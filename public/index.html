@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>恋愛人生ゲーム - Prototype</title>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <section id="titleScreen">
+    <h1>恋愛人生ゲーム</h1>
+    <button id="btnStart">Game Start</button>
+  </section>
+
+  <section id="setupWrapper">
+    <div class="ctrlBtns">
+      <button id="btnAdd">＋ プレイヤー追加</button>
+      <button id="btnRemove">－ プレイヤー削除</button>
+    </div>
+    <div id="playerList"></div>
+    <button id="btnBegin" class="startBtn">夏休み開始！</button>
+  </section>
+
+  <canvas id="threeCanvas"></canvas>
+
+  <div id="modal" class="modal">
+    <div class="modal-content"></div>
+  </div>
+
+  <!-- Socket.io クライアント -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- ゲームロジック -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>
