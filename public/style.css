@@ -1,0 +1,317 @@
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "M PLUS Rounded 1c", sans-serif;
+}
+
+:root {
+  --accent: #ffd166;
+  --bg1: #0f2027;
+  --bg2: #203a43;
+  --bg3: #2c5364;
+}
+
+body {
+  min-height: 100dvh;
+  overflow: hidden;
+  background: linear-gradient(120deg, var(--bg1), var(--bg2), var(--bg3));
+  background-size: 400% 400%;
+  animation: bgShift 15s ease infinite;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  overflow: hidden;
+}
+
+@keyframes bgShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+#titleScreen {
+  text-align: center;
+  animation: fadeIn 1s ease forwards;
+}
+
+#titleScreen h1 {
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  margin-bottom: 1rem;
+  letter-spacing: .05em;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, .4);
+}
+
+#titleScreen button {
+  padding: .8rem 2.5rem;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #333;
+  background: var(--accent);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .3);
+  transition: .2s;
+}
+#titleScreen button:hover {
+  transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+#setupWrapper {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(4px);
+}
+
+#playerList {
+  margin: 1.5rem 0;
+  width: min(400px, 90vw);
+  font-size: 16px
+}
+
+.playerInput {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: .6rem;
+}
+
+.playerInput input {
+  flex: 1;
+  padding: .5rem 1rem;
+  border-radius: 8px;
+  border: none;
+}
+
+.ctrlBtns {
+  display: flex;
+  gap: .5rem;
+}
+
+.ctrlBtns button,
+.startBtn {
+  padding: .6rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--accent);
+  color: #333;
+  font-weight: 700;
+  transition: .2s;
+}
+.ctrlBtns button:hover {
+  transform: translateY(-1px);
+}
+
+.startBtn {
+  margin-top: .8rem;
+  width: 100%;
+  opacity: .4;
+  
+  bottom: 40%;
+}
+.startBtn.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#threeCanvas {
+  display: none;
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  overflow: hidden;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, .5);
+  backdrop-filter: blur(4px);
+  z-index: 20;
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.modal-content {
+  white-space: pre-line;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.modal button {
+  margin-top: 1rem;
+  padding: .5rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #333;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+
+/* === iOSの自動ズーム回避 === */
+input, select, textarea, .playerInput input {
+  font-size: 16px !important;  /* 16px以上で拡大しない */
+  line-height: 1.2;
+  height: 44px;                 /* タップしやすい高さ（任意） */
+}
+
+/* ダブルタップズーム回避（ボタン系）*/
+button {
+  touch-action: manipulation;
+}
+
+/* 文字サイズ自動調整の暴走抑止（iOS対策） */
+html { -webkit-text-size-adjust: 100%; }
+
+
+/* ====================== 会話UI（ダイアログレイヤー） ====================== */
+.dialog-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: none;
+  pointer-events: auto;   /* ← none から auto に変更。どこでもタップで進めるように */
+}
+
+
+.dialog-bg {
+  position: absolute;
+  inset: 0;
+  background: #000 center/cover no-repeat;
+  filter: none;           /* 画像そのまま */
+}
+
+.dialog-ui {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: 1fr auto auto; /* 上：余白 / 中：選択肢 / 下：テキスト */
+  align-items: end;
+  pointer-events: none;
+}
+
+/* --- 選択肢（テキストボックスの上） --- */
+.dialog-choices{
+  width: min(1000px, 94vw);
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  /* bottom:50%; ←削除 */
+  z-index:6;
+  display:none;             /* JSで最初は隠しておく */
+  pointer-events:auto;      /* ←これが無いとクリックできません */
+  gap: 12px;
+}
+.dialog-choices button {
+  border: none;
+  border-radius: 12px;
+  padding: .9rem 1rem;
+  font-weight: auto;
+  font-size: 16px;
+  background: var(--accent);
+  color: #333;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,.25);
+  transition: transform .1s ease, filter .1s ease;
+}
+.dialog-choices button:hover { transform: translateY(-1px); }
+
+
+/* --- テキストボックス --- */
+.dialog-textbox {
+  position: relative;
+  pointer-events: auto;
+  width: min(1000px, 94vw);
+  margin: 0 auto 12px;
+  padding: 16px 18px 18px;
+  background: #10131a;                 /* 不透明 */
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+  color: #fff;
+  line-height: 1.6;
+  font-size: 16px;
+  min-height: 90px;
+}
+.dialog-name {
+  position: absolute;
+  top: -14px;
+  left: 16px;
+  background: var(--accent);
+  color: #333;
+  font-weight: 900;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 14px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.25);
+}
+
+/* --- 立ち絵（右下寄せ／複数対応） --- */
+.dialog-portraits {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(12px + 90px); /* テキストボックス+余白のすぐ上 */
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  pointer-events: none;
+  max-width: 92vw;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.dialog-portraits img {
+  max-height: clamp(260px, 58vh, 680px); /* 以前より大きく */
+  width: auto;
+  border-radius: 8px;
+  /*box-shadow: 0 8px 24px rgba(0,0,0,.3);*/
+  background: transparent; /* ← これで透過PNGが黒抜けしない */
+}
+@media (max-width: 640px) {
+  .dialog-portraits img { max-height: 36vh; }
+}
+
+
+
+#dayHUD{
+  position: fixed;
+  left: 12px;
+  top: 10px;
+  z-index: 50;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.55);
+  border: 1px solid rgba(255,255,255,.15);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: .03em;
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
