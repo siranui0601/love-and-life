@@ -16,7 +16,31 @@ app.use(express.static("public"));
 // ---------- Gemini API 初期化 ----------
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 //const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+//const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+// ★追加：429/Quota時に flash-lite に切替えて再試行する共通関数
+async function genWithFallback(prompt, options = {}) {
+  const primary = "gemini-2.5-flash";
+  const fallback = "gemini-2.5-flash-lite";
+  try {
+    const m = genAI.getGenerativeModel({ model: primary, ...options });
+    const res = await m.generateContent(prompt);
+    return res.response.text();
+  } catch (err) {
+    const msg = String(err?.message || "");
+    const code = err?.status || err?.statusText || "";
+    const isQuota =
+      code === 429 ||
+      /Too Many Requests|QuotaFailure|Resource has been exhausted/i.test(msg);
+    if (!isQuota) throw err;
+    // 429系だけフォールバック
+    console.warn(`[Gemini] ${primary} quota hit. Fallback to ${fallback}`);
+    // もしエラーメッセージに retryDelay が含まれていたら軽く待つ
+    await new Promise(r => setTimeout(r, 2000));
+    const m2 = genAI.getGenerativeModel({ model: fallback, ...options });
+    const res2 = await m2.generateContent(prompt);
+    return res2.response.text();
+  }
+}
 
 function stripJsonFence(s) {
   return typeof s === "string" ? s.replace(/^```json\s*|\s*```$/g, "") : s;
@@ -77,7 +101,7 @@ async function generateGameEvent(character, place, likability, playername) {
 特徴:${characterProfiles[character]}
 
 ここは海辺の町「潮風町」。今、${place.name}（詳細: ${place.detail}）で${playername}（＝プレイヤー）と出会いました。
-あなたの${playername}への現在の好感度は ${likability}です。(0は顔見知り程度、100は大大大好き！　0は嫌い。-30は顔も見たくない。 -60はいっその事殺したいレベル)
+あなたの${playername}への現在の好感度は ${likability}です。(0は顔見知り程度、100は大大大好き！　0未満は嫌い。-30は顔も見たくない。 -60はいっその事殺したいレベル)
 以下の要件をもとに、イベントを1つ生成してください：
 
 【登場シーン】
@@ -120,8 +144,7 @@ async function generateGameEvent(character, place, likability, playername) {
 `.trim();
 
   try {
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+     const text = await genWithFallback(prompt);
     const jsonString = text.replace(/^```json\n?|\n?```$/g, "");
     console.log(jsonString);
     return JSON.parse(jsonString);
@@ -178,8 +201,7 @@ ${joinedProfiles}
 `.trim();
 
   try {
-    const res = await model.generateContent(prompt);
-    const text = stripJsonFence(res.response.text());
+    const text = stripJsonFence(await genWithFallback(prompt));
     return JSON.parse(text);
   } catch (e) {
     console.error("❌ Gemini API Error (festival lines):", e);
@@ -204,6 +226,14 @@ function formatNameFor(character, playername) {
   return playername; // ミユ=呼び捨て
 }
 
+function rejectionBandFromLike(like) {
+  // 好感度に応じてトーンを4段階に
+  if (like >= 0) return 0;        // 0〜：ふつうの拒絶
+  if (like >= -30) return 1;      // -1〜-30：冷たく/嫌いを明言
+  if (like >= -60) return 2;      // -31〜-60：強い拒絶＋距離/通報の示唆
+  return 3;                       // -61以下：非常に強い拒絶＋通報を明言
+}
+
 // ---------- 各キャラの最終返事モノローグ（台詞配列） ----------
 async function generateEndingMonologue(character, entries, okName) {
   if (!entries || entries.length === 0) return [];
@@ -220,14 +250,22 @@ async function generateEndingMonologue(character, entries, okName) {
     // 単独告白への丁寧なお断り
     if (isSingle) {
       const toSole = formatNameFor(character, soleName);
+      const finalLike = Number(entries[0]?.finalLike ?? 0);
+      const band = rejectionBandFromLike(finalLike);
       try {
         const prompt = `
-あなたは${character}です。以下の条件で「丁寧なお断り」だけを台詞で返してください。
+あなたは${character}です。以下の条件で台詞を返してください。
 ${style}
 
 【状況】
 告白してきたのは${toSole}。
-今は付き合えないため、優しく感謝を伝えつつお断りします。
+今は付き合えないため、お断りします。
+相手への最終好感度は ${finalLike} です。拒絶トーンの強さは次のLEVELに従ってください：
+LEVEL 0: 丁寧に感謝し、穏やかにお断り。
+LEVEL 1: はっきり嫌い/合わないと伝え、突き放す。
+LEVEL 2: 非常に強い拒絶。即時に関わりを断つことを厳しく明言。「これ以上は警察に通報します」を明言。
+LEVEL 3: さらに強い拒絶。泥を投げるなどの行為も行ってください。
+採用するLEVELは ${band} です。
 
 【要件】
 - 出力はJSON配列のみ。各要素は {"name":"${character}","message":"…"} 形式。
@@ -241,8 +279,7 @@ ${style}
   *全体で6行以上
 ]
 `.trim();
-        const res = await model.generateContent(prompt);
-        const text = stripJsonFence(res.response.text());
+         const text = stripJsonFence(await genWithFallback(prompt));
         const arr = JSON.parse(text);
         return arr
           .map((l) => ({
@@ -287,8 +324,7 @@ ${listForPrompt}
   *全体で6行以上
 ]
 `.trim();
-      const res = await model.generateContent(prompt);
-      const text = stripJsonFence(res.response.text());
+       const text = stripJsonFence(await genWithFallback(prompt));
       const arr = JSON.parse(text);
       return arr
         .map((l) => ({
@@ -339,8 +375,7 @@ ${style}
   *全体で6行以上
 ]
 `.trim();
-      const res = await model.generateContent(prompt);
-      const text = stripJsonFence(res.response.text());
+       const text = stripJsonFence(await genWithFallback(prompt));
       const arr = JSON.parse(text);
       const out = arr
         .map((l) => ({
@@ -394,8 +429,7 @@ ${listForPrompt}
 `.trim();
 
   try {
-    const res = await model.generateContent(prompt);
-    const text = stripJsonFence(res.response.text());
+    const text = stripJsonFence(await genWithFallback(prompt));
     const arr = JSON.parse(text);
     const out = arr
       .map((l) => ({
@@ -470,8 +504,7 @@ ${style}
 `.trim();
 
   try {
-    const res = await model.generateContent(prompt);
-    const text = stripJsonFence(res.response.text());
+    const text = stripJsonFence(await genWithFallback(prompt));
     let arr = JSON.parse(text);
 
     // 空メッセージ除去
@@ -589,4 +622,3 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
-
