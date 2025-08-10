@@ -567,8 +567,8 @@ let festivalTimer = null;
 
 /* ====== 日付HUD ====== */
 let 日付はここで変更できるよのめあすになる変数;
-const festivalDay = 2;
-const finalDay = 3;
+const festivalDay = 15;
+const finalDay = 30;
 let dayHUD;
 let stepsHUD; // ★ 累計マス数用
 
@@ -782,6 +782,15 @@ function validate() {
   );
   const ok = names.every((n) => n) && new Set(names).size === names.length;
   btnBegin.classList.toggle("active", ok);
+  
+  // ボタンのクリック可能状態も制御
+  if (ok) {
+    btnBegin.style.pointerEvents = "auto";
+    btnBegin.style.cursor = "pointer";
+  } else {
+    btnBegin.style.pointerEvents = "none";
+    btnBegin.style.cursor = "not-allowed";
+  }
 }
 
 /* ---------- 画面遷移 ---------- */
@@ -795,9 +804,18 @@ btnAdd.onclick = addInput;
 btnRem.onclick = removeInput;
 listElm.addEventListener("input", validate);
 btnBegin.onclick = async () => {
-  playerNamesGlobal = [...listElm.querySelectorAll("input")].map((i) =>
+  // 念のため入力チェック
+  const names = [...listElm.querySelectorAll("input")].map((i) =>
     i.value.trim(),
   );
+  const isValid = names.every((n) => n) && new Set(names).size === names.length;
+  
+  if (!isValid) {
+    alert("すべてのプレイヤー名を入力してください（重複不可）");
+    return;
+  }
+  
+  playerNamesGlobal = names;
   setup.style.display = "none";
   document.body.style.overflow = "hidden";
   createDayHUD();
@@ -1424,7 +1442,7 @@ let festivalQueue = [];
 function runBonOdoriFestival() {
   // ★「同率のときは累計マス数が多い人を採用」し、
   //   負けた人には「行きたかったが…」メッセージ用の印を付ける
-  const THRESHOLD = 300000000; // 最低好感度（必要に応じて調整）
+  const THRESHOLD = 30; // 最低好感度（必要に応じて調整）
   let 盆踊り最低好感度;
 
   // 失恋（同率でマス数負け）した希望先: playerName -> [char,...]
