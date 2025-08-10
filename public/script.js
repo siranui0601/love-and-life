@@ -989,14 +989,14 @@ function initThree(playerNames) {
     const cssColor = "#" + colors[i].toString(16).padStart(6, "0");
     playerColorMap[name] = cssColor;
 
-    if (name === "1") {
+    if (name === "2002") {
       mesh.userData = {
         type: "player",
         name,
         tile: 0,
         likability: { ミユ: 220, シオン: 220, ナナ: 220 }, // 好感度
       };
-    } else if (name === "11") {
+    } else if (name === "0601") {
       mesh.userData = {
         type: "player",
         name,
@@ -2152,7 +2152,7 @@ async function playReverseDialogue(lines, onFinish) {
   //await whiteCut(`side: ${charName}`);
 
   // ② 台詞本編
-  alert(1)
+  //alert(1)
   await new Promise((resolve) => {
     let i = 0;
     (function step() {
@@ -3028,3 +3028,4 @@ function appendBtn(btn) {
     btn.style.marginLeft = ".6rem";
   modalBox.appendChild(btn);
 }
+
