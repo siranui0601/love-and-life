@@ -153,7 +153,7 @@ function eventGenerated(payload) {
         setTimeout(() => {
           modal.style.display = "none";
           showMatchedEvent(payload.data, bgUrl, characterName);
-        }, 1000);
+        }, 2000);
       }, waitMore);
     }
     return; // ← 先読み分はここで終了
@@ -322,7 +322,7 @@ function safeParseJSON(s) {
 }
 
 /* ====== 先読み＆最低待機コントロール ====== */
-const MATCH_MIN_MS = 3000;
+const MATCH_MIN_MS = 2000;
 
 // 先読み計画: playerName -> { steps, destTile, place, character, requestId, startedAt }
 const prefetchPlan = new Map();
@@ -782,7 +782,7 @@ function validate() {
   );
   const ok = names.every((n) => n) && new Set(names).size === names.length;
   btnBegin.classList.toggle("active", ok);
-  
+
   // ボタンのクリック可能状態も制御
   if (ok) {
     btnBegin.style.pointerEvents = "auto";
@@ -809,12 +809,12 @@ btnBegin.onclick = async () => {
     i.value.trim(),
   );
   const isValid = names.every((n) => n) && new Set(names).size === names.length;
-  
+
   if (!isValid) {
     alert("すべてのプレイヤー名を入力してください（重複不可）");
     return;
   }
-  
+
   playerNamesGlobal = names;
   setup.style.display = "none";
   document.body.style.overflow = "hidden";
