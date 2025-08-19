@@ -36,6 +36,8 @@ const BG_IMAGES = {
 // 盆踊りは指定がないため神社背景を既定使用
 const FESTIVAL_BG_FALLBACK = BG_IMAGES["神社"];
 
+const yasumi_image = "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjesnaOoawm-nfrRbhoGRCi7OYvD5PbklLyJfkm-OaZSTwaX7e6YwZ__GpugpG6kBPvyd_LwkRUwFnKasLMfete7Hq86UUt2cfb1JxJHWh6w4qWaNG31w4Pm0i7W1CI1sj4pb4ukqQxw731joBaA6MiZVGB4-QtuWwCNLg9ky2wtrFS9amdvjn27dV38cWP/s320/プレイヤーの部屋2.jpg"
+
 /* ========= 画像プリロード ========= */
 const IMG_CACHE = new Map();
 
@@ -689,10 +691,15 @@ const tileInfo = {
     detail:
       "レトロなアーケードには雑貨屋、駄菓子屋、洋品店が並び、どこか懐かしい賑わい。",
   },
-  4: {
+  /*4: {
     name: "路地裏",
     detail:
       "商店街の裏手にある細い道。野良猫がひなたで丸くなっている、静かな抜け道。",
+  },*/
+  4: {
+    name: "1回休み",
+    type: "rest",
+    detail: "思わぬアクシデント！次の自分の番はお休みになります。",
   },
   5: {
     name: "神社",
@@ -759,6 +766,23 @@ const gameLog = []; // {player, day, place, character, message, pickedIndex, pic
 
 // ▼ 追加（グローバル）
 let __extraCouples = []; // { player, character }
+
+/* ===== 1回休み：理由語彙 ===== */
+const REST_REASONS = [
+  { key: "cold",     label: "風邪をひいた" },
+  { key: "lost",     label: "迷子になった" },
+  { key: "phone",    label: "スマホが見つからない" },
+  { key: "soaked",   label: "海に落ちてびしょ濡れ" },
+];
+
+function pickRestReason(){
+  return REST_REASONS[Math.floor(Math.random()*REST_REASONS.length)];
+}
+function restLabelByKey(key){
+  const f = REST_REASONS.find(r=>r.key===key);
+  return f ? f.label : "体調不良";
+}
+
 
 /* ---------- プレイヤー入力欄 ---------- */
 function addInput() {
@@ -1206,40 +1230,38 @@ function startTurn() {
     (p) => p.userData.name === gameState.order[gameState.turn],
   );
 
-  // 盆踊り当日なら先に祭りへ
-  if (gameState.day === festivalDay) {
-    if (!gameState.festivalDone) {
-      currentPawn = pawn;
-      cameraInstantLook();
-      // 表示を毎ターン更新
-      updateStepsHUD();
-      runBonOdoriFestival();
-      return;
-    }
-  }
-
-  // ★ 最終日：通常イベントを止め、エンディング（夏祭りイベント）へ
-  if (gameState.day === finalDay) {
-    if (!gameState.endingDone) {
-      currentPawn = pawn;
-      cameraInstantLook();
-      updateStepsHUD();
-      runFinalConfessionEvent(); // ★ここへ
-      return;
-    }
-  }
-
+  // 常に参照更新
   currentPawn = pawn;
   cameraInstantLook();
-
-  // 表示を毎ターン更新
   updateStepsHUD();
 
-  // 次のプレイヤーを先読み
-  prefetchNextPlayerFromCurrentTurn();
+  // ① 盆踊り当日：休みの有無に関わらず先に祭り
+  if (gameState.day === festivalDay) {
+    if (!gameState.festivalDone) {
+      runBonOdoriFestival(); // ← 内部で全員分のconditionを参照できるように後述修正
+      return;
+    }
+  }
 
+  // ② 最終日：休みは無視して告白へ
+  if (gameState.day === finalDay) {
+    if (!gameState.endingDone) {
+      runFinalConfessionEvent();
+      return;
+    }
+  }
+
+  // ③ 休み消化：サイコロUIを出さずに即処理
+  if (pawn.userData.rest && pawn.userData.rest.active) {
+    handleRestTurn(pawn);
+    return;
+  }
+
+  // ④（通常時）次のプレイヤーを先読みし、手番モーダルへ
+  prefetchNextPlayerFromCurrentTurn();
   startTurnModal(pawn.userData.name);
 }
+
 
 function startTurnModal(name) {
   show(`${name} の番です！\n\n`, false);
@@ -1359,6 +1381,26 @@ function resolveTileEvent(pawn) {
     return;
   }
 
+
+  /* ★★ 追加：1回休みマスなら、ここで確定して早期 return */
+  if (place.type === "rest" || place.name === "1回休み") {
+    const reason = pickRestReason();
+    // ステータスON（次の自分の番で消化）
+    pawn.userData.rest = {
+      active: true,
+      reasonKey: reason.key,
+      reasonLabel: reason.label,
+      startedDay: gameState.day,
+    };
+
+    // モーダル表示 → タップで次ターンへ
+    show(`${pawn.userData.name} は ${reason.label}。1回休み`, false);
+    modal.onclick = () => {
+      modal.style.display = "none";
+      nextTurn(); // ←通常イベントは発生させない
+    };
+    return;
+  }
   /* ===== 2) プレイヤーの内部状態を更新 ===== */
   pawn.userData.meetingCharacter = characterName;
   pawn.userData.currentPlaceName = place.name;
@@ -1608,15 +1650,20 @@ function playNextFestivalInQueue() {
   next1.textContent = "OK";
   next1.onclick = () => {
     modal.style.display = "none";
-    // 生成リクエスト
+
+    // ★ ここを修正：体調条件（休み理由）をオプションで同梱
+    const condition = (pawn.userData.rest && pawn.userData.rest.active)
+      ? restLabelByKey(pawn.userData.rest.reasonKey)
+      : null;
+
     socket.emit("requestFestivalEvent", {
       playername: pawn.userData.name,
       characters: chars,
       place: festivalPlace,
       likabilities,
+      condition, // ← 追加：例 "風邪をひいた" など（nullなら未指定）
     });
 
-    modalBox.innerHTML = ""; // 前のボタンを消す
     show(`${pawn.userData.name}は、${label}とのデートを準備している…`, false);
   };
   modalBox.appendChild(next1);
@@ -1641,6 +1688,125 @@ function nextTurn() {
   }
   setTimeout(startTurn, 500);
 }
+
+/* ===== 休みターン進行 ===== */
+function handleRestTurn(pawn){
+  const name = pawn.userData.name;
+  const like = pawn.userData.likability || {};
+  const r = pawn.userData.rest || {};
+  const reasonKey = r.reasonKey || "cold";
+  const reasonLabel = r.reasonLabel || restLabelByKey(reasonKey);
+
+  // 判定セット
+  const gte50 = characters.filter(ch => (like[ch]||0) >= 50);
+  const gte30 = characters.filter(ch => (like[ch]||0) >= 30);
+  const lteM30= characters.filter(ch => (like[ch]||0) <= -30);
+  const lteM15= characters.filter(ch => (like[ch]||0) <= -15);
+
+  let type = "alone";
+  let visitors = [];
+
+  if (gte50.length){
+    type = "visit";
+    visitors = [...gte50];
+  } else if (gte30.length){
+    type = "visit";
+    visitors = [ gte30[Math.floor(Math.random()*gte30.length)] ];
+  } else if (lteM30.length){
+    type = "spite"; // 意趣返し
+    visitors = [ lteM30[Math.floor(Math.random()*lteM30.length)] ];
+  } else if (lteM15.length){
+    type = "mock";  // 冷笑
+    visitors = [ lteM15[Math.floor(Math.random()*lteM15.length)] ];
+  }
+
+  // 会話なし
+  if (type==="alone" || visitors.length===0){
+    show(`${name} は休んでいる…`, false);
+    modal.onclick = () => {
+      modal.style.display = "none";
+      // ★ 休み消化（クリア）
+      pawn.userData.rest.active = false;
+      nextTurn();
+    };
+    return;
+  }
+
+  // サーバー生成：見舞い/意趣返し/冷笑
+  const likabilities = {};
+  characters.forEach(ch => likabilities[ch] = like[ch]||0);
+
+  socket.emit("requestRestEvent", {
+    playername: name,
+    visitors,             // ["ミユ","ナナ"] 等
+    type,                 // "visit"|"spite"|"mock"
+    reasonKey,            // "cold"|"lost"|"phone"|"soaked"
+    reasonLabel,          // 例: "風邪をひいた"
+    likabilities,         // 参照用
+  });
+
+  // 待機表示
+  show(`様子を見に来ています…`, false);
+}
+
+/* ===== 休みイベント受信 ===== */
+socket.off("restGenerated");
+socket.on("restGenerated", (raw) => {
+  try {
+    const lines = Array.isArray(raw) ? raw : safeParseJSON(raw);
+    if (!Array.isArray(lines) || !lines.length) throw new Error("invalid lines");
+    playRestDialogue(lines, () => {
+      // 終了時：休み消化
+      if (currentPawn && currentPawn.userData && currentPawn.userData.rest){
+        currentPawn.userData.rest.active = false;
+      }
+      nextTurn();
+    });
+  } catch (e) {
+    console.error(e);
+    modalBox.innerHTML = "休みイベントの取得に失敗しました。";
+    const ok = document.createElement("button");
+    ok.textContent = "OK";
+    ok.onclick = () => {
+      modal.style.display = "none";
+      if (currentPawn && currentPawn.userData && currentPawn.userData.rest){
+        currentPawn.userData.rest.active = false;
+      }
+      nextTurn();
+    };
+    modal.style.display = "flex";
+    modalBox.appendChild(ok);
+  }
+});
+
+/* ===== 台詞配列の再生（盆踊りと同形式） ===== */
+function playRestDialogue(lines, onFinish){
+  const charSet = new Set(["ミユ","シオン","ナナ"]);
+  const bgUrl = yasumi_image;
+/*https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjesnaOoawm-nfrRbhoGRCi7OYvD5PbklLyJfkm-OaZSTwaX7e6YwZ__GpugpG6kBPvyd_LwkRUwFnKasLMfete7Hq86UUt2cfb1JxJHWh6w4qWaNG31w4Pm0i7W1CI1sj4pb4ukqQxw731joBaA6MiZVGB4-QtuWwCNLg9ky2wtrFS9amdvjn27dV38cWP/s320/プレイヤーの部屋2.jpg*/
+  let idx = 0;
+  function step(){
+    const { name, message } = lines[idx];
+    const portraits = charSet.has(name) ? [{ name, mood: "positive" }] : [];
+    renderEventLayer({
+      bgUrl,
+      portraits,
+      speaker: name,
+      message,
+      choices: [],
+      advanceOnTap: () => {
+        idx++;
+        if (idx < lines.length) step();
+        else {
+          hideEventLayer();
+          onFinish && onFinish();
+        }
+      }
+    });
+  }
+  step();
+}
+
 
 /* ======================================================
    ビジュアルノベル風 レイヤー描画
