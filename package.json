@@ -5,12 +5,15 @@
   "scripts": {
     "start": "node index.js"
   },
+  "engines": {
+  "node": "18"
+},
   "dependencies": {
     "@google/generative-ai": "*",
     "dotenv": "^17.2.1",
     "express": "^4.19.2",
-    "socket.io": "^4.7.5",
-    "node": "18"
+    "socket.io": "^4.7.5"
   }
 }
+
 
