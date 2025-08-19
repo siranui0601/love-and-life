@@ -92,6 +92,109 @@ function profileBlock(playername) {
   };
 }
 
+// ===== 休みイベント：台詞生成（訪問／意趣返し／冷笑） =====
+function jsonOnly(s){ return typeof s === "string" ? s.replace(/^```json\s*|\s*```$/g, "") : s; }
+async function generateRestDialogue(payload) {
+  // payload = { playername, visitors:["ミユ","シオン",...], type:"visit"|"spite"|"mock", reasonKey, reasonLabel, likabilities:{ミユ:number,シオン:number,ナナ:number} }
+  const {
+    playername = "プレイヤー",
+    visitors = [],
+    type = "visit",
+    reasonLabel = "体調不良",
+    likabilities = {}
+  } = payload || {};
+
+  // トーン定義
+  const tone =
+    type === "visit" ? "優しく励ます、見舞いにふさわしい口調（温かい）" :
+    type === "spite" ? "きつく刺すような皮肉（意趣返し）。暴力・過度な罵倒は避けるが、冷淡さは明確。" :
+    "軽く見下すような冷笑（ドライ）。罵倒や暴力表現は避ける。";
+
+  // 来訪者が空の場合は最小のフォールバック（通常、クライアント側で呼ばれない想定）
+  if (!Array.isArray(visitors) || visitors.length === 0) {
+    return [{ name: playername, message: "今日はおとなしく休むしかないな……。" }];
+  }
+
+  const profiles = profileBlock(playername);
+  const joinedProfiles = visitors.map(ch => `【${ch}】\n${profiles[ch] || ""}`).join("\n");
+  const likeTable = Object.entries(likabilities).map(([k,v])=>`${k}:${v}`).join(", ");
+
+  const prompt = `
+あなたは恋愛ADVの脚本家です。**出力は必ず JSON 配列のみ**にしてください。コードフェンス・地の文・括弧書きは禁止。
+
+【状況】
+- プレイヤー名: ${playername}
+- 理由: ${reasonLabel}（1回休み）
+- 来訪者: ${visitors.join("・")}
+- 来訪タイプ: ${type}（visit=見舞い / spite=意趣返し / mock=冷笑）
+- 各キャラの${playername}への好感度: ${likeTable || "不明"}
+
+【キャラ設定（話し方・呼称の参考）】
+${joinedProfiles}
+
+【会話方針】
+- 会話は ${visitors.join("・")} と ${playername} のセリフだけで進める。三人称ナレーション禁止。
+- 1人の来訪者につき最低2回は喋らせる。プレイヤー（${playername}）も適度に応じる。
+- プレイヤーの一人称は「俺」。
+- ${tone}
+- ${reasonLabel} を自然に会話へ織り込む（毎行に入れる必要はない）。
+
+【ボリューム】
+- 全体で 6〜12 行程度。
+
+【出力形式（これ以外は絶対に出力しない）】
+[
+  {"name":"登場人物名","message":"セリフ"},
+  ...
+]
+`.trim();
+
+  const text = jsonOnly(await genWithFallback(prompt));
+  let arr;
+  try {
+    arr = JSON.parse(text);
+  } catch {
+    throw new Error("Gemini returned non-JSON");
+  }
+  // 整形＆バリデーション
+  const cleaned = (Array.isArray(arr) ? arr : [])
+    .filter(l => l && typeof l.name === "string" && typeof l.message === "string")
+    .map(l => ({ name: l.name.trim(), message: l.message.trim() }))
+    .filter(l => l.name && l.message);
+
+  if (!cleaned.length) {
+    // フォールバック：非常に短い来訪
+    const who = visitors[0];
+    return [
+      { name: who,        message: `${playername}、${reasonLabel}って聞いて…大丈夫？` },
+      { name: playername, message: "心配かけた。来てくれて助かったよ。" }
+    ];
+  }
+  return cleaned;
+}
+// 明示フォールバック（生成失敗時）
+function fallbackRestDialogue(payload) {
+  const { playername, visitors = [], type = "visit", reasonLabel = "体調不良" } = payload || {};
+  if (!visitors.length) {
+    return [{ name: playername, message: "今日は休もう……。" }];
+  }
+  const lines = [];
+  visitors.forEach(v => {
+    if (type === "visit") {
+      lines.push({ name: v,          message: `${playername}、${reasonLabel}だって？無理しないで。` });
+      lines.push({ name: playername, message: "ありがとな。少し元気出た。" });
+    } else if (type === "spite") {
+      lines.push({ name: v,          message: `${reasonLabel}ね。…前の仕返し、ってわけじゃないけど。` });
+      lines.push({ name: playername, message: "今日は勘弁してくれ……。" });
+    } else {
+      lines.push({ name: v,          message: `${reasonLabel}？…そっか。そうなんだ。` });
+      lines.push({ name: playername, message: "…………。" });
+    }
+  });
+  return lines;
+}
+
+
 // ---------- 通常（1対1）イベント ----------
 async function generateGameEvent(character, place, likability, playername) {
   const characterProfiles = profileBlock(playername);
@@ -120,7 +223,7 @@ async function generateGameEvent(character, place, likability, playername) {
 - 三人称ナレーションは禁止（例:「${playername}さんが現れた」「${character}は目を見開いた」などの記述はNG）。
 - あなた（${character}）は、今この瞬間に目の前にいる${playername}に向けて、何かを話しかけるつもりで書いてください。
 - 好感度がマイナスの場合、その値に応じて毛嫌いすること。0未満は嫌い。-30は顔も見たくない。 -60はいっその事殺したいレベルです。
-- 好感度がマイナスの場合、その値に応じて踵を返す、無言になる、石を投げるなど、あらゆる手段を用いて拒否をしてください。
+
 【選択肢】
 - ${playername}がどう返すかを選べる2つの選択肢を用意してください。
 - 各選択肢には、好感度の変化（-15〜15の整数）を指定してください。
@@ -166,30 +269,37 @@ async function generateFestivalDialogue(
   place,
   likabilities,
   playername,
+  condition // ★ 追加: "風邪気味" / "迷子だった" / "スマホを失くした" / "海に落ちて濡れている" など or null
 ) {
   const profiles = profileBlock(playername);
   const joinedProfiles = characters
     .map((ch) => `【${ch}】\n${profiles[ch]}`)
     .join("\n");
-  const likeTable = Object.entries(likabilities)
+  const likeTable = Object.entries(likabilities || {})
     .map(([ch, v]) => `${ch}: ${v}`)
     .join(", ");
+
+  const condLine = condition
+    ? `- ${playername}は現在「${condition}」。体調／不調の様子に軽く触れつつ、からかいすぎたり重くしすぎない。`
+    : "- 特筆する不調はなし。";
 
   const prompt = `
 あなたは恋愛イベントの脚本家です。出力は必ず指定のJSONのみ。
 
 【登場キャラ】${characters.join("・")}（プレイヤー: ${playername}）
-【好感度】${likeTable}
+【好感度】${likeTable || "不明"}
 【場所】${place.name}（詳細: ${place.detail}）
+${condLine}
+
 【性格・話し方】
 ${joinedProfiles}
 
 【要件】
 - 盆踊り当夜の「甘めの会話」。
-- キャラが複数なら、全員が最低2回は話す。プレイヤーも適度に応じる。
+- キャラが複数なら、全員が最低2回は話す。プレイヤー（${playername}）も適度に応じる。
 - 三人称の地の文は不可。必ず話し言葉（1行目のみ）。
 - プレースホルダー、コードフェンス禁止。余計なキー禁止。
-- 登場キャラ以外のキャラは絶対に出現させないこと。
+- 登場キャラ以外のキャラは絶対に出現させない。
 
 【出力の形】
 [
@@ -205,18 +315,15 @@ ${joinedProfiles}
     return JSON.parse(text);
   } catch (e) {
     console.error("❌ Gemini API Error (festival lines):", e);
-    // フォールバック（ごく短い会話）
     const who = characters[0] || "ミユ";
     return [
-      {
-        name: who,
-        message: `${playername}${who === "シオン" ? "さん" : who === "ナナ" ? "くん" : ""}、隣、いい？`,
-      },
-      { name: playername, message: "もちろん。…手、繋いでもいい？" },
-      { name: who, message: "…うん。太鼓、近くで一緒に聞こ？" },
+      { name: who,         message: `${playername}${who === "シオン" ? "さん" : who === "ナナ" ? "くん" : ""}、隣、いい？` },
+      { name: playername,  message: "もちろん。…手、繋いでもいい？" },
+      { name: who,         message: "…うん。太鼓、近くで一緒に聞こ？" },
     ];
   }
 }
+
 
 // ---------- キャラごとの呼称（呼び捨て／さん／くん） ----------
 function formatNameFor(character, playername) {
@@ -537,6 +644,18 @@ ${style}
 io.on("connection", (socket) => {
   console.log("✅ client connected:", socket.id);
 
+  // 休みイベントの生成
+  socket.on("requestRestEvent", async (payload) => {
+    try {
+      const lines = await generateRestDialogue(payload);
+      socket.emit("restGenerated", lines);
+    } catch (err) {
+      console.error("[requestRestEvent] generation failed:", err);
+      socket.emit("restGenerated", fallbackRestDialogue(payload || {}));
+    }
+  });
+
+
   // 通常イベント
   socket.on("requestEvent", async (data) => {
     console.log("📩 Event requested:", data);
@@ -555,15 +674,17 @@ io.on("connection", (socket) => {
 
   // 盆踊りイベント（台詞配列）
   socket.on("requestFestivalEvent", async (data) => {
-    const { characters, place, likabilities, playername } = data;
+    const { characters, place, likabilities, playername, condition = null } = data;
     const lines = await generateFestivalDialogue(
       characters,
       place,
       likabilities,
       playername,
+      condition // ★ 追加
     );
-    socket.emit("festivalGenerated", lines); // ← 配列をそのまま返す
+    socket.emit("festivalGenerated", lines);
   });
+
 
   // 最終日エンディング（告白返事）
   socket.on("requestEndingEvent", async (payload) => {
