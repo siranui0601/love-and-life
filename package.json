@@ -4,10 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
-  },
-  "engines": {
-  "node": "18"
-},
+  }
   "dependencies": {
     "@google/generative-ai": "*",
     "dotenv": "^17.2.1",
@@ -15,5 +12,6 @@
     "socket.io": "^4.7.5"
   }
 }
+
 
 
