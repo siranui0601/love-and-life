@@ -120,6 +120,63 @@ function getCharImg(name, mood = "neutral") {
   return def[mood] || def.neutral;
 }
 
+
+// アルバイト定義（アイテム排出なし）
+export const PARTTIME_JOBS = {
+  // 説明はUI用。placeは既存のBG/場所説明に寄せられるようにしておくと自然
+  "清掃員": {
+    label: "清掃員（町内）",
+    place: { name: "商店街", detail: "夕方の商店街を掃除する町内会の手伝い。" },
+    payStop: 3000,     // 止まった時
+    payPass: 1500,     // 通過時（=半額）
+    encounterPct: 100, // %
+    weights: { "ミユ": 0.33, "シオン": 0.33, "ナナ": 0.34 }
+  },
+  "花屋": {
+    label: "花屋（商店街）",
+    place: { name: "商店街", detail: "季節の花が並ぶ小さな花屋の手伝い。" },
+    payStop: 5000,
+    payPass: 2500,
+    encounterPct: 85,
+    weights: { "ミユ": 0.50, "シオン": 0.25, "ナナ": 0.25 }
+  },
+  "神社手伝い": {
+    label: "神社手伝い",
+    place: { name: "神社", detail: "境内の掃除や授与所の手伝いを任される。" },
+    payStop: 4500,
+    payPass: 2250,
+    encounterPct: 90,
+    weights: { "ミユ": 0.20, "シオン": 0.60, "ナナ": 0.20 }
+  },
+  "海の家": {
+    label: "海の家",
+    place: { name: "ビーチ", detail: "海の家での接客や片付けで大忙し。" },
+    payStop: 5200,
+    payPass: 2600,
+    encounterPct: 80,
+    weights: { "ミユ": 0.35, "シオン": 0.20, "ナナ": 0.45 }
+  },
+  "ライフセーバー": {
+    label: "ライフセーバー（浜）",
+    place: { name: "ビーチ", detail: "監視塔から浜を見守り、応対を行う。" },
+    payStop: 9000,
+    payPass: 4500,
+    encounterPct: 60,
+    weights: { "ミユ": 0.45, "シオン": 0.20, "ナナ": 0.35 }
+  },
+  "漁師助手": {
+    label: "漁師助手（港）",
+    place: { name: "港", detail: "網の片付けや仕分けを手伝う力仕事。" },
+    payStop: 8000,
+    payPass: 4000,
+    encounterPct: 40,
+    weights: { "ミユ": 0.25, "シオン": 0.25, "ナナ": 0.50 }
+  },
+};
+
+
+
+
 /* ========== AIイベント受信（1対1） ========== */
 function eventGenerated(payload) {
   /* ===== 1) 先読み形式 ({requestId,data}) を優先 ===== */
