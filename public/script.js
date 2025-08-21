@@ -773,11 +773,17 @@ const tileInfo = {
     detail:
       "高台にある絶景スポット。潮風に吹かれながら、夕焼けが海を赤く染めてゆく。",
   },
-  8: {
+  /*8: {
     name: "古民家",
     detail:
       "木造の古民家の縁側で風鈴が揺れる。静かに流れる時間と風が心地よい。",
+  },*/
+    8: {
+    name: "アルバイト",
+    detail:
+      "今日はアルバイトの日。働く先によって、稼げるお金や出会いの確率が違う。",
   },
+
   9: {
     name: "岩瀬",
     detail:
@@ -839,6 +845,10 @@ function restLabelByKey(key){
   const f = REST_REASONS.find(r=>r.key===key);
   return f ? f.label : "体調不良";
 }
+
+  // ===== アルバイト関連 =====
+const JOB_TILE_ID = 8; // 8マス目をアルバイトに固定
+function isJobTileId(id) { return id === JOB_TILE_ID; }
 
 
 /* ---------- プレイヤー入力欄 ---------- */
@@ -1406,13 +1416,216 @@ function movePawn(name, steps) {
     }
     pawn.userData.tile = (pawn.userData.tile + 1) % 12;
     placePawnGlobal(pawn, pawn.userData.tile);
+
+    // ===== 通過判定：アルバイトマスを “跨いだ” 際の半額支給 =====
+    const tileIdNow = pawn.userData.tile + 1; // 1〜12
+    if (isJobTileId(tileIdNow) && remaining > 1) {
+      // まだ先に進む＝“通過”扱い
+      handleJobPass(pawn);
+    }
+
     remaining--;
     setTimeout(step, 250);
   })();
 }
 
+
+
+
+
+
+
+/* ======================================================
+   アルバイト：UI/処理
+====================================================== */
+
+// お金フィールド初期化
+function ensureMoney(pawn) {
+  if (typeof pawn.userData.money !== "number") pawn.userData.money = 0;
+}
+
+// 重み付き抽選（weights: {name:weight,...}）
+function weightedPick(weightMap) {
+  const entries = Object.entries(weightMap || {});
+  if (!entries.length) return null;
+  const sum = entries.reduce((s, [, w]) => s + (w || 0), 0);
+  let r = Math.random() * sum;
+  for (const [k, w] of entries) {
+    r -= (w || 0);
+    if (r <= 0) return k;
+  }
+  return entries[entries.length - 1][0];
+}
+
+// 初めてアルバイトマスに "停止" した人向け：どこで働くか選ぶ UI
+function promptSelectJob(pawn) {
+  return new Promise((resolve) => {
+    // モーダルを専有
+    modal.style.display = "flex";
+    modal.onclick = null;
+
+    const wrap = document.createElement("div");
+    wrap.style.whiteSpace = "pre-line";
+    wrap.innerHTML = `<div style="font-weight:900; font-size:1.05rem; margin-bottom:.6rem;">初めてのアルバイト！どこで働く？</div>`;
+
+    const list = document.createElement("div");
+    list.style.display = "grid";
+    list.style.gridTemplateColumns = "1fr";
+    list.style.gap = ".5rem";
+
+    Object.entries(PARTTIME_JOBS).forEach(([key, job]) => {
+      const btn = document.createElement("button");
+      btn.className = "btn";
+      btn.style.display = "grid";
+      btn.style.gridTemplateColumns = "1fr auto";
+      btn.style.alignItems = "center";
+      btn.style.justifyContent = "space-between";
+      btn.style.gap = "8px";
+      btn.innerHTML = `
+        <div>
+          <div style="font-weight:800">${job.label}</div>
+          <div style="opacity:.8; font-size:.9em">${job.place.name}：${job.place.detail}</div>
+          <div style="opacity:.8; font-size:.9em">停止: ¥${job.payStop.toLocaleString()} / 通過: ¥${job.payPass.toLocaleString()}</div>
+          <div style="opacity:.8; font-size:.9em">出会い発生率: ${job.encounterPct}%</div>
+        </div>
+        <div style="font-weight:900">選ぶ</div>
+      `;
+      btn.onclick = () => {
+        pawn.userData.jobKey = key;
+        modal.style.display = "none";
+        resolve(key);
+      };
+      list.appendChild(btn);
+    });
+
+    wrap.appendChild(list);
+    modalBox.innerHTML = "";
+    modalBox.appendChild(wrap);
+  });
+}
+
+// 「通過」時の処理（※ ジョブ未選択時はゼロ円）
+function handleJobPass(pawn) {
+  if (!pawn) return;
+  ensureMoney(pawn);
+  const jobKey = pawn.userData.jobKey;
+  if (!jobKey) return; // まだ就業先を決めていない場合は支給なし
+  const job = PARTTIME_JOBS[jobKey];
+  if (!job) return;
+  pawn.userData.money += job.payPass;
+  // 必要ならHUDに反映（任意）：updateMoneyHUD && updateMoneyHUD();
+}
+
+// 「停止」時の処理
+async function handleJobStop(pawn) {
+  if (!pawn) return;
+
+  // 1) 初回なら就業先を選ばせる
+  let jobKey = pawn.userData.jobKey;
+  if (!jobKey) {
+    jobKey = await promptSelectJob(pawn);
+  }
+  const job = PARTTIME_JOBS[jobKey];
+  if (!job) {
+    // 想定外の場合は素通り扱い
+    nextTurn();
+    return;
+  }
+
+  // 2) 賃金（停止）
+  ensureMoney(pawn);
+  pawn.userData.money += job.payStop;
+
+  // 3) 出会い抽選（停止時のみ）
+  const roll = Math.random() * 100;
+  const willMeet = roll < (job.encounterPct || 0);
+
+  if (!willMeet) {
+    // 会わない：結果だけ表示して次へ
+    show(
+      [
+        `🧹 ${pawn.userData.name}は「${job.label}」で働いた。`,
+        `→ ¥${job.payStop.toLocaleString()} を受け取った。`,
+      ].join("\n"),
+      false,
+    );
+    const ok = document.createElement("button");
+    ok.textContent = "OK";
+    ok.onclick = () => {
+      modal.style.display = "none";
+      nextTurn();
+    };
+    modalBox.appendChild(ok);
+    return;
+  }
+
+  // 4) 会うキャラ決定
+  const who = weightedPick(job.weights);
+  if (!who) {
+    // 念のため保険：誰も引けない場合はナシ扱い
+    show(
+      [
+        `🧹 ${pawn.userData.name}は「${job.label}」で働いた。`,
+        `→ ¥${job.payStop.toLocaleString()} を受け取った。`,
+      ].join("\n"),
+      false,
+    );
+    const ok = document.createElement("button");
+    ok.textContent = "OK";
+    ok.onclick = () => {
+      modal.style.display = "none";
+      nextTurn();
+    };
+    modalBox.appendChild(ok);
+    return;
+  }
+
+  // 5) 通常イベントをサーバ生成（既存フローを流用）
+  pawn.userData.meetingCharacter = who;
+  pawn.userData.currentPlaceName = job.place.name;
+
+  // “マッチング中”の簡易表示（ルーレットは回さないでOK）
+  const requestId = makeRequestId();
+  currentMatching = {
+    requestId,
+    startedAt: Date.now(),
+    player: pawn.userData.name,
+  };
+  if (rouletteTimer) { clearInterval(rouletteTimer); rouletteTimer = null; }
+  modal.style.display = "flex";
+  modal.onclick = null;
+  modalBox.innerHTML = [
+    `🧹 ${pawn.userData.name}は「${job.label}」で働いている…`,
+    "",
+    "…と、その時。",
+    "",
+    `<img style="height:240px;display:block;margin:8px auto;" src="${getCharImg(who)}" alt="${who}">`,
+    `<div style="font-size:1.6rem; margin-top:.5rem;">${who} が来店した！</div>`,
+  ].join("\n");
+
+  // サーバへ（いつもの requestEvent を流用）
+  socket.emit("requestEvent", {
+    requestId,
+    characterName: who,
+    place: { name: job.place.name, detail: job.place.detail },
+    likability: pawn.userData.likability?.[who] || 0,
+    playername: pawn.userData.name,
+  });
+}
+
+
+
+
+
 /* ---------- マスイベント ---------- */
 function resolveTileEvent(pawn) {
+
+  const tileId = pawn.userData.tile + 1;
+  // ===== アルバイトマスに停止したら、通常イベントではなくバイト処理へ =====
+  if (isJobTileId(tileId)) {
+    handleJobStop(pawn); // 停止時の賃金支給＆（あれば）会話へ
+    return;
+  }
   /* ===== 1) 事前計画の有無確認 ===== */
   const plan = prefetchPlan.get(pawn.userData.name);
   let place, characterName, requestId;
