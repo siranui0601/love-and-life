@@ -616,6 +616,9 @@ let theta = 0,
   dist = 130;
 let camera,
   currentPawn = null;
+  
+  // 駒カラー（最大6人分）
+const colors = [0xe57373, 0x64b5f6, 0x81c784, 0xffd54f, 0xba68c8, 0x4db6ac];
 
 // ==== AIイベント待機用の一時状態 ====
 let pendingEvent = null; // サーバから返るイベントオブジェクトを保持
@@ -1045,6 +1048,10 @@ function initThree(playerNames) {
   scene.add(ground);
 
   /* board tiles */
+
+  const tiles = [];
+  const pawns = []; // ★ 追加：駒コンテナ
+
   const CELL = 20, gap = 4;
   const tiles = [];
   const layout = boardLayout; // ← 12スタート
@@ -1070,6 +1077,8 @@ function initThree(playerNames) {
     lbl.position.set(0, CELL * 0.15, 0);
     m.add(lbl);
   });
+  
+  
 
   // 線（ループ）
   const pts = layout.concat([layout[0]]).map(
