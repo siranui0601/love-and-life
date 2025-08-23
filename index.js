@@ -14,7 +14,7 @@ const io = new Server(httpServer);
 app.use(express.static("public"));
 
 // ---------- Gemini API 初期化 ----------
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(/*process.env.*/GEMINI_API_KEY);
 //const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
 //const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 // ★追加：429/Quota時に flash-lite に切替えて再試行する共通関数
@@ -744,4 +744,5 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
