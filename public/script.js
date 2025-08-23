@@ -618,6 +618,7 @@ let camera,
   currentPawn = null;
   
   // 駒カラー（最大6人分）
+let pawns = [];
 const colors = [0xe57373, 0x64b5f6, 0x81c784, 0xffd54f, 0xba68c8, 0x4db6ac];
 
 // ==== AIイベント待機用の一時状態 ====
