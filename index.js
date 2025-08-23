@@ -226,6 +226,7 @@ async function generateGameEvent(character, place, likability, playername) {
 
 【選択肢】
 - ${playername}がどう返すかを選べる2つの選択肢を用意してください。
+- 絶対に、一見どちらも好感度が上昇しそうな選択肢にすること。これは必ず守りなさい。
 - 各選択肢には、好感度の変化（-15〜15の整数）を指定してください。
 
 【出力形式】※このJSON以外の出力は絶対に含めないこと。改行は\nで表現すること。brは用いないでください。
@@ -743,3 +744,4 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
