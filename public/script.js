@@ -695,12 +695,18 @@ function updateStepsHUD() {
       pawn && typeof pawn.userData.totalSteps === "number"
         ? pawn.userData.totalSteps
         : 0;
+    const money =
+      pawn && typeof pawn.userData.money === "number"
+        ? pawn.userData.money
+        : 0;
     const bonusMark = stepBonusWinners.has(n) ? "　歩数ボーナス！ +10♡" : "";
-    return `${n}: ${steps}マス${bonusMark}`;
+    // ← 所持金も同じ行に追記します
+    return `${n}: ${steps}マス${bonusMark} ｜ 所持金 ¥${money.toLocaleString()}`;
   });
 
   stepsHUD.textContent = lines.join("\n");
 }
+
 
 // ★ stepsHUD を dayHUD のすぐ下に固定配置する
 function positionStepsHUD() {
@@ -1513,30 +1519,51 @@ function handleJobPass(pawn) {
   const job = PARTTIME_JOBS[jobKey];
   if (!job) return;
   pawn.userData.money += job.payPass;
-  // 必要ならHUDに反映（任意）：updateMoneyHUD && updateMoneyHUD();
+  // 所持金が動いたので HUD を即更新
+  updateStepsHUD();
 }
+
 
 // 「停止」時の処理
 async function handleJobStop(pawn) {
   if (!pawn) return;
 
-  // 1) 初回なら就業先を選ばせる
+  // 1) 初回なら就業先を選ばせ、そのターンは「決めるだけ」で終了（賃金・遭遇なし）
   let jobKey = pawn.userData.jobKey;
   if (!jobKey) {
     jobKey = await promptSelectJob(pawn);
+    const jobChosen = PARTTIME_JOBS[jobKey];
+    // 決めたことだけ通知して、このターンはここで終了
+    show(
+      [
+        `🧰 ${pawn.userData.name}は「${jobChosen.label}」で働くことに決めた。`,
+        `（このターンは準備のみ。賃金や出会いは発生しません）`,
+      ].join("\n"),
+      false
+    );
+    const ok = document.createElement("button");
+    ok.textContent = "OK";
+    ok.onclick = () => {
+      modal.style.display = "none";
+      nextTurn();
+    };
+    modalBox.appendChild(ok);
+    return; // ★ 初回はここで確実にターン終了！
   }
+
+  // 2) 2回目以降：停止賃金の支給
   const job = PARTTIME_JOBS[jobKey];
   if (!job) {
-    // 想定外の場合は素通り扱い
+    // 想定外：就業先が見つからない場合はスキップ
     nextTurn();
     return;
   }
 
-  // 2) 賃金（停止）
   ensureMoney(pawn);
   pawn.userData.money += job.payStop;
+  updateStepsHUD(); // ← 支給後に HUD 反映
 
-  // 3) 出会い抽選（停止時のみ）
+  // 3) 遭遇（停止時のみ）
   const roll = Math.random() * 100;
   const willMeet = roll < (job.encounterPct || 0);
 
@@ -1547,7 +1574,7 @@ async function handleJobStop(pawn) {
         `🧹 ${pawn.userData.name}は「${job.label}」で働いた。`,
         `→ ¥${job.payStop.toLocaleString()} を受け取った。`,
       ].join("\n"),
-      false,
+      false
     );
     const ok = document.createElement("button");
     ok.textContent = "OK";
@@ -1562,13 +1589,13 @@ async function handleJobStop(pawn) {
   // 4) 会うキャラ決定
   const who = weightedPick(job.weights);
   if (!who) {
-    // 念のため保険：誰も引けない場合はナシ扱い
+    // 念のため保険：誰も引けない場合は遭遇なし扱い
     show(
       [
         `🧹 ${pawn.userData.name}は「${job.label}」で働いた。`,
         `→ ¥${job.payStop.toLocaleString()} を受け取った。`,
       ].join("\n"),
-      false,
+      false
     );
     const ok = document.createElement("button");
     ok.textContent = "OK";
@@ -1580,18 +1607,21 @@ async function handleJobStop(pawn) {
     return;
   }
 
-  // 5) 通常イベントをサーバ生成（既存フローを流用）
+  // 5) 通常イベント生成（既存サーバAPIに依存）
   pawn.userData.meetingCharacter = who;
   pawn.userData.currentPlaceName = job.place.name;
 
-  // “マッチング中”の簡易表示（ルーレットは回さないでOK）
+  // “マッチング中”の簡易表示（ルーレットは回さない）
   const requestId = makeRequestId();
   currentMatching = {
     requestId,
     startedAt: Date.now(),
     player: pawn.userData.name,
   };
-  if (rouletteTimer) { clearInterval(rouletteTimer); rouletteTimer = null; }
+  if (rouletteTimer) {
+    clearInterval(rouletteTimer);
+    rouletteTimer = null;
+  }
   modal.style.display = "flex";
   modal.onclick = null;
   modalBox.innerHTML = [
@@ -1603,7 +1633,7 @@ async function handleJobStop(pawn) {
     `<div style="font-size:1.6rem; margin-top:.5rem;">${who} が来店した！</div>`,
   ].join("\n");
 
-  // サーバへ（いつもの requestEvent を流用）
+  // サーバへ依頼
   socket.emit("requestEvent", {
     requestId,
     characterName: who,
@@ -1612,6 +1642,7 @@ async function handleJobStop(pawn) {
     playername: pawn.userData.name,
   });
 }
+
 
 
 
