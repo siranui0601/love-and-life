@@ -1992,6 +1992,8 @@ function nextTurn() {
 
 /* ===== 休みターン進行 ===== */
 function handleRestTurn(pawn){
+  pawn.userData.skipTurn = false;
+  
   const name = pawn.userData.name;
   const like = pawn.userData.likability || {};
   const r = pawn.userData.rest || {};
@@ -2027,7 +2029,7 @@ function handleRestTurn(pawn){
     modal.onclick = () => {
       modal.style.display = "none";
       // ★ 休み消化（クリア）
-      pawn.userData.rest.active = false;
+      //pawn.userData.rest.active = false;
       nextTurn();
     };
     return;
