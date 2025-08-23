@@ -406,7 +406,8 @@ function roll1d6() {
 
 // 指定歩数で到達するタイル番号（0〜11）を返す
 function calcDestTile(currentTile, steps) {
-  return (currentTile + steps) % 12;
+  const n = getTileCount();
+  return (currentTile + steps) % n;
 }
 
 // タイルID(1〜12)から場所オブジェクトを取得
@@ -631,6 +632,10 @@ const finalDay = 30;
 let dayHUD;
 let stepsHUD; // ★ 累計マス数用
 
+const JOB_UNLOCK_DAY = 7;       // 7日目にバイトを始める
+let JOBS_UNLOCKED = false;      // 解禁済みか
+const JOB_TILE_IDS = new Set(); // 解禁後に [13,14,15] を入れる
+
 function createDayHUD() {
   dayHUD = document.createElement("div");
   dayHUD.id = "dayHUD";
@@ -700,8 +705,7 @@ function updateStepsHUD() {
         ? pawn.userData.money
         : 0;
     const bonusMark = stepBonusWinners.has(n) ? "　歩数ボーナス！ +10♡" : "";
-    // ← 所持金も同じ行に追記します
-    return `${n}: ${steps}マス${bonusMark} ｜ 所持金 ¥${money.toLocaleString()}`;
+    return `${n}: ${steps}マス／¥${money.toLocaleString()}${bonusMark}`;
   });
 
   stepsHUD.textContent = lines.join("\n");
@@ -779,16 +783,16 @@ const tileInfo = {
     detail:
       "高台にある絶景スポット。潮風に吹かれながら、夕焼けが海を赤く染めてゆく。",
   },
-  /*8: {
+  8: {
     name: "古民家",
     detail:
       "木造の古民家の縁側で風鈴が揺れる。静かに流れる時間と風が心地よい。",
-  },*/
-    8: {
+  },
+    /*8: {
     name: "アルバイト",
     detail:
       "今日はアルバイトの日。働く先によって、稼げるお金や出会いの確率が違う。",
-  },
+  },*/
 
   9: {
     name: "岩瀬",
@@ -853,9 +857,9 @@ function restLabelByKey(key){
 }
 
   // ===== アルバイト関連 =====
-const JOB_TILE_ID = 8; // 8マス目をアルバイトに固定
-function isJobTileId(id) { return id === JOB_TILE_ID; }
-
+function isJobTileId(id) {
+  return JOBS_UNLOCKED && JOB_TILE_IDS.has(id);
+}
 
 /* ---------- プレイヤー入力欄 ---------- */
 function addInput() {
@@ -960,6 +964,44 @@ function showIntro() {
   };
 }
 
+
+
+/* ---------- 盤レイアウト：12マス と 15マス ---------- */
+/* 12マス（既存と同じ並び）*/
+const LAYOUT_12 = [
+  [0,0],[1,0],[2,0],[3,0],
+  [3,1],[3,2],[3,3],
+  [2,3],[1,3],[0,3],
+  [0,2],[0,1]
+];
+
+/* 15マス：12マスの“外周”はそのまま、上側に3マス増設（見た目が横に広がる） */
+const LAYOUT_15 = [
+  ...LAYOUT_12,
+  [0,-1],[1,-1],[2,-1], // 13,14,15
+];
+
+/* 現在のレイアウトとタイル数 */
+let boardLayout = LAYOUT_12;
+
+/* Three.js の主要オブジェクトを外だし保持（後から盤を増設したいので） */
+let sceneGlobal = null;
+let labelRendererGlobal = null;
+let rendererGlobal = null;
+let tileGeoGlobal = null;
+let tileMatColor = 0xffffff;
+let boardLine = null;
+
+/* ユーティリティ：タイル総数 */
+function getTileCount(){
+  return tilesGlobal?.length || boardLayout.length || 12;
+}
+
+
+
+
+
+
 /* ======================= Three.js 初期化 ======================= */
 let takasa = innerHeight;
 function initThree(playerNames) {
@@ -971,6 +1013,10 @@ function initThree(playerNames) {
   renderer.setPixelRatio(devicePixelRatio);
   renderer.setSize(innerWidth, takasa);
 
+  // ▼ 外だし
+  sceneGlobal = scene;
+  rendererGlobal = renderer;
+
   const labelRenderer = new CSS2DRenderer();
   labelRenderer.setSize(innerWidth, takasa);
   Object.assign(labelRenderer.domElement.style, {
@@ -980,6 +1026,7 @@ function initThree(playerNames) {
     zIndex: 5,
   });
   document.body.appendChild(labelRenderer.domElement);
+  labelRendererGlobal = labelRenderer;
 
   addEventListener("resize", () => {
     camera.aspect = innerWidth / takasa;
@@ -998,25 +1045,13 @@ function initThree(playerNames) {
   scene.add(ground);
 
   /* board tiles */
-  const CELL = 20,
-    gap = 4,
-    tiles = [],
-    layout = [
-      [0, 0],
-      [1, 0],
-      [2, 0],
-      [3, 0],
-      [3, 1],
-      [3, 2],
-      [3, 3],
-      [2, 3],
-      [1, 3],
-      [0, 3],
-      [0, 2],
-      [0, 1],
-    ];
-  const tileGeo = new THREE.BoxGeometry(CELL, CELL * 0.2, CELL),
-    tileMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+  const CELL = 20, gap = 4;
+  const tiles = [];
+  const layout = boardLayout; // ← 12スタート
+  const tileGeo = new THREE.BoxGeometry(CELL, CELL * 0.2, CELL);
+  const tileMat = new THREE.MeshStandardMaterial({ color: tileMatColor });
+  tileGeoGlobal = tileGeo; // ← 保持
+
   layout.forEach((p, i) => {
     const m = new THREE.Mesh(tileGeo, tileMat.clone());
     m.position.set(
@@ -1028,33 +1063,43 @@ function initThree(playerNames) {
     scene.add(m);
     tiles.push(m);
     const d = document.createElement("div");
-    d.textContent = tileInfo[i + 1].name;
+    d.textContent = (tileInfo[i + 1] || {name:"？"}).name;
     d.style.color = "#000";
     d.style.fontWeight = "700";
     const lbl = new CSS2DObject(d);
     lbl.position.set(0, CELL * 0.15, 0);
     m.add(lbl);
   });
-  const line = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints(
-      layout
-        .concat([layout[0]])
-        .map(
-          (p) =>
-            new THREE.Vector3(
-              (p[0] - 1.5) * (CELL + gap),
-              CELL * 0.1 + 0.01,
-              (p[1] - 1.5) * (CELL + gap),
-            ),
-        ),
-    ),
-    new THREE.LineBasicMaterial({ color: 0x555555 }),
-  );
-  scene.add(line);
 
-  /* players */
-  const colors = [0xff3333, 0xffff33, 0x33ff33, 0x3333ff, 0x111111, 0xffffff],
-    pawns = [];
+  // 線（ループ）
+  const pts = layout.concat([layout[0]]).map(
+    (p) => new THREE.Vector3(
+      (p[0] - 1.5) * (CELL + gap),
+      CELL * 0.1 + 0.01,
+      (p[1] - 1.5) * (CELL + gap),
+    ),
+  );
+  const lineGeom = new THREE.BufferGeometry().setFromPoints(pts);
+  const line = new THREE.Line(lineGeom, new THREE.LineBasicMaterial({ color: 0x555555 }));
+  scene.add(line);
+  boardLine = line;
+
+  const lineUpdateFromLayout = (lay) => {
+    const pts = lay.concat([lay[0]]).map(
+      (p) => new THREE.Vector3(
+        (p[0] - 1.5) * (CELL + gap),
+        CELL * 0.1 + 0.01,
+        (p[1] - 1.5) * (CELL + gap),
+      ),
+    );
+    boardLine.geometry.dispose();
+    boardLine.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+  };
+  // 外からも使えるように保存
+  sceneGlobal.__lineUpdateFromLayout = lineUpdateFromLayout;
+
+  const lineObj = line;
+
   const pawnGeo = new THREE.ConeGeometry(CELL * 0.4, CELL, 6);
   function placePawn(pawn, tIdx) {
     const group = pawns.filter((p) => p.userData.tile === tIdx).concat(pawn);
@@ -1075,7 +1120,7 @@ function initThree(playerNames) {
   tileInfoGlobal = tileInfo;
   placePawnGlobal = placePawn;
 
-  playerNames.slice(0, 6).forEach((name, i) => {
+    playerNames.slice(0, 6).forEach((name, i) => {
     const mesh = new THREE.Mesh(
       pawnGeo,
       new THREE.MeshStandardMaterial({ color: colors[i] }),
@@ -1091,21 +1136,24 @@ function initThree(playerNames) {
         type: "player",
         name,
         tile: 0,
-        likability: { ミユ: 220, シオン: 220, ナナ: 220 }, // 好感度
+        money: 0, // ← 追加
+        likability: { ミユ: 220, シオン: 220, ナナ: 220 },
       };
     } else if (name === "0601") {
       mesh.userData = {
         type: "player",
         name,
         tile: 0,
-        likability: { ミユ: 220, シオン: 220, ナナ: 220 }, // 好感度
+        money: 0, // ← 追加
+        likability: { ミユ: 220, シオン: 220, ナナ: 220 },
       };
     } else {
       mesh.userData = {
         type: "player",
         name,
         tile: 0,
-        likability: { ミユ: 0, シオン: 0, ナナ: 0 }, // 好感度
+        money: 0, // ← 追加
+        likability: { ミユ: 0, シオン: 0, ナナ: 0 },
       };
     }
 
@@ -1203,6 +1251,85 @@ function initThree(playerNames) {
   })();
 }
 
+
+
+
+
+/* ---------- 7日目に発動：盤を15マスへ拡張＆アルバイトマスを生やす ---------- */
+function expandBoardTo15(){
+  if (!sceneGlobal || !tileGeoGlobal) return;
+  if (boardLayout === LAYOUT_15 && getTileCount() === 15) return; // 既に拡張済み
+
+  boardLayout = LAYOUT_15;
+
+  // 13,14,15 をアルバイトマスとして注入
+  tileInfo[13] = { name: "アルバイト", type: "job", detail: "今日はアルバイト。停止時のみ賃金が入る。誰かに出会えるかも？" };
+  tileInfo[14] = { name: "アルバイト", type: "job", detail: "今日はアルバイト。停止時のみ賃金が入る。誰かに出会えるかも？" };
+  tileInfo[15] = { name: "アルバイト", type: "job", detail: "今日はアルバイト。停止時のみ賃金が入る。誰かに出会えるかも？" };
+  tileInfoGlobal = tileInfo;
+
+  JOB_TILE_IDS.clear();
+  JOB_TILE_IDS.add(13);
+  JOB_TILE_IDS.add(14);
+  JOB_TILE_IDS.add(15);
+
+  const CELL = 20, gap = 4;
+  const tileMat = new THREE.MeshStandardMaterial({ color: tileMatColor });
+
+  // 既存タイルを新レイアウトへ座標再配置
+  tilesGlobal.forEach((m, i) => {
+    const p = boardLayout[i];
+    if (!p) return;
+    m.position.set(
+      (p[0] - 1.5) * (CELL + gap),
+      (CELL * 0.1) / 2,
+      (p[1] - 1.5) * (CELL + gap),
+    );
+    // ラベルも更新（name変更に備えて）
+    const lbl = m.children.find(ch => ch instanceof CSS2DObject);
+    if (lbl && lbl.element) {
+      lbl.element.textContent = (tileInfo[i + 1] || {name:"？"}).name;
+    }
+  });
+
+  // 不足分（13〜15）を追加生成
+  for (let i = tilesGlobal.length; i < boardLayout.length; i++){
+    const p = boardLayout[i];
+    const m = new THREE.Mesh(tileGeoGlobal, tileMat.clone());
+    m.position.set(
+      (p[0] - 1.5) * (CELL + gap),
+      (CELL * 0.1) / 2,
+      (p[1] - 1.5) * (CELL + gap),
+    );
+    m.userData = { type: "tile", id: i + 1 };
+    sceneGlobal.add(m);
+    tilesGlobal.push(m);
+
+    const d = document.createElement("div");
+    d.textContent = (tileInfo[i + 1] || {name:"？"}).name;
+    d.style.color = "#000";
+    d.style.fontWeight = "700";
+    const lbl = new CSS2DObject(d);
+    lbl.position.set(0, CELL * 0.15, 0);
+    m.add(lbl);
+  }
+
+  // 線も更新
+  sceneGlobal.__lineUpdateFromLayout(boardLayout);
+
+  // 盤の並びが変わったので、全駒の立ち位置を補正（現在の tile index に合わせて再配置）
+  pawnsGlobal.forEach(pw => placePawnGlobal(pw, pw.userData.tile));
+
+  // 先読み計画は一旦クリア（タイル数が変わるため）
+  prefetchPlan.clear();
+
+  // フラグ立て
+  JOBS_UNLOCKED = true;
+}
+
+
+
+
 /* ======================= 順番決め 1d100 ======================= */
 function launchOrderRoll(players) {
   const used = [],
@@ -1298,10 +1425,17 @@ function launchOrderRoll(players) {
 }
 
 /* ---------- 手番開始 ---------- */
-function startTurn() {
+/* ---------- 手番開始 ---------- */
+async function startTurn() {
   const pawn = pawnsGlobal.find(
     (p) => p.userData.name === gameState.order[gameState.turn],
   );
+
+  // ▼ 7日目の解禁（まだなら先に処理してから続行）
+  if (gameState.day === JOB_UNLOCK_DAY && !JOBS_UNLOCKED) {
+    await runJobUnlockEvent();
+    return; // runJobUnlockEvent 終了時に startTurn を再呼び出ししている
+  }
 
   // 常に参照更新
   currentPawn = pawn;
@@ -1311,7 +1445,7 @@ function startTurn() {
   // ① 盆踊り当日：休みの有無に関わらず先に祭り
   if (gameState.day === festivalDay) {
     if (!gameState.festivalDone) {
-      runBonOdoriFestival(); // ← 内部で全員分のconditionを参照できるように後述修正
+      runBonOdoriFestival();
       return;
     }
   }
@@ -1324,13 +1458,13 @@ function startTurn() {
     }
   }
 
-  // ③ 休み消化：サイコロUIを出さずに即処理
+  // ③ 休み消化
   if (pawn.userData.rest && pawn.userData.rest.active) {
     handleRestTurn(pawn);
     return;
   }
 
-  // ④（通常時）次のプレイヤーを先読みし、手番モーダルへ
+  // ④ 次のプレイヤーを先読みし、手番モーダルへ
   prefetchNextPlayerFromCurrentTurn();
   startTurnModal(pawn.userData.name);
 }
@@ -1420,15 +1554,15 @@ function movePawn(name, steps) {
       resolveTileEvent(pawn);
       return;
     }
-    pawn.userData.tile = (pawn.userData.tile + 1) % 12;
+    pawn.userData.tile = (pawn.userData.tile + 1) % getTileCount();
     placePawnGlobal(pawn, pawn.userData.tile);
 
     // ===== 通過判定：アルバイトマスを “跨いだ” 際の半額支給 =====
-    const tileIdNow = pawn.userData.tile + 1; // 1〜12
+    /*const tileIdNow = pawn.userData.tile + 1; // 1〜12
     if (isJobTileId(tileIdNow) && remaining > 1) {
       // まだ先に進む＝“通過”扱い
       handleJobPass(pawn);
-    }
+    }*/
 
     remaining--;
     setTimeout(step, 250);
@@ -1510,9 +1644,71 @@ function promptSelectJob(pawn) {
   });
 }
 
+
+
+
+/* ---------- 7日目：全員の就業先を順に決める ---------- */
+async function runJobUnlockEvent(){
+  // 既に誰かがジョブ選択済みでもOK：未選択者だけに聞く
+  const need = pawnsGlobal.filter(p => !p.userData.jobKey);
+  if (!need.length) {
+    // 念のため拡張だけ行う
+    if (!JOBS_UNLOCKED) expandBoardTo15();
+    return;
+  }
+
+  // イントロ
+  show(
+    [
+      "🏁 夏休み7日目。そろそろバイトを始めよう。",
+      "",
+      "この街らしい仕事がいくつかあるらしい。",
+      "後からも変更はできない。慎重に選ぼう。",
+      "",
+      "順番に、あなたのバイトを決めてください。"
+    ].join("\n"),
+    false
+  );
+  const ok = document.createElement("button");
+  ok.textContent = "OK";
+  ok.onclick = async () => {
+    modal.style.display = "none";
+
+    // 未選択の人を順に
+    for (const pw of pawnsGlobal){
+      if (pw.userData.jobKey) continue;
+      await promptSelectJob(pw); // 横スワイプUIで選択
+    }
+
+    // 3マス拡張＆アルバイトマス解禁
+    expandBoardTo15();
+
+    // 案内
+    show(
+      [
+        "🧹 アルバイトマスが街に3ヶ所、出現しました！",
+        "・停止すると賃金が入る（通過では入らない）",
+        "・職種に応じて出会いの発生確率が変化",
+        "",
+        "それでは、ゲームを続けましょう。"
+      ].join("\n"),
+      false
+    );
+    const ok2 = document.createElement("button");
+    ok2.textContent = "スタート";
+    ok2.onclick = () => { modal.style.display = "none"; startTurn(); };
+    modalBox.appendChild(ok2);
+  };
+  modalBox.appendChild(ok);
+}
+
+
+
+
+
 // 「通過」時の処理（※ ジョブ未選択時はゼロ円）
 function handleJobPass(pawn) {
-  if (!pawn) return;
+  /*if (!pawn) return;
   ensureMoney(pawn);
   const jobKey = pawn.userData.jobKey;
   if (!jobKey) return; // まだ就業先を決めていない場合は支給なし
@@ -1520,7 +1716,8 @@ function handleJobPass(pawn) {
   if (!job) return;
   pawn.userData.money += job.payPass;
   // 所持金が動いたので HUD を即更新
-  updateStepsHUD();
+  updateStepsHUD();*/
+return;
 }
 
 
