@@ -2043,7 +2043,7 @@ function handleRestTurn(pawn){
     modal.onclick = () => {
       modal.style.display = "none";
       // ★ 休み消化（クリア）
-      //pawn.userData.rest.active = false;
+      pawn.userData.rest.active = false;
       nextTurn();
     };
     return;
