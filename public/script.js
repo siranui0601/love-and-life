@@ -1429,6 +1429,9 @@ function runJobsSelectionDay7(){
   const selected = new Map(); // name -> jobKey
   const decided = new Set();  // 決定済みプレイヤー
 
+  // 1枚ぶんの移動率（%）を計算（★重要：これに直す）
+  const PCT_PER_CARD = 100 / Math.max(1, keys.length);
+
   // ルート
   const root = document.createElement("div");
   root.style.width = "min(96vw, 860px)";
@@ -1455,9 +1458,16 @@ function runJobsSelectionDay7(){
         ? `${n} ✅`
         : n + (i===currentPlayerIdx ? " ▶" : "");
       Object.assign(b.style, {
-        border:"1px solid #444", borderRadius:"999px", padding:"6px 10px",
-        background: i===currentPlayerIdx ? "#333" : "#111", color:"#eee",
-        cursor:"pointer", fontWeight:"800"
+        border: "1px solid #2ea043",            // 緑系の枠
+        borderRadius: "999px",
+        padding: "6px 10px",
+        background: i===currentPlayerIdx
+          ? "#2ea043"                            // ★いまの人=緑
+          : "#111",                              // それ以外=濃いグレー
+        color: i===currentPlayerIdx ? "#fff" : "#eee",
+        cursor: "pointer",
+        fontWeight: "800",
+        boxShadow: i===currentPlayerIdx ? "0 0 0 2px rgba(46,160,67,.25)" : "none",
       });
       b.onclick = () => { currentPlayerIdx = i; renderAll(); };
       chips.appendChild(b);
@@ -1474,15 +1484,17 @@ function runJobsSelectionDay7(){
   });
   const track = document.createElement("div");
   Object.assign(track.style, {
-    display:"flex", height:"100%", width:`${keys.length*100}%`,
-    transition:"transform .35s ease"
+    display:"flex", height:"100%",
+    width: `${keys.length * 100}%`,        // トラックはN枚ぶんの幅
+    transition:"transform .35s ease",
+    willChange:"transform",
   });
   viewport.appendChild(track);
 
   function renderCard(jobKey){
     const job = PARTTIME_JOBS[jobKey];
     const card = document.createElement("div");
-    card.style.flex = "0 0 100%";
+    card.style.flex = "0 0 100%"; // ビューポートの100%
     card.style.padding = "14px";
     card.style.display = "grid";
     card.style.gridTemplateRows = "auto auto 1fr auto";
@@ -1512,17 +1524,30 @@ function runJobsSelectionDay7(){
   Object.assign(btnR.style, {position:"absolute", right:"8px", top:"calc(50% - 18px)"});
   viewport.appendChild(btnL); viewport.appendChild(btnR);
 
-  function updateTrack(){ track.style.transform = `translateX(${-jobIdx*100}%)`; }
-  btnL.onclick = ()=>{ jobIdx = (jobIdx-1+keys.length)%keys.length; updateTrack(); };
-  btnR.onclick = ()=>{ jobIdx = (jobIdx+1)%keys.length; updateTrack(); };
+  // ★1枚ぶんずつしか動かないように修正
+  function updateTrack(){
+    track.style.transform = `translateX(${-jobIdx * PCT_PER_CARD}%)`;
+  }
 
-  let startX=null;
-  viewport.addEventListener("touchstart", e=>{ startX=e.touches[0].clientX; }, {passive:true});
+  btnL.onclick = ()=>{
+    jobIdx = (jobIdx - 1 + keys.length) % keys.length;
+    updateTrack();
+  };
+  btnR.onclick = ()=>{
+    jobIdx = (jobIdx + 1) % keys.length;
+    updateTrack();
+  };
+
+  let startX = null;
+  viewport.addEventListener("touchstart", e=>{
+    startX = e.touches[0].clientX;
+  }, {passive:true});
   viewport.addEventListener("touchend", e=>{
-    if (startX==null) return;
-    const dx = e.changedTouches[0].clientX - startX; startX=null;
-    if (Math.abs(dx)<30) return;
-    if (dx<0) btnR.onclick(); else btnL.onclick();
+    if (startX == null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    startX = null;
+    if (Math.abs(dx) < 30) return;
+    if (dx < 0) btnR.onclick(); else btnL.onclick();
   });
 
   root.appendChild(viewport);
@@ -1544,7 +1569,7 @@ function runJobsSelectionDay7(){
     decided.add(name);
     // まだ決めていない次の人へフォーカス
     const nextIdx = allPlayers.findIndex(n=>!decided.has(n));
-    currentPlayerIdx = (nextIdx>=0 ? nextIdx : currentPlayerIdx);
+    currentPlayerIdx = (nextIdx >= 0 ? nextIdx : currentPlayerIdx);
     renderAll();
   };
 
@@ -1580,8 +1605,8 @@ function runJobsSelectionDay7(){
     // 現プレイヤーが既に選んでいるなら、そのカードへ合わせる
     const curName = allPlayers[currentPlayerIdx];
     const k = selected.get(curName);
-    jobIdx = k ? keys.indexOf(k) : jobIdx;
-    if (jobIdx<0) jobIdx=0;
+    jobIdx = (k ? Math.max(0, keys.indexOf(k)) : jobIdx);
+    if (jobIdx < 0) jobIdx = 0;
     updateTrack();
     syncAllDoneState();
     // タイトルの補足
@@ -1592,6 +1617,7 @@ function runJobsSelectionDay7(){
   modalBox.appendChild(root);
   renderAll();
 }
+
 
 // 重み付き抽選（weights: {name:weight,...}）
 function weightedPick(weightMap) {
