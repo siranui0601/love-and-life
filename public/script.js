@@ -1429,7 +1429,7 @@ function runJobsSelectionDay7(){
   const selected = new Map(); // name -> jobKey
   const decided = new Set();  // 決定済みプレイヤー
 
-  // 1枚ぶんの移動率（%）を計算（★重要：これに直す）
+  // 1枚ぶんの移動率（%）
   const PCT_PER_CARD = 100 / Math.max(1, keys.length);
 
   // ルート
@@ -1454,19 +1454,15 @@ function runJobsSelectionDay7(){
     chips.innerHTML = "";
     allPlayers.forEach((n, i) => {
       const b = document.createElement("button");
-      b.textContent = selected.has(n)
-        ? `${n} ✅`
-        : n + (i===currentPlayerIdx ? " ▶" : "");
+      b.textContent = selected.has(n) ? `${n} ✅` : n + (i===currentPlayerIdx ? " ▶" : "");
       Object.assign(b.style, {
-        border: "1px solid #2ea043",            // 緑系の枠
-        borderRadius: "999px",
-        padding: "6px 10px",
-        background: i===currentPlayerIdx
-          ? "#2ea043"                            // ★いまの人=緑
-          : "#111",                              // それ以外=濃いグレー
+        border:"1px solid #2ea043",
+        borderRadius:"999px",
+        padding:"6px 10px",
+        background: i===currentPlayerIdx ? "#2ea043" : "#111",
         color: i===currentPlayerIdx ? "#fff" : "#eee",
-        cursor: "pointer",
-        fontWeight: "800",
+        cursor:"pointer",
+        fontWeight:"800",
         boxShadow: i===currentPlayerIdx ? "0 0 0 2px rgba(46,160,67,.25)" : "none",
       });
       b.onclick = () => { currentPlayerIdx = i; renderAll(); };
@@ -1479,13 +1475,19 @@ function runJobsSelectionDay7(){
   let jobIdx = 0;
   const viewport = document.createElement("div");
   Object.assign(viewport.style, {
-    position:"relative", overflow:"hidden", height:"240px",
-    border:"1px solid #333", borderRadius:"12px", background:"#101010"
+    position:"relative",
+    overflow:"hidden",
+    height:"240px",
+    border:"1px solid #333",
+    borderRadius:"12px",
+    background:"#101010"
   });
+
   const track = document.createElement("div");
   Object.assign(track.style, {
-    display:"flex", height:"100%",
-    width: `${keys.length * 100}%`,        // トラックはN枚ぶんの幅
+    display:"flex",
+    height:"100%",
+    width: `${keys.length * 100}%`,   // ← N枚ぶんの幅（維持）
     transition:"transform .35s ease",
     willChange:"transform",
   });
@@ -1494,7 +1496,7 @@ function runJobsSelectionDay7(){
   function renderCard(jobKey){
     const job = PARTTIME_JOBS[jobKey];
     const card = document.createElement("div");
-    card.style.flex = "0 0 100%"; // ビューポートの100%
+    card.style.flex = `0 0 ${PCT_PER_CARD}%`; // ← ★ここを 100% から修正（1枚＝画面1枚ぶん）
     card.style.padding = "14px";
     card.style.display = "grid";
     card.style.gridTemplateRows = "auto auto 1fr auto";
@@ -1522,37 +1524,29 @@ function runJobsSelectionDay7(){
   btnR.className = "btn";
   btnR.textContent = "▶";
   Object.assign(btnR.style, {position:"absolute", right:"8px", top:"calc(50% - 18px)"});
-  viewport.appendChild(btnL); viewport.appendChild(btnR);
+  viewport.appendChild(btnL);
+  viewport.appendChild(btnR);
 
-  // ★1枚ぶんずつしか動かないように修正
+  // 1枚ぶんずつ移動
   function updateTrack(){
     track.style.transform = `translateX(${-jobIdx * PCT_PER_CARD}%)`;
   }
+  btnL.onclick = ()=>{ jobIdx = (jobIdx - 1 + keys.length) % keys.length; updateTrack(); };
+  btnR.onclick = ()=>{ jobIdx = (jobIdx + 1) % keys.length; updateTrack(); };
 
-  btnL.onclick = ()=>{
-    jobIdx = (jobIdx - 1 + keys.length) % keys.length;
-    updateTrack();
-  };
-  btnR.onclick = ()=>{
-    jobIdx = (jobIdx + 1) % keys.length;
-    updateTrack();
-  };
-
-  let startX = null;
-  viewport.addEventListener("touchstart", e=>{
-    startX = e.touches[0].clientX;
-  }, {passive:true});
+  // スワイプ
+  let startX=null;
+  viewport.addEventListener("touchstart", e=>{ startX=e.touches[0].clientX; }, {passive:true});
   viewport.addEventListener("touchend", e=>{
-    if (startX == null) return;
-    const dx = e.changedTouches[0].clientX - startX;
-    startX = null;
-    if (Math.abs(dx) < 30) return;
-    if (dx < 0) btnR.onclick(); else btnL.onclick();
+    if (startX==null) return;
+    const dx = e.changedTouches[0].clientX - startX; startX=null;
+    if (Math.abs(dx)<30) return;
+    if (dx<0) btnR.onclick(); else btnL.onclick();
   });
 
   root.appendChild(viewport);
 
-  // 決定ボタン & 全員確定ボタン
+  // 決定ボタン & 全員決定
   const row = document.createElement("div");
   row.style.display = "flex";
   row.style.justifyContent = "space-between";
@@ -1567,9 +1561,8 @@ function runJobsSelectionDay7(){
     const key = keys[jobIdx];
     selected.set(name, key);
     decided.add(name);
-    // まだ決めていない次の人へフォーカス
     const nextIdx = allPlayers.findIndex(n=>!decided.has(n));
-    currentPlayerIdx = (nextIdx >= 0 ? nextIdx : currentPlayerIdx);
+    currentPlayerIdx = (nextIdx>=0 ? nextIdx : currentPlayerIdx);
     renderAll();
   };
 
@@ -1577,7 +1570,6 @@ function runJobsSelectionDay7(){
   allDoneBtn.className = "btn";
   allDoneBtn.textContent = "全員決定！";
   allDoneBtn.onclick = ()=>{
-    // 反映
     pawnsGlobal.forEach(p=>{
       const k = selected.get(p.userData.name);
       if (k) p.userData.jobKey = k;
@@ -1585,9 +1577,9 @@ function runJobsSelectionDay7(){
     gameState.jobsChosen = true;
     modal.style.display = "none";
     showToast("全員のアルバイトが決まりました！");
-    // 現在のプレイヤーの手番を続行
     startTurn();
   };
+
   function syncAllDoneState(){
     const ok = allPlayers.every(n => selected.has(n));
     allDoneBtn.disabled = !ok;
@@ -1600,16 +1592,13 @@ function runJobsSelectionDay7(){
   root.appendChild(row);
 
   function renderAll(){
-    // chips
     renderChips();
-    // 現プレイヤーが既に選んでいるなら、そのカードへ合わせる
     const curName = allPlayers[currentPlayerIdx];
     const k = selected.get(curName);
     jobIdx = (k ? Math.max(0, keys.indexOf(k)) : jobIdx);
     if (jobIdx < 0) jobIdx = 0;
     updateTrack();
     syncAllDoneState();
-    // タイトルの補足
     title.textContent = `7日目：みんなでアルバイトを決めよう（いま：${curName}）`;
   }
 
