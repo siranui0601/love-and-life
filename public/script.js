@@ -1508,9 +1508,9 @@ function runJobsSelectionDay7(){
         停止: ¥${job.payStop.toLocaleString()} / 通過: ¥${job.payPass.toLocaleString()}<br>
         出会い発生率: ${job.encounterPct}%
       </div>
-      <div style="font-size:.85rem; opacity:.75">
+      <!-- div style="font-size:.85rem; opacity:.75">
         ※ この先は「${job.place.name}」に止まると就業。通過時は自動で半額を受け取ります。
-      </div>
+      </div-->
     `;
     return card;
   }
