@@ -1454,7 +1454,7 @@ function runJobsSelectionDay7(){
     chips.innerHTML = "";
     allPlayers.forEach((n, i) => {
       const b = document.createElement("button");
-      b.textContent = selected.has(n) ? `${n} ✅` : n + (i===currentPlayerIdx ? " ▶" : "");
+      b.textContent = selected.has(n) ? `${n} ✅` : n + (i===currentPlayerIdx ? "▷" : "");
       Object.assign(b.style, {
         border:"1px solid #2ea043",
         borderRadius:"999px",
@@ -1518,11 +1518,11 @@ function runJobsSelectionDay7(){
 
   const btnL = document.createElement("button");
   btnL.className = "btn";
-  btnL.textContent = "◀";
+  btnL.textContent = "←";
   Object.assign(btnL.style, {position:"absolute", left:"8px", top:"calc(50% - 18px)"});
   const btnR = document.createElement("button");
   btnR.className = "btn";
-  btnR.textContent = "▶";
+  btnR.textContent = "→";
   Object.assign(btnR.style, {position:"absolute", right:"8px", top:"calc(50% - 18px)"});
   viewport.appendChild(btnL);
   viewport.appendChild(btnR);
