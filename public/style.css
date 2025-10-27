@@ -316,7 +316,7 @@ html { -webkit-text-size-adjust: 100%; }
   letter-spacing: .03em;
 
   box-shadow: 0 6px 18px rgba(0,0,0,.25);
-
+}
 
 
 
@@ -455,3 +455,4 @@ html { -webkit-text-size-adjust: 100%; }
     font-size: 4rem;
   }
 }
+
