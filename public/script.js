@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const titleScreen = document.getElementById('titleScreen');
   const gameCards = document.querySelectorAll('.game-card');
 
+  // 初期状態: メニューを表示、タイトル画面を非表示
+  if (gameMenu) gameMenu.style.display = 'flex';
+  if (titleScreen) titleScreen.style.display = 'none';
+
   // ゲームカードのクリック処理
   gameCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -20,8 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // ゲームに応じて遷移
       if (gameType === 'love-life') {
         // AI×恋愛ゲームを開始
-        gameMenu.style.display = 'none';
-        titleScreen.style.display = 'flex';
+        if (gameMenu) gameMenu.style.display = 'none';
+        if (titleScreen) {
+          titleScreen.style.display = 'flex'; // ← flexに変更
+          titleScreen.style.flexDirection = 'column';
+          titleScreen.style.justifyContent = 'center';
+          titleScreen.style.alignItems = 'center';
+        }
       } else if (gameType === 'game2') {
         // 新しいゲーム2の処理（今後実装）
         alert('Game 2 - 準備中');
@@ -32,17 +41,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ホバーエフェクト用のサウンド（オプション）
+  // ホバーエフェクト
   gameCards.forEach(card => {
     if (!card.classList.contains('coming-soon')) {
       card.addEventListener('mouseenter', () => {
-        // 効果音を追加したい場合はここに記述
         card.style.borderColor = '#667eea';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.borderColor = 'transparent';
       });
     }
   });
 });
-
 // ========================================
 // 以下、既存のコード
 // ========================================
