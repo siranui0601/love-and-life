@@ -1,3 +1,79 @@
+// ========================================
+// ゲーム選択メニューの処理
+// ========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  const gameMenu = document.getElementById('gameMenu');
+  const titleScreen = document.getElementById('titleScreen');
+  const gameCards = document.querySelectorAll('.game-card');
+
+  // ゲームカードのクリック処理
+  gameCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const gameType = card.dataset.game;
+      
+      // Coming Soonのカードはクリック不可
+      if (card.classList.contains('coming-soon')) {
+        return;
+      }
+
+      // ゲームに応じて遷移
+      if (gameType === 'love-life') {
+        // AI×恋愛ゲームを開始
+        gameMenu.style.display = 'none';
+        titleScreen.style.display = 'flex';
+      } else if (gameType === 'game2') {
+        // 新しいゲーム2の処理（今後実装）
+        alert('Game 2 - 準備中');
+      } else if (gameType === 'game3') {
+        // 新しいゲーム3の処理（今後実装）
+        alert('Game 3 - 準備中');
+      }
+    });
+  });
+
+  // ホバーエフェクト用のサウンド（オプション）
+  gameCards.forEach(card => {
+    if (!card.classList.contains('coming-soon')) {
+      card.addEventListener('mouseenter', () => {
+        // 効果音を追加したい場合はここに記述
+        card.style.borderColor = '#667eea';
+      });
+    }
+  });
+});
+
+// ========================================
+// 以下、既存のコード
+// ========================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ================= Socket.io 接続 ================= */
 const socket = io();
 
