@@ -9,29 +9,35 @@
 <body>
 
   <!-- ★ 新規追加: ゲーム選択画面 -->
-  <section id="gameMenu">
-    <h1 class="menu-title">Game Collection</h1>
-    <div class="game-grid">
-      <div class="game-card" data-game="love-life">
-        <div class="game-icon">❤️</div>
-        <h2>AI×恋愛</h2>
-        <p>30日間の恋愛シミュレーション</p>
-      </div>
-      
-      <!-- 今後追加するゲーム用の例 -->
-      <div class="game-card coming-soon" data-game="game2">
-        <div class="game-icon">🎮</div>
-        <h2>Coming Soon</h2>
-        <p>新しいゲームを準備中...</p>
-      </div>
-      
-      <div class="game-card coming-soon" data-game="game3">
-        <div class="game-icon">🎯</div>
-        <h2>Coming Soon</h2>
-        <p>新しいゲームを準備中...</p>
-      </div>
+  <!-- ゲーム選択画面（初期表示） -->
+<section id="gameMenu">
+  <h1 class="menu-title">Game Collection</h1>
+  <div class="game-grid">
+    <div class="game-card" data-game="love-life">
+      <div class="game-icon">❤️</div>
+      <h2>AI×恋愛</h2>
+      <p>30日間の恋愛シミュレーション</p>
     </div>
-  </section>
+    
+    <div class="game-card coming-soon" data-game="game2">
+      <div class="game-icon">🎮</div>
+      <h2>Coming Soon</h2>
+      <p>新しいゲームを準備中...</p>
+    </div>
+    
+    <div class="game-card coming-soon" data-game="game3">
+      <div class="game-icon">🎯</div>
+      <h2>Coming Soon</h2>
+      <p>新しいゲームを準備中...</p>
+    </div>
+  </div>
+</section>
+
+<!-- 既存のタイトル画面（初期状態で非表示） -->
+<section id="titleScreen" style="display: none;">
+  <h1>恋愛人生ゲーム</h1>
+  <button id="btnStart">Game Start</button>
+</section>
 
   <!-- 既存のタイトル画面（初期状態で非表示に） -->
   <section id="titleScreen" style="display: none;">
