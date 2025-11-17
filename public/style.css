@@ -1,54 +1,4 @@
 
-/* ログインボタンのスタイル */
-#loginStatus {
-  text-align: center;
-}
-
-.login-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 12px 24px;
-  background: white;
-  color: #333;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.login-btn:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  transform: translateY(-2px);
-}
-
-.logout-btn {
-  padding: 8px 16px;
-  background: #f44336;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-top: 10px;
-  font-weight: 600;
-}
-
-.logout-btn:hover {
-  background: #d32f2f;
-}
-
-#userInfo {
-  color: white;
-  font-size: 18px;
-}
-
-#userInfo p {
-  margin-bottom: 10px;
-}
-
-
 
 
 
@@ -515,6 +465,7 @@ html { -webkit-text-size-adjust: 100%; }
     font-size: 4rem;
   }
 }
+
 
 
 
