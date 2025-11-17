@@ -8,45 +8,38 @@
 </head>
 <body>
 
-  <!-- ★ ゲーム選択画面（ログインボタン追加） -->
-  <section id="gameMenu">
-    <h1 class="menu-title">Game Collection</h1>
+  <!-- ★ 新規追加: ゲーム選択画面 -->
+  <!-- ゲーム選択画面（初期表示） -->
+<section id="gameMenu">
+  <h1 class="menu-title">Game Collection</h1>
+  <div class="game-grid">
+    <div class="game-card" data-game="love-life">
+      <div class="game-icon">❤️</div>
+      <h2>AI×恋愛</h2>
+      <p>30日間の恋愛シミュレーション</p>
+    </div>
     
-    <!-- ログイン状態表示 -->
-    <div id="loginStatus" style="margin-bottom: 30px;">
-      <button id="btnLogin" class="login-btn">
-        <img src="https://developers.google.com/identity/images/g-logo.png" 
-             alt="Google" style="width:20px; margin-right:8px;">
-        Googleでログイン
-      </button>
-      <div id="userInfo" style="display:none;">
-        <p>ようこそ、<span id="userName"></span>さん</p>
-        <button id="btnLogout" class="logout-btn">ログアウト</button>
-      </div>
+    <div class="game-card coming-soon" data-game="game2">
+      <div class="game-icon">🎮</div>
+      <h2>Coming Soon</h2>
+      <p>新しいゲームを準備中...</p>
     </div>
-
-    <div class="game-grid">
-      <div class="game-card" data-game="love-life">
-        <div class="game-icon">❤️</div>
-        <h2>AI×恋愛</h2>
-        <p>30日間の恋愛シミュレーション</p>
-      </div>
-      
-      <div class="game-card coming-soon" data-game="game2">
-        <div class="game-icon">🎮</div>
-        <h2>Coming Soon</h2>
-        <p>新しいゲームを準備中...</p>
-      </div>
-      
-      <div class="game-card coming-soon" data-game="game3">
-        <div class="game-icon">🎯</div>
-        <h2>Coming Soon</h2>
-        <p>新しいゲームを準備中...</p>
-      </div>
+    
+    <div class="game-card coming-soon" data-game="game3">
+      <div class="game-icon">🎯</div>
+      <h2>Coming Soon</h2>
+      <p>新しいゲームを準備中...</p>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- 既存のタイトル画面（初期状態で非表示） -->
+<!-- 既存のタイトル画面（初期状態で非表示） -->
+<section id="titleScreen" style="display: none;">
+  <h1>恋愛人生ゲーム</h1>
+  <button id="btnStart">Game Start</button>
+</section>
+
+  <!-- 既存のタイトル画面（初期状態で非表示に） -->
   <section id="titleScreen" style="display: none;">
     <h1>恋愛人生ゲーム</h1>
     <button id="btnStart">Game Start</button>
