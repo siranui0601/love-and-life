@@ -1,4 +1,91 @@
 
+/* ログインボタンのスタイル */
+#loginStatus {
+  text-align: center;
+}
+
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 24px;
+  background: white;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.login-btn:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transform: translateY(-2px);
+}
+
+.logout-btn {
+  padding: 8px 16px;
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+.logout-btn:hover {
+  background: #d32f2f;
+}
+
+#userInfo {
+  color: white;
+  font-size: 18px;
+}
+
+#userInfo p {
+  margin-bottom: 10px;
+}
+```
+
+---
+
+## 7️⃣ スプレッドシートの構造
+
+### シート名: `Users`
+
+| A列 (id) | B列 (googleId) | C列 (email) | D列 (name) | E列 (createdAt) |
+|----------|----------------|-------------|-----------|-----------------|
+| user_xxx | 123456789      | user@example.com | 太郎 | 2025-01-01T00:00:00Z |
+
+**ヘッダー行を1行目に追加してください:**
+```
+id | googleId | email | name | createdAt
+```
+
+---
+
+## 8️⃣ Google Cloud Consoleでリダイレクトの設定
+
+1. [Google Cloud Console](https://console.cloud.google.com/)にアクセス
+2. 「APIとサービス」→「認証情報」
+3. 作成したOAuthクライアントIDを選択
+4. 「承認済みのリダイレクトURI」に以下を追加:
+```
+   http://localhost:3000/auth/google/callback
+
+
+
+
+
+
+
+
+
+
+
+
 * {
   margin: 0;
   padding: 0;
@@ -455,4 +542,5 @@ html { -webkit-text-size-adjust: 100%; }
     font-size: 4rem;
   }
 }
+
 
