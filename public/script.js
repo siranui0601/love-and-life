@@ -1,4 +1,110 @@
 // ========================================
+// ログイン状態の管理
+// ========================================
+let currentUser = null;
+
+async function checkLoginStatus() {
+  try {
+    const response = await fetch('/api/user');
+    const data = await response.json();
+    
+    if (data.loggedIn) {
+      currentUser = data.user;
+      showUserInfo(data.user);
+    } else {
+      showLoginButton();
+    }
+  } catch (error) {
+    console.error('ログイン状態の確認に失敗:', error);
+    showLoginButton();
+  }
+}
+
+function showUserInfo(user) {
+  document.getElementById('btnLogin').style.display = 'none';
+  const userInfo = document.getElementById('userInfo');
+  userInfo.style.display = 'block';
+  document.getElementById('userName').textContent = user.name || user.email;
+}
+
+function showLoginButton() {
+  document.getElementById('btnLogin').style.display = 'inline-flex';
+  document.getElementById('userInfo').style.display = 'none';
+}
+
+// ========================================
+// ゲーム選択メニューの処理
+// ========================================
+document.addEventListener('DOMContentLoaded', async () => {
+  // ログイン状態確認
+  await checkLoginStatus();
+
+  const gameMenu = document.getElementById('gameMenu');
+  const titleScreen = document.getElementById('titleScreen');
+  const gameCards = document.querySelectorAll('.game-card');
+
+  // 初期状態: メニューを表示、タイトル画面を非表示
+  if (gameMenu) gameMenu.style.display = 'flex';
+  if (titleScreen) titleScreen.style.display = 'none';
+
+  // ログインボタン
+  document.getElementById('btnLogin')?.addEventListener('click', () => {
+    window.location.href = '/auth/google';
+  });
+
+  // ログアウトボタン
+  document.getElementById('btnLogout')?.addEventListener('click', () => {
+    window.location.href = '/auth/logout';
+  });
+
+  // ゲームカードのクリック処理
+  gameCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const gameType = card.dataset.game;
+      
+      // ログインチェック
+      if (!currentUser) {
+        alert('ゲームをプレイするにはログインが必要です');
+        return;
+      }
+
+      if (card.classList.contains('coming-soon')) {
+        return;
+      }
+
+      if (gameType === 'love-life') {
+        if (gameMenu) gameMenu.style.display = 'none';
+        if (titleScreen) {
+          titleScreen.style.display = 'flex';
+          titleScreen.style.flexDirection = 'column';
+          titleScreen.style.justifyContent = 'center';
+          titleScreen.style.alignItems = 'center';
+        }
+      }
+    });
+  });
+
+  // ホバーエフェクト
+  gameCards.forEach(card => {
+    if (!card.classList.contains('coming-soon')) {
+      card.addEventListener('mouseenter', () => {
+        card.style.borderColor = '#667eea';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.borderColor = 'transparent';
+      });
+    }
+  });
+});
+
+// 以下、既存のコード...
+
+
+
+
+
+
+// ========================================
 // ゲーム選択メニューの処理
 // ========================================
 
