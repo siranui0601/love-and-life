@@ -2,6 +2,204 @@
 import express from "express";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
+import session from "express-session";
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { google } from "googleapis";
+
+// ---------- Gemini API ----------
+import "dotenv/config";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer);
+
+// ========================================
+// セッション設定
+// ========================================
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "default-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // 本番環境では true に変更（HTTPS必須）
+      maxAge: 24 * 60 * 60 * 1000, // 24時間
+    },
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// ========================================
+// Google OAuth 設定
+// ========================================
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_REDIRECT_URI,
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        // ユーザー情報をスプレッドシートに保存/更新
+        const user = await findOrCreateUser(profile, accessToken, refreshToken);
+        return done(null, user);
+      } catch (error) {
+        return done(error, null);
+      }
+    }
+  )
+);
+
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await getUserById(id);
+    done(null, user);
+  } catch (error) {
+    done(error, null);
+  }
+});
+
+// ========================================
+// Google Sheets API 設定
+// ========================================
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+
+async function getAuthClient(accessToken, refreshToken) {
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+  );
+
+  oauth2Client.setCredentials({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  });
+
+  return oauth2Client;
+}
+
+// ユーザーをスプレッドシートから検索または作成
+async function findOrCreateUser(profile, accessToken, refreshToken) {
+  const auth = await getAuthClient(accessToken, refreshToken);
+  const sheets = google.sheets({ version: "v4", auth });
+
+  const email = profile.emails[0].value;
+  const name = profile.displayName;
+  const googleId = profile.id;
+
+  // スプレッドシートから既存ユーザーを検索
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: "Users!A:E",
+  });
+
+  const rows = response.data.values || [];
+  const existingUser = rows.find((row) => row[2] === email); // C列 = email
+
+  if (existingUser) {
+    // 既存ユーザー
+    return {
+      id: existingUser[0],
+      googleId: existingUser[1],
+      email: existingUser[2],
+      name: existingUser[3],
+      createdAt: existingUser[4],
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  // 新規ユーザー作成
+  const newUserId = `user_${Date.now()}`;
+  const createdAt = new Date().toISOString();
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: "Users!A:E",
+    valueInputOption: "USER_ENTERED",
+    resource: {
+      values: [[newUserId, googleId, email, name, createdAt]],
+    },
+  });
+
+  return {
+    id: newUserId,
+    googleId,
+    email,
+    name,
+    createdAt,
+    accessToken,
+    refreshToken,
+  };
+}
+
+// IDでユーザーを取得
+async function getUserById(id) {
+  // 簡易実装：セッションから取得
+  // 本番環境では再度スプレッドシートから取得推奨
+  return { id };
+}
+
+// ========================================
+// 認証ルート
+// ========================================
+app.get(
+  "/auth/google",
+  passport.authenticate("google", {
+    scope: [
+      "profile",
+      "email",
+      "https://www.googleapis.com/auth/spreadsheets",
+    ],
+    accessType: "offline",
+    prompt: "consent",
+  })
+);
+
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/" }),
+  (req, res) => {
+    res.redirect("/");
+  }
+);
+
+app.get("/auth/logout", (req, res) => {
+  req.logout(() => {
+    res.redirect("/");
+  });
+});
+
+// ログイン状態確認API
+app.get("/api/user", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.json({ loggedIn: true, user: req.user });
+  } else {
+    res.json({ loggedIn: false });
+  }
+});
+
+// 静的ファイルを /public から配信
+app.use(express.static("public"));
+
+// ... 以降は既存のGemini API・Socket.io処理
+
+
+
+// ---------- 基本サーバー ----------
+import express from "express";
+import { createServer } from "node:http";
+import { Server } from "socket.io";
 // ---------- Gemini API ----------
 import "dotenv/config";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -744,6 +942,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
