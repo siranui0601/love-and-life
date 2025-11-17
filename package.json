@@ -9,6 +9,11 @@
     "@google/generative-ai": "*",
     "dotenv": "^17.2.1",
     "express": "^4.19.2",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "passport": "*",
+    "passport-google-oauth20": "*",
+    "express-session": "*",
+    "googleapis": "*"
   }
 }
+
