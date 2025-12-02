@@ -30,15 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ゲームに応じて遷移
       if (gameType === 'love-life') {
-        // AI×恋愛ゲームを開始
-        if (gameMenu) gameMenu.style.display = 'none';
-        if (titleScreen) {
-          titleScreen.style.display = 'flex'; // ← flexに変更
-          titleScreen.style.flexDirection = 'column';
-          titleScreen.style.justifyContent = 'center';
-          titleScreen.style.alignItems = 'center';
-        }
-      } else if (gameType === 'game2') {
+  if (gameMenu) gameMenu.style.display = 'none';
+  if (titleScreen) {
+    titleScreen.style.display = 'flex';
+    titleScreen.style.flexDirection = 'column';
+    titleScreen.style.justifyContent = 'center';
+    titleScreen.style.alignItems = 'center';
+  }
+  showBackButton();
+}
+ else if (gameType === 'game2') {
         // 新しいゲーム2の処理（今後実装）
         alert('Game 2 - 準備中');
       } else if (gameType === 'game3') {
