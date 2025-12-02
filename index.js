@@ -1,6 +1,136 @@
 import 'dotenv/config';
 // これだけで process.env に .env の内容が入る
 
+import { google } from "googleapis";
+
+
+// ================================
+// Google Sheets クライアント
+// ================================
+const serviceAccount = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
+  ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
+  : null;
+
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+const SHEET_NAME = process.env.SHEET_NAME || "Users";
+
+async function getSheetsClient() {
+  if (!serviceAccount) {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY が設定されていません");
+  }
+
+  const auth = new google.auth.JWT(
+    serviceAccount.client_email,
+    null,
+    serviceAccount.private_key,
+    ["https://www.googleapis.com/auth/spreadsheets"]
+  );
+
+  await auth.authorize();
+
+  const sheets = google.sheets({ version: "v4", auth });
+  return sheets;
+}
+
+
+// email からユーザーを探す
+async function findUserByEmail(email) {
+  const sheets = await getSheetsClient();
+  const range = `${SHEET_NAME}!A2:C`; // ヘッダー行(A1:C1)をスキップ
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+  });
+
+  const rows = res.data.values || [];
+  for (const row of rows) {
+    const [rowEmail, username, displayName] = row;
+    if (rowEmail === email) {
+      return { email: rowEmail, username, displayName };
+    }
+  }
+  return null;
+}
+
+// 新規ユーザー追加
+async function addUser({ email, username, displayName }) {
+  const sheets = await getSheetsClient();
+  const range = `${SHEET_NAME}!A2:C2`;
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[email, username, displayName]],
+    },
+  });
+
+  return { email, username, displayName };
+}
+
+// ログイン時に呼ぶ：既存ユーザーかどうかチェック
+app.post("/api/user/lookup", async (req, res) => {
+  const { email } = req.body || {};
+  if (!email) {
+    return res.status(400).json({ error: "email is required" });
+  }
+
+  try {
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return res.json({ exists: false });
+    }
+    return res.json({
+      exists: true,
+      username: user.username,
+      displayName: user.displayName,
+    });
+  } catch (e) {
+    console.error("lookup error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+
+
+// 初回ログイン時：ユーザーネーム登録
+app.post("/api/user/register", async (req, res) => {
+  const { email, username, googleDisplayName } = req.body || {};
+
+  if (!email || !username) {
+    return res.status(400).json({ error: "email and username are required" });
+  }
+
+  try {
+    // すでに存在するならそのまま返す（2重登録防止）
+    const existing = await findUserByEmail(email);
+    if (existing) {
+      return res.json({
+        exists: true,
+        username: existing.username,
+        displayName: existing.displayName,
+      });
+    }
+
+    const user = await addUser({
+      email,
+      username,
+      displayName: googleDisplayName || "",
+    });
+
+    return res.json({
+      exists: true,
+      username: user.username,
+      displayName: user.displayName,
+    });
+  } catch (e) {
+    console.error("register error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
 
 
 
@@ -18,6 +148,9 @@ const io = new Server(httpServer);
 
 // 静的ファイルを /public から配信
 app.use(express.static("public"));
+
+app.use(express.json());
+
 
 // ---------- Gemini API 初期化 ----------
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -750,6 +883,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
