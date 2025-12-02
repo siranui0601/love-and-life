@@ -12,9 +12,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const gameMenu = document.getElementById('gameMenu');
   const titleScreen = document.getElementById('titleScreen');
-  const setupWrapper = document.getElementById('setupWrapper');
   const gameCards = document.querySelectorAll('.game-card');
-  const btnBackToMenu = document.getElementById('btnBackToMenu');
 
   // 初期状態: メニューを表示、タイトル画面を非表示
   if (gameMenu) gameMenu.style.display = 'flex';
@@ -35,57 +33,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // AI×恋愛ゲームを開始
         if (gameMenu) gameMenu.style.display = 'none';
         if (titleScreen) {
-          titleScreen.style.display = 'flex';
+          titleScreen.style.display = 'flex'; // ← flexに変更
           titleScreen.style.flexDirection = 'column';
           titleScreen.style.justifyContent = 'center';
           titleScreen.style.alignItems = 'center';
         }
-        // 戻るボタンを表示
-        if (btnBackToMenu) btnBackToMenu.style.display = 'flex';
       } else if (gameType === 'game2') {
+        // 新しいゲーム2の処理（今後実装）
         alert('Game 2 - 準備中');
       } else if (gameType === 'game3') {
+        // 新しいゲーム3の処理（今後実装）
         alert('Game 3 - 準備中');
       }
     });
   });
-
-  // 戻るボタンのクリック処理
-  if (btnBackToMenu) {
-    btnBackToMenu.addEventListener('click', () => {
-      // 確認モーダルを表示
-      const confirmModal = document.getElementById('modal');
-      const modalBox = confirmModal.querySelector('.modal-content');
-      
-      modalBox.innerHTML = `
-        <div style="font-size: 1.2rem; margin-bottom: 1rem; font-weight: bold;">
-          タイトル画面に戻りますか？
-        </div>
-        <div style="margin-bottom: 1.5rem; color: #ccc;">
-          現在のゲーム進行状況は失われます
-        </div>
-      `;
-      
-      const btnYes = document.createElement('button');
-      btnYes.textContent = 'はい';
-      btnYes.style.marginRight = '1rem';
-      btnYes.onclick = () => {
-        location.reload(); // ページをリロードしてメニューに戻る
-      };
-      
-      const btnNo = document.createElement('button');
-      btnNo.textContent = 'いいえ';
-      btnNo.onclick = () => {
-        confirmModal.style.display = 'none';
-      };
-      
-      modalBox.appendChild(btnYes);
-      modalBox.appendChild(btnNo);
-      
-      confirmModal.style.display = 'flex';
-      confirmModal.onclick = null; // 背景クリックでは閉じない
-    });
-  }
 
   // ホバーエフェクト
   gameCards.forEach(card => {
@@ -3658,4 +3619,3 @@ function appendBtn(btn) {
     btn.style.marginLeft = ".6rem";
   modalBox.appendChild(btn);
 }
-
