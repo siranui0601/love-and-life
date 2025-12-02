@@ -157,9 +157,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // 「次回またアカウント選択させたい」場合は revoke を呼ぶ
         if (window.google && google.accounts && google.accounts.id) {
           // email を使いたくないなら、sub（user id）でもOK
-          google.accounts.id.revoke(prevUser.id, done => {
+          /*google.accounts.id.revoke(prevUser.id, done => {
             console.log("Googleアカウントとの紐付け解除:", done);
-          });
+          });*/
         }
       });
     }
