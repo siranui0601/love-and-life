@@ -350,45 +350,54 @@ html { -webkit-text-size-adjust: 100%; }
 
 
 /* ========================================
-   ゲーム選択メニュー (Wii風)
+   ゲーム選択メニュー (横スクロール版)
 ======================================== */
 
 #gameMenu {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  justify-content: flex-start;
   min-height: 100vh;
+  width: 100%;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px 20px;
+  padding: 24px 16px;
+  overflow: hidden; /* 自身からははみ出さないように */
 }
 
 .menu-title {
-  font-size: 3rem;
+  font-size: clamp(1.8rem, 4vw, 3rem);
   color: white;
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  margin-bottom: 60px;
+  margin: 0 0 24px 8px;
   font-weight: bold;
 }
 
+/* 横一列＋横スクロール */
 .game-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 30px;
-  max-width: 1000px;
+  display: flex;
+  flex-wrap: nowrap;              /* 折り返さない */
+  gap: 16px;
   width: 100%;
+  overflow-x: auto;               /* 横スクロールを許可 */
+  padding: 8px 4px 16px;
+  -webkit-overflow-scrolling: touch; /* スマホでヌルっとスクロール */
+  scroll-snap-type: x mandatory;  /* カードごとにパチッと止まる（お好み） */
 }
 
+/* カード1枚のサイズ・挙動 */
 .game-card {
+  flex: 0 0 clamp(220px, 60vw, 280px); /* 端末幅に応じて横幅を調整 */
   background: white;
   border-radius: 20px;
-  padding: 30px;
+  padding: 24px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   position: relative;
   overflow: hidden;
+  scroll-snap-align: start;       /* スクロールでカードの左端が揃う */
 }
 
 .game-card::before {
@@ -407,8 +416,8 @@ html { -webkit-text-size-adjust: 100%; }
 }
 
 .game-card:hover {
-  transform: translateY(-10px) scale(1.05);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
 }
 
 .game-card.coming-soon {
@@ -423,48 +432,39 @@ html { -webkit-text-size-adjust: 100%; }
 }
 
 .game-icon {
-  font-size: 5rem;
-  margin-bottom: 20px;
+  font-size: clamp(3rem, 8vw, 4.5rem);
+  margin-bottom: 16px;
   animation: float 3s ease-in-out infinite;
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
 .game-card h2 {
-  font-size: 1.8rem;
+  font-size: clamp(1.2rem, 3.5vw, 1.6rem);
   color: #333;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .game-card p {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: #666;
   line-height: 1.5;
 }
 
-/* レスポンシブ対応 */
+/* レスポンシブ微調整（主に余白だけ） */
 @media (max-width: 768px) {
+  #gameMenu {
+    padding: 20px 10px;
+  }
+
   .menu-title {
-    font-size: 2rem;
-    margin-bottom: 40px;
+    margin-left: 4px;
+    margin-bottom: 16px;
   }
-  
+
   .game-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .game-icon {
-    font-size: 4rem;
+    gap: 12px;
   }
 }
+
 
 
 
