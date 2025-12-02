@@ -575,3 +575,60 @@ html { -webkit-text-size-adjust: 100%; }
 
 
 
+
+
+.simple-modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.6);
+  z-index: 999;
+}
+
+.simple-modal-inner {
+  background: #fff;
+  color: #333;
+  padding: 20px 24px;
+  border-radius: 16px;
+  width: min(320px, 90vw);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.simple-modal-inner h2 {
+  margin-bottom: 8px;
+  font-size: 1.2rem;
+}
+
+.simple-modal-inner p {
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+#usernameInput {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 12px;
+}
+
+.simple-modal-buttons {
+  display: flex;
+  justify-content: center;
+}
+
+.simple-modal-buttons button {
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: none;
+  background: #667eea;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+
+
