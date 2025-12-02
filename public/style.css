@@ -546,5 +546,32 @@ html { -webkit-text-size-adjust: 100%; }
 }
 
 
+.auth-area {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.logout-btn {
+  padding: 0.4rem 1.2rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 600;
+  backdrop-filter: blur(6px);
+  transition: 0.2s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
 
 
