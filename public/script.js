@@ -1,3 +1,23 @@
+// Google の ID トークン（JWT）をパースする小さい関数
+function parseJwt(token) {
+  try {
+    const [header, payload, signature] = token.split(".");
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(json);
+  } catch (e) {
+    console.error("JWT parse error:", e);
+    return null;
+  }
+}
+
+// ログインしたユーザー名をゲーム側からも使えるようにしておく
+window.currentUserName = null;
 
 
 
@@ -63,6 +83,53 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
+
+
+
+  // ================================
+  // Google ログインの初期化
+  // ================================
+  window.addEventListener("load", () => {
+    const loginStatus = document.getElementById("loginStatus");
+    const btnContainer = document.getElementById("googleSignInBtn");
+
+    // 要素がなければ何もしない
+    if (!loginStatus || !btnContainer) return;
+
+    // Google のライブラリがまだ読み込まれてない場合もガード
+    if (!window.google || !google.accounts || !google.accounts.id) {
+      console.warn("Google Identity Services がまだ読み込まれていません");
+      return;
+    }
+
+    google.accounts.id.initialize({
+      client_id: "958867607494-2htl5kj0atpuriq65ssnq7hje66",
+      callback: (response) => {
+        const payload = parseJwt(response.credential);
+        if (!payload) {
+          loginStatus.textContent = "ログインに失敗しました";
+          return;
+        }
+
+        const name = payload.name || payload.email || "ゲスト";
+        window.currentUserName = name;
+
+        loginStatus.textContent = `${name} でログイン中`;
+      },
+      ux_mode: "popup", // 画面遷移しないポップアップ方式
+    });
+
+    // Google の公式ボタンをレンダリング
+    google.accounts.id.renderButton(btnContainer, {
+      theme: "outline",
+      size: "large",
+      shape: "pill",
+      text: "continue_with",
+    });
+
+    // 必要なら One Tap を出す（お好みで）
+    // google.accounts.id.prompt();
+  });
 
 
   // ========================================
