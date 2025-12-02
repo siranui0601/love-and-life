@@ -17,7 +17,8 @@ function parseJwt(token) {
 }
 
 // ログインしたユーザー名をゲーム側からも使えるようにしておく
-window.currentUserName = null;
+//window.currentUserName = null;
+window.currentUser = null; // { email, username, googleName }
 
 
 
