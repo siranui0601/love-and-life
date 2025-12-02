@@ -59,5 +59,22 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="script.js"></script>
+
+
+  <!-- Backボタン（ゲーム中表示） -->
+<button id="backBtn" class="back-btn">←</button>
+
+<!-- 戻る確認モーダル -->
+<div id="backModal" class="modal">
+  <div class="modal-content">
+    <p>タイトル画面に戻りますか？</p>
+    <div class="modal-buttons">
+      <button id="confirmBack">戻る</button>
+      <button id="cancelBack">戻らない</button>
+    </div>
+  </div>
+</div>
+
+  
 </body>
 </html>
