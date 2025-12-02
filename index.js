@@ -70,6 +70,30 @@ async function addUser({ email, username, displayName }) {
   return { email, username, displayName };
 }
 
+
+
+
+// ---------- 基本サーバー ----------
+import express from "express";
+import { createServer } from "node:http";
+import { Server } from "socket.io";
+// ---------- Gemini API ----------
+import "dotenv/config";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer);
+
+// 静的ファイルを /public から配信
+app.use(express.static("public"));
+
+app.use(express.json());
+
+
+
+
+
 // ログイン時に呼ぶ：既存ユーザーかどうかチェック
 app.post("/api/user/lookup", async (req, res) => {
   const { email } = req.body || {};
@@ -131,25 +155,6 @@ app.post("/api/user/register", async (req, res) => {
   }
 });
 
-
-
-
-// ---------- 基本サーバー ----------
-import express from "express";
-import { createServer } from "node:http";
-import { Server } from "socket.io";
-// ---------- Gemini API ----------
-import "dotenv/config";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer);
-
-// 静的ファイルを /public から配信
-app.use(express.static("public"));
-
-app.use(express.json());
 
 
 // ---------- Gemini API 初期化 ----------
@@ -883,6 +888,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
