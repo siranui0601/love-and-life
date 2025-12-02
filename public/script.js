@@ -3619,3 +3619,58 @@ function appendBtn(btn) {
     btn.style.marginLeft = ".6rem";
   modalBox.appendChild(btn);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ========================================
+// Backボタン & 戻る確認モーダル
+// ========================================
+
+const backBtn = document.getElementById('backBtn');
+const backModal = document.getElementById('backModal');
+const confirmBack = document.getElementById('confirmBack');
+const cancelBack = document.getElementById('cancelBack');
+
+// ゲーム開始時（タイトル画面に入ったらBack表示）
+function showBackButton() {
+  if (backBtn) backBtn.style.display = 'block';
+}
+
+// メニューに戻る時（Back非表示）
+function hideBackButton() {
+  if (backBtn) backBtn.style.display = 'none';
+}
+
+// Back押下 → 確認モーダル表示
+backBtn?.addEventListener('click', () => {
+  if (backModal) backModal.style.display = 'flex';
+});
+
+// 戻らない
+cancelBack?.addEventListener('click', () => {
+  backModal.style.display = 'none';
+});
+
+// 戻る（ゲームメニューへ）
+confirmBack?.addEventListener('click', () => {
+  backModal.style.display = 'none';
+
+  // 画面状態リセット
+  document.getElementById('titleScreen').style.display = 'none';
+  document.getElementById('gameMenu').style.display = 'flex';
+
+  hideBackButton();
+});
+
