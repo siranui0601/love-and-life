@@ -28,6 +28,9 @@ window.currentUserName = null;
 // ========================================
 // ゲーム選択メニューの処理
 // ========================================
+// ログインしたユーザー情報（アプリ内用）
+window.currentUser = null;
+
 
 document.addEventListener('DOMContentLoaded', () => {
   
@@ -90,36 +93,42 @@ document.addEventListener('DOMContentLoaded', () => {
   // Google ログインの初期化
   // ================================
   window.addEventListener("load", () => {
-    const loginStatus = document.getElementById("loginStatus");
-    const btnContainer = document.getElementById("googleSignInBtn");
+    const loginStatus   = document.getElementById("loginStatus");
+    const btnContainer  = document.getElementById("googleSignInBtn");
+    const logoutBtn     = document.getElementById("logoutBtn");
 
-    // 要素がなければ何もしない
     if (!loginStatus || !btnContainer) return;
 
-    // Google のライブラリがまだ読み込まれてない場合もガード
     if (!window.google || !google.accounts || !google.accounts.id) {
       console.warn("Google Identity Services がまだ読み込まれていません");
       return;
     }
 
+    // ログイン成功時の処理を関数にしておく
+    function onLoginSuccess(credentialResponse) {
+      const payload = parseJwt(credentialResponse.credential);
+      if (!payload) {
+        loginStatus.textContent = "ログインに失敗しました";
+        return;
+      }
+
+      const userId = payload.sub;                  // Google ユーザーID（固定）
+      const name   = payload.name || "ゲスト";     // 表示用。email は使わない運用もOK
+
+      window.currentUser = { id: userId, name };
+
+      loginStatus.textContent = `${name} でログイン中`;
+      // ログインボタン隠して、ログアウトボタン出す
+      btnContainer.style.display = "none";
+      if (logoutBtn) logoutBtn.style.display = "inline-block";
+    }
+
     google.accounts.id.initialize({
-      client_id: "958867607494-2htl5kj0atpuriq65ssnq7hje66t1p6t.apps.googleusercontent.com",
-      callback: (response) => {
-        const payload = parseJwt(response.credential);
-        if (!payload) {
-          loginStatus.textContent = "ログインに失敗しました";
-          return;
-        }
-
-        const name = payload.name || payload.email || "ゲスト";
-        window.currentUserName = name;
-
-        loginStatus.textContent = `${name} でログイン中`;
-      },
-      ux_mode: "popup", // 画面遷移しないポップアップ方式
+      client_id: "（さっき設定したフルの client_id ）",
+      callback: onLoginSuccess,
+      ux_mode: "popup",
     });
 
-    // Google の公式ボタンをレンダリング
     google.accounts.id.renderButton(btnContainer, {
       theme: "outline",
       size: "large",
@@ -127,7 +136,35 @@ document.addEventListener('DOMContentLoaded', () => {
       text: "continue_with",
     });
 
-    // 必要なら One Tap を出す（お好みで）
+    // ================================
+    // ログアウト処理
+    // ================================
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", () => {
+        if (!window.currentUser) {
+          // そもそもログインしてない
+          return;
+        }
+
+        const prevUser = window.currentUser;
+        window.currentUser = null;
+
+        // 表示リセット
+        loginStatus.textContent = "ログインしていません";
+        btnContainer.style.display = "block";
+        logoutBtn.style.display = "none";
+
+        // 「次回またアカウント選択させたい」場合は revoke を呼ぶ
+        if (window.google && google.accounts && google.accounts.id) {
+          // email を使いたくないなら、sub（user id）でもOK
+          google.accounts.id.revoke(prevUser.id, done => {
+            console.log("Googleアカウントとの紐付け解除:", done);
+          });
+        }
+      });
+    }
+
+    // 必要なら One Tap を出す（任意）
     // google.accounts.id.prompt();
   });
 
