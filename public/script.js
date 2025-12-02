@@ -93,81 +93,130 @@ document.addEventListener('DOMContentLoaded', () => {
   // ================================
   // Google ログインの初期化
   // ================================
-  window.addEventListener("load", () => {
-    const loginStatus   = document.getElementById("loginStatus");
-    const btnContainer  = document.getElementById("googleSignInBtn");
-    const logoutBtn     = document.getElementById("logoutBtn");
+// 画面ロード時
+window.addEventListener("load", () => {
+  const loginStatus   = document.getElementById("loginStatus");
+  const btnContainer  = document.getElementById("googleSignInBtn");
+  const logoutBtn     = document.getElementById("logoutBtn");
 
-    if (!loginStatus || !btnContainer) return;
+  const usernameModal   = document.getElementById("usernameModal");
+  const usernameInput   = document.getElementById("usernameInput");
+  const usernameSaveBtn = document.getElementById("usernameSaveBtn");
 
-    if (!window.google || !google.accounts || !google.accounts.id) {
-      console.warn("Google Identity Services がまだ読み込まれていません");
+  if (!loginStatus || !btnContainer) return;
+  if (!window.google || !google.accounts || !google.accounts.id) {
+    console.warn("Google Identity Services がまだ読み込まれていません");
+    return;
+  }
+
+  // ログイン成功時
+  async function onLoginSuccess(credentialResponse) {
+    const payload = parseJwt(credentialResponse.credential);
+    if (!payload) {
+      loginStatus.textContent = "ログインに失敗しました";
       return;
     }
 
-    // ログイン成功時の処理を関数にしておく
-    function onLoginSuccess(credentialResponse) {
-      const payload = parseJwt(credentialResponse.credential);
-      if (!payload) {
-        loginStatus.textContent = "ログインに失敗しました";
-        return;
-      }
+    const email = payload.email;             // キーとして使う
+    const gName = payload.name || "ゲスト";  // Google 表示名
 
-      const userId = payload.sub;                  // Google ユーザーID（固定）
-      const name   = payload.name || "ゲスト";     // 表示用。email は使わない運用もOK
-
-      window.currentUser = { id: userId, name };
-
-      loginStatus.textContent = `${name} でログイン中`;
-      // ログインボタン隠して、ログアウトボタン出す
-      btnContainer.style.display = "none";
-      if (logoutBtn) logoutBtn.style.display = "inline-block";
+    if (!email) {
+      loginStatus.textContent = "メールアドレスを取得できませんでした";
+      return;
     }
 
-    google.accounts.id.initialize({
-      client_id: "958867607494-2htl5kj0atpuriq65ssnq7hje66t1p6t.apps.googleusercontent.com",
-      callback: onLoginSuccess,
-      ux_mode: "popup",
-    });
+    // サーバーに「この email のユーザーいる？」って聞く
+    let lookup;
+    try {
+      const res = await fetch("/api/user/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      lookup = await res.json();
+    } catch (e) {
+      console.error("lookup error:", e);
+      loginStatus.textContent = "ユーザー情報の取得に失敗しました";
+      return;
+    }
 
-    google.accounts.id.renderButton(btnContainer, {
-      theme: "outline",
-      size: "large",
-      shape: "pill",
-      text: "continue_with",
-    });
+    // すでに存在する → その username でログイン完了
+    if (lookup.exists && lookup.username) {
+      window.currentUser = {
+        email,
+        username: lookup.username,
+        googleName: lookup.displayName || gName,
+      };
+      loginStatus.textContent = `${lookup.username} でログイン中`;
+      btnContainer.style.display = "none";
+      if (logoutBtn) logoutBtn.style.display = "inline-block";
+      return;
+    }
 
-    // ================================
-    // ログアウト処理
-    // ================================
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", () => {
-        if (!window.currentUser) {
-          // そもそもログインしてない
+    // 初回ログイン → ユーザーネーム設定モーダルを開く
+    if (usernameModal && usernameInput && usernameSaveBtn) {
+      usernameInput.value = gName; // デフォルトは Google の名前
+      usernameModal.style.display = "flex";
+
+      usernameSaveBtn.onclick = async () => {
+        const username = usernameInput.value.trim();
+        if (!username) {
+          alert("ユーザーネームを入力してください");
           return;
         }
 
-        const prevUser = window.currentUser;
-        window.currentUser = null;
+        try {
+          const res2 = await fetch("/api/user/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email,
+              username,
+              googleDisplayName: gName,
+            }),
+          });
+          const data = await res2.json();
+          if (data.error) {
+            alert("ユーザーネームの登録に失敗しました");
+            return;
+          }
 
-        // 表示リセット
-        loginStatus.textContent = "ログインしていません";
-        btnContainer.style.display = "block";
-        logoutBtn.style.display = "none";
+          window.currentUser = {
+            email,
+            username: data.username,
+            googleName: data.displayName || gName,
+          };
 
-        // 「次回またアカウント選択させたい」場合は revoke を呼ぶ
-        if (window.google && google.accounts && google.accounts.id) {
-          // email を使いたくないなら、sub（user id）でもOK
-          /*google.accounts.id.revoke(prevUser.id, done => {
-            console.log("Googleアカウントとの紐付け解除:", done);
-          });*/
+          loginStatus.textContent = `${data.username} でログイン中`;
+          btnContainer.style.display = "none";
+          if (logoutBtn) logoutBtn.style.display = "inline-block";
+          usernameModal.style.display = "none";
+        } catch (e) {
+          console.error("register error:", e);
+          alert("ユーザーネームの登録に失敗しました");
         }
-      });
+      };
     }
+  }
 
-    // 必要なら One Tap を出す（任意）
-    // google.accounts.id.prompt();
+  // Google 初期化
+  google.accounts.id.initialize({
+    client_id: "あなたの正しい client_id",
+    callback: onLoginSuccess,
+    ux_mode: "popup",
   });
+
+  google.accounts.id.renderButton(btnContainer, {
+    theme: "outline",
+    size: "large",
+    shape: "pill",
+    text: "continue_with",
+  });
+
+  // （ログアウト処理は、前回のもの＋window.currentUser を null にするようにしておけばOK）
+});
+  //const playername = window.currentUser?.username || "プレイヤー";
+
 
 
   // ========================================
