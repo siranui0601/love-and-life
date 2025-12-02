@@ -100,6 +100,8 @@ confirmBack?.addEventListener('click', () => {
 
   // 画面状態リセット
   document.getElementById('titleScreen').style.display = 'none';
+  document.getElementById('setupWrapper').style.display = 'none';
+  document.getElementById('threeCanvas').style.display = 'none';
   document.getElementById('gameMenu').style.display = 'flex';
 
   hideBackButton();
