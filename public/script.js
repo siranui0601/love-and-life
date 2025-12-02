@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     google.accounts.id.initialize({
-      client_id: "（さっき設定したフルの client_id ）",
+      client_id: "958867607494-2htl5kj0atpuriq65ssnq7hje66t1p6t.apps.googleusercontent.com",
       callback: onLoginSuccess,
       ux_mode: "popup",
     });
