@@ -201,7 +201,7 @@ window.addEventListener("load", () => {
 
   // Google 初期化
   google.accounts.id.initialize({
-    client_id: "あなたの正しい client_id",
+    client_id: "958867607494-2htl5kj0atpuriq65ssnq7hje66t1p6t.apps.googleusercontent.com",
     callback: onLoginSuccess,
     ux_mode: "popup",
   });
