@@ -226,12 +226,12 @@ window.addEventListener("load", () => {
       btnContainer.style.display = "block";      // ログインボタン再表示
       logoutBtn.style.display = "none";          // ログアウトボタン非表示
 
-      // Google 側との紐付きを解除（任意だが、やっとくと次回サインイン選択画面が出やすい）
+      /* Google 側との紐付きを解除（任意だが、やっとくと次回サインイン選択画面が出やすい）
       if (email && window.google && google.accounts && google.accounts.id) {
         google.accounts.id.revoke(email, done => {
           console.log("Google token revoked:", done);
         });
-      }
+      }*/
     });
   }
 
