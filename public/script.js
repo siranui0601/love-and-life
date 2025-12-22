@@ -18,7 +18,7 @@ function parseJwt(token) {
 
 // ログインしたユーザー名をゲーム側からも使えるようにしておく
 //window.currentUserName = null;
-window.currentUser = null; // { email, username, googleName }
+//window.currentUser = null; // { email, username, googleName }
 
 
 
@@ -213,7 +213,28 @@ window.addEventListener("load", () => {
     text: "continue_with",
   });
 
-  // （ログアウト処理は、前回のもの＋window.currentUser を null にするようにしておけばOK）
+    // ================================
+  // ログアウトボタン
+  // ================================
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      // まずアプリ内の状態をクリア
+      const email = window.currentUser?.email || null;
+
+      window.currentUser = null;
+      loginStatus.textContent = "ログインしていません";
+      btnContainer.style.display = "block";      // ログインボタン再表示
+      logoutBtn.style.display = "none";          // ログアウトボタン非表示
+
+      // Google 側との紐付きを解除（任意だが、やっとくと次回サインイン選択画面が出やすい）
+      if (email && window.google && google.accounts && google.accounts.id) {
+        google.accounts.id.revoke(email, done => {
+          console.log("Google token revoked:", done);
+        });
+      }
+    });
+  }
+
 });
   //const playername = window.currentUser?.username || "プレイヤー";
 
