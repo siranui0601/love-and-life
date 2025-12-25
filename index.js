@@ -220,17 +220,6 @@ function colToA1(colIndex0){
 }
 
 //ルーム作成
-app.post("/api/judgement/room/create", async (req, res) => {
-  try {
-    const { allowRandom, hostName } = req.body || {};
-    if (!hostName) return res.status(400).json({ error: "hostName is required" });
-
-    const sheets = await getSheets();                 // ←既存の関数を使う
-    const spreadsheetId = process.env.SPREADSHEET_ID; // ←あなたの既存運用に合わせる
-    if (!spreadsheetId) return res.status(500).json({ error: "SPREADSHEET_ID missing" });
-
-    const roomId = await generateUniqueRoomId(sheets, spreadsheetId);
-    const flag =
 
 
 
@@ -982,6 +971,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
