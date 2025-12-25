@@ -159,87 +159,6 @@ app.post("/api/user/register", async (req, res) => {
 
 
 
-
-
-
-
-const JUDGE_SHEET_NAME = "断罪AI";
-app.use(express.json()); // まだなら必須
-
-// 既存の「Google Sheets client」を取得する関数を使う想定。
-// 例: async function getSheets(){ ...return google.sheets({version:"v4", auth}); }
-
-async function getJudgeRoomsAtoD(sheets, spreadsheetId) {
-  const range = `${JUDGE_SHEET_NAME}!A:D`;
-  const r = await sheets.spreadsheets.values.get({ spreadsheetId, range });
-  return r.data.values || [];
-}
-
-function pad4(n){ return String(n).padStart(4,"0"); }
-
-async function generateUniqueRoomId(sheets, spreadsheetId) {
-  const rows = await getJudgeRoomsAtoD(sheets, spreadsheetId);
-  const used = new Set(rows.slice(1).map(r => String(r[0]||"").trim()).filter(Boolean)); // ヘッダがある前提なら slice(1)
-  for (let i=0;i<10;i++){
-    const id = pad4(Math.floor(Math.random()*10000));
-    if (!used.has(id)) return id;
-  }
-  throw new Error("ルームID生成に失敗しました（混雑）");
-}
-
-async function findRowIndexByRoomId(sheets, spreadsheetId, roomId) {
-  const rows = await getJudgeRoomsAtoD(sheets, spreadsheetId);
-  // rows[0] がヘッダなら dataRowIndex = i+1、シート行番号は i+1（1始まり）
-  for (let i=0;i<rows.length;i++){
-    if (String(rows[i]?.[0]||"").trim() === String(roomId)) {
-      return i + 1; // Google Sheets の行番号
-    }
-  }
-  return null;
-}
-
-function nextEmptyColumnIndex(row, startColIndex0Based) {
-  // row: values array
-  // startColIndex0Based: D列=3
-  for (let c=startColIndex0Based; c<200; c++){
-    if (!row[c] || String(row[c]).trim()==="") return c;
-  }
-  return null;
-}
-
-function colToA1(colIndex0){
-  // 0->A, 1->B ...
-  let n = colIndex0 + 1;
-  let s = "";
-  while (n>0){
-    const r = (n-1)%26;
-    s = String.fromCharCode(65+r) + s;
-    n = Math.floor((n-1)/26);
-  }
-  return s;
-}
-
-//ルーム作成
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ---------- Gemini API 初期化 ----------
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 //const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
@@ -984,3 +903,289 @@ httpServer.listen(PORT, () => {
 
 
 
+
+const JUDGE_SHEET_NAME = "断罪AI";
+// ================================
+// 断罪AI (Judgement AI) - Rooms API
+// ================================
+
+// 既に無ければ必須（JSON body を読む）
+app.use(express.json());
+
+const JUDGE_SHEET_NAME = "断罪AI";
+
+// --- ヘルパー ---
+function pad4(n) {
+  return String(n).padStart(4, "0");
+}
+
+function colToA1(colIndex0) {
+  // 0->A, 1->B ... 25->Z, 26->AA ...
+  let n = colIndex0 + 1;
+  let s = "";
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+async function getJudgeRows(sheets, spreadsheetId) {
+  // A列からZ列くらいまで広めに取る（D以降が増えるので）
+  const range = `${JUDGE_SHEET_NAME}!A:Z`;
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId, range });
+  return r.data.values || [];
+}
+
+function findRowIndexByRoomId(rows, roomId) {
+  // rows は 0-index配列、シート行番号は 1-index
+  for (let i = 0; i < rows.length; i++) {
+    if (String(rows[i]?.[0] || "").trim() === String(roomId)) {
+      return i + 1; // Sheets row number
+    }
+  }
+  return null;
+}
+
+function extractMembersFromRow(row) {
+  // D列(=index3)以降が参加者
+  if (!row) return [];
+  return row.slice(3).map(v => String(v || "").trim()).filter(Boolean);
+}
+
+function nextEmptyMemberColIndex0(row) {
+  // D列から探す（D=3）
+  const start = 3;
+  for (let c = start; c < 200; c++) {
+    if (!row?.[c] || String(row[c]).trim() === "") return c;
+  }
+  return null;
+}
+
+async function generateUniqueRoomId(sheets, spreadsheetId) {
+  const rows = await getJudgeRows(sheets, spreadsheetId);
+  const used = new Set(
+    rows.map(r => String(r?.[0] || "").trim()).filter(Boolean)
+  );
+
+  for (let i = 0; i < 20; i++) {
+    const id = pad4(Math.floor(Math.random() * 10000));
+    if (!used.has(id)) return id;
+  }
+  throw new Error("ルームID生成に失敗しました（混雑）");
+}
+
+// --- ルーム作成 ---
+// body: { allowRandom:boolean, hostName:string }
+// Sheets: A=roomId, B=ランダム可/ランダム不可, C=作成者
+app.post("/api/judgement/room/create", async (req, res) => {
+  try {
+    const { allowRandom, hostName } = req.body || {};
+    if (!hostName) return res.status(400).json({ error: "hostName is required" });
+
+    const sheets = await getSheets(); // ← 既存のSheets取得関数に合わせる
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+    if (!spreadsheetId) return res.status(500).json({ error: "SPREADSHEET_ID missing" });
+
+    const roomId = await generateUniqueRoomId(sheets, spreadsheetId);
+    const flag = allowRandom ? "ランダム可" : "ランダム不可";
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: `${JUDGE_SHEET_NAME}!A:C`,
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: {
+        values: [[roomId, flag, hostName]],
+      },
+    });
+
+    return res.json({ roomId });
+  } catch (e) {
+    console.error("[judgement/create]", e);
+    return res.status(500).json({ error: e.message || "create failed" });
+  }
+});
+
+// --- ルーム状態取得（待機部屋ポーリング用） ---
+// body: { roomId }
+app.post("/api/judgement/room/state", async (req, res) => {
+  try {
+    const { roomId } = req.body || {};
+    if (!/^\d{4}$/.test(String(roomId || ""))) {
+      return res.status(400).json({ error: "roomId must be 4 digits" });
+    }
+
+    const sheets = await getSheets();
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+
+    const rows = await getJudgeRows(sheets, spreadsheetId);
+    const rowNo = findRowIndexByRoomId(rows, roomId);
+    if (!rowNo) return res.status(404).json({ error: "room not found" });
+
+    const row = rows[rowNo - 1];
+    const statusOrFlag = String(row?.[1] || "").trim(); // B
+    const hostName = String(row?.[2] || "").trim();     // C
+    const members = extractMembersFromRow(row);
+
+    return res.json({
+      roomId,
+      status: statusOrFlag,
+      hostName,
+      members,
+    });
+  } catch (e) {
+    console.error("[judgement/state]", e);
+    return res.status(500).json({ error: e.message || "state failed" });
+  }
+});
+
+// --- 入室（D列以降に username を追加） ---
+// body: { roomId, username }
+app.post("/api/judgement/room/join", async (req, res) => {
+  try {
+    const { roomId, username } = req.body || {};
+    if (!/^\d{4}$/.test(String(roomId || ""))) {
+      return res.status(400).json({ error: "roomId must be 4 digits" });
+    }
+    if (!username) return res.status(400).json({ error: "username is required" });
+
+    const sheets = await getSheets();
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+
+    const rows = await getJudgeRows(sheets, spreadsheetId);
+    const rowNo = findRowIndexByRoomId(rows, roomId);
+    if (!rowNo) return res.status(404).json({ error: "room not found" });
+
+    const row = rows[rowNo - 1];
+    const members = extractMembersFromRow(row);
+
+    // 二重参加防止
+    if (members.includes(username)) {
+      return res.json({ ok: true, members });
+    }
+
+    const colIndex0 = nextEmptyMemberColIndex0(row);
+    if (colIndex0 == null) return res.status(500).json({ error: "room is full (columns exceeded)" });
+
+    const colA1 = colToA1(colIndex0);
+    const range = `${JUDGE_SHEET_NAME}!${colA1}${rowNo}`;
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[username]] },
+    });
+
+    // 更新後のmembersを返す
+    const rows2 = await getJudgeRows(sheets, spreadsheetId);
+    const row2 = rows2[rowNo - 1];
+    const members2 = extractMembersFromRow(row2);
+
+    return res.json({ ok: true, members: members2 });
+  } catch (e) {
+    console.error("[judgement/join]", e);
+    return res.status(500).json({ error: e.message || "join failed" });
+  }
+});
+
+// --- ランダム入室（B列が「ランダム可」の最上段） ---
+// body: { username }
+app.post("/api/judgement/room/randomJoin", async (req, res) => {
+  try {
+    const { username } = req.body || {};
+    if (!username) return res.status(400).json({ error: "username is required" });
+
+    const sheets = await getSheets();
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+
+    const rows = await getJudgeRows(sheets, spreadsheetId);
+
+    // B列が「ランダム可」の最上段を探す
+    const target = rows.find(r => String(r?.[1] || "").trim() === "ランダム可");
+    if (!target) return res.status(404).json({ error: "no random-available room" });
+
+    const roomId = String(target?.[0] || "").trim();
+    if (!/^\d{4}$/.test(roomId)) return res.status(500).json({ error: "invalid roomId in sheet" });
+
+    return res.json({ roomId });
+  } catch (e) {
+    console.error("[judgement/randomJoin]", e);
+    return res.status(500).json({ error: e.message || "randomJoin failed" });
+  }
+});
+
+// --- ステータス更新（B列を対戦中に） ---
+// body: { roomId, status }
+app.post("/api/judgement/room/status", async (req, res) => {
+  try {
+    const { roomId, status } = req.body || {};
+    if (!/^\d{4}$/.test(String(roomId || ""))) {
+      return res.status(400).json({ error: "roomId must be 4 digits" });
+    }
+    if (!status) return res.status(400).json({ error: "status is required" });
+
+    const sheets = await getSheets();
+    const spreadsheetId = process.env.SPREADSHEET_ID;
+
+    const rows = await getJudgeRows(sheets, spreadsheetId);
+    const rowNo = findRowIndexByRoomId(rows, roomId);
+    if (!rowNo) return res.status(404).json({ error: "room not found" });
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${JUDGE_SHEET_NAME}!B${rowNo}`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: { values: [[status]] },
+    });
+
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[judgement/status]", e);
+    return res.status(500).json({ error: e.message || "status failed" });
+  }
+});
+
+// --- ルーム設定（MVP: サーバメモリ） ---
+// body: { roomId, maxPlayers:number, aiCount:number }
+const judgementRoomSettings = new Map(); // roomId -> { maxPlayers, aiCount }
+
+app.post("/api/judgement/room/settings", async (req, res) => {
+  try {
+    const { roomId, maxPlayers, aiCount } = req.body || {};
+    if (!/^\d{4}$/.test(String(roomId || ""))) {
+      return res.status(400).json({ error: "roomId must be 4 digits" });
+    }
+    const mp = Number(maxPlayers);
+    const ac = Number(aiCount);
+    if (!Number.isFinite(mp) || mp < 2) return res.status(400).json({ error: "maxPlayers invalid" });
+    if (!Number.isFinite(ac) || ac < 1) return res.status(400).json({ error: "aiCount invalid" });
+
+    judgementRoomSettings.set(String(roomId), { maxPlayers: mp, aiCount: ac });
+
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("[judgement/settings]", e);
+    return res.status(500).json({ error: e.message || "settings failed" });
+  }
+});
+
+
+let pollTimer = null;
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    if (!currentRoomId) return;
+    try {
+      const state = await postJSON("/api/judgement/room/state", { roomId: currentRoomId });
+      setMembers(waitingMembers, state.members || []);
+      const maxPlayers = Number(maxPlayersInput.value || 0);
+      btnStart.disabled = !((state.members || []).length === maxPlayers);
+    } catch (e) {
+      // 失敗しても黙って継続
+    }
+  }, 2000);
+}
