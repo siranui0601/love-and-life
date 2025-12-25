@@ -904,7 +904,7 @@ httpServer.listen(PORT, () => {
 
 
 
-const JUDGE_SHEET_NAME = "断罪AI";
+
 // ================================
 // 断罪AI (Judgement AI) - Rooms API
 // ================================
@@ -1189,3 +1189,4 @@ function startPolling() {
     }
   }, 2000);
 }
+
