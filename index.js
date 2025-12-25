@@ -38,6 +38,103 @@ async function getSheetsClient() {
 }
 
 
+
+
+
+
+
+// ================================
+// 断罪AI: Sheets Utility
+// ================================
+async function getJudgeAllRows() {
+  const sheets = await getSheetsClient();
+  const range = `${JUDGE_SHEET_NAME}!A:ZZ`;
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+  });
+  return res.data.values || [];
+}
+
+function pad4(n) {
+  return String(n).padStart(4, "0");
+}
+
+// 0-based col index -> A1 column letters (0->A, 1->B ...)
+function colToA1(colIndex0) {
+  let n = colIndex0 + 1;
+  let s = "";
+  while (n > 0) {
+    const r = (n - 1) % 26;
+    s = String.fromCharCode(65 + r) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
+}
+
+// roomId の行番号（1-based）を返す。見つからなければ null
+async function findJudgeRowNumber(roomId) {
+  const rows = await getJudgeAllRows();
+  // 1行目がヘッダなら、2行目以降を探す
+  for (let i = 1; i < rows.length; i++) {
+    const id = String(rows[i]?.[0] || "").trim();
+    if (id === String(roomId)) return i + 1; // シート行番号（1-based）
+  }
+  return null;
+}
+
+async function generateUniqueRoomId() {
+  const rows = await getJudgeAllRows();
+  const used = new Set();
+  for (let i = 1; i < rows.length; i++) {
+    const id = String(rows[i]?.[0] || "").trim();
+    if (/^\d{4}$/.test(id)) used.add(id);
+  }
+
+  for (let t = 0; t < 20; t++) {
+    const id = pad4(Math.floor(Math.random() * 10000));
+    if (!used.has(id)) return id;
+  }
+  throw new Error("ルームID生成に失敗しました（混雑）");
+}
+
+// 参加者一覧を抽出（D列以降）
+function extractMembersFromRow(row) {
+  const members = (row || []).slice(3).map(v => String(v || "").trim()).filter(Boolean);
+  return members;
+}
+
+// 次に書き込む列（D=3 以降）の index を返す
+function findNextEmptyMemberColIndex(row) {
+  const start = 3; // D列 (0-based)
+  for (let c = start; c < 200; c++) {
+    const v = row?.[c];
+    if (!v || String(v).trim() === "") return c;
+  }
+  return null;
+}
+
+// 同名重複を避けたい場合は true
+function memberExists(row, username) {
+  const members = extractMembersFromRow(row);
+  return members.includes(username);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // email からユーザーを探す
 async function findUserByEmail(email) {
   const sheets = await getSheetsClient();
@@ -158,6 +255,8 @@ app.post("/api/user/register", async (req, res) => {
     return res.status(500).json({ error: "server_error" });
   }
 });
+
+
 
 
 
@@ -364,18 +463,6 @@ app.post("/api/judgement/room/settings", async (req, res) => {
     return res.status(500).json({ error: "server_error" });
   }
 });
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1120,6 +1207,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
