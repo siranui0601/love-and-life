@@ -21,11 +21,12 @@
       <p>30日間の恋愛シミュレーション</p>
     </div>
     
-    <div class="game-card coming-soon" data-game="game2">
-      <div class="game-icon">🎮</div>
-      <h2>Coming Soon</h2>
-      <p>新しいゲームを準備中...</p>
+    <div class="game-card" data-game="judgement-ai" id="cardJudgementAI">
+      <div class="game-icon">⚖️</div>
+      <h2>断罪AI</h2>
+      <p>AIのふりをして生き残れ</p>
     </div>
+
     
     <div class="game-card coming-soon" data-game="game3">
       <div class="game-icon">🎯</div>
@@ -45,6 +46,71 @@
   </div>
   <!-- ▲ ここまで追加 ▲ -->
 </section>
+
+
+
+
+
+
+    
+
+    <section id="judgementAI" style="display:none;">
+  <h1 class="menu-title">断罪AI</h1>
+
+  <div class="judgement-actions">
+    <button id="btnRandomMatch">ランダム対戦</button>
+    <button id="btnRoomMatch">ルーム対戦</button>
+    <button id="btnJudgementRules">ルール説明</button>
+  </div>
+
+  <div id="roomMatchPanel" style="display:none;" class="room-panel">
+    <div class="room-buttons">
+      <button id="btnRoomCreate">作成</button>
+      <button id="btnRoomJoin">入室</button>
+    </div>
+
+    <div id="roomCreatePanel" style="display:none;" class="room-subpanel">
+      <label class="checkbox-line">
+        <input type="checkbox" id="chkAllowRandom" />
+        ランダム入室を許可する
+      </label>
+      <button id="btnRoomCreateConfirm">決定</button>
+      <p id="createdRoomInfo" class="muted"></p>
+    </div>
+
+    <div id="roomJoinPanel" style="display:none;" class="room-subpanel">
+      <input id="roomIdInput" maxlength="4" inputmode="numeric" placeholder="4桁のルームID" />
+      <button id="btnRoomJoinConfirm">入室</button>
+      <p id="joinRoomInfo" class="muted"></p>
+    </div>
+  </div>
+
+  <div id="waitingRoom" style="display:none;" class="waiting-room">
+    <h2>待機部屋</h2>
+    <p>ルームID: <span id="waitingRoomId"></span></p>
+
+    <div class="settings-row">
+      <label>参加人数（最大）</label>
+      <input id="maxPlayersInput" type="number" min="2" max="8" value="4" />
+    </div>
+    <div class="settings-row">
+      <label>AIの数</label>
+      <input id="aiCountInput" type="number" min="1" max="10" value="3" />
+    </div>
+
+    <div>
+      <h3>参加者</h3>
+      <ul id="waitingMembers"></ul>
+    </div>
+
+    <button id="btnStartJudgementGame" disabled>ゲーム開始</button>
+  </div>
+
+  <button id="btnBackToMenu" class="tiny-back">メニューに戻る</button>
+</section>
+
+
+    
 
     <!-- ユーザーネーム設定モーダル -->
 <div id="usernameModal" class="simple-modal" style="display:none;">
