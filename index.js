@@ -72,7 +72,6 @@ async function addUser({ email, username, displayName }) {
 
 
 
-
 // ---------- 基本サーバー ----------
 import express from "express";
 import { createServer } from "node:http";
@@ -154,6 +153,101 @@ app.post("/api/user/register", async (req, res) => {
     return res.status(500).json({ error: "server_error" });
   }
 });
+
+
+
+
+
+
+
+
+
+
+const JUDGE_SHEET_NAME = "断罪AI";
+app.use(express.json()); // まだなら必須
+
+// 既存の「Google Sheets client」を取得する関数を使う想定。
+// 例: async function getSheets(){ ...return google.sheets({version:"v4", auth}); }
+
+async function getJudgeRoomsAtoD(sheets, spreadsheetId) {
+  const range = `${JUDGE_SHEET_NAME}!A:D`;
+  const r = await sheets.spreadsheets.values.get({ spreadsheetId, range });
+  return r.data.values || [];
+}
+
+function pad4(n){ return String(n).padStart(4,"0"); }
+
+async function generateUniqueRoomId(sheets, spreadsheetId) {
+  const rows = await getJudgeRoomsAtoD(sheets, spreadsheetId);
+  const used = new Set(rows.slice(1).map(r => String(r[0]||"").trim()).filter(Boolean)); // ヘッダがある前提なら slice(1)
+  for (let i=0;i<10;i++){
+    const id = pad4(Math.floor(Math.random()*10000));
+    if (!used.has(id)) return id;
+  }
+  throw new Error("ルームID生成に失敗しました（混雑）");
+}
+
+async function findRowIndexByRoomId(sheets, spreadsheetId, roomId) {
+  const rows = await getJudgeRoomsAtoD(sheets, spreadsheetId);
+  // rows[0] がヘッダなら dataRowIndex = i+1、シート行番号は i+1（1始まり）
+  for (let i=0;i<rows.length;i++){
+    if (String(rows[i]?.[0]||"").trim() === String(roomId)) {
+      return i + 1; // Google Sheets の行番号
+    }
+  }
+  return null;
+}
+
+function nextEmptyColumnIndex(row, startColIndex0Based) {
+  // row: values array
+  // startColIndex0Based: D列=3
+  for (let c=startColIndex0Based; c<200; c++){
+    if (!row[c] || String(row[c]).trim()==="") return c;
+  }
+  return null;
+}
+
+function colToA1(colIndex0){
+  // 0->A, 1->B ...
+  let n = colIndex0 + 1;
+  let s = "";
+  while (n>0){
+    const r = (n-1)%26;
+    s = String.fromCharCode(65+r) + s;
+    n = Math.floor((n-1)/26);
+  }
+  return s;
+}
+
+//ルーム作成
+app.post("/api/judgement/room/create", async (req, res) => {
+  try {
+    const { allowRandom, hostName } = req.body || {};
+    if (!hostName) return res.status(400).json({ error: "hostName is required" });
+
+    const sheets = await getSheets();                 // ←既存の関数を使う
+    const spreadsheetId = process.env.SPREADSHEET_ID; // ←あなたの既存運用に合わせる
+    if (!spreadsheetId) return res.status(500).json({ error: "SPREADSHEET_ID missing" });
+
+    const roomId = await generateUniqueRoomId(sheets, spreadsheetId);
+    const flag =
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -888,6 +982,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
