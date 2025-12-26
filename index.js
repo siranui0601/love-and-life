@@ -15,10 +15,6 @@ const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 const SHEET_NAME = process.env.SHEET_NAME || "Users";
 
 
-// 断罪AI 用シート
-const JUDGE_SHEET_NAME = process.env.JUDGE_SHEET_NAME || "断罪AI";
-
-
 async function getSheetsClient() {
   if (!serviceAccount) {
     throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY が設定されていません");
@@ -42,83 +38,6 @@ async function getSheetsClient() {
 
 
 
-
-// ================================
-// 断罪AI: Sheets Utility
-// ================================
-async function getJudgeAllRows() {
-  const sheets = await getSheetsClient();
-  const range = `${JUDGE_SHEET_NAME}!A:ZZ`;
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range,
-  });
-  return res.data.values || [];
-}
-
-function pad4(n) {
-  return String(n).padStart(4, "0");
-}
-
-// 0-based col index -> A1 column letters (0->A, 1->B ...)
-function colToA1(colIndex0) {
-  let n = colIndex0 + 1;
-  let s = "";
-  while (n > 0) {
-    const r = (n - 1) % 26;
-    s = String.fromCharCode(65 + r) + s;
-    n = Math.floor((n - 1) / 26);
-  }
-  return s;
-}
-
-// roomId の行番号（1-based）を返す。見つからなければ null
-async function findJudgeRowNumber(roomId) {
-  const rows = await getJudgeAllRows();
-  // 1行目がヘッダなら、2行目以降を探す
-  for (let i = 1; i < rows.length; i++) {
-    const id = String(rows[i]?.[0] || "").trim();
-    if (id === String(roomId)) return i + 1; // シート行番号（1-based）
-  }
-  return null;
-}
-
-async function generateUniqueRoomId() {
-  const rows = await getJudgeAllRows();
-  const used = new Set();
-  for (let i = 1; i < rows.length; i++) {
-    const id = String(rows[i]?.[0] || "").trim();
-    if (/^\d{4}$/.test(id)) used.add(id);
-  }
-
-  for (let t = 0; t < 20; t++) {
-    const id = pad4(Math.floor(Math.random() * 10000));
-    if (!used.has(id)) return id;
-  }
-  throw new Error("ルームID生成に失敗しました（混雑）");
-}
-
-// 参加者一覧を抽出（D列以降）
-function extractMembersFromRow(row) {
-  const members = (row || []).slice(3).map(v => String(v || "").trim()).filter(Boolean);
-  return members;
-}
-
-// 次に書き込む列（D=3 以降）の index を返す
-function findNextEmptyMemberColIndex(row) {
-  const start = 3; // D列 (0-based)
-  for (let c = start; c < 200; c++) {
-    const v = row?.[c];
-    if (!v || String(v).trim() === "") return c;
-  }
-  return null;
-}
-
-// 同名重複を避けたい場合は true
-function memberExists(row, username) {
-  const members = extractMembersFromRow(row);
-  return members.includes(username);
-}
 
 
 
@@ -190,6 +109,396 @@ const io = new Server(httpServer);
 app.use(express.static("public"));
 
 app.use(express.json());
+
+
+
+
+
+
+
+
+
+
+
+
+// ================================
+// 断罪AI（Sheets: "断罪AI"）
+//  A: roomId(4桁)
+//  B: 状態 "ランダム可" / "ランダム不可" / "対戦中" + optional "/募集停止"
+//  C: 作成者ユーザー名
+//  D: 参加者ユーザー名（"/"区切り） 例: "alice/bob/charlie"
+//  E: AI数（数値）
+// ================================
+const JUDGE_SHEET_NAME = "断罪AI";
+
+// "/" 禁止（参加者列が "/" 区切りのため）
+function validateUsername(username) {
+  if (!username || typeof username !== "string") return "username is required";
+  const u = username.trim();
+  if (!u) return "username is empty";
+  if (u.includes("/")) return "username must not include '/'";
+  return null;
+}
+
+function isRecruitStopped(statusB) {
+  return String(statusB || "").includes("/募集停止");
+}
+function stripRecruitSuffix(statusB) {
+  return String(statusB || "").replace("/募集停止", "");
+}
+function withRecruitSuffix(statusB) {
+  const s = String(statusB || "");
+  return s.includes("/募集停止") ? s : `${stripRecruitSuffix(s)}/募集停止`;
+}
+function withoutRecruitSuffix(statusB) {
+  return stripRecruitSuffix(statusB);
+}
+
+function pad4(n) {
+  return String(n).padStart(4, "0");
+}
+
+async function getJudgeRows(sheets) {
+  const range = `${JUDGE_SHEET_NAME}!A2:E`;
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+  });
+  return res.data.values || []; // 各行: [A,B,C,D,E]
+}
+
+function findJudgeRowIndex(rows, roomId) {
+  // rows は A2:E の配列。index=0 がシートの2行目。
+  const rid = String(roomId || "").trim();
+  for (let i = 0; i < rows.length; i++) {
+    const a = String(rows[i]?.[0] || "").trim();
+    if (a === rid) {
+      return i; // 0-based in rows
+    }
+  }
+  return -1;
+}
+
+function sheetRowNumberFromIndex(idx0) {
+  // rows[0] がシート2行目なので +2
+  return idx0 + 2;
+}
+
+async function updateJudgeCells(sheets, rowNumber, updates) {
+  // updates: [{ col: "B", value: "..." }, ...]
+  // 例: B列 -> `${JUDGE_SHEET_NAME}!B${rowNumber}`
+  const data = updates.map(u => ({
+    range: `${JUDGE_SHEET_NAME}!${u.col}${rowNumber}`,
+    values: [[u.value]],
+  }));
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      valueInputOption: "USER_ENTERED",
+      data,
+    },
+  });
+}
+
+function parseMembers(cellD) {
+  const s = String(cellD || "").trim();
+  if (!s) return [];
+  return s.split("/").map(x => x.trim()).filter(Boolean);
+}
+
+function joinMembers(members, username) {
+  if (members.includes(username)) return members; // 二重参加防止
+  return [...members, username];
+}
+
+function kickMembers(members, username) {
+  return members.filter(m => m !== username);
+}
+
+async function generateUniqueRoomId(sheets) {
+  const rows = await getJudgeRows(sheets);
+  const used = new Set(rows.map(r => String(r?.[0] || "").trim()).filter(Boolean));
+  for (let i = 0; i < 30; i++) {
+    const id = pad4(Math.floor(Math.random() * 10000));
+    if (!used.has(id)) return id;
+  }
+  throw new Error("ルームID生成に失敗しました（混雑）");
+}
+
+// ルーム状態取得（ポーリング用）
+app.post("/api/judgement/room/state", async (req, res) => {
+  const { roomId } = req.body || {};
+  if (!roomId) return res.status(400).json({ error: "roomId is required" });
+
+  try {
+    const sheets = await getSheetsClient();
+    const rows = await getJudgeRows(sheets);
+    const idx = findJudgeRowIndex(rows, roomId);
+    if (idx < 0) return res.status(404).json({ error: "room_not_found" });
+
+    const row = rows[idx];
+    const statusB = row[1] || "";
+    const host = row[2] || "";
+    const members = parseMembers(row[3]);
+    const aiCount = row[4] !== undefined ? Number(row[4]) : null;
+
+    return res.json({
+      roomId: String(row[0]),
+      status: String(statusB),
+      host: String(host),
+      members,
+      aiCount: Number.isFinite(aiCount) ? aiCount : null,
+    });
+  } catch (e) {
+    console.error("room/state error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+// ルーム作成
+app.post("/api/judgement/room/create", async (req, res) => {
+  const { allowRandom, hostName } = req.body || {};
+
+  const err = validateUsername(hostName);
+  if (err) return res.status(400).json({ error: err });
+
+  try {
+    const sheets = await getSheetsClient();
+    const roomId = await generateUniqueRoomId(sheets);
+
+    const statusB = allowRandom ? "ランダム可" : "ランダム不可";
+    const initialMembers = hostName; // 作成者は自動参加
+    const aiCount = ""; // 作成後に作成者が設定（/api/judgement/room/aiCount）
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${JUDGE_SHEET_NAME}!A2:E2`,
+      valueInputOption: "USER_ENTERED",
+      requestBody: {
+        values: [[roomId, statusB, hostName, initialMembers, aiCount]],
+      },
+    });
+
+    return res.json({ roomId });
+  } catch (e) {
+    console.error("room/create error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+// ルーム入室（指定ID）
+app.post("/api/judgement/room/join", async (req, res) => {
+  const { roomId, username } = req.body || {};
+  if (!roomId) return res.status(400).json({ error: "roomId is required" });
+  const err = validateUsername(username);
+  if (err) return res.status(400).json({ error: err });
+
+  try {
+    const sheets = await getSheetsClient();
+    const rows = await getJudgeRows(sheets);
+    const idx = findJudgeRowIndex(rows, roomId);
+    if (idx < 0) return res.status(404).json({ error: "room_not_found" });
+
+    const row = rows[idx];
+    const statusB = String(row[1] || "");
+    if (stripRecruitSuffix(statusB) === "対戦中") {
+      return res.status(409).json({ error: "match_in_progress" });
+    }
+    if (isRecruitStopped(statusB)) {
+      return res.status(409).json({ error: "recruit_stopped" });
+    }
+
+    const members = parseMembers(row[3]);
+    const newMembers = joinMembers(members, username);
+
+    const rowNumber = sheetRowNumberFromIndex(idx);
+    await updateJudgeCells(sheets, rowNumber, [
+      { col: "D", value: newMembers.join("/") },
+    ]);
+
+    return res.json({ ok: true, members: newMembers });
+  } catch (e) {
+    console.error("room/join error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+// ランダム入室（Bが「ランダム可」で、募集停止でも対戦中でもない最上段）
+app.post("/api/judgement/room/randomJoin", async (req, res) => {
+  const { username } = req.body || {};
+  const err = validateUsername(username);
+  if (err) return res.status(400).json({ error: err });
+
+  try {
+    const sheets = await getSheetsClient();
+    const rows = await getJudgeRows(sheets);
+
+    // 最上段の条件一致ルームを探す
+    let targetIdx = -1;
+    for (let i = 0; i < rows.length; i++) {
+      const statusB = String(rows[i]?.[1] || "");
+      const base = stripRecruitSuffix(statusB);
+      if (base !== "ランダム可") continue;
+      if (isRecruitStopped(statusB)) continue;
+      if (base === "対戦中") continue; // 念のため
+      targetIdx = i;
+      break;
+    }
+    if (targetIdx < 0) return res.status(404).json({ error: "no_random_room" });
+
+    const roomId = String(rows[targetIdx][0]);
+    return res.json({ roomId });
+  } catch (e) {
+    console.error("room/randomJoin error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+// 募集停止/再開（作成者のみ）
+app.post("/api/judgement/room/toggleRecruit", async (req, res) => {
+  const { roomId, requesterName, stop } = req.body || {};
+  if (!roomId) return res.status(400).json({ error: "roomId is required" });
+  const err = validateUsername(requesterName);
+  if (err) return res.status(400).json({ error: err });
+
+  try {
+    const sheets = await getSheetsClient();
+    const rows = await getJudgeRows(sheets);
+    const idx = findJudgeRowIndex(rows, roomId);
+    if (idx < 0) return res.status(404).json({ error: "room_not_found" });
+
+    const row = rows[idx];
+    const host = String(row[2] || "");
+    if (host !== requesterName) return res.status(403).json({ error: "only_host" });
+
+    const statusB = String(row[1] || "");
+    const base = stripRecruitSuffix(statusB);
+
+    if (base === "対戦中") {
+      return res.status(409).json({ error: "match_in_progress" });
+    }
+
+    const newStatus = stop ? withRecruitSuffix(base) : withoutRecruitSuffix(statusB);
+
+    const rowNumber = sheetRowNumberFromIndex(idx);
+    await updateJudgeCells(sheets, rowNumber, [{ col: "B", value: newStatus }]);
+
+    return res.json({ ok: true, status: newStatus });
+  } catch (e) {
+    console.error("room/toggleRecruit error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+// キック（作成者のみ）
+app.post("/api/judgement/room/kick", async (req, res) => {
+  const { roomId, requesterName, targetName } = req.body || {};
+  if (!roomId) return res.status(400).json({ error: "roomId is required" });
+  const e1 = validateUsername(requesterName);
+  if (e1) return res.status(400).json({ error: e1 });
+  const e2 = validateUsername(targetName);
+  if (e2) return res.status(400).json({ error: e2 });
+
+  try {
+    const sheets = await getSheetsClient();
+    const rows = await getJudgeRows(sheets);
+    const idx = findJudgeRowIndex(rows, roomId);
+    if (idx < 0) return res.status(404).json({ error: "room_not_found" });
+
+    const row = rows[idx];
+    const statusB = String(row[1] || "");
+    const host = String(row[2] || "");
+
+    if (host !== requesterName) return res.status(403).json({ error: "only_host" });
+    if (stripRecruitSuffix(statusB) === "対戦中") {
+      return res.status(409).json({ error: "match_in_progress" });
+    }
+    if (targetName === host) return res.status(400).json({ error: "cannot_kick_host" });
+
+    const members = parseMembers(row[3]);
+    const newMembers = kickMembers(members, targetName);
+
+    const rowNumber = sheetRowNumberFromIndex(idx);
+    await updateJudgeCells(sheets, rowNumber, [{ col: "D", value: newMembers.join("/") }]);
+
+    return res.json({ ok: true, members: newMembers });
+  } catch (e) {
+    console.error("room/kick error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+// AI数設定（作成者のみ） → E列
+app.post("/api/judgement/room/aiCount", async (req, res) => {
+  const { roomId, requesterName, aiCount } = req.body || {};
+  if (!roomId) return res.status(400).json({ error: "roomId is required" });
+  const err = validateUsername(requesterName);
+  if (err) return res.status(400).json({ error: err });
+
+  const n = Number(aiCount);
+  if (!Number.isInteger(n) || n < 1 || n > 30) {
+    return res.status(400).json({ error: "aiCount must be integer (1..30)" });
+  }
+
+  try {
+    const sheets = await getSheetsClient();
+    const rows = await getJudgeRows(sheets);
+    const idx = findJudgeRowIndex(rows, roomId);
+    if (idx < 0) return res.status(404).json({ error: "room_not_found" });
+
+    const row = rows[idx];
+    const statusB = String(row[1] || "");
+    const host = String(row[2] || "");
+    if (host !== requesterName) return res.status(403).json({ error: "only_host" });
+    if (stripRecruitSuffix(statusB) === "対戦中") {
+      return res.status(409).json({ error: "match_in_progress" });
+    }
+
+    const rowNumber = sheetRowNumberFromIndex(idx);
+    await updateJudgeCells(sheets, rowNumber, [{ col: "E", value: String(n) }]);
+
+    return res.json({ ok: true, aiCount: n });
+  } catch (e) {
+    console.error("room/aiCount error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+// ゲーム開始（作成者のみ） → B列を「対戦中」にする
+app.post("/api/judgement/room/start", async (req, res) => {
+  const { roomId, requesterName } = req.body || {};
+  if (!roomId) return res.status(400).json({ error: "roomId is required" });
+  const err = validateUsername(requesterName);
+  if (err) return res.status(400).json({ error: err });
+
+  try {
+    const sheets = await getSheetsClient();
+    const rows = await getJudgeRows(sheets);
+    const idx = findJudgeRowIndex(rows, roomId);
+    if (idx < 0) return res.status(404).json({ error: "room_not_found" });
+
+    const row = rows[idx];
+    const host = String(row[2] || "");
+    if (host !== requesterName) return res.status(403).json({ error: "only_host" });
+
+    const rowNumber = sheetRowNumberFromIndex(idx);
+    await updateJudgeCells(sheets, rowNumber, [{ col: "B", value: "対戦中" }]);
+
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error("room/start error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+
+
+
+
+
+
+
 
 
 
@@ -269,200 +578,6 @@ app.post("/api/user/register", async (req, res) => {
 
 
 
-// ================================
-// 断罪AI: Room APIs
-// ================================
-
-// ルーム作成
-app.post("/api/judgement/room/create", async (req, res) => {
-  try {
-    const { allowRandom, hostName } = req.body || {};
-    if (!hostName) return res.status(400).json({ error: "hostName is required" });
-
-    const roomId = await generateUniqueRoomId();
-
-    const sheets = await getSheetsClient();
-    const range = `${JUDGE_SHEET_NAME}!A:C`;
-
-    const flag = allowRandom ? "ランダム可" : "ランダム不可";
-
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
-      range,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[roomId, flag, hostName]],
-      },
-    });
-
-    return res.json({ roomId });
-  } catch (e) {
-    console.error("room/create error:", e);
-    return res.status(500).json({ error: "server_error" });
-  }
-});
-
-// ルーム状態取得（待機部屋の同期用）
-app.post("/api/judgement/room/state", async (req, res) => {
-  try {
-    const { roomId } = req.body || {};
-    if (!roomId || !/^\d{4}$/.test(String(roomId))) {
-      return res.status(400).json({ error: "roomId is required" });
-    }
-
-    const rows = await getJudgeAllRows();
-    const rowIndex = rows.findIndex((r, idx) => idx >= 1 && String(r?.[0] || "").trim() === String(roomId));
-    if (rowIndex === -1) return res.status(404).json({ error: "room_not_found" });
-
-    const row = rows[rowIndex];
-    const status = String(row?.[1] || "").trim(); // B列
-    const hostName = String(row?.[2] || "").trim(); // C列
-    const members = extractMembersFromRow(row);
-
-    return res.json({
-      roomId,
-      status,
-      hostName,
-      members,
-    });
-  } catch (e) {
-    console.error("room/state error:", e);
-    return res.status(500).json({ error: "server_error" });
-  }
-});
-
-// 入室（D列以降に追加）
-app.post("/api/judgement/room/join", async (req, res) => {
-  try {
-    const { roomId, username } = req.body || {};
-    if (!roomId || !/^\d{4}$/.test(String(roomId))) {
-      return res.status(400).json({ error: "roomId is required" });
-    }
-    if (!username) return res.status(400).json({ error: "username is required" });
-
-    const rows = await getJudgeAllRows();
-    const rowIndex = rows.findIndex((r, idx) => idx >= 1 && String(r?.[0] || "").trim() === String(roomId));
-    if (rowIndex === -1) return res.status(404).json({ error: "room_not_found" });
-
-    const row = rows[rowIndex];
-
-    // 対戦中は入室不可（必要なら外してOK）
-    const status = String(row?.[1] || "").trim();
-    if (status === "対戦中") {
-      return res.status(409).json({ error: "room_in_game" });
-    }
-
-    // 既に同名が入っていたらそのまま返す（重複防止）
-    if (memberExists(row, username)) {
-      return res.json({ ok: true, members: extractMembersFromRow(row) });
-    }
-
-    const colIndex = findNextEmptyMemberColIndex(row);
-    if (colIndex == null) return res.status(500).json({ error: "room_full_columns" });
-
-    const sheetRowNumber = rowIndex + 1; // rows は 0-based, シート行は 1-based
-    const colLetter = colToA1(colIndex);
-    const range = `${JUDGE_SHEET_NAME}!${colLetter}${sheetRowNumber}`;
-
-    const sheets = await getSheetsClient();
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range,
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[username]] },
-    });
-
-    // 更新後のメンバーを返す
-    const afterRows = await getJudgeAllRows();
-    const afterRow = afterRows[rowIndex] || [];
-    return res.json({ ok: true, members: extractMembersFromRow(afterRow) });
-  } catch (e) {
-    console.error("room/join error:", e);
-    return res.status(500).json({ error: "server_error" });
-  }
-});
-
-// ランダム入室（B列が「ランダム可」の最上段に入る）
-app.post("/api/judgement/room/randomJoin", async (req, res) => {
-  try {
-    const { username } = req.body || {};
-    if (!username) return res.status(400).json({ error: "username is required" });
-
-    const rows = await getJudgeAllRows();
-
-    // 最上段（先に作られた順）で「ランダム可」
-    const targetIndex = rows.findIndex((r, idx) => {
-      if (idx < 1) return false;
-      const status = String(r?.[1] || "").trim();
-      return status === "ランダム可";
-    });
-
-    if (targetIndex === -1) {
-      return res.status(404).json({ error: "no_random_room" });
-    }
-
-    const roomId = String(rows[targetIndex]?.[0] || "").trim();
-    if (!/^\d{4}$/.test(roomId)) {
-      return res.status(500).json({ error: "invalid_room_row" });
-    }
-
-    return res.json({ roomId });
-  } catch (e) {
-    console.error("room/randomJoin error:", e);
-    return res.status(500).json({ error: "server_error" });
-  }
-});
-
-// 状態更新（B列を上書き）
-app.post("/api/judgement/room/status", async (req, res) => {
-  try {
-    const { roomId, status } = req.body || {};
-    if (!roomId || !/^\d{4}$/.test(String(roomId))) {
-      return res.status(400).json({ error: "roomId is required" });
-    }
-    if (!status) return res.status(400).json({ error: "status is required" });
-
-    const rowNumber = await findJudgeRowNumber(roomId);
-    if (!rowNumber) return res.status(404).json({ error: "room_not_found" });
-
-    const sheets = await getSheetsClient();
-    const range = `${JUDGE_SHEET_NAME}!B${rowNumber}`;
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range,
-      valueInputOption: "USER_ENTERED",
-      requestBody: { values: [[status]] },
-    });
-
-    return res.json({ ok: true });
-  } catch (e) {
-    console.error("room/status error:", e);
-    return res.status(500).json({ error: "server_error" });
-  }
-});
-
-// 設定保存（MVP: サーバメモリ保持）
-// 将来Sheetsに保存したいなら、E列=参加人数、F列=AI数 などで update に変える
-const judgeRoomSettings = new Map(); // roomId -> { maxPlayers, aiCount }
-app.post("/api/judgement/room/settings", async (req, res) => {
-  try {
-    const { roomId, maxPlayers, aiCount } = req.body || {};
-    if (!roomId || !/^\d{4}$/.test(String(roomId))) {
-      return res.status(400).json({ error: "roomId is required" });
-    }
-    const mp = Number(maxPlayers);
-    const ac = Number(aiCount);
-    if (!Number.isFinite(mp) || mp < 2) return res.status(400).json({ error: "maxPlayers invalid" });
-    if (!Number.isFinite(ac) || ac < 1) return res.status(400).json({ error: "aiCount invalid" });
-
-    judgeRoomSettings.set(String(roomId), { maxPlayers: mp, aiCount: ac });
-    return res.json({ ok: true });
-  } catch (e) {
-    console.error("room/settings error:", e);
-    return res.status(500).json({ error: "server_error" });
-  }
-});
 
 
 
@@ -1207,6 +1322,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
