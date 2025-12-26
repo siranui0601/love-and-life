@@ -86,25 +86,36 @@
   </div>
 
   <div id="waitingRoom" style="display:none;" class="waiting-room">
-    <h2>待機部屋</h2>
-    <p>ルームID: <span id="waitingRoomId"></span></p>
+  <h2>待機部屋</h2>
+  <p>ルームID: <span id="waitingRoomId"></span></p>
 
+  <!-- 状態表示（任意だが推奨） -->
+  <p id="waitingStatusText"></p>
+
+  <!-- 作成者専用コントロール（JSがホスト時だけ表示する） -->
+  <div id="hostControls" style="display:none;">
     <div class="settings-row">
-      <label>参加人数（最大）</label>
-      <input id="maxPlayersInput" type="number" min="2" max="8" value="4" />
+      <button id="btnToggleRecruit" type="button">募集停止</button>
     </div>
+
     <div class="settings-row">
       <label>AIの数</label>
-      <input id="aiCountInput" type="number" min="1" max="10" value="3" />
+      <input id="aiCountInput" type="number" min="1" max="30" value="3" />
+      <button id="btnSetAiCount" type="button">AI数を反映</button>
     </div>
 
-    <div>
-      <h3>参加者</h3>
-      <ul id="waitingMembers"></ul>
-    </div>
-
-    <button id="btnStartJudgementGame" disabled>ゲーム開始</button>
+    <!-- disabled は付けない（JS側でホスト表示＆開始制御） -->
+    <button id="btnStartJudgementGame" type="button">ゲーム開始</button>
   </div>
+
+  <div>
+    <h3>参加者</h3>
+    <ul id="waitingMembers"></ul>
+  </div>
+
+  <button id="btnBackToMenu" type="button">メニューに戻る</button>
+</div>
+
 
   <button id="btnBackToMenu" class="tiny-back">メニューに戻る</button>
 </section>
