@@ -275,7 +275,10 @@ async function buildJudgeState(roomId) {
   const row = rows[idx];
   const statusB = String(row[1] || "");
   const hostName = String(row[2] || "");
-  const members = parseMembers(row[3]);
+  
+  //const members = parseMembers(row[3]);
+  const members = parseSlashList(row[3]);
+  
   const aiCount = row[4] !== undefined && row[4] !== "" ? Number(row[4]) : null;
 
   return {
@@ -1499,6 +1502,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
