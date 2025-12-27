@@ -1376,30 +1376,30 @@ ${style}
 }
 
 // ---------- Socket.io ----------
-// ---------- Socket.io ----------
 io.on("connection", (socket) => {
   console.log("✅ client connected:", socket.id);
 
   // ===== 断罪AI：待機部屋監視開始 =====
- socket.on("judge:watch", async ({ roomId } = {}) => {
+  socket.on("judgement:watch", async ({ roomId } = {}) => {
     const rid = String(roomId || "").trim();
     if (!rid) return;
 
-    socket.join(`judge:${rid}`);
+    // join する room 名は broadcast と同じにする
+    socket.join(judgeSocketRoom(rid));
 
-    // 初回表示用に 1回だけ読む（ここを繰り返さない）
+    // 初回表示用に 1回だけ state を返す
     try {
-      const state = await readJudgeStateOnce(rid);
-      if (state) socket.emit("judge:state", state);
+      const state = await buildJudgeState(rid);
+      if (state) socket.emit("judgement:state", state);
     } catch (e) {
-      console.error("[judgement:watch] initial read error:", e);
+      console.error("[judgement:watch] initial state error:", e);
     }
   });
 
-  socket.on("judge:unwatch", ({ roomId } = {}) => {
+  socket.on("judgement:unwatch", ({ roomId } = {}) => {
     const rid = String(roomId || "").trim();
     if (!rid) return;
-    socket.leave(`judge:${rid}`);
+    socket.leave(judgeSocketRoom(rid));
   });
 
 
@@ -1502,6 +1502,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
