@@ -584,7 +584,7 @@ app.post("/api/judgement/room/kick", async (req, res) => {
 // 最終開始（ホストのみ）
 // ここで初めて E列 aiCount を反映し、B列を対戦中へ
 // --------------------
-app.post("/api/judgement/room/finalStart", async (req, res) => {
+/*app.post("/api/judgement/room/finalStart", async (req, res) => {
   const { roomId, hostName, aiCount } = req.body || {};
   if (!roomId) return res.status(400).json({ error: "roomId is required" });
   const err = validateUsername(hostName);
@@ -634,7 +634,16 @@ app.post("/api/judgement/room/finalStart", async (req, res) => {
     console.error("room/finalStart error:", e);
     return res.status(500).json({ error: "server_error" });
   }
+});*/
+app.get("/api/judgement/room/state", async (req, res) => {
+  console.warn("[DEPRECATED] /api/judgement/room/state called", {
+    ip: req.ip,
+    ua: req.headers["user-agent"],
+    t: new Date().toISOString(),
+  });
+  return res.status(410).json({ error: "deprecated_use_socket" });
 });
+
 
 
 
@@ -1369,23 +1378,25 @@ io.on("connection", (socket) => {
   console.log("✅ client connected:", socket.id);
 
   // ===== 断罪AI：待機部屋監視開始 =====
-  socket.on("judgement:watch", async ({ roomId } = {}) => {
-    if (!roomId) return;
-    const room = judgeSocketRoom(roomId);
-    socket.join(room);
+ socket.on("judge:watch", async ({ roomId } = {}) => {
+    const rid = String(roomId || "").trim();
+    if (!rid) return;
 
-    // watch開始した本人には即stateを返す（初期表示用）
+    socket.join(`judge:${rid}`);
+
+    // 初回表示用に 1回だけ読む（ここを繰り返さない）
     try {
-      const state = await buildJudgeState(roomId);
-      if (state) socket.emit("judgement:state", state);
+      const state = await readJudgeStateOnce(rid);
+      if (state) socket.emit("judge:state", state);
     } catch (e) {
-      console.error("[judgement:watch] build state error:", e);
+      console.error("[judgement:watch] initial read error:", e);
     }
   });
 
-  socket.on("judgement:unwatch", ({ roomId } = {}) => {
-    if (!roomId) return;
-    socket.leave(judgeSocketRoom(roomId));
+  socket.on("judge:unwatch", ({ roomId } = {}) => {
+    const rid = String(roomId || "").trim();
+    if (!rid) return;
+    socket.leave(`judge:${rid}`);
   });
 
 
@@ -1488,6 +1499,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
