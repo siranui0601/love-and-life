@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentHost = "";
   let currentMembers = [];
   let lastMembers = [];
-  let pollingTimer = null;
+  //let pollingTimer = null;
   let joinedOnce = false;
 
   function isHost() {
@@ -121,36 +121,35 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function stopPolling() {
-    if (pollingTimer) clearInterval(pollingTimer);
-    pollingTimer = null;
+    //巨悪の根源
   }
 
   function showTop() {
-    stopPolling();
-    currentRoomId = null;
-    currentHost = "";
-    currentMembers = [];
-    lastMembers = [];
-    joinedOnce = false;
+  // 先にunwatch（currentRoomIdをnullにする前）
+  if (currentRoomId) socket.emit("judgement:unwatch", { roomId: currentRoomId });
 
-    // waiting を閉じて、トップUIを開く
-    if (waitingRoom) waitingRoom.style.display = "none";
-    if (roomMatchPanel) roomMatchPanel.style.display = "none";
-    if (roomCreatePanel) roomCreatePanel.style.display = "none";
-    if (roomJoinPanel) roomJoinPanel.style.display = "none";
-    if (createdRoomInfo) createdRoomInfo.textContent = "";
-    if (joinRoomInfo) joinRoomInfo.textContent = "";
+  stopPolling();
+  currentRoomId = null;
+  currentHost = "";
+  currentMembers = [];
+  lastMembers = [];
+  joinedOnce = false;
 
-    if (nonHostLockedPanel) nonHostLockedPanel.style.display = "none";
-    if (hostConfigPanel) hostConfigPanel.style.display = "none";
-    if (waitingMembersPanel) waitingMembersPanel.style.display = "block";
+  // waiting を閉じて、トップUIを開く
+  if (waitingRoom) waitingRoom.style.display = "none";
+  if (roomMatchPanel) roomMatchPanel.style.display = "none";
+  if (roomCreatePanel) roomCreatePanel.style.display = "none";
+  if (roomJoinPanel) roomJoinPanel.style.display = "none";
+  if (createdRoomInfo) createdRoomInfo.textContent = "";
+  if (joinRoomInfo) joinRoomInfo.textContent = "";
 
-    if (judgementActions) judgementActions.style.display = "flex";
-    // ルーム対戦パネルは開かない（必要ならユーザーが押す）
+  if (nonHostLockedPanel) nonHostLockedPanel.style.display = "none";
+  if (hostConfigPanel) hostConfigPanel.style.display = "none";
+  if (waitingMembersPanel) waitingMembersPanel.style.display = "block";
 
-    if (currentRoomId) socket.emit("judgement:unwatch", { roomId: currentRoomId });
+  if (judgementActions) judgementActions.style.display = "flex";
+}
 
-  }
 
   function openWaiting(roomId) {
     currentRoomId = roomId;
@@ -275,29 +274,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  async function refreshRoom() {
-    if (!currentRoomId) return;
-    try {
-      const st = await postJSON("/api/judgement/room/state", { roomId: currentRoomId });
-      applyState(st);
-    } catch (e) {
-      console.error(e);
-      alert(`ルーム情報の取得に失敗: ${e.message}`);
-      showTop();
-    }
-  }
-
-  function startPolling() {
-    stopPolling();
-    refreshRoom(); // 即時
-    pollingTimer = setInterval(refreshRoom, 1500);
-  }
-
-  // タブ復帰時にズレた表示を戻す
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && currentRoomId) refreshRoom();
-  });
-
   // ---- UI events
   btnRoomMatch?.addEventListener("click", () => {
     if (!mustLogin()) return alert("ログインが必要です");
@@ -328,7 +304,6 @@ document.addEventListener("DOMContentLoaded", () => {
       await postJSON("/api/judgement/room/join", { roomId: data.roomId, username: hostName });
 
       openWaiting(data.roomId);
-      startPolling();
     } catch (e) {
       console.error(e);
       alert(`作成に失敗: ${e.message}`);
@@ -346,7 +321,6 @@ document.addEventListener("DOMContentLoaded", () => {
       await postJSON("/api/judgement/room/join", { roomId, username });
 
       openWaiting(roomId);
-      startPolling();
     } catch (e) {
       console.error(e);
       if (String(e.message).includes("kicked")) {
@@ -368,7 +342,6 @@ document.addEventListener("DOMContentLoaded", () => {
       await postJSON("/api/judgement/room/join", { roomId: data.roomId, username });
 
       openWaiting(data.roomId);
-      startPolling();
     } catch (e) {
       console.error(e);
       alert(`ランダム対戦が見つかりません: ${e.message}`);
@@ -397,8 +370,6 @@ document.addEventListener("DOMContentLoaded", () => {
         roomId: currentRoomId,
         hostName: window.currentUser.username,
       });
-
-      await refreshRoom(); // 即反映
     } catch (e) {
       console.error(e);
       alert(`締切に失敗: ${e.message}`);
@@ -427,7 +398,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       alert("対戦開始！（次はゲーム本編フェーズへ遷移）");
-      await refreshRoom();
     } catch (e) {
       console.error(e);
       alert(`開始に失敗: ${e.message}`);
@@ -446,8 +416,6 @@ document.addEventListener("DOMContentLoaded", () => {
         roomId: currentRoomId,
         hostName: window.currentUser.username,
       });
-
-      await refreshRoom();
     } catch (e) {
       console.error(e);
       alert(`募集再開に失敗: ${e.message}`);
