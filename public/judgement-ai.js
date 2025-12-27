@@ -1,279 +1,297 @@
 // public/judgement-ai.js
 
-// ------------------------------
-// helpers
-// ------------------------------
 function mustLogin() {
-  return !!(window.currentUser?.email && window.currentUser?.username);
+  return window.currentUser?.email && window.currentUser?.username;
 }
 
 async function postJSON(url, body) {
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body || {}),
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(body),
   });
-
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg = data?.error || `HTTP ${res.status}`;
-    throw new Error(msg);
-  }
+  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
   return data;
 }
 
-function isValidUsername(name) {
-  // スプレッドシートD列は "/" 区切りなので禁止
-  return typeof name === "string" && name.trim() && !name.includes("/");
+function setMembers(listEl, members, options = {}) {
+  const { isHost = false, onKick = null } = options;
+  listEl.innerHTML = "";
+
+  (members || []).forEach(name => {
+    const li = document.createElement("li");
+    li.style.display = "flex";
+    li.style.alignItems = "center";
+    li.style.gap = "8px";
+
+    const span = document.createElement("span");
+    span.textContent = name;
+    li.appendChild(span);
+
+    if (isHost && typeof onKick === "function" && name !== window.currentUser?.username) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "キック";
+      btn.addEventListener("click", () => onKick(name));
+      li.appendChild(btn);
+    }
+
+    listEl.appendChild(li);
+  });
 }
 
-function el(id) {
-  return document.getElementById(id);
+function containsSlash(name) {
+  return typeof name === "string" && name.includes("/");
 }
 
-function setText(idOrEl, text) {
-  const node = typeof idOrEl === "string" ? el(idOrEl) : idOrEl;
-  if (node) node.textContent = text ?? "";
+// 断罪AIトップへ戻す（※ページ遷移ではなく、UIを戻す想定）
+function backToJudgementTop() {
+  // ここはあなたのページ構造に合わせて調整ポイント。
+  // 例：断罪AIのトップ要素が #judgementTop ならそれを表示し、
+  // waitingRoom等を隠す。
+  const waitingRoom = document.getElementById("waitingRoom");
+  const roomMatchPanel = document.getElementById("roomMatchPanel");
+  const roomCreatePanel = document.getElementById("roomCreatePanel");
+  const roomJoinPanel = document.getElementById("roomJoinPanel");
+
+  if (waitingRoom) waitingRoom.style.display = "none";
+  if (roomMatchPanel) roomMatchPanel.style.display = "block";
+  if (roomCreatePanel) roomCreatePanel.style.display = "none";
+  if (roomJoinPanel) roomJoinPanel.style.display = "none";
 }
 
-function show(node) {
-  if (node) node.style.display = "block";
-}
-
-function hide(node) {
-  if (node) node.style.display = "none";
-}
-
-function setDisplay(node, value) {
-  if (node) node.style.display = value;
-}
-
-// ------------------------------
-// main
-// ------------------------------
 document.addEventListener("DOMContentLoaded", () => {
-  // top buttons
-  const btnRoomMatch = el("btnRoomMatch");
-  const btnRandom = el("btnRandomMatch");
-  const btnRules = el("btnJudgementRules");
+  const btnRoomMatch = document.getElementById("btnRoomMatch");
+  const btnRandom = document.getElementById("btnRandomMatch");
+  const btnRules = document.getElementById("btnJudgementRules");
 
-  // panels
-  const roomMatchPanel = el("roomMatchPanel");
-  const roomCreatePanel = el("roomCreatePanel");
-  const roomJoinPanel = el("roomJoinPanel");
-  const waitingRoom = el("waitingRoom");
+  const roomMatchPanel = document.getElementById("roomMatchPanel");
+  const btnCreate = document.getElementById("btnRoomCreate");
+  const btnJoin = document.getElementById("btnRoomJoin");
 
-  // room match panel buttons
-  const btnCreate = el("btnRoomCreate");
-  const btnJoin = el("btnRoomJoin");
+  const roomCreatePanel = document.getElementById("roomCreatePanel");
+  const chkAllowRandom = document.getElementById("chkAllowRandom");
+  const btnCreateConfirm = document.getElementById("btnRoomCreateConfirm");
+  const createdRoomInfo = document.getElementById("createdRoomInfo");
 
-  // create
-  const chkAllowRandom = el("chkAllowRandom");
-  const btnCreateConfirm = el("btnRoomCreateConfirm");
-  const createdRoomInfo = el("createdRoomInfo");
+  const roomJoinPanel = document.getElementById("roomJoinPanel");
+  const roomIdInput = document.getElementById("roomIdInput");
+  const btnJoinConfirm = document.getElementById("btnRoomJoinConfirm");
+  const joinRoomInfo = document.getElementById("joinRoomInfo");
 
-  // join
-  const roomIdInput = el("roomIdInput");
-  const btnJoinConfirm = el("btnRoomJoinConfirm");
-  const joinRoomInfo = el("joinRoomInfo");
+  const waitingRoom = document.getElementById("waitingRoom");
+  const waitingRoomId = document.getElementById("waitingRoomId");
+  const waitingStatusText = document.getElementById("waitingStatusText");
 
-  // waiting
-  const waitingRoomId = el("waitingRoomId");
-  const waitingMembers = el("waitingMembers");
-  const btnStart = el("btnStartJudgementGame");
-  const btnBackToMenu = el("btnBackToMenu");
+  const waitingMembersPanel = document.getElementById("waitingMembersPanel");
+  const waitingMembers = document.getElementById("waitingMembers");
 
-  // optional: host-only UI container & controls
-  const hostControls = el("hostControls");          // host用パネル（任意）
-  const btnToggleRecruit = el("btnToggleRecruit");  // 募集停止/再開（任意）
-  const aiCountInput = el("aiCountInput");          // AI数入力（任意）
-  const btnSetAiCount = el("btnSetAiCount");        // AI数反映（任意）
-  const waitingStatusText = el("waitingStatusText");// 状態表示（任意）
+  const btnPlayWithMembers = document.getElementById("btnPlayWithMembers");
+  const btnBackToMenu = document.getElementById("btnBackToMenu");
 
-  // state
+  const hostConfigPanel = document.getElementById("hostConfigPanel");
+  const memberCountText = document.getElementById("memberCountText");
+  const aiCountInput = document.getElementById("aiCountInput");
+  const aiHintText = document.getElementById("aiHintText");
+  const btnFinalStart = document.getElementById("btnFinalStart");
+  const btnToggleRecruit = document.getElementById("btnToggleRecruit");
+
+  const nonHostLockedPanel = document.getElementById("nonHostLockedPanel");
+  const waitingMembersLocked = document.getElementById("waitingMembersLocked");
+
   let currentRoomId = null;
   let pollTimer = null;
-  let lastState = null;
 
-  // ------------------------------
-  // UI utilities
-  // ------------------------------
-  function closeAllPanels() {
-    hide(roomMatchPanel);
-    hide(roomCreatePanel);
-    hide(roomJoinPanel);
+  function stopPolling() {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
   }
 
-  function showRoomMatchPanel() {
-    if (!roomMatchPanel) return;
-    // toggle
-    const now = roomMatchPanel.style.display;
-    setDisplay(roomMatchPanel, (now === "none" || !now) ? "block" : "none");
+  function startPolling() {
+    stopPolling();
+    pollTimer = setInterval(async () => {
+      try {
+        await refreshRoomState();
+      } catch (e) {
+        // 通信エラー程度は黙って継続
+        console.warn("poll error:", e?.message || e);
+      }
+    }, 1500);
   }
 
   function openWaiting(roomId) {
     currentRoomId = roomId;
 
-    // show waiting, hide others
-    closeAllPanels();
-    show(waitingRoom);
+    if (waitingRoom) waitingRoom.style.display = "block";
+    if (roomMatchPanel) roomMatchPanel.style.display = "none";
+    if (roomCreatePanel) roomCreatePanel.style.display = "none";
+    if (roomJoinPanel) roomJoinPanel.style.display = "none";
 
     if (createdRoomInfo) createdRoomInfo.textContent = "";
     if (joinRoomInfo) joinRoomInfo.textContent = "";
+    if (waitingRoomId) waitingRoomId.textContent = roomId;
 
-    setText(waitingRoomId, roomId);
+    // 初期は通常待機UI
+    if (waitingMembersPanel) waitingMembersPanel.style.display = "block";
+    if (hostConfigPanel) hostConfigPanel.style.display = "none";
+    if (nonHostLockedPanel) nonHostLockedPanel.style.display = "none";
 
-    // start polling
     startPolling();
-    // immediate refresh
-    refreshRoom().catch((e) => console.error("refreshRoom error:", e));
+    refreshRoomState(); // 初回即反映
   }
 
-  function stopPolling() {
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = null;
+  function normalizeStatusText(bCellText) {
+    // 表示だけ変えたい場合：サーバが旧文言でもここで吸収できる
+    let t = String(bCellText || "");
+    t = t.replace("ランダム可", "ランダム対戦許可");
+    t = t.replace("ランダム不可", "ランダム対戦不許可");
+    return t;
   }
 
-  function startPolling() {
-    stopPolling();
-    pollTimer = setInterval(() => {
-      refreshRoom().catch((e) => console.warn("poll failed:", e.message));
-    }, 1500);
+  function isRecruitStopped(statusText) {
+    return String(statusText || "").includes("/募集停止");
   }
 
-  function isHost(state) {
-    return !!(state?.host && window.currentUser?.username && state.host === window.currentUser.username);
+  function isInBattle(statusText) {
+    return String(statusText || "").includes("対戦中");
   }
 
-  function updateHostControlsVisibility(state) {
-    // hostControls がある場合はそれをまとめて表示/非表示
-    if (hostControls) {
-      hostControls.style.display = isHost(state) ? "block" : "none";
+  async function refreshRoomState() {
+    if (!currentRoomId) return;
+    const me = window.currentUser?.username;
+    if (!me) return;
+
+    const state = await postJSON("/api/judgement/room/state", { roomId: currentRoomId });
+    const members = state.members || [];
+    const kicked = state.kicked || [];
+    const hostName = state.hostName;
+    const isHost = (me === hostName);
+
+    const statusText = normalizeStatusText(state.status || "");
+    if (waitingStatusText) waitingStatusText.textContent = statusText;
+
+    // キック済みなら即追い出し（断罪AIトップへ戻す）
+    if (kicked.includes(me)) {
+      stopPolling();
+      alert("キックされました。");
+      // UIを断罪AIトップへ
+      backToJudgementTop();
+      currentRoomId = null;
+      return;
     }
 
-    // hostControls が無いケースでも、個別ボタンがあれば制御
-    const hostOnly = isHost(state);
-    if (btnToggleRecruit) btnToggleRecruit.style.display = hostOnly ? "inline-block" : "none";
-    if (btnSetAiCount) btnSetAiCount.style.display = hostOnly ? "inline-block" : "none";
-    if (aiCountInput) aiCountInput.style.display = hostOnly ? "inline-block" : "none";
-    if (btnStart) btnStart.style.display = hostOnly ? "inline-block" : "none";
-  }
-
-  function renderMembers(members, state) {
-    if (!waitingMembers) return;
-    waitingMembers.innerHTML = "";
-
-    const hostMode = isHost(state);
-    const hostName = state?.host || null;
-
-    (members || []).forEach((name) => {
-      const li = document.createElement("li");
-      li.textContent = name;
-
-      // hostのみ：キックボタン（host自身は対象外）
-      if (hostMode && hostName && name !== hostName) {
-        const kickBtn = document.createElement("button");
-        kickBtn.textContent = "キック";
-        kickBtn.className = "kick-btn";
-        kickBtn.addEventListener("click", async () => {
+    // メンバー一覧更新（ホストだけキックボタン）
+    if (waitingMembers) {
+      setMembers(waitingMembers, members, {
+        isHost,
+        onKick: async (targetName) => {
           try {
-            if (!confirm(`${name} をキックしますか？`)) return;
+            if (!currentRoomId) return;
             await postJSON("/api/judgement/room/kick", {
               roomId: currentRoomId,
-              requesterName: window.currentUser.username,
-              targetName: name,
+              hostName: me,
+              targetName
             });
-            await refreshRoom();
+            await refreshRoomState();
           } catch (e) {
             console.error(e);
             alert(`キックに失敗: ${e.message}`);
           }
-        });
+        }
+      });
+    }
 
-        li.appendChild(document.createTextNode(" "));
-        li.appendChild(kickBtn);
+    // 「このメンバーで遊ぶ！」ボタン名／表示制御
+    if (btnPlayWithMembers) {
+      btnPlayWithMembers.textContent = "このメンバーで遊ぶ！";
+      // 対戦中になったら押せない（必要なら）
+      btnPlayWithMembers.disabled = isInBattle(statusText);
+    }
+
+    // 募集停止後の表示分岐
+    const stopped = isRecruitStopped(statusText);
+
+    if (stopped) {
+      // ホスト以外：締切メッセージ画面
+      if (!isHost) {
+        if (waitingMembersPanel) waitingMembersPanel.style.display = "none";
+        if (hostConfigPanel) hostConfigPanel.style.display = "none";
+        if (nonHostLockedPanel) nonHostLockedPanel.style.display = "block";
+        if (waitingMembersLocked) setMembers(waitingMembersLocked, members);
+      } else {
+        // ホスト：AI設定画面へ（締切済みならここへ）
+        if (waitingMembersPanel) waitingMembersPanel.style.display = "none";
+        if (nonHostLockedPanel) nonHostLockedPanel.style.display = "none";
+        if (hostConfigPanel) hostConfigPanel.style.display = "block";
+
+        const humanCount = members.length;
+        const maxAI = Math.max(1, humanCount * 3);
+        const recommend = humanCount * 2;
+
+        if (memberCountText) memberCountText.textContent = `参加者: ${humanCount}人`;
+        if (aiCountInput) {
+          aiCountInput.min = "1";
+          aiCountInput.max = String(maxAI);
+          // 入力が上限超えてたら丸める
+          const v = Number(aiCountInput.value || 1);
+          if (v > maxAI) aiCountInput.value = String(maxAI);
+          if (v < 1) aiCountInput.value = "1";
+        }
+        if (aiHintText) {
+          aiHintText.textContent = `設定範囲: 1〜${maxAI}（おすすめ: ${recommend}）`;
+        }
       }
-
-      waitingMembers.appendChild(li);
-    });
-  }
-
-  function updateRecruitButtonText(state) {
-    if (!btnToggleRecruit) return;
-    const status = String(state?.status || "");
-    const stopped = status.includes("/募集停止");
-    btnToggleRecruit.textContent = stopped ? "募集を再開" : "募集停止";
-  }
-
-  function updateStatusText(state) {
-    if (!waitingStatusText) return;
-    const status = String(state?.status || "");
-    waitingStatusText.textContent = status ? `状態: ${status}` : "";
-  }
-
-  async function refreshRoom() {
-    if (!currentRoomId) return;
-
-    const state = await postJSON("/api/judgement/room/state", { roomId: currentRoomId });
-    lastState = state;
-
-    setText(waitingRoomId, state.roomId || currentRoomId);
-    renderMembers(state.members || [], state);
-    updateHostControlsVisibility(state);
-    updateRecruitButtonText(state);
-    updateStatusText(state);
-
-    // AI数：hostなら入力欄に反映（未設置なら無視）
-    if (isHost(state) && aiCountInput) {
-      const v = Number(state.aiCount);
-      if (Number.isFinite(v) && v > 0) aiCountInput.value = String(v);
-    }
-
-    // 対戦中なら、ここでゲーム画面へ遷移させる等（今は通知だけ）
-    if (String(state.status || "") === "対戦中") {
-      // 例：対戦中の表示が必要ならここで
-      // alert("対戦が開始されました");
+    } else {
+      // 募集停止前：通常待機画面
+      if (waitingMembersPanel) waitingMembersPanel.style.display = "block";
+      if (hostConfigPanel) hostConfigPanel.style.display = "none";
+      if (nonHostLockedPanel) nonHostLockedPanel.style.display = "none";
     }
   }
 
-  // ------------------------------
-  // event handlers
-  // ------------------------------
+  // ---------- ルームメニュー ----------
   btnRoomMatch?.addEventListener("click", () => {
-    if (!mustLogin()) {
-      alert("ログインが必要です");
-      return;
+    if (!mustLogin()) { alert("ログインが必要です"); return; }
+    if (roomMatchPanel) {
+      roomMatchPanel.style.display = (roomMatchPanel.style.display === "none" ? "block" : "none");
     }
-    showRoomMatchPanel();
   });
 
   btnCreate?.addEventListener("click", () => {
-    setDisplay(roomCreatePanel, "grid");
-    hide(roomJoinPanel);
+    if (roomCreatePanel) roomCreatePanel.style.display = "grid";
+    if (roomJoinPanel) roomJoinPanel.style.display = "none";
   });
 
   btnJoin?.addEventListener("click", () => {
-    setDisplay(roomJoinPanel, "grid");
-    hide(roomCreatePanel);
+    if (roomJoinPanel) roomJoinPanel.style.display = "grid";
+    if (roomCreatePanel) roomCreatePanel.style.display = "none";
   });
 
+  // ---------- ルーム作成 ----------
   btnCreateConfirm?.addEventListener("click", async () => {
     try {
-      if (!mustLogin()) {
-        alert("ログインが必要です");
-        return;
-      }
+      if (!mustLogin()) { alert("ログインが必要です"); return; }
       const hostName = window.currentUser.username;
 
-      if (!isValidUsername(hostName)) {
-        alert("ユーザーネームに「/」は使えません。ユーザー名を変更してください。");
+      if (containsSlash(hostName)) {
+        alert("ユーザー名に「/」は使用できません。ユーザー名を変更してください。");
         return;
       }
 
       const allowRandom = !!chkAllowRandom?.checked;
-      const data = await postJSON("/api/judgement/room/create", { allowRandom, hostName });
+      const data = await postJSON("/api/judgement/room/create", {
+        allowRandom,
+        hostName
+      });
 
       if (createdRoomInfo) createdRoomInfo.textContent = `作成しました：ルームID ${data.roomId}`;
+
+      // 作成者を入室させる
+      await postJSON("/api/judgement/room/join", { roomId: data.roomId, username: hostName });
+
       openWaiting(data.roomId);
     } catch (e) {
       console.error(e);
@@ -281,26 +299,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // ---------- ルーム入室 ----------
   btnJoinConfirm?.addEventListener("click", async () => {
     try {
-      if (!mustLogin()) {
-        alert("ログインが必要です");
-        return;
-      }
+      if (!mustLogin()) { alert("ログインが必要です"); return; }
       const roomId = (roomIdInput?.value || "").trim();
-      if (!/^\d{4}$/.test(roomId)) {
-        alert("4桁の数字を入力してください");
-        return;
-      }
+      if (!/^\d{4}$/.test(roomId)) { alert("4桁の数字を入力してください"); return; }
 
       const username = window.currentUser.username;
-      if (!isValidUsername(username)) {
-        alert("ユーザーネームに「/」は使えません。ユーザー名を変更してください。");
+      if (containsSlash(username)) {
+        alert("ユーザー名に「/」は使用できません。ユーザー名を変更してください。");
         return;
       }
 
       await postJSON("/api/judgement/room/join", { roomId, username });
-
       if (joinRoomInfo) joinRoomInfo.textContent = `入室しました：${roomId}`;
       openWaiting(roomId);
     } catch (e) {
@@ -309,22 +321,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // ---------- ランダム参加 ----------
   btnRandom?.addEventListener("click", async () => {
     try {
-      if (!mustLogin()) {
-        alert("ログインが必要です");
-        return;
-      }
-
+      if (!mustLogin()) { alert("ログインが必要です"); return; }
       const username = window.currentUser.username;
-      if (!isValidUsername(username)) {
-        alert("ユーザーネームに「/」は使えません。ユーザー名を変更してください。");
+
+      if (containsSlash(username)) {
+        alert("ユーザー名に「/」は使用できません。ユーザー名を変更してください。");
         return;
       }
 
       const data = await postJSON("/api/judgement/room/randomJoin", { username });
       await postJSON("/api/judgement/room/join", { roomId: data.roomId, username });
-
       openWaiting(data.roomId);
     } catch (e) {
       console.error(e);
@@ -332,110 +341,89 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // ---------- ルール ----------
   btnRules?.addEventListener("click", () => {
     alert(
 `【断罪AI ルール概要】
 ・1人が断罪狩人、他がレジスタント
-・全員がお題に対して「AIっぽく」回答（各120文字以内）
-・さらにAI回答も混ざる（AIの性格はゲームごとにランダム）
+・全員がお題に対して「AIっぽく」回答
+・さらにAI回答も混ざる
 ・断罪狩人は人間回答を見抜いて選ぶ
-・狩人は的中数だけ得点、レジスタントは見抜かれなければ1点
-（※本編フェーズはこれから実装）`
+・狩人は的中数だけ得点、レジスタントは見抜かれなければ1点`
     );
   });
 
-  // host：募集停止/再開
+  // ---------- 「このメンバーで遊ぶ！」（募集締切→ホストAI設定へ） ----------
+  btnPlayWithMembers?.addEventListener("click", async () => {
+    try {
+      if (!currentRoomId) return;
+      const me = window.currentUser?.username;
+      if (!me) return;
+
+      // ここで募集停止（＝締切）にする
+      await postJSON("/api/judgement/room/lockForStart", {
+        roomId: currentRoomId,
+        hostName: me
+      });
+
+      // すぐ反映
+      await refreshRoomState();
+    } catch (e) {
+      console.error(e);
+      alert(`締切に失敗: ${e.message}`);
+    }
+  });
+
+  // ---------- 募集停止/再開（ホストのみ） ----------
   btnToggleRecruit?.addEventListener("click", async () => {
     try {
-      if (!currentRoomId || !lastState) return;
-      if (!isHost(lastState)) {
-        alert("作成者のみ操作できます");
-        return;
-      }
-
-      const status = String(lastState.status || "");
-      const stopped = status.includes("/募集停止");
+      if (!currentRoomId) return;
+      const me = window.currentUser?.username;
+      if (!me) return;
 
       await postJSON("/api/judgement/room/toggleRecruit", {
         roomId: currentRoomId,
-        requesterName: window.currentUser.username,
-        stop: !stopped,
+        hostName: me
       });
 
-      await refreshRoom();
+      await refreshRoomState();
     } catch (e) {
       console.error(e);
-      alert(`募集状態の変更に失敗: ${e.message}`);
+      alert(`募集切替に失敗: ${e.message}`);
     }
   });
 
-  // host：AI数反映
-  btnSetAiCount?.addEventListener("click", async () => {
+  // ---------- ホスト最終開始（ここで初めてAI数をSheetへ反映） ----------
+  btnFinalStart?.addEventListener("click", async () => {
     try {
-      if (!currentRoomId || !lastState) return;
-      if (!isHost(lastState)) {
-        alert("作成者のみ操作できます");
-        return;
-      }
-      if (!aiCountInput) {
-        alert("aiCountInput が見つかりません（HTMLを確認してください）");
+      if (!currentRoomId) return;
+      const me = window.currentUser?.username;
+      if (!me) return;
+
+      const aiCount = Number(aiCountInput?.value || 1);
+      if (!Number.isFinite(aiCount) || aiCount < 1) {
+        alert("AIの数は1以上で入力してください");
         return;
       }
 
-      const n = Number(aiCountInput.value);
-      if (!Number.isInteger(n) || n <= 0 || n > 30) {
-        alert("AI数は 1〜30 の整数で入力してください");
-        return;
-      }
-
-      await postJSON("/api/judgement/room/aiCount", {
+      await postJSON("/api/judgement/room/finalStart", {
         roomId: currentRoomId,
-        requesterName: window.currentUser.username,
-        aiCount: n,
+        hostName: me,
+        aiCount
       });
 
-      await refreshRoom();
-      alert("AI数を更新しました");
-    } catch (e) {
-      console.error(e);
-      alert(`AI数の更新に失敗: ${e.message}`);
-    }
-  });
-
-  // host：開始
-  btnStart?.addEventListener("click", async () => {
-    try {
-      if (!currentRoomId || !lastState) return;
-      if (!isHost(lastState)) {
-        alert("作成者のみ開始できます");
-        return;
-      }
-
-      // 最低人数チェックを入れたい場合はここ（例：2人以上）
-      const membersCount = (lastState.members || []).length;
-      if (membersCount < 2) {
-        alert("参加者が少なすぎます（最低2人）");
-        return;
-      }
-
-      await postJSON("/api/judgement/room/start", {
-        roomId: currentRoomId,
-        requesterName: window.currentUser.username,
-      });
-
-      await refreshRoom();
       alert("対戦開始！（次はゲーム本編のフェーズ実装）");
+      await refreshRoomState();
     } catch (e) {
       console.error(e);
       alert(`開始に失敗: ${e.message}`);
     }
   });
 
+  // ---------- 戻る（断罪AIトップへ） ----------
   btnBackToMenu?.addEventListener("click", () => {
     stopPolling();
-    location.reload();
+    currentRoomId = null;
+    backToJudgementTop();
   });
-
-  // 初期状態：待機部屋は隠す（HTML側が表示でも上書き）
-  hide(waitingRoom);
 });
