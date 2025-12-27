@@ -249,6 +249,55 @@ function isInBattle(statusB) {
   return base === "対戦中";
 }
 
+
+
+
+
+
+
+
+
+
+// ================================
+// Socket.IO用：断罪AI状態取得＆ブロードキャスト
+// ================================
+function judgeSocketRoom(roomId) {
+  return `judgement:${String(roomId).trim()}`;
+}
+
+// 「今のルーム状態」を1発で作って返す
+async function buildJudgeState(roomId) {
+  const sheets = await getSheetsClient();
+  const rows = await getJudgeRows(sheets);
+  const idx = findJudgeRowIndex(rows, roomId);
+  if (idx < 0) return null;
+
+  const row = rows[idx];
+  const statusB = String(row[1] || "");
+  const hostName = String(row[2] || "");
+  const members = parseMembers(row[3]);
+  const aiCount = row[4] !== undefined && row[4] !== "" ? Number(row[4]) : null;
+
+  return {
+    roomId: String(row[0] || roomId),
+    status: statusB,
+    hostName,
+    members,
+    aiCount: Number.isFinite(aiCount) ? aiCount : null,
+  };
+}
+
+// ルーム内の全員へ最新stateをPush
+async function broadcastJudgeState(io, roomId) {
+  const state = await buildJudgeState(roomId);
+  if (!state) return;
+  io.to(judgeSocketRoom(roomId)).emit("judgement:state", state);
+}
+
+
+
+
+
 // --------------------
 // ルーム状態取得（ポーリング用）
 // --------------------
@@ -359,6 +408,9 @@ app.post("/api/judgement/room/join", async (req, res) => {
       { col: "D", value: formatSlashList(newMembers) },
     ]);
 
+    // ★ 追加：Socket.IOで待機部屋へ即時反映（ポーリング不要）
+    broadcastJudgeState(io, roomId).catch(console.error);
+
     return res.json({ ok: true, members: newMembers });
   } catch (e) {
     console.error("room/join error:", e);
@@ -392,6 +444,9 @@ app.post("/api/judgement/room/randomJoin", async (req, res) => {
     }
 
     if (targetIdx < 0) return res.status(404).json({ error: "no_random_room" });
+
+    // ※このAPIは「部屋IDを返すだけ」で、参加者追加は /join が行う設計
+    //   反映（broadcast）は /join 側で実行されるのでここは不要
 
     return res.json({ roomId: String(rows[targetIdx][0]) });
   } catch (e) {
@@ -431,6 +486,9 @@ app.post("/api/judgement/room/toggleRecruit", async (req, res) => {
     const rowNumber = sheetRowNumberFromIndex(idx);
     await updateJudgeCells(sheets, rowNumber, [{ col: "B", value: newStatus }]);
 
+    // ★ 追加：Socket.IOで待機部屋へ即時反映
+    broadcastJudgeState(io, roomId).catch(console.error);
+
     return res.json({ ok: true, status: normalizeStatusForDisplay(newStatus) });
   } catch (e) {
     console.error("room/toggleRecruit error:", e);
@@ -464,6 +522,9 @@ app.post("/api/judgement/room/lockForStart", async (req, res) => {
 
     const rowNumber = sheetRowNumberFromIndex(idx);
     await updateJudgeCells(sheets, rowNumber, [{ col: "B", value: newStatus }]);
+
+    // ★ 追加：Socket.IOで待機部屋へ即時反映
+    broadcastJudgeState(io, roomId).catch(console.error);
 
     return res.json({ ok: true, status: normalizeStatusForDisplay(newStatus) });
   } catch (e) {
@@ -508,6 +569,9 @@ app.post("/api/judgement/room/kick", async (req, res) => {
       { col: "D", value: formatSlashList(newMembers) },
       { col: "F", value: formatSlashList(newKicked) },
     ]);
+
+    // ★ 追加：Socket.IOで待機部屋へ即時反映
+    broadcastJudgeState(io, roomId).catch(console.error);
 
     return res.json({ ok: true, members: newMembers, kicked: newKicked });
   } catch (e) {
@@ -561,6 +625,9 @@ app.post("/api/judgement/room/finalStart", async (req, res) => {
       { col: "E", value: String(n) },
       { col: "B", value: "対戦中" }, // 募集停止は不要なので剥がす
     ]);
+
+    // ★ 追加：Socket.IOで待機部屋へ即時反映（対戦中になったことも伝わる）
+    broadcastJudgeState(io, roomId).catch(console.error);
 
     return res.json({ ok: true, aiCount: n });
   } catch (e) {
@@ -1297,8 +1364,30 @@ ${style}
 }
 
 // ---------- Socket.io ----------
+// ---------- Socket.io ----------
 io.on("connection", (socket) => {
   console.log("✅ client connected:", socket.id);
+
+  // ===== 断罪AI：待機部屋監視開始 =====
+  socket.on("judgement:watch", async ({ roomId } = {}) => {
+    if (!roomId) return;
+    const room = judgeSocketRoom(roomId);
+    socket.join(room);
+
+    // watch開始した本人には即stateを返す（初期表示用）
+    try {
+      const state = await buildJudgeState(roomId);
+      if (state) socket.emit("judgement:state", state);
+    } catch (e) {
+      console.error("[judgement:watch] build state error:", e);
+    }
+  });
+
+  socket.on("judgement:unwatch", ({ roomId } = {}) => {
+    if (!roomId) return;
+    socket.leave(judgeSocketRoom(roomId));
+  });
+
 
   // 休みイベントの生成
   socket.on("requestRestEvent", async (payload) => {
