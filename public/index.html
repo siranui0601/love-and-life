@@ -90,7 +90,7 @@
     <h2 style="margin:0;">待機部屋</h2>
 
     <!-- 旧 btnStartJudgementGame をこれに置換（名前変更＆横配置） -->
-    <button id="btnPlayWithMembers" type="button">このメンバーで遊ぶ！</button>
+    <button id="btnPlayWithMembers" type="button" class='room-buttons' >このメンバーで遊ぶ！</button>
   </div>
 
   <p>ルームID: <span id="waitingRoomId"></span></p>
@@ -101,7 +101,7 @@
     <p>募集を締め切りました！まもなくゲームを開始します！</p>
     <div>
       <h3>参加者</h3>
-      <ul id="waitingMembersLocked"></ul>
+      <ul id="waitingMembersLocked" style="text-align:center;"></ul>
     </div>
   </div>
 
@@ -116,10 +116,10 @@
     </div>
 
     <!-- 最終決定ボタン（ここで初めてSheetにAI数を書き込む） -->
-    <button id="btnFinalStart" type="button" class="room-subpanel">ゲーム開始</button>
+    <button id="btnFinalStart" type="button" class='room-buttons'>ゲーム開始</button>
 
     <!-- 募集停止トグル（ホストのみ） -->
-    <button id="btnToggleRecruit" type="button" >募集を再開</button>
+    <button id="btnToggleRecruit" type="button" class='room-buttons'>募集を再開</button>
   </div>
 
   <div id="waitingMembersPanel">
@@ -133,7 +133,7 @@
 
 
   <!-- button id="btnBackToMenu" class="tiny-back">メニューに戻る</button -->
-      <button id="btnBackToMenu" type="button">断罪AIのトップに戻る</button>
+      <button id="btnBackToMenu" type="button" class='room-buttons'>断罪AIのトップに戻る</button>
 </section>
 
 
