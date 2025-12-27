@@ -737,3 +737,78 @@ html { -webkit-text-size-adjust: 100%; }
 
 
 
+
+
+
+
+
+
+
+
+
+
+/* 待機部屋ヘッダーの並びを自然に */
+.waiting-header{
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* 参加者リストも中央寄せで綺麗に */
+#waitingMembers, #waitingMembersLocked{
+  list-style: none;
+  padding-left: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+/* settings-row: range用に幅を拡張 */
+.settings-row.slider-row{
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.settings-row.slider-row label{
+  font-weight: 800;
+}
+
+/* range（スライダー）装飾 */
+.settings-row input[type="range"]{
+  width: min(420px, 80vw);
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.18);
+  outline: none;
+  padding: 0;         /* rangeにpaddingは効きづらいので0 */
+  border: 1px solid rgba(255,255,255,.18);
+  accent-color: var(--accent); /* 対応ブラウザはこれで一気に揃う */
+}
+
+/* Webkit thumb */
+.settings-row input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 2px solid rgba(0,0,0,.25);
+  cursor: pointer;
+}
+
+/* Firefox thumb */
+.settings-row input[type="range"]::-moz-range-thumb{
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 2px solid rgba(0,0,0,.25);
+  cursor: pointer;
+}
+
+/* 待機部屋内の small を少し見やすく */
+#hostConfigPanel .muted{
+  display: block;
+  margin-top: 6px;
+}
