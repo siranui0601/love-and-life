@@ -55,6 +55,15 @@ function normalizeStatusText(status) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const socket = io(); // /socket.io/socket.io.js が読み込まれている前提
+  socket.on("judgement:state", (state) => {
+  // 今見ているroomIdのstateだけ反映（別ルームの通知事故を防ぐ）
+  if (!currentRoomId) return;
+  if (String(state.roomId) !== String(currentRoomId)) return;
+  applyState(state);
+});
+
+
   const judgementAISection = document.getElementById("judgementAI");
   const judgementActions = judgementAISection?.querySelector(".judgement-actions");
 
@@ -138,6 +147,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (judgementActions) judgementActions.style.display = "flex";
     // ルーム対戦パネルは開かない（必要ならユーザーが押す）
+
+    if (currentRoomId) socket.emit("judgement:unwatch", { roomId: currentRoomId });
+
   }
 
   function openWaiting(roomId) {
@@ -160,6 +172,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (nonHostLockedPanel) nonHostLockedPanel.style.display = "none";
     if (hostConfigPanel) hostConfigPanel.style.display = "none";
     if (waitingMembersPanel) waitingMembersPanel.style.display = "block";
+
+    socket.emit("judgement:watch", { roomId });
+
   }
 
   function updateAIHints(membersCount) {
