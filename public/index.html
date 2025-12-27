@@ -86,35 +86,50 @@
   </div>
 
   <div id="waitingRoom" style="display:none;" class="waiting-room">
-  <h2>待機部屋</h2>
-  <p>ルームID: <span id="waitingRoomId"></span></p>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <h2 style="margin:0;">待機部屋</h2>
 
-  <!-- 状態表示（任意だが推奨） -->
+    <!-- 旧 btnStartJudgementGame をこれに置換（名前変更＆横配置） -->
+    <button id="btnPlayWithMembers" type="button">このメンバーで遊ぶ！</button>
+  </div>
+
+  <p>ルームID: <span id="waitingRoomId"></span></p>
   <p id="waitingStatusText"></p>
 
-  <!-- 作成者専用コントロール（JSがホスト時だけ表示する） -->
-  <div id="hostControls" style="display:none;">
-    <div class="settings-row">
-      <button id="btnToggleRecruit" type="button">募集停止</button>
+  <!-- ホスト以外に見せる「締切後」メッセージ -->
+  <div id="nonHostLockedPanel" style="display:none;">
+    <p>募集を締め切りました！まもなくゲームを開始します！</p>
+    <div>
+      <h3>参加者</h3>
+      <ul id="waitingMembersLocked"></ul>
     </div>
+  </div>
+
+  <!-- ホスト用の設定フェーズ -->
+  <div id="hostConfigPanel" style="display:none;">
+    <p id="memberCountText"></p>
 
     <div class="settings-row">
       <label>AIの数</label>
-      <input id="aiCountInput" type="number" min="1" max="30" value="3" />
-      <button id="btnSetAiCount" type="button">AI数を反映</button>
+      <input id="aiCountInput" type="number" min="1" value="3" />
+      <small id="aiHintText"></small>
     </div>
 
-    <!-- disabled は付けない（JS側でホスト表示＆開始制御） -->
-    <button id="btnStartJudgementGame" type="button">ゲーム開始</button>
+    <!-- 最終決定ボタン（ここで初めてSheetにAI数を書き込む） -->
+    <button id="btnFinalStart" type="button">ゲーム開始</button>
+
+    <!-- 募集停止トグル（ホストのみ） -->
+    <button id="btnToggleRecruit" type="button">募集停止/再開</button>
   </div>
 
-  <div>
+  <div id="waitingMembersPanel">
     <h3>参加者</h3>
     <ul id="waitingMembers"></ul>
   </div>
 
-  <button id="btnBackToMenu" type="button">メニューに戻る</button>
+  <button id="btnBackToMenu" type="button">戻る</button>
 </div>
+
 
 
   <button id="btnBackToMenu" class="tiny-back">メニューに戻る</button>
