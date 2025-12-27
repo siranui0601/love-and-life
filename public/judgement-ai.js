@@ -56,9 +56,11 @@ function backToJudgementTop() {
   const roomJoinPanel = document.getElementById("roomJoinPanel");
 
   if (waitingRoom) waitingRoom.style.display = "none";
-  if (roomMatchPanel) roomMatchPanel.style.display = "block";
+  if (roomMatchPanel) roomMatchPanel.style.display = "none";
   if (roomCreatePanel) roomCreatePanel.style.display = "none";
   if (roomJoinPanel) roomJoinPanel.style.display = "none";
+  //roomMatchPanel
+  
 }
 
 document.addEventListener("DOMContentLoaded", () => {
