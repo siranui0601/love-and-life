@@ -86,11 +86,11 @@
   </div>
 
   <div id="waitingRoom" style="display:none;" class="waiting-room">
-  <div style="display:flex; align-items:center; gap:12px; text-align:center;">
-    <h2 style="margin:0;">待機部屋</h2>
 
-    <!-- 旧 btnStartJudgementGame をこれに置換（名前変更＆横配置） -->
-    <button id="btnPlayWithMembers" type="button" class='room-buttons' >このメンバーで遊ぶ！</button>
+  <!-- ヘッダー：待機部屋 + ホストのみ表示の「このメンバーで遊ぶ！」 -->
+  <div class="room-buttons waiting-header">
+    <h2 style="margin:0;">待機部屋</h2>
+    <button id="btnPlayWithMembers" type="button">このメンバーで遊ぶ！</button>
   </div>
 
   <p>ルームID: <span id="waitingRoomId"></span></p>
@@ -101,7 +101,7 @@
     <p>募集を締め切りました！まもなくゲームを開始します！</p>
     <div>
       <h3>参加者</h3>
-      <ul id="waitingMembersLocked" style="text-align:center;"></ul>
+      <ul id="waitingMembersLocked"></ul>
     </div>
   </div>
 
@@ -109,32 +109,35 @@
   <div id="hostConfigPanel" style="display:none;">
     <p id="memberCountText"></p>
 
-    <div class="settings-row">
-      <label>AIの数</label>
-      <input id="aiCountInput" type="number" min="1" value="3" />
-      <small id="aiHintText"></small>
+    <!-- ★ AI数：スライダー -->
+    <div class="settings-row slider-row">
+      <label>AIの数：<span id="aiCountValue">3</span></label>
+      <input id="aiCountInput" type="range" min="1" max="6" value="3" step="1" />
     </div>
+    <small id="aiHintText" class="muted"></small>
 
-    <!-- 最終決定ボタン（ここで初めてSheetにAI数を書き込む） -->
-    <button id="btnFinalStart" type="button" class='room-buttons'>ゲーム開始</button>
-
-    <!-- 募集停止トグル（ホストのみ） -->
-    <button id="btnToggleRecruit" type="button" class='room-buttons'>募集を再開</button>
+    <!-- ボタン群を中央寄せ＆共通装飾 -->
+    <div class="room-buttons">
+      <button id="btnFinalStart" type="button">ゲーム開始</button>
+      <button id="btnToggleRecruit" type="button">募集を再開</button>
+    </div>
   </div>
 
   <div id="waitingMembersPanel">
     <h3>参加者</h3>
     <ul id="waitingMembers"></ul>
   </div>
+</div>
 
-  <!--button id="btnBackToMenu" type="button">戻る</button -->
+<!-- 断罪AIトップに戻る（中央寄せ＆共通装飾） -->
+<div class="room-buttons" style="margin-top:16px;">
+  <button id="btnBackToMenu" type="button">断罪AIのトップに戻る</button>
 </div>
 
 
 
-  <!-- button id="btnBackToMenu" class="tiny-back">メニューに戻る</button -->
-      <button id="btnBackToMenu" type="button" class='room-buttons'>断罪AIのトップに戻る</button>
-</section>
+
+      
 
 
     
