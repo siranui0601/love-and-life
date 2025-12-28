@@ -812,3 +812,63 @@ html { -webkit-text-size-adjust: 100%; }
   display: block;
   margin-top: 6px;
 }
+
+
+
+
+
+
+
+
+/* ===== スクロール復活（全体） ===== */
+body{
+  overflow: hidden; /* 背景演出は固定のまま */
+}
+
+/* メニュー画面は縦にスクロールできるように */
+#gameMenu{
+  overflow-y: auto;
+  max-height: 100dvh;
+}
+
+/* 断罪AIの画面（中身だけ縦スクロール） */
+#judgementAI{
+  max-height: 100dvh;
+  overflow-y: auto;
+  padding-bottom: 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* iOSのセーフエリア下 */
+#judgementAI{
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+/* ===== 断罪AI：カード一覧 ===== */
+.judge-cards{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 720px){
+  .judge-cards{
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* ★3→2 */
+    gap: 10px;
+  }
+}
+
+.judge-card{
+  background: rgba(0,0,0,.28);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.judge-card .answer{
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;     /* ★単語が長くても壊れない */
+  overflow-wrap: anywhere;    /* ★さらに強い保険 */
+}
+
