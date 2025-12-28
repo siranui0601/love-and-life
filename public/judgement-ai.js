@@ -1,5 +1,12 @@
 // public/judgement-ai.js
 
+
+let currentRoomId = null;
+let lastGameState = null;
+
+// 狩人の選択（JUDGE中のみ）
+let selectedSlots = new Set();
+
 function mustLogin() {
   return window.currentUser?.email && window.currentUser?.username;
 }
@@ -89,6 +96,35 @@ document.addEventListener("DOMContentLoaded", () => {
     gameState = st;
     renderGame(st);
   });
+
+  const judgementTopActions = document.querySelector(".judgement-actions");
+const waitingRoom = document.getElementById("waitingRoom");
+const gamePanel = document.getElementById("gamePanel");
+const backToMenuBtn = document.getElementById("btnBackToMenu");
+const judgementTitle = document.querySelector("#judgementAI .menu-title");
+
+socket.on("judgement:gameState", (gs) => {
+  lastGameState = gs;
+  currentRoomId = gs.roomId;
+
+  // 断罪AIトップの大見出しはゲーム中いらないなら消す
+  if (judgementTitle) judgementTitle.style.display = "none";
+
+  // トップメニューはゲーム中消す
+  if (judgementTopActions) judgementTopActions.style.display = "none";
+
+  // 待機部屋は消す
+  waitingRoom.style.display = "none";
+
+  // ゲームパネルを表示
+  gamePanel.style.display = "block";
+
+  // 戻るボタンはゲーム中のみ表示（位置はCSSで左上固定に）
+  backToMenuBtn.style.display = "block";
+
+  renderByPhase(gs);
+});
+
 
   socket.on("judgement:error", (e) => {
     const msg = e?.message ? String(e.message) : "Unknown error";
@@ -763,6 +799,91 @@ document.addEventListener("DOMContentLoaded", () => {
       alert(`募集再開に失敗: ${e.message}`);
     }
   });
+
+
+  const gameArea = document.getElementById("gameArea");
+const picksRequiredEl = document.getElementById("picksRequired");
+const btnConfirmJudgement = document.getElementById("btnConfirmJudgement");
+
+function renderJudgeCards(gs) {
+  const need = Number(gs.picksRequired || 0);
+  picksRequiredEl.textContent = String(need);
+
+  // 初回JUDGEに入ったときだけ選択を初期化
+  // （JUDGE中にgameStateが何度来ても、選択を保持したい）
+  if (!lastGameState || lastGameState.phase !== "JUDGE") {
+    selectedSlots = new Set();
+  }
+
+  gameArea.innerHTML = "";
+  gameArea.classList.add("judge-cards"); // CSSでgridにする
+
+  for (const c of (gs.cards || [])) {
+    const card = document.createElement("div");
+    card.className = "judge-card";
+    card.dataset.slotId = c.slotId;
+
+    const isSelected = selectedSlots.has(c.slotId);
+    if (isSelected) card.classList.add("selected");
+
+    card.innerHTML = `
+      <img src="${c.avatar}" alt="" style="width:100%;border-radius:10px;display:block;">
+      <div class="answer" style="margin-top:8px;white-space:pre-wrap;">${escapeHtml(c.answer || "")}</div>
+      <div style="opacity:.7;margin-top:6px;font-size:12px;">${escapeHtml(c.name || "???")}</div>
+    `;
+
+    card.addEventListener("click", () => {
+      // トグル
+      if (selectedSlots.has(c.slotId)) {
+        selectedSlots.delete(c.slotId);
+      } else {
+        // 必要数を超えないように（超えるなら追加拒否）
+        if (selectedSlots.size >= need) return;
+        selectedSlots.add(c.slotId);
+      }
+      // 再描画（軽いのでOK）
+      renderJudgeCards(gs);
+      updateConfirmButton(need);
+    });
+
+    gameArea.appendChild(card);
+  }
+
+  updateConfirmButton(need);
+}
+
+function updateConfirmButton(need) {
+  btnConfirmJudgement.disabled = !(selectedSlots.size === need);
+  btnConfirmJudgement.textContent =
+    selectedSlots.size === need
+      ? `断罪を確定（${need}/${need}）`
+      : `断罪を確定（${selectedSlots.size}/${need}）`;
+}
+
+  btnConfirmJudgement.addEventListener("click", () => {
+  if (!lastGameState || lastGameState.phase !== "JUDGE") return;
+  const need = Number(lastGameState.picksRequired || 0);
+  if (selectedSlots.size !== need) return;
+
+  socket.emit("judgement:judgePick", {
+    roomId: currentRoomId,
+    pickedSlotIds: Array.from(selectedSlots),
+  });
+
+  // 連打防止
+  btnConfirmJudgement.disabled = true;
+});
+
+
+  function escapeHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 
   // ---- 断罪AIトップに戻る
   btnBackToMenu?.addEventListener("click", () => {
