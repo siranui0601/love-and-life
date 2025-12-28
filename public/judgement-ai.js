@@ -68,7 +68,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ログイン後に window.currentUser が更新される設計なら、必要に応じて再送してもOK
-  // window.addEventListener("user:login", () => socket.emit("judgement:auth", { username: window.currentUser.username }));
+  window.addEventListener("user:login", () => {
+  if (window.currentUser?.username) {
+    socket.emit("judgement:auth", { username: window.currentUser.username });
+  }
+});
+
 
 
   socket.on("judgement:state", (state) => {
@@ -723,26 +728,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ---- ゲーム開始（最終：ここでAI数をSheetへ）
   btnFinalStart?.addEventListener("click", async () => {
-    try {
-      if (!mustLogin()) return alert("ログインが必要です");
-      if (!currentRoomId) return;
-      if (!isHost()) return alert("ホストのみ操作できます");
+  try {
+    if (!mustLogin()) return alert("ログインが必要です");
+    if (!currentRoomId) return;
+    if (!isHost()) return alert("ホストのみ操作できます");
 
-      const n = Number(aiCountInput?.value || 0);
-      if (!Number.isInteger(n) || n < 1) return alert("AIの数が不正です");
+    // ★ ここで必ず再送（重要）
+    socket.emit("judgement:auth", { username: window.currentUser.username });
 
-      // Socketでゲーム開始（E列へAI数、G列にgameJson初期化、即ラウンド開始）
-      socket.emit("judgement:gameStart", {
-        roomId: currentRoomId,
-        aiCount: n
-      });
-      alert("ゲーム開始命令を送信しました（Socket）");
+    const n = Number(aiCountInput?.value || 0);
+    if (!Number.isInteger(n) || n < 1) return alert("AIの数が不正です");
 
-    } catch (e) {
-      console.error(e);
-      alert(`開始に失敗: ${e.message}`);
-    }
-  });
+    socket.emit("judgement:gameStart", { roomId: currentRoomId, aiCount: n });
+  } catch (e) {
+    alert(`開始に失敗: ${e.message}`);
+  }
+});
+
 
   // ---- 募集再開（締切解除）
   btnToggleRecruit?.addEventListener("click", async () => {
