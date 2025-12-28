@@ -1,7 +1,7 @@
 // public/judgement-ai.js
 
 function mustLogin() {
-  return window.currentUser ? .email && window.currentUser ? .username;
+  return window.currentUser ?.email && window.currentUser ?.username;
 }
 
 async function postJSON(url, body) {
@@ -13,7 +13,7 @@ async function postJSON(url, body) {
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data ? .error || `HTTP ${res.status}`);
+  if (!res.ok) throw new Error(data ?.error || `HTTP ${res.status}`);
   return data;
 }
 
@@ -61,7 +61,7 @@ function normalizeStatusText(status) {
 document.addEventListener("DOMContentLoaded", () => {
   const socket = io(); // /socket.io/socket.io.js が読み込まれている前提
   // ---- Socket側に username を紐付け（ゲーム本編に必須）
-  if (window.currentUser ? .username) {
+  if (window.currentUser ?.username) {
     socket.emit("judgement:auth", {
       username: window.currentUser.username
     });
@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   socket.on("judgement:error", (e) => {
-    const msg = e ? .message ? String(e.message) : "Unknown error";
+    const msg = e ?.message ? String(e.message) : "Unknown error";
     console.error("[judgement:error]", msg);
     alert(`エラー: ${msg}`);
   });
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   const judgementAISection = document.getElementById("judgementAI");
-  const judgementActions = judgementAISection ? .querySelector(".judgement-actions");
+  const judgementActions = judgementAISection ?.querySelector(".judgement-actions");
 
   const btnRandom = document.getElementById("btnRandomMatch");
   const btnRoomMatch = document.getElementById("btnRoomMatch");
@@ -205,18 +205,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function me() {
-    return window.currentUser ? .username || "";
+    return window.currentUser ?.username || "";
   }
 
   function isHunter(st) {
-    return st ? .hunter && st.hunter === me();
+    return st ?.hunter && st.hunter === me();
   }
 
   function renderTopBar(st) {
     if (gameTopic) gameTopic.textContent = st.topic ? `【お題】${st.topic}` : "";
     if (gameMeta) {
-      const total = st.cards ? .length || 0;
-      const req = st.picksRequired ? ? "-";
+      const total = st.cards ?.length || 0;
+      const req = st.picksRequired ?? "-";
       gameMeta.textContent =
         `フェーズ: ${st.phase} / ラウンド: ${st.roundIndex} / 狩人: ${st.hunter} / 人数: ${total}（断罪必要数: ${req}）`;
     }
@@ -312,7 +312,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!show) return;
 
     // 文字数表示
-    const t = String(answerInput ? .value || "");
+    const t = String(answerInput ?.value || "");
     if (answerCharCount) answerCharCount.textContent = `${t.length}/120`;
   }
 
@@ -322,7 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
     judgePanel.style.display = show ? "block" : "none";
     if (!show) return;
 
-    if (picksRequiredEl) picksRequiredEl.textContent = String(st.picksRequired ? ? "");
+    if (picksRequiredEl) picksRequiredEl.textContent = String(st.picksRequired ?? "");
     const need = Number(st.picksRequired || 0);
 
     if (btnConfirmJudgement) {
@@ -379,18 +379,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  answerInput ? .addEventListener("input", () => {
+  answerInput ?.addEventListener("input", () => {
     const t = String(answerInput.value || "");
     if (answerCharCount) answerCharCount.textContent = `${t.length}/120`;
   });
 
-  btnSubmitAnswer ? .addEventListener("click", () => {
+  btnSubmitAnswer ?.addEventListener("click", () => {
     try {
       if (!mustLogin()) return alert("ログインが必要です");
       if (!currentRoomId) return;
       if (!gameState || gameState.phase !== "ANSWER") return alert("回答フェーズではありません");
 
-      const text = String(answerInput ? .value || "").trim();
+      const text = String(answerInput ?.value || "").trim();
       if (!text) return alert("回答が空です");
       if (text.length > 120) return alert("120文字以内にしてください");
 
@@ -403,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  btnConfirmJudgement ? .addEventListener("click", () => {
+  btnConfirmJudgement ?.addEventListener("click", () => {
     if (!mustLogin()) return alert("ログインが必要です");
     if (!currentRoomId) return;
     if (!gameState || gameState.phase !== "JUDGE") return alert("断罪フェーズではありません");
@@ -419,7 +419,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  btnReadyNext ? .addEventListener("click", () => {
+  btnReadyNext ?.addEventListener("click", () => {
     if (!mustLogin()) return alert("ログインが必要です");
     if (!currentRoomId) return;
     if (!gameState || gameState.phase !== "RESULT") return alert("結果表示中ではありません");
@@ -528,7 +528,7 @@ document.addEventListener("DOMContentLoaded", () => {
     currentMembers = Array.isArray(state.members) ? state.members : [];
 
     // ---- キック検知（kicked配列が無くても動く）
-    const me = window.currentUser ? .username;
+    const me = window.currentUser ?.username;
     const iWasIn = lastMembers.includes(me);
     const iAmIn = currentMembers.includes(me);
 
@@ -601,27 +601,27 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ---- UI events
-  btnRoomMatch ? .addEventListener("click", () => {
+  btnRoomMatch ?.addEventListener("click", () => {
     if (!mustLogin()) return alert("ログインが必要です");
     roomMatchPanel.style.display = roomMatchPanel.style.display === "none" ? "block" : "none";
   });
 
-  btnCreate ? .addEventListener("click", () => {
+  btnCreate ?.addEventListener("click", () => {
     roomCreatePanel.style.display = "block";
     roomJoinPanel.style.display = "none";
   });
 
-  btnJoin ? .addEventListener("click", () => {
+  btnJoin ?.addEventListener("click", () => {
     roomJoinPanel.style.display = "block";
     roomCreatePanel.style.display = "none";
   });
 
-  btnCreateConfirm ? .addEventListener("click", async () => {
+  btnCreateConfirm ?.addEventListener("click", async () => {
     try {
       if (!mustLogin()) return alert("ログインが必要です");
 
       const hostName = window.currentUser.username;
-      const allowRandom = !!chkAllowRandom ? .checked;
+      const allowRandom = !!chkAllowRandom ?.checked;
 
       const data = await postJSON("/api/judgement/room/create", {
         allowRandom,
@@ -642,11 +642,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  btnJoinConfirm ? .addEventListener("click", async () => {
+  btnJoinConfirm ?.addEventListener("click", async () => {
     try {
       if (!mustLogin()) return alert("ログインが必要です");
 
-      const roomId = (roomIdInput ? .value || "").trim();
+      const roomId = (roomIdInput ?.value || "").trim();
       if (!/^\d{4}$/.test(roomId)) return alert("4桁の数字を入力してください");
 
       const username = window.currentUser.username;
@@ -667,7 +667,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  btnRandom ? .addEventListener("click", async () => {
+  btnRandom ?.addEventListener("click", async () => {
     try {
       if (!mustLogin()) return alert("ログインが必要です");
 
@@ -688,7 +688,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  btnRules ? .addEventListener("click", () => {
+  btnRules ?.addEventListener("click", () => {
     alert(
       `【断罪AI ルール概要】
 ・1人が断罪狩人、他がレジスタント
@@ -700,7 +700,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ---- 「このメンバーで遊ぶ！」（ホストのみ）
-  btnPlayWithMembers ? .addEventListener("click", async () => {
+  btnPlayWithMembers ?.addEventListener("click", async () => {
     try {
       if (!mustLogin()) return alert("ログインが必要です");
       if (!currentRoomId) return;
@@ -717,18 +717,18 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ---- スライダー値表示
-  aiCountInput ? .addEventListener("input", () => {
+  aiCountInput ?.addEventListener("input", () => {
     if (aiCountValue) aiCountValue.textContent = String(aiCountInput.value);
   });
 
   // ---- ゲーム開始（最終：ここでAI数をSheetへ）
-  btnFinalStart ? .addEventListener("click", async () => {
+  btnFinalStart ?.addEventListener("click", async () => {
     try {
       if (!mustLogin()) return alert("ログインが必要です");
       if (!currentRoomId) return;
       if (!isHost()) return alert("ホストのみ操作できます");
 
-      const n = Number(aiCountInput ? .value || 0);
+      const n = Number(aiCountInput ?.value || 0);
       if (!Number.isInteger(n) || n < 1) return alert("AIの数が不正です");
 
       // Socketでゲーム開始（E列へAI数、G列にgameJson初期化、即ラウンド開始）
@@ -745,7 +745,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ---- 募集再開（締切解除）
-  btnToggleRecruit ? .addEventListener("click", async () => {
+  btnToggleRecruit ?.addEventListener("click", async () => {
     try {
       if (!mustLogin()) return alert("ログインが必要です");
       if (!currentRoomId) return;
@@ -763,7 +763,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ---- 断罪AIトップに戻る
-  btnBackToMenu ? .addEventListener("click", () => {
+  btnBackToMenu ?.addEventListener("click", () => {
     showTop();
   });
 
