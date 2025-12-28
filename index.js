@@ -694,10 +694,6 @@ async function resolveJudgement(io, roomId, hunterName, pickedSlotIds) {
 
 
 
-function judgeSocketRoom(roomId) {
-  return `judgement:${String(roomId).trim()}`;
-}
-
 // 「今のルーム状態」を1発で作って返す
 async function buildJudgeState(roomId) {
   const sheets = await getSheetsClient();
@@ -2042,6 +2038,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
