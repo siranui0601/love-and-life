@@ -179,15 +179,16 @@ function removeName(listArr, username) {
   return (listArr || []).filter(x => x !== username);
 }
 
+// ★ F列まで → ★ G列まで
 async function getJudgeRows(sheets) {
-  // ★ F列まで読む
-  const range = `${JUDGE_SHEET_NAME}!A2:F`;
+  const range = `${JUDGE_SHEET_NAME}!A2:G`;
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
   });
-  return res.data.values || []; // 各行: [A,B,C,D,E,F]
+  return res.data.values || []; // 各行: [A,B,C,D,E,F,G]
 }
+
 
 function findJudgeRowIndex(rows, roomId) {
   const rid = String(roomId || "").trim();
@@ -261,6 +262,438 @@ function isInBattle(statusB) {
 // ================================
 // Socket.IO用：断罪AI状態取得＆ブロードキャスト
 // ================================
+// ================================
+// 断罪AI：ゲーム（G列に gameJson を保存）
+// ================================
+const TOPICS = [
+  "好きな季節について、その理由や情景も含めて教えて",
+  "最近よく食べているものと、それを選ぶ理由は？",
+  "何も予定がない一日をどう過ごすことが多い？",
+  "日常の中で小さな楽しみだと感じていることは？",
+  "気づくとやってしまう習慣や癖はある？",
+  "一日の中で好きな時間は？",
+  "早起き出来たら何をする？",
+  "最近「ちょっと嬉しかった」出来事は？",
+  "生活の中で地味に助かっているものは？",
+  "外出と在宅、それぞれの良さをどう感じている？",
+  "落ち着く瞬間はどんな時？",
+  "イライラした時、どう対処する？",
+  "不安を感じた時、考えがちになることは？",
+  "自分なりの「幸せ」の定義は？",
+  "苦手だと感じる人の特徴は？",
+  "自分の感情を抑えてしまう場面はある？",
+  "人から言われて印象に残っている言葉は？",
+  "気分転換に効果があると感じていることは？",
+  "座右の銘は？",
+  "何かを選ぶ時、重視している基準は？",
+  "買い物で迷った時、最後の決め手になるものは？",
+  "失敗した経験を教えて",
+  "もし一日だけ自由に使える時間が増えたら何をする？",
+  "もし過去の自分に一言伝えられるなら何を言う？",
+  "もし制限が一切なかったら挑戦したいことは？",
+  "もし世界の一つの仕組みを変えられるなら？",
+  "もし今の知識のまま別の人生を始めたらどうする？",
+  "もし失敗が記録されない世界だったら？",
+  "もし一つだけ才能を選べるとしたら？",
+  "もし誰にも評価されないとしたら何をする？",
+  "もし時間の流れを変えられるならどうしたい？",
+  "もし魔法が使えたらなにをする？",
+  "子どもの頃の記憶で印象に残っているものは？",
+  "初めての経験で覚えている感情は？",
+  "失敗から学んだことは？",
+  "恥ずかしいと感じた過去の出来事は？",
+  "忘れられない一日を挙げるなら？",
+  "昔と今で変わった考え方は？",
+  "嘘をつく時に気をつけていることは？",
+  "信頼を得るために必要だと思うことは？",
+  "自分がAIだと疑われたらどう説明する？",
+  "他人との差を感じる瞬間は？",
+];
+
+// いまはあなたが貼ってくれた画像を採用（増やすのはここに追加するだけ）
+const AVATAR_URLS = [
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh7Bps552TusX-PHewhpJCckYFrng7gqp8Oa-EwN29rkxYK6aNDEmBnHLg0X9VdEvfpWEdgHUMF4ilowhGE4qVoVhIjVXZzSGT1hWjepTd5Jb6oL0g0O8C0x4mXsWJFeSjmWq3tWHG_8rY/s800/native_american_indian.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEibShkfd-GiPO6BvtEgtnSb5x_5y8d390TwtJlAR6lwcUctbg_1uRkSCkpnC15tVyR5wNZVCKdzoKnoEw9-C54avMZtVhbYEGbBuj9b1YCqJYVxOcadifUMq15YpES5o9MWJPCsTAoS7hk/s800/pose_inoru_man_hisshi.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEieNtsT4AQJwI3Qo4IWgatDRUMJyEVv3jhKow-yAUzD7cWuKnYMec0uqi-W7PtIE7UQJWY1qY11XT2YKABsXLaRrSoSVdlrWQMHGjaIisGlaF8wNLkM10joFCtC70s-EGSkBXIkeL56RoQ/s800/dogeza_businessman.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg68FSEkRuBlFi_WgDu6U7R7mjDwPXcbPQ2yt0i8doApCnRRq8bTWZOy7BNHeCKd-VvoPnp-egH0iFFcpcmVf68XdRL-2n6zXRh8gwhm_AZrbNbCCT28NnjAL48JUBr4WgAsVv9j1DDuJuK/s800/megami.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhv6R7VMLpnU3jAPgcVWmwqBuJqxoK65Xj7cJxBko71E8IPNSH1j9h0fxXENXFNdg6jNjrCUBMZcRfdnPuxuLQMknVeIj36f-9WMYiwFI8LDtctyd1h0xlSa8HdrQC5zqrH-84ckKCmJNM/s800/musician_shikisya.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjv_UN__F3qC2YWFijUl2UWwpM1M9al7CXo6rpeMVyo6QiJKChp9gN1SEk-aJAQE4lXwP28NKZldlrH4EoP0LVbyxKonfvJAdR22URggDYr6jwHaWnNgqlAgdA6a6ramFvCxjE_5J1JTciE/s800/nigaoe_samurai_yasuke.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhy6xlfKWWn6NHtMPNU9DC10EYC9XKc7_OK0msapTZHIrmvqZLoq-z1PeXfNyXC1LHtcblqKCSmKYGRLrNHCyQAN4yWpkSJ3paF6LD_a880_fIHL7COo1mWHwmyqOZBikCnG14pBtU7Bt0m/s803/animal_kiboshi_iwa_hyrax.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhIFH9L78vesNF_2-67ZlN-sSlc3begQhBYQ9Hk8PZFyXpSG8rIgQhg-xbfDr4tojZJB8tHLRAQwCRpwWDI04dEEiY4t_5sxXRIRApdtIezWwi-54YPasIFVOLqAFvevmewmpx7Izmk2Xyv/s1600/medical_datsumou_happy.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjABhZ_X9wkB7m2djeKrUfJTUFIz9Quy7wk4o9eus7brZtRa4TQ3ONlqN6T9cQG2_NQtErNUivDkVCzgUv09cjd5uQ0SSFVZ4iuRi6lcLG7gYzh3sJtD4xzjx7sIUtZws98hlfJ_OUEIaE/s800/animal_okapi.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgPsjvxx688g3kNhZ4I3Heb6PKrkOgraJimkbwNOXMFmWirvtfkl1Oz5_CFViIFnkTefzQaOoEMuw8WPKCm4hZK2X0PsYVBFXWH5i84s-wYfI8SubvZ1V3fCo4HXpgWpASf_yTZrkLmNL4/s1600/osyousan.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEifnaalpQrY1Hm5zrDAgnqSpPGZDAeXXlGDWXsoKtIKIBAWU8I08EYr3lw4zKZb4K8YWh0inUiBEdiwuu83Hu8PLc5FzJTdVni6lN_noyHRHANiGekkKWfoUwNDrq3mPZksWa8kZmh9mCTj/s676/pet_robot_dog.png",
+];
+
+function nowMs() { return Date.now(); }
+function pickOne(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(a) {
+  const arr = a.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function safeJsonParse(s, fallback = null) {
+  try {
+    const t = String(s ?? "").trim();
+    if (!t) return fallback;
+    return JSON.parse(t);
+  } catch {
+    return fallback;
+  }
+}
+function clampText120(s) {
+  const t = String(s ?? "");
+  return t.length > 120 ? t.slice(0, 120) : t;
+}
+
+function judgeSocketRoom(roomId) {
+  return `judgement:${String(roomId).trim()}`;
+}
+
+// ---- in-memory cache + debounce flush（読み過多防止）
+const gameCache = new Map(); // roomId -> { state, flushTimer, phaseTimers:{answer,result} }
+function scheduleFlushGameToSheet(roomId) {
+  const ent = gameCache.get(roomId);
+  if (!ent?.state) return;
+  if (ent.flushTimer) return;
+  ent.flushTimer = setTimeout(async () => {
+    ent.flushTimer = null;
+    try {
+      const sheets = await getSheetsClient();
+      const rows = await getJudgeRows(sheets);
+      const idx = findJudgeRowIndex(rows, roomId);
+      if (idx < 0) return;
+
+      const rowNumber = sheetRowNumberFromIndex(idx);
+      await updateJudgeCells(sheets, rowNumber, [
+        { col: "G", value: JSON.stringify(ent.state) }, // ★ gameJson
+      ]);
+    } catch (e) {
+      console.error("[game] flush error:", e);
+    }
+  }, 250); // 0.25sでまとめて書く
+}
+
+async function loadGameState(roomId) {
+  const cached = gameCache.get(roomId)?.state;
+  if (cached) return cached;
+
+  const sheets = await getSheetsClient();
+  const rows = await getJudgeRows(sheets);
+  const idx = findJudgeRowIndex(rows, roomId);
+  if (idx < 0) return null;
+
+  const row = rows[idx];
+  const gameJson = row[6]; // G列
+  const st = safeJsonParse(gameJson, null);
+  if (!st) return null;
+
+  gameCache.set(roomId, { state: st, flushTimer: null, phaseTimers: {} });
+  return st;
+}
+
+function setGameState(roomId, newState) {
+  const ent = gameCache.get(roomId) || { state: null, flushTimer: null, phaseTimers: {} };
+  ent.state = newState;
+  gameCache.set(roomId, ent);
+  scheduleFlushGameToSheet(roomId);
+}
+
+// ---- 公開用state（断罪前に「誰がどのカードか」を隠す）
+function publicGameView(state) {
+  if (!state) return null;
+
+  const phase = state.phase;
+  const reveal = phase === "RESULT" || phase === "GAME_OVER";
+
+  const cards = (state.round?.cards || []).map(c => ({
+    slotId: c.slotId,
+    avatar: c.avatar,
+    answer: c.answer || "",
+    // RESULT以降だけ名前を出す（AIはAI固定）
+    name: reveal ? (c.kind === "ai" ? "AI" : c.owner) : "???",
+    kind: reveal ? c.kind : "???",
+    pickedByHunter: reveal ? !!c.pickedByHunter : false,
+  }));
+
+  return {
+    roomId: state.roomId,
+    phase: state.phase,
+    roundIndex: state.roundIndex,
+    hunter: reveal ? state.round?.hunter : (state.round?.hunter || null), // 狩人名は最初から出してOK（あなたの仕様）
+    topic: state.round?.topic || "",
+    answerDeadlineAt: state.round?.answerDeadlineAt || null,
+    resultDeadlineAt: state.round?.resultDeadlineAt || null,
+    picksRequired: state.round?.picksRequired ?? null,
+    // ランキングはGAME_OVERだけ
+    ranking: state.phase === "GAME_OVER" ? (state.ranking || []) : null,
+    stats: state.stats || null,
+    cards,
+    // 演出用
+    intro: state.intro || null,
+  };
+}
+
+async function broadcastGame(io, roomId) {
+  const ent = gameCache.get(roomId);
+  if (!ent?.state) return;
+  io.to(judgeSocketRoom(roomId)).emit("judgement:gameState", publicGameView(ent.state));
+}
+
+// ---- AI一括生成（配列だけ返させる）
+async function generateAIAnswers(topic, aiCount) {
+  const prompt = `
+${topic} に関して、感情や価値判断を含む「人間らしい意見」を ${aiCount} 件生成してください。
+各意見は120文字以内、日本語、装飾なし。
+説明文は出力せず、以下形式の配列のみを返してください。
+["回答1","回答2"]
+`.trim();
+
+  const text = stripJsonFence(await genWithFallback(prompt));
+  const arr = safeJsonParse(text, []);
+  const out = Array.isArray(arr) ? arr.map(s => clampText120(String(s))).filter(Boolean) : [];
+  while (out.length < aiCount) out.push("……（沈黙）");
+  return out.slice(0, aiCount);
+}
+
+// ---- ラウンド開始
+async function startNextRound(io, roomId) {
+  const state = await loadGameState(roomId);
+  if (!state) throw new Error("game_not_initialized");
+
+  // 全員が狩人を1回やったら終了
+  if (!state.remainingHunters || state.remainingHunters.length === 0) {
+    // GAME_OVER
+    const points = state.stats?.points || {};
+    const fp = state.stats?.aiFalsePositives || {};
+    const members = state.members || [];
+
+    const ranking = members.map(u => ({
+      name: u,
+      points: Number(points[u] || 0),
+      aiFalsePositives: Number(fp[u] || 0),
+    }))
+    .sort((a,b) => (b.points - a.points) || (a.aiFalsePositives - b.aiFalsePositives));
+
+    state.phase = "GAME_OVER";
+    state.ranking = ranking;
+    setGameState(roomId, state);
+    await broadcastGame(io, roomId);
+    return;
+  }
+
+  const hunter = pickOne(state.remainingHunters);
+  state.remainingHunters = state.remainingHunters.filter(x => x !== hunter);
+
+  const topic = pickOne(TOPICS);
+
+  const members = state.members || [];
+  const resistants = members.filter(x => x !== hunter);
+
+  const aiCount = Number(state.aiCount || 1);
+  const totalCards = resistants.length + aiCount;
+  if (AVATAR_URLS.length < totalCards) {
+    throw new Error(`not_enough_avatars: need ${totalCards}, have ${AVATAR_URLS.length}`);
+  }
+
+  const avatars = shuffle(AVATAR_URLS).slice(0, totalCards);
+  const cards = [];
+
+  // 人間（レジスタント）カード
+  resistants.forEach((u, i) => {
+    cards.push({
+      slotId: `H:${u}`,
+      kind: "human",
+      owner: u,
+      avatar: avatars[i],
+      answer: "",
+      pickedByHunter: false,
+    });
+  });
+
+  // AIカード
+  for (let i = 0; i < aiCount; i++) {
+    cards.push({
+      slotId: `A:${i}`,
+      kind: "ai",
+      owner: "AI",
+      avatar: avatars[resistants.length + i],
+      answer: "",
+      pickedByHunter: false,
+    });
+  }
+
+  // シャッフルして配置（見た目順）
+  state.roundIndex = (state.roundIndex || 0) + 1;
+  state.phase = "ANSWER";
+  state.round = {
+    hunter,
+    topic,
+    cards: shuffle(cards),
+    picksRequired: resistants.length,
+    answerDeadlineAt: nowMs() + 60_000,
+    resultDeadlineAt: null,
+    ready: {}, // RESULTで使う
+  };
+
+  setGameState(roomId, state);
+  await broadcastGame(io, roomId);
+
+  // AI生成（非同期）→ でき次第カードに埋める
+  generateAIAnswers(topic, aiCount)
+    .then(list => {
+      const st = gameCache.get(roomId)?.state;
+      if (!st || st.phase !== "ANSWER") return;
+
+      let k = 0;
+      st.round.cards.forEach(c => {
+        if (c.kind === "ai") {
+          c.answer = clampText120(list[k] || "……");
+          k++;
+        }
+      });
+      setGameState(roomId, st);
+      broadcastGame(io, roomId).catch(console.error);
+    })
+    .catch(e => console.error("[AI answers] error:", e));
+
+  // 60秒締切
+  const ent = gameCache.get(roomId);
+  if (ent.phaseTimers?.answer) clearTimeout(ent.phaseTimers.answer);
+  ent.phaseTimers.answer = setTimeout(async () => {
+    try {
+      const st = gameCache.get(roomId)?.state;
+      if (!st || st.phase !== "ANSWER") return;
+
+      st.phase = "JUDGE";
+      // JUDGEに入ったら、カードの回答は確定（そのまま）
+      setGameState(roomId, st);
+      await broadcastGame(io, roomId);
+    } catch (e) {
+      console.error("[ANSWER->JUDGE] timer error:", e);
+    }
+  }, 60_000 + 50);
+}
+
+// ---- 初期化（ホストが開始）
+async function initGame(io, roomId, aiCount) {
+  const sheets = await getSheetsClient();
+  const rows = await getJudgeRows(sheets);
+  const idx = findJudgeRowIndex(rows, roomId);
+  if (idx < 0) throw new Error("room_not_found");
+
+  const row = rows[idx];
+  const host = String(row[2] || "");
+  const members = parseSlashList(row[3]);
+
+  const st = {
+    roomId,
+    phase: "INTRO",
+    aiCount: Number(aiCount || 1),
+    members,
+    remainingHunters: shuffle(members), // 全員1回やる（ランダム順の母集団としてもOK）
+    roundIndex: 0,
+    round: null,
+    stats: {
+      points: Object.fromEntries(members.map(u => [u, 0])),
+      aiFalsePositives: Object.fromEntries(members.map(u => [u, 0])),
+    },
+    intro: {
+      title: "断罪AI",
+      text: "AIが勝利した世界。あなたたちは“AIっぽい”言葉で生き延びるレジスタント。狩人は混ざった人間を見抜け。",
+    },
+    ranking: null,
+  };
+
+  // ★ E列へAI数 / ★ B列を対戦中へ / ★ G列へgameJson初期化
+  const rowNumber = sheetRowNumberFromIndex(idx);
+  await updateJudgeCells(sheets, rowNumber, [
+    { col: "E", value: String(st.aiCount) },
+    { col: "B", value: "対戦中" },
+    { col: "G", value: JSON.stringify(st) },
+  ]);
+
+  gameCache.set(roomId, { state: st, flushTimer: null, phaseTimers: {} });
+  await broadcastGame(io, roomId);
+
+  // INTROは「表示だけ」なので、すぐ次のラウンドへ進めてもいいし、
+  // クライアント側で「世界観OK」ボタン→ startNextRound を叩くでもOK。
+  // ここでは自動でラウンド開始にします。
+  await startNextRound(io, roomId);
+}
+
+// ---- 狩人の断罪確定 → RESULTへ
+async function resolveJudgement(io, roomId, hunterName, pickedSlotIds) {
+  const st = gameCache.get(roomId)?.state || await loadGameState(roomId);
+  if (!st) throw new Error("game_not_found");
+  if (st.phase !== "JUDGE") throw new Error("invalid_phase");
+
+  const round = st.round;
+  if (!round) throw new Error("round_missing");
+  if (round.hunter !== hunterName) throw new Error("only_hunter");
+
+  const need = Number(round.picksRequired || 0);
+  const picked = Array.isArray(pickedSlotIds) ? pickedSlotIds : [];
+  const unique = Array.from(new Set(picked.map(String)));
+
+  if (unique.length !== need) throw new Error(`pick_count_must_be_${need}`);
+
+  // マーク
+  round.cards.forEach(c => { c.pickedByHunter = unique.includes(c.slotId); });
+
+  // 採点
+  let correctHuman = 0;
+  let aiFalse = 0;
+
+  round.cards.forEach(c => {
+    if (!c.pickedByHunter) return;
+    if (c.kind === "human") correctHuman++;
+    if (c.kind === "ai") aiFalse++;
+  });
+
+  // 狩人得点
+  st.stats.points[hunterName] = Number(st.stats.points[hunterName] || 0) + correctHuman;
+  // 狩人のAI誤断罪
+  st.stats.aiFalsePositives[hunterName] = Number(st.stats.aiFalsePositives[hunterName] || 0) + aiFalse;
+
+  // レジスタント：見抜かれなかったら+1
+  round.cards.forEach(c => {
+    if (c.kind !== "human") return;
+    const u = c.owner;
+    const survived = !c.pickedByHunter;
+    if (survived) {
+      st.stats.points[u] = Number(st.stats.points[u] || 0) + 1;
+    }
+  });
+
+  // RESULTへ
+  st.phase = "RESULT";
+  st.round.resultDeadlineAt = nowMs() + 30_000;
+  st.round.ready = Object.fromEntries((st.members || []).map(u => [u, false]));
+
+  setGameState(roomId, st);
+  await broadcastGame(io, roomId);
+
+  // 30秒タイムアウトで次へ
+  const ent = gameCache.get(roomId);
+  if (ent.phaseTimers?.result) clearTimeout(ent.phaseTimers.result);
+  ent.phaseTimers.result = setTimeout(async () => {
+    try {
+      const cur = gameCache.get(roomId)?.state;
+      if (!cur || cur.phase !== "RESULT") return;
+      await startNextRound(io, roomId);
+    } catch (e) {
+      console.error("[RESULT timeout] error:", e);
+    }
+  }, 30_000 + 50);
+}
+
+
+
+
 function judgeSocketRoom(roomId) {
   return `judgement:${String(roomId).trim()}`;
 }
@@ -352,20 +785,18 @@ app.post("/api/judgement/room/create", async (req, res) => {
     const aiCount = "";             // 最終開始時に反映
     const kicked = "";              // ★ F列
 
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${JUDGE_SHEET_NAME}!A2:F2`,
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[roomId, statusB, hostName, initialMembers, aiCount, kicked]],
-      },
-    });
+    const gameJson = ""; // ★ G列
 
-    return res.json({ roomId });
-  } catch (e) {
-    console.error("room/create error:", e);
-    return res.status(500).json({ error: "server_error" });
-  }
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${JUDGE_SHEET_NAME}!A2:G2`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[roomId, statusB, hostName, initialMembers, aiCount, kicked, gameJson]],
+    },
+  });
+
+  return res.json({ roomId });
 });
 
 // --------------------
@@ -1379,20 +1810,32 @@ ${style}
 io.on("connection", (socket) => {
   console.log("✅ client connected:", socket.id);
 
-  // ===== 断罪AI：待機部屋監視開始 =====
+  // ---- クライアントが自分のusernameを紐付ける（必須）
+  socket.on("judgement:auth", ({ username } = {}) => {
+    socket.data.username = String(username || "").trim();
+  });
+
+  // ---- 待機ルーム監視（あなたの既存 watch をこちらへ寄せる）
   socket.on("judgement:watch", async ({ roomId } = {}) => {
     const rid = String(roomId || "").trim();
     if (!rid) return;
 
-    // join する room 名は broadcast と同じにする
     socket.join(judgeSocketRoom(rid));
 
-    // 初回表示用に 1回だけ state を返す
+    // 待機状態（members等）を1回だけpush（あなたの broadcastJudgeState を使うならそれでもOK）
     try {
-      const state = await buildJudgeState(rid);
-      if (state) socket.emit("judgement:state", state);
+      const st = await buildJudgeState(rid);
+      if (st) socket.emit("judgement:state", st);
     } catch (e) {
-      console.error("[judgement:watch] initial state error:", e);
+      console.error("[judgement:watch] buildJudgeState error:", e);
+    }
+
+    // ゲームが既に始まっているなら gameState もpush
+    try {
+      const g = await loadGameState(rid);
+      if (g) socket.emit("judgement:gameState", publicGameView(g));
+    } catch (e) {
+      console.error("[judgement:watch] loadGameState error:", e);
     }
   });
 
@@ -1400,6 +1843,103 @@ io.on("connection", (socket) => {
     const rid = String(roomId || "").trim();
     if (!rid) return;
     socket.leave(judgeSocketRoom(rid));
+  });
+
+  // ---- ホスト：ゲーム開始（E列へAI数→G列初期化→ラウンド開始）
+  socket.on("judgement:gameStart", async ({ roomId, aiCount } = {}) => {
+    try {
+      const rid = String(roomId || "").trim();
+      const me = String(socket.data.username || "").trim();
+      if (!rid) throw new Error("roomId_required");
+      if (!me) throw new Error("not_authed");
+
+      // host判定（シートから確認）
+      const sheets = await getSheetsClient();
+      const rows = await getJudgeRows(sheets);
+      const idx = findJudgeRowIndex(rows, rid);
+      if (idx < 0) throw new Error("room_not_found");
+      const host = String(rows[idx]?.[2] || "");
+      if (host !== me) throw new Error("only_host");
+
+      await initGame(io, rid, Number(aiCount || 1));
+    } catch (e) {
+      console.error("[judgement:gameStart] error:", e);
+      socket.emit("judgement:error", { message: String(e.message || e) });
+    }
+  });
+
+  // ---- レジスタント：回答提出（上書き可、120字、ANSWERフェーズのみ）
+  socket.on("judgement:submitAnswer", async ({ roomId, text } = {}) => {
+    try {
+      const rid = String(roomId || "").trim();
+      const me = String(socket.data.username || "").trim();
+      if (!rid) throw new Error("roomId_required");
+      if (!me) throw new Error("not_authed");
+
+      const st = gameCache.get(rid)?.state || await loadGameState(rid);
+      if (!st) throw new Error("game_not_found");
+      if (st.phase !== "ANSWER") throw new Error("invalid_phase");
+
+      if (st.round?.hunter === me) throw new Error("hunter_cannot_answer");
+      if (nowMs() > Number(st.round?.answerDeadlineAt || 0)) throw new Error("deadline_passed");
+
+      const t = clampText120(String(text || "").replace(/\r/g, ""));
+      // 空も許容するならここを緩める。今回は「1人1件」なので空は弾く。
+      if (!t.trim()) throw new Error("empty_answer");
+
+      // 自分のカードへ書く（H:username）
+      const slotId = `H:${me}`;
+      const card = (st.round?.cards || []).find(c => c.slotId === slotId);
+      if (!card) throw new Error("not_resistant");
+
+      card.answer = t;
+
+      setGameState(rid, st);
+      await broadcastGame(io, rid);
+    } catch (e) {
+      socket.emit("judgement:error", { message: String(e.message || e) });
+    }
+  });
+
+  // ---- 狩人：断罪確定（JUDGEフェーズ）
+  socket.on("judgement:judgePick", async ({ roomId, pickedSlotIds } = {}) => {
+    try {
+      const rid = String(roomId || "").trim();
+      const me = String(socket.data.username || "").trim();
+      if (!rid) throw new Error("roomId_required");
+      if (!me) throw new Error("not_authed");
+      await resolveJudgement(io, rid, me, pickedSlotIds);
+    } catch (e) {
+      socket.emit("judgement:error", { message: String(e.message || e) });
+    }
+  });
+
+  // ---- RESULT：次へ準備完了（全員 or 30s）
+  socket.on("judgement:resultReady", async ({ roomId } = {}) => {
+    try {
+      const rid = String(roomId || "").trim();
+      const me = String(socket.data.username || "").trim();
+      if (!rid) throw new Error("roomId_required");
+      if (!me) throw new Error("not_authed");
+
+      const st = gameCache.get(rid)?.state || await loadGameState(rid);
+      if (!st) throw new Error("game_not_found");
+      if (st.phase !== "RESULT") throw new Error("invalid_phase");
+
+      if (st.round?.ready && typeof st.round.ready === "object") {
+        st.round.ready[me] = true;
+      }
+
+      setGameState(rid, st);
+      await broadcastGame(io, rid);
+
+      const allReady = Object.values(st.round.ready || {}).every(v => v === true);
+      if (allReady) {
+        await startNextRound(io, rid);
+      }
+    } catch (e) {
+      socket.emit("judgement:error", { message: String(e.message || e) });
+    }
   });
 
 
@@ -1502,6 +2042,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
