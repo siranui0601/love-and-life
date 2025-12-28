@@ -872,3 +872,20 @@ body{
   overflow-wrap: anywhere;    /* ★さらに強い保険 */
 }
 
+
+
+
+
+/* 断罪AIトップへ戻る：左上固定（ゲーム中のみ表示はJSで制御） */
+#btnBackToMenu{
+  position: fixed;
+  left: 14px;
+  top: 14px;
+  z-index: 80;
+  border-radius: 999px;
+  padding: .6rem 1rem;
+  background: rgba(0,0,0,.45);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.18);
+  backdrop-filter: blur(6px);
+}
