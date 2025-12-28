@@ -137,6 +137,38 @@
 
 
 
+
+
+      <section id="gamePanel" style="display:none; margin-top:16px;">
+  <div id="gameTopBar" style="padding:8px; border:1px solid #444; border-radius:8px;">
+    <div><b id="gameTopic"></b></div>
+    <div id="gameMeta" style="opacity:0.8; margin-top:4px;"></div>
+    <div id="gameTimer" style="opacity:0.8; margin-top:4px;"></div>
+  </div>
+
+  <div id="gameArea" style="margin-top:12px;"></div>
+
+  <div id="answerPanel" style="display:none; margin-top:12px;">
+    <textarea id="answerInput" rows="4" style="width:100%;" maxlength="120"></textarea>
+    <div style="margin-top:8px;">
+      <button id="btnSubmitAnswer" type="button">回答を送信（上書き可）</button>
+      <span id="answerCharCount" style="margin-left:8px; opacity:0.8;"></span>
+    </div>
+  </div>
+
+  <div id="judgePanel" style="display:none; margin-top:12px;">
+    <div style="margin-bottom:8px;">断罪するカードを選択（必要数：<span id="picksRequired"></span>）</div>
+    <button id="btnConfirmJudgement" type="button">断罪を確定</button>
+  </div>
+
+  <div id="resultPanel" style="display:none; margin-top:12px;">
+    <button id="btnReadyNext" type="button">次のラウンドへ（準備OK）</button>
+    <div id="resultCountdown" style="margin-top:8px; opacity:0.8;"></div>
+  </div>
+</section>
+
+
+
       
 
 
