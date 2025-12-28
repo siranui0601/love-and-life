@@ -408,9 +408,12 @@ function publicGameView(state) {
 
   const phase = state.phase;
   const revealIdentity = (phase === "RESULT" || phase === "GAME_OVER");
-  const hideAnswers = (phase === "ANSWER" || phase === "BRIEF" || phase === "INTRO");
+  const hideAnswers = (phase === "ANSWER" || phase === "BRIEF" || phase === "INTRO" || phase === "ROLE");
 
-  const cards = (state.round?.cards || []).map(c => ({
+  // ★ INTRO/ROLEは表示物を最小に（世界観/職業フェーズ専用）
+  const hideTopicAndCards = (phase === "INTRO" || phase === "ROLE");
+
+  const cards = hideTopicAndCards ? [] : (state.round?.cards || []).map(c => ({
     slotId: c.slotId,
     avatar: c.avatar,
     answer: hideAnswers ? "???" : (c.answer || ""),
@@ -419,13 +422,13 @@ function publicGameView(state) {
     pickedByHunter: revealIdentity ? !!c.pickedByHunter : false,
   }));
 
-    return {
+  return {
     roomId: state.roomId,
     phase: state.phase,
     roundIndex: state.roundIndex,
     hunter: state.round?.hunter || null,
-    topic: state.round?.topic || "",
-    roleText: state.round?.roleText || null,   // ★追加
+    topic: hideTopicAndCards ? "" : (state.round?.topic || ""),
+
     answerDeadlineAt: state.round?.answerDeadlineAt || null,
     resultDeadlineAt: state.round?.resultDeadlineAt || null,
     picksRequired: state.round?.picksRequired ?? null,
@@ -433,9 +436,14 @@ function publicGameView(state) {
     stats: state.stats || null,
     cards,
     intro: state.intro || null,
-  };
 
+    // ★ 追加：OK状況
+    introReady: state.introReady || null,
+    roleReady: state.round?.roleReady || null,
+    briefReady: state.round?.briefReady || null,
+  };
 }
+
 
 
 async function broadcastGame(io, roomId) {
@@ -495,13 +503,14 @@ async function startNextRound(io, roomId) {
   const resistants = members.filter(x => x !== hunter);
 
   const aiCount = Number(state.aiCount || 1);
-  const totalCards = resistants.length + aiCount;
-  if (AVATAR_URLS.length < totalCards) {
-    throw new Error(`not_enough_avatars: need ${totalCards}, have ${AVATAR_URLS.length}`);
-  }
+    const totalCards = resistants.length + aiCount;
 
-  const avatars = shuffle(AVATAR_URLS).slice(0, totalCards);
+  // ★ アバター不足でも落とさない（不足分は循環して使う）
+  const baseAvatars = shuffle(AVATAR_URLS);
+  const avatars = Array.from({ length: totalCards }, (_, i) => baseAvatars[i % baseAvatars.length]);
+
   const cards = [];
+
 
   // 人間（レジスタント）カード
   resistants.forEach((u, i) => {
@@ -528,30 +537,24 @@ async function startNextRound(io, roomId) {
   }
 
     // ★ ラウンド作成：まずROLE（世界観の次に、あなたの職業を見せる）
-  state.roundIndex = (state.roundIndex || 0) + 1;
+    state.roundIndex = (state.roundIndex || 0) + 1;
+
+  // ★ ROLEフェーズを追加（この後にBRIEFへ）
   state.phase = "ROLE";
   state.round = {
     hunter,
     topic,
     cards: shuffle(cards),
     picksRequired: resistants.length,
-
-    // ★ ここではまだタイマーを開始しない
     answerDeadlineAt: null,
     resultDeadlineAt: null,
-
     ready: {},
 
-    // ★ 追加：ROLE/BRIEFで全員のOKを取る
+    // ★ 追加：INTRO/ROLE/BRIEF のOK管理
     roleReady: Object.fromEntries((members || []).map(u => [u, false])),
     briefReady: Object.fromEntries((members || []).map(u => [u, false])),
-
-    // ★ 追加：ROLEの表示文（狩人/レジスタントで文言を変えるのはクライアント側判定でOK）
-    roleText: {
-      hunter: "あなたは『断罪狩人』。このラウンドで、AIに紛れたレジスタントを見抜け。",
-      resistant: "あなたは『レジスタント』。AIっぽい回答をして、断罪を回避しろ。",
-    },
   };
+
 
 
   setGameState(roomId, state);
@@ -617,8 +620,14 @@ async function initGame(io, roomId, aiCount) {
     { col: "G", value: JSON.stringify(st) },
   ]);
 
-    gameCache.set(roomId, { state: st, flushTimer: null, phaseTimers: {} });
+      // ★ INTROのOK待ち用（全員OKでROLEへ進める）
+  st.introReady = Object.fromEntries((members || []).map(u => [u, false]));
+
+  gameCache.set(roomId, { state: st, flushTimer: null, phaseTimers: {} });
   await broadcastGame(io, roomId);
+
+  // ★ ここでは進めない（INTROフェーズを表示する）
+
 }
 
 
@@ -1955,12 +1964,57 @@ socket.on("judgement:introOk", async ({ roomId } = {}) => {
     if (!st) throw new Error("game_not_found");
     if (st.phase !== "INTRO") throw new Error("invalid_phase");
 
-    // ホストだけ進める運用にしたいならここで host判定してもOK
-    await startNextRound(io, rid); // ★ここで初ラウンド（BRIEF）へ
+    if (!st.introReady || typeof st.introReady !== "object") {
+      st.introReady = Object.fromEntries((st.members || []).map(u => [u, false]));
+    }
+    st.introReady[me] = true;
+
+    setGameState(rid, st);
+    await broadcastGame(io, rid);
+
+    const allReady = Object.values(st.introReady || {}).every(v => v === true);
+    if (!allReady) return;
+
+    // ★ 全員OKで次ラウンド作成 → ROLEへ
+    await startNextRound(io, rid);
   } catch (e) {
     socket.emit("judgement:error", { message: String(e.message || e) });
   }
 });
+
+
+socket.on("judgement:roleOk", async ({ roomId } = {}) => {
+  try {
+    const rid = String(roomId || "").trim();
+    const me = String(socket.data.username || "").trim();
+    if (!rid) throw new Error("roomId_required");
+    if (!me) throw new Error("not_authed");
+
+    const st = gameCache.get(rid)?.state || await loadGameState(rid);
+    if (!st) throw new Error("game_not_found");
+    if (st.phase !== "ROLE") throw new Error("invalid_phase");
+    if (!st.round) throw new Error("round_missing");
+
+    if (!st.round.roleReady || typeof st.round.roleReady !== "object") {
+      st.round.roleReady = Object.fromEntries((st.members || []).map(u => [u, false]));
+    }
+    st.round.roleReady[me] = true;
+
+    setGameState(rid, st);
+    await broadcastGame(io, rid);
+
+    const allReady = Object.values(st.round.roleReady || {}).every(v => v === true);
+    if (!allReady) return;
+
+    // ★ 全員OKでBRIEFへ
+    st.phase = "BRIEF";
+    setGameState(rid, st);
+    await broadcastGame(io, rid);
+  } catch (e) {
+    socket.emit("judgement:error", { message: String(e.message || e) });
+  }
+});
+
 
 
   // ---- レジスタント：回答提出（上書き可、120字、ANSWERフェーズのみ）
@@ -2137,6 +2191,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
