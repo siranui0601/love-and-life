@@ -772,7 +772,7 @@ app.post("/api/judgement/room/create", async (req, res) => {
   const err = validateUsername(hostName);
   if (err) return res.status(400).json({ error: err });
 
-  try {
+  //try {
     const sheets = await getSheetsClient();
     const roomId = await generateUniqueRoomId(sheets);
 
@@ -2038,6 +2038,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
