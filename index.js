@@ -466,7 +466,6 @@ async function startNextRound(io, roomId) {
 
   // 全員が狩人を1回やったら終了
   if (!state.remainingHunters || state.remainingHunters.length === 0) {
-    // GAME_OVER
     const points = state.stats?.points || {};
     const fp = state.stats?.aiFalsePositives || {};
     const members = state.members || [];
@@ -526,27 +525,30 @@ async function startNextRound(io, roomId) {
     });
   }
 
-  // シャッフルして配置（見た目順）
+  // ★ ラウンド作成：ここではBRIEF開始（タイマーはまだ開始しない）
   state.roundIndex = (state.roundIndex || 0) + 1;
-  state.phase = "ANSWER";
+  state.phase = "BRIEF";
   state.round = {
     hunter,
     topic,
     cards: shuffle(cards),
     picksRequired: resistants.length,
-    answerDeadlineAt: nowMs() + 60_000,
+    answerDeadlineAt: null,   // ★ BRIEF中はnull
     resultDeadlineAt: null,
-    ready: {}, // RESULTで使う
+    ready: {},                // RESULTで使う
+    briefReady: Object.fromEntries((members || []).map(u => [u, false])), // ★追加
   };
 
   setGameState(roomId, state);
   await broadcastGame(io, roomId);
 
-  // AI生成（非同期）→ でき次第カードに埋める
+  // ★ AI生成（非同期）→ でき次第カードに埋める（BRIEF中でもOK）
   generateAIAnswers(topic, aiCount)
     .then(list => {
       const st = gameCache.get(roomId)?.state;
-      if (!st || st.phase !== "ANSWER") return;
+      // BRIEF/ANSWER のどちらでも反映してよい
+      if (!st || !st.round) return;
+      if (!(st.phase === "BRIEF" || st.phase === "ANSWER")) return;
 
       let k = 0;
       st.round.cards.forEach(c => {
@@ -559,24 +561,8 @@ async function startNextRound(io, roomId) {
       broadcastGame(io, roomId).catch(console.error);
     })
     .catch(e => console.error("[AI answers] error:", e));
-
-  // 60秒締切
-  const ent = gameCache.get(roomId);
-  if (ent.phaseTimers?.answer) clearTimeout(ent.phaseTimers.answer);
-  ent.phaseTimers.answer = setTimeout(async () => {
-    try {
-      const st = gameCache.get(roomId)?.state;
-      if (!st || st.phase !== "ANSWER") return;
-
-      st.phase = "JUDGE";
-      // JUDGEに入ったら、カードの回答は確定（そのまま）
-      setGameState(roomId, st);
-      await broadcastGame(io, roomId);
-    } catch (e) {
-      console.error("[ANSWER->JUDGE] timer error:", e);
-    }
-  }, 60_000 + 50);
 }
+
 
 // ---- 初期化（ホストが開始）
 async function initGame(io, roomId, aiCount) {
@@ -2109,6 +2095,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
