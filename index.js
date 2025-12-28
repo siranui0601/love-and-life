@@ -419,12 +419,13 @@ function publicGameView(state) {
     pickedByHunter: revealIdentity ? !!c.pickedByHunter : false,
   }));
 
-  return {
+    return {
     roomId: state.roomId,
     phase: state.phase,
     roundIndex: state.roundIndex,
-    hunter: state.round?.hunter || null, // 狩人名はあなたの仕様通り出してOK
+    hunter: state.round?.hunter || null,
     topic: state.round?.topic || "",
+    roleText: state.round?.roleText || null,   // ★追加
     answerDeadlineAt: state.round?.answerDeadlineAt || null,
     resultDeadlineAt: state.round?.resultDeadlineAt || null,
     picksRequired: state.round?.picksRequired ?? null,
@@ -433,6 +434,7 @@ function publicGameView(state) {
     cards,
     intro: state.intro || null,
   };
+
 }
 
 
@@ -525,19 +527,32 @@ async function startNextRound(io, roomId) {
     });
   }
 
-  // ★ ラウンド作成：ここではBRIEF開始（タイマーはまだ開始しない）
+    // ★ ラウンド作成：まずROLE（世界観の次に、あなたの職業を見せる）
   state.roundIndex = (state.roundIndex || 0) + 1;
-  state.phase = "BRIEF";
+  state.phase = "ROLE";
   state.round = {
     hunter,
     topic,
     cards: shuffle(cards),
     picksRequired: resistants.length,
-    answerDeadlineAt: null,   // ★ BRIEF中はnull
+
+    // ★ ここではまだタイマーを開始しない
+    answerDeadlineAt: null,
     resultDeadlineAt: null,
-    ready: {},                // RESULTで使う
-    briefReady: Object.fromEntries((members || []).map(u => [u, false])), // ★追加
+
+    ready: {},
+
+    // ★ 追加：ROLE/BRIEFで全員のOKを取る
+    roleReady: Object.fromEntries((members || []).map(u => [u, false])),
+    briefReady: Object.fromEntries((members || []).map(u => [u, false])),
+
+    // ★ 追加：ROLEの表示文（狩人/レジスタントで文言を変えるのはクライアント側判定でOK）
+    roleText: {
+      hunter: "あなたは『断罪狩人』。このラウンドで、AIに紛れたレジスタントを見抜け。",
+      resistant: "あなたは『レジスタント』。AIっぽい回答をして、断罪を回避しろ。",
+    },
   };
+
 
   setGameState(roomId, state);
   await broadcastGame(io, roomId);
@@ -604,9 +619,6 @@ async function initGame(io, roomId, aiCount) {
 
     gameCache.set(roomId, { state: st, flushTimer: null, phaseTimers: {} });
   await broadcastGame(io, roomId);
-
-  // ★ 自動で初回ラウンド（BRIEF）へ
-  await startNextRound(io, roomId);
 }
 
 
@@ -1900,6 +1912,37 @@ socket.on("judgement:roundOk", async ({ roomId } = {}) => {
   }
 });
 
+socket.on("judgement:roleOk", async ({ roomId } = {}) => {
+  try {
+    const rid = String(roomId || "").trim();
+    const me = String(socket.data.username || "").trim();
+    if (!rid) throw new Error("roomId_required");
+    if (!me) throw new Error("not_authed");
+
+    const st = gameCache.get(rid)?.state || await loadGameState(rid);
+    if (!st) throw new Error("game_not_found");
+    if (st.phase !== "ROLE") throw new Error("invalid_phase");
+
+    if (st.round?.roleReady && typeof st.round.roleReady === "object") {
+      st.round.roleReady[me] = true;
+    }
+    setGameState(rid, st);
+    await broadcastGame(io, rid);
+
+    const allReady = Object.values(st.round.roleReady || {}).every(v => v === true);
+    if (!allReady) return;
+
+    // ★ 全員ROLE OK → BRIEFへ
+    st.phase = "BRIEF";
+    setGameState(rid, st);
+    await broadcastGame(io, rid);
+
+  } catch (e) {
+    socket.emit("judgement:error", { message: String(e.message || e) });
+  }
+});
+
+
 
 socket.on("judgement:introOk", async ({ roomId } = {}) => {
   try {
@@ -2094,6 +2137,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
