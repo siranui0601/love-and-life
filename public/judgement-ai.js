@@ -266,11 +266,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // ---- auth
-  function sendAuthIfPossible() {
-    if (window.currentUser?.username) {
-      socket.emit("judgement:auth", { username: window.currentUser.username });
+    function sendAuthIfPossible() {
+    if (mustLogin()) {
+      socket.emit("judgement:auth", {
+        username: window.currentUser.username,
+        email: window.currentUser.email, // サーバが使わなくてもOK
+      });
     }
   }
+
+  socket.on("connect", sendAuthIfPossible); // ★追加（再接続にも強い）
+  sendAuthIfPossible();
+  window.addEventListener("user:login", sendAuthIfPossible);
+
   sendAuthIfPossible();
   window.addEventListener("user:login", sendAuthIfPossible);
 
@@ -747,7 +755,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!text) return alert("回答が空です");
     if (text.length > 120) return alert("120文字以内にしてください");
 
-    socket.emit("judgement:submitAnswer", { roomId: currentRoomId, text });
+    //socket.emit("judgement:submitAnswer", { roomId: currentRoomId, text });
+    socket.emit("judgement:submitAnswer", { roomId: currentRoomId, username: me(), text });
   });
 
   btnConfirmJudgement?.addEventListener("click", () => {
@@ -759,8 +768,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const need = Number(gameState.picksRequired || 0);
     if (selectedSlotIds.size !== need) return alert(`選択数が不足しています（${need}件）`);
 
-    socket.emit("judgement:judgePick", {
-      roomId: currentRoomId,
+    socket.emit("judgement:judgePick", { roomId: currentRoomId, username: me(),
       pickedSlotIds: Array.from(selectedSlotIds),
     });
 
@@ -771,7 +779,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!mustLogin()) return alert("ログインが必要です");
     if (!currentRoomId) return;
     if (!gameState || gameState.phase !== "RESULT") return alert("結果表示中ではありません");
-    socket.emit("judgement:resultReady", { roomId: currentRoomId });
+    //socket.emit("judgement:resultReady", { roomId: currentRoomId });
+    socket.emit("judgement:resultReady", { roomId: currentRoomId, username: me() });
   });
 
   // ---- back
