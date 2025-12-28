@@ -602,14 +602,13 @@ async function initGame(io, roomId, aiCount) {
     { col: "G", value: JSON.stringify(st) },
   ]);
 
-  gameCache.set(roomId, { state: st, flushTimer: null, phaseTimers: {} });
+    gameCache.set(roomId, { state: st, flushTimer: null, phaseTimers: {} });
   await broadcastGame(io, roomId);
 
-  // INTROは「表示だけ」なので、すぐ次のラウンドへ進めてもいいし、
-  // クライアント側で「世界観OK」ボタン→ startNextRound を叩くでもOK。
-  // ここでは自動でラウンド開始にします。
-  //await startNextRound(io, roomId);
+  // ★ 自動で初回ラウンド（BRIEF）へ
+  await startNextRound(io, roomId);
 }
+
 
 // ---- 狩人の断罪確定 → RESULTへ
 async function resolveJudgement(io, roomId, hunterName, pickedSlotIds) {
@@ -2095,6 +2094,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
