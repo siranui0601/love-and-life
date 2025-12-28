@@ -1807,9 +1807,9 @@ io.on("connection", (socket) => {
   console.log("✅ client connected:", socket.id);
 
 
-  if (window.currentUser?.username) {
+  /*if (window.currentUser?.username) {
     socket.emit("judgement:auth", { username: window.currentUser.username });
-  }
+  }*/
   
   // ---- クライアントが自分のusernameを紐付ける（必須）
   socket.on("judgement:auth", ({ username } = {}) => {
