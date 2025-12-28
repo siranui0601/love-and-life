@@ -407,35 +407,34 @@ function publicGameView(state) {
   if (!state) return null;
 
   const phase = state.phase;
-  const reveal = phase === "RESULT" || phase === "GAME_OVER";
+  const revealIdentity = (phase === "RESULT" || phase === "GAME_OVER");
+  const hideAnswers = (phase === "ANSWER" || phase === "BRIEF" || phase === "INTRO");
 
   const cards = (state.round?.cards || []).map(c => ({
     slotId: c.slotId,
     avatar: c.avatar,
-    answer: c.answer || "",
-    // RESULT以降だけ名前を出す（AIはAI固定）
-    name: reveal ? (c.kind === "ai" ? "AI" : c.owner) : "???",
-    kind: reveal ? c.kind : "???",
-    pickedByHunter: reveal ? !!c.pickedByHunter : false,
+    answer: hideAnswers ? "???" : (c.answer || ""),
+    name: revealIdentity ? (c.kind === "ai" ? "AI" : c.owner) : "???",
+    kind: revealIdentity ? c.kind : "???",
+    pickedByHunter: revealIdentity ? !!c.pickedByHunter : false,
   }));
 
   return {
     roomId: state.roomId,
     phase: state.phase,
     roundIndex: state.roundIndex,
-    hunter: reveal ? state.round?.hunter : (state.round?.hunter || null), // 狩人名は最初から出してOK（あなたの仕様）
+    hunter: state.round?.hunter || null, // 狩人名はあなたの仕様通り出してOK
     topic: state.round?.topic || "",
     answerDeadlineAt: state.round?.answerDeadlineAt || null,
     resultDeadlineAt: state.round?.resultDeadlineAt || null,
     picksRequired: state.round?.picksRequired ?? null,
-    // ランキングはGAME_OVERだけ
     ranking: state.phase === "GAME_OVER" ? (state.ranking || []) : null,
     stats: state.stats || null,
     cards,
-    // 演出用
     intro: state.intro || null,
   };
 }
+
 
 async function broadcastGame(io, roomId) {
   const ent = gameCache.get(roomId);
@@ -447,10 +446,11 @@ async function broadcastGame(io, roomId) {
 async function generateAIAnswers(topic, aiCount) {
   const prompt = `
 ${topic} に関して、感情や価値判断を含む「人間らしい意見」を ${aiCount} 件生成してください。
-各意見は120文字以内、日本語、装飾なし。
+各意見は **1〜2文**、120文字以内、日本語、装飾なし。
 説明文は出力せず、以下形式の配列のみを返してください。
 ["回答1","回答2"]
 `.trim();
+
 
   const text = stripJsonFence(await genWithFallback(prompt));
   const arr = safeJsonParse(text, []);
@@ -622,7 +622,7 @@ async function initGame(io, roomId, aiCount) {
   // INTROは「表示だけ」なので、すぐ次のラウンドへ進めてもいいし、
   // クライアント側で「世界観OK」ボタン→ startNextRound を叩くでもOK。
   // ここでは自動でラウンド開始にします。
-  await startNextRound(io, roomId);
+  //await startNextRound(io, roomId);
 }
 
 // ---- 狩人の断罪確定 → RESULTへ
@@ -1806,6 +1806,11 @@ ${style}
 io.on("connection", (socket) => {
   console.log("✅ client connected:", socket.id);
 
+
+  if (window.currentUser?.username) {
+    socket.emit("judgement:auth", { username: window.currentUser.username });
+  }
+  
   // ---- クライアントが自分のusernameを紐付ける（必須）
   socket.on("judgement:auth", ({ username } = {}) => {
     socket.data.username = String(username || "").trim();
@@ -1863,6 +1868,72 @@ io.on("connection", (socket) => {
       socket.emit("judgement:error", { message: String(e.message || e) });
     }
   });
+
+socket.on("judgement:roundOk", async ({ roomId } = {}) => {
+  try {
+    const rid = String(roomId || "").trim();
+    const me = String(socket.data.username || "").trim();
+    if (!rid) throw new Error("roomId_required");
+    if (!me) throw new Error("not_authed");
+
+    const st = gameCache.get(rid)?.state || await loadGameState(rid);
+    if (!st) throw new Error("game_not_found");
+    if (st.phase !== "BRIEF") throw new Error("invalid_phase");
+
+    if (st.round?.briefReady && typeof st.round.briefReady === "object") {
+      st.round.briefReady[me] = true;
+    }
+    setGameState(rid, st);
+    await broadcastGame(io, rid);
+
+    const allReady = Object.values(st.round.briefReady || {}).every(v => v === true);
+    if (!allReady) return;
+
+    // ★ 全員OK → ANSWER開始
+    st.phase = "ANSWER";
+    st.round.answerDeadlineAt = nowMs() + 120_000; // ★120秒
+    setGameState(rid, st);
+    await broadcastGame(io, rid);
+
+    // ★ 120秒締切タイマー
+    const ent = gameCache.get(rid);
+    if (ent.phaseTimers?.answer) clearTimeout(ent.phaseTimers.answer);
+    ent.phaseTimers.answer = setTimeout(async () => {
+      try {
+        const cur = gameCache.get(rid)?.state;
+        if (!cur || cur.phase !== "ANSWER") return;
+        cur.phase = "JUDGE";
+        setGameState(rid, cur);
+        await broadcastGame(io, rid);
+      } catch (e) {
+        console.error("[ANSWER->JUDGE] timer error:", e);
+      }
+    }, 120_000 + 50);
+
+  } catch (e) {
+    socket.emit("judgement:error", { message: String(e.message || e) });
+  }
+});
+
+
+socket.on("judgement:introOk", async ({ roomId } = {}) => {
+  try {
+    const rid = String(roomId || "").trim();
+    const me = String(socket.data.username || "").trim();
+    if (!rid) throw new Error("roomId_required");
+    if (!me) throw new Error("not_authed");
+
+    const st = gameCache.get(rid)?.state || await loadGameState(rid);
+    if (!st) throw new Error("game_not_found");
+    if (st.phase !== "INTRO") throw new Error("invalid_phase");
+
+    // ホストだけ進める運用にしたいならここで host判定してもOK
+    await startNextRound(io, rid); // ★ここで初ラウンド（BRIEF）へ
+  } catch (e) {
+    socket.emit("judgement:error", { message: String(e.message || e) });
+  }
+});
+
 
   // ---- レジスタント：回答提出（上書き可、120字、ANSWERフェーズのみ）
   socket.on("judgement:submitAnswer", async ({ roomId, text } = {}) => {
@@ -2038,6 +2109,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
