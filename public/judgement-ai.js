@@ -238,10 +238,17 @@ function renderRoleOrBriefModal(st, socket) {
       </div>
     `);
 
-    const btn = roleModal.querySelector("#btnRoleClose");
+    // ROLE
+const btn = roleModal.querySelector("#btnRoleClose");
 if (btn) {
-  btn.onclick = () => socket.emit("judgement:roleOk", { roomId: currentRoomId });
+  btn.onclick = () => {
+    btn.disabled = true;
+    btn.textContent = "OK済み";
+    hideModal(roleModal); // ★ローカルで即閉じる
+    socket.emit("judgement:roleOk", { roomId: currentRoomId });
+  };
 }
+
 
 
     // 30秒自動OK（未OKのみ）
@@ -278,10 +285,17 @@ if (btn) {
       </div>
     `);
 
-    const btn2 = roleModal.querySelector("#btnBriefClose");
+    // BRIEF
+const btn2 = roleModal.querySelector("#btnBriefClose");
 if (btn2) {
-  btn2.onclick = () => socket.emit("judgement:roundOk", { roomId: currentRoomId });
+  btn2.onclick = () => {
+    btn2.disabled = true;
+    btn2.textContent = "OK済み";
+    hideModal(roleModal); // ★ローカルで即閉じる
+    socket.emit("judgement:roundOk", { roomId: currentRoomId });
+  };
 }
+
 
 
     clearAutoOkTimers();
@@ -400,7 +414,13 @@ function renderCards(st, socket) {
 
     // ---- 自分判定：サーバが name を隠すなら、少なくとも slotId 側で self フラグが欲しい。
     // ここは「nameが自分と一致」または「c.isSelf」などがある想定で両対応にしておく。
-    const isSelf = (c.isSelf === true) || (c.name && c.name === me()) || (c.username && c.username === me());
+    const mySlotId = st?.selfSlotId != null ? String(st.selfSlotId) : null;
+const isSelf =
+  (mySlotId && String(c.slotId) === mySlotId) ||
+  (c.isSelf === true) ||
+  (c.name && c.name === me()) ||
+  (c.username && c.username === me());
+
 
     // 表示名：自分だけ見える。他人は伏せる（ゲーム性）
     const displayName = isSelf ? (me() || "YOU") : (st.phase === "RESULT" || st.phase === "GAME_OVER" ? (c.name || "???") : "???");
