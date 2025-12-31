@@ -11,6 +11,10 @@ let lastPhase = null;            // フェーズ変化検出用
 let selectedSlotIds = new Set(); // 狩人がJUDGEで選ぶカード（確定までローカル保持）
 let localTimerTick = null;
 
+
+let localPhaseOk = { ROLE: false, BRIEF: false };
+
+
 function mustLogin() {
   return !!(window.currentUser?.email && window.currentUser?.username);
 }
@@ -200,7 +204,7 @@ function clearAutoOkTimers() {
 function renderRoleOrBriefModal(st, socket) {
   // INTRO は即スキップ
   if (st.phase === "INTRO") {
-    socket.emit("judgement:introOk", { roomId: currentRoomId });
+    socket.emit("judgement:introOk", { roomId: currentRoomId, username: me() });
     return;
   }
 
@@ -221,7 +225,10 @@ function renderRoleOrBriefModal(st, socket) {
          操作：ANSWERでお題に対し<b>120文字以内</b>で回答を入力して送信してください。`;
 
     const readyMap = st?.phaseReady?.ROLE || null;
-    const myReady = readyMap && myName ? readyMap[myName] === true : false;
+    //const myReady = readyMap && myName ? readyMap[myName] === true : false;
+    const myReady =
+  (readyMap && myName ? readyMap[myName] === true : false) || localPhaseOk.ROLE;
+
     const ok = readyMap ? Object.values(readyMap).filter(v => v === true).length : 0;
     const total = readyMap ? Object.keys(readyMap).length : 0;
 
@@ -242,6 +249,7 @@ function renderRoleOrBriefModal(st, socket) {
 const btn = roleModal.querySelector("#btnRoleClose");
 if (btn) {
   btn.onclick = () => {
+    localPhaseOk.ROLE = true;  
     btn.disabled = true;
     btn.textContent = "OK済み";
     hideModal(roleModal); // ★ローカルで即閉じる
@@ -255,7 +263,7 @@ if (btn) {
     clearAutoOkTimers();
     if (!myReady) {
       autoOkTimers.ROLE = setTimeout(() => {
-        socket.emit("judgement:roleOk", { roomId: currentRoomId });
+        socket.emit("judgement:roleOk", { roomId: currentRoomId, username: me() });
       }, 30000);
     }
     return;
@@ -267,7 +275,10 @@ if (btn) {
 
     const topic = st?.topic || "";
     const readyMap = st?.phaseReady?.BRIEF || null;
-    const myReady = readyMap && myName ? readyMap[myName] === true : false;
+    //const myReady = readyMap && myName ? readyMap[myName] === true : false;
+    const myReady =
+  (readyMap && myName ? readyMap[myName] === true : false) || localPhaseOk.BRIEF;
+
     const ok = readyMap ? Object.values(readyMap).filter(v => v === true).length : 0;
     const total = readyMap ? Object.keys(readyMap).length : 0;
 
@@ -289,10 +300,24 @@ if (btn) {
 const btn2 = roleModal.querySelector("#btnBriefClose");
 if (btn2) {
   btn2.onclick = () => {
+    localPhaseOk.BRIEF = true;
     btn2.disabled = true;
     btn2.textContent = "OK済み";
     hideModal(roleModal); // ★ローカルで即閉じる
-    socket.emit("judgement:roundOk", { roomId: currentRoomId });
+    socket.emit("judgement:roundOk", { roomId: currentRoomId, username: me() });
+
+
+    // BRIEF OK押下直後
+showModal(roleModal, `
+  <div class="jai-modal-head">
+    <div>
+      <div class="jai-modal-title">準備中...</div>
+      <div class="jai-modal-sub">次のフェーズを待っています</div>
+    </div>
+  </div>
+`);
+setTimeout(() => hideModal(roleModal), 5000); // すぐ消す/もしくはANSWERで消す
+
   };
 }
 
@@ -509,10 +534,13 @@ async function startResultRevealAnimation(st, socket) {
 
   // 断罪対象の順序
   const order = Array.isArray(st.pickOrder) && st.pickOrder.length
-    ? st.pickOrder.map(String)
-    : Array.isArray(st?.result?.pickedSlotIds)
-      ? st.result.pickedSlotIds.map(String)
-      : [];
+  ? st.pickOrder.map(String)
+  : Array.isArray(st?.result?.pickedSlotIds) && st.result.pickedSlotIds.length
+    ? st.result.pickedSlotIds.map(String)
+    : Array.isArray(st?.pickedSlotIds) && st.pickedSlotIds.length
+      ? st.pickedSlotIds.map(String)
+      : []; // ←ここまでは現状近いけど “lengthチェック”を徹底
+
 
   // 演出する対象が無いなら即モーダル
   if (!order.length) {
@@ -912,21 +940,33 @@ let resultModalDelayTimer = null;
 
 
 function showGameOverRanking(st) {
+  if (gameTopic) gameTopic.textContent = "";
+if (gameTimer) gameTimer.textContent = "";
+const bar = document.getElementById("rankingBar");
+if (bar) bar.innerHTML = ""; // 上部バーは消して、ランキングを中で派手にする
+
   openGame();
 
   // gameAreaをランキング表示に差し替え（簡易）
   const ranking = Array.isArray(st.ranking) ? st.ranking : [];
   gameArea.innerHTML = `
-    <div class="jai-gameover">
-      <div class="jai-gameover-title">最終ランキング</div>
-      <div class="jai-gameover-body">
-        ${ranking.map((r,i)=>`<div>${i+1}位 ${escapeHtml(r.name)}：${Number(r.points||0)}点</div>`).join("")}
-      </div>
-      <div class="jai-modal-sub" style="margin-top:10px;opacity:.85;">
-        おつかれさまでした。メニューに戻る場合は「戻る」を押してください。
-      </div>
+  <div class="jai-gameover">
+    <div class="jai-gameover-title">最終ランキング</div>
+    <div class="jai-gameover-body">
+      ${ranking.map((r,i)=>`
+        <div class="jai-rank-row rank-${i+1}">
+          <span class="pos">${i+1}位</span>
+          <span class="name">${escapeHtml(r.name)}</span>
+          <span class="pts">${Number(r.points||0)}pt</span>
+        </div>
+      `).join("")}
     </div>
-  `;
+    <div class="jai-modal-sub" style="margin-top:10px;opacity:.85;">
+      おつかれさまでした。メニューに戻る場合は「戻る」を押してください。
+    </div>
+  </div>
+`;
+
 }
 
 
@@ -952,6 +992,11 @@ function renderGame(st) {
 }
 
   if (st.phase !== lastPhase) {
+    // フェーズ移動でローカルOKを必要に応じてリセット
+  if (st.phase === "ROLE")  localPhaseOk = { ROLE: false, BRIEF: false };
+  if (st.phase === "BRIEF") localPhaseOk.BRIEF = false;
+  if (st.phase === "ANSWER") localPhaseOk.BRIEF = true; // もうBRIEFは完了扱いでも良い
+    
     if (st.phase === "ANSWER") {
       hasSubmittedAnswer = false;
       draftAnswerText = "";
