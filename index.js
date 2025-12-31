@@ -321,8 +321,8 @@ const TOPICS = [
 
 // ★ フェーズ自動遷移の時間（ms）
 const INTRO_MS  = 0;
-const RULES_MS  = 30000;
-const ROLE_MS   = 15000;
+const RULES_MS  = 0;
+const ROLE_MS   = 20000;
 const BRIEF_MS  = 15000;
 const ANSWER_MS = 120_000;
 const RESULT_MS = 30_000;
@@ -2233,6 +2233,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
