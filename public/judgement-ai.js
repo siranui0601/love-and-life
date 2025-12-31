@@ -6,13 +6,17 @@ let currentMembers = [];
 let lastMembers = [];
 let joinedOnce = false;
 
-let gameState = null;        // 最新の publicGameView
-let lastPhase = null;        // フェーズ変化検出用
+let gameState = null;            // 最新の publicGameView
+let lastPhase = null;            // フェーズ変化検出用
 let selectedSlotIds = new Set(); // 狩人がJUDGEで選ぶカード（確定までローカル保持）
 let localTimerTick = null;
 
+// 送信済みフラグ（再描画でボタンが復活しないように）
+let hasSubmittedAnswer = false;
+let hasSubmittedJudge = false;
+
 function mustLogin() {
-  return window.currentUser?.email && window.currentUser?.username;
+  return !!(window.currentUser?.email && window.currentUser?.username);
 }
 
 async function postJSON(url, body) {
@@ -135,9 +139,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnReadyNext = document.getElementById("btnReadyNext");
   const resultCountdown = document.getElementById("resultCountdown");
 
+  // ---- small helpers
+  function toggleDisplay(el, displayWhenShown = "block") {
+    if (!el) return;
+    const isHidden = getComputedStyle(el).display === "none";
+    el.style.display = isHidden ? displayWhenShown : "none";
+  }
 
-
-    // ---- phase overlay (INTRO/ROLE/BRIEF)
+  // ---- phase overlay (INTRO/ROLE/BRIEF)
   let phaseOverlay = null;
   let phaseOverlayInner = null;
 
@@ -174,8 +183,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const m = mapObj && typeof mapObj === "object" ? mapObj : null;
     if (!m) return { ok: 0, total: 0 };
     const total = Object.keys(m).length;
-    const ok = Object.values(m).filter(v => v === true).length;
+    const ok = Object.values(m).filter((v) => v === true).length;
     return { ok, total };
+  }
+
+  function me() {
+    return window.currentUser?.username || "";
+  }
+  function isHost() {
+    return mustLogin() && me() === currentHost;
+  }
+  function isHunter(st) {
+    return st?.hunter && st.hunter === me();
   }
 
   function renderPhaseOverlay(st) {
@@ -264,33 +283,18 @@ document.addEventListener("DOMContentLoaded", () => {
     phaseOverlay.style.display = "none";
   }
 
-
   // ---- auth
-    function sendAuthIfPossible() {
-    if (mustLogin()) {
-      socket.emit("judgement:auth", {
-        username: window.currentUser.username,
-        email: window.currentUser.email, // サーバが使わなくてもOK
-      });
-    }
+  function sendAuthIfPossible() {
+    if (!mustLogin()) return;
+    socket.emit("judgement:auth", {
+      username: window.currentUser.username,
+      email: window.currentUser.email, // サーバが使わなくてもOK
+    });
   }
 
-  socket.on("connect", sendAuthIfPossible); // ★追加（再接続にも強い）
+  socket.on("connect", sendAuthIfPossible); // 再接続にも強い
   sendAuthIfPossible();
   window.addEventListener("user:login", sendAuthIfPossible);
-
-  sendAuthIfPossible();
-  window.addEventListener("user:login", sendAuthIfPossible);
-
-  function me() {
-    return window.currentUser?.username || "";
-  }
-  function isHost() {
-    return mustLogin() && me() === currentHost;
-  }
-  function isHunter(st) {
-    return st?.hunter && st.hunter === me();
-  }
 
   // ---- UI切替
   function showTop() {
@@ -306,6 +310,11 @@ document.addEventListener("DOMContentLoaded", () => {
     lastPhase = null;
     selectedSlotIds.clear();
     stopLocalTimer();
+
+    hasSubmittedAnswer = false;
+    hasSubmittedJudge = false;
+    if (answerInput) answerInput.value = "";
+    if (answerCharCount) answerCharCount.textContent = "0/120";
 
     if (gamePanel) gamePanel.style.display = "none";
     if (waitingRoom) waitingRoom.style.display = "none";
@@ -333,7 +342,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (waitingRoomId) waitingRoomId.textContent = roomId;
     if (waitingRoom) waitingRoom.style.display = "block";
-    if (btnBackToMenu) btnBackToMenu.style.display = "block"; // 左上固定にするならCSSで
+    if (btnBackToMenu) btnBackToMenu.style.display = "block";
 
     socket.emit("judgement:watch", { roomId });
   }
@@ -478,12 +487,13 @@ document.addEventListener("DOMContentLoaded", () => {
     wrap.style.gap = "10px";
 
     cards.forEach((c) => {
+      const slotId = String(c.slotId); // ★キーゆれ対策（常に文字列）
       const card = document.createElement("div");
       card.style.border = "1px solid #555";
       card.style.borderRadius = "10px";
       card.style.padding = "10px";
       card.style.cursor = selectable ? "pointer" : "default";
-      card.dataset.slotId = c.slotId;
+      card.dataset.slotId = slotId;
 
       const img = document.createElement("img");
       img.src = c.avatar;
@@ -507,18 +517,18 @@ document.addEventListener("DOMContentLoaded", () => {
       name.textContent = c.name || "???";
       card.appendChild(name);
 
-      if (selectedSlotIds.has(c.slotId)) {
+      if (selectedSlotIds.has(slotId)) {
         card.style.outline = "3px solid #aaa";
       }
 
-      if (selectable) {
+      if (selectable && !hasSubmittedJudge) {
         card.addEventListener("click", () => {
           const need = Number(st.picksRequired || 0);
-          if (selectedSlotIds.has(c.slotId)) {
-            selectedSlotIds.delete(c.slotId);
+          if (selectedSlotIds.has(slotId)) {
+            selectedSlotIds.delete(slotId);
           } else {
             if (selectedSlotIds.size >= need) return;
-            selectedSlotIds.add(c.slotId);
+            selectedSlotIds.add(slotId);
           }
           renderCards(st);
           renderJudgePanel(st);
@@ -536,8 +546,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const show = st.phase === "ANSWER" && !isHunter(st);
     answerPanel.style.display = show ? "block" : "none";
     if (!show) return;
+
     const t = String(answerInput?.value || "");
     if (answerCharCount) answerCharCount.textContent = `${t.length}/120`;
+
+    if (btnSubmitAnswer) {
+      btnSubmitAnswer.disabled = hasSubmittedAnswer;
+      if (hasSubmittedAnswer) btnSubmitAnswer.textContent = "送信済み";
+    }
   }
 
   function renderJudgePanel(st) {
@@ -549,9 +565,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const need = Number(st.picksRequired || 0);
     if (picksRequiredEl) picksRequiredEl.textContent = String(need);
 
-    btnConfirmJudgement.disabled = (selectedSlotIds.size !== need);
-    btnConfirmJudgement.textContent =
-      selectedSlotIds.size === need ? "断罪を確定" : `断罪を確定（${selectedSlotIds.size}/${need}）`;
+    const enough = selectedSlotIds.size === need;
+    if (btnConfirmJudgement) {
+      btnConfirmJudgement.disabled = hasSubmittedJudge || !enough;
+      btnConfirmJudgement.textContent = hasSubmittedJudge
+        ? "断罪を送信済み"
+        : (enough ? "断罪を確定" : `断罪を確定（${selectedSlotIds.size}/${need}）`);
+    }
   }
 
   function renderResultPanel(st) {
@@ -577,9 +597,21 @@ document.addEventListener("DOMContentLoaded", () => {
     openGame();
     renderTopBar(st);
 
-    // フェーズ変化時の初期化（JUDGE入った瞬間だけリセット）
+    // フェーズ変化時の初期化
     if (st.phase !== lastPhase) {
-      if (st.phase === "JUDGE") selectedSlotIds.clear();
+      if (st.phase === "ANSWER") {
+        hasSubmittedAnswer = false;
+        if (btnSubmitAnswer) btnSubmitAnswer.textContent = "回答を送信";
+        if (answerInput) answerInput.value = "";
+        if (answerCharCount) answerCharCount.textContent = "0/120";
+      }
+      if (st.phase === "JUDGE") {
+        selectedSlotIds.clear();
+        hasSubmittedJudge = false;
+      }
+      if (st.phase === "RESULT") {
+        // 次ラウンド準備などはサーバ側に委ねる
+      }
       lastPhase = st.phase;
     }
 
@@ -587,7 +619,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAnswerPanel(st);
     renderJudgePanel(st);
     renderResultPanel(st);
-    // ★ 追加：INTRO/ROLE/BRIEF のオーバーレイ
     renderPhaseOverlay(st);
 
     startLocalTimer();
@@ -625,17 +656,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---- waiting UI events
   btnRoomMatch?.addEventListener("click", () => {
     if (!mustLogin()) return alert("ログインが必要です");
-    roomMatchPanel.style.display = roomMatchPanel.style.display === "none" ? "block" : "none";
+    toggleDisplay(roomMatchPanel, "block");
   });
 
   btnCreate?.addEventListener("click", () => {
-    roomCreatePanel.style.display = "block";
-    roomJoinPanel.style.display = "none";
+    if (roomCreatePanel) roomCreatePanel.style.display = "block";
+    if (roomJoinPanel) roomJoinPanel.style.display = "none";
   });
 
   btnJoin?.addEventListener("click", () => {
-    roomJoinPanel.style.display = "block";
-    roomCreatePanel.style.display = "none";
+    if (roomJoinPanel) roomJoinPanel.style.display = "block";
+    if (roomCreatePanel) roomCreatePanel.style.display = "none";
   });
 
   btnCreateConfirm?.addEventListener("click", async () => {
@@ -645,7 +676,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const allowRandom = !!chkAllowRandom?.checked;
 
       const data = await postJSON("/api/judgement/room/create", { allowRandom, hostName });
-      createdRoomInfo.textContent = `作成しました：ルームID ${data.roomId}`;
+      if (createdRoomInfo) createdRoomInfo.textContent = `作成しました：ルームID ${data.roomId}`;
 
       await postJSON("/api/judgement/room/join", { roomId: data.roomId, username: hostName });
       openWaiting(data.roomId);
@@ -710,7 +741,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   aiCountInput?.addEventListener("input", () => {
-    if (aiCountValue) aiCountValue.textContent = String(aiCountInput.value);
+    if (aiCountValue && aiCountInput) aiCountValue.textContent = String(aiCountInput.value);
   });
 
   btnFinalStart?.addEventListener("click", () => {
@@ -750,12 +781,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!mustLogin()) return alert("ログインが必要です");
     if (!currentRoomId) return;
     if (!gameState || gameState.phase !== "ANSWER") return alert("回答フェーズではありません");
+    if (hasSubmittedAnswer) return;
 
     const text = String(answerInput?.value || "").trim();
     if (!text) return alert("回答が空です");
     if (text.length > 120) return alert("120文字以内にしてください");
 
-    //socket.emit("judgement:submitAnswer", { roomId: currentRoomId, text });
+    hasSubmittedAnswer = true;
+    if (btnSubmitAnswer) {
+      btnSubmitAnswer.disabled = true;
+      btnSubmitAnswer.textContent = "送信済み";
+    }
+
     socket.emit("judgement:submitAnswer", { roomId: currentRoomId, username: me(), text });
   });
 
@@ -764,22 +801,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!currentRoomId) return;
     if (!gameState || gameState.phase !== "JUDGE") return alert("断罪フェーズではありません");
     if (!isHunter(gameState)) return alert("狩人のみ断罪できます");
+    if (hasSubmittedJudge) return;
 
     const need = Number(gameState.picksRequired || 0);
     if (selectedSlotIds.size !== need) return alert(`選択数が不足しています（${need}件）`);
 
-    socket.emit("judgement:judgePick", { roomId: currentRoomId, username: me(),
+    hasSubmittedJudge = true;
+    if (btnConfirmJudgement) {
+      btnConfirmJudgement.disabled = true;
+      btnConfirmJudgement.textContent = "断罪を送信済み";
+    }
+
+    socket.emit("judgement:judgePick", {
+      roomId: currentRoomId,
+      username: me(),
       pickedSlotIds: Array.from(selectedSlotIds),
     });
-
-    btnConfirmJudgement.disabled = true; // 連打防止
   });
 
   btnReadyNext?.addEventListener("click", () => {
     if (!mustLogin()) return alert("ログインが必要です");
     if (!currentRoomId) return;
     if (!gameState || gameState.phase !== "RESULT") return alert("結果表示中ではありません");
-    //socket.emit("judgement:resultReady", { roomId: currentRoomId });
     socket.emit("judgement:resultReady", { roomId: currentRoomId, username: me() });
   });
 
