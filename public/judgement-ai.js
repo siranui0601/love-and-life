@@ -11,10 +11,6 @@ let lastPhase = null;            // フェーズ変化検出用
 let selectedSlotIds = new Set(); // 狩人がJUDGEで選ぶカード（確定までローカル保持）
 let localTimerTick = null;
 
-// 送信済みフラグ（再描画でボタンが復活しないように）
-let hasSubmittedAnswer = false;
-let hasSubmittedJudge = false;
-
 function mustLogin() {
   return !!(window.currentUser?.email && window.currentUser?.username);
 }
@@ -225,9 +221,6 @@ function me() {
     return { ok, total };
   }
 
-  function me() {
-    return window.currentUser?.username || "";
-  }
   function isHost() {
     return mustLogin() && me() === currentHost;
   }
@@ -286,9 +279,11 @@ function renderRoleOrBriefModal(st, socket) {
       </div>
     `);
 
-    roleModal.querySelector("#btnRoleClose")?.addEventListener("click", () => {
-      socket.emit("judgement:roleOk", { roomId: currentRoomId });
-    });
+    const btn = roleModal.querySelector("#btnRoleClose");
+if (btn) {
+  btn.onclick = () => socket.emit("judgement:roleOk", { roomId: currentRoomId });
+}
+
 
     // 30秒自動OK（未OKのみ）
     clearAutoOkTimers();
@@ -324,9 +319,11 @@ function renderRoleOrBriefModal(st, socket) {
       </div>
     `);
 
-    roleModal.querySelector("#btnBriefClose")?.addEventListener("click", () => {
-      socket.emit("judgement:roundOk", { roomId: currentRoomId });
-    });
+    const btn2 = roleModal.querySelector("#btnBriefClose");
+if (btn2) {
+  btn2.onclick = () => socket.emit("judgement:roundOk", { roomId: currentRoomId });
+}
+
 
     clearAutoOkTimers();
     if (!myReady) {
@@ -521,7 +518,14 @@ function renderCards(st, socket) {
   const sec = st.resultDeadlineAt ? Math.max(0, Math.ceil((st.resultDeadlineAt - now) / 1000)) : null;
 
   // サーバが持ってる情報に合わせて表示（無ければ “ランキングのみ” でも可）
-  const ranking = Array.isArray(st.ranking) ? st.ranking : [];
+  const ranking =
+  Array.isArray(st.ranking) ? st.ranking :
+  (st.scoreMap && typeof st.scoreMap === "object")
+    ? Object.entries(st.scoreMap)
+        .map(([name, points]) => ({ name, points: Number(points || 0) }))
+        .sort((a,b) => b.points - a.points)
+    : [];
+
   const deltas = st?.result?.deltas || st?.deltas || null; // あるなら使う
 
   const deltaHtml = Array.isArray(deltas)
@@ -841,87 +845,6 @@ function renderCards(st, socket) {
     if (gameTimer) gameTimer.textContent = line;
   }
 
-  function renderCards(st) {
-    if (!gameArea) return;
-    const cards = Array.isArray(st.cards) ? st.cards : [];
-    const selectable = st.phase === "JUDGE" && isHunter(st);
-
-    gameArea.innerHTML = "";
-    const wrap = document.createElement("div");
-    wrap.style.display = "grid";
-    wrap.style.gridTemplateColumns = "repeat(3, minmax(0, 1fr))";
-    wrap.style.gap = "10px";
-
-    cards.forEach((c) => {
-      const slotId = String(c.slotId); // ★キーゆれ対策（常に文字列）
-      const card = document.createElement("div");
-      card.style.border = "1px solid #555";
-      card.style.borderRadius = "10px";
-      card.style.padding = "10px";
-      card.style.cursor = selectable ? "pointer" : "default";
-      card.dataset.slotId = slotId;
-
-      const img = document.createElement("img");
-      img.src = c.avatar;
-      img.alt = "avatar";
-      img.style.width = "100%";
-      img.style.borderRadius = "10px";
-      card.appendChild(img);
-
-      const bubble = document.createElement("div");
-      bubble.style.marginTop = "8px";
-      bubble.style.padding = "8px";
-      bubble.style.border = "1px solid #444";
-      bubble.style.borderRadius = "10px";
-      bubble.textContent = c.answer || "(未回答)";
-      card.appendChild(bubble);
-
-      const name = document.createElement("div");
-      name.style.marginTop = "8px";
-      name.style.textAlign = "center";
-      name.style.opacity = "0.85";
-      name.textContent = c.name || "???";
-      card.appendChild(name);
-
-      if (selectedSlotIds.has(slotId)) {
-        card.style.outline = "3px solid #aaa";
-      }
-
-      if (selectable && !hasSubmittedJudge) {
-        card.addEventListener("click", () => {
-          const need = Number(st.picksRequired || 0);
-          if (selectedSlotIds.has(slotId)) {
-            selectedSlotIds.delete(slotId);
-          } else {
-            if (selectedSlotIds.size >= need) return;
-            selectedSlotIds.add(slotId);
-          }
-          renderCards(st);
-          renderJudgePanel(st);
-        });
-      }
-
-      wrap.appendChild(card);
-    });
-
-    gameArea.appendChild(wrap);
-  }
-
-  function renderAnswerPanel(st) {
-    if (!answerPanel) return;
-    const show = st.phase === "ANSWER" && !isHunter(st);
-    answerPanel.style.display = show ? "block" : "none";
-    if (!show) return;
-
-    const t = String(answerInput?.value || "");
-    if (answerCharCount) answerCharCount.textContent = `${t.length}/120`;
-
-    if (btnSubmitAnswer) {
-      btnSubmitAnswer.disabled = hasSubmittedAnswer;
-      if (hasSubmittedAnswer) btnSubmitAnswer.textContent = "送信済み";
-    }
-  }
-
   function renderJudgePanel(st) {
     if (!judgePanel) return;
     const show = st.phase === "JUDGE" && isHunter(st);
@@ -1142,7 +1065,7 @@ function renderCards(st, socket) {
   });
 
   // ---- game events
-  answerInput?.addEventListener("input", () => {
+  /*answerInput?.addEventListener("input", () => {
     const t = String(answerInput.value || "");
     if (answerCharCount) answerCharCount.textContent = `${t.length}/120`;
   });
@@ -1164,7 +1087,7 @@ function renderCards(st, socket) {
     }
 
     socket.emit("judgement:submitAnswer", { roomId: currentRoomId, username: me(), text });
-  });
+  });*/
 
   btnConfirmJudgement?.addEventListener("click", () => {
     if (!mustLogin()) return alert("ログインが必要です");
