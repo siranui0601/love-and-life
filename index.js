@@ -98,7 +98,7 @@ import express from "express";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 // ---------- Gemini API ----------
-import "dotenv/config";
+//import "dotenv/config";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const app = express();
@@ -862,7 +862,7 @@ state.phaseReady.ROLE = {};
 
 // ---- 初期化（ホストが開始）
 async function initGame(io, roomId, aiCount) {
-  phaseReady: {}, // ★追加：{ ROLE: {alice:true,...}, BRIEF:{...}, RESULT:{...}, ... }
+  //phaseReady: {}, // ★追加：{ ROLE: {alice:true,...}, BRIEF:{...}, RESULT:{...}, ... }
   const sheets = await getSheetsClient();
   const rows = await getJudgeRows(sheets);
   const idx = findJudgeRowIndex(rows, roomId);
@@ -879,6 +879,7 @@ async function initGame(io, roomId, aiCount) {
     remainingHunters: shuffle(members),
     roundIndex: 0,
     round: null,
+    phaseReady: {},
     stats: {
       points: Object.fromEntries(members.map(u => [u, 0])),
       aiFalsePositives: Object.fromEntries(members.map(u => [u, 0])),
@@ -1043,7 +1044,7 @@ async function buildJudgeState(roomId) {
 
   return {
     roomId: String(row[0] || roomId),
-    status: statusB,
+    status: normalizeStatusForDisplay(statusB),
     hostName,
     members,
     aiCount: Number.isFinite(aiCount) ? aiCount : null,
@@ -1103,7 +1104,7 @@ app.post("/api/judgement/room/create", async (req, res) => {
   const err = validateUsername(hostName);
   if (err) return res.status(400).json({ error: err });
 
-  //try {
+  try {
     const sheets = await getSheetsClient();
     const roomId = await generateUniqueRoomId(sheets);
 
@@ -1124,6 +1125,10 @@ app.post("/api/judgement/room/create", async (req, res) => {
   });
 
   return res.json({ roomId });
+  } catch (e) {
+    console.error("room/create error:", e);
+    return res.status(500).json({ error: "server_error" });
+  }
 });
 
 // --------------------
@@ -2270,16 +2275,21 @@ if (g) {
     if (st.phase !== "RESULT") throw new Error("invalid_phase");
     if (!st.round) throw new Error("round_missing");
 
-    // ★ready記録
+    // ★ ready記録（RESULTは phaseReady に統一しても良い。互換のため両方更新）
     st.round.ready ||= {};
     st.round.ready[me] = true;
+    st.phaseReady ||= {};
+    st.phaseReady.RESULT ||= {};
+    st.phaseReady.RESULT[me] = true;
+
+ 
 
     setGameState(rid, st);
     await broadcastGame(io, rid);
 
     // ★全員ready判定（members基準）
     const members = Array.isArray(st.members) ? st.members : [];
-    const allReady = members.length > 0 && members.every(u => st.round.ready?.[u]);
+    const allReady = members.length > 0 && members.every(u => st.phaseReady?.RESULT?.[u]);
 
     if (allReady) {
       // RESULTタイマーを止めて即次ラウンド
