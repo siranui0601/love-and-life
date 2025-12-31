@@ -139,6 +139,44 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnReadyNext = document.getElementById("btnReadyNext");
   const resultCountdown = document.getElementById("resultCountdown");
 
+
+
+
+
+  // ====== Modal manager (ROLE / ANSWER / RESULT) ======
+let roleModal = null;
+let answerModal = null;
+let resultModal = null;
+
+function ensureModal(id) {
+  let el = document.getElementById(id);
+  if (el) return el;
+
+  el = document.createElement("div");
+  el.id = id;
+  el.className = "jai-modal";
+  el.innerHTML = `<div class="jai-modal-card"></div>`;
+  document.body.appendChild(el);
+  return el;
+}
+
+function showModal(el, html) {
+  const card = el.querySelector(".jai-modal-card");
+  card.innerHTML = html;
+  el.classList.add("show");
+}
+
+function hideModal(el) {
+  el.classList.remove("show");
+}
+
+function me() {
+  return window.currentUser?.username || "";
+}
+
+
+
+  
   // ---- small helpers
   function toggleDisplay(el, displayWhenShown = "block") {
     if (!el) return;
@@ -197,6 +235,334 @@ document.addEventListener("DOMContentLoaded", () => {
     return st?.hunter && st.hunter === me();
   }
 
+
+  let autoOkTimers = { ROLE: null, BRIEF: null };
+
+function clearAutoOkTimers() {
+  if (autoOkTimers.ROLE) clearTimeout(autoOkTimers.ROLE);
+  if (autoOkTimers.BRIEF) clearTimeout(autoOkTimers.BRIEF);
+  autoOkTimers.ROLE = null;
+  autoOkTimers.BRIEF = null;
+}
+
+function renderRoleOrBriefModal(st, socket) {
+  // INTRO は即スキップ
+  if (st.phase === "INTRO") {
+    socket.emit("judgement:introOk", { roomId: currentRoomId });
+    return;
+  }
+
+  const myName = me();
+
+  // ROLE
+  if (st.phase === "ROLE") {
+    roleModal = roleModal || ensureModal("jaiRoleModal");
+
+    const isMeHunter = (st?.hunter === myName);
+    const pill = isMeHunter ? "断罪狩人" : "レジスタンス";
+    const title = `あなたは <span class="jai-pill">${pill}</span> です`;
+
+    const body = isMeHunter
+      ? `目的：<b>人間（レジスタンス）</b>を見抜いて断罪し、的中数ぶん得点します。<br>
+         操作：JUDGEで「断罪するカード」を必要数だけ選び、確定してください。`
+      : `目的：<b>AIっぽい回答</b>で紛れ込み、狩人に見抜かれないようにします。<br>
+         操作：ANSWERでお題に対し<b>120文字以内</b>で回答を入力して送信してください。`;
+
+    const readyMap = st?.roleReady || null;
+    const myReady = readyMap && myName ? readyMap[myName] === true : false;
+    const ok = readyMap ? Object.values(readyMap).filter(v => v === true).length : 0;
+    const total = readyMap ? Object.keys(readyMap).length : 0;
+
+    showModal(roleModal, `
+      <div class="jai-modal-head">
+        <div>
+          <div class="jai-modal-title">${title}</div>
+          <div class="jai-modal-sub">${body}</div>
+          <div class="jai-modal-sub" style="opacity:.75;margin-top:10px;">準備OK: ${ok}/${total}（30秒で自動進行）</div>
+        </div>
+        <button class="jai-modal-close" id="btnRoleClose" ${myReady ? "disabled" : ""}>
+          ${myReady ? "OK済み" : "OK"}
+        </button>
+      </div>
+    `);
+
+    roleModal.querySelector("#btnRoleClose")?.addEventListener("click", () => {
+      socket.emit("judgement:roleOk", { roomId: currentRoomId });
+    });
+
+    // 30秒自動OK（未OKのみ）
+    clearAutoOkTimers();
+    if (!myReady) {
+      autoOkTimers.ROLE = setTimeout(() => {
+        socket.emit("judgement:roleOk", { roomId: currentRoomId });
+      }, 30000);
+    }
+    return;
+  }
+
+  // BRIEF（お題確認→30秒 or 全員閉じで ANSWERへ）
+  if (st.phase === "BRIEF") {
+    roleModal = roleModal || ensureModal("jaiRoleModal");
+
+    const topic = st?.topic || "";
+    const readyMap = st?.briefReady || null;
+    const myReady = readyMap && myName ? readyMap[myName] === true : false;
+    const ok = readyMap ? Object.values(readyMap).filter(v => v === true).length : 0;
+    const total = readyMap ? Object.keys(readyMap).length : 0;
+
+    showModal(roleModal, `
+      <div class="jai-modal-head">
+        <div>
+          <div class="jai-modal-title">お題の確認</div>
+          <div class="jai-answer-topic">【お題】${escapeHtml(topic)}</div>
+          <div class="jai-modal-sub">レジスタンスはこのあと回答モーダルが開きます。120文字以内で入力してください。</div>
+          <div class="jai-modal-sub" style="opacity:.75;margin-top:10px;">準備OK: ${ok}/${total}（30秒で自動進行）</div>
+        </div>
+        <button class="jai-modal-close" id="btnBriefClose" ${myReady ? "disabled" : ""}>
+          ${myReady ? "OK済み" : "OK"}
+        </button>
+      </div>
+    `);
+
+    roleModal.querySelector("#btnBriefClose")?.addEventListener("click", () => {
+      socket.emit("judgement:roundOk", { roomId: currentRoomId });
+    });
+
+    clearAutoOkTimers();
+    if (!myReady) {
+      autoOkTimers.BRIEF = setTimeout(() => {
+        socket.emit("judgement:roundOk", { roomId: currentRoomId });
+      }, 30000);
+    }
+    return;
+  }
+
+  // それ以外は閉じる
+  if (roleModal) hideModal(roleModal);
+}
+
+
+
+  let draftAnswerText = "";     // ローカル下書き
+let hasSubmittedAnswer = false;
+
+function openAnswerModal(st, socket) {
+  if (st.phase !== "ANSWER") return;
+  if (st.hunter === me()) return; // 狩人は回答しない
+  if (hasSubmittedAnswer) return; // 送信後は原則閉じたまま（再編集したいなら自己カードタップで開く）
+
+  answerModal = answerModal || ensureModal("jaiAnswerModal");
+
+  const topic = st?.topic || "";
+  const now = Date.now();
+  const remain = st.answerDeadlineAt ? Math.max(0, Math.ceil((st.answerDeadlineAt - now) / 1000)) : null;
+
+  const current = draftAnswerText || "";
+  showModal(answerModal, `
+    <div class="jai-modal-head">
+      <div>
+        <div class="jai-modal-title">回答入力 <span class="jai-pill">120文字以内</span></div>
+        <div class="jai-modal-sub">締切まで: <b>${remain ?? "-"}</b> 秒</div>
+      </div>
+      <button class="jai-modal-close" id="btnAnswerHide">閉じる</button>
+    </div>
+
+    <div class="jai-answer-topic">【お題】${escapeHtml(topic)}</div>
+
+    <textarea class="jai-answer-textarea" id="jaiAnswerInput" maxlength="120"
+      placeholder="AIっぽい回答を120文字以内で入力">${escapeHtml(current)}</textarea>
+
+    <div class="jai-answer-foot">
+      <div class="jai-charcount" id="jaiCharCount">${current.length}/120</div>
+      <button class="jai-primary" id="jaiSubmitAnswer">送信</button>
+    </div>
+
+    <div class="jai-modal-sub" style="opacity:.8;margin-top:10px;">
+      送信後も、あなたのカードをタップすれば締切まで再編集できます。
+    </div>
+  `);
+
+  const ta = answerModal.querySelector("#jaiAnswerInput");
+  const cc = answerModal.querySelector("#jaiCharCount");
+  const btnHide = answerModal.querySelector("#btnAnswerHide");
+  const btnSend = answerModal.querySelector("#jaiSubmitAnswer");
+
+  const sync = () => {
+    const t = String(ta.value || "");
+    draftAnswerText = t;
+    cc.textContent = `${t.length}/120`;
+    btnSend.disabled = (t.trim().length === 0);
+  };
+  ta.addEventListener("input", sync);
+  sync();
+
+  btnHide.addEventListener("click", () => hideModal(answerModal));
+
+  btnSend.addEventListener("click", () => {
+    const text = String(ta.value || "").trim();
+    if (!text) return alert("回答が空です");
+    if (text.length > 120) return alert("120文字以内にしてください");
+    if (st.answerDeadlineAt && Date.now() > st.answerDeadlineAt) return alert("締切を過ぎています");
+
+    hasSubmittedAnswer = true;       // 連打防止
+    socket.emit("judgement:submitAnswer", { roomId: currentRoomId, username: me(), text });
+    hideModal(answerModal);
+  });
+}
+
+function reopenAnswerModalIfPossible(st, socket) {
+  // 自己カードタップから呼ぶ
+  if (st.phase !== "ANSWER") return;
+  if (st.hunter === me()) return;
+  if (st.answerDeadlineAt && Date.now() > st.answerDeadlineAt) return;
+  // 再編集を許可するので、送信済みでもOK（送るのは上書き扱いにしたいならサーバも対応が必要）
+  hasSubmittedAnswer = false;
+  openAnswerModal(st, socket);
+}
+
+
+  let hasSubmittedJudge = false;
+
+function renderCards(st, socket) {
+  if (!gameArea) return;
+  const cards = Array.isArray(st.cards) ? st.cards : [];
+
+  const isMeHunter = (st.hunter === me());
+  const selectable = (st.phase === "JUDGE" && isMeHunter && !hasSubmittedJudge);
+
+  // RESULT用（サーバが持っていれば使う：無ければ何もしない）
+  const picked = new Set((st?.result?.pickedSlotIds || st?.pickedSlotIds || []).map(String));
+  const hit = new Set((st?.result?.hitSlotIds || []).map(String));
+  const miss = new Set((st?.result?.missSlotIds || []).map(String));
+
+  gameArea.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.className = "judge-cards";
+
+  cards.forEach((c) => {
+    const slotId = String(c.slotId);
+
+    // ---- 自分判定：サーバが name を隠すなら、少なくとも slotId 側で self フラグが欲しい。
+    // ここは「nameが自分と一致」または「c.isSelf」などがある想定で両対応にしておく。
+    const isSelf = (c.isSelf === true) || (c.name && c.name === me()) || (c.username && c.username === me());
+
+    // 表示名：自分だけ見える。他人は伏せる（ゲーム性）
+    const displayName = isSelf ? (me() || "YOU") : (st.phase === "RESULT" || st.phase === "GAME_OVER" ? (c.name || "???") : "???");
+
+    // 回答表示：自分だけ見える（常時）。他人は RESULT 以降は見える
+    const displayAnswer = isSelf
+      ? (c.answer || "(未回答)")
+      : ((st.phase === "RESULT" || st.phase === "JUDGE" || st.phase === "GAME_OVER")
+          ? (c.answer || "(未回答)")
+          : "???");
+
+    const card = document.createElement("div");
+    card.className = "judge-card";
+    if (selectable || (st.phase === "ANSWER" && isSelf)) card.classList.add("tapable");
+    if (isSelf) card.classList.add("self");
+    if (selectedSlotIds.has(slotId)) card.classList.add("selected");
+
+    // RESULTのエフェクト
+    if (picked.has(slotId)) card.classList.add("picked");
+    if (hit.has(slotId)) card.classList.add("hit");
+    if (miss.has(slotId)) card.classList.add("miss");
+
+    card.dataset.slotId = slotId;
+
+    const img = document.createElement("img");
+    img.src = c.avatar;
+    img.alt = "avatar";
+
+    const ans = document.createElement("div");
+    ans.className = "answer";
+    ans.textContent = displayAnswer;
+
+    const nm = document.createElement("div");
+    nm.className = "name";
+    nm.textContent = displayName;
+
+    card.appendChild(img);
+    card.appendChild(ans);
+    card.appendChild(nm);
+
+    // --- click behavior
+    card.addEventListener("click", () => {
+      // 自分のカード → 回答モーダル再開（ANSWER中のみ）
+      if (st.phase === "ANSWER" && isSelf && !isMeHunter) {
+        reopenAnswerModalIfPossible(st, socket);
+        return;
+      }
+
+      // 狩人の選択
+      if (selectable) {
+        const need = Number(st.picksRequired || 0);
+        if (selectedSlotIds.has(slotId)) selectedSlotIds.delete(slotId);
+        else {
+          if (selectedSlotIds.size >= need) return;
+          selectedSlotIds.add(slotId);
+        }
+        renderCards(st, socket);
+        renderJudgePanel(st, socket);
+      }
+    });
+
+    wrap.appendChild(card);
+  });
+
+  gameArea.appendChild(wrap);
+}
+
+  function openResultModal(st, socket) {
+  if (st.phase !== "RESULT") return;
+
+  resultModal = resultModal || ensureModal("jaiResultModal");
+
+  const now = Date.now();
+  const sec = st.resultDeadlineAt ? Math.max(0, Math.ceil((st.resultDeadlineAt - now) / 1000)) : null;
+
+  // サーバが持ってる情報に合わせて表示（無ければ “ランキングのみ” でも可）
+  const ranking = Array.isArray(st.ranking) ? st.ranking : [];
+  const deltas = st?.result?.deltas || st?.deltas || null; // あるなら使う
+
+  const deltaHtml = Array.isArray(deltas)
+    ? `<div class="jai-modal-sub" style="margin-top:10px;">
+         <b>今回の得点</b><br>
+         ${deltas.map(d => `${escapeHtml(d.name)} : ${d.delta >= 0 ? "+" : ""}${d.delta}`).join("<br>")}
+       </div>`
+    : "";
+
+  const rankHtml = ranking.length
+    ? `<div class="jai-modal-sub" style="margin-top:12px;">
+         <b>現在ランキング</b><br>
+         ${ranking.map((r,i) => `${i+1}位 ${escapeHtml(r.name)} : ${r.points}点`).join("<br>")}
+       </div>`
+    : `<div class="jai-modal-sub" style="margin-top:12px;opacity:.85;">ランキング情報が未取得です</div>`;
+
+  showModal(resultModal, `
+    <div class="jai-modal-head">
+      <div>
+        <div class="jai-modal-title">ラウンド結果</div>
+        <div class="jai-modal-sub">次ラウンドまで: <b>${sec ?? "-"}</b> 秒（全員が閉じると即開始）</div>
+      </div>
+      <button class="jai-modal-close" id="btnResultClose">閉じる</button>
+    </div>
+    ${deltaHtml}
+    ${rankHtml}
+  `);
+
+  resultModal.querySelector("#btnResultClose")?.addEventListener("click", () => {
+    hideModal(resultModal);
+    socket.emit("judgement:resultReady", { roomId: currentRoomId, username: me() });
+  });
+
+  // 時間でも自動 close（= resultReady）したいなら
+  // ※サーバが既に deadline で進むなら “閉じる” は任意。ここは好み。
+  if (sec != null && sec <= 1) {
+    hideModal(resultModal);
+  }
+}
+
+  /*
   function renderPhaseOverlay(st) {
     ensurePhaseOverlay();
     if (!phaseOverlay || !phaseOverlayInner) return;
@@ -281,7 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // それ以外は非表示
     phaseOverlay.style.display = "none";
-  }
+  }*/
 
   // ---- auth
   function sendAuthIfPossible() {
@@ -594,44 +960,48 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderGame(st) {
-    openGame();
-    renderTopBar(st);
+  openGame();
+  renderTopBar(st);
 
-    // フェーズ変化時の初期化
-    if (st.phase !== lastPhase) {
-      if (st.phase === "ANSWER") {
-        hasSubmittedAnswer = false;
-        if (btnSubmitAnswer) btnSubmitAnswer.textContent = "回答を送信";
-        if (answerInput) answerInput.value = "";
-        if (answerCharCount) answerCharCount.textContent = "0/120";
-      }
-      if (st.phase === "JUDGE") {
-        selectedSlotIds.clear();
-        hasSubmittedJudge = false;
-      }
-      if (st.phase === "RESULT") {
-        // 次ラウンド準備などはサーバ側に委ねる
-      }
-      lastPhase = st.phase;
+  // フェーズ変化で状態リセット
+  if (st.phase !== lastPhase) {
+    if (st.phase === "ANSWER") {
+      hasSubmittedAnswer = false;
+      draftAnswerText = "";
     }
-
-    renderCards(st);
-    renderAnswerPanel(st);
-    renderJudgePanel(st);
-    renderResultPanel(st);
-    renderPhaseOverlay(st);
-
-    startLocalTimer();
-
-    if (st.phase === "GAME_OVER" && Array.isArray(st.ranking)) {
-      alert(
-        "ゲーム終了\n" +
-        st.ranking
-          .map((r, i) => `${i + 1}位 ${r.name} : ${r.points}点（AI誤断罪 ${r.aiFalsePositives}）`)
-          .join("\n")
-      );
+    if (st.phase === "JUDGE") {
+      selectedSlotIds.clear();
+      hasSubmittedJudge = false;
     }
+    lastPhase = st.phase;
   }
+
+  // ROLE/BRIEF（INTROは自動スキップ）
+  renderRoleOrBriefModal(st, socket);
+
+  // カード描画（スマホ1列・自己可視・タップで再編集）
+  renderCards(st, socket);
+
+  // ANSWERになったら自動で回答モーダル（レジスタントのみ）
+  if (st.phase === "ANSWER") {
+    openAnswerModal(st, socket);
+  } else {
+    if (answerModal) hideModal(answerModal);
+  }
+
+  // JUDGEパネルは従来どおり（ボタン表示）
+  renderJudgePanel(st, socket);
+
+  // RESULTになったらランキングモーダル
+  if (st.phase === "RESULT") {
+    openResultModal(st, socket);
+  } else {
+    if (resultModal) hideModal(resultModal);
+  }
+
+  startLocalTimer();
+}
+
 
   // ---- socket handlers
   socket.on("judgement:state", (state) => {
