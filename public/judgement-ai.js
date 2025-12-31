@@ -513,10 +513,14 @@ function renderCards(st, socket) {
     ${rankHtml}
   `);
 
-  resultModal.querySelector("#btnResultClose")?.addEventListener("click", () => {
+  const b = resultModal.querySelector("#btnResultClose");
+if (b) {
+  b.onclick = () => {
     hideModal(resultModal);
     socket.emit("judgement:resultReady", { roomId: currentRoomId, username: me() });
-  });
+  };
+}
+
 
   // 時間でも自動 close（= resultReady）したいなら
   // ※サーバが既に deadline で進むなら “閉じる” は任意。ここは好み。
