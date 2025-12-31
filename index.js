@@ -139,7 +139,15 @@ function validateUsername(username) {
   if (!u) return "username is empty";
   if (u.includes("/")) return "username must not include '/'";
   return null;
+  
 }
+function getAuthedName(socket, payload) {
+  const u = String(socket.data.username || payload?.username || "").trim();
+  if (!u) throw new Error("not_authed");
+  socket.data.username = u; // 一度取れたら固定
+  return u;
+}
+
 
 function isRecruitStopped(statusB) {
   return String(statusB || "").includes("/募集停止");
@@ -266,7 +274,7 @@ function isInBattle(statusB) {
 // 断罪AI：ゲーム（G列に gameJson を保存）
 // ================================
 const TOPICS = [
-  "好きな季節について、その理由や情景も含めて教えて",
+  "好きな季節について、その理由も含めて教えて",
   "最近よく食べているものと、それを選ぶ理由は？",
   "何も予定がない一日をどう過ごすことが多い？",
   "日常の中で小さな楽しみだと感じていることは？",
@@ -309,6 +317,15 @@ const TOPICS = [
   "自分がAIだと疑われたらどう説明する？",
   "他人との差を感じる瞬間は？",
 ];
+
+
+// ★ フェーズ自動遷移の時間（ms）
+const INTRO_MS  = 6000;
+const RULES_MS  = 6000;
+const ROLE_MS   = 4000;
+const BRIEF_MS  = 4000;
+const ANSWER_MS = 120_000;
+const RESULT_MS = 30_000;
 
 // いまはあなたが貼ってくれた画像を採用（増やすのはここに追加するだけ）
 const AVATAR_URLS = [
@@ -402,16 +419,177 @@ function setGameState(roomId, newState) {
   scheduleFlushGameToSheet(roomId);
 }
 
+
+function ensureCacheEntry(roomId, stateIfMissing = null) {
+  const rid = String(roomId || "").trim();
+  if (!rid) return null;
+
+  const ent = gameCache.get(rid);
+  if (ent) {
+    ent.phaseTimers ||= {};
+    return ent;
+  }
+
+  const created = { state: stateIfMissing, flushTimer: null, phaseTimers: {} };
+  gameCache.set(rid, created);
+  return created;
+}
+
+function clearTimer(ent, key) {
+  if (ent?.phaseTimers?.[key]) {
+    clearTimeout(ent.phaseTimers[key]);
+    ent.phaseTimers[key] = null;
+  }
+}
+
+function scheduleAt(ent, key, deadlineAt, fn) {
+  clearTimer(ent, key);
+  if (!deadlineAt) return;
+  const delay = Math.max(0, Number(deadlineAt) - Date.now());
+  ent.phaseTimers[key] = setTimeout(fn, delay + 25);
+}
+
+async function scheduleAllTimers(io, roomId) {
+  const rid = String(roomId || "").trim();
+  const ent = ensureCacheEntry(rid);
+  if (!ent?.state) return;
+
+  // いったん全部クリアして「今のphaseに必要なものだけ」貼り直す
+  for (const k of ["intro", "rules", "role", "brief", "answer", "result"]) {
+    clearTimer(ent, k);
+  }
+
+  const st = ent.state;
+
+  if (st.phase === "INTRO") {
+    scheduleAt(ent, "intro", st.introDeadlineAt, () => advanceFromIntro(io, rid));
+    return;
+  }
+
+  if (st.phase === "RULES") {
+    scheduleAt(ent, "rules", st.rulesDeadlineAt, () => advanceFromRules(io, rid));
+    return;
+  }
+
+  if (st.phase === "ROLE") {
+    scheduleAt(ent, "role", st.roleDeadlineAt, () => advanceFromRole(io, rid));
+    return;
+  }
+
+  if (st.phase === "BRIEF") {
+    scheduleAt(ent, "brief", st.briefDeadlineAt, () => advanceFromBrief(io, rid));
+    return;
+  }
+
+  if (st.phase === "ANSWER") {
+    scheduleAt(ent, "answer", st.round?.answerDeadlineAt, () => advanceFromAnswer(io, rid));
+    return;
+  }
+
+  if (st.phase === "RESULT") {
+    scheduleAt(ent, "result", st.round?.resultDeadlineAt, () => advanceFromResult(io, rid));
+    return;
+  }
+}
+
+// ---- 進行：INTRO → RULES
+async function advanceFromIntro(io, roomId) {
+  const st = gameCache.get(roomId)?.state || await loadGameState(roomId);
+  if (!st || st.phase !== "INTRO") return;
+  if (Date.now() < Number(st.introDeadlineAt || 0)) return;
+
+  st.phase = "RULES";
+  st.introDeadlineAt = null;
+  st.rulesDeadlineAt = nowMs() + RULES_MS;
+
+  setGameState(roomId, st);
+  await broadcastGame(io, roomId);
+  await scheduleAllTimers(io, roomId);
+}
+
+// ---- 進行：RULES → 1st round（ROLE）
+async function advanceFromRules(io, roomId) {
+  const st = gameCache.get(roomId)?.state || await loadGameState(roomId);
+  if (!st || st.phase !== "RULES") return;
+  if (Date.now() < Number(st.rulesDeadlineAt || 0)) return;
+
+  // ルール表示が終わったらラウンド作成
+  await startNextRound(io, roomId);
+}
+
+// ---- 進行：ROLE → BRIEF
+async function advanceFromRole(io, roomId) {
+  const st = gameCache.get(roomId)?.state || await loadGameState(roomId);
+  if (!st || st.phase !== "ROLE") return;
+  if (Date.now() < Number(st.roleDeadlineAt || 0)) return;
+
+  st.phase = "BRIEF";
+  st.roleDeadlineAt = null;
+  st.briefDeadlineAt = nowMs() + BRIEF_MS;
+
+  setGameState(roomId, st);
+  await broadcastGame(io, roomId);
+  await scheduleAllTimers(io, roomId);
+}
+
+// ---- 進行：BRIEF → ANSWER
+async function advanceFromBrief(io, roomId) {
+  const st = gameCache.get(roomId)?.state || await loadGameState(roomId);
+  if (!st || st.phase !== "BRIEF") return;
+  if (Date.now() < Number(st.briefDeadlineAt || 0)) return;
+
+  await beginAnswerPhase(io, roomId);
+}
+
+// ---- ANSWER開始（締切タイマーもここで確定）
+async function beginAnswerPhase(io, roomId) {
+  const st = gameCache.get(roomId)?.state || await loadGameState(roomId);
+  if (!st) throw new Error("game_not_found");
+  if (st.phase !== "BRIEF") throw new Error("invalid_phase");
+  if (!st.round) throw new Error("round_missing");
+
+  st.phase = "ANSWER";
+  st.briefDeadlineAt = null;
+  st.round.answerDeadlineAt = nowMs() + ANSWER_MS;
+
+  setGameState(roomId, st);
+  await broadcastGame(io, roomId);
+  await scheduleAllTimers(io, roomId);
+}
+
+// ---- 進行：ANSWER → JUDGE（締切で自動）
+async function advanceFromAnswer(io, roomId) {
+  const st = gameCache.get(roomId)?.state || await loadGameState(roomId);
+  if (!st || st.phase !== "ANSWER") return;
+  if (Date.now() < Number(st.round?.answerDeadlineAt || 0)) return;
+
+  st.phase = "JUDGE";
+  setGameState(roomId, st);
+  await broadcastGame(io, roomId);
+  // JUDGEはタイマー不要
+}
+
+// ---- 進行：RESULT → 次ラウンド（締切で自動）
+async function advanceFromResult(io, roomId) {
+  const st = gameCache.get(roomId)?.state || await loadGameState(roomId);
+  if (!st || st.phase !== "RESULT") return;
+  if (Date.now() < Number(st.round?.resultDeadlineAt || 0)) return;
+
+  await startNextRound(io, roomId);
+}
+
+
 // ---- 公開用state（断罪前に「誰がどのカードか」を隠す）
 function publicGameView(state) {
   if (!state) return null;
 
   const phase = state.phase;
-  const revealIdentity = (phase === "RESULT" || phase === "GAME_OVER");
-  const hideAnswers = (phase === "ANSWER" || phase === "BRIEF" || phase === "INTRO" || phase === "ROLE");
 
-  // ★ INTRO/ROLEは表示物を最小に（世界観/職業フェーズ専用）
-  const hideTopicAndCards = (phase === "INTRO" || phase === "ROLE");
+  const revealIdentity = (phase === "RESULT" || phase === "GAME_OVER");
+  const hideAnswers = (phase === "ANSWER" || phase === "BRIEF" || phase === "INTRO" || phase === "RULES" || phase === "ROLE");
+
+  // INTRO/RULES/ROLE はオーバーレイ専用（カード表示を消す）
+  const hideTopicAndCards = (phase === "INTRO" || phase === "RULES" || phase === "ROLE");
 
   const cards = hideTopicAndCards ? [] : (state.round?.cards || []).map(c => ({
     slotId: c.slotId,
@@ -426,23 +604,30 @@ function publicGameView(state) {
     roomId: state.roomId,
     phase: state.phase,
     roundIndex: state.roundIndex,
+
     hunter: state.round?.hunter || null,
     topic: hideTopicAndCards ? "" : (state.round?.topic || ""),
 
     answerDeadlineAt: state.round?.answerDeadlineAt || null,
     resultDeadlineAt: state.round?.resultDeadlineAt || null,
     picksRequired: state.round?.picksRequired ?? null,
+
+    // ★ 追加：INTRO/RULES/ROLE/BRIEF のdeadline
+    introDeadlineAt: state.introDeadlineAt || null,
+    rulesDeadlineAt: state.rulesDeadlineAt || null,
+    roleDeadlineAt: state.roleDeadlineAt || null,
+    briefDeadlineAt: state.briefDeadlineAt || null,
+
     ranking: state.phase === "GAME_OVER" ? (state.ranking || []) : null,
     stats: state.stats || null,
     cards,
-    intro: state.intro || null,
 
-    // ★ 追加：OK状況
-    introReady: state.introReady || null,
-    roleReady: state.round?.roleReady || null,
-    briefReady: state.round?.briefReady || null,
+    // 世界観/ルール本文（クライアントが使えるように渡す）
+    intro: state.intro || null,
+    rules: state.rules || null,
   };
 }
+
 
 
 
@@ -489,8 +674,16 @@ async function startNextRound(io, roomId) {
 
     state.phase = "GAME_OVER";
     state.ranking = ranking;
+
+    // タイマー用deadlineはクリア
+    state.introDeadlineAt = null;
+    state.rulesDeadlineAt = null;
+    state.roleDeadlineAt = null;
+    state.briefDeadlineAt = null;
+
     setGameState(roomId, state);
     await broadcastGame(io, roomId);
+    await scheduleAllTimers(io, roomId);
     return;
   }
 
@@ -503,16 +696,15 @@ async function startNextRound(io, roomId) {
   const resistants = members.filter(x => x !== hunter);
 
   const aiCount = Number(state.aiCount || 1);
-    const totalCards = resistants.length + aiCount;
+  const totalCards = resistants.length + aiCount;
 
-  // ★ アバター不足でも落とさない（不足分は循環して使う）
+  // アバター不足でも落とさない（循環）
   const baseAvatars = shuffle(AVATAR_URLS);
   const avatars = Array.from({ length: totalCards }, (_, i) => baseAvatars[i % baseAvatars.length]);
 
   const cards = [];
 
-
-  // 人間（レジスタント）カード
+  // 人間（レジスタント）
   resistants.forEach((u, i) => {
     cards.push({
       slotId: `H:${u}`,
@@ -524,7 +716,7 @@ async function startNextRound(io, roomId) {
     });
   });
 
-  // AIカード
+  // AI
   for (let i = 0; i < aiCount; i++) {
     cards.push({
       slotId: `A:${i}`,
@@ -536,11 +728,15 @@ async function startNextRound(io, roomId) {
     });
   }
 
-    // ★ ラウンド作成：まずROLE（世界観の次に、あなたの職業を見せる）
-    state.roundIndex = (state.roundIndex || 0) + 1;
+  state.roundIndex = (state.roundIndex || 0) + 1;
 
-  // ★ ROLEフェーズを追加（この後にBRIEFへ）
+  // ★ ここから ROLE → BRIEF → ANSWER は時間で自動遷移
   state.phase = "ROLE";
+  state.roleDeadlineAt = nowMs() + ROLE_MS;
+  state.briefDeadlineAt = null;
+  state.introDeadlineAt = null;
+  state.rulesDeadlineAt = null;
+
   state.round = {
     hunter,
     topic,
@@ -548,25 +744,18 @@ async function startNextRound(io, roomId) {
     picksRequired: resistants.length,
     answerDeadlineAt: null,
     resultDeadlineAt: null,
-    ready: {},
-
-    // ★ 追加：INTRO/ROLE/BRIEF のOK管理
-    roleReady: Object.fromEntries((members || []).map(u => [u, false])),
-    briefReady: Object.fromEntries((members || []).map(u => [u, false])),
   };
-
-
 
   setGameState(roomId, state);
   await broadcastGame(io, roomId);
+  await scheduleAllTimers(io, roomId);
 
-  // ★ AI生成（非同期）→ でき次第カードに埋める（BRIEF中でもOK）
+  // ★ AI生成（ROLE/BRIEF/ANSWER のどこで完了しても反映してOK）
   generateAIAnswers(topic, aiCount)
     .then(list => {
       const st = gameCache.get(roomId)?.state;
-      // BRIEF/ANSWER のどちらでも反映してよい
       if (!st || !st.round) return;
-      if (!(st.phase === "BRIEF" || st.phase === "ANSWER")) return;
+      if (!(st.phase === "ROLE" || st.phase === "BRIEF" || st.phase === "ANSWER")) return;
 
       let k = 0;
       st.round.cards.forEach(c => {
@@ -575,11 +764,13 @@ async function startNextRound(io, roomId) {
           k++;
         }
       });
+
       setGameState(roomId, st);
       broadcastGame(io, roomId).catch(console.error);
     })
     .catch(e => console.error("[AI answers] error:", e));
 }
+
 
 
 // ---- 初期化（ホストが開始）
@@ -590,7 +781,6 @@ async function initGame(io, roomId, aiCount) {
   if (idx < 0) throw new Error("room_not_found");
 
   const row = rows[idx];
-  const host = String(row[2] || "");
   const members = parseSlashList(row[3]);
 
   const st = {
@@ -598,21 +788,34 @@ async function initGame(io, roomId, aiCount) {
     phase: "INTRO",
     aiCount: Number(aiCount || 1),
     members,
-    remainingHunters: shuffle(members), // 全員1回やる（ランダム順の母集団としてもOK）
+    remainingHunters: shuffle(members),
     roundIndex: 0,
     round: null,
     stats: {
       points: Object.fromEntries(members.map(u => [u, 0])),
       aiFalsePositives: Object.fromEntries(members.map(u => [u, 0])),
     },
+
     intro: {
       title: "断罪AI",
       text: "AIが勝利した世界。あなたたちは“AIっぽい”言葉で生き延びるレジスタント。狩人は混ざった人間を見抜け。",
     },
+    rules: {
+      title: "ルール",
+      text:
+        "断罪狩人1人・レジスタント複数人。お題に対してレジスタントはAIっぽい回答（120文字以内）を出す。AI回答も混ざる。狩人は人間を見抜いて断罪。狩人は的中数だけ得点。レジスタントは見抜かれなければ+1点。",
+    },
+
+    // ★ 自動遷移用deadline
+    introDeadlineAt: nowMs() + INTRO_MS,
+    rulesDeadlineAt: null,
+    roleDeadlineAt: null,
+    briefDeadlineAt: null,
+
     ranking: null,
   };
 
-  // ★ E列へAI数 / ★ B列を対戦中へ / ★ G列へgameJson初期化
+  // ★ E列へAI数 / B列を対戦中 / G列へgameJson初期化（stを確定させてから書く）
   const rowNumber = sheetRowNumberFromIndex(idx);
   await updateJudgeCells(sheets, rowNumber, [
     { col: "E", value: String(st.aiCount) },
@@ -620,15 +823,13 @@ async function initGame(io, roomId, aiCount) {
     { col: "G", value: JSON.stringify(st) },
   ]);
 
-      // ★ INTROのOK待ち用（全員OKでROLEへ進める）
-  st.introReady = Object.fromEntries((members || []).map(u => [u, false]));
-
+  // cacheに載せる
   gameCache.set(roomId, { state: st, flushTimer: null, phaseTimers: {} });
+
   await broadcastGame(io, roomId);
-
-  // ★ ここでは進めない（INTROフェーズを表示する）
-
+  await scheduleAllTimers(io, roomId);
 }
+
 
 
 // ---- 狩人の断罪確定 → RESULTへ
@@ -675,27 +876,15 @@ async function resolveJudgement(io, roomId, hunterName, pickedSlotIds) {
     }
   });
 
-  // RESULTへ
+  // RESULTへ（30秒で自動で次ラウンドへ）
   st.phase = "RESULT";
-  st.round.resultDeadlineAt = nowMs() + 30_000;
-  st.round.ready = Object.fromEntries((st.members || []).map(u => [u, false]));
+  st.round.resultDeadlineAt = nowMs() + RESULT_MS;
 
   setGameState(roomId, st);
   await broadcastGame(io, roomId);
-
-  // 30秒タイムアウトで次へ
-  const ent = gameCache.get(roomId);
-  if (ent.phaseTimers?.result) clearTimeout(ent.phaseTimers.result);
-  ent.phaseTimers.result = setTimeout(async () => {
-    try {
-      const cur = gameCache.get(roomId)?.state;
-      if (!cur || cur.phase !== "RESULT") return;
-      await startNextRound(io, roomId);
-    } catch (e) {
-      console.error("[RESULT timeout] error:", e);
-    }
-  }, 30_000 + 50);
+  await scheduleAllTimers(io, roomId);
 }
+
 
 
 
@@ -1813,23 +2002,29 @@ io.on("connection", (socket) => {
   console.log("✅ client connected:", socket.id);
 
 
-  /*if (window.currentUser?.username) {
-    socket.emit("judgement:auth", { username: window.currentUser.username });
-  }*/
-  
-  // ---- クライアントが自分のusernameを紐付ける（必須）
+    // ---- クライアントが自分のusernameを紐付ける
   socket.on("judgement:auth", ({ username } = {}) => {
-    socket.data.username = String(username || "").trim();
+    const u = String(username || "").trim();
+    const err = validateUsername(u);
+    if (err) return; // 不正なら無視
+    socket.data.username = u;
   });
 
-  // ---- 待機ルーム監視（あなたの既存 watch をこちらへ寄せる）
-  socket.on("judgement:watch", async ({ roomId } = {}) => {
+  // ---- 待機ルーム監視
+  socket.on("judgement:watch", async ({ roomId, username } = {}) => {
     const rid = String(roomId || "").trim();
     if (!rid) return;
 
+    // authを送ってないクライアント救済（watchにusernameを入れてくればここで紐付け）
+    if (!socket.data.username && username) {
+      const u = String(username).trim();
+      const err = validateUsername(u);
+      if (!err) socket.data.username = u;
+    }
+
     socket.join(judgeSocketRoom(rid));
 
-    // 待機状態（members等）を1回だけpush（あなたの broadcastJudgeState を使うならそれでもOK）
+    // 待機状態
     try {
       const st = await buildJudgeState(rid);
       if (st) socket.emit("judgement:state", st);
@@ -1837,10 +2032,12 @@ io.on("connection", (socket) => {
       console.error("[judgement:watch] buildJudgeState error:", e);
     }
 
-    // ゲームが既に始まっているなら gameState もpush
+    // ゲーム状態
     try {
       const g = await loadGameState(rid);
       if (g) socket.emit("judgement:gameState", publicGameView(g));
+      // ★ サーバ再起動後などでもタイマーが復活するよう、watch時に再スケジュール
+      if (g) await scheduleAllTimers(io, rid);
     } catch (e) {
       console.error("[judgement:watch] loadGameState error:", e);
     }
@@ -1852,13 +2049,13 @@ io.on("connection", (socket) => {
     socket.leave(judgeSocketRoom(rid));
   });
 
-  // ---- ホスト：ゲーム開始（E列へAI数→G列初期化→ラウンド開始）
-  socket.on("judgement:gameStart", async ({ roomId, aiCount } = {}) => {
+  // ---- ホスト：ゲーム開始
+  socket.on("judgement:gameStart", async (payload = {}) => {
     try {
-      const rid = String(roomId || "").trim();
-      const me = String(socket.data.username || "").trim();
+      const rid = String(payload.roomId || "").trim();
       if (!rid) throw new Error("roomId_required");
-      if (!me) throw new Error("not_authed");
+
+      const me = getAuthedName(socket, payload);
 
       // host判定（シートから確認）
       const sheets = await getSheetsClient();
@@ -1868,162 +2065,20 @@ io.on("connection", (socket) => {
       const host = String(rows[idx]?.[2] || "");
       if (host !== me) throw new Error("only_host");
 
-      await initGame(io, rid, Number(aiCount || 1));
+      await initGame(io, rid, Number(payload.aiCount || 1));
     } catch (e) {
       console.error("[judgement:gameStart] error:", e);
       socket.emit("judgement:error", { message: String(e.message || e) });
     }
   });
 
-socket.on("judgement:roundOk", async ({ roomId } = {}) => {
-  try {
-    const rid = String(roomId || "").trim();
-    const me = String(socket.data.username || "").trim();
-    if (!rid) throw new Error("roomId_required");
-    if (!me) throw new Error("not_authed");
-
-    const st = gameCache.get(rid)?.state || await loadGameState(rid);
-    if (!st) throw new Error("game_not_found");
-    if (st.phase !== "BRIEF") throw new Error("invalid_phase");
-
-    if (st.round?.briefReady && typeof st.round.briefReady === "object") {
-      st.round.briefReady[me] = true;
-    }
-    setGameState(rid, st);
-    await broadcastGame(io, rid);
-
-    const allReady = Object.values(st.round.briefReady || {}).every(v => v === true);
-    if (!allReady) return;
-
-    // ★ 全員OK → ANSWER開始
-    st.phase = "ANSWER";
-    st.round.answerDeadlineAt = nowMs() + 120_000; // ★120秒
-    setGameState(rid, st);
-    await broadcastGame(io, rid);
-
-    // ★ 120秒締切タイマー
-    const ent = gameCache.get(rid);
-    if (ent.phaseTimers?.answer) clearTimeout(ent.phaseTimers.answer);
-    ent.phaseTimers.answer = setTimeout(async () => {
-      try {
-        const cur = gameCache.get(rid)?.state;
-        if (!cur || cur.phase !== "ANSWER") return;
-        cur.phase = "JUDGE";
-        setGameState(rid, cur);
-        await broadcastGame(io, rid);
-      } catch (e) {
-        console.error("[ANSWER->JUDGE] timer error:", e);
-      }
-    }, 120_000 + 50);
-
-  } catch (e) {
-    socket.emit("judgement:error", { message: String(e.message || e) });
-  }
-});
-
-socket.on("judgement:roleOk", async ({ roomId } = {}) => {
-  try {
-    const rid = String(roomId || "").trim();
-    const me = String(socket.data.username || "").trim();
-    if (!rid) throw new Error("roomId_required");
-    if (!me) throw new Error("not_authed");
-
-    const st = gameCache.get(rid)?.state || await loadGameState(rid);
-    if (!st) throw new Error("game_not_found");
-    if (st.phase !== "ROLE") throw new Error("invalid_phase");
-
-    if (st.round?.roleReady && typeof st.round.roleReady === "object") {
-      st.round.roleReady[me] = true;
-    }
-    setGameState(rid, st);
-    await broadcastGame(io, rid);
-
-    const allReady = Object.values(st.round.roleReady || {}).every(v => v === true);
-    if (!allReady) return;
-
-    // ★ 全員ROLE OK → BRIEFへ
-    st.phase = "BRIEF";
-    setGameState(rid, st);
-    await broadcastGame(io, rid);
-
-  } catch (e) {
-    socket.emit("judgement:error", { message: String(e.message || e) });
-  }
-});
-
-
-
-socket.on("judgement:introOk", async ({ roomId } = {}) => {
-  try {
-    const rid = String(roomId || "").trim();
-    const me = String(socket.data.username || "").trim();
-    if (!rid) throw new Error("roomId_required");
-    if (!me) throw new Error("not_authed");
-
-    const st = gameCache.get(rid)?.state || await loadGameState(rid);
-    if (!st) throw new Error("game_not_found");
-    if (st.phase !== "INTRO") throw new Error("invalid_phase");
-
-    if (!st.introReady || typeof st.introReady !== "object") {
-      st.introReady = Object.fromEntries((st.members || []).map(u => [u, false]));
-    }
-    st.introReady[me] = true;
-
-    setGameState(rid, st);
-    await broadcastGame(io, rid);
-
-    const allReady = Object.values(st.introReady || {}).every(v => v === true);
-    if (!allReady) return;
-
-    // ★ 全員OKで次ラウンド作成 → ROLEへ
-    await startNextRound(io, rid);
-  } catch (e) {
-    socket.emit("judgement:error", { message: String(e.message || e) });
-  }
-});
-
-
-socket.on("judgement:roleOk", async ({ roomId } = {}) => {
-  try {
-    const rid = String(roomId || "").trim();
-    const me = String(socket.data.username || "").trim();
-    if (!rid) throw new Error("roomId_required");
-    if (!me) throw new Error("not_authed");
-
-    const st = gameCache.get(rid)?.state || await loadGameState(rid);
-    if (!st) throw new Error("game_not_found");
-    if (st.phase !== "ROLE") throw new Error("invalid_phase");
-    if (!st.round) throw new Error("round_missing");
-
-    if (!st.round.roleReady || typeof st.round.roleReady !== "object") {
-      st.round.roleReady = Object.fromEntries((st.members || []).map(u => [u, false]));
-    }
-    st.round.roleReady[me] = true;
-
-    setGameState(rid, st);
-    await broadcastGame(io, rid);
-
-    const allReady = Object.values(st.round.roleReady || {}).every(v => v === true);
-    if (!allReady) return;
-
-    // ★ 全員OKでBRIEFへ
-    st.phase = "BRIEF";
-    setGameState(rid, st);
-    await broadcastGame(io, rid);
-  } catch (e) {
-    socket.emit("judgement:error", { message: String(e.message || e) });
-  }
-});
-
-
-
-  // ---- レジスタント：回答提出（上書き可、120字、ANSWERフェーズのみ）
-  socket.on("judgement:submitAnswer", async ({ roomId, text } = {}) => {
+  // ---- レジスタント：回答提出（ANSWERフェーズのみ）
+  socket.on("judgement:submitAnswer", async (payload = {}) => {
     try {
-      const rid = String(roomId || "").trim();
-      const me = String(socket.data.username || "").trim();
+      const rid = String(payload.roomId || "").trim();
       if (!rid) throw new Error("roomId_required");
-      if (!me) throw new Error("not_authed");
+
+      const me = getAuthedName(socket, payload);
 
       const st = gameCache.get(rid)?.state || await loadGameState(rid);
       if (!st) throw new Error("game_not_found");
@@ -2032,11 +2087,9 @@ socket.on("judgement:roleOk", async ({ roomId } = {}) => {
       if (st.round?.hunter === me) throw new Error("hunter_cannot_answer");
       if (nowMs() > Number(st.round?.answerDeadlineAt || 0)) throw new Error("deadline_passed");
 
-      const t = clampText120(String(text || "").replace(/\r/g, ""));
-      // 空も許容するならここを緩める。今回は「1人1件」なので空は弾く。
+      const t = clampText120(String(payload.text || "").replace(/\r/g, ""));
       if (!t.trim()) throw new Error("empty_answer");
 
-      // 自分のカードへ書く（H:username）
       const slotId = `H:${me}`;
       const card = (st.round?.cards || []).find(c => c.slotId === slotId);
       if (!card) throw new Error("not_resistant");
@@ -2051,45 +2104,34 @@ socket.on("judgement:roleOk", async ({ roomId } = {}) => {
   });
 
   // ---- 狩人：断罪確定（JUDGEフェーズ）
-  socket.on("judgement:judgePick", async ({ roomId, pickedSlotIds } = {}) => {
+  socket.on("judgement:judgePick", async (payload = {}) => {
     try {
-      const rid = String(roomId || "").trim();
-      const me = String(socket.data.username || "").trim();
+      const rid = String(payload.roomId || "").trim();
       if (!rid) throw new Error("roomId_required");
-      if (!me) throw new Error("not_authed");
-      await resolveJudgement(io, rid, me, pickedSlotIds);
+
+      const me = getAuthedName(socket, payload);
+
+      await resolveJudgement(io, rid, me, payload.pickedSlotIds);
     } catch (e) {
       socket.emit("judgement:error", { message: String(e.message || e) });
     }
   });
 
-  // ---- RESULT：次へ準備完了（全員 or 30s）
-  socket.on("judgement:resultReady", async ({ roomId } = {}) => {
+  // ---- RESULT：次へ準備完了（全員Readyで即次へ）※残してもOK、タイマーもあるので必須ではない
+  socket.on("judgement:resultReady", async (payload = {}) => {
     try {
-      const rid = String(roomId || "").trim();
-      const me = String(socket.data.username || "").trim();
+      const rid = String(payload.roomId || "").trim();
       if (!rid) throw new Error("roomId_required");
-      if (!me) throw new Error("not_authed");
 
-      const st = gameCache.get(rid)?.state || await loadGameState(rid);
-      if (!st) throw new Error("game_not_found");
-      if (st.phase !== "RESULT") throw new Error("invalid_phase");
+      getAuthedName(socket, payload); // not_authed対策（現時点ではReady情報は使わないが、エラー抑止）
 
-      if (st.round?.ready && typeof st.round.ready === "object") {
-        st.round.ready[me] = true;
-      }
-
-      setGameState(rid, st);
-      await broadcastGame(io, rid);
-
-      const allReady = Object.values(st.round.ready || {}).every(v => v === true);
-      if (allReady) {
-        await startNextRound(io, rid);
-      }
+      // ※今回は「時間で次へ」が要件なので、ここでは何もしない（将来早送りボタンを付けるなら使える）
+      // socket.emit("judgement:info", { message: "ok" });
     } catch (e) {
       socket.emit("judgement:error", { message: String(e.message || e) });
     }
   });
+
 
 
   // 休みイベントの生成
@@ -2191,6 +2233,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
