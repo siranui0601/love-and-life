@@ -718,27 +718,49 @@ if (b) {
     }
   }
 
+
+  function renderRankingBar(st){
+  const el = document.getElementById("rankingBar");
+  if (!el) return;
+
+  const ranking = Array.isArray(st.ranking) ? st.ranking : [];
+  if (!ranking.length) {
+    el.innerHTML = "";
+    return;
+  }
+
+  // 上位だけでOK（全部出すと縦が長い）
+  const top = ranking.slice(0, 5);
+  el.innerHTML = `
+    <div style="opacity:.85;font-size:12px;">ランキング（上位）</div>
+    <div style="font-size:13px;line-height:1.4;">
+      ${top.map((r,i)=>`${i+1}位 ${escapeHtml(r.name)}：${Number(r.points||0)}点`).join("<br>")}
+    </div>
+  `;
+}
+
+
   // ---- game描画
   function renderTopBar(st) {
-    if (gameTopic) gameTopic.textContent = st.topic ? `【お題】${st.topic}` : "";
-    if (gameMeta) {
-      const total = st.cards?.length || 0;
-      const req = st.picksRequired ?? "-";
-      gameMeta.textContent =
-        `フェーズ: ${st.phase} / ラウンド: ${st.roundIndex} / 狩人: ${st.hunter} / カード: ${total}（断罪必要数: ${req}）`;
-    }
+  if (gameTopic) gameTopic.textContent = st.topic ? `【お題】${st.topic}` : "";
 
-    const now = Date.now();
-    let line = "";
-    if (st.phase === "ANSWER" && st.answerDeadlineAt) {
-      const sec = Math.max(0, Math.ceil((st.answerDeadlineAt - now) / 1000));
-      line = `回答締切まで: ${sec}s`;
-    } else if (st.phase === "RESULT" && st.resultDeadlineAt) {
-      const sec = Math.max(0, Math.ceil((st.resultDeadlineAt - now) / 1000));
-      line = `次ラウンドまで: ${sec}s（全員準備OKでも即開始）`;
-    }
-    if (gameTimer) gameTimer.textContent = line;
+  // gameMeta は消していい（あなたの希望）
+  if (gameMeta) gameMeta.textContent = "";
+
+  const now = Date.now();
+  let line = "";
+  if (st.phase === "ANSWER" && st.answerDeadlineAt) {
+    const sec = Math.max(0, Math.ceil((st.answerDeadlineAt - now) / 1000));
+    line = `回答締切まで: ${sec}s`;
+  } else if (st.phase === "RESULT" && st.resultDeadlineAt) {
+    const sec = Math.max(0, Math.ceil((st.resultDeadlineAt - now) / 1000));
+    line = `次ラウンドまで: ${sec}s（全員準備OKで即開始）`;
   }
+  if (gameTimer) gameTimer.textContent = line;
+
+  renderRankingBar(st);
+}
+
 
   function renderJudgePanel(st) {
     if (!judgePanel) return;
@@ -777,11 +799,12 @@ if (b) {
     resultCountdown.textContent = `自動で次ラウンド: ${sec}s`;
   }
 
-  function renderGame(st) {
+let resultModalDelayTimer = null;
+
+function renderGame(st) {
   openGame();
   renderTopBar(st);
 
-  // フェーズ変化で状態リセット
   if (st.phase !== lastPhase) {
     if (st.phase === "ANSWER") {
       hasSubmittedAnswer = false;
@@ -791,34 +814,30 @@ if (b) {
       selectedSlotIds.clear();
       hasSubmittedJudge = false;
     }
+    if (st.phase === "RESULT") {
+      // ★結果モーダルは即出さず 800ms 遅らせる
+      if (resultModalDelayTimer) clearTimeout(resultModalDelayTimer);
+      resultModalDelayTimer = setTimeout(() => {
+        openResultModal(st, socket);
+      }, 800);
+    }
     lastPhase = st.phase;
   }
 
-  // ROLE/BRIEF（INTROは自動スキップ）
   renderRoleOrBriefModal(st, socket);
-
-  // カード描画（スマホ1列・自己可視・タップで再編集）
   renderCards(st, socket);
 
-  // ANSWERになったら自動で回答モーダル（レジスタントのみ）
-  if (st.phase === "ANSWER") {
-    openAnswerModal(st, socket);
-  } else {
-    if (answerModal) hideModal(answerModal);
-  }
+  if (st.phase === "ANSWER") openAnswerModal(st, socket);
+  else if (answerModal) hideModal(answerModal);
 
-  // JUDGEパネルは従来どおり（ボタン表示）
   renderJudgePanel(st, socket);
 
-  // RESULTになったらランキングモーダル
-  if (st.phase === "RESULT") {
-    openResultModal(st, socket);
-  } else {
-    if (resultModal) hideModal(resultModal);
-  }
+  // RESULTは上の遅延で開くので、ここでは “閉じるだけ”
+  if (st.phase !== "RESULT" && resultModal) hideModal(resultModal);
 
   startLocalTimer();
 }
+
 
 
   // ---- socket handlers
