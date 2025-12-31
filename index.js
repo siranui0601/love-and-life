@@ -639,22 +639,28 @@ function publicGameView(state, viewerUsername = null) {
   const scoreMap = buildScoreMap(state);
   const ranking = buildRankingFromScoreMap(scoreMap);
 
-  const cards = hideTopicAndCards
+    const cards = hideTopicAndCards
     ? []
-    : (state.round?.cards || []).map(c => ({
-        slotId: c.slotId,
-        avatar: c.avatar,
+    : (state.round?.cards || []).map(c => {
+        const isSelf =
+          v && c.kind === "human" && String(c.owner || "").trim() === v;
 
-        // 回答の匿名化：ANSWER/BRIEF/INTRO/RULES/ROLE では隠す
-        answer: hideAnswers ? "???" : (c.answer || ""),
+        return {
+          slotId: c.slotId,
+          avatar: c.avatar,
 
-        // 正体の匿名化：RESULT/GAME_OVER 以外は隠す
-        name: revealIdentity ? (c.kind === "ai" ? "AI" : c.owner) : "???",
-        kind: revealIdentity ? c.kind : "???",
+          // ★ここが重要：ANSWER等で隠すが「自分だけ」見える
+          answer: hideAnswers
+            ? (isSelf ? (c.answer || "") : "???")
+            : (c.answer || ""),
 
-        // ピック結果は RESULT/GAME_OVER 以外は隠す（現状踏襲）
-        pickedByHunter: revealIdentity ? !!c.pickedByHunter : false,
-      }));
+          name: revealIdentity ? (c.kind === "ai" ? "AI" : c.owner) : "???",
+          kind: revealIdentity ? c.kind : "???",
+
+          pickedByHunter: revealIdentity ? !!c.pickedByHunter : false,
+        };
+      });
+
 
   return {
     roomId: state.roomId,
@@ -999,6 +1005,10 @@ async function resolveJudgement(io, roomId, hunterName, pickedSlotIds) {
   // RESULTへ（30秒で自動で次ラウンドへ）
   st.phase = "RESULT";
   st.round.resultDeadlineAt = nowMs() + RESULT_MS;
+
+  // ★追加：RESULTのready管理
+  st.round.ready = {}; // { username: true }
+
 
   setGameState(roomId, st);
   await broadcastGame(io, roomId);
@@ -2156,7 +2166,11 @@ io.on("connection", (socket) => {
     // ゲーム状態
     try {
       const g = await loadGameState(rid);
-      if (g) socket.emit("judgement:gameState", publicGameView(g));
+if (g) {
+  const viewer = String(socket.data?.username || username || "").trim() || null;
+  socket.emit("judgement:gameState", publicGameView(g, viewer));
+}
+
       // ★ サーバ再起動後などでもタイマーが復活するよう、watch時に再スケジュール
       if (g) await scheduleAllTimers(io, rid);
     } catch (e) {
@@ -2240,18 +2254,39 @@ io.on("connection", (socket) => {
 
   // ---- RESULT：次へ準備完了（全員Readyで即次へ）※残してもOK、タイマーもあるので必須ではない
   socket.on("judgement:resultReady", async (payload = {}) => {
-    try {
-      const rid = String(payload.roomId || "").trim();
-      if (!rid) throw new Error("roomId_required");
+  try {
+    const rid = String(payload.roomId || "").trim();
+    if (!rid) throw new Error("roomId_required");
 
-      getAuthedName(socket, payload); // not_authed対策（現時点ではReady情報は使わないが、エラー抑止）
+    const me = getAuthedName(socket, payload);
 
-      // ※今回は「時間で次へ」が要件なので、ここでは何もしない（将来早送りボタンを付けるなら使える）
-      // socket.emit("judgement:info", { message: "ok" });
-    } catch (e) {
-      socket.emit("judgement:error", { message: String(e.message || e) });
+    const st = gameCache.get(rid)?.state || await loadGameState(rid);
+    if (!st) throw new Error("game_not_found");
+    if (st.phase !== "RESULT") throw new Error("invalid_phase");
+    if (!st.round) throw new Error("round_missing");
+
+    // ★ready記録
+    st.round.ready ||= {};
+    st.round.ready[me] = true;
+
+    setGameState(rid, st);
+    await broadcastGame(io, rid);
+
+    // ★全員ready判定（members基準）
+    const members = Array.isArray(st.members) ? st.members : [];
+    const allReady = members.length > 0 && members.every(u => st.round.ready?.[u]);
+
+    if (allReady) {
+      // RESULTタイマーを止めて即次ラウンド
+      const ent = ensureCacheEntry(rid);
+      clearTimer(ent, "result");
+      await startNextRound(io, rid);
     }
-  });
+  } catch (e) {
+    socket.emit("judgement:error", { message: String(e.message || e) });
+  }
+});
+
 
 
 
@@ -2354,6 +2389,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
