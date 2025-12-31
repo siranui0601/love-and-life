@@ -237,11 +237,7 @@ function renderRoleOrBriefModal(st, socket) {
         <div>
           <div class="jai-modal-title">${title}</div>
           <div class="jai-modal-sub">${body}</div>
-          <div class="jai-modal-sub" style="opacity:.75;margin-top:10px;">準備OK: ${ok}/${total}（30秒で自動進行）</div>
         </div>
-        <button class="jai-modal-close" id="btnRoleClose" ${myReady ? "disabled" : ""}>
-          ${myReady ? "OK済み" : "OK"}
-        </button>
       </div>
     `);
 
@@ -288,11 +284,7 @@ if (btn) {
           <div class="jai-modal-title">お題の確認</div>
           <div class="jai-answer-topic">【お題】${escapeHtml(topic)}</div>
           <div class="jai-modal-sub">レジスタンスはこのあと回答モーダルが開きます。120文字以内で入力してください。</div>
-          <div class="jai-modal-sub" style="opacity:.75;margin-top:10px;">準備OK: ${ok}/${total}（30秒で自動進行）</div>
         </div>
-        <button class="jai-modal-close" id="btnBriefClose" ${myReady ? "disabled" : ""}>
-          ${myReady ? "OK済み" : "OK"}
-        </button>
       </div>
     `);
 
@@ -662,7 +654,6 @@ async function startResultRevealAnimation(st, socket) {
     <div class="jai-modal-head">
       <div>
         <div class="jai-modal-title">ラウンド結果</div>
-        <div class="jai-modal-sub">次ラウンドまで: <b>${sec ?? "-"}</b> 秒（全員が閉じると即開始）</div>
       </div>
       <button class="jai-modal-close" id="btnResultClose">閉じる</button>
     </div>
@@ -962,7 +953,7 @@ if (bar) bar.innerHTML = ""; // 上部バーは消して、ランキングを中
       `).join("")}
     </div>
     <div class="jai-modal-sub" style="margin-top:10px;opacity:.85;">
-      おつかれさまでした。メニューに戻る場合は「戻る」を押してください。
+      おつかれさまでした。メニューに戻る場合は「断罪AIのトップに戻る」を押してください。
     </div>
   </div>
 `;
