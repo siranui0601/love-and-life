@@ -526,6 +526,8 @@ async function advanceFromRole(io, roomId) {
   st.phase = "BRIEF";
   st.roleDeadlineAt = null;
   st.briefDeadlineAt = nowMs() + BRIEF_MS;
+  st.phaseReady ||= {};
+st.phaseReady.BRIEF = {};
 
   setGameState(roomId, st);
   await broadcastGame(io, roomId);
@@ -815,7 +817,9 @@ async function startNextRound(io, roomId) {
 
   // ★ ここから ROLE → BRIEF → ANSWER は時間で自動遷移
   state.phase = "ROLE";
-  state.roleDeadlineAt = nowMs() + ROLE_MS;
+  state.roleDeadlineAt = nowMs() + ROLE_MS;// ★追加：ROLEのready初期化
+state.phaseReady ||= {};
+state.phaseReady.ROLE = {};
   state.briefDeadlineAt = null;
   state.introDeadlineAt = null;
   state.rulesDeadlineAt = null;
@@ -858,6 +862,7 @@ async function startNextRound(io, roomId) {
 
 // ---- 初期化（ホストが開始）
 async function initGame(io, roomId, aiCount) {
+  phaseReady: {}, // ★追加：{ ROLE: {alice:true,...}, BRIEF:{...}, RESULT:{...}, ... }
   const sheets = await getSheetsClient();
   const rows = await getJudgeRows(sheets);
   const idx = findJudgeRowIndex(rows, roomId);
@@ -2290,6 +2295,71 @@ if (g) {
 
 
 
+
+socket.on("judgement:phaseReady", async (payload = {}) => {
+  try {
+    const rid = String(payload.roomId || "").trim();
+    if (!rid) throw new Error("roomId_required");
+
+    const me = getAuthedName(socket, payload);
+
+    const st = gameCache.get(rid)?.state || await loadGameState(rid);
+    if (!st) throw new Error("game_not_found");
+
+    const phase = st.phase;
+    if (!["ROLE", "BRIEF", "RESULT", "INTRO", "RULES"].includes(phase)) {
+      throw new Error("invalid_phase_for_ready");
+    }
+
+    st.phaseReady ||= {};
+    st.phaseReady[phase] ||= {};
+    st.phaseReady[phase][me] = true;
+
+    setGameState(rid, st);
+    await broadcastGame(io, rid);
+
+    // 全員ready判定
+    const members = Array.isArray(st.members) ? st.members : [];
+    const allReady = members.length > 0 && members.every(u => st.phaseReady?.[phase]?.[u]);
+
+    if (!allReady) return;
+
+    // ready全員 → タイマー停止して即遷移
+    const ent = ensureCacheEntry(rid);
+
+    if (phase === "ROLE") {
+      clearTimer(ent, "role");
+      await advanceFromRole(io, rid);
+      return;
+    }
+    if (phase === "BRIEF") {
+      clearTimer(ent, "brief");
+      await advanceFromBrief(io, rid);
+      return;
+    }
+    if (phase === "RESULT") {
+      clearTimer(ent, "result");
+      await startNextRound(io, rid);
+      return;
+    }
+    if (phase === "INTRO") {
+      clearTimer(ent, "intro");
+      await advanceFromIntro(io, rid);
+      return;
+    }
+    if (phase === "RULES") {
+      clearTimer(ent, "rules");
+      await advanceFromRules(io, rid);
+      return;
+    }
+  } catch (e) {
+    socket.emit("judgement:error", { message: String(e.message || e) });
+  }
+});
+
+
+
+
   // 休みイベントの生成
   socket.on("requestRestEvent", async (payload) => {
     try {
@@ -2389,6 +2459,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
