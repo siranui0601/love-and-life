@@ -1132,3 +1132,64 @@ body{
   font-weight: 900;
 }
 
+
+
+
+
+
+
+
+/* ===== 断罪AI: カード一覧を見やすく ===== */
+.judge-cards{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin: 10px 0;
+}
+
+.judge-card{
+  display:grid;
+  grid-template-columns: 56px 1fr;
+  grid-template-rows: auto auto;
+  gap: 6px 10px;
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.18);
+}
+
+.judge-card img{
+  grid-row: 1 / span 2;
+  width:56px;
+  height:56px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.judge-card .answer{
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: .95;
+}
+
+.judge-card .name{
+  font-size: 12px;
+  opacity: .75;
+}
+
+/* タップ可能なカードの視認性 */
+.judge-card.tapable{
+  cursor:pointer;
+  outline: 1px solid rgba(255,255,255,0.12);
+}
+
+.judge-card.selected{
+  outline: 2px solid rgba(255,255,255,0.35);
+}
+
+/* 自分カードは薄く強調 */
+.judge-card.self{
+  border-color: rgba(255,255,255,0.35);
+}
