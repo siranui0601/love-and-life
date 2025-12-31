@@ -1193,3 +1193,38 @@ body{
 .judge-card.self{
   border-color: rgba(255,255,255,0.35);
 }
+
+
+
+
+
+.jai-reveal-overlay{
+  position: fixed;
+  inset: 0;
+  display: none;
+  place-items: center;
+  background: rgba(0,0,0,.65);
+  z-index: 9999;
+}
+.jai-reveal-overlay.show{ display: grid; }
+
+.jai-reveal-card{
+  width: min(360px, 92vw);
+  padding: 16px;
+  border-radius: 14px;
+  background: #111;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 12px 30px rgba(0,0,0,.45);
+}
+.jai-reveal-avatar{
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 10px 0;
+}
+.jai-reveal-title{ opacity: .85; font-size: 13px; }
+.jai-reveal-name{ font-size: 18px; font-weight: 700; margin-top: 6px; }
+.jai-reveal-kind{ margin-top: 6px; opacity: .9; }
+.jai-reveal-judge{ margin-top: 10px; font-weight: 700; }
