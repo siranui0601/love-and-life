@@ -220,7 +220,7 @@ function renderRoleOrBriefModal(st, socket) {
       : `目的：<b>AIっぽい回答</b>で紛れ込み、狩人に見抜かれないようにします。<br>
          操作：ANSWERでお題に対し<b>120文字以内</b>で回答を入力して送信してください。`;
 
-    const readyMap = st?.roleReady || null;
+    const readyMap = st?.phaseReady?.ROLE || null;
     const myReady = readyMap && myName ? readyMap[myName] === true : false;
     const ok = readyMap ? Object.values(readyMap).filter(v => v === true).length : 0;
     const total = readyMap ? Object.keys(readyMap).length : 0;
@@ -266,7 +266,7 @@ if (btn) {
     roleModal = roleModal || ensureModal("jaiRoleModal");
 
     const topic = st?.topic || "";
-    const readyMap = st?.briefReady || null;
+    const readyMap = st?.phaseReady?.BRIEF || null;
     const myReady = readyMap && myName ? readyMap[myName] === true : false;
     const ok = readyMap ? Object.values(readyMap).filter(v => v === true).length : 0;
     const total = readyMap ? Object.keys(readyMap).length : 0;
@@ -398,7 +398,7 @@ function renderCards(st, socket) {
   const cards = Array.isArray(st.cards) ? st.cards : [];
 
   const isMeHunter = (st.hunter === me());
-  const selectable = (st.phase === "JUDGE" && isMeHunter && !hasSubmittedJudge);
+  const selectable = (st.phase === "JUDGE" && isMeHunter && !hasSubmittedJudge && !isResultAnimating);
 
   // RESULT用（サーバが持っていれば使う：無ければ何もしない）
   const picked = new Set((st?.result?.pickedSlotIds || st?.pickedSlotIds || []).map(String));
@@ -488,6 +488,115 @@ const isSelf =
   gameArea.appendChild(wrap);
 }
 
+
+
+
+let isResultAnimating = false;
+let resultAnimToken = 0; // 演出の中断・再開始用
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+async function startResultRevealAnimation(st, socket) {
+  if (isResultAnimating) return;                 // 二重起動防止
+  if (st.phase !== "RESULT") return;
+
+  isResultAnimating = true;
+  const myToken = ++resultAnimToken;
+
+  // ここで RESULT モーダルは開かない（演出優先）
+  if (resultModal) hideModal(resultModal);
+
+  // 断罪対象の順序
+  const order = Array.isArray(st.pickOrder) && st.pickOrder.length
+    ? st.pickOrder.map(String)
+    : Array.isArray(st?.result?.pickedSlotIds)
+      ? st.result.pickedSlotIds.map(String)
+      : [];
+
+  // 演出する対象が無いなら即モーダル
+  if (!order.length) {
+    isResultAnimating = false;
+    openResultModal(st, socket);
+    return;
+  }
+
+  // カード情報を引けるMap
+  const cards = Array.isArray(st.cards) ? st.cards : [];
+  const cardMap = new Map(cards.map(c => [String(c.slotId), c]));
+
+  // 演出オーバーレイ（簡易）
+  let overlay = document.getElementById("jaiRevealOverlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "jaiRevealOverlay";
+    overlay.className = "jai-reveal-overlay"; // CSSは後述
+    document.body.appendChild(overlay);
+  }
+
+  const hit = new Set((st?.result?.hitSlotIds || []).map(String));
+  const miss = new Set((st?.result?.missSlotIds || []).map(String));
+
+  // 1件ずつ演出
+  for (const slotId of order) {
+    // 中断条件（フェーズが変わった/新しい演出が開始された）
+    if (myToken !== resultAnimToken) break;
+    if (gameState?.phase !== "RESULT") break;
+
+    const c = cardMap.get(String(slotId));
+    if (!c) continue;
+
+    // まず “選ばれた” 演出（伏せ表示）
+    overlay.innerHTML = `
+      <div class="jai-reveal-card">
+        <div class="jai-reveal-title">断罪対象</div>
+        <img class="jai-reveal-avatar" src="${escapeHtml(c.avatar)}" alt="">
+        <div class="jai-reveal-name">？？？</div>
+        <div class="jai-reveal-hint">判定中...</div>
+      </div>
+    `;
+    overlay.classList.add("show");
+    await sleep(850);
+
+    // フリップして正体を見せる（RESULTでは name/kind が返ってくる前提）
+    const name = c.name || "???";
+    const kind = c.kind || ""; // "HUMAN" / "AI" など（サーバ仕様に合わせる）
+    const judgeText =
+      hit.has(String(slotId)) ? "的中（人間）" :
+      miss.has(String(slotId)) ? "ハズレ（AI）" :
+      "";
+
+    overlay.innerHTML = `
+      <div class="jai-reveal-card flip">
+        <div class="jai-reveal-title">断罪結果</div>
+        <img class="jai-reveal-avatar" src="${escapeHtml(c.avatar)}" alt="">
+        <div class="jai-reveal-name">${escapeHtml(name)}</div>
+        <div class="jai-reveal-kind">${escapeHtml(kind)}</div>
+        <div class="jai-reveal-judge">${escapeHtml(judgeText)}</div>
+      </div>
+    `;
+    await sleep(1200);
+
+    // 次へ行く前に少し間
+    await sleep(250);
+  }
+
+  // オーバーレイを閉じる
+  overlay.classList.remove("show");
+  overlay.innerHTML = "";
+
+  isResultAnimating = false;
+
+  // 演出完了後に結果モーダル
+  // stが古い可能性があるので、最新gameStateを使う
+  if (gameState?.phase === "RESULT") {
+    openResultModal(gameState, socket);
+  }
+}
+
+
+
+
   function openResultModal(st, socket) {
   if (st.phase !== "RESULT") return;
 
@@ -537,7 +646,7 @@ const isSelf =
 if (b) {
   b.onclick = () => {
     hideModal(resultModal);
-    socket.emit("judgement:resultReady", { roomId: currentRoomId, username: me() });
+    socket.emit("judgement:phaseReady", { roomId: currentRoomId, username: me() });
   };
 }
 
@@ -801,9 +910,46 @@ if (b) {
 
 let resultModalDelayTimer = null;
 
+
+function showGameOverRanking(st) {
+  openGame();
+
+  // gameAreaをランキング表示に差し替え（簡易）
+  const ranking = Array.isArray(st.ranking) ? st.ranking : [];
+  gameArea.innerHTML = `
+    <div class="jai-gameover">
+      <div class="jai-gameover-title">最終ランキング</div>
+      <div class="jai-gameover-body">
+        ${ranking.map((r,i)=>`<div>${i+1}位 ${escapeHtml(r.name)}：${Number(r.points||0)}点</div>`).join("")}
+      </div>
+      <div class="jai-modal-sub" style="margin-top:10px;opacity:.85;">
+        おつかれさまでした。メニューに戻る場合は「戻る」を押してください。
+      </div>
+    </div>
+  `;
+}
+
+
+
+
+
+
 function renderGame(st) {
   openGame();
   renderTopBar(st);
+  
+  
+  if (st.phase === "GAME_OVER") {
+  // バトルUIを閉じる（モーダルも閉じる）
+  if (roleModal) hideModal(roleModal);
+  if (answerModal) hideModal(answerModal);
+  if (resultModal) hideModal(resultModal);
+
+  // ここで gamePanel を “ランキング表示モード” に切り替える処理を呼ぶ
+  showGameOverRanking(st);
+  startLocalTimer();
+  return;
+}
 
   if (st.phase !== lastPhase) {
     if (st.phase === "ANSWER") {
@@ -814,13 +960,18 @@ function renderGame(st) {
       selectedSlotIds.clear();
       hasSubmittedJudge = false;
     }
+    
     if (st.phase === "RESULT") {
+      // RESULTに入った瞬間に演出開始 → 演出後に openResultModal が呼ばれる
+      startResultRevealAnimation(st, socket);
+    }
+    /*if (st.phase === "RESULT") {
       // ★結果モーダルは即出さず 800ms 遅らせる
       if (resultModalDelayTimer) clearTimeout(resultModalDelayTimer);
       resultModalDelayTimer = setTimeout(() => {
         openResultModal(st, socket);
       }, 800);
-    }
+    }*/
     lastPhase = st.phase;
   }
 
@@ -1030,7 +1181,7 @@ function renderGame(st) {
     if (!mustLogin()) return alert("ログインが必要です");
     if (!currentRoomId) return;
     if (!gameState || gameState.phase !== "RESULT") return alert("結果表示中ではありません");
-    socket.emit("judgement:resultReady", { roomId: currentRoomId, username: me() });
+    socket.emit("judgement:phaseReady", { roomId: currentRoomId, username: me() });
   });
 
   // ---- back
