@@ -579,8 +579,43 @@ async function advanceFromResult(io, roomId) {
 }
 
 
+
+
+
+function buildScoreMap(state) {
+  const points = state?.stats?.points || {};
+  const fp = state?.stats?.aiFalsePositives || {};
+  const members = state?.members || [];
+
+  return Object.fromEntries(
+    members.map(u => [
+      u,
+      {
+        points: Number(points[u] || 0),
+        aiFalsePositives: Number(fp[u] || 0),
+      }
+    ])
+  );
+}
+
+function buildRankingFromScoreMap(scoreMap) {
+  const arr = Object.entries(scoreMap || {}).map(([name, v]) => ({
+    name,
+    points: Number(v?.points || 0),
+    aiFalsePositives: Number(v?.aiFalsePositives || 0),
+  }));
+
+  // points desc, aiFalsePositives asc
+  arr.sort((a, b) => (b.points - a.points) || (a.aiFalsePositives - b.aiFalsePositives));
+  return arr;
+}
+
+
+
 // ---- 公開用state（断罪前に「誰がどのカードか」を隠す）
-function publicGameView(state) {
+// ---- 公開用state（断罪前に「誰がどのカードか」を隠す）
+// viewerUsername を渡すと selfSlotId を返す（自分カード特定用）
+function publicGameView(state, viewerUsername = null) {
   if (!state) return null;
 
   const phase = state.phase;
@@ -591,20 +626,46 @@ function publicGameView(state) {
   // INTRO/RULES/ROLE はオーバーレイ専用（カード表示を消す）
   const hideTopicAndCards = (phase === "INTRO" || phase === "RULES" || phase === "ROLE");
 
-  const cards = hideTopicAndCards ? [] : (state.round?.cards || []).map(c => ({
-    slotId: c.slotId,
-    avatar: c.avatar,
-    answer: hideAnswers ? "???" : (c.answer || ""),
-    name: revealIdentity ? (c.kind === "ai" ? "AI" : c.owner) : "???",
-    kind: revealIdentity ? c.kind : "???",
-    pickedByHunter: revealIdentity ? !!c.pickedByHunter : false,
-  }));
+  // --- selfSlotId（この viewer が human の場合、H:<username> を返す）
+  // 狩人は "自分のカード" を持たないので null のままでもOK
+  let selfSlotId = null;
+  const v = String(viewerUsername || "").trim();
+  if (v && state.round?.cards?.length) {
+    const mine = state.round.cards.find(c => c.kind === "human" && c.owner === v);
+    if (mine) selfSlotId = mine.slotId; // 例: "H:alice"
+  }
+
+  // --- スコアは常に送る（UIがいつでも描画できるように）
+  const scoreMap = buildScoreMap(state);
+  const ranking = buildRankingFromScoreMap(scoreMap);
+
+  const cards = hideTopicAndCards
+    ? []
+    : (state.round?.cards || []).map(c => ({
+        slotId: c.slotId,
+        avatar: c.avatar,
+
+        // 回答の匿名化：ANSWER/BRIEF/INTRO/RULES/ROLE では隠す
+        answer: hideAnswers ? "???" : (c.answer || ""),
+
+        // 正体の匿名化：RESULT/GAME_OVER 以外は隠す
+        name: revealIdentity ? (c.kind === "ai" ? "AI" : c.owner) : "???",
+        kind: revealIdentity ? c.kind : "???",
+
+        // ピック結果は RESULT/GAME_OVER 以外は隠す（現状踏襲）
+        pickedByHunter: revealIdentity ? !!c.pickedByHunter : false,
+      }));
 
   return {
     roomId: state.roomId,
     phase: state.phase,
     roundIndex: state.roundIndex,
 
+    // viewer情報（自分カード特定）
+    viewer: v || null,
+    selfSlotId, // ★追加
+
+    // ラウンド情報
     hunter: state.round?.hunter || null,
     topic: hideTopicAndCards ? "" : (state.round?.topic || ""),
 
@@ -612,17 +673,22 @@ function publicGameView(state) {
     resultDeadlineAt: state.round?.resultDeadlineAt || null,
     picksRequired: state.round?.picksRequired ?? null,
 
-    // ★ 追加：INTRO/RULES/ROLE/BRIEF のdeadline
+    // INTRO/RULES/ROLE/BRIEF のdeadline
     introDeadlineAt: state.introDeadlineAt || null,
     rulesDeadlineAt: state.rulesDeadlineAt || null,
     roleDeadlineAt: state.roleDeadlineAt || null,
     briefDeadlineAt: state.briefDeadlineAt || null,
 
-    ranking: state.phase === "GAME_OVER" ? (state.ranking || []) : null,
-    stats: state.stats || null,
+    // ★スコアは常に送る（要求）
+    scoreMap,   // ★追加（常時）
+    ranking,    // ★追加（常時）
+
+    // ★RESULT時の差分（後述で round.deltas を作る）
+    deltas: state.round?.deltas || null,  // ★追加（RESULTで使う）
+
     cards,
 
-    // 世界観/ルール本文（クライアントが使えるように渡す）
+    // 世界観/ルール本文
     intro: state.intro || null,
     rules: state.rules || null,
   };
@@ -631,11 +697,22 @@ function publicGameView(state) {
 
 
 
+
 async function broadcastGame(io, roomId) {
   const ent = gameCache.get(roomId);
   if (!ent?.state) return;
-  io.to(judgeSocketRoom(roomId)).emit("judgement:gameState", publicGameView(ent.state));
+
+  const room = judgeSocketRoom(roomId);
+
+  // ルーム参加者ごとに、viewerUsername を見て出し分けて送る
+  const sockets = await io.in(room).fetchSockets();
+
+  for (const s of sockets) {
+    const viewer = String(s.data?.username || "").trim() || null;
+    s.emit("judgement:gameState", publicGameView(ent.state, viewer));
+  }
 }
+
 
 // ---- AI一括生成（配列だけ返させる）
 async function generateAIAnswers(topic, aiCount) {
@@ -851,6 +928,9 @@ async function resolveJudgement(io, roomId, hunterName, pickedSlotIds) {
   // マーク
   round.cards.forEach(c => { c.pickedByHunter = unique.includes(c.slotId); });
 
+  // ---- 加算前のスコア（before）
+  const before = buildScoreMap(st);
+
   // 採点
   let correctHuman = 0;
   let aiFalse = 0;
@@ -876,6 +956,46 @@ async function resolveJudgement(io, roomId, hunterName, pickedSlotIds) {
     }
   });
 
+  // ---- 加算後のスコア（after）
+  const after = buildScoreMap(st);
+
+  // ---- gained（増分）
+  const gained = {};
+  for (const u of Object.keys(after)) {
+    const bp = Number(before[u]?.points || 0);
+    const bfp = Number(before[u]?.aiFalsePositives || 0);
+    const ap = Number(after[u]?.points || 0);
+    const afp = Number(after[u]?.aiFalsePositives || 0);
+
+    gained[u] = {
+      points: ap - bp,
+      aiFalsePositives: afp - bfp,
+    };
+  }
+
+  // ---- RESULTで表示しやすいメタ
+  const pickedHumans = round.cards
+    .filter(c => c.pickedByHunter && c.kind === "human")
+    .map(c => c.owner);
+
+  const pickedAI = round.cards
+    .filter(c => c.pickedByHunter && c.kind === "ai")
+    .map(c => c.slotId);
+
+  round.deltas = {
+    before,
+    gained,
+    after,
+    meta: {
+      hunter: hunterName,
+      picksRequired: Number(round.picksRequired || 0),
+      correctHuman,
+      aiFalse,
+      pickedHumans,
+      pickedAI,
+    }
+  };
+
   // RESULTへ（30秒で自動で次ラウンドへ）
   st.phase = "RESULT";
   st.round.resultDeadlineAt = nowMs() + RESULT_MS;
@@ -884,6 +1004,7 @@ async function resolveJudgement(io, roomId, hunterName, pickedSlotIds) {
   await broadcastGame(io, roomId);
   await scheduleAllTimers(io, roomId);
 }
+
 
 
 
@@ -2233,6 +2354,7 @@ const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
 });
+
 
 
 
