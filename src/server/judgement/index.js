@@ -1292,7 +1292,7 @@ export function mountJudgementRoutes(app, io) {
       t: new Date().toISOString(),
     });
     return res.status(410).json({ error: "deprecated_use_socket" });
-
+  });
 }
 
 export function registerJudgementSocketHandlers(socket, io) {
