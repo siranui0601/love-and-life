@@ -244,6 +244,16 @@ function safeJsonParse(s, fallback = null) {
     return fallback;
   }
 }
+function stripJsonFence(s = "") {
+  const t = String(s ?? "").trim();
+
+  // ```json ... ``` または ``` ... ``` を剥がす
+  const m = t.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (m) return m[1].trim();
+
+  return t;
+}
+
 function clampText120(s) {
   const t = String(s ?? "");
   return t.length > 120 ? t.slice(0, 120) : t;
