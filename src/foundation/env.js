@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
-dotenv.config({ path: new URL("../../.env", import.meta.url).pathname });
+dotenv.config(
+  console.log("[env] GEMINI_API_KEY length =", (process.env.GEMINI_API_KEY || "").length);
+  { path: new URL("../../.env", import.meta.url).pathname });
 
 export const serviceAccount = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
   ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY)
