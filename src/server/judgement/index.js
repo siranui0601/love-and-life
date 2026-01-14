@@ -1,5 +1,5 @@
 import { getSheetsClient, SPREADSHEET_ID } from "../../foundation/sheets.js";
-
+import { genWithFallback, stripJsonFence } from "../../foundation/gemini.js";
 
 
 
@@ -244,7 +244,7 @@ function safeJsonParse(s, fallback = null) {
     return fallback;
   }
 }
-function stripJsonFence(s = "") {
+/*function stripJsonFence(s = "") {
   const t = String(s ?? "").trim();
 
   // ```json ... ``` または ``` ... ``` を剥がす
@@ -252,7 +252,7 @@ function stripJsonFence(s = "") {
   if (m) return m[1].trim();
 
   return t;
-}
+}*/
 
 function clampText120(s) {
   const t = String(s ?? "");
