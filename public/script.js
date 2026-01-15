@@ -441,55 +441,42 @@ function getCharImg(name, mood = "neutral") {
 }
 
 
-// ===== アルバイト定義（7日目に職業を選ぶ。以後は該当マス停止/通過で処理） =====
+// ===== アルバイト定義（7日目に職業を選ぶ。以後はシフト制で発生） =====
 export const PARTTIME_JOBS = {
-  "清掃員": {
-    label: "清掃員（駅前）",
-    place: { name: "駅前", detail: "駅前ロータリーの清掃ボランティアを手伝う。" },
-    payStop: 3000,
-    payPass: 1500,
-    encounterPct: 100,
-    weights: { "ミユ": 0.33, "シオン": 0.33, "ナナ": 0.34 }
-  },
-  "花屋": {
-    label: "花屋（商店街）",
-    place: { name: "商店街", detail: "季節の花が並ぶ小さな花屋の手伝い。" },
-    payStop: 5000,
-    payPass: 2500,
-    encounterPct: 85,
-    weights: { "ミユ": 0.50, "シオン": 0.25, "ナナ": 0.25 }
-  },
-  "神社手伝い": {
-    label: "神社手伝い",
-    place: { name: "神社", detail: "境内の掃除や授与所の手伝いを任される。" },
-    payStop: 4500,
-    payPass: 2250,
-    encounterPct: 90,
-    weights: { "ミユ": 0.20, "シオン": 0.60, "ナナ": 0.20 }
-  },
-  "海の家": {
-    label: "海の家",
-    place: { name: "ビーチ", detail: "海の家での接客や片付けで大忙し。" },
-    payStop: 5200,
-    payPass: 2600,
+  "清掃バイト": {
+    label: "清掃バイト",
+    place: { name: "駅前", detail: "駅前ロータリーの清掃を手伝う。" },
+    type: "daily",
+    dailyPay: 1500,
     encounterPct: 80,
-    weights: { "ミユ": 0.35, "シオン": 0.20, "ナナ": 0.45 }
   },
-  "ライフセーバー": {
-    label: "ライフセーバー（岩瀬）",
-    place: { name: "岩瀬", detail: "岩場の見回りや注意喚起などの監視活動。" },
-    payStop: 9000,
-    payPass: 4500,
-    encounterPct: 60,
-    weights: { "ミユ": 0.45, "シオン": 0.20, "ナナ": 0.35 }
-  },
-  "漁師助手": {
-    label: "漁師助手（港）",
-    place: { name: "港", detail: "網の片付けや仕分けを手伝う力仕事。" },
-    payStop: 8000,
-    payPass: 4000,
+  "パン屋バイト": {
+    label: "パン屋バイト",
+    place: { name: "商店街", detail: "商店街のパン屋で接客や品出しをする。" },
+    type: "daily",
+    dailyPay: 3000,
     encounterPct: 40,
-    weights: { "ミユ": 0.25, "シオン": 0.25, "ナナ": 0.50 }
+  },
+  "遠洋漁業バイト": {
+    label: "遠洋漁業バイト",
+    place: { name: "港", detail: "遠洋漁業の船に乗り込み、1週間の航海に出る。" },
+    type: "weekly",
+    weeklyPay: 50000,
+    encounterPct: 0,
+  },
+  "闇バイト": {
+    label: "闇バイト",
+    place: { name: "路地裏", detail: "怪しい指示のもと、裏路地で短時間の作業をする。" },
+    type: "dark",
+    encounterPct: 25,
+    payouts: [
+      { label: "大成功", amount: 18000, weight: 15 },
+      { label: "成功", amount: 8000, weight: 25 },
+      { label: "小成功", amount: 4000, weight: 30 },
+      { label: "微妙", amount: 1000, weight: 15 },
+      { label: "失敗", amount: -3000, weight: 10 },
+      { label: "大丈夫", amount: -8000, weight: 5 },
+    ],
   },
 };
 
@@ -781,7 +768,7 @@ function randomCharacter() {
  * - ダイス目・到着タイル・場所・会うキャラ・requestId を決めてサーバに投げる
  * - 既に計画済みなら何もしない（同じターン内の多重発注防止）
  */
-function prefetchEventFor(playerName) {
+function prefetchEventFor(playerName, dayForPlayer = gameState.day) {
   if (prefetchPlan.has(playerName)) return;
   const pawn = pawnsGlobal.find(p => p.userData.name === playerName);
   if (!pawn) return;
@@ -794,28 +781,21 @@ function prefetchEventFor(playerName) {
     if (nextDay === finalDay && !gameState.endingDone) return;
   }
 
-  const steps = roll1d6();
-  const destTile = calcDestTile(pawn.userData.tile, steps);
-  const tileId = destTile + 1;
-  const place = placeFromTileId(tileId);
-
-  // 職場停止か？
-  const job = getPlayerJob(pawn);
-  const jobTileId = job ? tileIdForPlaceName(job.place.name) : null;
-
-  const requestId = makeRequestId();
-
-  if (job && jobTileId === tileId) {
-    // 職場停止：先に遭遇抽選
-    const willMeet = (Math.random()*100) < (job.encounterPct||0);
-    let character = null;
-    if (willMeet) character = weightedPick(job.weights);
-
+  if (isShiftDay(pawn, dayForPlayer)) {
+    const job = getPlayerJob(pawn);
+    if (!job) return;
+    const requestId = makeRequestId();
+    const willMeet = (Math.random() * 100) < (job.encounterPct || 0);
+    const character = willMeet ? randomCharacter() : null;
     prefetchPlan.set(playerName, {
-      steps, destTile, place: job.place, character, requestId,
-      startedAt: Date.now(), isJobStop: true, willMeet
+      isShiftDay: true,
+      day: dayForPlayer,
+      jobKey: pawn.userData.jobKey,
+      character,
+      requestId,
+      startedAt: Date.now(),
+      willMeet,
     });
-
     if (willMeet && character) {
       socket.emit("requestEvent", {
         requestId,
@@ -828,7 +808,12 @@ function prefetchEventFor(playerName) {
     return;
   }
 
-  // 通常先読み
+  const steps = roll1d6();
+  const destTile = calcDestTile(pawn.userData.tile, steps);
+  const tileId = destTile + 1;
+  const place = placeFromTileId(tileId);
+
+  const requestId = makeRequestId();
   const character = randomCharacter();
   prefetchPlan.set(playerName, {
     steps, destTile, place, character, requestId, startedAt: Date.now()
@@ -860,7 +845,7 @@ function prefetchNextPlayerFromCurrentTurn() {
     return;
   }
 
-  prefetchEventFor(nextPlayer);
+  prefetchEventFor(nextPlayer, nextDay);
 }
 
 
@@ -1005,6 +990,11 @@ let festivalTimer = null;
 let 日付はここで変更できるよのめあすになる変数;
 const festivalDay = 15;
 const finalDay = 30;
+const SHIFT_WINDOWS = [
+  { key: "first", label: "7日目〜14日目", start: 7, end: 14 },
+  { key: "second", label: "16日目〜29日目", start: 16, end: 29 },
+];
+const DARK_SHIFT_RATE = 40;
 let dayHUD;
 let stepsHUD; // ★ 累計マス数用
 
@@ -1132,6 +1122,8 @@ let gameState = {
   day: 1,
   festivalDone: false,
   endingDone: false,
+  shiftWindow1Done: false,
+  shiftWindow2Done: false,
 };
 let pawnsGlobal = [],
   tilesGlobal = [],
@@ -1550,6 +1542,8 @@ function launchOrderRoll(players) {
         gameState.festivalDone = false;
 
         gameState.endingDone = false;
+        gameState.shiftWindow1Done = false;
+        gameState.shiftWindow2Done = false;
 
         updateDayHUD();
 
@@ -1606,6 +1600,16 @@ function startTurn() {
     runJobsSelectionDay7(); // ← 下で定義
     return;
   }
+  // ★ ③.5 シフト決定（7〜14日目）
+  if (!gameState.shiftWindow1Done && gameState.day >= SHIFT_WINDOWS[0].start) {
+    runShiftSelectionWindow(SHIFT_WINDOWS[0]);
+    return;
+  }
+  // ★ ③.6 シフト決定（16〜29日目）
+  if (!gameState.shiftWindow2Done && gameState.day >= SHIFT_WINDOWS[1].start) {
+    runShiftSelectionWindow(SHIFT_WINDOWS[1]);
+    return;
+  }
   // ④ 休み消化
   if (pawn.userData.rest && pawn.userData.rest.active) {
     handleRestTurn(pawn);
@@ -1613,6 +1617,17 @@ function startTurn() {
   }
   // ⑤ 先読み
   prefetchNextPlayerFromCurrentTurn();
+  // ⑥ シフト日ならバイト直行（サイコロ・通常イベントは省略）
+  if (isShiftDay(pawn, gameState.day)) {
+    const plan = prefetchPlan.get(pawn.userData.name);
+    if (plan && plan.isShiftDay && plan.day !== gameState.day) {
+      clearPrefetchForPlayer(pawn.userData.name);
+    }
+    const usePlan =
+      plan && plan.isShiftDay && plan.day === gameState.day ? plan : null;
+    runShiftWorkDay(pawn, usePlan);
+    return;
+  }
   startTurnModal(pawn.userData.name);
 }
 
@@ -1691,10 +1706,6 @@ function movePawn(name, steps) {
   pawn.userData.totalSteps += steps;
   updateStepsHUD();
 
-  // 自身の職場タイルID（あれば）
-  const job = getPlayerJob(pawn);
-  const jobTileId = job ? tileIdForPlaceName(job.place.name) : null;
-
   let remaining = steps;
   (function step(){
     if (remaining === 0) {
@@ -1703,13 +1714,6 @@ function movePawn(name, steps) {
     }
     pawn.userData.tile = (pawn.userData.tile + 1) % 12;
     placePawnGlobal(pawn, pawn.userData.tile);
-
-    const tileIdNow = pawn.userData.tile + 1;
-
-    // ★ 職場タイル "通過" 判定（まだ先へ進む＝残歩数がある）
-    if (jobTileId && tileIdNow === jobTileId && remaining > 1) {
-      handleJobPass(pawn);
-    }
 
     remaining--;
     setTimeout(step, 250);
@@ -1726,15 +1730,70 @@ function movePawn(name, steps) {
 /* ======================================================
    アルバイト：UI/処理
 ====================================================== */
-function tileIdForPlaceName(placeName){
-  for (const [id, info] of Object.entries(tileInfoGlobal)) {
-    if (info && info.name === placeName) return Number(id);
-  }
-  return null;
-}
 function getPlayerJob(pawn){
   const k = pawn?.userData?.jobKey;
   return k ? PARTTIME_JOBS[k] : null;
+}
+
+function ensureShiftData(pawn) {
+  if (!pawn.userData.shiftDays) pawn.userData.shiftDays = [];
+  if (!pawn.userData.fishingPayDays) pawn.userData.fishingPayDays = [];
+  if (!pawn.userData.fishingStartDays) pawn.userData.fishingStartDays = [];
+}
+
+function isShiftDay(pawn, day) {
+  ensureShiftData(pawn);
+  return pawn.userData.shiftDays.includes(day);
+}
+
+function isFishingPayDay(pawn, day) {
+  ensureShiftData(pawn);
+  return pawn.userData.fishingPayDays.includes(day);
+}
+
+function setShiftDaysForWindow(pawn, windowStart, windowEnd, days, fishingStartDays = [], fishingPayDays = []) {
+  ensureShiftData(pawn);
+  const inWindow = (d) => d >= windowStart && d <= windowEnd;
+  pawn.userData.shiftDays = pawn.userData.shiftDays.filter((d) => !inWindow(d));
+  pawn.userData.fishingPayDays = pawn.userData.fishingPayDays.filter((d) => !inWindow(d));
+  pawn.userData.fishingStartDays = pawn.userData.fishingStartDays.filter((d) => !inWindow(d));
+
+  const uniqueDays = Array.from(new Set(days)).sort((a, b) => a - b);
+  pawn.userData.shiftDays.push(...uniqueDays);
+  const uniqueStarts = Array.from(new Set(fishingStartDays)).sort((a, b) => a - b);
+  const uniquePayDays = Array.from(new Set(fishingPayDays)).sort((a, b) => a - b);
+  pawn.userData.fishingStartDays.push(...uniqueStarts);
+  pawn.userData.fishingPayDays.push(...uniquePayDays);
+}
+
+function clearPrefetchForPlayer(playerName) {
+  const plan = prefetchPlan.get(playerName);
+  if (plan) {
+    prefetchResult.delete(plan.requestId);
+    prefetchPlan.delete(playerName);
+  }
+}
+
+function buildFishingDaysFromStarts(starts) {
+  const days = [];
+  starts.forEach((startDay) => {
+    for (let d = startDay; d <= startDay + 6; d += 1) {
+      days.push(d);
+    }
+  });
+  return Array.from(new Set(days)).sort((a, b) => a - b);
+}
+
+function buildFishingPayDays(starts) {
+  return Array.from(new Set(starts.map((d) => d + 6))).sort((a, b) => a - b);
+}
+
+function buildDarkShiftDays(windowStart, windowEnd) {
+  const days = [];
+  for (let d = windowStart; d <= windowEnd; d += 1) {
+    if ((Math.random() * 100) < DARK_SHIFT_RATE) days.push(d);
+  }
+  return days;
 }
 
 
@@ -1815,6 +1874,21 @@ function runJobsSelectionDay7(){
 
   function renderCard(jobKey){
     const job = PARTTIME_JOBS[jobKey];
+    let payLine = "";
+    let extraLine = "";
+    if (job.type === "daily") {
+      payLine = `給料: ¥${job.dailyPay.toLocaleString()} / 日`;
+    } else if (job.type === "weekly") {
+      payLine = `給料: ¥${job.weeklyPay.toLocaleString()} / 週（最終日に支給）`;
+      extraLine = "※ 1回のバイトで7日間固定";
+    } else if (job.type === "dark") {
+      payLine = "給料: ランダム（結果により増減）";
+      extraLine = [
+        "※ シフトはランダムで自動決定",
+        "内訳: 大成功+18,000(15%) / 成功+8,000(25%) / 小成功+4,000(30%)",
+        "微妙+1,000(15%) / 失敗-3,000(10%) / 大丈夫-8,000(5%)",
+      ].join("<br>");
+    }
     const card = document.createElement("div");
     card.style.flex = `0 0 ${PCT_PER_CARD}%`; // ← ★ここを 100% から修正（1枚＝画面1枚ぶん）
     card.style.padding = "14px";
@@ -1825,12 +1899,12 @@ function runJobsSelectionDay7(){
       <div style="font-weight:800; font-size:1.1rem">${job.label}</div>
       <div style="opacity:.85">${job.place.name}：${job.place.detail}</div>
       <div style="opacity:.85; font-size:.95rem">
-        停止: ¥${job.payStop.toLocaleString()} / 通過: ¥${job.payPass.toLocaleString()}<br>
+        ${payLine}<br>
         出会い発生率: ${job.encounterPct}%
       </div>
-      <!-- div style="font-size:.85rem; opacity:.75">
-        ※ この先は「${job.place.name}」に止まると就業。通過時は自動で半額を受け取ります。
-      </div-->
+      <div style="font-size:.85rem; opacity:.75">
+        ${extraLine}
+      </div>
     `;
     return card;
   }
@@ -1927,69 +2001,374 @@ function runJobsSelectionDay7(){
   renderAll();
 }
 
+function runShiftSelectionWindow(windowInfo) {
+  const { start, end, label, key } = windowInfo;
+  modal.style.display = "flex";
+  modal.onclick = null;
 
-// 重み付き抽選（weights: {name:weight,...}）
-function weightedPick(weightMap) {
-  const entries = Object.entries(weightMap || {});
-  if (!entries.length) return null;
-  const sum = entries.reduce((s, [, w]) => s + (w || 0), 0);
-  let r = Math.random() * sum;
-  for (const [k, w] of entries) {
-    r -= (w || 0);
-    if (r <= 0) return k;
+  const allPlayers = [...gameState.order];
+  let currentPlayerIdx = 0;
+  const decided = new Set();
+  const selections = new Map(); // name -> { days:[], fishingStarts:[], fishingPayDays:[] }
+  const drafts = new Map(); // name -> { days:Set, fishingStarts:Set }
+
+  const pawnsByName = new Map();
+  allPlayers.forEach((name) => {
+    const pawn = pawnsGlobal.find((p) => p.userData.name === name);
+    if (!pawn) return;
+    pawnsByName.set(name, pawn);
+    ensureShiftData(pawn);
+    const inWindow = (d) => d >= start && d <= end;
+    let days = new Set(pawn.userData.shiftDays.filter(inWindow));
+    let starts = new Set(pawn.userData.fishingStartDays.filter(inWindow));
+    const job = getPlayerJob(pawn);
+    if (job && job.type === "weekly" && !starts.size && days.size) {
+      const dayList = Array.from(days).sort((a, b) => a - b);
+      dayList.forEach((d, idx) => {
+        const prev = dayList[idx - 1];
+        if (!prev || d !== prev + 1) starts.add(d);
+      });
+    }
+    if (job && job.type === "weekly" && starts.size) {
+      days = new Set(buildFishingDaysFromStarts(Array.from(starts)));
+    }
+    if (job && job.type === "dark" && !days.size) {
+      days = new Set(buildDarkShiftDays(start, end));
+    }
+    drafts.set(name, { days, fishingStarts: starts });
+  });
+
+  const root = document.createElement("div");
+  root.style.width = "min(96vw, 860px)";
+  root.style.maxWidth = "860px";
+
+  const title = document.createElement("div");
+  title.style.fontWeight = "900";
+  title.style.fontSize = "1.2rem";
+  title.style.marginBottom = ".5rem";
+  title.textContent = `シフト提出：${label}`;
+  root.appendChild(title);
+
+  const hint = document.createElement("div");
+  hint.style.fontSize = ".9rem";
+  hint.style.opacity = ".85";
+  hint.style.marginBottom = ".6rem";
+  hint.textContent =
+    "出勤日になったらバイトイベントへ直行します（通常の会話イベントは省略）。遭遇した場合は会話イベントが発生します。";
+  root.appendChild(hint);
+
+  const chips = document.createElement("div");
+  chips.style.display = "flex";
+  chips.style.flexWrap = "wrap";
+  chips.style.gap = "8px";
+  chips.style.margin = "8px 0 12px";
+  function renderChips() {
+    chips.innerHTML = "";
+    allPlayers.forEach((n, i) => {
+      const b = document.createElement("button");
+      b.textContent = selections.has(n) ? `${n} ✅` : n + (i === currentPlayerIdx ? "▷" : "");
+      Object.assign(b.style, {
+        border: "1px solid #2ea043",
+        borderRadius: "999px",
+        padding: "6px 10px",
+        background: i === currentPlayerIdx ? "#2ea043" : "#111",
+        color: i === currentPlayerIdx ? "#fff" : "#eee",
+        cursor: "pointer",
+        fontWeight: "800",
+        boxShadow: i === currentPlayerIdx ? "0 0 0 2px rgba(46,160,67,.25)" : "none",
+      });
+      b.onclick = () => {
+        currentPlayerIdx = i;
+        renderAll();
+      };
+      chips.appendChild(b);
+    });
   }
-  return entries[entries.length - 1][0];
+  root.appendChild(chips);
+
+  const scheduleBox = document.createElement("div");
+  scheduleBox.style.border = "1px solid #333";
+  scheduleBox.style.borderRadius = "12px";
+  scheduleBox.style.padding = "12px";
+  scheduleBox.style.background = "#101010";
+  root.appendChild(scheduleBox);
+
+  function renderSchedule() {
+    scheduleBox.innerHTML = "";
+    const name = allPlayers[currentPlayerIdx];
+    const pawn = pawnsByName.get(name);
+    const job = getPlayerJob(pawn);
+    const draft = drafts.get(name);
+    const header = document.createElement("div");
+    header.style.fontWeight = "800";
+    header.style.marginBottom = ".5rem";
+    header.textContent = `${name}：${job ? job.label : "バイト未選択"}`;
+    scheduleBox.appendChild(header);
+
+    if (!job) {
+      scheduleBox.appendChild(document.createTextNode("バイトが未設定です。"));
+      return;
+    }
+
+    if (job.type === "dark") {
+      const info = document.createElement("div");
+      info.style.marginBottom = ".5rem";
+      info.textContent = "シフトはランダムで自動決定されます。";
+      scheduleBox.appendChild(info);
+
+      const days = Array.from(draft.days).sort((a, b) => a - b);
+      const list = document.createElement("div");
+      list.textContent = days.length ? `出勤日: ${days.join(", ")}日` : "出勤日: なし";
+      scheduleBox.appendChild(list);
+      return;
+    }
+
+    if (job.type === "weekly") {
+      const starts = Array.from(draft.fishingStarts).sort((a, b) => a - b);
+      const allowedStarts = [];
+      for (let d = start; d <= end - 6; d += 1) {
+        allowedStarts.push(d);
+      }
+      const grid = document.createElement("div");
+      grid.style.display = "grid";
+      grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(72px, 1fr))";
+      grid.style.gap = "6px";
+      allowedStarts.forEach((d) => {
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        const active = draft.fishingStarts.has(d);
+        btn.textContent = `${d}日開始`;
+        btn.style.background = active ? "var(--accent)" : "#222";
+        btn.style.color = active ? "#111" : "#eee";
+        btn.onclick = () => {
+          if (draft.fishingStarts.has(d)) {
+            draft.fishingStarts.delete(d);
+          } else {
+            draft.fishingStarts.add(d);
+          }
+          draft.days = new Set(buildFishingDaysFromStarts(Array.from(draft.fishingStarts)));
+          renderSchedule();
+        };
+        grid.appendChild(btn);
+      });
+      scheduleBox.appendChild(grid);
+
+      const workDays = Array.from(draft.days).sort((a, b) => a - b);
+      const payDays = buildFishingPayDays(starts);
+      const summary = document.createElement("div");
+      summary.style.marginTop = ".6rem";
+      summary.textContent = workDays.length
+        ? `稼働日: ${workDays.join(", ")}日 / 給料支給日: ${payDays.join(", ")}日`
+        : "稼働日: なし";
+      scheduleBox.appendChild(summary);
+      return;
+    }
+
+    const grid = document.createElement("div");
+    grid.style.display = "grid";
+    grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(48px, 1fr))";
+    grid.style.gap = "6px";
+    for (let d = start; d <= end; d += 1) {
+      const btn = document.createElement("button");
+      btn.className = "btn";
+      const active = draft.days.has(d);
+      btn.textContent = `${d}日`;
+      btn.style.background = active ? "var(--accent)" : "#222";
+      btn.style.color = active ? "#111" : "#eee";
+      btn.onclick = () => {
+        if (draft.days.has(d)) {
+          draft.days.delete(d);
+        } else {
+          draft.days.add(d);
+        }
+        renderSchedule();
+      };
+      grid.appendChild(btn);
+    }
+    scheduleBox.appendChild(grid);
+
+    const summary = document.createElement("div");
+    const dayList = Array.from(draft.days).sort((a, b) => a - b);
+    summary.style.marginTop = ".6rem";
+    summary.textContent = dayList.length ? `出勤日: ${dayList.join(", ")}日` : "出勤日: なし";
+    scheduleBox.appendChild(summary);
+  }
+
+  const row = document.createElement("div");
+  row.style.display = "flex";
+  row.style.justifyContent = "space-between";
+  row.style.gap = "10px";
+  row.style.marginTop = "10px";
+
+  const decideBtn = document.createElement("button");
+  decideBtn.className = "btn btn-primary";
+  decideBtn.textContent = "このシフトにする";
+  decideBtn.onclick = () => {
+    const name = allPlayers[currentPlayerIdx];
+    const pawn = pawnsByName.get(name);
+    const job = getPlayerJob(pawn);
+    const draft = drafts.get(name);
+    let days = Array.from(draft.days);
+    let fishingStarts = [];
+    let fishingPayDays = [];
+    if (job && job.type === "weekly") {
+      fishingStarts = Array.from(draft.fishingStarts);
+      days = buildFishingDaysFromStarts(fishingStarts);
+      fishingPayDays = buildFishingPayDays(fishingStarts);
+    }
+    selections.set(name, {
+      days,
+      fishingStarts,
+      fishingPayDays,
+    });
+    decided.add(name);
+    const nextIdx = allPlayers.findIndex((n) => !decided.has(n));
+    currentPlayerIdx = (nextIdx >= 0 ? nextIdx : currentPlayerIdx);
+    renderAll();
+  };
+
+  const allDoneBtn = document.createElement("button");
+  allDoneBtn.className = "btn";
+  allDoneBtn.textContent = "全員決定！";
+  allDoneBtn.onclick = () => {
+    pawnsGlobal.forEach((p) => {
+      const selection = selections.get(p.userData.name);
+      if (!selection) return;
+      setShiftDaysForWindow(
+        p,
+        start,
+        end,
+        selection.days,
+        selection.fishingStarts,
+        selection.fishingPayDays,
+      );
+    });
+    if (key === "first") {
+      gameState.shiftWindow1Done = true;
+    } else if (key === "second") {
+      gameState.shiftWindow2Done = true;
+    }
+    modal.style.display = "none";
+    showToast(`${label} のシフトが決まりました！`);
+    startTurn();
+  };
+
+  function syncAllDoneState() {
+    const ok = allPlayers.every((n) => selections.has(n));
+    allDoneBtn.disabled = !ok;
+    allDoneBtn.style.opacity = ok ? "1" : ".5";
+    allDoneBtn.style.cursor = ok ? "pointer" : "not-allowed";
+  }
+
+  row.appendChild(decideBtn);
+  row.appendChild(allDoneBtn);
+  root.appendChild(row);
+
+  function renderAll() {
+    renderChips();
+    renderSchedule();
+    syncAllDoneState();
+    const curName = allPlayers[currentPlayerIdx];
+    title.textContent = `シフト提出：${label}（いま：${curName}）`;
+  }
+
+  modalBox.innerHTML = "";
+  modalBox.appendChild(root);
+  renderAll();
+}
+
+
+function weightedPickFromList(list) {
+  if (!list || !list.length) return null;
+  const sum = list.reduce((s, item) => s + (item.weight || 0), 0);
+  let r = Math.random() * sum;
+  for (const item of list) {
+    r -= item.weight || 0;
+    if (r <= 0) return item;
+  }
+  return list[list.length - 1];
 }
 
 function ensureMoney(pawn) {
   if (typeof pawn.userData.money !== "number") pawn.userData.money = 0;
 }
 
-// 通過：半額支給＋トースト
-function handleJobPass(pawn){
-  const job = getPlayerJob(pawn);
-  if (!job) return;
-  ensureMoney(pawn);
-  pawn.userData.money += job.payPass;
-  updateStepsHUD();
-  showToast(`【${job.label}】通過：¥${job.payPass.toLocaleString()} を受け取りました`);
+function rollDarkJobPayout(job) {
+  const pick = weightedPickFromList(job.payouts || []);
+  return pick || { label: "結果不明", amount: 0 };
 }
 
-// 停止：全額支給 → 遭遇判定 → あれば通常イベント生成
-async function handleJobStop(pawn, planOpt){
+async function runShiftWorkDay(pawn, planOpt) {
   const job = getPlayerJob(pawn);
-  if (!job) { nextTurn(); return; }
+  if (!job) {
+    nextTurn();
+    return;
+  }
 
-  // 1) 支給
   ensureMoney(pawn);
-  pawn.userData.money += job.payStop;
-  updateStepsHUD();
+  let payout = 0;
+  let payoutLabel = "";
+  let extraLine = "";
 
-  // 2) 遭遇判定（先読みの結果があればそれを使う）
-  let willMeet, who, requestId;
-  if (planOpt && planOpt.isJobStop) {
+  if (job.type === "daily") {
+    payout = job.dailyPay || 0;
+    payoutLabel = `→ ¥${payout.toLocaleString()} を受け取った。`;
+  } else if (job.type === "weekly") {
+    if (isFishingPayDay(pawn, gameState.day)) {
+      payout = job.weeklyPay || 0;
+      payoutLabel = `→ 最終日に ¥${payout.toLocaleString()} を受け取った。`;
+    } else {
+      payoutLabel = "→ 今日は航海の途中。給料の支給は最終日。";
+    }
+  } else if (job.type === "dark") {
+    const result = rollDarkJobPayout(job);
+    payout = result.amount || 0;
+    payoutLabel = `→ 結果: ${result.label} (${payout >= 0 ? "+" : ""}¥${payout.toLocaleString()})`;
+  }
+
+  if (payout !== 0) {
+    pawn.userData.money += payout;
+    updateStepsHUD();
+  }
+
+  if (job.type === "weekly") {
+    const starts = pawn.userData.fishingStartDays || [];
+    const currentStart = starts.find((s) => gameState.day >= s && gameState.day <= s + 6);
+    if (currentStart) {
+      const dayCount = gameState.day - currentStart + 1;
+      extraLine = `（${dayCount}日目／7日間）`;
+    }
+  }
+
+  let willMeet = false;
+  let who = null;
+  let requestId = null;
+  if (planOpt && planOpt.isShiftDay) {
     willMeet = !!planOpt.willMeet;
     who = planOpt.character || null;
     requestId = planOpt.requestId || makeRequestId();
   } else {
-    willMeet = (Math.random()*100) < (job.encounterPct||0);
-    who = willMeet ? weightedPick(job.weights) : null;
+    willMeet = (Math.random() * 100) < (job.encounterPct || 0);
+    who = willMeet ? randomCharacter() : null;
     requestId = makeRequestId();
   }
 
   if (!willMeet || !who) {
     show(
-      `🧹 ${pawn.userData.name}は「${job.label}」で働いた。\n→ ¥${job.payStop.toLocaleString()} を受け取った。`,
+      `🧹 ${pawn.userData.name}は「${job.label}」で働いた${extraLine}。\n${payoutLabel}`,
       false
     );
     const ok = document.createElement("button");
     ok.textContent = "OK";
-    ok.onclick = ()=>{ modal.style.display = "none"; nextTurn(); };
+    ok.onclick = () => {
+      modal.style.display = "none";
+      clearPrefetchForPlayer(pawn.userData.name);
+      nextTurn();
+    };
     modalBox.appendChild(ok);
     return;
   }
 
-  // 3) 遭遇イベント
   pawn.userData.meetingCharacter = who;
   pawn.userData.currentPlaceName = job.place.name;
 
@@ -1998,15 +2377,15 @@ async function handleJobStop(pawn, planOpt){
   modal.style.display = "flex";
   modal.onclick = null;
   modalBox.innerHTML = [
-    `🧹 ${pawn.userData.name}は「${job.label}」で働いている…`,
+    `🧹 ${pawn.userData.name}は「${job.label}」で働いている…${extraLine}`,
+    payoutLabel,
     "",
     "…と、その時。",
     "",
     `<img style="height:240px;display:block;margin:8px auto;" src="${getCharImg(who)}" alt="${who}">`,
-    `<div style="font-size:1.6rem; margin-top:.5rem;">${who} が来店した！</div>`,
+    `<div style="font-size:1.6rem; margin-top:.5rem;">${who} と遭遇した！</div>`,
   ].join("\n");
 
-  // 先読みで結果があるなら即出す／なければ発注
   const ready = prefetchResult.get(requestId);
   if (ready) {
     eventGenerated({ requestId, data: ready });
@@ -2039,19 +2418,6 @@ function resolveTileEvent(pawn) {
     show(`${pawn.userData.name} は ${reason.label}。1回休み`, false);
     modal.onclick = () => { modal.style.display = "none"; nextTurn(); };
     return;
-  }
-
-  // ★ 職場タイル停止 → バイト処理を優先
-  const job = getPlayerJob(pawn);
-  if (job) {
-    const jobTileId = tileIdForPlaceName(job.place.name);
-    if (jobTileId === tileId) {
-      // 先読みがあれば拾う
-      const plan = prefetchPlan.get(pawn.userData.name);
-      const usePlan = (plan && plan.destTile === (tileId-1) && plan.isJobStop) ? plan : null;
-      handleJobStop(pawn, usePlan || undefined);
-      return;
-    }
   }
 
   // 以降は通常マッチング
@@ -3846,4 +4212,3 @@ function appendBtn(btn) {
     btn.style.marginLeft = ".6rem";
   modalBox.appendChild(btn);
 }
-
