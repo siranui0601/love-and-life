@@ -46,6 +46,101 @@ function profileBlock(playername) {
   };
 }
 
+const JOB_TAG_DEFINITIONS = {
+  cleaning: [
+    {
+      key: "cleaning_town_knowledge",
+      detail: "この町の裏道や抜け道、相手の家の場所まで全部把握している",
+    },
+    {
+      key: "cleaning_mysophilia",
+      detail: "ミソフィリアで、汚れや散らかった空間が大好き",
+    },
+  ],
+  bakery: [
+    {
+      key: "bakery_glutton",
+      detail: "暴飲暴食が癖。食が行動原理の一部",
+    },
+    {
+      key: "bakery_burn_scar",
+      detail: "顔の片側に火傷跡があり、人の視線や距離感に敏感すぎる",
+    },
+  ],
+  fishing: [
+    {
+      key: "fishing_strength",
+      detail: "力自慢で無茶しがち。腹筋を見せたがる",
+    },
+    {
+      key: "fishing_sleep_deprived",
+      detail: "常に眠く、思考が飛んだり情緒が不安定になりやすい",
+    },
+  ],
+  dark: [
+    {
+      key: "dark_well_connected",
+      detail: "表も裏も知り合いが多く、怪しい話にもすぐ繋がる",
+    },
+    {
+      key: "dark_dragon_tattoo",
+      detail: "背中一面に龍の刺青があり、場面次第で周囲の空気を一気に変える存在感を持つ",
+    },
+  ],
+};
+
+const ALL_TAG_DETAILS = Object.values(JOB_TAG_DEFINITIONS)
+  .flat()
+  .reduce((acc, tag) => {
+    acc[tag.key] = tag.detail;
+    return acc;
+  }, {});
+
+const PLAYER_TAGS = new Map();
+
+function getPlayerTagDetails(playername) {
+  const owned = Array.from(getPlayerTagSet(playername));
+  return owned.map((key) => ALL_TAG_DETAILS[key]).filter(Boolean);
+}
+
+function resolveJobTagPool(job = {}) {
+  const label = job.label || "";
+  if (label.includes("清掃")) return JOB_TAG_DEFINITIONS.cleaning;
+  if (label.includes("パン屋")) return JOB_TAG_DEFINITIONS.bakery;
+  if (label.includes("遠洋")) return JOB_TAG_DEFINITIONS.fishing;
+  if (job.type === "dark" || label.includes("闇")) return JOB_TAG_DEFINITIONS.dark;
+  return null;
+}
+
+function getPlayerTagSet(playername) {
+  const key = playername || "プレイヤー";
+  if (!PLAYER_TAGS.has(key)) {
+    PLAYER_TAGS.set(key, new Set());
+  }
+  return PLAYER_TAGS.get(key);
+}
+
+function maybeAwardTag(playername, job = {}) {
+  const pool = resolveJobTagPool(job);
+  if (!pool || pool.length === 0) return null;
+  const owned = getPlayerTagSet(playername);
+  const available = pool.filter((tag) => !owned.has(tag.key));
+  if (available.length === 0) return null;
+  if (Math.random() >= 0.1) return null;
+  const selected = available[Math.floor(Math.random() * available.length)];
+  owned.add(selected.key);
+  return selected.detail;
+}
+
+function buildPlayerTagBlock(playername) {
+  const owned = Array.from(getPlayerTagSet(playername));
+  const details = owned.map((key) => ALL_TAG_DETAILS[key]).filter(Boolean);
+  const lines = details.length
+    ? details.map((detail) => `- ${detail}`).join("\n")
+    : "- 現在、タグ由来の特徴はない";
+  return `\n【プレイヤーについて】\n${lines}`;
+}
+
 // ===== 休みイベント：台詞生成（訪問／意趣返し／冷笑） =====
 function jsonOnly(s){ return typeof s === "string" ? s.replace(/^```json\s*|\s*```$/g, "") : s; }
 async function generateRestDialogue(payload) {
@@ -150,7 +245,13 @@ function fallbackRestDialogue(payload) {
 
 
 // ---------- 通常（1対1）イベント ----------
-async function generateGameEvent(character, place, likability, playername) {
+async function generateGameEvent(
+  character,
+  place,
+  likability,
+  playername,
+  playerTagBlock,
+) {
   const characterProfiles = profileBlock(playername);
 
   const prompt = `
@@ -199,7 +300,7 @@ async function generateGameEvent(character, place, likability, playername) {
     }
   ]
 }
-`.trim();
+${playerTagBlock}`.trim();
 
   try {
      const text = await genWithFallback(prompt);
@@ -249,6 +350,8 @@ async function generateShiftNoEncounterDialogue(payload) {
     playername = "プレイヤー",
     job = {},
     fishingDayCount = null,
+    playerTagBlock = "",
+    newlyAcquiredTagDetail = null,
   } = payload || {};
   const jobLabel = job.label || "バイト";
   const place = job.place || { name: "職場", detail: "" };
@@ -266,6 +369,9 @@ async function generateShiftNoEncounterDialogue(payload) {
   const payoutLine = isDarkJob
     ? `- 今日の成果: ${payoutLabel}`
     : "";
+  const newlyAcquiredLine = newlyAcquiredTagDetail
+    ? `- 今日のバイトで新しく身についた特徴: ${newlyAcquiredTagDetail}（自然に会話や描写に反映）`
+    : "";
 
   const prompt = `
 あなたは恋愛ADVゲームの脚本家です。
@@ -278,6 +384,7 @@ async function generateShiftNoEncounterDialogue(payload) {
 ${placeLine}
 ${dayLine}
 ${payoutLine}
+${newlyAcquiredLine}
 - 来訪キャラ: なし（今日は誰とも会わなかった）
 
 【会話方針】
@@ -300,7 +407,7 @@ ${isDarkJob ? `- ${payoutTone}` : ""}
   {"name":"登場人物名","message":"セリフ"},
   ...
 ]
-`.trim();
+${playerTagBlock}`.trim();
 
   const text = stripJsonFence(await genWithFallback(prompt));
   let arr;
@@ -335,6 +442,8 @@ async function generateShiftEncounterEvent(payload) {
     place = {},
     likability = 0,
     fishingDayCount = null,
+    playerTagBlock = "",
+    newlyAcquiredTagDetail = null,
   } = payload || {};
   const characterProfiles = profileBlock(playername);
   const jobLabel = job.label || "バイト";
@@ -353,6 +462,9 @@ async function generateShiftEncounterEvent(payload) {
   const payoutLine = isDarkJob
     ? `- 今日の成果: ${payoutLabel}`
     : "";
+  const newlyAcquiredLine = newlyAcquiredTagDetail
+    ? `- 今日のバイトで新しく身についた特徴: ${newlyAcquiredTagDetail}（自然に会話や描写に反映）`
+    : "";
 
   const prompt = `
 あなたの名前は ${character} です。
@@ -367,6 +479,7 @@ ${sceneIntro}
 - ${playername} は今バイト中（${jobLabel}）
 ${dayLine}
 ${payoutLine}
+${newlyAcquiredLine}
 - あなたは客、通行人、手伝いに来たなど自然な立場で登場する
 - バイトの状況に触れながら話しかける
 - ${tone}
@@ -393,7 +506,7 @@ ${isDarkJob ? `- ${payoutTone}` : ""}
     ...
   ]
 }
-`.trim();
+${playerTagBlock}`.trim();
 
   try {
     const text = stripJsonFence(await genWithFallback(prompt));
@@ -424,7 +537,8 @@ async function generateFestivalDialogue(
   place,
   likabilities,
   playername,
-  condition // ★ 追加: "風邪気味" / "迷子だった" / "スマホを失くした" / "海に落ちて濡れている" など or null
+  condition,
+  playerTagBlock
 ) {
   const profiles = profileBlock(playername);
   const joinedProfiles = characters
@@ -463,7 +577,7 @@ ${joinedProfiles}
   { "name": "ナナ", "message": "～" }
   *全体で6行以上
 ]
-`.trim();
+${playerTagBlock}`.trim();
 
   try {
     const text = stripJsonFence(await genWithFallback(prompt));
@@ -497,7 +611,12 @@ function rejectionBandFromLike(like) {
 }
 
 // ---------- 各キャラの最終返事モノローグ（台詞配列） ----------
-async function generateEndingMonologue(character, entries, okName) {
+async function generateEndingMonologue(
+  character,
+  entries,
+  okName,
+  playerTagBlock,
+) {
   if (!entries || entries.length === 0) return [];
 
   const style = CHARACTER_STYLE[character] || "";
@@ -540,7 +659,7 @@ LEVEL 3: さらに強い拒絶。泥を投げるなどの行為も行ってく�
   {"name":"${character}","message":"…"},
   *全体で6行以上
 ]
-`.trim();
+${playerTagBlock}`.trim();
          const text = stripJsonFence(await genWithFallback(prompt));
         const arr = JSON.parse(text);
         return arr
@@ -585,7 +704,7 @@ ${listForPrompt}
   {"name":"${character}","message":"…"},
   *全体で6行以上
 ]
-`.trim();
+${playerTagBlock}`.trim();
        const text = stripJsonFence(await genWithFallback(prompt));
       const arr = JSON.parse(text);
       return arr
@@ -636,7 +755,7 @@ ${style}
   {"name":"${character}","message":"…"},
   *全体で6行以上
 ]
-`.trim();
+${playerTagBlock}`.trim();
        const text = stripJsonFence(await genWithFallback(prompt));
       const arr = JSON.parse(text);
       const out = arr
@@ -688,7 +807,7 @@ ${listForPrompt}
   {"name":"${character}","message":"…"},
   *全体で6行以上
 ]
-`.trim();
+${playerTagBlock}`.trim();
 
   try {
     const text = stripJsonFence(await genWithFallback(prompt));
@@ -733,7 +852,14 @@ async function generateEndingDialogue(groups, accepted) {
     const entries = Array.isArray(groups?.[ch]) ? groups[ch] : [];
     if (!entries.length) continue; // ← 追加：ゼロはスキップ
     const okName = accepted?.[ch] ?? null;
-    const lines = await generateEndingMonologue(ch, entries, okName);
+    const playername = entries[0]?.playername || "プレイヤー";
+    const playerTagBlock = buildPlayerTagBlock(playername);
+    const lines = await generateEndingMonologue(
+      ch,
+      entries,
+      okName,
+      playerTagBlock,
+    );
     allLines.push(...lines);
   }
   return allLines;
@@ -819,6 +945,7 @@ export function registerLifeSocketHandlers(socket) {
       place,
       likability,
       playername,
+      buildPlayerTagBlock(playername),
     );
     socket.emit("eventGenerated", { requestId, data: eventData }); // ★ 追加：IDごと返す
   });
@@ -836,6 +963,9 @@ export function registerLifeSocketHandlers(socket) {
     } = data || {};
 
     try {
+      const newlyAcquiredTagDetail = maybeAwardTag(playername, job);
+      const playerTagBlock = buildPlayerTagBlock(playername);
+      const playerTagDetails = getPlayerTagDetails(playername);
       if (encounter && characterName) {
         const event = await generateShiftEncounterEvent({
           playername,
@@ -844,10 +974,17 @@ export function registerLifeSocketHandlers(socket) {
           place: job?.place,
           likability,
           fishingDayCount,
+          playerTagBlock,
+          newlyAcquiredTagDetail,
         });
         socket.emit("shiftEventGenerated", {
           requestId,
-          data: { kind: "encounter", event },
+          data: {
+            kind: "encounter",
+            event,
+            tagDetails: playerTagDetails,
+            newlyAcquiredTagDetail,
+          },
         });
         return;
       }
@@ -856,17 +993,26 @@ export function registerLifeSocketHandlers(socket) {
         playername,
         job,
         fishingDayCount,
+        playerTagBlock,
+        newlyAcquiredTagDetail,
       });
-      socket.emit("shiftEventGenerated", {
-        requestId,
-        data: { kind: "noEncounter", lines },
-      });
-    } catch (error) {
-      console.error("❌ Gemini API Error (shift event):", error);
       socket.emit("shiftEventGenerated", {
         requestId,
         data: {
           kind: "noEncounter",
+          lines,
+          tagDetails: playerTagDetails,
+          newlyAcquiredTagDetail,
+        },
+      });
+    } catch (error) {
+      console.error("❌ Gemini API Error (shift event):", error);
+      const fallbackTagDetails = getPlayerTagDetails(playername);
+      socket.emit("shiftEventGenerated", {
+        requestId,
+        data: {
+          kind: "noEncounter",
+          tagDetails: fallbackTagDetails,
           lines: [
             { name: playername || "俺", message: "今日のバイトは無事に終わった。" },
             { name: playername || "俺", message: "……今日は誰にも会わなかったな。" },
@@ -884,7 +1030,8 @@ export function registerLifeSocketHandlers(socket) {
       place,
       likabilities,
       playername,
-      condition // ★ 追加
+      condition,
+      buildPlayerTagBlock(playername),
     );
     socket.emit("festivalGenerated", lines);
   });
