@@ -704,8 +704,14 @@ function showShiftPayoutLine(pawn, payout, bgUrl) {
     speaker: pawn.userData.name,
     message: formatShiftPayoutLine(payout),
     choices: [],
-    advanceOnTap: () => {
+    advanceOnTap: async () => {
       hideEventLayer();
+      const tagDetail = pawn.userData.lastAcquiredTagDetail;
+      if (tagDetail?.name && tagDetail?.detail) {
+        const text = `${pawn.userData.name}は🏷️${tagDetail.name}　を獲得した！\n${tagDetail.detail}`;
+        pawn.userData.lastAcquiredTagDetail = null;
+        await redCut(text);
+      }
       clearPrefetchForPlayer(pawn.userData.name);
       nextTurn();
     },
@@ -1150,8 +1156,9 @@ function createDayHUD() {
     background: "rgba(0,0,0,.45)",
     border: "1px solid rgba(255,255,255,.12)",
     display: "flex",
-    flexDirection: "column",
-    gap: "4px",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: "8px",
     fontWeight: "700",
     fontSize: "13px",
     letterSpacing: ".03em",
@@ -1217,7 +1224,10 @@ function updateStepsHUD() {
   if (!stepsHUD) return;
   const names = gameState.order?.length ? [...gameState.order] : pawnsGlobal.map(p=>p.userData.name);
   stepsHUD.replaceChildren();
-  names.forEach((name, index) => {
+  const rows = document.createElement("div");
+  rows.className = "stepsHUD-rows";
+
+  names.forEach((name) => {
     const pawn = pawnsGlobal.find(p=>p.userData.name===name);
     const row = document.createElement("div");
     row.className = "stepsHUD-row";
@@ -1232,43 +1242,42 @@ function updateStepsHUD() {
 
     row.appendChild(label);
     row.appendChild(value);
-
-    if (index === 0) {
-      const buttons = document.createElement("span");
-      buttons.className = "stepsHUD-buttons";
-
-      const stepsBtn = document.createElement("button");
-      stepsBtn.type = "button";
-      stepsBtn.className = "stepsHUD-button";
-      stepsBtn.textContent = "👣";
-      stepsBtn.setAttribute("aria-label", "歩数表示");
-      stepsBtn.classList.toggle("active", stepsHUDMode === stepsHUDModes.steps);
-      stepsBtn.addEventListener("click", () => setStepsHUDMode(stepsHUDModes.steps));
-
-      const moneyBtn = document.createElement("button");
-      moneyBtn.type = "button";
-      moneyBtn.className = "stepsHUD-button";
-      moneyBtn.textContent = "💰";
-      moneyBtn.setAttribute("aria-label", "所持金表示");
-      moneyBtn.classList.toggle("active", stepsHUDMode === stepsHUDModes.money);
-      moneyBtn.addEventListener("click", () => setStepsHUDMode(stepsHUDModes.money));
-
-      const tagBtn = document.createElement("button");
-      tagBtn.type = "button";
-      tagBtn.className = "stepsHUD-button";
-      tagBtn.textContent = "🏷️";
-      tagBtn.setAttribute("aria-label", "タグ表示");
-      tagBtn.classList.toggle("active", stepsHUDMode === stepsHUDModes.tags);
-      tagBtn.addEventListener("click", () => setStepsHUDMode(stepsHUDModes.tags));
-
-      buttons.appendChild(stepsBtn);
-      buttons.appendChild(moneyBtn);
-      buttons.appendChild(tagBtn);
-      row.appendChild(buttons);
-    }
-
-    stepsHUD.appendChild(row);
+    rows.appendChild(row);
   });
+
+  const buttons = document.createElement("span");
+  buttons.className = "stepsHUD-buttons";
+
+  const stepsBtn = document.createElement("button");
+  stepsBtn.type = "button";
+  stepsBtn.className = "stepsHUD-button";
+  stepsBtn.textContent = "👣";
+  stepsBtn.setAttribute("aria-label", "歩数表示");
+  stepsBtn.classList.toggle("active", stepsHUDMode === stepsHUDModes.steps);
+  stepsBtn.addEventListener("click", () => setStepsHUDMode(stepsHUDModes.steps));
+
+  const moneyBtn = document.createElement("button");
+  moneyBtn.type = "button";
+  moneyBtn.className = "stepsHUD-button";
+  moneyBtn.textContent = "💰";
+  moneyBtn.setAttribute("aria-label", "所持金表示");
+  moneyBtn.classList.toggle("active", stepsHUDMode === stepsHUDModes.money);
+  moneyBtn.addEventListener("click", () => setStepsHUDMode(stepsHUDModes.money));
+
+  const tagBtn = document.createElement("button");
+  tagBtn.type = "button";
+  tagBtn.className = "stepsHUD-button";
+  tagBtn.textContent = "🏷️";
+  tagBtn.setAttribute("aria-label", "タグ表示");
+  tagBtn.classList.toggle("active", stepsHUDMode === stepsHUDModes.tags);
+  tagBtn.addEventListener("click", () => setStepsHUDMode(stepsHUDModes.tags));
+
+  buttons.appendChild(stepsBtn);
+  buttons.appendChild(moneyBtn);
+  buttons.appendChild(tagBtn);
+
+  stepsHUD.appendChild(rows);
+  stepsHUD.appendChild(buttons);
 }
 
 
@@ -3207,6 +3216,48 @@ function ensureWhiteCut() {
 function whiteCut(text) {
   const cut = ensureWhiteCut();
   cut.querySelector("#cutInner").textContent = text;
+  cut.style.display = "flex";
+  requestAnimationFrame(() => (cut.style.opacity = "1"));
+  return new Promise((resolve) => {
+    const onTap = () => {
+      cut.removeEventListener("click", onTap);
+      cut.style.opacity = "0";
+      setTimeout(() => {
+        cut.style.display = "none";
+        resolve();
+      }, 250);
+    };
+    cut.addEventListener("click", onTap, { once: true });
+  });
+}
+
+let __redCut;
+function ensureRedCut() {
+  if (__redCut) return __redCut;
+  __redCut = document.createElement("div");
+  Object.assign(__redCut.style, {
+    position: "fixed",
+    inset: "0",
+    background: "#C62828",
+    color: "#fff",
+    display: "none",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10000,
+    opacity: 0,
+    transition: "opacity 1s ease",
+    textAlign: "center",
+  });
+  __redCut.innerHTML = `
+    <div id="redCutInner" style="font-weight:900;font-size:20px;letter-spacing:.08em;white-space:pre-line"></div>
+  `;
+  document.body.appendChild(__redCut);
+  return __redCut;
+}
+
+function redCut(text) {
+  const cut = ensureRedCut();
+  cut.querySelector("#redCutInner").textContent = text;
   cut.style.display = "flex";
   requestAnimationFrame(() => (cut.style.opacity = "1"));
   return new Promise((resolve) => {

@@ -335,14 +335,21 @@ html { -webkit-text-size-adjust: 100%; }
   line-height: 1.2;
 }
 
+#stepsHUD .stepsHUD-rows{
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 #stepsHUD .stepsHUD-name{
   font-weight: 700;
 }
 
 #stepsHUD .stepsHUD-buttons{
   display: inline-flex;
-  gap: 4px;
-  margin-left: 4px;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: 6px;
 }
 
 #stepsHUD .stepsHUD-button{
@@ -350,9 +357,9 @@ html { -webkit-text-size-adjust: 100%; }
   border: 1px solid rgba(255,255,255,.18);
   background: rgba(255,255,255,.08);
   color: #fff;
-  border-radius: 6px;
-  padding: 2px 6px;
-  font-size: 12px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 14px;
   line-height: 1;
   cursor: pointer;
 }
