@@ -225,6 +225,25 @@ function buildShiftTone(jobType) {
   return "日常のアルバイト感を重視。忙しさ・疲労・達成感などを会話で表現する。";
 }
 
+function buildDarkPayoutTone(label) {
+  switch (label) {
+    case "大成功":
+      return "大成功で高揚感と手応えが強い。余裕や達成感がにじむ。";
+    case "成功":
+      return "成功で安堵や手応えがあるが、油断はしない雰囲気。";
+    case "まぁまぁ":
+      return "可もなく不可もなく。淡々とした温度感。";
+    case "微妙":
+      return "期待外れで微妙な空気。小さな引っかかりが残る。";
+    case "失敗":
+      return "失敗で焦りや後悔が強め。小さなトラブル感。";
+    case "大失敗":
+      return "大失敗で危機感が強く、後悔や緊張が濃い。";
+    default:
+      return "成果は不明だが、闇バイトらしい緊張感は維持する。";
+  }
+}
+
 async function generateShiftNoEncounterDialogue(payload) {
   const {
     playername = "プレイヤー",
@@ -233,11 +252,20 @@ async function generateShiftNoEncounterDialogue(payload) {
   } = payload || {};
   const jobLabel = job.label || "バイト";
   const place = job.place || { name: "職場", detail: "" };
+  const isDarkJob = job.type === "dark";
+  const payoutLabel = job.payoutLabel || "不明";
   const dayLine =
     job.type === "weekly"
       ? `- 今日の航海: ${fishingDayCount || 1}/7日目`
       : "";
   const tone = buildShiftTone(job.type);
+  const payoutTone = buildDarkPayoutTone(payoutLabel);
+  const placeLine = isDarkJob
+    ? ""
+    : `- 場所: ${place.name}（${place.detail}）`;
+  const payoutLine = isDarkJob
+    ? `- 今日の成果: ${payoutLabel}`
+    : "";
 
   const prompt = `
 あなたは恋愛ADVゲームの脚本家です。
@@ -247,8 +275,9 @@ async function generateShiftNoEncounterDialogue(payload) {
 - プレイヤー名: ${playername}
 - 今日の行動: バイト出勤日
 - バイト先: ${jobLabel}
-- 場所: ${place.name}（${place.detail}）
+${placeLine}
 ${dayLine}
+${payoutLine}
 - 来訪キャラ: なし（今日は誰とも会わなかった）
 
 【会話方針】
@@ -256,6 +285,7 @@ ${dayLine}
 - 三人称ナレーションは禁止
 - 恋愛要素は入れない
 - ${tone}
+${isDarkJob ? `- ${payoutTone}` : ""}
 - 最後は「今日は誰とも会わなかった」ことが自然に伝わる締めにする
 
 【文体ルール】
@@ -309,18 +339,26 @@ async function generateShiftEncounterEvent(payload) {
   const characterProfiles = profileBlock(playername);
   const jobLabel = job.label || "バイト";
   const placeInfo = place.name ? place : job.place || { name: "職場", detail: "" };
+  const isDarkJob = job.type === "dark";
+  const payoutLabel = job.payoutLabel || "不明";
   const dayLine =
     job.type === "weekly"
       ? `- 今日の航海: ${fishingDayCount || 1}/7日目`
       : "";
   const tone = buildShiftTone(job.type);
+  const payoutTone = buildDarkPayoutTone(payoutLabel);
+  const sceneIntro = isDarkJob
+    ? `今、バイト中の ${playername} と偶然出会いました。`
+    : `ここは海辺の町「潮風町」。\n今、${placeInfo.name}（${placeInfo.detail}）で、バイト中の ${playername} と偶然出会いました。`;
+  const payoutLine = isDarkJob
+    ? `- 今日の成果: ${payoutLabel}`
+    : "";
 
   const prompt = `
 あなたの名前は ${character} です。
 特徴: ${characterProfiles[character]}
 
-ここは海辺の町「潮風町」。
-今、${placeInfo.name}（${placeInfo.detail}）で、バイト中の ${playername} と偶然出会いました。
+${sceneIntro}
 
 あなたの ${playername} への現在の好感度は ${likability} です。
 (0は顔見知り程度、100は大大大好き、0未満は嫌い、-30は顔も見たくない、-60はいっその事殺したいレベル)
@@ -328,9 +366,11 @@ async function generateShiftEncounterEvent(payload) {
 【シーン条件】
 - ${playername} は今バイト中（${jobLabel}）
 ${dayLine}
+${payoutLine}
 - あなたは客、通行人、手伝いに来たなど自然な立場で登場する
 - バイトの状況に触れながら話しかける
 - ${tone}
+${isDarkJob ? `- ${payoutTone}` : ""}
 
 【会話・描写ルール】
 - セリフは ${playername} と ${character}、およびバイト先の人物のみ
