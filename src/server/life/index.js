@@ -333,32 +333,24 @@ ${dayLine}
 - ${tone}
 
 【会話・描写ルール】
-- セリフはすべて ${character} が ${playername} に直接話しかける形
+- セリフは ${playername} と ${character}、およびバイト先の人物のみ
 - 三人称ナレーションは禁止
 - プレイヤーの一人称は「俺」
 - 好感度が高いほど親しげ、低いほど素っ気ない or トゲがある
-- message は短く、選択肢を促す内容にすること
+- 遭遇しなかった日の会話に ${character} との会話を加える雰囲気
 
-【選択肢】
-- ${playername} の返答として2つ用意
-- 一見どちらも好感度が上がりそうな内容にすること
-- ただし実際の好感度変化は必ず片方がマイナス
-- 変動値は -15〜15 の整数
+【ボリューム】
+- 全体で 10行程度
+
+【好感度変化】
+- 会話全体を踏まえて ${playername} の好感度変化を -10〜10 の整数で決める
 
 【出力形式】※このJSON以外の出力は禁止
 {
-  "message": "${character}のセリフ（1文）",
-  "choices": [
-    {
-      "text": "選択肢1（${playername}の返答・1文）",
-      "likabilityChange": 整数,
-      "reaction": "選択後の${character}の返答（1文）"
-    },
-    {
-      "text": "選択肢2（${playername}の返答・1文）",
-      "likabilityChange": 整数,
-      "reaction": "選択後の${character}の返答（1文）"
-    }
+  "likabilityChange": 整数,
+  "lines": [
+    {"name":"登場人物名","message":"セリフ"},
+    ...
   ]
 }
 `.trim();
@@ -369,18 +361,18 @@ ${dayLine}
   } catch (error) {
     console.error("❌ Gemini API Error (shift encounter):", error);
     return {
-      message: "ここで働いてるんだ、ちょっと意外かも。",
-      choices: [
-        {
-          text: "町のためになるし、嫌いじゃないんだ。",
-          likabilityChange: 6,
-          reaction: "ふふ、そういうところは素敵だと思うよ。",
-        },
-        {
-          text: "正直ちょっと楽な仕事だからさ。",
-          likabilityChange: -5,
-          reaction: "……まあ、無理しないのも大事だけどね。",
-        },
+      likabilityChange: 2,
+      lines: [
+        { name: character, message: "ここで働いてるんだ、ちょっと意外かも。" },
+        { name: playername, message: "まあね、今はここが落ち着くんだ。" },
+        { name: character, message: "忙しそうだけど、無理してない？" },
+        { name: playername, message: "今日はまあまあ。手は動かしてるよ。" },
+        { name: character, message: "じゃあ邪魔しないように、手短に話すね。" },
+        { name: playername, message: "助かる。今ちょうど区切りだったし。" },
+        { name: character, message: "仕事終わったら、少し休めるといいね。" },
+        { name: playername, message: "うん、閉店作業までが勝負かな。" },
+        { name: character, message: "また今度、ゆっくり話そう。" },
+        { name: playername, message: "ああ、またな。" },
       ],
     };
   }

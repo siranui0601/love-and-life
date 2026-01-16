@@ -756,6 +756,11 @@ function renderShiftEventResult(payload, ctx) {
 
   if (payload?.kind === "encounter" && payload?.event) {
     const characterName = ctx.characterName || pawn.userData.meetingCharacter;
+    const likeDelta = parseInt(payload.event.likabilityChange, 10) || 0;
+    if (characterName) {
+      pawn.userData.likability[characterName] =
+        (pawn.userData.likability[characterName] || 0) + likeDelta;
+    }
     pawn.userData.__lastEvent = {
       characterName,
       placeName: job?.place?.name || pawn.userData.currentPlaceName || "",
@@ -765,17 +770,7 @@ function renderShiftEventResult(payload, ctx) {
       shiftPayout: ctx.payout,
       shiftBgUrl: bgUrl,
     };
-    renderEventLayer({
-      bgUrl,
-      portraits: [{ name: characterName, mood: "neutral" }],
-      speaker: characterName,
-      message: payload.event.message,
-      choices: payload.event.choices.map((c) => ({
-        text: c.text,
-        onClick: () => on1v1Choice(c, characterName),
-      })),
-      showChoicesOnTap: true,
-    });
+    playShiftDialogue(payload.event.lines || [], pawn, ctx.payout, bgUrl);
     currentMatching = null;
     return;
   }
@@ -795,7 +790,7 @@ socket.on("shiftEventGenerated", (payload) => {
     currentMatching.requestId === payload.requestId &&
     currentMatching.mode === "shift"
   ) {
-    renderShiftEventResult(payload.data, currentMatching);
+    ensureShiftMatchingDelay(payload.data, currentMatching);
   }
 });
 
@@ -1913,6 +1908,14 @@ function buildFishingPayDays(starts) {
   return Array.from(new Set(starts.map((d) => d + 6))).sort((a, b) => a - b);
 }
 
+function hasOverlappingFishingStart(candidateStart, existingStarts) {
+  const rangeEnd = candidateStart + 6;
+  return existingStarts.some((start) => {
+    const startEnd = start + 6;
+    return !(rangeEnd < start || startEnd < candidateStart);
+  });
+}
+
 function buildDarkShiftDays(windowStart, windowEnd) {
   const days = [];
   for (let d = windowStart; d <= windowEnd; d += 1) {
@@ -1951,6 +1954,25 @@ function startShiftDots(el, baseText) {
     idx = (idx + 1) % dots.length;
     el.textContent = `${baseText}${dots[idx]}`;
   }, 600);
+}
+
+function ensureShiftMatchingDelay(payload, ctx) {
+  if (!ctx?.requestId) {
+    renderShiftEventResult(payload, ctx);
+    return;
+  }
+  const elapsed = Date.now() - (ctx.startedAt || Date.now());
+  const waitMs = Math.max(0, 1500 - elapsed);
+  const requestId = ctx.requestId;
+  const run = () => {
+    if (!currentMatching || currentMatching.requestId !== requestId) return;
+    renderShiftEventResult(payload, currentMatching);
+  };
+  if (waitMs > 0) {
+    setTimeout(run, waitMs);
+  } else {
+    run();
+  }
 }
 
 //七日目に職業に就く処理
@@ -2289,10 +2311,17 @@ function runShiftSelectionWindow(windowInfo) {
         const btn = document.createElement("button");
         btn.className = "btn";
         const active = draft.fishingStarts.has(d);
+        const overlap = !active && hasOverlappingFishingStart(d, Array.from(draft.fishingStarts));
+        btn.disabled = overlap;
         btn.textContent = `${d}日開始`;
         btn.style.background = active ? "var(--accent)" : "#222";
         btn.style.color = active ? "#111" : "#eee";
+        if (overlap) {
+          btn.style.opacity = ".4";
+          btn.style.cursor = "not-allowed";
+        }
         btn.onclick = () => {
+          if (btn.disabled) return;
           if (draft.fishingStarts.has(d)) {
             draft.fishingStarts.delete(d);
           } else {
@@ -2459,7 +2488,7 @@ async function runShiftWorkDay(pawn, planOpt) {
 
   ensureMoney(pawn);
   let payout = 0;
-  let payoutLabel = "";
+  let payoutLabel = null;
   let extraLine = "";
 
   if (job.type === "daily") {
@@ -2475,7 +2504,6 @@ async function runShiftWorkDay(pawn, planOpt) {
   } else if (job.type === "dark") {
     const result = rollDarkJobPayout(job);
     payout = result.amount || 0;
-    payoutLabel = '';
   }
 
   if (payout !== 0) {
@@ -2523,9 +2551,12 @@ async function runShiftWorkDay(pawn, planOpt) {
   }
   modal.style.display = "flex";
   modal.onclick = null;
+  const payoutLineHtml = payoutLabel
+    ? `<div style="margin-top:.5rem; opacity:.8;">${payoutLabel}</div>`
+    : "";
   modalBox.innerHTML = `
     <div id="shiftMatchingText" style="font-size:1.6rem;"></div>
-    <div style="margin-top:.5rem; opacity:.8;">${payoutLabel}</div>
+    ${payoutLineHtml}
   `;
   const matchingText = document.getElementById("shiftMatchingText");
   if (matchingText) {
@@ -2534,7 +2565,7 @@ async function runShiftWorkDay(pawn, planOpt) {
 
   const ready = shiftPrefetchResult.get(requestId);
   if (ready) {
-    renderShiftEventResult(ready, currentMatching);
+    ensureShiftMatchingDelay(ready, currentMatching);
   } else {
     socket.emit("requestShiftEvent", {
       requestId,
