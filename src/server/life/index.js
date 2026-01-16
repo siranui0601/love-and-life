@@ -387,6 +387,9 @@ async function generateShiftNoEncounterDialogue(payload) {
   const newlyAcquiredLine = newlyAcquiredTagDetail
     ? `- 今日のバイトで新しく身についた特徴: ${newlyAcquiredTagDetail.name}: ${newlyAcquiredTagDetail.detail}（自然に会話や描写に反映）`
     : "";
+  const tagFocusLine = newlyAcquiredTagDetail
+    ? "- 新しく得た特徴の内容に強くフォーカスし、その特徴が際立つ具体描写や会話を必ず入れる"
+    : "";
 
   const prompt = `
 あなたは恋愛ADVゲームの脚本家です。
@@ -407,6 +410,7 @@ ${newlyAcquiredLine}
 - 三人称ナレーションは禁止
 - 恋愛要素は入れない
 - ${tone}
+${tagFocusLine}
 ${isDarkJob ? `- ${payoutTone}` : ""}
 - 最後は「今日は誰とも会わなかった」ことが自然に伝わる締めにする
 
@@ -480,6 +484,9 @@ async function generateShiftEncounterEvent(payload) {
   const newlyAcquiredLine = newlyAcquiredTagDetail
     ? `- 今日のバイトで新しく身についた特徴: ${newlyAcquiredTagDetail.name}: ${newlyAcquiredTagDetail.detail}（自然に会話や描写に反映）`
     : "";
+  const tagFocusLine = newlyAcquiredTagDetail
+    ? "- 新しく得た特徴の内容に強くフォーカスし、その特徴が際立つ具体描写や会話を必ず入れる"
+    : "";
 
   const prompt = `
 あなたの名前は ${character} です。
@@ -498,6 +505,7 @@ ${newlyAcquiredLine}
 - あなたは客、通行人、手伝いに来たなど自然な立場で登場する
 - バイトの状況に触れながら話しかける
 - ${tone}
+${tagFocusLine}
 ${isDarkJob ? `- ${payoutTone}` : ""}
 
 【会話・描写ルール】
@@ -511,7 +519,7 @@ ${isDarkJob ? `- ${payoutTone}` : ""}
 - 全体で 10行程度
 
 【好感度変化】
-- 会話全体を踏まえて ${playername} の好感度変化を -10〜10 の整数で決める
+- 会話全体を踏まえて ${playername} の好感度変化を必ず -10〜10 の整数で決める
 
 【出力形式】※このJSON以外の出力は禁止
 {
