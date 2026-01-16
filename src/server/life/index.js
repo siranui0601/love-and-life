@@ -218,6 +218,174 @@ async function generateGameEvent(character, place, likability, playername) {
   }
 }
 
+function buildShiftTone(jobType) {
+  if (jobType === "dark") {
+    return "裏仕事の緊張感、違法スレスレの空気、ひりつく会話を強めに。露骨な犯罪描写は避けつつ、危うさや胡散臭さを出す。";
+  }
+  return "日常のアルバイト感を重視。忙しさ・疲労・達成感などを会話で表現する。";
+}
+
+async function generateShiftNoEncounterDialogue(payload) {
+  const {
+    playername = "プレイヤー",
+    job = {},
+    fishingDayCount = null,
+  } = payload || {};
+  const jobLabel = job.label || "バイト";
+  const place = job.place || { name: "職場", detail: "" };
+  const dayLine =
+    job.type === "weekly"
+      ? `- 今日の航海: ${fishingDayCount || 1}/7日目`
+      : "";
+  const tone = buildShiftTone(job.type);
+
+  const prompt = `
+あなたは恋愛ADVゲームの脚本家です。
+**出力は必ず JSON 配列のみ**にしてください。コードフェンス・地の文・括弧書きは禁止。
+
+【状況】
+- プレイヤー名: ${playername}
+- 今日の行動: バイト出勤日
+- バイト先: ${jobLabel}
+- 場所: ${place.name}（${place.detail}）
+${dayLine}
+- 来訪キャラ: なし（今日は誰とも会わなかった）
+
+【会話方針】
+- セリフは ${playername} と 店員・同僚・客などバイト先の人物のみ
+- 三人称ナレーションは禁止
+- 恋愛要素は入れない
+- ${tone}
+- 最後は「今日は誰とも会わなかった」ことが自然に伝わる締めにする
+
+【文体ルール】
+- プレイヤーの一人称は「俺」
+- 店員や同僚はバイト先に合った口調で
+
+【ボリューム】
+- 全体で 6行程度
+
+【出力形式（これ以外は絶対に出力しない）】
+[
+  {"name":"登場人物名","message":"セリフ"},
+  ...
+]
+`.trim();
+
+  const text = stripJsonFence(await genWithFallback(prompt));
+  let arr;
+  try {
+    arr = JSON.parse(text);
+  } catch {
+    throw new Error("Shift no-encounter JSON parse error");
+  }
+  const cleaned = (Array.isArray(arr) ? arr : [])
+    .filter((l) => l && typeof l.name === "string" && typeof l.message === "string")
+    .map((l) => ({ name: l.name.trim(), message: l.message.trim() }))
+    .filter((l) => l.name && l.message);
+
+  if (!cleaned.length) {
+    return [
+      { name: "店長", message: "今日は人多かったな、助かったよ。" },
+      { name: playername, message: "思ったより忙しかったです、足パンパンです。" },
+      { name: "店長", message: "慣れればもう少し楽になるさ。" },
+      { name: playername, message: "閉店作業まで一気に来ましたね…" },
+      { name: "店長", message: "まあ、こういう日もある。" },
+      { name: playername, message: "……今日は知ってる人、誰も来なかったな。" },
+    ];
+  }
+  return cleaned;
+}
+
+async function generateShiftEncounterEvent(payload) {
+  const {
+    playername = "プレイヤー",
+    character = "ミユ",
+    job = {},
+    place = {},
+    likability = 0,
+    fishingDayCount = null,
+  } = payload || {};
+  const characterProfiles = profileBlock(playername);
+  const jobLabel = job.label || "バイト";
+  const placeInfo = place.name ? place : job.place || { name: "職場", detail: "" };
+  const dayLine =
+    job.type === "weekly"
+      ? `- 今日の航海: ${fishingDayCount || 1}/7日目`
+      : "";
+  const tone = buildShiftTone(job.type);
+
+  const prompt = `
+あなたの名前は ${character} です。
+特徴: ${characterProfiles[character]}
+
+ここは海辺の町「潮風町」。
+今、${placeInfo.name}（${placeInfo.detail}）で、バイト中の ${playername} と偶然出会いました。
+
+あなたの ${playername} への現在の好感度は ${likability} です。
+(0は顔見知り程度、100は大大大好き、0未満は嫌い、-30は顔も見たくない、-60はいっその事殺したいレベル)
+
+【シーン条件】
+- ${playername} は今バイト中（${jobLabel}）
+${dayLine}
+- あなたは客、通行人、手伝いに来たなど自然な立場で登場する
+- バイトの状況に触れながら話しかける
+- ${tone}
+
+【会話・描写ルール】
+- セリフはすべて ${character} が ${playername} に直接話しかける形
+- 三人称ナレーションは禁止
+- プレイヤーの一人称は「俺」
+- 好感度が高いほど親しげ、低いほど素っ気ない or トゲがある
+- message は短く、選択肢を促す内容にすること
+
+【選択肢】
+- ${playername} の返答として2つ用意
+- 一見どちらも好感度が上がりそうな内容にすること
+- ただし実際の好感度変化は必ず片方がマイナス
+- 変動値は -15〜15 の整数
+
+【出力形式】※このJSON以外の出力は禁止
+{
+  "message": "${character}のセリフ（1文）",
+  "choices": [
+    {
+      "text": "選択肢1（${playername}の返答・1文）",
+      "likabilityChange": 整数,
+      "reaction": "選択後の${character}の返答（1文）"
+    },
+    {
+      "text": "選択肢2（${playername}の返答・1文）",
+      "likabilityChange": 整数,
+      "reaction": "選択後の${character}の返答（1文）"
+    }
+  ]
+}
+`.trim();
+
+  try {
+    const text = stripJsonFence(await genWithFallback(prompt));
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("❌ Gemini API Error (shift encounter):", error);
+    return {
+      message: "ここで働いてるんだ、ちょっと意外かも。",
+      choices: [
+        {
+          text: "町のためになるし、嫌いじゃないんだ。",
+          likabilityChange: 6,
+          reaction: "ふふ、そういうところは素敵だと思うよ。",
+        },
+        {
+          text: "正直ちょっと楽な仕事だからさ。",
+          likabilityChange: -5,
+          reaction: "……まあ、無理しないのも大事だけどね。",
+        },
+      ],
+    };
+  }
+}
+
 // ---------- 盆踊り（選択肢なし・甘々会話：台詞配列） ----------
 async function generateFestivalDialogue(
   characters,
@@ -621,6 +789,59 @@ export function registerLifeSocketHandlers(socket) {
       playername,
     );
     socket.emit("eventGenerated", { requestId, data: eventData }); // ★ 追加：IDごと返す
+  });
+
+  // バイトイベント
+  socket.on("requestShiftEvent", async (data) => {
+    const {
+      requestId,
+      playername,
+      job,
+      encounter,
+      characterName,
+      likability = 0,
+      fishingDayCount = null,
+    } = data || {};
+
+    try {
+      if (encounter && characterName) {
+        const event = await generateShiftEncounterEvent({
+          playername,
+          character: characterName,
+          job,
+          place: job?.place,
+          likability,
+          fishingDayCount,
+        });
+        socket.emit("shiftEventGenerated", {
+          requestId,
+          data: { kind: "encounter", event },
+        });
+        return;
+      }
+
+      const lines = await generateShiftNoEncounterDialogue({
+        playername,
+        job,
+        fishingDayCount,
+      });
+      socket.emit("shiftEventGenerated", {
+        requestId,
+        data: { kind: "noEncounter", lines },
+      });
+    } catch (error) {
+      console.error("❌ Gemini API Error (shift event):", error);
+      socket.emit("shiftEventGenerated", {
+        requestId,
+        data: {
+          kind: "noEncounter",
+          lines: [
+            { name: playername || "俺", message: "今日のバイトは無事に終わった。" },
+            { name: playername || "俺", message: "……今日は誰にも会わなかったな。" },
+          ],
+        },
+      });
+    }
   });
 
   // 盆踊りイベント（台詞配列）
