@@ -2489,6 +2489,7 @@ async function runShiftWorkDay(pawn, planOpt) {
   ensureMoney(pawn);
   let payout = 0;
   let payoutLabel = null;
+  let darkPayoutLabel = null;
   let extraLine = "";
 
   if (job.type === "daily") {
@@ -2504,6 +2505,7 @@ async function runShiftWorkDay(pawn, planOpt) {
   } else if (job.type === "dark") {
     const result = rollDarkJobPayout(job);
     payout = result.amount || 0;
+    darkPayoutLabel = result.label || null;
   }
 
   if (payout !== 0) {
@@ -2574,6 +2576,7 @@ async function runShiftWorkDay(pawn, planOpt) {
         label: job.label,
         type: job.type,
         place: job.place,
+        payoutLabel: darkPayoutLabel,
       },
       encounter: willMeet && !!who,
       characterName: who,
