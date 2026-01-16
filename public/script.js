@@ -472,7 +472,7 @@ export const PARTTIME_JOBS = {
     payouts: [
       { label: "大成功", amount: 18000, weight: 15 },
       { label: "成功", amount: 8000, weight: 25 },
-      { label: "小成功", amount: 4000, weight: 30 },
+      { label: "まぁまぁ", amount: 4000, weight: 30 },
       { label: "微妙", amount: 1000, weight: 15 },
       { label: "失敗", amount: -3000, weight: 10 },
       { label: "大失敗", amount: -8000, weight: 5 },
