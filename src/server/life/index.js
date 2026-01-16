@@ -106,6 +106,13 @@ const ALL_TAG_DETAILS = Object.values(JOB_TAG_DEFINITIONS)
 
 const PLAYER_TAGS = new Map();
 
+function clampLikabilityChange(value, min = -10, max = 10) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  const rounded = Math.round(num);
+  return Math.max(min, Math.min(max, rounded));
+}
+
 function getPlayerTagDetails(playername) {
   const owned = Array.from(getPlayerTagSet(playername));
   return owned.map((key) => ALL_TAG_DETAILS[key]).filter(Boolean);
@@ -985,11 +992,15 @@ export function registerLifeSocketHandlers(socket) {
           playerTagBlock,
           newlyAcquiredTagDetail,
         });
+        const normalizedEvent = {
+          ...event,
+          likabilityChange: clampLikabilityChange(event?.likabilityChange),
+        };
         socket.emit("shiftEventGenerated", {
           requestId,
           data: {
             kind: "encounter",
-            event,
+            event: normalizedEvent,
             tagDetails: playerTagDetails,
             newlyAcquiredTagDetail,
           },
