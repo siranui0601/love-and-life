@@ -753,6 +753,14 @@ function renderShiftEventResult(payload, ctx) {
   const bgUrl = getBgForPlace(job?.place?.name || "");
   stopShiftDots();
   modal.style.display = "none";
+  if (Array.isArray(payload?.tagDetails)) {
+    pawn.userData.tags = [...payload.tagDetails];
+  }
+  if (payload?.newlyAcquiredTagDetail) {
+    pawn.userData.lastAcquiredTagDetail = payload.newlyAcquiredTagDetail;
+  } else {
+    pawn.userData.lastAcquiredTagDetail = null;
+  }
 
   if (payload?.kind === "encounter" && payload?.event) {
     const characterName = ctx.characterName || pawn.userData.meetingCharacter;
@@ -1502,6 +1510,8 @@ playerNames.slice(0, 6).forEach((name, i) => {
     name,
     tile: 0,
     money: 0, // ★ 所持金
+    tags: [],
+    lastAcquiredTagDetail: null,
     likability: (name==="2002"||name==="0601")
       ? { ミユ:220, シオン:220, ナナ:220 }
       : { ミユ:0, シオン:0, ナナ:0 },
