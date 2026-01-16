@@ -2662,11 +2662,11 @@ function resolveTileEvent(pawn) {
     if (currentMatching && currentMatching.requestId === requestId && rouletteTimer) {
       clearInterval(rouletteTimer);
       rouletteTimer = null;
-      modalBox.innerHTML = "通信が混み合っています。もう一度お試しください。";
-      const ok = document.createElement("button");
+      modalBox.innerHTML = "通信が混み合っています。少々お待ちください(ｺﾞﾒﾝﾈ)";
+      /*const ok = document.createElement("button");
       ok.textContent = "OK";
       ok.onclick = () => { modal.style.display = "none"; nextTurn(); };
-      modalBox.appendChild(ok);
+      modalBox.appendChild(ok);*/
     }
   }, 20000);
 }
@@ -3897,7 +3897,7 @@ function showResultsScreen() {
       </div>
       <div class="result-body" id="resultBody"></div>
       <div class="footer-actions">
-        <button class="btn btn-primary" id="btnPlayAgain">もう一度あそぶ</button>
+        <button class="btn btn-primary" id="btnPlayAgain">ホームに戻る</button>
       </div>
     </div>
   `;
