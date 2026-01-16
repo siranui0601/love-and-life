@@ -2035,15 +2035,11 @@ function runJobsSelectionDay7(){
     if (job.type === "daily") {
       payLine = `給料: ¥${job.dailyPay.toLocaleString()} / 日`;
     } else if (job.type === "weekly") {
-      payLine = `給料: ¥${job.weeklyPay.toLocaleString()} / 週（最終日に支給）`;
+      payLine = `給料: ¥${job.weeklyPay.toLocaleString()} / 週`;
       extraLine = "※ 1回のバイトで7日間固定";
     } else if (job.type === "dark") {
-      payLine = "給料: ランダム（結果により増減）";
-      extraLine = [
-        "※ シフトはランダムで自動決定",
-        "内訳: 大成功+18,000(15%) / 成功+8,000(25%) / 小成功+4,000(30%)",
-        "微妙+1,000(15%) / 失敗-3,000(10%) / 大丈夫-8,000(5%)",
-      ].join("<br>");
+      payLine = "給料: ランダム";
+      extraLine = "※ シフトはランダムで自動決定";
     }
     const card = document.createElement("div");
     card.style.flex = `0 0 ${PCT_PER_CARD}%`; // ← ★ここを 100% から修正（1枚＝画面1枚ぶん）
@@ -2274,7 +2270,7 @@ function runShiftSelectionWindow(windowInfo) {
 
       const days = Array.from(draft.days).sort((a, b) => a - b);
       const list = document.createElement("div");
-      list.textContent = days.length ? `出勤日: ${days.join(", ")}日` : "出勤日: なし";
+      list.textContent = '出勤日:？？？';
       scheduleBox.appendChild(list);
       return;
     }
@@ -2479,7 +2475,7 @@ async function runShiftWorkDay(pawn, planOpt) {
   } else if (job.type === "dark") {
     const result = rollDarkJobPayout(job);
     payout = result.amount || 0;
-    payoutLabel = `→ 結果: ${result.label} (${payout >= 0 ? "+" : ""}¥${payout.toLocaleString()})`;
+    payoutLabel = '';
   }
 
   if (payout !== 0) {
