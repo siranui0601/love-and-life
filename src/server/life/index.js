@@ -56,7 +56,7 @@ const JOB_TAG_DEFINITIONS = {
     {
       key: "cleaning_mysophilia",
       name: "ミソフィリア",
-      detail: "ミソフィリアで、汚れや散らかった空間が大好き",
+      detail: "清掃バイトをしてるうちに、汚れや散らかった空間が大好きになった",
     },
   ],
   bakery: [
@@ -92,7 +92,7 @@ const JOB_TAG_DEFINITIONS = {
     {
       key: "dark_dragon_tattoo",
       name: "龍の刺青",
-      detail: "背中一面に龍の刺青があり、場面次第で周囲の空気を一気に変える存在感を持つ",
+      detail: "背中一面と右腕に龍の刺青があり、場面次第で周囲の空気を一気に変える存在感を持つ",
     },
   ],
 };
