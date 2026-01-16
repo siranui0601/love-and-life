@@ -1123,6 +1123,13 @@ const SHIFT_WINDOWS = [
 const DARK_SHIFT_RATE = 40;
 let dayHUD;
 let stepsHUD; // ★ 累計マス数用
+let stepsHUDMode = "none"; // "none" | "steps" | "money" | "tags"
+const stepsHUDModes = {
+  none: "none",
+  steps: "steps",
+  money: "money",
+  tags: "tags",
+};
 
 function createDayHUD() {
   dayHUD = document.createElement("div");
@@ -1142,7 +1149,9 @@ function createDayHUD() {
     borderRadius: "10px",
     background: "rgba(0,0,0,.45)",
     border: "1px solid rgba(255,255,255,.12)",
-    whiteSpace: "pre", // 改行そのまま表示
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
     fontWeight: "700",
     fontSize: "13px",
     letterSpacing: ".03em",
@@ -1175,17 +1184,91 @@ function updateDayHUD() {
 // 告白ボーナス表示用：該当者の名前を保持（HUDに「歩数ボーナス」表示）
 let stepBonusWinners = new Set();
 
+function setStepsHUDMode(nextMode) {
+  stepsHUDMode = stepsHUDMode === nextMode ? stepsHUDModes.none : nextMode;
+  updateStepsHUD();
+}
+
+function formatStepsHUDValue(name, pawn) {
+  const steps = pawn && typeof pawn.userData.totalSteps === "number"
+    ? pawn.userData.totalSteps
+    : 0;
+  const money = pawn && typeof pawn.userData.money === "number"
+    ? pawn.userData.money
+    : 0;
+  const tags = pawn && Array.isArray(pawn.userData.tags)
+    ? pawn.userData.tags.filter(Boolean)
+    : [];
+  const bonusMark = stepBonusWinners.has(name) ? "　歩数ボーナス！ +10♡" : "";
+
+  switch (stepsHUDMode) {
+    case stepsHUDModes.steps:
+      return `${steps}👣${bonusMark}`;
+    case stepsHUDModes.money:
+      return `${money.toLocaleString()}💰`;
+    case stepsHUDModes.tags:
+      return tags.length ? tags.map((tag) => `🏷️${tag}`).join(",") : "";
+    default:
+      return "";
+  }
+}
+
 function updateStepsHUD() {
   if (!stepsHUD) return;
   const names = gameState.order?.length ? [...gameState.order] : pawnsGlobal.map(p=>p.userData.name);
-  const lines = names.map(n => {
-    const pawn = pawnsGlobal.find(p=>p.userData.name===n);
-    const steps = (pawn && typeof pawn.userData.totalSteps==="number") ? pawn.userData.totalSteps : 0;
-    const money = (pawn && typeof pawn.userData.money==="number") ? pawn.userData.money : 0;
-    const bonusMark = stepBonusWinners.has(n) ? "　歩数ボーナス！ +10♡" : "";
-    return `${n}: ${steps}マス |  ${money.toLocaleString()}${bonusMark}円`;
+  stepsHUD.replaceChildren();
+  names.forEach((name, index) => {
+    const pawn = pawnsGlobal.find(p=>p.userData.name===name);
+    const row = document.createElement("div");
+    row.className = "stepsHUD-row";
+
+    const label = document.createElement("span");
+    label.className = "stepsHUD-name";
+    label.textContent = `${name}:`;
+
+    const value = document.createElement("span");
+    value.className = "stepsHUD-value";
+    value.textContent = formatStepsHUDValue(name, pawn);
+
+    row.appendChild(label);
+    row.appendChild(value);
+
+    if (index === 0) {
+      const buttons = document.createElement("span");
+      buttons.className = "stepsHUD-buttons";
+
+      const stepsBtn = document.createElement("button");
+      stepsBtn.type = "button";
+      stepsBtn.className = "stepsHUD-button";
+      stepsBtn.textContent = "👣";
+      stepsBtn.setAttribute("aria-label", "歩数表示");
+      stepsBtn.classList.toggle("active", stepsHUDMode === stepsHUDModes.steps);
+      stepsBtn.addEventListener("click", () => setStepsHUDMode(stepsHUDModes.steps));
+
+      const moneyBtn = document.createElement("button");
+      moneyBtn.type = "button";
+      moneyBtn.className = "stepsHUD-button";
+      moneyBtn.textContent = "💰";
+      moneyBtn.setAttribute("aria-label", "所持金表示");
+      moneyBtn.classList.toggle("active", stepsHUDMode === stepsHUDModes.money);
+      moneyBtn.addEventListener("click", () => setStepsHUDMode(stepsHUDModes.money));
+
+      const tagBtn = document.createElement("button");
+      tagBtn.type = "button";
+      tagBtn.className = "stepsHUD-button";
+      tagBtn.textContent = "🏷️";
+      tagBtn.setAttribute("aria-label", "タグ表示");
+      tagBtn.classList.toggle("active", stepsHUDMode === stepsHUDModes.tags);
+      tagBtn.addEventListener("click", () => setStepsHUDMode(stepsHUDModes.tags));
+
+      buttons.appendChild(stepsBtn);
+      buttons.appendChild(moneyBtn);
+      buttons.appendChild(tagBtn);
+      row.appendChild(buttons);
+    }
+
+    stepsHUD.appendChild(row);
   });
-  stepsHUD.textContent = lines.join("\n");
 }
 
 
