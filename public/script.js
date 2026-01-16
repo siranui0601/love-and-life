@@ -770,12 +770,17 @@ function renderShiftEventResult(payload, ctx) {
   if (payload?.kind === "encounter" && payload?.event) {
     const characterName = ctx.characterName || pawn.userData.meetingCharacter;
     const likeDelta = parseInt(payload.event.likabilityChange, 10) || 0;
-    if (characterName) {
-      pawn.userData.likability[characterName] =
-        (pawn.userData.likability[characterName] || 0) + likeDelta;
+    const candidateName = characterName || (() => {
+      const charSet = new Set(characters);
+      const line = (payload.event.lines || []).find((l) => charSet.has(l?.name));
+      return line?.name || null;
+    })();
+    if (candidateName) {
+      pawn.userData.likability[candidateName] =
+        (pawn.userData.likability[candidateName] || 0) + likeDelta;
     }
     pawn.userData.__lastEvent = {
-      characterName,
+      characterName: candidateName || characterName,
       placeName: job?.place?.name || pawn.userData.currentPlaceName || "",
       data: payload.event,
       day: gameState.day,
@@ -1129,6 +1134,7 @@ const SHIFT_WINDOWS = [
 const DARK_SHIFT_RATE = 40;
 let dayHUD;
 let stepsHUD; // ★ 累計マス数用
+let stepsHUDButtons;
 let stepsHUDMode = "none"; // "none" | "steps" | "money" | "tags"
 const stepsHUDModes = {
   none: "none",
@@ -1164,6 +1170,24 @@ function createDayHUD() {
     letterSpacing: ".03em",
   });
   document.body.appendChild(stepsHUD);
+
+  stepsHUDButtons = document.createElement("div");
+  stepsHUDButtons.id = "stepsHUDButtons";
+  Object.assign(stepsHUDButtons.style, {
+    position: "fixed",
+    left: "12px",
+    top: "0px",
+    zIndex: "50",
+    padding: "6px 8px",
+    borderRadius: "10px",
+    background: "rgba(0,0,0,.45)",
+    border: "1px solid rgba(255,255,255,.12)",
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: "6px",
+  });
+  document.body.appendChild(stepsHUDButtons);
 
   // 初期配置 & リサイズ時に追従
   positionStepsHUD();
@@ -1242,9 +1266,10 @@ function updateStepsHUD() {
 
     row.appendChild(label);
     row.appendChild(value);
-    rows.appendChild(row);
+  rows.appendChild(row);
   });
 
+  stepsHUDButtons?.replaceChildren();
   const buttons = document.createElement("span");
   buttons.className = "stepsHUD-buttons";
 
@@ -1277,7 +1302,10 @@ function updateStepsHUD() {
   buttons.appendChild(tagBtn);
 
   stepsHUD.appendChild(rows);
-  stepsHUD.appendChild(buttons);
+  if (stepsHUDButtons) {
+    stepsHUDButtons.appendChild(buttons);
+  }
+  positionStepsHUD();
 }
 
 
@@ -1287,6 +1315,11 @@ function positionStepsHUD() {
   if (!dayHUD || !stepsHUD) return;
   const top = (dayHUD.offsetTop || 10) + dayHUD.offsetHeight + 6; // dayHUD の下に 6px 余白
   stepsHUD.style.top = `${top}px`;
+  if (stepsHUDButtons) {
+    stepsHUDButtons.style.top = `${top}px`;
+    const left = stepsHUD.offsetLeft + stepsHUD.offsetWidth + 8;
+    stepsHUDButtons.style.left = `${left}px`;
+  }
 }
 
 /* ---------- 戻るボタン ---------- */
