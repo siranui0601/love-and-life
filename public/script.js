@@ -673,6 +673,9 @@ function on1v1Choice(choice, characterName) {
     (pawn.userData.likability[characterName] || 0) + delta;
 
   const mood = delta > 0 ? "positive" : delta < 0 ? "negative" : "neutral";
+  const isShiftEvent = !!ctx?.isShiftEvent;
+  const shiftPayout = Number.isFinite(ctx?.shiftPayout) ? ctx.shiftPayout : 0;
+  const shiftBgUrl = ctx?.shiftBgUrl || null;
   renderEventLayer({
     keepCurrentBg: true,
     portraits: [{ name: characterName, mood }],
@@ -680,11 +683,121 @@ function on1v1Choice(choice, characterName) {
     message: choice.reaction || "……",
     choices: [],
     advanceOnTap: () => {
+      if (isShiftEvent) {
+        showShiftPayoutLine(pawn, shiftPayout, shiftBgUrl);
+        return;
+      }
       hideEventLayer();
       nextTurn();
     },
   });
 }
+
+function formatShiftPayoutLine(payout) {
+  return `${payout.toLocaleString()}円を手に入れた！`;
+}
+
+function showShiftPayoutLine(pawn, payout, bgUrl) {
+  renderEventLayer({
+    bgUrl: bgUrl || FESTIVAL_BG_FALLBACK,
+    portraits: [],
+    speaker: pawn.userData.name,
+    message: formatShiftPayoutLine(payout),
+    choices: [],
+    advanceOnTap: () => {
+      hideEventLayer();
+      clearPrefetchForPlayer(pawn.userData.name);
+      nextTurn();
+    },
+  });
+}
+
+function playShiftDialogue(lines, pawn, payout, bgUrl) {
+  const playerName = pawn.userData.name;
+  const charSet = new Set(characters);
+  const safeLines = Array.isArray(lines) && lines.length ? lines : [
+    { name: playerName, message: "今日はバイトを終えた。" },
+  ];
+
+  let idx = 0;
+
+  function showLine(i) {
+    const { name, message } = safeLines[i];
+    const isChar = charSet.has(name);
+    const portraits = isChar ? [{ name, mood: "positive" }] : [];
+
+    renderEventLayer({
+      bgUrl: bgUrl || FESTIVAL_BG_FALLBACK,
+      portraits,
+      speaker: name,
+      message,
+      choices: [],
+      advanceOnTap: () => {
+        idx += 1;
+        if (idx < safeLines.length) {
+          showLine(idx);
+        } else {
+          showShiftPayoutLine(pawn, payout, bgUrl);
+        }
+      },
+    });
+  }
+
+  showLine(0);
+}
+
+function renderShiftEventResult(payload, ctx) {
+  const pawn = currentPawn;
+  if (!pawn || !ctx) return;
+  const job = getPlayerJob(pawn);
+  const bgUrl = getBgForPlace(job?.place?.name || "");
+  stopShiftDots();
+  modal.style.display = "none";
+
+  if (payload?.kind === "encounter" && payload?.event) {
+    const characterName = ctx.characterName || pawn.userData.meetingCharacter;
+    pawn.userData.__lastEvent = {
+      characterName,
+      placeName: job?.place?.name || pawn.userData.currentPlaceName || "",
+      data: payload.event,
+      day: gameState.day,
+      isShiftEvent: true,
+      shiftPayout: ctx.payout,
+      shiftBgUrl: bgUrl,
+    };
+    renderEventLayer({
+      bgUrl,
+      portraits: [{ name: characterName, mood: "neutral" }],
+      speaker: characterName,
+      message: payload.event.message,
+      choices: payload.event.choices.map((c) => ({
+        text: c.text,
+        onClick: () => on1v1Choice(c, characterName),
+      })),
+      showChoicesOnTap: true,
+    });
+    currentMatching = null;
+    return;
+  }
+
+  playShiftDialogue(payload?.lines || [], pawn, ctx.payout, bgUrl);
+  currentMatching = null;
+}
+
+socket.on("shiftEventGenerated", (payload) => {
+  if (!payload?.requestId) return;
+  if (payload?.data) {
+    shiftPrefetchResult.set(payload.requestId, payload.data);
+  }
+
+  if (
+    currentMatching &&
+    currentMatching.requestId === payload.requestId &&
+    currentMatching.mode === "shift"
+  ) {
+    renderShiftEventResult(payload.data, currentMatching);
+  }
+});
 
 /* ========== 既存：盆踊り（マルチ） ========== */
 // 盆踊り：台詞配列を逐次表示
@@ -732,8 +845,12 @@ const prefetchPlan = new Map();
 // 先読み結果: requestId -> eventData(JSON)
 const prefetchResult = new Map();
 
+// バイト先読み結果: requestId -> shiftEventData
+const shiftPrefetchResult = new Map();
+
 // マッチングUIで待っている最中の情報
 let currentMatching = null;
+let shiftDotsTimer = null;
 
 let __currentReverseCtx = null;
 
@@ -787,6 +904,8 @@ function prefetchEventFor(playerName, dayForPlayer = gameState.day) {
     const requestId = makeRequestId();
     const willMeet = (Math.random() * 100) < (job.encounterPct || 0);
     const character = willMeet ? randomCharacter() : null;
+    const fishingDayCount =
+      job.type === "weekly" ? getFishingDayCount(pawn, dayForPlayer) : null;
     prefetchPlan.set(playerName, {
       isShiftDay: true,
       day: dayForPlayer,
@@ -795,16 +914,21 @@ function prefetchEventFor(playerName, dayForPlayer = gameState.day) {
       requestId,
       startedAt: Date.now(),
       willMeet,
+      fishingDayCount,
     });
-    if (willMeet && character) {
-      socket.emit("requestEvent", {
-        requestId,
-        characterName: character,
-        place: { name: job.place.name, detail: job.place.detail },
-        likability: pawn.userData.likability?.[character] || 0,
-        playername: playerName,
-      });
-    }
+    socket.emit("requestShiftEvent", {
+      requestId,
+      playername: playerName,
+      job: {
+        label: job.label,
+        type: job.type,
+        place: job.place,
+      },
+      encounter: willMeet && !!character,
+      characterName: character,
+      likability: character ? pawn.userData.likability?.[character] || 0 : 0,
+      fishingDayCount,
+    });
     return;
   }
 
@@ -1770,6 +1894,7 @@ function clearPrefetchForPlayer(playerName) {
   const plan = prefetchPlan.get(playerName);
   if (plan) {
     prefetchResult.delete(plan.requestId);
+    shiftPrefetchResult.delete(plan.requestId);
     prefetchPlan.delete(playerName);
   }
 }
@@ -1796,6 +1921,37 @@ function buildDarkShiftDays(windowStart, windowEnd) {
   return days;
 }
 
+function getFishingDayCount(pawn, day) {
+  const starts = pawn.userData.fishingStartDays || [];
+  const currentStart = starts.find((s) => day >= s && day <= s + 6);
+  return currentStart ? day - currentStart + 1 : null;
+}
+
+function getShiftMatchingText(pawn, job, day) {
+  if (job.type === "weekly") {
+    const dayCount = getFishingDayCount(pawn, day) ?? 1;
+    return `${pawn.userData.name}は今海の上、${dayCount}/7日目だ`;
+  }
+  return `${pawn.userData.name}は${job.label}に出勤中だ`;
+}
+
+function stopShiftDots() {
+  if (shiftDotsTimer) {
+    clearInterval(shiftDotsTimer);
+    shiftDotsTimer = null;
+  }
+}
+
+function startShiftDots(el, baseText) {
+  stopShiftDots();
+  const dots = [".", "..", "..."];
+  let idx = 0;
+  el.textContent = `${baseText}${dots[idx]}`;
+  shiftDotsTimer = setInterval(() => {
+    idx = (idx + 1) % dots.length;
+    el.textContent = `${baseText}${dots[idx]}`;
+  }, 600);
+}
 
 //七日目に職業に就く処理
 function runJobsSelectionDay7(){
@@ -2331,13 +2487,11 @@ async function runShiftWorkDay(pawn, planOpt) {
     updateStepsHUD();
   }
 
-  if (job.type === "weekly") {
-    const starts = pawn.userData.fishingStartDays || [];
-    const currentStart = starts.find((s) => gameState.day >= s && gameState.day <= s + 6);
-    if (currentStart) {
-      const dayCount = gameState.day - currentStart + 1;
-      extraLine = `（${dayCount}日目／7日間）`;
-    }
+  const fishingDayCount = job.type === "weekly"
+    ? getFishingDayCount(pawn, gameState.day)
+    : null;
+  if (fishingDayCount) {
+    extraLine = `（${fishingDayCount}日目／7日間）`;
   }
 
   let willMeet = false;
@@ -2353,49 +2507,51 @@ async function runShiftWorkDay(pawn, planOpt) {
     requestId = makeRequestId();
   }
 
-  if (!willMeet || !who) {
-    show(
-      `🧹 ${pawn.userData.name}は「${job.label}」で働いた${extraLine}。\n${payoutLabel}`,
-      false
-    );
-    const ok = document.createElement("button");
-    ok.textContent = "OK";
-    ok.onclick = () => {
-      modal.style.display = "none";
-      clearPrefetchForPlayer(pawn.userData.name);
-      nextTurn();
-    };
-    modalBox.appendChild(ok);
-    return;
+  if (willMeet && who) {
+    pawn.userData.meetingCharacter = who;
   }
-
-  pawn.userData.meetingCharacter = who;
   pawn.userData.currentPlaceName = job.place.name;
 
-  currentMatching = { requestId, startedAt: Date.now(), player: pawn.userData.name };
-  if (rouletteTimer) { clearInterval(rouletteTimer); rouletteTimer = null; }
+  currentMatching = {
+    requestId,
+    startedAt: Date.now(),
+    player: pawn.userData.name,
+    mode: "shift",
+    payout,
+    characterName: who,
+  };
+
+  if (rouletteTimer) {
+    clearInterval(rouletteTimer);
+    rouletteTimer = null;
+  }
   modal.style.display = "flex";
   modal.onclick = null;
-  modalBox.innerHTML = [
-    `🧹 ${pawn.userData.name}は「${job.label}」で働いている…${extraLine}`,
-    payoutLabel,
-    "",
-    "…と、その時。",
-    "",
-    `<img style="height:240px;display:block;margin:8px auto;" src="${getCharImg(who)}" alt="${who}">`,
-    `<div style="font-size:1.6rem; margin-top:.5rem;">${who} と遭遇した！</div>`,
-  ].join("\n");
+  modalBox.innerHTML = `
+    <div id="shiftMatchingText" style="font-size:1.6rem;"></div>
+    <div style="margin-top:.5rem; opacity:.8;">${payoutLabel}</div>
+  `;
+  const matchingText = document.getElementById("shiftMatchingText");
+  if (matchingText) {
+    startShiftDots(matchingText, getShiftMatchingText(pawn, job, gameState.day));
+  }
 
-  const ready = prefetchResult.get(requestId);
+  const ready = shiftPrefetchResult.get(requestId);
   if (ready) {
-    eventGenerated({ requestId, data: ready });
+    renderShiftEventResult(ready, currentMatching);
   } else {
-    socket.emit("requestEvent", {
+    socket.emit("requestShiftEvent", {
       requestId,
-      characterName: who,
-      place: { name: job.place.name, detail: job.place.detail },
-      likability: pawn.userData.likability?.[who] || 0,
       playername: pawn.userData.name,
+      job: {
+        label: job.label,
+        type: job.type,
+        place: job.place,
+      },
+      encounter: willMeet && !!who,
+      characterName: who,
+      likability: who ? pawn.userData.likability?.[who] || 0 : 0,
+      fishingDayCount,
     });
   }
 }
