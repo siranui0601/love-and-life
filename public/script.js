@@ -23,6 +23,74 @@ let lastChoicesHeight = 0;
 // ▼ 追加（グローバル）：プレイヤー名 -> CSSカラー
 let playerColorMap = {};
 
+const SHOP_ITEMS = [
+  {
+    id: "miyu_juice",
+    name: "ミユ特攻：甘々ジュース",
+    price: 800,
+    effects: "ミユ +12 / シオン -1 / ナナ +2",
+    flavor: "駅前の噴水＋夏＋映え、ミユが喜ぶ。",
+  },
+  {
+    id: "shion_case",
+    name: "シオン特攻：革製ICカードケース",
+    price: 1200,
+    effects: "シオン +12 / ミユ +1 / ナナ 0",
+    flavor:
+      "駅前＝改札＝実用品。「無駄がない」方向でシオンのツボ。",
+  },
+  {
+    id: "nana_ticket",
+    name: "ナナ特攻：スタバチケット",
+    price: 1000,
+    effects: "ナナ +12 / ミユ +2 / シオン 0",
+    flavor:
+      "「バイト先のカフェ」伏線にもなるし、渡しやすいプレゼント。",
+  },
+  {
+    id: "souvenir_snack",
+    name: "お土産用ミニ菓子",
+    price: 600,
+    effects: "ミユ +2 / シオン +2 / ナナ +2",
+    flavor: "困ったときの“無難枠”。序盤の救済になる。",
+  },
+];
+const SHOP_ITEM_MAP = new Map(SHOP_ITEMS.map((item) => [item.id, item]));
+const GIFT_CHARACTERS = ["ミユ", "シオン", "ナナ"];
+let shopItemInstanceSeq = 0;
+
+function createItemInstance(itemId) {
+  const base = SHOP_ITEM_MAP.get(itemId);
+  if (!base) return null;
+  shopItemInstanceSeq += 1;
+  return {
+    instanceId: `shop-${Date.now()}-${shopItemInstanceSeq}`,
+    ...base,
+  };
+}
+
+function ensureInventory(pawn) {
+  if (!pawn?.userData) return [];
+  if (!Array.isArray(pawn.userData.inventory)) pawn.userData.inventory = [];
+  return pawn.userData.inventory;
+}
+
+function ensureGiftSettings(pawn) {
+  if (!pawn?.userData) return { ミユ: null, シオン: null, ナナ: null };
+  if (!pawn.userData.giftSettings) {
+    pawn.userData.giftSettings = { ミユ: null, シオン: null, ナナ: null };
+  } else {
+    GIFT_CHARACTERS.forEach((ch) => {
+      if (!(ch in pawn.userData.giftSettings)) pawn.userData.giftSettings[ch] = null;
+    });
+  }
+  return pawn.userData.giftSettings;
+}
+
+function cloneItem(item) {
+  return item ? { ...item } : null;
+}
+
 
 /* ========== AIイベント受信（1対1） ========== */
 function eventGenerated(payload) {
@@ -180,6 +248,8 @@ function on1v1Choice(choice, characterName) {
   const isShiftEvent = !!ctx?.isShiftEvent;
   const shiftPayout = Number.isFinite(ctx?.shiftPayout) ? ctx.shiftPayout : 0;
   const shiftBgUrl = ctx?.shiftBgUrl || null;
+  const placeName = ctx?.placeName || pawn.userData.currentPlaceName || "";
+  const isStationEvent = !isShiftEvent && placeName === "駅前";
   renderEventLayer({
     keepCurrentBg: true,
     portraits: [{ name: characterName, mood }],
@@ -189,6 +259,11 @@ function on1v1Choice(choice, characterName) {
     advanceOnTap: () => {
       if (isShiftEvent) {
         showShiftPayoutLine(pawn, shiftPayout, shiftBgUrl);
+        return;
+      }
+      if (isStationEvent) {
+        hideEventLayer();
+        showStationMenu(pawn);
         return;
       }
       hideEventLayer();
@@ -1152,6 +1227,9 @@ playerNames.slice(0, 6).forEach((name, i) => {
     tile: 0,
     money: 0, // ★ 所持金
     tags: [],
+    inventory: [],
+    giftSettings: { ミユ: null, シオン: null, ナナ: null },
+    giftSettingsSaved: false,
     lastAcquiredTagDetail: null,
     likability: (name==="2002"||name==="0601")
       ? { ミユ:220, シオン:220, ナナ:220 }
@@ -2743,6 +2821,391 @@ function layoutDialogChoices(margin = 16) {
 function hideEventLayer() {
   const layer = document.getElementById("dialogLayer");
   if (layer) layer.style.display = "none";
+}
+
+let stationInfoCache = null;
+
+function ensureStationOverlay() {
+  let overlay = document.getElementById("stationOverlay");
+  let panel = document.getElementById("stationOverlayPanel");
+  let info = document.getElementById("stationOverlayInfo");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "stationOverlay";
+    overlay.className = "station-overlay";
+    overlay.innerHTML = `
+      <div class="station-overlay-panel" id="stationOverlayPanel"></div>
+      <div class="station-overlay-info" id="stationOverlayInfo" aria-hidden="true"></div>
+    `;
+    document.body.appendChild(overlay);
+    panel = document.getElementById("stationOverlayPanel");
+    info = document.getElementById("stationOverlayInfo");
+  }
+  stationInfoCache = info;
+  return { overlay, panel, info };
+}
+
+function showStationMenu(pawn) {
+  const { overlay, panel } = ensureStationOverlay();
+  hideStationItemInfo();
+  overlay.style.display = "flex";
+  panel.innerHTML = "";
+
+  const heading = document.createElement("div");
+  heading.className = "station-title";
+  heading.textContent = "駅前イベント";
+  panel.appendChild(heading);
+
+  const actions = document.createElement("div");
+  actions.className = "station-actions";
+
+  const shopBtn = document.createElement("button");
+  shopBtn.type = "button";
+  shopBtn.textContent = "買い物🛍";
+  shopBtn.onclick = () => showShoppingMenu(pawn);
+
+  const giftBtn = document.createElement("button");
+  giftBtn.type = "button";
+  giftBtn.textContent = "プレゼント設定🎁";
+  giftBtn.onclick = () => showGiftSettingMenu(pawn);
+
+  const endBtn = document.createElement("button");
+  endBtn.type = "button";
+  endBtn.textContent = "ターン終了🔚";
+  endBtn.onclick = () => {
+    overlay.style.display = "none";
+    nextTurn();
+  };
+
+  actions.appendChild(shopBtn);
+  actions.appendChild(giftBtn);
+  actions.appendChild(endBtn);
+  panel.appendChild(actions);
+}
+
+function showShoppingMenu(pawn) {
+  const { overlay, panel } = ensureStationOverlay();
+  hideStationItemInfo();
+  overlay.style.display = "flex";
+
+  if (typeof pawn.userData.money !== "number") pawn.userData.money = 0;
+  const money = pawn.userData.money;
+  const selected = new Set();
+  const itemButtons = new Map();
+
+  panel.innerHTML = "";
+  const header = document.createElement("div");
+  header.className = "station-header";
+
+  const title = document.createElement("div");
+  title.className = "station-title";
+  title.textContent = "何を買いますか？";
+  header.appendChild(title);
+
+  const moneyLine = document.createElement("div");
+  moneyLine.className = "station-money";
+  header.appendChild(moneyLine);
+  panel.appendChild(header);
+
+  const list = document.createElement("div");
+  list.className = "shop-list";
+
+  SHOP_ITEMS.forEach((item) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "shop-item";
+    btn.innerHTML = `
+      <div class="shop-item-title">${item.name}</div>
+      <div class="shop-item-price">${item.price.toLocaleString()}円</div>
+      <div class="shop-item-effect">${item.effects}</div>
+      <div class="shop-item-flavor">${item.flavor}</div>
+    `;
+    btn.onclick = () => {
+      const isSelected = selected.has(item.id);
+      if (isSelected) {
+        selected.delete(item.id);
+      } else {
+        const total = Array.from(selected).reduce(
+          (sum, id) => sum + (SHOP_ITEM_MAP.get(id)?.price || 0),
+          0,
+        );
+        const canAfford = item.price <= money - total;
+        if (!canAfford) return;
+        selected.add(item.id);
+      }
+      updateShopState();
+    };
+    list.appendChild(btn);
+    itemButtons.set(item.id, btn);
+  });
+  panel.appendChild(list);
+
+  const footer = document.createElement("div");
+  footer.className = "station-footer";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = "買い物を辞める";
+  cancelBtn.onclick = () => showStationMenu(pawn);
+
+  const checkoutBtn = document.createElement("button");
+  checkoutBtn.type = "button";
+  checkoutBtn.className = "primary";
+  checkoutBtn.textContent = "会計";
+  checkoutBtn.onclick = () => {
+    const total = Array.from(selected).reduce(
+      (sum, id) => sum + (SHOP_ITEM_MAP.get(id)?.price || 0),
+      0,
+    );
+    if (total <= 0 || total > pawn.userData.money) {
+      showStationMenu(pawn);
+      return;
+    }
+    pawn.userData.money -= total;
+    const inventory = ensureInventory(pawn);
+    Array.from(selected).forEach((id) => {
+      const instance = createItemInstance(id);
+      if (instance) inventory.push(instance);
+    });
+    showStationMenu(pawn);
+  };
+
+  footer.appendChild(cancelBtn);
+  footer.appendChild(checkoutBtn);
+  panel.appendChild(footer);
+
+  function updateShopState() {
+    const total = Array.from(selected).reduce(
+      (sum, id) => sum + (SHOP_ITEM_MAP.get(id)?.price || 0),
+      0,
+    );
+    moneyLine.textContent = `所持金: ${money.toLocaleString()}円`;
+    checkoutBtn.disabled = selected.size === 0;
+    itemButtons.forEach((btn, id) => {
+      const item = SHOP_ITEM_MAP.get(id);
+      const isSelected = selected.has(id);
+      const remaining = money - total + (isSelected ? item.price : 0);
+      const canAfford = remaining >= item.price;
+      btn.disabled = !isSelected && !canAfford;
+      btn.classList.toggle("selected", isSelected);
+    });
+  }
+
+  updateShopState();
+}
+
+function showGiftSettingMenu(pawn) {
+  const { overlay, panel } = ensureStationOverlay();
+  hideStationItemInfo();
+  overlay.style.display = "flex";
+  panel.innerHTML = "";
+
+  const inventory = ensureInventory(pawn).map(cloneItem);
+  const savedGifts = ensureGiftSettings(pawn);
+  const gifts = {
+    ミユ: cloneItem(savedGifts.ミユ),
+    シオン: cloneItem(savedGifts.シオン),
+    ナナ: cloneItem(savedGifts.ナナ),
+  };
+  let dragPayload = null;
+
+  const header = document.createElement("div");
+  header.className = "station-header";
+  const title = document.createElement("div");
+  title.className = "station-title";
+  title.textContent = "アイテムをドラッグし渡したいプレゼントを設定してください";
+  header.appendChild(title);
+  panel.appendChild(header);
+
+  const giftGrid = document.createElement("div");
+  giftGrid.className = "gift-grid";
+
+  const slots = {};
+
+  GIFT_CHARACTERS.forEach((ch) => {
+    const card = document.createElement("div");
+    card.className = "gift-card";
+    const name = document.createElement("div");
+    name.className = "gift-name";
+    name.textContent = ch;
+    card.appendChild(name);
+
+    const slot = document.createElement("div");
+    slot.className = "gift-slot";
+    slot.dataset.character = ch;
+    slot.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      slot.classList.add("dragover");
+    });
+    slot.addEventListener("dragleave", () => {
+      slot.classList.remove("dragover");
+    });
+    slot.addEventListener("drop", (e) => {
+      e.preventDefault();
+      slot.classList.remove("dragover");
+      if (!dragPayload?.item) return;
+      if (gifts[ch]) inventory.push(gifts[ch]);
+      if (dragPayload.source?.type === "inventory") {
+        removeFromInventory(dragPayload.item.instanceId);
+      }
+      if (dragPayload.source?.type === "slot") {
+        gifts[dragPayload.source.character] = null;
+      }
+      gifts[ch] = dragPayload.item;
+      dragPayload = null;
+      renderAll();
+    });
+    card.appendChild(slot);
+    giftGrid.appendChild(card);
+    slots[ch] = slot;
+  });
+  panel.appendChild(giftGrid);
+
+  const itemsWrap = document.createElement("div");
+  itemsWrap.className = "gift-items";
+  itemsWrap.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    itemsWrap.classList.add("dragover");
+  });
+  itemsWrap.addEventListener("dragleave", () => {
+    itemsWrap.classList.remove("dragover");
+  });
+  itemsWrap.addEventListener("drop", (e) => {
+    e.preventDefault();
+    itemsWrap.classList.remove("dragover");
+    if (!dragPayload?.item) return;
+    if (dragPayload.source?.type === "slot") {
+      gifts[dragPayload.source.character] = null;
+      inventory.push(dragPayload.item);
+      dragPayload = null;
+      renderAll();
+    }
+  });
+  panel.appendChild(itemsWrap);
+
+  const footer = document.createElement("div");
+  footer.className = "station-footer";
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.className = "primary";
+  saveBtn.textContent = "設定して戻る";
+  saveBtn.onclick = () => {
+    pawn.userData.inventory = inventory;
+    pawn.userData.giftSettings = gifts;
+    pawn.userData.giftSettingsSaved = true;
+    showStationMenu(pawn);
+  };
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = "設定せずに戻る";
+  cancelBtn.onclick = () => showStationMenu(pawn);
+
+  footer.appendChild(cancelBtn);
+  footer.appendChild(saveBtn);
+  panel.appendChild(footer);
+
+  function removeFromInventory(instanceId) {
+    const idx = inventory.findIndex((item) => item.instanceId === instanceId);
+    if (idx >= 0) inventory.splice(idx, 1);
+  }
+
+  function renderSlot(character, slot) {
+    slot.innerHTML = "";
+    const item = gifts[character];
+    if (!item) {
+      slot.textContent = "（空）";
+      slot.classList.add("empty");
+      return;
+    }
+    slot.classList.remove("empty");
+    const pill = document.createElement("div");
+    pill.className = "gift-pill";
+    pill.textContent = item.name;
+    pill.draggable = true;
+    pill.addEventListener("dragstart", () => {
+      dragPayload = { item, source: { type: "slot", character } };
+    });
+    pill.addEventListener("click", (e) => {
+      e.stopPropagation();
+      showStationItemInfo(item);
+    });
+    slot.appendChild(pill);
+  }
+
+  function renderInventoryItems() {
+    itemsWrap.innerHTML = "";
+    const label = document.createElement("div");
+    label.className = "gift-items-title";
+    label.textContent = "所持アイテム";
+    itemsWrap.appendChild(label);
+
+    const list = document.createElement("div");
+    list.className = "gift-items-list";
+    if (!inventory.length) {
+      const empty = document.createElement("div");
+      empty.className = "gift-items-empty";
+      empty.textContent = "アイテムがありません";
+      list.appendChild(empty);
+    } else {
+      inventory.forEach((item) => {
+        const pill = document.createElement("div");
+        pill.className = "gift-pill";
+        pill.textContent = item.name;
+        pill.draggable = true;
+        pill.addEventListener("dragstart", () => {
+          dragPayload = { item, source: { type: "inventory" } };
+        });
+        pill.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showStationItemInfo(item);
+        });
+        list.appendChild(pill);
+      });
+    }
+    itemsWrap.appendChild(list);
+  }
+
+  function renderAll() {
+    GIFT_CHARACTERS.forEach((ch) => renderSlot(ch, slots[ch]));
+    renderInventoryItems();
+  }
+
+  renderAll();
+}
+
+function showStationItemInfo(item) {
+  const { info } = ensureStationOverlay();
+  if (!item || !info) return;
+  info.innerHTML = `
+    <div class="station-info-card">
+      <button class="station-info-close" type="button" aria-label="閉じる">×</button>
+      <div class="station-info-title">${item.name}</div>
+      <div class="station-info-price">${item.price.toLocaleString()}円</div>
+      <div class="station-info-flavor">${item.flavor}</div>
+    </div>
+  `;
+  info.style.display = "flex";
+  info.setAttribute("aria-hidden", "false");
+  const closeBtn = info.querySelector(".station-info-close");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      hideStationItemInfo();
+    });
+  }
+  info.onclick = (e) => {
+    if (e.target === info) hideStationItemInfo();
+  };
+}
+
+function hideStationItemInfo() {
+  const info = stationInfoCache || document.getElementById("stationOverlayInfo");
+  if (!info) return;
+  info.style.display = "none";
+  info.setAttribute("aria-hidden", "true");
+  info.innerHTML = "";
 }
 
 /* ===== ホワイトカット（白フェード） ===== */
