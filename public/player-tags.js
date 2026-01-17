@@ -117,9 +117,37 @@ function getPlayerTagDetails(pawn) {
 
 export function buildPlayerTagBlock(pawn) {
   const details = getPlayerTagDetails(pawn);
-  if (!details.length) return "";
-  const lines = details.map((tag) => `- ${tag.name}: ${tag.detail}`).join("\n");
-  return `\n【プレイヤーについて】\n${lines}`;
+  const blocks = [];
+  if (details.length) {
+    const lines = details.map((tag) => `- ${tag.name}: ${tag.detail}`).join("\n");
+    blocks.push(`【プレイヤーについて】\n${lines}`);
+  }
+
+  const inventory = pawn?.userData?.inventory;
+  if (Array.isArray(inventory) && inventory.length) {
+    const itemLines = inventory
+      .map((item) => item?.name)
+      .filter(Boolean)
+      .map((name) => `- ${name}`)
+      .join("\n");
+    if (itemLines) {
+      blocks.push(`【所持アイテム】\n${itemLines}`);
+    }
+  }
+
+  const gifts = pawn?.userData?.giftSettings;
+  if (pawn?.userData?.giftSettingsSaved && gifts && typeof gifts === "object") {
+    const giftLines = ["ミユ", "シオン", "ナナ"]
+      .map((ch) => {
+        const name = gifts[ch]?.name || "未設定";
+        return `- ${ch}: ${name}`;
+      })
+      .join("\n");
+    blocks.push(`【プレゼント設定】\n${giftLines}`);
+  }
+
+  if (!blocks.length) return "";
+  return `\n${blocks.join("\n")}`;
 }
 
 export function maybeAwardTag(pawn, job = {}) {
