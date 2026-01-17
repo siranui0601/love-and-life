@@ -1185,7 +1185,7 @@ function createDayHUD() {
     display: "flex",
     flexDirection: "row",
     alignItems: "center",
-    gap: "6px",
+    gap: "10px",
   });
   document.body.appendChild(stepsHUDButtons);
 
