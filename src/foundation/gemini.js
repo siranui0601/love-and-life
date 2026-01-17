@@ -8,8 +8,8 @@ export function stripJsonFence(s) {
 }
 
 export async function genWithFallback(prompt, options = {}) {
-  const primary = "gemini-2.5-flash";
-  const fallback = "gemini-2.5-flash-lite";
+  const primary = "gemini-2.5-flash-lite";
+  const fallback = "gemini-2.5-flash";
   try {
     const m = genAI.getGenerativeModel({ model: primary, ...options });
     const res = await m.generateContent(prompt);
