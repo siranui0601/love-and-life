@@ -480,6 +480,114 @@ export const PARTTIME_JOBS = {
   },
 };
 
+const JOB_TAG_DEFINITIONS = {
+  cleaning: [
+    {
+      key: "cleaning_town_knowledge",
+      name: "土地勘がある",
+      detail: "この町の裏道や抜け道、相手の家の場所まで全部把握している",
+    },
+    {
+      key: "cleaning_mysophilia",
+      name: "ミソフィリア",
+      detail: "清掃バイトをしてるうちに、汚れや散らかった空間が大好きになった",
+    },
+  ],
+  bakery: [
+    {
+      key: "bakery_glutton",
+      name: "飲食大好き",
+      detail: "暴飲暴食が癖。食が行動原理の一部",
+    },
+    {
+      key: "bakery_burn_scar",
+      name: "顔半分に火傷跡",
+      detail: "顔の片側に火傷跡があり、人の視線や距離感に敏感すぎる",
+    },
+  ],
+  fishing: [
+    {
+      key: "fishing_strength",
+      name: "力自慢",
+      detail: "力自慢で無茶しがち。腹筋を見せたがる",
+    },
+    {
+      key: "fishing_sleep_deprived",
+      name: "超寝不足",
+      detail: "常に眠く、思考が飛んだり情緒が不安定になりやすい",
+    },
+  ],
+  dark: [
+    {
+      key: "dark_well_connected",
+      name: "顔が広い",
+      detail: "表も裏も知り合いが多く、怪しい話にもすぐ繋がる",
+    },
+    {
+      key: "dark_dragon_tattoo",
+      name: "龍の刺青",
+      detail: "背中一面と右腕に龍の刺青があり、場面次第で周囲の空気を一気に変える存在感を持つ",
+    },
+  ],
+};
+
+const TAG_DETAILS_BY_KEY = Object.values(JOB_TAG_DEFINITIONS)
+  .flat()
+  .reduce((acc, tag) => {
+    acc[tag.key] = { name: tag.name, detail: tag.detail };
+    return acc;
+  }, {});
+
+function resolveJobTagPool(job = {}) {
+  const label = job.label || "";
+  if (label.includes("清掃")) return JOB_TAG_DEFINITIONS.cleaning;
+  if (label.includes("パン屋")) return JOB_TAG_DEFINITIONS.bakery;
+  if (label.includes("遠洋")) return JOB_TAG_DEFINITIONS.fishing;
+  if (job.type === "dark" || label.includes("闇")) return JOB_TAG_DEFINITIONS.dark;
+  return null;
+}
+
+function ensurePlayerTags(pawn) {
+  if (!pawn?.userData) return [];
+  if (!Array.isArray(pawn.userData.tags)) pawn.userData.tags = [];
+  return pawn.userData.tags;
+}
+
+function getPlayerTagDetails(pawn) {
+  const tags = ensurePlayerTags(pawn);
+  return tags.map((key) => TAG_DETAILS_BY_KEY[key]).filter(Boolean);
+}
+
+function buildPlayerTagBlock(pawn) {
+  const details = getPlayerTagDetails(pawn);
+  if (!details.length) return "";
+  const lines = details.map((tag) => `- ${tag.name}: ${tag.detail}`).join("\n");
+  return `\n【プレイヤーについて】\n${lines}`;
+}
+
+function maybeAwardTag(pawn, job = {}) {
+  const pool = resolveJobTagPool(job);
+  if (!pool || pool.length === 0) return null;
+  const owned = new Set(ensurePlayerTags(pawn));
+  const available = pool.filter((tag) => !owned.has(tag.key));
+  if (!available.length) return null;
+  if (Math.random() >= 0.1) return null;
+  const selected = available[Math.floor(Math.random() * available.length)];
+  return { key: selected.key, name: selected.name, detail: selected.detail };
+}
+
+function applyTagToPlayer(pawn, tagDetail) {
+  if (!tagDetail?.key) return;
+  const tags = ensurePlayerTags(pawn);
+  if (!tags.includes(tagDetail.key)) {
+    tags.push(tagDetail.key);
+  }
+}
+
+function formatTagName(tagKey) {
+  return TAG_DETAILS_BY_KEY[tagKey]?.name || tagKey;
+}
+
 
 
 /* ===== トースト（上部） ===== */
@@ -759,13 +867,13 @@ function renderShiftEventResult(payload, ctx) {
   const bgUrl = getBgForPlace(job?.place?.name || "");
   stopShiftDots();
   modal.style.display = "none";
-  if (Array.isArray(payload?.tagDetails)) {
-    pawn.userData.tags = payload.tagDetails
-      .map((tag) => tag?.name)
-      .filter((name) => name);
+  const awardedTagDetail =
+    ctx?.newlyAcquiredTagDetail || payload?.newlyAcquiredTagDetail || null;
+  if (awardedTagDetail) {
+    applyTagToPlayer(pawn, awardedTagDetail);
+    updateStepsHUD();
   }
-  pawn.userData.lastAcquiredTagDetail =
-    payload?.newlyAcquiredTagDetail || null;
+  pawn.userData.lastAcquiredTagDetail = awardedTagDetail;
 
   if (payload?.kind === "encounter" && payload?.event) {
     const characterName = ctx.characterName || pawn.userData.meetingCharacter;
@@ -917,6 +1025,7 @@ function prefetchEventFor(playerName, dayForPlayer = gameState.day) {
     const requestId = makeRequestId();
     const willMeet = (Math.random() * 100) < (job.encounterPct || 0);
     const character = willMeet ? randomCharacter() : null;
+    const newlyAcquiredTagDetail = maybeAwardTag(pawn, job);
     const fishingDayCount =
       job.type === "weekly" ? getFishingDayCount(pawn, dayForPlayer) : null;
     prefetchPlan.set(playerName, {
@@ -928,6 +1037,7 @@ function prefetchEventFor(playerName, dayForPlayer = gameState.day) {
       startedAt: Date.now(),
       willMeet,
       fishingDayCount,
+      newlyAcquiredTagDetail,
     });
     socket.emit("requestShiftEvent", {
       requestId,
@@ -941,6 +1051,8 @@ function prefetchEventFor(playerName, dayForPlayer = gameState.day) {
       characterName: character,
       likability: character ? pawn.userData.likability?.[character] || 0 : 0,
       fishingDayCount,
+      newlyAcquiredTagDetail,
+      playerTagBlock: buildPlayerTagBlock(pawn),
     });
     return;
   }
@@ -961,6 +1073,7 @@ function prefetchEventFor(playerName, dayForPlayer = gameState.day) {
     place: { name: place.name, detail: place.detail },
     likability: pawn.userData.likability?.[character] || 0,
     playername: playerName,
+    playerTagBlock: buildPlayerTagBlock(pawn),
   });
 }
 
@@ -1228,7 +1341,7 @@ function formatStepsHUDValue(name, pawn) {
     ? pawn.userData.money
     : 0;
   const tags = pawn && Array.isArray(pawn.userData.tags)
-    ? pawn.userData.tags.filter(Boolean)
+    ? pawn.userData.tags.filter(Boolean).map(formatTagName)
     : [];
   const bonusMark = stepBonusWinners.has(name) ? "　歩数ボーナス！ +10♡" : "";
 
@@ -2657,6 +2770,7 @@ async function runShiftWorkDay(pawn, planOpt) {
   let willMeet = false;
   let who = null;
   let requestId = null;
+  let newlyAcquiredTagDetail = planOpt?.newlyAcquiredTagDetail || null;
   if (planOpt && planOpt.isShiftDay) {
     willMeet = !!planOpt.willMeet;
     who = planOpt.character || null;
@@ -2665,6 +2779,7 @@ async function runShiftWorkDay(pawn, planOpt) {
     willMeet = (Math.random() * 100) < (job.encounterPct || 0);
     who = willMeet ? randomCharacter() : null;
     requestId = makeRequestId();
+    newlyAcquiredTagDetail = maybeAwardTag(pawn, job);
   }
 
   if (willMeet && who) {
@@ -2679,6 +2794,7 @@ async function runShiftWorkDay(pawn, planOpt) {
     mode: "shift",
     payout,
     characterName: who,
+    newlyAcquiredTagDetail,
   };
 
   if (rouletteTimer) {
@@ -2716,6 +2832,8 @@ async function runShiftWorkDay(pawn, planOpt) {
       characterName: who,
       likability: who ? pawn.userData.likability?.[who] || 0 : 0,
       fishingDayCount,
+      newlyAcquiredTagDetail,
+      playerTagBlock: buildPlayerTagBlock(pawn),
     });
   }
 }
@@ -2792,6 +2910,7 @@ function resolveTileEvent(pawn) {
       place: { name: placeObj.name, detail: placeObj.detail },
       likability: pawn.userData.likability[characterName] || 0,
       playername: pawn.userData.name,
+      playerTagBlock: buildPlayerTagBlock(pawn),
     });
   }
 
@@ -2998,6 +3117,7 @@ function playNextFestivalInQueue() {
       place: festivalPlace,
       likabilities,
       condition, // ← 追加：例 "風邪をひいた" など（nullなら未指定）
+      playerTagBlock: buildPlayerTagBlock(pawn),
     });
 
     show(`${pawn.userData.name}は、${label}とのデートを準備している…`, false);
@@ -3467,6 +3587,14 @@ function runFinalConfessionEvent() {
 
 let __lastSelections = null; // { [playername]: "ミユ|シオン|ナナ" }
 let __lastConfessionResult = null; // { groups: ... } computeConfessionBonusesの返り
+function buildPlayerTagBlocks() {
+  const blocks = {};
+  pawnsGlobal.forEach((pawn) => {
+    if (!pawn?.userData?.name) return;
+    blocks[pawn.userData.name] = buildPlayerTagBlock(pawn);
+  });
+  return blocks;
+}
 function buildConfessionUI() {
   // プレイヤーごとの選択状態
   const selections = new Map(); // name -> "ミユ"|"シオン"|"ナナ"
@@ -3561,6 +3689,7 @@ function buildConfessionUI() {
     modal.style.display = "none";
     // ボーナス計算＋最終好感度を作ってサーバへ送る
     const payload = computeConfessionBonuses(selections); // {groups, accepted}
+    payload.playerTagBlocks = buildPlayerTagBlocks();
     __lastConfessionResult = payload; // 後続（逆告白）でも使う
     __lastSelections = Object.fromEntries(selections);
     // 待機表示
