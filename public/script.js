@@ -886,19 +886,19 @@ function renderShiftEventResult(payload, ctx) {
     if (candidateName) {
       pawn.userData.likability[candidateName] =
         (pawn.userData.likability[candidateName] || 0) + likeDelta;
-        
-        alert(
-  [
-    "【SHIFT LIKE】",
-    `候補者: ${candidateName}`,
-    `Before : ${pawn.userData.likability[candidateName] - likeDelta}`,
-    `Delta  : ${likeDelta >= 0 ? "+" : ""}${likeDelta}`,
-    `After  : ${pawn.userData.likability[candidateName]}`,
-  ].join("\n")
-);
-
-
-
+      gameLog.push({
+        player: pawn.userData.name,
+        day: gameState.day,
+        place: job?.place?.name || pawn.userData.currentPlaceName || "",
+        character: candidateName,
+        message: `バイト中に${candidateName}と遭遇した。`,
+        pickedIndex: 0,
+        pickedText: "バイト遭遇イベント",
+        pickedDelta: likeDelta,
+        otherText: "",
+        otherDelta: 0,
+        reaction: "",
+      });
     }
     pawn.userData.__lastEvent = {
       characterName: candidateName || characterName,
