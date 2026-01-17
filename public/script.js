@@ -26,33 +26,29 @@ let playerColorMap = {};
 const SHOP_ITEMS = [
   {
     id: "miyu_juice",
-    name: "ミユ特攻：甘々ジュース",
+    name: "甘々ジュース",
     price: 800,
-    effects: "ミユ +12 / シオン -1 / ナナ +2",
-    flavor: "駅前の噴水＋夏＋映え、ミユが喜ぶ。",
+    flavor: "ピンクフレーバーの夏限定炭酸",
   },
   {
     id: "shion_case",
-    name: "シオン特攻：革製ICカードケース",
+    name: "革製ICカードケース",
     price: 1200,
-    effects: "シオン +12 / ミユ +1 / ナナ 0",
     flavor:
-      "駅前＝改札＝実用品。「無駄がない」方向でシオンのツボ。",
+      "オシャレで無駄のない革製カードケース",
   },
   {
     id: "nana_ticket",
-    name: "ナナ特攻：スタバチケット",
+    name: "とあるカフェのチケット",
     price: 1000,
-    effects: "ナナ +12 / ミユ +2 / シオン 0",
     flavor:
-      "「バイト先のカフェ」伏線にもなるし、渡しやすいプレゼント。",
+      "モカにする？サンドイッチにする？",
   },
   {
     id: "souvenir_snack",
     name: "お土産用ミニ菓子",
     price: 600,
-    effects: "ミユ +2 / シオン +2 / ナナ +2",
-    flavor: "困ったときの“無難枠”。序盤の救済になる。",
+    flavor: "この町に来たなら買って帰ろう",
   },
 ];
 const SHOP_ITEM_MAP = new Map(SHOP_ITEMS.map((item) => [item.id, item]));
@@ -2917,7 +2913,6 @@ function showShoppingMenu(pawn) {
     btn.innerHTML = `
       <div class="shop-item-title">${item.name}</div>
       <div class="shop-item-price">${item.price.toLocaleString()}円</div>
-      <div class="shop-item-effect">${item.effects}</div>
       <div class="shop-item-flavor">${item.flavor}</div>
     `;
     btn.onclick = () => {
