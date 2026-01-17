@@ -1252,7 +1252,7 @@ let festivalTimer = null;
 /* ====== 日付HUD ====== */
 let 日付はここで変更できるよのめあすになる変数;
 const festivalDay = 15;
-const finalDay = 30;
+const finalDay = 16;
 const SHIFT_WINDOWS = [
   { key: "first", label: "7日目〜14日目", start: 7, end: 14 },
   { key: "second", label: "16日目〜29日目", start: 16, end: 29 },
