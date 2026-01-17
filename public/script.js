@@ -778,6 +778,19 @@ function renderShiftEventResult(payload, ctx) {
     if (candidateName) {
       pawn.userData.likability[candidateName] =
         (pawn.userData.likability[candidateName] || 0) + likeDelta;
+        
+        alert(
+  [
+    "【SHIFT LIKE】",
+    `候補者: ${candidateName}`,
+    `Before : ${pawn.userData.likability[candidateName] - likeDelta}`,
+    `Delta  : ${likeDelta >= 0 ? "+" : ""}${likeDelta}`,
+    `After  : ${pawn.userData.likability[candidateName]}`,
+  ].join("\n")
+);
+
+
+
     }
     pawn.userData.__lastEvent = {
       characterName: candidateName || characterName,
