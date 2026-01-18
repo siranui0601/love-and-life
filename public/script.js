@@ -537,7 +537,8 @@ function prefetchEventFor(playerName, dayForPlayer = gameState.day) {
     return;
   }
 
-  const steps = roll1d6();
+  const fixedSteps = getFixedStepsForPlayer(playerName);
+  const steps = typeof fixedSteps === "number" ? fixedSteps : roll1d6();
   const destTile = calcDestTile(pawn.userData.tile, steps);
   const tileId = destTile + 1;
   const place = placeFromTileId(tileId);
@@ -954,6 +955,11 @@ const characters = ["ミユ", "シオン", "ナナ"];
 
 /* ---------- ゲーム状態 ---------- */
 let playerNamesGlobal = [];
+const DEBUG_PLAYER_KEYWORD = "不知火";
+const debugFixedStepsByPlayer = new Map();
+let debugPanel = null;
+let debugStepsInput = null;
+let debugMoneyInput = null;
 //let gameState = { order: [], turn: 0, day: 1, festivalDone: false };
 let gameState = {
   order: [],
@@ -989,6 +995,117 @@ function pickRestReason(){
 function restLabelByKey(key){
   const f = REST_REASONS.find(r=>r.key===key);
   return f ? f.label : "体調不良";
+}
+
+function getDebugTargets(names = playerNamesGlobal) {
+  return names.filter((name) => name.includes(DEBUG_PLAYER_KEYWORD));
+}
+
+function getFixedStepsForPlayer(playerName) {
+  const fixed = debugFixedStepsByPlayer.get(playerName);
+  return typeof fixed === "number" ? fixed : null;
+}
+
+function applyDebugSettings() {
+  if (!debugPanel) return;
+  const targets = (debugPanel.dataset.targets || "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+  if (!targets.length) return;
+
+  const stepsValue = Number.parseInt(debugStepsInput?.value ?? "", 10);
+  const moneyValue = Number.parseInt(debugMoneyInput?.value ?? "", 10);
+  const hasSteps = Number.isFinite(stepsValue);
+  const hasMoney = Number.isFinite(moneyValue);
+  const normalizedSteps = hasSteps ? Math.min(6, Math.max(1, stepsValue)) : null;
+  const normalizedMoney = hasMoney ? Math.max(0, moneyValue) : null;
+
+  targets.forEach((name) => {
+    if (normalizedSteps !== null) {
+      debugFixedStepsByPlayer.set(name, normalizedSteps);
+      clearPrefetchForPlayer(name);
+    }
+    if (normalizedMoney !== null) {
+      const pawn = pawnsGlobal.find((p) => p.userData.name === name);
+      if (pawn) {
+        ensureMoney(pawn);
+        pawn.userData.money = normalizedMoney;
+      }
+    }
+  });
+
+  if (normalizedSteps !== null && debugStepsInput) {
+    debugStepsInput.value = String(normalizedSteps);
+  }
+  if (hasMoney) {
+    updateStepsHUD();
+  }
+}
+
+function initDebugPanelForShiranui(names) {
+  const targets = getDebugTargets(names);
+  if (!targets.length) {
+    if (debugPanel) debugPanel.style.display = "none";
+    return;
+  }
+
+  if (!debugPanel) {
+    debugPanel = document.createElement("div");
+    debugPanel.id = "debugPanel";
+
+    const title = document.createElement("div");
+    title.className = "debug-title";
+    title.textContent = "デバッグ欄";
+    debugPanel.appendChild(title);
+
+    const targetLine = document.createElement("div");
+    targetLine.className = "debug-target";
+    debugPanel.appendChild(targetLine);
+
+    const stepsRow = document.createElement("label");
+    stepsRow.className = "debug-row";
+    const stepsLabel = document.createElement("span");
+    stepsLabel.textContent = "何マス進む？";
+    debugStepsInput = document.createElement("input");
+    debugStepsInput.type = "number";
+    debugStepsInput.inputMode = "numeric";
+    debugStepsInput.min = "1";
+    debugStepsInput.max = "6";
+    debugStepsInput.placeholder = "1〜6";
+    stepsRow.appendChild(stepsLabel);
+    stepsRow.appendChild(debugStepsInput);
+    debugPanel.appendChild(stepsRow);
+
+    const moneyRow = document.createElement("label");
+    moneyRow.className = "debug-row";
+    const moneyLabel = document.createElement("span");
+    moneyLabel.textContent = "所持金";
+    debugMoneyInput = document.createElement("input");
+    debugMoneyInput.type = "number";
+    debugMoneyInput.inputMode = "numeric";
+    debugMoneyInput.min = "0";
+    debugMoneyInput.step = "1";
+    moneyRow.appendChild(moneyLabel);
+    moneyRow.appendChild(debugMoneyInput);
+    debugPanel.appendChild(moneyRow);
+
+    const applyBtn = document.createElement("button");
+    applyBtn.type = "button";
+    applyBtn.className = "debug-apply";
+    applyBtn.textContent = "登録";
+    applyBtn.addEventListener("click", applyDebugSettings);
+    debugPanel.appendChild(applyBtn);
+
+    document.body.appendChild(debugPanel);
+  }
+
+  debugPanel.style.display = "block";
+  debugPanel.dataset.targets = targets.join(",");
+  const targetLine = debugPanel.querySelector(".debug-target");
+  if (targetLine) {
+    targetLine.textContent = `対象: ${targets.join("・")}`;
+  }
 }
 
 
@@ -1057,6 +1174,7 @@ btnBegin.onclick = async () => {
   await preloadAllImages();
 
   initThree(playerNamesGlobal);
+  initDebugPanelForShiranui(playerNamesGlobal);
   showIntro();
 };
 
@@ -1531,7 +1649,9 @@ function rollDice(name) {
     clearInterval(timer);
     // ★ 事前決定のダイスがあればそれを使う
     const plan = prefetchPlan.get(name);
-    const fixed = plan?.steps ?? n;
+    const debugFixed = getFixedStepsForPlayer(name);
+    const fixed =
+      typeof debugFixed === "number" ? debugFixed : plan?.steps ?? n;
     rollDisplay.textContent = `🎲 ${fixed} 🎲\n\n確定！`;
     decide.remove();
     setTimeout(() => {
