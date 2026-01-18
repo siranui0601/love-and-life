@@ -1009,31 +1009,42 @@ html { -webkit-text-size-adjust: 100%; }
   background: rgba(255, 255, 255, 0.95);
 }
 
-.gift-assign {
-  border-radius: 16px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(70, 80, 120, 0.16);
+.gift-assign-dock {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(780px, 94vw);
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(120, 130, 180, 0.3);
+  box-shadow: 0 18px 32px rgba(15, 18, 40, 0.4);
   display: grid;
   gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.gift-assign.active {
-  box-shadow: 0 10px 24px rgba(30, 40, 70, 0.16);
+.gift-assign-dock.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -4px);
 }
 
-.gift-assign-label {
+.gift-assign-dock-label {
   font-weight: 800;
   text-align: center;
 }
 
-.gift-assign-buttons {
+.gift-assign-dock-buttons {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
-.gift-assign-buttons button {
+.gift-assign-dock-buttons button {
   border: none;
   border-radius: 999px;
   padding: 0.6rem 0.8rem;
@@ -1043,7 +1054,7 @@ html { -webkit-text-size-adjust: 100%; }
   cursor: pointer;
 }
 
-.gift-assign-buttons button:disabled {
+.gift-assign-dock-buttons button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

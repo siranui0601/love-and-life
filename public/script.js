@@ -2966,6 +2966,7 @@ function showStationMenu(pawn) {
   hideStationItemInfo();
   overlay.style.display = "flex";
   panel.innerHTML = "";
+  overlay.querySelector(".gift-assign-dock")?.remove();
 
   const heading = document.createElement("div");
   heading.className = "station-title";
@@ -3226,23 +3227,31 @@ function showGiftSettingMenu(pawn) {
   });
   panel.appendChild(giftGrid);
 
-  const assignWrap = document.createElement("div");
-  assignWrap.className = "gift-assign";
-  const assignLabel = document.createElement("div");
-  assignLabel.className = "gift-assign-label";
-  assignLabel.textContent = "アイテムをタップして渡す相手を選んでください";
-  assignWrap.appendChild(assignLabel);
-  const assignButtons = document.createElement("div");
-  assignButtons.className = "gift-assign-buttons";
+  const assignDock = document.createElement("div");
+  assignDock.className = "gift-assign-dock";
+  const assignDockLabel = document.createElement("div");
+  assignDockLabel.className = "gift-assign-dock-label";
+  assignDockLabel.textContent = "アイテムをタップして配置先を選んでください";
+  const assignDockButtons = document.createElement("div");
+  assignDockButtons.className = "gift-assign-dock-buttons";
+  const assignButtons = [];
   GIFT_CHARACTERS.forEach((ch) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.textContent = ch;
+    btn.textContent = `→${ch}`;
     btn.addEventListener("click", () => assignGiftTo(ch));
-    assignButtons.appendChild(btn);
+    assignDockButtons.appendChild(btn);
+    assignButtons.push(btn);
   });
-  assignWrap.appendChild(assignButtons);
-  panel.appendChild(assignWrap);
+  const backBtn = document.createElement("button");
+  backBtn.type = "button";
+  backBtn.textContent = "🔙🎒";
+  backBtn.addEventListener("click", returnGiftToInventory);
+  assignDockButtons.appendChild(backBtn);
+  assignButtons.push(backBtn);
+  assignDock.appendChild(assignDockLabel);
+  assignDock.appendChild(assignDockButtons);
+  overlay.appendChild(assignDock);
 
   const itemsWrap = document.createElement("div");
   itemsWrap.className = "gift-items";
@@ -3277,13 +3286,17 @@ function showGiftSettingMenu(pawn) {
     pawn.userData.inventory = inventory;
     pawn.userData.giftSettings = gifts;
     pawn.userData.giftSettingsSaved = true;
+    assignDock.remove();
     showStationMenu(pawn);
   };
 
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.textContent = "設定せずに戻る";
-  cancelBtn.onclick = () => showStationMenu(pawn);
+  cancelBtn.onclick = () => {
+    assignDock.remove();
+    showStationMenu(pawn);
+  };
 
   footer.appendChild(cancelBtn);
   footer.appendChild(saveBtn);
@@ -3363,8 +3376,13 @@ function showGiftSettingMenu(pawn) {
   function assignGiftTo(character) {
     if (!tappedSelection?.item) return;
     const { item, source } = tappedSelection;
+    if (source?.type === "slot" && source.character === character) {
+      tappedSelection = null;
+      renderAll();
+      return;
+    }
     const current = gifts[character];
-    if (current) {
+    if (current && current.instanceId !== item.instanceId) {
       inventory.push(current);
     }
     if (source?.type === "slot") {
@@ -3378,15 +3396,26 @@ function showGiftSettingMenu(pawn) {
     renderAll();
   }
 
+  function returnGiftToInventory() {
+    if (!tappedSelection?.item) return;
+    const { item, source } = tappedSelection;
+    if (source?.type === "slot") {
+      gifts[source.character] = null;
+      inventory.push(item);
+    }
+    tappedSelection = null;
+    renderAll();
+  }
+
   function renderAll() {
     GIFT_CHARACTERS.forEach((ch) => renderSlot(ch, slots[ch]));
     renderInventoryItems();
     const hasSelection = Boolean(tappedSelection?.item);
-    assignWrap.classList.toggle("active", hasSelection);
-    assignLabel.textContent = hasSelection
-      ? `「${tappedSelection.item.name}」を渡す相手を選んでください`
-      : "アイテムをタップして渡す相手を選んでください";
-    assignButtons.querySelectorAll("button").forEach((btn) => {
+    assignDock.classList.toggle("active", hasSelection);
+    assignDockLabel.textContent = hasSelection
+      ? `「${tappedSelection.item.name}」の配置先を選んでください`
+      : "アイテムをタップして配置先を選んでください";
+    assignButtons.forEach((btn) => {
       btn.disabled = !hasSelection;
     });
   }
