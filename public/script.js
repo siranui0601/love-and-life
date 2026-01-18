@@ -2886,7 +2886,7 @@ function showShoppingMenu(pawn) {
 
   if (typeof pawn.userData.money !== "number") pawn.userData.money = 0;
   const money = pawn.userData.money;
-  const selected = new Set();
+  const selectedCounts = new Map();
   const itemButtons = new Map();
 
   panel.innerHTML = "";
@@ -2907,31 +2907,45 @@ function showShoppingMenu(pawn) {
   list.className = "shop-list";
 
   SHOP_ITEMS.forEach((item) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
+    const btn = document.createElement("div");
     btn.className = "shop-item";
+    btn.setAttribute("role", "button");
+    btn.setAttribute("tabindex", "0");
     btn.innerHTML = `
-      <div class="shop-item-title">${item.name}</div>
-      <div class="shop-item-price">${item.price.toLocaleString()}円</div>
-      <div class="shop-item-flavor">${item.flavor}</div>
+      <div class="shop-item-main">
+        <div class="shop-item-title">${item.name}</div>
+        <div class="shop-item-price">${item.price.toLocaleString()}円</div>
+        <div class="shop-item-flavor">${item.flavor}</div>
+      </div>
+      <div class="shop-item-controls">
+        <button type="button" class="shop-qty-btn" data-action="minus">-</button>
+        <span class="shop-item-qty" aria-live="polite">0</span>
+        <button type="button" class="shop-qty-btn" data-action="plus">+</button>
+      </div>
     `;
-    btn.onclick = () => {
-      const isSelected = selected.has(item.id);
-      if (isSelected) {
-        selected.delete(item.id);
-      } else {
-        const total = Array.from(selected).reduce(
-          (sum, id) => sum + (SHOP_ITEM_MAP.get(id)?.price || 0),
-          0,
-        );
-        const canAfford = item.price <= money - total;
-        if (!canAfford) return;
-        selected.add(item.id);
+    btn.addEventListener("click", () => {
+      adjustItemCount(item.id, 1);
+    });
+    btn.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        adjustItemCount(item.id, 1);
       }
-      updateShopState();
-    };
+    });
+    btn.querySelectorAll(".shop-qty-btn").forEach((control) => {
+      control.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const action = control.dataset.action;
+        adjustItemCount(item.id, action === "minus" ? -1 : 1);
+      });
+    });
     list.appendChild(btn);
-    itemButtons.set(item.id, btn);
+    itemButtons.set(item.id, {
+      button: btn,
+      qty: btn.querySelector(".shop-item-qty"),
+      minus: btn.querySelector('[data-action="minus"]'),
+      plus: btn.querySelector('[data-action="plus"]'),
+    });
   });
   panel.appendChild(list);
 
@@ -2948,19 +2962,18 @@ function showShoppingMenu(pawn) {
   checkoutBtn.className = "primary";
   checkoutBtn.textContent = "会計";
   checkoutBtn.onclick = () => {
-    const total = Array.from(selected).reduce(
-      (sum, id) => sum + (SHOP_ITEM_MAP.get(id)?.price || 0),
-      0,
-    );
+    const total = getSelectedTotal();
     if (total <= 0 || total > pawn.userData.money) {
       showStationMenu(pawn);
       return;
     }
     pawn.userData.money -= total;
     const inventory = ensureInventory(pawn);
-    Array.from(selected).forEach((id) => {
-      const instance = createItemInstance(id);
-      if (instance) inventory.push(instance);
+    Array.from(selectedCounts.entries()).forEach(([id, count]) => {
+      for (let i = 0; i < count; i += 1) {
+        const instance = createItemInstance(id);
+        if (instance) inventory.push(instance);
+      }
     });
     showStationMenu(pawn);
   };
@@ -2969,20 +2982,51 @@ function showShoppingMenu(pawn) {
   footer.appendChild(checkoutBtn);
   panel.appendChild(footer);
 
-  function updateShopState() {
-    const total = Array.from(selected).reduce(
-      (sum, id) => sum + (SHOP_ITEM_MAP.get(id)?.price || 0),
+  function getSelectedTotal() {
+    return Array.from(selectedCounts.entries()).reduce(
+      (sum, [id, count]) =>
+        sum + (SHOP_ITEM_MAP.get(id)?.price || 0) * count,
       0,
     );
+  }
+
+  function adjustItemCount(id, delta) {
+    const current = selectedCounts.get(id) || 0;
+    if (delta > 0) {
+      const total = getSelectedTotal();
+      const price = SHOP_ITEM_MAP.get(id)?.price || 0;
+      if (price <= 0) return;
+      if (total + price > money) return;
+      selectedCounts.set(id, current + 1);
+    } else if (delta < 0 && current > 0) {
+      const next = current - 1;
+      if (next <= 0) {
+        selectedCounts.delete(id);
+      } else {
+        selectedCounts.set(id, next);
+      }
+    }
+    updateShopState();
+  }
+
+  function updateShopState() {
+    const total = getSelectedTotal();
     moneyLine.textContent = `所持金: ${money.toLocaleString()}円`;
-    checkoutBtn.disabled = selected.size === 0;
-    itemButtons.forEach((btn, id) => {
+    checkoutBtn.disabled = total <= 0;
+    itemButtons.forEach((view, id) => {
       const item = SHOP_ITEM_MAP.get(id);
-      const isSelected = selected.has(id);
-      const remaining = money - total + (isSelected ? item.price : 0);
+      const count = selectedCounts.get(id) || 0;
+      const remaining = money - total;
       const canAfford = remaining >= item.price;
-      btn.disabled = !isSelected && !canAfford;
-      btn.classList.toggle("selected", isSelected);
+      view.button.classList.toggle("disabled", count <= 0 && !canAfford);
+      view.button.setAttribute(
+        "aria-disabled",
+        count <= 0 && !canAfford ? "true" : "false",
+      );
+      view.button.classList.toggle("selected", count > 0);
+      view.qty.textContent = count;
+      view.minus.disabled = count <= 0;
+      view.plus.disabled = !canAfford;
     });
   }
 
@@ -3003,6 +3047,7 @@ function showGiftSettingMenu(pawn) {
     ナナ: cloneItem(savedGifts.ナナ),
   };
   let dragPayload = null;
+  let tappedSelection = null;
 
   const header = document.createElement("div");
   header.className = "station-header";
@@ -3020,6 +3065,11 @@ function showGiftSettingMenu(pawn) {
   GIFT_CHARACTERS.forEach((ch) => {
     const card = document.createElement("div");
     card.className = "gift-card";
+    const portrait = document.createElement("img");
+    portrait.className = "gift-portrait";
+    portrait.src = getCharImg(ch, "neutral");
+    portrait.alt = `${ch}の立ち絵`;
+    card.appendChild(portrait);
     const name = document.createElement("div");
     name.className = "gift-name";
     name.textContent = ch;
@@ -3055,6 +3105,24 @@ function showGiftSettingMenu(pawn) {
     slots[ch] = slot;
   });
   panel.appendChild(giftGrid);
+
+  const assignWrap = document.createElement("div");
+  assignWrap.className = "gift-assign";
+  const assignLabel = document.createElement("div");
+  assignLabel.className = "gift-assign-label";
+  assignLabel.textContent = "アイテムをタップして渡す相手を選んでください";
+  assignWrap.appendChild(assignLabel);
+  const assignButtons = document.createElement("div");
+  assignButtons.className = "gift-assign-buttons";
+  GIFT_CHARACTERS.forEach((ch) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = ch;
+    btn.addEventListener("click", () => assignGiftTo(ch));
+    assignButtons.appendChild(btn);
+  });
+  assignWrap.appendChild(assignButtons);
+  panel.appendChild(assignWrap);
 
   const itemsWrap = document.createElement("div");
   itemsWrap.className = "gift-items";
@@ -3124,8 +3192,12 @@ function showGiftSettingMenu(pawn) {
     });
     pill.addEventListener("click", (e) => {
       e.stopPropagation();
-      showStationItemInfo(item);
+      tappedSelection = { item, source: { type: "slot", character } };
+      renderAll();
     });
+    if (tappedSelection?.item?.instanceId === item.instanceId) {
+      pill.classList.add("selected");
+    }
     slot.appendChild(pill);
   }
 
@@ -3154,17 +3226,47 @@ function showGiftSettingMenu(pawn) {
         });
         pill.addEventListener("click", (e) => {
           e.stopPropagation();
-          showStationItemInfo(item);
+          tappedSelection = { item, source: { type: "inventory" } };
+          renderAll();
         });
+        if (tappedSelection?.item?.instanceId === item.instanceId) {
+          pill.classList.add("selected");
+        }
         list.appendChild(pill);
       });
     }
     itemsWrap.appendChild(list);
   }
 
+  function assignGiftTo(character) {
+    if (!tappedSelection?.item) return;
+    const { item, source } = tappedSelection;
+    const current = gifts[character];
+    if (current) {
+      inventory.push(current);
+    }
+    if (source?.type === "slot") {
+      gifts[source.character] = null;
+    }
+    if (source?.type === "inventory") {
+      removeFromInventory(item.instanceId);
+    }
+    gifts[character] = item;
+    tappedSelection = null;
+    renderAll();
+  }
+
   function renderAll() {
     GIFT_CHARACTERS.forEach((ch) => renderSlot(ch, slots[ch]));
     renderInventoryItems();
+    const hasSelection = Boolean(tappedSelection?.item);
+    assignWrap.classList.toggle("active", hasSelection);
+    assignLabel.textContent = hasSelection
+      ? `「${tappedSelection.item.name}」を渡す相手を選んでください`
+      : "アイテムをタップして渡す相手を選んでください";
+    assignButtons.querySelectorAll("button").forEach((btn) => {
+      btn.disabled = !hasSelection;
+    });
   }
 
   renderAll();
