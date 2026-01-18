@@ -3313,6 +3313,7 @@ function showGiftSettingMenu(pawn) {
     pill.addEventListener("click", (e) => {
       e.stopPropagation();
       tappedSelection = { item, source: { type: "slot", character } };
+      showStationItemInfo(item);
       renderAll();
     });
     if (tappedSelection?.item?.instanceId === item.instanceId) {
@@ -3347,6 +3348,7 @@ function showGiftSettingMenu(pawn) {
         pill.addEventListener("click", (e) => {
           e.stopPropagation();
           tappedSelection = { item, source: { type: "inventory" } };
+          showStationItemInfo(item);
           renderAll();
         });
         if (tappedSelection?.item?.instanceId === item.instanceId) {
