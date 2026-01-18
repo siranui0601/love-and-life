@@ -3226,24 +3226,6 @@ function showGiftSettingMenu(pawn) {
   });
   panel.appendChild(giftGrid);
 
-  const assignWrap = document.createElement("div");
-  assignWrap.className = "gift-assign";
-  const assignLabel = document.createElement("div");
-  assignLabel.className = "gift-assign-label";
-  assignLabel.textContent = "アイテムをタップして渡す相手を選んでください";
-  assignWrap.appendChild(assignLabel);
-  const assignButtons = document.createElement("div");
-  assignButtons.className = "gift-assign-buttons";
-  GIFT_CHARACTERS.forEach((ch) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = ch;
-    btn.addEventListener("click", () => assignGiftTo(ch));
-    assignButtons.appendChild(btn);
-  });
-  assignWrap.appendChild(assignButtons);
-  panel.appendChild(assignWrap);
-
   const itemsWrap = document.createElement("div");
   itemsWrap.className = "gift-items";
   itemsWrap.addEventListener("dragover", (e) => {
@@ -3313,6 +3295,7 @@ function showGiftSettingMenu(pawn) {
     pill.addEventListener("click", (e) => {
       e.stopPropagation();
       tappedSelection = { item, source: { type: "slot", character } };
+      showGiftItemInfo(item);
       renderAll();
     });
     if (tappedSelection?.item?.instanceId === item.instanceId) {
@@ -3347,6 +3330,7 @@ function showGiftSettingMenu(pawn) {
         pill.addEventListener("click", (e) => {
           e.stopPropagation();
           tappedSelection = { item, source: { type: "inventory" } };
+          showGiftItemInfo(item);
           renderAll();
         });
         if (tappedSelection?.item?.instanceId === item.instanceId) {
@@ -3373,26 +3357,40 @@ function showGiftSettingMenu(pawn) {
     }
     gifts[character] = item;
     tappedSelection = null;
+    hideStationItemInfo();
     renderAll();
+  }
+
+  function returnGiftToInventory() {
+    if (!tappedSelection?.item) return;
+    const { item, source } = tappedSelection;
+    if (source?.type === "slot") {
+      gifts[source.character] = null;
+      inventory.push(item);
+    }
+    tappedSelection = null;
+    hideStationItemInfo();
+    renderAll();
+  }
+
+  function showGiftItemInfo(item) {
+    showStationItemInfo(item, [
+      { label: "→ミユ", onClick: () => assignGiftTo("ミユ") },
+      { label: "→シオン", onClick: () => assignGiftTo("シオン") },
+      { label: "→ナナ", onClick: () => assignGiftTo("ナナ") },
+      { label: "🔙🎒", onClick: () => returnGiftToInventory() },
+    ]);
   }
 
   function renderAll() {
     GIFT_CHARACTERS.forEach((ch) => renderSlot(ch, slots[ch]));
     renderInventoryItems();
-    const hasSelection = Boolean(tappedSelection?.item);
-    assignWrap.classList.toggle("active", hasSelection);
-    assignLabel.textContent = hasSelection
-      ? `「${tappedSelection.item.name}」を渡す相手を選んでください`
-      : "アイテムをタップして渡す相手を選んでください";
-    assignButtons.querySelectorAll("button").forEach((btn) => {
-      btn.disabled = !hasSelection;
-    });
   }
 
   renderAll();
 }
 
-function showStationItemInfo(item) {
+function showStationItemInfo(item, actions = []) {
   const { info } = ensureStationOverlay();
   if (!item || !info) return;
   info.innerHTML = `
@@ -3403,6 +3401,21 @@ function showStationItemInfo(item) {
       <div class="station-info-flavor">${item.flavor}</div>
     </div>
   `;
+  if (actions.length) {
+    const actionsWrap = document.createElement("div");
+    actionsWrap.className = "station-info-actions";
+    actions.forEach((action) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = action.label;
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        action.onClick?.();
+      });
+      actionsWrap.appendChild(btn);
+    });
+    info.appendChild(actionsWrap);
+  }
   info.style.display = "flex";
   info.setAttribute("aria-hidden", "false");
   const closeBtn = info.querySelector(".station-info-close");

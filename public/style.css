@@ -1169,6 +1169,28 @@ html { -webkit-text-size-adjust: 100%; }
   opacity: 0.8;
 }
 
+.station-info-actions {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  width: min(420px, 92vw);
+}
+
+.station-info-actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #fff;
+  color: #222;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
 .muted{
   opacity: .8;
   font-size: 14px;
