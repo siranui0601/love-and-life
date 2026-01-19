@@ -23,7 +23,7 @@ export const PARTTIME_JOBS = {
   },
   "闇バイト": {
     label: "闇バイト",
-    place: { name: "路地裏", detail: "怪しい指示のもと、裏路地で短時間の作業をする。" },
+    place: { name: "路地裏", detail: "怪しい指示のもと、どこかで短時間の作業をする。" },
     type: "dark",
     encounterPct: 25,
     payouts: [
