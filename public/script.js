@@ -1,6 +1,7 @@
 import "./menu-auth.js";
 import { getBgForPlace, getCharImg, preloadAllImages, FESTIVAL_BG_FALLBACK, yasumi_image } from "./game-assets.js";
 import { PARTTIME_JOBS, applyTagToPlayer, buildPlayerTagBlock, formatTagName, maybeAwardTag } from "./player-tags.js";
+import { SHIFT_NO_ENCOUNTER_TEMPLATES } from "./shift-no-encounter-templates.js";
 import { showToast } from "./toast.js";
 import * as THREE from "https://esm.sh/three@0.163.0";
 import {
@@ -327,6 +328,58 @@ function playShiftDialogue(lines, pawn, payout, bgUrl) {
   showLine(0);
 }
 
+function pickRandomItem(list) {
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function resolveShiftJobKey(job) {
+  if (!job) return null;
+  if (job.type === "dark" || job.label?.includes("闇")) return "dark";
+  if (job.label?.includes("清掃")) return "cleaning";
+  if (job.label?.includes("パン屋")) return "bakery";
+  if (job.label?.includes("遠洋")) return "fishing";
+  return null;
+}
+
+function applyPlayerNameToLines(lines, playerName) {
+  const nameText = playerName || "俺";
+  return (lines || []).map((line) => ({
+    name: String(line?.name || "").split("{playername}").join(nameText),
+    message: String(line?.message || "").split("{playername}").join(nameText),
+  }));
+}
+
+function pickShiftNoEncounterLines({ job, playerTags, payoutLabel, playerName }) {
+  const jobKey = resolveShiftJobKey(job);
+  const templatePack = jobKey ? SHIFT_NO_ENCOUNTER_TEMPLATES[jobKey] : null;
+  if (!templatePack) return null;
+
+  const tagCandidates = (playerTags || []).filter((tag) => {
+    const tagTemplates = templatePack.tags?.[tag];
+    return jobKey === "dark" ? !!tagTemplates : Array.isArray(tagTemplates);
+  });
+  const chosenTag = pickRandomItem(tagCandidates);
+  const tagTemplateSet = chosenTag ? templatePack.tags?.[chosenTag] : null;
+
+  if (jobKey === "dark") {
+    const payoutKey = payoutLabel || "成功";
+    const payoutPool = (tagTemplateSet || templatePack.base || {})[payoutKey];
+    let conversations = payoutPool;
+    if (!Array.isArray(conversations)) {
+      const fallbackPool = tagTemplateSet || templatePack.base || {};
+      const fallbackList = Object.values(fallbackPool).find((value) => Array.isArray(value));
+      conversations = fallbackList || [];
+    }
+    const selected = pickRandomItem(conversations) || [];
+    return applyPlayerNameToLines(selected, playerName);
+  }
+
+  const pool = tagTemplateSet || templatePack.base || [];
+  const selected = pickRandomItem(pool) || [];
+  return applyPlayerNameToLines(selected, playerName);
+}
+
 function renderShiftEventResult(payload, ctx) {
   const pawn = currentPawn;
   if (!pawn || !ctx) return;
@@ -381,7 +434,16 @@ function renderShiftEventResult(payload, ctx) {
     return;
   }
 
-  playShiftDialogue(payload?.lines || [], pawn, ctx.payout, bgUrl);
+  let shiftLines = payload?.lines || [];
+  if (!Array.isArray(shiftLines) || shiftLines.length === 0) {
+    shiftLines = pickShiftNoEncounterLines({
+      job,
+      playerTags: pawn.userData.tags || [],
+      payoutLabel: ctx.payoutLabel || null,
+      playerName: pawn.userData.name,
+    }) || shiftLines;
+  }
+  playShiftDialogue(shiftLines, pawn, ctx.payout, bgUrl);
   currentMatching = null;
 }
 
@@ -2391,6 +2453,7 @@ async function runShiftWorkDay(pawn, planOpt) {
     player: pawn.userData.name,
     mode: "shift",
     payout,
+    payoutLabel: darkPayoutLabel,
     characterName: who,
     newlyAcquiredTagDetail,
   };
