@@ -1,5 +1,24 @@
 import { genWithFallback, stripJsonFence } from "../../foundation/gemini.js";
 
+const SYS = `#RULES
+Output JSON only. No fences, no narration, no placeholders
+Player first-person="俺"
+No third-person descriptions.Dialogue only
+Strings must be single-line
+`;
+
+const LIKE_RULE = `#LIKE_BANDS
+- like <= -60: 殺意レベルの拒絶
+- like <= -40: 強い拒絶
+- like <= -20: 嫌悪
+- like < 0: 不快・警戒
+- like < 20: 知り合い
+- like < 40: 好意あり
+- like < 60: 超好意
+- like < 80: 超恋人
+- else: 恋愛感情MAX
+`;
+
 // ---------- エンディング（最終日）用：キャラ話法スタイル ----------
 const CHARACTER_STYLE = {
   ミユ: `
@@ -56,6 +75,18 @@ function normalizeTagBlock(block) {
   return typeof block === "string" ? block : "";
 }
 
+function getLikeBand(like) {
+  if (like <= -60) return "殺意レベルの拒絶";
+  if (like <= -40) return "強い拒絶";
+  if (like <= -20) return "嫌悪";
+  if (like < 0) return "不快・警戒";
+  if (like < 20) return "知り合い";
+  if (like < 40) return "好意あり";
+  if (like < 60) return "超好意";
+  if (like < 80) return "超恋人";
+  return "恋愛感情MAX";
+}
+
 // ===== 休みイベント：台詞生成（訪問／意趣返し／冷笑） =====
 function jsonOnly(s){ return typeof s === "string" ? s.replace(/^```json\s*|\s*```$/g, "") : s; }
 async function generateRestDialogue(payload) {
@@ -68,12 +99,6 @@ async function generateRestDialogue(payload) {
     likabilities = {}
   } = payload || {};
 
-  // トーン定義
-  const tone =
-    type === "visit" ? "優しく励ます、見舞いにふさわしい口調（温かい）" :
-    type === "spite" ? "きつく刺すような皮肉（意趣返し）。暴力・過度な罵倒は避けるが、冷淡さは明確。" :
-    "軽く見下すような冷笑（ドライ）。罵倒や暴力表現は避ける。";
-
   // 来訪者が空の場合は最小のフォールバック（通常、クライアント側で呼ばれない想定）
   if (!Array.isArray(visitors) || visitors.length === 0) {
     return [{ name: playername, message: "今日はおとなしく休むしかないな……。" }];
@@ -81,36 +106,32 @@ async function generateRestDialogue(payload) {
 
   const profiles = profileBlock(playername);
   const joinedProfiles = visitors.map(ch => `【${ch}】\n${profiles[ch] || ""}`).join("\n");
-  const likeTable = Object.entries(likabilities).map(([k,v])=>`${k}:${v}`).join(", ");
+  const visitorBands = visitors
+    .map((v) => `${v}:${getLikeBand(likabilities?.[v] ?? 0)}`)
+    .join(", ");
 
   const prompt = `
-あなたは恋愛ADVの脚本家です。**出力は必ず JSON 配列のみ**にしてください。コードフェンス・地の文・括弧書きは禁止。
-
-【状況】
-- プレイヤー名: ${playername}
-- 理由: ${reasonLabel}（1回休み）
-- 来訪者: ${visitors.join("・")}
-- 来訪タイプ: ${type}（visit=見舞い / spite=意趣返し / mock=冷笑）
-- 各キャラの${playername}への好感度: ${likeTable || "不明"}
-
-【キャラ設定（話し方・呼称の参考）】
+${SYS}
+#TASK rest-dialogue
+reason:${reasonLabel}
+player:${playername}
+visitors:${visitors.join(",")}
+bands:${visitorBands}
+profiles:
 ${joinedProfiles}
 
-【会話方針】
-- 会話は ${visitors.join("・")} と ${playername} のセリフだけで進める。三人称ナレーション禁止。
-- 1人の来訪者につき最低2回は喋らせる。プレイヤー（${playername}）も適度に応じる。
-- プレイヤーの一人称は「俺」。
-- ${tone}
-- ${reasonLabel} を自然に会話へ織り込む（毎行に入れる必要はない）。
+#GUIDE
+Tone per visitor strictly follows their band
+Only ${playername} and visitors speak
+Each visitor speaks >=2 lines.
+Mention reason naturally (not every line)
 
-【ボリューム】
-- 全体で 6〜12 行程度。
-
-【出力形式（これ以外は絶対に出力しない）】
+#FORMAT
 [
-  {"name":"登場人物名","message":"セリフ"},
-  ...
+ {"name":"X","message":"..."},
+ ...
 ]
+- 6-12 lines.
 `.trim();
 
   const text = jsonOnly(await genWithFallback(prompt));
@@ -168,54 +189,26 @@ async function generateGameEvent(
   playerTagBlock,
 ) {
   const characterProfiles = profileBlock(playername);
+  const likeBand = getLikeBand(likability);
 
   const prompt = `
-あなたの名前は${character}です。
-特徴:${characterProfiles[character]}
+${SYS}${LIKE_RULE}
+#TASK normal-encounter
+you:${character}
+player:${playername}| tags:${playerTagBlock || "none"}
+place:${place.name}|${place.detail}
+likeBand:${likeBand}
+profile:${characterProfiles[character]}
 
-ここは海辺の町「潮風町」。今、${place.name}（詳細: ${place.detail}）で${playername}（＝プレイヤー）と出会いました。
-あなたの${playername}への現在の好感度は ${likability}です。(0は顔見知り程度、100は大大大好き！　0未満は嫌い。-30は顔も見たくない。 -60はいっその事殺したいレベル)
-以下の要件をもとに、イベントを1つ生成してください：
-
-【登場シーン】
-- ${playername}が${place.name}に到着すると、偶然${character}と出会う。
-- キャラの性格に合ったセリフを描写してください。
-
-【会話・描写】
-- あなたは${playername}に話しかけます
-- 好感度が低いほど素っ気なく、好感度が高いほど親密さ・照れ・冗談などを含めてください。
-- 口調や一人称も個性に沿って統一してください。
-- 〇〇等のplaceholderは使用しないこと。
-- messageは短く、playerの選択肢を促すものにすること。
-- choicesの各選択肢は、一見どちらも好感度が上昇しそうな文章にしてください。ただし、実際はどちらか一方は好感度を-にしてください。
-- プレイヤーの一人称は「俺」です
-- messageは${character}がプレイヤーである${playername}に直接話しかけるセリフに限定すること。
-- 三人称ナレーションは禁止（例:「${playername}さんが現れた」「${character}は目を見開いた」などの記述はNG）。
-- あなた（${character}）は、今この瞬間に目の前にいる${playername}に向けて、何かを話しかけるつもりで書いてください。
-- 好感度がマイナスの場合、その値に応じて毛嫌いすること。0未満は嫌い。-30は顔も見たくない。 -60はいっその事殺したいレベルです。
-
-【選択肢】
-- ${playername}がどう返すかを選べる2つの選択肢を用意してください。
-- 絶対に、一見どちらも好感度が上昇しそうな選択肢にすること。これは必ず守りなさい。
-- 各選択肢には、好感度の変化（-15〜15の整数）を指定してください。
-
-【出力形式】※このJSON以外の出力は絶対に含めないこと。改行は\nで表現すること。brは用いないでください。
+#OUTPUT
 {
-  "message": "${character}の質問（1文。好感度がマイナスなら毛嫌いする）",
-  "choices": [
-     {
-      "text": "選択肢1（${playername}の返答。1文）",
-      "likabilityChange": 整数値（例: -5）,
-       "reaction": "選択肢1を選んだ後の${character}の返答（1文。一見好感度が上昇しそうな文章）"
-    },
-    {
-      "text": "選択肢2（${playername}の返答。1文）",
-      "likabilityChange": 整数値（例: 10）,
-      "reaction": "選択肢2を選んだ後の${character}の返答（1文。一見好感度が上昇しそうな文章）"
-    }
-  ]
+ "message":"(1 short line to ${playername})",
+ "choices":[
+  {"text":"(player reply 1, 1 line, seems good)","likabilityChange":INT(-15..15),"reaction":"(1 line, seems good)"},
+  {"text":"(player reply 2, 1 line, seems good)","likabilityChange":INT(-15..15),"reaction":"(1 line, seems good)"}
+ ]
 }
-${playerTagBlock}`.trim();
+`.trim();
 
   try {
      const text = await genWithFallback(prompt);
@@ -234,36 +227,6 @@ ${playerTagBlock}`.trim();
   }
 }
 
-function buildShiftTone(jobType) {
-  if (jobType === "dark") {
-    return "裏仕事の緊張感、違法スレスレの空気、ひりつく会話を強めに。露骨な犯罪描写は避けつつ、危うさや胡散臭さを出す。";
-  }
-  return "日常のアルバイト感を重視。忙しさ・疲労・達成感などを会話で表現する。";
-}
-
-function buildDarkPayoutTone(label) {
-  switch (label) {
-    case "大成功":
-      return "大成功で高揚感と手応えが強い。余裕や達成感がにじむ。";
-    case "成功":
-      return "成功で安堵や手応えがあるが、油断はしない雰囲気。";
-    case "まぁまぁ":
-      return "可もなく不可もなく。淡々とした温度感。";
-    case "微妙":
-      return "期待外れで微妙な空気。小さな引っかかりが残る。";
-    case "失敗":
-      return "失敗で焦りや後悔が強め。小さなトラブル感。";
-    case "大失敗":
-      return "大失敗で危機感が強く、後悔や緊張が濃い。";
-    default:
-      return "成果は不明だが、闇バイトらしい緊張感は維持する。";
-  }
-}
-
-async function generateShiftNoEncounterDialogue(payload) {
-  return [];
-}
-
 async function generateShiftEncounterEvent(payload) {
   const {
     playername = "プレイヤー",
@@ -276,71 +239,35 @@ async function generateShiftEncounterEvent(payload) {
     newlyAcquiredTagDetail = null,
   } = payload || {};
   const characterProfiles = profileBlock(playername);
+  const likeBand = getLikeBand(likability);
   const jobLabel = job.label || "バイト";
   const placeInfo = place.name ? place : job.place || { name: "職場", detail: "" };
-  const isDarkJob = job.type === "dark";
+  const placeLine = `${placeInfo.name}|${placeInfo.detail}`;
   const payoutLabel = job.payoutLabel || "不明";
-  const dayLine =
-    job.type === "weekly"
-      ? `- 今日の航海: ${fishingDayCount || 1}/7日目`
-      : "";
-  const tone = buildShiftTone(job.type);
-  const payoutTone = buildDarkPayoutTone(payoutLabel);
-  const sceneIntro = isDarkJob
-    ? `今、バイト中の ${playername} と偶然出会いました。`
-    : `ここは海辺の町「潮風町」。\n今、${placeInfo.name}（${placeInfo.detail}）で、バイト中の ${playername} と偶然出会いました。`;
-  const payoutLine = isDarkJob
-    ? `- 今日の成果: ${payoutLabel}`
-    : "";
-  const newlyAcquiredLine = newlyAcquiredTagDetail
-    ? `- 今日のバイトで新しく身についた特徴: ${newlyAcquiredTagDetail.name}: ${newlyAcquiredTagDetail.detail}（自然に会話や描写に反映）`
-    : "";
-  const tagFocusLine = newlyAcquiredTagDetail
-    ? "- 新しく得た特徴の内容に強くフォーカスし、その特徴が際立つ具体描写や会話を必ず入れる"
-    : "";
 
   const prompt = `
-あなたの名前は ${character} です。
-特徴: ${characterProfiles[character]}
+${SYS}${LIKE_RULE}
+#TASK shift-encounter
+player:${playername}| tags:${playerTagBlock || "none"}
+job:${jobLabel}
+${job.type==="weekly" ? `day:${fishingDayCount||1}/7` : ""}
+${job.type==="dark" ? `result:${payoutLabel}` : `place:${placeLine}`}
+you:${character}
+likeBand:${likeBand}
+profile:${characterProfiles[character]}
+${newlyAcquiredTagDetail ? `newTrait:${newlyAcquiredTagDetail.detail}` : ""}
 
-${sceneIntro}
-
-あなたの ${playername} への現在の好感度は ${likability} です。
-(0は顔見知り程度、100は大大大好き、0未満は嫌い、-30は顔も見たくない、-60はいっその事殺したいレベル)
-
-【シーン条件】
-- ${playername} は今バイト中（${jobLabel}）
-${dayLine}
-${payoutLine}
-${newlyAcquiredLine}
-- あなたは客、通行人、手伝いに来たなど自然な立場で登場する
-- バイトの状況に触れながら話しかける
-- ${tone}
-${tagFocusLine}
-${isDarkJob ? `- ${payoutTone}` : ""}
-
-【会話・描写ルール】
-- セリフは ${playername} と ${character}、およびバイト先の人物のみ
-- 三人称ナレーションは禁止
-- プレイヤーの一人称は「俺」
-- 好感度が高いほど親しげ、低いほど素っ気ない or トゲがある
-- 遭遇しなかった日の会話に ${character} との会話を加える雰囲気
-
-【ボリューム】
-- 全体で 10行程度
-
-【好感度変化】
-- 会話全体を踏まえて ${playername} の好感度変化を必ず -10〜10 の整数で決める
-
-【出力形式】※このJSON以外の出力は禁止
+#OUTPUT
 {
-  "likabilityChange": 整数,
-  "lines": [
-    {"name":"登場人物名","message":"セリフ"},
-    ...
-  ]
+ "likabilityChange":INT(-10..10),
+ "lines":[
+  {"name":"X","message":"..."},
+  ...
+ ]
 }
-${playerTagBlock}`.trim();
+Rules:
+- 10 lines approx.
+- Only player/you/workplace people.`.trim();
 
   try {
     const text = stripJsonFence(await genWithFallback(prompt));
@@ -798,45 +725,30 @@ export function registerLifeSocketHandlers(socket) {
       playerTagBlock,
     } = data || {};
 
-    try {
-      if (encounter && characterName) {
-        const event = await generateShiftEncounterEvent({
-          playername,
-          character: characterName,
-          job,
-          place: job?.place,
-          likability,
-          fishingDayCount,
-          playerTagBlock: normalizeTagBlock(playerTagBlock),
-          newlyAcquiredTagDetail,
-        });
-        const normalizedEvent = {
-          ...event,
-          likabilityChange: clampLikabilityChange(event?.likabilityChange),
-        };
-        socket.emit("shiftEventGenerated", {
-          requestId,
-          data: {
-            kind: "encounter",
-            event: normalizedEvent,
-            newlyAcquiredTagDetail,
-          },
-        });
-        return;
-      }
+    if (!encounter || !characterName) {
+      return;
+    }
 
-      const lines = await generateShiftNoEncounterDialogue({
+    try {
+      const event = await generateShiftEncounterEvent({
         playername,
+        character: characterName,
         job,
+        place: job?.place,
+        likability,
         fishingDayCount,
         playerTagBlock: normalizeTagBlock(playerTagBlock),
         newlyAcquiredTagDetail,
       });
+      const normalizedEvent = {
+        ...event,
+        likabilityChange: clampLikabilityChange(event?.likabilityChange),
+      };
       socket.emit("shiftEventGenerated", {
         requestId,
         data: {
-          kind: "noEncounter",
-          lines,
+          kind: "encounter",
+          event: normalizedEvent,
           newlyAcquiredTagDetail,
         },
       });
@@ -845,11 +757,15 @@ export function registerLifeSocketHandlers(socket) {
       socket.emit("shiftEventGenerated", {
         requestId,
         data: {
-          kind: "noEncounter",
-          lines: [
-            { name: playername || "俺", message: "今日のバイトは無事に終わった。" },
-            { name: playername || "俺", message: "……今日は誰にも会わなかったな。" },
-          ],
+          kind: "encounter",
+          event: {
+            likabilityChange: 0,
+            lines: [
+              { name: characterName, message: "今ちょっと手が離せなくて、また後で。" },
+              { name: playername || "俺", message: "ああ、了解。" },
+            ],
+          },
+          newlyAcquiredTagDetail,
         },
       });
     }
