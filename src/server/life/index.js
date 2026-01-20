@@ -7,6 +7,9 @@ No third-person descriptions.Dialogue only
 Strings must be single-line
 `;
 
+const ConfessionSYS = `#RULES
+Output JSON only. No fences, no narration, no placeholders, only Japanese`;
+
 const LIKE_RULE = `#LIKE_BANDS
 - like <= -60: 殺意レベルの拒絶
 - like <= -40: 強い拒絶
@@ -18,22 +21,6 @@ const LIKE_RULE = `#LIKE_BANDS
 - like < 80: 超恋人
 - else: 恋愛感情MAX
 `;
-
-// ---------- エンディング（最終日）用：キャラ話法スタイル ----------
-const CHARACTER_STYLE = {
-  ミユ: `
-【性格】明るく元気で素直。感情が顔に出やすい。少し甘えん坊。
-【話し方】テンション高め、感嘆詞多め（〜だねっ！ 〜じゃん！ など）
-【呼称】相手は基本「呼び捨て」`,
-  シオン: `
-【性格】無口で真面目。不器用だが根は優しい。ツンデレ傾向。
-【話し方】丁寧で冷静。ちょっと心配症。
-【呼称】相手は「さん」付け`,
-  ナナ: `
-【性格】落ち着きがあり柔らかい。時々ミステリアス。面倒見が良い。
-【話し方】丁寧でやわらかい。少し含みのある冗談も。
-【呼称】相手は「くん」付け`,
-};
 
 // ---------- 共通プロファイル ----------
 function profileBlock(playername) {
@@ -85,6 +72,22 @@ function getLikeBand(like) {
   if (like < 60) return "超好意";
   if (like < 80) return "超恋人";
   return "恋愛感情MAX";
+}
+
+function bandFromLike(like) {
+  if (like >= 0) return 0; // 0〜：ふつうの拒絶
+  if (like >= -30) return 1; // -1〜-30：冷たく/嫌いを明言
+  if (like >= -60) return 2; // -31〜-60：強い拒絶＋距離/通報の示唆
+  return 3; // -61以下：非常に強い拒絶＋通報を明言
+}
+
+function rejectGuideForBand(band){
+  switch (band){
+    case 0: return "LEVEL0: polite thanks + gentle rejection.";
+    case 1: return "LEVEL1: cold rejection, clearly say dislike/doesn't fit.";
+    case 2: return "LEVEL2: very strong rejection, cut ties now, say 'I will report to police if it continues'.";
+    default:return "LEVEL3: Shows extreme rejection, such as saying “I called the police” and throwing mud.";
+  }
 }
 
 // ===== 休みイベント：台詞生成（訪問／意趣返し／冷笑） =====
@@ -305,40 +308,38 @@ async function generateFestivalDialogue(
   const joinedProfiles = characters
     .map((ch) => `【${ch}】\n${profiles[ch]}`)
     .join("\n");
-  const likeTable = Object.entries(likabilities || {})
-    .map(([ch, v]) => `${ch}: ${v}`)
+  const visitorBands = characters
+    .map((ch) => `${ch}:${getLikeBand(likabilities?.[ch] ?? 0)}`)
     .join(", ");
 
-  const condLine = condition
-    ? `- ${playername}は現在「${condition}」。体調／不調の様子に軽く触れつつ、からかいすぎたり重くしすぎない。`
-    : "- 特筆する不調はなし。";
-
   const prompt = `
-あなたは恋愛イベントの脚本家です。出力は必ず指定のJSONのみ。
+${SYS}
+#TASK festival-dialogue
+player:${playername}
+visitors:${characters.join(",")}
+bands:${visitorBands}
+place:${place.name}|${place.detail}
+${condition ? `condition:${condition}` : ""}
 
-【登場キャラ】${characters.join("・")}（プレイヤー: ${playername}）
-【好感度】${likeTable || "不明"}
-【場所】${place.name}（詳細: ${place.detail}）
-${condLine}
-
-【性格・話し方】
+profiles:
 ${joinedProfiles}
 
-【要件】
-- 盆踊り当夜の「甘めの会話」。
-- キャラが複数なら、全員が最低2回は話す。プレイヤー（${playername}）も適度に応じる。
-- 三人称の地の文は不可。必ず話し言葉（1行目のみ）。
-- プレースホルダー、コードフェンス禁止。余計なキー禁止。
-- 登場キャラ以外のキャラは絶対に出現させない。
+#GUIDE
+Tone per visitor MUST follow their band
+Mood is Japanese summer festival night
+Sweet and romantic, but no confession
+Only ${playername} and visitors speak
+Each visitor speaks >=2 lines
+Mention place or festival atmosphere at least once
+Mention condition naturally if exists
 
-【出力の形】
+#FORMAT
 [
-  { "name": "ミユ", "message": "～" },
-  { "name": "${playername}", "message": "～" },
-  { "name": "ナナ", "message": "～" }
-  *全体で6行以上
+ {"name":"X","message":"..."},
+ ...
 ]
-${playerTagBlock}`.trim();
+- 6-12 lines
+`.trim();
 
   try {
     const text = stripJsonFence(await genWithFallback(prompt));
@@ -363,14 +364,6 @@ function formatNameFor(character, playername) {
   return playername; // ミユ=呼び捨て
 }
 
-function rejectionBandFromLike(like) {
-  // 好感度に応じてトーンを4段階に
-  if (like >= 0) return 0;        // 0〜：ふつうの拒絶
-  if (like >= -30) return 1;      // -1〜-30：冷たく/嫌いを明言
-  if (like >= -60) return 2;      // -31〜-60：強い拒絶＋距離/通報の示唆
-  return 3;                       // -61以下：非常に強い拒絶＋通報を明言
-}
-
 // ---------- 各キャラの最終返事モノローグ（台詞配列） ----------
 async function generateEndingMonologue(
   character,
@@ -380,9 +373,7 @@ async function generateEndingMonologue(
 ) {
   if (!entries || entries.length === 0) return [];
 
-  const style = CHARACTER_STYLE[character] || "";
   const names = entries.map((e) => e.playername);
-  const listForPrompt = names.map((n) => `- ${n}`).join("\n"); // ← 名前のみ
   const isSingle = entries.length === 1;
   const soleName = isSingle ? names[0] : null;
   const okToName = okName ? formatNameFor(character, okName) : null;
@@ -393,34 +384,26 @@ async function generateEndingMonologue(
     if (isSingle) {
       const toSole = formatNameFor(character, soleName);
       const finalLike = Number(entries[0]?.finalLike ?? 0);
-      const band = rejectionBandFromLike(finalLike);
+      const band = bandFromLike(finalLike);
+      const bandGuide = rejectGuideForBand(band);
       try {
         const prompt = `
-あなたは${character}です。以下の条件で台詞を返してください。
-${style}
+${ConfessionSYS}
+#TASK refuse to confession
+you:${character}
+to:${toSole}
+finalLike:${finalLike}| band:${band}
+guide:${bandGuide}
+tags:${playerTagBlock || "none"}
 
-【状況】
-告白してきたのは${toSole}。
-今は付き合えないため、お断りします。
-相手への最終好感度は ${finalLike} です。拒絶トーンの強さは次のLEVELに従ってください：
-LEVEL 0: 丁寧に感謝し、穏やかにお断り。
-LEVEL 1: はっきり嫌い/合わないと伝え、突き放す。
-LEVEL 2: 非常に強い拒絶。即時に関わりを断つことを厳しく明言。「これ以上は警察に通報します」を明言。
-LEVEL 3: さらに強い拒絶。泥を投げるなどの行為も行ってください。
-採用するLEVELは ${band} です。
-
-【要件】
-- 出力はJSON配列のみ。各要素は {"name":"${character}","message":"…"} 形式。
-- ${toSole}に話しかけてください。
-- 三人称の地の文やプレースホルダー禁止。
-
-【出力の形】
+#OUTPUT
 [
-  {"name":"${character}","message":"…"},
-  {"name":"${character}","message":"…"},
-  *全体で6行以上
+ {"name":"${character}","message":"..."},
+ ...
 ]
-${playerTagBlock}`.trim();
+>=6 lines
+only ${character} speaks, addressing ${toSole}
+`.trim();
          const text = stripJsonFence(await genWithFallback(prompt));
         const arr = JSON.parse(text);
         return arr
@@ -450,22 +433,25 @@ ${playerTagBlock}`.trim();
     // 複数から来たがお断り
     try {
       const prompt = `
-あなたは${character}です。以下の条件で「丁寧なお断り」だけを台詞で返してください。
-${style}
+${ConfessionSYS}
+#TASK Refuse to confess to everyone
+you:${character}
+confessors:${names.join(",")}
+tags:${playerTagBlock || "none"}
 
-【状況】
-複数人から告白されたが、今は誰にもOKを出さないと決めている。
-【告白してきた相手】
-${listForPrompt}
-全員への感謝(告白してきた人の名前をちゃんと呼ぶこと)→今は答えられない旨→優しい締め　という流れにすること
+#GUIDE
+thank each by name (must call all names)
+say "not now" (no one accepted)
+gentle close
+no player lines
 
-【出力の形】
+#OUTPUT
 [
-  {"name":"${character}","message":"…"},
-  {"name":"${character}","message":"…"},
-  *全体で6行以上
+ {"name":"${character}","message":"..."},
+ ...
 ]
-${playerTagBlock}`.trim();
+>=6 lines
+`.trim();
        const text = stripJsonFence(await genWithFallback(prompt));
       const arr = JSON.parse(text);
       return arr
@@ -495,28 +481,26 @@ ${playerTagBlock}`.trim();
 
   // 単独告白 → 誰かと「比べる・選ぶ」表現は禁止
   if (isSingle) {
-    const toSole = formatNameFor(character, soleName);
     try {
       const prompt = `
-あなたは${character}です。以下の条件で「OKの返事」だけを台詞で返してください。
-${style}
+${ConfessionSYS}
+#TASK Accept to confession
+you:${character}
+to:${winnerAddress}
+tags:${playerTagBlock || "none"}
 
-【状況】
-告白してきたのは「${toSole}」
-あなたは既に ${winnerAddress} にOKを伝えると決めています。
+#GUIDE
+thanks -> slight embarrassment -> clearly say OK
+MUST include name "${winnerAddress}" in last line
+NEVER mention choosing/comparing/hesitating
 
-【要件】
-- 感謝→少しの照れ→最後に「${winnerAddress}」の名前を入れてはっきりOK。
-- 「誰を選ぶ／迷う／比較する」趣旨の表現は絶対に使わない。
-- プレースホルダー、三人称の地の文は禁止。
-
-【出力の形】
+#OUTPUT
 [
-  {"name":"${character}","message":"…"},
-  {"name":"${character}","message":"…"},
-  *全体で6行以上
+ {"name":"${character}","message":"..."},
+ ...
 ]
-${playerTagBlock}`.trim();
+>=6 lines
+`.trim();
        const text = stripJsonFence(await genWithFallback(prompt));
       const arr = JSON.parse(text);
       const out = arr
@@ -549,26 +533,26 @@ ${playerTagBlock}`.trim();
 
   // 複数からの告白 → 少し迷いOK。ただしOK相手は固定で明示。
   const prompt = `
-あなたは${character}です。以下の条件で、セリフだけの短い台本（JSON配列）を作成してください。
-${style}
+${ConfessionSYS}
+#TASK Accept only one confession
+you:${character}
+confessors:${names.join(",")}
+ok:${okName}| callAs:${winnerAddress}
+tags:${playerTagBlock || "none"}
 
-【告白してきた相手（名前のみ）】
-${listForPrompt}
+#GUIDE
+thank all by name (must call all)
+show slight hesitation ONLY as "feelings were shaken" (no comparing/choosing talk)
+end by naming "${winnerAddress}" and saying OK (must appear in last line)
+no player lines
 
-【必ずOKを出す相手（確定済み・変更不可）】
-- ${okName}（呼び方は「${winnerAddress}」）
-
-【要件】
-- 最初は全員への感謝(全員の名前をちゃんと呼ぶ))中盤で“少しだけ”迷いをにじませる→最後は「${winnerAddress}」を名指しでOK。
-- プレイヤー側の台詞は入れない。三人称の地の文とプレースホルダーは禁止。
-
-【出力の形】
+#OUTPUT
 [
-  {"name":"${character}","message":"…"},
-  {"name":"${character}","message":"…"},
-  *全体で6行以上
+ {"name":"${character}","message":"..."},
+ ...
 ]
-${playerTagBlock}`.trim();
+>=6 lines
+`.trim();
 
   try {
     const text = stripJsonFence(await genWithFallback(prompt));
@@ -628,28 +612,25 @@ async function generateEndingDialogue(groups, accepted, playerTagBlocks = {}) {
 
 // ---------- 逆告白（割り込み） ----------
 async function generateReverseMonologue(character, playername) {
-  const style = CHARACTER_STYLE[character] || "";
   const toName = formatNameFor(character, playername);
 
   const prompt = `
-あなたは${character}です。以下の条件で短い逆告白のセリフ台本（JSON配列）を出力してください。
-${style}
+${ConfessionSYS}
+#TASK make a confession
+you:${character}
+to:${toName}
 
-【状況】
-エンディング後、${toName}に向けて呼び止め、あなたのほうから逆告白をする。
+#GUIDE
+first line MUST start with "まって！！"
+last line MUST include "${toName}" and clearly say "好き" and "付き合って"
+no narration
 
-【出力要件】
-- 1行目は必ず「まって！！」で始めてください。
-- 最後の台詞では、${toName}に「好き」「付き合って」等を明言し、必ず名前（${toName}）を含めてください。
-- プレースホルダー（〇〇など）と三人称ナレーションは禁止です。
-
-【出力の形】
+#OUTPUT
 [
   {"name":"${character}","message":"まって！！"},
-  {"name":"${character}","message":"…"},
-  {"name":"${character}","message":"…"},
-  *全体で6行以上
+  ...
 ]
+>=6 lines
 `.trim();
 
   try {
