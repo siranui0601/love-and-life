@@ -707,6 +707,14 @@ export function registerLifeSocketHandlers(socket) {
     } = data || {};
 
     if (!encounter || !characterName) {
+      socket.emit("shiftEventGenerated", {
+        requestId,
+        data: {
+          kind: "noEncounter",
+          lines: [],
+          newlyAcquiredTagDetail,
+        },
+      });
       return;
     }
 
