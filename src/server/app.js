@@ -13,7 +13,7 @@ export function createApp() {
   // 時々文芸部！を /時々文芸部！ で配信
   app.use(
     "/時々文芸部！",
-    express.static(path.join(process.cwd(), "public/時々文芸部！"))
+    express.static(path.join(process.cwd(), "public/bungei-bu"))
   );
 
   // 時々文芸部！を /時々文芸部！ で配信
