@@ -57,7 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         showBackButton();
       } else if (gameType === 'literary-club') {
-        window.location.href = "https://siranui.jp/時々文芸部！";
+        const literaryClubUrl = new URL('/時々文芸部！/', window.location.origin);
+        window.location.href = literaryClubUrl.toString();
       } else if (gameType === 'judgement-ai') {
         if (!window.currentUser?.email) {
           alert("断罪AIはログインが必要です");
