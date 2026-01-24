@@ -16,5 +16,15 @@ export function createApp() {
     express.static(path.join(process.cwd(), "public/bungei-bu"))
   );
 
+  // 時々文芸部！を /時々文芸部！ で配信
+  const literaryClubPath = "/時々文芸部！";
+  const literaryClubEncodedPath = encodeURI(literaryClubPath);
+  const literaryClubAssets = express.static(
+    path.join(process.cwd(), "public/bungei-bu")
+  );
+
+  app.use(literaryClubPath, literaryClubAssets);
+  app.use(literaryClubEncodedPath, literaryClubAssets);
+
   return app;
 }
