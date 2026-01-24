@@ -3640,9 +3640,13 @@ function renderEventLayer({
   // ★ ズレ防止のため、一旦 min-height をリセット
   ui.choices.style.minHeight = "";
 
+  const normalizedChoices = (choices || []).filter(
+    (choice) => choice && typeof choice.text === "string" && choice.text.trim() !== ""
+  );
+
   // 選択肢
   ui.choices.innerHTML = "";
-  (choices || []).forEach((ch) => {
+  normalizedChoices.forEach((ch) => {
     const btn = document.createElement("button");
     btn.textContent = ch.text;
     btn.onclick = (e) => {
@@ -3653,14 +3657,14 @@ function renderEventLayer({
   });
 
   // 表示制御
-  if (choices.length) {
+  if (normalizedChoices.length) {
     ui.choices.style.display = showChoicesOnTap ? "none" : "grid";
   } else {
     ui.choices.style.display = "none";
   }
 
   // ★ 選択肢の高さを記録しておく（必要なら従来ロジック維持）
-  if (choices && choices.length > 0) {
+  if (normalizedChoices.length > 0) {
     requestAnimationFrame(() => {
       lastChoicesHeight = ui.choices.offsetHeight || lastChoicesHeight || 0;
       // すぐ表示する場合はここで位置決め
@@ -3673,14 +3677,14 @@ function renderEventLayer({
   // どこでもタップで進む／選択肢を出す
   ui.layer.onclick = null;
 
-  if (choices.length && showChoicesOnTap) {
+  if (normalizedChoices.length && showChoicesOnTap) {
     // ① 1回目タップで選択肢を表示 → その瞬間に位置計算
     ui.layer.onclick = () => {
       ui.choices.style.display = "grid";
       layoutDialogChoices(16); // ← ここでテキストボックス直上に配置
       ui.layer.onclick = null; // 以降は通常のボタン処理だけ
     };
-  } else if (!choices.length && typeof advanceOnTap === "function") {
+  } else if (!normalizedChoices.length && typeof advanceOnTap === "function") {
     // ② 選択肢が無い画面は「タップで次へ」
     ui.layer.onclick = () => advanceOnTap();
   }
