@@ -10,16 +10,10 @@ export function createApp() {
   // 既存トップページ用（必要なら）
   app.use(express.static("public"));
 
-  // 文芸部を /bungei-bu で配信
-  app.use(
-    "/bungei-bu",
-    express.static(path.join(process.cwd(), "public/bungei-bu"))
-  );
-
   // 時々文芸部！を /時々文芸部！ で配信
   app.use(
     "/時々文芸部！",
-    express.static(path.join(process.cwd(), "public/bungei-bu"))
+    express.static(path.join(process.cwd(), "public/時々文芸部！"))
   );
 
   return app;
