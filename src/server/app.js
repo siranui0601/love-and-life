@@ -23,12 +23,6 @@ export function createApp() {
     path.join(process.cwd(), "public/bungei-bu")
   );
 
-  app.get(literaryClubEncodedPath, (_req, res) => {
-    res.redirect(301, `${literaryClubPath}/`);
-  });
-  app.get(literaryClubPath, (_req, res) => {
-    res.redirect(301, `${literaryClubPath}/`);
-  });
   app.use(literaryClubPath, literaryClubAssets);
   app.use(literaryClubEncodedPath, literaryClubAssets);
 
