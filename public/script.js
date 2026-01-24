@@ -3655,6 +3655,8 @@ function renderEventLayer({
   // 表示制御
   if (choices.length) {
     ui.choices.style.display = showChoicesOnTap ? "none" : "grid";
+  } else {
+    ui.choices.style.display = "none";
   }
 
   // ★ 選択肢の高さを記録しておく（必要なら従来ロジック維持）
@@ -3665,11 +3667,7 @@ function renderEventLayer({
       if (!showChoicesOnTap) layoutDialogChoices(16);
     });
   } else {
-    if (lastChoicesHeight > 0) {
-      ui.choices.style.minHeight = `${lastChoicesHeight}px`;
-    } else {
-      ui.choices.style.minHeight = `96px`;
-    }
+    ui.choices.style.minHeight = "";
   }
 
   // どこでもタップで進む／選択肢を出す
