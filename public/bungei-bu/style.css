@@ -140,9 +140,6 @@ body {
   gap: 2vh;
 }
 
-.is-hidden {
-  display: none;
-}
 
 .intro-narration {
   margin: 0;
@@ -275,4 +272,15 @@ body {
   .character-stage__image {
     max-height: 45vh;
   }
+}
+
+
+
+
+
+
+
+
+.is-hidden {
+  display: none;
 }
