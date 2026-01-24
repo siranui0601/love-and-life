@@ -55,6 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
           titleScreen.style.alignItems = 'center';
         }
         showBackButton();
+      } else if (gameType === 'literary-club') {
+        window.location.href = 'https://siranui.jp/文芸部！/';
       } else if (gameType === 'judgement-ai') {
         if (!window.currentUser?.email) {
           alert("断罪AIはログインが必要です");
