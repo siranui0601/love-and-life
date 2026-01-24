@@ -3,11 +3,15 @@ import { getCharImg } from "../game-assets.js";
 const startButton = document.querySelector("#startButton");
 const introScreen = document.querySelector("#introScreen");
 const playArea = document.querySelector("#playArea");
-const introNarration = document.querySelector("#introNarration");
 const dialogueName = document.querySelector("#dialogueName");
 const dialogueLine = document.querySelector("#dialogueLine");
 const characterImage = document.querySelector("#characterImage");
 const choiceCard = document.querySelector("#choiceCard");
+const inputPanel = document.querySelector("#inputPanel");
+const playerInput = document.querySelector("#playerInput");
+const sendButton = document.querySelector("#sendButton");
+const dialogueBox = document.querySelector("#dialogueBox");
+const hudTimer = document.querySelector(".hud__timer");
 const modal = document.querySelector("#modal");
 const modalText = document.querySelector("#modalText");
 const modalFootnote = document.querySelector("#modalFootnote");
@@ -98,15 +102,43 @@ const dialogue = [
 let dialogueIndex = -1;
 let introActive = false;
 let pendingAfterModal = null;
+let choiceState = "hidden";
+let sceneDialogue = [];
+let sceneIndex = -1;
+let sceneActive = false;
+let waitingForResponse = false;
+let currentSummary = null;
+let relationship = [];
+let affection = { ミユ: 20, シオン: 20, ナナ: 20 };
+let remainingMinutes = 120;
 
 function setDialogue(index) {
   const entry = dialogue[index];
   if (!entry) return;
   dialogueIndex = index;
+  showDialoguePresence();
   dialogueName.textContent = entry.speaker;
   dialogueLine.textContent = entry.line;
   characterImage.src = getCharImg(entry.speaker, entry.mood);
   characterImage.alt = `${entry.speaker}の立ち絵`;
+}
+
+function setSceneLine(index) {
+  const entry = sceneDialogue[index];
+  if (!entry) return;
+  sceneIndex = index;
+  showDialoguePresence();
+  showDialogueBox();
+  const mood = entry.mood || entry.expression || "neutral";
+  dialogueName.textContent = entry.speaker;
+  dialogueLine.textContent = entry.line;
+  characterImage.src = getCharImg(entry.speaker, mood);
+  characterImage.alt = `${entry.speaker}の立ち絵`;
+}
+
+function updateTimer() {
+  if (!hudTimer) return;
+  hudTimer.textContent = `残り:${remainingMinutes}分`;
 }
 
 function showModal(message, footnote = "") {
@@ -124,15 +156,62 @@ function hideModal() {
   }
 }
 
+function showChoiceCard(text) {
+  choiceCard.textContent = text;
+  choiceCard.classList.remove("is-hidden");
+  choiceCard.hidden = false;
+  choiceCard.classList.toggle("is-empty", !text);
+}
+
+function hideChoiceCard() {
+  choiceCard.classList.add("is-hidden");
+  choiceCard.hidden = true;
+  choiceCard.classList.remove("is-empty");
+}
+
+function showInputPanel() {
+  inputPanel.classList.remove("is-hidden");
+  inputPanel.hidden = false;
+  playerInput.focus();
+}
+
+function hideInputPanel() {
+  inputPanel.classList.add("is-hidden");
+  inputPanel.hidden = true;
+}
+
+function showDialogueBox() {
+  dialogueBox.classList.remove("is-hidden");
+  dialogueBox.hidden = false;
+}
+
+function hideDialogueBox() {
+  dialogueBox.classList.add("is-hidden");
+  dialogueBox.hidden = true;
+}
+
+function hideDialoguePresence() {
+  characterImage.classList.add("is-hidden");
+  characterImage.hidden = true;
+  dialogueName.textContent = "";
+  dialogueName.classList.add("is-hidden");
+}
+
+function showDialoguePresence() {
+  characterImage.classList.remove("is-hidden");
+  characterImage.hidden = false;
+  dialogueName.classList.remove("is-hidden");
+}
+
 function startIntro() {
   introScreen.classList.add("is-hidden");
   introScreen.hidden = true;
   playArea.classList.remove("is-hidden");
   playArea.hidden = false;
   introActive = true;
-  choiceCard.classList.add("is-hidden");
-  choiceCard.hidden = true;
-  introNarration.classList.remove("is-hidden");
+  hideChoiceCard();
+  hideInputPanel();
+  showDialogueBox();
   setDialogue(0);
 }
 
@@ -144,10 +223,79 @@ function advanceDialogue() {
   }
   introActive = false;
   pendingAfterModal = () => {
-    choiceCard.classList.remove("is-hidden");
-    choiceCard.hidden = false;
+    choiceState = "invite";
+    hideDialogueBox();
+    hideDialoguePresence();
+    showChoiceCard("じゃあさ、片付けでもしながら夏っぽいの詠まない？");
   };
-  showModal("彼女を作ろう！");
+  showModal(
+    "あなたは文芸部の部員です！\n夏休みに入る前に彼女たちと仲良くなり、彼女を作りましょう！\n\n右上の残り時間は、入力した内容によって変化していきます！"
+  );
+}
+
+async function submitPlayerInput() {
+  if (waitingForResponse) return;
+  const input = playerInput.value.trim();
+  if (!input) return;
+  waitingForResponse = true;
+  sendButton.disabled = true;
+  sendButton.textContent = "送信中...";
+
+  try {
+    const response = await fetch("/api/bungei/scene", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input,
+        currentSummary,
+        relationship,
+        affection,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("gemini_failed");
+    }
+
+    const payload = await response.json();
+    const data = payload?.data;
+    if (!data || !Array.isArray(data.dialogue)) {
+      throw new Error("invalid_response");
+    }
+
+    currentSummary = data.currentSummary ?? currentSummary;
+    relationship = Array.isArray(data.relationship) ? data.relationship : relationship;
+    if (data.affection && typeof data.affection === "object") {
+      affection = { ...affection, ...data.affection };
+    }
+
+    const elapsed = Number(data.elapsedMinutes);
+    if (Number.isFinite(elapsed)) {
+      remainingMinutes = Math.max(0, remainingMinutes - Math.min(30, Math.max(5, elapsed)));
+      updateTimer();
+    }
+
+    sceneDialogue = data.dialogue;
+    sceneActive = sceneDialogue.length > 0;
+    sceneIndex = -1;
+    hideChoiceCard();
+    hideInputPanel();
+    playerInput.value = "";
+    sendButton.textContent = "送信";
+    if (sceneDialogue.length) {
+      setSceneLine(0);
+    } else {
+      showChoiceCard("");
+      choiceState = "inputReady";
+    }
+  } catch (error) {
+    console.error(error);
+    showModal("ごめんね、今は返答を作れなかったみたい。もう一度試してね。");
+  } finally {
+    waitingForResponse = false;
+    sendButton.textContent = "送信";
+    sendButton.disabled = playerInput.value.trim().length === 0;
+  }
 }
 
 if (startButton) {
@@ -166,16 +314,53 @@ if (modal) {
 if (choiceCard) {
   choiceCard.addEventListener("click", (event) => {
     event.stopPropagation();
-    pendingAfterModal = null;
-    showModal(
-      "おっと、君は文芸部だ！台詞は君が考えな！\nただし、台詞によっては部活が終わっちまうから、そこはよーーく考えるんだな！",
-      "…Monika.chrのバックアップを忘れずに。"
-    );
+    if (choiceState === "invite") {
+      pendingAfterModal = () => {
+        choiceState = "inputReady";
+        showChoiceCard("");
+      };
+      showModal(
+        "おっと、君は文芸部だ！台詞は君が考えな！\nただし、台詞によっては部活が終わっちまうから、そこはよーーく考えるんだな！",
+        "…Monika.chrのバックアップを忘れずに。"
+      );
+      return;
+    }
+    if (choiceState === "inputReady") {
+      hideChoiceCard();
+      showInputPanel();
+    }
+  });
+}
+
+if (playerInput) {
+  playerInput.addEventListener("input", () => {
+    sendButton.disabled = waitingForResponse || playerInput.value.trim().length === 0;
+  });
+}
+
+if (sendButton) {
+  sendButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (sendButton.disabled) return;
+    submitPlayerInput();
   });
 }
 
 document.addEventListener("click", () => {
   if (!modal.classList.contains("is-hidden")) return;
-  if (!introActive) return;
-  advanceDialogue();
+  if (introActive) {
+    advanceDialogue();
+    return;
+  }
+  if (sceneActive) {
+    if (sceneIndex < sceneDialogue.length - 1) {
+      setSceneLine(sceneIndex + 1);
+      return;
+    }
+    sceneActive = false;
+    showChoiceCard("");
+    choiceState = "inputReady";
+  }
 });
+
+updateTimer();
