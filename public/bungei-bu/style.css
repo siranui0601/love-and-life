@@ -45,6 +45,7 @@ body {
     rgba(255, 201, 223, 0.7) 100%
   );
   z-index: 0;
+  pointer-events: none;
 }
 
 .scene > * {
