@@ -29,9 +29,6 @@
       </section>
 
       <section class="play-area is-hidden" id="playArea" aria-live="polite" hidden>
-        <p class="intro-narration" id="introNarration">
-          文芸部の3人は、夏休み前の部室で最後の時間を過ごしています。
-        </p>
         <div class="character-stage">
           <img
             class="character-stage__image"
@@ -43,8 +40,20 @@
         <button class="choice-card is-hidden" id="choiceCard" type="button" hidden>
           じゃあさ、片付けでもしながら夏っぽいの詠まない？
         </button>
+        <div class="input-panel is-hidden" id="inputPanel" hidden>
+          <label class="input-panel__label" for="playerInput">あなたの台詞</label>
+          <textarea
+            class="input-panel__textarea"
+            id="playerInput"
+            rows="3"
+            placeholder="台詞を入力してください"
+          ></textarea>
+          <button class="send-button" id="sendButton" type="button" disabled>
+            送信
+          </button>
+        </div>
         <div class="dialogue-box" id="dialogueBox">
-          <span class="dialogue-name" id="dialogueName">ミユ</span>
+          <span class="dialogue-name" id="dialogueName"></span>
           <p class="dialogue-line" id="dialogueLine"></p>
           <span class="dialogue-hint">タップで次のセリフへ</span>
         </div>
