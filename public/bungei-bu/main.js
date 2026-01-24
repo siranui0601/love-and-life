@@ -126,9 +126,12 @@ function hideModal() {
 
 function startIntro() {
   introScreen.classList.add("is-hidden");
+  introScreen.hidden = true;
   playArea.classList.remove("is-hidden");
+  playArea.hidden = false;
   introActive = true;
   choiceCard.classList.add("is-hidden");
+  choiceCard.hidden = true;
   introNarration.classList.remove("is-hidden");
   setDialogue(0);
 }
@@ -142,6 +145,7 @@ function advanceDialogue() {
   introActive = false;
   pendingAfterModal = () => {
     choiceCard.classList.remove("is-hidden");
+    choiceCard.hidden = false;
   };
   showModal("彼女を作ろう！");
 }
