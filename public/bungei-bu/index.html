@@ -7,24 +7,46 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <main class="hero">
-      <button class="game-card" id="gameTap" type="button" aria-label="ゲームをタップ">
-        <span class="game-card__label">時々文芸部！</span>
-        <span class="game-card__subtitle">ゲームをタップしてはじめよう</span>
+    <div class="scene" id="scene">
+      <div class="scene__hud">
+        <div class="timer">残り:120分</div>
+      </div>
+
+      <div class="scene__content">
+        <div class="character-stage">
+          <img class="character-image" id="characterImage" alt="" />
+        </div>
+      </div>
+
+      <button class="choice-card" id="choiceCard" type="button" hidden>
+        じゃあさ、片付けでもしながら夏っぽいの詠まない？
       </button>
 
-      <p class="game-lead">
-        文章を打つことで時間が進み、キャラがリアクションを返します。<br />
-        120分が経過すると部活動は終わり、学校を出て夏休みに入ります。<br />
-        最後の文芸部活動で、彼女を作ることを目指しましょう。
-      </p>
-
-      <div class="actions" aria-label="メニュー">
-        <button class="action-button" type="button">スタート</button>
-        <button class="action-button action-button--secondary" type="button">続きから</button>
+      <div class="dialogue-box" id="dialogueBox" aria-live="polite">
+        <span class="dialogue-name" id="dialogueName"></span>
+        <p class="dialogue-text" id="dialogueText"></p>
+        <span class="dialogue-hint">タップで次へ</span>
       </div>
-    </main>
 
-    <script src="./main.js"></script>
+      <div class="start-overlay" id="startOverlay" role="dialog" aria-modal="true">
+        <div class="start-card">
+          <h1>時々文芸部！</h1>
+          <p>
+            最後の文芸部がはじまるよ。<br />
+            スタートを押すとイントロが流れます。
+          </p>
+          <button class="action-button" id="startButton" type="button">スタート</button>
+        </div>
+      </div>
+
+      <div class="modal" id="modal" role="dialog" aria-modal="true" hidden>
+        <div class="modal__content">
+          <p class="modal__text" id="modalText"></p>
+          <span class="modal__note" id="modalNote"></span>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
   </body>
 </html>
