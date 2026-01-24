@@ -7,24 +7,57 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <main class="hero">
-      <button class="game-card" id="gameTap" type="button" aria-label="ゲームをタップ">
-        <span class="game-card__label">時々文芸部！</span>
-        <span class="game-card__subtitle">ゲームをタップしてはじめよう</span>
-      </button>
-
-      <p class="game-lead">
-        文章を打つことで時間が進み、キャラがリアクションを返します。<br />
-        120分が経過すると部活動は終わり、学校を出て夏休みに入ります。<br />
-        最後の文芸部活動で、彼女を作ることを目指しましょう。
-      </p>
-
-      <div class="actions" aria-label="メニュー">
-        <button class="action-button" type="button">スタート</button>
-        <button class="action-button action-button--secondary" type="button">続きから</button>
+    <main class="scene" id="scene">
+      <div class="hud" aria-hidden="true">
+        <span class="hud__timer">残り:120分</span>
       </div>
+
+      <section class="intro-screen" id="introScreen">
+        <div class="intro-card">
+          <span class="intro-card__label">時々文芸部！</span>
+          <p class="intro-card__lead">
+            夏休み前、最後の放課後。<br />
+            部室で集まるのも、今日が最後の文芸部です。
+          </p>
+          <div class="actions" aria-label="メニュー">
+            <button class="action-button" id="startButton" type="button">スタート</button>
+            <button class="action-button action-button--secondary" type="button">
+              続きから
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="play-area is-hidden" id="playArea" aria-live="polite" hidden>
+        <p class="intro-narration" id="introNarration">
+          文芸部の3人は、夏休み前の部室で最後の時間を過ごしています。
+        </p>
+        <div class="character-stage">
+          <img
+            class="character-stage__image"
+            id="characterImage"
+            src=""
+            alt="キャラクターの立ち絵"
+          />
+        </div>
+        <button class="choice-card is-hidden" id="choiceCard" type="button" hidden>
+          じゃあさ、片付けでもしながら夏っぽいの詠まない？
+        </button>
+        <div class="dialogue-box" id="dialogueBox">
+          <span class="dialogue-name" id="dialogueName">ミユ</span>
+          <p class="dialogue-line" id="dialogueLine"></p>
+          <span class="dialogue-hint">タップで次のセリフへ</span>
+        </div>
+      </section>
     </main>
 
-    <script src="./main.js"></script>
+    <div class="modal is-hidden" id="modal" role="dialog" aria-modal="true">
+      <div class="modal__content">
+        <p class="modal__text" id="modalText"></p>
+        <span class="modal__footnote" id="modalFootnote"></span>
+      </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
   </body>
 </html>
