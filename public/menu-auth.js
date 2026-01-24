@@ -29,6 +29,7 @@ window.currentUser = null;
 document.addEventListener('DOMContentLoaded', () => {
   const gameMenu = document.getElementById('gameMenu');
   const titleScreen = document.getElementById('titleScreen');
+  const literaryClubScreen = document.getElementById('literaryClubScreen');
   const gameCards = document.querySelectorAll('.game-card');
 
   // 初期状態: メニューを表示、タイトル画面を非表示
@@ -53,6 +54,12 @@ document.addEventListener('DOMContentLoaded', () => {
           titleScreen.style.flexDirection = 'column';
           titleScreen.style.justifyContent = 'center';
           titleScreen.style.alignItems = 'center';
+        }
+        showBackButton();
+      } else if (gameType === 'literary-club') {
+        if (gameMenu) gameMenu.style.display = 'none';
+        if (literaryClubScreen) {
+          literaryClubScreen.style.display = 'flex';
         }
         showBackButton();
       } else if (gameType === 'judgement-ai') {
