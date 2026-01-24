@@ -61,6 +61,13 @@ body {
   opacity: 0.8;
 }
 
+.game-lead {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #6a4663;
+}
+
 .actions {
   display: grid;
   gap: 16px;

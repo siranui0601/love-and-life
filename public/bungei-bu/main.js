@@ -2,6 +2,6 @@ const gameTap = document.querySelector("#gameTap");
 
 if (gameTap) {
   gameTap.addEventListener("click", () => {
-    window.location.href = "https://siranui.jp/文芸部！";
+    window.location.href = "https://siranui.jp/時々文芸部！";
   });
 }
