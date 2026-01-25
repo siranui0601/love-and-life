@@ -31,6 +31,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const titleScreen = document.getElementById('titleScreen');
   const literaryClubScreen = document.getElementById('literaryClubScreen');
   const gameCards = document.querySelectorAll('.game-card');
+  const loginStatus = document.getElementById("loginStatus");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const btnContainer = document.getElementById("googleSignInBtn");
+
+  try {
+    const stored = localStorage.getItem("currentUser");
+    if (stored) {
+      window.currentUser = JSON.parse(stored);
+      if (loginStatus && window.currentUser?.username) {
+        loginStatus.textContent = `${window.currentUser.username} でログイン中`;
+      }
+      if (btnContainer) btnContainer.style.display = "none";
+      if (logoutBtn) logoutBtn.style.display = "inline-block";
+    }
+  } catch (error) {
+    console.error("localStorage parse error:", error);
+  }
 
   // 初期状態: メニューを表示、タイトル画面を非表示
   if (gameMenu) gameMenu.style.display = 'flex';
@@ -57,6 +74,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         showBackButton();
       } else if (gameType === 'literary-club') {
+        if (!window.currentUser?.email) {
+          alert("時々文芸部！はログインが必要です");
+          return;
+        }
         const literaryClubUrl = new URL('/時々文芸部！/', window.location.origin);
         window.location.href = literaryClubUrl.toString();
       } else if (gameType === 'judgement-ai') {
@@ -93,10 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // ================================
   // 画面ロード時
   window.addEventListener("load", () => {
-    const loginStatus = document.getElementById("loginStatus");
-    const btnContainer = document.getElementById("googleSignInBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-
     const usernameModal = document.getElementById("usernameModal");
     const usernameInput = document.getElementById("usernameInput");
     const usernameSaveBtn = document.getElementById("usernameSaveBtn");
@@ -145,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
           username: lookup.username,
           googleName: lookup.displayName || gName,
         };
+        localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
         loginStatus.textContent = `${lookup.username} でログイン中`;
         btnContainer.style.display = "none";
         if (logoutBtn) logoutBtn.style.display = "inline-block";
@@ -184,6 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
               username: data.username,
               googleName: data.displayName || gName,
             };
+            localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
 
             loginStatus.textContent = `${data.username} でログイン中`;
             btnContainer.style.display = "none";
@@ -220,6 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = window.currentUser?.email || null;
 
         window.currentUser = null;
+        localStorage.removeItem("currentUser");
         loginStatus.textContent = "ログインしていません";
         btnContainer.style.display = "block"; // ログインボタン再表示
         logoutBtn.style.display = "none"; // ログアウトボタン非表示
