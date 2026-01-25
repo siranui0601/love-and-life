@@ -21,6 +21,7 @@ body {
 body {
   background: #ffe9f1;
   color: #5c3b54;
+  touch-action: manipulation;
 }
 
 .scene {
@@ -135,6 +136,7 @@ body {
   cursor: pointer;
   box-shadow: 0 10px 18px rgba(255, 143, 193, 0.4);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  touch-action: manipulation;
 }
 
 .action-button:hover {
@@ -194,6 +196,7 @@ body {
   color: #6b3e58;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  touch-action: manipulation;
 }
 
 .choice-card:hover {
@@ -272,6 +275,7 @@ body {
   cursor: pointer;
   box-shadow: 0 10px 18px rgba(255, 143, 193, 0.4);
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  touch-action: manipulation;
 }
 
 .send-button:hover:not(:disabled) {
