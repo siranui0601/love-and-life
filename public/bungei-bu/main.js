@@ -3,6 +3,8 @@ import { getCharImg } from "../game-assets.js";
 const startButton = document.querySelector("#startButton");
 const introScreen = document.querySelector("#introScreen");
 const playArea = document.querySelector("#playArea");
+const scene = document.querySelector("#scene");
+const curtain = document.querySelector("#curtain");
 const dialogueName = document.querySelector("#dialogueName");
 const dialogueLine = document.querySelector("#dialogueLine");
 const characterImage = document.querySelector("#characterImage");
@@ -19,6 +21,7 @@ const playerLineHeader = document.querySelector("#playerLineHeader");
 const resultScreen = document.querySelector("#resultScreen");
 const resultRank = document.querySelector("#resultRank");
 const resultComment = document.querySelector("#resultComment");
+const resultRating = document.querySelector(".result-rating");
 const resultSlots = document.querySelector("#resultSlots");
 const retryButton = document.querySelector("#retryButton");
 const toTopButton = document.querySelector("#toTopButton");
@@ -118,6 +121,7 @@ const outroDialogue = [
 ];
 
 const slotCandidates = ["ミユ", "シオン", "ナナ", null];
+const DEFAULT_EPILOGUE_LINE = "夏の終わりは静かに訪れた。";
 
 let dialogueIndex = -1;
 let introActive = false;
@@ -131,6 +135,7 @@ let currentSummary = null;
 let relationship = [];
 let affection = { ミユ: 20, シオン: 20, ナナ: 20 };
 let endingPhase = "none";
+let curtainAnimating = false;
 const storedUser = (() => {
   try {
     return JSON.parse(localStorage.getItem("currentUser") || "null");
@@ -141,6 +146,52 @@ const storedUser = (() => {
 const playerEmail = storedUser?.email || "";
 let speechOrder = [];
 let remainingChars = 120;
+const initialBackgroundUrl =
+  scene?.dataset.initialBg || "https://pbs.twimg.com/media/G_ckRdSboAAoOnb.jpg";
+
+function setSceneBackground(url) {
+  if (!scene || !url) return;
+  scene.style.setProperty("--scene-bg", `url("${url}")`);
+}
+
+setSceneBackground(initialBackgroundUrl);
+
+function waitForCurtainTransition() {
+  if (!curtain) return Promise.resolve();
+  return new Promise((resolve) => {
+    let resolved = false;
+    const handleTransitionEnd = (event) => {
+      if (event.target !== curtain) return;
+      if (resolved) return;
+      resolved = true;
+      curtain.removeEventListener("transitionend", handleTransitionEnd);
+      resolve();
+    };
+    curtain.addEventListener("transitionend", handleTransitionEnd);
+    setTimeout(() => {
+      if (resolved) return;
+      resolved = true;
+      curtain.removeEventListener("transitionend", handleTransitionEnd);
+      resolve();
+    }, 1000);
+  });
+}
+
+async function lowerCurtain() {
+  if (!curtain || curtainAnimating) return;
+  curtainAnimating = true;
+  curtain.classList.add("is-lowered");
+  await waitForCurtainTransition();
+  curtainAnimating = false;
+}
+
+async function raiseCurtain() {
+  if (!curtain || curtainAnimating) return;
+  curtainAnimating = true;
+  curtain.classList.remove("is-lowered");
+  await waitForCurtainTransition();
+  curtainAnimating = false;
+}
 
 function setDialogue(index) {
   const entry = dialogue[index];
@@ -348,12 +399,47 @@ function showInviteChoice(text) {
   ]);
 }
 
-function buildEpilogueDialogue(text) {
-  return [{ speaker: "エピローグ", line: text, mood: "neutral" }];
+function normalizeEpilogueDialogue(raw) {
+  if (Array.isArray(raw)) {
+    return raw;
+  }
+  if (raw && typeof raw === "object" && Array.isArray(raw.dialogue)) {
+    return raw.dialogue;
+  }
+  if (typeof raw === "string") {
+    return raw
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const match = line.match(/^([^:：]+)[:：]\s*(.+)$/);
+        if (match) {
+          return { speaker: match[1].trim(), line: match[2].trim() };
+        }
+        return { speaker: "エピローグ", line };
+      });
+  }
+  return [];
 }
 
-async function fetchEpilogueText() {
-  if (!playerEmail) return "夏の終わりは静かに訪れた。";
+function buildEpilogueDialogue(raw) {
+  const entries = normalizeEpilogueDialogue(raw);
+  if (!entries.length) {
+    return [{ speaker: "エピローグ", line: DEFAULT_EPILOGUE_LINE, mood: "neutral" }];
+  }
+  return entries
+    .map((entry) => ({
+      speaker: entry.speaker || "エピローグ",
+      line: entry.line || "",
+      mood: entry.mood || "neutral",
+    }))
+    .filter((entry) => entry.line);
+}
+
+async function fetchEpilogueData() {
+  if (!playerEmail) {
+    return { dialogue: buildEpilogueDialogue(DEFAULT_EPILOGUE_LINE), background: null };
+  }
   try {
     const res = await fetch("/api/bungei/epilogue", {
       method: "POST",
@@ -362,10 +448,11 @@ async function fetchEpilogueText() {
     });
     if (!res.ok) throw new Error("epilogue_failed");
     const data = await res.json();
-    return String(data.epilogue || "").trim() || "夏の終わりは静かに訪れた。";
+    const dialogue = buildEpilogueDialogue(data.epilogue);
+    return { dialogue, background: data.background ?? null };
   } catch (error) {
     console.error(error);
-    return "夏の終わりは静かに訪れた。";
+    return { dialogue: buildEpilogueDialogue(DEFAULT_EPILOGUE_LINE), background: null };
   }
 }
 
@@ -381,13 +468,18 @@ function startOutro() {
 
 async function startEpilogue() {
   endingPhase = "epilogue";
-  const epilogueText = await fetchEpilogueText();
-  sceneDialogue = buildEpilogueDialogue(epilogueText);
+  await lowerCurtain();
+  const { dialogue, background } = await fetchEpilogueData();
+  if (background?.url) {
+    setSceneBackground(background.url);
+  }
+  sceneDialogue = dialogue;
   sceneIndex = -1;
   sceneActive = true;
   hideChoiceCards();
   hideInputPanel();
   setSceneLine(0);
+  await raiseCurtain();
 }
 
 function getResultRating() {
@@ -441,11 +533,24 @@ function runSlotAnimation(finalNames) {
   });
 }
 
-function showResultScreen() {
+function runSlotAnimationWithCompletion(finalNames) {
+  return new Promise((resolve) => {
+    if (!resultSlots) {
+      resolve();
+      return;
+    }
+    runSlotAnimation(finalNames);
+    const totalDelay = 800 + (finalNames.length - 1) * 500 + 450;
+    setTimeout(() => resolve(), totalDelay);
+  });
+}
+
+async function showResultScreen() {
   const finalNames = [...relationship, null, null, null].slice(0, 3);
   const { rank, comment } = getResultRating();
-  if (resultRank) resultRank.textContent = rank;
-  if (resultComment) resultComment.textContent = comment;
+  if (resultRank) resultRank.textContent = "";
+  if (resultComment) resultComment.textContent = "";
+  if (resultRating) resultRating.classList.add("is-delayed");
   if (resultScreen) {
     resultScreen.classList.remove("is-hidden");
     resultScreen.hidden = false;
@@ -457,7 +562,18 @@ function showResultScreen() {
     playArea.classList.add("is-hidden");
     playArea.hidden = true;
   }
-  runSlotAnimation(finalNames);
+  await runSlotAnimationWithCompletion(finalNames);
+  if (resultRank) resultRank.textContent = rank;
+  if (resultComment) resultComment.textContent = comment;
+  if (resultRating) resultRating.classList.remove("is-delayed");
+}
+
+async function startResultSequence() {
+  endingPhase = "result";
+  await lowerCurtain();
+  setSceneBackground(initialBackgroundUrl);
+  await showResultScreen();
+  await raiseCurtain();
 }
 
 function startIntro() {
@@ -595,6 +711,7 @@ if (sendButton) {
 }
 
 document.addEventListener("click", () => {
+  if (curtainAnimating) return;
   if (!modal.classList.contains("is-hidden")) return;
   if (introActive) {
     advanceDialogue();
@@ -611,8 +728,7 @@ document.addEventListener("click", () => {
       return;
     }
     if (endingPhase === "epilogue") {
-      endingPhase = "result";
-      showResultScreen();
+      startResultSequence();
       return;
     }
     if (remainingChars <= 0) {
