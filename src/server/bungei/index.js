@@ -9,13 +9,13 @@ import {
 } from "../../foundation/sheets.js";
 
 const BASE_PROMPT = `
-舞台は高校の文芸部。部員はプレイヤーとミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
+舞台は高校の文芸部。部員は${playerName}(プレイヤー)とミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
 
 PLAYER_INPUTに対する会話シーンを生成せよ。
 必ずJSONのみ出力。説明禁止。コードフェンス禁止。
 
 ルール：
-dialogueは配列。台詞のみ（地の文なし）。ミユ/シオン/ナナの発話を最低1回含める。プレイヤーは含めない。
+dialogueは配列。台詞のみ（地の文なし）。ミユ/シオン/ナナの発話を最低1回含める。${playerName}は含めない。
 各dialogueには "mood" を含めること。moodは "positive" "neutral" "negative" のいずれか（3択の表情差分）。
 relationshipは交際相手名の配列（いなければ[]）
 NowThinkingとcurrentSummary は短い要約
