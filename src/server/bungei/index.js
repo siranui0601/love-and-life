@@ -18,7 +18,9 @@ PLAYER_INPUTに対する会話シーンを生成せよ。
 dialogueは配列。台詞のみ（地の文なし）。ミユ/シオン/ナナの発話を最低1回含める。プレイヤーは含めない。
 プレイヤーを指す必要がある場合は必ずPLAYER_NAMEを使い、「プレイヤー」という単語は使わない。
 各dialogueには "mood" を含めること。moodは "positive" "neutral" "negative" のいずれか（3択の表情差分）。
-relationshipは交際相手名の配列（いなければ[]）
+relationshipは交際相手名の配列（いなければ[]。
+状況に応じ追加/削除）
+affectionは動的に変えること
 NowThinkingとcurrentSummary は短い要約
 
 CHARACTERS
