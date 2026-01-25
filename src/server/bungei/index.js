@@ -41,11 +41,71 @@ OUTPUT_JSON_EXAMPLE
 const EPILOGUE_PROMPT = `
 舞台は高校の文芸部。明日から夏休みで、今日が部活の最終日だった。
 
-RELATIONSHIPに交際相手がいる場合は、その相手(たち)と夏を過ごす後日談を書く。
-交際相手がいない場合は、ひとり寂しく夏を過ごす後日談を書く。
-1〜3文程度、情景描写を織り交ぜて短くまとめること。
-必ず本文のみを出力し、説明やコードフェンスは不要。
+BACKGROUND_NAME の場所でのエピローグ会話を生成する。
+RELATIONSHIPに交際相手がいる場合は、その相手(たち)とプレイヤーの会話にする。
+交際相手がいない場合は、プレイヤー一人の独り言だけにする。
+1〜3往復、会話形式のみ（地の文なし）。
+必ずJSONのみを出力し、説明やコードフェンスは禁止。
+
+OUTPUT_JSON_EXAMPLE
+{
+  "dialogue": [
+    { "speaker": "プレイヤー名", "line": "..." },
+    { "speaker": "ミユ", "line": "..." }
+  ]
+}
 `.trim();
+
+const EPILOGUE_BACKGROUNDS = [
+  { name: "遊園地", url: "https://pbs.twimg.com/media/G_g7eOPbIAA-osB.jpg" },
+  { name: "夏祭り", url: "https://pbs.twimg.com/media/G_g7eOwWQAAxwB1.jpg" },
+  { name: "海辺の防波堤", url: "https://pbs.twimg.com/media/G_g7eOzXsAASVRj.jpg" },
+  { name: "水族館", url: "https://pbs.twimg.com/media/G_g7eOMaoAEP5u6.jpg" },
+  { name: "カフェのテラス", url: "https://pbs.twimg.com/media/G_g7e9LasAAA4_B.jpg" },
+  { name: "映画館のロビー", url: "https://pbs.twimg.com/media/G_g7e9NboAA__6e.jpg" },
+  { name: "ボーリング場", url: "https://pbs.twimg.com/media/G_g7e90WIAAQ37_.jpg" },
+  { name: "海辺の展望台", url: "https://pbs.twimg.com/media/G_g7e9PbsAAy2Az.jpg" },
+  { name: "夜の公園", url: "https://pbs.twimg.com/media/G_g7fp5bQAA15Ut.jpg" },
+  { name: "星が見える丘", url: "https://pbs.twimg.com/media/G_g7fqrWcAAef_j.jpg" },
+  { name: "空港のロビー", url: "https://pbs.twimg.com/media/G_g7fp7bsAAmsSA.jpg" },
+  { name: "商店街", url: "https://pbs.twimg.com/media/G_g7fp6bQAA0_Sl.jpg" },
+  { name: "コンビニ前", url: "https://pbs.twimg.com/media/G_g7gccbkAAT4r6.jpg" },
+  { name: "田舎のバス停", url: "https://pbs.twimg.com/media/G_g7gdBX0AAQPHT.jpg" },
+];
+
+const DEFAULT_EPILOGUE_LINE = "夏の終わりは静かに訪れた。";
+
+function getRandomEpilogueBackground() {
+  return EPILOGUE_BACKGROUNDS[Math.floor(Math.random() * EPILOGUE_BACKGROUNDS.length)];
+}
+
+function parseDialogueText(text) {
+  if (!text) return [];
+  return String(text)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const match = line.match(/^([^:：]+)[:：]\s*(.+)$/);
+      if (match) {
+        return { speaker: match[1].trim(), line: match[2].trim() };
+      }
+      return { speaker: "エピローグ", line };
+    });
+}
+
+function normalizeDialoguePayload(raw) {
+  if (Array.isArray(raw)) {
+    return raw;
+  }
+  if (raw && typeof raw === "object" && Array.isArray(raw.dialogue)) {
+    return raw.dialogue;
+  }
+  if (typeof raw === "string") {
+    return parseDialogueText(raw);
+  }
+  return [];
+}
 
 export function mountBungeiRoutes(app) {
   app.post("/api/bungei/options", async (req, res) => {
@@ -179,7 +239,26 @@ ${JSON.stringify(relationship)}
         try {
           const entry = await findBungeiEntryByOrder(speechOrder);
           if (entry?.epilogue) {
-            res.json({ epilogue: entry.epilogue });
+            let cachedPayload = null;
+            try {
+              cachedPayload = JSON.parse(entry.epilogue);
+            } catch {
+              cachedPayload = entry.epilogue;
+            }
+            const dialogue = normalizeDialoguePayload(cachedPayload);
+            const backgroundName =
+              cachedPayload && typeof cachedPayload === "object"
+                ? cachedPayload.backgroundName
+                : null;
+            const background =
+              EPILOGUE_BACKGROUNDS.find((item) => item.name === backgroundName) ||
+              getRandomEpilogueBackground();
+            res.json({
+              epilogue: dialogue.length
+                ? dialogue
+                : [{ speaker: playerName, line: DEFAULT_EPILOGUE_LINE }],
+              background,
+            });
             return;
           }
         } catch (error) {
@@ -187,11 +266,15 @@ ${JSON.stringify(relationship)}
         }
       }
 
+      const background = getRandomEpilogueBackground();
       const prompt = `
 ${EPILOGUE_PROMPT}
 
 PLAYER_NAME
 ${playerName}
+
+BACKGROUND_NAME
+${background.name}
 
 RELATIONSHIP
 ${JSON.stringify(relationship)}
@@ -201,19 +284,32 @@ ${JSON.stringify(speechOrder)}
 `.trim();
 
       const text = await genWithFallback(prompt);
-      const epilogue = String(text || "").trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
+      const cleaned = stripJsonFence(text);
+      let parsed;
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        parsed = cleaned;
+      }
+      const dialogue = normalizeDialoguePayload(parsed);
+      const epiloguePayload = JSON.stringify({
+        dialogue: dialogue.length
+          ? dialogue
+          : [{ speaker: playerName, line: DEFAULT_EPILOGUE_LINE }],
+        backgroundName: background.name,
+      });
 
       if (speechOrder.length) {
         try {
           const entry = await findBungeiEntryByOrder(speechOrder);
           if (entry?.rowIndex) {
-            await updateBungeiEpilogue(entry.rowIndex, epilogue);
+            await updateBungeiEpilogue(entry.rowIndex, epiloguePayload);
           } else {
             await appendBungeiEntry({
               orderList: speechOrder,
               output: "",
               players: [playerName],
-              epilogue,
+              epilogue: epiloguePayload,
             });
           }
         } catch (error) {
@@ -221,7 +317,12 @@ ${JSON.stringify(speechOrder)}
         }
       }
 
-      res.json({ epilogue });
+      res.json({
+        epilogue: dialogue.length
+          ? dialogue
+          : [{ speaker: playerName, line: DEFAULT_EPILOGUE_LINE }],
+        background,
+      });
     } catch (error) {
       console.error("❌ Gemini API Error (bungei epilogue):", error);
       res.status(500).json({ error: "gemini_failed" });

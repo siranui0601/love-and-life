@@ -7,7 +7,11 @@
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <main class="scene" id="scene">
+    <main
+      class="scene"
+      id="scene"
+      data-initial-bg="https://pbs.twimg.com/media/G_ckRdSboAAoOnb.jpg"
+    >
       <div class="hud" aria-hidden="true">
         <span class="hud__timer">残り:120文字</span>
       </div>
@@ -88,6 +92,10 @@
         </button>
       </div>
     </main>
+
+    <div class="curtain" id="curtain" aria-hidden="true">
+      <div class="curtain__bow"></div>
+    </div>
 
     <div class="modal is-hidden" id="modal" role="dialog" aria-modal="true">
       <div class="modal__content">
