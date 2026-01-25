@@ -134,6 +134,11 @@ let waitingForResponse = false;
 let currentSummary = null;
 let relationship = [];
 let affection = { ミユ: 20, シオン: 20, ナナ: 20 };
+let nowThinking = {
+  ミユ: "明日から海に行くか、プールに行くか悩んでいる",
+  シオン: "今日が最後の活動日なので、きちんと片付けまで終わらせたいと考えている",
+  ナナ: "蝶々可愛い♡蝶々ってどうして蝶々って言うの？",
+};
 let endingPhase = "none";
 let curtainAnimating = false;
 const storedUser = (() => {
@@ -632,6 +637,7 @@ async function submitPlayerInput() {
         currentSummary,
         relationship,
         affection,
+        nowThinking,
         speechOrder: [...speechOrder, input],
       }),
     });
@@ -650,6 +656,9 @@ async function submitPlayerInput() {
     relationship = Array.isArray(data.relationship) ? data.relationship : relationship;
     if (data.affection && typeof data.affection === "object") {
       affection = { ...affection, ...data.affection };
+    }
+    if (data.NowThinking && typeof data.NowThinking === "object") {
+      nowThinking = { ...nowThinking, ...data.NowThinking };
     }
 
     speechOrder = [...speechOrder, input];
