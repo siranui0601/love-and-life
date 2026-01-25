@@ -84,12 +84,13 @@ export async function updateBungeiPlayers(rowIndex, players) {
   });
 }
 
-export async function listBungeiLinesForPlayer(playerName) {
+export async function listBungeiLinesForPlayer(playerName, speechOrder = []) {
   const sheets = await getSheetsClient();
   const range = `${BUNGEI_SHEET_NAME}!A2:C`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   const rows = res.data.values || [];
   const lines = new Set();
+  const normalizedSpeechOrder = speechOrder.map((line) => String(line ?? "").trim());
 
   for (const row of rows) {
     const [storedOrder, , players] = row;
@@ -103,12 +104,16 @@ export async function listBungeiLinesForPlayer(playerName) {
     if (!Array.isArray(playerList) || !playerList.includes(playerName)) continue;
     try {
       const orderList = JSON.parse(storedOrder);
-      if (Array.isArray(orderList)) {
-        orderList.forEach((line) => {
-          if (typeof line === "string" && line.trim()) {
-            lines.add(line.trim());
-          }
-        });
+      if (!Array.isArray(orderList)) continue;
+      const normalizedOrderList = orderList.map((line) => String(line ?? "").trim());
+      if (normalizedOrderList.length !== normalizedSpeechOrder.length + 1) continue;
+      const matchesPrefix = normalizedSpeechOrder.every(
+        (line, index) => line === normalizedOrderList[index]
+      );
+      if (!matchesPrefix) continue;
+      const nextLine = normalizedOrderList[normalizedSpeechOrder.length];
+      if (nextLine) {
+        lines.add(nextLine);
       }
     } catch {
       // ignore invalid rows

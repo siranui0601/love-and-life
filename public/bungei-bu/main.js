@@ -6,7 +6,7 @@ const playArea = document.querySelector("#playArea");
 const dialogueName = document.querySelector("#dialogueName");
 const dialogueLine = document.querySelector("#dialogueLine");
 const characterImage = document.querySelector("#characterImage");
-const choiceCard = document.querySelector("#choiceCard");
+const choiceCardList = document.querySelector("#choiceCardList");
 const inputPanel = document.querySelector("#inputPanel");
 const playerInput = document.querySelector("#playerInput");
 const sendButton = document.querySelector("#sendButton");
@@ -16,7 +16,6 @@ const modal = document.querySelector("#modal");
 const modalText = document.querySelector("#modalText");
 const modalFootnote = document.querySelector("#modalFootnote");
 const playerLineHeader = document.querySelector("#playerLineHeader");
-const pastLinesSelect = document.querySelector("#pastLinesSelect");
 
 const dialogue = [
   {
@@ -168,17 +167,33 @@ function hideModal() {
   }
 }
 
-function showChoiceCard(text) {
-  choiceCard.textContent = text;
-  choiceCard.classList.remove("is-hidden");
-  choiceCard.hidden = false;
-  choiceCard.classList.toggle("is-empty", !text);
+function showChoiceCards(cards) {
+  if (!choiceCardList) return;
+  choiceCardList.innerHTML = "";
+  cards.forEach((card) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "choice-card";
+    button.textContent = card.text || "";
+    if (card.isEmpty) {
+      button.classList.add("is-empty");
+      button.setAttribute("aria-label", "自由入力");
+    }
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      card.onClick?.();
+    });
+    choiceCardList.appendChild(button);
+  });
+  choiceCardList.classList.remove("is-hidden");
+  choiceCardList.hidden = false;
 }
 
-function hideChoiceCard() {
-  choiceCard.classList.add("is-hidden");
-  choiceCard.hidden = true;
-  choiceCard.classList.remove("is-empty");
+function hideChoiceCards() {
+  if (!choiceCardList) return;
+  choiceCardList.classList.add("is-hidden");
+  choiceCardList.hidden = true;
+  choiceCardList.innerHTML = "";
 }
 
 function showInputPanel() {
@@ -186,7 +201,6 @@ function showInputPanel() {
   inputPanel.hidden = false;
   playerInput.focus();
   showPlayerLineHeader();
-  refreshPastLines();
   updateInputLimit();
 }
 
@@ -244,31 +258,68 @@ function updateInputLimit() {
   updateTimer(playerInput.value.length);
 }
 
-async function refreshPastLines() {
-  if (!playerEmail || !pastLinesSelect) return;
+async function fetchPastLineOptions() {
+  if (!playerEmail) return [];
   try {
     const res = await fetch("/api/bungei/options", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: playerEmail }),
+      body: JSON.stringify({ email: playerEmail, speechOrder }),
     });
     if (!res.ok) throw new Error("options_failed");
     const data = await res.json();
-    const options = Array.isArray(data.options) ? data.options : [];
-    pastLinesSelect.innerHTML = "";
-    const emptyOption = document.createElement("option");
-    emptyOption.value = "";
-    emptyOption.textContent = "自由入力";
-    pastLinesSelect.appendChild(emptyOption);
-    options.forEach((line) => {
-      const option = document.createElement("option");
-      option.value = line;
-      option.textContent = line;
-      pastLinesSelect.appendChild(option);
-    });
+    return Array.isArray(data.options) ? data.options : [];
   } catch (error) {
     console.error(error);
+    return [];
   }
+}
+
+async function showInputChoices() {
+  const options = await fetchPastLineOptions();
+  const cards = options.map((line) => ({
+    text: line,
+    onClick: () => {
+      playerInput.value = line;
+      hideChoiceCards();
+      showInputPanel();
+      updateInputLimit();
+      sendButton.disabled =
+        waitingForResponse || playerInput.value.trim().length === 0 || remainingChars <= 0;
+    },
+  }));
+  cards.push({
+    text: "",
+    isEmpty: true,
+    onClick: () => {
+      playerInput.value = "";
+      hideChoiceCards();
+      showInputPanel();
+      updateInputLimit();
+      sendButton.disabled =
+        waitingForResponse || playerInput.value.trim().length === 0 || remainingChars <= 0;
+    },
+  });
+  showChoiceCards(cards);
+}
+
+function showInviteChoice(text) {
+  showChoiceCards([
+    {
+      text,
+      onClick: () => {
+        if (choiceState !== "invite") return;
+        pendingAfterModal = () => {
+          choiceState = "inputReady";
+          showInputChoices();
+        };
+        showModal(
+          "おっと、君は文芸部だ！台詞は君が考えな！\nただし、台詞によっては部活が終わっちまうから、そこはよーーく考えるんだな！",
+          "…Monika.chrのバックアップを忘れずに。"
+        );
+      },
+    },
+  ]);
 }
 
 function startIntro() {
@@ -277,7 +328,7 @@ function startIntro() {
   playArea.classList.remove("is-hidden");
   playArea.hidden = false;
   introActive = true;
-  hideChoiceCard();
+  hideChoiceCards();
   hideInputPanel();
   showDialogueBox();
   setDialogue(0);
@@ -294,7 +345,7 @@ function advanceDialogue() {
     choiceState = "invite";
     hideDialogueBox();
     hideDialoguePresence();
-    showChoiceCard("じゃあさ、片付けでもしながら夏っぽいの詠まない？");
+    showInviteChoice("じゃあさ、片付けでもしながら夏っぽいの詠まない？");
   };
   showModal(
     "あなたは文芸部の部員です！\n夏休みに入る前に彼女たちと仲良くなり、彼女を作りましょう！\n\n右上の残り文字数は、入力した内容によって変化していきます！"
@@ -346,7 +397,7 @@ async function submitPlayerInput() {
     sceneDialogue = data.dialogue;
     sceneActive = sceneDialogue.length > 0;
     sceneIndex = -1;
-    hideChoiceCard();
+    hideChoiceCards();
     hideInputPanel();
     playerInput.value = "";
     updateInputLimit();
@@ -354,7 +405,7 @@ async function submitPlayerInput() {
     if (sceneDialogue.length) {
       setSceneLine(0);
     } else {
-      showChoiceCard("");
+      showInputChoices();
       choiceState = "inputReady";
     }
   } catch (error) {
@@ -377,27 +428,6 @@ if (startButton) {
 if (modal) {
   modal.addEventListener("click", () => {
     hideModal();
-  });
-}
-
-if (choiceCard) {
-  choiceCard.addEventListener("click", (event) => {
-    event.stopPropagation();
-    if (choiceState === "invite") {
-      pendingAfterModal = () => {
-        choiceState = "inputReady";
-        showChoiceCard("");
-      };
-      showModal(
-        "おっと、君は文芸部だ！台詞は君が考えな！\nただし、台詞によっては部活が終わっちまうから、そこはよーーく考えるんだな！",
-        "…Monika.chrのバックアップを忘れずに。"
-      );
-      return;
-    }
-    if (choiceState === "inputReady") {
-      hideChoiceCard();
-      showInputPanel();
-    }
   });
 }
 
@@ -431,7 +461,7 @@ document.addEventListener("click", () => {
       return;
     }
     sceneActive = false;
-    showChoiceCard("");
+    showInputChoices();
     choiceState = "inputReady";
   }
 });
@@ -443,17 +473,4 @@ if (!playerEmail) {
   showModal("時々文芸部！はログインが必要です。\nトップページに戻ります。");
 } else {
   updateTimer();
-}
-
-if (pastLinesSelect) {
-  pastLinesSelect.addEventListener("change", () => {
-    if (!pastLinesSelect.value) {
-      playerInput.value = "";
-    } else {
-      playerInput.value = pastLinesSelect.value;
-    }
-    updateInputLimit();
-    sendButton.disabled =
-      waitingForResponse || playerInput.value.trim().length === 0 || remainingChars <= 0;
-  });
 }

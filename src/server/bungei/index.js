@@ -44,6 +44,7 @@ export function mountBungeiRoutes(app) {
       res.status(400).json({ error: "email_required" });
       return;
     }
+    const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
 
     try {
       const user = await findUserByEmail(email);
@@ -51,7 +52,7 @@ export function mountBungeiRoutes(app) {
         res.status(404).json({ error: "user_not_found" });
         return;
       }
-      const options = await listBungeiLinesForPlayer(user.username);
+      const options = await listBungeiLinesForPlayer(user.username, speechOrder);
       res.json({ options });
     } catch (error) {
       console.error("❌ Sheets Error (bungei options):", error);
