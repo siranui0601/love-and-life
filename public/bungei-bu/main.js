@@ -16,6 +16,12 @@ const modal = document.querySelector("#modal");
 const modalText = document.querySelector("#modalText");
 const modalFootnote = document.querySelector("#modalFootnote");
 const playerLineHeader = document.querySelector("#playerLineHeader");
+const resultScreen = document.querySelector("#resultScreen");
+const resultRank = document.querySelector("#resultRank");
+const resultComment = document.querySelector("#resultComment");
+const resultSlots = document.querySelector("#resultSlots");
+const retryButton = document.querySelector("#retryButton");
+const toTopButton = document.querySelector("#toTopButton");
 
 const dialogue = [
   {
@@ -100,6 +106,19 @@ const dialogue = [
   },
 ];
 
+const outroDialogue = [
+  { speaker: "チャイム", line: "「キーンコーンカーンコーン」", mood: "neutral" },
+  { speaker: "ミユ", line: "「え、もう終わり！？体感n分なんだけど！」", mood: "negative" },
+  { speaker: "シオン", line: "「寄り道しないで、まっすぐ帰りましょ」", mood: "neutral" },
+  { speaker: "ナナ", line: "「空、オレンジ色」", mood: "positive" },
+  { speaker: "ミユ", line: "「この感じ、ちょっと好きなんだけど」", mood: "positive" },
+  { speaker: "シオン", line: "「感傷に浸るのは家に着いてから」", mood: "neutral" },
+  { speaker: "ナナ", line: "「じゃあ、帰ろっか」", mood: "positive" },
+  { speaker: "ミユ", line: "「うん、帰ろ」", mood: "positive" },
+];
+
+const slotCandidates = ["ミユ", "シオン", "ナナ", null];
+
 let dialogueIndex = -1;
 let introActive = false;
 let pendingAfterModal = null;
@@ -111,6 +130,7 @@ let waitingForResponse = false;
 let currentSummary = null;
 let relationship = [];
 let affection = { ミユ: 20, シオン: 20, ナナ: 20 };
+let endingPhase = "none";
 const storedUser = (() => {
   try {
     return JSON.parse(localStorage.getItem("currentUser") || "null");
@@ -137,13 +157,19 @@ function setSceneLine(index) {
   const entry = sceneDialogue[index];
   if (!entry) return;
   sceneIndex = index;
-  showDialoguePresence();
-  showDialogueBox();
   const mood = entry.mood || entry.expression || "neutral";
+  const imageSrc = getCharImg(entry.speaker, mood);
+  if (imageSrc) {
+    showDialoguePresence();
+    characterImage.src = imageSrc;
+    characterImage.alt = `${entry.speaker}の立ち絵`;
+  } else {
+    hideDialoguePresence();
+  }
+  showDialogueBox();
   dialogueName.textContent = entry.speaker;
+  dialogueName.classList.remove("is-hidden");
   dialogueLine.textContent = entry.line;
-  characterImage.src = getCharImg(entry.speaker, mood);
-  characterImage.alt = `${entry.speaker}の立ち絵`;
 }
 
 function updateTimer(currentInputLength = 0) {
@@ -322,6 +348,118 @@ function showInviteChoice(text) {
   ]);
 }
 
+function buildEpilogueDialogue(text) {
+  return [{ speaker: "エピローグ", line: text, mood: "neutral" }];
+}
+
+async function fetchEpilogueText() {
+  if (!playerEmail) return "夏の終わりは静かに訪れた。";
+  try {
+    const res = await fetch("/api/bungei/epilogue", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: playerEmail, relationship, speechOrder }),
+    });
+    if (!res.ok) throw new Error("epilogue_failed");
+    const data = await res.json();
+    return String(data.epilogue || "").trim() || "夏の終わりは静かに訪れた。";
+  } catch (error) {
+    console.error(error);
+    return "夏の終わりは静かに訪れた。";
+  }
+}
+
+function startOutro() {
+  endingPhase = "outro";
+  sceneDialogue = outroDialogue;
+  sceneIndex = -1;
+  sceneActive = true;
+  hideChoiceCards();
+  hideInputPanel();
+  setSceneLine(0);
+}
+
+async function startEpilogue() {
+  endingPhase = "epilogue";
+  const epilogueText = await fetchEpilogueText();
+  sceneDialogue = buildEpilogueDialogue(epilogueText);
+  sceneIndex = -1;
+  sceneActive = true;
+  hideChoiceCards();
+  hideInputPanel();
+  setSceneLine(0);
+}
+
+function getResultRating() {
+  const count = relationship.length;
+  if (count >= 3) {
+    return { rank: "SSSSSSSS", comment: "運命すら味方につけた、伝説の夏！" };
+  }
+  if (count === 2) {
+    return { rank: "S", comment: "ふたりとの思い出が輝く、最高の放課後！" };
+  }
+  if (count === 1) {
+    return { rank: "A", comment: "ときめきが残る、甘い夏の予感。" };
+  }
+  return { rank: "NOOB", comment: "ひとりの夏も、ちゃんと物語になる。" };
+}
+
+function setSlotImage(slot, name) {
+  const img = slot.querySelector("img");
+  if (!img) return;
+  if (!name) {
+    img.src = "";
+    img.alt = "空白";
+    slot.classList.add("slot--empty");
+    return;
+  }
+  slot.classList.remove("slot--empty");
+  img.src = getCharImg(name, "positive") || getCharImg(name, "neutral");
+  img.alt = `${name}の立ち絵`;
+}
+
+function runSlotAnimation(finalNames) {
+  if (!resultSlots) return;
+  const slots = Array.from(resultSlots.querySelectorAll(".slot"));
+  slots.forEach((slot) => slot.classList.add("is-spinning"));
+
+  slots.forEach((slot, index) => {
+    let spinIndex = 0;
+    const interval = setInterval(() => {
+      const candidate = slotCandidates[spinIndex % slotCandidates.length];
+      setSlotImage(slot, candidate);
+      spinIndex += 1;
+    }, 120);
+    const stopDelay = 800 + index * 500;
+    setTimeout(() => {
+      clearInterval(interval);
+      setSlotImage(slot, finalNames[index] || null);
+      slot.classList.remove("is-spinning");
+      slot.classList.add("is-stopped");
+      setTimeout(() => slot.classList.remove("is-stopped"), 400);
+    }, stopDelay);
+  });
+}
+
+function showResultScreen() {
+  const finalNames = [...relationship, null, null, null].slice(0, 3);
+  const { rank, comment } = getResultRating();
+  if (resultRank) resultRank.textContent = rank;
+  if (resultComment) resultComment.textContent = comment;
+  if (resultScreen) {
+    resultScreen.classList.remove("is-hidden");
+    resultScreen.hidden = false;
+  }
+  hideDialogueBox();
+  hideDialoguePresence();
+  hideInputPanel();
+  if (playArea) {
+    playArea.classList.add("is-hidden");
+    playArea.hidden = true;
+  }
+  runSlotAnimation(finalNames);
+}
+
 function startIntro() {
   introScreen.classList.add("is-hidden");
   introScreen.hidden = true;
@@ -393,6 +531,9 @@ async function submitPlayerInput() {
     speechOrder = [...speechOrder, input];
     remainingChars = Math.max(0, remainingChars - input.length);
     updateTimer();
+    if (remainingChars <= 0) {
+      choiceState = "ending";
+    }
 
     sceneDialogue = data.dialogue;
     sceneActive = sceneDialogue.length > 0;
@@ -405,8 +546,12 @@ async function submitPlayerInput() {
     if (sceneDialogue.length) {
       setSceneLine(0);
     } else {
-      showInputChoices();
-      choiceState = "inputReady";
+      if (remainingChars <= 0) {
+        startOutro();
+      } else {
+        showInputChoices();
+        choiceState = "inputReady";
+      }
     }
   } catch (error) {
     console.error(error);
@@ -461,6 +606,19 @@ document.addEventListener("click", () => {
       return;
     }
     sceneActive = false;
+    if (endingPhase === "outro") {
+      startEpilogue();
+      return;
+    }
+    if (endingPhase === "epilogue") {
+      endingPhase = "result";
+      showResultScreen();
+      return;
+    }
+    if (remainingChars <= 0) {
+      startOutro();
+      return;
+    }
     showInputChoices();
     choiceState = "inputReady";
   }
@@ -473,4 +631,16 @@ if (!playerEmail) {
   showModal("時々文芸部！はログインが必要です。\nトップページに戻ります。");
 } else {
   updateTimer();
+}
+
+if (retryButton) {
+  retryButton.addEventListener("click", () => {
+    window.location.reload();
+  });
+}
+
+if (toTopButton) {
+  toTopButton.addEventListener("click", () => {
+    window.location.href = "/";
+  });
 }

@@ -47,6 +47,34 @@
         </div>
       </section>
 
+      <section class="result-screen is-hidden" id="resultScreen" hidden>
+        <div class="result-card">
+          <span class="result-card__label">リザルト</span>
+          <div class="result-slots" id="resultSlots" aria-label="付き合えた人">
+            <div class="slot">
+              <img src="" alt="空白" />
+            </div>
+            <div class="slot">
+              <img src="" alt="空白" />
+            </div>
+            <div class="slot">
+              <img src="" alt="空白" />
+            </div>
+          </div>
+          <div class="result-rating">
+            <span class="result-rating__label">評価！</span>
+            <div class="result-rating__rank" id="resultRank">A</div>
+            <p class="result-rating__comment" id="resultComment"></p>
+          </div>
+          <div class="result-actions">
+            <button class="action-button" id="retryButton" type="button">もう一度</button>
+            <button class="action-button action-button--secondary" id="toTopButton" type="button">
+              トップページに戻る
+            </button>
+          </div>
+        </div>
+      </section>
+
       <div class="input-panel is-hidden" id="inputPanel" hidden>
         <label class="input-panel__label" for="playerInput">台詞入力</label>
         <textarea
