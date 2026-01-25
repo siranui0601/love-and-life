@@ -135,14 +135,13 @@ export function mountBungeiRoutes(app) {
     }
 
     const prompt = `
-舞台は高校の文芸部。部員はプレイヤーとミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
+舞台は高校の文芸部。部員は ${playerName} とミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
 
-PLAYER_INPUTに対する会話シーンを生成せよ。
+「 ${input} 」に対する会話シーンを生成せよ。
 必ずJSONのみ出力。説明禁止。コードフェンス禁止。
 
 ルール：
-dialogueは配列。台詞のみ（地の文なし）。ミユ/シオン/ナナの発話を最低1回含める。プレイヤーは含めない。
-プレイヤーを指す必要がある場合は必ずPLAYER_NAMEを使い、「プレイヤー」という単語は使わない。
+dialogueは配列。台詞のみ（地の文なし）。 ${playerName} の発言に対し、ミユ/シオン/ナナの発話を最低1回含める。 ${playerName} の発言は含めない。
 各dialogueには "mood" を含めること。moodは "positive" "neutral" "negative" のいずれか（3択の表情差分）。
 relationshipは交際相手名の配列（いなければ[]。状況に応じ追加/削除）
 affectionは動的に変えること
@@ -164,12 +163,6 @@ OUTPUT_JSON_EXAMPLE
   "relationship": [],
   "affection": { "ミユ": 20, "シオン": 20, "ナナ": 20 }
 }
-
-PLAYER_NAME
-${playerName}
-
-PLAYER_INPUT
-${input}
 
 CURRENT_SUMMARY
 ${currentSummary ? currentSummary : "null"}
