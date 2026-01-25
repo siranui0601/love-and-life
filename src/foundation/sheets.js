@@ -45,31 +45,34 @@ export async function addUser({ email, username, displayName }) {
 
 export async function findBungeiEntryByOrder(orderList) {
   const sheets = await getSheetsClient();
-  const range = `${BUNGEI_SHEET_NAME}!A2:C`;
+  const range = `${BUNGEI_SHEET_NAME}!A2:D`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   const rows = res.data.values || [];
   const orderKey = JSON.stringify(orderList);
   for (let i = 0; i < rows.length; i += 1) {
-    const [storedOrder, output, players] = rows[i];
+    const [storedOrder, output, players, epilogue] = rows[i];
     if (storedOrder === orderKey) {
       return {
         rowIndex: i + 2,
         output,
         players,
+        epilogue,
       };
     }
   }
   return null;
 }
 
-export async function appendBungeiEntry({ orderList, output, players }) {
+export async function appendBungeiEntry({ orderList, output, players, epilogue = "" }) {
   const sheets = await getSheetsClient();
-  const range = `${BUNGEI_SHEET_NAME}!A2:C2`;
+  const range = `${BUNGEI_SHEET_NAME}!A2:D2`;
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range,
     valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[JSON.stringify(orderList), output, JSON.stringify(players)]] },
+    requestBody: {
+      values: [[JSON.stringify(orderList), output, JSON.stringify(players), epilogue]],
+    },
   });
 }
 
@@ -81,6 +84,17 @@ export async function updateBungeiPlayers(rowIndex, players) {
     range,
     valueInputOption: "USER_ENTERED",
     requestBody: { values: [[JSON.stringify(players)]] },
+  });
+}
+
+export async function updateBungeiEpilogue(rowIndex, epilogue) {
+  const sheets = await getSheetsClient();
+  const range = `${BUNGEI_SHEET_NAME}!D${rowIndex}`;
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[epilogue]] },
   });
 }
 

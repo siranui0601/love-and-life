@@ -4,6 +4,7 @@ import {
   findBungeiEntryByOrder,
   findUserByEmail,
   listBungeiLinesForPlayer,
+  updateBungeiEpilogue,
   updateBungeiPlayers,
 } from "../../foundation/sheets.js";
 
@@ -35,6 +36,15 @@ OUTPUT_JSON_EXAMPLE
   "relationship": [],
   "affection": { "ミユ": 20, "シオン": 20, "ナナ": 20 }
 }
+`.trim();
+
+const EPILOGUE_PROMPT = `
+舞台は高校の文芸部。明日から夏休みで、今日が部活の最終日だった。
+
+RELATIONSHIPに交際相手がいる場合は、その相手(たち)と夏を過ごす後日談を書く。
+交際相手がいない場合は、ひとり寂しく夏を過ごす後日談を書く。
+1〜3文程度、情景描写を織り交ぜて短くまとめること。
+必ず本文のみを出力し、説明やコードフェンスは不要。
 `.trim();
 
 export function mountBungeiRoutes(app) {
@@ -145,6 +155,75 @@ ${JSON.stringify(relationship)}
       res.json({ data });
     } catch (error) {
       console.error("❌ Gemini API Error (bungei scene):", error);
+      res.status(500).json({ error: "gemini_failed" });
+    }
+  });
+
+  app.post("/api/bungei/epilogue", async (req, res) => {
+    const email = String(req.body?.email || "").trim();
+    if (!email) {
+      res.status(400).json({ error: "email_required" });
+      return;
+    }
+    const relationship = Array.isArray(req.body?.relationship) ? req.body.relationship : [];
+    const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
+
+    try {
+      const user = await findUserByEmail(email);
+      if (!user?.username) {
+        res.status(404).json({ error: "user_not_found" });
+        return;
+      }
+      const playerName = user.username;
+      if (speechOrder.length) {
+        try {
+          const entry = await findBungeiEntryByOrder(speechOrder);
+          if (entry?.epilogue) {
+            res.json({ epilogue: entry.epilogue });
+            return;
+          }
+        } catch (error) {
+          console.error("❌ Sheets Error (bungei epilogue cache):", error);
+        }
+      }
+
+      const prompt = `
+${EPILOGUE_PROMPT}
+
+PLAYER_NAME
+${playerName}
+
+RELATIONSHIP
+${JSON.stringify(relationship)}
+
+SPEECH_ORDER
+${JSON.stringify(speechOrder)}
+`.trim();
+
+      const text = await genWithFallback(prompt);
+      const epilogue = String(text || "").trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
+
+      if (speechOrder.length) {
+        try {
+          const entry = await findBungeiEntryByOrder(speechOrder);
+          if (entry?.rowIndex) {
+            await updateBungeiEpilogue(entry.rowIndex, epilogue);
+          } else {
+            await appendBungeiEntry({
+              orderList: speechOrder,
+              output: "",
+              players: [playerName],
+              epilogue,
+            });
+          }
+        } catch (error) {
+          console.error("❌ Sheets Error (bungei epilogue update):", error);
+        }
+      }
+
+      res.json({ epilogue });
+    } catch (error) {
+      console.error("❌ Gemini API Error (bungei epilogue):", error);
       res.status(500).json({ error: "gemini_failed" });
     }
   });
