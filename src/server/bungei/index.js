@@ -104,6 +104,8 @@ export function mountBungeiRoutes(app) {
     const currentSummary = req.body?.currentSummary ?? null;
     const relationship = Array.isArray(req.body?.relationship) ? req.body.relationship : [];
     const affection = req.body?.affection ?? null;
+    const nowThinking =
+      req.body?.nowThinking && typeof req.body.nowThinking === "object" ? req.body.nowThinking : null;
     const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
     const user = await findUserByEmail(email);
     const playerName = user?.username || "プレイヤー";
@@ -168,9 +170,15 @@ CURRENT_SUMMARY
 ${currentSummary ? currentSummary : "null"}
 
 CHARACTERS_STATE
-ミユ affection:${affection?.ミユ ?? 20} NowThinking:明日から海に行くか、プールに行くか悩んでいる
-シオン affection:${affection?.シオン ?? 20} NowThinking:今日が最後の活動日なので、きちんと片付けまで終わらせたいと考えている
-ナナ affection:${affection?.ナナ ?? 20} NowThinking:蝶々可愛い♡蝶々ってどうして蝶々って言うの？
+ミユ affection:${affection?.ミユ ?? 20} NowThinking:${
+      nowThinking?.ミユ || "明日から海に行くか、プールに行くか悩んでいる"
+    }
+シオン affection:${affection?.シオン ?? 20} NowThinking:${
+      nowThinking?.シオン || "今日が最後の活動日なので、きちんと片付けまで終わらせたいと考えている"
+    }
+ナナ affection:${affection?.ナナ ?? 20} NowThinking:${
+      nowThinking?.ナナ || "蝶々可愛い♡蝶々ってどうして蝶々って言うの？"
+    }
 
 RELATIONSHIP
 ${JSON.stringify(relationship)}
