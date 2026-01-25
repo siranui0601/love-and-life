@@ -16,6 +16,7 @@ PLAYER_INPUTに対する会話シーンを生成せよ。
 
 ルール：
 dialogueは配列。台詞のみ（地の文なし）。ミユ/シオン/ナナの発話を最低1回含める。プレイヤーは含めない。
+プレイヤーを指す必要がある場合は必ずPLAYER_NAMEを使い、「プレイヤー」という単語は使わない。
 各dialogueには "mood" を含めること。moodは "positive" "neutral" "negative" のいずれか（3択の表情差分）。
 relationshipは交際相手名の配列（いなければ[]）
 NowThinkingとcurrentSummary は短い要約
@@ -38,13 +39,28 @@ OUTPUT_JSON_EXAMPLE
 }
 `.trim();
 
-const EPILOGUE_PROMPT = `
+const EPILOGUE_PROMPT_SINGLE = (playerName) => `
+${playerName}は高校の文芸部。夏休み前に彼女を作りたかったが、撃沈している。今は夏休み。
+BACKGROUND_NAME での、${playerName}の独り言を書いてください。
+5文程度、会話形式のみ（地の文なし）。
+必ずJSONのみを出力し、説明やコードフェンスは禁止。
+
+OUTPUT_JSON_EXAMPLE
+{
+  "dialogue": [
+    { "speaker": ${playerName}, "line": "..." },
+  ]
+}
+`.trim();
+
+const EPILOGUE_PROMPT_MULTI = `
 舞台は高校の文芸部。明日から夏休みで、今日が部活の最終日だった。
 
 BACKGROUND_NAME の場所でのエピローグ会話を生成する。
 RELATIONSHIPに交際相手がいる場合は、その相手(たち)とプレイヤーの会話にする。
-交際相手がいない場合は、プレイヤー一人の独り言だけにする。
+付き合った人のリストと、その人の性格を渡すので、その人たちとの場所に応じた甘々ストーリーを描写すること。
 1〜3往復、会話形式のみ（地の文なし）。
+台詞内でプレイヤーを指す場合は必ずPLAYER_NAMEを使い、「プレイヤー」という単語は使わない。
 必ずJSONのみを出力し、説明やコードフェンスは禁止。
 
 OUTPUT_JSON_EXAMPLE
@@ -55,6 +71,12 @@ OUTPUT_JSON_EXAMPLE
   ]
 }
 `.trim();
+
+const EPILOGUE_CHARACTER_PROFILES = {
+  ミユ: "幼馴染。明るく元気で素直。感情が顔に出やすい。少し甘えん坊。",
+  シオン: "真面目で無口。不器用だが根は優しい。ツンデレ傾向。",
+  ナナ: "落ち着きがあり柔らかい。時々ミステリアス。面倒見が良い。",
+};
 
 const EPILOGUE_BACKGROUNDS = [
   { name: "遊園地", url: "https://pbs.twimg.com/media/G_g7eOPbIAA-osB.jpg" },
@@ -267,8 +289,15 @@ ${JSON.stringify(relationship)}
       }
 
       const background = getRandomEpilogueBackground();
+      const profiles = relationship
+        .map((name) => ({ name, profile: EPILOGUE_CHARACTER_PROFILES[name] || "" }))
+        .filter((entry) => entry.name);
       const prompt = `
-${EPILOGUE_PROMPT}
+${
+  relationship.length
+    ? EPILOGUE_PROMPT_MULTI
+    : EPILOGUE_PROMPT_SINGLE(playerName)
+}
 
 PLAYER_NAME
 ${playerName}
@@ -278,6 +307,9 @@ ${background.name}
 
 RELATIONSHIP
 ${JSON.stringify(relationship)}
+
+CHARACTER_PROFILES
+${JSON.stringify(profiles)}
 
 SPEECH_ORDER
 ${JSON.stringify(speechOrder)}

@@ -354,6 +354,10 @@ async function fetchPastLineOptions() {
 
 async function showInputChoices() {
   const options = await fetchPastLineOptions();
+  showInputChoicesWithOptions(options);
+}
+
+function showInputChoicesWithOptions(options) {
   const cards = options.map((line) => ({
     text: line,
     onClick: () => {
@@ -381,14 +385,17 @@ async function showInputChoices() {
 }
 
 function showInviteChoice(text) {
+  const prefetchOptions = fetchPastLineOptions();
   showChoiceCards([
     {
       text,
       onClick: () => {
         if (choiceState !== "invite") return;
-        pendingAfterModal = () => {
+        pendingAfterModal = async () => {
           choiceState = "inputReady";
-          showInputChoices();
+          hideChoiceCards();
+          const options = await prefetchOptions;
+          showInputChoicesWithOptions(options);
         };
         showModal(
           "おっと、君は文芸部だ！台詞は君が考えな！\nただし、台詞によっては部活が終わっちまうから、そこはよーーく考えるんだな！",
@@ -501,7 +508,7 @@ function setSlotImage(slot, name) {
   if (!img) return;
   if (!name) {
     img.src = "";
-    img.alt = "空白";
+    img.alt = "";
     slot.classList.add("slot--empty");
     return;
   }
@@ -545,7 +552,7 @@ function runSlotAnimationWithCompletion(finalNames) {
   });
 }
 
-async function showResultScreen() {
+function showResultScreen() {
   const finalNames = [...relationship, null, null, null].slice(0, 3);
   const { rank, comment } = getResultRating();
   if (resultRank) resultRank.textContent = "";
@@ -562,18 +569,19 @@ async function showResultScreen() {
     playArea.classList.add("is-hidden");
     playArea.hidden = true;
   }
-  await runSlotAnimationWithCompletion(finalNames);
-  if (resultRank) resultRank.textContent = rank;
-  if (resultComment) resultComment.textContent = comment;
-  if (resultRating) resultRating.classList.remove("is-delayed");
+  return { finalNames, rank, comment };
 }
 
 async function startResultSequence() {
   endingPhase = "result";
   await lowerCurtain();
   setSceneBackground(initialBackgroundUrl);
-  await showResultScreen();
+  const { finalNames, rank, comment } = showResultScreen();
   await raiseCurtain();
+  await runSlotAnimationWithCompletion(finalNames);
+  if (resultRank) resultRank.textContent = rank;
+  if (resultComment) resultComment.textContent = comment;
+  if (resultRating) resultRating.classList.remove("is-delayed");
 }
 
 function startIntro() {
