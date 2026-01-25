@@ -8,67 +8,6 @@ import {
   updateBungeiPlayers,
 } from "../../foundation/sheets.js";
 
-const BASE_PROMPT = `
-舞台は高校の文芸部。部員はプレイヤーとミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
-
-PLAYER_INPUTに対する会話シーンを生成せよ。
-必ずJSONのみ出力。説明禁止。コードフェンス禁止。
-
-ルール：
-dialogueは配列。台詞のみ（地の文なし）。ミユ/シオン/ナナの発話を最低1回含める。プレイヤーは含めない。
-プレイヤーを指す必要がある場合は必ずPLAYER_NAMEを使い、「プレイヤー」という単語は使わない。
-各dialogueには "mood" を含めること。moodは "positive" "neutral" "negative" のいずれか（3択の表情差分）。
-relationshipは交際相手名の配列（いなければ[]。状況に応じ追加/削除）
-affectionは動的に変えること
-NowThinkingとcurrentSummary は短い要約
-
-CHARACTERS
-ミユ: 幼馴染。脳天気で天才肌
-シオン: 真面目委員長。実はむっつりスケベ
-ナナ: おっとり不思議ちゃん。遠慮を知らない
-
-OUTPUT_JSON_EXAMPLE
-{
-  "dialogue": [
-    { "speaker": "ミユ/シオン/ナナ", "line": "...", "mood": "positive|neutral|negative" }
-/*5~10line*/
-  ],
-  "NowThinking": { "ミユ": "...", "シオン": "...", "ナナ": "..." },
-  "currentSummary": "...",
-  "relationship": [],
-  "affection": { "ミユ": 20, "シオン": 20, "ナナ": 20 }
-}
-`.trim();
-
-const EPILOGUE_PROMPT_SINGLE = (playerName) => `
-${playerName}は高校の文芸部。夏休み前に彼女を作りたかったが、撃沈している。今は夏休み。
-BACKGROUND_NAME での、${playerName}の独り言を書いてください。
-5文程度、会話形式のみ（地の文なし）。
-必ずJSONのみを出力し、説明やコードフェンスは禁止。
-
-OUTPUT_JSON_EXAMPLE
-{
-  "dialogue": [
-    { "speaker": ${playerName}, "line": "..." },
-  ]
-}
-`.trim();
-
-const EPILOGUE_PROMPT_MULTI = `
-付き合った人のリストと、その人の性格を渡すので、その人たちとのBACKGROUND_NAMEに応じた甘々ストーリーを描写すること。
-10文以上、会話形式のみ（地の文なし）。
-台詞内でプレイヤーを指す場合は必ずPLAYER_NAMEを使い、「プレイヤー」という単語は使わない。
-必ずJSONのみを出力し、説明やコードフェンスは禁止。
-
-OUTPUT_JSON_EXAMPLE
-{
-  "dialogue": [
-    { "speaker": "プレイヤー名", "line": "..." },
-    { "speaker": "ミユ", "line": "..." }
-  ]
-}
-`.trim();
-
 const EPILOGUE_CHARACTER_PROFILES = {
   ミユ: "幼馴染。明るく元気で素直。感情が顔に出やすい。少し甘えん坊。",
   シオン: "真面目で無口。不器用だが根は優しい。ツンデレ傾向。",
@@ -196,7 +135,35 @@ export function mountBungeiRoutes(app) {
     }
 
     const prompt = `
-${BASE_PROMPT}
+舞台は高校の文芸部。部員はプレイヤーとミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
+
+PLAYER_INPUTに対する会話シーンを生成せよ。
+必ずJSONのみ出力。説明禁止。コードフェンス禁止。
+
+ルール：
+dialogueは配列。台詞のみ（地の文なし）。ミユ/シオン/ナナの発話を最低1回含める。プレイヤーは含めない。
+プレイヤーを指す必要がある場合は必ずPLAYER_NAMEを使い、「プレイヤー」という単語は使わない。
+各dialogueには "mood" を含めること。moodは "positive" "neutral" "negative" のいずれか（3択の表情差分）。
+relationshipは交際相手名の配列（いなければ[]。状況に応じ追加/削除）
+affectionは動的に変えること
+NowThinkingとcurrentSummary は短い要約
+
+CHARACTERS
+ミユ: 幼馴染。脳天気で天才肌
+シオン: 真面目委員長。実はむっつりスケベ
+ナナ: おっとり不思議ちゃん。遠慮を知らない
+
+OUTPUT_JSON_EXAMPLE
+{
+  "dialogue": [
+    { "speaker": "ミユ/シオン/ナナ", "line": "...", "mood": "positive|neutral|negative" }
+/*5~10line*/
+  ],
+  "NowThinking": { "ミユ": "...", "シオン": "...", "ナナ": "..." },
+  "currentSummary": "...",
+  "relationship": [],
+  "affection": { "ミユ": 20, "シオン": 20, "ナナ": 20 }
+}
 
 PLAYER_NAME
 ${playerName}
@@ -292,8 +259,33 @@ ${JSON.stringify(relationship)}
       const prompt = `
 ${
   relationship.length
-    ? EPILOGUE_PROMPT_MULTI
-    : EPILOGUE_PROMPT_SINGLE(playerName)
+    ? `
+付き合った人のリストと、その人の性格を渡すので、その人たちとのBACKGROUND_NAMEに応じた甘々ストーリーを描写すること。
+10文以上、会話形式のみ（地の文なし）。
+台詞内でプレイヤーを指す場合は必ずPLAYER_NAMEを使い、「プレイヤー」という単語は使わない。
+必ずJSONのみを出力し、説明やコードフェンスは禁止。
+
+OUTPUT_JSON_EXAMPLE
+{
+  "dialogue": [
+    { "speaker": "プレイヤー名", "line": "..." },
+    { "speaker": "ミユ", "line": "..." }
+  ]
+}
+`.trim()
+    : `
+${playerName}は高校の文芸部。夏休み前に彼女を作りたかったが、撃沈している。今は夏休み。
+BACKGROUND_NAME での、${playerName}の独り言を書いてください。
+5文程度、会話形式のみ（地の文なし）。
+必ずJSONのみを出力し、説明やコードフェンスは禁止。
+
+OUTPUT_JSON_EXAMPLE
+{
+  "dialogue": [
+    { "speaker": ${playerName}, "line": "..." },
+  ]
+}
+`.trim()
 }
 
 PLAYER_NAME
