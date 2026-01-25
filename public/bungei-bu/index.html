@@ -39,30 +39,26 @@
             alt="キャラクターの立ち絵"
           />
         </div>
-        <button class="choice-card is-hidden" id="choiceCard" type="button" hidden>
-          じゃあさ、片付けでもしながら夏っぽいの詠まない？
-        </button>
-        <div class="input-panel is-hidden" id="inputPanel" hidden>
-          <label class="input-panel__label" for="pastLinesSelect">過去の台詞から選ぶ</label>
-          <select class="input-panel__select" id="pastLinesSelect">
-            <option value="">自由入力</option>
-          </select>
-          <textarea
-            class="input-panel__textarea"
-            id="playerInput"
-            rows="3"
-            placeholder="台詞を入力してください"
-          ></textarea>
-          <button class="send-button" id="sendButton" type="button" disabled>
-            送信
-          </button>
-        </div>
+        <div class="choice-card-list is-hidden" id="choiceCardList" hidden></div>
         <div class="dialogue-box" id="dialogueBox">
           <span class="dialogue-name" id="dialogueName"></span>
           <p class="dialogue-line" id="dialogueLine"></p>
           <span class="dialogue-hint">タップで次のセリフへ</span>
         </div>
       </section>
+
+      <div class="input-panel is-hidden" id="inputPanel" hidden>
+        <label class="input-panel__label" for="playerInput">台詞入力</label>
+        <textarea
+          class="input-panel__textarea"
+          id="playerInput"
+          rows="3"
+          placeholder="台詞を入力してください"
+        ></textarea>
+        <button class="send-button" id="sendButton" type="button" disabled>
+          送信
+        </button>
+      </div>
     </main>
 
     <div class="modal is-hidden" id="modal" role="dialog" aria-modal="true">
