@@ -15,6 +15,8 @@ const hudTimer = document.querySelector(".hud__timer");
 const modal = document.querySelector("#modal");
 const modalText = document.querySelector("#modalText");
 const modalFootnote = document.querySelector("#modalFootnote");
+const playerLineHeader = document.querySelector("#playerLineHeader");
+const pastLinesSelect = document.querySelector("#pastLinesSelect");
 
 const dialogue = [
   {
@@ -64,7 +66,7 @@ const dialogue = [
   },
   {
     speaker: "ナナ",
-    line: "120分で、全部終わっちゃうんだ。",
+    line: "120文字で、全部終わっちゃうんだ。",
     mood: "neutral",
   },
   {
@@ -110,7 +112,16 @@ let waitingForResponse = false;
 let currentSummary = null;
 let relationship = [];
 let affection = { ミユ: 20, シオン: 20, ナナ: 20 };
-let remainingMinutes = 120;
+const storedUser = (() => {
+  try {
+    return JSON.parse(localStorage.getItem("currentUser") || "null");
+  } catch {
+    return null;
+  }
+})();
+const playerEmail = storedUser?.email || "";
+let speechOrder = [];
+let remainingChars = 120;
 
 function setDialogue(index) {
   const entry = dialogue[index];
@@ -136,9 +147,10 @@ function setSceneLine(index) {
   characterImage.alt = `${entry.speaker}の立ち絵`;
 }
 
-function updateTimer() {
+function updateTimer(currentInputLength = 0) {
   if (!hudTimer) return;
-  hudTimer.textContent = `残り:${remainingMinutes}分`;
+  const remaining = Math.max(0, remainingChars - currentInputLength);
+  hudTimer.textContent = `残り:${remaining}文字`;
 }
 
 function showModal(message, footnote = "") {
@@ -173,11 +185,15 @@ function showInputPanel() {
   inputPanel.classList.remove("is-hidden");
   inputPanel.hidden = false;
   playerInput.focus();
+  showPlayerLineHeader();
+  refreshPastLines();
+  updateInputLimit();
 }
 
 function hideInputPanel() {
   inputPanel.classList.add("is-hidden");
   inputPanel.hidden = true;
+  hidePlayerLineHeader();
 }
 
 function showDialogueBox() {
@@ -201,6 +217,58 @@ function showDialoguePresence() {
   characterImage.classList.remove("is-hidden");
   characterImage.hidden = false;
   dialogueName.classList.remove("is-hidden");
+}
+
+function showPlayerLineHeader() {
+  if (!playerLineHeader) return;
+  playerLineHeader.classList.remove("is-hidden");
+}
+
+function hidePlayerLineHeader() {
+  if (!playerLineHeader) return;
+  playerLineHeader.classList.add("is-hidden");
+}
+
+function updateInputLimit() {
+  const remaining = Math.max(0, remainingChars);
+  playerInput.maxLength = remaining;
+  if (playerInput.value.length > remaining) {
+    playerInput.value = playerInput.value.slice(0, remaining);
+  }
+  if (remaining <= 0) {
+    playerInput.disabled = true;
+    sendButton.disabled = true;
+  } else {
+    playerInput.disabled = false;
+  }
+  updateTimer(playerInput.value.length);
+}
+
+async function refreshPastLines() {
+  if (!playerEmail || !pastLinesSelect) return;
+  try {
+    const res = await fetch("/api/bungei/options", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: playerEmail }),
+    });
+    if (!res.ok) throw new Error("options_failed");
+    const data = await res.json();
+    const options = Array.isArray(data.options) ? data.options : [];
+    pastLinesSelect.innerHTML = "";
+    const emptyOption = document.createElement("option");
+    emptyOption.value = "";
+    emptyOption.textContent = "自由入力";
+    pastLinesSelect.appendChild(emptyOption);
+    options.forEach((line) => {
+      const option = document.createElement("option");
+      option.value = line;
+      option.textContent = line;
+      pastLinesSelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 function startIntro() {
@@ -229,7 +297,7 @@ function advanceDialogue() {
     showChoiceCard("じゃあさ、片付けでもしながら夏っぽいの詠まない？");
   };
   showModal(
-    "あなたは文芸部の部員です！\n夏休みに入る前に彼女たちと仲良くなり、彼女を作りましょう！\n\n右上の残り時間は、入力した内容によって変化していきます！"
+    "あなたは文芸部の部員です！\n夏休みに入る前に彼女たちと仲良くなり、彼女を作りましょう！\n\n右上の残り文字数は、入力した内容によって変化していきます！"
   );
 }
 
@@ -247,9 +315,11 @@ async function submitPlayerInput() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         input,
+        email: playerEmail,
         currentSummary,
         relationship,
         affection,
+        speechOrder: [...speechOrder, input],
       }),
     });
 
@@ -269,11 +339,9 @@ async function submitPlayerInput() {
       affection = { ...affection, ...data.affection };
     }
 
-    const elapsed = Number(data.elapsedMinutes);
-    if (Number.isFinite(elapsed)) {
-      remainingMinutes = Math.max(0, remainingMinutes - Math.min(30, Math.max(5, elapsed)));
-      updateTimer();
-    }
+    speechOrder = [...speechOrder, input];
+    remainingChars = Math.max(0, remainingChars - input.length);
+    updateTimer();
 
     sceneDialogue = data.dialogue;
     sceneActive = sceneDialogue.length > 0;
@@ -281,6 +349,7 @@ async function submitPlayerInput() {
     hideChoiceCard();
     hideInputPanel();
     playerInput.value = "";
+    updateInputLimit();
     sendButton.textContent = "送信";
     if (sceneDialogue.length) {
       setSceneLine(0);
@@ -294,7 +363,7 @@ async function submitPlayerInput() {
   } finally {
     waitingForResponse = false;
     sendButton.textContent = "送信";
-    sendButton.disabled = playerInput.value.trim().length === 0;
+    sendButton.disabled = playerInput.value.trim().length === 0 || remainingChars <= 0;
   }
 }
 
@@ -334,7 +403,11 @@ if (choiceCard) {
 
 if (playerInput) {
   playerInput.addEventListener("input", () => {
-    sendButton.disabled = waitingForResponse || playerInput.value.trim().length === 0;
+    updateInputLimit();
+    sendButton.disabled =
+      waitingForResponse ||
+      playerInput.value.trim().length === 0 ||
+      remainingChars - playerInput.value.length < 0;
   });
 }
 
@@ -363,4 +436,24 @@ document.addEventListener("click", () => {
   }
 });
 
-updateTimer();
+if (!playerEmail) {
+  pendingAfterModal = () => {
+    window.location.href = "/";
+  };
+  showModal("時々文芸部！はログインが必要です。\nトップページに戻ります。");
+} else {
+  updateTimer();
+}
+
+if (pastLinesSelect) {
+  pastLinesSelect.addEventListener("change", () => {
+    if (!pastLinesSelect.value) {
+      playerInput.value = "";
+    } else {
+      playerInput.value = pastLinesSelect.value;
+    }
+    updateInputLimit();
+    sendButton.disabled =
+      waitingForResponse || playerInput.value.trim().length === 0 || remainingChars <= 0;
+  });
+}

@@ -9,8 +9,10 @@
   <body>
     <main class="scene" id="scene">
       <div class="hud" aria-hidden="true">
-        <span class="hud__timer">残り:120分</span>
+        <span class="hud__timer">残り:120文字</span>
       </div>
+
+      <div class="player-line-header is-hidden" id="playerLineHeader">あなたの台詞</div>
 
       <section class="intro-screen" id="introScreen">
         <div class="intro-card">
@@ -41,7 +43,10 @@
           じゃあさ、片付けでもしながら夏っぽいの詠まない？
         </button>
         <div class="input-panel is-hidden" id="inputPanel" hidden>
-          <label class="input-panel__label" for="playerInput">あなたの台詞</label>
+          <label class="input-panel__label" for="pastLinesSelect">過去の台詞から選ぶ</label>
+          <select class="input-panel__select" id="pastLinesSelect">
+            <option value="">自由入力</option>
+          </select>
           <textarea
             class="input-panel__textarea"
             id="playerInput"
