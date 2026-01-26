@@ -455,17 +455,14 @@ async function fetchEpilogueData() {
   try {
     const condition = {
       ミユ: {
-        like: affection?.ミユ ?? 20,
         relationship: relationship.includes("ミユ"),
         NowThinking: nowThinking?.ミユ ?? "",
       },
       シオン: {
-        like: affection?.シオン ?? 20,
         relationship: relationship.includes("シオン"),
         NowThinking: nowThinking?.シオン ?? "",
       },
       ナナ: {
-        like: affection?.ナナ ?? 20,
         relationship: relationship.includes("ナナ"),
         NowThinking: nowThinking?.ナナ ?? "",
       },
