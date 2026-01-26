@@ -98,53 +98,102 @@ export async function updateBungeiEpilogue(rowIndex, epilogue) {
   });
 }
 
-export async function listBungeiLinesForPlayer(playerName, speechOrder = []) {
-  const sheets = await getSheetsClient();
-  const ranges = [
-    `${BUNGEI_SHEET_NAME}!A1:A100`,
-    `${BUNGEI_SHEET_NAME}!C1:C100`,
-  ];
-  const res = await sheets.spreadsheets.values.batchGet({
-    spreadsheetId: SPREADSHEET_ID,
-    ranges,
-  });
-  const [orderRange, playersRange] = res.data.valueRanges || [];
-  const orderValues = orderRange?.values || [];
-  const playerValues = playersRange?.values || [];
-  const maxRows = Math.max(orderValues.length, playerValues.length);
-  const lines = new Set();
-  const normalizedSpeechOrder = speechOrder.map((line) => String(line ?? "").trim());
+// ====== 時々文芸部：options用の高速キャッシュ ======
+const BUNGEI_CACHE_TTL_MS = 30_000; // 30秒（必要なら調整）
+let bungeiCache = {
+  fetchedAt: 0,
+  rows: null, // [{ storedOrder: string, players: string }]
+};
 
-  for (let index = 1; index < maxRows; index += 1) {
-    const storedOrder = orderValues[index]?.[0];
-    const players = playerValues[index]?.[0];
-    if (!storedOrder || !players) continue;
+async function loadBungeiRowsChunked() {
+  const sheets = await getSheetsClient();
+  const rows = [];
+  const CHUNK = 200; // 100でもOK。API回数減らしたいなら200が良い
+  let start = 2;
+
+  while (true) {
+    const end = start + CHUNK - 1;
+    const range = `${BUNGEI_SHEET_NAME}!A${start}:C${end}`;
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range,
+    });
+
+    const values = res.data.values || [];
+    if (!values.length) break;
+
+    for (const row of values) {
+      const storedOrder = row?.[0] ?? "";
+      const players = row?.[2] ?? ""; // A..Cなので index 2 が C列
+      rows.push({ storedOrder, players });
+    }
+
+    // 取得した最後の行が空っぽっぽいなら終了（追加読み不要）
+    const last = values[values.length - 1] || [];
+    const lastA = String(last?.[0] ?? "").trim();
+    const lastC = String(last?.[2] ?? "").trim();
+    if (!lastA && !lastC) break;
+
+    // CHUNKより少なければ末尾まで来た可能性が高い
+    if (values.length < CHUNK) break;
+
+    start += CHUNK;
+  }
+
+  return rows;
+}
+
+async function getBungeiRowsCached({ force = false } = {}) {
+  const now = Date.now();
+  if (!force && bungeiCache.rows && now - bungeiCache.fetchedAt < BUNGEI_CACHE_TTL_MS) {
+    return bungeiCache.rows;
+  }
+  const rows = await loadBungeiRowsChunked();
+  bungeiCache = { fetchedAt: now, rows };
+  return rows;
+}
+
+function computeNextLinesFromRows(playerName, speechOrder, rows) {
+  const lines = new Set();
+  const normalizedSpeechOrder = (speechOrder || []).map((v) => String(v ?? "").trim());
+
+  for (let i = 0; i < rows.length; i += 1) {
+    const storedOrder = rows[i].storedOrder;
+    const playersRaw = rows[i].players;
+    if (!storedOrder || !playersRaw) continue;
+
     let playerList = [];
     try {
-      playerList = JSON.parse(players);
+      playerList = JSON.parse(playersRaw);
     } catch {
       playerList = [];
     }
     if (!Array.isArray(playerList) || !playerList.includes(playerName)) continue;
+
     try {
       const orderList = JSON.parse(storedOrder);
       if (!Array.isArray(orderList)) continue;
-      const normalizedOrderList = orderList.map((line) => String(line ?? "").trim());
+
+      const normalizedOrderList = orderList.map((v) => String(v ?? "").trim());
       if (normalizedOrderList.length !== normalizedSpeechOrder.length + 1) continue;
-      const matchesPrefix = normalizedSpeechOrder.every(
-        (line, index) => line === normalizedOrderList[index]
-      );
-      if (!matchesPrefix) continue;
+
+      const ok = normalizedSpeechOrder.every((line, idx) => line === normalizedOrderList[idx]);
+      if (!ok) continue;
+
       const nextLine = normalizedOrderList[normalizedSpeechOrder.length];
-      if (nextLine) {
-        lines.add(nextLine);
-      }
+      if (nextLine) lines.add(nextLine);
     } catch {
-      // ignore invalid rows
+      // ignore
     }
   }
 
   return Array.from(lines);
+}
+
+// 既存の listBungeiLinesForPlayer を置き換え
+export async function listBungeiLinesForPlayer(playerName, speechOrder = []) {
+  const rows = await getBungeiRowsCached();
+  return computeNextLinesFromRows(playerName, speechOrder, rows);
 }
 
 export { SPREADSHEET_ID, SHEET_NAME };
