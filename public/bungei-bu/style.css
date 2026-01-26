@@ -156,7 +156,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4vh 4vw;
+  padding: 4vh 3vw 5svh;
   z-index: 200;
   backdrop-filter: blur(6px);
 }
@@ -166,8 +166,8 @@ body {
 }
 
 .tree-panel {
-  width: min(960px, 92vw);
-  height: min(80vh, 720px);
+  width: min(1200px, 96vw);
+  height: min(82svh, 760px);
   background: rgba(255, 255, 255, 0.96);
   border-radius: 28px;
   padding: 24px;
@@ -227,6 +227,8 @@ body {
   padding: 20px 24px;
   overflow: auto;
   cursor: grab;
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
 .tree-graph.is-loading {
