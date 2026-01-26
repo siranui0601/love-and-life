@@ -138,7 +138,6 @@ dialogueは配列。台詞のみ（地の文なし）
 ミユ/シオン/ナナの発話を最低1回含める
 ${playerName} の発言は dialogue に含めない
 各dialogueには "mood" を含めること（"positive"|"neutral"|"negative"）
-conditionは更新後を返す（likeは0〜100で自然に増減）
 condition.*.relationshipは、交際するならtrueにする。判定緩め
 currentSummaryとNowThinkingは短い要約
 
@@ -155,9 +154,9 @@ OUTPUT_JSON_EXAMPLE
   ],
   "currentSummary": "...",
   "condition": {
-    "ミユ": { "like": 20, "relationship": false, "NowThinking": "..." },
-    "シオン": { "like": 20, "relationship": false, "NowThinking": "..." },
-    "ナナ": { "like": 20, "relationship": false, "NowThinking": "..." }
+    "ミユ": {"relationship": false, "NowThinking": "..." },
+    "シオン": {"relationship": false, "NowThinking": "..." },
+    "ナナ": {"relationship": false, "NowThinking": "..." }
   }
 }
 
@@ -168,21 +167,18 @@ CURRENT_CONDITION
 ${JSON.stringify(
       {
         ミユ: {
-          like: condition?.ミユ?.like ?? 20,
           relationship: condition?.ミユ?.relationship ?? false,
           NowThinking:
             condition?.ミユ?.NowThinking ??
             "明日から海に行くか、プールに行くか悩んでいる",
         },
         シオン: {
-          like: condition?.シオン?.like ?? 20,
           relationship: condition?.シオン?.relationship ?? false,
           NowThinking:
             condition?.シオン?.NowThinking ??
             "今日が最後の活動日なので、きちんと片付けまで終わらせたいと考えている",
         },
         ナナ: {
-          like: condition?.ナナ?.like ?? 20,
           relationship: condition?.ナナ?.relationship ?? false,
           NowThinking:
             condition?.ナナ?.NowThinking ??
