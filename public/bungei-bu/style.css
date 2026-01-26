@@ -224,7 +224,6 @@ body {
   position: relative;
   background: #fff6fb;
   border-radius: 20px;
-  padding: 20px 24px;
   overflow: auto;
   cursor: grab;
   touch-action: none;
@@ -241,8 +240,8 @@ body {
 
 .tree-canvas {
   position: relative;
-  min-width: 100%;
-  min-height: 100%;
+  min-width: max-content;
+  min-height: max-content;
 }
 
 .tree-levels {
