@@ -729,7 +729,31 @@ body {
 
 
 
+/* ===== ツリー：モバイルは全画面で使う ===== */
+@media (max-width: 640px) {
+  .tree-overlay {
+    padding: 0;                 /* 余白を消して全画面に */
+    align-items: stretch;
+    justify-content: stretch;
+  }
 
+  .tree-panel {
+    width: 100vw;
+    height: 100svh;             /* Safari対策：svhを使う */
+    max-height: 100svh;
+    border-radius: 0;           /* 角丸を消して画面いっぱい感 */
+    padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom)); /* 下の安全域 */
+  }
+
+  .tree-body {
+    min-height: 0;              /* 重要：flex子のはみ出し防止 */
+  }
+
+  .tree-graph {
+    min-height: 0;              /* 重要：スクロール領域を正しく作る */
+  }
+}
 
 
 
