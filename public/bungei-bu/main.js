@@ -514,7 +514,7 @@ function getResultRating() {
     return { rank: "SSSSSSSS", comment: "運命すら味方につけた、伝説の夏！" };
   }
   if (count === 2) {
-    return { rank: "S", comment: "ふたりとの思い出が輝く、最高の放課後！" };
+    return { rank: "S", comment: "ふたりとの思い出が輝く、最高の夏休み！" };
   }
   if (count === 1) {
     return { rank: "A", comment: "ときめきが残る、甘い夏の予感。" };
