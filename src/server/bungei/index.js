@@ -135,11 +135,13 @@ ${playerName}の発言「${input}」に対する会話シーンを生成せよ�
 
 ルール：
 dialogueは配列。台詞のみ（地の文なし）
-ミユ/シオン/ナナの発話を最低1回含める
-${playerName} の発言は dialogue に含めない
-各dialogueには "mood" を含めること（"positive"|"neutral"|"negative"）
-condition.*.relationshipは、交際するならtrueにする。判定緩め
-currentSummaryとNowThinkingは短い要約
+ミユ/シオン/ナナ各1回以上発話
+${playerName}の発言は含めない
+各dialogueにmood必須（positive|neutral|negative）
+告白には成否を問わず返事必須
+告白合意でcondition.*.relationship=true
+true後は別れがない限り維持
+currentSummaryとNowThinkingは短文要約
 
 CHARACTERS
 ミユ: 幼馴染。脳天気で天才肌
