@@ -133,7 +133,7 @@ let sceneActive = false;
 let waitingForResponse = false;
 let currentSummary = null;
 let relationship = [];
-let affection = { ミユ: 20, シオン: 20, ナナ: 20 };
+//let affection = { ミユ: 20, シオン: 20, ナナ: 20 };
 let nowThinking = {
   ミユ: "明日から海に行くか、プールに行くか悩んでいる",
   シオン: "今日が最後の活動日なので、きちんと片付けまで終わらせたいと考えている",
@@ -642,19 +642,23 @@ async function submitPlayerInput() {
   sendButton.textContent = "送信中...";
 
   try {
-    const response = await fetch("/api/bungei/scene", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        input,
-        email: playerEmail,
-        currentSummary,
-        relationship,
-        affection,
-        nowThinking,
-        speechOrder: [...speechOrder, input],
-      }),
-    });
+    const conditionPayload = {
+  ミユ: { relationship: relationship.includes("ミユ"), NowThinking: nowThinking.ミユ },
+  シオン: { relationship: relationship.includes("シオン"), NowThinking: nowThinking.シオン },
+  ナナ: { relationship: relationship.includes("ナナ"), NowThinking: nowThinking.ナナ },
+};
+
+const response = await fetch("/api/bungei/scene", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    input,
+    email: playerEmail,
+    currentSummary,
+    condition: conditionPayload,
+    speechOrder: [...speechOrder, input],
+  }),
+});
 
     if (!response.ok) {
       throw new Error("gemini_failed");
@@ -667,13 +671,20 @@ async function submitPlayerInput() {
     }
 
     currentSummary = data.currentSummary ?? currentSummary;
-    relationship = Array.isArray(data.relationship) ? data.relationship : relationship;
-    if (data.affection && typeof data.affection === "object") {
-      affection = { ...affection, ...data.affection };
-    }
-    if (data.NowThinking && typeof data.NowThinking === "object") {
-      nowThinking = { ...nowThinking, ...data.NowThinking };
-    }
+
+if (data.condition && typeof data.condition === "object") {
+  // relationship 配列を condition から再構築
+  relationship = Object.entries(data.condition)
+    .filter(([_, v]) => v?.relationship)
+    .map(([name]) => name);
+
+  // NowThinking 更新
+  nowThinking = {
+    ミユ: data.condition.ミユ?.NowThinking ?? nowThinking.ミユ,
+    シオン: data.condition.シオン?.NowThinking ?? nowThinking.シオン,
+    ナナ: data.condition.ナナ?.NowThinking ?? nowThinking.ナナ,
+  };
+}
 
     speechOrder = [...speechOrder, input];
     remainingChars = Math.max(0, remainingChars - input.length);
