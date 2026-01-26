@@ -141,7 +141,7 @@ ${playerName}の発言は含めない
 告白には成否を問わず返事必須
 告白合意でcondition.*.relationship=true
 true後は別れがない限り維持
-currentSummaryとNowThinkingは短文要約
+currentSummaryとNowThinkingは入力内容に応じて短文要約
 
 CHARACTERS
 ミユ: 幼馴染。脳天気で天才肌
