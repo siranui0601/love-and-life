@@ -151,6 +151,7 @@ OUTPUT_JSON_EXAMPLE
 {
   "dialogue": [
     { "speaker": "ミユ/シオン/ナナ", "line": "...", "mood": "positive|neutral|negative" }
+    /*6文以上*/
   ],
   "currentSummary": "...",
   "condition": {
