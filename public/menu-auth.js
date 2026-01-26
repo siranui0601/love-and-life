@@ -34,6 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginStatus = document.getElementById("loginStatus");
   const logoutBtn = document.getElementById("logoutBtn");
   const btnContainer = document.getElementById("googleSignInBtn");
+  const usernameModal = document.getElementById("usernameModal");
+  const usernameInput = document.getElementById("usernameInput");
+  const usernameSaveBtn = document.getElementById("usernameSaveBtn");
+  const pendingSignupKey = "pendingGoogleSignup";
 
   try {
     const stored = localStorage.getItem("currentUser");
@@ -47,6 +51,73 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } catch (error) {
     console.error("localStorage parse error:", error);
+  }
+
+  function openUsernameModal({ email, gName }) {
+    if (!usernameModal || !usernameInput || !usernameSaveBtn) return;
+
+    sessionStorage.setItem(pendingSignupKey, JSON.stringify({ email, gName }));
+
+    usernameInput.value = gName;
+    usernameModal.style.display = "flex";
+
+    usernameSaveBtn.onclick = async () => {
+      const username = usernameInput.value.trim();
+      if (!username) {
+        alert("ユーザーネームを入力してください");
+        return;
+      }
+
+      try {
+        const res2 = await fetch("/api/user/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            username,
+            googleDisplayName: gName,
+          }),
+        });
+        const data = await res2.json();
+        if (data.error) {
+          alert("ユーザーネームの登録に失敗しました");
+          return;
+        }
+
+        window.currentUser = {
+          email,
+          username: data.username,
+          googleName: data.displayName || gName,
+        };
+        localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
+        sessionStorage.removeItem(pendingSignupKey);
+
+        loginStatus.textContent = `${data.username} でログイン中`;
+        btnContainer.style.display = "none";
+        if (logoutBtn) logoutBtn.style.display = "inline-block";
+        usernameModal.style.display = "none";
+      } catch (e) {
+        console.error("register error:", e);
+        alert("ユーザーネームの登録に失敗しました");
+      }
+    };
+  }
+
+  if (!window.currentUser) {
+    try {
+      const pendingSignupRaw = sessionStorage.getItem(pendingSignupKey);
+      if (pendingSignupRaw) {
+        const pendingSignup = JSON.parse(pendingSignupRaw);
+        if (pendingSignup?.email) {
+          openUsernameModal({
+            email: pendingSignup.email,
+            gName: pendingSignup.gName || "ゲスト",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("pending signup parse error:", error);
+    }
   }
 
   // 初期状態: メニューを表示、タイトル画面を非表示
@@ -114,10 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // ================================
   // 画面ロード時
   window.addEventListener("load", () => {
-    const usernameModal = document.getElementById("usernameModal");
-    const usernameInput = document.getElementById("usernameInput");
-    const usernameSaveBtn = document.getElementById("usernameSaveBtn");
-
     if (!loginStatus || !btnContainer) return;
     if (!window.google || !google.accounts || !google.accounts.id) {
       console.warn("Google Identity Services がまだ読み込まれていません");
@@ -170,50 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // 初回ログイン → ユーザーネーム設定モーダルを開く
-      if (usernameModal && usernameInput && usernameSaveBtn) {
-        usernameInput.value = gName; // デフォルトは Google の名前
-        usernameModal.style.display = "flex";
-
-        usernameSaveBtn.onclick = async () => {
-          const username = usernameInput.value.trim();
-          if (!username) {
-            alert("ユーザーネームを入力してください");
-            return;
-          }
-
-          try {
-            const res2 = await fetch("/api/user/register", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                email,
-                username,
-                googleDisplayName: gName,
-              }),
-            });
-            const data = await res2.json();
-            if (data.error) {
-              alert("ユーザーネームの登録に失敗しました");
-              return;
-            }
-
-            window.currentUser = {
-              email,
-              username: data.username,
-              googleName: data.displayName || gName,
-            };
-            localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
-
-            loginStatus.textContent = `${data.username} でログイン中`;
-            btnContainer.style.display = "none";
-            if (logoutBtn) logoutBtn.style.display = "inline-block";
-            usernameModal.style.display = "none";
-          } catch (e) {
-            console.error("register error:", e);
-            alert("ユーザーネームの登録に失敗しました");
-          }
-        };
-      }
+      openUsernameModal({ email, gName });
     }
 
     // Google 初期化
