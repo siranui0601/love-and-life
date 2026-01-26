@@ -226,25 +226,28 @@ body {
   border-radius: 20px;
   padding: 20px 24px;
   overflow: auto;
+  cursor: grab;
 }
 
 .tree-graph.is-loading {
   opacity: 0.7;
 }
 
-.tree-levels {
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 22px;
-  position: relative;
-  z-index: 1;
+.tree-graph.is-dragging {
+  cursor: grabbing;
 }
 
-.tree-level {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px 18px;
+.tree-canvas {
+  position: relative;
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.tree-levels {
+  position: relative;
+  z-index: 1;
+  min-width: 100%;
+  min-height: 100%;
 }
 
 .tree-node {
@@ -258,11 +261,19 @@ body {
   max-width: 220px;
   text-align: center;
   box-shadow: 0 6px 16px rgba(216, 92, 140, 0.15);
+  position: absolute;
+  width: 180px;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tree-lines {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 0;
 }
