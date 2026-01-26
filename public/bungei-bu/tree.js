@@ -213,6 +213,10 @@ function renderTree(container, nodes) {
   container._treeResizeHandler = drawLines;
   requestAnimationFrame(drawLines);
   window.addEventListener("resize", drawLines, { passive: true });
+
+  requestAnimationFrame(() => {
+    container.scrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+  });
 }
 
 function setupTreeView() {

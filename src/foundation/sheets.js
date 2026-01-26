@@ -100,14 +100,24 @@ export async function updateBungeiEpilogue(rowIndex, epilogue) {
 
 export async function listBungeiLinesForPlayer(playerName, speechOrder = []) {
   const sheets = await getSheetsClient();
-  const range = `${BUNGEI_SHEET_NAME}!A2:C`;
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
-  const rows = res.data.values || [];
+  const ranges = [
+    `${BUNGEI_SHEET_NAME}!A1:A100`,
+    `${BUNGEI_SHEET_NAME}!C1:C100`,
+  ];
+  const res = await sheets.spreadsheets.values.batchGet({
+    spreadsheetId: SPREADSHEET_ID,
+    ranges,
+  });
+  const [orderRange, playersRange] = res.data.valueRanges || [];
+  const orderValues = orderRange?.values || [];
+  const playerValues = playersRange?.values || [];
+  const maxRows = Math.max(orderValues.length, playerValues.length);
   const lines = new Set();
   const normalizedSpeechOrder = speechOrder.map((line) => String(line ?? "").trim());
 
-  for (const row of rows) {
-    const [storedOrder, , players] = row;
+  for (let index = 1; index < maxRows; index += 1) {
+    const storedOrder = orderValues[index]?.[0];
+    const players = playerValues[index]?.[0];
     if (!storedOrder || !players) continue;
     let playerList = [];
     try {
