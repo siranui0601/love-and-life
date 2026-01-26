@@ -102,10 +102,7 @@ export function mountBungeiRoutes(app) {
     }
 
     const currentSummary = req.body?.currentSummary ?? null;
-    const relationship = Array.isArray(req.body?.relationship) ? req.body.relationship : [];
-    const affection = req.body?.affection ?? null;
-    const nowThinking =
-      req.body?.nowThinking && typeof req.body.nowThinking === "object" ? req.body.nowThinking : null;
+    const condition = req.body?.condition && typeof req.body.condition === "object" ? req.body.condition : null;
     const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
     const user = await findUserByEmail(email);
     const playerName = user?.username || "プレイヤー";
@@ -137,17 +134,19 @@ export function mountBungeiRoutes(app) {
     }
 
     const prompt = `
-舞台は高校の文芸部。部員は ${playerName} とミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
+舞台は高校の文芸部。部員は${playerName}とミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
 
-「 ${input} 」に対する会話シーンを生成せよ。
+${playerName}の発言「${input}」に対する会話シーンを生成せよ。
 必ずJSONのみ出力。説明禁止。コードフェンス禁止。
 
 ルール：
-dialogueは配列。台詞のみ（地の文なし）。 ${playerName} の発言に対し、ミユ/シオン/ナナの発話を最低1回含める。 ${playerName} の発言は含めない。
-各dialogueには "mood" を含めること。moodは "positive" "neutral" "negative" のいずれか（3択の表情差分）。
-relationshipは交際相手名の配列（いなければ[]。状況に応じ追加/削除）
-affectionは動的に変えること
-NowThinkingとcurrentSummary は短い要約
+dialogueは配列。台詞のみ（地の文なし）
+ミユ/シオン/ナナの発話を最低1回含める
+${playerName} の発言は dialogue に含めない
+各dialogueには "mood" を含めること（"positive"|"neutral"|"negative"）
+conditionは更新後を返す（likeは0〜100で自然に増減）
+condition.*.relationship は boolean（交際中ならtrue）
+currentSummaryとNowThinkingは短い要約
 
 CHARACTERS
 ミユ: 幼馴染。脳天気で天才肌
@@ -158,30 +157,46 @@ OUTPUT_JSON_EXAMPLE
 {
   "dialogue": [
     { "speaker": "ミユ/シオン/ナナ", "line": "...", "mood": "positive|neutral|negative" }
-/*5~10line*/
   ],
-  "NowThinking": { "ミユ": "...", "シオン": "...", "ナナ": "..." },
   "currentSummary": "...",
-  "relationship": [],
-  "affection": { "ミユ": 20, "シオン": 20, "ナナ": 20 }
+  "condition": {
+    "ミユ": { "like": 20, "relationship": false, "NowThinking": "..." },
+    "シオン": { "like": 20, "relationship": false, "NowThinking": "..." },
+    "ナナ": { "like": 20, "relationship": false, "NowThinking": "..." }
+  }
 }
 
 CURRENT_SUMMARY
-${currentSummary ? currentSummary : "null"}
+${currentSummary ?? "null"}
 
-CHARACTERS_STATE
-ミユ affection:${affection?.ミユ ?? 20} NowThinking:${
-      nowThinking?.ミユ || "明日から海に行くか、プールに行くか悩んでいる"
-    }
-シオン affection:${affection?.シオン ?? 20} NowThinking:${
-      nowThinking?.シオン || "今日が最後の活動日なので、きちんと片付けまで終わらせたいと考えている"
-    }
-ナナ affection:${affection?.ナナ ?? 20} NowThinking:${
-      nowThinking?.ナナ || "蝶々可愛い♡蝶々ってどうして蝶々って言うの？"
-    }
-
-RELATIONSHIP
-${JSON.stringify(relationship)}
+CURRENT_CONDITION
+${JSON.stringify(
+      {
+        ミユ: {
+          like: condition?.ミユ?.like ?? 20,
+          relationship: condition?.ミユ?.relationship ?? false,
+          NowThinking:
+            condition?.ミユ?.NowThinking ??
+            "明日から海に行くか、プールに行くか悩んでいる",
+        },
+        シオン: {
+          like: condition?.シオン?.like ?? 20,
+          relationship: condition?.シオン?.relationship ?? false,
+          NowThinking:
+            condition?.シオン?.NowThinking ??
+            "今日が最後の活動日なので、きちんと片付けまで終わらせたいと考えている",
+        },
+        ナナ: {
+          like: condition?.ナナ?.like ?? 20,
+          relationship: condition?.ナナ?.relationship ?? false,
+          NowThinking:
+            condition?.ナナ?.NowThinking ??
+            "蝶々可愛い♡蝶々ってどうして蝶々って言うの？",
+        },
+      },
+      null,
+      0
+    )}
 `.trim();
 
     try {
