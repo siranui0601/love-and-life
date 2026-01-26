@@ -139,7 +139,7 @@ dialogueは配列。台詞のみ（地の文なし）
 ${playerName} の発言は dialogue に含めない
 各dialogueには "mood" を含めること（"positive"|"neutral"|"negative"）
 conditionは更新後を返す（likeは0〜100で自然に増減）
-condition.*.relationship は boolean（交際中ならtrue）
+condition.*.relationshipは、交際するならtrueにする。判定緩め
 currentSummaryとNowThinkingは短い要約
 
 CHARACTERS
