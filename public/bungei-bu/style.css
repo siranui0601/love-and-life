@@ -149,6 +149,131 @@ body {
   color: #5c3b54;
 }
 
+.tree-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 228, 242, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4vh 4vw;
+  z-index: 200;
+  backdrop-filter: blur(6px);
+}
+
+.tree-overlay.is-hidden {
+  display: none;
+}
+
+.tree-panel {
+  width: min(960px, 92vw);
+  height: min(80vh, 720px);
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: 0 24px 48px rgba(216, 92, 140, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tree-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tree-title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.tree-subtitle {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: #8a5b75;
+}
+
+.tree-close {
+  border: none;
+  background: #ffd3e5;
+  color: #6b3e58;
+  font-size: 1.4rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.tree-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tree-status {
+  min-height: 20px;
+  font-size: 0.9rem;
+  color: #b45a7b;
+}
+
+.tree-graph {
+  flex: 1;
+  position: relative;
+  background: #fff6fb;
+  border-radius: 20px;
+  padding: 20px 24px;
+  overflow: auto;
+}
+
+.tree-graph.is-loading {
+  opacity: 0.7;
+}
+
+.tree-levels {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 22px;
+  position: relative;
+  z-index: 1;
+}
+
+.tree-level {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 18px;
+}
+
+.tree-node {
+  background: #ffffff;
+  border: 2px solid #ffd1e4;
+  border-radius: 16px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  color: #6b3e58;
+  min-width: 120px;
+  max-width: 220px;
+  text-align: center;
+  box-shadow: 0 6px 16px rgba(216, 92, 140, 0.15);
+}
+
+.tree-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.tree-empty {
+  margin: 0;
+  text-align: center;
+  color: #8a5b75;
+  font-size: 0.95rem;
+}
+
 .play-area {
   flex: 1;
   display: flex;
