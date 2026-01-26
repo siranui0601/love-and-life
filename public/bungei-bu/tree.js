@@ -157,10 +157,10 @@ function renderTree(container, nodes) {
   const contentWidth = Math.max(1, maxX + 1) * (NODE_WIDTH + H_GAP) - H_GAP + PADDING * 2;
   const contentHeight =
     (maxDepth + 1) * (NODE_HEIGHT + V_GAP) - V_GAP + PADDING * 2;
-  canvas.style.width = `${contentWidth}px`;
-  canvas.style.height = `${contentHeight}px`;
-  levelsContainer.style.width = `${contentWidth}px`;
-  levelsContainer.style.height = `${contentHeight}px`;
+  canvas.style.minWidth = `${contentWidth}px`;
+canvas.style.minHeight = `${contentHeight}px`;
+levelsContainer.style.minWidth = `${contentWidth}px`;
+levelsContainer.style.minHeight = `${contentHeight}px`;
 
   visibleNodes.forEach((node) => {
     const item = document.createElement("div");
@@ -214,9 +214,11 @@ function renderTree(container, nodes) {
   requestAnimationFrame(drawLines);
   window.addEventListener("resize", drawLines, { passive: true });
 
-  requestAnimationFrame(() => {
-    container.scrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
-  });
+  const graph = container; // renderTree(graph, nodes) なので
+
+requestAnimationFrame(() => {
+  graph.scrollTop = graph.scrollHeight;
+});
 }
 
 function setupTreeView() {
