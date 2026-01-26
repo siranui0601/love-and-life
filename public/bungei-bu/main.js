@@ -453,10 +453,27 @@ async function fetchEpilogueData() {
     return { dialogue: buildEpilogueDialogue(DEFAULT_EPILOGUE_LINE), background: null };
   }
   try {
+    const condition = {
+      ミユ: {
+        like: affection?.ミユ ?? 20,
+        relationship: relationship.includes("ミユ"),
+        NowThinking: nowThinking?.ミユ ?? "",
+      },
+      シオン: {
+        like: affection?.シオン ?? 20,
+        relationship: relationship.includes("シオン"),
+        NowThinking: nowThinking?.シオン ?? "",
+      },
+      ナナ: {
+        like: affection?.ナナ ?? 20,
+        relationship: relationship.includes("ナナ"),
+        NowThinking: nowThinking?.ナナ ?? "",
+      },
+    };
     const res = await fetch("/api/bungei/epilogue", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: playerEmail, relationship, speechOrder }),
+      body: JSON.stringify({ email: playerEmail, relationship, speechOrder, condition }),
     });
     if (!res.ok) throw new Error("epilogue_failed");
     const data = await res.json();

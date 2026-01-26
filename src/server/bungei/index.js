@@ -8,12 +8,6 @@ import {
   updateBungeiPlayers,
 } from "../../foundation/sheets.js";
 
-const EPILOGUE_CHARACTER_PROFILES = {
-  ミユ: "幼馴染。明るく元気で素直。感情が顔に出やすい。少し甘えん坊。",
-  シオン: "真面目で無口。不器用だが根は優しい。ツンデレ傾向。",
-  ナナ: "落ち着きがあり柔らかい。時々ミステリアス。面倒見が良い。",
-};
-
 const EPILOGUE_BACKGROUNDS = [
   { name: "遊園地", url: "https://pbs.twimg.com/media/G_g7eOPbIAA-osB.jpg" },
   { name: "夏祭り", url: "https://pbs.twimg.com/media/G_g7eOwWQAAxwB1.jpg" },
@@ -228,6 +222,8 @@ ${JSON.stringify(
       return;
     }
     const relationship = Array.isArray(req.body?.relationship) ? req.body.relationship : [];
+    const condition =
+      req.body?.condition && typeof req.body.condition === "object" ? req.body.condition : null;
     const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
 
     try {
@@ -269,56 +265,81 @@ ${JSON.stringify(
       }
 
       const background = getRandomEpilogueBackground();
-      const profiles = relationship
-        .map((name) => ({ name, profile: EPILOGUE_CHARACTER_PROFILES[name] || "" }))
-        .filter((entry) => entry.name);
-      const prompt = `
-${
-  relationship.length
-    ? `
-付き合った人のリストと、その人の性格を渡すので、その人たちとのBACKGROUND_NAMEに応じた甘々ストーリーを描写すること。
-10文以上、会話形式のみ（地の文なし）。
-台詞内でプレイヤーを指す場合は必ずPLAYER_NAMEを使い、「プレイヤー」という単語は使わない。
-必ずJSONのみを出力し、説明やコードフェンスは禁止。
+      const conditionSource =
+        condition ??
+        Object.fromEntries(relationship.map((name) => [name, { relationship: true }]));
+      const loverEntries = Object.entries(conditionSource || {}).filter(
+        ([_, v]) => v?.relationship
+      );
+      const loverNames = loverEntries.map(([name]) => name);
+      const loverCondition = Object.fromEntries(loverEntries);
+      const lovers = Object.entries(conditionSource || {}).filter(([_, v]) => v?.relationship);
+      let prompt;
+
+      if (lovers.length > 0) {
+        prompt = `
+舞台は高校の夏休み。文芸部の活動はすでに終わっている。
+BACKGROUND_NAMEでの${playerName}と交際中キャラとの超甘々エピローグ会話を生成せよ。必ず全員が1回以上発話すること。${
+  loverNames.length > 1 ? "修羅場感を含めても良い" : ""
+}
+
+必ずJSONのみ出力。説明禁止。コードフェンス禁止。
+
+ルール:
+dialogueは配列。台詞のみ（地の文なし）
+speaker は ${playerName} 、${loverNames.join("、")}のみ
+8~15行
+
+${playerName}と交際中のキャラ
+${loverNames
+  .map((name) => {
+    if (name === "ミユ") return "ミユ: 幼馴染。脳天気で天才肌";
+    if (name === "シオン") return "シオン: 真面目委員長。実はむっつりスケベ";
+    if (name === "ナナ") return "ナナ: おっとり不思議ちゃん。遠慮を知らない";
+    return "";
+  })
+  .join("\n")}
 
 OUTPUT_JSON_EXAMPLE
 {
   "dialogue": [
-    { "speaker": "プレイヤー名", "line": "..." },
-    { "speaker": "ミユ", "line": "..." }
+    { "speaker": "${loverNames[0] ?? playerName}", "line": "..." },
+    { "speaker": "${playerName}", "line": "..." }
   ]
 }
-`.trim()
-    : `
-${playerName}は高校の文芸部。夏休み前に彼女を作りたかったが、撃沈している。今は夏休み。
-BACKGROUND_NAME での、${playerName}の独り言を書いてください。
-5文程度、会話形式のみ（地の文なし）。
-必ずJSONのみを出力し、説明やコードフェンスは禁止。
-
-OUTPUT_JSON_EXAMPLE
-{
-  "dialogue": [
-    { "speaker": ${playerName}, "line": "..." },
-  ]
-}
-`.trim()
-}
-
-PLAYER_NAME
-${playerName}
 
 BACKGROUND_NAME
 ${background.name}
 
-RELATIONSHIP
-${JSON.stringify(relationship)}
-
-CHARACTER_PROFILES
-${JSON.stringify(profiles)}
-
-SPEECH_ORDER
-${JSON.stringify(speechOrder)}
+CURRENT_CONDITION
+${JSON.stringify(loverCondition, null, 0)}
 `.trim();
+      } else {
+        prompt = `
+舞台は高校の夏休み。文芸部の活動はすでに終わっている。
+
+BACKGROUND_NAME での、${playerName}の独り言によるエピローグを生成せよ。
+少し切なく、しかし前向きな余韻を残す内容にすること。
+
+必ずJSONのみ出力。説明禁止。コードフェンス禁止。
+
+ルール:
+dialogueは配列
+speaker は必ず ${playerName} のみ
+台詞のみ（地の文なし）
+5~10行程度
+
+OUTPUT_JSON_EXAMPLE
+{
+  "dialogue": [
+    { "speaker": "${playerName}", "line": "..." }
+  ]
+}
+
+BACKGROUND_NAME
+${background.name}
+`.trim();
+      }
 
       const text = await genWithFallback(prompt);
       const cleaned = stripJsonFence(text);
