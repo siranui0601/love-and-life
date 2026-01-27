@@ -6,6 +6,7 @@ import {
   listBungeiLinesForPlayer,
   updateBungeiEpilogue,
   updateBungeiPlayers,
+  buildBungeiTreeForPlayer, // ←追加
 } from "../../foundation/sheets.js";
 
 const EPILOGUE_BACKGROUNDS = [
@@ -60,6 +61,37 @@ function normalizeDialoguePayload(raw) {
 }
 
 export function mountBungeiRoutes(app) {
+  
+  
+  app.post("/api/bungei/tree", async (req, res) => {
+  const email = String(req.body?.email || "").trim();
+  if (!email) {
+    res.status(400).json({ error: "email_required" });
+    return;
+  }
+
+  try {
+    const user = await findUserByEmail(email);
+    if (!user?.username) {
+      res.status(404).json({ error: "user_not_found" });
+      return;
+    }
+
+    const nodes = await buildBungeiTreeForPlayer(user.username, {
+      maxDepth: 8,
+      maxNodes: 2000,
+    });
+
+    res.json({ nodes });
+  } catch (error) {
+    console.error("❌ Sheets Error (bungei tree):", error);
+    res.status(500).json({ error: "sheets_failed" });
+  }
+});
+
+  
+  
+  
   app.post("/api/bungei/options", async (req, res) => {
     const email = String(req.body?.email || "").trim();
     if (!email) {
