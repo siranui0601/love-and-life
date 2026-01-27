@@ -99,21 +99,17 @@ export async function updateBungeiEpilogue(rowIndex, epilogue) {
 }
 
 // ====== 時々文芸部：options用の高速キャッシュ ======
-const BUNGEI_CACHE_TTL_MS = 30_000; // 30秒（必要なら調整）
-let bungeiCache = {
-  fetchedAt: 0,
-  rows: null, // [{ storedOrder: string, players: string }]
-};
+// ====== 時々文芸部：ツリー用（毎回最新取得・A:D一括） ======
 
-async function loadBungeiRowsChunked() {
+async function loadBungeiRowsChunkedAllAD() {
   const sheets = await getSheetsClient();
   const rows = [];
-  const CHUNK = 200; // 100でもOK。API回数減らしたいなら200が良い
+  const CHUNK = 200; // 100でもOK
   let start = 2;
 
   while (true) {
     const end = start + CHUNK - 1;
-    const range = `${BUNGEI_SHEET_NAME}!A${start}:C${end}`;
+    const range = `${BUNGEI_SHEET_NAME}!A${start}:D${end}`;
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range,
@@ -122,20 +118,24 @@ async function loadBungeiRowsChunked() {
     const values = res.data.values || [];
     if (!values.length) break;
 
-    for (const row of values) {
-      const storedOrder = row?.[0] ?? "";
-      const players = row?.[2] ?? ""; // A..Cなので index 2 が C列
-      rows.push({ storedOrder, players });
+    for (const r of values) {
+      const storedOrder = r?.[0] ?? "";
+      const output = r?.[1] ?? "";
+      const players = r?.[2] ?? "";
+      const epilogue = r?.[3] ?? "";
+      rows.push({ storedOrder, output, players, epilogue });
     }
 
-    // 取得した最後の行が空っぽっぽいなら終了（追加読み不要）
+    // CHUNK未満なら末尾の可能性が高いので終了
+    if (values.length < CHUNK) break;
+
+    // 最終行が完全空なら終了（保険）
     const last = values[values.length - 1] || [];
     const lastA = String(last?.[0] ?? "").trim();
+    const lastB = String(last?.[1] ?? "").trim();
     const lastC = String(last?.[2] ?? "").trim();
-    if (!lastA && !lastC) break;
-
-    // CHUNKより少なければ末尾まで来た可能性が高い
-    if (values.length < CHUNK) break;
+    const lastD = String(last?.[3] ?? "").trim();
+    if (!lastA && !lastB && !lastC && !lastD) break;
 
     start += CHUNK;
   }
@@ -143,23 +143,76 @@ async function loadBungeiRowsChunked() {
   return rows;
 }
 
-async function getBungeiRowsCached({ force = false } = {}) {
-  const now = Date.now();
-  if (!force && bungeiCache.rows && now - bungeiCache.fetchedAt < BUNGEI_CACHE_TTL_MS) {
-    return bungeiCache.rows;
+export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNodes = 2000 } = {}) {
+  const rows = await loadBungeiRowsChunkedAllAD();
+
+  // そのユーザーが関与した orderList だけ抽出
+  const orders = [];
+  for (const row of rows) {
+    const playersRaw = row.players;
+    const storedOrder = row.storedOrder;
+    if (!playersRaw || !storedOrder) continue;
+
+    let playerList = [];
+    try {
+      playerList = JSON.parse(playersRaw);
+    } catch {
+      playerList = [];
+    }
+    if (!Array.isArray(playerList) || !playerList.includes(playerName)) continue;
+
+    try {
+      const orderList = JSON.parse(storedOrder);
+      if (Array.isArray(orderList) && orderList.length) {
+        orders.push(orderList.map((v) => String(v ?? "").trim()).filter(Boolean));
+      }
+    } catch {
+      // ignore
+    }
   }
-  const rows = await loadBungeiRowsChunked();
-  bungeiCache = { fetchedAt: now, rows };
-  return rows;
+
+  // ツリー構築（prefixをキーにしてノードを一意化）
+  const nodes = [{ id: "root", parentId: null, line: null, depth: 0 }];
+  const idByPrefix = new Map();
+  idByPrefix.set("[]", "root");
+
+  let nodeCount = 1;
+  for (const orderList of orders) {
+    const limited = orderList.slice(0, maxDepth);
+    for (let i = 0; i < limited.length; i += 1) {
+      const prefix = JSON.stringify(limited.slice(0, i + 1));
+      if (idByPrefix.has(prefix)) continue;
+
+      const parentPrefix = JSON.stringify(limited.slice(0, i));
+      const parentId = idByPrefix.get(parentPrefix) || "root";
+
+      const id = `node-${nodes.length}`;
+      nodes.push({
+        id,
+        parentId,
+        line: limited[i],
+        depth: i + 1,
+      });
+      idByPrefix.set(prefix, id);
+
+      nodeCount += 1;
+      if (nodeCount >= maxNodes) return nodes;
+    }
+  }
+
+  return nodes;
 }
 
-function computeNextLinesFromRows(playerName, speechOrder, rows) {
+// 既存の listBungeiLinesForPlayer を置き換え
+export async function listBungeiLinesForPlayer(playerName, speechOrder = []) {
+  const rows = await loadBungeiRowsChunkedAllAD();
+
   const lines = new Set();
   const normalizedSpeechOrder = (speechOrder || []).map((v) => String(v ?? "").trim());
 
-  for (let i = 0; i < rows.length; i += 1) {
-    const storedOrder = rows[i].storedOrder;
-    const playersRaw = rows[i].players;
+  for (const row of rows) {
+    const storedOrder = row.storedOrder;
+    const playersRaw = row.players;
     if (!storedOrder || !playersRaw) continue;
 
     let playerList = [];
@@ -188,12 +241,6 @@ function computeNextLinesFromRows(playerName, speechOrder, rows) {
   }
 
   return Array.from(lines);
-}
-
-// 既存の listBungeiLinesForPlayer を置き換え
-export async function listBungeiLinesForPlayer(playerName, speechOrder = []) {
-  const rows = await getBungeiRowsCached();
-  return computeNextLinesFromRows(playerName, speechOrder, rows);
 }
 
 export { SPREADSHEET_ID, SHEET_NAME };
