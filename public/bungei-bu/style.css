@@ -268,6 +268,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  
+  
+  /* 追加 */
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;   /* 4行で省略 */
+  overflow: auto;
 }
 
 .tree-lines {
