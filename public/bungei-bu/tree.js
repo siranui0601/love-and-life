@@ -304,9 +304,8 @@ jumpYes.addEventListener("click", () => {
     });
 
     graph.addEventListener("pointerdown", (event) => {
-      graph.addEventListener("pointerdown", (event) => {
-  // ✅ ノードを触ったときはドラッグ開始しない（タップ優先）
-  if (event.target.closest?.(".tree-node")) return;
+      // ✅ ノードを触ったときはドラッグ開始しない（タップ優先）
+      if (event.target.closest?.(".tree-node")) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
 
       pointers.set(event.pointerId, event);
