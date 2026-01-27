@@ -193,6 +193,7 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
 
       orders.push({
         orderList: orderList.map((v) => String(v ?? "").trim()).filter(Boolean),
+        storedOrder,
         output: output ?? "",
         epilogue: epilogue ?? "",
       });
@@ -219,7 +220,18 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
       const parentId = idByPrefix.get(parentPrefix) || "root";
 
       const id = `node-${nodes.length}`;
-      nodes.push({ id, parentId, line: limited[i], depth: i + 1 });
+      //nodes.push({ id, parentId, line: limited[i], depth: i + 1 });
+      nodes.push({
+        id,
+        parentId,
+        line: limited[i],
+        depth: i + 1,
+        jump: {
+          orderList: limited.slice(0, i + 1),
+          output: item.output,
+          epilogue: item.epilogue,
+        },
+      });
       idByPrefix.set(prefix, id);
 
       nodeCount += 1;
@@ -251,7 +263,12 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
       line: `エピローグ\n${backgroundName || "不明"}`,
       epilogue: true,
       backgroundName: backgroundName || null,
-      lovers, // ["ミユ","シオン","ナナ"] など
+      lovers,
+      jump: {
+        orderList: limited,
+        output: item.output,
+        epilogue: item.epilogue,
+      },
     });
 
     nodeCount += 1;
