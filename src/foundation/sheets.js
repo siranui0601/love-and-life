@@ -143,42 +143,74 @@ async function loadBungeiRowsChunkedAllAD() {
   return rows;
 }
 
+
+//ここに追加で良いのか...？
+function parseEpilogueMeta(epilogueRaw) {
+  if (!epilogueRaw) return { backgroundName: null };
+
+  try {
+    const parsed = JSON.parse(epilogueRaw);
+    const backgroundName =
+      parsed && typeof parsed === "object" ? String(parsed.backgroundName || "") : "";
+    return { backgroundName: backgroundName || null };
+  } catch {
+    return { backgroundName: null };
+  }
+}
+function parseLoversFromOutput(outputRaw) {
+  if (!outputRaw) return [];
+  try {
+    const parsed = JSON.parse(outputRaw);
+    const cond = parsed?.condition;
+    const lovers = [];
+
+    if (cond?.ミユ?.relationship) lovers.push("ミユ");
+    if (cond?.シオン?.relationship) lovers.push("シオン");
+    if (cond?.ナナ?.relationship) lovers.push("ナナ");
+
+    return lovers;
+  } catch {
+    return [];
+  }
+}
+
 export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNodes = 2000 } = {}) {
   const rows = await loadBungeiRowsChunkedAllAD();
 
-  // そのユーザーが関与した orderList だけ抽出
+  // そのユーザーが関与した行だけ orderList + output + epilogue を集める
   const orders = [];
   for (const row of rows) {
-    const playersRaw = row.players;
-    const storedOrder = row.storedOrder;
-    if (!playersRaw || !storedOrder) continue;
+    const { storedOrder, players, output, epilogue } = row;
+    if (!players || !storedOrder) continue;
 
     let playerList = [];
-    try {
-      playerList = JSON.parse(playersRaw);
-    } catch {
-      playerList = [];
-    }
+    try { playerList = JSON.parse(players); } catch { playerList = []; }
     if (!Array.isArray(playerList) || !playerList.includes(playerName)) continue;
 
     try {
       const orderList = JSON.parse(storedOrder);
-      if (Array.isArray(orderList) && orderList.length) {
-        orders.push(orderList.map((v) => String(v ?? "").trim()).filter(Boolean));
-      }
+      if (!Array.isArray(orderList) || !orderList.length) continue;
+
+      orders.push({
+        orderList: orderList.map((v) => String(v ?? "").trim()).filter(Boolean),
+        output: output ?? "",
+        epilogue: epilogue ?? "",
+      });
     } catch {
       // ignore
     }
   }
 
-  // ツリー構築（prefixをキーにしてノードを一意化）
+  // ツリー本体（prefix一意化）
   const nodes = [{ id: "root", parentId: null, line: null, depth: 0 }];
   const idByPrefix = new Map();
   idByPrefix.set("[]", "root");
 
   let nodeCount = 1;
-  for (const orderList of orders) {
-    const limited = orderList.slice(0, maxDepth);
+
+  for (const item of orders) {
+    const limited = item.orderList.slice(0, maxDepth);
+
     for (let i = 0; i < limited.length; i += 1) {
       const prefix = JSON.stringify(limited.slice(0, i + 1));
       if (idByPrefix.has(prefix)) continue;
@@ -187,12 +219,7 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
       const parentId = idByPrefix.get(parentPrefix) || "root";
 
       const id = `node-${nodes.length}`;
-      nodes.push({
-        id,
-        parentId,
-        line: limited[i],
-        depth: i + 1,
-      });
+      nodes.push({ id, parentId, line: limited[i], depth: i + 1 });
       idByPrefix.set(prefix, id);
 
       nodeCount += 1;
@@ -200,8 +227,42 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
     }
   }
 
+  // ★ここから追加：エピローグノード
+  const epilogueAdded = new Set(); // 同じ枝に重複追加しない保険
+
+  for (const item of orders) {
+    if (!item.epilogue) continue;
+
+    const limited = item.orderList.slice(0, maxDepth);
+    const leafPrefix = JSON.stringify(limited);
+    const leafId = idByPrefix.get(leafPrefix);
+    if (!leafId) continue;
+
+    if (epilogueAdded.has(leafPrefix)) continue;
+    epilogueAdded.add(leafPrefix);
+
+    const { backgroundName } = parseEpilogueMeta(item.epilogue);
+    const lovers = parseLoversFromOutput(item.output);
+
+    nodes.push({
+      id: `ep-${leafId}`,
+      parentId: leafId,
+      depth: limited.length + 1,
+      line: `エピローグ\n${backgroundName || "不明"}`,
+      epilogue: true,
+      backgroundName: backgroundName || null,
+      lovers, // ["ミユ","シオン","ナナ"] など
+    });
+
+    nodeCount += 1;
+    if (nodeCount >= maxNodes) return nodes;
+  }
+
   return nodes;
 }
+
+
+
 
 // 既存の listBungeiLinesForPlayer を置き換え
 export async function listBungeiLinesForPlayer(playerName, speechOrder = []) {
