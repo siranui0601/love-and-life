@@ -756,6 +756,18 @@ body {
 }
 
 
+.tree-canvas {
+  position: relative;
+}
+
+.tree-inner {
+  position: relative;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+
+
 
 
 .is-hidden {
