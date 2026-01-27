@@ -265,7 +265,6 @@ body {
   position: absolute;
   width: 180px;
   min-height: 52px;
-  display: flex;
   align-items: center;
   justify-content: center;
   
@@ -274,7 +273,7 @@ body {
   line-height: 1.35;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;   /* 4行で省略 */
+  /*-webkit-line-clamp: 4;   /* 4行で省略 */
   overflow: auto;
 }
 
