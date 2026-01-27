@@ -36,9 +36,8 @@ function createOverlay() {
       <div class="tree-jump-box">
         <p>このシーンに移動しますか？</p>
         <div class="tree-jump-actions">
-          <button class="tree-jump-yes">はい</button>
-          <button class="tree-jump-no">いいえ</button>
-        </div>
+         <button class="tree-jump-yes" type="button">はい</button>
+         <button class="tree-jump-no" type="button">いいえ</button>        </div>
       </div>
     </div>
   `;
@@ -261,9 +260,18 @@ function closeJumpModal() {
   jumpModal.classList.add("is-hidden");
 }
 
-jumpNo.addEventListener("click", closeJumpModal);
+//jumpNo.addEventListener("click", closeJumpModal);
+jumpNo.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  closeJumpModal();
+});
+
 
 jumpYes.addEventListener("click", () => {
+  e.preventDefault();
+  e.stopPropagation();
+
   if (!pendingJump) return;
   window.dispatchEvent(
     new CustomEvent("bungei:jump", { detail: pendingJump })
