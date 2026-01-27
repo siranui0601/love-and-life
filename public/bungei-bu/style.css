@@ -777,6 +777,61 @@ body {
 
 
 
+/* ✅ エピローグ専用：改行を効かせる */
+.tree-node--epilogue {
+  white-space: pre-line;
+  font-weight: 700;
+  border-color: rgba(0,0,0,0.08);
+}
+
+/* ✅ 色の基本（誰とも付き合ってない＝灰色） */
+.tree-node--epilogue {
+  background: #d9d9d9;
+}
+
+/* loversの内容で色分け（dataset.lovers を利用） */
+.tree-node--epilogue[data-lovers~="ミユ"] { --miyu: #FFE100; }
+.tree-node--epilogue[data-lovers~="シオン"] { --shion: #706CAA; }
+.tree-node--epilogue[data-lovers~="ナナ"] { --nana: #f4aeb3; }
+
+/* 1人 */
+.tree-node--epilogue[data-lovers="ミユ"] { background: #FFE100; }
+.tree-node--epilogue[data-lovers="シオン"] { background: #706CAA; color:#fff; }
+.tree-node--epilogue[data-lovers="ナナ"] { background: #f4aeb3; }
+
+/* 2人（左右で半分） */
+.tree-node--epilogue[data-lovers="ミユ,シオン"],
+.tree-node--epilogue[data-lovers="シオン,ミユ"] {
+  background: linear-gradient(90deg, #FFE100 0 50%, #706CAA 50% 100%);
+  color:#2b2340;
+}
+.tree-node--epilogue[data-lovers="ミユ,ナナ"],
+.tree-node--epilogue[data-lovers="ナナ,ミユ"] {
+  background: linear-gradient(90deg, #FFE100 0 50%, #f4aeb3 50% 100%);
+}
+.tree-node--epilogue[data-lovers="シオン,ナナ"],
+.tree-node--epilogue[data-lovers="ナナ,シオン"] {
+  background: linear-gradient(90deg, #706CAA 0 50%, #f4aeb3 50% 100%);
+  color:#fff;
+}
+
+/* 3人（3分割） */
+.tree-node--epilogue[data-lovers="ミユ,ナナ,シオン"],
+.tree-node--epilogue[data-lovers="ミユ,シオン,ナナ"],
+.tree-node--epilogue[data-lovers="ナナ,ミユ,シオン"],
+.tree-node--epilogue[data-lovers="ナナ,シオン,ミユ"],
+.tree-node--epilogue[data-lovers="シオン,ミユ,ナナ"],
+.tree-node--epilogue[data-lovers="シオン,ナナ,ミユ"] {
+  background: linear-gradient(
+    90deg,
+    #FFE100 0 33.33%,
+    #f4aeb3 33.33% 66.66%,
+    #706CAA 66.66% 100%
+  );
+  color:#2b2340;
+}
+
+
 .is-hidden {
   display: none;
 }
