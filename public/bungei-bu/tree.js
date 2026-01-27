@@ -32,6 +32,15 @@ function createOverlay() {
         </div>
       </div>
     </div>
+    <div class="tree-jump-modal is-hidden">
+      <div class="tree-jump-box">
+        <p>このシーンに移動しますか？</p>
+        <div class="tree-jump-actions">
+          <button class="tree-jump-yes">はい</button>
+          <button class="tree-jump-no">いいえ</button>
+        </div>
+      </div>
+    </div>
   `;
   document.body.appendChild(overlay);
   return overlay;
@@ -48,7 +57,8 @@ async function fetchTreeNodes(email) {
   return Array.isArray(data.nodes) ? data.nodes : [];
 }
 
-function renderTree(container, nodes, scale = 1) {
+//function renderTree(container, nodes, scale = 1) {
+function renderTree(container, nodes, scale = 1, onNodeClick = null) {
   const levelsContainer = container.querySelector(".tree-levels");
   const svg = container.querySelector(".tree-lines");
   const canvas = container.querySelector(".tree-canvas");
@@ -150,6 +160,12 @@ if (node.epilogue) {
 
     levelsContainer.appendChild(item);
     
+    item.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!node.jump) return;
+      onNodeClick?.(node.jump);
+    });
+    
     // ✅ 実寸（折り返しで高さが変わるので）
     node._w = item.offsetWidth;
     node._h = item.offsetHeight;
@@ -225,8 +241,39 @@ function setupTreeView() {
 
   const redraw = () => {
     if (!graph || !cachedNodes) return;
-    renderTree(graph, cachedNodes, treeScale);
+    renderTree(graph, cachedNodes, treeScale, openJumpModal);
   };
+  
+  
+  const jumpModal = overlay.querySelector(".tree-jump-modal");
+const jumpYes = overlay.querySelector(".tree-jump-yes");
+const jumpNo = overlay.querySelector(".tree-jump-no");
+
+let pendingJump = null;
+
+function openJumpModal(jumpData) {
+  pendingJump = jumpData;
+  jumpModal.classList.remove("is-hidden");
+}
+
+function closeJumpModal() {
+  pendingJump = null;
+  jumpModal.classList.add("is-hidden");
+}
+
+jumpNo.addEventListener("click", closeJumpModal);
+
+jumpYes.addEventListener("click", () => {
+  if (!pendingJump) return;
+  window.dispatchEvent(
+    new CustomEvent("bungei:jump", { detail: pendingJump })
+  );
+  closeJumpModal();
+  overlay.classList.add("is-hidden");
+});
+  
+  
+  
 
   const setupDragPanAndZoom = () => {
     if (!graph) return;
@@ -385,6 +432,8 @@ function setupTreeView() {
       status.textContent = "読み込みに失敗しました。";
     }
   });
+  
+  
 }
 
 setupTreeView();
