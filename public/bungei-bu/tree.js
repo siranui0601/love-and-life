@@ -94,7 +94,7 @@ function renderTree(container, nodes, scale = 1) {
   const maxX = Math.max(...visibleNodes.map((n) => n.x ?? 0));
 
   const NODE_WIDTH = 180;
-  const NODE_HEIGHT = 52;
+  const NODE_HEIGHT = 65;
   const H_GAP = 80;
   const V_GAP = 80;
   const PADDING = 40;
