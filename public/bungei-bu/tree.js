@@ -24,8 +24,10 @@ function createOverlay() {
         <div class="tree-status" aria-live="polite"></div>
         <div class="tree-graph">
           <div class="tree-canvas">
-            <svg class="tree-lines" aria-hidden="true"></svg>
-            <div class="tree-levels"></div>
+            <div class="tree-inner">
+              <svg class="tree-lines" aria-hidden="true"></svg>
+              <div class="tree-levels"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -46,10 +48,12 @@ async function fetchTreeNodes(email) {
   return Array.isArray(data.nodes) ? data.nodes : [];
 }
 
-function renderTree(container, nodes) {
+function renderTree(container, nodes, scale = 1) {
   const levelsContainer = container.querySelector(".tree-levels");
   const svg = container.querySelector(".tree-lines");
   const canvas = container.querySelector(".tree-canvas");
+  const inner = container.querySelector(".tree-inner");
+
   if (!levelsContainer || !svg || !canvas) return;
 
   levelsContainer.innerHTML = "";
@@ -100,11 +104,24 @@ function renderTree(container, nodes) {
   const contentHeight =
     (maxDepth + 1) * (NODE_HEIGHT + V_GAP) - V_GAP + PADDING * 2;
 
-  // ここは width/height 推奨（minWidth だと scroll が不安定になることがある）
+
+  // scaleを反映（scroll領域も拡大縮小に追従させる）
+  const scaledW = Math.ceil(contentWidth * scale);
+  const scaledH = Math.ceil(contentHeight * scale);
+  canvas.style.width = `${scaledW}px`;
+  canvas.style.height = `${scaledH}px`;
+  if (inner) {
+    inner.style.width = `${contentWidth}px`;
+    inner.style.height = `${contentHeight}px`;
+    inner.style.transform = `scale(${scale})`;
+  }
+
+
+  /* ここは width/height 推奨（minWidth だと scroll が不安定になることがある）
   canvas.style.width = `${contentWidth}px`;
   canvas.style.height = `${contentHeight}px`;
   levelsContainer.style.width = `${contentWidth}px`;
-  levelsContainer.style.height = `${contentHeight}px`;
+  levelsContainer.style.height = `${contentHeight}px`;*/
 
   visibleNodes.forEach((node) => {
     const item = document.createElement("div");
@@ -114,49 +131,45 @@ function renderTree(container, nodes) {
 
     const x = PADDING + (node.x ?? 0) * (NODE_WIDTH + H_GAP);
     const y = PADDING + (maxDepth - node.depth) * (NODE_HEIGHT + V_GAP);
+    
+    node._px = x;
+    node._py = y;
+
+
     item.style.transform = `translate(${x}px, ${y}px)`;
 
     levelsContainer.appendChild(item);
   });
 
   const drawLines = () => {
-    svg.innerHTML = "";
+  svg.innerHTML = "";
+  // 内部座標は「スケール前」基準でOK（innerがscaleしてくれる）
+  svg.setAttribute("width", `${contentWidth}`);
+  svg.setAttribute("height", `${contentHeight}`);
 
-    // SVG は canvas の「論理サイズ」に合わせる（getBoundingClientRectだとズレやすい）
-    svg.setAttribute("width", `${contentWidth}`);
-    svg.setAttribute("height", `${contentHeight}`);
-    svg.setAttribute("viewBox", `0 0 ${contentWidth} ${contentHeight}`);
+  nodes
+    .filter((node) => node.parentId && node.depth > 0)
+    .forEach((node) => {
+      const parent = nodeById.get(node.parentId);
+      if (!parent) return;
 
-    nodes
-      .filter((node) => node.parentId && node.depth > 0)
-      .forEach((node) => {
-        const parent = nodeById.get(node.parentId);
-        if (!parent) return;
+      // 固定値アンカー：親=上、子=下（高さはNODE_HEIGHTで固定）
+      const startX = (parent._px ?? 0) + NODE_WIDTH / 2;
+      const startY = (parent._py ?? 0);              // 親の上
+      const endX = (node._px ?? 0) + NODE_WIDTH / 2;
+      const endY = (node._py ?? 0) + NODE_HEIGHT;    // 子の下
 
-        const parentEl = container.querySelector(`[data-node-id='${parent.id}']`);
-        const childEl = container.querySelector(`[data-node-id='${node.id}']`);
-        if (!parentEl || !childEl) return;
-
-        const pr = parentEl.getBoundingClientRect();
-        const cr = childEl.getBoundingClientRect();
-        const base = canvas.getBoundingClientRect();
-
-        const startX = pr.left + pr.width / 2 - base.left;
-        const startY = pr.top - base.top;
-        const endX = cr.left + cr.width / 2 - base.left;
-        const endY = cr.bottom - base.top;
-
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", `${startX}`);
-        line.setAttribute("y1", `${startY}`);
-        line.setAttribute("x2", `${endX}`);
-        line.setAttribute("y2", `${endY}`);
-        line.setAttribute("stroke", "#d86b97");
-        line.setAttribute("stroke-width", "2");
-        line.setAttribute("stroke-linecap", "round");
-        svg.appendChild(line);
-      });
-  };
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", `${startX}`);
+      line.setAttribute("y1", `${startY}`);
+      line.setAttribute("x2", `${endX}`);
+      line.setAttribute("y2", `${endY}`);
+      line.setAttribute("stroke", "#d86b97");
+      line.setAttribute("stroke-width", "2");
+      line.setAttribute("stroke-linecap", "round");
+      svg.appendChild(line);
+    });
+};
 
   if (container._treeResizeHandler) {
     window.removeEventListener("resize", container._treeResizeHandler);
@@ -179,38 +192,112 @@ function setupTreeView() {
   const status = overlay.querySelector(".tree-status");
   const graph = overlay.querySelector(".tree-graph");
 
-  const closeOverlay = () => overlay.classList.add("is-hidden");
+  let cachedNodes = null;
 
+  // scale state
+  let treeScale = 1;
+  const MIN_SCALE = 0.5;
+  const MAX_SCALE = 2.5;
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  const closeOverlay = () => overlay.classList.add("is-hidden");
   closeButton?.addEventListener("click", closeOverlay);
   overlay.addEventListener("click", (event) => {
     if (event.target === overlay) closeOverlay();
   });
 
-  // ドラッグでパン（上下左右）
-  if (graph) {
+  const redraw = () => {
+    if (!graph || !cachedNodes) return;
+    renderTree(graph, cachedNodes, treeScale);
+  };
+
+  const setupDragPanAndZoom = () => {
+    if (!graph) return;
+
+    const pointers = new Map();
     let dragging = false;
     let startX = 0;
     let startY = 0;
     let startScrollLeft = 0;
     let startScrollTop = 0;
 
-    const stopDrag = () => {
+    // pinch
+    let pinching = false;
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
+    let pinchCenter = { x: 0, y: 0, cx: 0, cy: 0 };
+
+    const stopAll = () => {
       dragging = false;
+      pinching = false;
       graph.classList.remove("is-dragging");
     };
 
+    const getDist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const getCenter = (a, b) => ({
+      clientX: (a.clientX + b.clientX) / 2,
+      clientY: (a.clientY + b.clientY) / 2,
+    });
+
     graph.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) return;
-      dragging = true;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+
+      pointers.set(event.pointerId, event);
       graph.setPointerCapture(event.pointerId);
-      graph.classList.add("is-dragging");
-      startX = event.clientX;
-      startY = event.clientY;
-      startScrollLeft = graph.scrollLeft;
-      startScrollTop = graph.scrollTop;
+
+      if (pointers.size === 1) {
+        pinching = false;
+        dragging = true;
+        graph.classList.add("is-dragging");
+        startX = event.clientX;
+        startY = event.clientY;
+        startScrollLeft = graph.scrollLeft;
+        startScrollTop = graph.scrollTop;
+        return;
+      }
+
+      if (pointers.size === 2) {
+        dragging = false;
+        graph.classList.remove("is-dragging");
+
+        const [p1, p2] = Array.from(pointers.values());
+        pinching = true;
+        pinchStartDist = getDist(p1, p2);
+        pinchStartScale = treeScale;
+
+        const c = getCenter(p1, p2);
+        const rect = graph.getBoundingClientRect();
+        pinchCenter = {
+          x: c.clientX - rect.left + graph.scrollLeft,
+          y: c.clientY - rect.top + graph.scrollTop,
+          cx: c.clientX - rect.left,
+          cy: c.clientY - rect.top,
+        };
+      }
     });
 
     graph.addEventListener("pointermove", (event) => {
+      if (!pointers.has(event.pointerId)) return;
+      pointers.set(event.pointerId, event);
+
+      if (pinching && pointers.size >= 2) {
+        const [p1, p2] = Array.from(pointers.values());
+        const dist = getDist(p1, p2);
+        const raw = pinchStartScale * (dist / Math.max(1, pinchStartDist));
+        const next = clamp(raw, MIN_SCALE, MAX_SCALE);
+        const prev = treeScale;
+        if (next === prev) return;
+
+        treeScale = next;
+
+        const ratio = next / prev;
+        graph.scrollLeft = pinchCenter.x * ratio - pinchCenter.cx;
+        graph.scrollTop = pinchCenter.y * ratio - pinchCenter.cy;
+
+        redraw();
+        return;
+      }
+
       if (!dragging) return;
       const dx = event.clientX - startX;
       const dy = event.clientY - startY;
@@ -218,10 +305,44 @@ function setupTreeView() {
       graph.scrollTop = startScrollTop - dy;
     });
 
-    graph.addEventListener("pointerup", stopDrag);
-    graph.addEventListener("pointercancel", stopDrag);
-    graph.addEventListener("pointerleave", stopDrag);
-  }
+    graph.addEventListener("pointerup", (event) => {
+      pointers.delete(event.pointerId);
+      if (pointers.size === 0) stopAll();
+      if (pointers.size === 1) pinching = false;
+    });
+
+    graph.addEventListener("pointercancel", (event) => {
+      pointers.delete(event.pointerId);
+      if (pointers.size === 0) stopAll();
+    });
+
+    // wheel zoom (PC)
+    graph.addEventListener(
+      "wheel",
+      (event) => {
+        event.preventDefault();
+
+        const rect = graph.getBoundingClientRect();
+        const mx = event.clientX - rect.left + graph.scrollLeft;
+        const my = event.clientY - rect.top + graph.scrollTop;
+
+        const prev = treeScale;
+        const next = clamp(prev * (event.deltaY > 0 ? 0.9 : 1.1), MIN_SCALE, MAX_SCALE);
+        if (next === prev) return;
+
+        treeScale = next;
+
+        const ratio = next / prev;
+        graph.scrollLeft = mx * ratio - (event.clientX - rect.left);
+        graph.scrollTop = my * ratio - (event.clientY - rect.top);
+
+        redraw();
+      },
+      { passive: false }
+    );
+  };
+
+  setupDragPanAndZoom();
 
   continueButton.addEventListener("click", async () => {
     const user = getStoredUser();
@@ -237,9 +358,11 @@ function setupTreeView() {
 
     try {
       const nodes = await fetchTreeNodes(user.email);
+      cachedNodes = nodes;
+
       graph?.classList.remove("is-loading");
       status.textContent = "";
-      renderTree(graph, nodes);
+      redraw();
     } catch {
       graph?.classList.remove("is-loading");
       status.textContent = "読み込みに失敗しました。";
