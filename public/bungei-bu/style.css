@@ -274,7 +274,7 @@ body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   /*-webkit-line-clamp: 4;   /* 4行で省略 */
-  overflow: auto;
+  /*overflow: auto;*/
 }
 
 .tree-lines {
