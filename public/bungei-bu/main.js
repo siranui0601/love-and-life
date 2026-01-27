@@ -802,3 +802,73 @@ if (toTopButton) {
     window.location.href = "/";
   });
 }
+
+
+
+window.addEventListener("bungei:jump", async (e) => {
+  const { orderList, output, epilogue } = e.detail || {};
+  if (!orderList || !output) return;
+
+  await jumpToScene({ orderList, output, epilogue });
+});
+
+async function jumpToScene({ orderList, output, epilogue }) {
+  await lowerCurtain();
+
+  // 状態復元
+  speechOrder = [...orderList];
+
+  try {
+    const parsed = JSON.parse(output);
+    currentSummary = parsed.currentSummary ?? null;
+
+    if (parsed.condition) {
+      relationship = Object.entries(parsed.condition)
+        .filter(([_, v]) => v?.relationship)
+        .map(([k]) => k);
+
+      nowThinking = {
+        ミユ: parsed.condition.ミユ?.NowThinking ?? nowThinking.ミユ,
+        シオン: parsed.condition.シオン?.NowThinking ?? nowThinking.シオン,
+        ナナ: parsed.condition.ナナ?.NowThinking ?? nowThinking.ナナ,
+      };
+    }
+  } catch {}
+
+  // epilogue なら専用再生
+  if (epilogue) {
+    const epiDialogue = buildEpilogueDialogue(epilogue);
+    sceneDialogue = epiDialogue;
+    endingPhase = "epilogue";
+  } else {
+    // 通常シーン再構築
+    const res = await fetch("/api/bungei/scene", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input: orderList[orderList.length - 1],
+        email: playerEmail,
+        currentSummary,
+        condition: {
+          ミユ: { relationship: relationship.includes("ミユ"), NowThinking: nowThinking.ミユ },
+          シオン: { relationship: relationship.includes("シオン"), NowThinking: nowThinking.シオン },
+          ナナ: { relationship: relationship.includes("ナナ"), NowThinking: nowThinking.ナナ },
+        },
+        speechOrder: orderList,
+      }),
+    });
+
+    const data = (await res.json())?.data;
+    sceneDialogue = data?.dialogue || [];
+    endingPhase = "none";
+  }
+
+  sceneIndex = -1;
+  sceneActive = true;
+
+  hideChoiceCards();
+  hideInputPanel();
+  setSceneLine(0);
+
+  await raiseCurtain();
+}
