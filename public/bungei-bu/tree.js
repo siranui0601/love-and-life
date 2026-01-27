@@ -139,6 +139,11 @@ function renderTree(container, nodes, scale = 1) {
     item.style.transform = `translate(${x}px, ${y}px)`;
 
     levelsContainer.appendChild(item);
+    
+    // ✅ 実寸（折り返しで高さが変わるので）
+    node._w = item.offsetWidth;
+    node._h = item.offsetHeight;
+    
   });
 
   const drawLines = () => {
@@ -152,12 +157,14 @@ function renderTree(container, nodes, scale = 1) {
     .forEach((node) => {
       const parent = nodeById.get(node.parentId);
       if (!parent) return;
+      if (parent.id === "root") return;
 
       // 固定値アンカー：親=上、子=下（高さはNODE_HEIGHTで固定）
       const startX = (parent._px ?? 0) + NODE_WIDTH / 2;
       const startY = (parent._py ?? 0);              // 親の上
       const endX = (node._px ?? 0) + NODE_WIDTH / 2;
-      const endY = (node._py ?? 0) + NODE_HEIGHT;    // 子の下
+      //const endY = (node._py ?? 0) + NODE_HEIGHT;    // 子の下
+      const endY = (node._py ?? 0) + (node._h ?? NODE_HEIGHT); // ✅ 子の下（実寸）
 
       const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
       line.setAttribute("x1", `${startX}`);
