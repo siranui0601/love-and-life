@@ -274,7 +274,7 @@ body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   /*-webkit-line-clamp: 4;   /* 4行で省略 */
-  overflow: auto;
+  /*overflow: auto;*/
 }
 
 .tree-lines {
@@ -834,4 +834,61 @@ body {
 
 .is-hidden {
   display: none;
+}
+
+
+
+/* ===== ツリー：ジャンプ確認モーダル ===== */
+.tree-panel {
+  position: relative; /* 念のため */
+}
+
+.tree-jump-modal {
+  position: fixed;            /* overlay全体を覆う */
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 232, 244, 0.75);
+  z-index: 999;               /* tree-panelより上 */
+}
+
+.tree-jump-modal.is-hidden {
+  display: none;
+}
+
+.tree-jump-box {
+  width: min(420px, 86vw);
+  padding: 22px 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 20px 40px rgba(255, 140, 190, 0.45);
+  text-align: center;
+}
+
+.tree-jump-actions {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tree-jump-yes,
+.tree-jump-no {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 0;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tree-jump-yes {
+  background: #ff8fc1;
+  color: #fff;
+}
+
+.tree-jump-no {
+  background: #ffd3e5;
+  color: #6b3e58;
 }
