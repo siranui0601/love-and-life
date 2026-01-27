@@ -53,6 +53,8 @@ function renderTree(container, nodes, scale = 1) {
   const svg = container.querySelector(".tree-lines");
   const canvas = container.querySelector(".tree-canvas");
   const inner = container.querySelector(".tree-inner");
+  
+  
 
   if (!levelsContainer || !svg || !canvas) return;
 
@@ -128,6 +130,14 @@ function renderTree(container, nodes, scale = 1) {
     item.className = "tree-node";
     item.dataset.nodeId = node.id;
     item.textContent = node.line;
+    
+    // ✅ 追加：エピローグノードの見た目フラグ
+if (node.epilogue) {
+  item.classList.add("tree-node--epilogue");
+  // lovers: ["ミユ","シオン"] みたいな配列が来る想定
+  const lovers = Array.isArray(node.lovers) ? node.lovers : [];
+  item.dataset.lovers = lovers.join(",");
+}
 
     const x = PADDING + (node.x ?? 0) * (NODE_WIDTH + H_GAP);
     const y = PADDING + (maxDepth - node.depth) * (NODE_HEIGHT + V_GAP);
