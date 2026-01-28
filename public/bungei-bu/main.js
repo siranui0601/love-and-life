@@ -835,28 +835,15 @@ async function jumpToScene({ orderList, output, epilogue }) {
     }
   } catch {}
 
-  // epilogue なら専用再生
-  if (epilogue) {
-    const epiDialogue = buildEpilogueDialogue(epilogue);
-    sceneDialogue = epiDialogue;
-    endingPhase = "epilogue";
-  } else {
-    // 通常シーン再構築
-    const res = await fetch("/api/bungei/scene", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        input: orderList[orderList.length - 1],
-        email: playerEmail,
-        currentSummary,
-        condition: {
-          ミユ: { relationship: relationship.includes("ミユ"), NowThinking: nowThinking.ミユ },
-          シオン: { relationship: relationship.includes("シオン"), NowThinking: nowThinking.シオン },
-          ナナ: { relationship: relationship.includes("ナナ"), NowThinking: nowThinking.ナナ },
-        },
-        speechOrder: orderList,
-      }),
-    });
+  // ✅ 保存済みの会話をそのまま再生する
+if (epilogue) {
+sceneDialogue = buildEpilogueDialogue(epilogue);
+endingPhase = "epilogue";
+ } else {
+   sceneDialogue = Array.isArray(parsed?.dialogue) ? parsed.dialogue : [];
+   endingPhase = "none";
+ }
+
 
     const data = (await res.json())?.data;
     sceneDialogue = data?.dialogue || [];
