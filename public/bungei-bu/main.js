@@ -815,47 +815,68 @@ window.addEventListener("bungei:jump", async (e) => {
 async function jumpToScene({ orderList, output, epilogue }) {
   await lowerCurtain();
 
-  // 状態復元
-  speechOrder = [...orderList];
+  // ---- 画面をプレイ状態に戻す ----
+  introActive = false;
+  if (introScreen) {
+    introScreen.classList.add("is-hidden");
+    introScreen.hidden = true;
+  }
+  if (resultScreen) {
+    resultScreen.classList.add("is-hidden");
+    resultScreen.hidden = true;
+  }
+  if (playArea) {
+    playArea.classList.remove("is-hidden");
+    playArea.hidden = false;
+  }
+  showDialogueBox();
 
+  // ---- 状態復元 ----
+  speechOrder = Array.isArray(orderList) ? [...orderList] : [];
+
+  let parsed = null;
   try {
-    const parsed = JSON.parse(output);
-    currentSummary = parsed.currentSummary ?? null;
+    parsed = JSON.parse(output);
+  } catch {
+    parsed = null;
+  }
 
-    if (parsed.condition) {
-      relationship = Object.entries(parsed.condition)
-        .filter(([_, v]) => v?.relationship)
-        .map(([k]) => k);
+  currentSummary = parsed?.currentSummary ?? null;
 
-      nowThinking = {
-        ミユ: parsed.condition.ミユ?.NowThinking ?? nowThinking.ミユ,
-        シオン: parsed.condition.シオン?.NowThinking ?? nowThinking.シオン,
-        ナナ: parsed.condition.ナナ?.NowThinking ?? nowThinking.ナナ,
-      };
-    }
-  } catch {}
+  if (parsed?.condition && typeof parsed.condition === "object") {
+    relationship = Object.entries(parsed.condition)
+      .filter(([_, v]) => v?.relationship)
+      .map(([k]) => k);
 
-  // ✅ 保存済みの会話をそのまま再生する
-if (epilogue) {
-sceneDialogue = buildEpilogueDialogue(epilogue);
-endingPhase = "epilogue";
- } else {
-   sceneDialogue = Array.isArray(parsed?.dialogue) ? parsed.dialogue : [];
-   endingPhase = "none";
- }
+    nowThinking = {
+      ミユ: parsed.condition.ミユ?.NowThinking ?? nowThinking.ミユ,
+      シオン: parsed.condition.シオン?.NowThinking ?? nowThinking.シオン,
+      ナナ: parsed.condition.ナナ?.NowThinking ?? nowThinking.ナナ,
+    };
+  }
 
-
-    const data = (await res.json())?.data;
-    sceneDialogue = data?.dialogue || [];
+  // ---- 会話のセット（保存済みをそのまま再生）----
+  if (epilogue) {
+    sceneDialogue = buildEpilogueDialogue(epilogue);
+    endingPhase = "epilogue";
+  } else {
+    sceneDialogue = Array.isArray(parsed?.dialogue) ? parsed.dialogue : [];
     endingPhase = "none";
   }
 
+  // ---- 再生開始 ----
   sceneIndex = -1;
-  sceneActive = true;
+  sceneActive = sceneDialogue.length > 0;
 
   hideChoiceCards();
   hideInputPanel();
-  setSceneLine(0);
+
+  if (sceneActive) {
+    setSceneLine(0);
+  } else {
+    // 万一 dialogue が無いときの保険
+    showModal("このシーンの会話データが見つかりませんでした。");
+  }
 
   await raiseCurtain();
 }
