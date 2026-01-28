@@ -268,7 +268,7 @@ jumpNo.addEventListener("click", (e) => {
 });
 
 
-jumpYes.addEventListener("click", () => {
+jumpYes.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
