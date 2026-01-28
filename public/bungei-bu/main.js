@@ -412,25 +412,42 @@ function showInviteChoice(text) {
 }
 
 function normalizeEpilogueDialogue(raw) {
-  if (Array.isArray(raw)) {
-    return raw;
+  if (Array.isArray(raw)) return raw;
+
+  if (raw && typeof raw === "object") {
+    if (Array.isArray(raw.dialogue)) return raw.dialogue;
+    if (Array.isArray(raw.epilogue)) return raw.epilogue;
+    if (typeof raw.epilogue === "string") return normalizeEpilogueDialogue(raw.epilogue);
   }
-  if (raw && typeof raw === "object" && Array.isArray(raw.dialogue)) {
-    return raw.dialogue;
-  }
+
   if (typeof raw === "string") {
-    return raw
+    const trimmed = raw.trim();
+
+    // ✅ まずJSON文字列として読めるか試す（ここが修正点）
+    if (
+      (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+      (trimmed.startsWith("[") && trimmed.endsWith("]"))
+    ) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return normalizeEpilogueDialogue(parsed);
+      } catch {
+        // JSONじゃなければ下へ
+      }
+    }
+
+    // 従来の「speaker: line」パース
+    return trimmed
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean)
       .map((line) => {
         const match = line.match(/^([^:：]+)[:：]\s*(.+)$/);
-        if (match) {
-          return { speaker: match[1].trim(), line: match[2].trim() };
-        }
+        if (match) return { speaker: match[1].trim(), line: match[2].trim() };
         return { speaker: "エピローグ", line };
       });
   }
+
   return [];
 }
 
@@ -833,6 +850,12 @@ async function jumpToScene({ orderList, output, epilogue }) {
 
   // ---- 状態復元 ----
   speechOrder = Array.isArray(orderList) ? [...orderList] : [];
+  
+  // ✅ 残り文字数を復元（プレイヤー入力の合計を引く）
+const usedChars = speechOrder.reduce((sum, s) => sum + String(s || "").length, 0);
+remainingChars = Math.max(0, 120 - usedChars);
+updateTimer();
+updateInputLimit();
 
   let parsed = null;
   try {
