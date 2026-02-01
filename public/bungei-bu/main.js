@@ -27,13 +27,29 @@ const retryButton = document.querySelector("#retryButton");
 const toTopButton = document.querySelector("#toTopButton");
 
 
+const EPILOGUE_BACKGROUNDS = [
+  { name: "遊園地", url: "https://pbs.twimg.com/media/G_g7eOPbIAA-osB.jpg" },
+  { name: "夏祭り", url: "https://pbs.twimg.com/media/G_g7eOwWQAAxwB1.jpg" },
+  { name: "海辺の防波堤", url: "https://pbs.twimg.com/media/G_g7eOzXsAASVRj.jpg" },
+  { name: "水族館", url: "https://pbs.twimg.com/media/G_g7eOMaoAEP5u6.jpg" },
+  { name: "カフェのテラス", url: "https://pbs.twimg.com/media/G_g7e9LasAAA4_B.jpg" },
+  { name: "映画館のロビー", url: "https://pbs.twimg.com/media/G_g7e9NboAA__6e.jpg" },
+  { name: "ボーリング場", url: "https://pbs.twimg.com/media/G_g7e90WIAAQ37_.jpg" },
+  { name: "海辺の展望台", url: "https://pbs.twimg.com/media/G_g7e9PbsAAy2Az.jpg" },
+  { name: "夜の公園", url: "https://pbs.twimg.com/media/G_g7fp5bQAA15Ut.jpg" },
+  { name: "星が見える丘", url: "https://pbs.twimg.com/media/G_g7fqrWcAAef_j.jpg" },
+  { name: "空港のロビー", url: "https://pbs.twimg.com/media/G_g7fp7bsAAmsSA.jpg" },
+  { name: "商店街", url: "https://pbs.twimg.com/media/G_g7fp6bQAA0_Sl.jpg" },
+  { name: "コンビニ前", url: "https://pbs.twimg.com/media/G_g7gccbkAAT4r6.jpg" },
+  { name: "田舎のバス停", url: "https://pbs.twimg.com/media/G_g7gdBX0AAQPHT.jpg" },
+];
+
+const EPILOGUE_BG_MAP = Object.fromEntries(
+  EPILOGUE_BACKGROUNDS.map(({ name, url }) => [name, url])
+);
 
 function getBackgroundUrlByName(name) {
-  const map = {
-    "水族館": "（水族館の背景URL）",
-    // 必要に応じて増やす
-  };
-  return map[name] || null;
+  return EPILOGUE_BG_MAP[name] || null;
 }
 
 const dialogue = [
