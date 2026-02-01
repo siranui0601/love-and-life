@@ -273,9 +273,18 @@ jumpYes.addEventListener("click", (e) => {
   e.stopPropagation();
 
   if (!pendingJump) return;
-  window.dispatchEvent(
-    new CustomEvent("bungei:jump", { detail: pendingJump })
-  );
+
+  // ✅ D列が空（null/""/"null"）なら epilogue 扱いしない
+  const epi = pendingJump.epilogue;
+  const isEmptyEpi =
+    epi == null ||
+    (typeof epi === "string" && (epi.trim() === "" || epi.trim() === "null"));
+
+  if (isEmptyEpi) {
+    delete pendingJump.epilogue;
+  }
+
+  window.dispatchEvent(new CustomEvent("bungei:jump", { detail: pendingJump }));
   closeJumpModal();
   overlay.classList.add("is-hidden");
 });
