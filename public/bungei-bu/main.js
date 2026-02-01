@@ -26,6 +26,16 @@ const resultSlots = document.querySelector("#resultSlots");
 const retryButton = document.querySelector("#retryButton");
 const toTopButton = document.querySelector("#toTopButton");
 
+
+
+function getBackgroundUrlByName(name) {
+  const map = {
+    "水族館": "（水族館の背景URL）",
+    // 必要に応じて増やす
+  };
+  return map[name] || null;
+}
+
 const dialogue = [
   {
     speaker: "ミユ",
@@ -879,10 +889,24 @@ updateInputLimit();
   }
 
   // ---- 会話のセット（保存済みをそのまま再生）----
-  if (epilogue) {
-    sceneDialogue = buildEpilogueDialogue(epilogue);
-    endingPhase = "epilogue";
-  } else {
+  // ✅ 保存済みの会話をそのまま再生する
+if (epilogue) {
+  // epilogue が文字列なら JSON 化
+  let epiObj = epilogue;
+  if (typeof epilogue === "string") {
+    try { epiObj = JSON.parse(epilogue); } catch { /* そのまま */ }
+  }
+
+  // ✅ 背景反映：background.url 優先、なければ backgroundName
+  const bgUrl =
+    epiObj?.background?.url ||
+    (epiObj?.backgroundName ? getBackgroundUrlByName(epiObj.backgroundName) : null);
+
+  if (bgUrl) setSceneBackground(bgUrl);
+
+  sceneDialogue = buildEpilogueDialogue(epiObj);
+  endingPhase = "epilogue";
+} else {
     sceneDialogue = Array.isArray(parsed?.dialogue) ? parsed.dialogue : [];
     endingPhase = "none";
   }
