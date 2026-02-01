@@ -271,16 +271,17 @@ jumpNo.addEventListener("click", (e) => {
 jumpYes.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
-
   if (!pendingJump) return;
 
-  // ✅ D列が空（null/""/"null"）なら epilogue 扱いしない
   const epi = pendingJump.epilogue;
   const isEmptyEpi =
     epi == null ||
     (typeof epi === "string" && (epi.trim() === "" || epi.trim() === "null"));
 
-  if (isEmptyEpi) {
+  // ✅ 追加：B列(output)がある葉は「通常会話の葉」なので epilogue を外す
+  const hasOutput = !!pendingJump.hasOutput;
+
+  if (hasOutput || isEmptyEpi) {
     delete pendingJump.epilogue;
   }
 
