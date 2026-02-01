@@ -235,6 +235,9 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
     hasOutput: !!String(item.output || "").trim(),
     // ✅ 追加：D列があるか
     hasEpilogue: !!String(item.epilogue || "").trim(),
+    
+    // ✅ 追加
+    jumpKind: "scene",
   },
 });
       idByPrefix.set(prefix, id);
@@ -275,6 +278,9 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
   epilogue: item.epilogue,
   hasOutput: !!String(item.output || "").trim(),
   hasEpilogue: !!String(item.epilogue || "").trim(),
+  
+  // ✅ 追加
+  jumpKind: "epilogue",
 },
     });
 
