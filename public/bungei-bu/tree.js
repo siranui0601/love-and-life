@@ -278,10 +278,13 @@ jumpYes.addEventListener("click", (e) => {
     epi == null ||
     (typeof epi === "string" && (epi.trim() === "" || epi.trim() === "null"));
 
-  // ✅ 追加：B列(output)がある葉は「通常会話の葉」なので epilogue を外す
   const hasOutput = !!pendingJump.hasOutput;
 
-  if (hasOutput || isEmptyEpi) {
+  // ✅ 追加：エピローグノードか？
+  const isEpilogueJump = pendingJump.jumpKind === "epilogue";
+
+  // ✅ 修正：通常ノード(scene)の時だけ epilogue を落とす
+  if (!isEpilogueJump && (hasOutput || isEmptyEpi)) {
     delete pendingJump.epilogue;
   }
 
