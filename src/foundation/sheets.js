@@ -222,16 +222,21 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
       const id = `node-${nodes.length}`;
       //nodes.push({ id, parentId, line: limited[i], depth: i + 1 });
       nodes.push({
-        id,
-        parentId,
-        line: limited[i],
-        depth: i + 1,
-        jump: {
-          orderList: limited.slice(0, i + 1),
-          output: item.output,
-          epilogue: item.epilogue,
-        },
-      });
+  id,
+  parentId,
+  line: limited[i],
+  depth: i + 1,
+  jump: {
+    orderList: limited.slice(0, i + 1),
+    output: item.output,
+    epilogue: item.epilogue,
+
+    // ✅ 追加：B列があるか
+    hasOutput: !!String(item.output || "").trim(),
+    // ✅ 追加：D列があるか
+    hasEpilogue: !!String(item.epilogue || "").trim(),
+  },
+});
       idByPrefix.set(prefix, id);
 
       nodeCount += 1;
@@ -265,10 +270,12 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
       backgroundName: backgroundName || null,
       lovers,
       jump: {
-        orderList: limited,
-        output: item.output,
-        epilogue: item.epilogue,
-      },
+  orderList: limited,
+  output: item.output,
+  epilogue: item.epilogue,
+  hasOutput: !!String(item.output || "").trim(),
+  hasEpilogue: !!String(item.epilogue || "").trim(),
+},
     });
 
     nodeCount += 1;
