@@ -137,7 +137,7 @@ const dialogue = [
 
 const outroDialogue = [
   { speaker: "チャイム", line: "「キーンコーンカーンコーン」", mood: "neutral" },
-  { speaker: "ミユ", line: "「え、もう終わり！？体感n分なんだけど！」", mood: "negative" },
+  { speaker: "ミユ", line: "「え、もう終わり！？体感10分なんだけど！」", mood: "negative" },
   { speaker: "シオン", line: "「寄り道しないで、まっすぐ帰りましょ」", mood: "neutral" },
   { speaker: "ナナ", line: "「空、オレンジ色」", mood: "positive" },
   { speaker: "ミユ", line: "「この感じ、ちょっと好きなんだけど」", mood: "positive" },
