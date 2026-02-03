@@ -30,6 +30,32 @@ export async function findUserByEmail(email) {
   return null;
 }
 
+export async function findUserByUsername(username) {
+  const sheets = await getSheetsClient();
+  const range = `${SHEET_NAME}!A2:C`;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
+  const rows = res.data.values || [];
+  for (const row of rows) {
+    const [, storedUsername] = row;
+    if (storedUsername === username) return { username: storedUsername };
+  }
+  return null;
+}
+
+export async function findUserByUsernameAndPassword(username, password) {
+  const sheets = await getSheetsClient();
+  const range = `${SHEET_NAME}!A2:B`;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
+  const rows = res.data.values || [];
+  for (const row of rows) {
+    const [storedPassword, storedUsername] = row;
+    if (storedUsername === username && storedPassword === password) {
+      return { username: storedUsername };
+    }
+  }
+  return null;
+}
+
 // 新規ユーザー追加
 export async function addUser({ email, username, displayName }) {
   const sheets = await getSheetsClient();
@@ -41,6 +67,18 @@ export async function addUser({ email, username, displayName }) {
     requestBody: { values: [[email, username, displayName]] },
   });
   return { email, username, displayName };
+}
+
+export async function addCredentialUser({ username, password }) {
+  const sheets = await getSheetsClient();
+  const range = `${SHEET_NAME}!A2:B2`;
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[password, username]] },
+  });
+  return { username };
 }
 
 export async function findBungeiEntryByOrder(orderList) {

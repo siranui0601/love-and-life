@@ -720,6 +720,35 @@ html { -webkit-text-size-adjust: 100%; }
   font-size: 0.9rem;
 }
 
+.auth-divider {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.login-form {
+  display: grid;
+  gap: 8px;
+  width: min(320px, 90vw);
+}
+
+.login-form input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.login-form button {
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: none;
+  background: #667eea;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .logout-btn {
   padding: 0.4rem 1.2rem;
   border-radius: 999px;
@@ -791,6 +820,65 @@ html { -webkit-text-size-adjust: 100%; }
   background: #667eea;
   color: #fff;
   font-weight: 600;
+  cursor: pointer;
+}
+
+.signup-top-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 998;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: 0.2s;
+}
+
+.signup-top-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.signup-modal-inner input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+.signup-modal-buttons {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  justify-items: center;
+}
+
+.signup-modal-buttons button {
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: none;
+  background: #667eea;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.google-signup-btn {
+  display: flex;
+  justify-content: center;
+}
+
+.signup-close-btn {
+  margin-top: 12px;
+  background: transparent;
+  border: none;
+  color: #666;
   cursor: pointer;
 }
 
