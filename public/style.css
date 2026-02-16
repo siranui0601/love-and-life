@@ -1459,7 +1459,8 @@ html { -webkit-text-size-adjust: 100%; }
 
 /* ===== スクロール復活（全体） ===== */
 body{
-  overflow: hidden; /* 背景演出は固定のまま */
+  overflow-y: auto;
+  overflow-x: hidden; /* 横は抑制（意図しない横スクロール防止） */
 }
 
 /* メニュー画面は縦にスクロールできるように */
