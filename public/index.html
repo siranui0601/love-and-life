@@ -45,23 +45,6 @@
       <p>新しいゲームを準備中...</p>
     </div>
   </div>
-
-
- <!-- ▼ ここから追加：ログインエリア ▼ -->
-  <div class="auth-area" id="authArea" style="display:none;">
-    <div id="loginStatus">ログインしていません</div>
-    <div id="googleSignInBtn"></div>
-    <div class="auth-divider">または</div>
-    <div class="login-form">
-      <input id="loginUsername" type="text" placeholder="ユーザーネーム" autocomplete="username" />
-      <input id="loginPassword" type="password" placeholder="パスワード" autocomplete="current-password" />
-      <button id="loginBtn" type="button">ログイン</button>
-    </div>
-    <button id="logoutBtn" class="logout-btn" style="display:none;">
-      ログアウト
-    </button>
-  </div>
-  <!-- ▲ ここまで追加 ▲ -->
 </section>
 
 
@@ -250,7 +233,7 @@
   
   
   
-<div id="signupModal" class="simple-modal" aria-hidden="true">
+  <div id="signupModal" class="simple-modal" aria-hidden="true">
     <div class="simple-modal-inner signup-modal-inner">
       <h2>新規登録</h2>
       <p>ユーザーネームとパスワードを入力してください。</p>
@@ -262,6 +245,27 @@
         <div id="googleSignUpBtn" class="google-signup-btn"></div>
       </div>
       <button id="closeSignupBtn" class="signup-close-btn" type="button">閉じる</button>
+    </div>
+  </div>
+
+  <div id="loginModal" class="simple-modal" aria-hidden="true">
+    <div class="simple-modal-inner login-modal-inner">
+      <h2>ログイン</h2>
+      <p>Google またはユーザーネームとパスワードでログインできます。</p>
+      <div class="auth-area" id="authArea">
+        <div id="loginStatus">ログインしていません</div>
+        <div id="googleSignInBtn" class="google-signin-btn"></div>
+        <div class="auth-divider">または</div>
+        <div class="login-form">
+          <input id="loginUsername" type="text" placeholder="ユーザーネーム" autocomplete="username" />
+          <input id="loginPassword" type="password" placeholder="パスワード" autocomplete="current-password" />
+          <button id="loginBtn" type="button">ログイン</button>
+        </div>
+        <button id="logoutBtn" class="logout-btn" style="display:none;">
+          ログアウト
+        </button>
+      </div>
+      <button id="closeLoginBtn" class="signup-close-btn" type="button">閉じる</button>
     </div>
   </div>
 

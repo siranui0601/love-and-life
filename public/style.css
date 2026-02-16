@@ -850,6 +850,19 @@ html { -webkit-text-size-adjust: 100%; }
   transform: translateY(-1px);
 }
 
+.login-modal-inner {
+  width: min(360px, 92vw);
+}
+
+.login-modal-inner .auth-area {
+  margin-top: 12px;
+}
+
+.google-signin-btn {
+  display: flex;
+  justify-content: center;
+}
+
 .signup-modal-inner input {
   width: 100%;
   padding: 8px 10px;
