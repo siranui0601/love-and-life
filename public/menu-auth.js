@@ -145,13 +145,16 @@ document.addEventListener('DOMContentLoaded', () => {
   if (openLoginBtn) {
     openLoginBtn.addEventListener("click", () => {
       showAuthArea();
+      if (signupModal) {
+        signupModal.style.display = "none";
+        signupModal.setAttribute("aria-hidden", "true");
+      }
     });
   }
 
   if (openSignupBtn && signupModal) {
     openSignupBtn.addEventListener("click", (event) => {
       event.preventDefault();
-      showAuthArea();
       signupModal.style.display = "flex";
       signupModal.setAttribute("aria-hidden", "false");
     });
