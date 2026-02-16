@@ -16,7 +16,6 @@
 
   <!-- ★ 新規追加: ゲーム選択画面 -->
   <!-- ゲーム選択画面（初期表示） -->
-  <center>
 <section id="gameMenu">
   <h1 class="menu-title">Game Collection</h1>
   <div class="game-grid">
@@ -187,24 +186,6 @@
   </div>
 </section>
 
-<div id="signupModal" class="simple-modal" aria-hidden="true">
-  <div class="simple-modal-inner signup-modal-inner">
-    <h2>新規登録</h2>
-    <p>ユーザーネームとパスワードを入力してください。</p>
-    <input id="signupUsername" type="text" placeholder="ユーザーネーム" autocomplete="username" />
-    <input id="signupPassword" type="password" placeholder="パスワード" autocomplete="new-password" />
-    <input id="signupPasswordConfirm" type="password" placeholder="パスワード再入力" autocomplete="new-password" />
-    <div class="signup-modal-buttons">
-      <button id="signupSubmitBtn" type="button">登録！</button>
-      <div id="googleSignUpBtn" class="google-signup-btn"></div>
-    </div>
-    <button id="closeSignupBtn" class="signup-close-btn" type="button">閉じる</button>
-  </div>
-</div>
-
-
-  </center>
-
 <!-- 既存のタイトル画面（初期状態で非表示） -->
 <section id="titleScreen" style="display: none;">
   <h1>恋愛人生ゲーム</h1>
@@ -269,17 +250,32 @@
   
   
   
-      <!-- ユーザーネーム設定モーダル -->
-<div id="usernameModal" class="simple-modal" style="display:none;">
-  <div class="simple-modal-inner">
-    <h2>ユーザーネーム設定</h2>
-    <p>このゲーム内で表示する名前を決めてください。</p>
-    <input id="usernameInput" type="text" maxlength="20" placeholder="例）そら" />
-    <div class="simple-modal-buttons">
-      <button id="usernameSaveBtn">OK</button>
+<div id="signupModal" class="simple-modal" aria-hidden="true">
+    <div class="simple-modal-inner signup-modal-inner">
+      <h2>新規登録</h2>
+      <p>ユーザーネームとパスワードを入力してください。</p>
+      <input id="signupUsername" type="text" placeholder="ユーザーネーム" autocomplete="username" />
+      <input id="signupPassword" type="password" placeholder="パスワード" autocomplete="new-password" />
+      <input id="signupPasswordConfirm" type="password" placeholder="パスワード再入力" autocomplete="new-password" />
+      <div class="signup-modal-buttons">
+        <button id="signupSubmitBtn" type="button">登録！</button>
+        <div id="googleSignUpBtn" class="google-signup-btn"></div>
+      </div>
+      <button id="closeSignupBtn" class="signup-close-btn" type="button">閉じる</button>
     </div>
   </div>
-</div>
+
+  <!-- ユーザーネーム設定モーダル（★同様に外へ） -->
+  <div id="usernameModal" class="simple-modal" style="display:none;">
+    <div class="simple-modal-inner">
+      <h2>ユーザーネーム設定</h2>
+      <p>このゲーム内で表示する名前を決めてください。</p>
+      <input id="usernameInput" type="text" maxlength="20" placeholder="例）そら" />
+      <div class="simple-modal-buttons">
+        <button id="usernameSaveBtn">OK</button>
+      </div>
+    </div>
+  </div>
 
 
 </body>
