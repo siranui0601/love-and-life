@@ -40,7 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginBtn = document.getElementById("loginBtn");
   const openSignupBtn = document.getElementById("openSignupBtn");
   const openLoginBtn = document.getElementById("openLoginBtn");
-  const authArea = document.getElementById("authArea");
+  const loginModal = document.getElementById("loginModal");
+  const closeLoginBtn = document.getElementById("closeLoginBtn");
   const signupModal = document.getElementById("signupModal");
   const signupUsername = document.getElementById("signupUsername");
   const signupPassword = document.getElementById("signupPassword");
@@ -53,13 +54,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const usernameSaveBtn = document.getElementById("usernameSaveBtn");
   const pendingSignupKey = "pendingGoogleSignup";
 
-  function showAuthArea() {
-    if (!authArea) return;
-    authArea.style.display = "flex";
+  function openLoginModal() {
+    if (!loginModal) return;
+    loginModal.style.display = "flex";
+    loginModal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeLoginModal() {
+    if (!loginModal) return;
+    loginModal.style.display = "none";
+    loginModal.setAttribute("aria-hidden", "true");
   }
 
   function setAuthUiLoggedIn(username) {
-    showAuthArea();
     if (loginStatus && username) {
       loginStatus.textContent = `${username} でログイン中`;
     }
@@ -70,7 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setAuthUiLoggedOut() {
-    showAuthArea();
     if (loginStatus) loginStatus.textContent = "ログインしていません";
     if (btnContainer) btnContainer.style.display = "block";
     if (loginForm) loginForm.style.display = "grid";
@@ -144,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (openLoginBtn) {
     openLoginBtn.addEventListener("click", () => {
-      showAuthArea();
+      openLoginModal();
       if (signupModal) {
         signupModal.style.display = "none";
         signupModal.setAttribute("aria-hidden", "true");
@@ -152,8 +158,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (closeLoginBtn) {
+    closeLoginBtn.addEventListener("click", () => {
+      closeLoginModal();
+    });
+  }
+
+  if (loginModal) {
+    loginModal.addEventListener("click", (event) => {
+      if (event.target === loginModal) {
+        closeLoginModal();
+      }
+    });
+  }
+
   function openSignupModal() {
-    showAuthArea();
+    closeLoginModal();
     if (!signupModal) {
       console.warn("signupModal が見つからないため新規登録モーダルを表示できません");
       return;
@@ -223,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
         setAuthUiLoggedIn(data.username);
+        closeLoginModal();
         signupModal.style.display = "none";
         signupModal.setAttribute("aria-hidden", "true");
         if (signupPassword) signupPassword.value = "";
@@ -262,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
         setAuthUiLoggedIn(data.username);
+        closeLoginModal();
         if (loginPassword) loginPassword.value = "";
       } catch (e) {
         console.error("login error:", e);
