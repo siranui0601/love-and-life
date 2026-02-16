@@ -823,10 +823,16 @@ html { -webkit-text-size-adjust: 100%; }
   cursor: pointer;
 }
 
-.signup-top-btn {
+.top-auth-actions {
   position: fixed;
   top: 16px;
   right: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 998;
+}
+
+.top-auth-btn {
   z-index: 998;
   padding: 8px 16px;
   border-radius: 999px;
@@ -839,7 +845,7 @@ html { -webkit-text-size-adjust: 100%; }
   transition: 0.2s;
 }
 
-.signup-top-btn:hover {
+.top-auth-btn:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }

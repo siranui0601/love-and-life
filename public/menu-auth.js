@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginPassword = document.getElementById("loginPassword");
   const loginBtn = document.getElementById("loginBtn");
   const openSignupBtn = document.getElementById("openSignupBtn");
+  const openLoginBtn = document.getElementById("openLoginBtn");
+  const authArea = document.getElementById("authArea");
   const signupModal = document.getElementById("signupModal");
   const signupUsername = document.getElementById("signupUsername");
   const signupPassword = document.getElementById("signupPassword");
@@ -51,7 +53,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const usernameSaveBtn = document.getElementById("usernameSaveBtn");
   const pendingSignupKey = "pendingGoogleSignup";
 
+  function showAuthArea() {
+    if (!authArea) return;
+    authArea.style.display = "flex";
+  }
+
   function setAuthUiLoggedIn(username) {
+    showAuthArea();
     if (loginStatus && username) {
       loginStatus.textContent = `${username} でログイン中`;
     }
@@ -62,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setAuthUiLoggedOut() {
+    showAuthArea();
     if (loginStatus) loginStatus.textContent = "ログインしていません";
     if (btnContainer) btnContainer.style.display = "block";
     if (loginForm) loginForm.style.display = "grid";
@@ -133,8 +142,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
+  if (openLoginBtn) {
+    openLoginBtn.addEventListener("click", () => {
+      showAuthArea();
+    });
+  }
+
   if (openSignupBtn && signupModal) {
-    openSignupBtn.addEventListener("click", () => {
+    openSignupBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      showAuthArea();
       signupModal.style.display = "flex";
       signupModal.setAttribute("aria-hidden", "false");
     });
