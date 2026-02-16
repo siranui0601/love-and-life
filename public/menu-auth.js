@@ -152,11 +152,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (openSignupBtn && signupModal) {
+  function openSignupModal() {
+    showAuthArea();
+    if (!signupModal) {
+      console.warn("signupModal が見つからないため新規登録モーダルを表示できません");
+      return;
+    }
+
+    signupModal.style.display = "flex";
+    signupModal.setAttribute("aria-hidden", "false");
+    if (signupUsername) {
+      requestAnimationFrame(() => signupUsername.focus());
+    }
+  }
+
+  if (openSignupBtn) {
     openSignupBtn.addEventListener("click", (event) => {
       event.preventDefault();
-      signupModal.style.display = "flex";
-      signupModal.setAttribute("aria-hidden", "false");
+      openSignupModal();
     });
   }
 
