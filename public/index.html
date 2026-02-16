@@ -9,6 +9,8 @@
 </head>
 <body>
 
+  <button id="openSignupBtn" class="signup-top-btn" type="button">新規登録</button>
+
   <!-- ★ 新規追加: ゲーム選択画面 -->
   <!-- ゲーム選択画面（初期表示） -->
   <center>
@@ -47,6 +49,12 @@
   <div class="auth-area">
     <div id="loginStatus">ログインしていません</div>
     <div id="googleSignInBtn"></div>
+    <div class="auth-divider">または</div>
+    <div class="login-form">
+      <input id="loginUsername" type="text" placeholder="ユーザーネーム" autocomplete="username" />
+      <input id="loginPassword" type="password" placeholder="パスワード" autocomplete="current-password" />
+      <button id="loginBtn" type="button">ログイン</button>
+    </div>
     <button id="logoutBtn" class="logout-btn" style="display:none;">
       ログアウト
     </button>
@@ -175,6 +183,21 @@
     <div id="resultCountdown" style="margin-top:8px; opacity:0.8;"></div>
   </div>
 </section>
+
+<div id="signupModal" class="simple-modal" aria-hidden="true">
+  <div class="simple-modal-inner signup-modal-inner">
+    <h2>新規登録</h2>
+    <p>ユーザーネームとパスワードを入力してください。</p>
+    <input id="signupUsername" type="text" placeholder="ユーザーネーム" autocomplete="username" />
+    <input id="signupPassword" type="password" placeholder="パスワード" autocomplete="new-password" />
+    <input id="signupPasswordConfirm" type="password" placeholder="パスワード再入力" autocomplete="new-password" />
+    <div class="signup-modal-buttons">
+      <button id="signupSubmitBtn" type="button">登録！</button>
+      <div id="googleSignUpBtn" class="google-signup-btn"></div>
+    </div>
+    <button id="closeSignupBtn" class="signup-close-btn" type="button">閉じる</button>
+  </div>
+</div>
 
 
   </center>

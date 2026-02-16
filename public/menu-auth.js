@@ -34,20 +34,48 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginStatus = document.getElementById("loginStatus");
   const logoutBtn = document.getElementById("logoutBtn");
   const btnContainer = document.getElementById("googleSignInBtn");
+  const loginForm = document.querySelector(".login-form");
+  const loginUsername = document.getElementById("loginUsername");
+  const loginPassword = document.getElementById("loginPassword");
+  const loginBtn = document.getElementById("loginBtn");
+  const openSignupBtn = document.getElementById("openSignupBtn");
+  const signupModal = document.getElementById("signupModal");
+  const signupUsername = document.getElementById("signupUsername");
+  const signupPassword = document.getElementById("signupPassword");
+  const signupPasswordConfirm = document.getElementById("signupPasswordConfirm");
+  const signupSubmitBtn = document.getElementById("signupSubmitBtn");
+  const closeSignupBtn = document.getElementById("closeSignupBtn");
+  const googleSignUpBtn = document.getElementById("googleSignUpBtn");
   const usernameModal = document.getElementById("usernameModal");
   const usernameInput = document.getElementById("usernameInput");
   const usernameSaveBtn = document.getElementById("usernameSaveBtn");
   const pendingSignupKey = "pendingGoogleSignup";
 
+  function setAuthUiLoggedIn(username) {
+    if (loginStatus && username) {
+      loginStatus.textContent = `${username} でログイン中`;
+    }
+    if (btnContainer) btnContainer.style.display = "none";
+    if (loginForm) loginForm.style.display = "none";
+    if (openSignupBtn) openSignupBtn.style.display = "none";
+    if (logoutBtn) logoutBtn.style.display = "inline-block";
+  }
+
+  function setAuthUiLoggedOut() {
+    if (loginStatus) loginStatus.textContent = "ログインしていません";
+    if (btnContainer) btnContainer.style.display = "block";
+    if (loginForm) loginForm.style.display = "grid";
+    if (openSignupBtn) openSignupBtn.style.display = "inline-block";
+    if (logoutBtn) logoutBtn.style.display = "none";
+  }
+
   try {
     const stored = localStorage.getItem("currentUser");
     if (stored) {
       window.currentUser = JSON.parse(stored);
-      if (loginStatus && window.currentUser?.username) {
-        loginStatus.textContent = `${window.currentUser.username} でログイン中`;
+      if (window.currentUser?.username) {
+        setAuthUiLoggedIn(window.currentUser.username);
       }
-      if (btnContainer) btnContainer.style.display = "none";
-      if (logoutBtn) logoutBtn.style.display = "inline-block";
     }
   } catch (error) {
     console.error("localStorage parse error:", error);
@@ -58,6 +86,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sessionStorage.setItem(pendingSignupKey, JSON.stringify({ email, gName }));
 
+    if (signupModal) {
+      signupModal.style.display = "none";
+      signupModal.setAttribute("aria-hidden", "true");
+    }
     usernameInput.value = gName;
     usernameModal.style.display = "flex";
 
@@ -92,15 +124,117 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
         sessionStorage.removeItem(pendingSignupKey);
 
-        loginStatus.textContent = `${data.username} でログイン中`;
-        btnContainer.style.display = "none";
-        if (logoutBtn) logoutBtn.style.display = "inline-block";
+        setAuthUiLoggedIn(data.username);
         usernameModal.style.display = "none";
       } catch (e) {
         console.error("register error:", e);
         alert("ユーザーネームの登録に失敗しました");
       }
     };
+  }
+
+  if (openSignupBtn && signupModal) {
+    openSignupBtn.addEventListener("click", () => {
+      signupModal.style.display = "flex";
+      signupModal.setAttribute("aria-hidden", "false");
+    });
+  }
+
+  if (closeSignupBtn && signupModal) {
+    closeSignupBtn.addEventListener("click", () => {
+      signupModal.style.display = "none";
+      signupModal.setAttribute("aria-hidden", "true");
+    });
+  }
+
+  if (signupModal) {
+    signupModal.addEventListener("click", (event) => {
+      if (event.target === signupModal) {
+        signupModal.style.display = "none";
+        signupModal.setAttribute("aria-hidden", "true");
+      }
+    });
+  }
+
+  if (signupSubmitBtn) {
+    signupSubmitBtn.addEventListener("click", async () => {
+      const username = signupUsername?.value.trim() || "";
+      const password = signupPassword?.value || "";
+      const confirm = signupPasswordConfirm?.value || "";
+
+      if (!username || !password) {
+        alert("ユーザーネームとパスワードを入力してください");
+        return;
+      }
+      if (password !== confirm) {
+        alert("パスワードが一致しません");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/user/register-credentials", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          alert(data.error || "登録に失敗しました");
+          return;
+        }
+
+        window.currentUser = {
+          email: username,
+          username: data.username,
+          googleName: null,
+        };
+        localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
+        setAuthUiLoggedIn(data.username);
+        signupModal.style.display = "none";
+        signupModal.setAttribute("aria-hidden", "true");
+        if (signupPassword) signupPassword.value = "";
+        if (signupPasswordConfirm) signupPasswordConfirm.value = "";
+      } catch (e) {
+        console.error("signup error:", e);
+        alert("登録に失敗しました");
+      }
+    });
+  }
+
+  if (loginBtn) {
+    loginBtn.addEventListener("click", async () => {
+      const username = loginUsername?.value.trim() || "";
+      const password = loginPassword?.value || "";
+      if (!username || !password) {
+        alert("ユーザーネームとパスワードを入力してください");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/user/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.exists) {
+          alert(data.error || "ログインに失敗しました");
+          return;
+        }
+
+        window.currentUser = {
+          email: username,
+          username: data.username,
+          googleName: null,
+        };
+        localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
+        setAuthUiLoggedIn(data.username);
+        if (loginPassword) loginPassword.value = "";
+      } catch (e) {
+        console.error("login error:", e);
+        alert("ログインに失敗しました");
+      }
+    });
   }
 
   if (!window.currentUser) {
@@ -230,9 +364,11 @@ document.addEventListener('DOMContentLoaded', () => {
           googleName: lookup.displayName || gName,
         };
         localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
-        loginStatus.textContent = `${lookup.username} でログイン中`;
-        btnContainer.style.display = "none";
-        if (logoutBtn) logoutBtn.style.display = "inline-block";
+        setAuthUiLoggedIn(lookup.username);
+        if (signupModal) {
+          signupModal.style.display = "none";
+          signupModal.setAttribute("aria-hidden", "true");
+        }
         return;
       }
 
@@ -254,6 +390,15 @@ document.addEventListener('DOMContentLoaded', () => {
       text: "continue_with",
     });
 
+    if (googleSignUpBtn) {
+      google.accounts.id.renderButton(googleSignUpBtn, {
+        theme: "outline",
+        size: "large",
+        shape: "pill",
+        text: "continue_with",
+      });
+    }
+
     // ================================
     // ログアウトボタン
     // ================================
@@ -264,9 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.currentUser = null;
         localStorage.removeItem("currentUser");
-        loginStatus.textContent = "ログインしていません";
-        btnContainer.style.display = "block"; // ログインボタン再表示
-        logoutBtn.style.display = "none"; // ログアウトボタン非表示
+        setAuthUiLoggedOut();
 
         /* Google 側との紐付きを解除（任意だが、やっとくと次回サインイン選択画面が出やすい）
         if (email && window.google && google.accounts && google.accounts.id) {
