@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const loginBtn = document.getElementById("loginBtn");
   const openSignupBtn = document.getElementById("openSignupBtn");
   const openLoginBtn = document.getElementById("openLoginBtn");
+  const openSettingsBtn = document.getElementById("openSettingsBtn");
   const loginModal = document.getElementById("loginModal");
   const closeLoginBtn = document.getElementById("closeLoginBtn");
   const signupModal = document.getElementById("signupModal");
@@ -52,6 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const usernameModal = document.getElementById("usernameModal");
   const usernameInput = document.getElementById("usernameInput");
   const usernameSaveBtn = document.getElementById("usernameSaveBtn");
+  const settingsModal = document.getElementById("settingsModal");
+  const settingsUsernameInput = document.getElementById("settingsUsernameInput");
+  const settingsMessage = document.getElementById("settingsMessage");
+  const settingsSaveBtn = document.getElementById("settingsSaveBtn");
+  const settingsLogoutBtn = document.getElementById("settingsLogoutBtn");
+  const closeSettingsBtn = document.getElementById("closeSettingsBtn");
   const pendingSignupKey = "pendingGoogleSignup";
 
   function openLoginModal() {
@@ -73,6 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnContainer) btnContainer.style.display = "none";
     if (loginForm) loginForm.style.display = "none";
     if (openSignupBtn) openSignupBtn.style.display = "none";
+    if (openLoginBtn) openLoginBtn.style.display = "none";
+    if (openSettingsBtn) openSettingsBtn.style.display = "inline-block";
     if (logoutBtn) logoutBtn.style.display = "inline-block";
   }
 
@@ -81,7 +90,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnContainer) btnContainer.style.display = "block";
     if (loginForm) loginForm.style.display = "grid";
     if (openSignupBtn) openSignupBtn.style.display = "inline-block";
+    if (openLoginBtn) openLoginBtn.style.display = "inline-block";
+    if (openSettingsBtn) openSettingsBtn.style.display = "none";
     if (logoutBtn) logoutBtn.style.display = "none";
+  }
+
+  function closeSettingsModal() {
+    if (!settingsModal) return;
+    settingsModal.style.display = "none";
+    settingsModal.setAttribute("aria-hidden", "true");
+    if (settingsMessage) settingsMessage.textContent = "";
+  }
+
+  function logoutCurrentUser() {
+    window.currentUser = null;
+    localStorage.removeItem("currentUser");
+    setAuthUiLoggedOut();
+    closeSettingsModal();
   }
 
   try {
@@ -156,6 +181,76 @@ document.addEventListener('DOMContentLoaded', () => {
         signupModal.setAttribute("aria-hidden", "true");
       }
     });
+  }
+
+  if (openSettingsBtn) {
+    openSettingsBtn.addEventListener("click", () => {
+      if (!window.currentUser?.username || !settingsModal) return;
+      if (settingsUsernameInput) settingsUsernameInput.value = window.currentUser.username;
+      if (settingsMessage) settingsMessage.textContent = "";
+      settingsModal.style.display = "flex";
+      settingsModal.setAttribute("aria-hidden", "false");
+    });
+  }
+
+  if (closeSettingsBtn) {
+    closeSettingsBtn.addEventListener("click", closeSettingsModal);
+  }
+
+  if (settingsModal) {
+    settingsModal.addEventListener("click", (event) => {
+      if (event.target === settingsModal) {
+        closeSettingsModal();
+      }
+    });
+  }
+
+  if (settingsSaveBtn) {
+    settingsSaveBtn.addEventListener("click", async () => {
+      const nextUsername = settingsUsernameInput?.value.trim() || "";
+      if (!nextUsername) {
+        if (settingsMessage) settingsMessage.textContent = "ユーザーネームを入力してください";
+        return;
+      }
+      if (!window.currentUser?.username) return;
+      if (nextUsername === window.currentUser.username) {
+        if (settingsMessage) settingsMessage.textContent = "";
+        closeSettingsModal();
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/user/update-username", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: window.currentUser.email,
+            currentUsername: window.currentUser.username,
+            nextUsername,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          if (settingsMessage) settingsMessage.textContent = data.error || "ユーザーネームの変更に失敗しました";
+          return;
+        }
+
+        window.currentUser.username = data.username;
+        if (window.currentUser.email === data.previousUsername) {
+          window.currentUser.email = data.username;
+        }
+        localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
+        setAuthUiLoggedIn(data.username);
+        closeSettingsModal();
+      } catch (error) {
+        console.error("update username error:", error);
+        if (settingsMessage) settingsMessage.textContent = "ユーザーネームの変更に失敗しました";
+      }
+    });
+  }
+
+  if (settingsLogoutBtn) {
+    settingsLogoutBtn.addEventListener("click", logoutCurrentUser);
   }
 
   if (closeLoginBtn) {
@@ -462,9 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // まずアプリ内の状態をクリア
         const email = window.currentUser?.email || null;
 
-        window.currentUser = null;
-        localStorage.removeItem("currentUser");
-        setAuthUiLoggedOut();
+        logoutCurrentUser();
 
         /* Google 側との紐付きを解除（任意だが、やっとくと次回サインイン選択画面が出やすい）
         if (email && window.google && google.accounts && google.accounts.id) {

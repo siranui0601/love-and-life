@@ -81,6 +81,37 @@ export async function addCredentialUser({ username, password }) {
   return { username };
 }
 
+export async function updateUsernameByIdentity({ email, currentUsername, nextUsername }) {
+  const sheets = await getSheetsClient();
+  const range = `${SHEET_NAME}!A2:C`;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
+  const rows = res.data.values || [];
+
+  let targetRowIndex = null;
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i] || [];
+    const rowA = row[0] || "";
+    const rowUsername = row[1] || "";
+    if ((email && rowA === email) || (currentUsername && rowUsername === currentUsername)) {
+      targetRowIndex = i + 2;
+      break;
+    }
+  }
+
+  if (!targetRowIndex) {
+    return null;
+  }
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SHEET_NAME}!B${targetRowIndex}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[nextUsername]] },
+  });
+
+  return { rowIndex: targetRowIndex, username: nextUsername };
+}
+
 export async function findBungeiEntryByOrder(orderList) {
   const sheets = await getSheetsClient();
   const range = `${BUNGEI_SHEET_NAME}!A2:D`;

@@ -4,6 +4,7 @@ import {
   findUserByUsername,
   findUserByUsernameAndPassword,
   addCredentialUser,
+  updateUsernameByIdentity,
 } from "../foundation/sheets.js";
 
 export function mountUserRoutes(app) {
@@ -55,6 +56,39 @@ export function mountUserRoutes(app) {
     }
   });
 
+
+  app.post("/api/user/update-username", async (req, res) => {
+    const { email, currentUsername, nextUsername } = req.body || {};
+    if (!currentUsername || !nextUsername) {
+      return res.status(400).json({ error: "currentUsername and nextUsername are required" });
+    }
+
+    const trimmed = String(nextUsername).trim();
+    if (!trimmed) {
+      return res.status(400).json({ error: "ユーザーネームを入力してください" });
+    }
+
+    try {
+      const existing = await findUserByUsername(trimmed);
+      if (existing && existing.username !== currentUsername) {
+        return res.status(409).json({ error: "そのユーザー名は登録済みです" });
+      }
+
+      const updated = await updateUsernameByIdentity({
+        email: email || "",
+        currentUsername,
+        nextUsername: trimmed,
+      });
+      if (!updated) {
+        return res.status(404).json({ error: "ユーザーが見つかりません" });
+      }
+
+      return res.json({ username: trimmed, previousUsername: currentUsername });
+    } catch (e) {
+      console.error("update username error:", e);
+      return res.status(500).json({ error: "server_error" });
+    }
+  });
   app.post("/api/user/login", async (req, res) => {
     const { username, password } = req.body || {};
     if (!username || !password) return res.status(400).json({ error: "username and password are required" });
