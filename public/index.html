@@ -12,6 +12,7 @@
   <div class="top-auth-actions">
     <button id="openSignupBtn" class="top-auth-btn" type="button">新規登録</button>
     <button id="openLoginBtn" class="top-auth-btn" type="button">ログイン</button>
+    <button id="openSettingsBtn" class="top-auth-btn" type="button" style="display:none;">設定</button>
   </div>
 
   <!-- ★ 新規追加: ゲーム選択画面 -->
@@ -278,6 +279,20 @@
       <div class="simple-modal-buttons">
         <button id="usernameSaveBtn">OK</button>
       </div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="simple-modal" aria-hidden="true">
+    <div class="simple-modal-inner">
+      <h2>設定</h2>
+      <p>ユーザーネームを変更できます。</p>
+      <input id="settingsUsernameInput" type="text" maxlength="20" placeholder="新しいユーザーネーム" />
+      <p id="settingsMessage" class="settings-message" aria-live="polite"></p>
+      <div class="simple-modal-buttons settings-modal-buttons">
+        <button id="settingsSaveBtn" type="button">ユーザーネーム変更</button>
+        <button id="settingsLogoutBtn" class="logout-btn" type="button">ログアウト</button>
+      </div>
+      <button id="closeSettingsBtn" class="signup-close-btn" type="button">閉じる</button>
     </div>
   </div>
 

@@ -813,6 +813,11 @@ html { -webkit-text-size-adjust: 100%; }
   justify-content: center;
 }
 
+.settings-modal-buttons {
+  flex-direction: column;
+  gap: 10px;
+}
+
 .simple-modal-buttons button {
   padding: 6px 18px;
   border-radius: 999px;
@@ -848,6 +853,13 @@ html { -webkit-text-size-adjust: 100%; }
 .top-auth-btn:hover {
   background: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
+}
+
+.settings-message {
+  min-height: 1.2em;
+  color: #d9534f;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
 }
 
 .login-modal-inner {
