@@ -206,14 +206,14 @@ dialogueは配列。台詞のみ（地の文なし）
 ${USERNAME_TOKEN}の発言は含めない
 各dialogueにmood必須（positive|neutral|negative）
 告白には成否を問わず返事必須
-告白合意でcondition.*.恋人関係=true
+告白が成立したらcondition.*.恋人関係=true
 true後は別れがない限り維持
 currentSummaryとNowThinkingは入力内容に応じて短文要約
 
 CHARACTERS
-ミユ: 幼馴染。脳天気で天才肌
-シオン: 真面目委員長。実はむっつりスケベ
-ナナ: おっとり不思議ちゃん。遠慮を知らない
+ミユ: 幼馴染。脳天気で天才肌。「username」と呼び捨て
+シオン: 真面目委員長。実はむっつりスケベ。「usernameさん」と呼ぶ
+ナナ: おっとり不思議ちゃん。遠慮を知らない。「usernameくん」と呼ぶ
 
 OUTPUT_JSON_EXAMPLE
 {
