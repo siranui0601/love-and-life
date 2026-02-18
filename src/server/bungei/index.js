@@ -131,7 +131,7 @@ export function mountBungeiRoutes(app) {
     const condition = req.body?.condition && typeof req.body.condition === "object" ? req.body.condition : null;
     const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
     const user = await findUserByEmail(email);
-    const playerName = user?.username || "プレイヤー";
+    const playerName = "ひろたか";
 
     if (speechOrder.length) {
       try {
