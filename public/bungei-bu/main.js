@@ -158,7 +158,7 @@ let sceneIndex = -1;
 let sceneActive = false;
 let waitingForResponse = false;
 let currentSummary = null;
-let relationship = [];
+let 恋人関係 = [];
 //let affection = { ミユ: 20, シオン: 20, ナナ: 20 };
 let nowThinking = {
   ミユ: "明日から海に行くか、プールに行くか悩んでいる",
@@ -528,22 +528,22 @@ async function fetchEpilogueData() {
   try {
     const condition = {
       ミユ: {
-        relationship: relationship.includes("ミユ"),
+        恋人関係: 恋人関係.includes("ミユ"),
         NowThinking: nowThinking?.ミユ ?? "",
       },
       シオン: {
-        relationship: relationship.includes("シオン"),
+        恋人関係: 恋人関係.includes("シオン"),
         NowThinking: nowThinking?.シオン ?? "",
       },
       ナナ: {
-        relationship: relationship.includes("ナナ"),
+        恋人関係: 恋人関係.includes("ナナ"),
         NowThinking: nowThinking?.ナナ ?? "",
       },
     };
     const res = await fetch("/api/bungei/epilogue", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(getUserIdentityPayload({ relationship, speechOrder, condition })),
+      body: JSON.stringify(getUserIdentityPayload({ 恋人関係, speechOrder, condition })),
     });
     if (!res.ok) throw new Error("epilogue_failed");
     const data = await res.json();
@@ -582,7 +582,7 @@ async function startEpilogue() {
 }
 
 function getResultRating() {
-  const count = relationship.length;
+  const count = 恋人関係.length;
   if (count >= 3) {
     return { rank: "SSSSSSSS", comment: "運命すら味方につけた、伝説の夏！" };
   }
@@ -645,7 +645,7 @@ function runSlotAnimationWithCompletion(finalNames) {
 }
 
 function showResultScreen() {
-  const finalNames = [...relationship, null, null, null].slice(0, 3);
+  const finalNames = [...恋人関係, null, null, null].slice(0, 3);
   const { rank, comment } = getResultRating();
   if (resultRank) resultRank.textContent = "";
   if (resultComment) resultComment.textContent = "";
@@ -716,9 +716,9 @@ async function submitPlayerInput() {
 
   try {
     const conditionPayload = {
-  ミユ: { relationship: relationship.includes("ミユ"), NowThinking: nowThinking.ミユ },
-  シオン: { relationship: relationship.includes("シオン"), NowThinking: nowThinking.シオン },
-  ナナ: { relationship: relationship.includes("ナナ"), NowThinking: nowThinking.ナナ },
+  ミユ: { 恋人関係: 恋人関係.includes("ミユ"), NowThinking: nowThinking.ミユ },
+  シオン: { 恋人関係: 恋人関係.includes("シオン"), NowThinking: nowThinking.シオン },
+  ナナ: { 恋人関係: 恋人関係.includes("ナナ"), NowThinking: nowThinking.ナナ },
 };
 
 const response = await fetch("/api/bungei/scene", {
@@ -745,9 +745,9 @@ const response = await fetch("/api/bungei/scene", {
     currentSummary = data.currentSummary ?? currentSummary;
 
 if (data.condition && typeof data.condition === "object") {
-  // relationship 配列を condition から再構築
-  relationship = Object.entries(data.condition)
-    .filter(([_, v]) => v?.relationship)
+  // 恋人関係 配列を condition から再構築
+  恋人関係 = Object.entries(data.condition)
+    .filter(([_, v]) => v?.恋人関係)
     .map(([name]) => name);
 
   // NowThinking 更新
@@ -922,8 +922,8 @@ updateInputLimit();
   currentSummary = parsed?.currentSummary ?? null;
 
   if (parsed?.condition && typeof parsed.condition === "object") {
-    relationship = Object.entries(parsed.condition)
-      .filter(([_, v]) => v?.relationship)
+    恋人関係 = Object.entries(parsed.condition)
+      .filter(([_, v]) => v?.恋人関係)
       .map(([k]) => k);
 
     nowThinking = {
