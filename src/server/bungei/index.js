@@ -206,7 +206,7 @@ dialogueは配列。台詞のみ（地の文なし）
 ${USERNAME_TOKEN}の発言は含めない
 各dialogueにmood必須（positive|neutral|negative）
 告白には成否を問わず返事必須
-告白合意でcondition.*.relationship=true
+告白合意でcondition.*.恋人関係=true
 true後は別れがない限り維持
 currentSummaryとNowThinkingは入力内容に応じて短文要約
 
@@ -223,9 +223,9 @@ OUTPUT_JSON_EXAMPLE
   ],
   "currentSummary": "...",
   "condition": {
-    "ミユ": {"relationship": false, "NowThinking": "..." },
-    "シオン": {"relationship": false, "NowThinking": "..." },
-    "ナナ": {"relationship": false, "NowThinking": "..." }
+    "ミユ": {"恋人関係": false, "NowThinking": "..." },
+    "シオン": {"恋人関係": false, "NowThinking": "..." },
+    "ナナ": {"恋人関係": false, "NowThinking": "..." }
   }
 }
 
@@ -236,19 +236,19 @@ CURRENT_CONDITION
 ${JSON.stringify(
       {
         ミユ: {
-          relationship: condition?.ミユ?.relationship ?? false,
+          恋人関係: condition?.ミユ?.恋人関係 ?? false,
           NowThinking:
             condition?.ミユ?.NowThinking ??
             "明日から海に行くか、プールに行くか悩んでいる",
         },
         シオン: {
-          relationship: condition?.シオン?.relationship ?? false,
+          恋人関係: condition?.シオン?.恋人関係 ?? false,
           NowThinking:
             condition?.シオン?.NowThinking ??
             "今日が最後の活動日なので、きちんと片付けまで終わらせたいと考えている",
         },
         ナナ: {
-          relationship: condition?.ナナ?.relationship ?? false,
+          恋人関係: condition?.ナナ?.恋人関係 ?? false,
           NowThinking:
             condition?.ナナ?.NowThinking ??
             "蝶々可愛い♡蝶々ってどうして蝶々って言うの？",
@@ -283,7 +283,7 @@ ${JSON.stringify(
   });
 
   app.post("/api/bungei/epilogue", async (req, res) => {
-    const relationship = Array.isArray(req.body?.relationship) ? req.body.relationship : [];
+    const 恋人関係 = Array.isArray(req.body?.恋人関係) ? req.body.恋人関係 : [];
     const condition =
       req.body?.condition && typeof req.body.condition === "object" ? req.body.condition : null;
     const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
@@ -335,13 +335,13 @@ ${JSON.stringify(
       const background = getRandomEpilogueBackground();
       const conditionSource =
         condition ??
-        Object.fromEntries(relationship.map((name) => [name, { relationship: true }]));
+        Object.fromEntries(恋人関係.map((name) => [name, { 恋人関係: true }]));
       const loverEntries = Object.entries(conditionSource || {}).filter(
-        ([_, v]) => v?.relationship
+        ([_, v]) => v?.恋人関係
       );
       const loverNames = loverEntries.map(([name]) => name);
       const loverCondition = Object.fromEntries(loverEntries);
-      const lovers = Object.entries(conditionSource || {}).filter(([_, v]) => v?.relationship);
+      const lovers = Object.entries(conditionSource || {}).filter(([_, v]) => v?.恋人関係);
       let prompt;
 
       if (lovers.length > 0) {
