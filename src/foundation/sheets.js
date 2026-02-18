@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { randomInt } from "node:crypto";
 import { serviceAccount, SPREADSHEET_ID, SHEET_NAME } from "./env.js";
 
 export const BUNGEI_SHEET_NAME = "時々文芸部！";
@@ -56,29 +57,41 @@ export async function findUserByUsernameAndPassword(username, password) {
   return null;
 }
 
+function generateUserTrackingId() {
+  const timestampPart = Date.now().toString(36);
+  const chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let randomPart = "";
+  for (let i = 0; i < 8; i += 1) {
+    randomPart += chars[randomInt(chars.length)];
+  }
+  return `${timestampPart}${randomPart}`;
+}
+
 // 新規ユーザー追加
 export async function addUser({ email, username, displayName }) {
   const sheets = await getSheetsClient();
-  const range = `${SHEET_NAME}!A2:C2`;
+  const userTrackingId = generateUserTrackingId();
+  const range = `${SHEET_NAME}!A2:D2`;
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range,
     valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[email, username, displayName]] },
+    requestBody: { values: [[email, username, displayName, userTrackingId]] },
   });
-  return { email, username, displayName };
+  return { email, username, displayName, userTrackingId };
 }
 
 export async function addCredentialUser({ username, password }) {
   const sheets = await getSheetsClient();
-  const range = `${SHEET_NAME}!A2:B2`;
+  const userTrackingId = generateUserTrackingId();
+  const range = `${SHEET_NAME}!A2:D2`;
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range,
     valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[password, username]] },
+    requestBody: { values: [[password, username, "", userTrackingId]] },
   });
-  return { username };
+  return { username, userTrackingId };
 }
 
 export async function updateUsernameByIdentity({ email, currentUsername, nextUsername }) {
