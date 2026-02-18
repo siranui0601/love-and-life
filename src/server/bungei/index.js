@@ -2,7 +2,7 @@ import { genWithFallback, stripJsonFence } from "../../foundation/gemini.js";
 import {
   appendBungeiEntry,
   findBungeiEntryByOrder,
-  findUserByEmail,
+  findUserByIdentity,
   listBungeiLinesForPlayer,
   updateBungeiEpilogue,
   updateBungeiPlayers,
@@ -61,19 +61,31 @@ function normalizeDialoguePayload(raw) {
 }
 
 export function mountBungeiRoutes(app) {
+  const resolveBungeiUser = async (body = {}) => {
+    const email = String(body?.email || "").trim();
+    const username = String(body?.username || "").trim();
+    if (!email && !username) {
+      return { error: "identity_required" };
+    }
+
+    const user = await findUserByIdentity({ email, username });
+    if (!user?.username || !user?.userTrackingId) {
+      return { error: "user_not_found" };
+    }
+
+    return { user };
+  };
   
   
   app.post("/api/bungei/tree", async (req, res) => {
-  const email = String(req.body?.email || "").trim();
-  if (!email) {
-    res.status(400).json({ error: "email_required" });
-    return;
-  }
-
   try {
-    const user = await findUserByEmail(email);
-    if (!user?.username || !user?.userTrackingId) {
-      res.status(404).json({ error: "user_not_found" });
+    const { user, error } = await resolveBungeiUser(req.body);
+    if (error === "identity_required") {
+      res.status(400).json({ error });
+      return;
+    }
+    if (error) {
+      res.status(404).json({ error });
       return;
     }
 
@@ -93,17 +105,16 @@ export function mountBungeiRoutes(app) {
   
   
   app.post("/api/bungei/options", async (req, res) => {
-    const email = String(req.body?.email || "").trim();
-    if (!email) {
-      res.status(400).json({ error: "email_required" });
-      return;
-    }
     const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
 
     try {
-      const user = await findUserByEmail(email);
-      if (!user?.username || !user?.userTrackingId) {
-        res.status(404).json({ error: "user_not_found" });
+      const { user, error } = await resolveBungeiUser(req.body);
+      if (error === "identity_required") {
+        res.status(400).json({ error });
+        return;
+      }
+      if (error) {
+        res.status(404).json({ error });
         return;
       }
       const options = await listBungeiLinesForPlayer(user.userTrackingId, speechOrder);
@@ -121,18 +132,16 @@ export function mountBungeiRoutes(app) {
       return;
     }
 
-    const email = String(req.body?.email || "").trim();
-    if (!email) {
-      res.status(400).json({ error: "email_required" });
-      return;
-    }
-
     const currentSummary = req.body?.currentSummary ?? null;
     const condition = req.body?.condition && typeof req.body.condition === "object" ? req.body.condition : null;
     const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
-    const user = await findUserByEmail(email);
-    if (!user?.username || !user?.userTrackingId) {
-      res.status(404).json({ error: "user_not_found" });
+    const { user, error } = await resolveBungeiUser(req.body);
+    if (error === "identity_required") {
+      res.status(400).json({ error });
+      return;
+    }
+    if (error) {
+      res.status(404).json({ error });
       return;
     }
     const playerName = user.username;
@@ -252,20 +261,19 @@ ${JSON.stringify(
   });
 
   app.post("/api/bungei/epilogue", async (req, res) => {
-    const email = String(req.body?.email || "").trim();
-    if (!email) {
-      res.status(400).json({ error: "email_required" });
-      return;
-    }
     const relationship = Array.isArray(req.body?.relationship) ? req.body.relationship : [];
     const condition =
       req.body?.condition && typeof req.body.condition === "object" ? req.body.condition : null;
     const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
 
     try {
-      const user = await findUserByEmail(email);
-      if (!user?.username || !user?.userTrackingId) {
-        res.status(404).json({ error: "user_not_found" });
+      const { user, error } = await resolveBungeiUser(req.body);
+      if (error === "identity_required") {
+        res.status(400).json({ error });
+        return;
+      }
+      if (error) {
+        res.status(404).json({ error });
         return;
       }
       const playerName = user.username;
