@@ -72,12 +72,12 @@ export function mountBungeiRoutes(app) {
 
   try {
     const user = await findUserByEmail(email);
-    if (!user?.username) {
+    if (!user?.username || !user?.userTrackingId) {
       res.status(404).json({ error: "user_not_found" });
       return;
     }
 
-    const nodes = await buildBungeiTreeForPlayer(user.username, {
+    const nodes = await buildBungeiTreeForPlayer(user.userTrackingId, {
       maxDepth: 8,
       maxNodes: 2000,
     });
@@ -102,11 +102,11 @@ export function mountBungeiRoutes(app) {
 
     try {
       const user = await findUserByEmail(email);
-      if (!user?.username) {
+      if (!user?.username || !user?.userTrackingId) {
         res.status(404).json({ error: "user_not_found" });
         return;
       }
-      const options = await listBungeiLinesForPlayer(user.username, speechOrder);
+      const options = await listBungeiLinesForPlayer(user.userTrackingId, speechOrder);
       res.json({ options });
     } catch (error) {
       console.error("❌ Sheets Error (bungei options):", error);
@@ -131,7 +131,12 @@ export function mountBungeiRoutes(app) {
     const condition = req.body?.condition && typeof req.body.condition === "object" ? req.body.condition : null;
     const speechOrder = Array.isArray(req.body?.speechOrder) ? req.body.speechOrder : [];
     const user = await findUserByEmail(email);
-    const playerName = "username";
+    if (!user?.username || !user?.userTrackingId) {
+      res.status(404).json({ error: "user_not_found" });
+      return;
+    }
+    const playerName = user.username;
+    const playerTrackingId = user.userTrackingId;
 
     if (speechOrder.length) {
       try {
@@ -146,8 +151,8 @@ export function mountBungeiRoutes(app) {
           if (!Array.isArray(playersList)) {
             playersList = [];
           }
-          if (!playersList.includes(playerName)) {
-            playersList.push(playerName);
+          if (!playersList.includes(playerTrackingId)) {
+            playersList.push(playerTrackingId);
             await updateBungeiPlayers(entry.rowIndex, playersList);
           }
           const cached = JSON.parse(entry.output);
@@ -233,7 +238,7 @@ ${JSON.stringify(
           await appendBungeiEntry({
             orderList: speechOrder,
             output: JSON.stringify(data),
-            players: [playerName],
+            players: [playerTrackingId],
           });
         } catch (error) {
           console.error("❌ Sheets Error (bungei append):", error);
@@ -259,11 +264,12 @@ ${JSON.stringify(
 
     try {
       const user = await findUserByEmail(email);
-      if (!user?.username) {
+      if (!user?.username || !user?.userTrackingId) {
         res.status(404).json({ error: "user_not_found" });
         return;
       }
       const playerName = user.username;
+      const playerTrackingId = user.userTrackingId;
       if (speechOrder.length) {
         try {
           const entry = await findBungeiEntryByOrder(speechOrder);
@@ -397,7 +403,7 @@ ${background.name}
             await appendBungeiEntry({
               orderList: speechOrder,
               output: "",
-              players: [playerName],
+              players: [playerTrackingId],
               epilogue: epiloguePayload,
             });
           }
