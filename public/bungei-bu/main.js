@@ -175,6 +175,8 @@ const storedUser = (() => {
   }
 })();
 const playerEmail = storedUser?.email || "";
+const playerUsername = String(storedUser?.username || "").trim() || "あなた";
+const PLAYER_NAME_TOKEN = "username";
 let speechOrder = [];
 let remainingChars = 120;
 const initialBackgroundUrl =
@@ -239,19 +241,38 @@ function setSceneLine(index) {
   const entry = sceneDialogue[index];
   if (!entry) return;
   sceneIndex = index;
+  const speaker = replacePlayerNameToken(entry.speaker);
+  const line = replacePlayerNameToken(entry.line);
   const mood = entry.mood || entry.expression || "neutral";
-  const imageSrc = getCharImg(entry.speaker, mood);
+  const imageSrc = getCharImg(speaker, mood);
   if (imageSrc) {
     showDialoguePresence();
     characterImage.src = imageSrc;
-    characterImage.alt = `${entry.speaker}の立ち絵`;
+    characterImage.alt = `${speaker}の立ち絵`;
   } else {
     hideDialoguePresence();
   }
   showDialogueBox();
-  dialogueName.textContent = entry.speaker;
+  dialogueName.textContent = speaker;
   dialogueName.classList.remove("is-hidden");
-  dialogueLine.textContent = entry.line;
+  dialogueLine.textContent = line;
+}
+
+function replacePlayerNameToken(text) {
+  if (typeof text !== "string" || !text) return text || "";
+  return text.split(PLAYER_NAME_TOKEN).join(playerUsername);
+}
+
+function personalizeDialogueEntries(entries) {
+  if (!Array.isArray(entries)) return [];
+  return entries.map((entry) => {
+    if (!entry || typeof entry !== "object") return entry;
+    return {
+      ...entry,
+      speaker: replacePlayerNameToken(entry.speaker || ""),
+      line: replacePlayerNameToken(entry.line || ""),
+    };
+  });
 }
 
 function updateTimer(currentInputLength = 0) {
@@ -390,9 +411,9 @@ async function showInputChoices() {
 
 function showInputChoicesWithOptions(options) {
   const cards = options.map((line) => ({
-    text: line,
+    text: replacePlayerNameToken(String(line || "")),
     onClick: () => {
-      playerInput.value = line;
+      playerInput.value = replacePlayerNameToken(String(line || ""));
       hideChoiceCards();
       showInputPanel();
       updateInputLimit();
@@ -484,8 +505,8 @@ function buildEpilogueDialogue(raw) {
   }
   return entries
     .map((entry) => ({
-      speaker: entry.speaker || "エピローグ",
-      line: entry.line || "",
+      speaker: replacePlayerNameToken(entry.speaker || "エピローグ"),
+      line: replacePlayerNameToken(entry.line || ""),
       mood: entry.mood || "neutral",
     }))
     .filter((entry) => entry.line);
@@ -736,7 +757,7 @@ if (data.condition && typeof data.condition === "object") {
       choiceState = "ending";
     }
 
-    sceneDialogue = data.dialogue;
+    sceneDialogue = personalizeDialogueEntries(data.dialogue);
     sceneActive = sceneDialogue.length > 0;
     sceneIndex = -1;
     hideChoiceCards();
@@ -923,7 +944,7 @@ if (epilogue) {
   sceneDialogue = buildEpilogueDialogue(epiObj);
   endingPhase = "epilogue";
 } else {
-    sceneDialogue = Array.isArray(parsed?.dialogue) ? parsed.dialogue : [];
+    sceneDialogue = personalizeDialogueEntries(parsed?.dialogue);
     endingPhase = "none";
   }
 
