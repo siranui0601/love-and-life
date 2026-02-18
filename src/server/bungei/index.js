@@ -27,6 +27,7 @@ const EPILOGUE_BACKGROUNDS = [
 ];
 
 const DEFAULT_EPILOGUE_LINE = "夏の終わりは静かに訪れた。";
+const USERNAME_TOKEN = "username";
 
 function getRandomEpilogueBackground() {
   return EPILOGUE_BACKGROUNDS[Math.floor(Math.random() * EPILOGUE_BACKGROUNDS.length)];
@@ -58,6 +59,26 @@ function normalizeDialoguePayload(raw) {
     return parseDialogueText(raw);
   }
   return [];
+}
+
+function replaceNameInValue(value, from, to) {
+  if (!from || !to || from === to) return value;
+  if (typeof value === "string") return value.split(from).join(to);
+  if (Array.isArray(value)) return value.map((item) => replaceNameInValue(item, from, to));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, replaceNameInValue(item, from, to)])
+    );
+  }
+  return value;
+}
+
+function toUsernameToken(value, playerName) {
+  return replaceNameInValue(value, playerName, USERNAME_TOKEN);
+}
+
+function toPlayerName(value, playerName) {
+  return replaceNameInValue(value, USERNAME_TOKEN, playerName);
 }
 
 export function mountBungeiRoutes(app) {
@@ -165,7 +186,7 @@ export function mountBungeiRoutes(app) {
             await updateBungeiPlayers(entry.rowIndex, playersList);
           }
           const cached = JSON.parse(entry.output);
-          res.json({ data: cached });
+          res.json({ data: toPlayerName(cached, playerName) });
           return;
         }
       } catch (error) {
@@ -174,15 +195,15 @@ export function mountBungeiRoutes(app) {
     }
 
     const prompt = `
-舞台は高校の文芸部。部員は${playerName}とミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
+舞台は高校の文芸部。部員は${USERNAME_TOKEN}とミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
 
-${playerName}の発言「${input}」に対する会話シーンを生成せよ。
+${USERNAME_TOKEN}の発言「${input}」に対する会話シーンを生成せよ。
 必ずJSONのみ出力。説明禁止。コードフェンス禁止。
 
 ルール：
 dialogueは配列。台詞のみ（地の文なし）
 ミユ/シオン/ナナ各1回以上発話
-${playerName}の発言は含めない
+${USERNAME_TOKEN}の発言は含めない
 各dialogueにmood必須（positive|neutral|negative）
 告白には成否を問わず返事必須
 告白合意でcondition.*.relationship=true
@@ -242,18 +263,19 @@ ${JSON.stringify(
       const text = await genWithFallback(prompt);
       const jsonString = stripJsonFence(text);
       const data = JSON.parse(jsonString);
+      const storableData = toUsernameToken(data, playerName);
       if (speechOrder.length) {
         try {
           await appendBungeiEntry({
             orderList: speechOrder,
-            output: JSON.stringify(data),
+            output: JSON.stringify(storableData),
             players: [playerTrackingId],
           });
         } catch (error) {
           console.error("❌ Sheets Error (bungei append):", error);
         }
       }
-      res.json({ data });
+      res.json({ data: toPlayerName(storableData, playerName) });
     } catch (error) {
       console.error("❌ Gemini API Error (bungei scene):", error);
       res.status(500).json({ error: "gemini_failed" });
@@ -297,9 +319,10 @@ ${JSON.stringify(
               EPILOGUE_BACKGROUNDS.find((item) => item.name === backgroundName) ||
               getRandomEpilogueBackground();
             res.json({
-              epilogue: dialogue.length
-                ? dialogue
-                : [{ speaker: playerName, line: DEFAULT_EPILOGUE_LINE }],
+              epilogue: toPlayerName(
+                dialogue.length ? dialogue : [{ speaker: USERNAME_TOKEN, line: DEFAULT_EPILOGUE_LINE }],
+                playerName
+              ),
               background,
             });
             return;
@@ -324,7 +347,7 @@ ${JSON.stringify(
       if (lovers.length > 0) {
         prompt = `
 舞台は高校の夏休み。文芸部の活動はすでに終わっている。
-BACKGROUND_NAMEでの${playerName}と交際中キャラとの超甘々エピローグ会話を生成せよ。必ず全員が1回以上発話すること。${
+BACKGROUND_NAMEでの${USERNAME_TOKEN}と交際中キャラとの超甘々エピローグ会話を生成せよ。必ず全員が1回以上発話すること。${
   loverNames.length > 1 ? "修羅場感を含めても良い" : ""
 }
 
@@ -332,10 +355,10 @@ BACKGROUND_NAMEでの${playerName}と交際中キャラとの超甘々エピロ�
 
 ルール:
 dialogueは配列。台詞のみ（地の文なし）
-speaker は ${playerName} 、${loverNames.join("、")}のみ
+speaker は ${USERNAME_TOKEN} 、${loverNames.join("、")}のみ
 8~15行
 
-${playerName}と交際中のキャラ
+${USERNAME_TOKEN}と交際中のキャラ
 ${loverNames
   .map((name) => {
     if (name === "ミユ") return "ミユ: 幼馴染。脳天気で天才肌";
@@ -348,8 +371,8 @@ ${loverNames
 OUTPUT_JSON_EXAMPLE
 {
   "dialogue": [
-    { "speaker": "${loverNames[0] ?? playerName}", "line": "..." },
-    { "speaker": "${playerName}", "line": "..." }
+    { "speaker": "${loverNames[0] ?? USERNAME_TOKEN}", "line": "..." },
+    { "speaker": "${USERNAME_TOKEN}", "line": "..." }
   ]
 }
 
@@ -363,21 +386,21 @@ ${JSON.stringify(loverCondition, null, 0)}
         prompt = `
 舞台は高校の夏休み。文芸部の活動はすでに終わっている。
 
-BACKGROUND_NAME での、${playerName}の独り言によるエピローグを生成せよ。
+BACKGROUND_NAME での、${USERNAME_TOKEN}の独り言によるエピローグを生成せよ。
 少し切なく、しかし前向きな余韻を残す内容にすること。
 
 必ずJSONのみ出力。説明禁止。コードフェンス禁止。
 
 ルール:
 dialogueは配列
-speaker は必ず ${playerName} のみ
+speaker は必ず ${USERNAME_TOKEN} のみ
 台詞のみ（地の文なし）
 5~10行程度
 
 OUTPUT_JSON_EXAMPLE
 {
   "dialogue": [
-    { "speaker": "${playerName}", "line": "..." }
+    { "speaker": "${USERNAME_TOKEN}", "line": "..." }
   ]
 }
 
@@ -394,11 +417,11 @@ ${background.name}
       } catch {
         parsed = cleaned;
       }
-      const dialogue = normalizeDialoguePayload(parsed);
+      const dialogue = normalizeDialoguePayload(toUsernameToken(parsed, playerName));
       const epiloguePayload = JSON.stringify({
         dialogue: dialogue.length
           ? dialogue
-          : [{ speaker: playerName, line: DEFAULT_EPILOGUE_LINE }],
+          : [{ speaker: USERNAME_TOKEN, line: DEFAULT_EPILOGUE_LINE }],
         backgroundName: background.name,
       });
 
@@ -421,9 +444,10 @@ ${background.name}
       }
 
       res.json({
-        epilogue: dialogue.length
-          ? dialogue
-          : [{ speaker: playerName, line: DEFAULT_EPILOGUE_LINE }],
+        epilogue: toPlayerName(
+          dialogue.length ? dialogue : [{ speaker: USERNAME_TOKEN, line: DEFAULT_EPILOGUE_LINE }],
+          playerName
+        ),
         background,
       });
     } catch (error) {
