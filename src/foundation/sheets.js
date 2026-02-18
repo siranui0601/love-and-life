@@ -278,9 +278,9 @@ function parseLoversFromOutput(outputRaw) {
     const cond = parsed?.condition;
     const lovers = [];
 
-    if (cond?.ミユ?.relationship) lovers.push("ミユ");
-    if (cond?.シオン?.relationship) lovers.push("シオン");
-    if (cond?.ナナ?.relationship) lovers.push("ナナ");
+    if (cond?.ミユ?.恋人関係) lovers.push("ミユ");
+    if (cond?.シオン?.恋人関係) lovers.push("シオン");
+    if (cond?.ナナ?.恋人関係) lovers.push("ナナ");
 
     return lovers;
   } catch {
