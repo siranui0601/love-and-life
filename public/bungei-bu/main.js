@@ -174,8 +174,17 @@ const storedUser = (() => {
     return null;
   }
 })();
-const playerEmail = storedUser?.email || "";
+const playerEmail = String(storedUser?.email || "").trim();
 const playerUsername = String(storedUser?.username || "").trim() || "あなた";
+const hasPlayerIdentity = Boolean(playerEmail || String(storedUser?.username || "").trim());
+
+function getUserIdentityPayload(extra = {}) {
+  return {
+    email: playerEmail,
+    username: String(storedUser?.username || "").trim(),
+    ...extra,
+  };
+}
 const PLAYER_NAME_TOKEN = "username";
 let speechOrder = [];
 let remainingChars = 120;
@@ -388,12 +397,12 @@ function updateInputLimit() {
 }
 
 async function fetchPastLineOptions() {
-  if (!playerEmail) return [];
+  if (!hasPlayerIdentity) return [];
   try {
     const res = await fetch("/api/bungei/options", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: playerEmail, speechOrder }),
+      body: JSON.stringify(getUserIdentityPayload({ speechOrder })),
     });
     if (!res.ok) throw new Error("options_failed");
     const data = await res.json();
@@ -513,7 +522,7 @@ function buildEpilogueDialogue(raw) {
 }
 
 async function fetchEpilogueData() {
-  if (!playerEmail) {
+  if (!hasPlayerIdentity) {
     return { dialogue: buildEpilogueDialogue(DEFAULT_EPILOGUE_LINE), background: null };
   }
   try {
@@ -534,7 +543,7 @@ async function fetchEpilogueData() {
     const res = await fetch("/api/bungei/epilogue", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: playerEmail, relationship, speechOrder, condition }),
+      body: JSON.stringify(getUserIdentityPayload({ relationship, speechOrder, condition })),
     });
     if (!res.ok) throw new Error("epilogue_failed");
     const data = await res.json();
@@ -715,13 +724,12 @@ async function submitPlayerInput() {
 const response = await fetch("/api/bungei/scene", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
+  body: JSON.stringify(getUserIdentityPayload({
     input,
-    email: playerEmail,
     currentSummary,
     condition: conditionPayload,
     speechOrder: [...speechOrder, input],
-  }),
+  })),
 });
 
     if (!response.ok) {
@@ -846,7 +854,7 @@ document.addEventListener("click", () => {
   }
 });
 
-if (!playerEmail) {
+if (!hasPlayerIdentity) {
   pendingAfterModal = () => {
     window.location.href = "/";
   };

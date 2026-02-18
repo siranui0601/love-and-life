@@ -33,13 +33,45 @@ export async function findUserByEmail(email) {
 
 export async function findUserByUsername(username) {
   const sheets = await getSheetsClient();
-  const range = `${SHEET_NAME}!A2:C`;
+  const range = `${SHEET_NAME}!A2:D`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   const rows = res.data.values || [];
   for (const row of rows) {
-    const [, storedUsername] = row;
-    if (storedUsername === username) return { username: storedUsername };
+    const [rowA, storedUsername, displayName, userTrackingId] = row;
+    if (storedUsername === username) {
+      return {
+        identity: rowA,
+        username: storedUsername,
+        displayName,
+        userTrackingId,
+      };
+    }
   }
+  return null;
+}
+
+export async function findUserByIdentity({ email = "", username = "" } = {}) {
+  const trimmedEmail = String(email || "").trim();
+  const trimmedUsername = String(username || "").trim();
+  if (!trimmedEmail && !trimmedUsername) return null;
+
+  const sheets = await getSheetsClient();
+  const range = `${SHEET_NAME}!A2:D`;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
+  const rows = res.data.values || [];
+
+  for (const row of rows) {
+    const [rowA, rowUsername, displayName, userTrackingId] = row;
+    if ((trimmedEmail && rowA === trimmedEmail) || (trimmedUsername && rowUsername === trimmedUsername)) {
+      return {
+        identity: rowA,
+        username: rowUsername,
+        displayName,
+        userTrackingId,
+      };
+    }
+  }
+
   return null;
 }
 

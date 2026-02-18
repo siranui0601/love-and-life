@@ -45,11 +45,14 @@ function createOverlay() {
   return overlay;
 }
 
-async function fetchTreeNodes(email) {
+async function fetchTreeNodes(user) {
   const res = await fetch("/api/bungei/tree", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({
+      email: String(user?.email || "").trim(),
+      username: String(user?.username || "").trim(),
+    }),
   });
   if (!res.ok) throw new Error("tree_fetch_failed");
   const data = await res.json();
@@ -433,7 +436,7 @@ jumpYes.addEventListener("click", (e) => {
 
   continueButton.addEventListener("click", async () => {
     const user = getStoredUser();
-    if (!user?.email) {
+    if (!user?.email && !user?.username) {
       status.textContent = "ログイン情報が見つかりませんでした。";
       overlay.classList.remove("is-hidden");
       return;
@@ -444,7 +447,7 @@ jumpYes.addEventListener("click", (e) => {
     graph?.classList.add("is-loading");
 
     try {
-      const nodes = await fetchTreeNodes(user.email);
+      const nodes = await fetchTreeNodes(user);
       cachedNodes = nodes;
 
       graph?.classList.remove("is-loading");
