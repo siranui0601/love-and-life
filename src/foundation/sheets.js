@@ -21,12 +21,12 @@ export async function getSheetsClient() {
 // email からユーザーを探す
 export async function findUserByEmail(email) {
   const sheets = await getSheetsClient();
-  const range = `${SHEET_NAME}!A2:C`;
+  const range = `${SHEET_NAME}!A2:D`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   const rows = res.data.values || [];
   for (const row of rows) {
-    const [rowEmail, username, displayName] = row;
-    if (rowEmail === email) return { email: rowEmail, username, displayName };
+    const [rowEmail, username, displayName, userTrackingId] = row;
+    if (rowEmail === email) return { email: rowEmail, username, displayName, userTrackingId };
   }
   return null;
 }
@@ -256,7 +256,7 @@ function parseLoversFromOutput(outputRaw) {
   }
 }
 
-export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNodes = 2000 } = {}) {
+export async function buildBungeiTreeForPlayer(playerTrackingId, { maxDepth = 8, maxNodes = 2000 } = {}) {
   const rows = await loadBungeiRowsChunkedAllAD();
 
   // そのユーザーが関与した行だけ orderList + output + epilogue を集める
@@ -267,7 +267,7 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
 
     let playerList = [];
     try { playerList = JSON.parse(players); } catch { playerList = []; }
-    if (!Array.isArray(playerList) || !playerList.includes(playerName)) continue;
+    if (!Array.isArray(playerList) || !playerList.includes(playerTrackingId)) continue;
 
     try {
       const orderList = JSON.parse(storedOrder);
@@ -377,7 +377,7 @@ export async function buildBungeiTreeForPlayer(playerName, { maxDepth = 8, maxNo
 
 
 // 既存の listBungeiLinesForPlayer を置き換え
-export async function listBungeiLinesForPlayer(playerName, speechOrder = []) {
+export async function listBungeiLinesForPlayer(playerTrackingId, speechOrder = []) {
   const rows = await loadBungeiRowsChunkedAllAD();
 
   const lines = new Set();
@@ -394,7 +394,7 @@ export async function listBungeiLinesForPlayer(playerName, speechOrder = []) {
     } catch {
       playerList = [];
     }
-    if (!Array.isArray(playerList) || !playerList.includes(playerName)) continue;
+    if (!Array.isArray(playerList) || !playerList.includes(playerTrackingId)) continue;
 
     try {
       const orderList = JSON.parse(storedOrder);
