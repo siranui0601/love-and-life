@@ -26,12 +26,23 @@ export function mountUserRoutes(app) {
     const { email, username, googleDisplayName } = req.body || {};
     if (!email || !username) return res.status(400).json({ error: "email and username are required" });
 
+    const trimmedUsername = String(username).trim();
+    if (!trimmedUsername) {
+      return res.status(400).json({ error: "ユーザーネームを入力してください" });
+    }
+
     try {
       const existing = await findUserByEmail(email);
       if (existing) {
         return res.json({ exists: true, username: existing.username, displayName: existing.displayName });
       }
-      const user = await addUser({ email, username, displayName: googleDisplayName || "" });
+
+      const existingByUsername = await findUserByUsername(trimmedUsername);
+      if (existingByUsername) {
+        return res.status(409).json({ error: "そのユーザー名は登録済みです" });
+      }
+
+      const user = await addUser({ email, username: trimmedUsername, displayName: googleDisplayName || "" });
       return res.json({ exists: true, username: user.username, displayName: user.displayName });
     } catch (e) {
       console.error("register error:", e);
@@ -43,12 +54,17 @@ export function mountUserRoutes(app) {
     const { username, password } = req.body || {};
     if (!username || !password) return res.status(400).json({ error: "username and password are required" });
 
+    const trimmedUsername = String(username).trim();
+    if (!trimmedUsername) {
+      return res.status(400).json({ error: "ユーザーネームを入力してください" });
+    }
+
     try {
-      const existing = await findUserByUsername(username);
+      const existing = await findUserByUsername(trimmedUsername);
       if (existing) {
-        return res.status(409).json({ error: "このユーザーネームは既に使われています" });
+        return res.status(409).json({ error: "そのユーザー名は登録済みです" });
       }
-      const user = await addCredentialUser({ username, password });
+      const user = await addCredentialUser({ username: trimmedUsername, password });
       return res.json({ exists: true, username: user.username });
     } catch (e) {
       console.error("register credential error:", e);
