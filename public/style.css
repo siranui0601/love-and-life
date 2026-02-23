@@ -550,6 +550,68 @@ html { -webkit-text-size-adjust: 100%; }
   padding: 8px 4px 24px;
 }
 
+.menu-physics-note {
+  margin: -8px 0 12px 8px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.95rem;
+}
+
+.tilt-btn {
+  margin: 0 0 12px 8px;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 700;
+  color: #2e2e2e;
+  background: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+#menuPhysicsLayer {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 320px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.12));
+}
+
+.menu-physics-icon {
+  position: absolute;
+  width: 86px;
+  height: 86px;
+  border: none;
+  border-radius: 18px;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  justify-items: center;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  will-change: transform;
+  padding: 8px 4px;
+}
+
+.menu-physics-emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.menu-physics-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #2e2e2e;
+  white-space: nowrap;
+}
+
+#gameMenu.physics-enabled .game-grid {
+  display: none;
+}
+
 /* カード1枚のサイズ・挙動 */
 .game-card {
   width: min(100%, 320px);
@@ -643,6 +705,29 @@ html { -webkit-text-size-adjust: 100%; }
     gap: 12px;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     padding-bottom: 16px;
+  }
+
+  .menu-physics-note {
+    margin-left: 4px;
+  }
+
+  .tilt-btn {
+    margin-left: 4px;
+    font-size: 0.85rem;
+  }
+
+  .menu-physics-icon {
+    width: 74px;
+    height: 74px;
+    border-radius: 16px;
+  }
+
+  .menu-physics-emoji {
+    font-size: 1.6rem;
+  }
+
+  .menu-physics-label {
+    font-size: 9px;
   }
 }
 

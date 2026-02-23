@@ -59,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const settingsSaveBtn = document.getElementById("settingsSaveBtn");
   const settingsLogoutBtn = document.getElementById("settingsLogoutBtn");
   const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+  const enableTiltBtn = document.getElementById("enableTiltBtn");
+  const physicsLayer = document.getElementById("menuPhysicsLayer");
   const pendingSignupKey = "pendingGoogleSignup";
 
   function openLoginModal() {
@@ -408,49 +410,219 @@ document.addEventListener('DOMContentLoaded', () => {
   if (gameMenu) gameMenu.style.display = 'flex';
   if (titleScreen) titleScreen.style.display = 'none';
 
+  function startGameByType(gameType) {
+    if (gameType === 'love-life') {
+      if (gameMenu) gameMenu.style.display = 'none';
+      if (titleScreen) {
+        titleScreen.style.display = 'flex';
+        titleScreen.style.flexDirection = 'column';
+        titleScreen.style.justifyContent = 'center';
+        titleScreen.style.alignItems = 'center';
+      }
+      showBackButton();
+    } else if (gameType === 'literary-club') {
+      if (!window.currentUser?.email) {
+        alert("時々文芸部！はログインが必要です");
+        return;
+      }
+      const literaryClubUrl = new URL('/時々文芸部！/', window.location.origin);
+      window.location.href = literaryClubUrl.toString();
+    } else if (gameType === 'judgement-ai') {
+      if (!window.currentUser?.email) {
+        alert("断罪AIはログインが必要です");
+        return;
+      }
+      if (gameMenu) gameMenu.style.display = 'none';
+      const judgementAI = document.getElementById('judgementAI');
+      if (judgementAI) judgementAI.style.display = 'block';
+      showBackButton();
+    } else if (gameType === 'game3') {
+      alert('Game 3 - 準備中');
+    }
+  }
+
   // ゲームカードのクリック処理
   gameCards.forEach(card => {
     card.addEventListener('click', () => {
       const gameType = card.dataset.game;
-
-      // Coming Soonのカードはクリック不可
       if (card.classList.contains('coming-soon')) {
         return;
       }
-
-      // ゲームに応じて遷移
-      if (gameType === 'love-life') {
-        if (gameMenu) gameMenu.style.display = 'none';
-        if (titleScreen) {
-          titleScreen.style.display = 'flex';
-          titleScreen.style.flexDirection = 'column';
-          titleScreen.style.justifyContent = 'center';
-          titleScreen.style.alignItems = 'center';
-        }
-        showBackButton();
-      } else if (gameType === 'literary-club') {
-        if (!window.currentUser?.email) {
-          alert("時々文芸部！はログインが必要です");
-          return;
-        }
-        const literaryClubUrl = new URL('/時々文芸部！/', window.location.origin);
-        window.location.href = literaryClubUrl.toString();
-      } else if (gameType === 'judgement-ai') {
-        if (!window.currentUser?.email) {
-          alert("断罪AIはログインが必要です");
-          return;
-        }
-        // gameMenu非表示、judgementAI表示
-        if (gameMenu) gameMenu.style.display = 'none';
-        const judgementAI = document.getElementById('judgementAI');
-        if (judgementAI) judgementAI.style.display = 'block';
-        showBackButton(); // 既存のBackボタン流用するなら
-      } else if (gameType === 'game3') {
-        // 新しいゲーム3の処理（今後実装）
-        alert('Game 3 - 準備中');
-      }
+      startGameByType(gameType);
     });
   });
+
+  function initFallingGameIcons() {
+    if (!physicsLayer || !gameMenu) return;
+
+    const MatterLib = window.Matter;
+    if (!MatterLib) {
+      console.warn('Matter.js not loaded. keep default cards.');
+      return;
+    }
+
+    const { Engine, World, Bodies, Body, Composite, Events } = MatterLib;
+    gameMenu.classList.add('physics-enabled');
+
+    const engine = Engine.create({
+      gravity: { x: 0, y: 1, scale: 0.0018 },
+    });
+
+    let width = physicsLayer.clientWidth;
+    let height = physicsLayer.clientHeight;
+    const wallThickness = 64;
+
+    const walls = {
+      ground: Bodies.rectangle(width / 2, height + wallThickness / 2, width + wallThickness * 2, wallThickness, {
+        isStatic: true,
+        restitution: 0.35,
+      }),
+      left: Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height + wallThickness * 2, { isStatic: true }),
+      right: Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height + wallThickness * 2, { isStatic: true }),
+    };
+    World.add(engine.world, [walls.ground, walls.left, walls.right]);
+
+    const iconDefs = [
+      { gameType: 'literary-club', icon: '📚', label: '時々文芸部！', color: '#fff5e6' },
+      { gameType: 'love-life', icon: '❤️', label: '恋愛人生ゲーム', color: '#ffe9f1' },
+      { gameType: 'judgement-ai', icon: '⚖️', label: '断罪AI', color: '#eef2ff' },
+    ];
+
+    const iconBodies = [];
+    const maxIcons = 18;
+
+    const makeIconBody = (def) => {
+      const size = Math.max(72, Math.min(94, Math.floor(width * 0.12)));
+      const x = 60 + Math.random() * Math.max(80, width - 120);
+      const y = -80;
+      const body = Bodies.rectangle(x, y, size, size, {
+        restitution: 0.58,
+        friction: 0.14,
+        frictionAir: 0.01,
+        density: 0.0023,
+        chamfer: { radius: 18 },
+      });
+
+      const node = document.createElement('button');
+      node.type = 'button';
+      node.className = 'menu-physics-icon';
+      node.style.background = def.color;
+      node.setAttribute('aria-label', `${def.label}へ移動`);
+      node.innerHTML = `<span class="menu-physics-emoji">${def.icon}</span><span class="menu-physics-label">${def.label}</span>`;
+      node.addEventListener('click', (event) => {
+        event.stopPropagation();
+        startGameByType(def.gameType);
+      });
+      physicsLayer.appendChild(node);
+
+      iconBodies.push({ body, node, size });
+      World.add(engine.world, body);
+    };
+
+    const spawnInitial = () => {
+      for (let i = 0; i < 5; i += 1) {
+        makeIconBody(iconDefs[i % iconDefs.length]);
+      }
+    };
+
+    const spawnTimer = window.setInterval(() => {
+      if (iconBodies.length >= maxIcons) return;
+      const def = iconDefs[Math.floor(Math.random() * iconDefs.length)];
+      makeIconBody(def);
+    }, 420);
+
+    spawnInitial();
+
+    const syncWalls = () => {
+      width = physicsLayer.clientWidth;
+      height = physicsLayer.clientHeight;
+      const groundW = width + wallThickness * 2;
+      Body.setPosition(walls.ground, { x: width / 2, y: height + wallThickness / 2 });
+      Body.setVertices(walls.ground, Bodies.rectangle(width / 2, height + wallThickness / 2, groundW, wallThickness, { isStatic: true }).vertices);
+
+      Body.setPosition(walls.left, { x: -wallThickness / 2, y: height / 2 });
+      Body.setVertices(walls.left, Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height + wallThickness * 2, { isStatic: true }).vertices);
+
+      Body.setPosition(walls.right, { x: width + wallThickness / 2, y: height / 2 });
+      Body.setVertices(walls.right, Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height + wallThickness * 2, { isStatic: true }).vertices);
+    };
+
+    const resizeObserver = new ResizeObserver(syncWalls);
+    resizeObserver.observe(physicsLayer);
+
+    const clampPosition = () => {
+      iconBodies.forEach(({ body }) => {
+        if (body.position.y > height + 240) {
+          Body.setPosition(body, {
+            x: 60 + Math.random() * Math.max(80, width - 120),
+            y: -120,
+          });
+          Body.setVelocity(body, { x: (Math.random() - 0.5) * 3, y: 0 });
+          Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.08);
+        }
+      });
+    };
+
+    const tick = () => {
+      Engine.update(engine, 1000 / 60);
+      clampPosition();
+
+      iconBodies.forEach(({ body, node, size }) => {
+        node.style.transform = `translate3d(${body.position.x - size / 2}px, ${body.position.y - size / 2}px, 0) rotate(${body.angle}rad)`;
+      });
+      rafId = requestAnimationFrame(tick);
+    };
+
+    let rafId = requestAnimationFrame(tick);
+
+    const onOrientation = (event) => {
+      const gamma = Number.isFinite(event.gamma) ? event.gamma : 0;
+      const beta = Number.isFinite(event.beta) ? event.beta : 55;
+      engine.world.gravity.x = Math.max(-1, Math.min(1, gamma / 28));
+      engine.world.gravity.y = Math.max(0.15, Math.min(1.2, beta / 55));
+    };
+
+    const enableOrientation = () => {
+      window.addEventListener('deviceorientation', onOrientation);
+      if (enableTiltBtn) {
+        enableTiltBtn.textContent = '傾き操作: ON';
+        enableTiltBtn.disabled = true;
+      }
+    };
+
+    if (enableTiltBtn) {
+      const askPermission = typeof DeviceOrientationEvent !== 'undefined'
+        && typeof DeviceOrientationEvent.requestPermission === 'function';
+
+      if (askPermission) {
+        enableTiltBtn.style.display = 'inline-block';
+        enableTiltBtn.addEventListener('click', async () => {
+          try {
+            const permission = await DeviceOrientationEvent.requestPermission();
+            if (permission === 'granted') enableOrientation();
+          } catch (error) {
+            console.warn('DeviceOrientation permission denied', error);
+          }
+        });
+      } else {
+        enableTiltBtn.textContent = '傾き操作: 自動ON';
+        enableOrientation();
+      }
+    }
+
+    const cleanup = () => {
+      window.clearInterval(spawnTimer);
+      cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
+      window.removeEventListener('deviceorientation', onOrientation);
+      Composite.clear(engine.world, false);
+      Engine.clear(engine);
+    };
+
+    window.addEventListener('beforeunload', cleanup, { once: true });
+  }
+
+  initFallingGameIcons();
 
   // ホバーエフェクト
   gameCards.forEach(card => {
