@@ -555,6 +555,8 @@ html { -webkit-text-size-adjust: 100%; }
   margin: -8px 0 12px 8px;
   color: rgba(255, 255, 255, 0.95);
   font-size: 0.95rem;
+  margin-left: 4px;
+  top: 10%;
 }
 
 .tilt-btn {
@@ -647,10 +649,6 @@ html { -webkit-text-size-adjust: 100%; }
   .menu-title {
     margin-left: 4px;
     margin-bottom: 16px;
-  }
-
-  .menu-physics-note {
-    margin-left: 4px;
   }
 
   .tilt-btn {
