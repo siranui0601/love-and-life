@@ -579,6 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     } catch (error) {
       console.warn('Matter.js physics icon init failed:', error);
+      alert("Matter初期化失敗: " + (error?.message || error));
       gameMenu.classList.remove('physics-enabled');
     }
   }
