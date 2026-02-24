@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const titleScreen = document.getElementById('titleScreen');
   const literaryClubScreen = document.getElementById('literaryClubScreen');
   const gameCards = document.querySelectorAll('.game-card');
+  const menuPhysicsNote = document.querySelector('.menu-physics-note');
+  const secretGameCard = document.querySelector('.game-card-secret');
   const loginStatus = document.getElementById("loginStatus");
   const logoutBtn = document.getElementById("logoutBtn");
   const btnContainer = document.getElementById("googleSignInBtn");
@@ -441,16 +443,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // ゲームカードのクリック処理
-  gameCards.forEach(card => {
-    card.addEventListener('click', () => {
-      const gameType = card.dataset.game;
-      if (card.classList.contains('coming-soon')) {
-        return;
-      }
-      startGameByType(gameType);
+  const handleGameCardClick = (card) => {
+    const gameType = card.dataset.game;
+    if (card.classList.contains('coming-soon')) {
+      return;
+    }
+    startGameByType(gameType);
+  };
+
+  // ゲームカードのクリック処理（動的追加カードにも対応）
+  if (gameMenu) {
+    gameMenu.addEventListener('click', (event) => {
+      const card = event.target.closest('.game-card');
+      if (!card) return;
+      handleGameCardClick(card);
     });
-  });
+  }
 
   async function initFallingGameIcons() {
     if (!physicsLayer || !gameMenu || !gameCards.length) return;
@@ -478,11 +486,11 @@ document.addEventListener('DOMContentLoaded', () => {
       World.add(engine.world, [walls.ground, walls.left, walls.right]);
 
       const cardBodies = [];
-      gameCards.forEach((card, index) => {
+      const addCardBody = (card, indexOffset = 0) => {
         const rect = card.getBoundingClientRect();
         const size = Math.max(96, Math.min(rect.width, rect.height));
         const x = 50 + Math.random() * Math.max(90, width - 100);
-        const y = -120 - (index * 130) - Math.random() * 160;
+        const y = -120 - (indexOffset * 130) - Math.random() * 160;
 
         const body = Bodies.rectangle(x, y, size, size, {
           restitution: 0.52,
@@ -497,6 +505,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         cardBodies.push({ body, card, size });
         World.add(engine.world, body);
+      };
+
+      gameCards.forEach((card, index) => {
+        if (card.style.display === 'none') return;
+        addCardBody(card, index);
       });
 
       const updateWalls = () => {
@@ -539,6 +552,33 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(syncCardDom);
       };
       requestAnimationFrame(syncCardDom);
+
+      let noteTapCount = 0;
+      let isSecretCardShown = false;
+
+      const revealSecretCard = () => {
+        if (!secretGameCard || isSecretCardShown) return;
+
+        secretGameCard.style.display = 'block';
+        addCardBody(secretGameCard, cardBodies.length + 1);
+        isSecretCardShown = true;
+      };
+
+      if (menuPhysicsNote) {
+        menuPhysicsNote.addEventListener('pointerdown', (event) => {
+          event.stopPropagation();
+          if (isSecretCardShown) return;
+          noteTapCount += 1;
+          if (noteTapCount >= 10) {
+            revealSecretCard();
+          }
+        });
+
+        document.addEventListener('pointerdown', (event) => {
+          if (event.target.closest('.menu-physics-note')) return;
+          noteTapCount = 0;
+        });
+      }
 
       const onOrientation = (event) => {
         const gamma = Number.isFinite(event.gamma) ? event.gamma : 0;
