@@ -538,6 +538,7 @@ html { -webkit-text-size-adjust: 100%; }
   font-weight: bold;
 }
 
+/*
 .game-grid {
   position: relative;
   width: 100%;
@@ -547,7 +548,8 @@ html { -webkit-text-size-adjust: 100%; }
   overflow: hidden;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.12));
   padding: 8px 4px 24px;
-}
+}*/
+
 
 .menu-physics-note {
   margin: -8px 0 12px 8px;
@@ -645,10 +647,6 @@ html { -webkit-text-size-adjust: 100%; }
   .menu-title {
     margin-left: 4px;
     margin-bottom: 16px;
-  }
-
-  .game-grid {
-    padding-bottom: 16px;
   }
 
   .menu-physics-note {
@@ -1533,7 +1531,7 @@ body{
 
 /* メニュー画面は縦にスクロールできるように */
 #gameMenu{
-  overflow-y: auto;
+  overflow: hidden;
   max-height: 100dvh;
 }
 
@@ -1934,3 +1932,23 @@ body{
 .jai-reveal-name{ font-size: 18px; font-weight: 700; margin-top: 6px; }
 .jai-reveal-kind{ margin-top: 6px; opacity: .9; }
 .jai-reveal-judge{ margin-top: 10px; font-weight: 700; }
+
+
+
+
+
+
+/* 物理演出用：カードを絶対配置で動かす */
+.game-grid {
+  position: relative;
+  width: 100%;
+  height: 70vh;          /* 好きに調整 */
+  overflow: hidden;
+}
+
+/* Matterが座標を入れるので absolute 必須 */
+.game-card{
+  position:absolute;
+  left:0;
+  top:0;
+}
