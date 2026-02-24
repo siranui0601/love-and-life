@@ -1940,7 +1940,7 @@ body{
 .game-grid {
   position: relative;
   width: 100%;
-  height: 70vh;          /* 好きに調整 */
+  height: 100dvh;          /* 好きに調整 */
   overflow: hidden;
 }
 
