@@ -556,6 +556,7 @@ html { -webkit-text-size-adjust: 100%; }
   color: rgba(255, 255, 255, 0.95);
   font-size: 0.95rem;
   margin-left: 4px;
+  top: 16dvh;
 }
 
 .tilt-btn {
@@ -862,7 +863,6 @@ html { -webkit-text-size-adjust: 100%; }
 
 .top-auth-actions {
   position: fixed;
-  top: 16dvh;
   right: 16px;
   display: flex;
   gap: 8px;
