@@ -544,9 +544,13 @@ html { -webkit-text-size-adjust: 100%; }
   flex: 1;
   min-height: 320px;
   border-radius: 16px;
-  overflow: hidden;
+  overflow: auto;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.12));
   padding: 8px 4px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 12px;
 }
 
 .menu-physics-note {
@@ -569,7 +573,7 @@ html { -webkit-text-size-adjust: 100%; }
 
 /* カード1枚のサイズ・挙動 */
 .game-card {
-  position: absolute;
+  position: relative;
   width: clamp(132px, 24vw, 220px);
   aspect-ratio: 1 / 1;
   background: white;
@@ -587,6 +591,15 @@ html { -webkit-text-size-adjust: 100%; }
   overflow: hidden;
   will-change: transform;
   touch-action: manipulation;
+}
+
+#gameMenu.physics-enabled .game-grid {
+  overflow: hidden;
+  display: block;
+}
+
+#gameMenu.physics-enabled .game-card {
+  position: absolute;
 }
 
 .game-card::before {
