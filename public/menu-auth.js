@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   async function initFallingGameIcons() {
-    if (!physicsLayer || !gameMenu) return;
+    if (!physicsLayer || !gameMenu || !gameCards.length) return;
 
     try {
       const Matter = await import('https://esm.sh/matter-js@0.20.0');
@@ -470,78 +470,80 @@ document.addEventListener('DOMContentLoaded', () => {
       let height = physicsLayer.clientHeight;
 
       const walls = {
-        ground: Bodies.rectangle(width / 2, height + 24, width + 80, 48, { isStatic: true }),
-        left: Bodies.rectangle(-24, height / 2, 48, height + 100, { isStatic: true }),
-        right: Bodies.rectangle(width + 24, height / 2, 48, height + 100, { isStatic: true }),
+        ground: Bodies.rectangle(width / 2, height + 30, width + 120, 60, { isStatic: true }),
+        left: Bodies.rectangle(-30, height / 2, 60, height + 140, { isStatic: true }),
+        right: Bodies.rectangle(width + 30, height / 2, 60, height + 140, { isStatic: true }),
       };
       World.add(engine.world, [walls.ground, walls.left, walls.right]);
 
-      const iconDefs = [
-        { gameType: 'literary-club', icon: '📚', label: '時々文芸部！' },
-        { gameType: 'love-life', icon: '❤️', label: '恋愛人生ゲーム' },
-        { gameType: 'judgement-ai', icon: '⚖️', label: '断罪AI' },
-      ];
-
-      const iconBodies = [];
-      const totalIcons = 11;
-      for (let i = 0; i < totalIcons; i += 1) {
-        const def = iconDefs[i % iconDefs.length];
-        const size = window.innerWidth < 768 ? 72 : 84;
-        const x = 40 + Math.random() * Math.max(80, width - 80);
-        const y = -90 - Math.random() * 360;
+      const cardBodies = [];
+      gameCards.forEach((card, index) => {
+        const rect = card.getBoundingClientRect();
+        const size = Math.max(96, Math.min(rect.width, rect.height));
+        const x = 50 + Math.random() * Math.max(90, width - 100);
+        const y = -120 - (index * 130) - Math.random() * 160;
 
         const body = Bodies.rectangle(x, y, size, size, {
-          restitution: 0.45,
-          friction: 0.06,
-          frictionAir: 0.012,
-          density: 0.0028,
-          chamfer: { radius: 16 },
+          restitution: 0.52,
+          friction: 0.12,
+          frictionAir: 0.02,
+          density: 0.0024,
+          chamfer: { radius: Math.max(12, size * 0.08) },
         });
 
-        const node = document.createElement('button');
-        node.type = 'button';
-        node.className = 'menu-physics-icon';
-        node.setAttribute('aria-label', `${def.label}へ移動`);
-        node.textContent = def.icon;
-        node.addEventListener('click', (event) => {
-          event.stopPropagation();
-          startGameByType(def.gameType);
-        });
-        physicsLayer.appendChild(node);
+        card.style.left = '0px';
+        card.style.top = '0px';
 
-        iconBodies.push({ body, node, size });
+        cardBodies.push({ body, card, size });
         World.add(engine.world, body);
-      }
+      });
 
-      const syncWalls = () => {
+      const updateWalls = () => {
         width = physicsLayer.clientWidth;
         height = physicsLayer.clientHeight;
-        Body.setPosition(walls.ground, { x: width / 2, y: height + 24 });
-        Body.setVertices(walls.ground, Bodies.rectangle(width / 2, height + 24, width + 80, 48, { isStatic: true }).vertices);
 
-        Body.setPosition(walls.left, { x: -24, y: height / 2 });
-        Body.setVertices(walls.left, Bodies.rectangle(-24, height / 2, 48, height + 100, { isStatic: true }).vertices);
+        const nextGround = Bodies.rectangle(width / 2, height + 30, width + 120, 60, { isStatic: true });
+        Body.setPosition(walls.ground, { x: width / 2, y: height + 30 });
+        Body.setVertices(walls.ground, nextGround.vertices);
 
-        Body.setPosition(walls.right, { x: width + 24, y: height / 2 });
-        Body.setVertices(walls.right, Bodies.rectangle(width + 24, height / 2, 48, height + 100, { isStatic: true }).vertices);
+        const nextLeft = Bodies.rectangle(-30, height / 2, 60, height + 140, { isStatic: true });
+        Body.setPosition(walls.left, { x: -30, y: height / 2 });
+        Body.setVertices(walls.left, nextLeft.vertices);
+
+        const nextRight = Bodies.rectangle(width + 30, height / 2, 60, height + 140, { isStatic: true });
+        Body.setPosition(walls.right, { x: width + 30, y: height / 2 });
+        Body.setVertices(walls.right, nextRight.vertices);
       };
 
-      const resizeObserver = new ResizeObserver(syncWalls);
+      const resizeObserver = new ResizeObserver(() => {
+        updateWalls();
+
+        cardBodies.forEach((entry) => {
+          const rect = entry.card.getBoundingClientRect();
+          const nextSize = Math.max(96, Math.min(rect.width, rect.height));
+          if (Math.abs(nextSize - entry.size) < 1) return;
+
+          const prevSize = entry.size;
+          entry.size = nextSize;
+          const scaleRate = nextSize / prevSize;
+          Body.scale(entry.body, scaleRate, scaleRate);
+        });
+      });
       resizeObserver.observe(physicsLayer);
 
-      const updateDom = () => {
-        iconBodies.forEach(({ body, node, size }) => {
-          node.style.transform = `translate(${body.position.x - size / 2}px, ${body.position.y - size / 2}px) rotate(${body.angle}rad)`;
+      const syncCardDom = () => {
+        cardBodies.forEach(({ body, card, size }) => {
+          card.style.transform = `translate(${body.position.x - size / 2}px, ${body.position.y - size / 2}px) rotate(${body.angle}rad)`;
         });
-        requestAnimationFrame(updateDom);
+        requestAnimationFrame(syncCardDom);
       };
-      requestAnimationFrame(updateDom);
+      requestAnimationFrame(syncCardDom);
 
       const onOrientation = (event) => {
         const gamma = Number.isFinite(event.gamma) ? event.gamma : 0;
-        const beta = Number.isFinite(event.beta) ? event.beta : 55;
-        engine.world.gravity.x = Math.max(-1, Math.min(1, gamma / 35));
-        engine.world.gravity.y = Math.max(0.2, Math.min(1.2, beta / 70));
+        const beta = Number.isFinite(event.beta) ? event.beta : 48;
+        engine.world.gravity.x = Math.max(-1, Math.min(1, gamma / 36));
+        engine.world.gravity.y = Math.max(0.15, Math.min(1.2, beta / 72));
       };
 
       if (enableTiltBtn) {
