@@ -456,7 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!physicsLayer || !gameMenu || !gameCards.length) return;
 
     try {
-      const Matter = await import('https://esm.sh/matter-js@0.20.0');
+      const mod = await import('https://esm.sh/matter-js@0.20.0');
+      const Matter = mod.default ?? mod; // ★ここが重要（default対応）
       const { Engine, Runner, World, Bodies, Body, Composite } = Matter;
 
       gameMenu.classList.add('physics-enabled');
