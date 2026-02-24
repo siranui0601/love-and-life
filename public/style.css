@@ -1949,3 +1949,27 @@ body{
   left:0;
   top:0;
 }
+
+
+
+
+/*おためし*/
+/* 物理演出用：画面全体 */
+#menuPhysicsLayer.game-grid{
+  position: fixed;   /* ← relative じゃなくて fixed */
+  inset: 0;          /* 画面いっぱい */
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  z-index: 1;        /* 物理フィールドは下 */
+  pointer-events: none; /* ←カードクリックをJSで拾うなら後述 */
+}
+
+/* Matterがtransformで動かすので absolute は維持 */
+.game-card{
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  pointer-events: auto; /* カードはタップできる */
+}
