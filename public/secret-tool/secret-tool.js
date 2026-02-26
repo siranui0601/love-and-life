@@ -10,7 +10,7 @@ const backToTitleBtn = document.getElementById("backToTitleBtn");
 const confirmYesBtn = document.getElementById("confirmYesBtn");
 const confirmNoBtn = document.getElementById("confirmNoBtn");
 
-const username = window.currentUser?.username ?? "guest";
+/*const username = window.currentUser?.username ?? "guest";
 
 let clientId = localStorage.getItem("clientId");
 if (!clientId) {
@@ -24,7 +24,37 @@ const socket = io({
     username: window.currentUser?.username ?? "guest",
     roomId: localStorage.getItem("activeRoomId") ?? null,
   }
+});*/
+function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem("currentUser") || "null");
+  } catch {
+    return null;
+  }
+}
+
+const storedUser = getStoredUser();
+const username = storedUser?.username || "guest";
+
+// ここで login 必須にしたいなら
+// if (!storedUser?.username) { alert("ログインが必要です"); location.href="/"; }
+
+/*let clientId = localStorage.getItem("clientId");
+if (!clientId) {
+  clientId = crypto.randomUUID();
+  localStorage.setItem("clientId", clientId);
+}*/
+const clientId = storedUser?.userId || localStorage.getItem("clientId") || crypto.randomUUID();
+localStorage.setItem("clientId", clientId);
+
+const socket = io({
+  auth: {
+    clientId,
+    username,
+    roomId: localStorage.getItem("activeRoomId") ?? null,
+  }
 });
+
 
 function setMessage(message) {
   messageEl.textContent = message;
