@@ -429,6 +429,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const literaryClubUrl = new URL('/時々文芸部！/', window.location.origin);
       window.location.href = literaryClubUrl.toString();
+    } else if (gameType === 'secret-tool') {
+      if (!window.currentUser?.email) {
+        alert("ひみつ道具バトルはログインが必要です");
+        return;
+      }
+      const secretToolUrl = new URL('/ひみつ道具バトル/', window.location.origin);
+      window.location.href = secretToolUrl.toString();
     } else if (gameType === 'judgement-ai') {
       if (!window.currentUser?.email) {
         alert("断罪AIはログインが必要です");
