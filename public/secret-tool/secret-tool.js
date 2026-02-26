@@ -25,26 +25,22 @@ const socket = io({
     roomId: localStorage.getItem("activeRoomId") ?? null,
   }
 });*/
+
 function getStoredUser() {
-  try {
-    return JSON.parse(localStorage.getItem("currentUser") || "null");
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(localStorage.getItem("currentUser") || "null"); }
+  catch { return null; }
 }
 
 const storedUser = getStoredUser();
-const username = storedUser?.username || "guest";
-
-const clientId =
-  storedUser?.userTrackingId || localStorage.getItem("clientId") || crypto.randomUUID();
-
 if (!storedUser?.username || !storedUser?.userTrackingId) {
   alert("ひみつ道具バトルはログインが必要です");
-  location.href = "/";
+  window.location.href = "/";
+  return;
 }
 
-localStorage.setItem("clientId", clientId);
+const username = storedUser.username;
+const clientId = storedUser.userTrackingId; // ★ UsersのD列を主体にする
+
 const socket = io({
   auth: {
     clientId,
