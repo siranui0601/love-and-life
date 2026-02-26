@@ -36,17 +36,15 @@ function getStoredUser() {
 const storedUser = getStoredUser();
 const username = storedUser?.username || "guest";
 
-// ここで login 必須にしたいなら
-// if (!storedUser?.username) { alert("ログインが必要です"); location.href="/"; }
+const clientId =
+  storedUser?.userTrackingId || localStorage.getItem("clientId") || crypto.randomUUID();
 
-/*let clientId = localStorage.getItem("clientId");
-if (!clientId) {
-  clientId = crypto.randomUUID();
-  localStorage.setItem("clientId", clientId);
-}*/
-const clientId = storedUser?.userId || localStorage.getItem("clientId") || crypto.randomUUID();
+if (!storedUser?.username || !storedUser?.userTrackingId) {
+  alert("ひみつ道具バトルはログインが必要です");
+  location.href = "/";
+}
+
 localStorage.setItem("clientId", clientId);
-
 const socket = io({
   auth: {
     clientId,
