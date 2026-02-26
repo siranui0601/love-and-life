@@ -35,7 +35,6 @@ const storedUser = getStoredUser();
 if (!storedUser?.username || !storedUser?.userTrackingId) {
   alert("ひみつ道具バトルはログインが必要です");
   window.location.href = "/";
-  return;
 }
 
 const username = storedUser.username;
