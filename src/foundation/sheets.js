@@ -3,6 +3,7 @@ import { randomInt } from "node:crypto";
 import { serviceAccount, SPREADSHEET_ID, SHEET_NAME } from "./env.js";
 
 export const BUNGEI_SHEET_NAME = "時々文芸部！";
+export const SECRET_TOOL_SHEET_NAME = "ひみつ道具";
 
 export async function getSheetsClient() {
   if (!serviceAccount) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY が設定されていません");
@@ -210,6 +211,184 @@ export async function updateBungeiEpilogue(rowIndex, epilogue) {
     valueInputOption: "USER_ENTERED",
     requestBody: { values: [[epilogue]] },
   });
+}
+
+function parseSecretMembersJson(raw) {
+  try {
+    const parsed = JSON.parse(String(raw || "[]"));
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((entry) => ({
+        name: String(entry?.name || "guest"),
+        id: String(entry?.id || ""),
+        role: String(entry?.role || "guest"),
+      }))
+      .filter((entry) => entry.id);
+  } catch {
+    return [];
+  }
+}
+
+function roomExpiresAtMs() {
+  return Date.now() + 30 * 60 * 1000;
+}
+
+async function getSecretToolRows(sheets) {
+  const range = `${SECRET_TOOL_SHEET_NAME}!A2:D`;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
+  return res.data.values || [];
+}
+
+function secretRowToRoom(row = [], index = 0) {
+  const roomId = String(row[0] || "").trim();
+  const members = parseSecretMembersJson(row[1]);
+  const status = String(row[2] || "").trim();
+  const expiresAt = Number(row[3] || 0);
+  return {
+    rowIndex: index + 2,
+    roomId,
+    members,
+    status,
+    expiresAt: Number.isFinite(expiresAt) ? expiresAt : 0,
+  };
+}
+
+function buildSecretToolRoomId() {
+  return String(Math.floor(Math.random() * 1_000_000)).padStart(6, "0");
+}
+
+async function updateSecretToolRoomRow(rowIndex, values) {
+  const sheets = await getSheetsClient();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SECRET_TOOL_SHEET_NAME}!A${rowIndex}:D${rowIndex}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [values] },
+  });
+}
+
+export async function createSecretToolRoom({ username, clientId }) {
+  const sheets = await getSheetsClient();
+  const rows = await getSecretToolRows(sheets);
+  const usedRoomIds = new Set(rows.map((row) => String(row?.[0] || "").trim()).filter(Boolean));
+
+  let roomId = "";
+  for (let i = 0; i < 30; i += 1) {
+    const candidate = buildSecretToolRoomId();
+    if (!usedRoomIds.has(candidate)) {
+      roomId = candidate;
+      break;
+    }
+  }
+
+  if (!roomId) {
+    throw new Error("room_create_failed");
+  }
+
+  const members = [{ name: username, id: clientId, role: "host" }];
+  const status = "lobby";
+  const expiresAt = roomExpiresAtMs();
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${SECRET_TOOL_SHEET_NAME}!A2:D2`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[roomId, JSON.stringify(members), status, String(expiresAt)]],
+    },
+  });
+
+  return { roomId, members, status, expiresAt };
+}
+
+export async function getSecretToolRoomById(roomId) {
+  const sheets = await getSheetsClient();
+  const rows = await getSecretToolRows(sheets);
+  const normalizedRoomId = String(roomId || "").trim();
+  const rowIndex = rows.findIndex((row) => String(row?.[0] || "").trim() === normalizedRoomId);
+  if (rowIndex < 0) return null;
+  return secretRowToRoom(rows[rowIndex], rowIndex);
+}
+
+export async function joinSecretToolRoom({ roomId, username, clientId }) {
+  const room = await getSecretToolRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+  if (room.status !== "lobby") throw new Error("room_not_lobby");
+
+  const members = [...room.members];
+  const existingIndex = members.findIndex((member) => member.id === clientId);
+  if (existingIndex >= 0) {
+    members[existingIndex] = { ...members[existingIndex], name: username };
+  } else {
+    members.push({ name: username, id: clientId, role: "guest" });
+  }
+
+  await updateSecretToolRoomRow(room.rowIndex, [
+    room.roomId,
+    JSON.stringify(members),
+    room.status,
+    String(room.expiresAt || roomExpiresAtMs()),
+  ]);
+
+  return {
+    roomId: room.roomId,
+    members,
+    status: room.status,
+    expiresAt: room.expiresAt,
+  };
+}
+
+export async function removeSecretToolMember({ roomId, clientId }) {
+  const room = await getSecretToolRoomById(roomId);
+  if (!room || room.status !== "lobby") return null;
+
+  const members = room.members.filter((member) => member.id !== clientId);
+  if (!members.length) {
+    await updateSecretToolRoomRow(room.rowIndex, ["", "", "", ""]);
+    return { roomId: room.roomId, members: [], status: "closed", expiresAt: 0 };
+  }
+
+  if (!members.some((member) => member.role === "host")) {
+    members[0].role = "host";
+  }
+
+  await updateSecretToolRoomRow(room.rowIndex, [
+    room.roomId,
+    JSON.stringify(members),
+    room.status,
+    String(room.expiresAt || roomExpiresAtMs()),
+  ]);
+
+  return {
+    roomId: room.roomId,
+    members,
+    status: room.status,
+    expiresAt: room.expiresAt,
+  };
+}
+
+export async function cleanupExpiredSecretToolRooms() {
+  const sheets = await getSheetsClient();
+  const rows = await getSecretToolRows(sheets);
+  const now = Date.now();
+  const targets = rows
+    .map((row, index) => secretRowToRoom(row, index))
+    .filter((room) => room.roomId && room.status === "lobby" && room.expiresAt > 0 && room.expiresAt < now);
+
+  if (!targets.length) return 0;
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      valueInputOption: "USER_ENTERED",
+      data: targets.map((room) => ({
+        range: `${SECRET_TOOL_SHEET_NAME}!A${room.rowIndex}:D${room.rowIndex}`,
+        values: [["", "", "", ""]],
+      })),
+    },
+  });
+
+  return targets.length;
 }
 
 // ====== 時々文芸部：options用の高速キャッシュ ======
