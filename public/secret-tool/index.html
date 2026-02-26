@@ -1,21 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ひみつ道具バトル</title>
-  <link rel="stylesheet" href="./secret-tool.css" />
+  <link rel="stylesheet" href="/secret-tool/secret-tool.css" />
 </head>
 <body>
   <main class="page">
     <section class="panel">
       <h1>ひみつ道具バトル</h1>
-      <div class="main-actions">
-        <button id="createRoomBtn" class="cute-btn">ルーム作成</button>
-        <button id="joinRoomBtn" class="cute-btn">ルーム入室</button>
-      </div>
-      <button id="backToTitleBtn" class="cute-btn ghost">タイトルに戻る</button>
+
       <p id="message" class="message"></p>
+
+      <div class="main-actions">
+        <button id="createRoomBtn" class="cute-btn" type="button">ルーム作成</button>
+        <button id="joinRoomBtn" class="cute-btn" type="button">ルーム入室</button>
+      </div>
+
+      <button id="backToTitleBtn" class="cute-btn ghost" type="button">タイトルに戻る</button>
     </section>
 
     <section id="waitingRoom" class="panel waiting hidden">
@@ -26,17 +29,17 @@
     </section>
   </main>
 
-  <div id="confirmModal" class="modal hidden">
+  <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-body">
       <p>本当に戻りますか？</p>
       <div class="modal-actions">
-        <button id="confirmYesBtn" class="cute-btn">はい</button>
-        <button id="confirmNoBtn" class="cute-btn ghost">いいえ</button>
+        <button id="confirmYesBtn" class="cute-btn" type="button">はい</button>
+        <button id="confirmNoBtn" class="cute-btn ghost" type="button">いいえ</button>
       </div>
     </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="./secret-tool.js"></script>
+  <script type="module" src="/secret-tool/secret-tool.js"></script>
 </body>
 </html>
