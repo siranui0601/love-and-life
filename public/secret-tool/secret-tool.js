@@ -1,5 +1,4 @@
 import { showToast } from "../toast.js";
-import * as THREE from "https://esm.sh/three@0.163.0";
 
 const messageEl = document.getElementById("message");
 const homePanelEl = document.getElementById("homePanel");
@@ -17,12 +16,13 @@ const leaveRoomBtn = document.getElementById("leaveRoomBtn");
 const waitingNoteEl = document.getElementById("waitingNote");
 
 const battlePanelEl = document.getElementById("battlePanel");
-const battleSceneEl = document.getElementById("battleScene");
 const battlePhaseEl = document.getElementById("battlePhase");
-const deckAnimationEl = document.getElementById("deckAnimation");
+const deckPocketEl = document.getElementById("deckPocket");
+const battlePlayerListEl = document.getElementById("battlePlayerList");
 const mulliganPanelEl = document.getElementById("mulliganPanel");
 const mulliganCounterEl = document.getElementById("mulliganCounter");
 const finishMulliganBtn = document.getElementById("finishMulliganBtn");
+const playerHandEl = document.getElementById("playerHand");
 
 const actionModalEl = document.getElementById("actionModal");
 const actionModalTextEl = document.getElementById("actionModalText");
@@ -62,418 +62,6 @@ const state = {
   selectedMulliganIds: new Set(),
   mulliganSubmitted: false,
 };
-
-const battle3D = {
-  renderer: null,
-  scene: null,
-  camera: null,
-  pocket: null,
-  playerMeshes: [],
-  disposeHandlers: [],
-  rafId: null,
-  lookYaw: 0,
-  lookPitch: 0,
-  baseDir: new THREE.Vector3(),
-  baseRight: new THREE.Vector3(),
-  handMeshes: [],
-  cardRaycaster: new THREE.Raycaster(),
-  pointer: new THREE.Vector2(),
-  dragDistance: 0,
-};
-
-const PLAYER_IMAGES = [
-  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhqVASLqpmTuw6sQ9bo2REFYB6JYMV9vbvqUW3jubB653Maac56Q9xQUhiyu3Ww-Ap5ErSqO0SAPugc78BXDSQrZBg8cI8vBHS9F4n8h1d0xrjOVhnedX6-xcxrYwCwjsns6xsH8smw9Bz4QeX0C9-vGa_wcLC6uIuw8Y3Nvn4R3NekA3sT5a5UVw2ot0A2/s545/IMG_4367.png",
-  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhS0PkKqdR4ZANKaL2qP-2B8SAaRtacUWgIGG79YO3Wf23lbG_DuMtFyBf_sZJSWPVENiUd3h-JYjxnmjorbaQ-lMW9EYTIVa6luFZiAJhyphenhyphen-NLSVEB0Gc62kaCFlkfE29yh-Us1dQNQzl6umbvJEq3vTIB6ELm-qlTGT_OBuZTQgKpXSnHAC_A3sOwXIVFJ/s500/IMG_4361.png",
-  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjI2U-8w71lVk5xgERCPm0clOIYwZgJg8yjwGnxcAVssNVNXFGfcLjX8lQ9xZfzPdV7YUTF7c0QF2fJgu7ERjWMVpf-a8Wjurqjx_PRmd8dEjPmpQQKDOHPlxENgJV2P8Bun6lliNAanEH0-Sb5KspBjOCexPD_tHiYQ9TGs2r3DAfJwYO9OqEf1U3Que5v/s380/IMG_4362.png",
-  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj1uSFIzcZLU4de_GxEna5QG7U-rtE1t7lRKhsxX3zEGv6el6d7AQ5H1VQr9UhkP7B7TSNGsYLlPQP8ekNvph8EkkaYiUeQdeAhHdyXIapjdmZOxq5lHcr7Q17rWOcy_F8h-yZgPP1aifiImFWOgN7GQhVlGdVQfFHfi3h_uQycQQVj9pAnLkGtzRWYBLxp/s1000/IMG_4364.jpeg",
-];
-
-const playerImageMap = new Map();
-const imageLoader = new THREE.TextureLoader();
-imageLoader.setCrossOrigin("anonymous");
-
-function shuffleArray(list) {
-  const arr = [...list];
-  for (let i = arr.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-function assignPlayerImages(seats = []) {
-  const ids = seats.map((seat) => seat.id).filter(Boolean);
-  for (const existingId of [...playerImageMap.keys()]) {
-    if (!ids.includes(existingId)) {
-      playerImageMap.delete(existingId);
-    }
-  }
-
-  const usedImages = new Set(playerImageMap.values());
-  const remainingImages = shuffleArray(PLAYER_IMAGES.filter((url) => !usedImages.has(url)));
-
-  for (const seat of seats) {
-    if (playerImageMap.has(seat.id)) continue;
-    const imageUrl = remainingImages.pop() || null;
-    playerImageMap.set(seat.id, imageUrl);
-  }
-}
-
-function clearBattle3DPlayers() {
-  for (const m of battle3D.playerMeshes) {
-    battle3D.scene?.remove(m);
-    m.traverse?.((child) => {
-      child.material?.map?.dispose?.();
-      child.material?.dispose?.();
-      child.geometry?.dispose?.();
-    });
-    m.material?.map?.dispose?.();
-    m.material?.dispose?.();
-    m.geometry?.dispose?.();
-  }
-  battle3D.playerMeshes = [];
-}
-
-function clearBattle3DHand() {
-  for (const mesh of battle3D.handMeshes) {
-    battle3D.scene?.remove(mesh);
-    mesh.material?.map?.dispose?.();
-    mesh.material?.dispose?.();
-    mesh.geometry?.dispose?.();
-  }
-  battle3D.handMeshes = [];
-}
-
-function makeCardTexture(card = {}) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 768;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-
-  ctx.fillStyle = "#fffef8";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "#d8cda8";
-  ctx.lineWidth = 16;
-  ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
-
-  ctx.fillStyle = "#293337";
-  ctx.font = "bold 42px sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  const cardName = String(card.name || "カード");
-  ctx.fillText(cardName.slice(0, 18), canvas.width / 2, 42);
-
-  ctx.strokeStyle = "#d8cda8";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(48, 114);
-  ctx.lineTo(canvas.width - 48, 114);
-  ctx.stroke();
-
-  ctx.fillStyle = "#33473f";
-  ctx.font = "28px sans-serif";
-  ctx.textAlign = "left";
-  const effectText = String(card.text || card.type || "効果なし");
-  const effectLines = wrapText(effectText, 24);
-  effectLines.slice(0, 8).forEach((line, index) => {
-    ctx.fillText(line, 48, 160 + index * 40);
-  });
-
-  ctx.strokeStyle = "#e6debf";
-  ctx.beginPath();
-  ctx.moveTo(48, 580);
-  ctx.lineTo(canvas.width - 48, 580);
-  ctx.stroke();
-
-  ctx.fillStyle = "#6f6a57";
-  ctx.font = "italic 24px serif";
-  const flavorText = String(card.flavor || "");
-  wrapText(flavorText, 26).slice(0, 3).forEach((line, index) => {
-    ctx.fillText(line, 48, 612 + index * 34);
-  });
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.needsUpdate = true;
-  return texture;
-}
-
-function wrapText(text, maxCharsPerLine) {
-  const lines = [];
-  const chars = [...String(text || "")];
-  for (let i = 0; i < chars.length; i += maxCharsPerLine) {
-    lines.push(chars.slice(i, i + maxCharsPerLine).join(""));
-  }
-  return lines.length ? lines : [""];
-}
-
-function makeNameTexture(name) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 64;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  ctx.fillStyle = "rgba(255,255,255,.92)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#1f2c1f";
-  ctx.font = "bold 30px sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(String(name || "PLAYER"), canvas.width / 2, canvas.height / 2);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
-}
-
-function seatPosition(index, total, radius) {
-  if (total === 2) {
-    return [new THREE.Vector3(0, 1, radius), new THREE.Vector3(0, 1, -radius)][index];
-  }
-  if (total === 4) {
-    return [
-      new THREE.Vector3(0, 1, radius),
-      new THREE.Vector3(radius, 1, 0),
-      new THREE.Vector3(0, 1, -radius),
-      new THREE.Vector3(-radius, 1, 0),
-    ][index];
-  }
-  const angle = (Math.PI * 2 * index) / Math.max(1, total);
-  return new THREE.Vector3(Math.sin(angle) * radius, 1, Math.cos(angle) * radius);
-}
-
-function setupBattle3D() {
-  if (!battleSceneEl || battle3D.renderer) return;
-
-  battle3D.scene = new THREE.Scene();
-  battle3D.scene.background = new THREE.Color("#bfe9ff");
-
-  battle3D.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 200);
-  battle3D.camera.position.set(0, 2.4, 13);
-
-  battle3D.renderer = new THREE.WebGLRenderer({ antialias: true });
-  battle3D.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  battleSceneEl.append(battle3D.renderer.domElement);
-
-  battle3D.scene.add(new THREE.HemisphereLight(0xffffff, 0x4b7f47, 1.15));
-  const dl = new THREE.DirectionalLight(0xffffff, 0.85);
-  dl.position.set(6, 10, 7);
-  battle3D.scene.add(dl);
-
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(120, 120),
-    new THREE.MeshStandardMaterial({ color: "#3fa34d" }),
-  );
-  ground.rotation.x = -Math.PI / 2;
-  battle3D.scene.add(ground);
-
-  const crescent = new THREE.Shape();
-  const pocketRadius = 1.25;
-  crescent.moveTo(-pocketRadius, 0);
-  crescent.absarc(0, 0, pocketRadius, Math.PI, Math.PI * 2, false);
-  crescent.lineTo(pocketRadius, 0);
-  crescent.lineTo(-pocketRadius, 0);
-  battle3D.pocket = new THREE.Mesh(
-    new THREE.ShapeGeometry(crescent),
-    new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.DoubleSide }),
-  );
-  battle3D.pocket.scale.setScalar(0.58);
-  battle3D.pocket.position.set(0, 1.15, 0);
-  battle3D.scene.add(battle3D.pocket);
-
-  const onResize = () => {
-    const width = battleSceneEl.clientWidth || window.innerWidth;
-    const height = battleSceneEl.clientHeight || window.innerHeight;
-    battle3D.camera.aspect = width / Math.max(1, height);
-    battle3D.camera.updateProjectionMatrix();
-    battle3D.renderer.setSize(width, height, false);
-  };
-  onResize();
-  window.addEventListener("resize", onResize);
-  battle3D.disposeHandlers.push(() => window.removeEventListener("resize", onResize));
-
-  let dragging = false;
-  let lastX = 0;
-  let lastY = 0;
-  const onDown = (event) => {
-    dragging = true;
-    battle3D.dragDistance = 0;
-    lastX = event.clientX;
-    lastY = event.clientY;
-  };
-  const onMove = (event) => {
-    if (!dragging) return;
-    const dx = event.clientX - lastX;
-    const dy = event.clientY - lastY;
-    lastX = event.clientX;
-    lastY = event.clientY;
-    battle3D.dragDistance += Math.abs(dx) + Math.abs(dy);
-    battle3D.lookYaw = THREE.MathUtils.clamp(battle3D.lookYaw - dx * 0.005, -Math.PI / 3, Math.PI / 3);
-    battle3D.lookPitch = THREE.MathUtils.clamp(battle3D.lookPitch - dy * 0.005, -Math.PI / 3, Math.PI / 3);
-  };
-  const onUp = () => {
-    if (dragging && battle3D.dragDistance < 6) {
-      onCardTapped(lastX, lastY);
-    }
-    dragging = false;
-  };
-
-  battle3D.renderer.domElement.addEventListener("pointerdown", onDown);
-  window.addEventListener("pointermove", onMove);
-  window.addEventListener("pointerup", onUp);
-  battle3D.disposeHandlers.push(() => {
-    battle3D.renderer?.domElement?.removeEventListener("pointerdown", onDown);
-    window.removeEventListener("pointermove", onMove);
-    window.removeEventListener("pointerup", onUp);
-  });
-
-  const animate = () => {
-    battle3D.rafId = requestAnimationFrame(animate);
-    if (!battle3D.camera || !battle3D.renderer || !battle3D.scene) return;
-
-    battle3D.pocket?.lookAt(battle3D.camera.position);
-
-    const look = battle3D.baseDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), battle3D.lookYaw);
-    const right = battle3D.baseRight.lengthSq() ? battle3D.baseRight : new THREE.Vector3(1, 0, 0);
-    look.applyAxisAngle(right, battle3D.lookPitch);
-    battle3D.camera.lookAt(battle3D.camera.position.clone().add(look));
-
-    battle3D.renderer.render(battle3D.scene, battle3D.camera);
-  };
-  animate();
-}
-
-function onCardTapped(clientX, clientY) {
-  if (!battle3D.renderer || !battle3D.camera || !state.game || state.game.phase !== "mulligan" || state.mulliganSubmitted) {
-    return;
-  }
-
-  const rect = battle3D.renderer.domElement.getBoundingClientRect();
-  battle3D.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-  battle3D.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-  battle3D.cardRaycaster.setFromCamera(battle3D.pointer, battle3D.camera);
-
-  const intersects = battle3D.cardRaycaster.intersectObjects(battle3D.handMeshes);
-  const hit = intersects[0]?.object;
-  const handId = hit?.userData?.handId;
-  if (!handId) return;
-
-  if (state.selectedMulliganIds.has(handId)) {
-    state.selectedMulliganIds.delete(handId);
-  } else {
-    if (state.selectedMulliganIds.size >= 3) return;
-    state.selectedMulliganIds.add(handId);
-  }
-  renderHand();
-}
-
-function renderHandInBattle3D(cards = []) {
-  setupBattle3D();
-  if (!battle3D.scene) return;
-
-  clearBattle3DHand();
-
-  const spacing = 2.08;
-  const startX = -((Math.max(1, cards.length) - 1) * spacing) / 2;
-
-  cards.forEach((card, index) => {
-    const cardTexture = makeCardTexture(card);
-    const cardMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.62, 2.38),
-      new THREE.MeshStandardMaterial({
-        map: cardTexture,
-        color: "#ffffff",
-        emissive: state.selectedMulliganIds.has(card.handId) ? new THREE.Color("#4b1132") : new THREE.Color("#000000"),
-        emissiveIntensity: state.selectedMulliganIds.has(card.handId) ? 0.22 : 0,
-      }),
-    );
-    cardMesh.position.set(startX + index * spacing, 0.66, 7.25);
-    cardMesh.rotation.x = -0.08;
-    cardMesh.userData.handId = card.handId;
-    battle3D.scene.add(cardMesh);
-    battle3D.handMeshes.push(cardMesh);
-  });
-}
-
-function layoutBattle3D(seats = []) {
-  setupBattle3D();
-  if (!battle3D.camera || !battle3D.scene) return;
-
-  assignPlayerImages(seats);
-  clearBattle3DPlayers();
-
-  const total = Math.max(2, Math.min(4, seats.length || 2));
-  const myIndex = Math.max(0, seats.findIndex((seat) => seat.id === userTrackingId));
-  const myPos = seatPosition(myIndex, total, 8);
-  const cameraPos = new THREE.Vector3(0, 2.4, 13);
-  const offset = cameraPos.clone().sub(myPos);
-
-  battle3D.camera.position.copy(cameraPos);
-  battle3D.baseDir = new THREE.Vector3(0, 1.8, 0).sub(cameraPos).normalize();
-  battle3D.baseRight = battle3D.baseDir.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
-  battle3D.lookYaw = 0;
-  battle3D.lookPitch = 0;
-
-  seats.slice(0, 4).forEach((seat, index) => {
-    const pos = seatPosition(index, total, 8).add(offset);
-    const group = new THREE.Group();
-    group.position.copy(pos);
-
-    const imageUrl = playerImageMap.get(seat.id);
-    const texture = imageUrl ? imageLoader.load(imageUrl) : null;
-    if (texture) {
-      texture.colorSpace = THREE.SRGBColorSpace;
-    }
-
-    const iconMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.1, 2.7),
-      new THREE.MeshBasicMaterial({
-        map: texture,
-        color: texture ? "#ffffff" : "#d5e9ff",
-        side: THREE.DoubleSide,
-      }),
-    );
-    iconMesh.position.set(0, 0.2, 0);
-    group.lookAt(offset.x, 0.2, offset.z);
-    group.add(iconMesh);
-
-    const nameSprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: makeNameTexture(seat.name), transparent: true }),
-    );
-    nameSprite.position.set(0, -1.5, 0);
-    nameSprite.scale.set(3.8, 1, 1);
-    group.add(nameSprite);
-
-    if (seat.id === state.game?.parentId) {
-      const crown = new THREE.Mesh(
-        new THREE.RingGeometry(1.3, 1.5, 48),
-        new THREE.MeshBasicMaterial({ color: "#ffd54f", side: THREE.DoubleSide }),
-      );
-      crown.position.set(0, 0, 0.02);
-      group.add(crown);
-    }
-
-    battle3D.scene.add(group);
-    battle3D.playerMeshes.push(group);
-  });
-}
-
-function destroyBattle3D() {
-  if (battle3D.rafId) cancelAnimationFrame(battle3D.rafId);
-  battle3D.rafId = null;
-  clearBattle3DPlayers();
-  clearBattle3DHand();
-  battle3D.disposeHandlers.forEach((dispose) => dispose());
-  battle3D.disposeHandlers = [];
-  if (battle3D.renderer?.domElement?.parentNode) {
-    battle3D.renderer.domElement.parentNode.removeChild(battle3D.renderer.domElement);
-  }
-  battle3D.renderer?.dispose?.();
-  battle3D.renderer = null;
-  battle3D.scene = null;
-  battle3D.camera = null;
-  battle3D.pocket = null;
-}
 
 function setMessage(message) {
   messageEl.textContent = message;
@@ -515,7 +103,7 @@ function showWaitingRoom(room) {
   waitingNoteEl.classList.remove("hidden");
 }
 
-function showBattlePanel(roomId) {
+function showBattlePanel() {
   hideHomePanel();
   waitingRoomEl.classList.add("hidden");
   waitingNoteEl.classList.add("hidden");
@@ -524,33 +112,99 @@ function showBattlePanel(roomId) {
 
 function renderSeats() {
   const seats = state.game?.seatOrder || [];
-  layoutBattle3D(seats);
+  battlePlayerListEl.innerHTML = "";
+
+  seats.forEach((seat) => {
+    const row = document.createElement("li");
+    row.className = "battle-player-row";
+    const isParent = seat.id === state.game?.parentId;
+
+    const cards = document.createElement("span");
+    cards.className = "player-card-count";
+    cards.setAttribute("aria-label", "カード枚数");
+    cards.textContent = "🎴🎴🎴🎴🎴";
+
+    const hp = document.createElement("span");
+    hp.className = "player-hp";
+    hp.textContent = "♡×10";
+
+    const name = document.createElement("span");
+    name.className = "player-name";
+    name.textContent = `${seat.name || "プレイヤー"}${isParent ? " 👑" : ""}`;
+
+    const trash = document.createElement("span");
+    trash.className = "player-trash";
+    trash.setAttribute("aria-label", "捨て札");
+    trash.textContent = "🗑";
+
+    row.append(cards, hp, name, trash);
+    battlePlayerListEl.append(row);
+  });
+}
+
+function createHandCardEl(card = {}) {
+  const cardEl = document.createElement("button");
+  cardEl.type = "button";
+  cardEl.className = "hand-card";
+  cardEl.dataset.handId = card.handId;
+
+  if (state.selectedMulliganIds.has(card.handId)) {
+    cardEl.classList.add("selected");
+  }
+
+  cardEl.innerHTML = `
+    <div class="hand-card-name">${card.name || "カード"}</div>
+    <div class="hand-card-effect">${card.text || card.type || "効果なし"}</div>
+    <div class="hand-card-flavor">${card.flavor || ""}</div>
+  `;
+
+  const isMulligan = state.game?.phase === "mulligan";
+  cardEl.disabled = state.mulliganSubmitted || !isMulligan;
+  cardEl.addEventListener("click", () => {
+    if (!isMulligan || state.mulliganSubmitted) return;
+
+    const { handId } = cardEl.dataset;
+    if (!handId) return;
+
+    if (state.selectedMulliganIds.has(handId)) {
+      state.selectedMulliganIds.delete(handId);
+    } else {
+      if (state.selectedMulliganIds.size >= 3) return;
+      state.selectedMulliganIds.add(handId);
+    }
+    renderHand();
+  });
+
+  return cardEl;
 }
 
 function renderHand() {
   const cards = state.hand || [];
   const isMulligan = state.game?.phase === "mulligan";
 
-  renderHandInBattle3D(cards);
+  playerHandEl.innerHTML = "";
+  cards.forEach((card) => {
+    playerHandEl.append(createHandCardEl(card));
+  });
 
   mulliganCounterEl.textContent = `${state.selectedMulliganIds.size}/3 枚選択中`;
   finishMulliganBtn.disabled = state.mulliganSubmitted || !isMulligan;
+  deckPocketEl.classList.toggle("deal", isMulligan);
 }
 
 function renderBattleState() {
   if (!state.game) return;
-  showBattlePanel(state.room?.roomId || localStorage.getItem("activeRoomId"));
+  showBattlePanel();
   renderSeats();
   renderHand();
 
   if (state.game.phase === "mulligan") {
-    battlePhaseEl.textContent = "初期配布完了：0〜3枚を交換できます。最初に終えた人が親です。";
+    battlePhaseEl.textContent = "カードを3枚まで選んで交換できます。最初に終えた人が親です。";
     mulliganPanelEl.classList.remove("hidden");
-    deckAnimationEl.classList.add("deal");
   } else {
     battlePhaseEl.textContent = "マリガン終了。親から時計回りでゲーム開始。";
     mulliganPanelEl.classList.add("hidden");
-    deckAnimationEl.classList.remove("deal");
+    deckPocketEl.classList.remove("deal");
   }
 }
 
@@ -564,7 +218,6 @@ function resetToLobbyState({ clearActiveRoom = true } = {}) {
     localStorage.removeItem("activeRoomId");
   }
   showHomePanel();
-  destroyBattle3D();
   waitingRoomEl.classList.add("hidden");
   battlePanelEl.classList.add("hidden");
   waitingNoteEl.classList.remove("hidden");
@@ -603,7 +256,7 @@ async function restoreActiveRoomIfExists() {
     if (room.status === "lobby") {
       showWaitingRoom(room);
     } else {
-      showBattlePanel(room.roomId);
+      showBattlePanel();
     }
     setMessage(`ルーム ${room.roomId} に再接続しました。`);
   } catch (error) {
@@ -701,7 +354,6 @@ finishMulliganBtn.addEventListener("click", () => {
   if (!state.room?.roomId || state.mulliganSubmitted || !state.game || state.game.phase !== "mulligan") return;
   state.mulliganSubmitted = true;
   renderHand();
-  deckAnimationEl.classList.add("returning");
   socket.emit("secret-tool:mulligan-finish", {
     roomId: state.room.roomId,
     selectedHandIds: Array.from(state.selectedMulliganIds),
@@ -741,12 +393,9 @@ backToTitleBtn.addEventListener("click", () => {
       socket.emit("secret-tool:leave-room");
       localStorage.removeItem("activeRoomId");
     }
-    destroyBattle3D();
     window.location.href = "/";
   });
 });
-
-window.addEventListener("beforeunload", destroyBattle3D);
 
 actionNoBtn.addEventListener("click", closeConfirmModal);
 
@@ -776,14 +425,14 @@ socket.on("secret-tool:members-updated", (room) => {
   if (room.status === "lobby") {
     showWaitingRoom(room);
   } else {
-    showBattlePanel(room.roomId);
+    showBattlePanel();
   }
 });
 
 socket.on("secret-tool:game-started", ({ roomId } = {}) => {
   if (!roomId) return;
   setMessage("ゲームが開始されました。カード配布中...");
-  showBattlePanel(roomId);
+  showBattlePanel();
 });
 
 socket.on("secret-tool:game-state", (gameState) => {
@@ -805,7 +454,6 @@ socket.on("secret-tool:mulligan-player-finished", ({ playerId, returnedCount } =
 socket.on("secret-tool:mulligan-completed", ({ parentId, turnOrder = [] } = {}) => {
   const parentName = (turnOrder.find((player) => player.id === parentId) || {}).name || "プレイヤー";
   setMessage(`マリガン終了。親は${parentName}です。`);
-  deckAnimationEl.classList.remove("returning");
 });
 
 socket.on("secret-tool:room-deleted", ({ roomId } = {}) => {

@@ -38,15 +38,25 @@
     </section>
 
     <section id="battlePanel" class="panel battle hidden">
-      <div id="battleScene" class="battle-scene" aria-label="対戦3Dビュー"></div>
       <p id="battlePhase" class="battle-phase"></p>
 
-      <div id="deckAnimation" class="deck-animation" aria-hidden="true"></div>
+      <div class="battle-board">
+        <div class="deck-pocket-wrap">
+          <div id="deckPocket" class="deck-pocket" aria-label="山札">🌀 四次元ポケット</div>
+        </div>
+
+        <aside class="battle-player-side" aria-label="プレイヤー情報">
+          <ul id="battlePlayerList" class="battle-player-list"></ul>
+        </aside>
+      </div>
 
       <section id="mulliganPanel" class="mulligan-panel hidden">
-        <h3>初期手札（5枚）</h3>
-        <p id="mulliganCounter">0/3 枚選択中</p>
-        <button id="finishMulliganBtn" class="cute-btn" type="button">この内容でマリガン完了</button>
+        <div class="mulligan-header">
+          <h3>あなたの手札</h3>
+          <p id="mulliganCounter">0/3 枚選択中</p>
+          <button id="finishMulliganBtn" class="cute-btn" type="button">この内容でマリガン完了</button>
+        </div>
+        <div id="playerHand" class="player-hand" aria-label="手札"></div>
       </section>
     </section>
   </main>
