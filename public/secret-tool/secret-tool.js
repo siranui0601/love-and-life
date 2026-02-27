@@ -90,6 +90,7 @@ const PLAYER_IMAGES = [
 
 const playerImageMap = new Map();
 const imageLoader = new THREE.TextureLoader();
+imageLoader.setCrossOrigin("anonymous");
 
 function shuffleArray(list) {
   const arr = [...list];
@@ -113,7 +114,7 @@ function assignPlayerImages(seats = []) {
 
   for (const seat of seats) {
     if (playerImageMap.has(seat.id)) continue;
-    const imageUrl = remainingImages.pop() || PLAYER_IMAGES[Math.floor(Math.random() * PLAYER_IMAGES.length)];
+    const imageUrl = remainingImages.pop() || null;
     playerImageMap.set(seat.id, imageUrl);
   }
 }
@@ -267,7 +268,7 @@ function setupBattle3D() {
   battle3D.scene.add(ground);
 
   const crescent = new THREE.Shape();
-  const pocketRadius = 1.8;
+  const pocketRadius = 1.25;
   crescent.moveTo(-pocketRadius, 0);
   crescent.absarc(0, 0, pocketRadius, Math.PI, Math.PI * 2, false);
   crescent.lineTo(pocketRadius, 0);
@@ -276,8 +277,8 @@ function setupBattle3D() {
     new THREE.ShapeGeometry(crescent),
     new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.DoubleSide }),
   );
-  battle3D.pocket.scale.setScalar(0.72);
-  battle3D.pocket.position.set(0, 1.2, 0);
+  battle3D.pocket.scale.setScalar(0.58);
+  battle3D.pocket.position.set(0, 1.15, 0);
   battle3D.scene.add(battle3D.pocket);
 
   const onResize = () => {
@@ -372,20 +373,22 @@ function renderHandInBattle3D(cards = []) {
 
   clearBattle3DHand();
 
-  const spacing = 2.15;
+  const spacing = 2.08;
   const startX = -((Math.max(1, cards.length) - 1) * spacing) / 2;
 
   cards.forEach((card, index) => {
     const cardTexture = makeCardTexture(card);
     const cardMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.8, 2.65),
+      new THREE.PlaneGeometry(1.62, 2.38),
       new THREE.MeshStandardMaterial({
         map: cardTexture,
-        color: state.selectedMulliganIds.has(card.handId) ? "#ffd4ea" : "#ffffff",
+        color: "#ffffff",
+        emissive: state.selectedMulliganIds.has(card.handId) ? new THREE.Color("#4b1132") : new THREE.Color("#000000"),
+        emissiveIntensity: state.selectedMulliganIds.has(card.handId) ? 0.22 : 0,
       }),
     );
-    cardMesh.position.set(startX + index * spacing, -1.75, 6.2);
-    cardMesh.rotation.x = -0.28;
+    cardMesh.position.set(startX + index * spacing, 0.66, 7.25);
+    cardMesh.rotation.x = -0.08;
     cardMesh.userData.handId = card.handId;
     battle3D.scene.add(cardMesh);
     battle3D.handMeshes.push(cardMesh);
@@ -423,12 +426,15 @@ function layoutBattle3D(seats = []) {
     }
 
     const iconMesh = new THREE.Mesh(
-      new THREE.CircleGeometry(1.15, 48),
-      new THREE.MeshStandardMaterial({
+      new THREE.PlaneGeometry(2.1, 2.7),
+      new THREE.MeshBasicMaterial({
         map: texture,
-        color: "#ffffff",
+        color: texture ? "#ffffff" : "#d5e9ff",
+        side: THREE.DoubleSide,
       }),
     );
+    iconMesh.position.set(0, 0.2, 0);
+    group.lookAt(offset.x, 0.2, offset.z);
     group.add(iconMesh);
 
     const nameSprite = new THREE.Sprite(
