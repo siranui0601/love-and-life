@@ -21,7 +21,6 @@ const battleSceneEl = document.getElementById("battleScene");
 const battlePhaseEl = document.getElementById("battlePhase");
 const deckAnimationEl = document.getElementById("deckAnimation");
 const mulliganPanelEl = document.getElementById("mulliganPanel");
-const handListEl = document.getElementById("handList");
 const mulliganCounterEl = document.getElementById("mulliganCounter");
 const finishMulliganBtn = document.getElementById("finishMulliganBtn");
 
@@ -76,6 +75,10 @@ const battle3D = {
   lookPitch: 0,
   baseDir: new THREE.Vector3(),
   baseRight: new THREE.Vector3(),
+  handMeshes: [],
+  cardRaycaster: new THREE.Raycaster(),
+  pointer: new THREE.Vector2(),
+  dragDistance: 0,
 };
 
 const PLAYER_IMAGES = [
@@ -128,6 +131,80 @@ function clearBattle3DPlayers() {
     m.geometry?.dispose?.();
   }
   battle3D.playerMeshes = [];
+}
+
+function clearBattle3DHand() {
+  for (const mesh of battle3D.handMeshes) {
+    battle3D.scene?.remove(mesh);
+    mesh.material?.map?.dispose?.();
+    mesh.material?.dispose?.();
+    mesh.geometry?.dispose?.();
+  }
+  battle3D.handMeshes = [];
+}
+
+function makeCardTexture(card = {}) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 768;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.fillStyle = "#fffef8";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = "#d8cda8";
+  ctx.lineWidth = 16;
+  ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+
+  ctx.fillStyle = "#293337";
+  ctx.font = "bold 42px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  const cardName = String(card.name || "カード");
+  ctx.fillText(cardName.slice(0, 18), canvas.width / 2, 42);
+
+  ctx.strokeStyle = "#d8cda8";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(48, 114);
+  ctx.lineTo(canvas.width - 48, 114);
+  ctx.stroke();
+
+  ctx.fillStyle = "#33473f";
+  ctx.font = "28px sans-serif";
+  ctx.textAlign = "left";
+  const effectText = String(card.text || card.type || "効果なし");
+  const effectLines = wrapText(effectText, 24);
+  effectLines.slice(0, 8).forEach((line, index) => {
+    ctx.fillText(line, 48, 160 + index * 40);
+  });
+
+  ctx.strokeStyle = "#e6debf";
+  ctx.beginPath();
+  ctx.moveTo(48, 580);
+  ctx.lineTo(canvas.width - 48, 580);
+  ctx.stroke();
+
+  ctx.fillStyle = "#6f6a57";
+  ctx.font = "italic 24px serif";
+  const flavorText = String(card.flavor || "");
+  wrapText(flavorText, 26).slice(0, 3).forEach((line, index) => {
+    ctx.fillText(line, 48, 612 + index * 34);
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function wrapText(text, maxCharsPerLine) {
+  const lines = [];
+  const chars = [...String(text || "")];
+  for (let i = 0; i < chars.length; i += maxCharsPerLine) {
+    lines.push(chars.slice(i, i + maxCharsPerLine).join(""));
+  }
+  return lines.length ? lines : [""];
 }
 
 function makeNameTexture(name) {
@@ -199,7 +276,8 @@ function setupBattle3D() {
     new THREE.ShapeGeometry(crescent),
     new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.DoubleSide }),
   );
-  battle3D.pocket.position.set(0, 1.8, 0);
+  battle3D.pocket.scale.setScalar(0.72);
+  battle3D.pocket.position.set(0, 1.2, 0);
   battle3D.scene.add(battle3D.pocket);
 
   const onResize = () => {
@@ -218,6 +296,7 @@ function setupBattle3D() {
   let lastY = 0;
   const onDown = (event) => {
     dragging = true;
+    battle3D.dragDistance = 0;
     lastX = event.clientX;
     lastY = event.clientY;
   };
@@ -227,10 +306,14 @@ function setupBattle3D() {
     const dy = event.clientY - lastY;
     lastX = event.clientX;
     lastY = event.clientY;
+    battle3D.dragDistance += Math.abs(dx) + Math.abs(dy);
     battle3D.lookYaw = THREE.MathUtils.clamp(battle3D.lookYaw - dx * 0.005, -Math.PI / 3, Math.PI / 3);
     battle3D.lookPitch = THREE.MathUtils.clamp(battle3D.lookPitch - dy * 0.005, -Math.PI / 3, Math.PI / 3);
   };
   const onUp = () => {
+    if (dragging && battle3D.dragDistance < 6) {
+      onCardTapped(lastX, lastY);
+    }
     dragging = false;
   };
 
@@ -257,6 +340,56 @@ function setupBattle3D() {
     battle3D.renderer.render(battle3D.scene, battle3D.camera);
   };
   animate();
+}
+
+function onCardTapped(clientX, clientY) {
+  if (!battle3D.renderer || !battle3D.camera || !state.game || state.game.phase !== "mulligan" || state.mulliganSubmitted) {
+    return;
+  }
+
+  const rect = battle3D.renderer.domElement.getBoundingClientRect();
+  battle3D.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  battle3D.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  battle3D.cardRaycaster.setFromCamera(battle3D.pointer, battle3D.camera);
+
+  const intersects = battle3D.cardRaycaster.intersectObjects(battle3D.handMeshes);
+  const hit = intersects[0]?.object;
+  const handId = hit?.userData?.handId;
+  if (!handId) return;
+
+  if (state.selectedMulliganIds.has(handId)) {
+    state.selectedMulliganIds.delete(handId);
+  } else {
+    if (state.selectedMulliganIds.size >= 3) return;
+    state.selectedMulliganIds.add(handId);
+  }
+  renderHand();
+}
+
+function renderHandInBattle3D(cards = []) {
+  setupBattle3D();
+  if (!battle3D.scene) return;
+
+  clearBattle3DHand();
+
+  const spacing = 2.15;
+  const startX = -((Math.max(1, cards.length) - 1) * spacing) / 2;
+
+  cards.forEach((card, index) => {
+    const cardTexture = makeCardTexture(card);
+    const cardMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.8, 2.65),
+      new THREE.MeshStandardMaterial({
+        map: cardTexture,
+        color: state.selectedMulliganIds.has(card.handId) ? "#ffd4ea" : "#ffffff",
+      }),
+    );
+    cardMesh.position.set(startX + index * spacing, -1.75, 6.2);
+    cardMesh.rotation.x = -0.28;
+    cardMesh.userData.handId = card.handId;
+    battle3D.scene.add(cardMesh);
+    battle3D.handMeshes.push(cardMesh);
+  });
 }
 
 function layoutBattle3D(seats = []) {
@@ -323,6 +456,7 @@ function destroyBattle3D() {
   if (battle3D.rafId) cancelAnimationFrame(battle3D.rafId);
   battle3D.rafId = null;
   clearBattle3DPlayers();
+  clearBattle3DHand();
   battle3D.disposeHandlers.forEach((dispose) => dispose());
   battle3D.disposeHandlers = [];
   if (battle3D.renderer?.domElement?.parentNode) {
@@ -389,38 +523,9 @@ function renderSeats() {
 
 function renderHand() {
   const cards = state.hand || [];
-  handListEl.innerHTML = "";
   const isMulligan = state.game?.phase === "mulligan";
 
-  for (const card of cards) {
-    const cardBtn = document.createElement("button");
-    cardBtn.type = "button";
-    cardBtn.className = "hand-card";
-    cardBtn.dataset.handId = card.handId;
-    cardBtn.innerHTML = `
-      <div class="card-name">${card.name || "カード"}</div>
-      <div class="card-effect">${card.text || card.type || "効果なし"}</div>
-      <small class="card-flavor">${card.flavor || ""}</small>
-    `;
-
-    if (state.selectedMulliganIds.has(card.handId)) {
-      cardBtn.classList.add("selected");
-    }
-
-    cardBtn.disabled = !isMulligan || state.mulliganSubmitted;
-    cardBtn.addEventListener("click", () => {
-      if (!isMulligan || state.mulliganSubmitted) return;
-      if (state.selectedMulliganIds.has(card.handId)) {
-        state.selectedMulliganIds.delete(card.handId);
-      } else {
-        if (state.selectedMulliganIds.size >= 3) return;
-        state.selectedMulliganIds.add(card.handId);
-      }
-      renderHand();
-    });
-
-    handListEl.append(cardBtn);
-  }
+  renderHandInBattle3D(cards);
 
   mulliganCounterEl.textContent = `${state.selectedMulliganIds.size}/3 枚選択中`;
   finishMulliganBtn.disabled = state.mulliganSubmitted || !isMulligan;
