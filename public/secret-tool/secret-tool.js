@@ -18,7 +18,6 @@ const waitingNoteEl = document.getElementById("waitingNote");
 
 const battlePanelEl = document.getElementById("battlePanel");
 const battleSceneEl = document.getElementById("battleScene");
-const tableSeatsEl = document.getElementById("tableSeats");
 const battlePhaseEl = document.getElementById("battlePhase");
 const deckAnimationEl = document.getElementById("deckAnimation");
 const mulliganPanelEl = document.getElementById("mulliganPanel");
@@ -79,11 +78,54 @@ const battle3D = {
   baseRight: new THREE.Vector3(),
 };
 
+const PLAYER_IMAGES = [
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhqVASLqpmTuw6sQ9bo2REFYB6JYMV9vbvqUW3jubB653Maac56Q9xQUhiyu3Ww-Ap5ErSqO0SAPugc78BXDSQrZBg8cI8vBHS9F4n8h1d0xrjOVhnedX6-xcxrYwCwjsns6xsH8smw9Bz4QeX0C9-vGa_wcLC6uIuw8Y3Nvn4R3NekA3sT5a5UVw2ot0A2/s545/IMG_4367.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhS0PkKqdR4ZANKaL2qP-2B8SAaRtacUWgIGG79YO3Wf23lbG_DuMtFyBf_sZJSWPVENiUd3h-JYjxnmjorbaQ-lMW9EYTIVa6luFZiAJhyphenhyphen-NLSVEB0Gc62kaCFlkfE29yh-Us1dQNQzl6umbvJEq3vTIB6ELm-qlTGT_OBuZTQgKpXSnHAC_A3sOwXIVFJ/s500/IMG_4361.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjI2U-8w71lVk5xgERCPm0clOIYwZgJg8yjwGnxcAVssNVNXFGfcLjX8lQ9xZfzPdV7YUTF7c0QF2fJgu7ERjWMVpf-a8Wjurqjx_PRmd8dEjPmpQQKDOHPlxENgJV2P8Bun6lliNAanEH0-Sb5KspBjOCexPD_tHiYQ9TGs2r3DAfJwYO9OqEf1U3Que5v/s380/IMG_4362.png",
+  "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj1uSFIzcZLU4de_GxEna5QG7U-rtE1t7lRKhsxX3zEGv6el6d7AQ5H1VQr9UhkP7B7TSNGsYLlPQP8ekNvph8EkkaYiUeQdeAhHdyXIapjdmZOxq5lHcr7Q17rWOcy_F8h-yZgPP1aifiImFWOgN7GQhVlGdVQfFHfi3h_uQycQQVj9pAnLkGtzRWYBLxp/s1000/IMG_4364.jpeg",
+];
+
+const playerImageMap = new Map();
+const imageLoader = new THREE.TextureLoader();
+
+function shuffleArray(list) {
+  const arr = [...list];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function assignPlayerImages(seats = []) {
+  const ids = seats.map((seat) => seat.id).filter(Boolean);
+  for (const existingId of [...playerImageMap.keys()]) {
+    if (!ids.includes(existingId)) {
+      playerImageMap.delete(existingId);
+    }
+  }
+
+  const usedImages = new Set(playerImageMap.values());
+  const remainingImages = shuffleArray(PLAYER_IMAGES.filter((url) => !usedImages.has(url)));
+
+  for (const seat of seats) {
+    if (playerImageMap.has(seat.id)) continue;
+    const imageUrl = remainingImages.pop() || PLAYER_IMAGES[Math.floor(Math.random() * PLAYER_IMAGES.length)];
+    playerImageMap.set(seat.id, imageUrl);
+  }
+}
+
 function clearBattle3DPlayers() {
   for (const m of battle3D.playerMeshes) {
     battle3D.scene?.remove(m);
+    m.traverse?.((child) => {
+      child.material?.map?.dispose?.();
+      child.material?.dispose?.();
+      child.geometry?.dispose?.();
+    });
     m.material?.map?.dispose?.();
     m.material?.dispose?.();
+    m.geometry?.dispose?.();
   }
   battle3D.playerMeshes = [];
 }
@@ -148,10 +190,11 @@ function setupBattle3D() {
   battle3D.scene.add(ground);
 
   const crescent = new THREE.Shape();
-  crescent.absarc(0, 0, 1.4, 0, Math.PI * 2, false);
-  const hole = new THREE.Path();
-  hole.absarc(0.58, 0, 1.18, 0, Math.PI * 2, true);
-  crescent.holes.push(hole);
+  const pocketRadius = 1.8;
+  crescent.moveTo(-pocketRadius, 0);
+  crescent.absarc(0, 0, pocketRadius, Math.PI, Math.PI * 2, false);
+  crescent.lineTo(pocketRadius, 0);
+  crescent.lineTo(-pocketRadius, 0);
   battle3D.pocket = new THREE.Mesh(
     new THREE.ShapeGeometry(crescent),
     new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.DoubleSide }),
@@ -220,6 +263,7 @@ function layoutBattle3D(seats = []) {
   setupBattle3D();
   if (!battle3D.camera || !battle3D.scene) return;
 
+  assignPlayerImages(seats);
   clearBattle3DPlayers();
 
   const total = Math.max(2, Math.min(4, seats.length || 2));
@@ -236,13 +280,42 @@ function layoutBattle3D(seats = []) {
 
   seats.slice(0, 4).forEach((seat, index) => {
     const pos = seatPosition(index, total, 8).add(offset);
-    const sprite = new THREE.Sprite(
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
+    const imageUrl = playerImageMap.get(seat.id);
+    const texture = imageUrl ? imageLoader.load(imageUrl) : null;
+    if (texture) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+    }
+
+    const iconMesh = new THREE.Mesh(
+      new THREE.CircleGeometry(1.15, 48),
+      new THREE.MeshStandardMaterial({
+        map: texture,
+        color: "#ffffff",
+      }),
+    );
+    group.add(iconMesh);
+
+    const nameSprite = new THREE.Sprite(
       new THREE.SpriteMaterial({ map: makeNameTexture(seat.name), transparent: true }),
     );
-    sprite.position.copy(pos);
-    sprite.scale.set(3.8, 1, 1);
-    battle3D.scene.add(sprite);
-    battle3D.playerMeshes.push(sprite);
+    nameSprite.position.set(0, -1.5, 0);
+    nameSprite.scale.set(3.8, 1, 1);
+    group.add(nameSprite);
+
+    if (seat.id === state.game?.parentId) {
+      const crown = new THREE.Mesh(
+        new THREE.RingGeometry(1.3, 1.5, 48),
+        new THREE.MeshBasicMaterial({ color: "#ffd54f", side: THREE.DoubleSide }),
+      );
+      crown.position.set(0, 0, 0.02);
+      group.add(crown);
+    }
+
+    battle3D.scene.add(group);
+    battle3D.playerMeshes.push(group);
   });
 }
 
@@ -312,17 +385,6 @@ function showBattlePanel(roomId) {
 function renderSeats() {
   const seats = state.game?.seatOrder || [];
   layoutBattle3D(seats);
-  tableSeatsEl.innerHTML = "";
-  for (const seat of seats) {
-    const seatEl = document.createElement("li");
-    const isSelf = seat.id === userTrackingId;
-    const isParent = seat.id === state.game?.parentId;
-    seatEl.className = "seat";
-    if (isSelf) seatEl.classList.add("self");
-    if (isParent) seatEl.classList.add("parent");
-    seatEl.innerHTML = `<strong>${seat.name}</strong>${isParent ? "<span>親</span>" : ""}`;
-    tableSeatsEl.append(seatEl);
-  }
 }
 
 function renderHand() {
