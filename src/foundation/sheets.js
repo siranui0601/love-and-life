@@ -78,13 +78,13 @@ export async function findUserByIdentity({ email = "", username = "" } = {}) {
 
 export async function findUserByUsernameAndPassword(username, password) {
   const sheets = await getSheetsClient();
-  const range = `${SHEET_NAME}!A2:B`;
+  const range = `${SHEET_NAME}!A2:D`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   const rows = res.data.values || [];
   for (const row of rows) {
-    const [storedPassword, storedUsername] = row;
+    const [storedPassword, storedUsername, displayName, userTrackingId] = row;
     if (storedUsername === username && storedPassword === password) {
-      return { username: storedUsername };
+      return { username: storedUsername, displayName, userTrackingId };
     }
   }
   return null;

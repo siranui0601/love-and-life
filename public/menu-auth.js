@@ -106,9 +106,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (settingsMessage) settingsMessage.textContent = "";
   }
 
+  function syncAuthStorage(user) {
+    if (!user) {
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("username");
+      localStorage.removeItem("userTrackingId");
+      return;
+    }
+
+    localStorage.setItem("currentUser", JSON.stringify(user));
+    if (user.username) localStorage.setItem("username", user.username);
+    else localStorage.removeItem("username");
+
+    if (user.userTrackingId) localStorage.setItem("userTrackingId", user.userTrackingId);
+    else localStorage.removeItem("userTrackingId");
+  }
+
   function logoutCurrentUser() {
     window.currentUser = null;
-    localStorage.removeItem("currentUser");
+    syncAuthStorage(null);
     setAuthUiLoggedOut();
     closeSettingsModal();
   }
@@ -117,9 +133,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const stored = localStorage.getItem("currentUser");
     if (stored) {
       window.currentUser = JSON.parse(stored);
-      if (window.currentUser?.username) {
-        setAuthUiLoggedIn(window.currentUser.username);
-      }
+    }
+
+    const storedUsername = localStorage.getItem("username") || "";
+    const storedTrackingId = localStorage.getItem("userTrackingId") || "";
+    if (window.currentUser && !window.currentUser.username && storedUsername) {
+      window.currentUser.username = storedUsername;
+    }
+    if (window.currentUser && !window.currentUser.userTrackingId && storedTrackingId) {
+      window.currentUser.userTrackingId = storedTrackingId;
+    }
+
+    if (window.currentUser?.username) {
+      setAuthUiLoggedIn(window.currentUser.username);
+      syncAuthStorage(window.currentUser);
     }
   } catch (error) {
     console.error("localStorage parse error:", error);
@@ -164,8 +191,9 @@ document.addEventListener('DOMContentLoaded', () => {
           email,
           username: data.username,
           googleName: data.displayName || gName,
+          userTrackingId: data.userTrackingId || "",
         };
-        localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
+        syncAuthStorage(window.currentUser);
         sessionStorage.removeItem(pendingSignupKey);
 
         setAuthUiLoggedIn(data.username);
@@ -243,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.currentUser.email === data.previousUsername) {
           window.currentUser.email = data.username;
         }
-        localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
+        syncAuthStorage(window.currentUser);
         setAuthUiLoggedIn(data.username);
         closeSettingsModal();
       } catch (error) {
@@ -339,8 +367,9 @@ document.addEventListener('DOMContentLoaded', () => {
           email: username,
           username: data.username,
           googleName: null,
+          userTrackingId: data.userTrackingId || "",
         };
-        localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
+        syncAuthStorage(window.currentUser);
         setAuthUiLoggedIn(data.username);
         closeLoginModal();
         signupModal.style.display = "none";
@@ -379,8 +408,9 @@ document.addEventListener('DOMContentLoaded', () => {
           email: username,
           username: data.username,
           googleName: null,
+          userTrackingId: data.userTrackingId || "",
         };
-        localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
+        syncAuthStorage(window.currentUser);
         setAuthUiLoggedIn(data.username);
         closeLoginModal();
         if (loginPassword) loginPassword.value = "";
@@ -694,8 +724,9 @@ document.addEventListener('DOMContentLoaded', () => {
           email,
           username: lookup.username,
           googleName: lookup.displayName || gName,
+          userTrackingId: lookup.userTrackingId || "",
         };
-        localStorage.setItem("currentUser", JSON.stringify(window.currentUser));
+        syncAuthStorage(window.currentUser);
         setAuthUiLoggedIn(lookup.username);
         if (signupModal) {
           signupModal.style.display = "none";

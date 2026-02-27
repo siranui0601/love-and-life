@@ -9,6 +9,41 @@ import {
 
 const PENDING_LEAVE_GRACE_MS = 60 * 1000;
 const pendingLeave = new Map();
+const activeSocketsByTrackingId = new Map();
+
+function addActiveSocket(userTrackingId, socketId) {
+  const normalizedTrackingId = String(userTrackingId || "").trim();
+  const normalizedSocketId = String(socketId || "").trim();
+  if (!normalizedTrackingId || !normalizedSocketId) return;
+
+  let socketIdSet = activeSocketsByTrackingId.get(normalizedTrackingId);
+  if (!socketIdSet) {
+    socketIdSet = new Set();
+    activeSocketsByTrackingId.set(normalizedTrackingId, socketIdSet);
+  }
+  socketIdSet.add(normalizedSocketId);
+}
+
+function removeActiveSocket(userTrackingId, socketId) {
+  const normalizedTrackingId = String(userTrackingId || "").trim();
+  const normalizedSocketId = String(socketId || "").trim();
+  if (!normalizedTrackingId || !normalizedSocketId) return;
+
+  const socketIdSet = activeSocketsByTrackingId.get(normalizedTrackingId);
+  if (!socketIdSet) return;
+
+  socketIdSet.delete(normalizedSocketId);
+  if (!socketIdSet.size) {
+    activeSocketsByTrackingId.delete(normalizedTrackingId);
+  }
+}
+
+function hasActiveSocket(userTrackingId) {
+  const normalizedTrackingId = String(userTrackingId || "").trim();
+  if (!normalizedTrackingId) return false;
+  const socketIdSet = activeSocketsByTrackingId.get(normalizedTrackingId);
+  return Boolean(socketIdSet && socketIdSet.size > 0);
+}
 
 function getPendingLeaveRoomMap(roomId) {
   const normalizedRoomId = String(roomId || "").trim();
@@ -23,19 +58,19 @@ function getPendingLeaveRoomMap(roomId) {
   return roomMap;
 }
 
-export function cancelPendingLeave(roomId, clientId) {
+export function cancelPendingLeave(roomId, userTrackingId) {
   const normalizedRoomId = String(roomId || "").trim();
-  const normalizedClientId = String(clientId || "").trim();
-  if (!normalizedRoomId || !normalizedClientId) return false;
+  const normalizedTrackingId = String(userTrackingId || "").trim();
+  if (!normalizedRoomId || !normalizedTrackingId) return false;
 
   const roomMap = pendingLeave.get(normalizedRoomId);
   if (!roomMap) return false;
 
-  const timeoutId = roomMap.get(normalizedClientId);
+  const timeoutId = roomMap.get(normalizedTrackingId);
   if (!timeoutId) return false;
 
   clearTimeout(timeoutId);
-  roomMap.delete(normalizedClientId);
+  roomMap.delete(normalizedTrackingId);
 
   if (!roomMap.size) {
     pendingLeave.delete(normalizedRoomId);
@@ -44,21 +79,21 @@ export function cancelPendingLeave(roomId, clientId) {
   return true;
 }
 
-export function schedulePendingLeave(roomId, clientId, callback) {
+export function schedulePendingLeave(roomId, userTrackingId, callback) {
   const normalizedRoomId = String(roomId || "").trim();
-  const normalizedClientId = String(clientId || "").trim();
-  if (!normalizedRoomId || !normalizedClientId) return null;
+  const normalizedTrackingId = String(userTrackingId || "").trim();
+  if (!normalizedRoomId || !normalizedTrackingId) return null;
 
-  cancelPendingLeave(normalizedRoomId, normalizedClientId);
+  cancelPendingLeave(normalizedRoomId, normalizedTrackingId);
   const roomMap = getPendingLeaveRoomMap(normalizedRoomId);
   if (!roomMap) return null;
 
   const timeoutId = setTimeout(async () => {
     const latestRoomMap = pendingLeave.get(normalizedRoomId);
-    const latestTimeoutId = latestRoomMap?.get(normalizedClientId);
+    const latestTimeoutId = latestRoomMap?.get(normalizedTrackingId);
     if (latestTimeoutId !== timeoutId) return;
 
-    latestRoomMap.delete(normalizedClientId);
+    latestRoomMap.delete(normalizedTrackingId);
     if (!latestRoomMap.size) {
       pendingLeave.delete(normalizedRoomId);
     }
@@ -66,7 +101,7 @@ export function schedulePendingLeave(roomId, clientId, callback) {
     await callback();
   }, PENDING_LEAVE_GRACE_MS);
 
-  roomMap.set(normalizedClientId, timeoutId);
+  roomMap.set(normalizedTrackingId, timeoutId);
   return timeoutId;
 }
 
@@ -89,14 +124,14 @@ export function mountSecretToolRoutes(app, io) {
 
   app.post("/api/secret-tool/rooms/create", async (req, res) => {
     const username = String(req.body?.username || "guest").trim() || "guest";
-    const clientId = String(req.body?.clientId || "").trim();
+    const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
 
-    if (!clientId) {
-      return res.status(400).json({ error: "clientId is required" });
+    if (!userTrackingId) {
+      return res.status(400).json({ error: "userTrackingId is required" });
     }
 
     try {
-      const room = await createSecretToolRoom({ username, clientId });
+      const room = await createSecretToolRoom({ username, clientId: userTrackingId });
       io.to(secretSocketRoom(room.roomId)).emit("secret-tool:members-updated", room);
       return res.json(room);
     } catch (error) {
@@ -107,15 +142,15 @@ export function mountSecretToolRoutes(app, io) {
 
   app.post("/api/secret-tool/rooms/join", async (req, res) => {
     const username = String(req.body?.username || "guest").trim() || "guest";
-    const clientId = String(req.body?.clientId || "").trim();
+    const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
     const roomId = String(req.body?.roomId || "").trim();
 
-    if (!clientId || !roomId) {
-      return res.status(400).json({ error: "clientId and roomId are required" });
+    if (!userTrackingId || !roomId) {
+      return res.status(400).json({ error: "userTrackingId and roomId are required" });
     }
 
     try {
-      const room = await joinSecretToolRoom({ username, clientId, roomId });
+      const room = await joinSecretToolRoom({ username, clientId: userTrackingId, roomId });
       io.to(secretSocketRoom(room.roomId)).emit("secret-tool:members-updated", room);
       return res.json(room);
     } catch (error) {
@@ -149,23 +184,31 @@ export function mountSecretToolRoutes(app, io) {
 
 export function registerSecretToolSocketHandlers(socket, io) {
   const auth = socket.handshake.auth || {};
-  socket.data.clientId = String(auth.clientId || socket.data.clientId || "").trim();
+  socket.data.clientId = String(auth.clientId || auth.userTrackingId || socket.data.clientId || "").trim();
   socket.data.username = String(auth.username || socket.data.username || "guest").trim() || "guest";
   socket.data.roomId = String(auth.roomId || socket.data.roomId || "").trim() || null;
 
+  const userTrackingId = String(socket.data.clientId || "").trim();
+  if (userTrackingId) {
+    addActiveSocket(userTrackingId, socket.id);
+    if (socket.data.roomId) {
+      cancelPendingLeave(socket.data.roomId, userTrackingId);
+    }
+  }
+
   socket.on("secret-tool:join-room", async ({ roomId } = {}) => {
     const normalizedRoomId = String(roomId || socket.data.roomId || "").trim();
-    const clientId = String(socket.data.clientId || "").trim();
+    const currentUserTrackingId = String(socket.data.clientId || "").trim();
     const username = String(socket.data.username || "guest").trim() || "guest";
-    if (!normalizedRoomId || !clientId) return;
+    if (!normalizedRoomId || !currentUserTrackingId) return;
 
-    cancelPendingLeave(normalizedRoomId, clientId);
+    cancelPendingLeave(normalizedRoomId, currentUserTrackingId);
     socket.join(secretSocketRoom(normalizedRoomId));
     socket.data.secretToolRoomId = normalizedRoomId;
     socket.data.roomId = normalizedRoomId;
 
     try {
-      const room = await joinSecretToolRoom({ roomId: normalizedRoomId, username, clientId });
+      const room = await joinSecretToolRoom({ roomId: normalizedRoomId, username, clientId: currentUserTrackingId });
       io.to(secretSocketRoom(normalizedRoomId)).emit("secret-tool:members-updated", room);
     } catch (error) {
       if (error.message !== "room_not_found" && error.message !== "room_not_lobby") {
@@ -176,11 +219,11 @@ export function registerSecretToolSocketHandlers(socket, io) {
 
   socket.on("secret-tool:leave-room", async () => {
     const roomId = String(socket.data.secretToolRoomId || "").trim();
-    const clientId = String(socket.data.clientId || "").trim();
-    if (!roomId || !clientId) return;
+    const currentUserTrackingId = String(socket.data.clientId || "").trim();
+    if (!roomId || !currentUserTrackingId) return;
 
-    cancelPendingLeave(roomId, clientId);
-    const updated = await removeSecretToolMember({ roomId, clientId });
+    cancelPendingLeave(roomId, currentUserTrackingId);
+    const updated = await removeSecretToolMember({ roomId, clientId: currentUserTrackingId });
     socket.leave(secretSocketRoom(roomId));
     socket.data.secretToolRoomId = null;
 
@@ -191,11 +234,16 @@ export function registerSecretToolSocketHandlers(socket, io) {
 
   socket.on("disconnect", () => {
     const roomId = String(socket.data.secretToolRoomId || socket.data.roomId || "").trim();
-    const clientId = String(socket.data.clientId || "").trim();
-    if (!roomId || !clientId) return;
+    const currentUserTrackingId = String(socket.data.clientId || "").trim();
+    if (!currentUserTrackingId) return;
 
-    schedulePendingLeave(roomId, clientId, async () => {
-      const updated = await removeSecretToolMember({ roomId, clientId });
+    removeActiveSocket(currentUserTrackingId, socket.id);
+    if (!roomId) return;
+
+    schedulePendingLeave(roomId, currentUserTrackingId, async () => {
+      if (hasActiveSocket(currentUserTrackingId)) return;
+
+      const updated = await removeSecretToolMember({ roomId, clientId: currentUserTrackingId });
       if (!updated) return;
       io.to(secretSocketRoom(roomId)).emit("secret-tool:members-updated", updated);
     });
