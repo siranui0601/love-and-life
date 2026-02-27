@@ -15,7 +15,12 @@ export function mountUserRoutes(app) {
     try {
       const user = await findUserByEmail(email);
       if (!user) return res.json({ exists: false });
-      return res.json({ exists: true, username: user.username, displayName: user.displayName });
+      return res.json({
+        exists: true,
+        username: user.username,
+        displayName: user.displayName,
+        userTrackingId: user.userTrackingId,
+      });
     } catch (e) {
       console.error("lookup error:", e);
       return res.status(500).json({ error: "server_error" });
@@ -34,7 +39,12 @@ export function mountUserRoutes(app) {
     try {
       const existing = await findUserByEmail(email);
       if (existing) {
-        return res.json({ exists: true, username: existing.username, displayName: existing.displayName });
+        return res.json({
+          exists: true,
+          username: existing.username,
+          displayName: existing.displayName,
+          userTrackingId: existing.userTrackingId,
+        });
       }
 
       const existingByUsername = await findUserByUsername(trimmedUsername);
@@ -43,7 +53,12 @@ export function mountUserRoutes(app) {
       }
 
       const user = await addUser({ email, username: trimmedUsername, displayName: googleDisplayName || "" });
-      return res.json({ exists: true, username: user.username, displayName: user.displayName });
+      return res.json({
+        exists: true,
+        username: user.username,
+        displayName: user.displayName,
+        userTrackingId: user.userTrackingId,
+      });
     } catch (e) {
       console.error("register error:", e);
       return res.status(500).json({ error: "server_error" });
@@ -65,7 +80,7 @@ export function mountUserRoutes(app) {
         return res.status(409).json({ error: "そのユーザー名は登録済みです" });
       }
       const user = await addCredentialUser({ username: trimmedUsername, password });
-      return res.json({ exists: true, username: user.username });
+      return res.json({ exists: true, username: user.username, userTrackingId: user.userTrackingId });
     } catch (e) {
       console.error("register credential error:", e);
       return res.status(500).json({ error: "server_error" });
@@ -112,7 +127,7 @@ export function mountUserRoutes(app) {
     try {
       const user = await findUserByUsernameAndPassword(username, password);
       if (!user) return res.status(401).json({ exists: false, error: "ユーザーネームかパスワードが違います" });
-      return res.json({ exists: true, username: user.username });
+      return res.json({ exists: true, username: user.username, userTrackingId: user.userTrackingId });
     } catch (e) {
       console.error("login error:", e);
       return res.status(500).json({ error: "server_error" });

@@ -20,7 +20,7 @@ if (!clientId) {
 
 const socket = io({
   auth: {
-    clientId,
+    userTrackingId,
     username: window.currentUser?.username ?? "guest",
     roomId: localStorage.getItem("activeRoomId") ?? null,
   }
@@ -38,11 +38,11 @@ if (!storedUser?.username || !storedUser?.userTrackingId) {
 }
 
 const username = storedUser.username;
-const clientId = storedUser.userTrackingId; // ★ UsersのD列を主体にする
+const userTrackingId = storedUser.userTrackingId; // ★ UsersのD列を主体にする
 
 const socket = io({
   auth: {
-    clientId,
+    userTrackingId,
     username,
     roomId: localStorage.getItem("activeRoomId") ?? null,
   }
@@ -85,7 +85,7 @@ async function requestJson(url, body) {
 createRoomBtn.addEventListener("click", async () => {
   setMessage("ルーム作成中...");
   try {
-    const room = await requestJson("/api/secret-tool/rooms/create", { username, clientId });
+    const room = await requestJson("/api/secret-tool/rooms/create", { username, userTrackingId });
     localStorage.setItem("activeRoomId", room.roomId);
     socket.emit("secret-tool:join-room", { roomId: room.roomId });
     renderMembers(room);
@@ -104,7 +104,7 @@ joinRoomBtn.addEventListener("click", async () => {
     const room = await requestJson("/api/secret-tool/rooms/join", {
       roomId: roomId.trim(),
       username,
-      clientId,
+      userTrackingId,
     });
     localStorage.setItem("activeRoomId", room.roomId);
     socket.emit("secret-tool:join-room", { roomId: room.roomId });
