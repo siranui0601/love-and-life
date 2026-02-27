@@ -38,7 +38,13 @@
     </section>
 
     <section id="battlePanel" class="panel battle hidden">
-      <p id="battlePhase" class="battle-phase"></p>
+      <div class="battle-topbar">
+        <p id="battlePhase" class="battle-phase"></p>
+        <div id="mulliganTopControls" class="mulligan-top-controls hidden">
+          <p id="mulliganCounter">0/3 枚選択中</p>
+          <button id="finishMulliganBtn" class="cute-btn" type="button">この内容でマリガン完了</button>
+        </div>
+      </div>
 
       <div class="battle-board">
         <div class="deck-pocket-wrap">
@@ -51,10 +57,7 @@
       </div>
 
       <section id="mulliganPanel" class="mulligan-panel hidden">
-        <div class="mulligan-header">
-          <p id="mulliganCounter">0/3 枚選択中</p>
-          <button id="finishMulliganBtn" class="cute-btn" type="button">この内容でマリガン完了</button>
-        </div>
+        <button id="toggleMulliganPanelBtn" class="cute-btn ghost mulligan-toggle" type="button">手札をたたむ</button>
         <div id="playerHand" class="player-hand" aria-label="手札"></div>
       </section>
     </section>
