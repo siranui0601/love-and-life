@@ -2,6 +2,7 @@ import path from "path";
 import {
   cleanupExpiredSecretToolRooms,
   createSecretToolRoom,
+  deleteSecretToolRoom,
   getSecretToolRoomById,
   removeSecretToolMember,
   joinSecretToolRoom,
@@ -165,6 +166,33 @@ export function mountSecretToolRoutes(app, io) {
     }
   });
 
+  app.post("/api/secret-tool/rooms/delete", async (req, res) => {
+    const roomId = String(req.body?.roomId || "").trim();
+    const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
+    if (!roomId || !userTrackingId) {
+      return res.status(400).json({ error: "roomId and userTrackingId are required" });
+    }
+
+    try {
+      const room = await deleteSecretToolRoom({ roomId, hostClientId: userTrackingId });
+      io.to(secretSocketRoom(roomId)).emit("secret-tool:room-deleted", { roomId });
+      io.to(secretSocketRoom(roomId)).emit("secret-tool:members-updated", room);
+      return res.json(room);
+    } catch (error) {
+      if (error.message === "room_not_found") {
+        return res.status(404).json({ error: "room_not_found" });
+      }
+      if (error.message === "room_not_lobby") {
+        return res.status(409).json({ error: "room_not_lobby" });
+      }
+      if (error.message === "forbidden") {
+        return res.status(403).json({ error: "forbidden" });
+      }
+      console.error("[secret-tool] delete room error:", error);
+      return res.status(500).json({ error: "server_error" });
+    }
+  });
+
   app.get("/api/secret-tool/rooms/:roomId", async (req, res) => {
     const roomId = String(req.params.roomId || "").trim();
     if (!roomId) {
@@ -196,7 +224,7 @@ export function registerSecretToolSocketHandlers(socket, io) {
     }
   }
 
-  socket.on("secret-tool:join-room", async ({ roomId } = {}) => {
+  socket.on("secret-tool:join-room", async ({ roomId, announceJoin = false } = {}) => {
     const normalizedRoomId = String(roomId || socket.data.roomId || "").trim();
     const currentUserTrackingId = String(socket.data.clientId || "").trim();
     const username = String(socket.data.username || "guest").trim() || "guest";
@@ -210,6 +238,12 @@ export function registerSecretToolSocketHandlers(socket, io) {
     try {
       const room = await joinSecretToolRoom({ roomId: normalizedRoomId, username, clientId: currentUserTrackingId });
       io.to(secretSocketRoom(normalizedRoomId)).emit("secret-tool:members-updated", room);
+      if (room.joined || announceJoin) {
+        socket.to(secretSocketRoom(normalizedRoomId)).emit("secret-tool:member-joined", {
+          roomId: normalizedRoomId,
+          name: username,
+        });
+      }
     } catch (error) {
       if (error.message !== "room_not_found" && error.message !== "room_not_lobby") {
         console.error("[secret-tool] join-room socket error:", error);
@@ -223,12 +257,20 @@ export function registerSecretToolSocketHandlers(socket, io) {
     if (!roomId || !currentUserTrackingId) return;
 
     cancelPendingLeave(roomId, currentUserTrackingId);
+    const previousRoom = await getSecretToolRoomById(roomId);
+    const leavingMember = previousRoom?.members.find((member) => member.id === currentUserTrackingId);
     const updated = await removeSecretToolMember({ roomId, clientId: currentUserTrackingId });
     socket.leave(secretSocketRoom(roomId));
     socket.data.secretToolRoomId = null;
 
     if (updated) {
       io.to(secretSocketRoom(roomId)).emit("secret-tool:members-updated", updated);
+      if (leavingMember?.name && updated.status !== "closed") {
+        io.to(secretSocketRoom(roomId)).emit("secret-tool:member-left", {
+          roomId,
+          name: leavingMember.name,
+        });
+      }
     }
   });
 
@@ -243,9 +285,17 @@ export function registerSecretToolSocketHandlers(socket, io) {
     schedulePendingLeave(roomId, currentUserTrackingId, async () => {
       if (hasActiveSocket(currentUserTrackingId)) return;
 
+      const previousRoom = await getSecretToolRoomById(roomId);
+      const leavingMember = previousRoom?.members.find((member) => member.id === currentUserTrackingId);
       const updated = await removeSecretToolMember({ roomId, clientId: currentUserTrackingId });
       if (!updated) return;
       io.to(secretSocketRoom(roomId)).emit("secret-tool:members-updated", updated);
+      if (leavingMember?.name && updated.status !== "closed") {
+        io.to(secretSocketRoom(roomId)).emit("secret-tool:member-left", {
+          roomId,
+          name: leavingMember.name,
+        });
+      }
     });
   });
 

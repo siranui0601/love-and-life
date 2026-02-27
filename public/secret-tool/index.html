@@ -8,7 +8,7 @@
 </head>
 <body>
   <main class="page">
-    <section class="panel">
+    <section id="homePanel" class="panel">
       <h1>ひみつ道具バトル</h1>
 
       <p id="message" class="message"></p>
@@ -26,15 +26,33 @@
       <p>ルームID: <span id="roomIdText">-</span></p>
       <h3>参加者</h3>
       <ul id="memberList"></ul>
+      <div class="waiting-actions">
+        <button id="startGameBtn" class="cute-btn" type="button" disabled>ゲーム開始</button>
+        <button id="deleteRoomBtn" class="cute-btn danger hidden" type="button">ルーム削除</button>
+        <button id="leaveRoomBtn" class="cute-btn ghost hidden" type="button">ルーム退室</button>
+      </div>
+    </section>
+
+    <section id="waitingNote" class="note-box">
+      待機部屋は、ルーム作成またはルーム入室後に表示されます。
     </section>
   </main>
 
-  <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true">
+  <div id="actionModal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-body">
-      <p>本当に戻りますか？</p>
+      <p id="actionModalText"></p>
       <div class="modal-actions">
-        <button id="confirmYesBtn" class="cute-btn" type="button">はい</button>
-        <button id="confirmNoBtn" class="cute-btn ghost" type="button">いいえ</button>
+        <button id="actionYesBtn" class="cute-btn" type="button">はい</button>
+        <button id="actionNoBtn" class="cute-btn ghost" type="button">いいえ</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="infoModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-body">
+      <p id="infoModalText"></p>
+      <div class="modal-actions">
+        <button id="infoModalCloseBtn" class="cute-btn" type="button">閉じる</button>
       </div>
     </div>
   </div>
