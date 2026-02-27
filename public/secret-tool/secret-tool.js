@@ -89,12 +89,56 @@ function showWaitingRoom(room) {
   waitingNoteEl.classList.remove("hidden");
 }
 
-function resetToLobbyState() {
+function resetToLobbyState({ clearActiveRoom = true } = {}) {
   state.room = null;
-  localStorage.removeItem("activeRoomId");
+  if (clearActiveRoom) {
+    localStorage.removeItem("activeRoomId");
+  }
   showHomePanel();
   waitingRoomEl.classList.add("hidden");
   waitingNoteEl.classList.remove("hidden");
+}
+
+async function fetchRoom(roomId) {
+  const response = await fetch(`/api/secret-tool/rooms/${encodeURIComponent(roomId)}`);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || "request_failed");
+  }
+  return payload;
+}
+
+async function restoreActiveRoomIfExists() {
+  const activeRoomId = localStorage.getItem("activeRoomId");
+  if (!activeRoomId) {
+    resetToLobbyState({ clearActiveRoom: false });
+    setMessage("ルームを作成するか、IDを入力して参加してください。");
+    return;
+  }
+
+  setMessage("ルームを再接続中...");
+  try {
+    const room = await fetchRoom(activeRoomId);
+    const joined = (room.members || []).some((member) => member.id === userTrackingId);
+
+    if (room.status !== "lobby" || !joined) {
+      resetToLobbyState();
+      setMessage("前回のルームには再接続できませんでした。");
+      return;
+    }
+
+    socket.emit("secret-tool:join-room", { roomId: room.roomId });
+    socket.emit("secret-tool:sync-room", { roomId: room.roomId });
+    showWaitingRoom(room);
+    setMessage(`ルーム ${room.roomId} に再接続しました。`);
+  } catch (error) {
+    resetToLobbyState();
+    if (error.message === "room_not_found") {
+      setMessage("前回のルームは見つかりませんでした。");
+      return;
+    }
+    setMessage("ルームの再接続に失敗しました。");
+  }
 }
 
 async function requestJson(url, body) {
@@ -272,5 +316,6 @@ socket.on("secret-tool:member-left", ({ roomId, id, name } = {}) => {
   showToast(`${name}が退室しました`, 3000);
 });
 
-resetToLobbyState();
-setMessage("ルームを作成するか、IDを入力して参加してください。");
+socket.on("connect", () => {
+  restoreActiveRoomIfExists();
+});
