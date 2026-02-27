@@ -268,6 +268,7 @@ export function registerSecretToolSocketHandlers(socket, io) {
       if (leavingMember?.name && updated.status !== "closed") {
         io.to(secretSocketRoom(roomId)).emit("secret-tool:member-left", {
           roomId,
+          id: leavingMember.id,
           name: leavingMember.name,
         });
       }
@@ -293,6 +294,7 @@ export function registerSecretToolSocketHandlers(socket, io) {
       if (leavingMember?.name && updated.status !== "closed") {
         io.to(secretSocketRoom(roomId)).emit("secret-tool:member-left", {
           roomId,
+          id: leavingMember.id,
           name: leavingMember.name,
         });
       }
