@@ -36,6 +36,23 @@
     <section id="waitingNote" class="note-box">
       待機部屋は、ルーム作成またはルーム入室後に表示されます。
     </section>
+
+    <section id="battlePanel" class="panel battle hidden">
+      <h2>対戦画面</h2>
+      <p>ルームID: <span id="battleRoomId">-</span></p>
+      <p id="battlePhase" class="battle-phase"></p>
+
+      <div id="deckAnimation" class="deck-animation">四次元ポケット</div>
+
+      <ul id="tableSeats" class="table-seats"></ul>
+
+      <section id="mulliganPanel" class="mulligan-panel hidden">
+        <h3>初期手札（5枚）</h3>
+        <p id="mulliganCounter">0/3 枚選択中</p>
+        <div id="handList" class="hand-list"></div>
+        <button id="finishMulliganBtn" class="cute-btn" type="button">この内容でマリガン完了</button>
+      </section>
+    </section>
   </main>
 
   <div id="actionModal" class="modal hidden" role="dialog" aria-modal="true">
