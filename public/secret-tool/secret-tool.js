@@ -1,4 +1,5 @@
 import { showToast } from "../toast.js";
+import * as THREE from "https://esm.sh/three@0.163.0";
 
 const messageEl = document.getElementById("message");
 const homePanelEl = document.getElementById("homePanel");
@@ -16,7 +17,7 @@ const leaveRoomBtn = document.getElementById("leaveRoomBtn");
 const waitingNoteEl = document.getElementById("waitingNote");
 
 const battlePanelEl = document.getElementById("battlePanel");
-const battleRoomIdEl = document.getElementById("battleRoomId");
+const battleSceneEl = document.getElementById("battleScene");
 const tableSeatsEl = document.getElementById("tableSeats");
 const battlePhaseEl = document.getElementById("battlePhase");
 const deckAnimationEl = document.getElementById("deckAnimation");
@@ -64,6 +65,203 @@ const state = {
   mulliganSubmitted: false,
 };
 
+const battle3D = {
+  renderer: null,
+  scene: null,
+  camera: null,
+  pocket: null,
+  playerMeshes: [],
+  disposeHandlers: [],
+  rafId: null,
+  lookYaw: 0,
+  lookPitch: 0,
+  baseDir: new THREE.Vector3(),
+  baseRight: new THREE.Vector3(),
+};
+
+function clearBattle3DPlayers() {
+  for (const m of battle3D.playerMeshes) {
+    battle3D.scene?.remove(m);
+    m.material?.map?.dispose?.();
+    m.material?.dispose?.();
+  }
+  battle3D.playerMeshes = [];
+}
+
+function makeNameTexture(name) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "rgba(255,255,255,.92)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#1f2c1f";
+  ctx.font = "bold 30px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(name || "PLAYER"), canvas.width / 2, canvas.height / 2);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function seatPosition(index, total, radius) {
+  if (total === 2) {
+    return [new THREE.Vector3(0, 1, radius), new THREE.Vector3(0, 1, -radius)][index];
+  }
+  if (total === 4) {
+    return [
+      new THREE.Vector3(0, 1, radius),
+      new THREE.Vector3(radius, 1, 0),
+      new THREE.Vector3(0, 1, -radius),
+      new THREE.Vector3(-radius, 1, 0),
+    ][index];
+  }
+  const angle = (Math.PI * 2 * index) / Math.max(1, total);
+  return new THREE.Vector3(Math.sin(angle) * radius, 1, Math.cos(angle) * radius);
+}
+
+function setupBattle3D() {
+  if (!battleSceneEl || battle3D.renderer) return;
+
+  battle3D.scene = new THREE.Scene();
+  battle3D.scene.background = new THREE.Color("#bfe9ff");
+
+  battle3D.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 200);
+  battle3D.camera.position.set(0, 2.4, 13);
+
+  battle3D.renderer = new THREE.WebGLRenderer({ antialias: true });
+  battle3D.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  battleSceneEl.append(battle3D.renderer.domElement);
+
+  battle3D.scene.add(new THREE.HemisphereLight(0xffffff, 0x4b7f47, 1.15));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.85);
+  dl.position.set(6, 10, 7);
+  battle3D.scene.add(dl);
+
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(120, 120),
+    new THREE.MeshStandardMaterial({ color: "#3fa34d" }),
+  );
+  ground.rotation.x = -Math.PI / 2;
+  battle3D.scene.add(ground);
+
+  const crescent = new THREE.Shape();
+  crescent.absarc(0, 0, 1.4, 0, Math.PI * 2, false);
+  const hole = new THREE.Path();
+  hole.absarc(0.58, 0, 1.18, 0, Math.PI * 2, true);
+  crescent.holes.push(hole);
+  battle3D.pocket = new THREE.Mesh(
+    new THREE.ShapeGeometry(crescent),
+    new THREE.MeshBasicMaterial({ color: "#ffffff", side: THREE.DoubleSide }),
+  );
+  battle3D.pocket.position.set(0, 1.8, 0);
+  battle3D.scene.add(battle3D.pocket);
+
+  const onResize = () => {
+    const width = battleSceneEl.clientWidth || window.innerWidth;
+    const height = battleSceneEl.clientHeight || window.innerHeight;
+    battle3D.camera.aspect = width / Math.max(1, height);
+    battle3D.camera.updateProjectionMatrix();
+    battle3D.renderer.setSize(width, height, false);
+  };
+  onResize();
+  window.addEventListener("resize", onResize);
+  battle3D.disposeHandlers.push(() => window.removeEventListener("resize", onResize));
+
+  let dragging = false;
+  let lastX = 0;
+  let lastY = 0;
+  const onDown = (event) => {
+    dragging = true;
+    lastX = event.clientX;
+    lastY = event.clientY;
+  };
+  const onMove = (event) => {
+    if (!dragging) return;
+    const dx = event.clientX - lastX;
+    const dy = event.clientY - lastY;
+    lastX = event.clientX;
+    lastY = event.clientY;
+    battle3D.lookYaw = THREE.MathUtils.clamp(battle3D.lookYaw - dx * 0.005, -Math.PI / 3, Math.PI / 3);
+    battle3D.lookPitch = THREE.MathUtils.clamp(battle3D.lookPitch - dy * 0.005, -Math.PI / 3, Math.PI / 3);
+  };
+  const onUp = () => {
+    dragging = false;
+  };
+
+  battle3D.renderer.domElement.addEventListener("pointerdown", onDown);
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  battle3D.disposeHandlers.push(() => {
+    battle3D.renderer?.domElement?.removeEventListener("pointerdown", onDown);
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+  });
+
+  const animate = () => {
+    battle3D.rafId = requestAnimationFrame(animate);
+    if (!battle3D.camera || !battle3D.renderer || !battle3D.scene) return;
+
+    battle3D.pocket?.lookAt(battle3D.camera.position);
+
+    const look = battle3D.baseDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), battle3D.lookYaw);
+    const right = battle3D.baseRight.lengthSq() ? battle3D.baseRight : new THREE.Vector3(1, 0, 0);
+    look.applyAxisAngle(right, battle3D.lookPitch);
+    battle3D.camera.lookAt(battle3D.camera.position.clone().add(look));
+
+    battle3D.renderer.render(battle3D.scene, battle3D.camera);
+  };
+  animate();
+}
+
+function layoutBattle3D(seats = []) {
+  setupBattle3D();
+  if (!battle3D.camera || !battle3D.scene) return;
+
+  clearBattle3DPlayers();
+
+  const total = Math.max(2, Math.min(4, seats.length || 2));
+  const myIndex = Math.max(0, seats.findIndex((seat) => seat.id === userTrackingId));
+  const myPos = seatPosition(myIndex, total, 8);
+  const cameraPos = new THREE.Vector3(0, 2.4, 13);
+  const offset = cameraPos.clone().sub(myPos);
+
+  battle3D.camera.position.copy(cameraPos);
+  battle3D.baseDir = new THREE.Vector3(0, 1.8, 0).sub(cameraPos).normalize();
+  battle3D.baseRight = battle3D.baseDir.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
+  battle3D.lookYaw = 0;
+  battle3D.lookPitch = 0;
+
+  seats.slice(0, 4).forEach((seat, index) => {
+    const pos = seatPosition(index, total, 8).add(offset);
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: makeNameTexture(seat.name), transparent: true }),
+    );
+    sprite.position.copy(pos);
+    sprite.scale.set(3.8, 1, 1);
+    battle3D.scene.add(sprite);
+    battle3D.playerMeshes.push(sprite);
+  });
+}
+
+function destroyBattle3D() {
+  if (battle3D.rafId) cancelAnimationFrame(battle3D.rafId);
+  battle3D.rafId = null;
+  clearBattle3DPlayers();
+  battle3D.disposeHandlers.forEach((dispose) => dispose());
+  battle3D.disposeHandlers = [];
+  if (battle3D.renderer?.domElement?.parentNode) {
+    battle3D.renderer.domElement.parentNode.removeChild(battle3D.renderer.domElement);
+  }
+  battle3D.renderer?.dispose?.();
+  battle3D.renderer = null;
+  battle3D.scene = null;
+  battle3D.camera = null;
+  battle3D.pocket = null;
+}
+
 function setMessage(message) {
   messageEl.textContent = message;
 }
@@ -109,11 +307,11 @@ function showBattlePanel(roomId) {
   waitingRoomEl.classList.add("hidden");
   waitingNoteEl.classList.add("hidden");
   battlePanelEl.classList.remove("hidden");
-  battleRoomIdEl.textContent = roomId || "-";
 }
 
 function renderSeats() {
   const seats = state.game?.seatOrder || [];
+  layoutBattle3D(seats);
   tableSeatsEl.innerHTML = "";
   for (const seat of seats) {
     const seatEl = document.createElement("li");
@@ -137,7 +335,11 @@ function renderHand() {
     cardBtn.type = "button";
     cardBtn.className = "hand-card";
     cardBtn.dataset.handId = card.handId;
-    cardBtn.innerHTML = `<b>${card.name}</b><small>${card.type}</small>`;
+    cardBtn.innerHTML = `
+      <div class="card-name">${card.name || "カード"}</div>
+      <div class="card-effect">${card.text || card.type || "効果なし"}</div>
+      <small class="card-flavor">${card.flavor || ""}</small>
+    `;
 
     if (state.selectedMulliganIds.has(card.handId)) {
       cardBtn.classList.add("selected");
@@ -189,6 +391,7 @@ function resetToLobbyState({ clearActiveRoom = true } = {}) {
     localStorage.removeItem("activeRoomId");
   }
   showHomePanel();
+  destroyBattle3D();
   waitingRoomEl.classList.add("hidden");
   battlePanelEl.classList.add("hidden");
   waitingNoteEl.classList.remove("hidden");
@@ -365,9 +568,12 @@ backToTitleBtn.addEventListener("click", () => {
       socket.emit("secret-tool:leave-room");
       localStorage.removeItem("activeRoomId");
     }
+    destroyBattle3D();
     window.location.href = "/";
   });
 });
+
+window.addEventListener("beforeunload", destroyBattle3D);
 
 actionNoBtn.addEventListener("click", closeConfirmModal);
 

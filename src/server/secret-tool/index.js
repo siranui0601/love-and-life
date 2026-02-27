@@ -46,6 +46,7 @@ function sanitizeHand(cardList = []) {
     name: card.name,
     type: card.type,
     text: card.text,
+    flavor: card.flavor,
     initial: card.initial,
   }));
 }
