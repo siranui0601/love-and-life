@@ -20,8 +20,10 @@ const battlePhaseEl = document.getElementById("battlePhase");
 const deckPocketEl = document.getElementById("deckPocket");
 const battlePlayerListEl = document.getElementById("battlePlayerList");
 const mulliganPanelEl = document.getElementById("mulliganPanel");
+const mulliganTopControlsEl = document.getElementById("mulliganTopControls");
 const mulliganCounterEl = document.getElementById("mulliganCounter");
 const finishMulliganBtn = document.getElementById("finishMulliganBtn");
+const toggleMulliganPanelBtn = document.getElementById("toggleMulliganPanelBtn");
 const playerHandEl = document.getElementById("playerHand");
 
 const actionModalEl = document.getElementById("actionModal");
@@ -61,6 +63,7 @@ const state = {
   hand: [],
   selectedMulliganIds: new Set(),
   mulliganSubmitted: false,
+  isMulliganPanelCollapsed: false,
 };
 
 function setMessage(message) {
@@ -192,6 +195,11 @@ function renderHand() {
   deckPocketEl.classList.toggle("deal", isMulligan);
 }
 
+function renderMulliganPanelVisibility() {
+  mulliganPanelEl.classList.toggle("collapsed", state.isMulliganPanelCollapsed);
+  toggleMulliganPanelBtn.textContent = state.isMulliganPanelCollapsed ? "手札を表示" : "手札をたたむ";
+}
+
 function renderBattleState() {
   if (!state.game) return;
   showBattlePanel();
@@ -200,9 +208,12 @@ function renderBattleState() {
 
   if (state.game.phase === "mulligan") {
     battlePhaseEl.textContent = "カードを3枚まで選んで交換できます。最初に終えた人が親です。";
+    mulliganTopControlsEl.classList.remove("hidden");
     mulliganPanelEl.classList.remove("hidden");
+    renderMulliganPanelVisibility();
   } else {
     battlePhaseEl.textContent = "マリガン終了。親から時計回りでゲーム開始。";
+    mulliganTopControlsEl.classList.add("hidden");
     mulliganPanelEl.classList.add("hidden");
     deckPocketEl.classList.remove("deal");
   }
@@ -214,6 +225,7 @@ function resetToLobbyState({ clearActiveRoom = true } = {}) {
   state.hand = [];
   state.selectedMulliganIds = new Set();
   state.mulliganSubmitted = false;
+  state.isMulliganPanelCollapsed = false;
   if (clearActiveRoom) {
     localStorage.removeItem("activeRoomId");
   }
@@ -360,6 +372,11 @@ finishMulliganBtn.addEventListener("click", () => {
   });
 });
 
+toggleMulliganPanelBtn.addEventListener("click", () => {
+  state.isMulliganPanelCollapsed = !state.isMulliganPanelCollapsed;
+  renderMulliganPanelVisibility();
+});
+
 deleteRoomBtn.addEventListener("click", () => {
   const roomId = state.room?.roomId;
   if (!roomId) return;
@@ -438,6 +455,9 @@ socket.on("secret-tool:game-started", ({ roomId } = {}) => {
 socket.on("secret-tool:game-state", (gameState) => {
   if (!gameState) return;
   state.game = gameState;
+  if (gameState.phase !== "mulligan") {
+    state.isMulliganPanelCollapsed = false;
+  }
   renderBattleState();
 });
 
