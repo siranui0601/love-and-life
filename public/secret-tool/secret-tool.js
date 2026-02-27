@@ -65,18 +65,19 @@ function hideHomePanel() {
 
 function showWaitingRoom(room) {
   state.room = room;
+  const members = room.members || [];
   roomIdTextEl.textContent = room.roomId;
   memberListEl.innerHTML = "";
 
-  for (const member of room.members || []) {
+  for (const member of members) {
     const li = document.createElement("li");
     const roleLabel = member.role === "host" ? " (ホスト)" : "";
     li.textContent = `${member.name}${roleLabel}`;
     memberListEl.append(li);
   }
 
-  const isHost = room.members.some((member) => member.id === userTrackingId && member.role === "host");
-  const memberCount = room.members.length;
+  const isHost = members.some((member) => member.id === userTrackingId && member.role === "host");
+  const memberCount = members.length;
 
   startGameBtn.disabled = !(isHost && memberCount >= 2);
   deleteRoomBtn.classList.toggle("hidden", !isHost);
@@ -254,9 +255,20 @@ socket.on("secret-tool:member-joined", ({ roomId, name } = {}) => {
   showToast(`${name}が参加しました`, 3000);
 });
 
-socket.on("secret-tool:member-left", ({ roomId, name } = {}) => {
+socket.on("secret-tool:member-left", ({ roomId, id, name } = {}) => {
   const activeRoomId = localStorage.getItem("activeRoomId");
   if (!activeRoomId || activeRoomId !== roomId || !name) return;
+
+  if (state.room?.roomId === roomId) {
+    const filteredMembers = (state.room.members || []).filter((member) => {
+      if (id) {
+        return member.id !== id;
+      }
+      return member.name !== name;
+    });
+    showWaitingRoom({ ...state.room, members: filteredMembers });
+  }
+
   showToast(`${name}が退室しました`, 3000);
 });
 
