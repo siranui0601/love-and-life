@@ -316,11 +316,13 @@ export async function joinSecretToolRoom({ roomId, username, clientId }) {
   if (room.status !== "lobby") throw new Error("room_not_lobby");
 
   const members = [...room.members];
+  let joined = false;
   const existingIndex = members.findIndex((member) => member.id === clientId);
   if (existingIndex >= 0) {
     members[existingIndex] = { ...members[existingIndex], name: username };
   } else {
     members.push({ name: username, id: clientId, role: "guest" });
+    joined = true;
   }
 
   await updateSecretToolRoomRow(room.rowIndex, [
@@ -335,7 +337,20 @@ export async function joinSecretToolRoom({ roomId, username, clientId }) {
     members,
     status: room.status,
     expiresAt: room.expiresAt,
+    joined,
   };
+}
+
+export async function deleteSecretToolRoom({ roomId, hostClientId }) {
+  const room = await getSecretToolRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+  if (room.status !== "lobby") throw new Error("room_not_lobby");
+
+  const host = room.members.find((member) => member.role === "host");
+  if (!host || host.id !== hostClientId) throw new Error("forbidden");
+
+  await updateSecretToolRoomRow(room.rowIndex, ["", "", "", ""]);
+  return { roomId: room.roomId, members: [], status: "closed", expiresAt: 0 };
 }
 
 export async function removeSecretToolMember({ roomId, clientId }) {
