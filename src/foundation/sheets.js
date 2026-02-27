@@ -4,6 +4,7 @@ import { serviceAccount, SPREADSHEET_ID, SHEET_NAME } from "./env.js";
 
 export const BUNGEI_SHEET_NAME = "時々文芸部！";
 export const SECRET_TOOL_SHEET_NAME = "ひみつ道具";
+const SECRET_TOOL_MAX_MEMBERS = 4;
 
 export async function getSheetsClient() {
   if (!serviceAccount) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY が設定されていません");
@@ -321,6 +322,9 @@ export async function joinSecretToolRoom({ roomId, username, clientId }) {
   if (existingIndex >= 0) {
     members[existingIndex] = { ...members[existingIndex], name: username };
   } else {
+    if (members.length >= SECRET_TOOL_MAX_MEMBERS) {
+      throw new Error("room_full");
+    }
     members.push({ name: username, id: clientId, role: "guest" });
     joined = true;
   }
@@ -338,6 +342,23 @@ export async function joinSecretToolRoom({ roomId, username, clientId }) {
     status: room.status,
     expiresAt: room.expiresAt,
     joined,
+  };
+}
+
+export async function updateSecretToolRoomStatus({ roomId, status }) {
+  const room = await getSecretToolRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+
+  await updateSecretToolRoomRow(room.rowIndex, [
+    room.roomId,
+    JSON.stringify(room.members || []),
+    String(status || "").trim(),
+    String(room.expiresAt || roomExpiresAtMs()),
+  ]);
+
+  return {
+    ...room,
+    status: String(status || "").trim(),
   };
 }
 
