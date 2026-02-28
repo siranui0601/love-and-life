@@ -23,8 +23,10 @@ const mulliganPanelEl = document.getElementById("mulliganPanel");
 const mulliganTopControlsEl = document.getElementById("mulliganTopControls");
 const mulliganCounterEl = document.getElementById("mulliganCounter");
 const finishMulliganBtn = document.getElementById("finishMulliganBtn");
+const endTurnBtn = document.getElementById("endTurnBtn");
 const toggleMulliganPanelBtn = document.getElementById("toggleMulliganPanelBtn");
 const playerHandEl = document.getElementById("playerHand");
+const battleLogEl = document.getElementById("battleLog");
 
 const actionModalEl = document.getElementById("actionModal");
 const actionModalTextEl = document.getElementById("actionModalText");
@@ -116,36 +118,64 @@ function showBattlePanel() {
 function renderSeats() {
   const seats = state.game?.seatOrder || [];
   const playerStats = state.game?.playerStats || {};
+  const isMyTurn = state.game?.currentTurnPlayerId === userTrackingId;
   battlePlayerListEl.innerHTML = "";
 
   seats.forEach((seat) => {
+    const stats = playerStats[seat.id] || {};
     const row = document.createElement("li");
     row.className = "battle-player-row";
     const isParent = seat.id === state.game?.parentId;
+    if (stats.active === false) {
+      row.classList.add("inactive");
+    }
 
     const cards = document.createElement("span");
     cards.className = "player-card-count";
     cards.setAttribute("aria-label", "カード枚数");
-    const handCount = Math.max(0, Number(playerStats[seat.id]?.handCount || 0));
+    const handCount = Math.max(0, Number(stats.handCount || 0));
     cards.textContent = "🎴".repeat(handCount);
 
     const hp = document.createElement("span");
     hp.className = "player-hp";
-    hp.textContent = `♡×${Number(playerStats[seat.id]?.hearts || 10)}`;
+    hp.textContent = `♡×${Number(stats.hearts || 10)}`;
 
     const name = document.createElement("span");
     name.className = "player-name";
     name.textContent = `${seat.name || "プレイヤー"}${isParent ? " 👑" : ""}`;
 
-    const trash = document.createElement("span");
-    trash.className = "player-trash";
-    trash.setAttribute("aria-label", "捨て札");
-    const trashCount = Number(playerStats[seat.id]?.trashCount || 0);
-    trash.textContent = `🗑${trashCount > 0 ? `×${trashCount}` : ""}`;
+    const zone = document.createElement("span");
+    zone.className = "player-trash";
+    zone.setAttribute("aria-label", "ゾーン");
+    zone.textContent = `🛠${Number(stats.installedCount || 0)} / 🗑${Number(stats.trashCount || 0)}`;
 
-    row.append(cards, hp, name, trash);
+    const controls = document.createElement("div");
+    controls.className = "heart-controls";
+    if (isMyTurn && state.game?.phase === "in_game" && stats.active !== false) {
+      const plus = document.createElement("button");
+      plus.type = "button";
+      plus.className = "mini-btn";
+      plus.textContent = "+1";
+      plus.addEventListener("click", () => {
+        socket.emit("secret-tool:adjust-heart", { roomId: state.room?.roomId, targetPlayerId: seat.id, delta: 1 });
+      });
+
+      const minus = document.createElement("button");
+      minus.type = "button";
+      minus.className = "mini-btn ghost";
+      minus.textContent = "-1";
+      minus.addEventListener("click", () => {
+        socket.emit("secret-tool:adjust-heart", { roomId: state.room?.roomId, targetPlayerId: seat.id, delta: -1 });
+      });
+      controls.append(plus, minus);
+    }
+
+    row.append(cards, hp, name, zone, controls);
     battlePlayerListEl.append(row);
   });
+
+  battleLogEl.innerHTML = (state.game?.logs || []).map((log) => `<div>${log}</div>`).join("");
+  battleLogEl.scrollTop = battleLogEl.scrollHeight;
 }
 
 function createHandCardEl(card = {}) {
@@ -165,20 +195,28 @@ function createHandCardEl(card = {}) {
   `;
 
   const isMulligan = state.game?.phase === "mulligan";
-  cardEl.disabled = state.mulliganSubmitted || !isMulligan;
+  const isInGame = state.game?.phase === "in_game";
+  const canPlay = isInGame && state.game?.currentTurnPlayerId === userTrackingId;
+  cardEl.disabled = (isMulligan && state.mulliganSubmitted) || (!isMulligan && !canPlay);
   cardEl.addEventListener("click", () => {
-    if (!isMulligan || state.mulliganSubmitted) return;
-
     const { handId } = cardEl.dataset;
     if (!handId) return;
 
-    if (state.selectedMulliganIds.has(handId)) {
-      state.selectedMulliganIds.delete(handId);
-    } else {
-      if (state.selectedMulliganIds.size >= 3) return;
-      state.selectedMulliganIds.add(handId);
+    if (isMulligan) {
+      if (state.mulliganSubmitted) return;
+      if (state.selectedMulliganIds.has(handId)) {
+        state.selectedMulliganIds.delete(handId);
+      } else {
+        if (state.selectedMulliganIds.size >= 3) return;
+        state.selectedMulliganIds.add(handId);
+      }
+      renderHand();
+      return;
     }
-    renderHand();
+
+    if (canPlay) {
+      socket.emit("secret-tool:play-card", { roomId: state.room?.roomId, handId });
+    }
   });
 
   return cardEl;
@@ -193,8 +231,11 @@ function renderHand() {
     playerHandEl.append(createHandCardEl(card));
   });
 
-  mulliganCounterEl.textContent = `${state.selectedMulliganIds.size}/3 枚選択中`;
+  if (isMulligan) {
+    mulliganCounterEl.textContent = `${state.selectedMulliganIds.size}/3 枚選択中`;
+  }
   finishMulliganBtn.disabled = state.mulliganSubmitted || !isMulligan;
+  endTurnBtn.disabled = !(state.game?.phase === "in_game" && state.game?.currentTurnPlayerId === userTrackingId && state.game?.drewThisTurn);
   deckPocketEl.classList.toggle("deal", isMulligan);
 }
 
@@ -210,7 +251,7 @@ function renderBattleState() {
   renderHand();
   const currentTurn = state.game.turnOrder?.find((player) => player.id === state.game.currentTurnPlayerId);
   const isMyTurn = state.game.currentTurnPlayerId && state.game.currentTurnPlayerId === userTrackingId;
-  deckPocketEl.classList.toggle("can-draw", Boolean(isMyTurn && state.game.phase === "in_game"));
+  deckPocketEl.classList.toggle("can-draw", Boolean(isMyTurn && state.game.phase === "in_game" && !state.game?.drewThisTurn));
 
   if (state.game.phase === "mulligan") {
     battlePhaseEl.textContent = "カードを3枚まで選んで交換できます。最初に終えた人が親です。";
@@ -218,12 +259,15 @@ function renderBattleState() {
     mulliganTopControlsEl.classList.remove("hidden");
     mulliganTopControlsEl.classList.remove("as-note");
     finishMulliganBtn.classList.remove("hidden");
+    endTurnBtn.classList.add("hidden");
     toggleMulliganPanelBtn.classList.remove("hidden");
     mulliganPanelEl.classList.remove("hidden");
     renderMulliganPanelVisibility();
   } else {
     if (isMyTurn) {
-      battlePhaseEl.textContent = "あなたの番です！四次元ポケットをタップしてください";
+      battlePhaseEl.textContent = state.game?.drewThisTurn
+        ? "あなたの番です。カードを好きなだけ使用してターンを終了してください。"
+        : "あなたの番です。まず四次元ポケットから1枚ドローしてください。";
       battlePhaseEl.classList.add("your-turn");
     } else {
       battlePhaseEl.textContent = `${currentTurn?.name || "プレイヤー"}の番です！`;
@@ -232,8 +276,9 @@ function renderBattleState() {
 
     mulliganTopControlsEl.classList.remove("hidden");
     mulliganTopControlsEl.classList.add("as-note");
-    mulliganCounterEl.textContent = "マリガン完了！ゲーム進行中です。";
+    mulliganCounterEl.textContent = "手札のカードをタップで使用できます（手動でハート調整）。";
     finishMulliganBtn.classList.add("hidden");
+    endTurnBtn.classList.remove("hidden");
     toggleMulliganPanelBtn.classList.add("hidden");
 
     mulliganPanelEl.classList.remove("hidden");
@@ -399,6 +444,12 @@ deckPocketEl.addEventListener("click", () => {
   if (!state.room?.roomId || !state.game || state.game.phase !== "in_game") return;
   if (state.game.currentTurnPlayerId !== userTrackingId) return;
   socket.emit("secret-tool:draw-card", { roomId: state.room.roomId });
+});
+
+endTurnBtn.addEventListener("click", () => {
+  if (!state.room?.roomId || !state.game || state.game.phase !== "in_game") return;
+  if (state.game.currentTurnPlayerId !== userTrackingId) return;
+  socket.emit("secret-tool:end-turn", { roomId: state.room.roomId });
 });
 
 toggleMulliganPanelBtn.addEventListener("click", () => {

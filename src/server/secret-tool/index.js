@@ -60,22 +60,43 @@ function buildPublicRoomState(gameState) {
     turnOrder: gameState.turnOrder,
     currentTurnPlayerId: gameState.currentTurnPlayerId,
     playerStats: gameState.playerStats,
+    installedByPlayer: gameState.installedByPlayer,
+    discardCountByPlayer: gameState.discardCountByPlayer,
+    drewThisTurn: gameState.drewThisTurn,
+    placements: gameState.placements,
+    logs: (gameState.logs || []).slice(-30),
   };
+}
+
+function pushGameLog(gameState, message) {
+  if (!gameState.logs) gameState.logs = [];
+  gameState.logs.push(`${new Date().toLocaleTimeString("ja-JP", { hour12: false })} ${message}`);
+  if (gameState.logs.length > 100) {
+    gameState.logs = gameState.logs.slice(-100);
+  }
+}
+
+function refreshPlayerStats(gameState) {
+  const playerStats = gameState.playerStats || {};
+  for (const seat of gameState.seatOrder || []) {
+    const playerId = seat.id;
+    const hand = gameState.hands?.[playerId] || [];
+    const discardCount = (gameState.discardByPlayer?.[playerId] || []).length;
+    const installedCount = (gameState.installedByPlayer?.[playerId] || []).length;
+    if (!playerStats[playerId]) {
+      playerStats[playerId] = { hearts: 10, trashCount: 0, handCount: hand.length, installedCount: 0, active: true };
+    }
+    playerStats[playerId].handCount = hand.length;
+    playerStats[playerId].trashCount = discardCount;
+    playerStats[playerId].installedCount = installedCount;
+  }
+  gameState.playerStats = playerStats;
 }
 
 function emitRoomGameState(io, roomId) {
   const gameState = gameStateByRoomId.get(roomId);
   if (!gameState) return;
-  const playerStats = gameState.playerStats || {};
-  for (const seat of gameState.seatOrder || []) {
-    const playerId = seat.id;
-    const hand = gameState.hands?.[playerId] || [];
-    if (!playerStats[playerId]) {
-      playerStats[playerId] = { hearts: 10, trashCount: 0, handCount: hand.length };
-    }
-    playerStats[playerId].handCount = hand.length;
-  }
-  gameState.playerStats = playerStats;
+  refreshPlayerStats(gameState);
   io.to(secretSocketRoom(roomId)).emit("secret-tool:game-state", buildPublicRoomState(gameState));
   for (const [playerId, hand] of Object.entries(gameState.hands || {})) {
     for (const socketId of activeSocketsByTrackingId.get(playerId) || []) {
@@ -86,6 +107,71 @@ function emitRoomGameState(io, roomId) {
       });
     }
   }
+}
+
+function ensureDeckCards(gameState, neededCount = 1) {
+  if ((gameState.deck || []).length >= neededCount) return;
+  const recyclePool = [];
+  for (const cards of Object.values(gameState.discardByPlayer || {})) {
+    recyclePool.push(...cards);
+  }
+  if (!recyclePool.length) return;
+
+  gameState.deck.push(...shuffleArray(recyclePool));
+  for (const playerId of Object.keys(gameState.discardByPlayer || {})) {
+    gameState.discardByPlayer[playerId] = [];
+  }
+  pushGameLog(gameState, "四次元くずかごを回収して山札を再構築しました。");
+}
+
+function evaluatePlacements(gameState) {
+  const activePlayerIds = gameState.turnOrder
+    .map((seat) => seat.id)
+    .filter((playerId) => gameState.playerStats?.[playerId]?.active !== false);
+  const assigned = new Set((gameState.placements || []).map((entry) => entry.playerId));
+
+  for (const playerId of activePlayerIds) {
+    const hearts = Number(gameState.playerStats?.[playerId]?.hearts || 0);
+    if (hearts <= 0 && !assigned.has(playerId)) {
+      gameState.placements.push({ playerId, result: "lose" });
+      assigned.add(playerId);
+      gameState.playerStats[playerId].active = false;
+      pushGameLog(gameState, `${gameState.seatOrder.find((p) => p.id === playerId)?.name || "プレイヤー"}が脱落しました。`);
+    }
+    if (hearts >= 20 && !assigned.has(playerId)) {
+      gameState.placements.unshift({ playerId, result: "win" });
+      assigned.add(playerId);
+      gameState.playerStats[playerId].active = false;
+      pushGameLog(gameState, `${gameState.seatOrder.find((p) => p.id === playerId)?.name || "プレイヤー"}が勝ち抜けしました。`);
+    }
+  }
+
+  const remainingActive = activePlayerIds.filter((playerId) => gameState.playerStats?.[playerId]?.active !== false);
+  if (remainingActive.length === 1) {
+    const lastPlayerId = remainingActive[0];
+    if (!assigned.has(lastPlayerId)) {
+      gameState.placements.unshift({ playerId: lastPlayerId, result: "win" });
+      gameState.playerStats[lastPlayerId].active = false;
+      pushGameLog(gameState, `${gameState.seatOrder.find((p) => p.id === lastPlayerId)?.name || "プレイヤー"}の順位が確定しました。`);
+    }
+  }
+
+  if (gameState.currentTurnPlayerId && gameState.playerStats?.[gameState.currentTurnPlayerId]?.active === false) {
+    gameState.currentTurnPlayerId = null;
+  }
+}
+
+function moveTurnToNextActive(gameState, fromPlayerId) {
+  const activeTurnOrder = (gameState.turnOrder || []).filter((seat) => gameState.playerStats?.[seat.id]?.active !== false);
+  if (!activeTurnOrder.length) {
+    gameState.currentTurnPlayerId = null;
+    return;
+  }
+
+  const index = activeTurnOrder.findIndex((seat) => seat.id === fromPlayerId);
+  const next = activeTurnOrder[(index + 1 + activeTurnOrder.length) % activeTurnOrder.length];
+  gameState.currentTurnPlayerId = next?.id || activeTurnOrder[0].id;
+  gameState.drewThisTurn = false;
 }
 
 function addActiveSocket(userTrackingId, socketId) {
@@ -437,10 +523,15 @@ export function registerSecretToolSocketHandlers(socket, io) {
       seatOrder,
       hands,
       deck,
+      discardByPlayer: Object.fromEntries(seatOrder.map((seat) => [seat.id, []])),
+      discardCountByPlayer: Object.fromEntries(seatOrder.map((seat) => [seat.id, 0])),
+      installedByPlayer: Object.fromEntries(seatOrder.map((seat) => [seat.id, []])),
       playerStats: Object.fromEntries(seatOrder.map((seat) => [seat.id, {
         hearts: 10,
         trashCount: 0,
         handCount: (hands[seat.id] || []).length,
+        installedCount: 0,
+        active: true,
       }])),
       mulliganDoneByPlayer: {},
       mulliganReturnByPlayer: {},
@@ -448,6 +539,9 @@ export function registerSecretToolSocketHandlers(socket, io) {
       parentId: null,
       turnOrder: [],
       currentTurnPlayerId: null,
+      drewThisTurn: false,
+      placements: [],
+      logs: [],
     });
 
     io.to(secretSocketRoom(normalizedRoomId)).emit("secret-tool:members-updated", startedRoom);
@@ -507,6 +601,8 @@ export function registerSecretToolSocketHandlers(socket, io) {
     gameState.turnOrder = rotatePlayersFromParent([...gameState.seatOrder], gameState.parentId);
     gameState.currentTurnPlayerId = gameState.parentId;
     gameState.phase = "in_game";
+    gameState.drewThisTurn = false;
+    pushGameLog(gameState, "ゲーム開始。親からターンを始めます。");
 
     io.to(secretSocketRoom(normalizedRoomId)).emit("secret-tool:mulligan-completed", {
       roomId: normalizedRoomId,
@@ -524,15 +620,92 @@ export function registerSecretToolSocketHandlers(socket, io) {
     const gameState = gameStateByRoomId.get(normalizedRoomId);
     if (!gameState || gameState.phase !== "in_game") return;
     if (gameState.currentTurnPlayerId !== currentUserTrackingId) return;
-    if (!gameState.deck.length) return;
+    if (gameState.drewThisTurn) return;
+
+    ensureDeckCards(gameState, 1);
+    if (!gameState.deck.length) {
+      gameState.drewThisTurn = true;
+      emitRoomGameState(io, normalizedRoomId);
+      return;
+    }
 
     const drawCard = sanitizeHand(gameState.deck.splice(0, 1));
     gameState.hands[currentUserTrackingId].push(...drawCard);
+    gameState.drewThisTurn = true;
+    pushGameLog(gameState, `${socket.data.username} がカードを1枚ドローしました。`);
 
-    const turnIndex = gameState.turnOrder.findIndex((seat) => seat.id === currentUserTrackingId);
-    if (turnIndex >= 0) {
-      const nextPlayer = gameState.turnOrder[(turnIndex + 1) % gameState.turnOrder.length];
-      gameState.currentTurnPlayerId = nextPlayer?.id || currentUserTrackingId;
+    emitRoomGameState(io, normalizedRoomId);
+  });
+
+  socket.on("secret-tool:play-card", ({ roomId, handId } = {}) => {
+    const normalizedRoomId = String(roomId || socket.data.roomId || "").trim();
+    const currentUserTrackingId = String(socket.data.clientId || "").trim();
+    const normalizedHandId = String(handId || "").trim();
+    if (!normalizedRoomId || !currentUserTrackingId || !normalizedHandId) return;
+
+    const gameState = gameStateByRoomId.get(normalizedRoomId);
+    if (!gameState || gameState.phase !== "in_game") return;
+    if (gameState.currentTurnPlayerId !== currentUserTrackingId) return;
+
+    const hand = gameState.hands[currentUserTrackingId] || [];
+    const cardIndex = hand.findIndex((card) => card.handId === normalizedHandId);
+    if (cardIndex < 0) return;
+
+    const [card] = hand.splice(cardIndex, 1);
+    if (card.type === "設置型") {
+      const installed = gameState.installedByPlayer[currentUserTrackingId] || [];
+      if (installed.length >= 3) {
+        hand.push(card);
+        return;
+      }
+      installed.push(card);
+      gameState.installedByPlayer[currentUserTrackingId] = installed;
+      pushGameLog(gameState, `${socket.data.username} が ${card.name} を設置しました。`);
+    } else {
+      const discard = gameState.discardByPlayer[currentUserTrackingId] || [];
+      discard.push(card);
+      gameState.discardByPlayer[currentUserTrackingId] = discard;
+      pushGameLog(gameState, `${socket.data.username} が ${card.name} を使用しました。`);
+    }
+
+    emitRoomGameState(io, normalizedRoomId);
+  });
+
+  socket.on("secret-tool:adjust-heart", ({ roomId, targetPlayerId, delta } = {}) => {
+    const normalizedRoomId = String(roomId || socket.data.roomId || "").trim();
+    const currentUserTrackingId = String(socket.data.clientId || "").trim();
+    const normalizedTargetId = String(targetPlayerId || "").trim();
+    const numericDelta = Math.trunc(Number(delta || 0));
+    if (!normalizedRoomId || !currentUserTrackingId || !normalizedTargetId || !numericDelta) return;
+
+    const gameState = gameStateByRoomId.get(normalizedRoomId);
+    if (!gameState || gameState.phase !== "in_game") return;
+    if (gameState.currentTurnPlayerId !== currentUserTrackingId) return;
+    if (!gameState.playerStats[normalizedTargetId] || gameState.playerStats[normalizedTargetId].active === false) return;
+
+    gameState.playerStats[normalizedTargetId].hearts = Math.max(0, gameState.playerStats[normalizedTargetId].hearts + numericDelta);
+    pushGameLog(gameState, `${socket.data.username} が ${gameState.seatOrder.find((p) => p.id === normalizedTargetId)?.name || "プレイヤー"} のハートを ${numericDelta > 0 ? "+" : ""}${numericDelta} しました。`);
+    evaluatePlacements(gameState);
+    emitRoomGameState(io, normalizedRoomId);
+  });
+
+  socket.on("secret-tool:end-turn", ({ roomId } = {}) => {
+    const normalizedRoomId = String(roomId || socket.data.roomId || "").trim();
+    const currentUserTrackingId = String(socket.data.clientId || "").trim();
+    if (!normalizedRoomId || !currentUserTrackingId) return;
+
+    const gameState = gameStateByRoomId.get(normalizedRoomId);
+    if (!gameState || gameState.phase !== "in_game") return;
+    if (gameState.currentTurnPlayerId !== currentUserTrackingId) return;
+    if (!gameState.drewThisTurn) return;
+
+    evaluatePlacements(gameState);
+    moveTurnToNextActive(gameState, currentUserTrackingId);
+    pushGameLog(gameState, `${socket.data.username} がターンを終了しました。`);
+
+    if (!gameState.currentTurnPlayerId) {
+      gameState.phase = "finished";
+      pushGameLog(gameState, "全プレイヤーの順位が確定しました。ゲーム終了です。");
     }
 
     emitRoomGameState(io, normalizedRoomId);
