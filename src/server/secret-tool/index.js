@@ -58,12 +58,24 @@ function buildPublicRoomState(gameState) {
     seatOrder: gameState.seatOrder,
     parentId: gameState.parentId,
     turnOrder: gameState.turnOrder,
+    currentTurnPlayerId: gameState.currentTurnPlayerId,
+    playerStats: gameState.playerStats,
   };
 }
 
 function emitRoomGameState(io, roomId) {
   const gameState = gameStateByRoomId.get(roomId);
   if (!gameState) return;
+  const playerStats = gameState.playerStats || {};
+  for (const seat of gameState.seatOrder || []) {
+    const playerId = seat.id;
+    const hand = gameState.hands?.[playerId] || [];
+    if (!playerStats[playerId]) {
+      playerStats[playerId] = { hearts: 10, trashCount: 0, handCount: hand.length };
+    }
+    playerStats[playerId].handCount = hand.length;
+  }
+  gameState.playerStats = playerStats;
   io.to(secretSocketRoom(roomId)).emit("secret-tool:game-state", buildPublicRoomState(gameState));
   for (const [playerId, hand] of Object.entries(gameState.hands || {})) {
     for (const socketId of activeSocketsByTrackingId.get(playerId) || []) {
@@ -425,11 +437,17 @@ export function registerSecretToolSocketHandlers(socket, io) {
       seatOrder,
       hands,
       deck,
+      playerStats: Object.fromEntries(seatOrder.map((seat) => [seat.id, {
+        hearts: 10,
+        trashCount: 0,
+        handCount: (hands[seat.id] || []).length,
+      }])),
       mulliganDoneByPlayer: {},
       mulliganReturnByPlayer: {},
       firstFinisherId: null,
       parentId: null,
       turnOrder: [],
+      currentTurnPlayerId: null,
     });
 
     io.to(secretSocketRoom(normalizedRoomId)).emit("secret-tool:members-updated", startedRoom);
@@ -487,6 +505,7 @@ export function registerSecretToolSocketHandlers(socket, io) {
 
     gameState.parentId = gameState.firstFinisherId;
     gameState.turnOrder = rotatePlayersFromParent([...gameState.seatOrder], gameState.parentId);
+    gameState.currentTurnPlayerId = gameState.parentId;
     gameState.phase = "in_game";
 
     io.to(secretSocketRoom(normalizedRoomId)).emit("secret-tool:mulligan-completed", {
@@ -494,6 +513,28 @@ export function registerSecretToolSocketHandlers(socket, io) {
       parentId: gameState.parentId,
       turnOrder: gameState.turnOrder,
     });
+    emitRoomGameState(io, normalizedRoomId);
+  });
+
+  socket.on("secret-tool:draw-card", ({ roomId } = {}) => {
+    const normalizedRoomId = String(roomId || socket.data.roomId || "").trim();
+    const currentUserTrackingId = String(socket.data.clientId || "").trim();
+    if (!normalizedRoomId || !currentUserTrackingId) return;
+
+    const gameState = gameStateByRoomId.get(normalizedRoomId);
+    if (!gameState || gameState.phase !== "in_game") return;
+    if (gameState.currentTurnPlayerId !== currentUserTrackingId) return;
+    if (!gameState.deck.length) return;
+
+    const drawCard = sanitizeHand(gameState.deck.splice(0, 1));
+    gameState.hands[currentUserTrackingId].push(...drawCard);
+
+    const turnIndex = gameState.turnOrder.findIndex((seat) => seat.id === currentUserTrackingId);
+    if (turnIndex >= 0) {
+      const nextPlayer = gameState.turnOrder[(turnIndex + 1) % gameState.turnOrder.length];
+      gameState.currentTurnPlayerId = nextPlayer?.id || currentUserTrackingId;
+    }
+
     emitRoomGameState(io, normalizedRoomId);
   });
 }

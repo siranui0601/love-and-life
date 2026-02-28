@@ -115,6 +115,7 @@ function showBattlePanel() {
 
 function renderSeats() {
   const seats = state.game?.seatOrder || [];
+  const playerStats = state.game?.playerStats || {};
   battlePlayerListEl.innerHTML = "";
 
   seats.forEach((seat) => {
@@ -125,11 +126,12 @@ function renderSeats() {
     const cards = document.createElement("span");
     cards.className = "player-card-count";
     cards.setAttribute("aria-label", "カード枚数");
-    cards.textContent = "🎴🎴🎴🎴🎴";
+    const handCount = Math.max(0, Number(playerStats[seat.id]?.handCount || 0));
+    cards.textContent = "🎴".repeat(handCount);
 
     const hp = document.createElement("span");
     hp.className = "player-hp";
-    hp.textContent = "♡×10";
+    hp.textContent = `♡×${Number(playerStats[seat.id]?.hearts || 10)}`;
 
     const name = document.createElement("span");
     name.className = "player-name";
@@ -138,7 +140,8 @@ function renderSeats() {
     const trash = document.createElement("span");
     trash.className = "player-trash";
     trash.setAttribute("aria-label", "捨て札");
-    trash.textContent = "🗑";
+    const trashCount = Number(playerStats[seat.id]?.trashCount || 0);
+    trash.textContent = `🗑${trashCount > 0 ? `×${trashCount}` : ""}`;
 
     row.append(cards, hp, name, trash);
     battlePlayerListEl.append(row);
@@ -205,16 +208,36 @@ function renderBattleState() {
   showBattlePanel();
   renderSeats();
   renderHand();
+  const currentTurn = state.game.turnOrder?.find((player) => player.id === state.game.currentTurnPlayerId);
+  const isMyTurn = state.game.currentTurnPlayerId && state.game.currentTurnPlayerId === userTrackingId;
+  deckPocketEl.classList.toggle("can-draw", Boolean(isMyTurn && state.game.phase === "in_game"));
 
   if (state.game.phase === "mulligan") {
     battlePhaseEl.textContent = "カードを3枚まで選んで交換できます。最初に終えた人が親です。";
+    battlePhaseEl.classList.remove("your-turn");
     mulliganTopControlsEl.classList.remove("hidden");
+    mulliganTopControlsEl.classList.remove("as-note");
+    finishMulliganBtn.classList.remove("hidden");
+    toggleMulliganPanelBtn.classList.remove("hidden");
     mulliganPanelEl.classList.remove("hidden");
     renderMulliganPanelVisibility();
   } else {
-    battlePhaseEl.textContent = "マリガン終了。親から時計回りでゲーム開始。";
-    mulliganTopControlsEl.classList.add("hidden");
-    mulliganPanelEl.classList.add("hidden");
+    if (isMyTurn) {
+      battlePhaseEl.textContent = "あなたの番です！四次元ポケットをタップしてください";
+      battlePhaseEl.classList.add("your-turn");
+    } else {
+      battlePhaseEl.textContent = `${currentTurn?.name || "プレイヤー"}の番です！`;
+      battlePhaseEl.classList.remove("your-turn");
+    }
+
+    mulliganTopControlsEl.classList.remove("hidden");
+    mulliganTopControlsEl.classList.add("as-note");
+    mulliganCounterEl.textContent = "マリガン完了！ゲーム進行中です。";
+    finishMulliganBtn.classList.add("hidden");
+    toggleMulliganPanelBtn.classList.add("hidden");
+
+    mulliganPanelEl.classList.remove("hidden");
+    mulliganPanelEl.classList.remove("collapsed");
     deckPocketEl.classList.remove("deal");
   }
 }
@@ -372,6 +395,12 @@ finishMulliganBtn.addEventListener("click", () => {
   });
 });
 
+deckPocketEl.addEventListener("click", () => {
+  if (!state.room?.roomId || !state.game || state.game.phase !== "in_game") return;
+  if (state.game.currentTurnPlayerId !== userTrackingId) return;
+  socket.emit("secret-tool:draw-card", { roomId: state.room.roomId });
+});
+
 toggleMulliganPanelBtn.addEventListener("click", () => {
   state.isMulliganPanelCollapsed = !state.isMulliganPanelCollapsed;
   renderMulliganPanelVisibility();
@@ -456,6 +485,8 @@ socket.on("secret-tool:game-state", (gameState) => {
   if (!gameState) return;
   state.game = gameState;
   if (gameState.phase !== "mulligan") {
+    state.mulliganSubmitted = true;
+    state.selectedMulliganIds = new Set();
     state.isMulliganPanelCollapsed = false;
   }
   renderBattleState();
