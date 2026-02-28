@@ -118,7 +118,6 @@ function showBattlePanel() {
 function renderSeats() {
   const seats = state.game?.seatOrder || [];
   const playerStats = state.game?.playerStats || {};
-  const isMyTurn = state.game?.currentTurnPlayerId === userTrackingId;
   battlePlayerListEl.innerHTML = "";
 
   seats.forEach((seat) => {
@@ -149,28 +148,7 @@ function renderSeats() {
     zone.setAttribute("aria-label", "ゾーン");
     zone.textContent = `🛠${Number(stats.installedCount || 0)} / 🗑${Number(stats.trashCount || 0)}`;
 
-    const controls = document.createElement("div");
-    controls.className = "heart-controls";
-    if (isMyTurn && state.game?.phase === "in_game" && stats.active !== false) {
-      const plus = document.createElement("button");
-      plus.type = "button";
-      plus.className = "mini-btn";
-      plus.textContent = "+1";
-      plus.addEventListener("click", () => {
-        socket.emit("secret-tool:adjust-heart", { roomId: state.room?.roomId, targetPlayerId: seat.id, delta: 1 });
-      });
-
-      const minus = document.createElement("button");
-      minus.type = "button";
-      minus.className = "mini-btn ghost";
-      minus.textContent = "-1";
-      minus.addEventListener("click", () => {
-        socket.emit("secret-tool:adjust-heart", { roomId: state.room?.roomId, targetPlayerId: seat.id, delta: -1 });
-      });
-      controls.append(plus, minus);
-    }
-
-    row.append(cards, hp, name, zone, controls);
+    row.append(cards, hp, name, zone);
     battlePlayerListEl.append(row);
   });
 
@@ -276,7 +254,7 @@ function renderBattleState() {
 
     mulliganTopControlsEl.classList.remove("hidden");
     mulliganTopControlsEl.classList.add("as-note");
-    mulliganCounterEl.textContent = "手札のカードをタップで使用できます（手動でハート調整）。";
+    mulliganCounterEl.textContent = "手札のカードをタップで使用します（効果は自動反映）。";
     finishMulliganBtn.classList.add("hidden");
     endTurnBtn.classList.remove("hidden");
     toggleMulliganPanelBtn.classList.add("hidden");

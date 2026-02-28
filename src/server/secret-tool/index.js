@@ -174,6 +174,166 @@ function moveTurnToNextActive(gameState, fromPlayerId) {
   gameState.drewThisTurn = false;
 }
 
+function getActivePlayerIds(gameState) {
+  return (gameState.turnOrder || [])
+    .map((seat) => seat.id)
+    .filter((playerId) => gameState.playerStats?.[playerId]?.active !== false);
+}
+
+function resolveTargetPlayerIds(gameState, target, actorPlayerId, context = {}) {
+  if (!target) return [];
+  const activePlayerIds = getActivePlayerIds(gameState);
+  if (!activePlayerIds.length) return [];
+
+  if (target === "self") return actorPlayerId ? [actorPlayerId] : [];
+  if (target === "allPlayers") return activePlayerIds;
+  if (target === "allOpponents") return activePlayerIds.filter((id) => id !== actorPlayerId);
+  if (target === "thatPlayer") return context.thatPlayerId ? [context.thatPlayerId] : [];
+
+  if (target?.type === "choosePlayer") {
+    if (target.who === "anyOpponent") {
+      const opponents = activePlayerIds.filter((id) => id !== actorPlayerId);
+      return opponents[0] ? [opponents[0]] : [];
+    }
+    if (target.who === "anyPlayer") {
+      return activePlayerIds[0] ? [activePlayerIds[0]] : [];
+    }
+  }
+
+  return [];
+}
+
+function resolveNumericValue(action, context = {}) {
+  if (typeof action.value === "number") return action.value;
+  if (typeof action.count === "number") return action.count;
+  const valueFrom = action.valueFrom || {};
+  let base = Number(context[valueFrom.var] ?? 0);
+  if (valueFrom.abs) base = Math.abs(base);
+  if (typeof valueFrom.mul === "number") base *= valueFrom.mul;
+  if (valueFrom.negate) base *= -1;
+  return Number.isFinite(base) ? base : 0;
+}
+
+function runCardActions({ gameState, ownerPlayerId, card, actions = [], context = {} }) {
+  const queue = Array.isArray(actions) ? actions : [actions];
+
+  for (const action of queue) {
+    if (!action || typeof action !== "object") continue;
+
+    if (action.type === "chooseOne") {
+      const choice = (action.choices || [])[0];
+      if (choice?.do) {
+        runCardActions({ gameState, ownerPlayerId, card, actions: choice.do, context });
+      }
+      continue;
+    }
+
+    if (action.type === "eachPlayer") {
+      const targets = resolveTargetPlayerIds(gameState, action.players, ownerPlayerId, context);
+      for (const targetPlayerId of targets) {
+        runCardActions({
+          gameState,
+          ownerPlayerId,
+          card,
+          actions: action.do,
+          context: { ...context, thatPlayerId: targetPlayerId },
+        });
+      }
+      continue;
+    }
+
+    if (action.type === "drawCards" || action.type === "draw") {
+      const count = Math.max(0, Math.trunc(resolveNumericValue(action, context) || 0));
+      const targets = resolveTargetPlayerIds(gameState, action.target || "self", ownerPlayerId, context);
+      for (const playerId of targets) {
+        ensureDeckCards(gameState, count);
+        const draw = sanitizeHand(gameState.deck.splice(0, count));
+        gameState.hands[playerId].push(...draw);
+      }
+      continue;
+    }
+
+    if (action.type === "modifyResource" && action.resource === "heart") {
+      const delta = Math.trunc(resolveNumericValue(action, context));
+      if (!delta) continue;
+      const targets = resolveTargetPlayerIds(gameState, action.target || "self", ownerPlayerId, context);
+      for (const playerId of targets) {
+        const stats = gameState.playerStats[playerId];
+        if (!stats || stats.active === false) continue;
+        stats.hearts = Math.max(0, Number(stats.hearts || 0) + delta);
+      }
+      continue;
+    }
+
+    if (action.type === "destroyInstalled") {
+      const targets = resolveTargetPlayerIds(gameState, action.targetPlayer, ownerPlayerId, context);
+      const count = Math.max(1, Math.trunc(action.count || 1));
+      for (const playerId of targets) {
+        const installed = gameState.installedByPlayer[playerId] || [];
+        const removed = installed.splice(0, count);
+        if (removed.length) {
+          gameState.discardByPlayer[playerId].push(...removed);
+        }
+      }
+      continue;
+    }
+
+    if (action.type === "moveChosenCards" && action.from === "selfHand" && action.to === "pocket") {
+      const hand = gameState.hands[ownerPlayerId] || [];
+      const moveCount = action.count === "any" ? hand.length : Math.max(0, Math.trunc(action.count || 0));
+      const moved = hand.splice(0, moveCount);
+      gameState.deck.push(...moved);
+      gameState.deck = shuffleArray(gameState.deck);
+      if (action.storeMovedCountAs) {
+        context[action.storeMovedCountAs] = moved.length;
+      }
+      continue;
+    }
+
+    if (action.type === "endGameForPlayer") {
+      const targets = resolveTargetPlayerIds(gameState, action.player || action.target || "self", ownerPlayerId, context);
+      for (const playerId of targets) {
+        if (!gameState.playerStats[playerId]) continue;
+        if (action.result === "win") {
+          gameState.playerStats[playerId].hearts = Math.max(20, Number(gameState.playerStats[playerId].hearts || 0));
+        } else if (action.result === "lose") {
+          gameState.playerStats[playerId].hearts = 0;
+        }
+      }
+    }
+  }
+}
+
+function resolveEffectsForTiming({ gameState, ownerPlayerId, card, timing }) {
+  const matched = (card.effects || []).filter((effect) => effect?.timing === timing);
+  for (const effect of matched) {
+    runCardActions({
+      gameState,
+      ownerPlayerId,
+      card,
+      actions: effect.action || [],
+      context: {},
+    });
+  }
+}
+
+function resolveInstalledTimingEffects(gameState, ownerPlayerId, timing) {
+  for (const [controllerId, installedCards] of Object.entries(gameState.installedByPlayer || {})) {
+    for (const card of installedCards || []) {
+      const effects = card.effects || [];
+      const hasMatchedTiming = effects.some((effect) => effect?.timing === timing);
+      if (!hasMatchedTiming) continue;
+
+      const shouldRun = (
+        timing === "onTurnStart" || timing === "onTurnEnd" || controllerId === ownerPlayerId
+      );
+      if (!shouldRun) continue;
+
+      resolveEffectsForTiming({ gameState, ownerPlayerId: controllerId, card, timing });
+    }
+  }
+}
+
 function addActiveSocket(userTrackingId, socketId) {
   const normalizedTrackingId = String(userTrackingId || "").trim();
   const normalizedSocketId = String(socketId || "").trim();
@@ -602,6 +762,8 @@ export function registerSecretToolSocketHandlers(socket, io) {
     gameState.currentTurnPlayerId = gameState.parentId;
     gameState.phase = "in_game";
     gameState.drewThisTurn = false;
+    resolveInstalledTimingEffects(gameState, gameState.currentTurnPlayerId, "onOwnerTurnStart");
+    resolveInstalledTimingEffects(gameState, gameState.currentTurnPlayerId, "onTurnStart");
     pushGameLog(gameState, "ゲーム開始。親からターンを始めます。");
 
     io.to(secretSocketRoom(normalizedRoomId)).emit("secret-tool:mulligan-completed", {
@@ -661,13 +823,17 @@ export function registerSecretToolSocketHandlers(socket, io) {
       installed.push(card);
       gameState.installedByPlayer[currentUserTrackingId] = installed;
       pushGameLog(gameState, `${socket.data.username} が ${card.name} を設置しました。`);
+      resolveEffectsForTiming({ gameState, ownerPlayerId: currentUserTrackingId, card, timing: "onInstall" });
+      resolveEffectsForTiming({ gameState, ownerPlayerId: currentUserTrackingId, card, timing: "onPlay" });
     } else {
       const discard = gameState.discardByPlayer[currentUserTrackingId] || [];
       discard.push(card);
       gameState.discardByPlayer[currentUserTrackingId] = discard;
       pushGameLog(gameState, `${socket.data.username} が ${card.name} を使用しました。`);
+      resolveEffectsForTiming({ gameState, ownerPlayerId: currentUserTrackingId, card, timing: "onPlay" });
     }
 
+    evaluatePlacements(gameState);
     emitRoomGameState(io, normalizedRoomId);
   });
 
@@ -700,8 +866,16 @@ export function registerSecretToolSocketHandlers(socket, io) {
     if (!gameState.drewThisTurn) return;
 
     evaluatePlacements(gameState);
+    resolveInstalledTimingEffects(gameState, currentUserTrackingId, "onOwnerTurnEnd");
+    resolveInstalledTimingEffects(gameState, currentUserTrackingId, "onTurnEnd");
     moveTurnToNextActive(gameState, currentUserTrackingId);
     pushGameLog(gameState, `${socket.data.username} がターンを終了しました。`);
+
+    if (gameState.currentTurnPlayerId) {
+      resolveInstalledTimingEffects(gameState, gameState.currentTurnPlayerId, "onOwnerTurnStart");
+      resolveInstalledTimingEffects(gameState, gameState.currentTurnPlayerId, "onTurnStart");
+      evaluatePlacements(gameState);
+    }
 
     if (!gameState.currentTurnPlayerId) {
       gameState.phase = "finished";
