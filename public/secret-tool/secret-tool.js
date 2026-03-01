@@ -76,6 +76,7 @@ const state = {
   isMulliganPanelCollapsed: false,
   myHandContainer: null,
   lastTurnToastKey: null,
+  detailedPlayerId: null,
 };
 
 function isInstalledCard(type) {
@@ -176,6 +177,9 @@ function renderSeats() {
     const header = document.createElement("div");
     header.className = "player-header";
 
+    const titleWrap = document.createElement("div");
+    titleWrap.className = "player-title-wrap";
+
     const hp = document.createElement("span");
     hp.className = "player-hp";
     hp.textContent = `♡×${Number(stats.hearts || 10)}`;
@@ -184,7 +188,18 @@ function renderSeats() {
     name.className = "player-name";
     name.textContent = `${seat.name || "プレイヤー"}${isSelf ? "（あなた）" : ""}${isParent ? " 👑" : ""}`;
 
-    header.append(name, hp);
+    const detailToggleBtn = document.createElement("button");
+    detailToggleBtn.type = "button";
+    detailToggleBtn.className = "mini-btn ghost detail-toggle-btn";
+    const isDetailed = state.detailedPlayerId === seat.id;
+    detailToggleBtn.textContent = isDetailed ? "カード簡易表示" : "カード詳細表示";
+    detailToggleBtn.addEventListener("click", () => {
+      state.detailedPlayerId = state.detailedPlayerId === seat.id ? null : seat.id;
+      renderBattleState();
+    });
+
+    titleWrap.append(name, detailToggleBtn);
+    header.append(titleWrap, hp);
 
     const handZone = document.createElement("div");
     handZone.className = "player-hand-zone";
@@ -213,7 +228,17 @@ function renderSeats() {
       const installedCard = installedCards[i];
       if (installedCard) {
         slot.className = "equipment-slot filled";
-        slot.innerHTML = `<strong>${installedCard.name || "設置カード"}</strong><small>${getCardRoleLabel(installedCard.type)}</small>`;
+        if (isDetailed) {
+          slot.classList.add("detailed");
+          slot.innerHTML = `
+            <strong>${installedCard.name || "設置カード"}</strong>
+            <small>${getCardRoleLabel(installedCard.type)}</small>
+            <small>${installedCard.text || "効果なし"}</small>
+            <small>${installedCard.flavor || ""}</small>
+          `;
+        } else {
+          slot.innerHTML = `<strong>${installedCard.name || "設置カード"}</strong><small>${getCardRoleLabel(installedCard.type)}</small>`;
+        }
       } else {
         slot.className = "equipment-slot empty";
         slot.textContent = "空";
@@ -231,6 +256,12 @@ function renderSeats() {
     });
 
     row.append(header, handZone, equipmentZone, zone);
+    if (isDetailed) {
+      row.classList.add("detailed");
+      if (row.classList.contains("region-bottom") || row.classList.contains("region-bottom-left") || row.classList.contains("region-bottom-right")) {
+        battleArenaEl.classList.add("detail-focus-bottom");
+      }
+    }
     battlePlayerListEl.append(row);
   });
 
@@ -238,7 +269,7 @@ function renderSeats() {
   battleLogEl.scrollTop = battleLogEl.scrollHeight;
 }
 
-function createHandCardEl(card = {}) {
+function createHandCardEl(card = {}, { showDetail = true } = {}) {
   const cardEl = document.createElement("button");
   cardEl.type = "button";
   cardEl.className = "hand-card";
@@ -251,9 +282,12 @@ function createHandCardEl(card = {}) {
   cardEl.innerHTML = `
     <div class="hand-card-role ${getCardRoleClass(card.type)}">${getCardRoleLabel(card.type)}</div>
     <div class="hand-card-name">${card.name || "カード"}</div>
-    <div class="hand-card-effect">${card.text || card.type || "効果なし"}</div>
-    <div class="hand-card-flavor">${card.flavor || ""}</div>
+    ${showDetail ? `<div class="hand-card-effect">${card.text || card.type || "効果なし"}</div>` : ""}
+    ${showDetail ? `<div class="hand-card-flavor">${card.flavor || ""}</div>` : ""}
   `;
+  if (!showDetail) {
+    cardEl.classList.add("compact");
+  }
 
   const isMulligan = state.game?.phase === "mulligan";
   const isInGame = state.game?.phase === "in_game";
@@ -288,9 +322,10 @@ function renderHand() {
   const isMulligan = state.game?.phase === "mulligan";
   const handContainer = state.myHandContainer || playerHandEl;
 
+  const showMyCardDetail = state.detailedPlayerId === userTrackingId;
   handContainer.innerHTML = "";
   cards.forEach((card) => {
-    handContainer.append(createHandCardEl(card));
+    handContainer.append(createHandCardEl(card, { showDetail: showMyCardDetail }));
   });
 
   if (isMulligan) {
@@ -327,8 +362,9 @@ function renderBattleState() {
     endTurnBtn.classList.add("hidden");
     mulliganPanelEl.classList.add("hidden");
   } else {
-    battlePhaseEl.textContent = "";
-    battlePhaseEl.classList.add("hidden");
+    battlePhaseEl.textContent = "note";
+    battlePhaseEl.classList.remove("hidden");
+    battlePhaseEl.classList.remove("your-turn");
 
     if (state.lastTurnToastKey !== turnToastKey) {
       if (isMyTurn) {
@@ -341,7 +377,7 @@ function renderBattleState() {
 
     mulliganTopControlsEl.classList.remove("hidden");
     mulliganTopControlsEl.classList.add("as-note");
-    mulliganCounterEl.textContent = "";
+    mulliganCounterEl.textContent = "note";
     finishMulliganBtn.classList.add("hidden");
     endTurnBtn.classList.remove("hidden");
     toggleMulliganPanelBtn.classList.add("hidden");
@@ -387,6 +423,7 @@ function resetToLobbyState({ clearActiveRoom = true } = {}) {
   state.mulliganSubmitted = false;
   state.isMulliganPanelCollapsed = false;
   state.lastTurnToastKey = null;
+  state.detailedPlayerId = null;
   if (clearActiveRoom) {
     localStorage.removeItem("activeRoomId");
   }
