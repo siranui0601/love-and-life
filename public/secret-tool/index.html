@@ -43,7 +43,6 @@
         <div id="mulliganTopControls" class="mulligan-top-controls hidden">
           <p id="mulliganCounter">0/3 枚選択中</p>
           <button id="finishMulliganBtn" class="cute-btn" type="button">この内容でマリガン完了</button>
-          <button id="endTurnBtn" class="cute-btn hidden" type="button">ターン終了</button>
         </div>
       </div>
 
@@ -52,6 +51,7 @@
           <ul id="battlePlayerList" class="battle-player-list"></ul>
 
           <div class="deck-pocket-wrap">
+            <button id="endTurnBtn" class="cute-btn small-end-turn hidden" type="button">ターン終了</button>
             <div id="deckPocket" class="deck-pocket" aria-label="山札">🌀 四次元ポケット</div>
             <button id="toggleBattleLogBtn" class="log-toggle-btn" type="button" aria-label="ログを開く">📖</button>
           </div>
@@ -89,6 +89,16 @@
       <div class="modal-actions">
         <button id="infoModalCloseBtn" class="cute-btn" type="button">閉じる</button>
       </div>
+    </div>
+  </div>
+
+  <div id="trashModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-body modal-wide">
+      <div class="trash-modal-head">
+        <p id="trashModalTitle">四次元くずかご</p>
+        <button id="trashModalCloseBtn" class="cute-btn ghost" type="button">閉じる</button>
+      </div>
+      <div id="trashModalCards" class="trash-modal-cards" aria-label="くずかごカード一覧"></div>
     </div>
   </div>
 

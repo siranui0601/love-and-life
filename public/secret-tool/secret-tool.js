@@ -40,6 +40,10 @@ const actionNoBtn = document.getElementById("actionNoBtn");
 const infoModalEl = document.getElementById("infoModal");
 const infoModalTextEl = document.getElementById("infoModalText");
 const infoModalCloseBtn = document.getElementById("infoModalCloseBtn");
+const trashModalEl = document.getElementById("trashModal");
+const trashModalTitleEl = document.getElementById("trashModalTitle");
+const trashModalCardsEl = document.getElementById("trashModalCards");
+const trashModalCloseBtn = document.getElementById("trashModalCloseBtn");
 
 function getStoredUser() {
   try { return JSON.parse(localStorage.getItem("currentUser") || "null"); }
@@ -71,17 +75,22 @@ const state = {
   mulliganSubmitted: false,
   isMulliganPanelCollapsed: false,
   myHandContainer: null,
+  lastTurnToastKey: null,
 };
 
+function isInstalledCard(type) {
+  return type === "installed" || type === "設置型";
+}
+
 function getCardRoleLabel(type) {
-  if (type === "installed") return "設置型";
-  if (type === "counter") return "反撃型";
+  if (isInstalledCard(type)) return "設置型";
+  if (type === "counter" || type === "反撃型") return "反撃型";
   return "手札型";
 }
 
 function getCardRoleClass(type) {
-  if (type === "installed") return "installed";
-  if (type === "counter") return "counter";
+  if (isInstalledCard(type)) return "installed";
+  if (type === "counter" || type === "反撃型") return "counter";
   return "hand";
 }
 
@@ -197,19 +206,29 @@ function renderSeats() {
     const equipmentZone = document.createElement("div");
     equipmentZone.className = "player-equipment-zone";
     equipmentZone.setAttribute("aria-label", "設置枠");
-    const slotCount = Math.max(3, Number(stats.installedCount || 0) + 2);
+    const installedCards = state.game?.installedByPlayer?.[seat.id] || [];
+    const slotCount = Math.max(3, installedCards.length + 1);
     for (let i = 0; i < slotCount; i += 1) {
       const slot = document.createElement("span");
-      const isFilled = i < Number(stats.installedCount || 0);
-      slot.className = `equipment-slot ${isFilled ? "filled" : "empty"}`;
-      slot.textContent = isFilled ? "🛠" : "＋";
+      const installedCard = installedCards[i];
+      if (installedCard) {
+        slot.className = "equipment-slot filled";
+        slot.innerHTML = `<strong>${installedCard.name || "設置カード"}</strong><small>${getCardRoleLabel(installedCard.type)}</small>`;
+      } else {
+        slot.className = "equipment-slot empty";
+        slot.textContent = "空";
+      }
       equipmentZone.append(slot);
     }
 
-    const zone = document.createElement("span");
+    const zone = document.createElement("button");
+    zone.type = "button";
     zone.className = "player-trash";
     zone.setAttribute("aria-label", "四次元くずかご");
     zone.textContent = `🗑 ${Number(stats.trashCount || 0)}`;
+    zone.addEventListener("click", () => {
+      openTrashModal(seat.id, seat.name);
+    });
 
     row.append(header, handZone, equipmentZone, zone);
     battlePlayerListEl.append(row);
@@ -294,36 +313,70 @@ function renderBattleState() {
   renderHand();
   const currentTurn = state.game.turnOrder?.find((player) => player.id === state.game.currentTurnPlayerId);
   const isMyTurn = state.game.currentTurnPlayerId && state.game.currentTurnPlayerId === userTrackingId;
+  const turnToastKey = `${state.game.phase || "phase"}:${state.game.currentTurnPlayerId || "none"}:${state.game.drewThisTurn ? "drew" : "nodraw"}`;
   deckPocketEl.classList.toggle("can-draw", Boolean(isMyTurn && state.game.phase === "in_game" && !state.game?.drewThisTurn));
 
   if (state.game.phase === "mulligan") {
     battlePhaseEl.textContent = "カードを3枚まで選んで交換できます。最初に終えた人が親です。";
+    battlePhaseEl.classList.remove("hidden");
     battlePhaseEl.classList.remove("your-turn");
+    state.lastTurnToastKey = null;
     mulliganTopControlsEl.classList.remove("hidden");
     mulliganTopControlsEl.classList.remove("as-note");
     finishMulliganBtn.classList.remove("hidden");
     endTurnBtn.classList.add("hidden");
     mulliganPanelEl.classList.add("hidden");
   } else {
-    if (isMyTurn) {
-      battlePhaseEl.textContent = state.game?.drewThisTurn
-        ? "あなたの番です。カードを好きなだけ使用してターンを終了してください。"
-        : "あなたの番です。まず四次元ポケットから1枚ドローしてください。";
-      battlePhaseEl.classList.add("your-turn");
-    } else {
-      battlePhaseEl.textContent = `${currentTurn?.name || "プレイヤー"}の番です！`;
-      battlePhaseEl.classList.remove("your-turn");
+    battlePhaseEl.textContent = "";
+    battlePhaseEl.classList.add("hidden");
+
+    if (state.lastTurnToastKey !== turnToastKey) {
+      if (isMyTurn) {
+        showToast(state.game?.drewThisTurn ? "あなたのターンです" : "あなたのターンです（まず1枚ドロー）", 2200);
+      } else if (currentTurn?.name) {
+        showToast(`${currentTurn.name}の番です`, 1800);
+      }
+      state.lastTurnToastKey = turnToastKey;
     }
 
     mulliganTopControlsEl.classList.remove("hidden");
     mulliganTopControlsEl.classList.add("as-note");
-    mulliganCounterEl.textContent = "手札のカードをタップで使用します（効果は自動反映）。";
+    mulliganCounterEl.textContent = "";
     finishMulliganBtn.classList.add("hidden");
     endTurnBtn.classList.remove("hidden");
     toggleMulliganPanelBtn.classList.add("hidden");
     mulliganPanelEl.classList.add("hidden");
     deckPocketEl.classList.remove("deal");
   }
+}
+
+
+function openTrashModal(playerId, playerName) {
+  if (!trashModalEl || !trashModalCardsEl) return;
+  const cards = state.game?.discardByPlayer?.[playerId] || [];
+  trashModalTitleEl.textContent = `${playerName || "プレイヤー"}の四次元くずかご（${cards.length}枚）`;
+  trashModalCardsEl.innerHTML = "";
+
+  if (!cards.length) {
+    trashModalCardsEl.innerHTML = "<p>くずかごは空です。</p>";
+  } else {
+    cards.forEach((card) => {
+      const cardEl = document.createElement("article");
+      cardEl.className = "trash-card";
+      cardEl.innerHTML = `
+        <div class="trash-card-name">${card.name || "カード"}</div>
+        <div class="hand-card-role ${getCardRoleClass(card.type)}">${getCardRoleLabel(card.type)}</div>
+        <div class="trash-card-effect">${card.text || "効果なし"}</div>
+      `;
+      trashModalCardsEl.append(cardEl);
+    });
+  }
+
+  trashModalEl.classList.remove("hidden");
+}
+
+function closeTrashModal() {
+  trashModalEl.classList.add("hidden");
 }
 
 function resetToLobbyState({ clearActiveRoom = true } = {}) {
@@ -333,6 +386,7 @@ function resetToLobbyState({ clearActiveRoom = true } = {}) {
   state.selectedMulliganIds = new Set();
   state.mulliganSubmitted = false;
   state.isMulliganPanelCollapsed = false;
+  state.lastTurnToastKey = null;
   if (clearActiveRoom) {
     localStorage.removeItem("activeRoomId");
   }
@@ -552,6 +606,11 @@ actionYesBtn.addEventListener("click", async () => {
 
 infoModalCloseBtn.addEventListener("click", () => {
   infoModalEl.classList.add("hidden");
+});
+
+trashModalCloseBtn?.addEventListener("click", closeTrashModal);
+trashModalEl?.addEventListener("click", (event) => {
+  if (event.target === trashModalEl) closeTrashModal();
 });
 
 socket.on("secret-tool:members-updated", (room) => {
