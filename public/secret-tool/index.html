@@ -48,15 +48,23 @@
       </div>
 
       <div class="battle-board">
-        <div class="deck-pocket-wrap">
-          <div id="deckPocket" class="deck-pocket" aria-label="山札">🌀 四次元ポケット</div>
-        </div>
-
-        <aside class="battle-player-side" aria-label="プレイヤー情報">
+        <div id="battleArena" class="battle-arena players-2" aria-label="対戦フィールド">
           <ul id="battlePlayerList" class="battle-player-list"></ul>
-          <div id="battleLog" class="battle-log" aria-label="ゲームログ"></div>
-        </aside>
+
+          <div class="deck-pocket-wrap">
+            <div id="deckPocket" class="deck-pocket" aria-label="山札">🌀 四次元ポケット</div>
+            <button id="toggleBattleLogBtn" class="log-toggle-btn" type="button" aria-label="ログを開く">📖</button>
+          </div>
+        </div>
       </div>
+
+      <section id="battleLogPanel" class="battle-log-panel hidden" aria-label="ゲームログ">
+        <div class="battle-log-head">
+          <p>バトルログ</p>
+          <button id="closeBattleLogBtn" class="cute-btn ghost" type="button">閉じる</button>
+        </div>
+        <div id="battleLog" class="battle-log" aria-label="ゲームログ一覧"></div>
+      </section>
 
       <section id="mulliganPanel" class="mulligan-panel hidden">
         <button id="toggleMulliganPanelBtn" class="cute-btn ghost mulligan-toggle" type="button">手札をたたむ</button>
