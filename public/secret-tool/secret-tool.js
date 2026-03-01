@@ -261,6 +261,9 @@ function renderSeats() {
       if (row.classList.contains("region-bottom") || row.classList.contains("region-bottom-left") || row.classList.contains("region-bottom-right")) {
         battleArenaEl.classList.add("detail-focus-bottom");
       }
+      if (row.classList.contains("region-top") || row.classList.contains("region-top-left") || row.classList.contains("region-top-right")) {
+        battleArenaEl.classList.add("detail-focus-top");
+      }
     }
     battlePlayerListEl.append(row);
   });
@@ -362,8 +365,8 @@ function renderBattleState() {
     endTurnBtn.classList.add("hidden");
     mulliganPanelEl.classList.add("hidden");
   } else {
-    battlePhaseEl.textContent = "note";
-    battlePhaseEl.classList.remove("hidden");
+    battlePhaseEl.textContent = "";
+    battlePhaseEl.classList.add("hidden");
     battlePhaseEl.classList.remove("your-turn");
 
     if (state.lastTurnToastKey !== turnToastKey) {
@@ -375,9 +378,9 @@ function renderBattleState() {
       state.lastTurnToastKey = turnToastKey;
     }
 
-    mulliganTopControlsEl.classList.remove("hidden");
-    mulliganTopControlsEl.classList.add("as-note");
-    mulliganCounterEl.textContent = "note";
+    mulliganTopControlsEl.classList.add("hidden");
+    mulliganTopControlsEl.classList.remove("as-note");
+    mulliganCounterEl.textContent = "";
     finishMulliganBtn.classList.add("hidden");
     endTurnBtn.classList.remove("hidden");
     toggleMulliganPanelBtn.classList.add("hidden");
