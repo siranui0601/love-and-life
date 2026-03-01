@@ -51,6 +51,15 @@ function sanitizeHand(cardList = []) {
   }));
 }
 
+function sanitizePublicCards(cardList = []) {
+  return (cardList || []).map((card) => ({
+    name: card?.name,
+    type: card?.type,
+    text: card?.text,
+    flavor: card?.flavor,
+  }));
+}
+
 function buildPublicRoomState(gameState) {
   if (!gameState) return null;
   return {
@@ -60,8 +69,8 @@ function buildPublicRoomState(gameState) {
     turnOrder: gameState.turnOrder,
     currentTurnPlayerId: gameState.currentTurnPlayerId,
     playerStats: gameState.playerStats,
-    installedByPlayer: gameState.installedByPlayer,
-    discardCountByPlayer: gameState.discardCountByPlayer,
+    installedByPlayer: Object.fromEntries(Object.entries(gameState.installedByPlayer || {}).map(([playerId, cards]) => [playerId, sanitizePublicCards(cards)])),
+    discardByPlayer: Object.fromEntries(Object.entries(gameState.discardByPlayer || {}).map(([playerId, cards]) => [playerId, sanitizePublicCards(cards)])),
     drewThisTurn: gameState.drewThisTurn,
     placements: gameState.placements,
     logs: (gameState.logs || []).slice(-30),
@@ -814,7 +823,7 @@ export function registerSecretToolSocketHandlers(socket, io) {
     if (cardIndex < 0) return;
 
     const [card] = hand.splice(cardIndex, 1);
-    if (card.type === "設置型") {
+    if (card.type === "設置型" || card.type === "installed") {
       const installed = gameState.installedByPlayer[currentUserTrackingId] || [];
       if (installed.length >= 3) {
         hand.push(card);
