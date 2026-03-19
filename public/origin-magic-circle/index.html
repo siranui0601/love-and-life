@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>オリジン魔法陣</title>
+  <link rel="stylesheet" href="/origin-magic-circle/style.css" />
+</head>
+<body>
+  <main class="page">
+    <section id="homePanel" class="panel">
+      <h1>オリジン魔法陣</h1>
+      <p id="message" class="message"></p>
+
+      <div class="main-actions">
+        <button id="createRoomBtn" class="cute-btn" type="button">ルーム作成</button>
+        <button id="joinRoomBtn" class="cute-btn" type="button">ルーム入室</button>
+      </div>
+
+      <button id="backToTitleBtn" class="cute-btn ghost" type="button">タイトルに戻る</button>
+    </section>
+
+    <section id="waitingRoom" class="panel hidden">
+      <h2>待機部屋</h2>
+      <p>ルームID: <span id="roomIdText">-</span></p>
+      <h3>参加者</h3>
+      <ul id="memberList"></ul>
+      <div class="waiting-actions">
+        <button id="startGameBtn" class="cute-btn" type="button" disabled>ゲーム開始</button>
+        <button id="deleteRoomBtn" class="cute-btn danger hidden" type="button">ルーム削除</button>
+        <button id="leaveRoomBtn" class="cute-btn ghost hidden" type="button">ルーム退室</button>
+      </div>
+    </section>
+
+    <section id="waitingNote" class="note-box">
+      ルーム作成・入室後に待機部屋が表示されます（最大2名）。
+    </section>
+  </main>
+
+  <script type="module" src="/origin-magic-circle/main.js"></script>
+</body>
+</html>
