@@ -466,6 +466,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const secretToolUrl = new URL('/ひみつ道具バトル/', window.location.origin);
       window.location.href = secretToolUrl.toString();
+    } else if (gameType === 'origin-magic-circle') {
+      if (!window.currentUser?.email) {
+        alert("オリジン魔法陣はログインが必要です");
+        return;
+      }
+      window.location.href = "https://siranui.jp/オリジン魔法陣";
     } else if (gameType === 'judgement-ai') {
       if (!window.currentUser?.email) {
         alert("断罪AIはログインが必要です");
