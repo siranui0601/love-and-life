@@ -1,5 +1,6 @@
 const refs = {
   message: document.getElementById("message"),
+  homePanel: document.getElementById("homePanel"),
   createRoomBtn: document.getElementById("createRoomBtn"),
   joinRoomBtn: document.getElementById("joinRoomBtn"),
   backToTitleBtn: document.getElementById("backToTitleBtn"),
@@ -18,13 +19,32 @@ const userTrackingId = String(user?.userTrackingId || "");
 
 let currentRoom = null;
 let refreshTimer = null;
+const ACTIVE_ROOM_STORAGE_KEY = "originMagicCircleActiveRoomId";
 
 function setMessage(text) {
   refs.message.textContent = text || "";
 }
 
+function showHomePanel() {
+  refs.homePanel?.classList.remove("hidden");
+}
+
+function hideHomePanel() {
+  refs.homePanel?.classList.add("hidden");
+}
+
+function saveActiveRoomId(roomId) {
+  if (!roomId) return;
+  localStorage.setItem(ACTIVE_ROOM_STORAGE_KEY, roomId);
+}
+
+function clearActiveRoomId() {
+  localStorage.removeItem(ACTIVE_ROOM_STORAGE_KEY);
+}
+
 function showWaitingRoom(room) {
   currentRoom = room;
+  hideHomePanel();
   refs.waitingRoom.classList.remove("hidden");
   refs.waitingNote.classList.add("hidden");
   refs.roomIdText.textContent = room.roomId;
@@ -60,7 +80,9 @@ async function refreshRoom() {
     showWaitingRoom(room);
   } catch {
     stopRefresh();
+    clearActiveRoomId();
     currentRoom = null;
+    showHomePanel();
     refs.waitingRoom.classList.add("hidden");
     refs.waitingNote.classList.remove("hidden");
     setMessage("ルームが見つかりませんでした。再作成してください。");
@@ -86,6 +108,7 @@ refs.createRoomBtn?.addEventListener("click", async () => {
 
   try {
     const room = await callApi("/api/origin-magic-circle/rooms/create", { username, userTrackingId }, "POST");
+    saveActiveRoomId(room.roomId);
     showWaitingRoom(room);
     setMessage("ルームを作成しました。対戦相手の入室を待ってください。");
     startRefresh();
@@ -104,6 +127,7 @@ refs.joinRoomBtn?.addEventListener("click", async () => {
 
   try {
     const room = await callApi("/api/origin-magic-circle/rooms/join", { roomId, username, userTrackingId }, "POST");
+    saveActiveRoomId(room.roomId);
     showWaitingRoom(room);
     setMessage("ルームに入室しました。");
     startRefresh();
@@ -121,7 +145,9 @@ refs.deleteRoomBtn?.addEventListener("click", async () => {
   try {
     await callApi("/api/origin-magic-circle/rooms/delete", { roomId: currentRoom.roomId, userTrackingId }, "POST");
     stopRefresh();
+    clearActiveRoomId();
     currentRoom = null;
+    showHomePanel();
     refs.waitingRoom.classList.add("hidden");
     refs.waitingNote.classList.remove("hidden");
     setMessage("ルームを削除しました。");
@@ -135,7 +161,9 @@ refs.leaveRoomBtn?.addEventListener("click", async () => {
   try {
     await callApi("/api/origin-magic-circle/rooms/leave", { roomId: currentRoom.roomId, userTrackingId }, "POST");
     stopRefresh();
+    clearActiveRoomId();
     currentRoom = null;
+    showHomePanel();
     refs.waitingRoom.classList.add("hidden");
     refs.waitingNote.classList.remove("hidden");
     setMessage("ルームを退出しました。");
@@ -151,3 +179,44 @@ refs.startGameBtn?.addEventListener("click", () => {
 refs.backToTitleBtn?.addEventListener("click", () => {
   window.location.href = "/";
 });
+
+async function restoreActiveRoomIfExists() {
+  const activeRoomId = localStorage.getItem(ACTIVE_ROOM_STORAGE_KEY);
+  if (!activeRoomId) {
+    showHomePanel();
+    refs.waitingRoom.classList.add("hidden");
+    refs.waitingNote.classList.remove("hidden");
+    return;
+  }
+
+  setMessage("前回の待機部屋に再接続中...");
+  try {
+    const room = await callApi(`/api/origin-magic-circle/rooms/${encodeURIComponent(activeRoomId)}`);
+    const joined = room.members?.some((member) => member.id === userTrackingId);
+
+    if (!joined) {
+      clearActiveRoomId();
+      showHomePanel();
+      refs.waitingRoom.classList.add("hidden");
+      refs.waitingNote.classList.remove("hidden");
+      setMessage("前回の待機部屋には再接続できませんでした。");
+      return;
+    }
+
+    showWaitingRoom(room);
+    startRefresh();
+    setMessage(`ルーム ${room.roomId} に再接続しました。`);
+  } catch (error) {
+    clearActiveRoomId();
+    showHomePanel();
+    refs.waitingRoom.classList.add("hidden");
+    refs.waitingNote.classList.remove("hidden");
+    if (error.message === "room_not_found") {
+      setMessage("前回の待機部屋は見つかりませんでした。");
+      return;
+    }
+    setMessage("待機部屋の再接続に失敗しました。");
+  }
+}
+
+restoreActiveRoomIfExists();
