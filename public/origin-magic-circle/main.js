@@ -124,9 +124,8 @@ try {
   alert("Three.js import開始");
 
   [THREE, GLTF] = await Promise.all([
-    import("https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"),
-    import("https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/loaders/GLTFLoader.js"),
-  ]);
+    import("https://esm.sh/three@0.166.1"),
+    import("https://esm.sh/three@0.166.1/examples/jsm/loaders/GLTFLoader.js"),  ]);
 
   alert("Three.js import成功");
 } catch (e) {
