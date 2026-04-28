@@ -11,6 +11,8 @@ const refs = {
   startGameBtn: document.getElementById("startGameBtn"),
   deleteRoomBtn: document.getElementById("deleteRoomBtn"),
   leaveRoomBtn: document.getElementById("leaveRoomBtn"),
+  page: document.querySelector(".page"),
+  battleView: document.getElementById("battleView"),
 };
 
 const user = JSON.parse(localStorage.getItem("currentUser") || "null");
@@ -19,6 +21,7 @@ const userTrackingId = String(user?.userTrackingId || "");
 
 let currentRoom = null;
 let refreshTimer = null;
+let battleStarted = false;
 const ACTIVE_ROOM_STORAGE_KEY = "originMagicCircleActiveRoomId";
 
 function setMessage(text) {
@@ -74,10 +77,13 @@ async function callApi(path, body = undefined, method = "GET") {
 }
 
 async function refreshRoom() {
-  if (!currentRoom?.roomId) return;
+  if (!currentRoom?.roomId || battleStarted) return;
   try {
     const room = await callApi(`/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom.roomId)}`);
     showWaitingRoom(room);
+    if (room.status === "対戦中") {
+      await startThreeBattleScene();
+    }
   } catch {
     stopRefresh();
     clearActiveRoomId();
@@ -98,6 +104,69 @@ function stopRefresh() {
   if (!refreshTimer) return;
   clearInterval(refreshTimer);
   refreshTimer = null;
+}
+
+async function startThreeBattleScene() {
+  if (battleStarted) return;
+  battleStarted = true;
+  stopRefresh();
+
+  refs.page?.classList.add("hidden");
+  refs.battleView?.classList.remove("hidden");
+
+  const [{ Scene, PerspectiveCamera, WebGLRenderer, Color, HemisphereLight, DirectionalLight, Group }, { GLTFLoader }] = await Promise.all([
+    import("https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js"),
+    import("https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/loaders/GLTFLoader.js"),
+  ]);
+
+  const scene = new Scene();
+  scene.background = new Color("#87ceeb");
+
+  const camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+  camera.position.set(0, 18, 28);
+
+  const renderer = new WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  refs.battleView.innerHTML = "";
+  refs.battleView.appendChild(renderer.domElement);
+
+  const hemiLight = new HemisphereLight(0xbad8ff, 0x5d4430, 1.1);
+  scene.add(hemiLight);
+
+  const dirLight = new DirectionalLight(0xffffff, 1.35);
+  dirLight.position.set(40, 60, 15);
+  scene.add(dirLight);
+
+  const loader = new GLTFLoader();
+  const gltf = await loader.loadAsync("/arid_wasteland.glb");
+  const tileRoot = new Group();
+  const tileSpacing = 26;
+
+  for (let z = -3; z <= 3; z += 1) {
+    for (let x = -3; x <= 3; x += 1) {
+      const tile = gltf.scene.clone(true);
+      tile.position.set(x * tileSpacing, 0, z * tileSpacing);
+      tile.scale.setScalar(2.8);
+      tileRoot.add(tile);
+    }
+  }
+
+  scene.add(tileRoot);
+
+  const onResize = () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  };
+  window.addEventListener("resize", onResize);
+
+  const animate = () => {
+    tileRoot.rotation.y += 0.0009;
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  };
+  animate();
 }
 
 refs.createRoomBtn?.addEventListener("click", async () => {
@@ -172,8 +241,19 @@ refs.leaveRoomBtn?.addEventListener("click", async () => {
   }
 });
 
-refs.startGameBtn?.addEventListener("click", () => {
-  alert("作成中...");
+refs.startGameBtn?.addEventListener("click", async () => {
+  if (!currentRoom?.roomId) return;
+  try {
+    const room = await callApi("/api/origin-magic-circle/rooms/start", {
+      roomId: currentRoom.roomId,
+      userTrackingId,
+    }, "POST");
+
+    currentRoom = room;
+    await startThreeBattleScene();
+  } catch (error) {
+    setMessage(`ゲーム開始に失敗しました: ${error.message}`);
+  }
 });
 
 refs.backToTitleBtn?.addEventListener("click", () => {
@@ -204,6 +284,11 @@ async function restoreActiveRoomIfExists() {
     }
 
     showWaitingRoom(room);
+    if (room.status === "対戦中") {
+      await startThreeBattleScene();
+      return;
+    }
+
     startRefresh();
     setMessage(`ルーム ${room.roomId} に再接続しました。`);
   } catch (error) {

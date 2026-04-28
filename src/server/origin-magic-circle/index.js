@@ -5,6 +5,7 @@ import {
   getOriginMagicCircleRoomById,
   joinOriginMagicCircleRoom,
   removeOriginMagicCircleMember,
+  updateOriginMagicCircleRoomStatus,
 } from "../../foundation/sheets.js";
 
 export function mountOriginMagicCircleRoutes(app) {
@@ -69,6 +70,36 @@ export function mountOriginMagicCircleRoutes(app) {
       if (error.message === "room_not_lobby") return res.status(409).json({ error: "room_not_lobby" });
       if (error.message === "forbidden") return res.status(403).json({ error: "forbidden" });
       console.error("[origin-magic-circle] delete room error:", error);
+      return res.status(500).json({ error: "server_error" });
+    }
+  });
+
+
+  app.post("/api/origin-magic-circle/rooms/start", async (req, res) => {
+    const roomId = String(req.body?.roomId || "").trim();
+    const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
+
+    if (!roomId || !userTrackingId) {
+      return res.status(400).json({ error: "roomId and userTrackingId are required" });
+    }
+
+    try {
+      const room = await getOriginMagicCircleRoomById(roomId);
+      if (!room) return res.status(404).json({ error: "room_not_found" });
+      if (room.status !== "lobby") return res.status(409).json({ error: "room_not_lobby" });
+      if ((room.members || []).length !== 2) return res.status(409).json({ error: "room_not_ready" });
+
+      const started = await updateOriginMagicCircleRoomStatus({
+        roomId,
+        status: "対戦中",
+        requestedByClientId: userTrackingId,
+      });
+
+      return res.json(started);
+    } catch (error) {
+      if (error.message === "room_not_found") return res.status(404).json({ error: "room_not_found" });
+      if (error.message === "forbidden") return res.status(403).json({ error: "forbidden" });
+      console.error("[origin-magic-circle] start room error:", error);
       return res.status(500).json({ error: "server_error" });
     }
   });
