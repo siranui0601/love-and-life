@@ -123,7 +123,9 @@ async function startThreeBattleScene() {
   scene.background = new Color("#87ceeb");
 
   const camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-  camera.position.set(0, 18, 28);
+  //camera.position.set(0, 18, 28);変更1
+camera.position.set(0, 35, 45);
+camera.lookAt(0, 0, 0);
 
   const renderer = new WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
