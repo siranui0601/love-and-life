@@ -157,8 +157,6 @@ try {
   return;
 }
 
-const tileRoot = new Group();
-
 
 
   const tileRoot = new Group();
