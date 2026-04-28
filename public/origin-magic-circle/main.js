@@ -168,6 +168,21 @@ camera.lookAt(0, 0, 0);
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   };
+  
+  //変更2
+console.log("GLB読み込み開始");
+
+let gltf;
+try {
+  gltf = await loader.loadAsync("/arid_wasteland.glb");
+  console.log("GLB読み込み成功", gltf);
+} catch (e) {
+  console.error("GLB読み込み失敗", e);
+  alert("GLB読み込み失敗。Consoleを見て！");
+  return;
+}
+
+
   animate();
 }
 
