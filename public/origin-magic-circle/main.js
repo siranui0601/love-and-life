@@ -140,8 +140,27 @@ camera.lookAt(0, 0, 0);
   dirLight.position.set(40, 60, 15);
   scene.add(dirLight);
 
-  const loader = new GLTFLoader();
-  const gltf = await loader.loadAsync("/arid_wasteland.glb");
+//変更2
+  //const loader = new GLTFLoader();
+  //const gltf = await loader.loadAsync("/arid_wasteland.glb");
+const loader = new GLTFLoader();
+
+let gltf;
+try {
+  console.log("GLB読み込み開始");
+  gltf = await loader.loadAsync("/arid_wasteland.glb");
+  alert("GLB読み込み成功", gltf);
+} catch (e) {
+  console.error("GLB読み込み失敗", e);
+  alert("GLB読み込み失敗。Consoleを見て！\n");
+  alert(e)
+  return;
+}
+
+const tileRoot = new Group();
+
+
+
   const tileRoot = new Group();
   const tileSpacing = 26;
 
@@ -168,19 +187,6 @@ camera.lookAt(0, 0, 0);
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   };
-  
-  //変更2
-alert("GLB読み込み開始");
-
-let gltf;
-try {
-  gltf = await loader.loadAsync("/arid_wasteland.glb");
-  alert("GLB読み込み成功", gltf);
-} catch (e) {
-  console.error("GLB読み込み失敗", e);
-  alert("GLB読み込み失敗。Consoleを見て！");
-  return;
-}
 
 
   animate();
