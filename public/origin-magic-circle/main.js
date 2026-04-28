@@ -1,3 +1,5 @@
+alert(5)
+
 const refs = {
   message: document.getElementById("message"),
   homePanel: document.getElementById("homePanel"),
@@ -107,6 +109,7 @@ function stopRefresh() {
 }
 
 async function startThreeBattleScene() {
+  alert("startThreeBattleScene 開始");
   if (battleStarted) return;
   battleStarted = true;
   stopRefresh();
