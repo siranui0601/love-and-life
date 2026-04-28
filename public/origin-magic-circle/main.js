@@ -109,7 +109,6 @@ function stopRefresh() {
 }
 
 async function startThreeBattleScene() {
-  //alert("startThreeBattleScene 開始");
   if (battleStarted) return;
   battleStarted = true;
   stopRefresh();
@@ -121,17 +120,12 @@ async function startThreeBattleScene() {
 let GLTF;
 
 try {
-  //alert("Three.js import開始");
-
   [THREE, GLTF] = await Promise.all([
     import("https://esm.sh/three@0.166.1"),
     import("https://esm.sh/three@0.166.1/examples/jsm/loaders/GLTFLoader.js"),  ]);
-
-  //alert("Three.js import成功");
 } catch (e) {
-  alert("Three.js import失敗");
   console.error(e);
-  alert(String(e));
+  alert("3D描画ライブラリの読み込みに失敗しました。");
   return;
 }
 
@@ -142,7 +136,9 @@ const {
   Color,
   HemisphereLight,
   DirectionalLight,
-  Group
+  Group,
+  Box3,
+  Vector3,
 } = THREE;
 
 const { GLTFLoader } = GLTF;
@@ -151,10 +147,6 @@ const { GLTFLoader } = GLTF;
   scene.background = new Color("#87ceeb");
 
   const camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-  camera.position.set(0, 18, 28);
-  //変更1
-//camera.position.set(0, 35, 45);
-camera.lookAt(0, 0, 0);
 
   const renderer = new WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -169,31 +161,29 @@ camera.lookAt(0, 0, 0);
   dirLight.position.set(40, 60, 15);
   scene.add(dirLight);
 
-//変更2
-  //const loader = new GLTFLoader();
-  //const gltf = await loader.loadAsync("/arid_wasteland.glb");
 const loader = new GLTFLoader();
 
-let gltf;
+let wastelandGltf;
+let pedestalGltf;
+let characterGltf;
 try {
-  console.log("GLB読み込み開始");
-  gltf = await loader.loadAsync("/arid_wasteland.glb");
-  //alert("GLB読み込み成功");
+  [wastelandGltf, pedestalGltf, characterGltf] = await Promise.all([
+    loader.loadAsync("/3D素材/arid_wasteland.glb"),
+    loader.loadAsync("/3D素材/pedestal.glb"),
+    loader.loadAsync("/3D素材/ancient_character.glb"),
+  ]);
 } catch (e) {
   console.error("GLB読み込み失敗", e);
-  alert("GLB読み込み失敗。Consoleを見て！\n");
-  alert(e)
+  alert("3D素材の読み込みに失敗しました。");
   return;
 }
-
-
 
   const tileRoot = new Group();
   const tileSpacing = 26;
 
   for (let z = -3; z <= 3; z += 1) {
     for (let x = -3; x <= 3; x += 1) {
-      const tile = gltf.scene.clone(true);
+      const tile = wastelandGltf.scene.clone(true);
       tile.position.set(x * tileSpacing, 0, z * tileSpacing);
       tile.scale.setScalar(2.8);
       tileRoot.add(tile);
@@ -201,6 +191,53 @@ try {
   }
 
   scene.add(tileRoot);
+
+  const makeSceneObject = (gltfScene, scale) => {
+    const object = gltfScene.clone(true);
+    object.scale.setScalar(scale);
+    return object;
+  };
+
+  const getHeight = (object3d) => {
+    const box = new Box3().setFromObject(object3d);
+    return box.max.y - box.min.y;
+  };
+
+  const setCameraForMatchup = (myId, members, fighterA, fighterB) => {
+    const isPlayerTwo = members.findIndex((member) => member.id === myId) === 1;
+    const ownFighter = isPlayerTwo ? fighterB : fighterA;
+    const enemyFighter = isPlayerTwo ? fighterA : fighterB;
+
+    const ownPos = ownFighter.position.clone();
+    const enemyPos = enemyFighter.position.clone();
+    const battleDirection = new Vector3().subVectors(enemyPos, ownPos).normalize();
+    const cameraPosition = ownPos.clone()
+      .addScaledVector(battleDirection, -7.5)
+      .add(new Vector3(0, 4.6, 0));
+
+    camera.position.copy(cameraPosition);
+    camera.lookAt(enemyPos.clone().add(new Vector3(0, 2.2, 0)));
+  };
+
+  const pedestalA = makeSceneObject(pedestalGltf.scene, 2.4);
+  const pedestalB = makeSceneObject(pedestalGltf.scene, 2.4);
+  pedestalA.position.set(-8, 2.2, 0);
+  pedestalB.position.set(8, 2.2, 0);
+  scene.add(pedestalA, pedestalB);
+
+  const fighterA = makeSceneObject(characterGltf.scene, 2.7);
+  const fighterB = makeSceneObject(characterGltf.scene, 2.7);
+  const pedestalHeight = getHeight(pedestalA);
+  const characterHeight = getHeight(fighterA);
+  const fighterYOffset = pedestalHeight * 0.5 + characterHeight * 0.5 + 2.2;
+
+  fighterA.position.set(-8, fighterYOffset, 0);
+  fighterB.position.set(8, fighterYOffset, 0);
+  fighterA.lookAt(fighterB.position.clone().add(new Vector3(0, 1.5, 0)));
+  fighterB.lookAt(fighterA.position.clone().add(new Vector3(0, 1.5, 0)));
+  scene.add(fighterA, fighterB);
+
+  setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
 
   const onResize = () => {
     camera.aspect = window.innerWidth / window.innerHeight;
