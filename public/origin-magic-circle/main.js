@@ -1,4 +1,4 @@
-alert(5)
+
 
 const refs = {
   message: document.getElementById("message"),
@@ -109,7 +109,7 @@ function stopRefresh() {
 }
 
 async function startThreeBattleScene() {
-  alert("startThreeBattleScene 開始");
+  //alert("startThreeBattleScene 開始");
   if (battleStarted) return;
   battleStarted = true;
   stopRefresh();
@@ -121,13 +121,13 @@ async function startThreeBattleScene() {
 let GLTF;
 
 try {
-  alert("Three.js import開始");
+  //alert("Three.js import開始");
 
   [THREE, GLTF] = await Promise.all([
     import("https://esm.sh/three@0.166.1"),
     import("https://esm.sh/three@0.166.1/examples/jsm/loaders/GLTFLoader.js"),  ]);
 
-  alert("Three.js import成功");
+  //alert("Three.js import成功");
 } catch (e) {
   alert("Three.js import失敗");
   console.error(e);
@@ -151,8 +151,9 @@ const { GLTFLoader } = GLTF;
   scene.background = new Color("#87ceeb");
 
   const camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-  //camera.position.set(0, 18, 28);変更1
-camera.position.set(0, 35, 45);
+  camera.position.set(0, 18, 28);
+  //変更1
+//camera.position.set(0, 35, 45);
 camera.lookAt(0, 0, 0);
 
   const renderer = new WebGLRenderer({ antialias: true });
@@ -177,7 +178,7 @@ let gltf;
 try {
   console.log("GLB読み込み開始");
   gltf = await loader.loadAsync("/arid_wasteland.glb");
-  alert("GLB読み込み成功");
+  //alert("GLB読み込み成功");
 } catch (e) {
   console.error("GLB読み込み失敗", e);
   alert("GLB読み込み失敗。Consoleを見て！\n");
