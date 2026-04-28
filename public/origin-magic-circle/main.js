@@ -149,7 +149,7 @@ let gltf;
 try {
   console.log("GLB読み込み開始");
   gltf = await loader.loadAsync("/arid_wasteland.glb");
-  alert("GLB読み込み成功", gltf);
+  alert("GLB読み込み成功");
 } catch (e) {
   console.error("GLB読み込み失敗", e);
   alert("GLB読み込み失敗。Consoleを見て！\n");
