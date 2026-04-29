@@ -218,7 +218,7 @@ try {
   const right = new Vector3(forward.z, 0, -forward.x).normalize();
 
   const cameraPosition = ownPos.clone()
-    .addScaledVector(forward, -26) // 後ろへ
+    .addScaledVector(forward, -13) // 後ろへ
     .addScaledVector(right, 10)    // 右へ
     .add(new Vector3(0, 10, 0));   // 上へ
 
@@ -228,7 +228,7 @@ try {
   camera.lookAt(enemyPos.clone().add(new Vector3(0, 3.5, 0)));
 };
 
-  const pedestalA = makeSceneObject(pedestalGltf.scene, 0.0016);
+  const pedestalA = makeSceneObject(pedestalGltf.scene, 0.0024);
 const pedestalB = makeSceneObject(pedestalGltf.scene, 0.0024);
 pedestalA.position.set(-8, 2, 0);
 pedestalB.position.set(8, 2, 0);
