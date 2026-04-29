@@ -228,8 +228,8 @@ try {
   camera.lookAt(enemyPos.clone().add(new Vector3(0, 3.5, 0)));
 };
 
-  const pedestalA = makeSceneObject(pedestalGltf.scene, 0.1);
-const pedestalB = makeSceneObject(pedestalGltf.scene, 0.05);
+  const pedestalA = makeSceneObject(pedestalGltf.scene, 0.005);
+const pedestalB = makeSceneObject(pedestalGltf.scene, 0.005);
 pedestalA.position.set(-8, 0, 0);
 pedestalB.position.set(8, 0, 0);
 scene.add(pedestalA, pedestalB);
