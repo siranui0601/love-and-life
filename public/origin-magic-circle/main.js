@@ -228,18 +228,18 @@ try {
   camera.lookAt(enemyPos.clone().add(new Vector3(0, 3.5, 0)));
 };
 
-  const pedestalA = makeSceneObject(pedestalGltf.scene, 0.0008);
-const pedestalB = makeSceneObject(pedestalGltf.scene, 0.008);
+  const pedestalA = makeSceneObject(pedestalGltf.scene, 0.004);
+const pedestalB = makeSceneObject(pedestalGltf.scene, 0.004);
 pedestalA.position.set(-8, 2, 0);
-pedestalB.position.set(8, 0, 0);
+pedestalB.position.set(8, 2, 0);
 scene.add(pedestalA, pedestalB);
 
-const fighterA = makeSceneObject(characterGltf.scene, 1.1);
-const fighterB = makeSceneObject(characterGltf.scene, 1.1);
+const fighterA = makeSceneObject(characterGltf.scene, 1.5);
+const fighterB = makeSceneObject(characterGltf.scene, 1.5);
 
 const pedestalHeight = getHeight(pedestalA);
 const characterHeight = getHeight(fighterA);
-const fighterYOffset = pedestalHeight + characterHeight * 0.5;
+const fighterYOffset = pedestalHeight + characterHeight * 0.5 +2;
 
 fighterA.position.set(-8, fighterYOffset, 0);
 fighterB.position.set(8, fighterYOffset, 0);
