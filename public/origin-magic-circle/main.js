@@ -213,7 +213,7 @@ try {
     const battleDirection = new Vector3().subVectors(enemyPos, ownPos).normalize();
     const cameraPosition = ownPos.clone()
       .addScaledVector(battleDirection, -30/*変更3　カメラ距離*/)
-      .add(new Vector3(0, 4.6, 0));
+      .add(new Vector3(0, 7.5, 0/*0, 4.6, 0　もう少し上から見たい*/));
 
     camera.position.copy(cameraPosition);
     camera.lookAt(enemyPos.clone().add(new Vector3(0, 2.2, 0)));
