@@ -212,7 +212,7 @@ try {
     const enemyPos = enemyFighter.position.clone();
     const battleDirection = new Vector3().subVectors(enemyPos, ownPos).normalize();
     const cameraPosition = ownPos.clone()
-      .addScaledVector(battleDirection, -7.5)
+      .addScaledVector(battleDirection, -30/*変更3　カメラ距離*/)
       .add(new Vector3(0, 4.6, 0));
 
     camera.position.copy(cameraPosition);
