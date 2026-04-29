@@ -219,8 +219,8 @@ try {
 
   const cameraPosition = ownPos.clone()
     .addScaledVector(forward, -13) // 後ろへ
-    .addScaledVector(right, 10)    // 右へ
-    .add(new Vector3(0, 0, 0));   // 上へ
+    .addScaledVector(right, 1)    // 右へ
+    .add(new Vector3(0, 2, 0));   // 上へ
 
   camera.position.copy(cameraPosition);
 
