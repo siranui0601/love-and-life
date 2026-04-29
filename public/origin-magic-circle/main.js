@@ -146,7 +146,7 @@ const { GLTFLoader } = GLTF;
   const scene = new Scene();
   scene.background = new Color("#87ceeb");
 
-  const camera = new PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+  const camera = new PerspectiveCamera(45/*変更4　60→45*/, window.innerWidth / window.innerHeight, 0.1, 2000);
 
   const renderer = new WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -204,20 +204,29 @@ try {
   };
 
   const setCameraForMatchup = (myId, members, fighterA, fighterB) => {
-    const isPlayerTwo = members.findIndex((member) => member.id === myId) === 1;
-    const ownFighter = isPlayerTwo ? fighterB : fighterA;
-    const enemyFighter = isPlayerTwo ? fighterA : fighterB;
+  const isPlayerTwo = members.findIndex((member) => member.id === myId) === 1;
+  const ownFighter = isPlayerTwo ? fighterB : fighterA;
+  const enemyFighter = isPlayerTwo ? fighterA : fighterB;
 
-    const ownPos = ownFighter.position.clone();
-    const enemyPos = enemyFighter.position.clone();
-    const battleDirection = new Vector3().subVectors(enemyPos, ownPos).normalize();
-    const cameraPosition = ownPos.clone()
-      .addScaledVector(battleDirection, -30/*変更3　カメラ距離*/)
-      .add(new Vector3(0, 7.5, 0/*0, 4.6, 0　もう少し上から見たい*/));
+  const ownPos = ownFighter.position.clone();
+  const enemyPos = enemyFighter.position.clone();
 
-    camera.position.copy(cameraPosition);
-    camera.lookAt(enemyPos.clone().add(new Vector3(0, 2.2, 0)));
-  };
+  // 自分 → 敵 の方向
+  const forward = new Vector3().subVectors(enemyPos, ownPos).normalize();
+
+  // 右方向
+  const right = new Vector3(forward.z, 0, -forward.x).normalize();
+
+  const cameraPosition = ownPos.clone()
+    .addScaledVector(forward, -26) // 後ろへ
+    .addScaledVector(right, 10)    // 右へ
+    .add(new Vector3(0, 10, 0));   // 上へ
+
+  camera.position.copy(cameraPosition);
+
+  // 敵の少し上を見る
+  camera.lookAt(enemyPos.clone().add(new Vector3(0, 3.5, 0)));
+};
 
   const pedestalA = makeSceneObject(pedestalGltf.scene, 2.4);
   const pedestalB = makeSceneObject(pedestalGltf.scene, 2.4);
