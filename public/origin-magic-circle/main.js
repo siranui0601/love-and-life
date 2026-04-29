@@ -218,8 +218,8 @@ try {
   const right = new Vector3(forward.z, 0, -forward.x).normalize();
 
   const cameraPosition = ownPos.clone()
-    .addScaledVector(forward, -10) // 後ろへ
-    .addScaledVector(left, 2)    // 右へ
+    .addScaledVector(forward, -13) // 後ろへ
+    .addScaledVector(right, 2)    // 右へ
     .add(new Vector3(0, 2, 0));   // 上へ
 
   camera.position.copy(cameraPosition);
