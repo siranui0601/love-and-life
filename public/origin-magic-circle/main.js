@@ -228,20 +228,21 @@ try {
   camera.lookAt(enemyPos.clone().add(new Vector3(0, 3.5, 0)));
 };
 
-  const pedestalA = makeSceneObject(pedestalGltf.scene, 2.4);
-  const pedestalB = makeSceneObject(pedestalGltf.scene, 2.4);
-  pedestalA.position.set(-8, 2.2, 0);
-  pedestalB.position.set(8, 2.2, 0);
-  scene.add(pedestalA, pedestalB);
+  const pedestalA = makeSceneObject(pedestalGltf.scene, 0.9);
+const pedestalB = makeSceneObject(pedestalGltf.scene, 0.9);
+pedestalA.position.set(-8, 0, 0);
+pedestalB.position.set(8, 0, 0);
+scene.add(pedestalA, pedestalB);
 
-  const fighterA = makeSceneObject(characterGltf.scene, 2.7);
-  const fighterB = makeSceneObject(characterGltf.scene, 2.7);
-  const pedestalHeight = getHeight(pedestalA);
-  const characterHeight = getHeight(fighterA);
-  const fighterYOffset = pedestalHeight * 0.5 + characterHeight * 0.5 + 2.2;
+const fighterA = makeSceneObject(characterGltf.scene, 1.1);
+const fighterB = makeSceneObject(characterGltf.scene, 1.1);
 
-  fighterA.position.set(-8, fighterYOffset, 0);
-  fighterB.position.set(8, fighterYOffset, 0);
+const pedestalHeight = getHeight(pedestalA);
+const characterHeight = getHeight(fighterA);
+const fighterYOffset = pedestalHeight + characterHeight * 0.5;
+
+fighterA.position.set(-8, fighterYOffset, 0);
+fighterB.position.set(8, fighterYOffset, 0);
   fighterA.lookAt(fighterB.position.clone().add(new Vector3(0, 1.5, 0)));
   fighterB.lookAt(fighterA.position.clone().add(new Vector3(0, 1.5, 0)));
   scene.add(fighterA, fighterB);
