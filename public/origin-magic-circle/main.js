@@ -231,8 +231,8 @@ try {
 
   const pedestalA = makeSceneObject(pedestalGltf.scene, 0.0024);
 const pedestalB = makeSceneObject(pedestalGltf.scene, 0.0024);
-pedestalA.position.set(-8, 2, 0);
-pedestalB.position.set(8, 2, 0);
+pedestalA.position.set(-16, 2, 0);
+pedestalB.position.set(16, 2, 0);
 scene.add(pedestalA, pedestalB);
 
 const fighterA = makeSceneObject(characterGltf.scene, 1.5);
@@ -242,8 +242,8 @@ const pedestalHeight = getHeight(pedestalA);
 const characterHeight = getHeight(fighterA);
 const fighterYOffset = pedestalHeight + characterHeight * 0.5 +2;
 
-fighterA.position.set(-8, fighterYOffset, 0);
-fighterB.position.set(8, fighterYOffset, 0);
+fighterA.position.set(-16, fighterYOffset, 0);
+fighterB.position.set(16, fighterYOffset, 0);
   fighterA.lookAt(fighterB.position.clone().add(new Vector3(0, 1.5, 0)));
   fighterB.lookAt(fighterA.position.clone().add(new Vector3(0, 1.5, 0)));
   scene.add(fighterA, fighterB);
