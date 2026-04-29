@@ -230,7 +230,7 @@ try {
 
   const pedestalA = makeSceneObject(pedestalGltf.scene, 0.008);
 const pedestalB = makeSceneObject(pedestalGltf.scene, 0.008);
-pedestalA.position.set(-8, 0, 0);
+pedestalA.position.set(-8, 1, 0);
 pedestalB.position.set(8, 0, 0);
 scene.add(pedestalA, pedestalB);
 
