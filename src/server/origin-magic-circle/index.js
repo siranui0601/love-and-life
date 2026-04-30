@@ -1,4 +1,6 @@
 import path from "path";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GEMINI_API_KEY } from "../../foundation/env.js";
 import {
   createOriginMagicCircleRoom,
   deleteOriginMagicCircleRoom,
@@ -9,6 +11,7 @@ import {
 } from "../../foundation/sheets.js";
 
 export function mountOriginMagicCircleRoutes(app) {
+  const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
   const routePath = "/オリジン魔法陣";
   const encodedPath = encodeURI(routePath);
   const htmlPath = path.join(process.cwd(), "public/origin-magic-circle/index.html");
@@ -132,6 +135,31 @@ export function mountOriginMagicCircleRoutes(app) {
     } catch (error) {
       console.error("[origin-magic-circle] get room error:", error);
       return res.status(500).json({ error: "server_error" });
+    }
+  });
+
+  app.post("/api/origin-magic-circle/chant-title", async (req, res) => {
+    const base64ImageFile = String(req.body?.base64ImageFile || "").trim();
+    if (!base64ImageFile) return res.status(400).json({ error: "base64ImageFile is required" });
+    if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
+
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const contents = [
+        {
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: base64ImageFile,
+          },
+        },
+        { text: "この魔法陣に厨二病風の題名を付けて。**題名以外の文言は不要**" },
+      ];
+      const response = await model.generateContent({ contents });
+      const title = String(response.response?.text?.() || "").trim();
+      return res.json({ title });
+    } catch (error) {
+      console.error("[origin-magic-circle] chant title error:", error);
+      return res.status(500).json({ error: "gemini_failed" });
     }
   });
 }

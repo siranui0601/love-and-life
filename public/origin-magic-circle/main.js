@@ -139,11 +139,35 @@ function setupMagicCircleUi(container) {
   let historyIndex = -1;
   let activePointerId = null;
   let lastPoint = null;
+  let isChanting = false;
+  let spinRafId = null;
+  let spinStartTs = 0;
+
+  const resultModal = document.createElement("div");
+  resultModal.className = "chant-result-modal hidden";
+  resultModal.innerHTML = `
+    <div class="chant-result-modal__backdrop"></div>
+    <div class="chant-result-modal__card">
+      <h3 class="chant-result-modal__title">魔法陣の真名</h3>
+      <p class="chant-result-modal__text"></p>
+      <button type="button" class="chant-result-modal__close">閉じる</button>
+    </div>
+  `;
+  const resultText = resultModal.querySelector(".chant-result-modal__text");
+  const closeModalBtn = resultModal.querySelector(".chant-result-modal__close");
 
   const updateButtons = () => {
+    if (isChanting) {
+      undoBtn.disabled = true;
+      redoBtn.disabled = true;
+      clearBtn.disabled = true;
+      chantBtn.disabled = true;
+      return;
+    }
     undoBtn.disabled = historyIndex <= 0;
     redoBtn.disabled = historyIndex >= history.length - 1;
     clearBtn.disabled = historyIndex <= 0;
+    chantBtn.disabled = false;
   };
 
   const restoreState = () => {
@@ -250,11 +274,87 @@ function setupMagicCircleUi(container) {
     commitState();
   });
 
-  chantBtn.addEventListener("click", () => {
-    alert("実装中");
+  const getTrimmedBase64Jpeg = () => {
+    if (!ctx) return "";
+    const imageData = ctx.getImageData(0, 0, overlay.width, overlay.height);
+    const { data, width, height } = imageData;
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const alpha = data[(y * width + x) * 4 + 3];
+        if (alpha === 0) continue;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+    if (maxX < minX || maxY < minY) return "";
+    const trimWidth = maxX - minX + 1;
+    const trimHeight = maxY - minY + 1;
+    const cropped = document.createElement("canvas");
+    cropped.width = trimWidth;
+    cropped.height = trimHeight;
+    const croppedCtx = cropped.getContext("2d");
+    if (!croppedCtx) return "";
+    croppedCtx.putImageData(ctx.getImageData(minX, minY, trimWidth, trimHeight), 0, 0);
+    return cropped.toDataURL("image/jpeg", 0.95).replace(/^data:image\/jpeg;base64,/, "");
+  };
+
+  const animateSpin = (ts) => {
+    if (!spinStartTs) spinStartTs = ts;
+    const elapsed = ts - spinStartTs;
+    const angle = (elapsed / 1000) * 180;
+    container.style.transform = `rotate(${angle}deg) scale(1)`;
+    if (isChanting) spinRafId = requestAnimationFrame(animateSpin);
+  };
+
+  const runShrinkToCenter = async () => {
+    container.style.transition = "transform 2s linear";
+    const currentAngle = (performance.now() - spinStartTs) / 1000 * 180;
+    container.style.transformOrigin = "center center";
+    container.style.transform = `rotate(${currentAngle + 720}deg) scale(0)`;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  };
+
+  chantBtn.addEventListener("click", async () => {
+    if (isChanting) return;
+    isChanting = true;
+    updateButtons();
+    spinStartTs = 0;
+    spinRafId = requestAnimationFrame(animateSpin);
+    try {
+      const base64ImageFile = getTrimmedBase64Jpeg();
+      const res = await fetch("/api/origin-magic-circle/chant-title", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base64ImageFile }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "chant_failed");
+      await runShrinkToCenter();
+      resultText.textContent = data.title || "無題";
+      resultModal.classList.remove("hidden");
+    } catch (error) {
+      console.error("[origin-magic-circle] chant failed:", error);
+      alert("詠唱に失敗しました。");
+    } finally {
+      isChanting = false;
+      if (spinRafId) cancelAnimationFrame(spinRafId);
+      spinRafId = null;
+      updateButtons();
+    }
   });
 
-  container.append(overlay, controlsLeft, controlsRight);
+  closeModalBtn?.addEventListener("click", () => {
+    resultModal.classList.add("hidden");
+  });
+
+  container.append(overlay, controlsLeft, controlsRight, resultModal);
   resizeOverlay();
   commitState();
   updateButtons();
