@@ -301,8 +301,11 @@ function setupMagicCircleUi(container) {
     cropped.height = trimHeight;
     const croppedCtx = cropped.getContext("2d");
     if (!croppedCtx) return "";
+    croppedCtx.fillStyle = "#ffffff";
+    croppedCtx.fillRect(0, 0, trimWidth, trimHeight);
     croppedCtx.putImageData(ctx.getImageData(minX, minY, trimWidth, trimHeight), 0, 0);
-    return cropped.toDataURL("image/jpeg", 0.95).replace(/^data:image\/jpeg;base64,/, "");
+
+    return cropped.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
   };
 
   const animateSpin = (ts) => {
