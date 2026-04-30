@@ -108,6 +108,160 @@ function stopRefresh() {
   refreshTimer = null;
 }
 
+
+function setupMagicCircleUi(container) {
+  const overlay = document.createElement("canvas");
+  overlay.className = "magic-circle-overlay";
+  const ctx = overlay.getContext("2d");
+
+  const controlsLeft = document.createElement("div");
+  controlsLeft.className = "magic-circle-controls left";
+  const undoBtn = document.createElement("button");
+  undoBtn.type = "button";
+  undoBtn.textContent = "↩︎";
+  const redoBtn = document.createElement("button");
+  redoBtn.type = "button";
+  redoBtn.textContent = "↪︎";
+  const clearBtn = document.createElement("button");
+  clearBtn.type = "button";
+  clearBtn.textContent = "🗑";
+  controlsLeft.append(undoBtn, redoBtn, clearBtn);
+
+  const controlsRight = document.createElement("div");
+  controlsRight.className = "magic-circle-controls right";
+  const chantBtn = document.createElement("button");
+  chantBtn.type = "button";
+  chantBtn.className = "chant-btn";
+  chantBtn.textContent = "魔法陣詠唱🪄ྀི";
+  controlsRight.appendChild(chantBtn);
+
+  const history = [];
+  let historyIndex = -1;
+  let activePointerId = null;
+  let lastPoint = null;
+
+  const updateButtons = () => {
+    undoBtn.disabled = historyIndex <= 0;
+    redoBtn.disabled = historyIndex >= history.length - 1;
+    clearBtn.disabled = historyIndex <= 0;
+  };
+
+  const restoreState = () => {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    const src = history[historyIndex];
+    if (!src) {
+      updateButtons();
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      ctx.drawImage(img, 0, 0, overlay.width, overlay.height);
+      updateButtons();
+    };
+    img.src = src;
+  };
+
+  const commitState = () => {
+    const snapshot = overlay.toDataURL("image/png");
+    history.splice(historyIndex + 1);
+    history.push(snapshot);
+    historyIndex = history.length - 1;
+    updateButtons();
+  };
+
+  const getPos = (event) => {
+    const rect = overlay.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  };
+
+  const configureCtx = () => {
+    if (!ctx) return;
+    ctx.strokeStyle = "#000";
+    ctx.fillStyle = "#000";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  };
+
+  const resizeOverlay = () => {
+    const activeSnapshot = history[historyIndex] || null;
+    overlay.width = window.innerWidth;
+    overlay.height = window.innerHeight;
+    configureCtx();
+    if (!activeSnapshot) {
+      ctx?.clearRect(0, 0, overlay.width, overlay.height);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => ctx?.drawImage(img, 0, 0, overlay.width, overlay.height);
+    img.src = activeSnapshot;
+  };
+
+  overlay.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (activePointerId !== null) return;
+    activePointerId = event.pointerId;
+    overlay.setPointerCapture(event.pointerId);
+    configureCtx();
+    lastPoint = getPos(event);
+    ctx?.beginPath();
+    ctx?.moveTo(lastPoint.x, lastPoint.y);
+    ctx?.lineTo(lastPoint.x + 0.01, lastPoint.y + 0.01);
+    ctx?.stroke();
+  });
+
+  overlay.addEventListener("pointermove", (event) => {
+    if (event.pointerId !== activePointerId || !lastPoint) return;
+    const point = getPos(event);
+    ctx?.beginPath();
+    ctx?.moveTo(lastPoint.x, lastPoint.y);
+    ctx?.lineTo(point.x, point.y);
+    ctx?.stroke();
+    lastPoint = point;
+  });
+
+  const finishStroke = (event) => {
+    if (event.pointerId !== activePointerId) return;
+    activePointerId = null;
+    lastPoint = null;
+    commitState();
+  };
+
+  overlay.addEventListener("pointerup", finishStroke);
+  overlay.addEventListener("pointercancel", finishStroke);
+
+  undoBtn.addEventListener("click", () => {
+    if (historyIndex <= 0) return;
+    historyIndex -= 1;
+    restoreState();
+  });
+
+  redoBtn.addEventListener("click", () => {
+    if (historyIndex >= history.length - 1) return;
+    historyIndex += 1;
+    restoreState();
+  });
+
+  clearBtn.addEventListener("click", () => {
+    if (historyIndex <= 0) return;
+    ctx?.clearRect(0, 0, overlay.width, overlay.height);
+    commitState();
+  });
+
+  chantBtn.addEventListener("click", () => {
+    alert("実装中");
+  });
+
+  container.append(overlay, controlsLeft, controlsRight);
+  resizeOverlay();
+  commitState();
+  updateButtons();
+
+  return { resizeOverlay };
+}
+
 async function startThreeBattleScene() {
   if (battleStarted) return;
   battleStarted = true;
@@ -153,6 +307,7 @@ const { GLTFLoader } = GLTF;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   refs.battleView.innerHTML = "";
   refs.battleView.appendChild(renderer.domElement);
+  const magicCircleUi = setupMagicCircleUi(refs.battleView);
 
   const hemiLight = new HemisphereLight(0xbad8ff, 0x5d4430, 1.1);
   scene.add(hemiLight);
@@ -255,6 +410,7 @@ fighterB.position.set(16, fighterYOffset, 0);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    magicCircleUi?.resizeOverlay();
   };
   window.addEventListener("resize", onResize);
 
