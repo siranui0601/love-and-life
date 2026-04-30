@@ -145,18 +145,20 @@ export function mountOriginMagicCircleRoutes(app) {
 
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-      const contents = [
-        {
-          inlineData: {
-            mimeType: "image/jpeg",
-            data: base64ImageFile,
-          },
-        },
-        { text: "この魔法陣に厨二病風の題名を付けて。**題名以外の文言は不要**" },
-      ];
-      const response = await model.generateContent({ contents });
-      const title = String(response.response?.text?.() || "").trim();
-      return res.json({ title });
+const response = await model.generateContent([
+  {
+    inlineData: {
+      mimeType: "image/jpeg",
+      data: base64ImageFile,
+    },
+  },
+  {
+    text: "この魔法陣に厨二病風の題名を付けて。題名以外の文言は不要。"
+  },
+]);
+
+const title = String(response.response.text() || "").trim();
+return res.json({ title });
     } catch (error) {
       console.error("[origin-magic-circle] chant title error:", error);
       return res.status(500).json({ error: "gemini_failed" });
