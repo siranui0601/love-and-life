@@ -306,20 +306,28 @@ function setupMagicCircleUi(container) {
   };
 
   const animateSpin = (ts) => {
-    if (!spinStartTs) spinStartTs = ts;
-    const elapsed = ts - spinStartTs;
-    const angle = (elapsed / 1000) * 180;
-    container.style.transform = `rotate(${angle}deg) scale(1)`;
-    if (isChanting) spinRafId = requestAnimationFrame(animateSpin);
-  };
+  if (!spinStartTs) spinStartTs = ts;
+  const elapsed = ts - spinStartTs;
+  const angle = (elapsed / 1000) * 180;
+
+  overlay.style.transformOrigin = "center center";
+  overlay.style.transform = `rotate(${angle}deg) scale(1)`;
+
+  if (isChanting) spinRafId = requestAnimationFrame(animateSpin);
+};
 
   const runShrinkToCenter = async () => {
-    container.style.transition = "transform 2s linear";
-    const currentAngle = (performance.now() - spinStartTs) / 1000 * 180;
-    container.style.transformOrigin = "center center";
-    container.style.transform = `rotate(${currentAngle + 720}deg) scale(0)`;
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-  };
+  overlay.style.transition = "transform 2s linear";
+
+  const currentAngle = ((performance.now() - spinStartTs) / 1000) * 180;
+  overlay.style.transformOrigin = "center center";
+  overlay.style.transform = `rotate(${currentAngle + 720}deg) scale(0)`;
+
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  overlay.style.transition = "";
+  overlay.style.transform = "";
+};
 
   chantBtn.addEventListener("click", async () => {
     if (isChanting) return;
@@ -346,6 +354,8 @@ function setupMagicCircleUi(container) {
       isChanting = false;
       if (spinRafId) cancelAnimationFrame(spinRafId);
       spinRafId = null;
+      overlay.style.transition = "";
+      overlay.style.transform = "";
       updateButtons();
     }
   });
