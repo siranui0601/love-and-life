@@ -133,3 +133,45 @@ h1, h2, h3 { margin-top: 0; }
   background: #af7cff;
   padding: 0 14px;
 }
+
+.chant-result-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10010;
+  display: grid;
+  place-items: center;
+}
+
+.chant-result-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.56);
+}
+
+.chant-result-modal__card {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 88vw);
+  background: rgba(17, 12, 25, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  padding: 18px;
+  text-align: center;
+}
+
+.chant-result-modal__text {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffe8ff;
+  margin: 20px 0 24px;
+}
+
+.chant-result-modal__close {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #241038;
+  background: linear-gradient(135deg, #ffe7ff, var(--accent));
+}
