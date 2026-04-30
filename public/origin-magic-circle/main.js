@@ -182,8 +182,8 @@ try {
   //変更5　グリッド間隔
   const tileSpacing = 22;
 
-  for (let z = -3; z <= 3; z += 1) {
-    for (let x = -3; x <= 3; x += 1) {
+  for (let z = -25; z <= 25; z += 1) {
+    for (let x = -25; x <= 25; x += 1) {
       const tile = wastelandGltf.scene.clone(true);
       tile.position.set(x * tileSpacing, 0, z * tileSpacing);
       tile.scale.setScalar(1/*変更6　2.8→1*/);
