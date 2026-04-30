@@ -148,7 +148,7 @@ export function mountOriginMagicCircleRoutes(app) {
 const response = await model.generateContent([
   {
     inlineData: {
-      mimeType: "image/jpeg",
+      mimeType: "image/png",
       data: base64ImageFile,
     },
   },
