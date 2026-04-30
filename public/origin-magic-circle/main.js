@@ -186,7 +186,7 @@ try {
     for (let x = -3; x <= 3; x += 1) {
       const tile = wastelandGltf.scene.clone(true);
       tile.position.set(x * tileSpacing, 0, z * tileSpacing);
-      tile.scale.setScalar(2.8);
+      tile.scale.setScalar(1/*変更6　2.8→1*/);
       tileRoot.add(tile);
     }
   }
