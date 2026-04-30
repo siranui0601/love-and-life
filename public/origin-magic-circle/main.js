@@ -180,7 +180,7 @@ try {
 
   const tileRoot = new Group();
   //変更5　グリッド間隔
-  const tileSpacing = 60;
+  const tileSpacing = 45;
 
   for (let z = -3; z <= 3; z += 1) {
     for (let x = -3; x <= 3; x += 1) {
