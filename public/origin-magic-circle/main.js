@@ -179,7 +179,8 @@ try {
 }
 
   const tileRoot = new Group();
-  const tileSpacing = 26;
+  //変更5　グリッド間隔
+  const tileSpacing = 60;
 
   for (let z = -3; z <= 3; z += 1) {
     for (let x = -3; x <= 3; x += 1) {
@@ -258,7 +259,8 @@ fighterB.position.set(16, fighterYOffset, 0);
   window.addEventListener("resize", onResize);
 
   const animate = () => {
-    tileRoot.rotation.y += 0.0009;
+    //回転阻止
+    //tileRoot.rotation.y += 0.0009;
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
   };
