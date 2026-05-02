@@ -696,6 +696,14 @@ fighterB.position.set(16, fighterYOffset, 0);
 
     mats.forEach((mat) => {
       showDebug(JSON.stringify({
+        
+        assetName: assetName,
+    animationCount: gltf.animations.length,
+    animations: gltf.animations,
+    
+    
+    
+    
         mesh: child.name,
         material: mat.name,
         hasMap: !!mat.map,
