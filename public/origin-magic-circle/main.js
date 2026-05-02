@@ -809,8 +809,7 @@ if (clip) {
   radioList?.addEventListener("change", () => {
   const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
   const selectedName = checkedAsset?.value || "";
-  const defaults = summonAssetDefaults[assetName] || { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 };
-  scaleInput.value = defaults.scale;
+  const defaults = summonAssetDefaults[selectedName] || { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 };  scaleInput.value = defaults.scale;
   yInput.value = defaults.y;
 
   applySummonState();
