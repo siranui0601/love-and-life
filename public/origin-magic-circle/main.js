@@ -746,7 +746,28 @@ function createLightningEffect() {
 
   return root;
 }
+function makeGlowMaterial(color, opacity = 1) {
+  return new MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    blending: AdditiveBlending,
+    depthWrite: false,
+    side: DoubleSide,
+    toneMapped: false,
+  });
+}
 
+function makeLineMaterial(color, opacity = 1) {
+  return new LineBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    blending: AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false,
+  });
+}
 function updateCustomEffect(root, elapsed, delta) {
   const type = root.userData.effectType;
   if (!type) return;
@@ -1121,10 +1142,10 @@ function resetExplosionBurst(root) {
   root.visible = true;
 
   root.children.forEach((child) => {
+    const role = child.userData.role;
+
     child.position.set(0, 0, 0);
     child.scale.setScalar(1);
-
-    const role = child.userData.role;
 
     if (role === "flash") {
       child.scale.setScalar(0.2);
