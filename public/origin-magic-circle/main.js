@@ -455,20 +455,21 @@ async function startThreeBattleScene() {
   let THREE;
 let GLTF;
 
-try {
- let THREE;
+let THREE;
 let GLTF;
 let POST;
 
-[THREE, GLTF, POST] = await Promise.all([
-  import("https://esm.sh/three@0.166.1"),
-  import("https://esm.sh/three@0.166.1/examples/jsm/loaders/GLTFLoader.js"),
-  Promise.all([
-    import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/EffectComposer.js"),
-    import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/RenderPass.js"),
-    import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/UnrealBloomPass.js"),
-  ]),
-]);} catch (e) {
+try {
+  [THREE, GLTF, POST] = await Promise.all([
+    import("https://esm.sh/three@0.166.1"),
+    import("https://esm.sh/three@0.166.1/examples/jsm/loaders/GLTFLoader.js"),
+    Promise.all([
+      import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/EffectComposer.js"),
+      import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/RenderPass.js"),
+      import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/UnrealBloomPass.js"),
+    ]),
+  ]);
+} catch (e) {
   console.error(e);
   alert("3D描画ライブラリの読み込みに失敗しました。");
   return;
