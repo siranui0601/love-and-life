@@ -653,30 +653,26 @@ function applyLightningMaterialFix(root) {
   root.traverse((child) => {
     if (!child.isMesh || !child.material) return;
 
-    const mats = Array.isArray(child.material)
+    const oldMats = Array.isArray(child.material)
       ? child.material
       : [child.material];
 
-    mats.forEach((mat) => {
-      if (mat.color) mat.color.set(0xffffff);
+    const newMats = oldMats.map(() => {
+      const mat = new MeshBasicMaterial({
+        color: 0x99ddff,
+        transparent: true,
+        opacity: 1,
+        side: DoubleSide,
+        depthWrite: false,
+        blending: AdditiveBlending,
+      });
 
-      if (mat.emissive) {
-        mat.emissive.set(0x88ccff);
-        mat.emissiveIntensity = 6.0;
-      }
-
-      if (mat.map) {
-        mat.map.colorSpace = SRGBColorSpace;
-        mat.map.needsUpdate = true;
-      }
-
-      mat.transparent = true;
-      mat.opacity = 1;
-      mat.depthWrite = false;
-      mat.alphaTest = 0.01;
       mat.toneMapped = false;
       mat.needsUpdate = true;
+      return mat;
     });
+
+    child.material = Array.isArray(child.material) ? newMats : newMats[0];
   });
 }
 
