@@ -545,7 +545,7 @@ function applyFireTornadoMaterialFix(root) {
 
       mat.transparent = true;
       mat.side = DoubleSide;
-      mat.depthWrite = false;
+      mat.depthWrite = true;//お試し
       mat.alphaTest = 0.01;
       mat.toneMapped = false;
       mat.needsUpdate = true;
