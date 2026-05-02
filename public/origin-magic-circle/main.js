@@ -642,7 +642,10 @@ fighterB.position.set(16, fighterYOffset, 0);
     radio.value = assetName;
     radio.checked = index === 0;
     label.append(radio, document.createTextNode(assetName));
-    radioList?.addEventListener("change", () => {
+    radioList?.appendChild(label)
+  });
+  
+  radioList?.addEventListener("change", () => {
   const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
   const selectedName = checkedAsset?.value || "";
   const defaults = summonAssetDefaults[selectedName] || { scale: 1, y: 1.6 };
@@ -652,7 +655,6 @@ fighterB.position.set(16, fighterYOffset, 0);
 
   applySummonState();
 });
-  });
 
   const applySummonState = () => {
   const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
