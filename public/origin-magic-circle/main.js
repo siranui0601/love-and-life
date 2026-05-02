@@ -511,21 +511,27 @@ function applyFireTornadoMaterialFix(root) {
       : [child.material];
 
     const fixedMaterials = materials.map((oldMaterial) => {
-      const fixed = oldMaterial.clone();
+      const map = oldMaterial.map || null;
 
-      if (fixed.map) {
-        fixed.map.colorSpace = SRGBColorSpace;
-        fixed.map.needsUpdate = true;
+      if (map) {
+        map.colorSpace = SRGBColorSpace;
+        map.needsUpdate = true;
       }
 
-      fixed.transparent = true;
-      fixed.side = DoubleSide;
-      fixed.depthWrite = false;
-      fixed.blending = AdditiveBlending;
-      fixed.toneMapped = false;
-      fixed.needsUpdate = true;
+      const fixedMaterial = new MeshBasicMaterial({
+        map,
+        color: 0xff7a00,
+        transparent: true,
+        opacity: 1,
+        side: DoubleSide,
+        depthWrite: false,
+        blending: AdditiveBlending,
+      });
 
-      return fixed;
+      fixedMaterial.toneMapped = false;
+      fixedMaterial.needsUpdate = true;
+
+      return fixedMaterial;
     });
 
     child.material = Array.isArray(child.material)
