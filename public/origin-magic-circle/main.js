@@ -44,8 +44,8 @@ const summonAssetDefaults = {
     offsetZ: 0,
   },
   "custom_lightning": {
-  scale: 1,
-  y: 3,
+  scale: 2,
+  y: 2,
   offsetX: 0,
   offsetZ: 0,
 },
