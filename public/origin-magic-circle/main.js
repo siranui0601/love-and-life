@@ -49,7 +49,7 @@ function showDebug(text) {
     el.style.bottom = "80px";
     el.style.zIndex = "20000";
     el.style.maxWidth = "95vw";
-    el.style.maxHeight = "40vh";
+    el.style.maxHeight = "10vh";
     el.style.overflow = "auto";
     el.style.background = "rgba(0,0,0,0.8)";
     el.style.color = "#0f0";
