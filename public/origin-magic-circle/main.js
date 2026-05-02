@@ -596,9 +596,9 @@ fighterB.position.set(16, fighterYOffset, 0);
   const root = gltf.scene.clone(true);
   root.visible = false;
   //変更11
-  if (assetName === "stylized_fire_tornado.glb") {
-    applyFireTornadoMaterialFix(root);
-  }
+  //if (assetName === "stylized_fire_tornado.glb") {
+    //applyFireTornadoMaterialFix(root);
+  //}
   root.position.set(0, 1.6, 0);
   root.scale.setScalar(1);
   scene.add(root);
