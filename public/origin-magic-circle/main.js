@@ -501,42 +501,34 @@ try {
     return object;
   };
   
-  //変更9
+  //変更13
 function applyFireTornadoMaterialFix(root) {
   root.traverse((child) => {
     if (!child.isMesh || !child.material) return;
 
-    const materials = Array.isArray(child.material)
+    const mats = Array.isArray(child.material)
       ? child.material
       : [child.material];
 
-    const fixedMaterials = materials.map((oldMaterial) => {
-      const map = oldMaterial.map || null;
-
-      if (map) {
-        map.colorSpace = SRGBColorSpace;
-        map.needsUpdate = true;
+    mats.forEach((mat) => {
+      if (mat.map) {
+        mat.map.colorSpace = SRGBColorSpace;
       }
 
-      const fixedMaterial = new MeshBasicMaterial({
-        map,
-        color: 0xff7a00,
-        transparent: true,
-        opacity: 1,
-        side: DoubleSide,
-        depthWrite: false,
-        blending: AdditiveBlending,
-      });
+      if (mat.emissiveMap) {
+        mat.emissive.set(0xffffff);
+        mat.emissiveIntensity = 2.0;
+      }
 
-      fixedMaterial.toneMapped = false;
-      fixedMaterial.needsUpdate = true;
+      mat.transparent = true;
+      mat.depthWrite = false;
+      mat.side = DoubleSide;
 
-      return fixedMaterial;
+      // これ重要
+      mat.alphaTest = 0.05;
+
+      mat.needsUpdate = true;
     });
-
-    child.material = Array.isArray(child.material)
-      ? fixedMaterials
-      : fixedMaterials[0];
   });
 }
 
