@@ -38,6 +38,49 @@ const summonAssetDefaults = {
   },
 };
 
+//変更14
+function showDebug(text) {
+  let el = document.getElementById("debugPanel");
+  if (!el) {
+    el = document.createElement("pre");
+    el.id = "debugPanel";
+    el.style.position = "fixed";
+    el.style.left = "8px";
+    el.style.bottom = "80px";
+    el.style.zIndex = "20000";
+    el.style.maxWidth = "95vw";
+    el.style.maxHeight = "40vh";
+    el.style.overflow = "auto";
+    el.style.background = "rgba(0,0,0,0.8)";
+    el.style.color = "#0f0";
+    el.style.fontSize = "12px";
+    el.style.padding = "8px";
+    document.body.appendChild(el);
+  }
+  el.textContent += text + "\n";
+}
+if (assetName === "stylized_fire_tornado.glb") {
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const mats = Array.isArray(child.material) ? child.material : [child.material];
+
+    mats.forEach((mat) => {
+      showDebug(JSON.stringify({
+        mesh: child.name,
+        material: mat.name,
+        hasMap: !!mat.map,
+        hasEmissiveMap: !!mat.emissiveMap,
+        hasAlphaMap: !!mat.alphaMap,
+        transparent: mat.transparent,
+        opacity: mat.opacity,
+        color: mat.color?.getHexString?.(),
+        emissive: mat.emissive?.getHexString?.(),
+      }, null, 2));
+    });
+  });
+}
+
 const user = JSON.parse(localStorage.getItem("currentUser") || "null");
 const username = String(user?.username || "ゲスト");
 const userTrackingId = String(user?.userTrackingId || "");
@@ -505,10 +548,6 @@ try {
 function applyFireTornadoMaterialFix(root) {
   root.traverse((child) => {
     if (!child.isMesh || !child.material) return;
-    
-    //変更14
-    console.log(child.material);
-
 
     const mats = Array.isArray(child.material)
       ? child.material
