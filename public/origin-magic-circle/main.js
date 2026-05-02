@@ -539,6 +539,7 @@ const {
   Clock,
   MeshBasicMaterial,
   AdditiveBlending,
+  NormalBlending,
   DoubleSide,
   SRGBColorSpace,
   Vector2,
@@ -556,6 +557,7 @@ CylinderGeometry,
 TorusGeometry,
 RingGeometry,
 PlaneGeometry,
+TetrahedronGeometry,
 CatmullRomCurve3,
 TubeGeometry,
 } = THREE;
@@ -778,34 +780,68 @@ function updateCustomEffect(root, elapsed, delta) {
 }
 
   if (type === "explosion_burst") {
-    root.rotation.y += delta * 1.2;
-    const pulse = 1 + Math.sin(elapsed * 8) * 0.08;
+    root.rotation.y += delta * 0.9;
     root.children.forEach((child, index) => {
-      child.scale.setScalar(index === 0 ? pulse : 1.1 + Math.sin(elapsed * 5) * 0.08);
+      if (child.userData.kind === "shard") {
+        child.position.addScaledVector(child.userData.velocity, delta);
+        child.rotation.x += delta * child.userData.spin.x;
+        child.rotation.y += delta * child.userData.spin.y;
+        child.rotation.z += delta * child.userData.spin.z;
+      } else if (child.userData.kind === "ray") {
+        child.scale.y = 0.85 + Math.sin(elapsed * child.userData.pulse + index) * 0.25;
+      } else if (child.userData.kind === "smoke") {
+        child.position.y += delta * child.userData.rise;
+        child.scale.multiplyScalar(1 + delta * 0.38);
+        child.material.opacity = Math.max(0, child.material.opacity - delta * 0.18);
+      } else if (child.material) {
+        child.material.opacity = 0.55 + Math.sin(elapsed * 11 + index) * 0.25;
+      }
     });
     return;
   }
 
   if (type === "mist_cloud") {
     root.children.forEach((child, index) => {
-      child.position.y += delta * (0.15 + index * 0.015);
-      child.rotation.y += delta * 0.3;
+      if (child.userData.kind === "warp") {
+        child.rotation.z += delta * child.userData.rot;
+        child.scale.x = 1 + Math.sin(elapsed * child.userData.freq + index) * 0.18;
+        child.scale.y = 1 + Math.cos(elapsed * child.userData.freq * 1.3 + index) * 0.18;
+      } else {
+        child.position.y += delta * (0.12 + index * 0.01);
+        child.rotation.y += delta * 0.26;
+      }
       if (child.material) {
-        child.material.opacity = 0.18 + Math.sin(elapsed * 2 + index) * 0.05;
+        child.material.opacity = 0.2 + Math.sin(elapsed * 2.8 + index) * 0.08;
       }
     });
     return;
   }
 
   if (type === "energy_slash") {
-    root.rotation.y += delta * 2.5;
-    root.rotation.z += delta * 0.8;
+    root.rotation.y += delta * 3.8;
+    root.children.forEach((child, index) => {
+      if (child.userData.kind === "glint") {
+        const phase = (elapsed * 3.8 + index * 0.8) % 1;
+        child.position.x = -1.55 + phase * 3.1;
+        child.material.opacity = phase > 0.15 && phase < 0.35 ? 0.95 : 0.18;
+      } else if (child.material) {
+        child.material.opacity = 0.72 + Math.sin(elapsed * 12 + index) * 0.2;
+      }
+    });
     return;
   }
 
   if (type === "shadow_orb" || type === "light_orb") {
     root.rotation.y += delta * 1.5;
     root.rotation.x += delta * 0.35;
+    root.children.forEach((child, index) => {
+      if (type === "shadow_orb" && child.userData.kind === "infall") {
+        child.scale.y = 0.75 + Math.sin(elapsed * child.userData.freq + index) * 0.25;
+      }
+      if (child.material && child.userData.kind === "mist") {
+        child.material.opacity = 0.24 + Math.sin(elapsed * 3 + index) * 0.12;
+      }
+    });
 
     const pulse = 1 + Math.sin(elapsed * 4) * 0.08;
     root.scale.setScalar(root.userData.currentScale ? root.userData.currentScale * pulse : pulse);
@@ -813,14 +849,23 @@ function updateCustomEffect(root, elapsed, delta) {
   }
 
   if (type === "crystal_shard") {
-    root.rotation.y += delta * 1.2;
+    root.rotation.y += delta * 7;
     root.position.y += Math.sin(elapsed * 3) * 0.002;
+    root.children.forEach((child, index) => {
+      if (child.userData.kind === "helix") {
+        child.rotation.y += delta * 2.4;
+        child.material.opacity = 0.45 + Math.sin(elapsed * 10 + index) * 0.22;
+      }
+    });
     return;
   }
 
   if (type === "fang_spikes") {
     root.children.forEach((child, index) => {
-      child.rotation.y += delta * (0.15 + index * 0.04);
+      if (child.userData.kind === "fang") {
+        child.position.y = 0.1 + Math.max(0, Math.sin(elapsed * 4 + child.userData.offset)) * child.userData.rise;
+      }
+      child.rotation.y += delta * (0.4 + index * 0.05);
     });
     return;
   }
@@ -842,32 +887,39 @@ function updateCustomEffect(root, elapsed, delta) {
 
 function createExplosionBurstEffect() {
   const root = new Group();
+  const core = new Mesh(new SphereGeometry(0.58, 28, 18), new MeshBasicMaterial({
+    color: 0xffcc66, transparent: true, opacity: 0.9, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
+  }));
+  root.add(core);
 
-  const core = new Mesh(
-    new SphereGeometry(0.7, 24, 16),
-    new MeshBasicMaterial({
-      color: 0xffaa22,
-      transparent: true,
-      opacity: 0.85,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      toneMapped: false,
-    })
-  );
+  for (let i = 0; i < 20; i += 1) {
+    const shard = new Mesh(new TetrahedronGeometry(0.08 + Math.random() * 0.11), new MeshBasicMaterial({
+      color: i % 2 === 0 ? 0xffeeaa : 0xff7733, transparent: true, opacity: 0.92, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
+    }));
+    const dir = new Vector3((Math.random() - 0.5) * 2, Math.random() * 1.5 + 0.4, (Math.random() - 0.5) * 2).normalize();
+    shard.userData = { kind: "shard", velocity: dir.multiplyScalar(2.4 + Math.random() * 2), spin: new Vector3(Math.random() * 5, Math.random() * 5, Math.random() * 5) };
+    root.add(shard);
+  }
 
-  const outer = new Mesh(
-    new SphereGeometry(1.15, 24, 16),
-    new MeshBasicMaterial({
-      color: 0xff3300,
-      transparent: true,
-      opacity: 0.35,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      toneMapped: false,
-    })
-  );
+  for (let i = 0; i < 8; i += 1) {
+    const ray = new Mesh(new CylinderGeometry(0.02, 0.1, 2.5, 8, 1, true), new MeshBasicMaterial({
+      color: 0xffaa44, transparent: true, opacity: 0.7, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
+    }));
+    ray.position.y = 0.55;
+    ray.rotation.z = Math.PI * Math.random();
+    ray.rotation.x = Math.PI * (i / 8);
+    ray.userData = { kind: "ray", pulse: 7 + Math.random() * 5 };
+    root.add(ray);
+  }
 
-  root.add(core, outer);
+  for (let i = 0; i < 6; i += 1) {
+    const smoke = new Mesh(new SphereGeometry(0.3 + Math.random() * 0.25, 12, 10), new MeshBasicMaterial({
+      color: 0x665555, transparent: true, opacity: 0.34, depthWrite: false,
+    }));
+    smoke.position.set((Math.random() - 0.5) * 1.8, 0.1 + Math.random() * 0.25, (Math.random() - 0.5) * 1.8);
+    smoke.userData = { kind: "smoke", rise: 0.45 + Math.random() * 0.2 };
+    root.add(smoke);
+  }
   root.userData.effectType = "explosion_burst";
   root.userData.baseScale = 1;
 
@@ -881,10 +933,12 @@ function createMistCloudEffect() {
     const puff = new Mesh(
       new SphereGeometry(0.35 + Math.random() * 0.25, 16, 12),
       new MeshBasicMaterial({
-        color: 0xdddddd,
+        color: 0xaab8ff,
         transparent: true,
-        opacity: 0.25,
+        opacity: 0.28,
+        blending: AdditiveBlending,
         depthWrite: false,
+        toneMapped: false,
       })
     );
 
@@ -896,6 +950,14 @@ function createMistCloudEffect() {
 
     root.add(puff);
   }
+  for (let i = 0; i < 3; i += 1) {
+    const warp = new Mesh(new TorusGeometry(0.6 + i * 0.22, 0.03, 8, 48), new MeshBasicMaterial({
+      color: i % 2 === 0 ? 0xaaffff : 0xc39bff, transparent: true, opacity: 0.3, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
+    }));
+    warp.rotation.set(Math.PI / (3 + i), 0, Math.random() * Math.PI);
+    warp.userData = { kind: "warp", rot: 0.7 + i * 0.25, freq: 2.2 + i };
+    root.add(warp);
+  }
 
   root.userData.effectType = "mist_cloud";
   return root;
@@ -903,12 +965,11 @@ function createMistCloudEffect() {
 
 function createSlashArcEffect() {
   const root = new Group();
-
-  const geometry = new TorusGeometry(1.2, 0.045, 8, 64, Math.PI * 1.2);
+  const geometry = new TorusGeometry(1.25, 0.09, 12, 100, Math.PI * 1.28);
   const material = new MeshBasicMaterial({
-    color: 0x88ddff,
+    color: 0xb7eeff,
     transparent: true,
-    opacity: 0.9,
+    opacity: 0.98,
     blending: AdditiveBlending,
     depthWrite: false,
     side: DoubleSide,
@@ -916,9 +977,21 @@ function createSlashArcEffect() {
   });
 
   const slash = new Mesh(geometry, material);
-  slash.rotation.set(Math.PI / 2.4, 0, Math.PI / 6);
-
+  slash.rotation.set(Math.PI / 2.5, 0, Math.PI / 6);
   root.add(slash);
+  const edgeGlow = slash.clone();
+  edgeGlow.scale.set(1.06, 1.06, 1.06);
+  edgeGlow.material = edgeGlow.material.clone();
+  edgeGlow.material.color.setHex(0xffffff);
+  edgeGlow.material.opacity = 0.55;
+  root.add(edgeGlow);
+  for (let i = 0; i < 3; i += 1) {
+    const glint = new Mesh(new PlaneGeometry(0.35, 0.08), new MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.15, blending: AdditiveBlending, side: DoubleSide, depthWrite: false, toneMapped: false,
+    }));
+    glint.userData = { kind: "glint" };
+    root.add(glint);
+  }
   root.userData.effectType = "energy_slash";
 
   return root;
@@ -930,10 +1003,10 @@ function createDarkOrbEffect() {
   const orb = new Mesh(
     new SphereGeometry(0.75, 32, 20),
     new MeshBasicMaterial({
-      color: 0x260033,
+      color: 0x09020f,
       transparent: true,
       opacity: 0.9,
-      blending: AdditiveBlending,
+      blending: NormalBlending,
       depthWrite: false,
       toneMapped: false,
     })
@@ -952,8 +1025,25 @@ function createDarkOrbEffect() {
   );
 
   ring.rotation.x = Math.PI / 2;
-
   root.add(orb, ring);
+  for (let i = 0; i < 5; i += 1) {
+    const mist = new Mesh(new SphereGeometry(0.95 + Math.random() * 0.2, 16, 12), new MeshBasicMaterial({
+      color: 0x6f2aff, transparent: true, opacity: 0.2, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
+    }));
+    mist.scale.set(1.2, 0.5, 1.2);
+    mist.rotation.x = Math.random() * Math.PI;
+    mist.userData = { kind: "mist" };
+    root.add(mist);
+  }
+  for (let i = 0; i < 12; i += 1) {
+    const infall = new Mesh(new CylinderGeometry(0.005, 0.02, 1.2 + Math.random() * 0.8, 5), new MeshBasicMaterial({
+      color: 0xaa88ff, transparent: true, opacity: 0.65, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
+    }));
+    infall.position.set((Math.random() - 0.5) * 2.8, (Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 2.8);
+    infall.lookAt(0, 0, 0);
+    infall.userData = { kind: "infall", freq: 5 + Math.random() * 3 };
+    root.add(infall);
+  }
   root.userData.effectType = "shadow_orb";
 
   return root;
@@ -1025,6 +1115,15 @@ function createIceShardEffect() {
   glow.rotation.x = Math.PI / 2;
 
   root.add(shard, glow);
+  for (let i = 0; i < 3; i += 1) {
+    const helix = new Mesh(new TorusGeometry(0.14 + i * 0.08, 0.012, 6, 36), new MeshBasicMaterial({
+      color: 0xdaf6ff, transparent: true, opacity: 0.55, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
+    }));
+    helix.position.y = -0.85 + i * 0.65;
+    helix.rotation.x = Math.PI / 2;
+    helix.userData = { kind: "helix" };
+    root.add(helix);
+  }
   root.userData.effectType = "crystal_shard";
 
   return root;
@@ -1057,19 +1156,19 @@ function createWindBladeEffect() {
 function createGroundSpikeEffect() {
   const root = new Group();
 
-  for (let i = 0; i < 5; i += 1) {
+  for (let i = 0; i < 8; i += 1) {
     const spike = new Mesh(
-      new ConeGeometry(0.25 + Math.random() * 0.12, 1.5 + Math.random() * 0.8, 5),
+      new ConeGeometry(0.14 + Math.random() * 0.1, 1.2 + Math.random() * 0.8, 8),
       new MeshBasicMaterial({
-        color: 0x8a6a45,
+        color: i % 2 === 0 ? 0xe7d0af : 0xb28c66,
         transparent: true,
         opacity: 1,
         depthWrite: true,
       })
     );
-
-    spike.position.set((i - 2) * 0.45, 0.7, (Math.random() - 0.5) * 0.35);
-    spike.rotation.z = (Math.random() - 0.5) * 0.25;
+    spike.position.set((i - 3.5) * 0.24, 0.12, (Math.random() - 0.5) * 0.28);
+    spike.rotation.z = -1.05 + Math.random() * 0.16;
+    spike.userData = { kind: "fang", offset: i * 0.45, rise: 0.8 + Math.random() * 0.7 };
 
     root.add(spike);
   }
