@@ -536,6 +536,9 @@ composer.addPass(bloomPass);
 const loader = new GLTFLoader();
 const summonAssetRoots = new Map();
 
+//変更19
+const summonAssetAnimationInfo = new Map();
+
 //変更6
 const summonAssetMixers = [];
 const clock = new Clock();
@@ -685,6 +688,16 @@ fighterB.position.set(16, fighterYOffset, 0);
 //変更7
   summonAssetGlbList.forEach((gltf, index) => {
   const assetName = summonAssetOptions[index];
+  
+  summonAssetAnimationInfo.set(
+  assetName,
+  gltf.animations.map((clip) => ({
+    name: clip.name,
+    duration: clip.duration,
+    trackCount: clip.tracks.length,
+    trackNames: clip.tracks.slice(0, 10).map((track) => track.name),
+  }))
+);
   const root = gltf.scene.clone(true);
   
   //変更15
@@ -793,7 +806,13 @@ if (assetName === "stylized_fire_tornado.glb") {
 
 //変更16
 function getMaterialDebugText(root, assetName) {
-  const lines = [`asset: ${assetName}`];
+  const animations = summonAssetAnimationInfo.get(assetName) || [];
+
+  const lines = [
+    `asset: ${assetName}`,
+    `animationCount: ${animations.length}`,
+    JSON.stringify({ animations }, null, 2),
+  ];
 
   root.traverse((child) => {
     if (!child.isMesh || !child.material) return;
@@ -809,13 +828,9 @@ function getMaterialDebugText(root, assetName) {
         material: mat.name,
         type: mat.type,
         hasMap: !!mat.map,
-        mapName: mat.map?.name || "",
-        hasEmissiveMap: !!mat.emissiveMap,
-        hasAlphaMap: !!mat.alphaMap,
         transparent: mat.transparent,
         opacity: mat.opacity,
         color: mat.color?.getHexString?.(),
-        emissive: mat.emissive?.getHexString?.(),
         blending: mat.blending,
         depthWrite: mat.depthWrite,
         alphaTest: mat.alphaTest,
@@ -826,7 +841,6 @@ function getMaterialDebugText(root, assetName) {
 
   return lines.join("\n");
 }
-
 
 
 
