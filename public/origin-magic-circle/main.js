@@ -518,7 +518,7 @@ composer.addPass(renderPass);
 
 const bloomPass = new UnrealBloomPass(
   new Vector2(window.innerWidth, window.innerHeight),
-  1.2,  // strength: 発光の強さ
+  0.6,  // strength: 発光の強さ
   0.6,  // radius: にじみの広さ
   0.2   // threshold: どれくらい明るい部分だけ光らせるか
 );
