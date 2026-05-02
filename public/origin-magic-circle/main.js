@@ -579,6 +579,30 @@ function applyFireTornadoMaterialFix(root) {
   });
 }
 
+//変更18　ファイアーボール修正
+function applyFireballMaterialFix(root) {
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const mats = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+
+    mats.forEach((mat) => {
+      if (mat.color) mat.color.set(0xffffff);
+      if (mat.emissive) mat.emissive.set(0xff8700);
+
+      mat.emissiveIntensity = 2.5;
+      mat.transparent = true;
+      mat.opacity = 0.9;
+      mat.depthWrite = false;
+      mat.alphaTest = 0.01;
+      mat.toneMapped = false;
+      mat.needsUpdate = true;
+    });
+  });
+}
+
   const getHeight = (object3d) => {
     const box = new Box3().setFromObject(object3d);
     return box.max.y - box.min.y;
@@ -661,9 +685,13 @@ fighterB.position.set(16, fighterYOffset, 0);
 
   root.visible = false;
   //変更15
-  //if (assetName === "stylized_fire_tornado.glb" || assetName === "fireball.glb") {
-    applyFireTornadoMaterialFix(root);
- // }
+  if (assetName === "fireball.glb") {
+    applyFireballMaterialFix(root);
+  }
+
+if (assetName === "stylized_fire_tornado.glb") {
+  applyFireTornadoMaterialFix(root);
+}
   root.position.set(0, 1.6, 0);
   root.scale.setScalar(1);
   scene.add(root);
