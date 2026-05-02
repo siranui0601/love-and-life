@@ -19,9 +19,24 @@ const refs = {
 const summonAssetOptions = [
   "fireball.glb",
   "magic_voxel_skull_flat_shaded.glb",
-  "negative_leader.glb",
   "stylized_fire_tornado.glb",
 ];
+
+//変更10
+const summonAssetDefaults = {
+  "fireball.glb": {
+    scale: 2,
+    y: 1.6,
+  },
+  "magic_voxel_skull_flat_shaded.glb": {
+    scale: 0.01,
+    y: 1.6,
+  },
+  "stylized_fire_tornado.glb": {
+    scale: 0.01,
+    y: 1.6,
+  },
+};
 
 const user = JSON.parse(localStorage.getItem("currentUser") || "null");
 const username = String(user?.username || "ゲスト");
@@ -414,6 +429,10 @@ const {
   Vector3,
   AnimationMixer,
   Clock,
+  MeshBasicMaterial,
+  AdditiveBlending,
+  DoubleSide,
+  SRGBColorSpace,
 } = THREE;
 
 const { GLTFLoader } = GLTF;
@@ -481,6 +500,45 @@ try {
     object.scale.setScalar(scale);
     return object;
   };
+  
+  //変更9
+function applyFireTornadoMaterialFix(root) {
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const materials = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+
+    const fixedMaterials = materials.map((oldMaterial) => {
+      const map = oldMaterial.map || null;
+
+      if (map) {
+        map.colorSpace = SRGBColorSpace;
+        map.needsUpdate = true;
+      }
+
+      const fixedMaterial = new MeshBasicMaterial({
+        map,
+        color: 0xff7a00,
+        transparent: true,
+        opacity: 1,
+        side: DoubleSide,
+        depthWrite: false,
+        blending: AdditiveBlending,
+      });
+
+      fixedMaterial.toneMapped = false;
+      fixedMaterial.needsUpdate = true;
+
+      return fixedMaterial;
+    });
+
+    child.material = Array.isArray(child.material)
+      ? fixedMaterials
+      : fixedMaterials[0];
+  });
+}
 
   const getHeight = (object3d) => {
     const box = new Box3().setFromObject(object3d);
@@ -584,7 +642,16 @@ fighterB.position.set(16, fighterYOffset, 0);
     radio.value = assetName;
     radio.checked = index === 0;
     label.append(radio, document.createTextNode(assetName));
-    radioList?.appendChild(label);
+    radioList?.addEventListener("change", () => {
+  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
+  const selectedName = checkedAsset?.value || "";
+  const defaults = summonAssetDefaults[selectedName] || { scale: 1, y: 1.6 };
+
+  scaleInput.value = defaults.scale;
+  yInput.value = defaults.y;
+
+  applySummonState();
+});
   });
 
   const applySummonState = () => {
