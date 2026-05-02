@@ -41,24 +41,49 @@ const summonAssetDefaults = {
 
 //変更14
 function showDebug(text) {
-  let el = document.getElementById("debugPanel");
-  if (!el) {
-    el = document.createElement("pre");
-    el.id = "debugPanel";
-    el.style.position = "fixed";
-    el.style.left = "8px";
-    el.style.bottom = "80px";
-    el.style.zIndex = "20000";
-    el.style.maxWidth = "95vw";
-    el.style.maxHeight = "10vh";
-    el.style.overflow = "auto";
-    el.style.background = "rgba(0,0,0,0.8)";
-    el.style.color = "#0f0";
-    el.style.fontSize = "12px";
-    el.style.padding = "8px";
-    document.body.appendChild(el);
+  let panel = document.getElementById("debugPanel");
+
+  if (!panel) {
+    panel = document.createElement("div");
+    panel.id = "debugPanel";
+    panel.style.position = "fixed";
+    panel.style.left = "8px";
+    panel.style.bottom = "80px";
+    panel.style.zIndex = "20000";
+    panel.style.maxWidth = "95vw";
+    panel.style.maxHeight = "18vh";
+    panel.style.overflow = "auto";
+    panel.style.background = "rgba(0,0,0,0.8)";
+    panel.style.color = "#0f0";
+    panel.style.fontSize = "12px";
+    panel.style.padding = "8px";
+    panel.style.display = "flex";
+    panel.style.gap = "8px";
+    panel.style.alignItems = "flex-start";
+
+    const pre = document.createElement("pre");
+    pre.id = "debugPanelText";
+    pre.style.margin = "0";
+    pre.style.whiteSpace = "pre-wrap";
+
+    const copyBtn = document.createElement("button");
+    copyBtn.textContent = "コピー";
+    copyBtn.style.fontSize = "12px";
+    copyBtn.style.padding = "4px 8px";
+    copyBtn.onclick = async () => {
+      await navigator.clipboard.writeText(pre.textContent || "");
+      copyBtn.textContent = "コピー済";
+      setTimeout(() => {
+        copyBtn.textContent = "コピー";
+      }, 1000);
+    };
+
+    panel.append(pre, copyBtn);
+    document.body.appendChild(panel);
   }
-  el.textContent += text + "\n";
+
+  const pre = document.getElementById("debugPanelText");
+  if (pre) pre.textContent = text;
 }
 
 const user = JSON.parse(localStorage.getItem("currentUser") || "null");
@@ -700,6 +725,46 @@ fighterB.position.set(16, fighterYOffset, 0);
   applySummonState();
 });
 
+
+//変更16
+function getMaterialDebugText(root, assetName) {
+  const lines = [`asset: ${assetName}`];
+
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const mats = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+
+    mats.forEach((mat, index) => {
+      lines.push(JSON.stringify({
+        mesh: child.name,
+        materialIndex: index,
+        material: mat.name,
+        type: mat.type,
+        hasMap: !!mat.map,
+        mapName: mat.map?.name || "",
+        hasEmissiveMap: !!mat.emissiveMap,
+        hasAlphaMap: !!mat.alphaMap,
+        transparent: mat.transparent,
+        opacity: mat.opacity,
+        color: mat.color?.getHexString?.(),
+        emissive: mat.emissive?.getHexString?.(),
+        blending: mat.blending,
+        depthWrite: mat.depthWrite,
+        alphaTest: mat.alphaTest,
+        toneMapped: mat.toneMapped,
+      }, null, 2));
+    });
+  });
+
+  return lines.join("\n");
+}
+
+
+
+
   const applySummonState = () => {
   const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
   const selectedName = checkedAsset?.value || "";
@@ -714,10 +779,16 @@ fighterB.position.set(16, fighterYOffset, 0);
     const isActive = assetName === selectedName;
     root.visible = isActive;
 
+
+//変更17
     if (isActive) {
       root.scale.setScalar(appliedScale);
       root.position.y = appliedY;
+
+      showDebug(getMaterialDebugText(root, assetName));
     }
+    
+    
   });
 };
 
