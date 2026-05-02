@@ -635,7 +635,7 @@ fighterB.position.set(16, fighterYOffset, 0);
 
   root.visible = false;
   //変更11
-  if (assetName === "stylized_fire_tornado.glb") {
+  if (assetName === "stylized_fire_tornado.glb" || assetName === "fireball.glb") {
     applyFireTornadoMaterialFix(root);
   }
   root.position.set(0, 1.6, 0);
