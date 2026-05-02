@@ -456,14 +456,29 @@ async function startThreeBattleScene() {
 let GLTF;
 
 try {
-  [THREE, GLTF] = await Promise.all([
-    import("https://esm.sh/three@0.166.1"),
-    import("https://esm.sh/three@0.166.1/examples/jsm/loaders/GLTFLoader.js"),  ]);
-} catch (e) {
+ let THREE;
+let GLTF;
+let POST;
+
+[THREE, GLTF, POST] = await Promise.all([
+  import("https://esm.sh/three@0.166.1"),
+  import("https://esm.sh/three@0.166.1/examples/jsm/loaders/GLTFLoader.js"),
+  Promise.all([
+    import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/EffectComposer.js"),
+    import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/RenderPass.js"),
+    import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/UnrealBloomPass.js"),
+  ]),
+]);} catch (e) {
   console.error(e);
   alert("3D描画ライブラリの読み込みに失敗しました。");
   return;
 }
+
+const [
+  { EffectComposer },
+  { RenderPass },
+  { UnrealBloomPass },
+] = POST;
 
 const {
   Scene,
@@ -481,6 +496,7 @@ const {
   AdditiveBlending,
   DoubleSide,
   SRGBColorSpace,
+  Vector2,
 } = THREE;
 
 const { GLTFLoader } = GLTF;
@@ -495,6 +511,19 @@ const { GLTFLoader } = GLTF;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   refs.battleView.innerHTML = "";
   refs.battleView.appendChild(renderer.domElement);
+  const composer = new EffectComposer(renderer);
+
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+const bloomPass = new UnrealBloomPass(
+  new Vector2(window.innerWidth, window.innerHeight),
+  1.2,  // strength: 発光の強さ
+  0.6,  // radius: にじみの広さ
+  0.2   // threshold: どれくらい明るい部分だけ光らせるか
+);
+
+composer.addPass(bloomPass);
   const magicCircleUi = setupMagicCircleUi(refs.battleView);
 
   const hemiLight = new HemisphereLight(0xbad8ff, 0x5d4430, 1.1);
@@ -828,11 +857,12 @@ function getMaterialDebugText(root, assetName) {
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
 
   const onResize = () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    magicCircleUi?.resizeOverlay();
-  };
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  magicCircleUi?.resizeOverlay();
+};
   window.addEventListener("resize", onResize);
 
 //変更8
@@ -843,7 +873,8 @@ function getMaterialDebugText(root, assetName) {
     mixer.update(delta);
   });
 
-  renderer.render(scene, camera);
+  //renderer.render(scene, camera);
+  composer.render();
   requestAnimationFrame(animate);
 };
 
