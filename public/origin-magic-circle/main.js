@@ -35,7 +35,7 @@ const summonAssetDefaults = {
     scale: 2,
     y: 3.5,
     offsetX: 0,
-    offsetZ: 5,
+    offsetZ: 7,
   },
   "stylized_fire_tornado.glb": {
     scale: 0.01,
