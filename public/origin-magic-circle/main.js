@@ -780,25 +780,127 @@ function updateCustomEffect(root, elapsed, delta) {
 }
 
   if (type === "explosion_burst") {
-    root.rotation.y += delta * 0.9;
-    root.children.forEach((child, index) => {
-      if (child.userData.kind === "shard") {
-        child.position.addScaledVector(child.userData.velocity, delta);
-        child.rotation.x += delta * child.userData.spin.x;
-        child.rotation.y += delta * child.userData.spin.y;
-        child.rotation.z += delta * child.userData.spin.z;
-      } else if (child.userData.kind === "ray") {
-        child.scale.y = 0.85 + Math.sin(elapsed * child.userData.pulse + index) * 0.25;
-      } else if (child.userData.kind === "smoke") {
-        child.position.y += delta * child.userData.rise;
-        child.scale.multiplyScalar(1 + delta * 0.38);
-        child.material.opacity = Math.max(0, child.material.opacity - delta * 0.18);
-      } else if (child.material) {
-        child.material.opacity = 0.55 + Math.sin(elapsed * 11 + index) * 0.25;
+  root.userData.age = (root.userData.age || 0) + delta;
+  const age = root.userData.age;
+
+  // 爆発は短命。1.5秒で自然に消える
+  const totalLife = 1.5;
+
+  root.children.forEach((child) => {
+    const role = child.userData.role;
+
+    if (role === "flash") {
+      // 0.0〜0.25秒：一瞬の白い閃光
+      const t = Math.min(age / 0.25, 1);
+      child.scale.setScalar(0.2 + t * 3.2);
+
+      if (child.material) {
+        child.material.opacity = Math.max(0, 1 - t);
       }
-    });
-    return;
+      return;
+    }
+
+    if (role === "fireCore") {
+      // 0.0〜0.7秒：中心の熱球が膨らんで消える
+      const t = Math.min(age / 0.7, 1);
+      const pulse = 1 + Math.sin(age * 30) * 0.05;
+      child.scale.setScalar((0.35 + t * 1.8) * pulse);
+
+      if (child.material) {
+        child.material.opacity = Math.max(0, 0.9 * (1 - t));
+      }
+      return;
+    }
+
+    if (role === "fireOuter") {
+      // 0.1〜0.9秒：外側の赤い爆炎
+      const t = Math.min(Math.max((age - 0.1) / 0.8, 0), 1);
+      child.scale.setScalar(0.5 + t * 2.4);
+
+      if (child.material) {
+        child.material.opacity = Math.max(0, 0.42 * (1 - t));
+      }
+      return;
+    }
+
+    if (role === "shockwave") {
+      // 0.05〜0.8秒：地面方向へ衝撃波
+      const t = Math.min(Math.max((age - 0.05) / 0.75, 0), 1);
+      child.scale.setScalar(0.4 + t * 4.5);
+
+      if (child.material) {
+        child.material.opacity = Math.max(0, 0.85 * (1 - t));
+      }
+      return;
+    }
+
+    if (role === "ray") {
+      // 0.0〜0.45秒：光線が外側へ走って消える
+      const delay = child.userData.lifeOffset || 0;
+      const t = Math.min(Math.max((age - delay) / 0.45, 0), 1);
+
+      const dir = child.userData.dir || new Vector3(0, 1, 0);
+      const speed = child.userData.speed || 3;
+
+      child.position.copy(dir.clone().multiplyScalar(t * speed));
+      child.scale.setScalar(1 + t * 1.4);
+
+      if (child.material) {
+        child.material.opacity = Math.max(0, 0.9 * (1 - t));
+      }
+      return;
+    }
+
+    if (role === "spark") {
+      // 0.0〜1.1秒：火花が放射状に飛び散る
+      const velocity = child.userData.velocity || new Vector3();
+      const gravity = child.userData.gravity || 1.5;
+
+      child.position.addScaledVector(velocity, delta);
+      velocity.y -= gravity * delta;
+
+      child.rotation.x += delta * 8;
+      child.rotation.y += delta * 6;
+
+      const t = Math.min(age / 1.1, 1);
+      child.scale.setScalar(Math.max(0.15, 1 - t * 0.75));
+
+      if (child.material) {
+        child.material.opacity = Math.max(0, 0.95 * (1 - t));
+      }
+      return;
+    }
+
+    if (role === "smoke") {
+      // 0.25〜1.5秒：煙が遅れて膨らむ
+      const t = Math.min(Math.max((age - 0.25) / 1.25, 0), 1);
+      const dir = child.userData.dir || new Vector3(0, 1, 0);
+      const speed = child.userData.speed || 0.6;
+      const phase = child.userData.phase || 0;
+
+      child.position.addScaledVector(dir, delta * speed);
+      child.position.x += Math.sin(age * 4 + phase) * delta * 0.15;
+      child.position.z += Math.cos(age * 3 + phase) * delta * 0.15;
+
+      child.scale.setScalar(0.4 + t * 2.2);
+
+      if (child.material) {
+        const fadeIn = Math.min(t * 4, 1);
+        const fadeOut = 1 - t;
+        child.material.opacity = Math.max(0, 0.32 * fadeIn * fadeOut);
+      }
+      return;
+    }
+  });
+
+  // 1.5秒後は消す。テスト画面では再表示用に自動リセットしたいなら下の reset を使う
+  if (age >= totalLife) {
+    root.visible = false;
+    root.userData.finished = true;
   }
+
+  return;
+}
 
   if (type === "mist_cloud") {
     root.children.forEach((child, index) => {
@@ -887,43 +989,175 @@ function updateCustomEffect(root, elapsed, delta) {
 
 function createExplosionBurstEffect() {
   const root = new Group();
-  const core = new Mesh(new SphereGeometry(0.58, 28, 18), new MeshBasicMaterial({
-    color: 0xffcc66, transparent: true, opacity: 0.9, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
-  }));
-  root.add(core);
 
-  for (let i = 0; i < 20; i += 1) {
-    const shard = new Mesh(new TetrahedronGeometry(0.08 + Math.random() * 0.11), new MeshBasicMaterial({
-      color: i % 2 === 0 ? 0xffeeaa : 0xff7733, transparent: true, opacity: 0.92, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
-    }));
-    const dir = new Vector3((Math.random() - 0.5) * 2, Math.random() * 1.5 + 0.4, (Math.random() - 0.5) * 2).normalize();
-    shard.userData = { kind: "shard", velocity: dir.multiplyScalar(2.4 + Math.random() * 2), spin: new Vector3(Math.random() * 5, Math.random() * 5, Math.random() * 5) };
-    root.add(shard);
-  }
+  // 爆発の経過時間
+  root.userData.effectType = "explosion_burst";
+  root.userData.age = 0;
+  root.userData.finished = false;
 
-  for (let i = 0; i < 8; i += 1) {
-    const ray = new Mesh(new CylinderGeometry(0.02, 0.1, 2.5, 8, 1, true), new MeshBasicMaterial({
-      color: 0xffaa44, transparent: true, opacity: 0.7, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
-    }));
-    ray.position.y = 0.55;
-    ray.rotation.z = Math.PI * Math.random();
-    ray.rotation.x = Math.PI * (i / 8);
-    ray.userData = { kind: "ray", pulse: 7 + Math.random() * 5 };
+  // 1. 中心閃光：爆発の「ドン！」の核
+  const flash = new Mesh(
+    new SphereGeometry(0.45, 32, 16),
+    makeGlowMaterial(0xffffff, 1)
+  );
+  flash.userData.role = "flash";
+  root.add(flash);
+
+  // 2. 熱球：中心から膨らむオレンジの爆炎
+  const fireCore = new Mesh(
+    new SphereGeometry(0.7, 32, 18),
+    makeGlowMaterial(0xffaa22, 0.85)
+  );
+  fireCore.userData.role = "fireCore";
+  root.add(fireCore);
+
+  // 3. 外側の赤い爆炎
+  const fireOuter = new Mesh(
+    new SphereGeometry(1.0, 32, 18),
+    makeGlowMaterial(0xff3300, 0.38)
+  );
+  fireOuter.userData.role = "fireOuter";
+  root.add(fireOuter);
+
+  // 4. 衝撃波リング：地面・空間に広がる波
+  const shockwave = new Mesh(
+    new RingGeometry(0.25, 0.35, 96),
+    makeGlowMaterial(0xffe6aa, 0.85)
+  );
+  shockwave.rotation.x = -Math.PI / 2;
+  shockwave.userData.role = "shockwave";
+  root.add(shockwave);
+
+  // 5. 放射状の光線：爆発の鋭さ
+  for (let i = 0; i < 18; i += 1) {
+    const rayGeometry = new BufferGeometry();
+
+    const dir = new Vector3(
+      Math.random() - 0.5,
+      Math.random() * 0.8 + 0.1,
+      Math.random() - 0.5
+    ).normalize();
+
+    const length = 0.8 + Math.random() * 1.4;
+
+    rayGeometry.setAttribute(
+      "position",
+      new Float32BufferAttribute([
+        0, 0, 0,
+        dir.x * length,
+        dir.y * length,
+        dir.z * length,
+      ], 3)
+    );
+
+    const ray = new Line(
+      rayGeometry,
+      makeLineMaterial(i % 2 === 0 ? 0xffffff : 0xffcc55, 0.9)
+    );
+
+    ray.userData.role = "ray";
+    ray.userData.dir = dir;
+    ray.userData.speed = 2.5 + Math.random() * 3.5;
+    ray.userData.lifeOffset = Math.random() * 0.15;
+
     root.add(ray);
   }
 
-  for (let i = 0; i < 6; i += 1) {
-    const smoke = new Mesh(new SphereGeometry(0.3 + Math.random() * 0.25, 12, 10), new MeshBasicMaterial({
-      color: 0x665555, transparent: true, opacity: 0.34, depthWrite: false,
-    }));
-    smoke.position.set((Math.random() - 0.5) * 1.8, 0.1 + Math.random() * 0.25, (Math.random() - 0.5) * 1.8);
-    smoke.userData = { kind: "smoke", rise: 0.45 + Math.random() * 0.2 };
+  // 6. 火花・破片：弾け飛ぶ粒
+  for (let i = 0; i < 32; i += 1) {
+    const spark = new Mesh(
+      new SphereGeometry(0.035 + Math.random() * 0.035, 8, 6),
+      makeGlowMaterial(i % 3 === 0 ? 0xffffff : 0xffaa22, 0.95)
+    );
+
+    const dir = new Vector3(
+      Math.random() - 0.5,
+      Math.random() * 0.9,
+      Math.random() - 0.5
+    ).normalize();
+
+    spark.position.copy(dir.clone().multiplyScalar(0.15));
+    spark.userData.role = "spark";
+    spark.userData.velocity = dir.multiplyScalar(2.5 + Math.random() * 4.5);
+    spark.userData.gravity = 1.2 + Math.random() * 0.8;
+
+    root.add(spark);
+  }
+
+  // 7. 煙：遅れて広がる余韻
+  for (let i = 0; i < 14; i += 1) {
+    const smoke = new Mesh(
+      new SphereGeometry(0.22 + Math.random() * 0.22, 12, 8),
+      new MeshBasicMaterial({
+        color: i % 2 === 0 ? 0x555555 : 0x777777,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        toneMapped: false,
+      })
+    );
+
+    const dir = new Vector3(
+      Math.random() - 0.5,
+      Math.random() * 0.6 + 0.2,
+      Math.random() - 0.5
+    ).normalize();
+
+    smoke.position.copy(dir.clone().multiplyScalar(0.2));
+    smoke.userData.role = "smoke";
+    smoke.userData.dir = dir;
+    smoke.userData.speed = 0.45 + Math.random() * 0.6;
+    smoke.userData.phase = Math.random() * Math.PI * 2;
+
     root.add(smoke);
   }
-  root.userData.effectType = "explosion_burst";
-  root.userData.baseScale = 1;
 
   return root;
+}
+
+function resetExplosionBurst(root) {
+  root.userData.age = 0;
+  root.userData.finished = false;
+  root.visible = true;
+
+  root.children.forEach((child) => {
+    child.position.set(0, 0, 0);
+    child.scale.setScalar(1);
+
+    const role = child.userData.role;
+
+    if (role === "flash") {
+      child.scale.setScalar(0.2);
+      if (child.material) child.material.opacity = 1;
+    }
+
+    if (role === "fireCore") {
+      child.scale.setScalar(0.35);
+      if (child.material) child.material.opacity = 0.9;
+    }
+
+    if (role === "fireOuter") {
+      child.scale.setScalar(0.5);
+      if (child.material) child.material.opacity = 0.42;
+    }
+
+    if (role === "shockwave") {
+      child.scale.setScalar(0.4);
+      if (child.material) child.material.opacity = 0.85;
+    }
+
+    if (role === "ray") {
+      if (child.material) child.material.opacity = 0.9;
+    }
+
+    if (role === "spark") {
+      if (child.material) child.material.opacity = 0.95;
+    }
+
+    if (role === "smoke") {
+      if (child.material) child.material.opacity = 0;
+    }
+  });
 }
 
 function createMistCloudEffect() {
@@ -1470,13 +1704,21 @@ function getMaterialDebugText(root, assetName) {
 
 //変更17
     if (isActive) {
-  const defaults = summonAssetDefaults[assetName] || { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 };
+  const defaults = summonAssetDefaults[assetName] || {
+    scale: 1,
+    y: 1.6,
+    offsetX: 0,
+    offsetZ: 0,
+  };
 
   root.scale.setScalar(appliedScale);
   root.position.set(defaults.offsetX || 0, appliedY, defaults.offsetZ || 0);
-
   root.userData.currentScale = appliedScale;
-  
+
+  if (root.userData.effectType === "explosion_burst") {
+    resetExplosionBurst(root);
+  }
+
   showDebug(getMaterialDebugText(root, assetName));
 }
     
