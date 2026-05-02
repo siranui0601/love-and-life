@@ -16,12 +16,37 @@ const refs = {
   page: document.querySelector(".page"),
   battleView: document.getElementById("battleView"),
 };
+
 const summonAssetOptions = [
   "fireball.glb",
   "magic_voxel_skull_flat_shaded.glb",
   "stylized_fire_tornado.glb",
-  "custom_lightning"
+
+  "lightning",
+  "explosion",
+  "smoke_puff",
+  "slash_arc",
+  "dark_orb",
+  "light_orb",
+  "ice_shard",
+  "wind_blade",
+  "ground_spike",
+  "shockwave_ring",
 ];
+
+
+const customEffectNames = new Set([
+  "lightning",
+  "explosion",
+  "smoke_puff",
+  "slash_arc",
+  "dark_orb",
+  "light_orb",
+  "ice_shard",
+  "wind_blade",
+  "ground_spike",
+  "shockwave_ring",
+]);
 
 //変更10
 const summonAssetDefaults = {
@@ -43,9 +68,63 @@ const summonAssetDefaults = {
     offsetX: 0,
     offsetZ: 0,
   },
-  "custom_lightning": {
+  "lightning": {
   scale: 2,
   y: 2,
+  offsetX: 0,
+  offsetZ: 0,
+},
+"explosion": {
+  scale: 1.5,
+  y: 1.6,
+  offsetX: 0,
+  offsetZ: 0,
+},
+"smoke_puff": {
+  scale: 1.5,
+  y: 1.6,
+  offsetX: 0,
+  offsetZ: 0,
+},
+"slash_arc": {
+  scale: 2,
+  y: 2.2,
+  offsetX: 0,
+  offsetZ: 0,
+},
+"dark_orb": {
+  scale: 1.5,
+  y: 2.2,
+  offsetX: 0,
+  offsetZ: 0,
+},
+"light_orb": {
+  scale: 1.5,
+  y: 2.2,
+  offsetX: 0,
+  offsetZ: 0,
+},
+"ice_shard": {
+  scale: 1.5,
+  y: 2.2,
+  offsetX: 0,
+  offsetZ: 0,
+},
+"wind_blade": {
+  scale: 2,
+  y: 2.2,
+  offsetX: 0,
+  offsetZ: 0,
+},
+"ground_spike": {
+  scale: 1.5,
+  y: 0.6,
+  offsetX: 0,
+  offsetZ: 0,
+},
+"shockwave_ring": {
+  scale: 2,
+  y: 0.08,
   offsetX: 0,
   offsetZ: 0,
 },
@@ -515,6 +594,18 @@ const {
   LineBasicMaterial,
   Line,
   Float32BufferAttribute,
+  
+  
+  
+  Mesh,
+SphereGeometry,
+ConeGeometry,
+CylinderGeometry,
+TorusGeometry,
+RingGeometry,
+PlaneGeometry,
+CatmullRomCurve3,
+TubeGeometry,
 } = THREE;
 
 const { GLTFLoader } = GLTF;
@@ -572,11 +663,11 @@ try {
     loader.loadAsync("/3D素材/ancient_character.glb"),
     
     Promise.all(
-      summonAssetOptions.map((assetName) => {
-        if (assetName === "custom_lightning") return null;
-        return loader.loadAsync(`/3D素材/${assetName}`);
-      })
-    )
+  summonAssetOptions.map((assetName) => {
+    if (customEffectNames.has(assetName)) return null;
+    return loader.loadAsync(`/3D素材/${assetName}`);
+  })
+)
     
   ]);
 } catch (e) {
@@ -660,7 +751,7 @@ function applyFireballMaterialFix(root) {
   });
 }
 
-function createCustomLightning() {
+function createLightningEffect() {
   const root = new Group();
 
   const createBolt = (offsetX = 0) => {
@@ -678,10 +769,7 @@ function createCustomLightning() {
       points.push(x, y, z);
     }
 
-    geometry.setAttribute(
-      "position",
-      new Float32BufferAttribute(points, 3)
-    );
+    geometry.setAttribute("position", new Float32BufferAttribute(points, 3));
 
     const material = new LineBasicMaterial({
       color: 0x88ccff,
@@ -699,39 +787,368 @@ function createCustomLightning() {
   root.add(createBolt(-0.25));
   root.add(createBolt(0.25));
 
-  root.userData.isCustomLightning = true;
+  root.userData.effectType = "lightning";
   root.userData.lastUpdate = 0;
 
   return root;
 }
-function updateCustomLightning(root, elapsed) {
-  if (!root.userData.isCustomLightning) return;
 
-  if (elapsed - root.userData.lastUpdate < 0.05) return;
-  root.userData.lastUpdate = elapsed;
+function updateCustomEffect(root, elapsed, delta) {
+  const type = root.userData.effectType;
+  if (!type) return;
 
-  root.children.forEach((line, lineIndex) => {
-    const position = line.geometry.attributes.position;
-    const segmentCount = position.count - 1;
-    const height = 4;
-    const offsetX = lineIndex === 1 ? -0.25 : lineIndex === 2 ? 0.25 : 0;
+  if (type === "lightning") {
+    updateCustomLightning(root, elapsed);
+    return;
+  }
 
-    for (let i = 0; i <= segmentCount; i += 1) {
-      const t = i / segmentCount;
-      const y = height * (1 - t);
-      const x = offsetX + (Math.random() - 0.5) * 0.45;
-      const z = (Math.random() - 0.5) * 0.45;
+  if (type === "explosion") {
+    root.rotation.y += delta * 1.2;
+    const pulse = 1 + Math.sin(elapsed * 8) * 0.08;
+    root.children.forEach((child, index) => {
+      child.scale.setScalar(index === 0 ? pulse : 1.1 + Math.sin(elapsed * 5) * 0.08);
+    });
+    return;
+  }
 
-      position.setXYZ(i, x, y, z);
-    }
+  if (type === "smoke_puff") {
+    root.children.forEach((child, index) => {
+      child.position.y += delta * (0.15 + index * 0.015);
+      child.rotation.y += delta * 0.3;
+      if (child.material) {
+        child.material.opacity = 0.18 + Math.sin(elapsed * 2 + index) * 0.05;
+      }
+    });
+    return;
+  }
 
-    position.needsUpdate = true;
+  if (type === "slash_arc" || type === "wind_blade") {
+    root.rotation.y += delta * 2.5;
+    root.rotation.z += delta * 0.8;
+    return;
+  }
 
-    if (line.material) {
-      line.material.opacity = 0.55 + Math.random() * 0.45;
-    }
-  });
+  if (type === "dark_orb" || type === "light_orb") {
+    root.rotation.y += delta * 1.5;
+    root.rotation.x += delta * 0.35;
+
+    const pulse = 1 + Math.sin(elapsed * 4) * 0.08;
+    root.scale.setScalar(root.userData.currentScale ? root.userData.currentScale * pulse : pulse);
+    return;
+  }
+
+  if (type === "ice_shard") {
+    root.rotation.y += delta * 1.2;
+    root.position.y += Math.sin(elapsed * 3) * 0.002;
+    return;
+  }
+
+  if (type === "ground_spike") {
+    root.children.forEach((child, index) => {
+      child.rotation.y += delta * (0.15 + index * 0.04);
+    });
+    return;
+  }
+
+  if (type === "shockwave_ring") {
+    const s = 1 + (Math.sin(elapsed * 3) + 1) * 0.15;
+    root.children.forEach((child) => {
+      child.scale.setScalar(s);
+      if (child.material) {
+        child.material.opacity = 0.45 + Math.sin(elapsed * 5) * 0.2;
+      }
+    });
+  }
 }
+
+
+
+
+
+function createExplosionEffect() {
+  const root = new Group();
+
+  const core = new Mesh(
+    new SphereGeometry(0.7, 24, 16),
+    new MeshBasicMaterial({
+      color: 0xffaa22,
+      transparent: true,
+      opacity: 0.85,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    })
+  );
+
+  const outer = new Mesh(
+    new SphereGeometry(1.15, 24, 16),
+    new MeshBasicMaterial({
+      color: 0xff3300,
+      transparent: true,
+      opacity: 0.35,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    })
+  );
+
+  root.add(core, outer);
+  root.userData.effectType = "explosion";
+  root.userData.baseScale = 1;
+
+  return root;
+}
+
+function createSmokePuffEffect() {
+  const root = new Group();
+
+  for (let i = 0; i < 7; i += 1) {
+    const puff = new Mesh(
+      new SphereGeometry(0.35 + Math.random() * 0.25, 16, 12),
+      new MeshBasicMaterial({
+        color: 0xdddddd,
+        transparent: true,
+        opacity: 0.25,
+        depthWrite: false,
+      })
+    );
+
+    puff.position.set(
+      (Math.random() - 0.5) * 1.4,
+      Math.random() * 0.8,
+      (Math.random() - 0.5) * 1.4
+    );
+
+    root.add(puff);
+  }
+
+  root.userData.effectType = "smoke_puff";
+  return root;
+}
+
+function createSlashArcEffect() {
+  const root = new Group();
+
+  const geometry = new TorusGeometry(1.2, 0.045, 8, 64, Math.PI * 1.2);
+  const material = new MeshBasicMaterial({
+    color: 0x88ddff,
+    transparent: true,
+    opacity: 0.9,
+    blending: AdditiveBlending,
+    depthWrite: false,
+    side: DoubleSide,
+    toneMapped: false,
+  });
+
+  const slash = new Mesh(geometry, material);
+  slash.rotation.set(Math.PI / 2.4, 0, Math.PI / 6);
+
+  root.add(slash);
+  root.userData.effectType = "slash_arc";
+
+  return root;
+}
+
+function createDarkOrbEffect() {
+  const root = new Group();
+
+  const orb = new Mesh(
+    new SphereGeometry(0.75, 32, 20),
+    new MeshBasicMaterial({
+      color: 0x260033,
+      transparent: true,
+      opacity: 0.9,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    })
+  );
+
+  const ring = new Mesh(
+    new TorusGeometry(1.0, 0.04, 8, 64),
+    new MeshBasicMaterial({
+      color: 0xaa33ff,
+      transparent: true,
+      opacity: 0.85,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    })
+  );
+
+  ring.rotation.x = Math.PI / 2;
+
+  root.add(orb, ring);
+  root.userData.effectType = "dark_orb";
+
+  return root;
+}
+
+function createLightOrbEffect() {
+  const root = new Group();
+
+  const orb = new Mesh(
+    new SphereGeometry(0.75, 32, 20),
+    new MeshBasicMaterial({
+      color: 0xffffcc,
+      transparent: true,
+      opacity: 0.95,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    })
+  );
+
+  const halo = new Mesh(
+    new TorusGeometry(1.05, 0.035, 8, 64),
+    new MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.75,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    })
+  );
+
+  halo.rotation.x = Math.PI / 2;
+
+  root.add(orb, halo);
+  root.userData.effectType = "light_orb";
+
+  return root;
+}
+
+function createIceShardEffect() {
+  const root = new Group();
+
+  const shard = new Mesh(
+    new ConeGeometry(0.35, 2.0, 6),
+    new MeshBasicMaterial({
+      color: 0x99ddff,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      toneMapped: false,
+    })
+  );
+
+  shard.rotation.x = Math.PI / 2;
+
+  const glow = new Mesh(
+    new ConeGeometry(0.45, 2.15, 6),
+    new MeshBasicMaterial({
+      color: 0x66ccff,
+      transparent: true,
+      opacity: 0.25,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    })
+  );
+
+  glow.rotation.x = Math.PI / 2;
+
+  root.add(shard, glow);
+  root.userData.effectType = "ice_shard";
+
+  return root;
+}
+
+function createWindBladeEffect() {
+  const root = new Group();
+
+  const geometry = new TorusGeometry(1.25, 0.035, 8, 64, Math.PI * 1.15);
+  const material = new MeshBasicMaterial({
+    color: 0xccffee,
+    transparent: true,
+    opacity: 0.65,
+    blending: AdditiveBlending,
+    depthWrite: false,
+    side: DoubleSide,
+    toneMapped: false,
+  });
+
+  const blade = new Mesh(geometry, material);
+  blade.scale.set(1.4, 0.55, 1);
+  blade.rotation.set(Math.PI / 2.2, 0, -Math.PI / 8);
+
+  root.add(blade);
+  root.userData.effectType = "wind_blade";
+
+  return root;
+}
+
+function createGroundSpikeEffect() {
+  const root = new Group();
+
+  for (let i = 0; i < 5; i += 1) {
+    const spike = new Mesh(
+      new ConeGeometry(0.25 + Math.random() * 0.12, 1.5 + Math.random() * 0.8, 5),
+      new MeshBasicMaterial({
+        color: 0x8a6a45,
+        transparent: true,
+        opacity: 1,
+        depthWrite: true,
+      })
+    );
+
+    spike.position.set((i - 2) * 0.45, 0.7, (Math.random() - 0.5) * 0.35);
+    spike.rotation.z = (Math.random() - 0.5) * 0.25;
+
+    root.add(spike);
+  }
+
+  root.userData.effectType = "ground_spike";
+
+  return root;
+}
+
+function createShockwaveRingEffect() {
+  const root = new Group();
+
+  const ring = new Mesh(
+    new RingGeometry(0.6, 0.72, 64),
+    new MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.75,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      side: DoubleSide,
+      toneMapped: false,
+    })
+  );
+
+  ring.rotation.x = -Math.PI / 2;
+
+  root.add(ring);
+  root.userData.effectType = "shockwave_ring";
+  root.userData.baseScale = 1;
+
+  return root;
+}
+
+
+
+
+function createCustomEffectByName(assetName) {
+  if (assetName === "lightning") return createLightningEffect();
+  if (assetName === "explosion") return createExplosionEffect();
+  if (assetName === "smoke_puff") return createSmokePuffEffect();
+  if (assetName === "slash_arc") return createSlashArcEffect();
+  if (assetName === "dark_orb") return createDarkOrbEffect();
+  if (assetName === "light_orb") return createLightOrbEffect();
+  if (assetName === "ice_shard") return createIceShardEffect();
+  if (assetName === "wind_blade") return createWindBladeEffect();
+  if (assetName === "ground_spike") return createGroundSpikeEffect();
+  if (assetName === "shockwave_ring") return createShockwaveRingEffect();
+
+  return new Group();
+}
+
+
+
 
   const getHeight = (object3d) => {
     const box = new Box3().setFromObject(object3d);
@@ -799,10 +1216,9 @@ fighterB.position.set(16, fighterYOffset, 0);
     : []
   );
   //const root = gltf.scene.clone(true);
-  const root =
-  assetName === "custom_lightning"
-    ? createCustomLightning()
-    : skeletonClone(gltf.scene);
+  const root = customEffectNames.has(assetName)
+  ? createCustomEffectByName(assetName)
+  : skeletonClone(gltf.scene);
       
   //変更15
   if (assetName === "stylized_fire_tornado.glb") {
@@ -975,6 +1391,8 @@ function getMaterialDebugText(root, assetName) {
   root.scale.setScalar(appliedScale);
   root.position.set(defaults.offsetX || 0, appliedY, defaults.offsetZ || 0);
 
+  root.userData.currentScale = appliedScale;
+  
   showDebug(getMaterialDebugText(root, assetName));
 }
     
@@ -1008,8 +1426,8 @@ const animate = () => {
   });
 
   summonAssetRoots.forEach((root) => {
-    updateCustomLightning(root, elapsed);
-  });
+  updateCustomEffect(root, elapsed, delta);
+});
 
   composer.render();
   requestAnimationFrame(animate);
