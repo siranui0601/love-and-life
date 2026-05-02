@@ -528,27 +528,26 @@ function applyFireTornadoMaterialFix(root) {
   root.traverse((child) => {
     if (!child.isMesh || !child.material) return;
 
-    const mats = Array.isArray(child.material)
+    const materials = Array.isArray(child.material)
       ? child.material
       : [child.material];
 
-    mats.forEach((mat) => {
-      if (mat.map) {
-        mat.map.colorSpace = SRGBColorSpace;
+    materials.forEach((mat) => {
+      // 黒で乗算されているのを白に戻す
+      if (mat.color) {
+        mat.color.set(0xffffff);
       }
 
-      if (mat.emissiveMap) {
-        mat.emissive.set(0xffffff);
-        mat.emissiveIntensity = 2.0;
+      if (mat.map) {
+        mat.map.colorSpace = SRGBColorSpace;
+        mat.map.needsUpdate = true;
       }
 
       mat.transparent = true;
-      mat.depthWrite = false;
       mat.side = DoubleSide;
-
-      // これ重要
-      mat.alphaTest = 0.05;
-
+      mat.depthWrite = false;
+      mat.alphaTest = 0.01;
+      mat.toneMapped = false;
       mat.needsUpdate = true;
     });
   });
