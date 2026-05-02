@@ -23,15 +23,14 @@ const summonAssetOptions = [
   "stylized_fire_tornado.glb",
 
   "lightning",
-  "explosion",
-  "smoke_puff",
-  "slash_arc",
-  "dark_orb",
+  "explosion_burst",
+  "mist_cloud",
+  "energy_slash",
+  "shadow_orb",
   "light_orb",
-  "ice_shard",
-  "wind_blade",
-  "ground_spike",
-  "shockwave_ring",
+  "crystal_shard",
+  "fang_spikes",
+  "simple_ring",
 ];
 
 
@@ -778,7 +777,7 @@ function updateCustomEffect(root, elapsed, delta) {
   return;
 }
 
-  if (type === "explosion") {
+  if (type === "explosion_burst") {
     root.rotation.y += delta * 1.2;
     const pulse = 1 + Math.sin(elapsed * 8) * 0.08;
     root.children.forEach((child, index) => {
@@ -787,7 +786,7 @@ function updateCustomEffect(root, elapsed, delta) {
     return;
   }
 
-  if (type === "smoke_puff") {
+  if (type === "mist_cloud") {
     root.children.forEach((child, index) => {
       child.position.y += delta * (0.15 + index * 0.015);
       child.rotation.y += delta * 0.3;
@@ -798,13 +797,13 @@ function updateCustomEffect(root, elapsed, delta) {
     return;
   }
 
-  if (type === "slash_arc" || type === "wind_blade") {
+  if (type === "energy_slash") {
     root.rotation.y += delta * 2.5;
     root.rotation.z += delta * 0.8;
     return;
   }
 
-  if (type === "dark_orb" || type === "light_orb") {
+  if (type === "shadow_orb" || type === "light_orb") {
     root.rotation.y += delta * 1.5;
     root.rotation.x += delta * 0.35;
 
@@ -813,20 +812,20 @@ function updateCustomEffect(root, elapsed, delta) {
     return;
   }
 
-  if (type === "ice_shard") {
+  if (type === "crystal_shard") {
     root.rotation.y += delta * 1.2;
     root.position.y += Math.sin(elapsed * 3) * 0.002;
     return;
   }
 
-  if (type === "ground_spike") {
+  if (type === "fang_spikes") {
     root.children.forEach((child, index) => {
       child.rotation.y += delta * (0.15 + index * 0.04);
     });
     return;
   }
 
-  if (type === "shockwave_ring") {
+  if (type === "simple_ring") {
     const s = 1 + (Math.sin(elapsed * 3) + 1) * 0.15;
     root.children.forEach((child) => {
       child.scale.setScalar(s);
@@ -869,7 +868,7 @@ function createExplosionEffect() {
   );
 
   root.add(core, outer);
-  root.userData.effectType = "explosion";
+  root.userData.effectType = "explosion_burst";
   root.userData.baseScale = 1;
 
   return root;
@@ -898,7 +897,7 @@ function createSmokePuffEffect() {
     root.add(puff);
   }
 
-  root.userData.effectType = "smoke_puff";
+  root.userData.effectType = "mist_cloud";
   return root;
 }
 
@@ -955,7 +954,7 @@ function createDarkOrbEffect() {
   ring.rotation.x = Math.PI / 2;
 
   root.add(orb, ring);
-  root.userData.effectType = "dark_orb";
+  root.userData.effectType = "shadow_orb";
 
   return root;
 }
@@ -1050,7 +1049,7 @@ function createWindBladeEffect() {
   blade.rotation.set(Math.PI / 2.2, 0, -Math.PI / 8);
 
   root.add(blade);
-  root.userData.effectType = "wind_blade";
+  root.userData.effectType = "energy_slash";
 
   return root;
 }
@@ -1075,7 +1074,7 @@ function createGroundSpikeEffect() {
     root.add(spike);
   }
 
-  root.userData.effectType = "ground_spike";
+  root.userData.effectType = "fang_spikes";
 
   return root;
 }
@@ -1099,7 +1098,7 @@ function createShockwaveRingEffect() {
   ring.rotation.x = -Math.PI / 2;
 
   root.add(ring);
-  root.userData.effectType = "shockwave_ring";
+  root.userData.effectType = "simple_ring";
   root.userData.baseScale = 1;
 
   return root;
