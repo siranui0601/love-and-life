@@ -1111,11 +1111,11 @@ function createCustomEffectByName(assetName) {
   if (assetName === "lightning") return createLightningEffect();
   if (assetName === "explosion_burst") return createExplosionBurstEffect();
   if (assetName === "mist_cloud") return createMistCloudEffect();
-  if (assetName === "energy_slash") return createEnergySlashEffect();
-  if (assetName === "shadow_orb") return createShadowOrbEffect();
+  if (assetName === "energy_slash") return createSlashArcEffect();
+  if (assetName === "shadow_orb") return createDarkOrbEffect();
   if (assetName === "light_orb") return createLightOrbEffect();
-  if (assetName === "crystal_shard") return createCrystalShardEffect();
-  if (assetName === "fang_spikes") return createFangSpikesEffect();
+  if (assetName === "crystal_shard") return createIceShardEffect();
+  if (assetName === "fang_spikes") return createGroundSpikeEffect();
   if (assetName === "simple_ring") return createSimpleRingEffect();
 
   return new Group();
