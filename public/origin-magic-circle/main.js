@@ -37,15 +37,14 @@ const summonAssetOptions = [
 
 const customEffectNames = new Set([
   "lightning",
-  "explosion",
-  "smoke_puff",
-  "slash_arc",
-  "dark_orb",
+  "explosion_burst",
+  "mist_cloud",
+  "energy_slash",
+  "shadow_orb",
   "light_orb",
-  "ice_shard",
-  "wind_blade",
-  "ground_spike",
-  "shockwave_ring",
+  "crystal_shard",
+  "fang_spikes",
+  "simple_ring",
 ]);
 
 //変更10
@@ -74,60 +73,14 @@ const summonAssetDefaults = {
   offsetX: 0,
   offsetZ: 0,
 },
-"explosion": {
-  scale: 1.5,
-  y: 1.6,
-  offsetX: 0,
-  offsetZ: 0,
-},
-"smoke_puff": {
-  scale: 1.5,
-  y: 1.6,
-  offsetX: 0,
-  offsetZ: 0,
-},
-"slash_arc": {
-  scale: 2,
-  y: 2.2,
-  offsetX: 0,
-  offsetZ: 0,
-},
-"dark_orb": {
-  scale: 1.5,
-  y: 2.2,
-  offsetX: 0,
-  offsetZ: 0,
-},
-"light_orb": {
-  scale: 1.5,
-  y: 2.2,
-  offsetX: 0,
-  offsetZ: 0,
-},
-"ice_shard": {
-  scale: 1.5,
-  y: 2.2,
-  offsetX: 0,
-  offsetZ: 0,
-},
-"wind_blade": {
-  scale: 2,
-  y: 2.2,
-  offsetX: 0,
-  offsetZ: 0,
-},
-"ground_spike": {
-  scale: 1.5,
-  y: 0.6,
-  offsetX: 0,
-  offsetZ: 0,
-},
-"shockwave_ring": {
-  scale: 2,
-  y: 0.08,
-  offsetX: 0,
-  offsetZ: 0,
-},
+"explosion_burst": { scale: 2, y: 1.8, offsetX: 0, offsetZ: 0 },
+"mist_cloud": { scale: 2, y: 1.5, offsetX: 0, offsetZ: 0 },
+"energy_slash": { scale: 2.5, y: 2.2, offsetX: 0, offsetZ: 0 },
+"shadow_orb": { scale: 1.8, y: 2.2, offsetX: 0, offsetZ: 0 },
+"light_orb": { scale: 1.5, y: 2.2, offsetX: 0, offsetZ: 0 },
+"crystal_shard": { scale: 1.6, y: 2.2, offsetX: 0, offsetZ: 0 },
+"fang_spikes": { scale: 2, y: 0.2, offsetX: 0, offsetZ: 0 },
+"simple_ring": { scale: 2, y: 2.5, offsetX: 0, offsetZ: 0 },
 };
 
 //変更14
@@ -1157,19 +1110,17 @@ function createShockwaveRingEffect() {
 
 function createCustomEffectByName(assetName) {
   if (assetName === "lightning") return createLightningEffect();
-  if (assetName === "explosion") return createExplosionEffect();
-  if (assetName === "smoke_puff") return createSmokePuffEffect();
-  if (assetName === "slash_arc") return createSlashArcEffect();
-  if (assetName === "dark_orb") return createDarkOrbEffect();
+  if (assetName === "explosion_burst") return createExplosionBurstEffect();
+  if (assetName === "mist_cloud") return createMistCloudEffect();
+  if (assetName === "energy_slash") return createEnergySlashEffect();
+  if (assetName === "shadow_orb") return createShadowOrbEffect();
   if (assetName === "light_orb") return createLightOrbEffect();
-  if (assetName === "ice_shard") return createIceShardEffect();
-  if (assetName === "wind_blade") return createWindBladeEffect();
-  if (assetName === "ground_spike") return createGroundSpikeEffect();
-  if (assetName === "shockwave_ring") return createShockwaveRingEffect();
+  if (assetName === "crystal_shard") return createCrystalShardEffect();
+  if (assetName === "fang_spikes") return createFangSpikesEffect();
+  if (assetName === "simple_ring") return createSimpleRingEffect();
 
   return new Group();
 }
-
 
 
 
