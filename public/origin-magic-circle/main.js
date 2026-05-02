@@ -28,14 +28,20 @@ const summonAssetDefaults = {
   "fireball.glb": {
     scale: 2,
     y: 1.6,
+    offsetX: 0,
+    offsetZ: 0,
   },
   "magic_voxel_skull_flat_shaded.glb": {
-    scale: 0.01,
-    y: 1.6,
+    scale: 2,
+    y: 3,
+    offsetX: 0.6,
+    offsetZ: 0,
   },
   "stylized_fire_tornado.glb": {
     scale: 0.01,
     y: 1.6,
+    offsetX: 0,
+    offsetZ: 0,
   },
 };
 
@@ -803,8 +809,7 @@ if (clip) {
   radioList?.addEventListener("change", () => {
   const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
   const selectedName = checkedAsset?.value || "";
-  const defaults = summonAssetDefaults[selectedName] || { scale: 1, y: 1.6 };
-
+  const defaults = summonAssetDefaults[assetName] || { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 };
   scaleInput.value = defaults.scale;
   yInput.value = defaults.y;
 
@@ -869,11 +874,13 @@ function getMaterialDebugText(root, assetName) {
 
 //変更17
     if (isActive) {
-      root.scale.setScalar(appliedScale);
-      root.position.y = appliedY;
+  const defaults = summonAssetDefaults[assetName] || { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 };
 
-      showDebug(getMaterialDebugText(root, assetName));
-    }
+  root.scale.setScalar(appliedScale);
+  root.position.set(defaults.offsetX || 0, appliedY, defaults.offsetZ || 0);
+
+  showDebug(getMaterialDebugText(root, assetName));
+}
     
     
   });
