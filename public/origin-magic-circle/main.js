@@ -16,6 +16,12 @@ const refs = {
   page: document.querySelector(".page"),
   battleView: document.getElementById("battleView"),
 };
+const summonAssetOptions = [
+  "fireball.glb",
+  "magic_voxel_skull_flat_shaded.glb",
+  "negative_leader.glb",
+  "stylized_fire_tornado.glb",
+];
 
 const user = JSON.parse(localStorage.getItem("currentUser") || "null");
 const username = String(user?.username || "ゲスト");
@@ -430,15 +436,18 @@ const { GLTFLoader } = GLTF;
   scene.add(dirLight);
 
 const loader = new GLTFLoader();
+const summonAssetRoots = new Map();
 
 let wastelandGltf;
 let pedestalGltf;
 let characterGltf;
+let summonAssetGlbList;
 try {
-  [wastelandGltf, pedestalGltf, characterGltf] = await Promise.all([
+  [wastelandGltf, pedestalGltf, characterGltf, summonAssetGlbList] = await Promise.all([
     loader.loadAsync("/3D素材/arid_wasteland.glb"),
     loader.loadAsync("/3D素材/pedestal.glb"),
     loader.loadAsync("/3D素材/ancient_character.glb"),
+    Promise.all(summonAssetOptions.map((assetName) => loader.loadAsync(`/3D素材/${assetName}`))),
   ]);
 } catch (e) {
   console.error("GLB読み込み失敗", e);
@@ -516,6 +525,60 @@ fighterB.position.set(16, fighterYOffset, 0);
   fighterA.lookAt(fighterB.position.clone().add(new Vector3(0, 1.5, 0)));
   fighterB.lookAt(fighterA.position.clone().add(new Vector3(0, 1.5, 0)));
   scene.add(fighterA, fighterB);
+
+  summonAssetGlbList.forEach((gltf, index) => {
+    const assetName = summonAssetOptions[index];
+    const root = gltf.scene.clone(true);
+    root.visible = false;
+    root.position.set(0, 1.6, 0);
+    root.scale.setScalar(1);
+    scene.add(root);
+    summonAssetRoots.set(assetName, root);
+  });
+
+  const topControls = document.createElement("div");
+  topControls.className = "summon-test-controls";
+  topControls.innerHTML = `
+    <div class="summon-test-controls__list"></div>
+    <label class="summon-test-controls__scale">
+      スケール倍率
+      <input type="number" min="0.01" step="0.1" value="1" />
+    </label>
+  `;
+  const radioList = topControls.querySelector(".summon-test-controls__list");
+  const scaleInput = topControls.querySelector("input");
+
+  summonAssetOptions.forEach((assetName, index) => {
+    const label = document.createElement("label");
+    label.className = "summon-test-controls__item";
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = "summonAsset";
+    radio.value = assetName;
+    radio.checked = index === 0;
+    label.append(radio, document.createTextNode(assetName));
+    radioList?.appendChild(label);
+  });
+
+  const applySummonState = () => {
+    const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
+    const selectedName = checkedAsset?.value || "";
+    const scaleValue = Number(scaleInput?.value);
+    const appliedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+
+    summonAssetRoots.forEach((root, assetName) => {
+      const isActive = assetName === selectedName;
+      root.visible = isActive;
+      if (isActive) {
+        root.scale.setScalar(appliedScale);
+      }
+    });
+  };
+
+  topControls.addEventListener("change", applySummonState);
+  scaleInput?.addEventListener("input", applySummonState);
+  refs.battleView.appendChild(topControls);
+  applySummonState();
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
 

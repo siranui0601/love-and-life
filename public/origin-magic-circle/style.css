@@ -180,3 +180,43 @@ h1, h2, h3 { margin-top: 0; }
 .chant-result-modal.hidden {
   display: none;
 }
+
+.summon-test-controls {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10003;
+  background: rgba(16, 16, 24, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+  min-width: min(96vw, 720px);
+}
+
+.summon-test-controls__list {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.summon-test-controls__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.summon-test-controls__scale {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.summon-test-controls__scale input {
+  width: 110px;
+  padding: 4px 8px;
+}
