@@ -505,6 +505,10 @@ try {
 function applyFireTornadoMaterialFix(root) {
   root.traverse((child) => {
     if (!child.isMesh || !child.material) return;
+    
+    //変更14
+    console.log(child.material);
+
 
     const mats = Array.isArray(child.material)
       ? child.material
