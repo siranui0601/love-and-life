@@ -649,6 +649,37 @@ function applyFireballMaterialFix(root) {
   });
 }
 
+function applyLightningMaterialFix(root) {
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const mats = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+
+    mats.forEach((mat) => {
+      if (mat.color) mat.color.set(0xffffff);
+
+      if (mat.emissive) {
+        mat.emissive.set(0x88ccff);
+        mat.emissiveIntensity = 6.0;
+      }
+
+      if (mat.map) {
+        mat.map.colorSpace = SRGBColorSpace;
+        mat.map.needsUpdate = true;
+      }
+
+      mat.transparent = true;
+      mat.opacity = 1;
+      mat.depthWrite = false;
+      mat.alphaTest = 0.01;
+      mat.toneMapped = false;
+      mat.needsUpdate = true;
+    });
+  });
+}
+
   const getHeight = (object3d) => {
     const box = new Box3().setFromObject(object3d);
     return box.max.y - box.min.y;
@@ -757,6 +788,12 @@ fighterB.position.set(16, fighterYOffset, 0);
 if (assetName === "stylized_fire_tornado.glb") {
   applyFireTornadoMaterialFix(root);
 }
+
+if (assetName === "negative_leader.glb") {
+  applyLightningMaterialFix(root);
+}
+
+
   root.position.set(0, 1.6, 0);
   root.scale.setScalar(1);
   scene.add(root);
