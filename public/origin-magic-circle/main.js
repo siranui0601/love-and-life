@@ -840,7 +840,7 @@ function updateCustomEffect(root, elapsed, delta) {
 
 
 
-function createExplosionEffect() {
+function createExplosionBurstEffect() {
   const root = new Group();
 
   const core = new Mesh(
@@ -874,7 +874,7 @@ function createExplosionEffect() {
   return root;
 }
 
-function createSmokePuffEffect() {
+function createMistCloudEffect() {
   const root = new Group();
 
   for (let i = 0; i < 7; i += 1) {
@@ -1079,7 +1079,7 @@ function createGroundSpikeEffect() {
   return root;
 }
 
-function createShockwaveRingEffect() {
+function createSimpleRingEffect() {
   const root = new Group();
 
   const ring = new Mesh(
