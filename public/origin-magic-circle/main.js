@@ -919,7 +919,7 @@ function createSlashArcEffect() {
   slash.rotation.set(Math.PI / 2.4, 0, Math.PI / 6);
 
   root.add(slash);
-  root.userData.effectType = "slash_arc";
+  root.userData.effectType = "energy_slash";
 
   return root;
 }
@@ -1025,7 +1025,7 @@ function createIceShardEffect() {
   glow.rotation.x = Math.PI / 2;
 
   root.add(shard, glow);
-  root.userData.effectType = "ice_shard";
+  root.userData.effectType = "crystal_shard";
 
   return root;
 }
@@ -1191,8 +1191,9 @@ fighterB.position.set(16, fighterYOffset, 0);
   //const root = gltf.scene.clone(true);
   const root = customEffectNames.has(assetName)
   ? createCustomEffectByName(assetName)
-  : skeletonClone(gltf.scene);
-      
+  : skeletonClone(gltf.scene);   
+  
+       
   //変更15
   if (assetName === "stylized_fire_tornado.glb") {
   root.traverse((child) => {
