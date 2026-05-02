@@ -43,6 +43,12 @@ const summonAssetDefaults = {
     offsetX: 0,
     offsetZ: 0,
   },
+  "negative_leader.glb": {
+  scale: 5,
+  y: 3,
+  offsetX: 0,
+  offsetZ: 0,
+},
 };
 
 //変更14
