@@ -34,8 +34,8 @@ const summonAssetDefaults = {
   "magic_voxel_skull_flat_shaded.glb": {
     scale: 2,
     y: 3.5,
-    offsetX: 8,
-    offsetZ: 0,
+    offsetX: 0,
+    offsetZ: 2,
   },
   "stylized_fire_tornado.glb": {
     scale: 0.01,
