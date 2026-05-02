@@ -59,27 +59,6 @@ function showDebug(text) {
   }
   el.textContent += text + "\n";
 }
-if (assetName === "stylized_fire_tornado.glb") {
-  root.traverse((child) => {
-    if (!child.isMesh || !child.material) return;
-
-    const mats = Array.isArray(child.material) ? child.material : [child.material];
-
-    mats.forEach((mat) => {
-      showDebug(JSON.stringify({
-        mesh: child.name,
-        material: mat.name,
-        hasMap: !!mat.map,
-        hasEmissiveMap: !!mat.emissiveMap,
-        hasAlphaMap: !!mat.alphaMap,
-        transparent: mat.transparent,
-        opacity: mat.opacity,
-        color: mat.color?.getHexString?.(),
-        emissive: mat.emissive?.getHexString?.(),
-      }, null, 2));
-    });
-  });
-}
 
 const user = JSON.parse(localStorage.getItem("currentUser") || "null");
 const username = String(user?.username || "ゲスト");
@@ -629,6 +608,32 @@ fighterB.position.set(16, fighterYOffset, 0);
   summonAssetGlbList.forEach((gltf, index) => {
   const assetName = summonAssetOptions[index];
   const root = gltf.scene.clone(true);
+  
+  //変更15
+  if (assetName === "stylized_fire_tornado.glb") {
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const mats = Array.isArray(child.material) ? child.material : [child.material];
+
+    mats.forEach((mat) => {
+      showDebug(JSON.stringify({
+        mesh: child.name,
+        material: mat.name,
+        hasMap: !!mat.map,
+        hasEmissiveMap: !!mat.emissiveMap,
+        hasAlphaMap: !!mat.alphaMap,
+        transparent: mat.transparent,
+        opacity: mat.opacity,
+        color: mat.color?.getHexString?.(),
+        emissive: mat.emissive?.getHexString?.(),
+      }, null, 2));
+    });
+  });
+}
+
+
+
   root.visible = false;
   //変更11
   if (assetName === "stylized_fire_tornado.glb") {
