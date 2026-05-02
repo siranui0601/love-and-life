@@ -798,9 +798,32 @@ function updateCustomEffect(root, elapsed, delta) {
   if (!type) return;
 
   if (type === "lightning") {
-    updateCustomLightning(root, elapsed);
-    return;
-  }
+  if (elapsed - root.userData.lastUpdate < 0.05) return;
+  root.userData.lastUpdate = elapsed;
+
+  root.children.forEach((line, lineIndex) => {
+    const position = line.geometry.attributes.position;
+    const segmentCount = position.count - 1;
+    const height = 4;
+    const offsetX = lineIndex === 1 ? -0.25 : lineIndex === 2 ? 0.25 : 0;
+
+    for (let i = 0; i <= segmentCount; i += 1) {
+      const t = i / segmentCount;
+      const y = height * (1 - t);
+      const x = offsetX + (Math.random() - 0.5) * 0.45;
+      const z = (Math.random() - 0.5) * 0.45;
+      position.setXYZ(i, x, y, z);
+    }
+
+    position.needsUpdate = true;
+
+    if (line.material) {
+      line.material.opacity = 0.55 + Math.random() * 0.45;
+    }
+  });
+
+  return;
+}
 
   if (type === "explosion") {
     root.rotation.y += delta * 1.2;
@@ -1287,6 +1310,11 @@ if (assetName === "stylized_fire_tornado.glb") {
 });
 
   const topControls = document.createElement("div");
+  topControls.style.maxHeight = "28vh";
+topControls.style.overflowY = "auto";
+topControls.style.maxWidth = "96vw";
+topControls.style.fontSize = "12px";
+topControls.style.padding = "8px";
   topControls.className = "summon-test-controls";
   topControls.innerHTML = `
   <div class="summon-test-controls__list"></div>
@@ -1306,6 +1334,12 @@ if (assetName === "stylized_fire_tornado.glb") {
   const radioList = topControls.querySelector(".summon-test-controls__list");
   const scaleInput = topControls.querySelector(".summon-scale-input");
   const yInput = topControls.querySelector(".summon-y-input");
+
+if (radioList) {
+  radioList.style.display = "flex";
+  radioList.style.flexWrap = "wrap";
+  radioList.style.gap = "6px";
+}
 
   summonAssetOptions.forEach((assetName, index) => {
     const label = document.createElement("label");
