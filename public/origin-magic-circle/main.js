@@ -20,7 +20,7 @@ const summonAssetOptions = [
   "fireball.glb",
   "magic_voxel_skull_flat_shaded.glb",
   "stylized_fire_tornado.glb",
-  "negative_leader.glb"
+  "custom_lightning"
 ];
 
 //変更10
@@ -43,8 +43,8 @@ const summonAssetDefaults = {
     offsetX: 0,
     offsetZ: 0,
   },
-  "negative_leader.glb": {
-  scale: 5,
+  "custom_lightning": {
+  scale: 1,
   y: 3,
   offsetX: 0,
   offsetZ: 0,
@@ -511,6 +511,10 @@ const {
   DoubleSide,
   SRGBColorSpace,
   Vector2,
+  BufferGeometry,
+  LineBasicMaterial,
+  Line,
+  Float32BufferAttribute,
 } = THREE;
 
 const { GLTFLoader } = GLTF;
@@ -566,7 +570,14 @@ try {
     loader.loadAsync("/3D素材/arid_wasteland.glb"),
     loader.loadAsync("/3D素材/pedestal.glb"),
     loader.loadAsync("/3D素材/ancient_character.glb"),
-    Promise.all(summonAssetOptions.map((assetName) => loader.loadAsync(`/3D素材/${assetName}`))),
+    
+    Promise.all(
+      summonAssetOptions.map((assetName) => {
+        if (assetName === "custom_lightning") return null;
+        return loader.loadAsync(`/3D素材/${assetName}`);
+      })
+    )
+    
   ]);
 } catch (e) {
   console.error("GLB読み込み失敗", e);
@@ -649,30 +660,76 @@ function applyFireballMaterialFix(root) {
   });
 }
 
-function applyLightningMaterialFix(root) {
-  root.traverse((child) => {
-    if (!child.isMesh || !child.material) return;
+function createCustomLightning() {
+  const root = new Group();
 
-    const oldMats = Array.isArray(child.material)
-      ? child.material
-      : [child.material];
+  const createBolt = (offsetX = 0) => {
+    const geometry = new BufferGeometry();
+    const points = [];
 
-    const newMats = oldMats.map(() => {
-      const mat = new MeshBasicMaterial({
-        color: 0x99ddff,
-        transparent: true,
-        opacity: 1,
-        side: DoubleSide,
-        depthWrite: false,
-        blending: AdditiveBlending,
-      });
+    const segmentCount = 12;
+    const height = 4;
 
-      mat.toneMapped = false;
-      mat.needsUpdate = true;
-      return mat;
+    for (let i = 0; i <= segmentCount; i += 1) {
+      const t = i / segmentCount;
+      const y = height * (1 - t);
+      const x = offsetX + (Math.random() - 0.5) * 0.35;
+      const z = (Math.random() - 0.5) * 0.35;
+      points.push(x, y, z);
+    }
+
+    geometry.setAttribute(
+      "position",
+      new Float32BufferAttribute(points, 3)
+    );
+
+    const material = new LineBasicMaterial({
+      color: 0x88ccff,
+      transparent: true,
+      opacity: 0.95,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
     });
 
-    child.material = Array.isArray(child.material) ? newMats : newMats[0];
+    return new Line(geometry, material);
+  };
+
+  root.add(createBolt(0));
+  root.add(createBolt(-0.25));
+  root.add(createBolt(0.25));
+
+  root.userData.isCustomLightning = true;
+  root.userData.lastUpdate = 0;
+
+  return root;
+}
+function updateCustomLightning(root, elapsed) {
+  if (!root.userData.isCustomLightning) return;
+
+  if (elapsed - root.userData.lastUpdate < 0.05) return;
+  root.userData.lastUpdate = elapsed;
+
+  root.children.forEach((line, lineIndex) => {
+    const position = line.geometry.attributes.position;
+    const segmentCount = position.count - 1;
+    const height = 4;
+    const offsetX = lineIndex === 1 ? -0.25 : lineIndex === 2 ? 0.25 : 0;
+
+    for (let i = 0; i <= segmentCount; i += 1) {
+      const t = i / segmentCount;
+      const y = height * (1 - t);
+      const x = offsetX + (Math.random() - 0.5) * 0.45;
+      const z = (Math.random() - 0.5) * 0.45;
+
+      position.setXYZ(i, x, y, z);
+    }
+
+    position.needsUpdate = true;
+
+    if (line.material) {
+      line.material.opacity = 0.55 + Math.random() * 0.45;
+    }
   });
 }
 
@@ -731,17 +788,22 @@ fighterB.position.set(16, fighterYOffset, 0);
   const assetName = summonAssetOptions[index];
   
   summonAssetAnimationInfo.set(
-  assetName,
-  gltf.animations.map((clip) => ({
-    name: clip.name,
-    duration: clip.duration,
-    trackCount: clip.tracks.length,
-    trackNames: clip.tracks.slice(0, 10).map((track) => track.name),
-  }))
-);
+    assetName,
+    gltf
+      ? gltf.animations.map((clip) => ({
+          name: clip.name,
+          duration: clip.duration,
+          trackCount: clip.tracks.length,
+          trackNames: clip.tracks.slice(0, 10).map((track) => track.name),
+      }))
+    : []
+  );
   //const root = gltf.scene.clone(true);
-  const root = skeletonClone(gltf.scene);
-  
+  const root =
+  assetName === "custom_lightning"
+    ? createCustomLightning()
+    : skeletonClone(gltf.scene);
+      
   //変更15
   if (assetName === "stylized_fire_tornado.glb") {
   root.traverse((child) => {
@@ -785,31 +847,27 @@ if (assetName === "stylized_fire_tornado.glb") {
   applyFireTornadoMaterialFix(root);
 }
 
-if (assetName === "negative_leader.glb") {
-  applyLightningMaterialFix(root);
-}
-
 
   root.position.set(0, 1.6, 0);
   root.scale.setScalar(1);
   scene.add(root);
   summonAssetRoots.set(assetName, root);
 
-  if (gltf.animations && gltf.animations.length > 0) {
-    const mixer = new AnimationMixer(root);
+  if (gltf && gltf.animations && gltf.animations.length > 0) {
+  const mixer = new AnimationMixer(root);
 
-    const clip =
-  gltf.animations.find((clip) => clip.name === "attack a") ||
-  gltf.animations[0];
+  const clip =
+    gltf.animations.find((clip) => clip.name === "attack a") ||
+    gltf.animations[0];
 
-if (clip) {
-  const action = mixer.clipAction(clip);
-  action.reset();
-  action.play();
-}
-
-    summonAssetMixers.push(mixer);
+  if (clip) {
+    const action = mixer.clipAction(clip);
+    action.reset();
+    action.play();
   }
+
+  summonAssetMixers.push(mixer);
+}
 });
 
   const topControls = document.createElement("div");
@@ -941,14 +999,18 @@ function getMaterialDebugText(root, assetName) {
   window.addEventListener("resize", onResize);
 
 //変更8
-  const animate = () => {
+const animate = () => {
   const delta = clock.getDelta();
+  const elapsed = clock.elapsedTime;
 
   summonAssetMixers.forEach((mixer) => {
     mixer.update(delta);
   });
 
-  //renderer.render(scene, camera);
+  summonAssetRoots.forEach((root) => {
+    updateCustomLightning(root, elapsed);
+  });
+
   composer.render();
   requestAnimationFrame(animate);
 };
