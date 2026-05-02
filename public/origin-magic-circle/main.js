@@ -520,7 +520,7 @@ const bloomPass = new UnrealBloomPass(
   new Vector2(window.innerWidth, window.innerHeight),
   0.6,  // strength: 発光の強さ
   0.3,  // radius: にじみの広さ
-  0.2   // threshold: どれくらい明るい部分だけ光らせるか
+  0.8   // threshold: どれくらい明るい部分だけ光らせるか
 );
 
 composer.addPass(bloomPass);
