@@ -557,14 +557,23 @@ fighterB.position.set(16, fighterYOffset, 0);
   const topControls = document.createElement("div");
   topControls.className = "summon-test-controls";
   topControls.innerHTML = `
-    <div class="summon-test-controls__list"></div>
-    <label class="summon-test-controls__scale">
+  <div class="summon-test-controls__list"></div>
+
+  <div class="summon-test-controls__fields">
+    <label class="summon-test-controls__field">
       スケール倍率
-      <input type="number" min="0.01" step="0.1" value="1" />
+      <input class="summon-scale-input" type="number" min="0.01" step="0.1" value="1" />
     </label>
-  `;
+
+    <label class="summon-test-controls__field">
+      Y高さ
+      <input class="summon-y-input" type="number" step="0.1" value="1.6" />
+    </label>
+  </div>
+`;
   const radioList = topControls.querySelector(".summon-test-controls__list");
-  const scaleInput = topControls.querySelector("input");
+  const scaleInput = topControls.querySelector(".summon-scale-input");
+  const yInput = topControls.querySelector(".summon-y-input");
 
   summonAssetOptions.forEach((assetName, index) => {
     const label = document.createElement("label");
@@ -579,23 +588,29 @@ fighterB.position.set(16, fighterYOffset, 0);
   });
 
   const applySummonState = () => {
-    const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
-    const selectedName = checkedAsset?.value || "";
-    const scaleValue = Number(scaleInput?.value);
-    const appliedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
+  const selectedName = checkedAsset?.value || "";
 
-    summonAssetRoots.forEach((root, assetName) => {
-      const isActive = assetName === selectedName;
-      root.visible = isActive;
-      if (isActive) {
-        root.scale.setScalar(appliedScale);
-      }
-    });
-  };
+  const scaleValue = Number(scaleInput?.value);
+  const appliedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+
+  const yValue = Number(yInput?.value);
+  const appliedY = Number.isFinite(yValue) ? yValue : 1.6;
+
+  summonAssetRoots.forEach((root, assetName) => {
+    const isActive = assetName === selectedName;
+    root.visible = isActive;
+
+    if (isActive) {
+      root.scale.setScalar(appliedScale);
+      root.position.y = appliedY;
+    }
+  });
+};
 
   topControls.addEventListener("change", applySummonState);
   scaleInput?.addEventListener("input", applySummonState);
-  refs.battleView.appendChild(topControls);
+  yInput?.addEventListener("input", applySummonState);  refs.battleView.appendChild(topControls);
   applySummonState();
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
