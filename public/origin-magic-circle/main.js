@@ -466,6 +466,7 @@ try {
       import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/EffectComposer.js"),
       import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/RenderPass.js"),
       import("https://esm.sh/three@0.166.1/examples/jsm/postprocessing/UnrealBloomPass.js"),
+      import("https://esm.sh/three@0.166.1/examples/jsm/utils/SkeletonUtils.js"),
     ]),
   ]);
 } catch (e) {
@@ -478,6 +479,7 @@ const [
   { EffectComposer },
   { RenderPass },
   { UnrealBloomPass },
+  { clone: skeletonClone },
 ] = POST;
 
 const {
@@ -698,7 +700,8 @@ fighterB.position.set(16, fighterYOffset, 0);
     trackNames: clip.tracks.slice(0, 10).map((track) => track.name),
   }))
 );
-  const root = gltf.scene.clone(true);
+  //const root = gltf.scene.clone(true);
+  const root = skeletonClone(gltf.scene);
   
   //変更15
   if (assetName === "stylized_fire_tornado.glb") {
