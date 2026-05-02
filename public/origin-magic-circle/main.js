@@ -452,8 +452,7 @@ async function startThreeBattleScene() {
   refs.page?.classList.add("hidden");
   refs.battleView?.classList.remove("hidden");
 
-  let THREE;
-let GLTF;
+
 
 let THREE;
 let GLTF;
