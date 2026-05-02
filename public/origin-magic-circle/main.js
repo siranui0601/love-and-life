@@ -547,7 +547,7 @@ function applyFireTornadoMaterialFix(root) {
       mat.side = DoubleSide;
       mat.depthWrite = true;//お試し
       mat.alphaTest = 0.01;
-      mat.toneMapped = false;
+      mat.toneMapped = true;//お試し
       mat.needsUpdate = true;
     });
   });
