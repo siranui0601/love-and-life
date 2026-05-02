@@ -220,3 +220,10 @@ h1, h2, h3 { margin-top: 0; }
   width: 110px;
   padding: 4px 8px;
 }
+
+
+.summon-test-controls input,
+.summon-test-controls select,
+.summon-test-controls button {
+  font-size: 16px;
+}
