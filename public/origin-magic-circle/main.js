@@ -20,6 +20,7 @@ const summonAssetOptions = [
   "fireball.glb",
   "magic_voxel_skull_flat_shaded.glb",
   "stylized_fire_tornado.glb",
+  "negative_leader.glb"
 ];
 
 //変更10
@@ -634,10 +635,10 @@ fighterB.position.set(16, fighterYOffset, 0);
 
 
   root.visible = false;
-  //変更11
-  if (assetName === "stylized_fire_tornado.glb" || assetName === "fireball.glb") {
+  //変更15
+  //if (assetName === "stylized_fire_tornado.glb" || assetName === "fireball.glb") {
     applyFireTornadoMaterialFix(root);
-  }
+ // }
   root.position.set(0, 1.6, 0);
   root.scale.setScalar(1);
   scene.add(root);
