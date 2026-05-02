@@ -750,10 +750,15 @@ if (assetName === "stylized_fire_tornado.glb") {
   if (gltf.animations && gltf.animations.length > 0) {
     const mixer = new AnimationMixer(root);
 
-    gltf.animations.forEach((clip) => {
-      const action = mixer.clipAction(clip);
-      action.play();
-    });
+    const clip =
+  gltf.animations.find((clip) => clip.name === "attack a") ||
+  gltf.animations[0];
+
+if (clip) {
+  const action = mixer.clipAction(clip);
+  action.reset();
+  action.play();
+}
 
     summonAssetMixers.push(mixer);
   }
