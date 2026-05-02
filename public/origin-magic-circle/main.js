@@ -511,27 +511,21 @@ function applyFireTornadoMaterialFix(root) {
       : [child.material];
 
     const fixedMaterials = materials.map((oldMaterial) => {
-      const map = oldMaterial.map || null;
+      const fixed = oldMaterial.clone();
 
-      if (map) {
-        map.colorSpace = SRGBColorSpace;
-        map.needsUpdate = true;
+      if (fixed.map) {
+        fixed.map.colorSpace = SRGBColorSpace;
+        fixed.map.needsUpdate = true;
       }
 
-      const fixedMaterial = new MeshBasicMaterial({
-        map,
-        color: 0xff7a00,
-        transparent: true,
-        opacity: 1,
-        side: DoubleSide,
-        depthWrite: false,
-        blending: AdditiveBlending,
-      });
+      fixed.transparent = true;
+      fixed.side = DoubleSide;
+      fixed.depthWrite = false;
+      fixed.blending = AdditiveBlending;
+      fixed.toneMapped = false;
+      fixed.needsUpdate = true;
 
-      fixedMaterial.toneMapped = false;
-      fixedMaterial.needsUpdate = true;
-
-      return fixedMaterial;
+      return fixed;
     });
 
     child.material = Array.isArray(child.material)
@@ -596,9 +590,9 @@ fighterB.position.set(16, fighterYOffset, 0);
   const root = gltf.scene.clone(true);
   root.visible = false;
   //変更11
-  //if (assetName === "stylized_fire_tornado.glb") {
-    //applyFireTornadoMaterialFix(root);
-  //}
+  if (assetName === "stylized_fire_tornado.glb") {
+    applyFireTornadoMaterialFix(root);
+  }
   root.position.set(0, 1.6, 0);
   root.scale.setScalar(1);
   scene.add(root);
