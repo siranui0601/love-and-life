@@ -412,6 +412,8 @@ const {
   Group,
   Box3,
   Vector3,
+  AnimationMixer,
+  Clock,
 } = THREE;
 
 const { GLTFLoader } = GLTF;
@@ -437,6 +439,10 @@ const { GLTFLoader } = GLTF;
 
 const loader = new GLTFLoader();
 const summonAssetRoots = new Map();
+
+//変更6
+const summonAssetMixers = [];
+const clock = new Clock();
 
 let wastelandGltf;
 let pedestalGltf;
@@ -526,15 +532,27 @@ fighterB.position.set(16, fighterYOffset, 0);
   fighterB.lookAt(fighterA.position.clone().add(new Vector3(0, 1.5, 0)));
   scene.add(fighterA, fighterB);
 
+//変更7
   summonAssetGlbList.forEach((gltf, index) => {
-    const assetName = summonAssetOptions[index];
-    const root = gltf.scene.clone(true);
-    root.visible = false;
-    root.position.set(0, 1.6, 0);
-    root.scale.setScalar(1);
-    scene.add(root);
-    summonAssetRoots.set(assetName, root);
-  });
+  const assetName = summonAssetOptions[index];
+  const root = gltf.scene.clone(true);
+  root.visible = false;
+  root.position.set(0, 1.6, 0);
+  root.scale.setScalar(1);
+  scene.add(root);
+  summonAssetRoots.set(assetName, root);
+
+  if (gltf.animations && gltf.animations.length > 0) {
+    const mixer = new AnimationMixer(root);
+
+    gltf.animations.forEach((clip) => {
+      const action = mixer.clipAction(clip);
+      action.play();
+    });
+
+    summonAssetMixers.push(mixer);
+  }
+});
 
   const topControls = document.createElement("div");
   topControls.className = "summon-test-controls";
@@ -590,12 +608,17 @@ fighterB.position.set(16, fighterYOffset, 0);
   };
   window.addEventListener("resize", onResize);
 
+//変更8
   const animate = () => {
-    //回転阻止
-    //tileRoot.rotation.y += 0.0009;
-    renderer.render(scene, camera);
-    requestAnimationFrame(animate);
-  };
+  const delta = clock.getDelta();
+
+  summonAssetMixers.forEach((mixer) => {
+    mixer.update(delta);
+  });
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+};
 
 
   animate();
