@@ -560,6 +560,11 @@ PlaneGeometry,
 TetrahedronGeometry,
 CatmullRomCurve3,
 TubeGeometry,
+
+
+Sprite,
+SpriteMaterial,
+CanvasTexture,
 } = THREE;
 
 const { GLTFLoader } = GLTF;
@@ -758,6 +763,35 @@ function makeGlowMaterial(color, opacity = 1) {
   });
 }
 
+function createFogTexture() {
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+
+  const ctx = canvas.getContext("2d");
+  const gradient = ctx.createRadialGradient(
+    size / 2,
+    size / 2,
+    0,
+    size / 2,
+    size / 2,
+    size / 2
+  );
+
+  gradient.addColorStop(0.0, "rgba(255,255,255,0.55)");
+  gradient.addColorStop(0.35, "rgba(255,255,255,0.28)");
+  gradient.addColorStop(0.7, "rgba(255,255,255,0.08)");
+  gradient.addColorStop(1.0, "rgba(255,255,255,0)");
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  const texture = new CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
 function makeLineMaterial(color, opacity = 1) {
   return new LineBasicMaterial({
     color,
@@ -924,21 +958,45 @@ function updateCustomEffect(root, elapsed, delta) {
 }
 
   if (type === "mist_cloud") {
-    root.children.forEach((child, index) => {
-      if (child.userData.kind === "warp") {
-        child.rotation.z += delta * child.userData.rot;
-        child.scale.x = 1 + Math.sin(elapsed * child.userData.freq + index) * 0.18;
-        child.scale.y = 1 + Math.cos(elapsed * child.userData.freq * 1.3 + index) * 0.18;
-      } else {
-        child.position.y += delta * (0.12 + index * 0.01);
-        child.rotation.y += delta * 0.26;
-      }
-      if (child.material) {
-        child.material.opacity = 0.2 + Math.sin(elapsed * 2.8 + index) * 0.08;
-      }
-    });
-    return;
-  }
+  root.rotation.y += delta * 0.05;
+
+  root.children.forEach((child, index) => {
+    const phase = child.userData.phase || 0;
+    const speed = child.userData.driftSpeed || 0.3;
+    const floatRange = child.userData.floatRange || 0.1;
+
+    const baseX = child.userData.baseX || 0;
+    const baseY = child.userData.baseY || 0;
+    const baseZ = child.userData.baseZ || 0;
+
+    // 上に登って消えるのではなく、その場でゆっくり漂わせる
+    child.position.x = baseX + Math.sin(elapsed * speed + phase) * 0.25;
+    child.position.y = baseY + Math.sin(elapsed * speed * 0.8 + phase) * floatRange;
+    child.position.z = baseZ + Math.cos(elapsed * speed + phase) * 0.25;
+
+    const breath = 1 + Math.sin(elapsed * 1.2 + phase) * 0.06;
+    const baseScale = child.userData.baseScale || 1;
+
+    if (!child.userData.initialScaleX) {
+      child.userData.initialScaleX = child.scale.x;
+      child.userData.initialScaleY = child.scale.y;
+    }
+
+    child.scale.set(
+      child.userData.initialScaleX * breath,
+      child.userData.initialScaleY * breath,
+      1
+    );
+
+    if (child.material) {
+      const baseOpacity = child.userData.baseOpacity || 0.2;
+      child.material.opacity =
+        baseOpacity + Math.sin(elapsed * 1.5 + index) * 0.035;
+    }
+  });
+
+  return;
+}
 
   if (type === "energy_slash") {
     root.rotation.y += delta * 3.8;
@@ -1183,38 +1241,85 @@ function resetExplosionBurst(root) {
 
 function createMistCloudEffect() {
   const root = new Group();
-
-  for (let i = 0; i < 7; i += 1) {
-    const puff = new Mesh(
-      new SphereGeometry(0.35 + Math.random() * 0.25, 16, 12),
-      new MeshBasicMaterial({
-        color: 0xaab8ff,
-        transparent: true,
-        opacity: 0.28,
-        blending: AdditiveBlending,
-        depthWrite: false,
-        toneMapped: false,
-      })
-    );
-
-    puff.position.set(
-      (Math.random() - 0.5) * 1.4,
-      Math.random() * 0.8,
-      (Math.random() - 0.5) * 1.4
-    );
-
-    root.add(puff);
-  }
-  for (let i = 0; i < 3; i += 1) {
-    const warp = new Mesh(new TorusGeometry(0.6 + i * 0.22, 0.03, 8, 48), new MeshBasicMaterial({
-      color: i % 2 === 0 ? 0xaaffff : 0xc39bff, transparent: true, opacity: 0.3, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
-    }));
-    warp.rotation.set(Math.PI / (3 + i), 0, Math.random() * Math.PI);
-    warp.userData = { kind: "warp", rot: 0.7 + i * 0.25, freq: 2.2 + i };
-    root.add(warp);
-  }
+  const fogTexture = createFogTexture();
 
   root.userData.effectType = "mist_cloud";
+
+  // 広い霧の層
+  for (let i = 0; i < 34; i += 1) {
+    const material = new SpriteMaterial({
+      map: fogTexture,
+      color: i % 3 === 0 ? 0xdde7ff : 0xffffff,
+      transparent: true,
+      opacity: 0.18 + Math.random() * 0.12,
+      depthWrite: false,
+      depthTest: true,
+      blending: NormalBlending,
+      toneMapped: false,
+    });
+
+    const sprite = new Sprite(material);
+
+    const radius = 1.8 + Math.random() * 1.6;
+    const angle = Math.random() * Math.PI * 2;
+
+    sprite.position.set(
+      Math.cos(angle) * radius * Math.random(),
+      0.2 + Math.random() * 1.7,
+      Math.sin(angle) * radius * Math.random()
+    );
+
+    const size = 1.2 + Math.random() * 1.8;
+    sprite.scale.set(size, size, 1);
+
+    sprite.userData.role = "fog_layer";
+    sprite.userData.baseX = sprite.position.x;
+    sprite.userData.baseY = sprite.position.y;
+    sprite.userData.baseZ = sprite.position.z;
+    sprite.userData.baseOpacity = material.opacity;
+    sprite.userData.driftSpeed = 0.25 + Math.random() * 0.45;
+    sprite.userData.phase = Math.random() * Math.PI * 2;
+    sprite.userData.floatRange = 0.08 + Math.random() * 0.18;
+
+    root.add(sprite);
+  }
+
+  // 奥に濃い霧の芯を作る
+  for (let i = 0; i < 8; i += 1) {
+    const material = new SpriteMaterial({
+      map: fogTexture,
+      color: 0xbfc8ff,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false,
+      depthTest: true,
+      blending: AdditiveBlending,
+      toneMapped: false,
+    });
+
+    const sprite = new Sprite(material);
+
+    sprite.position.set(
+      (Math.random() - 0.5) * 1.5,
+      0.7 + Math.random() * 1.2,
+      (Math.random() - 0.5) * 1.5
+    );
+
+    const size = 1.4 + Math.random() * 1.2;
+    sprite.scale.set(size, size, 1);
+
+    sprite.userData.role = "mist_core";
+    sprite.userData.baseX = sprite.position.x;
+    sprite.userData.baseY = sprite.position.y;
+    sprite.userData.baseZ = sprite.position.z;
+    sprite.userData.baseOpacity = material.opacity;
+    sprite.userData.driftSpeed = 0.4 + Math.random() * 0.5;
+    sprite.userData.phase = Math.random() * Math.PI * 2;
+    sprite.userData.floatRange = 0.05 + Math.random() * 0.12;
+
+    root.add(sprite);
+  }
+
   return root;
 }
 
