@@ -194,7 +194,10 @@ const summonAssetSizePresets = {
 };
 
 //変更14
+const ENABLE_ORIGIN_DEBUG = false;
+
 function showDebug(text) {
+  if (!ENABLE_ORIGIN_DEBUG) return;
   let panel = document.getElementById("debugPanel");
 
   if (!panel) {
@@ -331,6 +334,47 @@ function stopRefresh() {
   refreshTimer = null;
 }
 
+
+
+function showMagicNameCenter(magicName) {
+  const old = document.getElementById("magicNameCenterOverlay");
+  if (old) old.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "magicNameCenterOverlay";
+  overlay.textContent = magicName || "無名の魔法";
+
+  overlay.style.position = "fixed";
+  overlay.style.left = "50%";
+  overlay.style.top = "50%";
+  overlay.style.transform = "translate(-50%, -50%)";
+  overlay.style.zIndex = "30000";
+  overlay.style.padding = "18px 28px";
+  overlay.style.borderRadius = "18px";
+  overlay.style.background = "rgba(0, 0, 0, 0.72)";
+  overlay.style.color = "#fff";
+  overlay.style.fontSize = "clamp(24px, 6vw, 56px)";
+  overlay.style.fontWeight = "700";
+  overlay.style.letterSpacing = "0.08em";
+  overlay.style.textAlign = "center";
+  overlay.style.textShadow = "0 0 18px rgba(140, 200, 255, 0.95)";
+  overlay.style.pointerEvents = "none";
+  overlay.style.opacity = "0";
+  overlay.style.transition = "opacity 0.35s ease, transform 0.35s ease";
+
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(() => {
+    overlay.style.opacity = "1";
+    overlay.style.transform = "translate(-50%, -50%) scale(1.04)";
+  });
+
+  setTimeout(() => {
+    overlay.style.opacity = "0";
+    overlay.style.transform = "translate(-50%, -50%) scale(0.96)";
+    setTimeout(() => overlay.remove(), 400);
+  }, 3000);
+}
 
 function setupMagicCircleUi(container, options = {}) {
   const {
@@ -720,6 +764,7 @@ composer.addPass(bloomPass);
   let hasHiddenTopModal = false;
   const magicCircleUi = setupMagicCircleUi(refs.battleView, {
     onMagicJsonReady: (effectJson) => {
+      showMagicNameCenter(effectJson.magicName);
       playMagicVisualEffects(effectJson);
     },
     hideTopModalOnce: () => {
@@ -2648,7 +2693,7 @@ radioList?.addEventListener("change", () => {
   scaleInput.value = preset.scale;
   yInput.value = preset.y;
 
-  applySummonState();
+  //applySummonState();
 });
 
 
@@ -2656,8 +2701,8 @@ radioList?.addEventListener("change", () => {
   scaleInput?.addEventListener("input", applySummonState);
   yInput?.addEventListener("input", applySummonState);
   
-  refs.battleView.appendChild(topControls);
-  applySummonState();
+  //refs.battleView.appendChild(topControls);
+  //applySummonState();
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
 
