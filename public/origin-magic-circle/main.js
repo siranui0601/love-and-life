@@ -60,53 +60,137 @@ const customEffectNames = new Set([
 ]);
 
 //変更10
-const summonAssetDefaults = {
+const summonAssetSizePresets = {
   "fireball.glb": {
-    scale: 2,
-    y: 1.6,
-    offsetX: 0,
-    offsetZ: 0,
+    small: { scale: 1, y: 1.6 },
+    medium: { scale: 2, y: 1.6 },
+    large: { scale: 10, y: 1.6 },
   },
   "magic_voxel_skull_flat_shaded.glb": {
-    scale: 2,
-    y: 3.5,
-    offsetX: 0,
-    offsetZ: 7,
+    small: { scale: 1, y: 1.75, offsetZ: 3.5 },
+    medium: { scale: 2, y: 3.5, offsetZ: 7 },
+    large: { scale: 4, y: 7, offsetZ: 14 },
   },
   "stylized_fire_tornado.glb": {
-    scale: 0.01,
-    y: 1.6,
-    offsetX: 0,
-    offsetZ: 0,
+    small: { scale: 0.005, y: 1.6 },
+    medium: { scale: 0.01, y: 1.6 },
+    large: { scale: 0.03, y: 1.6 },
+  },
+  "phoenix_bird.glb": {
+    small: { scale: 0.002, y: 1.6 },
+    medium: { scale: 0.01, y: 1.6 },
+    large: { scale: 0.03, y: 1.6 },
+  },
+  "truth_about_the_dark_side_of_the_moon.glb": {
+    small: { scale: 1, y: 0.66 },
+    medium: { scale: 3, y: 2 },
+    large: { scale: 9, y: 6 },
+  },
+  "broken_steampunk_clock.glb": {
+    small: { scale: 0.02, y: 4 },
+    medium: { scale: 0.1, y: 4 },
+    large: { scale: 0.15, y: 8 },
+  },
+  "evanescent_plasma.glb": {
+    small: { scale: 1, y: 3 },
+    medium: { scale: 2, y: 3 },
+    large: { scale: 6, y: 3 },
+  },
+  "gun-bot_with_walk_and_idle_animation.glb": {
+    small: { scale: 0.5, y: 1.6 },
+    medium: { scale: 2, y: 1.6 },
+    large: { scale: 4, y: 1.6 },
+  },
+  "soulsucker_-_weaponcraft.glb": {
+    small: { scale: 1, y: 1.6 },
+    medium: { scale: 2, y: 1.6 },
+    large: { scale: 4, y: 1.6 },
+  },
+  "bouquet.glb": {
+    small: { scale: 1.5, y: 1.6 },
+    medium: { scale: 2.5, y: 1.6 },
+    large: { scale: 5, y: 1.6 },
+  },
+  "lance_of_the_primordials_-_dae_weaponcraft.glb": {
+    small: { scale: 150, y: 1.6 },
+    medium: { scale: 300, y: 1.6 },
+    large: { scale: 900, y: 1.6 },
+  },
+  "pearl_electron.glb": {
+    small: { scale: 1, y: 1 },
+    medium: { scale: 2, y: 2 },
+    large: { scale: 4, y: 4 },
+  },
+  "stranger_star.glb": {
+    small: { scale: 1, y: 3 },
+    medium: { scale: 2, y: 3 },
+    large: { scale: 4, y: 3 },
+  },
+  "cube_cascade.glb": {
+    small: { scale: 0.5, y: 0.8 },
+    medium: { scale: 1, y: 1.6 },
+    large: { scale: 2, y: 6.2 },
+  },
+  "cyber_orb.glb": {
+    small: { scale: 0.5, y: 0.8 },
+    medium: { scale: 1, y: 1.6 },
+    large: { scale: 5, y: 8 },
+  },
+  "magic_marble.glb": {
+    small: { scale: 0.75, y: 3 },
+    medium: { scale: 1.5, y: 3 },
+    large: { scale: 3, y: 3 },
+  },
+  "cyber_spore.glb": {
+    small: { scale: 1, y: 1.5 },
+    medium: { scale: 2, y: 3 },
+    large: { scale: 4, y: 6 },
+  },
+  "dark_matter.glb": {
+    small: { scale: 2.5, y: 3 },
+    medium: { scale: 5, y: 3 },
+    large: { scale: 10, y: 3 },
+  },
+  "harlequin_orb.glb": {
+    small: { scale: 0.5, y: 0.8 },
+    medium: { scale: 1, y: 1.6 },
+    large: { scale: 3, y: 4.8 },
+  },
+  "evanescent_smoke.glb": {
+    small: { scale: 1, y: 3 },
+    medium: { scale: 2, y: 5 },
+    large: { scale: 4, y: 6 },
   },
   "lightning": {
-  scale: 2,
-  y: 2,
-  offsetX: 0,
-  offsetZ: 0,
-},
-"explosion_burst": { scale: 2, y: 1.8, offsetX: 0, offsetZ: 0 },
-"mist_cloud": { scale: 2, y: 1.5, offsetX: 0, offsetZ: 0 },
-"light_orb": { scale: 1.5, y: 2.2, offsetX: 0, offsetZ: 0 },
-"crystal_shard": { scale: 1.6, y: 2.2, offsetX: 0, offsetZ: 0 },
-"simple_ring": { scale: 2, y: 2.5, offsetX: 0, offsetZ: 0 },
-"phoenix_bird.glb": { scale: 0.01, y: 1.6, offsetX: 0, offsetZ: 0 },
-"truth_about_the_dark_side_of_the_moon.glb": { scale: 3, y: 2, offsetX: 0, offsetZ: 0 },
-"broken_steampunk_clock.glb": { scale: 0.1, y: 4, offsetX: 0, offsetZ: 0 },
-"evanescent_plasma.glb": { scale: 2, y: 3, offsetX: 0, offsetZ: 0 },
-"bouquet.glb": { scale: 2.5, y: 1.6, offsetX: 0, offsetZ: 0 },
-"lance_of_the_primordials_-_dae_weaponcraft.glb": { scale: 300, y: 1.6, offsetX: 0, offsetZ: 0 },
-"gun-bot_with_walk_and_idle_animation.glb": { scale: 2, y: 1.6, offsetX: 0, offsetZ: 0 },
-"soulsucker_-_weaponcraft.glb": { scale: 2, y: 1.6, offsetX: 0, offsetZ: 0 },
-"pearl_electron.glb": { scale: 2, y: 2, offsetX: 0, offsetZ: 0 },
-"stranger_star.glb": { scale: 2, y: 3, offsetX: 0, offsetZ: 0 },
-"cube_cascade.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
-"cyber_orb.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
-"magic_marble.glb": { scale: 1.5, y: 3, offsetX: 0, offsetZ: 0 },
-"cyber_spore.glb": { scale: 2, y: 3, offsetX: 0, offsetZ: 0 },
-"dark_matter.glb": { scale: 5, y: 3, offsetX: 0, offsetZ: 0 },
-"harlequin_orb.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
-"evanescent_smoke.glb": { scale: 5, y: 2, offsetX: 0, offsetZ: 0 },
+    small: { scale: 1, y: 2 },
+    medium: { scale: 2, y: 2 },
+    large: { scale: 3, y: 2 },
+  },
+  "explosion_burst": {
+    small: { scale: 1, y: 1.8 },
+    medium: { scale: 2, y: 1.8 },
+    large: { scale: 10, y: 1.8 },
+  },
+  "mist_cloud": {
+    small: { scale: 1, y: 1.5 },
+    medium: { scale: 2, y: 1.5 },
+    large: { scale: 4, y: 1.5 },
+  },
+  "light_orb": {
+    small: { scale: 0.75, y: 2.2 },
+    medium: { scale: 1.5, y: 2.2 },
+    large: { scale: 6, y: 7 },
+  },
+  "crystal_shard": {
+    small: { scale: 0.8, y: 2.2 },
+    medium: { scale: 1.6, y: 2.2 },
+    large: { scale: 6.4, y: 3.5 },
+  },
+  "simple_ring": {
+    small: { scale: 1, y: 2.5 },
+    medium: { scale: 2, y: 2.5 },
+    large: { scale: 5, y: 2.5 },
+  },
 };
 
 //変更14
