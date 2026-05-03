@@ -94,12 +94,11 @@ const summonAssetDefaults = {
 "truth_about_the_dark_side_of_the_moon.glb": { scale: 3, y: 2, offsetX: 0, offsetZ: 0 },
 "broken_steampunk_clock.glb": { scale: 0.1, y: 4, offsetX: 0, offsetZ: 0 },
 "evanescent_plasma.glb": { scale: 2, y: 3, offsetX: 0, offsetZ: 0 },
-"gun-bot_with_walk_and_idle_animation.glb": { scale: 2, y: 1.6, offsetX: 0, offsetZ: 0 },
-"soulsucker_-_weaponcraft.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
 "bouquet.glb": { scale: 2.5, y: 1.6, offsetX: 0, offsetZ: 0 },
 "lance_of_the_primordials_-_dae_weaponcraft.glb": { scale: 300, y: 1.6, offsetX: 0, offsetZ: 0 },
-"dragon_koi.glb": { scale: 5, y: 5, offsetX: 0, offsetZ: 0 },
-"pearl_electron.glb": { scale: 2, y: 2, offsetX: 0, offsetZ: 0 },
+"gun-bot_with_walk_and_idle_animation.glb": { scale: 2, y: 1.6, offsetX: 0, offsetZ: 0 },
+"soulsucker_-_weaponcraft.glb": { scale: 2, y: 1.6, offsetX: 0, offsetZ: 0 },
+"dragon_koi.glb": { scale: 1, y: 5, offsetX: 0, offsetZ: 0 },"pearl_electron.glb": { scale: 2, y: 2, offsetX: 0, offsetZ: 0 },
 "stranger_star.glb": { scale: 2, y: 3, offsetX: 0, offsetZ: 0 },
 "cube_cascade.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
 "cyber_orb.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
@@ -793,14 +792,55 @@ function applyGlbEffectVisibilityFix(root) {
   });
 }
 
+function applySoftEffectMaterialFix(root) {
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const mats = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+
+    mats.forEach((mat) => {
+      if (mat.map) {
+        mat.map.colorSpace = SRGBColorSpace;
+        mat.map.needsUpdate = true;
+      }
+
+      mat.transparent = true;
+      mat.depthWrite = false;
+      mat.side = DoubleSide;
+
+      // 元気玉化の主原因。Bloomに拾われすぎないよう戻す
+      mat.toneMapped = true;
+
+      // 白飛びしやすい加算表現を避ける
+      mat.blending = NormalBlending;
+
+      if (mat.emissive) {
+        mat.emissive.set(0x000000);
+        mat.emissiveIntensity = 0;
+      }
+
+      // alphaTestが高すぎる素材はエフェクトが欠けるので少し下げる
+      if (typeof mat.alphaTest === "number" && mat.alphaTest > 0.5) {
+        mat.alphaTest = 0.15;
+      }
+
+      mat.needsUpdate = true;
+    });
+  });
+}
+
 function applyAssetSpecificTransform(root, assetName) {
   if (assetName === "broken_steampunk_clock.glb") {
-    // z向き → x向き
     root.rotation.y = Math.PI / 2;
   }
 
+  if (assetName === "gun-bot_with_walk_and_idle_animation.glb") {
+    root.rotation.y = Math.PI;
+  }
+
   if (assetName === "soulsucker_-_weaponcraft.glb") {
-    // y向き → x向き
     root.rotation.z = -Math.PI / 2;
   }
 }
@@ -808,19 +848,26 @@ function applyAssetSpecificTransform(root, assetName) {
 function applyAssetSpecificMaterialFix(root, assetName) {
   applyCommonGlbMaterialFix(root);
 
-  const effectHeavyAssets = new Set([
-    "dragon_koi.glb",
-    "stranger_star.glb",
+  const strongBloomAssets = new Set([
+    "evanescent_plasma.glb",
+    "cyber_spore.glb",
     "dark_matter.glb",
     "evanescent_smoke.glb",
-    "evanescent_plasma.glb",
+  ]);
+
+  const softEffectAssets = new Set([
+    "dragon_koi.glb",
     "pearl_electron.glb",
-    "cyber_spore.glb",
+    "stranger_star.glb",
     "magic_marble.glb",
   ]);
 
-  if (effectHeavyAssets.has(assetName)) {
+  if (strongBloomAssets.has(assetName)) {
     applyGlbEffectVisibilityFix(root);
+  }
+
+  if (softEffectAssets.has(assetName)) {
+    applySoftEffectMaterialFix(root);
   }
 }
 
