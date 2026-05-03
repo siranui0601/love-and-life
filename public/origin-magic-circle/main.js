@@ -1089,78 +1089,7 @@ function updateCustomEffect(root, elapsed, delta) {
   return;
 }
 
-    if (role === "slash_core") {
-      if (child.material) {
-        child.material.opacity = 0.78 + Math.sin(elapsed * 3.2) * 0.12;
-      }
-      return;
-    }
-
-    if (role === "slash_glow") {
-      const pulse = 1 + Math.sin(elapsed * 2.1) * 0.035;
-      child.scale.set(1.55 * pulse, 0.42 * pulse, 1);
-
-      if (child.material) {
-        child.material.opacity = 0.18 + Math.sin(elapsed * 2.6) * 0.05;
-      }
-      return;
-    }
-
-    if (role === "slash_wave" || role === "slash_trail") {
-      // 0〜1で端から端へ移動。少し止まってからまた走る。
-      const speed = child.userData.speed || 1;
-      const delay = child.userData.delay || 0;
-      const local = (elapsed * speed + delay) % 2.4;
-
-      // 1.0秒だけ表示して、残りは消える＝不定期っぽい
-      if (local > 1.0) {
-        child.visible = false;
-        return;
-      }
-
-      child.visible = true;
-
-      const t = local / 1.0;
-
-      // 三日月の弧上の位置
-      const startAngle = -Math.PI * 0.95;
-      const endAngle = Math.PI * 0.15;
-      const angle = startAngle + (endAngle - startAngle) * t;
-
-      // 平べったい楕円弧にする
-      const radiusX = role === "slash_wave" ? 2.15 : 2.05;
-      const radiusY = role === "slash_wave" ? 0.55 : 0.48;
-
-      const waveOffset = Math.sin(t * Math.PI * 8 + elapsed * 10) * 0.035;
-
-      child.position.set(
-        Math.cos(angle) * radiusX,
-        Math.sin(angle) * radiusY + waveOffset,
-        role === "slash_wave" ? 0.08 : -0.02
-      );
-
-      const fadeEdge = Math.sin(t * Math.PI);
-      const flicker = 0.75 + Math.sin(elapsed * 25 + index) * 0.25;
-
-      if (child.material) {
-        child.material.opacity =
-          role === "slash_wave"
-            ? 0.95 * fadeEdge * flicker
-            : 0.45 * fadeEdge;
-      }
-
-      const s =
-        role === "slash_wave"
-          ? 0.8 + fadeEdge * 0.9
-          : 0.5 + fadeEdge * 0.5;
-
-      child.scale.setScalar(s);
-      return;
-    }
-  });
-
-  return;
-}
+    
 
   if (type === "shadow_orb" || type === "light_orb") {
     root.rotation.y += delta * 1.5;
