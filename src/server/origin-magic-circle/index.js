@@ -180,37 +180,7 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
       "startTimeSeconds": 0,
       "visualObjects": [
         {
-          "assetFileName": [
-  "fireball.glb",
-  "magic_voxel_skull_flat_shaded.glb",
-  "stylized_fire_tornado.glb",
-
-  "phoenix_bird.glb",
-  "truth_about_the_dark_side_of_the_moon.glb",
-  "broken_steampunk_clock.glb",
-  "evanescent_plasma.glb",
-  "gun-bot_with_walk_and_idle_animation.glb",
-  "soulsucker_-_weaponcraft.glb",
-  "bouquet.glb",
-  "lance_of_the_primordials_-_dae_weaponcraft.glb",
-
-  "pearl_electron.glb",
-  "stranger_star.glb",
-  "cube_cascade.glb",
-  "cyber_orb.glb",
-  "magic_marble.glb",
-  "cyber_spore.glb",
-  "dark_matter.glb",
-  "harlequin_orb.glb",
-  "evanescent_smoke.glb",
-
-  "lightning",
-  "explosion_burst",
-  "mist_cloud",
-  "light_orb",
-  "crystal_shard",
-  "simple_ring"
-],
+          "assetFileName": ["fireball.glb","magic_voxel_skull_flat_shaded.glb","stylized_fire_tornado.glb","phoenix_bird.glb","truth_about_the_dark_side_of_the_moon.glb","broken_steampunk_clock.glb","evanescent_plasma.glb","gun-bot_with_walk_and_idle_animation.glb","soulsucker_-_weaponcraft.glb","bouquet.glb","lance_of_the_primordials_-_dae_weaponcraft.glb","pearl_electron.glb","stranger_star.glb","cube_cascade.glb","cyber_orb.glb","magic_marble.glb","cyber_spore.glb","dark_matter.glb","harlequin_orb.glb","evanescent_smoke.glb","lightning","explosion_burst","mist_cloud","light_orb","crystal_shard","simple_ring"],
           "objectCount": 1,
           "spawnPosition": ["in_front_of_self","behind_self","above_self","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
           "spawnSpreadPattern": ["none","horizontal_line","vertical_line","circle","random_scatter"],
@@ -245,12 +215,12 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
 - visualObjectsは各timedVisualEffectsにつき1〜3個
 - objectCountは1〜5
 - startTimeSecondsは0〜6
-- lifeTimeSecondsは0.5〜10
-- moveDurationSecondsは0〜10
+- moveDurationSeconds<lifeTimeSeconds<10
 
 - damageTimingsは1〜5個
 - damageWeightの合計は100にする
-- timeSecondsは0〜10
+- timeSecondsは0.5〜10
+- 最後のdamageTimingsのtimeSecondsは8〜10秒にする
 
 - JSON以外は出力しない`,
         },
