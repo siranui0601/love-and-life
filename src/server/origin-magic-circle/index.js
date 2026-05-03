@@ -10,6 +10,22 @@ import {
   updateOriginMagicCircleRoomStatus,
 } from "../../foundation/sheets.js";
 
+
+function extractJsonText(text) {
+  const raw = String(text || "").trim();
+
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenced?.[1]) return fenced[1].trim();
+
+  const firstBrace = raw.indexOf("{");
+  const lastBrace = raw.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    return raw.slice(firstBrace, lastBrace + 1).trim();
+  }
+
+  return raw;
+}
+      
 export function mountOriginMagicCircleRoutes(app) {
   const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
   const routePath = "/オリジン魔法陣";
@@ -241,9 +257,9 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
       ]);
 
       const rawText = String(response.response.text() || "").trim();
-      const magicEffectJson = JSON.parse(rawText);
-      return res.json({ magicEffectJson });
-    } catch (error) {
+      const jsonText = extractJsonText(rawText);
+      const magicEffectJson = JSON.parse(jsonText);
+      return res.json({ magicEffectJson });    } catch (error) {
       console.error("[origin-magic-circle] chant title error:", error);
       return res.status(500).json({ error: "gemini_failed" });
     }
