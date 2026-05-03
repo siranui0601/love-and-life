@@ -30,7 +30,7 @@ const summonAssetOptions = [
   "soulsucker_-_weaponcraft.glb",
   "bouquet.glb",
   "lance_of_the_primordials_-_dae_weaponcraft.glb",
-  "dragon_koi.glb",
+
   "pearl_electron.glb",
   "stranger_star.glb",
   "cube_cascade.glb",
@@ -98,7 +98,7 @@ const summonAssetDefaults = {
 "lance_of_the_primordials_-_dae_weaponcraft.glb": { scale: 300, y: 1.6, offsetX: 0, offsetZ: 0 },
 "gun-bot_with_walk_and_idle_animation.glb": { scale: 2, y: 1.6, offsetX: 0, offsetZ: 0 },
 "soulsucker_-_weaponcraft.glb": { scale: 2, y: 1.6, offsetX: 0, offsetZ: 0 },
-"dragon_koi.glb": { scale: 1, y: 5, offsetX: 0, offsetZ: 0 },"pearl_electron.glb": { scale: 2, y: 2, offsetX: 0, offsetZ: 0 },
+"pearl_electron.glb": { scale: 2, y: 2, offsetX: 0, offsetZ: 0 },
 "stranger_star.glb": { scale: 2, y: 3, offsetX: 0, offsetZ: 0 },
 "cube_cascade.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
 "cyber_orb.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
@@ -856,7 +856,6 @@ function applyAssetSpecificMaterialFix(root, assetName) {
   ]);
 
   const softEffectAssets = new Set([
-    "dragon_koi.glb",
     "pearl_electron.glb",
     "stranger_star.glb",
     "magic_marble.glb",
