@@ -25,11 +25,8 @@ const summonAssetOptions = [
   "lightning",
   "explosion_burst",
   "mist_cloud",
-  "energy_slash",
-  "shadow_orb",
   "light_orb",
   "crystal_shard",
-  "fang_spikes",
   "simple_ring",
 ];
 
@@ -38,11 +35,8 @@ const customEffectNames = new Set([
   "lightning",
   "explosion_burst",
   "mist_cloud",
-  "energy_slash",
-  "shadow_orb",
   "light_orb",
   "crystal_shard",
-  "fang_spikes",
   "simple_ring",
 ]);
 
@@ -74,11 +68,8 @@ const summonAssetDefaults = {
 },
 "explosion_burst": { scale: 2, y: 1.8, offsetX: 0, offsetZ: 0 },
 "mist_cloud": { scale: 2, y: 1.5, offsetX: 0, offsetZ: 0 },
-"energy_slash": { scale: 2.5, y: 2.2, offsetX: 0, offsetZ: 0 },
-"shadow_orb": { scale: 1.8, y: 2.2, offsetX: 0, offsetZ: 0 },
 "light_orb": { scale: 1.5, y: 2.2, offsetX: 0, offsetZ: 0 },
 "crystal_shard": { scale: 1.6, y: 2.2, offsetX: 0, offsetZ: 0 },
-"fang_spikes": { scale: 2, y: 0.2, offsetX: 0, offsetZ: 0 },
 "simple_ring": { scale: 2, y: 2.5, offsetX: 0, offsetZ: 0 },
 };
 
@@ -1032,7 +1023,7 @@ function updateCustomEffect(root, elapsed, delta) {
   return;
 }
 
-  if (type === "energy_slash") {
+  if (type === "wind_blade") {
   root.children.forEach((child, index) => {
     const role = child.userData.role;
 
@@ -1086,13 +1077,10 @@ function updateCustomEffect(root, elapsed, delta) {
 
     
 
-  if (type === "shadow_orb" || type === "light_orb") {
+  if (type === "light_orb") {
     root.rotation.y += delta * 1.5;
     root.rotation.x += delta * 0.35;
     root.children.forEach((child, index) => {
-      if (type === "shadow_orb" && child.userData.kind === "infall") {
-        child.scale.y = 0.75 + Math.sin(elapsed * child.userData.freq + index) * 0.25;
-      }
       if (child.material && child.userData.kind === "mist") {
         child.material.opacity = 0.24 + Math.sin(elapsed * 3 + index) * 0.12;
       }
@@ -1111,16 +1099,6 @@ function updateCustomEffect(root, elapsed, delta) {
         child.rotation.y += delta * 2.4;
         child.material.opacity = 0.45 + Math.sin(elapsed * 10 + index) * 0.22;
       }
-    });
-    return;
-  }
-
-  if (type === "fang_spikes") {
-    root.children.forEach((child, index) => {
-      if (child.userData.kind === "fang") {
-        child.position.y = 0.1 + Math.max(0, Math.sin(elapsed * 4 + child.userData.offset)) * child.userData.rise;
-      }
-      child.rotation.y += delta * (0.4 + index * 0.05);
     });
     return;
   }
@@ -1397,107 +1375,6 @@ function createMistCloudEffect() {
   return root;
 }
 
-function createEnergySlashEffect() {
-  const root = new Group();
-  root.userData.effectType = "energy_slash";
-
-  const crescentTexture = createCrescentSlashTexture();
-
-  const crescent = new Sprite(
-  new SpriteMaterial({
-    map: crescentTexture,
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.9,
-    blending: AdditiveBlending,
-    depthWrite: false,
-    depthTest: true,
-    toneMapped: false,
-    rotation: -Math.PI / 2,
-  })
-);
-
-crescent.userData.role = "crescent_body";
-crescent.scale.set(3.4, 2.1, 1);
-root.add(crescent);
-
-  // 端から端へ走る発光点
-  for (let i = 0; i < 5; i += 1) {
-    const wave = new Sprite(
-      new SpriteMaterial({
-        map: createFogTexture(),
-        color: i % 2 === 0 ? 0xffffff : 0x99eeff,
-        transparent: true,
-        opacity: 0,
-        blending: AdditiveBlending,
-        depthWrite: false,
-        depthTest: true,
-        toneMapped: false,
-      })
-    );
-
-    wave.userData.role = "crescent_wave";
-    wave.userData.delay = i * 0.06;
-    wave.userData.speed = 1.0;
-    wave.scale.set(0.35, 0.35, 1);
-    root.add(wave);
-  }
-
-  return root;
-}
-
-function createDarkOrbEffect() {
-  const root = new Group();
-
-  const orb = new Mesh(
-    new SphereGeometry(0.75, 32, 20),
-    new MeshBasicMaterial({
-      color: 0x09020f,
-      transparent: true,
-      opacity: 0.9,
-      blending: NormalBlending,
-      depthWrite: false,
-      toneMapped: false,
-    })
-  );
-
-  const ring = new Mesh(
-    new TorusGeometry(1.0, 0.04, 8, 64),
-    new MeshBasicMaterial({
-      color: 0xaa33ff,
-      transparent: true,
-      opacity: 0.85,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      toneMapped: false,
-    })
-  );
-
-  ring.rotation.x = Math.PI / 2;
-  root.add(orb, ring);
-  for (let i = 0; i < 5; i += 1) {
-    const mist = new Mesh(new SphereGeometry(0.95 + Math.random() * 0.2, 16, 12), new MeshBasicMaterial({
-      color: 0x6f2aff, transparent: true, opacity: 0.2, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
-    }));
-    mist.scale.set(1.2, 0.5, 1.2);
-    mist.rotation.x = Math.random() * Math.PI;
-    mist.userData = { kind: "mist" };
-    root.add(mist);
-  }
-  for (let i = 0; i < 12; i += 1) {
-    const infall = new Mesh(new CylinderGeometry(0.005, 0.02, 1.2 + Math.random() * 0.8, 5), new MeshBasicMaterial({
-      color: 0xaa88ff, transparent: true, opacity: 0.65, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
-    }));
-    infall.position.set((Math.random() - 0.5) * 2.8, (Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 2.8);
-    infall.lookAt(0, 0, 0);
-    infall.userData = { kind: "infall", freq: 5 + Math.random() * 3 };
-    root.add(infall);
-  }
-  root.userData.effectType = "shadow_orb";
-
-  return root;
-}
-
 function createLightOrbEffect() {
   const root = new Group();
 
@@ -1597,32 +1474,7 @@ function createWindBladeEffect() {
   blade.rotation.set(Math.PI / 2.2, 0, -Math.PI / 8);
 
   root.add(blade);
-  root.userData.effectType = "energy_slash";
-
-  return root;
-}
-
-function createGroundSpikeEffect() {
-  const root = new Group();
-
-  for (let i = 0; i < 8; i += 1) {
-    const spike = new Mesh(
-      new ConeGeometry(0.14 + Math.random() * 0.1, 1.2 + Math.random() * 0.8, 8),
-      new MeshBasicMaterial({
-        color: i % 2 === 0 ? 0xe7d0af : 0xb28c66,
-        transparent: true,
-        opacity: 1,
-        depthWrite: true,
-      })
-    );
-    spike.position.set((i - 3.5) * 0.24, 0.12, (Math.random() - 0.5) * 0.28);
-    spike.rotation.z = -1.05 + Math.random() * 0.16;
-    spike.userData = { kind: "fang", offset: i * 0.45, rise: 0.8 + Math.random() * 0.7 };
-
-    root.add(spike);
-  }
-
-  root.userData.effectType = "fang_spikes";
+  root.userData.effectType = "wind_blade";
 
   return root;
 }
@@ -1659,11 +1511,8 @@ function createCustomEffectByName(assetName) {
   if (assetName === "lightning") return createLightningEffect();
   if (assetName === "explosion_burst") return createExplosionBurstEffect();
   if (assetName === "mist_cloud") return createMistCloudEffect();
-  if (assetName === "energy_slash") return createEnergySlashEffect();
-  if (assetName === "shadow_orb") return createDarkOrbEffect();
   if (assetName === "light_orb") return createLightOrbEffect();
   if (assetName === "crystal_shard") return createIceShardEffect();
-  if (assetName === "fang_spikes") return createGroundSpikeEffect();
   if (assetName === "simple_ring") return createSimpleRingEffect();
 
   return new Group();
