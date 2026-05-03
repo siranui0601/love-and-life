@@ -1096,7 +1096,7 @@ function updateCustomEffect(root, elapsed, delta) {
     root.position.y += Math.sin(elapsed * 3) * 0.002;
     root.children.forEach((child, index) => {
       if (child.userData.kind === "helix") {
-        child.rotation.y += delta * 2.4;
+        child.rotation.x += delta * 2.4;
         child.material.opacity = 0.45 + Math.sin(elapsed * 10 + index) * 0.22;
       }
     });
