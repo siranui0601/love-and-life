@@ -21,6 +21,30 @@ const summonAssetOptions = [
   "fireball.glb",
   "magic_voxel_skull_flat_shaded.glb",
   "stylized_fire_tornado.glb",
+  "phoenix_bird.glb",
+  "truth_about_the_dark_side_of_the_moon.glb",
+  "sphere_bot.glb",
+  "broken_steampunk_clock.glb",
+  "evanescent_plasma.glb",
+  "gun-bot_with_walk_and_idle_animation.glb",
+  "soulsucker_-_weaponcraft.glb",
+  "bouquet.glb",
+  "lance_of_the_primordials_-_dae_weaponcraft.glb",
+  "dragon_koi.glb",
+  "pearl_electron.glb",
+  "cosmic_cell.glb",
+  "wonderful_world.glb",
+  "quantum_cube.glb",
+  "stranger_star.glb",
+  "cube_cascade.glb",
+  "cyber_orb.glb",
+  "magic_marble.glb",
+  "cyber_spore.glb",
+  "dark_matter.glb",
+  "strangest_star.glb",
+  "harlequin_orb.glb",
+  "evanescent_smoke.glb",
+  "magic_ring.glb",
 
   "lightning",
   "explosion_burst",
@@ -742,6 +766,29 @@ function createLightningEffect() {
 
   return root;
 }
+function getPreferredAnimationClip(assetName, animations = []) {
+  if (!animations.length) return null;
+
+  if (assetName === "sphere_bot.glb") {
+    const sphereBotPriority = [
+      "05_Sphere_bot_WalkCycle",
+      "02_Sphere_bot_Run_Cycle",
+      "01_Sphere_bot_Roll",
+      "04_Sphere_bot_Attack",
+      "03_Sphere_bot_Open",
+      "06_Sphere_bot_Run_Attack",
+      "07_Sphere_bot_Jump",
+    ];
+
+    for (const clipName of sphereBotPriority) {
+      const clip = animations.find((item) => item.name === clipName);
+      if (clip) return clip;
+    }
+  }
+
+  return animations.find((clip) => clip.name === "attack a") || animations[0] || null;
+}
+
 function makeGlowMaterial(color, opacity = 1) {
   return new MeshBasicMaterial({
     color,
@@ -1688,9 +1735,7 @@ if (assetName === "stylized_fire_tornado.glb") {
   if (gltf && gltf.animations && gltf.animations.length > 0) {
   const mixer = new AnimationMixer(root);
 
-  const clip =
-    gltf.animations.find((clip) => clip.name === "attack a") ||
-    gltf.animations[0];
+  const clip = getPreferredAnimationClip(assetName, gltf.animations);
 
   if (clip) {
     const action = mixer.clipAction(clip);
