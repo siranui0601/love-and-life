@@ -101,20 +101,26 @@ h1, h2, h3 { margin-top: 0; }
 
 .magic-circle-controls {
   position: fixed;
-  left: 0;
-  width: 100%;
+  bottom: calc(env(safe-area-inset-bottom) + 2dvh);
+  z-index: 10002;
   display: flex;
-  justify-content: space-between;
+  gap: 8px;
   padding: 0 16px;
-  z-index: 10000;
+  pointer-events: none;
 }
 
-/* ←ここが重要 */
-.magic-circle-controls.left,
-.magic-circle-controls.right {
-  bottom: calc(env(safe-area-inset-bottom) + 2dvh);
+.magic-circle-controls.left {
+  left: 0;
+  right: auto;
 }
+
+.magic-circle-controls.right {
+  right: 0;
+  left: auto;
+}
+
 .magic-circle-controls button {
+  pointer-events: auto;
   min-width: 44px;
   height: 44px;
   border: none;
