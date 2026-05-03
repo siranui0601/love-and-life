@@ -596,6 +596,28 @@ export async function removeOriginMagicCircleMember({ roomId, clientId }) {
   };
 }
 
+export async function findOriginMagicCircleSpellCache(base64ImageFile) {
+  const sheets = await getSheetsClient();
+  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:H`;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
+  const rows = res.data.values || [];
+  const key = String(base64ImageFile || "").trim();
+  const idx = rows.findIndex((row) => String(row?.[0] || "").trim() === key);
+  if (idx < 0) return null;
+  const rawJson = String(rows[idx]?.[1] || "").trim();
+  return { rowIndex: idx + 2, base64ImageFile: key, rawJson };
+}
+
+export async function appendOriginMagicCircleSpellCache({ base64ImageFile, rawJson }) {
+  const sheets = await getSheetsClient();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:H2`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [[String(base64ImageFile || ""), String(rawJson || "")]] },
+  });
+}
+
 // ====== 時々文芸部：options用の高速キャッシュ ======
 // ====== 時々文芸部：ツリー用（毎回最新取得・A:D一括） ======
 
