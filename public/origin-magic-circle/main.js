@@ -715,12 +715,23 @@ composer.addPass(bloomPass);
 const loader = new GLTFLoader();
 const summonAssetRoots = new Map();
 
+// 本番魔法演出用：素材の元データ
+const summonAssetSources = new Map();
+
+// 本番魔法演出用：発動中オブジェクト
+const activeMagicObjects = [];
+
+// 本番魔法演出用：発動中GLBアニメーション
+const activeMagicMixers = [];
+
 //変更19
 const summonAssetAnimationInfo = new Map();
 
 //変更6
 const summonAssetMixers = [];
 const clock = new Clock();
+
+
 
 let wastelandGltf;
 let pedestalGltf;
@@ -1890,11 +1901,461 @@ fighterB.position.set(16, fighterYOffset, 0);
   fighterA.lookAt(fighterB.position.clone().add(new Vector3(0, 1.5, 0)));
   fighterB.lookAt(fighterA.position.clone().add(new Vector3(0, 1.5, 0)));
   scene.add(fighterA, fighterB);
+  
+  
+  //大改革
+function clampNumber(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+function getAssetSizePreset(assetName, objectSize = "medium") {
+  const medium = summonAssetSizePresets[assetName]?.medium || {
+    scale: 1,
+    y: 1.6,
+    offsetX: 0,
+    offsetZ: 0,
+  };
+
+  const preset =
+    summonAssetSizePresets[assetName]?.[objectSize] ||
+    medium;
+
+  return {
+    scale: preset.scale ?? medium.scale ?? 1,
+    y: preset.y ?? medium.y ?? 1.6,
+    offsetX: preset.offsetX ?? medium.offsetX ?? 0,
+    offsetZ: preset.offsetZ ?? medium.offsetZ ?? 0,
+  };
+}
+function getBattleActors() {
+  const members = currentRoom?.members || [];
+  const isPlayerTwo = members.findIndex((member) => member.id === userTrackingId) === 1;
+
+  return {
+    self: isPlayerTwo ? fighterB : fighterA,
+    enemy: isPlayerTwo ? fighterA : fighterB,
+  };
+}
+
+function getForwardAndRight(self, enemy) {
+  const forward = new Vector3()
+    .subVectors(enemy.position, self.position)
+    .setY(0)
+    .normalize();
+
+  const right = new Vector3(forward.z, 0, -forward.x).normalize();
+
+  return { forward, right };
+}
+function applySpawnSpread(base, forward, right, objectIndex, objectCount, spreadPattern) {
+  const pos = base.clone();
+
+  if (objectCount <= 1 || spreadPattern === "none") {
+    return pos;
+  }
+
+  const centerIndex = (objectCount - 1) / 2;
+  const n = objectIndex - centerIndex;
+
+  if (spreadPattern === "horizontal_line") {
+    pos.addScaledVector(right, n * 2.4);
+    return pos;
+  }
+
+  if (spreadPattern === "vertical_line") {
+    pos.y += n * 2.0;
+    return pos;
+  }
+
+  if (spreadPattern === "circle") {
+    const radius = 2.5;
+    const angle = (Math.PI * 2 * objectIndex) / objectCount;
+
+    pos.addScaledVector(right, Math.cos(angle) * radius);
+    pos.addScaledVector(forward, Math.sin(angle) * radius);
+    return pos;
+  }
+
+  if (spreadPattern === "random_scatter") {
+    pos.addScaledVector(right, (Math.random() - 0.5) * 5);
+    pos.addScaledVector(forward, (Math.random() - 0.5) * 5);
+    pos.y += (Math.random() - 0.5) * 2;
+    return pos;
+  }
+
+  return pos;
+}
+function getSpawnPositionByName(
+  positionName,
+  assetName,
+  objectSize = "medium",
+  objectIndex = 0,
+  objectCount = 1,
+  spreadPattern = "none"
+) {
+  const { self, enemy } = getBattleActors();
+  const { forward, right } = getForwardAndRight(self, enemy);
+  const preset = getAssetSizePreset(assetName, objectSize);
+
+  const centerPos = new Vector3(0, 0, 0);
+  let base;
+
+  if (positionName === "in_front_of_self") {
+    base = self.position
+      .clone()
+      .addScaledVector(forward, 6)
+      .setY(preset.y);
+  } else if (positionName === "behind_self") {
+    base = self.position
+      .clone()
+      .addScaledVector(forward, -6)
+      .setY(preset.y);
+  } else if (positionName === "above_self") {
+    base = self.position
+      .clone()
+      .setY(preset.y + 6);
+  } else if (positionName === "battlefield_center") {
+    base = centerPos
+      .clone()
+      .setY(preset.y);
+  } else if (positionName === "above_battlefield_center") {
+    base = centerPos
+      .clone()
+      .setY(preset.y + 8);
+  } else if (positionName === "enemy_position") {
+    base = enemy.position
+      .clone()
+      .setY(preset.y);
+  } else if (positionName === "above_enemy") {
+    base = enemy.position
+      .clone()
+      .setY(preset.y + 6);
+  } else {
+    base = centerPos
+      .clone()
+      .setY(preset.y);
+  }
+
+  base.x += preset.offsetX || 0;
+  base.z += preset.offsetZ || 0;
+
+  return applySpawnSpread(
+    base,
+    forward,
+    right,
+    objectIndex,
+    objectCount,
+    spreadPattern
+  );
+}
+function getTargetPositionByName(positionName, assetName, objectSize = "medium") {
+  const { self, enemy } = getBattleActors();
+  const preset = getAssetSizePreset(assetName, objectSize);
+
+  const centerPos = new Vector3(0, 0, 0);
+
+  if (positionName === "self_position") {
+    return self.position.clone().setY(preset.y);
+  }
+
+  if (positionName === "battlefield_center") {
+    return centerPos.clone().setY(preset.y);
+  }
+
+  if (positionName === "above_battlefield_center") {
+    return centerPos.clone().setY(preset.y + 8);
+  }
+
+  if (positionName === "enemy_position") {
+    return enemy.position.clone().setY(preset.y);
+  }
+
+  if (positionName === "above_enemy") {
+    return enemy.position.clone().setY(preset.y + 6);
+  }
+
+  return centerPos.clone().setY(preset.y);
+}
+function createMagicObjectRoot(assetName) {
+  const source = summonAssetSources.get(assetName);
+
+  if (!source) {
+    console.warn("[origin-magic-circle] unknown asset:", assetName);
+    return null;
+  }
+
+  let root;
+
+  if (source.isCustom) {
+    root = createCustomEffectByName(assetName);
+  } else {
+    root = skeletonClone(source.gltf.scene);
+
+    applyAssetSpecificTransform(root, assetName);
+    applyAssetSpecificMaterialFix(root, assetName);
+
+    if (assetName === "fireball.glb") {
+      applyFireballMaterialFix(root);
+    }
+
+    if (assetName === "stylized_fire_tornado.glb") {
+      applyFireTornadoMaterialFix(root);
+    }
+
+    if (source.gltf?.animations?.length > 0) {
+      const mixer = new AnimationMixer(root);
+      const clip = getPreferredAnimationClip(assetName, source.gltf.animations);
+
+      if (clip) {
+        const action = mixer.clipAction(clip);
+        action.reset();
+        action.play();
+      }
+
+      activeMagicMixers.push({
+        root,
+        mixer,
+      });
+    }
+  }
+
+  root.visible = true;
+  return root;
+}
+function getRotationSpeedValue(rotationSpeed) {
+  if (rotationSpeed === "slow") return 0.8;
+  if (rotationSpeed === "normal") return 1.8;
+  if (rotationSpeed === "fast") return 4.0;
+  return 1.8;
+}
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function getPositionOnPath(start, target, t, pathType) {
+  const clamped = Math.max(0, Math.min(t, 1));
+  const eased = easeOutCubic(clamped);
+
+  if (pathType === "fall_from_above") {
+    const highStart = start.clone();
+    highStart.y = Math.max(start.y, target.y + 10);
+    return highStart.lerp(target, eased);
+  }
+
+  if (pathType === "rise_from_below") {
+    const lowStart = start.clone();
+    lowStart.y = Math.min(start.y, target.y - 5);
+    return lowStart.lerp(target, eased);
+  }
+
+  const pos = start.clone().lerp(target, eased);
+
+  if (pathType === "arc") {
+    pos.y += Math.sin(Math.PI * eased) * 5;
+  }
+
+  if (pathType === "orbit") {
+    const radius = Math.max(start.distanceTo(target), 3);
+    const angle = eased * Math.PI * 2;
+
+    pos.x = target.x + Math.cos(angle) * radius * (1 - eased);
+    pos.z = target.z + Math.sin(angle) * radius * (1 - eased);
+    pos.y += Math.sin(Math.PI * eased) * 3;
+  }
+
+  return pos;
+}
+function applyMagicColor(root, colorHexCode) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(String(colorHexCode || ""))) return;
+
+  const color = new Color(colorHexCode);
+
+  root.traverse((child) => {
+    if (!child.material) return;
+
+    const mats = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+
+    mats.forEach((mat) => {
+      if (mat.color) {
+        mat.color.lerp(color, 0.35);
+      }
+
+      if (mat.emissive) {
+        mat.emissive.lerp(color, 0.5);
+      }
+
+      mat.needsUpdate = true;
+    });
+  });
+}
+function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1) {
+  const assetName = visualObject.assetFileName;
+
+  if (!summonAssetOptions.includes(assetName)) {
+    console.warn("[origin-magic-circle] rejected asset:", assetName);
+    return null;
+  }
+
+  const objectSize = visualObject.objectSize || "medium";
+  const preset = getAssetSizePreset(assetName, objectSize);
+
+  const root = createMagicObjectRoot(assetName);
+  if (!root) return null;
+
+  const spawnPosition = getSpawnPositionByName(
+    visualObject.spawnPosition,
+    assetName,
+    objectSize,
+    objectIndex,
+    objectCount,
+    visualObject.spawnSpreadPattern || "none"
+  );
+
+  const movement = visualObject.movement || {};
+  const targetPosition = getTargetPositionByName(
+    movement.targetPosition || "enemy_position",
+    assetName,
+    objectSize
+  );
+
+  root.position.copy(spawnPosition);
+  root.scale.setScalar(preset.scale);
+  root.userData.currentScale = preset.scale;
+
+  applyMagicColor(root, visualObject.colorHexCode);
+
+  if (assetName === "explosion_burst") {
+    resetExplosionBurst(root);
+  }
+
+  scene.add(root);
+
+  const moveDuration = clampNumber(
+    movement.moveDurationSeconds,
+    0,
+    10,
+    0
+  );
+
+  const movePathType = movement.movePathType || "none";
+
+  const active = {
+    root,
+    assetName,
+    startTime: clock.elapsedTime,
+    lifeTime: clampNumber(visualObject.lifeTimeSeconds, 0.5, 10, 3),
+
+    spawnPosition: spawnPosition.clone(),
+    targetPosition: targetPosition.clone(),
+
+    moveDuration,
+    movePathType,
+
+    shouldRotate: !!visualObject.rotation?.shouldRotate,
+    rotationSpeed: getRotationSpeedValue(visualObject.rotation?.rotationSpeed),
+  };
+
+  activeMagicObjects.push(active);
+  return active;
+}
+function playMagicVisualEffects(effectJson) {
+  if (!effectJson || !Array.isArray(effectJson.timedVisualEffects)) {
+    console.warn("[origin-magic-circle] invalid magic effect json:", effectJson);
+    return;
+  }
+
+  effectJson.timedVisualEffects.forEach((timedEffect) => {
+    const delaySeconds = clampNumber(timedEffect.startTimeSeconds, 0, 6, 0);
+
+    setTimeout(() => {
+      const visualObjects = Array.isArray(timedEffect.visualObjects)
+        ? timedEffect.visualObjects
+        : [];
+
+      visualObjects.forEach((visualObject) => {
+        const objectCount = Math.max(
+          1,
+          Math.min(Number(visualObject.objectCount) || 1, 5)
+        );
+
+        for (let i = 0; i < objectCount; i += 1) {
+          spawnMagicVisualObject(visualObject, i, objectCount);
+        }
+      });
+    }, delaySeconds * 1000);
+  });
+}
+function updateActiveMagicObjects(elapsed, delta) {
+  for (let i = activeMagicObjects.length - 1; i >= 0; i -= 1) {
+    const item = activeMagicObjects[i];
+    const age = elapsed - item.startTime;
+
+    updateCustomEffect(item.root, elapsed, delta);
+
+    if (item.assetName === "explosion_burst" && item.root.userData.finished) {
+      removeActiveMagicObject(i);
+      continue;
+    }
+
+    if (age >= item.lifeTime) {
+      removeActiveMagicObject(i);
+      continue;
+    }
+
+    if (item.movePathType !== "none" && item.moveDuration > 0) {
+      const t = age / item.moveDuration;
+      item.root.position.copy(
+        getPositionOnPath(
+          item.spawnPosition,
+          item.targetPosition,
+          t,
+          item.movePathType
+        )
+      );
+    }
+
+    if (item.shouldRotate) {
+      item.root.rotation.y += delta * item.rotationSpeed;
+    }
+  }
+}
+
+function removeActiveMagicObject(index) {
+  const item = activeMagicObjects[index];
+  if (!item) return;
+
+  scene.remove(item.root);
+
+  removeMixerForRoot(item.root);
+  activeMagicObjects.splice(index, 1);
+}
+
+function removeMixerForRoot(root) {
+  for (let i = activeMagicMixers.length - 1; i >= 0; i -= 1) {
+    if (activeMagicMixers[i].root === root) {
+      activeMagicMixers.splice(i, 1);
+    }
+  }
+}
+
 
 //変更7
-  summonAssetGlbList.forEach((gltf, index) => {
+summonAssetGlbList.forEach((gltf, index) => {
   const assetName = summonAssetOptions[index];
-  
+  const isCustom = customEffectNames.has(assetName);
+
+  // 本番魔法演出用：clone元を保存
+  summonAssetSources.set(assetName, {
+    assetName,
+    gltf,
+    isCustom,
+  });
+
+  // デバッグ用：アニメーション情報を保存
   summonAssetAnimationInfo.set(
     assetName,
     gltf
@@ -1903,86 +2364,57 @@ fighterB.position.set(16, fighterYOffset, 0);
           duration: clip.duration,
           trackCount: clip.tracks.length,
           trackNames: clip.tracks.slice(0, 10).map((track) => track.name),
-      }))
-    : []
+        }))
+      : []
   );
-  //const root = gltf.scene.clone(true);
-  const root = customEffectNames.has(assetName)
-  ? createCustomEffectByName(assetName)
-  : skeletonClone(gltf.scene);   
-  
-  
-  
-  if (!customEffectNames.has(assetName)) {
-  applyAssetSpecificTransform(root, assetName);
-  applyAssetSpecificMaterialFix(root, assetName);
-}
 
+  // テスト表示用の1体を作成
+  const root = isCustom
+    ? createCustomEffectByName(assetName)
+    : skeletonClone(gltf.scene);
 
-       
-  //変更15
-  if (assetName === "stylized_fire_tornado.glb") {
-  root.traverse((child) => {
-    if (!child.isMesh || !child.material) return;
+  if (!isCustom) {
+    applyAssetSpecificTransform(root, assetName);
+    applyAssetSpecificMaterialFix(root, assetName);
 
-    const mats = Array.isArray(child.material) ? child.material : [child.material];
+    if (assetName === "fireball.glb") {
+      applyFireballMaterialFix(root);
+    }
 
-    mats.forEach((mat) => {
-      showDebug(JSON.stringify({
-        
-        assetName: assetName,
-    animationCount: gltf.animations.length,
-    animations: gltf.animations,
-    
-    
-    
-    
-        mesh: child.name,
-        material: mat.name,
-        hasMap: !!mat.map,
-        hasEmissiveMap: !!mat.emissiveMap,
-        hasAlphaMap: !!mat.alphaMap,
-        transparent: mat.transparent,
-        opacity: mat.opacity,
-        color: mat.color?.getHexString?.(),
-        emissive: mat.emissive?.getHexString?.(),
-      }, null, 2));
-    });
-  });
-}
-
-
-
-  root.visible = false;
-  //変更15
-  if (assetName === "fireball.glb") {
-    applyFireballMaterialFix(root);
+    if (assetName === "stylized_fire_tornado.glb") {
+      applyFireTornadoMaterialFix(root);
+    }
   }
 
-if (assetName === "stylized_fire_tornado.glb") {
-  applyFireTornadoMaterialFix(root);
-}
+  root.visible = false;
 
+  const mediumPreset = getAssetSizePreset(assetName, "medium");
+  root.position.set(
+    mediumPreset.offsetX || 0,
+    mediumPreset.y,
+    mediumPreset.offsetZ || 0
+  );
+  root.scale.setScalar(mediumPreset.scale);
+  root.userData.currentScale = mediumPreset.scale;
 
-  root.position.set(0, 1.6, 0);
-  root.scale.setScalar(1);
   scene.add(root);
   summonAssetRoots.set(assetName, root);
 
+  // テスト表示用GLBアニメーション
   if (gltf && gltf.animations && gltf.animations.length > 0) {
-  const mixer = new AnimationMixer(root);
+    const mixer = new AnimationMixer(root);
+    const clip = getPreferredAnimationClip(assetName, gltf.animations);
 
-  const clip = getPreferredAnimationClip(assetName, gltf.animations);
+    if (clip) {
+      const action = mixer.clipAction(clip);
+      action.reset();
+      action.play();
+    }
 
-  if (clip) {
-    const action = mixer.clipAction(clip);
-    action.reset();
-    action.play();
+    summonAssetMixers.push(mixer);
   }
-
-  summonAssetMixers.push(mixer);
-}
 });
+  
 
   const topControls = document.createElement("div");
   topControls.style.maxHeight = "28vh";
@@ -2004,11 +2436,21 @@ topControls.style.padding = "8px";
       Y高さ
       <input class="summon-y-input" type="number" step="0.1" value="1.6" />
     </label>
+
+    <button class="magic-effect-test-btn" type="button">魔法演出テスト</button>
   </div>
 `;
   const radioList = topControls.querySelector(".summon-test-controls__list");
   const scaleInput = topControls.querySelector(".summon-scale-input");
   const yInput = topControls.querySelector(".summon-y-input");
+
+  const effectTestBtn = topControls.querySelector(".magic-effect-test-btn");
+
+const initialPreset = getAssetSizePreset("fireball.glb", "medium");
+scaleInput.value = initialPreset.scale;
+yInput.value = initialPreset.y;
+
+
 
 if (radioList) {
   radioList.style.display = "flex";
@@ -2027,15 +2469,6 @@ if (radioList) {
     label.append(radio, document.createTextNode(assetName));
     radioList?.appendChild(label)
   });
-  
-  radioList?.addEventListener("change", () => {
-  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
-  const selectedName = checkedAsset?.value || "";
-  const defaults = summonAssetDefaults[selectedName] || { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 };  scaleInput.value = defaults.scale;
-  yInput.value = defaults.y;
-
-  applySummonState();
-});
 
 
 //変更16
@@ -2077,6 +2510,71 @@ function getMaterialDebugText(root, assetName) {
 }
 
 
+effectTestBtn?.addEventListener("click", () => {
+  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
+  const selectedName = checkedAsset?.value || "fireball.glb";
+
+  playMagicVisualEffects({
+    magicName: "テスト魔法",
+    artScore: 80,
+    timedVisualEffects: [
+      {
+        startTimeSeconds: 0,
+        visualObjects: [
+          {
+            assetFileName: selectedName,
+            objectCount: 3,
+            spawnPosition: "in_front_of_self",
+            spawnSpreadPattern: "horizontal_line",
+            colorHexCode: "#88ccff",
+            objectSize: "medium",
+            lifeTimeSeconds: 4,
+            movement: {
+              targetPosition: "enemy_position",
+              moveDurationSeconds: 2,
+              movePathType: "arc",
+            },
+            rotation: {
+              shouldRotate: true,
+              rotationSpeed: "normal",
+            },
+          },
+        ],
+      },
+      {
+        startTimeSeconds: 2,
+        visualObjects: [
+          {
+            assetFileName: "explosion_burst",
+            objectCount: 1,
+            spawnPosition: "enemy_position",
+            spawnSpreadPattern: "none",
+            colorHexCode: "#ff8844",
+            objectSize: "medium",
+            lifeTimeSeconds: 1.5,
+            movement: {
+              targetPosition: "enemy_position",
+              moveDurationSeconds: 0,
+              movePathType: "none",
+            },
+            rotation: {
+              shouldRotate: false,
+              rotationSpeed: "normal",
+            },
+          },
+        ],
+      },
+    ],
+    damageTimings: [
+      {
+        timeSeconds: 2,
+        damageWeight: 100,
+        target: "enemy",
+      },
+    ],
+  });
+});
+
 
   const applySummonState = () => {
   const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
@@ -2092,34 +2590,43 @@ function getMaterialDebugText(root, assetName) {
     const isActive = assetName === selectedName;
     root.visible = isActive;
 
-
-//変更17
     if (isActive) {
-  const defaults = summonAssetDefaults[assetName] || {
-    scale: 1,
-    y: 1.6,
-    offsetX: 0,
-    offsetZ: 0,
-  };
+      const preset = getAssetSizePreset(assetName, "medium");
 
-  root.scale.setScalar(appliedScale);
-  root.position.set(defaults.offsetX || 0, appliedY, defaults.offsetZ || 0);
-  root.userData.currentScale = appliedScale;
+      root.scale.setScalar(appliedScale);
+      root.position.set(
+        preset.offsetX || 0,
+        appliedY,
+        preset.offsetZ || 0
+      );
+      root.userData.currentScale = appliedScale;
 
-  if (root.userData.effectType === "explosion_burst") {
-    resetExplosionBurst(root);
-  }
+      if (root.userData.effectType === "explosion_burst") {
+        resetExplosionBurst(root);
+      }
 
-  showDebug(getMaterialDebugText(root, assetName));
-}
-    
-    
+      showDebug(getMaterialDebugText(root, assetName));
+    }
   });
 };
 
+radioList?.addEventListener("change", () => {
+  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
+  const selectedName = checkedAsset?.value || "";
+  const preset = getAssetSizePreset(selectedName, "medium");
+
+  scaleInput.value = preset.scale;
+  yInput.value = preset.y;
+
+  applySummonState();
+});
+
+
   topControls.addEventListener("change", applySummonState);
   scaleInput?.addEventListener("input", applySummonState);
-  yInput?.addEventListener("input", applySummonState);  refs.battleView.appendChild(topControls);
+  yInput?.addEventListener("input", applySummonState);
+  
+  refs.battleView.appendChild(topControls);
   applySummonState();
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
@@ -2143,8 +2650,14 @@ const animate = () => {
   });
 
   summonAssetRoots.forEach((root) => {
-  updateCustomEffect(root, elapsed, delta);
-});
+    updateCustomEffect(root, elapsed, delta);
+  });
+
+  activeMagicMixers.forEach((item) => {
+    item.mixer.update(delta);
+  });
+
+  updateActiveMagicObjects(elapsed, delta);
 
   composer.render();
   requestAnimationFrame(animate);
