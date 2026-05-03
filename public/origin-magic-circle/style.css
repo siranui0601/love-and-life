@@ -101,7 +101,7 @@ h1, h2, h3 { margin-top: 0; }
 
 .magic-circle-controls {
   position: absolute;
-  bottom: 10dvh;
+  bottom: 5svh;
   display: flex;
   gap: 8px;
   z-index: 10002;
