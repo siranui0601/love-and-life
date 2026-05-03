@@ -1092,16 +1092,52 @@ function updateCustomEffect(root, elapsed, delta) {
   }
 
   if (type === "crystal_shard") {
-    root.rotation.y += delta * 7;
-    root.position.y += Math.sin(elapsed * 3) * 0.002;
-    root.children.forEach((child, index) => {
-      if (child.userData.kind === "helix") {
-        child.rotation.x += delta * 2.4;
-        child.material.opacity = 0.45 + Math.sin(elapsed * 10 + index) * 0.22;
+  // 本体は相手方向、つまりX方向に向かってドリル回転
+  root.children.forEach((child) => {
+    if (
+      child.userData.kind === "main_shard" ||
+      child.userData.kind === "main_shard_glow"
+    ) {
+      child.rotation.x += delta * 12;
+    }
+
+    if (child.userData.kind === "drill_ring") {
+      const index = child.userData.ringIndex || 0;
+
+      // 0→1→2→3の順に出現、その後0→1→2→3の順に消える
+      const cycle = 1.6;
+      const local = (elapsed % cycle) / cycle;
+
+      const appearStart = index * 0.11;
+      const appearEnd = appearStart + 0.18;
+
+      const disappearStart = 0.55 + index * 0.11;
+      const disappearEnd = disappearStart + 0.18;
+
+      let opacity = 0;
+
+      if (local >= appearStart && local < appearEnd) {
+        opacity = (local - appearStart) / (appearEnd - appearStart);
+      } else if (local >= appearEnd && local < disappearStart) {
+        opacity = 1;
+      } else if (local >= disappearStart && local < disappearEnd) {
+        opacity = 1 - (local - disappearStart) / (disappearEnd - disappearStart);
       }
-    });
-    return;
-  }
+
+      child.visible = opacity > 0.02;
+
+      if (child.material) {
+        child.material.opacity = opacity * (child.userData.baseOpacity || 0.65);
+      }
+
+      // リング自体は回転させない。少しだけ脈動
+      const pulse = 1 + Math.sin(elapsed * 8 + index) * 0.04;
+      child.scale.setScalar(pulse);
+    }
+  });
+
+  return;
+}
 
   if (type === "simple_ring") {
     const s = 1 + (Math.sin(elapsed * 3) + 1) * 0.15;
@@ -1410,48 +1446,57 @@ function createLightOrbEffect() {
   return root;
 }
 
-function createIceShardEffect() {
+function createShardEffect() {
   const root = new Group();
 
+  const shardMaterial = makeGlowMaterial(0x99ddff, 0.85);
+  const glowMaterial = makeGlowMaterial(0x66ccff, 0.25);
+
   const shard = new Mesh(
-    new ConeGeometry(0.35, 2.0, 6),
-    new MeshBasicMaterial({
-      color: 0x99ddff,
-      transparent: true,
-      opacity: 0.85,
-      depthWrite: false,
-      toneMapped: false,
-    })
+    new ConeGeometry(0.35, 2.2, 6),
+    shardMaterial
   );
 
-  shard.rotation.x = Math.PI / 2;
+  // ConeGeometryはY方向に伸びるので、X方向へ寝かせる
+  shard.rotation.z = -Math.PI / 2;
+  shard.userData.kind = "main_shard";
+  root.add(shard);
 
   const glow = new Mesh(
-    new ConeGeometry(0.45, 2.15, 6),
-    new MeshBasicMaterial({
-      color: 0x66ccff,
-      transparent: true,
-      opacity: 0.25,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      toneMapped: false,
-    })
+    new ConeGeometry(0.48, 2.35, 6),
+    glowMaterial
   );
 
-  glow.rotation.x = Math.PI / 2;
+  glow.rotation.z = -Math.PI / 2;
+  glow.userData.kind = "main_shard_glow";
+  root.add(glow);
 
-  root.add(shard, glow);
-  for (let i = 0; i < 3; i += 1) {
-    const helix = new Mesh(new TorusGeometry(0.14 + i * 0.08, 0.012, 6, 36), new MeshBasicMaterial({
-      color: 0xdaf6ff, transparent: true, opacity: 0.55, blending: AdditiveBlending, depthWrite: false, toneMapped: false,
-    }));
-    helix.position.y = -0.85 + i * 0.65;
-    helix.rotation.x = Math.PI / 2;
-    helix.userData = { kind: "helix" };
-    root.add(helix);
-  }
+  // 指輪状リング。根元側が大きく、先端側ほど小さい
+  const ringData = [
+    { x: -0.65, radius: 0.46 },
+    { x: -0.25, radius: 0.36 },
+    { x: 0.18, radius: 0.27 },
+    { x: 0.58, radius: 0.18 },
+  ];
+
+  ringData.forEach((data, index) => {
+    const ring = new Mesh(
+      new TorusGeometry(data.radius, 0.012, 8, 48),
+      makeGlowMaterial(0xdaf6ff, 0.65)
+    );
+
+    // X方向に進むドリルに対して、指輪のように垂直配置
+    ring.rotation.y = Math.PI / 2;
+    ring.position.x = data.x;
+
+    ring.userData.kind = "drill_ring";
+    ring.userData.ringIndex = index;
+    ring.userData.baseOpacity = 0.65;
+
+    root.add(ring);
+  });
+
   root.userData.effectType = "crystal_shard";
-
   return root;
 }
 
@@ -1512,7 +1557,7 @@ function createCustomEffectByName(assetName) {
   if (assetName === "explosion_burst") return createExplosionBurstEffect();
   if (assetName === "mist_cloud") return createMistCloudEffect();
   if (assetName === "light_orb") return createLightOrbEffect();
-  if (assetName === "crystal_shard") return createIceShardEffect();
+  if (assetName === "crystal_shard") return createShardEffect();
   if (assetName === "simple_ring") return createSimpleRingEffect();
 
   return new Group();
