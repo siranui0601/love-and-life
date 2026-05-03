@@ -792,6 +792,48 @@ function createFogTexture() {
   return texture;
 }
 
+
+function createCrescentSlashTexture() {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+
+  const ctx = canvas.getContext("2d");
+
+  // 発光する三日月本体
+  const gradient = ctx.createRadialGradient(88, 128, 8, 96, 128, 125);
+  gradient.addColorStop(0.0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.28, "rgba(150,235,255,0.95)");
+  gradient.addColorStop(0.68, "rgba(60,170,255,0.65)");
+  gradient.addColorStop(1.0, "rgba(0,120,255,0)");
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(112, 128, 92, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 別の円で削って三日月にする
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.beginPath();
+  ctx.arc(154, 128, 86, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 合成を戻す
+  ctx.globalCompositeOperation = "source-over";
+
+  // 刃の白い芯を少し足す
+  ctx.strokeStyle = "rgba(255,255,255,0.85)";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(108, 128, 88, -Math.PI * 0.62, Math.PI * 0.62);
+  ctx.stroke();
+
+  const texture = new CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
 function makeLineMaterial(color, opacity = 1) {
   return new LineBasicMaterial({
     color,
@@ -999,16 +1041,53 @@ function updateCustomEffect(root, elapsed, delta) {
 }
 
   if (type === "energy_slash") {
-  // 本体は回転させない。呼吸するように少しだけ明滅。
   root.children.forEach((child, index) => {
     const role = child.userData.role;
 
-    if (role === "slash_body") {
-      if (child.material) {
-        child.material.opacity = 0.62 + Math.sin(elapsed * 2.4) * 0.08;
-      }
+    if (role === "crescent_body") {
+      // 本体は回転させない。軽く呼吸するだけ。
+      child.material.opacity = 0.82 + Math.sin(elapsed * 2.2) * 0.08;
+      child.scale.set(
+        3.2 + Math.sin(elapsed * 1.8) * 0.05,
+        2.0 + Math.sin(elapsed * 1.8) * 0.03,
+        1
+      );
       return;
     }
+
+    if (role === "crescent_wave") {
+      // 端から端へ「三日月の刃の上」を走る
+      const cycle = 1.65;
+      const local = (elapsed * child.userData.speed + child.userData.delay) % cycle;
+
+      if (local > 1.0) {
+        child.visible = false;
+        return;
+      }
+
+      child.visible = true;
+
+      const t = local; // 0〜1
+      const angle = -Math.PI * 0.62 + Math.PI * 1.24 * t;
+
+      // 三日月の外周に沿って移動
+      const x = Math.cos(angle) * 1.18 - 0.38;
+      const y = Math.sin(angle) * 0.72;
+
+      child.position.set(x, y, 0.08);
+
+      const fade = Math.sin(t * Math.PI);
+      const flicker = 0.75 + Math.sin(elapsed * 35 + index * 3) * 0.25;
+
+      child.material.opacity = 0.95 * fade * flicker;
+      child.scale.set(0.18 + fade * 0.28, 0.18 + fade * 0.28, 1);
+
+      return;
+    }
+  });
+
+  return;
+}
 
     if (role === "slash_core") {
       if (child.material) {
@@ -1396,69 +1475,47 @@ function createMistCloudEffect() {
 
 function createEnergySlashEffect() {
   const root = new Group();
-
   root.userData.effectType = "energy_slash";
 
-  // 三日月の本体：太い外側弧
-  const outerArc = new Mesh(
-    new TorusGeometry(1.45, 0.055, 8, 96, Math.PI * 1.25),
-    makeGlowMaterial(0x88ddff, 0.72)
-  );
-  outerArc.userData.role = "slash_body";
-  outerArc.rotation.z = -Math.PI * 0.62;
-  outerArc.scale.set(1.45, 0.38, 1);
-  root.add(outerArc);
+  const crescentTexture = createCrescentSlashTexture();
 
-  // 三日月の芯：白い細い刃
-  const innerArc = new Mesh(
-    new TorusGeometry(1.32, 0.026, 8, 96, Math.PI * 1.18),
-    makeGlowMaterial(0xffffff, 0.9)
+  const crescent = new Sprite(
+    new SpriteMaterial({
+      map: crescentTexture,
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.9,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      depthTest: true,
+      toneMapped: false,
+    })
   );
-  innerArc.userData.role = "slash_core";
-  innerArc.rotation.z = -Math.PI * 0.59;
-  innerArc.scale.set(1.52, 0.32, 1);
-  root.add(innerArc);
 
-  // 残光：外側の薄い青いにじみ
-  const glowArc = new Mesh(
-    new TorusGeometry(1.52, 0.09, 8, 96, Math.PI * 1.2),
-    makeGlowMaterial(0x2299ff, 0.22)
-  );
-  glowArc.userData.role = "slash_glow";
-  glowArc.rotation.z = -Math.PI * 0.62;
-  glowArc.scale.set(1.55, 0.42, 1);
-  root.add(glowArc);
+  crescent.userData.role = "crescent_body";
+  crescent.scale.set(3.2, 2.0, 1);
+  root.add(crescent);
 
-  // 波打つ光：端から端へ走る小さな発光点たち
-  for (let i = 0; i < 7; i += 1) {
-    const wave = new Mesh(
-      new SphereGeometry(0.055 + i * 0.004, 12, 8),
-      makeGlowMaterial(i % 2 === 0 ? 0xffffff : 0x99eeff, 0.95)
+  // 端から端へ走る発光点
+  for (let i = 0; i < 5; i += 1) {
+    const wave = new Sprite(
+      new SpriteMaterial({
+        map: createFogTexture(),
+        color: i % 2 === 0 ? 0xffffff : 0x99eeff,
+        transparent: true,
+        opacity: 0,
+        blending: AdditiveBlending,
+        depthWrite: false,
+        depthTest: true,
+        toneMapped: false,
+      })
     );
 
-    wave.userData.role = "slash_wave";
-    wave.userData.phase = i * 0.12;
-    wave.userData.speed = 0.85 + Math.random() * 0.45;
-    wave.userData.delay = Math.random() * 1.5;
-    wave.visible = false;
-
+    wave.userData.role = "crescent_wave";
+    wave.userData.delay = i * 0.06;
+    wave.userData.speed = 1.0;
+    wave.scale.set(0.35, 0.35, 1);
     root.add(wave);
-  }
-
-  // 細い尾：波が通った後の一瞬の軌跡
-  for (let i = 0; i < 4; i += 1) {
-    const trail = new Mesh(
-      new SphereGeometry(0.035, 8, 6),
-      makeGlowMaterial(0x99eeff, 0.45)
-    );
-
-    trail.userData.role = "slash_trail";
-    trail.userData.phase = i * 0.18;
-    trail.userData.delay = Math.random() * 1.5;
-    trail.visible = false;
-
-    root.rotation.x = 80;
-    root.add(trail);
   }
 
   return root;
