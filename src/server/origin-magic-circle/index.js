@@ -8,6 +8,8 @@ import {
   joinOriginMagicCircleRoom,
   removeOriginMagicCircleMember,
   updateOriginMagicCircleRoomStatus,
+  findOriginMagicCircleSpellCache,
+  appendOriginMagicCircleSpellCache,
 } from "../../foundation/sheets.js";
 
 
@@ -27,6 +29,7 @@ function extractJsonText(text) {
 }
       
 export function mountOriginMagicCircleRoutes(app) {
+  const roomCastEvents = new Map();
   const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
   const routePath = "/オリジン魔法陣";
   const encodedPath = encodeURI(routePath);
@@ -160,6 +163,10 @@ export function mountOriginMagicCircleRoutes(app) {
     if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
 
     try {
+      const cached = await findOriginMagicCircleSpellCache(base64ImageFile);
+      if (cached?.rawJson) {
+        return res.json({ magicEffectJson: JSON.parse(cached.rawJson), fromCache: true });
+      }
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const response = await model.generateContent([
         {
@@ -229,9 +236,31 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
       const rawText = String(response.response.text() || "").trim();
       const jsonText = extractJsonText(rawText);
       const magicEffectJson = JSON.parse(jsonText);
+      await appendOriginMagicCircleSpellCache({ base64ImageFile, rawJson: JSON.stringify(magicEffectJson) });
       return res.json({ magicEffectJson });    } catch (error) {
       console.error("[origin-magic-circle] chant title error:", error);
       return res.status(500).json({ error: "gemini_failed" });
     }
+  });
+
+  app.post("/api/origin-magic-circle/casts", (req, res) => {
+    const roomId = String(req.body?.roomId || "").trim();
+    const casterId = String(req.body?.casterId || "").trim();
+    const casterName = String(req.body?.casterName || "").trim();
+    const magicEffectJson = req.body?.magicEffectJson || null;
+    if (!roomId || !casterId || !magicEffectJson) return res.status(400).json({ error: "invalid_cast" });
+    const entry = { id: `${Date.now()}_${Math.random()}`, at: Date.now(), casterId, casterName, magicEffectJson };
+    const list = roomCastEvents.get(roomId) || [];
+    list.push(entry);
+    roomCastEvents.set(roomId, list.slice(-30));
+    return res.json({ ok: true, cast: entry });
+  });
+
+  app.get("/api/origin-magic-circle/casts/:roomId", (req, res) => {
+    const roomId = String(req.params.roomId || "").trim();
+    const since = Number(req.query?.since || 0);
+    const list = roomCastEvents.get(roomId) || [];
+    const casts = Number.isFinite(since) && since > 0 ? list.filter((v) => v.at > since) : list;
+    return res.json({ casts });
   });
 }

@@ -101,7 +101,7 @@ h1, h2, h3 { margin-top: 0; }
 
 .magic-circle-controls {
   position: absolute;
-  bottom: 16px;
+  bottom: 2dvh;
   display: flex;
   gap: 8px;
   z-index: 10002;
@@ -227,3 +227,15 @@ h1, h2, h3 { margin-top: 0; }
 .summon-test-controls button {
   font-size: 16px;
 }
+
+
+.magic-name-banner{position:fixed;left:0;top:45dvh;width:100vw;z-index:30000;padding:2dvh 2vw;text-align:center;font-size:clamp(26px,7vw,62px);font-weight:800;color:#fff;background:rgba(0,0,0,.72);text-shadow:0 0 18px rgba(140,200,255,.95);}
+.magic-name-banner.enemy{background:rgba(128,0,32,.88);}
+.hp-bars{position:fixed;top:1dvh;left:0;width:100vw;display:flex;gap:1vw;padding:0 1vw;z-index:30001;}
+.hp-card{flex:1;background:rgba(0,0,0,.45);padding:.8dvh .8vw;border-radius:10px;}
+.hp-label{font-weight:700;font-size:14px;margin-bottom:.6dvh;}
+.hp-track{height:2.4dvh;min-height:16px;background:#3a3a3a;border-radius:999px;overflow:hidden;position:relative;}
+.hp-fill{height:100%;}
+.hp-fill.self{background:#3ccf66;}
+.hp-fill.enemy{background:#d04545;}
+.hp-value{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;}

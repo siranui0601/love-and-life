@@ -250,6 +250,7 @@ const userTrackingId = String(user?.userTrackingId || "");
 let currentRoom = null;
 let refreshTimer = null;
 let battleStarted = false;
+let battleState = { selfHp: 1000, enemyHp: 1000, lastCastAt: 0, processedCastIds: new Set() };
 const ACTIVE_ROOM_STORAGE_KEY = "originMagicCircleActiveRoomId";
 
 function setMessage(text) {
@@ -336,46 +337,19 @@ function stopRefresh() {
 
 
 
-function showMagicNameCenter(magicName) {
+function showMagicNameCenter(magicName, isEnemy = false, onComplete = null) {
   const old = document.getElementById("magicNameCenterOverlay");
   if (old) old.remove();
-
   const overlay = document.createElement("div");
   overlay.id = "magicNameCenterOverlay";
+  overlay.className = `magic-name-banner${isEnemy ? " enemy" : ""}`;
   overlay.textContent = magicName || "無名の魔法";
-
-  overlay.style.position = "fixed";
-  overlay.style.left = "50%";
-  overlay.style.top = "50%";
-  overlay.style.transform = "translate(-50%, -50%)";
-  overlay.style.zIndex = "30000";
-  overlay.style.padding = "18px 28px";
-  overlay.style.borderRadius = "18px";
-  overlay.style.background = "rgba(0, 0, 0, 0.72)";
-  overlay.style.color = "#fff";
-  overlay.style.fontSize = "clamp(24px, 6vw, 56px)";
-  overlay.style.fontWeight = "700";
-  overlay.style.letterSpacing = "0.08em";
-  overlay.style.textAlign = "center";
-  overlay.style.textShadow = "0 0 18px rgba(140, 200, 255, 0.95)";
-  overlay.style.pointerEvents = "none";
-  overlay.style.opacity = "0";
-  overlay.style.transition = "opacity 0.35s ease, transform 0.35s ease";
-
   document.body.appendChild(overlay);
-
-  requestAnimationFrame(() => {
-    overlay.style.opacity = "1";
-    overlay.style.transform = "translate(-50%, -50%) scale(1.04)";
-  });
-
   setTimeout(() => {
-    overlay.style.opacity = "0";
-    overlay.style.transform = "translate(-50%, -50%) scale(0.96)";
-    setTimeout(() => overlay.remove(), 400);
-  }, 3000);
+    overlay.remove();
+    if (typeof onComplete === "function") onComplete();
+  }, 2200);
 }
-
 function setupMagicCircleUi(container, options = {}) {
   const {
     onMagicJsonReady = null,
@@ -763,9 +737,9 @@ composer.addPass(bloomPass);
   let hasHiddenDebugPanel = false;
   let hasHiddenTopModal = false;
   const magicCircleUi = setupMagicCircleUi(refs.battleView, {
-    onMagicJsonReady: (effectJson) => {
-      showMagicNameCenter(effectJson.magicName);
-      playMagicVisualEffects(effectJson);
+    onMagicJsonReady: async (effectJson) => {
+      await fetch("/api/origin-magic-circle/casts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: currentRoom?.roomId, casterId: userTrackingId, casterName: username, magicEffectJson: effectJson }) });
+      showMagicNameCenter(effectJson.magicName, false, () => playMagicVisualEffects(effectJson, false));
     },
     hideTopModalOnce: () => {
       if (hasHiddenTopModal || !topControls) return;
@@ -2337,12 +2311,24 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1) 
   activeMagicObjects.push(active);
   return active;
 }
-function playMagicVisualEffects(effectJson) {
+function playMagicVisualEffects(effectJson, isEnemyCast = false) {
   if (!effectJson || !Array.isArray(effectJson.timedVisualEffects)) {
     console.warn("[origin-magic-circle] invalid magic effect json:", effectJson);
     return;
   }
 
+
+  const maxDamage = Math.min(300, Math.max(0, Number(effectJson?.artScore) || 0));
+  const damageTimings = Array.isArray(effectJson?.damageTimings) ? effectJson.damageTimings : [];
+  damageTimings.forEach((timing) => {
+    const delay = Math.max(0, Number(timing.timeSeconds) || 0) * 1000;
+    setTimeout(() => {
+      const amount = Math.round(maxDamage * (Math.max(0, Number(timing.damageWeight) || 0) / 100));
+      if (isEnemyCast) battleState.selfHp = Math.max(0, battleState.selfHp - amount);
+      else battleState.enemyHp = Math.max(0, battleState.enemyHp - amount);
+      renderHpBars();
+    }, delay);
+  });
   effectJson.timedVisualEffects.forEach((timedEffect) => {
     const delaySeconds = clampNumber(timedEffect.startTimeSeconds, 0, 6, 0);
 
@@ -2585,6 +2571,25 @@ function getMaterialDebugText(root, assetName) {
 }
 
 
+
+function ensureHpBars() {
+  if (document.getElementById("hpBars")) return;
+  const enemy = (currentRoom?.members || []).find((m) => m.id !== userTrackingId);
+  const wrap = document.createElement("div");
+  wrap.id = "hpBars";
+  wrap.className = "hp-bars";
+  wrap.innerHTML = `<div class="hp-card"><div class="hp-label">${username}</div><div class="hp-track"><div id="selfHpFill" class="hp-fill self"></div><div id="selfHpValue" class="hp-value">1000/1000</div></div></div><div class="hp-card"><div class="hp-label">${enemy?.name || "相手"}</div><div class="hp-track"><div id="enemyHpFill" class="hp-fill enemy"></div><div id="enemyHpValue" class="hp-value">1000/1000</div></div></div>`;
+  refs.battleView.appendChild(wrap);
+}
+function renderHpBars() {
+  ensureHpBars();
+  const sf = document.getElementById("selfHpFill"); const ef = document.getElementById("enemyHpFill");
+  const sv = document.getElementById("selfHpValue"); const ev = document.getElementById("enemyHpValue");
+  if (sf) sf.style.width = `${(battleState.selfHp / 1000) * 100}%`;
+  if (ef) ef.style.width = `${(battleState.enemyHp / 1000) * 100}%`;
+  if (sv) sv.textContent = `${battleState.selfHp}/1000`;
+  if (ev) ev.textContent = `${battleState.enemyHp}/1000`;
+}
 effectTestBtn?.addEventListener("click", () => {
   const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
   const selectedName = checkedAsset?.value || "fireball.glb";
@@ -2705,6 +2710,19 @@ radioList?.addEventListener("change", () => {
   //applySummonState();
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
+  renderHpBars();
+  setInterval(async () => {
+    try {
+      const r = await fetch(`/api/origin-magic-circle/casts/${encodeURIComponent(currentRoom?.roomId || "")}?since=${battleState.lastCastAt}`);
+      const d = await r.json();
+      for (const cast of d.casts || []) {
+        battleState.lastCastAt = Math.max(battleState.lastCastAt, cast.at || 0);
+        if (battleState.processedCastIds.has(cast.id) || cast.casterId === userTrackingId) continue;
+        battleState.processedCastIds.add(cast.id);
+        showMagicNameCenter(cast.magicEffectJson?.magicName, true, () => playMagicVisualEffects(cast.magicEffectJson, true));
+      }
+    } catch {}
+  }, 1200);
 
   const onResize = () => {
   camera.aspect = window.innerWidth / window.innerHeight;
