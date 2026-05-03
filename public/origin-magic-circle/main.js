@@ -688,7 +688,7 @@ async function startThreeBattleScene() {
   battleState.lastCastAt = Date.now();
   battleState.processedCastIds = new Set();
 
-  ensureTutorialModal();
+  //ensureTutorialModal();
 
 
 
@@ -772,11 +772,13 @@ const { GLTFLoader } = GLTF;
   const renderer = new WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  
   refs.battleView.innerHTML = "";
   refs.battleView.appendChild(renderer.domElement);
-  
+
   hydrateBattleHpFromRoom();
-  updateHpBars();
+  renderHpBars();
+  ensureTutorialModal();
   
   const composer = new EffectComposer(renderer);
 
@@ -2806,7 +2808,7 @@ radioList?.addEventListener("change", () => {
   //applySummonState();
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
-  renderHpBars();
+  //renderHpBars();
   setInterval(async () => {
     try {
       const r = await fetch(`/api/origin-magic-circle/casts/${encodeURIComponent(currentRoom?.roomId || "")}?since=${battleState.lastCastAt}`);
