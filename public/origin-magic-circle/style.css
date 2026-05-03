@@ -105,19 +105,19 @@ h1, h2, h3 { margin-top: 0; }
   z-index: 10002;
   display: flex;
   gap: 8px;
-  padding: 0 16px;
-  pointer-events: none;
+  pointer-events: auto; /* ←ここ重要 */
 }
 
+/* 左グループ */
 .magic-circle-controls.left {
-  left: 0;
-  right: auto;
+  left: 16px;
 }
 
+/* 右グループ */
 .magic-circle-controls.right {
-  right: 0;
-  left: auto;
+  right: 16px;
 }
+
 
 .magic-circle-controls button {
   pointer-events: auto;
