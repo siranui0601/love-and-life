@@ -21,9 +21,9 @@ const summonAssetOptions = [
   "fireball.glb",
   "magic_voxel_skull_flat_shaded.glb",
   "stylized_fire_tornado.glb",
+
   "phoenix_bird.glb",
   "truth_about_the_dark_side_of_the_moon.glb",
-  "sphere_bot.glb",
   "broken_steampunk_clock.glb",
   "evanescent_plasma.glb",
   "gun-bot_with_walk_and_idle_animation.glb",
@@ -32,19 +32,14 @@ const summonAssetOptions = [
   "lance_of_the_primordials_-_dae_weaponcraft.glb",
   "dragon_koi.glb",
   "pearl_electron.glb",
-  "cosmic_cell.glb",
-  "wonderful_world.glb",
-  "quantum_cube.glb",
   "stranger_star.glb",
   "cube_cascade.glb",
   "cyber_orb.glb",
   "magic_marble.glb",
   "cyber_spore.glb",
   "dark_matter.glb",
-  "strangest_star.glb",
   "harlequin_orb.glb",
   "evanescent_smoke.glb",
-  "magic_ring.glb",
 
   "lightning",
   "explosion_burst",
@@ -95,6 +90,24 @@ const summonAssetDefaults = {
 "light_orb": { scale: 1.5, y: 2.2, offsetX: 0, offsetZ: 0 },
 "crystal_shard": { scale: 1.6, y: 2.2, offsetX: 0, offsetZ: 0 },
 "simple_ring": { scale: 2, y: 2.5, offsetX: 0, offsetZ: 0 },
+"phoenix_bird.glb": { scale: 0.01, y: 1.6, offsetX: 0, offsetZ: 0 },
+"truth_about_the_dark_side_of_the_moon.glb": { scale: 3, y: 2, offsetX: 0, offsetZ: 0 },
+"broken_steampunk_clock.glb": { scale: 0.1, y: 4, offsetX: 0, offsetZ: 0 },
+"evanescent_plasma.glb": { scale: 2, y: 3, offsetX: 0, offsetZ: 0 },
+"gun-bot_with_walk_and_idle_animation.glb": { scale: 2, y: 1.6, offsetX: 0, offsetZ: 0 },
+"soulsucker_-_weaponcraft.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
+"bouquet.glb": { scale: 2.5, y: 1.6, offsetX: 0, offsetZ: 0 },
+"lance_of_the_primordials_-_dae_weaponcraft.glb": { scale: 300, y: 1.6, offsetX: 0, offsetZ: 0 },
+"dragon_koi.glb": { scale: 5, y: 5, offsetX: 0, offsetZ: 0 },
+"pearl_electron.glb": { scale: 2, y: 2, offsetX: 0, offsetZ: 0 },
+"stranger_star.glb": { scale: 2, y: 3, offsetX: 0, offsetZ: 0 },
+"cube_cascade.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
+"cyber_orb.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
+"magic_marble.glb": { scale: 1.5, y: 3, offsetX: 0, offsetZ: 0 },
+"cyber_spore.glb": { scale: 2, y: 3, offsetX: 0, offsetZ: 0 },
+"dark_matter.glb": { scale: 5, y: 3, offsetX: 0, offsetZ: 0 },
+"harlequin_orb.glb": { scale: 1, y: 1.6, offsetX: 0, offsetZ: 0 },
+"evanescent_smoke.glb": { scale: 5, y: 2, offsetX: 0, offsetZ: 0 },
 };
 
 //変更14
@@ -723,6 +736,92 @@ function applyFireballMaterialFix(root) {
       mat.needsUpdate = true;
     });
   });
+}
+
+
+
+function applyCommonGlbMaterialFix(root) {
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const mats = Array.isArray(child.material) ? child.material : [child.material];
+
+    mats.forEach((mat) => {
+      if (mat.color && mat.color.getHexString?.() === "000000" && mat.map) {
+        mat.color.set(0xffffff);
+      }
+
+      if (mat.map) {
+        mat.map.colorSpace = SRGBColorSpace;
+        mat.map.needsUpdate = true;
+      }
+
+      mat.side = DoubleSide;
+      mat.needsUpdate = true;
+    });
+  });
+}
+
+function applyGlbEffectVisibilityFix(root) {
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const mats = Array.isArray(child.material) ? child.material : [child.material];
+
+    mats.forEach((mat) => {
+      if (mat.color && mat.color.getHexString?.() === "000000" && mat.map) {
+        mat.color.set(0xffffff);
+      }
+
+      if (mat.map) {
+        mat.map.colorSpace = SRGBColorSpace;
+        mat.map.needsUpdate = true;
+      }
+
+      mat.transparent = true;
+      mat.depthWrite = false;
+      mat.side = DoubleSide;
+      mat.toneMapped = false;
+
+      if (mat.emissive) {
+        mat.emissive.set(0xffffff);
+        mat.emissiveIntensity = Math.max(mat.emissiveIntensity || 0, 1.8);
+      }
+
+      mat.needsUpdate = true;
+    });
+  });
+}
+
+function applyAssetSpecificTransform(root, assetName) {
+  if (assetName === "broken_steampunk_clock.glb") {
+    // z向き → x向き
+    root.rotation.y = Math.PI / 2;
+  }
+
+  if (assetName === "soulsucker_-_weaponcraft.glb") {
+    // y向き → x向き
+    root.rotation.z = -Math.PI / 2;
+  }
+}
+
+function applyAssetSpecificMaterialFix(root, assetName) {
+  applyCommonGlbMaterialFix(root);
+
+  const effectHeavyAssets = new Set([
+    "dragon_koi.glb",
+    "stranger_star.glb",
+    "dark_matter.glb",
+    "evanescent_smoke.glb",
+    "evanescent_plasma.glb",
+    "pearl_electron.glb",
+    "cyber_spore.glb",
+    "magic_marble.glb",
+  ]);
+
+  if (effectHeavyAssets.has(assetName)) {
+    applyGlbEffectVisibilityFix(root);
+  }
 }
 
 function createLightningEffect() {
@@ -1682,6 +1781,14 @@ fighterB.position.set(16, fighterYOffset, 0);
   ? createCustomEffectByName(assetName)
   : skeletonClone(gltf.scene);   
   
+  
+  
+  if (!customEffectNames.has(assetName)) {
+  applyAssetSpecificTransform(root, assetName);
+  applyAssetSpecificMaterialFix(root, assetName);
+}
+
+
        
   //変更15
   if (assetName === "stylized_fire_tornado.glb") {
