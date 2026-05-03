@@ -332,7 +332,12 @@ function stopRefresh() {
 }
 
 
-function setupMagicCircleUi(container) {
+function setupMagicCircleUi(container, options = {}) {
+  const {
+    onMagicJsonReady = null,
+    hideTopModalOnce = null,
+    hideDebugOnce = null,
+  } = options;
   const overlay = document.createElement("canvas");
   overlay.className = "magic-circle-overlay";
   const ctx = overlay.getContext("2d");
@@ -571,8 +576,15 @@ function setupMagicCircleUi(container) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "chant_failed");
       await runShrinkToCenter();
-      resultText.textContent = data.title || "無題";
-      resultModal.classList.remove("hidden");
+      const magicEffectJson = data.magicEffectJson || null;
+      if (typeof onMagicJsonReady === "function" && magicEffectJson) {
+        onMagicJsonReady(magicEffectJson);
+        hideTopModalOnce?.();
+        hideDebugOnce?.();
+      } else {
+        resultText.textContent = data.title || "無題";
+        resultModal.classList.remove("hidden");
+      }
     } catch (error) {
       console.error("[origin-magic-circle] chant failed:", error);
       alert("詠唱に失敗しました。");
@@ -703,7 +715,25 @@ const bloomPass = new UnrealBloomPass(
 );
 
 composer.addPass(bloomPass);
-  const magicCircleUi = setupMagicCircleUi(refs.battleView);
+  let topControls = null;
+  let hasHiddenDebugPanel = false;
+  let hasHiddenTopModal = false;
+  const magicCircleUi = setupMagicCircleUi(refs.battleView, {
+    onMagicJsonReady: (effectJson) => {
+      playMagicVisualEffects(effectJson);
+    },
+    hideTopModalOnce: () => {
+      if (hasHiddenTopModal || !topControls) return;
+      topControls.style.display = "none";
+      hasHiddenTopModal = true;
+    },
+    hideDebugOnce: () => {
+      if (hasHiddenDebugPanel) return;
+      const debugPanel = document.getElementById("debugPanel");
+      if (debugPanel) debugPanel.style.display = "none";
+      hasHiddenDebugPanel = true;
+    },
+  });
 
   const hemiLight = new HemisphereLight(0xbad8ff, 0x5d4430, 1.1);
   scene.add(hemiLight);
@@ -2416,7 +2446,7 @@ summonAssetGlbList.forEach((gltf, index) => {
 });
   
 
-  const topControls = document.createElement("div");
+  topControls = document.createElement("div");
   topControls.style.maxHeight = "28vh";
 topControls.style.overflowY = "auto";
 topControls.style.maxWidth = "96vw";

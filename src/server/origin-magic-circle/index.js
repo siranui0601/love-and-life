@@ -145,20 +145,104 @@ export function mountOriginMagicCircleRoutes(app) {
 
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-const response = await model.generateContent([
-  {
-    inlineData: {
-      mimeType: "image/png",
-      data: base64ImageFile,
-    },
-  },
-  {
-    text: "この絵が何を表しているのかを考え、かっこいい題名を付けて。**題名以外の文言は不要**"
-  },
-]);
+      const response = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: "image/png",
+            data: base64ImageFile,
+          },
+        },
+        {
+          text: `画像の魔法陣を見て、魔法名・芸術点・3D演出・ダメージ発生タイミングをJSONのみで出力してください。
+JSON以外は禁止。候補が配列で示されている項目は、必ず1つの値だけを選んでください。
 
-const title = String(response.response.text() || "").trim();
-return res.json({ title });
+{
+  "magicName": "画像から連想した厨二病風の魔法名",
+  "artScore": 0,
+  "timedVisualEffects": [
+    {
+      "startTimeSeconds": 0,
+      "visualObjects": [
+        {
+          "assetFileName": [
+  "fireball.glb",
+  "magic_voxel_skull_flat_shaded.glb",
+  "stylized_fire_tornado.glb",
+
+  "phoenix_bird.glb",
+  "truth_about_the_dark_side_of_the_moon.glb",
+  "broken_steampunk_clock.glb",
+  "evanescent_plasma.glb",
+  "gun-bot_with_walk_and_idle_animation.glb",
+  "soulsucker_-_weaponcraft.glb",
+  "bouquet.glb",
+  "lance_of_the_primordials_-_dae_weaponcraft.glb",
+
+  "pearl_electron.glb",
+  "stranger_star.glb",
+  "cube_cascade.glb",
+  "cyber_orb.glb",
+  "magic_marble.glb",
+  "cyber_spore.glb",
+  "dark_matter.glb",
+  "harlequin_orb.glb",
+  "evanescent_smoke.glb",
+
+  "lightning",
+  "explosion_burst",
+  "mist_cloud",
+  "light_orb",
+  "crystal_shard",
+  "simple_ring"
+],
+          "objectCount": 1,
+          "spawnPosition": ["in_front_of_self","behind_self","above_self","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
+          "spawnSpreadPattern": ["none","horizontal_line","vertical_line","circle","random_scatter"],
+          "colorHexCode": "#RRGGBB",
+          "objectSize": ["small","medium","large"],
+          "lifeTimeSeconds": 3,
+          "movement": {
+            "targetPosition": ["self_position","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
+            "moveDurationSeconds": 1,
+            "movePathType": ["none","straight_line","arc","fall_from_above","rise_from_below","orbit"]
+          },
+          "rotation": {
+            "shouldRotate": true,
+            "rotationSpeed": ["slow","normal","fast"]
+          }
+        }
+      ]
+    }
+  ],
+  "damageTimings": [
+    {
+      "timeSeconds": 1,
+      "damageWeight": 100,
+      "target": ["enemy"]
+    }
+  ]
+}
+
+ルール:
+- artScoreは0〜100の整数
+- timedVisualEffectsは1〜4個
+- visualObjectsは各timedVisualEffectsにつき1〜3個
+- objectCountは1〜5
+- startTimeSecondsは0〜6
+- lifeTimeSecondsは0.5〜10
+- moveDurationSecondsは0〜10
+
+- damageTimingsは1〜5個
+- damageWeightの合計は100にする
+- timeSecondsは0〜10
+
+- JSON以外は出力しない`,
+        },
+      ]);
+
+      const rawText = String(response.response.text() || "").trim();
+      const magicEffectJson = JSON.parse(rawText);
+      return res.json({ magicEffectJson });
     } catch (error) {
       console.error("[origin-magic-circle] chant title error:", error);
       return res.status(500).json({ error: "gemini_failed" });
