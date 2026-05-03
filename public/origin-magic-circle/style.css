@@ -76,7 +76,7 @@ h1, h2, h3 { margin-top: 0; }
   position: fixed;
   inset: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100svh;
   z-index: 9999;
   background: #87ceeb;
 }
@@ -94,7 +94,7 @@ h1, h2, h3 { margin-top: 0; }
   position: absolute;
   inset: 0;
   width: 100%;
-  height: 100%;
+  height: 100svh;
   touch-action: none;
   z-index: 10001;
 }
