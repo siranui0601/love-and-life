@@ -1457,7 +1457,7 @@ function createEnergySlashEffect() {
     trail.userData.delay = Math.random() * 1.5;
     trail.visible = false;
 
-    root.rotation.x = 90;
+    root.rotation.x = 80;
     root.add(trail);
   }
 
