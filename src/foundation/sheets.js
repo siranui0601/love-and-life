@@ -244,7 +244,7 @@ async function getSecretToolRows(sheets) {
 
 function secretRowToRoom(row = [], index = 0) {
   const roomId = String(row[0] || "").trim();
-  const members = parseSecretMembersJson(row[1]);
+  const members = parseSecretMembersJson(row[1]).map((m) => ({ ...m, hp: Number.isFinite(Number(m?.hp)) ? Number(m.hp) : 1000 }));
   const status = String(row[2] || "").trim();
   const expiresAt = Number(row[3] || 0);
   return {
@@ -288,7 +288,7 @@ export async function createSecretToolRoom({ username, clientId }) {
     throw new Error("room_create_failed");
   }
 
-  const members = [{ name: username, id: clientId, role: "host" }];
+  const members = [{ name: username, id: clientId, role: "host", hp: 1000 }];
   const status = "lobby";
   const expiresAt = roomExpiresAtMs();
 
@@ -322,12 +322,12 @@ export async function joinSecretToolRoom({ roomId, username, clientId }) {
   let joined = false;
   const existingIndex = members.findIndex((member) => member.id === clientId);
   if (existingIndex >= 0) {
-    members[existingIndex] = { ...members[existingIndex], name: username };
+    members[existingIndex] = { ...members[existingIndex], name: username, hp: Number.isFinite(Number(members[existingIndex].hp)) ? Number(members[existingIndex].hp) : 1000 };
   } else {
     if (members.length >= SECRET_TOOL_MAX_MEMBERS) {
       throw new Error("room_full");
     }
-    members.push({ name: username, id: clientId, role: "guest" });
+    members.push({ name: username, id: clientId, role: "guest", hp: 1000 });
     joined = true;
   }
 
@@ -437,7 +437,7 @@ async function getOriginMagicCircleRows(sheets) {
 
 function originMagicCircleRowToRoom(row = [], index = 0) {
   const roomId = String(row[0] || "").trim();
-  const members = parseSecretMembersJson(row[1]);
+  const members = parseSecretMembersJson(row[1]).map((m) => ({ ...m, hp: Number.isFinite(Number(m?.hp)) ? Number(m.hp) : 1000 }));
   const status = String(row[2] || "").trim();
   const expiresAt = Number(row[3] || 0);
   return {
@@ -474,7 +474,7 @@ export async function createOriginMagicCircleRoom({ username, clientId }) {
   }
   if (!roomId) throw new Error("room_create_failed");
 
-  const members = [{ name: username, id: clientId, role: "host" }];
+  const members = [{ name: username, id: clientId, role: "host", hp: 1000 }];
   const status = "lobby";
   const expiresAt = roomExpiresAtMs();
 
@@ -507,10 +507,10 @@ export async function joinOriginMagicCircleRoom({ roomId, username, clientId }) 
   const members = [...room.members];
   const existingIndex = members.findIndex((member) => member.id === clientId);
   if (existingIndex >= 0) {
-    members[existingIndex] = { ...members[existingIndex], name: username };
+    members[existingIndex] = { ...members[existingIndex], name: username, hp: Number.isFinite(Number(members[existingIndex].hp)) ? Number(members[existingIndex].hp) : 1000 };
   } else {
     if (members.length >= ORIGIN_MAGIC_CIRCLE_MAX_MEMBERS) throw new Error("room_full");
-    members.push({ name: username, id: clientId, role: "guest" });
+    members.push({ name: username, id: clientId, role: "guest", hp: 1000 });
   }
 
   await updateOriginMagicCircleRoomRow(room.rowIndex, [
@@ -594,6 +594,28 @@ export async function removeOriginMagicCircleMember({ roomId, clientId }) {
     status: room.status,
     expiresAt: room.expiresAt,
   };
+}
+
+
+
+export async function updateOriginMagicCircleRoomHp({ roomId, clientId, selfHp, enemyHp }) {
+  const room = await getOriginMagicCircleRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+  const members = [...(room.members || [])];
+  const meIndex = members.findIndex((member) => member.id === clientId);
+  if (meIndex < 0) throw new Error("forbidden");
+  const enemyIndex = members.findIndex((member) => member.id !== clientId);
+  members[meIndex] = { ...members[meIndex], hp: Math.max(0, Number(selfHp) || 0) };
+  if (enemyIndex >= 0 && Number.isFinite(Number(enemyHp))) {
+    members[enemyIndex] = { ...members[enemyIndex], hp: Math.max(0, Number(enemyHp) || 0) };
+  }
+  await updateOriginMagicCircleRoomRow(room.rowIndex, [
+    room.roomId,
+    JSON.stringify(members),
+    room.status,
+    String(room.expiresAt || roomExpiresAtMs()),
+  ]);
+  return { ...room, members };
 }
 
 export async function findOriginMagicCircleSpellCache(base64ImageFile) {

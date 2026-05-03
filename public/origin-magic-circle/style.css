@@ -249,3 +249,7 @@ h1, h2, h3 { margin-top: 0; }
 .hp-fill.self{background:#3ccf66;}
 .hp-fill.enemy{background:#d04545;}
 .hp-value{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;}
+
+.damage-number{position:fixed;z-index:30005;color:#ff4b4b;font-weight:900;text-shadow:0 0 12px rgba(0,0,0,.9);animation:damage-pop .9s ease-out forwards;pointer-events:none;}
+@keyframes damage-pop{0%{transform:translate(-50%,0) scale(.7);opacity:0}15%{opacity:1}100%{transform:translate(-50%,-42px) scale(1);opacity:0}}
+.battle-tutorial-modal{position:fixed;left:50%;top:12dvh;transform:translateX(-50%);z-index:30002;padding:16px 24px;border-radius:14px;background:rgba(10,8,20,.35);border:1px solid rgba(255,255,255,.25);font-size:clamp(18px,3.5vw,30px);font-weight:800;backdrop-filter:blur(1px);}

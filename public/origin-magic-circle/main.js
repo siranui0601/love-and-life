@@ -251,6 +251,7 @@ let currentRoom = null;
 let refreshTimer = null;
 let battleStarted = false;
 let battleState = { selfHp: 1000, enemyHp: 1000, lastCastAt: 0, processedCastIds: new Set() };
+let tutorialModalDismissed = false;
 const ACTIVE_ROOM_STORAGE_KEY = "originMagicCircleActiveRoomId";
 
 function setMessage(text) {
@@ -285,7 +286,8 @@ function showWaitingRoom(room) {
   const isHost = room.members.some((member) => member.id === userTrackingId && member.role === "host");
   room.members.forEach((member) => {
     const li = document.createElement("li");
-    li.textContent = `${member.name}${member.role === "host" ? "（ホスト）" : ""}`;
+    const hpText = Number.isFinite(Number(member.hp)) ? ` HP:${Math.max(0, Number(member.hp))}` : "";
+    li.textContent = `${member.name}${member.role === "host" ? "（ホスト）" : ""}${hpText}`;
     refs.memberList.appendChild(li);
   });
 
@@ -322,6 +324,50 @@ async function refreshRoom() {
     refs.waitingNote.classList.remove("hidden");
     setMessage("ルームが見つかりませんでした。再作成してください。");
   }
+}
+
+
+
+async function syncBattleHp() {
+  if (!currentRoom?.roomId) return;
+  try {
+    const room = await callApi("/api/origin-magic-circle/rooms/hp", {
+      roomId: currentRoom.roomId,
+      userTrackingId,
+      selfHp: battleState.selfHp,
+      enemyHp: battleState.enemyHp,
+    }, "POST");
+    currentRoom = room;
+  } catch (error) {
+    console.warn("[origin-magic-circle] hp sync failed:", error);
+  }
+}
+
+function showDamageNumber(amount, isEnemyCast) {
+  const target = document.createElement("div");
+  target.className = "damage-number";
+  const safe = Math.max(1, Number(amount) || 1);
+  const size = Math.min(92, 24 + Math.sqrt(safe) * 3);
+  target.style.fontSize = `${size}px`;
+  target.style.left = isEnemyCast ? "24vw" : "74vw";
+  target.style.top = "18vh";
+  target.textContent = `-${Math.round(safe)}`;
+  refs.battleView?.appendChild(target);
+  setTimeout(() => target.remove(), 900);
+}
+
+function ensureTutorialModal() {
+  if (document.getElementById("battleTutorialModal") || tutorialModalDismissed) return;
+  const modal = document.createElement("div");
+  modal.id = "battleTutorialModal";
+  modal.className = "battle-tutorial-modal";
+  modal.textContent = "魔法陣を描き相手を倒せ！";
+  refs.battleView?.appendChild(modal);
+}
+
+function hideTutorialModal() {
+  tutorialModalDismissed = true;
+  document.getElementById("battleTutorialModal")?.remove();
 }
 
 function startRefresh() {
@@ -598,6 +644,7 @@ function setupMagicCircleUi(container, options = {}) {
       if (typeof onMagicJsonReady === "function" && magicEffectJson) {
         onMagicJsonReady(magicEffectJson);
         hideTopModalOnce?.();
+        hideTutorialModal();
         hideDebugOnce?.();
       } else {
         resultText.textContent = data.title || "無題";
@@ -635,6 +682,8 @@ async function startThreeBattleScene() {
 
   refs.page?.classList.add("hidden");
   refs.battleView?.classList.remove("hidden");
+  hydrateBattleHpFromRoom();
+  ensureTutorialModal();
 
 
 
@@ -2339,7 +2388,9 @@ function playMagicVisualEffects(effectJson, isEnemyCast = false) {
       const amount = Math.round(maxDamage * (Math.max(0, Number(timing.damageWeight) || 0) / 100));
       if (isEnemyCast) battleState.selfHp = Math.max(0, battleState.selfHp - amount);
       else battleState.enemyHp = Math.max(0, battleState.enemyHp - amount);
+      showDamageNumber(amount, isEnemyCast);
       renderHpBars();
+      syncBattleHp();
     }, delay);
   });
   effectJson.timedVisualEffects.forEach((timedEffect) => {
@@ -2376,7 +2427,7 @@ function updateActiveMagicObjects(elapsed, delta) {
     }
 
     if (age >= item.lifeTime) {
-      removeActiveMagicObject(i);
+      removeActiveMagicObject(i, true);
       continue;
     }
 
@@ -2392,16 +2443,29 @@ function updateActiveMagicObjects(elapsed, delta) {
       );
     }
 
+    if (item.shrinking) {
+      const t = Math.min(1, (elapsed - item.shrinkStartedAt) / item.shrinkDuration);
+      item.root.scale.setScalar((item.root.userData.currentScale || 1) * (1 - t));
+      if (t >= 1) removeActiveMagicObject(i, false);
+      continue;
+    }
+
     if (item.shouldRotate) {
       item.root.rotation.y += delta * item.rotationSpeed;
     }
   }
 }
 
-function removeActiveMagicObject(index) {
+function removeActiveMagicObject(index, withShrink = false) {
   const item = activeMagicObjects[index];
   if (!item) return;
 
+  if (withShrink && !item.shrinking) {
+    item.shrinking = true;
+    item.shrinkStartedAt = clock.elapsedTime;
+    item.shrinkDuration = 0.35;
+    return;
+  }
   scene.remove(item.root);
 
   removeMixerForRoot(item.root);
@@ -2603,6 +2667,14 @@ function renderHpBars() {
   if (sv) sv.textContent = `${battleState.selfHp}/1000`;
   if (ev) ev.textContent = `${battleState.enemyHp}/1000`;
 }
+
+function hydrateBattleHpFromRoom() {
+  const me = (currentRoom?.members || []).find((m) => m.id === userTrackingId);
+  const enemy = (currentRoom?.members || []).find((m) => m.id !== userTrackingId);
+  battleState.selfHp = Number.isFinite(Number(me?.hp)) ? Math.max(0, Number(me.hp)) : 1000;
+  battleState.enemyHp = Number.isFinite(Number(enemy?.hp)) ? Math.max(0, Number(enemy.hp)) : 1000;
+}
+
 effectTestBtn?.addEventListener("click", () => {
   const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
   const selectedName = checkedAsset?.value || "fireball.glb";
