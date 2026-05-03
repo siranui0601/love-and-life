@@ -683,6 +683,13 @@ async function startThreeBattleScene() {
   refs.page?.classList.add("hidden");
   refs.battleView?.classList.remove("hidden");
   hydrateBattleHpFromRoom();
+  
+  hydrateBattleHpFromRoom();
+
+  // 再読込時に、過去の魔法を再処理しない
+  battleState.lastCastAt = Date.now();
+  battleState.processedCastIds = new Set();
+
   ensureTutorialModal();
 
 
