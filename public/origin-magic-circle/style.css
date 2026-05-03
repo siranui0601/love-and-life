@@ -100,16 +100,20 @@ h1, h2, h3 { margin-top: 0; }
 }
 
 .magic-circle-controls {
-  position: absolute;
-  bottom: 5svh;
+  position: fixed;
+  left: 0;
+  width: 100%;
   display: flex;
-  gap: 8px;
-  z-index: 10002;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 10000;
 }
 
-.magic-circle-controls.left { left: 12px; }
-.magic-circle-controls.right { right: 12px; }
-
+/* ←ここが重要 */
+.magic-circle-controls.left,
+.magic-circle-controls.right {
+  bottom: calc(env(safe-area-inset-bottom) + 2dvh);
+}
 .magic-circle-controls button {
   min-width: 44px;
   height: 44px;
