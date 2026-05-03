@@ -999,18 +999,89 @@ function updateCustomEffect(root, elapsed, delta) {
 }
 
   if (type === "energy_slash") {
-    root.rotation.y += delta * 3.8;
-    root.children.forEach((child, index) => {
-      if (child.userData.kind === "glint") {
-        const phase = (elapsed * 3.8 + index * 0.8) % 1;
-        child.position.x = -1.55 + phase * 3.1;
-        child.material.opacity = phase > 0.15 && phase < 0.35 ? 0.95 : 0.18;
-      } else if (child.material) {
-        child.material.opacity = 0.72 + Math.sin(elapsed * 12 + index) * 0.2;
+  // 本体は回転させない。呼吸するように少しだけ明滅。
+  root.children.forEach((child, index) => {
+    const role = child.userData.role;
+
+    if (role === "slash_body") {
+      if (child.material) {
+        child.material.opacity = 0.62 + Math.sin(elapsed * 2.4) * 0.08;
       }
-    });
-    return;
-  }
+      return;
+    }
+
+    if (role === "slash_core") {
+      if (child.material) {
+        child.material.opacity = 0.78 + Math.sin(elapsed * 3.2) * 0.12;
+      }
+      return;
+    }
+
+    if (role === "slash_glow") {
+      const pulse = 1 + Math.sin(elapsed * 2.1) * 0.035;
+      child.scale.set(1.55 * pulse, 0.42 * pulse, 1);
+
+      if (child.material) {
+        child.material.opacity = 0.18 + Math.sin(elapsed * 2.6) * 0.05;
+      }
+      return;
+    }
+
+    if (role === "slash_wave" || role === "slash_trail") {
+      // 0〜1で端から端へ移動。少し止まってからまた走る。
+      const speed = child.userData.speed || 1;
+      const delay = child.userData.delay || 0;
+      const local = (elapsed * speed + delay) % 2.4;
+
+      // 1.0秒だけ表示して、残りは消える＝不定期っぽい
+      if (local > 1.0) {
+        child.visible = false;
+        return;
+      }
+
+      child.visible = true;
+
+      const t = local / 1.0;
+
+      // 三日月の弧上の位置
+      const startAngle = -Math.PI * 0.95;
+      const endAngle = Math.PI * 0.15;
+      const angle = startAngle + (endAngle - startAngle) * t;
+
+      // 平べったい楕円弧にする
+      const radiusX = role === "slash_wave" ? 2.15 : 2.05;
+      const radiusY = role === "slash_wave" ? 0.55 : 0.48;
+
+      const waveOffset = Math.sin(t * Math.PI * 8 + elapsed * 10) * 0.035;
+
+      child.position.set(
+        Math.cos(angle) * radiusX,
+        Math.sin(angle) * radiusY + waveOffset,
+        role === "slash_wave" ? 0.08 : -0.02
+      );
+
+      const fadeEdge = Math.sin(t * Math.PI);
+      const flicker = 0.75 + Math.sin(elapsed * 25 + index) * 0.25;
+
+      if (child.material) {
+        child.material.opacity =
+          role === "slash_wave"
+            ? 0.95 * fadeEdge * flicker
+            : 0.45 * fadeEdge;
+      }
+
+      const s =
+        role === "slash_wave"
+          ? 0.8 + fadeEdge * 0.9
+          : 0.5 + fadeEdge * 0.5;
+
+      child.scale.setScalar(s);
+      return;
+    }
+  });
+
+  return;
+}
 
   if (type === "shadow_orb" || type === "light_orb") {
     root.rotation.y += delta * 1.5;
@@ -1323,36 +1394,71 @@ function createMistCloudEffect() {
   return root;
 }
 
-function createSlashArcEffect() {
+function createEnergySlashEffect() {
   const root = new Group();
-  const geometry = new TorusGeometry(1.25, 0.09, 12, 100, Math.PI * 1.28);
-  const material = new MeshBasicMaterial({
-    color: 0xb7eeff,
-    transparent: true,
-    opacity: 0.98,
-    blending: AdditiveBlending,
-    depthWrite: false,
-    side: DoubleSide,
-    toneMapped: false,
-  });
 
-  const slash = new Mesh(geometry, material);
-  slash.rotation.set(Math.PI / 2.5, 0, Math.PI / 6);
-  root.add(slash);
-  const edgeGlow = slash.clone();
-  edgeGlow.scale.set(1.06, 1.06, 1.06);
-  edgeGlow.material = edgeGlow.material.clone();
-  edgeGlow.material.color.setHex(0xffffff);
-  edgeGlow.material.opacity = 0.55;
-  root.add(edgeGlow);
-  for (let i = 0; i < 3; i += 1) {
-    const glint = new Mesh(new PlaneGeometry(0.35, 0.08), new MeshBasicMaterial({
-      color: 0xffffff, transparent: true, opacity: 0.15, blending: AdditiveBlending, side: DoubleSide, depthWrite: false, toneMapped: false,
-    }));
-    glint.userData = { kind: "glint" };
-    root.add(glint);
-  }
   root.userData.effectType = "energy_slash";
+
+  // 三日月の本体：太い外側弧
+  const outerArc = new Mesh(
+    new TorusGeometry(1.45, 0.055, 8, 96, Math.PI * 1.25),
+    makeGlowMaterial(0x88ddff, 0.72)
+  );
+  outerArc.userData.role = "slash_body";
+  outerArc.rotation.z = -Math.PI * 0.62;
+  outerArc.scale.set(1.45, 0.38, 1);
+  root.add(outerArc);
+
+  // 三日月の芯：白い細い刃
+  const innerArc = new Mesh(
+    new TorusGeometry(1.32, 0.026, 8, 96, Math.PI * 1.18),
+    makeGlowMaterial(0xffffff, 0.9)
+  );
+  innerArc.userData.role = "slash_core";
+  innerArc.rotation.z = -Math.PI * 0.59;
+  innerArc.scale.set(1.52, 0.32, 1);
+  root.add(innerArc);
+
+  // 残光：外側の薄い青いにじみ
+  const glowArc = new Mesh(
+    new TorusGeometry(1.52, 0.09, 8, 96, Math.PI * 1.2),
+    makeGlowMaterial(0x2299ff, 0.22)
+  );
+  glowArc.userData.role = "slash_glow";
+  glowArc.rotation.z = -Math.PI * 0.62;
+  glowArc.scale.set(1.55, 0.42, 1);
+  root.add(glowArc);
+
+  // 波打つ光：端から端へ走る小さな発光点たち
+  for (let i = 0; i < 7; i += 1) {
+    const wave = new Mesh(
+      new SphereGeometry(0.055 + i * 0.004, 12, 8),
+      makeGlowMaterial(i % 2 === 0 ? 0xffffff : 0x99eeff, 0.95)
+    );
+
+    wave.userData.role = "slash_wave";
+    wave.userData.phase = i * 0.12;
+    wave.userData.speed = 0.85 + Math.random() * 0.45;
+    wave.userData.delay = Math.random() * 1.5;
+    wave.visible = false;
+
+    root.add(wave);
+  }
+
+  // 細い尾：波が通った後の一瞬の軌跡
+  for (let i = 0; i < 4; i += 1) {
+    const trail = new Mesh(
+      new SphereGeometry(0.035, 8, 6),
+      makeGlowMaterial(0x99eeff, 0.45)
+    );
+
+    trail.userData.role = "slash_trail";
+    trail.userData.phase = i * 0.18;
+    trail.userData.delay = Math.random() * 1.5;
+    trail.visible = false;
+
+    root.add(trail);
+  }
 
   return root;
 }
@@ -1570,7 +1676,7 @@ function createCustomEffectByName(assetName) {
   if (assetName === "lightning") return createLightningEffect();
   if (assetName === "explosion_burst") return createExplosionBurstEffect();
   if (assetName === "mist_cloud") return createMistCloudEffect();
-  if (assetName === "energy_slash") return createSlashArcEffect();
+  if (assetName === "energy_slash") return createEnergySlashEffect();
   if (assetName === "shadow_orb") return createDarkOrbEffect();
   if (assetName === "light_orb") return createLightOrbEffect();
   if (assetName === "crystal_shard") return createIceShardEffect();
