@@ -801,33 +801,25 @@ function createCrescentSlashTexture() {
 
   const ctx = canvas.getContext("2d");
 
-  // 発光する三日月本体
-  const gradient = ctx.createRadialGradient(88, 128, 8, 96, 128, 125);
+  const gradient = ctx.createRadialGradient(86, 128, 0, 96, 128, 116);
   gradient.addColorStop(0.0, "rgba(255,255,255,1)");
-  gradient.addColorStop(0.28, "rgba(150,235,255,0.95)");
-  gradient.addColorStop(0.68, "rgba(60,170,255,0.65)");
-  gradient.addColorStop(1.0, "rgba(0,120,255,0)");
+  gradient.addColorStop(0.28, "rgba(160,240,255,0.95)");
+  gradient.addColorStop(0.62, "rgba(50,170,255,0.62)");
+  gradient.addColorStop(1.0, "rgba(0,110,255,0)");
 
+  // 外側の円
   ctx.fillStyle = gradient;
   ctx.beginPath();
-  ctx.arc(112, 128, 92, 0, Math.PI * 2);
+  ctx.arc(112, 128, 94, 0, Math.PI * 2);
   ctx.fill();
 
-  // 別の円で削って三日月にする
+  // 内側を大きめの円でくり抜く
   ctx.globalCompositeOperation = "destination-out";
   ctx.beginPath();
-  ctx.arc(154, 128, 86, 0, Math.PI * 2);
+  ctx.arc(156, 128, 104, 0, Math.PI * 2);
   ctx.fill();
 
-  // 合成を戻す
   ctx.globalCompositeOperation = "source-over";
-
-  // 刃の白い芯を少し足す
-  ctx.strokeStyle = "rgba(255,255,255,0.85)";
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.arc(108, 128, 88, -Math.PI * 0.62, Math.PI * 0.62);
-  ctx.stroke();
 
   const texture = new CanvasTexture(canvas);
   texture.needsUpdate = true;
@@ -1056,34 +1048,37 @@ function updateCustomEffect(root, elapsed, delta) {
     }
 
     if (role === "crescent_wave") {
-      // 端から端へ「三日月の刃の上」を走る
-      const cycle = 1.65;
-      const local = (elapsed * child.userData.speed + child.userData.delay) % cycle;
+  const cycle = 1.65;
+  const local = (elapsed * child.userData.speed + child.userData.delay) % cycle;
 
-      if (local > 1.0) {
-        child.visible = false;
-        return;
-      }
+  if (local > 1.0) {
+    child.visible = false;
+    return;
+  }
 
-      child.visible = true;
+  child.visible = true;
 
-      const t = local; // 0〜1
-      const angle = -Math.PI * 0.62 + Math.PI * 1.24 * t;
+  const t = local;
+  const angle = -Math.PI * 0.78 + Math.PI * 1.56 * t;
 
-      // 三日月の外周に沿って移動
-      const x = Math.cos(angle) * 1.18 - 0.38;
-      const y = Math.sin(angle) * 0.72;
+  // 三日月の外縁に沿う座標
+  let x = Math.cos(angle) * 0.62 - 0.12;
+  let y = Math.sin(angle) * 1.05;
 
-      child.position.set(x, y, 0.08);
+  // 三日月本体を -90° 回したので、光の軌道も同じだけ回す
+  const rotatedX = y;
+  const rotatedY = -x;
 
-      const fade = Math.sin(t * Math.PI);
-      const flicker = 0.75 + Math.sin(elapsed * 35 + index * 3) * 0.25;
+  child.position.set(rotatedX, rotatedY, 0.08);
 
-      child.material.opacity = 0.95 * fade * flicker;
-      child.scale.set(0.18 + fade * 0.28, 0.18 + fade * 0.28, 1);
+  const fade = Math.sin(t * Math.PI);
+  const flicker = 0.75 + Math.sin(elapsed * 35 + index * 3) * 0.25;
 
-      return;
-    }
+  child.material.opacity = 0.95 * fade * flicker;
+  child.scale.set(0.18 + fade * 0.28, 0.18 + fade * 0.28, 1);
+
+  return;
+}
   });
 
   return;
@@ -1409,21 +1404,22 @@ function createEnergySlashEffect() {
   const crescentTexture = createCrescentSlashTexture();
 
   const crescent = new Sprite(
-    new SpriteMaterial({
-      map: crescentTexture,
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.9,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      depthTest: true,
-      toneMapped: false,
-    })
-  );
+  new SpriteMaterial({
+    map: crescentTexture,
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.9,
+    blending: AdditiveBlending,
+    depthWrite: false,
+    depthTest: true,
+    toneMapped: false,
+    rotation: -Math.PI / 2,
+  })
+);
 
-  crescent.userData.role = "crescent_body";
-  crescent.scale.set(3.2, 2.0, 1);
-  root.add(crescent);
+crescent.userData.role = "crescent_body";
+crescent.scale.set(3.4, 2.1, 1);
+root.add(crescent);
 
   // 端から端へ走る発光点
   for (let i = 0; i < 5; i += 1) {
