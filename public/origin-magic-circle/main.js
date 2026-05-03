@@ -682,9 +682,7 @@ async function startThreeBattleScene() {
 
   refs.page?.classList.add("hidden");
   refs.battleView?.classList.remove("hidden");
-  hydrateBattleHpFromRoom();
-  
-  hydrateBattleHpFromRoom();
+  //hydrateBattleHpFromRoom();
 
   // 再読込時に、過去の魔法を再処理しない
   battleState.lastCastAt = Date.now();
@@ -776,6 +774,10 @@ const { GLTFLoader } = GLTF;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   refs.battleView.innerHTML = "";
   refs.battleView.appendChild(renderer.domElement);
+  
+  hydrateBattleHpFromRoom();
+  updateHpBars();
+  
   const composer = new EffectComposer(renderer);
 
 const renderPass = new RenderPass(scene, camera);
@@ -2676,10 +2678,12 @@ function renderHpBars() {
 }
 
 function hydrateBattleHpFromRoom() {
-  const me = (currentRoom?.members || []).find((m) => m.id === userTrackingId);
-  const enemy = (currentRoom?.members || []).find((m) => m.id !== userTrackingId);
-  battleState.selfHp = Number.isFinite(Number(me?.hp)) ? Math.max(0, Number(me.hp)) : 1000;
-  battleState.enemyHp = Number.isFinite(Number(enemy?.hp)) ? Math.max(0, Number(enemy.hp)) : 1000;
+  const members = currentRoom?.members || [];
+  const self = members.find((member) => member.id === userTrackingId);
+  const enemy = members.find((member) => member.id !== userTrackingId);
+
+  battleState.selfHp = Number.isFinite(Number(self?.hp)) ? Number(self.hp) : 1000;
+  battleState.enemyHp = Number.isFinite(Number(enemy?.hp)) ? Number(enemy.hp) : 1000;
 }
 
 effectTestBtn?.addEventListener("click", () => {
