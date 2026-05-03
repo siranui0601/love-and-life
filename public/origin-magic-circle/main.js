@@ -1977,14 +1977,23 @@ function getAssetSizePreset(assetName, objectSize = "medium") {
     offsetZ: preset.offsetZ ?? medium.offsetZ ?? 0,
   };
 }
-function getBattleActors() {
+function getBattleActors(casterSide = "self") {
   const members = currentRoom?.members || [];
   const isPlayerTwo = members.findIndex((member) => member.id === userTrackingId) === 1;
 
-  return {
+  const viewerActors = {
     self: isPlayerTwo ? fighterB : fighterA,
     enemy: isPlayerTwo ? fighterA : fighterB,
   };
+
+  if (casterSide === "enemy") {
+    return {
+      self: viewerActors.enemy,
+      enemy: viewerActors.self,
+    };
+  }
+
+  return viewerActors;
 }
 
 function getForwardAndRight(self, enemy) {
@@ -2041,9 +2050,10 @@ function getSpawnPositionByName(
   objectSize = "medium",
   objectIndex = 0,
   objectCount = 1,
-  spreadPattern = "none"
+  spreadPattern = "none",
+  casterSide = "self"
 ) {
-  const { self, enemy } = getBattleActors();
+  const { self, enemy } = getBattleActors(casterSide);
   const { forward, right } = getForwardAndRight(self, enemy);
   const preset = getAssetSizePreset(assetName, objectSize);
 
@@ -2098,8 +2108,8 @@ function getSpawnPositionByName(
     spreadPattern
   );
 }
-function getTargetPositionByName(positionName, assetName, objectSize = "medium") {
-  const { self, enemy } = getBattleActors();
+function getTargetPositionByName(positionName, assetName, objectSize = "medium", casterSide = "self") {
+  const { self, enemy } = getBattleActors(casterSide);
   const preset = getAssetSizePreset(assetName, objectSize);
 
   const centerPos = new Vector3(0, 0, 0);
@@ -2241,7 +2251,7 @@ function applyMagicColor(root, colorHexCode) {
     });
   });
 }
-function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1) {
+function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, casterSide = "self") {
   const assetName = visualObject.assetFileName;
 
   if (!summonAssetOptions.includes(assetName)) {
@@ -2261,14 +2271,16 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1) 
     objectSize,
     objectIndex,
     objectCount,
-    visualObject.spawnSpreadPattern || "none"
+    visualObject.spawnSpreadPattern || "none",
+    casterSide
   );
 
   const movement = visualObject.movement || {};
   const targetPosition = getTargetPositionByName(
     movement.targetPosition || "enemy_position",
     assetName,
-    objectSize
+    objectSize,
+    casterSide
   );
 
   root.position.copy(spawnPosition);
@@ -2316,6 +2328,7 @@ function playMagicVisualEffects(effectJson, isEnemyCast = false) {
     console.warn("[origin-magic-circle] invalid magic effect json:", effectJson);
     return;
   }
+  const casterSide = isEnemyCast ? "enemy" : "self";
 
 
   const maxDamage = Math.min(300, Math.max(0, Number(effectJson?.artScore) || 0));
@@ -2344,7 +2357,7 @@ function playMagicVisualEffects(effectJson, isEnemyCast = false) {
         );
 
         for (let i = 0; i < objectCount; i += 1) {
-          spawnMagicVisualObject(visualObject, i, objectCount);
+          spawnMagicVisualObject(visualObject, i, objectCount, casterSide);
         }
       });
     }, delaySeconds * 1000);
