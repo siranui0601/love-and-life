@@ -235,13 +235,14 @@ export function mountOriginMagicCircleRoutes(app, io) {
   });
 
   app.post("/api/origin-magic-circle/chant-title", async (req, res) => {
-    const base64ImageFile = String(req.body?.base64ImageFile || "").trim();
-    if (!base64ImageFile) return res.status(400).json({ error: "base64ImageFile is required" });
-    if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
+  const base64ImageFile = String(req.body?.base64ImageFile || "").trim();
+  if (!base64ImageFile) return res.status(400).json({ error: "base64ImageFile is required" });
+  if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
 
-    try {
-      const cached = await findOriginMagicCircleSpellCache(base64ImageFile);
-      if (cached?.rawJson) {
+  const imageHash = createOriginMagicCircleImageHash(base64ImageFile);
+
+  try {
+    const cached = await findOriginMagicCircleSpellCache(imageHash);      if (cached?.rawJson) {
         return res.json({ magicEffectJson: normalizeOriginMagicCircleEffectJson(JSON.parse(cached.rawJson)), fromCache: true });
       }
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -323,9 +324,14 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
       const rawText = String(response.response.text() || "").trim();
       const jsonText = extractJsonText(rawText);
       const magicEffectJson = normalizeOriginMagicCircleEffectJson(JSON.parse(jsonText));
-      await appendOriginMagicCircleSpellCache({ base64ImageFile, rawJson: JSON.stringify(magicEffectJson) });
-      return res.json({ magicEffectJson });    } catch (error) {
-      console.error("[origin-magic-circle] chant title error:", error);
+      await appendOriginMagicCircleSpellCache({
+  imageHash,
+  rawJson: JSON.stringify(magicEffectJson),
+});
+
+return res.json({ magicEffectJson });
+
+            console.error("[origin-magic-circle] chant title error:", error);
       return res.status(500).json({ error: "gemini_failed" });
     }
   });
