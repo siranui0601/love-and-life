@@ -2425,6 +2425,86 @@ function getRotationSpeedValue(rotationSpeed) {
   return 1.8;
 }
 
+
+function normalizeEnterEffect(value) {
+  if (value === "fall_from_sky") return "fall_from_sky";
+  if (value === "rise_from_ground") return "rise_from_ground";
+  if (value === "scale_up") return "scale_up";
+  return "scale_up";
+}
+
+function normalizeExitEffect(value) {
+  if (value === "rise_to_sky") return "rise_to_sky";
+  if (value === "sink_into_ground") return "sink_into_ground";
+  if (value === "scale_down") return "scale_down";
+  return "scale_down";
+}
+
+function smoothStep01(value) {
+  const t = Math.max(0, Math.min(1, Number(value) || 0));
+  return t * t * (3 - 2 * t);
+}
+
+function getBaseMagicPosition(item, age) {
+  if (item.movePathType !== "none" && item.moveDuration > 0) {
+    return getPositionOnPath(
+      item.spawnPosition,
+      item.targetPosition,
+      age / item.moveDuration,
+      item.movePathType
+    );
+  }
+
+  return item.spawnPosition.clone();
+}
+
+function applyMagicLifecycleTransform(item, age) {
+  const root = item.root;
+  let pos = getBaseMagicPosition(item, age);
+  let scaleRate = 1;
+
+  const enterDuration = Math.max(0.01, item.enterDuration || 0.75);
+  const exitDuration = Math.max(0.01, item.exitDuration || 0.75);
+
+  const enterT = smoothStep01(age / enterDuration);
+
+  if (enterT < 1) {
+    if (item.enterEffect === "fall_from_sky") {
+      pos.y += (1 - enterT) * 12;
+    }
+
+    if (item.enterEffect === "rise_from_ground") {
+      pos.y -= (1 - enterT) * 6;
+    }
+
+    if (item.enterEffect === "scale_up") {
+      scaleRate *= enterT;
+    }
+  }
+
+  const exitStart = Math.max(0, item.lifeTime - exitDuration);
+
+  if (age >= exitStart) {
+    const exitT = smoothStep01((age - exitStart) / exitDuration);
+
+    if (item.exitEffect === "rise_to_sky") {
+      pos.y += exitT * 12;
+    }
+
+    if (item.exitEffect === "sink_into_ground") {
+      pos.y -= exitT * 6;
+    }
+
+    if (item.exitEffect === "scale_down") {
+      scaleRate *= 1 - exitT;
+    }
+  }
+
+  root.position.copy(pos);
+  root.scale.setScalar((item.baseScale || item.root.userData.currentScale || 1) * Math.max(0.001, scaleRate));
+}
+
+
 function easeOutCubic(t) {
   return 1 - Math.pow(1 - t, 3);
 }
@@ -2541,21 +2621,29 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
   const movePathType = movement.movePathType || "none";
 
   const active = {
-    root,
-    assetName,
-    startTime: clock.elapsedTime,
-    lifeTime: clampNumber(visualObject.lifeTimeSeconds, 0.5, 10, 3),
+  root,
+  assetName,
+  startTime: clock.elapsedTime,
+  lifeTime: clampNumber(visualObject.lifeTimeSeconds, 0.5, 10, 8),
 
-    spawnPosition: spawnPosition.clone(),
-    targetPosition: targetPosition.clone(),
+  spawnPosition: spawnPosition.clone(),
+  targetPosition: targetPosition.clone(),
 
-    moveDuration,
-    movePathType,
+  moveDuration,
+  movePathType,
 
-    shouldRotate: !!visualObject.rotation?.shouldRotate,
-    rotationSpeed: getRotationSpeedValue(visualObject.rotation?.rotationSpeed),
-  };
+  baseScale: preset.scale,
+  enterEffect: normalizeEnterEffect(visualObject.enterEffect),
+  exitEffect: normalizeExitEffect(visualObject.exitEffect),
+  enterDuration: 0.75,
+  exitDuration: 0.75,
 
+  shouldRotate: !!visualObject.rotation?.shouldRotate,
+  rotationSpeed: getRotationSpeedValue(visualObject.rotation?.rotationSpeed),
+};
+
+
+  applyMagicLifecycleTransform(active, 0);
   activeMagicObjects.push(active);
   return active;
 }
@@ -2627,6 +2715,9 @@ function playMagicVisualEffects(effectJson, isEnemyCast = false) {
     }, delaySeconds * 1000);
   });
 }
+
+
+
 function updateActiveMagicObjects(elapsed, delta) {
   for (let i = activeMagicObjects.length - 1; i >= 0; i -= 1) {
     const item = activeMagicObjects[i];
@@ -2640,28 +2731,11 @@ function updateActiveMagicObjects(elapsed, delta) {
     }
 
     if (age >= item.lifeTime) {
-      removeActiveMagicObject(i, true);
+      removeActiveMagicObject(i, false);
       continue;
     }
 
-    if (item.movePathType !== "none" && item.moveDuration > 0) {
-      const t = age / item.moveDuration;
-      item.root.position.copy(
-        getPositionOnPath(
-          item.spawnPosition,
-          item.targetPosition,
-          t,
-          item.movePathType
-        )
-      );
-    }
-
-    if (item.shrinking) {
-      const t = Math.min(1, (elapsed - item.shrinkStartedAt) / item.shrinkDuration);
-      item.root.scale.setScalar((item.root.userData.currentScale || 1) * (1 - t));
-      if (t >= 1) removeActiveMagicObject(i, false);
-      continue;
-    }
+    applyMagicLifecycleTransform(item, age);
 
     if (item.shouldRotate) {
       item.root.rotation.y += delta * item.rotationSpeed;
