@@ -265,18 +265,22 @@ h1, h2, h3 { margin-top: 0; }
 .battle-tutorial-modal {
   position: fixed;
   left: 0;
-  top: 42dvh;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom) + 18dvh);
+  transform: none;
+
   width: 100vw;
-  z-index: 25000;
-  padding: 22px 16px;
+  padding: 18px 20px;
+
+  z-index: 30002;
   text-align: center;
-  font-size: clamp(24px, 6vw, 56px);
-  font-weight: 900;
+  font-size: clamp(24px, 6vw, 44px);
+  font-weight: 800;
   color: #fff;
-  background: rgba(12, 8, 24, 0.78);
-  border-top: 1px solid rgba(255,255,255,.28);
-  border-bottom: 1px solid rgba(255,255,255,.28);
-  text-shadow: 0 0 18px rgba(212,143,255,.95);
+
+  background: rgba(17, 24, 38, 0.9);
+  text-shadow: 0 0 12px rgba(210, 170, 255, 0.95);
+
   pointer-events: none;
 }
 
