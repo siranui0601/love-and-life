@@ -636,13 +636,16 @@ export async function findOriginMagicCircleSpellCache(base64ImageFile) {
   return { rowIndex: idx + 2, base64ImageFile: key, rawJson };
 }
 
-export async function appendOriginMagicCircleSpellCache({ base64ImageFile, rawJson }) {
+export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson }) {
   const sheets = await getSheetsClient();
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
     range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:H2`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [[String(base64ImageFile || ""), String(rawJson || "")]] },
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[String(imageHash || ""), String(rawJson || "")]],
+    },
   });
 }
 
