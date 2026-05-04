@@ -29,7 +29,7 @@ function extractJsonText(text) {
   return raw;
 }
       
-export function mountOriginMagicCircleRoutes(app) {
+export function mountOriginMagicCircleRoutes(app, io) {
   const roomCastEvents = new Map();
   const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
   const routePath = "/オリジン魔法陣";
@@ -267,16 +267,32 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
     }
   });
 
-  app.post("/api/origin-magic-circle/casts", (req, res) => {
+    app.post("/api/origin-magic-circle/casts", (req, res) => {
     const roomId = String(req.body?.roomId || "").trim();
     const casterId = String(req.body?.casterId || "").trim();
     const casterName = String(req.body?.casterName || "").trim();
     const magicEffectJson = req.body?.magicEffectJson || null;
-    if (!roomId || !casterId || !magicEffectJson) return res.status(400).json({ error: "invalid_cast" });
-    const entry = { id: `${Date.now()}_${Math.random()}`, at: Date.now(), casterId, casterName, magicEffectJson };
+
+    if (!roomId || !casterId || !magicEffectJson) {
+      return res.status(400).json({ error: "invalid_cast" });
+    }
+
+    const entry = {
+      id: `${Date.now()}_${Math.random()}`,
+      at: Date.now(),
+      roomId,
+      casterId,
+      casterName,
+      magicEffectJson,
+    };
+
     const list = roomCastEvents.get(roomId) || [];
     list.push(entry);
     roomCastEvents.set(roomId, list.slice(-30));
+
+    // Socket.IO移行後でも、REST経由で送られた魔法を相手へ通知できるようにしておく
+    io?.to(originSocketRoom(roomId)).emit("origin:cast", entry);
+
     return res.json({ ok: true, cast: entry });
   });
 
@@ -284,7 +300,206 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
     const roomId = String(req.params.roomId || "").trim();
     const since = Number(req.query?.since || 0);
     const list = roomCastEvents.get(roomId) || [];
-    const casts = Number.isFinite(since) && since > 0 ? list.filter((v) => v.at > since) : list;
+    const casts = Number.isFinite(since) && since > 0
+      ? list.filter((v) => v.at > since)
+      : list;
+
     return res.json({ casts });
+  });
+
+  function originSocketRoom(roomId) {
+    return `origin-magic-circle:${String(roomId || "").trim()}`;
+  }
+
+  function buildHpPayload(room, viewerClientId) {
+    const members = room?.members || [];
+    const self = members.find((member) => member.id === viewerClientId);
+    const enemy = members.find((member) => member.id !== viewerClientId);
+
+    return {
+      roomId: room?.roomId || "",
+      selfHp: Number.isFinite(Number(self?.hp)) ? Number(self.hp) : 1000,
+      enemyHp: Number.isFinite(Number(enemy?.hp)) ? Number(enemy.hp) : 1000,
+      members,
+    };
+  }
+
+  io.on("connection", (socket) => {
+    socket.on("origin:join", async (payload = {}, ack) => {
+      const roomId = String(payload.roomId || "").trim();
+      const userTrackingId = String(payload.userTrackingId || payload.clientId || "").trim();
+
+      if (!roomId || !userTrackingId) {
+        ack?.({ ok: false, error: "roomId and userTrackingId are required" });
+        return;
+      }
+
+      try {
+        const room = await getOriginMagicCircleRoomById(roomId);
+        if (!room) {
+          ack?.({ ok: false, error: "room_not_found" });
+          return;
+        }
+
+        const joined = (room.members || []).some((member) => member.id === userTrackingId);
+        if (!joined) {
+          ack?.({ ok: false, error: "forbidden" });
+          return;
+        }
+
+        socket.data.originRoomId = roomId;
+        socket.data.originUserTrackingId = userTrackingId;
+        socket.join(originSocketRoom(roomId));
+
+        ack?.({
+          ok: true,
+          room,
+          hp: buildHpPayload(room, userTrackingId),
+        });
+      } catch (error) {
+        console.error("[origin-magic-circle] socket join error:", error);
+        ack?.({ ok: false, error: "server_error" });
+      }
+    });
+
+    socket.on("origin:requestHp", async (payload = {}, ack) => {
+      const roomId = String(payload.roomId || socket.data.originRoomId || "").trim();
+      const userTrackingId = String(payload.userTrackingId || socket.data.originUserTrackingId || "").trim();
+
+      if (!roomId || !userTrackingId) {
+        ack?.({ ok: false, error: "roomId and userTrackingId are required" });
+        return;
+      }
+
+      try {
+        const room = await getOriginMagicCircleRoomById(roomId);
+        if (!room) {
+          ack?.({ ok: false, error: "room_not_found" });
+          return;
+        }
+
+        const joined = (room.members || []).some((member) => member.id === userTrackingId);
+        if (!joined) {
+          ack?.({ ok: false, error: "forbidden" });
+          return;
+        }
+
+        ack?.({
+          ok: true,
+          room,
+          hp: buildHpPayload(room, userTrackingId),
+        });
+      } catch (error) {
+        console.error("[origin-magic-circle] socket request hp error:", error);
+        ack?.({ ok: false, error: "server_error" });
+      }
+    });
+
+    socket.on("origin:cast", async (payload = {}, ack) => {
+      const roomId = String(payload.roomId || socket.data.originRoomId || "").trim();
+      const casterId = String(payload.casterId || socket.data.originUserTrackingId || "").trim();
+      const casterName = String(payload.casterName || "").trim();
+      const magicEffectJson = payload.magicEffectJson || null;
+
+      if (!roomId || !casterId || !magicEffectJson) {
+        ack?.({ ok: false, error: "invalid_cast" });
+        return;
+      }
+
+      try {
+        const room = await getOriginMagicCircleRoomById(roomId);
+        if (!room) {
+          ack?.({ ok: false, error: "room_not_found" });
+          return;
+        }
+
+        const joined = (room.members || []).some((member) => member.id === casterId);
+        if (!joined) {
+          ack?.({ ok: false, error: "forbidden" });
+          return;
+        }
+
+        const entry = {
+          id: `${Date.now()}_${Math.random()}`,
+          at: Date.now(),
+          roomId,
+          casterId,
+          casterName,
+          magicEffectJson,
+        };
+
+        const list = roomCastEvents.get(roomId) || [];
+        list.push(entry);
+        roomCastEvents.set(roomId, list.slice(-30));
+
+        io.to(originSocketRoom(roomId)).emit("origin:cast", entry);
+
+        ack?.({ ok: true, cast: entry });
+      } catch (error) {
+        console.error("[origin-magic-circle] socket cast error:", error);
+        ack?.({ ok: false, error: "server_error" });
+      }
+    });
+
+    socket.on("origin:damage", async (payload = {}, ack) => {
+      const roomId = String(payload.roomId || socket.data.originRoomId || "").trim();
+      const attackerId = String(payload.attackerId || socket.data.originUserTrackingId || "").trim();
+      const targetId = String(payload.targetId || "").trim();
+      const damage = Math.max(0, Math.round(Number(payload.damage) || 0));
+
+      if (!roomId || !attackerId || !targetId || damage <= 0) {
+        ack?.({ ok: false, error: "invalid_damage" });
+        return;
+      }
+
+      try {
+        const roomBefore = await getOriginMagicCircleRoomById(roomId);
+        if (!roomBefore) {
+          ack?.({ ok: false, error: "room_not_found" });
+          return;
+        }
+
+        const attacker = (roomBefore.members || []).find((member) => member.id === attackerId);
+        const target = (roomBefore.members || []).find((member) => member.id === targetId);
+
+        if (!attacker || !target) {
+          ack?.({ ok: false, error: "forbidden" });
+          return;
+        }
+
+        const attackerHp = Number.isFinite(Number(attacker.hp)) ? Number(attacker.hp) : 1000;
+        const targetHp = Number.isFinite(Number(target.hp)) ? Number(target.hp) : 1000;
+        const nextTargetHp = Math.max(0, targetHp - damage);
+
+        const roomAfter = await updateOriginMagicCircleRoomHp({
+          roomId,
+          clientId: attackerId,
+          selfHp: attackerHp,
+          enemyHp: nextTargetHp,
+        });
+
+        const sockets = await io.in(originSocketRoom(roomId)).fetchSockets();
+
+        for (const targetSocket of sockets) {
+          const viewerId = String(targetSocket.data.originUserTrackingId || "").trim();
+          targetSocket.emit("origin:hp", buildHpPayload(roomAfter, viewerId));
+        }
+
+        ack?.({ ok: true, room: roomAfter });
+      } catch (error) {
+        if (error.message === "room_not_found") {
+          ack?.({ ok: false, error: "room_not_found" });
+          return;
+        }
+
+        if (error.message === "forbidden") {
+          ack?.({ ok: false, error: "forbidden" });
+          return;
+        }
+
+        console.error("[origin-magic-circle] socket damage error:", error);
+        ack?.({ ok: false, error: "server_error" });
+      }
+    });
   });
 }
