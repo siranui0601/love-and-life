@@ -243,46 +243,138 @@ h1, h2, h3 { margin-top: 0; }
 
 .magic-name-banner{position:fixed;left:0;top:45dvh;width:100vw;z-index:30000;padding:2dvh 2vw;text-align:center;font-size:clamp(26px,7vw,62px);font-weight:800;color:#fff;background:rgba(0,0,0,.72);text-shadow:0 0 18px rgba(140,200,255,.95);}
 .magic-name-banner.enemy{background:rgba(128,0,32,.88);}
-.hp-bars{position:fixed;top:1dvh;left:0;width:100vw;display:flex;gap:1vw;padding:0 1vw;z-index:30001;}
-.hp-card{flex:1;background:rgba(0,0,0,.45);padding:.8dvh .8vw;border-radius:10px;}
-.hp-label{font-weight:700;font-size:14px;margin-bottom:.6dvh;}
-.hp-track{height:2.4dvh;min-height:16px;background:#3a3a3a;border-radius:999px;overflow:hidden;position:relative;}
-.hp-fill{height:100%;}
-.hp-fill.self{background:#3ccf66;}
-.hp-fill.enemy{background:#d04545;}
-.hp-value{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;}
 
 .damage-number{position:fixed;z-index:30005;color:#ff4b4b;font-weight:900;text-shadow:0 0 12px rgba(0,0,0,.9);animation:damage-pop .9s ease-out forwards;pointer-events:none;}
 @keyframes damage-pop{0%{transform:translate(-50%,0) scale(.7);opacity:0}15%{opacity:1}100%{transform:translate(-50%,-42px) scale(1);opacity:0}}
-.battle-tutorial-modal{position:fixed;left:50%;top:12dvh;transform:translateX(-50%);z-index:30002;padding:16px 24px;border-radius:14px;background:rgba(10,8,20,.35);border:1px solid rgba(255,255,255,.25);font-size:clamp(18px,3.5vw,30px);font-weight:800;backdrop-filter:blur(1px);}
 
 
 
+/* =========================
+   Battle HUD layout
+========================= */
+
+:root {
+  --battle-hud-top: max(8px, calc(env(safe-area-inset-top) + 1dvh));
+  --battle-hud-side: 1vw;
+  --battle-hp-card-padding-y: 0.8dvh;
+  --battle-hp-card-padding-x: 0.8vw;
+  --battle-hp-label-height: 18px;
+  --battle-hp-label-margin: 0.6dvh;
+  --battle-hp-track-height: max(16px, 2.4dvh);
+  --battle-hp-card-radius: 10px;
+
+  /*
+    HPバー全体のだいたいの高さ。
+    .hp-card の padding上下 + label + label下margin + track
+  */
+  --battle-hp-total-height: calc(
+    var(--battle-hp-card-padding-y) * 2
+    + var(--battle-hp-label-height)
+    + var(--battle-hp-label-margin)
+    + var(--battle-hp-track-height)
+  );
+
+  --battle-tutorial-gap: 8px;
+}
+
+.hp-bars {
+  position: fixed;
+  top: var(--battle-hud-top);
+  left: 0;
+  width: 100vw;
+  display: flex;
+  gap: 1vw;
+  padding: 0 var(--battle-hud-side);
+  z-index: 30001;
+}
+
+.hp-card {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.45);
+  padding: var(--battle-hp-card-padding-y) var(--battle-hp-card-padding-x);
+  border-radius: var(--battle-hp-card-radius);
+}
+
+.hp-label {
+  height: var(--battle-hp-label-height);
+  line-height: var(--battle-hp-label-height);
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: var(--battle-hp-label-margin);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hp-track {
+  height: var(--battle-hp-track-height);
+  background: #3a3a3a;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.hp-fill {
+  height: 100%;
+}
+
+.hp-fill.self {
+  background: #3ccf66;
+}
+
+.hp-fill.enemy {
+  background: #d04545;
+}
+
+.hp-value {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 700;
+}
 
 
-
+/* =========================
+   Battle tutorial
+   HPバーのすぐ下に固定
+========================= */
 
 .battle-tutorial-modal {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(env(safe-area-inset-bottom) + 18dvh);
-  transform: none;
-
-  width: 100vw;
-  padding: 18px 20px;
+  top: calc(
+    var(--battle-hud-top)
+    + var(--battle-hp-total-height)
+    + var(--battle-tutorial-gap)
+  );
+  left: var(--battle-hud-side);
+  right: var(--battle-hud-side);
 
   z-index: 30002;
+  width: auto;
+
+  padding: 10px 14px;
+  min-height: 0;
+
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(17, 24, 38, 0.78);
+  backdrop-filter: blur(2px);
+
   text-align: center;
-  font-size: clamp(24px, 6vw, 44px);
+  font-size: clamp(16px, 4.2vw, 28px);
+  line-height: 1.25;
   font-weight: 800;
   color: #fff;
-
-  background: rgba(17, 24, 38, 0.9);
   text-shadow: 0 0 12px rgba(210, 170, 255, 0.95);
 
   pointer-events: none;
 }
+
+
+
+
 
 .room-id-modal {
   position: fixed;
