@@ -761,6 +761,59 @@ function setupMagicCircleUi(container, options = {}) {
   return { resizeOverlay };
 }
 
+
+
+function ensureHpBars() {
+  if (document.getElementById("hpBars")) return;
+
+  const enemy = (currentRoom?.members || []).find((m) => m.id !== userTrackingId);
+  const wrap = document.createElement("div");
+  wrap.id = "hpBars";
+  wrap.className = "hp-bars";
+  wrap.innerHTML = `
+    <div class="hp-card">
+      <div class="hp-label">${username}</div>
+      <div class="hp-track">
+        <div id="selfHpFill" class="hp-fill self"></div>
+        <div id="selfHpValue" class="hp-value">1000/1000</div>
+      </div>
+    </div>
+    <div class="hp-card">
+      <div class="hp-label">${enemy?.name || "相手"}</div>
+      <div class="hp-track">
+        <div id="enemyHpFill" class="hp-fill enemy"></div>
+        <div id="enemyHpValue" class="hp-value">1000/1000</div>
+      </div>
+    </div>
+  `;
+  refs.battleView.appendChild(wrap);
+}
+
+function renderHpBars() {
+  ensureHpBars();
+
+  const sf = document.getElementById("selfHpFill");
+  const ef = document.getElementById("enemyHpFill");
+  const sv = document.getElementById("selfHpValue");
+  const ev = document.getElementById("enemyHpValue");
+
+  if (sf) sf.style.width = `${(battleState.selfHp / 1000) * 100}%`;
+  if (ef) ef.style.width = `${(battleState.enemyHp / 1000) * 100}%`;
+  if (sv) sv.textContent = `${battleState.selfHp}/1000`;
+  if (ev) ev.textContent = `${battleState.enemyHp}/1000`;
+}
+
+function hydrateBattleHpFromRoom() {
+  const members = currentRoom?.members || [];
+  const self = members.find((member) => member.id === userTrackingId);
+  const enemy = members.find((member) => member.id !== userTrackingId);
+
+  battleState.selfHp = Number.isFinite(Number(self?.hp)) ? Number(self.hp) : 1000;
+  battleState.enemyHp = Number.isFinite(Number(enemy?.hp)) ? Number(enemy.hp) : 1000;
+}
+
+
+
 async function startThreeBattleScene() {
   if (battleStarted) return;
   battleStarted = true;
@@ -2805,36 +2858,6 @@ function getMaterialDebugText(root, assetName) {
   });
 
   return lines.join("\n");
-}
-
-
-
-function ensureHpBars() {
-  if (document.getElementById("hpBars")) return;
-  const enemy = (currentRoom?.members || []).find((m) => m.id !== userTrackingId);
-  const wrap = document.createElement("div");
-  wrap.id = "hpBars";
-  wrap.className = "hp-bars";
-  wrap.innerHTML = `<div class="hp-card"><div class="hp-label">${username}</div><div class="hp-track"><div id="selfHpFill" class="hp-fill self"></div><div id="selfHpValue" class="hp-value">1000/1000</div></div></div><div class="hp-card"><div class="hp-label">${enemy?.name || "相手"}</div><div class="hp-track"><div id="enemyHpFill" class="hp-fill enemy"></div><div id="enemyHpValue" class="hp-value">1000/1000</div></div></div>`;
-  refs.battleView.appendChild(wrap);
-}
-function renderHpBars() {
-  ensureHpBars();
-  const sf = document.getElementById("selfHpFill"); const ef = document.getElementById("enemyHpFill");
-  const sv = document.getElementById("selfHpValue"); const ev = document.getElementById("enemyHpValue");
-  if (sf) sf.style.width = `${(battleState.selfHp / 1000) * 100}%`;
-  if (ef) ef.style.width = `${(battleState.enemyHp / 1000) * 100}%`;
-  if (sv) sv.textContent = `${battleState.selfHp}/1000`;
-  if (ev) ev.textContent = `${battleState.enemyHp}/1000`;
-}
-
-function hydrateBattleHpFromRoom() {
-  const members = currentRoom?.members || [];
-  const self = members.find((member) => member.id === userTrackingId);
-  const enemy = members.find((member) => member.id !== userTrackingId);
-
-  battleState.selfHp = Number.isFinite(Number(self?.hp)) ? Number(self.hp) : 1000;
-  battleState.enemyHp = Number.isFinite(Number(enemy?.hp)) ? Number(enemy.hp) : 1000;
 }
 
 effectTestBtn?.addEventListener("click", () => {
