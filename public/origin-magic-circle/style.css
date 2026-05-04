@@ -287,7 +287,12 @@ h1, h2, h3 { margin-top: 0; }
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  top: 10vh;
+  padding-top: 18vh;
+}
+
+.room-id-modal:focus-within {
+  padding-top: 12px;
+  align-items: flex-start;
 }
 
 .room-id-modal__backdrop {
