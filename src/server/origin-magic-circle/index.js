@@ -242,7 +242,8 @@ export function mountOriginMagicCircleRoutes(app, io) {
   const imageHash = createOriginMagicCircleImageHash(base64ImageFile);
 
   try {
-    const cached = await findOriginMagicCircleSpellCache(imageHash);      if (cached?.rawJson) {
+    const cached = await findOriginMagicCircleSpellCache(imageHash);
+          if (cached?.rawJson) {
         return res.json({ magicEffectJson: normalizeOriginMagicCircleEffectJson(JSON.parse(cached.rawJson)), fromCache: true });
       }
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -330,8 +331,8 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
 });
 
 return res.json({ magicEffectJson });
-
-            console.error("[origin-magic-circle] chant title error:", error);
+    } catch (error) {
+      console.error("[origin-magic-circle] chant title error:", error);
       return res.status(500).json({ error: "gemini_failed" });
     }
   });
