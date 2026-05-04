@@ -28,6 +28,51 @@ function extractJsonText(text) {
 
   return raw;
 }
+
+const ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP = {
+  "炎球": "fireball.glb",
+  "人魂と骸骨": "magic_voxel_skull_flat_shaded.glb",
+  "竜巻": "stylized_fire_tornado.glb",
+  "不死鳥": "phoenix_bird.glb",
+  "月": "truth_about_the_dark_side_of_the_moon.glb",
+  "歯車時計": "broken_steampunk_clock.glb",
+  "プラズマ": "evanescent_plasma.glb",
+  "六足ロボ": "gun-bot_with_walk_and_idle_animation.glb",
+  "魂剣": "soulsucker_-_weaponcraft.glb",
+  "花束": "bouquet.glb",
+  "ギミック剣": "lance_of_the_primordials_-_dae_weaponcraft.glb",
+  "サイバー卵": "pearl_electron.glb",
+  "サイバー球と円盤": "stranger_star.glb",
+  "蠢く立方体": "cube_cascade.glb",
+  "サイバー多面球": "cyber_orb.glb",
+  "エナジー凝縮球": "magic_marble.glb",
+  "二重螺旋球": "cyber_spore.glb",
+  "銀河": "dark_matter.glb",
+  "蠢く多面球": "harlequin_orb.glb",
+  "多線球": "evanescent_smoke.glb",
+  "雷": "lightning",
+  "大爆発": "explosion_burst",
+  "雲": "mist_cloud",
+  "光球": "light_orb",
+  "バレッド": "crystal_shard",
+  "シンプルリング": "simple_ring",
+};
+
+function normalizeOriginMagicCircleEffectJson(effectJson) {
+  if (!effectJson || typeof effectJson !== "object") return effectJson;
+  const cloned = JSON.parse(JSON.stringify(effectJson));
+  const timedVisualEffects = Array.isArray(cloned.timedVisualEffects) ? cloned.timedVisualEffects : [];
+  for (const effect of timedVisualEffects) {
+    const visualObjects = Array.isArray(effect?.visualObjects) ? effect.visualObjects : [];
+    for (const visualObject of visualObjects) {
+      const currentName = String(visualObject?.assetFileName || "").trim();
+      if (currentName && ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[currentName]) {
+        visualObject.assetFileName = ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[currentName];
+      }
+    }
+  }
+  return cloned;
+}
       
 export function mountOriginMagicCircleRoutes(app, io) {
   const roomCastEvents = new Map();
@@ -189,7 +234,7 @@ export function mountOriginMagicCircleRoutes(app, io) {
     try {
       const cached = await findOriginMagicCircleSpellCache(base64ImageFile);
       if (cached?.rawJson) {
-        return res.json({ magicEffectJson: JSON.parse(cached.rawJson), fromCache: true });
+        return res.json({ magicEffectJson: normalizeOriginMagicCircleEffectJson(JSON.parse(cached.rawJson)), fromCache: true });
       }
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const response = await model.generateContent([
@@ -211,7 +256,7 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
       "startTimeSeconds": 0,
       "visualObjects": [
         {
-          "assetFileName": ["fireball.glb","magic_voxel_skull_flat_shaded.glb","stylized_fire_tornado.glb","phoenix_bird.glb","truth_about_the_dark_side_of_the_moon.glb","broken_steampunk_clock.glb","evanescent_plasma.glb","gun-bot_with_walk_and_idle_animation.glb","soulsucker_-_weaponcraft.glb","bouquet.glb","lance_of_the_primordials_-_dae_weaponcraft.glb","pearl_electron.glb","stranger_star.glb","cube_cascade.glb","cyber_orb.glb","magic_marble.glb","cyber_spore.glb","dark_matter.glb","harlequin_orb.glb","evanescent_smoke.glb","lightning","explosion_burst","mist_cloud","light_orb","crystal_shard","simple_ring"],
+          "assetFileName": ["炎球","人魂と骸骨","竜巻","不死鳥","月","歯車時計","プラズマ","六足ロボ","魂剣","花束","ギミック剣","サイバー卵","サイバー球と円盤","蠢く立方体","サイバー多面球","エナジー凝縮球","二重螺旋球","銀河","蠢く多面球","多線球","雷","大爆発","雲","光球","バレッド","シンプルリング"],
           "objectCount": 1,
           "spawnPosition": ["in_front_of_self","behind_self","above_self","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
           "spawnSpreadPattern": ["none","horizontal_line","vertical_line","circle","random_scatter"],
@@ -241,12 +286,13 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
 }
 
 ルール:
+- assetは3種以上使うこと
 - artScoreは0〜100の整数
 - timedVisualEffectsは1〜4個
 - visualObjectsは各timedVisualEffectsにつき1〜3個
 - objectCountは1〜5
 - startTimeSecondsは0〜6
-- moveDurationSeconds<lifeTimeSeconds<10
+- moveDurationSeconds<lifeTimeSeconds
 
 - damageTimingsは1〜5個
 - damageWeightの合計は100にする
@@ -259,7 +305,7 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
 
       const rawText = String(response.response.text() || "").trim();
       const jsonText = extractJsonText(rawText);
-      const magicEffectJson = JSON.parse(jsonText);
+      const magicEffectJson = normalizeOriginMagicCircleEffectJson(JSON.parse(jsonText));
       await appendOriginMagicCircleSpellCache({ base64ImageFile, rawJson: JSON.stringify(magicEffectJson) });
       return res.json({ magicEffectJson });    } catch (error) {
       console.error("[origin-magic-circle] chant title error:", error);
@@ -271,7 +317,7 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
     const roomId = String(req.body?.roomId || "").trim();
     const casterId = String(req.body?.casterId || "").trim();
     const casterName = String(req.body?.casterName || "").trim();
-    const magicEffectJson = req.body?.magicEffectJson || null;
+    const magicEffectJson = normalizeOriginMagicCircleEffectJson(req.body?.magicEffectJson || null);
 
     if (!roomId || !casterId || !magicEffectJson) {
       return res.status(400).json({ error: "invalid_cast" });
@@ -399,7 +445,7 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
       const roomId = String(payload.roomId || socket.data.originRoomId || "").trim();
       const casterId = String(payload.casterId || socket.data.originUserTrackingId || "").trim();
       const casterName = String(payload.casterName || "").trim();
-      const magicEffectJson = payload.magicEffectJson || null;
+      const magicEffectJson = normalizeOriginMagicCircleEffectJson(payload.magicEffectJson || null);
 
       if (!roomId || !casterId || !magicEffectJson) {
         ack?.({ ok: false, error: "invalid_cast" });
