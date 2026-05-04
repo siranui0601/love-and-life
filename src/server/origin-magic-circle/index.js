@@ -1,4 +1,5 @@
 import path from "path";
+import crypto from "node:crypto";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_API_KEY } from "../../foundation/env.js";
 import {
@@ -27,6 +28,13 @@ function extractJsonText(text) {
   }
 
   return raw;
+}
+
+function createOriginMagicCircleImageHash(base64ImageFile) {
+  return crypto
+    .createHash("sha256")
+    .update(String(base64ImageFile || ""))
+    .digest("hex");
 }
 
 const ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP = {
