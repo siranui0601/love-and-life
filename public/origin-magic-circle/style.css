@@ -287,7 +287,9 @@ h1, h2, h3 { margin-top: 0; }
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 15svh; /* ←ここで高さ調整 */
+
+  /* ここを変更 */
+  padding-top: calc(env(safe-area-inset-top) + 88px);
 }
 
 .room-id-modal__backdrop {
@@ -307,6 +309,9 @@ h1, h2, h3 { margin-top: 0; }
   border: 1px solid rgba(255, 255, 255, 0.26);
   box-shadow: 0 18px 60px rgba(0,0,0,.45);
   text-align: center;
+  
+  max-height: calc(100dvh - env(safe-area-inset-top) - 24px);
+  overflow-y: auto;
 }
 
 .room-id-modal__card h3 {
