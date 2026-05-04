@@ -17,6 +17,8 @@ const refs = {
   battleView: document.getElementById("battleView"),
 };
 
+const ORIGIN_TUTORIAL_DISMISSED_KEY = "originMagicCircleTutorialDismissed";
+
 const summonAssetOptions = [
   "fireball.glb",
   "magic_voxel_skull_flat_shaded.glb",
@@ -443,7 +445,9 @@ function showDamageNumber(amount, isEnemyCast) {
 }
 
 function ensureTutorialModal() {
-  if (document.getElementById("battleTutorialModal") || tutorialModalDismissed) return;
+  if (document.getElementById("battleTutorialModal")) return;
+  if (localStorage.getItem(ORIGIN_TUTORIAL_DISMISSED_KEY) === "1") return;
+
   const modal = document.createElement("div");
   modal.id = "battleTutorialModal";
   modal.className = "battle-tutorial-modal";
@@ -453,6 +457,7 @@ function ensureTutorialModal() {
 
 function hideTutorialModal() {
   tutorialModalDismissed = true;
+  localStorage.setItem(ORIGIN_TUTORIAL_DISMISSED_KEY, "1");
   document.getElementById("battleTutorialModal")?.remove();
 }
 
@@ -482,6 +487,68 @@ function showMagicNameCenter(magicName, isEnemy = false, onComplete = null) {
     if (typeof onComplete === "function") onComplete();
   }, 2200);
 }
+
+
+function showRoomIdModal() {
+  return new Promise((resolve) => {
+    const old = document.getElementById("roomIdInputModal");
+    if (old) old.remove();
+
+    const modal = document.createElement("div");
+    modal.id = "roomIdInputModal";
+    modal.className = "room-id-modal";
+    modal.innerHTML = `
+      <div class="room-id-modal__backdrop"></div>
+      <div class="room-id-modal__card">
+        <h3>ルーム入室</h3>
+        <p>6桁のルームIDを入力してください</p>
+        <input class="room-id-modal__input" inputmode="numeric" maxlength="6" placeholder="123456" />
+        <div class="room-id-modal__actions">
+          <button type="button" class="room-id-modal__cancel">キャンセル</button>
+          <button type="button" class="room-id-modal__ok">入室</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const input = modal.querySelector(".room-id-modal__input");
+    const okBtn = modal.querySelector(".room-id-modal__ok");
+    const cancelBtn = modal.querySelector(".room-id-modal__cancel");
+
+    const close = (value) => {
+      modal.remove();
+      resolve(value);
+    };
+
+    input.focus();
+
+    input.addEventListener("input", () => {
+      input.value = input.value.replace(/\D/g, "").slice(0, 6);
+    });
+
+    okBtn.addEventListener("click", () => {
+      const value = input.value.trim();
+      close(value || null);
+    });
+
+    cancelBtn.addEventListener("click", () => close(null));
+
+    modal.querySelector(".room-id-modal__backdrop").addEventListener("click", () => close(null));
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        close(input.value.trim() || null);
+      }
+      if (event.key === "Escape") {
+        close(null);
+      }
+    });
+  });
+}
+
+
+
 function setupMagicCircleUi(container, options = {}) {
   const {
     onMagicJsonReady = null,
@@ -711,6 +778,9 @@ function setupMagicCircleUi(container, options = {}) {
 };
 
   chantBtn.addEventListener("click", async () => {
+    
+    hideTutorialModal();
+    
     if (isChanting) return;
     isChanting = true;
     updateButtons();
@@ -3152,7 +3222,7 @@ refs.joinRoomBtn?.addEventListener("click", async () => {
     alert("ログイン情報が見つかりません。タイトルに戻って再ログインしてください。");
     return;
   }
-  const roomId = prompt("6桁のルームIDを入力してください");
+  const roomId = await showRoomIdModal();
   if (!roomId) return;
 
   try {
