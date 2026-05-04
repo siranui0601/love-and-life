@@ -14,7 +14,7 @@ export function createServerContext() {
   mountUserRoutes(app);
   mountBungeiRoutes(app);
   mountSecretToolRoutes(app, io);
-  mountOriginMagicCircleRoutes(app);
+  mountOriginMagicCircleRoutes(app, io);
 
   return { app, httpServer, io };
 }
