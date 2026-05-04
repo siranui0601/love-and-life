@@ -262,11 +262,13 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
           "spawnSpreadPattern": ["none","horizontal_line","vertical_line","circle","random_scatter"],
           "colorHexCode": "#RRGGBB",
           "objectSize": ["small","medium","large"],
-          "lifeTimeSeconds": 3,
+          "lifeTimeSeconds": 8,
+          "enterEffect": ["fall_from_sky","scale_up","rise_from_ground"],
+          "exitEffect": ["rise_to_sky","scale_down","sink_into_ground"],
           "movement": {
             "targetPosition": ["self_position","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
             "moveDurationSeconds": 1,
-            "movePathType": ["none","straight_line","arc","fall_from_above","rise_from_below","orbit"]
+            "movePathType": ["none","straight_line","arc","orbit"]
           },
           "rotation": {
             "shouldRotate": true,
@@ -292,13 +294,20 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
 - visualObjectsは各timedVisualEffectsにつき1〜3個
 - objectCountは1〜5
 - startTimeSecondsは0〜6
+- lifeTimeSecondsは8〜10
+- moveDurationSecondsは0〜10
 - moveDurationSeconds<lifeTimeSeconds
-
+- enterEffectは必ず候補から1つ選ぶ
+- exitEffectは必ず候補から1つ選ぶ
+- enterEffectは出現演出のみを表す
+- exitEffectは消失演出のみを表す
+- movementは出現後の移動のみを表す
+- movePathTypeがnoneの場合、moveDurationSecondsは0にする
 - damageTimingsは1〜5個
 - damageWeightの合計は100にする
 - timeSecondsは0.5〜10
 - 最後のdamageTimingsのtimeSecondsは8〜10秒にする
-
+- targetは必ず"enemy"にする
 - JSON以外は出力しない`,
         },
       ]);
