@@ -287,9 +287,12 @@ h1, h2, h3 { margin-top: 0; }
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  padding-top: 18vh;
+}
 
-  /* ここを変更 */
-  padding-top: calc(env(safe-area-inset-top) + 88px);
+.room-id-modal:focus-within {
+  padding-top: 12px;
+  align-items: flex-start;
 }
 
 .room-id-modal__backdrop {
