@@ -250,6 +250,9 @@ const userTrackingId = String(user?.userTrackingId || "");
 let currentRoom = null;
 let refreshTimer = null;
 let battleStarted = false;
+
+let originSocket = null;
+
 let battleState = { selfHp: 1000, enemyHp: 1000, lastCastAt: 0, processedCastIds: new Set() };
 let tutorialModalDismissed = false;
 const ACTIVE_ROOM_STORAGE_KEY = "originMagicCircleActiveRoomId";
@@ -328,7 +331,90 @@ async function refreshRoom() {
 
 
 
-async function syncBattleHp() {
+function getSocketIoClient() {
+  if (typeof window === "undefined" || typeof window.io !== "function") {
+    console.warn("[origin-magic-circle] socket.io client is not loaded");
+    return null;
+  }
+
+  if (!originSocket) {
+    originSocket = window.io();
+  }
+
+  return originSocket;
+}
+
+function emitWithAck(socket, eventName, payload, timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    if (!socket) {
+      reject(new Error("socket_missing"));
+      return;
+    }
+
+    socket.timeout(timeoutMs).emit(eventName, payload, (error, response) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      if (!response?.ok) {
+        reject(new Error(response?.error || "socket_request_failed"));
+        return;
+      }
+
+      resolve(response);
+    });
+  });
+}
+
+function applyHpPayload(hpPayload) {
+  if (!hpPayload) return;
+
+  battleState.selfHp = Number.isFinite(Number(hpPayload.selfHp))
+    ? Number(hpPayload.selfHp)
+    : 1000;
+
+  battleState.enemyHp = Number.isFinite(Number(hpPayload.enemyHp))
+    ? Number(hpPayload.enemyHp)
+    : 1000;
+
+  renderHpBars();
+}
+
+async function joinOriginSocketRoom() {
+  const socket = getSocketIoClient();
+  if (!socket || !currentRoom?.roomId || !userTrackingId) return;
+
+  const response = await emitWithAck(socket, "origin:join", {
+    roomId: currentRoom.roomId,
+    userTrackingId,
+  });
+
+  if (response.room) {
+    currentRoom = response.room;
+  }
+
+  applyHpPayload(response.hp);
+}
+
+async function requestLatestHpBySocket() {
+  const socket = getSocketIoClient();
+  if (!socket || !currentRoom?.roomId || !userTrackingId) return;
+
+  const response = await emitWithAck(socket, "origin:requestHp", {
+    roomId: currentRoom.roomId,
+    userTrackingId,
+  });
+
+  if (response.room) {
+    currentRoom = response.room;
+  }
+
+  applyHpPayload(response.hp);
+}
+
+
+/*async function syncBattleHp() {
   if (!currentRoom?.roomId) return;
   try {
     const room = await callApi("/api/origin-magic-circle/rooms/hp", {
@@ -341,7 +427,7 @@ async function syncBattleHp() {
   } catch (error) {
     console.warn("[origin-magic-circle] hp sync failed:", error);
   }
-}
+}*/
 
 function showDamageNumber(amount, isEnemyCast) {
   const target = document.createElement("div");
@@ -642,7 +728,7 @@ function setupMagicCircleUi(container, options = {}) {
       await runShrinkToCenter();
       const magicEffectJson = data.magicEffectJson || null;
       if (typeof onMagicJsonReady === "function" && magicEffectJson) {
-        onMagicJsonReady(magicEffectJson);
+        await onMagicJsonReady(magicEffectJson);
         hideTopModalOnce?.();
         hideTutorialModal();
         hideDebugOnce?.();
@@ -776,9 +862,21 @@ const { GLTFLoader } = GLTF;
   refs.battleView.innerHTML = "";
   refs.battleView.appendChild(renderer.domElement);
 
-  hydrateBattleHpFromRoom();
-  renderHpBars();
-  ensureTutorialModal();
+
+
+hydrateBattleHpFromRoom();
+renderHpBars();
+
+try {
+  await joinOriginSocketRoom();
+  await requestLatestHpBySocket();
+} catch (error) {
+  console.warn("[origin-magic-circle] socket hp init failed:", error);
+}
+
+
+
+ensureTutorialModal();
   
   const composer = new EffectComposer(renderer);
 
@@ -798,9 +896,34 @@ composer.addPass(bloomPass);
   let hasHiddenTopModal = false;
   const magicCircleUi = setupMagicCircleUi(refs.battleView, {
     onMagicJsonReady: async (effectJson) => {
-      await fetch("/api/origin-magic-circle/casts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roomId: currentRoom?.roomId, casterId: userTrackingId, casterName: username, magicEffectJson: effectJson }) });
-      showMagicNameCenter(effectJson.magicName, false, () => playMagicVisualEffects(effectJson, false));
-    },
+  const socket = getSocketIoClient();
+
+  try {
+    await emitWithAck(socket, "origin:cast", {
+      roomId: currentRoom?.roomId,
+      casterId: userTrackingId,
+      casterName: username,
+      magicEffectJson: effectJson,
+    });
+  } catch (error) {
+    console.warn("[origin-magic-circle] socket cast failed, fallback to fetch:", error);
+
+    await fetch("/api/origin-magic-circle/casts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        roomId: currentRoom?.roomId,
+        casterId: userTrackingId,
+        casterName: username,
+        magicEffectJson: effectJson,
+      }),
+    });
+  }
+
+  showMagicNameCenter(effectJson.magicName, false, () => {
+    playMagicVisualEffects(effectJson, false);
+  });
+},
     hideTopModalOnce: () => {
       if (hasHiddenTopModal || !topControls) return;
       topControls.style.display = "none";
@@ -2396,12 +2519,38 @@ function playMagicVisualEffects(effectJson, isEnemyCast = false) {
   damageTimings.forEach((timing) => {
     const delay = Math.max(0, Number(timing.timeSeconds) || 0) * 1000;
     setTimeout(() => {
+      //ここ自信ない↓
       const amount = Math.round(maxDamage * (Math.max(0, Number(timing.damageWeight) || 0) / 100));
-      if (isEnemyCast) battleState.selfHp = Math.max(0, battleState.selfHp - amount);
-      else battleState.enemyHp = Math.max(0, battleState.enemyHp - amount);
+
+      if (isEnemyCast) {
+        battleState.selfHp = Math.max(0, battleState.selfHp - amount);
+      } else {
+        battleState.enemyHp = Math.max(0, battleState.enemyHp - amount);
+      }
+
       showDamageNumber(amount, isEnemyCast);
       renderHpBars();
-      syncBattleHp();
+
+      // 自分が撃った魔法のダメージだけサーバーへ確定送信する。
+      // 相手から受けた魔法側では送らない。二重減算防止。
+      if (!isEnemyCast) {
+        const members = currentRoom?.members || [];
+        const enemy = members.find((member) => member.id !== userTrackingId);
+        const socket = getSocketIoClient();
+
+        if (enemy?.id && socket) {
+          emitWithAck(socket, "origin:damage", {
+            roomId: currentRoom?.roomId,
+            attackerId: userTrackingId,
+            targetId: enemy.id,
+            damage: amount,
+          }).catch((error) => {
+            console.warn("[origin-magic-circle] socket damage failed:", error);
+          });
+        }
+      }
+      
+      
     }, delay);
   });
   effectJson.timedVisualEffects.forEach((timedEffect) => {
@@ -2809,7 +2958,7 @@ radioList?.addEventListener("change", () => {
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
   //renderHpBars();
-  setInterval(async () => {
+  /*setInterval(async () => {
     try {
       const r = await fetch(`/api/origin-magic-circle/casts/${encodeURIComponent(currentRoom?.roomId || "")}?since=${battleState.lastCastAt}`);
       const d = await r.json();
@@ -2820,7 +2969,33 @@ radioList?.addEventListener("change", () => {
         showMagicNameCenter(cast.magicEffectJson?.magicName, true, () => playMagicVisualEffects(cast.magicEffectJson, true));
       }
     } catch {}
-  }, 1200);
+  }, 1200);*/
+//代わりにこれを入れるよ〜
+const socket = getSocketIoClient();
+
+if (socket) {
+  socket.off("origin:cast");
+  socket.on("origin:cast", (cast) => {
+    if (!cast?.id) return;
+
+    battleState.lastCastAt = Math.max(battleState.lastCastAt, Number(cast.at) || 0);
+
+    if (battleState.processedCastIds.has(cast.id)) return;
+    battleState.processedCastIds.add(cast.id);
+
+    // 自分が撃った魔法は、自分側ではすでに演出開始しているので再生しない
+    if (cast.casterId === userTrackingId) return;
+
+    showMagicNameCenter(cast.magicEffectJson?.magicName, true, () => {
+      playMagicVisualEffects(cast.magicEffectJson, true);
+    });
+  });
+
+  socket.off("origin:hp");
+  socket.on("origin:hp", (hpPayload) => {
+    applyHpPayload(hpPayload);
+  });
+}
 
   const onResize = () => {
   camera.aspect = window.innerWidth / window.innerHeight;
