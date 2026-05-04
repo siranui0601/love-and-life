@@ -220,12 +220,18 @@ function parseSecretMembersJson(raw) {
   try {
     const parsed = JSON.parse(String(raw || "[]"));
     if (!Array.isArray(parsed)) return [];
+
     return parsed
-      .map((entry) => ({
-        name: String(entry?.name || "guest"),
-        id: String(entry?.id || ""),
-        role: String(entry?.role || "guest"),
-      }))
+      .map((entry) => {
+        const hp = Number(entry?.hp);
+
+        return {
+          name: String(entry?.name || "guest"),
+          id: String(entry?.id || ""),
+          role: String(entry?.role || "guest"),
+          hp: Number.isFinite(hp) ? Math.max(0, hp) : 1000,
+        };
+      })
       .filter((entry) => entry.id);
   } catch {
     return [];
