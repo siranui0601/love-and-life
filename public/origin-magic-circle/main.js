@@ -3495,13 +3495,19 @@ function removeMixerForRoot(root) {
   
 
   topControls = document.createElement("div");
-  topControls.style.maxHeight = "28vh";
+topControls.style.position = "fixed";
+topControls.style.left = "8px";
+topControls.style.top = "8px";
+topControls.style.zIndex = "30000";
+topControls.style.maxHeight = "28vh";
 topControls.style.overflowY = "auto";
 topControls.style.maxWidth = "96vw";
 topControls.style.fontSize = "12px";
 topControls.style.padding = "8px";
-  topControls.className = "summon-test-controls";
-  topControls.innerHTML = `
+topControls.className = "summon-test-controls";
+
+  
+      topControls.innerHTML = `
   <div class="summon-test-controls__header">
     <strong>3D素材テスト</strong>
     <button class="summon-test-controls__toggle" type="button">折り畳む</button>
@@ -3517,11 +3523,19 @@ topControls.style.padding = "8px";
       </label>
 
       <label class="summon-test-controls__field">
-        Y高さ
-        <input class="summon-y-input" type="number" step="0.1" value="1.6" />
-      </label>
+  Y高さ
+  <input class="summon-y-input" type="number" step="0.1" value="1.6" />
+</label>
 
-      <button class="magic-effect-test-btn" type="button">魔法演出テスト</button>
+<label class="summon-test-controls__field">
+  表示位置
+  <select class="summon-preview-position-select">
+    <option value="center">中央</option>
+    <option value="self">自キャラ前</option>
+  </select>
+</label>
+
+<button class="magic-effect-test-btn" type="button">魔法演出テスト</button>
     </div>
   </div>
 `;
@@ -3535,6 +3549,12 @@ topControls.style.padding = "8px";
   const yInput = topControls.querySelector(".summon-y-input");
 
   const effectTestBtn = topControls.querySelector(".magic-effect-test-btn");
+
+
+
+const positionSelect = topControls.querySelector(".summon-preview-position-select");
+
+
 
 const initialPreset = getAssetSizePreset("fireball.glb", "medium");
 scaleInput.value = initialPreset.scale;
@@ -3608,6 +3628,95 @@ function getMaterialDebugText(root, assetName) {
   return lines.join("\n");
 }
 
+
+
+
+
+let previewAssetRoot = null;
+let previewAssetName = "";
+
+function removePreviewAssetRoot() {
+  if (!previewAssetRoot) return;
+
+  scene.remove(previewAssetRoot);
+  removeMixerForRoot(previewAssetRoot);
+
+  previewAssetRoot = null;
+  previewAssetName = "";
+}
+
+function getPreviewPosition(assetName, appliedY) {
+  const mode = positionSelect?.value || "center";
+  const preset = getAssetSizePreset(assetName, "medium");
+
+  if (mode === "self") {
+    const { self, enemy } = getBattleActors("self");
+    const { forward } = getForwardAndRight(self, enemy);
+
+    return self.position
+      .clone()
+      .addScaledVector(forward, 6)
+      .setY(appliedY);
+  }
+
+  return new Vector3(
+    preset.offsetX || 0,
+    appliedY,
+    preset.offsetZ || 0
+  );
+}
+
+async function showPreviewAsset(assetName) {
+  if (!assetName || !summonAssetOptions.includes(assetName)) return;
+
+  const scaleValue = Number(scaleInput?.value);
+  const appliedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+
+  const yValue = Number(yInput?.value);
+  const appliedY = Number.isFinite(yValue) ? yValue : 1.6;
+
+  // 同じ素材なら作り直さず、位置とサイズだけ更新
+  if (previewAssetRoot && previewAssetName === assetName) {
+    previewAssetRoot.visible = true;
+    previewAssetRoot.scale.setScalar(appliedScale);
+    previewAssetRoot.position.copy(getPreviewPosition(assetName, appliedY));
+    previewAssetRoot.userData.currentScale = appliedScale;
+
+    if (previewAssetRoot.userData.effectType === "explosion_burst") {
+      resetExplosionBurst(previewAssetRoot);
+    }
+
+    showDebug(getMaterialDebugText(previewAssetRoot, assetName));
+    return;
+  }
+
+  removePreviewAssetRoot();
+
+  await ensureSummonAssetLoaded(assetName, { urgent: true });
+
+  const root = createMagicObjectRoot(assetName);
+  if (!root) return;
+
+  root.visible = true;
+  root.scale.setScalar(appliedScale);
+  root.position.copy(getPreviewPosition(assetName, appliedY));
+  root.userData.currentScale = appliedScale;
+
+  if (root.userData.effectType === "explosion_burst") {
+    resetExplosionBurst(root);
+  }
+
+  scene.add(root);
+
+  previewAssetRoot = root;
+  previewAssetName = assetName;
+
+  showDebug(getMaterialDebugText(root, assetName));
+}
+
+
+
+
 effectTestBtn?.addEventListener("click", () => {
   const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
   const selectedName = checkedAsset?.value || "fireball.glb";
@@ -3675,36 +3784,13 @@ effectTestBtn?.addEventListener("click", () => {
 
 
   const applySummonState = () => {
+  if (!isOriginDebugTestRoom) return;
+
   const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
-  const selectedName = checkedAsset?.value || "";
+  const selectedName = checkedAsset?.value || "fireball.glb";
 
-  const scaleValue = Number(scaleInput?.value);
-  const appliedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
-
-  const yValue = Number(yInput?.value);
-  const appliedY = Number.isFinite(yValue) ? yValue : 1.6;
-
-  summonAssetRoots.forEach((root, assetName) => {
-    const isActive = assetName === selectedName;
-    root.visible = isActive;
-
-    if (isActive) {
-      const preset = getAssetSizePreset(assetName, "medium");
-
-      root.scale.setScalar(appliedScale);
-      root.position.set(
-        preset.offsetX || 0,
-        appliedY,
-        preset.offsetZ || 0
-      );
-      root.userData.currentScale = appliedScale;
-
-      if (root.userData.effectType === "explosion_burst") {
-        resetExplosionBurst(root);
-      }
-
-      showDebug(getMaterialDebugText(root, assetName));
-    }
+  showPreviewAsset(selectedName).catch((error) => {
+    console.warn("[origin-magic-circle] preview asset failed:", error);
   });
 };
 
@@ -3716,13 +3802,18 @@ radioList?.addEventListener("change", () => {
   scaleInput.value = preset.scale;
   yInput.value = preset.y;
 
-  //applySummonState();
+  applySummonState();
 });
 
 
   topControls.addEventListener("change", applySummonState);
   scaleInput?.addEventListener("input", applySummonState);
   yInput?.addEventListener("input", applySummonState);
+  
+  
+  
+  positionSelect?.addEventListener("change", applySummonState);
+  
   
   //refs.battleView.appendChild(topControls);
   //applySummonState();
