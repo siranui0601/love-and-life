@@ -85,6 +85,55 @@ function normalizeOriginMagicCircleEffectJson(effectJson) {
   }
   return cloned;
 }
+
+function normalizeOriginMagicCircleStrokeJson(rawStrokeJson) {
+  const raw = String(rawStrokeJson || "").trim();
+  if (!raw) return "";
+
+  try {
+    const parsed = JSON.parse(raw);
+
+    if (!Array.isArray(parsed)) return "";
+
+    const normalized = [];
+
+    for (const stroke of parsed) {
+      if (!Array.isArray(stroke)) continue;
+
+      const points = [];
+
+      // [x1,y1,x2,y2...] なので偶数個だけ採用
+      const usableLength = stroke.length - (stroke.length % 2);
+
+      for (let i = 0; i < usableLength; i += 2) {
+        const x = Math.round(Number(stroke[i]));
+        const y = Math.round(Number(stroke[i + 1]));
+
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+
+        // 異常値を軽く弾く。画面サイズより大きい端末もあるので上限は広め
+        if (x < -10000 || x > 10000 || y < -10000 || y > 10000) continue;
+
+        points.push(x, y);
+      }
+
+      if (points.length >= 4) {
+        normalized.push(points);
+      }
+    }
+
+    const json = JSON.stringify(normalized);
+
+    // Google Sheets 1セル制限対策。I列も50000文字を超えたら危険
+    if (json.length > 45000) {
+      return JSON.stringify(normalized.slice(0, 200));
+    }
+
+    return json;
+  } catch {
+    return "";
+  }
+}
       
 export function mountOriginMagicCircleRoutes(app, io) {
   const roomCastEvents = new Map();
@@ -253,8 +302,10 @@ export function mountOriginMagicCircleRoutes(app, io) {
 
   app.post("/api/origin-magic-circle/chant-title", async (req, res) => {
   const base64ImageFile = String(req.body?.base64ImageFile || "").trim();
-  if (!base64ImageFile) return res.status(400).json({ error: "base64ImageFile is required" });
-  if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
+const strokeJson = normalizeOriginMagicCircleStrokeJson(req.body?.strokeJson);
+
+if (!base64ImageFile) return res.status(400).json({ error: "base64ImageFile is required" });
+if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
 
   const imageHash = createOriginMagicCircleImageHash(base64ImageFile);
 
@@ -345,6 +396,7 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
       await appendOriginMagicCircleSpellCache({
   imageHash,
   rawJson: JSON.stringify(magicEffectJson),
+  strokeJson,
 });
 
 return res.json({ magicEffectJson });
