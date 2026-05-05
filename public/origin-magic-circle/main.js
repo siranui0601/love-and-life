@@ -586,7 +586,7 @@ function setupMagicCircleUi(container, options = {}) {
   let lastPoint = null;
   let isChanting = false;
   let spinRafId = null;
-  let spinStartTs = 0;
+  //let spinStartTs = 0;
 
   const resultModal = document.createElement("div");
   resultModal.className = "chant-result-modal hidden";
@@ -701,23 +701,35 @@ function setupMagicCircleUi(container, options = {}) {
   overlay.addEventListener("pointerup", finishStroke);
   overlay.addEventListener("pointercancel", finishStroke);
 
+  
+  
+  
+  
   undoBtn.addEventListener("click", () => {
-    if (historyIndex <= 0) return;
-    historyIndex -= 1;
-    restoreState();
-  });
+  if (isChanting) return;
+  if (historyIndex <= 0) return;
+  historyIndex -= 1;
+  restoreState();
+});
 
-  redoBtn.addEventListener("click", () => {
-    if (historyIndex >= history.length - 1) return;
-    historyIndex += 1;
-    restoreState();
-  });
+redoBtn.addEventListener("click", () => {
+  if (isChanting) return;
+  if (historyIndex >= history.length - 1) return;
+  historyIndex += 1;
+  restoreState();
+});
 
-  clearBtn.addEventListener("click", () => {
-    if (historyIndex <= 0) return;
-    ctx?.clearRect(0, 0, overlay.width, overlay.height);
-    commitState();
-  });
+clearBtn.addEventListener("click", () => {
+  if (isChanting) return;
+  if (historyIndex <= 0) return;
+  ctx?.clearRect(0, 0, overlay.width, overlay.height);
+  commitState();
+});
+
+
+
+
+
 
   const getTrimmedBase64Jpeg = () => {
     if (!ctx) return "";
@@ -752,72 +764,409 @@ function setupMagicCircleUi(container, options = {}) {
 
     return cropped.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
   };
+  
+  
+  
+  
+  
+  
+  const resetCanvasAndHistory = () => {
+  if (!ctx) return;
 
-  const animateSpin = (ts) => {
-  if (!spinStartTs) spinStartTs = ts;
-  const elapsed = ts - spinStartTs;
-  const angle = (elapsed / 1000) * 180;
-
-  overlay.style.transformOrigin = "center center";
-  overlay.style.transform = `rotate(${angle}deg) scale(1)`;
-
-  if (isChanting) spinRafId = requestAnimationFrame(animateSpin);
-};
-
-  const runShrinkToCenter = async () => {
-  overlay.style.transition = "transform 2s linear";
-
-  const currentAngle = ((performance.now() - spinStartTs) / 1000) * 180;
-  overlay.style.transformOrigin = "center center";
-  overlay.style.transform = `rotate(${currentAngle + 720}deg) scale(0)`;
-
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = "transparent";
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
 
   overlay.style.transition = "";
   overlay.style.transform = "";
+
+  history.length = 0;
+  historyIndex = -1;
+  commitState();
+  updateButtons();
 };
 
-  chantBtn.addEventListener("click", async () => {
-    
-    hideTutorialModal();
-    
-    if (isChanting) return;
-    isChanting = true;
-    updateButtons();
-    spinStartTs = 0;
-    spinRafId = requestAnimationFrame(animateSpin);
-    try {
-      const base64ImageFile = getTrimmedBase64Jpeg();
-      const res = await fetch("/api/origin-magic-circle/chant-title", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ base64ImageFile }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "chant_failed");
-      await runShrinkToCenter();
-      const magicEffectJson = data.magicEffectJson || null;
-      if (typeof onMagicJsonReady === "function" && magicEffectJson) {
-        await onMagicJsonReady(magicEffectJson);
-        hideTopModalOnce?.();
-        hideTutorialModal();
-        hideDebugOnce?.();
-      } else {
-        resultText.textContent = data.title || "無題";
-        resultModal.classList.remove("hidden");
+const sampleDrawnPixels = (maxParticles = 900) => {
+  if (!ctx) return [];
+
+  const imageData = ctx.getImageData(0, 0, overlay.width, overlay.height);
+  const { data, width, height } = imageData;
+
+  const points = [];
+  const step = Math.max(2, Math.floor(Math.sqrt((width * height) / maxParticles) / 2));
+
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      const i = (y * width + x) * 4;
+      const alpha = data[i + 3];
+
+      if (alpha > 20) {
+        points.push({
+          x: x + (Math.random() - 0.5) * 2,
+          y: y + (Math.random() - 0.5) * 2,
+        });
       }
-    } catch (error) {
-      console.error("[origin-magic-circle] chant failed:", error);
-      alert("詠唱に失敗しました。");
-    } finally {
-      isChanting = false;
-      if (spinRafId) cancelAnimationFrame(spinRafId);
-      spinRafId = null;
-      overlay.style.transition = "";
-      overlay.style.transform = "";
-      updateButtons();
     }
+  }
+
+  if (points.length <= maxParticles) return points;
+
+  const sampled = [];
+  for (let i = 0; i < maxParticles; i += 1) {
+    sampled.push(points[Math.floor(Math.random() * points.length)]);
+  }
+
+  return sampled;
+};
+
+const createGlyphTargetPoints = (count) => {
+  const offscreen = document.createElement("canvas");
+  offscreen.width = overlay.width;
+  offscreen.height = overlay.height;
+
+  const g = offscreen.getContext("2d");
+  if (!g) return [];
+
+  g.clearRect(0, 0, offscreen.width, offscreen.height);
+  g.fillStyle = "#000";
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+
+  const glyphs = [
+    "ـ", "ح", "ع", "م", "ل", "س", "ن", "ر", "و", "ق",
+    "⌁", "∿", "⟆", "⟊", "ꙮ", "ᚱ", "ᛟ", "ᛞ", "𐌀", "𐌔"
+  ];
+
+  const centerX = offscreen.width / 2;
+  const centerY = offscreen.height / 2;
+  const lineCount = Math.min(4, Math.max(2, Math.floor(offscreen.height / 230)));
+  const fontSize = Math.max(34, Math.min(74, offscreen.width / 12));
+  const charGap = fontSize * 0.72;
+
+  g.font = `900 ${fontSize}px "Times New Roman", "Yu Mincho", serif`;
+
+  for (let line = 0; line < lineCount; line += 1) {
+    const charsInLine = Math.max(6, Math.floor(offscreen.width / charGap) - 2);
+    const y = centerY + (line - (lineCount - 1) / 2) * fontSize * 1.15;
+
+    for (let i = 0; i < charsInLine; i += 1) {
+      const x = centerX + (i - (charsInLine - 1) / 2) * charGap;
+      const glyph = glyphs[Math.floor(Math.random() * glyphs.length)];
+
+      g.save();
+      g.translate(
+        x + (Math.random() - 0.5) * 12,
+        y + Math.sin(i * 0.8 + Math.random() * 2) * 12
+      );
+      g.rotate((Math.random() - 0.5) * 0.55);
+      g.scale(
+        0.8 + Math.random() * 0.55,
+        0.75 + Math.random() * 0.7
+      );
+      g.fillText(glyph, 0, 0);
+      g.restore();
+    }
+  }
+
+  const imageData = g.getImageData(0, 0, offscreen.width, offscreen.height);
+  const { data, width, height } = imageData;
+
+  const targets = [];
+  const step = 3;
+
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      const alpha = data[(y * width + x) * 4 + 3];
+      if (alpha > 20) {
+        targets.push({
+          x: x + (Math.random() - 0.5) * 2,
+          y: y + (Math.random() - 0.5) * 2,
+        });
+      }
+    }
+  }
+
+  if (!targets.length) {
+    for (let i = 0; i < count; i += 1) {
+      targets.push({
+        x: centerX + (Math.random() - 0.5) * offscreen.width * 0.5,
+        y: centerY + (Math.random() - 0.5) * offscreen.height * 0.25,
+      });
+    }
+  }
+
+  const result = [];
+  for (let i = 0; i < count; i += 1) {
+    result.push(targets[Math.floor(Math.random() * targets.length)]);
+  }
+
+  return result;
+};
+
+const startGlyphRitualAnimation = () => {
+  if (!ctx) return null;
+
+  const sourcePoints = sampleDrawnPixels(950);
+  if (!sourcePoints.length) return null;
+
+  const targetPoints = createGlyphTargetPoints(sourcePoints.length);
+  const startedAt = performance.now();
+
+  const particles = sourcePoints.map((p, index) => {
+    const target = targetPoints[index] || p;
+    const angle = Math.random() * Math.PI * 2;
+    const scatterDistance = 70 + Math.random() * 180;
+
+    return {
+      x: p.x,
+      y: p.y,
+      sx: p.x,
+      sy: p.y,
+      mx: p.x + Math.cos(angle) * scatterDistance,
+      my: p.y + Math.sin(angle) * scatterDistance,
+      tx: target.x,
+      ty: target.y,
+      fromX: p.x,
+      fromY: p.y,
+      nextX: target.x,
+      nextY: target.y,
+      size: 1.4 + Math.random() * 2.2,
+      alpha: 0.55 + Math.random() * 0.45,
+      jitter: Math.random() * Math.PI * 2,
+    };
   });
+
+  let rafId = null;
+  let finished = false;
+  let finishing = false;
+  let finishStartedAt = 0;
+  let finishResolve = null;
+
+  let nextMorphAt = startedAt + 900 + Math.random() * 900;
+  let morphStartedAt = 0;
+  let morphDuration = 520;
+  let isMorphing = false;
+
+  const ease = (t) => {
+    const v = Math.max(0, Math.min(1, t));
+    return v * v * (3 - 2 * v);
+  };
+
+  const beginMorph = (now) => {
+    const targets = createGlyphTargetPoints(particles.length);
+
+    particles.forEach((p, index) => {
+      const target = targets[index] || { x: p.x, y: p.y };
+      p.fromX = p.x;
+      p.fromY = p.y;
+      p.nextX = target.x;
+      p.nextY = target.y;
+    });
+
+    morphStartedAt = now;
+    morphDuration = 420 + Math.random() * 520;
+    isMorphing = true;
+    nextMorphAt = now + morphDuration + 500 + Math.random() * 1100;
+  };
+
+  const drawParticle = (p, now, finalGlowRate) => {
+    const wiggleX = Math.sin(now * 0.006 + p.jitter) * 1.2;
+    const wiggleY = Math.cos(now * 0.005 + p.jitter) * 1.0;
+
+    ctx.beginPath();
+    ctx.arc(p.x + wiggleX, p.y + wiggleY, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  const draw = (now) => {
+    if (!ctx || finished) return;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+    const elapsed = now - startedAt;
+
+    let finalGlowRate = 0;
+    let vanishRate = 0;
+
+    if (finishing) {
+      finalGlowRate = ease((now - finishStartedAt) / 420);
+      vanishRate = ease(Math.max(0, now - finishStartedAt - 520) / 520);
+    }
+
+    if (!finishing && now >= nextMorphAt) {
+      beginMorph(now);
+    }
+
+    if (isMorphing) {
+      const t = ease((now - morphStartedAt) / morphDuration);
+
+      particles.forEach((p) => {
+        p.x = p.fromX + (p.nextX - p.fromX) * t;
+        p.y = p.fromY + (p.nextY - p.fromY) * t;
+        p.tx = p.nextX;
+        p.ty = p.nextY;
+      });
+
+      if (t >= 1) {
+        isMorphing = false;
+      }
+    } else {
+      const formT = ease(elapsed / 1250);
+
+      particles.forEach((p) => {
+        if (formT < 0.42) {
+          const t = ease(formT / 0.42);
+          p.x = p.sx + (p.mx - p.sx) * t;
+          p.y = p.sy + (p.my - p.sy) * t;
+        } else {
+          const t = ease((formT - 0.42) / 0.58);
+          p.x = p.mx + (p.tx - p.mx) * t;
+          p.y = p.my + (p.ty - p.my) * t;
+        }
+      });
+    }
+
+    if (finishing) {
+      ctx.fillStyle = `rgba(210, 120, 255, ${Math.max(0, 1 - vanishRate)})`;
+      ctx.shadowColor = "rgba(210, 120, 255, 0.95)";
+      ctx.shadowBlur = 8 + finalGlowRate * 24;
+    } else {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.86)";
+      ctx.shadowColor = "rgba(120, 80, 180, 0.28)";
+      ctx.shadowBlur = 2;
+    }
+
+    ctx.globalAlpha = Math.max(0, 1 - vanishRate);
+
+    particles.forEach((p) => {
+      p.size *= finishing ? 1.002 : 1;
+      drawParticle(p, now, finalGlowRate);
+    });
+
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+
+    if (finishing && vanishRate >= 1) {
+      finished = true;
+      cancelAnimationFrame(rafId);
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      finishResolve?.();
+      return;
+    }
+
+    rafId = requestAnimationFrame(draw);
+  };
+
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+  rafId = requestAnimationFrame(draw);
+
+  return {
+    finish() {
+      return new Promise((resolve) => {
+        if (finished) {
+          resolve();
+          return;
+        }
+
+        finishing = true;
+        finishStartedAt = performance.now();
+        finishResolve = resolve;
+      });
+    },
+
+    cancel() {
+      finished = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      ctx?.clearRect(0, 0, overlay.width, overlay.height);
+    },
+  };
+};
+
+const finishGlyphRitualAnimation = async () => {
+  if (!ritualController) {
+    resetCanvasAndHistory();
+    return;
+  }
+
+  try {
+    await ritualController.finish();
+  } finally {
+    ritualController = null;
+    resetCanvasAndHistory();
+  }
+};
+
+const cancelGlyphRitualAnimation = () => {
+  ritualController?.cancel();
+  ritualController = null;
+  resetCanvasAndHistory();
+};
+
+
+
+
+
+  chantBtn.addEventListener("click", async () => {
+  hideTutorialModal();
+
+  if (isChanting) return;
+  isChanting = true;
+  updateButtons();
+
+  try {
+    const base64ImageFile = getTrimmedBase64Jpeg();
+
+    if (!base64ImageFile) {
+      alert("魔法陣を描いてください。");
+      return;
+    }
+
+    ritualController = startGlyphRitualAnimation();
+
+    const res = await fetch("/api/origin-magic-circle/chant-title", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ base64ImageFile }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "chant_failed");
+
+    await finishGlyphRitualAnimation();
+
+    const magicEffectJson = data.magicEffectJson || null;
+
+    if (typeof onMagicJsonReady === "function" && magicEffectJson) {
+      await onMagicJsonReady(magicEffectJson);
+      hideTopModalOnce?.();
+      hideTutorialModal();
+      hideDebugOnce?.();
+    } else {
+      resultText.textContent = data.title || "無題";
+      resultModal.classList.remove("hidden");
+    }
+  } catch (error) {
+    console.error("[origin-magic-circle] chant failed:", error);
+    cancelGlyphRitualAnimation();
+    alert("詠唱に失敗しました。");
+  } finally {
+    isChanting = false;
+    overlay.style.transition = "";
+    overlay.style.transform = "";
+    updateButtons();
+  }
+});
+
+
+
+
+
+
 
   closeModalBtn?.addEventListener("click", () => {
     resultModal.classList.add("hidden");
