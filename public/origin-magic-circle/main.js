@@ -821,88 +821,193 @@ const sampleDrawnPixels = (maxParticles = 900) => {
   return sampled;
 };
 
-const createGlyphTargetPoints = (count) => {
-  const offscreen = document.createElement("canvas");
-  offscreen.width = overlay.width;
-  offscreen.height = overlay.height;
 
-  const g = offscreen.getContext("2d");
-  if (!g) return [];
 
-  g.clearRect(0, 0, offscreen.width, offscreen.height);
-  g.fillStyle = "#000";
-  g.textAlign = "center";
-  g.textBaseline = "middle";
 
-  const glyphs = [
-    "ـ", "ح", "ع", "م", "ل", "س", "ن", "ر", "و", "ق",
-    "⌁", "∿", "⟆", "⟊", "ꙮ", "ᚱ", "ᛟ", "ᛞ", "𐌀", "𐌔"
-  ];
 
-  const centerX = offscreen.width / 2;
-  const centerY = offscreen.height / 2;
-  const lineCount = Math.min(4, Math.max(2, Math.floor(offscreen.height / 230)));
-  const fontSize = Math.max(34, Math.min(74, offscreen.width / 12));
-  const charGap = fontSize * 0.72;
 
-  g.font = `900 ${fontSize}px "Times New Roman", "Yu Mincho", serif`;
 
-  for (let line = 0; line < lineCount; line += 1) {
-    const charsInLine = Math.max(6, Math.floor(offscreen.width / charGap) - 2);
-    const y = centerY + (line - (lineCount - 1) / 2) * fontSize * 1.15;
+const clamp = (value, min, max) => {
+  return Math.max(min, Math.min(max, value));
+};
 
-    for (let i = 0; i < charsInLine; i += 1) {
-      const x = centerX + (i - (charsInLine - 1) / 2) * charGap;
-      const glyph = glyphs[Math.floor(Math.random() * glyphs.length)];
+const randomBetween = (min, max) => {
+  return min + Math.random() * (max - min);
+};
 
-      g.save();
-      g.translate(
-        x + (Math.random() - 0.5) * 12,
-        y + Math.sin(i * 0.8 + Math.random() * 2) * 12
-      );
-      g.rotate((Math.random() - 0.5) * 0.55);
-      g.scale(
-        0.8 + Math.random() * 0.55,
-        0.75 + Math.random() * 0.7
-      );
-      g.fillText(glyph, 0, 0);
-      g.restore();
-    }
+const lerp = (a, b, t) => {
+  return a + (b - a) * t;
+};
+
+const createRuneStrokeTemplate = () => {
+  const strokes = [];
+
+  // 中央の縦芯。これがあるだけで一気にルーン文字っぽくなる
+  strokes.push({
+    x1: randomBetween(-0.08, 0.08),
+    y1: -0.46,
+    x2: randomBetween(-0.08, 0.08),
+    y2: 0.46,
+  });
+
+  const branchCount = Math.floor(randomBetween(2, 5));
+
+  for (let i = 0; i < branchCount; i += 1) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const y1 = randomBetween(-0.38, 0.3);
+    const y2 = clamp(y1 + randomBetween(-0.22, 0.28), -0.48, 0.48);
+    const x1 = randomBetween(-0.04, 0.04);
+    const x2 = side * randomBetween(0.22, 0.46);
+
+    strokes.push({ x1, y1, x2, y2 });
   }
 
-  const imageData = g.getImageData(0, 0, offscreen.width, offscreen.height);
-  const { data, width, height } = imageData;
+  // たまに横棒・斜め貫通を足す
+  if (Math.random() < 0.55) {
+    strokes.push({
+      x1: randomBetween(-0.36, -0.14),
+      y1: randomBetween(-0.18, 0.18),
+      x2: randomBetween(0.14, 0.36),
+      y2: randomBetween(-0.18, 0.18),
+    });
+  }
 
+  // たまに下部の足
+  if (Math.random() < 0.5) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    strokes.push({
+      x1: 0,
+      y1: 0.28,
+      x2: side * randomBetween(0.18, 0.42),
+      y2: 0.48,
+    });
+  }
+
+  return strokes;
+};
+
+const createRuneSentenceLayout = (particleCount) => {
+  const width = overlay.width;
+  const height = overlay.height;
+
+  // 文字数は粒子数から決める。
+  // 1文字あたり40〜55粒くらいあると、文字として見えやすい。
+  const glyphCount = clamp(Math.floor(particleCount / 46), 7, 34);
+
+  const marginX = width * 0.08;
+  const usableWidth = width - marginX * 2;
+
+  const fontSize = clamp(usableWidth / glyphCount * 1.05, 34, 72);
+  const gap = fontSize * 0.78;
+
+  const charsPerLine = Math.max(6, Math.floor(usableWidth / gap));
+  const lineCount = Math.ceil(glyphCount / charsPerLine);
+
+  const startY = height * 0.5 - ((lineCount - 1) * fontSize * 1.2) / 2;
+
+  const glyphs = [];
+
+  for (let i = 0; i < glyphCount; i += 1) {
+    const line = Math.floor(i / charsPerLine);
+    const indexInLine = i % charsPerLine;
+
+    const glyphsInThisLine = Math.min(charsPerLine, glyphCount - line * charsPerLine);
+    const lineWidth = (glyphsInThisLine - 1) * gap;
+
+    const x = width * 0.5 - lineWidth / 2 + indexInLine * gap;
+    const y = startY + line * fontSize * 1.2;
+
+    glyphs.push({
+      index: i,
+      x,
+      y,
+      size: fontSize * randomBetween(0.88, 1.12),
+      rotation: randomBetween(-0.18, 0.18),
+      strokes: createRuneStrokeTemplate(),
+    });
+  }
+
+  return glyphs;
+};
+
+const pointOnRuneStroke = (glyph, stroke) => {
+  const t = Math.random();
+
+  const localX = lerp(stroke.x1, stroke.x2, t) * glyph.size;
+  const localY = lerp(stroke.y1, stroke.y2, t) * glyph.size;
+
+  const jitter = glyph.size * 0.035;
+  const jx = randomBetween(-jitter, jitter);
+  const jy = randomBetween(-jitter, jitter);
+
+  const cos = Math.cos(glyph.rotation);
+  const sin = Math.sin(glyph.rotation);
+
+  const rx = (localX + jx) * cos - (localY + jy) * sin;
+  const ry = (localX + jx) * sin + (localY + jy) * cos;
+
+  return {
+    x: glyph.x + rx,
+    y: glyph.y + ry,
+  };
+};
+
+const createRuneTargetsForGlyph = (glyph, count) => {
   const targets = [];
-  const step = 3;
 
-  for (let y = 0; y < height; y += step) {
-    for (let x = 0; x < width; x += step) {
-      const alpha = data[(y * width + x) * 4 + 3];
-      if (alpha > 20) {
-        targets.push({
-          x: x + (Math.random() - 0.5) * 2,
-          y: y + (Math.random() - 0.5) * 2,
-        });
-      }
-    }
+  for (let i = 0; i < count; i += 1) {
+    const stroke = glyph.strokes[i % glyph.strokes.length];
+    targets.push(pointOnRuneStroke(glyph, stroke));
   }
 
-  if (!targets.length) {
-    for (let i = 0; i < count; i += 1) {
-      targets.push({
-        x: centerX + (Math.random() - 0.5) * offscreen.width * 0.5,
-        y: centerY + (Math.random() - 0.5) * offscreen.height * 0.25,
-      });
-    }
-  }
+  return targets;
+};
+
+const createRuneSentenceTargets = (particleCount) => {
+  const glyphs = createRuneSentenceLayout(particleCount);
 
   const result = [];
-  for (let i = 0; i < count; i += 1) {
-    result.push(targets[Math.floor(Math.random() * targets.length)]);
+  const basePerGlyph = Math.floor(particleCount / glyphs.length);
+  let remaining = particleCount;
+
+  glyphs.forEach((glyph, glyphIndex) => {
+    const isLast = glyphIndex === glyphs.length - 1;
+    const count = isLast ? remaining : basePerGlyph;
+    remaining -= count;
+
+    const targets = createRuneTargetsForGlyph(glyph, count);
+
+    targets.forEach((target) => {
+      result.push({
+        x: target.x,
+        y: target.y,
+        glyphIndex,
+      });
+    });
+  });
+
+  while (result.length < particleCount) {
+    const glyphIndex = Math.floor(Math.random() * glyphs.length);
+    const target = createRuneTargetsForGlyph(glyphs[glyphIndex], 1)[0];
+    result.push({
+      x: target.x,
+      y: target.y,
+      glyphIndex,
+    });
   }
 
-  return result;
+  return {
+    glyphs,
+    targets: result.slice(0, particleCount),
+  };
+};
+
+const mutateOneRuneGlyph = (glyph) => {
+  return {
+    ...glyph,
+    rotation: randomBetween(-0.2, 0.2),
+    strokes: createRuneStrokeTemplate(),
+  };
 };
 
 const startGlyphRitualAnimation = () => {
@@ -911,30 +1016,48 @@ const startGlyphRitualAnimation = () => {
   const sourcePoints = sampleDrawnPixels(950);
   if (!sourcePoints.length) return null;
 
-  const targetPoints = createGlyphTargetPoints(sourcePoints.length);
+  const runeSentence = createRuneSentenceTargets(sourcePoints.length);
+  let glyphs = runeSentence.glyphs;
+  const targetPoints = runeSentence.targets;
+
   const startedAt = performance.now();
 
   const particles = sourcePoints.map((p, index) => {
-    const target = targetPoints[index] || p;
+    const target = targetPoints[index] || {
+      x: overlay.width / 2,
+      y: overlay.height / 2,
+      glyphIndex: 0,
+    };
+
     const angle = Math.random() * Math.PI * 2;
     const scatterDistance = 70 + Math.random() * 180;
 
     return {
       x: p.x,
       y: p.y,
+
       sx: p.x,
       sy: p.y,
+
       mx: p.x + Math.cos(angle) * scatterDistance,
       my: p.y + Math.sin(angle) * scatterDistance,
+
       tx: target.x,
       ty: target.y,
+
       fromX: p.x,
       fromY: p.y,
       nextX: target.x,
       nextY: target.y,
-      size: 1.4 + Math.random() * 2.2,
-      alpha: 0.55 + Math.random() * 0.45,
+
+      glyphIndex: target.glyphIndex,
+
+      size: 1.7 + Math.random() * 1.4,
+      alpha: 0.72 + Math.random() * 0.28,
       jitter: Math.random() * Math.PI * 2,
+
+      // 文字ごとに少し違う呼吸感
+      pulseSeed: Math.random() * Math.PI * 2,
     };
   });
 
@@ -944,9 +1067,10 @@ const startGlyphRitualAnimation = () => {
   let finishStartedAt = 0;
   let finishResolve = null;
 
-  let nextMorphAt = startedAt + 900 + Math.random() * 900;
+  let nextRuneMorphAt = startedAt + 800 + Math.random() * 900;
   let morphStartedAt = 0;
-  let morphDuration = 520;
+  let morphDuration = 420;
+  let morphingGlyphIndex = -1;
   let isMorphing = false;
 
   const ease = (t) => {
@@ -954,11 +1078,18 @@ const startGlyphRitualAnimation = () => {
     return v * v * (3 - 2 * v);
   };
 
-  const beginMorph = (now) => {
-    const targets = createGlyphTargetPoints(particles.length);
+  const beginOneRuneMorph = (now) => {
+    if (!glyphs.length) return;
 
-    particles.forEach((p, index) => {
-      const target = targets[index] || { x: p.x, y: p.y };
+    morphingGlyphIndex = Math.floor(Math.random() * glyphs.length);
+    glyphs[morphingGlyphIndex] = mutateOneRuneGlyph(glyphs[morphingGlyphIndex]);
+
+    const targetParticles = particles.filter((p) => p.glyphIndex === morphingGlyphIndex);
+    const newTargets = createRuneTargetsForGlyph(glyphs[morphingGlyphIndex], targetParticles.length);
+
+    targetParticles.forEach((p, index) => {
+      const target = newTargets[index] || { x: p.x, y: p.y };
+
       p.fromX = p.x;
       p.fromY = p.y;
       p.nextX = target.x;
@@ -966,17 +1097,82 @@ const startGlyphRitualAnimation = () => {
     });
 
     morphStartedAt = now;
-    morphDuration = 420 + Math.random() * 520;
+    morphDuration = 340 + Math.random() * 520;
     isMorphing = true;
-    nextMorphAt = now + morphDuration + 500 + Math.random() * 1100;
+
+    // 「文字毎に不定期」なので、全文一括ではなく、次の1文字変化まで少し待つ
+    nextRuneMorphAt = now + morphDuration + 260 + Math.random() * 760;
   };
 
-  const drawParticle = (p, now, finalGlowRate) => {
-    const wiggleX = Math.sin(now * 0.006 + p.jitter) * 1.2;
-    const wiggleY = Math.cos(now * 0.005 + p.jitter) * 1.0;
+  const drawRuneConnectionLines = (now, finalGlowRate, vanishRate) => {
+    // 点だけだと文字に見えにくいので、同じ文字内の粒子を近距離だけ線で結ぶ
+    const alpha = Math.max(0, 1 - vanishRate);
+
+    ctx.lineWidth = 1.15;
+
+    if (finishing) {
+      ctx.strokeStyle = `rgba(215, 120, 255, ${0.36 * alpha})`;
+      ctx.shadowColor = "rgba(210, 120, 255, 0.95)";
+      ctx.shadowBlur = 10 + finalGlowRate * 20;
+    } else {
+      ctx.strokeStyle = `rgba(15, 10, 25, ${0.32 * alpha})`;
+      ctx.shadowColor = "rgba(120, 70, 180, 0.22)";
+      ctx.shadowBlur = 2;
+    }
+
+    const byGlyph = new Map();
+
+    particles.forEach((p) => {
+      if (!byGlyph.has(p.glyphIndex)) byGlyph.set(p.glyphIndex, []);
+      byGlyph.get(p.glyphIndex).push(p);
+    });
+
+    byGlyph.forEach((list) => {
+      for (let i = 1; i < list.length; i += 2) {
+        const a = list[i - 1];
+        const b = list[i];
+
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const distanceSq = dx * dx + dy * dy;
+
+        if (distanceSq > 900) continue;
+
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    });
+
+    ctx.shadowBlur = 0;
+  };
+
+  const drawParticle = (p, now, finalGlowRate, vanishRate) => {
+    const breathe = 1 + Math.sin(now * 0.004 + p.pulseSeed) * 0.18;
+    const wiggleX = Math.sin(now * 0.005 + p.jitter) * 0.7;
+    const wiggleY = Math.cos(now * 0.004 + p.jitter) * 0.7;
+
+    const alpha = Math.max(0, p.alpha * (1 - vanishRate));
+
+    if (finishing) {
+      ctx.fillStyle = `rgba(225, 135, 255, ${alpha})`;
+      ctx.shadowColor = "rgba(210, 120, 255, 0.98)";
+      ctx.shadowBlur = 10 + finalGlowRate * 24;
+    } else {
+      ctx.fillStyle = `rgba(8, 6, 16, ${alpha})`;
+      ctx.shadowColor = "rgba(95, 60, 150, 0.28)";
+      ctx.shadowBlur = 2;
+    }
 
     ctx.beginPath();
-    ctx.arc(p.x + wiggleX, p.y + wiggleY, p.size, 0, Math.PI * 2);
+    ctx.arc(
+      p.x + wiggleX,
+      p.y + wiggleY,
+      p.size * breathe,
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
   };
 
@@ -995,61 +1191,58 @@ const startGlyphRitualAnimation = () => {
 
     if (finishing) {
       finalGlowRate = ease((now - finishStartedAt) / 420);
-      vanishRate = ease(Math.max(0, now - finishStartedAt - 520) / 520);
+      vanishRate = ease(Math.max(0, now - finishStartedAt - 560) / 560);
     }
 
-    if (!finishing && now >= nextMorphAt) {
-      beginMorph(now);
+    if (!finishing && now >= nextRuneMorphAt) {
+      beginOneRuneMorph(now);
     }
 
     if (isMorphing) {
       const t = ease((now - morphStartedAt) / morphDuration);
 
       particles.forEach((p) => {
+        if (p.glyphIndex !== morphingGlyphIndex) return;
+
         p.x = p.fromX + (p.nextX - p.fromX) * t;
         p.y = p.fromY + (p.nextY - p.fromY) * t;
-        p.tx = p.nextX;
-        p.ty = p.nextY;
+
+        if (t >= 1) {
+          p.tx = p.nextX;
+          p.ty = p.nextY;
+        }
       });
 
       if (t >= 1) {
         isMorphing = false;
+        morphingGlyphIndex = -1;
       }
-    } else {
-      const formT = ease(elapsed / 1250);
-
-      particles.forEach((p) => {
-        if (formT < 0.42) {
-          const t = ease(formT / 0.42);
-          p.x = p.sx + (p.mx - p.sx) * t;
-          p.y = p.sy + (p.my - p.sy) * t;
-        } else {
-          const t = ease((formT - 0.42) / 0.58);
-          p.x = p.mx + (p.tx - p.mx) * t;
-          p.y = p.my + (p.ty - p.my) * t;
-        }
-      });
     }
 
-    if (finishing) {
-      ctx.fillStyle = `rgba(210, 120, 255, ${Math.max(0, 1 - vanishRate)})`;
-      ctx.shadowColor = "rgba(210, 120, 255, 0.95)";
-      ctx.shadowBlur = 8 + finalGlowRate * 24;
-    } else {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.86)";
-      ctx.shadowColor = "rgba(120, 80, 180, 0.28)";
-      ctx.shadowBlur = 2;
-    }
-
-    ctx.globalAlpha = Math.max(0, 1 - vanishRate);
+    // 初期変形：魔法陣 → 散らばる → 左から並んだルーン文章
+    const formT = ease(elapsed / 1350);
 
     particles.forEach((p) => {
-      p.size *= finishing ? 1.002 : 1;
-      drawParticle(p, now, finalGlowRate);
+      if (formT < 0.38) {
+        const t = ease(formT / 0.38);
+        p.x = p.sx + (p.mx - p.sx) * t;
+        p.y = p.sy + (p.my - p.sy) * t;
+      } else if (!isMorphing || p.glyphIndex !== morphingGlyphIndex) {
+        const t = ease((formT - 0.38) / 0.62);
+        p.x = p.mx + (p.tx - p.mx) * t;
+        p.y = p.my + (p.ty - p.my) * t;
+      }
     });
 
-    ctx.globalAlpha = 1;
+    // 先に線、後から粒子。これで「点群」ではなく「文字」に見えやすくなる
+    drawRuneConnectionLines(now, finalGlowRate, vanishRate);
+
+    particles.forEach((p) => {
+      drawParticle(p, now, finalGlowRate, vanishRate);
+    });
+
     ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
 
     if (finishing && vanishRate >= 1) {
       finished = true;
