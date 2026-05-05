@@ -1068,44 +1068,97 @@ composer.addPass(bloomPass);
   scene.add(dirLight);
 
 const loader = new GLTFLoader();
-const summonAssetRoots = new Map();
-
-// 本番魔法演出用：素材の元データ
-const summonAssetSources = new Map();
-
-// 本番魔法演出用：発動中オブジェクト
-const activeMagicObjects = [];
-
-// 本番魔法演出用：発動中GLBアニメーション
-const activeMagicMixers = [];
-
-//変更19
-const summonAssetAnimationInfo = new Map();
-
-//変更6
-const summonAssetMixers = [];
-const clock = new Clock();
-
-
 
 let wastelandGltf;
-let pedestalGltf;
 let characterGltf;
-let summonAssetGlbList;
+let pedestalGltf;
+
+const summonAssetRoots = new Map();
+const summonAssetSources = new Map();
+const activeMagicObjects = [];
+const activeMagicMixers = [];
+const summonAssetAnimationInfo = new Map();
+const summonAssetMixers = [];
+const assetLoadPromises = new Map();
+const clock = new Clock();
+
+async function ensureSummonAssetLoaded(assetName, { urgent = false } = {}) {
+  if (customEffectNames.has(assetName)) {
+    if (!summonAssetSources.has(assetName)) {
+      summonAssetSources.set(assetName, {
+        assetName,
+        gltf: null,
+        isCustom: true,
+      });
+    }
+    return null;
+  }
+
+  const existing = summonAssetSources.get(assetName);
+  if (existing?.gltf) return existing.gltf;
+
+  if (assetLoadPromises.has(assetName)) {
+    return assetLoadPromises.get(assetName);
+  }
+
+  const promise = loader.loadAsync(`/3D素材/${assetName}`).then((gltf) => {
+    summonAssetSources.set(assetName, {
+      assetName,
+      gltf,
+      isCustom: false,
+    });
+
+    summonAssetAnimationInfo.set(
+      assetName,
+      gltf.animations.map((clip) => ({
+        name: clip.name,
+        duration: clip.duration,
+        trackCount: clip.tracks.length,
+        trackNames: clip.tracks.slice(0, 10).map((track) => track.name),
+      }))
+    );
+
+    return gltf;
+  });
+
+  assetLoadPromises.set(assetName, promise);
+  return promise;
+}
+
+function getAssetNamesFromMagicJson(effectJson) {
+  const names = new Set();
+
+  for (const timed of effectJson?.timedVisualEffects || []) {
+    for (const obj of timed?.visualObjects || []) {
+      if (summonAssetOptions.includes(obj?.assetFileName)) {
+        names.add(obj.assetFileName);
+      }
+    }
+  }
+
+  return [...names];
+}
+
+async function ensureMagicJsonAssetsLoaded(effectJson) {
+  const names = getAssetNamesFromMagicJson(effectJson);
+
+  for (const name of names) {
+    await ensureSummonAssetLoaded(name, { urgent: true });
+  }
+}
+
+async function preloadSummonAssetsOneByOne() {
+  for (const assetName of summonAssetOptions) {
+    await ensureSummonAssetLoaded(assetName);
+  }
+}
+
 try {
-  [wastelandGltf, pedestalGltf, characterGltf, summonAssetGlbList] = await Promise.all([
-    loader.loadAsync("/3D素材/arid_wasteland.glb"),
-    loader.loadAsync("/3D素材/pedestal.glb"),
-    loader.loadAsync("/3D素材/ancient_character.glb"),
-    
-    Promise.all(
-  summonAssetOptions.map((assetName) => {
-    if (customEffectNames.has(assetName)) return null;
-    return loader.loadAsync(`/3D素材/${assetName}`);
-  })
-)
-    
-  ]);
+  wastelandGltf = await loader.loadAsync("/3D素材/arid_wasteland.glb");
+  characterGltf = await loader.loadAsync("/3D素材/ancient_character.glb");
+  pedestalGltf = await loader.loadAsync("/3D素材/pedestal.glb");
+
+  preloadSummonAssetsOneByOne();
 } catch (e) {
   console.error("GLB読み込み失敗", e);
   alert("3D素材の読み込みに失敗しました。");
@@ -2717,11 +2770,14 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
   activeMagicObjects.push(active);
   return active;
 }
-function playMagicVisualEffects(effectJson, isEnemyCast = false) {
+async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
   if (!effectJson || !Array.isArray(effectJson.timedVisualEffects)) {
     console.warn("[origin-magic-circle] invalid magic effect json:", effectJson);
     return;
   }
+
+  await ensureMagicJsonAssetsLoaded(effectJson);
+
   const casterSide = isEnemyCast ? "enemy" : "self";
 
 
@@ -2838,77 +2894,7 @@ function removeMixerForRoot(root) {
 }
 
 
-//変更7
-summonAssetGlbList.forEach((gltf, index) => {
-  const assetName = summonAssetOptions[index];
-  const isCustom = customEffectNames.has(assetName);
 
-  // 本番魔法演出用：clone元を保存
-  summonAssetSources.set(assetName, {
-    assetName,
-    gltf,
-    isCustom,
-  });
-
-  // デバッグ用：アニメーション情報を保存
-  summonAssetAnimationInfo.set(
-    assetName,
-    gltf
-      ? gltf.animations.map((clip) => ({
-          name: clip.name,
-          duration: clip.duration,
-          trackCount: clip.tracks.length,
-          trackNames: clip.tracks.slice(0, 10).map((track) => track.name),
-        }))
-      : []
-  );
-
-  // テスト表示用の1体を作成
-  const root = isCustom
-    ? createCustomEffectByName(assetName)
-    : skeletonClone(gltf.scene);
-
-  if (!isCustom) {
-    applyAssetSpecificTransform(root, assetName);
-    applyAssetSpecificMaterialFix(root, assetName);
-
-    if (assetName === "fireball.glb") {
-      applyFireballMaterialFix(root);
-    }
-
-    if (assetName === "stylized_fire_tornado.glb") {
-      applyFireTornadoMaterialFix(root);
-    }
-  }
-
-  root.visible = false;
-
-  const mediumPreset = getAssetSizePreset(assetName, "medium");
-  root.position.set(
-    mediumPreset.offsetX || 0,
-    mediumPreset.y,
-    mediumPreset.offsetZ || 0
-  );
-  root.scale.setScalar(mediumPreset.scale);
-  root.userData.currentScale = mediumPreset.scale;
-
-  scene.add(root);
-  summonAssetRoots.set(assetName, root);
-
-  // テスト表示用GLBアニメーション
-  if (gltf && gltf.animations && gltf.animations.length > 0) {
-    const mixer = new AnimationMixer(root);
-    const clip = getPreferredAnimationClip(assetName, gltf.animations);
-
-    if (clip) {
-      const action = mixer.clipAction(clip);
-      action.reset();
-      action.play();
-    }
-
-    summonAssetMixers.push(mixer);
-  }
-});
   
 
   topControls = document.createElement("div");
