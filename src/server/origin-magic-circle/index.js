@@ -12,6 +12,10 @@ import {
   findOriginMagicCircleSpellCache,
   appendOriginMagicCircleSpellCache,
   updateOriginMagicCircleRoomHp,
+  
+  touchOriginMagicCircleRoomExpiresAt,
+  cleanupExpiredOriginMagicCircleRooms,
+  
 } from "../../foundation/sheets.js";
 
 
@@ -86,6 +90,16 @@ export function mountOriginMagicCircleRoutes(app, io) {
   const roomCastEvents = new Map();
   const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
   const routePath = "/オリジン魔法陣";
+  
+  async function cleanupOriginRoomsQuietly() {
+  try {
+    await cleanupExpiredOriginMagicCircleRooms();
+  } catch (error) {
+    console.warn("[origin-magic-circle] cleanup expired rooms failed:", error);
+  }
+}
+
+
   const encodedPath = encodeURI(routePath);
   const htmlPath = path.join(process.cwd(), "public/origin-magic-circle/index.html");
 
@@ -98,6 +112,7 @@ export function mountOriginMagicCircleRoutes(app, io) {
   });
 
   app.post("/api/origin-magic-circle/rooms/create", async (req, res) => {
+  await cleanupOriginRoomsQuietly();
     const username = String(req.body?.username || "guest").trim() || "guest";
     const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
     if (!userTrackingId) return res.status(400).json({ error: "userTrackingId is required" });
@@ -112,6 +127,7 @@ export function mountOriginMagicCircleRoutes(app, io) {
   });
 
   app.post("/api/origin-magic-circle/rooms/join", async (req, res) => {
+  await cleanupOriginRoomsQuietly();
     const username = String(req.body?.username || "guest").trim() || "guest";
     const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
     const roomId = String(req.body?.roomId || "").trim();
@@ -198,6 +214,7 @@ export function mountOriginMagicCircleRoutes(app, io) {
   });
 
   app.get("/api/origin-magic-circle/rooms/:roomId", async (req, res) => {
+  await cleanupOriginRoomsQuietly();
     const roomId = String(req.params.roomId || "").trim();
     if (!roomId) return res.status(400).json({ error: "roomId is required" });
 
@@ -337,7 +354,7 @@ return res.json({ magicEffectJson });
     }
   });
 
-    app.post("/api/origin-magic-circle/casts", (req, res) => {
+    app.post("/api/origin-magic-circle/casts", async (req, res) => {
     const roomId = String(req.body?.roomId || "").trim();
     const casterId = String(req.body?.casterId || "").trim();
     const casterName = String(req.body?.casterName || "").trim();
@@ -357,14 +374,21 @@ return res.json({ magicEffectJson });
     };
 
     const list = roomCastEvents.get(roomId) || [];
-    list.push(entry);
-    roomCastEvents.set(roomId, list.slice(-30));
+list.push(entry);
+roomCastEvents.set(roomId, list.slice(-30));
 
-    // Socket.IO移行後でも、REST経由で送られた魔法を相手へ通知できるようにしておく
-    io?.to(originSocketRoom(roomId)).emit("origin:cast", entry);
+const touchedRoom = await touchOriginMagicCircleRoomExpiresAt({
+  roomId,
+  baseMs: entry.at,
+});
 
-    return res.json({ ok: true, cast: entry });
-  });
+io?.to(originSocketRoom(roomId)).emit("origin:room", touchedRoom);
+
+// Socket.IO移行後でも、REST経由で送られた魔法を相手へ通知できるようにしておく
+io?.to(originSocketRoom(roomId)).emit("origin:cast", entry);
+
+return res.json({ ok: true, cast: entry }); 
+   });
 
   app.get("/api/origin-magic-circle/casts/:roomId", (req, res) => {
     const roomId = String(req.params.roomId || "").trim();
@@ -396,6 +420,7 @@ return res.json({ magicEffectJson });
 
   io.on("connection", (socket) => {
     socket.on("origin:join", async (payload = {}, ack) => {
+      await cleanupOriginRoomsQuietly();
       const roomId = String(payload.roomId || "").trim();
       const userTrackingId = String(payload.userTrackingId || payload.clientId || "").trim();
 
@@ -499,12 +524,18 @@ return res.json({ magicEffectJson });
         };
 
         const list = roomCastEvents.get(roomId) || [];
-        list.push(entry);
-        roomCastEvents.set(roomId, list.slice(-30));
+list.push(entry);
+roomCastEvents.set(roomId, list.slice(-30));
 
-        io.to(originSocketRoom(roomId)).emit("origin:cast", entry);
+const touchedRoom = await touchOriginMagicCircleRoomExpiresAt({
+  roomId,
+  baseMs: entry.at,
+});
 
-        ack?.({ ok: true, cast: entry });
+io.to(originSocketRoom(roomId)).emit("origin:room", touchedRoom);
+io.to(originSocketRoom(roomId)).emit("origin:cast", entry);
+
+ack?.({ ok: true, cast: entry });
       } catch (error) {
         console.error("[origin-magic-circle] socket cast error:", error);
         ack?.({ ok: false, error: "server_error" });
