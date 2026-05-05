@@ -655,11 +655,17 @@ function setupMagicCircleUi(container, options = {}) {
   chantBtn.textContent = "魔法陣詠唱🪄ྀི";
   controlsRight.appendChild(chantBtn);
 
-  const history = [];
-  let historyIndex = -1;
-  let activePointerId = null;
-  let lastPoint = null;
-  let isChanting = false;
+const history = [];
+let historyIndex = -1;
+let activePointerId = null;
+let lastPoint = null;
+let isChanting = false;
+
+// 追加：一筆ごとの座標保存
+const strokeList = [];
+let currentStroke = null;
+
+
   let ritualController = null;
   //let spinStartTs = 0;
 
@@ -719,6 +725,50 @@ function setupMagicCircleUi(container, options = {}) {
     const rect = overlay.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   };
+  
+  
+  
+  
+  
+  const normalizeStrokePoint = (point) => {
+  return [
+    Math.round(point.x),
+    Math.round(point.y),
+  ];
+};
+
+const appendPointToCurrentStroke = (point) => {
+  if (!currentStroke) return;
+
+  const [x, y] = normalizeStrokePoint(point);
+
+  // 直前と同じ座標なら保存しない
+  const len = currentStroke.length;
+  if (len >= 2) {
+    const lastX = currentStroke[len - 2];
+    const lastY = currentStroke[len - 1];
+
+    const dx = x - lastX;
+    const dy = y - lastY;
+
+    // 近すぎる点は間引く。保存量をかなり減らせる
+    if (dx * dx + dy * dy < 9) return;
+  }
+
+  currentStroke.push(x, y);
+};
+
+const getStrokeJson = () => {
+  // 点が1個未満のストロークは除外
+  const cleaned = strokeList.filter((stroke) => Array.isArray(stroke) && stroke.length >= 4);
+  return JSON.stringify(cleaned);
+};
+
+
+
+
+
+
 
   const configureCtx = () => {
     if (!ctx) return;
@@ -750,6 +800,14 @@ function setupMagicCircleUi(container, options = {}) {
     overlay.setPointerCapture(event.pointerId);
     configureCtx();
     lastPoint = getPos(event);
+    
+    
+    
+    currentStroke = [];
+appendPointToCurrentStroke(lastPoint);
+
+
+
     ctx?.beginPath();
     ctx?.moveTo(lastPoint.x, lastPoint.y);
     ctx?.lineTo(lastPoint.x + 0.01, lastPoint.y + 0.01);
@@ -759,19 +817,28 @@ function setupMagicCircleUi(container, options = {}) {
   overlay.addEventListener("pointermove", (event) => {
     if (event.pointerId !== activePointerId || !lastPoint) return;
     const point = getPos(event);
-    ctx?.beginPath();
-    ctx?.moveTo(lastPoint.x, lastPoint.y);
-    ctx?.lineTo(point.x, point.y);
-    ctx?.stroke();
-    lastPoint = point;
+
+appendPointToCurrentStroke(point);
+
+ctx?.beginPath();
+ctx?.moveTo(lastPoint.x, lastPoint.y);
+ctx?.lineTo(point.x, point.y);
+ctx?.stroke();
+lastPoint = point;
   });
 
   const finishStroke = (event) => {
-    if (event.pointerId !== activePointerId) return;
-    activePointerId = null;
-    lastPoint = null;
-    commitState();
-  };
+  if (event.pointerId !== activePointerId) return;
+
+  if (currentStroke && currentStroke.length >= 4) {
+    strokeList.push(currentStroke);
+  }
+
+  currentStroke = null;
+  activePointerId = null;
+  lastPoint = null;
+  commitState();
+};
 
   overlay.addEventListener("pointerup", finishStroke);
   overlay.addEventListener("pointercancel", finishStroke);
@@ -797,7 +864,12 @@ redoBtn.addEventListener("click", () => {
 clearBtn.addEventListener("click", () => {
   if (isChanting) return;
   if (historyIndex <= 0) return;
+
   ctx?.clearRect(0, 0, overlay.width, overlay.height);
+
+  strokeList.length = 0;
+  currentStroke = null;
+
   commitState();
 });
 
@@ -856,6 +928,11 @@ clearBtn.addEventListener("click", () => {
 
   overlay.style.transition = "";
   overlay.style.transform = "";
+
+
+strokeList.length = 0;
+currentStroke = null;
+
 
   history.length = 0;
   historyIndex = -1;
@@ -1399,8 +1476,11 @@ const cancelGlyphRitualAnimation = () => {
     const res = await fetch("/api/origin-magic-circle/chant-title", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ base64ImageFile }),
-    });
+      body: JSON.stringify({
+        base64ImageFile,
+        strokeJson: getStrokeJson(),
+      }),
+     });
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "chant_failed");
