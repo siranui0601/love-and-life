@@ -14,6 +14,7 @@ body {
   background: #0f0b18 url("https://sozaino.site/wp-content/uploads/2021/10/mahou33.png") center / cover no-repeat fixed;
 
   overflow: hidden;
+  touch-action: manipulation;
 }
 
 .page {
