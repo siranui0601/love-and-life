@@ -19,6 +19,34 @@ const refs = {
 
 const ORIGIN_TUTORIAL_DISMISSED_KEY = "originMagicCircleTutorialDismissed";
 
+
+
+
+
+function installDoubleTapZoomBlocker() {
+  let lastTouchEndAt = 0;
+
+  document.addEventListener(
+    "touchend",
+    (event) => {
+      const now = Date.now();
+
+      if (now - lastTouchEndAt <= 350) {
+        event.preventDefault();
+      }
+
+      lastTouchEndAt = now;
+    },
+    { passive: false }
+  );
+}
+
+installDoubleTapZoomBlocker();
+
+
+
+
+
 const summonAssetOptions = [
   "fireball.glb",
   "magic_voxel_skull_flat_shaded.glb",
