@@ -3495,17 +3495,13 @@ function removeMixerForRoot(root) {
   
 
   topControls = document.createElement("div");
-topControls.style.position = "fixed";
-topControls.style.left = "8px";
-topControls.style.top = "8px";
-topControls.style.zIndex = "3000000";
 topControls.style.maxHeight = "28vh";
 topControls.style.overflowY = "auto";
 topControls.style.maxWidth = "96vw";
 topControls.style.fontSize = "12px";
 topControls.style.padding = "8px";
+topControls.style.zIndex = "30000000";
 topControls.className = "summon-test-controls";
-
   
       topControls.innerHTML = `
   <div class="summon-test-controls__header">
