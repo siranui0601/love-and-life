@@ -199,7 +199,8 @@ const summonAssetSizePresets = {
 const ENABLE_ORIGIN_DEBUG = false;
 
 function showDebug(text) {
-  if (!ENABLE_ORIGIN_DEBUG) return;
+  if (!ENABLE_ORIGIN_DEBUG && !isOriginDebugTestRoom) return;
+  
   let panel = document.getElementById("debugPanel");
 
   if (!panel) {
@@ -236,8 +237,26 @@ function showDebug(text) {
         copyBtn.textContent = "コピー";
       }, 1000);
     };
+    
+    
+    
+    const toggleBtn = document.createElement("button");
+toggleBtn.textContent = "折り畳む";
+toggleBtn.style.fontSize = "12px";
+toggleBtn.style.padding = "4px 8px";
 
-    panel.append(pre, copyBtn);
+toggleBtn.onclick = () => {
+  const collapsed = panel.dataset.collapsed === "1";
+  panel.dataset.collapsed = collapsed ? "0" : "1";
+
+  if (pre) {
+    pre.style.display = collapsed ? "" : "none";
+  }
+
+  toggleBtn.textContent = collapsed ? "折り畳む" : "開く";
+};
+
+    panel.append(pre, copyBtn, toggleBtn);
     document.body.appendChild(panel);
   }
 
@@ -254,6 +273,7 @@ let refreshTimer = null;
 let battleStarted = false;
 
 let originSocket = null;
+let isOriginDebugTestRoom = false;
 
 let battleState = { selfHp: 1000, enemyHp: 1000, lastCastAt: 0, processedCastIds: new Set() };
 let tutorialModalDismissed = false;
@@ -546,6 +566,33 @@ function showRoomIdModal() {
     });
   });
 }
+
+
+
+
+function createOriginDebugTestRoom() {
+  return {
+    roomId: "000000",
+    members: [
+      {
+        name: username || "player",
+        id: userTrackingId,
+        role: "host",
+        hp: 1000,
+      },
+      {
+        name: "bot",
+        id: "origin-debug-bot",
+        role: "guest",
+        hp: 1000,
+      },
+    ],
+    status: "対戦中",
+    expiresAt: Date.now() + 60 * 60 * 1000,
+    isDebugTestRoom: true,
+  };
+}
+
 
 
 
@@ -1532,11 +1579,13 @@ const { GLTFLoader } = GLTF;
 hydrateBattleHpFromRoom();
 renderHpBars();
 
-try {
-  await joinOriginSocketRoom();
-  await requestLatestHpBySocket();
-} catch (error) {
-  console.warn("[origin-magic-circle] socket hp init failed:", error);
+if (!isOriginDebugTestRoom) {
+  try {
+    await joinOriginSocketRoom();
+    await requestLatestHpBySocket();
+  } catch (error) {
+    console.warn("[origin-magic-circle] socket hp init failed:", error);
+  }
 }
 
 
@@ -1561,34 +1610,40 @@ composer.addPass(bloomPass);
   let hasHiddenTopModal = false;
   const magicCircleUi = setupMagicCircleUi(refs.battleView, {
     onMagicJsonReady: async (effectJson) => {
-  const socket = getSocketIoClient();
+  if (!isOriginDebugTestRoom) {
+    const socket = getSocketIoClient();
 
-  try {
-    await emitWithAck(socket, "origin:cast", {
-      roomId: currentRoom?.roomId,
-      casterId: userTrackingId,
-      casterName: username,
-      magicEffectJson: effectJson,
-    });
-  } catch (error) {
-    console.warn("[origin-magic-circle] socket cast failed, fallback to fetch:", error);
-
-    await fetch("/api/origin-magic-circle/casts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      await emitWithAck(socket, "origin:cast", {
         roomId: currentRoom?.roomId,
         casterId: userTrackingId,
         casterName: username,
         magicEffectJson: effectJson,
-      }),
-    });
+      });
+    } catch (error) {
+      console.warn("[origin-magic-circle] socket cast failed, fallback to fetch:", error);
+
+      await fetch("/api/origin-magic-circle/casts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomId: currentRoom?.roomId,
+          casterId: userTrackingId,
+          casterName: username,
+          magicEffectJson: effectJson,
+        }),
+      });
+    }
   }
 
   showMagicNameCenter(effectJson.magicName, false, () => {
     playMagicVisualEffects(effectJson, false);
   });
 },
+
+
+
+
     hideTopModalOnce: () => {
       if (hasHiddenTopModal || !topControls) return;
       topControls.style.display = "none";
@@ -3342,7 +3397,7 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
 
       // 自分が撃った魔法のダメージだけサーバーへ確定送信する。
       // 相手から受けた魔法側では送らない。二重減算防止。
-      if (!isEnemyCast) {
+      if (!isEnemyCast && !isOriginDebugTestRoom) {
         const members = currentRoom?.members || [];
         const enemy = members.find((member) => member.id !== userTrackingId);
         const socket = getSocketIoClient();
@@ -3447,22 +3502,34 @@ topControls.style.fontSize = "12px";
 topControls.style.padding = "8px";
   topControls.className = "summon-test-controls";
   topControls.innerHTML = `
-  <div class="summon-test-controls__list"></div>
+  <div class="summon-test-controls__header">
+    <strong>3D素材テスト</strong>
+    <button class="summon-test-controls__toggle" type="button">折り畳む</button>
+  </div>
 
-  <div class="summon-test-controls__fields">
-    <label class="summon-test-controls__field">
-      スケール倍率
-      <input class="summon-scale-input" type="number" min="0.01" step="0.1" value="1" />
-    </label>
+  <div class="summon-test-controls__body">
+    <div class="summon-test-controls__list"></div>
 
-    <label class="summon-test-controls__field">
-      Y高さ
-      <input class="summon-y-input" type="number" step="0.1" value="1.6" />
-    </label>
+    <div class="summon-test-controls__fields">
+      <label class="summon-test-controls__field">
+        スケール倍率
+        <input class="summon-scale-input" type="number" min="0.01" step="0.1" value="1" />
+      </label>
 
-    <button class="magic-effect-test-btn" type="button">魔法演出テスト</button>
+      <label class="summon-test-controls__field">
+        Y高さ
+        <input class="summon-y-input" type="number" step="0.1" value="1.6" />
+      </label>
+
+      <button class="magic-effect-test-btn" type="button">魔法演出テスト</button>
+    </div>
   </div>
 `;
+
+  const topControlsBody = topControls.querySelector(".summon-test-controls__body");
+  const topControlsToggle = topControls.querySelector(".summon-test-controls__toggle");
+
+
   const radioList = topControls.querySelector(".summon-test-controls__list");
   const scaleInput = topControls.querySelector(".summon-scale-input");
   const yInput = topControls.querySelector(".summon-y-input");
@@ -3472,6 +3539,15 @@ topControls.style.padding = "8px";
 const initialPreset = getAssetSizePreset("fireball.glb", "medium");
 scaleInput.value = initialPreset.scale;
 yInput.value = initialPreset.y;
+
+
+topControlsToggle?.addEventListener("click", () => {
+  const collapsed = topControls.classList.toggle("is-collapsed");
+  if (topControlsBody) {
+    topControlsBody.style.display = collapsed ? "none" : "";
+  }
+  topControlsToggle.textContent = collapsed ? "開く" : "折り畳む";
+});
 
 
 
@@ -3650,6 +3726,10 @@ radioList?.addEventListener("change", () => {
   
   //refs.battleView.appendChild(topControls);
   //applySummonState();
+if (isOriginDebugTestRoom) {
+  refs.battleView.appendChild(topControls);
+  applySummonState();
+}
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
   //renderHpBars();
@@ -3752,6 +3832,30 @@ refs.joinRoomBtn?.addEventListener("click", async () => {
   }
   const roomId = await showRoomIdModal();
   if (!roomId) return;
+  
+  
+  
+  if (roomId === "000000") {
+  isOriginDebugTestRoom = true;
+
+  const room = createOriginDebugTestRoom();
+  currentRoom = room;
+
+  // テスト部屋は再読み込み復帰もできるように保存する
+  saveActiveRoomId("000000");
+
+  showWaitingRoom(room);
+  setMessage("テスト部屋に入室しました。対戦相手 bot を追加します。");
+
+  await startThreeBattleScene();
+  return;
+}
+
+
+
+
+
+
 
   try {
     const room = await callApi("/api/origin-magic-circle/rooms/join", { roomId, username, userTrackingId }, "POST");
@@ -3822,6 +3926,27 @@ refs.backToTitleBtn?.addEventListener("click", () => {
 async function restoreActiveRoomIfExists() {
   const activeRoomId = localStorage.getItem(ACTIVE_ROOM_STORAGE_KEY);
   if (!activeRoomId) {
+    
+    
+    
+    
+    if (activeRoomId === "000000") {
+  isOriginDebugTestRoom = true;
+
+  const room = createOriginDebugTestRoom();
+  currentRoom = room;
+
+  showWaitingRoom(room);
+  setMessage("テスト部屋に再接続しました。");
+
+  await startThreeBattleScene();
+  return;
+}
+
+
+
+
+
     showHomePanel();
     refs.waitingRoom.classList.add("hidden");
     refs.waitingNote.classList.remove("hidden");
