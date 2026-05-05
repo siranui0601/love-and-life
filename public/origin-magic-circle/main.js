@@ -585,7 +585,7 @@ function setupMagicCircleUi(container, options = {}) {
   let activePointerId = null;
   let lastPoint = null;
   let isChanting = false;
-  let spinRafId = null;
+  let ritualController = null;
   //let spinStartTs = 0;
 
   const resultModal = document.createElement("div");
