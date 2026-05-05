@@ -196,7 +196,7 @@ const summonAssetSizePresets = {
 };
 
 //変更14
-const ENABLE_ORIGIN_DEBUG = true;
+const ENABLE_ORIGIN_DEBUG = false;
 
 function showDebug(text) {
   if (!ENABLE_ORIGIN_DEBUG) return;
