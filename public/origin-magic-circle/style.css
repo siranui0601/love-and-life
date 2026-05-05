@@ -8,14 +8,39 @@
 
 
 
-html {
+
+
+html,
+body {
   touch-action: manipulation;
-  -webkit-touch-callout: none; /* iOS等の長押しメニューを無効化 */
-    -webkit-user-select: none;   /* テキスト選択を無効化 */
-    user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
 }
 
+button,
+input,
+textarea,
+select,
+label,
+.cute-btn,
+.room-id-modal,
+.room-id-modal *,
+.magic-circle-controls,
+.magic-circle-controls *,
+.summon-test-controls,
+.summon-test-controls *,
+.battle-view {
+  touch-action: manipulation;
+}
 
+/* 魔法陣キャンバスは描画用なので none のままでOK */
+.magic-circle-overlay {
+  touch-action: none;
+}
 
 body {
   margin: 0;
