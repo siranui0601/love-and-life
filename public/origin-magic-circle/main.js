@@ -3498,7 +3498,7 @@ function removeMixerForRoot(root) {
 topControls.style.position = "fixed";
 topControls.style.left = "8px";
 topControls.style.top = "8px";
-topControls.style.zIndex = "30000";
+topControls.style.zIndex = "3000000";
 topControls.style.maxHeight = "28vh";
 topControls.style.overflowY = "auto";
 topControls.style.maxWidth = "96vw";
