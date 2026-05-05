@@ -465,6 +465,15 @@ async function updateOriginMagicCircleRoomRow(rowIndex, values) {
   });
 }
 
+
+
+function buildOriginMagicCircleRoomId() {
+  return String(randomInt(100000, 1000000));
+}
+
+
+
+
 export async function createOriginMagicCircleRoom({ username, clientId }) {
   const sheets = await getSheetsClient();
   const rows = await getOriginMagicCircleRows(sheets);
@@ -472,8 +481,8 @@ export async function createOriginMagicCircleRoom({ username, clientId }) {
 
   let roomId = "";
   for (let i = 0; i < 30; i += 1) {
-    const candidate = buildSecretToolRoomId();
-    if (!usedRoomIds.has(candidate)) {
+    const candidate = buildOriginMagicCircleRoomId();
+        if (!usedRoomIds.has(candidate)) {
       roomId = candidate;
       break;
     }
