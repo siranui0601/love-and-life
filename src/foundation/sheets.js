@@ -482,7 +482,7 @@ export async function createOriginMagicCircleRoom({ username, clientId }) {
 
   const members = [{ name: username, id: clientId, role: "host", hp: 1000 }];
   const status = "lobby";
-  const expiresAt = roomExpiresAtMs();
+  const expiresAt = originMagicCircleExpiresAtMs();
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
@@ -601,6 +601,61 @@ export async function removeOriginMagicCircleMember({ roomId, clientId }) {
     expiresAt: room.expiresAt,
   };
 }
+
+
+
+
+
+const ORIGIN_MAGIC_CIRCLE_ACTIVE_MS = 60 * 60 * 1000;
+
+function originMagicCircleExpiresAtMs(baseMs = Date.now()) {
+  return Number(baseMs) + ORIGIN_MAGIC_CIRCLE_ACTIVE_MS;
+}
+
+export async function touchOriginMagicCircleRoomExpiresAt({ roomId, baseMs = Date.now() }) {
+  const room = await getOriginMagicCircleRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+
+  const expiresAt = originMagicCircleExpiresAtMs(baseMs);
+
+  await updateOriginMagicCircleRoomRow(room.rowIndex, [
+    room.roomId,
+    JSON.stringify(room.members || []),
+    room.status,
+    String(expiresAt),
+  ]);
+
+  return {
+    ...room,
+    expiresAt,
+  };
+}
+
+export async function cleanupExpiredOriginMagicCircleRooms() {
+  const sheets = await getSheetsClient();
+  const rows = await getOriginMagicCircleRows(sheets);
+  const now = Date.now();
+
+  const targets = rows
+    .map((row, index) => originMagicCircleRowToRoom(row, index))
+    .filter((room) => room.roomId && room.expiresAt > 0 && room.expiresAt < now);
+
+  if (!targets.length) return 0;
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      valueInputOption: "USER_ENTERED",
+      data: targets.map((room) => ({
+        range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${room.rowIndex}:D${room.rowIndex}`,
+        values: [["", "", "", ""]],
+      })),
+    },
+  });
+
+  return targets.length;
+}
+
 
 
 
