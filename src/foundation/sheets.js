@@ -688,27 +688,41 @@ export async function updateOriginMagicCircleRoomHp({ roomId, clientId, selfHp, 
   return { ...room, members };
 }
 
-export async function findOriginMagicCircleSpellCache(base64ImageFile) {
+export async function findOriginMagicCircleSpellCache(imageHash) {
   const sheets = await getSheetsClient();
-  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:H`;
+  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   const rows = res.data.values || [];
-  const key = String(base64ImageFile || "").trim();
+
+  const key = String(imageHash || "").trim();
   const idx = rows.findIndex((row) => String(row?.[0] || "").trim() === key);
+
   if (idx < 0) return null;
+
   const rawJson = String(rows[idx]?.[1] || "").trim();
-  return { rowIndex: idx + 2, base64ImageFile: key, rawJson };
+  const strokeJson = String(rows[idx]?.[2] || "").trim();
+
+  return {
+    rowIndex: idx + 2,
+    imageHash: key,
+    rawJson,
+    strokeJson,
+  };
 }
 
-export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson }) {
+export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson, strokeJson = "" }) {
   const sheets = await getSheetsClient();
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:H2`,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I2`,
     valueInputOption: "RAW",
     requestBody: {
-      values: [[String(imageHash || ""), String(rawJson || "")]],
+      values: [[
+        String(imageHash || ""),
+        String(rawJson || ""),
+        String(strokeJson || ""),
+      ]],
     },
   });
 }
