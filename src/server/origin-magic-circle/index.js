@@ -88,13 +88,17 @@ function normalizeOriginMagicCircleEffectJson(effectJson) {
   return cloned;
 }
 
-function normalizeOriginMagicCircleStrokeJson(rawStrokeJson) {
+
+    
+    function normalizeOriginMagicCircleStrokeJson(rawStrokeJson) {
   const raw = String(rawStrokeJson || "").trim();
   if (!raw) return "";
 
   try {
     const parsed = JSON.parse(raw);
 
+    // 旧形式: [[x,y,x,y], ...]
+    // 新形式: { w, h, strokes: [[x,y,x,y], ...] }
     const sourceStrokes = Array.isArray(parsed)
       ? parsed
       : Array.isArray(parsed?.strokes)
@@ -103,16 +107,18 @@ function normalizeOriginMagicCircleStrokeJson(rawStrokeJson) {
 
     if (!sourceStrokes) return "";
 
-    const w = Math.round(Number(parsed?.w));
-    const h = Math.round(Number(parsed?.h));
+    const rawW = Number(parsed?.w);
+    const rawH = Number(parsed?.h);
 
-    const safeW = Number.isFinite(w) && w > 0
-      ? Math.min(w, 10000)
-      : 0;
+    const safeW =
+      Number.isFinite(rawW) && rawW > 0
+        ? Math.min(Math.round(rawW), 10000)
+        : 0;
 
-    const safeH = Number.isFinite(h) && h > 0
-      ? Math.min(h, 10000)
-      : 0;
+    const safeH =
+      Number.isFinite(rawH) && rawH > 0
+        ? Math.min(Math.round(rawH), 10000)
+        : 0;
 
     const normalizedStrokes = [];
 
@@ -158,6 +164,7 @@ function normalizeOriginMagicCircleStrokeJson(rawStrokeJson) {
 
     let json = JSON.stringify(payload);
 
+    // Sheets 1セル 50,000文字制限対策
     while (json.length > 45000 && payload.strokes.length > 1) {
       payload.strokes.pop();
       json = JSON.stringify(payload);
@@ -170,6 +177,11 @@ function normalizeOriginMagicCircleStrokeJson(rawStrokeJson) {
     return "";
   }
 }
+
+
+
+
+
       
 export function mountOriginMagicCircleRoutes(app, io) {
   const roomCastEvents = new Map();
