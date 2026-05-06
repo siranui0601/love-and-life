@@ -507,18 +507,27 @@ return res.json({ magicEffectJson });
     const casterName = String(req.body?.casterName || "").trim();
     const magicEffectJson = normalizeOriginMagicCircleEffectJson(req.body?.magicEffectJson || null);
 
+
+
+
+    const strokeJson = normalizeOriginMagicCircleStrokeJson(req.body?.strokeJson);
+
+
+
+
     if (!roomId || !casterId || !magicEffectJson) {
       return res.status(400).json({ error: "invalid_cast" });
     }
 
     const entry = {
-      id: `${Date.now()}_${Math.random()}`,
-      at: Date.now(),
-      roomId,
-      casterId,
-      casterName,
-      magicEffectJson,
-    };
+  id: `${Date.now()}_${Math.random()}`,
+  at: Date.now(),
+  roomId,
+  casterId,
+  casterName,
+  magicEffectJson,
+  strokeJson,
+};
 
     const list = roomCastEvents.get(roomId) || [];
 list.push(entry);
@@ -643,6 +652,14 @@ return res.json({ ok: true, cast: entry });
       const casterName = String(payload.casterName || "").trim();
       const magicEffectJson = normalizeOriginMagicCircleEffectJson(payload.magicEffectJson || null);
 
+
+
+
+      const strokeJson = normalizeOriginMagicCircleStrokeJson(payload.strokeJson);
+      
+      
+      
+      
       if (!roomId || !casterId || !magicEffectJson) {
         ack?.({ ok: false, error: "invalid_cast" });
         return;
@@ -662,13 +679,14 @@ return res.json({ ok: true, cast: entry });
         }
 
         const entry = {
-          id: `${Date.now()}_${Math.random()}`,
-          at: Date.now(),
-          roomId,
-          casterId,
-          casterName,
-          magicEffectJson,
-        };
+  id: `${Date.now()}_${Math.random()}`,
+  at: Date.now(),
+  roomId,
+  casterId,
+  casterName,
+  magicEffectJson,
+  strokeJson,
+};
 
         const list = roomCastEvents.get(roomId) || [];
 list.push(entry);
