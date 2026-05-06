@@ -1610,8 +1610,9 @@ const res = await fetch("/api/origin-magic-circle/chant-title", {
 
     if (typeof onMagicJsonReady === "function" && magicEffectJson) {
       await onMagicJsonReady(magicEffectJson, {
-  strokeJson,
-});
+        strokeJson: data.strokeJson || strokeJson,
+        spellHash: data.imageHash || "",
+      });
       hideTopModalOnce?.();
       hideTutorialModal();
       hideDebugOnce?.();
@@ -1704,6 +1705,7 @@ function addMagicLogFromCast(cast) {
     at: Number(cast.at) || Date.now(),
     casterId: String(cast.casterId || ""),
     casterName: String(cast.casterName || "unknown"),
+    spellHash: String(cast.spellHash || cast.imageHash || "").trim(),
     magicName: String(cast.magicEffectJson?.magicName || "無名の魔法"),
     artScore: Math.max(0, Math.min(100, Math.round(Number(cast.magicEffectJson?.artScore) || 0))),
     strokeJson: String(cast.strokeJson || ""),
@@ -1873,47 +1875,77 @@ composer.addPass(bloomPass);
   let topControls = null;
   let hasHiddenDebugPanel = false;
   let hasHiddenTopModal = false;
+  
+  
+  
   const magicCircleUi = setupMagicCircleUi(refs.battleView, {
   onMagicJsonReady: async (effectJson, meta = {}) => {
-    const selfCast = {
-      id: `${Date.now()}_${Math.random()}`,
-      at: Date.now(),
-      roomId: currentRoom?.roomId || "",
-      casterId: userTrackingId,
-      casterName: username,
-      magicEffectJson: effectJson,
-      strokeJson: meta.strokeJson || "",
-    };
+    const spellHash = String(meta.spellHash || "").trim();
+    const strokeJson = String(meta.strokeJson || "");
 
-    // 自分のリザルトログ用
-    addMagicLogFromCast(selfCast);
+    // テスト部屋はサーバーに送らず、ローカルだけでログ保存
+    if (isOriginDebugTestRoom) {
+      const localCast = {
+        id: `${Date.now()}_${Math.random()}`,
+        at: Date.now(),
+        roomId: currentRoom?.roomId || "",
+        casterId: userTrackingId,
+        casterName: username,
+        magicEffectJson: effectJson,
+        strokeJson,
+        spellHash,
+      };
 
-    if (!isOriginDebugTestRoom) {
-      const socket = getSocketIoClient();
+      addMagicLogFromCast(localCast);
 
-      try {
-        await emitWithAck(socket, "origin:cast", {
+      if (battleState.gameEnded) return;
+
+      showMagicNameCenter(effectJson.magicName, false, () => {
+        if (battleState.gameEnded) return;
+        playMagicVisualEffects(effectJson, false);
+      });
+
+      return;
+    }
+
+    const socket = getSocketIoClient();
+    let sentCast = null;
+
+    try {
+      const response = await emitWithAck(socket, "origin:cast", {
+        roomId: currentRoom?.roomId,
+        casterId: userTrackingId,
+        casterName: username,
+        magicEffectJson: effectJson,
+        strokeJson,
+        spellHash,
+        imageHash: spellHash,
+      });
+
+      sentCast = response.cast || null;
+    } catch (error) {
+      console.warn("[origin-magic-circle] socket cast failed, fallback to fetch:", error);
+
+      const res = await fetch("/api/origin-magic-circle/casts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           roomId: currentRoom?.roomId,
           casterId: userTrackingId,
           casterName: username,
           magicEffectJson: effectJson,
-          strokeJson: meta.strokeJson || "",
-        });
-      } catch (error) {
-        console.warn("[origin-magic-circle] socket cast failed, fallback to fetch:", error);
+          strokeJson,
+          spellHash,
+          imageHash: spellHash,
+        }),
+      });
 
-        await fetch("/api/origin-magic-circle/casts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            roomId: currentRoom?.roomId,
-            casterId: userTrackingId,
-            casterName: username,
-            magicEffectJson: effectJson,
-            strokeJson: meta.strokeJson || "",
-          }),
-        });
-      }
+      const data = await res.json().catch(() => ({}));
+      sentCast = data.cast || null;
+    }
+
+    if (sentCast) {
+      addMagicLogFromCast(sentCast);
     }
 
     if (battleState.gameEnded) return;
@@ -1937,6 +1969,12 @@ composer.addPass(bloomPass);
     hasHiddenDebugPanel = true;
   },
 });
+
+
+
+
+
+
 
   const hemiLight = new HemisphereLight(0xbad8ff, 0x5d4430, 1.1);
   scene.add(hemiLight);
@@ -4328,6 +4366,39 @@ function createResultMagicBubble(log, index) {
   return bubble;
 }
 
+
+
+
+async function hydrateMagicLogsFromRoomCastLogs() {
+  if (!currentRoom?.roomId || isOriginDebugTestRoom) return;
+
+  try {
+    const data = await callApi(
+      `/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom.roomId)}/cast-logs`
+    );
+
+    const logs = Array.isArray(data.logs) ? data.logs : [];
+
+    logs.forEach((log) => {
+      addMagicLogFromCast({
+        id: log.id,
+        at: log.at,
+        casterId: log.casterId,
+        casterName: log.casterName,
+        spellHash: log.spellHash,
+        magicEffectJson: log.magicEffectJson,
+        strokeJson: log.strokeJson,
+      });
+    });
+  } catch (error) {
+    console.warn("[origin-magic-circle] hydrate magic logs failed:", error);
+  }
+}
+
+
+
+
+
 function showBattleResultScreen({ selfWon }) {
   refs.battleView.innerHTML = "";
 
@@ -4405,8 +4476,9 @@ async function startBattleEndSequence() {
 
   hideWinBanner();
 
-  showBattleResultScreen({ selfWon });
-}
+await hydrateMagicLogsFromRoomCastLogs();
+
+showBattleResultScreen({ selfWon });}
 
 
 
