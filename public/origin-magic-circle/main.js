@@ -1748,19 +1748,6 @@ async function startThreeBattleScene() {
 let THREE;
 let GLTF;
 let POST;
-
-
-
-
-
-onBattleHpReachedZero = () => {
-  startBattleEndSequence();
-};
-
-
-
-
-
 try {
   [THREE, GLTF, POST] = await Promise.all([
     import("https://esm.sh/three@0.166.1"),
@@ -1887,62 +1874,69 @@ composer.addPass(bloomPass);
   let hasHiddenDebugPanel = false;
   let hasHiddenTopModal = false;
   const magicCircleUi = setupMagicCircleUi(refs.battleView, {
-    onMagicJsonReady: async (effectJson, meta = {}) => {
-        if (!isOriginDebugTestRoom) {
-    const socket = getSocketIoClient();
+  onMagicJsonReady: async (effectJson, meta = {}) => {
+    const selfCast = {
+      id: `${Date.now()}_${Math.random()}`,
+      at: Date.now(),
+      roomId: currentRoom?.roomId || "",
+      casterId: userTrackingId,
+      casterName: username,
+      magicEffectJson: effectJson,
+      strokeJson: meta.strokeJson || "",
+    };
 
-    try {
-      await emitWithAck(socket, "origin:cast", {
-  roomId: currentRoom?.roomId,
-  casterId: userTrackingId,
-  casterName: username,
-  magicEffectJson: effectJson,
-  strokeJson: meta.strokeJson || "",
-      });
-    } catch (error) {
-      console.warn("[origin-magic-circle] socket cast failed, fallback to fetch:", error);
+    // 自分のリザルトログ用
+    addMagicLogFromCast(selfCast);
 
-      await fetch("/api/origin-magic-circle/casts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-  roomId: currentRoom?.roomId,
-  casterId: userTrackingId,
-  casterName: username,
-  magicEffectJson: effectJson,
-  strokeJson: meta.strokeJson || "",
-}),
-      });
+    if (!isOriginDebugTestRoom) {
+      const socket = getSocketIoClient();
+
+      try {
+        await emitWithAck(socket, "origin:cast", {
+          roomId: currentRoom?.roomId,
+          casterId: userTrackingId,
+          casterName: username,
+          magicEffectJson: effectJson,
+          strokeJson: meta.strokeJson || "",
+        });
+      } catch (error) {
+        console.warn("[origin-magic-circle] socket cast failed, fallback to fetch:", error);
+
+        await fetch("/api/origin-magic-circle/casts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            roomId: currentRoom?.roomId,
+            casterId: userTrackingId,
+            casterName: username,
+            magicEffectJson: effectJson,
+            strokeJson: meta.strokeJson || "",
+          }),
+        });
+      }
     }
-  }
 
-  if (battleState.gameEnded) return;
+    if (battleState.gameEnded) return;
 
-showMagicNameCenter(effectJson.magicName, false, () => {
-  if (battleState.gameEnded) return;
-  playMagicVisualEffects(effectJson, false);
-});
-  
-    
-    
+    showMagicNameCenter(effectJson.magicName, false, () => {
+      if (battleState.gameEnded) return;
+      playMagicVisualEffects(effectJson, false);
     });
-},
+  },
 
+  hideTopModalOnce: () => {
+    if (hasHiddenTopModal || !topControls) return;
+    topControls.style.display = "none";
+    hasHiddenTopModal = true;
+  },
 
-
-
-    hideTopModalOnce: () => {
-      if (hasHiddenTopModal || !topControls) return;
-      topControls.style.display = "none";
-      hasHiddenTopModal = true;
-    },
-    hideDebugOnce: () => {
-      if (hasHiddenDebugPanel) return;
-      const debugPanel = document.getElementById("debugPanel");
-      if (debugPanel) debugPanel.style.display = "none";
-      hasHiddenDebugPanel = true;
-    },
-  });
+  hideDebugOnce: () => {
+    if (hasHiddenDebugPanel) return;
+    const debugPanel = document.getElementById("debugPanel");
+    if (debugPanel) debugPanel.style.display = "none";
+    hasHiddenDebugPanel = true;
+  },
+});
 
   const hemiLight = new HemisphereLight(0xbad8ff, 0x5d4430, 1.1);
   scene.add(hemiLight);
@@ -3194,6 +3188,11 @@ fighterB.position.set(16, fighterYOffset, 0);
   fighterB.lookAt(fighterA.position.clone().add(new Vector3(0, 1.5, 0)));
   scene.add(fighterA, fighterB);
   
+  
+  
+  onBattleHpReachedZero = () => {
+  startBattleEndSequence();
+};
   
   //大改革
 function clampNumber(value, min, max, fallback) {
