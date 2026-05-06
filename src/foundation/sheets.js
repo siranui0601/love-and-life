@@ -688,6 +688,34 @@ export async function updateOriginMagicCircleRoomHp({ roomId, clientId, selfHp, 
   return { ...room, members };
 }
 
+
+
+
+
+async function findNextOriginMagicCircleSpellCacheRowIndex(sheets) {
+  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:G`;
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+  });
+
+  const rows = res.data.values || [];
+
+  for (let i = 0; i < rows.length; i += 1) {
+    const imageHash = String(rows[i]?.[0] || "").trim();
+
+    if (!imageHash) {
+      return i + 2;
+    }
+  }
+
+  return rows.length + 2;
+}
+
+
+
+
+
 export async function findOriginMagicCircleSpellCache(imageHash) {
   const sheets = await getSheetsClient();
   const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
@@ -713,18 +741,27 @@ export async function findOriginMagicCircleSpellCache(imageHash) {
 export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson, strokeJson = "" }) {
   const sheets = await getSheetsClient();
 
-  await sheets.spreadsheets.values.append({
+  const rowIndex = await findNextOriginMagicCircleSpellCacheRowIndex(sheets);
+
+  const safeImageHash = String(imageHash || "");
+  const safeRawJson = String(rawJson || "");
+  const safeStrokeJson = String(strokeJson || "");
+
+  await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I2`,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G${rowIndex}:I${rowIndex}`,
     valueInputOption: "RAW",
     requestBody: {
-      values: [[
-        String(imageHash || ""),
-        String(rawJson || ""),
-        String(strokeJson || ""),
-      ]],
+      values: [[safeImageHash, safeRawJson, safeStrokeJson]],
     },
   });
+
+  return {
+    rowIndex,
+    imageHash: safeImageHash,
+    rawJson: safeRawJson,
+    strokeJson: safeStrokeJson,
+  };
 }
 
 
@@ -737,14 +774,21 @@ export async function updateOriginMagicCircleSpellCacheStroke({ rowIndex, stroke
 
   const sheets = await getSheetsClient();
 
+  const safeStrokeJson = String(strokeJson || "");
+
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
     range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${safeRowIndex}`,
     valueInputOption: "RAW",
     requestBody: {
-      values: [[String(strokeJson || "")]],
+      values: [[safeStrokeJson]],
     },
   });
+
+  return {
+    rowIndex: safeRowIndex,
+    strokeJson: safeStrokeJson,
+  };
 }
 
 // ====== 時々文芸部：options用の高速キャッシュ ======
