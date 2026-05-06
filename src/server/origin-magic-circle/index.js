@@ -352,6 +352,15 @@ export function mountOriginMagicCircleRoutes(app, io) {
   const base64ImageFile = String(req.body?.base64ImageFile || "").trim();
 const strokeJson = normalizeOriginMagicCircleStrokeJson(req.body?.strokeJson);
 
+
+console.log("[origin-magic-circle] stroke receive:", {
+  hasRawStroke: !!String(req.body?.strokeJson || "").trim(),
+  rawStrokeLength: String(req.body?.strokeJson || "").length,
+  normalizedStrokeLength: strokeJson.length,
+});
+
+
+
 if (!base64ImageFile) return res.status(400).json({ error: "base64ImageFile is required" });
 if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
 
