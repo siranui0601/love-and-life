@@ -4127,7 +4127,7 @@ refs.joinRoomBtn?.addEventListener("click", async () => {
   
   
   
-  if (roomId === "000000") {
+  if (roomId === "0") {
   isOriginDebugTestRoom = true;
 
   const room = createOriginDebugTestRoom();
