@@ -436,22 +436,47 @@ export async function cleanupExpiredSecretToolRooms() {
 }
 
 async function getOriginMagicCircleRows(sheets) {
-  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A2:D`;
+  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A2:E`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   return res.data.values || [];
 }
 
+function parseOriginMagicCircleCastLogsJson(raw) {
+  try {
+    const parsed = JSON.parse(String(raw || "[]"));
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((entry) => ({
+        id: String(entry?.id || ""),
+        at: Number(entry?.at) || 0,
+        casterId: String(entry?.casterId || ""),
+        casterName: String(entry?.casterName || "unknown"),
+        spellHash: String(entry?.spellHash || "").trim(),
+      }))
+      .filter((entry) => entry.id && entry.casterId && entry.spellHash);
+  } catch {
+    return [];
+  }
+}
+
 function originMagicCircleRowToRoom(row = [], index = 0) {
   const roomId = String(row[0] || "").trim();
-  const members = parseSecretMembersJson(row[1]).map((m) => ({ ...m, hp: Number.isFinite(Number(m?.hp)) ? Number(m.hp) : 1000 }));
+  const members = parseSecretMembersJson(row[1]).map((m) => ({
+    ...m,
+    hp: Number.isFinite(Number(m?.hp)) ? Number(m.hp) : 1000,
+  }));
   const status = String(row[2] || "").trim();
   const expiresAt = Number(row[3] || 0);
+  const castLogs = parseOriginMagicCircleCastLogsJson(row[4]);
+
   return {
     rowIndex: index + 2,
     roomId,
     members,
     status,
     expiresAt: Number.isFinite(expiresAt) ? expiresAt : 0,
+    castLogs,
   };
 }
 
@@ -464,6 +489,21 @@ async function updateOriginMagicCircleRoomRow(rowIndex, values) {
     requestBody: { values: [values] },
   });
 }
+
+
+async function clearOriginMagicCircleRoomRow(rowIndex) {
+  const sheets = await getSheetsClient();
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${rowIndex}:E${rowIndex}`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [["", "", "", "", ""]],
+    },
+  });
+}
+
 
 
 
@@ -588,9 +628,9 @@ export async function removeOriginMagicCircleMember({ roomId, clientId }) {
 
   const members = room.members.filter((member) => member.id !== clientId);
   if (!members.length) {
-    await updateOriginMagicCircleRoomRow(room.rowIndex, ["", "", "", ""]);
-    return { roomId: room.roomId, members: [], status: "closed", expiresAt: 0 };
-  }
+  await clearOriginMagicCircleRoomRow(room.rowIndex);
+  return { roomId: room.roomId, members: [], status: "closed", expiresAt: 0, castLogs: [] };
+}
 
   if (!members.some((member) => member.role === "host")) {
     members[0].role = "host";
@@ -656,8 +696,8 @@ export async function cleanupExpiredOriginMagicCircleRooms() {
     requestBody: {
       valueInputOption: "USER_ENTERED",
       data: targets.map((room) => ({
-        range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${room.rowIndex}:D${room.rowIndex}`,
-        values: [["", "", "", ""]],
+        range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${room.rowIndex}:E${room.rowIndex}`,
+        values: [["", "", "", "", ""]],
       })),
     },
   });
@@ -692,6 +732,58 @@ export async function updateOriginMagicCircleRoomHp({ roomId, clientId, selfHp, 
 
 
 
+export async function appendOriginMagicCircleRoomCastLog({
+  roomId,
+  castId,
+  at,
+  casterId,
+  casterName,
+  spellHash,
+}) {
+  const room = await getOriginMagicCircleRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+
+  const safeSpellHash = String(spellHash || "").trim();
+  if (!safeSpellHash) throw new Error("spellHash is required");
+
+  const nextLog = {
+    id: String(castId || `${Date.now()}_${Math.random()}`),
+    at: Number(at) || Date.now(),
+    casterId: String(casterId || ""),
+    casterName: String(casterName || "unknown"),
+    spellHash: safeSpellHash,
+  };
+
+  const logs = Array.isArray(room.castLogs) ? [...room.castLogs] : [];
+
+  if (!logs.some((log) => log.id === nextLog.id)) {
+    logs.push(nextLog);
+  }
+
+  logs.sort((a, b) => Number(a.at || 0) - Number(b.at || 0));
+
+  const trimmedLogs = logs.slice(-80);
+
+  const sheets = await getSheetsClient();
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!E${room.rowIndex}`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[JSON.stringify(trimmedLogs)]],
+    },
+  });
+
+  return {
+    ...room,
+    castLogs: trimmedLogs,
+  };
+}
+
+
+
+
+
 async function findNextOriginMagicCircleSpellCacheRowIndex(sheets) {
   const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:G`;
   const res = await sheets.spreadsheets.values.get({
@@ -710,6 +802,42 @@ async function findNextOriginMagicCircleSpellCacheRowIndex(sheets) {
   }
 
   return rows.length + 2;
+}
+
+
+
+
+export async function findOriginMagicCircleSpellCachesByHashes(imageHashes = []) {
+  const keys = [...new Set(
+    imageHashes
+      .map((hash) => String(hash || "").trim())
+      .filter(Boolean)
+  )];
+
+  if (!keys.length) return new Map();
+
+  const keySet = new Set(keys);
+
+  const sheets = await getSheetsClient();
+  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
+  const rows = res.data.values || [];
+
+  const result = new Map();
+
+  rows.forEach((row, index) => {
+    const imageHash = String(row?.[0] || "").trim();
+    if (!keySet.has(imageHash)) return;
+
+    result.set(imageHash, {
+      rowIndex: index + 2,
+      imageHash,
+      rawJson: String(row?.[1] || "").trim(),
+      strokeJson: String(row?.[2] || "").trim(),
+    });
+  });
+
+  return result;
 }
 
 
