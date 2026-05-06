@@ -303,8 +303,19 @@ let battleStarted = false;
 let originSocket = null;
 let isOriginDebugTestRoom = false;
 
-let battleState = { selfHp: 1000, enemyHp: 1000, lastCastAt: 0, processedCastIds: new Set() };
-let tutorialModalDismissed = false;
+let battleState = {
+  selfHp: 1000,
+  enemyHp: 1000,
+  lastCastAt: 0,
+  processedCastIds: new Set(),
+
+  gameEnded: false,
+  endingStarted: false,
+  winnerId: "",
+  loserId: "",
+
+  magicLogs: [],
+};let tutorialModalDismissed = false;
 const ACTIVE_ROOM_STORAGE_KEY = "originMagicCircleActiveRoomId";
 
 function setMessage(text) {
@@ -1591,7 +1602,9 @@ const res = await fetch("/api/origin-magic-circle/chant-title", {
     const magicEffectJson = data.magicEffectJson || null;
 
     if (typeof onMagicJsonReady === "function" && magicEffectJson) {
-      await onMagicJsonReady(magicEffectJson);
+      await onMagicJsonReady(magicEffectJson, {
+  strokeJson,
+});
       hideTopModalOnce?.();
       hideTutorialModal();
       hideDebugOnce?.();
@@ -1818,16 +1831,17 @@ composer.addPass(bloomPass);
   let hasHiddenDebugPanel = false;
   let hasHiddenTopModal = false;
   const magicCircleUi = setupMagicCircleUi(refs.battleView, {
-    onMagicJsonReady: async (effectJson) => {
-  if (!isOriginDebugTestRoom) {
+    onMagicJsonReady: async (effectJson, meta = {}) => {
+        if (!isOriginDebugTestRoom) {
     const socket = getSocketIoClient();
 
     try {
       await emitWithAck(socket, "origin:cast", {
-        roomId: currentRoom?.roomId,
-        casterId: userTrackingId,
-        casterName: username,
-        magicEffectJson: effectJson,
+  roomId: currentRoom?.roomId,
+  casterId: userTrackingId,
+  casterName: username,
+  magicEffectJson: effectJson,
+  strokeJson: meta.strokeJson || "",
       });
     } catch (error) {
       console.warn("[origin-magic-circle] socket cast failed, fallback to fetch:", error);
@@ -1836,18 +1850,26 @@ composer.addPass(bloomPass);
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          roomId: currentRoom?.roomId,
-          casterId: userTrackingId,
-          casterName: username,
-          magicEffectJson: effectJson,
-        }),
+  roomId: currentRoom?.roomId,
+  casterId: userTrackingId,
+  casterName: username,
+  magicEffectJson: effectJson,
+  strokeJson: meta.strokeJson || "",
+}),
       });
     }
   }
 
-  showMagicNameCenter(effectJson.magicName, false, () => {
-    playMagicVisualEffects(effectJson, false);
-  });
+  if (battleState.gameEnded) return;
+
+showMagicNameCenter(effectJson.magicName, false, () => {
+  if (battleState.gameEnded) return;
+  playMagicVisualEffects(effectJson, false);
+});
+  
+    
+    
+    });
 },
 
 
