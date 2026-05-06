@@ -16,6 +16,8 @@ import {
   touchOriginMagicCircleRoomExpiresAt,
   cleanupExpiredOriginMagicCircleRooms,
   
+  updateOriginMagicCircleSpellCacheStroke,
+  
 } from "../../foundation/sheets.js";
 
 
@@ -311,9 +313,24 @@ if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
 
   try {
     const cached = await findOriginMagicCircleSpellCache(imageHash);
-          if (cached?.rawJson) {
-        return res.json({ magicEffectJson: normalizeOriginMagicCircleEffectJson(JSON.parse(cached.rawJson)), fromCache: true });
-      }
+
+if (cached?.rawJson) {
+  if (strokeJson && !cached.strokeJson && cached.rowIndex) {
+    try {
+      await updateOriginMagicCircleSpellCacheStroke({
+        rowIndex: cached.rowIndex,
+        strokeJson,
+      });
+    } catch (error) {
+      console.warn("[origin-magic-circle] stroke cache update failed:", error);
+    }
+  }
+
+  return res.json({
+    magicEffectJson: normalizeOriginMagicCircleEffectJson(JSON.parse(cached.rawJson)),
+    fromCache: true,
+  });
+}
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const response = await model.generateContent([
         {
