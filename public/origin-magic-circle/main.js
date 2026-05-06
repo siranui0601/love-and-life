@@ -303,6 +303,9 @@ let battleStarted = false;
 let originSocket = null;
 let isOriginDebugTestRoom = false;
 
+
+let onBattleHpReachedZero = null;
+
 let battleState = {
   selfHp: 1000,
   enemyHp: 1000,
@@ -440,6 +443,10 @@ function applyHpPayload(hpPayload) {
     : 1000;
 
   renderHpBars();
+
+  if (!battleState.gameEnded && (battleState.selfHp <= 0 || battleState.enemyHp <= 0)) {
+    onBattleHpReachedZero?.();
+  }
 }
 
 async function joinOriginSocketRoom() {
@@ -1684,6 +1691,32 @@ function renderHpBars() {
   if (ev) ev.textContent = `${battleState.enemyHp}/1000`;
 }
 
+
+
+
+function addMagicLogFromCast(cast) {
+  if (!cast?.id) return;
+
+  if (battleState.magicLogs.some((log) => log.id === cast.id)) return;
+
+  battleState.magicLogs.push({
+    id: cast.id,
+    at: Number(cast.at) || Date.now(),
+    casterId: String(cast.casterId || ""),
+    casterName: String(cast.casterName || "unknown"),
+    magicName: String(cast.magicEffectJson?.magicName || "無名の魔法"),
+    artScore: Math.max(0, Math.min(100, Math.round(Number(cast.magicEffectJson?.artScore) || 0))),
+    strokeJson: String(cast.strokeJson || ""),
+  });
+
+  battleState.magicLogs.sort((a, b) => a.at - b.at);
+}
+
+
+
+
+
+
 function hydrateBattleHpFromRoom() {
   const members = currentRoom?.members || [];
   const self = members.find((member) => member.id === userTrackingId);
@@ -1715,6 +1748,18 @@ async function startThreeBattleScene() {
 let THREE;
 let GLTF;
 let POST;
+
+
+
+
+
+onBattleHpReachedZero = () => {
+  startBattleEndSequence();
+};
+
+
+
+
 
 try {
   [THREE, GLTF, POST] = await Promise.all([
@@ -1804,7 +1849,18 @@ renderHpBars();
 if (!isOriginDebugTestRoom) {
   try {
     await joinOriginSocketRoom();
+    
+    
+    
+    if (!battleState.gameEnded && (battleState.selfHp <= 0 || battleState.enemyHp <= 0)) {
+  startBattleEndSequence();
+}
+
+
+
+
     await requestLatestHpBySocket();
+    
   } catch (error) {
     console.warn("[origin-magic-circle] socket hp init failed:", error);
   }
@@ -3599,8 +3655,10 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
   return active;
 }
 async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
+  if (battleState.gameEnded) return;
+
   if (!effectJson || !Array.isArray(effectJson.timedVisualEffects)) {
-    console.warn("[origin-magic-circle] invalid magic effect json:", effectJson);
+        console.warn("[origin-magic-circle] invalid magic effect json:", effectJson);
     return;
   }
 
@@ -3614,6 +3672,11 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
   damageTimings.forEach((timing) => {
     const delay = Math.max(0, Number(timing.timeSeconds) || 0) * 1000;
     setTimeout(() => {
+      
+      
+      if (battleState.gameEnded) return;
+      
+      
       //ここ自信ない↓
       const amount = Math.round(maxDamage * (Math.max(0, Number(timing.damageWeight) || 0) / 100));
 
@@ -3625,6 +3688,14 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
 
       showDamageNumber(amount, isEnemyCast);
       renderHpBars();
+      
+      
+      
+      
+      
+      if (!battleState.gameEnded && (battleState.selfHp <= 0 || battleState.enemyHp <= 0)) {
+  onBattleHpReachedZero?.();
+}
 
       // 自分が撃った魔法のダメージだけサーバーへ確定送信する。
       // 相手から受けた魔法側では送らない。二重減算防止。
@@ -3652,6 +3723,7 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
     const delaySeconds = clampNumber(timedEffect.startTimeSeconds, 0, 6, 0);
 
     setTimeout(() => {
+      if (battleState.gameEnded) return;
       const visualObjects = Array.isArray(timedEffect.visualObjects)
         ? timedEffect.visualObjects
         : [];
@@ -4050,6 +4122,298 @@ if (isOriginDebugTestRoom) {
   applySummonState();
 }
 
+
+
+
+function getViewerActors() {
+  const members = currentRoom?.members || [];
+  const isPlayerTwo = members.findIndex((member) => member.id === userTrackingId) === 1;
+
+  return {
+    self: isPlayerTwo ? fighterB : fighterA,
+    enemy: isPlayerTwo ? fighterA : fighterB,
+  };
+}
+
+function getMemberBySide(side) {
+  const members = currentRoom?.members || [];
+  if (side === "self") {
+    return members.find((member) => member.id === userTrackingId) || null;
+  }
+
+  return members.find((member) => member.id !== userTrackingId) || null;
+}
+
+function showWinBanner(winnerName) {
+  const old = document.getElementById("originWinBanner");
+  old?.remove();
+
+  const banner = document.createElement("div");
+  banner.id = "originWinBanner";
+  banner.className = "origin-win-banner";
+  banner.textContent = `${winnerName || "PLAYER"} WIN`;
+
+  refs.battleView.appendChild(banner);
+}
+
+function hideWinBanner() {
+  document.getElementById("originWinBanner")?.remove();
+}
+
+function animateLoserFall(loserActor) {
+  return new Promise((resolve) => {
+    const start = performance.now();
+    const duration = 1000;
+
+    const initialRotZ = loserActor.rotation.z;
+    const targetRotZ = initialRotZ + Math.PI / 2;
+
+    const initialY = loserActor.position.y;
+    const targetY = Math.max(1.5, initialY - 1.8);
+
+    const step = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+
+      loserActor.rotation.z = initialRotZ + (targetRotZ - initialRotZ) * eased;
+      loserActor.position.y = initialY + (targetY - initialY) * eased;
+
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else {
+        resolve();
+      }
+    };
+
+    requestAnimationFrame(step);
+  });
+}
+
+function focusCameraOnWinner(winnerActor) {
+  const winnerPos = winnerActor.position.clone();
+
+  const front = new Vector3(0, 0, 1);
+  const cameraPos = winnerPos
+    .clone()
+    .addScaledVector(front, 10)
+    .add(new Vector3(0, 3.2, 0));
+
+  camera.position.copy(cameraPos);
+  camera.lookAt(winnerPos.clone().add(new Vector3(0, 2.8, 0)));
+}
+
+function orbitCameraAroundWinner(winnerActor) {
+  return new Promise((resolve) => {
+    const start = performance.now();
+    const duration = 2600;
+    const radius = 10;
+    const baseY = 3.2;
+
+    const center = winnerActor.position.clone().add(new Vector3(0, 2.2, 0));
+
+    const step = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      const angle = t * Math.PI * 2;
+
+      camera.position.set(
+        center.x + Math.sin(angle) * radius,
+        center.y + baseY,
+        center.z + Math.cos(angle) * radius
+      );
+
+      camera.lookAt(center);
+
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else {
+        resolve();
+      }
+    };
+
+    requestAnimationFrame(step);
+  });
+}
+
+
+
+
+function parseStrokePayload(strokeJson) {
+  try {
+    const parsed = JSON.parse(String(strokeJson || ""));
+    if (!parsed || typeof parsed !== "object") return null;
+    if (!Array.isArray(parsed.strokes)) return null;
+
+    return {
+      w: Math.max(1, Math.round(Number(parsed.w) || 1)),
+      h: Math.max(1, Math.round(Number(parsed.h) || 1)),
+      strokes: parsed.strokes.filter((stroke) => Array.isArray(stroke) && stroke.length >= 4),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function drawStrokePayloadToCanvas(canvas, strokeJson) {
+  const payload = parseStrokePayload(strokeJson);
+  const ctx2d = canvas.getContext("2d");
+
+  if (!ctx2d) return;
+
+  ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+  ctx2d.fillStyle = "#fff";
+  ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+
+  if (!payload) {
+    ctx2d.fillStyle = "#999";
+    ctx2d.font = "14px sans-serif";
+    ctx2d.textAlign = "center";
+    ctx2d.fillText("魔法陣データなし", canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  const scale = Math.min(
+    (canvas.width - 20) / payload.w,
+    (canvas.height - 20) / payload.h
+  );
+
+  const offsetX = (canvas.width - payload.w * scale) / 2;
+  const offsetY = (canvas.height - payload.h * scale) / 2;
+
+  ctx2d.strokeStyle = "#111";
+  ctx2d.lineWidth = Math.max(2, 4 * scale);
+  ctx2d.lineCap = "round";
+  ctx2d.lineJoin = "round";
+
+  payload.strokes.forEach((stroke) => {
+    if (stroke.length < 4) return;
+
+    ctx2d.beginPath();
+    ctx2d.moveTo(
+      offsetX + stroke[0] * scale,
+      offsetY + stroke[1] * scale
+    );
+
+    for (let i = 2; i < stroke.length - 1; i += 2) {
+      ctx2d.lineTo(
+        offsetX + stroke[i] * scale,
+        offsetY + stroke[i + 1] * scale
+      );
+    }
+
+    ctx2d.stroke();
+  });
+}
+
+function createResultMagicBubble(log, index) {
+  const isSelf = log.casterId === userTrackingId;
+
+  const bubble = document.createElement("div");
+  bubble.className = `origin-result-bubble ${isSelf ? "self" : "enemy"}`;
+  bubble.style.animationDelay = `${index * 0.5}s`;
+
+  const title = document.createElement("div");
+  title.className = "origin-result-bubble__title";
+  title.textContent = `${log.magicName}　【${log.artScore}点】`;
+
+  const canvas = document.createElement("canvas");
+  canvas.className = "origin-result-bubble__canvas";
+  canvas.width = 260;
+  canvas.height = 180;
+
+  bubble.append(title, canvas);
+
+  requestAnimationFrame(() => {
+    drawStrokePayloadToCanvas(canvas, log.strokeJson);
+  });
+
+  return bubble;
+}
+
+function showBattleResultScreen({ selfWon }) {
+  refs.battleView.innerHTML = "";
+
+  const result = document.createElement("div");
+  result.className = `origin-result-screen ${selfWon ? "win" : "lose"}`;
+
+  const title = document.createElement("div");
+  title.className = "origin-result-title";
+  title.textContent = selfWon ? "VICTORY" : "DEFEAT";
+
+  const sub = document.createElement("div");
+  sub.className = "origin-result-subtitle";
+  sub.textContent = "発動した魔法陣";
+
+  const list = document.createElement("div");
+  list.className = "origin-result-chat";
+
+  const logs = [...battleState.magicLogs].sort((a, b) => a.at - b.at);
+
+  logs.forEach((log, index) => {
+    list.appendChild(createResultMagicBubble(log, index));
+  });
+
+  result.append(title, sub, list);
+  refs.battleView.appendChild(result);
+
+  setTimeout(() => {
+    list.scrollTo({
+      top: list.scrollHeight,
+      behavior: "smooth",
+    });
+  }, Math.max(800, logs.length * 500 + 200));
+}
+
+
+
+
+async function startBattleEndSequence() {
+  if (battleState.endingStarted) return;
+
+  battleState.endingStarted = true;
+  battleState.gameEnded = true;
+
+  const selfMember = getMemberBySide("self");
+  const enemyMember = getMemberBySide("enemy");
+
+  const selfWon = battleState.selfHp > 0 && battleState.enemyHp <= 0;
+
+  const winnerMember = selfWon ? selfMember : enemyMember;
+  const loserMember = selfWon ? enemyMember : selfMember;
+
+  battleState.winnerId = winnerMember?.id || "";
+  battleState.loserId = loserMember?.id || "";
+
+  const actors = getViewerActors();
+  const winnerActor = selfWon ? actors.self : actors.enemy;
+  const loserActor = selfWon ? actors.enemy : actors.self;
+
+  hideTutorialModal();
+
+  // 操作UIを消す
+  document.querySelector(".magic-circle-overlay")?.remove();
+  document.querySelector(".magic-circle-controls.left")?.remove();
+  document.querySelector(".magic-circle-controls.right")?.remove();
+  document.querySelector(".chant-result-modal")?.remove();
+
+  focusCameraOnWinner(winnerActor);
+  showWinBanner(winnerMember?.name || "PLAYER");
+
+  await animateLoserFall(loserActor);
+
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  await orbitCameraAroundWinner(winnerActor);
+
+  hideWinBanner();
+
+  showBattleResultScreen({ selfWon });
+}
+
+
+
+
+
+
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
   //renderHpBars();
   /*setInterval(async () => {
@@ -4070,20 +4434,26 @@ const socket = getSocketIoClient();
 if (socket) {
   socket.off("origin:cast");
   socket.on("origin:cast", (cast) => {
-    if (!cast?.id) return;
+  if (!cast?.id) return;
 
-    battleState.lastCastAt = Math.max(battleState.lastCastAt, Number(cast.at) || 0);
+  battleState.lastCastAt = Math.max(battleState.lastCastAt, Number(cast.at) || 0);
 
-    if (battleState.processedCastIds.has(cast.id)) return;
-    battleState.processedCastIds.add(cast.id);
+  if (battleState.processedCastIds.has(cast.id)) return;
+  battleState.processedCastIds.add(cast.id);
 
-    // 自分が撃った魔法は、自分側ではすでに演出開始しているので再生しない
-    if (cast.casterId === userTrackingId) return;
+  addMagicLogFromCast(cast);
 
-    showMagicNameCenter(cast.magicEffectJson?.magicName, true, () => {
-      playMagicVisualEffects(cast.magicEffectJson, true);
-    });
+  // HP0後に届いた魔法はログには残しても、演出は出さない
+  if (battleState.gameEnded) return;
+
+  // 自分が撃った魔法は、自分側ではすでに演出開始しているので再生しない
+  if (cast.casterId === userTrackingId) return;
+
+  showMagicNameCenter(cast.magicEffectJson?.magicName, true, () => {
+    if (battleState.gameEnded) return;
+    playMagicVisualEffects(cast.magicEffectJson, true);
   });
+});
 
   socket.off("origin:hp");
   socket.on("origin:hp", (hpPayload) => {
