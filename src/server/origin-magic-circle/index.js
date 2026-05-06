@@ -95,41 +95,75 @@ function normalizeOriginMagicCircleStrokeJson(rawStrokeJson) {
   try {
     const parsed = JSON.parse(raw);
 
-    if (!Array.isArray(parsed)) return "";
+    const sourceStrokes = Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.strokes)
+        ? parsed.strokes
+        : null;
 
-    const normalized = [];
+    if (!sourceStrokes) return "";
 
-    for (const stroke of parsed) {
+    const w = Math.round(Number(parsed?.w));
+    const h = Math.round(Number(parsed?.h));
+
+    const safeW = Number.isFinite(w) && w > 0
+      ? Math.min(w, 10000)
+      : 0;
+
+    const safeH = Number.isFinite(h) && h > 0
+      ? Math.min(h, 10000)
+      : 0;
+
+    const normalizedStrokes = [];
+
+    for (const stroke of sourceStrokes) {
       if (!Array.isArray(stroke)) continue;
 
       const points = [];
-
-      // [x1,y1,x2,y2...] なので偶数個だけ採用
       const usableLength = stroke.length - (stroke.length % 2);
 
       for (let i = 0; i < usableLength; i += 2) {
-        const x = Math.round(Number(stroke[i]));
-        const y = Math.round(Number(stroke[i + 1]));
+        let x = Math.round(Number(stroke[i]));
+        let y = Math.round(Number(stroke[i + 1]));
 
         if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
 
-        // 異常値を軽く弾く。画面サイズより大きい端末もあるので上限は広め
-        if (x < -10000 || x > 10000 || y < -10000 || y > 10000) continue;
+        if (safeW > 0) {
+          x = Math.max(0, Math.min(safeW - 1, x));
+        } else if (x < -10000 || x > 10000) {
+          continue;
+        }
+
+        if (safeH > 0) {
+          y = Math.max(0, Math.min(safeH - 1, y));
+        } else if (y < -10000 || y > 10000) {
+          continue;
+        }
 
         points.push(x, y);
       }
 
       if (points.length >= 4) {
-        normalized.push(points);
+        normalizedStrokes.push(points);
       }
     }
 
-    const json = JSON.stringify(normalized);
+    if (!normalizedStrokes.length) return "";
 
-    // Google Sheets 1セル制限対策。I列も50000文字を超えたら危険
-    if (json.length > 45000) {
-      return JSON.stringify(normalized.slice(0, 200));
+    let payload = {
+      w: safeW,
+      h: safeH,
+      strokes: normalizedStrokes,
+    };
+
+    let json = JSON.stringify(payload);
+
+    while (json.length > 45000 && payload.strokes.length > 1) {
+      payload.strokes.pop();
+      json = JSON.stringify(payload);
     }
+
+    if (json.length > 45000) return "";
 
     return json;
   } catch {
