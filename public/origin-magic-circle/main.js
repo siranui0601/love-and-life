@@ -697,29 +697,42 @@ let currentStroke = null;
   };
 
   const restoreState = () => {
-    if (!ctx) return;
-    ctx.clearRect(0, 0, overlay.width, overlay.height);
-    const src = history[historyIndex];
-    if (!src) {
-      updateButtons();
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      ctx.clearRect(0, 0, overlay.width, overlay.height);
-      ctx.drawImage(img, 0, 0, overlay.width, overlay.height);
-      updateButtons();
-    };
-    img.src = src;
-  };
+  if (!ctx) return;
 
-  const commitState = () => {
-    const snapshot = overlay.toDataURL("image/png");
-    history.splice(historyIndex + 1);
-    history.push(snapshot);
-    historyIndex = history.length - 1;
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+  const snapshot = history[historyIndex];
+
+  if (!snapshot?.image) {
+    restoreStrokeList([]);
+    updateButtons();
+    return;
+  }
+
+  restoreStrokeList(snapshot.strokes || []);
+
+  const img = new Image();
+  img.onload = () => {
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    ctx.drawImage(img, 0, 0, overlay.width, overlay.height);
     updateButtons();
   };
+  img.src = snapshot.image;
+};
+
+
+
+  const commitState = () => {
+  const snapshot = {
+    image: overlay.toDataURL("image/png"),
+    strokes: cloneStrokeList(),
+  };
+
+  history.splice(historyIndex + 1);
+  history.push(snapshot);
+  historyIndex = history.length - 1;
+  updateButtons();
+};
 
   const getPos = (event) => {
     const rect = overlay.getBoundingClientRect();
@@ -758,10 +771,122 @@ const appendPointToCurrentStroke = (point) => {
   currentStroke.push(x, y);
 };
 
-const getStrokeJson = () => {
-  // 点が1個未満のストロークは除外
-  const cleaned = strokeList.filter((stroke) => Array.isArray(stroke) && stroke.length >= 4);
-  return JSON.stringify(cleaned);
+const cloneStrokeList = () => {
+  return strokeList.map((stroke) => stroke.slice());
+};
+
+const restoreStrokeList = (strokes) => {
+  strokeList.length = 0;
+
+  if (!Array.isArray(strokes)) return;
+
+  strokes.forEach((stroke) => {
+    if (Array.isArray(stroke) && stroke.length >= 4) {
+      strokeList.push(stroke.slice());
+    }
+  });
+};
+
+const getTrimmedMagicCircleData = () => {
+  if (!ctx) {
+    return {
+      base64ImageFile: "",
+      strokeJson: "",
+    };
+  }
+
+  const imageData = ctx.getImageData(0, 0, overlay.width, overlay.height);
+  const { data, width, height } = imageData;
+
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const alpha = data[(y * width + x) * 4 + 3];
+      if (alpha === 0) continue;
+
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return {
+      base64ImageFile: "",
+      strokeJson: "",
+    };
+  }
+
+  const padding = 12;
+
+  const trimLeft = Math.max(0, minX - padding);
+  const trimTop = Math.max(0, minY - padding);
+  const trimRight = Math.min(width - 1, maxX + padding);
+  const trimBottom = Math.min(height - 1, maxY + padding);
+
+  const trimWidth = trimRight - trimLeft + 1;
+  const trimHeight = trimBottom - trimTop + 1;
+
+  const cropped = document.createElement("canvas");
+  cropped.width = trimWidth;
+  cropped.height = trimHeight;
+
+  const croppedCtx = cropped.getContext("2d");
+  if (!croppedCtx) {
+    return {
+      base64ImageFile: "",
+      strokeJson: "",
+    };
+  }
+
+  croppedCtx.fillStyle = "#ffffff";
+  croppedCtx.fillRect(0, 0, trimWidth, trimHeight);
+  croppedCtx.putImageData(
+    ctx.getImageData(trimLeft, trimTop, trimWidth, trimHeight),
+    0,
+    0
+  );
+
+  const trimmedStrokes = strokeList
+    .map((stroke) => {
+      if (!Array.isArray(stroke)) return [];
+
+      const next = [];
+      const usableLength = stroke.length - (stroke.length % 2);
+
+      for (let i = 0; i < usableLength; i += 2) {
+        const x = Math.round(Number(stroke[i]) - trimLeft);
+        const y = Math.round(Number(stroke[i + 1]) - trimTop);
+
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+
+        const clampedX = Math.max(0, Math.min(trimWidth - 1, x));
+        const clampedY = Math.max(0, Math.min(trimHeight - 1, y));
+
+        next.push(clampedX, clampedY);
+      }
+
+      return next;
+    })
+    .filter((stroke) => stroke.length >= 4);
+
+  const strokePayload = {
+    w: trimWidth,
+    h: trimHeight,
+    strokes: trimmedStrokes,
+  };
+
+  return {
+    base64ImageFile: cropped
+      .toDataURL("image/png")
+      .replace(/^data:image\/png;base64,/, ""),
+    strokeJson: JSON.stringify(strokePayload),
+  };
 };
 
 
@@ -779,19 +904,25 @@ const getStrokeJson = () => {
     ctx.lineJoin = "round";
   };
 
-  const resizeOverlay = () => {
-    const activeSnapshot = history[historyIndex] || null;
-    overlay.width = window.innerWidth;
-    overlay.height = window.innerHeight;
-    configureCtx();
-    if (!activeSnapshot) {
-      ctx?.clearRect(0, 0, overlay.width, overlay.height);
-      return;
-    }
-    const img = new Image();
-    img.onload = () => ctx?.drawImage(img, 0, 0, overlay.width, overlay.height);
-    img.src = activeSnapshot;
+const resizeOverlay = () => {
+  const activeSnapshot = history[historyIndex] || null;
+
+  overlay.width = window.innerWidth;
+  overlay.height = window.innerHeight;
+  configureCtx();
+
+  if (!activeSnapshot?.image) {
+    ctx?.clearRect(0, 0, overlay.width, overlay.height);
+    return;
+  }
+
+  const img = new Image();
+  img.onload = () => {
+    ctx?.clearRect(0, 0, overlay.width, overlay.height);
+    ctx?.drawImage(img, 0, 0, overlay.width, overlay.height);
   };
+  img.src = activeSnapshot.image;
+};
 
   overlay.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -873,44 +1004,6 @@ clearBtn.addEventListener("click", () => {
   commitState();
 });
 
-
-
-
-
-
-  const getTrimmedBase64Jpeg = () => {
-    if (!ctx) return "";
-    const imageData = ctx.getImageData(0, 0, overlay.width, overlay.height);
-    const { data, width, height } = imageData;
-    let minX = width;
-    let minY = height;
-    let maxX = -1;
-    let maxY = -1;
-
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const alpha = data[(y * width + x) * 4 + 3];
-        if (alpha === 0) continue;
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      }
-    }
-    if (maxX < minX || maxY < minY) return "";
-    const trimWidth = maxX - minX + 1;
-    const trimHeight = maxY - minY + 1;
-    const cropped = document.createElement("canvas");
-    cropped.width = trimWidth;
-    cropped.height = trimHeight;
-    const croppedCtx = cropped.getContext("2d");
-    if (!croppedCtx) return "";
-    croppedCtx.fillStyle = "#ffffff";
-    croppedCtx.fillRect(0, 0, trimWidth, trimHeight);
-    croppedCtx.putImageData(ctx.getImageData(minX, minY, trimWidth, trimHeight), 0, 0);
-
-    return cropped.toDataURL("image/png").replace(/^data:image\/png;base64,/, "");
-  };
   
   
   
@@ -1464,23 +1557,26 @@ const cancelGlyphRitualAnimation = () => {
   updateButtons();
 
   try {
-    const base64ImageFile = getTrimmedBase64Jpeg();
+    const {
+  base64ImageFile,
+  strokeJson,
+} = getTrimmedMagicCircleData();
 
-    if (!base64ImageFile) {
-      alert("魔法陣を描いてください。");
-      return;
-    }
+if (!base64ImageFile) {
+  alert("魔法陣を描いてください。");
+  return;
+}
 
-    ritualController = startGlyphRitualAnimation();
+ritualController = startGlyphRitualAnimation();
 
-    const res = await fetch("/api/origin-magic-circle/chant-title", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        base64ImageFile,
-        strokeJson: getStrokeJson(),
-      }),
-     });
+const res = await fetch("/api/origin-magic-circle/chant-title", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    base64ImageFile,
+    strokeJson,
+  }),
+});
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "chant_failed");
@@ -4120,12 +4216,7 @@ refs.backToTitleBtn?.addEventListener("click", () => {
 
 async function restoreActiveRoomIfExists() {
   const activeRoomId = localStorage.getItem(ACTIVE_ROOM_STORAGE_KEY);
-  if (!activeRoomId) {
-    
-    
-    
-    
-    if (activeRoomId === "000000") {
+if (activeRoomId === "000000") {
   isOriginDebugTestRoom = true;
 
   const room = createOriginDebugTestRoom();
@@ -4138,15 +4229,12 @@ async function restoreActiveRoomIfExists() {
   return;
 }
 
-
-
-
-
-    showHomePanel();
-    refs.waitingRoom.classList.add("hidden");
-    refs.waitingNote.classList.remove("hidden");
-    return;
-  }
+if (!activeRoomId) {
+  showHomePanel();
+  refs.waitingRoom.classList.add("hidden");
+  refs.waitingNote.classList.remove("hidden");
+  return;
+}
 
   setMessage("前回の待機部屋に再接続中...");
   try {
