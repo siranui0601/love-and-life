@@ -961,6 +961,10 @@ lastPoint = point;
   const finishStroke = (event) => {
   if (event.pointerId !== activePointerId) return;
 
+  if (lastPoint) {
+    appendPointToCurrentStroke(lastPoint);
+  }
+
   if (currentStroke && currentStroke.length >= 4) {
     strokeList.push(currentStroke);
   }
@@ -968,6 +972,7 @@ lastPoint = point;
   currentStroke = null;
   activePointerId = null;
   lastPoint = null;
+
   commitState();
 };
 
