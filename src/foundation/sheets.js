@@ -727,6 +727,26 @@ export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson, st
   });
 }
 
+
+export async function updateOriginMagicCircleSpellCacheStroke({ rowIndex, strokeJson }) {
+  const safeRowIndex = Number(rowIndex);
+
+  if (!Number.isInteger(safeRowIndex) || safeRowIndex < 2) {
+    throw new Error("invalid_row_index");
+  }
+
+  const sheets = await getSheetsClient();
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${safeRowIndex}`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[String(strokeJson || "")]],
+    },
+  });
+}
+
 // ====== 時々文芸部：options用の高速キャッシュ ======
 // ====== 時々文芸部：ツリー用（毎回最新取得・A:D一括） ======
 
