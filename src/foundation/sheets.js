@@ -747,14 +747,79 @@ export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson, st
   const safeRawJson = String(rawJson || "");
   const safeStrokeJson = String(strokeJson || "");
 
+  // まずG:Hを確実に書く
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G${rowIndex}:I${rowIndex}`,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G${rowIndex}:H${rowIndex}`,
     valueInputOption: "RAW",
     requestBody: {
-      values: [[safeImageHash, safeRawJson, safeStrokeJson]],
+      values: [[safeImageHash, safeRawJson]],
     },
   });
+
+  // I列は別更新にする
+  if (safeStrokeJson) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${rowIndex}`,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [[safeStrokeJson]],
+      },
+    });
+  }
+
+  // 書けたか読み返す
+  const verifyRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G${rowIndex}:I${rowIndex}`,
+  });
+
+  const verifyRow = verifyRes.data.values?.[0] || [];
+  const writtenHash = String(verifyRow?.[0] || "");
+  const writtenRawJson = String(verifyRow?.[1] || "");
+  const writtenStrokeJson = String(verifyRow?.[2] || "");
+
+  console.log("[origin-magic-circle] spell cache write verify:", {
+    rowIndex,
+    expectedStrokeLength: safeStrokeJson.length,
+    writtenHashLength: writtenHash.length,
+    writtenRawJsonLength: writtenRawJson.length,
+    writtenStrokeLength: writtenStrokeJson.length,
+    strokeWritten: !safeStrokeJson || writtenStrokeJson === safeStrokeJson,
+  });
+
+  // I列だけ空/不一致ならもう一度I列だけ書く
+  if (safeStrokeJson && writtenStrokeJson !== safeStrokeJson) {
+    console.warn("[origin-magic-circle] stroke write mismatch. retry I column:", {
+      rowIndex,
+      expectedStrokeLength: safeStrokeJson.length,
+      writtenStrokeLength: writtenStrokeJson.length,
+    });
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${rowIndex}`,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [[safeStrokeJson]],
+      },
+    });
+
+    const retryVerifyRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${rowIndex}`,
+    });
+
+    const retryStrokeJson = String(retryVerifyRes.data.values?.[0]?.[0] || "");
+
+    console.log("[origin-magic-circle] stroke retry verify:", {
+      rowIndex,
+      expectedStrokeLength: safeStrokeJson.length,
+      writtenStrokeLength: retryStrokeJson.length,
+      strokeWritten: retryStrokeJson === safeStrokeJson,
+    });
+  }
 
   return {
     rowIndex,
@@ -765,6 +830,12 @@ export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson, st
 }
 
 
+
+
+
+
+
+
 export async function updateOriginMagicCircleSpellCacheStroke({ rowIndex, strokeJson }) {
   const safeRowIndex = Number(rowIndex);
 
@@ -773,7 +844,6 @@ export async function updateOriginMagicCircleSpellCacheStroke({ rowIndex, stroke
   }
 
   const sheets = await getSheetsClient();
-
   const safeStrokeJson = String(strokeJson || "");
 
   await sheets.spreadsheets.values.update({
@@ -785,11 +855,27 @@ export async function updateOriginMagicCircleSpellCacheStroke({ rowIndex, stroke
     },
   });
 
+  const verifyRes = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${safeRowIndex}`,
+  });
+
+  const writtenStrokeJson = String(verifyRes.data.values?.[0]?.[0] || "");
+
+  console.log("[origin-magic-circle] stroke update verify:", {
+    rowIndex: safeRowIndex,
+    expectedStrokeLength: safeStrokeJson.length,
+    writtenStrokeLength: writtenStrokeJson.length,
+    strokeWritten: writtenStrokeJson === safeStrokeJson,
+  });
+
   return {
     rowIndex: safeRowIndex,
     strokeJson: safeStrokeJson,
+    written: writtenStrokeJson === safeStrokeJson,
   };
 }
+
 
 // ====== 時々文芸部：options用の高速キャッシュ ======
 // ====== 時々文芸部：ツリー用（毎回最新取得・A:D一括） ======
