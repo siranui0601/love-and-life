@@ -4018,11 +4018,10 @@ radioList?.addEventListener("change", () => {
   //refs.battleView.appendChild(topControls);
   //applySummonState();
 
-//テストルームでリロードしたらタイトル戻っていいよ
-/*if (isOriginDebugTestRoom) {
+if (isOriginDebugTestRoom) {
   refs.battleView.appendChild(topControls);
   applySummonState();
-}*/
+}
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
   //renderHpBars();
@@ -4135,7 +4134,7 @@ refs.joinRoomBtn?.addEventListener("click", async () => {
   currentRoom = room;
 
   // テスト部屋は再読み込み復帰もできるように保存する
-  saveActiveRoomId("000000");
+  //saveActiveRoomId("000000");
 
   showWaitingRoom(room);
   setMessage("テスト部屋に入室しました。対戦相手 bot を追加します。");
