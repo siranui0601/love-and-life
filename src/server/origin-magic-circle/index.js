@@ -370,11 +370,23 @@ if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
     const cached = await findOriginMagicCircleSpellCache(imageHash);
 
 if (cached?.rawJson) {
-  if (strokeJson && !cached.strokeJson && cached.rowIndex) {
+  console.log("[origin-magic-circle] cache hit:", {
+    rowIndex: cached.rowIndex,
+    hasCachedStroke: !!cached.strokeJson,
+    cachedStrokeLength: String(cached.strokeJson || "").length,
+    incomingStrokeLength: strokeJson.length,
+  });
+
+  if (strokeJson && cached.rowIndex && strokeJson !== cached.strokeJson) {
     try {
       await updateOriginMagicCircleSpellCacheStroke({
         rowIndex: cached.rowIndex,
         strokeJson,
+      });
+
+      console.log("[origin-magic-circle] stroke cache updated:", {
+        rowIndex: cached.rowIndex,
+        strokeLength: strokeJson.length,
       });
     } catch (error) {
       console.warn("[origin-magic-circle] stroke cache update failed:", error);
@@ -386,6 +398,10 @@ if (cached?.rawJson) {
     fromCache: true,
   });
 }
+
+
+
+
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const response = await model.generateContent([
         {
@@ -465,10 +481,17 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
       const rawText = String(response.response.text() || "").trim();
       const jsonText = extractJsonText(rawText);
       const magicEffectJson = normalizeOriginMagicCircleEffectJson(JSON.parse(jsonText));
-      await appendOriginMagicCircleSpellCache({
+      const appended = await appendOriginMagicCircleSpellCache({
   imageHash,
   rawJson: JSON.stringify(magicEffectJson),
   strokeJson,
+});
+
+console.log("[origin-magic-circle] spell cache appended:", {
+  rowIndex: appended?.rowIndex,
+  imageHashLength: String(imageHash || "").length,
+  rawJsonLength: JSON.stringify(magicEffectJson).length,
+  strokeLength: String(strokeJson || "").length,
 });
 
 return res.json({ magicEffectJson });
