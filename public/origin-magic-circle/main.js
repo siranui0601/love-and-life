@@ -4017,10 +4017,12 @@ radioList?.addEventListener("change", () => {
   
   //refs.battleView.appendChild(topControls);
   //applySummonState();
-if (isOriginDebugTestRoom) {
+
+//テストルームでリロードしたらタイトル戻っていいよ
+/*if (isOriginDebugTestRoom) {
   refs.battleView.appendChild(topControls);
   applySummonState();
-}
+}*/
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
   //renderHpBars();
