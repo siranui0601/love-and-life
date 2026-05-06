@@ -18,6 +18,11 @@ import {
   
   updateOriginMagicCircleSpellCacheStroke,
   
+  
+    appendOriginMagicCircleRoomCastLog,
+  findOriginMagicCircleSpellCachesByHashes,
+  
+  
 } from "../../foundation/sheets.js";
 
 
@@ -353,6 +358,9 @@ export function mountOriginMagicCircleRoutes(app, io) {
 const strokeJson = normalizeOriginMagicCircleStrokeJson(req.body?.strokeJson);
 
 
+
+//const spellHash = String(req.body?.spellHash || req.body?.imageHash || "").trim();
+
 console.log("[origin-magic-circle] stroke receive:", {
   hasRawStroke: !!String(req.body?.strokeJson || "").trim(),
   rawStrokeLength: String(req.body?.strokeJson || "").length,
@@ -394,9 +402,11 @@ if (cached?.rawJson) {
   }
 
   return res.json({
-    magicEffectJson: normalizeOriginMagicCircleEffectJson(JSON.parse(cached.rawJson)),
-    fromCache: true,
-  });
+  magicEffectJson: normalizeOriginMagicCircleEffectJson(JSON.parse(cached.rawJson)),
+  imageHash,
+  strokeJson: cached.strokeJson || strokeJson,
+  fromCache: true,
+});
 }
 
 
@@ -494,57 +504,170 @@ console.log("[origin-magic-circle] spell cache appended:", {
   strokeLength: String(strokeJson || "").length,
 });
 
-return res.json({ magicEffectJson });
+return res.json({
+  magicEffectJson,
+  imageHash,
+  strokeJson,
+  fromCache: false,
+});
     } catch (error) {
       console.error("[origin-magic-circle] chant title error:", error);
       return res.status(500).json({ error: "gemini_failed" });
     }
   });
 
-    app.post("/api/origin-magic-circle/casts", async (req, res) => {
-    const roomId = String(req.body?.roomId || "").trim();
-    const casterId = String(req.body?.casterId || "").trim();
-    const casterName = String(req.body?.casterName || "").trim();
-    const magicEffectJson = normalizeOriginMagicCircleEffectJson(req.body?.magicEffectJson || null);
 
 
 
-
-    const strokeJson = normalizeOriginMagicCircleStrokeJson(req.body?.strokeJson);
-
-
-
-
-    if (!roomId || !casterId || !magicEffectJson) {
-      return res.status(400).json({ error: "invalid_cast" });
-    }
-
-    const entry = {
-  id: `${Date.now()}_${Math.random()}`,
-  at: Date.now(),
+async function registerOriginMagicCircleCast({
   roomId,
   casterId,
   casterName,
   magicEffectJson,
-  strokeJson,
-};
+  strokeJson = "",
+  spellHash = "",
+}) {
+  const safeRoomId = String(roomId || "").trim();
+  const safeCasterId = String(casterId || "").trim();
+  const safeCasterName = String(casterName || "").trim();
+  const safeMagicEffectJson = normalizeOriginMagicCircleEffectJson(magicEffectJson || null);
+  const safeStrokeJson = normalizeOriginMagicCircleStrokeJson(strokeJson);
+  const safeSpellHash = String(spellHash || "").trim();
 
-    const list = roomCastEvents.get(roomId) || [];
-list.push(entry);
-roomCastEvents.set(roomId, list.slice(-30));
+  if (!safeRoomId || !safeCasterId || !safeMagicEffectJson) {
+    throw new Error("invalid_cast");
+  }
 
-const touchedRoom = await touchOriginMagicCircleRoomExpiresAt({
-  roomId,
-  baseMs: entry.at,
+  const room = await getOriginMagicCircleRoomById(safeRoomId);
+  if (!room) throw new Error("room_not_found");
+
+  const joined = (room.members || []).some((member) => member.id === safeCasterId);
+  if (!joined) throw new Error("forbidden");
+
+  const entry = {
+    id: `${Date.now()}_${Math.random()}`,
+    at: Date.now(),
+    roomId: safeRoomId,
+    casterId: safeCasterId,
+    casterName: safeCasterName,
+    magicEffectJson: safeMagicEffectJson,
+    strokeJson: safeStrokeJson,
+    spellHash: safeSpellHash,
+  };
+
+  if (safeSpellHash) {
+    try {
+      await appendOriginMagicCircleRoomCastLog({
+        roomId: safeRoomId,
+        castId: entry.id,
+        at: entry.at,
+        casterId: safeCasterId,
+        casterName: safeCasterName,
+        spellHash: safeSpellHash,
+      });
+    } catch (error) {
+      console.warn("[origin-magic-circle] append room cast log failed:", error);
+    }
+  }
+
+  const list = roomCastEvents.get(safeRoomId) || [];
+  list.push(entry);
+  roomCastEvents.set(safeRoomId, list.slice(-30));
+
+  const touchedRoom = await touchOriginMagicCircleRoomExpiresAt({
+    roomId: safeRoomId,
+    baseMs: entry.at,
+  });
+
+  io?.to(originSocketRoom(safeRoomId)).emit("origin:room", touchedRoom);
+  io?.to(originSocketRoom(safeRoomId)).emit("origin:cast", entry);
+
+  return {
+    entry,
+    room: touchedRoom,
+  };
+}
+
+
+
+
+
+app.post("/api/origin-magic-circle/casts", async (req, res) => {
+  try {
+    const { entry } = await registerOriginMagicCircleCast({
+      roomId: req.body?.roomId,
+      casterId: req.body?.casterId,
+      casterName: req.body?.casterName,
+      magicEffectJson: req.body?.magicEffectJson,
+      strokeJson: req.body?.strokeJson,
+      spellHash: req.body?.spellHash || req.body?.imageHash,
+    });
+
+    return res.json({ ok: true, cast: entry });
+  } catch (error) {
+    if (error.message === "invalid_cast") {
+      return res.status(400).json({ error: "invalid_cast" });
+    }
+
+    if (error.message === "room_not_found") {
+      return res.status(404).json({ error: "room_not_found" });
+    }
+
+    if (error.message === "forbidden") {
+      return res.status(403).json({ error: "forbidden" });
+    }
+
+    console.error("[origin-magic-circle] rest cast error:", error);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+  
+  
+  
+  
+  app.get("/api/origin-magic-circle/rooms/:roomId/cast-logs", async (req, res) => {
+  const roomId = String(req.params.roomId || "").trim();
+  if (!roomId) return res.status(400).json({ error: "roomId is required" });
+
+  try {
+    const room = await getOriginMagicCircleRoomById(roomId);
+    if (!room) return res.status(404).json({ error: "room_not_found" });
+
+    const castLogs = Array.isArray(room.castLogs) ? room.castLogs : [];
+    const spellHashes = castLogs.map((log) => log.spellHash).filter(Boolean);
+    const cacheMap = await findOriginMagicCircleSpellCachesByHashes(spellHashes);
+
+    const logs = castLogs.map((log) => {
+      const cache = cacheMap.get(log.spellHash) || null;
+
+      let magicEffectJson = null;
+      if (cache?.rawJson) {
+        try {
+          magicEffectJson = normalizeOriginMagicCircleEffectJson(JSON.parse(cache.rawJson));
+        } catch {
+          magicEffectJson = null;
+        }
+      }
+
+      return {
+        ...log,
+        magicEffectJson,
+        strokeJson: cache?.strokeJson || "",
+      };
+    });
+
+    return res.json({
+      roomId,
+      logs,
+    });
+  } catch (error) {
+    console.error("[origin-magic-circle] get cast logs error:", error);
+    return res.status(500).json({ error: "server_error" });
+  }
 });
 
-io?.to(originSocketRoom(roomId)).emit("origin:room", touchedRoom);
 
-// Socket.IO移行後でも、REST経由で送られた魔法を相手へ通知できるようにしておく
-io?.to(originSocketRoom(roomId)).emit("origin:cast", entry);
 
-return res.json({ ok: true, cast: entry }); 
-   });
 
   app.get("/api/origin-magic-circle/casts/:roomId", (req, res) => {
     const roomId = String(req.params.roomId || "").trim();
@@ -646,66 +769,42 @@ return res.json({ ok: true, cast: entry });
       }
     });
 
+
+
+
+
     socket.on("origin:cast", async (payload = {}, ack) => {
-      const roomId = String(payload.roomId || socket.data.originRoomId || "").trim();
-      const casterId = String(payload.casterId || socket.data.originUserTrackingId || "").trim();
-      const casterName = String(payload.casterName || "").trim();
-      const magicEffectJson = normalizeOriginMagicCircleEffectJson(payload.magicEffectJson || null);
-
-
-
-
-      const strokeJson = normalizeOriginMagicCircleStrokeJson(payload.strokeJson);
-      
-      
-      
-      
-      if (!roomId || !casterId || !magicEffectJson) {
-        ack?.({ ok: false, error: "invalid_cast" });
-        return;
-      }
-
-      try {
-        const room = await getOriginMagicCircleRoomById(roomId);
-        if (!room) {
-          ack?.({ ok: false, error: "room_not_found" });
-          return;
-        }
-
-        const joined = (room.members || []).some((member) => member.id === casterId);
-        if (!joined) {
-          ack?.({ ok: false, error: "forbidden" });
-          return;
-        }
-
-        const entry = {
-  id: `${Date.now()}_${Math.random()}`,
-  at: Date.now(),
-  roomId,
-  casterId,
-  casterName,
-  magicEffectJson,
-  strokeJson,
-};
-
-        const list = roomCastEvents.get(roomId) || [];
-list.push(entry);
-roomCastEvents.set(roomId, list.slice(-30));
-
-const touchedRoom = await touchOriginMagicCircleRoomExpiresAt({
-  roomId,
-  baseMs: entry.at,
-});
-
-io.to(originSocketRoom(roomId)).emit("origin:room", touchedRoom);
-io.to(originSocketRoom(roomId)).emit("origin:cast", entry);
-
-ack?.({ ok: true, cast: entry });
-      } catch (error) {
-        console.error("[origin-magic-circle] socket cast error:", error);
-        ack?.({ ok: false, error: "server_error" });
-      }
+  try {
+    const { entry } = await registerOriginMagicCircleCast({
+      roomId: payload.roomId || socket.data.originRoomId,
+      casterId: payload.casterId || socket.data.originUserTrackingId,
+      casterName: payload.casterName,
+      magicEffectJson: payload.magicEffectJson,
+      strokeJson: payload.strokeJson,
+      spellHash: payload.spellHash || payload.imageHash,
     });
+
+    ack?.({ ok: true, cast: entry });
+  } catch (error) {
+    if (error.message === "invalid_cast") {
+      ack?.({ ok: false, error: "invalid_cast" });
+      return;
+    }
+
+    if (error.message === "room_not_found") {
+      ack?.({ ok: false, error: "room_not_found" });
+      return;
+    }
+
+    if (error.message === "forbidden") {
+      ack?.({ ok: false, error: "forbidden" });
+      return;
+    }
+
+    console.error("[origin-magic-circle] socket cast error:", error);
+    ack?.({ ok: false, error: "server_error" });
+  }
+});
 
     socket.on("origin:damage", async (payload = {}, ack) => {
       const roomId = String(payload.roomId || socket.data.originRoomId || "").trim();
