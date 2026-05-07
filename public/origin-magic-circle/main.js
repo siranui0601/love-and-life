@@ -4397,30 +4397,58 @@ function getResultCanvasInternalSize(strokeJson) {
 function resizeResultCanvasToPayload(canvas, strokeJson) {
   const payload = parseStrokePayload(strokeJson);
 
-  // コメント枠内で実際に表示される横幅
-  const cssWidth = Math.max(1, Math.round(canvas.clientWidth || 260));
+  /*
+    まずCSS上の実横幅を測る。
+    canvasは .origin-result-bubble の中で width:100% なので、
+    ここで得られる値が「コメント枠内で実際に使える横幅」になる。
+  */
+  const measuredWidth = canvas.clientWidth || canvas.getBoundingClientRect().width || 260;
+  const cssWidth = Math.max(1, Math.round(measuredWidth));
 
-  let cssHeight = Math.round(cssWidth * 0.68);
+  let sourceW = Number(payload?.w);
+  let sourceH = Number(payload?.h);
 
-  if (payload?.w && payload?.h) {
-    const aspect = payload.w / payload.h;
+  if (!Number.isFinite(sourceW) || sourceW <= 0) sourceW = 1;
+  if (!Number.isFinite(sourceH) || sourceH <= 0) sourceH = 1;
 
-    // 縦長すぎる/横長すぎる魔法陣でも破綻しにくいように制限
-    const rawHeight = cssWidth / Math.max(0.15, aspect);
+  /*
+    ユーザーの言っている式そのもの。
 
-    cssHeight = Math.round(
-      Math.max(
-        cssWidth * 0.48,
-        Math.min(rawHeight, cssWidth * 1.25)
-      )
-    );
-  }
+    キャンバスが置ける横幅 : y
+    =
+    保存されてるキャンバスの横幅 : 保存されてるキャンバスの縦幅
+
+    y = cssWidth * sourceH / sourceW
+  */
+  const rawCssHeight = cssWidth * (sourceH / sourceW);
+
+  /*
+    極端な縦長/横長で画面を破壊しないための最低限の保険。
+    ただし、今回の目的は「途切れない」なので、
+    maxを低くしすぎない。
+  */
+  const minCssHeight = 120;
+  const maxCssHeight = Math.max(260, window.innerHeight * 0.62);
+
+  const cssHeight = Math.round(
+    Math.max(minCssHeight, Math.min(rawCssHeight, maxCssHeight))
+  );
 
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
+  /*
+    CSS上の表示サイズ。
+    CSS変数にも入れるし、style.heightにも直接入れる。
+    どちらか片方だけより事故りにくい。
+  */
   canvas.style.width = "100%";
   canvas.style.height = `${cssHeight}px`;
+  canvas.style.setProperty("--result-canvas-height", `${cssHeight}px`);
 
+  /*
+    canvas内部解像度。
+    表示サイズと同じ比率にする。
+  */
   canvas.width = Math.round(cssWidth * dpr);
   canvas.height = Math.round(cssHeight * dpr);
 
@@ -4459,42 +4487,60 @@ function drawStrokePayloadToCanvas(canvas, strokeJson) {
     return;
   }
 
-  // ここが重要。
-  // canvasの内部解像度基準で、確実に上下左右に収まるようにする
-  const padding = Math.max(28 * dpr, Math.min(canvas.width, canvas.height) * 0.08);
+  const sourceW = Math.max(1, Number(payload.w) || 1);
+  const sourceH = Math.max(1, Number(payload.h) || 1);
+
+  /*
+    線の太さ分の余白。
+    保存座標が範囲内でも、線は座標を中心に太さを持つので、
+    端ギリギリに線があると切れる。
+  */
+  const padding = Math.max(18 * dpr, Math.min(canvas.width, canvas.height) * 0.055);
 
   const drawableWidth = Math.max(1, canvas.width - padding * 2);
   const drawableHeight = Math.max(1, canvas.height - padding * 2);
 
+  /*
+    表示canvas自体が sourceW:sourceH と同じ比率なので、
+    基本的にはこのscaleで綺麗に収まる。
+  */
   const scale = Math.min(
-    drawableWidth / payload.w,
-    drawableHeight / payload.h
+    drawableWidth / sourceW,
+    drawableHeight / sourceH
   );
 
-  const drawnWidth = payload.w * scale;
-  const drawnHeight = payload.h * scale;
+  const drawnWidth = sourceW * scale;
+  const drawnHeight = sourceH * scale;
 
   const offsetX = (canvas.width - drawnWidth) / 2;
   const offsetY = (canvas.height - drawnHeight) / 2;
 
   ctx2d.strokeStyle = "#111";
-  ctx2d.lineWidth = Math.max(3 * dpr, 4 * scale);
+  ctx2d.lineWidth = Math.max(2.5 * dpr, 4 * scale);
   ctx2d.lineCap = "round";
   ctx2d.lineJoin = "round";
 
   payload.strokes.forEach((stroke) => {
-    if (stroke.length < 4) return;
+    if (!Array.isArray(stroke) || stroke.length < 4) return;
+
+    const usableLength = stroke.length - (stroke.length % 2);
 
     ctx2d.beginPath();
+
     ctx2d.moveTo(
-      offsetX + stroke[0] * scale,
-      offsetY + stroke[1] * scale
+      offsetX + Number(stroke[0]) * scale,
+      offsetY + Number(stroke[1]) * scale
     );
 
-    for (let i = 2; i < stroke.length - 1; i += 2) {
+    for (let i = 2; i < usableLength; i += 2) {
+      const x = Number(stroke[i]);
+      const y = Number(stroke[i + 1]);
+
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+
       ctx2d.lineTo(
-        offsetX + stroke[i] * scale,
-        offsetY + stroke[i + 1] * scale
+        offsetX + x * scale,
+        offsetY + y * scale
       );
     }
 
