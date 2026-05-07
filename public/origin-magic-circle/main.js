@@ -306,9 +306,12 @@ let isOriginDebugTestRoom = false;
 
 let onBattleHpReachedZero = null;
 
+
+const ORIGIN_MAGIC_CIRCLE_MAX_HP = 100;
+
 let battleState = {
-  selfHp: 1000,
-  enemyHp: 1000,
+  selfHp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
+  enemyHp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
   lastCastAt: 0,
   processedCastIds: new Set(),
 
@@ -435,12 +438,12 @@ function applyHpPayload(hpPayload) {
   if (!hpPayload) return;
 
   battleState.selfHp = Number.isFinite(Number(hpPayload.selfHp))
-    ? Number(hpPayload.selfHp)
-    : 1000;
+  ? Math.max(0, Math.min(ORIGIN_MAGIC_CIRCLE_MAX_HP, Number(hpPayload.selfHp)))
+  : ORIGIN_MAGIC_CIRCLE_MAX_HP;
 
-  battleState.enemyHp = Number.isFinite(Number(hpPayload.enemyHp))
-    ? Number(hpPayload.enemyHp)
-    : 1000;
+battleState.enemyHp = Number.isFinite(Number(hpPayload.enemyHp))
+  ? Math.max(0, Math.min(ORIGIN_MAGIC_CIRCLE_MAX_HP, Number(hpPayload.enemyHp)))
+  : ORIGIN_MAGIC_CIRCLE_MAX_HP;
 
   renderHpBars();
 
@@ -624,13 +627,13 @@ function createOriginDebugTestRoom() {
         name: username || "player",
         id: userTrackingId,
         role: "host",
-        hp: 1000,
+        hp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
       },
       {
         name: "bot",
         id: "origin-debug-bot",
         role: "guest",
-        hp: 1000,
+        hp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
       },
     ],
     status: "対戦中",
@@ -1664,14 +1667,14 @@ function ensureHpBars() {
       <div class="hp-label">${username}</div>
       <div class="hp-track">
         <div id="selfHpFill" class="hp-fill self"></div>
-        <div id="selfHpValue" class="hp-value">1000/1000</div>
+        <div id="selfHpValue" class="hp-value">${ORIGIN_MAGIC_CIRCLE_MAX_HP}/${ORIGIN_MAGIC_CIRCLE_MAX_HP}</div>
       </div>
     </div>
     <div class="hp-card">
       <div class="hp-label">${enemy?.name || "相手"}</div>
       <div class="hp-track">
         <div id="enemyHpFill" class="hp-fill enemy"></div>
-        <div id="enemyHpValue" class="hp-value">1000/1000</div>
+        <div id="enemyHpValue" class="hp-value">${ORIGIN_MAGIC_CIRCLE_MAX_HP}/${ORIGIN_MAGIC_CIRCLE_MAX_HP}</div>
       </div>
     </div>
   `;
@@ -1686,10 +1689,11 @@ function renderHpBars() {
   const sv = document.getElementById("selfHpValue");
   const ev = document.getElementById("enemyHpValue");
 
-  if (sf) sf.style.width = `${(battleState.selfHp / 1000) * 100}%`;
-  if (ef) ef.style.width = `${(battleState.enemyHp / 1000) * 100}%`;
-  if (sv) sv.textContent = `${battleState.selfHp}/1000`;
-  if (ev) ev.textContent = `${battleState.enemyHp}/1000`;
+  if (sf) sf.style.width = `${(battleState.selfHp / ORIGIN_MAGIC_CIRCLE_MAX_HP) * 100}%`;
+if (ef) ef.style.width = `${(battleState.enemyHp / ORIGIN_MAGIC_CIRCLE_MAX_HP) * 100}%`;
+if (sv) sv.textContent = `${battleState.selfHp}/${ORIGIN_MAGIC_CIRCLE_MAX_HP}`;
+if (ev) ev.textContent = `${battleState.enemyHp}/${ORIGIN_MAGIC_CIRCLE_MAX_HP}`;
+
 }
 
 
@@ -1724,8 +1728,13 @@ function hydrateBattleHpFromRoom() {
   const self = members.find((member) => member.id === userTrackingId);
   const enemy = members.find((member) => member.id !== userTrackingId);
 
-  battleState.selfHp = Number.isFinite(Number(self?.hp)) ? Number(self.hp) : 1000;
-  battleState.enemyHp = Number.isFinite(Number(enemy?.hp)) ? Number(enemy.hp) : 1000;
+  battleState.selfHp = Number.isFinite(Number(self?.hp))
+  ? Math.max(0, Math.min(ORIGIN_MAGIC_CIRCLE_MAX_HP, Number(self.hp)))
+  : ORIGIN_MAGIC_CIRCLE_MAX_HP;
+
+battleState.enemyHp = Number.isFinite(Number(enemy?.hp))
+  ? Math.max(0, Math.min(ORIGIN_MAGIC_CIRCLE_MAX_HP, Number(enemy.hp)))
+  : ORIGIN_MAGIC_CIRCLE_MAX_HP;
 }
 
 
