@@ -675,12 +675,12 @@ h1, h2, h3 { margin-top: 0; }
   overflow-wrap: anywhere;
 }
 
-.origin-result-bubble__canvas {
+.battle-view .origin-result-bubble__canvas {
   display: block;
 
   width: 100%;
-  height: auto;
   max-width: 100%;
+  height: auto;
 
   margin-top: 8px;
 
