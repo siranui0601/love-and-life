@@ -4490,14 +4490,12 @@ title.innerHTML = `
 
   const canvasSize = getResultCanvasDisplaySize(log.strokeJson);
 
+bubble.style.setProperty("--result-canvas-width", `${canvasSize.width}px`);
+
 const canvas = document.createElement("canvas");
 canvas.className = "origin-result-bubble__canvas";
-
-// 実描画サイズ
 canvas.width = canvasSize.width;
 canvas.height = canvasSize.height;
-
-// CSS表示サイズ
 canvas.style.setProperty("--result-canvas-width", `${canvasSize.width}px`);
 
 bubble.append(title, canvas);
