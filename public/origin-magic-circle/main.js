@@ -4394,36 +4394,91 @@ function getResultCanvasInternalSize(strokeJson) {
 
 
 
+function resizeResultCanvasToPayload(canvas, strokeJson) {
+  const payload = parseStrokePayload(strokeJson);
+
+  // コメント枠内で実際に表示される横幅
+  const cssWidth = Math.max(1, Math.round(canvas.clientWidth || 260));
+
+  let cssHeight = Math.round(cssWidth * 0.68);
+
+  if (payload?.w && payload?.h) {
+    const aspect = payload.w / payload.h;
+
+    // 縦長すぎる/横長すぎる魔法陣でも破綻しにくいように制限
+    const rawHeight = cssWidth / Math.max(0.15, aspect);
+
+    cssHeight = Math.round(
+      Math.max(
+        cssWidth * 0.48,
+        Math.min(rawHeight, cssWidth * 1.25)
+      )
+    );
+  }
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  canvas.style.width = "100%";
+  canvas.style.height = `${cssHeight}px`;
+
+  canvas.width = Math.round(cssWidth * dpr);
+  canvas.height = Math.round(cssHeight * dpr);
+
+  return {
+    payload,
+    cssWidth,
+    cssHeight,
+    dpr,
+  };
+}
+
+
 
 
 function drawStrokePayloadToCanvas(canvas, strokeJson) {
-  const payload = parseStrokePayload(strokeJson);
-  const ctx2d = canvas.getContext("2d");
+  const {
+    payload,
+    dpr,
+  } = resizeResultCanvasToPayload(canvas, strokeJson);
 
+  const ctx2d = canvas.getContext("2d");
   if (!ctx2d) return;
 
+  ctx2d.setTransform(1, 0, 0, 1, 0, 0);
   ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+
   ctx2d.fillStyle = "#fff";
   ctx2d.fillRect(0, 0, canvas.width, canvas.height);
 
   if (!payload) {
     ctx2d.fillStyle = "#999";
-    ctx2d.font = "14px sans-serif";
+    ctx2d.font = `${14 * dpr}px sans-serif`;
     ctx2d.textAlign = "center";
+    ctx2d.textBaseline = "middle";
     ctx2d.fillText("魔法陣データなし", canvas.width / 2, canvas.height / 2);
     return;
   }
 
+  // ここが重要。
+  // canvasの内部解像度基準で、確実に上下左右に収まるようにする
+  const padding = Math.max(28 * dpr, Math.min(canvas.width, canvas.height) * 0.08);
+
+  const drawableWidth = Math.max(1, canvas.width - padding * 2);
+  const drawableHeight = Math.max(1, canvas.height - padding * 2);
+
   const scale = Math.min(
-    (canvas.width - 20) / payload.w,
-    (canvas.height - 20) / payload.h
+    drawableWidth / payload.w,
+    drawableHeight / payload.h
   );
 
-  const offsetX = (canvas.width - payload.w * scale) / 2;
-  const offsetY = (canvas.height - payload.h * scale) / 2;
+  const drawnWidth = payload.w * scale;
+  const drawnHeight = payload.h * scale;
+
+  const offsetX = (canvas.width - drawnWidth) / 2;
+  const offsetY = (canvas.height - drawnHeight) / 2;
 
   ctx2d.strokeStyle = "#111";
-  ctx2d.lineWidth = Math.max(2, 4 * scale);
+  ctx2d.lineWidth = Math.max(3 * dpr, 4 * scale);
   ctx2d.lineCap = "round";
   ctx2d.lineJoin = "round";
 
@@ -4479,34 +4534,15 @@ function createResultMagicBubble(log, index) {
 
   title.textContent = `${log.magicName}\n【${damage}ダメージ】`;
 
-  const canvas = document.createElement("canvas");
-  canvas.className = "origin-result-bubble__canvas";
+  
+   const canvas = document.createElement("canvas");
+canvas.className = "origin-result-bubble__canvas";
 
-  const payload = parseStrokePayload(log.strokeJson);
+bubble.append(title, canvas);
 
-  // CSS上の見た目は「横幅70vwのコメント枠に対して100%」。
-  // canvasの内部比率を魔法陣の w/h に合わせることで、縦長でも途切れない。
-  const renderWidth = 720;
-
-  if (payload?.w && payload?.h) {
-    const aspect = payload.w / payload.h;
-
-    canvas.width = renderWidth;
-    canvas.height = Math.max(120, Math.round(renderWidth / aspect));
-
-    // iOS Safari対策。属性だけでなくstyleにも比率を明示する。
-    canvas.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
-  } else {
-    canvas.width = renderWidth;
-    canvas.height = 480;
-    canvas.style.aspectRatio = "3 / 2";
-  }
-
-  bubble.append(title, canvas);
-
-  requestAnimationFrame(() => {
-    drawStrokePayloadToCanvas(canvas, log.strokeJson);
-  });
+requestAnimationFrame(() => {
+  drawStrokePayloadToCanvas(canvas, log.strokeJson);
+});
 
   return bubble;
 }
