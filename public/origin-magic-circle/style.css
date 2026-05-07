@@ -640,6 +640,11 @@ h1, h2, h3 { margin-top: 0; }
   overflow: hidden;
   box-sizing: border-box;
 
+  /*
+    中身の幅計算を安定させる
+  */
+  contain: layout paint;
+
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
 
   opacity: 0;
@@ -675,12 +680,24 @@ h1, h2, h3 { margin-top: 0; }
   overflow-wrap: anywhere;
 }
 
-.battle-view .origin-result-bubble__canvas {
+
+
+  
+  
+  
+  .battle-view .origin-result-bubble__canvas {
   display: block;
 
   width: 100%;
   max-width: 100%;
-  height: auto;
+
+  /*
+    ここ重要。
+    canvasの高さはJSで計算して style.height に入れる。
+    CSSの height:auto に任せると、canvas属性値との兼ね合いで
+    想定外の表示高さになりやすい。
+  */
+  height: var(--result-canvas-height, 220px);
 
   margin-top: 8px;
 
@@ -689,6 +706,12 @@ h1, h2, h3 { margin-top: 0; }
   border: 1px solid rgba(0, 0, 0, 0.12);
 
   box-sizing: border-box;
+
+  /*
+    canvasそのものは切らない。
+    ただし角丸の外だけは自然に隠す。
+  */
+  overflow: hidden;
 }
 
 
