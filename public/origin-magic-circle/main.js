@@ -4446,7 +4446,7 @@ title.innerHTML = `
   const canvas = document.createElement("canvas");
   canvas.className = "origin-result-bubble__canvas";
   canvas.width = 260;
-  canvas.height = 360;
+  canvas.height = 560;
 
   bubble.append(title, canvas);
 
