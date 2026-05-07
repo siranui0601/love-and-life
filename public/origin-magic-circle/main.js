@@ -4362,6 +4362,51 @@ function parseStrokePayload(strokeJson) {
   }
 }
 
+
+
+
+function getResultCanvasDisplaySize(strokeJson) {
+  const payload = parseStrokePayload(strokeJson);
+
+  if (!payload) {
+    return {
+      width: 240,
+      height: 170,
+    };
+  }
+
+  const aspect = payload.w / payload.h;
+
+  const maxWidth = 320;
+  const minWidth = 180;
+  const maxHeight = 240;
+  const minHeight = 120;
+
+  let width = 260;
+  let height = width / aspect;
+
+  if (height > maxHeight) {
+    height = maxHeight;
+    width = height * aspect;
+  }
+
+  if (height < minHeight) {
+    height = minHeight;
+    width = height * aspect;
+  }
+
+  width = Math.max(minWidth, Math.min(maxWidth, width));
+
+  return {
+    width: Math.round(width),
+    height: Math.round(height),
+  };
+}
+
+
+
+
+
 function drawStrokePayloadToCanvas(canvas, strokeJson) {
   const payload = parseStrokePayload(strokeJson);
   const ctx2d = canvas.getContext("2d");
@@ -4443,12 +4488,19 @@ title.innerHTML = `
   <div>【${Math.round(Number(log.totalDamage) || 0)}ダメージ】</div>
 `;
 
-  const canvas = document.createElement("canvas");
-  canvas.className = "origin-result-bubble__canvas";
-  canvas.width = 260;
-  canvas.height = 180;
+  const canvasSize = getResultCanvasDisplaySize(log.strokeJson);
 
-  bubble.append(title, canvas);
+const canvas = document.createElement("canvas");
+canvas.className = "origin-result-bubble__canvas";
+
+// 実描画サイズ
+canvas.width = canvasSize.width;
+canvas.height = canvasSize.height;
+
+// CSS表示サイズ
+canvas.style.setProperty("--result-canvas-width", `${canvasSize.width}px`);
+
+bubble.append(title, canvas);
 
   requestAnimationFrame(() => {
     drawStrokePayloadToCanvas(canvas, log.strokeJson);
