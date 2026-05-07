@@ -4365,40 +4365,29 @@ function parseStrokePayload(strokeJson) {
 
 
 
-function getResultCanvasDisplaySize(strokeJson) {
+function getResultCanvasInternalSize(strokeJson) {
   const payload = parseStrokePayload(strokeJson);
 
   if (!payload) {
     return {
-      width: 240,
-      height: 170,
+      width: 700,
+      height: 480,
     };
   }
 
   const aspect = payload.w / payload.h;
 
-  const maxWidth = 320;
-  const minWidth = 180;
-  const maxHeight = 240;
-  const minHeight = 120;
+  const width = 700;
 
-  let width = 260;
+  // 極端に縦長・横長だと崩れるので、見た目用に制限する
+  const minHeight = 260;
+  const maxHeight = 620;
+
   let height = width / aspect;
-
-  if (height > maxHeight) {
-    height = maxHeight;
-    width = height * aspect;
-  }
-
-  if (height < minHeight) {
-    height = minHeight;
-    width = height * aspect;
-  }
-
-  width = Math.max(minWidth, Math.min(maxWidth, width));
+  height = Math.max(minHeight, Math.min(maxHeight, height));
 
   return {
-    width: Math.round(width),
+    width,
     height: Math.round(height),
   };
 }
@@ -4488,15 +4477,14 @@ title.innerHTML = `
   <div>【${Math.round(Number(log.totalDamage) || 0)}ダメージ】</div>
 `;
 
-  const canvasSize = getResultCanvasDisplaySize(log.strokeJson);
-
-bubble.style.setProperty("--result-canvas-width", `${canvasSize.width}px`);
+  const canvasSize = getResultCanvasInternalSize(log.strokeJson);
 
 const canvas = document.createElement("canvas");
 canvas.className = "origin-result-bubble__canvas";
+
+// 実描画解像度。表示幅はCSSの70vwに任せる
 canvas.width = canvasSize.width;
 canvas.height = canvasSize.height;
-canvas.style.setProperty("--result-canvas-width", `${canvasSize.width}px`);
 
 bubble.append(title, canvas);
 
