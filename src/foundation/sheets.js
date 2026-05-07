@@ -8,6 +8,13 @@ export const ORIGIN_MAGIC_CIRCLE_SHEET_NAME = "オリジン魔法陣";
 const SECRET_TOOL_MAX_MEMBERS = 4;
 const ORIGIN_MAGIC_CIRCLE_MAX_MEMBERS = 2;
 
+
+
+const ORIGIN_MAGIC_CIRCLE_MAX_HP = 100;
+
+
+
+
 export async function getSheetsClient() {
   if (!serviceAccount) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY が設定されていません");
 
@@ -460,12 +467,29 @@ function parseOriginMagicCircleCastLogsJson(raw) {
   }
 }
 
+
+
+
+function normalizeOriginMagicCircleHp(value) {
+  const hp = Number(value);
+  if (!Number.isFinite(hp)) return ORIGIN_MAGIC_CIRCLE_MAX_HP;
+  return Math.max(0, Math.min(ORIGIN_MAGIC_CIRCLE_MAX_HP, hp));
+}
+
+function normalizeOriginMagicCircleMember(member) {
+  return {
+    ...member,
+    hp: normalizeOriginMagicCircleHp(member?.hp),
+  };
+}
+
+
+
+
+
 function originMagicCircleRowToRoom(row = [], index = 0) {
   const roomId = String(row[0] || "").trim();
-  const members = parseSecretMembersJson(row[1]).map((m) => ({
-    ...m,
-    hp: Number.isFinite(Number(m?.hp)) ? Number(m.hp) : 1000,
-  }));
+  const members = parseSecretMembersJson(row[1]).map(normalizeOriginMagicCircleMember);
   const status = String(row[2] || "").trim();
   const expiresAt = Number(row[3] || 0);
   const castLogs = parseOriginMagicCircleCastLogsJson(row[4]);
@@ -529,7 +553,8 @@ export async function createOriginMagicCircleRoom({ username, clientId }) {
   }
   if (!roomId) throw new Error("room_create_failed");
 
-  const members = [{ name: username, id: clientId, role: "host", hp: 1000 }];
+  const members = [{ name: username, id: clientId, role: "host", hp: ORIGIN_MAGIC_CIRCLE_MAX_HP }];
+
   const status = "lobby";
   const expiresAt = originMagicCircleExpiresAtMs();
 
@@ -562,10 +587,19 @@ export async function joinOriginMagicCircleRoom({ roomId, username, clientId }) 
   const members = [...room.members];
   const existingIndex = members.findIndex((member) => member.id === clientId);
   if (existingIndex >= 0) {
-    members[existingIndex] = { ...members[existingIndex], name: username, hp: Number.isFinite(Number(members[existingIndex].hp)) ? Number(members[existingIndex].hp) : 1000 };
+    members[existingIndex] = {
+  ...members[existingIndex],
+  name: username,
+  hp: normalizeOriginMagicCircleHp(members[existingIndex].hp),
+};
   } else {
     if (members.length >= ORIGIN_MAGIC_CIRCLE_MAX_MEMBERS) throw new Error("room_full");
-    members.push({ name: username, id: clientId, role: "guest", hp: 1000 });
+    members.push({
+  name: username,
+  id: clientId,
+  role: "guest",
+  hp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
+});
   }
 
   await updateOriginMagicCircleRoomRow(room.rowIndex, [
