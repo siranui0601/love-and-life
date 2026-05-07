@@ -708,19 +708,6 @@ h1, h2, h3 { margin-top: 0; }
 
 
 
-.origin-result-bubble {
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-.origin-result-bubble__canvas {
-  display: block;
-  max-width: 100%;
-  box-sizing: border-box;
-  margin-top: 8px;
-  border-radius: 12px;
-}
-
 
 .origin-result-back-btn {
   display: block;
