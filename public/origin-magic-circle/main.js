@@ -4471,22 +4471,38 @@ function createResultMagicBubble(log, index) {
   bubble.style.animationDelay = `${index * 1}s`;
 
   const title = document.createElement("div");
-title.className = "origin-result-bubble__title";
-title.innerHTML = `
-  <div>${escapeHtml(log.magicName || "無名の魔法")}</div>
-  <div>【${Math.round(Number(log.totalDamage) || 0)}ダメージ】</div>
-`;
+  title.className = "origin-result-bubble__title";
 
-  const canvasSize = getResultCanvasInternalSize(log.strokeJson);
+  const damage = Number.isFinite(Number(log.totalDamage))
+    ? Math.max(0, Math.round(Number(log.totalDamage)))
+    : Math.max(0, Math.round(Number(log.artScore) || 0));
 
-const canvas = document.createElement("canvas");
-canvas.className = "origin-result-bubble__canvas";
+  title.textContent = `${log.magicName}\n【${damage}ダメージ】`;
 
-// 実描画解像度。表示幅はCSSの70vwに任せる
-canvas.width = canvasSize.width;
-canvas.height = canvasSize.height;
+  const canvas = document.createElement("canvas");
+  canvas.className = "origin-result-bubble__canvas";
 
-bubble.append(title, canvas);
+  const payload = parseStrokePayload(log.strokeJson);
+
+  // CSS上の見た目は「横幅70vwのコメント枠に対して100%」。
+  // canvasの内部比率を魔法陣の w/h に合わせることで、縦長でも途切れない。
+  const renderWidth = 720;
+
+  if (payload?.w && payload?.h) {
+    const aspect = payload.w / payload.h;
+
+    canvas.width = renderWidth;
+    canvas.height = Math.max(120, Math.round(renderWidth / aspect));
+
+    // iOS Safari対策。属性だけでなくstyleにも比率を明示する。
+    canvas.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
+  } else {
+    canvas.width = renderWidth;
+    canvas.height = 480;
+    canvas.style.aspectRatio = "3 / 2";
+  }
+
+  bubble.append(title, canvas);
 
   requestAnimationFrame(() => {
     drawStrokePayloadToCanvas(canvas, log.strokeJson);
