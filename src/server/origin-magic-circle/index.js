@@ -48,6 +48,11 @@ function createOriginMagicCircleImageHash(base64ImageFile) {
     .digest("hex");
 }
 
+
+
+
+const ORIGIN_MAGIC_CIRCLE_MAX_HP = 100;
+
 const ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP = {
   "炎球": "fireball.glb",
   "人魂と骸骨": "magic_voxel_skull_flat_shaded.glb",
@@ -691,9 +696,14 @@ app.post("/api/origin-magic-circle/casts", async (req, res) => {
 
     return {
       roomId: room?.roomId || "",
-      selfHp: Number.isFinite(Number(self?.hp)) ? Number(self.hp) : 1000,
-      enemyHp: Number.isFinite(Number(enemy?.hp)) ? Number(enemy.hp) : 1000,
-      members,
+      selfHp: Number.isFinite(Number(self?.hp))
+  ? Math.max(0, Math.min(ORIGIN_MAGIC_CIRCLE_MAX_HP, Number(self.hp)))
+  : ORIGIN_MAGIC_CIRCLE_MAX_HP,
+
+enemyHp: Number.isFinite(Number(enemy?.hp))
+  ? Math.max(0, Math.min(ORIGIN_MAGIC_CIRCLE_MAX_HP, Number(enemy.hp)))
+  : ORIGIN_MAGIC_CIRCLE_MAX_HP,
+        members,
     };
   }
 
@@ -832,9 +842,14 @@ app.post("/api/origin-magic-circle/casts", async (req, res) => {
           return;
         }
 
-        const attackerHp = Number.isFinite(Number(attacker.hp)) ? Number(attacker.hp) : 1000;
-        const targetHp = Number.isFinite(Number(target.hp)) ? Number(target.hp) : 1000;
-        const nextTargetHp = Math.max(0, targetHp - damage);
+        const attackerHp = Number.isFinite(Number(attacker.hp))
+  ? Math.max(0, Math.min(ORIGIN_MAGIC_CIRCLE_MAX_HP, Number(attacker.hp)))
+  : ORIGIN_MAGIC_CIRCLE_MAX_HP;
+
+const targetHp = Number.isFinite(Number(target.hp))
+  ? Math.max(0, Math.min(ORIGIN_MAGIC_CIRCLE_MAX_HP, Number(target.hp)))
+  : ORIGIN_MAGIC_CIRCLE_MAX_HP;
+    const nextTargetHp = Math.max(0, targetHp - damage);
 
         const roomAfter = await updateOriginMagicCircleRoomHp({
           roomId,
