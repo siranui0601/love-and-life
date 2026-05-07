@@ -670,6 +670,9 @@ h1, h2, h3 { margin-top: 0; }
   font-weight: 900;
   margin-bottom: 8px;
   line-height: 1.35;
+
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .origin-result-bubble__canvas {
