@@ -1096,7 +1096,7 @@ const sampleDrawnPixels = (maxParticles = 900) => {
 
 
 
-
+//ここから
 
 const clamp = (value, min, max) => {
   return Math.max(min, Math.min(max, value));
@@ -1110,198 +1110,304 @@ const lerp = (a, b, t) => {
   return a + (b - a) * t;
 };
 
-const createRuneStrokeTemplate = () => {
-  const strokes = [];
-
-  // 中央の縦芯。これがあるだけで一気にルーン文字っぽくなる
-  strokes.push({
-    x1: randomBetween(-0.08, 0.08),
-    y1: -0.46,
-    x2: randomBetween(-0.08, 0.08),
-    y2: 0.46,
-  });
-
-  const branchCount = Math.floor(randomBetween(2, 5));
-
-  for (let i = 0; i < branchCount; i += 1) {
-    const side = Math.random() < 0.5 ? -1 : 1;
-    const y1 = randomBetween(-0.38, 0.3);
-    const y2 = clamp(y1 + randomBetween(-0.22, 0.28), -0.48, 0.48);
-    const x1 = randomBetween(-0.04, 0.04);
-    const x2 = side * randomBetween(0.22, 0.46);
-
-    strokes.push({ x1, y1, x2, y2 });
-  }
-
-  // たまに横棒・斜め貫通を足す
-  if (Math.random() < 0.55) {
-    strokes.push({
-      x1: randomBetween(-0.36, -0.14),
-      y1: randomBetween(-0.18, 0.18),
-      x2: randomBetween(0.14, 0.36),
-      y2: randomBetween(-0.18, 0.18),
-    });
-  }
-
-  // たまに下部の足
-  if (Math.random() < 0.5) {
-    const side = Math.random() < 0.5 ? -1 : 1;
-    strokes.push({
-      x1: 0,
-      y1: 0.28,
-      x2: side * randomBetween(0.18, 0.42),
-      y2: 0.48,
-    });
-  }
-
-  return strokes;
+const easeSmooth = (t) => {
+  const v = clamp(Number(t) || 0, 0, 1);
+  return v * v * (3 - 2 * v);
 };
 
-const createRuneSentenceLayout = (particleCount) => {
+const pointOnCircle = (cx, cy, radius, angle) => {
+  return {
+    x: cx + Math.cos(angle) * radius,
+    y: cy + Math.sin(angle) * radius,
+  };
+};
+
+const makeSegment = (x1, y1, x2, y2, groupId) => {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+
+  return {
+    type: "segment",
+    groupId,
+    x1,
+    y1,
+    x2,
+    y2,
+    length: Math.max(1, Math.hypot(dx, dy)),
+  };
+};
+
+const makeCircleArcSegments = (cx, cy, radius, groupId, parts = 96) => {
+  const segments = [];
+
+  for (let i = 0; i < parts; i += 1) {
+    const a1 = (Math.PI * 2 * i) / parts;
+    const a2 = (Math.PI * 2 * (i + 1)) / parts;
+
+    const p1 = pointOnCircle(cx, cy, radius, a1);
+    const p2 = pointOnCircle(cx, cy, radius, a2);
+
+    segments.push(makeSegment(p1.x, p1.y, p2.x, p2.y, groupId));
+  }
+
+  return segments;
+};
+
+const makeStarSegments = (cx, cy, radius, pointCount, groupId, rotation = -Math.PI / 2) => {
+  const points = [];
+
+  for (let i = 0; i < pointCount; i += 1) {
+    const angle = rotation + (Math.PI * 2 * i) / pointCount;
+    points.push(pointOnCircle(cx, cy, radius, angle));
+  }
+
+  const segments = [];
+
+  if (pointCount === 5) {
+    const order = [0, 2, 4, 1, 3, 0];
+
+    for (let i = 0; i < order.length - 1; i += 1) {
+      const a = points[order[i]];
+      const b = points[order[i + 1]];
+      segments.push(makeSegment(a.x, a.y, b.x, b.y, groupId));
+    }
+
+    return segments;
+  }
+
+  if (pointCount === 6) {
+    const triA = [0, 2, 4, 0];
+    const triB = [1, 3, 5, 1];
+
+    for (let i = 0; i < triA.length - 1; i += 1) {
+      const a = points[triA[i]];
+      const b = points[triA[i + 1]];
+      segments.push(makeSegment(a.x, a.y, b.x, b.y, `${groupId}-a`));
+    }
+
+    for (let i = 0; i < triB.length - 1; i += 1) {
+      const a = points[triB[i]];
+      const b = points[triB[i + 1]];
+      segments.push(makeSegment(a.x, a.y, b.x, b.y, `${groupId}-b`));
+    }
+
+    return segments;
+  }
+
+  for (let i = 0; i < pointCount; i += 1) {
+    const a = points[i];
+    const b = points[(i + 1) % pointCount];
+    segments.push(makeSegment(a.x, a.y, b.x, b.y, groupId));
+  }
+
+  return segments;
+};
+
+const makeRadialSegments = (cx, cy, innerRadius, outerRadius, count, groupId, rotation = 0) => {
+  const segments = [];
+
+  for (let i = 0; i < count; i += 1) {
+    const angle = rotation + (Math.PI * 2 * i) / count;
+    const p1 = pointOnCircle(cx, cy, innerRadius, angle);
+    const p2 = pointOnCircle(cx, cy, outerRadius, angle);
+    segments.push(makeSegment(p1.x, p1.y, p2.x, p2.y, groupId));
+  }
+
+  return segments;
+};
+
+const makePolygonSegments = (cx, cy, radius, count, groupId, rotation = -Math.PI / 2) => {
+  const points = [];
+
+  for (let i = 0; i < count; i += 1) {
+    const angle = rotation + (Math.PI * 2 * i) / count;
+    points.push(pointOnCircle(cx, cy, radius, angle));
+  }
+
+  const segments = [];
+
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    segments.push(makeSegment(a.x, a.y, b.x, b.y, groupId));
+  }
+
+  return segments;
+};
+
+const createMagicCircleSegments = (particleCount) => {
   const width = overlay.width;
   const height = overlay.height;
 
-  // 文字数は粒子数から決める。
-  // 1文字あたり40〜55粒くらいあると、文字として見えやすい。
-  const glyphCount = clamp(Math.floor(particleCount / 46), 7, 34);
+  const cx = width / 2;
+  const cy = height / 2;
 
-  const marginX = width * 0.08;
-  const usableWidth = width - marginX * 2;
+  const minSide = Math.min(width, height);
 
-  const fontSize = clamp(usableWidth / glyphCount * 1.05, 34, 72);
-  const gap = fontSize * 0.78;
+  /*
+    粒子数に応じて魔法陣の複雑さを変える。
+    粒子が少ない時に複雑すぎる図形を作るとスカスカになるので、
+    外円 → 内円 → 星 → 補助円 → 放射線 の順で足す。
+  */
+  const radius = minSide * randomBetween(0.19, 0.26);
+  const rotation = randomBetween(0, Math.PI * 2);
 
-  const charsPerLine = Math.max(6, Math.floor(usableWidth / gap));
-  const lineCount = Math.ceil(glyphCount / charsPerLine);
+  const useHexagram = Math.random() < 0.48;
+  const starPoints = useHexagram ? 6 : 5;
 
-  const startY = height * 0.5 - ((lineCount - 1) * fontSize * 1.2) / 2;
+  const segments = [];
 
-  const glyphs = [];
+  // 外円
+  segments.push(...makeCircleArcSegments(cx, cy, radius, "outer-circle", 128));
 
-  for (let i = 0; i < glyphCount; i += 1) {
-    const line = Math.floor(i / charsPerLine);
-    const indexInLine = i % charsPerLine;
-
-    const glyphsInThisLine = Math.min(charsPerLine, glyphCount - line * charsPerLine);
-    const lineWidth = (glyphsInThisLine - 1) * gap;
-
-    const x = width * 0.5 - lineWidth / 2 + indexInLine * gap;
-    const y = startY + line * fontSize * 1.2;
-
-    glyphs.push({
-      index: i,
-      x,
-      y,
-      size: fontSize * randomBetween(0.88, 1.12),
-      rotation: randomBetween(-0.18, 0.18),
-      strokes: createRuneStrokeTemplate(),
-    });
+  // 内円
+  if (particleCount >= 90) {
+    segments.push(...makeCircleArcSegments(cx, cy, radius * randomBetween(0.62, 0.74), "inner-circle", 96));
   }
 
-  return glyphs;
+  // 五芒星 or 六芒星
+  if (particleCount >= 130) {
+    segments.push(...makeStarSegments(cx, cy, radius * randomBetween(0.72, 0.88), starPoints, "main-star", rotation));
+  }
+
+  // さらに小さい内側の円
+  if (particleCount >= 220) {
+    segments.push(...makeCircleArcSegments(cx, cy, radius * randomBetween(0.28, 0.42), "core-circle", 64));
+  }
+
+  // 多角形の補助線
+  if (particleCount >= 320) {
+    const polygonCount = Math.random() < 0.5 ? 8 : 12;
+    segments.push(...makePolygonSegments(cx, cy, radius * randomBetween(0.48, 0.58), polygonCount, "polygon", rotation * 0.7));
+  }
+
+  // 放射線
+  if (particleCount >= 420) {
+    const radialCount = Math.random() < 0.5 ? 8 : 12;
+    segments.push(...makeRadialSegments(cx, cy, radius * 0.16, radius * 0.96, radialCount, "radial", rotation));
+  }
+
+  // 外側の小円群
+  if (particleCount >= 620) {
+    const smallCircleCount = Math.random() < 0.5 ? 5 : 6;
+    const smallRadius = radius * randomBetween(0.08, 0.115);
+    const orbitRadius = radius * randomBetween(0.82, 0.94);
+
+    for (let i = 0; i < smallCircleCount; i += 1) {
+      const angle = rotation + (Math.PI * 2 * i) / smallCircleCount;
+      const p = pointOnCircle(cx, cy, orbitRadius, angle);
+      segments.push(...makeCircleArcSegments(p.x, p.y, smallRadius, `small-circle-${i}`, 32));
+    }
+  }
+
+  return segments;
 };
 
-const pointOnRuneStroke = (glyph, stroke) => {
-  const t = Math.random();
-
-  const localX = lerp(stroke.x1, stroke.x2, t) * glyph.size;
-  const localY = lerp(stroke.y1, stroke.y2, t) * glyph.size;
-
-  const jitter = glyph.size * 0.035;
-  const jx = randomBetween(-jitter, jitter);
-  const jy = randomBetween(-jitter, jitter);
-
-  const cos = Math.cos(glyph.rotation);
-  const sin = Math.sin(glyph.rotation);
-
-  const rx = (localX + jx) * cos - (localY + jy) * sin;
-  const ry = (localX + jx) * sin + (localY + jy) * cos;
-
+const pointOnSegment = (segment, t) => {
   return {
-    x: glyph.x + rx,
-    y: glyph.y + ry,
+    x: lerp(segment.x1, segment.x2, t),
+    y: lerp(segment.y1, segment.y2, t),
   };
 };
 
-const createRuneTargetsForGlyph = (glyph, count) => {
+const createMagicCircleTargets = (particleCount) => {
+  const segments = createMagicCircleSegments(particleCount);
+
+  const totalLength = segments.reduce((sum, segment) => sum + segment.length, 0);
+
+  if (!segments.length || totalLength <= 0) {
+    return Array.from({ length: particleCount }, (_, index) => ({
+      x: overlay.width / 2,
+      y: overlay.height / 2,
+      groupId: "center",
+      order: index,
+    }));
+  }
+
   const targets = [];
 
-  for (let i = 0; i < count; i += 1) {
-    const stroke = glyph.strokes[i % glyph.strokes.length];
-    targets.push(pointOnRuneStroke(glyph, stroke));
-  }
+  segments.forEach((segment, segmentIndex) => {
+    const rawCount = Math.max(1, Math.round((segment.length / totalLength) * particleCount));
 
-  return targets;
-};
+    for (let i = 0; i < rawCount; i += 1) {
+      const t = rawCount <= 1 ? 0 : i / (rawCount - 1);
+      const p = pointOnSegment(segment, t);
 
-const createRuneSentenceTargets = (particleCount) => {
-  const glyphs = createRuneSentenceLayout(particleCount);
-
-  const result = [];
-  const basePerGlyph = Math.floor(particleCount / glyphs.length);
-  let remaining = particleCount;
-
-  glyphs.forEach((glyph, glyphIndex) => {
-    const isLast = glyphIndex === glyphs.length - 1;
-    const count = isLast ? remaining : basePerGlyph;
-    remaining -= count;
-
-    const targets = createRuneTargetsForGlyph(glyph, count);
-
-    targets.forEach((target) => {
-      result.push({
-        x: target.x,
-        y: target.y,
-        glyphIndex,
+      targets.push({
+        x: p.x,
+        y: p.y,
+        groupId: segment.groupId,
+        order: segmentIndex * 10000 + i,
       });
-    });
+    }
   });
 
-  while (result.length < particleCount) {
-    const glyphIndex = Math.floor(Math.random() * glyphs.length);
-    const target = createRuneTargetsForGlyph(glyphs[glyphIndex], 1)[0];
-    result.push({
-      x: target.x,
-      y: target.y,
-      glyphIndex,
+  while (targets.length < particleCount) {
+    const segment = segments[Math.floor(Math.random() * segments.length)];
+    const p = pointOnSegment(segment, Math.random());
+
+    targets.push({
+      x: p.x,
+      y: p.y,
+      groupId: segment.groupId,
+      order: targets.length,
     });
   }
 
-  return {
-    glyphs,
-    targets: result.slice(0, particleCount),
-  };
+  return targets.slice(0, particleCount);
 };
 
-const mutateOneRuneGlyph = (glyph) => {
-  return {
-    ...glyph,
-    rotation: randomBetween(-0.2, 0.2),
-    strokes: createRuneStrokeTemplate(),
-  };
+const assignTargetsToParticles = (particles, targets) => {
+  particles.forEach((particle, index) => {
+    const target = targets[index] || targets[targets.length - 1] || {
+      x: overlay.width / 2,
+      y: overlay.height / 2,
+      groupId: "center",
+      order: index,
+    };
+
+    particle.fromX = particle.x;
+    particle.fromY = particle.y;
+    particle.nextX = target.x;
+    particle.nextY = target.y;
+    particle.groupId = target.groupId;
+    particle.order = target.order;
+  });
 };
 
-const startGlyphRitualAnimation = () => {
+const createMagicNameRitualOverlay = (magicName) => {
+  const old = document.getElementById("ritualMagicNameOverlay");
+  old?.remove();
+
+  const overlayName = document.createElement("div");
+  overlayName.id = "ritualMagicNameOverlay";
+  overlayName.className = "ritual-magic-name-overlay";
+  overlayName.textContent = magicName || "無名の魔法";
+
+  refs.battleView?.appendChild(overlayName);
+
+  return overlayName;
+};
+
+const startMagicCircleRitualAnimation = () => {
   if (!ctx) return null;
 
   const sourcePoints = sampleDrawnPixels(950);
   if (!sourcePoints.length) return null;
 
-  const runeSentence = createRuneSentenceTargets(sourcePoints.length);
-  let glyphs = runeSentence.glyphs;
-  const targetPoints = runeSentence.targets;
-
   const startedAt = performance.now();
+  const initialTargets = createMagicCircleTargets(sourcePoints.length);
 
   const particles = sourcePoints.map((p, index) => {
-    const target = targetPoints[index] || {
+    const target = initialTargets[index] || {
       x: overlay.width / 2,
       y: overlay.height / 2,
-      glyphIndex: 0,
+      groupId: "center",
+      order: index,
     };
 
     const angle = Math.random() * Math.PI * 2;
-    const scatterDistance = 70 + Math.random() * 180;
+    const scatterDistance = 60 + Math.random() * 150;
 
     return {
       x: p.x,
@@ -1321,92 +1427,73 @@ const startGlyphRitualAnimation = () => {
       nextX: target.x,
       nextY: target.y,
 
-      glyphIndex: target.glyphIndex,
+      groupId: target.groupId,
+      order: target.order,
 
-      size: 1.7 + Math.random() * 1.4,
-      alpha: 0.72 + Math.random() * 0.28,
-      jitter: Math.random() * Math.PI * 2,
-
-      // 文字ごとに少し違う呼吸感
-      pulseSeed: Math.random() * Math.PI * 2,
+      size: 1.6 + Math.random() * 1.4,
+      alpha: 0.82 + Math.random() * 0.18,
     };
   });
 
   let rafId = null;
   let finished = false;
+
+  let isMorphing = false;
+  let morphStartedAt = 0;
+  let morphDuration = 650;
+  let nextMorphAt = startedAt + 1200 + Math.random() * 1100;
+
   let finishing = false;
   let finishStartedAt = 0;
   let finishResolve = null;
+  let magicNameNode = null;
 
-  let nextRuneMorphAt = startedAt + 800 + Math.random() * 900;
-  let morphStartedAt = 0;
-  let morphDuration = 420;
-  let morphingGlyphIndex = -1;
-  let isMorphing = false;
+  const beginMorphToNewMagicCircle = (now) => {
+    const targets = createMagicCircleTargets(particles.length);
 
-  const ease = (t) => {
-    const v = Math.max(0, Math.min(1, t));
-    return v * v * (3 - 2 * v);
-  };
-
-  const beginOneRuneMorph = (now) => {
-    if (!glyphs.length) return;
-
-    morphingGlyphIndex = Math.floor(Math.random() * glyphs.length);
-    glyphs[morphingGlyphIndex] = mutateOneRuneGlyph(glyphs[morphingGlyphIndex]);
-
-    const targetParticles = particles.filter((p) => p.glyphIndex === morphingGlyphIndex);
-    const newTargets = createRuneTargetsForGlyph(glyphs[morphingGlyphIndex], targetParticles.length);
-
-    targetParticles.forEach((p, index) => {
-      const target = newTargets[index] || { x: p.x, y: p.y };
-
-      p.fromX = p.x;
-      p.fromY = p.y;
-      p.nextX = target.x;
-      p.nextY = target.y;
-    });
+    assignTargetsToParticles(particles, targets);
 
     morphStartedAt = now;
-    morphDuration = 340 + Math.random() * 520;
+    morphDuration = 520 + Math.random() * 620;
     isMorphing = true;
 
-    // 「文字毎に不定期」なので、全文一括ではなく、次の1文字変化まで少し待つ
-    nextRuneMorphAt = now + morphDuration + 260 + Math.random() * 760;
+    nextMorphAt = now + morphDuration + 650 + Math.random() * 1400;
   };
 
-  const drawRuneConnectionLines = (now, finalGlowRate, vanishRate) => {
-    // 点だけだと文字に見えにくいので、同じ文字内の粒子を近距離だけ線で結ぶ
-    const alpha = Math.max(0, 1 - vanishRate);
+  const drawMagicCircleLines = (finalGlowRate, vanishRate) => {
+    const visibleAlpha = Math.max(0, 1 - vanishRate);
 
-    ctx.lineWidth = 1.15;
-
-    if (finishing) {
-      ctx.strokeStyle = `rgba(215, 120, 255, ${0.36 * alpha})`;
-      ctx.shadowColor = "rgba(210, 120, 255, 0.95)";
-      ctx.shadowBlur = 10 + finalGlowRate * 20;
-    } else {
-      ctx.strokeStyle = `rgba(15, 10, 25, ${0.32 * alpha})`;
-      ctx.shadowColor = "rgba(120, 70, 180, 0.22)";
-      ctx.shadowBlur = 2;
-    }
-
-    const byGlyph = new Map();
+    const byGroup = new Map();
 
     particles.forEach((p) => {
-      if (!byGlyph.has(p.glyphIndex)) byGlyph.set(p.glyphIndex, []);
-      byGlyph.get(p.glyphIndex).push(p);
+      if (!byGroup.has(p.groupId)) byGroup.set(p.groupId, []);
+      byGroup.get(p.groupId).push(p);
     });
 
-    byGlyph.forEach((list) => {
-      for (let i = 1; i < list.length; i += 2) {
-        const a = list[i - 1];
-        const b = list[i];
+    if (finishing) {
+      ctx.strokeStyle = `rgba(255, 95, 210, ${0.55 * visibleAlpha})`;
+      ctx.shadowColor = "rgba(255, 80, 215, 0.98)";
+      ctx.shadowBlur = 12 + finalGlowRate * 26;
+      ctx.lineWidth = 1.7;
+    } else {
+      ctx.strokeStyle = `rgba(12, 8, 22, ${0.52 * visibleAlpha})`;
+      ctx.shadowColor = "rgba(110, 70, 180, 0.25)";
+      ctx.shadowBlur = 2;
+      ctx.lineWidth = 1.25;
+    }
+
+    byGroup.forEach((list) => {
+      const sorted = [...list].sort((a, b) => a.order - b.order);
+
+      for (let i = 1; i < sorted.length; i += 1) {
+        const a = sorted[i - 1];
+        const b = sorted[i];
 
         const dx = a.x - b.x;
         const dy = a.y - b.y;
         const distanceSq = dx * dx + dy * dy;
 
+        // 違う線分の端同士が変に繋がるのを防ぐ
         if (distanceSq > 900) continue;
 
         ctx.beginPath();
@@ -1419,31 +1506,21 @@ const startGlyphRitualAnimation = () => {
     ctx.shadowBlur = 0;
   };
 
-  const drawParticle = (p, now, finalGlowRate, vanishRate) => {
-    const breathe = 1 + Math.sin(now * 0.004 + p.pulseSeed) * 0.18;
-    const wiggleX = Math.sin(now * 0.005 + p.jitter) * 0.7;
-    const wiggleY = Math.cos(now * 0.004 + p.jitter) * 0.7;
-
+  const drawParticle = (p, finalGlowRate, vanishRate) => {
     const alpha = Math.max(0, p.alpha * (1 - vanishRate));
 
     if (finishing) {
-      ctx.fillStyle = `rgba(225, 135, 255, ${alpha})`;
-      ctx.shadowColor = "rgba(210, 120, 255, 0.98)";
-      ctx.shadowBlur = 10 + finalGlowRate * 24;
+      ctx.fillStyle = `rgba(255, 130, 225, ${alpha})`;
+      ctx.shadowColor = "rgba(255, 90, 220, 1)";
+      ctx.shadowBlur = 10 + finalGlowRate * 22;
     } else {
       ctx.fillStyle = `rgba(8, 6, 16, ${alpha})`;
-      ctx.shadowColor = "rgba(95, 60, 150, 0.28)";
-      ctx.shadowBlur = 2;
+      ctx.shadowColor = "rgba(95, 60, 150, 0.24)";
+      ctx.shadowBlur = 1.5;
     }
 
     ctx.beginPath();
-    ctx.arc(
-      p.x + wiggleX,
-      p.y + wiggleY,
-      p.size * breathe,
-      0,
-      Math.PI * 2
-    );
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
     ctx.fill();
   };
 
@@ -1461,22 +1538,45 @@ const startGlyphRitualAnimation = () => {
     let vanishRate = 0;
 
     if (finishing) {
-      finalGlowRate = ease((now - finishStartedAt) / 420);
-      vanishRate = ease(Math.max(0, now - finishStartedAt - 560) / 560);
+      finalGlowRate = easeSmooth((now - finishStartedAt) / 460);
+      vanishRate = easeSmooth(Math.max(0, now - finishStartedAt - 900) / 620);
+
+      if (magicNameNode) {
+        magicNameNode.style.opacity = String(Math.max(0, 1 - vanishRate));
+        magicNameNode.style.transform = `translate(-50%, -50%) scale(${1 + finalGlowRate * 0.04})`;
+      }
     }
 
-    if (!finishing && now >= nextRuneMorphAt) {
-      beginOneRuneMorph(now);
+    if (!finishing && now >= nextMorphAt) {
+      beginMorphToNewMagicCircle(now);
     }
 
+    // 最初だけ：描いた魔法陣 → 散る → 新しい魔法陣へ整列
+    const formT = easeSmooth(elapsed / 1200);
+
+    particles.forEach((p) => {
+      if (formT < 0.36) {
+        const t = easeSmooth(formT / 0.36);
+        p.x = lerp(p.sx, p.mx, t);
+        p.y = lerp(p.sy, p.my, t);
+        return;
+      }
+
+      if (!isMorphing) {
+        const t = easeSmooth((formT - 0.36) / 0.64);
+        p.x = lerp(p.mx, p.tx, t);
+        p.y = lerp(p.my, p.ty, t);
+      }
+    });
+
+    // 不定期に魔法陣の形を変える。
+    // この時以外は点を揺らさず、完全に静止させる。
     if (isMorphing) {
-      const t = ease((now - morphStartedAt) / morphDuration);
+      const t = easeSmooth((now - morphStartedAt) / morphDuration);
 
       particles.forEach((p) => {
-        if (p.glyphIndex !== morphingGlyphIndex) return;
-
-        p.x = p.fromX + (p.nextX - p.fromX) * t;
-        p.y = p.fromY + (p.nextY - p.fromY) * t;
+        p.x = lerp(p.fromX, p.nextX, t);
+        p.y = lerp(p.fromY, p.nextY, t);
 
         if (t >= 1) {
           p.tx = p.nextX;
@@ -1486,30 +1586,18 @@ const startGlyphRitualAnimation = () => {
 
       if (t >= 1) {
         isMorphing = false;
-        morphingGlyphIndex = -1;
       }
+    } else if (formT >= 1) {
+      particles.forEach((p) => {
+        p.x = p.tx;
+        p.y = p.ty;
+      });
     }
 
-    // 初期変形：魔法陣 → 散らばる → 左から並んだルーン文章
-    const formT = ease(elapsed / 1350);
+    drawMagicCircleLines(finalGlowRate, vanishRate);
 
     particles.forEach((p) => {
-      if (formT < 0.38) {
-        const t = ease(formT / 0.38);
-        p.x = p.sx + (p.mx - p.sx) * t;
-        p.y = p.sy + (p.my - p.sy) * t;
-      } else if (!isMorphing || p.glyphIndex !== morphingGlyphIndex) {
-        const t = ease((formT - 0.38) / 0.62);
-        p.x = p.mx + (p.tx - p.mx) * t;
-        p.y = p.my + (p.ty - p.my) * t;
-      }
-    });
-
-    // 先に線、後から粒子。これで「点群」ではなく「文字」に見えやすくなる
-    drawRuneConnectionLines(now, finalGlowRate, vanishRate);
-
-    particles.forEach((p) => {
-      drawParticle(p, now, finalGlowRate, vanishRate);
+      drawParticle(p, finalGlowRate, vanishRate);
     });
 
     ctx.shadowBlur = 0;
@@ -1517,8 +1605,13 @@ const startGlyphRitualAnimation = () => {
 
     if (finishing && vanishRate >= 1) {
       finished = true;
-      cancelAnimationFrame(rafId);
+
+      if (rafId) cancelAnimationFrame(rafId);
+
       ctx.clearRect(0, 0, overlay.width, overlay.height);
+      magicNameNode?.remove();
+      magicNameNode = null;
+
       finishResolve?.();
       return;
     }
@@ -1530,7 +1623,7 @@ const startGlyphRitualAnimation = () => {
   rafId = requestAnimationFrame(draw);
 
   return {
-    finish() {
+    finish(magicName) {
       return new Promise((resolve) => {
         if (finished) {
           resolve();
@@ -1540,36 +1633,45 @@ const startGlyphRitualAnimation = () => {
         finishing = true;
         finishStartedAt = performance.now();
         finishResolve = resolve;
+
+        magicNameNode = createMagicNameRitualOverlay(magicName);
       });
     },
 
     cancel() {
       finished = true;
+
       if (rafId) cancelAnimationFrame(rafId);
+
       ctx?.clearRect(0, 0, overlay.width, overlay.height);
+      magicNameNode?.remove();
+      magicNameNode = null;
     },
   };
 };
 
-const finishGlyphRitualAnimation = async () => {
+const finishMagicCircleRitualAnimation = async (magicName = "") => {
   if (!ritualController) {
     resetCanvasAndHistory();
     return;
   }
 
   try {
-    await ritualController.finish();
+    await ritualController.finish(magicName);
   } finally {
     ritualController = null;
     resetCanvasAndHistory();
   }
 };
 
-const cancelGlyphRitualAnimation = () => {
+const cancelMagicCircleRitualAnimation = () => {
   ritualController?.cancel();
   ritualController = null;
   resetCanvasAndHistory();
 };
+
+
+
 
 
 
@@ -1593,7 +1695,7 @@ if (!base64ImageFile) {
   return;
 }
 
-ritualController = startGlyphRitualAnimation();
+ritualController = startMagicCircleRitualAnimation();
 
 const res = await fetch("/api/origin-magic-circle/chant-title", {
   method: "POST",
@@ -1607,9 +1709,11 @@ const res = await fetch("/api/origin-magic-circle/chant-title", {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "chant_failed");
 
-    await finishGlyphRitualAnimation();
-
     const magicEffectJson = data.magicEffectJson || null;
+const magicName = String(magicEffectJson?.magicName || "無名の魔法");
+
+await finishMagicCircleRitualAnimation(magicName);
+
 
     if (typeof onMagicJsonReady === "function" && magicEffectJson) {
       await onMagicJsonReady(magicEffectJson, {
@@ -1625,7 +1729,9 @@ const res = await fetch("/api/origin-magic-circle/chant-title", {
     }
   } catch (error) {
     console.error("[origin-magic-circle] chant failed:", error);
-    cancelGlyphRitualAnimation();
+    //cancelGlyphRitualAnimation();
+    cancelMagicCircleRitualAnimation();
+    
     alert("詠唱に失敗しました。");
   } finally {
     isChanting = false;
