@@ -285,6 +285,35 @@ h1, h2, h3 { margin-top: 0; }
 
 
 
+
+.ritual-magic-name-overlay {
+  position: fixed;
+  left: 50%;
+  top: 34%;
+  transform: translate(-50%, -50%);
+  z-index: 30020;
+
+  width: min(92vw, 720px);
+  padding: 14px 18px;
+
+  text-align: center;
+  font-size: clamp(28px, 8vw, 70px);
+  line-height: 1.1;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+
+  color: #fff;
+  text-shadow:
+    0 0 10px rgba(255, 130, 230, 1),
+    0 0 24px rgba(255, 80, 210, 0.95),
+    0 0 48px rgba(170, 70, 255, 0.85);
+
+  pointer-events: none;
+  opacity: 1;
+
+  filter: drop-shadow(0 0 12px rgba(255, 110, 220, 0.95));
+}
+
 /* =========================
    Battle HUD layout
 ========================= */
