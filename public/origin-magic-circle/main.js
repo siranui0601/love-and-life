@@ -1633,14 +1633,6 @@ particles.connections = initialTargetData.connections;
 
 
   const drawMagicCircleLines = (finalGlowRate, vanishRate) => {
-    const visibleAlpha = Math.max(0, 1 - vanishRate);
-
-
-
-
-
-
-const drawMagicCircleLines = (finalGlowRate, vanishRate) => {
   const visibleAlpha = Math.max(0, 1 - vanishRate);
 
   if (finishing) {
@@ -1649,10 +1641,10 @@ const drawMagicCircleLines = (finalGlowRate, vanishRate) => {
     ctx.shadowBlur = 12 + finalGlowRate * 26;
     ctx.lineWidth = 2.1;
   } else {
-    ctx.strokeStyle = `rgba(12, 8, 22, ${0.58 * visibleAlpha})`;
+    ctx.strokeStyle = `rgba(12, 8, 22, ${0.72 * visibleAlpha})`;
     ctx.shadowColor = "rgba(110, 70, 180, 0.25)";
     ctx.shadowBlur = 2;
-    ctx.lineWidth = 1.55;
+    ctx.lineWidth = 1.8;
   }
 
   const connections = particles.connections || [];
@@ -1671,9 +1663,6 @@ const drawMagicCircleLines = (finalGlowRate, vanishRate) => {
 
   ctx.shadowBlur = 0;
 };
-
-    ctx.shadowBlur = 0;
-  };
 
   const drawParticle = (p, finalGlowRate, vanishRate) => {
     const alpha = Math.max(0, p.alpha * (1 - vanishRate));
