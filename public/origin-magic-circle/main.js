@@ -2050,10 +2050,8 @@ composer.addPass(bloomPass);
 
       if (battleState.gameEnded) return;
 
-      showMagicNameCenter(effectJson.magicName, false, () => {
-        if (battleState.gameEnded) return;
-        playMagicVisualEffects(effectJson, false);
-      });
+      if (battleState.gameEnded) return;
+playMagicVisualEffects(effectJson, false);
 
       return;
     }
@@ -2100,10 +2098,8 @@ composer.addPass(bloomPass);
 
     if (battleState.gameEnded) return;
 
-    showMagicNameCenter(effectJson.magicName, false, () => {
-      if (battleState.gameEnded) return;
-      playMagicVisualEffects(effectJson, false);
-    });
+    if (battleState.gameEnded) return;
+playMagicVisualEffects(effectJson, false);
   },
 
   hideTopModalOnce: () => {
