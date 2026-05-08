@@ -1116,8 +1116,17 @@ const easeSmooth = (t) => {
 };
 
 
+
+
+
+
 // 魔法陣詠唱演出の調整値
-const RITUAL_DOT_DISTANCE_RATE = 10;
+
+// 魔法陣として最低限成立する外円の点数
+const RITUAL_MIN_CIRCLE_POINTS = 12;
+
+// 入力された線の量が多いほど、点数や記号を増やす
+const RITUAL_MAX_POINTS = 180;
 
 // ピンク発光＋魔法名表示後、この時間だけそのまま見せる
 const RITUAL_FINAL_HOLD_MS = 3000;
@@ -1125,40 +1134,14 @@ const RITUAL_FINAL_HOLD_MS = 3000;
 // 消える時のフェード時間
 const RITUAL_FADE_MS = 620;
 
-// 元コードの distanceSq > 900 は「30px以上なら繋がない」という意味。
-// 点間隔を10倍にするので、接続許容距離も10倍にする。
-const RITUAL_BASE_LINK_DISTANCE = 30;
+const makePointKey = (() => {
+  let counter = 0;
 
-
-const pickEvenlySpacedPoints = (points, distanceRate = 10) => {
-  if (!Array.isArray(points) || !points.length) return [];
-
-  const rate = Math.max(1, Math.round(Number(distanceRate) || 1));
-
-  // 点と点の距離を約10倍にしたいので、使用する点数を約1/10にする。
-  // ただし少なすぎると魔法陣にならないので最低12点は残す。
-  const targetCount = Math.max(
-    12,
-    Math.floor(points.length / rate)
-  );
-
-  if (points.length <= targetCount) {
-    return points.slice();
-  }
-
-  const result = [];
-
-  for (let i = 0; i < targetCount; i += 1) {
-    const index = Math.min(
-      points.length - 1,
-      Math.floor((points.length * i) / targetCount)
-    );
-
-    result.push(points[index]);
-  }
-
-  return result;
-};
+  return (prefix) => {
+    counter += 1;
+    return `${prefix}-${counter}`;
+  };
+})();
 
 const pointOnCircle = (cx, cy, radius, angle) => {
   return {
@@ -1167,253 +1150,376 @@ const pointOnCircle = (cx, cy, radius, angle) => {
   };
 };
 
-const makeSegment = (x1, y1, x2, y2, groupId) => {
-  const dx = x2 - x1;
-  const dy = y2 - y1;
+const addPoint = (model, x, y, prefix) => {
+  const key = makePointKey(prefix);
 
-  return {
-    type: "segment",
+  model.points.push({
+    key,
+    x,
+    y,
+  });
+
+  return key;
+};
+
+const addConnection = (model, fromKey, toKey, groupId = "default") => {
+  model.connections.push({
+    fromKey,
+    toKey,
     groupId,
-    x1,
-    y1,
-    x2,
-    y2,
-    length: Math.max(1, Math.hypot(dx, dy)),
-  };
+  });
 };
 
-const makeCircleArcSegments = (cx, cy, radius, groupId, parts = 96) => {
-  const segments = [];
-
-  for (let i = 0; i < parts; i += 1) {
-    const a1 = (Math.PI * 2 * i) / parts;
-    const a2 = (Math.PI * 2 * (i + 1)) / parts;
-
-    const p1 = pointOnCircle(cx, cy, radius, a1);
-    const p2 = pointOnCircle(cx, cy, radius, a2);
-
-    segments.push(makeSegment(p1.x, p1.y, p2.x, p2.y, groupId));
-  }
-
-  return segments;
-};
-
-const makeStarSegments = (cx, cy, radius, pointCount, groupId, rotation = -Math.PI / 2) => {
-  const points = [];
+const addClosedCircle = (model, cx, cy, radius, pointCount, prefix, rotation = 0) => {
+  const keys = [];
 
   for (let i = 0; i < pointCount; i += 1) {
     const angle = rotation + (Math.PI * 2 * i) / pointCount;
-    points.push(pointOnCircle(cx, cy, radius, angle));
+    const p = pointOnCircle(cx, cy, radius, angle);
+    keys.push(addPoint(model, p.x, p.y, prefix));
   }
 
-  const segments = [];
-
-  if (pointCount === 5) {
-    const order = [0, 2, 4, 1, 3, 0];
-
-    for (let i = 0; i < order.length - 1; i += 1) {
-      const a = points[order[i]];
-      const b = points[order[i + 1]];
-      segments.push(makeSegment(a.x, a.y, b.x, b.y, groupId));
-    }
-
-    return segments;
+  for (let i = 0; i < keys.length; i += 1) {
+    addConnection(model, keys[i], keys[(i + 1) % keys.length], prefix);
   }
 
-  if (pointCount === 6) {
-    const triA = [0, 2, 4, 0];
-    const triB = [1, 3, 5, 1];
-
-    for (let i = 0; i < triA.length - 1; i += 1) {
-      const a = points[triA[i]];
-      const b = points[triA[i + 1]];
-      segments.push(makeSegment(a.x, a.y, b.x, b.y, `${groupId}-a`));
-    }
-
-    for (let i = 0; i < triB.length - 1; i += 1) {
-      const a = points[triB[i]];
-      const b = points[triB[i + 1]];
-      segments.push(makeSegment(a.x, a.y, b.x, b.y, `${groupId}-b`));
-    }
-
-    return segments;
-  }
-
-  for (let i = 0; i < pointCount; i += 1) {
-    const a = points[i];
-    const b = points[(i + 1) % pointCount];
-    segments.push(makeSegment(a.x, a.y, b.x, b.y, groupId));
-  }
-
-  return segments;
+  return keys;
 };
 
-const makeRadialSegments = (cx, cy, innerRadius, outerRadius, count, groupId, rotation = 0) => {
-  const segments = [];
+const addPolygon = (model, cx, cy, radius, pointCount, prefix, rotation = -Math.PI / 2) => {
+  return addClosedCircle(model, cx, cy, radius, pointCount, prefix, rotation);
+};
 
+const addPentagram = (model, cx, cy, radius, prefix, rotation = -Math.PI / 2) => {
+  const keys = [];
+
+  for (let i = 0; i < 5; i += 1) {
+    const angle = rotation + (Math.PI * 2 * i) / 5;
+    const p = pointOnCircle(cx, cy, radius, angle);
+    keys.push(addPoint(model, p.x, p.y, prefix));
+  }
+
+  const order = [0, 2, 4, 1, 3, 0];
+
+  for (let i = 0; i < order.length - 1; i += 1) {
+    addConnection(model, keys[order[i]], keys[order[i + 1]], prefix);
+  }
+
+  return keys;
+};
+
+const addHexagram = (model, cx, cy, radius, prefix, rotation = -Math.PI / 2) => {
+  const keys = [];
+
+  for (let i = 0; i < 6; i += 1) {
+    const angle = rotation + (Math.PI * 2 * i) / 6;
+    const p = pointOnCircle(cx, cy, radius, angle);
+    keys.push(addPoint(model, p.x, p.y, prefix));
+  }
+
+  const triA = [0, 2, 4, 0];
+  const triB = [1, 3, 5, 1];
+
+  for (let i = 0; i < triA.length - 1; i += 1) {
+    addConnection(model, keys[triA[i]], keys[triA[i + 1]], `${prefix}-a`);
+  }
+
+  for (let i = 0; i < triB.length - 1; i += 1) {
+    addConnection(model, keys[triB[i]], keys[triB[i + 1]], `${prefix}-b`);
+  }
+
+  return keys;
+};
+
+const addRadialLines = (
+  model,
+  cx,
+  cy,
+  innerRadius,
+  outerRadius,
+  count,
+  prefix,
+  rotation = 0
+) => {
   for (let i = 0; i < count; i += 1) {
     const angle = rotation + (Math.PI * 2 * i) / count;
-    const p1 = pointOnCircle(cx, cy, innerRadius, angle);
-    const p2 = pointOnCircle(cx, cy, outerRadius, angle);
-    segments.push(makeSegment(p1.x, p1.y, p2.x, p2.y, groupId));
-  }
 
-  return segments;
+    const inner = pointOnCircle(cx, cy, innerRadius, angle);
+    const outer = pointOnCircle(cx, cy, outerRadius, angle);
+
+    const innerKey = addPoint(model, inner.x, inner.y, `${prefix}-inner`);
+    const outerKey = addPoint(model, outer.x, outer.y, `${prefix}-outer`);
+
+    addConnection(model, innerKey, outerKey, prefix);
+  }
 };
 
-const makePolygonSegments = (cx, cy, radius, count, groupId, rotation = -Math.PI / 2) => {
-  const points = [];
+const addSmallOrbitCircles = (
+  model,
+  cx,
+  cy,
+  orbitRadius,
+  smallRadius,
+  circleCount,
+  pointCount,
+  prefix,
+  rotation = 0
+) => {
+  for (let i = 0; i < circleCount; i += 1) {
+    const angle = rotation + (Math.PI * 2 * i) / circleCount;
+    const center = pointOnCircle(cx, cy, orbitRadius, angle);
 
-  for (let i = 0; i < count; i += 1) {
-    const angle = rotation + (Math.PI * 2 * i) / count;
-    points.push(pointOnCircle(cx, cy, radius, angle));
+    addClosedCircle(
+      model,
+      center.x,
+      center.y,
+      smallRadius,
+      pointCount,
+      `${prefix}-${i}`,
+      rotation + angle
+    );
   }
-
-  const segments = [];
-
-  for (let i = 0; i < points.length; i += 1) {
-    const a = points[i];
-    const b = points[(i + 1) % points.length];
-    segments.push(makeSegment(a.x, a.y, b.x, b.y, groupId));
-  }
-
-  return segments;
 };
 
-const createMagicCircleSegments = (particleCount, complexityCount = particleCount) => {
-    const width = overlay.width;
+const countDrawnStrokePoints = () => {
+  return strokeList.reduce((sum, stroke) => {
+    if (!Array.isArray(stroke)) return sum;
+    return sum + Math.floor(stroke.length / 2);
+  }, 0);
+};
+
+const createMagicCircleModel = () => {
+  const width = overlay.width;
   const height = overlay.height;
 
   const cx = width / 2;
   const cy = height / 2;
 
   const minSide = Math.min(width, height);
-
-  /*
-    粒子数に応じて魔法陣の複雑さを変える。
-    粒子が少ない時に複雑すぎる図形を作るとスカスカになるので、
-    外円 → 内円 → 星 → 補助円 → 放射線 の順で足す。
-  */
-  const radius = minSide * randomBetween(0.19, 0.26);
+  const radius = minSide * randomBetween(0.23, 0.31);
   const rotation = randomBetween(0, Math.PI * 2);
 
-  const useHexagram = Math.random() < 0.48;
-  const starPoints = useHexagram ? 6 : 5;
+  const drawnPointCount = countDrawnStrokePoints();
 
-  const segments = [];
+  /*
+    入力された線の量から、魔法陣の豪華さを決める。
+    ただし最低限は外円12点 + 星。
+  */
+  const richness = clamp(Math.floor(drawnPointCount / 8), 0, 12);
 
-  // 外円
-  segments.push(...makeCircleArcSegments(cx, cy, radius, "outer-circle", 128));
-
-  
-  
-  if (complexityCount >= 90) {
-  segments.push(...makeCircleArcSegments(cx, cy, radius * randomBetween(0.62, 0.74), "inner-circle", 96));
-}
-
-if (complexityCount >= 130) {
-  segments.push(...makeStarSegments(cx, cy, radius * randomBetween(0.72, 0.88), starPoints, "main-star", rotation));
-}
-
-if (complexityCount >= 220) {
-  segments.push(...makeCircleArcSegments(cx, cy, radius * randomBetween(0.28, 0.42), "core-circle", 64));
-}
-
-if (complexityCount >= 320) {
-  const polygonCount = Math.random() < 0.5 ? 8 : 12;
-  segments.push(...makePolygonSegments(cx, cy, radius * randomBetween(0.48, 0.58), polygonCount, "polygon", rotation * 0.7));
-}
-
-if (complexityCount >= 420) {
-  const radialCount = Math.random() < 0.5 ? 8 : 12;
-  segments.push(...makeRadialSegments(cx, cy, radius * 0.16, radius * 0.96, radialCount, "radial", rotation));
-}
-
-if (complexityCount >= 620) {
-  const smallCircleCount = Math.random() < 0.5 ? 5 : 6;
-  const smallRadius = radius * randomBetween(0.08, 0.115);
-  const orbitRadius = radius * randomBetween(0.82, 0.94);
-
-  for (let i = 0; i < smallCircleCount; i += 1) {
-    const angle = rotation + (Math.PI * 2 * i) / smallCircleCount;
-    const p = pointOnCircle(cx, cy, orbitRadius, angle);
-    segments.push(...makeCircleArcSegments(p.x, p.y, smallRadius, `small-circle-${i}`, 32));
-  }
-}
-
-  return segments;
-};
-
-const pointOnSegment = (segment, t) => {
-  return {
-    x: lerp(segment.x1, segment.x2, t),
-    y: lerp(segment.y1, segment.y2, t),
+  const model = {
+    points: [],
+    connections: [],
   };
-};
 
-const createMagicCircleTargets = (particleCount, complexityCount = particleCount) => {
-  const segments = createMagicCircleSegments(particleCount, complexityCount);
-  
-  const totalLength = segments.reduce((sum, segment) => sum + segment.length, 0);
+  // 1. 外円。最低12点あれば円として成立する。
+  const outerPointCount = 12 + Math.min(richness, 8) * 2;
+  addClosedCircle(
+    model,
+    cx,
+    cy,
+    radius,
+    outerPointCount,
+    "outer-circle",
+    rotation
+  );
 
-  if (!segments.length || totalLength <= 0) {
-    return Array.from({ length: particleCount }, (_, index) => ({
-      x: overlay.width / 2,
-      y: overlay.height / 2,
-      groupId: "center",
-      order: index,
-    }));
+  // 2. メイン記号。五芒星 or 六芒星。
+  if (Math.random() < 0.5) {
+    addPentagram(
+      model,
+      cx,
+      cy,
+      radius * randomBetween(0.70, 0.86),
+      "pentagram",
+      rotation - Math.PI / 2
+    );
+  } else {
+    addHexagram(
+      model,
+      cx,
+      cy,
+      radius * randomBetween(0.70, 0.86),
+      "hexagram",
+      rotation - Math.PI / 2
+    );
   }
 
-  const targets = [];
+  // 3. 内円。少し線量があれば追加。
+  if (richness >= 2) {
+    const innerPointCount = 12 + Math.min(richness, 6);
+    addClosedCircle(
+      model,
+      cx,
+      cy,
+      radius * randomBetween(0.54, 0.68),
+      innerPointCount,
+      "inner-circle",
+      rotation * 0.5
+    );
+  }
 
-  segments.forEach((segment, segmentIndex) => {
-    const rawCount = Math.max(1, Math.round((segment.length / totalLength) * particleCount));
+  // 4. 中央円。
+  if (richness >= 4) {
+    addClosedCircle(
+      model,
+      cx,
+      cy,
+      radius * randomBetween(0.20, 0.34),
+      12,
+      "core-circle",
+      rotation * 0.2
+    );
+  }
 
-    for (let i = 0; i < rawCount; i += 1) {
-      const t = rawCount <= 1 ? 0 : i / (rawCount - 1);
-      const p = pointOnSegment(segment, t);
+  // 5. 多角形。
+  if (richness >= 5) {
+    const polygonCount = Math.random() < 0.5 ? 8 : 12;
 
-      targets.push({
-        x: p.x,
-        y: p.y,
-        groupId: segment.groupId,
-        order: segmentIndex * 10000 + i,
-      });
-    }
-  });
+    addPolygon(
+      model,
+      cx,
+      cy,
+      radius * randomBetween(0.42, 0.54),
+      polygonCount,
+      "polygon",
+      rotation + Math.PI / polygonCount
+    );
+  }
 
-  while (targets.length < particleCount) {
-    const segment = segments[Math.floor(Math.random() * segments.length)];
-    const p = pointOnSegment(segment, Math.random());
+  // 6. 放射線。
+  if (richness >= 7) {
+    const radialCount = Math.random() < 0.5 ? 8 : 12;
 
-    targets.push({
-      x: p.x,
-      y: p.y,
-      groupId: segment.groupId,
-      order: targets.length,
+    addRadialLines(
+      model,
+      cx,
+      cy,
+      radius * 0.18,
+      radius * 0.95,
+      radialCount,
+      "radial",
+      rotation
+    );
+  }
+
+  // 7. 外周の小円。
+  if (richness >= 9) {
+    const smallCircleCount = Math.random() < 0.5 ? 5 : 6;
+
+    addSmallOrbitCircles(
+      model,
+      cx,
+      cy,
+      radius * randomBetween(0.82, 0.92),
+      radius * randomBetween(0.055, 0.085),
+      smallCircleCount,
+      8,
+      "small-circle",
+      rotation
+    );
+  }
+
+  /*
+    あまりに点が増えすぎると重くなるので軽く制限。
+    connections側も、存在しない点を参照しないように落とす。
+  */
+  if (model.points.length > RITUAL_MAX_POINTS) {
+    const allowed = new Set(
+      model.points.slice(0, RITUAL_MAX_POINTS).map((point) => point.key)
+    );
+
+    model.points = model.points.slice(0, RITUAL_MAX_POINTS);
+    model.connections = model.connections.filter((connection) => {
+      return allowed.has(connection.fromKey) && allowed.has(connection.toKey);
     });
   }
 
-  return targets.slice(0, particleCount);
+  return model;
 };
 
-const assignTargetsToParticles = (particles, targets) => {
-  particles.forEach((particle, index) => {
-    const target = targets[index] || targets[targets.length - 1] || {
-      x: overlay.width / 2,
-      y: overlay.height / 2,
-      groupId: "center",
-      order: index,
-    };
+const createMagicCircleTargets = () => {
+  const model = createMagicCircleModel();
 
-    particle.fromX = particle.x;
-    particle.fromY = particle.y;
-    particle.nextX = target.x;
-    particle.nextY = target.y;
-    particle.groupId = target.groupId;
-    particle.order = target.order;
+  const pointMap = new Map();
+  model.points.forEach((point, index) => {
+    pointMap.set(point.key, {
+      ...point,
+      index,
+    });
   });
+
+  const targets = model.points.map((point, index) => ({
+    x: point.x,
+    y: point.y,
+    key: point.key,
+    targetIndex: index,
+  }));
+
+  const connections = model.connections
+    .map((connection) => {
+      const from = pointMap.get(connection.fromKey);
+      const to = pointMap.get(connection.toKey);
+
+      if (!from || !to) return null;
+
+      return {
+        fromIndex: from.index,
+        toIndex: to.index,
+        groupId: connection.groupId,
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    targets,
+    connections,
+  };
+};
+
+const assignTargetsToParticles = (particles, targetData) => {
+  const targets = targetData.targets || [];
+  const connections = targetData.connections || [];
+
+  /*
+    particles数とtargets数が違う場合に備える。
+    今回は「図形側が必要な点数を決める」ので、
+    particlesはtargets数に合わせるのが自然。
+  */
+  particles.length = targets.length;
+
+  for (let i = 0; i < targets.length; i += 1) {
+    const target = targets[i];
+
+    if (!particles[i]) {
+      particles[i] = {
+        x: overlay.width / 2,
+        y: overlay.height / 2,
+        sx: overlay.width / 2,
+        sy: overlay.height / 2,
+        mx: overlay.width / 2,
+        my: overlay.height / 2,
+        tx: target.x,
+        ty: target.y,
+        fromX: overlay.width / 2,
+        fromY: overlay.height / 2,
+        nextX: target.x,
+        nextY: target.y,
+        size: 2.4,
+        alpha: 0.88,
+      };
+    }
+
+    particles[i].fromX = particles[i].x;
+    particles[i].fromY = particles[i].y;
+    particles[i].nextX = target.x;
+    particles[i].nextY = target.y;
+    particles[i].tx = target.x;
+    particles[i].ty = target.y;
+    particles[i].targetIndex = i;
+  }
+
+  particles.connections = connections;
 };
 
 const createMagicNameRitualOverlay = (magicName) => {
@@ -1430,64 +1536,68 @@ const createMagicNameRitualOverlay = (magicName) => {
   return overlayName;
 };
 
+
+
+
+
+
 const startMagicCircleRitualAnimation = () => {
   if (!ctx) return null;
 
   const rawSourcePoints = sampleDrawnPixels(950);
-  if (!rawSourcePoints.length) return null;
+if (!rawSourcePoints.length) return null;
 
-  // 実際に動かす点は約1/10にする。
-  // これで点と点の見た目上の距離が大きくなる。
-  const sourcePoints = pickEvenlySpacedPoints(
-    rawSourcePoints,
-    RITUAL_DOT_DISTANCE_RATE
-  );
+const startedAt = performance.now();
 
-  const startedAt = performance.now();
-
-  // 表示点数は sourcePoints.length。
-  // 魔法陣の複雑さ判定は rawSourcePoints.length。
-  const initialTargets = createMagicCircleTargets(
-    sourcePoints.length,
-    rawSourcePoints.length
-  );
+const initialTargetData = createMagicCircleTargets();
+const sourcePoints = rawSourcePoints.length
+  ? rawSourcePoints
+  : [{ x: overlay.width / 2, y: overlay.height / 2 }];
   
-  const particles = sourcePoints.map((p, index) => {
-    const target = initialTargets[index] || {
-      x: overlay.width / 2,
-      y: overlay.height / 2,
-      groupId: "center",
-      order: index,
-    };
+  
+  
 
-    const angle = Math.random() * Math.PI * 2;
-    const scatterDistance = 60 + Math.random() * 150;
 
-    return {
-      x: p.x,
-      y: p.y,
+const particles = initialTargetData.targets.map((target, index) => {
+  const source = sourcePoints[index % sourcePoints.length] || {
+    x: overlay.width / 2,
+    y: overlay.height / 2,
+  };
 
-      sx: p.x,
-      sy: p.y,
+  const angle = Math.random() * Math.PI * 2;
+  const scatterDistance = 60 + Math.random() * 150;
 
-      mx: p.x + Math.cos(angle) * scatterDistance,
-      my: p.y + Math.sin(angle) * scatterDistance,
+  return {
+    x: source.x,
+    y: source.y,
 
-      tx: target.x,
-      ty: target.y,
+    sx: source.x,
+    sy: source.y,
 
-      fromX: p.x,
-      fromY: p.y,
-      nextX: target.x,
-      nextY: target.y,
+    mx: source.x + Math.cos(angle) * scatterDistance,
+    my: source.y + Math.sin(angle) * scatterDistance,
 
-      groupId: target.groupId,
-      order: target.order,
+    tx: target.x,
+    ty: target.y,
 
-      size: 1.6 + Math.random() * 1.4,
-      alpha: 0.82 + Math.random() * 0.18,
-    };
-  });
+    fromX: source.x,
+    fromY: source.y,
+    nextX: target.x,
+    nextY: target.y,
+
+    targetIndex: index,
+
+    size: 2.2 + Math.random() * 1.2,
+    alpha: 0.82 + Math.random() * 0.18,
+  };
+});
+
+particles.connections = initialTargetData.connections;
+
+
+
+
+
 
   let rafId = null;
   let finished = false;
@@ -1503,12 +1613,9 @@ const startMagicCircleRitualAnimation = () => {
   let magicNameNode = null;
 
   const beginMorphToNewMagicCircle = (now) => {
-  const targets = createMagicCircleTargets(
-    particles.length,
-    rawSourcePoints.length
-  );
+  const targetData = createMagicCircleTargets();
 
-  assignTargetsToParticles(particles, targets);
+  assignTargetsToParticles(particles, targetData);
 
   morphStartedAt = now;
   morphDuration = 520 + Math.random() * 620;
@@ -1517,51 +1624,53 @@ const startMagicCircleRitualAnimation = () => {
   nextMorphAt = now + morphDuration + 650 + Math.random() * 1400;
 };
 
+
+
+
+
+
+
+
+
   const drawMagicCircleLines = (finalGlowRate, vanishRate) => {
     const visibleAlpha = Math.max(0, 1 - vanishRate);
 
-    const byGroup = new Map();
 
-    particles.forEach((p) => {
-      if (!byGroup.has(p.groupId)) byGroup.set(p.groupId, []);
-      byGroup.get(p.groupId).push(p);
-    });
 
-    if (finishing) {
-      ctx.strokeStyle = `rgba(255, 95, 210, ${0.55 * visibleAlpha})`;
-      ctx.shadowColor = "rgba(255, 80, 215, 0.98)";
-      ctx.shadowBlur = 12 + finalGlowRate * 26;
-      ctx.lineWidth = 1.7;
-    } else {
-      ctx.strokeStyle = `rgba(12, 8, 22, ${0.52 * visibleAlpha})`;
-      ctx.shadowColor = "rgba(110, 70, 180, 0.25)";
-      ctx.shadowBlur = 2;
-      ctx.lineWidth = 1.25;
-    }
 
-    byGroup.forEach((list) => {
-      const sorted = [...list].sort((a, b) => a.order - b.order);
 
-      for (let i = 1; i < sorted.length; i += 1) {
-        const a = sorted[i - 1];
-        const b = sorted[i];
 
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
-        const distanceSq = dx * dx + dy * dy;
+const drawMagicCircleLines = (finalGlowRate, vanishRate) => {
+  const visibleAlpha = Math.max(0, 1 - vanishRate);
 
-        // 違う線分の端同士が変に繋がるのを防ぐ
-        const maxConnectionDistance =
-  RITUAL_BASE_LINK_DISTANCE * RITUAL_DOT_DISTANCE_RATE;
+  if (finishing) {
+    ctx.strokeStyle = `rgba(255, 95, 210, ${0.62 * visibleAlpha})`;
+    ctx.shadowColor = "rgba(255, 80, 215, 0.98)";
+    ctx.shadowBlur = 12 + finalGlowRate * 26;
+    ctx.lineWidth = 2.1;
+  } else {
+    ctx.strokeStyle = `rgba(12, 8, 22, ${0.58 * visibleAlpha})`;
+    ctx.shadowColor = "rgba(110, 70, 180, 0.25)";
+    ctx.shadowBlur = 2;
+    ctx.lineWidth = 1.55;
+  }
 
-if (distanceSq > maxConnectionDistance * maxConnectionDistance) continue;
+  const connections = particles.connections || [];
 
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-      }
-    });
+  connections.forEach((connection) => {
+    const a = particles[connection.fromIndex];
+    const b = particles[connection.toIndex];
+
+    if (!a || !b) return;
+
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  });
+
+  ctx.shadowBlur = 0;
+};
 
     ctx.shadowBlur = 0;
   };
