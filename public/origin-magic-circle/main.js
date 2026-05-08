@@ -1115,6 +1115,51 @@ const easeSmooth = (t) => {
   return v * v * (3 - 2 * v);
 };
 
+
+// 魔法陣詠唱演出の調整値
+const RITUAL_DOT_DISTANCE_RATE = 10;
+
+// ピンク発光＋魔法名表示後、この時間だけそのまま見せる
+const RITUAL_FINAL_HOLD_MS = 3000;
+
+// 消える時のフェード時間
+const RITUAL_FADE_MS = 620;
+
+// 元コードの distanceSq > 900 は「30px以上なら繋がない」という意味。
+// 点間隔を10倍にするので、接続許容距離も10倍にする。
+const RITUAL_BASE_LINK_DISTANCE = 30;
+
+
+const pickEvenlySpacedPoints = (points, distanceRate = 10) => {
+  if (!Array.isArray(points) || !points.length) return [];
+
+  const rate = Math.max(1, Math.round(Number(distanceRate) || 1));
+
+  // 点と点の距離を約10倍にしたいので、使用する点数を約1/10にする。
+  // ただし少なすぎると魔法陣にならないので最低12点は残す。
+  const targetCount = Math.max(
+    12,
+    Math.floor(points.length / rate)
+  );
+
+  if (points.length <= targetCount) {
+    return points.slice();
+  }
+
+  const result = [];
+
+  for (let i = 0; i < targetCount; i += 1) {
+    const index = Math.min(
+      points.length - 1,
+      Math.floor((points.length * i) / targetCount)
+    );
+
+    result.push(points[index]);
+  }
+
+  return result;
+};
+
 const pointOnCircle = (cx, cy, radius, angle) => {
   return {
     x: cx + Math.cos(angle) * radius,
@@ -1235,8 +1280,8 @@ const makePolygonSegments = (cx, cy, radius, count, groupId, rotation = -Math.PI
   return segments;
 };
 
-const createMagicCircleSegments = (particleCount) => {
-  const width = overlay.width;
+const createMagicCircleSegments = (particleCount, complexityCount = particleCount) => {
+    const width = overlay.width;
   const height = overlay.height;
 
   const cx = width / 2;
@@ -1260,45 +1305,41 @@ const createMagicCircleSegments = (particleCount) => {
   // 外円
   segments.push(...makeCircleArcSegments(cx, cy, radius, "outer-circle", 128));
 
-  // 内円
-  if (particleCount >= 90) {
-    segments.push(...makeCircleArcSegments(cx, cy, radius * randomBetween(0.62, 0.74), "inner-circle", 96));
-  }
+  
+  
+  if (complexityCount >= 90) {
+  segments.push(...makeCircleArcSegments(cx, cy, radius * randomBetween(0.62, 0.74), "inner-circle", 96));
+}
 
-  // 五芒星 or 六芒星
-  if (particleCount >= 130) {
-    segments.push(...makeStarSegments(cx, cy, radius * randomBetween(0.72, 0.88), starPoints, "main-star", rotation));
-  }
+if (complexityCount >= 130) {
+  segments.push(...makeStarSegments(cx, cy, radius * randomBetween(0.72, 0.88), starPoints, "main-star", rotation));
+}
 
-  // さらに小さい内側の円
-  if (particleCount >= 220) {
-    segments.push(...makeCircleArcSegments(cx, cy, radius * randomBetween(0.28, 0.42), "core-circle", 64));
-  }
+if (complexityCount >= 220) {
+  segments.push(...makeCircleArcSegments(cx, cy, radius * randomBetween(0.28, 0.42), "core-circle", 64));
+}
 
-  // 多角形の補助線
-  if (particleCount >= 320) {
-    const polygonCount = Math.random() < 0.5 ? 8 : 12;
-    segments.push(...makePolygonSegments(cx, cy, radius * randomBetween(0.48, 0.58), polygonCount, "polygon", rotation * 0.7));
-  }
+if (complexityCount >= 320) {
+  const polygonCount = Math.random() < 0.5 ? 8 : 12;
+  segments.push(...makePolygonSegments(cx, cy, radius * randomBetween(0.48, 0.58), polygonCount, "polygon", rotation * 0.7));
+}
 
-  // 放射線
-  if (particleCount >= 420) {
-    const radialCount = Math.random() < 0.5 ? 8 : 12;
-    segments.push(...makeRadialSegments(cx, cy, radius * 0.16, radius * 0.96, radialCount, "radial", rotation));
-  }
+if (complexityCount >= 420) {
+  const radialCount = Math.random() < 0.5 ? 8 : 12;
+  segments.push(...makeRadialSegments(cx, cy, radius * 0.16, radius * 0.96, radialCount, "radial", rotation));
+}
 
-  // 外側の小円群
-  if (particleCount >= 620) {
-    const smallCircleCount = Math.random() < 0.5 ? 5 : 6;
-    const smallRadius = radius * randomBetween(0.08, 0.115);
-    const orbitRadius = radius * randomBetween(0.82, 0.94);
+if (complexityCount >= 620) {
+  const smallCircleCount = Math.random() < 0.5 ? 5 : 6;
+  const smallRadius = radius * randomBetween(0.08, 0.115);
+  const orbitRadius = radius * randomBetween(0.82, 0.94);
 
-    for (let i = 0; i < smallCircleCount; i += 1) {
-      const angle = rotation + (Math.PI * 2 * i) / smallCircleCount;
-      const p = pointOnCircle(cx, cy, orbitRadius, angle);
-      segments.push(...makeCircleArcSegments(p.x, p.y, smallRadius, `small-circle-${i}`, 32));
-    }
+  for (let i = 0; i < smallCircleCount; i += 1) {
+    const angle = rotation + (Math.PI * 2 * i) / smallCircleCount;
+    const p = pointOnCircle(cx, cy, orbitRadius, angle);
+    segments.push(...makeCircleArcSegments(p.x, p.y, smallRadius, `small-circle-${i}`, 32));
   }
+}
 
   return segments;
 };
@@ -1310,9 +1351,9 @@ const pointOnSegment = (segment, t) => {
   };
 };
 
-const createMagicCircleTargets = (particleCount) => {
-  const segments = createMagicCircleSegments(particleCount);
-
+const createMagicCircleTargets = (particleCount, complexityCount = particleCount) => {
+  const segments = createMagicCircleSegments(particleCount, complexityCount);
+  
   const totalLength = segments.reduce((sum, segment) => sum + segment.length, 0);
 
   if (!segments.length || totalLength <= 0) {
@@ -1392,12 +1433,25 @@ const createMagicNameRitualOverlay = (magicName) => {
 const startMagicCircleRitualAnimation = () => {
   if (!ctx) return null;
 
-  const sourcePoints = sampleDrawnPixels(950);
-  if (!sourcePoints.length) return null;
+  const rawSourcePoints = sampleDrawnPixels(950);
+  if (!rawSourcePoints.length) return null;
+
+  // 実際に動かす点は約1/10にする。
+  // これで点と点の見た目上の距離が大きくなる。
+  const sourcePoints = pickEvenlySpacedPoints(
+    rawSourcePoints,
+    RITUAL_DOT_DISTANCE_RATE
+  );
 
   const startedAt = performance.now();
-  const initialTargets = createMagicCircleTargets(sourcePoints.length);
 
+  // 表示点数は sourcePoints.length。
+  // 魔法陣の複雑さ判定は rawSourcePoints.length。
+  const initialTargets = createMagicCircleTargets(
+    sourcePoints.length,
+    rawSourcePoints.length
+  );
+  
   const particles = sourcePoints.map((p, index) => {
     const target = initialTargets[index] || {
       x: overlay.width / 2,
@@ -1449,16 +1503,19 @@ const startMagicCircleRitualAnimation = () => {
   let magicNameNode = null;
 
   const beginMorphToNewMagicCircle = (now) => {
-    const targets = createMagicCircleTargets(particles.length);
+  const targets = createMagicCircleTargets(
+    particles.length,
+    rawSourcePoints.length
+  );
 
-    assignTargetsToParticles(particles, targets);
+  assignTargetsToParticles(particles, targets);
 
-    morphStartedAt = now;
-    morphDuration = 520 + Math.random() * 620;
-    isMorphing = true;
+  morphStartedAt = now;
+  morphDuration = 520 + Math.random() * 620;
+  isMorphing = true;
 
-    nextMorphAt = now + morphDuration + 650 + Math.random() * 1400;
-  };
+  nextMorphAt = now + morphDuration + 650 + Math.random() * 1400;
+};
 
   const drawMagicCircleLines = (finalGlowRate, vanishRate) => {
     const visibleAlpha = Math.max(0, 1 - vanishRate);
@@ -1494,7 +1551,10 @@ const startMagicCircleRitualAnimation = () => {
         const distanceSq = dx * dx + dy * dy;
 
         // 違う線分の端同士が変に繋がるのを防ぐ
-        if (distanceSq > 900) continue;
+        const maxConnectionDistance =
+  RITUAL_BASE_LINK_DISTANCE * RITUAL_DOT_DISTANCE_RATE;
+
+if (distanceSq > maxConnectionDistance * maxConnectionDistance) continue;
 
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
@@ -1538,14 +1598,19 @@ const startMagicCircleRitualAnimation = () => {
     let vanishRate = 0;
 
     if (finishing) {
-      finalGlowRate = easeSmooth((now - finishStartedAt) / 460);
-      vanishRate = easeSmooth(Math.max(0, now - finishStartedAt - 900) / 620);
+  finalGlowRate = easeSmooth((now - finishStartedAt) / 460);
 
-      if (magicNameNode) {
-        magicNameNode.style.opacity = String(Math.max(0, 1 - vanishRate));
-        magicNameNode.style.transform = `translate(-50%, -50%) scale(${1 + finalGlowRate * 0.04})`;
-      }
-    }
+  // ピンク発光＋魔法名表示後、3秒は消えずに待機。
+  // その後 RITUAL_FADE_MS で魔法陣と魔法名が同時に消える。
+  vanishRate = easeSmooth(
+    Math.max(0, now - finishStartedAt - RITUAL_FINAL_HOLD_MS) / RITUAL_FADE_MS
+  );
+
+  if (magicNameNode) {
+    magicNameNode.style.opacity = String(Math.max(0, 1 - vanishRate));
+    magicNameNode.style.transform = `translate(-50%, -50%) scale(${1 + finalGlowRate * 0.04})`;
+  }
+}
 
     if (!finishing && now >= nextMorphAt) {
       beginMorphToNewMagicCircle(now);
