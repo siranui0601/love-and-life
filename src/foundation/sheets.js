@@ -1063,6 +1063,64 @@ function compareOriginMagicCircleShape64(a, b) {
   );
 }
 
+
+export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
+  const targetShape64 = String(shape64 || "").trim().toLowerCase();
+
+  if (!/^[0-9a-f]{4096}$/.test(targetShape64)) {
+    return null;
+  }
+
+  const SIMILARITY_THRESHOLD = 0.30;
+
+  const sheets = await getSheetsClient();
+  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+  });
+
+  const rows = res.data.values || [];
+
+  let best = null;
+
+  rows.forEach((row, index) => {
+    const imageHash = String(row?.[0] || "").trim();
+    const rawJson = String(row?.[1] || "").trim();
+    const storedShape64 = String(row?.[2] || "").trim().toLowerCase();
+
+    if (!rawJson) return;
+    if (!/^[0-9a-f]{4096}$/.test(storedShape64)) return;
+
+    const score = compareOriginMagicCircleShape64(targetShape64, storedShape64);
+
+    if (!Number.isFinite(score)) return;
+
+    if (!best || score < best.similarScore) {
+      best = {
+        rowIndex: index + 2,
+        imageHash,
+        rawJson,
+        shape64: storedShape64,
+        similarScore: score,
+      };
+    }
+  });
+
+  console.log("[origin-magic-circle] shape64 similarity:", {
+    bestRowIndex: best?.rowIndex || null,
+    bestScore: best?.similarScore ?? null,
+    threshold: SIMILARITY_THRESHOLD,
+    matched: !!best && best.similarScore <= SIMILARITY_THRESHOLD,
+  });
+
+  if (!best) return null;
+  if (best.similarScore > SIMILARITY_THRESHOLD) return null;
+
+  return best;
+}
+
 // ====== 時々文芸部：options用の高速キャッシュ ======
 // ====== 時々文芸部：ツリー用（毎回最新取得・A:D一括） ======
 
