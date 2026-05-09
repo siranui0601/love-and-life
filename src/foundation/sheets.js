@@ -872,7 +872,7 @@ function originMagicCircleShape64ToLevels(shape64) {
     });
 }
 
-/*function compareOriginMagicCircleShape64(aShape64, bShape64) {
+function compareOriginMagicCircleShape64(aShape64, bShape64) {
   const a = originMagicCircleShape64ToLevels(aShape64);
   const b = originMagicCircleShape64ToLevels(bShape64);
 
@@ -960,7 +960,7 @@ export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64, o
   }
 
   return best;
-}*/
+}
 
 
 
@@ -1126,7 +1126,7 @@ function overlapCount(a, b, shiftX = 0, shiftY = 0) {
   return count;
 }
 
-function compareOriginMagicCircleShape64(a, b) {
+/*function compareOriginMagicCircleShape64(a, b) {
   const maskA = shape64ToMask(a);
   const maskB = shape64ToMask(b);
 
@@ -1245,7 +1245,7 @@ const candidate = {
 
 return null;
 }
-
+*/
 // ====== 時々文芸部：options用の高速キャッシュ ======
 // ====== 時々文芸部：ツリー用（毎回最新取得・A:D一括） ======
 
