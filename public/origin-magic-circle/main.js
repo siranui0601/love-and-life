@@ -1327,6 +1327,78 @@ const addSmallOrbitCircles = (
   }
 };
 
+
+const getDrawnStrokeStats = () => {
+  let pointCount = 0;
+  let totalLength = 0;
+  let strokeCount = 0;
+
+  strokeList.forEach((stroke) => {
+    if (!Array.isArray(stroke) || stroke.length < 4) return;
+
+    strokeCount += 1;
+    pointCount += Math.floor(stroke.length / 2);
+
+    const usableLength = stroke.length - (stroke.length % 2);
+
+    for (let i = 2; i < usableLength; i += 2) {
+      const x1 = Number(stroke[i - 2]);
+      const y1 = Number(stroke[i - 1]);
+      const x2 = Number(stroke[i]);
+      const y2 = Number(stroke[i + 1]);
+
+      if (
+        !Number.isFinite(x1) ||
+        !Number.isFinite(y1) ||
+        !Number.isFinite(x2) ||
+        !Number.isFinite(y2)
+      ) {
+        continue;
+      }
+
+      totalLength += Math.hypot(x2 - x1, y2 - y1);
+    }
+  });
+
+  return {
+    strokeCount,
+    pointCount,
+    totalLength,
+  };
+};
+
+const addOpenArc = (
+  model,
+  cx,
+  cy,
+  radius,
+  pointCount,
+  prefix,
+  startAngle = 0,
+  arcRate = 0.72
+) => {
+  const keys = [];
+  const safePointCount = Math.max(2, Math.round(pointCount));
+  const arcAngle = Math.PI * 2 * clamp(arcRate, 0.12, 0.95);
+
+  for (let i = 0; i < safePointCount; i += 1) {
+    const t = safePointCount <= 1 ? 0 : i / (safePointCount - 1);
+    const angle = startAngle + arcAngle * t;
+    const p = pointOnCircle(cx, cy, radius, angle);
+    keys.push(addPoint(model, p.x, p.y, prefix));
+  }
+
+  for (let i = 0; i < keys.length - 1; i += 1) {
+    addConnection(model, keys[i], keys[i + 1], prefix);
+  }
+
+  return keys;
+};
+
+
+
+
+
 const countDrawnStrokePoints = () => {
   return strokeList.reduce((sum, stroke) => {
     if (!Array.isArray(stroke)) return sum;
@@ -1334,7 +1406,12 @@ const countDrawnStrokePoints = () => {
   }, 0);
 };
 
-const createMagicCircleModel = () => {
+
+
+
+
+
+  const createMagicCircleModel = () => {
   const width = overlay.width;
   const height = overlay.height;
 
@@ -1345,21 +1422,64 @@ const createMagicCircleModel = () => {
   const radius = minSide * randomBetween(0.23, 0.31);
   const rotation = randomBetween(0, Math.PI * 2);
 
-  const drawnPointCount = countDrawnStrokePoints();
+  const stats = getDrawnStrokeStats();
 
   /*
-    入力された線の量から、魔法陣の豪華さを決める。
-    ただし最低限は外円12点 + 星。
+    入力線の長さから、作れる線の量を決める。
+    45pxにつき接続線1本くらい。
+    少ない入力では本当にスカスカにする。
   */
-  const richness = clamp(Math.floor(drawnPointCount / 8), 0, 12);
+  const lineBudget = clamp(
+    Math.round(stats.totalLength / 45),
+    2,
+    90
+  );
 
   const model = {
     points: [],
     connections: [],
   };
 
-  // 1. 外円。最低12点あれば円として成立する。
-  const outerPointCount = 12 + Math.min(richness, 8) * 2;
+  // かなり少ない入力：円未満。短い弧だけ。
+  if (lineBudget <= 7) {
+    addOpenArc(
+      model,
+      cx,
+      cy,
+      radius,
+      Math.max(3, lineBudget + 1),
+      "weak-arc",
+      rotation,
+      randomBetween(0.22, 0.48)
+    );
+
+    return model;
+  }
+
+  // 少なめ：外周だけ。星は出さない。
+  if (lineBudget <= 16) {
+    const outerPointCount = clamp(lineBudget, 8, 14);
+
+    addClosedCircle(
+      model,
+      cx,
+      cy,
+      radius,
+      outerPointCount,
+      "outer-circle",
+      rotation
+    );
+
+    return model;
+  }
+
+  // 普通以上：まず外円
+  const outerPointCount = clamp(
+    Math.round(lineBudget * 0.42),
+    12,
+    28
+  );
+
   addClosedCircle(
     model,
     cx,
@@ -1370,43 +1490,42 @@ const createMagicCircleModel = () => {
     rotation
   );
 
-  // 2. メイン記号。五芒星 or 六芒星。
-  if (Math.random() < 0.5) {
-    addPentagram(
-      model,
-      cx,
-      cy,
-      radius * randomBetween(0.70, 0.86),
-      "pentagram",
-      rotation - Math.PI / 2
-    );
-  } else {
-    addHexagram(
-      model,
-      cx,
-      cy,
-      radius * randomBetween(0.70, 0.86),
-      "hexagram",
-      rotation - Math.PI / 2
-    );
+  // ここから先は、線量に応じて段階追加
+  if (lineBudget >= 22) {
+    if (Math.random() < 0.5) {
+      addPentagram(
+        model,
+        cx,
+        cy,
+        radius * randomBetween(0.70, 0.86),
+        "pentagram",
+        rotation - Math.PI / 2
+      );
+    } else {
+      addHexagram(
+        model,
+        cx,
+        cy,
+        radius * randomBetween(0.70, 0.86),
+        "hexagram",
+        rotation - Math.PI / 2
+      );
+    }
   }
 
-  // 3. 内円。少し線量があれば追加。
-  if (richness >= 2) {
-    const innerPointCount = 12 + Math.min(richness, 6);
+  if (lineBudget >= 34) {
     addClosedCircle(
       model,
       cx,
       cy,
       radius * randomBetween(0.54, 0.68),
-      innerPointCount,
+      clamp(Math.round(lineBudget * 0.22), 12, 22),
       "inner-circle",
       rotation * 0.5
     );
   }
 
-  // 4. 中央円。
-  if (richness >= 4) {
+  if (lineBudget >= 46) {
     addClosedCircle(
       model,
       cx,
@@ -1418,8 +1537,7 @@ const createMagicCircleModel = () => {
     );
   }
 
-  // 5. 多角形。
-  if (richness >= 5) {
+  if (lineBudget >= 58) {
     const polygonCount = Math.random() < 0.5 ? 8 : 12;
 
     addPolygon(
@@ -1433,8 +1551,7 @@ const createMagicCircleModel = () => {
     );
   }
 
-  // 6. 放射線。
-  if (richness >= 7) {
+  if (lineBudget >= 72) {
     const radialCount = Math.random() < 0.5 ? 8 : 12;
 
     addRadialLines(
@@ -1449,8 +1566,7 @@ const createMagicCircleModel = () => {
     );
   }
 
-  // 7. 外周の小円。
-  if (richness >= 9) {
+  if (lineBudget >= 84) {
     const smallCircleCount = Math.random() < 0.5 ? 5 : 6;
 
     addSmallOrbitCircles(
@@ -1466,10 +1582,6 @@ const createMagicCircleModel = () => {
     );
   }
 
-  /*
-    あまりに点が増えすぎると重くなるので軽く制限。
-    connections側も、存在しない点を参照しないように落とす。
-  */
   if (model.points.length > RITUAL_MAX_POINTS) {
     const allowed = new Set(
       model.points.slice(0, RITUAL_MAX_POINTS).map((point) => point.key)
@@ -1483,6 +1595,13 @@ const createMagicCircleModel = () => {
 
   return model;
 };
+
+
+
+
+
+
+
 
 const createMagicCircleTargets = () => {
   const model = createMagicCircleModel();
@@ -2265,7 +2384,7 @@ composer.addPass(bloomPass);
       if (battleState.gameEnded) return;
 
       if (battleState.gameEnded) return;
-playMagicVisualEffects(effectJson, false);
+      await playMagicVisualEffects(effectJson, false);
 
       return;
     }
@@ -2313,7 +2432,7 @@ playMagicVisualEffects(effectJson, false);
     if (battleState.gameEnded) return;
 
     if (battleState.gameEnded) return;
-playMagicVisualEffects(effectJson, false);
+      await playMagicVisualEffects(effectJson, false);
   },
 
   hideTopModalOnce: () => {
@@ -2377,7 +2496,8 @@ async function ensureSummonAssetLoaded(assetName, { urgent = false } = {}) {
     return assetLoadPromises.get(assetName);
   }
 
-  const promise = loader.loadAsync(`/3D素材/${assetName}`).then((gltf) => {
+  const promise = loader.loadAsync(`/3D素材/${assetName}`)
+  .then((gltf) => {
     summonAssetSources.set(assetName, {
       assetName,
       gltf,
@@ -2395,11 +2515,17 @@ async function ensureSummonAssetLoaded(assetName, { urgent = false } = {}) {
     );
 
     return gltf;
+  })
+  .catch((error) => {
+    assetLoadPromises.delete(assetName);
+    summonAssetSources.delete(assetName);
+    throw error;
   });
-
-  assetLoadPromises.set(assetName, promise);
-  return promise;
-}
+  
+  
+  
+  
+  
 
 function getAssetNamesFromMagicJson(effectJson) {
   const names = new Set();
@@ -2418,9 +2544,9 @@ function getAssetNamesFromMagicJson(effectJson) {
 async function ensureMagicJsonAssetsLoaded(effectJson) {
   const names = getAssetNamesFromMagicJson(effectJson);
 
-  for (const name of names) {
-    await ensureSummonAssetLoaded(name, { urgent: true });
-  }
+  await Promise.all(
+    names.map((name) => ensureSummonAssetLoaded(name, { urgent: true }))
+  );
 }
 
 async function preloadSummonAssetsOneByOne() {
@@ -5102,10 +5228,10 @@ if (socket) {
   // 自分が撃った魔法は、自分側ではすでに演出開始しているので再生しない
   if (cast.casterId === userTrackingId) return;
 
-  showMagicNameCenter(cast.magicEffectJson?.magicName, true, () => {
-    if (battleState.gameEnded) return;
-    playMagicVisualEffects(cast.magicEffectJson, true);
-  });
+  showMagicNameCenter(cast.magicEffectJson?.magicName, true, async () => {
+  if (battleState.gameEnded) return;
+  await playMagicVisualEffects(cast.magicEffectJson, true);
+});
 });
 
   socket.off("origin:hp");
