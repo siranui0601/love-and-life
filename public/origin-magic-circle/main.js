@@ -2197,6 +2197,7 @@ function addMagicLogFromCast(cast) {
     casterName: String(cast.casterName || "unknown"),
     spellHash: String(cast.spellHash || cast.imageHash || "").trim(),
     magicName: String(magicEffectJson?.magicName || "無名の魔法"),
+    artScore: Math.max(0, Math.round(Number(magicEffectJson?.artScore) || 0)),
     totalDamage: calculateMagicTotalDamage(magicEffectJson),
     strokeJson: String(cast.strokeJson || ""),
   });
@@ -5054,7 +5055,11 @@ function createResultMagicBubble(log, index) {
     ? Math.max(0, Math.round(Number(log.totalDamage)))
     : Math.max(0, Math.round(Number(log.artScore) || 0));
 
-  title.textContent = `${log.magicName}\n【${damage}ダメージ】`;
+  const artScore = Number.isFinite(Number(log.artScore))
+  ? Math.max(0, Math.round(Number(log.artScore)))
+  : 0;
+
+title.textContent = `${log.magicName}\n【芸術点:${artScore}　${damage}ダメージ】`;
 
   
    const canvas = document.createElement("canvas");
