@@ -405,32 +405,31 @@ if (cached?.rawJson) {
   }
 
   if (cachedMagicEffectJson && cachedSpellHash) {
-    console.log("[origin-magic-circle] spell cache hit:", {
-      cachedRowIndex: cached.rowIndex,
-      currentImageHash: imageHash,
-      cachedSpellHash,
-      similarScore: cached.similarScore,
-    });
+  console.log("[origin-magic-circle] spell cache hit:", {
+    cachedRowIndex: cached.rowIndex,
+    currentImageHash: imageHash,
+    cachedSpellHash,
+    similarScore: cached.similarScore,
+  });
 
-    return res.json({
-      magicEffectJson: cachedMagicEffectJson,
+  return res.json({
+    magicEffectJson: cachedMagicEffectJson,
 
-      // 今回描いた画像のhash。確認・デバッグ用
-      imageHash,
+    // 今回描いた画像のhash。確認・デバッグ用
+    imageHash,
 
-      // 実際にcastLogへ保存すべきhash。
-      // これはG列に存在するキャッシュ元hash。
-      spellHash: cachedSpellHash,
+    // 実際にcastLogへ保存すべきhash。
+    // これはG列に存在するキャッシュ元hash。
+    spellHash: cachedSpellHash,
 
-      strokeJson,
-      shape64,
-      fromCache: true,
-      similarScore: cached.similarScore,
-      cachedRowIndex: cached.rowIndex,
-    });
-  }
+    strokeJson,
+    shape64,
+    fromCache: true,
+    similarScore: cached.similarScore,
+    cachedRowIndex: cached.rowIndex,
+  });
 }
-
+}
 
 
 
