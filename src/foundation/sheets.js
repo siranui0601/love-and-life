@@ -953,15 +953,17 @@ function compareOriginMagicCircleShape64(a, b) {
   return (1 - iou) * 0.75 + avgDiff * 0.25;
 }
 
-export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
 
+  export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
+  const normalizedShape64 = String(shape64 || "").trim().toLowerCase();
 
-  if (!/^[0-9a-f]{4096}$/.test(targetShape64)) return null;
-
-  const SIMILARITY_THRESHOLD = 0.42;
+  if (!/^[0-9a-f]{4096}$/.test(normalizedShape64)) {
+    return null;
+  }
 
   const sheets = await getSheetsClient();
   const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
+
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
@@ -973,23 +975,30 @@ export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
 
   rows.forEach((row, index) => {
     const imageHash = String(row?.[0] || "").trim();
-    const rawJson = String(row?.[1] || "").trim();
-    const savedShape64 = String(row?.[2] || "").trim().toLowerCase();
+    const magicEffectJsonRaw = String(row?.[1] || "").trim();
+    const storedShape64 = String(row?.[2] || "").trim().toLowerCase();
 
-    if (!rawJson || !/^[0-9a-f]{4096}$/.test(savedShape64)) return;
+    if (!imageHash || !magicEffectJsonRaw || !storedShape64) return;
 
-    const score = compareOriginMagicCircleShape64(targetShape64, savedShape64);
+    const score = compareOriginMagicCircleShape64(
+      normalizedShape64,
+      storedShape64
+    );
+
+    if (!Number.isFinite(score)) return;
 
     if (!best || score < best.similarScore) {
       best = {
         rowIndex: index + 2,
         imageHash,
-        rawJson,
-        shape64: savedShape64,
+        magicEffectJson: safeParseJson(magicEffectJsonRaw),
+        shape64: storedShape64,
         similarScore: score,
       };
     }
   });
+
+  const SIMILARITY_THRESHOLD = 0.42;
 
   if (!best || best.similarScore > SIMILARITY_THRESHOLD) {
     return null;
