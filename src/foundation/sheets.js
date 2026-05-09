@@ -856,116 +856,6 @@ async function findNextOriginMagicCircleSpellCacheRowIndex(sheets) {
 
 
 
-
-function normalizeOriginMagicCircleCacheShape64(rawShape64) {
-  const value = String(rawShape64 || "").trim().toLowerCase();
-  if (!/^[0-9a-f]{4096}$/.test(value)) return "";
-  return value;
-}
-
-function originMagicCircleShape64ToLevels(shape64) {
-  return String(shape64 || "")
-    .split("")
-    .map((ch) => {
-      const n = Number.parseInt(ch, 16);
-      return Number.isFinite(n) ? Math.max(0, Math.min(15, n)) : 0;
-    });
-}
-
-function compareOriginMagicCircleShape64(aShape64, bShape64) {
-  const a = originMagicCircleShape64ToLevels(aShape64);
-  const b = originMagicCircleShape64ToLevels(bShape64);
-
-  if (a.length !== 4096 || b.length !== 4096) return Infinity;
-
-  let diffSum = 0;
-  let inkUnion = 0;
-  let inkIntersection = 0;
-
-  for (let i = 0; i < 4096; i += 1) {
-    const av = a[i];
-    const bv = b[i];
-
-    diffSum += Math.abs(av - bv);
-
-    if (av > 0 || bv > 0) inkUnion += 1;
-    if (av > 0 && bv > 0) inkIntersection += 1;
-  }
-
-  // 濃淡差。0に近いほど似ている。
-  const densityDiffScore = diffSum / (4096 * 15);
-
-  // 線が存在する場所の重なり。1に近いほど似ている。
-  const overlapRate = inkUnion > 0 ? inkIntersection / inkUnion : 0;
-  const overlapPenalty = 1 - overlapRate;
-
-  
-    //densityDiffだけだと、ほぼ白背景同士が似ている扱いになりやすい。
-    //なので「線がある場所が重なっているか」を強めに見る。
-
-  return densityDiffScore * 0.35 + overlapPenalty * 0.65;
-}
-
-export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64, options = {}) {
-  const targetShape64 = normalizeOriginMagicCircleCacheShape64(shape64);
-  if (!targetShape64) return null;
-
-  const threshold = Number.isFinite(Number(options.threshold))
-    ? Number(options.threshold)
-    : 0.34;
-
-  const sheets = await getSheetsClient();
-
-  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range,
-  });
-
-  const rows = res.data.values || [];
-
-  let best = null;
-
-  for (let i = 0; i < rows.length; i += 1) {
-    const row = rows[i] || [];
-
-    const imageHash = String(row[0] || "").trim();
-    const rawJson = String(row[1] || "").trim();
-    const storedShape64 = normalizeOriginMagicCircleCacheShape64(row[2]);
-
-    if (!imageHash || !rawJson || !storedShape64) continue;
-
-    const similarScore = compareOriginMagicCircleShape64(
-      targetShape64,
-      storedShape64
-    );
-
-    if (!Number.isFinite(similarScore)) continue;
-
-    if (!best || similarScore < best.similarScore) {
-      best = {
-        rowIndex: i + 2,
-        imageHash,
-        rawJson,
-        shape64: storedShape64,
-        similarScore,
-      };
-    }
-  }
-
-  if (!best) return null;
-
-  if (best.similarScore > threshold) {
-    return null;
-  }
-
-  return best;
-}
-
-
-
-
-
 export async function findOriginMagicCircleSpellCachesByHashes(imageHashes = []) {
   const keys = [...new Set(
     imageHashes
@@ -1037,151 +927,51 @@ export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson, sh
   return { rowIndex };
 }
 
+function compareOriginMagicCircleShape64(a, b) {
+  const shapeA = String(a || "").trim().toLowerCase();
+  const shapeB = String(b || "").trim().toLowerCase();
 
+  if (!/^[0-9a-f]{4096}$/.test(shapeA)) return Infinity;
+  if (!/^[0-9a-f]{4096}$/.test(shapeB)) return Infinity;
 
+  let intersection = 0;
+  let union = 0;
+  let weightedDiff = 0;
+  let activeCount = 0;
 
+  for (let i = 0; i < 4096; i += 1) {
+    const av = parseInt(shapeA[i], 16);
+    const bv = parseInt(shapeB[i], 16);
 
+    const aInk = av >= 2;
+    const bInk = bv >= 2;
 
+    // 両方空白なら無視。ここが最重要。
+    if (!aInk && !bInk) continue;
 
-  function shape64ToMask(shape64, threshold = 2) {
-  const value = String(shape64 || "").trim().toLowerCase();
-  if (!/^[0-9a-f]{4096}$/.test(value)) return null;
+    if (aInk || bInk) union += 1;
+    if (aInk && bInk) intersection += 1;
 
-  return Array.from(value, (ch) => parseInt(ch, 16) >= threshold ? 1 : 0);
-}
-
-function getMaskBounds(mask) {
-  let minX = 64;
-  let minY = 64;
-  let maxX = -1;
-  let maxY = -1;
-  let count = 0;
-
-  for (let y = 0; y < 64; y += 1) {
-    for (let x = 0; x < 64; x += 1) {
-      if (!mask[y * 64 + x]) continue;
-      count += 1;
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x);
-      maxY = Math.max(maxY, y);
-    }
+    weightedDiff += Math.abs(av - bv) / 15;
+    activeCount += 1;
   }
 
-  if (count <= 0) return null;
+  if (union <= 0 || activeCount <= 0) return Infinity;
 
-  return {
-    minX,
-    minY,
-    maxX,
-    maxY,
-    w: maxX - minX + 1,
-    h: maxY - minY + 1,
-    count,
-  };
-}
-
-function dilateMask(mask, radius = 1) {
-  const out = new Array(4096).fill(0);
-
-  for (let y = 0; y < 64; y += 1) {
-    for (let x = 0; x < 64; x += 1) {
-      if (!mask[y * 64 + x]) continue;
-
-      for (let dy = -radius; dy <= radius; dy += 1) {
-        for (let dx = -radius; dx <= radius; dx += 1) {
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx < 0 || nx >= 64 || ny < 0 || ny >= 64) continue;
-          out[ny * 64 + nx] = 1;
-        }
-      }
-    }
-  }
-
-  return out;
-}
-
-function countMask(mask) {
-  return mask.reduce((sum, v) => sum + (v ? 1 : 0), 0);
-}
-
-function overlapCount(a, b, shiftX = 0, shiftY = 0) {
-  let count = 0;
-
-  for (let y = 0; y < 64; y += 1) {
-    const by = y + shiftY;
-    if (by < 0 || by >= 64) continue;
-
-    for (let x = 0; x < 64; x += 1) {
-      const bx = x + shiftX;
-      if (bx < 0 || bx >= 64) continue;
-
-      if (a[y * 64 + x] && b[by * 64 + bx]) {
-        count += 1;
-      }
-    }
-  }
-
-  return count;
-}
-
-/*function compareOriginMagicCircleShape64(a, b) {
-  const maskA = shape64ToMask(a);
-  const maskB = shape64ToMask(b);
-
-  if (!maskA || !maskB) return Infinity;
-
-  const boundsA = getMaskBounds(maskA);
-  const boundsB = getMaskBounds(maskB);
-
-  if (!boundsA || !boundsB) return Infinity;
-
-  // 線量が極端に違うものは別物寄り
-  const inkRatio =
-    Math.min(boundsA.count, boundsB.count) /
-    Math.max(boundsA.count, boundsB.count);
-
-  // 縦横比が大きく違うものも別物寄り
-  const aspectA = boundsA.w / boundsA.h;
-  const aspectB = boundsB.w / boundsB.h;
-  const aspectDiff = Math.abs(aspectA - aspectB);
-
-  const dilatedA = dilateMask(maskA, 2);
-  const dilatedB = dilateMask(maskB, 2);
-
-  const countA = countMask(maskA);
-  const countB = countMask(maskB);
-
-  let bestCover = 0;
-
-  // ±4pxまでのズレを許容
-  for (let sy = -4; sy <= 4; sy += 1) {
-    for (let sx = -4; sx <= 4; sx += 1) {
-      const aNearB = overlapCount(maskA, dilatedB, sx, sy) / countA;
-      const bNearA = overlapCount(maskB, dilatedA, -sx, -sy) / countB;
-      const cover = (aNearB + bNearA) / 2;
-      bestCover = Math.max(bestCover, cover);
-    }
-  }
+  const iou = intersection / union;
+  const avgDiff = weightedDiff / activeCount;
 
   // 小さいほど似ている
-  return (
-    (1 - bestCover) * 0.70 +
-    (1 - inkRatio) * 0.20 +
-    Math.min(aspectDiff, 1) * 0.10
-  );
+  return (1 - iou) * 0.75 + avgDiff * 0.25;
 }
 
 
-export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
-  const targetShape64 = String(shape64 || "").trim().toLowerCase();
+  export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
+  const normalizedShape64 = String(shape64 || "").trim().toLowerCase();
 
-  if (!/^[0-9a-f]{4096}$/.test(targetShape64)) {
+  if (!/^[0-9a-f]{4096}$/.test(normalizedShape64)) {
     return null;
   }
-
-  const SIMILARITY_THRESHOLD = 0.30;
 
   const sheets = await getSheetsClient();
   const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
@@ -1197,24 +987,15 @@ export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
 
   rows.forEach((row, index) => {
     const imageHash = String(row?.[0] || "").trim();
-    const rawJson = String(row?.[1] || "").trim();
+    const magicEffectJsonRaw = String(row?.[1] || "").trim();
     const storedShape64 = String(row?.[2] || "").trim().toLowerCase();
 
+    if (!imageHash || !magicEffectJsonRaw || !storedShape64) return;
 
-
-const candidate = {
-  rowIndex: i + 2,
-  imageHash,
-  rawJson,
-  shape64: storedShape64,
-  similarScore,
-};
-
-
-    if (!rawJson) return;
-    if (!/^[0-9a-f]{4096}$/.test(storedShape64)) return;
-
-    const score = compareOriginMagicCircleShape64(targetShape64, storedShape64);
+    const score = compareOriginMagicCircleShape64(
+      normalizedShape64,
+      storedShape64
+    );
 
     if (!Number.isFinite(score)) return;
 
@@ -1222,30 +1003,22 @@ const candidate = {
       best = {
         rowIndex: index + 2,
         imageHash,
-        rawJson,
+        magicEffectJson: safeParseJson(magicEffectJsonRaw),
         shape64: storedShape64,
         similarScore: score,
       };
     }
   });
 
-  console.log("[origin-magic-circle] shape64 similarity:", {
-    bestRowIndex: best?.rowIndex || null,
-    bestScore: best?.similarScore ?? null,
-    threshold: SIMILARITY_THRESHOLD,
-    matched: !!best && best.similarScore <= SIMILARITY_THRESHOLD,
-  });
+  const SIMILARITY_THRESHOLD = 0.42;
 
-  if (!best) return null;
-  if (best.similarScore > SIMILARITY_THRESHOLD) return null;
-
-  if (best && best.similarScore <= SIMILARITY_THRESHOLD) {
-    return best;
+  if (!best || best.similarScore > SIMILARITY_THRESHOLD) {
+    return null;
   }
 
-return null;
+  return best;
 }
-*/
+
 // ====== 時々文芸部：options用の高速キャッシュ ======
 // ====== 時々文芸部：ツリー用（毎回最新取得・A:D一括） ======
 
