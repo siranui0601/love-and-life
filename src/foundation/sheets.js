@@ -1090,6 +1090,17 @@ export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
     const rawJson = String(row?.[1] || "").trim();
     const storedShape64 = String(row?.[2] || "").trim().toLowerCase();
 
+
+
+const candidate = {
+  rowIndex: i + 2,
+  imageHash,
+  rawJson,
+  shape64: storedShape64,
+  similarScore,
+};
+
+
     if (!rawJson) return;
     if (!/^[0-9a-f]{4096}$/.test(storedShape64)) return;
 
@@ -1118,7 +1129,11 @@ export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
   if (!best) return null;
   if (best.similarScore > SIMILARITY_THRESHOLD) return null;
 
-  return best;
+  if (best && best.similarScore <= SIMILARITY_THRESHOLD) {
+    return best;
+  }
+
+return null;
 }
 
 // ====== 時々文芸部：options用の高速キャッシュ ======
