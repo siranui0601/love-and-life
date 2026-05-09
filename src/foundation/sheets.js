@@ -919,31 +919,55 @@ function compareOriginMagicCircleShape64(a, b) {
   const shapeA = String(a || "").trim().toLowerCase();
   const shapeB = String(b || "").trim().toLowerCase();
 
-  if (shapeA.length !== 4096 || shapeB.length !== 4096) {
-    return Infinity;
-  }
+  if (!/^[0-9a-f]{4096}$/.test(shapeA)) return Infinity;
+  if (!/^[0-9a-f]{4096}$/.test(shapeB)) return Infinity;
 
-  let diff = 0;
+  let intersection = 0;
+  let union = 0;
+  let weightedDiff = 0;
+  let activeCount = 0;
 
   for (let i = 0; i < 4096; i += 1) {
-    const av = Number.parseInt(shapeA[i], 16);
-    const bv = Number.parseInt(shapeB[i], 16);
+    const av = parseInt(shapeA[i], 16);
+    const bv = parseInt(shapeB[i], 16);
 
-    if (!Number.isFinite(av) || !Number.isFinite(bv)) {
-      return Infinity;
-    }
+    const aInk = av >= 2;
+    const bInk = bv >= 2;
 
-    diff += Math.abs(av - bv);
+    // 両方空白なら無視。ここが最重要。
+    if (!aInk && !bInk) continue;
+
+    if (aInk || bInk) union += 1;
+    if (aInk && bInk) intersection += 1;
+
+    weightedDiff += Math.abs(av - bv) / 15;
+    activeCount += 1;
   }
 
-  return diff / 4096;
+  if (union <= 0 || activeCount <= 0) return Infinity;
+
+  const iou = intersection / union;
+  const avgDiff = weightedDiff / activeCount;
+
+  // 小さいほど似ている
+  return (1 - iou) * 0.75 + avgDiff * 0.25;
 }
 
 export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
+  
+  
+  
   const targetShape64 = String(shape64 || "").trim().toLowerCase();
+  console.log("[origin-magic-circle] shape64 best match:", {
+  rowIndex: best?.rowIndex,
+  score: best?.similarScore,
+  matched: !!best && best.similarScore <= SIMILARITY_THRESHOLD,
+});
+
+
   if (!/^[0-9a-f]{4096}$/.test(targetShape64)) return null;
 
-  const SIMILARITY_THRESHOLD = 1.8;
+  const SIMILARITY_THRESHOLD = 0.42;
 
   const sheets = await getSheetsClient();
   const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
