@@ -25,7 +25,10 @@
 
     <section id="waitingRoom" class="panel hidden">
       <h2>待機部屋</h2>
-      <p>ルームID: <span id="roomIdText">-</span></p>
+      <p class="room-id-row">
+  ルームID: <span id="roomIdText">-</span>
+  <button id="copyRoomIdBtn" class="cute-btn ghost room-copy-btn" type="button">コピー</button>
+</p>
       <h3>参加者</h3>
       <ul id="memberList"></ul>
       <div class="waiting-actions">
