@@ -447,7 +447,7 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
 
 {
   "magicName": "画像から連想した厨二病風の魔法名",
-  "artScore": 0,
+  "artScore": 0-100,
   "timedVisualEffects": [
     {
       "startTimeSeconds": 0,
@@ -486,7 +486,7 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
 
 ルール:
 - assetは3種以上使うこと
-- artScoreは0〜100の整数
+- artScoreは落書きなら20程度。真円に近い、複雑等手間がかかっていれば高得点。また、絵心も評価基準
 - timedVisualEffectsは1〜4個
 - visualObjectsは各timedVisualEffectsにつき1〜3個
 - objectCountは1〜5
