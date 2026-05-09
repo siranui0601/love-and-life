@@ -872,7 +872,7 @@ function originMagicCircleShape64ToLevels(shape64) {
     });
 }
 
-function compareOriginMagicCircleShape64(aShape64, bShape64) {
+/*function compareOriginMagicCircleShape64(aShape64, bShape64) {
   const a = originMagicCircleShape64ToLevels(aShape64);
   const b = originMagicCircleShape64ToLevels(bShape64);
 
@@ -899,12 +899,12 @@ function compareOriginMagicCircleShape64(aShape64, bShape64) {
   const overlapRate = inkUnion > 0 ? inkIntersection / inkUnion : 0;
   const overlapPenalty = 1 - overlapRate;
 
-  /*
-    densityDiffだけだと、ほぼ白背景同士が似ている扱いになりやすい。
-    なので「線がある場所が重なっているか」を強めに見る。
-  */
+  
+    //densityDiffだけだと、ほぼ白背景同士が似ている扱いになりやすい。
+    //なので「線がある場所が重なっているか」を強めに見る。
+
   return densityDiffScore * 0.35 + overlapPenalty * 0.65;
-}
+}*/
 
 export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64, options = {}) {
   const targetShape64 = normalizeOriginMagicCircleCacheShape64(shape64);
