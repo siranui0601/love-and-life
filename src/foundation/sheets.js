@@ -904,7 +904,7 @@ function originMagicCircleShape64ToLevels(shape64) {
     //なので「線がある場所が重なっているか」を強めに見る。
 
   return densityDiffScore * 0.35 + overlapPenalty * 0.65;
-}*/
+}
 
 export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64, options = {}) {
   const targetShape64 = normalizeOriginMagicCircleCacheShape64(shape64);
@@ -960,7 +960,7 @@ export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64, o
   }
 
   return best;
-}
+}*/
 
 
 
