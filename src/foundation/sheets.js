@@ -856,6 +856,116 @@ async function findNextOriginMagicCircleSpellCacheRowIndex(sheets) {
 
 
 
+
+function normalizeOriginMagicCircleCacheShape64(rawShape64) {
+  const value = String(rawShape64 || "").trim().toLowerCase();
+  if (!/^[0-9a-f]{4096}$/.test(value)) return "";
+  return value;
+}
+
+function originMagicCircleShape64ToLevels(shape64) {
+  return String(shape64 || "")
+    .split("")
+    .map((ch) => {
+      const n = Number.parseInt(ch, 16);
+      return Number.isFinite(n) ? Math.max(0, Math.min(15, n)) : 0;
+    });
+}
+
+function compareOriginMagicCircleShape64(aShape64, bShape64) {
+  const a = originMagicCircleShape64ToLevels(aShape64);
+  const b = originMagicCircleShape64ToLevels(bShape64);
+
+  if (a.length !== 4096 || b.length !== 4096) return Infinity;
+
+  let diffSum = 0;
+  let inkUnion = 0;
+  let inkIntersection = 0;
+
+  for (let i = 0; i < 4096; i += 1) {
+    const av = a[i];
+    const bv = b[i];
+
+    diffSum += Math.abs(av - bv);
+
+    if (av > 0 || bv > 0) inkUnion += 1;
+    if (av > 0 && bv > 0) inkIntersection += 1;
+  }
+
+  // 濃淡差。0に近いほど似ている。
+  const densityDiffScore = diffSum / (4096 * 15);
+
+  // 線が存在する場所の重なり。1に近いほど似ている。
+  const overlapRate = inkUnion > 0 ? inkIntersection / inkUnion : 0;
+  const overlapPenalty = 1 - overlapRate;
+
+  /*
+    densityDiffだけだと、ほぼ白背景同士が似ている扱いになりやすい。
+    なので「線がある場所が重なっているか」を強めに見る。
+  */
+  return densityDiffScore * 0.35 + overlapPenalty * 0.65;
+}
+
+export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64, options = {}) {
+  const targetShape64 = normalizeOriginMagicCircleCacheShape64(shape64);
+  if (!targetShape64) return null;
+
+  const threshold = Number.isFinite(Number(options.threshold))
+    ? Number(options.threshold)
+    : 0.34;
+
+  const sheets = await getSheetsClient();
+
+  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+  });
+
+  const rows = res.data.values || [];
+
+  let best = null;
+
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i] || [];
+
+    const imageHash = String(row[0] || "").trim();
+    const rawJson = String(row[1] || "").trim();
+    const storedShape64 = normalizeOriginMagicCircleCacheShape64(row[2]);
+
+    if (!imageHash || !rawJson || !storedShape64) continue;
+
+    const similarScore = compareOriginMagicCircleShape64(
+      targetShape64,
+      storedShape64
+    );
+
+    if (!Number.isFinite(similarScore)) continue;
+
+    if (!best || similarScore < best.similarScore) {
+      best = {
+        rowIndex: i + 2,
+        imageHash,
+        rawJson,
+        shape64: storedShape64,
+        similarScore,
+      };
+    }
+  }
+
+  if (!best) return null;
+
+  if (best.similarScore > threshold) {
+    return null;
+  }
+
+  return best;
+}
+
+
+
+
+
 export async function findOriginMagicCircleSpellCachesByHashes(imageHashes = []) {
   const keys = [...new Set(
     imageHashes
