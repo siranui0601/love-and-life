@@ -927,96 +927,140 @@ export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson, sh
   return { rowIndex };
 }
 
-function compareOriginMagicCircleShape64(a, b) {
-  const shapeA = String(a || "").trim().toLowerCase();
-  const shapeB = String(b || "").trim().toLowerCase();
 
-  if (!/^[0-9a-f]{4096}$/.test(shapeA)) return Infinity;
-  if (!/^[0-9a-f]{4096}$/.test(shapeB)) return Infinity;
 
-  let intersection = 0;
-  let union = 0;
-  let weightedDiff = 0;
-  let activeCount = 0;
 
-  for (let i = 0; i < 4096; i += 1) {
-    const av = parseInt(shapeA[i], 16);
-    const bv = parseInt(shapeB[i], 16);
 
-    const aInk = av >= 2;
-    const bInk = bv >= 2;
 
-    // 両方空白なら無視。ここが最重要。
-    if (!aInk && !bInk) continue;
 
-    if (aInk || bInk) union += 1;
-    if (aInk && bInk) intersection += 1;
+  function shape64ToMask(shape64, threshold = 2) {
+  const value = String(shape64 || "").trim().toLowerCase();
+  if (!/^[0-9a-f]{4096}$/.test(value)) return null;
 
-    weightedDiff += Math.abs(av - bv) / 15;
-    activeCount += 1;
-  }
-
-  if (union <= 0 || activeCount <= 0) return Infinity;
-
-  const iou = intersection / union;
-  const avgDiff = weightedDiff / activeCount;
-
-  // 小さいほど似ている
-  return (1 - iou) * 0.75 + avgDiff * 0.25;
+  return Array.from(value, (ch) => parseInt(ch, 16) >= threshold ? 1 : 0);
 }
 
+function getMaskBounds(mask) {
+  let minX = 64;
+  let minY = 64;
+  let maxX = -1;
+  let maxY = -1;
+  let count = 0;
 
-  export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
-  const normalizedShape64 = String(shape64 || "").trim().toLowerCase();
-
-  if (!/^[0-9a-f]{4096}$/.test(normalizedShape64)) {
-    return null;
-  }
-
-  const sheets = await getSheetsClient();
-  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
-
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range,
-  });
-
-  const rows = res.data.values || [];
-
-  let best = null;
-
-  rows.forEach((row, index) => {
-    const imageHash = String(row?.[0] || "").trim();
-    const magicEffectJsonRaw = String(row?.[1] || "").trim();
-    const storedShape64 = String(row?.[2] || "").trim().toLowerCase();
-
-    if (!imageHash || !magicEffectJsonRaw || !storedShape64) return;
-
-    const score = compareOriginMagicCircleShape64(
-      normalizedShape64,
-      storedShape64
-    );
-
-    if (!Number.isFinite(score)) return;
-
-    if (!best || score < best.similarScore) {
-      best = {
-        rowIndex: index + 2,
-        imageHash,
-        magicEffectJson: safeParseJson(magicEffectJsonRaw),
-        shape64: storedShape64,
-        similarScore: score,
-      };
+  for (let y = 0; y < 64; y += 1) {
+    for (let x = 0; x < 64; x += 1) {
+      if (!mask[y * 64 + x]) continue;
+      count += 1;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
     }
-  });
-
-  const SIMILARITY_THRESHOLD = 0.42;
-
-  if (!best || best.similarScore > SIMILARITY_THRESHOLD) {
-    return null;
   }
 
-  return best;
+  if (count <= 0) return null;
+
+  return {
+    minX,
+    minY,
+    maxX,
+    maxY,
+    w: maxX - minX + 1,
+    h: maxY - minY + 1,
+    count,
+  };
+}
+
+function dilateMask(mask, radius = 1) {
+  const out = new Array(4096).fill(0);
+
+  for (let y = 0; y < 64; y += 1) {
+    for (let x = 0; x < 64; x += 1) {
+      if (!mask[y * 64 + x]) continue;
+
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        for (let dx = -radius; dx <= radius; dx += 1) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || nx >= 64 || ny < 0 || ny >= 64) continue;
+          out[ny * 64 + nx] = 1;
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
+function countMask(mask) {
+  return mask.reduce((sum, v) => sum + (v ? 1 : 0), 0);
+}
+
+function overlapCount(a, b, shiftX = 0, shiftY = 0) {
+  let count = 0;
+
+  for (let y = 0; y < 64; y += 1) {
+    const by = y + shiftY;
+    if (by < 0 || by >= 64) continue;
+
+    for (let x = 0; x < 64; x += 1) {
+      const bx = x + shiftX;
+      if (bx < 0 || bx >= 64) continue;
+
+      if (a[y * 64 + x] && b[by * 64 + bx]) {
+        count += 1;
+      }
+    }
+  }
+
+  return count;
+}
+
+function compareOriginMagicCircleShape64(a, b) {
+  const maskA = shape64ToMask(a);
+  const maskB = shape64ToMask(b);
+
+  if (!maskA || !maskB) return Infinity;
+
+  const boundsA = getMaskBounds(maskA);
+  const boundsB = getMaskBounds(maskB);
+
+  if (!boundsA || !boundsB) return Infinity;
+
+  // 線量が極端に違うものは別物寄り
+  const inkRatio =
+    Math.min(boundsA.count, boundsB.count) /
+    Math.max(boundsA.count, boundsB.count);
+
+  // 縦横比が大きく違うものも別物寄り
+  const aspectA = boundsA.w / boundsA.h;
+  const aspectB = boundsB.w / boundsB.h;
+  const aspectDiff = Math.abs(aspectA - aspectB);
+
+  const dilatedA = dilateMask(maskA, 2);
+  const dilatedB = dilateMask(maskB, 2);
+
+  const countA = countMask(maskA);
+  const countB = countMask(maskB);
+
+  let bestCover = 0;
+
+  // ±4pxまでのズレを許容
+  for (let sy = -4; sy <= 4; sy += 1) {
+    for (let sx = -4; sx <= 4; sx += 1) {
+      const aNearB = overlapCount(maskA, dilatedB, sx, sy) / countA;
+      const bNearA = overlapCount(maskB, dilatedA, -sx, -sy) / countB;
+      const cover = (aNearB + bNearA) / 2;
+      bestCover = Math.max(bestCover, cover);
+    }
+  }
+
+  // 小さいほど似ている
+  return (
+    (1 - bestCover) * 0.70 +
+    (1 - inkRatio) * 0.20 +
+    Math.min(aspectDiff, 1) * 0.10
+  );
 }
 
 // ====== 時々文芸部：options用の高速キャッシュ ======
