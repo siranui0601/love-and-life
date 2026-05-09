@@ -610,12 +610,21 @@ function showRoomIdModal() {
       input.value = input.value.replace(/\D/g, "").slice(0, 6);
     });
 
-    okBtn.addEventListener("click", () => {
-      const value = input.value.trim();
-      close(value || null);
-    });
+    const submitRoomId = () => {
+  const value = input.value.trim();
+  close(value || null);
+};
 
-    cancelBtn.addEventListener("click", () => close(null));
+okBtn.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  submitRoomId();
+});
+
+cancelBtn.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  close(null);
+});
+
 
     modal.querySelector(".room-id-modal__backdrop").addEventListener("click", () => close(null));
 
