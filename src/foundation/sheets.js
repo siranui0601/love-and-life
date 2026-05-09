@@ -15,6 +15,18 @@ const ORIGIN_MAGIC_CIRCLE_MAX_HP = 100;
 
 
 
+function safeParseJson(raw, fallback = null) {
+  try {
+    if (raw === undefined || raw === null || raw === "") return fallback;
+    return JSON.parse(String(raw));
+  } catch {
+    return fallback;
+  }
+}
+
+
+
+
 export async function getSheetsClient() {
   if (!serviceAccount) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY が設定されていません");
 
