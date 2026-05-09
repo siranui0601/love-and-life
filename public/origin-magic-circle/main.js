@@ -52,7 +52,6 @@ const summonAssetOptions = [
   "fireball.glb",
   "magic_voxel_skull_flat_shaded.glb",
   "stylized_fire_tornado.glb",
-
   "phoenix_bird.glb",
   "truth_about_the_dark_side_of_the_moon.glb",
   "broken_steampunk_clock.glb",
@@ -61,7 +60,6 @@ const summonAssetOptions = [
   "soulsucker_-_weaponcraft.glb",
   "bouquet.glb",
   "lance_of_the_primordials_-_dae_weaponcraft.glb",
-
   "pearl_electron.glb",
   "stranger_star.glb",
   "cube_cascade.glb",
@@ -72,6 +70,73 @@ const summonAssetOptions = [
   "harlequin_orb.glb",
   "evanescent_smoke.glb",
 
+  "sun.glb",
+  "meteorite.glb",
+  "rocky_hell_terrain.glb",
+  "magic_ring_-_yingyangblue.glb",
+  "magic_ring_-_yellow.glb",
+  "magic_ring_-_green.glb",
+  "magic_ring_-_red.glb",
+  "iciclion.glb",
+  "icicle.glb",
+  "黒天使砂時計.glb",
+  "09271839.glb",
+  "35b59066261a4a0a8c113da5b5a988e9.glb",
+  "2024zhongqiu_4_loop.glb",
+  "eff_huanguang.glb",
+  "c3d8c3fda1ec45a0bdab896eba97e679.glb",
+  "829e78a8ee3548369f3ac92c41a2ee74.glb",
+  "67f9a0094a714d258e5c5088fac2a7a4.glb",
+  "27444eb10a4f4409b4a2649738ec7441.glb",
+  "c7ba0550fe034f29bfb54ca75b7eb1f6.glb",
+  "fd37b7bec4ca48a8b6539dc4048787cf.glb",
+  "technology_aperture_out.glb",
+  "appearance_effect_light_beam.glb",
+  "secret_garden_729_space_portal.glb",
+  "animatedtrailglb2_test.glb",
+  "book_set.glb",
+  "line_motion.glb",
+  "event_horixon_by_uuon_foundation.glb",
+  "duchess_shield.glb",
+  "hojas_verdes_caen.glb",
+  "the_cube.glb",
+  "armillary.glb",
+  "icosahedron_knot.glb",
+  "animated_effect.glb",
+  "303ac171bafb4998950b741d7c89aa94.glb",
+  "torii_gate_lighthouse.glb",
+  "sculptjanuary2021_-_day_05_-_magic_gate.glb",
+  "executor_warp_gate.glb",
+  "lantian_gate.glb",
+  "japanese_tori_gate.glb",
+  "stargate.glb",
+  "cute_dragon.glb",
+  "dragon.glb",
+  "adult_dragon.glb",
+  "dragon_walk.glb",
+  "dragon_fly.glb",
+  "tornado.glb",
+  "tree.glb",
+  "young_palm.glb",
+  "spruce_tree_-_low_poly.glb",
+  "creaturespirate_trooper.glb",
+  "pegasus.glb",
+  "wing_379.glb",
+  "blue_glowing_butterfly.glb",
+  "hell_wings.glb",
+  "low_poly__wings.glb",
+  "wings_03.glb",
+  "h6k4_war_thunder.glb",
+  "k9_thunder_artillery.glb",
+  "5b040bd048324e72a6624b8f2aab5cf4.glb",
+  "chromatic_plasma.glb",
+  "looping_snow_2.glb",
+  "falling_snow_loop.glb",
+  "snowflake_crystal_by_elsa_mmd2005.glb",
+  "crystal.glb",
+  "crystal_heart.glb",
+  "purple_diamond_crystal_gem.glb",
+
   "lightning",
   "explosion_burst",
   "mist_cloud",
@@ -79,6 +144,8 @@ const summonAssetOptions = [
   "crystal_shard",
   "simple_ring",
 ];
+
+
 
 
 const customEffectNames = new Set([
@@ -4378,6 +4445,11 @@ topControls.className = "summon-test-controls";
       <label class="summon-test-controls__field">
   Y高さ
   <input class="summon-y-input" type="number" step="0.1" value="1.6" />
+  
+  <label class="summon-test-controls__field">
+  Z補正
+  <input class="summon-z-input" type="number" step="0.1" value="0" />
+</label>
 </label>
 
 <label class="summon-test-controls__field">
@@ -4400,6 +4472,7 @@ topControls.className = "summon-test-controls";
   const radioList = topControls.querySelector(".summon-test-controls__list");
   const scaleInput = topControls.querySelector(".summon-scale-input");
   const yInput = topControls.querySelector(".summon-y-input");
+  const zInput = topControls.querySelector(".summon-z-input");
 
   const effectTestBtn = topControls.querySelector(".magic-effect-test-btn");
 
@@ -4411,7 +4484,8 @@ const positionSelect = topControls.querySelector(".summon-preview-position-selec
 
 const initialPreset = getAssetSizePreset("fireball.glb", "medium");
 scaleInput.value = initialPreset.scale;
-yInput.value = initialPreset.y;
+  yInput.value = initialPreset.y;
+  zInput.value = initialPreset.offsetZ || 0;
 
 
 topControlsToggle?.addEventListener("click", () => {
@@ -4498,9 +4572,10 @@ function removePreviewAssetRoot() {
   previewAssetName = "";
 }
 
-function getPreviewPosition(assetName, appliedY) {
+function getPreviewPosition(assetName, appliedY, appliedZ = null) {
   const mode = positionSelect?.value || "center";
   const preset = getAssetSizePreset(assetName, "medium");
+  const z = Number.isFinite(Number(appliedZ)) ? Number(appliedZ) : (preset.offsetZ || 0);
 
   if (mode === "self") {
     const { self, enemy } = getBattleActors("self");
@@ -4509,13 +4584,14 @@ function getPreviewPosition(assetName, appliedY) {
     return self.position
       .clone()
       .addScaledVector(forward, 6)
-      .setY(appliedY);
+      .setY(appliedY)
+      .add(new Vector3(0, 0, z));
   }
 
   return new Vector3(
     preset.offsetX || 0,
     appliedY,
-    preset.offsetZ || 0
+    z
   );
 }
 
@@ -4528,11 +4604,14 @@ async function showPreviewAsset(assetName) {
   const yValue = Number(yInput?.value);
   const appliedY = Number.isFinite(yValue) ? yValue : 1.6;
 
+  const zValue = Number(zInput?.value);
+  const appliedZ = Number.isFinite(zValue) ? zValue : 0;
+
   // 同じ素材なら作り直さず、位置とサイズだけ更新
   if (previewAssetRoot && previewAssetName === assetName) {
     previewAssetRoot.visible = true;
     previewAssetRoot.scale.setScalar(appliedScale);
-    previewAssetRoot.position.copy(getPreviewPosition(assetName, appliedY));
+    previewAssetRoot.position.copy(getPreviewPosition(assetName, appliedY, appliedZ));
     previewAssetRoot.userData.currentScale = appliedScale;
 
     if (previewAssetRoot.userData.effectType === "explosion_burst") {
@@ -4552,7 +4631,7 @@ async function showPreviewAsset(assetName) {
 
   root.visible = true;
   root.scale.setScalar(appliedScale);
-  root.position.copy(getPreviewPosition(assetName, appliedY));
+  root.position.copy(getPreviewPosition(assetName, appliedY, appliedZ));
   root.userData.currentScale = appliedScale;
 
   if (root.userData.effectType === "explosion_burst") {
@@ -4654,6 +4733,7 @@ radioList?.addEventListener("change", () => {
 
   scaleInput.value = preset.scale;
   yInput.value = preset.y;
+  zInput.value = preset.offsetZ || 0;
 
   applySummonState();
 });
@@ -4662,6 +4742,7 @@ radioList?.addEventListener("change", () => {
   topControls.addEventListener("change", applySummonState);
   scaleInput?.addEventListener("input", applySummonState);
   yInput?.addEventListener("input", applySummonState);
+  zInput?.addEventListener("input", applySummonState);
   
   
   
