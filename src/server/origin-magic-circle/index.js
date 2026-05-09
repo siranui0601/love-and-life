@@ -388,14 +388,48 @@ if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
     const cached = await findSimilarOriginMagicCircleSpellCacheByShape64(shape64);
 
 if (cached?.rawJson) {
-  return res.json({
-  magicEffectJson: normalizeOriginMagicCircleEffectJson(JSON.parse(cached.rawJson)),
-  imageHash,
-  strokeJson,
-  shape64,
-  fromCache: true,
-  similarScore: cached.similarScore,
-});
+  const cachedSpellHash = String(cached.imageHash || "").trim();
+
+  let cachedMagicEffectJson = null;
+
+  try {
+    cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson(
+      JSON.parse(cached.rawJson)
+    );
+  } catch (error) {
+    console.warn("[origin-magic-circle] cached rawJson parse failed:", {
+      rowIndex: cached.rowIndex,
+      imageHash: cached.imageHash,
+      error,
+    });
+  }
+
+  if (cachedMagicEffectJson && cachedSpellHash) {
+    console.log("[origin-magic-circle] spell cache hit:", {
+      cachedRowIndex: cached.rowIndex,
+      currentImageHash: imageHash,
+      cachedSpellHash,
+      similarScore: cached.similarScore,
+    });
+
+    return res.json({
+      magicEffectJson: cachedMagicEffectJson,
+
+      // 今回描いた画像のhash。確認・デバッグ用
+      imageHash,
+
+      // 実際にcastLogへ保存すべきhash。
+      // これはG列に存在するキャッシュ元hash。
+      spellHash: cachedSpellHash,
+
+      strokeJson,
+      shape64,
+      fromCache: true,
+      similarScore: cached.similarScore,
+      cachedRowIndex: cached.rowIndex,
+    });
+  }
+}
 }
 
 
@@ -494,12 +528,16 @@ console.log("[origin-magic-circle] spell cache appended:", {
 });
 
     return res.json({
-      magicEffectJson,
-      imageHash,
-      strokeJson,
-      shape64,
-      fromCache: false,
-    });
+  magicEffectJson,
+
+  // 新規生成時は、今回のhashがそのままキャッシュ本体のhash
+  imageHash,
+  spellHash: imageHash,
+
+  strokeJson,
+  shape64,
+  fromCache: false,
+});
     } catch (error) {
       console.error("[origin-magic-circle] chant title error:", error);
       return res.status(500).json({ error: "gemini_failed" });
