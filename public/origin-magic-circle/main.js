@@ -1927,10 +1927,13 @@ await finishMagicCircleRitualAnimation(magicName);
 
 
     if (typeof onMagicJsonReady === "function" && magicEffectJson) {
-      await onMagicJsonReady(magicEffectJson, {
-        strokeJson: data.strokeJson || strokeJson,
-        spellHash: data.imageHash || "",
-      });
+  await onMagicJsonReady(magicEffectJson, {
+    strokeJson: data.strokeJson || strokeJson,
+
+    // 類似キャッシュヒット時は data.spellHash がキャッシュ元のG列hash。
+    // 新規生成時は data.spellHash === data.imageHash。
+    spellHash: data.spellHash || data.imageHash || "",
+  });
       hideTopModalOnce?.();
       hideTutorialModal();
       hideDebugOnce?.();
