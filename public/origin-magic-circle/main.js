@@ -808,11 +808,52 @@ const restoreStrokeList = (strokes) => {
   });
 };
 
+const createShape64FromCanvas = (sourceCanvas) => {
+  const size = 64;
+  const square = document.createElement("canvas");
+  square.width = size;
+  square.height = size;
+
+  const sctx = square.getContext("2d");
+  if (!sctx) return "";
+
+  sctx.fillStyle = "#fff";
+  sctx.fillRect(0, 0, size, size);
+
+  const sourceW = sourceCanvas.width;
+  const sourceH = sourceCanvas.height;
+  const scale = Math.min(size / sourceW, size / sourceH);
+  const drawW = sourceW * scale;
+  const drawH = sourceH * scale;
+  const dx = (size - drawW) / 2;
+  const dy = (size - drawH) / 2;
+
+  sctx.drawImage(sourceCanvas, dx, dy, drawW, drawH);
+
+  const imageData = sctx.getImageData(0, 0, size, size);
+  const data = imageData.data;
+  let result = "";
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const alpha = data[i + 3] / 255;
+    const brightness = (r + g + b) / 3;
+    const darkness = (255 - brightness) * alpha;
+    const level = Math.max(0, Math.min(15, Math.round((darkness / 255) * 15)));
+    result += level.toString(16);
+  }
+
+  return result;
+};
+
 const getTrimmedMagicCircleData = () => {
   if (!ctx) {
     return {
       base64ImageFile: "",
       strokeJson: "",
+      shape64: "",
     };
   }
 
@@ -840,6 +881,7 @@ const getTrimmedMagicCircleData = () => {
     return {
       base64ImageFile: "",
       strokeJson: "",
+      shape64: "",
     };
   }
 
@@ -862,6 +904,7 @@ const getTrimmedMagicCircleData = () => {
     return {
       base64ImageFile: "",
       strokeJson: "",
+      shape64: "",
     };
   }
 
@@ -902,11 +945,14 @@ const getTrimmedMagicCircleData = () => {
     strokes: trimmedStrokes,
   };
 
+  const shape64 = createShape64FromCanvas(cropped);
+
   return {
     base64ImageFile: cropped
       .toDataURL("image/png")
       .replace(/^data:image\/png;base64,/, ""),
     strokeJson: JSON.stringify(strokePayload),
+    shape64,
   };
 };
 
@@ -1851,6 +1897,7 @@ const cancelMagicCircleRitualAnimation = () => {
     const {
   base64ImageFile,
   strokeJson,
+  shape64,
 } = getTrimmedMagicCircleData();
 
 if (!base64ImageFile) {
@@ -1866,6 +1913,7 @@ const res = await fetch("/api/origin-magic-circle/chant-title", {
   body: JSON.stringify({
     base64ImageFile,
     strokeJson,
+    shape64,
   }),
 });
 

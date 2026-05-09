@@ -460,6 +460,7 @@ function parseOriginMagicCircleCastLogsJson(raw) {
         casterId: String(entry?.casterId || ""),
         casterName: String(entry?.casterName || "unknown"),
         spellHash: String(entry?.spellHash || "").trim(),
+        strokeJson: String(entry?.strokeJson || ""),
       }))
       .filter((entry) => entry.id && entry.casterId && entry.spellHash);
   } catch {
@@ -773,6 +774,7 @@ export async function appendOriginMagicCircleRoomCastLog({
   casterId,
   casterName,
   spellHash,
+  strokeJson = "",
 }) {
   const room = await getOriginMagicCircleRoomById(roomId);
   if (!room) throw new Error("room_not_found");
@@ -786,6 +788,7 @@ export async function appendOriginMagicCircleRoomCastLog({
     casterId: String(casterId || ""),
     casterName: String(casterName || "unknown"),
     spellHash: safeSpellHash,
+    strokeJson: String(strokeJson || ""),
   };
 
   const logs = Array.isArray(room.castLogs) ? [...room.castLogs] : [];
@@ -867,16 +870,12 @@ export async function findOriginMagicCircleSpellCachesByHashes(imageHashes = [])
       rowIndex: index + 2,
       imageHash,
       rawJson: String(row?.[1] || "").trim(),
-      strokeJson: String(row?.[2] || "").trim(),
+      shape64: String(row?.[2] || "").trim().toLowerCase(),
     });
   });
 
   return result;
 }
-
-
-
-
 
 export async function findOriginMagicCircleSpellCache(imageHash) {
   const sheets = await getSheetsClient();
@@ -890,154 +889,99 @@ export async function findOriginMagicCircleSpellCache(imageHash) {
   if (idx < 0) return null;
 
   const rawJson = String(rows[idx]?.[1] || "").trim();
-  const strokeJson = String(rows[idx]?.[2] || "").trim();
+  const shape64 = String(rows[idx]?.[2] || "").trim().toLowerCase();
 
   return {
     rowIndex: idx + 2,
     imageHash: key,
     rawJson,
-    strokeJson,
+    shape64,
   };
 }
 
-export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson, strokeJson = "" }) {
+export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson, shape64 = "" }) {
   const sheets = await getSheetsClient();
-
   const rowIndex = await findNextOriginMagicCircleSpellCacheRowIndex(sheets);
 
-  const safeImageHash = String(imageHash || "");
-  const safeRawJson = String(rawJson || "");
-  const safeStrokeJson = String(strokeJson || "");
-
-  // まずG:Hを確実に書く
   await sheets.spreadsheets.values.update({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G${rowIndex}:H${rowIndex}`,
-    valueInputOption: "RAW",
-    requestBody: {
-      values: [[safeImageHash, safeRawJson]],
-    },
-  });
-
-  // I列は別更新にする
-  if (safeStrokeJson) {
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${rowIndex}`,
-      valueInputOption: "RAW",
-      requestBody: {
-        values: [[safeStrokeJson]],
-      },
-    });
-  }
-
-  // 書けたか読み返す
-  const verifyRes = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G${rowIndex}:I${rowIndex}`,
-  });
-
-  const verifyRow = verifyRes.data.values?.[0] || [];
-  const writtenHash = String(verifyRow?.[0] || "");
-  const writtenRawJson = String(verifyRow?.[1] || "");
-  const writtenStrokeJson = String(verifyRow?.[2] || "");
-
-  console.log("[origin-magic-circle] spell cache write verify:", {
-    rowIndex,
-    expectedStrokeLength: safeStrokeJson.length,
-    writtenHashLength: writtenHash.length,
-    writtenRawJsonLength: writtenRawJson.length,
-    writtenStrokeLength: writtenStrokeJson.length,
-    strokeWritten: !safeStrokeJson || writtenStrokeJson === safeStrokeJson,
-  });
-
-  // I列だけ空/不一致ならもう一度I列だけ書く
-  if (safeStrokeJson && writtenStrokeJson !== safeStrokeJson) {
-    console.warn("[origin-magic-circle] stroke write mismatch. retry I column:", {
-      rowIndex,
-      expectedStrokeLength: safeStrokeJson.length,
-      writtenStrokeLength: writtenStrokeJson.length,
-    });
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${rowIndex}`,
-      valueInputOption: "RAW",
-      requestBody: {
-        values: [[safeStrokeJson]],
-      },
-    });
-
-    const retryVerifyRes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${rowIndex}`,
-    });
-
-    const retryStrokeJson = String(retryVerifyRes.data.values?.[0]?.[0] || "");
-
-    console.log("[origin-magic-circle] stroke retry verify:", {
-      rowIndex,
-      expectedStrokeLength: safeStrokeJson.length,
-      writtenStrokeLength: retryStrokeJson.length,
-      strokeWritten: retryStrokeJson === safeStrokeJson,
-    });
-  }
-
-  return {
-    rowIndex,
-    imageHash: safeImageHash,
-    rawJson: safeRawJson,
-    strokeJson: safeStrokeJson,
-  };
-}
-
-
-
-
-
-
-
-
-export async function updateOriginMagicCircleSpellCacheStroke({ rowIndex, strokeJson }) {
-  const safeRowIndex = Number(rowIndex);
-
-  if (!Number.isInteger(safeRowIndex) || safeRowIndex < 2) {
-    throw new Error("invalid_row_index");
-  }
-
-  const sheets = await getSheetsClient();
-  const safeStrokeJson = String(strokeJson || "");
-
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${safeRowIndex}`,
     valueInputOption: "RAW",
     requestBody: {
-      values: [[safeStrokeJson]],
+      values: [[String(imageHash || ""), String(rawJson || ""), String(shape64 || "").trim().toLowerCase()]],
     },
   });
 
-  const verifyRes = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!I${safeRowIndex}`,
-  });
-
-  const writtenStrokeJson = String(verifyRes.data.values?.[0]?.[0] || "");
-
-  console.log("[origin-magic-circle] stroke update verify:", {
-    rowIndex: safeRowIndex,
-    expectedStrokeLength: safeStrokeJson.length,
-    writtenStrokeLength: writtenStrokeJson.length,
-    strokeWritten: writtenStrokeJson === safeStrokeJson,
-  });
-
-  return {
-    rowIndex: safeRowIndex,
-    strokeJson: safeStrokeJson,
-    written: writtenStrokeJson === safeStrokeJson,
-  };
+  return { rowIndex };
 }
 
+function compareOriginMagicCircleShape64(a, b) {
+  const shapeA = String(a || "").trim().toLowerCase();
+  const shapeB = String(b || "").trim().toLowerCase();
+
+  if (shapeA.length !== 4096 || shapeB.length !== 4096) {
+    return Infinity;
+  }
+
+  let diff = 0;
+
+  for (let i = 0; i < 4096; i += 1) {
+    const av = Number.parseInt(shapeA[i], 16);
+    const bv = Number.parseInt(shapeB[i], 16);
+
+    if (!Number.isFinite(av) || !Number.isFinite(bv)) {
+      return Infinity;
+    }
+
+    diff += Math.abs(av - bv);
+  }
+
+  return diff / 4096;
+}
+
+export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
+  const targetShape64 = String(shape64 || "").trim().toLowerCase();
+  if (!/^[0-9a-f]{4096}$/.test(targetShape64)) return null;
+
+  const SIMILARITY_THRESHOLD = 1.8;
+
+  const sheets = await getSheetsClient();
+  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range,
+  });
+
+  const rows = res.data.values || [];
+
+  let best = null;
+
+  rows.forEach((row, index) => {
+    const imageHash = String(row?.[0] || "").trim();
+    const rawJson = String(row?.[1] || "").trim();
+    const savedShape64 = String(row?.[2] || "").trim().toLowerCase();
+
+    if (!rawJson || !/^[0-9a-f]{4096}$/.test(savedShape64)) return;
+
+    const score = compareOriginMagicCircleShape64(targetShape64, savedShape64);
+
+    if (!best || score < best.similarScore) {
+      best = {
+        rowIndex: index + 2,
+        imageHash,
+        rawJson,
+        shape64: savedShape64,
+        similarScore: score,
+      };
+    }
+  });
+
+  if (!best || best.similarScore > SIMILARITY_THRESHOLD) {
+    return null;
+  }
+
+  return best;
+}
 
 // ====== 時々文芸部：options用の高速キャッシュ ======
 // ====== 時々文芸部：ツリー用（毎回最新取得・A:D一括） ======
