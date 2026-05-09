@@ -2495,6 +2495,9 @@ async function ensureSummonAssetLoaded(assetName, { urgent = false } = {}) {
   if (assetLoadPromises.has(assetName)) {
     return assetLoadPromises.get(assetName);
   }
+  
+  
+  
 
   const promise = loader.loadAsync(`/3D素材/${assetName}`)
   .then((gltf) => {
@@ -2521,6 +2524,10 @@ async function ensureSummonAssetLoaded(assetName, { urgent = false } = {}) {
     summonAssetSources.delete(assetName);
     throw error;
   });
+
+assetLoadPromises.set(assetName, promise);
+return promise;
+}
   
   
   
