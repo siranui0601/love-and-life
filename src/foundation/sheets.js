@@ -927,55 +927,305 @@ export async function appendOriginMagicCircleSpellCache({ imageHash, rawJson, sh
   return { rowIndex };
 }
 
-function compareOriginMagicCircleShape64(a, b) {
-  const shapeA = String(a || "").trim().toLowerCase();
-  const shapeB = String(b || "").trim().toLowerCase();
 
-  if (!/^[0-9a-f]{4096}$/.test(shapeA)) return Infinity;
-  if (!/^[0-9a-f]{4096}$/.test(shapeB)) return Infinity;
+
+function normalizeOriginMagicCircleCacheShape64(rawShape64) {
+  const value = String(rawShape64 || "").trim().toLowerCase();
+
+  // 64 * 64 = 4096文字。各文字は0〜fの濃淡。
+  if (!/^[0-9a-f]{4096}$/.test(value)) return "";
+
+  return value;
+}
+
+function originMagicCircleShape64ToLevels(shape64) {
+  const normalized = normalizeOriginMagicCircleCacheShape64(shape64);
+  if (!normalized) return [];
+
+  return normalized.split("").map((ch) => {
+    const n = Number.parseInt(ch, 16);
+    return Number.isFinite(n) ? Math.max(0, Math.min(15, n)) : 0;
+  });
+}
+
+function originMagicCircleLevelsToBinary(levels, threshold = 1) {
+  if (!Array.isArray(levels) || levels.length !== 4096) return [];
+
+  // threshold=1にしている理由：
+  // アンチエイリアスの薄い線も拾いたいから。
+  // ここを3や4にすると、薄い線・細い線が消えて別物判定されやすい。
+  return levels.map((level) => (Number(level) >= threshold ? 1 : 0));
+}
+
+function getBinaryBounds(binary, size = 64) {
+  let minX = size;
+  let minY = size;
+  let maxX = -1;
+  let maxY = -1;
+  let count = 0;
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      if (!binary[y * size + x]) continue;
+
+      count += 1;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  if (count <= 0) {
+    return {
+      ok: false,
+      minX: 0,
+      minY: 0,
+      maxX: 0,
+      maxY: 0,
+      width: 0,
+      height: 0,
+      count: 0,
+    };
+  }
+
+  return {
+    ok: true,
+    minX,
+    minY,
+    maxX,
+    maxY,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+    count,
+  };
+}
+
+function normalizeBinaryShape(binary, sourceSize = 64, outputSize = 48, padding = 4) {
+  const bounds = getBinaryBounds(binary, sourceSize);
+
+  const result = new Array(outputSize * outputSize).fill(0);
+
+  if (!bounds.ok) {
+    return result;
+  }
+
+  const usableSize = outputSize - padding * 2;
+
+  // 縦横比を維持して、黒部分だけを48×48内に正規化する。
+  // これで「同じ円だけど少し大きい/小さい/位置が違う」に強くなる。
+  const scale = Math.min(
+    usableSize / Math.max(1, bounds.width),
+    usableSize / Math.max(1, bounds.height)
+  );
+
+  const drawW = bounds.width * scale;
+  const drawH = bounds.height * scale;
+
+  const offsetX = (outputSize - drawW) / 2;
+  const offsetY = (outputSize - drawH) / 2;
+
+  for (let sy = bounds.minY; sy <= bounds.maxY; sy += 1) {
+    for (let sx = bounds.minX; sx <= bounds.maxX; sx += 1) {
+      if (!binary[sy * sourceSize + sx]) continue;
+
+      const nx = Math.round(offsetX + (sx - bounds.minX) * scale);
+      const ny = Math.round(offsetY + (sy - bounds.minY) * scale);
+
+      if (nx < 0 || nx >= outputSize || ny < 0 || ny >= outputSize) continue;
+
+      result[ny * outputSize + nx] = 1;
+    }
+  }
+
+  return result;
+}
+
+function dilateBinary(binary, size = 48, radius = 1) {
+  const result = new Array(size * size).fill(0);
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      if (!binary[y * size + x]) continue;
+
+      for (let dy = -radius; dy <= radius; dy += 1) {
+        for (let dx = -radius; dx <= radius; dx += 1) {
+          if (dx * dx + dy * dy > radius * radius) continue;
+
+          const nx = x + dx;
+          const ny = y + dy;
+
+          if (nx < 0 || nx >= size || ny < 0 || ny >= size) continue;
+
+          result[ny * size + nx] = 1;
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+function countBinaryPixels(binary) {
+  return binary.reduce((sum, value) => sum + (value ? 1 : 0), 0);
+}
+
+function binaryIoU(a, b, size = 48, dilationRadius = 1) {
+  const da = dilateBinary(a, size, dilationRadius);
+  const db = dilateBinary(b, size, dilationRadius);
 
   let intersection = 0;
   let union = 0;
-  let weightedDiff = 0;
-  let activeCount = 0;
 
-  for (let i = 0; i < 4096; i += 1) {
-    const av = parseInt(shapeA[i], 16);
-    const bv = parseInt(shapeB[i], 16);
+  for (let i = 0; i < size * size; i += 1) {
+    const av = da[i] ? 1 : 0;
+    const bv = db[i] ? 1 : 0;
 
-    const aInk = av >= 2;
-    const bInk = bv >= 2;
-
-    // 両方空白なら無視。ここが最重要。
-    if (!aInk && !bInk) continue;
-
-    if (aInk || bInk) union += 1;
-    if (aInk && bInk) intersection += 1;
-
-    weightedDiff += Math.abs(av - bv) / 15;
-    activeCount += 1;
+    if (av && bv) intersection += 1;
+    if (av || bv) union += 1;
   }
 
-  if (union <= 0 || activeCount <= 0) return Infinity;
+  if (union <= 0) return 0;
 
-  const iou = intersection / union;
-  const avgDiff = weightedDiff / activeCount;
-
-  // 小さいほど似ている
-  return (1 - iou) * 0.75 + avgDiff * 0.25;
+  return intersection / union;
 }
 
+function getForegroundPoints(binary, size = 48) {
+  const points = [];
 
-  export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
-  const normalizedShape64 = String(shape64 || "").trim().toLowerCase();
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      if (binary[y * size + x]) {
+        points.push({ x, y });
+      }
+    }
+  }
 
-  if (!/^[0-9a-f]{4096}$/.test(normalizedShape64)) {
+  return points;
+}
+
+function averageNearestDistanceScore(a, b, size = 48) {
+  const pointsA = getForegroundPoints(a, size);
+  const pointsB = getForegroundPoints(b, size);
+
+  if (!pointsA.length || !pointsB.length) return 1;
+
+  const nearestAverage = (from, to) => {
+    let sum = 0;
+
+    for (const p of from) {
+      let bestSq = Infinity;
+
+      for (const q of to) {
+        const dx = p.x - q.x;
+        const dy = p.y - q.y;
+        const d2 = dx * dx + dy * dy;
+
+        if (d2 < bestSq) bestSq = d2;
+      }
+
+      sum += Math.sqrt(bestSq);
+    }
+
+    return sum / from.length;
+  };
+
+  const ab = nearestAverage(pointsA, pointsB);
+  const ba = nearestAverage(pointsB, pointsA);
+
+  const avg = (ab + ba) / 2;
+
+  // 48pxグリッドで、平均ズレ6px以上ならかなり別物扱い。
+  return Math.min(1, avg / 6);
+}
+
+function compareNormalizedShapeBinary(a, b, size = 48) {
+  const countA = countBinaryPixels(a);
+  const countB = countBinaryPixels(b);
+
+  if (countA <= 0 || countB <= 0) return 1;
+
+  const densityA = countA / (size * size);
+  const densityB = countB / (size * size);
+
+  // 密度が極端に違う場合は、円 vs ぐちゃぐちゃ線を同一扱いしにくくする。
+  const densityPenalty = Math.min(
+    0.35,
+    Math.abs(densityA - densityB) * 3.2
+  );
+
+  const iou = binaryIoU(a, b, size, 1);
+  const iouDistance = 1 - iou;
+
+  const nearestDistance = averageNearestDistanceScore(a, b, size);
+
+  /*
+    iouDistance:
+      同じ場所に線があるか。
+    nearestDistance:
+      線同士が近いか。円の少しのズレに強い。
+    densityPenalty:
+      線量が違いすぎるものを弾く。
+  */
+  const score =
+    iouDistance * 0.42 +
+    nearestDistance * 0.48 +
+    densityPenalty * 0.10;
+
+  return Math.max(0, Math.min(1, score));
+}
+
+function compareOriginMagicCircleShape64(aShape64, bShape64) {
+  const aLevels = originMagicCircleShape64ToLevels(aShape64);
+  const bLevels = originMagicCircleShape64ToLevels(bShape64);
+
+  if (aLevels.length !== 4096 || bLevels.length !== 4096) return 1;
+
+  const aBinary64 = originMagicCircleLevelsToBinary(aLevels, 1);
+  const bBinary64 = originMagicCircleLevelsToBinary(bLevels, 1);
+
+  const aBounds = getBinaryBounds(aBinary64, 64);
+  const bBounds = getBinaryBounds(bBinary64, 64);
+
+  if (!aBounds.ok || !bBounds.ok) return 1;
+
+  /*
+    あまりに線量が違うものは先に弾く。
+    ただし円の描き方によって点数はそこそこ変わるので、
+    ここは緩めにする。
+  */
+  const countRatio =
+    Math.min(aBounds.count, bBounds.count) /
+    Math.max(aBounds.count, bBounds.count);
+
+  if (countRatio < 0.32) {
+    return 1;
+  }
+
+  const aNormalized = normalizeBinaryShape(aBinary64, 64, 48, 4);
+  const bNormalized = normalizeBinaryShape(bBinary64, 64, 48, 4);
+
+  return compareNormalizedShapeBinary(aNormalized, bNormalized, 48);
+}
+
+// 低いほど似ている。
+// 0.42なら「多少ズレた円」は通し、「円と星」「円と×」は落とす想定。
+const SIMILARITY_THRESHOLD = 0.42;
+
+export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
+  const targetShape64 = normalizeOriginMagicCircleCacheShape64(shape64);
+
+  if (!targetShape64) {
+    console.log("[origin-magic-circle] shape64 search skipped: invalid target", {
+      length: String(shape64 || "").length,
+    });
     return null;
   }
 
   const sheets = await getSheetsClient();
-  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
 
+  // G: sha256, H: 魔法陣json, I: shape64
+  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!G2:I`;
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range,
@@ -984,41 +1234,61 @@ function compareOriginMagicCircleShape64(a, b) {
   const rows = res.data.values || [];
 
   let best = null;
+  const debugCandidates = [];
 
-  rows.forEach((row, index) => {
-    const imageHash = String(row?.[0] || "").trim();
-    const magicEffectJsonRaw = String(row?.[1] || "").trim();
-    const storedShape64 = String(row?.[2] || "").trim().toLowerCase();
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i] || [];
 
-    if (!imageHash || !magicEffectJsonRaw || !storedShape64) return;
+    const imageHash = String(row[0] || "").trim();
+    const rawJson = String(row[1] || "").trim();
+    const storedShape64 = normalizeOriginMagicCircleCacheShape64(row[2]);
 
-    const score = compareOriginMagicCircleShape64(
-      normalizedShape64,
-      storedShape64
-    );
+    if (!imageHash || !rawJson || !storedShape64) continue;
 
-    if (!Number.isFinite(score)) return;
+    const score = compareOriginMagicCircleShape64(targetShape64, storedShape64);
+
+    const candidate = {
+      rowIndex: i + 2,
+      imageHash,
+      rawJson,
+      shape64: storedShape64,
+      similarScore: score,
+    };
+
+    debugCandidates.push({
+      rowIndex: candidate.rowIndex,
+      score: Number(score.toFixed(4)),
+      imageHash: imageHash.slice(0, 10),
+    });
 
     if (!best || score < best.similarScore) {
-      best = {
-        rowIndex: index + 2,
-        imageHash,
-        magicEffectJson: safeParseJson(magicEffectJsonRaw),
-        shape64: storedShape64,
-        similarScore: score,
-      };
+      best = candidate;
     }
-  });
-
-  const SIMILARITY_THRESHOLD = 0.42;
-
-  if (!best || best.similarScore > SIMILARITY_THRESHOLD) {
-    return null;
   }
 
-  return best;
-}
+  debugCandidates.sort((a, b) => a.score - b.score);
 
+  console.log("[origin-magic-circle] shape64 similarity search:", {
+    threshold: SIMILARITY_THRESHOLD,
+    rows: rows.length,
+    candidates: debugCandidates.length,
+    best: best
+      ? {
+          rowIndex: best.rowIndex,
+          imageHash: best.imageHash.slice(0, 10),
+          similarScore: Number(best.similarScore.toFixed(4)),
+          hit: best.similarScore <= SIMILARITY_THRESHOLD,
+        }
+      : null,
+    top5: debugCandidates.slice(0, 5),
+  });
+
+  if (best && best.similarScore <= SIMILARITY_THRESHOLD) {
+    return best;
+  }
+
+  return null;
+}
 // ====== 時々文芸部：options用の高速キャッシュ ======
 // ====== 時々文芸部：ツリー用（毎回最新取得・A:D一括） ======
 
