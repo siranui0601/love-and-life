@@ -954,15 +954,6 @@ function compareOriginMagicCircleShape64(a, b) {
 }
 
 export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
-  
-  
-  
-  const targetShape64 = String(shape64 || "").trim().toLowerCase();
-  console.log("[origin-magic-circle] shape64 best match:", {
-  rowIndex: best?.rowIndex,
-  score: best?.similarScore,
-  matched: !!best && best.similarScore <= SIMILARITY_THRESHOLD,
-});
 
 
   if (!/^[0-9a-f]{4096}$/.test(targetShape64)) return null;
