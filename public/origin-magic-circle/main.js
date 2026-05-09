@@ -9,6 +9,7 @@ const refs = {
   waitingRoom: document.getElementById("waitingRoom"),
   waitingNote: document.getElementById("waitingNote"),
   roomIdText: document.getElementById("roomIdText"),
+  copyRoomIdBtn: document.getElementById("copyRoomIdBtn"),
   memberList: document.getElementById("memberList"),
   startGameBtn: document.getElementById("startGameBtn"),
   deleteRoomBtn: document.getElementById("deleteRoomBtn"),
@@ -352,12 +353,25 @@ function showWaitingRoom(room) {
   refs.waitingNote.classList.add("hidden");
   refs.roomIdText.textContent = room.roomId;
   refs.memberList.innerHTML = "";
+  refs.copyRoomIdBtn?.classList.remove("hidden");
+refs.copyRoomIdBtn.onclick = async () => {
+  await navigator.clipboard.writeText(String(room.roomId || ""));
+  refs.copyRoomIdBtn.textContent = "コピー済";
+  setTimeout(() => {
+    refs.copyRoomIdBtn.textContent = "コピー";
+  }, 1000);
+};
 
   const isHost = room.members.some((member) => member.id === userTrackingId && member.role === "host");
   room.members.forEach((member) => {
+    
+    
+    
     const li = document.createElement("li");
-    const hpText = Number.isFinite(Number(member.hp)) ? ` HP:${Math.max(0, Number(member.hp))}` : "";
-    li.textContent = `${member.name}${member.role === "host" ? "（ホスト）" : ""}${hpText}`;
+    li.textContent = `${member.name}${member.role === "host" ? "（ホスト）" : ""}`;
+    
+    
+    
     refs.memberList.appendChild(li);
   });
 
@@ -4728,13 +4742,17 @@ function moveCameraToWinnerFront(winnerActor, duration = 1000) {
     const winnerPos = winnerActor.position.clone();
     const targetLookAt = winnerPos.clone().add(new Vector3(0, 2.8, 0));
 
-    // 勝者の正面側へ移動。
-    // 今のキャラ配置だとZ方向正面で問題ない。
-    const front = new Vector3(0, 0, 1);
-    const targetPos = winnerPos
-      .clone()
-      .addScaledVector(front, 10)
-      .add(new Vector3(0, 3.2, 0));
+    // 各キャラは中央(0,0,0)を向いているので、
+// キャラ位置 → 中央 の方向がキャラの正面方向。
+const front = new Vector3(0, winnerPos.y, 0)
+  .sub(winnerPos)
+  .setY(0)
+  .normalize();
+
+const targetPos = winnerPos
+  .clone()
+  .addScaledVector(front, 10)
+  .add(new Vector3(0, 3.2, 0));
 
     const ease = (t) => {
       const v = Math.max(0, Math.min(1, t));
