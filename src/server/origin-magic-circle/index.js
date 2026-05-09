@@ -9,17 +9,14 @@ import {
   joinOriginMagicCircleRoom,
   removeOriginMagicCircleMember,
   updateOriginMagicCircleRoomStatus,
-  findOriginMagicCircleSpellCache,
   appendOriginMagicCircleSpellCache,
+  findSimilarOriginMagicCircleSpellCacheByShape64,
   updateOriginMagicCircleRoomHp,
   
   touchOriginMagicCircleRoomExpiresAt,
   cleanupExpiredOriginMagicCircleRooms,
   
-  updateOriginMagicCircleSpellCacheStroke,
-  
-  
-    appendOriginMagicCircleRoomCastLog,
+  appendOriginMagicCircleRoomCastLog,
   findOriginMagicCircleSpellCachesByHashes,
   
   
@@ -46,6 +43,12 @@ function createOriginMagicCircleImageHash(base64ImageFile) {
     .createHash("sha256")
     .update(String(base64ImageFile || ""))
     .digest("hex");
+}
+
+function normalizeOriginMagicCircleShape64(rawShape64) {
+  const value = String(rawShape64 || "").trim().toLowerCase();
+  if (!/^[0-9a-f]{4096}$/.test(value)) return "";
+  return value;
 }
 
 
@@ -361,6 +364,7 @@ export function mountOriginMagicCircleRoutes(app, io) {
   app.post("/api/origin-magic-circle/chant-title", async (req, res) => {
   const base64ImageFile = String(req.body?.base64ImageFile || "").trim();
 const strokeJson = normalizeOriginMagicCircleStrokeJson(req.body?.strokeJson);
+const shape64 = normalizeOriginMagicCircleShape64(req.body?.shape64);
 
 
 
@@ -375,42 +379,22 @@ console.log("[origin-magic-circle] stroke receive:", {
 
 
 if (!base64ImageFile) return res.status(400).json({ error: "base64ImageFile is required" });
+if (!shape64) return res.status(400).json({ error: "shape64 is required" });
 if (!genAI) return res.status(500).json({ error: "gemini_key_missing" });
 
   const imageHash = createOriginMagicCircleImageHash(base64ImageFile);
 
   try {
-    const cached = await findOriginMagicCircleSpellCache(imageHash);
+    const cached = await findSimilarOriginMagicCircleSpellCacheByShape64(shape64);
 
 if (cached?.rawJson) {
-  console.log("[origin-magic-circle] cache hit:", {
-    rowIndex: cached.rowIndex,
-    hasCachedStroke: !!cached.strokeJson,
-    cachedStrokeLength: String(cached.strokeJson || "").length,
-    incomingStrokeLength: strokeJson.length,
-  });
-
-  if (strokeJson && cached.rowIndex && strokeJson !== cached.strokeJson) {
-    try {
-      await updateOriginMagicCircleSpellCacheStroke({
-        rowIndex: cached.rowIndex,
-        strokeJson,
-      });
-
-      console.log("[origin-magic-circle] stroke cache updated:", {
-        rowIndex: cached.rowIndex,
-        strokeLength: strokeJson.length,
-      });
-    } catch (error) {
-      console.warn("[origin-magic-circle] stroke cache update failed:", error);
-    }
-  }
-
   return res.json({
   magicEffectJson: normalizeOriginMagicCircleEffectJson(JSON.parse(cached.rawJson)),
   imageHash,
-  strokeJson: cached.strokeJson || strokeJson,
+  strokeJson,
+  shape64,
   fromCache: true,
+  similarScore: cached.similarScore,
 });
 }
 
@@ -497,10 +481,10 @@ JSON以外は禁止。候補が配列で示されている項目は、必ず1つ
       const jsonText = extractJsonText(rawText);
       const magicEffectJson = normalizeOriginMagicCircleEffectJson(JSON.parse(jsonText));
       const appended = await appendOriginMagicCircleSpellCache({
-  imageHash,
-  rawJson: JSON.stringify(magicEffectJson),
-  strokeJson,
-});
+        imageHash,
+        rawJson: JSON.stringify(magicEffectJson),
+        shape64,
+      });
 
 console.log("[origin-magic-circle] spell cache appended:", {
   rowIndex: appended?.rowIndex,
@@ -509,12 +493,13 @@ console.log("[origin-magic-circle] spell cache appended:", {
   strokeLength: String(strokeJson || "").length,
 });
 
-return res.json({
-  magicEffectJson,
-  imageHash,
-  strokeJson,
-  fromCache: false,
-});
+    return res.json({
+      magicEffectJson,
+      imageHash,
+      strokeJson,
+      shape64,
+      fromCache: false,
+    });
     } catch (error) {
       console.error("[origin-magic-circle] chant title error:", error);
       return res.status(500).json({ error: "gemini_failed" });
@@ -569,6 +554,7 @@ async function registerOriginMagicCircleCast({
         casterId: safeCasterId,
         casterName: safeCasterName,
         spellHash: safeSpellHash,
+        strokeJson: safeStrokeJson,
       });
     } catch (error) {
       console.warn("[origin-magic-circle] append room cast log failed:", error);
@@ -657,7 +643,7 @@ app.post("/api/origin-magic-circle/casts", async (req, res) => {
       return {
         ...log,
         magicEffectJson,
-        strokeJson: cache?.strokeJson || "",
+        strokeJson: log.strokeJson || "",
       };
     });
 
