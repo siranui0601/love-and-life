@@ -3828,76 +3828,19 @@ function getAssetSizePreset(assetName, objectSize = "medium") {
     y: 1.6,
     offsetX: 0,
     offsetZ: 0,
-    rotationX: 0,
-    rotationY: 0,
-    rotationZ: 0,
   };
 
-  const preset = summonAssetSizePresets[assetName]?.[objectSize] || medium;
+  const preset =
+    summonAssetSizePresets[assetName]?.[objectSize] ||
+    medium;
 
   return {
     scale: preset.scale ?? medium.scale ?? 1,
     y: preset.y ?? medium.y ?? 1.6,
     offsetX: preset.offsetX ?? medium.offsetX ?? 0,
     offsetZ: preset.offsetZ ?? medium.offsetZ ?? 0,
-    rotationX: preset.rotationX ?? medium.rotationX ?? 0,
-    rotationY: preset.rotationY ?? medium.rotationY ?? 0,
-    rotationZ: preset.rotationZ ?? medium.rotationZ ?? 0,
   };
 }
-
-
-
-
-function getSelectedAssetName() {
-  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
-  return checkedAsset?.value || "fireball.glb";
-}
-
-function getSelectedObjectSize() {
-  return sizeSelect?.value || "medium";
-}
-
-function getPresetInputValues() {
-  return {
-    scale: Number(scaleInput?.value) || 1,
-    y: Number(yInput?.value) || 1.6,
-    offsetZ: Number(zInput?.value) || 0,
-    rotationX: Number(rotXInput?.value) || 0,
-    rotationY: Number(rotYInput?.value) || 0,
-    rotationZ: Number(rotZInput?.value) || 0,
-  };
-}
-
-function writeInputsToPreset() {
-  const assetName = getSelectedAssetName();
-  const objectSize = getSelectedObjectSize();
-
-  if (!summonAssetSizePresets[assetName]) {
-    summonAssetSizePresets[assetName] = {};
-  }
-
-  summonAssetSizePresets[assetName][objectSize] = {
-    ...getPresetInputValues(),
-  };
-}
-
-function loadPresetToInputs() {
-  const assetName = getSelectedAssetName();
-  const objectSize = getSelectedObjectSize();
-  const preset = getAssetSizePreset(assetName, objectSize);
-
-  scaleInput.value = preset.scale;
-  yInput.value = preset.y;
-  zInput.value = preset.offsetZ || 0;
-  rotXInput.value = preset.rotationX || 0;
-  rotYInput.value = preset.rotationY || 0;
-  rotZInput.value = preset.rotationZ || 0;
-}
-
-
-
-
 function getBattleActors(casterSide = "self") {
   const members = currentRoom?.members || [];
   const isPlayerTwo = members.findIndex((member) => member.id === userTrackingId) === 1;
@@ -4288,14 +4231,6 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
   root.scale.setScalar(preset.scale);
   root.userData.currentScale = preset.scale;
 
-
-
-
-
-root.rotation.x += preset.rotationX || 0;
-root.rotation.y += preset.rotationY || 0;
-root.rotation.z += preset.rotationZ || 0;
-
   applyMagicColor(root, visualObject.colorHexCode);
 
   if (assetName === "explosion_burst") {
@@ -4503,62 +4438,58 @@ topControls.className = "summon-test-controls";
 
     <div class="summon-test-controls__fields">
     
-    
+    <label class="summon-test-controls__field">
+  素材パーツ
+  <select class="summon-material-select"></select>
+</label>
+
+<label class="summon-test-controls__field">
+  色
+  <input class="summon-material-color" type="color" value="#ffffff" />
+</label>
+
+<label class="summon-test-controls__field">
+  透明度
+  <input class="summon-material-opacity" type="number" min="0" max="1" step="0.05" value="1" />
+</label>
+
+<label class="summon-test-controls__field">
+  <input class="summon-material-transparent" type="checkbox" />
+  transparent
+</label>
+
+<label class="summon-test-controls__field">
+  <input class="summon-material-depthwrite" type="checkbox" />
+  depthWrite
+</label>
+
+<label class="summon-test-controls__field">
+  <input class="summon-material-tonemapped" type="checkbox" />
+  toneMapped
+</label>
+
 
 
       <label class="summon-test-controls__field">
-  サイズ種別
-  <select class="summon-size-select">
-    <option value="small">small</option>
-    <option value="medium" selected>medium</option>
-    <option value="large">large</option>
-  </select>
-</label>
-<br>
-<label class="summon-test-controls__field">
-  スケール
-  <input class="summon-scale-input" type="number" min="0.0001" step="0.1" value="1" />
-</label>
-<br>
-<label class="summon-test-controls__field">
-  Y高さ
-  <input class="summon-y-input" type="number" step="0.1" value="1.6" />
-</label>
-<br>
-<label class="summon-test-controls__field">
-  Z補正
-  <input class="summon-z-input" type="number" step="0.1" value="0" />
-</label>
-<br>
-<label class="summon-test-controls__field">
-  回転X
-  <input class="summon-rot-x-input" type="number" step="0.1" value="0" />
-</label>
-<br>
-<label class="summon-test-controls__field">
-  回転Y
-  <input class="summon-rot-y-input" type="number" step="0.1" value="0" />
-</label>
-<br>
-<label class="summon-test-controls__field">
-  回転Z
-  <input class="summon-rot-z-input" type="number" step="0.1" value="0" />
-</label>
-<br>
+        スケール倍率
+        <input class="summon-scale-input" type="number" min="0.01" step="0.1" value="1" />
+      </label>
+
+      <label class="summon-test-controls__field">
+        Y高さ
+      <input class="summon-y-input" type="number" step="0.1" value="1.6" />
+  
+      <label class="summon-test-controls__field">
+        Z補正
+      <input class="summon-z-input" type="number" step="0.1" value="0" />
+      </label>
+
 <label class="summon-test-controls__field">
   表示位置
   <select class="summon-preview-position-select">
     <option value="center">中央</option>
     <option value="self">自キャラ前</option>
   </select>
-</label>
-<br>
-<div class="summon-test-controls__test-buttons">
-  <button class="magic-effect-test-btn basic" type="button">単体テスト</button>
-  <button class="magic-effect-test-btn spread" type="button">横並びテスト</button>
-  <button class="magic-effect-test-btn orbit" type="button">周回テスト</button>
-  <button class="magic-effect-test-btn fall" type="button">落下テスト</button>
-</div>
 </label>
 
 <button class="magic-effect-test-btn" type="button">魔法演出テスト</button>
@@ -4571,18 +4502,10 @@ topControls.className = "summon-test-controls";
 
 
   const radioList = topControls.querySelector(".summon-test-controls__list");
-  const sizeSelect = topControls.querySelector(".summon-size-select");
-const scaleInput = topControls.querySelector(".summon-scale-input");
-const yInput = topControls.querySelector(".summon-y-input");
-const zInput = topControls.querySelector(".summon-z-input");
-const rotXInput = topControls.querySelector(".summon-rot-x-input");
-const rotYInput = topControls.querySelector(".summon-rot-y-input");
-const rotZInput = topControls.querySelector(".summon-rot-z-input");
+  const scaleInput = topControls.querySelector(".summon-scale-input");
+  const yInput = topControls.querySelector(".summon-y-input");
+  const zInput = topControls.querySelector(".summon-z-input");
 
-const effectTestBasicBtn = topControls.querySelector(".magic-effect-test-btn.basic");
-const effectTestSpreadBtn = topControls.querySelector(".magic-effect-test-btn.spread");
-const effectTestOrbitBtn = topControls.querySelector(".magic-effect-test-btn.orbit");
-const effectTestFallBtn = topControls.querySelector(".magic-effect-test-btn.fall");
   const effectTestBtn = topControls.querySelector(".magic-effect-test-btn");
 
 
@@ -4595,7 +4518,6 @@ const materialTransparentInput = topControls.querySelector(".summon-material-tra
 const materialDepthWriteInput = topControls.querySelector(".summon-material-depthwrite");
 const materialToneMappedInput = topControls.querySelector(".summon-material-tonemapped");
 
-/*
 let previewMaterialItems = [];
 
 
@@ -4671,11 +4593,10 @@ function rebuildMaterialEditor(root, assetName) {
   materialSelect.value = "0";
   syncMaterialEditorInputs();
 }
-*/
 
 
-//materialSelect?.addEventListener("change", syncMaterialEditorInputs);
-//materialColorInput?.addEventListener("input", applyMaterialEditorToSelected);
+materialSelect?.addEventListener("change", syncMaterialEditorInputs);
+materialColorInput?.addEventListener("input", applyMaterialEditorToSelected);
 materialOpacityInput?.addEventListener("input", applyMaterialEditorToSelected);
 materialTransparentInput?.addEventListener("change", applyMaterialEditorToSelected);
 materialDepthWriteInput?.addEventListener("change", applyMaterialEditorToSelected);
@@ -4685,7 +4606,11 @@ materialToneMappedInput?.addEventListener("change", applyMaterialEditorToSelecte
 
 
 
-loadPresetToInputs();
+const initialPreset = getAssetSizePreset("fireball.glb", "medium");
+scaleInput.value = initialPreset.scale;
+  yInput.value = initialPreset.y;
+  zInput.value = initialPreset.offsetZ || 0;
+
 
 topControlsToggle?.addEventListener("click", () => {
   const collapsed = topControls.classList.toggle("is-collapsed");
@@ -4799,7 +4724,7 @@ function getPreviewPosition(assetName, appliedY, appliedZ = null) {
 
 
 
-/*function detachMaterialsForPreview(root) {
+function detachMaterialsForPreview(root) {
   root.traverse((child) => {
     if (!child.isMesh || !child.material) return;
 
@@ -4830,28 +4755,34 @@ function collectPreviewMaterials(root) {
   });
 
   return items;
-}*/
+}
 
 
 
 
 
-
-
-
-  async function showPreviewAsset(assetName) {
+async function showPreviewAsset(assetName) {
   const requestId = ++previewRequestId;
 
   if (!assetName || !summonAssetOptions.includes(assetName)) return;
 
   removePreviewAssetRoot();
 
-  const objectSize = getSelectedObjectSize();
-  const preset = getAssetSizePreset(assetName, objectSize);
+  const scaleValue = Number(scaleInput?.value);
+  const appliedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
+
+  const yValue = Number(yInput?.value);
+  const appliedY = Number.isFinite(yValue) ? yValue : 1.6;
+
+  const zValue = Number(zInput?.value);
+  const appliedZ = Number.isFinite(zValue) ? zValue : 0;
 
   await ensureSummonAssetLoaded(assetName, { urgent: true });
 
-  const currentSelectedName = getSelectedAssetName();
+  // 重要：ロード中に別素材へ切り替わっていたら、この表示処理を破棄
+  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
+  const currentSelectedName = checkedAsset?.value || "";
+
   if (requestId !== previewRequestId || currentSelectedName !== assetName) {
     return;
   }
@@ -4859,15 +4790,12 @@ function collectPreviewMaterials(root) {
   const root = createMagicObjectRoot(assetName);
   if (!root) return;
 
+  detachMaterialsForPreview(root);
+
   root.visible = true;
-  root.scale.setScalar(preset.scale);
-  root.position.copy(getPreviewPosition(assetName, preset.y, preset.offsetZ));
-
-  root.rotation.x += preset.rotationX || 0;
-  root.rotation.y += preset.rotationY || 0;
-  root.rotation.z += preset.rotationZ || 0;
-
-  root.userData.currentScale = preset.scale;
+  root.scale.setScalar(appliedScale);
+  root.position.copy(getPreviewPosition(assetName, appliedY, appliedZ));
+  root.userData.currentScale = appliedScale;
 
   if (root.userData.effectType === "explosion_burst") {
     resetExplosionBurst(root);
@@ -4878,133 +4806,38 @@ function collectPreviewMaterials(root) {
   previewAssetRoot = root;
   previewAssetName = assetName;
 
+  //rebuildMaterialEditor(root, assetName);
+  rebuildMaterialEditor(root);
+
   showDebug(getMaterialDebugText(root, assetName));
 }
 
 
-function buildTestMagicEffect(assetName, testType = "basic") {
-  const objectSize = getSelectedObjectSize();
 
-  if (testType === "spread") {
-    return {
-      magicName: "横並びテスト魔法",
-      artScore: 0,
-      timedVisualEffects: [
-        {
-          startTimeSeconds: 0,
-          visualObjects: [
-            {
-              assetFileName: assetName,
-              objectCount: 5,
-              spawnPosition: "in_front_of_self",
-              spawnSpreadPattern: "horizontal_line",
-              colorHexCode: "#88ccff",
-              objectSize,
-              lifeTimeSeconds: 4,
-              movement: {
-                targetPosition: "enemy_position",
-                moveDurationSeconds: 2,
-                movePathType: "arc",
-              },
-              rotation: {
-                shouldRotate: true,
-                rotationSpeed: "normal",
-              },
-            },
-          ],
-        },
-      ],
-      damageTimings: [],
-    };
-  }
 
-  if (testType === "orbit") {
-    return {
-      magicName: "周回テスト魔法",
-      artScore: 0,
-      timedVisualEffects: [
-        {
-          startTimeSeconds: 0,
-          visualObjects: [
-            {
-              assetFileName: assetName,
-              objectCount: 3,
-              spawnPosition: "battlefield_center",
-              spawnSpreadPattern: "circle",
-              colorHexCode: "#ff66dd",
-              objectSize,
-              lifeTimeSeconds: 5,
-              movement: {
-                targetPosition: "battlefield_center",
-                moveDurationSeconds: 4,
-                movePathType: "orbit",
-              },
-              rotation: {
-                shouldRotate: true,
-                rotationSpeed: "fast",
-              },
-            },
-          ],
-        },
-      ],
-      damageTimings: [],
-    };
-  }
+effectTestBtn?.addEventListener("click", () => {
+  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
+  const selectedName = checkedAsset?.value || "fireball.glb";
 
-  if (testType === "fall") {
-    return {
-      magicName: "落下テスト魔法",
-      artScore: 0,
-      timedVisualEffects: [
-        {
-          startTimeSeconds: 0,
-          visualObjects: [
-            {
-              assetFileName: assetName,
-              objectCount: 1,
-              spawnPosition: "above_enemy",
-              spawnSpreadPattern: "none",
-              colorHexCode: "#ffffff",
-              objectSize,
-              lifeTimeSeconds: 4,
-              enterEffect: "fall_from_sky",
-              exitEffect: "scale_down",
-              movement: {
-                targetPosition: "enemy_position",
-                moveDurationSeconds: 1.8,
-                movePathType: "fall_from_above",
-              },
-              rotation: {
-                shouldRotate: true,
-                rotationSpeed: "slow",
-              },
-            },
-          ],
-        },
-      ],
-      damageTimings: [],
-    };
-  }
-
-  return {
-    magicName: "単体テスト魔法",
+  playMagicVisualEffects({
+    magicName: "テスト魔法",
     artScore: 0,
     timedVisualEffects: [
       {
         startTimeSeconds: 0,
         visualObjects: [
           {
-            assetFileName: assetName,
-            objectCount: 1,
+            assetFileName: selectedName,
+            objectCount: 3,
             spawnPosition: "in_front_of_self",
-            spawnSpreadPattern: "none",
+            spawnSpreadPattern: "horizontal_line",
             colorHexCode: "#88ccff",
-            objectSize,
+            objectSize: "medium",
             lifeTimeSeconds: 4,
             movement: {
               targetPosition: "enemy_position",
-              moveDurationSeconds: 0,
-              movePathType: "none",
+              moveDurationSeconds: 2,
+              movePathType: "arc",
             },
             rotation: {
               shouldRotate: true,
@@ -5013,25 +4846,39 @@ function buildTestMagicEffect(assetName, testType = "basic") {
           },
         ],
       },
+      {
+        startTimeSeconds: 2,
+        visualObjects: [
+          {
+            assetFileName: "explosion_burst",
+            objectCount: 1,
+            spawnPosition: "enemy_position",
+            spawnSpreadPattern: "none",
+            colorHexCode: "#ff8844",
+            objectSize: "medium",
+            lifeTimeSeconds: 1.5,
+            movement: {
+              targetPosition: "enemy_position",
+              moveDurationSeconds: 0,
+              movePathType: "none",
+            },
+            rotation: {
+              shouldRotate: false,
+              rotationSpeed: "normal",
+            },
+          },
+        ],
+      },
     ],
-    damageTimings: [],
-  };
-}
-
-function playSelectedAssetTest(testType) {
-  const selectedName = getSelectedAssetName();
-  writeInputsToPreset();
-  playMagicVisualEffects(buildTestMagicEffect(selectedName, testType));
-}
-
-effectTestBasicBtn?.addEventListener("click", () => playSelectedAssetTest("basic"));
-effectTestSpreadBtn?.addEventListener("click", () => playSelectedAssetTest("spread"));
-effectTestOrbitBtn?.addEventListener("click", () => playSelectedAssetTest("orbit"));
-effectTestFallBtn?.addEventListener("click", () => playSelectedAssetTest("fall"));
-
-
-
-
+    damageTimings: [
+      {
+        timeSeconds: 2,
+        damageWeight: 0,
+        target: "enemy",
+      },
+    ],
+  });
+});
 
 
   const applySummonState = () => {
@@ -5046,56 +4893,33 @@ effectTestFallBtn?.addEventListener("click", () => playSelectedAssetTest("fall")
 };
 
 radioList?.addEventListener("change", () => {
-  loadPresetToInputs();
+  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
+  const selectedName = checkedAsset?.value || "";
+  const preset = getAssetSizePreset(selectedName, "medium");
+
+  scaleInput.value = preset.scale;
+  yInput.value = preset.y;
+  zInput.value = preset.offsetZ || 0;
+
   applySummonState();
 });
 
 
-  sizeSelect?.addEventListener("change", () => {
-  loadPresetToInputs();
-  applySummonState();
-});
-
-scaleInput?.addEventListener("input", () => {
-  writeInputsToPreset();
-  applySummonState();
-});
-
-yInput?.addEventListener("input", () => {
-  writeInputsToPreset();
-  applySummonState();
-});
-
-zInput?.addEventListener("input", () => {
-  writeInputsToPreset();
-  applySummonState();
-});
-
-rotXInput?.addEventListener("input", () => {
-  writeInputsToPreset();
-  applySummonState();
-});
-
-rotYInput?.addEventListener("input", () => {
-  writeInputsToPreset();
-  applySummonState();
-});
-
-rotZInput?.addEventListener("input", () => {
-  writeInputsToPreset();
-  applySummonState();
-});
-
-positionSelect?.addEventListener("change", applySummonState);
-
-    
+  //topControls.addEventListener("change", applySummonState);
+  scaleInput?.addEventListener("input", applySummonState);
+  yInput?.addEventListener("input", applySummonState);
+  zInput?.addEventListener("input", applySummonState);
+  
+  
+  
+  positionSelect?.addEventListener("change", applySummonState);
+  
   
   //refs.battleView.appendChild(topControls);
   //applySummonState();
 
 if (isOriginDebugTestRoom) {
   refs.battleView.appendChild(topControls);
-  loadPresetToInputs();
   applySummonState();
 }
 
