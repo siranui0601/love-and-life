@@ -440,7 +440,11 @@ function setMessage(text) {
 }
 
 function updateLoadingProgress(loadedCount, totalCount) {
-  const safeLoaded = Number.isFinite(loadedCount) ? Math.max(0, loadedCount) : 0;
+  showLoadingNote();
+
+  // 以下は今のまま
+
+    const safeLoaded = Number.isFinite(loadedCount) ? Math.max(0, loadedCount) : 0;
   const safeTotal = Number.isFinite(totalCount) ? Math.max(0, totalCount) : 0;
 
   if (refs.loadingProgressText) {
@@ -452,6 +456,44 @@ function updateLoadingProgress(loadedCount, totalCount) {
     refs.loadingWaterFill.style.height = `${ratio * 100}%`;
   }
 }
+
+
+
+
+function showNormalNote(text = "") {
+  refs.waitingNote?.classList.remove("hidden", "loading-active");
+
+  if (refs.loadingProgressText) {
+    refs.loadingProgressText.textContent = text;
+  }
+
+  if (refs.loadingWaterFill) {
+    refs.loadingWaterFill.style.height = "0%";
+  }
+}
+
+function hideWaitingNote() {
+  hideWaitingNote();
+    refs.waitingNote?.classList.remove("loading-active");
+
+  if (refs.loadingProgressText) {
+    refs.loadingProgressText.textContent = "";
+  }
+
+  if (refs.loadingWaterFill) {
+    refs.loadingWaterFill.style.height = "0%";
+  }
+}
+
+function showLoadingNote() {
+  refs.waitingNote?.classList.remove("hidden");
+  refs.waitingNote?.classList.add("loading-active");
+}
+
+
+
+
+
 
 function resetLoadingWaterFillVisual() {
   if (!refs.loadingWaterFill) return;
@@ -493,12 +535,12 @@ function clearActiveRoomId() {
 function showWaitingRoom(room) {
   
   
-  refs.waitingNote?.classList.add("hidden");
-  
+  //hideWaitingNote();  
+
   currentRoom = room;
   if (room?.status !== "loading") {
     loadingBattleFlowStarted = false;
-    refs.waitingNote?.classList.add("hidden");
+    hideWaitingNote();
   }
   hideHomePanel();
   refs.waitingRoom.classList.remove("hidden");
@@ -5984,7 +6026,8 @@ if (activeRoomId === "000000") {
 if (!activeRoomId) {
   showHomePanel();
   refs.waitingRoom.classList.add("hidden");
-  refs.waitingNote.classList.remove("hidden");
+  showNormalNote("");
+  refs.waitingNote?.classList.add("hidden");
   return;
 }
 
