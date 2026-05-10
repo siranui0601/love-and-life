@@ -1209,8 +1209,8 @@ function compareOriginMagicCircleShape64(aShape64, bShape64) {
 }
 
 // 低いほど似ている。
-// 0.42なら「多少ズレた円」は通し、「円と星」「円と×」は落とす想定。
-const SIMILARITY_THRESHOLD = 0.42;
+// 閾値をやや厳しめにして、異なる形状が同一判定されるケースを減らす。
+const SIMILARITY_THRESHOLD = 0.34;
 
 export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
   const targetShape64 = normalizeOriginMagicCircleCacheShape64(shape64);
