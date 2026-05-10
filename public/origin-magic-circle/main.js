@@ -77,10 +77,7 @@ const summonAssetOptions = [
   "magic_ring_-_yellow.glb",
   "magic_ring_-_green.glb",
   "magic_ring_-_red.glb",
-  "iciclion.glb",
   "icicle.glb",
-  "黒天使砂時計.glb",
-  "09271839.glb",
   "35b59066261a4a0a8c113da5b5a988e9.glb",
   "2024zhongqiu_4_loop.glb",
   "eff_huanguang.glb",
@@ -92,11 +89,6 @@ const summonAssetOptions = [
   "fd37b7bec4ca48a8b6539dc4048787cf.glb",
   "technology_aperture_out.glb",
   "appearance_effect_light_beam.glb",
-  "secret_garden_729_space_portal.glb",
-  "animatedtrailglb2_test.glb",
-  "book_set.glb",
-  "line_motion.glb",
-  "event_horixon_by_uuon_foundation.glb",
   "duchess_shield.glb",
   "hojas_verdes_caen.glb",
   "the_cube.glb",
@@ -107,7 +99,6 @@ const summonAssetOptions = [
   "torii_gate_lighthouse.glb",
   "sculptjanuary2021_-_day_05_-_magic_gate.glb",
   "executor_warp_gate.glb",
-  "lantian_gate.glb",
   "japanese_tori_gate.glb",
   "stargate.glb",
   "cute_dragon.glb",
@@ -120,7 +111,6 @@ const summonAssetOptions = [
   "young_palm.glb",
   "spruce_tree_-_low_poly.glb",
   "creaturespirate_trooper.glb",
-  "pegasus.glb",
   "wing_379.glb",
   "blue_glowing_butterfly.glb",
   "hell_wings.glb",
@@ -128,8 +118,6 @@ const summonAssetOptions = [
   "wings_03.glb",
   "h6k4_war_thunder.glb",
   "k9_thunder_artillery.glb",
-  "5b040bd048324e72a6624b8f2aab5cf4.glb",
-  "chromatic_plasma.glb",
   "looping_snow_2.glb",
   "falling_snow_loop.glb",
   "snowflake_crystal_by_elsa_mmd2005.glb",
@@ -290,6 +278,30 @@ const summonAssetSizePresets = {
     large: { scale: 5, y: 2.5 },
   },
 };
+
+
+Object.assign(summonAssetSizePresets, {
+  "sun.glb": { small: { scale: 0.1, y: 3 }, medium: { scale: 0.5, y: 7 }, large: { scale: 1, y: 12 } },
+  "meteorite.glb": { small: { scale: 0.1, y: 2, offsetZ: -1 }, medium: { scale: 0.5, y: 2, offsetZ: -2 }, large: { scale: 1, y: 5, offsetZ: -6 } },
+  "rocky_hell_terrain.glb": { small: { scale: 0.0005, y: 4, offsetZ: 1 }, medium: { scale: 0.001, y: 4, offsetZ: 3 }, large: { scale: 0.002, y: 4, offsetZ: 7 } },
+  "icicle.glb": { small: { scale: 2, y: 6, offsetZ: -0.5 }, medium: { scale: 4, y: 10, offsetZ: -1 }, large: { scale: 8, y: 19, offsetZ: -1 } },
+  "35b59066261a4a0a8c113da5b5a988e9.glb": { small: { scale: 0.05, y: 1.6 }, medium: { scale: 0.25, y: 1.6 }, large: { scale: 1, y: 1.6 } },
+  "2024zhongqiu_4_loop.glb": { small: { scale: 75, y: 1.6 }, medium: { scale: 175, y: 1.6 }, large: { scale: 500, y: 1.6 } },
+  "eff_huanguang.glb": { small: { scale: 75, y: 1.6 }, medium: { scale: 175, y: 1.6 }, large: { scale: 500, y: 1.6 } },
+  "c3d8c3fda1ec45a0bdab896eba97e679.glb": { small: { scale: 0.5, y: 3 }, medium: { scale: 1, y: 3 }, large: { scale: 2, y: 3 } },
+  "829e78a8ee3548369f3ac92c41a2ee74.glb": { small: { scale: 2, y: 1.6 }, medium: { scale: 6, y: 1.6 }, large: { scale: 25, y: 1.6 } },
+  "67f9a0094a714d258e5c5088fac2a7a4.glb": { small: { scale: 1, y: 1.6 }, medium: { scale: 2, y: 1.6 }, large: { scale: 3, y: 1.6 } },
+  "27444eb10a4f4409b4a2649738ec7441.glb": { small: { scale: 3, y: 1.6 }, medium: { scale: 6, y: 1.6 }, large: { scale: 15, y: 1.6 } },
+  "c7ba0550fe034f29bfb54ca75b7eb1f6.glb": { small: { scale: 4, y: 1.6 }, medium: { scale: 8, y: 1.6 }, large: { scale: 25, y: 1.6 } },
+  "fd37b7bec4ca48a8b6539dc4048787cf.glb": { small: { scale: 1.5, y: 1.6 }, medium: { scale: 3, y: 1.6 }, large: { scale: 15, y: 1.6 } },
+  "technology_aperture_out.glb": { small: { scale: 0.25, y: 1.6 }, medium: { scale: 5, y: 1.6 }, large: { scale: 1, y: 1.6 } },
+  "appearance_effect_light_beam.glb": { small: { scale: 1, y: 2 }, medium: { scale: 2, y: 2 }, large: { scale: 4, y: 2 } },
+  "duchess_shield.glb": { small: { scale: 1, y: 1.6 }, medium: { scale: 2, y: 1.6 }, large: { scale: 4, y: 1.6 } },
+  "hojas_verdes_caen.glb": { small: { scale: 3, y: 1.6 }, medium: { scale: 6, y: 1.6 }, large: { scale: 12, y: 1.6 } },
+  "the_cube.glb": { small: { scale: 0.5, y: 4 }, medium: { scale: 1, y: 4 }, large: { scale: 1.5, y: 6 } },
+  "armillary.glb": { small: { scale: 0.05, y: 3 }, medium: { scale: 0.1, y: 4 }, large: { scale: 0.2, y: 8 } },
+  "icosahedron_knot.glb": { small: { scale: 0.25, y: 3 }, medium: { scale: 0.5, y: 3 }, large: { scale: 1, y: 5 } },
+});
 
 //変更14
 const ENABLE_ORIGIN_DEBUG = false;
@@ -2846,6 +2858,36 @@ function applyAssetSpecificTransform(root, assetName) {
   if (assetName === "soulsucker_-_weaponcraft.glb") {
     root.rotation.z = -Math.PI / 2;
   }
+
+  if (assetName === "c3d8c3fda1ec45a0bdab896eba97e679.glb") {
+    root.rotation.x = Math.PI / 2;
+    root.rotation.z = Math.PI / 2;
+  }
+
+  if (assetName === "67f9a0094a714d258e5c5088fac2a7a4.glb") {
+    root.rotation.y = Math.PI;
+    root.rotation.z = Math.PI / 2;
+  }
+
+  if (assetName === "duchess_shield.glb") {
+    root.rotation.y = Math.PI / 2;
+  }
+
+  if (assetName === "executor_warp_gate.glb" || assetName === "japanese_tori_gate.glb" || assetName === "stargate.glb" || assetName === "cute_dragon.glb" || assetName === "dragon.glb" || assetName === "adult_dragon.glb" || assetName === "wing_379.glb" || assetName === "hell_wings.glb" || assetName === "low_poly__wings.glb" || assetName === "h6k4_war_thunder.glb" || assetName === "k9_thunder_artillery.glb") {
+    root.rotation.y = Math.PI / 2;
+  }
+
+  if (assetName === "creaturespirate_trooper.glb") {
+    root.rotation.y = (80 * Math.PI) / 180;
+  }
+
+  if (assetName === "snowflake_crystal_by_elsa_mmd2005.glb") {
+    root.rotation.z = Math.PI / 2;
+  }
+
+  if (assetName === "crystal.glb" || assetName === "purple_diamond_crystal_gem.glb") {
+    root.rotation.y = (100 * Math.PI) / 180;
+  }
 }
 
 function applyAssetSpecificMaterialFix(root, assetName) {
@@ -2864,12 +2906,37 @@ function applyAssetSpecificMaterialFix(root, assetName) {
     "magic_marble.glb",
   ]);
 
+  const brightUnlitAssets = new Set([
+    "magic_ring_-_yingyangblue.glb",
+    "magic_ring_-_yellow.glb",
+    "magic_ring_-_green.glb",
+    "magic_ring_-_red.glb",
+  ]);
+
   if (strongBloomAssets.has(assetName)) {
     applyGlbEffectVisibilityFix(root);
   }
 
   if (softEffectAssets.has(assetName)) {
     applySoftEffectMaterialFix(root);
+  }
+
+  if (brightUnlitAssets.has(assetName)) {
+    root.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach((mat) => {
+        mat.transparent = true;
+        mat.depthWrite = false;
+        mat.side = DoubleSide;
+        mat.toneMapped = false;
+        if (mat.emissive && mat.color) {
+          mat.emissive.copy(mat.color);
+          mat.emissiveIntensity = Math.max(mat.emissiveIntensity || 0, 2.2);
+        }
+        mat.needsUpdate = true;
+      });
+    });
   }
 }
 
