@@ -4434,7 +4434,10 @@ topControls.className = "summon-test-controls";
   </div>
 
   <div class="summon-test-controls__body">
-    <div class="summon-test-controls__list"></div>
+    <label class="summon-test-controls__field">
+      3D素材
+      <select class="summon-asset-select"></select>
+    </label>
 
     <div class="summon-test-controls__fields">
     
@@ -4463,13 +4466,6 @@ topControls.className = "summon-test-controls";
   depthWrite
 </label>
 
-<label class="summon-test-controls__field">
-  <input class="summon-material-tonemapped" type="checkbox" />
-  toneMapped
-</label>
-
-
-
       <label class="summon-test-controls__field">
         スケール倍率
         <input class="summon-scale-input" type="number" min="0.01" step="0.1" value="1" />
@@ -4484,6 +4480,21 @@ topControls.className = "summon-test-controls";
       <input class="summon-z-input" type="number" step="0.1" value="0" />
       </label>
 
+      <label class="summon-test-controls__field">
+        向きX(度)
+        <input class="summon-rotation-x-input" type="number" step="1" value="0" />
+      </label>
+
+      <label class="summon-test-controls__field">
+        向きY(度)
+        <input class="summon-rotation-y-input" type="number" step="1" value="0" />
+      </label>
+
+      <label class="summon-test-controls__field">
+        向きZ(度)
+        <input class="summon-rotation-z-input" type="number" step="1" value="0" />
+      </label>
+
 <label class="summon-test-controls__field">
   表示位置
   <select class="summon-preview-position-select">
@@ -4492,7 +4503,15 @@ topControls.className = "summon-test-controls";
   </select>
 </label>
 
-<button class="magic-effect-test-btn" type="button">魔法演出テスト</button>
+<label class="summon-test-controls__field">
+  魔法演出テスト種別
+  <select class="magic-effect-test-pattern">
+    <option value="comet_blast">彗星弾</option>
+    <option value="spiral_guard">螺旋ガード</option>
+    <option value="rain_storm">流星雨</option>
+  </select>
+</label>
+<button class="magic-effect-test-btn" type="button">魔法演出テスト実行</button>
     </div>
   </div>
 `;
@@ -4501,12 +4520,16 @@ topControls.className = "summon-test-controls";
   const topControlsToggle = topControls.querySelector(".summon-test-controls__toggle");
 
 
-  const radioList = topControls.querySelector(".summon-test-controls__list");
+  const assetSelect = topControls.querySelector(".summon-asset-select");
   const scaleInput = topControls.querySelector(".summon-scale-input");
   const yInput = topControls.querySelector(".summon-y-input");
   const zInput = topControls.querySelector(".summon-z-input");
+  const rotationXInput = topControls.querySelector(".summon-rotation-x-input");
+  const rotationYInput = topControls.querySelector(".summon-rotation-y-input");
+  const rotationZInput = topControls.querySelector(".summon-rotation-z-input");
 
   const effectTestBtn = topControls.querySelector(".magic-effect-test-btn");
+  const effectPatternSelect = topControls.querySelector(".magic-effect-test-pattern");
 
 
 
@@ -4516,7 +4539,6 @@ const materialColorInput = topControls.querySelector(".summon-material-color");
 const materialOpacityInput = topControls.querySelector(".summon-material-opacity");
 const materialTransparentInput = topControls.querySelector(".summon-material-transparent");
 const materialDepthWriteInput = topControls.querySelector(".summon-material-depthwrite");
-const materialToneMappedInput = topControls.querySelector(".summon-material-tonemapped");
 
 let previewMaterialItems = [];
 
@@ -4548,7 +4570,6 @@ function syncMaterialEditorInputs() {
 
   if (materialTransparentInput) materialTransparentInput.checked = !!mat.transparent;
   if (materialDepthWriteInput) materialDepthWriteInput.checked = !!mat.depthWrite;
-  if (materialToneMappedInput) materialToneMappedInput.checked = !!mat.toneMapped;
 }
 
 function applyMaterialEditorToSelected() {
@@ -4567,8 +4588,6 @@ function applyMaterialEditorToSelected() {
 
   if (materialTransparentInput) mat.transparent = materialTransparentInput.checked;
   if (materialDepthWriteInput) mat.depthWrite = materialDepthWriteInput.checked;
-  if (materialToneMappedInput) mat.toneMapped = materialToneMappedInput.checked;
-
   mat.needsUpdate = true;
 
   if (previewAssetRoot && previewAssetName) {
@@ -4600,7 +4619,6 @@ materialColorInput?.addEventListener("input", applyMaterialEditorToSelected);
 materialOpacityInput?.addEventListener("input", applyMaterialEditorToSelected);
 materialTransparentInput?.addEventListener("change", applyMaterialEditorToSelected);
 materialDepthWriteInput?.addEventListener("change", applyMaterialEditorToSelected);
-materialToneMappedInput?.addEventListener("change", applyMaterialEditorToSelected);
 
 
 
@@ -4622,22 +4640,12 @@ topControlsToggle?.addEventListener("click", () => {
 
 
 
-if (radioList) {
-  radioList.style.display = "flex";
-  radioList.style.flexWrap = "wrap";
-  radioList.style.gap = "6px";
-}
-
   summonAssetOptions.forEach((assetName, index) => {
-    const label = document.createElement("label");
-    label.className = "summon-test-controls__item";
-    const radio = document.createElement("input");
-    radio.type = "radio";
-    radio.name = "summonAsset";
-    radio.value = assetName;
-    radio.checked = index === 0;
-    label.append(radio, document.createTextNode(assetName));
-    radioList?.appendChild(label)
+    const option = document.createElement("option");
+    option.value = assetName;
+    option.textContent = assetName;
+    if (index === 0) option.selected = true;
+    assetSelect?.appendChild(option);
   });
 
 
@@ -4780,8 +4788,7 @@ async function showPreviewAsset(assetName) {
   await ensureSummonAssetLoaded(assetName, { urgent: true });
 
   // 重要：ロード中に別素材へ切り替わっていたら、この表示処理を破棄
-  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
-  const currentSelectedName = checkedAsset?.value || "";
+  const currentSelectedName = assetSelect?.value || "";
 
   if (requestId !== previewRequestId || currentSelectedName !== assetName) {
     return;
@@ -4795,6 +4802,11 @@ async function showPreviewAsset(assetName) {
   root.visible = true;
   root.scale.setScalar(appliedScale);
   root.position.copy(getPreviewPosition(assetName, appliedY, appliedZ));
+  root.rotation.set(
+    (Number(rotationXInput?.value) || 0) * Math.PI / 180,
+    (Number(rotationYInput?.value) || 0) * Math.PI / 180,
+    (Number(rotationZInput?.value) || 0) * Math.PI / 180
+  );
   root.userData.currentScale = appliedScale;
 
   if (root.userData.effectType === "explosion_burst") {
@@ -4816,13 +4828,10 @@ async function showPreviewAsset(assetName) {
 
 
 effectTestBtn?.addEventListener("click", () => {
-  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
-  const selectedName = checkedAsset?.value || "fireball.glb";
+  const selectedName = assetSelect?.value || "fireball.glb";
+  const pattern = effectPatternSelect?.value || "comet_blast";
 
-  playMagicVisualEffects({
-    magicName: "テスト魔法",
-    artScore: 0,
-    timedVisualEffects: [
+  const baseTimedVisualEffects = [
       {
         startTimeSeconds: 0,
         visualObjects: [
@@ -4846,30 +4855,32 @@ effectTestBtn?.addEventListener("click", () => {
           },
         ],
       },
+      ];
+
+  const patternVisualMap = {
+    comet_blast: [
+      ...baseTimedVisualEffects,
       {
         startTimeSeconds: 2,
-        visualObjects: [
-          {
-            assetFileName: "explosion_burst",
-            objectCount: 1,
-            spawnPosition: "enemy_position",
-            spawnSpreadPattern: "none",
-            colorHexCode: "#ff8844",
-            objectSize: "medium",
-            lifeTimeSeconds: 1.5,
-            movement: {
-              targetPosition: "enemy_position",
-              moveDurationSeconds: 0,
-              movePathType: "none",
-            },
-            rotation: {
-              shouldRotate: false,
-              rotationSpeed: "normal",
-            },
-          },
-        ],
+        visualObjects: [{
+          assetFileName: "explosion_burst", objectCount: 1, spawnPosition: "enemy_position", spawnSpreadPattern: "none", colorHexCode: "#ff8844", objectSize: "medium", lifeTimeSeconds: 1.5, movement: { targetPosition: "enemy_position", moveDurationSeconds: 0, movePathType: "none" }, rotation: { shouldRotate: false, rotationSpeed: "normal" },
+        }],
       },
     ],
+    spiral_guard: [
+      { startTimeSeconds: 0, visualObjects: [{ assetFileName: "simple_ring", objectCount: 2, spawnPosition: "self_position", spawnSpreadPattern: "circle", colorHexCode: "#66ddff", objectSize: "medium", lifeTimeSeconds: 3.2, movement: { targetPosition: "self_position", moveDurationSeconds: 0, movePathType: "none" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
+      { startTimeSeconds: 0.4, visualObjects: [{ assetFileName: "lightning", objectCount: 4, spawnPosition: "self_position", spawnSpreadPattern: "circle", colorHexCode: "#b388ff", objectSize: "small", lifeTimeSeconds: 1.4, movement: { targetPosition: "enemy_position", moveDurationSeconds: 1.1, movePathType: "arc" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
+    ],
+    rain_storm: [
+      { startTimeSeconds: 0, visualObjects: [{ assetFileName: selectedName, objectCount: 8, spawnPosition: "in_front_of_enemy", spawnSpreadPattern: "random", colorHexCode: "#7fb3ff", objectSize: "small", lifeTimeSeconds: 2.6, movement: { targetPosition: "enemy_position", moveDurationSeconds: 1.6, movePathType: "straight" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
+      { startTimeSeconds: 1.3, visualObjects: [{ assetFileName: "mist_cloud", objectCount: 3, spawnPosition: "enemy_position", spawnSpreadPattern: "circle", colorHexCode: "#99ddff", objectSize: "medium", lifeTimeSeconds: 1.8, movement: { targetPosition: "enemy_position", moveDurationSeconds: 0, movePathType: "none" }, rotation: { shouldRotate: false, rotationSpeed: "normal" } }] },
+    ],
+  };
+
+  playMagicVisualEffects({
+    magicName: `テスト魔法:${pattern}`,
+    artScore: 0,
+    timedVisualEffects: patternVisualMap[pattern] || patternVisualMap.comet_blast,
     damageTimings: [
       {
         timeSeconds: 2,
@@ -4884,17 +4895,15 @@ effectTestBtn?.addEventListener("click", () => {
   const applySummonState = () => {
   if (!isOriginDebugTestRoom) return;
 
-  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
-  const selectedName = checkedAsset?.value || "fireball.glb";
+  const selectedName = assetSelect?.value || "fireball.glb";
 
   showPreviewAsset(selectedName).catch((error) => {
     console.warn("[origin-magic-circle] preview asset failed:", error);
   });
 };
 
-radioList?.addEventListener("change", () => {
-  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
-  const selectedName = checkedAsset?.value || "";
+assetSelect?.addEventListener("change", () => {
+  const selectedName = assetSelect?.value || "";
   const preset = getAssetSizePreset(selectedName, "medium");
 
   scaleInput.value = preset.scale;
@@ -4909,6 +4918,9 @@ radioList?.addEventListener("change", () => {
   scaleInput?.addEventListener("input", applySummonState);
   yInput?.addEventListener("input", applySummonState);
   zInput?.addEventListener("input", applySummonState);
+  rotationXInput?.addEventListener("input", applySummonState);
+  rotationYInput?.addEventListener("input", applySummonState);
+  rotationZInput?.addEventListener("input", applySummonState);
   
   
   
