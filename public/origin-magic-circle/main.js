@@ -8,6 +8,8 @@ const refs = {
   backToTitleBtn: document.getElementById("backToTitleBtn"),
   waitingRoom: document.getElementById("waitingRoom"),
   waitingNote: document.getElementById("waitingNote"),
+  loadingProgressText: document.getElementById("loadingProgressText"),
+  loadingWaterFill: document.getElementById("loadingWaterFill"),
   roomIdText: document.getElementById("roomIdText"),
   copyRoomIdBtn: document.getElementById("copyRoomIdBtn"),
   memberList: document.getElementById("memberList"),
@@ -444,6 +446,20 @@ function setMessage(text) {
   refs.message.textContent = text || "";
 }
 
+function updateLoadingProgress(loadedCount, totalCount) {
+  const safeLoaded = Number.isFinite(loadedCount) ? Math.max(0, loadedCount) : 0;
+  const safeTotal = Number.isFinite(totalCount) ? Math.max(0, totalCount) : 0;
+
+  if (refs.loadingProgressText) {
+    refs.loadingProgressText.textContent = `読み込み中... ${safeLoaded}/${safeTotal}`;
+  }
+
+  if (refs.loadingWaterFill) {
+    const ratio = safeTotal > 0 ? Math.min(safeLoaded / safeTotal, 1) : 0;
+    refs.loadingWaterFill.style.height = `${ratio * 100}%`;
+  }
+}
+
 function showHomePanel() {
   refs.homePanel?.classList.remove("hidden");
 }
@@ -673,7 +689,6 @@ function stopRefresh() {
 
 
 async function preloadStartAssetsWithLoadingScreen() {
-  if (!refs.message) return;
   const preloadTargets = [
     "arid_wasteland.glb",
     "ancient_character.glb",
@@ -681,14 +696,16 @@ async function preloadStartAssetsWithLoadingScreen() {
     ...summonAssetOptions.filter((assetName) => assetName.endsWith(".glb")),
   ];
 
+  updateLoadingProgress(0, preloadTargets.length);
   for (let index = 0; index < preloadTargets.length; index += 1) {
     const assetName = preloadTargets[index];
-    setMessage(`ロード中... ${index + 1}/${preloadTargets.length}`);
+    updateLoadingProgress(index, preloadTargets.length);
     try {
       await fetch(`/3D素材/${assetName}`, { cache: "force-cache" });
     } catch (error) {
       console.warn("[origin-magic-circle] preload failed:", assetName, error);
     }
+    updateLoadingProgress(index + 1, preloadTargets.length);
   }
 }
 
@@ -700,6 +717,7 @@ async function startBattleLoadingFlow() {
   refs.waitingRoom.classList.add("hidden");
   refs.waitingNote.classList.remove("hidden");
   setMessage("対戦前ロードを開始しています...");
+  updateLoadingProgress(0, 0);
 
   await preloadStartAssetsWithLoadingScreen();
 
