@@ -127,6 +127,33 @@ h1, h2, h3 { margin-top: 0; }
 
 .hidden { display: none; }
 
+.loading-progress-text {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e6f8ff;
+}
+
+.loading-water-tank {
+  position: relative;
+  width: 100%;
+  height: min(40vh, 240px);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(16, 18, 38, 0.55);
+  overflow: hidden;
+}
+
+.loading-water-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0%;
+  background: linear-gradient(180deg, rgba(99, 217, 255, 0.8), rgba(64, 136, 255, 0.9));
+  transition: height 0.28s ease;
+}
+
 
 .magic-circle-overlay {
   position: absolute;
