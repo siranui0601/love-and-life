@@ -4673,8 +4673,8 @@ function rebuildMaterialEditor(root, assetName) {
 */
 
 
-materialSelect?.addEventListener("change", syncMaterialEditorInputs);
-materialColorInput?.addEventListener("input", applyMaterialEditorToSelected);
+//materialSelect?.addEventListener("change", syncMaterialEditorInputs);
+//materialColorInput?.addEventListener("input", applyMaterialEditorToSelected);
 materialOpacityInput?.addEventListener("input", applyMaterialEditorToSelected);
 materialTransparentInput?.addEventListener("change", applyMaterialEditorToSelected);
 materialDepthWriteInput?.addEventListener("change", applyMaterialEditorToSelected);
@@ -4798,7 +4798,7 @@ function getPreviewPosition(assetName, appliedY, appliedZ = null) {
 
 
 
-function detachMaterialsForPreview(root) {
+/*function detachMaterialsForPreview(root) {
   root.traverse((child) => {
     if (!child.isMesh || !child.material) return;
 
@@ -4829,34 +4829,28 @@ function collectPreviewMaterials(root) {
   });
 
   return items;
-}
+}*/
 
 
 
 
 
-async function showPreviewAsset(assetName) {
+
+
+
+  async function showPreviewAsset(assetName) {
   const requestId = ++previewRequestId;
 
   if (!assetName || !summonAssetOptions.includes(assetName)) return;
 
   removePreviewAssetRoot();
 
-  const scaleValue = Number(scaleInput?.value);
-  const appliedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
-
-  const yValue = Number(yInput?.value);
-  const appliedY = Number.isFinite(yValue) ? yValue : 1.6;
-
-  const zValue = Number(zInput?.value);
-  const appliedZ = Number.isFinite(zValue) ? zValue : 0;
+  const objectSize = getSelectedObjectSize();
+  const preset = getAssetSizePreset(assetName, objectSize);
 
   await ensureSummonAssetLoaded(assetName, { urgent: true });
 
-  // 重要：ロード中に別素材へ切り替わっていたら、この表示処理を破棄
-  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
-  const currentSelectedName = checkedAsset?.value || "";
-
+  const currentSelectedName = getSelectedAssetName();
   if (requestId !== previewRequestId || currentSelectedName !== assetName) {
     return;
   }
@@ -4864,21 +4858,15 @@ async function showPreviewAsset(assetName) {
   const root = createMagicObjectRoot(assetName);
   if (!root) return;
 
-  detachMaterialsForPreview(root);
-
   root.visible = true;
-  root.scale.setScalar(appliedScale);
-  root.position.copy(getPreviewPosition(assetName, appliedY, appliedZ));
-  root.userData.currentScale = appliedScale;
+  root.scale.setScalar(preset.scale);
+  root.position.copy(getPreviewPosition(assetName, preset.y, preset.offsetZ));
 
+  root.rotation.x += preset.rotationX || 0;
+  root.rotation.y += preset.rotationY || 0;
+  root.rotation.z += preset.rotationZ || 0;
 
-  const preset = getAssetSizePreset(assetName, getSelectedObjectSize());
-
-root.rotation.x += preset.rotationX || 0;
-root.rotation.y += preset.rotationY || 0;
-root.rotation.z += preset.rotationZ || 0;
-
-
+  root.userData.currentScale = preset.scale;
 
   if (root.userData.effectType === "explosion_burst") {
     resetExplosionBurst(root);
@@ -4889,13 +4877,8 @@ root.rotation.z += preset.rotationZ || 0;
   previewAssetRoot = root;
   previewAssetName = assetName;
 
-  //rebuildMaterialEditor(root, assetName);
-  rebuildMaterialEditor(root);
-
   showDebug(getMaterialDebugText(root, assetName));
 }
-
-
 
 
 function buildTestMagicEffect(assetName, testType = "basic") {
@@ -5111,6 +5094,7 @@ positionSelect?.addEventListener("change", applySummonState);
 
 if (isOriginDebugTestRoom) {
   refs.battleView.appendChild(topControls);
+  loadPresetToInputs();
   applySummonState();
 }
 
