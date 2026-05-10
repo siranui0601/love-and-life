@@ -453,6 +453,19 @@ function updateLoadingProgress(loadedCount, totalCount) {
   }
 }
 
+function resetLoadingWaterFillVisual() {
+  if (!refs.loadingWaterFill) return;
+  refs.loadingWaterFill.style.transition = "none";
+  refs.loadingWaterFill.style.height = "0%";
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (refs.loadingWaterFill) {
+        refs.loadingWaterFill.style.transition = "height 0.28s ease";
+      }
+    });
+  });
+}
+
 function showOpponentLoadingWaitMessage() {
   if (refs.loadingProgressText) {
     refs.loadingProgressText.textContent = "対戦相手のロードを待っています...";
@@ -717,6 +730,7 @@ async function startBattleLoadingFlow() {
   refs.waitingRoom.classList.add("hidden");
   refs.waitingNote.classList.remove("hidden");
   setMessage("");
+  resetLoadingWaterFillVisual();
   updateLoadingProgress(0, 0);
 
   await preloadStartAssetsWithLoadingScreen();
