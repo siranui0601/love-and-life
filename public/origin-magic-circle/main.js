@@ -2660,8 +2660,14 @@ async function ensureMagicJsonAssetsLoaded(effectJson) {
 }
 
 async function preloadSummonAssetsOneByOne() {
+  const isSafari =
+    typeof navigator !== "undefined" &&
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent || "");
+  const preloadIntervalMs = isSafari ? 420 : 140;
+
   for (const assetName of summonAssetOptions) {
     await ensureSummonAssetLoaded(assetName);
+    await new Promise((resolve) => setTimeout(resolve, preloadIntervalMs));
   }
 }
 
@@ -4897,36 +4903,14 @@ async function showPreviewAsset(assetName) {
 effectTestBtn?.addEventListener("click", () => {
   const selectedName = assetSelect?.value || "fireball.glb";
   const pattern = effectPatternSelect?.value || "comet_blast";
-
-  const baseTimedVisualEffects = [
-      {
-        startTimeSeconds: 0,
-        visualObjects: [
-          {
-            assetFileName: selectedName,
-            objectCount: 3,
-            spawnPosition: "in_front_of_self",
-            spawnSpreadPattern: "horizontal_line",
-            colorHexCode: "#88ccff",
-            objectSize: "medium",
-            lifeTimeSeconds: 4,
-            movement: {
-              targetPosition: "enemy_position",
-              moveDurationSeconds: 2,
-              movePathType: "arc",
-            },
-            rotation: {
-              shouldRotate: true,
-              rotationSpeed: "normal",
-            },
-          },
-        ],
-      },
-      ];
-
   const patternVisualMap = {
     comet_blast: [
-      ...baseTimedVisualEffects,
+      {
+        startTimeSeconds: 0,
+        visualObjects: [{
+          assetFileName: selectedName, objectCount: 3, spawnPosition: "in_front_of_self", spawnSpreadPattern: "horizontal_line", colorHexCode: "#88ccff", objectSize: "medium", lifeTimeSeconds: 4, movement: { targetPosition: "enemy_position", moveDurationSeconds: 2, movePathType: "arc" }, rotation: { shouldRotate: true, rotationSpeed: "normal" },
+        }],
+      },
       {
         startTimeSeconds: 2,
         visualObjects: [{
@@ -4935,12 +4919,14 @@ effectTestBtn?.addEventListener("click", () => {
       },
     ],
     spiral_guard: [
-      { startTimeSeconds: 0, visualObjects: [{ assetFileName: "simple_ring", objectCount: 2, spawnPosition: "self_position", spawnSpreadPattern: "circle", colorHexCode: "#66ddff", objectSize: "medium", lifeTimeSeconds: 3.2, movement: { targetPosition: "self_position", moveDurationSeconds: 0, movePathType: "none" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
-      { startTimeSeconds: 0.4, visualObjects: [{ assetFileName: "lightning", objectCount: 4, spawnPosition: "self_position", spawnSpreadPattern: "circle", colorHexCode: "#b388ff", objectSize: "small", lifeTimeSeconds: 1.4, movement: { targetPosition: "enemy_position", moveDurationSeconds: 1.1, movePathType: "arc" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
+      { startTimeSeconds: 0, visualObjects: [{ assetFileName: selectedName, objectCount: 1, spawnPosition: "battlefield_center", spawnSpreadPattern: "none", colorHexCode: "#66ddff", objectSize: "medium", lifeTimeSeconds: 2.8, movement: { targetPosition: "battlefield_center", moveDurationSeconds: 0, movePathType: "none" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
+      { startTimeSeconds: 0.6, visualObjects: [{ assetFileName: selectedName, objectCount: 1, spawnPosition: "above_battlefield_center", spawnSpreadPattern: "none", colorHexCode: "#66ddff", objectSize: "medium", lifeTimeSeconds: 2.8, movement: { targetPosition: "enemy_position", moveDurationSeconds: 1.6, movePathType: "straight_line" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
+      { startTimeSeconds: 1.2, visualObjects: [{ assetFileName: selectedName, objectCount: 2, spawnPosition: "self_position", spawnSpreadPattern: "circle", colorHexCode: "#b388ff", objectSize: "small", lifeTimeSeconds: 2.4, movement: { targetPosition: "enemy_position", moveDurationSeconds: 1.1, movePathType: "arc" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
     ],
     rain_storm: [
-      { startTimeSeconds: 0, visualObjects: [{ assetFileName: selectedName, objectCount: 8, spawnPosition: "in_front_of_enemy", spawnSpreadPattern: "random", colorHexCode: "#7fb3ff", objectSize: "small", lifeTimeSeconds: 2.6, movement: { targetPosition: "enemy_position", moveDurationSeconds: 1.6, movePathType: "straight" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
-      { startTimeSeconds: 1.3, visualObjects: [{ assetFileName: "mist_cloud", objectCount: 3, spawnPosition: "enemy_position", spawnSpreadPattern: "circle", colorHexCode: "#99ddff", objectSize: "medium", lifeTimeSeconds: 1.8, movement: { targetPosition: "enemy_position", moveDurationSeconds: 0, movePathType: "none" }, rotation: { shouldRotate: false, rotationSpeed: "normal" } }] },
+      { startTimeSeconds: 0, visualObjects: [{ assetFileName: selectedName, objectCount: 10, spawnPosition: "above_enemy", spawnSpreadPattern: "random_scatter", colorHexCode: "#7fb3ff", objectSize: "small", lifeTimeSeconds: 2.6, movement: { targetPosition: "enemy_position", moveDurationSeconds: 1.6, movePathType: "straight_line" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
+      { startTimeSeconds: 1.1, visualObjects: [{ assetFileName: selectedName, objectCount: 4, spawnPosition: "in_front_of_self", spawnSpreadPattern: "horizontal_line", colorHexCode: "#ff99dd", objectSize: "small", lifeTimeSeconds: 2.1, movement: { targetPosition: "above_battlefield_center", moveDurationSeconds: 1.3, movePathType: "orbit" }, rotation: { shouldRotate: true, rotationSpeed: "normal" } }] },
+      { startTimeSeconds: 2.1, visualObjects: [{ assetFileName: selectedName, objectCount: 2, spawnPosition: "enemy_position", spawnSpreadPattern: "vertical_line", colorHexCode: "#99ffbb", objectSize: "medium", lifeTimeSeconds: 2.8, movement: { targetPosition: "enemy_position", moveDurationSeconds: 0, movePathType: "none" }, rotation: { shouldRotate: false, rotationSpeed: "normal" } }] },
     ],
   };
 
