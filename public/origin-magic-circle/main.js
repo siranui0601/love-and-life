@@ -716,7 +716,7 @@ async function startBattleLoadingFlow() {
 
   refs.waitingRoom.classList.add("hidden");
   refs.waitingNote.classList.remove("hidden");
-  setMessage("対戦前ロードを開始しています...");
+  setMessage("");
   updateLoadingProgress(0, 0);
 
   await preloadStartAssetsWithLoadingScreen();
@@ -744,13 +744,20 @@ async function startBattleLoadingFlow() {
       continue;
     }
 
-    try {
-      await callApi("/api/origin-magic-circle/rooms/ready", {
-        roomId: currentRoom.roomId,
-        userTrackingId,
-      }, "POST");
-    } catch (error) {
-      if (error.message !== "opponent_loading") throw error;
+    const selfMember = (room.members || []).find((member) => member.id === userTrackingId);
+    const isHost = selfMember?.role === "host";
+
+    if (isHost) {
+      try {
+        await callApi("/api/origin-magic-circle/rooms/ready", {
+          roomId: currentRoom.roomId,
+          userTrackingId,
+        }, "POST");
+      } catch (error) {
+        if (error.message !== "opponent_loading") throw error;
+      }
+    } else {
+      setMessage("ホストが対戦開始処理を実行中です...");
     }
 
     await new Promise((resolve) => setTimeout(resolve, 500));
