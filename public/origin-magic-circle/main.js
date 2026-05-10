@@ -444,7 +444,7 @@ function updateLoadingProgress(loadedCount, totalCount) {
   const safeTotal = Number.isFinite(totalCount) ? Math.max(0, totalCount) : 0;
 
   if (refs.loadingProgressText) {
-    refs.loadingProgressText.textContent = `素材読み込み中... ${safeLoaded}/${safeTotal}`;
+    refs.loadingProgressText.textContent = safeTotal > 0 ? `素材読み込み中... ${safeLoaded}/${safeTotal}` : "";
   }
 
   if (refs.loadingWaterFill) {
@@ -754,6 +754,19 @@ async function startBattleLoadingFlow() {
 
     const everyoneLoaded = Array.isArray(room.members) && room.members.length === 2 && room.members.every((member) => member.loadReady === true);
     if (!everyoneLoaded) {
+      const selfMember = (room.members || []).find((member) => member.id === userTrackingId);
+      if (!selfMember?.loadReady) {
+        try {
+          await callApi("/api/origin-magic-circle/rooms/loading", {
+            roomId: currentRoom.roomId,
+            userTrackingId,
+            isLoaded: true,
+          }, "POST");
+        } catch (error) {
+          console.warn("[origin-magic-circle] retry loading update failed:", error);
+        }
+      }
+
       showOpponentLoadingWaitMessage();
       await new Promise((resolve) => setTimeout(resolve, 1000));
       continue;
