@@ -144,7 +144,6 @@ const earlyWarmupAssetQueue = [
   "arid_wasteland.glb",
   "ancient_character.glb",
   "pedestal.glb",
-  ...summonAssetOptions.filter((assetName) => assetName.endsWith(".glb")),
 ];
 
 let earlyWarmupStarted = false;
@@ -162,9 +161,10 @@ async function warmupOriginMagicCircleAssetsEarly() {
   }
 }
 
-setTimeout(() => {
-  warmupOriginMagicCircleAssetsEarly();
-}, 0);
+// Safari対策：全素材の事前fetchはメモリ圧迫になりやすいので停止
+// setTimeout(() => {
+//   warmupOriginMagicCircleAssetsEarly();
+// }, 0);
 
 const customEffectNames = new Set([
   "lightning",
@@ -493,7 +493,7 @@ function clearActiveRoomId() {
 function showWaitingRoom(room) {
   
   
-  //refs.waitingNote?.classList.add("hidden");
+  refs.waitingNote?.classList.add("hidden");
   
   currentRoom = room;
   if (room?.status !== "loading") {
@@ -2586,8 +2586,18 @@ const { GLTFLoader } = GLTF;
 
   const renderer = new WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   
+  
+  
+  
+  
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isSafari ? 1.25 : 1.75));
+
+
+
+
+        
   refs.battleView.innerHTML = "";
   refs.battleView.appendChild(renderer.domElement);
 
@@ -4530,6 +4540,45 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
     return;
   }
 
+  
+  
+  effectJson = sanitizeMagicEffectForDevice(effectJson);
+  function isSafariBrowser() {
+  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+}
+
+function sanitizeMagicEffectForDevice(effectJson) {
+  const cloned = JSON.parse(JSON.stringify(effectJson || {}));
+  const safari = isSafariBrowser();
+
+  const maxTimedEffects = safari ? 2 : 4;
+  const maxVisualObjectsPerTimed = safari ? 2 : 3;
+  const maxObjectCount = safari ? 2 : 5;
+  const maxLifeTime = safari ? 5 : 10;
+
+  cloned.timedVisualEffects = Array.isArray(cloned.timedVisualEffects)
+    ? cloned.timedVisualEffects.slice(0, maxTimedEffects)
+    : [];
+
+  cloned.timedVisualEffects.forEach((timed) => {
+    timed.visualObjects = Array.isArray(timed.visualObjects)
+      ? timed.visualObjects.slice(0, maxVisualObjectsPerTimed)
+      : [];
+
+    timed.visualObjects.forEach((obj) => {
+      obj.objectCount = Math.max(1, Math.min(Number(obj.objectCount) || 1, maxObjectCount));
+      obj.lifeTimeSeconds = Math.max(0.5, Math.min(Number(obj.lifeTimeSeconds) || 4, maxLifeTime));
+
+      if (safari && obj.objectSize === "large") {
+        obj.objectSize = "medium";
+      }
+    });
+  });
+
+  return cloned;
+}
+
+
   await ensureMagicJsonAssetsLoaded(effectJson);
 
   const casterSide = isEnemyCast ? "enemy" : "self";
@@ -4597,10 +4646,11 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
         : [];
 
       visualObjects.forEach((visualObject) => {
-        const objectCount = Math.max(
-          1,
-          Math.min(Number(visualObject.objectCount) || 1, 5)
-        );
+        const safari = isSafariBrowser();
+const objectCount = Math.max(
+  1,
+  Math.min(Number(visualObject.objectCount) || 1, safari ? 2 : 5)
+);
 
         for (let i = 0; i < objectCount; i += 1) {
           spawnMagicVisualObject(visualObject, i, objectCount, casterSide);
