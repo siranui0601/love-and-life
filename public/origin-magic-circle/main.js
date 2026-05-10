@@ -136,6 +136,41 @@ const summonAssetOptions = [
 
 
 
+
+
+const earlyWarmupAssetQueue = [
+  "arid_wasteland.glb",
+  "ancient_character.glb",
+  "pedestal.glb",
+  ...summonAssetOptions.filter((assetName) => assetName.endsWith(".glb")),
+];
+
+let earlyWarmupStarted = false;
+
+async function warmupOriginMagicCircleAssetsEarly() {
+  if (earlyWarmupStarted) return;
+  earlyWarmupStarted = true;
+
+  const isSafari =
+    typeof navigator !== "undefined" &&
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent || "");
+  const intervalMs = isSafari ? 520 : 180;
+
+  for (const assetName of earlyWarmupAssetQueue) {
+    try {
+      await fetch(`/3D素材/${assetName}`, { cache: "force-cache" });
+    } catch (error) {
+      console.warn("[origin-magic-circle] early warmup failed:", assetName, error);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+}
+
+setTimeout(() => {
+  warmupOriginMagicCircleAssetsEarly();
+}, 0);
+
 const customEffectNames = new Set([
   "lightning",
   "explosion_burst",

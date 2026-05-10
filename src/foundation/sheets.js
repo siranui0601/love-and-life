@@ -1210,7 +1210,7 @@ function compareOriginMagicCircleShape64(aShape64, bShape64) {
 
 // 低いほど似ている。
 // 閾値をやや厳しめにして、異なる形状が同一判定されるケースを減らす。
-const SIMILARITY_THRESHOLD = 0.34;
+const SIMILARITY_THRESHOLD = 0.29;
 
 export async function findSimilarOriginMagicCircleSpellCacheByShape64(shape64) {
   const targetShape64 = normalizeOriginMagicCircleCacheShape64(shape64);
