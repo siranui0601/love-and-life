@@ -166,6 +166,13 @@ h1, h2, h3 { margin-top: 0; }
 }
 
 #waitingNote.note-box {
+  position: static;
+  margin: 0;
+  padding: 14px 16px;
+  pointer-events: none;
+}
+
+#waitingNote.loading-active {
   position: fixed;
   inset: 0;
   margin: 0;
@@ -174,7 +181,23 @@ h1, h2, h3 { margin-top: 0; }
   border: 0;
   backdrop-filter: none;
   pointer-events: none;
+  z-index: 9000;
 }
+
+
+#waitingNote:not(.loading-active) .loading-water-tank,
+#waitingNote:not(.loading-active) .loading-water-fill {
+  display: none !important;
+}
+
+#waitingNote:not(.loading-active) .loading-progress-text {
+  position: static;
+  transform: none;
+  background: transparent;
+  padding: 0;
+  color: #ffe8ff;
+}
+
 
 
 .magic-circle-overlay {
