@@ -4588,13 +4588,14 @@ const effectTestFallBtn = topControls.querySelector(".magic-effect-test-btn.fall
 
 
 
-/*const materialSelect = topControls.querySelector(".summon-material-select");
+const materialSelect = topControls.querySelector(".summon-material-select");
 const materialColorInput = topControls.querySelector(".summon-material-color");
 const materialOpacityInput = topControls.querySelector(".summon-material-opacity");
 const materialTransparentInput = topControls.querySelector(".summon-material-transparent");
 const materialDepthWriteInput = topControls.querySelector(".summon-material-depthwrite");
 const materialToneMappedInput = topControls.querySelector(".summon-material-tonemapped");
 
+/*
 let previewMaterialItems = [];
 
 
