@@ -491,8 +491,15 @@ function clearActiveRoomId() {
 }
 
 function showWaitingRoom(room) {
+  
+  
+  //refs.waitingNote?.classList.add("hidden");
+  
   currentRoom = room;
-  if (room?.status !== "loading") loadingBattleFlowStarted = false;
+  if (room?.status !== "loading") {
+    loadingBattleFlowStarted = false;
+    refs.waitingNote?.classList.add("hidden");
+  }
   hideHomePanel();
   refs.waitingRoom.classList.remove("hidden");
   refs.waitingNote.classList.add("hidden");
@@ -723,6 +730,14 @@ async function preloadStartAssetsWithLoadingScreen() {
 }
 
 async function startBattleLoadingFlow() {
+  
+  refs.waitingRoom?.classList.add("hidden");
+refs.waitingNote?.classList.remove("hidden");
+resetLoadingWaterFillVisual();
+updateLoadingProgress(0, earlyWarmupAssetQueue.length);
+
+
+  
   if (loadingBattleFlowStarted || !currentRoom?.roomId) return;
   loadingBattleFlowStarted = true;
   stopRefresh();
