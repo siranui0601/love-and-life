@@ -875,3 +875,19 @@ h1, h2, h3 { margin-top: 0; }
 .origin-result-back-btn:active {
   transform: translateY(1px);
 }
+
+
+
+
+
+
+
+#waitingNote.hidden {
+  display: none !important;
+}
+
+#waitingNote.hidden .loading-progress-text,
+#waitingNote.hidden .loading-water-tank,
+#waitingNote.hidden .loading-water-fill {
+  display: none !important;
+}
