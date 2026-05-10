@@ -4437,20 +4437,53 @@ topControls.className = "summon-test-controls";
     <div class="summon-test-controls__list"></div>
 
     <div class="summon-test-controls__fields">
+    
+    <label class="summon-test-controls__field">
+  素材パーツ
+  <select class="summon-material-select"></select>
+</label>
+
+<label class="summon-test-controls__field">
+  色
+  <input class="summon-material-color" type="color" value="#ffffff" />
+</label>
+
+<label class="summon-test-controls__field">
+  透明度
+  <input class="summon-material-opacity" type="number" min="0" max="1" step="0.05" value="1" />
+</label>
+
+<label class="summon-test-controls__field">
+  <input class="summon-material-transparent" type="checkbox" />
+  transparent
+</label>
+
+<label class="summon-test-controls__field">
+  <input class="summon-material-depthwrite" type="checkbox" />
+  depthWrite
+</label>
+
+<label class="summon-test-controls__field">
+  <input class="summon-material-tonemapped" type="checkbox" />
+  toneMapped
+</label>
+
+
+
       <label class="summon-test-controls__field">
         スケール倍率
         <input class="summon-scale-input" type="number" min="0.01" step="0.1" value="1" />
       </label>
 
       <label class="summon-test-controls__field">
-  Y高さ
-  <input class="summon-y-input" type="number" step="0.1" value="1.6" />
+        Y高さ
+      <input class="summon-y-input" type="number" step="0.1" value="1.6" />
   
-  <label class="summon-test-controls__field">
-  Z補正
-  <input class="summon-z-input" type="number" step="0.1" value="0" />
-</label>
-</label>
+      <label class="summon-test-controls__field">
+        Z補正
+      <input class="summon-z-input" type="number" step="0.1" value="0" />
+      </label>
+      </label>
 
 <label class="summon-test-controls__field">
   表示位置
@@ -4478,7 +4511,111 @@ topControls.className = "summon-test-controls";
 
 
 
+
+const materialSelect = topControls.querySelector(".summon-material-select");
+const materialColorInput = topControls.querySelector(".summon-material-color");
+const materialOpacityInput = topControls.querySelector(".summon-material-opacity");
+const materialTransparentInput = topControls.querySelector(".summon-material-transparent");
+const materialDepthWriteInput = topControls.querySelector(".summon-material-depthwrite");
+const materialToneMappedInput = topControls.querySelector(".summon-material-tonemapped");
+
+let previewMaterialItems = [];
+
+
+
+
 const positionSelect = topControls.querySelector(".summon-preview-position-select");
+
+
+
+
+const materialSelect = topControls.querySelector(".summon-material-select");
+const materialColorInput = topControls.querySelector(".summon-material-color");
+const materialOpacityInput = topControls.querySelector(".summon-material-opacity");
+const materialTransparentInput = topControls.querySelector(".summon-material-transparent");
+const materialDepthWriteInput = topControls.querySelector(".summon-material-depthwrite");
+const materialToneMappedInput = topControls.querySelector(".summon-material-tonemapped");
+
+let previewMaterialItems = [];
+
+function getSelectedPreviewMaterialItem() {
+  const index = Number(materialSelect?.value);
+  if (!Number.isInteger(index)) return null;
+  return previewMaterialItems[index] || null;
+}
+
+function syncMaterialEditorInputs() {
+  const item = getSelectedPreviewMaterialItem();
+  const mat = item?.material;
+  if (!mat) return;
+
+  if (materialColorInput && mat.color) {
+    materialColorInput.value = `#${mat.color.getHexString()}`;
+  }
+
+  if (materialOpacityInput) {
+    materialOpacityInput.value = String(
+      Number.isFinite(Number(mat.opacity)) ? mat.opacity : 1
+    );
+  }
+
+  if (materialTransparentInput) materialTransparentInput.checked = !!mat.transparent;
+  if (materialDepthWriteInput) materialDepthWriteInput.checked = !!mat.depthWrite;
+  if (materialToneMappedInput) materialToneMappedInput.checked = !!mat.toneMapped;
+}
+
+function applyMaterialEditorToSelected() {
+  const item = getSelectedPreviewMaterialItem();
+  const mat = item?.material;
+  if (!mat) return;
+
+  if (mat.color && materialColorInput?.value) {
+    mat.color.set(materialColorInput.value);
+  }
+
+  if (materialOpacityInput) {
+    const opacity = Math.max(0, Math.min(1, Number(materialOpacityInput.value)));
+    mat.opacity = Number.isFinite(opacity) ? opacity : 1;
+  }
+
+  if (materialTransparentInput) mat.transparent = materialTransparentInput.checked;
+  if (materialDepthWriteInput) mat.depthWrite = materialDepthWriteInput.checked;
+  if (materialToneMappedInput) mat.toneMapped = materialToneMappedInput.checked;
+
+  mat.needsUpdate = true;
+
+  if (previewAssetRoot && previewAssetName) {
+    showDebug(getMaterialDebugText(previewAssetRoot, previewAssetName));
+  }
+}
+
+function rebuildMaterialEditor(root, assetName) {
+  previewMaterialItems = collectPreviewMaterials(root);
+
+  if (!materialSelect) return;
+
+  materialSelect.innerHTML = "";
+
+  previewMaterialItems.forEach((item, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = `${item.meshName} / ${item.material.name || item.material.type} [${item.materialIndex}]`;
+    materialSelect.appendChild(option);
+  });
+
+  materialSelect.value = "0";
+  syncMaterialEditorInputs();
+}
+
+
+materialSelect?.addEventListener("change", syncMaterialEditorInputs);
+materialColorInput?.addEventListener("input", applyMaterialEditorToSelected);
+materialOpacityInput?.addEventListener("input", applyMaterialEditorToSelected);
+materialTransparentInput?.addEventListener("change", applyMaterialEditorToSelected);
+materialDepthWriteInput?.addEventListener("change", applyMaterialEditorToSelected);
+materialToneMappedInput?.addEventListener("change", applyMaterialEditorToSelected);
+
+
 
 
 
@@ -4561,6 +4698,7 @@ function getMaterialDebugText(root, assetName) {
 
 let previewAssetRoot = null;
 let previewAssetName = "";
+let previewRequestId = 0;
 
 function removePreviewAssetRoot() {
   if (!previewAssetRoot) return;
@@ -4595,8 +4733,53 @@ function getPreviewPosition(assetName, appliedY, appliedZ = null) {
   );
 }
 
+
+
+
+
+function detachMaterialsForPreview(root) {
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    if (Array.isArray(child.material)) {
+      child.material = child.material.map((mat) => mat.clone());
+    } else {
+      child.material = child.material.clone();
+    }
+  });
+}
+
+function collectPreviewMaterials(root) {
+  const items = [];
+
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const mats = Array.isArray(child.material) ? child.material : [child.material];
+
+    mats.forEach((mat, materialIndex) => {
+      items.push({
+        mesh: child,
+        meshName: child.name || "(no name)",
+        material: mat,
+        materialIndex,
+      });
+    });
+  });
+
+  return items;
+}
+
+
+
+
+
 async function showPreviewAsset(assetName) {
+  const requestId = ++previewRequestId;
+
   if (!assetName || !summonAssetOptions.includes(assetName)) return;
+
+  removePreviewAssetRoot();
 
   const scaleValue = Number(scaleInput?.value);
   const appliedScale = Number.isFinite(scaleValue) && scaleValue > 0 ? scaleValue : 1;
@@ -4607,27 +4790,20 @@ async function showPreviewAsset(assetName) {
   const zValue = Number(zInput?.value);
   const appliedZ = Number.isFinite(zValue) ? zValue : 0;
 
-  // 同じ素材なら作り直さず、位置とサイズだけ更新
-  if (previewAssetRoot && previewAssetName === assetName) {
-    previewAssetRoot.visible = true;
-    previewAssetRoot.scale.setScalar(appliedScale);
-    previewAssetRoot.position.copy(getPreviewPosition(assetName, appliedY, appliedZ));
-    previewAssetRoot.userData.currentScale = appliedScale;
+  await ensureSummonAssetLoaded(assetName, { urgent: true });
 
-    if (previewAssetRoot.userData.effectType === "explosion_burst") {
-      resetExplosionBurst(previewAssetRoot);
-    }
+  // 重要：ロード中に別素材へ切り替わっていたら、この表示処理を破棄
+  const checkedAsset = topControls.querySelector('input[name="summonAsset"]:checked');
+  const currentSelectedName = checkedAsset?.value || "";
 
-    showDebug(getMaterialDebugText(previewAssetRoot, assetName));
+  if (requestId !== previewRequestId || currentSelectedName !== assetName) {
     return;
   }
 
-  removePreviewAssetRoot();
-
-  await ensureSummonAssetLoaded(assetName, { urgent: true });
-
   const root = createMagicObjectRoot(assetName);
   if (!root) return;
+
+  detachMaterialsForPreview(root);
 
   root.visible = true;
   root.scale.setScalar(appliedScale);
@@ -4643,6 +4819,7 @@ async function showPreviewAsset(assetName) {
   previewAssetRoot = root;
   previewAssetName = assetName;
 
+  rebuildMaterialEditor(root, assetName);
   showDebug(getMaterialDebugText(root, assetName));
 }
 
@@ -4655,7 +4832,7 @@ effectTestBtn?.addEventListener("click", () => {
 
   playMagicVisualEffects({
     magicName: "テスト魔法",
-    artScore: 80,
+    artScore: 0,
     timedVisualEffects: [
       {
         startTimeSeconds: 0,
@@ -4707,7 +4884,7 @@ effectTestBtn?.addEventListener("click", () => {
     damageTimings: [
       {
         timeSeconds: 2,
-        damageWeight: 100,
+        damageWeight: 0,
         target: "enemy",
       },
     ],
