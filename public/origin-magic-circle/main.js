@@ -4483,7 +4483,6 @@ topControls.className = "summon-test-controls";
         Z補正
       <input class="summon-z-input" type="number" step="0.1" value="0" />
       </label>
-      </label>
 
 <label class="summon-test-controls__field">
   表示位置
@@ -4525,18 +4524,6 @@ let previewMaterialItems = [];
 
 
 const positionSelect = topControls.querySelector(".summon-preview-position-select");
-
-
-
-
-const materialSelect = topControls.querySelector(".summon-material-select");
-const materialColorInput = topControls.querySelector(".summon-material-color");
-const materialOpacityInput = topControls.querySelector(".summon-material-opacity");
-const materialTransparentInput = topControls.querySelector(".summon-material-transparent");
-const materialDepthWriteInput = topControls.querySelector(".summon-material-depthwrite");
-const materialToneMappedInput = topControls.querySelector(".summon-material-tonemapped");
-
-let previewMaterialItems = [];
 
 function getSelectedPreviewMaterialItem() {
   const index = Number(materialSelect?.value);
@@ -4819,7 +4806,9 @@ async function showPreviewAsset(assetName) {
   previewAssetRoot = root;
   previewAssetName = assetName;
 
-  rebuildMaterialEditor(root, assetName);
+  //rebuildMaterialEditor(root, assetName);
+  rebuildMaterialEditor(root);
+
   showDebug(getMaterialDebugText(root, assetName));
 }
 
@@ -4916,7 +4905,7 @@ radioList?.addEventListener("change", () => {
 });
 
 
-  topControls.addEventListener("change", applySummonState);
+  //topControls.addEventListener("change", applySummonState);
   scaleInput?.addEventListener("input", applySummonState);
   yInput?.addEventListener("input", applySummonState);
   zInput?.addEventListener("input", applySummonState);
