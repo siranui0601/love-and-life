@@ -590,9 +590,9 @@ async function refreshRoom() {
   try {
     const room = await callApi(`/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom.roomId)}`);
     showWaitingRoom(room);
-    if (room.status === "loading" || room.status === "対戦中") {
-      await startBattleLoadingFlow();
-    }
+    if (room.status === "対戦中") {
+  await startThreeBattleScene();
+}
   } catch {
     stopRefresh();
     clearActiveRoomId();
@@ -771,85 +771,7 @@ async function preloadStartAssetsWithLoadingScreen() {
   }
 }
 
-async function startBattleLoadingFlow() {
-  
-  refs.waitingRoom?.classList.add("hidden");
-refs.waitingNote?.classList.remove("hidden");
-resetLoadingWaterFillVisual();
-updateLoadingProgress(0, earlyWarmupAssetQueue.length);
 
-
-  
-  if (loadingBattleFlowStarted || !currentRoom?.roomId) return;
-  loadingBattleFlowStarted = true;
-  stopRefresh();
-
-  refs.waitingRoom.classList.add("hidden");
-  refs.waitingNote.classList.remove("hidden");
-  setMessage("");
-  resetLoadingWaterFillVisual();
-  updateLoadingProgress(0, 0);
-
-  await preloadStartAssetsWithLoadingScreen();
-
-  await callApi("/api/origin-magic-circle/rooms/loading", {
-    roomId: currentRoom.roomId,
-    userTrackingId,
-    isLoaded: true,
-  }, "POST");
-  showOpponentLoadingWaitMessage();
-
-  let isBattleStarted = false;
-  while (!isBattleStarted) {
-    const room = await callApi(`/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom.roomId)}`);
-    currentRoom = room;
-
-    if (room.status === "対戦中") {
-      isBattleStarted = true;
-      break;
-    }
-
-    const everyoneLoaded = Array.isArray(room.members) && room.members.length === 2 && room.members.every((member) => member.loadReady === true);
-    if (!everyoneLoaded) {
-      const selfMember = (room.members || []).find((member) => member.id === userTrackingId);
-      if (!selfMember?.loadReady) {
-        try {
-          await callApi("/api/origin-magic-circle/rooms/loading", {
-            roomId: currentRoom.roomId,
-            userTrackingId,
-            isLoaded: true,
-          }, "POST");
-        } catch (error) {
-          console.warn("[origin-magic-circle] retry loading update failed:", error);
-        }
-      }
-
-      showOpponentLoadingWaitMessage();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      continue;
-    }
-
-    const selfMember = (room.members || []).find((member) => member.id === userTrackingId);
-    const isHost = selfMember?.role === "host";
-
-    if (isHost) {
-      try {
-        await callApi("/api/origin-magic-circle/rooms/ready", {
-          roomId: currentRoom.roomId,
-          userTrackingId,
-        }, "POST");
-      } catch (error) {
-        if (error.message !== "opponent_loading") throw error;
-      }
-    } else {
-      setMessage("ホストが対戦開始処理を実行中です...");
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-
-  await startThreeBattleScene();
-}
 
 
 function showMagicNameCenter(magicName, isEnemy = false, onComplete = null) {
@@ -2830,6 +2752,8 @@ async function ensureSummonAssetLoaded(assetName, { urgent = false } = {}) {
 
   const promise = loader.loadAsync(`/3D素材/${assetName}`)
   .then((gltf) => {
+    assetLoadPromises.delete(assetName);
+
     summonAssetSources.set(assetName, {
       assetName,
       gltf,
@@ -2885,24 +2809,14 @@ async function ensureMagicJsonAssetsLoaded(effectJson) {
   );
 }
 
-async function preloadSummonAssetsOneByOne() {
-  const isSafari =
-    typeof navigator !== "undefined" &&
-    /^((?!chrome|android).)*safari/i.test(navigator.userAgent || "");
-  const preloadIntervalMs = isSafari ? 420 : 140;
 
-  for (const assetName of summonAssetOptions) {
-    await ensureSummonAssetLoaded(assetName);
-    await new Promise((resolve) => setTimeout(resolve, preloadIntervalMs));
-  }
-}
 
 try {
   wastelandGltf = await loader.loadAsync("/3D素材/arid_wasteland.glb");
   characterGltf = await loader.loadAsync("/3D素材/ancient_character.glb");
   pedestalGltf = await loader.loadAsync("/3D素材/pedestal.glb");
 
-  preloadSummonAssetsOneByOne();
+  //preloadSummonAssetsOneByOne();
 } catch (e) {
   console.error("GLB読み込み失敗", e);
   alert("3D素材の読み込みに失敗しました。");
@@ -4740,9 +4654,15 @@ function removeActiveMagicObject(index, withShrink = false) {
     return;
   }
   scene.remove(item.root);
+removeMixerForRoot(item.root);
+activeMagicObjects.splice(index, 1);
 
-  removeMixerForRoot(item.root);
-  activeMagicObjects.splice(index, 1);
+if (customEffectNames.has(item.assetName)) {
+  disposeObject3DResources(item.root);
+} else {
+  releaseSummonAssetIfUnused(item.assetName);
+}
+
 }
 
 function removeMixerForRoot(root) {
@@ -4752,6 +4672,63 @@ function removeMixerForRoot(root) {
     }
   }
 }
+
+
+
+
+function disposeObject3DResources(root) {
+  if (!root) return;
+
+  root.traverse((child) => {
+    if (child.geometry) {
+      child.geometry.dispose?.();
+    }
+
+    if (!child.material) return;
+
+    const materials = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+
+    materials.forEach((mat) => {
+      if (!mat) return;
+
+      [
+        "map",
+        "normalMap",
+        "roughnessMap",
+        "metalnessMap",
+        "emissiveMap",
+        "alphaMap",
+        "aoMap",
+      ].forEach((key) => {
+        mat[key]?.dispose?.();
+      });
+
+      mat.dispose?.();
+    });
+  });
+}
+
+function releaseSummonAssetIfUnused(assetName) {
+  if (!assetName || customEffectNames.has(assetName)) return;
+
+  const stillUsed = activeMagicObjects.some((item) => {
+    return item.assetName === assetName;
+  });
+
+  if (stillUsed) return;
+
+  const source = summonAssetSources.get(assetName);
+  if (source?.gltf?.scene) {
+    disposeObject3DResources(source.gltf.scene);
+  }
+
+  summonAssetSources.delete(assetName);
+  assetLoadPromises.delete(assetName);
+  summonAssetAnimationInfo.delete(assetName);
+}
+
 
 
 
@@ -5998,7 +5975,7 @@ refs.startGameBtn?.addEventListener("click", async () => {
     }, "POST");
 
     currentRoom = room;
-    await startBattleLoadingFlow();
+    await startThreeBattleScene();
   } catch (error) {
     setMessage(`ゲーム開始に失敗しました: ${error.message}`);
   }
@@ -6047,7 +6024,7 @@ if (!activeRoomId) {
 
     showWaitingRoom(room);
     if (room.status === "loading" || room.status === "対戦中") {
-      await startBattleLoadingFlow();
+      await startThreeBattleScene();
       return;
     }
 
