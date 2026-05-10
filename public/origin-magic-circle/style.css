@@ -166,6 +166,7 @@ h1, h2, h3 { margin-top: 0; }
 }
 
 #waitingNote.note-box {
+  display: none;
   position: fixed;
   inset: 0;
   margin: 0;
