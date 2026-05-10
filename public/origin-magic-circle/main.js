@@ -473,8 +473,8 @@ function showNormalNote(text = "") {
 }
 
 function hideWaitingNote() {
-  hideWaitingNote();
-    refs.waitingNote?.classList.remove("loading-active");
+  refs.waitingNote?.classList.add("hidden");
+  refs.waitingNote?.classList.remove("loading-active");
 
   if (refs.loadingProgressText) {
     refs.loadingProgressText.textContent = "";
@@ -544,7 +544,7 @@ function showWaitingRoom(room) {
   }
   hideHomePanel();
   refs.waitingRoom.classList.remove("hidden");
-  refs.waitingNote.classList.add("hidden");
+  //refs.waitingNote.classList.add("hidden");
   refs.roomIdText.textContent = room.roomId;
   refs.memberList.innerHTML = "";
   refs.copyRoomIdBtn?.classList.remove("hidden");
