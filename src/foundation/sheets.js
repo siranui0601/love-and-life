@@ -499,10 +499,32 @@ function normalizeOriginMagicCircleMember(member) {
 
 
 
+function parseOriginMagicCircleMembersJson(raw) {
+  try {
+    const parsed = JSON.parse(String(raw || "[]"));
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((entry) => ({
+        name: String(entry?.name || "guest"),
+        id: String(entry?.id || ""),
+        role: String(entry?.role || "guest"),
+        hp: normalizeOriginMagicCircleHp(entry?.hp),
+        loadReady: entry?.loadReady === true,
+      }))
+      .filter((entry) => entry.id);
+  } catch {
+    return [];
+  }
+}
+
+
+
+
 
 function originMagicCircleRowToRoom(row = [], index = 0) {
   const roomId = String(row[0] || "").trim();
-  const members = parseSecretMembersJson(row[1]).map(normalizeOriginMagicCircleMember);
+  const members = parseOriginMagicCircleMembersJson(row[1]);
   const status = String(row[2] || "").trim();
   const expiresAt = Number(row[3] || 0);
   const castLogs = parseOriginMagicCircleCastLogsJson(row[4]);
