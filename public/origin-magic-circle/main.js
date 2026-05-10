@@ -153,19 +153,12 @@ async function warmupOriginMagicCircleAssetsEarly() {
   if (earlyWarmupStarted) return;
   earlyWarmupStarted = true;
 
-  const isSafari =
-    typeof navigator !== "undefined" &&
-    /^((?!chrome|android).)*safari/i.test(navigator.userAgent || "");
-  const intervalMs = isSafari ? 520 : 180;
-
   for (const assetName of earlyWarmupAssetQueue) {
     try {
       await fetch(`/3D素材/${assetName}`, { cache: "force-cache" });
     } catch (error) {
       console.warn("[origin-magic-circle] early warmup failed:", assetName, error);
     }
-
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
 }
 
@@ -451,13 +444,20 @@ function updateLoadingProgress(loadedCount, totalCount) {
   const safeTotal = Number.isFinite(totalCount) ? Math.max(0, totalCount) : 0;
 
   if (refs.loadingProgressText) {
-    refs.loadingProgressText.textContent = `読み込み中... ${safeLoaded}/${safeTotal}`;
+    refs.loadingProgressText.textContent = `素材読み込み中... ${safeLoaded}/${safeTotal}`;
   }
 
   if (refs.loadingWaterFill) {
     const ratio = safeTotal > 0 ? Math.min(safeLoaded / safeTotal, 1) : 0;
     refs.loadingWaterFill.style.height = `${ratio * 100}%`;
   }
+}
+
+function showOpponentLoadingWaitMessage() {
+  if (refs.loadingProgressText) {
+    refs.loadingProgressText.textContent = "対戦相手のロードを待っています...";
+  }
+  setMessage("対戦相手のロードを待っています...");
 }
 
 function showHomePanel() {
@@ -726,6 +726,7 @@ async function startBattleLoadingFlow() {
     userTrackingId,
     isLoaded: true,
   }, "POST");
+  showOpponentLoadingWaitMessage();
 
   let isBattleStarted = false;
   while (!isBattleStarted) {
@@ -739,7 +740,7 @@ async function startBattleLoadingFlow() {
 
     const everyoneLoaded = Array.isArray(room.members) && room.members.length === 2 && room.members.every((member) => member.loadReady === true);
     if (!everyoneLoaded) {
-      setMessage("対戦相手のロードを待っています...");
+      showOpponentLoadingWaitMessage();
       await new Promise((resolve) => setTimeout(resolve, 1000));
       continue;
     }
