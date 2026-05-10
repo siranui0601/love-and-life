@@ -438,6 +438,7 @@ let battleState = {
   magicLogs: [],
 };let tutorialModalDismissed = false;
 const ACTIVE_ROOM_STORAGE_KEY = "originMagicCircleActiveRoomId";
+let loadingBattleFlowStarted = false;
 
 function setMessage(text) {
   refs.message.textContent = text || "";
@@ -462,6 +463,7 @@ function clearActiveRoomId() {
 
 function showWaitingRoom(room) {
   currentRoom = room;
+  if (room?.status !== "loading") loadingBattleFlowStarted = false;
   hideHomePanel();
   refs.waitingRoom.classList.remove("hidden");
   refs.waitingNote.classList.add("hidden");
@@ -510,8 +512,8 @@ async function refreshRoom() {
   try {
     const room = await callApi(`/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom.roomId)}`);
     showWaitingRoom(room);
-    if (room.status === "対戦中") {
-      await startThreeBattleScene();
+    if (room.status === "loading" || room.status === "対戦中") {
+      await startBattleLoadingFlow();
     }
   } catch {
     stopRefresh();
@@ -669,6 +671,75 @@ function stopRefresh() {
   refreshTimer = null;
 }
 
+
+async function preloadStartAssetsWithLoadingScreen() {
+  if (!refs.message) return;
+  const preloadTargets = [
+    "arid_wasteland.glb",
+    "ancient_character.glb",
+    "pedestal.glb",
+    ...summonAssetOptions.filter((assetName) => assetName.endsWith(".glb")),
+  ];
+
+  for (let index = 0; index < preloadTargets.length; index += 1) {
+    const assetName = preloadTargets[index];
+    setMessage(`ロード中... ${index + 1}/${preloadTargets.length}`);
+    try {
+      await fetch(`/3D素材/${assetName}`, { cache: "force-cache" });
+    } catch (error) {
+      console.warn("[origin-magic-circle] preload failed:", assetName, error);
+    }
+  }
+}
+
+async function startBattleLoadingFlow() {
+  if (loadingBattleFlowStarted || !currentRoom?.roomId) return;
+  loadingBattleFlowStarted = true;
+  stopRefresh();
+
+  refs.waitingRoom.classList.add("hidden");
+  refs.waitingNote.classList.remove("hidden");
+  setMessage("対戦前ロードを開始しています...");
+
+  await preloadStartAssetsWithLoadingScreen();
+
+  await callApi("/api/origin-magic-circle/rooms/loading", {
+    roomId: currentRoom.roomId,
+    userTrackingId,
+    isLoaded: true,
+  }, "POST");
+
+  let isBattleStarted = false;
+  while (!isBattleStarted) {
+    const room = await callApi(`/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom.roomId)}`);
+    currentRoom = room;
+
+    if (room.status === "対戦中") {
+      isBattleStarted = true;
+      break;
+    }
+
+    const everyoneLoaded = Array.isArray(room.members) && room.members.length === 2 && room.members.every((member) => member.loadReady === true);
+    if (!everyoneLoaded) {
+      setMessage("対戦相手のロードを待っています...");
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      continue;
+    }
+
+    try {
+      await callApi("/api/origin-magic-circle/rooms/ready", {
+        roomId: currentRoom.roomId,
+        userTrackingId,
+      }, "POST");
+    } catch (error) {
+      if (error.message !== "opponent_loading") throw error;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  await startThreeBattleScene();
+}
 
 
 function showMagicNameCenter(magicName, isEnemy = false, onComplete = null) {
@@ -5767,7 +5838,7 @@ refs.startGameBtn?.addEventListener("click", async () => {
     }, "POST");
 
     currentRoom = room;
-    await startThreeBattleScene();
+    await startBattleLoadingFlow();
   } catch (error) {
     setMessage(`ゲーム開始に失敗しました: ${error.message}`);
   }
@@ -5814,8 +5885,8 @@ if (!activeRoomId) {
     }
 
     showWaitingRoom(room);
-    if (room.status === "対戦中") {
-      await startThreeBattleScene();
+    if (room.status === "loading" || room.status === "対戦中") {
+      await startBattleLoadingFlow();
       return;
     }
 

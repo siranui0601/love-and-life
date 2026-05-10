@@ -12,6 +12,7 @@ import {
   appendOriginMagicCircleSpellCache,
   findSimilarOriginMagicCircleSpellCacheByShape64,
   updateOriginMagicCircleRoomHp,
+  updateOriginMagicCircleMemberLoadState,
   
   touchOriginMagicCircleRoomExpiresAt,
   cleanupExpiredOriginMagicCircleRooms,
@@ -344,7 +345,7 @@ export function mountOriginMagicCircleRoutes(app, io) {
 
       const started = await updateOriginMagicCircleRoomStatus({
         roomId,
-        status: "対戦中",
+        status: "loading",
         requestedByClientId: userTrackingId,
       });
 
@@ -357,6 +358,58 @@ export function mountOriginMagicCircleRoutes(app, io) {
     }
   });
 
+
+  app.post("/api/origin-magic-circle/rooms/loading", async (req, res) => {
+    const roomId = String(req.body?.roomId || "").trim();
+    const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
+    const isLoaded = Boolean(req.body?.isLoaded);
+    if (!roomId || !userTrackingId) {
+      return res.status(400).json({ error: "roomId and userTrackingId are required" });
+    }
+
+    try {
+      const room = await updateOriginMagicCircleMemberLoadState({
+        roomId,
+        clientId: userTrackingId,
+        isLoaded,
+      });
+      return res.json(room);
+    } catch (error) {
+      if (error.message === "room_not_found") return res.status(404).json({ error: "room_not_found" });
+      if (error.message === "forbidden") return res.status(403).json({ error: "forbidden" });
+      console.error("[origin-magic-circle] loading update error:", error);
+      return res.status(500).json({ error: "server_error" });
+    }
+  });
+
+  app.post("/api/origin-magic-circle/rooms/ready", async (req, res) => {
+    const roomId = String(req.body?.roomId || "").trim();
+    const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
+
+    if (!roomId || !userTrackingId) {
+      return res.status(400).json({ error: "roomId and userTrackingId are required" });
+    }
+
+    try {
+      const room = await getOriginMagicCircleRoomById(roomId);
+      if (!room) return res.status(404).json({ error: "room_not_found" });
+      if ((room.members || []).length !== 2) return res.status(409).json({ error: "room_not_ready" });
+      const bothLoaded = (room.members || []).every((member) => member.loadReady === true);
+      if (!bothLoaded) return res.status(409).json({ error: "opponent_loading" });
+
+      const started = await updateOriginMagicCircleRoomStatus({
+        roomId,
+        status: "対戦中",
+        requestedByClientId: userTrackingId,
+      });
+      return res.json(started);
+    } catch (error) {
+      if (error.message === "room_not_found") return res.status(404).json({ error: "room_not_found" });
+      if (error.message === "forbidden") return res.status(403).json({ error: "forbidden" });
+      console.error("[origin-magic-circle] ready room error:", error);
+      return res.status(500).json({ error: "server_error" });
+    }
+  });
   app.post("/api/origin-magic-circle/rooms/leave", async (req, res) => {
     const roomId = String(req.body?.roomId || "").trim();
     const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();

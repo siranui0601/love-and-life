@@ -630,6 +630,33 @@ export async function joinOriginMagicCircleRoom({ roomId, username, clientId }) 
   };
 }
 
+
+export async function updateOriginMagicCircleMemberLoadState({ roomId, clientId, isLoaded }) {
+  const room = await getOriginMagicCircleRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+
+  const members = [...(room.members || [])];
+  const targetIndex = members.findIndex((member) => member.id === clientId);
+  if (targetIndex < 0) throw new Error("forbidden");
+
+  members[targetIndex] = {
+    ...members[targetIndex],
+    loadReady: Boolean(isLoaded),
+  };
+
+  await updateOriginMagicCircleRoomRow(room.rowIndex, [
+    room.roomId,
+    JSON.stringify(members),
+    room.status,
+    String(room.expiresAt || roomExpiresAtMs()),
+  ]);
+
+  return {
+    ...room,
+    members,
+  };
+}
+
 export async function updateOriginMagicCircleRoomStatus({ roomId, status, requestedByClientId = "" }) {
   const room = await getOriginMagicCircleRoomById(roomId);
   if (!room) throw new Error("room_not_found");
