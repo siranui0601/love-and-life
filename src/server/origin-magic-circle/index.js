@@ -400,8 +400,8 @@ export function mountOriginMagicCircleRoutes(app, io) {
       const started = await updateOriginMagicCircleRoomStatus({
         roomId,
         status: "対戦中",
-        requestedByClientId: userTrackingId,
       });
+      
       return res.json(started);
     } catch (error) {
       if (error.message === "room_not_found") return res.status(404).json({ error: "room_not_found" });
