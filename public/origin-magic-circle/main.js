@@ -419,6 +419,8 @@ let onBattleHpReachedZero = null;
 
 const ORIGIN_MAGIC_CIRCLE_MAX_HP = 100;
 
+
+
 let battleState = {
   selfHp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
   enemyHp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
@@ -4373,17 +4375,26 @@ function getPositionOnPath(start, target, t, pathType) {
   }
 
   if (pathType === "orbit") {
-    const radius = Math.max(start.distanceTo(target), 3);
-    const angle = eased * Math.PI * 2;
+  const relX = start.x - target.x;
+  const relZ = start.z - target.z;
+  const radius = Math.max(Math.hypot(relX, relZ), 3);
+  const startAngle = Math.atan2(relZ, relX);
+  const angle = startAngle + eased * Math.PI * 2;
 
-    pos.x = target.x + Math.cos(angle) * radius * (1 - eased);
-    pos.z = target.z + Math.sin(angle) * radius * (1 - eased);
-    pos.y += Math.sin(Math.PI * eased) * 3;
-  }
+  pos.x = target.x + Math.cos(angle) * radius;
+  pos.z = target.z + Math.sin(angle) * radius;
+  pos.y += Math.sin(Math.PI * eased) * 3;
+}
 
   return pos;
 }
-function applyMagicColor(root, colorHexCode) {
+
+
+
+
+
+function applyMagicColor(root, colorHexCode, colorMode = "tint") {
+  if (colorMode === "ignore") return;
   if (!/^#[0-9a-fA-F]{6}$/.test(String(colorHexCode || ""))) return;
 
   const color = new Color(colorHexCode);
@@ -4408,6 +4419,11 @@ function applyMagicColor(root, colorHexCode) {
     });
   });
 }
+
+
+
+
+
 function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, casterSide = "self") {
   const assetName = visualObject.assetFileName;
 
@@ -4444,8 +4460,8 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
   root.scale.setScalar(preset.scale);
   root.userData.currentScale = preset.scale;
 
-  applyMagicColor(root, visualObject.colorHexCode);
-
+  applyMagicColor(root, visualObject.colorHexCode, visualObject.colorMode || "tint");
+  
   if (assetName === "explosion_burst") {
     resetExplosionBurst(root);
   }
@@ -4608,9 +4624,21 @@ const objectCount = Math.max(
   Math.min(Number(visualObject.objectCount) || 1, safari ? 2 : 5)
 );
 
-        for (let i = 0; i < objectCount; i += 1) {
-          spawnMagicVisualObject(visualObject, i, objectCount, casterSide);
-        }
+        const perObjectDelaySeconds = Math.max(
+  0,
+  Number(visualObject.perObjectDelaySeconds) || 0
+);
+
+for (let i = 0; i < objectCount; i += 1) {
+  setTimeout(() => {
+    if (battleState.gameEnded) return;
+    spawnMagicVisualObject(visualObject, i, objectCount, casterSide);
+  }, perObjectDelaySeconds * i * 1000);
+}
+
+
+
+
       });
     }, delaySeconds * 1000);
   });
