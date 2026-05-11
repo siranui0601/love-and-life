@@ -55,7 +55,7 @@ function normalizeOriginMagicCircleShape64(rawShape64) {
 
 
 
-const ORIGIN_MAGIC_CIRCLE_MAX_HP = 100;
+const ORIGIN_MAGIC_CIRCLE_MAX_HP = 300;
 
 const ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP = {
   "炎球": "fireball.glb",
@@ -137,6 +137,61 @@ const ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP = {
   "ダイヤ": "purple_diamond_crystal_gem.glb",
 };
 
+
+
+const ORIGIN_MAGIC_CIRCLE_POSITION_CANDIDATES = ["in_front_of_self", "behind_self", "above_self", "battlefield_center", "above_battlefield_center", "enemy_position", "above_enemy", "self_position"];
+const ORIGIN_MAGIC_CIRCLE_SIZE_CANDIDATES = ["small", "medium", "large"];
+const ORIGIN_MAGIC_CIRCLE_SPREAD_PATTERNS = ["none", "horizontal_line", "vertical_line", "circle", "random_scatter"];
+const ORIGIN_MAGIC_CIRCLE_MOVE_PATH_TYPES = ["none", "straight_line", "arc", "fall_from_above", "rise_from_below", "orbit"];
+const ORIGIN_MAGIC_CIRCLE_ENTER_EFFECTS = ["fall_from_sky", "scale_up", "rise_from_ground"];
+const ORIGIN_MAGIC_CIRCLE_EXIT_EFFECTS = ["rise_to_sky", "scale_down", "sink_into_ground"];
+const ORIGIN_MAGIC_CIRCLE_ROTATION_SPEEDS = ["slow", "normal", "fast"];
+
+const clamp = (v,min,max,d=min)=>Number.isFinite(Number(v))?Math.max(min,Math.min(max,Number(v))):d;
+const pick = (arr)=>arr[Math.floor(Math.random()*arr.length)];
+function toAssetFileName(name){const raw=String(name||"").trim();if(!raw) return pick(Object.values(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP));return ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[raw]||raw;}
+function randomColorFromBase(base){const palette=[base,"#FFFFFF","#111111","#FFD700"];if(Math.random()<0.65) return pick(palette);const n=parseInt(base.slice(1),16);const r=(n>>16)&255,g=(n>>8)&255,b=n&255;const dv=()=>Math.max(0,Math.min(255,Math.round((Math.random()-0.5)*70)));return `#${[r+dv(),g+dv(),b+dv()].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase()}`;}
+
+function normalizeOriginMagicCircleTimelineJson(rawJson){
+  const parsed=typeof rawJson==='string'?JSON.parse(rawJson):rawJson||{};
+  const timeline=Array.isArray(parsed.timeline)?parsed.timeline:[];
+  const magicName=String(parsed.magicName||'深淵輪廻・無銘終焉').trim()||'深淵輪廻・無銘終焉';
+  const artScore=Math.round(clamp(parsed.artScore,0,100,0));
+  const spawned=new Set();const despawned=new Set();
+  const normalized=[];
+  timeline.forEach((node)=>{const time=clamp(node?.time,0,10,0);const actions=[];for(const a of (Array.isArray(node?.actions)?node.actions:[]).slice(0,4)){
+    const action=String(a?.action||'').trim();const id=String(a?.id||'').trim();if(!id) continue;
+    if(action==='spawn'){
+      spawned.add(id);
+      actions.push({action,id,assetFileName:toAssetFileName(a.assetFileName),objectCount:Math.round(clamp(a.objectCount,1,5,1)),position:ORIGIN_MAGIC_CIRCLE_POSITION_CANDIDATES.includes(a.position)?a.position:'battlefield_center',objectSize:ORIGIN_MAGIC_CIRCLE_SIZE_CANDIDATES.includes(a.objectSize)?a.objectSize:'medium'});
+    } else if(action==='move' && spawned.has(id) && !despawned.has(id)){
+      actions.push({action,id,targetPosition:ORIGIN_MAGIC_CIRCLE_POSITION_CANDIDATES.includes(a.targetPosition)?a.targetPosition:'enemy_position'});
+    } else if(action==='despawn' && spawned.has(id) && !despawned.has(id)){
+      despawned.add(id);actions.push({action,id});
+    }
+  }if(actions.length) normalized.push({time,actions});});
+  normalized.sort((a,b)=>a.time-b.time);
+  const alive=[...spawned].filter(id=>!despawned.has(id));
+  if(alive.length){normalized.push({time:clamp(8+Math.random()*2,8,10,9),actions:alive.map(id=>({action:'despawn',id}))});}
+  const assets=new Set();for(const t of normalized)for(const a of t.actions)if(a.action==='spawn')assets.add(a.assetFileName);
+  const ids=[...spawned];
+  while(assets.size<4){const id=`auto${assets.size+1}`;const asset=pick(Object.values(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP));assets.add(asset);normalized.push({time:clamp(Math.random()*6,0,6,0),actions:[{action:'spawn',id,assetFileName:asset,objectCount:1+Math.floor(Math.random()*2),position:pick(ORIGIN_MAGIC_CIRCLE_POSITION_CANDIDATES),objectSize:pick(ORIGIN_MAGIC_CIRCLE_SIZE_CANDIDATES)}]});normalized.push({time:clamp(8+Math.random()*2,8,10,9),actions:[{action:'despawn',id}]});}
+  normalized.sort((a,b)=>a.time-b.time);
+  return {magicName,artScore,timeline:normalized};
+}
+
+function expandOriginMagicCircleTimelineToEffectJson(timelineJson){
+  const baseColor=`#${Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0').toUpperCase()}`;
+  const spawns=new Map();const despawnAt=new Map();const moves=new Map();
+  for(const t of timelineJson.timeline){for(const a of t.actions){if(a.action==='spawn')spawns.set(a.id,{...a,start:t.time});if(a.action==='despawn')despawnAt.set(a.id,t.time);if(a.action==='move'){if(!moves.has(a.id))moves.set(a.id,[]);moves.get(a.id).push({time:t.time,targetPosition:a.targetPosition});}}}
+  const timedVisualEffects=[];
+  for(const [id,s] of spawns){const end=clamp(despawnAt.get(id)??(8+Math.random()*2),0.5,10,9);const life=clamp(end-s.start,0.5,10,8);const firstMove=(moves.get(id)||[])[0];timedVisualEffects.push({startTimeSeconds:s.start,visualObjects:[{id,assetFileName:s.assetFileName,objectCount:s.objectCount,spawnPosition:s.position,spawnSpreadPattern:pick(ORIGIN_MAGIC_CIRCLE_SPREAD_PATTERNS),colorHexCode:randomColorFromBase(baseColor),objectSize:s.objectSize,lifeTimeSeconds:life,enterEffect:pick(ORIGIN_MAGIC_CIRCLE_ENTER_EFFECTS),exitEffect:pick(ORIGIN_MAGIC_CIRCLE_EXIT_EFFECTS),movement:firstMove?{targetPosition:firstMove.targetPosition,moveDurationSeconds:clamp(Math.random()*1.9+0.6,0.6,Math.max(0.6,life-0.1),1),movePathType:pick(ORIGIN_MAGIC_CIRCLE_MOVE_PATH_TYPES)}:{targetPosition:'self_position',moveDurationSeconds:0,movePathType:'none'},rotation:{shouldRotate:Math.random()<0.8,rotationSpeed:pick(ORIGIN_MAGIC_CIRCLE_ROTATION_SPEEDS)}}]});
+    for(const m of (moves.get(id)||[]).slice(1)){timedVisualEffects.push({startTimeSeconds:m.time,visualObjects:[{id,assetFileName:s.assetFileName,objectCount:s.objectCount,spawnPosition:s.position,spawnSpreadPattern:'none',colorHexCode:randomColorFromBase(baseColor),objectSize:s.objectSize,lifeTimeSeconds:clamp(life-(m.time-s.start),0.5,10,1.5),enterEffect:'scale_up',exitEffect:pick(ORIGIN_MAGIC_CIRCLE_EXIT_EFFECTS),movement:{targetPosition:m.targetPosition,moveDurationSeconds:clamp(Math.random()+0.6,0.6,2.5,1),movePathType:pick(ORIGIN_MAGIC_CIRCLE_MOVE_PATH_TYPES)},rotation:{shouldRotate:true,rotationSpeed:pick(ORIGIN_MAGIC_CIRCLE_ROTATION_SPEEDS)}}]});}
+  }
+  timedVisualEffects.sort((a,b)=>a.startTimeSeconds-b.startTimeSeconds);
+  return {magicName:timelineJson.magicName,artScore:timelineJson.artScore,timeline:timelineJson.timeline,timedVisualEffects};
+}
+function createOriginMagicCircleDamageTimings(expandedEffectJson, artScore){const totalDamage=Math.round(clamp(80+artScore*2.2,80,300,80));const candidates=[];for(const t of expandedEffectJson.timeline||[]){for(const a of t.actions||[]){if(a.action==='move' && ['enemy_position','above_enemy'].includes(a.targetPosition)) candidates.push(clamp(t.time,0.5,9.5,2));if(a.action==='spawn'&&['enemy_position','above_enemy'].includes(a.position)&&a.objectSize==='large') candidates.push(clamp(t.time+0.8,0.5,9.5,2.5));}}candidates.push(clamp(8+Math.random()*2,8,10,9));const uniq=[...new Set(candidates.map(v=>Number(v.toFixed(2))))].sort((a,b)=>a-b).slice(0,5);if(!uniq.length) uniq.push(2.5,9);const w=uniq.map(()=>1);w[w.length-1]=2;const sum=w.reduce((a,b)=>a+b,0);let assigned=w.map(x=>Math.round((x/sum)*100));let diff=100-assigned.reduce((a,b)=>a+b,0);assigned[assigned.length-1]+=diff;return {totalDamage,damageTimings:uniq.map((t,i)=>({timeSeconds:t,damageWeight:assigned[i],target:'enemy'}))};}
 function normalizeOriginMagicCircleEffectJson(effectJson) {
   if (!effectJson || typeof effectJson !== "object") return effectJson;
   const cloned = JSON.parse(JSON.stringify(effectJson));
@@ -497,9 +552,16 @@ if (cached?.rawJson) {
   let cachedMagicEffectJson = null;
 
   try {
-    cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson(
-      JSON.parse(cached.rawJson)
-    );
+    const parsedCache = JSON.parse(cached.rawJson);
+    const hasTimed = Array.isArray(parsedCache?.timedVisualEffects);
+    if (hasTimed) {
+      cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson(parsedCache);
+    } else {
+      const timelineJson = normalizeOriginMagicCircleTimelineJson(parsedCache);
+      const expandedEffectJson = expandOriginMagicCircleTimelineToEffectJson(timelineJson);
+      const damageInfo = createOriginMagicCircleDamageTimings(expandedEffectJson, timelineJson.artScore);
+      cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson({ ...expandedEffectJson, ...damageInfo });
+    }
   } catch (error) {
     console.warn("[origin-magic-circle] cached rawJson parse failed:", {
       rowIndex: cached.rowIndex,
@@ -546,76 +608,46 @@ if (cached?.rawJson) {
           },
         },
         {
-          text: `画像の魔法陣を見て、魔法名・芸術点・3D演出・ダメージ発生タイミングをJSONのみで出力してください。
-JSON以外は禁止。候補が配列で示されている項目は、必ず1つの値だけを選んでください。
+          text: `画像の魔法陣を見て、魔法名・芸術点・timeline形式の演出骨格をJSONのみで出力してください。JSON以外は禁止。色、複数出現時の並び方、移動経路、回転、消え方、ダメージ発生タイミングはシステム側で自動補完します。
 
 {
   "magicName": "画像から連想した厨二病風の魔法名",
-  "artScore": 0-100,
-  "timedVisualEffects": [
-    {
-      "startTimeSeconds": 0,
-      "visualObjects": [
-        {
-          "assetFileName": [${Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP).map((name) => `"${name}"`).join(",")}],
-          "objectCount": 1,
-          "spawnPosition": ["in_front_of_self","behind_self","above_self","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
-          "spawnSpreadPattern": ["none","horizontal_line","vertical_line","circle","random_scatter"],
-          "colorHexCode": "#RRGGBB",
-          "objectSize": ["small","medium","large"],
-          "lifeTimeSeconds": 8,
-          "enterEffect": ["fall_from_sky","scale_up","rise_from_ground"],
-          "exitEffect": ["rise_to_sky","scale_down","sink_into_ground"],
-          "movement": {
-            "targetPosition": ["self_position","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
-            "moveDurationSeconds": 1,
-            "movePathType": ["none","straight_line","arc","orbit"]
-          },
-          "rotation": {
-            "shouldRotate": true,
-            "rotationSpeed": ["slow","normal","fast"]
-          }
-        }
-      ]
-    }
-  ],
-  "damageTimings": [
-    {
-      "timeSeconds": 1,
-      "damageWeight": 100,
-      "target": ["enemy"]
-    }
+  "artScore": 0,
+  "timeline": [
+    {"time":0,"actions":[{"action":"spawn","id":"fire1","assetFileName":"炎球","objectCount":3,"position":"above_self","objectSize":"medium"},{"action":"spawn","id":"skull1","assetFileName":"人魂と骸骨","objectCount":1,"position":"battlefield_center","objectSize":"large"}]},
+    {"time":1.5,"actions":[{"action":"move","id":"fire1","targetPosition":"enemy_position"},{"action":"spawn","id":"tornado1","assetFileName":"竜巻","objectCount":1,"position":"enemy_position","objectSize":"large"}]},
+    {"time":4,"actions":[{"action":"despawn","id":"skull1"}]}
   ]
 }
 
 ルール:
-- assetは3種以上使うこと
-- artScoreは落書きなら20程度。真円に近い、複雑等手間がかかっていれば高得点。また、絵心も評価基準
-- timedVisualEffectsは1〜4個
-- visualObjectsは各timedVisualEffectsにつき1〜3個
+- magicNameは厨二病風
+- artScoreは0〜100整数
+- timelineは4〜8個、timeは0〜10秒で昇順
+- actionsは各timeにつき1〜4個
+- 同時に複数素材spawn可。タイミングをずらして別素材spawn可
+- spawnした素材は後でmove/despawn可
+- assetFileNameは魔法全体で最低4種類
+- spawn: action,id,assetFileName,objectCount,position,objectSize
+- move: action,id,targetPosition
+- despawn: action,id
+- move/despawnのidは過去spawn済みのみ
+- spawnしたidは最後までに必ずdespawn
 - objectCountは1〜5
-- startTimeSecondsは0〜6
-- lifeTimeSecondsは8〜10
-- moveDurationSecondsは0〜10
-- moveDurationSeconds<lifeTimeSeconds
-- enterEffectは必ず候補から1つ選ぶ
-- exitEffectは必ず候補から1つ選ぶ
-- enterEffectは出現演出のみを表す
-- exitEffectは消失演出のみを表す
-- movementは出現後の移動のみを表す
-- movePathTypeがnoneの場合、moveDurationSecondsは0にする
-- damageTimingsは1〜5個
-- damageWeightの合計は100にする
-- timeSecondsは0.5〜10
-- 最後のdamageTimingsのtimeSecondsは8〜10秒にする
-- targetは必ず"enemy"にする
+- position/targetPosition候補: in_front_of_self,behind_self,above_self,battlefield_center,above_battlefield_center,enemy_position,above_enemy,self_position
+- objectSize候補: small,medium,large
+- actionごとに不要項目を書かない
 - JSON以外は出力しない`,
         },
       ]);
 
       const rawText = String(response.response.text() || "").trim();
       const jsonText = extractJsonText(rawText);
-      const magicEffectJson = normalizeOriginMagicCircleEffectJson(JSON.parse(jsonText));
+      const originalTimelineJson = JSON.parse(jsonText);
+      const timelineJson = normalizeOriginMagicCircleTimelineJson(originalTimelineJson);
+      const expandedEffectJson = expandOriginMagicCircleTimelineToEffectJson(timelineJson);
+      const damageInfo = createOriginMagicCircleDamageTimings(expandedEffectJson, timelineJson.artScore);
+      const magicEffectJson = normalizeOriginMagicCircleEffectJson({ ...expandedEffectJson, ...damageInfo });
       const appended = await appendOriginMagicCircleSpellCache({
         imageHash,
         rawJson: JSON.stringify(magicEffectJson),
@@ -631,6 +663,7 @@ console.log("[origin-magic-circle] spell cache appended:", {
 
     return res.json({
   magicEffectJson,
+  originalTimelineJson,
 
   // 新規生成時は、今回のhashがそのままキャッシュ本体のhash
   imageHash,
@@ -654,6 +687,7 @@ async function registerOriginMagicCircleCast({
   casterId,
   casterName,
   magicEffectJson,
+  originalTimelineJson,
   strokeJson = "",
   spellHash = "",
 }) {
@@ -783,6 +817,7 @@ app.post("/api/origin-magic-circle/casts", async (req, res) => {
       return {
         ...log,
         magicEffectJson,
+  originalTimelineJson,
         strokeJson: log.strokeJson || "",
       };
     });
