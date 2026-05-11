@@ -50,6 +50,77 @@ installDoubleTapZoomBlocker();
 
 
 
+
+
+const originMagicCircleAssetAliasMap = {
+  "炎球": "fireball.glb",
+  "人魂と骸骨": "magic_voxel_skull_flat_shaded.glb",
+  "竜巻": "stylized_fire_tornado.glb",
+  "不死鳥": "phoenix_bird.glb",
+  "月": "truth_about_the_dark_side_of_the_moon.glb",
+  "歯車時計": "broken_steampunk_clock.glb",
+  "プラズマ": "evanescent_plasma.glb",
+  "六足ロボ": "gun-bot_with_walk_and_idle_animation.glb",
+  "魂剣": "soulsucker_-_weaponcraft.glb",
+  "花束": "bouquet.glb",
+  "ギミック剣": "lance_of_the_primordials_-_dae_weaponcraft.glb",
+  "サイバー卵": "pearl_electron.glb",
+  "サイバー球と円盤": "stranger_star.glb",
+  "蠢く立方体": "cube_cascade.glb",
+  "サイバー多面球": "cyber_orb.glb",
+  "エナジー凝縮球": "magic_marble.glb",
+  "二重螺旋球": "cyber_spore.glb",
+  "銀河": "dark_matter.glb",
+  "蠢く多面球": "harlequin_orb.glb",
+  "多線球": "evanescent_smoke.glb",
+  "雷": "lightning",
+  "大爆発": "explosion_burst",
+  "雲": "mist_cloud",
+  "光球": "light_orb",
+  "バレッド": "crystal_shard",
+  "シンプルリング": "simple_ring",
+};
+
+function normalizeIncomingMagicEffectJson(rawEffectJson) {
+  let effectJson = rawEffectJson;
+  if (typeof effectJson === "string") {
+    try { effectJson = JSON.parse(effectJson); } catch { return null; }
+  }
+  if (!effectJson || typeof effectJson !== "object") return null;
+
+  const cloned = JSON.parse(JSON.stringify(effectJson));
+  const timed = Array.isArray(cloned.timedVisualEffects)
+    ? cloned.timedVisualEffects
+    : Array.isArray(cloned.visualEffects)
+      ? cloned.visualEffects
+      : [];
+
+  cloned.timedVisualEffects = timed.map((entry) => {
+    const startTimeSeconds = Number.isFinite(Number(entry?.startTimeSeconds))
+      ? Number(entry.startTimeSeconds)
+      : Number.isFinite(Number(entry?.timeSeconds))
+        ? Number(entry.timeSeconds)
+        : 0;
+
+    const visualObjects = Array.isArray(entry?.visualObjects)
+      ? entry.visualObjects
+      : Array.isArray(entry?.objects)
+        ? entry.objects
+        : [];
+
+    return {
+      ...entry,
+      startTimeSeconds,
+      visualObjects: visualObjects.map((obj) => {
+        const rawAssetName = String(obj?.assetFileName || obj?.assetName || "").trim();
+        const mappedAssetName = originMagicCircleAssetAliasMap[rawAssetName] || rawAssetName;
+        return { ...obj, assetFileName: mappedAssetName };
+      }),
+    };
+  });
+
+  return cloned;
+}
 const summonAssetOptions = [
   "fireball.glb",
   "magic_voxel_skull_flat_shaded.glb",
@@ -2279,7 +2350,7 @@ const res = await fetch("/api/origin-magic-circle/chant-title", {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "chant_failed");
 
-    const magicEffectJson = data.magicEffectJson || null;
+    const magicEffectJson = normalizeIncomingMagicEffectJson(data.magicEffectJson);
 const magicName = String(magicEffectJson?.magicName || "無名の魔法");
 
 await finishMagicCircleRitualAnimation(magicName);
@@ -2433,7 +2504,7 @@ function addMagicLogFromCast(cast) {
 
   if (battleState.magicLogs.some((log) => log.id === cast.id)) return;
 
-  const magicEffectJson = cast.magicEffectJson || null;
+  const magicEffectJson = normalizeIncomingMagicEffectJson(cast.magicEffectJson);
 
   battleState.magicLogs.push({
     id: cast.id,
@@ -4438,7 +4509,8 @@ function applyMagicColor(root, colorHexCode) {
   });
 }
 function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, casterSide = "self") {
-  const assetName = visualObject.assetFileName;
+  const rawAssetName = String(visualObject?.assetFileName || visualObject?.assetName || "").trim();
+  const assetName = originMagicCircleAssetAliasMap[rawAssetName] || rawAssetName;
 
   if (!summonAssetOptions.includes(assetName)) {
     console.warn("[origin-magic-circle] rejected asset:", assetName);
@@ -4519,6 +4591,8 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
 }
 async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
   if (battleState.gameEnded) return;
+
+  effectJson = normalizeIncomingMagicEffectJson(effectJson);
 
   if (!effectJson || !Array.isArray(effectJson.timedVisualEffects)) {
         console.warn("[origin-magic-circle] invalid magic effect json:", effectJson);
