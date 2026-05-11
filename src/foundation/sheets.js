@@ -691,16 +691,23 @@ export async function updateOriginMagicCircleRoomStatus({ roomId, status, reques
     if (!host || host.id !== requestedByClientId) throw new Error("forbidden");
   }
 
+  const nextMembers = (room.members || []).map((member) => ({
+    ...member,
+    hp: normalizedStatus === "loading"
+      ? ORIGIN_MAGIC_CIRCLE_MAX_HP
+      : normalizeOriginMagicCircleHp(member?.hp),
+  }));
+
   await updateOriginMagicCircleRoomRow(room.rowIndex, [
     room.roomId,
-    JSON.stringify(room.members || []),
+    JSON.stringify(nextMembers),
     normalizedStatus,
     String(room.expiresAt || roomExpiresAtMs()),
   ]);
 
   return {
     roomId: room.roomId,
-    members: room.members,
+    members: nextMembers,
     status: normalizedStatus,
     expiresAt: room.expiresAt,
   };

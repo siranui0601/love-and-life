@@ -5649,11 +5649,7 @@ function createResultMagicBubble(log, index) {
   ? Math.max(0, Math.round(Number(log.artScore)))
   : 0;
 
-const materials = Array.isArray(log.materialNames) && log.materialNames.length
-  ? log.materialNames.join(" / ")
-  : "素材なし";
-
-title.textContent = `${log.magicName}\n【素材:${materials}】\n【芸術点:${artScore}　${damage}ダメージ】`;
+title.textContent = `${log.magicName}\n\n【芸術点:${artScore}　${damage}ダメージ】`;
 
   
    const canvas = document.createElement("canvas");
