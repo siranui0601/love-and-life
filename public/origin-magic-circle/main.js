@@ -417,7 +417,7 @@ let isOriginDebugTestRoom = false;
 let onBattleHpReachedZero = null;
 
 
-const ORIGIN_MAGIC_CIRCLE_MAX_HP = 300;
+const ORIGIN_MAGIC_CIRCLE_MAX_HP = 1000;
 
 let battleState = {
   selfHp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
@@ -2404,6 +2404,30 @@ function calculateMagicTotalDamage(effectJson) {
 
 
 
+function extractMagicMaterialNames(magicEffectJson) {
+  const names = [];
+  const pushName = (value) => {
+    const name = String(value || "").trim();
+    if (!name || names.includes(name)) return;
+    names.push(name);
+  };
+
+  for (const timed of magicEffectJson?.timeline || []) {
+    for (const action of timed?.actions || []) {
+      if (action?.action === "spawn") pushName(action?.assetFileName);
+    }
+  }
+
+  for (const timed of magicEffectJson?.timedVisualEffects || []) {
+    for (const visualObject of timed?.visualObjects || []) {
+      pushName(visualObject?.assetFileName);
+    }
+  }
+
+  return names;
+}
+
+
 function addMagicLogFromCast(cast) {
   if (!cast?.id) return;
 
@@ -2420,6 +2444,7 @@ function addMagicLogFromCast(cast) {
     magicName: String(magicEffectJson?.magicName || "無名の魔法"),
     artScore: Math.max(0, Math.round(Number(magicEffectJson?.artScore) || 0)),
     totalDamage: calculateMagicTotalDamage(magicEffectJson),
+    materialNames: extractMagicMaterialNames(magicEffectJson),
     strokeJson: String(cast.strokeJson || ""),
   });
 
@@ -5624,7 +5649,11 @@ function createResultMagicBubble(log, index) {
   ? Math.max(0, Math.round(Number(log.artScore)))
   : 0;
 
-title.textContent = `${log.magicName}\n【芸術点:${artScore}　${damage}ダメージ】`;
+const materials = Array.isArray(log.materialNames) && log.materialNames.length
+  ? log.materialNames.join(" / ")
+  : "素材なし";
+
+title.textContent = `${log.magicName}\n【素材:${materials}】\n【芸術点:${artScore}　${damage}ダメージ】`;
 
   
    const canvas = document.createElement("canvas");

@@ -55,7 +55,7 @@ function normalizeOriginMagicCircleShape64(rawShape64) {
 
 
 
-const ORIGIN_MAGIC_CIRCLE_MAX_HP = 300;
+const ORIGIN_MAGIC_CIRCLE_MAX_HP = 1000;
 
 const ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP = {
   "炎球": "fireball.glb",
