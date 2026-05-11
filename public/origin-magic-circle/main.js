@@ -417,7 +417,7 @@ let isOriginDebugTestRoom = false;
 let onBattleHpReachedZero = null;
 
 
-const ORIGIN_MAGIC_CIRCLE_MAX_HP = 100;
+const ORIGIN_MAGIC_CIRCLE_MAX_HP = 300;
 
 let battleState = {
   selfHp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
@@ -2379,7 +2379,11 @@ if (ev) ev.textContent = `${battleState.enemyHp}/${ORIGIN_MAGIC_CIRCLE_MAX_HP}`;
 
 
 function calculateMagicTotalDamage(effectJson) {
-  const maxDamage = Math.min(
+  const totalDamage = Number.isFinite(Number(effectJson?.totalDamage))
+    ? Math.max(0, Math.round(Number(effectJson.totalDamage)))
+    : null;
+
+  const legacyMaxDamage = Math.min(
     ORIGIN_MAGIC_CIRCLE_MAX_HP,
     Math.max(0, Number(effectJson?.artScore) || 0)
   );
@@ -2390,7 +2394,7 @@ function calculateMagicTotalDamage(effectJson) {
 
   const total = damageTimings.reduce((sum, timing) => {
     const weight = Math.max(0, Number(timing?.damageWeight) || 0);
-    return sum + Math.round(maxDamage * (weight / 100));
+    return sum + Math.round((totalDamage !== null ? totalDamage : legacyMaxDamage) * (weight / 100));
   }, 0);
 
   return Math.max(0, total);
@@ -4540,7 +4544,10 @@ function sanitizeMagicEffectForDevice(effectJson) {
   const casterSide = isEnemyCast ? "enemy" : "self";
 
 
-  const maxDamage = Math.min(300, Math.max(0, Number(effectJson?.artScore) || 0));
+  const totalDamage = Number.isFinite(Number(effectJson?.totalDamage))
+    ? Math.max(0, Math.round(Number(effectJson.totalDamage)))
+    : null;
+  const legacyMaxDamage = Math.min(ORIGIN_MAGIC_CIRCLE_MAX_HP, Math.max(0, Number(effectJson?.artScore) || 0));
   const damageTimings = Array.isArray(effectJson?.damageTimings) ? effectJson.damageTimings : [];
   damageTimings.forEach((timing) => {
     const delay = Math.max(0, Number(timing.timeSeconds) || 0) * 1000;
@@ -4551,7 +4558,10 @@ function sanitizeMagicEffectForDevice(effectJson) {
       
       
       //ここ自信ない↓
-      const amount = Math.round(maxDamage * (Math.max(0, Number(timing.damageWeight) || 0) / 100));
+      const weight = Math.max(0, Number(timing.damageWeight) || 0);
+      const amount = totalDamage !== null
+        ? Math.round(totalDamage * (weight / 100))
+        : Math.round(legacyMaxDamage * (weight / 100));
 
       if (isEnemyCast) {
         battleState.selfHp = Math.max(0, battleState.selfHp - amount);
