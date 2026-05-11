@@ -559,9 +559,26 @@ if (cached?.rawJson) {
     } else {
       const timelineJson = normalizeOriginMagicCircleTimelineJson(parsedCache);
       const expandedEffectJson = expandOriginMagicCircleTimelineToEffectJson(timelineJson);
-      const damageInfo = createOriginMagicCircleDamageTimings(expandedEffectJson, timelineJson.artScore);
-      cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson({ ...expandedEffectJson, ...damageInfo });
-    }
+      
+      
+      
+      
+      
+      const damageInfo = createOriginMagicCircleDamageTimings(
+  expandedEffectJson,
+  expandedEffectJson.artScore
+);
+
+cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson({
+  ...expandedEffectJson,
+  totalDamage: damageInfo.totalDamage,
+  damageTimings: damageInfo.damageTimings,
+});
+
+    
+        
+            
+                    }
   } catch (error) {
     console.warn("[origin-magic-circle] cached rawJson parse failed:", {
       rowIndex: cached.rowIndex,
@@ -646,19 +663,43 @@ if (cached?.rawJson) {
       const originalTimelineJson = JSON.parse(jsonText);
       const timelineJson = normalizeOriginMagicCircleTimelineJson(originalTimelineJson);
       const expandedEffectJson = expandOriginMagicCircleTimelineToEffectJson(timelineJson);
-      const damageInfo = createOriginMagicCircleDamageTimings(expandedEffectJson, timelineJson.artScore);
-      const magicEffectJson = normalizeOriginMagicCircleEffectJson({ ...expandedEffectJson, ...damageInfo });
-      const appended = await appendOriginMagicCircleSpellCache({
-        imageHash,
-        rawJson: JSON.stringify(magicEffectJson),
-        shape64,
-      });
+      
+      
+      const damageInfo = createOriginMagicCircleDamageTimings(
+  expandedEffectJson,
+  expandedEffectJson.artScore
+);
+
+const magicEffectJson = normalizeOriginMagicCircleEffectJson({
+  ...expandedEffectJson,
+  totalDamage: damageInfo.totalDamage,
+  damageTimings: damageInfo.damageTimings,
+});
+
+const appended = await appendOriginMagicCircleSpellCache({
+  imageHash,
+  rawJson: JSON.stringify(magicEffectJson),
+  strokeJson,
+  shape64,
+});
+
+
+
+
 
 console.log("[origin-magic-circle] spell cache appended:", {
   rowIndex: appended?.rowIndex,
   imageHashLength: String(imageHash || "").length,
   rawJsonLength: JSON.stringify(magicEffectJson).length,
   strokeLength: String(strokeJson || "").length,
+});
+
+
+
+console.log("[origin-magic-circle] response magicEffectJson:", {
+  magicName: magicEffectJson.magicName,
+  timedVisualEffectsLength: magicEffectJson.timedVisualEffects?.length,
+  damageTimingsLength: magicEffectJson.damageTimings?.length,
 });
 
     return res.json({
@@ -815,11 +856,11 @@ app.post("/api/origin-magic-circle/casts", async (req, res) => {
       }
 
       return {
-        ...log,
-        magicEffectJson,
-  originalTimelineJson,
-        strokeJson: log.strokeJson || "",
-      };
+  ...log,
+  magicEffectJson,
+  originalTimelineJson: magicEffectJson?.timeline || null,
+  strokeJson: log.strokeJson || "",
+};
     });
 
     return res.json({
