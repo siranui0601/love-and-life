@@ -608,7 +608,7 @@ if (cached?.rawJson) {
           },
         },
         {
-          text: `画像の魔法陣を見て、魔法名・芸術点・timeline形式の演出骨格をJSONのみで出力してください。JSON以外は禁止。色、複数出現時の並び方、移動経路、回転、消え方、ダメージ発生タイミングはシステム側で自動補完します。
+          text: `画像の魔法陣を見て、jsonを出力
 
 {
   "magicName": "画像から連想した厨二病風の魔法名",
@@ -622,7 +622,7 @@ if (cached?.rawJson) {
 
 ルール:
 - magicNameは厨二病風
-- artScoreは0〜100整数
+- artScoreは0〜100
 - timelineは4〜8個、timeは0〜10秒で昇順
 - actionsは各timeにつき1〜4個
 - 同時に複数素材spawn可。タイミングをずらして別素材spawn可
