@@ -137,20 +137,298 @@ const ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP = {
   "ダイヤ": "purple_diamond_crystal_gem.glb",
 };
 
-function normalizeOriginMagicCircleEffectJson(effectJson) {
-  if (!effectJson || typeof effectJson !== "object") return effectJson;
-  const cloned = JSON.parse(JSON.stringify(effectJson));
-  const timedVisualEffects = Array.isArray(cloned.timedVisualEffects) ? cloned.timedVisualEffects : [];
-  for (const effect of timedVisualEffects) {
-    const visualObjects = Array.isArray(effect?.visualObjects) ? effect.visualObjects : [];
-    for (const visualObject of visualObjects) {
-      const currentName = String(visualObject?.assetFileName || "").trim();
-      if (currentName && ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[currentName]) {
-        visualObject.assetFileName = ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[currentName];
+
+
+
+const ORIGIN_MAGIC_CIRCLE_TIMELINE_ACTIONS = new Set(["spawn", "move", "despawn"]);
+
+const ORIGIN_MAGIC_CIRCLE_SPAWN_POSITIONS = [
+  "in_front_of_self",
+  "behind_self",
+  "above_self",
+  "battlefield_center",
+  "above_battlefield_center",
+  "enemy_position",
+  "above_enemy",
+];
+
+const ORIGIN_MAGIC_CIRCLE_TARGET_POSITIONS = [
+  "self_position",
+  "battlefield_center",
+  "above_battlefield_center",
+  "enemy_position",
+  "above_enemy",
+];
+
+const ORIGIN_MAGIC_CIRCLE_OBJECT_SIZES = ["small", "medium", "large"];
+
+const ORIGIN_MAGIC_CIRCLE_SPREAD_PATTERNS = [
+  "none",
+  "horizontal_line",
+  "vertical_line",
+  "circle",
+  "random_scatter",
+];
+
+const ORIGIN_MAGIC_CIRCLE_MOVE_PATH_TYPES = [
+  "straight_line",
+  "arc",
+  "fall_from_above",
+  "rise_from_below",
+  "orbit",
+];
+
+const ORIGIN_MAGIC_CIRCLE_COLORS = [
+  "#FF3B30",
+  "#FF9500",
+  "#FFD60A",
+  "#30D158",
+  "#00C7BE",
+  "#0A84FF",
+  "#5E5CE6",
+  "#BF5AF2",
+  "#FF2D55",
+  "#FFFFFF",
+];
+
+function clampNumber(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+function pickRandom(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function normalizeAssetFileName(assetFileName) {
+  const name = String(assetFileName || "").trim();
+  if (ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[name]) {
+    return ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[name];
+  }
+  return name;
+}
+
+function calculateOriginMagicCircleTotalDamage(artScore) {
+  const score = clampNumber(artScore, 0, 100, 0);
+
+  // 低得点でも派手に戦えるよう最低80、最高300
+  return Math.round(40 + score * 2.2);
+}
+
+
+
+function completeOriginMagicCircleTimelineJson(rawJson) {
+  const safe = rawJson && typeof rawJson === "object" ? rawJson : {};
+
+  const magicName = String(safe.magicName || "名もなき原初魔法").trim().slice(0, 50);
+  const artScore = Math.round(clampNumber(safe.artScore, 0, 100, 0));
+
+  const rawTimeline = Array.isArray(safe.timeline) ? safe.timeline : [];
+  const timeline = [];
+  const spawnedIds = new Map();
+
+  for (const rawEvent of rawTimeline) {
+    const time = clampNumber(rawEvent?.time, 0, 10, 0);
+    const rawActions = Array.isArray(rawEvent?.actions) ? rawEvent.actions : [];
+    const actions = [];
+
+    for (const rawAction of rawActions) {
+      const action = String(rawAction?.action || "").trim();
+
+      if (!ORIGIN_MAGIC_CIRCLE_TIMELINE_ACTIONS.has(action)) continue;
+
+      const id = String(rawAction?.id || "").trim().replace(/[^\w-]/g, "").slice(0, 32);
+      if (!id) continue;
+
+      if (action === "spawn") {
+        const assetFileName = normalizeAssetFileName(rawAction.assetFileName);
+        if (!assetFileName) continue;
+
+        const objectCount = Math.round(clampNumber(rawAction.objectCount, 1, 5, 1));
+
+        const spawnPosition = ORIGIN_MAGIC_CIRCLE_SPAWN_POSITIONS.includes(rawAction.spawnPosition)
+          ? rawAction.spawnPosition
+          : pickRandom(ORIGIN_MAGIC_CIRCLE_SPAWN_POSITIONS);
+
+        const objectSize = ORIGIN_MAGIC_CIRCLE_OBJECT_SIZES.includes(rawAction.objectSize)
+          ? rawAction.objectSize
+          : pickRandom(ORIGIN_MAGIC_CIRCLE_OBJECT_SIZES);
+
+        const completed = {
+          action: "spawn",
+          id,
+          assetFileName,
+          objectCount,
+          spawnPosition,
+          spawnSpreadPattern: objectCount >= 3 ? pickRandom(ORIGIN_MAGIC_CIRCLE_SPREAD_PATTERNS) : "none",
+          colorHexCode: pickRandom(ORIGIN_MAGIC_CIRCLE_COLORS),
+          objectSize,
+          enterEffect: pickRandom(["fall_from_sky", "scale_up", "rise_from_ground"]),
+          rotation: {
+            shouldRotate: true,
+            rotationSpeed: pickRandom(["slow", "normal", "fast"]),
+          },
+        };
+
+        spawnedIds.set(id, {
+          assetFileName,
+          spawnTime: time,
+          lastPosition: spawnPosition,
+          objectSize,
+        });
+
+        actions.push(completed);
+      }
+
+      if (action === "move") {
+        if (!spawnedIds.has(id)) continue;
+
+        const targetPosition = ORIGIN_MAGIC_CIRCLE_TARGET_POSITIONS.includes(rawAction.targetPosition)
+          ? rawAction.targetPosition
+          : pickRandom(ORIGIN_MAGIC_CIRCLE_TARGET_POSITIONS);
+
+        const completed = {
+          action: "move",
+          id,
+          targetPosition,
+          movePathType: pickRandom(ORIGIN_MAGIC_CIRCLE_MOVE_PATH_TYPES),
+        };
+
+        spawnedIds.get(id).lastPosition = targetPosition;
+        actions.push(completed);
+      }
+
+      if (action === "despawn") {
+        if (!spawnedIds.has(id)) continue;
+
+        actions.push({
+          action: "despawn",
+          id,
+          exitEffect: pickRandom(["rise_to_sky", "scale_down", "sink_into_ground"]),
+        });
+
+        spawnedIds.delete(id);
+      }
+    }
+
+    if (actions.length > 0) {
+      timeline.push({ time, actions });
+    }
+  }
+
+  timeline.sort((a, b) => a.time - b.time);
+
+  // 消し忘れ救済
+  if (spawnedIds.size > 0) {
+    timeline.push({
+      time: 10,
+      actions: [...spawnedIds.keys()].map((id) => ({
+        action: "despawn",
+        id,
+        exitEffect: pickRandom(["rise_to_sky", "scale_down", "sink_into_ground"]),
+      })),
+    });
+  }
+
+  const uniqueAssets = new Set();
+  for (const event of timeline) {
+    for (const action of event.actions) {
+      if (action.action === "spawn") uniqueAssets.add(action.assetFileName);
+    }
+  }
+
+  return {
+    magicName,
+    artScore,
+    totalDamage: calculateOriginMagicCircleTotalDamage(artScore),
+    timeline,
+    damageTimings: createOriginMagicCircleDamageTimings({
+      timeline,
+      artScore,
+    }),
+    debug: {
+      uniqueAssetCount: uniqueAssets.size,
+    },
+  };
+}
+
+
+
+
+function createOriginMagicCircleDamageTimings({ timeline, artScore }) {
+  const totalDamage = calculateOriginMagicCircleTotalDamage(artScore);
+  const candidates = [];
+
+  for (const event of timeline) {
+    for (const action of event.actions || []) {
+      if (action.action === "move") {
+        if (action.targetPosition === "enemy_position" || action.targetPosition === "above_enemy") {
+          candidates.push({
+            timeSeconds: clampNumber(event.time + 0.4, 0.5, 10, event.time),
+            type: "impact",
+            weight: 35,
+          });
+        }
+      }
+
+      if (action.action === "spawn") {
+        if (action.spawnPosition === "enemy_position" || action.spawnPosition === "above_enemy") {
+          candidates.push({
+            timeSeconds: clampNumber(event.time + 0.6, 0.5, 10, event.time),
+            type: "impact",
+            weight: 25,
+          });
+        }
+
+        if (action.objectCount >= 3) {
+          candidates.push({
+            timeSeconds: clampNumber(event.time + 2.0, 0.5, 10, event.time),
+            type: "slip",
+            weight: 15,
+          });
+        }
       }
     }
   }
-  return cloned;
+
+  candidates.push({
+    timeSeconds: 9,
+    type: "finish",
+    weight: 40,
+  });
+
+  const limited = candidates
+    .sort((a, b) => a.timeSeconds - b.timeSeconds)
+    .slice(0, 5);
+
+  const weightSum = limited.reduce((sum, item) => sum + item.weight, 0) || 1;
+
+  let usedDamage = 0;
+
+  return limited.map((item, index) => {
+    const isLast = index === limited.length - 1;
+    const damage = isLast
+      ? totalDamage - usedDamage
+      : Math.max(1, Math.round(totalDamage * (item.weight / weightSum)));
+
+    usedDamage += damage;
+
+    return {
+      timeSeconds: item.timeSeconds,
+      damage,
+      type: item.type,
+      target: "enemy",
+    };
+  });
+}
+
+
+
+
+
+function normalizeOriginMagicCircleEffectJson(effectJson) {
+  return completeOriginMagicCircleTimelineJson(effectJson);
 }
 
 
@@ -546,70 +824,50 @@ if (cached?.rawJson) {
           },
         },
         {
-          text: `画像の魔法陣を見て、魔法名・芸術点・3D演出・ダメージ発生タイミングをJSONのみで出力してください。
+          text: `画像の魔法陣を見て、魔法名・芸術点・3D演出タイムラインをJSONのみで出力してください。
 JSON以外は禁止。候補が配列で示されている項目は、必ず1つの値だけを選んでください。
 
 {
   "magicName": "画像から連想した厨二病風の魔法名",
-  "artScore": 0-100,
-  "timedVisualEffects": [
+  "artScore": 0~100,
+  "timeline": [
     {
-      "startTimeSeconds": 0,
-      "visualObjects": [
+      "time": 0,
+      "actions": [
         {
+          "action": "spawn",
+          "id": "後からmove/despawnで指定する識別名",
           "assetFileName": [${Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP).map((name) => `"${name}"`).join(",")}],
           "objectCount": 1,
           "spawnPosition": ["in_front_of_self","behind_self","above_self","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
-          "spawnSpreadPattern": ["none","horizontal_line","vertical_line","circle","random_scatter"],
-          "colorHexCode": "#RRGGBB",
-          "objectSize": ["small","medium","large"],
-          "lifeTimeSeconds": 8,
-          "enterEffect": ["fall_from_sky","scale_up","rise_from_ground"],
-          "exitEffect": ["rise_to_sky","scale_down","sink_into_ground"],
-          "movement": {
-            "targetPosition": ["self_position","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
-            "moveDurationSeconds": 1,
-            "movePathType": ["none","straight_line","arc","orbit"]
-          },
-          "rotation": {
-            "shouldRotate": true,
-            "rotationSpeed": ["slow","normal","fast"]
-          }
+          "objectSize": ["small","medium","large"]
+        },
+        {
+          "action": "move",
+          "id": "すでにspawnした識別名",
+          "targetPosition": ["self_position","battlefield_center","above_battlefield_center","enemy_position","above_enemy"]
+        },
+        {
+          "action": "despawn",
+          "id": "すでにspawnした識別名"
         }
       ]
-    }
-  ],
-  "damageTimings": [
-    {
-      "timeSeconds": 1,
-      "damageWeight": 100,
-      "target": ["enemy"]
     }
   ]
 }
 
 ルール:
-- assetは3種以上使うこと
-- artScoreは落書きなら20程度。真円に近い、複雑等手間がかかっていれば高得点。また、絵心も評価基準
-- timedVisualEffectsは1〜4個
-- visualObjectsは各timedVisualEffectsにつき1〜3個
-- objectCountは1〜5
-- startTimeSecondsは0〜6
-- lifeTimeSecondsは8〜10
-- moveDurationSecondsは0〜10
-- moveDurationSeconds<lifeTimeSeconds
-- enterEffectは必ず候補から1つ選ぶ
-- exitEffectは必ず候補から1つ選ぶ
-- enterEffectは出現演出のみを表す
-- exitEffectは消失演出のみを表す
-- movementは出現後の移動のみを表す
-- movePathTypeがnoneの場合、moveDurationSecondsは0にする
-- damageTimingsは1〜5個
-- damageWeightの合計は100にする
-- timeSecondsは0.5〜10
-- 最後のdamageTimingsのtimeSecondsは8〜10秒にする
-- targetは必ず"enemy"にする
-- JSON以外は出力しない`,
+- timelineは4〜10個
+- timeは0〜10秒
+- timeは昇順にする
+- actionsは各timeにつき1〜4個
+- assetは最低4種類使う
+- spawnはaction,id,assetFileName,objectCount,spawnPosition,objectSizeのみを書く
+- moveはaction,id,targetPositionのみを書く
+- despawnはaction,idのみを書く
+- move/despawnのidは、それ以前にspawnされたidだけ使う
+- spawnしたidは最後までに必ずdespawnする
+- JSON以外は出力しない`
         },
       ]);
 
