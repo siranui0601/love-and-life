@@ -137,242 +137,6 @@ const ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP = {
   "ダイヤ": "purple_diamond_crystal_gem.glb",
 };
 
-
-
-
-const ORIGIN_MAGIC_CIRCLE_ASSET_META = {
-  "炎球": {
-    file: "fireball.glb",
-    colorMode: "tint",
-    roles: ["projectile", "fire", "impact"],
-    damageStyle: "instant",
-  },
-  "隕石": {
-    file: "meteorite.glb",
-    colorMode: "ignore",
-    roles: ["fall", "rock", "impact"],
-    damageStyle: "instant",
-  },
-  "竜巻": {
-    file: "stylized_fire_tornado.glb",
-    colorMode: "tint",
-    roles: ["field", "wind", "dot"],
-    damageStyle: "dot",
-  },
-  "雷": {
-    file: "lightning",
-    colorMode: "tint",
-    roles: ["strike", "thunder", "multiHit"],
-    damageStyle: "multi",
-  },
-  "太陽": {
-    file: "sun.glb",
-    colorMode: "ignore",
-    roles: ["summon", "sky", "impact"],
-    damageStyle: "instant",
-  },
-  "シールド": {
-    file: "duchess_shield.glb",
-    colorMode: "ignore",
-    roles: ["aura", "defense"],
-    damageStyle: "none",
-  },
-};
-
-
-
-
-function createSeededRandom(seedText = "") {
-  let seed = 0;
-  for (let i = 0; i < seedText.length; i += 1) {
-    seed = (seed * 31 + seedText.charCodeAt(i)) >>> 0;
-  }
-
-  return () => {
-    seed = (seed * 1664525 + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
-}
-
-function pickBySeed(items, random) {
-  if (!Array.isArray(items) || items.length === 0) return null;
-  return items[Math.floor(random() * items.length)];
-}
-
-function normalizeAssetPlan(aiPlanJson) {
-  const rawPlan = Array.isArray(aiPlanJson?.assetPlan) ? aiPlanJson.assetPlan : [];
-
-  return rawPlan
-    .map((item) => {
-      const assetName = String(item?.assetName || "").trim();
-      if (!ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[assetName]) return null;
-
-      const count = Math.max(1, Math.min(5, Math.round(Number(item?.count) || 1)));
-      const size = ["small", "medium", "large"].includes(item?.size)
-        ? item.size
-        : "medium";
-
-      return { assetName, count, size };
-    })
-    .filter(Boolean)
-    .slice(0, 5);
-}
-
-
-
-
-function getAssetMeta(assetName) {
-  const file = ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[assetName];
-
-  return ORIGIN_MAGIC_CIRCLE_ASSET_META[assetName] || {
-    file,
-    colorMode: "tint",
-    roles: ["generic"],
-    damageStyle: "instant",
-  };
-}
-
-function buildDamageTimings({ damageStyle, impactSecond = 2.0, random }) {
-  if (damageStyle === "dot") {
-    return [
-      { timeSeconds: impactSecond, damageWeight: 20, target: "enemy" },
-      { timeSeconds: impactSecond + 0.2, damageWeight: 20, target: "enemy" },
-      { timeSeconds: impactSecond + 0.4, damageWeight: 20, target: "enemy" },
-      { timeSeconds: impactSecond + 0.6, damageWeight: 20, target: "enemy" },
-      { timeSeconds: impactSecond + 0.8, damageWeight: 20, target: "enemy" },
-    ];
-  }
-
-  if (damageStyle === "multi") {
-    return [
-      { timeSeconds: impactSecond, damageWeight: 35, target: "enemy" },
-      { timeSeconds: impactSecond + 0.35, damageWeight: 35, target: "enemy" },
-      { timeSeconds: impactSecond + 0.7, damageWeight: 30, target: "enemy" },
-    ];
-  }
-
-  return [
-    { timeSeconds: impactSecond, damageWeight: 100, target: "enemy" },
-  ];
-}
-
-
-
-
-function buildOriginMagicEffectJsonFromPlan(aiPlanJson, imageHash = "") {
-  const random = createSeededRandom(imageHash);
-  const assetPlan = normalizeAssetPlan(aiPlanJson);
-
-  const safePlan = assetPlan.length
-    ? assetPlan
-    : [{ assetName: "炎球", count: 1, size: "medium" }];
-
-  const main = safePlan[0];
-  const mainMeta = getAssetMeta(main.assetName);
-
-  const pattern = pickBySeed(
-    ["straight", "behind_cast", "sky_fall", "enemy_field", "aura_then_shot", "orbit_then_hit"],
-    random
-  );
-
-  const timedVisualEffects = [];
-
-  safePlan.forEach((plan, index) => {
-    const meta = getAssetMeta(plan.assetName);
-
-    let visualObject = {
-      assetFileName: meta.file,
-      objectCount: plan.count,
-      objectSize: plan.size,
-      colorMode: meta.colorMode,
-      colorHexCode: meta.colorMode === "ignore" ? "#ffffff" : pickBySeed(["#88ccff", "#ff66dd", "#ff8844", "#ffffff", "#99ffcc"], random),
-      lifeTimeSeconds: 4 + Math.floor(random() * 4),
-      perObjectDelaySeconds: plan.count >= 2 ? 0.15 + random() * 0.18 : 0,
-      spawnSpreadPattern: plan.count >= 2 ? pickBySeed(["horizontal_line", "circle", "random_scatter"], random) : "none",
-      enterEffect: pickBySeed(["scale_up", "fall_from_sky", "rise_from_ground"], random),
-      exitEffect: pickBySeed(["scale_down", "rise_to_sky", "sink_into_ground"], random),
-      rotation: {
-        shouldRotate: random() < 0.75,
-        rotationSpeed: pickBySeed(["slow", "normal", "fast"], random),
-      },
-      movement: {
-        targetPosition: "enemy_position",
-        moveDurationSeconds: 0,
-        movePathType: "none",
-      },
-    };
-
-    if (pattern === "behind_cast") {
-      visualObject.spawnPosition = index === 0 ? "behind_self" : "in_front_of_self";
-      visualObject.movement = {
-        targetPosition: "enemy_position",
-        moveDurationSeconds: 1.4 + random() * 0.8,
-        movePathType: "straight_line",
-      };
-    } else if (pattern === "sky_fall" || meta.roles.includes("fall")) {
-      visualObject.spawnPosition = "above_enemy";
-      visualObject.enterEffect = "fall_from_sky";
-      visualObject.movement = {
-        targetPosition: "enemy_position",
-        moveDurationSeconds: 1.2 + random() * 0.8,
-        movePathType: "fall_from_above",
-      };
-    } else if (pattern === "enemy_field" || meta.damageStyle === "dot") {
-      visualObject.spawnPosition = "enemy_position";
-      visualObject.spawnSpreadPattern = plan.count >= 2 ? "circle" : "none";
-      visualObject.lifeTimeSeconds = 5;
-      visualObject.movement = {
-        targetPosition: "enemy_position",
-        moveDurationSeconds: 0,
-        movePathType: "none",
-      };
-    } else if (pattern === "aura_then_shot") {
-      visualObject.spawnPosition = index === 0 ? "behind_self" : "in_front_of_self";
-      visualObject.movement = index === 0
-        ? { targetPosition: "self_position", moveDurationSeconds: 0, movePathType: "none" }
-        : { targetPosition: "enemy_position", moveDurationSeconds: 1.6, movePathType: "arc" };
-    } else if (pattern === "orbit_then_hit") {
-      visualObject.spawnPosition = "battlefield_center";
-      visualObject.spawnSpreadPattern = plan.count >= 2 ? "circle" : "none";
-      visualObject.movement = {
-        targetPosition: "battlefield_center",
-        moveDurationSeconds: 2.2,
-        movePathType: "orbit",
-      };
-    } else {
-      visualObject.spawnPosition = "in_front_of_self";
-      visualObject.movement = {
-        targetPosition: "enemy_position",
-        moveDurationSeconds: 1.2 + random() * 0.8,
-        movePathType: pickBySeed(["straight_line", "arc"], random),
-      };
-    }
-
-    timedVisualEffects.push({
-      startTimeSeconds: Number((index * (0.35 + random() * 0.25)).toFixed(2)),
-      visualObjects: [visualObject],
-    });
-  });
-
-  const damageTimings = buildDamageTimings({
-    damageStyle: mainMeta.damageStyle,
-    impactSecond: pattern === "enemy_field" ? 0.6 : 2.0,
-    random,
-  });
-
-  return normalizeOriginMagicCircleEffectJson({
-    magicName: String(aiPlanJson?.magicName || "無名の魔法").slice(0, 40),
-    magicTheme: String(aiPlanJson?.magicTheme || "").slice(0, 80),
-    artScore: Math.max(0, Math.min(100, Math.round(Number(aiPlanJson?.artScore) || 0))),
-    timedVisualEffects,
-    damageTimings,
-  });
-}
-
-
-
-
-
 function normalizeOriginMagicCircleEffectJson(effectJson) {
   if (!effectJson || typeof effectJson !== "object") return effectJson;
   const cloned = JSON.parse(JSON.stringify(effectJson));
@@ -774,53 +538,84 @@ if (cached?.rawJson) {
 
 
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-      const assetNames = Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP);
-
-const response = await model.generateContent([
-  {
-    inlineData: {
-      mimeType: "image/png",
-      data: base64ImageFile,
-    },
-  },
-  {
-    text: `画像の魔法陣から連想される魔法をJSONのみで出力してください。
+      const response = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: "image/png",
+            data: base64ImageFile,
+          },
+        },
+        {
+          text: `画像の魔法陣を見て、魔法名・芸術点・3D演出・ダメージ発生タイミングをJSONのみで出力してください。
+JSON以外は禁止。候補が配列で示されている項目は、必ず1つの値だけを選んでください。
 
 {
-  "magicName": "厨二病風の魔法名",
-  "magicTheme": "魔法の雰囲気を短く説明",
-  "artScore": 0,
-  "assetPlan": [
+  "magicName": "画像から連想した厨二病風の魔法名",
+  "artScore": 0-100,
+  "timedVisualEffects": [
     {
-      "assetName": [${assetNames.map((name) => `"${name}"`).join(",")}],
-      "count": 1,
-      "size": ["small","medium","large"]
+      "startTimeSeconds": 0,
+      "visualObjects": [
+        {
+          "assetFileName": [${Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP).map((name) => `"${name}"`).join(",")}],
+          "objectCount": 1,
+          "spawnPosition": ["in_front_of_self","behind_self","above_self","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
+          "spawnSpreadPattern": ["none","horizontal_line","vertical_line","circle","random_scatter"],
+          "colorHexCode": "#RRGGBB",
+          "objectSize": ["small","medium","large"],
+          "lifeTimeSeconds": 8,
+          "enterEffect": ["fall_from_sky","scale_up","rise_from_ground"],
+          "exitEffect": ["rise_to_sky","scale_down","sink_into_ground"],
+          "movement": {
+            "targetPosition": ["self_position","battlefield_center","above_battlefield_center","enemy_position","above_enemy"],
+            "moveDurationSeconds": 1,
+            "movePathType": ["none","straight_line","arc","orbit"]
+          },
+          "rotation": {
+            "shouldRotate": true,
+            "rotationSpeed": ["slow","normal","fast"]
+          }
+        }
+      ]
+    }
+  ],
+  "damageTimings": [
+    {
+      "timeSeconds": 1,
+      "damageWeight": 100,
+      "target": ["enemy"]
     }
   ]
 }
 
 ルール:
-- assetPlanは2〜5種類
-- countは1〜5
-- artScoreは0〜100
-- 画像の形、密度、雰囲気に合う素材を選ぶ
-- 同じ素材ばかりにしない
-- JSON以外は禁止`,
-  },
-]);
+- assetは3種以上使うこと
+- artScoreは落書きなら20程度。真円に近い、複雑等手間がかかっていれば高得点。また、絵心も評価基準
+- timedVisualEffectsは1〜4個
+- visualObjectsは各timedVisualEffectsにつき1〜3個
+- objectCountは1〜5
+- startTimeSecondsは0〜6
+- lifeTimeSecondsは8〜10
+- moveDurationSecondsは0〜10
+- moveDurationSeconds<lifeTimeSeconds
+- enterEffectは必ず候補から1つ選ぶ
+- exitEffectは必ず候補から1つ選ぶ
+- enterEffectは出現演出のみを表す
+- exitEffectは消失演出のみを表す
+- movementは出現後の移動のみを表す
+- movePathTypeがnoneの場合、moveDurationSecondsは0にする
+- damageTimingsは1〜5個
+- damageWeightの合計は100にする
+- timeSecondsは0.5〜10
+- 最後のdamageTimingsのtimeSecondsは8〜10秒にする
+- targetは必ず"enemy"にする
+- JSON以外は出力しない`,
+        },
+      ]);
 
       const rawText = String(response.response.text() || "").trim();
       const jsonText = extractJsonText(rawText);
-      
-      
-      
-      
-      const aiPlanJson = JSON.parse(jsonText);
-      const magicEffectJson = buildOriginMagicEffectJsonFromPlan(aiPlanJson, imageHash);
-
-
-
-
+      const magicEffectJson = normalizeOriginMagicCircleEffectJson(JSON.parse(jsonText));
       const appended = await appendOriginMagicCircleSpellCache({
         imageHash,
         rawJson: JSON.stringify(magicEffectJson),
