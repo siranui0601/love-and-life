@@ -4564,8 +4564,7 @@ function sanitizeMagicEffectForDevice(effectJson) {
 }
 
 
-//こいつが悪さしてる気がするぜ
-  //await ensureMagicJsonAssetsLoaded(effectJson);
+  await ensureMagicJsonAssetsLoaded(effectJson);
 
   const casterSide = isEnemyCast ? "enemy" : "self";
 
