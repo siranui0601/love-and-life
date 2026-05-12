@@ -714,37 +714,28 @@ cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson({
           },
         },
         {
-          text: `画像の魔法陣を見て、jsonを出力
+          text: `画像の絵を見てjsonを出力
 
 {
   "magicName": "画像から連想した厨二病風の魔法名",
   "artScore": 0,
   "timeline": [
-    {"time":0,"actions":[{"action":"spawn","id":"fire1","assetFileName":"炎球","objectCount":3,"position":"above_self","objectSize":"medium"},{"action":"spawn","id":"skull1","assetFileName":"人魂と骸骨","objectCount":1,"position":"battlefield_center","objectSize":"large"}]},
-    {"time":1.5,"actions":[{"action":"move","id":"fire1","targetPosition":"enemy_position"},{"action":"spawn","id":"tornado1","assetFileName":"竜巻","objectCount":1,"position":"enemy_position","objectSize":"large"}]},
-    {"time":4,"actions":[{"action":"despawn","id":"skull1"}]}
+    {"time":0,"actions":[{"action":"spawn","id":"core1","assetFileName":"魔法陣3","objectCount":1,"position":"self_position","objectSize":"large"},{"action":"spawn","id":"fire1","assetFileName":"炎球","objectCount":3,"position":"above_self","objectSize":"medium"}]},
+    {"time":1.5,"actions":[{"action":"move","id":"fire1","targetPosition":"enemy_position"},{"action":"spawn","id":"storm1","assetFileName":"竜巻","objectCount":1,"position":"battlefield_center","objectSize":"large"}]},
+    {"time":4,"actions":[{"action":"spawn","id":"finish1","assetFileName":"大爆発","objectCount":1,"position":"enemy_position","objectSize":"large"},{"action":"despawn","id":"core1"}]}
   ]
 }
 
 ルール:
 - magicNameは厨二病風
-- artScoreは0〜100
-- 使用可能assetFileNameの一覧: 炎球,人魂と骸骨,竜巻,不死鳥,月,歯車時計,プラズマ,六足ロボ,魂剣,花束,ギミック剣,サイバー卵,サイバー球と円盤,蠢く立方体,サイバー多面球,エナジー凝縮球,二重螺旋球,銀河,蠢く多面球,多線球,雷,大爆発,雲,光球,バレッド,シンプルリング,太陽,隕石,火山,ツララ,魔法陣1,魔法陣2,魔法陣3,サイバー巻物,魔法陣4,竹巻物,魔法陣5,魔法陣6,魔法陣7,魔法陣8,魔法陣9,シールド,落葉,キューブ,天球儀,捻れ球,オーラ,魔法陣10,動く鳥居,ゲート1,円盤,鳥居,ゲート2,キュートドラゴン,アニメドラゴン,弱ドラゴン,竜騎士,翔ぶドラゴン,アニメ竜巻,枯れ木,ヤシの木,針葉樹,トルーパー,翼,蝶,悪魔翼,機械翼,天使翼,戦闘機,戦車,雪1,雪2,雪結晶1,雪結晶2,ハート,ダイヤ
-- timelineは4〜8個、timeは0〜10秒で昇順
-- actionsは各timeにつき1〜4個
-- 同時に複数素材spawn可。タイミングをずらして別素材spawn可
-- spawnした素材は後でmove/despawn可
-- assetFileNameは魔法全体で最低4種類
-- spawn: action,id,assetFileName,objectCount,position,objectSize
-- move: action,id,targetPosition
-- despawn: action,id
-- move/despawnのidは過去spawn済みのみ
-- spawnしたidは最後までに必ずdespawn
-- objectCountは1〜5
-- position/targetPosition候補: in_front_of_self,behind_self,above_self,battlefield_center,above_battlefield_center,enemy_position,above_enemy,self_position
-- objectSize候補: small,medium,large
-- actionごとに不要項目を書かない
-- JSON以外は出力しない`,
+- artScoreは0~100
+- assetFileName一覧: 炎球,人魂と骸骨,竜巻,不死鳥,月,歯車時計,プラズマ,六足ロボ,魂剣,花束,ギミック剣,サイバー卵,サイバー球と円盤,蠢く立方体,サイバー多面球,エナジー凝縮球,二重螺旋球,銀河,蠢く多面球,多線球,雷,大爆発,雲,光球,バレッド,シンプルリング,太陽,隕石,火山,ツララ,魔法陣1,魔法陣2,魔法陣3,サイバー巻物,魔法陣4,竹巻物,魔法陣5,魔法陣6,魔法陣7,魔法陣8,魔法陣9,シールド,落葉,キューブ,天球儀,捻れ球,オーラ,魔法陣10,動く鳥居,ゲート1,円盤,鳥居,ゲート2,キュートドラゴン,アニメドラゴン,弱ドラゴン,竜騎士,翔ぶドラゴン,アニメ竜巻,枯れ木,ヤシの木,針葉樹,トルーパー,翼,蝶,悪魔翼,機械翼,天使翼,戦闘機,戦車,雪1,雪2,雪結晶1,雪結晶2,ハート,ダイヤ
+- timelineは5〜9個、timeは0〜10秒で昇順
+- 各timeのactions数は自由。ただし魔法全体でspawnを最低5回行う
+- assetFileNameは魔法全体で最低5種類
+- 同じtimeに複数素材を重ねてもよく、時間差で追加してもよい
+- objectCountは1〜5。群れ・弾幕・粒子表現には3〜5を使う
+- 単発ではなく、複数素材が重なった派手な演出にする*important`
         },
       ]);
 
