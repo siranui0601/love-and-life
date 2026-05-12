@@ -311,26 +311,305 @@ const summonAssetSizePresets = {
 
 
 Object.assign(summonAssetSizePresets, {
-  "sun.glb": { small: { scale: 0.1, y: 3 }, medium: { scale: 0.5, y: 7 }, large: { scale: 1, y: 12 } },
-  "meteorite.glb": { small: { scale: 0.1, y: 2, offsetZ: -1 }, medium: { scale: 0.5, y: 2, offsetZ: -2 }, large: { scale: 1, y: 5, offsetZ: -6 } },
-  "rocky_hell_terrain.glb": { small: { scale: 0.0005, y: 4, offsetZ: 1 }, medium: { scale: 0.001, y: 4, offsetZ: 3 }, large: { scale: 0.002, y: 4, offsetZ: 7 } },
-  "icicle.glb": { small: { scale: 2, y: 6, offsetZ: -0.5 }, medium: { scale: 4, y: 10, offsetZ: -1 }, large: { scale: 8, y: 19, offsetZ: -1 } },
-  "35b59066261a4a0a8c113da5b5a988e9.glb": { small: { scale: 0.05, y: 1.6 }, medium: { scale: 0.25, y: 1.6 }, large: { scale: 1, y: 1.6 } },
-  "2024zhongqiu_4_loop.glb": { small: { scale: 75, y: 1.6 }, medium: { scale: 175, y: 1.6 }, large: { scale: 500, y: 1.6 } },
-  "eff_huanguang.glb": { small: { scale: 75, y: 1.6 }, medium: { scale: 175, y: 1.6 }, large: { scale: 500, y: 1.6 } },
-  "c3d8c3fda1ec45a0bdab896eba97e679.glb": { small: { scale: 0.5, y: 3 }, medium: { scale: 1, y: 3 }, large: { scale: 2, y: 3 } },
-  "829e78a8ee3548369f3ac92c41a2ee74.glb": { small: { scale: 2, y: 1.6 }, medium: { scale: 6, y: 1.6 }, large: { scale: 25, y: 1.6 } },
-  "67f9a0094a714d258e5c5088fac2a7a4.glb": { small: { scale: 1, y: 1.6 }, medium: { scale: 2, y: 1.6 }, large: { scale: 3, y: 1.6 } },
-  "27444eb10a4f4409b4a2649738ec7441.glb": { small: { scale: 3, y: 1.6 }, medium: { scale: 6, y: 1.6 }, large: { scale: 15, y: 1.6 } },
-  "c7ba0550fe034f29bfb54ca75b7eb1f6.glb": { small: { scale: 4, y: 1.6 }, medium: { scale: 8, y: 1.6 }, large: { scale: 25, y: 1.6 } },
-  "fd37b7bec4ca48a8b6539dc4048787cf.glb": { small: { scale: 1.5, y: 1.6 }, medium: { scale: 3, y: 1.6 }, large: { scale: 15, y: 1.6 } },
-  "technology_aperture_out.glb": { small: { scale: 0.25, y: 1.6 }, medium: { scale: 5, y: 1.6 }, large: { scale: 1, y: 1.6 } },
-  "appearance_effect_light_beam.glb": { small: { scale: 1, y: 2 }, medium: { scale: 2, y: 2 }, large: { scale: 4, y: 2 } },
-  "duchess_shield.glb": { small: { scale: 1, y: 1.6 }, medium: { scale: 2, y: 1.6 }, large: { scale: 4, y: 1.6 } },
-  "hojas_verdes_caen.glb": { small: { scale: 3, y: 1.6 }, medium: { scale: 6, y: 1.6 }, large: { scale: 12, y: 1.6 } },
-  "the_cube.glb": { small: { scale: 0.5, y: 4 }, medium: { scale: 1, y: 4 }, large: { scale: 1.5, y: 6 } },
-  "armillary.glb": { small: { scale: 0.05, y: 3 }, medium: { scale: 0.1, y: 4 }, large: { scale: 0.2, y: 8 } },
-  "icosahedron_knot.glb": { small: { scale: 0.25, y: 3 }, medium: { scale: 0.5, y: 3 }, large: { scale: 1, y: 5 } },
+  "sun.glb": {
+    small: { scale: 0.1, y: 3 },
+    medium: { scale: 0.5, y: 7 },
+    large: { scale: 1, y: 12 },
+  },
+
+  "meteorite.glb": {
+    small: { scale: 0.1, y: 2, offsetZ: -1 },
+    medium: { scale: 0.5, y: 2, offsetZ: -2 },
+    large: { scale: 1, y: 5, offsetZ: -6 },
+  },
+
+  "rocky_hell_terrain.glb": {
+    small: { scale: 0.0005, y: 4, offsetZ: 1 },
+    medium: { scale: 0.001, y: 4, offsetZ: 3 },
+    large: { scale: 0.002, y: 4, offsetZ: 7 },
+  },
+
+  "icicle.glb": {
+    small: { scale: 2, y: 6, offsetZ: -0.5 },
+    medium: { scale: 4, y: 10, offsetZ: -1 },
+    large: { scale: 8, y: 19, offsetZ: -1 },
+  },
+
+  "35b59066261a4a0a8c113da5b5a988e9.glb": {
+    small: { scale: 0.05, y: 1.6 },
+    medium: { scale: 0.25, y: 1.6 },
+    large: { scale: 1, y: 1.6 },
+  },
+
+  "2024zhongqiu_4_loop.glb": {
+    small: { scale: 75, y: 1.6 },
+    medium: { scale: 175, y: 1.6 },
+    large: { scale: 500, y: 1.6 },
+  },
+
+  "eff_huanguang.glb": {
+    small: { scale: 75, y: 1.6 },
+    medium: { scale: 175, y: 1.6 },
+    large: { scale: 500, y: 1.6 },
+  },
+
+  "c3d8c3fda1ec45a0bdab896eba97e679.glb": {
+    small: { scale: 0.5, y: 3, rotationX: Math.PI / 2, rotationZ: Math.PI / 2 },
+    medium: { scale: 1, y: 3, rotationX: Math.PI / 2, rotationZ: Math.PI / 2 },
+    large: { scale: 2, y: 3, rotationX: Math.PI / 2, rotationZ: Math.PI / 2 },
+  },
+
+  "829e78a8ee3548369f3ac92c41a2ee74.glb": {
+    small: { scale: 2, y: 1.6 },
+    medium: { scale: 6, y: 1.6 },
+    large: { scale: 25, y: 1.6 },
+  },
+
+  "67f9a0094a714d258e5c5088fac2a7a4.glb": {
+    small: { scale: 1, y: 1.6, rotationY: Math.PI, rotationZ: Math.PI / 2 },
+    medium: { scale: 2, y: 1.6, rotationY: Math.PI, rotationZ: Math.PI / 2 },
+    large: { scale: 3, y: 1.6, rotationY: Math.PI, rotationZ: Math.PI / 2 },
+  },
+
+  "27444eb10a4f4409b4a2649738ec7441.glb": {
+    small: { scale: 3, y: 1.6 },
+    medium: { scale: 6, y: 1.6 },
+    large: { scale: 15, y: 1.6 },
+  },
+
+  "c7ba0550fe034f29bfb54ca75b7eb1f6.glb": {
+    small: { scale: 4, y: 1.6 },
+    medium: { scale: 8, y: 1.6 },
+    large: { scale: 25, y: 1.6 },
+  },
+
+  "fd37b7bec4ca48a8b6539dc4048787cf.glb": {
+    small: { scale: 1.5, y: 1.6 },
+    medium: { scale: 3, y: 1.6 },
+    large: { scale: 15, y: 1.6 },
+  },
+
+  "technology_aperture_out.glb": {
+    small: { scale: 0.25, y: 1.6 },
+    medium: { scale: 5, y: 1.6 },
+    large: { scale: 1, y: 1.6 },
+  },
+
+  "appearance_effect_light_beam.glb": {
+    small: { scale: 1, y: 2 },
+    medium: { scale: 2, y: 2 },
+    large: { scale: 4, y: 2 },
+  },
+
+  "duchess_shield.glb": {
+    small: { scale: 1, y: 1.6, rotationY: Math.PI / 2 },
+    medium: { scale: 2, y: 1.6, rotationY: Math.PI / 2 },
+    large: { scale: 4, y: 1.6, rotationY: Math.PI / 2 },
+  },
+
+  "hojas_verdes_caen.glb": {
+    small: { scale: 3, y: 1.6 },
+    medium: { scale: 6, y: 1.6 },
+    large: { scale: 12, y: 1.6 },
+  },
+
+  "the_cube.glb": {
+    small: { scale: 0.5, y: 4 },
+    medium: { scale: 1, y: 4 },
+    large: { scale: 1.5, y: 6 },
+  },
+
+  "armillary.glb": {
+    small: { scale: 0.05, y: 3 },
+    medium: { scale: 0.1, y: 4 },
+    large: { scale: 0.2, y: 8 },
+  },
+
+  "icosahedron_knot.glb": {
+    small: { scale: 0.25, y: 3 },
+    medium: { scale: 0.5, y: 3 },
+    large: { scale: 1, y: 5 },
+  },
+
+  "animated_effect.glb": {
+    small: { scale: 1, y: 3 },
+    medium: { scale: 3, y: 3 },
+    large: { scale: 6, y: 4 },
+  },
+
+  "303ac171bafb4998950b741d7c89aa94.glb": {
+    small: { scale: 100, y: 2 },
+    medium: { scale: 200, y: 2 },
+    large: { scale: 500, y: 2 },
+  },
+
+  "torii_gate_lighthouse.glb": {
+    small: { scale: 0.2, y: 1.6 },
+    medium: { scale: 0.5, y: 1.6 },
+    large: { scale: 1, y: 1.6 },
+  },
+
+  "sculptjanuary2021_-_day_05_-_magic_gate.glb": {
+    small: { scale: 0.0025, y: 1.6 },
+    medium: { scale: 0.005, y: 1.6 },
+    large: { scale: 0.01, y: 1.6 },
+  },
+
+  "executor_warp_gate.glb": {
+    small: { scale: 0.5, y: 3, rotationY: Math.PI / 2 },
+    medium: { scale: 1, y: 4, rotationY: Math.PI / 2 },
+    large: { scale: 2, y: 8, rotationY: Math.PI / 2 },
+  },
+
+  "japanese_tori_gate.glb": {
+    small: { scale: 0.25, y: 3, rotationY: Math.PI / 2 },
+    medium: { scale: 0.5, y: 5, rotationY: Math.PI / 2 },
+    large: { scale: 0.75, y: 7, rotationY: Math.PI / 2 },
+  },
+
+  "stargate.glb": {
+    small: { scale: 1, y: 3, rotationY: Math.PI / 2 },
+    medium: { scale: 2, y: 7.5, rotationY: Math.PI / 2 },
+    large: { scale: 3, y: 10, rotationY: Math.PI / 2 },
+  },
+
+  "cute_dragon.glb": {
+    small: { scale: 2, y: 3, rotationY: Math.PI / 2 },
+    medium: { scale: 4, y: 6, rotationY: Math.PI / 2 },
+    large: { scale: 6, y: 6, rotationY: Math.PI / 2 },
+  },
+
+  "dragon.glb": {
+    small: { scale: 1, y: 1.6, rotationY: Math.PI / 2 },
+    medium: { scale: 2, y: 1.6, rotationY: Math.PI / 2 },
+    large: { scale: 4, y: 1.6, rotationY: Math.PI / 2 },
+  },
+
+  "adult_dragon.glb": {
+    small: { scale: 1.5, y: 1.6, rotationY: Math.PI / 2 },
+    medium: { scale: 3, y: 1.6, rotationY: Math.PI / 2 },
+    large: { scale: 6, y: 1.6, rotationY: Math.PI / 2 },
+  },
+
+  "dragon_walk.glb": {
+    small: { scale: 0.05, y: 1.6 },
+    medium: { scale: 0.1, y: 1.6 },
+    large: { scale: 0.2, y: 1.6 },
+  },
+
+  "dragon_fly.glb": {
+    small: { scale: 0.005, y: 1.6 },
+    medium: { scale: 0.01, y: 1.6 },
+    large: { scale: 0.03, y: 1.6 },
+  },
+
+  "tornado.glb": {
+    small: { scale: 0.025, y: 1.6 },
+    medium: { scale: 0.05, y: 1.6 },
+    large: { scale: 0.2, y: 1.6 },
+  },
+
+  "tree.glb": {
+    small: { scale: 0.01, y: 1.6 },
+    medium: { scale: 0.02, y: 1.6 },
+    large: { scale: 0.04, y: 1.6 },
+  },
+
+  "young_palm.glb": {
+    small: { scale: 0.3, y: 1.6 },
+    medium: { scale: 0.6, y: 1.6 },
+    large: { scale: 1.2, y: 1.6 },
+  },
+
+  "spruce_tree_-_low_poly.glb": {
+    small: { scale: 0.004, y: 1.6 },
+    medium: { scale: 0.008, y: 1.6 },
+    large: { scale: 0.016, y: 1.6 },
+  },
+
+  "creaturespirate_trooper.glb": {
+    small: { scale: 0.5, y: 1.6, rotationY: (80 * Math.PI) / 180 },
+    medium: { scale: 1, y: 1.6, rotationY: (80 * Math.PI) / 180 },
+    large: { scale: 2, y: 1.6, rotationY: (80 * Math.PI) / 180 },
+  },
+
+  "wing_379.glb": {
+    small: { scale: 10, y: 1.6, rotationY: Math.PI / 2 },
+    medium: { scale: 20, y: 1.6, rotationY: Math.PI / 2 },
+    large: { scale: 90, y: 1.6, rotationY: Math.PI / 2 },
+  },
+
+  "blue_glowing_butterfly.glb": {
+    small: { scale: 4, y: 0, offsetZ: 20 },
+    medium: { scale: 8, y: -5, offsetZ: 40 },
+    large: { scale: 32, y: -25, offsetZ: 160 },
+  },
+
+  "hell_wings.glb": {
+    small: { scale: 1.5, y: 1.6, rotationY: Math.PI / 2 },
+    medium: { scale: 3, y: 1.6, rotationY: Math.PI / 2 },
+    large: { scale: 5, y: 1.6, rotationY: Math.PI / 2 },
+  },
+
+  "low_poly__wings.glb": {
+    small: { scale: 3, y: 0, rotationY: Math.PI / 2 },
+    medium: { scale: 6, y: -3, rotationY: Math.PI / 2 },
+    large: { scale: 9, y: -6, rotationY: Math.PI / 2 },
+  },
+
+  "wings_03.glb": {
+    small: { scale: 250, y: 4, rotationY: Math.PI / 2 },
+    medium: { scale: 400, y: 5.5, rotationY: Math.PI / 2 },
+    large: { scale: 800, y: 11, rotationY: Math.PI / 2 },
+  },
+
+  "h6k4_war_thunder.glb": {
+    small: { scale: 0.1, y: 3, rotationY: Math.PI / 2 },
+    medium: { scale: 0.2, y: 3, rotationY: Math.PI / 2 },
+    large: { scale: 0.5, y: 3, rotationY: Math.PI / 2 },
+  },
+
+  "k9_thunder_artillery.glb": {
+    small: { scale: 0.00003, y: 3, rotationY: Math.PI / 2 },
+    medium: { scale: 0.00004, y: 3, rotationY: Math.PI / 2 },
+    large: { scale: 0.00006, y: 3, rotationY: Math.PI / 2 },
+  },
+
+  "looping_snow_2.glb": {
+    small: { scale: 0.5, y: 1.6 },
+    medium: { scale: 1, y: 1.6 },
+    large: { scale: 2, y: 1.6 },
+  },
+
+  "falling_snow_loop.glb": {
+    small: { scale: 2, y: 1.6 },
+    medium: { scale: 4, y: 1.6 },
+    large: { scale: 8, y: 1.6 },
+  },
+
+  "snowflake_crystal_by_elsa_mmd2005.glb": {
+    small: { scale: 0.02, y: 3, rotationZ: Math.PI / 2 },
+    medium: { scale: 0.04, y: 4, rotationZ: Math.PI / 2 },
+    large: { scale: 0.08, y: 8, rotationZ: Math.PI / 2 },
+  },
+
+  "crystal.glb": {
+    small: { scale: 1, y: 3, rotationY: (100 * Math.PI) / 180 },
+    medium: { scale: 2, y: 5, rotationY: (100 * Math.PI) / 180 },
+    large: { scale: 4, y: 5, rotationY: (100 * Math.PI) / 180 },
+  },
+
+  "crystal_heart.glb": {
+    small: { scale: 1, y: 1.6 },
+    medium: { scale: 4, y: 1.6 },
+    large: { scale: 8, y: 1.6 },
+  },
+
+  "purple_diamond_crystal_gem.glb": {
+    small: { scale: 0.05, y: 1.6, rotationY: (100 * Math.PI) / 180 },
+    medium: { scale: 0.1, y: 1.6, rotationY: (100 * Math.PI) / 180 },
+    large: { scale: 0.2, y: 1.6, rotationY: (100 * Math.PI) / 180 },
+  },
 });
 
 //変更14
@@ -4077,11 +4356,14 @@ function getAssetSizePreset(assetName, objectSize = "medium") {
     medium;
 
   return {
-    scale: preset.scale ?? medium.scale ?? 1,
-    y: preset.y ?? medium.y ?? 1.6,
-    offsetX: preset.offsetX ?? medium.offsetX ?? 0,
-    offsetZ: preset.offsetZ ?? medium.offsetZ ?? 0,
-  };
+  scale: preset.scale ?? medium.scale ?? 1,
+  y: preset.y ?? medium.y ?? 1.6,
+  offsetX: preset.offsetX ?? medium.offsetX ?? 0,
+  offsetZ: preset.offsetZ ?? medium.offsetZ ?? 0,
+  rotationX: preset.rotationX ?? medium.rotationX ?? 0,
+  rotationY: preset.rotationY ?? medium.rotationY ?? 0,
+  rotationZ: preset.rotationZ ?? medium.rotationZ ?? 0,
+};
 }
 function getBattleActors(casterSide = "self") {
   const members = currentRoom?.members || [];
@@ -4470,10 +4752,14 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
   );
 
   root.position.copy(spawnPosition);
-  root.scale.setScalar(preset.scale);
-  root.userData.currentScale = preset.scale;
+root.scale.setScalar(preset.scale);
+root.userData.currentScale = preset.scale;
 
-  applyMagicColor(root, visualObject.colorHexCode);
+root.rotation.x += preset.rotationX || 0;
+root.rotation.y += preset.rotationY || 0;
+root.rotation.z += preset.rotationZ || 0;
+
+applyMagicColor(root, visualObject.colorHexCode);
 
   if (assetName === "explosion_burst") {
     resetExplosionBurst(root);
@@ -4521,52 +4807,19 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
   if (battleState.gameEnded) return;
 
   if (!effectJson || !Array.isArray(effectJson.timedVisualEffects)) {
-        console.warn("[origin-magic-circle] invalid magic effect json:", effectJson);
+    console.warn("[origin-magic-circle] invalid magic effect json:", effectJson);
     return;
   }
 
-  
-  
-  effectJson = sanitizeMagicEffectForDevice(effectJson);
   function isSafariBrowser() {
-  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-}
-
-function sanitizeMagicEffectForDevice(effectJson) {
-  const cloned = JSON.parse(JSON.stringify(effectJson || {}));
-  const safari = isSafariBrowser();
-
-  const maxTimedEffects = safari ? 2 : 4;
-  const maxVisualObjectsPerTimed = safari ? 2 : 3;
-  const maxObjectCount = safari ? 2 : 5;
-  const maxLifeTime = safari ? 5 : 10;
-
-  cloned.timedVisualEffects = Array.isArray(cloned.timedVisualEffects)
-    ? cloned.timedVisualEffects.slice(0, maxTimedEffects)
-    : [];
-
-  cloned.timedVisualEffects.forEach((timed) => {
-    timed.visualObjects = Array.isArray(timed.visualObjects)
-      ? timed.visualObjects.slice(0, maxVisualObjectsPerTimed)
-      : [];
-
-    timed.visualObjects.forEach((obj) => {
-      obj.objectCount = Math.max(1, Math.min(Number(obj.objectCount) || 1, maxObjectCount));
-      obj.lifeTimeSeconds = Math.max(0.5, Math.min(Number(obj.lifeTimeSeconds) || 4, maxLifeTime));
-
-      if (safari && obj.objectSize === "large") {
-        obj.objectSize = "medium";
-      }
-    });
-  });
-
-  return cloned;
-}
-
+    return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  }
 
   await ensureMagicJsonAssetsLoaded(effectJson);
 
   const casterSide = isEnemyCast ? "enemy" : "self";
+
+  // 以下そのまま
 
 
   const totalDamage = Number.isFinite(Number(effectJson?.totalDamage))
@@ -4637,10 +4890,10 @@ function sanitizeMagicEffectForDevice(effectJson) {
         : [];
 
       visualObjects.forEach((visualObject) => {
-        const safari = isSafariBrowser();
+        //const safari = isSafariBrowser();
 const objectCount = Math.max(
   1,
-  Math.min(Number(visualObject.objectCount) || 1, safari ? 2 : 5)
+  Math.min(Number(visualObject.objectCount) || 1, 5)
 );
 
         for (let i = 0; i < objectCount; i += 1) {
