@@ -191,7 +191,96 @@ function expandOriginMagicCircleTimelineToEffectJson(timelineJson){
   timedVisualEffects.sort((a,b)=>a.startTimeSeconds-b.startTimeSeconds);
   return {magicName:timelineJson.magicName,artScore:timelineJson.artScore,timeline:timelineJson.timeline,timedVisualEffects};
 }
-function createOriginMagicCircleDamageTimings(expandedEffectJson, artScore){const totalDamage=Math.round(clamp(80+artScore*2.2,80,300,80));const candidates=[];for(const t of expandedEffectJson.timeline||[]){for(const a of t.actions||[]){if(a.action==='move' && ['enemy_position','above_enemy'].includes(a.targetPosition)) candidates.push(clamp(t.time,0.5,9.5,2));if(a.action==='spawn'&&['enemy_position','above_enemy'].includes(a.position)&&a.objectSize==='large') candidates.push(clamp(t.time+0.8,0.5,9.5,2.5));}}candidates.push(clamp(8+Math.random()*2,8,10,9));const uniq=[...new Set(candidates.map(v=>Number(v.toFixed(2))))].sort((a,b)=>a-b).slice(0,5);if(!uniq.length) uniq.push(2.5,9);const w=uniq.map(()=>1);w[w.length-1]=2;const sum=w.reduce((a,b)=>a+b,0);let assigned=w.map(x=>Math.round((x/sum)*100));let diff=100-assigned.reduce((a,b)=>a+b,0);assigned[assigned.length-1]+=diff;return {totalDamage,damageTimings:uniq.map((t,i)=>({timeSeconds:t,damageWeight:assigned[i],target:'enemy'}))};}
+function createOriginMagicCircleDamageTimings(expandedEffectJson, artScore){
+  const totalDamage=Math.round(
+    clamp(80+artScore*2.2,80,300,80)
+  );
+
+  const candidates=[];
+
+  for(const t of expandedEffectJson.timeline||[]){
+    for(const a of t.actions||[]){
+
+      // 敵へ移動した瞬間
+      if(
+        a.action==='move' &&
+        ['enemy_position','above_enemy'].includes(a.targetPosition)
+      ){
+        candidates.push(
+          clamp(t.time,0.5,9.5,2)
+        );
+      }
+
+      // 敵側に大型出現した瞬間
+      if(
+        a.action==='spawn' &&
+        ['enemy_position','above_enemy'].includes(a.position) &&
+        a.objectSize==='large'
+      ){
+        candidates.push(
+          clamp(t.time+0.8,0.5,9.5,2.5)
+        );
+      }
+    }
+  }
+
+  // ===== ここ追加 =====
+
+  const latestEffectEnd = Math.max(
+    ...(
+      expandedEffectJson.timedVisualEffects || []
+    ).flatMap(effect =>
+      (effect.visualObjects || []).map(obj =>
+        Number(effect.startTimeSeconds || 0) +
+        Number(obj.lifeTimeSeconds || 0)
+      )
+    ),
+    4
+  );
+
+  // 最後の演出終了直前に大ダメージ
+  candidates.push(
+    clamp(latestEffectEnd - 0.2,0.5,9.5,4)
+  );
+
+  // ===== ここまで =====
+
+  const uniq=[
+    ...new Set(
+      candidates.map(v=>Number(v.toFixed(2)))
+    )
+  ]
+  .sort((a,b)=>a-b)
+  .slice(0,5);
+
+  if(!uniq.length) uniq.push(2.5);
+
+  const w=uniq.map(()=>1);
+
+  // 最後を重くする
+  w[w.length-1]=2;
+
+  const sum=w.reduce((a,b)=>a+b,0);
+
+  let assigned=w.map(x=>
+    Math.round((x/sum)*100)
+  );
+
+  let diff=100-assigned.reduce((a,b)=>a+b,0);
+
+  assigned[assigned.length-1]+=diff;
+
+  return {
+    totalDamage,
+    damageTimings:uniq.map((t,i)=>({
+      timeSeconds:t,
+      damageWeight:assigned[i],
+      target:'enemy'
+    }))
+  };
+}
+
+
 function normalizeOriginMagicCircleEffectJson(effectJson) {
   if (!effectJson || typeof effectJson !== "object") return effectJson;
   const cloned = JSON.parse(JSON.stringify(effectJson));
