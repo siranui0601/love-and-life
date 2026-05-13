@@ -3300,7 +3300,12 @@ function applySoftEffectMaterialFix(root) {
   });
 }
 
-function applyAssetSpecificTransform(root, assetName) {
+
+  
+  
+  
+  
+  function applyAssetSpecificTransform(root, assetName) {
   if (assetName === "broken_steampunk_clock.glb") {
     root.rotation.y = Math.PI / 2;
   }
@@ -3312,37 +3317,11 @@ function applyAssetSpecificTransform(root, assetName) {
   if (assetName === "soulsucker_-_weaponcraft.glb") {
     root.rotation.z = -Math.PI / 2;
   }
-
-  if (assetName === "c3d8c3fda1ec45a0bdab896eba97e679.glb") {
-    root.rotation.x = Math.PI / 2;
-    root.rotation.z = Math.PI / 2;
-  }
-
-  if (assetName === "67f9a0094a714d258e5c5088fac2a7a4.glb") {
-    root.rotation.y = Math.PI;
-    root.rotation.z = Math.PI / 2;
-  }
-
-  if (assetName === "duchess_shield.glb") {
-    root.rotation.y = Math.PI / 2;
-  }
-
-  if (assetName === "executor_warp_gate.glb" || assetName === "japanese_tori_gate.glb" || assetName === "stargate.glb" || assetName === "cute_dragon.glb" || assetName === "dragon.glb" || assetName === "adult_dragon.glb" || assetName === "wing_379.glb" || assetName === "hell_wings.glb" || assetName === "low_poly__wings.glb" || assetName === "h6k4_war_thunder.glb" || assetName === "k9_thunder_artillery.glb") {
-    root.rotation.y = Math.PI / 2;
-  }
-
-  if (assetName === "creaturespirate_trooper.glb") {
-    root.rotation.y = (80 * Math.PI) / 180;
-  }
-
-  if (assetName === "snowflake_crystal_by_elsa_mmd2005.glb") {
-    root.rotation.z = Math.PI / 2;
-  }
-
-  if (assetName === "crystal.glb" || assetName === "purple_diamond_crystal_gem.glb") {
-    root.rotation.y = (100 * Math.PI) / 180;
-  }
 }
+
+
+
+
 
 function applyAssetSpecificMaterialFix(root, assetName) {
   applyCommonGlbMaterialFix(root);
@@ -3376,22 +3355,38 @@ function applyAssetSpecificMaterialFix(root, assetName) {
   }
 
   if (brightUnlitAssets.has(assetName)) {
-    root.traverse((child) => {
-      if (!child.isMesh || !child.material) return;
-      const mats = Array.isArray(child.material) ? child.material : [child.material];
-      mats.forEach((mat) => {
-        mat.transparent = true;
-        mat.depthWrite = false;
-        mat.side = DoubleSide;
-        mat.toneMapped = false;
-        if (mat.emissive && mat.color) {
-          mat.emissive.copy(mat.color);
-          mat.emissiveIntensity = Math.max(mat.emissiveIntensity || 0, 2.2);
-        }
-        mat.needsUpdate = true;
+  root.traverse((child) => {
+    if (!child.isMesh || !child.material) return;
+
+    const oldMaterials = Array.isArray(child.material)
+      ? child.material
+      : [child.material];
+
+    const nextMaterials = oldMaterials.map((mat) => {
+      const color = mat.color ? mat.color.clone() : new Color(0xffffff);
+      const map = mat.map || null;
+
+      if (map) {
+        map.colorSpace = SRGBColorSpace;
+        map.needsUpdate = true;
+      }
+
+      return new MeshBasicMaterial({
+        color,
+        map,
+        transparent: true,
+        opacity: typeof mat.opacity === "number" ? mat.opacity : 1,
+        depthWrite: false,
+        side: DoubleSide,
+        toneMapped: false,
       });
     });
-  }
+
+    child.material = Array.isArray(child.material)
+      ? nextMaterials
+      : nextMaterials[0];
+  });
+}
 }
 
 function createLightningEffect() {
