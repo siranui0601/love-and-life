@@ -159,11 +159,23 @@ function normalizeOriginMagicCircleTimelineJson(rawJson){
   const artScore=Math.round(clamp(parsed.artScore,0,100,0));
   const spawned=new Set();const despawned=new Set();
   const normalized=[];
-  timeline.forEach((node)=>{const time=clamp(node?.time,0,10,0);const actions=[];for(const a of (Array.isArray(node?.actions)?node.actions:[]).slice(0,4)){
-    const action=String(a?.action||'').trim();const id=String(a?.id||'').trim();if(!id) continue;
+  timeline.forEach((node)=>{const time=clamp(node?.time,0,10,0);const actions=[];
+    for (const a of (Array.isArray(node?.actions) ? node.actions : [])) {
+      
+      
+          const action=String(a?.action||'').trim();const id=String(a?.id||'').trim();if(!id) continue;
     if(action==='spawn'){
       spawned.add(id);
-      actions.push({action,id,assetFileName:toAssetFileName(a.assetFileName),objectCount:Math.round(clamp(a.objectCount,1,5,1)),position:ORIGIN_MAGIC_CIRCLE_POSITION_CANDIDATES.includes(a.position)?a.position:'battlefield_center',objectSize:ORIGIN_MAGIC_CIRCLE_SIZE_CANDIDATES.includes(a.objectSize)?a.objectSize:'medium'});
+      actions.push({
+        action,
+        id,
+        assetFileName:toAssetFileName(a.assetFileName),
+        objectCount:Math.round(clamp(a.objectCount,1,5,1)),
+        position:ORIGIN_MAGIC_CIRCLE_POSITION_CANDIDATES.includes(a.position)?a.position:'battlefield_center',
+        objectSize:ORIGIN_MAGIC_CIRCLE_SIZE_CANDIDATES.includes(a.objectSize)?a.objectSize:'medium'
+      });
+      
+      
     } else if(action==='move' && spawned.has(id) && !despawned.has(id)){
       actions.push({action,id,targetPosition:ORIGIN_MAGIC_CIRCLE_POSITION_CANDIDATES.includes(a.targetPosition)?a.targetPosition:'enemy_position'});
     } else if(action==='despawn' && spawned.has(id) && !despawned.has(id)){
@@ -729,10 +741,10 @@ cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson({
 ルール:
 - magicNameは厨二病風
 - artScoreは0~100
-- assetFileName一覧: 炎球,人魂と骸骨,竜巻,不死鳥,月,歯車時計,プラズマ,六足ロボ,魂剣,花束,ギミック剣,サイバー卵,サイバー球と円盤,蠢く立方体,サイバー多面球,エナジー凝縮球,二重螺旋球,銀河,蠢く多面球,多線球,雷,大爆発,雲,光球,バレッド,シンプルリング,太陽,隕石,火山,ツララ,魔法陣1,魔法陣2,魔法陣3,サイバー巻物,魔法陣4,竹巻物,魔法陣5,魔法陣6,魔法陣7,魔法陣8,魔法陣9,シールド,落葉,キューブ,天球儀,捻れ球,オーラ,魔法陣10,動く鳥居,ゲート1,円盤,鳥居,ゲート2,キュートドラゴン,アニメドラゴン,弱ドラゴン,竜騎士,翔ぶドラゴン,アニメ竜巻,枯れ木,ヤシの木,針葉樹,トルーパー,翼,蝶,悪魔翼,機械翼,天使翼,戦闘機,戦車,雪1,雪2,雪結晶1,雪結晶2,ハート,ダイヤ
+- assetFileName一覧: ${Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP).join(",")}
 - timelineは5〜9個、timeは0〜10秒で昇順
 - 各timeのactions数は自由。ただし魔法全体でspawnを最低5回行う
-- assetFileNameは魔法全体で最低5種類
+- assetFileNameは魔法全体で最低4種類
 - 同じtimeに複数素材を重ねてもよく、時間差で追加してもよい
 - objectCountは1〜5。群れ・弾幕・粒子表現には3〜5を使う
 - 単発ではなく、複数素材が重なった派手な演出にする*important`
