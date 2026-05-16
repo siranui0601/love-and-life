@@ -6148,20 +6148,29 @@ function showBattleResultScreen({ selfWon }) {
   const backBtn = document.createElement("button");
   backBtn.type = "button";
   backBtn.className = "origin-result-back-btn";
-  backBtn.textContent = "トップページに戻る";
+  backBtn.textContent = "もう一度遊ぶ";
 
-  backBtn.addEventListener("click", () => {
-    // ルーム復帰用キャッシュだけ消す。
-    // currentUser などのログイン情報は消さない。
-    clearActiveRoomId();
+  backBtn.addEventListener("click", async () => {
+    if (!currentRoom?.roomId || !userTrackingId) return;
 
-    // Socket.IOの残留を避けたいので切断してからトップへ
-    if (originSocket) {
-      originSocket.disconnect();
-      originSocket = null;
+    backBtn.disabled = true;
+
+    try {
+      const room = await callApi("/api/origin-magic-circle/rooms/rematch", {
+        roomId: currentRoom.roomId,
+        userTrackingId,
+      }, "POST");
+
+      currentRoom = room;
+      saveActiveRoomId(room.roomId);
+      showWaitingRoom(room);
+      refs.battleView.innerHTML = "";
+      setMessage("もう一度遊ぶ準備ができました。開始ボタンを押してください。");
+      startRefresh();
+    } catch (error) {
+      backBtn.disabled = false;
+      setMessage(`再戦の準備に失敗しました: ${error.message}`);
     }
-
-    window.location.href = "/";
   });
 
   result.append(title, sub, list, backBtn);
