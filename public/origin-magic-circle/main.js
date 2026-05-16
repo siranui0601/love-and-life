@@ -887,11 +887,17 @@ async function refreshRoom() {
     showWaitingRoom(room);
 
     // ホストが開始した結果、status が loading / 対戦中 になったら即移行
-    if (members.length >= 2 && (room.status === "loading" || room.status === "対戦中")) {
-      stopRefresh();
-      await startThreeBattleScene();
-      return;
-    }
+    if (members.length >= 2 && room.status === "対戦中") {
+  stopRefresh();
+  await startThreeBattleScene();
+  return;
+}
+
+if (members.length >= 2 && room.status === "loading") {
+  showLoadingNote();
+  showOpponentLoadingWaitMessage();
+  return;
+}
   } catch {
     stopRefresh();
     clearActiveRoomId();
@@ -2735,12 +2741,21 @@ function ensureTurnModal() {
 
 function renderTurnUi() {
   const modal = ensureTurnModal();
-  const myTurn = isMyTurn();
 
   if (battleState.gameEnded) {
     modal.style.opacity = "0";
     return;
   }
+
+  if (!battleState.currentTurnOwnerId) {
+    modal.textContent = "先攻を決定中...";
+    modal.style.opacity = "1";
+    modal.style.transform = "translateX(-50%) scale(1)";
+    magicCircleUiController?.setInputEnabled?.(false);
+    return;
+  }
+
+  const myTurn = isMyTurn();
 
   if (myTurn) {
     modal.textContent = "あなたのターン";
@@ -3113,8 +3128,21 @@ composer.addPass(bloomPass);
 
     if (battleState.gameEnded) return;
 
-    if (battleState.gameEnded) return;
-      await playMagicVisualEffects(effectJson, false);
+await playMagicVisualEffects(effectJson, false);
+
+if (!battleState.gameEnded) {
+  try {
+    const nextRoom = await callApi("/api/origin-magic-circle/turn/end", {
+      roomId: currentRoom?.roomId,
+      userTrackingId,
+    }, "POST");
+
+    currentRoom = nextRoom;
+    applyRoomTurnState(nextRoom);
+  } catch (error) {
+    console.warn("[origin-magic-circle] turn end failed:", error);
+  }
+}
   },
 
   hideTopModalOnce: () => {
@@ -6428,8 +6456,11 @@ refs.startGameBtn?.addEventListener("click", async () => {
     showWaitingRoom(room);
     setMessage("対戦を開始します...");
 
-    // ここで直接 startThreeBattleScene() しない。
-    // refreshRoom に loading / 対戦中 を拾わせる方が、両者の状態が揃いやすい。
+    if (room.status === "対戦中") {
+      await startThreeBattleScene();
+      return;
+    }
+
     startRefresh();
     await refreshRoom();
   } catch (error) {
