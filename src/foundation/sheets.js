@@ -798,7 +798,7 @@ export async function findActiveOriginMagicCircleRoomByClientId(clientId) {
     .filter((room) => {
       if (!room.roomId) return false;
       if (room.expiresAt > 0 && room.expiresAt < now) return false;
-      if (!["loading", "対戦中"].includes(room.status)) return false;
+      if (!["lobby", "loading", "対戦中"].includes(room.status)) return false;
       return (room.members || []).some((member) => member.id === safeClientId);
     })
     .sort((a, b) => Number(b.expiresAt || 0) - Number(a.expiresAt || 0));
@@ -1021,8 +1021,8 @@ export async function cleanupExpiredOriginMagicCircleRooms() {
     requestBody: {
       valueInputOption: "USER_ENTERED",
       data: targets.map((room) => ({
-        range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${room.rowIndex}:F{room.rowIndex}`,
-        values: [["", "", "", "", ""]],
+        range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${room.rowIndex}:F${room.rowIndex}`,
+        values: [["", "", "", "", "", ""]],
       })),
     },
   });
