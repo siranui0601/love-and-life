@@ -537,11 +537,15 @@ export function mountOriginMagicCircleRoutes(app, io) {
       if (room.status !== "lobby") return res.status(409).json({ error: "room_not_lobby" });
       if ((room.members || []).length !== 2) return res.status(409).json({ error: "room_not_ready" });
 
-      const started = await updateOriginMagicCircleRoomStatus({
-        roomId,
-        status: "loading",
-        requestedByClientId: userTrackingId,
-      });
+      const started = await startOriginMagicCircleBattle({
+  roomId,
+  requestedByClientId: userTrackingId,
+  requireLoadReady: false,
+});
+
+io?.to(originSocketRoom(roomId)).emit("origin:room", started);
+
+return res.json(started);
 
       return res.json(started);
     } catch (error) {
