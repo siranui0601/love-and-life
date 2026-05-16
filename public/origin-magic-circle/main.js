@@ -716,6 +716,87 @@ let battleState = {
 };
 
 
+
+
+
+let battleSceneCleanup = null;
+const battleTimeoutIds = new Set();
+
+function setBattleTimeout(callback, delayMs) {
+  const id = setTimeout(() => {
+    battleTimeoutIds.delete(id);
+    callback();
+  }, delayMs);
+
+  battleTimeoutIds.add(id);
+  return id;
+}
+
+function clearBattleTimeouts() {
+  battleTimeoutIds.forEach((id) => clearTimeout(id));
+  battleTimeoutIds.clear();
+}
+
+function createInitialBattleState() {
+  return {
+    selfHp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
+    enemyHp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
+    lastCastAt: 0,
+    processedCastIds: new Set(),
+
+    currentTurnOwnerId: "",
+    currentTurnSeq: 0,
+
+    gameEnded: false,
+    endingStarted: false,
+    winnerId: "",
+    loserId: "",
+
+    magicLogs: [],
+  };
+}
+
+function resetBattleClientStateForLobby() {
+  clearBattleTimeouts();
+
+  if (typeof battleSceneCleanup === "function") {
+    battleSceneCleanup();
+    battleSceneCleanup = null;
+  }
+
+  battleStarted = false;
+  loadingBattleFlowStarted = false;
+  onBattleHpReachedZero = null;
+
+  battleState = createInitialBattleState();
+
+  document.getElementById("originWinBanner")?.remove();
+  document.getElementById("magicNameCenterOverlay")?.remove();
+  document.getElementById("battleTutorialModal")?.remove();
+  document.getElementById("turnModal")?.remove();
+
+  refs.battleView.innerHTML = "";
+  refs.battleView.classList.add("hidden");
+  refs.page?.classList.remove("hidden");
+}
+
+function enterRematchWaitingRoom(room) {
+  resetBattleClientStateForLobby();
+
+  currentRoom = room;
+  saveActiveRoomId(room.roomId);
+
+  showWaitingRoom(room);
+  setMessage("もう一度遊ぶ準備ができました。開始ボタンを押してください。");
+
+  stopRefresh();
+  startRefresh();
+}
+
+
+
+
+
 let tutorialModalDismissed = false;
 const ACTIVE_ROOM_STORAGE_KEY = "originMagicCircleActiveRoomId";
 let loadingBattleFlowStarted = false;
@@ -1098,6 +1179,16 @@ function showMagicNameCenter(magicName, isEnemy = false, onComplete = null) {
     if (typeof onComplete === "function") onComplete();
   }, 2200);
 }
+
+
+
+
+function showMagicNameCenterAsync(magicName, isEnemy = false) {
+  return new Promise((resolve) => {
+    showMagicNameCenter(magicName, isEnemy, resolve);
+  });
+}
+
 
 
 function showRoomIdModal() {
@@ -3068,7 +3159,12 @@ composer.addPass(bloomPass);
       addMagicLogFromCast(localCast);
 
       if (battleState.gameEnded) return;
-      await playMagicVisualEffects(effectJson, false);
+
+await showMagicNameCenterAsync(effectJson?.magicName, false);
+
+if (battleState.gameEnded) return;
+
+await playMagicVisualEffects(effectJson, false);
       if (!battleState.gameEnded) {
   try {
     const nextRoom = await callApi("/api/origin-magic-circle/turn/end", {
@@ -3127,6 +3223,10 @@ composer.addPass(bloomPass);
     }
 
     if (battleState.gameEnded) return;
+
+await showMagicNameCenterAsync(effectJson?.magicName, false);
+
+if (battleState.gameEnded) return;
 
 await playMagicVisualEffects(effectJson, false);
 
@@ -4988,22 +5088,7 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
         ? Math.round(totalDamage * (weight / 100))
         : Math.round(legacyMaxDamage * (weight / 100));
 
-      if (isEnemyCast) {
-        battleState.selfHp = Math.max(0, battleState.selfHp - amount);
-      } else {
-        battleState.enemyHp = Math.max(0, battleState.enemyHp - amount);
-      }
-
-      showDamageNumber(amount, isEnemyCast);
-      renderHpBars();
-      
-      
-      
-      
-      
-      if (!battleState.gameEnded && (battleState.selfHp <= 0 || battleState.enemyHp <= 0)) {
-  onBattleHpReachedZero?.();
-}
+     showDamageNumber(amount, isEnemyCast);
 
       // 自分が撃った魔法のダメージだけサーバーへ確定送信する。
       // 相手から受けた魔法側では送らない。二重減算防止。
@@ -6151,27 +6236,22 @@ function showBattleResultScreen({ selfWon }) {
   backBtn.textContent = "もう一度遊ぶ";
 
   backBtn.addEventListener("click", async () => {
-    if (!currentRoom?.roomId || !userTrackingId) return;
+  if (!currentRoom?.roomId || !userTrackingId) return;
 
-    backBtn.disabled = true;
+  backBtn.disabled = true;
 
-    try {
-      const room = await callApi("/api/origin-magic-circle/rooms/rematch", {
-        roomId: currentRoom.roomId,
-        userTrackingId,
-      }, "POST");
+  try {
+    const room = await callApi("/api/origin-magic-circle/rooms/rematch", {
+      roomId: currentRoom.roomId,
+      userTrackingId,
+    }, "POST");
 
-      currentRoom = room;
-      saveActiveRoomId(room.roomId);
-      showWaitingRoom(room);
-      refs.battleView.innerHTML = "";
-      setMessage("もう一度遊ぶ準備ができました。開始ボタンを押してください。");
-      startRefresh();
-    } catch (error) {
-      backBtn.disabled = false;
-      setMessage(`再戦の準備に失敗しました: ${error.message}`);
-    }
-  });
+    enterRematchWaitingRoom(room);
+  } catch (error) {
+    backBtn.disabled = false;
+    setMessage(`再戦の準備に失敗しました: ${error.message}`);
+  }
+});
 
   result.append(title, sub, list, backBtn);
   refs.battleView.appendChild(result);
@@ -6326,8 +6406,59 @@ socket.on("origin:room", (room) => {
 };
   window.addEventListener("resize", onResize);
 
+
+
+
+
+  let sceneDisposed = false;
+let animationFrameId = null;
+
+function disposeMaterial(material) {
+  if (!material) return;
+
+  if (Array.isArray(material)) {
+    material.forEach(disposeMaterial);
+    return;
+  }
+
+  if (material.map) material.map.dispose?.();
+  if (material.normalMap) material.normalMap.dispose?.();
+  if (material.emissiveMap) material.emissiveMap.dispose?.();
+  material.dispose?.();
+}
+
+function disposeObject3D(root) {
+  root.traverse?.((obj) => {
+    if (obj.geometry) obj.geometry.dispose?.();
+    if (obj.material) disposeMaterial(obj.material);
+  });
+}
+
+battleSceneCleanup = () => {
+  sceneDisposed = true;
+
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+
+  window.removeEventListener("resize", onResize);
+
+  activeMagicObjects.splice(0);
+  activeMagicMixers.splice(0);
+  summonAssetMixers.splice(0);
+
+  disposeObject3D(scene);
+  composer?.dispose?.();
+  renderer?.dispose?.();
+
+  renderer?.domElement?.remove();
+};
+
 //変更8
 const animate = () => {
+  if (sceneDisposed) return;
+
   const delta = clock.getDelta();
   const elapsed = clock.elapsedTime;
 
@@ -6346,7 +6477,7 @@ const animate = () => {
   updateActiveMagicObjects(elapsed, delta);
 
   composer.render();
-  requestAnimationFrame(animate);
+  animationFrameId = requestAnimationFrame(animate);
 };
 
 
