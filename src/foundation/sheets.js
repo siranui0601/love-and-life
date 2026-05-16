@@ -455,10 +455,39 @@ export async function cleanupExpiredSecretToolRooms() {
 }
 
 async function getOriginMagicCircleRows(sheets) {
-  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A2:E`;
+  const range = `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A2:F`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   return res.data.values || [];
 }
+
+
+
+
+function parseOriginMagicCircleBattleStateJson(raw) {
+  try {
+    const parsed = JSON.parse(String(raw || "{}"));
+    if (!parsed || typeof parsed !== "object") {
+      return {
+        turnOwnerId: "",
+        turnSeq: 0,
+      };
+    }
+
+    return {
+      turnOwnerId: String(parsed.turnOwnerId || ""),
+      turnSeq: Math.max(0, Math.round(Number(parsed.turnSeq) || 0)),
+    };
+  } catch {
+    return {
+      turnOwnerId: "",
+      turnSeq: 0,
+    };
+  }
+}
+
+
+
+
 
 function parseOriginMagicCircleCastLogsJson(raw) {
   try {
@@ -528,6 +557,7 @@ function originMagicCircleRowToRoom(row = [], index = 0) {
   const status = String(row[2] || "").trim();
   const expiresAt = Number(row[3] || 0);
   const castLogs = parseOriginMagicCircleCastLogsJson(row[4]);
+  const battleState = parseOriginMagicCircleBattleStateJson(row[5]);
 
   return {
     rowIndex: index + 2,
@@ -536,6 +566,7 @@ function originMagicCircleRowToRoom(row = [], index = 0) {
     status,
     expiresAt: Number.isFinite(expiresAt) ? expiresAt : 0,
     castLogs,
+    battleState,
   };
 }
 
@@ -548,6 +579,125 @@ async function updateOriginMagicCircleRoomRow(rowIndex, values) {
     requestBody: { values: [values] },
   });
 }
+
+
+
+
+async function updateOriginMagicCircleBattleStateCell(rowIndex, battleState) {
+  const sheets = await getSheetsClient();
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!F${rowIndex}`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: [[JSON.stringify(battleState || {})]],
+    },
+  });
+}
+
+
+
+
+
+
+
+
+export async function startOriginMagicCircleBattle({ roomId }) {
+  const room = await getOriginMagicCircleRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+
+  const members = room.members || [];
+  if (members.length !== 2) throw new Error("room_not_ready");
+
+  const bothLoaded = members.every((member) => member.loadReady === true);
+  if (!bothLoaded) throw new Error("opponent_loading");
+
+  const firstMember = members[Math.floor(Math.random() * members.length)];
+
+  const battleState = {
+    turnOwnerId: firstMember.id,
+    turnSeq: 1,
+  };
+
+  await updateOriginMagicCircleRoomRow(room.rowIndex, [
+    room.roomId,
+    JSON.stringify(members),
+    "対戦中",
+    String(room.expiresAt || originMagicCircleExpiresAtMs()),
+  ]);
+
+  await updateOriginMagicCircleBattleStateCell(room.rowIndex, battleState);
+
+  return {
+    ...room,
+    status: "対戦中",
+    members,
+    battleState,
+  };
+}
+
+
+
+
+export async function advanceOriginMagicCircleTurn({ roomId, clientId }) {
+  const room = await getOriginMagicCircleRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+
+  if (room.status !== "対戦中") {
+    throw new Error("room_not_battle");
+  }
+
+  const members = room.members || [];
+  if (members.length !== 2) throw new Error("room_not_ready");
+
+  const currentTurnOwnerId = String(room.battleState?.turnOwnerId || "");
+  if (currentTurnOwnerId && currentTurnOwnerId !== clientId) {
+    throw new Error("not_your_turn");
+  }
+
+  const nextOwner = members.find((member) => member.id !== clientId);
+  if (!nextOwner) throw new Error("room_not_ready");
+
+  const battleState = {
+    turnOwnerId: nextOwner.id,
+    turnSeq: Math.max(0, Number(room.battleState?.turnSeq) || 0) + 1,
+  };
+
+  await updateOriginMagicCircleBattleStateCell(room.rowIndex, battleState);
+
+  const updated = await getOriginMagicCircleRoomById(roomId);
+
+  return updated || {
+    ...room,
+    battleState,
+  };
+}
+
+
+
+
+
+export async function assertOriginMagicCircleTurnOwner({ roomId, clientId }) {
+  const room = await getOriginMagicCircleRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+
+  if (room.status !== "対戦中") {
+    throw new Error("room_not_battle");
+  }
+
+  const turnOwnerId = String(room.battleState?.turnOwnerId || "");
+  if (turnOwnerId && turnOwnerId !== clientId) {
+    throw new Error("not_your_turn");
+  }
+
+  return room;
+}
+
+
+
+
+
 
 
 async function clearOriginMagicCircleRoomRow(rowIndex) {
@@ -614,6 +764,35 @@ export async function getOriginMagicCircleRoomById(roomId) {
   return originMagicCircleRowToRoom(rows[rowIndex], rowIndex);
 }
 
+
+
+
+export async function findActiveOriginMagicCircleRoomByClientId(clientId) {
+  const safeClientId = String(clientId || "").trim();
+  if (!safeClientId) return null;
+
+  const sheets = await getSheetsClient();
+  const rows = await getOriginMagicCircleRows(sheets);
+  const now = Date.now();
+
+  const candidates = rows
+    .map((row, index) => originMagicCircleRowToRoom(row, index))
+    .filter((room) => {
+      if (!room.roomId) return false;
+      if (room.expiresAt > 0 && room.expiresAt < now) return false;
+      if (!["loading", "対戦中"].includes(room.status)) return false;
+      return (room.members || []).some((member) => member.id === safeClientId);
+    })
+    .sort((a, b) => Number(b.expiresAt || 0) - Number(a.expiresAt || 0));
+
+  return candidates[0] || null;
+}
+
+
+
+
+
+
 export async function joinOriginMagicCircleRoom({ roomId, username, clientId }) {
   const room = await getOriginMagicCircleRoomById(roomId);
   if (!room) throw new Error("room_not_found");
@@ -638,18 +817,43 @@ export async function joinOriginMagicCircleRoom({ roomId, username, clientId }) 
   }
 
   await updateOriginMagicCircleRoomRow(room.rowIndex, [
-    room.roomId,
-    JSON.stringify(members),
-    room.status,
-    String(room.expiresAt || roomExpiresAtMs()),
-  ]);
+  room.roomId,
+  JSON.stringify(members),
+  room.status,
+  String(room.expiresAt || originMagicCircleExpiresAtMs()),
+]);
 
-  return {
-    roomId: room.roomId,
-    members,
-    status: room.status,
-    expiresAt: room.expiresAt,
-  };
+// B列への反映を確認してから返す。
+// Google Sheets は update のPromiseが解決しても、直後の別リクエストで古い値が見えることがあるため。
+for (let i = 0; i < 6; i += 1) {
+  const savedRoom = await getOriginMagicCircleRoomById(room.roomId);
+  const savedMembers = savedRoom?.members || [];
+
+  const joined = savedMembers.some((member) => member.id === clientId);
+  const memberCountOk = existingIndex >= 0
+    ? savedMembers.length === members.length
+    : savedMembers.length >= members.length;
+
+  if (savedRoom && joined && memberCountOk) {
+    return {
+      roomId: savedRoom.roomId,
+      members: savedRoom.members,
+      status: savedRoom.status,
+      expiresAt: savedRoom.expiresAt,
+      battleState: savedRoom.battleState,
+    };
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 180));
+}
+
+const fallbackRoom = await getOriginMagicCircleRoomById(room.roomId);
+return fallbackRoom || {
+  roomId: room.roomId,
+  members,
+  status: room.status,
+  expiresAt: room.expiresAt,
+};
 }
 
 
