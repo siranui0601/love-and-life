@@ -773,7 +773,7 @@ function resetBattleClientStateForLobby() {
   document.getElementById("originWinBanner")?.remove();
   document.getElementById("magicNameCenterOverlay")?.remove();
   document.getElementById("battleTutorialModal")?.remove();
-  document.getElementById("turnModal")?.remove();
+  document.getElementById("originTurnModal")?.remove();
 
   refs.battleView.innerHTML = "";
   refs.battleView.classList.add("hidden");
@@ -2809,9 +2809,9 @@ function ensureTurnModal() {
     modal = document.createElement("div");
     modal.id = "originTurnModal";
     modal.style.position = "fixed";
-    modal.style.left = "50%";
-    modal.style.top = "86px";
-    modal.style.transform = "translateX(-50%)";
+modal.style.left = "50%";
+modal.style.bottom = "calc(env(safe-area-inset-bottom) + 2dvh)";
+modal.style.transform = "translateX(-50%)";
     modal.style.zIndex = "40000000";
     modal.style.padding = "14px 22px";
     modal.style.borderRadius = "999px";
@@ -2848,15 +2848,15 @@ function renderTurnUi() {
 
   const myTurn = isMyTurn();
 
-  if (myTurn) {
-    modal.textContent = "あなたのターン";
-    modal.style.opacity = "1";
-    modal.style.transform = "translateX(-50%) scale(1)";
-  } else {
-    modal.textContent = "相手のターン";
-    modal.style.opacity = "1";
-    modal.style.transform = "translateX(-50%) scale(1)";
-  }
+ if (myTurn) {
+  modal.textContent = "";
+  modal.style.opacity = "0";
+  modal.style.transform = "translateX(-50%) scale(0.96)";
+} else {
+  modal.textContent = "相手のターン";
+  modal.style.opacity = "1";
+  modal.style.transform = "translateX(-50%) scale(1)";
+}
 
   magicCircleUiController?.setInputEnabled?.(myTurn);
 }
