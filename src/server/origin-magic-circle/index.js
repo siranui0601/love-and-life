@@ -19,6 +19,13 @@ import {
   
   appendOriginMagicCircleRoomCastLog,
   findOriginMagicCircleSpellCachesByHashes,
+
+
+  findActiveOriginMagicCircleRoomByClientId,
+startOriginMagicCircleBattle,
+advanceOriginMagicCircleTurn,
+assertOriginMagicCircleTurnOwner,
+
   
   
 } from "../../foundation/sheets.js";
@@ -444,6 +451,37 @@ export function mountOriginMagicCircleRoutes(app, io) {
     }
   });
 
+
+
+
+
+  app.get("/api/origin-magic-circle/rooms/active", async (req, res) => {
+  await cleanupOriginRoomsQuietly();
+
+  const userTrackingId = String(req.query?.userTrackingId || req.query?.clientId || "").trim();
+
+  if (!userTrackingId) {
+    return res.status(400).json({ error: "userTrackingId is required" });
+  }
+
+  try {
+    const room = await findActiveOriginMagicCircleRoomByClientId(userTrackingId);
+
+    if (!room) {
+      return res.status(404).json({ error: "active_room_not_found" });
+    }
+
+    return res.json(room);
+  } catch (error) {
+    console.error("[origin-magic-circle] active room error:", error);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+
+
+
+  
   app.post("/api/origin-magic-circle/rooms/join", async (req, res) => {
   await cleanupOriginRoomsQuietly();
     const username = String(req.body?.username || "guest").trim() || "guest";
@@ -553,12 +591,16 @@ export function mountOriginMagicCircleRoutes(app, io) {
       const bothLoaded = (room.members || []).every((member) => member.loadReady === true);
       if (!bothLoaded) return res.status(409).json({ error: "opponent_loading" });
 
-      const started = await updateOriginMagicCircleRoomStatus({
-        roomId,
-        status: "対戦中",
-      });
+      const started = await startOriginMagicCircleBattle({ roomId });
+
+io?.to(originSocketRoom(roomId)).emit("origin:room", started);
+
+return res.json(started);
+
+
+
+
       
-      return res.json(started);
     } catch (error) {
       if (error.message === "room_not_found") return res.status(404).json({ error: "room_not_found" });
       if (error.message === "forbidden") return res.status(403).json({ error: "forbidden" });
@@ -566,6 +608,42 @@ export function mountOriginMagicCircleRoutes(app, io) {
       return res.status(500).json({ error: "server_error" });
     }
   });
+
+
+
+
+  app.post("/api/origin-magic-circle/turn/end", async (req, res) => {
+  const roomId = String(req.body?.roomId || "").trim();
+  const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
+
+  if (!roomId || !userTrackingId) {
+    return res.status(400).json({ error: "roomId and userTrackingId are required" });
+  }
+
+  try {
+    const room = await advanceOriginMagicCircleTurn({
+      roomId,
+      clientId: userTrackingId,
+    });
+
+    io?.to(originSocketRoom(roomId)).emit("origin:room", room);
+
+    return res.json(room);
+  } catch (error) {
+    if (error.message === "room_not_found") return res.status(404).json({ error: "room_not_found" });
+    if (error.message === "room_not_battle") return res.status(409).json({ error: "room_not_battle" });
+    if (error.message === "room_not_ready") return res.status(409).json({ error: "room_not_ready" });
+    if (error.message === "not_your_turn") return res.status(403).json({ error: "not_your_turn" });
+
+    console.error("[origin-magic-circle] turn end error:", error);
+    return res.status(500).json({ error: "server_error" });
+  }
+});
+
+
+
+
+  
   app.post("/api/origin-magic-circle/rooms/leave", async (req, res) => {
     const roomId = String(req.body?.roomId || "").trim();
     const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
@@ -1080,9 +1158,17 @@ enemyHp: Number.isFinite(Number(enemy?.hp))
 
     socket.on("origin:cast", async (payload = {}, ack) => {
   try {
+    const roomId = String(payload.roomId || socket.data.originRoomId || "").trim();
+    const casterId = String(payload.casterId || socket.data.originUserTrackingId || "").trim();
+
+    await assertOriginMagicCircleTurnOwner({
+      roomId,
+      clientId: casterId,
+    });
+
     const { entry } = await registerOriginMagicCircleCast({
-      roomId: payload.roomId || socket.data.originRoomId,
-      casterId: payload.casterId || socket.data.originUserTrackingId,
+      roomId,
+      casterId,
       casterName: payload.casterName,
       magicEffectJson: payload.magicEffectJson,
       strokeJson: payload.strokeJson,
@@ -1091,6 +1177,16 @@ enemyHp: Number.isFinite(Number(enemy?.hp))
 
     ack?.({ ok: true, cast: entry });
   } catch (error) {
+    if (error.message === "not_your_turn") {
+      ack?.({ ok: false, error: "not_your_turn" });
+      return;
+    }
+
+    if (error.message === "room_not_battle") {
+      ack?.({ ok: false, error: "room_not_battle" });
+      return;
+    }
+
     if (error.message === "invalid_cast") {
       ack?.({ ok: false, error: "invalid_cast" });
       return;
@@ -1110,6 +1206,10 @@ enemyHp: Number.isFinite(Number(enemy?.hp))
     ack?.({ ok: false, error: "server_error" });
   }
 });
+
+
+
+    
 
     socket.on("origin:damage", async (payload = {}, ack) => {
       const roomId = String(payload.roomId || socket.data.originRoomId || "").trim();
