@@ -704,13 +704,19 @@ let battleState = {
   lastCastAt: 0,
   processedCastIds: new Set(),
 
+  currentTurnOwnerId: "",
+  currentTurnSeq: 0,
+
   gameEnded: false,
   endingStarted: false,
   winnerId: "",
   loserId: "",
 
   magicLogs: [],
-};let tutorialModalDismissed = false;
+};
+
+
+let tutorialModalDismissed = false;
 const ACTIVE_ROOM_STORAGE_KEY = "originMagicCircleActiveRoomId";
 let loadingBattleFlowStarted = false;
 
@@ -1200,6 +1206,7 @@ let historyIndex = -1;
 let activePointerId = null;
 let lastPoint = null;
 let isChanting = false;
+let isInputEnabled = true;
 
 // 追加：一筆ごとの座標保存
 const strokeList = [];
@@ -1223,18 +1230,19 @@ let currentStroke = null;
   const closeModalBtn = resultModal.querySelector(".chant-result-modal__close");
 
   const updateButtons = () => {
-    if (isChanting) {
-      undoBtn.disabled = true;
-      redoBtn.disabled = true;
-      clearBtn.disabled = true;
-      chantBtn.disabled = true;
-      return;
-    }
-    undoBtn.disabled = historyIndex <= 0;
-    redoBtn.disabled = historyIndex >= history.length - 1;
-    clearBtn.disabled = historyIndex <= 0;
-    chantBtn.disabled = false;
-  };
+  if (isChanting || !isInputEnabled) {
+    undoBtn.disabled = true;
+    redoBtn.disabled = true;
+    clearBtn.disabled = true;
+    chantBtn.disabled = true;
+    return;
+  }
+
+  undoBtn.disabled = historyIndex <= 0;
+  redoBtn.disabled = historyIndex >= history.length - 1;
+  clearBtn.disabled = historyIndex <= 0;
+  chantBtn.disabled = false;
+};
 
   const restoreState = () => {
   if (!ctx) return;
@@ -1511,6 +1519,7 @@ const resizeOverlay = () => {
 };
 
   overlay.addEventListener("pointerdown", (event) => {
+    if (!isInputEnabled) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
     if (activePointerId !== null) return;
     activePointerId = event.pointerId;
@@ -1532,6 +1541,7 @@ appendPointToCurrentStroke(lastPoint);
   });
 
   overlay.addEventListener("pointermove", (event) => {
+    if (!isInputEnabled) return;
     if (event.pointerId !== activePointerId || !lastPoint) return;
     const point = getPos(event);
 
@@ -2608,7 +2618,19 @@ await finishMagicCircleRitualAnimation(magicName);
   commitState();
   updateButtons();
 
-  return { resizeOverlay };
+  return {
+  resizeOverlay,
+
+  setInputEnabled(enabled) {
+    isInputEnabled = Boolean(enabled);
+
+    overlay.style.pointerEvents = isInputEnabled ? "auto" : "none";
+    overlay.style.opacity = isInputEnabled ? "1" : "0.72";
+
+    updateButtons();
+  },
+};
+  
 }
 
 
@@ -2653,6 +2675,76 @@ if (sv) sv.textContent = `${battleState.selfHp}/${ORIGIN_MAGIC_CIRCLE_MAX_HP}`;
 if (ev) ev.textContent = `${battleState.enemyHp}/${ORIGIN_MAGIC_CIRCLE_MAX_HP}`;
 
 }
+
+
+
+let magicCircleUiController = null;
+
+function isMyTurn() {
+  if (isOriginDebugTestRoom) return true;
+  return String(battleState.currentTurnOwnerId || "") === String(userTrackingId || "");
+}
+
+function ensureTurnModal() {
+  let modal = document.getElementById("originTurnModal");
+
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "originTurnModal";
+    modal.style.position = "fixed";
+    modal.style.left = "50%";
+    modal.style.top = "86px";
+    modal.style.transform = "translateX(-50%)";
+    modal.style.zIndex = "40000000";
+    modal.style.padding = "14px 22px";
+    modal.style.borderRadius = "999px";
+    modal.style.background = "linear-gradient(135deg, rgba(10,14,35,0.88), rgba(70,36,110,0.82))";
+    modal.style.color = "#fff";
+    modal.style.fontWeight = "800";
+    modal.style.fontSize = "16px";
+    modal.style.letterSpacing = "0.08em";
+    modal.style.boxShadow = "0 12px 36px rgba(0,0,0,0.36), inset 0 0 18px rgba(255,255,255,0.14)";
+    modal.style.backdropFilter = "blur(10px)";
+    modal.style.pointerEvents = "none";
+    modal.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+    refs.battleView?.appendChild(modal);
+  }
+
+  return modal;
+}
+
+function renderTurnUi() {
+  const modal = ensureTurnModal();
+  const myTurn = isMyTurn();
+
+  if (battleState.gameEnded) {
+    modal.style.opacity = "0";
+    return;
+  }
+
+  if (myTurn) {
+    modal.textContent = "あなたのターン";
+    modal.style.opacity = "1";
+    modal.style.transform = "translateX(-50%) scale(1)";
+  } else {
+    modal.textContent = "相手のターン";
+    modal.style.opacity = "1";
+    modal.style.transform = "translateX(-50%) scale(1)";
+  }
+
+  magicCircleUiController?.setInputEnabled?.(myTurn);
+}
+
+function applyRoomTurnState(room) {
+  currentRoom = room || currentRoom;
+
+  const next = room?.battleState || {};
+  battleState.currentTurnOwnerId = String(next.turnOwnerId || "");
+  battleState.currentTurnSeq = Math.max(0, Math.round(Number(next.turnSeq) || 0));
+
+  renderTurnUi();
+}
+
 
 
 
@@ -2941,9 +3033,20 @@ composer.addPass(bloomPass);
       addMagicLogFromCast(localCast);
 
       if (battleState.gameEnded) return;
-
-      if (battleState.gameEnded) return;
       await playMagicVisualEffects(effectJson, false);
+      if (!battleState.gameEnded) {
+  try {
+    const nextRoom = await callApi("/api/origin-magic-circle/turn/end", {
+      roomId: currentRoom?.roomId,
+      userTrackingId,
+    }, "POST");
+
+    currentRoom = nextRoom;
+    applyRoomTurnState(nextRoom);
+  } catch (error) {
+    console.warn("[origin-magic-circle] turn end failed:", error);
+  }
+}
 
       return;
     }
@@ -3007,7 +3110,8 @@ composer.addPass(bloomPass);
     hasHiddenDebugPanel = true;
   },
 });
-
+magicCircleUiController = magicCircleUi;
+applyRoomTurnState(currentRoom);
 
 
 
@@ -4897,6 +5001,31 @@ const objectCount = Math.max(
       });
     }, delaySeconds * 1000);
   });
+
+
+    const visualEndSeconds = effectJson.timedVisualEffects.reduce((max, timedEffect) => {
+    const start = Math.max(0, Number(timedEffect.startTimeSeconds) || 0);
+    const visualObjects = Array.isArray(timedEffect.visualObjects)
+      ? timedEffect.visualObjects
+      : [];
+
+    const localMax = visualObjects.reduce((innerMax, obj) => {
+      const life = Math.max(0.5, Number(obj.lifeTimeSeconds) || 0.5);
+      return Math.max(innerMax, start + life);
+    }, start);
+
+    return Math.max(max, localMax);
+  }, 0);
+
+  const damageEndSeconds = damageTimings.reduce((max, timing) => {
+    return Math.max(max, Math.max(0, Number(timing.timeSeconds) || 0));
+  }, 0);
+
+  const endMs = Math.ceil(Math.max(visualEndSeconds, damageEndSeconds) * 1000) + 450;
+
+  await new Promise((resolve) => setTimeout(resolve, endMs));
+
+  
 }
 
 
@@ -6115,6 +6244,20 @@ if (socket) {
   socket.on("origin:hp", (hpPayload) => {
     applyHpPayload(hpPayload);
   });
+
+
+  socket.off("origin:room");
+socket.on("origin:room", (room) => {
+  if (!room?.roomId) return;
+  if (currentRoom?.roomId && room.roomId !== currentRoom.roomId) return;
+
+  currentRoom = room;
+  applyRoomTurnState(room);
+  applyHpPayload({
+    selfHp: (room.members || []).find((member) => member.id === userTrackingId)?.hp,
+    enemyHp: (room.members || []).find((member) => member.id !== userTrackingId)?.hp,
+  });
+});
 }
 
   const onResize = () => {
@@ -6251,16 +6394,36 @@ refs.leaveRoomBtn?.addEventListener("click", async () => {
 
 refs.startGameBtn?.addEventListener("click", async () => {
   if (!currentRoom?.roomId) return;
+
+  refs.startGameBtn.disabled = true;
+
   try {
+    const latestRoom = await callApi(
+      `/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom.roomId)}`
+    );
+
+    currentRoom = latestRoom;
+    showWaitingRoom(latestRoom);
+
+    if ((latestRoom.members || []).length !== 2) {
+      setMessage("対戦相手の入室反映を待っています。もう少し待ってください。");
+      return;
+    }
+
     const room = await callApi("/api/origin-magic-circle/rooms/start", {
       roomId: currentRoom.roomId,
       userTrackingId,
     }, "POST");
 
     currentRoom = room;
+    saveActiveRoomId(room.roomId);
     await startThreeBattleScene();
   } catch (error) {
     setMessage(`ゲーム開始に失敗しました: ${error.message}`);
+  } finally {
+    if (!battleStarted && refs.startGameBtn) {
+      refs.startGameBtn.disabled = false;
+    }
   }
 });
 
@@ -6284,6 +6447,28 @@ if (activeRoomId === "000000") {
 }
 
 if (!activeRoomId) {
+  try {
+    const room = await callApi(
+      `/api/origin-magic-circle/rooms/active?userTrackingId=${encodeURIComponent(userTrackingId)}`
+    );
+
+    if (room?.roomId) {
+      saveActiveRoomId(room.roomId);
+      currentRoom = room;
+      showWaitingRoom(room);
+
+      if (room.status === "loading" || room.status === "対戦中") {
+        await startThreeBattleScene();
+        return;
+      }
+
+      startRefresh();
+      return;
+    }
+  } catch {
+    // 進行中ルームがなければ普通にトップを表示
+  }
+
   showHomePanel();
   refs.waitingRoom.classList.add("hidden");
   showNormalNote("");
