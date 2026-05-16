@@ -975,9 +975,17 @@ async function registerOriginMagicCircleCast({
 
 app.post("/api/origin-magic-circle/casts", async (req, res) => {
   try {
+    const roomId = String(req.body?.roomId || "").trim();
+    const casterId = String(req.body?.casterId || req.body?.clientId || "").trim();
+
+    await assertOriginMagicCircleTurnOwner({
+      roomId,
+      clientId: casterId,
+    });
+
     const { entry } = await registerOriginMagicCircleCast({
-      roomId: req.body?.roomId,
-      casterId: req.body?.casterId,
+      roomId,
+      casterId,
       casterName: req.body?.casterName,
       magicEffectJson: req.body?.magicEffectJson,
       strokeJson: req.body?.strokeJson,
@@ -997,6 +1005,15 @@ app.post("/api/origin-magic-circle/casts", async (req, res) => {
     if (error.message === "forbidden") {
       return res.status(403).json({ error: "forbidden" });
     }
+
+
+    if (error.message === "not_your_turn") {
+  return res.status(403).json({ error: "not_your_turn" });
+}
+
+if (error.message === "room_not_battle") {
+  return res.status(409).json({ error: "room_not_battle" });
+}
 
     console.error("[origin-magic-circle] rest cast error:", error);
     return res.status(500).json({ error: "server_error" });
