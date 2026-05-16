@@ -872,19 +872,34 @@ async function callApi(path, body = undefined, method = "GET") {
 
 async function refreshRoom() {
   if (!currentRoom?.roomId || battleStarted) return;
+
   try {
-    const room = await callApi(`/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom.roomId)}`);
+    const room = await callApi(
+      `/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom.roomId)}`
+    );
+
+    currentRoom = room;
+    saveActiveRoomId(room.roomId);
+
+    const members = Array.isArray(room.members) ? room.members : [];
+
+    // 2人以上いる待機部屋では、常に最新状態を画面に反映
     showWaitingRoom(room);
-    if (room.status === "対戦中") {
-  await startThreeBattleScene();
-}
+
+    // ホストが開始した結果、status が loading / 対戦中 になったら即移行
+    if (members.length >= 2 && (room.status === "loading" || room.status === "対戦中")) {
+      stopRefresh();
+      await startThreeBattleScene();
+      return;
+    }
   } catch {
     stopRefresh();
     clearActiveRoomId();
     currentRoom = null;
     showHomePanel();
     refs.waitingRoom.classList.add("hidden");
-    refs.waitingNote.classList.remove("hidden");
+    showNormalNote("");
+    refs.waitingNote?.classList.add("hidden");
     setMessage("ルームが見つかりませんでした。再作成してください。");
   }
 }
@@ -1025,7 +1040,12 @@ function hideTutorialModal() {
 
 function startRefresh() {
   stopRefresh();
-  refreshTimer = setInterval(refreshRoom, 2500);
+
+  // まず即時確認。これがないと、開始直後に最大1秒待つ
+  refreshRoom();
+
+  // 2人以上になった後の開始反映を速く拾いたいので1秒にする
+  refreshTimer = setInterval(refreshRoom, 1000);
 }
 
 function stopRefresh() {
@@ -6398,18 +6418,6 @@ refs.startGameBtn?.addEventListener("click", async () => {
   refs.startGameBtn.disabled = true;
 
   try {
-    const latestRoom = await callApi(
-      `/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom.roomId)}`
-    );
-
-    currentRoom = latestRoom;
-    showWaitingRoom(latestRoom);
-
-    if ((latestRoom.members || []).length !== 2) {
-      setMessage("対戦相手の入室反映を待っています。もう少し待ってください。");
-      return;
-    }
-
     const room = await callApi("/api/origin-magic-circle/rooms/start", {
       roomId: currentRoom.roomId,
       userTrackingId,
@@ -6417,13 +6425,16 @@ refs.startGameBtn?.addEventListener("click", async () => {
 
     currentRoom = room;
     saveActiveRoomId(room.roomId);
-    await startThreeBattleScene();
+    showWaitingRoom(room);
+    setMessage("対戦を開始します...");
+
+    // ここで直接 startThreeBattleScene() しない。
+    // refreshRoom に loading / 対戦中 を拾わせる方が、両者の状態が揃いやすい。
+    startRefresh();
+    await refreshRoom();
   } catch (error) {
+    refs.startGameBtn.disabled = false;
     setMessage(`ゲーム開始に失敗しました: ${error.message}`);
-  } finally {
-    if (!battleStarted && refs.startGameBtn) {
-      refs.startGameBtn.disabled = false;
-    }
   }
 });
 
