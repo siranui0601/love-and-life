@@ -723,7 +723,7 @@ async function clearOriginMagicCircleRoomRow(rowIndex) {
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${rowIndex}:E${rowIndex}`,
+    range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${rowIndex}:F${rowIndex}`,
     valueInputOption: "RAW",
     requestBody: {
       values: [["", "", "", "", ""]],
@@ -943,7 +943,7 @@ export async function deleteOriginMagicCircleRoom({ roomId, hostClientId }) {
   const host = room.members.find((member) => member.role === "host");
   if (!host || host.id !== hostClientId) throw new Error("forbidden");
 
-  await updateOriginMagicCircleRoomRow(room.rowIndex, ["", "", "", ""]);
+  await clearOriginMagicCircleRoomRow(room.rowIndex);
   return { roomId: room.roomId, members: [], status: "closed", expiresAt: 0 };
 }
 
@@ -1021,7 +1021,7 @@ export async function cleanupExpiredOriginMagicCircleRooms() {
     requestBody: {
       valueInputOption: "USER_ENTERED",
       data: targets.map((room) => ({
-        range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${room.rowIndex}:E${room.rowIndex}`,
+        range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${room.rowIndex}:F{room.rowIndex}`,
         values: [["", "", "", "", ""]],
       })),
     },
