@@ -603,17 +603,35 @@ async function updateOriginMagicCircleBattleStateCell(rowIndex, battleState) {
 
 
 
-export async function startOriginMagicCircleBattle({ roomId }) {
+export async function startOriginMagicCircleBattle({
+  roomId,
+  requestedByClientId = "",
+  requireLoadReady = false,
+} = {}) {
   const room = await getOriginMagicCircleRoomById(roomId);
   if (!room) throw new Error("room_not_found");
 
   const members = room.members || [];
   if (members.length !== 2) throw new Error("room_not_ready");
 
-  const bothLoaded = members.every((member) => member.loadReady === true);
-  if (!bothLoaded) throw new Error("opponent_loading");
+  if (requestedByClientId) {
+    const host = members.find((member) => member.role === "host");
+    if (!host || host.id !== requestedByClientId) {
+      throw new Error("forbidden");
+    }
+  }
+
+  if (requireLoadReady) {
+    const bothLoaded = members.every((member) => member.loadReady === true);
+    if (!bothLoaded) throw new Error("opponent_loading");
+  }
 
   const firstMember = members[Math.floor(Math.random() * members.length)];
+
+  const nextMembers = members.map((member) => ({
+    ...member,
+    hp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
+  }));
 
   const battleState = {
     turnOwnerId: firstMember.id,
@@ -622,7 +640,7 @@ export async function startOriginMagicCircleBattle({ roomId }) {
 
   await updateOriginMagicCircleRoomRow(room.rowIndex, [
     room.roomId,
-    JSON.stringify(members),
+    JSON.stringify(nextMembers),
     "対戦中",
     String(room.expiresAt || originMagicCircleExpiresAtMs()),
   ]);
@@ -632,7 +650,7 @@ export async function startOriginMagicCircleBattle({ roomId }) {
   return {
     ...room,
     status: "対戦中",
-    members,
+    members: nextMembers,
     battleState,
   };
 }
