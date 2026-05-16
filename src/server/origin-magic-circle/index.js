@@ -22,6 +22,7 @@ import {
 
 
   findActiveOriginMagicCircleRoomByClientId,
+  resetOriginMagicCircleRoomForRematch,
 startOriginMagicCircleBattle,
 advanceOriginMagicCircleTurn,
 assertOriginMagicCircleTurnOwner,
@@ -681,6 +682,33 @@ return res.json(started);
   });
 
 
+
+
+  app.post("/api/origin-magic-circle/rooms/rematch", async (req, res) => {
+    const roomId = String(req.body?.roomId || "").trim();
+    const userTrackingId = String(req.body?.userTrackingId || req.body?.clientId || "").trim();
+
+    if (!roomId || !userTrackingId) {
+      return res.status(400).json({ error: "roomId and userTrackingId are required" });
+    }
+
+    try {
+      const room = await resetOriginMagicCircleRoomForRematch({
+        roomId,
+        clientId: userTrackingId,
+      });
+
+      io?.to(originSocketRoom(roomId)).emit("origin:room", room);
+
+      return res.json(room);
+    } catch (error) {
+      if (error.message === "room_not_found") return res.status(404).json({ error: "room_not_found" });
+      if (error.message === "forbidden") return res.status(403).json({ error: "forbidden" });
+      if (error.message === "room_not_ready") return res.status(409).json({ error: "room_not_ready" });
+      console.error("[origin-magic-circle] rematch room error:", error);
+      return res.status(500).json({ error: "server_error" });
+    }
+  });
 
   app.post("/api/origin-magic-circle/rooms/hp", async (req, res) => {
     const roomId = String(req.body?.roomId || "").trim();

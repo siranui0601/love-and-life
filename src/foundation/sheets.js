@@ -1033,6 +1033,51 @@ export async function cleanupExpiredOriginMagicCircleRooms() {
 
 
 
+
+export async function resetOriginMagicCircleRoomForRematch({ roomId, clientId }) {
+  const room = await getOriginMagicCircleRoomById(roomId);
+  if (!room) throw new Error("room_not_found");
+
+  const members = [...(room.members || [])];
+  const me = members.find((member) => member.id === clientId);
+  if (!me) throw new Error("forbidden");
+  if (members.length !== 2) throw new Error("room_not_ready");
+
+  const resetMembers = members.map((member) => ({
+    ...member,
+    hp: ORIGIN_MAGIC_CIRCLE_MAX_HP,
+    loadReady: false,
+  }));
+  const nextExpiresAt = originMagicCircleExpiresAtMs();
+
+  const sheets = await getSheetsClient();
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      valueInputOption: "USER_ENTERED",
+      data: [
+        {
+          range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!A${room.rowIndex}:D${room.rowIndex}`,
+          values: [[room.roomId, JSON.stringify(resetMembers), "lobby", String(nextExpiresAt)]],
+        },
+        {
+          range: `${ORIGIN_MAGIC_CIRCLE_SHEET_NAME}!E${room.rowIndex}:F${room.rowIndex}`,
+          values: [["", ""]],
+        },
+      ],
+    },
+  });
+
+  return {
+    ...room,
+    members: resetMembers,
+    status: "lobby",
+    castLogs: [],
+    battleState: {},
+    expiresAt: nextExpiresAt,
+  };
+}
+
 export async function updateOriginMagicCircleRoomHp({ roomId, clientId, selfHp, enemyHp }) {
   const room = await getOriginMagicCircleRoomById(roomId);
   if (!room) throw new Error("room_not_found");
