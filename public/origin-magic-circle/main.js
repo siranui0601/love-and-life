@@ -4732,6 +4732,45 @@ function applySpawnSpread(base, forward, right, objectIndex, objectCount, spread
 
   return pos;
 }
+
+
+
+
+
+function applyRelativeOffsetToPosition(position, offset = {}, casterSide = "self") {
+  if (!offset || typeof offset !== "object") return position;
+
+  const { self, enemy } = getBattleActors(casterSide);
+  const { forward, right } = getForwardAndRight(self, enemy);
+
+  const result = position.clone();
+
+  result.addScaledVector(forward, Number(offset.forward) || 0);
+  result.addScaledVector(right, Number(offset.right) || 0);
+  result.y += Number(offset.y) || 0;
+
+  return result;
+}
+
+function applyVisualObjectRotationOptions(root, visualObject, casterSide = "self") {
+  if (!root || !visualObject) return;
+
+  if (visualObject.faceEnemy) {
+    const { enemy } = getBattleActors(casterSide);
+    root.lookAt(enemy.position.clone().add(new Vector3(0, 3, 0)));
+  }
+
+  const offset = visualObject.rotationOffset || {};
+  root.rotation.x += Number(offset.x) || 0;
+  root.rotation.y += Number(offset.y) || 0;
+  root.rotation.z += Number(offset.z) || 0;
+}
+
+
+
+
+
+
 function getSpawnPositionByName(
   positionName,
   assetName,
@@ -5033,31 +5072,47 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
   const root = createMagicObjectRoot(assetName);
   if (!root) return null;
 
-  const spawnPosition = getSpawnPositionByName(
-    visualObject.spawnPosition,
-    assetName,
-    objectSize,
-    objectIndex,
-    objectCount,
-    visualObject.spawnSpreadPattern || "none",
-    casterSide
-  );
 
-  const movement = visualObject.movement || {};
-  const targetPosition = getTargetPositionByName(
-    movement.targetPosition || "enemy_position",
-    assetName,
-    objectSize,
-    casterSide
-  );
+const baseSpawnPosition = getSpawnPositionByName(
+  visualObject.spawnPosition,
+  assetName,
+  objectSize,
+  objectIndex,
+  objectCount,
+  visualObject.spawnSpreadPattern || "none",
+  casterSide
+);
 
-  root.position.copy(spawnPosition);
+const spawnPosition = applyRelativeOffsetToPosition(
+  baseSpawnPosition,
+  visualObject.positionOffset,
+  casterSide
+);
+
+const movement = visualObject.movement || {};
+
+const baseTargetPosition = getTargetPositionByName(
+  movement.targetPosition || "enemy_position",
+  assetName,
+  objectSize,
+  casterSide
+);
+
+const targetPosition = applyRelativeOffsetToPosition(
+  baseTargetPosition,
+  movement.targetOffset,
+  casterSide
+);
+
+root.position.copy(spawnPosition);
 root.scale.setScalar(preset.scale);
 root.userData.currentScale = preset.scale;
 
 root.rotation.x += preset.rotationX || 0;
 root.rotation.y += preset.rotationY || 0;
 root.rotation.z += preset.rotationZ || 0;
+
+applyVisualObjectRotationOptions(root, visualObject, casterSide);
 
 applyMagicColor(root, visualObject.colorHexCode);
 
@@ -5122,6 +5177,117 @@ function getMagicEffectEndSeconds(effectJson) {
   return Math.min(Math.max(end, 1), 12);
 }
 
+
+
+
+
+
+function triggerOriginSceneEffect(sceneEffect, casterSide = "self") {
+  if (!sceneEffect || typeof sceneEffect !== "object") return;
+
+  if (sceneEffect.type === "sky_color") {
+    const originalBackground = scene.background?.clone?.() || new Color("#87ceeb");
+    const nextColor = new Color(sceneEffect.color || "#101020");
+    const durationMs = Math.max(300, Number(sceneEffect.durationSeconds || 3) * 1000);
+
+    scene.background = nextColor;
+
+    setBattleTimeout(() => {
+      if (!battleState.gameEnded) {
+        scene.background = originalBackground;
+      }
+    }, durationMs);
+
+    return;
+  }
+
+  if (sceneEffect.type === "camera_shake") {
+    const durationMs = Math.max(100, Number(sceneEffect.durationSeconds || 0.8) * 1000);
+    const strength = Math.max(0, Number(sceneEffect.strength || 0.4));
+    const startedAt = performance.now();
+    const basePosition = camera.position.clone();
+
+    const shake = () => {
+      if (battleState.gameEnded) {
+        camera.position.copy(basePosition);
+        return;
+      }
+
+      const elapsed = performance.now() - startedAt;
+      const t = elapsed / durationMs;
+
+      if (t >= 1) {
+        camera.position.copy(basePosition);
+        return;
+      }
+
+      const fade = 1 - t;
+      camera.position.set(
+        basePosition.x + (Math.random() - 0.5) * strength * fade,
+        basePosition.y + (Math.random() - 0.5) * strength * fade,
+        basePosition.z + (Math.random() - 0.5) * strength * fade
+      );
+
+      requestAnimationFrame(shake);
+    };
+
+    shake();
+    return;
+  }
+
+  if (sceneEffect.type === "camera_pulse") {
+    const durationMs = Math.max(100, Number(sceneEffect.durationSeconds || 0.8) * 1000);
+    const strength = Math.max(0, Number(sceneEffect.strength || 0.35));
+    const startedAt = performance.now();
+    const baseFov = camera.fov;
+
+    const pulse = () => {
+      if (battleState.gameEnded) {
+        camera.fov = baseFov;
+        camera.updateProjectionMatrix();
+        return;
+      }
+
+      const elapsed = performance.now() - startedAt;
+      const t = elapsed / durationMs;
+
+      if (t >= 1) {
+        camera.fov = baseFov;
+        camera.updateProjectionMatrix();
+        return;
+      }
+
+      const wave = Math.sin(Math.PI * t);
+      camera.fov = baseFov - wave * strength * 10;
+      camera.updateProjectionMatrix();
+
+      requestAnimationFrame(pulse);
+    };
+
+    pulse();
+  }
+}
+
+function scheduleOriginSceneEffects(effectJson, casterSide = "self") {
+  const sceneEffects = Array.isArray(effectJson?.sceneEffects)
+    ? effectJson.sceneEffects
+    : [];
+
+  sceneEffects.forEach((sceneEffect) => {
+    const delay = Math.max(0, Number(sceneEffect.timeSeconds || 0)) * 1000;
+
+    setBattleTimeout(() => {
+      if (battleState.gameEnded) return;
+      triggerOriginSceneEffect(sceneEffect, casterSide);
+    }, delay);
+  });
+}
+
+
+
+
+
+
 async function playMagicVisualEffects(effectJson, isEnemyCast = false, options = {}) {
   if (battleState.gameEnded) return;
 
@@ -5139,6 +5305,10 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false, options =
 }
 
   const casterSide = isEnemyCast ? "enemy" : "self";
+
+  scheduleOriginSceneEffects(effectJson, casterSide);
+
+
 
   // 以下そのまま
 
@@ -5199,7 +5369,7 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false, options =
         //const safari = isSafariBrowser();
 const objectCount = Math.max(
   1,
-  Math.min(Number(visualObject.objectCount) || 1, 5)
+  Math.min(Number(visualObject.objectCount) || 1, 12)
 );
 
         for (let i = 0; i < objectCount; i += 1) {
