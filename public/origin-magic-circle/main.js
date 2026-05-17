@@ -6581,7 +6581,6 @@ const animate = () => {
 
 
   animate();
-}
 
 refs.createRoomBtn?.addEventListener("click", async () => {
   if (!userTrackingId) {
