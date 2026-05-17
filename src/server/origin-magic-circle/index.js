@@ -160,6 +160,864 @@ const pick = (arr)=>arr[Math.floor(Math.random()*arr.length)];
 function toAssetFileName(name){const raw=String(name||"").trim();if(!raw) return pick(Object.values(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP));return ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[raw]||raw;}
 function randomColorFromBase(base){const palette=[base,"#FFFFFF","#111111","#FFD700"];if(Math.random()<0.65) return pick(palette);const n=parseInt(base.slice(1),16);const r=(n>>16)&255,g=(n>>8)&255,b=n&255;const dv=()=>Math.max(0,Math.min(255,Math.round((Math.random()-0.5)*70)));return `#${[r+dv(),g+dv(),b+dv()].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase()}`;}
 
+
+
+//ここから大量追加
+const ORIGIN_MAGIC_CIRCLE_MAGIC_CIRCLE_ASSETS = [
+  "魔法陣1",
+  "魔法陣2",
+  "魔法陣3",
+  "魔法陣4",
+  "魔法陣5",
+  "魔法陣6",
+  "魔法陣7",
+  "魔法陣8",
+  "魔法陣9",
+  "魔法陣10",
+];
+
+const ORIGIN_MAGIC_CIRCLE_FINISH_ASSETS = [
+  "大爆発",
+  "雷",
+  "光球",
+  "プラズマ",
+  "銀河",
+  "竜巻",
+];
+
+const ORIGIN_MAGIC_CIRCLE_SUPPORT_ASSETS = [
+  "魔法陣3",
+  "雲",
+  "光球",
+  "プラズマ",
+  "大爆発",
+  "シンプルリング",
+  "オーラ",
+  "銀河",
+  "雷",
+  "竜巻",
+  "ゲート1",
+  "ゲート2",
+  "魂剣",
+  "バレッド",
+  "隕石",
+  "翼",
+  "天使翼",
+  "悪魔翼",
+  "雪結晶1",
+  "雪結晶2",
+];
+
+const ORIGIN_MAGIC_CIRCLE_PATTERN_POOL = [
+  "vertical_circle_single_judgment",
+  "vertical_circle_barrage",
+  "sky_mass_rain",
+  "sky_road",
+  "gate_release",
+  "gate_army",
+  "behind_stand",
+  "enemy_encircle",
+  "crossfire",
+  "far_charge",
+  "ground_rupture",
+  "spiral_bind",
+  "cosmic_collapse",
+  "meteor_fall",
+  "weapon_execution",
+  "dragon_assault",
+  "orbital_laser",
+  "tornado_swallow",
+  "moon_gravity",
+  "sun_burst",
+  "ice_prison",
+  "snowfall_execution",
+  "machine_barrage",
+  "tank_siege",
+  "fighter_airstrike",
+  "wing_judgment",
+  "dark_gate",
+  "soul_procession",
+  "cube_cascade_crush",
+  "crystal_storm",
+  "tree_world_takeover",
+  "torii_boundary",
+  "clock_stop",
+  "plasma_cage",
+  "smoke_assassination",
+  "ring_seal",
+  "butterfly_swarm",
+  "phoenix_rebirth_blast",
+  "hell_wing_drop",
+  "angelic_pillar",
+  "cyber_orb_network",
+  "dual_spiral",
+  "light_lane",
+  "enemy_backstab",
+  "above_enemy_execution",
+  "battlefield_core_overload",
+  "delayed_big_bang",
+  "multi_phase_barrage",
+  "silence_then_flash",
+  "all_range_finale",
+];
+
+function uniqueArray(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function chooseMainAsset(rawMainAsset) {
+  const raw = String(rawMainAsset || "").trim();
+
+  if (ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[raw]) return raw;
+
+  const fileNameHit = Object.entries(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP)
+    .find(([, fileName]) => fileName === raw);
+
+  if (fileNameHit) return fileNameHit[0];
+
+  return pick(Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP));
+}
+
+function chooseSupportAssets(mainAsset, count = 4) {
+  const pool = ORIGIN_MAGIC_CIRCLE_SUPPORT_ASSETS
+    .filter((name) => name !== mainAsset && ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[name]);
+
+  const result = [];
+
+  while (result.length < count && pool.length) {
+    const selected = pick(pool);
+    if (!result.includes(selected)) result.push(selected);
+  }
+
+  return result;
+}
+
+function normalizeOriginMagicCircleConceptJson(rawJson) {
+  const parsed = typeof rawJson === "string" ? JSON.parse(rawJson) : rawJson || {};
+
+  const magicName =
+    String(parsed.magicName || "無銘魔法・原初解放").trim() ||
+    "無銘魔法・原初解放";
+
+  const artScore = Math.round(clamp(parsed.artScore, 0, 100, 50));
+  const mainAsset = chooseMainAsset(parsed.mainAsset);
+
+  return {
+    magicName,
+    artScore,
+    mainAsset,
+  };
+}
+
+function makeVisualObject({
+  id,
+  asset,
+  count = 1,
+  position = "battlefield_center",
+  size = "medium",
+  life = 4,
+  spread = "none",
+  color = "#FFFFFF",
+  target = "self_position",
+  duration = 0,
+  path = "none",
+  enter = "scale_up",
+  exit = "scale_down",
+  rotate = true,
+  rotationSpeed = "normal",
+  positionOffset,
+  targetOffset,
+  rotationOffset,
+  faceEnemy = false,
+}) {
+  return {
+    id,
+    assetFileName: toAssetFileName(asset),
+    objectCount: Math.round(clamp(count, 1, 12, 1)),
+    spawnPosition: position,
+    spawnSpreadPattern: spread,
+    colorHexCode: color,
+    objectSize: size,
+    lifeTimeSeconds: clamp(life, 0.5, 10, 4),
+    enterEffect: enter,
+    exitEffect: exit,
+    movement: {
+      targetPosition: target,
+      moveDurationSeconds: clamp(duration, 0, 10, 0),
+      movePathType: path,
+      targetOffset,
+    },
+    rotation: {
+      shouldRotate: rotate,
+      rotationSpeed,
+    },
+    positionOffset,
+    rotationOffset,
+    faceEnemy,
+  };
+}
+
+function makeTimedEffect(time, visualObjects) {
+  return {
+    startTimeSeconds: clamp(time, 0, 10, 0),
+    visualObjects: visualObjects.filter(Boolean),
+  };
+}
+
+function makeSceneEffect(time, type, options = {}) {
+  return {
+    timeSeconds: clamp(time, 0, 10, 0),
+    type,
+    ...options,
+  };
+}
+
+function createDamageTimingsFromImpactTimes(impactTimes, artScore) {
+  const totalDamage = Math.round(clamp(90 + artScore * 2.25, 100, 320, 200));
+
+  const times = uniqueArray(
+    impactTimes
+      .map((v) => Number(Number(v).toFixed(2)))
+      .filter((v) => Number.isFinite(v))
+      .map((v) => clamp(v, 0.5, 9.7, 2))
+  ).sort((a, b) => a - b).slice(0, 5);
+
+  if (!times.length) times.push(3.5, 6.8);
+
+  const weights = times.map(() => 1);
+  weights[weights.length - 1] = 2;
+
+  const sum = weights.reduce((a, b) => a + b, 0);
+  const damageWeights = weights.map((w) => Math.round((w / sum) * 100));
+  damageWeights[damageWeights.length - 1] += 100 - damageWeights.reduce((a, b) => a + b, 0);
+
+  return {
+    totalDamage,
+    damageTimings: times.map((timeSeconds, i) => ({
+      timeSeconds,
+      damageWeight: damageWeights[i],
+      target: "enemy",
+    })),
+  };
+}
+
+function getMainAssetProfile(mainAsset) {
+  if (["雷", "プラズマ", "光球"].includes(mainAsset)) {
+    return {
+      color: "#8FEAFF",
+      darkColor: "#081A38",
+      circle: "魔法陣9",
+      finish: "大爆発",
+      sky: "#10163A",
+    };
+  }
+
+  if (["炎球", "竜巻", "太陽", "火山", "不死鳥"].includes(mainAsset)) {
+    return {
+      color: "#FF8A2A",
+      darkColor: "#2A0800",
+      circle: "魔法陣3",
+      finish: "大爆発",
+      sky: "#2A1105",
+    };
+  }
+
+  if (["月", "銀河", "多線球", "蠢く多面球", "二重螺旋球"].includes(mainAsset)) {
+    return {
+      color: "#9E7BFF",
+      darkColor: "#080018",
+      circle: "魔法陣8",
+      finish: "銀河",
+      sky: "#070012",
+    };
+  }
+
+  if (["ツララ", "雪1", "雪2", "雪結晶1", "雪結晶2"].includes(mainAsset)) {
+    return {
+      color: "#BDEBFF",
+      darkColor: "#071622",
+      circle: "魔法陣2",
+      finish: "大爆発",
+      sky: "#102033",
+    };
+  }
+
+  if (["戦車", "戦闘機", "六足ロボ", "トルーパー"].includes(mainAsset)) {
+    return {
+      color: "#FFD36A",
+      darkColor: "#1A1812",
+      circle: "魔法陣10",
+      finish: "大爆発",
+      sky: "#151515",
+    };
+  }
+
+  return {
+    color: "#D48FFF",
+    darkColor: "#10051A",
+    circle: "魔法陣3",
+    finish: "大爆発",
+    sky: "#130A22",
+  };
+}
+
+function buildVerticalCircleObject(id, asset, color, life = 4.8) {
+  return makeVisualObject({
+    id,
+    asset,
+    count: 1,
+    position: "in_front_of_self",
+    size: "large",
+    life,
+    color,
+    spread: "none",
+    target: "in_front_of_self",
+    duration: 0,
+    path: "none",
+    enter: "scale_up",
+    exit: "scale_down",
+    rotate: true,
+    rotationSpeed: "slow",
+
+    // main.js側で対応する追加フィールド
+    faceEnemy: true,
+    rotationOffset: {
+      x: Math.PI / 2,
+      y: 0,
+      z: 0,
+    },
+    positionOffset: {
+      forward: 1.5,
+      y: 2.5,
+    },
+  });
+}
+
+function buildOriginMagicCircleEffectFromConcept(concept) {
+  const magicName = concept.magicName;
+  const artScore = concept.artScore;
+  const mainAsset = concept.mainAsset;
+
+  const profile = getMainAssetProfile(mainAsset);
+  const supportAssets = chooseSupportAssets(mainAsset, 5);
+
+  const pattern = pick(ORIGIN_MAGIC_CIRCLE_PATTERN_POOL);
+
+  const mainFile = toAssetFileName(mainAsset);
+  const circleAsset = profile.circle;
+  const gateAsset = pick(["ゲート1", "ゲート2", "円盤", "鳥居", "動く鳥居"]);
+  const finishAsset = profile.finish || pick(ORIGIN_MAGIC_CIRCLE_FINISH_ASSETS);
+
+  const timedVisualEffects = [];
+  const sceneEffects = [];
+  const impactTimes = [];
+
+  const add = (time, objects) => {
+    timedVisualEffects.push(makeTimedEffect(time, Array.isArray(objects) ? objects : [objects]));
+  };
+
+  const addScene = (time, type, options = {}) => {
+    sceneEffects.push(makeSceneEffect(time, type, options));
+  };
+
+  // 共通：発動予兆。全魔法で「縦の魔法陣」を出す
+  add(0, [
+    buildVerticalCircleObject("origin_vertical_circle", circleAsset, profile.color, 5.2),
+    makeVisualObject({
+      id: "origin_charge_aura",
+      asset: pick(["オーラ", "光球", "シンプルリング", "雲"]),
+      count: 3,
+      position: "self_position",
+      size: "medium",
+      life: 3.2,
+      color: profile.color,
+      spread: "circle",
+      enter: "scale_up",
+      exit: "rise_to_sky",
+      rotate: true,
+      rotationSpeed: "fast",
+      positionOffset: { y: 1.5 },
+    }),
+  ]);
+
+  addScene(0, "sky_color", {
+    color: profile.sky,
+    durationSeconds: 5.5,
+  });
+
+  addScene(0.25, "camera_pulse", {
+    durationSeconds: 1.2,
+    strength: 0.45,
+  });
+
+  const family = pattern;
+
+  if (
+    family === "vertical_circle_single_judgment" ||
+    family === "above_enemy_execution" ||
+    family === "silence_then_flash"
+  ) {
+    add(1.2, makeVisualObject({
+      id: "omen_cloud",
+      asset: pick(["雲", "光球", "シンプルリング"]),
+      count: 5,
+      position: "above_enemy",
+      size: "medium",
+      life: 3.5,
+      color: profile.color,
+      spread: "circle",
+      enter: "scale_up",
+      exit: "scale_down",
+      rotate: true,
+      rotationSpeed: "fast",
+    }));
+
+    add(2.4, makeVisualObject({
+      id: "main_judgment",
+      asset: mainAsset,
+      count: mainAsset === "雷" ? 1 : 3,
+      position: "above_enemy",
+      size: "large",
+      life: 3.5,
+      color: profile.color,
+      spread: "vertical_line",
+      target: "enemy_position",
+      duration: 0.9,
+      path: "fall_from_above",
+      enter: "fall_from_sky",
+      exit: "rise_to_sky",
+      rotate: true,
+      rotationSpeed: "fast",
+    }));
+
+    add(3.3, makeVisualObject({
+      id: "finish_burst",
+      asset: finishAsset,
+      count: 1,
+      position: "enemy_position",
+      size: "large",
+      life: 2.8,
+      color: "#FFFFFF",
+      spread: "none",
+      enter: "scale_up",
+      exit: "scale_down",
+    }));
+
+    addScene(2.4, "camera_shake", { durationSeconds: 0.75, strength: 0.65 });
+    impactTimes.push(2.5, 3.4, 5.5);
+  } else if (
+    family === "vertical_circle_barrage" ||
+    family === "multi_phase_barrage" ||
+    family === "light_lane"
+  ) {
+    add(1.0, makeVisualObject({
+      id: "main_barrage_1",
+      asset: mainAsset,
+      count: 6,
+      position: "in_front_of_self",
+      size: "medium",
+      life: 4.2,
+      color: profile.color,
+      spread: "horizontal_line",
+      target: "enemy_position",
+      duration: 1.2,
+      path: "straight_line",
+      enter: "scale_up",
+      exit: "scale_down",
+      rotate: true,
+      rotationSpeed: "fast",
+      positionOffset: { forward: 2, y: 2 },
+    }));
+
+    add(1.8, makeVisualObject({
+      id: "main_barrage_2",
+      asset: mainAsset,
+      count: 8,
+      position: "in_front_of_self",
+      size: "small",
+      life: 4.5,
+      color: "#FFFFFF",
+      spread: "random_scatter",
+      target: "above_enemy",
+      duration: 1.6,
+      path: "arc",
+      enter: "scale_up",
+      exit: "rise_to_sky",
+      rotate: true,
+      rotationSpeed: "fast",
+      positionOffset: { forward: 1, y: 3 },
+    }));
+
+    add(3.4, makeVisualObject({
+      id: "barrage_finish",
+      asset: finishAsset,
+      count: 1,
+      position: "enemy_position",
+      size: "large",
+      life: 3,
+      color: profile.color,
+      spread: "none",
+      enter: "scale_up",
+      exit: "sink_into_ground",
+    }));
+
+    addScene(1.6, "camera_shake", { durationSeconds: 1.6, strength: 0.35 });
+    impactTimes.push(2.2, 3.0, 3.8, 5.8);
+  } else if (
+    family === "sky_mass_rain" ||
+    family === "meteor_fall" ||
+    family === "snowfall_execution"
+  ) {
+    add(0.9, makeVisualObject({
+      id: "sky_omen",
+      asset: pick(["雲", "銀河", "魔法陣9", "光球"]),
+      count: 4,
+      position: "above_battlefield_center",
+      size: "large",
+      life: 4,
+      color: profile.darkColor,
+      spread: "circle",
+      enter: "fall_from_sky",
+      exit: "scale_down",
+    }));
+
+    add(2.0, makeVisualObject({
+      id: "main_rain",
+      asset: mainAsset,
+      count: 12,
+      position: "above_enemy",
+      size: "medium",
+      life: 4.2,
+      color: profile.color,
+      spread: "random_scatter",
+      target: "enemy_position",
+      duration: 1.1,
+      path: "fall_from_above",
+      enter: "fall_from_sky",
+      exit: "sink_into_ground",
+      rotate: true,
+      rotationSpeed: "fast",
+      positionOffset: { y: 8 },
+    }));
+
+    add(4.2, makeVisualObject({
+      id: "rain_final",
+      asset: mainAsset,
+      count: 1,
+      position: "above_enemy",
+      size: "large",
+      life: 3.4,
+      color: "#FFFFFF",
+      spread: "none",
+      target: "enemy_position",
+      duration: 0.8,
+      path: "fall_from_above",
+      enter: "fall_from_sky",
+      exit: "scale_down",
+    }));
+
+    addScene(2.1, "camera_shake", { durationSeconds: 2.0, strength: 0.45 });
+    impactTimes.push(2.8, 3.5, 4.8, 6.5);
+  } else if (
+    family === "gate_release" ||
+    family === "gate_army" ||
+    family === "dark_gate"
+  ) {
+    add(0.8, makeVisualObject({
+      id: "gate",
+      asset: gateAsset,
+      count: 1,
+      position: "in_front_of_self",
+      size: "large",
+      life: 6.5,
+      color: profile.color,
+      spread: "none",
+      enter: "scale_up",
+      exit: "sink_into_ground",
+      rotate: true,
+      rotationSpeed: "slow",
+      faceEnemy: true,
+      positionOffset: { forward: 3, y: 2 },
+    }));
+
+    add(1.6, makeVisualObject({
+      id: "gate_main_release",
+      asset: mainAsset,
+      count: 5,
+      position: "in_front_of_self",
+      size: "medium",
+      life: 5.5,
+      color: profile.color,
+      spread: "circle",
+      target: "enemy_position",
+      duration: 1.4,
+      path: "straight_line",
+      enter: "scale_up",
+      exit: "rise_to_sky",
+      rotate: true,
+      rotationSpeed: "fast",
+      positionOffset: { forward: 4, y: 2 },
+    }));
+
+    add(2.5, makeVisualObject({
+      id: "gate_support",
+      asset: pick(supportAssets),
+      count: 4,
+      position: "in_front_of_self",
+      size: "small",
+      life: 4.5,
+      color: "#FFFFFF",
+      spread: "random_scatter",
+      target: "above_enemy",
+      duration: 1.8,
+      path: "arc",
+      enter: "scale_up",
+      exit: "scale_down",
+      positionOffset: { forward: 4, y: 2 },
+    }));
+
+    add(4.5, makeVisualObject({
+      id: "gate_finish",
+      asset: finishAsset,
+      count: 1,
+      position: "enemy_position",
+      size: "large",
+      life: 2.8,
+      color: profile.color,
+      enter: "scale_up",
+      exit: "scale_down",
+    }));
+
+    addScene(4.5, "camera_shake", { durationSeconds: 1.0, strength: 0.6 });
+    impactTimes.push(2.3, 3.4, 4.8, 6.8);
+  } else if (
+    family === "enemy_encircle" ||
+    family === "crossfire" ||
+    family === "enemy_backstab" ||
+    family === "tank_siege"
+  ) {
+    add(1.0, makeVisualObject({
+      id: "encircle_main",
+      asset: mainAsset,
+      count: 8,
+      position: "enemy_position",
+      size: "medium",
+      life: 5.5,
+      color: profile.color,
+      spread: "circle",
+      target: "enemy_position",
+      duration: 0,
+      path: "none",
+      enter: "rise_from_ground",
+      exit: "scale_down",
+      rotate: true,
+      rotationSpeed: "fast",
+    }));
+
+    add(2.2, makeVisualObject({
+      id: "encircle_support",
+      asset: pick(supportAssets),
+      count: 6,
+      position: "above_enemy",
+      size: "small",
+      life: 4.8,
+      color: "#FFFFFF",
+      spread: "circle",
+      target: "enemy_position",
+      duration: 1.1,
+      path: "fall_from_above",
+      enter: "fall_from_sky",
+      exit: "sink_into_ground",
+    }));
+
+    add(4.0, makeVisualObject({
+      id: "encircle_crush",
+      asset: finishAsset,
+      count: 1,
+      position: "enemy_position",
+      size: "large",
+      life: 3.2,
+      color: profile.color,
+      enter: "scale_up",
+      exit: "scale_down",
+    }));
+
+    addScene(1.2, "camera_pulse", { durationSeconds: 1.0, strength: 0.3 });
+    addScene(4.0, "camera_shake", { durationSeconds: 1.0, strength: 0.7 });
+    impactTimes.push(2.4, 4.2, 6.8);
+  } else if (
+    family === "behind_stand" ||
+    family === "dragon_assault" ||
+    family === "wing_judgment" ||
+    family === "hell_wing_drop" ||
+    family === "angelic_pillar"
+  ) {
+    const standAsset = ["アニメドラゴン", "弱ドラゴン", "竜騎士", "天使翼", "悪魔翼", "翼"].includes(mainAsset)
+      ? mainAsset
+      : pick(["アニメドラゴン", "天使翼", "悪魔翼", "翼", mainAsset]);
+
+    add(0.9, makeVisualObject({
+      id: "stand",
+      asset: standAsset,
+      count: 1,
+      position: "behind_self",
+      size: "large",
+      life: 6.2,
+      color: profile.color,
+      spread: "none",
+      enter: "rise_from_ground",
+      exit: "rise_to_sky",
+      rotate: true,
+      rotationSpeed: "slow",
+      faceEnemy: true,
+      positionOffset: { forward: -2, y: 3 },
+    }));
+
+    add(2.2, makeVisualObject({
+      id: "stand_attack",
+      asset: mainAsset,
+      count: 5,
+      position: "behind_self",
+      size: "medium",
+      life: 4.5,
+      color: "#FFFFFF",
+      spread: "horizontal_line",
+      target: "enemy_position",
+      duration: 1.2,
+      path: "arc",
+      enter: "scale_up",
+      exit: "scale_down",
+      positionOffset: { forward: -1, y: 5 },
+    }));
+
+    add(4.2, makeVisualObject({
+      id: "stand_finish",
+      asset: finishAsset,
+      count: 1,
+      position: "above_enemy",
+      size: "large",
+      life: 3.2,
+      color: profile.color,
+      target: "enemy_position",
+      duration: 0.8,
+      path: "fall_from_above",
+      enter: "fall_from_sky",
+      exit: "scale_down",
+    }));
+
+    addScene(2.2, "camera_pulse", { durationSeconds: 1.3, strength: 0.55 });
+    addScene(4.5, "camera_shake", { durationSeconds: 1.0, strength: 0.65 });
+    impactTimes.push(3.0, 4.8, 6.8);
+  } else {
+    // その他30種類以上のpatternはここに集約。
+    // pattern名は毎回変わるので、同じmainAssetでも見え方が散る。
+    add(1.0, makeVisualObject({
+      id: "phase_main_1",
+      asset: mainAsset,
+      count: 5,
+      position: pick(["above_self", "battlefield_center", "in_front_of_self", "above_battlefield_center"]),
+      size: pick(["medium", "large"]),
+      life: 5.5,
+      color: profile.color,
+      spread: pick(["circle", "horizontal_line", "random_scatter"]),
+      target: pick(["enemy_position", "above_enemy", "battlefield_center"]),
+      duration: 1.2 + Math.random() * 1.4,
+      path: pick(["straight_line", "arc", "fall_from_above", "orbit"]),
+      enter: pick(["scale_up", "fall_from_sky", "rise_from_ground"]),
+      exit: pick(["scale_down", "rise_to_sky", "sink_into_ground"]),
+      rotate: true,
+      rotationSpeed: pick(["normal", "fast"]),
+      positionOffset: { y: Math.random() * 3 },
+    }));
+
+    add(2.2, makeVisualObject({
+      id: "phase_support",
+      asset: pick(supportAssets),
+      count: 4 + Math.floor(Math.random() * 5),
+      position: pick(["battlefield_center", "enemy_position", "above_enemy"]),
+      size: pick(["small", "medium"]),
+      life: 4.8,
+      color: "#FFFFFF",
+      spread: pick(["circle", "vertical_line", "random_scatter"]),
+      target: "enemy_position",
+      duration: Math.random() < 0.5 ? 0 : 1.1,
+      path: pick(["none", "arc", "fall_from_above"]),
+      enter: pick(["scale_up", "fall_from_sky", "rise_from_ground"]),
+      exit: pick(["scale_down", "rise_to_sky", "sink_into_ground"]),
+    }));
+
+    add(3.8, makeVisualObject({
+      id: "phase_main_2",
+      asset: mainAsset,
+      count: 1 + Math.floor(Math.random() * 4),
+      position: pick(["above_enemy", "enemy_position", "above_battlefield_center"]),
+      size: "large",
+      life: 4.2,
+      color: profile.color,
+      spread: pick(["none", "circle", "vertical_line"]),
+      target: "enemy_position",
+      duration: Math.random() < 0.5 ? 0 : 0.9,
+      path: pick(["none", "fall_from_above", "rise_from_below"]),
+      enter: pick(["scale_up", "fall_from_sky"]),
+      exit: pick(["scale_down", "sink_into_ground"]),
+      rotate: true,
+      rotationSpeed: "fast",
+    }));
+
+    add(5.8, makeVisualObject({
+      id: "phase_finish",
+      asset: finishAsset,
+      count: 1,
+      position: "enemy_position",
+      size: "large",
+      life: 2.9,
+      color: profile.color,
+      enter: "scale_up",
+      exit: "scale_down",
+    }));
+
+    addScene(1.5, "camera_pulse", { durationSeconds: 1.0, strength: 0.4 });
+    addScene(5.8, "camera_shake", { durationSeconds: 1.1, strength: 0.65 });
+    impactTimes.push(2.2, 4.4, 6.2, 8.0);
+  }
+
+  timedVisualEffects.sort((a, b) => a.startTimeSeconds - b.startTimeSeconds);
+  sceneEffects.sort((a, b) => a.timeSeconds - b.timeSeconds);
+
+  const damageInfo = createDamageTimingsFromImpactTimes(impactTimes, artScore);
+
+  return normalizeOriginMagicCircleEffectJson({
+    magicName,
+    artScore,
+    mainAsset: toAssetFileName(mainAsset),
+    mainAssetName: mainAsset,
+    pattern,
+    timedVisualEffects,
+    sceneEffects,
+    totalDamage: damageInfo.totalDamage,
+    damageTimings: damageInfo.damageTimings,
+
+    // リザルト・デバッグ用。旧timelineの代わりに概念を残す
+    timeline: [
+      {
+        time: 0,
+        actions: [
+          {
+            action: "concept",
+            mainAsset,
+            pattern,
+          },
+        ],
+      },
+    ],
+  });
+}
+//大量追加ここまで
+
+
+
+
+
 function normalizeOriginMagicCircleTimelineJson(rawJson){
   const parsed=typeof rawJson==='string'?JSON.parse(rawJson):rawJson||{};
   const timeline=Array.isArray(parsed.timeline)?parsed.timeline:[];
@@ -836,48 +1694,32 @@ cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson({
           },
         },
         {
-          text: `画像の絵を見てjsonを出力
+          text: `画像の魔法陣を見てjsonのみ出力
 
 {
   "magicName": "画像から連想した厨二病風の魔法名",
   "artScore": 0,
-  "timeline": [
-    {"time":0,"actions":[{"action":"spawn","id":"core1","assetFileName":"魔法陣3","objectCount":1,"position":"self_position","objectSize":"large"},{"action":"spawn","id":"fire1","assetFileName":"炎球","objectCount":3,"position":"above_self","objectSize":"medium"}]},
-    {"time":1.5,"actions":[{"action":"move","id":"fire1","targetPosition":"enemy_position"},{"action":"spawn","id":"storm1","assetFileName":"竜巻","objectCount":1,"position":"battlefield_center","objectSize":"large"}]},
-    {"time":4,"actions":[{"action":"spawn","id":"finish1","assetFileName":"大爆発","objectCount":1,"position":"enemy_position","objectSize":"large"},{"action":"despawn","id":"core1"}]}
-  ]
+  "mainAsset": "雷"
 }
 
 ルール:
+- JSON以外は禁止
 - magicNameは厨二病風
-- artScoreは0~100
-- assetFileName一覧: ${Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP).join(",")}
-- timelineは5〜9個、timeは0〜10秒で昇順
-- 各timeのactions数は自由。ただし魔法全体でspawnを最低5回行う
-- assetFileNameは魔法全体で最低4種類
-- 同じtimeに複数素材を重ねてもよく、時間差で追加してもよい
-- objectCountは1〜5。群れ・弾幕・粒子表現には3〜5を使う
-- 単発ではなく、複数素材が重なった派手な演出にする*important`
+- artScoreは0〜100。無意味な絵は20前後。何を表したいのかギリ読み取れるなら50前後
+- mainAssetは必ず次の一覧から1つだけ選ぶ
+${Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP).join(",")}
+- mainAssetは画像から最も連想される主役素材にする
+- timeline, timedVisualEffects, damageTimingsは出力しない`,
         },
       ]);
 
       const rawText = String(response.response.text() || "").trim();
-      const jsonText = extractJsonText(rawText);
-      const originalTimelineJson = JSON.parse(jsonText);
-      const timelineJson = normalizeOriginMagicCircleTimelineJson(originalTimelineJson);
-      const expandedEffectJson = expandOriginMagicCircleTimelineToEffectJson(timelineJson);
-      
-      
-      const damageInfo = createOriginMagicCircleDamageTimings(
-  expandedEffectJson,
-  expandedEffectJson.artScore
-);
+const jsonText = extractJsonText(rawText);
 
-const magicEffectJson = normalizeOriginMagicCircleEffectJson({
-  ...expandedEffectJson,
-  totalDamage: damageInfo.totalDamage,
-  damageTimings: damageInfo.damageTimings,
-});
+const originalConceptJson = JSON.parse(jsonText);
+const conceptJson = normalizeOriginMagicCircleConceptJson(originalConceptJson);
+
+const magicEffectJson = buildOriginMagicCircleEffectFromConcept(conceptJson);
 
 const appended = await appendOriginMagicCircleSpellCache({
   imageHash,
@@ -907,9 +1749,9 @@ console.log("[origin-magic-circle] response magicEffectJson:", {
 
     return res.json({
   magicEffectJson,
-  originalTimelineJson,
+  originalConceptJson,
+  conceptJson,
 
-  // 新規生成時は、今回のhashがそのままキャッシュ本体のhash
   imageHash,
   spellHash: imageHash,
 
