@@ -5236,30 +5236,6 @@ const objectCount = Math.max(
 }
 
 
-    const visualEndSeconds = effectJson.timedVisualEffects.reduce((max, timedEffect) => {
-    const start = Math.max(0, Number(timedEffect.startTimeSeconds) || 0);
-    const visualObjects = Array.isArray(timedEffect.visualObjects)
-      ? timedEffect.visualObjects
-      : [];
-
-    const localMax = visualObjects.reduce((innerMax, obj) => {
-      const life = Math.max(0.5, Number(obj.lifeTimeSeconds) || 0.5);
-      return Math.max(innerMax, start + life);
-    }, start);
-
-    return Math.max(max, localMax);
-  }, 0);
-
-  const damageEndSeconds = damageTimings.reduce((max, timing) => {
-    return Math.max(max, Math.max(0, Number(timing.timeSeconds) || 0));
-  }, 0);
-
-  const endMs = Math.ceil(Math.max(visualEndSeconds, damageEndSeconds) * 1000) + 450;
-
-  await new Promise((resolve) => setTimeout(resolve, endMs));
-
-  
-}
 
 
 
@@ -6581,6 +6557,7 @@ const animate = () => {
 
 
   animate();
+}
 
 refs.createRoomBtn?.addEventListener("click", async () => {
   if (!userTrackingId) {
