@@ -26,7 +26,7 @@ const ORIGIN_TUTORIAL_DISMISSED_KEY = "originMagicCircleTutorialDismissed";
 
 
 
-function installDoubleTapZoomBlocker() {
+function installMobileZoomBlocker() {
   let lastTouchEndAt = 0;
 
   document.addEventListener(
@@ -42,9 +42,43 @@ function installDoubleTapZoomBlocker() {
     },
     { passive: false }
   );
+
+  document.addEventListener(
+    "touchmove",
+    (event) => {
+      if (event.touches && event.touches.length >= 2) {
+        event.preventDefault();
+      }
+    },
+    { passive: false }
+  );
+
+  document.addEventListener(
+    "gesturestart",
+    (event) => {
+      event.preventDefault();
+    },
+    { passive: false }
+  );
+
+  document.addEventListener(
+    "gesturechange",
+    (event) => {
+      event.preventDefault();
+    },
+    { passive: false }
+  );
+
+  document.addEventListener(
+    "gestureend",
+    (event) => {
+      event.preventDefault();
+    },
+    { passive: false }
+  );
 }
 
-installDoubleTapZoomBlocker();
+installMobileZoomBlocker();
 
 
 
@@ -2797,6 +2831,13 @@ if (ev) ev.textContent = `${battleState.enemyHp}/${ORIGIN_MAGIC_CIRCLE_MAX_HP}`;
 
 let magicCircleUiController = null;
 
+let isTurnActionLocked = false;
+
+function setTurnActionLocked(locked) {
+  isTurnActionLocked = Boolean(locked);
+  renderTurnUi();
+}
+
 function isMyTurn() {
   if (isOriginDebugTestRoom) return true;
   return String(battleState.currentTurnOwnerId || "") === String(userTrackingId || "");
@@ -2858,7 +2899,7 @@ function renderTurnUi() {
   modal.style.transform = "translateX(-50%) scale(1)";
 }
 
-  magicCircleUiController?.setInputEnabled?.(myTurn);
+  magicCircleUiController?.setInputEnabled?.(myTurn && !isTurnActionLocked);
 }
 
 function applyRoomTurnState(room) {
@@ -3224,14 +3265,12 @@ await playMagicVisualEffects(effectJson, false);
 
     if (battleState.gameEnded) return;
 
-await showMagicNameCenterAsync(effectJson?.magicName, false);
+setTurnActionLocked(true);
 
-if (battleState.gameEnded) return;
+try {
+  await playMagicCastWithName(effectJson, false);
 
-await playMagicVisualEffects(effectJson, false);
-
-if (!battleState.gameEnded) {
-  try {
+  if (!battleState.gameEnded) {
     const nextRoom = await callApi("/api/origin-magic-circle/turn/end", {
       roomId: currentRoom?.roomId,
       userTrackingId,
@@ -3239,10 +3278,24 @@ if (!battleState.gameEnded) {
 
     currentRoom = nextRoom;
     applyRoomTurnState(nextRoom);
-  } catch (error) {
-    console.warn("[origin-magic-circle] turn end failed:", error);
   }
+} catch (error) {
+  console.warn("[origin-magic-circle] own magic flow failed:", error);
+
+  try {
+    const latestRoom = await callApi(
+      `/api/origin-magic-circle/rooms/${encodeURIComponent(currentRoom?.roomId || "")}`
+    );
+    currentRoom = latestRoom;
+    applyRoomTurnState(latestRoom);
+  } catch (refreshError) {
+    console.warn("[origin-magic-circle] room refresh after magic failed:", refreshError);
+  }
+} finally {
+  setTurnActionLocked(false);
 }
+
+    
   },
 
   hideTopModalOnce: () => {
@@ -5050,7 +5103,26 @@ applyMagicColor(root, visualObject.colorHexCode);
   activeMagicObjects.push(active);
   return active;
 }
-async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
+function getMagicEffectEndSeconds(effectJson) {
+  let end = 0;
+
+  for (const timedEffect of effectJson?.timedVisualEffects || []) {
+    const start = Math.max(0, Number(timedEffect?.startTimeSeconds) || 0);
+
+    for (const visualObject of timedEffect?.visualObjects || []) {
+      const life = Math.max(0.5, Number(visualObject?.lifeTimeSeconds) || 0);
+      end = Math.max(end, start + life);
+    }
+  }
+
+  for (const timing of effectJson?.damageTimings || []) {
+    end = Math.max(end, Math.max(0, Number(timing?.timeSeconds) || 0));
+  }
+
+  return Math.min(Math.max(end, 1), 12);
+}
+
+async function playMagicVisualEffects(effectJson, isEnemyCast = false, options = {}) {
   if (battleState.gameEnded) return;
 
   if (!effectJson || !Array.isArray(effectJson.timedVisualEffects)) {
@@ -5062,7 +5134,9 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
     return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   }
 
+  if (!options.assetsAlreadyLoaded) {
   await ensureMagicJsonAssetsLoaded(effectJson);
+}
 
   const casterSide = isEnemyCast ? "enemy" : "self";
 
@@ -5076,7 +5150,7 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
   const damageTimings = Array.isArray(effectJson?.damageTimings) ? effectJson.damageTimings : [];
   damageTimings.forEach((timing) => {
     const delay = Math.max(0, Number(timing.timeSeconds) || 0) * 1000;
-    setTimeout(() => {
+    setBattleTimeout(() => {
       
       
       if (battleState.gameEnded) return;
@@ -5115,7 +5189,7 @@ async function playMagicVisualEffects(effectJson, isEnemyCast = false) {
   effectJson.timedVisualEffects.forEach((timedEffect) => {
     const delaySeconds = clampNumber(timedEffect.startTimeSeconds, 0, 6, 0);
 
-    setTimeout(() => {
+    setBattleTimeout(() => {
       if (battleState.gameEnded) return;
       const visualObjects = Array.isArray(timedEffect.visualObjects)
         ? timedEffect.visualObjects
@@ -5134,6 +5208,32 @@ const objectCount = Math.max(
       });
     }, delaySeconds * 1000);
   });
+
+    const endMs = getMagicEffectEndSeconds(effectJson) * 1000 + 350;
+
+  await new Promise((resolve) => {
+    setBattleTimeout(resolve, endMs);
+  });
+}
+
+
+
+
+  async function playMagicCastWithName(effectJson, isEnemyCast = false) {
+  if (battleState.gameEnded) return;
+
+  await ensureMagicJsonAssetsLoaded(effectJson);
+
+  if (battleState.gameEnded) return;
+
+  await showMagicNameCenterAsync(effectJson?.magicName, isEnemyCast);
+
+  if (battleState.gameEnded) return;
+
+  await playMagicVisualEffects(effectJson, isEnemyCast, {
+    assetsAlreadyLoaded: true,
+  });
+}
 
 
     const visualEndSeconds = effectJson.timedVisualEffects.reduce((max, timedEffect) => {
@@ -6371,9 +6471,8 @@ if (socket) {
   // 自分が撃った魔法は、自分側ではすでに演出開始しているので再生しない
   if (cast.casterId === userTrackingId) return;
 
-  showMagicNameCenter(cast.magicEffectJson?.magicName, true, async () => {
-  if (battleState.gameEnded) return;
-  await playMagicVisualEffects(cast.magicEffectJson, true);
+  playMagicCastWithName(cast.magicEffectJson, true).catch((error) => {
+  console.warn("[origin-magic-circle] enemy magic flow failed:", error);
 });
 });
 
