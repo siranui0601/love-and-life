@@ -329,32 +329,34 @@ function makeVisualObject({
   targetOffset,
   rotationOffset,
   faceEnemy = false,
+  orbit,
 }) {
   return {
-    id,
-    assetFileName: toAssetFileName(asset),
-    objectCount: Math.round(clamp(count, 1, 12, 1)),
-    spawnPosition: position,
-    spawnSpreadPattern: spread,
-    colorHexCode: color,
-    objectSize: size,
-    lifeTimeSeconds: clamp(life, 0.5, 10, 4),
-    enterEffect: enter,
-    exitEffect: exit,
-    movement: {
-      targetPosition: target,
-      moveDurationSeconds: clamp(duration, 0, 10, 0),
-      movePathType: path,
-      targetOffset,
-    },
-    rotation: {
-      shouldRotate: rotate,
-      rotationSpeed,
-    },
-    positionOffset,
-    rotationOffset,
-    faceEnemy,
-  };
+  id,
+  assetFileName: toAssetFileName(asset),
+  objectCount: Math.round(clamp(count, 1, 12, 1)),
+  spawnPosition: position,
+  spawnSpreadPattern: spread,
+  colorHexCode: color,
+  objectSize: size,
+  lifeTimeSeconds: clamp(life, 0.5, 10, 4),
+  enterEffect: enter,
+  exitEffect: exit,
+  movement: {
+    targetPosition: target,
+    moveDurationSeconds: clamp(duration, 0, 10, 0),
+    movePathType: path,
+    targetOffset,
+  },
+  rotation: {
+    shouldRotate: rotate,
+    rotationSpeed,
+  },
+  positionOffset,
+  rotationOffset,
+  faceEnemy,
+  orbit,
+};
 }
 
 function makeTimedEffect(time, visualObjects) {
@@ -401,6 +403,66 @@ function createDamageTimingsFromImpactTimes(impactTimes, artScore) {
   };
 }
 
+
+
+
+const ORIGIN_SKY_COLOR_PALETTES = {
+  thunder: [
+    "#050816",
+    "#071A33",
+    "#10163A",
+    "#1A103A",
+    "#001C2E",
+    "#0C1028",
+  ],
+  fire: [
+    "#210600",
+    "#2A1105",
+    "#301108",
+    "#3A0900",
+    "#1E0B05",
+    "#2E1600",
+  ],
+  cosmic: [
+    "#03000A",
+    "#070012",
+    "#10051A",
+    "#120027",
+    "#050017",
+    "#0A0820",
+  ],
+  ice: [
+    "#061622",
+    "#102033",
+    "#071A2A",
+    "#001D2E",
+    "#0B1828",
+    "#11253A",
+  ],
+  machine: [
+    "#101010",
+    "#151515",
+    "#1A1812",
+    "#0F1418",
+    "#181A20",
+    "#0B0F12",
+  ],
+  default: [
+    "#130A22",
+    "#10051A",
+    "#0A1020",
+    "#160821",
+    "#081221",
+    "#1A102A",
+  ],
+};
+
+function pickSkyColor(kind = "default") {
+  return pick(ORIGIN_SKY_COLOR_PALETTES[kind] || ORIGIN_SKY_COLOR_PALETTES.default);
+}
+
+
+
 function getMainAssetProfile(mainAsset) {
   if (["雷", "プラズマ", "光球"].includes(mainAsset)) {
     return {
@@ -408,7 +470,7 @@ function getMainAssetProfile(mainAsset) {
       darkColor: "#081A38",
       circle: "魔法陣9",
       finish: "大爆発",
-      sky: "#10163A",
+      sky: pickSkyColor("thunder"),
     };
   }
 
@@ -418,7 +480,7 @@ function getMainAssetProfile(mainAsset) {
       darkColor: "#2A0800",
       circle: "魔法陣3",
       finish: "大爆発",
-      sky: "#2A1105",
+      sky: pickSkyColor("fire"),
     };
   }
 
@@ -428,7 +490,7 @@ function getMainAssetProfile(mainAsset) {
       darkColor: "#080018",
       circle: "魔法陣8",
       finish: "銀河",
-      sky: "#070012",
+      sky: pickSkyColor("cosmic"),
     };
   }
 
@@ -438,7 +500,7 @@ function getMainAssetProfile(mainAsset) {
       darkColor: "#071622",
       circle: "魔法陣2",
       finish: "大爆発",
-      sky: "#102033",
+      sky: pickSkyColor("ice"),
     };
   }
 
@@ -448,7 +510,7 @@ function getMainAssetProfile(mainAsset) {
       darkColor: "#1A1812",
       circle: "魔法陣10",
       finish: "大爆発",
-      sky: "#151515",
+      sky: pickSkyColor("machine"),
     };
   }
 
@@ -457,17 +519,20 @@ function getMainAssetProfile(mainAsset) {
     darkColor: "#10051A",
     circle: "魔法陣3",
     finish: "大爆発",
-    sky: "#130A22",
+    sky: pickSkyColor("default"),
   };
 }
 
-function buildVerticalCircleObject(id, asset, color, life = 4.8) {
+function buildVerticalCircleObject(id, asset, color, life = 3.8) {
   return makeVisualObject({
     id,
     asset,
     count: 1,
     position: "in_front_of_self",
-    size: "large",
+
+    // largeだと視界を塞ぎやすいのでmedium寄りにする
+    size: "medium",
+
     life,
     color,
     spread: "none",
@@ -476,19 +541,24 @@ function buildVerticalCircleObject(id, asset, color, life = 4.8) {
     path: "none",
     enter: "scale_up",
     exit: "scale_down",
-    rotate: true,
+
+    // 重要：縦魔法陣は回転させない
+    rotate: false,
     rotationSpeed: "slow",
 
-    // main.js側で対応する追加フィールド
     faceEnemy: true,
+
+    // 縦に立てる
     rotationOffset: {
       x: Math.PI / 2,
       y: 0,
       z: 0,
     },
+
+    // キャラ中心ではなく、少し前・少し上
     positionOffset: {
-      forward: 1.5,
-      y: 2.5,
+      forward: 3.2,
+      y: 2.4,
     },
   });
 }
@@ -524,20 +594,36 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
   add(0, [
     buildVerticalCircleObject("origin_vertical_circle", circleAsset, profile.color, 5.2),
     makeVisualObject({
-      id: "origin_charge_aura",
-      asset: pick(["オーラ", "光球", "シンプルリング", "雲"]),
-      count: 3,
-      position: "self_position",
-      size: "medium",
-      life: 3.2,
-      color: profile.color,
-      spread: "circle",
-      enter: "scale_up",
-      exit: "rise_to_sky",
-      rotate: true,
-      rotationSpeed: "fast",
-      positionOffset: { y: 1.5 },
-    }),
+  id: "origin_charge_aura",
+  asset: pick(["オーラ", "光球", "シンプルリング", "雲"]),
+  count: 3,
+  position: "self_position",
+  size: "medium",
+  life: 3.2,
+  color: profile.color,
+  spread: "circle",
+  enter: "scale_up",
+  exit: "rise_to_sky",
+
+  // オブジェクト自体の自転は弱める
+  rotate: Math.random() < 0.35,
+  rotationSpeed: "slow",
+
+  // キャラ中心ではなく、少し前・少し上
+  positionOffset: {
+    forward: 2.6,
+    y: 2.2,
+  },
+
+  // main.js側で追加する公転設定
+  orbit: {
+    centerPosition: "self_position",
+    radius: 3.8,
+    height: 2.0,
+    speed: 1.4,
+    verticalWobble: 0.45,
+  },
+}),
   ]);
 
   addScene(0, "sky_color", {
