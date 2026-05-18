@@ -66,8 +66,8 @@ function normalizeOriginMagicCircleShape64(rawShape64) {
 const ORIGIN_MAGIC_CIRCLE_MAX_HP = 1000;
 
 const ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP = {
-  "炎球": "fireball.glb",
-  "人魂と骸骨": "magic_voxel_skull_flat_shaded.glb",
+  "火": "fireball.glb",
+  "骸骨": "magic_voxel_skull_flat_shaded.glb",
   "竜巻": "stylized_fire_tornado.glb",
   "不死鳥": "phoenix_bird.glb",
   "月": "truth_about_the_dark_side_of_the_moon.glb",
@@ -562,6 +562,134 @@ function buildVerticalCircleObject(id, asset, color, life = 3.8) {
     },
   });
 }
+
+
+
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTemporaryGeminiError(error) {
+  const status = Number(error?.status || error?.response?.status || 0);
+  const message = String(error?.message || "");
+
+  return (
+    status === 429 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504 ||
+    message.includes("503") ||
+    message.includes("Service Unavailable") ||
+    message.includes("high demand")
+  );
+}
+
+async function generateGeminiContentWithRetry({
+  genAI,
+  modelName,
+  contents,
+  maxAttempts = 4,
+}) {
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      return await model.generateContent(contents);
+    } catch (error) {
+      lastError = error;
+
+      if (!isTemporaryGeminiError(error) || attempt >= maxAttempts) {
+        throw error;
+      }
+
+      const waitMs =
+        700 * Math.pow(2, attempt - 1) +
+        Math.floor(Math.random() * 400);
+
+      console.warn("[origin-magic-circle] gemini retry:", {
+        attempt,
+        nextAttempt: attempt + 1,
+        waitMs,
+        status: error?.status,
+        message: String(error?.message || "").slice(0, 200),
+      });
+
+      await sleep(waitMs);
+    }
+  }
+
+  throw lastError;
+}
+
+function pickByStableHash(values, seed, salt = "") {
+  const list = values.filter(Boolean);
+  if (!list.length) return "";
+
+  const hash = crypto
+    .createHash("sha256")
+    .update(`${seed || "fallback"}:${salt}`)
+    .digest("hex");
+
+  const index = parseInt(hash.slice(0, 8), 16) % list.length;
+  return list[index];
+}
+
+function estimateFallbackArtScore(strokeJson) {
+  try {
+    const parsed = JSON.parse(String(strokeJson || ""));
+    const strokes = Array.isArray(parsed?.strokes) ? parsed.strokes : [];
+
+    const strokeCount = strokes.length;
+    const pointCount = strokes.reduce((sum, stroke) => {
+      return sum + Math.floor((Array.isArray(stroke) ? stroke.length : 0) / 2);
+    }, 0);
+
+    return Math.round(
+      clamp(30 + strokeCount * 4 + pointCount / 10, 25, 85, 50)
+    );
+  } catch {
+    return 50;
+  }
+}
+
+function createFallbackOriginMagicCircleConcept({
+  imageHash,
+  strokeJson,
+  shape64,
+}) {
+  const seed = imageHash || shape64 || String(Date.now());
+
+  const mainAsset = pickByStableHash(
+    Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP),
+    seed,
+    "mainAsset"
+  );
+
+  const prefix = pickByStableHash(
+    ["虚空", "終焉", "蒼雷", "紅蓮", "氷獄", "星骸", "神罰", "深淵", "天翔", "黒翼"],
+    seed,
+    "prefix"
+  );
+
+  const suffix = pickByStableHash(
+    ["断罪", "審判", "解放", "轟臨", "葬送", "崩壊", "輪舞", "召喚", "聖歌", "咆哮"],
+    seed,
+    "suffix"
+  );
+
+  return {
+    magicName: `${prefix}の${suffix}`,
+    artScore: estimateFallbackArtScore(strokeJson),
+    mainAsset,
+  };
+}
+
+
+
+
 
 function buildOriginMagicCircleEffectFromConcept(concept) {
   const magicName = concept.magicName;
@@ -1779,17 +1907,15 @@ cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson({
 }
 
 
-
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-      const response = await model.generateContent([
-        {
-          inlineData: {
-            mimeType: "image/png",
-            data: base64ImageFile,
-          },
-        },
-        {
-          text: `画像の魔法陣を見てjsonのみ出力
+const geminiContents = [
+  {
+    inlineData: {
+      mimeType: "image/png",
+      data: base64ImageFile,
+    },
+  },
+  {
+    text: `画像の魔法陣を見てjsonのみ出力
 
 {
   "magicName": "画像から連想した厨二病風の魔法名",
@@ -1805,16 +1931,57 @@ cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson({
 ${Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP).join(",")}
 - mainAssetは画像から最も連想される主役素材にする
 - timeline, timedVisualEffects, damageTimingsは出力しない`,
-        },
-      ]);
+  },
+];
 
-      const rawText = String(response.response.text() || "").trim();
-const jsonText = extractJsonText(rawText);
+let originalConceptJson = null;
+let conceptJson = null;
+let usedLocalFallback = false;
 
-const originalConceptJson = JSON.parse(jsonText);
-const conceptJson = normalizeOriginMagicCircleConceptJson(originalConceptJson);
+try {
+  const response = await generateGeminiContentWithRetry({
+    genAI,
+    modelName: "gemini-2.5-flash-lite",
+    contents: geminiContents,
+    maxAttempts: 4,
+  });
+
+  const rawText = String(response.response.text() || "").trim();
+  const jsonText = extractJsonText(rawText);
+
+  originalConceptJson = JSON.parse(jsonText);
+  conceptJson = normalizeOriginMagicCircleConceptJson(originalConceptJson);
+} catch (error) {
+  if (!isTemporaryGeminiError(error)) {
+    throw error;
+  }
+
+  usedLocalFallback = true;
+
+  conceptJson = createFallbackOriginMagicCircleConcept({
+    imageHash,
+    strokeJson,
+    shape64,
+  });
+
+  originalConceptJson = {
+    ...conceptJson,
+    fallbackReason: "gemini_temporary_error",
+    fallbackStatus: error?.status || "",
+  };
+
+  console.warn("[origin-magic-circle] gemini unavailable, local fallback used:", {
+    status: error?.status,
+    magicName: conceptJson.magicName,
+    mainAsset: conceptJson.mainAsset,
+    artScore: conceptJson.artScore,
+  });
+}
 
 const magicEffectJson = buildOriginMagicCircleEffectFromConcept(conceptJson);
+
+
+    
 
 const appended = await appendOriginMagicCircleSpellCache({
   imageHash,
@@ -1853,10 +2020,14 @@ console.log("[origin-magic-circle] response magicEffectJson:", {
   strokeJson,
   shape64,
   fromCache: false,
+  fromFallback: usedLocalFallback,
 });
     } catch (error) {
       console.error("[origin-magic-circle] chant title error:", error);
-      return res.status(500).json({ error: "gemini_failed" });
+      return res.status(500).json({
+  error: "chant_failed",
+  detail: String(error?.message || "").slice(0, 200),
+});
     }
   });
 
