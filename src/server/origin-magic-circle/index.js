@@ -636,6 +636,15 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
     strength: 0.45,
   });
 
+  addScene(0.1, "camera_move", {
+  durationSeconds: 0.85,
+  holdSeconds: 0.45,
+  right: pick([-4.5, 4.5]),
+  y: 2.2,
+  forward: -1.8,
+  lookAt: "self",
+});
+
   const family = pattern;
 
   if (
