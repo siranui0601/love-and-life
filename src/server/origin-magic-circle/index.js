@@ -259,6 +259,18 @@ const ORIGIN_MAGIC_CIRCLE_PATTERN_POOL = [
   "multi_phase_barrage",
   "silence_then_flash",
   "all_range_finale",
+  "far_projectile_impact",
+  "gather_then_release",
+  "enemy_wide_impale",
+  "linked_magic_circles",
+  "ice_bullet_stab",
+  "meteor_impact",
+  "sky_to_ground_lightning",
+  "diagonal_lightning_slash",
+  "field_lightning_rain",
+  "portal_projectile_burst",
+  "camera_sky_execution",
+  "low_angle_summon",
 ];
 
 function uniqueArray(values) {
@@ -325,11 +337,13 @@ function makeVisualObject({
   exit = "scale_down",
   rotate = true,
   rotationSpeed = "normal",
+  rotationAxis,
   positionOffset,
   targetOffset,
   rotationOffset,
   faceEnemy = false,
   orbit,
+  lightningStyle,
 }) {
   return {
   id,
@@ -351,11 +365,13 @@ function makeVisualObject({
   rotation: {
     shouldRotate: rotate,
     rotationSpeed,
+    axis: rotationAxis,
   },
   positionOffset,
   rotationOffset,
   faceEnemy,
   orbit,
+  lightningStyle,
 };
 }
 
@@ -734,21 +750,21 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
   exit: "rise_to_sky",
 
   // オブジェクト自体の自転は弱める
-  rotate: Math.random() < 0.35,
+  rotate: Math.random() < 0.25,
   rotationSpeed: "slow",
 
   // キャラ中心ではなく、少し前・少し上
   positionOffset: {
-    forward: 2.6,
+    forward: 2.8,
     y: 2.2,
   },
 
   // main.js側で追加する公転設定
   orbit: {
     centerPosition: "self_position",
-    radius: 3.8,
-    height: 2.0,
-    speed: 1.4,
+    radius: 4.2,
+    height: 2.2,
+    speed: 1.15,
     verticalWobble: 0.45,
   },
 }),
@@ -957,7 +973,7 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
       spread: "none",
       enter: "scale_up",
       exit: "sink_into_ground",
-      rotate: true,
+      rotate: false,
       rotationSpeed: "slow",
       faceEnemy: true,
       positionOffset: { forward: 3, y: 2 },
@@ -1090,7 +1106,7 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
       spread: "none",
       enter: "rise_from_ground",
       exit: "rise_to_sky",
-      rotate: true,
+      rotate: false,
       rotationSpeed: "slow",
       faceEnemy: true,
       positionOffset: { forward: -2, y: 3 },

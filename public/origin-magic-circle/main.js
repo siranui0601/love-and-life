@@ -208,6 +208,35 @@ const customEffectNames = new Set([
   "crystal_shard",
   "simple_ring",
 ]);
+const gateAssetNames = new Set([
+  "sculptjanuary2021_-_day_05_-_magic_gate.glb",
+  "executor_warp_gate.glb",
+  "stargate.glb",
+  "japanese_tori_gate.glb",
+  "torii_gate_lighthouse.glb",
+]);
+const magicCircleAssetNames = new Set([
+  "35b59066261a4a0a8c113da5b5a988e9.glb",
+  "2024zhongqiu_4_loop.glb",
+  "eff_huanguang.glb",
+  "829e78a8ee3548369f3ac92c41a2ee74.glb",
+  "27444eb10a4f4409b4a2649738ec7441.glb",
+  "c7ba0550fe034f29bfb54ca75b7eb1f6.glb",
+  "fd37b7bec4ca48a8b6539dc4048787cf.glb",
+  "technology_aperture_out.glb",
+  "appearance_effect_light_beam.glb",
+  "303ac171bafb4998950b741d7c89aa94.glb",
+]);
+const noAutoSpinAssetNames = new Set([
+  ...gateAssetNames,
+  ...magicCircleAssetNames,
+  "animated_effect.glb",
+  "duchess_shield.glb",
+  "wings_03.glb",
+  "wing_379.glb",
+  "hell_wings.glb",
+  "low_poly__wings.glb",
+]);
 
 //変更10
 const summonAssetSizePresets = {
@@ -3205,7 +3234,7 @@ await showMagicNameCenterAsync(effectJson?.magicName, false);
 
 if (battleState.gameEnded) return;
 
-await playMagicVisualEffects(effectJson, false);
+await playMagicCastWithName(effectJson, false);
       if (!battleState.gameEnded) {
   try {
     const nextRoom = await callApi("/api/origin-magic-circle/turn/end", {
@@ -3694,47 +3723,28 @@ function applyAssetSpecificMaterialFix(root, assetName) {
 }
 }
 
-function createLightningEffect() {
+function createLightningEffect(visualObject = {}) {
   const root = new Group();
-
-  const createBolt = (offsetX = 0) => {
-    const geometry = new BufferGeometry();
-    const points = [];
-
-    const segmentCount = 12;
-    const height = 4;
-
-    for (let i = 0; i <= segmentCount; i += 1) {
-      const t = i / segmentCount;
-      const y = height * (1 - t);
-      const x = offsetX + (Math.random() - 0.5) * 0.35;
-      const z = (Math.random() - 0.5) * 0.35;
-      points.push(x, y, z);
-    }
-
+  const style = String(visualObject.lightningStyle || "").trim() || "pillar";
+  const colorHex = String(visualObject.colorHexCode || "#8FEAFF");
+  const color = /^#[0-9a-fA-F]{6}$/.test(colorHex) ? Number(`0x${colorHex.slice(1)}`) : 0x88ccff;
+  const objectSize = visualObject.objectSize || "medium";
+  const boltCount = style === "storm" ? 18 : style === "road" ? 10 : style === "slash" ? 6 : style === "chain" ? 8 : objectSize === "large" ? 9 : objectSize === "small" ? 3 : 5;
+  const height = objectSize === "large" ? 18 : objectSize === "small" ? 7 : 12;
+  const radius = style === "storm" ? 8 : style === "road" ? 5 : style === "chain" ? 4 : 1.2;
+  const createBoltLine = (index) => { const geometry = new BufferGeometry(); const points = []; const segmentCount = 18;
+    for (let i = 0; i <= segmentCount; i += 1) { const t = i / segmentCount; let x = 0; let y = height * (1 - t); let z = 0;
+      if (style === "storm") { const angle = (Math.PI * 2 * index) / boltCount; const r = radius * (0.35 + Math.random() * 0.65); x = Math.cos(angle) * r + (Math.random() - 0.5) * 0.8; z = Math.sin(angle) * r + (Math.random() - 0.5) * 0.8; }
+      else if (style === "road") { z = -radius + (radius * 2 * index) / Math.max(1, boltCount - 1); x = (Math.random() - 0.5) * 0.7; }
+      else if (style === "slash") { x = -4 + t * 8 + (Math.random() - 0.5) * 0.5; y = height * 0.75 - t * height * 0.75; z = (index - boltCount / 2) * 0.25 + (Math.random() - 0.5) * 0.35; }
+      else if (style === "chain") { const angle = t * Math.PI * 2 + index; x = Math.cos(angle) * radius * (1 - t * 0.5); z = Math.sin(angle) * radius * (1 - t * 0.5); }
+      else { x = (Math.random() - 0.5) * 0.8; z = (Math.random() - 0.5) * 0.8; } points.push(x, y, z); }
     geometry.setAttribute("position", new Float32BufferAttribute(points, 3));
-
-    const material = new LineBasicMaterial({
-      color: 0x88ccff,
-      transparent: true,
-      opacity: 0.95,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      toneMapped: false,
-    });
-
-    return new Line(geometry, material);
-  };
-
-  root.add(createBolt(0));
-  root.add(createBolt(-0.25));
-  root.add(createBolt(0.25));
-
-  root.userData.effectType = "lightning";
-  root.userData.lastUpdate = 0;
-
-  return root;
-}
+    const material = new LineBasicMaterial({ color, transparent: true, opacity: 0.75 + Math.random() * 0.25, blending: AdditiveBlending, depthWrite: false, toneMapped: false });
+    return new Line(geometry, material); };
+  for (let i = 0; i < boltCount; i += 1) root.add(createBoltLine(i));
+  if (objectSize === "large" || style === "pillar") { const core = new Mesh(new CylinderGeometry(0.08, 0.18, height, 10, 1, true), new MeshBasicMaterial({ color, transparent: true, opacity: 0.35, blending: AdditiveBlending, depthWrite: false, side: DoubleSide, toneMapped: false })); core.position.y = height / 2; core.userData.role = "lightning_core"; root.add(core);}
+  root.userData.effectType = "lightning"; root.userData.lightningStyle = style; root.userData.lightningHeight = height; root.userData.lastUpdate = 0; return root; }
 function getPreferredAnimationClip(assetName, animations = []) {
   if (!animations.length) return null;
 
@@ -3848,30 +3858,35 @@ function updateCustomEffect(root, elapsed, delta) {
   if (!type) return;
 
   if (type === "lightning") {
-  if (elapsed - root.userData.lastUpdate < 0.05) return;
+  if (elapsed - root.userData.lastUpdate < 0.035) return;
   root.userData.lastUpdate = elapsed;
-
-  root.children.forEach((line, lineIndex) => {
-    const position = line.geometry.attributes.position;
+  const style = root.userData.lightningStyle || "pillar";
+  const height = root.userData.lightningHeight || 12;
+  root.children.forEach((child, lineIndex) => {
+    if (child.userData.role === "lightning_core") {
+      if (child.material) child.material.opacity = 0.18 + Math.random() * 0.28;
+      const s = 0.85 + Math.random() * 0.35;
+      child.scale.set(s, 1, s);
+      return;
+    }
+    if (!child.geometry?.attributes?.position) return;
+    const position = child.geometry.attributes.position;
     const segmentCount = position.count - 1;
-    const height = 4;
-    const offsetX = lineIndex === 1 ? -0.25 : lineIndex === 2 ? 0.25 : 0;
-
     for (let i = 0; i <= segmentCount; i += 1) {
       const t = i / segmentCount;
-      const y = height * (1 - t);
-      const x = offsetX + (Math.random() - 0.5) * 0.45;
-      const z = (Math.random() - 0.5) * 0.45;
+      let x = position.getX(i);
+      let y = height * (1 - t);
+      let z = position.getZ(i);
+      if (style === "storm") { x += (Math.random() - 0.5) * 0.55; z += (Math.random() - 0.5) * 0.55; }
+      else if (style === "road") { x = (Math.random() - 0.5) * 0.9; z += (Math.random() - 0.5) * 0.25; }
+      else if (style === "slash") { x += (Math.random() - 0.5) * 0.35; y += (Math.random() - 0.5) * 0.3; z += (Math.random() - 0.5) * 0.35; }
+      else if (style === "chain") { const angle = t * Math.PI * 2 + elapsed * 4 + lineIndex; x = Math.cos(angle) * (3.2 - t * 1.5) + (Math.random() - 0.5) * 0.25; z = Math.sin(angle) * (3.2 - t * 1.5) + (Math.random() - 0.5) * 0.25; }
+      else { x = (Math.random() - 0.5) * 0.8; z = (Math.random() - 0.5) * 0.8; }
       position.setXYZ(i, x, y, z);
     }
-
     position.needsUpdate = true;
-
-    if (line.material) {
-      line.material.opacity = 0.55 + Math.random() * 0.45;
-    }
+    if (child.material) child.material.opacity = 0.45 + Math.random() * 0.55;
   });
-
   return;
 }
 
@@ -4568,8 +4583,8 @@ function createSimpleRingEffect() {
 
 
 
-function createCustomEffectByName(assetName) {
-  if (assetName === "lightning") return createLightningEffect();
+function createCustomEffectByName(assetName, visualObject = {}) {
+  if (assetName === "lightning") return createLightningEffect(visualObject);
   if (assetName === "explosion_burst") return createExplosionBurstEffect();
   if (assetName === "mist_cloud") return createMistCloudEffect();
   if (assetName === "light_orb") return createLightOrbEffect();
@@ -4752,18 +4767,24 @@ function applyRelativeOffsetToPosition(position, offset = {}, casterSide = "self
   return result;
 }
 
+function getFaceEnemyYaw(casterSide = "self") {
+  const { self, enemy } = getBattleActors(casterSide);
+  const dir = new Vector3().subVectors(enemy.position, self.position).setY(0);
+  if (dir.lengthSq() <= 0.0001) return 0;
+  dir.normalize();
+  return Math.atan2(dir.x, dir.z);
+}
 function applyVisualObjectRotationOptions(root, visualObject, casterSide = "self") {
   if (!root || !visualObject) return;
-
-  if (visualObject.faceEnemy) {
-    const { enemy } = getBattleActors(casterSide);
-    root.lookAt(enemy.position.clone().add(new Vector3(0, 3, 0)));
+  const assetName = String(visualObject?.assetFileName || "");
+  if (visualObject?.faceEnemy === true) {
+    root.rotation.y += getFaceEnemyYaw(casterSide);
   }
-
   const offset = visualObject.rotationOffset || {};
   root.rotation.x += Number(offset.x) || 0;
   root.rotation.y += Number(offset.y) || 0;
   root.rotation.z += Number(offset.z) || 0;
+  if (gateAssetNames.has(assetName)) root.userData.rotationLocked = true;
 }
 
 
@@ -4889,9 +4910,6 @@ function getSpawnPositionByName(
       .setY(preset.y);
   }
 
-  base.x += preset.offsetX || 0;
-  base.z += preset.offsetZ || 0;
-
   return applySpawnSpread(
     base,
     forward,
@@ -4929,7 +4947,7 @@ function getTargetPositionByName(positionName, assetName, objectSize = "medium",
 
   return centerPos.clone().setY(preset.y);
 }
-function createMagicObjectRoot(assetName) {
+function createMagicObjectRoot(assetName, visualObject = {}) {
   const source = summonAssetSources.get(assetName);
 
   if (!source) {
@@ -4940,7 +4958,7 @@ function createMagicObjectRoot(assetName) {
   let root;
 
   if (source.isCustom) {
-    root = createCustomEffectByName(assetName);
+    root = createCustomEffectByName(assetName, visualObject);
   } else {
     root = skeletonClone(source.gltf.scene);
 
@@ -4983,6 +5001,25 @@ function getRotationSpeedValue(rotationSpeed) {
 }
 
 
+
+function normalizeRotationAxis(value, assetName) {
+  if (value === "x") return "x";
+  if (value === "y") return "y";
+  if (value === "z") return "z";
+  if (magicCircleAssetNames.has(assetName)) return "z";
+  return "y";
+}
+function shouldAutoSpinAsset(assetName, visualObject) {
+  if (visualObject?.rotation?.shouldRotate !== true) return false;
+  if (gateAssetNames.has(assetName)) return false;
+  if (noAutoSpinAssetNames.has(assetName)) return false;
+  return true;
+}
+function applyAutoSpin(root, delta, speed, axis) {
+  if (axis === "x") return void (root.rotation.x += delta * speed);
+  if (axis === "z") return void (root.rotation.z += delta * speed);
+  root.rotation.y += delta * speed;
+}
 function normalizeEnterEffect(value) {
   if (value === "fall_from_sky") return "fall_from_sky";
   if (value === "rise_from_ground") return "rise_from_ground";
@@ -5135,8 +5172,10 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
   const objectSize = visualObject.objectSize || "medium";
   const preset = getAssetSizePreset(assetName, objectSize);
 
-  const root = createMagicObjectRoot(assetName);
-  if (!root) return null;
+  const modelRoot = createMagicObjectRoot(assetName, visualObject);
+  if (!modelRoot) return null;
+  const root = new Group();
+  root.add(modelRoot);
 
 
 const baseSpawnPosition = getSpawnPositionByName(
@@ -5170,6 +5209,8 @@ const targetPosition = applyRelativeOffsetToPosition(
   casterSide
 );
 
+const safeScale = preset.scale || 1;
+modelRoot.position.set((preset.offsetX || 0) / safeScale, 0, (preset.offsetZ || 0) / safeScale);
 root.position.copy(spawnPosition);
 root.scale.setScalar(preset.scale);
 root.userData.currentScale = preset.scale;
@@ -5180,10 +5221,10 @@ root.rotation.z += preset.rotationZ || 0;
 
 applyVisualObjectRotationOptions(root, visualObject, casterSide);
 
-applyMagicColor(root, visualObject.colorHexCode);
+applyMagicColor(modelRoot, visualObject.colorHexCode);
 
   if (assetName === "explosion_burst") {
-    resetExplosionBurst(root);
+    resetExplosionBurst(modelRoot);
   }
 
   scene.add(root);
@@ -5210,6 +5251,8 @@ applyMagicColor(root, visualObject.colorHexCode);
 
   const active = {
   root,
+  modelRoot,
+  effectRoot: modelRoot,
   assetName,
   startTime: clock.elapsedTime,
   lifeTime: clampNumber(visualObject.lifeTimeSeconds, 0.5, 10, 8),
@@ -5586,9 +5629,9 @@ function updateActiveMagicObjects(elapsed, delta) {
     const item = activeMagicObjects[i];
     const age = elapsed - item.startTime;
 
-    updateCustomEffect(item.root, elapsed, delta);
+    updateCustomEffect(item.effectRoot || item.root, elapsed, delta);
 
-    if (item.assetName === "explosion_burst" && item.root.userData.finished) {
+    if (item.assetName === "explosion_burst" && (item.effectRoot || item.root).userData.finished) {
       removeActiveMagicObject(i);
       continue;
     }
@@ -5607,7 +5650,7 @@ if (item.orbit) {
 }
 
 if (item.shouldRotate) {
-  item.root.rotation.y += delta * item.rotationSpeed;
+  applyAutoSpin(item.root, delta, item.rotationSpeed, item.rotationAxis);
 }
   }
 }
@@ -6095,7 +6138,7 @@ async function showPreviewAsset(assetName) {
   root.userData.currentScale = appliedScale;
 
   if (root.userData.effectType === "explosion_burst") {
-    resetExplosionBurst(root);
+    resetExplosionBurst(modelRoot);
   }
 
   scene.add(root);
@@ -6770,7 +6813,7 @@ showBattleResultScreen({ selfWon });}
         battleState.lastCastAt = Math.max(battleState.lastCastAt, cast.at || 0);
         if (battleState.processedCastIds.has(cast.id) || cast.casterId === userTrackingId) continue;
         battleState.processedCastIds.add(cast.id);
-        showMagicNameCenter(cast.magicEffectJson?.magicName, true, () => playMagicVisualEffects(cast.magicEffectJson, true));
+        showMagicNameCenter(cast.magicEffectJson?.magicName, true, () => playMagicCastWithName(cast.magicEffectJson, true));
       }
     } catch {}
   }, 1200);*/
