@@ -4770,7 +4770,73 @@ function applyVisualObjectRotationOptions(root, visualObject, casterSide = "self
 
 
 
+function getOrbitCenterPositionByName(positionName, assetName, objectSize = "medium", casterSide = "self") {
+  return getTargetPositionByName(
+    positionName || "self_position",
+    assetName,
+    objectSize,
+    casterSide
+  );
+}
 
+function normalizeVisualOrbitConfig(
+  visualObject,
+  assetName,
+  objectSize,
+  casterSide,
+  objectIndex = 0,
+  objectCount = 1
+) {
+  const orbit = visualObject?.orbit;
+  if (!orbit || typeof orbit !== "object") return null;
+
+  const center = getOrbitCenterPositionByName(
+    orbit.centerPosition || "self_position",
+    assetName,
+    objectSize,
+    casterSide
+  );
+
+  const radius = Math.max(1.2, Number(orbit.radius) || 3.5);
+  const height = Number(orbit.height) || 0;
+  const speed = Number(orbit.speed) || 1.2;
+  const verticalWobble = Math.max(0, Number(orbit.verticalWobble) || 0);
+
+  const angleStep = objectCount > 0 ? (Math.PI * 2) / objectCount : 0;
+  const startAngle =
+    Number(orbit.startAngle) ||
+    objectIndex * angleStep ||
+    Math.random() * Math.PI * 2;
+
+  return {
+    center,
+    radius,
+    height,
+    speed,
+    verticalWobble,
+    startAngle,
+    clockwise: orbit.clockwise !== false,
+  };
+}
+
+function applyStationaryOrbitMotion(active, age) {
+  if (!active?.orbit) return;
+
+  const orbit = active.orbit;
+  const direction = orbit.clockwise ? 1 : -1;
+  const angle = orbit.startAngle + age * orbit.speed * direction;
+
+  active.root.position.set(
+    orbit.center.x + Math.cos(angle) * orbit.radius,
+    orbit.center.y + orbit.height + Math.sin(age * orbit.speed * 1.7) * orbit.verticalWobble,
+    orbit.center.z + Math.sin(angle) * orbit.radius
+  );
+}
+
+
+
+
+  
 function getSpawnPositionByName(
   positionName,
   assetName,
@@ -5131,6 +5197,17 @@ applyMagicColor(root, visualObject.colorHexCode);
 
   const movePathType = movement.movePathType || "none";
 
+
+
+  const orbitConfig = normalizeVisualOrbitConfig(
+  visualObject,
+  assetName,
+  objectSize,
+  casterSide,
+  objectIndex,
+  objectCount
+);
+
   const active = {
   root,
   assetName,
@@ -5142,6 +5219,8 @@ applyMagicColor(root, visualObject.colorHexCode);
 
   moveDuration,
   movePathType,
+
+  orbit: orbitConfig,
 
   baseScale: preset.scale,
   enterEffect: normalizeEnterEffect(visualObject.enterEffect),
@@ -5266,6 +5345,99 @@ function triggerOriginSceneEffect(sceneEffect, casterSide = "self") {
 
     pulse();
   }
+
+  if (sceneEffect.type === "camera_move") {
+  const durationMs = Math.max(200, Number(sceneEffect.durationSeconds || 1.2) * 1000);
+  const holdMs = Math.max(0, Number(sceneEffect.holdSeconds || 0.4) * 1000);
+
+  const { self, enemy } = getBattleActors(casterSide);
+  const { forward, right } = getForwardAndRight(self, enemy);
+
+  const basePosition = camera.position.clone();
+  const baseQuaternion = camera.quaternion.clone();
+
+  const lookTarget = (() => {
+    if (sceneEffect.lookAt === "enemy") {
+      return enemy.position.clone().add(new Vector3(0, 3, 0));
+    }
+
+    if (sceneEffect.lookAt === "self") {
+      return self.position.clone().add(new Vector3(0, 3, 0));
+    }
+
+    return new Vector3(0, 3, 0);
+  })();
+
+  const targetPosition = basePosition
+    .clone()
+    .addScaledVector(forward, Number(sceneEffect.forward) || 0)
+    .addScaledVector(right, Number(sceneEffect.right) || 0);
+
+  targetPosition.y += Number(sceneEffect.y) || 0;
+
+  const startedAt = performance.now();
+
+  const move = () => {
+    if (battleState.gameEnded) {
+      camera.position.copy(basePosition);
+      camera.quaternion.copy(baseQuaternion);
+      return;
+    }
+
+    const elapsed = performance.now() - startedAt;
+    const t = Math.min(elapsed / durationMs, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+
+    camera.position.lerpVectors(basePosition, targetPosition, eased);
+    camera.lookAt(lookTarget);
+
+    if (typeof controls !== "undefined" && controls?.target) {
+      controls.target.copy(lookTarget);
+      controls.update?.();
+    }
+
+    if (t < 1) {
+      requestAnimationFrame(move);
+      return;
+    }
+
+    setBattleTimeout(() => {
+      const backStartedAt = performance.now();
+      const currentPosition = camera.position.clone();
+      const currentQuaternion = camera.quaternion.clone();
+
+      const back = () => {
+        if (battleState.gameEnded) {
+          camera.position.copy(basePosition);
+          camera.quaternion.copy(baseQuaternion);
+          return;
+        }
+
+        const backElapsed = performance.now() - backStartedAt;
+        const backT = Math.min(backElapsed / durationMs, 1);
+        const backEased = 1 - Math.pow(1 - backT, 3);
+
+        camera.position.lerpVectors(currentPosition, basePosition, backEased);
+        camera.quaternion.slerpQuaternions(currentQuaternion, baseQuaternion, backEased);
+
+        if (typeof controls !== "undefined" && controls?.target) {
+          controls.target.copy(lookTarget.clone().lerp(new Vector3(0, 2, 0), backEased));
+          controls.update?.();
+        }
+
+        if (backT < 1) {
+          requestAnimationFrame(back);
+        }
+      };
+
+      back();
+    }, holdMs);
+  };
+
+  move();
+  return;
+}
+  
 }
 
 function scheduleOriginSceneEffects(effectJson, casterSide = "self") {
@@ -5428,9 +5600,15 @@ function updateActiveMagicObjects(elapsed, delta) {
 
     applyMagicLifecycleTransform(item, age);
 
-    if (item.shouldRotate) {
-      item.root.rotation.y += delta * item.rotationSpeed;
-    }
+// 公転指定がある場合は、通常移動後に位置だけ上書きする
+// scale_up / exitEffect などのライフサイクル演出は維持される
+if (item.orbit) {
+  applyStationaryOrbitMotion(item, age);
+}
+
+if (item.shouldRotate) {
+  item.root.rotation.y += delta * item.rotationSpeed;
+}
   }
 }
 
