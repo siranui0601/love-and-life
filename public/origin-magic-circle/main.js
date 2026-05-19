@@ -211,6 +211,27 @@ const customEffectNames = new Set([
 
 
 
+const gateAssetNames = new Set([
+  "sculptjanuary2021_-_day_05_-_magic_gate.glb",
+  "executor_warp_gate.glb",
+  "stargate.glb",
+  "japanese_tori_gate.glb",
+  "torii_gate_lighthouse.glb",
+]);
+
+const magicCircleAssetNames = new Set([
+  "35b59066261a4a0a8c113da5b5a988e9.glb",
+  "2024zhongqiu_4_loop.glb",
+  "eff_huanguang.glb",
+  "829e78a8ee3548369f3ac92c41a2ee74.glb",
+  "27444eb10a4f4409b4a2649738ec7441.glb",
+  "c7ba0550fe034f29bfb54ca75b7eb1f6.glb",
+  "fd37b7bec4ca48a8b6539dc4048787cf.glb",
+  "technology_aperture_out.glb",
+  "appearance_effect_light_beam.glb",
+  "303ac171bafb4998950b741d7c89aa94.glb",
+]);
+
 const noSpinMainAssetNames = new Set([
   "cute_dragon.glb",
   "dragon.glb",
