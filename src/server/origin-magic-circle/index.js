@@ -281,6 +281,67 @@ const ORIGIN_MAGIC_CIRCLE_PATTERN_POOL = [
   "low_angle_summon",
 ];
 
+const noSpinMainAssets = new Set([
+  "キュートドラゴン",
+  "アニメドラゴン",
+  "弱ドラゴン",
+  "竜騎士",
+  "翔ぶドラゴン",
+  "トルーパー",
+  "戦車",
+  "戦闘機",
+  "ゲート1",
+  "ゲート2",
+  "鳥居",
+  "動く鳥居",
+]);
+const ORIGIN_FLAT_ASSET_NAMES = new Set([
+  "魔法陣", "魔法陣1", "魔法陣2", "魔法陣3", "魔法陣4", "魔法陣5", "魔法陣6", "魔法陣7", "魔法陣8", "魔法陣9", "魔法陣10",
+  "オーラ", "ゲート", "ゲート1", "ゲート2", "円盤", "鳥居", "動く鳥居", "シールド", "翼", "悪魔翼", "機械翼", "天使翼",
+]);
+const ORIGIN_CREATURE_ASSET_NAMES = new Set(["キュートドラゴン", "アニメドラゴン", "弱ドラゴン", "竜騎士", "翔ぶドラゴン", "不死鳥", "六足ロボ", "トルーパー"]);
+const ORIGIN_VEHICLE_ASSET_NAMES = new Set(["戦車", "戦闘機"]);
+const ORIGIN_PROJECTILE_ASSET_NAMES = new Set(["炎球", "プラズマ", "光球", "バレッド", "魂剣", "ギミック剣", "ツララ", "隕石", "雪結晶1", "雪結晶2", "ダイヤ"]);
+const ORIGIN_LIGHTNING_ASSET_NAMES = new Set(["雷"]);
+function getOriginAssetKind(assetName) {
+  const name = chooseMainAsset(assetName);
+  if (ORIGIN_LIGHTNING_ASSET_NAMES.has(name)) return "lightning";
+  if (ORIGIN_CREATURE_ASSET_NAMES.has(name)) return "creature";
+  if (ORIGIN_VEHICLE_ASSET_NAMES.has(name)) return "vehicle";
+  if (ORIGIN_FLAT_ASSET_NAMES.has(name)) return "flat";
+  if (ORIGIN_PROJECTILE_ASSET_NAMES.has(name)) return "projectile";
+  if (["月", "太陽", "銀河", "サイバー多面球", "二重螺旋球", "蠢く多面球", "多線球", "ハート", "キューブ", "捻れ球", "天球儀"].includes(name)) return "orb";
+  return "generic";
+}
+function shouldDisableSpinForAsset(assetName) {
+  const name = chooseMainAsset(assetName);
+  if (noSpinMainAssets.has(name)) return true;
+  const kind = getOriginAssetKind(name);
+  if (kind === "flat") return true;
+  return false;
+}
+function sanitizeSpreadPatternByAsset({ assetName, objectCount, spread }) {
+  const count = Math.max(1, Math.round(Number(objectCount) || 1));
+  const kind = getOriginAssetKind(assetName);
+  if (count <= 1) return spread || "none";
+  if (!spread || spread === "none") {
+    if (kind === "projectile") return "fan";
+    if (kind === "lightning") return "enemy_wide_ring";
+    if (kind === "creature") return "arc";
+    if (kind === "vehicle") return "enemy_wide_ring";
+    if (kind === "flat") return "linked_circle";
+    return "circle";
+  }
+  return spread;
+}
+function makeImpactEffect(assetName, color) {
+  const kind = getOriginAssetKind(assetName);
+  if (kind === "lightning") return { assetFileName: "lightning", objectSize: "large", colorHexCode: color, lightningStyle: { mode: "pillar", thickness: "huge", branchCount: 10, strikeCount: 2, spreadRadius: 2.5 } };
+  if (kind === "projectile" || kind === "vehicle") return { assetFileName: "explosion_burst", objectSize: "large", colorHexCode: color };
+  if (kind === "flat") return { assetFileName: "light_orb", objectSize: "large", colorHexCode: color };
+  return { assetFileName: "explosion_burst", objectSize: "medium", colorHexCode: color };
+}
+
 function uniqueArray(values) {
   return [...new Set(values.filter(Boolean))];
 }
@@ -360,221 +421,26 @@ function normalizeOriginMagicCircleConceptJson(rawJson, seed = "") {
 }
 
 function makeVisualObject({
-  id,
-  asset,
-  count = 1,
-  position = "battlefield_center",
-  size = "medium",
-  life = 4,
-  spread = "none",
-  color = "#FFFFFF",
-  target = "self_position",
-  duration = 0,
-  path = "none",
-  enter = "scale_up",
-  exit = "scale_down",
-  rotate = true,
-  rotationSpeed = "normal",
-  rotationAxis,
-  positionOffset,
-  targetOffset,
-  rotationOffset,
-  faceEnemy = false,
-  orbit,
-  lightningStyle,
+  id, asset, count = 1, position = "battlefield_center", size = "medium", life = 4, spread = "none", color = "#FFFFFF",
+  target = "self_position", duration = 0, path = "none", enter = "scale_up", exit = "scale_down", rotate = true,
+  rotationSpeed = "normal", rotationAxis, positionOffset, targetOffset, rotationOffset, faceEnemy, orbit, lightningStyle,
+  orientationMode, despawnOnImpact = false, impactEffect, role = "effect", cameraHint,
 }) {
-  return {
-  id,
-  assetFileName: toAssetFileName(asset),
-  objectCount: Math.round(clamp(count, 1, 12, 1)),
-  spawnPosition: position,
-  spawnSpreadPattern: spread,
-  colorHexCode: color,
-  objectSize: size,
-  lifeTimeSeconds: clamp(life, 0.5, 10, 4),
-  enterEffect: enter,
-  exitEffect: exit,
-  movement: {
-    targetPosition: target,
-    moveDurationSeconds: clamp(duration, 0, 10, 0),
-    movePathType: path,
-    targetOffset,
-  },
-  rotation: {
-    shouldRotate: rotate,
-    rotationSpeed,
-    axis: rotationAxis,
-  },
-  positionOffset,
-  rotationOffset,
-  faceEnemy,
-  orbit,
-  lightningStyle,
-};
-}
-
-function makeTimedEffect(time, visualObjects) {
-  return {
-    startTimeSeconds: clamp(time, 0, 10, 0),
-    visualObjects: visualObjects.filter(Boolean),
-  };
-}
-
-function makeSceneEffect(time, type, options = {}) {
-  return {
-    timeSeconds: clamp(time, 0, 10, 0),
-    type,
-    ...options,
-  };
-}
-
-function createDamageTimingsFromImpactTimes(impactTimes, artScore) {
-  const totalDamage = Math.round(clamp(90 + artScore * 2.25, 100, 320, 200));
-
-  const times = uniqueArray(
-    impactTimes
-      .map((v) => Number(Number(v).toFixed(2)))
-      .filter((v) => Number.isFinite(v))
-      .map((v) => clamp(v, 0.5, 9.7, 2))
-  ).sort((a, b) => a - b).slice(0, 5);
-
-  if (!times.length) times.push(3.5, 6.8);
-
-  const weights = times.map(() => 1);
-  weights[weights.length - 1] = 2;
-
-  const sum = weights.reduce((a, b) => a + b, 0);
-  const damageWeights = weights.map((w) => Math.round((w / sum) * 100));
-  damageWeights[damageWeights.length - 1] += 100 - damageWeights.reduce((a, b) => a + b, 0);
-
-  return {
-    totalDamage,
-    damageTimings: times.map((timeSeconds, i) => ({
-      timeSeconds,
-      damageWeight: damageWeights[i],
-      target: "enemy",
-    })),
-  };
-}
-
-
-
-
-const ORIGIN_SKY_COLOR_PALETTES = {
-  thunder: [
-    "#050816",
-    "#071A33",
-    "#10163A",
-    "#1A103A",
-    "#001C2E",
-    "#0C1028",
-  ],
-  fire: [
-    "#210600",
-    "#2A1105",
-    "#301108",
-    "#3A0900",
-    "#1E0B05",
-    "#2E1600",
-  ],
-  cosmic: [
-    "#03000A",
-    "#070012",
-    "#10051A",
-    "#120027",
-    "#050017",
-    "#0A0820",
-  ],
-  ice: [
-    "#061622",
-    "#102033",
-    "#071A2A",
-    "#001D2E",
-    "#0B1828",
-    "#11253A",
-  ],
-  machine: [
-    "#101010",
-    "#151515",
-    "#1A1812",
-    "#0F1418",
-    "#181A20",
-    "#0B0F12",
-  ],
-  default: [
-    "#130A22",
-    "#10051A",
-    "#0A1020",
-    "#160821",
-    "#081221",
-    "#1A102A",
-  ],
-};
-
-function pickSkyColor(kind = "default") {
-  return pick(ORIGIN_SKY_COLOR_PALETTES[kind] || ORIGIN_SKY_COLOR_PALETTES.default);
-}
-
-
-
-function getMainAssetProfile(mainAsset) {
-  if (["雷", "プラズマ", "光球"].includes(mainAsset)) {
-    return {
-      color: "#8FEAFF",
-      darkColor: "#081A38",
-      circle: "魔法陣9",
-      finish: "大爆発",
-      sky: pickSkyColor("thunder"),
-    };
-  }
-
-  if (["炎球", "竜巻", "太陽", "火山", "不死鳥"].includes(mainAsset)) {
-    return {
-      color: "#FF8A2A",
-      darkColor: "#2A0800",
-      circle: "魔法陣3",
-      finish: "大爆発",
-      sky: pickSkyColor("fire"),
-    };
-  }
-
-  if (["月", "銀河", "多線球", "蠢く多面球", "二重螺旋球"].includes(mainAsset)) {
-    return {
-      color: "#9E7BFF",
-      darkColor: "#080018",
-      circle: "魔法陣8",
-      finish: "銀河",
-      sky: pickSkyColor("cosmic"),
-    };
-  }
-
-  if (["ツララ", "雪1", "雪2", "雪結晶1", "雪結晶2"].includes(mainAsset)) {
-    return {
-      color: "#BDEBFF",
-      darkColor: "#071622",
-      circle: "魔法陣2",
-      finish: "大爆発",
-      sky: pickSkyColor("ice"),
-    };
-  }
-
-  if (["戦車", "戦闘機", "六足ロボ", "トルーパー"].includes(mainAsset)) {
-    return {
-      color: "#FFD36A",
-      darkColor: "#1A1812",
-      circle: "魔法陣10",
-      finish: "大爆発",
-      sky: pickSkyColor("machine"),
-    };
-  }
-
-  return {
-    color: "#D48FFF",
-    darkColor: "#10051A",
-    circle: "魔法陣3",
-    finish: "大爆発",
-    sky: pickSkyColor("default"),
-  };
+  const safeAssetName = chooseMainAsset(asset);
+  const assetFileName = toAssetFileName(safeAssetName);
+  const assetKind = getOriginAssetKind(safeAssetName);
+  const safeCount = Math.round(clamp(count, 1, 12, 1));
+  const safeSpread = sanitizeSpreadPatternByAsset({ assetName: safeAssetName, objectCount: safeCount, spread });
+  const moveDuration = clamp(duration, 0, 10, 0);
+  const shouldImpactDespawn = despawnOnImpact || (moveDuration > 0 && ["enemy_position", "above_enemy"].includes(target) && ["projectile", "lightning", "vehicle"].includes(assetKind));
+  const safeRotate = shouldDisableSpinForAsset(safeAssetName) ? false : rotate === true;
+  const safeFaceEnemy = typeof faceEnemy === "boolean" ? faceEnemy : ["flat", "creature", "vehicle"].includes(assetKind);
+  const finalImpactEffect = shouldImpactDespawn ? (impactEffect || makeImpactEffect(safeAssetName, color)) : undefined;
+  return { id, assetFileName, objectCount: safeCount, spawnPosition: position, spawnSpreadPattern: safeSpread, colorHexCode: color, objectSize: size,
+    lifeTimeSeconds: clamp(life, 0.5, 10, 4), enterEffect: enter, exitEffect: exit,
+    movement: { targetPosition: target, moveDurationSeconds: moveDuration, movePathType: path, targetOffset },
+    rotation: { shouldRotate: safeRotate, rotationSpeed, axis: rotationAxis }, positionOffset, rotationOffset, faceEnemy: safeFaceEnemy, orbit, lightningStyle, orientationMode,
+    despawnOnImpact: shouldImpactDespawn, impactEffect: finalImpactEffect, role, cameraHint };
 }
 
 function buildVerticalCircleObject(id, asset, color, life = 3.8) {

@@ -227,7 +227,15 @@ const magicCircleAssetNames = new Set([
   "appearance_effect_light_beam.glb",
   "303ac171bafb4998950b741d7c89aa94.glb",
 ]);
+const noSpinMainAssetNames = new Set([
+  "cute_dragon.glb", "dragon.glb", "adult_dragon.glb", "dragon_walk.glb", "dragon_fly.glb", "creaturespirate_trooper.glb", "k9_thunder_artillery.glb", "h6k4_war_thunder.glb", "sculptjanuary2021_-_day_05_-_magic_gate.glb", "stargate.glb", "japanese_tori_gate.glb", "torii_gate_lighthouse.glb",
+]);
+const flatVisualAssetNames = new Set([
+  ...magicCircleAssetNames, ...gateAssetNames, "animated_effect.glb", "duchess_shield.glb", "wing_379.glb", "hell_wings.glb", "low_poly__wings.glb", "wings_03.glb", "simple_ring",
+]);
 const noAutoSpinAssetNames = new Set([
+  ...noSpinMainAssetNames,
+  ...flatVisualAssetNames,
   ...gateAssetNames,
   ...magicCircleAssetNames,
   "animated_effect.glb",
@@ -3229,6 +3237,7 @@ composer.addPass(bloomPass);
       addMagicLogFromCast(localCast);
 
       if (battleState.gameEnded) return;
+  originBaseCameraState = captureOriginBaseCameraState();
 
 await showMagicNameCenterAsync(effectJson?.magicName, false);
 
@@ -5650,7 +5659,7 @@ if (item.orbit) {
 }
 
 if (item.shouldRotate) {
-  applyAutoSpin(item.root, delta, item.rotationSpeed, item.rotationAxis);
+  applyAutoSpin(item.modelRoot || item.root, delta, item.rotationSpeed, item.rotationAxis);
 }
   }
 }
