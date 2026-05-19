@@ -208,6 +208,7 @@ const customEffectNames = new Set([
   "crystal_shard",
   "simple_ring",
 ]);
+
 const gateAssetNames = new Set([
   "sculptjanuary2021_-_day_05_-_magic_gate.glb",
   "executor_warp_gate.glb",
@@ -215,6 +216,7 @@ const gateAssetNames = new Set([
   "japanese_tori_gate.glb",
   "torii_gate_lighthouse.glb",
 ]);
+
 const magicCircleAssetNames = new Set([
   "35b59066261a4a0a8c113da5b5a988e9.glb",
   "2024zhongqiu_4_loop.glb",
@@ -227,16 +229,70 @@ const magicCircleAssetNames = new Set([
   "appearance_effect_light_beam.glb",
   "303ac171bafb4998950b741d7c89aa94.glb",
 ]);
-const noAutoSpinAssetNames = new Set([
-  ...gateAssetNames,
-  ...magicCircleAssetNames,
-  "animated_effect.glb",
-  "duchess_shield.glb",
-  "wings_03.glb",
+
+const dragonAssetNames = new Set([
+  "cute_dragon.glb",
+  "dragon.glb",
+  "adult_dragon.glb",
+  "dragon_walk.glb",
+  "dragon_fly.glb",
+]);
+
+const wingAssetNames = new Set([
   "wing_379.glb",
   "hell_wings.glb",
   "low_poly__wings.glb",
+  "wings_03.glb",
 ]);
+
+const vehicleAssetNames = new Set([
+  "h6k4_war_thunder.glb",
+  "k9_thunder_artillery.glb",
+]);
+
+const noAutoSpinAssetNames = new Set([
+  ...gateAssetNames,
+  ...magicCircleAssetNames,
+  ...dragonAssetNames,
+  ...wingAssetNames,
+  ...vehicleAssetNames,
+
+  "phoenix_bird.glb",
+  "animated_effect.glb",
+  "creaturespirate_trooper.glb",
+  "duchess_shield.glb",
+
+  // 木・地形系も回るとギャグになりやすい
+  "tree.glb",
+  "young_palm.glb",
+  "spruce_tree_-_low_poly.glb",
+  "rocky_hell_terrain.glb",
+]);
+
+const faceEnemyByDefaultAssetNames = new Set([
+  ...gateAssetNames,
+  ...magicCircleAssetNames,
+  ...dragonAssetNames,
+  ...wingAssetNames,
+  ...vehicleAssetNames,
+
+  "phoenix_bird.glb",
+  "animated_effect.glb",
+  "creaturespirate_trooper.glb",
+  "duchess_shield.glb",
+]);
+
+const faceMovementTargetAssetNames = new Set([
+  "icicle.glb",
+  "crystal_shard",
+  "soulsucker_-_weaponcraft.glb",
+  "lance_of_the_primordials_-_dae_weaponcraft.glb",
+  "meteorite.glb",
+  "fireball.glb",
+]);
+
+
+
 
 //変更10
 const summonAssetSizePresets = {
@@ -4709,28 +4765,54 @@ function getForwardAndRight(self, enemy) {
 
   return { forward, right };
 }
-function applySpawnSpread(base, forward, right, objectIndex, objectCount, spreadPattern) {
+
+
+
+
+function getSpreadUnit(assetName, objectSize) {
+  if (objectSize === "large") return 7.0;
+  if (objectSize === "medium") return 4.2;
+  return 2.4;
+}
+
+function applySpawnSpread(
+  base,
+  forward,
+  right,
+  objectIndex,
+  objectCount,
+  spreadPattern,
+  assetName = "",
+  objectSize = "medium"
+) {
   const pos = base.clone();
 
-  if (objectCount <= 1 || spreadPattern === "none") {
+  if (objectCount <= 1) {
     return pos;
   }
+
+  // 複数個なのに none だと完全に重なるので、最低限 circle に逃がす
+  const effectivePattern =
+    spreadPattern === "none" || !spreadPattern
+      ? "circle"
+      : spreadPattern;
 
   const centerIndex = (objectCount - 1) / 2;
   const n = objectIndex - centerIndex;
+  const unit = getSpreadUnit(assetName, objectSize);
 
-  if (spreadPattern === "horizontal_line") {
-    pos.addScaledVector(right, n * 2.4);
+  if (effectivePattern === "horizontal_line") {
+    pos.addScaledVector(right, n * unit);
     return pos;
   }
 
-  if (spreadPattern === "vertical_line") {
-    pos.y += n * 2.0;
+  if (effectivePattern === "vertical_line") {
+    pos.y += n * unit * 0.75;
     return pos;
   }
 
-  if (spreadPattern === "circle") {
-    const radius = 2.5;
+  if (effectivePattern === "circle") {
+    const radius = unit * (objectCount >= 6 ? 1.25 : 1);
     const angle = (Math.PI * 2 * objectIndex) / objectCount;
 
     pos.addScaledVector(right, Math.cos(angle) * radius);
@@ -4738,10 +4820,11 @@ function applySpawnSpread(base, forward, right, objectIndex, objectCount, spread
     return pos;
   }
 
-  if (spreadPattern === "random_scatter") {
-    pos.addScaledVector(right, (Math.random() - 0.5) * 5);
-    pos.addScaledVector(forward, (Math.random() - 0.5) * 5);
-    pos.y += (Math.random() - 0.5) * 2;
+  if (effectivePattern === "random_scatter") {
+    const radius = unit * 1.4;
+    pos.addScaledVector(right, (Math.random() - 0.5) * radius * 2);
+    pos.addScaledVector(forward, (Math.random() - 0.5) * radius * 2);
+    pos.y += (Math.random() - 0.5) * unit;
     return pos;
   }
 
@@ -4774,17 +4857,67 @@ function getFaceEnemyYaw(casterSide = "self") {
   dir.normalize();
   return Math.atan2(dir.x, dir.z);
 }
-function applyVisualObjectRotationOptions(root, visualObject, casterSide = "self") {
+
+
+
+
+function getYawFromTo(from, to) {
+  const dir = new Vector3()
+    .subVectors(to, from)
+    .setY(0);
+
+  if (dir.lengthSq() <= 0.0001) return 0;
+
+  dir.normalize();
+
+  // ローカル +Z が正面の素材向け
+  return Math.atan2(dir.x, dir.z);
+}
+
+function applyVisualObjectRotationOptions(
+  root,
+  visualObject,
+  casterSide = "self",
+  spawnPosition = null,
+  targetPosition = null,
+  movementInfo = {}
+) {
   if (!root || !visualObject) return;
+
   const assetName = String(visualObject?.assetFileName || "");
-  if (visualObject?.faceEnemy === true) {
+
+  const shouldFaceEnemy =
+    visualObject?.faceEnemy === true ||
+    faceEnemyByDefaultAssetNames.has(assetName);
+
+  const shouldFaceMovement =
+    visualObject?.faceMovementDirection === true ||
+    (
+      faceMovementTargetAssetNames.has(assetName) &&
+      movementInfo.moveDuration > 0 &&
+      movementInfo.movePathType !== "none"
+    );
+
+  if (shouldFaceMovement && spawnPosition && targetPosition) {
+    root.rotation.y += getYawFromTo(spawnPosition, targetPosition);
+
+    // 氷柱はモデルの素の向きが縦向きになりやすいので、
+    // 横方向に飛ばす時だけ寝かせる
+    if (assetName === "icicle.glb" && movementInfo.movePathType !== "fall_from_above") {
+      root.rotation.z += Math.PI / 2;
+    }
+  } else if (shouldFaceEnemy) {
     root.rotation.y += getFaceEnemyYaw(casterSide);
   }
+
   const offset = visualObject.rotationOffset || {};
   root.rotation.x += Number(offset.x) || 0;
   root.rotation.y += Number(offset.y) || 0;
   root.rotation.z += Number(offset.z) || 0;
-  if (gateAssetNames.has(assetName)) root.userData.rotationLocked = true;
+
+  if (noAutoSpinAssetNames.has(assetName)) {
+    root.userData.rotationLocked = true;
+  }
 }
 
 
@@ -4911,13 +5044,15 @@ function getSpawnPositionByName(
   }
 
   return applySpawnSpread(
-    base,
-    forward,
-    right,
-    objectIndex,
-    objectCount,
-    spreadPattern
-  );
+  base,
+  forward,
+  right,
+  objectIndex,
+  objectCount,
+  spreadPattern,
+  assetName,
+  objectSize
+);
 }
 function getTargetPositionByName(positionName, assetName, objectSize = "medium", casterSide = "self") {
   const { self, enemy } = getBattleActors(casterSide);
@@ -5011,8 +5146,11 @@ function normalizeRotationAxis(value, assetName) {
 }
 function shouldAutoSpinAsset(assetName, visualObject) {
   if (visualObject?.rotation?.shouldRotate !== true) return false;
-  if (gateAssetNames.has(assetName)) return false;
+
+  // ゲート・魔法陣・ドラゴン・翼・乗り物などは、
+  // JSON側で shouldRotate:true が来ても回さない
   if (noAutoSpinAssetNames.has(assetName)) return false;
+
   return true;
 }
 function applyAutoSpin(root, delta, speed, axis) {
@@ -5188,7 +5326,7 @@ const baseSpawnPosition = getSpawnPositionByName(
   casterSide
 );
 
-const spawnPosition = applyRelativeOffsetToPosition(
+let spawnPosition = applyRelativeOffsetToPosition(
   baseSpawnPosition,
   visualObject.positionOffset,
   casterSide
@@ -5209,6 +5347,24 @@ const targetPosition = applyRelativeOffsetToPosition(
   casterSide
 );
 
+
+const moveDuration = clampNumber(
+  movement.moveDurationSeconds,
+  0,
+  10,
+  0
+);
+
+const movePathType = movement.movePathType || "none";
+
+
+if (assetName === "lightning") {
+  // 雷は「物体」ではなく、地面から空へ伸びる柱として扱う。
+  // above_enemy でも enemy_position でも、根元は必ず地面に置く。
+  spawnPosition.y = 0;
+}
+
+
 const safeScale = preset.scale || 1;
 modelRoot.position.set((preset.offsetX || 0) / safeScale, 0, (preset.offsetZ || 0) / safeScale);
 root.position.copy(spawnPosition);
@@ -5219,7 +5375,17 @@ root.rotation.x += preset.rotationX || 0;
 root.rotation.y += preset.rotationY || 0;
 root.rotation.z += preset.rotationZ || 0;
 
-applyVisualObjectRotationOptions(root, visualObject, casterSide);
+applyVisualObjectRotationOptions(
+  root,
+  visualObject,
+  casterSide,
+  spawnPosition,
+  targetPosition,
+  {
+    moveDuration,
+    movePathType,
+  }
+);
 
 applyMagicColor(modelRoot, visualObject.colorHexCode);
 
@@ -5249,14 +5415,35 @@ applyMagicColor(modelRoot, visualObject.colorHexCode);
   objectCount
 );
 
+
+
+
+const rawLifeTime = clampNumber(visualObject.lifeTimeSeconds, 0.5, 10, 8);
+
+const shouldDespawnOnImpact =
+  visualObject?.movement?.despawnOnImpact === true ||
+  (
+    moveDuration > 0 &&
+    ["enemy_position", "above_enemy"].includes(movement.targetPosition || "") &&
+    ["straight_line", "arc", "fall_from_above", "rise_from_below"].includes(movePathType)
+  );
+
+const finalLifeTime = shouldDespawnOnImpact
+  ? Math.min(rawLifeTime, moveDuration + 0.18)
+  : rawLifeTime;
+  
+  
+  
+  
+
   const active = {
   root,
   modelRoot,
   effectRoot: modelRoot,
   assetName,
   startTime: clock.elapsedTime,
-  lifeTime: clampNumber(visualObject.lifeTimeSeconds, 0.5, 10, 8),
-
+  lifeTime: finalLifeTime,
+  
   spawnPosition: spawnPosition.clone(),
   targetPosition: targetPosition.clone(),
 
@@ -5271,9 +5458,9 @@ applyMagicColor(modelRoot, visualObject.colorHexCode);
   enterDuration: 0.75,
   exitDuration: 0.75,
 
-  shouldRotate: !!visualObject.rotation?.shouldRotate,
-  rotationSpeed: getRotationSpeedValue(visualObject.rotation?.rotationSpeed),
-};
+  shouldRotate: shouldAutoSpinAsset(assetName, visualObject),
+rotationSpeed: getRotationSpeedValue(visualObject.rotation?.rotationSpeed),
+rotationAxis: normalizeRotationAxis(visualObject.rotation?.axis, assetName),
 
 
   applyMagicLifecycleTransform(active, 0);
