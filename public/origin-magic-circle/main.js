@@ -227,56 +227,15 @@ const magicCircleAssetNames = new Set([
   "appearance_effect_light_beam.glb",
   "303ac171bafb4998950b741d7c89aa94.glb",
 ]);
-const dragonAssetNames = new Set([
-  "cute_dragon.glb",
-  "dragon.glb",
-  "adult_dragon.glb",
-  "dragon_walk.glb",
-  "dragon_fly.glb",
-]);
-const wingAssetNames = new Set([
-  "wing_379.glb",
-  "hell_wings.glb",
-  "low_poly__wings.glb",
-  "wings_03.glb",
-]);
-const vehicleAssetNames = new Set([
-  "h6k4_war_thunder.glb",
-  "k9_thunder_artillery.glb",
-]);
 const noAutoSpinAssetNames = new Set([
   ...gateAssetNames,
   ...magicCircleAssetNames,
-  ...dragonAssetNames,
-  ...wingAssetNames,
-  ...vehicleAssetNames,
-  "phoenix_bird.glb",
   "animated_effect.glb",
-  "creaturespirate_trooper.glb",
   "duchess_shield.glb",
-  "tree.glb",
-  "young_palm.glb",
-  "spruce_tree_-_low_poly.glb",
-  "rocky_hell_terrain.glb",
-]);
-const faceEnemyByDefaultAssetNames = new Set([
-  ...gateAssetNames,
-  ...magicCircleAssetNames,
-  ...dragonAssetNames,
-  ...wingAssetNames,
-  ...vehicleAssetNames,
-  "phoenix_bird.glb",
-  "animated_effect.glb",
-  "creaturespirate_trooper.glb",
-  "duchess_shield.glb",
-]);
-const faceMovementTargetAssetNames = new Set([
-  "icicle.glb",
-  "crystal_shard",
-  "soulsucker_-_weaponcraft.glb",
-  "lance_of_the_primordials_-_dae_weaponcraft.glb",
-  "meteorite.glb",
-  "fireball.glb",
+  "wings_03.glb",
+  "wing_379.glb",
+  "hell_wings.glb",
+  "low_poly__wings.glb",
 ]);
 
 //変更10
@@ -3181,35 +3140,9 @@ CanvasTexture,
 const { GLTFLoader } = GLTF;
 
   const scene = new Scene();
-  const defaultSceneBackground = new Color("#87ceeb");
-  scene.background = defaultSceneBackground.clone();
+  scene.background = new Color("#87ceeb");
 
   const camera = new PerspectiveCamera(45/*変更4　60→45*/, window.innerWidth / window.innerHeight, 0.1, 2000);
-  let defaultCameraPosition = null;
-  let defaultCameraQuaternion = null;
-  function rememberDefaultBattleCamera() {
-    defaultCameraPosition = camera.position.clone();
-    defaultCameraQuaternion = camera.quaternion.clone();
-  }
-  function restoreDefaultBattleCamera(durationSeconds = 0.6) {
-    if (!defaultCameraPosition || !defaultCameraQuaternion) return;
-    const start = performance.now();
-    const durationMs = Math.max(100, durationSeconds * 1000);
-    const fromPos = camera.position.clone();
-    const fromQuat = camera.quaternion.clone();
-    const step = (now) => {
-      const t = Math.min((now - start) / durationMs, 1);
-      const eased = t * t * (3 - 2 * t);
-      camera.position.lerpVectors(fromPos, defaultCameraPosition, eased);
-      camera.quaternion.slerpQuaternions(fromQuat, defaultCameraQuaternion, eased);
-      if (t < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }
-  function restoreDefaultSceneVisuals() {
-    scene.background = defaultSceneBackground.clone();
-    restoreDefaultBattleCamera(0.6);
-  }
 
   const renderer = new WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -4776,32 +4709,28 @@ function getForwardAndRight(self, enemy) {
 
   return { forward, right };
 }
-function getSpreadUnit(assetName, objectSize) {
-  if (objectSize === "large") return 7.0;
-  if (objectSize === "medium") return 4.2;
-  return 2.4;
-}
-function applySpawnSpread(base, forward, right, objectIndex, objectCount, spreadPattern, assetName = "", objectSize = "medium") {
+function applySpawnSpread(base, forward, right, objectIndex, objectCount, spreadPattern) {
   const pos = base.clone();
-  if (objectCount <= 1) return pos;
-  const effectivePattern = spreadPattern === "none" || !spreadPattern ? "circle" : spreadPattern;
+
+  if (objectCount <= 1 || spreadPattern === "none") {
+    return pos;
+  }
 
   const centerIndex = (objectCount - 1) / 2;
   const n = objectIndex - centerIndex;
-  const unit = getSpreadUnit(assetName, objectSize);
 
-  if (effectivePattern === "horizontal_line") {
-    pos.addScaledVector(right, n * unit);
+  if (spreadPattern === "horizontal_line") {
+    pos.addScaledVector(right, n * 2.4);
     return pos;
   }
 
-  if (effectivePattern === "vertical_line") {
-    pos.y += n * unit * 0.75;
+  if (spreadPattern === "vertical_line") {
+    pos.y += n * 2.0;
     return pos;
   }
 
-  if (effectivePattern === "circle") {
-    const radius = unit * (objectCount >= 6 ? 1.25 : 1);
+  if (spreadPattern === "circle") {
+    const radius = 2.5;
     const angle = (Math.PI * 2 * objectIndex) / objectCount;
 
     pos.addScaledVector(right, Math.cos(angle) * radius);
@@ -4809,11 +4738,10 @@ function applySpawnSpread(base, forward, right, objectIndex, objectCount, spread
     return pos;
   }
 
-  if (effectivePattern === "random_scatter") {
-    const radius = unit * 1.4;
-    pos.addScaledVector(right, (Math.random() - 0.5) * radius * 2);
-    pos.addScaledVector(forward, (Math.random() - 0.5) * radius * 2);
-    pos.y += (Math.random() - 0.5) * unit;
+  if (spreadPattern === "random_scatter") {
+    pos.addScaledVector(right, (Math.random() - 0.5) * 5);
+    pos.addScaledVector(forward, (Math.random() - 0.5) * 5);
+    pos.y += (Math.random() - 0.5) * 2;
     return pos;
   }
 
@@ -4846,32 +4774,17 @@ function getFaceEnemyYaw(casterSide = "self") {
   dir.normalize();
   return Math.atan2(dir.x, dir.z);
 }
-function getYawFromTo(from, to) {
-  const dir = new Vector3().subVectors(to, from).setY(0);
-  if (dir.lengthSq() <= 0.0001) return 0;
-  dir.normalize();
-  return Math.atan2(dir.x, dir.z);
-}
-function applyVisualObjectRotationOptions(root, visualObject, casterSide = "self", spawnPosition = null, targetPosition = null, movementInfo = {}) {
+function applyVisualObjectRotationOptions(root, visualObject, casterSide = "self") {
   if (!root || !visualObject) return;
   const assetName = String(visualObject?.assetFileName || "");
-  const shouldFaceEnemy = visualObject?.faceEnemy === true || faceEnemyByDefaultAssetNames.has(assetName);
-  const shouldFaceMovement =
-    visualObject?.faceMovementDirection === true ||
-    (faceMovementTargetAssetNames.has(assetName) && movementInfo.moveDuration > 0 && movementInfo.movePathType !== "none");
-  if (shouldFaceMovement && spawnPosition && targetPosition) {
-    root.rotation.y += getYawFromTo(spawnPosition, targetPosition);
-    if (assetName === "icicle.glb" && movementInfo.movePathType !== "fall_from_above") {
-      root.rotation.z += Math.PI / 2;
-    }
-  } else if (shouldFaceEnemy) {
+  if (visualObject?.faceEnemy === true) {
     root.rotation.y += getFaceEnemyYaw(casterSide);
   }
   const offset = visualObject.rotationOffset || {};
   root.rotation.x += Number(offset.x) || 0;
   root.rotation.y += Number(offset.y) || 0;
   root.rotation.z += Number(offset.z) || 0;
-  if (noAutoSpinAssetNames.has(assetName)) root.userData.rotationLocked = true;
+  if (gateAssetNames.has(assetName)) root.userData.rotationLocked = true;
 }
 
 
@@ -5003,9 +4916,7 @@ function getSpawnPositionByName(
     right,
     objectIndex,
     objectCount,
-    spreadPattern,
-    assetName,
-    objectSize
+    spreadPattern
   );
 }
 function getTargetPositionByName(positionName, assetName, objectSize = "medium", casterSide = "self") {
@@ -5100,6 +5011,7 @@ function normalizeRotationAxis(value, assetName) {
 }
 function shouldAutoSpinAsset(assetName, visualObject) {
   if (visualObject?.rotation?.shouldRotate !== true) return false;
+  if (gateAssetNames.has(assetName)) return false;
   if (noAutoSpinAssetNames.has(assetName)) return false;
   return true;
 }
@@ -5276,7 +5188,7 @@ const baseSpawnPosition = getSpawnPositionByName(
   casterSide
 );
 
-let spawnPosition = applyRelativeOffsetToPosition(
+const spawnPosition = applyRelativeOffsetToPosition(
   baseSpawnPosition,
   visualObject.positionOffset,
   casterSide
@@ -5307,7 +5219,7 @@ root.rotation.x += preset.rotationX || 0;
 root.rotation.y += preset.rotationY || 0;
 root.rotation.z += preset.rotationZ || 0;
 
-applyVisualObjectRotationOptions(root, visualObject, casterSide, spawnPosition, targetPosition, { moveDuration, movePathType });
+applyVisualObjectRotationOptions(root, visualObject, casterSide);
 
 applyMagicColor(modelRoot, visualObject.colorHexCode);
 
@@ -5317,13 +5229,14 @@ applyMagicColor(modelRoot, visualObject.colorHexCode);
 
   scene.add(root);
 
-  const rawLifeTime = clampNumber(visualObject.lifeTimeSeconds, 0.5, 10, 8);
-  const shouldDespawnOnImpact =
-    visualObject?.movement?.despawnOnImpact === true ||
-    (moveDuration > 0 &&
-      ["enemy_position", "above_enemy"].includes(movement.targetPosition || "") &&
-      ["straight_line", "arc", "fall_from_above", "rise_from_below"].includes(movePathType));
-  const finalLifeTime = shouldDespawnOnImpact ? Math.min(rawLifeTime, moveDuration + 0.18) : rawLifeTime;
+  const moveDuration = clampNumber(
+    movement.moveDurationSeconds,
+    0,
+    10,
+    0
+  );
+
+  const movePathType = movement.movePathType || "none";
 
 
 
@@ -5342,7 +5255,7 @@ applyMagicColor(modelRoot, visualObject.colorHexCode);
   effectRoot: modelRoot,
   assetName,
   startTime: clock.elapsedTime,
-  lifeTime: finalLifeTime,
+  lifeTime: clampNumber(visualObject.lifeTimeSeconds, 0.5, 10, 8),
 
   spawnPosition: spawnPosition.clone(),
   targetPosition: targetPosition.clone(),
@@ -5358,9 +5271,8 @@ applyMagicColor(modelRoot, visualObject.colorHexCode);
   enterDuration: 0.75,
   exitDuration: 0.75,
 
-  shouldRotate: shouldAutoSpinAsset(assetName, visualObject),
+  shouldRotate: !!visualObject.rotation?.shouldRotate,
   rotationSpeed: getRotationSpeedValue(visualObject.rotation?.rotationSpeed),
-  rotationAxis: normalizeRotationAxis(visualObject.rotation?.axis, assetName),
 };
 
 
@@ -5687,7 +5599,6 @@ const objectCount = Math.max(
   await new Promise((resolve) => {
     setBattleTimeout(resolve, endMs);
   });
-  restoreDefaultSceneVisuals();
 }
 
 
@@ -6893,7 +6804,6 @@ showBattleResultScreen({ selfWon });}
 
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
-  rememberDefaultBattleCamera();
   //renderHpBars();
   /*setInterval(async () => {
     try {
@@ -7250,13 +7160,3 @@ if (!activeRoomId) {
 }
 
 restoreActiveRoomIfExists();
-const moveDuration = clampNumber(
-  movement.moveDurationSeconds,
-  0,
-  10,
-  0
-);
-const movePathType = movement.movePathType || "none";
-if (assetName === "lightning") {
-  spawnPosition.y = 0;
-}
