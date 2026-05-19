@@ -5553,15 +5553,22 @@ function getMagicEffectEndSeconds(effectJson) {
 
 let originBaseCameraState = null;
 
+function getOptionalCameraControls() {
+  if (typeof controls === "undefined") return null;
+  return controls || null;
+}
+
 function captureOriginBaseCameraState() {
   if (!camera) return null;
+
+  const cameraControls = getOptionalCameraControls();
 
   return {
     position: camera.position.clone(),
     quaternion: camera.quaternion.clone(),
     fov: camera.fov,
     background: scene.background?.clone?.() || new Color("#87ceeb"),
-    controlsTarget: controls?.target?.clone?.() || new Vector3(0, 2, 0),
+    controlsTarget: cameraControls?.target?.clone?.() || new Vector3(0, 2, 0),
   };
 }
 
@@ -5587,14 +5594,16 @@ function restoreOriginBaseCameraState(durationMs = 500) {
     camera.fov = startFov + (targetFov - startFov) * eased;
     camera.updateProjectionMatrix();
 
-    if (controls?.target && originBaseCameraState.controlsTarget) {
-      controls.target.lerpVectors(
-        controls.target.clone(),
-        originBaseCameraState.controlsTarget,
-        eased
-      );
-      controls.update?.();
-    }
+    const cameraControls = getOptionalCameraControls();
+
+if (cameraControls?.target && originBaseCameraState.controlsTarget) {
+  cameraControls.target.lerpVectors(
+    cameraControls.target.clone(),
+    originBaseCameraState.controlsTarget,
+    eased
+  );
+  cameraControls.update?.();
+}
 
     if (t < 1) requestAnimationFrame(step);
   };
@@ -5703,10 +5712,12 @@ if (sceneEffect.type === "camera_preset") {
     camera.position.lerpVectors(startPos, targetPos, eased);
     camera.lookAt(lookTarget);
 
-    if (controls?.target) {
-      controls.target.copy(lookTarget);
-      controls.update?.();
-    }
+    const cameraControls = getOptionalCameraControls();
+
+if (cameraControls?.target) {
+  cameraControls.target.copy(lookTarget);
+  cameraControls.update?.();
+}
 
     if (t < 1) {
       requestAnimationFrame(move);
