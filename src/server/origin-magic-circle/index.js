@@ -443,6 +443,197 @@ function makeVisualObject({
     despawnOnImpact: shouldImpactDespawn, impactEffect: finalImpactEffect, role, cameraHint };
 }
 
+
+
+
+
+const ORIGIN_SKY_COLOR_PALETTES = {
+  thunder: [
+    "#050816",
+    "#071A33",
+    "#10163A",
+    "#1A103A",
+    "#001C2E",
+    "#0C1028",
+  ],
+  fire: [
+    "#210600",
+    "#2A1105",
+    "#301108",
+    "#3A0900",
+    "#1E0B05",
+    "#2E1600",
+  ],
+  cosmic: [
+    "#03000A",
+    "#070012",
+    "#10051A",
+    "#120027",
+    "#050017",
+    "#0A0820",
+  ],
+  ice: [
+    "#061622",
+    "#102033",
+    "#071A2A",
+    "#001D2E",
+    "#0B1828",
+    "#11253A",
+  ],
+  machine: [
+    "#101010",
+    "#151515",
+    "#1A1812",
+    "#0F1418",
+    "#181A20",
+    "#0B0F12",
+  ],
+  nature: [
+    "#061C12",
+    "#0C2416",
+    "#102818",
+    "#14210C",
+    "#081A10",
+    "#122A14",
+  ],
+  holy: [
+    "#101424",
+    "#161A2E",
+    "#1A1430",
+    "#201A34",
+    "#101828",
+    "#18142A",
+  ],
+  default: [
+    "#130A22",
+    "#10051A",
+    "#0A1020",
+    "#160821",
+    "#081221",
+    "#1A102A",
+  ],
+};
+
+function pickSkyColor(kind = "default") {
+  return pick(ORIGIN_SKY_COLOR_PALETTES[kind] || ORIGIN_SKY_COLOR_PALETTES.default);
+}
+
+function getMainAssetProfile(rawMainAsset) {
+  const mainAsset = chooseMainAsset(rawMainAsset);
+
+  if (["雷", "プラズマ", "光球"].includes(mainAsset)) {
+    return {
+      color: "#8FEAFF",
+      darkColor: "#081A38",
+      circle: "魔法陣9",
+      finish: "大爆発",
+      sky: pickSkyColor("thunder"),
+    };
+  }
+
+  if (["炎球", "竜巻", "アニメ竜巻", "太陽", "火山", "不死鳥"].includes(mainAsset)) {
+    return {
+      color: "#FF8A2A",
+      darkColor: "#2A0800",
+      circle: "魔法陣3",
+      finish: "大爆発",
+      sky: pickSkyColor("fire"),
+    };
+  }
+
+  if (["月", "銀河", "多線球", "蠢く多面球", "二重螺旋球", "サイバー多面球", "エナジー凝縮球", "サイバー球と円盤", "サイバー卵"].includes(mainAsset)) {
+    return {
+      color: "#9E7BFF",
+      darkColor: "#080018",
+      circle: "魔法陣8",
+      finish: "銀河",
+      sky: pickSkyColor("cosmic"),
+    };
+  }
+
+  if (["ツララ", "雪1", "雪2", "雪結晶1", "雪結晶2"].includes(mainAsset)) {
+    return {
+      color: "#BDEBFF",
+      darkColor: "#071622",
+      circle: "魔法陣2",
+      finish: "大爆発",
+      sky: pickSkyColor("ice"),
+    };
+  }
+
+  if (["戦車", "戦闘機", "六足ロボ", "トルーパー", "歯車時計"].includes(mainAsset)) {
+    return {
+      color: "#FFD36A",
+      darkColor: "#1A1812",
+      circle: "魔法陣10",
+      finish: "大爆発",
+      sky: pickSkyColor("machine"),
+    };
+  }
+
+  if (["枯れ木", "ヤシの木", "針葉樹", "落葉", "花束", "蝶"].includes(mainAsset)) {
+    return {
+      color: "#8CFF9A",
+      darkColor: "#061C12",
+      circle: "魔法陣5",
+      finish: "光球",
+      sky: pickSkyColor("nature"),
+    };
+  }
+
+  if (["翼", "天使翼", "悪魔翼", "機械翼", "シールド", "ハート", "ダイヤ"].includes(mainAsset)) {
+    return {
+      color: "#FFD6FF",
+      darkColor: "#120818",
+      circle: "魔法陣9",
+      finish: "光球",
+      sky: pickSkyColor("holy"),
+    };
+  }
+
+  if (["キュートドラゴン", "アニメドラゴン", "弱ドラゴン", "竜騎士", "翔ぶドラゴン"].includes(mainAsset)) {
+    return {
+      color: "#FFB86A",
+      darkColor: "#180805",
+      circle: "魔法陣3",
+      finish: "大爆発",
+      sky: pickSkyColor("fire"),
+    };
+  }
+
+  if (["ゲート1", "ゲート2", "円盤", "鳥居", "動く鳥居"].includes(mainAsset)) {
+    return {
+      color: "#B48CFF",
+      darkColor: "#080018",
+      circle: "魔法陣8",
+      finish: "銀河",
+      sky: pickSkyColor("cosmic"),
+    };
+  }
+
+  if (["魔法陣1", "魔法陣2", "魔法陣3", "魔法陣4", "魔法陣5", "魔法陣6", "魔法陣7", "魔法陣8", "魔法陣9", "魔法陣10", "オーラ", "シンプルリング"].includes(mainAsset)) {
+    return {
+      color: "#D48FFF",
+      darkColor: "#10051A",
+      circle: mainAsset.startsWith("魔法陣") ? mainAsset : "魔法陣3",
+      finish: "大爆発",
+      sky: pickSkyColor("default"),
+    };
+  }
+
+  return {
+    color: "#D48FFF",
+    darkColor: "#10051A",
+    circle: "魔法陣3",
+    finish: "大爆発",
+    sky: pickSkyColor("default"),
+  };
+}
+
+
+
+
+
 function buildVerticalCircleObject(id, asset, color, life = 3.8) {
   return makeVisualObject({
     id,
