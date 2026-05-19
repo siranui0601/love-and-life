@@ -66,7 +66,9 @@ function normalizeOriginMagicCircleShape64(rawShape64) {
 const ORIGIN_MAGIC_CIRCLE_MAX_HP = 1000;
 
 const ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP = {
+  "炎球": "fireball.glb",
   "火": "fireball.glb",
+  "人魂と骸骨": "magic_voxel_skull_flat_shaded.glb",
   "骸骨": "magic_voxel_skull_flat_shaded.glb",
   "竜巻": "stylized_fire_tornado.glb",
   "不死鳥": "phoenix_bird.glb",
@@ -176,6 +178,12 @@ const ORIGIN_MAGIC_CIRCLE_MAGIC_CIRCLE_ASSETS = [
   "魔法陣10",
 ];
 
+const ORIGIN_MAGIC_CIRCLE_EFFECT_SCHEMA_VERSION = 2;
+const ORIGIN_MAGIC_CIRCLE_MAIN_ASSET_PROMPT_CANDIDATES = ["炎球","人魂と骸骨","竜巻","不死鳥","月","歯車時計","プラズマ","六足ロボ","魂剣","花束","ギミック剣","サイバー卵","サイバー球と円盤","蠢く立方体","サイバー多面球","エナジー凝縮球","二重螺旋球","銀河","蠢く多面球","多線球","雷","大爆発","雲","光球","バレッド","シンプルリング","太陽","隕石","火山","ツララ","魔法陣","サイバー巻物","竹巻物","シールド","落葉","キューブ","天球儀","捻れ球","オーラ","動く鳥居","ゲート","鳥居","キュートドラゴン","アニメドラゴン","弱ドラゴン","竜騎士","翔ぶドラゴン","アニメ竜巻","枯れ木","ヤシの木","針葉樹","トルーパー","翼","蝶","悪魔翼","機械翼","天使翼","戦闘機","戦車","雪","雪結晶","ハート","ダイヤ"];
+const ORIGIN_MAGIC_CIRCLE_DIRECTION_TAGS = ["召喚","突撃","落下","包囲","連射","爆発","咆哮","拘束","儀式","天空","地面隆起","ゲート","分身","吸収","時間停止"];
+const ORIGIN_MAGIC_CIRCLE_ASSET_ALIAS_MAP = {"魔法陣": ORIGIN_MAGIC_CIRCLE_MAGIC_CIRCLE_ASSETS,"ゲート": ["ゲート1", "ゲート2", "円盤"],"雪": ["雪1", "雪2"],"雪結晶": ["雪結晶1", "雪結晶2"],"火": "炎球","骸骨": "人魂と骸骨"};
+const ORIGIN_MAGIC_CIRCLE_DIRECTION_PATTERN_MAP = {"召喚": ["gate_release","gate_army","behind_stand","low_angle_summon","soul_procession"],"突撃": ["far_charge","far_projectile_impact","dragon_assault","weapon_execution","light_lane"],"落下": ["sky_mass_rain","meteor_fall","meteor_impact","sky_to_ground_lightning","snowfall_execution"],"包囲": ["enemy_encircle","crossfire","enemy_backstab","tank_siege","all_range_finale"],"連射": ["vertical_circle_barrage","multi_phase_barrage","portal_projectile_burst","machine_barrage","fighter_airstrike"],"爆発": ["delayed_big_bang","battlefield_core_overload","vertical_circle_single_judgment","sun_burst"],"咆哮": ["dragon_assault","tornado_swallow","phoenix_rebirth_blast","hell_wing_drop"],"拘束": ["spiral_bind","ice_prison","plasma_cage","ring_seal","enemy_encircle"],"儀式": ["linked_magic_circles","vertical_circle_single_judgment","silence_then_flash","torii_boundary","clock_stop"],"天空": ["camera_sky_execution","sky_mass_rain","field_lightning_rain","orbital_laser","angelic_pillar"],"地面隆起": ["ground_rupture","tree_world_takeover","cube_cascade_crush","battlefield_core_overload"],"ゲート": ["gate_release","gate_army","dark_gate","portal_projectile_burst"],"分身": ["butterfly_swarm","cyber_orb_network","dual_spiral","multi_phase_barrage"],"吸収": ["cosmic_collapse","moon_gravity","smoke_assassination","soul_procession"],"時間停止": ["clock_stop","silence_then_flash","torii_boundary","moon_gravity"]};
+
 const ORIGIN_MAGIC_CIRCLE_FINISH_ASSETS = [
   "大爆発",
   "雷",
@@ -277,8 +285,13 @@ function uniqueArray(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
-function chooseMainAsset(rawMainAsset) {
+function chooseMainAsset(rawMainAsset, seed = "") {
   const raw = String(rawMainAsset || "").trim();
+
+  if (!raw) return pickByStableHash(ORIGIN_MAGIC_CIRCLE_MAIN_ASSET_PROMPT_CANDIDATES, seed, "emptyMainAsset");
+  const alias = ORIGIN_MAGIC_CIRCLE_ASSET_ALIAS_MAP[raw];
+  if (Array.isArray(alias)) return pickByStableHash(alias, seed, `alias:${raw}`) || pick(alias);
+  if (typeof alias === "string") return chooseMainAsset(alias, seed);
 
   if (ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[raw]) return raw;
 
@@ -287,7 +300,34 @@ function chooseMainAsset(rawMainAsset) {
 
   if (fileNameHit) return fileNameHit[0];
 
-  return pick(Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP));
+  return pickByStableHash(ORIGIN_MAGIC_CIRCLE_MAIN_ASSET_PROMPT_CANDIDATES, seed, `unknownMainAsset:${raw}`);
+}
+
+function normalizeOriginMagicCircleDirectionTags(rawDirectionTags, seed = "") {
+  const source = Array.isArray(rawDirectionTags)
+    ? rawDirectionTags
+    : String(rawDirectionTags || "").split(/[,\s、]+/).filter(Boolean);
+  const tags = uniqueArray(
+    source
+      .map((tag) => String(tag || "").trim())
+      .filter((tag) => ORIGIN_MAGIC_CIRCLE_DIRECTION_TAGS.includes(tag))
+  ).slice(0, 3);
+  if (tags.length > 0) return tags;
+  return [pickByStableHash(ORIGIN_MAGIC_CIRCLE_DIRECTION_TAGS, seed, "fallbackDirectionTag") || "召喚"];
+}
+
+function choosePatternFromDirectionTags(directionTags, mainAsset, seed = "") {
+  const tagPatterns = [];
+  for (const tag of directionTags || []) {
+    tagPatterns.push(...(ORIGIN_MAGIC_CIRCLE_DIRECTION_PATTERN_MAP[tag] || []));
+  }
+  if (["キュートドラゴン", "アニメドラゴン", "弱ドラゴン", "竜騎士", "翔ぶドラゴン"].includes(mainAsset)) tagPatterns.push("dragon_assault", "behind_stand", "low_angle_summon");
+  if (["雷", "プラズマ", "光球"].includes(mainAsset)) tagPatterns.push("sky_to_ground_lightning", "field_lightning_rain", "sky_road");
+  if (["戦車", "戦闘機", "六足ロボ", "トルーパー"].includes(mainAsset)) tagPatterns.push("tank_siege", "machine_barrage", "fighter_airstrike");
+  if (["魂剣", "ギミック剣", "バレッド", "ツララ"].includes(mainAsset)) tagPatterns.push("weapon_execution", "enemy_wide_impale", "ice_bullet_stab");
+  const usablePatterns = uniqueArray(tagPatterns).filter((pattern) => ORIGIN_MAGIC_CIRCLE_PATTERN_POOL.includes(pattern));
+  const pool = usablePatterns.length > 0 ? usablePatterns : ORIGIN_MAGIC_CIRCLE_PATTERN_POOL;
+  return pickByStableHash(pool, seed, `pattern:${mainAsset}:${(directionTags || []).join("|")}`) || pick(pool);
 }
 
 function chooseSupportAssets(mainAsset, count = 4) {
@@ -304,7 +344,7 @@ function chooseSupportAssets(mainAsset, count = 4) {
   return result;
 }
 
-function normalizeOriginMagicCircleConceptJson(rawJson) {
+function normalizeOriginMagicCircleConceptJson(rawJson, seed = "") {
   const parsed = typeof rawJson === "string" ? JSON.parse(rawJson) : rawJson || {};
 
   const magicName =
@@ -312,13 +352,11 @@ function normalizeOriginMagicCircleConceptJson(rawJson) {
     "無銘魔法・原初解放";
 
   const artScore = Math.round(clamp(parsed.artScore, 0, 100, 50));
-  const mainAsset = chooseMainAsset(parsed.mainAsset);
+  const rawMainAssetName = parsed.mainAssetName ?? parsed.mainAsset ?? parsed.assetName ?? "";
+  const mainAsset = chooseMainAsset(rawMainAssetName, `${seed}:${magicName}:${artScore}`);
+  const directionTags = normalizeOriginMagicCircleDirectionTags(parsed.directionTags, `${seed}:${magicName}:${mainAsset}`);
 
-  return {
-    magicName,
-    artScore,
-    mainAsset,
-  };
+  return { magicName, artScore, mainAsset, mainAssetName: mainAsset, directionTags };
 }
 
 function makeVisualObject({
@@ -678,11 +716,8 @@ function createFallbackOriginMagicCircleConcept({
 }) {
   const seed = imageHash || shape64 || String(Date.now());
 
-  const mainAsset = pickByStableHash(
-    Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP),
-    seed,
-    "mainAsset"
-  );
+  const rawMainAssetName = pickByStableHash(ORIGIN_MAGIC_CIRCLE_MAIN_ASSET_PROMPT_CANDIDATES, seed, "mainAssetName");
+  const mainAsset = chooseMainAsset(rawMainAssetName, seed);
 
   const prefix = pickByStableHash(
     ["虚空", "終焉", "蒼雷", "紅蓮", "氷獄", "星骸", "神罰", "深淵", "天翔", "黒翼"],
@@ -696,10 +731,18 @@ function createFallbackOriginMagicCircleConcept({
     "suffix"
   );
 
+  const tagCount = 1 + (
+    parseInt(crypto.createHash("sha256").update(`${seed}:directionTagCount`).digest("hex").slice(0, 2), 16) % 3
+  );
+  const directionTags = uniqueArray(Array.from({ length: tagCount }, (_, index) =>
+    pickByStableHash(ORIGIN_MAGIC_CIRCLE_DIRECTION_TAGS, seed, `fallbackDirectionTag:${index}`)
+  ));
   return {
     magicName: `${prefix}の${suffix}`,
     artScore: estimateFallbackArtScore(strokeJson),
     mainAsset,
+    mainAssetName: mainAsset,
+    directionTags: directionTags.length ? directionTags : ["召喚"],
   };
 }
 
@@ -711,13 +754,19 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
   const magicName = concept.magicName;
   const artScore = concept.artScore;
   const mainAsset = concept.mainAsset;
+  const directionTags = normalizeOriginMagicCircleDirectionTags(
+    concept.directionTags,
+    `${magicName}:${mainAsset}:${artScore}`
+  );
 
   const profile = getMainAssetProfile(mainAsset);
   const supportAssets = chooseSupportAssets(mainAsset, 5);
 
-  const pattern = pick(ORIGIN_MAGIC_CIRCLE_PATTERN_POOL);
-
-  const mainFile = toAssetFileName(mainAsset);
+  const pattern = choosePatternFromDirectionTags(
+    directionTags,
+    mainAsset,
+    `${magicName}:${mainAsset}:${artScore}`
+  );
   const circleAsset = profile.circle;
   const gateAsset = pick(["ゲート1", "ゲート2", "円盤", "鳥居", "動く鳥居"]);
   const finishAsset = profile.finish || pick(ORIGIN_MAGIC_CIRCLE_FINISH_ASSETS);
@@ -1226,10 +1275,12 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
   const damageInfo = createDamageTimingsFromImpactTimes(impactTimes, artScore);
 
   return normalizeOriginMagicCircleEffectJson({
+    schemaVersion: ORIGIN_MAGIC_CIRCLE_EFFECT_SCHEMA_VERSION,
     magicName,
     artScore,
     mainAsset: toAssetFileName(mainAsset),
     mainAssetName: mainAsset,
+    directionTags,
     pattern,
     timedVisualEffects,
     sceneEffects,
@@ -1244,6 +1295,8 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
           {
             action: "concept",
             mainAsset,
+            mainAssetName: mainAsset,
+            directionTags,
             pattern,
           },
         ],
@@ -1862,31 +1915,18 @@ if (cached?.rawJson) {
   try {
     const parsedCache = JSON.parse(cached.rawJson);
     const hasTimed = Array.isArray(parsedCache?.timedVisualEffects);
-    if (hasTimed) {
+    const cacheSchemaVersion = Number(parsedCache?.schemaVersion || 0);
+    if (hasTimed && cacheSchemaVersion === ORIGIN_MAGIC_CIRCLE_EFFECT_SCHEMA_VERSION) {
       cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson(parsedCache);
     } else {
-      const timelineJson = normalizeOriginMagicCircleTimelineJson(parsedCache);
-      const expandedEffectJson = expandOriginMagicCircleTimelineToEffectJson(timelineJson);
-      
-      
-      
-      
-      
-      const damageInfo = createOriginMagicCircleDamageTimings(
-  expandedEffectJson,
-  expandedEffectJson.artScore
-);
-
-cachedMagicEffectJson = normalizeOriginMagicCircleEffectJson({
-  ...expandedEffectJson,
-  totalDamage: damageInfo.totalDamage,
-  damageTimings: damageInfo.damageTimings,
-});
-
-    
-        
-            
-                    }
+      console.log("[origin-magic-circle] stale spell cache skipped:", {
+        rowIndex: cached.rowIndex,
+        imageHash: cached.imageHash,
+        cacheSchemaVersion,
+        requiredSchemaVersion: ORIGIN_MAGIC_CIRCLE_EFFECT_SCHEMA_VERSION,
+      });
+      cachedMagicEffectJson = null;
+    }
   } catch (error) {
     console.warn("[origin-magic-circle] cached rawJson parse failed:", {
       rowIndex: cached.rowIndex,
@@ -1931,22 +1971,24 @@ const geminiContents = [
     },
   },
   {
-    text: `画像の魔法陣を見てjsonのみ出力
+    text: `画像の魔法陣を見てJSONのみ出力。
 
 {
   "magicName": "画像から連想した厨二病風の魔法名",
   "artScore": 0,
-  "mainAsset": "雷"
+  "mainAssetName": "リスト内から1つ",
+  "directionTags": ["演出方向性を1〜3個"]
 }
 
 ルール:
+- **mainAssetNameは、リストから最も絵の内容に近いものを精査して選ぶこと** @important 
+
+- artScoreは0〜100。　採点基準：何を描いたか義理わかる程度なら70点 
+- directionTagsは次から1〜3個: 召喚,突撃,落下,包囲,連射,爆発,咆哮,拘束,儀式,天空,地面隆起,ゲート,分身,吸収,時間停止
 - JSON以外は禁止
-- magicNameは厨二病風
-- artScoreは0〜100。無意味な絵は20前後。何を表したいのかギリ読み取れるなら50前後
-- mainAssetは必ず次の一覧から1つだけ選ぶ
-${Object.keys(ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP).join(",")}
-- mainAssetは画像から最も連想される主役素材にする
-- timeline, timedVisualEffects, damageTimingsは出力しない`,
+
+mainAssetName候補:
+${ORIGIN_MAGIC_CIRCLE_MAIN_ASSET_PROMPT_CANDIDATES.join(",")}`,
   },
 ];
 
@@ -1966,7 +2008,7 @@ try {
   const jsonText = extractJsonText(rawText);
 
   originalConceptJson = JSON.parse(jsonText);
-  conceptJson = normalizeOriginMagicCircleConceptJson(originalConceptJson);
+  conceptJson = normalizeOriginMagicCircleConceptJson(originalConceptJson, imageHash || shape64);
 } catch (error) {
   if (!isTemporaryGeminiError(error)) {
     throw error;
