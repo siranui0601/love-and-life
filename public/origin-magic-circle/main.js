@@ -208,9 +208,6 @@ const customEffectNames = new Set([
   "crystal_shard",
   "simple_ring",
 ]);
-
-
-
 const gateAssetNames = new Set([
   "sculptjanuary2021_-_day_05_-_magic_gate.glb",
   "executor_warp_gate.glb",
@@ -218,7 +215,6 @@ const gateAssetNames = new Set([
   "japanese_tori_gate.glb",
   "torii_gate_lighthouse.glb",
 ]);
-
 const magicCircleAssetNames = new Set([
   "35b59066261a4a0a8c113da5b5a988e9.glb",
   "2024zhongqiu_4_loop.glb",
@@ -231,38 +227,15 @@ const magicCircleAssetNames = new Set([
   "appearance_effect_light_beam.glb",
   "303ac171bafb4998950b741d7c89aa94.glb",
 ]);
-
-const noSpinMainAssetNames = new Set([
-  "cute_dragon.glb",
-  "dragon.glb",
-  "adult_dragon.glb",
-  "dragon_walk.glb",
-  "dragon_fly.glb",
-
-  "creaturespirate_trooper.glb",
-  "k9_thunder_artillery.glb",
-  "h6k4_war_thunder.glb",
-  "sculptjanuary2021_-_day_05_-_magic_gate.glb",
-  "stargate.glb",
-  "japanese_tori_gate.glb",
-  "torii_gate_lighthouse.glb",
-]);
-
-const flatVisualAssetNames = new Set([
-  ...magicCircleAssetNames,
+const noAutoSpinAssetNames = new Set([
   ...gateAssetNames,
+  ...magicCircleAssetNames,
   "animated_effect.glb",
   "duchess_shield.glb",
+  "wings_03.glb",
   "wing_379.glb",
   "hell_wings.glb",
   "low_poly__wings.glb",
-  "wings_03.glb",
-  "simple_ring",
-]);
-
-const noAutoSpinAssetNames = new Set([
-  ...noSpinMainAssetNames,
-  ...flatVisualAssetNames,
 ]);
 
 //変更10
@@ -3752,144 +3725,47 @@ function applyAssetSpecificMaterialFix(root, assetName) {
 
 function createLightningEffect(visualObject = {}) {
   const root = new Group();
-
-  const rawStyle = visualObject.lightningStyle;
-  const style = typeof rawStyle === "object" && rawStyle
-    ? rawStyle
-    : { mode: String(rawStyle || "pillar") };
-
-  const mode = String(style.mode || "pillar");
+  const style = String(visualObject.lightningStyle || "").trim() || "pillar";
   const colorHex = String(visualObject.colorHexCode || "#8FEAFF");
-  const color = /^#[0-9a-fA-F]{6}$/.test(colorHex)
-    ? Number(`0x${colorHex.slice(1)}`)
-    : 0x88ccff;
-
+  const color = /^#[0-9a-fA-F]{6}$/.test(colorHex) ? Number(`0x${colorHex.slice(1)}`) : 0x88ccff;
   const objectSize = visualObject.objectSize || "medium";
-
-  const height =
-    objectSize === "large" ? 30 :
-    objectSize === "small" ? 14 :
-    22;
-
-  const thickness =
-    style.thickness === "huge" ? 0.22 :
-    style.thickness === "thick" ? 0.14 :
-    0.08;
-
-  const branchCount = Math.max(
-    3,
-    Math.min(24, Number(style.branchCount) || (
-      mode === "field_rain" ? 20 :
-      mode === "road" ? 10 :
-      mode === "cage" ? 12 :
-      mode === "slash" ? 7 :
-      mode === "chain" ? 9 :
-      objectSize === "large" ? 11 :
-      6
-    ))
-  );
-
-  const spreadRadius = Math.max(0.5, Number(style.spreadRadius) || (
-    mode === "field_rain" ? 11 :
-    mode === "road" ? 7 :
-    mode === "cage" ? 5 :
-    mode === "chain" ? 4 :
-    1.4
-  ));
-
-  const makeBoltPoints = (index) => {
-    const points = [];
-    const segmentCount = 20;
-
-    for (let i = 0; i <= segmentCount; i += 1) {
-      const t = i / segmentCount;
-
-      let x = 0;
-      let y = height * (1 - t);
-      let z = 0;
-
-      if (mode === "field_rain") {
-        const angle = (Math.PI * 2 * index) / branchCount;
-        const r = spreadRadius * (0.25 + Math.random() * 0.75);
-        x = Math.cos(angle) * r + (Math.random() - 0.5) * 1.2;
-        z = Math.sin(angle) * r + (Math.random() - 0.5) * 1.2;
-      } else if (mode === "road") {
-        const laneT = branchCount <= 1 ? 0.5 : index / (branchCount - 1);
-        z = -spreadRadius + spreadRadius * 2 * laneT;
-        x = (Math.random() - 0.5) * 1.1;
-      } else if (mode === "slash") {
-        x = -spreadRadius + t * spreadRadius * 2 + (Math.random() - 0.5) * 0.7;
-        y = height * 0.9 - t * height * 0.9;
-        z = (index - branchCount / 2) * 0.35 + (Math.random() - 0.5) * 0.6;
-      } else if (mode === "cage") {
-        const angle = (Math.PI * 2 * index) / branchCount;
-        x = Math.cos(angle) * spreadRadius;
-        z = Math.sin(angle) * spreadRadius;
-      } else if (mode === "chain") {
-        const angle = t * Math.PI * 2 + index * 0.7;
-        x = Math.cos(angle) * spreadRadius * (1 - t * 0.45);
-        z = Math.sin(angle) * spreadRadius * (1 - t * 0.45);
-      } else {
-        x = (Math.random() - 0.5) * 1.0;
-        z = (Math.random() - 0.5) * 1.0;
-      }
-
-      x += (Math.random() - 0.5) * 0.7;
-      z += (Math.random() - 0.5) * 0.7;
-
-      points.push(x, y, z);
-    }
-
-    return points;
-  };
-
-  const createBoltLine = (index) => {
-    const geometry = new BufferGeometry();
-    const points = makeBoltPoints(index);
-
+  const boltCount = style === "storm" ? 18 : style === "road" ? 10 : style === "slash" ? 6 : style === "chain" ? 8 : objectSize === "large" ? 9 : objectSize === "small" ? 3 : 5;
+  const height = objectSize === "large" ? 18 : objectSize === "small" ? 7 : 12;
+  const radius = style === "storm" ? 8 : style === "road" ? 5 : style === "chain" ? 4 : 1.2;
+  const createBoltLine = (index) => { const geometry = new BufferGeometry(); const points = []; const segmentCount = 18;
+    for (let i = 0; i <= segmentCount; i += 1) { const t = i / segmentCount; let x = 0; let y = height * (1 - t); let z = 0;
+      if (style === "storm") { const angle = (Math.PI * 2 * index) / boltCount; const r = radius * (0.35 + Math.random() * 0.65); x = Math.cos(angle) * r + (Math.random() - 0.5) * 0.8; z = Math.sin(angle) * r + (Math.random() - 0.5) * 0.8; }
+      else if (style === "road") { z = -radius + (radius * 2 * index) / Math.max(1, boltCount - 1); x = (Math.random() - 0.5) * 0.7; }
+      else if (style === "slash") { x = -4 + t * 8 + (Math.random() - 0.5) * 0.5; y = height * 0.75 - t * height * 0.75; z = (index - boltCount / 2) * 0.25 + (Math.random() - 0.5) * 0.35; }
+      else if (style === "chain") { const angle = t * Math.PI * 2 + index; x = Math.cos(angle) * radius * (1 - t * 0.5); z = Math.sin(angle) * radius * (1 - t * 0.5); }
+      else { x = (Math.random() - 0.5) * 0.8; z = (Math.random() - 0.5) * 0.8; } points.push(x, y, z); }
     geometry.setAttribute("position", new Float32BufferAttribute(points, 3));
+    const material = new LineBasicMaterial({ color, transparent: true, opacity: 0.75 + Math.random() * 0.25, blending: AdditiveBlending, depthWrite: false, toneMapped: false });
+    return new Line(geometry, material); };
+  for (let i = 0; i < boltCount; i += 1) root.add(createBoltLine(i));
+  if (objectSize === "large" || style === "pillar") { const core = new Mesh(new CylinderGeometry(0.08, 0.18, height, 10, 1, true), new MeshBasicMaterial({ color, transparent: true, opacity: 0.35, blending: AdditiveBlending, depthWrite: false, side: DoubleSide, toneMapped: false })); core.position.y = height / 2; core.userData.role = "lightning_core"; root.add(core);}
+  root.userData.effectType = "lightning"; root.userData.lightningStyle = style; root.userData.lightningHeight = height; root.userData.lastUpdate = 0; return root; }
+function getPreferredAnimationClip(assetName, animations = []) {
+  if (!animations.length) return null;
 
-    const material = new LineBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 0.75 + Math.random() * 0.25,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      toneMapped: false,
-    });
+  if (assetName === "sphere_bot.glb") {
+    const sphereBotPriority = [
+      "05_Sphere_bot_WalkCycle",
+      "02_Sphere_bot_Run_Cycle",
+      "01_Sphere_bot_Roll",
+      "04_Sphere_bot_Attack",
+      "03_Sphere_bot_Open",
+      "06_Sphere_bot_Run_Attack",
+      "07_Sphere_bot_Jump",
+    ];
 
-    return new Line(geometry, material);
-  };
-
-  for (let i = 0; i < branchCount; i += 1) {
-    root.add(createBoltLine(i));
+    for (const clipName of sphereBotPriority) {
+      const clip = animations.find((item) => item.name === clipName);
+      if (clip) return clip;
+    }
   }
 
-  if (objectSize === "large" || mode === "pillar" || mode === "road") {
-    const core = new Mesh(
-      new CylinderGeometry(thickness, thickness * 1.8, height, 12, 1, true),
-      new MeshBasicMaterial({
-        color,
-        transparent: true,
-        opacity: 0.25,
-        blending: AdditiveBlending,
-        depthWrite: false,
-        side: DoubleSide,
-        toneMapped: false,
-      })
-    );
-
-    core.position.y = height / 2;
-    core.userData.role = "lightning_core";
-    root.add(core);
-  }
-
-  root.userData.effectType = "lightning";
-  root.userData.lightningStyle = mode;
-  root.userData.lightningHeight = height;
-  root.userData.lastUpdate = 0;
-
-  return root;
+  return animations.find((clip) => clip.name === "attack a") || animations[0] || null;
 }
 
 function makeGlowMaterial(color, opacity = 1) {
@@ -4835,15 +4711,13 @@ function getForwardAndRight(self, enemy) {
 }
 function applySpawnSpread(base, forward, right, objectIndex, objectCount, spreadPattern) {
   const pos = base.clone();
-  const count = Math.max(1, Number(objectCount) || 1);
 
-  if (count <= 1 || spreadPattern === "none") {
+  if (objectCount <= 1 || spreadPattern === "none") {
     return pos;
   }
 
-  const centerIndex = (count - 1) / 2;
+  const centerIndex = (objectCount - 1) / 2;
   const n = objectIndex - centerIndex;
-  const angle = (Math.PI * 2 * objectIndex) / count;
 
   if (spreadPattern === "horizontal_line") {
     pos.addScaledVector(right, n * 2.4);
@@ -4856,63 +4730,11 @@ function applySpawnSpread(base, forward, right, objectIndex, objectCount, spread
   }
 
   if (spreadPattern === "circle") {
-    const radius = 2.8;
+    const radius = 2.5;
+    const angle = (Math.PI * 2 * objectIndex) / objectCount;
+
     pos.addScaledVector(right, Math.cos(angle) * radius);
     pos.addScaledVector(forward, Math.sin(angle) * radius);
-    return pos;
-  }
-
-  if (spreadPattern === "enemy_wide_ring") {
-    const radius = 5.2;
-    pos.addScaledVector(right, Math.cos(angle) * radius);
-    pos.addScaledVector(forward, Math.sin(angle) * radius);
-    pos.y += Math.sin(angle * 2) * 0.7;
-    return pos;
-  }
-
-  if (spreadPattern === "sky_ring") {
-    const radius = 6.5;
-    pos.addScaledVector(right, Math.cos(angle) * radius);
-    pos.addScaledVector(forward, Math.sin(angle) * radius);
-    pos.y += 8 + Math.sin(angle * 2) * 1.2;
-    return pos;
-  }
-
-  if (spreadPattern === "fan") {
-    pos.addScaledVector(right, n * 1.7);
-    pos.addScaledVector(forward, Math.abs(n) * -0.6);
-    pos.y += Math.abs(n) * 0.35;
-    return pos;
-  }
-
-  if (spreadPattern === "arc") {
-    const arcT = count <= 1 ? 0.5 : objectIndex / (count - 1);
-    const arcAngle = -Math.PI * 0.75 + arcT * Math.PI * 1.5;
-    const radius = 4.6;
-    pos.addScaledVector(right, Math.cos(arcAngle) * radius);
-    pos.addScaledVector(forward, Math.sin(arcAngle) * radius);
-    pos.y += Math.sin(arcT * Math.PI) * 2.2;
-    return pos;
-  }
-
-  if (spreadPattern === "corridor") {
-    const lane = n;
-    pos.addScaledVector(right, lane * 1.6);
-    pos.addScaledVector(forward, lane * 0.8);
-    pos.y += Math.abs(lane) * 0.2;
-    return pos;
-  }
-
-  if (spreadPattern === "linked_circle") {
-    pos.addScaledVector(forward, objectIndex * 3.2);
-    pos.y += objectIndex * 0.35;
-    return pos;
-  }
-
-  if (spreadPattern === "wide_random") {
-    pos.addScaledVector(right, (Math.random() - 0.5) * 12);
-    pos.addScaledVector(forward, (Math.random() - 0.5) * 12);
-    pos.y += (Math.random() - 0.5) * 5;
     return pos;
   }
 
@@ -5302,36 +5124,6 @@ function getPositionOnPath(start, target, t, pathType) {
   if (pathType === "arc") {
     pos.y += Math.sin(Math.PI * eased) * 5;
   }
-  
-  
-  if (pathType === "collapse_to_center") {
-  const wideStart = start.clone();
-  return wideStart.lerp(target, eased);
-}
-
-if (pathType === "gather_to_self") {
-  const pos = start.clone().lerp(target, eased);
-  pos.y += Math.sin(Math.PI * eased) * 2.0;
-  return pos;
-}
-
-if (pathType === "pierce") {
-  const overshoot = target.clone().add(
-    target.clone().sub(start).normalize().multiplyScalar(4)
-  );
-  return start.clone().lerp(overshoot, eased);
-}
-
-if (pathType === "meteor_impact") {
-  const highStart = start.clone();
-  highStart.y = Math.max(start.y + 18, target.y + 24);
-  const pos = highStart.lerp(target, eased);
-  pos.x += Math.sin(eased * Math.PI) * 1.5;
-  return pos;
-}
-
-
-
 
   if (pathType === "orbit") {
     const radius = Math.max(start.distanceTo(target), 3);
@@ -5378,23 +5170,6 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
   }
 
   const objectSize = visualObject.objectSize || "medium";
-  
-  const safeVisualObject = { ...visualObject };
-
-if (
-  Number(safeVisualObject.objectCount || objectCount || 1) > 1 &&
-  (!safeVisualObject.spawnSpreadPattern || safeVisualObject.spawnSpreadPattern === "none")
-) {
-  if (assetName === "lightning") {
-    safeVisualObject.spawnSpreadPattern = "enemy_wide_ring";
-  } else if (flatVisualAssetNames.has(assetName)) {
-    safeVisualObject.spawnSpreadPattern = "linked_circle";
-  } else {
-    safeVisualObject.spawnSpreadPattern = "circle";
-  }
-}
-
-  
   const preset = getAssetSizePreset(assetName, objectSize);
 
   const modelRoot = createMagicObjectRoot(assetName, visualObject);
@@ -5409,7 +5184,7 @@ const baseSpawnPosition = getSpawnPositionByName(
   objectSize,
   objectIndex,
   objectCount,
-  safeVisualObject.spawnSpreadPattern || "none",
+  visualObject.spawnSpreadPattern || "none",
   casterSide
 );
 
@@ -5418,13 +5193,6 @@ const spawnPosition = applyRelativeOffsetToPosition(
   visualObject.positionOffset,
   casterSide
 );
-
-if (assetName === "lightning") {
-  // 雷はどこに出ても「地面から空まで」の柱として成立させる。
-  // rootのyを0にして、createLightningEffect側のheightで上空まで伸ばす。
-  spawnPosition.y = 0;
-}
-
 
 const movement = visualObject.movement || {};
 
@@ -5440,11 +5208,6 @@ const targetPosition = applyRelativeOffsetToPosition(
   movement.targetOffset,
   casterSide
 );
-
-
-if (assetName === "lightning") {
-  targetPosition.y = 0;
-}
 
 const safeScale = preset.scale || 1;
 modelRoot.position.set((preset.offsetX || 0) / safeScale, 0, (preset.offsetZ || 0) / safeScale);
@@ -5508,20 +5271,9 @@ applyMagicColor(modelRoot, visualObject.colorHexCode);
   enterDuration: 0.75,
   exitDuration: 0.75,
 
-  shouldRotate: shouldAutoSpinAsset(assetName, safeVisualObject),
-rotationSpeed: getRotationSpeedValue(safeVisualObject.rotation?.rotationSpeed),
-rotationAxis: normalizeRotationAxis(safeVisualObject.rotation?.axis, assetName),
-
-despawnOnImpact: safeVisualObject.despawnOnImpact === true,
-impactEffect: safeVisualObject.impactEffect || null,
-impactTriggered: false,
-
-
-casterSide,
-
-
-
-  };
+  shouldRotate: !!visualObject.rotation?.shouldRotate,
+  rotationSpeed: getRotationSpeedValue(visualObject.rotation?.rotationSpeed),
+};
 
 
   applyMagicLifecycleTransform(active, 0);
@@ -5551,192 +5303,9 @@ function getMagicEffectEndSeconds(effectJson) {
 
 
 
-let originBaseCameraState = null;
-
-function getOptionalCameraControls() {
-  if (typeof controls === "undefined") return null;
-  return controls || null;
-}
-
-function captureOriginBaseCameraState() {
-  if (!camera) return null;
-
-  const cameraControls = getOptionalCameraControls();
-
-  return {
-    position: camera.position.clone(),
-    quaternion: camera.quaternion.clone(),
-    fov: camera.fov,
-    background: scene.background?.clone?.() || new Color("#87ceeb"),
-    controlsTarget: cameraControls?.target?.clone?.() || new Vector3(0, 2, 0),
-  };
-}
-
-function restoreOriginBaseCameraState(durationMs = 500) {
-  if (!originBaseCameraState) return;
-
-  const startAt = performance.now();
-  const startPos = camera.position.clone();
-  const startQuat = camera.quaternion.clone();
-  const startFov = camera.fov;
-  const targetPos = originBaseCameraState.position.clone();
-  const targetQuat = originBaseCameraState.quaternion.clone();
-  const targetFov = originBaseCameraState.fov;
-
-  scene.background = originBaseCameraState.background.clone();
-
-  const step = () => {
-    const t = Math.min((performance.now() - startAt) / durationMs, 1);
-    const eased = 1 - Math.pow(1 - t, 3);
-
-    camera.position.lerpVectors(startPos, targetPos, eased);
-    camera.quaternion.slerpQuaternions(startQuat, targetQuat, eased);
-    camera.fov = startFov + (targetFov - startFov) * eased;
-    camera.updateProjectionMatrix();
-
-    const cameraControls = getOptionalCameraControls();
-
-if (cameraControls?.target && originBaseCameraState.controlsTarget) {
-  cameraControls.target.lerpVectors(
-    cameraControls.target.clone(),
-    originBaseCameraState.controlsTarget,
-    eased
-  );
-  cameraControls.update?.();
-}
-
-    if (t < 1) requestAnimationFrame(step);
-  };
-
-  step();
-}
-
-function getCameraPresetTarget(sceneEffect, casterSide = "self") {
-  const { self, enemy } = getBattleActors(casterSide);
-
-  if (sceneEffect.lookAt === "self") {
-    return self.position.clone().add(new Vector3(0, 3, 0));
-  }
-
-  if (sceneEffect.lookAt === "enemy") {
-    return enemy.position.clone().add(new Vector3(0, 3, 0));
-  }
-
-  return new Vector3(0, 3, 0);
-}
-
-function getCameraPresetPosition(preset, casterSide = "self") {
-  const { self, enemy } = getBattleActors(casterSide);
-  const { forward, right } = getForwardAndRight(self, enemy);
-
-  if (preset === "over_shoulder_self") {
-    return self.position
-      .clone()
-      .addScaledVector(forward, -9)
-      .addScaledVector(right, 3.2)
-      .add(new Vector3(0, 3.2, 0));
-  }
-
-  if (preset === "low_angle_self") {
-    return self.position
-      .clone()
-      .addScaledVector(forward, -7)
-      .addScaledVector(right, 1.5)
-      .add(new Vector3(0, 1.1, 0));
-  }
-
-  if (preset === "sky_top_down") {
-    return enemy.position
-      .clone()
-      .add(new Vector3(0, 28, 0))
-      .addScaledVector(forward, -1);
-  }
-
-  if (preset === "orbit_enemy") {
-    return enemy.position
-      .clone()
-      .addScaledVector(right, 10)
-      .addScaledVector(forward, -8)
-      .add(new Vector3(0, 6, 0));
-  }
-
-  if (preset === "side_track") {
-    return new Vector3(0, 5.2, 16);
-  }
-
-  if (preset === "silence_wide") {
-    return new Vector3(0, 10, 24);
-  }
-
-  return camera.position.clone();
-}
-
-
-
-
 
 function triggerOriginSceneEffect(sceneEffect, casterSide = "self") {
   if (!sceneEffect || typeof sceneEffect !== "object") return;
-  
-  
-  
-  if (sceneEffect.type === "camera_reset") {
-  restoreOriginBaseCameraState(
-    Math.max(200, Number(sceneEffect.durationSeconds || 0.5) * 1000)
-  );
-  return;
-}
-
-if (sceneEffect.type === "camera_preset") {
-  const durationMs = Math.max(200, Number(sceneEffect.durationSeconds || 0.9) * 1000);
-  const holdMs = Math.max(0, Number(sceneEffect.holdSeconds || 0.35) * 1000);
-
-  const preset = String(sceneEffect.preset || "over_shoulder_self");
-  const startPos = camera.position.clone();
-  const startQuat = camera.quaternion.clone();
-
-  const targetPos = getCameraPresetPosition(preset, casterSide);
-  const lookTarget = getCameraPresetTarget(sceneEffect, casterSide);
-
-  const startedAt = performance.now();
-
-  const move = () => {
-    if (battleState.gameEnded) {
-      restoreOriginBaseCameraState(250);
-      return;
-    }
-
-    const t = Math.min((performance.now() - startedAt) / durationMs, 1);
-    const eased = 1 - Math.pow(1 - t, 3);
-
-    camera.position.lerpVectors(startPos, targetPos, eased);
-    camera.lookAt(lookTarget);
-
-    const cameraControls = getOptionalCameraControls();
-
-if (cameraControls?.target) {
-  cameraControls.target.copy(lookTarget);
-  cameraControls.update?.();
-}
-
-    if (t < 1) {
-      requestAnimationFrame(move);
-      return;
-    }
-
-    setBattleTimeout(() => {
-      restoreOriginBaseCameraState(durationMs);
-    }, holdMs);
-  };
-
-  move();
-  return;
-}
-
-
-
-
-
 
   if (sceneEffect.type === "sky_color") {
     const originalBackground = scene.background?.clone?.() || new Color("#87ceeb");
@@ -5937,10 +5506,6 @@ function scheduleOriginSceneEffects(effectJson, casterSide = "self") {
 async function playMagicVisualEffects(effectJson, isEnemyCast = false, options = {}) {
   if (battleState.gameEnded) return;
 
-
-  originBaseCameraState = captureOriginBaseCameraState();
-  
-  
   if (!effectJson || !Array.isArray(effectJson.timedVisualEffects)) {
     console.warn("[origin-magic-circle] invalid magic effect json:", effectJson);
     return;
@@ -6034,10 +5599,6 @@ const objectCount = Math.max(
   await new Promise((resolve) => {
     setBattleTimeout(resolve, endMs);
   });
-  
-  
-  
-  restoreOriginBaseCameraState(500);
 }
 
 
@@ -6082,49 +5643,6 @@ function updateActiveMagicObjects(elapsed, delta) {
 
     applyMagicLifecycleTransform(item, age);
 
-
-if (
-  item.despawnOnImpact &&
-  !item.impactTriggered &&
-  item.moveDuration > 0 &&
-  age >= item.moveDuration
-) {
-  item.impactTriggered = true;
-
-  if (item.impactEffect) {
-    spawnMagicVisualObject(
-      {
-        id: `${item.assetName}_impact_${Date.now()}`,
-        assetFileName: item.impactEffect.assetFileName || "explosion_burst",
-        objectCount: 1,
-        spawnPosition: "enemy_position",
-        spawnSpreadPattern: "none",
-        colorHexCode: item.impactEffect.colorHexCode || "#FFFFFF",
-        objectSize: item.impactEffect.objectSize || "medium",
-        lifeTimeSeconds: 1.4,
-        enterEffect: "scale_up",
-        exitEffect: "scale_down",
-        movement: {
-          targetPosition: "enemy_position",
-          moveDurationSeconds: 0,
-          movePathType: "none",
-        },
-        rotation: {
-          shouldRotate: false,
-          rotationSpeed: "normal",
-        },
-        lightningStyle: item.impactEffect.lightningStyle,
-      },
-      0,
-      1,
-      item.casterSide || "self"
-    );
-  }
-
-  removeActiveMagicObject(i, false);
-  continue;
-}
-
 // 公転指定がある場合は、通常移動後に位置だけ上書きする
 // scale_up / exitEffect などのライフサイクル演出は維持される
 if (item.orbit) {
@@ -6132,9 +5650,7 @@ if (item.orbit) {
 }
 
 if (item.shouldRotate) {
-  // offsetZが大きいGLBをrootごと回すと、素材全体が変な公転をする。
-  // 自転は基本的にmodelRoot側へかける。
-  applyAutoSpin(item.modelRoot || item.root, delta, item.rotationSpeed, item.rotationAxis);
+  applyAutoSpin(item.root, delta, item.rotationSpeed, item.rotationAxis);
 }
   }
 }
