@@ -358,56 +358,6 @@ function normalizeOriginMagicCircleConceptJson(rawJson, seed = "") {
 
   return { magicName, artScore, mainAsset, mainAssetName: mainAsset, directionTags };
 }
-const ORIGIN_NO_ROTATE_FILE_NAMES = new Set([
-  "phoenix_bird.glb", "rocky_hell_terrain.glb", "animated_effect.glb", "torii_gate_lighthouse.glb",
-  "sculptjanuary2021_-_day_05_-_magic_gate.glb", "executor_warp_gate.glb", "japanese_tori_gate.glb", "stargate.glb",
-  "cute_dragon.glb", "dragon.glb", "adult_dragon.glb", "dragon_walk.glb", "dragon_fly.glb", "creaturespirate_trooper.glb",
-  "wing_379.glb", "blue_glowing_butterfly.glb", "hell_wings.glb", "low_poly__wings.glb", "wings_03.glb",
-  "h6k4_war_thunder.glb", "k9_thunder_artillery.glb", "duchess_shield.glb",
-]);
-const ORIGIN_FACE_ENEMY_FILE_NAMES = new Set([
-  "animated_effect.glb", "torii_gate_lighthouse.glb", "sculptjanuary2021_-_day_05_-_magic_gate.glb", "executor_warp_gate.glb",
-  "japanese_tori_gate.glb", "stargate.glb", "cute_dragon.glb", "dragon.glb", "adult_dragon.glb", "dragon_walk.glb", "dragon_fly.glb",
-  "creaturespirate_trooper.glb", "wing_379.glb", "blue_glowing_butterfly.glb", "hell_wings.glb", "low_poly__wings.glb",
-  "wings_03.glb", "h6k4_war_thunder.glb", "k9_thunder_artillery.glb", "duchess_shield.glb",
-]);
-const ORIGIN_PROJECTILE_FACE_TARGET_FILE_NAMES = new Set([
-  "icicle.glb", "crystal_shard", "soulsucker_-_weaponcraft.glb", "lance_of_the_primordials_-_dae_weaponcraft.glb", "meteorite.glb", "fireball.glb",
-]);
-const ORIGIN_MAGIC_CIRCLE_FILE_NAMES = new Set([
-  "35b59066261a4a0a8c113da5b5a988e9.glb", "2024zhongqiu_4_loop.glb", "eff_huanguang.glb", "829e78a8ee3548369f3ac92c41a2ee74.glb",
-  "27444eb10a4f4409b4a2649738ec7441.glb", "c7ba0550fe034f29bfb54ca75b7eb1f6.glb", "fd37b7bec4ca48a8b6539dc4048787cf.glb",
-  "technology_aperture_out.glb", "appearance_effect_light_beam.glb", "303ac171bafb4998950b741d7c89aa94.glb",
-]);
-function finalizeVisualObjectDefaults(obj) {
-  if (!obj || typeof obj !== "object") return obj;
-  const assetFileName = String(obj.assetFileName || "").trim();
-  if (!obj.rotation || typeof obj.rotation !== "object") obj.rotation = { shouldRotate: false, rotationSpeed: "slow" };
-  if (ORIGIN_NO_ROTATE_FILE_NAMES.has(assetFileName) || ORIGIN_MAGIC_CIRCLE_FILE_NAMES.has(assetFileName)) {
-    obj.rotation.shouldRotate = false;
-    obj.rotation.rotationSpeed = "slow";
-  }
-  if (ORIGIN_FACE_ENEMY_FILE_NAMES.has(assetFileName) || ORIGIN_MAGIC_CIRCLE_FILE_NAMES.has(assetFileName)) obj.faceEnemy = true;
-  if (ORIGIN_MAGIC_CIRCLE_FILE_NAMES.has(assetFileName)) {
-    obj.faceEnemy = true;
-    obj.rotation.shouldRotate = false;
-    obj.rotationOffset = obj.rotationOffset || { x: Math.PI / 2, y: 0, z: 0 };
-  }
-  if ((Number(obj.objectCount) || 1) > 1 && (!obj.spawnSpreadPattern || obj.spawnSpreadPattern === "none")) obj.spawnSpreadPattern = "circle";
-  const moveDuration = Number(obj.movement?.moveDurationSeconds || 0);
-  const targetPosition = String(obj.movement?.targetPosition || "");
-  if (ORIGIN_PROJECTILE_FACE_TARGET_FILE_NAMES.has(assetFileName) && moveDuration > 0 && ["enemy_position", "above_enemy"].includes(targetPosition)) {
-    obj.faceMovementDirection = true;
-    obj.movement.despawnOnImpact = true;
-    obj.lifeTimeSeconds = Math.min(Number(obj.lifeTimeSeconds || 8), moveDuration + 0.22);
-  }
-  if (assetFileName === "lightning") {
-    obj.rotation.shouldRotate = false;
-    obj.lightningStyle = obj.lightningStyle || pick(["pillar", "storm", "road", "slash", "chain"]);
-    obj.lifeTimeSeconds = Math.min(Number(obj.lifeTimeSeconds || 2.2), 2.8);
-  }
-  return obj;
-}
 
 function makeVisualObject({
   id,
@@ -433,7 +383,7 @@ function makeVisualObject({
   orbit,
   lightningStyle,
 }) {
-  const obj = {
+  return {
   id,
   assetFileName: toAssetFileName(asset),
   objectCount: Math.round(clamp(count, 1, 12, 1)),
@@ -461,7 +411,6 @@ function makeVisualObject({
   orbit,
   lightningStyle,
 };
-  return finalizeVisualObjectDefaults(obj);
 }
 
 function makeTimedEffect(time, visualObjects) {
@@ -1247,35 +1196,6 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
     addScene(2.2, "camera_pulse", { durationSeconds: 1.3, strength: 0.55 });
     addScene(4.5, "camera_shake", { durationSeconds: 1.0, strength: 0.65 });
     impactTimes.push(3.0, 4.8, 6.8);
-  } else if (family === "linked_magic_circles") {
-    add(0.8, [makeVisualObject({ id: "chain_circle_1", asset: circleAsset, count: 1, position: "in_front_of_self", size: "medium", life: 5.5, color: profile.color, spread: "none", rotate: false, faceEnemy: true, positionOffset: { forward: 2.5, y: 2.3 }, rotationOffset: { x: Math.PI / 2, y: 0, z: 0 } }), makeVisualObject({ id: "chain_circle_2", asset: circleAsset, count: 1, position: "battlefield_center", size: "medium", life: 5.5, color: "#FFFFFF", spread: "none", rotate: false, faceEnemy: true, positionOffset: { y: 2.6 }, rotationOffset: { x: Math.PI / 2, y: 0, z: 0 } }), makeVisualObject({ id: "chain_circle_3", asset: circleAsset, count: 1, position: "above_enemy", size: "medium", life: 5.5, color: profile.color, spread: "none", rotate: false, faceEnemy: true, positionOffset: { y: -1.4 }, rotationOffset: { x: Math.PI / 2, y: 0, z: 0 } })]);
-    add(2.0, makeVisualObject({ id: "chain_main_shot", asset: mainAsset, count: 5, position: "in_front_of_self", size: "medium", life: 2.0, color: profile.color, spread: "circle", target: "enemy_position", duration: 1.35, path: "straight_line", enter: "scale_up", exit: "scale_down", positionOffset: { forward: 3.8, y: 2.4 } }));
-    add(3.6, makeVisualObject({ id: "chain_finish", asset: finishAsset, count: 1, position: "enemy_position", size: "large", life: 2.5, color: profile.color, enter: "scale_up", exit: "scale_down" }));
-    addScene(1.0, "camera_move", { durationSeconds: 0.7, holdSeconds: 0.5, right: 3.8, y: 1.8, forward: -1.2, lookAt: "self" });
-    addScene(3.6, "camera_shake", { durationSeconds: 0.9, strength: 0.65 });
-    impactTimes.push(2.4, 3.8, 6.2);
-  } else if (family === "sky_to_ground_lightning" || family === "field_lightning_rain" || family === "sky_mass_rain" || family === "camera_sky_execution") {
-    const rainAsset = mainAsset === "雷" ? "雷" : mainAsset;
-    add(0.9, makeVisualObject({ id: "sky_gate_ring", asset: circleAsset, count: 6, position: "above_enemy", size: "medium", life: 5.5, color: profile.color, spread: "circle", enter: "scale_up", exit: "scale_down", rotate: false, faceEnemy: true, rotationOffset: { x: Math.PI / 2, y: 0, z: 0 }, positionOffset: { y: 8 } }));
-    add(1.8, makeVisualObject({ id: "sky_rain_main", asset: rainAsset, count: mainAsset === "雷" ? 8 : 10, position: "above_enemy", size: mainAsset === "雷" ? "large" : "medium", life: mainAsset === "雷" ? 2.4 : 2.0, color: profile.color, spread: "circle", target: "enemy_position", duration: mainAsset === "雷" ? 0 : 0.95, path: mainAsset === "雷" ? "none" : "fall_from_above", enter: "fall_from_sky", exit: "scale_down", lightningStyle: family === "field_lightning_rain" ? "storm" : "pillar" }));
-    add(3.4, makeVisualObject({ id: "sky_rain_finish", asset: finishAsset, count: 1, position: "enemy_position", size: "large", life: 3.0, color: "#FFFFFF", enter: "scale_up", exit: "scale_down" }));
-    addScene(1.2, "camera_move", { durationSeconds: 0.8, holdSeconds: 1.0, right: 0, y: 9, forward: 2, lookAt: "enemy" });
-    addScene(1.8, "camera_shake", { durationSeconds: 1.4, strength: 0.55 });
-    impactTimes.push(2.0, 2.6, 3.5, 6.2);
-  } else if (family === "enemy_wide_impale" || family === "ice_bullet_stab" || family === "weapon_execution") {
-    const weaponAsset = mainAsset;
-    add(1.0, makeVisualObject({ id: "impale_warning_ring", asset: "シンプルリング", count: 8, position: "enemy_position", size: "medium", life: 4.8, color: profile.color, spread: "circle", enter: "scale_up", exit: "scale_down", orbit: { centerPosition: "enemy_position", radius: 6.5, height: 2.2, speed: 0.9, verticalWobble: 0.15 } }));
-    add(2.0, makeVisualObject({ id: "impale_blades", asset: weaponAsset, count: 8, position: "enemy_position", size: "medium", life: 1.45, color: profile.color, spread: "circle", target: "enemy_position", duration: 1.2, path: "straight_line", enter: "scale_up", exit: "scale_down", movementOffset: { y: 2 } }));
-    add(3.3, makeVisualObject({ id: "impale_burst", asset: finishAsset, count: 1, position: "enemy_position", size: "large", life: 2.6, color: profile.color, enter: "scale_up", exit: "scale_down" }));
-    addScene(2.0, "camera_shake", { durationSeconds: 1.0, strength: 0.5 });
-    impactTimes.push(2.4, 3.5, 5.7);
-  } else if (family === "meteor_impact" || family === "meteor_fall") {
-    add(0.8, makeVisualObject({ id: "meteor_sky_omen", asset: pick(["銀河", "雲", "魔法陣9"]), count: 3, position: "above_enemy", size: "large", life: 4.4, color: profile.darkColor, spread: "circle", enter: "scale_up", exit: "scale_down", positionOffset: { y: 10 } }));
-    add(2.0, makeVisualObject({ id: "meteor_main", asset: mainAsset === "隕石" ? "隕石" : mainAsset, count: 1, position: "above_enemy", size: "large", life: 1.35, color: profile.color, spread: "none", target: "enemy_position", duration: 1.1, path: "fall_from_above", enter: "fall_from_sky", exit: "scale_down", rotate: true, rotationSpeed: "fast", positionOffset: { y: 16 } }));
-    add(3.1, makeVisualObject({ id: "meteor_impact_burst", asset: "大爆発", count: 1, position: "enemy_position", size: "large", life: 3.0, color: profile.color, enter: "scale_up", exit: "scale_down" }));
-    addScene(1.4, "camera_move", { durationSeconds: 0.9, holdSeconds: 0.8, right: 0, y: 8, forward: 3, lookAt: "enemy" });
-    addScene(3.1, "camera_shake", { durationSeconds: 1.2, strength: 0.8 });
-    impactTimes.push(3.1, 4.2, 6.3);
   } else {
     // その他30種類以上のpatternはここに集約。
     // pattern名は毎回変わるので、同じmainAssetでも見え方が散る。
