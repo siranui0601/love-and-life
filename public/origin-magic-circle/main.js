@@ -5299,7 +5299,13 @@ function applyMagicColor(root, colorHexCode) {
     });
   });
 }
-function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, casterSide = "self") {
+
+
+  
+  
+  
+  
+  function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, casterSide = "self") {
   const assetName = visualObject.assetFileName;
 
   if (!summonAssetOptions.includes(assetName)) {
@@ -5312,89 +5318,42 @@ function spawnMagicVisualObject(visualObject, objectIndex = 0, objectCount = 1, 
 
   const modelRoot = createMagicObjectRoot(assetName, visualObject);
   if (!modelRoot) return null;
+
   const root = new Group();
   root.add(modelRoot);
 
+  const baseSpawnPosition = getSpawnPositionByName(
+    visualObject.spawnPosition,
+    assetName,
+    objectSize,
+    objectIndex,
+    objectCount,
+    visualObject.spawnSpreadPattern || "none",
+    casterSide
+  );
 
-const baseSpawnPosition = getSpawnPositionByName(
-  visualObject.spawnPosition,
-  assetName,
-  objectSize,
-  objectIndex,
-  objectCount,
-  visualObject.spawnSpreadPattern || "none",
-  casterSide
-);
+  let spawnPosition = applyRelativeOffsetToPosition(
+    baseSpawnPosition,
+    visualObject.positionOffset,
+    casterSide
+  );
 
-let spawnPosition = applyRelativeOffsetToPosition(
-  baseSpawnPosition,
-  visualObject.positionOffset,
-  casterSide
-);
+  const movement = visualObject.movement || {};
 
-const movement = visualObject.movement || {};
+  const baseTargetPosition = getTargetPositionByName(
+    movement.targetPosition || "enemy_position",
+    assetName,
+    objectSize,
+    casterSide
+  );
 
-const baseTargetPosition = getTargetPositionByName(
-  movement.targetPosition || "enemy_position",
-  assetName,
-  objectSize,
-  casterSide
-);
+  const targetPosition = applyRelativeOffsetToPosition(
+    baseTargetPosition,
+    movement.targetOffset,
+    casterSide
+  );
 
-const targetPosition = applyRelativeOffsetToPosition(
-  baseTargetPosition,
-  movement.targetOffset,
-  casterSide
-);
-
-
-const moveDuration = clampNumber(
-  movement.moveDurationSeconds,
-  0,
-  10,
-  0
-);
-
-const movePathType = movement.movePathType || "none";
-
-
-if (assetName === "lightning") {
-  // 雷は「物体」ではなく、地面から空へ伸びる柱として扱う。
-  // above_enemy でも enemy_position でも、根元は必ず地面に置く。
-  spawnPosition.y = 0;
-}
-
-
-const safeScale = preset.scale || 1;
-modelRoot.position.set((preset.offsetX || 0) / safeScale, 0, (preset.offsetZ || 0) / safeScale);
-root.position.copy(spawnPosition);
-root.scale.setScalar(preset.scale);
-root.userData.currentScale = preset.scale;
-
-root.rotation.x += preset.rotationX || 0;
-root.rotation.y += preset.rotationY || 0;
-root.rotation.z += preset.rotationZ || 0;
-
-applyVisualObjectRotationOptions(
-  root,
-  visualObject,
-  casterSide,
-  spawnPosition,
-  targetPosition,
-  {
-    moveDuration,
-    movePathType,
-  }
-);
-
-applyMagicColor(modelRoot, visualObject.colorHexCode);
-
-  if (assetName === "explosion_burst") {
-    resetExplosionBurst(modelRoot);
-  }
-
-  scene.add(root);
-
+  // ここで1回だけ宣言する。下で再宣言しない。
   const moveDuration = clampNumber(
     movement.moveDurationSeconds,
     0,
@@ -5404,69 +5363,111 @@ applyMagicColor(modelRoot, visualObject.colorHexCode);
 
   const movePathType = movement.movePathType || "none";
 
+  if (assetName === "lightning") {
+    // 雷は空中に浮く物体ではなく、地面まで届く柱・落雷として扱う
+    spawnPosition.y = 0;
+  }
 
+  const safeScale = preset.scale || 1;
 
-  const orbitConfig = normalizeVisualOrbitConfig(
-  visualObject,
-  assetName,
-  objectSize,
-  casterSide,
-  objectIndex,
-  objectCount
-);
-
-
-
-
-const rawLifeTime = clampNumber(visualObject.lifeTimeSeconds, 0.5, 10, 8);
-
-const shouldDespawnOnImpact =
-  visualObject?.movement?.despawnOnImpact === true ||
-  (
-    moveDuration > 0 &&
-    ["enemy_position", "above_enemy"].includes(movement.targetPosition || "") &&
-    ["straight_line", "arc", "fall_from_above", "rise_from_below"].includes(movePathType)
+  modelRoot.position.set(
+    (preset.offsetX || 0) / safeScale,
+    0,
+    (preset.offsetZ || 0) / safeScale
   );
 
-const finalLifeTime = shouldDespawnOnImpact
-  ? Math.min(rawLifeTime, moveDuration + 0.18)
-  : rawLifeTime;
-  
-  
-  
-  
+  root.position.copy(spawnPosition);
+  root.scale.setScalar(preset.scale);
+  root.userData.currentScale = preset.scale;
+
+  root.rotation.x += preset.rotationX || 0;
+  root.rotation.y += preset.rotationY || 0;
+  root.rotation.z += preset.rotationZ || 0;
+
+  applyVisualObjectRotationOptions(
+    root,
+    visualObject,
+    casterSide,
+    spawnPosition,
+    targetPosition,
+    {
+      moveDuration,
+      movePathType,
+    }
+  );
+
+  applyMagicColor(modelRoot, visualObject.colorHexCode);
+
+  if (assetName === "explosion_burst") {
+    resetExplosionBurst(modelRoot);
+  }
+
+  scene.add(root);
+
+  const orbitConfig = normalizeVisualOrbitConfig(
+    visualObject,
+    assetName,
+    objectSize,
+    casterSide,
+    objectIndex,
+    objectCount
+  );
+
+  const rawLifeTime = clampNumber(
+    visualObject.lifeTimeSeconds,
+    0.5,
+    10,
+    8
+  );
+
+  const shouldDespawnOnImpact =
+    visualObject?.movement?.despawnOnImpact === true ||
+    (
+      moveDuration > 0 &&
+      ["enemy_position", "above_enemy"].includes(movement.targetPosition || "") &&
+      ["straight_line", "arc", "fall_from_above", "rise_from_below"].includes(movePathType)
+    );
+
+  const finalLifeTime = shouldDespawnOnImpact
+    ? Math.min(rawLifeTime, moveDuration + 0.18)
+    : rawLifeTime;
 
   const active = {
-  root,
-  modelRoot,
-  effectRoot: modelRoot,
-  assetName,
-  startTime: clock.elapsedTime,
-  lifeTime: finalLifeTime,
-  
-  spawnPosition: spawnPosition.clone(),
-  targetPosition: targetPosition.clone(),
+    root,
+    modelRoot,
+    effectRoot: modelRoot,
+    assetName,
+    startTime: clock.elapsedTime,
+    lifeTime: finalLifeTime,
 
-  moveDuration,
-  movePathType,
+    spawnPosition: spawnPosition.clone(),
+    targetPosition: targetPosition.clone(),
 
-  orbit: orbitConfig,
+    moveDuration,
+    movePathType,
 
-  baseScale: preset.scale,
-  enterEffect: normalizeEnterEffect(visualObject.enterEffect),
-  exitEffect: normalizeExitEffect(visualObject.exitEffect),
-  enterDuration: 0.75,
-  exitDuration: 0.75,
+    orbit: orbitConfig,
 
-  shouldRotate: shouldAutoSpinAsset(assetName, visualObject),
-rotationSpeed: getRotationSpeedValue(visualObject.rotation?.rotationSpeed),
-rotationAxis: normalizeRotationAxis(visualObject.rotation?.axis, assetName),
+    baseScale: preset.scale,
+    enterEffect: normalizeEnterEffect(visualObject.enterEffect),
+    exitEffect: normalizeExitEffect(visualObject.exitEffect),
+    enterDuration: 0.75,
+    exitDuration: 0.75,
 
+    shouldRotate: shouldAutoSpinAsset(assetName, visualObject),
+    rotationSpeed: getRotationSpeedValue(visualObject.rotation?.rotationSpeed),
+    rotationAxis: normalizeRotationAxis(visualObject.rotation?.axis, assetName),
+  };
 
   applyMagicLifecycleTransform(active, 0);
   activeMagicObjects.push(active);
+
   return active;
 }
+
+
+
+
 function getMagicEffectEndSeconds(effectJson) {
   let end = 0;
 
