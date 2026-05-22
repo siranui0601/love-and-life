@@ -5615,20 +5615,24 @@ function getMagicEffectEndSeconds(effectJson) {
 
 
 
-
 function triggerOriginSceneEffect(sceneEffect, casterSide = "self") {
   if (!sceneEffect || typeof sceneEffect !== "object") return;
 
   if (sceneEffect.type === "sky_color") {
-    const originalBackground = scene.background?.clone?.() || new Color("#87ceeb");
+    const token = ++originSkyEffectVersion;
     const nextColor = new Color(sceneEffect.color || "#101020");
     const durationMs = Math.max(300, Number(sceneEffect.durationSeconds || 3) * 1000);
 
     scene.background = nextColor;
 
     setBattleTimeout(() => {
-      if (!battleState.gameEnded) {
-        scene.background = originalBackground;
+      if (token !== originSkyEffectVersion) return;
+      if (battleState.gameEnded) return;
+
+      if (battleDefaultSkyColor) {
+        scene.background = battleDefaultSkyColor.clone();
+      } else {
+        scene.background = new Color("#87ceeb");
       }
     }, durationMs);
 
@@ -5656,6 +5660,7 @@ function triggerOriginSceneEffect(sceneEffect, casterSide = "self") {
       }
 
       const fade = 1 - t;
+
       camera.position.set(
         basePosition.x + (Math.random() - 0.5) * strength * fade,
         basePosition.y + (Math.random() - 0.5) * strength * fade,
@@ -5699,220 +5704,151 @@ function triggerOriginSceneEffect(sceneEffect, casterSide = "self") {
     };
 
     pulse();
+    return;
   }
 
-if (sceneEffect.type === "camera_move") {
-  const token = ++originCameraEffectVersion;
+  if (sceneEffect.type === "camera_move") {
+    const token = ++originCameraEffectVersion;
 
-  const durationMs = Math.max(200, Number(sceneEffect.durationSeconds || 1.2) * 1000);
-  const holdMs = Math.max(0, Number(sceneEffect.holdSeconds || 0.4) * 1000);
+    const durationMs = Math.max(200, Number(sceneEffect.durationSeconds || 1.2) * 1000);
+    const holdMs = Math.max(0, Number(sceneEffect.holdSeconds || 0.4) * 1000);
 
-  const { self, enemy } = getBattleActors(casterSide);
-  const { forward, right } = getForwardAndRight(self, enemy);
+    const { self, enemy } = getBattleActors(casterSide);
+    const { forward, right } = getForwardAndRight(self, enemy);
 
-  const startPosition = camera.position.clone();
-  const startQuaternion = camera.quaternion.clone();
+    const startPosition = camera.position.clone();
+    const lookTarget = getSceneEffectLookTarget(sceneEffect, casterSide);
 
-  const lookTarget = getSceneEffectLookTarget(sceneEffect, casterSide);
+    const targetPosition = startPosition
+      .clone()
+      .addScaledVector(forward, Number(sceneEffect.forward) || 0)
+      .addScaledVector(right, Number(sceneEffect.right) || 0);
 
-  const targetPosition = startPosition
-    .clone()
-    .addScaledVector(forward, Number(sceneEffect.forward) || 0)
-    .addScaledVector(right, Number(sceneEffect.right) || 0);
+    targetPosition.y += Number(sceneEffect.y) || 0;
 
-  targetPosition.y += Number(sceneEffect.y) || 0;
+    const startedAt = performance.now();
 
-  const startedAt = performance.now();
-
-  const move = () => {
-    if (token !== originCameraEffectVersion) return;
-
-    if (battleState.gameEnded) {
-      return;
-    }
-
-    const elapsed = performance.now() - startedAt;
-    const t = Math.min(elapsed / durationMs, 1);
-    const eased = 1 - Math.pow(1 - t, 3);
-
-    camera.position.lerpVectors(startPosition, targetPosition, eased);
-    camera.lookAt(lookTarget);
-
-    if (t < 1) {
-      requestAnimationFrame(move);
-      return;
-    }
-
-    setBattleTimeout(() => {
+    const move = () => {
       if (token !== originCameraEffectVersion) return;
       if (battleState.gameEnded) return;
 
-      restoreBattleDefaultCameraPose(durationMs);
-    }, holdMs);
-  };
+      const elapsed = performance.now() - startedAt;
+      const t = Math.min(elapsed / durationMs, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
 
-  move();
-  return;
-}
+      camera.position.lerpVectors(startPosition, targetPosition, eased);
+      camera.lookAt(lookTarget);
 
-if (sceneEffect.type === "camera_orbit") {
-  const token = ++originCameraEffectVersion;
+      if (t < 1) {
+        requestAnimationFrame(move);
+        return;
+      }
 
-  const durationMs = Math.max(400, Number(sceneEffect.durationSeconds || 2.2) * 1000);
-  const radius = Math.max(4, Number(sceneEffect.radius || 18));
-  const height = Number(sceneEffect.y || sceneEffect.height || 6);
+      setBattleTimeout(() => {
+        if (token !== originCameraEffectVersion) return;
+        if (battleState.gameEnded) return;
 
-  const lookTarget = getSceneEffectLookTarget(sceneEffect, casterSide);
-  const startedAt = performance.now();
+        restoreBattleDefaultCameraPose(durationMs);
+      }, holdMs);
+    };
 
-  const startAngle = Math.atan2(
-    camera.position.x - lookTarget.x,
-    camera.position.z - lookTarget.z
-  );
+    move();
+    return;
+  }
 
-  const orbit = (now) => {
-    if (token !== originCameraEffectVersion) return;
-    if (battleState.gameEnded) return;
+  if (sceneEffect.type === "camera_orbit") {
+    const token = ++originCameraEffectVersion;
 
-    const t = Math.min((now - startedAt) / durationMs, 1);
-    const eased = t * t * (3 - 2 * t);
-    const angle = startAngle + eased * Math.PI * 2 * (sceneEffect.clockwise === false ? -1 : 1);
+    const durationMs = Math.max(400, Number(sceneEffect.durationSeconds || 2.2) * 1000);
+    const radius = Math.max(4, Number(sceneEffect.radius || 18));
+    const height = Number(sceneEffect.y || sceneEffect.height || 6);
 
-    camera.position.set(
-      lookTarget.x + Math.sin(angle) * radius,
-      lookTarget.y + height,
-      lookTarget.z + Math.cos(angle) * radius
+    const lookTarget = getSceneEffectLookTarget(sceneEffect, casterSide);
+    const startedAt = performance.now();
+
+    const startAngle = Math.atan2(
+      camera.position.x - lookTarget.x,
+      camera.position.z - lookTarget.z
     );
 
-    camera.lookAt(lookTarget);
-
-    if (t < 1) {
-      requestAnimationFrame(orbit);
-      return;
-    }
-
-    restoreBattleDefaultCameraPose(700);
-  };
-
-  requestAnimationFrame(orbit);
-  return;
-}
-
-if (sceneEffect.type === "camera_top_down") {
-  const token = ++originCameraEffectVersion;
-
-  const durationMs = Math.max(300, Number(sceneEffect.durationSeconds || 0.9) * 1000);
-  const holdMs = Math.max(0, Number(sceneEffect.holdSeconds || 0.8) * 1000);
-
-  const lookTarget = getSceneEffectLookTarget(sceneEffect, casterSide);
-  const startPosition = camera.position.clone();
-
-  const targetPosition = lookTarget.clone().add(new Vector3(
-    Number(sceneEffect.x || 0),
-    Number(sceneEffect.y || 20),
-    Number(sceneEffect.z || 0.1)
-  ));
-
-  const startedAt = performance.now();
-
-  const move = (now) => {
-    if (token !== originCameraEffectVersion) return;
-    if (battleState.gameEnded) return;
-
-    const t = Math.min((now - startedAt) / durationMs, 1);
-    const eased = 1 - Math.pow(1 - t, 3);
-
-    camera.position.lerpVectors(startPosition, targetPosition, eased);
-    camera.lookAt(lookTarget);
-
-    if (t < 1) {
-      requestAnimationFrame(move);
-      return;
-    }
-
-    setBattleTimeout(() => {
+    const orbit = (now) => {
       if (token !== originCameraEffectVersion) return;
       if (battleState.gameEnded) return;
 
+      const t = Math.min((now - startedAt) / durationMs, 1);
+      const eased = t * t * (3 - 2 * t);
+      const direction = sceneEffect.clockwise === false ? -1 : 1;
+      const angle = startAngle + eased * Math.PI * 2 * direction;
+
+      camera.position.set(
+        lookTarget.x + Math.sin(angle) * radius,
+        lookTarget.y + height,
+        lookTarget.z + Math.cos(angle) * radius
+      );
+
+      camera.lookAt(lookTarget);
+
+      if (t < 1) {
+        requestAnimationFrame(orbit);
+        return;
+      }
+
       restoreBattleDefaultCameraPose(700);
-    }, holdMs);
-  };
+    };
 
-  requestAnimationFrame(move);
-  return;
+    requestAnimationFrame(orbit);
+    return;
+  }
+
+  if (sceneEffect.type === "camera_top_down") {
+    const token = ++originCameraEffectVersion;
+
+    const durationMs = Math.max(300, Number(sceneEffect.durationSeconds || 0.9) * 1000);
+    const holdMs = Math.max(0, Number(sceneEffect.holdSeconds || 0.8) * 1000);
+
+    const lookTarget = getSceneEffectLookTarget(sceneEffect, casterSide);
+    const startPosition = camera.position.clone();
+
+    const targetPosition = lookTarget.clone().add(new Vector3(
+      Number(sceneEffect.x || 0),
+      Number(sceneEffect.y || 20),
+      Number(sceneEffect.z || 0.1)
+    ));
+
+    const startedAt = performance.now();
+
+    const move = (now) => {
+      if (token !== originCameraEffectVersion) return;
+      if (battleState.gameEnded) return;
+
+      const t = Math.min((now - startedAt) / durationMs, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+
+      camera.position.lerpVectors(startPosition, targetPosition, eased);
+      camera.lookAt(lookTarget);
+
+      if (t < 1) {
+        requestAnimationFrame(move);
+        return;
+      }
+
+      setBattleTimeout(() => {
+        if (token !== originCameraEffectVersion) return;
+        if (battleState.gameEnded) return;
+
+        restoreBattleDefaultCameraPose(700);
+      }, holdMs);
+    };
+
+    requestAnimationFrame(move);
+    return;
+  }
 }
 
-  const targetPosition = basePosition
-    .clone()
-    .addScaledVector(forward, Number(sceneEffect.forward) || 0)
-    .addScaledVector(right, Number(sceneEffect.right) || 0);
 
-  targetPosition.y += Number(sceneEffect.y) || 0;
 
-  const startedAt = performance.now();
 
-  const move = () => {
-    if (battleState.gameEnded) {
-      camera.position.copy(basePosition);
-      camera.quaternion.copy(baseQuaternion);
-      return;
-    }
 
-    const elapsed = performance.now() - startedAt;
-    const t = Math.min(elapsed / durationMs, 1);
-    const eased = 1 - Math.pow(1 - t, 3);
-
-    camera.position.lerpVectors(basePosition, targetPosition, eased);
-    camera.lookAt(lookTarget);
-
-    if (typeof controls !== "undefined" && controls?.target) {
-      controls.target.copy(lookTarget);
-      controls.update?.();
-    }
-
-    if (t < 1) {
-      requestAnimationFrame(move);
-      return;
-    }
-
-    setBattleTimeout(() => {
-      const backStartedAt = performance.now();
-      const currentPosition = camera.position.clone();
-      const currentQuaternion = camera.quaternion.clone();
-
-      const back = () => {
-        if (battleState.gameEnded) {
-          camera.position.copy(basePosition);
-          camera.quaternion.copy(baseQuaternion);
-          return;
-        }
-
-        const backElapsed = performance.now() - backStartedAt;
-        const backT = Math.min(backElapsed / durationMs, 1);
-        const backEased = 1 - Math.pow(1 - backT, 3);
-
-        camera.position.lerpVectors(currentPosition, basePosition, backEased);
-        camera.quaternion.slerpQuaternions(currentQuaternion, baseQuaternion, backEased);
-
-        if (typeof controls !== "undefined" && controls?.target) {
-          controls.target.copy(lookTarget.clone().lerp(new Vector3(0, 2, 0), backEased));
-          controls.update?.();
-        }
-
-        if (backT < 1) {
-          requestAnimationFrame(back);
-        }
-      };
-
-      back();
-    }, holdMs);
-  };
-
-  move();
-  return;
-}
-  
-}
 
 function scheduleOriginSceneEffects(effectJson, casterSide = "self") {
   const sceneEffects = Array.isArray(effectJson?.sceneEffects)
