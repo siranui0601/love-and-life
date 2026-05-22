@@ -4683,6 +4683,96 @@ function createCustomEffectByName(assetName, visualObject = {}) {
 };
 
 
+
+let battleDefaultCameraPose = null;
+let battleDefaultSkyColor = null;
+let originCameraEffectVersion = 0;
+let originSkyEffectVersion = 0;
+
+function saveBattleDefaultCameraPose() {
+  battleDefaultCameraPose = {
+    position: camera.position.clone(),
+    quaternion: camera.quaternion.clone(),
+    fov: camera.fov,
+  };
+
+  battleDefaultSkyColor = scene.background?.clone?.() || new Color("#87ceeb");
+}
+
+function restoreBattleDefaultCameraPose(durationMs = 650) {
+  if (!battleDefaultCameraPose) return;
+
+  const token = ++originCameraEffectVersion;
+  const start = performance.now();
+
+  const fromPosition = camera.position.clone();
+  const fromQuaternion = camera.quaternion.clone();
+  const fromFov = camera.fov;
+
+  const toPosition = battleDefaultCameraPose.position.clone();
+  const toQuaternion = battleDefaultCameraPose.quaternion.clone();
+  const toFov = battleDefaultCameraPose.fov;
+
+  const step = (now) => {
+    if (token !== originCameraEffectVersion) return;
+
+    const t = Math.min((now - start) / durationMs, 1);
+    const eased = t * t * (3 - 2 * t);
+
+    camera.position.lerpVectors(fromPosition, toPosition, eased);
+    camera.quaternion.slerpQuaternions(fromQuaternion, toQuaternion, eased);
+    camera.fov = fromFov + (toFov - fromFov) * eased;
+    camera.updateProjectionMatrix();
+
+    if (t < 1) {
+      requestAnimationFrame(step);
+      return;
+    }
+
+    camera.position.copy(toPosition);
+    camera.quaternion.copy(toQuaternion);
+    camera.fov = toFov;
+    camera.updateProjectionMatrix();
+  };
+
+  requestAnimationFrame(step);
+}
+
+function resetBattleSceneCameraAndSky() {
+  originSkyEffectVersion += 1;
+
+  if (battleDefaultSkyColor) {
+    scene.background = battleDefaultSkyColor.clone();
+  } else {
+    scene.background = new Color("#87ceeb");
+  }
+
+  restoreBattleDefaultCameraPose(650);
+}
+
+function getSceneEffectLookTarget(sceneEffect, casterSide = "self") {
+  const { self, enemy } = getBattleActors(casterSide);
+
+  if (sceneEffect.lookAt === "enemy") {
+    return enemy.position.clone().add(new Vector3(0, 3, 0));
+  }
+
+  if (sceneEffect.lookAt === "self") {
+    return self.position.clone().add(new Vector3(0, 3, 0));
+  }
+
+  if (sceneEffect.lookAt === "center" || sceneEffect.lookAt === "battlefield_center") {
+    return new Vector3(0, 3, 0);
+  }
+
+  return new Vector3(0, 3, 0);
+}
+
+
+
+
+
+
   const pedestalA = makeSceneObject(pedestalGltf.scene, 0.0024);
 const pedestalB = makeSceneObject(pedestalGltf.scene, 0.0024);
 pedestalA.position.set(-16, 2, 0);
@@ -4874,6 +4964,36 @@ function getYawFromTo(from, to) {
   return Math.atan2(dir.x, dir.z);
 }
 
+
+
+function getAssetFacingYawCorrection(assetName) {
+  /*
+    getYawFromTo / getFaceEnemyYaw は「ローカル +Z が正面」の素材を前提にしている。
+    ただし、ゲート・鳥居・魔法陣・翼・一部キャラ系は、見た目上の正面が +X 側に寄っていることが多い。
+    そのまま yaw を足すと、プレイヤー同士の軸に対して90度横を向く。
+  */
+
+  if (
+    gateAssetNames.has(assetName) ||
+    magicCircleAssetNames.has(assetName) ||
+    wingAssetNames.has(assetName) ||
+    dragonAssetNames.has(assetName) ||
+    vehicleAssetNames.has(assetName) ||
+    assetName === "animated_effect.glb" ||
+    assetName === "duchess_shield.glb" ||
+    assetName === "creaturespirate_trooper.glb"
+  ) {
+    return -Math.PI / 2;
+  }
+
+  return 0;
+}
+
+
+
+
+
+
 function applyVisualObjectRotationOptions(
   root,
   visualObject,
@@ -4899,16 +5019,20 @@ function applyVisualObjectRotationOptions(
     );
 
   if (shouldFaceMovement && spawnPosition && targetPosition) {
-    root.rotation.y += getYawFromTo(spawnPosition, targetPosition);
+  root.rotation.y +=
+    getYawFromTo(spawnPosition, targetPosition) +
+    getAssetFacingYawCorrection(assetName);
 
-    // 氷柱はモデルの素の向きが縦向きになりやすいので、
-    // 横方向に飛ばす時だけ寝かせる
-    if (assetName === "icicle.glb" && movementInfo.movePathType !== "fall_from_above") {
-      root.rotation.z += Math.PI / 2;
-    }
-  } else if (shouldFaceEnemy) {
-    root.rotation.y += getFaceEnemyYaw(casterSide);
+  // 氷柱は横方向に飛ばす時だけ寝かせる。
+  // fall_from_above の時は、上から下に刺さるので寝かせない。
+  if (assetName === "icicle.glb" && movementInfo.movePathType !== "fall_from_above") {
+    root.rotation.z += Math.PI / 2;
   }
+} else if (shouldFaceEnemy) {
+  root.rotation.y +=
+    getFaceEnemyYaw(casterSide) +
+    getAssetFacingYawCorrection(assetName);
+}
 
   const offset = visualObject.rotationOffset || {};
   root.rotation.x += Number(offset.x) || 0;
@@ -5577,27 +5701,146 @@ function triggerOriginSceneEffect(sceneEffect, casterSide = "self") {
     pulse();
   }
 
-  if (sceneEffect.type === "camera_move") {
+if (sceneEffect.type === "camera_move") {
+  const token = ++originCameraEffectVersion;
+
   const durationMs = Math.max(200, Number(sceneEffect.durationSeconds || 1.2) * 1000);
   const holdMs = Math.max(0, Number(sceneEffect.holdSeconds || 0.4) * 1000);
 
   const { self, enemy } = getBattleActors(casterSide);
   const { forward, right } = getForwardAndRight(self, enemy);
 
-  const basePosition = camera.position.clone();
-  const baseQuaternion = camera.quaternion.clone();
+  const startPosition = camera.position.clone();
+  const startQuaternion = camera.quaternion.clone();
 
-  const lookTarget = (() => {
-    if (sceneEffect.lookAt === "enemy") {
-      return enemy.position.clone().add(new Vector3(0, 3, 0));
+  const lookTarget = getSceneEffectLookTarget(sceneEffect, casterSide);
+
+  const targetPosition = startPosition
+    .clone()
+    .addScaledVector(forward, Number(sceneEffect.forward) || 0)
+    .addScaledVector(right, Number(sceneEffect.right) || 0);
+
+  targetPosition.y += Number(sceneEffect.y) || 0;
+
+  const startedAt = performance.now();
+
+  const move = () => {
+    if (token !== originCameraEffectVersion) return;
+
+    if (battleState.gameEnded) {
+      return;
     }
 
-    if (sceneEffect.lookAt === "self") {
-      return self.position.clone().add(new Vector3(0, 3, 0));
+    const elapsed = performance.now() - startedAt;
+    const t = Math.min(elapsed / durationMs, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+
+    camera.position.lerpVectors(startPosition, targetPosition, eased);
+    camera.lookAt(lookTarget);
+
+    if (t < 1) {
+      requestAnimationFrame(move);
+      return;
     }
 
-    return new Vector3(0, 3, 0);
-  })();
+    setBattleTimeout(() => {
+      if (token !== originCameraEffectVersion) return;
+      if (battleState.gameEnded) return;
+
+      restoreBattleDefaultCameraPose(durationMs);
+    }, holdMs);
+  };
+
+  move();
+  return;
+}
+
+if (sceneEffect.type === "camera_orbit") {
+  const token = ++originCameraEffectVersion;
+
+  const durationMs = Math.max(400, Number(sceneEffect.durationSeconds || 2.2) * 1000);
+  const radius = Math.max(4, Number(sceneEffect.radius || 18));
+  const height = Number(sceneEffect.y || sceneEffect.height || 6);
+
+  const lookTarget = getSceneEffectLookTarget(sceneEffect, casterSide);
+  const startedAt = performance.now();
+
+  const startAngle = Math.atan2(
+    camera.position.x - lookTarget.x,
+    camera.position.z - lookTarget.z
+  );
+
+  const orbit = (now) => {
+    if (token !== originCameraEffectVersion) return;
+    if (battleState.gameEnded) return;
+
+    const t = Math.min((now - startedAt) / durationMs, 1);
+    const eased = t * t * (3 - 2 * t);
+    const angle = startAngle + eased * Math.PI * 2 * (sceneEffect.clockwise === false ? -1 : 1);
+
+    camera.position.set(
+      lookTarget.x + Math.sin(angle) * radius,
+      lookTarget.y + height,
+      lookTarget.z + Math.cos(angle) * radius
+    );
+
+    camera.lookAt(lookTarget);
+
+    if (t < 1) {
+      requestAnimationFrame(orbit);
+      return;
+    }
+
+    restoreBattleDefaultCameraPose(700);
+  };
+
+  requestAnimationFrame(orbit);
+  return;
+}
+
+if (sceneEffect.type === "camera_top_down") {
+  const token = ++originCameraEffectVersion;
+
+  const durationMs = Math.max(300, Number(sceneEffect.durationSeconds || 0.9) * 1000);
+  const holdMs = Math.max(0, Number(sceneEffect.holdSeconds || 0.8) * 1000);
+
+  const lookTarget = getSceneEffectLookTarget(sceneEffect, casterSide);
+  const startPosition = camera.position.clone();
+
+  const targetPosition = lookTarget.clone().add(new Vector3(
+    Number(sceneEffect.x || 0),
+    Number(sceneEffect.y || 20),
+    Number(sceneEffect.z || 0.1)
+  ));
+
+  const startedAt = performance.now();
+
+  const move = (now) => {
+    if (token !== originCameraEffectVersion) return;
+    if (battleState.gameEnded) return;
+
+    const t = Math.min((now - startedAt) / durationMs, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+
+    camera.position.lerpVectors(startPosition, targetPosition, eased);
+    camera.lookAt(lookTarget);
+
+    if (t < 1) {
+      requestAnimationFrame(move);
+      return;
+    }
+
+    setBattleTimeout(() => {
+      if (token !== originCameraEffectVersion) return;
+      if (battleState.gameEnded) return;
+
+      restoreBattleDefaultCameraPose(700);
+    }, holdMs);
+  };
+
+  requestAnimationFrame(move);
+  return;
+}
 
   const targetPosition = basePosition
     .clone()
@@ -5787,6 +6030,9 @@ const objectCount = Math.max(
   await new Promise((resolve) => {
     setBattleTimeout(resolve, endMs);
   });
+  if (!battleState.gameEnded) {
+  resetBattleSceneCameraAndSky();
+}
 }
 
 
@@ -6992,6 +7238,8 @@ showBattleResultScreen({ selfWon });}
 
 
   setCameraForMatchup(userTrackingId, currentRoom?.members || [], fighterA, fighterB);
+  
+  saveBattleDefaultCameraPose();
   //renderHpBars();
   /*setInterval(async () => {
     try {
@@ -7006,6 +7254,9 @@ showBattleResultScreen({ selfWon });}
     } catch {}
   }, 1200);*/
 //代わりにこれを入れるよ〜
+
+
+
 const socket = getSocketIoClient();
 
 if (socket) {
