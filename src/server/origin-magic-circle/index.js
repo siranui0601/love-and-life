@@ -316,32 +316,241 @@ function normalizeOriginMagicCircleDirectionTags(rawDirectionTags, seed = "") {
   return [pickByStableHash(ORIGIN_MAGIC_CIRCLE_DIRECTION_TAGS, seed, "fallbackDirectionTag") || "召喚"];
 }
 
+
+const ORIGIN_MAIN_ASSET_ROLE_MAP = {
+  炎球: "projectile",
+  火: "projectile",
+  雷: "weather",
+  プラズマ: "energy",
+  光球: "energy",
+  バレッド: "weapon",
+  魂剣: "weapon",
+  ギミック剣: "weapon",
+  ツララ: "weapon",
+  隕石: "meteor",
+
+  円盤: "portal",
+  ゲート: "portal",
+  ゲート1: "portal",
+  ゲート2: "portal",
+  鳥居: "portal",
+  動く鳥居: "portal",
+  魔法陣: "circle",
+
+  キュートドラゴン: "creature",
+  アニメドラゴン: "creature",
+  弱ドラゴン: "creature",
+  竜騎士: "creature",
+  翔ぶドラゴン: "creature",
+  不死鳥: "creature",
+
+  戦車: "vehicle",
+  戦闘機: "vehicle",
+  六足ロボ: "vehicle",
+  トルーパー: "vehicle",
+
+  太陽: "celestial",
+  月: "celestial",
+  銀河: "cosmic",
+  歯車時計: "time",
+  天球儀: "cosmic",
+
+  竜巻: "storm",
+  アニメ竜巻: "storm",
+  雲: "weather",
+  雪: "ice",
+  雪結晶: "ice",
+  火山: "ground",
+  落葉: "nature",
+  枯れ木: "nature",
+  ヤシの木: "nature",
+  針葉樹: "nature",
+
+  翼: "wing",
+  天使翼: "wing",
+  悪魔翼: "wing",
+  機械翼: "wing",
+  蝶: "swarm",
+
+  ハート: "symbol",
+  ダイヤ: "symbol",
+  花束: "symbol",
+};
+
+const ORIGIN_ROLE_ALLOWED_PATTERNS = {
+  projectile: [
+    "vertical_circle_barrage",
+    "multi_phase_barrage",
+    "far_projectile_impact",
+    "gather_then_release",
+    "portal_projectile_burst",
+    "weapon_execution",
+  ],
+
+  weapon: [
+    "weapon_execution",
+    "enemy_wide_impale",
+    "ice_bullet_stab",
+    "far_projectile_impact",
+    "linked_magic_circles",
+  ],
+
+  weather: [
+    "sky_to_ground_lightning",
+    "field_lightning_rain",
+    "diagonal_lightning_slash",
+    "sky_road",
+    "camera_sky_execution",
+  ],
+
+  energy: [
+    "orbital_laser",
+    "plasma_cage",
+    "vertical_circle_single_judgment",
+    "multi_phase_barrage",
+    "battlefield_core_overload",
+  ],
+
+  portal: [
+    "gate_release",
+    "gate_army",
+    "dark_gate",
+    "portal_projectile_burst",
+    "linked_magic_circles",
+    "cosmic_collapse",
+  ],
+
+  circle: [
+    "linked_magic_circles",
+    "vertical_circle_single_judgment",
+    "ring_seal",
+    "torii_boundary",
+    "silence_then_flash",
+  ],
+
+  creature: [
+    "dragon_assault",
+    "behind_stand",
+    "low_angle_summon",
+    "phoenix_rebirth_blast",
+    "hell_wing_drop",
+  ],
+
+  vehicle: [
+    "tank_siege",
+    "machine_barrage",
+    "fighter_airstrike",
+    "crossfire",
+    "far_charge",
+  ],
+
+  celestial: [
+    "sun_burst",
+    "moon_gravity",
+    "angelic_pillar",
+    "orbital_laser",
+    "camera_sky_execution",
+  ],
+
+  cosmic: [
+    "cosmic_collapse",
+    "moon_gravity",
+    "orbital_laser",
+    "camera_sky_execution",
+    "battlefield_core_overload",
+  ],
+
+  time: [
+    "clock_stop",
+    "silence_then_flash",
+    "moon_gravity",
+    "linked_magic_circles",
+    "cosmic_collapse",
+  ],
+
+  storm: [
+    "tornado_swallow",
+    "sky_mass_rain",
+    "field_lightning_rain",
+    "spiral_bind",
+    "battlefield_core_overload",
+  ],
+
+  ice: [
+    "ice_prison",
+    "ice_bullet_stab",
+    "snowfall_execution",
+    "meteor_impact",
+    "enemy_wide_impale",
+  ],
+
+  ground: [
+    "ground_rupture",
+    "battlefield_core_overload",
+    "meteor_impact",
+    "tree_world_takeover",
+  ],
+
+  nature: [
+    "tree_world_takeover",
+    "enemy_encircle",
+    "sky_mass_rain",
+    "ground_rupture",
+    "all_range_finale",
+  ],
+
+  wing: [
+    "wing_judgment",
+    "angelic_pillar",
+    "hell_wing_drop",
+    "behind_stand",
+    "camera_sky_execution",
+  ],
+
+  swarm: [
+    "butterfly_swarm",
+    "enemy_encircle",
+    "all_range_finale",
+    "gather_then_release",
+  ],
+
+  symbol: [
+    "ring_seal",
+    "angelic_pillar",
+    "linked_magic_circles",
+    "silence_then_flash",
+  ],
+};
+
+function getMainAssetRole(mainAsset) {
+  return ORIGIN_MAIN_ASSET_ROLE_MAP[mainAsset] || "projectile";
+}
+
+
 function choosePatternFromDirectionTags(directionTags, mainAsset, seed = "") {
+  const role = getMainAssetRole(mainAsset);
+
   const tagPatterns = [];
+
   for (const tag of directionTags || []) {
     tagPatterns.push(...(ORIGIN_MAGIC_CIRCLE_DIRECTION_PATTERN_MAP[tag] || []));
   }
-  if (["キュートドラゴン", "アニメドラゴン", "弱ドラゴン", "竜騎士", "翔ぶドラゴン"].includes(mainAsset)) tagPatterns.push("dragon_assault", "behind_stand", "low_angle_summon");
-  if (["雷", "プラズマ", "光球"].includes(mainAsset)) tagPatterns.push("sky_to_ground_lightning", "field_lightning_rain", "sky_road");
-  if (["戦車", "戦闘機", "六足ロボ", "トルーパー"].includes(mainAsset)) tagPatterns.push("tank_siege", "machine_barrage", "fighter_airstrike");
-  if (["魂剣", "ギミック剣", "バレッド", "ツララ"].includes(mainAsset)) tagPatterns.push("weapon_execution", "enemy_wide_impale", "ice_bullet_stab");
-  const usablePatterns = uniqueArray(tagPatterns).filter((pattern) => ORIGIN_MAGIC_CIRCLE_PATTERN_POOL.includes(pattern));
-  const pool = usablePatterns.length > 0 ? usablePatterns : ORIGIN_MAGIC_CIRCLE_PATTERN_POOL;
-  return pickByStableHash(pool, seed, `pattern:${mainAsset}:${(directionTags || []).join("|")}`) || pick(pool);
-}
 
-function chooseSupportAssets(mainAsset, count = 4) {
-  const pool = ORIGIN_MAGIC_CIRCLE_SUPPORT_ASSETS
-    .filter((name) => name !== mainAsset && ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[name]);
+  const roleAllowed = ORIGIN_ROLE_ALLOWED_PATTERNS[role] || ORIGIN_MAGIC_CIRCLE_PATTERN_POOL;
 
-  const result = [];
+  const tagFiltered = uniqueArray(tagPatterns)
+    .filter((pattern) => ORIGIN_MAGIC_CIRCLE_PATTERN_POOL.includes(pattern))
+    .filter((pattern) => roleAllowed.includes(pattern));
 
-  while (result.length < count && pool.length) {
-    const selected = pick(pool);
-    if (!result.includes(selected)) result.push(selected);
-  }
+  const pool = tagFiltered.length > 0
+    ? tagFiltered
+    : roleAllowed.filter((pattern) => ORIGIN_MAGIC_CIRCLE_PATTERN_POOL.includes(pattern));
 
-  return result;
+  return pickByStableHash(
+    pool.length ? pool : ORIGIN_MAGIC_CIRCLE_PATTERN_POOL,
+    seed,
+    `rolePattern:${mainAsset}:${role}:${(directionTags || []).join("|")}`
+  );
 }
 
 function normalizeOriginMagicCircleConceptJson(rawJson, seed = "") {
@@ -909,6 +1118,251 @@ function createFallbackOriginMagicCircleConcept({
 
 
 
+function buildOpeningSequence({ mainAsset, profile, circleAsset, pattern }) {
+  const role = getMainAssetRole(mainAsset);
+  const timed = [];
+  const scene = [];
+
+  const pushTimed = (time, objects) => {
+    timed.push(makeTimedEffect(time, Array.isArray(objects) ? objects : [objects]));
+  };
+
+  const pushScene = (time, type, options = {}) => {
+    scene.push(makeSceneEffect(time, type, options));
+  };
+
+  const openingType = pickByStableHash(
+    [
+      "front_vertical_circle",
+      "ground_ritual_circle",
+      "behind_symbol",
+      "enemy_sky_omen",
+      "silent_flash",
+      "gate_opening",
+      "wide_orbit_charge",
+    ],
+    `${mainAsset}:${pattern}`,
+    "openingType"
+  );
+
+  pushScene(0, "sky_color", {
+    color: profile.sky,
+    durationSeconds: 5.5,
+  });
+
+  if (openingType === "front_vertical_circle") {
+    pushTimed(0, [
+      buildVerticalCircleObject("origin_vertical_circle", circleAsset, profile.color, 4.8),
+      makeVisualObject({
+        id: "origin_charge_orbit",
+        asset: pick(["オーラ", "光球", "シンプルリング", "雲"]),
+        count: 3,
+        position: "self_position",
+        size: "medium",
+        life: 3.0,
+        color: profile.color,
+        spread: "circle",
+        enter: "scale_up",
+        exit: "rise_to_sky",
+        rotate: false,
+        positionOffset: { forward: 2.8, y: 2.2 },
+        orbit: {
+          centerPosition: "self_position",
+          radius: 4.4,
+          height: 2.2,
+          speed: 1.1,
+          verticalWobble: 0.35,
+        },
+      }),
+    ]);
+
+    pushScene(0.1, "camera_move", {
+      durationSeconds: 0.75,
+      holdSeconds: 0.35,
+      right: pick([-4.2, 4.2]),
+      y: 1.8,
+      forward: -1.5,
+      lookAt: "self",
+    });
+  }
+
+  if (openingType === "ground_ritual_circle") {
+    pushTimed(0, makeVisualObject({
+      id: "origin_ground_circle",
+      asset: circleAsset,
+      count: 1,
+      position: "self_position",
+      size: "large",
+      life: 4.5,
+      color: profile.color,
+      spread: "none",
+      enter: "scale_up",
+      exit: "sink_into_ground",
+      rotate: false,
+      faceEnemy: false,
+    }));
+
+    pushScene(0.15, "camera_top_down", {
+      durationSeconds: 0.7,
+      holdSeconds: 0.55,
+      y: 16,
+      lookAt: "self",
+    });
+  }
+
+  if (openingType === "behind_symbol") {
+    pushTimed(0, [
+      makeVisualObject({
+        id: "origin_behind_symbol",
+        asset: role === "creature" ? mainAsset : pick(["翼", "天使翼", "悪魔翼", "オーラ"]),
+        count: 1,
+        position: "behind_self",
+        size: "large",
+        life: 4.8,
+        color: profile.color,
+        enter: "rise_from_ground",
+        exit: "rise_to_sky",
+        rotate: false,
+        faceEnemy: true,
+        positionOffset: { forward: -2.5, y: 3.2 },
+      }),
+      makeVisualObject({
+        id: "origin_small_charge",
+        asset: "光球",
+        count: 5,
+        position: "in_front_of_self",
+        size: "small",
+        life: 3.2,
+        color: "#FFFFFF",
+        spread: "circle",
+        enter: "scale_up",
+        exit: "scale_down",
+        positionOffset: { forward: 3.4, y: 2.2 },
+      }),
+    ]);
+
+    pushScene(0.2, "camera_move", {
+      durationSeconds: 0.8,
+      holdSeconds: 0.5,
+      right: 3.8,
+      y: 2.8,
+      forward: -2.4,
+      lookAt: "self",
+    });
+  }
+
+  if (openingType === "enemy_sky_omen") {
+    pushTimed(0, makeVisualObject({
+      id: "origin_enemy_sky_omen",
+      asset: pick(["魔法陣9", "雲", "銀河", "月"]),
+      count: 3,
+      position: "above_enemy",
+      size: "medium",
+      life: 4.2,
+      color: profile.color,
+      spread: "circle",
+      enter: "scale_up",
+      exit: "scale_down",
+      rotate: false,
+      faceEnemy: true,
+      positionOffset: { y: 7.5 },
+      rotationOffset: { x: Math.PI / 2, y: 0, z: 0 },
+    }));
+
+    pushScene(0.1, "camera_top_down", {
+      durationSeconds: 0.8,
+      holdSeconds: 0.7,
+      y: 20,
+      lookAt: "enemy",
+    });
+  }
+
+  if (openingType === "silent_flash") {
+    pushTimed(0.35, makeVisualObject({
+      id: "origin_flash_ring",
+      asset: "シンプルリング",
+      count: 1,
+      position: "battlefield_center",
+      size: "large",
+      life: 2.4,
+      color: "#FFFFFF",
+      spread: "none",
+      enter: "scale_up",
+      exit: "scale_down",
+      rotate: false,
+    }));
+
+    pushScene(0.05, "camera_pulse", {
+      durationSeconds: 1.1,
+      strength: 0.5,
+    });
+  }
+
+  if (openingType === "gate_opening") {
+    pushTimed(0, makeVisualObject({
+      id: "origin_opening_gate",
+      asset: pick(["ゲート1", "ゲート2", "円盤", "鳥居"]),
+      count: 1,
+      position: "in_front_of_self",
+      size: "large",
+      life: 5.4,
+      color: profile.color,
+      spread: "none",
+      enter: "scale_up",
+      exit: "scale_down",
+      rotate: false,
+      faceEnemy: true,
+      positionOffset: { forward: 3.2, y: 2.2 },
+    }));
+
+    pushScene(0.1, "camera_move", {
+      durationSeconds: 0.8,
+      holdSeconds: 0.5,
+      right: pick([-5.0, 5.0]),
+      y: 2.4,
+      forward: -1.5,
+      lookAt: "self",
+    });
+  }
+
+  if (openingType === "wide_orbit_charge") {
+    pushTimed(0, makeVisualObject({
+      id: "origin_wide_orbit_charge",
+      asset: pick(["光球", "シンプルリング", "プラズマ", "雲"]),
+      count: 8,
+      position: "self_position",
+      size: "small",
+      life: 3.8,
+      color: profile.color,
+      spread: "circle",
+      enter: "scale_up",
+      exit: "rise_to_sky",
+      rotate: false,
+      orbit: {
+        centerPosition: "self_position",
+        radius: 6.8,
+        height: 2.4,
+        speed: 1.35,
+        verticalWobble: 0.5,
+      },
+    }));
+
+    pushScene(0.15, "camera_orbit", {
+      durationSeconds: 1.8,
+      radius: 15,
+      y: 3.5,
+      lookAt: "self",
+    });
+  }
+
+  return { timed, scene };
+}
+
+
+
+
+
+
 function buildOriginMagicCircleEffectFromConcept(concept) {
   const magicName = concept.magicName;
   const artScore = concept.artScore;
@@ -942,60 +1396,24 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
     sceneEffects.push(makeSceneEffect(time, type, options));
   };
 
-  // 共通：発動予兆。全魔法で「縦の魔法陣」を出す
-  add(0, [
-    buildVerticalCircleObject("origin_vertical_circle", circleAsset, profile.color, 5.2),
-    makeVisualObject({
-  id: "origin_charge_aura",
-  asset: pick(["オーラ", "光球", "シンプルリング", "雲"]),
-  count: 3,
-  position: "self_position",
-  size: "medium",
-  life: 3.2,
-  color: profile.color,
-  spread: "circle",
-  enter: "scale_up",
-  exit: "rise_to_sky",
 
-  // オブジェクト自体の自転は弱める
-  rotate: Math.random() < 0.25,
-  rotationSpeed: "slow",
 
-  // キャラ中心ではなく、少し前・少し上
-  positionOffset: {
-    forward: 2.8,
-    y: 2.2,
-  },
 
-  // main.js側で追加する公転設定
-  orbit: {
-    centerPosition: "self_position",
-    radius: 4.2,
-    height: 2.2,
-    speed: 1.15,
-    verticalWobble: 0.45,
-  },
-}),
-  ]);
 
-  addScene(0, "sky_color", {
-    color: profile.sky,
-    durationSeconds: 5.5,
-  });
-
-  addScene(0.25, "camera_pulse", {
-    durationSeconds: 1.2,
-    strength: 0.45,
-  });
-
-  addScene(0.1, "camera_move", {
-  durationSeconds: 0.85,
-  holdSeconds: 0.45,
-  right: pick([-4.5, 4.5]),
-  y: 2.2,
-  forward: -1.8,
-  lookAt: "self",
+  const opening = buildOpeningSequence({
+  mainAsset,
+  profile,
+  circleAsset,
+  pattern,
 });
+
+opening.timed.forEach((effect) => timedVisualEffects.push(effect));
+opening.scene.forEach((effect) => sceneEffects.push(effect));
+
+
+
+
+
 
   const family = pattern;
 
@@ -1556,7 +1974,7 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
       path: "straight_line",
       enter: "scale_up",
       exit: "scale_down",
-      movementOffset: { y: 2 },
+      targetOffset: { y: 2 },
     }));
 
     add(3.3, makeVisualObject({
@@ -1632,6 +2050,324 @@ function buildOriginMagicCircleEffectFromConcept(concept) {
     });
     addScene(3.1, "camera_shake", { durationSeconds: 1.2, strength: 0.8 });
     impactTimes.push(3.1, 4.2, 6.3);
+    
+    
+    
+    
+      } else if (family === "clock_stop") {
+    add(0.8, makeVisualObject({
+      id: "clock_domain",
+      asset: "歯車時計",
+      count: 1,
+      position: "battlefield_center",
+      size: "large",
+      life: 6.0,
+      color: profile.color,
+      spread: "none",
+      enter: "scale_up",
+      exit: "scale_down",
+      rotate: false,
+      faceEnemy: true,
+      positionOffset: { y: 4 },
+    }));
+
+    add(1.4, makeVisualObject({
+      id: "clock_frozen_rings",
+      asset: "シンプルリング",
+      count: 8,
+      position: "enemy_position",
+      size: "medium",
+      life: 4.5,
+      color: "#FFFFFF",
+      spread: "circle",
+      enter: "scale_up",
+      exit: "scale_down",
+      rotate: false,
+      orbit: {
+        centerPosition: "enemy_position",
+        radius: 5.8,
+        height: 2.3,
+        speed: 0.25,
+        verticalWobble: 0.05,
+      },
+    }));
+
+    add(2.8, makeVisualObject({
+      id: "clock_main_execution",
+      asset: mainAsset,
+      count: mainAsset === "歯車時計" ? 3 : 5,
+      position: "above_enemy",
+      size: "medium",
+      life: 2.2,
+      color: profile.color,
+      spread: "circle",
+      target: "enemy_position",
+      duration: 1.1,
+      path: "fall_from_above",
+      enter: "fall_from_sky",
+      exit: "scale_down",
+    }));
+
+    add(4.2, makeVisualObject({
+      id: "clock_finish",
+      asset: "銀河",
+      count: 1,
+      position: "enemy_position",
+      size: "large",
+      life: 3.0,
+      color: profile.color,
+      enter: "scale_up",
+      exit: "scale_down",
+    }));
+
+    addScene(0.9, "camera_orbit", {
+      durationSeconds: 2.2,
+      radius: 18,
+      y: 5,
+      lookAt: "center",
+    });
+
+    addScene(2.8, "camera_pulse", {
+      durationSeconds: 1.0,
+      strength: 0.55,
+    });
+
+    impactTimes.push(2.9, 4.4, 6.6);
+    
+    
+    
+    //月
+  } else if (family === "moon_gravity") {
+    add(0.9, makeVisualObject({
+      id: "moon_overhead",
+      asset: "月",
+      count: 1,
+      position: "above_battlefield_center",
+      size: "large",
+      life: 6.5,
+      color: profile.color,
+      spread: "none",
+      enter: "scale_up",
+      exit: "scale_down",
+      rotate: false,
+      positionOffset: { y: 10 },
+    }));
+
+    add(1.8, makeVisualObject({
+      id: "gravity_rings",
+      asset: "シンプルリング",
+      count: 6,
+      position: "enemy_position",
+      size: "medium",
+      life: 4.8,
+      color: "#FFFFFF",
+      spread: "circle",
+      enter: "scale_up",
+      exit: "sink_into_ground",
+      rotate: false,
+      orbit: {
+        centerPosition: "enemy_position",
+        radius: 6.2,
+        height: 2.5,
+        speed: 0.75,
+        verticalWobble: 0.25,
+      },
+    }));
+
+    add(2.6, makeVisualObject({
+      id: "gravity_collapse",
+      asset: mainAsset === "月" ? "銀河" : mainAsset,
+      count: 1,
+      position: "enemy_position",
+      size: "large",
+      life: 4.0,
+      color: profile.color,
+      enter: "scale_up",
+      exit: "scale_down",
+      rotate: false,
+    }));
+
+    addScene(1.0, "camera_top_down", {
+      durationSeconds: 0.9,
+      holdSeconds: 1.0,
+      y: 22,
+      lookAt: "enemy",
+    });
+
+    addScene(2.6, "camera_shake", {
+      durationSeconds: 1.4,
+      strength: 0.5,
+    });
+
+    impactTimes.push(2.8, 4.2, 6.4);
+    
+    
+    
+    
+    //ゲートから射出
+  } else if (family === "portal_projectile_burst") {
+    add(0.7, [
+      makeVisualObject({
+        id: "portal_left",
+        asset: gateAsset,
+        count: 1,
+        position: "in_front_of_self",
+        size: "large",
+        life: 6.2,
+        color: profile.color,
+        spread: "none",
+        enter: "scale_up",
+        exit: "scale_down",
+        rotate: false,
+        faceEnemy: true,
+        positionOffset: { forward: 3.4, right: -3.2, y: 2.4 },
+      }),
+      makeVisualObject({
+        id: "portal_right",
+        asset: gateAsset,
+        count: 1,
+        position: "in_front_of_self",
+        size: "large",
+        life: 6.2,
+        color: profile.color,
+        spread: "none",
+        enter: "scale_up",
+        exit: "scale_down",
+        rotate: false,
+        faceEnemy: true,
+        positionOffset: { forward: 3.4, right: 3.2, y: 2.4 },
+      }),
+    ]);
+
+    add(1.5, makeVisualObject({
+      id: "portal_burst_main",
+      asset: mainAsset,
+      count: 10,
+      position: "in_front_of_self",
+      size: "medium",
+      life: 2.0,
+      color: profile.color,
+      spread: "horizontal_line",
+      target: "enemy_position",
+      duration: 1.4,
+      path: "straight_line",
+      enter: "scale_up",
+      exit: "scale_down",
+      positionOffset: { forward: 4.2, y: 2.4 },
+    }));
+
+    add(3.2, makeVisualObject({
+      id: "portal_burst_finish",
+      asset: finishAsset,
+      count: 1,
+      position: "enemy_position",
+      size: "large",
+      life: 2.8,
+      color: profile.color,
+      enter: "scale_up",
+      exit: "scale_down",
+    }));
+
+    addScene(0.9, "camera_move", {
+      durationSeconds: 0.7,
+      holdSeconds: 0.7,
+      right: 5.5,
+      y: 2.4,
+      forward: -1.6,
+      lookAt: "self",
+    });
+
+    addScene(1.5, "camera_shake", {
+      durationSeconds: 1.1,
+      strength: 0.45,
+    });
+
+    impactTimes.push(2.2, 3.4, 5.8);
+    
+    
+    
+    
+    //戦車包囲
+  } else if (family === "tank_siege") {
+    const siegeAsset = mainAsset === "戦車" ? "戦車" : mainAsset;
+
+    add(1.0, makeVisualObject({
+      id: "tank_siege_units",
+      asset: siegeAsset,
+      count: 6,
+      position: "enemy_position",
+      size: "medium",
+      life: 5.8,
+      color: profile.color,
+      spread: "circle",
+      enter: "rise_from_ground",
+      exit: "sink_into_ground",
+      rotate: false,
+      faceEnemy: true,
+    }));
+
+    add(2.2, makeVisualObject({
+      id: "tank_shell_warning",
+      asset: "シンプルリング",
+      count: 6,
+      position: "enemy_position",
+      size: "small",
+      life: 2.8,
+      color: "#FFFFFF",
+      spread: "circle",
+      enter: "scale_up",
+      exit: "scale_down",
+      rotate: false,
+      orbit: {
+        centerPosition: "enemy_position",
+        radius: 5.5,
+        height: 1.8,
+        speed: 0.6,
+        verticalWobble: 0.1,
+      },
+    }));
+
+    add(3.0, makeVisualObject({
+      id: "tank_shells",
+      asset: "大爆発",
+      count: 3,
+      position: "enemy_position",
+      size: "medium",
+      life: 2.2,
+      color: profile.color,
+      spread: "random_scatter",
+      enter: "scale_up",
+      exit: "scale_down",
+    }));
+
+    add(4.4, makeVisualObject({
+      id: "tank_final_blast",
+      asset: "大爆発",
+      count: 1,
+      position: "enemy_position",
+      size: "large",
+      life: 3.0,
+      color: "#FFFFFF",
+      enter: "scale_up",
+      exit: "scale_down",
+    }));
+
+    addScene(1.0, "camera_orbit", {
+      durationSeconds: 1.8,
+      radius: 17,
+      y: 3.5,
+      lookAt: "enemy",
+    });
+
+    addScene(3.0, "camera_shake", {
+      durationSeconds: 1.6,
+      strength: 0.75,
+    });
+
+    impactTimes.push(3.1, 4.5, 6.8);
+    
+    
+    
     
   } else {
     // その他30種類以上のpatternはここに集約。
