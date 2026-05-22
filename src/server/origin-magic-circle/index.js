@@ -1658,8 +1658,7 @@ opening.scene.forEach((effect) => sceneEffects.push(effect));
   } else if (
     family === "enemy_encircle" ||
     family === "crossfire" ||
-    family === "enemy_backstab" ||
-    family === "tank_siege"
+    family === "enemy_backstab"
   ) {
     add(1.0, makeVisualObject({
       id: "encircle_main",
