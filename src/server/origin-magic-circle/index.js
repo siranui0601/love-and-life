@@ -526,6 +526,55 @@ function getMainAssetRole(mainAsset) {
   return ORIGIN_MAIN_ASSET_ROLE_MAP[mainAsset] || "projectile";
 }
 
+const ORIGIN_ROLE_SUPPORT_ASSETS = {
+  projectile: ["バレッド", "光球", "シンプルリング", "魔法陣3", "大爆発"],
+  weapon: ["魂剣", "バレッド", "シンプルリング", "魔法陣3", "光球"],
+  weather: ["雲", "雷", "光球", "魔法陣9", "プラズマ"],
+  energy: ["プラズマ", "光球", "シンプルリング", "オーラ", "魔法陣9"],
+  portal: ["ゲート1", "ゲート2", "シンプルリング", "魔法陣8", "光球"],
+  circle: ["シンプルリング", "光球", "オーラ", "魔法陣9", "プラズマ"],
+  creature: ["翼", "光球", "雲", "大爆発", "魔法陣3"],
+  vehicle: ["バレッド", "大爆発", "雲", "光球", "魔法陣10"],
+  celestial: ["銀河", "光球", "シンプルリング", "魔法陣9", "プラズマ"],
+  cosmic: ["銀河", "プラズマ", "光球", "魔法陣8", "シンプルリング"],
+  time: ["シンプルリング", "魔法陣8", "光球", "銀河", "オーラ"],
+  storm: ["竜巻", "雲", "雷", "プラズマ", "魔法陣9"],
+  ice: ["雪結晶1", "雪結晶2", "光球", "雲", "魔法陣2"],
+  ground: ["隕石", "雲", "大爆発", "光球", "魔法陣3"],
+  nature: ["落葉", "雲", "光球", "オーラ", "魔法陣3"],
+  wing: ["翼", "天使翼", "悪魔翼", "光球", "雲"],
+  swarm: ["光球", "シンプルリング", "雲", "オーラ", "魔法陣3"],
+  symbol: ["ハート", "ダイヤ", "光球", "シンプルリング", "オーラ"],
+};
+
+function chooseSupportAssets(mainAsset, count = 5) {
+  const role = getMainAssetRole(mainAsset);
+  const themedAssets = ORIGIN_ROLE_SUPPORT_ASSETS[role] || [];
+  const profile = getMainAssetProfile(mainAsset);
+  const desiredCount = Math.max(1, Math.floor(Number(count) || 5));
+
+  const pool = uniqueArray([
+    profile.circle,
+    profile.finish,
+    ...themedAssets,
+    ...ORIGIN_MAGIC_CIRCLE_SUPPORT_ASSETS,
+  ])
+    .filter((asset) => asset !== mainAsset)
+    .filter((asset) => ORIGIN_MAGIC_CIRCLE_ASSET_NAME_MAP[asset]);
+
+  const selected = [];
+  for (let index = 0; index < desiredCount && selected.length < pool.length; index += 1) {
+    const asset = pickByStableHash(
+      pool.filter((candidate) => !selected.includes(candidate)),
+      `${mainAsset}:${role}:${desiredCount}`,
+      `supportAsset:${index}`
+    );
+    if (asset) selected.push(asset);
+  }
+
+  return selected.length ? selected : ORIGIN_MAGIC_CIRCLE_SUPPORT_ASSETS.slice(0, desiredCount);
+}
+
 
 function choosePatternFromDirectionTags(directionTags, mainAsset, seed = "") {
   const role = getMainAssetRole(mainAsset);
