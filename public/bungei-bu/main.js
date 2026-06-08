@@ -12,6 +12,7 @@ const choiceCardList = document.querySelector("#choiceCardList");
 const inputPanel = document.querySelector("#inputPanel");
 const playerInput = document.querySelector("#playerInput");
 const sendButton = document.querySelector("#sendButton");
+const inputBackButton = document.querySelector("#inputBackButton");
 const dialogueBox = document.querySelector("#dialogueBox");
 const hudTimer = document.querySelector(".hud__timer");
 const modal = document.querySelector("#modal");
@@ -25,6 +26,7 @@ const resultRating = document.querySelector(".result-rating");
 const resultSlots = document.querySelector("#resultSlots");
 const retryButton = document.querySelector("#retryButton");
 const toTopButton = document.querySelector("#toTopButton");
+const titleReturnButton = document.querySelector("#titleReturnButton");
 
 
 const EPILOGUE_BACKGROUNDS = [
@@ -153,6 +155,7 @@ let dialogueIndex = -1;
 let introActive = false;
 let pendingAfterModal = null;
 let choiceState = "hidden";
+let currentInputOptions = [];
 let sceneDialogue = [];
 let sceneIndex = -1;
 let sceneActive = false;
@@ -334,9 +337,17 @@ function hideChoiceCards() {
   choiceCardList.innerHTML = "";
 }
 
+function updateInputBackButton() {
+  if (!inputBackButton) return;
+  const canGoBack = Array.isArray(currentInputOptions) && currentInputOptions.length > 0;
+  inputBackButton.classList.toggle("is-hidden", !canGoBack);
+  inputBackButton.hidden = !canGoBack;
+}
+
 function showInputPanel() {
   inputPanel.classList.remove("is-hidden");
   inputPanel.hidden = false;
+  updateInputBackButton();
   playerInput.focus();
   showPlayerLineHeader();
   updateInputLimit();
@@ -419,7 +430,8 @@ async function showInputChoices() {
 }
 
 function showInputChoicesWithOptions(options) {
-  const cards = options.map((line) => ({
+  currentInputOptions = Array.isArray(options) ? [...options] : [];
+  const cards = currentInputOptions.map((line) => ({
     text: replacePlayerNameToken(String(line || "")),
     onClick: () => {
       playerInput.value = replacePlayerNameToken(String(line || ""));
@@ -800,6 +812,13 @@ if (startButton) {
   });
 }
 
+if (titleReturnButton) {
+  titleReturnButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    window.location.href = "/";
+  });
+}
+
 if (modal) {
   modal.addEventListener("click", () => {
     hideModal();
@@ -821,6 +840,17 @@ if (sendButton) {
     event.stopPropagation();
     if (sendButton.disabled) return;
     submitPlayerInput();
+  });
+}
+
+if (inputBackButton) {
+  inputBackButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (waitingForResponse || !currentInputOptions.length) return;
+    playerInput.value = "";
+    hideInputPanel();
+    showInputChoicesWithOptions(currentInputOptions);
+    sendButton.disabled = true;
   });
 }
 

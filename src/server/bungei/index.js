@@ -115,7 +115,7 @@ export function mountBungeiRoutes(app) {
       maxNodes: 2000,
     });
 
-    res.json({ nodes });
+    res.json({ nodes: toPlayerName(nodes, user.username) });
   } catch (error) {
     console.error("❌ Sheets Error (bungei tree):", error);
     res.status(500).json({ error: "sheets_failed" });
@@ -138,8 +138,9 @@ export function mountBungeiRoutes(app) {
         res.status(404).json({ error });
         return;
       }
-      const options = await listBungeiLinesForPlayer(user.userTrackingId, speechOrder);
-      res.json({ options });
+      const canonicalSpeechOrder = toUsernameToken(speechOrder, user.username);
+      const options = await listBungeiLinesForPlayer(user.userTrackingId, canonicalSpeechOrder);
+      res.json({ options: toPlayerName(options, user.username) });
     } catch (error) {
       console.error("❌ Sheets Error (bungei options):", error);
       res.status(500).json({ error: "sheets_failed" });
@@ -167,10 +168,14 @@ export function mountBungeiRoutes(app) {
     }
     const playerName = user.username;
     const playerTrackingId = user.userTrackingId;
+    const promptInput = toUsernameToken(input, playerName);
+    const promptCurrentSummary = toUsernameToken(currentSummary, playerName);
+    const promptCondition = toUsernameToken(condition, playerName);
+    const canonicalSpeechOrder = toUsernameToken(speechOrder, playerName);
 
-    if (speechOrder.length) {
+    if (canonicalSpeechOrder.length) {
       try {
-        const entry = await findBungeiEntryByOrder(speechOrder);
+        const entry = await findBungeiEntryByOrder(canonicalSpeechOrder);
         if (entry?.output) {
           let playersList = [];
           try {
@@ -197,7 +202,7 @@ export function mountBungeiRoutes(app) {
     const prompt = `
 舞台は高校の文芸部。部員は${USERNAME_TOKEN}とミユ・シオン・ナナのみ。明日から夏休みで、今日が部活の最終日。
 
-${USERNAME_TOKEN}の発言「${input}」に対する会話シーンを生成せよ。
+${USERNAME_TOKEN}の発言「${promptInput}」に対する会話シーンを生成せよ。
 必ずJSONのみ出力。説明禁止。コードフェンス禁止。
 
 ルール：
@@ -230,27 +235,27 @@ OUTPUT_JSON_EXAMPLE
 }
 
 CURRENT_SUMMARY
-${currentSummary ?? "null"}
+${promptCurrentSummary ?? "null"}
 
 CURRENT_CONDITION
 ${JSON.stringify(
       {
         ミユ: {
-          恋人関係: condition?.ミユ?.恋人関係 ?? false,
+          恋人関係: promptCondition?.ミユ?.恋人関係 ?? false,
           NowThinking:
-            condition?.ミユ?.NowThinking ??
+            promptCondition?.ミユ?.NowThinking ??
             "明日から海に行くか、プールに行くか悩んでいる",
         },
         シオン: {
-          恋人関係: condition?.シオン?.恋人関係 ?? false,
+          恋人関係: promptCondition?.シオン?.恋人関係 ?? false,
           NowThinking:
-            condition?.シオン?.NowThinking ??
+            promptCondition?.シオン?.NowThinking ??
             "今日が最後の活動日なので、きちんと片付けまで終わらせたいと考えている",
         },
         ナナ: {
-          恋人関係: condition?.ナナ?.恋人関係 ?? false,
+          恋人関係: promptCondition?.ナナ?.恋人関係 ?? false,
           NowThinking:
-            condition?.ナナ?.NowThinking ??
+            promptCondition?.ナナ?.NowThinking ??
             "蝶々可愛い♡蝶々ってどうして蝶々って言うの？",
         },
       },
@@ -264,10 +269,10 @@ ${JSON.stringify(
       const jsonString = stripJsonFence(text);
       const data = JSON.parse(jsonString);
       const storableData = toUsernameToken(data, playerName);
-      if (speechOrder.length) {
+      if (canonicalSpeechOrder.length) {
         try {
           await appendBungeiEntry({
-            orderList: speechOrder,
+            orderList: canonicalSpeechOrder,
             output: JSON.stringify(storableData),
             players: [playerTrackingId],
           });
@@ -300,9 +305,11 @@ ${JSON.stringify(
       }
       const playerName = user.username;
       const playerTrackingId = user.userTrackingId;
-      if (speechOrder.length) {
+      const promptCondition = toUsernameToken(condition, playerName);
+      const canonicalSpeechOrder = toUsernameToken(speechOrder, playerName);
+      if (canonicalSpeechOrder.length) {
         try {
-          const entry = await findBungeiEntryByOrder(speechOrder);
+          const entry = await findBungeiEntryByOrder(canonicalSpeechOrder);
           if (entry?.epilogue) {
             let cachedPayload = null;
             try {
@@ -334,7 +341,7 @@ ${JSON.stringify(
 
       const background = getRandomEpilogueBackground();
       const conditionSource =
-        condition ??
+        promptCondition ??
         Object.fromEntries(恋人関係.map((name) => [name, { 恋人関係: true }]));
       const loverEntries = Object.entries(conditionSource || {}).filter(
         ([_, v]) => v?.恋人関係
@@ -425,14 +432,14 @@ ${background.name}
         backgroundName: background.name,
       });
 
-      if (speechOrder.length) {
+      if (canonicalSpeechOrder.length) {
         try {
-          const entry = await findBungeiEntryByOrder(speechOrder);
+          const entry = await findBungeiEntryByOrder(canonicalSpeechOrder);
           if (entry?.rowIndex) {
             await updateBungeiEpilogue(entry.rowIndex, epiloguePayload);
           } else {
             await appendBungeiEntry({
-              orderList: speechOrder,
+              orderList: canonicalSpeechOrder,
               output: "",
               players: [playerTrackingId],
               epilogue: epiloguePayload,

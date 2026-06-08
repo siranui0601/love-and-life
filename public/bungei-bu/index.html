@@ -34,6 +34,13 @@
             >
               続きから
             </button>
+            <button
+              class="action-button action-button--secondary"
+              id="titleReturnButton"
+              type="button"
+            >
+              タイトル画面に戻る
+            </button>
           </div>
         </div>
       </section>
@@ -91,9 +98,19 @@
           rows="3"
           placeholder="台詞を入力してください"
         ></textarea>
-        <button class="send-button" id="sendButton" type="button" disabled>
-          送信
-        </button>
+        <div class="input-panel__actions">
+          <button
+            class="input-back-button is-hidden"
+            id="inputBackButton"
+            type="button"
+            hidden
+          >
+            戻る
+          </button>
+          <button class="send-button" id="sendButton" type="button" disabled>
+            送信
+          </button>
+        </div>
       </div>
     </main>
 
