@@ -58,12 +58,15 @@
     <!-- メニュー画面 -->
     <main id="menu-screen">
       <div class="menu-container fade-in-delayed2">
-        <button class="menu-button" onclick="startGame()">
+        <button class="menu-button primary" onclick="startGame()">
           ゲームスタート
         </button>
         <button class="menu-button" onclick="toggleRules()">ルール</button>
+        <button class="menu-button ghost" onclick="goToTopPage()">
+          トップページに戻る
+        </button>
       </div>
-      <div id="credits-button-container" class="fade-in-delayed2">
+      <div id="credits-button-container" class="fade-in-delayed2" hidden>
         <button class="credits-button" onclick="toggleCredits()">
           可能性炸裂の製作の部分
         </button>
@@ -71,6 +74,27 @@
     </main>
 
 
+
+    <!-- 時を戻す確認モーダル -->
+    <div id="rewind-modal" class="popup choice-modal" onclick="closeRewindOutside(event)">
+      <div class="popup-inner rewind-inner">
+        <div class="popup-header">
+          <h3>時を戻しますか？</h3>
+          <span class="close-btn" onclick="closeRewindModal()">×</span>
+        </div>
+        <div class="popup-body">
+          <p>戻り先を選んでください。</p>
+          <div class="popup-buttons rewind-buttons">
+            <button class="action-button" onclick="resetCurrentRoom()">
+              この部屋を初期状態にする
+            </button>
+            <button class="action-button secondary" onclick="returnToTitle()">
+              タイトルに戻る
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- siranuiプロフィール確認ポップアップ -->
     <div
@@ -147,11 +171,12 @@
           style="display: none"
         />
       </div>
-      <button id="time-rewind" onclick="timeRewind()">時を戻す</button>
-      <button id="rule-btn" onclick="toggleRules()">ルール</button>
-
-      <!--何とかしてヒント機能を作りたい-->
-      <button id="hinto-btn" onclick="togglehinto()">ヒント</button>
+      <div class="game-toolbar" aria-label="ゲーム操作">
+        <button id="rule-btn" onclick="toggleRules()">ルール</button>
+        <button id="hinto-btn" onclick="togglehinto()">ヒント</button>
+        <button id="time-rewind" onclick="timeRewind()">時を戻す</button>
+        <button id="top-page-btn" onclick="goToTopPage()">トップページ</button>
+      </div>
 
       <!-- ハートをタップした時の説明 -->
       <div id="heart-info">部分ツイート可能な回数です</div>

@@ -26,6 +26,8 @@ let posterCleaned = false;
 
 let simaiCount = 0; // しまいをツイートした回数
 
+const assetPath = (fileName) => `/2D画像/${fileName}`;
+
 document.getElementById("hinto").style.display = "none";
 
 /**********************************************
@@ -69,16 +71,16 @@ let objectDescMap = {
  * 初期化 (画像srcなど)
  **********************************************/
 function initObjects() {
-  document.getElementById("aircon").src =
-    "https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9183.png?v=1739189355223";
-  document.getElementById("table").src =
-    "https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9185.png?v=1739189362943";
-  document.getElementById("book").src =
-    "https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9186.png?v=1739189414159";
+  const objectImages = {
+    aircon: "IMG_9183.png",
+    table: "IMG_9185.png",
+    book: "IMG_9186.png",
+    doorItem: "IMG_9241.png",
+  };
 
-  // ドア画像
-  document.getElementById("doorItem").src =
-    "https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9241.png?v=1739280955269";
+  Object.entries(objectImages).forEach(([id, fileName]) => {
+    document.getElementById(id).src = assetPath(fileName);
+  });
 
   // ショタをドアより前に出す => z-index
   document.getElementById("shotaItem").style.zIndex = "9999";
@@ -118,6 +120,11 @@ function startGame() {
   haveJouka = false;
   starAppeared = false;
   posterCleaned = false;
+  simaiCount = 0;
+  document.querySelectorAll(".simai-clone").forEach((el) => el.remove());
+  document.getElementById("oshimai-screen").style.display = "none";
+  document.getElementById("thank-you-line1").style.display = "none";
+  document.getElementById("thank-you-line2").style.display = "none";
 
   // ハート2つ ON, 3つ目以降 OFF
   document.getElementById("heart1").style.display = "inline";
@@ -443,6 +450,21 @@ function goToSiranui() {
  * 時を戻す (timeRewind)
  **********************************************/
 function timeRewind() {
+  document.getElementById("rewind-modal").style.display = "block";
+}
+
+function closeRewindModal() {
+  document.getElementById("rewind-modal").style.display = "none";
+}
+
+function closeRewindOutside(e) {
+  if (e.target.id === "rewind-modal") {
+    closeRewindModal();
+  }
+}
+
+function resetCurrentRoom() {
+  closeRewindModal();
   if (currentRoom === 3) {
     gotoThirdRoom();
   } else if (currentRoom === 2) {
@@ -450,6 +472,28 @@ function timeRewind() {
   } else {
     startGame();
   }
+}
+
+function returnToTitle() {
+  closeRewindModal();
+  document.getElementById("game-screen").style.display = "none";
+  document.getElementById("ending-overlay").style.display = "none";
+  document.getElementById("popup").style.display = "none";
+  document.getElementById("girl-use-popup").style.display = "none";
+  document.getElementById("darkness").style.display = "none";
+  document.getElementById("darkness-overlay").style.display = "none";
+  document.getElementById("oshimai-screen").style.display = "none";
+  document.getElementById("thank-you-line1").style.display = "none";
+  document.getElementById("thank-you-line2").style.display = "none";
+  document.querySelectorAll(".simai-clone").forEach((el) => el.remove());
+
+  const header = document.querySelector("header#title-screen");
+  if (header) header.style.display = "block";
+  document.getElementById("menu-screen").style.display = "block";
+}
+
+function goToTopPage() {
+  window.location.href = "/";
 }
 
 /**********************************************
@@ -684,6 +728,11 @@ function updateDarknessEffect() {
  * オブジェクトをタップ => ポップアップ (tapObject)
  **********************************************/
 function tapObject(name) {
+  if (name === "おしまい" && simaiCount > 0) {
+    showToast("遊んでくれてありがとう！");
+    return;
+  }
+
   currentObjectName = name;
 
   // (A) ガール+ショタ => doUse
