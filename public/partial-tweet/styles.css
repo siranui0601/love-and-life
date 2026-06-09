@@ -1355,3 +1355,154 @@ body::before {
     height: 28px;
   }
 }
+
+/* ===== Gameplay fixes ===== */
+#game-screen {
+  background: #020617;
+  overflow: hidden;
+}
+
+.room-container {
+  background: url("https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9196.jpeg?v=1739191278769") center center no-repeat;
+  background-size: 100% 100%;
+}
+
+.room-container::before,
+.room-container::after {
+  content: none;
+  display: none;
+}
+
+.game-toolbar {
+  top: max(10px, env(safe-area-inset-top));
+  left: 0;
+  right: auto;
+  width: max-content;
+  max-width: calc(100vw - 12px);
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  padding: 0.45rem;
+  border: 1px solid var(--x-line);
+  border-left: 0;
+  border-radius: 0 999px 999px 0;
+  background: rgba(2, 6, 23, 0.72);
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.35);
+  backdrop-filter: blur(18px);
+  z-index: 3300;
+  pointer-events: auto;
+  transform: translateX(0);
+  transition: transform 0.22s ease;
+}
+
+.game-toolbar.is-collapsed {
+  transform: translateX(calc(-100% + 3.15rem));
+}
+
+.game-toolbar > button {
+  white-space: nowrap;
+}
+
+#toolbar-toggle {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0.45rem !important;
+  border-radius: 999px;
+  color: #f8fafc;
+  background: linear-gradient(135deg, rgba(244, 114, 182, 0.95), rgba(29, 155, 240, 0.95));
+}
+
+#heart-container {
+  z-index: 3200;
+}
+
+.popup,
+#rules-box,
+#hinto,
+#profile-confirm,
+#girl-use-popup {
+  overflow: hidden;
+}
+
+.popup-inner,
+#profile-confirm .popup-inner,
+#girl-use-popup .popup-inner {
+  position: fixed;
+  top: max(1rem, env(safe-area-inset-top));
+  left: 50%;
+  width: min(85vw, 400px);
+  max-height: calc(100svh - 2rem);
+  margin: 0;
+  overflow-y: auto;
+  transform: translateX(-50%);
+  overscroll-behavior: contain;
+}
+
+.rewind-inner {
+  width: min(85vw, 460px);
+}
+
+#tweet-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#tweet-input {
+  width: 100%;
+  max-width: none;
+  margin-right: 0;
+}
+
+#tweet-error-msg {
+  grid-column: 1 / -1;
+}
+
+#oshimai-screen {
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+#oshimai-actions {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  z-index: 10000;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  width: min(88vw, 340px);
+  transform: translateX(-50%);
+  opacity: 0;
+  animation: fadeIn 0.6s ease forwards 2.1s;
+}
+
+.oshimai-button {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.9rem 1.15rem;
+  color: #7f1d1d;
+  background: rgba(255, 255, 255, 0.94);
+  font-weight: 800;
+  box-shadow: 0 16px 38px rgba(2, 6, 23, 0.24);
+  cursor: pointer;
+}
+
+.oshimai-button.secondary {
+  color: #fff;
+  background: rgba(2, 6, 23, 0.62);
+}
+
+@media (max-width: 520px) {
+  .game-toolbar {
+    right: auto;
+  }
+
+  .game-toolbar.is-collapsed {
+    transform: translateX(calc(-100% + 2.95rem));
+  }
+}
