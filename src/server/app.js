@@ -26,5 +26,16 @@ export function createApp() {
   app.use(literaryClubPath, literaryClubAssets);
   app.use(literaryClubEncodedPath, literaryClubAssets);
 
+
+    // 部分ツイートを /部分ツイート で配信
+  const partialTweetPath = "/部分ツイート";
+  const partialTweetEncodedPath = encodeURI(partialTweetPath);
+  const partialTweetAssets = express.static(
+    path.join(process.cwd(), "public/partial-tweet")
+  );
+
+  app.use(partialTweetPath, partialTweetAssets);
+  app.use(partialTweetEncodedPath, partialTweetAssets);
+
   return app;
 }
