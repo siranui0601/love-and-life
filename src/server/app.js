@@ -10,6 +10,16 @@ export function createApp() {
   // 既存トップページ用（必要なら）
   app.use(express.static("public"));
 
+  // 部分ツイートの新しい画像パス(/2D画像)を既存素材ディレクトリへ紐づける
+  const twoDImagePath = "/2D画像";
+  const twoDImageEncodedPath = encodeURI(twoDImagePath);
+  const twoDImageAssets = express.static(
+    path.join(process.cwd(), "public/2D素材")
+  );
+
+  app.use(twoDImagePath, twoDImageAssets);
+  app.use(twoDImageEncodedPath, twoDImageAssets);
+
   // 時々文芸部！を /時々文芸部！ で配信
   app.use(
     "/時々文芸部！",
