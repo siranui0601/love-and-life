@@ -459,6 +459,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const literaryClubUrl = new URL('/時々文芸部！/', window.location.origin);
       window.location.href = literaryClubUrl.toString();
+
+      } else if (gameType === 'partial-tweet') {
+        const partialTweetUrl = new URL('/部分ツイート', window.location.origin);
+        window.location.href = partialTweetUrl.toString();
+      
     } else if (gameType === 'secret-tool') {
       if (!window.currentUser?.email) {
         alert("ひみつ道具バトルはログインが必要です");
