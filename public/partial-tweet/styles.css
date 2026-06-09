@@ -1,0 +1,997 @@
+/* ベースリセット */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* デフォルトフォント */
+html {
+  font-size: 16px;
+}
+body {
+  font-family: sans-serif;
+  background-color: #fafafa;
+  color: #333;
+  overflow-x: hidden;
+}
+
+/* タイトル画面 */
+#title-screen {
+  width: 100%;
+  height: auto;
+  text-align: center;
+  background: linear-gradient(150deg, #ffafbd, #ffc3a0);
+  padding: 2rem 1rem;
+}
+#title-screen h1 {
+  font-size: 2rem;
+  margin: 0;
+  color: #fff;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+}
+.subtitle {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: #ffeeee;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* フェードインアニメーション */
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 1.5s forwards;
+}
+.fade-in-delayed {
+  opacity: 0;
+  animation: fadeIn 2s forwards 0.5s;
+}
+.fade-in-delayed2 {
+  opacity: 0;
+  animation: fadeIn 2s forwards 1s;
+}
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+/* ルール表示オーバーレイ */
+#rules-box {
+  display: none;
+  position: fixed;
+  z-index: 3000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+}
+.rules-inner {
+  position: relative;
+  background: #fdfdfd;
+  width: 90%;
+  max-width: 600px;
+  margin: 5% auto;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #ddd;
+}
+.close-btn-rules {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/*ヒント機能を作りたい*/
+#hinto {
+  display: none;
+  position: fixed;
+  z-index: 3000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+}
+.hinto-inner {
+  position: relative;
+  background: #fdfdfd;
+  width: 80%;
+  max-width: 600px;
+  margin: 5% auto;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #ddd;
+}
+.close-btn-hinto {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* メニュー画面 */
+#menu-screen {
+  text-align: center;
+  padding: 1rem 0 2rem;
+  background: #fff;
+  position: relative;
+  min-height: 60vh;
+}
+.menu-container {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.menu-button {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+.menu-button:hover {
+  background: #0056b3;
+}
+
+/* 右下のクレジットボタン */
+#credits-button-container {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+}
+.credits-button {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  padding: 0.8rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+.credits-button:hover {
+  background: #218838;
+}
+.link-like {
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* クレジット表示(オーバーレイ) */
+#credits-box {
+  display: none;
+  position: fixed;
+  z-index: 3000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+}
+.credits-inner {
+  position: relative;
+  background: #fdfdfd;
+  width: 80%;
+  max-width: 400px;
+  margin: 10% auto;
+  border-radius: 0.5rem;
+  border: 1px solid #ddd;
+  text-align: center;
+  padding: 1rem;
+}
+.close-btn {
+  background: #eb6100;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* siranuiプロフィール用ポップアップ */
+#profile-confirm {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+#profile-confirm .popup-inner {
+  background: #fff;
+  width: 85%;
+  max-width: 400px;
+  margin: 10% auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  position: relative;
+}
+#profile-confirm .popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ゲーム画面 */
+#game-screen {
+  display: none;
+  width: 100%;
+  height: 100dvh;
+  overflow: auto;
+  position: relative;
+}
+
+/* 右上のハート */
+#heart-container {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  gap: 5px;
+  cursor: pointer;
+  z-index: 10;
+}
+.heart {
+  width: 50px;
+  height: 50px;
+}
+
+/* 時を戻すボタン */
+#time-rewind {
+  display: block;
+  position: absolute;
+  top: 5px;
+  right: 45%;
+  background: #444;
+  color: #fff;
+  border: none;
+  border-radius: 0.3rem;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  z-index: 3000;
+  cursor: pointer;
+}
+
+/* ゲーム中左上のルールボタン */
+#rule-btn {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: #888;
+  color: #fff;
+  border: none;
+  border-radius: 0.3rem;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.8rem;
+  z-index: 3000;
+  cursor: pointer;
+}
+
+/*ヒントボタン*/
+#hinto-btn {
+  position: absolute;
+  top: 5px;
+  left: 20%;
+  background: linear-gradient(to right, orange 0%, #888 0%);
+  background-size: 100% 100%;
+  color: #fff;
+  border: none;
+  border-radius: 0.3rem;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.8rem;
+  z-index: 3000;
+  cursor: not-allowed;
+  transition: background 0.5s linear;
+}
+
+/* ハート説明 */
+#heart-info {
+  display: none;
+  position: absolute;
+  top: 40px;
+  right: 5px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.5rem;
+  border-radius: 0.3rem;
+  font-size: 0.8rem;
+  z-index: 10;
+}
+
+/* 部屋背景 */
+.room-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: url("https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9196.jpeg?v=1739191278769")
+    center center no-repeat;
+  background-size: 100% 100%;
+}
+
+/* エアコン */
+#aircon {
+  position: absolute;
+  width: 40vw;
+  max-width: 200px;
+  top: 5%;
+  left: 5%;
+}
+
+/* 机 */
+#table {
+  position: absolute;
+  width: 40vw;
+  max-width: 250px;
+  bottom: 5%;
+  right: 5%;
+}
+
+/* 昆虫図鑑 */
+#book {
+  position: absolute;
+  width: 20vw;
+  max-width: 120px;
+  bottom: 22%;
+  right: 6%;
+}
+
+/* 家内／毛皮／リモコン */
+#kanaiItem {
+  position: absolute;
+  bottom: 5%;
+  right: 60%;
+  width: 30vw;
+  max-width: 150px;
+}
+#kegawaItem {
+  position: absolute;
+  top: 30%;
+  right: 5%;
+  width: 60vw;
+  max-width: 150px;
+}
+#rimokonItem {
+  position: absolute;
+  bottom: 22%;
+  right: 26%;
+  width: 20vw;
+  max-width: 100px;
+}
+
+/* その他アイテム */
+#kochiItem {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+#doriaItem {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40vw;
+  max-width: 200px;
+}
+#tatakaiItem {
+  position: absolute;
+  top: 30%;
+  left: 5%;
+  width: 30vw;
+  max-width: 150px;
+}
+#takaiItem {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 90%;
+  max-height: 90%;
+}
+#bowgunItem {
+  position: absolute;
+  bottom: 5%;
+  left: 5%;
+  width: 20vw;
+  max-width: 120px;
+}
+#holeItem {
+  position: absolute;
+  top: 30%;
+  left: 10%;
+  width: 30vw;
+  max-width: 150px;
+}
+
+/* 2部屋目の穴(やや下) */
+#hole2Item {
+  position: absolute;
+  bottom: 2%;
+  left: 5%;
+  width: 25vw;
+  max-width: 120px;
+}
+
+/* ガール */
+#girlItem {
+  position: absolute;
+  bottom: 5%;
+  right: 5%;
+  width: 25vw;
+  max-width: 120px;
+}
+/* 恒星 => 中央大きめ */
+#kouseiItem {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60vw;
+  max-width: 300px;
+}
+
+/* おねショタ */
+#oneShotaItem {
+  position: absolute;
+  bottom: 5%;
+  right: 5%;
+  width: 25vw;
+  max-width: 120px;
+}
+
+/* おねしょ */
+#onesyo {
+  position: absolute;
+  bottom: 2%;
+  left: 5%;
+  width: 25vw;
+  max-width: 120px;
+}
+
+/* 鍵 */
+#keyItem {
+  position: absolute;
+  bottom: 5%;
+  left: 8%;
+  width: 10vw;
+  max-width: 50px;
+}
+
+/* ドア => 中央下寄り */
+#doorItem {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 25vw;
+  max-width: 150px;
+}
+
+#Opendoor {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 25vw;
+  max-width: 150px;
+}
+
+/* ショタ => ガールの左隣 */
+#shotaItem {
+  position: absolute;
+  bottom: 5%;
+  right: 33%;
+  width: 20vw;
+  max-width: 100px;
+}
+
+/* 暗闇(黒画面) */
+#darkness {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2999;
+  object-fit: cover;
+  display: none;
+}
+
+/* 3部屋目: トランプ, ポスター, シャッター, 配電盤 */
+#toranpuItem {
+  position: absolute;
+  bottom: 5%;
+  left: 5%;
+  width: auto;
+  max-width: 15%;
+  display: none;
+}
+#posterItem {
+  position: absolute;
+  top: 30%;
+  right: 20%;
+  width: auto;
+  max-width: 26%;
+  display: none;
+}
+#newposterItem {
+  position: absolute;
+  top: 30%;
+  right: 20%;
+  width: auto;
+  max-width: 26%;
+  display: none;
+}
+#shutterItem {
+  position: absolute;
+  left: 8%;
+  top: 40%;
+  height: 20%;
+  display: none;
+  z-index: 15;
+}
+#haidenbanItem {
+  position: absolute;
+  bottom: 35px;
+  right: 3%;
+  width: auto;
+  max-width: 38%;
+  display: none;
+  z-index: 15;
+}
+#windowItem {
+  position: absolute;
+  left: 8%;
+  top: 40%;
+  height: 20%;
+  display: none;
+}
+#haidenbanBrokenItem {
+  position: absolute;
+  bottom: 35px;
+  right: 3%;
+  width: auto;
+  max-width: 38%;
+  display: none;
+  z-index: 15;
+}
+
+/* 3部屋目で出現するアイテム: ランプ,鏡,スター,バール */
+#lampItem {
+  position: absolute;
+  top: 0%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: 18%;
+  display: none;
+}
+#kagamiItem {
+  position: absolute;
+  bottom: 165px;
+  right: 7%;
+  width: auto;
+  max-width: 20%;
+  display: none;
+}
+#starItem {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: 40%;
+  display: none;
+}
+#joukaItem {
+  position: absolute;
+  bottom: 5%;
+  left: 20%;
+  width: auto;
+  max-width: 18%;
+  display: none;
+}
+#brokenWindowItem {
+  position: absolute;
+  left: 8%;
+  top: 40%;
+  height: 20%;
+  display: none;
+}
+#barItem {
+  position: absolute;
+  bottom: 5%;
+  left: 15%;
+  width: auto;
+  max-width: 18%;
+  display: none;
+}
+#coverItem {
+  position: absolute;
+  bottom: 5%;
+  left: 30%;
+  width: auto;
+  max-width: 25%;
+  display: none;
+  z-index: 15;
+}
+#simaiItem {
+  position: absolute;
+  bottom: 7%;
+  left: 10%;
+  width: auto;
+  max-width: 30%;
+  z-index: 9999;
+}
+
+/* ランダム生成される姉妹の共通スタイル */
+.simai-clone {
+  position: absolute;
+  z-index: 9999;
+  width: auto;
+ /* max-width: 25%; /* ちょっと小さめ */
+  transition: opacity 0.5s ease-in-out;
+}
+
+
+/*スポットライト*/
+@keyframes flicker {
+  0% {
+    opacity: 0.9;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+  100% {
+    opacity: 0.9;
+    filter: brightness(1);
+  }
+}
+
+#darkness-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at 50% 10%,
+    rgba(255, 255, 180, 0.4) 10%,
+    rgba(0, 0, 0, 0.8) 60%
+  );
+  pointer-events: none; /* クリックを邪魔しない */
+  animation: flicker 2s infinite alternate ease-in-out;
+  z-index: 300; /* アイテムの上に配置 */
+  display: none;
+}
+
+/***********************************************
+ * おしまい画面全体（下からスムーズに覆う）
+ ***********************************************/
+#oshimai-screen {
+  position: fixed;
+  bottom: -100%;
+  left: 0;
+  width: 100%; 
+  height: 100%;
+  background: #a33e46; /* 和風の落ち着いた赤 */
+  z-index: 9998;
+  display: none;
+  animation: slideInScreen 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 背景が画面下から緩やかに加速しつつ上がってくる */
+@keyframes slideInScreen {
+  0%   { bottom: -100%; }
+  60%  { bottom: 5%; }
+  100% { bottom: 0%; }
+}
+
+/***********************************************
+ * 「おしまい」文字（背景より少し遅れて追随）
+ ***********************************************/
+#oshimai-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 60%);
+  font-size: 3rem; /* 少し小さく */
+  color: #fff;
+  font-family: "Hiragino Mincho ProN", serif;
+  opacity: 0;
+  animation: slideInOshimai 2s cubic-bezier(0.4, 0, 0.2, 1) forwards 0.2s; 
+  /* 0.2秒遅延で開始し、背景に追随する */
+}
+
+@keyframes slideInOshimai {
+  0%   { opacity: 0; transform: translate(-50%, 80%); }
+  100% { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/***********************************************
+ * 2行メッセージ（躍動感のあるジャンプ着地アニメ）
+ ***********************************************/
+/* --- 「遊んでくれて ありがとう！」のスタイル --- */
+.yonda {
+  position: absolute;
+  font-size: 0.7rem;  /* 1/3程度に縮小 */
+  font-weight: bold;
+  color: white;
+  padding: 4px 40px; /* 縮小 */
+  border-radius: 4px;
+  text-align: center;
+  z-index: 9998; /* 最前面 */
+  opacity: 0; /* 最初は透明 */
+  display: none; /* 最初は非表示 */
+  transform-origin: center;
+  will-change: transform, opacity;
+  white-space: nowrap; /* 1行にして横長にする */
+}
+
+/* 1行目（緑のスタンプ） */
+#thank-you-line1 {
+  background-color: #6d8346;
+  border: 2px solid #5a6f3d;
+  transform: rotate(-10deg);
+}
+
+/* 2行目（オレンジのスタンプ） */
+#thank-you-line2 {
+  background-color: #f6b483;
+  border: 2px solid #e59a66;
+  transform: rotate(10deg);
+}
+
+/* 1行目のアニメーション（少し大きく登場→縮小＆着地） */
+@keyframes stamp-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(80px) scale(1.2, 1) rotate(-15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1, 1) rotate(-10deg);
+  }
+}
+
+/* 2行目のアニメーション（1テンポ遅れて登場） */
+@keyframes stamp-fade-reverse {
+  0% {
+    opacity: 0;
+    transform: translateY(80px) scale(1.2, 1) rotate(15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1, 1) rotate(10deg);
+  }
+}
+
+/* 1行目の配置（下部に移動） */
+#thank-you-line1 {
+  left: 40%;
+  top: 75%;  /* さらに下へ */
+  animation: stamp-fade 0.6s ease-out forwards;
+}
+
+/* 2行目の配置（下部に移動） */
+#thank-you-line2 {
+  left: 43%;
+  top: 85%;  /* さらに下へ */
+  animation: stamp-fade-reverse 0.6s ease-out 0.15s forwards;
+}
+
+
+
+  
+
+
+/* ポップアップ (共通) */
+.popup {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+.popup-inner {
+  background: #fff;
+  width: 85%;
+  max-width: 400px;
+  margin: 10% auto;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  position: relative;
+}
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.close-btn {
+  cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+.popup-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+#popup-desc {
+  width: 100%;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0.5rem 0;
+  text-align: center;
+  min-height: 1.2rem;
+}
+.popup-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.popup-footer {
+  text-align: center;
+  margin-top: 0.5rem;
+}
+
+/* ショタ後ガール使用 => 特別ポップアップ */
+#girl-use-popup {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+#girl-use-popup .popup-inner {
+  background: #fff;
+  width: 85%;
+  max-width: 400px;
+  margin: 10% auto;
+  flex-direction: column;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  position: relative;
+}
+#girl-use-popup .popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ボタン */
+.action-button {
+  background: #eb6100;
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.action-button:hover {
+  background: #d35600;
+}
+
+/* 入力欄 */
+#tweet-input {
+  width: 60%;
+  max-width: 250px;
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  border-radius: 0.3rem;
+  margin-right: 0.5rem;
+  font-size: 16px;
+}
+
+/* トースト通知 */
+#toast {
+  display: none;
+  position: fixed;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: 0.8rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 0.5rem;
+  z-index: 99999;
+  transition: top 0.4s;
+  text-align: center;
+  max-width: 80%;
+}
+#toast.show {
+  top: 40px;
+}
+
+/* エンディングオーバーレイ */
+#ending-overlay {
+  display: none;
+  position: fixed;
+  z-index: 100000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  animation: fadeIn 0.5s forwards;
+}
+#ending-message {
+  color: #fff;
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  margin: 40% auto 0;
+  width: 100%;
+  max-width: 600px;
+  padding: 1rem;
+  animation: scaleUp 1s ease-in-out forwards;
+}
+/* ゲームオーバー => 赤い背景 */
+#ending-overlay.gameover {
+  background: rgba(255, 0, 0, 0.8);
+  animation: flashRed 1s infinite alternate;
+}
+/* 脱出成功 => 緑っぽい背景 */
+#ending-overlay.success {
+  background: rgba(0, 150, 0, 0.8);
+  animation: flashGreen 1s infinite alternate;
+}
+
+/* 背景をチカチカさせるアニメ */
+@keyframes flashRed {
+  0% {
+    background: rgba(255, 0, 0, 0.8);
+  }
+  100% {
+    background: rgba(255, 50, 50, 0.8);
+  }
+}
+@keyframes flashGreen {
+  0% {
+    background: rgba(0, 150, 0, 0.8);
+  }
+  100% {
+    background: rgba(0, 200, 0, 0.8);
+  }
+}
+
+/* 文字拡大 */
+@keyframes scaleUp {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

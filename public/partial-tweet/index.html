@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>部分ツイート脱出ゲーム</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body oncontextmenu="return false;">
+    <!-- タイトル画面 -->
+    <header id="title-screen">
+      <h1 class="fade-in">部分ツイート脱出ゲーム</h1>
+      <p class="subtitle fade-in-delayed">〜 ツイ廃よ、脱出せよ！ 〜</p>
+    </header>
+
+    <!-- ルールオーバーレイ -->
+    <div id="rules-box" onclick="closeRulesOutside(event)">
+      <div class="rules-inner">
+        <span class="close-btn-rules" onclick="toggleRules()">×</span>
+        <h2>◆ ルール ◆</h2>
+        <p>・いつの間にか謎の部屋に閉じ込められた…！部屋から脱出しましょう！</p>
+        <br />
+        <p>
+          ・部屋の中にあるオブジェクト（家具や道具など）をタップすると、その説明文が表示されます。
+        </p>
+        <br />
+        <p>
+          ・「<span style="color: red">3文字以上の連続する</span
+          >」フレーズを選んで【部分ツイート】すると、アイテムが出現します。<br />
+          <span style="font-size: 0.9rem; color: red">
+            *（長音[ー]は直前の母音とします）<br />
+            例：ルール=るうる, ついいと=ツイート
+          </span>
+        </p>
+        <br />
+        <p>・取得したアイテムは部屋の中に現れ、脱出に役立ちます。</p>
+        <br />
+        <p>
+          *（同じアイテムは重複して入手できません。）<br />
+          *（部分ツイートが行える回数は限りがあります
+          <span style="color: blue">右上を見てね！</span>）
+        </p>
+      </div>
+    </div>
+
+    <!-- ヒントオーバーレイ -->
+    <div id="hinto" onclick="closeHintoOutside(event)">
+      <div class="hinto-inner">
+        <span class="close-btn-hinto" onclick="togglehinto()">×</span>
+        <h2>◆ ヒント ◆</h2>
+        <br />
+        <p>次に取得できるアイテムは</p>
+        <p id="hinto-msg">
+          .....ない！この表示を見るやつが出てくるとはな！センスあるぜお前！
+        </p>
+      </div>
+    </div>
+    <!-- メニュー画面 -->
+    <main id="menu-screen">
+      <div class="menu-container fade-in-delayed2">
+        <button class="menu-button" onclick="startGame()">
+          ゲームスタート
+        </button>
+        <button class="menu-button" onclick="toggleRules()">ルール</button>
+      </div>
+      <div id="credits-button-container" class="fade-in-delayed2">
+        <button class="credits-button" onclick="toggleCredits()">
+          可能性炸裂の製作の部分
+        </button>
+      </div>
+    </main>
+
+
+
+    <!-- siranuiプロフィール確認ポップアップ -->
+    <div
+      id="profile-confirm"
+      class="popup"
+      onclick="closeProfileOutside(event)"
+    >
+      <div class="popup-inner">
+        <div class="popup-header">
+          <h3>確認</h3>
+          <span class="close-btn" onclick="hideProfilePopup()">×</span>
+        </div>
+        <hr />
+        <div class="popup-body">
+          <p>
+            プロフィールに飛びますか？<br />たいした人じゃないですよ、マジで。
+          </p>
+          <div class="popup-buttons">
+            <button class="action-button" onclick="goToSiranui()">はい</button>
+            <button class="action-button" onclick="hideProfilePopup()">
+              いいえ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <section id="game-screen">
+      <!-- 右上のハート & 時を戻すボタン -->
+      <div id="heart-container" onclick="showHeartInfo()">
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9197.webp?v=1739194266534"
+          alt="♡"
+          class="heart"
+          id="heart1"
+        />
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9197.webp?v=1739194266534"
+          alt="♡"
+          class="heart"
+          id="heart2"
+        />
+        <!-- 3個目ハート -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9197.webp?v=1739194266534"
+          alt="♡"
+          class="heart"
+          id="heart3"
+          style="display: none"
+        />
+        <!-- 4個目ハート -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9197.webp?v=1739194266534"
+          alt="♡"
+          class="heart"
+          id="heart4"
+          style="display: none"
+        />
+        <!-- 5個目ハート -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9197.webp?v=1739194266534"
+          alt="♡"
+          class="heart"
+          id="heart5"
+          style="display: none"
+        />
+        <!-- 6個目ハート -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9197.webp?v=1739194266534"
+          alt="♡"
+          class="heart"
+          id="heart6"
+          style="display: none"
+        />
+      </div>
+      <button id="time-rewind" onclick="timeRewind()">時を戻す</button>
+      <button id="rule-btn" onclick="toggleRules()">ルール</button>
+
+      <!--何とかしてヒント機能を作りたい-->
+      <button id="hinto-btn" onclick="togglehinto()">ヒント</button>
+
+      <!-- ハートをタップした時の説明 -->
+      <div id="heart-info">部分ツイート可能な回数です</div>
+
+      <div class="room-container">
+        <!-- エアコン -->
+        <img id="aircon" alt="エアコン" onclick="tapObject('エアコン')" />
+        <!-- 机 -->
+        <img id="table" alt="机" onclick="tapObject('机')" />
+        <!-- 昆虫図鑑 -->
+        <img id="book" alt="昆虫図鑑" onclick="tapObject('昆虫図鑑')" />
+
+        <!-- 家内 -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9201.png?v=1739198704711"
+          alt="家内"
+          id="kanaiItem"
+          style="display: none"
+          onclick="tapObject('家内')"
+        />
+        <!-- 毛皮 -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9202.png?v=1739198793896"
+          alt="毛皮"
+          id="kegawaItem"
+          style="display: none"
+          onclick="tapObject('毛皮')"
+        />
+        <!-- リモコン -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9203.png?v=1739198868513"
+          alt="リモコン"
+          id="rimokonItem"
+          style="display: none"
+          onclick="tapObject('リモコン')"
+        />
+
+        <!-- 高知 -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9205.png?v=1739227017308"
+          alt="高知"
+          id="kochiItem"
+          style="display: none"
+          onclick="onBadEnd('デカすぎる...玄関口ではなさそうだ')"
+        />
+        <!-- ドリア -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9209.png?v=1739227028927"
+          alt="ドリア"
+          id="doriaItem"
+          style="display: none"
+          onclick="onBadEnd('出来たてホヤホヤだ...脱出は出来なそうだ')"
+        />
+        <!-- 戦い -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9214.png?v=1739227625774"
+          alt="戦い"
+          id="tatakaiItem"
+          style="display: none"
+          onclick="onBadEnd('壁にヒビが...！！脱出はできない！')"
+        />
+        <!-- 他界 -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9208.png?v=1739227172980"
+          alt="他界"
+          id="takaiItem"
+          style="display: none"
+          onclick="onBadEnd('.........⚰️')"
+        />
+        <!-- ボウガン -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9204.png?v=1739227271370"
+          alt="ボウガン"
+          id="bowgunItem"
+          style="display: none"
+          onclick="tapObject('ボウガン')"
+        />
+        <!-- 穴 (1部屋目ゴール) -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9211.png?v=1739227159589"
+          alt="穴"
+          id="holeItem"
+          style="display: none"
+          onclick="onSuccess()"
+        />
+
+        <!-- 2部屋目の穴 (もう少し下へ) -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9219.png?v=1739272687363"
+          alt="穴"
+          id="hole2Item"
+          style="display: none"
+          onclick="tapObject('穴')"
+        />
+
+        <!-- ガール -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9220.png?v=1739272658634"
+          alt="ガール"
+          id="girlItem"
+          style="display: none"
+          onclick="tapObject('ガール')"
+        />
+
+        <!-- ショタ -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9222.png?v=1739276768597"
+          alt="ショタ"
+          id="shotaItem"
+          style="display: none"
+          onclick="tapObject('ショタ')"
+        />
+
+        <!-- 恒星 -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9223.png?v=1739277446684"
+          alt="恒星"
+          id="kouseiItem"
+          style="display: none"
+          onclick="onBadEnd('一瞬で消し炭だ！')"
+        />
+
+        <!-- おねショタ -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9226.png?v=1739279431855"
+          alt="おねショタ"
+          id="oneShotaItem"
+          style="display: none"
+          onclick="tapObject('おねショタ')"
+        />
+
+        <!-- おねしょ -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9240.png?v=1739280635027"
+          id="onesyo"
+          style="display: none"
+          alt="おねしょで満たされた穴"
+        />
+
+        <!-- 鍵 -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9229.png?v=1739280763724"
+          id="keyItem"
+          alt="鍵"
+          style="display: none"
+          onclick="getKey()"
+        />
+
+        <!-- ドア(中央下寄り) -->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9241.png?v=1739280955269"
+          alt="ドア"
+          id="doorItem"
+          onclick="tapObject('ドア')"
+        />
+
+        <!-- 開いたドア-->
+        <img
+          src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9242.png?v=1739287950730"
+          alt="開いたドア"
+          id="Opendoor"
+          onclick="tapObject('ドア')"
+        />
+      </div>
+    </section>
+
+    <!-- 黒背景(暗闇) -->
+    <img
+      id="darkness"
+      src="https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9221.jpeg?v=1739272742039"
+      alt="暗闇"
+      onclick="tapObject('暗闇')"
+      style="display: none"
+    />
+
+    <!-- (3部屋目) -->
+    <!-- スポットライト暗がり演出 -->
+    <div id="darkness-overlay"></div>
+
+    <img
+      id="toranpuItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9286.png?v=1739713838050"
+      alt="トランプ"
+      style="display: none"
+      onclick="tapObject('トランプ')"
+    />
+    <img
+      id="posterItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/0A1A8250-C179-4464-80B1-C1EE574C1A9C.jpeg?v=1740025661767"
+      alt="ポスター"
+      style="display: none"
+      onclick="tapObject('ポスター')"
+    />
+    <img
+      id="newposterItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9288.jpeg?v=1739714749459"
+      alt="ポスター"
+      style="display: none"
+      onclick="tapObject('ポスター')"
+    />
+    <img
+      id="shutterItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9325.png?v=1739723662896"
+      alt="シャッター"
+      style="display: none"
+      onclick="tapObject('シャッター')"
+    />
+    <img
+      id="haidenbanItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9290.png?v=1739718646663"
+      alt="配電盤"
+      style="display: none"
+      onclick="tapObject('配電盤')"
+    />
+
+    <!-- 3部屋目で新たに出現するアイテム(ランプ,鏡,スター,バール) -->
+    <img
+      id="lampItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9329.png?v=1739750894068"
+      alt="ランプ"
+      style="display: none"
+      onclick="tapObject('ランプ')"
+    />
+    <img
+      id="kagamiItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9330.png?v=1739762220510"
+      alt="鏡"
+      style="display: none"
+      onclick="tapObject('鏡')"
+    />
+    <img
+      id="starItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9327.png?v=1739746319718"
+      alt="スター"
+      style="display: none"
+      onclick="tapObject('スター')"
+    />
+    <img
+      id="barItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9328.png?v=1739747163313"
+      alt="バール"
+      style="display: none"
+      onclick="tapObject('バール')"
+    />
+    <img
+      id="windowItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9321.png?v=1739927318366"
+      alt="窓"
+      style="display: none"
+      onclick="tapObject('窓')"
+    />
+    <img
+      id="haidenbanBrokenItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9442.png?v=1739927306426"
+      alt="配電盤(故障中)"
+      style="display: none"
+    />
+    <!-- 浄化アイテム -->
+    <img
+      id="joukaItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9445.png?v=1739964908740"
+      alt="浄化"
+      style="display: none"
+      onclick="tapObject('浄化')"
+    />
+    <!-- 割れた窓 -->
+    <img
+      id="brokenWindowItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/EBC0249A-C193-4F39-AE45-C82F4354801D.jpeg?v=1740044403591"
+      alt="割れた窓"
+      style="display: none"
+      onclick="onSuccess()"
+    />
+    <!-- カバー曲-->
+    <img
+      id="coverItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9446.png?v=1740010919381"
+      alt="カバー"
+      style="display: none"
+      onclick="tapObject('カバー')"
+    />
+
+    <!-- 姉妹-->
+    <img
+      id="simaiItem"
+      src="https://cdn.glitch.global/8ee64ece-711f-42c2-b725-8ed51943800c/IMG_9466.png?v=1740060128988"
+      alt="姉妹"
+      style="display: none"
+    />
+
+    <div id="oshimai-screen" style="display: none">
+      <p id="oshimai-text" onclick="tapObject('おしまい')">おしまい</p>
+    </div>
+    <div id="thank-you-line1" class="yonda">遊んでくれて</div>
+    <div id="thank-you-line2" class="yonda">ありがとう！</div>
+
+    <!-- ポップアップ (ゲーム内共通) -->
+    <div id="popup" class="popup" onclick="closePopupOutside(event)">
+      <div class="popup-inner">
+        <div class="popup-header">
+          <h2 id="popup-title"></h2>
+          <span class="close-btn" onclick="closePopup()">×</span>
+        </div>
+        <hr />
+        <div class="popup-body">
+          <p id="popup-desc"></p>
+          <div class="popup-buttons">
+            <!--button class="action-button" onclick="doUse()">使用</button-->
+            <button class="action-button" onclick="openTweetForm()">
+              部分ツイート
+            </button>
+          </div>
+        </div>
+
+        <!-- 部分ツイートフォーム -->
+        <div class="popup-footer" id="tweet-footer" style="display: none">
+          <input type="text" id="tweet-input" placeholder="ひらがな3文字以上" />
+          <button class="action-button" onclick="submitTweet()">決定</button>
+          <!-- エラー表示領域 -->
+          <p
+            id="tweet-error-msg"
+            style="color: red; font-size: 0.8rem; margin-top: 0.5rem"
+          ></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ショタ後、ガールに使用したときの特別ポップアップ -->
+    <div id="girl-use-popup" class="popup" onclick="closeGirlUseOutside(event)">
+      <div class="popup-inner">
+        <div class="popup-header">
+          <h3>？？？</h3>
+          <span class="close-btn" onclick="closeGirlUsePopup()">×</span>
+        </div>
+        <hr />
+        <div class="popup-body">
+          <p>・・・おや！？ 女子高生のようすが・・・！</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- トースト通知 -->
+    <div id="toast" onclick="hideToast()"></div>
+
+    <!-- エンディングオーバーレイ -->
+    <div id="ending-overlay" onclick="hideEnding()">
+      <div id="ending-message"></div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
