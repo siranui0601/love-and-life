@@ -109,6 +109,7 @@ function startGame() {
   const header = document.querySelector("header#title-screen");
   if (header) header.style.display = "none";
   document.getElementById("game-screen").style.display = "block";
+  collapseGameToolbar();
 
   // 1部屋目 初期化
   currentRoom = 1;
@@ -425,6 +426,30 @@ function closeCreditsOutside(e) {
   if (e.target.id === "credits-box") {
     toggleCredits();
   }
+}
+
+
+function toggleGameToolbar() {
+  const toolbar = document.querySelector(".game-toolbar");
+  const toggle = document.getElementById("toolbar-toggle");
+  if (!toolbar || !toggle) return;
+
+  const isCollapsed = toolbar.classList.toggle("is-collapsed");
+  toggle.setAttribute("aria-expanded", String(!isCollapsed));
+  toggle.setAttribute(
+    "aria-label",
+    isCollapsed ? "ゲーム操作を開く" : "ゲーム操作を閉じる"
+  );
+}
+
+function collapseGameToolbar() {
+  const toolbar = document.querySelector(".game-toolbar");
+  const toggle = document.getElementById("toolbar-toggle");
+  if (!toolbar || !toggle) return;
+
+  toolbar.classList.add("is-collapsed");
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.setAttribute("aria-label", "ゲーム操作を開く");
 }
 
 /**********************************************
@@ -898,8 +923,9 @@ function closePopup(e) {
 
   document.getElementById("popup").style.display = "none";
   document.getElementById("tweet-error-msg").textContent = "";
-  window.scrollTo(0, 30);
-  document.activeElement.blur();
+  if (document.activeElement && typeof document.activeElement.blur === "function") {
+    document.activeElement.blur();
+  }
 }
 
 function closePopupOutside(e) {
@@ -951,7 +977,7 @@ function openTweetForm() {
   if (popDesc.textContent) {
     popDesc.textContent = toHiragana(popDesc.textContent);
   }
-  document.getElementById("tweet-footer").style.display = "block";
+  document.getElementById("tweet-footer").style.display = "grid";
   document.getElementById("tweet-error-msg").textContent = "";
 }
 

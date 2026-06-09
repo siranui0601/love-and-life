@@ -171,11 +171,19 @@
           style="display: none"
         />
       </div>
-      <div class="game-toolbar" aria-label="ゲーム操作">
+      <div class="game-toolbar is-collapsed" aria-label="ゲーム操作">
         <button id="rule-btn" onclick="toggleRules()">ルール</button>
         <button id="hinto-btn" onclick="togglehinto()">ヒント</button>
         <button id="time-rewind" onclick="timeRewind()">時を戻す</button>
-        <button id="top-page-btn" onclick="goToTopPage()">トップページ</button>
+        <button
+          id="toolbar-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-label="ゲーム操作を開く"
+          onclick="toggleGameToolbar()"
+        >
+          ☰
+        </button>
       </div>
 
       <!-- ハートをタップした時の説明 -->
@@ -469,6 +477,10 @@
 
     <div id="oshimai-screen" style="display: none">
       <p id="oshimai-text" onclick="tapObject('おしまい')">おしまい</p>
+      <div id="oshimai-actions" aria-label="ゲーム終了後の操作">
+        <button class="oshimai-button" onclick="startGame()">もう一度遊ぶ</button>
+        <button class="oshimai-button secondary" onclick="goToTopPage()">トップページに戻る</button>
+      </div>
     </div>
     <div id="thank-you-line1" class="yonda">遊んでくれて</div>
     <div id="thank-you-line2" class="yonda">ありがとう！</div>
