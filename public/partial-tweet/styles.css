@@ -1598,11 +1598,11 @@ body.partial-tweet-locked #game-screen {
 
 
 #popup {
-  position: absolute !important;
+  position: fixed !important;   /* absolute → fixed に変更 */
   inset: 0;
   width: 100vw;
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: 100%;
+  height: 100%;                 /* dvh → % に変更 */
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -1701,6 +1701,6 @@ body.partial-tweet-locked #game-screen {
 #ending-overlay,
 #oshimai-screen,
 #darkness {
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: 100%;
+  height: 100%;
 }
