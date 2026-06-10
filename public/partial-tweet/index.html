@@ -88,7 +88,7 @@
             <button class="action-button" onclick="resetCurrentRoom()">
               この部屋を初期状態にする
             </button>
-            <button class="action-button secondary" onclick="returnToTitle()">
+            <button class="action-button secondary" onclick="reloadPartialTweetPage()">
               タイトルに戻る
             </button>
           </div>
@@ -478,7 +478,7 @@
     <div id="oshimai-screen" style="display: none">
       <p id="oshimai-text" onclick="tapObject('おしまい')">おしまい</p>
       <div id="oshimai-actions" aria-label="ゲーム終了後の操作">
-        <button class="oshimai-button" onclick="startGame()">もう一度遊ぶ</button>
+        <button class="oshimai-button" onclick="reloadPartialTweetPage()">もう一度遊ぶ</button>
         <button class="oshimai-button secondary" onclick="goToTopPage()">トップページに戻る</button>
       </div>
     </div>
