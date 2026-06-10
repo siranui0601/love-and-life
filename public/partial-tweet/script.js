@@ -83,9 +83,37 @@ function unlockPartialTweetPage() {
 
 installPartialTweetViewportFix();
 
+function installPartialTweetZoomGuard() {
+  document.addEventListener(
+    "dblclick",
+    (e) => {
+      e.preventDefault();
+    },
+    { passive: false }
+  );
 
+  document.addEventListener(
+    "touchmove",
+    (e) => {
+      if (e.touches && e.touches.length > 1) {
+        e.preventDefault();
+      }
+    },
+    { passive: false }
+  );
 
+  ["gesturestart", "gesturechange", "gestureend"].forEach((eventName) => {
+    window.addEventListener(
+      eventName,
+      (e) => {
+        e.preventDefault();
+      },
+      { passive: false }
+    );
+  });
+}
 
+installPartialTweetZoomGuard();
 
 document.getElementById("hinto").style.display = "none";
 
@@ -150,14 +178,6 @@ function initObjects() {
  * ゲーム開始 (startGame)
  **********************************************/
 function startGame() {
-  // ダブルタップ防止
-  document.addEventListener(
-    "dblclick",
-    function (e) {
-      e.preventDefault();
-    },
-    { passive: false }
-  );
   initObjects();
 
   // ヒント
@@ -223,6 +243,7 @@ function startGame() {
     "Opendoor",
     "toranpuItem",
     "posterItem",
+    "newposterItem",
     "shutterItem",
     "haidenbanItem",
     "lampItem",
@@ -692,6 +713,7 @@ function gotoThirdRoom() {
   // 3部屋目初期
   document.getElementById("toranpuItem").style.display = "block";
   document.getElementById("posterItem").style.display = "block";
+  document.getElementById("newposterItem").style.display = "none";
   document.getElementById("shutterItem").style.display = "block";
   document.getElementById("haidenbanItem").style.display = "block";
 
@@ -867,6 +889,7 @@ function tapObject(name) {
     document.getElementById("newposterItem").style.display = "block";
     document.getElementById("joukaItem").style.display = "none";
     objectDescMap["ポスター"] = "大衆酒場アルバイト大募集！";
+    posterCleaned = true;
     //ガールユーズポップアップを使い回す
     document.querySelector("#girl-use-popup h3").textContent = "スター";
     document.querySelector("#girl-use-popup p").textContent =
