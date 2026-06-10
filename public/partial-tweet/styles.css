@@ -1391,7 +1391,7 @@ body.partial-tweet-locked button {
 
 .room-container {
   background: url("/2D画像/IMG_9193.jpeg") center center no-repeat;
-  background-size: cover;
+  background-size: 100% 100%;
 }
 
 .room-container::before,
