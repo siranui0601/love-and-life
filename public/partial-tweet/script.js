@@ -105,11 +105,18 @@ function startGame() {
   startCharging();
 
   // 画面切替
-  document.getElementById("menu-screen").style.display = "none";
+    document.getElementById("menu-screen").style.display = "none";
   const header = document.querySelector("header#title-screen");
   if (header) header.style.display = "none";
   document.getElementById("game-screen").style.display = "block";
+
+  document.documentElement.classList.add("partial-tweet-locked");
+  document.body.classList.add("partial-tweet-locked");
+
   collapseGameToolbar();
+  
+  
+  
 
   // 1部屋目 初期化
   currentRoom = 1;
@@ -501,6 +508,10 @@ function resetCurrentRoom() {
 
 function returnToTitle() {
   closeRewindModal();
+
+  document.documentElement.classList.remove("partial-tweet-locked");
+  document.body.classList.remove("partial-tweet-locked");
+
   document.getElementById("game-screen").style.display = "none";
   document.getElementById("ending-overlay").style.display = "none";
   document.getElementById("popup").style.display = "none";
