@@ -474,7 +474,7 @@ body {
 /* ドア => 中央下寄り */
 #doorItem {
   position: absolute;
-  bottom: 12%;
+  bottom: 18%;
   left: 50%;
   transform: translateX(-50%);
   width: 25vw;
@@ -483,7 +483,7 @@ body {
 
 #Opendoor {
   position: absolute;
-  bottom: 12%;
+  bottom: 18%;
   left: 50%;
   transform: translateX(-50%);
   width: 25vw;
