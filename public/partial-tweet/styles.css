@@ -1533,3 +1533,40 @@ body.partial-tweet-locked button {
     transform: translateX(calc(-100% + 2.95rem));
   }
 }
+
+
+
+
+/* ===== 部分ツイート入力モーダルのiPhoneキーボード対策 ===== */
+#popup {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* JS側で display:block にされるので、表示中だけflex化する */
+#popup[style*="display: block"] {
+  display: flex !important;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 18vh;
+}
+
+/* 入力中は上に寄せる。オリジン魔法陣の room-id-modal:focus-within と同じ考え方 */
+#popup[style*="display: block"]:focus-within {
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+
+#popup .popup-inner {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  width: min(88vw, 400px);
+  max-height: calc(100dvh - env(safe-area-inset-top) - 24px);
+  margin: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
