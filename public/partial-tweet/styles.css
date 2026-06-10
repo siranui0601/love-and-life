@@ -1537,36 +1537,60 @@ body.partial-tweet-locked button {
 
 
 
-/* ===== 部分ツイート入力モーダルのiPhoneキーボード対策 ===== */
-#popup {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
-  overflow: hidden;
+/* ===== 部分ツイート入力モーダルのiPhoneキーボード対策・改 ===== */
+:root {
+  --pt-vv-top: 0px;
+  --pt-vv-height: 100dvh;
 }
 
-/* JS側で display:block にされるので、表示中だけflex化する */
-#popup[style*="display: block"] {
+#popup {
+  position: fixed !important;
+  left: 0;
+  top: var(--pt-vv-top);
+  width: 100vw;
+  height: var(--pt-vv-height);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* style="display:block" ではなく class で表示状態を管理する */
+#popup.is-open {
   display: flex !important;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 18vh;
+  padding-top: clamp(14px, 8vh, 72px);
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
 }
 
-/* 入力中は上に寄せる。オリジン魔法陣の room-id-modal:focus-within と同じ考え方 */
-#popup[style*="display: block"]:focus-within {
-  padding-top: max(12px, env(safe-area-inset-top));
+/* 入力中に上へジャンプさせない */
+#popup.is-open:focus-within {
+  padding-top: clamp(14px, 8vh, 72px);
 }
 
-#popup .popup-inner {
-  position: relative;
-  top: auto;
-  left: auto;
-  transform: none;
+#popup.is-open .popup-inner {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
   width: min(88vw, 400px);
-  max-height: calc(100dvh - env(safe-area-inset-top) - 24px);
+  max-height: calc(var(--pt-vv-height) - 28px);
   margin: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* キーボード中はフォームが潰れないようにする */
+#tweet-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#tweet-input {
+  width: 100%;
+  max-width: none;
+  margin-right: 0;
+  font-size: 16px;
 }
