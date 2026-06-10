@@ -37,118 +37,83 @@ const assetPath = (fileName) => `/2D画像/${fileName}`;
 
 
 let partialTweetLockedScrollY = 0;
-let partialTweetGameHeight = 0;
 
-function updatePartialTweetVisualOffset() {
-  const vv = window.visualViewport;
-  const offsetTop = vv ? vv.offsetTop || 0 : 0;
+const modalElementIds = [
+  "rules-box",
+  "hinto",
+  "credits-box",
+  "profile-confirm",
+  "rewind-modal",
+  "popup",
+  "girl-use-popup",
+  "ending-overlay",
+];
 
-  document.documentElement.style.setProperty(
-    "--pt-vv-offset-top",
-    `${offsetTop}px`
+function isElementVisible(el) {
+  return !!el && getComputedStyle(el).display !== "none";
+}
+
+function updateModalOpenState() {
+  const hasOpenModal = modalElementIds.some((id) =>
+    isElementVisible(document.getElementById(id))
   );
+
+  document.body.classList.toggle("modal-open", hasOpenModal);
+}
+
+function showModalElement(el, display = "block") {
+  if (!el) return;
+  el.style.display = display;
+  updateModalOpenState();
+}
+
+function hideModalElement(el) {
+  if (!el) return;
+  el.style.display = "none";
+  updateModalOpenState();
+}
+
+function installModalOpenObserver() {
+  const observer = new MutationObserver(updateModalOpenState);
+
+  modalElementIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    observer.observe(el, {
+      attributes: true,
+      attributeFilter: ["class", "style"],
+    });
+  });
+
+  updateModalOpenState();
 }
 
 function updatePartialTweetViewportVars() {
-  const height = partialTweetGameHeight || window.innerHeight;
-
-  document.documentElement.style.setProperty("--pt-game-height", `${height}px`);
-  updatePartialTweetVisualOffset();
+  document.documentElement.style.setProperty("--pt-game-height", "100dvh");
 }
 
 function installPartialTweetViewportFix() {
-  partialTweetGameHeight = window.innerHeight;
   updatePartialTweetViewportVars();
-
-  window.addEventListener("resize", () => {
-    if (!document.body.classList.contains("partial-tweet-locked")) {
-      partialTweetGameHeight = window.innerHeight;
-      updatePartialTweetViewportVars();
-    }
-  });
-
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", updatePartialTweetVisualOffset);
-    window.visualViewport.addEventListener("scroll", updatePartialTweetVisualOffset);
-  }
 }
 
 function lockPartialTweetPage() {
   partialTweetLockedScrollY = window.scrollY || window.pageYOffset || 0;
-  partialTweetGameHeight = window.innerHeight;
-
   updatePartialTweetViewportVars();
 
   document.documentElement.classList.add("partial-tweet-locked");
   document.body.classList.add("partial-tweet-locked");
-
-  document.body.style.position = "fixed";
-  document.body.style.top = `-${partialTweetLockedScrollY}px`;
-  document.body.style.left = "0";
-  document.body.style.right = "0";
-  document.body.style.width = "100%";
-  document.body.style.height = `${partialTweetGameHeight}px`;
 }
 
 function unlockPartialTweetPage() {
   document.documentElement.classList.remove("partial-tweet-locked");
   document.body.classList.remove("partial-tweet-locked");
-
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.left = "";
-  document.body.style.right = "";
-  document.body.style.width = "";
-  document.body.style.height = "";
+  document.body.classList.remove("modal-open");
 
   window.scrollTo(0, partialTweetLockedScrollY || 0);
 }
 
 installPartialTweetViewportFix();
-
-function installPartialTweetViewportFix() {
-  partialTweetGameHeight = window.innerHeight;
-  updatePartialTweetViewportVars();
-
-  window.addEventListener("resize", () => {
-    // ゲーム中は高さを変えない。タイトル画面など、未ロック時だけ更新する。
-    if (!document.body.classList.contains("partial-tweet-locked")) {
-      partialTweetGameHeight = window.innerHeight;
-      updatePartialTweetViewportVars();
-    }
-  });
-}
-
-function lockPartialTweetPage() {
-  partialTweetLockedScrollY = window.scrollY || window.pageYOffset || 0;
-  partialTweetGameHeight = window.innerHeight;
-
-  updatePartialTweetViewportVars();
-
-  document.documentElement.classList.add("partial-tweet-locked");
-  document.body.classList.add("partial-tweet-locked");
-
-  document.body.style.position = "fixed";
-  document.body.style.top = `-${partialTweetLockedScrollY}px`;
-  document.body.style.left = "0";
-  document.body.style.right = "0";
-  document.body.style.width = "100%";
-}
-
-function unlockPartialTweetPage() {
-  document.documentElement.classList.remove("partial-tweet-locked");
-  document.body.classList.remove("partial-tweet-locked");
-
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.left = "";
-  document.body.style.right = "";
-  document.body.style.width = "";
-
-  window.scrollTo(0, partialTweetLockedScrollY || 0);
-}
-
-installPartialTweetViewportFix();
+installModalOpenObserver();
 
 function installPartialTweetZoomGuard() {
   document.addEventListener(
@@ -407,9 +372,9 @@ function handleTouchEnd(e) {
 function toggleRules() {
   const rulesBox = document.getElementById("rules-box");
   if (!rulesBox.style.display || rulesBox.style.display === "none") {
-    rulesBox.style.display = "block";
+    showModalElement(rulesBox);
   } else {
-    rulesBox.style.display = "none";
+    hideModalElement(rulesBox);
   }
 }
 function closeRulesOutside(e) {
@@ -552,9 +517,9 @@ function togglehinto() {
           "<p>ポスター & トランプから部分ツイートしてみよう！</p>";
       }
     }
-    Hinto.style.display = "block";
+    showModalElement(Hinto);
   } else {
-    Hinto.style.display = "none";
+    hideModalElement(Hinto);
     currentTime = 0;
     startCharging();
   }
@@ -572,9 +537,9 @@ function closeHintoOutside(e) {
 function toggleCredits() {
   const cBox = document.getElementById("credits-box");
   if (!cBox.style.display || cBox.style.display === "none") {
-    cBox.style.display = "block";
+    showModalElement(cBox);
   } else {
-    cBox.style.display = "none";
+    hideModalElement(cBox);
   }
 }
 function closeCreditsOutside(e) {
@@ -611,10 +576,10 @@ function collapseGameToolbar() {
  * siranuiプロフィール確認
  **********************************************/
 function confirmSiranuiProfile() {
-  document.getElementById("profile-confirm").style.display = "block";
+  showModalElement(document.getElementById("profile-confirm"));
 }
 function hideProfilePopup() {
-  document.getElementById("profile-confirm").style.display = "none";
+  hideModalElement(document.getElementById("profile-confirm"));
 }
 function closeProfileOutside(e) {
   if (e.target.id === "profile-confirm") {
@@ -630,11 +595,11 @@ function goToSiranui() {
  * 時を戻す (timeRewind)
  **********************************************/
 function timeRewind() {
-  document.getElementById("rewind-modal").style.display = "block";
+  showModalElement(document.getElementById("rewind-modal"));
 }
 
 function closeRewindModal() {
-  document.getElementById("rewind-modal").style.display = "none";
+  hideModalElement(document.getElementById("rewind-modal"));
 }
 
 function closeRewindOutside(e) {
@@ -768,7 +733,7 @@ function gotoThirdRoom() {
   document.getElementById("Opendoor").style.display = "none";
   document.getElementById("doorItem").style.display = "none";
   document.getElementById("darkness").style.display = "none";
-  document.getElementById("popup").style.display = "none";
+  hideModalElement(document.getElementById("popup"));
 
   partialTweetCount = 6;
   document.getElementById("heart1").style.display = "inline";
@@ -861,7 +826,7 @@ function doUse() {
     const shotaEl = document.getElementById("shotaItem");
     if (shotaEl.style.display !== "none") {
       document.getElementById("girlItem").style.display = "none";
-      document.getElementById("girl-use-popup").style.display = "block";
+      showModalElement(document.getElementById("girl-use-popup"));
     }
   }
   // ドア使用
@@ -963,7 +928,7 @@ function tapObject(name) {
     document.querySelector("#girl-use-popup h3").textContent = "スター";
     document.querySelector("#girl-use-popup p").textContent =
       "汚れてるﾎﾟｩ！掃除するﾎﾟｩ！";
-    document.getElementById("girl-use-popup").style.display = "block";
+    showModalElement(document.getElementById("girl-use-popup"));
   }
 
   //(F) 鏡、スター、配電盤がある状態で鏡をタップ→マイケルが身だしなみを整える
@@ -980,7 +945,7 @@ function tapObject(name) {
     document.querySelector("#girl-use-popup h3").textContent = "スター";
     document.querySelector("#girl-use-popup p").textContent =
       "ヘアーが乱れてるﾎﾟｩ！！整えるﾎﾟｩ！";
-    document.getElementById("girl-use-popup").style.display = "block";
+    showModalElement(document.getElementById("girl-use-popup"));
   }
   if (
     name === "鏡" &&
@@ -1017,7 +982,7 @@ function tapObject(name) {
       document.querySelector("#girl-use-popup h3").textContent = "スター";
       document.querySelector("#girl-use-popup p").textContent =
         "完璧ﾎﾟｩ！轟け！俺のソウルソング！ﾎﾟｩ！";
-      document.getElementById("girl-use-popup").style.display = "block";
+      showModalElement(document.getElementById("girl-use-popup"));
       return;
     }
   }
@@ -1039,8 +1004,8 @@ function tapObject(name) {
   popupOriginalDesc = descEl.textContent;
   updateHiraganaToggleButton();
   updatePartialTweetViewportVars();
-pop.classList.add("is-open");
-pop.style.display = "block";
+  pop.classList.add("is-open");
+  showModalElement(pop);
 }
 
 /**********************************************
@@ -1074,7 +1039,7 @@ function closePopup(e) {
 
   const popup = document.getElementById("popup");
 popup.classList.remove("is-open");
-popup.style.display = "none";
+hideModalElement(popup);
 
   document.getElementById("tweet-error-msg").textContent = "";
 
@@ -1093,7 +1058,6 @@ function closePopupOutside(e) {
   // エラーメッセージが出ている場合は閉じずに入力欄へ戻す
   if (errEl.textContent.trim() !== "") {
   inputEl.focus({ preventScroll: true });
-  updatePartialTweetVisualOffset();
   return;
 }
   closePopup();
@@ -1110,7 +1074,7 @@ function closeGirlUsePopup() {
     document.getElementById("windowItem").style.display = "none";
     document.getElementById("brokenWindowItem").style.display = "block";
   }
-  document.getElementById("girl-use-popup").style.display = "none";
+  hideModalElement(document.getElementById("girl-use-popup"));
   document.getElementById("girlItem").style.display = "none";
   document.getElementById("shotaItem").style.display = "none";
   if (currentRoom === 2) {

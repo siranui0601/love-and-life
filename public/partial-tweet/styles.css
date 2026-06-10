@@ -59,7 +59,7 @@ body {
 /* ルール表示オーバーレイ */
 #rules-box {
   display: none;
-  position: fixed;
+  position: absolute;
   z-index: 3000;
   top: 0;
   left: 0;
@@ -89,7 +89,7 @@ body {
 /*ヒント機能を作りたい*/
 #hinto {
   display: none;
-  position: fixed;
+  position: absolute;
   z-index: 3000;
   top: 0;
   left: 0;
@@ -169,7 +169,7 @@ body {
 /* クレジット表示(オーバーレイ) */
 #credits-box {
   display: none;
-  position: fixed;
+  position: absolute;
   z-index: 3000;
   top: 0;
   left: 0;
@@ -201,7 +201,7 @@ body {
 /* siranuiプロフィール用ポップアップ */
 #profile-confirm {
   display: none;
-  position: fixed;
+  position: absolute;
   z-index: 9999;
   top: 0;
   left: 0;
@@ -501,7 +501,7 @@ body {
 
 /* 暗闇(黒画面) */
 #darkness {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100vw;
@@ -685,7 +685,7 @@ body {
  * おしまい画面全体（下からスムーズに覆う）
  ***********************************************/
 #oshimai-screen {
-  position: fixed;
+  position: absolute;
   bottom: -100%;
   left: 0;
   width: 100%; 
@@ -804,7 +804,7 @@ body {
 /* ポップアップ (共通) */
 .popup {
   display: none;
-  position: fixed;
+  position: absolute;
   z-index: 9999;
   top: 0;
   left: 0;
@@ -885,7 +885,7 @@ body {
 /* ショタ後ガール使用 => 特別ポップアップ */
 #girl-use-popup {
   display: none;
-  position: fixed;
+  position: absolute;
   z-index: 9999;
   top: 0;
   left: 0;
@@ -937,7 +937,7 @@ body {
 /* トースト通知 */
 #toast {
   display: none;
-  position: fixed;
+  position: absolute;
   top: -60px;
   left: 50%;
   transform: translateX(-50%);
@@ -958,7 +958,7 @@ body {
 /* エンディングオーバーレイ */
 #ending-overlay {
   display: none;
-  position: fixed;
+  position: absolute;
   z-index: 100000;
   top: 0;
   left: 0;
@@ -1052,12 +1052,12 @@ body {
     radial-gradient(circle at 85% 12%, rgba(244, 114, 182, 0.2), transparent 30%),
     radial-gradient(circle at 50% 90%, rgba(34, 197, 94, 0.16), transparent 26%),
     linear-gradient(135deg, #020617 0%, #0f172a 48%, #111827 100%);
-  background-attachment: fixed;
+  background-attachment: scroll;
 }
 
 body::before {
   content: "";
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   background-image:
@@ -1176,7 +1176,7 @@ body::before {
 }
 
 .game-toolbar {
-  position: fixed;
+  position: absolute;
   top: max(10px, env(safe-area-inset-top));
   left: 10px;
   right: 10px;
@@ -1205,7 +1205,7 @@ body::before {
 }
 
 #heart-container {
-  position: fixed;
+  position: absolute;
   top: max(10px, env(safe-area-inset-top));
   right: 10px;
   padding: 0.35rem;
@@ -1224,7 +1224,7 @@ body::before {
 }
 
 #heart-info {
-  position: fixed;
+  position: absolute;
   top: 62px;
   right: 12px;
   color: #e2e8f0;
@@ -1393,10 +1393,10 @@ body.partial-tweet-locked {
   overscroll-behavior: none;
 }
 
-/* ゲーム中は画面そのものを固定する */
+/* ゲーム中は100dvh内に収める */
 body.partial-tweet-locked #game-screen {
-  position: fixed;
-  inset: 0;
+  position: relative;
+  inset: auto;
   width: 100vw;
   height: 100dvh;
   overflow: hidden;
@@ -1482,7 +1482,7 @@ body.partial-tweet-locked button {
 .popup-inner,
 #profile-confirm .popup-inner,
 #girl-use-popup .popup-inner {
-  position: fixed;
+  position: absolute;
   top: max(1rem, env(safe-area-inset-top));
   left: 50%;
   width: min(85vw, 400px);
@@ -1569,10 +1569,9 @@ body.partial-tweet-locked button {
 
 
 
-/* ===== 部分ツイート入力モーダルのiPhoneキーボード対策・固定版 ===== */
+/* ===== 部分ツイート入力モーダルのiPhoneキーボード対策 ===== */
 :root {
   --pt-game-height: 100dvh;
-  --pt-vv-offset-top: 0px;
 }
 
 html.partial-tweet-locked,
@@ -1583,21 +1582,27 @@ body.partial-tweet-locked {
   overscroll-behavior: none;
 }
 
+body.modal-open {
+  overflow: hidden;
+  height: 100%;
+}
+
+
 body.partial-tweet-locked #game-screen {
-  position: fixed;
-  inset: 0;
+  position: relative;
+  inset: auto;
   width: 100vw;
-  height: var(--pt-game-height);
+  height: 100dvh;
   overflow: hidden;
 }
 
 
 #popup {
-  position: fixed !important;
-  left: 0;
-  top: var(--pt-vv-offset-top);
+  position: absolute !important;
+  inset: 0;
   width: 100vw;
-  height: var(--pt-game-height);
+  min-height: 100dvh;
+  height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -1684,4 +1689,18 @@ body.partial-tweet-locked #game-screen {
   left: 50% !important;
   transform: translateX(-50%) !important;
   bottom: calc(var(--pt-floor-line-from-bottom) - var(--pt-door-overlap-floor)) !important;
+}
+/* Full-screen modal containers use a 100dvh wrapper so iOS keyboard changes do not
+   shift viewport-sized overlays. */
+.popup,
+#rules-box,
+#hinto,
+#credits-box,
+#profile-confirm,
+#girl-use-popup,
+#ending-overlay,
+#oshimai-screen,
+#darkness {
+  min-height: 100dvh;
+  height: 100dvh;
 }
