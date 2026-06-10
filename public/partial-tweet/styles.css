@@ -1664,7 +1664,7 @@ body.partial-tweet-locked #game-screen {
   境界線も % で持つのが正しい。
 */
 :root {
-  --pt-floor-line-from-bottom: 17%;
+  --pt-floor-line-from-bottom: 20%;
   --pt-door-width: 150px;
   --pt-door-overlap-floor: 8px;
 }
