@@ -39,10 +39,72 @@ const assetPath = (fileName) => `/2D画像/${fileName}`;
 let partialTweetLockedScrollY = 0;
 let partialTweetGameHeight = 0;
 
+function updatePartialTweetVisualOffset() {
+  const vv = window.visualViewport;
+  const offsetTop = vv ? vv.offsetTop || 0 : 0;
+
+  document.documentElement.style.setProperty(
+    "--pt-vv-offset-top",
+    `${offsetTop}px`
+  );
+}
+
 function updatePartialTweetViewportVars() {
   const height = partialTweetGameHeight || window.innerHeight;
+
   document.documentElement.style.setProperty("--pt-game-height", `${height}px`);
+  updatePartialTweetVisualOffset();
 }
+
+function installPartialTweetViewportFix() {
+  partialTweetGameHeight = window.innerHeight;
+  updatePartialTweetViewportVars();
+
+  window.addEventListener("resize", () => {
+    if (!document.body.classList.contains("partial-tweet-locked")) {
+      partialTweetGameHeight = window.innerHeight;
+      updatePartialTweetViewportVars();
+    }
+  });
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", updatePartialTweetVisualOffset);
+    window.visualViewport.addEventListener("scroll", updatePartialTweetVisualOffset);
+  }
+}
+
+function lockPartialTweetPage() {
+  partialTweetLockedScrollY = window.scrollY || window.pageYOffset || 0;
+  partialTweetGameHeight = window.innerHeight;
+
+  updatePartialTweetViewportVars();
+
+  document.documentElement.classList.add("partial-tweet-locked");
+  document.body.classList.add("partial-tweet-locked");
+
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${partialTweetLockedScrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+  document.body.style.height = `${partialTweetGameHeight}px`;
+}
+
+function unlockPartialTweetPage() {
+  document.documentElement.classList.remove("partial-tweet-locked");
+  document.body.classList.remove("partial-tweet-locked");
+
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+  document.body.style.height = "";
+
+  window.scrollTo(0, partialTweetLockedScrollY || 0);
+}
+
+installPartialTweetViewportFix();
 
 function installPartialTweetViewportFix() {
   partialTweetGameHeight = window.innerHeight;
@@ -120,63 +182,7 @@ function installPartialTweetZoomGuard() {
 
 installPartialTweetZoomGuard();
 
-let partialTweetKeyboardAdjustTimer = null;
-function resetPartialTweetPopupLift() {
-  document.documentElement.style.setProperty("--pt-popup-lift", "0px");
-}
-function adjustPartialTweetPopupForKeyboard() {
-  const popup = document.getElementById("popup");
-  const popupInner = popup?.querySelector(".popup-inner");
-  const input = document.getElementById("tweet-input");
-  if (!popup || !popup.classList.contains("is-open")) return;
-  if (!popupInner || !input) return;
-  if (document.activeElement !== input) return;
-  const vv = window.visualViewport;
-  if (!vv) return;
-  const visibleTop = vv.offsetTop || 0;
-  const visibleBottom = visibleTop + vv.height;
-  const inputRect = input.getBoundingClientRect();
-  const innerRect = popupInner.getBoundingClientRect();
-  const margin = 24;
-  const overflow = inputRect.bottom + margin - visibleBottom;
-  if (overflow <= 0) {
-    resetPartialTweetPopupLift();
-    return;
-  }
-  const topLimit = Math.max(12, visibleTop + 12);
-  const maxLift = Math.max(0, innerRect.top - topLimit);
-  const lift = Math.min(Math.ceil(overflow), Math.ceil(maxLift));
-  document.documentElement.style.setProperty("--pt-popup-lift", `${lift}px`);
-  requestAnimationFrame(() => {
-    input.scrollIntoView({
-      block: "nearest",
-      inline: "nearest",
-      behavior: "smooth",
-    });
-  });
-}
-function schedulePartialTweetPopupKeyboardAdjust() {
-  if (partialTweetKeyboardAdjustTimer) {
-    clearTimeout(partialTweetKeyboardAdjustTimer);
-  }
-  adjustPartialTweetPopupForKeyboard();
-  partialTweetKeyboardAdjustTimer = setTimeout(adjustPartialTweetPopupForKeyboard, 120);
-  setTimeout(adjustPartialTweetPopupForKeyboard, 320);
-  setTimeout(adjustPartialTweetPopupForKeyboard, 600);
-}
-function installPartialTweetKeyboardAdjuster() {
-  const input = document.getElementById("tweet-input");
-  if (input) {
-    input.addEventListener("focus", schedulePartialTweetPopupKeyboardAdjust);
-    input.addEventListener("input", schedulePartialTweetPopupKeyboardAdjust);
-    input.addEventListener("blur", resetPartialTweetPopupLift);
-  }
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", schedulePartialTweetPopupKeyboardAdjust);
-    window.visualViewport.addEventListener("scroll", schedulePartialTweetPopupKeyboardAdjust);
-  }
-}
-installPartialTweetKeyboardAdjuster();
+
 
 document.getElementById("hinto").style.display = "none";
 
@@ -1033,9 +1039,8 @@ function tapObject(name) {
   popupOriginalDesc = descEl.textContent;
   updateHiraganaToggleButton();
   updatePartialTweetViewportVars();
-  resetPartialTweetPopupLift();
-  pop.classList.add("is-open");
-  pop.style.display = "block";
+pop.classList.add("is-open");
+pop.style.display = "block";
 }
 
 /**********************************************
@@ -1068,9 +1073,8 @@ function closePopup(e) {
   }
 
   const popup = document.getElementById("popup");
-  popup.classList.remove("is-open");
-  popup.style.display = "none";
-  resetPartialTweetPopupLift();
+popup.classList.remove("is-open");
+popup.style.display = "none";
 
   document.getElementById("tweet-error-msg").textContent = "";
 
@@ -1088,10 +1092,10 @@ function closePopupOutside(e) {
   const inputEl = document.getElementById("tweet-input");
   // エラーメッセージが出ている場合は閉じずに入力欄へ戻す
   if (errEl.textContent.trim() !== "") {
-    inputEl.focus({ preventScroll: true });
-    schedulePartialTweetPopupKeyboardAdjust();
-    return;
-  }
+  inputEl.focus({ preventScroll: true });
+  updatePartialTweetVisualOffset();
+  return;
+}
   closePopup();
 }
 /**********************************************
