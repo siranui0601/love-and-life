@@ -837,7 +837,7 @@ function tapObject(name) {
     document.getElementById("shutterItem").style.display = "none";
     document.getElementById("windowItem").style.display = "block";
     showToast("バールが壊れた");
-    //haveBar = false;
+    haveBar = false;
     return;
   }
 
@@ -849,7 +849,7 @@ function tapObject(name) {
     document.getElementById("windowItem").style.display = "block";
     showToast("シャッターが開いた。バールが壊れた");
     updateDarknessEffect();
-    //haveBar = false;
+    haveBar = false;
 
     // ランプ未取得 => 暗闇
     if (document.getElementById("lampItem").style.display === "none") {
