@@ -28,6 +28,67 @@ let simaiCount = 0; // しまいをツイートした回数
 
 const assetPath = (fileName) => `/2D画像/${fileName}`;
 
+
+
+
+
+let partialTweetLockedScrollY = 0;
+
+function updatePartialTweetViewportVars() {
+  const vv = window.visualViewport;
+
+  const top = vv ? vv.offsetTop : 0;
+  const height = vv ? vv.height : window.innerHeight;
+
+  document.documentElement.style.setProperty("--pt-vv-top", `${top}px`);
+  document.documentElement.style.setProperty("--pt-vv-height", `${height}px`);
+}
+
+function installPartialTweetViewportFix() {
+  updatePartialTweetViewportVars();
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", updatePartialTweetViewportVars);
+    window.visualViewport.addEventListener("scroll", updatePartialTweetViewportVars);
+  }
+
+  window.addEventListener("resize", updatePartialTweetViewportVars);
+}
+
+function lockPartialTweetPage() {
+  updatePartialTweetViewportVars();
+
+  partialTweetLockedScrollY = window.scrollY || window.pageYOffset || 0;
+
+  document.documentElement.classList.add("partial-tweet-locked");
+  document.body.classList.add("partial-tweet-locked");
+
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${partialTweetLockedScrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+}
+
+function unlockPartialTweetPage() {
+  document.documentElement.classList.remove("partial-tweet-locked");
+  document.body.classList.remove("partial-tweet-locked");
+
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+
+  window.scrollTo(0, partialTweetLockedScrollY || 0);
+}
+
+installPartialTweetViewportFix();
+
+
+
+
+
 document.getElementById("hinto").style.display = "none";
 
 /**********************************************
@@ -110,9 +171,8 @@ function startGame() {
   if (header) header.style.display = "none";
   document.getElementById("game-screen").style.display = "block";
 
-  document.documentElement.classList.add("partial-tweet-locked");
-  document.body.classList.add("partial-tweet-locked");
-
+  lockPartialTweetPage();
+  
   collapseGameToolbar();
   
   
@@ -506,30 +566,14 @@ function resetCurrentRoom() {
   }
 }
 
-function returnToTitle() {
-  closeRewindModal();
 
-  document.documentElement.classList.remove("partial-tweet-locked");
-  document.body.classList.remove("partial-tweet-locked");
-
-  document.getElementById("game-screen").style.display = "none";
-  document.getElementById("ending-overlay").style.display = "none";
-  document.getElementById("popup").style.display = "none";
-  document.getElementById("girl-use-popup").style.display = "none";
-  document.getElementById("darkness").style.display = "none";
-  document.getElementById("darkness-overlay").style.display = "none";
-  document.getElementById("oshimai-screen").style.display = "none";
-  document.getElementById("thank-you-line1").style.display = "none";
-  document.getElementById("thank-you-line2").style.display = "none";
-  document.querySelectorAll(".simai-clone").forEach((el) => el.remove());
-
-  const header = document.querySelector("header#title-screen");
-  if (header) header.style.display = "block";
-  document.getElementById("menu-screen").style.display = "block";
-}
 
 function goToTopPage() {
   window.location.href = "/";
+}
+
+function reloadPartialTweetPage() {
+  window.location.reload();
 }
 
 /**********************************************
@@ -900,6 +944,8 @@ function tapObject(name) {
   document.getElementById("tweet-error-msg").textContent = "";
 
   doUse();
+  updatePartialTweetViewportVars();
+  pop.classList.add("is-open");
   pop.style.display = "block";
 }
 
@@ -932,8 +978,15 @@ function closePopup(e) {
     return;
   }
 
-  document.getElementById("popup").style.display = "none";
+  const popup = document.getElementById("popup");
+  popup.classList.remove("is-open");
+  popup.style.display = "none";
+
   document.getElementById("tweet-error-msg").textContent = "";
+
+  
+  
+    
   if (document.activeElement && typeof document.activeElement.blur === "function") {
     document.activeElement.blur();
   }
@@ -985,7 +1038,6 @@ function openTweetForm() {
   const popTitle = document.getElementById("popup-title");
   const popDesc = document.getElementById("popup-desc");
   const tweetFooter = document.getElementById("tweet-footer");
-  const tweetInput = document.getElementById("tweet-input");
 
   popTitle.textContent = toHiragana(popTitle.textContent);
   if (popDesc.textContent) {
@@ -995,9 +1047,7 @@ function openTweetForm() {
   tweetFooter.style.display = "grid";
   document.getElementById("tweet-error-msg").textContent = "";
 
-  requestAnimationFrame(() => {
-    tweetInput.focus({ preventScroll: true });
-  });
+  updatePartialTweetViewportVars();
 }
 
 /**********************************************
