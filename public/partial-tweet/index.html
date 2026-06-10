@@ -493,28 +493,33 @@
       <div class="popup-inner">
         <div class="popup-header">
           <h2 id="popup-title"></h2>
-          <span class="close-btn" onclick="closePopup()">×</span>
+          <div class="popup-header-actions">
+            <button
+              type="button"
+              id="hiragana-toggle-btn"
+              class="icon-button"
+              aria-label="ひらがな表示に切り替え"
+              aria-pressed="false"
+              onclick="togglePopupHiragana(event)"
+            >
+              🔄
+            </button>
+            <span class="close-btn" onclick="closePopup()">×</span>
+          </div>
         </div>
         <hr />
         <div class="popup-body">
           <p id="popup-desc"></p>
-          <div class="popup-buttons">
-            <!--button class="action-button" onclick="doUse()">使用</button-->
-            <button class="action-button" onclick="openTweetForm()">
-              部分ツイート
-            </button>
+          <!-- 部分ツイートフォーム -->
+          <div class="popup-footer" id="tweet-footer">
+            <input type="text" id="tweet-input" placeholder="ひらがな3文字以上" />
+            <button class="action-button" onclick="submitTweet()">決定</button>
+            <!-- エラー表示領域 -->
+            <p
+              id="tweet-error-msg"
+              style="color: red; font-size: 0.8rem; margin-top: 0.5rem"
+            ></p>
           </div>
-        </div>
-
-        <!-- 部分ツイートフォーム -->
-        <div class="popup-footer" id="tweet-footer" style="display: none">
-          <input type="text" id="tweet-input" placeholder="ひらがな3文字以上" />
-          <button class="action-button" onclick="submitTweet()">決定</button>
-          <!-- エラー表示領域 -->
-          <p
-            id="tweet-error-msg"
-            style="color: red; font-size: 0.8rem; margin-top: 0.5rem"
-          ></p>
         </div>
       </div>
     </div>
