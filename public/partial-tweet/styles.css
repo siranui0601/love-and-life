@@ -1572,7 +1572,7 @@ body.partial-tweet-locked button {
 /* ===== 部分ツイート入力モーダルのiPhoneキーボード対策・固定版 ===== */
 :root {
   --pt-game-height: 100dvh;
-  --pt-popup-lift: 0px;
+  --pt-vv-offset-top: 0px;
 }
 
 html.partial-tweet-locked,
@@ -1591,10 +1591,11 @@ body.partial-tweet-locked #game-screen {
   overflow: hidden;
 }
 
-/* popup自体は常に「ゲーム開始時の高さ」に固定する */
+
 #popup {
   position: fixed !important;
-  inset: 0;
+  left: 0;
+  top: var(--pt-vv-offset-top);
   width: 100vw;
   height: var(--pt-game-height);
   overflow: hidden;
@@ -1620,14 +1621,14 @@ body.partial-tweet-locked #game-screen {
   position: relative !important;
   top: auto !important;
   left: auto !important;
-  transform: translateY(calc(-1 * var(--pt-popup-lift))) !important;
+  transform: none !important;
   width: min(88vw, 400px);
   max-height: calc(var(--pt-game-height) - 96px);
   margin: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  transition: transform 0.18s ease;
+  transition: none;
 }
 
 #tweet-footer {
