@@ -24,6 +24,11 @@ let starAppeared = false;
 // ポスターが汚れを落として読める状態かどうか
 let posterCleaned = false;
 
+// ポップアップ本文のひらがな表示切り替え状態
+let popupHiraganaMode = false;
+let popupOriginalTitle = "";
+let popupOriginalDesc = "";
+
 let simaiCount = 0; // しまいをツイートした回数
 
 const assetPath = (fileName) => `/2D画像/${fileName}`;
@@ -960,11 +965,15 @@ function tapObject(name) {
 
   descEl.textContent = "";
   titleEl.textContent = name;
-  document.getElementById("tweet-footer").style.display = "none";
+  popupHiraganaMode = false;
+  document.getElementById("tweet-footer").style.display = "grid";
   document.getElementById("tweet-input").value = "";
   document.getElementById("tweet-error-msg").textContent = "";
 
   doUse();
+  popupOriginalTitle = titleEl.textContent;
+  popupOriginalDesc = descEl.textContent;
+  updateHiraganaToggleButton();
   updatePartialTweetViewportVars();
   pop.classList.add("is-open");
   pop.style.display = "block";
@@ -1053,19 +1062,40 @@ function closeGirlUseOutside(e) {
 }
 
 /**********************************************
- * 部分ツイートフォーム (openTweetForm)
+ * 表示切り替え (togglePopupHiragana)
  **********************************************/
-function openTweetForm() {
+function renderPopupText() {
   const popTitle = document.getElementById("popup-title");
   const popDesc = document.getElementById("popup-desc");
-  const tweetFooter = document.getElementById("tweet-footer");
 
-  popTitle.textContent = toHiragana(popTitle.textContent);
-  if (popDesc.textContent) {
-    popDesc.textContent = toHiragana(popDesc.textContent);
+  popTitle.textContent = popupHiraganaMode
+    ? toHiragana(popupOriginalTitle)
+    : popupOriginalTitle;
+  popDesc.textContent = popupHiraganaMode
+    ? toHiragana(popupOriginalDesc)
+    : popupOriginalDesc;
+}
+
+function updateHiraganaToggleButton() {
+  const toggleBtn = document.getElementById("hiragana-toggle-btn");
+  if (!toggleBtn) return;
+
+  toggleBtn.setAttribute("aria-pressed", String(popupHiraganaMode));
+  toggleBtn.setAttribute(
+    "aria-label",
+    popupHiraganaMode ? "元の表示に戻す" : "ひらがな表示に切り替え"
+  );
+  toggleBtn.title = popupHiraganaMode ? "元の表示に戻す" : "ひらがな表示に切り替え";
+}
+
+function togglePopupHiragana(e) {
+  if (e) {
+    e.stopPropagation();
   }
 
-  tweetFooter.style.display = "grid";
+  popupHiraganaMode = !popupHiraganaMode;
+  renderPopupText();
+  updateHiraganaToggleButton();
   document.getElementById("tweet-error-msg").textContent = "";
 
   updatePartialTweetViewportVars();
@@ -1090,6 +1120,8 @@ const hiraganaMap = {
   冷房ガンガンだ: "れいぼうがんがんだ",
   ドア: "どあ",
   "鍵がない...": "かぎがない...",
+  "...そっとドアを開けて、おねショタの2人を置いて脱出した":
+    "...そっとどあをあけて、おねしょたのふたりをおいてだっしゅつした",
   穴: "あな",
   底になにかがある: "そこになにかがある",
   ガール: "がーる",
@@ -1102,6 +1134,7 @@ const hiraganaMap = {
   お姉さんは満面の笑みだ: "おねえさんはまんめんのえみだ",
   暗闇: "くらやみ",
   暗いと何も見えない: "くらいとなにもみえない",
+  "壁に穴が空いた！": "かべにあながあいた！",
 
   トランプ: "とらんぷ",
   "赤が見つからない": "あかがみつからない",
