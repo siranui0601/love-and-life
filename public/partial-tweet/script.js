@@ -984,12 +984,20 @@ function closeGirlUseOutside(e) {
 function openTweetForm() {
   const popTitle = document.getElementById("popup-title");
   const popDesc = document.getElementById("popup-desc");
+  const tweetFooter = document.getElementById("tweet-footer");
+  const tweetInput = document.getElementById("tweet-input");
+
   popTitle.textContent = toHiragana(popTitle.textContent);
   if (popDesc.textContent) {
     popDesc.textContent = toHiragana(popDesc.textContent);
   }
-  document.getElementById("tweet-footer").style.display = "grid";
+
+  tweetFooter.style.display = "grid";
   document.getElementById("tweet-error-msg").textContent = "";
+
+  requestAnimationFrame(() => {
+    tweetInput.focus({ preventScroll: true });
+  });
 }
 
 /**********************************************
