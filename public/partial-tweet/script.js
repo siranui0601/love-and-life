@@ -1103,13 +1103,16 @@ document.getElementById("tweet-error-msg").textContent = "";
 
 function closePopupOutside(e) {
   if (e.target.id !== "popup") return;
+
   const errEl = document.getElementById("tweet-error-msg");
   const inputEl = document.getElementById("tweet-input");
-  // エラーメッセージが出ている場合は閉じずに入力欄へ戻す
+
   if (errEl.textContent.trim() !== "") {
     inputEl.focus({ preventScroll: true });
+    setPartialTweetKeyboardOpen(true);
     return;
   }
+
   closePopup();
 }
 /**********************************************
