@@ -89,11 +89,20 @@ function installModalOpenObserver() {
 }
 
 function updatePartialTweetViewportVars() {
-  document.documentElement.style.setProperty("--pt-game-height", "100dvh");
+  // window.innerHeightはキーボード表示後の実際の高さを返す
+  const h = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+  document.documentElement.style.setProperty("--pt-game-height", h + "px");
 }
 
 function installPartialTweetViewportFix() {
   updatePartialTweetViewportVars();
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", updatePartialTweetViewportVars);
+  } else {
+    window.addEventListener("resize", updatePartialTweetViewportVars);
+  }
 }
 
 function lockPartialTweetPage() {
