@@ -31,19 +31,16 @@ const assetPath = (fileName) => `/2D画像/${fileName}`;
 
 
 
-
-let partialTweetLockedScrollY = 0;
-
 let partialTweetLockedScrollY = 0;
 let partialTweetGameHeight = 0;
 
 function updatePartialTweetViewportVars() {
   const height = partialTweetGameHeight || window.innerHeight;
-
   document.documentElement.style.setProperty("--pt-game-height", `${height}px`);
 }
 
 function installPartialTweetViewportFix() {
+  partialTweetGameHeight = window.innerHeight;
   updatePartialTweetViewportVars();
 
   window.addEventListener("resize", () => {
@@ -60,47 +57,6 @@ function lockPartialTweetPage() {
   partialTweetGameHeight = window.innerHeight;
 
   updatePartialTweetViewportVars();
-
-  document.documentElement.classList.add("partial-tweet-locked");
-  document.body.classList.add("partial-tweet-locked");
-
-  document.body.style.position = "fixed";
-  document.body.style.top = `-${partialTweetLockedScrollY}px`;
-  document.body.style.left = "0";
-  document.body.style.right = "0";
-  document.body.style.width = "100%";
-}
-
-function unlockPartialTweetPage() {
-  document.documentElement.classList.remove("partial-tweet-locked");
-  document.body.classList.remove("partial-tweet-locked");
-
-  document.body.style.position = "";
-  document.body.style.top = "";
-  document.body.style.left = "";
-  document.body.style.right = "";
-  document.body.style.width = "";
-
-  window.scrollTo(0, partialTweetLockedScrollY || 0);
-}
-
-installPartialTweetViewportFix();
-
-function installPartialTweetViewportFix() {
-  updatePartialTweetViewportVars();
-
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", updatePartialTweetViewportVars);
-    window.visualViewport.addEventListener("scroll", updatePartialTweetViewportVars);
-  }
-
-  window.addEventListener("resize", updatePartialTweetViewportVars);
-}
-
-function lockPartialTweetPage() {
-  updatePartialTweetViewportVars();
-
-  partialTweetLockedScrollY = window.scrollY || window.pageYOffset || 0;
 
   document.documentElement.classList.add("partial-tweet-locked");
   document.body.classList.add("partial-tweet-locked");
