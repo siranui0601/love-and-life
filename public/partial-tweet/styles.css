@@ -316,8 +316,8 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
-  background: url("https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9196.jpeg?v=1739191278769")
-    center center no-repeat;
+  background: url("/2D画像/IMG_9193.jpeg") center center no-repeat;
+  center center no-repeat;
   background-size: 100% 100%;
 }
 
@@ -1357,14 +1357,41 @@ body::before {
 }
 
 /* ===== Gameplay fixes ===== */
+/* ===== iPhone入力時の画面スクロール対策 ===== */
+html.partial-tweet-locked,
+body.partial-tweet-locked {
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* ゲーム中は画面そのものを固定する */
+body.partial-tweet-locked #game-screen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* 入力欄やモーダル内だけは操作できるようにする */
+body.partial-tweet-locked .popup-inner,
+body.partial-tweet-locked input,
+body.partial-tweet-locked button {
+  touch-action: manipulation;
+}
+
+
+
 #game-screen {
   background: #020617;
   overflow: hidden;
 }
 
 .room-container {
-  background: url("https://cdn.glitch.global/f4938ba0-fa91-4c79-bd78-9bfb84ef88f7/IMG_9196.jpeg?v=1739191278769") center center no-repeat;
-  background-size: 100% 100%;
+  background: url("/2D画像/IMG_9193.jpeg") center center no-repeat;
+  background-size: cover;
 }
 
 .room-container::before,
