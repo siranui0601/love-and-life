@@ -34,15 +34,57 @@ const assetPath = (fileName) => `/2D画像/${fileName}`;
 
 let partialTweetLockedScrollY = 0;
 
+let partialTweetLockedScrollY = 0;
+let partialTweetGameHeight = 0;
+
 function updatePartialTweetViewportVars() {
-  const vv = window.visualViewport;
+  const height = partialTweetGameHeight || window.innerHeight;
 
-  const top = vv ? vv.offsetTop : 0;
-  const height = vv ? vv.height : window.innerHeight;
-
-  document.documentElement.style.setProperty("--pt-vv-top", `${top}px`);
-  document.documentElement.style.setProperty("--pt-vv-height", `${height}px`);
+  document.documentElement.style.setProperty("--pt-game-height", `${height}px`);
 }
+
+function installPartialTweetViewportFix() {
+  updatePartialTweetViewportVars();
+
+  window.addEventListener("resize", () => {
+    // ゲーム中は高さを変えない。タイトル画面など、未ロック時だけ更新する。
+    if (!document.body.classList.contains("partial-tweet-locked")) {
+      partialTweetGameHeight = window.innerHeight;
+      updatePartialTweetViewportVars();
+    }
+  });
+}
+
+function lockPartialTweetPage() {
+  partialTweetLockedScrollY = window.scrollY || window.pageYOffset || 0;
+  partialTweetGameHeight = window.innerHeight;
+
+  updatePartialTweetViewportVars();
+
+  document.documentElement.classList.add("partial-tweet-locked");
+  document.body.classList.add("partial-tweet-locked");
+
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${partialTweetLockedScrollY}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+}
+
+function unlockPartialTweetPage() {
+  document.documentElement.classList.remove("partial-tweet-locked");
+  document.body.classList.remove("partial-tweet-locked");
+
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+
+  window.scrollTo(0, partialTweetLockedScrollY || 0);
+}
+
+installPartialTweetViewportFix();
 
 function installPartialTweetViewportFix() {
   updatePartialTweetViewportVars();
