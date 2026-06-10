@@ -1013,6 +1013,11 @@ body {
 
 html,
 body {
+  touch-action: pan-x pan-y;
+}
+
+html,
+body {
   min-height: 100%;
 }
 
@@ -1573,14 +1578,14 @@ body.partial-tweet-locked #game-screen {
   display: flex !important;
   justify-content: center;
   align-items: flex-start;
-  padding-top: clamp(72px, 12vh, 120px);
+  padding-top: clamp(28px, 6vh, 64px);
   padding-left: max(12px, env(safe-area-inset-left));
   padding-right: max(12px, env(safe-area-inset-right));
 }
 
 /* focus中も位置を変えない */
 #popup.is-open:focus-within {
-  padding-top: clamp(72px, 12vh, 120px);
+  padding-top: clamp(28px, 6vh, 64px);
 }
 
 #popup.is-open .popup-inner {
@@ -1589,7 +1594,7 @@ body.partial-tweet-locked #game-screen {
   left: auto !important;
   transform: none !important;
   width: min(88vw, 400px);
-  max-height: calc(var(--pt-game-height) - 160px);
+  max-height: calc(var(--pt-game-height) - 96px);
   margin: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
