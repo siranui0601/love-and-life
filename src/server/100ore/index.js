@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import fs from "node:fs/promises";
 import path from "node:path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_API_KEY } from "../../foundation/env.js";
@@ -8,6 +9,25 @@ const HUNDRED_ORE_PUBLIC_PATH = "/100日後も生きる俺";
 const HUNDRED_ORE_ENCODED_PATH = encodeURI(HUNDRED_ORE_PUBLIC_PATH);
 const FALLBACK_IMAGES = new Map();
 const MEMORY_RUNS = [];
+const INITIAL_IMAGE_FILE = "57AC36E4-B396-48E0-9386-60ED107CA964.png";
+const INITIAL_IMAGE_PATH = path.join(process.cwd(), "public/2D素材", INITIAL_IMAGE_FILE);
+const INITIAL_IMAGE_URL = `/2D画像/${INITIAL_IMAGE_FILE}`;
+const OUTCOME_TYPES = new Set(["danger", "chance", "choice", "embarrassment", "mistake", "weird", "lucky", "other"]);
+const TEXT_TIMEOUT_MS = 12000;
+const IMAGE_TIMEOUT_MS = 25000;
+const VISION_TIMEOUT_MS = 18000;
+
+const INITIAL_PAGE = {
+  day: 1,
+  pageTitle: "1日目：王様の朝ごはんが逃げた",
+  bodyText:
+    "目が覚めると、俺は王様の城の食堂係になっていた。今日は大事な朝食会。ところが、主役のパンケーキに小さな足が生え、皿から逃げ出そうとしている。",
+  sceneSummary:
+    "俺は王様の城の食堂係。朝食会の主役であるパンケーキが足を生やして逃げ出そうとしている。王様は怒っており、失敗すると俺が朝ごはんの代わりにされる。",
+  imagePrompt:
+    "王様の城の食堂、怒った王様、足が生えて逃げ出すパンケーキ、慌てる食堂係の俺、絵本風",
+  imageUrl: INITIAL_IMAGE_URL,
+};
 
 function jsonFromText(text) {
   const raw = String(text || "").trim();
@@ -17,6 +37,25 @@ function jsonFromText(text) {
 }
 function dataUrlToBase64(dataUrl) { return String(dataUrl || "").replace(/^data:[^;]+;base64,/, ""); }
 function sha256(input) { return crypto.createHash("sha256").update(String(input || "")).digest("hex"); }
+function sha256Buffer(input) { return crypto.createHash("sha256").update(input).digest("hex"); }
+function withTimeout(promise, ms, label) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label}_timeout`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+function normalizeBoolean(value) {
+  if (value === true) return true;
+  if (value === false || value === undefined || value === null) return false;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") return ["true", "1", "yes", "はい"].includes(value.trim().toLowerCase());
+  return false;
+}
+function normalizeOutcomeType(value) {
+  const type = String(value || "other").trim();
+  return OUTCOME_TYPES.has(type) ? type : "other";
+}
 function clampText(value, max = 260) { return String(value || "").trim().slice(0, max); }
 function normalizePage(page = {}, day = 1) {
   return {
@@ -49,11 +88,11 @@ function svgDataUrl(prompt, day) {
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
 function escapeXml(s) { return s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
-async function generateTextJson(genAI, prompt, fallback) {
+async function generateTextJson(genAI, prompt, fallback, timeoutMs = TEXT_TIMEOUT_MS) {
   if (!genAI) return fallback();
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-    const result = await model.generateContent([{ text: prompt }]);
+    const result = await withTimeout(model.generateContent([{ text: prompt }]), timeoutMs, "text_generation");
     return jsonFromText(result.response.text());
   } catch (error) {
     console.warn("[100ore] text generation fallback:", error?.message || error);
@@ -62,9 +101,14 @@ async function generateTextJson(genAI, prompt, fallback) {
 }
 async function generateImageDataUrl(prompt, day) {
   if (!GEMINI_API_KEY) return svgDataUrl(prompt, day);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(new Error("image_generation_timeout")), IMAGE_TIMEOUT_MS);
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
-      method: "POST", headers: { "Content-Type":"application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: `絵本の1ページの一枚絵。文字は入れない。紙とインクの質感。少し奇妙で温かい。${prompt}` }] }], generationConfig: { responseModalities: ["IMAGE", "TEXT"] } })
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({ contents: [{ parts: [{ text: `絵本の1ページの一枚絵。文字は入れない。紙とインクの質感。少し奇妙で温かい。${prompt}` }] }], generationConfig: { responseModalities: ["IMAGE", "TEXT"] } })
     });
     const json = await res.json();
     const parts = json?.candidates?.[0]?.content?.parts || [];
@@ -74,6 +118,8 @@ async function generateImageDataUrl(prompt, day) {
   } catch (error) {
     console.warn("[100ore] image generation fallback:", error?.message || error);
     return svgDataUrl(prompt, day);
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 async function buildPageWithImage(page) {
@@ -82,8 +128,49 @@ async function buildPageWithImage(page) {
   FALLBACK_IMAGES.set(imageHash, imageDataUrl);
   return { ...page, imageHash, imageDataUrl };
 }
+async function buildInitialPage() {
+  let imageHash = "initial-57AC36E4-B396-48E0-9386-60ED107CA964";
+  try {
+    imageHash = sha256Buffer(await fs.readFile(INITIAL_IMAGE_PATH));
+  } catch (error) {
+    console.warn("[100ore] initial image hash fallback:", error?.message || error);
+  }
+  return { ...INITIAL_PAGE, imageHash };
+}
+function sanitizeOutcome(outcome = {}) {
+  return {
+    rewriteText: clampText(outcome.rewriteText, 180),
+    outcomeSummary: clampText(outcome.outcomeSummary, 180),
+    outcomeType: normalizeOutcomeType(outcome.outcomeType),
+    gameOver: normalizeBoolean(outcome.gameOver),
+    gameOverReason: clampText(outcome.gameOverReason, 180),
+    nextSceneHint: clampText(outcome.nextSceneHint, 180),
+    compositeHash: clampText(outcome.compositeHash, 80),
+  };
+}
+function sanitizeCanvas(canvas = {}) {
+  return {
+    x: Number(canvas.x || 0),
+    y: Number(canvas.y || 0),
+    w: Number(canvas.w || 0),
+    h: Number(canvas.h || 0),
+    shape: clampText(canvas.shape, 20),
+    label: clampText(canvas.label, 40),
+  };
+}
+function sanitizeSavedPage(p = {}) {
+  return {
+    day: Math.max(1, Math.min(365, Number(p.day || 1))),
+    pageTitle: clampText(p.pageTitle, 60),
+    bodyText: clampText(p.bodyText, 220),
+    sceneSummary: clampText(p.sceneSummary, 220),
+    outcomeSummary: clampText(p.outcomeSummary || p.outcome?.outcomeSummary || p.outcome?.rewriteText || "", 180),
+    canvas: p.canvas ? sanitizeCanvas(p.canvas) : null,
+    imageHash: clampText(p.imageHash, 80),
+  };
+}
 function serializeRun(run) {
-  return { ...run, pages: (run.pages || []).map((p) => ({ ...p, imageDataUrl: p.imageDataUrl || FALLBACK_IMAGES.get(p.imageHash) || "" })) };
+  return { ...run, pages: (run.pages || []).map((p) => ({ ...p, imageUrl: p.day === 1 ? INITIAL_IMAGE_URL : p.imageUrl || "", imageDataUrl: p.imageDataUrl || FALLBACK_IMAGES.get(p.imageHash) || "" })) };
 }
 
 export function mountHundredOreRoutes(app) {
@@ -93,11 +180,8 @@ export function mountHundredOreRoutes(app) {
 
   app.post("/api/100ore/start", async (req, res) => {
     try {
-      const username = clampText(req.body?.username || "旅人", 30);
       const runId = `ore_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
-      const prompt = `ゲーム「100日後も生きる俺」の初期ページをJSONだけで返す。絵本らしく奇想天外、本文は70字以内。主人公は「俺」。形式:{"pageTitle":"1日目...","bodyText":"...","sceneSummary":"...","imagePrompt":"..."} プレイヤー:${username}`;
-      const rawPage = await generateTextJson(genAI, prompt, () => fallbackInitialPage(runId));
-      const page = await buildPageWithImage(normalizePage(rawPage, 1));
+      const page = await buildInitialPage();
       return res.json({ runId, page });
     } catch (error) { console.error("[100ore] start error:", error); return res.status(500).json({ error:"start_failed", detail:String(error?.message || "").slice(0, 180) }); }
   });
@@ -114,11 +198,11 @@ export function mountHundredOreRoutes(app) {
       if (genAI && compositeBase64) {
         try {
           const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-          const result = await model.generateContent([{ text: `絵本ゲームの改変判定。画像は元絵+配置キャンパス+落書きの完成画像。現在:${clampText(current.sceneSummary, 220)} 本文:${clampText(current.bodyText, 180)} キャンパス:${JSON.stringify(canvas)}。落書きの位置と内容をこじつけでも物語化。即死にしすぎない。JSONだけ:{"rewriteText":"改変後本文80字以内","outcomeSummary":"要約","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページ状況"}` }, { inlineData: { mimeType: "image/png", data: compositeBase64 } }]);
+          const result = await withTimeout(model.generateContent([{ text: `絵本ゲームの改変判定。画像は元絵+配置キャンパス+落書きの完成画像。現在:${clampText(current.sceneSummary, 220)} 本文:${clampText(current.bodyText, 180)} キャンパス:${JSON.stringify(canvas)}。落書きの位置と内容をこじつけでも物語化。即死にしすぎない。JSONだけ:{"rewriteText":"改変後本文80字以内","outcomeSummary":"要約","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページ状況"}` }, { inlineData: { mimeType: "image/png", data: compositeBase64 } }]), VISION_TIMEOUT_MS, "vision_generation");
           outcome = { ...outcome, ...jsonFromText(result.response.text()) };
         } catch (error) { console.warn("[100ore] vision fallback:", error?.message || error); }
       }
-      outcome.rewriteText = clampText(outcome.rewriteText, 180); outcome.outcomeSummary = clampText(outcome.outcomeSummary, 180); outcome.gameOverReason = clampText(outcome.gameOverReason, 180); outcome.nextSceneHint = clampText(outcome.nextSceneHint, 180); outcome.compositeHash = compositeHash;
+      outcome = sanitizeOutcome({ ...outcome, compositeHash });
       let nextPage = null;
       if (!outcome.gameOver) {
         const nextDay = day + 1;
@@ -131,7 +215,23 @@ export function mountHundredOreRoutes(app) {
   });
 
   app.post("/api/100ore/runs", async (req, res) => {
-    const run = { runId: clampText(req.body?.runId || `ore_${Date.now()}`, 80), username: clampText(req.body?.username || "名無しの俺", 40), userTrackingId: clampText(req.body?.userTrackingId || "", 120), startedAt: clampText(req.body?.startedAt || "", 40), endedAt: clampText(req.body?.endedAt || new Date().toISOString(), 40), score: Math.max(1, Number(req.body?.score || 1)), gameOverReason: clampText(req.body?.gameOverReason || "", 220), pages: Array.isArray(req.body?.pages) ? req.body.pages.slice(0, 120).map((p) => ({ day:p.day, pageTitle:clampText(p.pageTitle,60), bodyText:clampText(p.bodyText,220), sceneSummary:clampText(p.sceneSummary,220), imageHash:clampText(p.imageHash,80), outcome:p.outcome || null, canvas:p.canvas || null, imageDataUrl:p.imageDataUrl && String(p.imageDataUrl).startsWith("data:image/svg") ? p.imageDataUrl : "" })) : [] };
+    const rawPages = Array.isArray(req.body?.pages) ? req.body.pages : [];
+    const score = Math.floor(Number(req.body?.score || 0));
+    if (!Number.isFinite(score) || score < 1 || score > 365 || score !== rawPages.length) {
+      return res.status(400).json({ error:"invalid_score", detail:"score must be 1-365 and match pages.length" });
+    }
+    const pages = rawPages.slice(0, 365).map(sanitizeSavedPage);
+    const run = {
+      runId: clampText(req.body?.runId || `ore_${Date.now()}`, 80),
+      username: clampText(req.body?.username || "名無しの俺", 40),
+      userTrackingId: clampText(req.body?.userTrackingId || "", 120),
+      startedAt: clampText(req.body?.startedAt || "", 40),
+      endedAt: clampText(req.body?.endedAt || new Date().toISOString(), 40),
+      score,
+      gameOverReason: clampText(req.body?.gameOverReason || "", 220),
+      pages,
+      meta: { version: 2, pageCount: pages.length },
+    };
     try { await appendHundredOreRun(run); } catch (error) { console.warn("[100ore] sheets save fallback:", error?.message || error); }
     MEMORY_RUNS.unshift(run); MEMORY_RUNS.splice(100);
     return res.json({ ok:true, runId:run.runId });
