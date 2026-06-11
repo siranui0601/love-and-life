@@ -5,7 +5,7 @@ export function createApp() {
   const app = express();
 
   // JSON
-  app.use(express.json());
+  app.use(express.json({ limit: "12mb" }));
 
   // 既存トップページ用（必要なら）
   app.use(express.static("public"));
@@ -46,6 +46,16 @@ export function createApp() {
 
   app.use(partialTweetPath, partialTweetAssets);
   app.use(partialTweetEncodedPath, partialTweetAssets);
+
+  const hundredOrePath = "/100日後も生きる俺";
+  const hundredOreEncodedPath = encodeURI(hundredOrePath);
+  const hundredOreAssets = express.static(
+    path.join(process.cwd(), "public/100ore")
+  );
+
+  app.use("/100ore", hundredOreAssets);
+  app.use(hundredOrePath, hundredOreAssets);
+  app.use(hundredOreEncodedPath, hundredOreAssets);
 
   return app;
 }
