@@ -22,7 +22,10 @@ function escapeHtml(s){ return String(s || "").replace(/[&<>"']/g, c => ({"&":"&
 async function api(path, body){
   const res = await fetch(path, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body || {}) });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || data.error || `HTTP ${res.status}`);
+  if (!res.ok) {
+    console.error("[100ore api error]", { path, status: res.status, data });
+    throw new Error(data.detail || data.error || `HTTP ${res.status}`);
+  }
   return data;
 }
 function randomCanvas(){ const base = shapes[Math.floor(Math.random()*shapes.length)]; return { ...base, id:`c_${Date.now()}_${Math.random().toString(16).slice(2)}`, power:Math.round((base.w*base.h)*1000) }; }
@@ -65,9 +68,9 @@ function onPointerMove(e){ if (!state.drawing) return; e.preventDefault(); const
 function onPointerUp(){ state.drawing=false; state.last=null; }
 async function loadImage(src){ return new Promise((resolve,reject)=>{ const img = new Image(); img.crossOrigin="anonymous"; img.onload=()=>resolve(img); img.onerror=reject; img.src=src; }); }
 async function buildComposite(){
-  const size = 768; const out = document.createElement("canvas"); out.width=size; out.height=size; const o=out.getContext("2d"); const img=await loadImage(refs.img.src); o.fillStyle="#f7e8c3"; o.fillRect(0,0,size,size); o.drawImage(img,0,0,size,size);
+  const size = 512; const out = document.createElement("canvas"); out.width=size; out.height=size; const o=out.getContext("2d"); const img=await loadImage(refs.img.src); o.fillStyle="#f7e8c3"; o.fillRect(0,0,size,size); o.drawImage(img,0,0,size,size);
   if (state.placed) { const p=state.placed; const x=p.x*size, y=p.y*size, w=p.w*size, h=p.h*size; o.save(); o.beginPath(); if(p.shape==="circle") o.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2); else if(p.shape==="rounded") o.roundRect(x,y,w,h,24); else o.rect(x,y,w,h); o.clip(); o.drawImage(refs.canvas,0,0,size,size); o.restore(); o.save(); o.strokeStyle="rgba(120,42,28,.9)"; o.lineWidth=5; o.setLineDash([16,10]); o.beginPath(); if(p.shape==="circle") o.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2); else if(p.shape==="rounded") o.roundRect(x,y,w,h,24); else o.rect(x,y,w,h); o.stroke(); o.restore(); }
-  return out.toDataURL("image/png");
+  return out.toDataURL("image/jpeg", 0.72);
 }
 function applyPage(page, { append=true } = {}){
   state.current = page; state.day = Number(page.day || state.day || 1); refs.day.textContent = `${state.day}日目`; refs.pageTitle.textContent = page.pageTitle || `${state.day}日目`; refs.story.textContent = page.bodyText || ""; refs.scene.textContent = page.sceneSummary || ""; refs.img.src = page.imageDataUrl || page.imageUrl || "";
@@ -88,13 +91,20 @@ async function confirmRewrite(){
   setLoading(true,"AIが落書きの意味を絵本語に翻訳しています…");
   try {
     const compositeImageDataUrl = await buildComposite(); const usedCanvas = state.placed; const strokesImageHash = await sha256(await (await fetch(refs.canvas.toDataURL("image/png"))).arrayBuffer());
-    const data = await api("/api/100ore/rewrite", { runId:state.runId, day:state.day, currentPage:state.current, compositeImageDataUrl, canvas:usedCanvas, drawingHash:strokesImageHash });
+    const currentPageLite = {
+      day: state.current?.day,
+      pageTitle: state.current?.pageTitle,
+      bodyText: state.current?.bodyText,
+      sceneSummary: state.current?.sceneSummary,
+      imageHash: state.current?.imageHash,
+    };
+    const data = await api("/api/100ore/rewrite", { runId:state.runId, day:state.day, currentPage:currentPageLite, compositeImageDataUrl, canvas:usedCanvas, drawingHash:strokesImageHash });
     refs.outcome.textContent = data.outcome?.outcomeType || "改変"; addHistory(data.outcome);
     if (state.pages.length) state.pages[state.pages.length - 1] = { ...state.pages[state.pages.length - 1], outcome: data.outcome, canvas: usedCanvas };
     state.stock = state.stock.filter(c => c.id !== state.selected?.id); ensureStock();
     if (isGameOverValue(data.outcome?.gameOver)) { state.gameOver = true; await saveRun(data.outcome); showGameOver(data.outcome); return; }
     applyPage(data.nextPage); setStatus("続きのページが現れました。残りのキャンパスでまた介入できます。");
-  } catch(e) { setStatus(`改変に失敗しました: ${e.message}`); if (state.placed && !state.gameOver) refs.confirm.disabled = false; }
+  } catch(e) { console.error(e); setStatus(`改変に失敗しました: ${e.message}`); if (state.placed && !state.gameOver) refs.confirm.disabled = false; }
   finally{ state.rewriting = false; setLoading(false); }
 }
 async function sha256(buffer){ const hash = await crypto.subtle.digest("SHA-256", buffer); return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,"0")).join(""); }
@@ -102,7 +112,7 @@ function addHistory(outcome){ if(!outcome) return; const el=document.createEleme
 async function saveRun(outcome){ const user=getUser(); await api("/api/100ore/runs", { runId:state.runId, username:user.username || localStorage.getItem("username") || "名無しの俺", userTrackingId:user.userTrackingId || localStorage.getItem("userTrackingId") || "", score:state.day, gameOverReason:outcome.gameOverReason || outcome.outcomeSummary || "物語から退場", pages:state.pages, endedAt:new Date().toISOString() }).catch(e => setStatus(`ランキング保存に失敗しました: ${e.message}`)); }
 function showGameOver(outcome){ const div=document.createElement("div"); div.className="game-over-card"; div.innerHTML=`<h2>ゲームオーバー：${state.day}日目</h2><p>${escapeHtml(outcome.gameOverReason || outcome.outcomeSummary || "俺は絵本から消えた。")}</p><button class="primary-btn" id="againBtn">もう一度</button> <button class="ghost-btn" id="overRankBtn">ランキング</button>`; document.body.appendChild(div); div.querySelector("#againBtn").onclick=()=>location.reload(); div.querySelector("#overRankBtn").onclick=showRanking; setStatus("記録を保存しました。ほかの俺の絵本も覗けます。"); }
 async function showRanking(){ refs.rankingDialog.showModal(); refs.rankingList.textContent="読み込み中…"; try{ const res=await fetch("/api/100ore/rankings"); const data=await res.json(); refs.rankingList.innerHTML=""; (data.rankings||[]).forEach((r,i)=>{ const row=document.createElement("div"); row.className="rank-row"; row.innerHTML=`<b>${i+1}</b><span>${escapeHtml(r.username||"名無しの俺")}<br><small>${escapeHtml(r.gameOverReason||"")}</small></span><strong>${r.score}日</strong>`; const btn=document.createElement("button"); btn.className="small-btn"; btn.textContent="絵本を見る"; btn.onclick=()=>showRun(r.runId); row.appendChild(btn); refs.rankingList.appendChild(row); }); if(!refs.rankingList.children.length) refs.rankingList.textContent="まだ記録がありません。"; }catch(e){ refs.rankingList.textContent=`ランキング取得に失敗: ${e.message}`; } }
-async function showRun(runId){ refs.runDialog.showModal(); refs.runViewer.textContent="読み込み中…"; try{ const res=await fetch(`/api/100ore/runs/${encodeURIComponent(runId)}`); const data=await res.json(); refs.runTitle.textContent=`${data.run?.username || "誰か"}の絵本`; refs.runViewer.innerHTML=""; (data.run?.pages||[]).forEach(p=>{ const el=document.createElement("div"); el.className="run-page"; el.innerHTML=`${(p.imageDataUrl || p.imageUrl) ? `<img src="${p.imageDataUrl || p.imageUrl}" alt="">` : `<div></div>`}<div><b>${escapeHtml(p.pageTitle||`${p.day}日目`)}</b><p>${escapeHtml(p.bodyText||"")}</p><small>${escapeHtml(p.sceneSummary||"")}</small>${(p.outcomeSummary || p.outcome) ? `<p><em>改変: ${escapeHtml(p.outcomeSummary || p.outcome?.outcomeSummary || p.outcome?.rewriteText || "")}</em></p>` : ""}</div>`; refs.runViewer.appendChild(el); }); }catch(e){ refs.runViewer.textContent=`閲覧に失敗: ${e.message}`; } }
+async function showRun(runId){ refs.runDialog.showModal(); refs.runViewer.textContent="読み込み中…"; try{ const res=await fetch(`/api/100ore/runs/${encodeURIComponent(runId)}`); const data=await res.json(); refs.runTitle.textContent=`${data.run?.username || "誰か"}の絵本`; refs.runViewer.innerHTML=""; (data.run?.pages||[]).forEach(p=>{ const el=document.createElement("div"); el.className="run-page"; el.innerHTML=`${p.imageUrl ? `<img src="${p.imageUrl}" alt="">` : `<div></div>`}<div><b>${escapeHtml(p.pageTitle||`${p.day}日目`)}</b><p>${escapeHtml(p.bodyText||"")}</p><small>${escapeHtml(p.sceneSummary||"")}</small>${(p.outcomeSummary || p.outcome) ? `<p><em>改変: ${escapeHtml(p.outcomeSummary || p.outcome?.outcomeSummary || p.outcome?.rewriteText || "")}</em></p>` : ""}</div>`; refs.runViewer.appendChild(el); }); }catch(e){ refs.runViewer.textContent=`閲覧に失敗: ${e.message}`; } }
 
 refs.start.onclick = startGame; refs.confirm.onclick = confirmRewrite; refs.ranking.onclick=showRanking; refs.rankingTop.onclick=showRanking; refs.closeRanking.onclick=()=>refs.rankingDialog.close(); refs.closeRun.onclick=()=>refs.runDialog.close();
 document.querySelectorAll(".tool-choice").forEach(btn => btn.onclick=()=>{ state.tool=btn.dataset.tool; document.querySelectorAll(".tool-choice").forEach(b=>b.classList.toggle("active", b===btn)); });

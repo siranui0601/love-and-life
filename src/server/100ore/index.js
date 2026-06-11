@@ -35,7 +35,12 @@ function jsonFromText(text) {
   const target = fenced || raw.match(/\{[\s\S]*\}/)?.[0] || raw;
   return JSON.parse(target);
 }
-function dataUrlToBase64(dataUrl) { return String(dataUrl || "").replace(/^data:[^;]+;base64,/, ""); }
+function parseDataUrl(dataUrl) {
+  const match = String(dataUrl || "").match(/^data:([^;]+);base64,(.*)$/);
+  if (!match) return { mimeType: "image/jpeg", base64: "" };
+  return { mimeType: match[1], base64: match[2] };
+}
+function dataUrlToBase64(dataUrl) { return parseDataUrl(dataUrl).base64; }
 function sha256(input) { return crypto.createHash("sha256").update(String(input || "")).digest("hex"); }
 function sha256Buffer(input) { return crypto.createHash("sha256").update(input).digest("hex"); }
 function withTimeout(promise, ms, label) {
@@ -170,7 +175,7 @@ function sanitizeSavedPage(p = {}) {
   };
 }
 function serializeRun(run) {
-  return { ...run, pages: (run.pages || []).map((p) => ({ ...p, imageUrl: p.day === 1 ? INITIAL_IMAGE_URL : p.imageUrl || "", imageDataUrl: p.imageDataUrl || FALLBACK_IMAGES.get(p.imageHash) || "" })) };
+  return { ...run, pages: (run.pages || []).map((p) => ({ ...p, imageUrl: Number(p.day) === 1 ? INITIAL_IMAGE_URL : p.imageUrl || "" })) };
 }
 
 export function mountHundredOreRoutes(app) {
@@ -190,7 +195,7 @@ export function mountHundredOreRoutes(app) {
     try {
       const day = Math.max(1, Number(req.body?.day || 1));
       const current = req.body?.currentPage || {};
-      const compositeBase64 = dataUrlToBase64(req.body?.compositeImageDataUrl || "");
+      const { mimeType, base64: compositeBase64 } = parseDataUrl(req.body?.compositeImageDataUrl || "");
       const compositeHash = sha256(compositeBase64);
       const canvas = req.body?.canvas || {};
       const fallback = () => fallbackOutcome(day);
@@ -198,7 +203,7 @@ export function mountHundredOreRoutes(app) {
       if (genAI && compositeBase64) {
         try {
           const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-          const result = await withTimeout(model.generateContent([{ text: `絵本ゲームの改変判定。画像は元絵+配置キャンパス+落書きの完成画像。現在:${clampText(current.sceneSummary, 220)} 本文:${clampText(current.bodyText, 180)} キャンパス:${JSON.stringify(canvas)}。落書きの位置と内容をこじつけでも物語化。即死にしすぎない。JSONだけ:{"rewriteText":"改変後本文80字以内","outcomeSummary":"要約","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページ状況"}` }, { inlineData: { mimeType: "image/png", data: compositeBase64 } }]), VISION_TIMEOUT_MS, "vision_generation");
+          const result = await withTimeout(model.generateContent([{ text: `絵本ゲームの改変判定。画像は元絵+配置キャンパス+落書きの完成画像。現在:${clampText(current.sceneSummary, 220)} 本文:${clampText(current.bodyText, 180)} キャンパス:${JSON.stringify(canvas)}。落書きの位置と内容をこじつけでも物語化。即死にしすぎない。JSONだけ:{"rewriteText":"改変後本文80字以内","outcomeSummary":"要約","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページ状況"}` }, { inlineData: { mimeType, data: compositeBase64 } }]), VISION_TIMEOUT_MS, "vision_generation");
           outcome = { ...outcome, ...jsonFromText(result.response.text()) };
         } catch (error) { console.warn("[100ore] vision fallback:", error?.message || error); }
       }
