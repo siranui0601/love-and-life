@@ -376,21 +376,166 @@ function handleTouchEnd(e) {
 }
 
 /**********************************************
- * ルール表示
+ * ルール表示：スライド式
  **********************************************/
+const ruleSlides = [
+  {
+    src: "/2D画像/C25CDE8C-099B-40C4-AA0F-51E5CC208A78.jpeg",
+    alt: "部分ツイート脱出ゲームのルール説明 1ページ目",
+  },
+  {
+    src: "/2D画像/IMG_5337.jpeg",
+    alt: "部分ツイート脱出ゲームのルール説明 2ページ目",
+  },
+  {
+    src: "/2D画像/IMG_5349.jpeg",
+    alt: "部分ツイート脱出ゲームのルール説明 3ページ目",
+  },
+  {
+    src: "/2D画像/7466E72F-C060-416B-9A4B-FC268299700B.jpeg",
+    alt: "部分ツイート脱出ゲームのルール説明 4ページ目",
+  },
+];
+
+let currentRuleSlideIndex = 0;
+let ruleSwipeStartX = 0;
+let ruleSwipeStartY = 0;
+
+function updateRuleSlide() {
+  const image = document.getElementById("rules-slide-image");
+  const indicator = document.getElementById("rules-slide-indicator");
+  const leftBtn = document.getElementById("rules-left-btn");
+  const rightBtn = document.getElementById("rules-right-btn");
+
+  if (!image || !indicator || !leftBtn || !rightBtn) return;
+
+  const slide = ruleSlides[currentRuleSlideIndex];
+
+  image.src = slide.src;
+  image.alt = slide.alt;
+
+  indicator.textContent = ruleSlides
+    .map((_, index) => (index === currentRuleSlideIndex ? "⦿" : "○"))
+    .join("");
+
+  if (currentRuleSlideIndex === 0) {
+    leftBtn.textContent = "閉じる";
+    rightBtn.textContent = "次へ";
+  } else if (currentRuleSlideIndex === ruleSlides.length - 1) {
+    leftBtn.textContent = "前へ";
+    rightBtn.textContent = "閉じる";
+  } else {
+    leftBtn.textContent = "前へ";
+    rightBtn.textContent = "次へ";
+  }
+}
+
+function openRules() {
+  const rulesBox = document.getElementById("rules-box");
+  if (!rulesBox) return;
+
+  currentRuleSlideIndex = 0;
+  updateRuleSlide();
+
+  showModalElement(rulesBox, "flex");
+}
+
+function closeRules() {
+  const rulesBox = document.getElementById("rules-box");
+  if (!rulesBox) return;
+
+  hideModalElement(rulesBox);
+}
+
 function toggleRules() {
   const rulesBox = document.getElementById("rules-box");
+  if (!rulesBox) return;
+
   if (!rulesBox.style.display || rulesBox.style.display === "none") {
-    showModalElement(rulesBox);
+    openRules();
   } else {
-    hideModalElement(rulesBox);
+    closeRules();
   }
 }
+
 function closeRulesOutside(e) {
   if (e.target.id === "rules-box") {
-    toggleRules();
+    closeRules();
   }
 }
+
+function nextRuleSlide() {
+  if (currentRuleSlideIndex >= ruleSlides.length - 1) return;
+  currentRuleSlideIndex++;
+  updateRuleSlide();
+}
+
+function prevRuleSlide() {
+  if (currentRuleSlideIndex <= 0) return;
+  currentRuleSlideIndex--;
+  updateRuleSlide();
+}
+
+function handleRuleLeftButton() {
+  if (currentRuleSlideIndex === 0) {
+    closeRules();
+    return;
+  }
+
+  prevRuleSlide();
+}
+
+function handleRuleRightButton() {
+  if (currentRuleSlideIndex === ruleSlides.length - 1) {
+    closeRules();
+    return;
+  }
+
+  nextRuleSlide();
+}
+
+function installRuleSlideSwipe() {
+  const modal = document.querySelector(".rules-slide-modal");
+  if (!modal) return;
+
+  modal.addEventListener(
+    "touchstart",
+    (e) => {
+      if (!e.touches || e.touches.length !== 1) return;
+
+      ruleSwipeStartX = e.touches[0].clientX;
+      ruleSwipeStartY = e.touches[0].clientY;
+    },
+    { passive: true }
+  );
+
+  modal.addEventListener(
+    "touchend",
+    (e) => {
+      if (!e.changedTouches || e.changedTouches.length !== 1) return;
+
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+
+      const diffX = endX - ruleSwipeStartX;
+      const diffY = endY - ruleSwipeStartY;
+
+      const isHorizontalSwipe =
+        Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY) * 1.5;
+
+      if (!isHorizontalSwipe) return;
+
+      if (diffX < 0) {
+        nextRuleSlide();
+      } else {
+        prevRuleSlide();
+      }
+    },
+    { passive: true }
+  );
+}
+
+installRuleSlideSwipe();
 
 /**********************************************
  * ヒント表示
