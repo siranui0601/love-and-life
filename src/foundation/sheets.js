@@ -5,6 +5,7 @@ import { serviceAccount, SPREADSHEET_ID, SHEET_NAME } from "./env.js";
 export const BUNGEI_SHEET_NAME = "時々文芸部！";
 export const SECRET_TOOL_SHEET_NAME = "ひみつ道具";
 export const ORIGIN_MAGIC_CIRCLE_SHEET_NAME = "オリジン魔法陣";
+export const HUNDRED_ORE_SHEET_NAME = "100俺";
 const SECRET_TOOL_MAX_MEMBERS = 4;
 const ORIGIN_MAGIC_CIRCLE_MAX_MEMBERS = 2;
 
@@ -1847,5 +1848,72 @@ export async function listBungeiLinesForPlayer(playerTrackingId, speechOrder = [
 
   return Array.from(lines);
 }
+
+function parseHundredOreRunRow(row, index = 0) {
+  const safeParse = (raw, fallback) => {
+    try { return raw ? JSON.parse(String(raw)) : fallback; } catch { return fallback; }
+  };
+  return {
+    rowIndex: index + 2,
+    runId: String(row?.[0] || "").trim(),
+    username: String(row?.[1] || "").trim(),
+    userTrackingId: String(row?.[2] || "").trim(),
+    startedAt: String(row?.[3] || "").trim(),
+    endedAt: String(row?.[4] || "").trim(),
+    score: Number(row?.[5] || 0),
+    gameOverReason: String(row?.[6] || "").trim(),
+    pages: safeParse(row?.[7], []),
+    meta: safeParse(row?.[8], {}),
+  };
+}
+
+export async function appendHundredOreRun(run) {
+  const sheets = await getSheetsClient();
+  const values = [[
+    String(run.runId || ""),
+    String(run.username || ""),
+    String(run.userTrackingId || ""),
+    String(run.startedAt || ""),
+    String(run.endedAt || new Date().toISOString()),
+    Number(run.score || 0),
+    String(run.gameOverReason || ""),
+    JSON.stringify(run.pages || []),
+    JSON.stringify(run.meta || {}),
+  ]];
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `${HUNDRED_ORE_SHEET_NAME}!A2:I2`,
+    valueInputOption: "RAW",
+    requestBody: { values },
+  });
+
+  return { ok: true };
+}
+
+export async function listHundredOreRankings({ limit = 30 } = {}) {
+  const sheets = await getSheetsClient();
+  const range = `${HUNDRED_ORE_SHEET_NAME}!A2:I`;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
+  const rows = res.data.values || [];
+  return rows
+    .map(parseHundredOreRunRow)
+    .filter((run) => run.runId)
+    .sort((a, b) => Number(b.score || 0) - Number(a.score || 0) || String(b.endedAt || "").localeCompare(String(a.endedAt || "")))
+    .slice(0, limit);
+}
+
+export async function getHundredOreRunById(runId) {
+  const key = String(runId || "").trim();
+  if (!key) return null;
+  const sheets = await getSheetsClient();
+  const range = `${HUNDRED_ORE_SHEET_NAME}!A2:I`;
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
+  const rows = res.data.values || [];
+  const index = rows.findIndex((row) => String(row?.[0] || "").trim() === key);
+  if (index < 0) return null;
+  return parseHundredOreRunRow(rows[index], index);
+}
+
 
 export { SPREADSHEET_ID, SHEET_NAME };

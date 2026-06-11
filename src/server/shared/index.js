@@ -5,6 +5,7 @@ import { mountBungeiRoutes } from "../bungei/index.js";
 import { mountUserRoutes } from "../userRoutes.js";
 import { mountSecretToolRoutes } from "../secret-tool/index.js";
 import { mountOriginMagicCircleRoutes } from "../origin-magic-circle/index.js";
+import { mountHundredOreRoutes } from "../100ore/index.js";
 
 export function createServerContext() {
   const app = createApp();
@@ -15,6 +16,7 @@ export function createServerContext() {
   mountBungeiRoutes(app);
   mountSecretToolRoutes(app, io);
   mountOriginMagicCircleRoutes(app, io);
+  mountHundredOreRoutes(app);
 
   return { app, httpServer, io };
 }
