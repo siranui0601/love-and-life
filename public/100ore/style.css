@@ -305,6 +305,26 @@ button:disabled { cursor: not-allowed; }
   object-fit: cover;
 }
 
+.image-generation-failed #pageImage {
+  filter: saturate(0.45) opacity(0.48);
+}
+
+.image-fallback-notice {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 3;
+  transform: translateX(-50%);
+  width: min(86%, 430px);
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(255, 248, 222, 0.94);
+  color: #5c2b19;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 10px 24px rgba(43, 24, 9, 0.2);
+}
+
 .draw-canvas,
 .canvas-overlay {
   position: absolute;

@@ -14,8 +14,13 @@ const INITIAL_IMAGE_PATH = path.join(process.cwd(), "public/2D素材", INITIAL_I
 const INITIAL_IMAGE_URL = `/2D画像/${INITIAL_IMAGE_FILE}`;
 const OUTCOME_TYPES = new Set(["danger", "chance", "choice", "embarrassment", "mistake", "weird", "lucky", "other"]);
 const TEXT_TIMEOUT_MS = 12000;
-const IMAGE_TIMEOUT_MS = 25000;
-const VISION_TIMEOUT_MS = 18000;
+const IMAGE_TIMEOUT_MS = 30000;
+const VISION_TIMEOUT_MS = 30000;
+const IMAGE_MODEL_CANDIDATES = [
+  "gemini-2.5-flash-image",
+  "gemini-3-pro-image-preview",
+  "gemini-2.5-flash-image-preview",
+];
 
 const INITIAL_PAGE = {
   day: 1,
@@ -67,8 +72,9 @@ function normalizePage(page = {}, day = 1) {
     day,
     pageTitle: clampText(page.pageTitle || `${day}日目`, 40),
     bodyText: clampText(page.bodyText || "俺は余白の多いページに立っていた。", 180),
-    sceneSummary: clampText(page.sceneSummary || "絵本の世界で俺が次の出来事を待っている。", 180),
-    imagePrompt: clampText(page.imagePrompt || "奇妙な絵本の一場面、主人公の俺、余白のある画面", 320),
+    sceneSummary: clampText(page.sceneSummary || "絵本の世界で俺が次の出来事を待っている。", 240),
+    illustrationPrompt: clampText(page.illustrationPrompt || page.imagePrompt || "奇妙な絵本の一場面、主人公の俺、余白のある画面", 900),
+    imagePrompt: clampText(page.illustrationPrompt || page.imagePrompt || "奇妙な絵本の一場面、主人公の俺、余白のある画面", 900),
   };
 }
 function fallbackInitialPage(seed) {
@@ -83,16 +89,56 @@ function fallbackOutcome(day) {
   return { rewriteText:"落書きはページの法則に化け、俺の足元で小さな事件を起こした。", outcomeSummary:"絵の余白から新しい道具と誤解が生まれた。", outcomeType:type, gameOver, gameOverReason:gameOver ? "描いた印が王立しおり係の紋章と間違われ、俺は物語の欄外へ丁寧に追放された。" : "", nextSceneHint: gameOver ? "" : "俺は新しい誤解を抱えたまま次のページへ進む。" };
 }
 function fallbackNextPage(day, hint = "") {
-  return normalizePage({ pageTitle:`${day}日目：欄外からの続き`, bodyText:`${hint || "俺は変な誤解を背負ったまま歩いた。"} 次の角では、パンの形をした門番が通行料として秘密を要求している。`, sceneSummary:`パンの門番が秘密を要求する道。俺は前ページの改変の影響をまだ受けている。`, imagePrompt:"whimsical eerie picture book page, bread shaped gatekeeper, Japanese man protagonist, paper texture, strange road" }, day);
+  const carried = hint || "前ページの落書きのせいで、俺はなぜか王立パンくず裁判に呼ばれた。";
+  return normalizePage({
+    pageTitle: `${day}日目：パンくず裁判の証人`,
+    bodyText: `${carried} 俺が咳をした瞬間、証拠品のパンくずが鳩の群れになって飛び、裁判長のかつらを巣にした。`,
+    sceneSummary: `前ページの改変を引きずった俺が、パンくず裁判で証人席に立つ。パンくずは鳩になり、裁判長のかつらに巣を作って法廷が混乱する。`,
+    illustrationPrompt: buildIllustrationPrompt({
+      bodyText: `${carried} 俺が咳をした瞬間、証拠品のパンくずが鳩の群れになって飛び、裁判長のかつらを巣にした。`,
+      sceneSummary: `俺が絵本の法廷で証人席に立ち、パンくずの鳩たちが裁判長の大きなかつらへ飛び込む。前ページの改変の影響が小道具や表情に残っている。`,
+    }),
+  }, day);
 }
-function svgDataUrl(prompt, day) {
-  const hash = sha256(`${prompt}:${day}`);
-  const hue = parseInt(hash.slice(0, 2), 16);
-  const accent = `hsl(${hue},55%,45%)`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768"><defs><filter id="paper"><feTurbulence baseFrequency="0.018" numOctaves="4"/><feColorMatrix type="saturate" values="0.18"/><feBlend in="SourceGraphic" mode="multiply"/></filter></defs><rect width="768" height="768" fill="#f7e5bd"/><g filter="url(#paper)"><circle cx="610" cy="135" r="74" fill="#f7d67e"/><path d="M90 610C240 465 381 706 680 520" fill="none" stroke="${accent}" stroke-width="42" stroke-linecap="round"/><rect x="165" y="260" width="190" height="250" rx="88" fill="#33415c"/><circle cx="260" cy="210" r="70" fill="#f1b881"/><path d="M218 210h84M230 245c35 28 62 28 92 0" stroke="#2d2118" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M440 250c95 18 145 90 118 160-25 65-112 70-152 18-36-47-18-133 34-178Z" fill="${accent}" opacity=".82"/><text x="52" y="86" font-family="serif" font-size="38" fill="#3c2a1d">${day}日目</text><text x="56" y="706" font-family="serif" font-size="24" fill="#5f4934">${escapeXml(String(prompt).slice(0, 34))}</text></g></svg>`;
+function svgDataUrl() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768"><defs><filter id="paper"><feTurbulence baseFrequency="0.018" numOctaves="4"/><feColorMatrix type="saturate" values="0.12"/><feBlend in="SourceGraphic" mode="multiply"/></filter><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#fff3d0"/><stop offset="1" stop-color="#ead2a0"/></linearGradient></defs><rect width="768" height="768" fill="url(#g)"/><g filter="url(#paper)" opacity=".72"><path d="M96 120c120-36 250-32 374 0 80 21 137 14 202-12v540c-78 31-152 30-232 6-111-34-228-37-344-3z" fill="#f8e8bf" stroke="#d5b779" stroke-width="8"/><path d="M132 188c154-22 296-18 502 8M132 278c168-20 320-12 502 8M132 368c160-18 316-15 502 6M132 458c172-20 318-10 502 8M132 548c154-17 304-13 502 7" fill="none" stroke="#d8bf86" stroke-width="5" stroke-linecap="round" opacity=".55"/></g></svg>`;
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
-function escapeXml(s) { return s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+function buildIllustrationPrompt({ bodyText = "", sceneSummary = "", illustrationPrompt = "" } = {}) {
+  const detail = illustrationPrompt ? `挿絵の具体案: ${clampText(illustrationPrompt, 420)}\n` : "";
+  return `以下の物語本文に合う、絵本の一枚絵を描いてください。
+画像内に文字・看板・ラベル・吹き出し・数字は絶対に入れない。
+日本語文字、英字、記号、吹き出し、看板、ラベル、キャプションを描かない。
+絵本の一枚絵。1ページ目の画風に近い、温かい手描き絵本風。紙の質感。少し奇妙でユーモラス。
+現在の日数や本文を画像内に描かない。
+必ず本文の状況に合う挿絵にする。
+主人公は必ず「俺」。棒人間、単純な円や謎の物体だけで済ませない。
+${detail}本文: ${clampText(bodyText, 360)}
+状況: ${clampText(sceneSummary, 420)}`;
+}
+function errorMessage(error) {
+  return String(error?.message || error || "unknown_error").slice(0, 500);
+}
+function imageGenerationPlaceholder() {
+  const dataUrl = svgDataUrl();
+  return { dataUrl, mimeType: "image/svg+xml", base64Length: dataUrlToBase64(dataUrl).length, fallback: true };
+}
+async function listGeminiModelsForDebug() {
+  if (!GEMINI_API_KEY) {
+    console.warn("[100ore] Gemini models.list skipped: GEMINI_API_KEY is not set");
+    return [];
+  }
+  const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+  const res = await fetch(url);
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message || `models_list_failed_${res.status}`);
+  const models = (json.models || []).map((model) => ({
+    name: model.name,
+    supportedGenerationMethods: model.supportedGenerationMethods || [],
+  }));
+  console.log("[100ore] available Gemini models:", models);
+  return models;
+}
 async function generateTextJson(genAI, prompt, fallback, timeoutMs = TEXT_TIMEOUT_MS) {
   if (!genAI) return fallback();
   try {
@@ -104,34 +150,63 @@ async function generateTextJson(genAI, prompt, fallback, timeoutMs = TEXT_TIMEOU
     return fallback();
   }
 }
-async function generateImageDataUrl(prompt, day) {
-  if (!GEMINI_API_KEY) return svgDataUrl(prompt, day);
+async function generateImageWithModel(modelName, prompt) {
+  console.log("[100ore] trying image model:", modelName);
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(new Error("image_generation_timeout")), IMAGE_TIMEOUT_MS);
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type":"application/json" },
       signal: controller.signal,
-      body: JSON.stringify({ contents: [{ parts: [{ text: `絵本の1ページの一枚絵。文字は入れない。紙とインクの質感。少し奇妙で温かい。${prompt}` }] }], generationConfig: { responseModalities: ["IMAGE", "TEXT"] } })
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
+      }),
     });
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
     const parts = json?.candidates?.[0]?.content?.parts || [];
-    const imagePart = parts.find((p) => p.inlineData?.data);
+    const imagePart = parts.find((part) => part.inlineData?.data);
     if (!res.ok || !imagePart) throw new Error(json?.error?.message || "image_not_returned");
-    return `data:${imagePart.inlineData.mimeType || "image/png"};base64,${imagePart.inlineData.data}`;
-  } catch (error) {
-    console.warn("[100ore] image generation fallback:", error?.message || error);
-    return svgDataUrl(prompt, day);
+    const mimeType = imagePart.inlineData.mimeType || "image/png";
+    const base64 = imagePart.inlineData.data || "";
+    console.log("[100ore] image generation succeeded:", { modelName, mimeType, base64Length: base64.length });
+    return { dataUrl: `data:${mimeType};base64,${base64}`, mimeType, base64Length: base64.length, modelName, fallback: false };
   } finally {
     clearTimeout(timeoutId);
   }
 }
+async function generateImageDataUrl(page) {
+  const prompt = buildIllustrationPrompt(page);
+  if (!GEMINI_API_KEY) {
+    console.warn("[100ore] image generation fallback: GEMINI_API_KEY is not set");
+    return imageGenerationPlaceholder();
+  }
+  for (const modelName of IMAGE_MODEL_CANDIDATES) {
+    try {
+      const image = await generateImageWithModel(modelName, prompt);
+      console.log("[100ore] successful image model:", modelName);
+      return image;
+    } catch (error) {
+      console.warn("[100ore] image model failed:", { modelName, error: errorMessage(error) });
+    }
+  }
+  console.warn("[100ore] image generation fallback: all image model candidates failed");
+  return imageGenerationPlaceholder();
+}
 async function buildPageWithImage(page) {
-  const imageDataUrl = await generateImageDataUrl(page.imagePrompt, page.day);
-  const imageHash = sha256(dataUrlToBase64(imageDataUrl));
-  FALLBACK_IMAGES.set(imageHash, imageDataUrl);
-  return { ...page, imageHash, imageDataUrl };
+  const image = await generateImageDataUrl(page);
+  const imageHash = sha256(dataUrlToBase64(image.dataUrl));
+  FALLBACK_IMAGES.set(imageHash, image.dataUrl);
+  console.log("[100ore] generated image payload:", {
+    day: page.day,
+    mimeType: image.mimeType,
+    base64Length: image.base64Length,
+    fallback: image.fallback,
+    modelName: image.modelName || "none",
+  });
+  return { ...page, imageHash, imageDataUrl: image.dataUrl, imageGenerationFailed: Boolean(image.fallback), imageModel: image.modelName || "" };
 }
 async function buildInitialPage() {
   let imageHash = "initial-57AC36E4-B396-48E0-9386-60ED107CA964";
@@ -180,8 +255,19 @@ function serializeRun(run) {
 
 export function mountHundredOreRoutes(app) {
   const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+  listGeminiModelsForDebug().catch((error) => console.warn("[100ore] Gemini models.list failed:", errorMessage(error)));
   app.get(HUNDRED_ORE_PUBLIC_PATH, (_req, res) => res.sendFile(path.join(process.cwd(), "public/100ore/index.html")));
   app.get(HUNDRED_ORE_ENCODED_PATH, (_req, res) => res.sendFile(path.join(process.cwd(), "public/100ore/index.html")));
+
+  app.get("/api/100ore/debug/models", async (_req, res) => {
+    try {
+      const models = await listGeminiModelsForDebug();
+      return res.json({ models });
+    } catch (error) {
+      console.warn("[100ore] debug models failed:", errorMessage(error));
+      return res.status(500).json({ error:"models_list_failed", detail:errorMessage(error) });
+    }
+  });
 
   app.post("/api/100ore/start", async (req, res) => {
     try {
@@ -203,7 +289,21 @@ export function mountHundredOreRoutes(app) {
       if (genAI && compositeBase64) {
         try {
           const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-          const result = await withTimeout(model.generateContent([{ text: `絵本ゲームの改変判定。画像は元絵+配置キャンパス+落書きの完成画像。現在:${clampText(current.sceneSummary, 220)} 本文:${clampText(current.bodyText, 180)} キャンパス:${JSON.stringify(canvas)}。落書きの位置と内容をこじつけでも物語化。即死にしすぎない。JSONだけ:{"rewriteText":"改変後本文80字以内","outcomeSummary":"要約","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページ状況"}` }, { inlineData: { mimeType, data: compositeBase64 } }]), VISION_TIMEOUT_MS, "vision_generation");
+          const outcomePrompt = `絵本ゲーム「100日後も生きる俺」の落書き改変判定です。
+入力画像は「現在の挿絵 + ユーザーが配置したキャンパス + その中の落書き」です。
+ここでは次ページ本文を作らず、落書きが現在ページに起こした outcome だけを返してください。
+現在のsceneSummary: ${clampText(current.sceneSummary, 240)}
+現在のbodyText: ${clampText(current.bodyText, 220)}
+キャンパス情報: ${JSON.stringify(sanitizeCanvas(canvas))}
+方針:
+- 落書きの位置、色、形を観察し、こじつけでも具体的な出来事に変える。
+- 前ページの出来事を必ず受け継ぐ。
+- 主人公は必ず「俺」。
+- 奇想天外、絵本らしい、少し理不尽。笑える危機、好機、恥、誤解、うっかりのどれかを混ぜる。
+- 何が起きたか分かる具体文にする。「新たな誤解の種が」のような抽象だけで終わらない。
+- 即死にしすぎない。gameOverの場合だけgameOverReasonを書く。
+JSONだけ: {"rewriteText":"改変後本文。80字以内で俺視点。","outcomeSummary":"具体的な改変要約。","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページへ受け継ぐ具体状況。画像化しやすく。"}`;
+          const result = await withTimeout(model.generateContent([{ text: outcomePrompt }, { inlineData: { mimeType, data: compositeBase64 } }]), VISION_TIMEOUT_MS, "vision_generation");
           outcome = { ...outcome, ...jsonFromText(result.response.text()) };
         } catch (error) { console.warn("[100ore] vision fallback:", error?.message || error); }
       }
@@ -211,8 +311,24 @@ export function mountHundredOreRoutes(app) {
       let nextPage = null;
       if (!outcome.gameOver) {
         const nextDay = day + 1;
-        const pagePrompt = `ゲーム「100日後も生きる俺」の次ページJSONだけ。前状況:${clampText(current.sceneSummary, 160)} 改変結果:${outcome.outcomeSummary} 次:${outcome.nextSceneHint} 危機/好機/恥/間抜けを混ぜる。本文80字以内。形式:{"pageTitle":"${nextDay}日目...","bodyText":"...","sceneSummary":"...","imagePrompt":"..."}`;
-        const rawNext = await generateTextJson(genAI, pagePrompt, () => fallbackNextPage(nextDay, outcome.nextSceneHint));
+        const pagePrompt = `ゲーム「100日後も生きる俺」の次ページを作る。JSONだけ返してください。
+必須形式: {"pageTitle":"","bodyText":"","sceneSummary":"","illustrationPrompt":""}
+前ページの状況: ${clampText(current.sceneSummary, 220)}
+前ページ本文: ${clampText(current.bodyText, 220)}
+落書き改変結果: ${clampText(outcome.outcomeSummary || outcome.rewriteText, 220)}
+次ページへ受け継ぐ状況: ${clampText(outcome.nextSceneHint, 220)}
+方針:
+- 主人公は必ず「俺」。前ページの出来事と落書き改変結果を必ず受け継ぐ。
+- ただ説明するだけにせず、奇想天外、絵本らしい、少し理不尽にする。
+- 笑える危機、好機、恥、誤解、うっかりのうち2つ以上を混ぜる。
+- bodyTextは短いが、誰がどこで何をして何が困る/面白いのか分かる具体文にする。90字以内。
+- ゲームオーバーでないので、次に描きたくなる余地を残す。
+- 「新たな誤解の種が」のような抽象だけで終わらない。画像にしづらい棒、円、謎の物体だけの状況にしない。
+- illustrationPromptはbodyTextとsceneSummaryに完全対応した挿絵用プロンプトにする。
+- illustrationPromptに文字、看板、ラベル、吹き出し、数字、キャプションを描く指示を絶対に入れない。
+- illustrationPromptには温かい手描き絵本風、紙の質感、本文に合う一枚絵、画像内に文字を描かないことを含める。
+pageTitleは必ず「${nextDay}日目：」で始める。`;
+        const rawNext = await generateTextJson(genAI, pagePrompt, () => fallbackNextPage(nextDay, outcome.nextSceneHint), 18000);
         nextPage = await buildPageWithImage(normalizePage(rawNext, nextDay));
       }
       return res.json({ outcome, nextPage });
