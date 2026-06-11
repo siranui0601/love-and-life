@@ -2,7 +2,7 @@ const refs = {
   cover: document.getElementById("coverScreen"), game: document.getElementById("gameScreen"), start: document.getElementById("startBtn"),
   rankingTop: document.getElementById("rankingBtnTop"), ranking: document.getElementById("rankingBtn"), day: document.getElementById("dayBadge"),
   status: document.getElementById("statusBar"), pageTitle: document.getElementById("pageTitle"), story: document.getElementById("storyText"), scene: document.getElementById("sceneSummary"),
-  outcome: document.getElementById("outcomeChip"), history: document.getElementById("historyList"), stage: document.getElementById("pictureStage"), img: document.getElementById("pageImage"),
+  outcome: document.getElementById("outcomeChip"), history: document.getElementById("historyList"), stage: document.getElementById("pictureStage"), img: document.getElementById("pageImage"), fallbackNotice: document.getElementById("imageFallbackNotice"),
   canvas: document.getElementById("drawCanvas"), overlay: document.getElementById("canvasOverlay"), stock: document.getElementById("canvasStock"), color: document.getElementById("colorInput"),
   size: document.getElementById("sizeInput"), confirm: document.getElementById("confirmBtn"), undo: document.getElementById("undoBtn"), redo: document.getElementById("redoBtn"), clear: document.getElementById("clearBtn"),
   loading: document.getElementById("loadingVeil"), loadingText: document.getElementById("loadingText"), rankingDialog: document.getElementById("rankingDialog"), rankingList: document.getElementById("rankingList"),
@@ -13,10 +13,12 @@ const shapes = [
   { shape:"square", label:"小さな正方形", w:.24, h:.24 }, { shape:"square", label:"大きな正方形", w:.38, h:.38 }, { shape:"rect", label:"横長長方形", w:.46, h:.24 },
   { shape:"rect", label:"縦長長方形", w:.25, h:.48 }, { shape:"circle", label:"円形", w:.34, h:.34 }, { shape:"rect", label:"細長い帯", w:.62, h:.16 }, { shape:"rounded", label:"角丸長方形", w:.42, h:.28 },
 ];
-const state = { runId:null, day:1, current:null, pages:[], stock:[], selected:null, placed:null, tool:"pen", drawing:false, last:null, undo:[], redo:[], gameOver:false, rewriting:false };
+const state = { runId:null, day:1, current:null, pages:[], stock:[], selected:null, placed:null, tool:"pen", drawing:false, last:null, undo:[], redo:[], gameOver:false, rewriting:false, loadingTimers:[] };
 
 function getUser(){ try { return JSON.parse(localStorage.getItem("currentUser") || "null") || {}; } catch { return {}; } }
-function setLoading(show, text="AIがページの端をめくっています…"){ refs.loading.hidden = !show; refs.loadingText.textContent = text; }
+function clearLoadingTimers(){ state.loadingTimers.forEach((timer) => clearTimeout(timer)); state.loadingTimers = []; }
+function setLoading(show, text="AIがページの端をめくっています…"){ if (!show) clearLoadingTimers(); refs.loading.hidden = !show; refs.loadingText.textContent = text; }
+function setLoadingSteps(steps){ clearLoadingTimers(); if (!steps.length) return; setLoading(true, steps[0].text); steps.slice(1).forEach((step) => { state.loadingTimers.push(setTimeout(() => { if (state.rewriting) refs.loadingText.textContent = step.text; }, step.delay)); }); }
 function setStatus(text){ refs.status.textContent = text; }
 function escapeHtml(s){ return String(s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 async function api(path, body){
@@ -74,7 +76,9 @@ async function buildComposite(){
 }
 function applyPage(page, { append=true } = {}){
   state.current = page; state.day = Number(page.day || state.day || 1); refs.day.textContent = `${state.day}日目`; refs.pageTitle.textContent = page.pageTitle || `${state.day}日目`; refs.story.textContent = page.bodyText || ""; refs.scene.textContent = page.sceneSummary || ""; refs.img.src = page.imageDataUrl || page.imageUrl || "";
-  if (append) state.pages.push({ day:state.day, pageTitle:page.pageTitle, bodyText:page.bodyText, sceneSummary:page.sceneSummary, imageHash:page.imageHash, imageUrl:page.imageUrl || "" });
+  const imageFailed = Boolean(page.imageGenerationFailed); refs.stage.classList.toggle("image-generation-failed", imageFailed); refs.fallbackNotice.hidden = !imageFailed;
+  if (imageFailed) setStatus("挿絵生成に失敗したため、紙のプレースホルダーを表示しています。本文を本物の挿絵として扱ってください。");
+  if (append) state.pages.push({ day:state.day, pageTitle:page.pageTitle, bodyText:page.bodyText, sceneSummary:page.sceneSummary, imageHash:page.imageHash, imageUrl:page.imageUrl || "", imageGenerationFailed:imageFailed });
   clearDrawing(true); state.undo=[]; state.redo=[]; state.selected=null; state.placed=null; positionOverlay(null); refs.confirm.disabled=true; renderStock(); setTimeout(resizeCanvas, 60);
 }
 async function startGame(){
@@ -88,7 +92,7 @@ async function confirmRewrite(){
   if (!state.placed || state.gameOver || state.rewriting) return;
   state.rewriting = true;
   refs.confirm.disabled = true;
-  setLoading(true,"AIが落書きの意味を絵本語に翻訳しています…");
+  setLoadingSteps([{ text:"落書きを読み取っています", delay:0 }, { text:"次の物語を編んでいます", delay:12000 }, { text:"挿絵を描いています", delay:22000 }]);
   try {
     const compositeImageDataUrl = await buildComposite(); const usedCanvas = state.placed; const strokesImageHash = await sha256(await (await fetch(refs.canvas.toDataURL("image/png"))).arrayBuffer());
     const currentPageLite = {
@@ -103,7 +107,7 @@ async function confirmRewrite(){
     if (state.pages.length) state.pages[state.pages.length - 1] = { ...state.pages[state.pages.length - 1], outcome: data.outcome, canvas: usedCanvas };
     state.stock = state.stock.filter(c => c.id !== state.selected?.id); ensureStock();
     if (isGameOverValue(data.outcome?.gameOver)) { state.gameOver = true; await saveRun(data.outcome); showGameOver(data.outcome); return; }
-    applyPage(data.nextPage); setStatus("続きのページが現れました。残りのキャンパスでまた介入できます。");
+    applyPage(data.nextPage); if (!data.nextPage?.imageGenerationFailed) setStatus("続きのページが現れました。残りのキャンパスでまた介入できます。");
   } catch(e) { console.error(e); setStatus(`改変に失敗しました: ${e.message}`); if (state.placed && !state.gameOver) refs.confirm.disabled = false; }
   finally{ state.rewriting = false; setLoading(false); }
 }
