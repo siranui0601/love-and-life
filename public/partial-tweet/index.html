@@ -15,36 +15,43 @@
       <h1 class="fade-in">部分ツイート脱出ゲーム</h1>
       <p class="subtitle fade-in-delayed">〜 ツイ廃よ、脱出せよ！ 〜</p>
     </header>
-
+    
+    
     <!-- ルールオーバーレイ -->
-    <div id="rules-box" onclick="closeRulesOutside(event)">
-      <div class="rules-inner">
-        <span class="close-btn-rules" onclick="toggleRules()">×</span>
-        <h2>◆ ルール ◆</h2>
-        <p>・いつの間にか謎の部屋に閉じ込められた…！部屋から脱出しましょう！</p>
-        <br />
-        <p>
-          ・部屋の中にあるオブジェクト（家具や道具など）をタップすると、その説明文が表示されます。
-        </p>
-        <br />
-        <p>
-          ・「<span style="color: red">3文字以上の連続する</span
-          >」フレーズを選んで【部分ツイート】すると、アイテムが出現します。<br />
-          <span style="font-size: 0.9rem; color: red">
-            *（長音[ー]は直前の母音とします）<br />
-            例：ルール=るうる, ついいと=ツイート
-          </span>
-        </p>
-        <br />
-        <p>・取得したアイテムは部屋の中に現れ、脱出に役立ちます。</p>
-        <br />
-        <p>
-          *（同じアイテムは重複して入手できません。）<br />
-          *（部分ツイートが行える回数は限りがあります
-          <span style="color: blue">右上を見てね！</span>）
-        </p>
-      </div>
+<div id="rules-box" onclick="closeRulesOutside(event)">
+  <div class="rules-slide-modal" onclick="event.stopPropagation()">
+    <button
+      class="rules-close-btn"
+      type="button"
+      onclick="toggleRules()"
+      aria-label="ルールを閉じる"
+    >
+      ×
+    </button>
+
+    <div class="rules-slide-frame">
+      <img
+        id="rules-slide-image"
+        src="/2D画像/C25CDE8C-099B-40C4-AA0F-51E5CC208A78.jpeg"
+        alt="部分ツイート脱出ゲームのルール説明 1ページ目"
+        draggable="false"
+      />
     </div>
+
+    <div id="rules-slide-indicator" class="rules-slide-indicator" aria-label="ルールページ">
+      ⦿⚪︎︎⚪︎⚪︎
+    </div>
+
+    <div class="rules-slide-buttons">
+      <button id="rules-left-btn" type="button" onclick="handleRuleLeftButton()">
+        閉じる
+      </button>
+      <button id="rules-right-btn" type="button" onclick="handleRuleRightButton()">
+        次へ
+      </button>
+    </div>
+  </div>
+</div>
 
     <!-- ヒントオーバーレイ -->
     <div id="hinto" onclick="closeHintoOutside(event)">
