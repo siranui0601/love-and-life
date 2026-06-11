@@ -558,7 +558,6 @@ button:disabled { cursor: not-allowed; }
     padding: 18px;
   }
 
-  .picture-page { order: -1; }
   .book-header { align-items: flex-start; }
   .header-actions { justify-content: flex-end; }
   .canvas-stock { grid-template-columns: repeat(3, minmax(0, 1fr)); }
