@@ -1,3 +1,569 @@
-:root{color-scheme:light;--paper:#fff7df;--paper2:#f6e6bd;--ink:#2d2118;--muted:#79654b;--red:#9f2f2f;--green:#527244;--gold:#c89235;--shadow:0 24px 60px rgba(41,25,10,.28)}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;color:var(--ink);background:radial-gradient(circle at 20% 8%,rgba(255,255,255,.55),transparent 34%),linear-gradient(135deg,#3d261a,#7b4d29 48%,#251916);touch-action:manipulation}button,input{font:inherit}button{cursor:pointer}.book-shell{min-height:100svh;padding:clamp(14px,3vw,34px);position:relative}.book-shell:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.17;background-image:radial-gradient(#1b1009 1px,transparent 1px);background-size:18px 18px}.cover-screen{min-height:calc(100svh - 60px);display:grid;place-items:center}.home-link{position:fixed;left:16px;top:14px;color:#fff1d2;text-decoration:none;background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:8px 12px;backdrop-filter:blur(8px)}.cover-card{width:min(720px,100%);min-height:520px;padding:clamp(28px,7vw,70px);border-radius:22px;background:linear-gradient(120deg,rgba(86,43,31,.88),rgba(157,101,51,.9)),repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 2px,transparent 2px 8px);box-shadow:var(--shadow),inset 0 0 0 10px rgba(255,231,174,.2),inset 0 0 0 12px rgba(44,22,12,.24);color:#fff2d5;text-align:center;position:relative;overflow:hidden}.cover-card:before,.page:before{content:"";position:absolute;inset:12px;border:1px solid rgba(90,53,19,.22);border-radius:16px;pointer-events:none}.cover-card:after{content:"栞";position:absolute;top:0;right:42px;width:46px;height:150px;background:linear-gradient(#7f2020,#b84034);clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%);display:grid;place-items:start center;padding-top:20px;letter-spacing:.2em}.eyebrow{margin:0 0 8px;color:var(--gold);font-weight:800;letter-spacing:.15em}.cover-card .eyebrow{color:#ffd98a}.cover-card h1,.book-header h1{margin:.1em 0;font-size:clamp(2.2rem,8vw,5.2rem);letter-spacing:.08em}.cover-copy{font-size:clamp(1rem,2.6vw,1.25rem);line-height:1.9}.cover-actions,.header-actions,.tool-actions,.dialog-head{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}.primary-btn,.ghost-btn,.small-btn{border:0;border-radius:999px;padding:12px 18px;font-weight:900;box-shadow:0 8px 18px rgba(0,0,0,.18)}.primary-btn{background:linear-gradient(#e7b654,#b46b24);color:#281507}.primary-btn:disabled{filter:grayscale(1);opacity:.55;cursor:not-allowed}.ghost-btn,.small-btn{background:rgba(255,248,222,.88);color:#432813;border:1px solid rgba(65,36,18,.18)}.small-btn{padding:8px 12px;font-size:.92rem}.login-hint{opacity:.8}.game-screen{display:grid;gap:14px}.book-header{display:flex;justify-content:space-between;align-items:center;gap:12px;color:#fff3d5}.book-header h1{font-size:clamp(1.5rem,5vw,3rem)}.day-badge{display:inline-grid;place-items:center;min-width:86px;border-radius:999px;background:#fff3d0;color:#402412;padding:10px 14px;font-weight:900;box-shadow:0 8px 18px rgba(0,0,0,.18)}.status-bar{border-radius:14px;padding:10px 14px;background:rgba(255,248,223,.92);box-shadow:0 10px 30px rgba(0,0,0,.16);color:#51351e}.spread{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.25fr);gap:18px;align-items:stretch}.page{position:relative;border-radius:18px;background:linear-gradient(105deg,var(--paper),#fffaf0 48%,var(--paper2));box-shadow:var(--shadow),inset 22px 0 42px rgba(92,57,20,.12);padding:22px;min-height:420px;overflow:hidden}.page-topline{display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px dashed rgba(78,48,23,.3);padding-bottom:8px;margin-bottom:14px;font-weight:900}.page-topline span:last-child{font-size:.85rem;border-radius:999px;background:#ead49e;padding:5px 9px}.story-text{white-space:pre-wrap;font-size:clamp(1.05rem,2.3vw,1.28rem);line-height:1.9;min-height:150px}.scene-details{margin-top:12px;color:var(--muted);line-height:1.6}.history-list{display:grid;gap:8px;margin-top:12px;max-height:160px;overflow:auto}.history-item{border-left:4px solid #b68539;padding:8px 10px;background:rgba(255,255,255,.35);border-radius:10px;font-size:.9rem}.picture-stage{position:relative;width:100%;aspect-ratio:1/1;border-radius:14px;overflow:hidden;background:#d4c5a3;box-shadow:inset 0 0 0 1px rgba(70,35,12,.25)}#pageImage{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.draw-canvas,.canvas-overlay{position:absolute;inset:0;width:100%;height:100%;touch-action:none}.canvas-overlay{pointer-events:none;border:3px dashed rgba(138,38,25,.9);background:rgba(255,255,255,.08);filter:drop-shadow(0 4px 10px rgba(0,0,0,.25))}.canvas-overlay.circle{border-radius:50%}.canvas-overlay.rounded{border-radius:22px}.canvas-overlay:after{content:"この中だけ描けます";position:absolute;left:8px;top:8px;background:rgba(255,247,220,.9);border-radius:999px;padding:4px 8px;font-size:12px;color:#5c2b19}.stage-help{margin:10px 0 0;color:var(--muted);font-size:.92rem}.tool-bookmark{display:grid;grid-template-columns:minmax(240px,.8fr) minmax(0,1.2fr);gap:14px;padding:14px;border-radius:18px;background:rgba(255,238,184,.94);box-shadow:var(--shadow);border:1px solid rgba(84,46,15,.18)}.canvas-stock-wrap h2{margin:0 0 10px;font-size:1.1rem}.canvas-stock-wrap h2 span{font-size:.75rem;color:var(--muted);font-weight:400}.canvas-stock{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stock-card{min-height:96px;border:2px solid rgba(93,54,20,.25);border-radius:14px;background:#fff9e7;display:grid;place-items:center;padding:8px;position:relative}.stock-card.active{border-color:var(--red);box-shadow:0 0 0 4px rgba(159,47,47,.16)}.stock-shape{background:linear-gradient(135deg,rgba(190,112,49,.2),rgba(255,255,255,.7));border:2px dashed #8d5b2c}.stock-shape.circle{border-radius:50%}.stock-shape.rounded{border-radius:14px}.stock-label{font-size:.76rem;color:var(--muted);text-align:center}.tool-panel{display:grid;gap:10px;align-content:center}.tool-panel label{display:flex;align-items:center;gap:9px;font-weight:900}.tool-panel input[type="range"]{width:min(260px,55vw)}.segmented{display:flex;gap:6px;flex-wrap:wrap}.tool-choice{border:1px solid #a77b42;background:#fff8de;border-radius:999px;padding:8px 12px}.tool-choice.active{background:#5c351c;color:#fff1d4}.loading-veil{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(35,21,12,.55);color:#fff4d7;text-align:center;backdrop-filter:blur(5px)}.ink-loader{display:flex;gap:12px}.ink-loader span{width:18px;height:18px;border-radius:50%;background:#f0c15e;animation:drop 1s infinite alternate}.ink-loader span:nth-child(2){animation-delay:.15s}.ink-loader span:nth-child(3){animation-delay:.3s}@keyframes drop{to{transform:translateY(18px);background:#8e2c25}}.book-dialog{width:min(760px,calc(100vw - 24px));max-height:85svh;border:0;border-radius:18px;padding:18px;background:var(--paper);color:var(--ink);box-shadow:var(--shadow)}.book-dialog::backdrop{background:rgba(23,13,8,.55)}.dialog-head{justify-content:space-between;border-bottom:1px dashed #b58b50;margin-bottom:12px}.ranking-list{display:grid;gap:8px}.rank-row{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;border-radius:12px;background:rgba(255,255,255,.48);padding:10px;border:1px solid rgba(98,59,21,.14)}.rank-row button{grid-column:1/-1;justify-self:end}.run-viewer{display:grid;gap:12px}.run-page{display:grid;grid-template-columns:100px 1fr;gap:10px;padding:10px;border-radius:12px;background:rgba(255,255,255,.45)}.run-page img{width:100px;height:100px;object-fit:cover;border-radius:8px}.game-over-card{position:fixed;inset:auto 16px 16px 16px;z-index:20;margin:auto;max-width:680px;border-radius:18px;background:#fff4d5;box-shadow:var(--shadow);padding:18px;text-align:center;border:3px double #74321f}
-@media (max-width:840px){.book-shell{padding:10px}.spread,.tool-bookmark{grid-template-columns:1fr}.page{min-height:auto;padding:18px}.picture-page{order:-1}.book-header{align-items:flex-start}.header-actions{justify-content:flex-end}.canvas-stock{grid-template-columns:repeat(3,minmax(0,1fr))}.stock-card{min-height:84px}.tool-actions{justify-content:flex-start}.run-page{grid-template-columns:78px 1fr}.run-page img{width:78px;height:78px}} 
+/* =========================================================
+   100日後も生きる俺 - picture-book UI
+   ========================================================= */
+
+:root {
+  color-scheme: light;
+  --paper: #fff7df;
+  --paper2: #f6e6bd;
+  --ink: #2d2118;
+  --muted: #79654b;
+  --red: #9f2f2f;
+  --green: #527244;
+  --gold: #c89235;
+  --shadow: 0 24px 60px rgba(41, 25, 10, 0.28);
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 20% 8%, rgba(255, 255, 255, 0.55), transparent 34%),
+    linear-gradient(135deg, #3d261a, #7b4d29 48%, #251916);
+  touch-action: manipulation;
+}
+
+button,
+input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+/* Layout -------------------------------------------------- */
+
+.book-shell {
+  min-height: 100svh;
+  padding: clamp(14px, 3vw, 34px);
+  position: relative;
+}
+
+.book-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.17;
+  background-image: radial-gradient(#1b1009 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.game-screen { display: grid; gap: 14px; }
+
+/* Cover --------------------------------------------------- */
+
+.cover-screen {
+  min-height: calc(100svh - 60px);
+  display: grid;
+  place-items: center;
+}
+
+.home-link {
+  position: fixed;
+  left: 16px;
+  top: 14px;
+  color: #fff1d2;
+  text-decoration: none;
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 8px 12px;
+  backdrop-filter: blur(8px);
+}
+
+.cover-card {
+  width: min(720px, 100%);
+  min-height: 520px;
+  padding: clamp(28px, 7vw, 70px);
+  border-radius: 22px;
+  background:
+    linear-gradient(120deg, rgba(86, 43, 31, 0.88), rgba(157, 101, 51, 0.9)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 8px);
+  box-shadow:
+    var(--shadow),
+    inset 0 0 0 10px rgba(255, 231, 174, 0.2),
+    inset 0 0 0 12px rgba(44, 22, 12, 0.24);
+  color: #fff2d5;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cover-card::before,
+.page::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid rgba(90, 53, 19, 0.22);
+  border-radius: 16px;
+  pointer-events: none;
+}
+
+.cover-card::after {
+  content: "栞";
+  position: absolute;
+  top: 0;
+  right: 42px;
+  width: 46px;
+  height: 150px;
+  padding-top: 20px;
+  display: grid;
+  place-items: start center;
+  letter-spacing: 0.2em;
+  background: linear-gradient(#7f2020, #b84034);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--gold);
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+
+.cover-card .eyebrow { color: #ffd98a; }
+
+.cover-card h1,
+.book-header h1 {
+  margin: 0.1em 0;
+  font-size: clamp(2.2rem, 8vw, 5.2rem);
+  letter-spacing: 0.08em;
+}
+
+.cover-copy {
+  font-size: clamp(1rem, 2.6vw, 1.25rem);
+  line-height: 1.9;
+}
+
+.login-hint { opacity: 0.8; }
+
+/* Buttons ------------------------------------------------- */
+
+.cover-actions,
+.header-actions,
+.tool-actions,
+.dialog-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.primary-btn,
+.ghost-btn,
+.small-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.primary-btn {
+  background: linear-gradient(#e7b654, #b46b24);
+  color: #281507;
+}
+
+.primary-btn:disabled {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.ghost-btn,
+.small-btn {
+  background: rgba(255, 248, 222, 0.88);
+  color: #432813;
+  border: 1px solid rgba(65, 36, 18, 0.18);
+}
+
+.small-btn {
+  padding: 8px 12px;
+  font-size: 0.92rem;
+}
+
+/* Header and story pages --------------------------------- */
+
+.book-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: #fff3d5;
+}
+
+.book-header h1 { font-size: clamp(1.5rem, 5vw, 3rem); }
+
+.day-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 86px;
+  border-radius: 999px;
+  background: #fff3d0;
+  color: #402412;
+  padding: 10px 14px;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.status-bar {
+  border-radius: 14px;
+  padding: 10px 14px;
+  background: rgba(255, 248, 223, 0.92);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+  color: #51351e;
+}
+
+.spread {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.page {
+  position: relative;
+  min-height: 420px;
+  padding: 22px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(105deg, var(--paper), #fffaf0 48%, var(--paper2));
+  box-shadow: var(--shadow), inset 22px 0 42px rgba(92, 57, 20, 0.12);
+}
+
+.page-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(78, 48, 23, 0.3);
+  font-weight: 900;
+}
+
+.page-topline span:last-child {
+  font-size: 0.85rem;
+  border-radius: 999px;
+  background: #ead49e;
+  padding: 5px 9px;
+}
+
+.story-text {
+  white-space: pre-wrap;
+  font-size: clamp(1.05rem, 2.3vw, 1.28rem);
+  line-height: 1.9;
+  min-height: 150px;
+}
+
+.scene-details {
+  margin-top: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.history-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.history-item {
+  border-left: 4px solid #b68539;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+/* Picture and drawing stage ------------------------------ */
+
+.picture-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #d4c5a3;
+  box-shadow: inset 0 0 0 1px rgba(70, 35, 12, 0.25);
+}
+
+#pageImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.draw-canvas,
+.canvas-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.canvas-overlay {
+  pointer-events: none;
+  border: 3px dashed rgba(138, 38, 25, 0.9);
+  background: rgba(255, 255, 255, 0.08);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
+}
+
+.canvas-overlay.circle { border-radius: 50%; }
+.canvas-overlay.rounded { border-radius: 22px; }
+
+.canvas-overlay::after {
+  content: "この中だけ描けます";
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(255, 247, 220, 0.9);
+  color: #5c2b19;
+  font-size: 12px;
+}
+
+.stage-help {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* Tool panel --------------------------------------------- */
+
+.tool-bookmark {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+  gap: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 238, 184, 0.94);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(84, 46, 15, 0.18);
+}
+
+.canvas-stock-wrap h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+.canvas-stock-wrap h2 span {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.canvas-stock {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stock-card {
+  min-height: 96px;
+  border: 2px solid rgba(93, 54, 20, 0.25);
+  border-radius: 14px;
+  background: #fff9e7;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  position: relative;
+}
+
+.stock-card.active {
+  border-color: var(--red);
+  box-shadow: 0 0 0 4px rgba(159, 47, 47, 0.16);
+}
+
+.stock-shape {
+  background: linear-gradient(135deg, rgba(190, 112, 49, 0.2), rgba(255, 255, 255, 0.7));
+  border: 2px dashed #8d5b2c;
+}
+
+.stock-shape.circle { border-radius: 50%; }
+.stock-shape.rounded { border-radius: 14px; }
+
+.stock-label {
+  font-size: 0.76rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.tool-panel {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.tool-panel label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 900;
+}
+
+.tool-panel input[type="range"] { width: min(260px, 55vw); }
+
+.segmented {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tool-choice {
+  border: 1px solid #a77b42;
+  background: #fff8de;
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+
+.tool-choice.active {
+  background: #5c351c;
+  color: #fff1d4;
+}
+
+/* Loading and dialogs ------------------------------------ */
+
+.loading-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: rgba(35, 21, 12, 0.55);
+  color: #fff4d7;
+  text-align: center;
+  backdrop-filter: blur(5px);
+}
+
+.ink-loader {
+  display: flex;
+  gap: 12px;
+}
+
+.ink-loader span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f0c15e;
+  animation: drop 1s infinite alternate;
+}
+
+.ink-loader span:nth-child(2) { animation-delay: 0.15s; }
+.ink-loader span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes drop {
+  to {
+    transform: translateY(18px);
+    background: #8e2c25;
+  }
+}
+
+.book-dialog {
+  width: min(760px, calc(100vw - 24px));
+  max-height: 85svh;
+  border: 0;
+  border-radius: 18px;
+  padding: 18px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.book-dialog::backdrop { background: rgba(23, 13, 8, 0.55); }
+
+.dialog-head {
+  justify-content: space-between;
+  border-bottom: 1px dashed #b58b50;
+  margin-bottom: 12px;
+}
+
+.ranking-list,
+.run-viewer {
+  display: grid;
+  gap: 8px;
+}
+
+.rank-row {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.48);
+  padding: 10px;
+  border: 1px solid rgba(98, 59, 21, 0.14);
+}
+
+.rank-row button {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+.run-page {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.run-page img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* Game over ---------------------------------------------- */
+
+.game-over-card {
+  position: fixed;
+  inset: auto 16px 16px;
+  z-index: 20;
+  margin: auto;
+  max-width: 680px;
+  border-radius: 18px;
+  background: #fff4d5;
+  box-shadow: var(--shadow);
+  padding: 18px;
+  text-align: center;
+  border: 3px double #74321f;
+}
+
+/* Responsive --------------------------------------------- */
+
+@media (max-width: 840px) {
+  .book-shell { padding: 10px; }
+
+  .spread,
+  .tool-bookmark { grid-template-columns: 1fr; }
+
+  .page {
+    min-height: auto;
+    padding: 18px;
+  }
+
+  .picture-page { order: -1; }
+  .book-header { align-items: flex-start; }
+  .header-actions { justify-content: flex-end; }
+  .canvas-stock { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stock-card { min-height: 84px; }
+  .tool-actions { justify-content: flex-start; }
+  .run-page { grid-template-columns: 78px 1fr; }
+
+  .run-page img {
+    width: 78px;
+    height: 78px;
+  }
+}
