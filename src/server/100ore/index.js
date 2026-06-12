@@ -27,6 +27,11 @@ const IMAGE_MODEL_CANDIDATES = [
   "gemini-2.5-flash-image-preview",
 ];
 
+const HUNDRED_ORE_SHEETS_MODE_VERSION = "hundred-ore-split-sheets-v2";
+const HUNDRED_ORE_CACHE_SHEET = "100俺_cache";
+const HUNDRED_ORE_RUNS_SHEET = "100俺_runs";
+const ADVANCED_AXES = ["場所", "目的", "立場", "危機", "通路", "代償", "敵", "役割"];
+
 const DISPLAY_FORBIDDEN_TERMS = [
   "落書き", "キャンパス", "プレイヤー", "ユーザー", "描いた", "書いた", "改変", "画像", "挿絵", "AI", "プロンプト", "画面", "差分", "生成", "追加された", "突然現れた", "急に出現した",
 ];
@@ -107,6 +112,8 @@ function normalizePage(page = {}, day = 1) {
     sceneSummary: scrubDisplayText(page.sceneSummary || "絵本の世界で俺が次の出来事を待っている。", 240),
     illustrationPrompt: clampText(page.illustrationPrompt || page.imagePrompt || "奇妙な絵本の一場面、主人公の俺、余白のある画面", 900),
     imagePrompt: clampText(page.illustrationPrompt || page.imagePrompt || "奇妙な絵本の一場面、主人公の俺、余白のある場面", 900),
+    advancedAxis: ADVANCED_AXES.includes(String(page.advancedAxis || "").trim()) ? String(page.advancedAxis || "").trim() : "場所",
+    nextTouchableObjects: Array.isArray(page.nextTouchableObjects) ? page.nextTouchableObjects.map((v) => scrubDisplayText(v, 28)).filter(Boolean).slice(0, 5) : [],
   };
   normalized.sceneKey = clampText(page.sceneKey || buildSceneKey(page.imageHash || "", normalized.sceneSummary), 40);
   return normalized;
@@ -123,18 +130,35 @@ function fallbackOutcome(day, labelsText = "") {
   const base = labelsText || "車の進路が石畳の溝へずれる";
   return { rewriteText:`${base}。俺の前の危機は形を変え、次の出口が開いた。`, outcomeSummary:`${base}ため、路地裏の危機が別の方向へ動いた。`, outcomeType:type, gameOver, gameOverReason:gameOver ? `${base}が裏目に出て、俺は逃げ場を失った。` : "", nextSceneHint: gameOver ? "" : `${base}結果、俺は別の場所へ押し出される。` };
 }
-function fallbackNextPage(day, { current = {}, outcome = {}, changeLabels = [] } = {}) {
+function axisForStoryCard(storyCard = "", fallbackIndex = 0) {
+  const map = {
+    ESCALATE: "危機",
+    SHIFT_STAGE: "場所",
+    NEW_RULE: "通路",
+    SWAP_ROLE: "役割",
+    REVEAL: "目的",
+    PRICE: "代償",
+    GAME_OVER: "危機",
+  };
+  return map[storyCard] || ADVANCED_AXES[Math.abs(Number(fallbackIndex || 0)) % ADVANCED_AXES.length];
+}
+function fallbackNextPage(day, { current = {}, outcome = {}, changeLabels = [], storyCard = "" } = {}) {
   const carry = inferCarryoverElements(current);
-  const location = carry.location || "次の曲がり角";
   const people = carry.people.join("、") || "俺";
-  const objects = carry.objects.slice(0, 3).join("、") || "目の前の物";
+  const objects = carry.objects.slice(0, 2).join("と") || "目の前の物";
   const changed = changeLabels.join("、") || outcome.outcomeSummary || outcome.rewriteText || "小さな変化";
-  const trouble = outcome.nextSceneHint || `${changed}の結果、俺たちは${location}から次の足場へ押し出される。`;
+  const advancedAxis = axisForStoryCard(storyCard, day);
+  const destinations = ["屋根の避雷針の下", "巨大魚の口の中", "車の沈んだ召喚陣の縁", "壁の向こうの逆さまの停留所"];
+  const destination = destinations[day % destinations.length];
+  const nextTouchableObjects = ["紫の切符", "曲がったハンドル", "階段状の歯"];
+  const trouble = outcome.nextSceneHint || `${changed}の反動で、前の危機は背後へ流れ、俺たちは${destination}へ押し出される。`;
   return normalizePage({
-    pageTitle: `${day}日目：次の足場が光る`,
-    bodyText: `${people}は${objects}を抱え、${changed}の勢いで${location}の先へ進んだ。${trouble} 足元では次に触れそうな金具と細い扉が光っている。`,
-    sceneSummary: `${people}と${objects}は前ページの変化を受け、${location}から次の局面へ移る。足元に金具と細い扉がある。`,
-    illustrationPrompt: buildContinuityIllustrationPrompt({ current, bodyText: `${people}が${objects}と次の足場へ進む。`, sceneSummary: `${people}、${objects}、${trouble}`, changeLabels, trouble }),
+    pageTitle: `${day}日目：${destination}へ押し出される`,
+    bodyText: `${changed}に引っぱられ、${people}は${objects}を抱えたまま${destination}へ飛び込んだ。${trouble} そこには次の行き先を選ばせる紫の切符、曲がったハンドル、階段状の歯が並んでいた。`,
+    sceneSummary: `${people}はchangeLabelsの結果、前ページの場所から${destination}へ移動した。進んだ軸は${advancedAxis}。紫の切符、曲がったハンドル、階段状の歯が次に触れる物として見える。`,
+    illustrationPrompt: buildContinuityIllustrationPrompt({ current, bodyText: `${people}が${destination}へ押し出される。`, sceneSummary: `${people}、${objects}、${trouble}`, changeLabels, trouble, storyCard }),
+    advancedAxis,
+    nextTouchableObjects,
   }, day);
 }
 function svgDataUrl() {
@@ -147,8 +171,9 @@ function buildIllustrationPrompt({ bodyText = "", sceneSummary = "", illustratio
 画像内に文字・看板・ラベル・吹き出し・数字は絶対に入れない。
 日本語文字、英字、記号、吹き出し、看板、ラベル、キャプションを描かない。
 絵本の一枚絵。1ページ目の画風に近い、温かい手描き絵本風。紙の質感。少し奇妙でユーモラス。
-前ページ画像の画風と主要キャラの見た目は保つ。ただし構図と状況は次ページ本文に合わせて大きく変える。
-changeLabelsから生まれた中心事件を画面の主役として描く。
+前ページ画像はキャラクターと画風の参考にする。背景・構図・ポーズは次ページ本文に合わせて大きく変える。これは次のページの新しい挿絵であり、前ページの微修正ではない。
+参照画像で維持してよいのはキャラの見た目・画風・紙の質感だけ。同じ背景、同じ構図、同じポーズ、同じ危機、同じ画面配置を維持しない。
+changeLabelsから生まれた中心事件を、画面中央の大きな変化として描く。
 参照画像がある場合は、前ページ画像の主人公・少女・重要キャラの見た目、線の太さ、紙の質感をなるべく維持する。
 前ページと同じ構図にしなくてよい。次ページ本文に合わせて、視点・場所・ポーズを変えてよい。
 直前の重要変化は維持し、目的・危機・局面の変化が一目で分かるようにする。
@@ -182,7 +207,7 @@ function buildContinuityIllustrationPrompt({ current = {}, bodyText = "", sceneS
 前ページからの因果・直前の結果: ${trouble || sceneSummary || bodyText}
 今回の中心事件(changeLabels): ${changeLabels.join("、") || "前ページの変化"}
 展開カード: ${storyCard || "ESCALATE"}
-絵本風、紙の質感、文字なし。前ページ画像の画風と主要キャラの見た目は保つ。ただし構図と状況は次ページ本文に合わせて大きく変える。前ページと同じ構図にしなくてよい。視点・場所・ポーズを変えてよい。changeLabels由来の中心事件を画面の主役にする。`;
+絵本風、紙の質感、文字なし。前ページ画像はキャラクターと画風の参考にする。背景・構図・ポーズは次ページ本文に合わせて大きく変える。これは次のページの新しい挿絵であり、前ページの微修正ではない。参照画像で維持してよいのはキャラの見た目・画風・紙の質感だけ。同じ背景、同じ構図、同じポーズ、同じ危機、同じ画面配置を維持しない。changeLabelsから生まれた中心事件を、画面中央の大きな変化として描く。`;
 }
 
 function errorMessage(error) {
@@ -372,6 +397,8 @@ function sanitizeSavedPage(p = {}) {
     outcomeSummary: scrubDisplayText(p.outcomeSummary || p.outcome?.outcomeSummary || p.outcome?.rewriteText || "", 180),
     canvases: Array.isArray(p.canvases) ? p.canvases.slice(0, 3).map(sanitizeCanvas) : (p.canvas ? [sanitizeCanvas(p.canvas)] : []),
     imageHash: clampText(p.imageHash, 80),
+    advancedAxis: ADVANCED_AXES.includes(String(p.advancedAxis || "").trim()) ? String(p.advancedAxis || "").trim() : "",
+    nextTouchableObjects: Array.isArray(p.nextTouchableObjects) ? p.nextTouchableObjects.map((v) => scrubDisplayText(v, 28)).filter(Boolean).slice(0, 5) : [],
   };
 }
 function hydratePageForResponse(page = null) {
@@ -393,6 +420,8 @@ function sanitizeCacheNextPage(page = null) {
     imageHash: clampText(page.imageHash, 80),
     imageModel: clampText(page.imageModel, 80),
     imageGenerationFailed: normalizeBoolean(page.imageGenerationFailed),
+    advancedAxis: ADVANCED_AXES.includes(String(page.advancedAxis || "").trim()) ? String(page.advancedAxis || "").trim() : "",
+    nextTouchableObjects: Array.isArray(page.nextTouchableObjects) ? page.nextTouchableObjects.map((v) => scrubDisplayText(v, 28)).filter(Boolean).slice(0, 5) : [],
   };
 }
 function serializeRun(run) {
@@ -426,13 +455,13 @@ function chooseOutcomeMode(day) {
 }
 function modeInstruction(storyCard) {
   const map = {
-    ESCALATE: "展開カード: ESCALATE。changeLabelsが原因で、事態の規模や方向を一段階大きく変える。解決で止めず、次に触れる具体物を置く。",
-    SHIFT_STAGE: "展開カード: SHIFT_STAGE。changeLabelsに押し出される形で場所・視点・足場のどれかを変える。脈絡のない転移ではなく因果で移動する。",
-    NEW_RULE: "展開カード: NEW_RULE。changeLabelsの結果として世界のルールを一つ増やす。ルール説明だけで終えず、見える道具・場所・現象を置く。",
-    SWAP_ROLE: "展開カード: SWAP_ROLE。助ける側と助けられる側、追う側と追われる側など役割を入れ替え、次の局面を変える。",
-    REVEAL: "展開カード: REVEAL。隠れていた正体・目的・構造が見える。ただし説明だけで終えず、触れそうな具体物を置く。",
-    PRICE: "展開カード: PRICE。助かった代償や交換条件を発生させる。代償によって場所・目的・危機のどれかを変える。",
-    GAME_OVER: "展開カード: GAME_OVER。changeLabelsが中心事件になった結果としてゲームオーバーに向かう。変化の内容は必ず反映する。",
+    ESCALATE: "展開カード: ESCALATE。危機の規模を上げるだけでなく、旧危機を別の危機に置き換える。同じ危機を続けず、次に触れる具体物を置く。",
+    SHIFT_STAGE: "展開カード: SHIFT_STAGE。そのページの終わりまでに、必ず現在の場所・足場・視点のどれかを変える。最も強く次ページに進んだ感を出す。",
+    NEW_RULE: "展開カード: NEW_RULE。新ルールを説明するだけでなく、そのルールによって通れる場所・触れる物・失う物のどれかを変える。",
+    SWAP_ROLE: "展開カード: SWAP_ROLE。役割を入れ替えたうえで、次の目的を変える。助ける側/助けられる側、追う側/追われる側などを反転させる。",
+    REVEAL: "展開カード: REVEAL。正体や構造を明かしたうえで、新しい入口・道具・敵・目的地のどれかを出す。説明だけで終えない。",
+    PRICE: "展開カード: PRICE。助かった代償として、何かを失う・背負う・追われる・移動させられる、のいずれかを起こす。",
+    GAME_OVER: "展開カード: GAME_OVER。changeLabelsを反映したうえで終了する。変化の内容は必ず反映する。",
   };
   return map[storyCard] || map.ESCALATE;
 }
@@ -545,6 +574,12 @@ async function findCachedOutcome(genAI, sceneKey, changeLabels) {
 
 export function mountHundredOreRoutes(app) {
   const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+  console.log("[100ore] sheets mode", {
+    cacheSheet: HUNDRED_ORE_CACHE_SHEET,
+    runsSheet: HUNDRED_ORE_RUNS_SHEET,
+    version: HUNDRED_ORE_SHEETS_MODE_VERSION,
+  });
+  console.log("[100ore] sheets target", { cacheSheet: HUNDRED_ORE_CACHE_SHEET, runsSheet: HUNDRED_ORE_RUNS_SHEET });
   listGeminiModelsForDebug().catch((error) => console.warn("[100ore] Gemini models.list failed:", errorMessage(error)));
   app.get(HUNDRED_ORE_PUBLIC_PATH, (_req, res) => res.sendFile(path.join(process.cwd(), "public/100ore/index.html")));
   app.get(HUNDRED_ORE_ENCODED_PATH, (_req, res) => res.sendFile(path.join(process.cwd(), "public/100ore/index.html")));
@@ -591,8 +626,17 @@ export function mountHundredOreRoutes(app) {
       if (cached) {
         const storyCard = cached.storyCard || cached.outcome?.storyCard || cached.outcome?.outcomeMode || "";
         const outcome = sanitizeOutcome({ ...cached.outcome, changeLabels, cacheId: cached.cacheId, cacheHit: true, compositeHash, storyCard, outcomeMode: storyCard });
+        const cachedNextPage = hydratePageForResponse(cached.nextPage || null);
         console.log("[100ore] branch hit", { cacheId: cached.cacheId, sceneKey, changeLabels });
-        return res.json({ outcome, nextPage: hydratePageForResponse(cached.nextPage || null), cacheHit: true });
+        if (cachedNextPage) console.log("[100ore] page advancement", {
+          storyCard,
+          changeLabels,
+          advancedAxis: cachedNextPage.advancedAxis || "",
+          currentPageTitle: current.pageTitle || "",
+          nextPageTitle: cachedNextPage.pageTitle || "",
+          nextTouchableObjects: cachedNextPage.nextTouchableObjects || [],
+        });
+        return res.json({ outcome, nextPage: cachedNextPage, cacheHit: true });
       }
 
       const storyCard = chooseOutcomeMode(day);
@@ -612,7 +656,8 @@ ${modeInstruction(storyCard)}
 配置情報: ${JSON.stringify(canvases)}
 方針:
 - 変化ラベルを必ず中心事件として扱う。装飾や小さな改善だけで済ませない。
-- 変化ラベルによって場所・目的・立場・危機のどれかを大きく動かす。
+- 変化ラベルによって場所・目的・立場・危機・通路・代償・敵・役割のどれかを大きく動かす。
+- changeLabelsを「体調」「熱」「光」「共鳴」だけで終わらせない。羽なら空中・屋根・新しい通路などへ押し出し、前の危機を別の危機に置き換える。
 - 問題を少し解決して同じ危機を続けるのは禁止。変化の結果として物語を変な方向へ押し出す。
 - 「描いた」「落書き」「キャンパス」「画像」「改変」などのメタ語は表示用フィールドに絶対に出さない。
 - 「最初からそうだった」「正史」「昔からあった」「生まれつき」などの歴史改変表現は禁止。
@@ -620,7 +665,7 @@ ${modeInstruction(storyCard)}
 - 前ページの出来事を一つ受け継ぎつつ、同じ会話や同じ危機に居座らない。
 - 次ページで介入しやすい目に見える具体物を2つ以上残す。
 - GAME_OVERのときだけgameOver=trueにし、gameOverReasonを書く。
-- 禁止: 「まだ終わっていない」「どう動けばいい？」「どうすればいい？」「不穏な気配」「新たな誤解の種」。
+- 禁止: 熱を帯びるだけ、光るだけ、共鳴するだけ、出口が塞がっただけ、同じ路地裏に居座るだけ、少女が恐怖で身をすくめるだけ、俺が困っているだけ、「まだ終わっていない」「どう動けばいい？」「どうすればいい？」「不穏な気配」「新たな誤解の種」。
 - 表示用フィールド（rewriteText/outcomeSummary/gameOverReason/nextSceneHint）では次の語を絶対に使わない: ${DISPLAY_FORBIDDEN_TERMS.join("、")}
 JSONだけ: {"rewriteText":"80字以内で俺視点。changeLabelsによる結果。","outcomeSummary":"具体的な結果要約。","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページへ受け継ぐ具体状況。見える物を2つ以上含める。"}`;
           const parts = [{ text: outcomePrompt }];
@@ -637,7 +682,7 @@ JSONだけ: {"rewriteText":"80字以内で俺視点。changeLabelsによる結�
         const nextDay = day + 1;
         const carryover = inferCarryoverElements(current);
         const pagePrompt = `ゲーム「100日後も生きる俺」の次ページをJSONで作る。JSONだけ返してください。
-必須JSON: {"pageTitle":"","bodyText":"","sceneSummary":"","illustrationPrompt":""}
+必須JSON: {"pageTitle":"","bodyText":"","sceneSummary":"","illustrationPrompt":"","advancedAxis":"場所|目的|立場|危機|通路|代償|敵|役割","nextTouchableObjects":["具体物1","具体物2"]}
 前ページの状況: ${clampText(current.sceneSummary, 260)}
 前ページ本文: ${clampText(current.bodyText, 220)}
 直前の結果: ${clampText(outcome.outcomeSummary || outcome.rewriteText, 240)}
@@ -650,25 +695,29 @@ ${modeInstruction(storyCard)}
 前ページから因果として残してよい具体物候補: ${carryover.objects.slice(0, 3).join("、")}
 
 物語方針:
+- このゲームは、同じ挿絵を少し変えるゲームではない。改変ごとに絵本のページがめくられ、次のページの場面へ進むゲームである。
+- 毎回、次のページとして成立する新しい場面を作る。前ページの説明を繰り返さない。同じ背景を続けない。同じ構図を続けない。同じ危機を言い換えて引き延ばさない。
+- changeLabelsをきっかけに、場所・目的・立場・危機・行き先のどれかを変える。ただし、主人公「俺」と重要キャラ1〜2人、直前の因果は維持する。完全に無関係な別場面には飛ばさない。
+- 「前ページの結果に押し出されて次のページへ進む」形にする。
 - 解決ではなく、転がす。維持ではなく、因果でつなぐ。
 - changeLabelsを装飾ではなく次ページの中心事件にする。
-- changeLabelsによって場所・目的・立場・危機のどれかを必ず大きく動かす。
+- changeLabelsによって場所・目的・立場・危機・通路・代償・敵・役割のどれかを必ず大きく動かす。
 - 主人公は必ず「俺」。俺視点で書く。
 - 維持するもの: 主人公「俺」、直前のchangeLabels、直前の結果、重要キャラ1〜2人、因果関係。
 - 維持しなくてよいもの: 同じ場所、同じ構図、同じ危機、同じ物体全部、初期ページの全要素。
 - 前ページの説明を繰り返さず、状況を一段階進める。同じ場所・同じ危機に留まらない。
 - 完全に脈絡なく別世界へ飛ばさず、changeLabelsと直前の結果に押し出される形で場面を進める。
-- カードに従い、場所・目的・立場・危機のどれかを大きく変える。
+- カードに従い、場所・目的・立場・危機・通路・代償・敵・役割のどれかを大きく変える。
 
 bodyTextのルール:
 - 100〜160字程度。
 - changeLabelsが中心事件になっている。
 - 前ページの説明を繰り返さない。
 - 1ページ内で状況が明確に進む。
-- 目的・場所・立場・危機のどれかが変わる。
+- 目的・場所・立場・危機・通路・代償・敵・役割のどれかが変わる。
 - 次に介入できる具体物が2つ以上見える。
 - 最後は次に触れそうな具体物・場所・人物・現象で終える。
-- 禁止: 「まだ終わっていない」「俺はどう動けばいい？」「俺はどうすればいい？」「何が起きているのか分からないままだった」「不穏な気配がした」「新たな誤解の種が生まれた」「少し和らいだが、危機は続いている」。
+- 禁止: 熱を帯びるだけ、光るだけ、共鳴するだけ、出口が塞がっただけ、同じ路地裏に居座るだけ、少女が恐怖で身をすくめるだけ、俺が困っているだけ、「まだ終わっていない」「どうすればいい？」「この力で脱出できるのか？」「不穏な音が響く」「暗闇を照らしていた」「新たな誤解の種が生まれた」「少し和らいだが、危機は続いている」。
 - 同じ危機を言い換えて引き延ばさない。
 
 sceneSummaryのルール:
@@ -680,12 +729,14 @@ illustrationPromptのルール:
 - 次ページ本文と完全に対応させる。
 - 主人公「俺」、重要キャラ、changeLabelsから生まれた中心事件、今回のstoryCardによる大きな変化、次に触れそうな具体物を含める。
 - 絵本風、紙の質感。前ページ画像の人物・画風をなるべく維持。
-- 前ページ画像の画風と主要キャラの見た目は保つ。ただし構図と状況は次ページ本文に合わせて大きく変える。
-- 前ページと同じ構図にしなくてよい。次ページ本文に合わせて、視点・場所・ポーズを変えてよい。
-- changeLabelsから生まれた中心事件を画面の主役として描く。
+- 前ページ画像はキャラクターと画風の参考にする。背景・構図・ポーズは次ページ本文に合わせて大きく変える。これは次のページの新しい挿絵であり、前ページの微修正ではない。
+- 参照画像で維持してよいのはキャラの見た目・画風・紙の質感だけ。同じ背景、同じ構図、同じポーズ、同じ危機、同じ画面配置を維持しない。
+- changeLabelsから生まれた中心事件を、画面中央の大きな変化として描く。
 - 禁止: 文字、数字、看板、ラベル、吹き出し、キャプション。
 - 表示用フィールド（pageTitle/bodyText/sceneSummary）では次の語を絶対に使わない: ${DISPLAY_FORBIDDEN_TERMS.join("、")}
 - 「最初から」「正史」「昔からあった」「生まれつき」も禁止。
+advancedAxisは「場所」「目的」「立場」「危機」「通路」「代償」「敵」「役割」のどれか一つ。本文中で実際に進んだ軸と一致させる。
+nextTouchableObjectsは本文と挿絵に出る、次に触りたくなる具体物を2つ以上。
 pageTitleは必ず「${nextDay}日目：」で始める。`;
         const rawNext = await generateTextJson(genAI, pagePrompt, 18000);
         const continuityPrompt = buildContinuityIllustrationPrompt({ current, bodyText: rawNext.bodyText, sceneSummary: rawNext.sceneSummary, changeLabels, trouble: outcome.nextSceneHint || outcome.outcomeSummary, storyCard });
@@ -698,6 +749,14 @@ pageTitleは必ず「${nextDay}日目：」で始める。`;
           { referenceImageDataUrl: req.body?.originalImageDataUrl || "", referenceMimeType: originalMimeType, referenceBase64: originalBase64 }
         );
         nextPage.sceneKey = buildSceneKey(nextPage.imageHash || "", nextPage.sceneSummary || "");
+        console.log("[100ore] page advancement", {
+          storyCard,
+          changeLabels,
+          advancedAxis: nextPage.advancedAxis || "",
+          currentPageTitle: current.pageTitle || "",
+          nextPageTitle: nextPage.pageTitle || "",
+          nextTouchableObjects: nextPage.nextTouchableObjects || [],
+        });
         console.log("[100ore] next page generated", {
           storyCard,
           outcomeMode: storyCard,
