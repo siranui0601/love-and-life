@@ -595,3 +595,119 @@ button:disabled { cursor: not-allowed; }
     height: 78px;
   }
 }
+
+/* Updated multi-canvas card panel -------------------------------- */
+#pageImage,
+.draw-canvas,
+.canvas-overlay {
+  transform: scale(var(--stage-zoom, 1));
+  transform-origin: center center;
+}
+
+.tool-bookmark {
+  grid-template-columns: 1fr;
+}
+
+.flip-panel {
+  border-radius: 18px;
+  padding: 14px;
+  background: linear-gradient(110deg, rgba(255, 250, 232, 0.96), rgba(239, 209, 145, 0.94));
+  border: 2px solid rgba(112, 67, 25, 0.22);
+  box-shadow: inset 18px 0 30px rgba(99, 56, 18, 0.08);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.flip-panel[data-side="pen"] {
+  transform: rotateY(1.5deg);
+  box-shadow: var(--shadow), inset -18px 0 30px rgba(99, 56, 18, 0.08);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px dashed rgba(92, 53, 21, 0.35);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+}
+
+.panel-head h2,
+.canvas-stock-wrap h3,
+.placed-wrap h3 {
+  margin: 0;
+}
+
+.canvas-panel,
+.pen-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.canvas-panel {
+  grid-template-columns: minmax(240px, 1fr) minmax(190px, 0.8fr);
+  align-items: start;
+}
+
+.canvas-panel[hidden],
+.pen-panel[hidden] { display: none; }
+
+.placed-list {
+  display: grid;
+  gap: 7px;
+  min-height: 42px;
+  color: var(--muted);
+}
+
+.placed-card {
+  border: 1px solid rgba(93, 54, 20, 0.25);
+  border-radius: 12px;
+  background: #fff9e7;
+  padding: 9px 10px;
+  text-align: left;
+  font-weight: 800;
+}
+
+.placed-card.active {
+  border-color: var(--red);
+  background: #ffe8d9;
+  box-shadow: 0 0 0 3px rgba(159, 47, 47, 0.12);
+}
+
+.adjust-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-areas: ". up ." "left . right" ". down .";
+  justify-content: start;
+  gap: 6px;
+}
+
+.nudge-btn[data-dy="-1"] { grid-area: up; }
+.nudge-btn[data-dx="-1"] { grid-area: left; }
+.nudge-btn[data-dx="1"] { grid-area: right; }
+.nudge-btn[data-dy="1"] { grid-area: down; }
+
+.angle-control,
+.pen-panel label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 900;
+}
+
+.angle-control input,
+.pen-panel input[type="range"] { width: min(300px, 62vw); }
+
+.confirm-wide {
+  justify-self: end;
+  margin-top: 4px;
+}
+
+.placement-frame {
+  transform-origin: center center;
+}
+
+@media (max-width: 840px) {
+  .canvas-panel { grid-template-columns: 1fr; }
+  .confirm-wide { justify-self: stretch; }
+}
