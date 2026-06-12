@@ -147,9 +147,11 @@ function buildIllustrationPrompt({ bodyText = "", sceneSummary = "", illustratio
 画像内に文字・看板・ラベル・吹き出し・数字は絶対に入れない。
 日本語文字、英字、記号、吹き出し、看板、ラベル、キャプションを描かない。
 絵本の一枚絵。1ページ目の画風に近い、温かい手描き絵本風。紙の質感。少し奇妙でユーモラス。
-参照画像がある場合は、前ページ画像の主人公・少女・主要キャラの見た目をなるべく維持する。
-参照画像がある場合は、前ページ画像の画風、線の太さ、紙の質感、主要物体の見た目を維持する。
-場所が変わる場合でも、前ページ由来のキャラや物体を完全に別人・別物にしない。
+前ページ画像の画風と主要キャラの見た目は保つ。ただし構図と状況は次ページ本文に合わせて大きく変える。
+changeLabelsから生まれた中心事件を画面の主役として描く。
+参照画像がある場合は、前ページ画像の主人公・少女・重要キャラの見た目、線の太さ、紙の質感をなるべく維持する。
+前ページと同じ構図にしなくてよい。次ページ本文に合わせて、視点・場所・ポーズを変えてよい。
+直前の重要変化は維持し、目的・危機・局面の変化が一目で分かるようにする。
 現在の日数や本文を画像内に描かない。
 必ず本文の状況に合う挿絵にする。
 主人公は必ず「俺」。棒人間、単純な円や謎の物体だけで済ませない。
@@ -173,13 +175,14 @@ function inferCarryoverElements(page = {}) {
     objects: allMatches(objectKeywords, 2),
   };
 }
-function buildContinuityIllustrationPrompt({ current = {}, bodyText = "", sceneSummary = "", changeLabels = [], trouble = "" } = {}) {
+function buildContinuityIllustrationPrompt({ current = {}, bodyText = "", sceneSummary = "", changeLabels = [], trouble = "", storyCard = "" } = {}) {
   const carry = inferCarryoverElements(current);
   return `前ページから引き継ぐ人物: ${carry.people.join("、") || "俺"}
-前ページから引き継ぐ重要物体: ${carry.objects.slice(0, 4).join("、") || "前ページの主要物体"}
-前ページからの関係・目的: ${trouble || sceneSummary || bodyText}
-今回変化したもの: ${changeLabels.join("、") || "前ページの変化"}
-絵本風、紙の質感、文字なし。場所の完全維持より目的の進行を優先し、前ページ由来の人物・物体の見た目と因果関係を保つ。`;
+前ページから引き継ぐ重要物体: ${carry.objects.slice(0, 3).join("、") || "前ページの主要物体"}
+前ページからの因果・直前の結果: ${trouble || sceneSummary || bodyText}
+今回の中心事件(changeLabels): ${changeLabels.join("、") || "前ページの変化"}
+展開カード: ${storyCard || "ESCALATE"}
+絵本風、紙の質感、文字なし。前ページ画像の画風と主要キャラの見た目は保つ。ただし構図と状況は次ページ本文に合わせて大きく変える。前ページと同じ構図にしなくてよい。視点・場所・ポーズを変えてよい。changeLabels由来の中心事件を画面の主役にする。`;
 }
 
 function errorMessage(error) {
@@ -337,7 +340,8 @@ function sanitizeOutcome(outcome = {}) {
     changeLabels: Array.isArray(outcome.changeLabels) ? outcome.changeLabels.map((v) => scrubDisplayText(v, 40)).filter(Boolean).slice(0, 8) : [],
     cacheId: clampText(outcome.cacheId, 80),
     cacheHit: normalizeBoolean(outcome.cacheHit),
-    outcomeMode: clampText(outcome.outcomeMode, 30),
+    storyCard: clampText(outcome.storyCard || outcome.outcomeMode, 30),
+    outcomeMode: clampText(outcome.outcomeMode || outcome.storyCard, 30),
   };
 }
 function sanitizeCanvas(canvas = {}) {
@@ -411,30 +415,28 @@ function fallbackChangeLabels(day, canvases = []) {
 }
 function gameOverProbability(day) {
   if (day <= 2) return 0;
-  if (day <= 5) return 0.12;
+  if (day <= 5) return 0.13;
   if (day <= 10) return 0.23;
   return 0.33;
 }
 function chooseOutcomeMode(day) {
   if (Math.random() < gameOverProbability(day)) return "GAME_OVER";
-  const earlyModes = ["RESOLVE", "BACKFIRE", "RESOLVE", "CHASE", "DEAL", "TRIAL"];
-  const modes = ["RESOLVE", "BACKFIRE", "RESOLVE", "DEAL", "CHASE", "TRIAL", "NEW_ROLE", "SCENE_JUMP"];
-  const pool = day >= 2 && day <= 4 ? earlyModes : modes;
-  return pool[Math.floor(Math.random() * pool.length)];
+  const storyCards = ["ESCALATE", "SHIFT_STAGE", "NEW_RULE", "SWAP_ROLE", "REVEAL", "PRICE"];
+  return storyCards[Math.floor(Math.random() * storyCards.length)];
 }
-function modeInstruction(mode) {
+function modeInstruction(storyCard) {
   const map = {
-    RESOLVE: "今回の展開タイプ: RESOLVE。前の危機を一つ解決し、その結果として新しい目的・移動先・選択へ進める。",
-    BACKFIRE: "今回の展開タイプ: BACKFIRE。変化が裏目に出るが、人物・因果関係・目的を保ったまま状況を一段階進める。",
-    SCENE_JUMP: "今回の展開タイプ: SCENE_JUMP。場面を大きく変えてよいが、前ページ由来の人物・関係・主要物体を持ち越す。",
-    NEW_ROLE: "今回の展開タイプ: NEW_ROLE。俺の役割や立場を変え、その役割で向かう具体的な目的物を置く。",
-    DEAL: "今回の展開タイプ: DEAL。奇妙な取引を発生させ、成立または失敗の結果として次の局面へ進める。",
-    CHASE: "今回の展開タイプ: CHASE。追跡や逃走へ移り、進路・移動先・障害物をはっきり置く。",
-    TRIAL: "今回の展開タイプ: TRIAL。試練や審査へ移り、結果によって次に触れる証拠品や道具を置く。",
-    GAME_OVER: "今回の展開タイプ: GAME_OVER。どんな変化でもゲームオーバーへ向かわせる。ただし変化の内容は必ず反映する。",
+    ESCALATE: "展開カード: ESCALATE。changeLabelsが原因で、事態の規模や方向を一段階大きく変える。解決で止めず、次に触れる具体物を置く。",
+    SHIFT_STAGE: "展開カード: SHIFT_STAGE。changeLabelsに押し出される形で場所・視点・足場のどれかを変える。脈絡のない転移ではなく因果で移動する。",
+    NEW_RULE: "展開カード: NEW_RULE。changeLabelsの結果として世界のルールを一つ増やす。ルール説明だけで終えず、見える道具・場所・現象を置く。",
+    SWAP_ROLE: "展開カード: SWAP_ROLE。助ける側と助けられる側、追う側と追われる側など役割を入れ替え、次の局面を変える。",
+    REVEAL: "展開カード: REVEAL。隠れていた正体・目的・構造が見える。ただし説明だけで終えず、触れそうな具体物を置く。",
+    PRICE: "展開カード: PRICE。助かった代償や交換条件を発生させる。代償によって場所・目的・危機のどれかを変える。",
+    GAME_OVER: "展開カード: GAME_OVER。changeLabelsが中心事件になった結果としてゲームオーバーに向かう。変化の内容は必ず反映する。",
   };
-  return map[mode] || map.SCENE_JUMP;
+  return map[storyCard] || map.ESCALATE;
 }
+
 async function extractChangeLabels(genAI, { current, canvases, originalMimeType, originalBase64, compositeMimeType, compositeBase64, compositeHash, sceneKey, day }) {
   const logBase = {
     day,
@@ -507,29 +509,36 @@ async function extractChangeLabels(genAI, { current, canvases, originalMimeType,
 }
 async function findCachedOutcome(genAI, sceneKey, changeLabels) {
   const sheetCaches = await listHundredOreCacheBySceneKey(sceneKey).catch((error) => {
-    console.warn("[100ore] cache lookup fallback:", error?.message || error);
+    console.warn("[100ore] branch lookup fallback:", error?.message || error);
     return [];
   });
+  const seen = new Set();
   const candidates = [...sheetCaches, ...MEMORY_CACHES.filter((cache) => cache.sceneKey === sceneKey)]
     .filter((cache) => cache.cacheId && cache.outcome)
+    .filter((cache) => {
+      if (seen.has(cache.cacheId)) return false;
+      seen.add(cache.cacheId);
+      return true;
+    })
     .slice(0, 40);
+  console.log("[100ore] branch lookup", { sceneKey, changeLabels, candidateCount: candidates.length });
   if (!candidates.length) return null;
-  if (!genAI) {
-    const key = changeLabels.join("|");
-    return candidates.find((c) => normalizeChangeLabels(c.changeLabels).join("|") === key) || null;
-  }
+  const exactKey = normalizeChangeLabels(changeLabels).join("|");
+  const exact = candidates.find((c) => normalizeChangeLabels(c.changeLabels).join("|") === exactKey);
+  if (exact) return exact;
+  if (!genAI) return null;
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-    const prompt = `同じ場面で、今回の変化ラベルが既存候補と同じ選択肢か判定してください。JSONだけ。
+    const prompt = `同じ場面で、今回の変化ラベルが既存の分岐記録と同じ選択肢か判定してください。JSONだけ。
 今回: ${JSON.stringify(changeLabels)}
-候補: ${JSON.stringify(candidates.map((c) => ({ cacheId: c.cacheId, changeLabels: c.changeLabels })))}
+分岐候補: ${JSON.stringify(candidates.map((c) => ({ cacheId: c.cacheId, changeLabels: c.changeLabels })))}
 返却形式: {"matched":true,"cacheId":"xxx"} または {"matched":false,"cacheId":""}
 意味がほぼ同じならmatched=true。`;
-    const response = await withTimeout(model.generateContent([{ text: prompt }]), TEXT_TIMEOUT_MS, "cache_match");
+    const response = await withTimeout(model.generateContent([{ text: prompt }]), TEXT_TIMEOUT_MS, "branch_match");
     const match = jsonFromText(response.response.text());
     if (normalizeBoolean(match.matched)) return candidates.find((c) => c.cacheId === String(match.cacheId || "")) || null;
   } catch (error) {
-    console.warn("[100ore] cache match fallback:", error?.message || error);
+    console.warn("[100ore] branch match fallback:", error?.message || error);
   }
   return null;
 }
@@ -569,38 +578,51 @@ export function mountHundredOreRoutes(app) {
       const sceneKey = clampText(current.sceneKey || buildSceneKey(current.imageHash || "", current.sceneSummary || ""), 40);
       const change = await extractChangeLabels(genAI, { current, canvases, originalMimeType, originalBase64, compositeMimeType, compositeBase64, compositeHash, sceneKey, day });
       const changeLabels = normalizeChangeLabels(change.changeLabels);
-      const changeLabelsText = scrubDisplayText(changeLabels.join("、"), 160);
+      const changeLabelsText = scrubDisplayText(changeLabels.join(" / "), 160);
+      console.log("[100ore] changeLabels extracted", {
+        day,
+        sceneKey,
+        changeLabels,
+        compositeHash: compositeHash.slice(0, 12),
+        fallback: Boolean(change.fallback),
+      });
 
       const cached = await findCachedOutcome(genAI, sceneKey, changeLabels);
       if (cached) {
-        const outcome = sanitizeOutcome({ ...cached.outcome, changeLabels, cacheId: cached.cacheId, cacheHit: true, compositeHash });
+        const storyCard = cached.storyCard || cached.outcome?.storyCard || cached.outcome?.outcomeMode || "";
+        const outcome = sanitizeOutcome({ ...cached.outcome, changeLabels, cacheId: cached.cacheId, cacheHit: true, compositeHash, storyCard, outcomeMode: storyCard });
+        console.log("[100ore] branch hit", { cacheId: cached.cacheId, sceneKey, changeLabels });
         return res.json({ outcome, nextPage: hydratePageForResponse(cached.nextPage || null), cacheHit: true });
       }
 
-      const outcomeMode = chooseOutcomeMode(day);
+      const storyCard = chooseOutcomeMode(day);
+      console.log("[100ore] storyCard selected", { day, storyCard });
       const fallback = () => fallbackOutcome(day, changeLabelsText);
-      let outcome = { ...fallback(), outcomeMode };
+      let outcome = { ...fallback(), storyCard, outcomeMode: storyCard };
       if (genAI && compositeBase64) {
         try {
           const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
           const outcomePrompt = `絵本ゲーム「100日後も生きる俺」の現在ページの結果だけをJSONで返してください。
 1枚目は変化前、2枚目は変化後です。変化はページ内で実際に起きた出来事として扱います。
-${modeInstruction(outcomeMode)}
+${modeInstruction(storyCard)}
 現在のsceneSummary: ${clampText(current.sceneSummary, 240)}
 現在のbodyText: ${clampText(current.bodyText, 220)}
 変化ラベル: ${JSON.stringify(changeLabels)}
 変化ラベル詳細: ${clampText(changeLabelsText, 160)}
 配置情報: ${JSON.stringify(canvases)}
 方針:
-- 変化ラベルを必ず反映する。
+- 変化ラベルを必ず中心事件として扱う。装飾や小さな改善だけで済ませない。
+- 変化ラベルによって場所・目的・立場・危機のどれかを大きく動かす。
+- 問題を少し解決して同じ危機を続けるのは禁止。変化の結果として物語を変な方向へ押し出す。
 - 「描いた」「落書き」「キャンパス」「画像」「改変」などのメタ語は表示用フィールドに絶対に出さない。
 - 「最初からそうだった」「正史」「昔からあった」「生まれつき」などの歴史改変表現は禁止。
-- 絵本世界の中で、タイヤがへこむ、影が広がる、線が歪む、狙いが変わる、のような因果として書く。
+- 絵本世界の中で、羽に引っぱられる、光の柱が曲がる、出口が開く、狙いが変わる、のような因果として書く。
 - 前ページの出来事を一つ受け継ぎつつ、同じ会話や同じ危機に居座らない。
 - 次ページで介入しやすい目に見える具体物を2つ以上残す。
 - GAME_OVERのときだけgameOver=trueにし、gameOverReasonを書く。
+- 禁止: 「まだ終わっていない」「どう動けばいい？」「どうすればいい？」「不穏な気配」「新たな誤解の種」。
 - 表示用フィールド（rewriteText/outcomeSummary/gameOverReason/nextSceneHint）では次の語を絶対に使わない: ${DISPLAY_FORBIDDEN_TERMS.join("、")}
-JSONだけ: {"rewriteText":"80字以内で俺視点。","outcomeSummary":"具体的な結果要約。","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページへ受け継ぐ具体状況。見える物を含める。"}`;
+JSONだけ: {"rewriteText":"80字以内で俺視点。changeLabelsによる結果。","outcomeSummary":"具体的な結果要約。","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページへ受け継ぐ具体状況。見える物を2つ以上含める。"}`;
           const parts = [{ text: outcomePrompt }];
           if (originalBase64) parts.push({ inlineData: { mimeType: originalMimeType, data: originalBase64 } });
           parts.push({ inlineData: { mimeType: compositeMimeType, data: compositeBase64 } });
@@ -608,48 +630,65 @@ JSONだけ: {"rewriteText":"80字以内で俺視点。","outcomeSummary":"具体
           outcome = { ...outcome, ...jsonFromText(result.response.text()) };
         } catch (error) { console.warn("[100ore] vision fallback:", error?.message || error); }
       }
-      if (outcomeMode === "GAME_OVER") outcome.gameOver = true;
-      outcome = sanitizeOutcome({ ...outcome, compositeHash, changeLabels, outcomeMode });
+      if (storyCard === "GAME_OVER") outcome.gameOver = true;
+      outcome = sanitizeOutcome({ ...outcome, compositeHash, changeLabels, storyCard, outcomeMode: storyCard });
       let nextPage = null;
       if (!outcome.gameOver) {
         const nextDay = day + 1;
         const carryover = inferCarryoverElements(current);
-        const pagePrompt = `ゲーム「100日後も生きる俺」の次ページを作る。JSONだけ返してください。
-必須形式: {"pageTitle":"","bodyText":"","sceneSummary":"","illustrationPrompt":""}
-前ページの状況: ${clampText(current.sceneSummary, 220)}
+        const pagePrompt = `ゲーム「100日後も生きる俺」の次ページをJSONで作る。JSONだけ返してください。
+必須JSON: {"pageTitle":"","bodyText":"","sceneSummary":"","illustrationPrompt":""}
+前ページの状況: ${clampText(current.sceneSummary, 260)}
 前ページ本文: ${clampText(current.bodyText, 220)}
-ページ内で起きた変化: ${clampText(changeLabelsText, 160)}
-結果: ${clampText(outcome.outcomeSummary || outcome.rewriteText, 220)}
-次ページへ受け継ぐ状況: ${clampText(outcome.nextSceneHint, 220)}
-前ページから引き継ぐ場所: ${carryover.location || "同じ場所"}
-前ページから引き継ぐ人物: ${carryover.people.join("、") || "俺"}
-前ページから引き継ぐ物体: ${carryover.objects.slice(0, 4).join("、")}
-今回変化したもの: ${changeLabels.join("、") || changeLabelsText}
-今回の困りごと: ${clampText(outcome.nextSceneHint || outcome.outcomeSummary, 160)}
-${modeInstruction(outcomeMode)}
-方針:
-- 主人公は必ず「俺」。前ページの登場人物、重要な関係、直前の変化を受け継ぐ。
-- 場所の完全維持よりも、目的の進行を優先する。
-- 毎ページ、状況を一段階前へ進める。同じ危機を言い換えて引き延ばさない。
-- 「まだ終わっていない」「どう動けばいい？」で停滞させない。
-- 何かを解決したら、その結果として新しい目的・移動先・役割・選択へ進む。
-- 同じ場所に留まり続けない。SCENE_JUMP以外でも小規模な場面転換は許可する。
-- ただし、主人公や重要キャラが別人に見えるような断絶は避ける。
-- 前ページの主要人物を維持し、主要物体も最低1〜2個は因果関係として持ち越す。
-- 2〜4日目は初期ページの路地裏・少女・車・召喚陣・巨大魚・コインなどを発展させる。
-- bodyTextは90〜130字程度。短めで画像化しやすくする。
-- 目に見える困りごと、または次に触れそうな具体物を1つ以上置く。
-- bodyTextの最後は、次に介入できる具体物・状況で終える。
-- 「どう動けばいい？」「どうすればいい？」のような曖昧な締めは禁止。
-- 王様が怒るだけ、剣が迫るだけ、会話だけ、不穏な空気だけは禁止。
-- 「新たな誤解の種が」のような抽象だけで終わらない。
-- illustrationPromptは本文とsceneSummaryに完全対応し、「前ページから引き継ぐ人物」「前ページから引き継ぐ重要物体」「今回変化したもの」「次の目的・移動先・具体物」を必ず明記する。
-- illustrationPromptに文字、看板、ラベル、吹き出し、数字、キャプションを描く指示を絶対に入れない。
+直前の結果: ${clampText(outcome.outcomeSummary || outcome.rewriteText, 240)}
+次ページへ押し出す因果: ${clampText(outcome.nextSceneHint, 240)}
+changeLabels（次ページの中心事件）: ${JSON.stringify(changeLabels)}
+changeLabelsText: ${clampText(changeLabelsText, 160)}
+展開カード: ${storyCard}
+${modeInstruction(storyCard)}
+前ページから引き継ぐ重要キャラ候補: ${carryover.people.join("、") || "俺"}
+前ページから因果として残してよい具体物候補: ${carryover.objects.slice(0, 3).join("、")}
+
+物語方針:
+- 解決ではなく、転がす。維持ではなく、因果でつなぐ。
+- changeLabelsを装飾ではなく次ページの中心事件にする。
+- changeLabelsによって場所・目的・立場・危機のどれかを必ず大きく動かす。
+- 主人公は必ず「俺」。俺視点で書く。
+- 維持するもの: 主人公「俺」、直前のchangeLabels、直前の結果、重要キャラ1〜2人、因果関係。
+- 維持しなくてよいもの: 同じ場所、同じ構図、同じ危機、同じ物体全部、初期ページの全要素。
+- 前ページの説明を繰り返さず、状況を一段階進める。同じ場所・同じ危機に留まらない。
+- 完全に脈絡なく別世界へ飛ばさず、changeLabelsと直前の結果に押し出される形で場面を進める。
+- カードに従い、場所・目的・立場・危機のどれかを大きく変える。
+
+bodyTextのルール:
+- 100〜160字程度。
+- changeLabelsが中心事件になっている。
+- 前ページの説明を繰り返さない。
+- 1ページ内で状況が明確に進む。
+- 目的・場所・立場・危機のどれかが変わる。
+- 次に介入できる具体物が2つ以上見える。
+- 最後は次に触れそうな具体物・場所・人物・現象で終える。
+- 禁止: 「まだ終わっていない」「俺はどう動けばいい？」「俺はどうすればいい？」「何が起きているのか分からないままだった」「不穏な気配がした」「新たな誤解の種が生まれた」「少し和らいだが、危機は続いている」。
+- 同じ危機を言い換えて引き延ばさない。
+
+sceneSummaryのルール:
+- 次ページ画像生成と後続ページのための状況要約。
+- 現在の場所または局面、俺の状態、重要キャラ、changeLabelsの結果、次に触れそうな具体物、次ページの目的/危機を含める。
+- 本文より少し具体的に。ただし長すぎない。
+
+illustrationPromptのルール:
+- 次ページ本文と完全に対応させる。
+- 主人公「俺」、重要キャラ、changeLabelsから生まれた中心事件、今回のstoryCardによる大きな変化、次に触れそうな具体物を含める。
+- 絵本風、紙の質感。前ページ画像の人物・画風をなるべく維持。
+- 前ページ画像の画風と主要キャラの見た目は保つ。ただし構図と状況は次ページ本文に合わせて大きく変える。
+- 前ページと同じ構図にしなくてよい。次ページ本文に合わせて、視点・場所・ポーズを変えてよい。
+- changeLabelsから生まれた中心事件を画面の主役として描く。
+- 禁止: 文字、数字、看板、ラベル、吹き出し、キャプション。
 - 表示用フィールド（pageTitle/bodyText/sceneSummary）では次の語を絶対に使わない: ${DISPLAY_FORBIDDEN_TERMS.join("、")}
 - 「最初から」「正史」「昔からあった」「生まれつき」も禁止。
 pageTitleは必ず「${nextDay}日目：」で始める。`;
         const rawNext = await generateTextJson(genAI, pagePrompt, 18000);
-        const continuityPrompt = buildContinuityIllustrationPrompt({ current, bodyText: rawNext.bodyText, sceneSummary: rawNext.sceneSummary, changeLabels, trouble: outcome.nextSceneHint || outcome.outcomeSummary });
+        const continuityPrompt = buildContinuityIllustrationPrompt({ current, bodyText: rawNext.bodyText, sceneSummary: rawNext.sceneSummary, changeLabels, trouble: outcome.nextSceneHint || outcome.outcomeSummary, storyCard });
         rawNext.illustrationPrompt = rawNext.illustrationPrompt
           ? `${continuityPrompt}
 具体案: ${clampText(rawNext.illustrationPrompt, 420)}`
@@ -660,7 +699,8 @@ pageTitleは必ず「${nextDay}日目：」で始める。`;
         );
         nextPage.sceneKey = buildSceneKey(nextPage.imageHash || "", nextPage.sceneSummary || "");
         console.log("[100ore] next page generated", {
-          outcomeMode,
+          storyCard,
+          outcomeMode: storyCard,
           currentPageTitle: current.pageTitle || "",
           nextPageTitle: nextPage.pageTitle || "",
           carriedCharacters: carryover.people,
@@ -670,14 +710,31 @@ pageTitleは必ず「${nextDay}日目：」で始める。`;
         });
       }
       const cacheId = `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
-      outcome = sanitizeOutcome({ ...outcome, cacheId });
+      outcome = sanitizeOutcome({ ...outcome, cacheId, storyCard, outcomeMode: storyCard });
       const shouldCache = !nextPage?.imageGenerationFailed;
       if (shouldCache) {
         const cacheNextPage = sanitizeCacheNextPage(nextPage);
-        console.debug("[100ore] cache nextPageJson length", JSON.stringify(cacheNextPage || null).length);
-        const cache = { recordType:"cache", cacheId, sceneKey, changeLabels, outcome, nextPage: cacheNextPage, createdAt:new Date().toISOString() };
+        console.debug("[100ore] branch nextPageJson length", JSON.stringify(cacheNextPage || null).length);
+        const cache = {
+          recordType: "cache",
+          cacheId,
+          sceneKey,
+          sourceDay: day,
+          sourcePageTitle: scrubDisplayText(current.pageTitle, 60),
+          changeLabels,
+          changeLabelsText,
+          storyCard,
+          outcomeText: outcome.outcomeSummary || outcome.rewriteText || "",
+          nextPageTitle: cacheNextPage?.pageTitle || "",
+          nextPageBody: cacheNextPage?.bodyText || "",
+          nextSceneKey: cacheNextPage?.sceneKey || "",
+          outcome,
+          nextPage: cacheNextPage,
+          createdAt: new Date().toISOString(),
+        };
         MEMORY_CACHES.unshift(cache); MEMORY_CACHES.splice(200);
-        appendHundredOreCache(cache).catch((error) => console.warn("[100ore] cache save fallback:", error?.message || error));
+        console.log("[100ore] branch saved", { cacheId, sceneKey, changeLabels, storyCard, nextPageTitle: cache.nextPageTitle });
+        appendHundredOreCache(cache).catch((error) => console.warn("[100ore] branch save fallback:", error?.message || error));
       }
       return res.json({ outcome, nextPage, cacheHit: false, transientError: !shouldCache });
     } catch (error) {
