@@ -49,10 +49,12 @@
 
         <article class="page picture-page">
           <div id="pictureStage" class="picture-stage">
-            <img id="pageImage" alt="絵本のページ絵" />
+            <div id="stageViewport" class="stage-viewport">
+              <img id="pageImage" alt="絵本のページ絵" />
+              <canvas id="drawCanvas" class="draw-canvas"></canvas>
+              <div id="canvasOverlay" class="canvas-overlay" aria-label="配置したキャンパス"></div>
+            </div>
             <div id="imageFallbackNotice" class="image-fallback-notice" hidden>挿絵生成に失敗しました。紙のプレースホルダーを表示しています。</div>
-            <canvas id="drawCanvas" class="draw-canvas"></canvas>
-            <div id="canvasOverlay" class="canvas-overlay" aria-label="配置したキャンパス"></div>
           </div>
         </article>
       </div>
