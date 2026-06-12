@@ -17,6 +17,10 @@ const OUTCOME_TYPES = new Set(["danger", "chance", "choice", "embarrassment", "m
 const TEXT_TIMEOUT_MS = 12000;
 const IMAGE_TIMEOUT_MS = 30000;
 const VISION_TIMEOUT_MS = 30000;
+const TEXT_MODEL_CANDIDATES = [
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+];
 const IMAGE_MODEL_CANDIDATES = [
   "gemini-2.5-flash-image",
   "gemini-3-pro-image-preview",
@@ -117,16 +121,17 @@ function fallbackOutcome(day, labelsText = "") {
   const base = labelsText || "車の進路が石畳の溝へずれる";
   return { rewriteText:`${base}。俺の前の危機は形を変え、次の出口が開いた。`, outcomeSummary:`${base}ため、路地裏の危機が別の方向へ動いた。`, outcomeType:type, gameOver, gameOverReason:gameOver ? `${base}が裏目に出て、俺は逃げ場を失った。` : "", nextSceneHint: gameOver ? "" : `${base}結果、俺は別の場所へ押し出される。` };
 }
-function fallbackNextPage(day, hint = "") {
-  const carried = hint || "前ページの変化で俺は路地裏から水浸しの駅前へ転がり出た。";
+function fallbackNextPage(day, { current = {}, outcome = {}, changeLabels = [] } = {}) {
+  const location = inferCarryoverElements(current).location || "前ページと同じ場所";
+  const people = inferCarryoverElements(current).people.join("、") || "俺";
+  const objects = inferCarryoverElements(current).objects.slice(0, 3).join("、") || "目の前の物";
+  const changed = changeLabels.join("、") || outcome.outcomeSummary || outcome.rewriteText || "小さな変化";
+  const trouble = outcome.nextSceneHint || `${changed}が収まらず、同じ場所で別の危機に変わる。`;
   return normalizePage({
-    pageTitle: `${day}日目：駅前で魚の切符を止めろ`,
-    bodyText: `${carried} 改札では巨大魚が切符を飲み込み、濡れた車輪と紫の小石が俺の足元をふさいでいる。駅員の網も破れそうだ。`,
-    sceneSummary: `${carried} 駅前改札で巨大魚が切符を飲み、濡れた車輪、紫の小石、破れそうな網が見えている。`,
-    illustrationPrompt: buildIllustrationPrompt({
-      bodyText: `${carried} 改札では巨大魚が切符を飲み込み、濡れた車輪と紫の小石が俺の足元をふさいでいる。駅員の網も破れそうだ。`,
-      sceneSummary: `俺が水浸しの駅前改札にいて、巨大魚、濡れた車輪、紫の小石、破れそうな網が危機と介入対象として見える。`,
-    }),
+    pageTitle: `${day}日目：同じ場所で光がほどける`,
+    bodyText: `${location}で、${people}はまだ動けずにいた。${objects}に${changed}が絡み、${trouble} 俺は近くの物に手を伸ばすしかない。`,
+    sceneSummary: `${location}に俺と${people}がいて、${objects}が残っている。${changed}によって同じ場面の困りごとが進んでいる。`,
+    illustrationPrompt: buildContinuityIllustrationPrompt({ current, bodyText: `${location}で${objects}に${changed}が絡む。`, sceneSummary: `${location}、${people}、${objects}、${trouble}`, changeLabels, trouble }),
   }, day);
 }
 function svgDataUrl() {
@@ -145,6 +150,33 @@ function buildIllustrationPrompt({ bodyText = "", sceneSummary = "", illustratio
 ${detail}本文: ${clampText(bodyText, 360)}
 状況: ${clampText(sceneSummary, 420)}`;
 }
+
+function inferCarryoverElements(page = {}) {
+  const text = `${page.sceneSummary || ""} ${page.bodyText || ""} ${page.illustrationPrompt || page.imagePrompt || ""}`;
+  const locationKeywords = ["路地裏", "石畳", "駅前", "改札", "森", "城", "部屋", "道", "川", "広場", "店", "車内"];
+  const peopleKeywords = ["俺", "少女", "駅員", "王様", "郵便屋", "使い", "迷子", "職人", "勇者"];
+  const objectKeywords = ["車", "召喚陣", "巨大魚", "コイン", "紫の光", "小石", "車輪", "壁", "影", "切符", "網", "王冠", "月"];
+  const firstMatch = (keywords) => keywords.find((keyword) => text.includes(keyword)) || "";
+  const allMatches = (keywords, min = 1) => {
+    const found = keywords.filter((keyword) => text.includes(keyword));
+    return found.length >= min ? found : keywords.slice(0, min);
+  };
+  return {
+    location: firstMatch(locationKeywords),
+    people: allMatches(peopleKeywords, 1),
+    objects: allMatches(objectKeywords, 2),
+  };
+}
+function buildContinuityIllustrationPrompt({ current = {}, bodyText = "", sceneSummary = "", changeLabels = [], trouble = "" } = {}) {
+  const carry = inferCarryoverElements(current);
+  return `前ページから引き継ぐ場所: ${carry.location || "同じ場所"}
+前ページから引き継ぐ人物: ${carry.people.join("、") || "俺"}
+前ページから引き継ぐ物体: ${carry.objects.slice(0, 4).join("、") || "前ページの主要物体"}
+今回変化したもの: ${changeLabels.join("、") || "前ページの変化"}
+今回の困りごと: ${trouble || sceneSummary || bodyText}
+絵本風、紙の質感、文字なし。前ページの舞台を作り直さず、同じ場所と主要物体を保つ。`;
+}
+
 function errorMessage(error) {
   return String(error?.message || error || "unknown_error").slice(0, 500);
 }
@@ -168,16 +200,42 @@ async function listGeminiModelsForDebug() {
   console.log("[100ore] available Gemini models:", models);
   return models;
 }
-async function generateTextJson(genAI, prompt, fallback, timeoutMs = TEXT_TIMEOUT_MS) {
-  if (!genAI) return fallback();
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-    const result = await withTimeout(model.generateContent([{ text: prompt }]), timeoutMs, "text_generation");
-    return jsonFromText(result.response.text());
-  } catch (error) {
-    console.warn("[100ore] text generation fallback:", error?.message || error);
-    return fallback();
+function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+function isRetryableGeminiError(error) {
+  const message = errorMessage(error).toLowerCase();
+  return message.includes("503") || message.includes("overload") || message.includes("unavailable") || message.includes("rate") || message.includes("timeout");
+}
+async function generateTextJson(genAI, prompt, timeoutMs = TEXT_TIMEOUT_MS) {
+  if (!genAI) {
+    const error = new Error("text_generation_unavailable");
+    error.statusCode = 503;
+    throw error;
   }
+  let lastError = null;
+  let retriedBusyOnce = false;
+  for (const modelName of TEXT_MODEL_CANDIDATES) {
+    let attempt = 0;
+    while (attempt < 2) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await withTimeout(model.generateContent([{ text: prompt }]), timeoutMs, "text_generation");
+        return jsonFromText(result.response.text());
+      } catch (error) {
+        lastError = error;
+        console.warn("[100ore] text model failed:", { modelName, attempt: attempt + 1, error: errorMessage(error) });
+        if (!retriedBusyOnce && isRetryableGeminiError(error)) {
+          retriedBusyOnce = true;
+          attempt += 1;
+          await sleep(650);
+          continue;
+        }
+        break;
+      }
+    }
+  }
+  const error = new Error(`text_generation_unavailable: ${errorMessage(lastError)}`);
+  error.statusCode = 503;
+  throw error;
 }
 async function generateImageWithModel(modelName, prompt) {
   console.log("[100ore] trying image model:", modelName);
@@ -336,18 +394,20 @@ function gameOverProbability(day) {
 }
 function chooseOutcomeMode(day) {
   if (Math.random() < gameOverProbability(day)) return "GAME_OVER";
-  const modes = ["RESOLVE", "BACKFIRE", "SCENE_JUMP", "NEW_ROLE", "DEAL", "CHASE", "TRIAL"];
-  return modes[Math.floor(Math.random() * modes.length)];
+  const earlyModes = ["RESOLVE", "BACKFIRE", "RESOLVE", "CHASE", "DEAL", "TRIAL"];
+  const modes = ["RESOLVE", "BACKFIRE", "RESOLVE", "DEAL", "CHASE", "TRIAL", "NEW_ROLE", "SCENE_JUMP"];
+  const pool = day >= 2 && day <= 4 ? earlyModes : modes;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 function modeInstruction(mode) {
   const map = {
-    RESOLVE: "今回の展開タイプ: RESOLVE。前の危機を一つ解決し、すぐ次の具体的な困りごとへ進める。",
-    BACKFIRE: "今回の展開タイプ: BACKFIRE。変化が裏目に出るが、同じ場面に居座らず状況を動かす。",
-    SCENE_JUMP: "今回の展開タイプ: SCENE_JUMP。必ず場面を大きく変える。",
-    NEW_ROLE: "今回の展開タイプ: NEW_ROLE。俺の役割や立場を変え、見える目的物を置く。",
-    DEAL: "今回の展開タイプ: DEAL。奇妙な取引を発生させ、交換できそうな具体物を置く。",
-    CHASE: "今回の展開タイプ: CHASE。追跡や逃走へ移り、進路と障害物をはっきり置く。",
-    TRIAL: "今回の展開タイプ: TRIAL。試練や審査へ移り、触れそうな証拠品や道具を置く。",
+    RESOLVE: "今回の展開タイプ: RESOLVE。前の危機を一つ解決し、同じ舞台で次の具体的な困りごとへ進める。",
+    BACKFIRE: "今回の展開タイプ: BACKFIRE。変化が裏目に出るが、場所・人物・主要物体を保ったまま状況を動かす。",
+    SCENE_JUMP: "今回の展開タイプ: SCENE_JUMP。場面を大きく変えてよいが、前ページ由来の要素を最低1つ持ち越す。",
+    NEW_ROLE: "今回の展開タイプ: NEW_ROLE。場所は基本維持し、俺の役割や立場だけを変えて見える目的物を置く。",
+    DEAL: "今回の展開タイプ: DEAL。同じ舞台で奇妙な取引を発生させ、交換できそうな具体物を置く。",
+    CHASE: "今回の展開タイプ: CHASE。同じ舞台から追跡や逃走へ移り、進路と障害物をはっきり置く。",
+    TRIAL: "今回の展開タイプ: TRIAL。同じ舞台で試練や審査へ移り、触れそうな証拠品や道具を置く。",
     GAME_OVER: "今回の展開タイプ: GAME_OVER。どんな変化でもゲームオーバーへ向かわせる。ただし変化の内容は必ず反映する。",
   };
   return map[mode] || map.SCENE_JUMP;
@@ -487,6 +547,7 @@ JSONだけ: {"rewriteText":"80字以内で俺視点。","outcomeSummary":"具体
       let nextPage = null;
       if (!outcome.gameOver) {
         const nextDay = day + 1;
+        const carryover = inferCarryoverElements(current);
         const pagePrompt = `ゲーム「100日後も生きる俺」の次ページを作る。JSONだけ返してください。
 必須形式: {"pageTitle":"","bodyText":"","sceneSummary":"","illustrationPrompt":""}
 前ページの状況: ${clampText(current.sceneSummary, 220)}
@@ -494,33 +555,53 @@ JSONだけ: {"rewriteText":"80字以内で俺視点。","outcomeSummary":"具体
 ページ内で起きた変化: ${clampText(changeLabelsText, 160)}
 結果: ${clampText(outcome.outcomeSummary || outcome.rewriteText, 220)}
 次ページへ受け継ぐ状況: ${clampText(outcome.nextSceneHint, 220)}
+前ページから引き継ぐ場所: ${carryover.location || "同じ場所"}
+前ページから引き継ぐ人物: ${carryover.people.join("、") || "俺"}
+前ページから引き継ぐ物体: ${carryover.objects.slice(0, 4).join("、")}
+今回変化したもの: ${changeLabels.join("、") || changeLabelsText}
+今回の困りごと: ${clampText(outcome.nextSceneHint || outcome.outcomeSummary, 160)}
 ${modeInstruction(outcomeMode)}
 方針:
 - 主人公は必ず「俺」。前ページの結果を1つ受け継ぐ。
-- そのうえで状況を大きく動かす。同じ場所・同じ会話に居座らない。
+- 前ページの場所・主要人物・主要物体を維持する。大きな場面転換はSCENE_JUMP時のみ。新規要素を増やしすぎない。
+- 前ページの主要物体を最低2つ維持する。新しく追加する大きな要素は1〜2個まで。
+- 2〜4日目は初期ページの路地裏・少女・車・召喚陣・巨大魚・コインなどを発展させる。
+- SCENE_JUMP以外では同じ舞台を維持したまま問題を進める。
 - bodyTextは90〜130字程度。短めで画像化しやすくする。
 - 目に見える困りごとを1つ置く。
 - 介入できそうな具体物を2つ以上置く。
 - 王様が怒るだけ、剣が迫るだけ、会話だけ、不穏な空気だけは禁止。
 - 「新たな誤解の種が」のような抽象だけで終わらない。
-- illustrationPromptは本文とsceneSummaryに完全対応し、具体物、主人公「俺」、主要キャラ、困りごと、介入対象を含める。
+- illustrationPromptは本文とsceneSummaryに完全対応し、「前ページから引き継ぐ場所」「前ページから引き継ぐ人物」「前ページから引き継ぐ物体」「今回変化したもの」「今回の困りごと」を必ず明記する。
 - illustrationPromptに文字、看板、ラベル、吹き出し、数字、キャプションを描く指示を絶対に入れない。
 - 表示用フィールド（pageTitle/bodyText/sceneSummary）では次の語を絶対に使わない: ${DISPLAY_FORBIDDEN_TERMS.join("、")}
 - 「最初から」「正史」「昔からあった」「生まれつき」も禁止。
 pageTitleは必ず「${nextDay}日目：」で始める。`;
-        const rawNext = await generateTextJson(genAI, pagePrompt, () => fallbackNextPage(nextDay, outcome.nextSceneHint), 18000);
+        const rawNext = await generateTextJson(genAI, pagePrompt, 18000);
+        const continuityPrompt = buildContinuityIllustrationPrompt({ current, bodyText: rawNext.bodyText, sceneSummary: rawNext.sceneSummary, changeLabels, trouble: outcome.nextSceneHint || outcome.outcomeSummary });
+        rawNext.illustrationPrompt = rawNext.illustrationPrompt
+          ? `${continuityPrompt}
+具体案: ${clampText(rawNext.illustrationPrompt, 420)}`
+          : continuityPrompt;
         nextPage = await buildPageWithImage(normalizePage(rawNext, nextDay));
         nextPage.sceneKey = buildSceneKey(nextPage.imageHash || "", nextPage.sceneSummary || "");
       }
       const cacheId = `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
       outcome = sanitizeOutcome({ ...outcome, cacheId });
-      const cacheNextPage = sanitizeCacheNextPage(nextPage);
-      console.debug("[100ore] cache nextPageJson length", JSON.stringify(cacheNextPage || null).length);
-      const cache = { recordType:"cache", cacheId, sceneKey, changeLabels, outcome, nextPage: cacheNextPage, createdAt:new Date().toISOString() };
-      MEMORY_CACHES.unshift(cache); MEMORY_CACHES.splice(200);
-      appendHundredOreCache(cache).catch((error) => console.warn("[100ore] cache save fallback:", error?.message || error));
-      return res.json({ outcome, nextPage, cacheHit: false });
-    } catch (error) { console.error("[100ore] rewrite error:", error); return res.status(500).json({ error:"rewrite_failed", detail:String(error?.message || "").slice(0, 180) }); }
+      const shouldCache = !nextPage?.imageGenerationFailed;
+      if (shouldCache) {
+        const cacheNextPage = sanitizeCacheNextPage(nextPage);
+        console.debug("[100ore] cache nextPageJson length", JSON.stringify(cacheNextPage || null).length);
+        const cache = { recordType:"cache", cacheId, sceneKey, changeLabels, outcome, nextPage: cacheNextPage, createdAt:new Date().toISOString() };
+        MEMORY_CACHES.unshift(cache); MEMORY_CACHES.splice(200);
+        appendHundredOreCache(cache).catch((error) => console.warn("[100ore] cache save fallback:", error?.message || error));
+      }
+      return res.json({ outcome, nextPage, cacheHit: false, transientError: !shouldCache });
+    } catch (error) {
+      console.error("[100ore] rewrite error:", error);
+      if (error?.statusCode === 503) return res.status(503).json({ error:"ai_busy", detail:"AIが混雑しています。もう一度試してください", transientError:true });
+      return res.status(500).json({ error:"rewrite_failed", detail:String(error?.message || "").slice(0, 180) });
+    }
   });
 
   app.post("/api/100ore/runs", async (req, res) => {

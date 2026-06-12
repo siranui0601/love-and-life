@@ -295,6 +295,17 @@ button:disabled { cursor: not-allowed; }
   overflow: hidden;
   background: #d4c5a3;
   box-shadow: inset 0 0 0 1px rgba(70, 35, 12, 0.25);
+  touch-action: none;
+}
+
+
+.stage-viewport {
+  position: absolute;
+  inset: 0;
+  transform: translate(var(--stage-pan-x, 0px), var(--stage-pan-y, 0px)) scale(var(--stage-zoom, 1));
+  transform-origin: center center;
+  touch-action: none;
+  will-change: transform;
 }
 
 #pageImage {
@@ -618,12 +629,6 @@ button:disabled { cursor: not-allowed; }
 }
 
 /* Updated multi-canvas card panel -------------------------------- */
-#pageImage,
-.draw-canvas,
-.canvas-overlay {
-  transform: scale(var(--stage-zoom, 1));
-  transform-origin: center center;
-}
 
 .tool-bookmark {
   grid-template-columns: 1fr;

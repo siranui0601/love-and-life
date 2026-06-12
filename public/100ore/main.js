@@ -12,6 +12,7 @@ const refs = {
   outcome: document.getElementById("outcomeChip"),
   history: document.getElementById("historyList"),
   stage: document.getElementById("pictureStage"),
+  viewport: document.getElementById("stageViewport"),
   img: document.getElementById("pageImage"),
   fallbackNotice: document.getElementById("imageFallbackNotice"),
   canvas: document.getElementById("drawCanvas"),
@@ -72,7 +73,7 @@ const state = {
   gameOver: false,
   rewriting: false,
   loadingTimers: [],
-  zoom: 1,
+  viewport: { zoom: 1, panX: 0, panY: 0 },
 };
 
 function getUser() {
@@ -224,14 +225,43 @@ function placeCanvas(item, xRatio, yRatio) {
   updateConfirmState();
 }
 
+function eventClientPoint(e) {
+  const t = e.touches?.[0] || e.changedTouches?.[0] || e;
+  return { clientX: t.clientX, clientY: t.clientY };
+}
 function pointFromEvent(e) {
   const r = refs.canvas.getBoundingClientRect();
-  const t = e.touches?.[0] || e.changedTouches?.[0] || e;
+  const t = eventClientPoint(e);
   return {
     x: (t.clientX - r.left) * refs.canvas.width / r.width,
     y: (t.clientY - r.top) * refs.canvas.height / r.height,
     inside: t.clientX >= r.left && t.clientX <= r.right && t.clientY >= r.top && t.clientY <= r.bottom,
   };
+}
+function clampViewportPan() {
+  const zoom = Number(state.viewport.zoom || 1);
+  if (zoom <= 1) {
+    state.viewport.zoom = 1;
+    state.viewport.panX = 0;
+    state.viewport.panY = 0;
+    return;
+  }
+  const rect = refs.stage.getBoundingClientRect();
+  const maxX = Math.max(0, rect.width * (zoom - 1) / 2);
+  const maxY = Math.max(0, rect.height * (zoom - 1) / 2);
+  state.viewport.panX = Math.max(-maxX, Math.min(maxX, Number(state.viewport.panX || 0)));
+  state.viewport.panY = Math.max(-maxY, Math.min(maxY, Number(state.viewport.panY || 0)));
+}
+function applyViewportTransform() {
+  clampViewportPan();
+  refs.viewport.style.setProperty("--stage-zoom", state.viewport.zoom);
+  refs.viewport.style.setProperty("--stage-pan-x", `${state.viewport.panX}px`);
+  refs.viewport.style.setProperty("--stage-pan-y", `${state.viewport.panY}px`);
+}
+function resetViewport() {
+  state.viewport = { zoom: 1, panX: 0, panY: 0 };
+  if (refs.zoom) refs.zoom.value = "100";
+  applyViewportTransform();
 }
 function placementCenter(p, size = refs.canvas.width) {
   return { cx: (p.x + p.w / 2) * size, cy: (p.y + p.h / 2) * size, w: p.w * size, h: p.h * size };
@@ -379,7 +409,7 @@ function placementHasVisibleInk(placement) {
 function onPointerDown(e) {
   if (state.rewriting || state.gameOver) return;
   e.preventDefault();
-  refs.canvas.setPointerCapture?.(e.pointerId);
+  refs.stage.setPointerCapture?.(e.pointerId);
   const point = pointFromEvent(e);
   const handleHit = state.editMode === "canvas" ? rotateHandleAt(point) : null;
   const placementHit = placementAt(point);
@@ -403,7 +433,14 @@ function onPointerDown(e) {
     return;
   }
 
-  if (!placementHit) return;
+  if (!placementHit) {
+    if (state.viewport.zoom > 1) {
+      const start = eventClientPoint(e);
+      state.pointerMode = "pan";
+      state.pointerStart = { point, startClient: start, startViewport: { ...state.viewport } };
+    }
+    return;
+  }
   setActivePlacement(placementHit.id);
   const local = toLocal(point, placementHit);
   if (!isLocalInside(local, placementHit)) return;
@@ -415,8 +452,15 @@ function onPointerMove(e) {
   if (!state.pointerMode) return;
   e.preventDefault();
   const point = pointFromEvent(e);
-  const p = activePlacement();
   console.debug("[100ore] pointermove", { pointerMode: state.pointerMode });
+  if (state.pointerMode === "pan") {
+    const now = eventClientPoint(e);
+    state.viewport.panX = state.pointerStart.startViewport.panX + (now.clientX - state.pointerStart.startClient.clientX);
+    state.viewport.panY = state.pointerStart.startViewport.panY + (now.clientY - state.pointerStart.startClient.clientY);
+    applyViewportTransform();
+    return;
+  }
+  const p = activePlacement();
   if (!p) return;
   if (state.pointerMode === "move") {
     const dx = (point.x - state.pointerStart.point.x) / refs.canvas.width;
@@ -442,7 +486,7 @@ function onPointerMove(e) {
   drawStroke(ctx, state.currentStroke, p);
 }
 function onPointerUp(e) {
-  if (e?.pointerId !== undefined) refs.canvas.releasePointerCapture?.(e.pointerId);
+  if (e?.pointerId !== undefined) refs.stage.releasePointerCapture?.(e.pointerId);
   if (state.pointerMode === "draw" && state.currentStroke?.points.length > 1) state.strokes.push(state.currentStroke);
   state.pointerMode = null;
   state.pointerStart = null;
@@ -469,7 +513,14 @@ function resizeCanvas() {
   drawScene();
   updateConfirmState();
 }
-function setZoom(value) { state.zoom = Number(value || 100) / 100; refs.stage.style.setProperty("--stage-zoom", state.zoom); }
+function setZoom(value) {
+  state.viewport.zoom = Math.max(1, Number(value || 100) / 100);
+  applyViewportTransform();
+}
+function handleResize() {
+  resizeCanvas();
+  applyViewportTransform();
+}
 
 async function loadImage(src) {
   return new Promise((resolve, reject) => {
@@ -553,8 +604,7 @@ function applyPage(page, { append = true } = {}) {
   state.undo = [];
   state.redo = [];
   refs.outcome.textContent = "未確定";
-  setZoom(100);
-  refs.zoom.value = "100";
+  resetViewport();
   setEditMode("canvas");
   renderPanels();
   setTimeout(resizeCanvas, 60);
@@ -602,10 +652,10 @@ async function confirmRewrite() {
       return;
     }
     applyPage(data.nextPage);
-    setStatus(data.cacheHit ? "同じような変化だったので、前と同じ展開へ進みました。" : "続きのページが現れました。残りの紙片と補充1枚を使えます。");
+    setStatus(data.transientError ? "挿絵生成が混雑しています。この分岐は保存せず、必要ならもう一度試してください。" : (data.cacheHit ? "同じような変化だったので、前と同じ展開へ進みました。" : "続きのページが現れました。残りの紙片と補充1枚を使えます。"));
   } catch (e) {
     console.error(e);
-    setStatus(`確定に失敗しました: ${e.message}`);
+    setStatus(e.message.includes("AIが混雑") ? "AIが混雑しています。もう一度試してください" : `確定に失敗しました: ${e.message}`);
   } finally {
     state.rewriting = false;
     setLoading(false);
@@ -680,12 +730,12 @@ refs.ranking.onclick = showRanking;
 refs.rankingTop.onclick = showRanking;
 refs.closeRanking.onclick = () => refs.rankingDialog.close();
 refs.closeRun.onclick = () => refs.runDialog.close();
-refs.canvas.addEventListener("pointerdown", onPointerDown);
-refs.canvas.addEventListener("pointermove", onPointerMove);
-refs.canvas.addEventListener("pointerup", onPointerUp);
-refs.canvas.addEventListener("pointercancel", onPointerUp);
-refs.canvas.addEventListener("pointerleave", onPointerUp);
-window.addEventListener("resize", resizeCanvas);
+refs.stage.addEventListener("pointerdown", onPointerDown);
+refs.stage.addEventListener("pointermove", onPointerMove);
+refs.stage.addEventListener("pointerup", onPointerUp);
+refs.stage.addEventListener("pointercancel", onPointerUp);
+refs.stage.addEventListener("pointerleave", onPointerUp);
+window.addEventListener("resize", handleResize);
 document.querySelectorAll(".tool-choice").forEach((btn) => btn.onclick = () => { state.tool = btn.dataset.tool; document.querySelectorAll(".tool-choice").forEach((b) => b.classList.toggle("active", b === btn)); });
 refs.undo.onclick = () => { if (!state.undo.length) return; state.redo.push(snapshot()); restoreSnapshot(state.undo.pop()); updateConfirmState(); };
 refs.redo.onclick = () => { if (!state.redo.length) return; state.undo.push(snapshot()); restoreSnapshot(state.redo.pop()); updateConfirmState(); };
@@ -696,4 +746,5 @@ refs.zoom.oninput = () => setZoom(refs.zoom.value);
 refs.flip.onclick = () => setEditMode(state.editMode === "canvas" ? "pen" : "canvas");
 fillInitialStock();
 renderOverlay();
+applyViewportTransform();
 updateConfirmState();
