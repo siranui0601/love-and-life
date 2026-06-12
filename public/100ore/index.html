@@ -73,17 +73,9 @@
               <h3>設置済み</h3>
               <div id="placedList" class="placed-list"></div>
             </div>
-            <div class="adjust-grid" aria-label="選択中キャンパスの調整">
-              <button class="small-btn nudge-btn" data-dx="0" data-dy="-1" type="button">↑</button>
-              <button class="small-btn nudge-btn" data-dx="-1" data-dy="0" type="button">←</button>
-              <button class="small-btn nudge-btn" data-dx="1" data-dy="0" type="button">→</button>
-              <button class="small-btn nudge-btn" data-dx="0" data-dy="1" type="button">↓</button>
-            </div>
-            <label class="angle-control">角度 <input id="angleInput" type="range" min="-180" max="180" value="0" /></label>
+            <label class="angle-control visually-hidden">角度 <input id="angleInput" type="range" min="-180" max="180" value="0" /></label>
             <div class="tool-actions">
-              <button id="rotateLeftBtn" class="small-btn" type="button">左回転</button>
-              <button id="rotateRightBtn" class="small-btn" type="button">右回転</button>
-              <button id="deletePlacementBtn" class="small-btn" type="button">削除</button>
+              <button id="deletePlacementBtn" class="small-btn" type="button">選択中を削除</button>
             </div>
           </div>
 

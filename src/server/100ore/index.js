@@ -110,11 +110,11 @@ function fallbackInitialPage(seed) {
   const role = roles[parseInt(sha256(seed).slice(0, 2), 16) % roles.length];
   return normalizePage({ pageTitle:"1日目：余白つきの朝", bodyText:`俺は${role}として、しゃべる月の下に立っていた。道の先では小さな王冠がくしゃみをしている。`, sceneSummary:`俺は${role}。しゃべる月とくしゃみする王冠がある道で、最初の介入を待っている。`, imagePrompt:`storybook illustration, Japanese weird fairy tale, a man as ${role}, talking moon, sneezing crown, warm paper, blank spaces` }, 1);
 }
-function fallbackOutcome(day, changeSummary = "") {
+function fallbackOutcome(day, labelsText = "") {
   const types = ["danger","chance","choice","embarrassment","mistake","weird","lucky"];
   const type = types[day % types.length];
   const gameOver = day >= 4 && Math.random() < Math.min(.08 + day * .02, .35);
-  const base = changeSummary || "車の進路が石畳の溝へずれた";
+  const base = labelsText || "車の進路が石畳の溝へずれる";
   return { rewriteText:`${base}。俺の前の危機は形を変え、次の出口が開いた。`, outcomeSummary:`${base}ため、路地裏の危機が別の方向へ動いた。`, outcomeType:type, gameOver, gameOverReason:gameOver ? `${base}が裏目に出て、俺は逃げ場を失った。` : "", nextSceneHint: gameOver ? "" : `${base}結果、俺は別の場所へ押し出される。` };
 }
 function fallbackNextPage(day, hint = "") {
@@ -256,7 +256,6 @@ function sanitizeOutcome(outcome = {}) {
     nextSceneHint: scrubDisplayText(outcome.nextSceneHint, 180),
     compositeHash: clampText(outcome.compositeHash, 80),
     changeLabels: Array.isArray(outcome.changeLabels) ? outcome.changeLabels.map((v) => scrubDisplayText(v, 40)).filter(Boolean).slice(0, 8) : [],
-    changeSummary: scrubDisplayText(outcome.changeSummary, 160),
     cacheId: clampText(outcome.cacheId, 80),
     cacheHit: normalizeBoolean(outcome.cacheHit),
     outcomeMode: clampText(outcome.outcomeMode, 30),
@@ -273,13 +272,10 @@ function sanitizeCanvas(canvas = {}) {
     shape: clampText(canvas.shape, 20),
     label: clampText(canvas.label, 40),
     angle: Number(canvas.angle || 0),
-    strokes: Array.isArray(canvas.strokes) ? canvas.strokes.slice(0, 120).map((stroke) => ({
-      placementId: clampText(stroke.placementId || canvas.id, 80),
-      tool: clampText(stroke.tool, 20),
-      color: clampText(stroke.color, 30),
-      size: Number(stroke.size || 1),
-      points: Array.isArray(stroke.points) ? stroke.points.slice(0, 400).map((pt) => ({ x: Number(pt.x || 0), y: Number(pt.y || 0) })) : [],
-    })) : [],
+    strokeCount: Math.max(0, Number(canvas.strokeCount || 0)),
+    inkStrokeCount: Math.max(0, Number(canvas.inkStrokeCount || 0)),
+    eraserStrokeCount: Math.max(0, Number(canvas.eraserStrokeCount || 0)),
+    tools: Array.isArray(canvas.tools) ? canvas.tools.map((tool) => clampText(tool, 20)).filter(Boolean).slice(0, 4) : [],
   };
 }
 function sanitizeSavedPage(p = {}) {
@@ -293,6 +289,27 @@ function sanitizeSavedPage(p = {}) {
     outcomeSummary: scrubDisplayText(p.outcomeSummary || p.outcome?.outcomeSummary || p.outcome?.rewriteText || "", 180),
     canvases: Array.isArray(p.canvases) ? p.canvases.slice(0, 3).map(sanitizeCanvas) : (p.canvas ? [sanitizeCanvas(p.canvas)] : []),
     imageHash: clampText(p.imageHash, 80),
+  };
+}
+function hydratePageForResponse(page = null) {
+  if (!page) return null;
+  if (page.imageDataUrl) return page;
+  const imageDataUrl = FALLBACK_IMAGES.get(page.imageHash || "");
+  if (imageDataUrl) return { ...page, imageDataUrl };
+  const placeholder = imageGenerationPlaceholder();
+  return { ...page, imageDataUrl: placeholder.dataUrl, imageGenerationFailed: true, imageModel: page.imageModel || "" };
+}
+function sanitizeCacheNextPage(page = null) {
+  if (!page) return null;
+  return {
+    day: Math.max(1, Math.min(365, Number(page.day || 1))),
+    pageTitle: scrubDisplayText(page.pageTitle, 60),
+    bodyText: scrubDisplayText(page.bodyText, 220),
+    sceneSummary: scrubDisplayText(page.sceneSummary, 220),
+    sceneKey: clampText(page.sceneKey || buildSceneKey(page.imageHash || "", page.sceneSummary || ""), 40),
+    imageHash: clampText(page.imageHash, 80),
+    imageModel: clampText(page.imageModel, 80),
+    imageGenerationFailed: normalizeBoolean(page.imageGenerationFailed),
   };
 }
 function serializeRun(run) {
@@ -309,7 +326,7 @@ function normalizeChangeLabels(labels = []) {
 function fallbackChangeLabels(day, canvases = []) {
   const base = ["車の進路がずれる", "少女の落下がゆるむ", "召喚陣の線が歪む", "巨大魚の狙いが変わる"];
   const count = Math.max(1, Math.min(3, canvases.length || 2));
-  return { changeLabels: base.slice(day % 2, day % 2 + count), changeSummary: "路地裏の危機が絵本世界の中で別の向きへ動いた" };
+  return { changeLabels: base.slice(day % 2, day % 2 + count) };
 }
 function gameOverProbability(day) {
   if (day <= 2) return 0;
@@ -344,7 +361,7 @@ async function extractChangeLabels(genAI, { current, canvases, originalMimeType,
 現在の状況: ${clampText(current.sceneSummary, 240)}
 本文: ${clampText(current.bodyText, 220)}
 配置情報: ${JSON.stringify(canvases)}
-返却形式: {"changeLabels":["車のタイヤがへこむ"],"changeSummary":"車の進路がずれ、少女の落下速度がゆるんだ"}
+返却形式: {"changeLabels":["車のタイヤがへこむ"]}
 ルール:
 - changeLabelsは同一判定用。短い名詞句/動詞句。
 - 物語世界で起きた変化だけを書く。
@@ -360,7 +377,6 @@ async function extractChangeLabels(genAI, { current, canvases, originalMimeType,
   }
   return {
     changeLabels: normalizeChangeLabels(result.changeLabels),
-    changeSummary: scrubDisplayText(result.changeSummary, 160),
   };
 }
 async function findCachedOutcome(genAI, sceneKey, changeLabels) {
@@ -427,16 +443,16 @@ export function mountHundredOreRoutes(app) {
       const sceneKey = clampText(current.sceneKey || buildSceneKey(current.imageHash || "", current.sceneSummary || ""), 40);
       const change = await extractChangeLabels(genAI, { current, canvases, originalMimeType, originalBase64, compositeMimeType, compositeBase64, day });
       const changeLabels = normalizeChangeLabels(change.changeLabels);
-      const changeSummary = scrubDisplayText(change.changeSummary || changeLabels.join("、"), 160);
+      const changeLabelsText = scrubDisplayText(changeLabels.join("、"), 160);
 
       const cached = await findCachedOutcome(genAI, sceneKey, changeLabels);
       if (cached) {
-        const outcome = sanitizeOutcome({ ...cached.outcome, changeLabels, changeSummary, cacheId: cached.cacheId, cacheHit: true, compositeHash });
-        return res.json({ outcome, nextPage: cached.nextPage || null, cacheHit: true });
+        const outcome = sanitizeOutcome({ ...cached.outcome, changeLabels, cacheId: cached.cacheId, cacheHit: true, compositeHash });
+        return res.json({ outcome, nextPage: hydratePageForResponse(cached.nextPage || null), cacheHit: true });
       }
 
       const outcomeMode = chooseOutcomeMode(day);
-      const fallback = () => fallbackOutcome(day, changeSummary);
+      const fallback = () => fallbackOutcome(day, changeLabelsText);
       let outcome = { ...fallback(), outcomeMode };
       if (genAI && compositeBase64) {
         try {
@@ -447,7 +463,7 @@ ${modeInstruction(outcomeMode)}
 現在のsceneSummary: ${clampText(current.sceneSummary, 240)}
 現在のbodyText: ${clampText(current.bodyText, 220)}
 変化ラベル: ${JSON.stringify(changeLabels)}
-変化要約: ${clampText(changeSummary, 160)}
+変化ラベル詳細: ${clampText(changeLabelsText, 160)}
 配置情報: ${JSON.stringify(canvases)}
 方針:
 - 変化ラベルを必ず反映する。
@@ -467,7 +483,7 @@ JSONだけ: {"rewriteText":"80字以内で俺視点。","outcomeSummary":"具体
         } catch (error) { console.warn("[100ore] vision fallback:", error?.message || error); }
       }
       if (outcomeMode === "GAME_OVER") outcome.gameOver = true;
-      outcome = sanitizeOutcome({ ...outcome, compositeHash, changeLabels, changeSummary, outcomeMode });
+      outcome = sanitizeOutcome({ ...outcome, compositeHash, changeLabels, outcomeMode });
       let nextPage = null;
       if (!outcome.gameOver) {
         const nextDay = day + 1;
@@ -475,7 +491,7 @@ JSONだけ: {"rewriteText":"80字以内で俺視点。","outcomeSummary":"具体
 必須形式: {"pageTitle":"","bodyText":"","sceneSummary":"","illustrationPrompt":""}
 前ページの状況: ${clampText(current.sceneSummary, 220)}
 前ページ本文: ${clampText(current.bodyText, 220)}
-ページ内で起きた変化: ${clampText(changeSummary, 160)}
+ページ内で起きた変化: ${clampText(changeLabelsText, 160)}
 結果: ${clampText(outcome.outcomeSummary || outcome.rewriteText, 220)}
 次ページへ受け継ぐ状況: ${clampText(outcome.nextSceneHint, 220)}
 ${modeInstruction(outcomeMode)}
@@ -498,7 +514,9 @@ pageTitleは必ず「${nextDay}日目：」で始める。`;
       }
       const cacheId = `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
       outcome = sanitizeOutcome({ ...outcome, cacheId });
-      const cache = { recordType:"cache", cacheId, sceneKey, changeLabels, changeSummary, outcome, nextPage, createdAt:new Date().toISOString() };
+      const cacheNextPage = sanitizeCacheNextPage(nextPage);
+      console.debug("[100ore] cache nextPageJson length", JSON.stringify(cacheNextPage || null).length);
+      const cache = { recordType:"cache", cacheId, sceneKey, changeLabels, outcome, nextPage: cacheNextPage, createdAt:new Date().toISOString() };
       MEMORY_CACHES.unshift(cache); MEMORY_CACHES.splice(200);
       appendHundredOreCache(cache).catch((error) => console.warn("[100ore] cache save fallback:", error?.message || error));
       return res.json({ outcome, nextPage, cacheHit: false });
@@ -512,6 +530,7 @@ pageTitleは必ず「${nextDay}日目：」で始める。`;
       return res.status(400).json({ error:"invalid_score", detail:"score must be 1-365 and match pages.length" });
     }
     const pages = rawPages.slice(0, 365).map(sanitizeSavedPage);
+    console.debug("[100ore] run pagesJson length", JSON.stringify(pages).length);
     const run = {
       runId: clampText(req.body?.runId || `ore_${Date.now()}`, 80),
       username: clampText(req.body?.username || "名無しの俺", 40),
