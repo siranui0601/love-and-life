@@ -1883,15 +1883,42 @@ function parseHundredOreCacheRow(row, index = 0) {
     cacheId: String(row?.[9] || "").trim(),
     sceneKey: String(row?.[10] || "").trim(),
     changeLabels: safeParse(row?.[11], []),
-    changeSummary: String(row?.[12] || "").trim(),
     outcome: safeParse(row?.[13], null),
     nextPage: safeParse(row?.[14], null),
     createdAt: String(row?.[15] || "").trim(),
   };
 }
 
+function stripHundredOreImagePayload(value) {
+  if (Array.isArray(value)) return value.map(stripHundredOreImagePayload);
+  if (!value || typeof value !== "object") return value;
+  const cleaned = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (key === "imageDataUrl" || key === "originalImageDataUrl" || key === "compositeImageDataUrl" || key === "points") continue;
+    cleaned[key] = stripHundredOreImagePayload(child);
+  }
+  return cleaned;
+}
+
+function sanitizeHundredOreCacheNextPage(page) {
+  if (!page || typeof page !== "object") return null;
+  return {
+    day: Number(page.day || 1),
+    pageTitle: String(page.pageTitle || ""),
+    bodyText: String(page.bodyText || ""),
+    sceneSummary: String(page.sceneSummary || ""),
+    sceneKey: String(page.sceneKey || ""),
+    imageHash: String(page.imageHash || ""),
+    imageModel: String(page.imageModel || ""),
+    imageGenerationFailed: Boolean(page.imageGenerationFailed),
+  };
+}
+
 export async function appendHundredOreRun(run) {
   const sheets = await getSheetsClient();
+  const safePages = stripHundredOreImagePayload(run.pages || []);
+  const pagesJson = JSON.stringify(safePages);
+  console.debug("[100ore] run pagesJson length", pagesJson.length);
   const values = [[
     "run",
     String(run.runId || ""),
@@ -1901,8 +1928,8 @@ export async function appendHundredOreRun(run) {
     String(run.endedAt || new Date().toISOString()),
     Number(run.score || 0),
     String(run.gameOverReason || ""),
-    JSON.stringify(run.pages || []),
-    JSON.stringify(run.meta || {}),
+    pagesJson,
+    JSON.stringify(stripHundredOreImagePayload(run.meta || {})),
     "", "", "", "", "", "",
   ]];
 
@@ -1918,15 +1945,19 @@ export async function appendHundredOreRun(run) {
 
 export async function appendHundredOreCache(cache) {
   const sheets = await getSheetsClient();
+  const safeOutcome = stripHundredOreImagePayload(cache.outcome || {});
+  const safeNextPage = sanitizeHundredOreCacheNextPage(stripHundredOreImagePayload(cache.nextPage || null));
+  const nextPageJson = JSON.stringify(safeNextPage || null);
+  console.debug("[100ore] cache nextPageJson length", nextPageJson.length);
   const values = [[
     "cache",
-    "", "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "",
     String(cache.cacheId || ""),
     String(cache.sceneKey || ""),
     JSON.stringify(Array.isArray(cache.changeLabels) ? cache.changeLabels : []),
-    String(cache.changeSummary || ""),
-    JSON.stringify(cache.outcome || {}),
-    JSON.stringify(cache.nextPage || null),
+    "",
+    JSON.stringify(safeOutcome),
+    nextPageJson,
     String(cache.createdAt || new Date().toISOString()),
   ]];
 
