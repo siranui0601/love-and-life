@@ -1966,6 +1966,8 @@ function sanitizeHundredOreCacheNextPage(page) {
     imageHash: String(page.imageHash || ""),
     imageModel: String(page.imageModel || ""),
     imageGenerationFailed: Boolean(page.imageGenerationFailed),
+    advancedAxis: String(page.advancedAxis || ""),
+    nextTouchableObjects: Array.isArray(page.nextTouchableObjects) ? page.nextTouchableObjects.map(String).filter(Boolean).slice(0, 5) : [],
   };
 }
 
@@ -1989,10 +1991,12 @@ async function ensureSheetHeader(sheets, sheetName, headers) {
 }
 
 async function ensureHundredOreCacheHeader(sheets) {
+  console.log("[100ore] sheets target", { cacheSheet: HUNDRED_ORE_CACHE_SHEET_NAME, runsSheet: HUNDRED_ORE_RUNS_SHEET_NAME });
   await ensureSheetHeader(sheets, HUNDRED_ORE_CACHE_SHEET_NAME, HUNDRED_ORE_CACHE_HEADERS);
 }
 
 async function ensureHundredOreRunsHeader(sheets) {
+  console.log("[100ore] sheets target", { cacheSheet: HUNDRED_ORE_CACHE_SHEET_NAME, runsSheet: HUNDRED_ORE_RUNS_SHEET_NAME });
   await ensureSheetHeader(sheets, HUNDRED_ORE_RUNS_SHEET_NAME, HUNDRED_ORE_RUNS_HEADERS);
 }
 
