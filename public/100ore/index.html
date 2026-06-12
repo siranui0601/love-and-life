@@ -11,9 +11,9 @@
     <section id="coverScreen" class="cover-screen">
       <a class="home-link" href="/">← 不知火遊技場</a>
       <div class="cover-card">
-        <p class="eyebrow">AI改変絵本サバイバル</p>
+        <p class="eyebrow">因果が転がる絵本サバイバル</p>
         <h1>100日後も生きる俺</h1>
-        <p class="cover-copy">絵本の1ページに小さな余白を貼り、そこへ落書きして物語をねじ曲げよう。何日目まで「俺」は物語に残れるだろう？</p>
+        <p class="cover-copy">絵本の1ページに小さな紙片を重ね、そこで起きた変化から物語を転がそう。何日目まで「俺」は物語に残れるだろう？</p>
         <div class="cover-actions">
           <button id="startBtn" class="primary-btn" type="button">表紙をひらく</button>
           <button id="rankingBtnTop" class="ghost-btn" type="button">ランキング</button>
@@ -38,8 +38,8 @@
 
       <div class="spread">
         <article class="page story-page">
-          <div class="page-topline"><span id="pageTitle">はじまり</span><span id="outcomeChip">未改変</span></div>
-          <div id="storyText" class="story-text">AIが最初のページを描いています。</div>
+          <div class="page-topline"><span id="pageTitle">はじまり</span><span id="outcomeChip">未確定</span></div>
+          <div id="storyText" class="story-text">最初のページを準備しています。</div>
           <details class="scene-details">
             <summary>現在の状況</summary>
             <p id="sceneSummary">準備中</p>
@@ -57,27 +57,53 @@
         </article>
       </div>
 
-      <section class="tool-bookmark" aria-label="落書き道具">
-        <div class="canvas-stock-wrap">
-          <h2>キャンパスストック <span>1ページごとに1枚補充</span></h2>
-          <div id="canvasStock" class="canvas-stock"></div>
-        </div>
+      <section class="tool-bookmark" aria-label="絵本の道具">
+        <div class="flip-panel" data-side="canvas">
+          <div class="panel-head">
+            <h2 id="panelTitle">キャンパスパネル</h2>
+            <button id="flipPanelBtn" class="small-btn" type="button">ペンパネルへ</button>
+          </div>
 
-        <div class="tool-panel">
-          <label>色 <input id="colorInput" type="color" value="#d53f2a" /></label>
-          <label>太さ <input id="sizeInput" type="range" min="3" max="34" value="10" /></label>
-          <div class="segmented" role="group" aria-label="筆種">
-            <button class="tool-choice active" data-tool="pen" type="button">ペン</button>
-            <button class="tool-choice" data-tool="marker" type="button">マーカー</button>
-            <button class="tool-choice" data-tool="eraser" type="button">消しゴム</button>
+          <div id="canvasPanel" class="panel-face canvas-panel">
+            <div class="canvas-stock-wrap">
+              <h3>ストック <span>1ページごとに1枚補充 / 上限3枚</span></h3>
+              <div id="canvasStock" class="canvas-stock"></div>
+            </div>
+            <div class="placed-wrap">
+              <h3>設置済み</h3>
+              <div id="placedList" class="placed-list"></div>
+            </div>
+            <div class="adjust-grid" aria-label="選択中キャンパスの調整">
+              <button class="small-btn nudge-btn" data-dx="0" data-dy="-1" type="button">↑</button>
+              <button class="small-btn nudge-btn" data-dx="-1" data-dy="0" type="button">←</button>
+              <button class="small-btn nudge-btn" data-dx="1" data-dy="0" type="button">→</button>
+              <button class="small-btn nudge-btn" data-dx="0" data-dy="1" type="button">↓</button>
+            </div>
+            <label class="angle-control">角度 <input id="angleInput" type="range" min="-180" max="180" value="0" /></label>
+            <div class="tool-actions">
+              <button id="rotateLeftBtn" class="small-btn" type="button">左回転</button>
+              <button id="rotateRightBtn" class="small-btn" type="button">右回転</button>
+              <button id="deletePlacementBtn" class="small-btn" type="button">削除</button>
+            </div>
           </div>
-          <div class="tool-actions">
-            <button id="undoBtn" class="small-btn" type="button">undo</button>
-            <button id="redoBtn" class="small-btn" type="button">redo</button>
-            <button id="clearBtn" class="small-btn" type="button">消す</button>
-            <button id="confirmBtn" class="primary-btn" type="button" disabled>改変を確定</button>
+
+          <div id="penPanel" class="panel-face pen-panel" hidden>
+            <label>色 <input id="colorInput" type="color" value="#d53f2a" /></label>
+            <label>太さ <input id="sizeInput" type="range" min="3" max="34" value="10" /></label>
+            <label>ズーム <input id="zoomInput" type="range" min="100" max="260" value="100" /></label>
+            <div class="segmented" role="group" aria-label="筆種">
+              <button class="tool-choice active" data-tool="pen" type="button">ペン</button>
+              <button class="tool-choice" data-tool="marker" type="button">マーカー</button>
+              <button class="tool-choice" data-tool="eraser" type="button">消しゴム</button>
+            </div>
+            <div class="tool-actions">
+              <button id="undoBtn" class="small-btn" type="button">undo</button>
+              <button id="redoBtn" class="small-btn" type="button">redo</button>
+              <button id="clearBtn" class="small-btn" type="button">消す</button>
+            </div>
           </div>
         </div>
+        <button id="confirmBtn" class="primary-btn confirm-wide" type="button" disabled>この変化で進む</button>
       </section>
     </section>
   </main>
