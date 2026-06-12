@@ -543,7 +543,20 @@ async function buildOriginalImage() {
   o.drawImage(img, 0, 0, size, size);
   return out.toDataURL("image/jpeg", 0.72);
 }
-async function buildComposite() {
+async function buildCompositeForAI() {
+  const size = 512;
+  const out = document.createElement("canvas");
+  out.width = size;
+  out.height = size;
+  const o = out.getContext("2d");
+  const img = await loadImage(refs.img.src);
+  o.fillStyle = "#f7e8c3";
+  o.fillRect(0, 0, size, size);
+  o.drawImage(img, 0, 0, size, size);
+  state.strokes.forEach((stroke) => drawStroke(o, stroke, state.placements.find((p) => p.id === stroke.placementId), size));
+  return out.toDataURL("image/jpeg", 0.72);
+}
+async function buildCompositeForPreview() {
   const size = 512;
   const out = document.createElement("canvas");
   out.width = size;
@@ -636,7 +649,7 @@ async function confirmRewrite() {
   updateConfirmState();
   setLoadingSteps([{ text: "変化を読み取っています", delay: 0 }, { text: "次の物語を編んでいます", delay: 12000 }, { text: "次の一枚絵を用意しています", delay: 22000 }]);
   try {
-    const [originalImageDataUrl, compositeImageDataUrl] = await Promise.all([buildOriginalImage(), buildComposite()]);
+    const [originalImageDataUrl, compositeImageDataUrl] = await Promise.all([buildOriginalImage(), buildCompositeForAI()]);
     const canvases = liteCanvases();
     const drawingHash = await sha256(await (await fetch(compositeImageDataUrl)).arrayBuffer());
     const currentPage = { day: state.current?.day, pageTitle: state.current?.pageTitle, bodyText: state.current?.bodyText, sceneSummary: state.current?.sceneSummary, sceneKey: state.current?.sceneKey, imageHash: state.current?.imageHash };
