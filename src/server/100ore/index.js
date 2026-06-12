@@ -30,6 +30,8 @@ const IMAGE_MODEL_CANDIDATES = [
 const DISPLAY_FORBIDDEN_TERMS = [
   "落書き", "キャンパス", "プレイヤー", "ユーザー", "描いた", "書いた", "改変", "画像", "挿絵", "AI", "プロンプト", "画面", "差分", "生成", "追加された", "突然現れた", "急に出現した",
 ];
+const CHANGE_LABEL_FORBIDDEN_TERMS = [...DISPLAY_FORBIDDEN_TERMS, "UI", "枠", "点線", "選択範囲"];
+
 const DISPLAY_REPLACEMENTS = new Map([
   ["落書き", "しるし"], ["キャンパス", "場所"], ["プレイヤー", "俺"], ["ユーザー", "俺"], ["描いた", "起きた"], ["書いた", "起きた"],
   ["改変", "変化"], ["画像", "場面"], ["挿絵", "場面"], ["AI", ""], ["プロンプト", ""], ["画面", "場面"], ["差分", "変化"], ["生成", ""],
@@ -122,16 +124,17 @@ function fallbackOutcome(day, labelsText = "") {
   return { rewriteText:`${base}。俺の前の危機は形を変え、次の出口が開いた。`, outcomeSummary:`${base}ため、路地裏の危機が別の方向へ動いた。`, outcomeType:type, gameOver, gameOverReason:gameOver ? `${base}が裏目に出て、俺は逃げ場を失った。` : "", nextSceneHint: gameOver ? "" : `${base}結果、俺は別の場所へ押し出される。` };
 }
 function fallbackNextPage(day, { current = {}, outcome = {}, changeLabels = [] } = {}) {
-  const location = inferCarryoverElements(current).location || "前ページと同じ場所";
-  const people = inferCarryoverElements(current).people.join("、") || "俺";
-  const objects = inferCarryoverElements(current).objects.slice(0, 3).join("、") || "目の前の物";
+  const carry = inferCarryoverElements(current);
+  const location = carry.location || "次の曲がり角";
+  const people = carry.people.join("、") || "俺";
+  const objects = carry.objects.slice(0, 3).join("、") || "目の前の物";
   const changed = changeLabels.join("、") || outcome.outcomeSummary || outcome.rewriteText || "小さな変化";
-  const trouble = outcome.nextSceneHint || `${changed}が収まらず、同じ場所で別の危機に変わる。`;
+  const trouble = outcome.nextSceneHint || `${changed}の結果、俺たちは${location}から次の足場へ押し出される。`;
   return normalizePage({
-    pageTitle: `${day}日目：同じ場所で光がほどける`,
-    bodyText: `${location}で、${people}はまだ動けずにいた。${objects}に${changed}が絡み、${trouble} 俺は近くの物に手を伸ばすしかない。`,
-    sceneSummary: `${location}に俺と${people}がいて、${objects}が残っている。${changed}によって同じ場面の困りごとが進んでいる。`,
-    illustrationPrompt: buildContinuityIllustrationPrompt({ current, bodyText: `${location}で${objects}に${changed}が絡む。`, sceneSummary: `${location}、${people}、${objects}、${trouble}`, changeLabels, trouble }),
+    pageTitle: `${day}日目：次の足場が光る`,
+    bodyText: `${people}は${objects}を抱え、${changed}の勢いで${location}の先へ進んだ。${trouble} 足元では次に触れそうな金具と細い扉が光っている。`,
+    sceneSummary: `${people}と${objects}は前ページの変化を受け、${location}から次の局面へ移る。足元に金具と細い扉がある。`,
+    illustrationPrompt: buildContinuityIllustrationPrompt({ current, bodyText: `${people}が${objects}と次の足場へ進む。`, sceneSummary: `${people}、${objects}、${trouble}`, changeLabels, trouble }),
   }, day);
 }
 function svgDataUrl() {
@@ -144,6 +147,9 @@ function buildIllustrationPrompt({ bodyText = "", sceneSummary = "", illustratio
 画像内に文字・看板・ラベル・吹き出し・数字は絶対に入れない。
 日本語文字、英字、記号、吹き出し、看板、ラベル、キャプションを描かない。
 絵本の一枚絵。1ページ目の画風に近い、温かい手描き絵本風。紙の質感。少し奇妙でユーモラス。
+参照画像がある場合は、前ページ画像の主人公・少女・主要キャラの見た目をなるべく維持する。
+参照画像がある場合は、前ページ画像の画風、線の太さ、紙の質感、主要物体の見た目を維持する。
+場所が変わる場合でも、前ページ由来のキャラや物体を完全に別人・別物にしない。
 現在の日数や本文を画像内に描かない。
 必ず本文の状況に合う挿絵にする。
 主人公は必ず「俺」。棒人間、単純な円や謎の物体だけで済ませない。
@@ -169,12 +175,11 @@ function inferCarryoverElements(page = {}) {
 }
 function buildContinuityIllustrationPrompt({ current = {}, bodyText = "", sceneSummary = "", changeLabels = [], trouble = "" } = {}) {
   const carry = inferCarryoverElements(current);
-  return `前ページから引き継ぐ場所: ${carry.location || "同じ場所"}
-前ページから引き継ぐ人物: ${carry.people.join("、") || "俺"}
-前ページから引き継ぐ物体: ${carry.objects.slice(0, 4).join("、") || "前ページの主要物体"}
+  return `前ページから引き継ぐ人物: ${carry.people.join("、") || "俺"}
+前ページから引き継ぐ重要物体: ${carry.objects.slice(0, 4).join("、") || "前ページの主要物体"}
+前ページからの関係・目的: ${trouble || sceneSummary || bodyText}
 今回変化したもの: ${changeLabels.join("、") || "前ページの変化"}
-今回の困りごと: ${trouble || sceneSummary || bodyText}
-絵本風、紙の質感、文字なし。前ページの舞台を作り直さず、同じ場所と主要物体を保つ。`;
+絵本風、紙の質感、文字なし。場所の完全維持より目的の進行を優先し、前ページ由来の人物・物体の見た目と因果関係を保つ。`;
 }
 
 function errorMessage(error) {
@@ -237,53 +242,66 @@ async function generateTextJson(genAI, prompt, timeoutMs = TEXT_TIMEOUT_MS) {
   error.statusCode = 503;
   throw error;
 }
-async function generateImageWithModel(modelName, prompt) {
-  console.log("[100ore] trying image model:", modelName);
+async function generateImageWithModel(modelName, prompt, { referenceMimeType = "", referenceBase64 = "" } = {}) {
+  const useReference = Boolean(referenceBase64);
+  console.log("[100ore] trying image model:", { modelName, useReference, referenceBase64Length: referenceBase64.length });
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(new Error("image_generation_timeout")), IMAGE_TIMEOUT_MS);
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+    const parts = [{ text: prompt }];
+    if (useReference) parts.push({ inlineData: { mimeType: referenceMimeType || "image/jpeg", data: referenceBase64 } });
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type":"application/json" },
       signal: controller.signal,
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ parts }],
         generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
       }),
     });
     const json = await res.json().catch(() => ({}));
-    const parts = json?.candidates?.[0]?.content?.parts || [];
-    const imagePart = parts.find((part) => part.inlineData?.data);
+    const responseParts = json?.candidates?.[0]?.content?.parts || [];
+    const imagePart = responseParts.find((part) => part.inlineData?.data);
     if (!res.ok || !imagePart) throw new Error(json?.error?.message || "image_not_returned");
     const mimeType = imagePart.inlineData.mimeType || "image/png";
     const base64 = imagePart.inlineData.data || "";
-    console.log("[100ore] image generation succeeded:", { modelName, mimeType, base64Length: base64.length });
-    return { dataUrl: `data:${mimeType};base64,${base64}`, mimeType, base64Length: base64.length, modelName, fallback: false };
+    console.log("[100ore] image generation succeeded:", { modelName, mimeType, base64Length: base64.length, usedReference: useReference, fallback: false });
+    return { dataUrl: `data:${mimeType};base64,${base64}`, mimeType, base64Length: base64.length, modelName, fallback: false, usedReference: useReference };
   } finally {
     clearTimeout(timeoutId);
   }
 }
-async function generateImageDataUrl(page) {
+async function generateImageDataUrl(page, { referenceMimeType = "", referenceBase64 = "" } = {}) {
   const prompt = buildIllustrationPrompt(page);
+  const hasReference = Boolean(referenceBase64);
   if (!GEMINI_API_KEY) {
-    console.warn("[100ore] image generation fallback: GEMINI_API_KEY is not set");
+    console.warn("[100ore] image generation fallback: GEMINI_API_KEY is not set", { hasReference, referenceBase64Length: referenceBase64.length });
     return imageGenerationPlaceholder();
   }
   for (const modelName of IMAGE_MODEL_CANDIDATES) {
+    if (hasReference) {
+      try {
+        const image = await generateImageWithModel(modelName, prompt, { referenceMimeType, referenceBase64 });
+        console.log("[100ore] successful image model:", { modelName, usedReference: true, fallback: false, generatedBase64Length: image.base64Length });
+        return image;
+      } catch (error) {
+        console.warn("[100ore] reference image generation failed, retrying text-only", { modelName, referenceBase64Length: referenceBase64.length, error: errorMessage(error) });
+      }
+    }
     try {
       const image = await generateImageWithModel(modelName, prompt);
-      console.log("[100ore] successful image model:", modelName);
-      return image;
+      console.log("[100ore] successful image model:", { modelName, usedReference: false, fallback: hasReference, generatedBase64Length: image.base64Length });
+      return { ...image, referenceFallback: hasReference };
     } catch (error) {
-      console.warn("[100ore] image model failed:", { modelName, error: errorMessage(error) });
+      console.warn("[100ore] image model failed:", { modelName, usedReference: false, error: errorMessage(error) });
     }
   }
-  console.warn("[100ore] image generation fallback: all image model candidates failed");
+  console.warn("[100ore] image generation fallback: all image model candidates failed", { hasReference, referenceBase64Length: referenceBase64.length });
   return imageGenerationPlaceholder();
 }
-async function buildPageWithImage(page) {
-  const image = await generateImageDataUrl(page);
+async function buildPageWithImage(page, options = {}) {
+  const image = await generateImageDataUrl(page, options);
   const imageHash = sha256(dataUrlToBase64(image.dataUrl));
   FALLBACK_IMAGES.set(imageHash, image.dataUrl);
   console.log("[100ore] generated image payload:", {
@@ -291,6 +309,9 @@ async function buildPageWithImage(page) {
     mimeType: image.mimeType,
     base64Length: image.base64Length,
     fallback: image.fallback,
+    referenceImageUsed: Boolean(image.usedReference),
+    referenceBase64Length: options.referenceBase64?.length || 0,
+    referenceFallback: Boolean(image.referenceFallback),
     modelName: image.modelName || "none",
   });
   return { ...page, imageHash, imageDataUrl: image.dataUrl, imageGenerationFailed: Boolean(image.fallback), imageModel: image.modelName || "" };
@@ -376,8 +397,10 @@ function serializeRun(run) {
 
 function normalizeChangeLabels(labels = []) {
   return (Array.isArray(labels) ? labels : [])
-    .map((label) => scrubDisplayText(label, 40))
+    .map((label) => clampText(label, 40))
     .map((label) => label.replace(/[「」『』。.!！?？\s]+$/g, "").trim())
+    .filter((label) => label && !CHANGE_LABEL_FORBIDDEN_TERMS.some((term) => label.includes(term)))
+    .map((label) => scrubDisplayText(label, 40))
     .filter(Boolean)
     .slice(0, 8);
 }
@@ -401,43 +424,86 @@ function chooseOutcomeMode(day) {
 }
 function modeInstruction(mode) {
   const map = {
-    RESOLVE: "今回の展開タイプ: RESOLVE。前の危機を一つ解決し、同じ舞台で次の具体的な困りごとへ進める。",
-    BACKFIRE: "今回の展開タイプ: BACKFIRE。変化が裏目に出るが、場所・人物・主要物体を保ったまま状況を動かす。",
-    SCENE_JUMP: "今回の展開タイプ: SCENE_JUMP。場面を大きく変えてよいが、前ページ由来の要素を最低1つ持ち越す。",
-    NEW_ROLE: "今回の展開タイプ: NEW_ROLE。場所は基本維持し、俺の役割や立場だけを変えて見える目的物を置く。",
-    DEAL: "今回の展開タイプ: DEAL。同じ舞台で奇妙な取引を発生させ、交換できそうな具体物を置く。",
-    CHASE: "今回の展開タイプ: CHASE。同じ舞台から追跡や逃走へ移り、進路と障害物をはっきり置く。",
-    TRIAL: "今回の展開タイプ: TRIAL。同じ舞台で試練や審査へ移り、触れそうな証拠品や道具を置く。",
+    RESOLVE: "今回の展開タイプ: RESOLVE。前の危機を一つ解決し、その結果として新しい目的・移動先・選択へ進める。",
+    BACKFIRE: "今回の展開タイプ: BACKFIRE。変化が裏目に出るが、人物・因果関係・目的を保ったまま状況を一段階進める。",
+    SCENE_JUMP: "今回の展開タイプ: SCENE_JUMP。場面を大きく変えてよいが、前ページ由来の人物・関係・主要物体を持ち越す。",
+    NEW_ROLE: "今回の展開タイプ: NEW_ROLE。俺の役割や立場を変え、その役割で向かう具体的な目的物を置く。",
+    DEAL: "今回の展開タイプ: DEAL。奇妙な取引を発生させ、成立または失敗の結果として次の局面へ進める。",
+    CHASE: "今回の展開タイプ: CHASE。追跡や逃走へ移り、進路・移動先・障害物をはっきり置く。",
+    TRIAL: "今回の展開タイプ: TRIAL。試練や審査へ移り、結果によって次に触れる証拠品や道具を置く。",
     GAME_OVER: "今回の展開タイプ: GAME_OVER。どんな変化でもゲームオーバーへ向かわせる。ただし変化の内容は必ず反映する。",
   };
   return map[mode] || map.SCENE_JUMP;
 }
-async function extractChangeLabels(genAI, { current, canvases, originalMimeType, originalBase64, compositeMimeType, compositeBase64, day }) {
-  let result = fallbackChangeLabels(day, canvases);
-  if (!genAI || !compositeBase64) return result;
+async function extractChangeLabels(genAI, { current, canvases, originalMimeType, originalBase64, compositeMimeType, compositeBase64, compositeHash, sceneKey, day }) {
+  const logBase = {
+    day,
+    sceneKey,
+    canvasCount: canvases.length,
+    canvases: canvases.map((canvas) => ({
+      id: canvas.id,
+      shape: canvas.shape,
+      label: canvas.label,
+      x: Number(canvas.x || 0).toFixed(3),
+      y: Number(canvas.y || 0).toFixed(3),
+      w: Number(canvas.w || 0).toFixed(3),
+      h: Number(canvas.h || 0).toFixed(3),
+      angle: canvas.angle,
+      strokeCount: canvas.strokeCount,
+      inkStrokeCount: canvas.inkStrokeCount,
+      tools: canvas.tools,
+    })),
+    compositeHash: String(compositeHash || "").slice(0, 12),
+    originalBase64Length: originalBase64.length,
+    compositeBase64Length: compositeBase64.length,
+  };
+  if (!compositeBase64) {
+    const fallbackResult = fallbackChangeLabels(day, canvases);
+    console.warn("[100ore] changeLabels fallback used", { ...logBase, reason: "missing_composite_image", fallbackLabels: fallbackResult.changeLabels, fallback: true, success: false });
+    return { changeLabels: normalizeChangeLabels(fallbackResult.changeLabels), fallback: true };
+  }
+  if (!genAI) {
+    const fallbackResult = fallbackChangeLabels(day, canvases);
+    console.warn("[100ore] changeLabels fallback used", { ...logBase, reason: "GEMINI_API_KEY is not set", fallbackLabels: fallbackResult.changeLabels, fallback: true, success: false });
+    return { changeLabels: normalizeChangeLabels(fallbackResult.changeLabels), fallback: true };
+  }
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const prompt = `beforeとafterを比較し、このページ内で起きた変化を短いラベルにしてください。JSONだけ返してください。
+    const prompt = `1枚目は変化前、2枚目は変化後です。beforeとafterを比較し、2枚目でユーザー描画によって増えた主な視覚変化だけを短いラベルにしてください。JSONだけ返してください。
 現在の状況: ${clampText(current.sceneSummary, 240)}
 本文: ${clampText(current.bodyText, 220)}
 配置情報: ${JSON.stringify(canvases)}
-返却形式: {"changeLabels":["車のタイヤがへこむ"]}
+返却形式: {"changeLabels":["主人公に羽","主人公に天使の輪"]}
+読み取り方針:
+- 2枚目で増えた線・色・形を探す。
+- キャンパス枠、点線枠、選択枠、回転ハンドル、UI、操作用の枠は無視する。
+- 人物の背中付近に翼のような形があれば「主人公に羽」。
+- 頭上の輪のような形があれば「主人公に天使の輪」。
+- 車輪付近の変化なら「車のタイヤが変化」。
+- 少女の周囲の線なら「少女の落下に変化」。
+- 召喚陣付近の変化なら「召喚陣が変化」。
+- 変化が小さくても、最も目立つユーザー描画を優先する。
+- 物語として面白くなるように勝手に飛躍させず、まずは視覚変化を素直に読む。
 ルール:
 - changeLabelsは同一判定用。短い名詞句/動詞句。
 - 物語世界で起きた変化だけを書く。
-- 次の語を絶対に使わない: ${DISPLAY_FORBIDDEN_TERMS.join("、")}
+- 次の語をchangeLabelsに絶対に使わない: ${CHANGE_LABEL_FORBIDDEN_TERMS.join("、")}
 - 「最初から」「正史」「生まれつき」「昔から」のような歴史改変表現も禁止。`;
     const parts = [{ text: prompt }];
     if (originalBase64) parts.push({ inlineData: { mimeType: originalMimeType, data: originalBase64 } });
     parts.push({ inlineData: { mimeType: compositeMimeType, data: compositeBase64 } });
     const response = await withTimeout(model.generateContent(parts), VISION_TIMEOUT_MS, "change_labels");
-    result = { ...result, ...jsonFromText(response.response.text()) };
+    const parsed = jsonFromText(response.response.text());
+    const changeLabels = normalizeChangeLabels(parsed.changeLabels);
+    if (!changeLabels.length) throw new Error("change_labels_empty");
+    console.log("[100ore] changeLabels extracted", { ...logBase, changeLabels, fallback: false, success: true });
+    return { changeLabels, fallback: false };
   } catch (error) {
-    console.warn("[100ore] change label fallback:", error?.message || error);
+    console.warn("[100ore] changeLabels extraction failed", { ...logBase, reason: errorMessage(error), fallback: false, success: false });
+    const transient = new Error(`change_labels_unavailable: ${errorMessage(error)}`);
+    transient.statusCode = 503;
+    throw transient;
   }
-  return {
-    changeLabels: normalizeChangeLabels(result.changeLabels),
-  };
 }
 async function findCachedOutcome(genAI, sceneKey, changeLabels) {
   const sheetCaches = await listHundredOreCacheBySceneKey(sceneKey).catch((error) => {
@@ -501,7 +567,7 @@ export function mountHundredOreRoutes(app) {
       const compositeHash = sha256(compositeBase64);
       const canvases = Array.isArray(req.body?.canvases) ? req.body.canvases.slice(0, 3).map(sanitizeCanvas) : [];
       const sceneKey = clampText(current.sceneKey || buildSceneKey(current.imageHash || "", current.sceneSummary || ""), 40);
-      const change = await extractChangeLabels(genAI, { current, canvases, originalMimeType, originalBase64, compositeMimeType, compositeBase64, day });
+      const change = await extractChangeLabels(genAI, { current, canvases, originalMimeType, originalBase64, compositeMimeType, compositeBase64, compositeHash, sceneKey, day });
       const changeLabels = normalizeChangeLabels(change.changeLabels);
       const changeLabelsText = scrubDisplayText(changeLabels.join("、"), 160);
 
@@ -562,17 +628,22 @@ JSONだけ: {"rewriteText":"80字以内で俺視点。","outcomeSummary":"具体
 今回の困りごと: ${clampText(outcome.nextSceneHint || outcome.outcomeSummary, 160)}
 ${modeInstruction(outcomeMode)}
 方針:
-- 主人公は必ず「俺」。前ページの結果を1つ受け継ぐ。
-- 前ページの場所・主要人物・主要物体を維持する。大きな場面転換はSCENE_JUMP時のみ。新規要素を増やしすぎない。
-- 前ページの主要物体を最低2つ維持する。新しく追加する大きな要素は1〜2個まで。
+- 主人公は必ず「俺」。前ページの登場人物、重要な関係、直前の変化を受け継ぐ。
+- 場所の完全維持よりも、目的の進行を優先する。
+- 毎ページ、状況を一段階前へ進める。同じ危機を言い換えて引き延ばさない。
+- 「まだ終わっていない」「どう動けばいい？」で停滞させない。
+- 何かを解決したら、その結果として新しい目的・移動先・役割・選択へ進む。
+- 同じ場所に留まり続けない。SCENE_JUMP以外でも小規模な場面転換は許可する。
+- ただし、主人公や重要キャラが別人に見えるような断絶は避ける。
+- 前ページの主要人物を維持し、主要物体も最低1〜2個は因果関係として持ち越す。
 - 2〜4日目は初期ページの路地裏・少女・車・召喚陣・巨大魚・コインなどを発展させる。
-- SCENE_JUMP以外では同じ舞台を維持したまま問題を進める。
 - bodyTextは90〜130字程度。短めで画像化しやすくする。
-- 目に見える困りごとを1つ置く。
-- 介入できそうな具体物を2つ以上置く。
+- 目に見える困りごと、または次に触れそうな具体物を1つ以上置く。
+- bodyTextの最後は、次に介入できる具体物・状況で終える。
+- 「どう動けばいい？」「どうすればいい？」のような曖昧な締めは禁止。
 - 王様が怒るだけ、剣が迫るだけ、会話だけ、不穏な空気だけは禁止。
 - 「新たな誤解の種が」のような抽象だけで終わらない。
-- illustrationPromptは本文とsceneSummaryに完全対応し、「前ページから引き継ぐ場所」「前ページから引き継ぐ人物」「前ページから引き継ぐ物体」「今回変化したもの」「今回の困りごと」を必ず明記する。
+- illustrationPromptは本文とsceneSummaryに完全対応し、「前ページから引き継ぐ人物」「前ページから引き継ぐ重要物体」「今回変化したもの」「次の目的・移動先・具体物」を必ず明記する。
 - illustrationPromptに文字、看板、ラベル、吹き出し、数字、キャプションを描く指示を絶対に入れない。
 - 表示用フィールド（pageTitle/bodyText/sceneSummary）では次の語を絶対に使わない: ${DISPLAY_FORBIDDEN_TERMS.join("、")}
 - 「最初から」「正史」「昔からあった」「生まれつき」も禁止。
@@ -583,8 +654,20 @@ pageTitleは必ず「${nextDay}日目：」で始める。`;
           ? `${continuityPrompt}
 具体案: ${clampText(rawNext.illustrationPrompt, 420)}`
           : continuityPrompt;
-        nextPage = await buildPageWithImage(normalizePage(rawNext, nextDay));
+        nextPage = await buildPageWithImage(
+          normalizePage(rawNext, nextDay),
+          { referenceImageDataUrl: req.body?.originalImageDataUrl || "", referenceMimeType: originalMimeType, referenceBase64: originalBase64 }
+        );
         nextPage.sceneKey = buildSceneKey(nextPage.imageHash || "", nextPage.sceneSummary || "");
+        console.log("[100ore] next page generated", {
+          outcomeMode,
+          currentPageTitle: current.pageTitle || "",
+          nextPageTitle: nextPage.pageTitle || "",
+          carriedCharacters: carryover.people,
+          carriedObjects: carryover.objects,
+          sceneKey,
+          nextSceneKey: nextPage.sceneKey,
+        });
       }
       const cacheId = `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
       outcome = sanitizeOutcome({ ...outcome, cacheId });
