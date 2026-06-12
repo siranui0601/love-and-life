@@ -22,6 +22,15 @@ const IMAGE_MODEL_CANDIDATES = [
   "gemini-2.5-flash-image-preview",
 ];
 
+const DISPLAY_FORBIDDEN_TERMS = [
+  "落書き", "キャンパス", "プレイヤー", "ユーザー", "描いた", "書いた", "改変", "画像", "挿絵", "AI", "プロンプト", "画面", "差分", "生成", "追加された", "突然現れた", "急に出現した",
+];
+const DISPLAY_REPLACEMENTS = new Map([
+  ["落書き", "しるし"], ["キャンパス", "枠"], ["プレイヤー", "俺"], ["ユーザー", "俺"], ["描いた", "生まれつきあった"], ["書いた", "刻まれていた"],
+  ["改変", "正史"], ["画像", "一枚絵"], ["挿絵", "一枚絵"], ["AI", ""], ["プロンプト", ""], ["画面", "場面"], ["差分", "違い"], ["生成", "成立"],
+  ["追加された", "昔からあった"], ["突然現れた", "昔からそこにあった"], ["急に出現した", "昔からそこにあった"],
+]);
+
 const INITIAL_PAGE = {
   day: 1,
   pageTitle: "1日目：王様の朝ごはんが逃げた",
@@ -67,12 +76,17 @@ function normalizeOutcomeType(value) {
   return OUTCOME_TYPES.has(type) ? type : "other";
 }
 function clampText(value, max = 260) { return String(value || "").trim().slice(0, max); }
+function scrubDisplayText(value, max = 260) {
+  let text = clampText(value, max);
+  for (const [term, replacement] of DISPLAY_REPLACEMENTS.entries()) text = text.split(term).join(replacement);
+  return text.replace(/\s{2,}/g, " ").trim();
+}
 function normalizePage(page = {}, day = 1) {
   return {
     day,
-    pageTitle: clampText(page.pageTitle || `${day}日目`, 40),
-    bodyText: clampText(page.bodyText || "俺は余白の多いページに立っていた。", 180),
-    sceneSummary: clampText(page.sceneSummary || "絵本の世界で俺が次の出来事を待っている。", 240),
+    pageTitle: scrubDisplayText(page.pageTitle || `${day}日目`, 40),
+    bodyText: scrubDisplayText(page.bodyText || "俺は余白の多いページに立っていた。", 180),
+    sceneSummary: scrubDisplayText(page.sceneSummary || "絵本の世界で俺が次の出来事を待っている。", 240),
     illustrationPrompt: clampText(page.illustrationPrompt || page.imagePrompt || "奇妙な絵本の一場面、主人公の俺、余白のある画面", 900),
     imagePrompt: clampText(page.illustrationPrompt || page.imagePrompt || "奇妙な絵本の一場面、主人公の俺、余白のある画面", 900),
   };
@@ -86,17 +100,17 @@ function fallbackOutcome(day) {
   const types = ["danger","chance","choice","embarrassment","mistake","weird","lucky"];
   const type = types[day % types.length];
   const gameOver = day >= 4 && Math.random() < Math.min(.18 + day * .025, .52);
-  return { rewriteText:"落書きはページの法則に化け、俺の足元で小さな事件を起こした。", outcomeSummary:"絵の余白から新しい道具と誤解が生まれた。", outcomeType:type, gameOver, gameOverReason:gameOver ? "描いた印が王立しおり係の紋章と間違われ、俺は物語の欄外へ丁寧に追放された。" : "", nextSceneHint: gameOver ? "" : "俺は新しい誤解を抱えたまま次のページへ進む。" };
+  return { rewriteText:"そのしるしは昔から王家の紋章だったことになり、俺の足元で小さな事件を起こした。", outcomeSummary:"古い紋章の由来から新しい道具と誤解が生まれた。", outcomeType:type, gameOver, gameOverReason:gameOver ? "その印は王立しおり係の紋章と間違われ、俺は物語の欄外へ丁寧に追放された。" : "", nextSceneHint: gameOver ? "" : "俺は新しい誤解を抱えたまま次のページへ進む。" };
 }
 function fallbackNextPage(day, hint = "") {
-  const carried = hint || "前ページの落書きのせいで、俺はなぜか王立パンくず裁判に呼ばれた。";
+  const carried = hint || "前ページから続く王家の紋章騒ぎで、俺はなぜか王立パンくず裁判に呼ばれた。";
   return normalizePage({
     pageTitle: `${day}日目：パンくず裁判の証人`,
     bodyText: `${carried} 俺が咳をした瞬間、証拠品のパンくずが鳩の群れになって飛び、裁判長のかつらを巣にした。`,
-    sceneSummary: `前ページの改変を引きずった俺が、パンくず裁判で証人席に立つ。パンくずは鳩になり、裁判長のかつらに巣を作って法廷が混乱する。`,
+    sceneSummary: `前ページの正史を引きずった俺が、パンくず裁判で証人席に立つ。パンくずは鳩になり、裁判長のかつらに巣を作って法廷が混乱する。`,
     illustrationPrompt: buildIllustrationPrompt({
       bodyText: `${carried} 俺が咳をした瞬間、証拠品のパンくずが鳩の群れになって飛び、裁判長のかつらを巣にした。`,
-      sceneSummary: `俺が絵本の法廷で証人席に立ち、パンくずの鳩たちが裁判長の大きなかつらへ飛び込む。前ページの改変の影響が小道具や表情に残っている。`,
+      sceneSummary: `俺が絵本の法廷で証人席に立ち、パンくずの鳩たちが裁判長の大きなかつらへ飛び込む。前ページから受け継いだ正史の要素が小道具や表情に残っている。`,
     }),
   }, day);
 }
@@ -219,17 +233,19 @@ async function buildInitialPage() {
 }
 function sanitizeOutcome(outcome = {}) {
   return {
-    rewriteText: clampText(outcome.rewriteText, 180),
-    outcomeSummary: clampText(outcome.outcomeSummary, 180),
+    rewriteText: scrubDisplayText(outcome.rewriteText, 180),
+    outcomeSummary: scrubDisplayText(outcome.outcomeSummary, 180),
     outcomeType: normalizeOutcomeType(outcome.outcomeType),
     gameOver: normalizeBoolean(outcome.gameOver),
-    gameOverReason: clampText(outcome.gameOverReason, 180),
-    nextSceneHint: clampText(outcome.nextSceneHint, 180),
+    gameOverReason: scrubDisplayText(outcome.gameOverReason, 180),
+    nextSceneHint: scrubDisplayText(outcome.nextSceneHint, 180),
     compositeHash: clampText(outcome.compositeHash, 80),
   };
 }
 function sanitizeCanvas(canvas = {}) {
   return {
+    id: clampText(canvas.id, 80),
+    sourceCanvasId: clampText(canvas.sourceCanvasId, 80),
     x: Number(canvas.x || 0),
     y: Number(canvas.y || 0),
     w: Number(canvas.w || 0),
@@ -241,11 +257,11 @@ function sanitizeCanvas(canvas = {}) {
 function sanitizeSavedPage(p = {}) {
   return {
     day: Math.max(1, Math.min(365, Number(p.day || 1))),
-    pageTitle: clampText(p.pageTitle, 60),
-    bodyText: clampText(p.bodyText, 220),
-    sceneSummary: clampText(p.sceneSummary, 220),
-    outcomeSummary: clampText(p.outcomeSummary || p.outcome?.outcomeSummary || p.outcome?.rewriteText || "", 180),
-    canvas: p.canvas ? sanitizeCanvas(p.canvas) : null,
+    pageTitle: scrubDisplayText(p.pageTitle, 60),
+    bodyText: scrubDisplayText(p.bodyText, 220),
+    sceneSummary: scrubDisplayText(p.sceneSummary, 220),
+    outcomeSummary: scrubDisplayText(p.outcomeSummary || p.outcome?.outcomeSummary || p.outcome?.rewriteText || "", 180),
+    canvases: Array.isArray(p.canvases) ? p.canvases.slice(0, 3).map(sanitizeCanvas) : (p.canvas ? [sanitizeCanvas(p.canvas)] : []),
     imageHash: clampText(p.imageHash, 80),
   };
 }
@@ -281,29 +297,39 @@ export function mountHundredOreRoutes(app) {
     try {
       const day = Math.max(1, Number(req.body?.day || 1));
       const current = req.body?.currentPage || {};
-      const { mimeType, base64: compositeBase64 } = parseDataUrl(req.body?.compositeImageDataUrl || "");
+      const { mimeType: originalMimeType, base64: originalBase64 } = parseDataUrl(req.body?.originalImageDataUrl || "");
+      const { mimeType: compositeMimeType, base64: compositeBase64 } = parseDataUrl(req.body?.compositeImageDataUrl || "");
       const compositeHash = sha256(compositeBase64);
-      const canvas = req.body?.canvas || {};
+      const canvases = Array.isArray(req.body?.canvases) ? req.body.canvases.slice(0, 3).map(sanitizeCanvas) : (req.body?.canvas ? [sanitizeCanvas(req.body.canvas)] : []);
       const fallback = () => fallbackOutcome(day);
       let outcome = fallback();
       if (genAI && compositeBase64) {
         try {
           const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-          const outcomePrompt = `絵本ゲーム「100日後も生きる俺」の落書き改変判定です。
-入力画像は「現在の挿絵 + ユーザーが配置したキャンパス + その中の落書き」です。
-ここでは次ページ本文を作らず、落書きが現在ページに起こした outcome だけを返してください。
+          const outcomePrompt = `絵本ゲーム「100日後も生きる俺」の正史再構成判定です。
+1枚目は改変前、2枚目は改変後です。差分を見つけてください。ただし、表示本文では“差分”“落書き”“キャンパス”“ユーザーが描いた”とは言わないでください。2枚目の絵が最初から正しい世界だったものとして、物語を再構成してください。
+ここでは次ページ本文を作らず、現在ページに起きた outcome だけを返してください。
 現在のsceneSummary: ${clampText(current.sceneSummary, 240)}
 現在のbodyText: ${clampText(current.bodyText, 220)}
-キャンパス情報: ${JSON.stringify(sanitizeCanvas(canvas))}
+配置情報: ${JSON.stringify(canvases)}
 方針:
-- 落書きの位置、色、形を観察し、こじつけでも具体的な出来事に変える。
-- 前ページの出来事を必ず受け継ぐ。
-- 主人公は必ず「俺」。
-- 奇想天外、絵本らしい、少し理不尽。笑える危機、好機、恥、誤解、うっかりのどれかを混ぜる。
-- 何が起きたか分かる具体文にする。「新たな誤解の種が」のような抽象だけで終わらない。
+- before画像とafter画像を比較する。
+- after画像を「本来の正史」として扱う。
+- beforeとの差分は、世界の歴史や設定が書き換わった結果として解釈する。
+- 登場人物は、キャンパスや落書きやプレイヤーを認識しない。
+- 登場人物は、after画像の状態を最初から当然のものとして受け入れている。
+- 「黒い線が突然現れた」「王冠が急に消えた」のような出現描写は禁止。
+- 「その皿には昔から王家の紋章のような黒い線が刻まれていた」のように、歴史・文化・設定として自然に言い換える。
+- ただし、その正史のせいで新しい問題、好機、誤解、恥、危機のどれかを生む。
+- 次ページで介入しやすいよう、目に見える具体物を2〜3個残す。
+- 前ページの出来事を必ず受け継ぐ。主人公は必ず「俺」。
+- 表示用フィールド（rewriteText/outcomeSummary/gameOverReason/nextSceneHint）では次の語を絶対に使わない: ${DISPLAY_FORBIDDEN_TERMS.join("、")}
 - 即死にしすぎない。gameOverの場合だけgameOverReasonを書く。
-JSONだけ: {"rewriteText":"改変後本文。80字以内で俺視点。","outcomeSummary":"具体的な改変要約。","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページへ受け継ぐ具体状況。画像化しやすく。"}`;
-          const result = await withTimeout(model.generateContent([{ text: outcomePrompt }, { inlineData: { mimeType, data: compositeBase64 } }]), VISION_TIMEOUT_MS, "vision_generation");
+JSONだけ: {"rewriteText":"正史化された結果。80字以内で俺視点。禁止語なし。","outcomeSummary":"具体的な正史の要約。禁止語なし。","outcomeType":"danger|chance|choice|embarrassment|mistake|weird|lucky|other","gameOver":false,"gameOverReason":"","nextSceneHint":"次ページへ受け継ぐ具体状況。見える物を含める。禁止語なし。"}`;
+          const parts = [{ text: outcomePrompt }];
+          if (originalBase64) parts.push({ inlineData: { mimeType: originalMimeType, data: originalBase64 } });
+          parts.push({ inlineData: { mimeType: compositeMimeType, data: compositeBase64 } });
+          const result = await withTimeout(model.generateContent(parts), VISION_TIMEOUT_MS, "vision_generation");
           outcome = { ...outcome, ...jsonFromText(result.response.text()) };
         } catch (error) { console.warn("[100ore] vision fallback:", error?.message || error); }
       }
@@ -315,18 +341,24 @@ JSONだけ: {"rewriteText":"改変後本文。80字以内で俺視点。","outco
 必須形式: {"pageTitle":"","bodyText":"","sceneSummary":"","illustrationPrompt":""}
 前ページの状況: ${clampText(current.sceneSummary, 220)}
 前ページ本文: ${clampText(current.bodyText, 220)}
-落書き改変結果: ${clampText(outcome.outcomeSummary || outcome.rewriteText, 220)}
+正史化された結果: ${clampText(outcome.outcomeSummary || outcome.rewriteText, 220)}
 次ページへ受け継ぐ状況: ${clampText(outcome.nextSceneHint, 220)}
 方針:
-- 主人公は必ず「俺」。前ページの出来事と落書き改変結果を必ず受け継ぐ。
+- 主人公は必ず「俺」。前ページの出来事と正史化された結果を必ず1つ受け継ぐ。
 - ただ説明するだけにせず、奇想天外、絵本らしい、少し理不尽にする。
 - 笑える危機、好機、恥、誤解、うっかりのうち2つ以上を混ぜる。
-- bodyTextは短いが、誰がどこで何をして何が困る/面白いのか分かる具体文にする。90字以内。
-- ゲームオーバーでないので、次に描きたくなる余地を残す。
+- bodyTextは90〜130字程度。誰がどこで何をして何が困る/面白いのか分かる具体文にする。
+- 正史に基づく新しい奇想天外な状況を1つ起こす。
+- 目に見える困りごとを1つ置く。
+- 介入できそうな具体物を2〜3個置く。
+- 危機だけでなく、好機・恥・誤解・うっかり・変なチャンスも混ぜる。
+- ゲームオーバーでないので、次に手を加えたくなる余地を残す。
 - 「新たな誤解の種が」のような抽象だけで終わらない。画像にしづらい棒、円、謎の物体だけの状況にしない。
-- illustrationPromptはbodyTextとsceneSummaryに完全対応した挿絵用プロンプトにする。
+- illustrationPromptはbodyTextとsceneSummaryに完全対応した一枚絵用プロンプトにする。
+- illustrationPromptには、本文に出てきた具体物、主人公「俺」、主要キャラ、困りごと、介入対象、前ページから引き継いだ正史要素を必ず含める。
 - illustrationPromptに文字、看板、ラベル、吹き出し、数字、キャプションを描く指示を絶対に入れない。
 - illustrationPromptには温かい手描き絵本風、紙の質感、本文に合う一枚絵、画像内に文字を描かないことを含める。
+- 表示用フィールド（pageTitle/bodyText/sceneSummary/nextSceneHint）では次の語を絶対に使わない: ${DISPLAY_FORBIDDEN_TERMS.join("、")}
 pageTitleは必ず「${nextDay}日目：」で始める。`;
         const rawNext = await generateTextJson(genAI, pagePrompt, () => fallbackNextPage(nextDay, outcome.nextSceneHint), 18000);
         nextPage = await buildPageWithImage(normalizePage(rawNext, nextDay));

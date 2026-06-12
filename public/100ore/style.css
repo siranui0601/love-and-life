@@ -336,31 +336,36 @@ button:disabled { cursor: not-allowed; }
 
 .canvas-overlay {
   pointer-events: none;
+  z-index: 2;
+}
+
+.placement-frame {
+  position: absolute;
   border: 3px dashed rgba(138, 38, 25, 0.9);
   background: rgba(255, 255, 255, 0.08);
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.25));
 }
 
-.canvas-overlay.circle { border-radius: 50%; }
-.canvas-overlay.rounded { border-radius: 22px; }
-
-.canvas-overlay::after {
-  content: "この中だけ描けます";
-  position: absolute;
-  left: 8px;
-  top: 8px;
-  border-radius: 999px;
-  padding: 4px 8px;
-  background: rgba(255, 247, 220, 0.9);
-  color: #5c2b19;
-  font-size: 12px;
+.placement-frame.active {
+  border-color: rgba(213, 63, 42, 1);
+  box-shadow: 0 0 0 4px rgba(213, 63, 42, 0.18);
 }
 
-.stage-help {
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-size: 0.92rem;
+.placement-frame.circle { border-radius: 50%; }
+.placement-frame.rounded { border-radius: 22px; }
+
+.drag-ghost {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  border: 3px dashed rgba(138, 38, 25, 0.95);
+  background: rgba(255, 249, 231, 0.72);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
 }
+
+.drag-ghost.circle { border-radius: 50%; }
+.drag-ghost.rounded { border-radius: 18px; }
 
 /* Tool panel --------------------------------------------- */
 
