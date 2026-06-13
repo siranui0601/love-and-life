@@ -1852,18 +1852,20 @@ export async function listBungeiLinesForPlayer(playerTrackingId, speechOrder = [
 
 const HUNDRED_ORE_CACHE_HEADERS = [
   "cacheId",
-  "sceneKey",
-  "sourceDay",
-  "sourcePageTitle",
+  "sourceSceneKey",
+  "sourcePageNumber",
+  "sourceTitle",
+  "sourceImageHash",
+  "sourceImageHint",
   "changeLabelsText",
   "changeLabelsJson",
-  "storyCard",
-  "outcomeText",
-  "nextPageTitle",
-  "nextPageBody",
-  "nextSceneKey",
-  "outcomeJson",
-  "nextPageJson",
+  "resultSceneKey",
+  "resultPageNumber",
+  "resultTitle",
+  "resultBodyText",
+  "resultStorySoFar",
+  "gameOver",
+  "resultImageHash",
   "createdAt",
 ];
 const HUNDRED_ORE_RUNS_HEADERS = [
@@ -1873,10 +1875,19 @@ const HUNDRED_ORE_RUNS_HEADERS = [
   "startedAt",
   "endedAt",
   "score",
-  "gameOverReason",
+  "gameOver",
+  "finalTitle",
+  "finalBodyText",
   "pagesJson",
   "metaJson",
 ];
+
+function normalizeHundredOreLabels(labels) {
+  return (Array.isArray(labels) ? labels : [])
+    .map((label) => String(label || "").trim().slice(0, 40))
+    .filter(Boolean)
+    .slice(0, 5);
+}
 
 function parseHundredOreRunRow(row, index = 0) {
   return {
@@ -1888,33 +1899,35 @@ function parseHundredOreRunRow(row, index = 0) {
     startedAt: String(row?.[3] || "").trim(),
     endedAt: String(row?.[4] || "").trim(),
     score: Number(row?.[5] || 0),
-    gameOverReason: String(row?.[6] || "").trim(),
-    pages: safeParseJson(row?.[7], []),
-    meta: safeParseJson(row?.[8], {}),
+    gameOver: String(row?.[6] || "").trim().toLowerCase() === "true",
+    finalTitle: String(row?.[7] || "").trim(),
+    finalBodyText: String(row?.[8] || "").trim(),
+    pages: safeParseJson(row?.[9], []),
+    meta: safeParseJson(row?.[10], {}),
   };
 }
 
 function parseHundredOreCacheRow(row, index = 0) {
-  const outcome = safeParseJson(row?.[11], null);
-  const nextPage = safeParseJson(row?.[12], null);
-  const changeLabels = safeParseJson(row?.[5], []);
+  const changeLabels = safeParseJson(row?.[7], []);
   return {
     rowIndex: index + 2,
     recordType: "cache",
     cacheId: String(row?.[0] || "").trim(),
-    sceneKey: String(row?.[1] || "").trim(),
-    sourceDay: Number(row?.[2] || 0),
-    sourcePageTitle: String(row?.[3] || "").trim(),
-    changeLabelsText: String(row?.[4] || "").trim(),
-    changeLabels: Array.isArray(changeLabels) ? changeLabels.map(String) : [],
-    storyCard: String(row?.[6] || outcome?.storyCard || outcome?.outcomeMode || "").trim(),
-    outcomeText: String(row?.[7] || outcome?.outcomeSummary || outcome?.rewriteText || "").trim(),
-    nextPageTitle: String(row?.[8] || nextPage?.pageTitle || "").trim(),
-    nextPageBody: String(row?.[9] || nextPage?.bodyText || "").trim(),
-    nextSceneKey: String(row?.[10] || nextPage?.sceneKey || "").trim(),
-    outcome,
-    nextPage,
-    createdAt: String(row?.[13] || "").trim(),
+    sourceSceneKey: String(row?.[1] || "").trim(),
+    sourcePageNumber: Number(row?.[2] || 0),
+    sourceTitle: String(row?.[3] || "").trim(),
+    sourceImageHash: String(row?.[4] || "").trim(),
+    sourceImageHint: String(row?.[5] || "").trim(),
+    changeLabelsText: String(row?.[6] || "").trim(),
+    changeLabels: normalizeHundredOreLabels(changeLabels),
+    resultSceneKey: String(row?.[8] || "").trim(),
+    resultPageNumber: Number(row?.[9] || 0),
+    resultTitle: String(row?.[10] || "").trim(),
+    resultBodyText: String(row?.[11] || "").trim(),
+    resultStorySoFar: String(row?.[12] || "").trim(),
+    gameOver: String(row?.[13] || "").trim().toLowerCase() === "true",
+    resultImageHash: String(row?.[14] || "").trim(),
+    createdAt: String(row?.[15] || "").trim(),
   };
 }
 
@@ -1938,39 +1951,6 @@ function stripHundredOreImagePayload(value) {
   return cleaned;
 }
 
-function sanitizeHundredOreCacheOutcome(outcome) {
-  if (!outcome || typeof outcome !== "object") return {};
-  const storyCard = String(outcome.storyCard || outcome.outcomeMode || "");
-  return {
-    rewriteText: String(outcome.rewriteText || ""),
-    outcomeSummary: String(outcome.outcomeSummary || ""),
-    outcomeType: String(outcome.outcomeType || ""),
-    gameOver: Boolean(outcome.gameOver),
-    gameOverReason: String(outcome.gameOverReason || ""),
-    nextSceneHint: String(outcome.nextSceneHint || ""),
-    changeLabels: Array.isArray(outcome.changeLabels) ? outcome.changeLabels.map(String).slice(0, 8) : [],
-    cacheId: String(outcome.cacheId || ""),
-    storyCard,
-    outcomeMode: storyCard,
-  };
-}
-
-function sanitizeHundredOreCacheNextPage(page) {
-  if (!page || typeof page !== "object") return null;
-  return {
-    day: Number(page.day || 1),
-    pageTitle: String(page.pageTitle || ""),
-    bodyText: String(page.bodyText || ""),
-    sceneSummary: String(page.sceneSummary || ""),
-    sceneKey: String(page.sceneKey || ""),
-    imageHash: String(page.imageHash || ""),
-    imageModel: String(page.imageModel || ""),
-    imageGenerationFailed: Boolean(page.imageGenerationFailed),
-    advancedAxis: String(page.advancedAxis || ""),
-    nextTouchableObjects: Array.isArray(page.nextTouchableObjects) ? page.nextTouchableObjects.map(String).filter(Boolean).slice(0, 5) : [],
-  };
-}
-
 async function ensureSheetHeader(sheets, sheetName, headers) {
   const endColumn = String.fromCharCode("A".charCodeAt(0) + headers.length - 1);
   const range = `${sheetName}!A1:${endColumn}1`;
@@ -1991,21 +1971,26 @@ async function ensureSheetHeader(sheets, sheetName, headers) {
 }
 
 async function ensureHundredOreCacheHeader(sheets) {
-  console.log("[100ore] sheets target", { cacheSheet: HUNDRED_ORE_CACHE_SHEET_NAME, runsSheet: HUNDRED_ORE_RUNS_SHEET_NAME });
   await ensureSheetHeader(sheets, HUNDRED_ORE_CACHE_SHEET_NAME, HUNDRED_ORE_CACHE_HEADERS);
 }
 
 async function ensureHundredOreRunsHeader(sheets) {
-  console.log("[100ore] sheets target", { cacheSheet: HUNDRED_ORE_CACHE_SHEET_NAME, runsSheet: HUNDRED_ORE_RUNS_SHEET_NAME });
   await ensureSheetHeader(sheets, HUNDRED_ORE_RUNS_SHEET_NAME, HUNDRED_ORE_RUNS_HEADERS);
 }
 
 export async function appendHundredOreRun(run) {
   const sheets = await getSheetsClient();
   await ensureHundredOreRunsHeader(sheets);
-  const safePages = stripHundredOreImagePayload(run.pages || []);
-  const pagesJson = JSON.stringify(safePages);
-  console.debug("[100ore] run pagesJson length", pagesJson.length);
+  const safePages = stripHundredOreImagePayload(run.pages || []).map((page) => ({
+    pageNumber: Number(page.pageNumber || 1),
+    title: String(page.title || ""),
+    bodyText: String(page.bodyText || ""),
+    storySoFar: String(page.storySoFar || ""),
+    sceneKey: String(page.sceneKey || ""),
+    imageHash: String(page.imageHash || ""),
+    gameOver: Boolean(page.gameOver),
+    changeLabels: normalizeHundredOreLabels(page.changeLabels),
+  }));
   const values = [[
     String(run.runId || ""),
     String(run.username || ""),
@@ -2013,14 +1998,16 @@ export async function appendHundredOreRun(run) {
     String(run.startedAt || ""),
     String(run.endedAt || new Date().toISOString()),
     Number(run.score || 0),
-    String(run.gameOverReason || ""),
-    pagesJson,
+    String(Boolean(run.gameOver)),
+    String(run.finalTitle || ""),
+    String(run.finalBodyText || ""),
+    JSON.stringify(safePages),
     JSON.stringify(stripHundredOreImagePayload(run.meta || {})),
   ]];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${HUNDRED_ORE_RUNS_SHEET_NAME}!A2:I`,
+    range: `${HUNDRED_ORE_RUNS_SHEET_NAME}!A2:K`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values },
@@ -2032,33 +2019,29 @@ export async function appendHundredOreRun(run) {
 export async function appendHundredOreCache(cache) {
   const sheets = await getSheetsClient();
   await ensureHundredOreCacheHeader(sheets);
-  const changeLabels = Array.isArray(cache.changeLabels) ? cache.changeLabels.map(String).filter(Boolean).slice(0, 8) : [];
-  const safeOutcome = sanitizeHundredOreCacheOutcome(stripHundredOreImagePayload(cache.outcome || {}));
-  const safeNextPage = sanitizeHundredOreCacheNextPage(stripHundredOreImagePayload(cache.nextPage || null));
-  const outcomeJson = JSON.stringify(safeOutcome);
-  const nextPageJson = JSON.stringify(safeNextPage || null);
-  console.debug("[100ore] branch nextPageJson length", nextPageJson.length);
-  const storyCard = String(cache.storyCard || safeOutcome.storyCard || safeOutcome.outcomeMode || "");
+  const changeLabels = normalizeHundredOreLabels(cache.changeLabels);
   const values = [[
-    String(cache.cacheId || safeOutcome.cacheId || ""),
-    String(cache.sceneKey || ""),
-    Number(cache.sourceDay || 0),
-    String(cache.sourcePageTitle || ""),
+    String(cache.cacheId || ""),
+    String(cache.sourceSceneKey || ""),
+    Number(cache.sourcePageNumber || 0),
+    String(cache.sourceTitle || ""),
+    String(cache.sourceImageHash || ""),
+    String(cache.sourceImageHint || ""),
     String(cache.changeLabelsText || changeLabels.join(" / ")),
     JSON.stringify(changeLabels),
-    storyCard,
-    String(cache.outcomeText || safeOutcome.outcomeSummary || safeOutcome.rewriteText || ""),
-    String(cache.nextPageTitle || safeNextPage?.pageTitle || ""),
-    String(cache.nextPageBody || safeNextPage?.bodyText || ""),
-    String(cache.nextSceneKey || safeNextPage?.sceneKey || ""),
-    outcomeJson,
-    nextPageJson,
+    String(cache.resultSceneKey || ""),
+    Number(cache.resultPageNumber || 0),
+    String(cache.resultTitle || ""),
+    String(cache.resultBodyText || ""),
+    String(cache.resultStorySoFar || ""),
+    String(Boolean(cache.gameOver)),
+    String(cache.resultImageHash || ""),
     String(cache.createdAt || new Date().toISOString()),
   ]];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${HUNDRED_ORE_CACHE_SHEET_NAME}!A2:N`,
+    range: `${HUNDRED_ORE_CACHE_SHEET_NAME}!A2:P`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values },
@@ -2072,18 +2055,18 @@ export async function listHundredOreCacheBySceneKey(sceneKey) {
   if (!key) return [];
   const sheets = await getSheetsClient();
   await ensureHundredOreCacheHeader(sheets);
-  const range = `${HUNDRED_ORE_CACHE_SHEET_NAME}!A2:N`;
+  const range = `${HUNDRED_ORE_CACHE_SHEET_NAME}!A2:P`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   const rows = res.data.values || [];
   return rows
     .map(parseHundredOreCacheRow)
-    .filter((cache) => cache && cache.cacheId && cache.sceneKey === key);
+    .filter((cache) => cache && cache.cacheId && cache.sourceSceneKey === key);
 }
 
 export async function listHundredOreRankings({ limit = 30 } = {}) {
   const sheets = await getSheetsClient();
   await ensureHundredOreRunsHeader(sheets);
-  const range = `${HUNDRED_ORE_RUNS_SHEET_NAME}!A2:I`;
+  const range = `${HUNDRED_ORE_RUNS_SHEET_NAME}!A2:K`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   const rows = res.data.values || [];
   return rows
@@ -2098,7 +2081,7 @@ export async function getHundredOreRunById(runId) {
   if (!key) return null;
   const sheets = await getSheetsClient();
   await ensureHundredOreRunsHeader(sheets);
-  const range = `${HUNDRED_ORE_RUNS_SHEET_NAME}!A2:I`;
+  const range = `${HUNDRED_ORE_RUNS_SHEET_NAME}!A2:K`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   const rows = res.data.values || [];
   for (let i = 0; i < rows.length; i += 1) {
