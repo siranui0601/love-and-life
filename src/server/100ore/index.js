@@ -137,6 +137,8 @@ async function labelAndMatchBranch(genAI, { currentPage, originalMimeType, origi
 
 同じ場面で、意味がほぼ同じ変化だけmatched=true。
 「少女に羽」と「主人公に羽」は別物。「羽」と「光」も別物。
+出力するchangeLabelsは絵本世界の出来事として書く。
+「落書き」「描いた」等のメタ語は使わない。絵として評価
 
 既出なら: {"matched":true,"cacheId":"xxx","changeLabels":["候補側のラベル"]}
 未出なら: {"matched":false,"cacheId":"","changeLabels":["1→2枚目の短い変化ラベル"]}
@@ -157,14 +159,14 @@ async function labelAndMatchBranch(genAI, { currentPage, originalMimeType, origi
   return { matched: false, cacheId: "", changeLabels, cache: null };
 }
 async function generateNormalStory(genAI, { currentPage, nextPageNumber, changeLabels, originalMimeType, originalBase64, compositeMimeType, compositeBase64 }) {
-  const prompt = `1→2枚目の変化を元に、次ページの物語を作って。
+  const prompt = `1→2枚目の変化と変化ラベルを元に、次ページの物語を生成。
 目的は、俺と少女が救われない運命を避けること。
 救われないとは、死、事故、失踪、冤罪、孤立、失敗、心が折れる、しょーもないミス等を含む。
 
 この場面の説明を続けず、一難去ってまた一難にする。
 奇想天外で突拍子もない展開にすること。
 必ず少女か俺に具体的な危機を発生させること。
-危機には、具体物を2つ以上描写し、何が危機なのかを明言する。
+危機には、具体物を2つ以上描写し、何が危機なのかを明言する
 
 titleは必ず「${nextPageNumber}ページ目: ○○」にする。
 bodyTextは100字程度。
