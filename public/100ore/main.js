@@ -4,12 +4,11 @@ const refs = {
   start: document.getElementById("startBtn"),
   rankingTop: document.getElementById("rankingBtnTop"),
   ranking: document.getElementById("rankingBtn"),
-  day: document.getElementById("dayBadge"),
+  pageBadge: document.getElementById("dayBadge"),
   status: document.getElementById("statusBar"),
-  pageTitle: document.getElementById("pageTitle"),
+  title: document.getElementById("title"),
   story: document.getElementById("storyText"),
-  scene: document.getElementById("sceneSummary"),
-  outcome: document.getElementById("outcomeChip"),
+  scene: document.getElementById("storySoFar"),
   history: document.getElementById("historyList"),
   stage: document.getElementById("pictureStage"),
   viewport: document.getElementById("stageViewport"),
@@ -55,7 +54,7 @@ const shapes = [
 ];
 const state = {
   runId: null,
-  day: 1,
+  pageNumber: 1,
   current: null,
   pages: [],
   stock: [],
@@ -121,7 +120,7 @@ function updateConfirmState() {
   const hasPlacement = state.placements.length > 0;
   const hasDrawing = hasMeaningfulDrawing();
   refs.confirm.disabled = !hasPlacement || !hasDrawing || state.rewriting || state.gameOver;
-  console.debug("[100ore] confirm state", { hasPlacement, hasDrawing, rewriting: state.rewriting, gameOver: state.gameOver, disabled: refs.confirm.disabled });
+  console.debug("[8-15] confirm state", { hasPlacement, hasDrawing, rewriting: state.rewriting, gameOver: state.gameOver, disabled: refs.confirm.disabled });
 }
 function renderPanels() {
   refs.stock.innerHTML = "";
@@ -161,7 +160,7 @@ function setEditMode(mode) {
   refs.panelTitle.textContent = toPen ? "ペンパネル" : "キャンパスパネル";
   refs.flip.textContent = toPen ? "キャンパスパネルへ" : "ペンパネルへ";
   refs.flip.closest(".flip-panel")?.setAttribute("data-side", toPen ? "pen" : "canvas");
-  console.debug("[100ore] panel flip", { editMode: state.editMode });
+  console.debug("[8-15] panel flip", { editMode: state.editMode });
 }
 function selectCanvas(item) {
   if (state.rewriting || state.gameOver) return;
@@ -413,7 +412,7 @@ function onPointerDown(e) {
   const point = pointFromEvent(e);
   const handleHit = state.editMode === "canvas" ? rotateHandleAt(point) : null;
   const placementHit = placementAt(point);
-  console.debug("[100ore] pointerdown", { editMode: state.editMode, selected: state.selected?.id || null, activePlacementId: state.activePlacementId, hitPlacement: placementHit?.id || null, hitRotateHandle: handleHit?.id || null });
+  console.debug("[8-15] pointerdown", { editMode: state.editMode, selected: state.selected?.id || null, activePlacementId: state.activePlacementId, hitPlacement: placementHit?.id || null, hitRotateHandle: handleHit?.id || null });
   if (state.editMode === "canvas") {
     if (handleHit) {
       setActivePlacement(handleHit.id);
@@ -452,7 +451,7 @@ function onPointerMove(e) {
   if (!state.pointerMode) return;
   e.preventDefault();
   const point = pointFromEvent(e);
-  console.debug("[100ore] pointermove", { pointerMode: state.pointerMode });
+  console.debug("[8-15] pointermove", { pointerMode: state.pointerMode });
   if (state.pointerMode === "pan") {
     const now = eventClientPoint(e);
     state.viewport.panX = state.pointerStart.startViewport.panX + (now.clientX - state.pointerStart.startClient.clientX);
@@ -600,24 +599,22 @@ function liteCanvases() {
 }
 function applyPage(page, { append = true } = {}) {
   state.current = page;
-  state.day = Number(page.day || state.day || 1);
-  refs.day.textContent = `${state.day}日目`;
-  refs.pageTitle.textContent = page.pageTitle || `${state.day}日目`;
+  state.pageNumber = Number(page.pageNumber || state.pageNumber || 1);
+  refs.pageBadge.textContent = `${state.pageNumber}ページ目`;
+  refs.title.textContent = page.title || `${state.pageNumber}ページ目`;
   refs.story.textContent = page.bodyText || "";
-  refs.scene.textContent = page.sceneSummary || "";
+  refs.scene.textContent = page.storySoFar || "";
   refs.img.src = page.imageDataUrl || page.imageUrl || "";
-  const imageFailed = Boolean(page.imageGenerationFailed);
-  refs.stage.classList.toggle("image-generation-failed", imageFailed);
-  refs.fallbackNotice.hidden = !imageFailed;
-  if (append) state.pages.push({ day: state.day, pageTitle: page.pageTitle, bodyText: page.bodyText, sceneSummary: page.sceneSummary, sceneKey: page.sceneKey, imageHash: page.imageHash, imageGenerationFailed: imageFailed, imageModel: page.imageModel || "" });
+  refs.stage.classList.remove("image-generation-failed");
+  refs.fallbackNotice.hidden = true;
+  if (append) state.pages.push({ pageNumber: state.pageNumber, title: page.title, bodyText: page.bodyText, storySoFar: page.storySoFar, sceneKey: page.sceneKey, imageHash: page.imageHash, gameOver: Boolean(page.gameOver), changeLabels: Array.isArray(page.changeLabels) ? page.changeLabels : [] });
   state.selected = null;
   state.placements = [];
   state.strokes = [];
   state.activePlacementId = null;
   state.undo = [];
   state.redo = [];
-  refs.outcome.textContent = "未確定";
-  resetViewport();
+    resetViewport();
   setEditMode("canvas");
   renderPanels();
   setTimeout(resizeCanvas, 60);
@@ -642,7 +639,6 @@ async function startGame() {
     setLoading(false);
   }
 }
-function isGameOverValue(value) { return value === true || (typeof value === "string" && value.trim().toLowerCase() === "true") || value === 1; }
 async function confirmRewrite() {
   if (!state.placements.length || !hasMeaningfulDrawing() || state.gameOver || state.rewriting) return;
   state.rewriting = true;
@@ -652,20 +648,19 @@ async function confirmRewrite() {
     const [originalImageDataUrl, compositeImageDataUrl] = await Promise.all([buildOriginalImage(), buildCompositeForAI()]);
     const canvases = liteCanvases();
     const drawingHash = await sha256(await (await fetch(compositeImageDataUrl)).arrayBuffer());
-    const currentPage = { day: state.current?.day, pageTitle: state.current?.pageTitle, bodyText: state.current?.bodyText, sceneSummary: state.current?.sceneSummary, sceneKey: state.current?.sceneKey, imageHash: state.current?.imageHash };
-    const data = await api("/api/100ore/rewrite", { runId: state.runId, day: state.day, currentPage, originalImageDataUrl, compositeImageDataUrl, canvases, drawingHash });
-    refs.outcome.textContent = data.cacheHit ? "既出の転機" : (data.outcome?.outcomeType || "転機");
-    addHistory(data.outcome);
-    if (state.pages.length) state.pages[state.pages.length - 1] = { ...state.pages[state.pages.length - 1], outcomeSummary: data.outcome?.outcomeSummary || data.outcome?.rewriteText || "", changeLabels: data.outcome?.changeLabels || [], canvases, imageHash: state.current?.imageHash || "" };
+    const currentPage = { pageNumber: state.current?.pageNumber, title: state.current?.title, bodyText: state.current?.bodyText, storySoFar: state.current?.storySoFar, sceneKey: state.current?.sceneKey, imageHash: state.current?.imageHash, gameOver: state.current?.gameOver };
+    const data = await api("/api/100ore/rewrite", { runId: state.runId, pageNumber: state.pageNumber, currentPage, originalImageDataUrl, compositeImageDataUrl, canvases, drawingHash });
+    addHistory(data.changeLabels);
+    if (state.pages.length) state.pages[state.pages.length - 1] = { ...state.pages[state.pages.length - 1], changeLabels: data.changeLabels || [] };
     replenishOneStock();
-    if (isGameOverValue(data.outcome?.gameOver)) {
+    applyPage({ ...data.page, changeLabels: data.changeLabels || [] });
+    if (data.page?.gameOver) {
       state.gameOver = true;
-      await saveRun(data.outcome);
-      showGameOver(data.outcome);
+      await saveRun();
+      showGameOver(data.page);
       return;
     }
-    applyPage(data.nextPage);
-    setStatus(data.transientError ? "挿絵生成が混雑しています。この分岐は保存せず、必要ならもう一度試してください。" : (data.cacheHit ? "同じような変化だったので、前と同じ展開へ進みました。" : "続きのページが現れました。残りの紙片と補充1枚を使えます。"));
+    setStatus(data.cacheHit ? "同じような変化だったので、前と同じ展開へ進みました。" : "続きのページが現れました。残りの紙片と補充1枚を使えます。");
   } catch (e) {
     console.error(e);
     setStatus(e.message.includes("AIが混雑") ? "AIが混雑しています。もう一度試してください" : `確定に失敗しました: ${e.message}`);
@@ -675,21 +670,22 @@ async function confirmRewrite() {
     updateConfirmState();
   }
 }
-function addHistory(outcome) {
-  if (!outcome) return;
+function addHistory(changeLabels) {
+  const labels = Array.isArray(changeLabels) && changeLabels.length ? changeLabels.join(" / ") : "物語が動いた";
   const el = document.createElement("div");
   el.className = "history-item";
-  el.textContent = `${state.day}日目: ${outcome.rewriteText || outcome.outcomeSummary || "物語が動いた。"}`;
+  el.textContent = `${state.pageNumber}ページ目の変化: ${labels}`;
   refs.history.prepend(el);
 }
-async function saveRun(outcome) {
+async function saveRun() {
   const user = getUser();
-  await api("/api/100ore/runs", { runId: state.runId, username: user.username || localStorage.getItem("username") || "名無しの俺", userTrackingId: user.userTrackingId || localStorage.getItem("userTrackingId") || "", score: state.day, gameOverReason: outcome.gameOverReason || outcome.outcomeSummary || "物語から退場", pages: state.pages, endedAt: new Date().toISOString() }).catch((e) => setStatus(`ランキング保存に失敗しました: ${e.message}`));
+  const finalPage = state.pages[state.pages.length - 1] || state.current || {};
+  await api("/api/100ore/runs", { runId: state.runId, username: user.username || localStorage.getItem("username") || "名無しの俺", userTrackingId: user.userTrackingId || localStorage.getItem("userTrackingId") || "", score: state.pageNumber, gameOver: true, finalTitle: finalPage.title || "", finalBodyText: finalPage.bodyText || "", pages: state.pages, endedAt: new Date().toISOString() }).catch((e) => setStatus(`ランキング保存に失敗しました: ${e.message}`));
 }
-function showGameOver(outcome) {
+function showGameOver(page) {
   const div = document.createElement("div");
   div.className = "game-over-card";
-  div.innerHTML = `<h2>ゲームオーバー：${state.day}日目</h2><p>${escapeHtml(outcome.gameOverReason || outcome.outcomeSummary || "俺は絵本から消えた。")}</p><button class="primary-btn" id="againBtn">もう一度</button> <button class="ghost-btn" id="overRankBtn">ランキング</button>`;
+  div.innerHTML = `<h2>ゲームオーバー：${state.pageNumber}ページ目</h2><p>${escapeHtml(page.bodyText || "俺は絵本から消えた。")}</p><button class="primary-btn" id="againBtn">もう一度</button> <button class="ghost-btn" id="overRankBtn">ランキング</button>`;
   document.body.appendChild(div);
   div.querySelector("#againBtn").onclick = () => location.reload();
   div.querySelector("#overRankBtn").onclick = showRanking;
@@ -705,7 +701,7 @@ async function showRanking() {
     (data.rankings || []).forEach((r, i) => {
       const row = document.createElement("div");
       row.className = "rank-row";
-      row.innerHTML = `<b>${i + 1}</b><span>${escapeHtml(r.username || "名無しの俺")}<br><small>${escapeHtml(r.gameOverReason || "")}</small></span><strong>${r.score}日</strong>`;
+      row.innerHTML = `<b>${i + 1}</b><span>${escapeHtml(r.username || "名無しの俺")}<br><small>${escapeHtml(r.finalTitle || "")}</small></span><strong>${r.score}ページ</strong>`;
       const btn = document.createElement("button");
       btn.className = "small-btn";
       btn.textContent = "絵本を見る";
@@ -729,7 +725,7 @@ async function showRun(runId) {
     (data.run?.pages || []).forEach((p) => {
       const el = document.createElement("div");
       el.className = "run-page";
-      el.innerHTML = `${p.imageUrl ? `<img src="${p.imageUrl}" alt="">` : `<div></div>`}<div><b>${escapeHtml(p.pageTitle || `${p.day}日目`)}</b><p>${escapeHtml(p.bodyText || "")}</p><small>${escapeHtml(p.sceneSummary || "")}</small>${p.outcomeSummary ? `<p><em>転機: ${escapeHtml(p.outcomeSummary)}</em></p>` : ""}</div>`;
+      el.innerHTML = `${p.imageUrl ? `<img src="${p.imageUrl}" alt="">` : `<div></div>`}<div><b>${escapeHtml(p.title || `${p.pageNumber}ページ目`)}</b><p>${escapeHtml(p.bodyText || "")}</p><small>${escapeHtml(p.storySoFar || "")}</small></div>`;
       refs.runViewer.appendChild(el);
     });
   } catch (e) {
