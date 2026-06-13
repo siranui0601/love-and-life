@@ -716,6 +716,7 @@ function expandCropRect(bounds, canvasWidth, canvasHeight) {
 }
 
 // ラベル判定AI専用：落書き周辺だけを切り出して拡大する
+// ラベル判定AI専用：落書き周辺だけを切り出して拡大する
 async function buildLabelCompositeForAI() {
   const sourceCanvas = await renderCompositeCanvasForAI(AI_LABEL_IMAGE_SIZE);
   const bounds = getInkStrokeBounds(AI_LABEL_IMAGE_SIZE);
@@ -752,34 +753,36 @@ async function buildLabelCompositeForAI() {
     outputHeight
   );
 
+  const debugMeta = {
+    sourceSize: AI_LABEL_IMAGE_SIZE,
+
+    boundsMinX: Math.round(bounds.minX),
+    boundsMinY: Math.round(bounds.minY),
+    boundsMaxX: Math.round(bounds.maxX),
+    boundsMaxY: Math.round(bounds.maxY),
+    boundsWidth: Math.round(bounds.width),
+    boundsHeight: Math.round(bounds.height),
+
+    cropX: Math.round(crop.x),
+    cropY: Math.round(crop.y),
+    cropWidth: Math.round(crop.width),
+    cropHeight: Math.round(crop.height),
+
+    outputWidth,
+    outputHeight,
+    outputLongSide: Math.max(outputWidth, outputHeight),
+
+    quality: AI_LABEL_IMAGE_QUALITY,
+    strokeCount: bounds.strokeCount,
+    pointCount: bounds.pointCount,
+  };
+
   const dataUrl = canvasToJpegDataUrl(out);
 
-const debugMeta = {
-  sourceSize: AI_LABEL_IMAGE_SIZE,
-  boundsMinX: Math.round(bounds.minX),
-  boundsMinY: Math.round(bounds.minY),
-  boundsMaxX: Math.round(bounds.maxX),
-  boundsMaxY: Math.round(bounds.maxY),
-  boundsWidth: Math.round(bounds.width),
-  boundsHeight: Math.round(bounds.height),
-  cropX: Math.round(crop.x),
-  cropY: Math.round(crop.y),
-  cropWidth: Math.round(crop.width),
-  cropHeight: Math.round(crop.height),
-  outputWidth,
-  outputHeight,
-  outputLongSide: Math.max(outputWidth, outputHeight),
-  quality: AI_LABEL_IMAGE_QUALITY,
-  strokeCount: bounds.strokeCount,
-  pointCount: bounds.pointCount,
-};
+  console.debug("[8-15] label crop built", debugMeta);
+  showDebugLabelCrop(dataUrl, debugMeta);
 
-const dataUrl = canvasToJpegDataUrl(out);
-
-console.debug("[8-15] label crop built", debugMeta);
-showDebugLabelCrop(dataUrl, debugMeta);
-
-return dataUrl;
+  return dataUrl;
 }
 async function buildCompositeForPreview() {
   const size = 512;
