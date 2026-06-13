@@ -173,17 +173,17 @@ function imageParts(prompt, originalMimeType, originalBase64, compositeMimeType,
   return parts;
 }
 async function labelAndMatchBranch(genAI, { currentPage, originalMimeType, originalBase64, compositeMimeType, compositeBase64, candidates }) {
-  const prompt = `1→2枚目の変化を抽出し、これと同様の変化ラベルを1つ下記から選べ。
+  const prompt = `1枚目は全体図。そこに2枚目のような変化が起きた。これと同様の変化ラベルを1つ下記から選べ。
 
 候補: ${JSON.stringify(candidates.map((c) => ({ cacheId: c.cacheId, changeLabels: c.changeLabels })))}
 
-同じ場面で、意味がほぼ同じ変化だけmatched=true。
-画像を注視し、既出か未出かは慎重に判断すること。
+意味がほぼ同じ変化だけmatched=true。
+画像を注視し、既出か否かは慎重に判断すること。
 出力するchangeLabelsは絵本世界の出来事として書く。
 「落書き」「描いた」等のメタ語は使わない。絵として評価
 
 既出なら: {"matched":true,"cacheId":"xxx","changeLabels":["候補側のラベル"]}
-未出なら: {"matched":false,"cacheId":"","changeLabels":["1→2枚目の短い変化ラベル"]}
+未出なら: {"matched":false,"cacheId":"","changeLabels":["猫に首輪,手紙が燃える　等の短い変化ラベル"]}
 
 返答はコメントなしのJSONのみ。`;
   const raw = await generateTextJson(genAI, imageParts(prompt, originalMimeType, originalBase64, compositeMimeType, compositeBase64), VISION_TIMEOUT_MS);
@@ -200,18 +200,16 @@ async function labelAndMatchBranch(genAI, { currentPage, originalMimeType, origi
   if (!changeLabels.length) throw new Error("invalid_label_match_empty_labels");
   return { matched: false, cacheId: "", changeLabels, cache: null };
 }
-async function generateNormalStory(genAI, { currentPage, nextPageNumber, changeLabels, originalMimeType, originalBase64, compositeMimeType, compositeBase64 }) {
-  const prompt = `1→2枚目の変化と変化ラベルを元に、次ページの物語を生成。
-目的は、俺と少女が救われない運命を避けること。カゲロウデイズのようなイメージです。
+async function generateNormalStory(genAI, { currentPage, nextPageNumber, changeLabels }) {
+  const prompt = `本文,あらすじ,変化ラベルを元に、次ページの物語を生成。
+目的は、俺と少女が救われない運命を避けること。カゲロウデイズのようなイメージ。
 
 この場面の説明を続けず、一難去ってまた一難にする。
 奇想天外で突拍子もない展開にすること。
-必ず少女か俺に具体的な危機を発生させること。
+必ず少女か俺に具体的な危機を発生させること
 危機には、具体物を2つ以上描写し、何が危機なのかを明言する
 
-titleは必ず「${nextPageNumber}ページ目: ○○」にする。
-bodyTextは100字程度。
-storySoFarは300字以下。
+titleは必ず「${nextPageNumber}ページ目: ○○」にする
 
 現在の本文: ${currentPage.bodyText}
 
@@ -221,15 +219,14 @@ storySoFarは300字以下。
 
 返答はJSONのみ: {
   "title":"",
-  "bodyText":"",
-  "storySoFar":""
+  "bodyText":"100字程度",
+  "storySoFar":"300字以下"
 }`;
-  const raw = await generateTextJson(genAI, imageParts(prompt, originalMimeType, originalBase64, compositeMimeType, compositeBase64));
+  const raw = await generateTextJson(genAI, [{ text: prompt }], TEXT_TIMEOUT_MS);
   return normalizePage(raw, nextPageNumber);
 }
-async function generateBadEndStory(genAI, { currentPage, nextPageNumber, changeLabels, originalMimeType, originalBase64, compositeMimeType, compositeBase64 }) {
-  const prompt = `1→2枚目の変化を主軸に、カゲロウデイズのようなバッドエンドストーリーを生成。
-必ず1→2枚目の変化を主軸にすること。
+async function generateBadEndStory(genAI, { currentPage, nextPageNumber, changeLabels }) {
+  const prompt = `**変化ラベル(!IMPORTANT)**を主軸に、カゲロウデイズのようなバッドエンドストーリーを生成。
 
 titleは必ず「${nextPageNumber}ページ目: ○○」にする。
 bodyTextは100字程度。
@@ -244,7 +241,7 @@ bodyTextは100字程度。
   "title":"",
   "bodyText":""
 }`;
-  const raw = await generateTextJson(genAI, imageParts(prompt, originalMimeType, originalBase64, compositeMimeType, compositeBase64));
+  const raw = await generateTextJson(genAI, [{ text: prompt }], TEXT_TIMEOUT_MS);
   const bodyText = clampText(raw?.bodyText, 160) || "逃げ道を見失い、俺たちはそこで終わった。";
   return normalizePage({ title: raw?.title, bodyText, storySoFar: clampText(`${currentPage.storySoFar} ${bodyText}`, 300), gameOver: true }, nextPageNumber);
 }
@@ -360,13 +357,36 @@ export function mountHundredOreRoutes(app) {
       const currentPage = normalizePage(req.body?.currentPage || {}, Number(req.body?.currentPage?.pageNumber || req.body?.pageNumber || 1));
       if (!currentPage.sceneKey) return res.status(400).json({ error: "invalid_current_page" });
       const nextPageNumber = currentPage.pageNumber + 1;
-      const { mimeType: originalMimeType, base64: originalBase64 } = parseDataUrl(req.body?.originalImageDataUrl);
-      const { mimeType: compositeMimeType, base64: compositeBase64 } = parseDataUrl(req.body?.compositeImageDataUrl);
-      if (!originalBase64 || !compositeBase64) return res.status(400).json({ error: "images_required" });
+      const { mimeType: originalMimeType, base64: originalBase64 } =
+  parseDataUrl(req.body?.originalImageDataUrl);
+
+const { mimeType: labelCompositeMimeType, base64: labelCompositeBase64 } =
+  parseDataUrl(req.body?.labelCompositeImageDataUrl || req.body?.compositeImageDataUrl);
+
+const { mimeType: referenceCompositeMimeType, base64: referenceCompositeBase64 } =
+  parseDataUrl(req.body?.referenceCompositeImageDataUrl || req.body?.compositeImageDataUrl);
+
+if (!originalBase64 || !labelCompositeBase64 || !referenceCompositeBase64) {
+  return res.status(400).json({ error: "images_required" });
+}
+
+console.log("[8-15] rewrite image inputs", {
+  originalBase64Length: originalBase64.length,
+  labelCompositeBase64Length: labelCompositeBase64.length,
+  referenceCompositeBase64Length: referenceCompositeBase64.length,
+});
+
       const sheetCandidates = await listHundredOreCacheBySceneKey(currentPage.sceneKey).catch((error) => { console.warn("[8-15] cache load fallback", { error: errorMessage(error) }); return []; });
       const memoryCandidates = MEMORY_CACHES.filter((cache) => cache.sourceSceneKey === currentPage.sceneKey);
       const candidates = [...sheetCandidates, ...memoryCandidates];
-      const match = await labelAndMatchBranch(genAI, { currentPage, originalMimeType, originalBase64, compositeMimeType, compositeBase64, candidates });
+      const match = await labelAndMatchBranch(genAI, {
+  currentPage,
+  originalMimeType,
+  originalBase64,
+  compositeMimeType: labelCompositeMimeType,
+  compositeBase64: labelCompositeBase64,
+  candidates,
+});
       console.log("[8-15] label/match", { sourceSceneKey: currentPage.sceneKey, sourcePageNumber: currentPage.pageNumber, matched: match.matched, cacheId: match.cacheId, changeLabels: match.changeLabels });
 
       let page;
@@ -389,8 +409,16 @@ export function mountHundredOreRoutes(app) {
       } else {
         const gameOver = Math.random() < BAD_END_RATE;
         page = gameOver
-          ? await generateBadEndStory(genAI, { currentPage, nextPageNumber, changeLabels: match.changeLabels, originalMimeType, originalBase64, compositeMimeType, compositeBase64 })
-          : await generateNormalStory(genAI, { currentPage, nextPageNumber, changeLabels: match.changeLabels, originalMimeType, originalBase64, compositeMimeType, compositeBase64 });
+  ? await generateBadEndStory(genAI, {
+      currentPage,
+      nextPageNumber,
+      changeLabels: match.changeLabels,
+    })
+  : await generateNormalStory(genAI, {
+      currentPage,
+      nextPageNumber,
+      changeLabels: match.changeLabels,
+    });
         page.gameOver = gameOver;
         page.sceneKey = buildResultSceneKey(currentPage.sceneKey, match.changeLabels, page.title, page.storySoFar);
         console.log("[8-15] story generated", { pageNumber: page.pageNumber, title: page.title, gameOver: page.gameOver, storySoFarLength: page.storySoFar.length });
@@ -400,7 +428,14 @@ export function mountHundredOreRoutes(app) {
 
       if (!cacheHit || !page.imageUrl) {
         if (cacheHit) console.warn("[8-15] cache image missing; regenerating image", { cacheId, resultSceneKey: page.sceneKey, resultImageHash: page.imageHash });
-        page = await attachGeneratedImage(page, { originalMimeType, originalBase64, compositeMimeType, compositeBase64, runId: clampText(req.body?.runId, 80), cacheId });
+        page = await attachGeneratedImage(page, {
+  originalMimeType: "",
+  originalBase64: "",
+  compositeMimeType: referenceCompositeMimeType,
+  compositeBase64: referenceCompositeBase64,
+  runId: clampText(req.body?.runId, 80),
+  cacheId,
+});
       } else {
         console.log("[8-15] cache image reused", { cacheId, pageNumber: page.pageNumber, imageHash: String(page.imageHash || "").slice(0, 12), imageUrl: page.imageUrl });
       }
