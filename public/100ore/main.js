@@ -80,7 +80,7 @@ function getUser() {
 }
 function setStatus(text) { refs.status.textContent = text; }
 function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[c])); }
-const AI_LABEL_IMAGE_SIZE = 1024;
+const AI_LABEL_IMAGE_SIZE = 512;
 const AI_LABEL_IMAGE_QUALITY = 0.72;
 function pageImageSrc(page = {}) {
   if (page.imageDataUrl) return String(page.imageDataUrl);
