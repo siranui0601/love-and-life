@@ -604,6 +604,41 @@ async function renderCompositeCanvasForAI(size = AI_LABEL_IMAGE_SIZE) {
 function canvasToJpegDataUrl(canvas, quality = AI_LABEL_IMAGE_QUALITY) {
   return canvas.toDataURL("image/jpeg", quality);
 }
+//デバック用
+function showDebugLabelCrop(dataUrl, meta = {}) {
+  document.getElementById("debugLabelCropBox")?.remove();
+
+  const box = document.createElement("div");
+  box.id = "debugLabelCropBox";
+  box.style.position = "fixed";
+  box.style.right = "12px";
+  box.style.bottom = "12px";
+  box.style.zIndex = "99999";
+  box.style.width = "280px";
+  box.style.maxHeight = "70vh";
+  box.style.overflow = "auto";
+  box.style.background = "rgba(20, 12, 8, 0.94)";
+  box.style.color = "#fff";
+  box.style.border = "2px solid #f7d38a";
+  box.style.borderRadius = "14px";
+  box.style.padding = "10px";
+  box.style.boxShadow = "0 12px 32px rgba(0,0,0,.35)";
+  box.style.fontSize = "12px";
+
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;">
+      <b>AI送信用 crop</b>
+      <button type="button" id="closeDebugLabelCrop" style="font-size:12px;">閉じる</button>
+    </div>
+    <img src="${dataUrl}" alt="label crop debug" style="width:100%;display:block;border-radius:10px;background:#f7e8c3;">
+    <pre style="white-space:pre-wrap;font-size:11px;margin:8px 0 0;">${escapeHtml(JSON.stringify(meta, null, 2))}</pre>
+  `;
+
+  document.body.appendChild(box);
+  box.querySelector("#closeDebugLabelCrop").onclick = () => box.remove();
+}
+
+
 
 async function buildOriginalImage() {
   const canvas = await renderOriginalCanvasForAI(AI_LABEL_IMAGE_SIZE);
@@ -719,8 +754,14 @@ async function buildLabelCompositeForAI() {
 
   const dataUrl = canvasToJpegDataUrl(out);
 
-console.debug("[8-15] label crop built", {
+const debugMeta = {
   sourceSize: AI_LABEL_IMAGE_SIZE,
+  boundsMinX: Math.round(bounds.minX),
+  boundsMinY: Math.round(bounds.minY),
+  boundsMaxX: Math.round(bounds.maxX),
+  boundsMaxY: Math.round(bounds.maxY),
+  boundsWidth: Math.round(bounds.width),
+  boundsHeight: Math.round(bounds.height),
   cropX: Math.round(crop.x),
   cropY: Math.round(crop.y),
   cropWidth: Math.round(crop.width),
@@ -731,11 +772,12 @@ console.debug("[8-15] label crop built", {
   quality: AI_LABEL_IMAGE_QUALITY,
   strokeCount: bounds.strokeCount,
   pointCount: bounds.pointCount,
-  preview: dataUrl,
-});
+};
 
-// デバッグ用。新しいタブでAIに送るcrop画像を開く
-window.open(dataUrl, "_blank");
+const dataUrl = canvasToJpegDataUrl(out);
+
+console.debug("[8-15] label crop built", debugMeta);
+showDebugLabelCrop(dataUrl, debugMeta);
 
 return dataUrl;
 }
