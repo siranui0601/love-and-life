@@ -3,7 +3,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_API_KEY } from "../../foundation/env.js";
-import { getHundredOreDriveImage, uploadHundredOreImageToDrive } from "../../foundation/drive.js";
 import { appendHundredOreCache, appendHundredOreRun, getHundredOreRunById, listHundredOreCacheBySceneKey, listHundredOreRankings } from "../../foundation/sheets.js";
 
 const HUNDRED_ORE_PUBLIC_PATH = "/100日後も生きる俺";
@@ -20,6 +19,9 @@ const BAD_END_RATE = 0.3;
 const VERSION = "eight-fifteen-simple-flow-v1";
 const TEXT_MODEL_CANDIDATES = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 const IMAGE_MODEL_CANDIDATES = ["gemini-2.5-flash-image", "gemini-3-pro-image-preview", "gemini-2.5-flash-image-preview"];
+const LOCAL_IMAGE_DIR = path.join(process.cwd(), "public/8-15-images");
+const LOCAL_IMAGE_URL_PREFIX = "/8-15-images";
+
 
 const INITIAL_PAGE_TEXT = {
   pageNumber: 1,
@@ -42,6 +44,42 @@ function parseDataUrl(dataUrl) {
   return { mimeType: match[1], base64: match[2] };
 }
 function dataUrlToBase64(dataUrl) { return parseDataUrl(dataUrl).base64; }
+function imageExtensionFromMimeType(mimeType) {
+  const normalized = String(mimeType || "").toLowerCase();
+  if (normalized.includes("png")) return "png";
+  if (normalized.includes("svg")) return "svg";
+  if (normalized.includes("webp")) return "webp";
+  return "jpg";
+}
+function sanitizeFilePart(value, max = 48) {
+  return String(value || "")
+    .normalize("NFKC")
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, max) || "image";
+}
+async function saveHundredOreImageLocally({ imageDataUrl, imageHash, pageNumber, title, runId, cacheId, gameOver } = {}) {
+  const { mimeType, base64 } = parseDataUrl(imageDataUrl);
+  if (!base64) throw new Error("image_data_url_required");
+  const buffer = Buffer.from(base64, "base64");
+  if (!buffer.length) throw new Error("image_buffer_empty");
+  await fs.mkdir(LOCAL_IMAGE_DIR, { recursive: true });
+  const ext = imageExtensionFromMimeType(mimeType);
+  const ownerId = sanitizeFilePart(cacheId || runId || "run", 40);
+  const titlePart = sanitizeFilePart(title, 40);
+  const parts = [
+    ownerId,
+    `p${Number(pageNumber || 0) || 0}`,
+    gameOver ? "badend" : "page",
+    sanitizeFilePart(String(imageHash || "").slice(0, 12), 12),
+    titlePart,
+  ].filter(Boolean);
+  const fileName = `${parts.join("-")}.${ext}`;
+  await fs.writeFile(path.join(LOCAL_IMAGE_DIR, fileName), buffer);
+  return { imageUrl: `${LOCAL_IMAGE_URL_PREFIX}/${encodeURIComponent(fileName)}` };
+}
 function sha256(input) { return crypto.createHash("sha256").update(String(input || "")).digest("hex"); }
 function sha256Buffer(input) { return crypto.createHash("sha256").update(input).digest("hex"); }
 function clampText(value, max = 260) { return String(value || "").replace(/\s+/g, " ").trim().slice(0, max); }
@@ -101,8 +139,6 @@ function sanitizeSavedPage(page = {}) {
     storySoFar: clampText(page.storySoFar, 300),
     sceneKey: clampText(page.sceneKey, 80),
     imageHash: clampText(page.imageHash, 80),
-    imageFileId: clampText(page.imageFileId, 160),
-    imageDriveUrl: clampText(page.imageDriveUrl, 220),
     imageUrl: clampText(page.imageUrl, 220),
     gameOver: Boolean(page.gameOver),
     changeLabels: normalizeChangeLabels(page.changeLabels),
@@ -266,7 +302,7 @@ async function attachGeneratedImage(page, refs = {}) {
   const nextPage = { ...page, imageDataUrl: image.dataUrl, imageHash };
   console.log("[8-15] image generated", { pageNumber: page.pageNumber, imageHash: imageHash.slice(0, 12), referenceMode: image.referenceMode });
   try {
-    const saved = await uploadHundredOreImageToDrive({
+    const saved = await saveHundredOreImageLocally({
       imageDataUrl: image.dataUrl,
       imageHash,
       pageNumber: page.pageNumber,
@@ -275,13 +311,12 @@ async function attachGeneratedImage(page, refs = {}) {
       cacheId: refs.cacheId,
       gameOver: page.gameOver,
     });
-    if (saved?.imageFileId) {
-      nextPage.imageFileId = saved.imageFileId;
-      nextPage.imageDriveUrl = saved.imageDriveUrl;
-      console.log("[8-15] drive image saved", { pageNumber: page.pageNumber, imageFileId: saved.imageFileId });
+    if (saved?.imageUrl) {
+      nextPage.imageUrl = saved.imageUrl;
+      console.log("[8-15] local image saved", { pageNumber: page.pageNumber, imageHash: imageHash.slice(0, 12), imageUrl: saved.imageUrl });
     }
   } catch (error) {
-    console.warn("[8-15] drive image save failed", { pageNumber: page.pageNumber, error: errorMessage(error) });
+    console.warn("[8-15] local image save failed", { pageNumber: page.pageNumber, imageHash: imageHash.slice(0, 12), error: errorMessage(error) });
   }
   return nextPage;
 }
@@ -310,19 +345,6 @@ export function mountHundredOreRoutes(app) {
     if (!dataUrl) return res.status(404).send("not found");
     const { mimeType, base64 } = parseDataUrl(dataUrl);
     res.type(mimeType).send(Buffer.from(base64, "base64"));
-  });
-
-  app.get("/api/100ore/images/:fileId", async (req, res) => {
-    try {
-      const image = await getHundredOreDriveImage(String(req.params.fileId || ""));
-      if (!image?.buffer) return res.status(404).send("not found");
-      res.type(image.mimeType || "application/octet-stream");
-      res.set("Cache-Control", "private, max-age=300");
-      return res.send(image.buffer);
-    } catch (error) {
-      console.warn("[8-15] drive image fetch failed", { fileId: String(req.params.fileId || ""), error: errorMessage(error) });
-      return res.status(error?.code === 404 ? 404 : 500).send("image fetch failed");
-    }
   });
 
   app.post("/api/100ore/start", async (req, res) => {
@@ -361,6 +383,7 @@ export function mountHundredOreRoutes(app) {
           storySoFar: cached.resultStorySoFar,
           sceneKey: cached.resultSceneKey,
           imageHash: cached.resultImageHash,
+          imageUrl: cached.resultImageUrl,
           imageFileId: cached.resultImageFileId,
           imageDriveUrl: cached.resultImageDriveUrl,
           gameOver: cached.gameOver,
@@ -377,7 +400,12 @@ export function mountHundredOreRoutes(app) {
 
       if (!cacheHit) cacheId = `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
 
-      page = await attachGeneratedImage(page, { originalMimeType, originalBase64, compositeMimeType, compositeBase64, runId: clampText(req.body?.runId, 80), cacheId });
+      if (!cacheHit || !page.imageUrl) {
+        if (cacheHit) console.warn("[8-15] cache image missing; regenerating image", { cacheId, resultSceneKey: page.sceneKey, resultImageHash: page.imageHash });
+        page = await attachGeneratedImage(page, { originalMimeType, originalBase64, compositeMimeType, compositeBase64, runId: clampText(req.body?.runId, 80), cacheId });
+      } else {
+        console.log("[8-15] cache image reused", { cacheId, pageNumber: page.pageNumber, imageHash: String(page.imageHash || "").slice(0, 12), imageUrl: page.imageUrl });
+      }
 
       if (!cacheHit) {
         const cache = {
@@ -396,8 +424,7 @@ export function mountHundredOreRoutes(app) {
           resultStorySoFar: page.storySoFar,
           gameOver: page.gameOver,
           resultImageHash: page.imageHash,
-          resultImageFileId: page.imageFileId,
-          resultImageDriveUrl: page.imageDriveUrl,
+          resultImageUrl: page.imageUrl,
           createdAt: new Date().toISOString(),
         };
         MEMORY_CACHES.unshift(cache); MEMORY_CACHES.splice(200);

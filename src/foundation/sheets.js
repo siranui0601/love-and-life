@@ -1867,8 +1867,7 @@ const HUNDRED_ORE_CACHE_HEADERS = [
   "gameOver",
   "resultImageHash",
   "createdAt",
-  "resultImageFileId",
-  "resultImageDriveUrl",
+  "resultImageUrl",
 ];
 const HUNDRED_ORE_RUNS_HEADERS = [
   "runId",
@@ -1911,6 +1910,9 @@ function parseHundredOreRunRow(row, index = 0) {
 
 function parseHundredOreCacheRow(row, index = 0) {
   const changeLabels = safeParseJson(row?.[7], []);
+  const qValue = String(row?.[16] || "").trim();
+  const rValue = String(row?.[17] || "").trim();
+  const qLooksLikeUrl = /^(?:https?:\/\/|\/)/i.test(qValue);
   return {
     rowIndex: index + 2,
     recordType: "cache",
@@ -1930,8 +1932,9 @@ function parseHundredOreCacheRow(row, index = 0) {
     gameOver: String(row?.[13] || "").trim().toLowerCase() === "true",
     resultImageHash: String(row?.[14] || "").trim(),
     createdAt: String(row?.[15] || "").trim(),
-    resultImageFileId: String(row?.[16] || "").trim(),
-    resultImageDriveUrl: String(row?.[17] || "").trim(),
+    resultImageUrl: qLooksLikeUrl || !rValue ? qValue : "",
+    resultImageFileId: rValue ? qValue : "",
+    resultImageDriveUrl: rValue,
   };
 }
 
@@ -1992,8 +1995,6 @@ export async function appendHundredOreRun(run) {
     storySoFar: String(page.storySoFar || ""),
     sceneKey: String(page.sceneKey || ""),
     imageHash: String(page.imageHash || ""),
-    imageFileId: String(page.imageFileId || ""),
-    imageDriveUrl: String(page.imageDriveUrl || ""),
     imageUrl: String(page.imageUrl || ""),
     gameOver: Boolean(page.gameOver),
     changeLabels: normalizeHundredOreLabels(page.changeLabels),
@@ -2044,13 +2045,12 @@ export async function appendHundredOreCache(cache) {
     String(Boolean(cache.gameOver)),
     String(cache.resultImageHash || ""),
     String(cache.createdAt || new Date().toISOString()),
-    String(cache.resultImageFileId || ""),
-    String(cache.resultImageDriveUrl || ""),
+    String(cache.resultImageUrl || ""),
   ]];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${HUNDRED_ORE_CACHE_SHEET_NAME}!A2:R`,
+    range: `${HUNDRED_ORE_CACHE_SHEET_NAME}!A2:Q`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values },

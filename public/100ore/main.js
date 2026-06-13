@@ -80,11 +80,13 @@ function getUser() {
 }
 function setStatus(text) { refs.status.textContent = text; }
 function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[c])); }
+const AI_LABEL_IMAGE_SIZE = 1024;
+const AI_LABEL_IMAGE_QUALITY = 0.72;
 function pageImageSrc(page = {}) {
   if (page.imageDataUrl) return String(page.imageDataUrl);
+  if (page.imageUrl) return String(page.imageUrl);
   if (page.imageDriveUrl) return String(page.imageDriveUrl);
   if (page.imageFileId) return `/api/100ore/images/${encodeURIComponent(page.imageFileId)}`;
-  if (page.imageUrl) return String(page.imageUrl);
   return "";
 }
 function savedPage(page = {}) {
@@ -559,7 +561,7 @@ async function loadImage(src) {
   });
 }
 async function buildOriginalImage() {
-  const size = 512;
+  const size = AI_LABEL_IMAGE_SIZE;
   const out = document.createElement("canvas");
   out.width = size;
   out.height = size;
@@ -568,10 +570,10 @@ async function buildOriginalImage() {
   o.fillStyle = "#f7e8c3";
   o.fillRect(0, 0, size, size);
   o.drawImage(img, 0, 0, size, size);
-  return out.toDataURL("image/jpeg", 0.72);
+  return out.toDataURL("image/jpeg", AI_LABEL_IMAGE_QUALITY);
 }
 async function buildCompositeForAI() {
-  const size = 512;
+  const size = AI_LABEL_IMAGE_SIZE;
   const out = document.createElement("canvas");
   out.width = size;
   out.height = size;
@@ -581,7 +583,7 @@ async function buildCompositeForAI() {
   o.fillRect(0, 0, size, size);
   o.drawImage(img, 0, 0, size, size);
   state.strokes.forEach((stroke) => drawStroke(o, stroke, state.placements.find((p) => p.id === stroke.placementId), size));
-  return out.toDataURL("image/jpeg", 0.72);
+  return out.toDataURL("image/jpeg", AI_LABEL_IMAGE_QUALITY);
 }
 async function buildCompositeForPreview() {
   const size = 512;
