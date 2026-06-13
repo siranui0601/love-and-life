@@ -202,8 +202,7 @@ async function labelAndMatchBranch(genAI, { currentPage, originalMimeType, origi
 }
 async function generateNormalStory(genAI, { currentPage, nextPageNumber, changeLabels, originalMimeType, originalBase64, compositeMimeType, compositeBase64 }) {
   const prompt = `1→2枚目の変化と変化ラベルを元に、次ページの物語を生成。
-目的は、俺と少女が救われない運命を避けること。
-救われないとは、死、事故、失踪、冤罪、孤立、失敗、心が折れる、しょーもないミス等を含む。
+目的は、俺と少女が救われない運命を避けること。カゲロウデイズのようなイメージです。
 
 この場面の説明を続けず、一難去ってまた一難にする。
 奇想天外で突拍子もない展開にすること。
@@ -229,9 +228,8 @@ storySoFarは300字以下。
   return normalizePage(raw, nextPageNumber);
 }
 async function generateBadEndStory(genAI, { currentPage, nextPageNumber, changeLabels, originalMimeType, originalBase64, compositeMimeType, compositeBase64 }) {
-  const prompt = `1→2枚目の変化を主軸に、バッドエンドストーリーを生成。
-バッドエンドは死、事故、失踪、冤罪、孤立、失敗、心が折れる、しょーもないミス等、内容はなんでも良い。
-が、必ず1→2枚目の変化を主軸にすること。
+  const prompt = `1→2枚目の変化を主軸に、カゲロウデイズのようなバッドエンドストーリーを生成。
+必ず1→2枚目の変化を主軸にすること。
 
 titleは必ず「${nextPageNumber}ページ目: ○○」にする。
 bodyTextは100字程度。
