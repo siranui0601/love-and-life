@@ -85,7 +85,7 @@ const AI_LABEL_IMAGE_QUALITY = 0.72;
 
 // ラベル判定用：落書き周辺だけを切り出す時の設定
 const LABEL_CROP_LONG_SIDE = 512;
-const LABEL_CROP_PADDING_RATIO = 0.25;
+const LABEL_CROP_PADDING_RATIO = 0.5;
 const LABEL_CROP_MIN_PADDING = 32;
 
 function pageImageSrc(page = {}) {
