@@ -173,12 +173,12 @@ function imageParts(prompt, originalMimeType, originalBase64, compositeMimeType,
   return parts;
 }
 async function labelAndMatchBranch(genAI, { currentPage, originalMimeType, originalBase64, compositeMimeType, compositeBase64, candidates }) {
-  const prompt = `1→2枚目の変化を抽出し、これと同様、もしくはほぼ同様の変化ラベルを1つ下記から選べ。
+  const prompt = `1→2枚目の変化を抽出し、これと同様の変化ラベルを1つ下記から選べ。
 
 候補: ${JSON.stringify(candidates.map((c) => ({ cacheId: c.cacheId, changeLabels: c.changeLabels })))}
 
 同じ場面で、意味がほぼ同じ変化だけmatched=true。
-「少女に羽」と「主人公に羽」は別物。「羽」と「光」も別物。
+画像を注視し、既出か未出かは慎重に判断すること。
 出力するchangeLabelsは絵本世界の出来事として書く。
 「落書き」「描いた」等のメタ語は使わない。絵として評価
 
