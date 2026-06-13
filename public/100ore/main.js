@@ -80,6 +80,34 @@ function getUser() {
 }
 function setStatus(text) { refs.status.textContent = text; }
 function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[c])); }
+function pageImageSrc(page = {}) {
+  if (page.imageDataUrl) return String(page.imageDataUrl);
+  if (page.imageDriveUrl) return String(page.imageDriveUrl);
+  if (page.imageFileId) return `/api/100ore/images/${encodeURIComponent(page.imageFileId)}`;
+  if (page.imageUrl) return String(page.imageUrl);
+  return "";
+}
+function savedPage(page = {}) {
+  return {
+    pageNumber: Number(page.pageNumber || 1),
+    title: page.title || "",
+    bodyText: page.bodyText || "",
+    storySoFar: page.storySoFar || "",
+    sceneKey: page.sceneKey || "",
+    imageHash: page.imageHash || "",
+    imageFileId: page.imageFileId || "",
+    imageDriveUrl: page.imageDriveUrl || "",
+    imageUrl: page.imageUrl || "",
+    gameOver: Boolean(page.gameOver),
+    changeLabels: Array.isArray(page.changeLabels) ? page.changeLabels : [],
+  };
+}
+function changeLabelsHtml(labels) {
+  const safe = Array.isArray(labels) ? labels.filter(Boolean) : [];
+  if (!safe.length) return "";
+  return `<div class="page-labels">${safe.map((label) => `<span>${escapeHtml(label)}</span>`).join("")}</div>`;
+}
+
 function clearLoadingTimers() { state.loadingTimers.forEach((timer) => clearTimeout(timer)); state.loadingTimers = []; }
 function setLoading(show, text = "ページの端をめくっています…") { if (!show) clearLoadingTimers(); refs.loading.hidden = !show; refs.loadingText.textContent = text; }
 function setLoadingSteps(steps) {
@@ -604,10 +632,10 @@ function applyPage(page, { append = true } = {}) {
   refs.title.textContent = page.title || `${state.pageNumber}ページ目`;
   refs.story.textContent = page.bodyText || "";
   refs.scene.textContent = page.storySoFar || "";
-  refs.img.src = page.imageDataUrl || page.imageUrl || "";
+  refs.img.src = pageImageSrc(page);
   refs.stage.classList.remove("image-generation-failed");
   refs.fallbackNotice.hidden = true;
-  if (append) state.pages.push({ pageNumber: state.pageNumber, title: page.title, bodyText: page.bodyText, storySoFar: page.storySoFar, sceneKey: page.sceneKey, imageHash: page.imageHash, gameOver: Boolean(page.gameOver), changeLabels: Array.isArray(page.changeLabels) ? page.changeLabels : [] });
+  if (append) state.pages.push(savedPage(page));
   state.selected = null;
   state.placements = [];
   state.strokes = [];
@@ -648,7 +676,7 @@ async function confirmRewrite() {
     const [originalImageDataUrl, compositeImageDataUrl] = await Promise.all([buildOriginalImage(), buildCompositeForAI()]);
     const canvases = liteCanvases();
     const drawingHash = await sha256(await (await fetch(compositeImageDataUrl)).arrayBuffer());
-    const currentPage = { pageNumber: state.current?.pageNumber, title: state.current?.title, bodyText: state.current?.bodyText, storySoFar: state.current?.storySoFar, sceneKey: state.current?.sceneKey, imageHash: state.current?.imageHash, gameOver: state.current?.gameOver };
+    const currentPage = savedPage(state.current || {});
     const data = await api("/api/100ore/rewrite", { runId: state.runId, pageNumber: state.pageNumber, currentPage, originalImageDataUrl, compositeImageDataUrl, canvases, drawingHash });
     addHistory(data.changeLabels);
     if (state.pages.length) state.pages[state.pages.length - 1] = { ...state.pages[state.pages.length - 1], changeLabels: data.changeLabels || [] };
@@ -682,13 +710,49 @@ async function saveRun() {
   const finalPage = state.pages[state.pages.length - 1] || state.current || {};
   await api("/api/100ore/runs", { runId: state.runId, username: user.username || localStorage.getItem("username") || "名無しの俺", userTrackingId: user.userTrackingId || localStorage.getItem("userTrackingId") || "", score: state.pageNumber, gameOver: true, finalTitle: finalPage.title || "", finalBodyText: finalPage.bodyText || "", pages: state.pages, endedAt: new Date().toISOString() }).catch((e) => setStatus(`ランキング保存に失敗しました: ${e.message}`));
 }
+function renderReviewPage(p, className = "bad-review-page") {
+  const src = pageImageSrc(p);
+  return `<article class="${className}">
+    ${src ? `<img src="${src}" alt="${escapeHtml(p.title || "絵本のページ")}">` : `<div class="image-missing">画像なし</div>`}
+    <div class="review-text">
+      <b>${escapeHtml(p.title || `${p.pageNumber || "?"}ページ目`)}</b>
+      <p>${escapeHtml(p.bodyText || "")}</p>
+      ${changeLabelsHtml(p.changeLabels)}
+    </div>
+  </article>`;
+}
 function showGameOver(page) {
+  document.querySelector(".game-over-card")?.remove();
   const div = document.createElement("div");
   div.className = "game-over-card";
-  div.innerHTML = `<h2>ゲームオーバー：${state.pageNumber}ページ目</h2><p>${escapeHtml(page.bodyText || "俺は絵本から消えた。")}</p><button class="primary-btn" id="againBtn">もう一度</button> <button class="ghost-btn" id="overRankBtn">ランキング</button>`;
+  const reviewPages = state.pages.map((p) => (p.pageNumber === page.pageNumber ? { ...p, ...savedPage(page), changeLabels: p.changeLabels || page.changeLabels || [] } : p));
+  const heroSrc = pageImageSrc(page);
+  div.innerHTML = `<div class="game-over-panel">
+    <div class="game-over-head">
+      <p class="eyebrow">運命は赤黒く閉じた</p>
+      <h2>バッドエンド：${state.pageNumber}ページ目</h2>
+      <button class="small-btn close-over-btn" id="closeOverBtn" type="button">閉じる</button>
+    </div>
+    <section class="bad-end-hero">
+      ${heroSrc ? `<img src="${heroSrc}" alt="${escapeHtml(page.title || "バッドエンド")}">` : `<div class="image-missing">画像なし</div>`}
+      <div>
+        <h3>${escapeHtml(page.title || "終わりのページ")}</h3>
+        <p>${escapeHtml(page.bodyText || "俺は絵本から消えた。")}</p>
+      </div>
+    </section>
+    <h3 class="review-heading">ここまでの絵本</h3>
+    <div class="bad-review-list">${reviewPages.map((p) => renderReviewPage(p)).join("")}</div>
+    <div class="game-over-actions">
+      <button class="primary-btn" id="againBtn" type="button">もう一度</button>
+      <button class="ghost-btn" id="overRankBtn" type="button">ランキング</button>
+      <button class="ghost-btn" id="closeOverBtnBottom" type="button">絵本を閉じる</button>
+    </div>
+  </div>`;
   document.body.appendChild(div);
   div.querySelector("#againBtn").onclick = () => location.reload();
   div.querySelector("#overRankBtn").onclick = showRanking;
+  div.querySelector("#closeOverBtn").onclick = () => div.remove();
+  div.querySelector("#closeOverBtnBottom").onclick = () => div.remove();
   setStatus("記録を保存しました。ほかの俺の絵本も覗けます。");
 }
 async function showRanking() {
@@ -725,7 +789,8 @@ async function showRun(runId) {
     (data.run?.pages || []).forEach((p) => {
       const el = document.createElement("div");
       el.className = "run-page";
-      el.innerHTML = `${p.imageUrl ? `<img src="${p.imageUrl}" alt="">` : `<div></div>`}<div><b>${escapeHtml(p.title || `${p.pageNumber}ページ目`)}</b><p>${escapeHtml(p.bodyText || "")}</p><small>${escapeHtml(p.storySoFar || "")}</small></div>`;
+      const src = pageImageSrc(p);
+      el.innerHTML = `${src ? `<img src="${src}" alt="${escapeHtml(p.title || "絵本のページ")}">` : `<div class="image-missing">画像なし</div>`}<div><b>${escapeHtml(p.title || `${p.pageNumber}ページ目`)}</b><p>${escapeHtml(p.bodyText || "")}</p>${changeLabelsHtml(p.changeLabels)}<small>${escapeHtml(p.storySoFar || "")}</small></div>`;
       refs.runViewer.appendChild(el);
     });
   } catch (e) {

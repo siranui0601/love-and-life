@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GEMINI_API_KEY } from "../../foundation/env.js";
+import { getHundredOreDriveImage, uploadHundredOreImageToDrive } from "../../foundation/drive.js";
 import { appendHundredOreCache, appendHundredOreRun, getHundredOreRunById, listHundredOreCacheBySceneKey, listHundredOreRankings } from "../../foundation/sheets.js";
 
 const HUNDRED_ORE_PUBLIC_PATH = "/100日後も生きる俺";
@@ -86,6 +87,8 @@ function normalizePage(page = {}, pageNumber = 1) {
     sceneKey: clampText(page.sceneKey, 80),
     imageHash: clampText(page.imageHash, 80),
     ...(page.imageDataUrl ? { imageDataUrl: String(page.imageDataUrl) } : {}),
+    ...(page.imageDriveUrl ? { imageDriveUrl: String(page.imageDriveUrl) } : {}),
+    ...(page.imageFileId ? { imageFileId: String(page.imageFileId) } : {}),
     ...(page.imageUrl ? { imageUrl: String(page.imageUrl) } : {}),
     gameOver: Boolean(page.gameOver),
   };
@@ -98,6 +101,9 @@ function sanitizeSavedPage(page = {}) {
     storySoFar: clampText(page.storySoFar, 300),
     sceneKey: clampText(page.sceneKey, 80),
     imageHash: clampText(page.imageHash, 80),
+    imageFileId: clampText(page.imageFileId, 160),
+    imageDriveUrl: clampText(page.imageDriveUrl, 220),
+    imageUrl: clampText(page.imageUrl, 220),
     gameOver: Boolean(page.gameOver),
     changeLabels: normalizeChangeLabels(page.changeLabels),
   };
@@ -253,14 +259,47 @@ async function generatePageImage(page, { originalMimeType, originalBase64, compo
   }
   return imageGenerationPlaceholder();
 }
-async function attachGeneratedImage(page, refs) {
+async function attachGeneratedImage(page, refs = {}) {
   const image = await generatePageImage(page, refs);
   const imageHash = sha256(dataUrlToBase64(image.dataUrl));
   FALLBACK_IMAGES.set(imageHash, image.dataUrl);
+  const nextPage = { ...page, imageDataUrl: image.dataUrl, imageHash };
   console.log("[8-15] image generated", { pageNumber: page.pageNumber, imageHash: imageHash.slice(0, 12), referenceMode: image.referenceMode });
-  return { ...page, imageDataUrl: image.dataUrl, imageHash };
+  try {
+    const saved = await uploadHundredOreImageToDrive({
+      imageDataUrl: image.dataUrl,
+      imageHash,
+      pageNumber: page.pageNumber,
+      title: page.title,
+      runId: refs.runId,
+      cacheId: refs.cacheId,
+      gameOver: page.gameOver,
+    });
+    if (saved?.imageFileId) {
+      nextPage.imageFileId = saved.imageFileId;
+      nextPage.imageDriveUrl = saved.imageDriveUrl;
+      console.log("[8-15] drive image saved", { pageNumber: page.pageNumber, imageFileId: saved.imageFileId });
+    }
+  } catch (error) {
+    console.warn("[8-15] drive image save failed", { pageNumber: page.pageNumber, error: errorMessage(error) });
+  }
+  return nextPage;
 }
 function serializeRun(run) { return { ...run, pages: Array.isArray(run.pages) ? run.pages : [] }; }
+function dedupeRankings(runs = []) {
+  const byRunId = new Map();
+  runs.forEach((run) => {
+    const runId = String(run?.runId || "").trim();
+    if (!runId) return;
+    const existing = byRunId.get(runId);
+    if (!existing) { byRunId.set(runId, run); return; }
+    const existingSheet = existing.recordType === "run";
+    const incomingSheet = run.recordType === "run";
+    if (incomingSheet && !existingSheet) { byRunId.set(runId, run); return; }
+    if (incomingSheet === existingSheet && String(run.endedAt || "").localeCompare(String(existing.endedAt || "")) > 0) byRunId.set(runId, run);
+  });
+  return [...byRunId.values()];
+}
 
 export function mountHundredOreRoutes(app) {
   console.log("[8-15] started", { cacheSheet: "100俺_cache", runsSheet: "100俺_runs", version: VERSION });
@@ -271,6 +310,19 @@ export function mountHundredOreRoutes(app) {
     if (!dataUrl) return res.status(404).send("not found");
     const { mimeType, base64 } = parseDataUrl(dataUrl);
     res.type(mimeType).send(Buffer.from(base64, "base64"));
+  });
+
+  app.get("/api/100ore/images/:fileId", async (req, res) => {
+    try {
+      const image = await getHundredOreDriveImage(String(req.params.fileId || ""));
+      if (!image?.buffer) return res.status(404).send("not found");
+      res.type(image.mimeType || "application/octet-stream");
+      res.set("Cache-Control", "private, max-age=300");
+      return res.send(image.buffer);
+    } catch (error) {
+      console.warn("[8-15] drive image fetch failed", { fileId: String(req.params.fileId || ""), error: errorMessage(error) });
+      return res.status(error?.code === 404 ? 404 : 500).send("image fetch failed");
+    }
   });
 
   app.post("/api/100ore/start", async (req, res) => {
@@ -309,6 +361,8 @@ export function mountHundredOreRoutes(app) {
           storySoFar: cached.resultStorySoFar,
           sceneKey: cached.resultSceneKey,
           imageHash: cached.resultImageHash,
+          imageFileId: cached.resultImageFileId,
+          imageDriveUrl: cached.resultImageDriveUrl,
           gameOver: cached.gameOver,
         }, Number(cached.resultPageNumber || nextPageNumber));
       } else {
@@ -321,10 +375,11 @@ export function mountHundredOreRoutes(app) {
         console.log("[8-15] story generated", { pageNumber: page.pageNumber, title: page.title, gameOver: page.gameOver, storySoFarLength: page.storySoFar.length });
       }
 
-      page = await attachGeneratedImage(page, { originalMimeType, originalBase64, compositeMimeType, compositeBase64 });
+      if (!cacheHit) cacheId = `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
+
+      page = await attachGeneratedImage(page, { originalMimeType, originalBase64, compositeMimeType, compositeBase64, runId: clampText(req.body?.runId, 80), cacheId });
 
       if (!cacheHit) {
-        cacheId = `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
         const cache = {
           cacheId,
           sourceSceneKey: currentPage.sceneKey,
@@ -341,6 +396,8 @@ export function mountHundredOreRoutes(app) {
           resultStorySoFar: page.storySoFar,
           gameOver: page.gameOver,
           resultImageHash: page.imageHash,
+          resultImageFileId: page.imageFileId,
+          resultImageDriveUrl: page.imageDriveUrl,
           createdAt: new Date().toISOString(),
         };
         MEMORY_CACHES.unshift(cache); MEMORY_CACHES.splice(200);
@@ -382,9 +439,12 @@ export function mountHundredOreRoutes(app) {
   app.get("/api/100ore/rankings", async (_req, res) => {
     try {
       const rankings = await listHundredOreRankings({ limit: 30 });
-      const merged = [...rankings, ...MEMORY_RUNS].sort((a, b) => Number(b.score) - Number(a.score) || String(b.endedAt).localeCompare(String(a.endedAt))).slice(0, 30);
+      const merged = dedupeRankings([...rankings, ...MEMORY_RUNS]).sort((a, b) => Number(b.score) - Number(a.score) || String(b.endedAt).localeCompare(String(a.endedAt))).slice(0, 30);
       return res.json({ rankings: merged.map((r) => ({ runId: r.runId, username: r.username, score: r.score, endedAt: r.endedAt, finalTitle: r.finalTitle, finalBodyText: r.finalBodyText })) });
-    } catch { return res.json({ rankings: MEMORY_RUNS.slice(0, 30) }); }
+    } catch {
+      const rankings = dedupeRankings(MEMORY_RUNS).sort((a, b) => Number(b.score) - Number(a.score) || String(b.endedAt).localeCompare(String(a.endedAt))).slice(0, 30);
+      return res.json({ rankings });
+    }
   });
 
   app.get("/api/100ore/runs/:runId", async (req, res) => {

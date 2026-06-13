@@ -10,3 +10,4 @@ export const SHEET_NAME = process.env.SHEET_NAME || "Users";
 
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 export const PORT = process.env.PORT || 3000;
+export const GOOGLE_DRIVE_IMAGE_FOLDER_ID = process.env.GOOGLE_DRIVE_IMAGE_FOLDER_ID || "";
