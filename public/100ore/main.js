@@ -717,21 +717,27 @@ async function buildLabelCompositeForAI() {
     outputHeight
   );
 
-  console.debug("[8-15] label crop built", {
-    sourceSize: AI_LABEL_IMAGE_SIZE,
-    cropX: Math.round(crop.x),
-    cropY: Math.round(crop.y),
-    cropWidth: Math.round(crop.width),
-    cropHeight: Math.round(crop.height),
-    outputWidth,
-    outputHeight,
-    outputLongSide: Math.max(outputWidth, outputHeight),
-    quality: AI_LABEL_IMAGE_QUALITY,
-    strokeCount: bounds.strokeCount,
-    pointCount: bounds.pointCount,
-  });
+  const dataUrl = canvasToJpegDataUrl(out);
 
-  return canvasToJpegDataUrl(out);
+console.debug("[8-15] label crop built", {
+  sourceSize: AI_LABEL_IMAGE_SIZE,
+  cropX: Math.round(crop.x),
+  cropY: Math.round(crop.y),
+  cropWidth: Math.round(crop.width),
+  cropHeight: Math.round(crop.height),
+  outputWidth,
+  outputHeight,
+  outputLongSide: Math.max(outputWidth, outputHeight),
+  quality: AI_LABEL_IMAGE_QUALITY,
+  strokeCount: bounds.strokeCount,
+  pointCount: bounds.pointCount,
+  preview: dataUrl,
+});
+
+// デバッグ用。新しいタブでAIに送るcrop画像を開く
+window.open(dataUrl, "_blank");
+
+return dataUrl;
 }
 async function buildCompositeForPreview() {
   const size = 512;
