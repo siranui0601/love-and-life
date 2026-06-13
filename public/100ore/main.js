@@ -82,6 +82,12 @@ function setStatus(text) { refs.status.textContent = text; }
 function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[c])); }
 const AI_LABEL_IMAGE_SIZE = 512;
 const AI_LABEL_IMAGE_QUALITY = 0.72;
+
+// ラベル判定用：落書き周辺だけを切り出す時の設定
+const LABEL_CROP_LONG_SIDE = 512;
+const LABEL_CROP_PADDING_RATIO = 0.25;
+const LABEL_CROP_MIN_PADDING = 32;
+
 function pageImageSrc(page = {}) {
   if (page.imageDataUrl) return String(page.imageDataUrl);
   if (page.imageUrl) return String(page.imageUrl);
@@ -560,30 +566,172 @@ async function loadImage(src) {
     img.src = src;
   });
 }
-async function buildOriginalImage() {
-  const size = AI_LABEL_IMAGE_SIZE;
+async function renderOriginalCanvasForAI(size = AI_LABEL_IMAGE_SIZE) {
   const out = document.createElement("canvas");
   out.width = size;
   out.height = size;
+
   const o = out.getContext("2d");
   const img = await loadImage(refs.img.src);
+
   o.fillStyle = "#f7e8c3";
   o.fillRect(0, 0, size, size);
   o.drawImage(img, 0, 0, size, size);
-  return out.toDataURL("image/jpeg", AI_LABEL_IMAGE_QUALITY);
+
+  return out;
 }
-async function buildCompositeForAI() {
-  const size = AI_LABEL_IMAGE_SIZE;
+
+async function renderCompositeCanvasForAI(size = AI_LABEL_IMAGE_SIZE) {
   const out = document.createElement("canvas");
   out.width = size;
   out.height = size;
+
   const o = out.getContext("2d");
   const img = await loadImage(refs.img.src);
+
   o.fillStyle = "#f7e8c3";
   o.fillRect(0, 0, size, size);
   o.drawImage(img, 0, 0, size, size);
-  state.strokes.forEach((stroke) => drawStroke(o, stroke, state.placements.find((p) => p.id === stroke.placementId), size));
-  return out.toDataURL("image/jpeg", AI_LABEL_IMAGE_QUALITY);
+
+  state.strokes.forEach((stroke) => {
+    const placement = state.placements.find((p) => p.id === stroke.placementId);
+    drawStroke(o, stroke, placement, size);
+  });
+
+  return out;
+}
+
+function canvasToJpegDataUrl(canvas, quality = AI_LABEL_IMAGE_QUALITY) {
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+async function buildOriginalImage() {
+  const canvas = await renderOriginalCanvasForAI(AI_LABEL_IMAGE_SIZE);
+  return canvasToJpegDataUrl(canvas);
+}
+
+// after全体画像。文章生成には使わず、画像生成AIの参照画像に使う。
+async function buildCompositeForAI() {
+  const canvas = await renderCompositeCanvasForAI(AI_LABEL_IMAGE_SIZE);
+  return canvasToJpegDataUrl(canvas);
+}
+
+function getInkStrokeBounds(size = AI_LABEL_IMAGE_SIZE) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let strokeCount = 0;
+  let pointCount = 0;
+
+  state.strokes.forEach((stroke) => {
+    // 「実際に描いたもの」の周辺を切りたいので、消しゴムだけの線は外接矩形に含めない
+    if (stroke.tool === "eraser") return;
+    if (!Array.isArray(stroke.points) || stroke.points.length < 2) return;
+
+    const placement = state.placements.find((p) => p.id === stroke.placementId);
+    if (!placement) return;
+
+    const lineWidth = Number(stroke.size || 8) * (size / refs.canvas.width);
+    const pad = Math.max(2, lineWidth / 2);
+
+    stroke.points.forEach((pt) => {
+      const gp = fromLocal(pt, placement, size);
+      if (!Number.isFinite(gp.x) || !Number.isFinite(gp.y)) return;
+
+      minX = Math.min(minX, gp.x - pad);
+      minY = Math.min(minY, gp.y - pad);
+      maxX = Math.max(maxX, gp.x + pad);
+      maxY = Math.max(maxY, gp.y + pad);
+      pointCount += 1;
+    });
+
+    strokeCount += 1;
+  });
+
+  if (!strokeCount || !pointCount) return null;
+
+  return {
+    minX,
+    minY,
+    maxX,
+    maxY,
+    width: Math.max(1, maxX - minX),
+    height: Math.max(1, maxY - minY),
+    strokeCount,
+    pointCount,
+  };
+}
+
+function expandCropRect(bounds, canvasWidth, canvasHeight) {
+  const padX = Math.max(LABEL_CROP_MIN_PADDING, bounds.width * LABEL_CROP_PADDING_RATIO);
+  const padY = Math.max(LABEL_CROP_MIN_PADDING, bounds.height * LABEL_CROP_PADDING_RATIO);
+
+  const x = Math.max(0, bounds.minX - padX);
+  const y = Math.max(0, bounds.minY - padY);
+  const right = Math.min(canvasWidth, bounds.maxX + padX);
+  const bottom = Math.min(canvasHeight, bounds.maxY + padY);
+
+  return {
+    x,
+    y,
+    width: Math.max(1, right - x),
+    height: Math.max(1, bottom - y),
+  };
+}
+
+// ラベル判定AI専用：落書き周辺だけを切り出して拡大する
+async function buildLabelCompositeForAI() {
+  const sourceCanvas = await renderCompositeCanvasForAI(AI_LABEL_IMAGE_SIZE);
+  const bounds = getInkStrokeBounds(AI_LABEL_IMAGE_SIZE);
+
+  if (!bounds) {
+    console.warn("[8-15] label crop fallback: no ink bounds");
+    return buildCompositeForAI();
+  }
+
+  const crop = expandCropRect(bounds, sourceCanvas.width, sourceCanvas.height);
+  const cropLongSide = Math.max(crop.width, crop.height);
+  const scale = LABEL_CROP_LONG_SIDE / cropLongSide;
+
+  const outputWidth = Math.max(1, Math.round(crop.width * scale));
+  const outputHeight = Math.max(1, Math.round(crop.height * scale));
+
+  const out = document.createElement("canvas");
+  out.width = outputWidth;
+  out.height = outputHeight;
+
+  const o = out.getContext("2d");
+  o.fillStyle = "#f7e8c3";
+  o.fillRect(0, 0, outputWidth, outputHeight);
+
+  o.drawImage(
+    sourceCanvas,
+    crop.x,
+    crop.y,
+    crop.width,
+    crop.height,
+    0,
+    0,
+    outputWidth,
+    outputHeight
+  );
+
+  console.debug("[8-15] label crop built", {
+    sourceSize: AI_LABEL_IMAGE_SIZE,
+    cropX: Math.round(crop.x),
+    cropY: Math.round(crop.y),
+    cropWidth: Math.round(crop.width),
+    cropHeight: Math.round(crop.height),
+    outputWidth,
+    outputHeight,
+    outputLongSide: Math.max(outputWidth, outputHeight),
+    quality: AI_LABEL_IMAGE_QUALITY,
+    strokeCount: bounds.strokeCount,
+    pointCount: bounds.pointCount,
+  });
+
+  return canvasToJpegDataUrl(out);
 }
 async function buildCompositeForPreview() {
   const size = 512;
@@ -675,11 +823,40 @@ async function confirmRewrite() {
   updateConfirmState();
   setLoadingSteps([{ text: "変化を読み取っています", delay: 0 }, { text: "次の物語を編んでいます", delay: 12000 }, { text: "次の一枚絵を用意しています", delay: 22000 }]);
   try {
-    const [originalImageDataUrl, compositeImageDataUrl] = await Promise.all([buildOriginalImage(), buildCompositeForAI()]);
-    const canvases = liteCanvases();
-    const drawingHash = await sha256(await (await fetch(compositeImageDataUrl)).arrayBuffer());
-    const currentPage = savedPage(state.current || {});
-    const data = await api("/api/100ore/rewrite", { runId: state.runId, pageNumber: state.pageNumber, currentPage, originalImageDataUrl, compositeImageDataUrl, canvases, drawingHash });
+    const [
+  originalImageDataUrl,
+  labelCompositeImageDataUrl,
+  referenceCompositeImageDataUrl,
+] = await Promise.all([
+  buildOriginalImage(),          // before全体
+  buildLabelCompositeForAI(),    // after落書き周辺crop。ラベル判定用
+  buildCompositeForAI(),         // after全体。画像生成参照用
+]);
+
+console.debug("[8-15] rewrite image payload", {
+  originalLength: originalImageDataUrl.length,
+  labelCompositeLength: labelCompositeImageDataUrl.length,
+  referenceCompositeLength: referenceCompositeImageDataUrl.length,
+  totalLength:
+    originalImageDataUrl.length +
+    labelCompositeImageDataUrl.length +
+    referenceCompositeImageDataUrl.length,
+});
+
+const canvases = liteCanvases();
+const drawingHash = await sha256(await (await fetch(labelCompositeImageDataUrl)).arrayBuffer());
+const currentPage = savedPage(state.current || {});
+
+const data = await api("/api/100ore/rewrite", {
+  runId: state.runId,
+  pageNumber: state.pageNumber,
+  currentPage,
+  originalImageDataUrl,
+  labelCompositeImageDataUrl,
+  referenceCompositeImageDataUrl,
+  canvases,
+  drawingHash,
+});
     addHistory(data.changeLabels);
     if (state.pages.length) state.pages[state.pages.length - 1] = { ...state.pages[state.pages.length - 1], changeLabels: data.changeLabels || [] };
     replenishOneStock();
