@@ -585,6 +585,21 @@ async function loadImage(src) {
     img.src = src;
   });
 }
+
+
+function drawImageCover(ctx, img, x, y, w, h) {
+  const imgW = img.naturalWidth || img.width;
+  const imgH = img.naturalHeight || img.height;
+
+  const scale = Math.max(w / imgW, h / imgH);
+  const drawW = imgW * scale;
+  const drawH = imgH * scale;
+
+  const dx = x + (w - drawW) / 2;
+  const dy = y + (h - drawH) / 2;
+
+  ctx.drawImage(img, dx, dy, drawW, drawH);
+}
 async function renderOriginalCanvasForAI(size = AI_LABEL_IMAGE_SIZE) {
   const out = document.createElement("canvas");
   out.width = size;
@@ -594,8 +609,8 @@ async function renderOriginalCanvasForAI(size = AI_LABEL_IMAGE_SIZE) {
   const img = await loadImage(refs.img.src);
 
   o.fillStyle = "#f7e8c3";
-  o.fillRect(0, 0, size, size);
-  o.drawImage(img, 0, 0, size, size);
+o.fillRect(0, 0, size, size);
+drawImageCover(o, img, 0, 0, out.width, out.height);
 
   return out;
 }
@@ -609,8 +624,8 @@ async function renderCompositeCanvasForAI(size = AI_LABEL_IMAGE_SIZE) {
   const img = await loadImage(refs.img.src);
 
   o.fillStyle = "#f7e8c3";
-  o.fillRect(0, 0, size, size);
-  o.drawImage(img, 0, 0, size, size);
+o.fillRect(0, 0, size, size);
+drawImageCover(o, img, 0, 0, out.width, out.height);
 
   state.strokes.forEach((stroke) => {
   const placement = state.placements.find((p) => p.id === stroke.placementId);
@@ -844,8 +859,8 @@ async function buildCompositeForPreview() {
   const o = out.getContext("2d");
   const img = await loadImage(refs.img.src);
   o.fillStyle = "#f7e8c3";
-  o.fillRect(0, 0, size, size);
-  o.drawImage(img, 0, 0, size, size);
+o.fillRect(0, 0, size, size);
+drawImageCover(o, img, 0, 0, out.width, out.height);
   state.strokes.forEach((stroke) => {
   const placement = state.placements.find((p) => p.id === stroke.placementId);
   drawStroke(o, stroke, placement, out.width, out.height);
