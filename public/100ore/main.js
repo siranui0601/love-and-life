@@ -604,33 +604,50 @@ async function renderCompositeCanvasForAI(size = AI_LABEL_IMAGE_SIZE) {
 function canvasToJpegDataUrl(canvas, quality = AI_LABEL_IMAGE_QUALITY) {
   return canvas.toDataURL("image/jpeg", quality);
 }
+
+
 //デバック用
-function showDebugLabelCrop(dataUrl, meta = {}) {
+function showDebugLabelCrop(images = [], meta = {}) {
   document.getElementById("debugLabelCropBox")?.remove();
+
+  const safeImages = Array.isArray(images) ? images.filter((item) => item?.src) : [];
+  if (!safeImages.length) return;
 
   const box = document.createElement("div");
   box.id = "debugLabelCropBox";
   box.style.position = "fixed";
-  box.style.right = "12px";
-  box.style.bottom = "12px";
+  box.style.left = "50%";
+  box.style.top = "50%";
+  box.style.transform = "translate(-50%, -50%)";
   box.style.zIndex = "99999";
-  box.style.width = "280px";
-  box.style.maxHeight = "70vh";
+  box.style.width = "min(92vw, 560px)";
+  box.style.maxHeight = "78vh";
   box.style.overflow = "auto";
-  box.style.background = "rgba(20, 12, 8, 0.94)";
+  box.style.background = "rgba(20, 12, 8, 0.96)";
   box.style.color = "#fff";
   box.style.border = "2px solid #f7d38a";
   box.style.borderRadius = "14px";
-  box.style.padding = "10px";
-  box.style.boxShadow = "0 12px 32px rgba(0,0,0,.35)";
+  box.style.padding = "12px";
+  box.style.boxShadow = "0 12px 32px rgba(0,0,0,.45)";
   box.style.fontSize = "12px";
 
   box.innerHTML = `
-    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;">
-      <b>AI送信用 crop</b>
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:10px;">
+      <b>AI送信用デバッグ</b>
       <button type="button" id="closeDebugLabelCrop" style="font-size:12px;">閉じる</button>
     </div>
-    <img src="${dataUrl}" alt="label crop debug" style="width:100%;display:block;border-radius:10px;background:#f7e8c3;">
+
+    ${safeImages.map((item) => `
+      <section style="margin:0 0 12px;">
+        <div style="font-weight:bold;margin:0 0 6px;color:#f7d38a;">${escapeHtml(item.label || "image")}</div>
+        <img
+          src="${item.src}"
+          alt="${escapeHtml(item.label || "debug image")}"
+          style="width:100%;display:block;border-radius:10px;background:#f7e8c3;"
+        >
+      </section>
+    `).join("")}
+
     <pre style="white-space:pre-wrap;font-size:11px;margin:8px 0 0;">${escapeHtml(JSON.stringify(meta, null, 2))}</pre>
   `;
 
@@ -779,10 +796,25 @@ async function buildLabelCompositeForAI() {
 
   const dataUrl = canvasToJpegDataUrl(out);
 
-  console.debug("[8-15] label crop built", debugMeta);
-  showDebugLabelCrop(dataUrl, debugMeta);
+// before全体図も同じモーダルで確認する
+const beforeCanvas = await renderOriginalCanvasForAI(AI_LABEL_IMAGE_SIZE);
+const beforeDataUrl = canvasToJpegDataUrl(beforeCanvas);
 
-  return dataUrl;
+// after全体図も一緒に見る。cropのズレ確認に役立つ
+const afterFullDataUrl = canvasToJpegDataUrl(sourceCanvas);
+
+console.debug("[8-15] label crop built", debugMeta);
+
+showDebugLabelCrop(
+  [
+    { label: "1. before全体 / originalImageDataUrl", src: beforeDataUrl },
+    { label: "2. after全体 / referenceCompositeImageDataUrl", src: afterFullDataUrl },
+    { label: "3. after局所crop / labelCompositeImageDataUrl", src: dataUrl },
+  ],
+  debugMeta
+);
+
+return dataUrl;
 }
 async function buildCompositeForPreview() {
   const size = 512;
