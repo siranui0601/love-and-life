@@ -327,7 +327,7 @@ async function generateNormalStory(genAI, { currentPage, nextPageNumber, changeL
 変化ラベル: ${JSON.stringify(changeLabels)}
 
 返答はJSONのみ: {
-  "title":"",
+  "title":"短いタイトル",
   "bodyText":"100字程度",
   "storySoFar":"300字以下"
 }`;
@@ -344,7 +344,7 @@ async function generateBadEndStory(genAI, { currentPage, nextPageNumber, changeL
 変化ラベル: ${JSON.stringify(changeLabels)}
 
 返答はJSONのみ: {
-  "title":"",
+  "title":"短いタイトル",
   "bodyText":"100字程度"
 }`;
   const raw = await generateTextJson(genAI, [{ text: prompt }], TEXT_TIMEOUT_MS);
