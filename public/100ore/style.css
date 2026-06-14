@@ -568,6 +568,19 @@ button:disabled { cursor: not-allowed; }
 
 .book-dialog::backdrop { background: rgba(23, 13, 8, 0.55); }
 
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.login-benefit-dialog p {
+  line-height: 1.8;
+  margin: 0;
+}
+
 .dialog-head {
   justify-content: space-between;
   border-bottom: 1px dashed #b58b50;

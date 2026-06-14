@@ -106,6 +106,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (settingsMessage) settingsMessage.textContent = "";
   }
 
+  function redirectAfterAuthIfNeeded() {
+    const url = sessionStorage.getItem("afterAuthRedirect");
+    if (!url) return false;
+    sessionStorage.removeItem("afterAuthRedirect");
+    window.location.href = url;
+    return true;
+  }
+
   function syncAuthStorage(user) {
     if (!user) {
       localStorage.removeItem("currentUser");
@@ -195,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         syncAuthStorage(window.currentUser);
         sessionStorage.removeItem(pendingSignupKey);
+        if (redirectAfterAuthIfNeeded()) return;
 
         setAuthUiLoggedIn(data.username);
         usernameModal.style.display = "none";
@@ -213,6 +222,10 @@ document.addEventListener('DOMContentLoaded', () => {
         signupModal.setAttribute("aria-hidden", "true");
       }
     });
+  }
+
+  if (new URLSearchParams(window.location.search).get("openLogin") === "1") {
+    openLoginModal();
   }
 
   if (openSettingsBtn) {
@@ -370,6 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
           userTrackingId: data.userTrackingId || "",
         };
         syncAuthStorage(window.currentUser);
+        if (redirectAfterAuthIfNeeded()) return;
         setAuthUiLoggedIn(data.username);
         closeLoginModal();
         signupModal.style.display = "none";
@@ -411,6 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
           userTrackingId: data.userTrackingId || "",
         };
         syncAuthStorage(window.currentUser);
+        if (redirectAfterAuthIfNeeded()) return;
         setAuthUiLoggedIn(data.username);
         closeLoginModal();
         if (loginPassword) loginPassword.value = "";
@@ -741,6 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
           userTrackingId: lookup.userTrackingId || "",
         };
         syncAuthStorage(window.currentUser);
+        if (redirectAfterAuthIfNeeded()) return;
         setAuthUiLoggedIn(lookup.username);
         if (signupModal) {
           signupModal.style.display = "none";

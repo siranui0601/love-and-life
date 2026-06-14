@@ -21,6 +21,8 @@ const TEXT_MODEL_CANDIDATES = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 const IMAGE_MODEL_CANDIDATES = ["gemini-2.5-flash-image", "gemini-3-pro-image-preview", "gemini-2.5-flash-image-preview"];
 const LOCAL_IMAGE_DIR = path.join(process.cwd(), "public/8-15-images");
 const LOCAL_IMAGE_URL_PREFIX = "/8-15-images";
+const PROGRESS_DIR = path.join(process.cwd(), "data/8-15-progress");
+const JOB_INPUT_DIR = path.join(process.cwd(), "data/8-15-jobs");
 
 
 const INITIAL_PAGE_TEXT = {
@@ -31,6 +33,115 @@ const INITIAL_PAGE_TEXT = {
   imageUrl: INITIAL_IMAGE_URL,
   gameOver: false,
 };
+
+
+function safeJsonParse(text, fallback = null) {
+  try { return JSON.parse(String(text || "")); } catch { return fallback; }
+}
+async function ensureProgressDir() {
+  await fs.mkdir(PROGRESS_DIR, { recursive: true });
+  await fs.mkdir(JOB_INPUT_DIR, { recursive: true });
+}
+function progressKey(userTrackingId) { return sha256(String(userTrackingId || "")).slice(0, 40); }
+function progressPathForUser(userTrackingId) {
+  const key = progressKey(userTrackingId);
+  if (!key) return "";
+  return path.join(PROGRESS_DIR, `${key}.json`);
+}
+async function readUserProgress(userTrackingId) {
+  if (!userTrackingId) return null;
+  const filePath = progressPathForUser(userTrackingId);
+  const parsed = safeJsonParse(await fs.readFile(filePath, "utf8").catch(() => ""), null);
+  return parsed && parsed.userTrackingId ? parsed : null;
+}
+function sanitizeProgressPage(page = {}) { return sanitizeSavedPage(page); }
+function sanitizeProgressStock(stock = []) {
+  return (Array.isArray(stock) ? stock : []).slice(0, 12).map((item) => ({
+    id: clampText(item?.id, 80),
+    shape: clampText(item?.shape, 30),
+    label: clampText(item?.label, 80),
+    w: Number(item?.w || 0),
+    h: Number(item?.h || 0),
+  })).filter((item) => item.id || item.shape || item.label);
+}
+function sanitizeProgressPages(pages = []) {
+  const seen = new Set();
+  return (Array.isArray(pages) ? pages : []).map(sanitizeProgressPage).filter((page) => {
+    const key = String(page.pageNumber || "");
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 365);
+}
+function sanitizePendingTransition(pending = null) {
+  if (!pending || typeof pending !== "object") return null;
+  return {
+    transitionId: clampText(pending.transitionId, 120),
+    cacheId: clampText(pending.cacheId, 120),
+    status: clampText(pending.status, 40),
+    sourcePageNumber: Number(pending.sourcePageNumber || 0),
+    sourceSceneKey: clampText(pending.sourceSceneKey, 80),
+    currentPage: pending.currentPage ? sanitizeProgressPage(pending.currentPage) : {},
+    changeLabels: normalizeChangeLabels(pending.changeLabels),
+    nextPage: pending.nextPage ? sanitizeProgressPage(pending.nextPage) : null,
+    referenceCompositeImagePath: clampText(pending.referenceCompositeImagePath, 260),
+    originalImagePath: clampText(pending.originalImagePath, 260),
+    labelCompositeImagePath: clampText(pending.labelCompositeImagePath, 260),
+    error: clampText(pending.error, 220),
+    createdAt: clampText(pending.createdAt, 40),
+    updatedAt: clampText(pending.updatedAt, 40),
+  };
+}
+async function writeUserProgress(progress) {
+  if (!progress?.userTrackingId) return null;
+  await ensureProgressDir();
+  const now = new Date().toISOString();
+  const clean = {
+    userTrackingId: clampText(progress.userTrackingId, 160),
+    username: clampText(progress.username, 40),
+    runId: clampText(progress.runId, 100),
+    status: clampText(progress.status || "active", 40),
+    pageNumber: Number(progress.pageNumber || progress.currentPage?.pageNumber || 1),
+    currentPage: sanitizeProgressPage(progress.currentPage || {}),
+    pages: sanitizeProgressPages(progress.pages || []),
+    stock: sanitizeProgressStock(progress.stock || []),
+    gameOver: Boolean(progress.gameOver),
+    pendingTransition: sanitizePendingTransition(progress.pendingTransition),
+    updatedAt: clampText(progress.updatedAt || now, 40),
+  };
+  const filePath = progressPathForUser(clean.userTrackingId);
+  const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  await fs.writeFile(tmpPath, JSON.stringify(clean, null, 2));
+  await fs.rename(tmpPath, filePath);
+  return clean;
+}
+async function clearUserProgress(userTrackingId) {
+  if (!userTrackingId) return;
+  await fs.rm(progressPathForUser(userTrackingId), { force: true }).catch(() => {});
+}
+function safeTransitionId(value) { return sanitizeFilePart(value || `trans_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`, 100); }
+async function saveJobDataUrl({ transitionId, name, dataUrl }) {
+  await ensureProgressDir();
+  const dir = path.join(JOB_INPUT_DIR, safeTransitionId(transitionId));
+  await fs.mkdir(dir, { recursive: true });
+  const filePath = path.join(dir, `${sanitizeFilePart(name, 40)}.dataurl`);
+  await fs.writeFile(filePath, String(dataUrl || ""));
+  return filePath;
+}
+async function readJobDataUrl(filePath) {
+  if (!filePath) return "";
+  const resolved = path.resolve(String(filePath));
+  if (!resolved.startsWith(path.resolve(JOB_INPUT_DIR))) return "";
+  return fs.readFile(resolved, "utf8").catch(() => "");
+}
+function mergePagesWith(pageList, page) {
+  const pages = sanitizeProgressPages(pageList);
+  const saved = sanitizeProgressPage(page);
+  const index = pages.findIndex((item) => Number(item.pageNumber) === Number(saved.pageNumber));
+  if (index >= 0) pages[index] = saved;
+  else pages.push(saved);
+  return pages;
+}
 
 function jsonFromText(text) {
   const raw = String(text || "").trim();
@@ -339,16 +450,41 @@ export function mountHundredOreRoutes(app) {
 
   app.post("/api/100ore/start", async (req, res) => {
     try {
+      const username = clampText(req.body?.username || "旅人", 40);
+      const userTrackingId = clampText(req.body?.userTrackingId || "", 160);
+      if (userTrackingId) {
+        const progress = await readUserProgress(userTrackingId);
+        if (progress && progress.status !== "gameOver" && progress.currentPage?.pageNumber) {
+          return res.json({ resumed: true, progress });
+        }
+      }
       const page = await buildInitialPage();
       const runId = `ore_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
-      return res.json({ runId, page });
+      if (userTrackingId) {
+        await writeUserProgress({
+          userTrackingId, username, runId, status: "active", pageNumber: 1, currentPage: page,
+          pages: [page], stock: sanitizeProgressStock(req.body?.stock || []), gameOver: false,
+          pendingTransition: null, updatedAt: new Date().toISOString(),
+        });
+      }
+      return res.json({ resumed: false, runId, page });
     } catch (error) {
       return res.status(500).json({ error: "start_failed", detail: errorMessage(error) });
     }
   });
 
+  app.post("/api/100ore/progress", async (req, res) => {
+    const userTrackingId = clampText(req.body?.userTrackingId || "", 160);
+    if (!userTrackingId) return res.json({ progress: null });
+    return res.json({ progress: await readUserProgress(userTrackingId) });
+  });
+
   app.post("/api/100ore/rewrite", async (req, res) => {
     try {
+      const username = clampText(req.body?.username || "旅人", 40);
+      const userTrackingId = clampText(req.body?.userTrackingId || "", 160);
+      const runId = clampText(req.body?.runId || "", 100);
+      const transitionId = safeTransitionId(req.body?.transitionId);
       const currentPage = normalizePage(req.body?.currentPage || {}, Number(req.body?.currentPage?.pageNumber || req.body?.pageNumber || 1));
       if (!currentPage.sceneKey) return res.status(400).json({ error: "invalid_current_page" });
       const nextPageNumber = currentPage.pageNumber + 1;
@@ -370,6 +506,27 @@ console.log("[8-15] rewrite image inputs", {
   labelCompositeBase64Length: labelCompositeBase64.length,
   referenceCompositeBase64Length: referenceCompositeBase64.length,
 });
+
+      let previousPending = null;
+      if (userTrackingId) {
+        const [originalImagePath, labelCompositeImagePath, referenceCompositeImagePath] = await Promise.all([
+          saveJobDataUrl({ transitionId, name: "original", dataUrl: req.body?.originalImageDataUrl }),
+          saveJobDataUrl({ transitionId, name: "label", dataUrl: req.body?.labelCompositeImageDataUrl || req.body?.compositeImageDataUrl }),
+          saveJobDataUrl({ transitionId, name: "reference", dataUrl: req.body?.referenceCompositeImageDataUrl || req.body?.compositeImageDataUrl }),
+        ]);
+        previousPending = {
+          transitionId, cacheId: "", status: "processing", sourcePageNumber: currentPage.pageNumber,
+          sourceSceneKey: currentPage.sceneKey, currentPage, changeLabels: [], nextPage: null,
+          originalImagePath, labelCompositeImagePath, referenceCompositeImagePath,
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        };
+        await writeUserProgress({
+          userTrackingId, username, runId, status: "processing", pageNumber: currentPage.pageNumber,
+          currentPage, pages: sanitizeProgressPages(req.body?.pages || [currentPage]),
+          stock: sanitizeProgressStock(req.body?.stock || []), gameOver: false,
+          pendingTransition: previousPending, updatedAt: new Date().toISOString(),
+        });
+      }
 
       const sheetCandidates = await listHundredOreCacheBySceneKey(currentPage.sceneKey).catch((error) => { console.warn("[8-15] cache load fallback", { error: errorMessage(error) }); return []; });
       const memoryCandidates = MEMORY_CACHES.filter((cache) => cache.sourceSceneKey === currentPage.sceneKey);
@@ -421,13 +578,43 @@ console.log("[8-15] rewrite image inputs", {
 
       if (!cacheHit) cacheId = `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
 
+      const nextPageForProgress = { ...page, changeLabels: match.changeLabels, ...(cacheHit ? {} : { imageLoading: true }) };
+      const nextPages = mergePagesWith(req.body?.pages || [currentPage], nextPageForProgress);
       if (cacheHit) {
+        if (userTrackingId) {
+          await writeUserProgress({
+            userTrackingId, username, runId, status: page.gameOver ? "gameOver" : "active",
+            pageNumber: page.pageNumber, currentPage: nextPageForProgress, pages: nextPages,
+            stock: sanitizeProgressStock(req.body?.stock || []), gameOver: Boolean(page.gameOver),
+            pendingTransition: null, updatedAt: new Date().toISOString(),
+          });
+        }
         console.log("[8-15] cache image reused", { cacheId, pageNumber: page.pageNumber, imageHash: String(page.imageHash || "").slice(0, 12), imageUrl: page.imageUrl });
         return res.json({ page, changeLabels: match.changeLabels, cacheHit: true, cacheId, imagePending: false });
       }
 
-      return res.json({ page, changeLabels: match.changeLabels, cacheHit: false, cacheId, imagePending: true });
+      if (userTrackingId) {
+        await writeUserProgress({
+          userTrackingId, username, runId, status: "story_done", pageNumber: page.pageNumber,
+          currentPage: nextPageForProgress, pages: nextPages, stock: sanitizeProgressStock(req.body?.stock || []),
+          gameOver: Boolean(page.gameOver),
+          pendingTransition: { ...previousPending, cacheId, status: "story_done", changeLabels: match.changeLabels, nextPage: nextPageForProgress, updatedAt: new Date().toISOString() },
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      return res.json({ page, changeLabels: match.changeLabels, cacheHit: false, cacheId, imagePending: true, transitionId });
     } catch (error) {
+      const userTrackingId = clampText(req.body?.userTrackingId || "", 160);
+      if (userTrackingId) {
+        const progress = await readUserProgress(userTrackingId).catch(() => null);
+        await writeUserProgress({
+          ...(progress || {}), userTrackingId, username: clampText(req.body?.username || progress?.username || "旅人", 40),
+          runId: clampText(req.body?.runId || progress?.runId || "", 100), status: "failed",
+          pendingTransition: { ...(progress?.pendingTransition || {}), status: "failed", error: errorMessage(error), updatedAt: new Date().toISOString() },
+          updatedAt: new Date().toISOString(),
+        }).catch(() => {});
+      }
       console.error("[8-15] rewrite error", error);
       if (error?.statusCode === 503) return res.status(503).json({ error: "ai_busy", detail: "AIが混雑しています。もう一度試してください" });
       return res.status(500).json({ error: "rewrite_failed", detail: errorMessage(error) });
@@ -436,13 +623,33 @@ console.log("[8-15] rewrite image inputs", {
 
   app.post("/api/100ore/page-image", async (req, res) => {
     try {
-      const currentPage = normalizePage(req.body?.currentPage || {}, Number(req.body?.currentPage?.pageNumber || 1));
-      const page = normalizePage(req.body?.page || {}, Number(req.body?.page?.pageNumber || currentPage.pageNumber + 1));
-      const cacheId = clampText(req.body?.cacheId || `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`, 120);
-      const changeLabels = Array.isArray(req.body?.changeLabels) ? req.body.changeLabels.map((label) => clampText(label, 80)).filter(Boolean) : [];
-      const { mimeType: compositeMimeType, base64: compositeBase64 } = parseDataUrl(req.body?.referenceCompositeImageDataUrl || req.body?.compositeImageDataUrl);
+      const username = clampText(req.body?.username || "旅人", 40);
+      const userTrackingId = clampText(req.body?.userTrackingId || "", 160);
+      const runId = clampText(req.body?.runId || "", 100);
+      const transitionId = clampText(req.body?.transitionId || "", 120);
+      const progress = userTrackingId ? await readUserProgress(userTrackingId) : null;
+      const currentPage = normalizePage(req.body?.currentPage || progress?.pendingTransition?.currentPage || {}, Number(req.body?.currentPage?.pageNumber || progress?.pendingTransition?.currentPage?.pageNumber || 1));
+      const page = normalizePage(req.body?.page || progress?.pendingTransition?.nextPage || {}, Number(req.body?.page?.pageNumber || progress?.pendingTransition?.nextPage?.pageNumber || currentPage.pageNumber + 1));
+      const cacheId = clampText(req.body?.cacheId || progress?.pendingTransition?.cacheId || `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`, 120);
+      const changeLabels = Array.isArray(req.body?.changeLabels) ? req.body.changeLabels.map((label) => clampText(label, 80)).filter(Boolean) : normalizeChangeLabels(progress?.pendingTransition?.changeLabels);
+      let referenceDataUrl = req.body?.referenceCompositeImageDataUrl || req.body?.compositeImageDataUrl || "";
+      if (!referenceDataUrl && progress?.pendingTransition?.referenceCompositeImagePath) {
+        referenceDataUrl = await readJobDataUrl(progress.pendingTransition.referenceCompositeImagePath);
+      }
+      const { mimeType: compositeMimeType, base64: compositeBase64 } = parseDataUrl(referenceDataUrl);
       if (!currentPage.sceneKey || !page.sceneKey) return res.status(400).json({ error: "invalid_page" });
       if (!compositeBase64) return res.status(400).json({ error: "image_required" });
+
+      if (userTrackingId) {
+        await writeUserProgress({
+          ...(progress || {}), userTrackingId, username, runId: runId || progress?.runId, status: "image_generating",
+          pageNumber: page.pageNumber, currentPage: { ...page, imageLoading: true, changeLabels },
+          pages: mergePagesWith(req.body?.pages || progress?.pages || [], { ...page, imageLoading: true, changeLabels }),
+          stock: sanitizeProgressStock(req.body?.stock || progress?.stock || []), gameOver: Boolean(page.gameOver),
+          pendingTransition: { ...(progress?.pendingTransition || {}), transitionId: transitionId || progress?.pendingTransition?.transitionId, cacheId, status: "image_generating", currentPage, changeLabels, nextPage: { ...page, imageLoading: true, changeLabels }, updatedAt: new Date().toISOString() },
+          updatedAt: new Date().toISOString(),
+        });
+      }
 
       const pageWithImage = await attachGeneratedImage(page, {
         originalMimeType: "",
@@ -478,8 +685,28 @@ console.log("[8-15] rewrite image inputs", {
         console.log("[8-15] branch saved", { cacheId, sourceSceneKey: cache.sourceSceneKey, sourcePageNumber: cache.sourcePageNumber, changeLabels: cache.changeLabels, resultSceneKey: cache.resultSceneKey, resultPageNumber: cache.resultPageNumber, gameOver: cache.gameOver });
       }
 
+      if (userTrackingId) {
+        await writeUserProgress({
+          userTrackingId, username, runId: runId || progress?.runId, status: pageWithImage.gameOver ? "gameOver" : "active",
+          pageNumber: pageWithImage.pageNumber, currentPage: { ...pageWithImage, changeLabels },
+          pages: mergePagesWith(req.body?.pages || progress?.pages || [], { ...pageWithImage, changeLabels }),
+          stock: sanitizeProgressStock(req.body?.stock || progress?.stock || []), gameOver: Boolean(pageWithImage.gameOver),
+          pendingTransition: null, updatedAt: new Date().toISOString(),
+        });
+      }
+
       return res.json({ page: pageWithImage, cacheId });
     } catch (error) {
+      const userTrackingId = clampText(req.body?.userTrackingId || "", 160);
+      if (userTrackingId) {
+        const progress = await readUserProgress(userTrackingId).catch(() => null);
+        await writeUserProgress({
+          ...(progress || {}), userTrackingId, username: clampText(req.body?.username || progress?.username || "旅人", 40),
+          runId: clampText(req.body?.runId || progress?.runId || "", 100), status: "image_failed",
+          pendingTransition: { ...(progress?.pendingTransition || {}), status: "image_failed", error: errorMessage(error), updatedAt: new Date().toISOString() },
+          updatedAt: new Date().toISOString(),
+        }).catch(() => {});
+      }
       console.error("[8-15] page-image error", error);
       if (error?.statusCode === 503) return res.status(503).json({ error: "ai_busy", detail: "AIが混雑しています。もう一度試してください" });
       return res.status(500).json({ error: "page_image_failed", detail: errorMessage(error) });

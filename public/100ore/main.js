@@ -35,6 +35,9 @@ const refs = {
   runTitle: document.getElementById("runTitle"),
   runViewer: document.getElementById("runViewer"),
   closeRun: document.getElementById("closeRunBtn"),
+  loginBenefitDialog: document.getElementById("loginBenefitDialog"),
+  goLogin: document.getElementById("goLoginBtn"),
+  continueGuest: document.getElementById("continueGuestBtn"),
   flip: document.getElementById("flipPanelBtn"),
   panelTitle: document.getElementById("panelTitle"),
   canvasPanel: document.getElementById("canvasPanel"),
@@ -72,12 +75,24 @@ const state = {
   gameOver: false,
   rewriting: false,
   loadingTimers: [],
+  guestStartAccepted: false,
+  resumePollingTimer: null,
   suppressStockClick: false,
   viewport: { zoom: 1, panX: 0, panY: 0 },
 };
 
 function getUser() {
   try { return JSON.parse(localStorage.getItem("currentUser") || "null") || {}; } catch { return {}; }
+}
+function loggedInUser() {
+  const user = getUser();
+  const userTrackingId = user.userTrackingId || localStorage.getItem("userTrackingId") || "";
+  return {
+    user,
+    username: user.username || localStorage.getItem("username") || "",
+    userTrackingId,
+    loggedIn: Boolean(userTrackingId),
+  };
 }
 function setStatus(text) { refs.status.textContent = text; }
 function escapeHtml(s) { return String(s || "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;" }[c])); }
@@ -980,15 +995,64 @@ function applyPage(page, { append = true } = {}) {
   renderPanels();
   setTimeout(resizeCanvas, 60);
 }
+function handleStartClick() {
+  const auth = loggedInUser();
+  if (auth.loggedIn || state.guestStartAccepted) {
+    startGame();
+    return;
+  }
+  refs.loginBenefitDialog?.showModal();
+}
+
+function restoreProgress(progress) {
+  if (!progress?.currentPage) return;
+  stopResumePolling();
+  state.runId = progress.runId;
+  state.pageNumber = Number(progress.pageNumber || progress.currentPage?.pageNumber || 1);
+  state.pages = Array.isArray(progress.pages) ? progress.pages.map(savedPage) : [];
+  state.stock = Array.isArray(progress.stock) && progress.stock.length ? progress.stock : [];
+  if (!state.stock.length) fillInitialStock();
+  state.gameOver = progress.status === "gameOver" || Boolean(progress.gameOver);
+  applyPage(progress.currentPage, { append: false });
+  renderPanels();
+  resizeCanvas();
+
+  if (progress.status === "processing") {
+    setStatus("前回のページ生成を確認しています…");
+    setLoading(true, "前回の生成を確認しています…");
+    startResumePolling();
+    return;
+  }
+
+  if (progress.status === "story_done" || progress.status === "image_generating" || progress.status === "image_failed") {
+    const pending = progress.pendingTransition;
+    if (pending?.nextPage) {
+      applyPage({ ...pending.nextPage, imageLoading: true, changeLabels: pending.changeLabels || [] }, { append: false });
+      setStatus("前回の挿絵を用意しています…");
+      resumeImageGenerationFromProgress(progress);
+      return;
+    }
+  }
+
+  setLoading(false);
+  if (progress.status === "active") setStatus("保存されたページから再開しました。");
+  if (progress.status === "gameOver") setStatus("前回のバッドエンドを表示しました。");
+}
+
 async function startGame() {
   refs.cover.hidden = true;
   refs.game.hidden = false;
   resizeCanvas();
+  state.stock = [];
   fillInitialStock();
   setLoading(true, "表紙をめくっています…");
   try {
-    const user = getUser();
-    const data = await api("/api/100ore/start", { username: user.username || localStorage.getItem("username") || "旅人", userTrackingId: user.userTrackingId || localStorage.getItem("userTrackingId") || "" });
+    const auth = loggedInUser();
+    const data = await api("/api/100ore/start", { username: auth.username || "旅人", userTrackingId: auth.userTrackingId, stock: state.stock });
+    if (data.resumed) {
+      restoreProgress(data.progress);
+      return;
+    }
     state.runId = data.runId;
     applyPage(data.page);
     setStatus("1ページに1〜3枚置けます。使った分は消え、次ページで1枚だけ補充されます。");
@@ -997,9 +1061,48 @@ async function startGame() {
     refs.cover.hidden = false;
     refs.game.hidden = true;
   } finally {
-    setLoading(false);
+    if (!state.resumePollingTimer) setLoading(false);
   }
 }
+
+async function resumeImageGenerationFromProgress(progress) {
+  const pending = progress?.pendingTransition;
+  if (!pending?.nextPage) return;
+  await generateImageForCurrentPage({
+    page: pending.nextPage,
+    currentPage: pending.currentPage || progress.pages?.[progress.pages.length - 2] || progress.currentPage,
+    changeLabels: pending.changeLabels || [],
+    cacheId: pending.cacheId,
+    transitionId: pending.transitionId,
+    referenceCompositeImageDataUrl: "",
+  });
+}
+
+function startResumePolling() {
+  stopResumePolling();
+  state.resumePollingTimer = setInterval(checkProgressOnce, 4000);
+}
+function stopResumePolling() {
+  if (state.resumePollingTimer) clearInterval(state.resumePollingTimer);
+  state.resumePollingTimer = null;
+}
+async function checkProgressOnce() {
+  const auth = loggedInUser();
+  if (!auth.loggedIn) return;
+  const data = await api("/api/100ore/progress", { userTrackingId: auth.userTrackingId });
+  const progress = data.progress;
+  if (!progress) return;
+  if (["story_done", "image_generating", "image_failed", "active", "gameOver"].includes(progress.status)) {
+    stopResumePolling();
+    restoreProgress(progress);
+  }
+  if (progress.status === "failed") {
+    stopResumePolling();
+    setLoading(false);
+    setStatus("前回の生成は失敗していました。もう一度試してください。");
+  }
+}
+
 async function confirmRewrite() {
   if (!state.placements.length || !hasMeaningfulDrawing() || state.gameOver || state.rewriting) return;
   state.rewriting = true;
@@ -1029,6 +1132,8 @@ console.debug("[8-15] rewrite image payload", {
 const canvases = liteCanvases();
 const drawingHash = await sha256(await (await fetch(labelCompositeImageDataUrl)).arrayBuffer());
 const currentPage = savedPage(state.current || {});
+const auth = loggedInUser();
+const transitionId = `trans_${Date.now().toString(36)}_${Math.random().toString(16).slice(2)}`;
 
 const data = await api("/api/100ore/rewrite", {
   runId: state.runId,
@@ -1039,6 +1144,11 @@ const data = await api("/api/100ore/rewrite", {
   referenceCompositeImageDataUrl,
   canvases,
   drawingHash,
+  username: auth.username,
+  userTrackingId: auth.userTrackingId,
+  transitionId,
+  pages: state.pages,
+  stock: state.stock,
 });
     addHistory(data.changeLabels);
     if (state.pages.length) state.pages[state.pages.length - 1] = { ...state.pages[state.pages.length - 1], changeLabels: data.changeLabels || [] };
@@ -1055,6 +1165,7 @@ const data = await api("/api/100ore/rewrite", {
         currentPage,
         changeLabels: data.changeLabels || [],
         cacheId: data.cacheId,
+        transitionId: data.transitionId || transitionId,
         referenceCompositeImageDataUrl,
       });
       return;
@@ -1074,7 +1185,7 @@ const data = await api("/api/100ore/rewrite", {
     updateConfirmState();
   }
 }
-async function generateImageForCurrentPage({ page, currentPage, changeLabels, cacheId, referenceCompositeImageDataUrl }) {
+async function generateImageForCurrentPage({ page, currentPage, changeLabels, cacheId, transitionId, referenceCompositeImageDataUrl }) {
   const expectedSceneKey = page.sceneKey;
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
@@ -1082,6 +1193,7 @@ async function generateImageForCurrentPage({ page, currentPage, changeLabels, ca
       refs.stage.classList.remove("image-generation-failed");
       refs.fallbackNotice.textContent = attempt === 1 ? "挿絵を読み込み中..." : "挿絵生成に失敗しました。もう一度試しています…";
       refs.fallbackNotice.hidden = false;
+      const auth = loggedInUser();
       const data = await api("/api/100ore/page-image", {
         runId: state.runId,
         cacheId,
@@ -1089,6 +1201,11 @@ async function generateImageForCurrentPage({ page, currentPage, changeLabels, ca
         page,
         changeLabels,
         referenceCompositeImageDataUrl,
+        username: auth.username,
+        userTrackingId: auth.userTrackingId,
+        transitionId,
+        pages: state.pages,
+        stock: state.stock,
       });
       if (state.current?.sceneKey !== expectedSceneKey) return;
       const updatedPage = { ...data.page, changeLabels };
@@ -1214,7 +1331,9 @@ async function showRun(runId) {
   }
 }
 
-refs.start.onclick = startGame;
+refs.start.onclick = handleStartClick;
+if (refs.continueGuest) refs.continueGuest.onclick = () => { state.guestStartAccepted = true; refs.loginBenefitDialog?.close(); startGame(); };
+if (refs.goLogin) refs.goLogin.onclick = () => { sessionStorage.setItem("afterAuthRedirect", window.location.href); window.location.href = "/?openLogin=1"; };
 refs.confirm.onclick = confirmRewrite;
 refs.ranking.onclick = showRanking;
 refs.rankingTop.onclick = showRanking;
