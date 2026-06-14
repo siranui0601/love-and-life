@@ -298,11 +298,16 @@ function resetViewport() {
   if (refs.zoom) refs.zoom.value = "100";
   applyViewportTransform();
 }
-function placementCenter(p, size = refs.canvas.width) {
-  return { cx: (p.x + p.w / 2) * size, cy: (p.y + p.h / 2) * size, w: p.w * size, h: p.h * size };
+function placementCenter(p, width = refs.canvas.width, height = refs.canvas.height) {
+  return {
+    cx: (p.x + p.w / 2) * width,
+    cy: (p.y + p.h / 2) * height,
+    w: p.w * width,
+    h: p.h * height,
+  };
 }
-function toLocal(point, p, size = refs.canvas.width) {
-  const { cx, cy, w, h } = placementCenter(p, size);
+function toLocal(point, p, width = refs.canvas.width, height = refs.canvas.height) {
+  const { cx, cy, w, h } = placementCenter(p, width, height);
   const rad = -(p.angle || 0) * Math.PI / 180;
   const dx = point.x - cx;
   const dy = point.y - cy;
@@ -310,12 +315,15 @@ function toLocal(point, p, size = refs.canvas.width) {
   const ry = dx * Math.sin(rad) + dy * Math.cos(rad);
   return { x: rx / w + 0.5, y: ry / h + 0.5 };
 }
-function fromLocal(pt, p, size = refs.canvas.width) {
-  const { cx, cy, w, h } = placementCenter(p, size);
+function fromLocal(pt, p, width = refs.canvas.width, height = refs.canvas.height) {
+  const { cx, cy, w, h } = placementCenter(p, width, height);
   const rad = (p.angle || 0) * Math.PI / 180;
   const lx = (pt.x - 0.5) * w;
   const ly = (pt.y - 0.5) * h;
-  return { x: cx + lx * Math.cos(rad) - ly * Math.sin(rad), y: cy + lx * Math.sin(rad) + ly * Math.cos(rad) };
+  return {
+    x: cx + lx * Math.cos(rad) - ly * Math.sin(rad),
+    y: cy + lx * Math.sin(rad) + ly * Math.cos(rad),
+  };
 }
 function isLocalInside(local, p) {
   if (local.x < 0 || local.x > 1 || local.y < 0 || local.y > 1) return false;
@@ -336,8 +344,8 @@ function angleFromCenter(point, p) {
   const { cx, cy } = placementCenter(p);
   return Math.atan2(point.y - cy, point.x - cx) * 180 / Math.PI;
 }
-function pathPlacement(o, p, size = refs.canvas.width) {
-  const { cx, cy, w, h } = placementCenter(p, size);
+function pathPlacement(o, p, width = refs.canvas.width, height = refs.canvas.height) {
+  const { cx, cy, w, h } = placementCenter(p, width, height);
   o.beginPath();
   o.save();
   o.translate(cx, cy);
@@ -347,28 +355,39 @@ function pathPlacement(o, p, size = refs.canvas.width) {
   else o.rect(-w / 2, -h / 2, w, h);
   o.restore();
 }
-function drawStroke(o, stroke, p, size = refs.canvas.width) {
-  if (!p || stroke.points.length < 2) return;
+function drawStroke(o, stroke, p, width = refs.canvas.width, height = refs.canvas.height) {
+  if (!p || !Array.isArray(stroke.points) || stroke.points.length < 2) return;
+
   o.save();
-  pathPlacement(o, p, size);
+  pathPlacement(o, p, width, height);
   o.clip();
   o.lineCap = "round";
   o.lineJoin = "round";
-  o.lineWidth = Number(stroke.size || 8) * (size / refs.canvas.width);
+
+  const scaleX = width / refs.canvas.width;
+  const scaleY = height / refs.canvas.height;
+  const scale = Math.min(scaleX, scaleY);
+
+  o.lineWidth = Number(stroke.size || 8) * scale;
   o.globalAlpha = stroke.tool === "marker" ? 0.42 : 1;
   o.globalCompositeOperation = stroke.tool === "eraser" ? "destination-out" : "source-over";
   o.strokeStyle = stroke.tool === "eraser" ? "#000" : stroke.color;
+
   o.beginPath();
   stroke.points.forEach((pt, i) => {
-    const gp = fromLocal(pt, p, size);
-    if (i) o.lineTo(gp.x, gp.y); else o.moveTo(gp.x, gp.y);
+    const gp = fromLocal(pt, p, width, height);
+    if (i) o.lineTo(gp.x, gp.y);
+    else o.moveTo(gp.x, gp.y);
   });
   o.stroke();
   o.restore();
 }
 function drawScene() {
   ctx.clearRect(0, 0, refs.canvas.width, refs.canvas.height);
-  state.strokes.forEach((stroke) => drawStroke(ctx, stroke, state.placements.find((p) => p.id === stroke.placementId)));
+  state.strokes.forEach((stroke) => {
+  const placement = state.placements.find((p) => p.id === stroke.placementId);
+  drawStroke(ctx, stroke, placement, refs.canvas.width, refs.canvas.height);
+});
   renderOverlay();
 }
 function renderOverlay() {
@@ -518,7 +537,7 @@ function onPointerMove(e) {
   if (!isLocalInside(local, p)) return;
   state.currentStroke.points.push(local);
   drawScene();
-  drawStroke(ctx, state.currentStroke, p);
+  drawStroke(ctx, state.currentStroke, p, refs.canvas.width, refs.canvas.height);
 }
 function onPointerUp(e) {
   if (e?.pointerId !== undefined) refs.stage.releasePointerCapture?.(e.pointerId);
@@ -826,13 +845,17 @@ async function buildCompositeForPreview() {
   o.fillStyle = "#f7e8c3";
   o.fillRect(0, 0, size, size);
   o.drawImage(img, 0, 0, size, size);
-  state.strokes.forEach((stroke) => drawStroke(o, stroke, state.placements.find((p) => p.id === stroke.placementId), size));
-  state.placements.forEach((p) => {
+  state.strokes.forEach((stroke) => {
+  const placement = state.placements.find((p) => p.id === stroke.placementId);
+  drawStroke(o, stroke, placement, out.width, out.height);
+});
+  
+    state.placements.forEach((p) => {
     o.save();
     o.strokeStyle = "rgba(120,42,28,.9)";
     o.lineWidth = 4;
     o.setLineDash([14, 8]);
-    pathPlacement(o, p, size);
+    pathPlacement(o, p, out.width, out.height);
     o.stroke();
     o.restore();
   });
