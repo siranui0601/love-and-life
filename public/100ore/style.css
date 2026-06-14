@@ -106,20 +106,7 @@ button:disabled { cursor: not-allowed; }
   pointer-events: none;
 }
 
-.cover-card::after {
-  content: "栞";
-  position: absolute;
-  top: 0;
-  right: 42px;
-  width: 46px;
-  height: 150px;
-  padding-top: 20px;
-  display: grid;
-  place-items: start center;
-  letter-spacing: 0.2em;
-  background: linear-gradient(#7f2020, #b84034);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
-}
+
 
 .eyebrow {
   margin: 0 0 8px;
