@@ -72,6 +72,7 @@ const state = {
   gameOver: false,
   rewriting: false,
   loadingTimers: [],
+  suppressStockClick: false,
   viewport: { zoom: 1, panX: 0, panY: 0 },
 };
 
@@ -172,7 +173,10 @@ function renderPanels() {
     label.className = "stock-label";
     label.textContent = `${item.label} / 面積${item.power}`;
     card.append(shape, label);
-    card.onclick = () => selectCanvas(item);
+    card.onclick = () => {
+      if (state.suppressStockClick) { state.suppressStockClick = false; return; }
+      selectCanvas(item);
+    };
     card.addEventListener("pointerdown", (e) => startStockDrag(e, item));
     refs.stock.appendChild(card);
   });
@@ -196,16 +200,38 @@ function setEditMode(mode) {
   refs.panelTitle.textContent = toPen ? "ペンパネル" : "キャンパスパネル";
   refs.flip.textContent = toPen ? "キャンパスパネルへ" : "ペンパネルへ";
   refs.flip.closest(".flip-panel")?.setAttribute("data-side", toPen ? "pen" : "canvas");
+  drawScene();
   console.debug("[8-15] panel flip", { editMode: state.editMode });
+}
+function overlapArea(a, b) {
+  const left = Math.max(a.x, b.x);
+  const top = Math.max(a.y, b.y);
+  const right = Math.min(a.x + a.w, b.x + b.w);
+  const bottom = Math.min(a.y + a.h, b.y + b.h);
+  return Math.max(0, right - left) * Math.max(0, bottom - top);
+}
+function findAutoPlacementPoint(item) {
+  const candidates = [[0.5, 0.5], [0.28, 0.28], [0.72, 0.28], [0.28, 0.72], [0.72, 0.72], [0.5, 0.25], [0.5, 0.75], [0.25, 0.5], [0.75, 0.5]];
+  let best = candidates[0];
+  let bestScore = Infinity;
+  candidates.forEach(([xRatio, yRatio]) => {
+    const box = clampPlacementBox({ x: xRatio - item.w / 2, y: yRatio - item.h / 2, w: item.w, h: item.h });
+    const score = state.placements.reduce((sum, p) => sum + overlapArea(box, p), 0);
+    if (score < bestScore) {
+      bestScore = score;
+      best = [box.x + box.w / 2, box.y + box.h / 2];
+    }
+  });
+  return best;
+}
+function autoPlaceCanvas(item) {
+  const [xRatio, yRatio] = findAutoPlacementPoint(item);
+  placeCanvas(item, xRatio, yRatio);
 }
 function selectCanvas(item) {
   if (state.rewriting || state.gameOver) return;
-  state.selected = item;
-  state.activePlacementId = null;
   setEditMode("canvas");
-  renderPanels();
-  drawScene();
-  setStatus("ストックを選びました。絵の上を押すかドラッグして置けます。置いた後は直接動かせます。");
+  autoPlaceCanvas(item);
 }
 function startStockDrag(e, item) {
   if (state.rewriting || state.gameOver) return;
@@ -217,12 +243,20 @@ function startStockDrag(e, item) {
   ghost.style.width = `${Math.max(44, item.w * 170)}px`;
   ghost.style.height = `${Math.max(44, item.h * 170)}px`;
   document.body.appendChild(ghost);
-  const move = (ev) => { ghost.style.left = `${ev.clientX}px`; ghost.style.top = `${ev.clientY}px`; };
+  const start = eventClientPoint(e);
+  let moved = false;
+  const move = (ev) => {
+    const now = eventClientPoint(ev);
+    if (Math.hypot(now.clientX - start.clientX, now.clientY - start.clientY) > 6) moved = true;
+    ghost.style.left = `${ev.clientX}px`;
+    ghost.style.top = `${ev.clientY}px`;
+  };
   const up = (ev) => {
     window.removeEventListener("pointermove", move);
     ghost.remove();
+    if (moved) state.suppressStockClick = true;
     const p = pointFromEvent(ev);
-    if (p.inside) placeCanvas(item, p.x / refs.canvas.width, p.y / refs.canvas.height);
+    if (moved && p.inside) placeCanvas(item, p.x / refs.canvas.width, p.y / refs.canvas.height);
   };
   move(e);
   window.addEventListener("pointermove", move);
@@ -256,7 +290,7 @@ function placeCanvas(item, xRatio, yRatio) {
   state.stock = state.stock.filter((stock) => stock.id !== item.id);
   state.selected = null;
   setActivePlacement(p.id);
-  setStatus("置きました。直接ドラッグで移動、右上のハンドルをドラッグで回転できます。");
+  setStatus("置きました。直接ドラッグで移動、右上のハンドルで回転できます。");
   updateConfirmState();
 }
 
@@ -340,6 +374,15 @@ function rotateHandleAt(point) {
     return Math.hypot(point.x - h.x, point.y - h.y) <= radius;
   }) || null;
 }
+function deleteHandlePoint(p) { return fromLocal({ x: -0.06, y: 1.06 }, p); }
+function deleteHandleAt(point) {
+  if (state.editMode !== "canvas") return null;
+  const p = activePlacement();
+  if (!p) return null;
+  const radius = Math.max(22, 22 * (window.devicePixelRatio || 1));
+  const h = deleteHandlePoint(p);
+  return Math.hypot(point.x - h.x, point.y - h.y) <= radius ? p : null;
+}
 function angleFromCenter(point, p) {
   const { cx, cy } = placementCenter(p);
   return Math.atan2(point.y - cy, point.x - cx) * 180 / Math.PI;
@@ -401,11 +444,14 @@ function renderOverlay() {
     frame.style.width = `${p.w * 100}%`;
     frame.style.height = `${p.h * 100}%`;
     frame.style.transform = `translate(-50%, -50%) rotate(${p.angle || 0}deg)`;
-    if (p.id === state.activePlacementId) {
+    if (p.id === state.activePlacementId && state.editMode === "canvas") {
       const handle = document.createElement("div");
       handle.className = "rotate-handle";
       handle.setAttribute("aria-hidden", "true");
-      frame.appendChild(handle);
+      const deleteHandle = document.createElement("div");
+      deleteHandle.className = "delete-handle";
+      deleteHandle.setAttribute("aria-hidden", "true");
+      frame.append(handle, deleteHandle);
     }
     refs.overlay.appendChild(frame);
   });
@@ -465,10 +511,16 @@ function onPointerDown(e) {
   e.preventDefault();
   refs.stage.setPointerCapture?.(e.pointerId);
   const point = pointFromEvent(e);
+  const deleteHit = state.editMode === "canvas" ? deleteHandleAt(point) : null;
   const handleHit = state.editMode === "canvas" ? rotateHandleAt(point) : null;
   const placementHit = placementAt(point);
-  console.debug("[8-15] pointerdown", { editMode: state.editMode, selected: state.selected?.id || null, activePlacementId: state.activePlacementId, hitPlacement: placementHit?.id || null, hitRotateHandle: handleHit?.id || null });
+  console.debug("[8-15] pointerdown", { editMode: state.editMode, selected: state.selected?.id || null, activePlacementId: state.activePlacementId, hitPlacement: placementHit?.id || null, hitRotateHandle: handleHit?.id || null, hitDeleteHandle: deleteHit?.id || null });
   if (state.editMode === "canvas") {
+    if (deleteHit) {
+      setActivePlacement(deleteHit.id);
+      deleteActive();
+      return;
+    }
     if (handleHit) {
       setActivePlacement(handleHit.id);
       pushUndo();
@@ -906,9 +958,16 @@ function applyPage(page, { append = true } = {}) {
   refs.title.textContent = page.title || `${state.pageNumber}ページ目`;
   refs.story.textContent = page.bodyText || "";
   refs.scene.textContent = page.storySoFar || "";
-  refs.img.src = pageImageSrc(page);
-  refs.stage.classList.remove("image-generation-failed");
-  refs.fallbackNotice.hidden = true;
+  refs.stage.classList.remove("image-generation-failed", "image-loading");
+  if (page.imageLoading && !pageImageSrc(page)) {
+    refs.stage.classList.add("image-loading");
+    refs.fallbackNotice.textContent = "挿絵を読み込み中...";
+    refs.fallbackNotice.hidden = false;
+    refs.img.removeAttribute("src");
+  } else {
+    refs.fallbackNotice.hidden = true;
+    refs.img.src = pageImageSrc(page);
+  }
   if (append) state.pages.push(savedPage(page));
   state.selected = null;
   state.placements = [];
@@ -984,14 +1043,28 @@ const data = await api("/api/100ore/rewrite", {
     addHistory(data.changeLabels);
     if (state.pages.length) state.pages[state.pages.length - 1] = { ...state.pages[state.pages.length - 1], changeLabels: data.changeLabels || [] };
     replenishOneStock();
-    applyPage({ ...data.page, changeLabels: data.changeLabels || [] });
+    const nextPage = { ...data.page, imageLoading: Boolean(data.imagePending), changeLabels: data.changeLabels || [] };
+    applyPage(nextPage);
+    setStatus(data.cacheHit ? "同じような変化だったので、前と同じ展開へ進みました。" : "続きのページが現れました。挿絵を用意しています。");
+    if (data.imagePending) {
+      state.rewriting = false;
+      setLoading(false);
+      updateConfirmState();
+      await generateImageForCurrentPage({
+        page: nextPage,
+        currentPage,
+        changeLabels: data.changeLabels || [],
+        cacheId: data.cacheId,
+        referenceCompositeImageDataUrl,
+      });
+      return;
+    }
     if (data.page?.gameOver) {
       state.gameOver = true;
       await saveRun();
       showGameOver(data.page);
       return;
     }
-    setStatus(data.cacheHit ? "同じような変化だったので、前と同じ展開へ進みました。" : "続きのページが現れました。残りの紙片と補充1枚を使えます。");
   } catch (e) {
     console.error(e);
     setStatus(e.message.includes("AIが混雑") ? "AIが混雑しています。もう一度試してください" : `確定に失敗しました: ${e.message}`);
@@ -1001,6 +1074,50 @@ const data = await api("/api/100ore/rewrite", {
     updateConfirmState();
   }
 }
+async function generateImageForCurrentPage({ page, currentPage, changeLabels, cacheId, referenceCompositeImageDataUrl }) {
+  const expectedSceneKey = page.sceneKey;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      refs.stage.classList.add("image-loading");
+      refs.stage.classList.remove("image-generation-failed");
+      refs.fallbackNotice.textContent = attempt === 1 ? "挿絵を読み込み中..." : "挿絵生成に失敗しました。もう一度試しています…";
+      refs.fallbackNotice.hidden = false;
+      const data = await api("/api/100ore/page-image", {
+        runId: state.runId,
+        cacheId,
+        currentPage,
+        page,
+        changeLabels,
+        referenceCompositeImageDataUrl,
+      });
+      if (state.current?.sceneKey !== expectedSceneKey) return;
+      const updatedPage = { ...data.page, changeLabels };
+      state.current = updatedPage;
+      if (state.pages.length) state.pages[state.pages.length - 1] = savedPage(updatedPage);
+      refs.img.src = pageImageSrc(updatedPage);
+      refs.stage.classList.remove("image-loading", "image-generation-failed");
+      refs.fallbackNotice.hidden = true;
+      setStatus(updatedPage.gameOver ? "バッドエンドの挿絵が現れました。" : "挿絵が現れました。残りの紙片と補充1枚を使えます。");
+      if (updatedPage.gameOver) {
+        state.gameOver = true;
+        await saveRun();
+        showGameOver(updatedPage);
+      }
+      return;
+    } catch (e) {
+      console.error(e);
+      refs.stage.classList.remove("image-loading");
+      refs.stage.classList.add("image-generation-failed");
+      refs.fallbackNotice.hidden = false;
+      refs.fallbackNotice.textContent = "挿絵生成に失敗しました。もう一度このページの挿絵を生成します。";
+      if (attempt >= 2) {
+        setStatus("挿絵生成に失敗しました。ページは保存されています。もう一度進むかリロードしてください。");
+        return;
+      }
+    }
+  }
+}
+
 function addHistory(changeLabels) {
   const labels = Array.isArray(changeLabels) && changeLabels.length ? changeLabels.join(" / ") : "物語が動いた";
   const el = document.createElement("div");
@@ -1034,7 +1151,6 @@ function showGameOver(page) {
     <div class="game-over-head">
       <p class="eyebrow">運命は赤黒く閉じた</p>
       <h2>バッドエンド：${state.pageNumber}ページ目</h2>
-      <button class="small-btn close-over-btn" id="closeOverBtn" type="button">閉じる</button>
     </div>
     <section class="bad-end-hero">
       ${heroSrc ? `<img src="${heroSrc}" alt="${escapeHtml(page.title || "バッドエンド")}">` : `<div class="image-missing">画像なし</div>`}
@@ -1048,14 +1164,11 @@ function showGameOver(page) {
     <div class="game-over-actions">
       <button class="primary-btn" id="againBtn" type="button">もう一度</button>
       <button class="ghost-btn" id="overRankBtn" type="button">ランキング</button>
-      <button class="ghost-btn" id="closeOverBtnBottom" type="button">絵本を閉じる</button>
     </div>
   </div>`;
   document.body.appendChild(div);
   div.querySelector("#againBtn").onclick = () => location.reload();
   div.querySelector("#overRankBtn").onclick = showRanking;
-  div.querySelector("#closeOverBtn").onclick = () => div.remove();
-  div.querySelector("#closeOverBtnBottom").onclick = () => div.remove();
   setStatus("記録を保存しました。ほかの俺の絵本も覗けます。");
 }
 async function showRanking() {
@@ -1117,7 +1230,7 @@ document.querySelectorAll(".tool-choice").forEach((btn) => btn.onclick = () => {
 refs.undo.onclick = () => { if (!state.undo.length) return; state.redo.push(snapshot()); restoreSnapshot(state.undo.pop()); updateConfirmState(); };
 refs.redo.onclick = () => { if (!state.redo.length) return; state.undo.push(snapshot()); restoreSnapshot(state.redo.pop()); updateConfirmState(); };
 refs.clear.onclick = () => clearDrawing();
-refs.deletePlacement.onclick = deleteActive;
+if (refs.deletePlacement) refs.deletePlacement.onclick = deleteActive;
 if (refs.angle) refs.angle.oninput = () => { const p = activePlacement(); if (!p) return; p.angle = Number(refs.angle.value); drawScene(); renderPanels(); };
 refs.zoom.oninput = () => setZoom(refs.zoom.value);
 refs.flip.onclick = () => setEditMode(state.editMode === "canvas" ? "pen" : "canvas");
