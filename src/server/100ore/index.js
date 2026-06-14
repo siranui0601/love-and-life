@@ -204,12 +204,10 @@ async function generateNormalStory(genAI, { currentPage, nextPageNumber, changeL
   const prompt = `本文,あらすじ,変化ラベルを元に、次ページの物語を生成。
 目的は、俺と少女が救われない運命を避けること。カゲロウデイズのようなイメージ。
 
-この場面の説明を続けず、一難去ってまた一難にする。
+この場面の説明を続けず、一難去ってまた一難にする。積極的に場面転換をすること
 奇想天外で突拍子もない展開にすること。
 必ず少女か俺に具体的な危機を発生させること
 危機には、具体物を2つ以上描写し、何が危機なのかを明言する
-
-titleは必ず「${nextPageNumber}ページ目: ○○」にする
 
 現在の本文: ${currentPage.bodyText}
 
@@ -228,9 +226,6 @@ titleは必ず「${nextPageNumber}ページ目: ○○」にする
 async function generateBadEndStory(genAI, { currentPage, nextPageNumber, changeLabels }) {
   const prompt = `**変化ラベル(!IMPORTANT)**を主軸に、カゲロウデイズのようなバッドエンドストーリーを生成。
 
-titleは必ず「${nextPageNumber}ページ目: ○○」にする。
-bodyTextは100字程度。
-
 現在の本文: ${currentPage.bodyText}
 
 これまでのあらすじ: ${currentPage.storySoFar}
@@ -239,7 +234,7 @@ bodyTextは100字程度。
 
 返答はJSONのみ: {
   "title":"",
-  "bodyText":""
+  "bodyText":"100字程度"
 }`;
   const raw = await generateTextJson(genAI, [{ text: prompt }], TEXT_TIMEOUT_MS);
   const bodyText = clampText(raw?.bodyText, 160) || "逃げ道を見失い、俺たちはそこで終わった。";
@@ -265,7 +260,7 @@ async function generateImageWithModel(modelName, prompt, references = []) {
 async function generatePageImage(page, { originalMimeType, originalBase64, compositeMimeType, compositeBase64 }) {
   const prompt = `本文を元に、挿絵を生成。
 添付画像の画風、キャラ等を参考にしつつ、背景、構図、ポーズ、状況等は本文に合わせて適切に変更。
-これは次のページの新しい挿絵であり、前ページの微修正ではない。
+これは次のページの新しい挿絵であり、前ページの微修正ではない。積極的に場面転換を行うこと
 画像内に文字、数字、看板、吹き出し、ラベルは入れない。
 
 本文:${page.bodyText}
