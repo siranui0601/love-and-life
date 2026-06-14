@@ -613,9 +613,9 @@ async function renderCompositeCanvasForAI(size = AI_LABEL_IMAGE_SIZE) {
   o.drawImage(img, 0, 0, size, size);
 
   state.strokes.forEach((stroke) => {
-    const placement = state.placements.find((p) => p.id === stroke.placementId);
-    drawStroke(o, stroke, placement, size);
-  });
+  const placement = state.placements.find((p) => p.id === stroke.placementId);
+  drawStroke(o, stroke, placement, out.width, out.height);
+});
 
   return out;
 }
@@ -703,11 +703,12 @@ function getInkStrokeBounds(size = AI_LABEL_IMAGE_SIZE) {
     const placement = state.placements.find((p) => p.id === stroke.placementId);
     if (!placement) return;
 
-    const lineWidth = Number(stroke.size || 8) * (size / refs.canvas.width);
+    const scale = size / refs.canvas.width;
+    const lineWidth = Number(stroke.size || 8) * scale;
     const pad = Math.max(2, lineWidth / 2);
 
     stroke.points.forEach((pt) => {
-      const gp = fromLocal(pt, placement, size);
+      const gp = fromLocal(pt, placement, size, size);
       if (!Number.isFinite(gp.x) || !Number.isFinite(gp.y)) return;
 
       minX = Math.min(minX, gp.x - pad);
