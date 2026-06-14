@@ -421,21 +421,39 @@ console.log("[8-15] rewrite image inputs", {
 
       if (!cacheHit) cacheId = `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`;
 
-      if (!cacheHit || !page.imageUrl) {
-        if (cacheHit) console.warn("[8-15] cache image missing; regenerating image", { cacheId, resultSceneKey: page.sceneKey, resultImageHash: page.imageHash });
-        page = await attachGeneratedImage(page, {
-  originalMimeType: "",
-  originalBase64: "",
-  compositeMimeType: referenceCompositeMimeType,
-  compositeBase64: referenceCompositeBase64,
-  runId: clampText(req.body?.runId, 80),
-  cacheId,
-});
-      } else {
+      if (cacheHit) {
         console.log("[8-15] cache image reused", { cacheId, pageNumber: page.pageNumber, imageHash: String(page.imageHash || "").slice(0, 12), imageUrl: page.imageUrl });
+        return res.json({ page, changeLabels: match.changeLabels, cacheHit: true, cacheId, imagePending: false });
       }
 
-      if (!cacheHit) {
+      return res.json({ page, changeLabels: match.changeLabels, cacheHit: false, cacheId, imagePending: true });
+    } catch (error) {
+      console.error("[8-15] rewrite error", error);
+      if (error?.statusCode === 503) return res.status(503).json({ error: "ai_busy", detail: "AIが混雑しています。もう一度試してください" });
+      return res.status(500).json({ error: "rewrite_failed", detail: errorMessage(error) });
+    }
+  });
+
+  app.post("/api/100ore/page-image", async (req, res) => {
+    try {
+      const currentPage = normalizePage(req.body?.currentPage || {}, Number(req.body?.currentPage?.pageNumber || 1));
+      const page = normalizePage(req.body?.page || {}, Number(req.body?.page?.pageNumber || currentPage.pageNumber + 1));
+      const cacheId = clampText(req.body?.cacheId || `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`, 120);
+      const changeLabels = Array.isArray(req.body?.changeLabels) ? req.body.changeLabels.map((label) => clampText(label, 80)).filter(Boolean) : [];
+      const { mimeType: compositeMimeType, base64: compositeBase64 } = parseDataUrl(req.body?.referenceCompositeImageDataUrl || req.body?.compositeImageDataUrl);
+      if (!currentPage.sceneKey || !page.sceneKey) return res.status(400).json({ error: "invalid_page" });
+      if (!compositeBase64) return res.status(400).json({ error: "image_required" });
+
+      const pageWithImage = await attachGeneratedImage(page, {
+        originalMimeType: "",
+        originalBase64: "",
+        compositeMimeType,
+        compositeBase64,
+        runId: clampText(req.body?.runId, 80),
+        cacheId,
+      });
+
+      if (!MEMORY_CACHES.some((cache) => cache.cacheId === cacheId)) {
         const cache = {
           cacheId,
           sourceSceneKey: currentPage.sceneKey,
@@ -443,16 +461,16 @@ console.log("[8-15] rewrite image inputs", {
           sourceTitle: currentPage.title,
           sourceImageHash: currentPage.imageHash,
           sourceImageHint: currentPage.pageNumber === 1 ? INITIAL_IMAGE_FILE : `generated:${String(currentPage.imageHash || "").slice(0, 12)}`,
-          changeLabels: match.changeLabels,
-          changeLabelsText: match.changeLabels.join(" / "),
-          resultSceneKey: page.sceneKey,
-          resultPageNumber: page.pageNumber,
-          resultTitle: page.title,
-          resultBodyText: page.bodyText,
-          resultStorySoFar: page.storySoFar,
-          gameOver: page.gameOver,
-          resultImageHash: page.imageHash,
-          resultImageUrl: page.imageUrl,
+          changeLabels,
+          changeLabelsText: changeLabels.join(" / "),
+          resultSceneKey: pageWithImage.sceneKey,
+          resultPageNumber: pageWithImage.pageNumber,
+          resultTitle: pageWithImage.title,
+          resultBodyText: pageWithImage.bodyText,
+          resultStorySoFar: pageWithImage.storySoFar,
+          gameOver: pageWithImage.gameOver,
+          resultImageHash: pageWithImage.imageHash,
+          resultImageUrl: pageWithImage.imageUrl,
           createdAt: new Date().toISOString(),
         };
         MEMORY_CACHES.unshift(cache); MEMORY_CACHES.splice(200);
@@ -460,11 +478,11 @@ console.log("[8-15] rewrite image inputs", {
         console.log("[8-15] branch saved", { cacheId, sourceSceneKey: cache.sourceSceneKey, sourcePageNumber: cache.sourcePageNumber, changeLabels: cache.changeLabels, resultSceneKey: cache.resultSceneKey, resultPageNumber: cache.resultPageNumber, gameOver: cache.gameOver });
       }
 
-      return res.json({ page, changeLabels: match.changeLabels, cacheHit, cacheId });
+      return res.json({ page: pageWithImage, cacheId });
     } catch (error) {
-      console.error("[8-15] rewrite error", error);
+      console.error("[8-15] page-image error", error);
       if (error?.statusCode === 503) return res.status(503).json({ error: "ai_busy", detail: "AIが混雑しています。もう一度試してください" });
-      return res.status(500).json({ error: "rewrite_failed", detail: errorMessage(error) });
+      return res.status(500).json({ error: "page_image_failed", detail: errorMessage(error) });
     }
   });
 

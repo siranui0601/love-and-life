@@ -303,6 +303,23 @@ button:disabled { cursor: not-allowed; }
   object-fit: cover;
 }
 
+.picture-stage.image-loading #pageImage {
+  filter: opacity(0.35) saturate(0.5);
+}
+
+.picture-stage.image-loading::after {
+  content: "読み込み中...";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 4;
+  color: #fff7df;
+  font-weight: 900;
+  font-size: 1.2rem;
+  background: rgba(35, 21, 12, 0.35);
+}
+
 .image-generation-failed #pageImage {
   filter: saturate(0.45) opacity(0.48);
 }
@@ -374,6 +391,28 @@ button:disabled { cursor: not-allowed; }
   color: #fff8de;
   font-weight: 900;
   font-size: 19px;
+  line-height: 1;
+}
+
+.delete-handle {
+  position: absolute;
+  left: -18px;
+  bottom: -18px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid #fff8de;
+  background: radial-gradient(circle at 35% 35%, #fff4bf, #4b2a1a 62%, #1c0c08);
+  box-shadow: 0 5px 14px rgba(43, 24, 9, 0.32);
+}
+
+.delete-handle::before {
+  content: "🗑";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
   line-height: 1;
 }
 
