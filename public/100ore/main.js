@@ -1193,7 +1193,7 @@ const data = await api("/api/100ore/rewrite", {
     state.stock = normalizeStockList(data.nextStock || nextStock);
     const nextPage = { ...data.page, imageLoading: Boolean(data.imagePending), changeLabels: data.changeLabels || [] };
     applyPage(nextPage);
-    setStatus(data.cacheHit ? "同じような変化だったので、前と同じ展開へ進みました。" : "続きのページが現れました。挿絵を用意しています。");
+    setStatus(data.cacheHit ? "続きのページが現れた！" : "続きのページが現れた！　挿絵を用意しています。");
     if (data.imagePending) {
       state.rewriting = false;
       setLoading(false);
