@@ -965,7 +965,7 @@ async function buildLabelCompositeForAI() {
 
 console.debug("[8-15] label crop built", debugMeta);
 
-//ここから
+/*/ここから
 // before全体図も同じモーダルで確認する
 const beforeCanvas = await renderOriginalCanvasForAI(AI_LABEL_IMAGE_SIZE);
 const beforeDataUrl = canvasToJpegDataUrl(beforeCanvas);
@@ -981,7 +981,7 @@ showDebugLabelCrop(
   ],
   debugMeta
 );
-//ここまで
+*///ここまで
 
 return dataUrl;
 }
