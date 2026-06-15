@@ -16,6 +16,48 @@ const TEXT_TIMEOUT_MS = 12000;
 const IMAGE_TIMEOUT_MS = 30000;
 const VISION_TIMEOUT_MS = 30000;
 const BAD_END_RATE = 0.3;
+const RISK_IMPACTS = new Set([
+  "major_improve",
+  "minor_improve",
+  "neutral",
+  "minor_worse",
+  "worse",
+]);
+
+const RISK_IMPACT_ALIASES = {
+  "大きく改善": "major_improve",
+  "少し改善": "minor_improve",
+  "変化なし": "neutral",
+  "少し悪化": "minor_worse",
+  "悪化": "worse",
+};
+
+const BAD_END_RATE_BY_RISK = {
+  major_improve: 0.08,
+  minor_improve: 0.18,
+  neutral: BAD_END_RATE,
+  minor_worse: 0.45,
+  worse: 0.62,
+};
+
+function normalizeDanger(value, fallback = "危機が迫っている") {
+  if (typeof value !== "string") return clampText(fallback, 80) || "危機が迫っている";
+  const text = clampText(value, 80);
+  if (!text || text === "undefined" || text === "null" || text === "[object Object]") {
+    return clampText(fallback, 80) || "危機が迫っている";
+  }
+  return text;
+}
+
+function normalizeRiskImpact(value) {
+  const raw = String(value || "").trim();
+  const mapped = RISK_IMPACT_ALIASES[raw] || raw;
+  return RISK_IMPACTS.has(mapped) ? mapped : "neutral";
+}
+
+function badEndRateForRiskImpact(value) {
+  return BAD_END_RATE_BY_RISK[normalizeRiskImpact(value)] ?? BAD_END_RATE;
+}
 const VERSION = "eight-fifteen-simple-flow-v1";
 const TEXT_MODEL_CANDIDATES = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 const IMAGE_MODEL_CANDIDATES = ["gemini-2.5-flash-image", "gemini-3-pro-image-preview", "gemini-2.5-flash-image-preview"];
@@ -28,6 +70,7 @@ const JOB_INPUT_DIR = path.join(process.cwd(), "data/8-15-jobs");
 const INITIAL_PAGE_TEXT = {
   pageNumber: 1,
   title: "1ページ目: 猫を追う少女",
+  danger: "少女が猫を追って公園の外へ飛び出しそう",
   bodyText: `気がつくと、俺は真夏の公園に立っていた。記憶は曖昧なのに、ベンチの向こうで黒猫を追う少女だけは知っている気がする。守らなきゃ。そう思った瞬間、猫が柵を抜けて外へ逃げ、少女も追いかけて走り出した。時計は12時40分を指していた。`,
   storySoFar: `俺は理由も分からず真夏の公園に立っている。黒猫を追う少女を見て、強く守りたいと感じた。猫は柵の隙間から公園の外へ逃げ、少女も追い始めた。時計は12時40分。`,
   imageUrl: INITIAL_IMAGE_URL,
@@ -249,9 +292,13 @@ async function buildInitialPage() {
   };
 }
 function normalizePage(page = {}, pageNumber = 1) {
+  const title = fixTitle(page.title, pageNumber);
+  const danger = normalizeDanger(page.danger, title);
+
   return {
     pageNumber,
-    title: fixTitle(page.title, pageNumber),
+    title,
+    danger,
     bodyText: clampText(page.bodyText, 160) || "物語が動いた。",
     storySoFar: clampText(page.storySoFar, 300) || "物語が動いた。",
     sceneKey: clampText(page.sceneKey, 80),
@@ -263,10 +310,14 @@ function normalizePage(page = {}, pageNumber = 1) {
     gameOver: Boolean(page.gameOver),
   };
 }
+
 function sanitizeSavedPage(page = {}) {
+  const title = clampText(page.title, 60);
+
   return {
     pageNumber: Number(page.pageNumber || 1),
-    title: clampText(page.title, 60),
+    title,
+    danger: normalizeDanger(page.danger, title),
     bodyText: clampText(page.bodyText, 180),
     storySoFar: clampText(page.storySoFar, 300),
     sceneKey: clampText(page.sceneKey, 80),
@@ -315,7 +366,8 @@ async function labelAndMatchBranch(genAI, { currentPage, originalMimeType, origi
 「落書き」「描いた」等のメタ語は使わない。絵として評価
 
 既出なら: {"matched":true,"cacheId":"xxx","changeLabels":["候補側のラベル"]}
-未出なら: {"matched":false,"cacheId":"","changeLabels":["猫に首輪,手紙が燃える　等の短い変化ラベル"]}
+未出なら:
+ {"matched":false,"cacheId":"","changeLabels":["猫に首輪,手紙が燃える　等の短い変化ラベル"],"riskImpact":"現在の危機:「${currentDanger}」の解決率。major_improve,minor_improve。neutral,minor_worse,worseより1つ選択"}}
 
 返答はコメントなしのJSONのみ。`;
   const raw = await generateTextJson(genAI, imageParts(prompt, originalMimeType, originalBase64, compositeMimeType, compositeBase64), VISION_TIMEOUT_MS);
@@ -323,22 +375,36 @@ async function labelAndMatchBranch(genAI, { currentPage, originalMimeType, origi
   const cacheId = clampText(raw?.cacheId, 100);
   if (typeof raw?.matched !== "boolean") throw new Error("invalid_label_match_matched");
   if (matched) {
-    if (!cacheId) throw new Error("invalid_label_match_cacheId");
-    const cache = candidates.find((item) => item.cacheId === cacheId);
-    if (!cache) throw new Error("matched_cache_not_found");
-    return { matched: true, cacheId, changeLabels: normalizeChangeLabels(cache.changeLabels), cache };
-  }
-  const changeLabels = normalizeChangeLabels(raw?.changeLabels);
-  if (!changeLabels.length) throw new Error("invalid_label_match_empty_labels");
-  return { matched: false, cacheId: "", changeLabels, cache: null };
+  if (!cacheId) throw new Error("invalid_label_match_cacheId");
+  const cache = candidates.find((item) => item.cacheId === cacheId);
+  if (!cache) throw new Error("matched_cache_not_found");
+
+  // 既出ルートでは結果が確定済みなので riskImpact は使わない
+  return {
+    matched: true,
+    cacheId,
+    changeLabels: normalizeChangeLabels(cache.changeLabels),
+    cache,
+  };
 }
+
+const changeLabels = normalizeChangeLabels(raw?.changeLabels);
+if (!changeLabels.length) throw new Error("invalid_label_match_empty_labels");
+
+return {
+  matched: false,
+  cacheId: "",
+  changeLabels,
+  riskImpact: normalizeRiskImpact(raw?.riskImpact),
+  cache: null,
+};
 async function generateNormalStory(genAI, { currentPage, nextPageNumber, changeLabels }) {
   const prompt = `本文,あらすじ,変化ラベルを元に、次ページの物語を生成。
 目的は、俺と少女が救われない運命を避けること。カゲロウデイズのようなイメージ。
 
 この場面の説明を続けず、一難去ってまた一難にする。積極的に場面転換をすること
 奇想天外で突拍子もない展開にすること。
-必ず少女か俺に具体的な危機を発生させること
+必ず少女に具体的な危機を発生させること
 危機には、具体物を2つ以上描写し、何が危機なのかを明言する
 
 現在の本文: ${currentPage.bodyText}
@@ -349,6 +415,7 @@ async function generateNormalStory(genAI, { currentPage, nextPageNumber, changeL
 
 返答はJSONのみ: {
   "title":"短いタイトル",
+  "danger":"今回の危機を短く表す",
   "bodyText":"100字程度",
   "storySoFar":"300字以下"
 }`;
@@ -582,20 +649,29 @@ console.log("[8-15] rewrite image inputs", {
       if (cacheHit) {
         const cached = match.cache;
         page = normalizePage({
-          pageNumber: Number(cached.resultPageNumber || nextPageNumber),
-          title: cached.resultTitle,
-          bodyText: cached.resultBodyText,
-          storySoFar: cached.resultStorySoFar,
-          sceneKey: cached.resultSceneKey,
-          imageHash: cached.resultImageHash,
-          imageUrl: cached.resultImageUrl,
-          imageFileId: cached.resultImageFileId,
-          imageDriveUrl: cached.resultImageDriveUrl,
-          gameOver: cached.gameOver,
-        }, Number(cached.resultPageNumber || nextPageNumber));
+  pageNumber: Number(cached.resultPageNumber || nextPageNumber),
+  title: cached.resultTitle,
+  danger: cached.resultDanger,
+  bodyText: cached.resultBodyText,
+  storySoFar: cached.resultStorySoFar,
+  sceneKey: cached.resultSceneKey,
+  imageHash: cached.resultImageHash,
+  imageUrl: cached.resultImageUrl,
+  imageFileId: cached.resultImageFileId,
+  imageDriveUrl: cached.resultImageDriveUrl,
+  gameOver: cached.gameOver,
+}, Number(cached.resultPageNumber || nextPageNumber));
       } else {
-        const gameOver = Math.random() < BAD_END_RATE;
-        page = gameOver
+        const badEndRate = badEndRateForRiskImpact(match.riskImpact);
+const gameOver = Math.random() < badEndRate;
+
+console.log("[8-15] bad end roll", {
+  riskImpact: match.riskImpact || "neutral",
+  badEndRate,
+  gameOver,
+});
+
+page = gameOver
   ? await generateBadEndStory(genAI, {
       currentPage,
       nextPageNumber,
@@ -710,9 +786,10 @@ console.log("[8-15] rewrite image inputs", {
           resultSceneKey: pageWithImage.sceneKey,
           resultPageNumber: pageWithImage.pageNumber,
           resultTitle: pageWithImage.title,
-          resultBodyText: pageWithImage.bodyText,
-          resultStorySoFar: pageWithImage.storySoFar,
-          gameOver: pageWithImage.gameOver,
+resultDanger: pageWithImage.danger,
+resultBodyText: pageWithImage.bodyText,
+resultStorySoFar: pageWithImage.storySoFar,
+gameOver: pageWithImage.gameOver,
           resultImageHash: pageWithImage.imageHash,
           resultImageUrl: pageWithImage.imageUrl,
           createdAt: new Date().toISOString(),
