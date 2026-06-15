@@ -116,8 +116,9 @@ function savedPage(page = {}) {
   return {
     pageNumber: Number(page.pageNumber || 1),
     title: page.title || "",
-    bodyText: page.bodyText || "",
-    storySoFar: page.storySoFar || "",
+danger: page.danger || "",
+bodyText: page.bodyText || "",
+storySoFar: page.storySoFar || "",
     sceneKey: page.sceneKey || "",
     imageHash: page.imageHash || "",
     imageFileId: page.imageFileId || "",
