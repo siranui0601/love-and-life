@@ -56,13 +56,22 @@ async function readUserProgress(userTrackingId) {
 }
 function sanitizeProgressPage(page = {}) { return sanitizeSavedPage(page); }
 function sanitizeProgressStock(stock = []) {
-  return (Array.isArray(stock) ? stock : []).slice(0, 12).map((item) => ({
-    id: clampText(item?.id, 80),
-    shape: clampText(item?.shape, 30),
-    label: clampText(item?.label, 80),
-    w: Number(item?.w || 0),
-    h: Number(item?.h || 0),
-  })).filter((item) => item.id || item.shape || item.label);
+  return (Array.isArray(stock) ? stock : []).slice(0, 12).map((item) => {
+    const w = Number(item?.w || 0);
+    const h = Number(item?.h || 0);
+    const power = Number.isFinite(Number(item?.power))
+      ? Math.round(Number(item.power))
+      : Math.round(w * h * 1000);
+
+    return {
+      id: clampText(item?.id, 80),
+      shape: clampText(item?.shape, 30),
+      label: clampText(item?.label, 80),
+      w,
+      h,
+      power,
+    };
+  }).filter((item) => item.id || item.shape || item.label);
 }
 function sanitizeProgressPages(pages = []) {
   const seen = new Set();
@@ -488,6 +497,8 @@ export function mountHundredOreRoutes(app) {
       const currentPage = normalizePage(req.body?.currentPage || {}, Number(req.body?.currentPage?.pageNumber || req.body?.pageNumber || 1));
       if (!currentPage.sceneKey) return res.status(400).json({ error: "invalid_current_page" });
       const nextPageNumber = currentPage.pageNumber + 1;
+      const currentStock = sanitizeProgressStock(req.body?.stock || []);
+      const nextStock = sanitizeProgressStock(req.body?.nextStock || req.body?.stock || []);
       const { mimeType: originalMimeType, base64: originalBase64 } =
   parseDataUrl(req.body?.originalImageDataUrl);
 
@@ -523,7 +534,7 @@ console.log("[8-15] rewrite image inputs", {
         await writeUserProgress({
           userTrackingId, username, runId, status: "processing", pageNumber: currentPage.pageNumber,
           currentPage, pages: sanitizeProgressPages(req.body?.pages || [currentPage]),
-          stock: sanitizeProgressStock(req.body?.stock || []), gameOver: false,
+          stock: currentStock, gameOver: false,
           pendingTransition: previousPending, updatedAt: new Date().toISOString(),
         });
       }
@@ -585,25 +596,25 @@ console.log("[8-15] rewrite image inputs", {
           await writeUserProgress({
             userTrackingId, username, runId, status: page.gameOver ? "gameOver" : "active",
             pageNumber: page.pageNumber, currentPage: nextPageForProgress, pages: nextPages,
-            stock: sanitizeProgressStock(req.body?.stock || []), gameOver: Boolean(page.gameOver),
+            stock: nextStock, gameOver: Boolean(page.gameOver),
             pendingTransition: null, updatedAt: new Date().toISOString(),
           });
         }
         console.log("[8-15] cache image reused", { cacheId, pageNumber: page.pageNumber, imageHash: String(page.imageHash || "").slice(0, 12), imageUrl: page.imageUrl });
-        return res.json({ page, changeLabels: match.changeLabels, cacheHit: true, cacheId, imagePending: false });
+        return res.json({ page, changeLabels: match.changeLabels, cacheHit: true, cacheId, imagePending: false, nextStock });
       }
 
       if (userTrackingId) {
         await writeUserProgress({
           userTrackingId, username, runId, status: "story_done", pageNumber: page.pageNumber,
-          currentPage: nextPageForProgress, pages: nextPages, stock: sanitizeProgressStock(req.body?.stock || []),
+          currentPage: nextPageForProgress, pages: nextPages, stock: nextStock,
           gameOver: Boolean(page.gameOver),
           pendingTransition: { ...previousPending, cacheId, status: "story_done", changeLabels: match.changeLabels, nextPage: nextPageForProgress, updatedAt: new Date().toISOString() },
           updatedAt: new Date().toISOString(),
         });
       }
 
-      return res.json({ page, changeLabels: match.changeLabels, cacheHit: false, cacheId, imagePending: true, transitionId });
+      return res.json({ page, changeLabels: match.changeLabels, cacheHit: false, cacheId, imagePending: true, transitionId, nextStock });
     } catch (error) {
       const userTrackingId = clampText(req.body?.userTrackingId || "", 160);
       if (userTrackingId) {
@@ -632,6 +643,7 @@ console.log("[8-15] rewrite image inputs", {
       const page = normalizePage(req.body?.page || progress?.pendingTransition?.nextPage || {}, Number(req.body?.page?.pageNumber || progress?.pendingTransition?.nextPage?.pageNumber || currentPage.pageNumber + 1));
       const cacheId = clampText(req.body?.cacheId || progress?.pendingTransition?.cacheId || `cache_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`, 120);
       const changeLabels = Array.isArray(req.body?.changeLabels) ? req.body.changeLabels.map((label) => clampText(label, 80)).filter(Boolean) : normalizeChangeLabels(progress?.pendingTransition?.changeLabels);
+      const progressStock = sanitizeProgressStock(req.body?.stock || progress?.stock || []);
       let referenceDataUrl = req.body?.referenceCompositeImageDataUrl || req.body?.compositeImageDataUrl || "";
       if (!referenceDataUrl && progress?.pendingTransition?.referenceCompositeImagePath) {
         referenceDataUrl = await readJobDataUrl(progress.pendingTransition.referenceCompositeImagePath);
@@ -645,7 +657,7 @@ console.log("[8-15] rewrite image inputs", {
           ...(progress || {}), userTrackingId, username, runId: runId || progress?.runId, status: "image_generating",
           pageNumber: page.pageNumber, currentPage: { ...page, imageLoading: true, changeLabels },
           pages: mergePagesWith(req.body?.pages || progress?.pages || [], { ...page, imageLoading: true, changeLabels }),
-          stock: sanitizeProgressStock(req.body?.stock || progress?.stock || []), gameOver: Boolean(page.gameOver),
+          stock: progressStock, gameOver: Boolean(page.gameOver),
           pendingTransition: { ...(progress?.pendingTransition || {}), transitionId: transitionId || progress?.pendingTransition?.transitionId, cacheId, status: "image_generating", currentPage, changeLabels, nextPage: { ...page, imageLoading: true, changeLabels }, updatedAt: new Date().toISOString() },
           updatedAt: new Date().toISOString(),
         });
@@ -690,7 +702,7 @@ console.log("[8-15] rewrite image inputs", {
           userTrackingId, username, runId: runId || progress?.runId, status: pageWithImage.gameOver ? "gameOver" : "active",
           pageNumber: pageWithImage.pageNumber, currentPage: { ...pageWithImage, changeLabels },
           pages: mergePagesWith(req.body?.pages || progress?.pages || [], { ...pageWithImage, changeLabels }),
-          stock: sanitizeProgressStock(req.body?.stock || progress?.stock || []), gameOver: Boolean(pageWithImage.gameOver),
+          stock: progressStock, gameOver: Boolean(pageWithImage.gameOver),
           pendingTransition: null, updatedAt: new Date().toISOString(),
         });
       }

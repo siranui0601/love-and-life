@@ -155,6 +155,38 @@ function randomCanvas() {
   const base = shapes[Math.floor(Math.random() * shapes.length)];
   return { ...base, id: `c_${Date.now()}_${Math.random().toString(16).slice(2)}`, power: Math.round(base.w * base.h * 1000) };
 }
+function normalizeStockItem(item = {}) {
+  const fallback = shapes.find((s) => s.shape === item.shape && s.label === item.label)
+    || shapes.find((s) => s.label === item.label)
+    || shapes.find((s) => s.shape === item.shape)
+    || shapes[0];
+  const w = Number(item.w || fallback.w);
+  const h = Number(item.h || fallback.h);
+
+  return {
+    ...fallback,
+    ...item,
+    id: item.id || `c_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    shape: item.shape || fallback.shape,
+    label: item.label || fallback.label,
+    w,
+    h,
+    power: Number.isFinite(Number(item.power))
+      ? Math.round(Number(item.power))
+      : Math.round(w * h * 1000),
+  };
+}
+function normalizeStockList(stock = []) {
+  return (Array.isArray(stock) ? stock : [])
+    .map(normalizeStockItem)
+    .filter((item) => item.w > 0 && item.h > 0)
+    .slice(0, 3);
+}
+function stockForNextPage(stock = state.stock) {
+  const next = normalizeStockList(stock);
+  if (next.length < 3) next.push(randomCanvas());
+  return next.slice(0, 3);
+}
 function fillInitialStock() { while (state.stock.length < 3) state.stock.push(randomCanvas()); renderPanels(); }
 function replenishOneStock() { if (state.stock.length < 3) state.stock.push(randomCanvas()); renderPanels(); }
 function activePlacement() { return state.placements.find((p) => p.id === state.activePlacementId) || null; }
@@ -175,6 +207,7 @@ function updateConfirmState() {
   console.debug("[8-15] confirm state", { hasPlacement, hasDrawing, rewriting: state.rewriting, gameOver: state.gameOver, disabled: refs.confirm.disabled });
 }
 function renderPanels() {
+  state.stock = normalizeStockList(state.stock);
   refs.stock.innerHTML = "";
   state.stock.forEach((item) => {
     const card = document.createElement("button");
@@ -186,7 +219,10 @@ function renderPanels() {
     shape.style.height = `${Math.round(item.h * 130)}px`;
     const label = document.createElement("div");
     label.className = "stock-label";
-    label.textContent = `${item.label} / 面積${item.power}`;
+    const power = Number.isFinite(Number(item.power))
+      ? Math.round(Number(item.power))
+      : Math.round(Number(item.w || 0) * Number(item.h || 0) * 1000);
+    label.textContent = `${item.label} / 面積${power}`;
     card.append(shape, label);
     card.onclick = () => {
       if (state.suppressStockClick) { state.suppressStockClick = false; return; }
@@ -1010,7 +1046,7 @@ function restoreProgress(progress) {
   state.runId = progress.runId;
   state.pageNumber = Number(progress.pageNumber || progress.currentPage?.pageNumber || 1);
   state.pages = Array.isArray(progress.pages) ? progress.pages.map(savedPage) : [];
-  state.stock = Array.isArray(progress.stock) && progress.stock.length ? progress.stock : [];
+  state.stock = normalizeStockList(progress.stock);
   if (!state.stock.length) fillInitialStock();
   state.gameOver = progress.status === "gameOver" || Boolean(progress.gameOver);
   applyPage(progress.currentPage, { append: false });
@@ -1134,6 +1170,7 @@ const drawingHash = await sha256(await (await fetch(labelCompositeImageDataUrl))
 const currentPage = savedPage(state.current || {});
 const auth = loggedInUser();
 const transitionId = `trans_${Date.now().toString(36)}_${Math.random().toString(16).slice(2)}`;
+const nextStock = stockForNextPage(state.stock);
 
 const data = await api("/api/100ore/rewrite", {
   runId: state.runId,
@@ -1149,10 +1186,11 @@ const data = await api("/api/100ore/rewrite", {
   transitionId,
   pages: state.pages,
   stock: state.stock,
+  nextStock,
 });
     addHistory(data.changeLabels);
     if (state.pages.length) state.pages[state.pages.length - 1] = { ...state.pages[state.pages.length - 1], changeLabels: data.changeLabels || [] };
-    replenishOneStock();
+    state.stock = normalizeStockList(data.nextStock || nextStock);
     const nextPage = { ...data.page, imageLoading: Boolean(data.imagePending), changeLabels: data.changeLabels || [] };
     applyPage(nextPage);
     setStatus(data.cacheHit ? "同じような変化だったので、前と同じ展開へ進みました。" : "続きのページが現れました。挿絵を用意しています。");
