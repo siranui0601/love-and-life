@@ -1868,6 +1868,8 @@ const HUNDRED_ORE_CACHE_HEADERS = [
   "resultImageHash",
   "createdAt",
   "resultImageUrl",
+"resultImageDriveUrl",
+"resultDanger",
 ];
 const HUNDRED_ORE_RUNS_HEADERS = [
   "runId",
@@ -1933,8 +1935,9 @@ function parseHundredOreCacheRow(row, index = 0) {
     resultImageHash: String(row?.[14] || "").trim(),
     createdAt: String(row?.[15] || "").trim(),
     resultImageUrl: qLooksLikeUrl || !rValue ? qValue : "",
-    resultImageFileId: rValue ? qValue : "",
-    resultImageDriveUrl: rValue,
+resultImageFileId: rValue ? qValue : "",
+resultImageDriveUrl: rValue,
+resultDanger: String(row?.[18] || "").trim(),
   };
 }
 
@@ -1991,8 +1994,9 @@ export async function appendHundredOreRun(run) {
   const safePages = stripHundredOreImagePayload(run.pages || []).map((page) => ({
     pageNumber: Number(page.pageNumber || 1),
     title: String(page.title || ""),
-    bodyText: String(page.bodyText || ""),
-    storySoFar: String(page.storySoFar || ""),
+danger: String(page.danger || ""),
+bodyText: String(page.bodyText || ""),
+storySoFar: String(page.storySoFar || ""),
     sceneKey: String(page.sceneKey || ""),
     imageHash: String(page.imageHash || ""),
     imageUrl: String(page.imageUrl || ""),
@@ -2044,13 +2048,15 @@ export async function appendHundredOreCache(cache) {
     String(cache.resultStorySoFar || ""),
     String(Boolean(cache.gameOver)),
     String(cache.resultImageHash || ""),
-    String(cache.createdAt || new Date().toISOString()),
-    String(cache.resultImageUrl || ""),
+String(cache.createdAt || new Date().toISOString()),
+String(cache.resultImageUrl || ""),
+String(cache.resultImageDriveUrl || ""),
+String(cache.resultDanger || ""),
   ]];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${HUNDRED_ORE_CACHE_SHEET_NAME}!A2:Q`,
+    range: `${HUNDRED_ORE_CACHE_SHEET_NAME}!A2:S`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values },
@@ -2064,7 +2070,7 @@ export async function listHundredOreCacheBySceneKey(sceneKey) {
   if (!key) return [];
   const sheets = await getSheetsClient();
   await ensureHundredOreCacheHeader(sheets);
-  const range = `${HUNDRED_ORE_CACHE_SHEET_NAME}!A2:R`;
+  const range = `${HUNDRED_ORE_CACHE_SHEET_NAME}!A2:S`;
   const res = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range });
   const rows = res.data.values || [];
   return rows
