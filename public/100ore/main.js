@@ -73,6 +73,7 @@ const state = {
   undo: [],
   redo: [],
   gameOver: false,
+  gameOverRunSaved: false,
   rewriting: false,
   loadingTimers: [],
   guestStartAccepted: false,
@@ -1040,7 +1041,7 @@ function handleStartClick() {
   refs.loginBenefitDialog?.showModal();
 }
 
-function restoreProgress(progress) {
+async function restoreProgress(progress) {
   if (!progress?.currentPage) return;
   stopResumePolling();
   state.runId = progress.runId;
@@ -1071,8 +1072,12 @@ function restoreProgress(progress) {
   }
 
   setLoading(false);
+  if (progress.status === "gameOver" || progress.currentPage?.gameOver) {
+    setStatus("前回のバッドエンドを表示しました。");
+    await finalizeGameOver(progress.currentPage);
+    return;
+  }
   if (progress.status === "active") setStatus("保存されたページから再開しました。");
-  if (progress.status === "gameOver") setStatus("前回のバッドエンドを表示しました。");
 }
 
 async function startGame() {
@@ -1086,7 +1091,7 @@ async function startGame() {
     const auth = loggedInUser();
     const data = await api("/api/100ore/start", { username: auth.username || "旅人", userTrackingId: auth.userTrackingId, stock: state.stock });
     if (data.resumed) {
-      restoreProgress(data.progress);
+      await restoreProgress(data.progress);
       return;
     }
     state.runId = data.runId;
@@ -1130,7 +1135,7 @@ async function checkProgressOnce() {
   if (!progress) return;
   if (["story_done", "image_generating", "image_failed", "active", "gameOver"].includes(progress.status)) {
     stopResumePolling();
-    restoreProgress(progress);
+    await restoreProgress(progress);
   }
   if (progress.status === "failed") {
     stopResumePolling();
@@ -1209,9 +1214,7 @@ const data = await api("/api/100ore/rewrite", {
       return;
     }
     if (data.page?.gameOver) {
-      state.gameOver = true;
-      await saveRun();
-      showGameOver(data.page);
+      await finalizeGameOver(data.page);
       return;
     }
   } catch (e) {
@@ -1254,9 +1257,7 @@ async function generateImageForCurrentPage({ page, currentPage, changeLabels, ca
       refs.fallbackNotice.hidden = true;
       setStatus(updatedPage.gameOver ? "バッドエンドの挿絵が現れました。" : "挿絵が現れました。残りの紙片と補充1枚を使えます。");
       if (updatedPage.gameOver) {
-        state.gameOver = true;
-        await saveRun();
-        showGameOver(updatedPage);
+        await finalizeGameOver(updatedPage);
       }
       return;
     } catch (e) {
@@ -1284,6 +1285,23 @@ async function saveRun() {
   const user = getUser();
   const finalPage = state.pages[state.pages.length - 1] || state.current || {};
   await api("/api/100ore/runs", { runId: state.runId, username: user.username || localStorage.getItem("username") || "名無しの俺", userTrackingId: user.userTrackingId || localStorage.getItem("userTrackingId") || "", score: state.pageNumber, gameOver: true, finalTitle: finalPage.title || "", finalBodyText: finalPage.bodyText || "", pages: state.pages, endedAt: new Date().toISOString() }).catch((e) => setStatus(`ランキング保存に失敗しました: ${e.message}`));
+}
+async function clearProgressAfterGameOver() {
+  const auth = loggedInUser();
+  if (!auth.loggedIn) return;
+  await api("/api/100ore/progress/clear", {
+    userTrackingId: auth.userTrackingId,
+  }).catch((e) => {
+    console.warn("[8-15] progress clear failed", e);
+  });
+}
+async function finalizeGameOver(page) {
+  state.gameOver = true;
+  if (!state.gameOverRunSaved) {
+    state.gameOverRunSaved = true;
+    await saveRun();
+  }
+  showGameOver(page);
 }
 function renderReviewPage(p, className = "bad-review-page") {
   const src = pageImageSrc(p);
@@ -1325,6 +1343,7 @@ function showGameOver(page) {
   div.querySelector("#againBtn").onclick = () => location.reload();
   div.querySelector("#overRankBtn").onclick = showRanking;
   setStatus("記録を保存しました。ほかの俺の絵本も覗けます。");
+  clearProgressAfterGameOver();
 }
 async function showRanking() {
   refs.rankingDialog.showModal();

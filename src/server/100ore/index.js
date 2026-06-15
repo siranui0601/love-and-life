@@ -129,6 +129,18 @@ async function clearUserProgress(userTrackingId) {
   await fs.rm(progressPathForUser(userTrackingId), { force: true }).catch(() => {});
 }
 function safeTransitionId(value) { return sanitizeFilePart(value || `trans_${Date.now().toString(36)}_${crypto.randomBytes(4).toString("hex")}`, 100); }
+
+async function cleanupJobInputs(transitionId) {
+  const safeId = safeTransitionId(transitionId);
+  if (!safeId) return;
+  const dir = path.join(JOB_INPUT_DIR, safeId);
+  const resolved = path.resolve(dir);
+  const root = path.resolve(JOB_INPUT_DIR);
+  if (!resolved.startsWith(root)) return;
+  await fs.rm(resolved, { recursive: true, force: true }).catch((error) => {
+    console.warn("[8-15] job cleanup failed", { transitionId: safeId, error: errorMessage(error) });
+  });
+}
 async function saveJobDataUrl({ transitionId, name, dataUrl }) {
   await ensureProgressDir();
   const dir = path.join(JOB_INPUT_DIR, safeTransitionId(transitionId));
@@ -463,7 +475,7 @@ export function mountHundredOreRoutes(app) {
       const userTrackingId = clampText(req.body?.userTrackingId || "", 160);
       if (userTrackingId) {
         const progress = await readUserProgress(userTrackingId);
-        if (progress && progress.status !== "gameOver" && progress.currentPage?.pageNumber) {
+        if (progress && progress.currentPage?.pageNumber) {
           return res.json({ resumed: true, progress });
         }
       }
@@ -486,6 +498,18 @@ export function mountHundredOreRoutes(app) {
     const userTrackingId = clampText(req.body?.userTrackingId || "", 160);
     if (!userTrackingId) return res.json({ progress: null });
     return res.json({ progress: await readUserProgress(userTrackingId) });
+  });
+
+  app.post("/api/100ore/progress/clear", async (req, res) => {
+    try {
+      const userTrackingId = clampText(req.body?.userTrackingId || "", 160);
+      if (!userTrackingId) return res.json({ ok: true, cleared: false });
+      await clearUserProgress(userTrackingId);
+      return res.json({ ok: true, cleared: true });
+    } catch (error) {
+      console.warn("[8-15] progress clear failed", { error: errorMessage(error) });
+      return res.status(500).json({ error: "progress_clear_failed", detail: errorMessage(error) });
+    }
   });
 
   app.post("/api/100ore/rewrite", async (req, res) => {
@@ -601,6 +625,7 @@ console.log("[8-15] rewrite image inputs", {
           });
         }
         console.log("[8-15] cache image reused", { cacheId, pageNumber: page.pageNumber, imageHash: String(page.imageHash || "").slice(0, 12), imageUrl: page.imageUrl });
+        await cleanupJobInputs(transitionId);
         return res.json({ page, changeLabels: match.changeLabels, cacheHit: true, cacheId, imagePending: false, nextStock });
       }
 
@@ -706,6 +731,8 @@ console.log("[8-15] rewrite image inputs", {
           pendingTransition: null, updatedAt: new Date().toISOString(),
         });
       }
+
+      await cleanupJobInputs(transitionId || progress?.pendingTransition?.transitionId);
 
       return res.json({ page: pageWithImage, cacheId });
     } catch (error) {
