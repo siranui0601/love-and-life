@@ -356,48 +356,71 @@ function imageParts(prompt, originalMimeType, originalBase64, compositeMimeType,
   return parts;
 }
 async function labelAndMatchBranch(genAI, { currentPage, originalMimeType, originalBase64, compositeMimeType, compositeBase64, candidates }) {
-  const prompt = `1枚目は全体図。そこに2枚目のような変化が起きた。これと同様の変化ラベルを1つ下記から選べ。
+  const currentDanger = normalizeDanger(currentPage?.danger, currentPage?.title);
+
+  const prompt = `現在の危機: ${currentDanger}
+
+1枚目は全体図。そこに2枚目のような変化が起きた。これと同様の変化ラベルを1つ下記から選べ。
 
 候補: ${JSON.stringify(candidates.map((c) => ({ cacheId: c.cacheId, changeLabels: c.changeLabels })))}
 
 意味がほぼ同じ変化だけmatched=true。
 画像を注視し、既出か否かは慎重に判断すること。
 出力するchangeLabelsは絵本世界の出来事として書く。
-「落書き」「描いた」等のメタ語は使わない。絵として評価
+「落書き」「描いた」等のメタ語は使わない。絵として評価。
 
-既出なら: {"matched":true,"cacheId":"xxx","changeLabels":["候補側のラベル"]}
+未出の場合だけ、今回の変化が「現在の危機」をどう変えたかをriskImpactで返す。
+riskImpactは次の5つから必ず1つ:
+major_improve / minor_improve / neutral / minor_worse / worse
+
+既出なら:
+{"matched":true,"cacheId":"xxx","changeLabels":["候補側のラベル"]}
+
 未出なら:
- {"matched":false,"cacheId":"","changeLabels":["猫に首輪,手紙が燃える　等の短い変化ラベル"],"riskImpact":"現在の危機:「${currentDanger}」の解決率。major_improve,minor_improve。neutral,minor_worse,worseより1つ選択"}}
+{"matched":false,"cacheId":"","changeLabels":["猫に首輪 等の短い変化ラベル"],"riskImpact":"major_improve"}
 
 返答はコメントなしのJSONのみ。`;
-  const raw = await generateTextJson(genAI, imageParts(prompt, originalMimeType, originalBase64, compositeMimeType, compositeBase64), VISION_TIMEOUT_MS);
+
+  const raw = await generateTextJson(
+    genAI,
+    imageParts(prompt, originalMimeType, originalBase64, compositeMimeType, compositeBase64),
+    VISION_TIMEOUT_MS
+  );
+
   const matched = raw?.matched === true;
   const cacheId = clampText(raw?.cacheId, 100);
-  if (typeof raw?.matched !== "boolean") throw new Error("invalid_label_match_matched");
-  if (matched) {
-  if (!cacheId) throw new Error("invalid_label_match_cacheId");
-  const cache = candidates.find((item) => item.cacheId === cacheId);
-  if (!cache) throw new Error("matched_cache_not_found");
 
-  // 既出ルートでは結果が確定済みなので riskImpact は使わない
+  if (typeof raw?.matched !== "boolean") {
+    throw new Error("invalid_label_match_matched");
+  }
+
+  if (matched) {
+    if (!cacheId) throw new Error("invalid_label_match_cacheId");
+
+    const cache = candidates.find((item) => item.cacheId === cacheId);
+    if (!cache) throw new Error("matched_cache_not_found");
+
+    return {
+      matched: true,
+      cacheId,
+      changeLabels: normalizeChangeLabels(cache.changeLabels),
+      cache,
+    };
+  }
+
+  const changeLabels = normalizeChangeLabels(raw?.changeLabels);
+  if (!changeLabels.length) {
+    throw new Error("invalid_label_match_empty_labels");
+  }
+
   return {
-    matched: true,
-    cacheId,
-    changeLabels: normalizeChangeLabels(cache.changeLabels),
-    cache,
+    matched: false,
+    cacheId: "",
+    changeLabels,
+    riskImpact: normalizeRiskImpact(raw?.riskImpact),
+    cache: null,
   };
 }
-
-const changeLabels = normalizeChangeLabels(raw?.changeLabels);
-if (!changeLabels.length) throw new Error("invalid_label_match_empty_labels");
-
-return {
-  matched: false,
-  cacheId: "",
-  changeLabels,
-  riskImpact: normalizeRiskImpact(raw?.riskImpact),
-  cache: null,
-};
 async function generateNormalStory(genAI, { currentPage, nextPageNumber, changeLabels }) {
   const prompt = `本文,あらすじ,変化ラベルを元に、次ページの物語を生成。
 目的は、俺と少女が救われない運命を避けること。カゲロウデイズのようなイメージ。
