@@ -325,10 +325,36 @@ function clampPlacementBox(p) {
   p.y = Math.max(0, Math.min(1 - p.h, p.y));
   return p;
 }
+function clampPlacementToCanvas(p, width = refs.canvas.width, height = refs.canvas.height) {
+  const w = Number(p.w || 0);
+  const h = Number(p.h || 0);
+  if (!width || !height || w <= 0 || h <= 0) return clampPlacementBox(p);
+
+  const rectW = w * width;
+  const rectH = h * height;
+  const rad = (Number(p.angle || 0) * Math.PI) / 180;
+  const cos = Math.abs(Math.cos(rad));
+  const sin = Math.abs(Math.sin(rad));
+  const halfBoundsW = (rectW * cos + rectH * sin) / 2;
+  const halfBoundsH = (rectW * sin + rectH * cos) / 2;
+  const minCx = halfBoundsW;
+  const maxCx = width - halfBoundsW;
+  const minCy = halfBoundsH;
+  const maxCy = height - halfBoundsH;
+
+  let cx = (Number(p.x || 0) + w / 2) * width;
+  let cy = (Number(p.y || 0) + h / 2) * height;
+  cx = minCx > maxCx ? width / 2 : Math.max(minCx, Math.min(maxCx, cx));
+  cy = minCy > maxCy ? height / 2 : Math.max(minCy, Math.min(maxCy, cy));
+
+  p.x = cx / width - w / 2;
+  p.y = cy / height - h / 2;
+  return p;
+}
 function placeCanvas(item, xRatio, yRatio) {
   if (!state.stock.some((stock) => stock.id === item.id)) return;
   const box = canvasPixelsFor(item, xRatio, yRatio);
-  const p = clampPlacementBox({
+  const p = clampPlacementToCanvas({
     id: `p_${Date.now()}_${Math.random().toString(16).slice(2)}`,
     sourceCanvasId: item.id,
     x: box.x / refs.canvas.width,
@@ -626,13 +652,14 @@ function onPointerMove(e) {
     const dy = (point.y - state.pointerStart.point.y) / refs.canvas.height;
     p.x = state.pointerStart.start.x + dx;
     p.y = state.pointerStart.start.y + dy;
-    clampPlacementBox(p);
+    clampPlacementToCanvas(p);
     drawScene();
     return;
   }
   if (state.pointerMode === "rotate") {
     const delta = angleFromCenter(point, p) - state.pointerStart.startPointerAngle;
     p.angle = ((Number(state.pointerStart.start.angle || 0) + delta + 540) % 360) - 180;
+    clampPlacementToCanvas(p);
     if (refs.angle) refs.angle.value = String(Math.round(p.angle));
     drawScene();
     renderPanels();
@@ -1408,7 +1435,7 @@ refs.undo.onclick = () => { if (!state.undo.length) return; state.redo.push(snap
 refs.redo.onclick = () => { if (!state.redo.length) return; state.undo.push(snapshot()); restoreSnapshot(state.redo.pop()); updateConfirmState(); };
 refs.clear.onclick = () => clearDrawing();
 if (refs.deletePlacement) refs.deletePlacement.onclick = deleteActive;
-if (refs.angle) refs.angle.oninput = () => { const p = activePlacement(); if (!p) return; p.angle = Number(refs.angle.value); drawScene(); renderPanels(); };
+if (refs.angle) refs.angle.oninput = () => { const p = activePlacement(); if (!p) return; p.angle = Number(refs.angle.value); clampPlacementToCanvas(p); drawScene(); renderPanels(); };
 refs.zoom.oninput = () => setZoom(refs.zoom.value);
 refs.flip.onclick = () => setEditMode(state.editMode === "canvas" ? "pen" : "canvas");
 fillInitialStock();
