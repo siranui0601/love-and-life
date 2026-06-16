@@ -3,6 +3,7 @@ import { mountJudgementRoutes, registerJudgementSocketHandlers } from "./src/ser
 import { registerLifeSocketHandlers } from "./src/server/life/index.js";
 import { PORT } from "./src/foundation/env.js";
 import { registerSecretToolSocketHandlers, startSecretToolTtlCleanup } from "./src/server/secret-tool/index.js";
+import { registerNoHandSoccerSocketHandlers } from "./src/server/noHandSoccer/index.js";
 
 const { app, httpServer, io } = createServerContext();
 
@@ -14,6 +15,7 @@ io.on("connection", (socket) => {
   registerJudgementSocketHandlers(socket, io);
   registerLifeSocketHandlers(socket);
   registerSecretToolSocketHandlers(socket, io);
+  registerNoHandSoccerSocketHandlers(socket);
 
   socket.on("disconnect", () => {
     console.log("❌ client disconnected:", socket.id);
