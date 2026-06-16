@@ -1,5 +1,0 @@
-This branch contains a visual polish pass for the stage1 no-hand soccer prototype:
-- richer app shell and field frame CSS
-- improved pitch drawing with grass stripes, slope shading, penalty boxes, goal frames, and net details
-- improved soccer ball rendering with pentagon patches and shadow
-- improved player rendering with jersey, shorts, limbs, head, labels, and keeper patrol guide
