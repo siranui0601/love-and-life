@@ -492,9 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       window.location.href = "https://siranui.jp/オリジン魔法陣";
-    } else if (gameType === 'nohand-soccer') {
-      window.location.href = new URL('/noHand_soccer/', window.location.origin).toString();
-    } else if (gameType === 'hundred-ore') {
+      } else if (gameType === 'hundred-ore') {
       const hundredOreUrl = new URL('/100日後も生きる俺/', window.location.origin);
       window.location.href = hundredOreUrl.toString();
     } else if (gameType === 'judgement-ai') {
