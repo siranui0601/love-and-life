@@ -1,13 +1,16 @@
 :root {
-  --bg: #061a12;
-  --panel: rgba(10, 34, 25, 0.88);
-  --panel-strong: rgba(17, 62, 45, 0.94);
-  --line: rgba(255, 255, 255, 0.22);
+  --bg: #04130d;
+  --panel: rgba(9, 30, 22, 0.82);
+  --panel-strong: rgba(15, 54, 39, 0.94);
+  --line: rgba(255, 255, 255, 0.2);
+  --line-strong: rgba(255, 255, 255, 0.38);
   --text: #f5fff8;
   --muted: #b9d6c7;
   --accent: #e8f96a;
+  --accent-2: #5cf2aa;
   --danger: #ff6b6b;
-  --goal: #fdf3bc;
+  --goal: #fff2a6;
+  --shadow: rgba(0, 0, 0, 0.34);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -20,8 +23,9 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at 12% 0%, rgba(111, 255, 169, 0.18), transparent 34%),
-    linear-gradient(180deg, #082516, #020806 70%);
+    radial-gradient(circle at 10% 0%, rgba(107, 255, 178, 0.2), transparent 34%),
+    radial-gradient(circle at 92% 10%, rgba(232, 249, 106, 0.16), transparent 26%),
+    linear-gradient(145deg, #071b11 0%, #020806 62%, #000 100%);
   color: var(--text);
   overscroll-behavior: none;
 }
@@ -31,32 +35,56 @@ body {
   padding: 14px;
 }
 
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 38px 38px;
+  mask-image: radial-gradient(circle at center, #000 0%, transparent 78%);
+}
+
 button,
 input {
   font: inherit;
 }
 
 button {
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
   color: var(--text);
   padding: 10px 12px;
-  font-weight: 800;
+  font-weight: 850;
   cursor: pointer;
   touch-action: manipulation;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 20px rgba(0,0,0,0.18);
+  transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.38);
+}
+
+button:active {
+  transform: translateY(1px) scale(0.99);
 }
 
 button.primary {
-  background: linear-gradient(135deg, #f6ff7a, #60e6a6);
+  background: linear-gradient(135deg, #f6ff7a, #60e6a6 62%, #45d6ff);
   color: #102016;
   border-color: transparent;
-  box-shadow: 0 10px 28px rgba(82, 233, 151, 0.22);
+  box-shadow: 0 12px 30px rgba(82, 233, 151, 0.28), inset 0 1px 0 rgba(255,255,255,0.7);
 }
 
 button:disabled {
   opacity: 0.48;
   cursor: not-allowed;
+  transform: none;
 }
 
 .stage-header {
@@ -72,8 +100,9 @@ button:disabled {
   margin: 0 0 4px;
   color: var(--accent);
   font-size: 0.75rem;
-  font-weight: 900;
+  font-weight: 950;
   letter-spacing: 0.16em;
+  text-shadow: 0 0 18px rgba(232,249,106,0.26);
 }
 
 h1,
@@ -84,7 +113,9 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-size: clamp(1.25rem, 4vw, 2.1rem);
+  font-size: clamp(1.25rem, 4vw, 2.15rem);
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 18px rgba(0,0,0,0.38);
 }
 
 h2 {
@@ -93,12 +124,16 @@ h2 {
 }
 
 .status-card {
-  min-width: 132px;
+  min-width: 140px;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--panel);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.1), transparent),
+    var(--panel);
   padding: 10px 14px;
   text-align: right;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.12);
+  backdrop-filter: blur(10px);
 }
 
 .status-card span,
@@ -109,10 +144,12 @@ h2 {
 .status-card span {
   color: var(--muted);
   font-size: 0.75rem;
+  font-weight: 800;
 }
 
 .status-card strong {
-  font-size: 1.35rem;
+  font-size: 1.42rem;
+  color: #ffffff;
 }
 
 .stage-layout {
@@ -126,14 +163,27 @@ h2 {
 .field-panel,
 .control-panel > section {
   border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--panel);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.085), rgba(255,255,255,0.018)),
+    var(--panel);
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255,255,255,0.12);
+  backdrop-filter: blur(10px);
 }
 
 .field-panel {
-  padding: 12px;
+  padding: 14px;
   min-width: 0;
+  position: relative;
+}
+
+.field-panel::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 24px;
+  pointer-events: none;
+  border: 1px solid rgba(232,249,106,0.16);
 }
 
 .field-frame {
@@ -142,10 +192,23 @@ h2 {
   max-height: calc(100dvh - 126px);
   aspect-ratio: 9 / 14;
   margin: 0 auto;
-  border: 3px solid rgba(255, 255, 255, 0.78);
-  border-radius: 22px;
+  border: 6px solid rgba(255, 255, 255, 0.86);
+  border-radius: 30px;
   overflow: hidden;
   background: #0f7b42;
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.46),
+    0 0 0 1px rgba(255,255,255,0.15),
+    inset 0 0 0 2px rgba(0,0,0,0.18);
+}
+
+.field-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: inset 0 0 90px rgba(0,0,0,0.38), inset 0 0 14px rgba(255,255,255,0.24);
 }
 
 #fieldCanvas {
@@ -161,10 +224,11 @@ h2 {
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(0, 0, 0, 0.38);
-  z-index: 5;
+  background: rgba(0, 0, 0, 0.44);
+  z-index: 6;
   text-align: center;
   padding: 24px;
+  backdrop-filter: blur(2px);
 }
 
 .result-overlay.hidden {
@@ -172,11 +236,14 @@ h2 {
 }
 
 .result-overlay .result-card {
-  border-radius: 24px;
-  padding: 22px 24px;
-  background: rgba(4, 18, 12, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  max-width: 420px;
+  border-radius: 28px;
+  padding: 24px 26px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255,255,255,0.14), transparent 42%),
+    rgba(4, 18, 12, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  max-width: 430px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.5);
 }
 
 .result-overlay .result-card strong {
@@ -185,10 +252,12 @@ h2 {
   line-height: 1;
   color: var(--goal);
   letter-spacing: 0.08em;
+  text-shadow: 0 0 24px rgba(255,242,166,0.3);
 }
 
 .result-overlay .result-card.own strong {
   color: var(--danger);
+  text-shadow: 0 0 24px rgba(255,107,107,0.28);
 }
 
 .control-panel {
@@ -198,7 +267,7 @@ h2 {
 }
 
 .control-panel > section {
-  padding: 14px;
+  padding: 15px;
 }
 
 .coach-card p {
@@ -210,13 +279,13 @@ h2 {
 .control-card label {
   display: block;
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 800;
   margin-bottom: 12px;
 }
 
 .control-card output {
   color: var(--accent);
-  font-weight: 900;
+  font-weight: 950;
   margin-left: 6px;
 }
 
@@ -244,8 +313,9 @@ input[type="range"] {
   overflow: auto;
   white-space: pre-wrap;
   color: #dcffe9;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.34);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
   padding: 10px;
   font-size: 0.78rem;
 }
@@ -261,11 +331,12 @@ input[type="range"] {
 
 .log-line {
   border-left: 3px solid var(--accent);
-  background: rgba(255, 255, 255, 0.07);
-  border-radius: 10px;
-  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.075);
+  border-radius: 12px;
+  padding: 8px 10px;
   color: #eafff0;
   font-size: 0.84rem;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
 @media (max-width: 860px) {
@@ -277,13 +348,24 @@ input[type="range"] {
     align-items: flex-start;
   }
 
+  .status-card {
+    min-width: 110px;
+    padding: 9px 10px;
+  }
+
   .stage-layout {
     grid-template-columns: 1fr;
+  }
+
+  .field-panel {
+    padding: 8px;
   }
 
   .field-frame {
     width: min(100%, 56dvh);
     max-height: 66dvh;
+    border-width: 4px;
+    border-radius: 24px;
   }
 
   .control-panel {
