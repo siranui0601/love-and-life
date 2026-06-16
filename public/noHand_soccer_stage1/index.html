@@ -3,14 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>サッカーは、素手以外セーフ - Stage 1 Core</title>
+  <title>サッカーは、素手以外セーフ - Stage 2 Fixed Gimmicks</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./stage2.css">
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
 </head>
 <body>
   <header class="stage-header">
     <div>
-      <p class="eyebrow">STAGE 1 / AIなし・ショップなし・物理試合場</p>
+      <p class="eyebrow">STAGE 2 / AIなし・固定ギミック検証場</p>
       <h1>⚽ サッカーは、素手以外セーフ</h1>
     </div>
     <div class="status-card" aria-label="試合状態">
@@ -30,8 +31,26 @@
     <aside class="control-panel">
       <section class="coach-card">
         <h2>監督メモ</h2>
-        <p>固定座標 <b>900×1400</b> の俯瞰コート。左右は壁、上は相手ゴール、下は全面自陣ゴール。コートは常に自陣側へ緩く下っています。</p>
-        <p>まずはこの試合場が気持ちよく動くかを見るため、AI生成・ショップ・ギミック装着は入れていません。</p>
+        <p>第2段階では、AI生成前の受け皿として <b>固定ギミック</b> を実装しています。カードをON/OFFして、ボール・選手・ゴール・コートへ効果が乗るかを確認します。</p>
+        <p>まだドラッグ装着ではありません。第3段階で、この固定ギミック基盤にドラッグUIを載せます。</p>
+      </section>
+
+      <section class="gimmick-card" aria-label="固定ギミック">
+        <div class="gimmick-header">
+          <div>
+            <h2>固定ギミック</h2>
+            <p>ONにした分だけコストを消費。上限内なら同系統でも複数利用できる想定です。</p>
+          </div>
+          <div class="cost-meter" aria-label="コスト">
+            <span>コスト</span>
+            <strong><b id="costUsed">0</b>/<b id="costLimit">30</b></strong>
+          </div>
+        </div>
+        <div id="gimmickList" class="gimmick-list"></div>
+        <div class="gimmick-actions">
+          <button id="presetBtn" type="button">おすすめON</button>
+          <button id="clearGimmicksBtn" type="button">全OFF</button>
+        </div>
       </section>
 
       <section class="control-card">
