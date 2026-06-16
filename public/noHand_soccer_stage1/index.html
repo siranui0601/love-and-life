@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>サッカーは、素手以外セーフ - Stage 1 Core</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
+</head>
+<body>
+  <header class="stage-header">
+    <div>
+      <p class="eyebrow">STAGE 1 / AIなし・ショップなし・物理試合場</p>
+      <h1>⚽ サッカーは、素手以外セーフ</h1>
+    </div>
+    <div class="status-card" aria-label="試合状態">
+      <span id="matchState">準備中</span>
+      <strong id="timer">0.00s</strong>
+    </div>
+  </header>
+
+  <main class="stage-layout">
+    <section class="field-panel" aria-label="試合場">
+      <div class="field-frame" id="fieldFrame">
+        <canvas id="fieldCanvas" width="900" height="1400"></canvas>
+        <div id="resultOverlay" class="result-overlay hidden"></div>
+      </div>
+    </section>
+
+    <aside class="control-panel">
+      <section class="coach-card">
+        <h2>監督メモ</h2>
+        <p>固定座標 <b>900×1400</b> の俯瞰コート。左右は壁、上は相手ゴール、下は全面自陣ゴール。コートは常に自陣側へ緩く下っています。</p>
+        <p>まずはこの試合場が気持ちよく動くかを見るため、AI生成・ショップ・ギミック装着は入れていません。</p>
+      </section>
+
+      <section class="control-card">
+        <h2>キック設定</h2>
+        <label>
+          角度 <output id="angleValue">0°</output>
+          <input id="angleInput" type="range" min="-35" max="35" value="0">
+        </label>
+        <label>
+          威力 <output id="powerValue">0.021</output>
+          <input id="powerInput" type="range" min="10" max="34" value="21">
+        </label>
+        <div class="button-grid">
+          <button id="kickBtn" class="primary">キック！</button>
+          <button id="pauseBtn">一時停止</button>
+          <button id="retryBtn">リトライ</button>
+          <button id="speedBtn">等速</button>
+        </div>
+      </section>
+
+      <section class="control-card">
+        <h2>確認用デバッグ</h2>
+        <div class="button-grid compact">
+          <button id="hitboxBtn">当たり判定</button>
+          <button id="forceGoalBtn">強制ゴール</button>
+          <button id="forceOwnGoalBtn">強制失点</button>
+          <button id="stepBtn">1フレーム</button>
+        </div>
+        <pre id="debugText" class="debug-text"></pre>
+      </section>
+
+      <section class="log-card">
+        <h2>発動ログ</h2>
+        <div id="logList" class="log-list"></div>
+      </section>
+    </aside>
+  </main>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
