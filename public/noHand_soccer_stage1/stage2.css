@@ -1,0 +1,194 @@
+.gimmick-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.gimmick-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -36% 28%;
+  height: 120px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(232, 255, 102, 0.16), transparent 62%);
+}
+
+.gimmick-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.gimmick-header h2,
+.gimmick-header p {
+  margin: 0;
+}
+
+.gimmick-header p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.cost-meter {
+  min-width: 88px;
+  border: 1px solid rgba(232, 255, 102, 0.28);
+  border-radius: 17px;
+  padding: 8px 10px;
+  text-align: right;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(232, 255, 102, 0.18), transparent 40%),
+    rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.cost-meter.over {
+  border-color: rgba(255, 107, 116, 0.62);
+  box-shadow: 0 0 22px rgba(255, 107, 116, 0.16), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.cost-meter span,
+.cost-meter strong {
+  display: block;
+}
+
+.cost-meter span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.cost-meter strong {
+  color: var(--accent);
+  font-size: 1.18rem;
+  letter-spacing: 0.03em;
+}
+
+.cost-meter.over strong {
+  color: var(--danger);
+}
+
+.gimmick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.gimmick-item {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025)),
+    rgba(0, 0, 0, 0.18);
+  color: var(--text);
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.gimmick-item.is-active {
+  border-color: rgba(232, 255, 102, 0.58);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(232, 255, 102, 0.18), transparent 44%),
+    linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0.035)),
+    rgba(0, 0, 0, 0.18);
+  box-shadow:
+    0 0 22px rgba(232, 255, 102, 0.12),
+    inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.gimmick-item.is-locked {
+  opacity: 0.48;
+}
+
+.gimmick-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.06)),
+    rgba(5, 20, 14, 0.76);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 18px rgba(0,0,0,0.22);
+  font-size: 1.35rem;
+}
+
+.gimmick-main {
+  min-width: 0;
+}
+
+.gimmick-main strong,
+.gimmick-main small {
+  display: block;
+}
+
+.gimmick-main strong {
+  font-size: 0.93rem;
+  line-height: 1.28;
+}
+
+.gimmick-main small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.38;
+}
+
+.gimmick-cost-pill {
+  min-width: 42px;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: rgba(232, 255, 102, 0.12);
+  border: 1px solid rgba(232, 255, 102, 0.26);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-align: center;
+}
+
+.gimmick-actions {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.gimmick-actions button {
+  padding: 9px 10px;
+  font-size: 0.86rem;
+}
+
+@media (max-width: 860px) {
+  .gimmick-header {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-meter {
+    width: 100%;
+    text-align: left;
+  }
+
+  .gimmick-item {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    padding: 8px;
+  }
+
+  .gimmick-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+}
