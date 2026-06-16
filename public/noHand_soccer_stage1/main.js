@@ -6,16 +6,16 @@ const FIELD = Object.freeze({
   wallThickness: 48,
   opponentGoalWidthRatio: 0.3,
   opponentGoalLineY: 86,
-  ownGoalLineY: 1372,
+  ownGoalLineY: 1314,
   ballRadius: 18,
   playerRadius: 26,
   keeperRadius: 30,
   fixedStepMs: 1000 / 60,
-  slopeForce: 0.000045,
+  slopeForce: 0,
 });
 
 const COST_LIMIT = 30;
-const DEFAULT_GIMMICKS = ['rocket_kick', 'spring_pad', 'goal_magnet'];
+const DEFAULT_GIMMICKS = ['rocket_kick', 'low_friction_ball', 'spring_pad', 'pitch_blade'];
 
 const FIXED_GIMMICKS = Object.freeze([
   {
@@ -40,7 +40,7 @@ const FIXED_GIMMICKS = Object.freeze([
     name: 'バネ床',
     cost: 5,
     attachLabel: 'コート',
-    summary: '中央やや下に固定配置。踏んだボールを相手ゴール方向へ跳ね上げる。',
+    summary: '中央下に固定配置。踏んだボールを相手ゴール方向へ跳ね上げる。',
   },
   {
     id: 'goal_magnet',
@@ -72,13 +72,13 @@ const FIXED_GIMMICKS = Object.freeze([
     name: '氷の通路',
     cost: 5,
     attachLabel: 'コート',
-    summary: '相手陣中央を低抵抗ゾーンにして、通過中の減速を抑える。',
+    summary: '中央突破ルートを低抵抗ゾーンにして、通過中の減速を抑える。',
   },
 ]);
 
 const FIELD_GIMMICK_ZONES = Object.freeze({
-  spring_pad: { x: 345, y: 820, w: 210, h: 82, color: '#e8ff66' },
-  ice_lane: { x: 285, y: 560, w: 330, h: 190, color: '#7ddcff' },
+  spring_pad: { x: 342, y: 760, w: 216, h: 88, color: '#e8ff66' },
+  ice_lane: { x: 298, y: 600, w: 304, h: 164, color: '#7ddcff' },
 });
 
 const TEAM = Object.freeze({
@@ -160,12 +160,12 @@ let accumulatorMs = 0;
 let logs = [];
 let activeGimmicks = new Set(DEFAULT_GIMMICKS);
 let effectCooldowns = new Map();
-let frameNotices = new Set();
 
 const SPEEDS = [1, 2, 0.5];
 const goalLeft = FIELD.width * (1 - FIELD.opponentGoalWidthRatio) / 2;
 const goalRight = FIELD.width * (1 + FIELD.opponentGoalWidthRatio) / 2;
-const goalCenter = Object.freeze({ x: FIELD.width / 2, y: FIELD.opponentGoalLineY * 0.45 });
+const opponentGoalCenter = Object.freeze({ x: FIELD.width / 2, y: FIELD.opponentGoalLineY * 0.45 });
+const ownGoalCenter = Object.freeze({ x: FIELD.width / 2, y: FIELD.ownGoalLineY + 48 });
 
 function isGimmickActive(id) {
   return activeGimmicks.has(id);
@@ -179,17 +179,15 @@ function getActiveCost() {
   return FIXED_GIMMICKS.reduce((sum, gimmick) => sum + (isGimmickActive(gimmick.id) ? gimmick.cost : 0), 0);
 }
 
+function updateKickButtonState() {
+  kickBtn.disabled = getActiveCost() > COST_LIMIT || (running && !ended);
+}
+
 function log(text) {
   const time = (elapsedMs / 1000).toFixed(2);
   logs.unshift(`${time}s　${text}`);
   logs = logs.slice(0, 30);
   renderLog();
-}
-
-function logOncePerFrame(key, text) {
-  if (frameNotices.has(key)) return;
-  frameNotices.add(key);
-  log(text);
 }
 
 function renderLog() {
@@ -207,7 +205,7 @@ function renderGimmicks() {
   const cost = getActiveCost();
   costUsedEl.textContent = String(cost);
   costMeterEl.classList.toggle('over', cost > COST_LIMIT);
-  kickBtn.disabled = cost > COST_LIMIT;
+  updateKickButtonState();
 
   gimmickListEl.replaceChildren();
   for (const gimmick of FIXED_GIMMICKS) {
@@ -265,7 +263,6 @@ function resetWorld() {
   players = [];
   walls = [];
   effectCooldowns = new Map();
-  frameNotices = new Set();
   resultOverlayEl.classList.add('hidden');
   resultOverlayEl.replaceChildren();
 
@@ -277,8 +274,8 @@ function resetWorld() {
   matchStateEl.textContent = '準備中';
   timerEl.textContent = '0.00s';
   pauseBtn.textContent = '一時停止';
-  kickBtn.disabled = getActiveCost() > COST_LIMIT;
-  log('配置完了。固定ギミックのON/OFFを確認できます。');
+  updateKickButtonState();
+  log('中央キックオフ。敵は速く、触れると強く自陣ゴールへ蹴り込みます。');
   draw();
   updateDebug();
   renderGimmicks();
@@ -306,13 +303,23 @@ function buildStaticWalls() {
     label: 'topWallRight',
     renderKind: 'wall',
   });
+  const bottomWallLeft = Bodies.rectangle(goalLeft / 2, FIELD.ownGoalLineY + t / 2, goalLeft, t, {
+    isStatic: true,
+    label: 'bottomWallLeft',
+    renderKind: 'wall',
+  });
+  const bottomWallRight = Bodies.rectangle((FIELD.width + goalRight) / 2, FIELD.ownGoalLineY + t / 2, FIELD.width - goalRight, t, {
+    isStatic: true,
+    label: 'bottomWallRight',
+    renderKind: 'wall',
+  });
 
-  walls = [leftWall, rightWall, topWallLeft, topWallRight];
+  walls = [leftWall, rightWall, topWallLeft, topWallRight, bottomWallLeft, bottomWallRight];
   World.add(engine.world, walls);
 }
 
 function buildBall() {
-  ball = Bodies.circle(FIELD.width / 2, 1090, FIELD.ballRadius, {
+  ball = Bodies.circle(FIELD.width / 2, FIELD.height / 2, FIELD.ballRadius, {
     label: 'ball',
     restitution: 0.72,
     friction: 0.025,
@@ -352,14 +359,14 @@ function makePlayer({ x, y, team, role, patrolMinX = null, patrolMaxX = null, nu
 
 function buildPlayers() {
   const bodies = [
-    makePlayer({ x: FIELD.width / 2, y: 1248, team: 'ally', role: 'keeper', patrolMinX: 130, patrolMaxX: 770, number: 1 }),
-    makePlayer({ x: 260, y: 1030, team: 'ally', role: 'field', number: 7 }),
-    makePlayer({ x: 450, y: 955, team: 'ally', role: 'field', number: 10 }),
-    makePlayer({ x: 640, y: 1030, team: 'ally', role: 'field', number: 11 }),
+    makePlayer({ x: FIELD.width / 2, y: FIELD.height - 154, team: 'ally', role: 'keeper', patrolMinX: goalLeft + 24, patrolMaxX: goalRight - 24, number: 1 }),
+    makePlayer({ x: 260, y: 920, team: 'ally', role: 'field', number: 7 }),
+    makePlayer({ x: 450, y: 820, team: 'ally', role: 'field', number: 10 }),
+    makePlayer({ x: 640, y: 920, team: 'ally', role: 'field', number: 11 }),
     makePlayer({ x: FIELD.width / 2, y: 154, team: 'enemy', role: 'keeper', patrolMinX: goalLeft + 24, patrolMaxX: goalRight - 24, number: 1 }),
-    makePlayer({ x: 260, y: 430, team: 'enemy', role: 'field', number: 4 }),
-    makePlayer({ x: 450, y: 510, team: 'enemy', role: 'field', number: 9 }),
-    makePlayer({ x: 640, y: 430, team: 'enemy', role: 'field', number: 6 }),
+    makePlayer({ x: 260, y: 480, team: 'enemy', role: 'field', number: 4 }),
+    makePlayer({ x: 450, y: 620, team: 'enemy', role: 'field', number: 9 }),
+    makePlayer({ x: 640, y: 480, team: 'enemy', role: 'field', number: 6 }),
   ];
   World.add(engine.world, bodies);
 }
@@ -376,14 +383,20 @@ function bindCollisionLogging() {
       }
       if (labels.includes('ball') && labels.includes('leftWall')) log('左壁に接触。');
       if (labels.includes('ball') && labels.includes('rightWall')) log('右壁に接触。');
+      if (labels.includes('ball') && labels.includes('bottomWallLeft')) log('自陣ゴール左の壁に接触。');
+      if (labels.includes('ball') && labels.includes('bottomWallRight')) log('自陣ゴール右の壁に接触。');
     }
   });
+}
+
+function getBaseBallFrictionAir() {
+  return isGimmickActive('low_friction_ball') ? 0.005 : 0.012;
 }
 
 function applyGimmickStateToBodies(isReset) {
   if (!ball) return;
   ball.friction = isGimmickActive('low_friction_ball') ? 0.008 : 0.025;
-  ball.frictionAir = isGimmickActive('low_friction_ball') ? 0.005 : 0.012;
+  ball.frictionAir = getBaseBallFrictionAir();
   ball.restitution = isGimmickActive('low_friction_ball') ? 0.78 : 0.72;
 
   const convertTarget = players.find((p) => p.game.baseTeam === 'enemy' && p.game.role === 'field' && p.game.number === 9);
@@ -395,6 +408,7 @@ function applyGimmickStateToBodies(isReset) {
 }
 
 function kick() {
+  if (running && !ended) return;
   if (ended) resetWorld();
   if (getActiveCost() > COST_LIMIT) {
     log('コスト超過中はキックできない。');
@@ -403,18 +417,18 @@ function kick() {
   const angleDeg = Number(angleInput.value);
   const power = Number(powerInput.value) / 1000;
   const angleRad = (-90 + angleDeg) * Math.PI / 180;
-  const impulse = {
-    x: Math.cos(angleRad) * power,
-    y: Math.sin(angleRad) * power,
-  };
-  Body.setVelocity(ball, { x: 0, y: 0 });
-  Body.setAngularVelocity(ball, 0);
-  Body.applyForce(ball, ball.position, impulse);
+  const kickoffSpeed = 6 + Number(powerInput.value) * 0.23;
+  Body.setPosition(ball, { x: FIELD.width / 2, y: FIELD.height / 2 });
+  Body.setVelocity(ball, {
+    x: Math.cos(angleRad) * kickoffSpeed,
+    y: Math.sin(angleRad) * kickoffSpeed,
+  });
+  Body.setAngularVelocity(ball, angleDeg * 0.006);
   running = true;
   ended = false;
   matchStateEl.textContent = '試合中';
-  kickBtn.disabled = true;
-  log(`キック：角度 ${angleDeg}° / 威力 ${power.toFixed(3)}`);
+  updateKickButtonState();
+  log(`中央キックオフ：角度 ${angleDeg}° / 威力 ${power.toFixed(3)}`);
 }
 
 function getEffectiveTeam(player) {
@@ -430,15 +444,55 @@ function canTrigger(key, cooldownMs) {
   return true;
 }
 
+function aimVelocityToward(target, speed) {
+  const dx = target.x - ball.position.x;
+  const dy = target.y - ball.position.y;
+  const distance = Math.max(Math.hypot(dx, dy), 1);
+  return {
+    x: (dx / distance) * speed,
+    y: (dy / distance) * speed,
+  };
+}
+
 function handleBallPlayerTouch(player) {
-  if (!isGimmickActive('rocket_kick')) return;
-  if (getEffectiveTeam(player) !== 'ally') return;
-  const key = `rocket_kick:${player.game.baseTeam}:${player.game.role}:${player.game.number}`;
-  if (!canTrigger(key, 1100)) return;
-  const lateral = Math.max(-0.35, Math.min(0.35, (ball.position.x - player.position.x) / 120));
-  Body.applyForce(ball, ball.position, { x: lateral * 0.012, y: -0.026 });
-  Body.setAngularVelocity(ball, ball.angularVelocity + lateral * 0.22);
-  log(`${player.game.role === 'keeper' ? 'GK' : player.game.number + '番'}のロケットキック発動。`);
+  if (!player?.game) return;
+  const effectiveTeam = getEffectiveTeam(player);
+  const key = `touch_kick:${player.game.baseTeam}:${player.game.role}:${player.game.number}`;
+  if (!canTrigger(key, 650)) return;
+
+  if (effectiveTeam === 'enemy') {
+    const speed = player.game.role === 'keeper' ? 11 : 15.5;
+    Body.setVelocity(ball, aimVelocityToward(ownGoalCenter, speed));
+    Body.setAngularVelocity(ball, ball.angularVelocity + 0.22);
+    log(`敵${player.game.role === 'keeper' ? 'GK' : player.game.number + '番'}が自陣ゴールへ強烈に蹴り込んだ。`);
+    return;
+  }
+
+  const rocket = isGimmickActive('rocket_kick');
+  const target = opponentGoalCenter;
+  const speed = rocket ? (player.game.role === 'keeper' ? 13.8 : 16.2) : (player.game.role === 'keeper' ? 6.8 : 8.4);
+  const lateralAssist = Math.max(-1.4, Math.min(1.4, (ball.position.x - player.position.x) * 0.018));
+  const velocity = aimVelocityToward(target, speed);
+  Body.setVelocity(ball, { x: velocity.x + lateralAssist, y: velocity.y });
+  Body.setAngularVelocity(ball, ball.angularVelocity - 0.2);
+  log(rocket
+    ? `${player.game.role === 'keeper' ? 'GK' : player.game.number + '番'}のロケットキック発動。`
+    : `${player.game.role === 'keeper' ? 'GK' : player.game.number + '番'}が弱くクリア。`);
+}
+
+function getPlayerTuning(player) {
+  const effectiveTeam = getEffectiveTeam(player);
+  const isKeeper = player.game.role === 'keeper';
+  if (effectiveTeam === 'enemy') {
+    return {
+      baseForce: isKeeper ? 0.000035 : 0.000052,
+      maxSpeed: isKeeper ? 4.8 : 6.7,
+    };
+  }
+  return {
+    baseForce: isKeeper ? 0.000024 : 0.000022,
+    maxSpeed: isKeeper ? 3.9 : 3.5,
+  };
 }
 
 function updatePlayerAI() {
@@ -451,30 +505,30 @@ function updatePlayerAI() {
     const distance = Math.max(Vector.magnitude(toBall), 1);
     const dir = Vector.div(toBall, distance);
     const isKeeper = p.game.role === 'keeper';
-    const baseForce = isKeeper ? 0.000028 : 0.000022;
-    let force = Vector.mult(dir, baseForce * p.mass);
+    const tuning = getPlayerTuning(p);
+    let force = Vector.mult(dir, tuning.baseForce * p.mass);
 
     if (isKeeper) {
       const minX = p.game.patrolMinX;
       const maxX = p.game.patrolMaxX;
       const targetX = Math.max(minX, Math.min(maxX, ball.position.x));
       const xDir = Math.sign(targetX - p.position.x);
-      force = { x: xDir * baseForce * p.mass * 1.6, y: (p.game.home.y - p.position.y) * 0.0000008 * p.mass };
+      force = { x: xDir * tuning.baseForce * p.mass * 1.7, y: (p.game.home.y - p.position.y) * 0.0000008 * p.mass };
       if (p.position.x < minX) Body.setPosition(p, { x: minX, y: p.position.y });
       if (p.position.x > maxX) Body.setPosition(p, { x: maxX, y: p.position.y });
     }
 
     Body.applyForce(p, p.position, force);
 
-    const maxSpeed = isKeeper ? 4.2 : 3.6;
     const speed = Vector.magnitude(p.velocity);
-    if (speed > maxSpeed) {
-      Body.setVelocity(p, Vector.mult(Vector.normalise(p.velocity), maxSpeed));
+    if (speed > tuning.maxSpeed) {
+      Body.setVelocity(p, Vector.mult(Vector.normalise(p.velocity), tuning.maxSpeed));
     }
   }
 }
 
 function applySlopeForce() {
+  if (FIELD.slopeForce === 0) return;
   Body.applyForce(ball, ball.position, { x: 0, y: FIELD.slopeForce * ball.mass });
   for (const p of players) {
     Body.applyForce(p, p.position, { x: 0, y: FIELD.slopeForce * p.mass * 0.32 });
@@ -484,7 +538,6 @@ function applySlopeForce() {
 function stepSimulation() {
   if (ended) return;
   elapsedMs += FIELD.fixedStepMs;
-  frameNotices = new Set();
   applySlopeForce();
   applyContinuousGimmicks();
   updatePlayerAI();
@@ -494,34 +547,34 @@ function stepSimulation() {
 }
 
 function applyContinuousGimmicks() {
+  ball.frictionAir = getBaseBallFrictionAir();
   if (isGimmickActive('goal_magnet')) applyGoalMagnet();
   if (isGimmickActive('pitch_blade')) applyPitchBlade();
   if (isGimmickActive('ice_lane') && isBallInsideZone(FIELD_GIMMICK_ZONES.ice_lane)) {
     ball.frictionAir = 0.002;
     if (canTrigger('ice_lane_log', 1800)) log('氷の通路：通過中の減速を軽減。');
-  } else if (!isGimmickActive('low_friction_ball')) {
-    ball.frictionAir = 0.012;
   }
 }
 
 function applyPostPhysicsGimmicks() {
   if (isGimmickActive('spring_pad') && isBallInsideZone(FIELD_GIMMICK_ZONES.spring_pad)) {
-    if (canTrigger('spring_pad', 1250)) {
-      Body.applyForce(ball, ball.position, { x: 0, y: -0.03 });
-      Body.setAngularVelocity(ball, ball.angularVelocity + 0.12);
+    if (canTrigger('spring_pad', 900)) {
+      const speed = Math.max(Vector.magnitude(ball.velocity), 9.5);
+      Body.setVelocity(ball, aimVelocityToward(opponentGoalCenter, speed + 4.2));
+      Body.setAngularVelocity(ball, ball.angularVelocity + 0.18);
       log('バネ床発動：ボールを相手ゴール方向へ跳ね上げた。');
     }
   }
 }
 
 function applyGoalMagnet() {
-  const dx = goalCenter.x - ball.position.x;
-  const dy = goalCenter.y - ball.position.y;
+  const dx = opponentGoalCenter.x - ball.position.x;
+  const dy = opponentGoalCenter.y - ball.position.y;
   const dist = Math.hypot(dx, dy);
-  if (dist > 320 || dist < 1) return;
-  const pull = (1 - dist / 320) * 0.00018 * ball.mass;
+  if (dist > 360 || dist < 1) return;
+  const pull = (1 - dist / 360) * 0.00034 * ball.mass;
   Body.applyForce(ball, ball.position, { x: (dx / dist) * pull, y: (dy / dist) * pull });
-  if (canTrigger('goal_magnet_log', 1600)) log('吸引ゴール：ネット中央へ引き寄せ中。');
+  if (canTrigger('goal_magnet_log', 1400)) log('吸引ゴール：ネット中央へ引き寄せ中。');
 }
 
 function applyPitchBlade() {
@@ -538,11 +591,11 @@ function applyPitchBlade() {
       target = p;
     }
   }
-  if (!target || best > 128) return;
-  if (!canTrigger('pitch_blade', 1600)) return;
-  target.game.downUntil = elapsedMs + 2100;
+  if (!target || best > 155) return;
+  if (!canTrigger('pitch_blade', 1400)) return;
+  target.game.downUntil = elapsedMs + 2300;
   const away = Vector.normalise(Vector.sub(target.position, bladeOwner.position));
-  Body.applyForce(target, target.position, { x: away.x * 0.014, y: away.y * 0.014 });
+  Body.applyForce(target, target.position, { x: away.x * 0.016, y: away.y * 0.016 });
   log(`ピッチ刀：敵${target.game.number}番を短時間ダウン。`);
 }
 
@@ -552,11 +605,12 @@ function isBallInsideZone(zone) {
 }
 
 function checkOutcome() {
-  if (ball.position.y + FIELD.ballRadius < FIELD.opponentGoalLineY && ball.position.x > goalLeft && ball.position.x < goalRight) {
+  const inGoalMouth = ball.position.x > goalLeft && ball.position.x < goalRight;
+  if (ball.position.y + FIELD.ballRadius < FIELD.opponentGoalLineY && inGoalMouth) {
     finish('goal');
     return;
   }
-  if (ball.position.y - FIELD.ballRadius > FIELD.ownGoalLineY) {
+  if (ball.position.y - FIELD.ballRadius > FIELD.ownGoalLineY && inGoalMouth) {
     finish('ownGoal');
     return;
   }
@@ -568,7 +622,7 @@ function checkOutcome() {
 function finish(type) {
   running = false;
   ended = true;
-  kickBtn.disabled = false;
+  updateKickButtonState();
   const seconds = (elapsedMs / 1000).toFixed(2);
   if (type === 'goal') {
     matchStateEl.textContent = 'GOAL';
@@ -576,8 +630,8 @@ function finish(type) {
     log('相手ゴールラインを完全突破。');
   } else if (type === 'ownGoal') {
     matchStateEl.textContent = 'OWN GOAL';
-    showResult('OWN GOAL', '何もしないと自陣ネットへ落ちます。細工が必要です。', 'own');
-    log('自陣ゴールへ落下。');
+    showResult('OWN GOAL', '敵に中央ゴールへ押し込まれました。細工が必要です。', 'own');
+    log('自陣中央ゴールへ失点。');
   } else {
     matchStateEl.textContent = 'TIME UP';
     showResult('TIME UP', '45秒経過。第2段階では制限時間で終了します。', 'own');
@@ -613,14 +667,14 @@ function drawField() {
 
   drawGrassStripes(w, h);
   drawGrassNoise(w, h);
-  drawSlopeShade(w, h);
+  drawCenterPressureShade(w, h);
   drawGoalBackdrops();
   drawGoalNet(goalLeft, 0, goalRight - goalLeft, FIELD.opponentGoalLineY, 'opponent');
-  drawGoalNet(0, FIELD.ownGoalLineY, w, h - FIELD.ownGoalLineY, 'own');
+  drawGoalNet(goalLeft, FIELD.ownGoalLineY, goalRight - goalLeft, h - FIELD.ownGoalLineY, 'own');
   drawPitchLines(w, h);
   drawFieldGimmicks();
   drawGoalFrames();
-  drawSlopeArrows(w, h);
+  drawPressureArrows(w, h);
   drawPitchLabels(w, h);
 }
 
@@ -660,13 +714,13 @@ function drawGrassNoise(w, h) {
   ctx.restore();
 }
 
-function drawSlopeShade(w, h) {
+function drawCenterPressureShade(w, h) {
   ctx.save();
-  const slope = ctx.createLinearGradient(0, h * 0.36, 0, h);
-  slope.addColorStop(0, 'rgba(255,255,255,0)');
-  slope.addColorStop(0.72, 'rgba(0,0,0,0.12)');
-  slope.addColorStop(1, 'rgba(0,0,0,0.3)');
-  ctx.fillStyle = slope;
+  const shade = ctx.createRadialGradient(w / 2, h / 2, 60, w / 2, h / 2, 460);
+  shade.addColorStop(0, 'rgba(255,255,255,0.04)');
+  shade.addColorStop(0.55, 'rgba(0,0,0,0)');
+  shade.addColorStop(1, 'rgba(0,0,0,0.18)');
+  ctx.fillStyle = shade;
   ctx.fillRect(0, 0, w, h);
   ctx.restore();
 }
@@ -680,11 +734,11 @@ function drawGoalBackdrops() {
   ctx.fillStyle = topDepth;
   ctx.fillRect(goalLeft, 0, goalRight - goalLeft, FIELD.opponentGoalLineY);
 
-  const ownDepth = ctx.createLinearGradient(0, FIELD.ownGoalLineY, 0, FIELD.height);
-  ownDepth.addColorStop(0, 'rgba(255,94,94,0.08)');
-  ownDepth.addColorStop(1, 'rgba(255,94,94,0.28)');
+  const ownDepth = ctx.createLinearGradient(goalLeft, FIELD.ownGoalLineY, goalRight, FIELD.height);
+  ownDepth.addColorStop(0, 'rgba(255,94,94,0.1)');
+  ownDepth.addColorStop(1, 'rgba(255,94,94,0.34)');
   ctx.fillStyle = ownDepth;
-  ctx.fillRect(0, FIELD.ownGoalLineY, FIELD.width, FIELD.height - FIELD.ownGoalLineY);
+  ctx.fillRect(goalLeft, FIELD.ownGoalLineY, goalRight - goalLeft, FIELD.height - FIELD.ownGoalLineY);
   ctx.restore();
 }
 
@@ -709,11 +763,14 @@ function drawPitchLines(w, h) {
   ctx.fill();
 
   ctx.strokeRect(goalLeft - 56, 18, goalRight - goalLeft + 112, 190);
-  ctx.strokeRect(120, h - 240, w - 240, 222);
+  ctx.strokeRect(goalLeft - 56, h - 208, goalRight - goalLeft + 112, 190);
 
   ctx.setLineDash([10, 12]);
   ctx.beginPath();
   ctx.arc(w / 2, h - 130, 78, Math.PI * 1.12, Math.PI * 1.88);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(w / 2, 130, 78, Math.PI * 0.12, Math.PI * 0.88);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.restore();
@@ -729,10 +786,10 @@ function drawFieldGimmicks() {
     ctx.fillStyle = 'rgba(232, 255, 102, 0.05)';
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(goalCenter.x, FIELD.opponentGoalLineY * 0.7, 285 * pulse, 0, Math.PI * 2);
+    ctx.arc(opponentGoalCenter.x, FIELD.opponentGoalLineY * 0.7, 285 * pulse, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    drawFieldIcon('🧲', goalCenter.x, FIELD.opponentGoalLineY + 24, 28);
+    drawFieldIcon('🧲', opponentGoalCenter.x, FIELD.opponentGoalLineY + 24, 28);
     ctx.restore();
   }
 }
@@ -784,32 +841,36 @@ function drawGoalFrames() {
   ctx.lineTo(goalRight, FIELD.opponentGoalLineY);
   ctx.stroke();
 
-  ctx.shadowBlur = 6;
-  ctx.strokeStyle = '#ff7777';
-  ctx.lineWidth = 11;
+  ctx.shadowBlur = 9;
+  ctx.strokeStyle = '#ffe8e8';
+  ctx.lineWidth = 14;
   ctx.beginPath();
-  ctx.moveTo(18, FIELD.ownGoalLineY);
-  ctx.lineTo(FIELD.width - 18, FIELD.ownGoalLineY);
+  ctx.moveTo(goalLeft, FIELD.ownGoalLineY - 2);
+  ctx.lineTo(goalLeft, FIELD.height - 8);
+  ctx.moveTo(goalRight, FIELD.ownGoalLineY - 2);
+  ctx.lineTo(goalRight, FIELD.height - 8);
+  ctx.moveTo(goalLeft, FIELD.ownGoalLineY);
+  ctx.lineTo(goalRight, FIELD.ownGoalLineY);
   ctx.stroke();
   ctx.restore();
 }
 
-function drawSlopeArrows(w, h) {
+function drawPressureArrows(w, h) {
   ctx.save();
-  ctx.globalAlpha = 0.3;
-  ctx.strokeStyle = '#e8f96a';
-  ctx.fillStyle = '#e8f96a';
+  ctx.globalAlpha = 0.35;
+  ctx.strokeStyle = '#ff7777';
+  ctx.fillStyle = '#ff7777';
   ctx.lineWidth = 3;
-  for (const x of [180, 360, 540, 720]) {
-    const y = h - 178;
+  for (const x of [330, 450, 570]) {
+    const y = h / 2 + 75;
     ctx.beginPath();
-    ctx.moveTo(x, y - 42);
-    ctx.lineTo(x, y + 20);
+    ctx.moveTo(x, y - 34);
+    ctx.lineTo(x, y + 38);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(x - 10, y + 8);
-    ctx.lineTo(x, y + 28);
-    ctx.lineTo(x + 10, y + 8);
+    ctx.moveTo(x - 11, y + 25);
+    ctx.lineTo(x, y + 47);
+    ctx.lineTo(x + 11, y + 25);
     ctx.closePath();
     ctx.fill();
   }
@@ -823,29 +884,29 @@ function drawPitchLabels(w, h) {
   ctx.font = '900 22px system-ui';
   ctx.fillText('相手ゴール', w / 2, 46);
   ctx.fillStyle = 'rgba(255,188,188,.95)';
-  ctx.fillText('自陣ゴール全面', w / 2, h - 18);
-  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.fillText('自陣ゴール', w / 2, h - 18);
+  ctx.fillStyle = 'rgba(255,255,255,.54)';
   ctx.font = '800 15px system-ui';
-  ctx.fillText('緩やかな下り坂', w / 2, h - 83);
+  ctx.fillText('中央キックオフ / 敵の強烈カウンター', w / 2, h / 2 + 132);
   ctx.restore();
 }
 
 function drawGoalNet(x, y, w, h, kind) {
   ctx.save();
   const isOwn = kind === 'own';
-  ctx.fillStyle = isOwn ? 'rgba(255,82,82,.2)' : 'rgba(255,244,170,.22)';
+  ctx.fillStyle = isOwn ? 'rgba(255,82,82,.22)' : 'rgba(255,244,170,.22)';
   ctx.fillRect(x, y, w, h);
-  ctx.strokeStyle = isOwn ? 'rgba(255,160,160,.7)' : 'rgba(255,255,255,.7)';
+  ctx.strokeStyle = isOwn ? 'rgba(255,160,160,.75)' : 'rgba(255,255,255,.7)';
   ctx.lineWidth = isOwn ? 2 : 1.9;
   ctx.shadowColor = isOwn ? 'rgba(255,80,80,.18)' : 'rgba(255,255,255,.18)';
   ctx.shadowBlur = 4;
-  for (let gx = x; gx <= x + w + 1; gx += isOwn ? 30 : 20) {
+  for (let gx = x; gx <= x + w + 1; gx += 20) {
     ctx.beginPath();
     ctx.moveTo(gx, y);
-    ctx.lineTo(gx + (isOwn ? 9 : 5), y + h);
+    ctx.lineTo(gx + (isOwn ? -5 : 5), y + h);
     ctx.stroke();
   }
-  for (let gy = y; gy <= y + h + 1; gy += isOwn ? 16 : 13) {
+  for (let gy = y; gy <= y + h + 1; gy += 13) {
     ctx.beginPath();
     ctx.moveTo(x, gy);
     ctx.lineTo(x + w, gy + Math.sin(gy * 0.08) * 3);
@@ -1128,6 +1189,7 @@ function updateDebug() {
     `fixedStep: ${FIELD.fixedStepMs.toFixed(3)}ms`,
     `field: ${FIELD.width}x${FIELD.height}`,
     `goal x: ${goalLeft.toFixed(0)}-${goalRight.toFixed(0)}`,
+    `ownGoalY: ${FIELD.ownGoalLineY}`,
     `cost: ${getActiveCost()}/${COST_LIMIT}`,
     `gimmicks: ${[...activeGimmicks].join(', ') || 'none'}`,
     `hitbox: ${showHitboxes ? 'ON' : 'OFF'}`,
@@ -1162,6 +1224,7 @@ pauseBtn.addEventListener('click', () => {
   running = !running;
   matchStateEl.textContent = running ? '試合中' : '一時停止';
   pauseBtn.textContent = running ? '一時停止' : '再開';
+  updateKickButtonState();
 });
 retryBtn.addEventListener('click', resetWorld);
 speedBtn.addEventListener('click', () => {
