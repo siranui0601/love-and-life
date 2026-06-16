@@ -17,18 +17,27 @@ const FIELD = Object.freeze({
 const TEAM = Object.freeze({
   ally: {
     fill: '#f7f7ff',
-    stroke: '#1f6feb',
+    fill2: '#dce7ff',
+    stroke: '#2368f3',
+    dark: '#0f3f9f',
     label: '味',
+    shorts: '#1742a5',
   },
   enemy: {
-    fill: '#ffe7e7',
-    stroke: '#df3030',
+    fill: '#ffe9e9',
+    fill2: '#ffc9c9',
+    stroke: '#e23b3b',
+    dark: '#a91515',
     label: '敵',
+    shorts: '#8f1111',
   },
   keeper: {
-    fill: '#fff5c9',
-    stroke: '#d69a00',
+    fill: '#fff1b5',
+    fill2: '#ffd36b',
+    stroke: '#d49300',
+    dark: '#8c5f00',
     label: 'GK',
+    shorts: '#57451d',
   },
 });
 
@@ -330,114 +339,326 @@ function drawField() {
   const w = FIELD.width;
   const h = FIELD.height;
   const gradient = ctx.createLinearGradient(0, 0, 0, h);
-  gradient.addColorStop(0, '#11834b');
-  gradient.addColorStop(1, '#0a5f35');
+  gradient.addColorStop(0, '#16894d');
+  gradient.addColorStop(0.58, '#0d713f');
+  gradient.addColorStop(1, '#07532f');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, w, h);
 
+  drawGrassStripes(w, h);
+  drawSlopeShade(w, h);
+  drawGoalNet(goalLeft, 0, goalRight - goalLeft, FIELD.opponentGoalLineY, 'opponent');
+  drawGoalNet(0, FIELD.ownGoalLineY, w, h - FIELD.ownGoalLineY, 'own');
+  drawPitchLines(w, h);
+  drawGoalFrames();
+  drawSlopeArrows(w, h);
+  drawPitchLabels(w, h);
+}
+
+function drawGrassStripes(w, h) {
   ctx.save();
-  ctx.globalAlpha = 0.12;
-  for (let y = 0; y < h; y += 140) {
-    ctx.fillStyle = y % 280 === 0 ? '#ffffff' : '#001b12';
-    ctx.fillRect(0, y, w, 70);
+  for (let y = 0; y < h; y += 86) {
+    const even = Math.floor(y / 86) % 2 === 0;
+    const stripe = ctx.createLinearGradient(0, y, w, y + 86);
+    stripe.addColorStop(0, even ? 'rgba(255,255,255,.045)' : 'rgba(0,0,0,.045)');
+    stripe.addColorStop(1, even ? 'rgba(255,255,255,.018)' : 'rgba(0,0,0,.025)');
+    ctx.fillStyle = stripe;
+    ctx.fillRect(0, y, w, 86);
+  }
+
+  ctx.globalAlpha = 0.16;
+  ctx.strokeStyle = '#eaffd5';
+  ctx.lineWidth = 1;
+  for (let x = -h; x < w; x += 42) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x + h, h);
+    ctx.stroke();
   }
   ctx.restore();
+}
 
-  ctx.strokeStyle = 'rgba(255,255,255,.75)';
+function drawSlopeShade(w, h) {
+  ctx.save();
+  const slope = ctx.createLinearGradient(0, h * 0.36, 0, h);
+  slope.addColorStop(0, 'rgba(255,255,255,0)');
+  slope.addColorStop(1, 'rgba(0,0,0,0.24)');
+  ctx.fillStyle = slope;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+
+function drawPitchLines(w, h) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,.84)';
   ctx.lineWidth = 4;
-  ctx.strokeRect(16, 16, w - 32, h - 32);
+  ctx.shadowColor = 'rgba(0,0,0,.25)';
+  ctx.shadowBlur = 4;
+  ctx.strokeRect(18, 18, w - 36, h - 36);
+
   ctx.beginPath();
-  ctx.moveTo(16, h / 2);
-  ctx.lineTo(w - 16, h / 2);
+  ctx.moveTo(18, h / 2);
+  ctx.lineTo(w - 18, h / 2);
   ctx.stroke();
+
   ctx.beginPath();
   ctx.arc(w / 2, h / 2, 92, 0, Math.PI * 2);
   ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(w / 2, h / 2, 5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,.9)';
+  ctx.fill();
 
-  drawGoalNet(goalLeft, 0, goalRight - goalLeft, FIELD.opponentGoalLineY, 'opponent');
-  drawGoalNet(0, FIELD.ownGoalLineY, w, h - FIELD.ownGoalLineY, 'own');
+  ctx.strokeRect(goalLeft - 56, 18, goalRight - goalLeft + 112, 190);
+  ctx.strokeRect(120, h - 240, w - 240, 222);
 
-  ctx.fillStyle = 'rgba(255,255,255,.85)';
-  ctx.font = '900 22px system-ui';
+  ctx.setLineDash([10, 12]);
+  ctx.beginPath();
+  ctx.arc(w / 2, h - 130, 78, Math.PI * 1.12, Math.PI * 1.88);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawGoalFrames() {
+  ctx.save();
+  ctx.lineWidth = 12;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#f8f8f1';
+  ctx.shadowColor = 'rgba(0,0,0,.36)';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.moveTo(goalLeft, FIELD.opponentGoalLineY);
+  ctx.lineTo(goalLeft, 10);
+  ctx.moveTo(goalRight, FIELD.opponentGoalLineY);
+  ctx.lineTo(goalRight, 10);
+  ctx.moveTo(goalLeft, FIELD.opponentGoalLineY);
+  ctx.lineTo(goalRight, FIELD.opponentGoalLineY);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#ff7777';
+  ctx.beginPath();
+  ctx.moveTo(16, FIELD.ownGoalLineY);
+  ctx.lineTo(FIELD.width - 16, FIELD.ownGoalLineY);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawSlopeArrows(w, h) {
+  ctx.save();
+  ctx.globalAlpha = 0.33;
+  ctx.strokeStyle = '#e8f96a';
+  ctx.fillStyle = '#e8f96a';
+  ctx.lineWidth = 3;
+  for (const x of [180, 360, 540, 720]) {
+    const y = h - 178;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 42);
+    ctx.lineTo(x, y + 20);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - 10, y + 8);
+    ctx.lineTo(x, y + 28);
+    ctx.lineTo(x + 10, y + 8);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawPitchLabels(w, h) {
+  ctx.save();
   ctx.textAlign = 'center';
-  ctx.fillText('相手ゴール', w / 2, 44);
+  ctx.fillStyle = 'rgba(255,255,255,.9)';
+  ctx.font = '900 22px system-ui';
+  ctx.fillText('相手ゴール', w / 2, 46);
+  ctx.fillStyle = 'rgba(255,180,180,.92)';
   ctx.fillText('自陣ゴール全面', w / 2, h - 18);
-
-  ctx.fillStyle = 'rgba(255,255,255,.45)';
-  ctx.font = '700 16px system-ui';
-  ctx.fillText('コートは常にこちらへ緩く下る', w / 2, h - 76);
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.font = '800 15px system-ui';
+  ctx.fillText('緩やかな下り坂', w / 2, h - 83);
+  ctx.restore();
 }
 
 function drawGoalNet(x, y, w, h, kind) {
   ctx.save();
-  ctx.fillStyle = kind === 'own' ? 'rgba(255,80,80,.18)' : 'rgba(255,244,170,.2)';
+  const isOwn = kind === 'own';
+  ctx.fillStyle = isOwn ? 'rgba(255,82,82,.18)' : 'rgba(255,244,170,.2)';
   ctx.fillRect(x, y, w, h);
-  ctx.strokeStyle = kind === 'own' ? 'rgba(255,120,120,.55)' : 'rgba(255,255,255,.6)';
-  ctx.lineWidth = 2;
-  for (let gx = x; gx <= x + w; gx += 28) {
+  ctx.strokeStyle = isOwn ? 'rgba(255,150,150,.62)' : 'rgba(255,255,255,.64)';
+  ctx.lineWidth = isOwn ? 2 : 1.7;
+  for (let gx = x; gx <= x + w + 1; gx += isOwn ? 32 : 22) {
     ctx.beginPath();
     ctx.moveTo(gx, y);
-    ctx.lineTo(gx, y + h);
+    ctx.lineTo(gx + (isOwn ? 8 : 4), y + h);
     ctx.stroke();
   }
-  for (let gy = y; gy <= y + h; gy += 18) {
+  for (let gy = y; gy <= y + h + 1; gy += isOwn ? 18 : 14) {
     ctx.beginPath();
     ctx.moveTo(x, gy);
-    ctx.lineTo(x + w, gy);
+    ctx.lineTo(x + w, gy + Math.sin(gy * 0.08) * 3);
     ctx.stroke();
   }
   ctx.restore();
 }
 
 function drawBodies() {
-  for (const p of players) drawPlayer(p);
+  const sorted = [...players].sort((a, b) => a.position.y - b.position.y);
+  sorted.forEach(drawPlayer);
   drawBall(ball);
+}
+
+function drawGroundShadow(x, y, rx, ry, alpha = 0.25) {
+  ctx.save();
+  ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+  ctx.beginPath();
+  ctx.ellipse(x + 5, y + 8, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawBall(body) {
   const { x, y } = body.position;
   const r = FIELD.ballRadius;
+  drawGroundShadow(x, y, r * 1.05, r * 0.48, 0.26);
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(body.angle);
-  ctx.fillStyle = '#f9f9f9';
-  ctx.strokeStyle = '#111';
-  ctx.lineWidth = 3;
+
+  const shine = ctx.createRadialGradient(-r * 0.35, -r * 0.5, r * 0.2, 0, 0, r * 1.15);
+  shine.addColorStop(0, '#ffffff');
+  shine.addColorStop(0.58, '#f1f1ed');
+  shine.addColorStop(1, '#d9d9d0');
+  ctx.fillStyle = shine;
+  ctx.strokeStyle = '#101010';
+  ctx.lineWidth = 2.5;
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
+
   ctx.fillStyle = '#111';
+  drawPentagon(0, 0, r * 0.44, -Math.PI / 2);
+  for (let i = 0; i < 5; i += 1) {
+    const a = -Math.PI / 2 + i * Math.PI * 2 / 5;
+    const px = Math.cos(a) * r * 0.68;
+    const py = Math.sin(a) * r * 0.68;
+    drawPentagon(px, py, r * 0.24, a + Math.PI / 5);
+    ctx.strokeStyle = '#111';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * r * 0.28, Math.sin(a) * r * 0.28);
+    ctx.lineTo(px, py);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = 'rgba(0,0,0,.32)';
+  ctx.lineWidth = 1.1;
   ctx.beginPath();
-  ctx.moveTo(0, -9);
-  ctx.lineTo(9, -2);
-  ctx.lineTo(6, 9);
-  ctx.lineTo(-6, 9);
-  ctx.lineTo(-9, -2);
+  ctx.arc(0, 0, r * 0.78, 0.1, Math.PI * 1.36);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawPentagon(x, y, radius, rotation) {
+  ctx.beginPath();
+  for (let i = 0; i < 5; i += 1) {
+    const a = rotation + i * Math.PI * 2 / 5;
+    const px = x + Math.cos(a) * radius;
+    const py = y + Math.sin(a) * radius;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
   ctx.closePath();
   ctx.fill();
-  ctx.restore();
 }
 
 function drawPlayer(body) {
   const { x, y } = body.position;
   const { team, role, radius } = body.game;
   const style = role === 'keeper' ? TEAM.keeper : TEAM[team];
+  const direction = Math.atan2(ball.position.y - y, ball.position.x - x);
+
+  drawGroundShadow(x, y, radius * 1.1, radius * 0.52, 0.23);
+
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(body.angle);
-  ctx.fillStyle = style.fill;
-  ctx.strokeStyle = style.stroke;
-  ctx.lineWidth = 4;
+  ctx.rotate(direction + Math.PI / 2);
+
+  // Feet / running silhouette. Purely visual; physics body remains circular.
+  ctx.strokeStyle = style.dark;
+  ctx.lineWidth = 7;
+  ctx.lineCap = 'round';
+  ctx.globalAlpha = 0.9;
+  const stride = Math.sin((elapsedMs * 0.012) + x * 0.03) * 4;
   ctx.beginPath();
-  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.moveTo(-8, 10);
+  ctx.lineTo(-15, 22 + stride);
+  ctx.moveTo(8, 10);
+  ctx.lineTo(15, 22 - stride);
+  ctx.stroke();
+
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = style.shorts;
+  ctx.beginPath();
+  ctx.roundRect(-15, 0, 30, 19, 7);
+  ctx.fill();
+
+  const jersey = ctx.createLinearGradient(-18, -24, 18, 20);
+  jersey.addColorStop(0, style.fill);
+  jersey.addColorStop(1, style.fill2);
+  ctx.fillStyle = jersey;
+  ctx.strokeStyle = style.stroke;
+  ctx.lineWidth = 3.2;
+  ctx.beginPath();
+  ctx.roundRect(-20, -28, 40, 42, 11);
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = style.stroke;
-  ctx.font = `900 ${role === 'keeper' ? 16 : 15}px system-ui`;
+
+  ctx.strokeStyle = style.stroke;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-19, -16);
+  ctx.lineTo(-29, -3);
+  ctx.moveTo(19, -16);
+  ctx.lineTo(29, -3);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,.62)';
+  ctx.fillRect(-12, -24, 5, 34);
+  ctx.fillRect(7, -24, 5, 34);
+
+  ctx.fillStyle = '#f0c9a4';
+  ctx.strokeStyle = 'rgba(0,0,0,.28)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, -36, role === 'keeper' ? 12 : 10, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = style.dark;
+  ctx.font = `900 ${role === 'keeper' ? 15 : 14}px system-ui`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(role === 'keeper' ? 'GK' : TEAM[team].label, 0, 1);
+  ctx.fillText(role === 'keeper' ? 'GK' : TEAM[team].label, 0, -7);
+
+  ctx.restore();
+
+  if (role === 'keeper') drawKeeperRange(body);
+}
+
+function drawKeeperRange(body) {
+  const { patrolMinX, patrolMaxX, home } = body.game;
+  if (patrolMinX == null || patrolMaxX == null) return;
+  ctx.save();
+  ctx.strokeStyle = body.game.team === 'enemy' ? 'rgba(255,255,255,.18)' : 'rgba(232,249,106,.18)';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 10]);
+  ctx.beginPath();
+  ctx.moveTo(patrolMinX, home.y);
+  ctx.lineTo(patrolMaxX, home.y);
+  ctx.stroke();
   ctx.restore();
 }
 
