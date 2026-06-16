@@ -1,0 +1,2 @@
+import fs from 'node:fs/promises';import path from 'node:path';import {sha256} from './gimmickBuilder.js';
+export async function ensureIcon(visualLabel){const imageId=sha256('icon:'+visualLabel);const dir=path.join(process.cwd(),'public/noHand_soccer/generated-icons');await fs.mkdir(dir,{recursive:true});const file=path.join(dir,`${imageId}.webp`);try{await fs.access(file)}catch{const webp=Buffer.from('UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA','base64');await fs.writeFile(file,webp)}return{imageId,imagePath:`/noHand_soccer/generated-icons/${imageId}.webp`}}
