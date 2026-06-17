@@ -28,6 +28,10 @@ const retryButton = document.querySelector("#retryButton");
 const toTopButton = document.querySelector("#toTopButton");
 const titleReturnButton = document.querySelector("#titleReturnButton");
 
+const dailyBgm = document.querySelector("#dailyBgm");
+const creditButton = document.querySelector("#creditButton");
+const bgmToggleButton = document.querySelector("#bgmToggleButton");
+
 
 const EPILOGUE_BACKGROUNDS = [
   { name: "遊園地", url: "https://pbs.twimg.com/media/G_g7eOPbIAA-osB.jpg" },
@@ -200,6 +204,59 @@ function setSceneBackground(url) {
 }
 
 setSceneBackground(initialBackgroundUrl);
+
+
+const BGM_DEFAULT_VOLUME = 0.35;
+let bgmEnabled = localStorage.getItem("bungeiDailyBgmEnabled") !== "false";
+
+function updateBgmToggleButton() {
+  if (!bgmToggleButton) return;
+  bgmToggleButton.textContent = bgmEnabled ? "BGM OFF" : "BGM ON";
+}
+
+function playDailyBgm() {
+  if (!dailyBgm || !bgmEnabled) return;
+
+  dailyBgm.volume = BGM_DEFAULT_VOLUME;
+
+  const promise = dailyBgm.play();
+
+  if (promise && typeof promise.catch === "function") {
+    promise.catch((error) => {
+      console.warn("BGMの再生に失敗しました。", error);
+    });
+  }
+}
+
+function pauseDailyBgm() {
+  if (!dailyBgm) return;
+  dailyBgm.pause();
+}
+
+function fadeOutDailyBgm(duration = 800) {
+  if (!dailyBgm || dailyBgm.paused) return;
+
+  const startVolume = dailyBgm.volume || BGM_DEFAULT_VOLUME;
+  const startTime = performance.now();
+
+  function step(now) {
+    const progress = Math.min(1, (now - startTime) / duration);
+    dailyBgm.volume = startVolume * (1 - progress);
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+      return;
+    }
+
+    dailyBgm.pause();
+    dailyBgm.currentTime = 0;
+    dailyBgm.volume = BGM_DEFAULT_VOLUME;
+  }
+
+  requestAnimationFrame(step);
+}
+
+updateBgmToggleButton();
 
 function waitForCurtainTransition() {
   if (!curtain) return Promise.resolve();
@@ -568,6 +625,8 @@ async function fetchEpilogueData() {
 }
 
 function startOutro() {
+  fadeOutDailyBgm();
+
   endingPhase = "outro";
   sceneDialogue = outroDialogue;
   sceneIndex = -1;
@@ -808,6 +867,7 @@ if (data.condition && typeof data.condition === "object") {
 if (startButton) {
   startButton.addEventListener("click", (event) => {
     event.stopPropagation();
+    playDailyBgm();
     startIntro();
   });
 }
@@ -902,6 +962,36 @@ if (retryButton) {
 if (toTopButton) {
   toTopButton.addEventListener("click", () => {
     window.location.href = "/";
+  });
+}
+
+
+
+
+if (creditButton) {
+  creditButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    showModal(
+      "クレジット\n\n楽曲：日常の始まり\n作曲：GILLTHIM",
+      "本楽曲はGILLTHIM様より、ゲーム内使用を目的として提供いただいたものです。無断転載・再配布・販売・自作発言を禁止します。"
+    );
+  });
+}
+if (bgmToggleButton) {
+  bgmToggleButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+
+    bgmEnabled = !bgmEnabled;
+    localStorage.setItem("bungeiDailyBgmEnabled", String(bgmEnabled));
+    updateBgmToggleButton();
+
+    if (!dailyBgm) return;
+
+    if (bgmEnabled) {
+      playDailyBgm();
+    } else {
+      pauseDailyBgm();
+    }
   });
 }
 
