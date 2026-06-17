@@ -140,26 +140,40 @@
 }
 
 .credit-modal__links {
-  display: grid;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 20px;
 }
 
 .credit-modal__links a {
-  display: block;
-  padding: 12px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 112px;
+  padding: 10px 14px;
   border-radius: 999px;
-  background: #ff8fc1;
+  background: #444;
   color: #fff;
   text-decoration: none;
   font-weight: 700;
-  box-shadow: 0 10px 18px rgba(255, 143, 193, 0.32);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-size: 0.92rem;
+  box-shadow: 0 10px 18px rgba(60, 60, 60, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.credit-modal__links a::after {
+  content: "↗";
+  font-size: 0.82rem;
+  opacity: 0.78;
 }
 
 .credit-modal__links a:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 22px rgba(255, 143, 193, 0.42);
+  background: #333;
+  box-shadow: 0 14px 22px rgba(60, 60, 60, 0.24);
 }
 
 @media (max-width: 480px) {
@@ -178,5 +192,15 @@
     left: 3vw;
     padding: 9px 12px;
     font-size: 0.9rem;
+  }
+
+  .credit-modal__links {
+    gap: 8px;
+  }
+
+  .credit-modal__links a {
+    min-width: 92px;
+    padding: 9px 12px;
+    font-size: 0.86rem;
   }
 }

@@ -1,5 +1,7 @@
 const BGM_DEFAULT_VOLUME = 0.35;
 const BGM_MUTED_STORAGE_KEY = "bungeiDailyBgmMuted";
+const LEGACY_BGM_ENABLED_STORAGE_KEY = "bungeiDailyBgmEnabled";
+const BUNGEI_TITLE_URL = "/時々文芸部！/";
 
 const scene = document.querySelector("#scene");
 const hud = document.querySelector(".hud");
@@ -9,6 +11,7 @@ const resultScreen = document.querySelector("#resultScreen");
 const creditButton = document.querySelector("#creditButton");
 const resultCreditButton = document.querySelector("#resultCreditButton");
 const hudTimer = document.querySelector(".hud__timer");
+const legacyModal = document.querySelector("#modal");
 
 let dailyBgm = document.querySelector("#dailyBgm");
 let bgmMuted = localStorage.getItem(BGM_MUTED_STORAGE_KEY) === "true";
@@ -24,7 +27,16 @@ function ensureDailyBgm() {
   dailyBgm.loop = true;
   dailyBgm.src = "/api/bungei/bgm/daily";
   document.body.appendChild(dailyBgm);
+  syncAudioMutedState();
   return dailyBgm;
+}
+
+function syncAudioMutedState() {
+  const audio = dailyBgm;
+  if (audio) {
+    audio.muted = bgmMuted;
+  }
+  localStorage.setItem(LEGACY_BGM_ENABLED_STORAGE_KEY, String(!bgmMuted));
 }
 
 function getSoundIcon() {
@@ -39,11 +51,19 @@ function updateBgmToggleButton() {
   button.classList.toggle("is-muted", bgmMuted);
   button.setAttribute("aria-label", bgmMuted ? "BGMをオンにする" : "BGMをオフにする");
   button.title = bgmMuted ? "BGM ON" : "BGM OFF";
+  syncAudioMutedState();
 }
 
 function playDailyBgm() {
   const audio = ensureDailyBgm();
-  if (!audio || bgmMuted) return;
+  if (!audio) return;
+
+  syncAudioMutedState();
+
+  if (bgmMuted) {
+    audio.pause();
+    return;
+  }
 
   if (bgmFadeFrame) {
     cancelAnimationFrame(bgmFadeFrame);
@@ -62,6 +82,12 @@ function playDailyBgm() {
 
 function startDailyBgm() {
   bgmShouldPlay = true;
+
+  if (bgmMuted) {
+    pauseDailyBgm();
+    return;
+  }
+
   playDailyBgm();
 }
 
@@ -69,6 +95,7 @@ function pauseDailyBgm() {
   const audio = ensureDailyBgm();
   if (!audio) return;
   audio.pause();
+  syncAudioMutedState();
 }
 
 function fadeOutDailyBgm(duration = 800) {
@@ -98,6 +125,7 @@ function fadeOutDailyBgm(duration = 800) {
     audio.currentTime = 0;
     audio.volume = BGM_DEFAULT_VOLUME;
     bgmFadeFrame = null;
+    syncAudioMutedState();
   }
 
   bgmFadeFrame = requestAnimationFrame(step);
@@ -149,13 +177,15 @@ function ensureGameTitleReturnButton() {
     button.type = "button";
     button.className = "game-title-return-button is-hidden";
     button.textContent = "タイトルに戻る";
-    button.setAttribute("aria-label", "タイトル画面に戻る");
+    button.setAttribute("aria-label", "時々文芸部！のタイトル画面に戻る");
     scene.appendChild(button);
   }
 
   button.addEventListener("click", (event) => {
     event.stopPropagation();
-    window.location.href = "/";
+    bgmShouldPlay = false;
+    pauseDailyBgm();
+    window.location.href = BUNGEI_TITLE_URL;
   });
 
   return button;
@@ -192,11 +222,7 @@ function ensureCreditModal() {
         <p class="credit-modal__main">日常の始まり</p>
         <p class="credit-modal__sub">作曲：GILLTHIM</p>
       </div>
-      <p class="credit-modal__note">
-        本楽曲はGILLTHIM様より、「時々文芸部！」ゲーム内使用を目的として提供いただいたものです。<br>
-        楽曲の無断転載・再配布・販売・自作発言を禁止します。
-      </p>
-      <div class="credit-modal__links" aria-label="GILLTHIMリンク">
+      <div class="credit-modal__links" aria-label="GILLTHIM外部リンク">
         <a href="https://gillthim.wixsite.com/noveltysounds" target="_blank" rel="noopener noreferrer">公式サイト</a>
         <a href="https://x.com/Gillthim3" target="_blank" rel="noopener noreferrer">X</a>
         <a href="https://www.youtube.com/channel/UCy9B4VgmfmTj0SiaoyD1wsA" target="_blank" rel="noopener noreferrer">YouTube</a>
@@ -228,8 +254,16 @@ function ensureCreditModal() {
   return modal;
 }
 
+function hideLegacyCreditModal() {
+  if (!legacyModal) return;
+  legacyModal.classList.add("is-hidden");
+}
+
 function showCreditModal(event) {
-  event?.stopPropagation();
+  event?.preventDefault?.();
+  event?.stopImmediatePropagation?.();
+  event?.stopPropagation?.();
+  hideLegacyCreditModal();
   const modal = ensureCreditModal();
   modal.classList.remove("is-hidden");
 }
@@ -238,6 +272,11 @@ function hideCreditModal() {
   const modal = document.querySelector("#creditModal");
   if (!modal) return;
   modal.classList.add("is-hidden");
+}
+
+function bindCreditButton(button) {
+  if (!button) return;
+  button.addEventListener("click", showCreditModal, { capture: true });
 }
 
 function observeGameState() {
@@ -266,6 +305,7 @@ function observeGameState() {
 }
 
 ensureDailyBgm();
+syncAudioMutedState();
 ensureBgmToggleButton();
 ensureGameTitleReturnButton();
 ensureCreditModal();
@@ -277,8 +317,8 @@ startButton?.addEventListener("click", (event) => {
   startDailyBgm();
 });
 
-creditButton?.addEventListener("click", showCreditModal);
-resultCreditButton?.addEventListener("click", showCreditModal);
+bindCreditButton(creditButton);
+bindCreditButton(resultCreditButton);
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
