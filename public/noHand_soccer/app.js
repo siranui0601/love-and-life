@@ -1,7 +1,9 @@
 const FIELD = { w: 900, h: 1400, topGoalY: 86, bottomGoalY: 1314, ballR: 18, playerR: 26, keeperR: 30 };
 const COST_LIMIT = 30;
-const SIM_SPEEDS = [0.5, 1, 2];
-const SPEED_LABELS = ['等速', '2x', '4x'];
+const SIM_SPEEDS = [0.25, 0.5, 1];
+const SPEED_LABELS = ['0.5x', '等速', '2x'];
+const KICK_ANGLE_DEG = 0;
+const KICK_POWER = 21;
 const goalLeft = FIELD.w * 0.35;
 const goalRight = FIELD.w * 0.65;
 const topGoal = { x: FIELD.w / 2, y: FIELD.topGoalY * 0.45 };
@@ -53,9 +55,10 @@ const els = {
   state: $('#matchState'), timer: $('#timer'), debug: $('#debugText'), result: $('#resultOverlay'), logs: $('#logList'),
   list: $('#gimmickList'), installed: $('#installedList'), installedCount: $('#installedCount'), cost: $('#costUsed'), limit: $('#costLimit'), costBadge: $('#costBadge'), speedBadge: $('#speedBadge'),
   kick: $('#kickBtn'), pause: $('#pauseBtn'), retry: $('#retryBtn'), speed: $('#speedBtn'), preset: $('#presetBtn'), clear: $('#clearGimmicksBtn'),
-  angle: $('#angleInput'), power: $('#powerInput'), angleVal: $('#angleValue'), powerVal: $('#powerValue'), hitbox: $('#hitboxBtn'), goal: $('#forceGoalBtn'), own: $('#forceOwnGoalBtn'), step: $('#stepBtn'),
+  hitbox: $('#hitboxBtn'), goal: $('#forceGoalBtn'), own: $('#forceOwnGoalBtn'), step: $('#stepBtn'),
   points: $('#pointsValue'), shopCategoryTabs: $('#shopCategoryTabs'), shopGrid: $('#emojiShopGrid'), cartList: $('#cartList'), cartTotal: $('#cartTotal'),
-  buyCart: $('#buyCartBtn'), clearCart: $('#clearCartBtn'), ownedList: $('#ownedEmojiList'), recipes: $('#generatedRecipeList'),
+  buyCart: $('#buyCartBtn'), clearCart: $('#clearCartBtn'), ownedList: $('#ownedEmojiList'),
+  generateSlots: $('#generateSlots'), generateOwnedList: $('#generateOwnedList'), generateBtn: $('#generateBtn'), clearRecipe: $('#clearRecipeBtn'), recipes: $('#generatedRecipeList'),
 };
 
 let ball, players, placements, nextId, logs, running, ended, hitbox, speedIndex, elapsed, acc, lastTs, currentDrop, cooldown;
@@ -68,6 +71,8 @@ let points = 120;
 let emojiCatalog = [];
 let shopCategory = 'すべて';
 let cart = [];
+let recipeSelection = [];
+let experimentalRecipes = [];
 const owned = new Map();
 
 function initState() {
@@ -128,8 +133,6 @@ function updateHud() {
   els.kick.disabled = c > COST_LIMIT || (running && !ended);
   els.speed.textContent = speedText();
   $('.cost-meter')?.classList.toggle('over', c > COST_LIMIT);
-  els.angleVal.textContent = `${els.angle.value}°`;
-  els.powerVal.textContent = (Number(els.power.value) / 1000).toFixed(3);
 }
 
 function renderGimmicks() {
@@ -248,7 +251,7 @@ function selectGimmick(g) {
   }
   selectedGimmick = g;
   currentDrop = null;
-  log(`${g.icon} ${g.name}を選択。コート上の光る場所をタップ、コート設置系は押したままなぞって位置調整できます。`);
+  log(`${g.icon} ${g.name}を選択。コート上の光る場所へ配置できます。`);
   render();
   openTab('play');
   fieldFrame.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -264,15 +267,7 @@ function kind(p) { if (p.role === 'keeper') return 'keeper'; return p.team === '
 function dropTarget(p, g) {
   if (g.allowed.includes('field')) {
     const s = ZONE[g.id] ?? { w: 180, h: 110 };
-    return {
-      ok: true,
-      kind: 'field',
-      target: {
-        type: 'field',
-        x: clamp(p.x, s.w / 2, FIELD.w - s.w / 2),
-        y: clamp(p.y, s.h / 2, FIELD.h - s.h / 2),
-      },
-    };
+    return { ok: true, kind: 'field', target: { type: 'field', x: clamp(p.x, s.w / 2, FIELD.w - s.w / 2), y: clamp(p.y, s.h / 2, FIELD.h - s.h / 2) } };
   }
   if (g.allowed.includes('goal') && p.x >= goalLeft && p.x <= goalRight && p.y <= FIELD.topGoalY + 95) return { ok: true, kind: 'goal', target: { type: 'goal' } };
   if (g.allowed.includes('ball') && d(p, ball) <= ball.r + 50) return { ok: true, kind: 'ball', target: { type: 'ball' } };
@@ -351,12 +346,8 @@ function handleFieldPointerUp(e) {
       const removedName = gimmick(editingPlacement.gid).name;
       placements = placements.filter((p) => p.id !== editingPlacement.id);
       log(`${removedName}をコート外へ出して撤去。`);
-      editingPlacement = null;
-      currentDrop = null;
-      deletePreview = false;
-      placePointerId = null;
-      applyStatusEffects();
-      render();
+      editingPlacement = null; currentDrop = null; deletePreview = false; placePointerId = null;
+      applyStatusEffects(); render();
       return;
     }
     const target = dropTarget(point, g);
@@ -366,12 +357,8 @@ function handleFieldPointerUp(e) {
     } else {
       log(`${g.name}はそこには再配置できない。`);
     }
-    editingPlacement = null;
-    currentDrop = null;
-    deletePreview = false;
-    placePointerId = null;
-    applyStatusEffects();
-    render();
+    editingPlacement = null; currentDrop = null; deletePreview = false; placePointerId = null;
+    applyStatusEffects(); render();
     return;
   }
 
@@ -396,11 +383,11 @@ function kick() {
   if (ended) initState();
   if (cost() > COST_LIMIT) return log('コスト超過中はキックできない。');
   selectedGimmick = null; editingPlacement = null; currentDrop = null; deletePreview = false;
-  const angle = (-90 + Number(els.angle.value)) * Math.PI / 180;
-  const v = 6 + Number(els.power.value) * 0.23;
-  Object.assign(ball, { x: 450, y: 700, vx: Math.cos(angle) * v, vy: Math.sin(angle) * v, spin: Number(els.angle.value) * 0.006 });
+  const angle = (-90 + KICK_ANGLE_DEG) * Math.PI / 180;
+  const v = 6 + KICK_POWER * 0.23;
+  Object.assign(ball, { x: 450, y: 700, vx: Math.cos(angle) * v, vy: Math.sin(angle) * v, spin: 0 });
   running = true; ended = false; els.state.textContent = '試合中'; updateHud();
-  log(`中央キックオフ：角度 ${els.angle.value}° / 威力 ${(Number(els.power.value) / 1000).toFixed(3)}`);
+  log('中央キックオフ：角度 0° / 威力 0.021');
   openTab('play');
   fieldFrame.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
@@ -579,76 +566,39 @@ function hints(g) {
   const valid = 'rgba(232,255,102,.98)';
   const glow = `rgba(101,242,164,${0.18 + pulse * 0.2})`;
   const soft = 'rgba(232,255,102,.72)';
-  ctx.fillStyle = 'rgba(0,0,0,.16)';
-  ctx.fillRect(0, 0, FIELD.w, FIELD.h);
-
-  if (deletePreview) {
-    ctx.fillStyle = 'rgba(255,65,84,.34)';
-    ctx.fillRect(0, 0, FIELD.w, FIELD.h);
-    labelBox('コート外で離すと撤去', FIELD.w / 2, FIELD.h / 2, '#ffffff');
-    ctx.restore();
-    return;
-  }
-
+  ctx.fillStyle = 'rgba(0,0,0,.16)'; ctx.fillRect(0, 0, FIELD.w, FIELD.h);
+  if (deletePreview) { ctx.fillStyle = 'rgba(255,65,84,.34)'; ctx.fillRect(0, 0, FIELD.w, FIELD.h); labelBox('コート外で離すと撤去', FIELD.w / 2, FIELD.h / 2, '#ffffff'); ctx.restore(); return; }
   if (g.allowed.includes('field')) {
-    ctx.fillStyle = 'rgba(101, 242, 164, .12)';
-    ctx.strokeStyle = currentDrop?.kind === 'field' ? valid : 'rgba(101,242,164,.62)';
-    ctx.lineWidth = currentDrop?.kind === 'field' ? 9 : 5;
+    ctx.fillStyle = 'rgba(101, 242, 164, .12)'; ctx.strokeStyle = currentDrop?.kind === 'field' ? valid : 'rgba(101,242,164,.62)'; ctx.lineWidth = currentDrop?.kind === 'field' ? 9 : 5;
     rr(18, 18, FIELD.w - 36, FIELD.h - 36, 28); ctx.fill(); ctx.stroke();
     labelBox(editingPlacement ? '動かして再配置 / コート外で撤去' : 'ゴール際も選手の真上も設置可', FIELD.w / 2, FIELD.topGoalY + 150, '#e8ff66');
     if (currentDrop?.kind === 'field') {
       const s = ZONE[g.id] ?? { w: 180, h: 110 };
       const z = { x: currentDrop.target.x - s.w / 2, y: currentDrop.target.y - s.h / 2, w: s.w, h: s.h };
-      ctx.fillStyle = 'rgba(232,255,102,.28)'; ctx.strokeStyle = valid; ctx.lineWidth = 9;
-      ctx.shadowColor = 'rgba(232,255,102,.95)'; ctx.shadowBlur = 28;
-      rr(z.x, z.y, z.w, z.h, 18); ctx.fill(); ctx.stroke();
-      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(232,255,102,.28)'; ctx.strokeStyle = valid; ctx.lineWidth = 9; ctx.shadowColor = 'rgba(232,255,102,.95)'; ctx.shadowBlur = 28;
+      rr(z.x, z.y, z.w, z.h, 18); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
       cross(currentDrop.target.x, currentDrop.target.y, 44, valid);
       labelBox(editingPlacement ? '離すと移動' : '離すとここに設置', currentDrop.target.x, z.y - 24, '#ffffff');
     }
   }
   if (g.allowed.includes('goal')) targetRect(goalLeft - 16, 0, goalRight - goalLeft + 32, FIELD.topGoalY + 100, '相手ゴールに装着', currentDrop?.kind === 'goal');
   if (g.allowed.includes('ball')) targetCircle(ball.x, ball.y, ball.r + 66, 'ボールに装着', currentDrop?.kind === 'ball');
-  for (const p of players) {
-    const k = kind(p);
-    if (!g.allowed.includes(k)) continue;
-    targetCircle(p.x, p.y, p.r + 58, `${targetName(k, p)}に装着`, currentDrop?.target?.key === key(p));
-  }
+  for (const p of players) { const k = kind(p); if (!g.allowed.includes(k)) continue; targetCircle(p.x, p.y, p.r + 58, `${targetName(k, p)}に装着`, currentDrop?.target?.key === key(p)); }
   labelBox(`${g.icon} ${g.name}：${editingPlacement ? '再配置中' : `${g.label}へ配置`}`, FIELD.w / 2, FIELD.h - 62, '#e8ff66');
   ctx.restore();
-
   function targetCircle(x, y, r, label, active) {
     ctx.save();
     const halo = ctx.createRadialGradient(x, y, r * 0.22, x, y, r * 1.45);
-    halo.addColorStop(0, active ? 'rgba(232,255,102,.42)' : 'rgba(101,242,164,.22)');
-    halo.addColorStop(0.56, active ? glow : 'rgba(232,255,102,.1)');
-    halo.addColorStop(1, 'rgba(232,255,102,0)');
-    ctx.fillStyle = halo;
-    ctx.beginPath(); ctx.arc(x, y, r * 1.45, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = active ? valid : soft;
-    ctx.lineWidth = active ? 10 : 6;
-    ctx.shadowColor = active ? 'rgba(232,255,102,.95)' : 'rgba(101,242,164,.5)';
-    ctx.shadowBlur = active ? 28 : 14;
-    ctx.beginPath(); ctx.arc(x, y, r + pulse * 10, 0, Math.PI * 2); ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = active ? '#ffffff' : 'rgba(255,255,255,.62)';
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(x, y, Math.max(18, r * .42), 0, Math.PI * 2); ctx.stroke();
-    labelBox(label, x, y - r - 22, active ? '#ffffff' : '#e8ff66');
-    if (active) cross(x, y, 34, valid);
-    ctx.restore();
+    halo.addColorStop(0, active ? 'rgba(232,255,102,.42)' : 'rgba(101,242,164,.22)'); halo.addColorStop(0.56, active ? glow : 'rgba(232,255,102,.1)'); halo.addColorStop(1, 'rgba(232,255,102,0)');
+    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(x, y, r * 1.45, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = active ? valid : soft; ctx.lineWidth = active ? 10 : 6; ctx.shadowColor = active ? 'rgba(232,255,102,.95)' : 'rgba(101,242,164,.5)'; ctx.shadowBlur = active ? 28 : 14;
+    ctx.beginPath(); ctx.arc(x, y, r + pulse * 10, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.strokeStyle = active ? '#ffffff' : 'rgba(255,255,255,.62)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, Math.max(18, r * .42), 0, Math.PI * 2); ctx.stroke();
+    labelBox(label, x, y - r - 22, active ? '#ffffff' : '#e8ff66'); if (active) cross(x, y, 34, valid); ctx.restore();
   }
   function targetRect(x, y, w, h, label, active) {
-    ctx.save();
-    ctx.fillStyle = active ? glow : 'rgba(232,255,102,.11)';
-    ctx.strokeStyle = active ? valid : soft;
-    ctx.lineWidth = active ? 10 : 6;
-    ctx.shadowColor = active ? 'rgba(232,255,102,.95)' : 'rgba(101,242,164,.5)';
-    ctx.shadowBlur = active ? 30 : 14;
-    rr(x, y, w, h, 20); ctx.fill(); ctx.stroke();
-    ctx.shadowBlur = 0;
-    labelBox(label, x + w / 2, y + h + 30, active ? '#ffffff' : '#e8ff66');
-    ctx.restore();
+    ctx.save(); ctx.fillStyle = active ? glow : 'rgba(232,255,102,.11)'; ctx.strokeStyle = active ? valid : soft; ctx.lineWidth = active ? 10 : 6; ctx.shadowColor = active ? 'rgba(232,255,102,.95)' : 'rgba(101,242,164,.5)'; ctx.shadowBlur = active ? 30 : 14;
+    rr(x, y, w, h, 20); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0; labelBox(label, x + w / 2, y + h + 30, active ? '#ffffff' : '#e8ff66'); ctx.restore();
   }
 }
 function targetName(k, p) { if (k === 'keeper') return p.team === 'enemy' ? '敵GK' : '味方GK'; if (k === 'enemy') return `敵${p.no}番`; return `味方${p.no}番`; }
@@ -660,7 +610,7 @@ function badge(t, x, y) { ctx.fillStyle = 'rgba(2,14,10,.78)'; ctx.beginPath(); 
 function text(t, x, y, s) { ctx.font = `${s}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText(t, x, y); }
 function circle(x, y, r, stroke) { ctx.strokeStyle = stroke; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke(); }
 function rr(x, y, w, h, r) { const m = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2); ctx.beginPath(); ctx.moveTo(x + m, y); ctx.lineTo(x + w - m, y); ctx.quadraticCurveTo(x + w, y, x + w, y + m); ctx.lineTo(x + w, y + h - m); ctx.quadraticCurveTo(x + w, y + h, x + w - m, y + h); ctx.lineTo(x + m, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - m); ctx.lineTo(x, y + m); ctx.quadraticCurveTo(x, y, x + m, y); }
-function updateDebug() { els.debug.textContent = [`state: ${els.state.textContent}`, `time: ${elapsed.toFixed(2)}s`, `ball: x=${ball.x.toFixed(1)}, y=${ball.y.toFixed(1)}`, `velocity: ${mag(ball).toFixed(3)} (${ball.vx.toFixed(2)}, ${ball.vy.toFixed(2)})`, `field: ${FIELD.w}x${FIELD.h}`, `goal x: ${goalLeft.toFixed(0)}-${goalRight.toFixed(0)}`, `cost: ${cost()}/${COST_LIMIT}`, `placements: ${placements.length}`, `selected: ${activeGimmick()?.name ?? 'なし'}`, `editing: ${editingPlacement ? gimmick(editingPlacement.gid).name : 'なし'}`, `speed label: ${speedText()} / sim=${SIM_SPEEDS[speedIndex]}x`, `points: ${points}`, `engine: built-in deterministic 2D`, `hitbox: ${hitbox ? 'ON' : 'OFF'}`].join('\n'); }
+function updateDebug() { els.debug.textContent = [`state: ${els.state.textContent}`, `time: ${elapsed.toFixed(2)}s`, `ball: x=${ball.x.toFixed(1)}, y=${ball.y.toFixed(1)}`, `velocity: ${mag(ball).toFixed(3)} (${ball.vx.toFixed(2)}, ${ball.vy.toFixed(2)})`, `field: ${FIELD.w}x${FIELD.h}`, `cost: ${cost()}/${COST_LIMIT}`, `placements: ${placements.length}`, `selected: ${activeGimmick()?.name ?? 'なし'}`, `editing: ${editingPlacement ? gimmick(editingPlacement.gid).name : 'なし'}`, `speed label: ${speedText()} / sim=${SIM_SPEEDS[speedIndex]}x`, `points: ${points}`, `engine: built-in deterministic 2D`, `hitbox: ${hitbox ? 'ON' : 'OFF'}`].join('\n'); }
 
 async function loadShopCatalog() {
   seedOwned(['🦵', '🚀', '💨', '🥅', '🏃', '🇯🇵']);
@@ -669,98 +619,48 @@ async function loadShopCatalog() {
     if (!res.ok) throw new Error(`catalog ${res.status}`);
     const data = await res.json();
     const raw = Array.isArray(data) ? data : (data.emojis ?? data.items ?? []);
-    emojiCatalog = raw
-      .filter((item) => item && item.emoji)
-      .map((item) => ({
-        emoji: item.emoji,
-        jaName: item.jaName || item.name || item.emoji,
-        shopCategory: item.shopCategory || 'その他',
-        price: Number.isFinite(Number(item.price)) ? Number(item.price) : estimateEmojiPrice(item),
-      }));
+    emojiCatalog = raw.filter((item) => item && item.emoji).map((item) => ({ emoji: item.emoji, jaName: item.jaName || item.name || item.emoji, shopCategory: item.shopCategory || 'その他', price: Number.isFinite(Number(item.price)) ? Number(item.price) : estimateEmojiPrice(item) }));
   } catch (err) {
     emojiCatalog = FALLBACK_EMOJIS;
     log('絵文字カタログの読み込みに失敗。内蔵ミニショップで続行。');
   }
   emojiCatalog.sort((a, b) => a.shopCategory.localeCompare(b.shopCategory, 'ja') || a.price - b.price || a.jaName.localeCompare(b.jaName, 'ja'));
-  renderShop();
+  renderEconomy();
 }
-
-function estimateEmojiPrice(item) {
-  const category = item.shopCategory || '';
-  if (/旗|記号|顔/.test(category)) return 10;
-  if (/道具|スポーツ|乗り物/.test(category)) return 22;
-  if (/自然|動物/.test(category)) return 16;
-  return 14;
-}
-
-function seedOwned(list) {
-  for (const emoji of list) owned.set(emoji, (owned.get(emoji) ?? 0) + 1);
-}
-
-function renderShop() {
-  renderCategoryTabs();
-  renderShopGrid();
-  renderCart();
-  renderOwned();
-  renderGeneratedRecipes();
-}
-
+function estimateEmojiPrice(item) { const category = item.shopCategory || ''; if (/旗|記号|顔/.test(category)) return 10; if (/道具|スポーツ|乗り物/.test(category)) return 22; if (/自然|動物/.test(category)) return 16; return 14; }
+function seedOwned(list) { for (const emoji of list) owned.set(emoji, (owned.get(emoji) ?? 0) + 1); }
+function renderEconomy() { renderCategoryTabs(); renderShopGrid(); renderCart(); renderOwned(); renderGenerate(); renderGeneratedRecipes(); }
 function renderCategoryTabs() {
-  if (!els.shopCategoryTabs) return;
   const categories = ['すべて', ...new Set(emojiCatalog.map((e) => e.shopCategory || 'その他'))];
   if (!categories.includes(shopCategory)) shopCategory = 'すべて';
-  els.shopCategoryTabs.replaceChildren(...categories.map((cat) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = cat === shopCategory ? 'is-active' : '';
-    b.textContent = cat;
-    b.addEventListener('click', () => { shopCategory = cat; renderShop(); });
-    return b;
-  }));
+  els.shopCategoryTabs.replaceChildren(...categories.map((cat) => { const b = document.createElement('button'); b.type = 'button'; b.className = cat === shopCategory ? 'is-active' : ''; b.textContent = cat; b.addEventListener('click', () => { shopCategory = cat; renderEconomy(); }); return b; }));
 }
-
 function renderShopGrid() {
-  if (!els.shopGrid) return;
   const filtered = shopCategory === 'すべて' ? emojiCatalog : emojiCatalog.filter((e) => e.shopCategory === shopCategory);
-  const page = filtered.slice(0, 240);
-  els.shopGrid.replaceChildren(...page.map((item) => {
+  els.shopGrid.replaceChildren(...filtered.slice(0, 260).map((item) => {
+    const inCart = cart.some((c) => c.emoji === item.emoji);
     const card = document.createElement('button');
     card.type = 'button';
-    card.className = 'emoji-shop-card';
-    card.innerHTML = `<span class="shop-emoji">${item.emoji}</span><strong class="emoji-name">${item.jaName}</strong><span class="emoji-add">カートへ</span><span class="emoji-price">${item.price}</span>`;
-    card.addEventListener('click', () => addToCart(item));
+    card.className = `emoji-shop-card ${inCart ? 'in-cart' : ''}`;
+    card.title = `${item.jaName} / ${item.price}pt`;
+    card.innerHTML = `<span class="shop-emoji">${item.emoji}</span><span class="emoji-price">${item.price}</span>`;
+    card.addEventListener('click', () => toggleCart(item));
     return card;
   }));
 }
-
-function addToCart(item) {
-  cart.push(item);
-  log(`${item.emoji} ${item.jaName}をカートへ追加。`);
-  renderShop();
+function toggleCart(item) {
+  const index = cart.findIndex((c) => c.emoji === item.emoji);
+  if (index >= 0) { cart.splice(index, 1); log(`${item.emoji} をカートから外しました。`); }
+  else { cart.push(item); log(`${item.emoji} をカートへ追加。`); }
+  renderEconomy();
 }
-
 function renderCart() {
-  if (!els.cartList) return;
   const total = cart.reduce((sum, item) => sum + item.price, 0);
   els.cartTotal.textContent = total;
   els.buyCart.disabled = !cart.length || total > points;
-  if (!cart.length) {
-    const empty = document.createElement('div');
-    empty.className = 'cart-empty';
-    empty.textContent = 'カードをタップして追加';
-    els.cartList.replaceChildren(empty);
-    return;
-  }
-  els.cartList.replaceChildren(...cart.map((item, index) => {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'cart-chip';
-    chip.textContent = `${item.emoji} ${item.price}`;
-    chip.addEventListener('click', () => { cart.splice(index, 1); renderShop(); });
-    return chip;
-  }));
+  if (!cart.length) { const empty = document.createElement('div'); empty.className = 'cart-empty'; empty.textContent = '棚の絵文字をタップ'; els.cartList.replaceChildren(empty); return; }
+  els.cartList.replaceChildren(...cart.map((item) => { const chip = document.createElement('button'); chip.type = 'button'; chip.className = 'cart-chip'; chip.textContent = `${item.emoji} ${item.price}`; chip.addEventListener('click', () => toggleCart(item)); return chip; }));
 }
-
 function buyCart() {
   const total = cart.reduce((sum, item) => sum + item.price, 0);
   if (!cart.length) return;
@@ -769,28 +669,60 @@ function buyCart() {
   for (const item of cart) owned.set(item.emoji, (owned.get(item.emoji) ?? 0) + 1);
   log(`${cart.map((i) => i.emoji).join(' ')} を購入。-${total}pt`);
   cart = [];
-  renderShop();
+  recipeSelection = recipeSelection.filter((emoji) => owned.has(emoji));
+  renderEconomy();
 }
-
 function renderOwned() {
-  if (!els.ownedList) return;
   els.points.textContent = points;
-  const chips = Array.from(owned.entries()).map(([emoji, count]) => {
-    const span = document.createElement('span');
-    span.className = 'owned-chip';
-    span.textContent = count > 1 ? `${emoji}×${count}` : emoji;
-    return span;
-  });
+  const chips = Array.from(owned.entries()).map(([emoji, count]) => { const span = document.createElement('span'); span.className = 'owned-chip'; span.textContent = count > 1 ? `${emoji}×${count}` : emoji; return span; });
   els.ownedList.replaceChildren(...chips);
 }
-
+function selectedCount(emoji) { return recipeSelection.filter((e) => e === emoji).length; }
+function canSelectEmoji(emoji) { return recipeSelection.length < 3 && selectedCount(emoji) < (owned.get(emoji) ?? 0); }
+function renderGenerate() {
+  els.generateSlots.replaceChildren(...[0, 1, 2].map((index) => {
+    const emoji = recipeSelection[index];
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `recipe-slot ${emoji ? 'filled' : ''}`;
+    b.innerHTML = emoji ? `<span class="slot-emoji">${emoji}</span>` : `${index + 1}`;
+    if (emoji) b.addEventListener('click', () => { recipeSelection.splice(index, 1); renderEconomy(); });
+    return b;
+  }));
+  els.generateBtn.disabled = recipeSelection.length === 0;
+  const cards = Array.from(owned.entries()).map(([emoji, count]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'generate-owned-card';
+    b.disabled = !canSelectEmoji(emoji);
+    b.innerHTML = `<span>${emoji}</span><small>${selectedCount(emoji)}/${count}</small>`;
+    b.addEventListener('click', () => { if (!canSelectEmoji(emoji)) return; recipeSelection.push(emoji); renderEconomy(); });
+    return b;
+  });
+  els.generateOwnedList.replaceChildren(...cards);
+}
+function generateFromRecipe() {
+  if (!recipeSelection.length) return;
+  const key = recipeSelection.join('');
+  const found = GIMMICKS.find((g) => g.recipe.join('') === key);
+  if (found) {
+    log(`${recipeSelection.join(' + ')} から ${found.icon} ${found.name} を確認。試合画面で装着できます。`);
+    selectGimmick(found);
+  } else {
+    if (!experimentalRecipes.some((r) => r.key === key)) experimentalRecipes.unshift({ key, recipe: [...recipeSelection], name: `未接続レシピ ${experimentalRecipes.length + 1}` });
+    log(`${recipeSelection.join(' + ')} は未接続レシピとして記録。AI生成接続時の入力候補です。`);
+    renderGeneratedRecipes();
+  }
+}
 function renderGeneratedRecipes() {
-  if (!els.recipes) return;
-  els.recipes.replaceChildren(...GIMMICKS.map((g) => {
-    const row = document.createElement('div');
-    row.className = 'recipe-item';
-    row.innerHTML = `<span><strong>${g.icon} ${g.name}</strong><small>${g.recipe.join(' + ')} / ${g.label} / cost ${g.cost}</small></span><span>${g.cost}</span>`;
-    return row;
+  const fixedRows = GIMMICKS.map((g) => ({ type: 'fixed', key: g.id, icon: g.icon, name: g.name, recipe: g.recipe, label: `${g.label} / cost ${g.cost}`, gimmick: g }));
+  const protoRows = experimentalRecipes.map((r) => ({ type: 'proto', key: r.key, icon: r.recipe.join(''), name: r.name, recipe: r.recipe, label: 'AI生成待ち', gimmick: null }));
+  els.recipes.replaceChildren(...[...protoRows, ...fixedRows].map((row) => {
+    const div = document.createElement('div');
+    div.className = 'recipe-item';
+    div.innerHTML = `<span><strong>${row.icon} ${row.name}</strong><small>${row.recipe.join(' + ')} / ${row.label}</small></span>${row.gimmick ? '<button type="button">装着</button>' : '<span>保留</span>'}`;
+    if (row.gimmick) div.querySelector('button').addEventListener('click', () => selectGimmick(row.gimmick));
+    return div;
   }));
 }
 
@@ -799,23 +731,15 @@ function loop(now = performance.now()) {
   lastTs = now;
   if (running && !ended) {
     acc += delta * SIM_SPEEDS[speedIndex];
-    while (acc >= 1 / 60) {
-      step(1 / 60);
-      acc -= 1 / 60;
-      if (ended) break;
-    }
+    while (acc >= 1 / 60) { step(1 / 60); acc -= 1 / 60; if (ended) break; }
   }
-  updateHud();
-  draw();
-  updateDebug();
-  requestAnimationFrame(loop);
+  updateHud(); draw(); updateDebug(); requestAnimationFrame(loop);
 }
 
 canvas.addEventListener('pointerdown', handleFieldPointerDown, { passive: false });
 canvas.addEventListener('pointermove', handleFieldPointerMove, { passive: false });
 canvas.addEventListener('pointerup', handleFieldPointerUp, { passive: false });
 canvas.addEventListener('pointercancel', (e) => { if (placePointerId === e.pointerId) { placePointerId = null; currentDrop = null; deletePreview = false; editingPlacement = null; draw(); } });
-
 $$('.tab-button').forEach((button) => button.addEventListener('click', () => openTab(button.dataset.tab)));
 els.kick.addEventListener('click', kick);
 els.pause.addEventListener('click', () => { if (ended) return; running = !running; els.state.textContent = running ? '試合中' : '一時停止'; els.pause.textContent = running ? '一時停止' : '再開'; updateHud(); });
@@ -823,18 +747,18 @@ els.retry.addEventListener('click', initState);
 els.speed.addEventListener('click', () => { speedIndex = (speedIndex + 1) % SIM_SPEEDS.length; updateHud(); });
 els.preset.addEventListener('click', preset);
 els.clear.addEventListener('click', () => clearPlacements(false));
-els.angle.addEventListener('input', updateHud);
-els.power.addEventListener('input', updateHud);
 els.hitbox.addEventListener('click', () => { hitbox = !hitbox; draw(); });
 els.goal.addEventListener('click', () => finish('goal'));
 els.own.addEventListener('click', () => finish('own'));
 els.step.addEventListener('click', () => { if (!running && !ended) { step(1 / 60); draw(); updateDebug(); } });
-els.buyCart?.addEventListener('click', buyCart);
-els.clearCart?.addEventListener('click', () => { cart = []; renderShop(); });
+els.buyCart.addEventListener('click', buyCart);
+els.clearCart.addEventListener('click', () => { cart = []; renderEconomy(); });
+els.generateBtn.addEventListener('click', generateFromRecipe);
+els.clearRecipe.addEventListener('click', () => { recipeSelection = []; renderEconomy(); });
 
 placements = [];
 nextId = 1;
-speedIndex = 0;
+speedIndex = 1;
 hitbox = false;
 initState();
 preset();
