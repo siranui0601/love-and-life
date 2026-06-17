@@ -78,7 +78,7 @@ button:disabled { opacity: 0.46; }
   gap: 8px;
 }
 
-.app-shell > *, .game-header > *, .dock-head > *, .gimmick-dock, .command-dock, .play-area { min-width: 0; }
+.app-shell > *, .game-header > *, .dock-head > *, .gimmick-dock, .command-dock, .play-area, .shop-dock { min-width: 0; }
 
 .game-header {
   display: grid;
@@ -96,7 +96,7 @@ button:disabled { opacity: 0.46; }
   white-space: nowrap;
 }
 
-h1, h2, p { margin-top: 0; }
+h1, h2, h3, p { margin-top: 0; }
 
 h1 {
   margin-bottom: 0;
@@ -112,7 +112,12 @@ h2 {
   letter-spacing: 0.03em;
 }
 
-.status-card, .command-dock, .gimmick-dock, .info-details, .memo-card, .debug-card, .log-card {
+h3 {
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+}
+
+.status-card, .command-dock, .gimmick-dock, .info-details, .memo-card, .debug-card, .log-card, .shop-dock {
   border: 1px solid var(--line);
   background:
     radial-gradient(circle at 18% 0%, rgba(255,255,255,0.12), transparent 36%),
@@ -132,6 +137,49 @@ h2 {
 .status-card span, .status-card strong { display: block; }
 .status-card span { color: var(--muted); font-size: 0.62rem; font-weight: 900; }
 .status-card strong { color: #fff; font-size: 1.05rem; letter-spacing: 0.04em; }
+
+.tab-nav {
+  position: sticky;
+  top: max(6px, env(safe-area-inset-top));
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid rgba(230,255,236,.16);
+  border-radius: 20px;
+  background: rgba(2, 16, 10, .76);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 34px rgba(0,0,0,.32);
+}
+
+.tab-button {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  place-items: center;
+  padding: 7px 4px;
+  border-radius: 15px;
+  color: rgba(247,255,248,.72);
+  background: rgba(255,255,255,.045);
+  font-size: 1.06rem;
+}
+
+.tab-button span {
+  font-size: .62rem;
+  line-height: 1;
+  letter-spacing: .04em;
+}
+
+.tab-button.is-active {
+  color: #102016;
+  border-color: transparent;
+  background: linear-gradient(135deg, #f6ff7a, #7cf1a7 55%, #52d9ff);
+  box-shadow: 0 10px 24px rgba(82,233,151,.25);
+}
+
+.tab-panel { display: none; min-width: 0; }
+.tab-panel.is-active { display: grid; gap: 8px; }
 
 .play-area {
   display: grid;
@@ -223,7 +271,7 @@ h2 {
 .result-card.own strong { color: var(--danger); }
 .result-card p { color: var(--muted); line-height: 1.6; }
 
-.command-dock, .gimmick-dock, .info-details { border-radius: 20px; padding: 10px; overflow: hidden; }
+.command-dock, .gimmick-dock, .info-details, .shop-dock { border-radius: 20px; padding: 10px; overflow: hidden; }
 
 .range-grid {
   display: grid;
@@ -273,7 +321,7 @@ input[type="range"] {
 .dock-head h2, .dock-head p { margin: 0; }
 .dock-head p { margin-top: 3px; color: var(--muted); font-size: 0.72rem; line-height: 1.35; }
 
-.cost-meter {
+.cost-meter, .point-card {
   min-width: 74px;
   border: 1px solid rgba(232, 255, 102, 0.28);
   border-radius: 15px;
@@ -281,9 +329,9 @@ input[type="range"] {
   text-align: right;
   background: rgba(0,0,0,0.24);
 }
-.cost-meter span, .cost-meter strong { display: block; }
-.cost-meter span { color: var(--muted); font-size: 0.6rem; font-weight: 900; }
-.cost-meter strong { color: var(--accent); font-size: 1rem; }
+.cost-meter span, .cost-meter strong, .point-card span, .point-card strong { display: block; }
+.cost-meter span, .point-card span { color: var(--muted); font-size: 0.6rem; font-weight: 900; }
+.cost-meter strong, .point-card strong { color: var(--accent); font-size: 1rem; }
 .cost-meter.over strong { color: var(--danger); }
 
 .gimmick-list {
@@ -302,17 +350,13 @@ input[type="range"] {
   touch-action: pan-x;
 }
 
-.gimmick-item {
+.gimmick-item, .emoji-shop-card {
   position: relative;
   display: grid;
-  grid-template-rows: 45px auto 18px;
   gap: 4px;
   align-items: center;
   justify-items: center;
   width: 100%;
-  min-height: 112px;
-  scroll-snap-align: start;
-  padding: 8px 7px 7px;
   border: 1px solid rgba(255,255,255,0.14);
   border-radius: 18px;
   background:
@@ -322,8 +366,15 @@ input[type="range"] {
   color: var(--text);
   text-align: center;
   user-select: none;
-  touch-action: pan-x;
   cursor: pointer;
+}
+
+.gimmick-item {
+  grid-template-rows: 45px auto 18px;
+  min-height: 112px;
+  scroll-snap-align: start;
+  padding: 8px 7px 7px;
+  touch-action: pan-x;
 }
 
 .gimmick-item::after {
@@ -343,10 +394,6 @@ input[type="range"] {
 .gimmick-item.is-active {
   border-color: rgba(232,255,102,0.86);
   box-shadow: 0 0 0 2px rgba(232,255,102,0.2), 0 0 28px rgba(232,255,102,0.17);
-  background:
-    radial-gradient(circle at 50% 0%, rgba(232,255,102,0.28), transparent 50%),
-    linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.035)),
-    rgba(0,0,0,0.22);
 }
 
 .gimmick-item.is-active::after {
@@ -357,7 +404,7 @@ input[type="range"] {
 
 .gimmick-item.is-locked { opacity: 0.45; }
 
-.gimmick-icon {
+.gimmick-icon, .shop-emoji {
   width: 45px;
   height: 45px;
   display: grid;
@@ -396,7 +443,7 @@ input[type="range"] {
   overflow: hidden;
 }
 
-.gimmick-cost-pill {
+.gimmick-cost-pill, .emoji-price {
   position: absolute;
   top: 5px;
   right: 5px;
@@ -411,19 +458,141 @@ input[type="range"] {
   text-align: center;
 }
 
-.installed-details, .info-details { color: var(--text); }
-.installed-details { margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
+.shop-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+
+.shop-hero h2, .shop-hero p { margin-bottom: 0; }
+.shop-hero p { margin-top: 5px; color: var(--muted); font-size: .75rem; line-height: 1.5; }
+
+.shop-cart {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 8px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 18px;
+  padding: 9px;
+  background: rgba(0,0,0,.2);
+}
+
+.cart-list, .owned-emoji-list {
+  min-height: 38px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-content: flex-start;
+}
+
+.cart-chip, .owned-chip {
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: rgba(255,255,255,.08);
+  font-weight: 900;
+  font-size: .78rem;
+}
+
+.cart-empty {
+  color: var(--muted);
+  font-size: .72rem;
+  padding: 6px 0;
+}
+
+.cart-action {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  text-align: right;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.cart-action button { padding: 7px; font-size: .72rem; }
+
+.shop-category-tabs {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 10px 0 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.shop-category-tabs button {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: .72rem;
+  color: var(--muted);
+}
+
+.shop-category-tabs button.is-active {
+  color: #102016;
+  background: linear-gradient(135deg, #f6ff7a, #7cf1a7);
+  border-color: transparent;
+}
+
+.emoji-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+  padding: 1px 1px 8px;
+}
+
+.emoji-shop-card {
+  grid-template-rows: 50px auto 24px;
+  min-height: 128px;
+  padding: 9px 6px 7px;
+}
+
+.shop-emoji {
+  width: 50px;
+  height: 50px;
+  font-size: 1.8rem;
+}
+
+.emoji-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 2.2em;
+  overflow: hidden;
+  font-size: .67rem;
+  line-height: 1.12;
+  font-weight: 900;
+}
+
+.emoji-add {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(101, 242, 164, 0.14);
+  color: #dfffe9;
+  font-size: .6rem;
+  font-weight: 950;
+}
+
+.owned-details, .installed-details, .info-details { color: var(--text); }
+.owned-details, .installed-details { margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
 summary { cursor: pointer; color: var(--accent); font-weight: 950; letter-spacing: 0.03em; }
 
-.installed-list {
+.installed-list, .generated-recipe-list {
   display: grid;
   gap: 7px;
   margin-top: 8px;
-  max-height: 120px;
+  max-height: 160px;
   overflow: auto;
 }
 
-.installed-empty, .installed-item {
+.installed-empty, .installed-item, .recipe-item {
   border-radius: 13px;
   padding: 8px 9px;
   background: rgba(0,0,0,0.2);
@@ -431,7 +600,7 @@ summary { cursor: pointer; color: var(--accent); font-weight: 950; letter-spacin
   font-size: 0.76rem;
 }
 
-.installed-item {
+.installed-item, .recipe-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -439,35 +608,36 @@ summary { cursor: pointer; color: var(--accent); font-weight: 950; letter-spacin
   color: var(--text);
   border: 1px solid rgba(255,255,255,0.11);
 }
-.installed-item small { display: block; margin-top: 2px; color: var(--muted); }
+.installed-item small, .recipe-item small { display: block; margin-top: 2px; color: var(--muted); }
 .installed-item button { padding: 6px 9px; border-radius: 11px; font-size: 0.74rem; }
 
-.info-details > summary { padding: 3px 2px; }
-.memo-card, .debug-card, .log-card { border-radius: 18px; padding: 10px; margin-top: 8px; }
+.memo-card, .debug-card, .log-card { border-radius: 18px; padding: 10px; }
 .memo-card p { color: var(--muted); line-height: 1.6; font-size: 0.82rem; }
 .debug-text { min-height: 100px; max-height: 190px; overflow: auto; white-space: pre-wrap; color: #dcffe9; background: rgba(0,0,0,0.34); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; padding: 9px; font-size: 0.68rem; }
-.log-list { min-height: 70px; max-height: 180px; overflow: auto; display: grid; gap: 7px; }
+.log-list { min-height: 70px; max-height: 260px; overflow: auto; display: grid; gap: 7px; }
 .log-line { border-left: 4px solid var(--accent); background: rgba(255,255,255,0.078); border-radius: 13px; padding: 8px 10px; color: #eafff0; font-size: 0.78rem; }
 
 @media (max-width: 380px) {
   .field-frame { width: min(90vw, 318px); }
   .gimmick-list { grid-auto-columns: 92px; }
   button { font-size: 0.8rem; padding: 8px 7px; }
+  .emoji-shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-height: 760px) and (max-width: 520px) {
   .field-frame { width: min(86vw, 302px); }
   .app-shell { gap: 6px; }
-  .command-dock, .gimmick-dock, .info-details { padding: 8px; }
+  .command-dock, .gimmick-dock, .info-details, .shop-dock { padding: 8px; }
   .gimmick-item { min-height: 104px; }
 }
 
 @media (min-width: 760px) {
-  .app-shell { max-width: 1180px; grid-template-columns: minmax(0, 1fr) 380px; align-items: start; }
-  .game-header, .play-area, .command-dock { grid-column: 1; }
-  .gimmick-dock, .info-details { grid-column: 2; }
-  .gimmick-dock { grid-row: 2 / span 2; }
-  .info-details { grid-row: 4; }
+  .app-shell { max-width: 1180px; grid-template-columns: minmax(0, 1fr) 390px; align-items: start; }
+  .game-header, .tab-nav { grid-column: 1 / -1; }
+  .tab-panel.is-active { display: contents; }
+  #tab-play .command-dock, #tab-play .play-area { grid-column: 1; }
+  #tab-gimmick, #tab-shop, #tab-log { grid-column: 2; display: grid; gap: 8px; }
+  #tab-gimmick:not(.is-active), #tab-shop:not(.is-active), #tab-log:not(.is-active) { display: none; }
   .field-frame { width: min(100%, 64dvh, 620px); border-width: 6px; border-radius: 28px; }
   .gimmick-list { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
   .gimmick-item { min-height: 118px; }
