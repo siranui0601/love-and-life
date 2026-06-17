@@ -1,0 +1,194 @@
+const FIELD = { w: 900, h: 1400, topGoalY: 86, bottomGoalY: 1314, ballR: 18, playerR: 26, keeperR: 30 };
+const COST_LIMIT = 30;
+const SPEEDS = [1, 2, 0.5];
+const goalLeft = FIELD.w * 0.35;
+const goalRight = FIELD.w * 0.65;
+const topGoal = { x: FIELD.w / 2, y: FIELD.topGoalY * 0.45 };
+const ownGoal = { x: FIELD.w / 2, y: FIELD.bottomGoalY + 54 };
+
+const GIMMICKS = [
+  { id: 'rocket', icon: '🚀🦵', name: 'ロケットキック', cost: 6, allowed: ['ally', 'keeper'], label: '味方/GK', desc: '装着した味方が強烈に蹴る。' },
+  { id: 'iceBall', icon: '🧊⚽', name: '低摩擦ボール', cost: 4, allowed: ['ball'], label: 'ボール', desc: 'ボールの減速を抑える。' },
+  { id: 'spring', icon: '🟩🦘', name: 'バネ床', cost: 5, allowed: ['field'], label: 'コート', desc: '踏むと跳ね返す床。' },
+  { id: 'magnet', icon: '🥅🧲', name: '吸引ゴール', cost: 7, allowed: ['goal'], label: '相手ゴール', desc: 'ゴール方向へじわっと吸う。' },
+  { id: 'convert', icon: '🇯🇵🏃', name: '寝返り日の丸', cost: 8, allowed: ['enemy'], label: '敵選手', desc: '敵を一定時間味方扱いにする。' },
+  { id: 'blade', icon: '🗡️', name: 'ピッチ刀', cost: 5, allowed: ['ally'], label: '味方選手', desc: '近い敵を短時間ダウン。' },
+  { id: 'lane', icon: '🧊🛣️', name: '氷の通路', cost: 5, allowed: ['field'], label: 'コート', desc: '通過中の減速を抑える。' },
+];
+
+const ZONE = { spring: { w: 216, h: 88 }, lane: { w: 304, h: 164 } };
+const PRESET = [
+  { gid: 'rocket', target: { type: 'player', key: 'ally:field:10' } },
+  { gid: 'iceBall', target: { type: 'ball' } },
+  { gid: 'spring', target: { type: 'field', x: 450, y: 790 } },
+  { gid: 'blade', target: { type: 'player', key: 'ally:field:10' } },
+];
+
+const $ = (s) => document.querySelector(s);
+const canvas = $('#fieldCanvas');
+const ctx = canvas.getContext('2d');
+const fieldFrame = $('#fieldFrame');
+const els = {
+  state: $('#matchState'), timer: $('#timer'), debug: $('#debugText'), result: $('#resultOverlay'), logs: $('#logList'),
+  list: $('#gimmickList'), installed: $('#installedList'), installedCount: $('#installedCount'), cost: $('#costUsed'), limit: $('#costLimit'), costBadge: $('#costBadge'), speedBadge: $('#speedBadge'),
+  kick: $('#kickBtn'), pause: $('#pauseBtn'), retry: $('#retryBtn'), speed: $('#speedBtn'), preset: $('#presetBtn'), clear: $('#clearGimmicksBtn'),
+  angle: $('#angleInput'), power: $('#powerInput'), angleVal: $('#angleValue'), powerVal: $('#powerValue'), hitbox: $('#hitboxBtn'), goal: $('#forceGoalBtn'), own: $('#forceOwnGoalBtn'), step: $('#stepBtn'),
+};
+
+let ball, players, placements, nextId, logs, running, ended, hitbox, speedIndex, elapsed, acc, lastTs, drag, ghost, currentDrop, cooldown;
+
+function initState() {
+  ball = { x: 450, y: 700, vx: 0, vy: 0, r: FIELD.ballR, a: 0, spin: 0 };
+  players = [
+    makePlayer(450, 1246, 'ally', 'keeper', 1), makePlayer(260, 920, 'ally', 'field', 7), makePlayer(450, 820, 'ally', 'field', 10), makePlayer(640, 920, 'ally', 'field', 11),
+    makePlayer(450, 154, 'enemy', 'keeper', 1), makePlayer(260, 480, 'enemy', 'field', 4), makePlayer(450, 620, 'enemy', 'field', 9), makePlayer(640, 480, 'enemy', 'field', 6),
+  ];
+  for (const p of players) {
+    if (p.role === 'keeper') { p.minX = goalLeft + 24; p.maxX = goalRight - 24; }
+  }
+  cooldown = new Map();
+  running = false; ended = false; elapsed = 0; acc = 0; logs = [];
+  els.result.classList.add('hidden'); els.result.replaceChildren(); els.state.textContent = '準備中'; els.pause.textContent = '一時停止';
+  applyStatusEffects();
+  log('中央キックオフ。敵は高速で詰めて自陣ゴールを狙います。');
+  render();
+}
+
+function makePlayer(x, y, team, role, no) { return { x, y, vx: 0, vy: 0, team, role, no, homeX: x, homeY: y, r: role === 'keeper' ? FIELD.keeperR : FIELD.playerR, down: 0, convert: 0 }; }
+function key(p) { return `${p.team}:${p.role}:${p.no}`; }
+function findPlayer(k) { return players.find((p) => key(p) === k); }
+function effective(p) { return p.team === 'enemy' && elapsed < p.convert ? 'ally' : p.team; }
+function gimmick(id) { return GIMMICKS.find((g) => g.id === id); }
+function cost() { return placements.reduce((n, p) => n + gimmick(p.gid).cost, 0); }
+function has(id, fn = () => true) { return placements.some((p) => p.gid === id && fn(p)); }
+function byGimmick(id) { return placements.filter((p) => p.gid === id); }
+function d(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function mag(v) { return Math.hypot(v.vx, v.vy); }
+function can(k, sec) { const last = cooldown.get(k) ?? -Infinity; if (elapsed - last < sec) return false; cooldown.set(k, elapsed); return true; }
+
+function log(text) { logs.unshift(`${elapsed.toFixed(2)}s　${text}`); logs = logs.slice(0, 30); renderLogs(); }
+function renderLogs() { els.logs.replaceChildren(...logs.map((t) => { const r = document.createElement('div'); r.className = 'log-line'; r.textContent = t; return r; })); }
+
+function applyStatusEffects() {
+  for (const p of players) p.convert = 0;
+  for (const pl of byGimmick('convert')) {
+    const p = findPlayer(pl.target.key);
+    if (p) p.convert = 12;
+  }
+}
+
+function updateHud() {
+  const c = cost();
+  els.limit.textContent = COST_LIMIT; els.cost.textContent = c; els.costBadge.textContent = `COST ${c}/${COST_LIMIT}`; els.speedBadge.textContent = `${SPEEDS[speedIndex]}x`;
+  els.timer.textContent = `${elapsed.toFixed(2)}s`; els.kick.disabled = c > COST_LIMIT || (running && !ended); els.speed.textContent = SPEEDS[speedIndex] === 1 ? '等速' : `${SPEEDS[speedIndex]}x`;
+  $('.cost-meter')?.classList.toggle('over', c > COST_LIMIT);
+  els.angleVal.textContent = `${els.angle.value}°`; els.powerVal.textContent = (Number(els.power.value) / 1000).toFixed(3);
+}
+
+function renderGimmicks() {
+  els.list.replaceChildren();
+  const c = cost();
+  for (const g of GIMMICKS) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = `gimmick-item ${c + g.cost > COST_LIMIT ? 'is-locked' : ''}`;
+    b.innerHTML = `<span class="gimmick-icon">${g.icon}</span><span class="gimmick-main"><strong>${g.name}</strong><small>${g.label}｜${g.desc}</small></span><span class="gimmick-cost-pill">${g.cost}</span>`;
+    b.addEventListener('pointerdown', (e) => startDrag(e, g, b));
+    b.addEventListener('click', () => log(`${g.name}：カードをコートへドラッグして装着。`));
+    els.list.appendChild(b);
+  }
+}
+
+function renderInstalled() {
+  els.installedCount.textContent = placements.length;
+  els.installed.replaceChildren();
+  if (!placements.length) {
+    const e = document.createElement('div'); e.className = 'installed-empty'; e.textContent = 'まだ何も配置されていません。'; els.installed.appendChild(e); return;
+  }
+  for (const pl of placements) {
+    const g = gimmick(pl.gid); const r = document.createElement('div'); r.className = 'installed-item';
+    r.innerHTML = `<span><strong>${g.icon} ${g.name}</strong><small>${describe(pl.target)} / cost ${g.cost}</small></span><button type="button">撤去</button>`;
+    r.querySelector('button').addEventListener('click', () => removePlacement(pl.id)); els.installed.appendChild(r);
+  }
+}
+
+function render() { updateHud(); renderGimmicks(); renderInstalled(); renderLogs(); draw(); updateDebug(); }
+
+function describe(t) {
+  if (t.type === 'ball') return 'ボール'; if (t.type === 'goal') return '相手ゴール'; if (t.type === 'field') return `コート(${Math.round(t.x)}, ${Math.round(t.y)})`;
+  const p = findPlayer(t.key); return p ? `${p.team === 'enemy' ? '敵' : '味方'}${p.role === 'keeper' ? 'GK' : `${p.no}番`}` : '選手';
+}
+
+function addPlacement(gid, target, silent = false) {
+  const g = gimmick(gid); if (cost() + g.cost > COST_LIMIT) { if (!silent) log(`${g.name}はコスト超過で配置できない。`); return false; }
+  placements.push({ id: nextId++, gid, target }); if (!silent) log(`${g.name}を${describe(target)}へ装着。`); applyStatusEffects(); render(); return true;
+}
+function removePlacement(id) { const pl = placements.find((p) => p.id === id); if (!pl) return; placements = placements.filter((p) => p.id !== id); log(`${gimmick(pl.gid).name}を撤去。`); applyStatusEffects(); render(); }
+function clearPlacements(silent = false) { placements = []; nextId = 1; if (!silent) log('固定ギミックを全撤去。'); applyStatusEffects(); render(); }
+function preset() { placements = []; nextId = 1; for (const p of PRESET) addPlacement(p.gid, p.target, true); log('おすすめ配置を適用。味方10番中心に反撃ラインを作成。'); render(); }
+
+function startDrag(e, g, source) {
+  if (running && !ended) return log('試合中は装着できません。リトライ後に配置してください。');
+  if (cost() + g.cost > COST_LIMIT) return log(`${g.name}はコスト超過で持てない。`);
+  e.preventDefault(); drag = { g, source }; source.classList.add('is-dragging-source');
+  ghost = document.createElement('div'); ghost.className = 'drag-ghost'; ghost.innerHTML = `<span>${g.icon}</span><span><strong>${g.name}</strong><small>${g.label}</small></span>`; document.body.appendChild(ghost);
+  moveGhost(e.clientX, e.clientY); window.addEventListener('pointermove', dragMove, { passive: false }); window.addEventListener('pointerup', dragEnd, { once: true });
+}
+function dragMove(e) { if (!drag) return; e.preventDefault(); moveGhost(e.clientX, e.clientY); const p = fieldPoint(e.clientX, e.clientY); currentDrop = p ? dropTarget(p, drag.g) : null; draw(); }
+function dragEnd(e) { window.removeEventListener('pointermove', dragMove); if (!drag) return; const p = fieldPoint(e.clientX, e.clientY); const t = p ? dropTarget(p, drag.g) : null; if (t?.ok) addPlacement(drag.g.id, t.target); else log(`${drag.g.name}はそこには装着できない。`); drag.source.classList.remove('is-dragging-source'); ghost?.remove(); drag = null; ghost = null; currentDrop = null; draw(); }
+function moveGhost(x, y) { if (ghost) { ghost.style.left = `${x}px`; ghost.style.top = `${y}px`; } }
+function fieldPoint(cx, cy) { const r = canvas.getBoundingClientRect(); if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) return null; return { x: (cx - r.left) / r.width * FIELD.w, y: (cy - r.top) / r.height * FIELD.h }; }
+function kind(p) { if (p.role === 'keeper') return 'keeper'; return p.team === 'enemy' ? 'enemy' : 'ally'; }
+function dropTarget(p, g) {
+  if (g.allowed.includes('goal') && p.x >= goalLeft && p.x <= goalRight && p.y <= FIELD.topGoalY + 95) return { ok: true, kind: 'goal', target: { type: 'goal' } };
+  if (g.allowed.includes('ball') && d(p, ball) <= ball.r + 36) return { ok: true, kind: 'ball', target: { type: 'ball' } };
+  const near = players.map((pl) => ({ pl, dd: d(p, pl) })).sort((a, b) => a.dd - b.dd)[0];
+  if (near && near.dd <= near.pl.r + 44) { const k = kind(near.pl); return g.allowed.includes(k) ? { ok: true, kind: k, target: { type: 'player', key: key(near.pl) } } : { ok: false, kind: k }; }
+  if (g.allowed.includes('field') && p.y > FIELD.topGoalY + 100 && p.y < FIELD.bottomGoalY - 58) {
+    const s = ZONE[g.id] ?? { w: 180, h: 110 }; return { ok: true, kind: 'field', target: { type: 'field', x: clamp(p.x, s.w / 2 + 28, FIELD.w - s.w / 2 - 28), y: clamp(p.y, FIELD.topGoalY + s.h / 2 + 54, FIELD.bottomGoalY - s.h / 2 - 54) } };
+  }
+  return { ok: false };
+}
+
+function kick() {
+  if (running && !ended) return; if (ended) initState(); if (cost() > COST_LIMIT) return log('コスト超過中はキックできない。');
+  const angle = (-90 + Number(els.angle.value)) * Math.PI / 180; const v = 6 + Number(els.power.value) * 0.23;
+  Object.assign(ball, { x: 450, y: 700, vx: Math.cos(angle) * v, vy: Math.sin(angle) * v, spin: Number(els.angle.value) * 0.006 });
+  running = true; ended = false; els.state.textContent = '試合中'; updateHud(); log(`中央キックオフ：角度 ${els.angle.value}° / 威力 ${(Number(els.power.value) / 1000).toFixed(3)}`); fieldFrame.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function step(dt) { if (ended) return; elapsed += dt; effects(); movePlayers(dt); moveBall(dt); collisions(); outcome(); }
+function moveBall(dt) { const low = has('iceBall', (p) => p.target.type === 'ball'); const iced = zones('lane').some((z) => inside(ball, z)); const drag = iced ? 0.992 : low ? 0.988 : 0.978; ball.vx *= drag ** (dt * 60); ball.vy *= drag ** (dt * 60); ball.x += ball.vx * dt * 60; ball.y += ball.vy * dt * 60; ball.a += ball.spin * dt * 60; ball.spin *= 0.992 ** (dt * 60); if (ball.x - ball.r < 18) { ball.x = 18 + ball.r; ball.vx = Math.abs(ball.vx) * 0.82; } if (ball.x + ball.r > FIELD.w - 18) { ball.x = FIELD.w - 18 - ball.r; ball.vx = -Math.abs(ball.vx) * 0.82; } }
+function movePlayers(dt) { for (const p of players) { if (elapsed < p.down) { p.vx *= 0.82; p.vy *= 0.82; p.x += p.vx * dt * 60; p.y += p.vy * dt * 60; continue; } const enemy = effective(p) === 'enemy'; const keep = p.role === 'keeper'; const max = enemy ? keep ? 6.3 : 11.8 : keep ? 3.9 : 3.6; const acc = enemy ? keep ? 0.48 : 0.72 : keep ? 0.21 : 0.18; let tx = enemy ? ball.x + ball.vx * 14 : ball.x; let ty = enemy ? ball.y + ball.vy * 14 : ball.y; if (keep) { tx = clamp(ball.x, p.minX, p.maxX); ty = p.homeY; } const dx = tx - p.x, dy = ty - p.y, dd = Math.max(Math.hypot(dx, dy), 1); p.vx += dx / dd * acc * dt * 60; p.vy += dy / dd * acc * dt * 60; const s = Math.hypot(p.vx, p.vy); if (s > max) { p.vx = p.vx / s * max; p.vy = p.vy / s * max; } p.x = clamp(p.x + p.vx * dt * 60, 24 + p.r, FIELD.w - 24 - p.r); p.y = clamp(p.y + p.vy * dt * 60, FIELD.topGoalY + 8 + p.r, FIELD.bottomGoalY - 8 - p.r); } }
+function effects() { if (has('magnet', (p) => p.target.type === 'goal')) { const dx = topGoal.x - ball.x, dy = topGoal.y - ball.y, dd = Math.hypot(dx, dy); if (dd < 360 && dd > 1) { ball.vx += dx / dd * 0.12 * (1 - dd / 360); ball.vy += dy / dd * 0.12 * (1 - dd / 360); if (can('maglog', 1.4)) log('吸引ゴール：ネット中央へ引き寄せ中。'); } } for (const z of zones('spring')) if (inside(ball, z) && can(`spring:${z.id}`, 0.9)) { aim(topGoal, Math.max(mag(ball), 9.8) + 4.3); log('バネ床発動：相手ゴール方向へ跳ね上げた。'); } for (const z of zones('lane')) if (inside(ball, z) && can(`ice:${z.id}`, 1.8)) log('氷の通路：通過中の減速を軽減。'); for (const pl of byGimmick('blade')) { const owner = findPlayer(pl.target.key); if (!owner || elapsed < owner.down) continue; let target = null, best = 9999; for (const p of players) { if (effective(p) === 'ally' || elapsed < p.down) continue; const dd = d(owner, p); if (dd < best) { best = dd; target = p; } } if (target && best < 155 && can(`blade:${pl.id}`, 1.4)) { target.down = elapsed + 2.3; target.vx += (target.x - owner.x) / Math.max(best, 1) * 8; target.vy += (target.y - owner.y) / Math.max(best, 1) * 8; log(`ピッチ刀：敵${target.no}番を短時間ダウン。`); } } }
+function collisions() { for (const p of players) { const dd = d(ball, p), min = ball.r + p.r; if (dd < min && dd > 0.001) { const nx = (ball.x - p.x) / dd, ny = (ball.y - p.y) / dd, ov = min - dd; ball.x += nx * ov * 0.62; ball.y += ny * ov * 0.62; touch(p); } } }
+function touch(p) { if (!can(`touch:${key(p)}`, 0.58)) return; const e = effective(p); log(`ボールが${e === 'ally' ? '味方側' : '敵側'}の選手に接触。`); if (e === 'enemy') { aim(ownGoal, p.role === 'keeper' ? 13 : 19.5); ball.spin += 0.28; log(`敵${p.role === 'keeper' ? 'GK' : `${p.no}番`}が自陣ゴールへ強烈に蹴り込んだ。`); return; } const rocket = has('rocket', (pl) => pl.target.type === 'player' && pl.target.key === key(p)); aim(topGoal, rocket ? p.role === 'keeper' ? 14.6 : 17.4 : p.role === 'keeper' ? 7 : 8.6); ball.vx += clamp((ball.x - p.x) * 0.02, -1.5, 1.5); ball.spin -= 0.22; log(rocket ? `${p.role === 'keeper' ? 'GK' : `${p.no}番`}のロケットキック発動。` : `${p.role === 'keeper' ? 'GK' : `${p.no}番`}が弱くクリア。`); }
+function aim(t, v) { const dx = t.x - ball.x, dy = t.y - ball.y, dd = Math.max(Math.hypot(dx, dy), 1); ball.vx = dx / dd * v; ball.vy = dy / dd * v; }
+function outcome() { const inGoal = ball.x > goalLeft && ball.x < goalRight; if (ball.y + ball.r < FIELD.topGoalY && inGoal) return finish('goal'); if (ball.y - ball.r > FIELD.bottomGoalY && inGoal) return finish('own'); if (elapsed > 45) return finish('time'); }
+function finish(type) { running = false; ended = true; const msg = type === 'goal' ? ['GOOOOAL!', `${elapsed.toFixed(2)}秒。ボール全体が相手ゴールラインを超えました。`, 'goal'] : type === 'own' ? ['OWN GOAL', '自陣ゴールへ決められました。細工が足りません。', 'own'] : ['TIME UP', '45秒経過。決めきれませんでした。', 'own']; els.state.textContent = type === 'goal' ? 'GOAL' : type === 'own' ? 'OWN GOAL' : 'TIME UP'; showResult(...msg); log(type === 'goal' ? '相手ゴールラインを完全突破。' : type === 'own' ? '自陣ゴールへ失点。' : 'タイムアップ。'); }
+function showResult(title, text, kind) { els.result.replaceChildren(); const card = document.createElement('div'); card.className = `result-card ${kind}`; card.innerHTML = `<strong>${title}</strong><p>${text}</p><button class="primary" type="button">リトライ</button>`; card.querySelector('button').addEventListener('click', initState); els.result.appendChild(card); els.result.classList.remove('hidden'); }
+
+function zones(id) { const s = ZONE[id]; if (!s) return []; return byGimmick(id).filter((p) => p.target.type === 'field').map((p) => ({ id: p.id, x: p.target.x - s.w / 2, y: p.target.y - s.h / 2, w: s.w, h: s.h })); }
+function inside(p, z) { return p.x > z.x && p.x < z.x + z.w && p.y > z.y && p.y < z.y + z.h; }
+
+function draw() { field(); zones('lane').forEach((z) => zone(z, '氷の通路', 'rgba(96,220,255,.2)', 'rgba(130,235,255,.78)')); zones('spring').forEach((z) => zone(z, 'バネ床', 'rgba(232,255,102,.22)', 'rgba(232,255,102,.86)')); if (has('magnet', (p) => p.target.type === 'goal')) { ctx.strokeStyle = 'rgba(232,255,102,.42)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(topGoal.x, FIELD.topGoalY * 0.7, 285, 0, Math.PI * 2); ctx.stroke(); text('🧲', topGoal.x, FIELD.topGoalY + 24, 28); } players.slice().sort((a, b) => a.y - b.y).forEach(player); soccerBall(); if (drag) hints(drag.g); if (hitbox) drawHitbox(); }
+function field() { const g = ctx.createLinearGradient(0, 0, 0, FIELD.h); g.addColorStop(0, '#1a9653'); g.addColorStop(.48, '#0e7b45'); g.addColorStop(1, '#064c2d'); ctx.fillStyle = g; ctx.fillRect(0, 0, FIELD.w, FIELD.h); for (let y = 0; y < FIELD.h; y += 78) { ctx.fillStyle = Math.floor(y / 78) % 2 ? 'rgba(0,0,0,.048)' : 'rgba(255,255,255,.048)'; ctx.fillRect(0, y, FIELD.w, 78); } net(goalLeft, 0, goalRight - goalLeft, FIELD.topGoalY, false); net(goalLeft, FIELD.bottomGoalY, goalRight - goalLeft, FIELD.h - FIELD.bottomGoalY, true); ctx.strokeStyle = 'rgba(255,255,255,.86)'; ctx.lineWidth = 4; ctx.strokeRect(18, 18, FIELD.w - 36, FIELD.h - 36); ctx.beginPath(); ctx.moveTo(18, FIELD.h / 2); ctx.lineTo(FIELD.w - 18, FIELD.h / 2); ctx.stroke(); ctx.beginPath(); ctx.arc(450, 700, 92, 0, Math.PI * 2); ctx.stroke(); ctx.strokeRect(goalLeft - 56, 18, goalRight - goalLeft + 112, 190); ctx.strokeRect(goalLeft - 56, FIELD.h - 208, goalRight - goalLeft + 112, 190); posts(); }
+function net(x, y, w, h, own) { ctx.fillStyle = own ? 'rgba(255,82,82,.22)' : 'rgba(255,244,170,.22)'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = own ? 'rgba(255,160,160,.75)' : 'rgba(255,255,255,.7)'; ctx.lineWidth = 2; for (let gx = x; gx <= x + w; gx += 20) { ctx.beginPath(); ctx.moveTo(gx, y); ctx.lineTo(gx, y + h); ctx.stroke(); } for (let gy = y; gy <= y + h; gy += 13) { ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x + w, gy); ctx.stroke(); } }
+function posts() { ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 14; ctx.shadowColor = 'rgba(0,0,0,.42)'; ctx.shadowBlur = 9; ctx.beginPath(); ctx.moveTo(goalLeft, FIELD.topGoalY); ctx.lineTo(goalLeft, 8); ctx.moveTo(goalRight, FIELD.topGoalY); ctx.lineTo(goalRight, 8); ctx.moveTo(goalLeft, FIELD.topGoalY); ctx.lineTo(goalRight, FIELD.topGoalY); ctx.moveTo(goalLeft, FIELD.bottomGoalY); ctx.lineTo(goalLeft, FIELD.h - 8); ctx.moveTo(goalRight, FIELD.bottomGoalY); ctx.lineTo(goalRight, FIELD.h - 8); ctx.moveTo(goalLeft, FIELD.bottomGoalY); ctx.lineTo(goalRight, FIELD.bottomGoalY); ctx.stroke(); ctx.restore(); }
+function zone(z, label, fill, stroke) { ctx.save(); ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = 4; ctx.setLineDash([12, 8]); rr(z.x, z.y, z.w, z.h, 18); ctx.fill(); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = stroke; ctx.font = '900 20px system-ui'; ctx.textAlign = 'center'; ctx.fillText(label, z.x + z.w / 2, z.y + z.h / 2 + 7); ctx.restore(); }
+function player(p) { const e = effective(p); const c = p.role === 'keeper' ? ['#ffd36b', '#d49300', '#8c5f00'] : e === 'ally' && p.team === 'enemy' ? ['#bff7da', '#24b86e', '#086a3b'] : p.team === 'ally' ? ['#dce7ff', '#2368f3', '#0f3f9f'] : ['#ffc9c9', '#e23b3b', '#a91515']; shadow(p.x, p.y, p.r * 1.15, p.r * .5, elapsed < p.down ? .12 : .25); ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(elapsed < p.down ? Math.PI / 2 : Math.atan2(ball.y - p.y, ball.x - p.x) + Math.PI / 2); ctx.globalAlpha = elapsed < p.down ? .62 : 1; ctx.fillStyle = c[0]; ctx.strokeStyle = c[1]; ctx.lineWidth = 4; rr(-22, -30, 44, 45, 12); ctx.fill(); ctx.stroke(); ctx.fillStyle = c[2]; ctx.font = '900 15px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.role === 'keeper' ? 'GK' : p.no, 0, -8); ctx.fillStyle = '#ffd2a7'; ctx.beginPath(); ctx.arc(0, -39, p.role === 'keeper' ? 12 : 10, 0, Math.PI * 2); ctx.fill(); ctx.restore(); const badges = []; if (has('rocket', (pl) => pl.target.type === 'player' && pl.target.key === key(p))) badges.push('🚀'); if (has('blade', (pl) => pl.target.type === 'player' && pl.target.key === key(p))) badges.push('🗡️'); if (has('convert', (pl) => pl.target.type === 'player' && pl.target.key === key(p)) && elapsed < p.convert) badges.push('🇯🇵'); if (elapsed < p.down) badges.push('💫'); badges.forEach((b, i) => badge(b, p.x + 24 + i * 18, p.y - p.r - 18)); }
+function soccerBall() { shadow(ball.x, ball.y, ball.r * 1.18, ball.r * .5, .28); ctx.save(); ctx.translate(ball.x, ball.y); ctx.rotate(ball.a); ctx.fillStyle = '#f7f7f2'; ctx.strokeStyle = '#111'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, ball.r * 1.16, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, ball.r * .42, 0, Math.PI * 2); ctx.fill(); ctx.restore(); if (has('iceBall', (p) => p.target.type === 'ball')) badge('🧊', ball.x + 24, ball.y - 26); }
+function hints(g) { ctx.save(); ctx.lineWidth = 4; ctx.setLineDash([9, 7]); const ok = 'rgba(232,255,102,.9)', ng = 'rgba(255,255,255,.22)'; if (g.allowed.includes('ball')) circle(ball.x, ball.y, ball.r + 36, currentDrop?.kind === 'ball' ? ok : ng); for (const p of players) circle(p.x, p.y, p.r + 44, g.allowed.includes(kind(p)) ? ok : ng); if (g.allowed.includes('goal')) { ctx.strokeStyle = currentDrop?.kind === 'goal' ? ok : ng; ctx.strokeRect(goalLeft - 8, 0, goalRight - goalLeft + 16, FIELD.topGoalY + 98); } if (g.allowed.includes('field')) { ctx.strokeStyle = currentDrop?.kind === 'field' ? ok : ng; ctx.strokeRect(34, FIELD.topGoalY + 98, FIELD.w - 68, FIELD.bottomGoalY - FIELD.topGoalY - 154); } ctx.restore(); }
+function drawHitbox() { circle(ball.x, ball.y, ball.r, '#fffb91'); players.forEach((p) => circle(p.x, p.y, p.r, '#fffb91')); }
+function shadow(x, y, rx, ry, a) { ctx.fillStyle = `rgba(0,0,0,${a})`; ctx.beginPath(); ctx.ellipse(x + 5, y + 8, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
+function badge(t, x, y) { ctx.fillStyle = 'rgba(2,14,10,.78)'; ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fill(); text(t, x, y + 1, 16); }
+function text(t, x, y, s) { ctx.font = `${s}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText(t, x, y); }
+function circle(x, y, r, stroke) { ctx.strokeStyle = stroke; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke(); }
+function rr(x, y, w, h, r) { const m = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + m, y); ctx.lineTo(x + w - m, y); ctx.quadraticCurveTo(x + w, y, x + w, y + m); ctx.lineTo(x + w, y + h - m); ctx.quadraticCurveTo(x + w, y + h, x + w - m, y + h); ctx.lineTo(x + m, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - m); ctx.lineTo(x, y + m); ctx.quadraticCurveTo(x, y, x + m, y); }
+function updateDebug() { els.debug.textContent = [`state: ${els.state.textContent}`, `time: ${elapsed.toFixed(2)}s`, `ball: x=${ball.x.toFixed(1)}, y=${ball.y.toFixed(1)}`, `velocity: ${mag(ball).toFixed(3)} (${ball.vx.toFixed(2)}, ${ball.vy.toFixed(2)})`, `field: ${FIELD.w}x${FIELD.h}`, `goal x: ${goalLeft.toFixed(0)}-${goalRight.toFixed(0)}`, `cost: ${cost()}/${COST_LIMIT}`, `placements: ${placements.length}`, `engine: built-in deterministic 2D`, `hitbox: ${hitbox ? 'ON' : 'OFF'}`].join('\n'); }
+
+function loop(now = performance.now()) { const delta = Math.min((now - lastTs) / 1000, .1); lastTs = now; if (running && !ended) { acc += delta * SPEEDS[speedIndex]; while (acc >= 1 / 60) { step(1 / 60); acc -= 1 / 60; if (ended) break; } } updateHud(); draw(); updateDebug(); requestAnimationFrame(loop); }
+
+els.kick.addEventListener('click', kick); els.pause.addEventListener('click', () => { if (ended) return; running = !running; els.state.textContent = running ? '試合中' : '一時停止'; els.pause.textContent = running ? '一時停止' : '再開'; updateHud(); }); els.retry.addEventListener('click', initState); els.speed.addEventListener('click', () => { speedIndex = (speedIndex + 1) % SPEEDS.length; updateHud(); }); els.preset.addEventListener('click', preset); els.clear.addEventListener('click', () => clearPlacements(false)); els.angle.addEventListener('input', updateHud); els.power.addEventListener('input', updateHud); els.hitbox.addEventListener('click', () => { hitbox = !hitbox; draw(); }); els.goal.addEventListener('click', () => finish('goal')); els.own.addEventListener('click', () => finish('own')); els.step.addEventListener('click', () => { if (!running && !ended) { step(1 / 60); draw(); updateDebug(); } });
+
+placements = []; nextId = 1; speedIndex = 0; hitbox = false; initState(); preset(); requestAnimationFrame((t) => { lastTs = t; loop(t); });
