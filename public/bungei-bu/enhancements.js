@@ -219,6 +219,7 @@ function ensureCreditModal() {
   });
 
   modal.addEventListener("click", (event) => {
+    event.stopPropagation();
     if (event.target === modal) {
       hideCreditModal();
     }
