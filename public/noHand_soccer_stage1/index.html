@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>サッカーは、素手以外セーフ - Stage 2 Fixed Gimmicks</title>
+  <title>サッカーは、素手以外セーフ - Stage 3 Drag Attach</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./stage2.css">
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
@@ -11,7 +11,7 @@
 <body>
   <header class="stage-header">
     <div>
-      <p class="eyebrow">STAGE 2 / AIなし・固定ギミック検証場</p>
+      <p class="eyebrow">STAGE 3 / 固定ギミック・ドラッグ装着</p>
       <h1>⚽ サッカーは、素手以外セーフ</h1>
     </div>
     <div class="status-card" aria-label="試合状態">
@@ -29,32 +29,7 @@
     </section>
 
     <aside class="control-panel">
-      <section class="coach-card">
-        <h2>監督メモ</h2>
-        <p>第2段階では、中央キックオフから始まり、相手選手が速さとキック力で自陣ゴールを狙います。細工なしでは押し込まれやすい検証場です。</p>
-        <p>上下のゴールは同じ幅の中央ゴールに統一済みです。カードをON/OFFして、ボール・選手・ゴール・コートへ効果が乗るかを確認します。</p>
-        <p>まだドラッグ装着ではありません。第3段階で、この固定ギミック基盤にドラッグUIを載せます。</p>
-      </section>
-
-      <section class="gimmick-card" aria-label="固定ギミック">
-        <div class="gimmick-header">
-          <div>
-            <h2>固定ギミック</h2>
-            <p>ONにした分だけコストを消費。上限内なら同系統でも複数利用できる想定です。</p>
-          </div>
-          <div class="cost-meter" aria-label="コスト">
-            <span>コスト</span>
-            <strong><b id="costUsed">0</b>/<b id="costLimit">30</b></strong>
-          </div>
-        </div>
-        <div id="gimmickList" class="gimmick-list"></div>
-        <div class="gimmick-actions">
-          <button id="presetBtn" type="button">おすすめON</button>
-          <button id="clearGimmicksBtn" type="button">全OFF</button>
-        </div>
-      </section>
-
-      <section class="control-card">
+      <section class="control-card kick-card">
         <h2>キック設定</h2>
         <label>
           角度 <output id="angleValue">0°</output>
@@ -70,6 +45,31 @@
           <button id="retryBtn">リトライ</button>
           <button id="speedBtn">等速</button>
         </div>
+      </section>
+
+      <section class="gimmick-card" aria-label="固定ギミック">
+        <div class="gimmick-header">
+          <div>
+            <h2>固定ギミック</h2>
+            <p>カードをコートへドラッグ、またはカード選択後に対象をタップして装着。配置した数だけコストを消費します。</p>
+          </div>
+          <div class="cost-meter" aria-label="コスト">
+            <span>コスト</span>
+            <strong><b id="costUsed">0</b>/<b id="costLimit">30</b></strong>
+          </div>
+        </div>
+        <div id="gimmickList" class="gimmick-list"></div>
+        <div id="placementList" class="placement-list" aria-label="配置済みギミック"></div>
+        <div class="gimmick-actions">
+          <button id="presetBtn" type="button">おすすめ配置</button>
+          <button id="clearGimmicksBtn" type="button">全撤去</button>
+        </div>
+      </section>
+
+      <section class="coach-card">
+        <h2>監督メモ</h2>
+        <p>第3段階では、AI生成前の固定ギミックを実際の対象へ装着するUIを検証します。対応しない対象へは配置できません。</p>
+        <p>相手選手は速く、ボールに触れると自陣ゴールへ強く蹴ります。待機時間を減らし、細工の必要性が分かるバランスにしています。</p>
       </section>
 
       <section class="control-card">
