@@ -11,11 +11,14 @@ const FIELD = Object.freeze({
   playerRadius: 26,
   keeperRadius: 30,
   fixedStepMs: 1000 / 60,
-  slopeForce: 0,
 });
 
 const COST_LIMIT = 30;
-const DEFAULT_GIMMICKS = ['rocket_kick', 'low_friction_ball', 'spring_pad', 'pitch_blade'];
+const SPEEDS = [1, 2, 0.5];
+const goalLeft = FIELD.width * (1 - FIELD.opponentGoalWidthRatio) / 2;
+const goalRight = FIELD.width * (1 + FIELD.opponentGoalWidthRatio) / 2;
+const opponentGoalCenter = Object.freeze({ x: FIELD.width / 2, y: FIELD.opponentGoalLineY * 0.45 });
+const ownGoalCenter = Object.freeze({ x: FIELD.width / 2, y: FIELD.ownGoalLineY + 48 });
 
 const FIXED_GIMMICKS = Object.freeze([
   {
@@ -25,6 +28,7 @@ const FIXED_GIMMICKS = Object.freeze([
     cost: 6,
     attachLabel: '味方選手/GK',
     summary: '味方がボールに触れた瞬間、相手ゴール方向へ強く蹴り出す。',
+    targets: ['allyPlayer', 'allyKeeper'],
   },
   {
     id: 'low_friction_ball',
@@ -33,6 +37,7 @@ const FIXED_GIMMICKS = Object.freeze([
     cost: 4,
     attachLabel: 'ボール',
     summary: 'ボールの空気抵抗と摩擦を下げ、転がりを長く保つ。',
+    targets: ['ball'],
   },
   {
     id: 'spring_pad',
@@ -40,7 +45,8 @@ const FIXED_GIMMICKS = Object.freeze([
     name: 'バネ床',
     cost: 5,
     attachLabel: 'コート',
-    summary: '中央下に固定配置。踏んだボールを相手ゴール方向へ跳ね上げる。',
+    summary: '設置した床を踏んだボールを相手ゴール方向へ跳ね上げる。',
+    targets: ['field'],
   },
   {
     id: 'goal_magnet',
@@ -49,6 +55,7 @@ const FIXED_GIMMICKS = Object.freeze([
     cost: 7,
     attachLabel: '相手ゴール',
     summary: 'ゴール付近に入ったボールを、ネット中央へじわっと引き寄せる。',
+    targets: ['opponentGoal'],
   },
   {
     id: 'flag_convert',
@@ -56,15 +63,17 @@ const FIXED_GIMMICKS = Object.freeze([
     name: '寝返り日の丸',
     cost: 8,
     attachLabel: '敵選手',
-    summary: '敵9番を一定時間だけ味方扱いにする。刀や妨害の対象からも外れる。',
+    summary: '装着した敵選手を一定時間だけ味方扱いにする。',
+    targets: ['enemyPlayer'],
   },
   {
     id: 'pitch_blade',
     icon: '🗡️',
     name: 'ピッチ刀',
     cost: 5,
-    attachLabel: '味方10番',
-    summary: '味方10番の近くに敵が来ると、短時間ダウンさせて押し返す。',
+    attachLabel: '味方選手',
+    summary: '装着した味方の近くに敵が来ると、短時間ダウンさせて押し返す。',
+    targets: ['allyPlayer'],
   },
   {
     id: 'ice_lane',
@@ -72,51 +81,23 @@ const FIXED_GIMMICKS = Object.freeze([
     name: '氷の通路',
     cost: 5,
     attachLabel: 'コート',
-    summary: '中央突破ルートを低抵抗ゾーンにして、通過中の減速を抑える。',
+    summary: '設置した範囲を低抵抗ゾーンにして、通過中の減速を抑える。',
+    targets: ['field'],
   },
 ]);
 
-const FIELD_GIMMICK_ZONES = Object.freeze({
-  spring_pad: { x: 342, y: 760, w: 216, h: 88, color: '#e8ff66' },
-  ice_lane: { x: 298, y: 600, w: 304, h: 164, color: '#7ddcff' },
-});
-
 const TEAM = Object.freeze({
   ally: {
-    fill: '#f7f7ff',
-    fill2: '#dce7ff',
-    stroke: '#2368f3',
-    dark: '#0f3f9f',
-    label: '味',
-    shorts: '#1742a5',
-    socks: '#f7f7ff',
+    fill: '#f7f7ff', fill2: '#dce7ff', stroke: '#2368f3', dark: '#0f3f9f', label: '味', shorts: '#1742a5', socks: '#f7f7ff',
   },
   enemy: {
-    fill: '#ffe9e9',
-    fill2: '#ffc9c9',
-    stroke: '#e23b3b',
-    dark: '#a91515',
-    label: '敵',
-    shorts: '#8f1111',
-    socks: '#fff1f1',
+    fill: '#ffe9e9', fill2: '#ffc9c9', stroke: '#e23b3b', dark: '#a91515', label: '敵', shorts: '#8f1111', socks: '#fff1f1',
   },
   converted: {
-    fill: '#eefcff',
-    fill2: '#bff7da',
-    stroke: '#24b86e',
-    dark: '#086a3b',
-    label: '寝',
-    shorts: '#0b7a45',
-    socks: '#f7fff8',
+    fill: '#eefcff', fill2: '#bff7da', stroke: '#24b86e', dark: '#086a3b', label: '寝', shorts: '#0b7a45', socks: '#f7fff8',
   },
   keeper: {
-    fill: '#fff1b5',
-    fill2: '#ffd36b',
-    stroke: '#d49300',
-    dark: '#8c5f00',
-    label: 'GK',
-    shorts: '#57451d',
-    socks: '#fff1b5',
+    fill: '#fff1b5', fill2: '#ffd36b', stroke: '#d49300', dark: '#8c5f00', label: 'GK', shorts: '#57451d', socks: '#fff1b5',
   },
 });
 
@@ -140,6 +121,7 @@ const powerInput = document.querySelector('#powerInput');
 const angleValue = document.querySelector('#angleValue');
 const powerValue = document.querySelector('#powerValue');
 const gimmickListEl = document.querySelector('#gimmickList');
+const placementListEl = document.querySelector('#placementList');
 const costUsedEl = document.querySelector('#costUsed');
 const costLimitEl = document.querySelector('#costLimit');
 const presetBtn = document.querySelector('#presetBtn');
@@ -158,25 +140,53 @@ let elapsedMs = 0;
 let lastFrameTs = performance.now();
 let accumulatorMs = 0;
 let logs = [];
-let activeGimmicks = new Set(DEFAULT_GIMMICKS);
+let placements = [];
+let nextPlacementId = 1;
+let selectedGimmickId = null;
+let dragState = null;
+let hoverTarget = null;
 let effectCooldowns = new Map();
-
-const SPEEDS = [1, 2, 0.5];
-const goalLeft = FIELD.width * (1 - FIELD.opponentGoalWidthRatio) / 2;
-const goalRight = FIELD.width * (1 + FIELD.opponentGoalWidthRatio) / 2;
-const opponentGoalCenter = Object.freeze({ x: FIELD.width / 2, y: FIELD.opponentGoalLineY * 0.45 });
-const ownGoalCenter = Object.freeze({ x: FIELD.width / 2, y: FIELD.ownGoalLineY + 48 });
-
-function isGimmickActive(id) {
-  return activeGimmicks.has(id);
-}
 
 function getGimmick(id) {
   return FIXED_GIMMICKS.find((g) => g.id === id);
 }
 
 function getActiveCost() {
-  return FIXED_GIMMICKS.reduce((sum, gimmick) => sum + (isGimmickActive(gimmick.id) ? gimmick.cost : 0), 0);
+  return placements.reduce((sum, placement) => sum + getGimmick(placement.gimmickId).cost, 0);
+}
+
+function countPlacements(gimmickId) {
+  return placements.filter((p) => p.gimmickId === gimmickId).length;
+}
+
+function isGimmickActive(id) {
+  return countPlacements(id) > 0;
+}
+
+function getPlayerById(playerId) {
+  return players.find((p) => p.game.id === playerId) ?? null;
+}
+
+function getPlayerLabel(player) {
+  if (!player?.game) return '対象不明';
+  if (player.game.role === 'keeper') return player.game.baseTeam === 'ally' ? '味方GK' : '敵GK';
+  return `${player.game.baseTeam === 'ally' ? '味方' : '敵'}${player.game.number}番`;
+}
+
+function describePlacementTarget(placement) {
+  if (placement.targetType === 'ball') return 'ボール';
+  if (placement.targetType === 'opponentGoal') return '相手ゴール';
+  if (placement.targetType === 'field') return `コート(${Math.round(placement.x)},${Math.round(placement.y)})`;
+  if (placement.targetType === 'player') return getPlayerLabel(getPlayerById(placement.playerId));
+  return '対象不明';
+}
+
+function getPlacementsForPlayer(player, gimmickId) {
+  return placements.filter((p) => p.gimmickId === gimmickId && p.targetType === 'player' && p.playerId === player.game.id);
+}
+
+function playerHasGimmick(player, gimmickId) {
+  return getPlacementsForPlayer(player, gimmickId).length > 0;
 }
 
 function updateKickButtonState() {
@@ -186,7 +196,7 @@ function updateKickButtonState() {
 function log(text) {
   const time = (elapsedMs / 1000).toFixed(2);
   logs.unshift(`${time}s　${text}`);
-  logs = logs.slice(0, 30);
+  logs = logs.slice(0, 34);
   renderLog();
 }
 
@@ -209,41 +219,264 @@ function renderGimmicks() {
 
   gimmickListEl.replaceChildren();
   for (const gimmick of FIXED_GIMMICKS) {
-    const active = isGimmickActive(gimmick.id);
-    const wouldExceed = !active && cost + gimmick.cost > COST_LIMIT;
+    const placed = countPlacements(gimmick.id);
+    const wouldExceed = cost + gimmick.cost > COST_LIMIT;
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = `gimmick-item ${active ? 'is-active' : ''} ${wouldExceed ? 'is-locked' : ''}`;
-    button.setAttribute('aria-pressed', String(active));
+    button.className = [
+      'gimmick-item',
+      selectedGimmickId === gimmick.id ? 'is-selected' : '',
+      placed > 0 ? 'has-placement' : '',
+      wouldExceed ? 'is-locked' : '',
+    ].filter(Boolean).join(' ');
+    button.setAttribute('aria-pressed', String(selectedGimmickId === gimmick.id));
     button.innerHTML = `
       <span class="gimmick-icon">${gimmick.icon}</span>
       <span class="gimmick-main">
-        <strong>${gimmick.name}</strong>
+        <strong>${gimmick.name}${placed ? ` ×${placed}` : ''}</strong>
         <small>${gimmick.attachLabel}｜${gimmick.summary}</small>
       </span>
       <span class="gimmick-cost-pill">${gimmick.cost}</span>
     `;
-    button.addEventListener('click', () => toggleGimmick(gimmick.id));
+    button.addEventListener('pointerdown', (event) => startDragGimmick(event, gimmick.id));
+    button.addEventListener('click', () => selectGimmick(gimmick.id));
     gimmickListEl.appendChild(button);
+  }
+
+  renderPlacements();
+}
+
+function renderPlacements() {
+  placementListEl.replaceChildren();
+  if (!placements.length) {
+    const empty = document.createElement('div');
+    empty.className = 'placement-empty';
+    empty.textContent = '未配置。カードを選んでコート上の対象をタップ、またはカードをドラッグしてください。';
+    placementListEl.appendChild(empty);
+    return;
+  }
+
+  for (const placement of placements) {
+    const gimmick = getGimmick(placement.gimmickId);
+    const row = document.createElement('div');
+    row.className = 'placement-chip';
+    row.innerHTML = `<strong>${gimmick.icon} ${gimmick.name}</strong><span>${describePlacementTarget(placement)}</span><button type="button">外す</button>`;
+    row.querySelector('button').addEventListener('click', () => removePlacement(placement.id));
+    placementListEl.appendChild(row);
   }
 }
 
-function toggleGimmick(id) {
+function selectGimmick(id) {
+  if (dragState?.moved) return;
   const gimmick = getGimmick(id);
   if (!gimmick) return;
-  if (isGimmickActive(id)) {
-    activeGimmicks.delete(id);
-    log(`${gimmick.name}をOFF。`);
-  } else {
-    const nextCost = getActiveCost() + gimmick.cost;
-    if (nextCost > COST_LIMIT) {
-      log(`${gimmick.name}はコスト超過でONにできない。`);
-      return;
-    }
-    activeGimmicks.add(id);
-    log(`${gimmick.name}をON。`);
+  selectedGimmickId = selectedGimmickId === id ? null : id;
+  log(selectedGimmickId ? `${gimmick.name}を選択。コート上の対象をタップ。` : `${gimmick.name}の選択を解除。`);
+  renderGimmicks();
+}
+
+function startDragGimmick(event, gimmickId) {
+  if (running && !ended) {
+    log('試合中は配置を変更できません。リトライ後に調整してください。');
+    return;
   }
-  applyGimmickStateToBodies(false);
+  const gimmick = getGimmick(gimmickId);
+  if (!gimmick) return;
+  selectedGimmickId = gimmickId;
+  dragState = {
+    gimmickId,
+    startX: event.clientX,
+    startY: event.clientY,
+    moved: false,
+    ghost: createDragGhost(gimmick),
+  };
+  moveGhost(event.clientX, event.clientY);
+  document.addEventListener('pointermove', moveDragGimmick);
+  document.addEventListener('pointerup', endDragGimmick, { once: true });
+  renderGimmicks();
+}
+
+function createDragGhost(gimmick) {
+  const ghost = document.createElement('div');
+  ghost.className = 'drag-ghost';
+  ghost.innerHTML = `<span>${gimmick.icon}</span><span>${gimmick.name}</span>`;
+  document.body.appendChild(ghost);
+  return ghost;
+}
+
+function moveGhost(x, y) {
+  if (!dragState?.ghost) return;
+  dragState.ghost.style.left = `${x}px`;
+  dragState.ghost.style.top = `${y}px`;
+}
+
+function moveDragGimmick(event) {
+  if (!dragState) return;
+  const dx = event.clientX - dragState.startX;
+  const dy = event.clientY - dragState.startY;
+  if (Math.hypot(dx, dy) > 6) dragState.moved = true;
+  moveGhost(event.clientX, event.clientY);
+  const point = clientToField(event.clientX, event.clientY);
+  hoverTarget = point ? findDropTarget(dragState.gimmickId, point) : null;
+}
+
+function endDragGimmick(event) {
+  if (!dragState) return;
+  document.removeEventListener('pointermove', moveDragGimmick);
+  dragState.ghost?.remove();
+  const { gimmickId, moved } = dragState;
+  dragState = null;
+  const point = clientToField(event.clientX, event.clientY);
+  if (moved && point) placeSelectedGimmick(gimmickId, point);
+  hoverTarget = null;
+  renderGimmicks();
+}
+
+function clientToField(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return null;
+  return {
+    x: (clientX - rect.left) / rect.width * FIELD.width,
+    y: (clientY - rect.top) / rect.height * FIELD.height,
+  };
+}
+
+function isTargetAllowed(gimmick, targetType) {
+  return gimmick.targets.includes(targetType);
+}
+
+function findNearestPlayer(point, predicate, maxDistance = 92) {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const player of players) {
+    if (!predicate(player)) continue;
+    const distance = Math.hypot(player.position.x - point.x, player.position.y - point.y);
+    if (distance < bestDistance) {
+      best = player;
+      bestDistance = distance;
+    }
+  }
+  return best && bestDistance <= maxDistance ? { player: best, distance: bestDistance } : null;
+}
+
+function findDropTarget(gimmickId, point) {
+  const gimmick = getGimmick(gimmickId);
+  if (!gimmick) return null;
+
+  if (isTargetAllowed(gimmick, 'ball') && Math.hypot(ball.position.x - point.x, ball.position.y - point.y) <= 82) {
+    return { targetType: 'ball', x: ball.position.x, y: ball.position.y, label: 'ボール' };
+  }
+
+  const playerTarget = findNearestPlayer(point, (player) => {
+    const effective = getEffectiveTeam(player);
+    if (isTargetAllowed(gimmick, 'allyKeeper') && effective === 'ally' && player.game.role === 'keeper') return true;
+    if (isTargetAllowed(gimmick, 'allyPlayer') && effective === 'ally' && player.game.role === 'field') return true;
+    if (isTargetAllowed(gimmick, 'enemyPlayer') && player.game.baseTeam === 'enemy' && player.game.role === 'field') return true;
+    if (isTargetAllowed(gimmick, 'enemyKeeper') && player.game.baseTeam === 'enemy' && player.game.role === 'keeper') return true;
+    return false;
+  });
+  if (playerTarget) {
+    return {
+      targetType: 'player',
+      playerId: playerTarget.player.game.id,
+      x: playerTarget.player.position.x,
+      y: playerTarget.player.position.y,
+      label: getPlayerLabel(playerTarget.player),
+    };
+  }
+
+  if (isTargetAllowed(gimmick, 'opponentGoal') && point.y <= 240 && point.x >= goalLeft - 110 && point.x <= goalRight + 110) {
+    return { targetType: 'opponentGoal', x: opponentGoalCenter.x, y: FIELD.opponentGoalLineY + 22, label: '相手ゴール' };
+  }
+
+  if (isTargetAllowed(gimmick, 'field') && point.x >= 44 && point.x <= FIELD.width - 44 && point.y >= 160 && point.y <= FIELD.ownGoalLineY - 130) {
+    return { targetType: 'field', x: point.x, y: point.y, label: 'コート' };
+  }
+
+  return null;
+}
+
+function placeSelectedGimmick(gimmickId, point) {
+  const gimmick = getGimmick(gimmickId);
+  if (!gimmick) return;
+  if (running && !ended) {
+    log('試合中は配置を変更できません。');
+    return;
+  }
+  if (getActiveCost() + gimmick.cost > COST_LIMIT) {
+    log(`${gimmick.name}はコスト超過で配置できません。`);
+    return;
+  }
+  const target = findDropTarget(gimmickId, point);
+  if (!target) {
+    log(`${gimmick.name}はその場所には配置できません。`);
+    return;
+  }
+  const placement = {
+    id: nextPlacementId,
+    gimmickId,
+    targetType: target.targetType,
+    playerId: target.playerId ?? null,
+    x: target.x,
+    y: target.y,
+  };
+  nextPlacementId += 1;
+  placements.push(placement);
+  applyPlacementStateToBodies(true);
+  log(`${gimmick.name}を${target.label}へ配置。`);
+  selectedGimmickId = null;
+  renderGimmicks();
+}
+
+function removePlacement(id) {
+  const placement = placements.find((p) => p.id === id);
+  if (!placement) return;
+  if (running && !ended) {
+    log('試合中は配置を変更できません。');
+    return;
+  }
+  const gimmick = getGimmick(placement.gimmickId);
+  placements = placements.filter((p) => p.id !== id);
+  applyPlacementStateToBodies(false);
+  log(`${gimmick.name}を外しました。`);
+  renderGimmicks();
+}
+
+function clearPlacements() {
+  if (running && !ended) {
+    log('試合中は配置を変更できません。');
+    return;
+  }
+  placements = [];
+  selectedGimmickId = null;
+  applyPlacementStateToBodies(false);
+  log('ギミックを全撤去。');
+  renderGimmicks();
+}
+
+function addPlacementDirect(gimmickId, target) {
+  const gimmick = getGimmick(gimmickId);
+  if (!gimmick || getActiveCost() + gimmick.cost > COST_LIMIT) return;
+  placements.push({ id: nextPlacementId++, gimmickId, ...target });
+}
+
+function applyRecommendedPlacements() {
+  if (running && !ended) {
+    log('試合中は配置を変更できません。');
+    return;
+  }
+  placements = [];
+  selectedGimmickId = null;
+  const ally10 = players.find((p) => p.game.baseTeam === 'ally' && p.game.role === 'field' && p.game.number === 10);
+  const ally7 = players.find((p) => p.game.baseTeam === 'ally' && p.game.role === 'field' && p.game.number === 7);
+  addPlacementDirect('low_friction_ball', { targetType: 'ball', x: ball.position.x, y: ball.position.y, playerId: null });
+  if (ally10) addPlacementDirect('rocket_kick', { targetType: 'player', playerId: ally10.game.id, x: ally10.position.x, y: ally10.position.y });
+  if (ally10) addPlacementDirect('pitch_blade', { targetType: 'player', playerId: ally10.game.id, x: ally10.position.x, y: ally10.position.y });
+  if (ally7) addPlacementDirect('rocket_kick', { targetType: 'player', playerId: ally7.game.id, x: ally7.position.x, y: ally7.position.y });
+  addPlacementDirect('spring_pad', { targetType: 'field', x: FIELD.width / 2, y: 760, playerId: null });
+  addPlacementDirect('ice_lane', { targetType: 'field', x: FIELD.width / 2, y: 620, playerId: null });
+  applyPlacementStateToBodies(true);
+  log('おすすめ配置をセット。コートを見ながら調整できます。');
   renderGimmicks();
 }
 
@@ -270,12 +503,12 @@ function resetWorld() {
   buildBall();
   buildPlayers();
   bindCollisionLogging();
-  applyGimmickStateToBodies(true);
+  applyPlacementStateToBodies(true);
   matchStateEl.textContent = '準備中';
   timerEl.textContent = '0.00s';
   pauseBtn.textContent = '一時停止';
   updateKickButtonState();
-  log('中央キックオフ。敵は速く、触れると強く自陣ゴールへ蹴り込みます。');
+  log('中央キックオフ。敵の寄せを速くし、待機時間を減らしました。');
   draw();
   updateDebug();
   renderGimmicks();
@@ -283,90 +516,44 @@ function resetWorld() {
 
 function buildStaticWalls() {
   const t = FIELD.wallThickness;
-  const leftWall = Bodies.rectangle(-t / 2, FIELD.height / 2, t, FIELD.height * 2, {
-    isStatic: true,
-    label: 'leftWall',
-    renderKind: 'wall',
-  });
-  const rightWall = Bodies.rectangle(FIELD.width + t / 2, FIELD.height / 2, t, FIELD.height * 2, {
-    isStatic: true,
-    label: 'rightWall',
-    renderKind: 'wall',
-  });
-  const topWallLeft = Bodies.rectangle(goalLeft / 2, FIELD.opponentGoalLineY - t / 2, goalLeft, t, {
-    isStatic: true,
-    label: 'topWallLeft',
-    renderKind: 'wall',
-  });
-  const topWallRight = Bodies.rectangle((FIELD.width + goalRight) / 2, FIELD.opponentGoalLineY - t / 2, FIELD.width - goalRight, t, {
-    isStatic: true,
-    label: 'topWallRight',
-    renderKind: 'wall',
-  });
-  const bottomWallLeft = Bodies.rectangle(goalLeft / 2, FIELD.ownGoalLineY + t / 2, goalLeft, t, {
-    isStatic: true,
-    label: 'bottomWallLeft',
-    renderKind: 'wall',
-  });
-  const bottomWallRight = Bodies.rectangle((FIELD.width + goalRight) / 2, FIELD.ownGoalLineY + t / 2, FIELD.width - goalRight, t, {
-    isStatic: true,
-    label: 'bottomWallRight',
-    renderKind: 'wall',
-  });
-
+  const leftWall = Bodies.rectangle(-t / 2, FIELD.height / 2, t, FIELD.height * 2, { isStatic: true, label: 'leftWall' });
+  const rightWall = Bodies.rectangle(FIELD.width + t / 2, FIELD.height / 2, t, FIELD.height * 2, { isStatic: true, label: 'rightWall' });
+  const topWallLeft = Bodies.rectangle(goalLeft / 2, FIELD.opponentGoalLineY - t / 2, goalLeft, t, { isStatic: true, label: 'topWallLeft' });
+  const topWallRight = Bodies.rectangle((FIELD.width + goalRight) / 2, FIELD.opponentGoalLineY - t / 2, FIELD.width - goalRight, t, { isStatic: true, label: 'topWallRight' });
+  const bottomWallLeft = Bodies.rectangle(goalLeft / 2, FIELD.ownGoalLineY + t / 2, goalLeft, t, { isStatic: true, label: 'bottomWallLeft' });
+  const bottomWallRight = Bodies.rectangle((FIELD.width + goalRight) / 2, FIELD.ownGoalLineY + t / 2, FIELD.width - goalRight, t, { isStatic: true, label: 'bottomWallRight' });
   walls = [leftWall, rightWall, topWallLeft, topWallRight, bottomWallLeft, bottomWallRight];
   World.add(engine.world, walls);
 }
 
 function buildBall() {
   ball = Bodies.circle(FIELD.width / 2, FIELD.height / 2, FIELD.ballRadius, {
-    label: 'ball',
-    restitution: 0.72,
-    friction: 0.025,
-    frictionAir: 0.012,
-    density: 0.0022,
-    renderKind: 'ball',
+    label: 'ball', restitution: 0.72, friction: 0.025, frictionAir: 0.012, density: 0.0022,
   });
   Body.setVelocity(ball, { x: 0, y: 0 });
   World.add(engine.world, ball);
 }
 
-function makePlayer({ x, y, team, role, patrolMinX = null, patrolMaxX = null, number = 0 }) {
+function makePlayer({ id, x, y, team, role, patrolMinX = null, patrolMaxX = null, number = 0 }) {
   const radius = role === 'keeper' ? FIELD.keeperRadius : FIELD.playerRadius;
   const body = Bodies.circle(x, y, radius, {
-    label: `${team}-${role}`,
-    restitution: 0.45,
-    friction: 0.08,
-    frictionAir: 0.06,
-    density: role === 'keeper' ? 0.004 : 0.0032,
-    renderKind: 'player',
+    label: `${team}-${role}`, restitution: 0.45, friction: 0.08, frictionAir: 0.045, density: role === 'keeper' ? 0.004 : 0.0032,
   });
-  body.game = {
-    team,
-    baseTeam: team,
-    role,
-    home: { x, y },
-    patrolMinX,
-    patrolMaxX,
-    radius,
-    downUntil: 0,
-    convertedUntil: 0,
-    number,
-  };
+  body.game = { id, team, baseTeam: team, role, home: { x, y }, patrolMinX, patrolMaxX, radius, downUntil: 0, convertedUntil: 0, number };
   players.push(body);
   return body;
 }
 
 function buildPlayers() {
   const bodies = [
-    makePlayer({ x: FIELD.width / 2, y: FIELD.height - 154, team: 'ally', role: 'keeper', patrolMinX: goalLeft + 24, patrolMaxX: goalRight - 24, number: 1 }),
-    makePlayer({ x: 260, y: 920, team: 'ally', role: 'field', number: 7 }),
-    makePlayer({ x: 450, y: 820, team: 'ally', role: 'field', number: 10 }),
-    makePlayer({ x: 640, y: 920, team: 'ally', role: 'field', number: 11 }),
-    makePlayer({ x: FIELD.width / 2, y: 154, team: 'enemy', role: 'keeper', patrolMinX: goalLeft + 24, patrolMaxX: goalRight - 24, number: 1 }),
-    makePlayer({ x: 260, y: 480, team: 'enemy', role: 'field', number: 4 }),
-    makePlayer({ x: 450, y: 620, team: 'enemy', role: 'field', number: 9 }),
-    makePlayer({ x: 640, y: 480, team: 'enemy', role: 'field', number: 6 }),
+    makePlayer({ id: 'ally-gk', x: FIELD.width / 2, y: FIELD.height - 154, team: 'ally', role: 'keeper', patrolMinX: goalLeft + 24, patrolMaxX: goalRight - 24, number: 1 }),
+    makePlayer({ id: 'ally-7', x: 260, y: 920, team: 'ally', role: 'field', number: 7 }),
+    makePlayer({ id: 'ally-10', x: 450, y: 820, team: 'ally', role: 'field', number: 10 }),
+    makePlayer({ id: 'ally-11', x: 640, y: 920, team: 'ally', role: 'field', number: 11 }),
+    makePlayer({ id: 'enemy-gk', x: FIELD.width / 2, y: 154, team: 'enemy', role: 'keeper', patrolMinX: goalLeft + 24, patrolMaxX: goalRight - 24, number: 1 }),
+    makePlayer({ id: 'enemy-4', x: 260, y: 480, team: 'enemy', role: 'field', number: 4 }),
+    makePlayer({ id: 'enemy-9', x: 450, y: 620, team: 'enemy', role: 'field', number: 9 }),
+    makePlayer({ id: 'enemy-6', x: 640, y: 480, team: 'enemy', role: 'field', number: 6 }),
   ];
   World.add(engine.world, bodies);
 }
@@ -393,17 +580,21 @@ function getBaseBallFrictionAir() {
   return isGimmickActive('low_friction_ball') ? 0.005 : 0.012;
 }
 
-function applyGimmickStateToBodies(isReset) {
+function applyPlacementStateToBodies(isReset) {
   if (!ball) return;
   ball.friction = isGimmickActive('low_friction_ball') ? 0.008 : 0.025;
   ball.frictionAir = getBaseBallFrictionAir();
   ball.restitution = isGimmickActive('low_friction_ball') ? 0.78 : 0.72;
 
-  const convertTarget = players.find((p) => p.game.baseTeam === 'enemy' && p.game.role === 'field' && p.game.number === 9);
-  if (convertTarget) {
-    convertTarget.game.convertedUntil = isGimmickActive('flag_convert') ? 10000 : 0;
+  for (const player of players) {
+    if (player.game.baseTeam === 'enemy') player.game.convertedUntil = 0;
   }
-  if (isReset && isGimmickActive('flag_convert')) log('寝返り日の丸：敵9番が10秒間だけ味方扱い。');
+  for (const placement of placements.filter((p) => p.gimmickId === 'flag_convert')) {
+    const player = getPlayerById(placement.playerId);
+    if (player) player.game.convertedUntil = 10000;
+  }
+
+  if (isReset && isGimmickActive('flag_convert')) log('寝返り日の丸：対象の敵が10秒間だけ味方扱い。');
   if (isReset && isGimmickActive('low_friction_ball')) log('低摩擦ボール：ボールの抵抗を軽減。');
 }
 
@@ -411,7 +602,7 @@ function kick() {
   if (running && !ended) return;
   if (ended) resetWorld();
   if (getActiveCost() > COST_LIMIT) {
-    log('コスト超過中はキックできない。');
+    log('コスト超過中はキックできません。');
     return;
   }
   const angleDeg = Number(angleInput.value);
@@ -419,10 +610,7 @@ function kick() {
   const angleRad = (-90 + angleDeg) * Math.PI / 180;
   const kickoffSpeed = 6 + Number(powerInput.value) * 0.23;
   Body.setPosition(ball, { x: FIELD.width / 2, y: FIELD.height / 2 });
-  Body.setVelocity(ball, {
-    x: Math.cos(angleRad) * kickoffSpeed,
-    y: Math.sin(angleRad) * kickoffSpeed,
-  });
+  Body.setVelocity(ball, { x: Math.cos(angleRad) * kickoffSpeed, y: Math.sin(angleRad) * kickoffSpeed });
   Body.setAngularVelocity(ball, angleDeg * 0.006);
   running = true;
   ended = false;
@@ -448,45 +636,47 @@ function aimVelocityToward(target, speed) {
   const dx = target.x - ball.position.x;
   const dy = target.y - ball.position.y;
   const distance = Math.max(Math.hypot(dx, dy), 1);
-  return {
-    x: (dx / distance) * speed,
-    y: (dy / distance) * speed,
-  };
+  return { x: (dx / distance) * speed, y: (dy / distance) * speed };
 }
 
 function handleBallPlayerTouch(player) {
   if (!player?.game) return;
   const effectiveTeam = getEffectiveTeam(player);
-  const key = `touch_kick:${player.game.baseTeam}:${player.game.role}:${player.game.number}`;
-  if (!canTrigger(key, 650)) return;
+  const key = `touch_kick:${player.game.id}`;
+  if (!canTrigger(key, 520)) return;
 
   if (effectiveTeam === 'enemy') {
-    const speed = player.game.role === 'keeper' ? 11 : 15.5;
+    const speed = player.game.role === 'keeper' ? 12.5 : 18.4;
     Body.setVelocity(ball, aimVelocityToward(ownGoalCenter, speed));
-    Body.setAngularVelocity(ball, ball.angularVelocity + 0.22);
+    Body.setAngularVelocity(ball, ball.angularVelocity + 0.26);
     log(`敵${player.game.role === 'keeper' ? 'GK' : player.game.number + '番'}が自陣ゴールへ強烈に蹴り込んだ。`);
     return;
   }
 
-  const rocket = isGimmickActive('rocket_kick');
-  const target = opponentGoalCenter;
-  const speed = rocket ? (player.game.role === 'keeper' ? 13.8 : 16.2) : (player.game.role === 'keeper' ? 6.8 : 8.4);
-  const lateralAssist = Math.max(-1.4, Math.min(1.4, (ball.position.x - player.position.x) * 0.018));
-  const velocity = aimVelocityToward(target, speed);
+  const rocketCount = getPlacementsForPlayer(player, 'rocket_kick').length;
+  const speed = rocketCount > 0 ? (player.game.role === 'keeper' ? 15.2 : 18.3 + rocketCount * 1.8) : (player.game.role === 'keeper' ? 7.1 : 8.6);
+  const lateralAssist = Math.max(-1.6, Math.min(1.6, (ball.position.x - player.position.x) * 0.018));
+  const velocity = aimVelocityToward(opponentGoalCenter, speed);
   Body.setVelocity(ball, { x: velocity.x + lateralAssist, y: velocity.y });
-  Body.setAngularVelocity(ball, ball.angularVelocity - 0.2);
-  log(rocket
+  Body.setAngularVelocity(ball, ball.angularVelocity - 0.22);
+  log(rocketCount > 0
     ? `${player.game.role === 'keeper' ? 'GK' : player.game.number + '番'}のロケットキック発動。`
     : `${player.game.role === 'keeper' ? 'GK' : player.game.number + '番'}が弱くクリア。`);
+}
+
+function minBallPlayerDistance() {
+  return players.reduce((best, p) => Math.min(best, Vector.magnitude(Vector.sub(p.position, ball.position))), Infinity);
 }
 
 function getPlayerTuning(player) {
   const effectiveTeam = getEffectiveTeam(player);
   const isKeeper = player.game.role === 'keeper';
+  const ballSpeed = Vector.magnitude(ball.velocity);
+  const idleChaseBoost = ballSpeed < 5.5 && minBallPlayerDistance() > 165 ? 1.55 : 1;
   if (effectiveTeam === 'enemy') {
     return {
-      baseForce: isKeeper ? 0.000035 : 0.000052,
-      maxSpeed: isKeeper ? 4.8 : 6.7,
+      baseForce: (isKeeper ? 0.000055 : 0.000145) * idleChaseBoost,
+      maxSpeed: (isKeeper ? 6.2 : 10.8) * (idleChaseBoost > 1 ? 1.08 : 1),
     };
   }
   return {
@@ -498,7 +688,7 @@ function getPlayerTuning(player) {
 function updatePlayerAI() {
   for (const p of players) {
     if (elapsedMs < p.game.downUntil) {
-      Body.setVelocity(p, Vector.mult(p.velocity, 0.86));
+      Body.setVelocity(p, Vector.mult(p.velocity, 0.84));
       continue;
     }
     const toBall = Vector.sub(ball.position, p.position);
@@ -513,32 +703,20 @@ function updatePlayerAI() {
       const maxX = p.game.patrolMaxX;
       const targetX = Math.max(minX, Math.min(maxX, ball.position.x));
       const xDir = Math.sign(targetX - p.position.x);
-      force = { x: xDir * tuning.baseForce * p.mass * 1.7, y: (p.game.home.y - p.position.y) * 0.0000008 * p.mass };
+      force = { x: xDir * tuning.baseForce * p.mass * 1.9, y: (p.game.home.y - p.position.y) * 0.0000008 * p.mass };
       if (p.position.x < minX) Body.setPosition(p, { x: minX, y: p.position.y });
       if (p.position.x > maxX) Body.setPosition(p, { x: maxX, y: p.position.y });
     }
 
     Body.applyForce(p, p.position, force);
-
     const speed = Vector.magnitude(p.velocity);
-    if (speed > tuning.maxSpeed) {
-      Body.setVelocity(p, Vector.mult(Vector.normalise(p.velocity), tuning.maxSpeed));
-    }
-  }
-}
-
-function applySlopeForce() {
-  if (FIELD.slopeForce === 0) return;
-  Body.applyForce(ball, ball.position, { x: 0, y: FIELD.slopeForce * ball.mass });
-  for (const p of players) {
-    Body.applyForce(p, p.position, { x: 0, y: FIELD.slopeForce * p.mass * 0.32 });
+    if (speed > tuning.maxSpeed) Body.setVelocity(p, Vector.mult(Vector.normalise(p.velocity), tuning.maxSpeed));
   }
 }
 
 function stepSimulation() {
   if (ended) return;
   elapsedMs += FIELD.fixedStepMs;
-  applySlopeForce();
   applyContinuousGimmicks();
   updatePlayerAI();
   Engine.update(engine, FIELD.fixedStepMs);
@@ -550,58 +728,70 @@ function applyContinuousGimmicks() {
   ball.frictionAir = getBaseBallFrictionAir();
   if (isGimmickActive('goal_magnet')) applyGoalMagnet();
   if (isGimmickActive('pitch_blade')) applyPitchBlade();
-  if (isGimmickActive('ice_lane') && isBallInsideZone(FIELD_GIMMICK_ZONES.ice_lane)) {
+  if (isBallInsideAnyZone('ice_lane')) {
     ball.frictionAir = 0.002;
     if (canTrigger('ice_lane_log', 1800)) log('氷の通路：通過中の減速を軽減。');
   }
 }
 
 function applyPostPhysicsGimmicks() {
-  if (isGimmickActive('spring_pad') && isBallInsideZone(FIELD_GIMMICK_ZONES.spring_pad)) {
-    if (canTrigger('spring_pad', 900)) {
-      const speed = Math.max(Vector.magnitude(ball.velocity), 9.5);
-      Body.setVelocity(ball, aimVelocityToward(opponentGoalCenter, speed + 4.2));
-      Body.setAngularVelocity(ball, ball.angularVelocity + 0.18);
-      log('バネ床発動：ボールを相手ゴール方向へ跳ね上げた。');
-    }
+  const spring = getBallZonePlacement('spring_pad');
+  if (spring && canTrigger(`spring_pad:${spring.id}`, 900)) {
+    const speed = Math.max(Vector.magnitude(ball.velocity), 9.5);
+    Body.setVelocity(ball, aimVelocityToward(opponentGoalCenter, speed + 4.4));
+    Body.setAngularVelocity(ball, ball.angularVelocity + 0.18);
+    log('バネ床発動：ボールを相手ゴール方向へ跳ね上げた。');
   }
 }
 
+function getFieldZone(placement) {
+  const base = placement.gimmickId === 'ice_lane' ? { w: 304, h: 164 } : { w: 216, h: 88 };
+  return { x: placement.x - base.w / 2, y: placement.y - base.h / 2, w: base.w, h: base.h };
+}
+
+function isBallInsideZone(zone) {
+  return ball.position.x > zone.x && ball.position.x < zone.x + zone.w && ball.position.y > zone.y && ball.position.y < zone.y + zone.h;
+}
+
+function isBallInsideAnyZone(gimmickId) {
+  return placements.some((p) => p.gimmickId === gimmickId && p.targetType === 'field' && isBallInsideZone(getFieldZone(p)));
+}
+
+function getBallZonePlacement(gimmickId) {
+  return placements.find((p) => p.gimmickId === gimmickId && p.targetType === 'field' && isBallInsideZone(getFieldZone(p))) ?? null;
+}
+
 function applyGoalMagnet() {
+  const magnetCount = countPlacements('goal_magnet');
+  if (magnetCount <= 0) return;
   const dx = opponentGoalCenter.x - ball.position.x;
   const dy = opponentGoalCenter.y - ball.position.y;
   const dist = Math.hypot(dx, dy);
-  if (dist > 360 || dist < 1) return;
-  const pull = (1 - dist / 360) * 0.00034 * ball.mass;
+  if (dist > 390 || dist < 1) return;
+  const pull = (1 - dist / 390) * (0.00038 + 0.00008 * Math.min(2, magnetCount - 1)) * ball.mass;
   Body.applyForce(ball, ball.position, { x: (dx / dist) * pull, y: (dy / dist) * pull });
   if (canTrigger('goal_magnet_log', 1400)) log('吸引ゴール：ネット中央へ引き寄せ中。');
 }
 
 function applyPitchBlade() {
-  const bladeOwner = players.find((p) => p.game.baseTeam === 'ally' && p.game.role === 'field' && p.game.number === 10);
-  if (!bladeOwner || elapsedMs < bladeOwner.game.downUntil) return;
-  let target = null;
-  let best = Infinity;
-  for (const p of players) {
-    if (getEffectiveTeam(p) === 'ally') continue;
-    if (elapsedMs < p.game.downUntil) continue;
-    const d = Vector.magnitude(Vector.sub(p.position, bladeOwner.position));
-    if (d < best) {
-      best = d;
-      target = p;
+  for (const placement of placements.filter((p) => p.gimmickId === 'pitch_blade')) {
+    const bladeOwner = getPlayerById(placement.playerId);
+    if (!bladeOwner || elapsedMs < bladeOwner.game.downUntil) continue;
+    let target = null;
+    let best = Infinity;
+    for (const p of players) {
+      if (getEffectiveTeam(p) === 'ally') continue;
+      if (elapsedMs < p.game.downUntil) continue;
+      const d = Vector.magnitude(Vector.sub(p.position, bladeOwner.position));
+      if (d < best) { best = d; target = p; }
     }
+    if (!target || best > 165) continue;
+    if (!canTrigger(`pitch_blade:${bladeOwner.game.id}`, 1300)) continue;
+    target.game.downUntil = elapsedMs + 2400;
+    const away = Vector.normalise(Vector.sub(target.position, bladeOwner.position));
+    Body.applyForce(target, target.position, { x: away.x * 0.018, y: away.y * 0.018 });
+    log(`ピッチ刀：敵${target.game.number}番を短時間ダウン。`);
   }
-  if (!target || best > 155) return;
-  if (!canTrigger('pitch_blade', 1400)) return;
-  target.game.downUntil = elapsedMs + 2300;
-  const away = Vector.normalise(Vector.sub(target.position, bladeOwner.position));
-  Body.applyForce(target, target.position, { x: away.x * 0.016, y: away.y * 0.016 });
-  log(`ピッチ刀：敵${target.game.number}番を短時間ダウン。`);
-}
-
-function isBallInsideZone(zone) {
-  if (!zone) return false;
-  return ball.position.x > zone.x && ball.position.x < zone.x + zone.w && ball.position.y > zone.y && ball.position.y < zone.y + zone.h;
 }
 
 function checkOutcome() {
@@ -614,9 +804,7 @@ function checkOutcome() {
     finish('ownGoal');
     return;
   }
-  if (elapsedMs > 45000) {
-    finish('timeout');
-  }
+  if (elapsedMs > 45000) finish('timeout');
 }
 
 function finish(type) {
@@ -634,7 +822,7 @@ function finish(type) {
     log('自陣中央ゴールへ失点。');
   } else {
     matchStateEl.textContent = 'TIME UP';
-    showResult('TIME UP', '45秒経過。第2段階では制限時間で終了します。', 'own');
+    showResult('TIME UP', '45秒経過。第3段階では制限時間で終了します。', 'own');
     log('タイムアップ。');
   }
 }
@@ -673,6 +861,7 @@ function drawField() {
   drawGoalNet(goalLeft, FIELD.ownGoalLineY, goalRight - goalLeft, h - FIELD.ownGoalLineY, 'own');
   drawPitchLines(w, h);
   drawFieldGimmicks();
+  drawDropTargetHint();
   drawGoalFrames();
   drawPressureArrows(w, h);
   drawPitchLabels(w, h);
@@ -689,7 +878,6 @@ function drawGrassStripes(w, h) {
     ctx.fillStyle = stripe;
     ctx.fillRect(0, y, w, 78);
   }
-
   ctx.globalAlpha = 0.12;
   ctx.strokeStyle = '#eaffd5';
   ctx.lineWidth = 1;
@@ -733,7 +921,6 @@ function drawGoalBackdrops() {
   topDepth.addColorStop(1, 'rgba(0,0,0,0.08)');
   ctx.fillStyle = topDepth;
   ctx.fillRect(goalLeft, 0, goalRight - goalLeft, FIELD.opponentGoalLineY);
-
   const ownDepth = ctx.createLinearGradient(goalLeft, FIELD.ownGoalLineY, goalRight, FIELD.height);
   ownDepth.addColorStop(0, 'rgba(255,94,94,0.1)');
   ownDepth.addColorStop(1, 'rgba(255,94,94,0.34)');
@@ -749,7 +936,6 @@ function drawPitchLines(w, h) {
   ctx.shadowColor = 'rgba(0,0,0,.24)';
   ctx.shadowBlur = 4;
   ctx.strokeRect(18, 18, w - 36, h - 36);
-
   ctx.beginPath();
   ctx.moveTo(18, h / 2);
   ctx.lineTo(w - 18, h / 2);
@@ -761,10 +947,8 @@ function drawPitchLines(w, h) {
   ctx.arc(w / 2, h / 2, 5, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255,255,255,.94)';
   ctx.fill();
-
   ctx.strokeRect(goalLeft - 56, 18, goalRight - goalLeft + 112, 190);
   ctx.strokeRect(goalLeft - 56, h - 208, goalRight - goalLeft + 112, 190);
-
   ctx.setLineDash([10, 12]);
   ctx.beginPath();
   ctx.arc(w / 2, h - 130, 78, Math.PI * 1.12, Math.PI * 1.88);
@@ -777,8 +961,10 @@ function drawPitchLines(w, h) {
 }
 
 function drawFieldGimmicks() {
-  if (isGimmickActive('ice_lane')) drawZone(FIELD_GIMMICK_ZONES.ice_lane, '氷の通路', 'rgba(96, 220, 255, 0.2)', 'rgba(130, 235, 255, 0.78)');
-  if (isGimmickActive('spring_pad')) drawZone(FIELD_GIMMICK_ZONES.spring_pad, 'バネ床', 'rgba(232, 255, 102, 0.22)', 'rgba(232, 255, 102, 0.86)');
+  for (const placement of placements) {
+    if (placement.gimmickId === 'ice_lane' && placement.targetType === 'field') drawZone(getFieldZone(placement), '氷の通路', 'rgba(96, 220, 255, 0.2)', 'rgba(130, 235, 255, 0.78)');
+    if (placement.gimmickId === 'spring_pad' && placement.targetType === 'field') drawZone(getFieldZone(placement), 'バネ床', 'rgba(232, 255, 102, 0.22)', 'rgba(232, 255, 102, 0.86)');
+  }
   if (isGimmickActive('goal_magnet')) {
     ctx.save();
     const pulse = 1 + Math.sin(elapsedMs * 0.006) * 0.04;
@@ -792,6 +978,35 @@ function drawFieldGimmicks() {
     drawFieldIcon('🧲', opponentGoalCenter.x, FIELD.opponentGoalLineY + 24, 28);
     ctx.restore();
   }
+}
+
+function drawDropTargetHint() {
+  if (!hoverTarget) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(107,231,255,.95)';
+  ctx.fillStyle = 'rgba(107,231,255,.12)';
+  ctx.lineWidth = 5;
+  ctx.setLineDash([12, 9]);
+  if (hoverTarget.targetType === 'field') {
+    roundedRectPath(hoverTarget.x - 90, hoverTarget.y - 44, 180, 88, 18);
+    ctx.fill();
+    ctx.stroke();
+  } else if (hoverTarget.targetType === 'opponentGoal') {
+    roundedRectPath(goalLeft - 12, 10, goalRight - goalLeft + 24, 110, 18);
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.arc(hoverTarget.x, hoverTarget.y, 58, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(220,255,255,.96)';
+  ctx.font = '900 20px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(hoverTarget.label, hoverTarget.x, hoverTarget.y - 64);
+  ctx.restore();
 }
 
 function drawZone(zone, label, fill, stroke) {
@@ -825,7 +1040,6 @@ function drawGoalFrames() {
   ctx.lineCap = 'round';
   ctx.shadowColor = 'rgba(0,0,0,.42)';
   ctx.shadowBlur = 9;
-
   const postGrad = ctx.createLinearGradient(goalLeft, 0, goalRight, FIELD.opponentGoalLineY);
   postGrad.addColorStop(0, '#ffffff');
   postGrad.addColorStop(0.5, '#f7ffe8');
@@ -840,10 +1054,7 @@ function drawGoalFrames() {
   ctx.moveTo(goalLeft, FIELD.opponentGoalLineY);
   ctx.lineTo(goalRight, FIELD.opponentGoalLineY);
   ctx.stroke();
-
-  ctx.shadowBlur = 9;
   ctx.strokeStyle = '#ffe8e8';
-  ctx.lineWidth = 14;
   ctx.beginPath();
   ctx.moveTo(goalLeft, FIELD.ownGoalLineY - 2);
   ctx.lineTo(goalLeft, FIELD.height - 8);
@@ -937,7 +1148,6 @@ function drawBall(body) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(body.angle);
-
   const shine = ctx.createRadialGradient(-r * 0.38, -r * 0.52, r * 0.18, 0, 0, r * 1.16);
   shine.addColorStop(0, '#ffffff');
   shine.addColorStop(0.52, '#f7f7f2');
@@ -949,7 +1159,6 @@ function drawBall(body) {
   ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-
   ctx.fillStyle = '#111';
   drawPentagon(0, 0, r * 0.43, -Math.PI / 2);
   for (let i = 0; i < 5; i += 1) {
@@ -964,21 +1173,13 @@ function drawBall(body) {
     ctx.lineTo(px, py);
     ctx.stroke();
   }
-
-  ctx.strokeStyle = 'rgba(0,0,0,.34)';
-  ctx.lineWidth = 1.1;
-  ctx.beginPath();
-  ctx.arc(0, 0, r * 0.8, 0.12, Math.PI * 1.35);
-  ctx.stroke();
   ctx.restore();
-
   drawBallGimmickBadges(x, y);
 }
 
 function drawBallGimmickBadges(x, y) {
   const badges = [];
   if (isGimmickActive('low_friction_ball')) badges.push('🧊');
-  if (!badges.length) return;
   badges.forEach((badge, i) => drawTinyBadge(badge, x + 24 + i * 18, y - 26));
 }
 
@@ -1017,34 +1218,26 @@ function drawPlayer(body) {
   const direction = Math.atan2(ball.position.y - y, ball.position.x - x);
   const run = Math.sin((elapsedMs * 0.012) + x * 0.03) * 4;
   const isDown = elapsedMs < body.game.downUntil;
-
   drawGroundShadow(x, y, radius * 1.16, radius * 0.52, isDown ? 0.12 : 0.25);
-
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(isDown ? Math.PI / 2 : direction + Math.PI / 2);
   ctx.globalAlpha = isDown ? 0.62 : 1;
-
   ctx.strokeStyle = style.dark;
   ctx.lineWidth = 7;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(-8, 9);
-  ctx.lineTo(-16, 22 + run);
-  ctx.moveTo(8, 9);
-  ctx.lineTo(16, 22 - run);
+  ctx.moveTo(-8, 9); ctx.lineTo(-16, 22 + run);
+  ctx.moveTo(8, 9); ctx.lineTo(16, 22 - run);
   ctx.stroke();
-
   ctx.fillStyle = style.socks;
   ctx.beginPath();
   ctx.ellipse(-16, 24 + run, 8, 4, 0.1, 0, Math.PI * 2);
   ctx.ellipse(16, 24 - run, 8, 4, -0.1, 0, Math.PI * 2);
   ctx.fill();
-
   ctx.fillStyle = style.shorts;
   roundedRectPath(-16, -2, 32, 21, 7);
   ctx.fill();
-
   const jersey = ctx.createLinearGradient(-22, -30, 22, 18);
   jersey.addColorStop(0, '#ffffff');
   jersey.addColorStop(0.18, style.fill);
@@ -1055,16 +1248,12 @@ function drawPlayer(body) {
   roundedRectPath(-22, -30, 44, 45, 12);
   ctx.fill();
   ctx.stroke();
-
   ctx.strokeStyle = style.stroke;
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.moveTo(-20, -17);
-  ctx.lineTo(-31, -4);
-  ctx.moveTo(20, -17);
-  ctx.lineTo(31, -4);
+  ctx.moveTo(-20, -17); ctx.lineTo(-31, -4);
+  ctx.moveTo(20, -17); ctx.lineTo(31, -4);
   ctx.stroke();
-
   if (role === 'keeper') {
     ctx.fillStyle = '#f3f5ff';
     ctx.strokeStyle = style.stroke;
@@ -1075,17 +1264,14 @@ function drawPlayer(body) {
     ctx.fill();
     ctx.stroke();
   }
-
   ctx.fillStyle = 'rgba(255,255,255,.68)';
   ctx.fillRect(-12, -26, 5, 36);
   ctx.fillRect(7, -26, 5, 36);
-
   ctx.fillStyle = style.dark;
   ctx.font = `900 ${role === 'keeper' ? 14 : 15}px system-ui`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(role === 'keeper' ? 'GK' : String(number), 0, -8);
-
   const skin = ctx.createRadialGradient(-4, -40, 2, 0, -38, 13);
   skin.addColorStop(0, '#ffd9b8');
   skin.addColorStop(1, '#e9aa75');
@@ -1096,14 +1282,11 @@ function drawPlayer(body) {
   ctx.arc(0, -39, role === 'keeper' ? 12 : 10.5, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-
   ctx.fillStyle = style.dark;
   ctx.beginPath();
   ctx.ellipse(0, -48, role === 'keeper' ? 10 : 8, 4, 0, 0, Math.PI * 2);
   ctx.fill();
-
   ctx.restore();
-
   drawPlayerHalo(body, style, isDown);
   drawPlayerGimmickBadges(body);
   if (role === 'keeper') drawKeeperRange(body);
@@ -1111,9 +1294,9 @@ function drawPlayer(body) {
 
 function drawPlayerGimmickBadges(body) {
   const badges = [];
-  if (isGimmickActive('rocket_kick') && getEffectiveTeam(body) === 'ally') badges.push('🚀');
-  if (isGimmickActive('pitch_blade') && body.game.baseTeam === 'ally' && body.game.number === 10) badges.push('🗡️');
-  if (isGimmickActive('flag_convert') && body.game.baseTeam === 'enemy' && body.game.number === 9 && elapsedMs < body.game.convertedUntil) badges.push('🇯🇵');
+  if (playerHasGimmick(body, 'rocket_kick')) badges.push('🚀');
+  if (playerHasGimmick(body, 'pitch_blade')) badges.push('🗡️');
+  if (playerHasGimmick(body, 'flag_convert') && elapsedMs < body.game.convertedUntil) badges.push('🇯🇵');
   if (elapsedMs < body.game.downUntil) badges.push('💫');
   badges.forEach((badge, i) => drawTinyBadge(badge, body.position.x + 24 + i * 18, body.position.y - body.game.radius - 18));
 }
@@ -1172,7 +1355,8 @@ function drawHitboxes() {
     ctx.closePath();
     ctx.stroke();
   }
-  for (const zone of Object.values(FIELD_GIMMICK_ZONES)) {
+  for (const placement of placements.filter((p) => p.targetType === 'field')) {
+    const zone = getFieldZone(placement);
     ctx.strokeRect(zone.x, zone.y, zone.w, zone.h);
   }
   ctx.restore();
@@ -1191,7 +1375,8 @@ function updateDebug() {
     `goal x: ${goalLeft.toFixed(0)}-${goalRight.toFixed(0)}`,
     `ownGoalY: ${FIELD.ownGoalLineY}`,
     `cost: ${getActiveCost()}/${COST_LIMIT}`,
-    `gimmicks: ${[...activeGimmicks].join(', ') || 'none'}`,
+    `placements: ${placements.length}`,
+    `selected: ${selectedGimmickId ?? 'none'}`,
     `hitbox: ${showHitboxes ? 'ON' : 'OFF'}`,
   ].join('\n');
 }
@@ -1218,6 +1403,17 @@ function updateKickLabels() {
   powerValue.textContent = (Number(powerInput.value) / 1000).toFixed(3);
 }
 
+canvas.addEventListener('pointermove', (event) => {
+  const point = clientToField(event.clientX, event.clientY);
+  hoverTarget = point && selectedGimmickId ? findDropTarget(selectedGimmickId, point) : null;
+});
+canvas.addEventListener('pointerleave', () => { if (!dragState) hoverTarget = null; });
+canvas.addEventListener('pointerdown', (event) => {
+  if (!selectedGimmickId) return;
+  const point = clientToField(event.clientX, event.clientY);
+  if (point) placeSelectedGimmick(selectedGimmickId, point);
+});
+
 kickBtn.addEventListener('click', kick);
 pauseBtn.addEventListener('click', () => {
   if (ended) return;
@@ -1234,25 +1430,13 @@ speedBtn.addEventListener('click', () => {
 stepBtn.addEventListener('click', () => {
   if (!running && !ended) stepSimulation();
 });
-hitboxBtn.addEventListener('click', () => {
-  showHitboxes = !showHitboxes;
-});
+hitboxBtn.addEventListener('click', () => { showHitboxes = !showHitboxes; });
 forceGoalBtn.addEventListener('click', () => finish('goal'));
 forceOwnGoalBtn.addEventListener('click', () => finish('ownGoal'));
 angleInput.addEventListener('input', updateKickLabels);
 powerInput.addEventListener('input', updateKickLabels);
-presetBtn.addEventListener('click', () => {
-  activeGimmicks = new Set(DEFAULT_GIMMICKS);
-  log('おすすめ固定ギミックをON。');
-  applyGimmickStateToBodies(false);
-  renderGimmicks();
-});
-clearGimmicksBtn.addEventListener('click', () => {
-  activeGimmicks.clear();
-  log('固定ギミックを全OFF。');
-  applyGimmickStateToBodies(false);
-  renderGimmicks();
-});
+presetBtn.addEventListener('click', applyRecommendedPlacements);
+clearGimmicksBtn.addEventListener('click', clearPlacements);
 
 updateKickLabels();
 renderGimmicks();
