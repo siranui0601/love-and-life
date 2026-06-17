@@ -20,34 +20,46 @@
     </div>
   </header>
 
-  <main class="stage-layout">
-    <section class="field-panel" aria-label="試合場">
-      <div class="field-frame" id="fieldFrame">
-        <canvas id="fieldCanvas" width="900" height="1400"></canvas>
-        <div id="resultOverlay" class="result-overlay hidden"></div>
-      </div>
-    </section>
-
-    <aside class="control-panel">
-      <section class="coach-card">
-        <h2>監督メモ</h2>
-        <p>第3段階では、固定ギミックをカードとして持ち、ボール・選手・ゴール・コートへドラッグ装着します。未対応の装着先は試合場上で薄く表示されます。</p>
-        <p>相手選手はさらに高速化済みです。ボールが孤立して待機時間が生まれにくいよう、敵が素早く詰めて自陣ゴールへ蹴り込みます。</p>
-        <p>ショップ・AI生成はまだ未実装です。まずは「生成されたギミックをどこへ貼るか」の操作感を確認します。</p>
+  <main class="stage-layout stage-layout-stage3">
+    <section class="field-panel stage3-field-panel" aria-label="試合場">
+      <section class="control-card in-field-controls" aria-label="キック設定">
+        <div class="in-field-controls-head">
+          <div>
+            <h2>キックオフ</h2>
+            <p>押したら自動でコートへ寄ります。試合を見ながらすぐ操作できます。</p>
+          </div>
+          <strong class="mini-state" id="miniStateLabel">READY</strong>
+        </div>
+        <div class="kick-tuning-grid">
+          <label>
+            角度 <output id="angleValue">0°</output>
+            <input id="angleInput" type="range" min="-35" max="35" value="0">
+          </label>
+          <label>
+            威力 <output id="powerValue">0.021</output>
+            <input id="powerInput" type="range" min="10" max="34" value="21">
+          </label>
+        </div>
+        <div class="button-grid in-field-button-grid">
+          <button id="kickBtn" class="primary">キック！</button>
+          <button id="pauseBtn">一時停止</button>
+          <button id="retryBtn">リトライ</button>
+          <button id="speedBtn">等速</button>
+        </div>
       </section>
 
-      <section class="gimmick-card" aria-label="固定ギミック">
+      <section class="gimmick-card in-field-gimmicks" aria-label="固定ギミック">
         <div class="gimmick-header">
           <div>
-            <h2>固定ギミック</h2>
-            <p>カードを試合場へドラッグして装着。複数配置できますが、配置ごとにコストを消費します。</p>
+            <h2>ギミック装着</h2>
+            <p>カードを下のコートへドラッグ。コート・ボール・選手・ゴールの近くに置くと装着できます。</p>
           </div>
           <div class="cost-meter" aria-label="コスト">
             <span>コスト</span>
             <strong><b id="costUsed">0</b>/<b id="costLimit">30</b></strong>
           </div>
         </div>
-        <p id="dragHint" class="drag-hint">ギミックカードを長押し/ドラッグして、対応する対象へドロップ。</p>
+        <p id="dragHint" class="drag-hint">横スクロールで素材を選び、カードをそのままコートへ引っ張る。</p>
         <div id="gimmickList" class="gimmick-list"></div>
         <div class="installed-panel">
           <h3>配置済み</h3>
@@ -59,22 +71,17 @@
         </div>
       </section>
 
-      <section class="control-card">
-        <h2>キック設定</h2>
-        <label>
-          角度 <output id="angleValue">0°</output>
-          <input id="angleInput" type="range" min="-35" max="35" value="0">
-        </label>
-        <label>
-          威力 <output id="powerValue">0.021</output>
-          <input id="powerInput" type="range" min="10" max="34" value="21">
-        </label>
-        <div class="button-grid">
-          <button id="kickBtn" class="primary">キック！</button>
-          <button id="pauseBtn">一時停止</button>
-          <button id="retryBtn">リトライ</button>
-          <button id="speedBtn">等速</button>
-        </div>
+      <div class="field-frame" id="fieldFrame">
+        <canvas id="fieldCanvas" width="900" height="1400"></canvas>
+        <div id="resultOverlay" class="result-overlay hidden"></div>
+      </div>
+    </section>
+
+    <aside class="control-panel stage3-info-panel">
+      <section class="coach-card compact-coach-card">
+        <h2>監督メモ</h2>
+        <p>第3段階では、固定ギミックをカードとして持ち、ボール・選手・ゴール・コートへドラッグ装着します。</p>
+        <p>相手選手は高速化済みです。ボールが孤立して待機時間が生まれにくいよう、敵が素早く詰めて自陣ゴールへ蹴り込みます。</p>
       </section>
 
       <section class="control-card">
@@ -96,5 +103,6 @@
   </main>
 
   <script type="module" src="./main.js"></script>
+  <script src="./stage3-mobile-ux.js"></script>
 </body>
 </html>
