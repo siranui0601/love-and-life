@@ -24,7 +24,7 @@
         <canvas id="fieldCanvas" width="900" height="1400"></canvas>
         <div class="field-hud top">
           <span id="costBadge">COST 0/30</span>
-          <span id="speedBadge">1x</span>
+          <span id="speedBadge">0.5x</span>
         </div>
         <div id="resultOverlay" class="result-overlay hidden"></div>
       </div>
@@ -45,7 +45,7 @@
         <button id="kickBtn" class="primary">キック！</button>
         <button id="pauseBtn">一時停止</button>
         <button id="retryBtn">リトライ</button>
-        <button id="speedBtn">等速</button>
+        <button id="speedBtn">0.5x</button>
       </div>
     </section>
 
@@ -53,7 +53,7 @@
       <div class="dock-head">
         <div>
           <h2>ギミック装着</h2>
-          <p>アイコンカードをつかんでコートへ運ぶ。ドラッグ中に置ける場所が光ります。</p>
+          <p>カードをタップして選択。その後、コート上の光る場所をタップ/なぞって設置します。</p>
         </div>
         <div class="cost-meter" aria-label="コスト">
           <span>コスト</span>
@@ -75,8 +75,8 @@
       <summary>監督メモ / デバッグ / ログ</summary>
       <section class="memo-card">
         <h2>監督メモ</h2>
-        <p>スマホでは、コート全体が見えることを優先して縮尺を抑えています。設置系ギミックはドラッグ中にプレビュー枠が出ます。</p>
-        <p>この版では外部CDNに依存せず、軽量な内蔵2D物理で即時起動するようにしています。</p>
+        <p>ギミックは、ドラッグ前提ではなく「選択→コート上で配置」に変更しました。コート上部や細かいフィールド配置も狙いやすくしています。</p>
+        <p>初期速度は旧0.5倍相当にして、選手とボールの動きを追いやすくしています。</p>
       </section>
       <section class="debug-card">
         <h2>確認用デバッグ</h2>
