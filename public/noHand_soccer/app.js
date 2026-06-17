@@ -7,13 +7,13 @@ const topGoal = { x: FIELD.w / 2, y: FIELD.topGoalY * 0.45 };
 const ownGoal = { x: FIELD.w / 2, y: FIELD.bottomGoalY + 54 };
 
 const GIMMICKS = [
-  { id: 'rocket', icon: '🚀🦵', name: 'ロケットキック', cost: 6, allowed: ['ally', 'keeper'], label: '味方/GK', desc: '装着した味方が強烈に蹴る。' },
-  { id: 'iceBall', icon: '🧊⚽', name: '低摩擦ボール', cost: 4, allowed: ['ball'], label: 'ボール', desc: 'ボールの減速を抑える。' },
-  { id: 'spring', icon: '🟩🦘', name: 'バネ床', cost: 5, allowed: ['field'], label: 'コート', desc: '踏むと跳ね返す床。' },
-  { id: 'magnet', icon: '🥅🧲', name: '吸引ゴール', cost: 7, allowed: ['goal'], label: '相手ゴール', desc: 'ゴール方向へじわっと吸う。' },
-  { id: 'convert', icon: '🇯🇵🏃', name: '寝返り日の丸', cost: 8, allowed: ['enemy'], label: '敵選手', desc: '敵を一定時間味方扱いにする。' },
-  { id: 'blade', icon: '🗡️', name: 'ピッチ刀', cost: 5, allowed: ['ally'], label: '味方選手', desc: '近い敵を短時間ダウン。' },
-  { id: 'lane', icon: '🧊🛣️', name: '氷の通路', cost: 5, allowed: ['field'], label: 'コート', desc: '通過中の減速を抑える。' },
+  { id: 'rocket', icon: '🚀🦵', name: 'ロケットキック', cost: 6, allowed: ['ally', 'keeper'], label: '味方/GK', desc: '味方が強烈に蹴る。' },
+  { id: 'iceBall', icon: '🧊⚽', name: '低摩擦ボール', cost: 4, allowed: ['ball'], label: 'ボール', desc: '減速を抑える。' },
+  { id: 'spring', icon: '🟩🦘', name: 'バネ床', cost: 5, allowed: ['field'], label: 'コート', desc: '踏むと跳ね返す。' },
+  { id: 'magnet', icon: '🥅🧲', name: '吸引ゴール', cost: 7, allowed: ['goal'], label: '相手ゴール', desc: 'ネットへ吸う。' },
+  { id: 'convert', icon: '🇯🇵🏃', name: '寝返り日の丸', cost: 8, allowed: ['enemy'], label: '敵選手', desc: '敵を味方扱い。' },
+  { id: 'blade', icon: '🗡️', name: 'ピッチ刀', cost: 5, allowed: ['ally'], label: '味方選手', desc: '近い敵をダウン。' },
+  { id: 'lane', icon: '🧊🛣️', name: '氷の通路', cost: 5, allowed: ['field'], label: 'コート', desc: '減速を抑える道。' },
 ];
 
 const ZONE = { spring: { w: 216, h: 88 }, lane: { w: 304, h: 164 } };
@@ -43,9 +43,7 @@ function initState() {
     makePlayer(450, 1246, 'ally', 'keeper', 1), makePlayer(260, 920, 'ally', 'field', 7), makePlayer(450, 820, 'ally', 'field', 10), makePlayer(640, 920, 'ally', 'field', 11),
     makePlayer(450, 154, 'enemy', 'keeper', 1), makePlayer(260, 480, 'enemy', 'field', 4), makePlayer(450, 620, 'enemy', 'field', 9), makePlayer(640, 480, 'enemy', 'field', 6),
   ];
-  for (const p of players) {
-    if (p.role === 'keeper') { p.minX = goalLeft + 24; p.maxX = goalRight - 24; }
-  }
+  for (const p of players) if (p.role === 'keeper') { p.minX = goalLeft + 24; p.maxX = goalRight - 24; }
   cooldown = new Map();
   running = false; ended = false; elapsed = 0; acc = 0; logs = [];
   els.result.classList.add('hidden'); els.result.replaceChildren(); els.state.textContent = '準備中'; els.pause.textContent = '一時停止';
@@ -92,9 +90,10 @@ function renderGimmicks() {
   for (const g of GIMMICKS) {
     const b = document.createElement('button');
     b.type = 'button'; b.className = `gimmick-item ${c + g.cost > COST_LIMIT ? 'is-locked' : ''}`;
+    b.setAttribute('aria-label', `${g.name}。${g.label}へドラッグして配置。`);
     b.innerHTML = `<span class="gimmick-icon">${g.icon}</span><span class="gimmick-main"><strong>${g.name}</strong><small>${g.label}｜${g.desc}</small></span><span class="gimmick-cost-pill">${g.cost}</span>`;
     b.addEventListener('pointerdown', (e) => startDrag(e, g, b));
-    b.addEventListener('click', () => log(`${g.name}：カードをコートへドラッグして装着。`));
+    b.addEventListener('click', () => log(`${g.name}：カードをコートへドラッグ。置ける場所が光ります。`));
     els.list.appendChild(b);
   }
 }
@@ -131,11 +130,12 @@ function startDrag(e, g, source) {
   if (running && !ended) return log('試合中は装着できません。リトライ後に配置してください。');
   if (cost() + g.cost > COST_LIMIT) return log(`${g.name}はコスト超過で持てない。`);
   e.preventDefault(); drag = { g, source }; source.classList.add('is-dragging-source');
-  ghost = document.createElement('div'); ghost.className = 'drag-ghost'; ghost.innerHTML = `<span>${g.icon}</span><span><strong>${g.name}</strong><small>${g.label}</small></span>`; document.body.appendChild(ghost);
+  ghost = document.createElement('div'); ghost.className = 'drag-ghost'; ghost.innerHTML = `<span>${g.icon}</span><span><strong>${g.name}</strong><small>${g.label}へ置く</small></span>`; document.body.appendChild(ghost);
   moveGhost(e.clientX, e.clientY); window.addEventListener('pointermove', dragMove, { passive: false }); window.addEventListener('pointerup', dragEnd, { once: true });
+  log(`${g.name}をドラッグ中。光っている場所に置けます。`);
 }
 function dragMove(e) { if (!drag) return; e.preventDefault(); moveGhost(e.clientX, e.clientY); const p = fieldPoint(e.clientX, e.clientY); currentDrop = p ? dropTarget(p, drag.g) : null; draw(); }
-function dragEnd(e) { window.removeEventListener('pointermove', dragMove); if (!drag) return; const p = fieldPoint(e.clientX, e.clientY); const t = p ? dropTarget(p, drag.g) : null; if (t?.ok) addPlacement(drag.g.id, t.target); else log(`${drag.g.name}はそこには装着できない。`); drag.source.classList.remove('is-dragging-source'); ghost?.remove(); drag = null; ghost = null; currentDrop = null; draw(); }
+function dragEnd(e) { window.removeEventListener('pointermove', dragMove); if (!drag) return; const p = fieldPoint(e.clientX, e.clientY); const t = p ? dropTarget(p, drag.g) : null; if (t?.ok) addPlacement(drag.g.id, t.target); else log(`${drag.g.name}はそこには装着できない。光る場所へ置いてください。`); drag.source.classList.remove('is-dragging-source'); ghost?.remove(); drag = null; ghost = null; currentDrop = null; draw(); }
 function moveGhost(x, y) { if (ghost) { ghost.style.left = `${x}px`; ghost.style.top = `${y}px`; } }
 function fieldPoint(cx, cy) { const r = canvas.getBoundingClientRect(); if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) return null; return { x: (cx - r.left) / r.width * FIELD.w, y: (cy - r.top) / r.height * FIELD.h }; }
 function kind(p) { if (p.role === 'keeper') return 'keeper'; return p.team === 'enemy' ? 'enemy' : 'ally'; }
@@ -178,13 +178,69 @@ function posts() { ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = '#fff'; 
 function zone(z, label, fill, stroke) { ctx.save(); ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = 4; ctx.setLineDash([12, 8]); rr(z.x, z.y, z.w, z.h, 18); ctx.fill(); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle = stroke; ctx.font = '900 20px system-ui'; ctx.textAlign = 'center'; ctx.fillText(label, z.x + z.w / 2, z.y + z.h / 2 + 7); ctx.restore(); }
 function player(p) { const e = effective(p); const c = p.role === 'keeper' ? ['#ffd36b', '#d49300', '#8c5f00'] : e === 'ally' && p.team === 'enemy' ? ['#bff7da', '#24b86e', '#086a3b'] : p.team === 'ally' ? ['#dce7ff', '#2368f3', '#0f3f9f'] : ['#ffc9c9', '#e23b3b', '#a91515']; shadow(p.x, p.y, p.r * 1.15, p.r * .5, elapsed < p.down ? .12 : .25); ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(elapsed < p.down ? Math.PI / 2 : Math.atan2(ball.y - p.y, ball.x - p.x) + Math.PI / 2); ctx.globalAlpha = elapsed < p.down ? .62 : 1; ctx.fillStyle = c[0]; ctx.strokeStyle = c[1]; ctx.lineWidth = 4; rr(-22, -30, 44, 45, 12); ctx.fill(); ctx.stroke(); ctx.fillStyle = c[2]; ctx.font = '900 15px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(p.role === 'keeper' ? 'GK' : p.no, 0, -8); ctx.fillStyle = '#ffd2a7'; ctx.beginPath(); ctx.arc(0, -39, p.role === 'keeper' ? 12 : 10, 0, Math.PI * 2); ctx.fill(); ctx.restore(); const badges = []; if (has('rocket', (pl) => pl.target.type === 'player' && pl.target.key === key(p))) badges.push('🚀'); if (has('blade', (pl) => pl.target.type === 'player' && pl.target.key === key(p))) badges.push('🗡️'); if (has('convert', (pl) => pl.target.type === 'player' && pl.target.key === key(p)) && elapsed < p.convert) badges.push('🇯🇵'); if (elapsed < p.down) badges.push('💫'); badges.forEach((b, i) => badge(b, p.x + 24 + i * 18, p.y - p.r - 18)); }
 function soccerBall() { shadow(ball.x, ball.y, ball.r * 1.18, ball.r * .5, .28); ctx.save(); ctx.translate(ball.x, ball.y); ctx.rotate(ball.a); ctx.fillStyle = '#f7f7f2'; ctx.strokeStyle = '#111'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, ball.r * 1.16, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0, 0, ball.r * .42, 0, Math.PI * 2); ctx.fill(); ctx.restore(); if (has('iceBall', (p) => p.target.type === 'ball')) badge('🧊', ball.x + 24, ball.y - 26); }
-function hints(g) { ctx.save(); ctx.lineWidth = 4; ctx.setLineDash([9, 7]); const ok = 'rgba(232,255,102,.9)', ng = 'rgba(255,255,255,.22)'; if (g.allowed.includes('ball')) circle(ball.x, ball.y, ball.r + 36, currentDrop?.kind === 'ball' ? ok : ng); for (const p of players) circle(p.x, p.y, p.r + 44, g.allowed.includes(kind(p)) ? ok : ng); if (g.allowed.includes('goal')) { ctx.strokeStyle = currentDrop?.kind === 'goal' ? ok : ng; ctx.strokeRect(goalLeft - 8, 0, goalRight - goalLeft + 16, FIELD.topGoalY + 98); } if (g.allowed.includes('field')) { ctx.strokeStyle = currentDrop?.kind === 'field' ? ok : ng; ctx.strokeRect(34, FIELD.topGoalY + 98, FIELD.w - 68, FIELD.bottomGoalY - FIELD.topGoalY - 154); } ctx.restore(); }
+function hints(g) {
+  ctx.save();
+  ctx.lineWidth = 5;
+  ctx.setLineDash([12, 9]);
+  const valid = 'rgba(232,255,102,.95)';
+  const glow = 'rgba(101,242,164,.22)';
+  const soft = 'rgba(255,255,255,.28)';
+  if (g.allowed.includes('field')) {
+    ctx.fillStyle = 'rgba(101, 242, 164, .10)';
+    ctx.strokeStyle = currentDrop?.kind === 'field' ? valid : 'rgba(101,242,164,.55)';
+    rr(34, FIELD.topGoalY + 98, FIELD.w - 68, FIELD.bottomGoalY - FIELD.topGoalY - 154, 28); ctx.fill(); ctx.stroke();
+    labelBox('コート上に置ける', FIELD.w / 2, FIELD.topGoalY + 150, '#e8ff66');
+    if (currentDrop?.kind === 'field') {
+      const s = ZONE[g.id] ?? { w: 180, h: 110 };
+      const z = { x: currentDrop.target.x - s.w / 2, y: currentDrop.target.y - s.h / 2, w: s.w, h: s.h };
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(232,255,102,.24)'; ctx.strokeStyle = valid; ctx.lineWidth = 7;
+      rr(z.x, z.y, z.w, z.h, 18); ctx.fill(); ctx.stroke();
+      cross(currentDrop.target.x, currentDrop.target.y, 42, valid);
+      labelBox('ここに設置', currentDrop.target.x, z.y - 24, '#ffffff');
+    }
+  }
+  if (g.allowed.includes('goal')) targetRect(goalLeft - 16, 0, goalRight - goalLeft + 32, FIELD.topGoalY + 100, '相手ゴール', currentDrop?.kind === 'goal');
+  if (g.allowed.includes('ball')) targetCircle(ball.x, ball.y, ball.r + 58, 'ボール', currentDrop?.kind === 'ball');
+  for (const p of players) {
+    const k = kind(p);
+    if (!g.allowed.includes(k)) continue;
+    targetCircle(p.x, p.y, p.r + 50, targetName(k, p), currentDrop?.target?.key === key(p));
+  }
+  labelBox(`${g.icon} ${g.name}：${g.label}へ配置`, FIELD.w / 2, FIELD.h - 62, '#e8ff66');
+  ctx.restore();
+
+  function targetCircle(x, y, r, label, active) {
+    ctx.save();
+    ctx.setLineDash([12, 9]);
+    ctx.fillStyle = active ? glow : 'rgba(232,255,102,.08)';
+    ctx.strokeStyle = active ? valid : soft;
+    ctx.lineWidth = active ? 8 : 5;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    labelBox(label, x, y - r - 18, active ? '#ffffff' : '#dfffe9');
+    if (active) cross(x, y, 32, valid);
+    ctx.restore();
+  }
+  function targetRect(x, y, w, h, label, active) {
+    ctx.save();
+    ctx.setLineDash([12, 9]);
+    ctx.fillStyle = active ? glow : 'rgba(232,255,102,.08)';
+    ctx.strokeStyle = active ? valid : soft;
+    ctx.lineWidth = active ? 8 : 5;
+    rr(x, y, w, h, 20); ctx.fill(); ctx.stroke();
+    labelBox(label, x + w / 2, y + h + 28, active ? '#ffffff' : '#dfffe9');
+    ctx.restore();
+  }
+}
+function targetName(k, p) { if (k === 'keeper') return p.team === 'enemy' ? '敵GK' : '味方GK'; if (k === 'enemy') return `敵${p.no}番`; return `味方${p.no}番`; }
+function labelBox(t, x, y, color) { ctx.save(); ctx.setLineDash([]); ctx.font = '900 22px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const m = ctx.measureText(t); ctx.fillStyle = 'rgba(2,14,9,.72)'; rr(x - m.width / 2 - 14, y - 17, m.width + 28, 34, 17); ctx.fill(); ctx.fillStyle = color; ctx.fillText(t, x, y + 1); ctx.restore(); }
+function cross(x, y, r, stroke) { ctx.save(); ctx.setLineDash([]); ctx.strokeStyle = stroke; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x + r, y); ctx.moveTo(x, y - r); ctx.lineTo(x, y + r); ctx.stroke(); ctx.restore(); }
 function drawHitbox() { circle(ball.x, ball.y, ball.r, '#fffb91'); players.forEach((p) => circle(p.x, p.y, p.r, '#fffb91')); }
 function shadow(x, y, rx, ry, a) { ctx.fillStyle = `rgba(0,0,0,${a})`; ctx.beginPath(); ctx.ellipse(x + 5, y + 8, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
 function badge(t, x, y) { ctx.fillStyle = 'rgba(2,14,10,.78)'; ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fill(); text(t, x, y + 1, 16); }
 function text(t, x, y, s) { ctx.font = `${s}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff'; ctx.fillText(t, x, y); }
 function circle(x, y, r, stroke) { ctx.strokeStyle = stroke; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke(); }
-function rr(x, y, w, h, r) { const m = Math.min(r, w / 2, h / 2); ctx.beginPath(); ctx.moveTo(x + m, y); ctx.lineTo(x + w - m, y); ctx.quadraticCurveTo(x + w, y, x + w, y + m); ctx.lineTo(x + w, y + h - m); ctx.quadraticCurveTo(x + w, y + h, x + w - m, y + h); ctx.lineTo(x + m, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - m); ctx.lineTo(x, y + m); ctx.quadraticCurveTo(x, y, x + m, y); }
+function rr(x, y, w, h, r) { const m = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2); ctx.beginPath(); ctx.moveTo(x + m, y); ctx.lineTo(x + w - m, y); ctx.quadraticCurveTo(x + w, y, x + w, y + m); ctx.lineTo(x + w, y + h - m); ctx.quadraticCurveTo(x + w, y + h, x + w - m, y + h); ctx.lineTo(x + m, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - m); ctx.lineTo(x, y + m); ctx.quadraticCurveTo(x, y, x + m, y); }
 function updateDebug() { els.debug.textContent = [`state: ${els.state.textContent}`, `time: ${elapsed.toFixed(2)}s`, `ball: x=${ball.x.toFixed(1)}, y=${ball.y.toFixed(1)}`, `velocity: ${mag(ball).toFixed(3)} (${ball.vx.toFixed(2)}, ${ball.vy.toFixed(2)})`, `field: ${FIELD.w}x${FIELD.h}`, `goal x: ${goalLeft.toFixed(0)}-${goalRight.toFixed(0)}`, `cost: ${cost()}/${COST_LIMIT}`, `placements: ${placements.length}`, `engine: built-in deterministic 2D`, `hitbox: ${hitbox ? 'ON' : 'OFF'}`].join('\n'); }
 
 function loop(now = performance.now()) { const delta = Math.min((now - lastTs) / 1000, .1); lastTs = now; if (running && !ended) { acc += delta * SPEEDS[speedIndex]; while (acc >= 1 / 60) { step(1 / 60); acc -= 1 / 60; if (ended) break; } } updateHud(); draw(); updateDebug(); requestAnimationFrame(loop); }
