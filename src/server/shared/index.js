@@ -2,6 +2,8 @@ import { createServer } from "node:http";
 import { createApp } from "../app.js";
 import { createIO } from "../socket.js";
 import { mountBungeiRoutes } from "../bungei/index.js";
+import { mountBungeiBgmRoutes } from "../bungei/bgm.js";
+import { mountBungeiResponseSanitizer } from "../bungei/response-sanitizer.js";
 import { mountUserRoutes } from "../userRoutes.js";
 import { mountSecretToolRoutes } from "../secret-tool/index.js";
 import { mountOriginMagicCircleRoutes } from "../origin-magic-circle/index.js";
@@ -13,6 +15,8 @@ export function createServerContext() {
   const io = createIO(httpServer);
 
   mountUserRoutes(app);
+  mountBungeiResponseSanitizer(app);
+  mountBungeiBgmRoutes(app);
   mountBungeiRoutes(app);
   mountSecretToolRoutes(app, io);
   mountOriginMagicCircleRoutes(app, io);
