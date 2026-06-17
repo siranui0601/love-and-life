@@ -365,7 +365,16 @@ input[type="range"] {
   border-radius: 15px;
   background: rgba(255,255,255,0.13);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 8px 18px rgba(0,0,0,0.24);
-  font-size: 1.55rem;
+  font-size: 1.38rem;
+  line-height: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.gimmick-icon.multi-icon {
+  font-size: 1.02rem;
+  letter-spacing: -0.22em;
+  padding-right: 0.22em;
 }
 
 .gimmick-main { min-width: 0; }
