@@ -41,6 +41,21 @@
             >
               タイトル画面に戻る
             </button>
+            <button
+  class="action-button action-button--secondary"
+  id="creditButton"
+  type="button"
+>
+  クレジット
+</button>
+
+<button
+  class="action-button action-button--secondary"
+  id="bgmToggleButton"
+  type="button"
+>
+  BGM ON
+</button>
           </div>
         </div>
       </section>
@@ -113,6 +128,8 @@
         </div>
       </div>
     </main>
+
+    <audio id="dailyBgm" preload="auto" loop src="/api/bungei/bgm/daily"></audio>
 
     <div class="curtain" id="curtain" aria-hidden="true">
       <div class="curtain__bow"></div>
