@@ -2,57 +2,108 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="refresh" content="0; url=/noHand_soccer_stage1/">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>サッカーは、素手以外セーフ</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #03110b;
-      color: #f7fff8;
-    }
-    body {
-      min-height: 100dvh;
-      margin: 0;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at 15% 0%, rgba(101, 255, 176, 0.25), transparent 32%),
-        radial-gradient(circle at 86% 8%, rgba(232, 255, 102, 0.16), transparent 25%),
-        linear-gradient(145deg, #071b11 0%, #020806 64%, #000 100%);
-    }
-    main {
-      width: min(92vw, 520px);
-      border: 1px solid rgba(225, 255, 236, 0.18);
-      border-radius: 28px;
-      padding: 28px;
-      background: rgba(7, 28, 20, 0.78);
-      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255,255,255,0.12);
-      text-align: center;
-    }
-    h1 { margin: 0 0 12px; font-size: clamp(1.4rem, 7vw, 2.3rem); }
-    p { color: #b8d6c7; line-height: 1.7; }
-    a {
-      display: inline-block;
-      margin-top: 12px;
-      border-radius: 999px;
-      padding: 12px 18px;
-      background: linear-gradient(135deg, #f6ff7a 0%, #7cf1a7 58%, #52d9ff 100%);
-      color: #102016;
-      font-weight: 900;
-      text-decoration: none;
-    }
-  </style>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./stage2.css">
 </head>
 <body>
-  <main>
-    <h1>⚽ サッカーは、素手以外セーフ</h1>
-    <p>ゲーム本体へ移動しています。自動で移動しない場合は下のボタンを押してください。</p>
-    <a href="/noHand_soccer_stage1/">ゲームを開く</a>
+  <header class="stage-header">
+    <div>
+      <p class="eyebrow">STAGE 3 / ドラッグ装着・固定ギミック検証場</p>
+      <h1>⚽ サッカーは、素手以外セーフ</h1>
+    </div>
+    <div class="status-card" aria-label="試合状態">
+      <span id="matchState">読込中</span>
+      <strong id="timer">0.00s</strong>
+    </div>
+  </header>
+
+  <main class="stage-layout stage-layout-stage3">
+    <section class="field-panel stage3-field-panel" aria-label="試合場">
+      <section class="control-card in-field-controls" aria-label="キック設定">
+        <div class="in-field-controls-head">
+          <div>
+            <h2>キックオフ</h2>
+            <p>押したら自動でコートへ寄ります。試合を見ながらすぐ操作できます。</p>
+          </div>
+          <strong class="mini-state" id="miniStateLabel">LOAD</strong>
+        </div>
+        <div class="kick-tuning-grid">
+          <label>
+            角度 <output id="angleValue">0°</output>
+            <input id="angleInput" type="range" min="-35" max="35" value="0">
+          </label>
+          <label>
+            威力 <output id="powerValue">0.021</output>
+            <input id="powerInput" type="range" min="10" max="34" value="21">
+          </label>
+        </div>
+        <div class="button-grid in-field-button-grid">
+          <button id="kickBtn" class="primary">キック！</button>
+          <button id="pauseBtn">一時停止</button>
+          <button id="retryBtn">リトライ</button>
+          <button id="speedBtn">等速</button>
+        </div>
+      </section>
+
+      <section class="gimmick-card in-field-gimmicks" aria-label="固定ギミック">
+        <div class="gimmick-header">
+          <div>
+            <h2>ギミック装着</h2>
+            <p>カードを下のコートへドラッグ。コート・ボール・選手・ゴールの近くに置くと装着できます。</p>
+          </div>
+          <div class="cost-meter" aria-label="コスト">
+            <span>コスト</span>
+            <strong><b id="costUsed">0</b>/<b id="costLimit">30</b></strong>
+          </div>
+        </div>
+        <p id="dragHint" class="drag-hint">横スクロールで素材を選び、カードをそのままコートへ引っ張る。</p>
+        <div id="gimmickList" class="gimmick-list"></div>
+        <div class="installed-panel">
+          <h3>配置済み</h3>
+          <div id="installedList" class="installed-list"></div>
+        </div>
+        <div class="gimmick-actions">
+          <button id="presetBtn" type="button">おすすめ配置</button>
+          <button id="clearGimmicksBtn" type="button">全撤去</button>
+        </div>
+      </section>
+
+      <div class="field-frame" id="fieldFrame">
+        <canvas id="fieldCanvas" width="900" height="1400"></canvas>
+        <div id="resultOverlay" class="result-overlay hidden"></div>
+      </div>
+    </section>
+
+    <aside class="control-panel stage3-info-panel">
+      <section class="coach-card compact-coach-card">
+        <h2>監督メモ</h2>
+        <p>第3段階では、固定ギミックをカードとして持ち、ボール・選手・ゴール・コートへドラッグ装着します。</p>
+        <p>相手選手は高速化済みです。ボールが孤立して待機時間が生まれにくいよう、敵が素早く詰めて自陣ゴールへ蹴り込みます。</p>
+      </section>
+
+      <section class="control-card">
+        <h2>確認用デバッグ</h2>
+        <div class="button-grid compact">
+          <button id="hitboxBtn">当たり判定</button>
+          <button id="forceGoalBtn">強制ゴール</button>
+          <button id="forceOwnGoalBtn">強制失点</button>
+          <button id="stepBtn">1フレーム</button>
+        </div>
+        <pre id="debugText" class="debug-text"></pre>
+      </section>
+
+      <section class="log-card">
+        <h2>発動ログ</h2>
+        <div id="logList" class="log-list"></div>
+      </section>
+    </aside>
   </main>
-  <script>
-    window.location.replace('/noHand_soccer_stage1/');
-  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js" onerror="document.querySelector('#matchState').textContent = '物理エンジン読込失敗';"></script>
+  <script type="module" src="./main.js"></script>
+  <script type="module" src="./stage3-mobile-ux.js"></script>
 </body>
 </html>
