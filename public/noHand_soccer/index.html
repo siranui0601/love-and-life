@@ -19,17 +19,6 @@
       </div>
     </header>
 
-    <section class="play-area" aria-label="試合場">
-      <div class="field-frame" id="fieldFrame">
-        <canvas id="fieldCanvas" width="900" height="1400"></canvas>
-        <div class="field-hud top">
-          <span id="costBadge">COST 0/30</span>
-          <span id="speedBadge">0.5x</span>
-        </div>
-        <div id="resultOverlay" class="result-overlay hidden"></div>
-      </div>
-    </section>
-
     <section class="command-dock" aria-label="キック操作">
       <div class="range-grid">
         <label>
@@ -49,11 +38,22 @@
       </div>
     </section>
 
+    <section class="play-area" aria-label="試合場">
+      <div class="field-frame" id="fieldFrame">
+        <canvas id="fieldCanvas" width="900" height="1400"></canvas>
+        <div class="field-hud top">
+          <span id="costBadge">COST 0/30</span>
+          <span id="speedBadge">0.5x</span>
+        </div>
+        <div id="resultOverlay" class="result-overlay hidden"></div>
+      </div>
+    </section>
+
     <section class="gimmick-dock" aria-label="ギミック装着">
       <div class="dock-head">
         <div>
           <h2>ギミック装着</h2>
-          <p>カードをタップして選択。その後、コート上の光る場所をタップ/なぞって設置します。</p>
+          <p>カードをタップして選択。配置済みのコートギミックはタップして再配置できます。</p>
         </div>
         <div class="cost-meter" aria-label="コスト">
           <span>コスト</span>
@@ -75,8 +75,8 @@
       <summary>監督メモ / デバッグ / ログ</summary>
       <section class="memo-card">
         <h2>監督メモ</h2>
-        <p>ギミックは、ドラッグ前提ではなく「選択→コート上で配置」に変更しました。コート上部や細かいフィールド配置も狙いやすくしています。</p>
-        <p>初期速度は旧0.5倍相当にして、選手とボールの動きを追いやすくしています。</p>
+        <p>キック操作はコートの上部へ移動しました。コート設置系は、配置済みの枠をタップして再配置し、コート外で離すと撤去できます。</p>
+        <p>ダウン中の選手はボールに干渉しないため、倒れている相手にボールが跳ね返される事故を防ぎます。</p>
       </section>
       <section class="debug-card">
         <h2>確認用デバッグ</h2>
