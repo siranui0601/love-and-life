@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>サッカーは、素手以外セーフ - Stage 2 Fixed Gimmicks</title>
+  <title>サッカーは、素手以外セーフ - Stage 3 Drag Attachments</title>
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./stage2.css">
   <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
@@ -11,7 +11,7 @@
 <body>
   <header class="stage-header">
     <div>
-      <p class="eyebrow">STAGE 2 / AIなし・固定ギミック検証場</p>
+      <p class="eyebrow">STAGE 3 / ドラッグ装着・固定ギミック検証場</p>
       <h1>⚽ サッカーは、素手以外セーフ</h1>
     </div>
     <div class="status-card" aria-label="試合状態">
@@ -31,26 +31,31 @@
     <aside class="control-panel">
       <section class="coach-card">
         <h2>監督メモ</h2>
-        <p>第2段階では、中央キックオフから始まり、相手選手が速さとキック力で自陣ゴールを狙います。細工なしでは押し込まれやすい検証場です。</p>
-        <p>上下のゴールは同じ幅の中央ゴールに統一済みです。カードをON/OFFして、ボール・選手・ゴール・コートへ効果が乗るかを確認します。</p>
-        <p>まだドラッグ装着ではありません。第3段階で、この固定ギミック基盤にドラッグUIを載せます。</p>
+        <p>第3段階では、固定ギミックをカードとして持ち、ボール・選手・ゴール・コートへドラッグ装着します。未対応の装着先は試合場上で薄く表示されます。</p>
+        <p>相手選手はさらに高速化済みです。ボールが孤立して待機時間が生まれにくいよう、敵が素早く詰めて自陣ゴールへ蹴り込みます。</p>
+        <p>ショップ・AI生成はまだ未実装です。まずは「生成されたギミックをどこへ貼るか」の操作感を確認します。</p>
       </section>
 
       <section class="gimmick-card" aria-label="固定ギミック">
         <div class="gimmick-header">
           <div>
             <h2>固定ギミック</h2>
-            <p>ONにした分だけコストを消費。上限内なら同系統でも複数利用できる想定です。</p>
+            <p>カードを試合場へドラッグして装着。複数配置できますが、配置ごとにコストを消費します。</p>
           </div>
           <div class="cost-meter" aria-label="コスト">
             <span>コスト</span>
             <strong><b id="costUsed">0</b>/<b id="costLimit">30</b></strong>
           </div>
         </div>
+        <p id="dragHint" class="drag-hint">ギミックカードを長押し/ドラッグして、対応する対象へドロップ。</p>
         <div id="gimmickList" class="gimmick-list"></div>
+        <div class="installed-panel">
+          <h3>配置済み</h3>
+          <div id="installedList" class="installed-list"></div>
+        </div>
         <div class="gimmick-actions">
-          <button id="presetBtn" type="button">おすすめON</button>
-          <button id="clearGimmicksBtn" type="button">全OFF</button>
+          <button id="presetBtn" type="button">おすすめ配置</button>
+          <button id="clearGimmicksBtn" type="button">全撤去</button>
         </div>
       </section>
 

@@ -25,11 +25,22 @@
   margin: 0;
 }
 
-.gimmick-header p {
+.gimmick-header p,
+.drag-hint {
   margin-top: 6px;
   color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.55;
+}
+
+.drag-hint {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px dashed rgba(232, 255, 102, 0.28);
+  border-radius: 14px;
+  background: rgba(232, 255, 102, 0.06);
 }
 
 .cost-meter {
@@ -94,17 +105,13 @@
   color: var(--text);
   text-align: left;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  user-select: none;
+  touch-action: none;
 }
 
-.gimmick-item.is-active {
-  border-color: rgba(232, 255, 102, 0.58);
-  background:
-    radial-gradient(circle at 0% 0%, rgba(232, 255, 102, 0.18), transparent 44%),
-    linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0.035)),
-    rgba(0, 0, 0, 0.18);
-  box-shadow:
-    0 0 22px rgba(232, 255, 102, 0.12),
-    inset 0 1px 0 rgba(255,255,255,0.12);
+.gimmick-item.is-dragging-source {
+  opacity: 0.52;
+  border-color: rgba(107, 231, 255, 0.56);
 }
 
 .gimmick-item.is-locked {
@@ -157,6 +164,66 @@
   text-align: center;
 }
 
+.installed-panel {
+  position: relative;
+  z-index: 1;
+  margin-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 10px;
+}
+
+.installed-panel h3 {
+  margin: 0 0 8px;
+  font-size: 0.86rem;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.installed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 34px;
+}
+
+.installed-empty {
+  color: var(--muted);
+  font-size: 0.78rem;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.18);
+}
+
+.installed-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 9px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  background: rgba(0,0,0,0.2);
+  font-size: 0.78rem;
+}
+
+.installed-item strong {
+  display: block;
+  font-size: 0.82rem;
+}
+
+.installed-item small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.installed-item button {
+  padding: 6px 9px;
+  border-radius: 11px;
+  font-size: 0.76rem;
+}
+
 .gimmick-actions {
   position: relative;
   z-index: 1;
@@ -169,6 +236,46 @@
 .gimmick-actions button {
   padding: 9px 10px;
   font-size: 0.86rem;
+}
+
+.drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  display: grid;
+  grid-template-columns: 38px auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 174px;
+  padding: 8px 10px;
+  border-radius: 17px;
+  border: 1px solid rgba(232, 255, 102, 0.7);
+  background: rgba(7, 28, 20, 0.92);
+  box-shadow: 0 20px 45px rgba(0,0,0,0.45), 0 0 26px rgba(232,255,102,0.15);
+  color: var(--text);
+  backdrop-filter: blur(10px);
+}
+
+.drag-ghost span:first-child {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(255,255,255,0.12);
+  font-size: 1.2rem;
+}
+
+.drag-ghost strong,
+.drag-ghost small {
+  display: block;
+}
+
+.drag-ghost small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 
 @media (max-width: 860px) {
