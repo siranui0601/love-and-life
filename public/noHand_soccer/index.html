@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>サッカーは、素手以外セーフ</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./shop_ext.css">
 </head>
 <body>
   <main class="app-shell">
@@ -92,7 +93,7 @@
         <div class="generate-hero">
           <p class="eyebrow">EMOJI → GIMMICK</p>
           <h2>絵文字を1〜3個、順番つきで混ぜる</h2>
-          <p>同じ並びは同じギミックになります。今は固定ギミックとの照合を行い、未登録の並びは試作ログとして扱います。</p>
+          <p>同じ絵文字も繰り返し投入できます。同じ並びは同じギミックになります。</p>
         </div>
 
         <div class="recipe-builder">
@@ -125,7 +126,7 @@
           <div>
             <p class="eyebrow shop-eyebrow">EMOJI MARKET</p>
             <h2>発想ポイントで素材を買う</h2>
-            <p>棚の絵文字をタップするとカートへ入ります。同じ絵文字は1回の会計で1つまで。</p>
+            <p>棚の絵文字をタップするとカートへ入ります。英語名・日本語名・カテゴリで検索できます。</p>
           </div>
           <div class="point-card">
             <span>発想ポイント</span>
@@ -140,10 +141,15 @@
           </div>
           <div class="cart-action">
             <span>合計 <b id="cartTotal">0</b> pt</span>
-            <button id="buyCartBtn" class="primary" type="button">購入</button>
+            <button id="buyCartBtn" class="primary" type="button">購入へ</button>
             <button id="clearCartBtn" type="button">空にする</button>
           </div>
         </div>
+
+        <label class="shop-search">
+          <span>検索</span>
+          <input id="shopSearchInput" type="search" placeholder="例：ロケット、足、heart、flag" autocomplete="off">
+        </label>
 
         <div id="shopCategoryTabs" class="shop-category-tabs" aria-label="絵文字カテゴリ"></div>
         <div id="emojiShopGrid" class="emoji-shop-grid"></div>
@@ -161,6 +167,23 @@
     <button type="button" class="tab-button" data-tab="generate">🧪<span>生成</span></button>
     <button type="button" class="tab-button" data-tab="shop">🛒<span>ショップ</span></button>
   </nav>
+
+  <div id="purchaseModal" class="purchase-modal hidden" role="dialog" aria-modal="true" aria-labelledby="purchaseTitle">
+    <div class="purchase-card">
+      <p class="eyebrow shop-eyebrow">CHECKOUT</p>
+      <h2 id="purchaseTitle">購入確認</h2>
+      <p class="purchase-lead">この絵文字を購入します。購入後は所持絵文字に追加され、生成で使えるようになります。</p>
+      <div id="purchasePreviewList" class="purchase-preview-list"></div>
+      <div class="purchase-total-row">
+        <span>合計</span>
+        <strong><b id="purchaseTotal">0</b> pt</strong>
+      </div>
+      <div class="purchase-buttons">
+        <button id="cancelPurchaseBtn" type="button">戻る</button>
+        <button id="confirmPurchaseBtn" class="primary" type="button">購入確定</button>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="./app.js"></script>
 </body>
