@@ -134,6 +134,12 @@
     </div>
   </div>
 
+  <script>
+    // app.js is an ES module and the shop tab currently stores its selected category
+    // through the global identifier `shopCategory`. Initialize that browser-global
+    // before loading the module so Safari does not stop the entire 3D render loop.
+    var shopCategory = 'すべて';
+  </script>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
