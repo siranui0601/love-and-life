@@ -1,18 +1,23 @@
 # noHand soccer UX rebuild notes
 
-This branch focuses on usability after the first pitagora prototype.
+This prototype prioritizes first-run usability.
 
-## Main changes
+## Current onboarding design
 
-- First view is now intentionally minimal: venue, ball, goal, and kickoff.
-- The generation screen is locked until the first fall/tutorial moment.
-- Tutorial flow now guides the player through kickoff, failure, generation, placement, editing, and retry.
-- Gimmick placement is drag-first: drag a gimmick card onto the court, drag placed objects to move, and drag the round handle to rotate.
-- Field emojis no longer use large circular backgrounds that can be mistaken for placed objects.
-- Own-goal visuals are now red hazard gates, and failure uses a modal instead of tiny status text.
-- Commentary/log UI has been removed from the primary interface.
+- The first screen only explains the core action: press kickoff and guide the ball into the yellow goal.
+- Tutorial mode starts with only the ball and the first goal. Field emojis and own-goals stay hidden until after the first successful goal.
+- The first fall unlocks the generation tab and explains why gimmicks are needed.
+- A generated gimmick returns the player to the venue and teaches drag placement.
+- When the first goal is cleared, the ball returns to the start, a new goal appears, the camera shows it, then field emojis appear with an explanation.
+
+## Interaction model
+
+- Kickoff mode: the ball is moving and placement is disabled.
+- Non-kickoff mode: gimmicks can be placed, moved, and rotated directly on the court.
+- There is no separate edit button; being outside kickoff is the edit state.
+- Field emojis are materials. The ball collects them by touching them.
 
 ## Still prototype
 
 - The AI bridge is still represented by deterministic local template generation.
-- Physics values and goal progression need tuning after phone testing.
+- Physics values and goal progression need phone testing.
