@@ -2,95 +2,70 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>サッカーはハンド以外セーフ？</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <main class="game-shell">
-    <section class="title-card" id="titleCard">
-      <p class="eyebrow">NO HAND SOCCER / PITAGORA PROTOTYPE</p>
-      <h1>サッカーは<br><span>ハンド以外セーフ？</span></h1>
-      <p class="lead">
-        絵文字3つで合法ギミックを作り、ボールを落とさず全ゴールをくぐらせろ。
-        ハンド以外は、だいたい審議中。
-      </p>
-      <div class="title-actions">
-        <button id="startBtn" class="primary-btn" type="button">キックオフ</button>
-        <button id="demoBtn" class="soft-btn" type="button">おすすめ配置</button>
+  <main class="app" id="app">
+    <header class="topbar">
+      <div class="brand"><span>⚽</span><b>ハンド以外セーフ？</b></div>
+      <div class="mini-score" id="miniScore"><span id="roundLabel">R1</span><span id="goalLabel">0/1</span></div>
+    </header>
+
+    <section class="screen screen-venue is-active" id="venueScreen" aria-label="会場">
+      <div class="field-card">
+        <div class="field-header">
+          <p id="fieldHint">キックオフを押して、まずは何が起きるか見よう。</p>
+          <button class="ghost-btn" id="centerBtn" type="button">中央</button>
+        </div>
+        <div class="canvas-shell" id="canvasShell">
+          <canvas id="gameCanvas" width="900" height="1180"></canvas>
+          <div class="field-help" id="fieldHelp" hidden></div>
+        </div>
+        <div class="venue-actions">
+          <button class="primary-btn" id="kickBtn" type="button">キックオフ</button>
+          <button class="soft-btn" id="editBtn" type="button">編集</button>
+        </div>
       </div>
-      <div class="rule-strip" aria-label="ルール">
-        <span>🥅 全ゴール通過で次ラウンド</span>
-        <span>🧪 絵文字3つで生成</span>
-        <span>☠️ 赤ゴールは即終了</span>
+
+      <div class="dock" id="gimmickDock" hidden>
+        <div class="dock-head"><b>ギミック</b><span>カードをドラッグして配置</span></div>
+        <div class="dock-list" id="dockList"></div>
       </div>
     </section>
 
-    <section class="play-layout" aria-label="ゲーム画面">
-      <section class="score-strip">
-        <div><span>ROUND</span><strong id="roundValue">1</strong></div>
-        <div><span>GOALS</span><strong id="goalValue">0/1</strong></div>
-        <div><span>EMOJI</span><strong id="emojiValue">0</strong></div>
-        <div><span>PHASE</span><strong id="phaseValue">編集</strong></div>
-      </section>
-
-      <section class="pitch-card">
-        <div class="pitch-head">
-          <div>
-            <p class="coach-line" id="coachLine">まずは試走。何もしなければ落ちます。</p>
-            <p class="sub-line" id="subLine">編集中はギミックをタップして選び、ピッチをタップして配置できます。</p>
-          </div>
-          <button id="resetBtn" class="mini-btn" type="button">最初から</button>
-        </div>
-
-        <div class="canvas-wrap">
-          <canvas id="gameCanvas" width="900" height="1180" aria-label="ピタゴラサッカー盤面"></canvas>
-        </div>
-
-        <div class="action-row">
-          <button id="runBtn" class="primary-btn" type="button">試走する</button>
-          <button id="editBtn" class="soft-btn" type="button">編集</button>
-          <button id="rewardBtn" class="soft-btn" type="button">絵文字+3</button>
-        </div>
-      </section>
-
-      <aside class="control-card" aria-label="操作パネル">
-        <section class="panel-section">
-          <div class="section-title">
-            <span>絵文字インベントリ</span>
-            <small>3つ選択</small>
-          </div>
-          <div id="emojiInventory" class="emoji-grid"></div>
-        </section>
-
-        <section class="panel-section">
-          <div class="section-title">
-            <span>選択中</span>
-            <small id="selectionHint">0/3</small>
-          </div>
-          <div id="selectedTray" class="selected-tray"></div>
-          <button id="generateBtn" class="primary-btn full" type="button">ギミック生成</button>
-        </section>
-
-        <section class="panel-section">
-          <div class="section-title">
-            <span>ギミック</span>
-            <small>置く / 回す / しまう</small>
-          </div>
-          <div id="gimmickList" class="gimmick-list"></div>
-        </section>
-
-        <section class="panel-section log-panel">
-          <div class="section-title">
-            <span>実況</span>
-            <small>これはサッカーです</small>
-          </div>
-          <div id="logList" class="log-list"></div>
-        </section>
-      </aside>
+    <section class="screen screen-generate" id="generateScreen" aria-label="生成">
+      <div class="generate-card">
+        <div class="step-badge" id="generateStepBadge">STEP 1</div>
+        <h1>絵文字を3つ選ぶ</h1>
+        <p id="generateHint">好きな絵文字を3つタップ。順番によってギミックの性格が変わる。</p>
+        <div class="selected-row" id="selectedRow"></div>
+        <button class="primary-btn full" id="generateBtn" type="button">ギミック生成</button>
+      </div>
+      <div class="emoji-card-panel">
+        <div class="panel-title"><b>素材絵文字</b><span id="emojiCountLabel">0個</span></div>
+        <div class="emoji-grid" id="emojiGrid"></div>
+      </div>
     </section>
   </main>
 
+  <nav class="bottom-nav" id="bottomNav" hidden>
+    <button type="button" class="tab-btn is-active" data-tab="venue">🏟️<span>会場</span></button>
+    <button type="button" class="tab-btn is-locked" data-tab="generate">🧪<span>生成</span></button>
+  </nav>
+
+  <div class="modal is-open" id="modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <p class="modal-kicker" id="modalKicker">KICK OFF</p>
+      <h2 id="modalTitle">今宵はサッカー！</h2>
+      <p id="modalText">ボールをゴールへ繰り出せ⚽️ なお、手を使わなければだいたい審議中です。</p>
+      <button class="primary-btn full" id="modalPrimary" type="button">キックオフ</button>
+      <button class="text-btn" id="modalSecondary" type="button" hidden>閉じる</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
