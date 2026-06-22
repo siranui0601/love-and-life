@@ -10,27 +10,28 @@
   <main class="app" id="app">
     <header class="topbar">
       <div class="brand"><span>⚽</span><b>ハンド以外セーフ？</b></div>
-      <div class="mini-score" id="miniScore"><span id="roundLabel">R1</span><span id="goalLabel">0/1</span></div>
+      <div class="mini-score"><span id="roundLabel">R1</span><span id="goalLabel">0/1</span></div>
     </header>
+
+    <section class="coach" id="coachBar">
+      <b id="coachTitle">ボールを黄色いゴールへ入れよう</b>
+      <p id="coachText">まずは下のキックオフを押す。ボールがどう動くか見ればOK。</p>
+    </section>
 
     <section class="screen screen-venue is-active" id="venueScreen" aria-label="会場">
       <div class="field-card">
-        <div class="field-header">
-          <p id="fieldHint">キックオフを押して、まずは何が起きるか見よう。</p>
-          <button class="ghost-btn" id="centerBtn" type="button">中央</button>
-        </div>
         <div class="canvas-shell" id="canvasShell">
           <canvas id="gameCanvas" width="900" height="1180"></canvas>
           <div class="field-help" id="fieldHelp" hidden></div>
         </div>
         <div class="venue-actions">
           <button class="primary-btn" id="kickBtn" type="button">キックオフ</button>
-          <button class="soft-btn" id="editBtn" type="button">編集</button>
+          <button class="ghost-btn" id="centerBtn" type="button">全体を見る</button>
         </div>
       </div>
 
       <div class="dock" id="gimmickDock" hidden>
-        <div class="dock-head"><b>ギミック</b><span>カードをドラッグして配置</span></div>
+        <div class="dock-head"><b>ギミック</b><span>カードをコートへドラッグ</span></div>
         <div class="dock-list" id="dockList"></div>
       </div>
     </section>
@@ -39,7 +40,7 @@
       <div class="generate-card">
         <div class="step-badge" id="generateStepBadge">STEP 1</div>
         <h1>絵文字を3つ選ぶ</h1>
-        <p id="generateHint">好きな絵文字を3つタップ。順番によってギミックの性格が変わる。</p>
+        <p id="generateHint">素材絵文字を3つタップ。選んだ3つから、ボールを助けるギミックを作る。</p>
         <div class="selected-row" id="selectedRow"></div>
         <button class="primary-btn full" id="generateBtn" type="button">ギミック生成</button>
       </div>
@@ -59,8 +60,8 @@
     <div class="modal-card">
       <p class="modal-kicker" id="modalKicker">KICK OFF</p>
       <h2 id="modalTitle">今宵はサッカー！</h2>
-      <p id="modalText">ボールをゴールへ繰り出せ⚽️ なお、手を使わなければだいたい審議中です。</p>
-      <button class="primary-btn full" id="modalPrimary" type="button">キックオフ</button>
+      <p id="modalText">ボールを黄色いゴールへ入れるゲームです。まずは会場を見て、下のキックオフを押そう⚽️</p>
+      <button class="primary-btn full" id="modalPrimary" type="button">会場を見る</button>
       <button class="text-btn" id="modalSecondary" type="button" hidden>閉じる</button>
     </div>
   </div>
