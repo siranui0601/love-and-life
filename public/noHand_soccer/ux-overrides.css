@@ -1,0 +1,41 @@
+.dock-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(155px,1fr));
+  gap:10px;
+  align-items:stretch;
+  overflow:visible;
+}
+
+.gimmick-card{
+  min-width:0;
+  flex:auto;
+}
+
+.gimmick-card.is-selected{
+  background:rgba(232,255,89,.14);
+}
+
+.gimmick-meta{
+  color:#e6f4e8;
+  font-size:.82rem;
+  font-weight:900;
+}
+
+.gimmick-help{
+  line-height:1.35;
+}
+
+@media(max-width:420px){
+  .dock-list{
+    grid-template-columns:1fr 1fr;
+  }
+  .gimmick-card{
+    padding:9px;
+  }
+  .gimmick-name{
+    font-size:.88rem;
+  }
+  .gimmick-help{
+    font-size:.72rem;
+  }
+}
