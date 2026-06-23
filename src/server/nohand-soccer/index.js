@@ -1,40 +1,33 @@
 import { genWithFallback, stripJsonFence } from "../../foundation/gemini.js";
 
-const ALLOWED_TEMPLATES = new Set([
-  "BOUNCE",
-  "LAUNCH",
-  "FLOW",
-  "SHAPE",
-  "WARP",
-  "ATTACH",
-  "ROTATE",
-  "CARRY",
-  "PHASE",
-  "SWITCH",
-]);
+const EFFECT_TYPES = [
+  "impulse",
+  "bounce",
+  "flow",
+  "attract",
+  "repel",
+  "lift",
+  "dampen",
+  "curve",
+  "platform",
+  "rotate",
+  "portal",
+  "phase",
+];
 
-const TEMPLATE_GUIDE = {
-  BOUNCE: "反発。触れたボールを強く跳ね返す。バンパー、トランポリン、太鼓など。",
-  LAUNCH: "発射。触れたボールを矢印方向へ飛ばす。大砲、ロケット、キック装置など。",
-  FLOW: "風・流れ。範囲内のボールを継続的に押す。送風機、竜巻、水流など。",
-  SHAPE: "地形。坂や板としてボールの進路を変える。すべり台、壁、レールなど。",
-  WARP: "ワープ。入口に触れたボールを別地点へ逃がす。扉、穴、ポータルなど。",
-  ATTACH: "糸・連結。近くのボールをゆるく引き寄せる。糸、クモの巣、鎖など。",
-  ROTATE: "回転。回る棒や羽根でボールを弾く。歯車、扇、時計など。",
-  CARRY: "運搬。乗ったボールを少し運ぶ。リフト、雲、鳥、台車など。",
-  PHASE: "透過・幽霊。触れたボールを少し浮かせたり逃がす。幽霊門、透明化など。",
-  SWITCH: "切替。近くのギミックの向きを変える。ボタン、レバー、信号など。",
-};
+const SHAPES = ["point", "line", "area", "gate", "fan", "platform"];
 
-function localFallback(emojis = [], fallbackTemplate = "BOUNCE") {
-  const template = ALLOWED_TEMPLATES.has(fallbackTemplate) ? fallbackTemplate : "BOUNCE";
-  return {
-    name: `合法${emojis.join("")}`.slice(0, 24),
-    flavor: `${emojis.join("")}を使った、審議中のサッカー装置。`,
-    template,
-    visualLabel: template === "LAUNCH" ? "大砲" : template === "FLOW" ? "送風機" : template === "SHAPE" ? "坂" : "装置",
-    shortEffect: TEMPLATE_GUIDE[template].split("。")[1] || "ボールの動きを変える。",
-  };
+function hash(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function pick(arr, n) {
+  return arr[Math.abs(Number(n) || 0) % arr.length];
 }
 
 function normalizeString(value, fallback, maxLength) {
@@ -42,58 +35,98 @@ function normalizeString(value, fallback, maxLength) {
   return text.slice(0, maxLength);
 }
 
+function normalizeNumber(value, fallback, min, max) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+function normalizeEffectType(type, fallback = "impulse") {
+  const raw = String(type || "").toLowerCase();
+  if (EFFECT_TYPES.includes(raw)) return raw;
+  if (/launch|kick|shoot|impulse|push|blast|発射|蹴|飛|押/.test(raw)) return "impulse";
+  if (/bounce|jump|spring|反発|跳|弾/.test(raw)) return "bounce";
+  if (/wind|flow|current|stream|風|流/.test(raw)) return "flow";
+  if (/attract|pull|magnet|suck|吸|引|磁/.test(raw)) return "attract";
+  if (/repel|away|pushout|反|退|離/.test(raw)) return "repel";
+  if (/lift|float|up|cloud|浮|上|持/.test(raw)) return "lift";
+  if (/slow|stop|dampen|brake|減速|止/.test(raw)) return "dampen";
+  if (/curve|bend|spin|swerve|曲|偏/.test(raw)) return "curve";
+  if (/platform|slope|wall|rail|line|坂|壁|板|床|レール/.test(raw)) return "platform";
+  if (/rotate|turn|gear|回/.test(raw)) return "rotate";
+  if (/portal|warp|teleport|door|ワープ|扉|穴/.test(raw)) return "portal";
+  if (/phase|ghost|pass|透|幽/.test(raw)) return "phase";
+  return fallback;
+}
+
+function normalizeShape(shape, effects) {
+  const raw = String(shape || "").toLowerCase();
+  if (SHAPES.includes(raw)) return raw;
+  if (effects.some((effect) => effect.type === "platform" || effect.type === "rotate")) return "line";
+  if (effects.some((effect) => effect.type === "portal" || effect.type === "phase")) return "gate";
+  if (effects.some((effect) => effect.type === "flow" || effect.type === "attract" || effect.type === "repel" || effect.type === "lift")) return "area";
+  return "point";
+}
+
+function localFallback(emojis = []) {
+  const seed = hash(emojis.join("|"));
+  const first = pick(EFFECT_TYPES, seed);
+  const second = pick(EFFECT_TYPES.filter((type) => type !== first), seed >>> 4);
+  return {
+    name: `審議中${emojis.join("")}`.slice(0, 24),
+    flavor: `${emojis.join("")}から生まれたボール細工。`,
+    visualLabel: pick(["装置", "細工", "仕掛け", "ゲート", "足場", "流れ"], seed >>> 7),
+    shortEffect: "触れたボールの動きを変える。",
+    shape: "point",
+    effects: [
+      { type: first, strength: 0.55, range: 0.55, direction: "angle" },
+      { type: second, strength: 0.32, range: 0.42, direction: "angle" },
+    ],
+  };
+}
+
+function normalizeEffects(rawEffects, fallbackEffects) {
+  const list = Array.isArray(rawEffects) ? rawEffects : [];
+  const normalized = list.slice(0, 4).map((effect, index) => {
+    const fallback = fallbackEffects[index] || fallbackEffects[0] || { type: "impulse", strength: 0.5, range: 0.5, direction: "angle" };
+    return {
+      type: normalizeEffectType(effect?.type, fallback.type),
+      strength: normalizeNumber(effect?.strength, fallback.strength ?? 0.5, 0.05, 1),
+      range: normalizeNumber(effect?.range, fallback.range ?? 0.5, 0.05, 1),
+      direction: normalizeString(effect?.direction, fallback.direction || "angle", 18),
+    };
+  }).filter((effect) => effect.type);
+  return normalized.length ? normalized : fallbackEffects;
+}
+
 function normalizeResult(raw, fallback) {
-  const template = ALLOWED_TEMPLATES.has(raw?.template) ? raw.template : fallback.template;
+  const effects = normalizeEffects(raw?.effects, fallback.effects);
   return {
     name: normalizeString(raw?.name, fallback.name, 24),
     flavor: normalizeString(raw?.flavor, fallback.flavor, 80),
-    template,
     visualLabel: normalizeString(raw?.visualLabel, fallback.visualLabel, 12),
-    shortEffect: normalizeString(raw?.shortEffect, fallback.shortEffect, 34),
+    shortEffect: normalizeString(raw?.shortEffect, fallback.shortEffect, 42),
+    shape: normalizeShape(raw?.shape, effects),
+    effects,
   };
 }
 
 export function mountNoHandSoccerRoutes(app) {
   app.post("/api/nohand-soccer/gimmick", async (req, res) => {
     const emojis = Array.isArray(req.body?.emojis) ? req.body.emojis.slice(0, 3).map(String) : [];
-    const fallback = localFallback(emojis, req.body?.fallbackTemplate);
 
     if (emojis.length !== 3 || emojis.some((emoji) => !emoji.trim())) {
       return res.status(400).json({ error: "emojis must contain exactly 3 items." });
     }
 
-    const prompt = `
-あなたは物理パズルゲーム「サッカーはハンド以外セーフ？」のギミック設計AIです。
-プレイヤーが選んだ絵文字3つから、ボールをゴールへ導く設置物を1つ作ってください。
-
-重要方針:
-- ユーザビリティ最優先。プレイヤーが一目で効果を理解できる名前と説明にする。
-- ふざけた味は出してよいが、効果説明は短く具体的にする。
-- 無限加速、永久ワープ、永続生成、即クリア、スコア直接加算は禁止。
-- 物理数値はシステム側で決めるので、数値を書かない。
-- template は必ず下記のいずれか1つ。
-
-テンプレート:
-${Object.entries(TEMPLATE_GUIDE).map(([key, desc]) => `- ${key}: ${desc}`).join("\n")}
-
-選択絵文字: ${emojis.join(" ")}
-
-JSONのみ返してください。Markdown禁止。
-形式:
-{
-  "name": "12文字前後のギミック名",
-  "flavor": "1文だけの短い説明",
-  "template": "BOUNCE等の許可テンプレート",
-  "visualLabel": "大砲、坂、送風機など見た目を表す短い名詞",
-  "shortEffect": "触れると何が起きるかを短く説明"
-}
-`.trim();
+    const fallback = localFallback(emojis);
+    const prompt = `絵文字3つから、ボールを動かすギミックを生成。絵文字:${emojis.join(" ")}。JSONのみ:{"name":"","flavor":"","visualLabel":"","shortEffect":"","shape":"point|line|area|gate|fan|platform","effects":[{"type":"","strength":0.5,"range":0.5,"direction":"angle"}]}`;
 
     try {
       const text = await genWithFallback(prompt, {
         generationConfig: {
           responseMimeType: "application/json",
-          temperature: 0.55,
+          temperature: 0.9,
         },
       });
       const parsed = JSON.parse(stripJsonFence(text));
