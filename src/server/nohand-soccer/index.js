@@ -1,4 +1,5 @@
 import { genWithFallback, stripJsonFence } from "../../foundation/gemini.js";
+import { appendNoHandSoccerGimmickEntry } from "../../foundation/sheets.js";
 
 const EFFECT_TYPES = [
   "impulse",
@@ -14,6 +15,36 @@ const EFFECT_TYPES = [
   "portal",
   "phase",
 ];
+
+const EFFECT_LABELS = {
+  impulse: "衝撃",
+  bounce: "反発",
+  flow: "流れ",
+  attract: "引力",
+  repel: "反力",
+  lift: "浮上",
+  dampen: "減速",
+  curve: "曲げ",
+  platform: "足場",
+  rotate: "回転",
+  portal: "転送",
+  phase: "透過",
+};
+
+const EFFECT_SHORT = {
+  impulse: "ボールを勢いよく飛ばす",
+  bounce: "ボールを跳ね返す",
+  flow: "範囲内のボールを流す",
+  attract: "ボールを引き寄せる",
+  repel: "ボールを押しのける",
+  lift: "ボールを浮かせる",
+  dampen: "ボールの勢いを弱める",
+  curve: "ボールの軌道を曲げる",
+  platform: "ボールを受け止める",
+  rotate: "回転してボールを弾く",
+  portal: "ボールを別地点へ逃がす",
+  phase: "ボールをすり抜け気味に浮かせる",
+};
 
 const SHAPES = ["point", "line", "area", "gate", "fan", "platform"];
 
@@ -64,7 +95,7 @@ function normalizeShape(shape, effects) {
   if (SHAPES.includes(raw)) return raw;
   if (effects.some((effect) => effect.type === "platform" || effect.type === "rotate")) return "line";
   if (effects.some((effect) => effect.type === "portal" || effect.type === "phase")) return "gate";
-  if (effects.some((effect) => effect.type === "flow" || effect.type === "attract" || effect.type === "repel" || effect.type === "lift")) return "area";
+  if (effects.some((effect) => ["flow", "attract", "repel", "lift", "curve", "dampen"].includes(effect.type))) return "area";
   return "point";
 }
 
@@ -72,16 +103,17 @@ function localFallback(emojis = []) {
   const seed = hash(emojis.join("|"));
   const first = pick(EFFECT_TYPES, seed);
   const second = pick(EFFECT_TYPES.filter((type) => type !== first), seed >>> 4);
+  const effects = [
+    { type: first, strength: 0.55, range: 0.55, direction: "angle" },
+    { type: second, strength: 0.32, range: 0.42, direction: "angle" },
+  ];
   return {
     name: `審議中${emojis.join("")}`.slice(0, 24),
     flavor: `${emojis.join("")}から生まれたボール細工。`,
     visualLabel: pick(["装置", "細工", "仕掛け", "ゲート", "足場", "流れ"], seed >>> 7),
-    shortEffect: "触れたボールの動きを変える。",
-    shape: "point",
-    effects: [
-      { type: first, strength: 0.55, range: 0.55, direction: "angle" },
-      { type: second, strength: 0.32, range: 0.42, direction: "angle" },
-    ],
+    shortEffect: `${EFFECT_SHORT[first]}＋${EFFECT_SHORT[second]}`.slice(0, 42),
+    shape: normalizeShape("", effects),
+    effects,
   };
 }
 
@@ -99,9 +131,27 @@ function normalizeEffects(rawEffects, fallbackEffects) {
   return normalized.length ? normalized : fallbackEffects;
 }
 
-function normalizeResult(raw, fallback) {
-  const effects = normalizeEffects(raw?.effects, fallback.effects);
+function looksMostlyEnglish(text) {
+  const s = String(text || "").trim();
+  if (!s) return false;
+  const latin = (s.match(/[A-Za-z]/g) || []).length;
+  const jp = (s.match(/[ぁ-んァ-ン一-龥]/g) || []).length;
+  return latin >= 5 && latin > jp * 2;
+}
+
+function japaneseFallbackText(result, emojis) {
+  const effectLabels = result.effects.map((effect) => EFFECT_LABELS[effect.type] || effect.type);
+  const primary = result.effects[0]?.type || "impulse";
   return {
+    name: `${emojis.join("")}の${effectLabels[0] || "細工"}`.slice(0, 24),
+    visualLabel: result.visualLabel && !looksMostlyEnglish(result.visualLabel) ? result.visualLabel : (EFFECT_LABELS[primary] || "装置"),
+    shortEffect: result.effects.map((effect) => EFFECT_SHORT[effect.type] || "ボールを動かす").join("＋").slice(0, 42),
+  };
+}
+
+function normalizeResult(raw, fallback, emojis) {
+  const effects = normalizeEffects(raw?.effects, fallback.effects);
+  const base = {
     name: normalizeString(raw?.name, fallback.name, 24),
     flavor: normalizeString(raw?.flavor, fallback.flavor, 80),
     visualLabel: normalizeString(raw?.visualLabel, fallback.visualLabel, 12),
@@ -109,6 +159,22 @@ function normalizeResult(raw, fallback) {
     shape: normalizeShape(raw?.shape, effects),
     effects,
   };
+  if (looksMostlyEnglish(base.name) || looksMostlyEnglish(base.shortEffect)) {
+    const jp = japaneseFallbackText(base, emojis);
+    return {
+      ...base,
+      name: jp.name,
+      visualLabel: jp.visualLabel,
+      shortEffect: jp.shortEffect,
+      flavor: looksMostlyEnglish(base.flavor) ? `${emojis.join(" ")}から生まれたボール細工。` : base.flavor,
+    };
+  }
+  return base;
+}
+
+function buildSheetDescription(emojis, result) {
+  const effects = result.effects.map((effect) => EFFECT_LABELS[effect.type] || effect.type).join("＋");
+  return `絵文字:${emojis.join(" ")} / ${result.name} / ${result.visualLabel} / ${effects} / ${result.shortEffect}`;
 }
 
 export function mountNoHandSoccerRoutes(app) {
@@ -120,8 +186,9 @@ export function mountNoHandSoccerRoutes(app) {
     }
 
     const fallback = localFallback(emojis);
-    const prompt = `絵文字3つから、ボールを動かすギミックを生成。絵文字:${emojis.join(" ")}。JSONのみ:{"name":"","flavor":"","visualLabel":"","shortEffect":"","shape":"point|line|area|gate|fan|platform","effects":[{"type":"","strength":0.5,"range":0.5,"direction":"angle"}]}`;
+    const prompt = `絵文字3つから、ボールを動かすギミックを生成。必ず日本語。絵文字:${emojis.join(" ")}。JSONのみ:{"name":"","flavor":"","visualLabel":"","shortEffect":"","shape":"point|line|area|gate|fan|platform","effects":[{"type":"","strength":0.5,"range":0.5,"direction":"angle"}]}`;
 
+    let result;
     try {
       const text = await genWithFallback(prompt, {
         generationConfig: {
@@ -130,10 +197,22 @@ export function mountNoHandSoccerRoutes(app) {
         },
       });
       const parsed = JSON.parse(stripJsonFence(text));
-      return res.json(normalizeResult(parsed, fallback));
+      result = normalizeResult(parsed, fallback, emojis);
     } catch (error) {
       console.warn("[noHand-soccer] Gemini gimmick fallback", error);
-      return res.json({ ...fallback, source: "fallback" });
+      result = { ...fallback, source: "fallback" };
     }
+
+    try {
+      await appendNoHandSoccerGimmickEntry({
+        description: buildSheetDescription(emojis, result),
+        emojis,
+        gimmick: result,
+      });
+    } catch (sheetError) {
+      console.warn("[noHand-soccer] sheet append skipped", sheetError);
+    }
+
+    return res.json(result);
   });
 }
