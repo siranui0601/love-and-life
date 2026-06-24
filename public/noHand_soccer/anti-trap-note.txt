@@ -1,2 +1,0 @@
-anti-trap normalization is implemented server-side in src/server/nohand-soccer/index.js.
-Field-style generated gimmicks that are likely to trap the ball now receive towardNextGoal current and speedFloor support motors during normalization.
