@@ -66,13 +66,19 @@ function normalizeEffectType(type, fallback = "impulse") {
   return fallback;
 }
 
-function normalizeShape(shape, effects) {
-  const raw = String(shape || "").toLowerCase();
-  if (SHAPES.includes(raw)) return raw;
+function inferShape(effects) {
   if (effects.some((effect) => effect.type === "platform" || effect.type === "rotate")) return "line";
   if (effects.some((effect) => effect.type === "portal" || effect.type === "phase")) return "gate";
   if (effects.some((effect) => ["flow", "attract", "repel", "lift", "curve", "dampen"].includes(effect.type))) return "area";
   return "point";
+}
+
+function normalizeShape(shape, effects) {
+  const raw = String(shape || "").toLowerCase();
+  const inferred = inferShape(effects);
+  if ((raw === "line" || raw === "platform") && inferred !== "line") return inferred;
+  if (SHAPES.includes(raw)) return raw;
+  return inferred;
 }
 
 function localFallback(emojis = []) {
