@@ -1,4 +1,5 @@
 import { genWithFallback, stripJsonFence } from "../../foundation/gemini.js";
+import { appendNoHandSoccerGimmickLog } from "./sheet-log.js";
 
 const EFFECT_TYPES = [
   "impulse",
@@ -41,6 +42,12 @@ function normalizeNumber(value, fallback, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
+function normalizeJapanese(value, fallback, maxLength) {
+  const text = normalizeString(value, fallback, maxLength);
+  if (/[ぁ-んァ-ン一-龥]/.test(text)) return text;
+  return normalizeString(fallback, "ボールの動きを変える。", maxLength);
+}
+
 function normalizeEffectType(type, fallback = "impulse") {
   const raw = String(type || "").toLowerCase();
   if (EFFECT_TYPES.includes(raw)) return raw;
@@ -64,7 +71,7 @@ function normalizeShape(shape, effects) {
   if (SHAPES.includes(raw)) return raw;
   if (effects.some((effect) => effect.type === "platform" || effect.type === "rotate")) return "line";
   if (effects.some((effect) => effect.type === "portal" || effect.type === "phase")) return "gate";
-  if (effects.some((effect) => effect.type === "flow" || effect.type === "attract" || effect.type === "repel" || effect.type === "lift")) return "area";
+  if (effects.some((effect) => ["flow", "attract", "repel", "lift", "curve", "dampen"].includes(effect.type))) return "area";
   return "point";
 }
 
@@ -102,13 +109,21 @@ function normalizeEffects(rawEffects, fallbackEffects) {
 function normalizeResult(raw, fallback) {
   const effects = normalizeEffects(raw?.effects, fallback.effects);
   return {
-    name: normalizeString(raw?.name, fallback.name, 24),
-    flavor: normalizeString(raw?.flavor, fallback.flavor, 80),
-    visualLabel: normalizeString(raw?.visualLabel, fallback.visualLabel, 12),
-    shortEffect: normalizeString(raw?.shortEffect, fallback.shortEffect, 42),
+    name: normalizeJapanese(raw?.name, fallback.name, 24),
+    flavor: normalizeJapanese(raw?.flavor, fallback.flavor, 80),
+    visualLabel: normalizeJapanese(raw?.visualLabel, fallback.visualLabel, 12),
+    shortEffect: normalizeJapanese(raw?.shortEffect, fallback.shortEffect, 42),
     shape: normalizeShape(raw?.shape, effects),
     effects,
   };
+}
+
+async function logGimmickSafely({ emojis, gimmick, source }) {
+  try {
+    await appendNoHandSoccerGimmickLog({ emojis, gimmick, source });
+  } catch (error) {
+    console.warn("[noHand-soccer] sheet log skipped", error);
+  }
 }
 
 export function mountNoHandSoccerRoutes(app) {
@@ -120,7 +135,7 @@ export function mountNoHandSoccerRoutes(app) {
     }
 
     const fallback = localFallback(emojis);
-    const prompt = `絵文字3つから、ボールを動かすギミックを生成。絵文字:${emojis.join(" ")}。JSONのみ:{"name":"","flavor":"","visualLabel":"","shortEffect":"","shape":"point|line|area|gate|fan|platform","effects":[{"type":"","strength":0.5,"range":0.5,"direction":"angle"}]}`;
+    const prompt = `絵文字3つから、ボールを動かすギミックを生成。日本語で。絵文字:${emojis.join(" ")}。JSONのみ:{"name":"","flavor":"","visualLabel":"","shortEffect":"","shape":"point|line|area|gate|fan|platform","effects":[{"type":"","strength":0.5,"range":0.5,"direction":"angle"}]}`;
 
     try {
       const text = await genWithFallback(prompt, {
@@ -130,10 +145,14 @@ export function mountNoHandSoccerRoutes(app) {
         },
       });
       const parsed = JSON.parse(stripJsonFence(text));
-      return res.json(normalizeResult(parsed, fallback));
+      const gimmick = normalizeResult(parsed, fallback);
+      await logGimmickSafely({ emojis, gimmick, source: "gemini" });
+      return res.json(gimmick);
     } catch (error) {
       console.warn("[noHand-soccer] Gemini gimmick fallback", error);
-      return res.json({ ...fallback, source: "fallback" });
+      const gimmick = { ...fallback, source: "fallback" };
+      await logGimmickSafely({ emojis, gimmick, source: "fallback" });
+      return res.json(gimmick);
     }
   });
 }
