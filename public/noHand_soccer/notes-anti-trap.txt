@@ -1,1 +1,0 @@
-Generated field gimmicks now get outgoing current and speed support when the normalized motor stack looks likely to trap the ball.
