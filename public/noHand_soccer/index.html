@@ -57,6 +57,14 @@
     <button type="button" class="tab-btn is-locked" data-tab="generate">🧪<span>生成</span></button>
   </nav>
 
+  <div class="generate-wait" id="generateWaitOverlay" hidden>
+    <div class="generate-wait-card">
+      <div class="construction-loop" aria-hidden="true"><span>🔨</span><span>⚙️</span><span>✨</span></div>
+      <b>作成中…</b>
+      <p>絵文字からギミックをトンカン工事中。</p>
+    </div>
+  </div>
+
   <div class="modal is-open" id="modal" role="dialog" aria-modal="true">
     <div class="modal-card">
       <p class="modal-kicker" id="modalKicker">KICK OFF</p>
@@ -68,6 +76,7 @@
   </div>
 
   <div class="toast" id="toast" hidden></div>
+  <script src="./generation-wait.js"></script>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
