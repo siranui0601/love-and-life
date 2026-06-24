@@ -68,31 +68,8 @@ let modalAction = null;
 let toastTimer = null;
 
 function freshState() {
-  return {
-    tab: 'venue',
-    tutorial: 'intro',
-    phase: 'ready',
-    round: 1,
-    cameraY: 0,
-    runTime: 0,
-    ball: makeBall(),
-    goals: [{ id: 1, x: 690, y: 360, w: 116, h: 78, done: false, label: 'A' }],
-    ownGoals: [],
-    fieldEmojis: [],
-    inventory: [],
-    selected: [],
-    gimmicks: [],
-    placing: null,
-    focusGimmick: null,
-    nextGimmick: 1,
-    nextGoal: 2,
-    generateUnlocked: false,
-    tabUnlocked: false,
-    gameover: false,
-    last: 0,
-  };
+  return { tab: 'venue', tutorial: 'intro', phase: 'ready', round: 1, cameraY: 0, runTime: 0, ball: makeBall(), goals: [{ id: 1, x: 690, y: 360, w: 116, h: 78, done: false, label: 'A' }], ownGoals: [], fieldEmojis: [], inventory: [], selected: [], gimmicks: [], placing: null, focusGimmick: null, nextGimmick: 1, nextGoal: 2, generateUnlocked: false, tabUnlocked: false, gameover: false, last: 0 };
 }
-
 function makeBall() { return { x: START.x, y: START.y, vx: 0, vy: 0, r: 18, phaseUntil: 0 }; }
 function uid() { return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`; }
 function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i += 1) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -104,127 +81,24 @@ function showHelp(text) { els.fieldHelp.textContent = text; els.fieldHelp.hidden
 function hideHelp() { els.fieldHelp.hidden = true; }
 function showModal(kicker, title, text, primary, action, secondary) { els.modalKicker.textContent = kicker; els.modalTitle.textContent = title; els.modalText.textContent = text; els.modalPrimary.textContent = primary; els.modalSecondary.hidden = !secondary; els.modalSecondary.textContent = secondary || ''; modalAction = action; els.modal.classList.add('is-open'); }
 function closeModal() { els.modal.classList.remove('is-open'); }
-
-async function loadEmojiCatalog() {
-  try {
-    const res = await fetch('./emoji_catalog_full_ja.json', { cache: 'force-cache' });
-    if (!res.ok) return;
-    const data = await res.json();
-    const list = Array.isArray(data) ? data : Object.values(data).flat();
-    const normalized = list.map((item) => (typeof item === 'string' ? item : (item.emoji || item.char || item.symbol || item.unicode || ''))).filter(Boolean);
-    if (normalized.length > 30) emojiPool = normalized;
-  } catch (_) {}
-}
-
-async function boot() {
-  await loadEmojiCatalog();
-  grantEmojis(8);
-  render();
-  fitCameraToGoals();
-  showModal('KICK OFF', '今宵はサッカー！', 'ボールを黄色いゴールへ入れるゲームです。まずは会場を見て、下のキックオフを押そう⚽️', '会場を見る', () => { closeModal(); showHelp('下の「キックオフ」を押すとボールが動きます。黄色いGOAL Aへ入れよう。'); });
-  requestAnimationFrame(loop);
-}
-
+async function loadEmojiCatalog() { try { const res = await fetch('./emoji_catalog_full_ja.json', { cache: 'force-cache' }); if (!res.ok) return; const data = await res.json(); const list = Array.isArray(data) ? data : Object.values(data).flat(); const normalized = list.map((item) => (typeof item === 'string' ? item : (item.emoji || item.char || item.symbol || item.unicode || ''))).filter(Boolean); if (normalized.length > 30) emojiPool = normalized; } catch (_) {} }
+async function boot() { await loadEmojiCatalog(); grantEmojis(8); render(); fitCameraToGoals(); showModal('KICK OFF', '今宵はサッカー！', 'ボールを黄色いゴールへ入れるゲームです。まずは会場を見て、下のキックオフを押そう⚽️', '会場を見る', () => { closeModal(); showHelp('下の「キックオフ」を押すとボールが動きます。黄色いGOAL Aへ入れよう。'); }); requestAnimationFrame(loop); }
 function grantEmojis(n) { for (let i = 0; i < n; i += 1) state.inventory.push({ id: uid(), emoji: pick(emojiPool, hash(`${Date.now()}-${i}-${state.inventory.length}`)) }); }
 function spawnFieldEmojis(n) { const base = hash(`field-${state.round}-${state.fieldEmojis.length}`); for (let i = 0; i < n; i += 1) state.fieldEmojis.push({ id: uid(), emoji: pick(emojiPool, base + i * 37), x: 110 + ((base + i * 91) % 680), y: 250 + ((base + i * 141) % 640), r: 20 }); }
 function setTab(tab) { if (tab === 'generate' && !state.generateUnlocked) { toast('まずキックオフして、細工を解禁しよう'); return; } state.tab = tab; els.venue.classList.toggle('is-active', tab === 'venue'); els.gen.classList.toggle('is-active', tab === 'generate'); document.querySelectorAll('.tab-btn').forEach((button) => button.classList.toggle('is-active', button.dataset.tab === tab)); render(); if (tab === 'venue') fitCameraToGoals(); }
-
-function startRun() {
-  if (state.phase === 'run' || state.phase === 'between') return;
-  state.gameover = false;
-  resetGimmicksToHome();
-  state.phase = 'run';
-  state.runTime = 0;
-  state.ball = makeBall();
-  setCoach('キックオフ中', 'この1回のキックオフで、黄色いゴールを全部くぐろう。');
-  hideHelp();
-  render();
-  fitCameraToGoals();
-}
-
-function trialReset(title, text) {
-  state.phase = 'edit';
-  state.gameover = false;
-  state.runTime = 0;
-  state.ball = makeBall();
-  state.goals.forEach((goal) => { goal.done = false; });
-  resetGimmicksToHome();
-  setCoach(title || '作戦タイム', text || 'ゴールは復活しました。次のキックオフで全ゴール通過を狙おう。');
-  render();
-  fitCameraToGoals();
-}
-
+function startRun() { if (state.phase === 'run' || state.phase === 'between') return; state.gameover = false; resetGimmicksToHome(); state.phase = 'run'; state.runTime = 0; state.ball = makeBall(); setCoach('キックオフ中', 'この1回のキックオフで、黄色いゴールを全部くぐろう。'); hideHelp(); render(); fitCameraToGoals(); }
+function trialReset(title, text) { state.phase = 'edit'; state.gameover = false; state.runTime = 0; state.ball = makeBall(); state.goals.forEach((goal) => { goal.done = false; }); resetGimmicksToHome(); setCoach(title || '作戦タイム', text || 'ゴールは復活しました。次のキックオフで全ゴール通過を狙おう。'); render(); fitCameraToGoals(); }
 function resetAll() { state = freshState(); grantEmojis(8); render(); fitCameraToGoals(); showModal('KICK OFF', '今宵はサッカー！', 'ボールを黄色いゴールへ入れるゲームです。まずは会場を見て、下のキックオフを押そう⚽️', '会場を見る', () => { closeModal(); showHelp('下の「キックオフ」を押すとボールが動きます。黄色いGOAL Aへ入れよう。'); }); }
 function firstFallTutorial() { state.generateUnlocked = true; state.tabUnlocked = true; els.nav.hidden = false; trialReset('落下！このままだと届かない', '下の「生成」タブで絵文字を3つ選び、ボールを助けるギミックを作ろう。'); showModal('作戦タイム', 'そうだ、細工をしよう！', 'このままだとボールは落ちます。生成タブで絵文字を3つ選んで、ゴールへ導くギミックを作ろう。', '生成タブへ', () => { closeModal(); setTab('generate'); }); state.tutorial = 'generate'; }
 function ownGoalReset() { showModal('OWN GOAL', 'オウンゴール！', 'これはその試走の失敗扱い。盤面はそのまま、ゴールだけ復活して作戦タイムに戻ります。', '作戦タイムへ', () => { closeModal(); trialReset('オウンゴール。作戦タイム', '盤面は維持。次のキックオフで全ゴール通過を狙おう。'); }); }
-
-async function generateGimmick() {
-  if (state.selected.length !== 3) { toast('絵文字を3つ選んで！'); return; }
-  const recipe = state.selected.map((item) => item.emoji);
-  const seed = hash(recipe.join('|'));
-  const fallback = buildLocalGimmick(recipe, seed);
-  const generated = await requestGeminiGimmick(recipe, fallback);
-  const gimmick = makeGimmickFromData({ ...fallback, ...generated }, recipe, seed);
-  state.nextGimmick += 1;
-  state.gimmicks.push(gimmick);
-  for (const item of state.selected) { const index = state.inventory.findIndex((owned) => owned.id === item.id); if (index >= 0) state.inventory.splice(index, 1); }
-  state.selected = [];
-  state.placing = gimmick.id;
-  state.focusGimmick = gimmick.id;
-  setTab('venue');
-  setCoach('ギミックを設置しよう', `${gimmick.visualLabel}：${gimmick.shortEffect}`);
-  showHelp(`「${gimmick.name}」を設置できます。下のカードを押したままコートへドラッグ。`);
-  if (state.tutorial === 'generate') { showModal('配置しよう', '会場へ戻った！', '下のギミックカードを押したまま、コートへドラッグして離そう。設置後は本体ドラッグで移動できます。', '配置する', () => closeModal()); state.tutorial = 'place'; }
-  render();
-  fitCameraToGoals();
-}
-
-function makeGimmickFromData(data, recipe, seed) {
-  const motors = normalizeMotors(data.motors || data.effects || []);
-  const body = normalizeBody(data.body || { shape: data.shape }, motors);
-  const x = 450;
-  const y = 520;
-  const angle = (seed % 360) * Math.PI / 180;
-  return {
-    id: `g${state.nextGimmick}`,
-    recipe,
-    name: String(data.name || `審議中${recipe.join('')}`).slice(0, 24),
-    flavor: String(data.flavor || `${recipe.join('')}から生まれたボール細工。`).slice(0, 80),
-    visualLabel: String(data.visualLabel || '装置').slice(0, 12),
-    shortEffect: String(data.shortEffect || summarizeMotors(motors)).slice(0, 44),
-    body,
-    motors,
-    x,
-    y,
-    homeX: x,
-    homeY: y,
-    angle,
-    homeAngle: angle,
-    placed: false,
-    spin: 0,
-    runtime: makeRuntime(),
-  };
-}
-
+async function generateGimmick() { if (state.selected.length !== 3) { toast('絵文字を3つ選んで！'); return; } const recipe = state.selected.map((item) => item.emoji); const seed = hash(recipe.join('|')); const fallback = buildLocalGimmick(recipe, seed); const generated = await requestGeminiGimmick(recipe, fallback); const gimmick = makeGimmickFromData({ ...fallback, ...generated }, recipe, seed); state.nextGimmick += 1; state.gimmicks.push(gimmick); for (const item of state.selected) { const index = state.inventory.findIndex((owned) => owned.id === item.id); if (index >= 0) state.inventory.splice(index, 1); } state.selected = []; state.placing = gimmick.id; state.focusGimmick = gimmick.id; setTab('venue'); setCoach('ギミックを設置しよう', `${gimmick.visualLabel}：${gimmick.shortEffect}`); showHelp(`「${gimmick.name}」を設置できます。下のカードを押したままコートへドラッグ。`); if (state.tutorial === 'generate') { showModal('配置しよう', '会場へ戻った！', '下のギミックカードを押したまま、コートへドラッグして離そう。設置後は本体ドラッグで移動できます。', '配置する', () => closeModal()); state.tutorial = 'place'; } render(); fitCameraToGoals(); }
+function makeGimmickFromData(data, recipe, seed) { const motors = normalizeMotors(data.motors || data.effects || []); const body = normalizeBody(data.body || { shape: data.shape }, motors); const x = 450; const y = 520; const angle = (seed % 360) * Math.PI / 180; return { id: `g${state.nextGimmick}`, recipe, name: String(data.name || `審議中${recipe.join('')}`).slice(0, 24), flavor: String(data.flavor || `${recipe.join('')}から生まれたボール細工。`).slice(0, 80), visualLabel: String(data.visualLabel || '装置').slice(0, 12), shortEffect: String(data.shortEffect || summarizeMotors(motors)).slice(0, 44), body, motors, x, y, homeX: x, homeY: y, angle, homeAngle: angle, placed: false, spin: 0, runtime: makeRuntime() }; }
 function makeRuntime() { return { t: 0, cooldowns: {}, holding: false, holdUntil: 0, lastX: 0, lastY: 0, dx: 0, dy: 0 }; }
 function resetGimmicksToHome() { state.gimmicks.forEach((g) => resetGimmickToHome(g)); }
 function resetGimmickToHome(g) { g.x = g.homeX ?? g.x; g.y = g.homeY ?? g.y; g.angle = g.homeAngle ?? g.angle; g.spin = 0; g.runtime = makeRuntime(); g.runtime.lastX = g.x; g.runtime.lastY = g.y; }
 function saveGimmickHome(g) { g.homeX = g.x; g.homeY = g.y; g.homeAngle = g.angle; }
-
-function buildLocalGimmick(recipe, seed) {
-  const first = pick(MOTOR_KINDS, seed);
-  const second = pick(MOTOR_KINDS.filter((kind) => kind !== first), seed >>> 5);
-  const motors = [{ kind: first, trigger: 'contact', direction: 'angle', power: 0.72, range: 0.58, duration: 0.35 }, { kind: second, trigger: 'inside', direction: 'angle', power: 0.45, range: 0.52, duration: 0.6 }];
-  return { name: `審議中${recipe.join('')}`, flavor: `${recipe.join('')}から生まれたボール細工。`, visualLabel: pick(['装置', '細工', '仕掛け', 'ゲート', '足場', '流れ', '振り子'], seed >>> 8), shortEffect: summarizeMotors(motors), body: { shape: defaultShapeForMotors(motors), solid: shouldBeSolid(defaultShapeForMotors(motors), motors), size: 0.65, motion: defaultMotionForMotors(motors), motionPower: 0.55 }, motors };
-}
-async function requestGeminiGimmick(recipe, fallback) {
-  try {
-    const response = await fetch('/api/nohand-soccer/gimmick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ emojis: recipe }) });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    return data || fallback;
-  } catch (error) { console.warn('[noHand] Gemini gimmick fallback', error); toast('AI生成が混雑中。ローカル生成で続行します。'); return fallback; }
-}
+function buildLocalGimmick(recipe, seed) { const first = pick(MOTOR_KINDS, seed); const second = pick(MOTOR_KINDS.filter((kind) => kind !== first), seed >>> 5); const motors = [{ kind: first, trigger: 'contact', direction: 'angle', power: 0.72, range: 0.58, duration: 0.35 }, { kind: second, trigger: 'inside', direction: 'angle', power: 0.45, range: 0.52, duration: 0.6 }]; return { name: `審議中${recipe.join('')}`, flavor: `${recipe.join('')}から生まれたボール細工。`, visualLabel: pick(['装置', '細工', '仕掛け', 'ゲート', '足場', '流れ', '振り子'], seed >>> 8), shortEffect: summarizeMotors(motors), body: { shape: defaultShapeForMotors(motors), solid: shouldBeSolid(defaultShapeForMotors(motors), motors), size: 0.65, motion: defaultMotionForMotors(motors), motionPower: 0.55 }, motors }; }
+async function requestGeminiGimmick(recipe, fallback) { try { const response = await fetch('/api/nohand-soccer/gimmick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ emojis: recipe }) }); if (!response.ok) throw new Error(`HTTP ${response.status}`); return await response.json(); } catch (error) { console.warn('[noHand] Gemini gimmick fallback', error); toast('AI生成が混雑中。ローカル生成で続行します。'); return fallback; } }
 function normalizeMotors(motors) { const source = Array.isArray(motors) ? motors : []; const normalized = source.slice(0, 5).map((motor) => ({ kind: normalizeMotorKind(motor?.kind), trigger: normalizeOne(motor?.trigger, ['contact', 'inside', 'enter', 'periodic', 'timer'], 'contact'), direction: normalizeOne(motor?.direction, ['angle', 'up', 'down', 'left', 'right', 'radialIn', 'radialOut', 'tangent', 'towardNextGoal', 'awayFromBall'], 'angle'), power: clamp(Number(motor?.power ?? 0.7), 0.18, 1), range: clamp(Number(motor?.range ?? 0.55), 0.15, 1), duration: clamp(Number(motor?.duration ?? 0.4), 0.05, 2.5) })); if (!normalized.length) normalized.push({ kind: 'kick', trigger: 'contact', direction: 'angle', power: 0.74, range: 0.55, duration: 0.35 }); const strong = normalized.some((m) => ['kick', 'cannon', 'spring', 'redirect', 'portal', 'carrier', 'pendulum', 'rail'].includes(m.kind)); const sustain = normalized.some((m) => ['wind', 'updraft', 'vortex', 'current', 'tether', 'orbit', 'antiFall', 'speedFloor'].includes(m.kind)); if (!strong && !sustain) normalized.push({ kind: 'speedFloor', trigger: 'inside', direction: 'angle', power: 0.55, range: 0.6, duration: 0.5 }); if (normalized.length === 1) normalized.push({ kind: ['kick', 'cannon', 'spring'].includes(normalized[0].kind) ? 'updraft' : 'speedFloor', trigger: 'inside', direction: normalized[0].direction, power: 0.35, range: Math.max(0.45, normalized[0].range), duration: 0.6 }); return normalized.slice(0, 5); }
 function normalizeMotorKind(kind) { const raw = String(kind || '').toLowerCase(); if (MOTOR_KINDS.includes(raw)) return raw; if (/cannon|gun|shoot|砲|大砲|射/.test(raw)) return 'cannon'; if (/spring|jump|bounce|バネ|跳|弾/.test(raw)) return 'spring'; if (/wind|fan|flow|風|扇|流/.test(raw)) return 'wind'; if (/updraft|lift|float|上昇|浮|雲/.test(raw)) return 'updraft'; if (/vortex|spin|twister|渦|竜巻/.test(raw)) return 'vortex'; if (/current|river|belt|流れ|水流|ベルト/.test(raw)) return 'current'; if (/fall|parachute|落下|傘/.test(raw)) return 'antiFall'; if (/redirect|turn|curve|曲|向き/.test(raw)) return 'redirect'; if (/mirror|reflect|反射|鏡/.test(raw)) return 'mirror'; if (/rail|track|レール|軌道/.test(raw)) return 'rail'; if (/carrier|lift|move|運|リフト|台車/.test(raw)) return 'carrier'; if (/tether|rope|string|糸|鎖|引/.test(raw)) return 'tether'; if (/orbit|circle|周|衛星/.test(raw)) return 'orbit'; if (/catch|hold|release|掴|捕|放/.test(raw)) return 'catchRelease'; if (/pendulum|swing|振り子|揺/.test(raw)) return 'pendulum'; if (/portal|warp|door|ワープ|扉|穴/.test(raw)) return 'portal'; if (/phase|ghost|pass|透|幽霊/.test(raw)) return 'phase'; if (/gravity|重力/.test(raw)) return 'gravityFlip'; if (/slow|brake|減速/.test(raw)) return 'slow'; if (/speed|boost|加速/.test(raw)) return 'speedFloor'; return 'kick'; }
 function normalizeOne(value, allowed, fallback) { const raw = String(value || '').trim(); return allowed.includes(raw) ? raw : fallback; }
@@ -233,7 +107,6 @@ function defaultShapeForMotors(motors) { if (motors.some((m) => ['rail', 'mirror
 function defaultMotionForMotors(motors) { if (motors.some((m) => m.kind === 'pendulum')) return 'pendulum'; if (motors.some((m) => m.kind === 'carrier')) return 'slide'; if (motors.some((m) => ['vortex', 'orbit'].includes(m.kind))) return 'spin'; return 'none'; }
 function shouldBeSolid(shape, motors) { return ['rail', 'platform', 'line', 'carrier', 'arm'].includes(shape) || motors.some((m) => ['mirror', 'rail', 'oneWay', 'pendulum', 'carrier'].includes(m.kind)); }
 function summarizeMotors(motors) { return motors.slice(0, 3).map((m) => MOTOR_META[m.kind]?.short || '動かす').join('＋'); }
-
 function roundClearSequence() { state.phase = 'between'; resetGimmicksToHome(); render(); showModal('GOOOOL!', 'GOOOOL！', '全ゴール通過！ 次はコートが広がり、新しいゴールが増えます。', '次へ', () => { closeModal(); animateBallHome(() => { state.round += 1; state.goals.forEach((goal) => { goal.done = false; }); const newGoal = addGoal(); render(); focusCameraOn(newGoal.y); setTimeout(() => { fitCameraToGoals(); setTimeout(() => showAfterGoalTutorial(), 450); }, 650); }); }); }
 function showAfterGoalTutorial() { showModal('ROUND UP', 'ゴールが増えた！', '大丈夫、ゴールが増えただけだ！素材が足りない……？ 安心してくれ。', '素材を見る', () => { closeModal(); spawnFieldEmojis(5); render(); showModal('素材出現', '絵文字が出現した！', 'ゴールを決めると、コートに絵文字が出ます。ボールで触れると素材回収。素材3つでギミックを作り、全ゴールを完遂するんだ！', '了解', () => { closeModal(); trialReset('全ゴールをくぐろう', '黄色いゴールをすべて通過すると次ラウンド。絵文字はボールで触れると素材になります。'); }); }); }
 function animateBallHome(done) { const start = { x: state.ball.x, y: state.ball.y }; const end = { ...START }; const t0 = performance.now(); function step(now) { const t = clamp((now - t0) / 650, 0, 1); const ease = 1 - Math.pow(1 - t, 3); state.ball.x = start.x + (end.x - start.x) * ease; state.ball.y = start.y + (end.y - start.y) * ease; state.ball.vx = 0; state.ball.vy = 0; draw(); if (t < 1) requestAnimationFrame(step); else done(); } requestAnimationFrame(step); }
@@ -241,18 +114,16 @@ function addGoal() { const seed = hash(`goal-${state.round}-${state.goals.length
 function fallLine() { return Math.max(1110, Math.max(...state.goals.map((goal) => goal.y), ...state.ownGoals.map((goal) => goal.y), 0) + 210); }
 function loop(ts) { if (!state.last) state.last = ts; const dt = Math.min(0.033, (ts - state.last) / 1000); state.last = ts; update(dt); draw(); requestAnimationFrame(loop); }
 function update(dt) { if (state.phase !== 'run') return; const ball = state.ball; state.runTime += dt; for (const gimmick of state.gimmicks) if (gimmick.placed) updateDeviceMotion(gimmick, dt); for (const gimmick of state.gimmicks) if (gimmick.placed) applyGimmick(gimmick, dt); ball.vy += WORLD.gravity * dt * 60; ball.vx *= 0.996; ball.vy *= 0.999; ball.x += ball.vx * dt * 60; ball.y += ball.vy * dt * 60; if (ball.x < ball.r) { ball.x = ball.r; ball.vx = Math.abs(ball.vx) * WORLD.wallBounce; } if (ball.x > WORLD.w - ball.r) { ball.x = WORLD.w - ball.r; ball.vx = -Math.abs(ball.vx) * WORLD.wallBounce; } checkCollect(); checkGoals(); state.cameraY += (ball.y - canvas.height / (canvas.width / WORLD.w) * 0.45 - state.cameraY) * 0.08; if (ball.y > fallLine()) { if (state.tutorial === 'intro') { firstFallTutorial(); return; } trialReset('落下。作戦タイム', '落下したので、その試走のゴール通過はリセット。次のキックオフで全ゴールを狙おう。'); } if (state.runTime > 30) trialReset('30秒ゴールなし', 'その試走は終了。ギミックの場所や角度を調整しよう。'); }
-
-function updateDeviceMotion(g, dt) { const runtime = g.runtime || makeRuntime(); g.runtime = runtime; runtime.t += dt; const t = runtime.t; const body = g.body || {}; const p = clamp(body.motionPower ?? 0.55, 0, 1); const hx = g.homeX ?? g.x; const hy = g.homeY ?? g.y; const ha = g.homeAngle ?? g.angle; const prevX = g.x; const prevY = g.y; if (body.motion === 'slide') { g.x = hx + Math.sin(t * 1.25) * (95 + 75 * p); g.y = hy; g.angle = ha; } else if (body.motion === 'bob') { g.x = hx; g.y = hy + Math.sin(t * 1.65) * (55 + 80 * p); g.angle = ha; } else if (body.motion === 'swing' || body.motion === 'pendulum') { g.x = hx; g.y = hy; g.angle = ha + Math.sin(t * 1.28) * (0.45 + 0.75 * p); } else if (body.motion === 'orbit') { const r = 40 + 80 * p; g.x = hx + Math.cos(t * 1.05) * r; g.y = hy + Math.sin(t * 1.05) * r; g.angle = ha + t * 1.05; } else if (body.motion === 'spin') { g.x = hx; g.y = hy; g.angle = ha + t * (1.2 + 2.1 * p); } else { g.x = hx; g.y = hy; g.angle = ha; } runtime.dx = g.x - prevX; runtime.dy = g.y - prevY; }
+function updateDeviceMotion(g, dt) { const runtime = g.runtime || makeRuntime(); g.runtime = runtime; Object.keys(runtime.cooldowns || {}).forEach((key) => { runtime.cooldowns[key] = Math.max(0, runtime.cooldowns[key] - 1); }); runtime.t += dt; const t = runtime.t; const body = g.body || {}; const p = clamp(body.motionPower ?? 0.55, 0, 1); const hx = g.homeX ?? g.x; const hy = g.homeY ?? g.y; const ha = g.homeAngle ?? g.angle; const prevX = g.x; const prevY = g.y; if (body.motion === 'slide') { g.x = hx + Math.sin(t * 1.25) * (95 + 75 * p); g.y = hy; g.angle = ha; } else if (body.motion === 'bob') { g.x = hx; g.y = hy + Math.sin(t * 1.65) * (55 + 80 * p); g.angle = ha; } else if (body.motion === 'swing' || body.motion === 'pendulum') { g.x = hx; g.y = hy; g.angle = ha + Math.sin(t * 1.28) * (0.45 + 0.75 * p); } else if (body.motion === 'orbit') { const r = 40 + 80 * p; g.x = hx + Math.cos(t * 1.05) * r; g.y = hy + Math.sin(t * 1.05) * r; g.angle = ha + t * 1.05; } else if (body.motion === 'spin') { g.x = hx; g.y = hy; g.angle = ha + t * (1.2 + 2.1 * p); } else { g.x = hx; g.y = hy; g.angle = ha; } runtime.dx = g.x - prevX; runtime.dy = g.y - prevY; }
 function applyGimmick(g, dt) { const ball = state.ball; const dx = ball.x - g.x; const dy = ball.y - g.y; const distance = Math.hypot(dx, dy) || 1; if (g.body?.solid && ['line', 'platform', 'rail', 'carrier', 'arm'].includes(g.body.shape)) collideLine(g.x, g.y, g.angle, bodyLength(g), bodyBounce(g), g.runtime?.dx || 0, g.runtime?.dy || 0); g.motors.forEach((motor, index) => applyMotor(g, motor, index, distance, dx, dy, dt)); }
 function bodyLength(g) { return 110 + clamp(g.body?.size ?? 0.65, 0.35, 1) * 130; }
 function bodyBounce(g) { return g.motors.some((m) => ['mirror', 'pendulum', 'spring'].includes(m.kind)) ? 1.14 : 0.78; }
 function motorRange(motor) { return 42 + clamp(motor.range ?? 0.55, 0.15, 1) * 205; }
 function motorPower(motor, base) { return base * clamp(motor.power ?? 0.7, 0.18, 1); }
 function motorReady(g, index, frames = 34) { const key = `${index}`; if ((g.runtime?.cooldowns?.[key] || 0) > 0) return false; g.runtime.cooldowns[key] = frames; return true; }
-function decayCooldowns(g) { Object.keys(g.runtime.cooldowns || {}).forEach((key) => { g.runtime.cooldowns[key] = Math.max(0, g.runtime.cooldowns[key] - 1); }); }
 function nextGoalVector(fromX, fromY) { const next = state.goals.find((goal) => !goal.done) || state.goals[0]; if (!next) return { x: 1, y: -0.15 }; const dx = next.x - fromX; const dy = next.y - fromY; const d = Math.hypot(dx, dy) || 1; return { x: dx / d, y: dy / d }; }
 function motorVector(g, motor, dx, dy) { const dir = String(motor.direction || 'angle'); if (dir === 'up') return { x: 0, y: -1 }; if (dir === 'down') return { x: 0, y: 1 }; if (dir === 'left') return { x: -1, y: 0 }; if (dir === 'right') return { x: 1, y: 0 }; if (dir === 'radialIn') { const d = Math.hypot(dx, dy) || 1; return { x: -dx / d, y: -dy / d }; } if (dir === 'radialOut') { const d = Math.hypot(dx, dy) || 1; return { x: dx / d, y: dy / d }; } if (dir === 'tangent') { const d = Math.hypot(dx, dy) || 1; return { x: -dy / d, y: dx / d }; } if (dir === 'towardNextGoal') return nextGoalVector(state.ball.x, state.ball.y); if (dir === 'awayFromBall') { const d = Math.hypot(dx, dy) || 1; return { x: -dx / d, y: -dy / d }; } return { x: Math.cos(g.angle), y: Math.sin(g.angle) }; }
-function applyMotor(g, motor, index, distance, dx, dy, dt) { decayCooldowns(g); const ball = state.ball; const range = motorRange(motor); const near = distance < range; const contact = distance < Math.max(52, 42 + (g.body?.size || 0.65) * 34); const falloff = near ? (1 - distance / range) : 0; const v = motorVector(g, motor, dx, dy); if (motor.kind === 'kick' && contact && motorReady(g, index, 28)) { launchBall(v, motorPower(motor, 10.5), -0.45); separate(g, 68); } else if (motor.kind === 'cannon' && contact && motorReady(g, index, 42)) { launchBall(v, motorPower(motor, 13.2), -0.85); separate(g, 72); } else if (motor.kind === 'spring' && contact && motorReady(g, index, 24)) { const d = distance || 1; const mix = { x: dx / d + v.x * 0.65, y: dy / d + v.y * 0.65 - 0.25 }; normalizeLaunch(mix, motorPower(motor, 11.2)); separate(g, 72); } else if (motor.kind === 'wind' && near) addForce(v.x, v.y, motorPower(motor, 0.48) * falloff * dt * 60); else if (motor.kind === 'updraft' && near) addForce(0, -1, motorPower(motor, 0.56) * falloff * dt * 60); else if (motor.kind === 'vortex' && near) { const d = distance || 1; addForce(-dy / d, dx / d, motorPower(motor, 0.34) * falloff * dt * 60); addForce(-dx / d, -dy / d, motorPower(motor, 0.16) * falloff * dt * 60); } else if (motor.kind === 'current' && near) addForce(v.x, v.y, motorPower(motor, 0.62) * falloff * dt * 60); else if (motor.kind === 'antiFall' && near && ball.vy > 0) addForce(0, -1, motorPower(motor, 0.72) * falloff * dt * 60); else if (motor.kind === 'redirect' && contact && motorReady(g, index, 22)) { const speed = Math.max(8.2, Math.hypot(ball.vx, ball.vy) * 0.92); normalizeLaunch(v, speed * (0.75 + motor.power * 0.55)); separate(g, 66); } else if (motor.kind === 'mirror') { if (g.body?.shape !== 'line' && g.body?.shape !== 'rail') collideLine(g.x, g.y, g.angle, bodyLength(g), 1.22, g.runtime?.dx || 0, g.runtime?.dy || 0); } else if (motor.kind === 'curve' && near) addForce(-v.y, v.x, motorPower(motor, 0.26) * falloff * dt * 60); else if (motor.kind === 'rail' && near) railAssist(g, motor, falloff, dt); else if (motor.kind === 'oneWay' && contact) { const forward = ball.vx * Math.cos(g.angle) + ball.vy * Math.sin(g.angle); if (forward < 0) normalizeLaunch({ x: Math.cos(g.angle), y: Math.sin(g.angle) }, motorPower(motor, 8.4)); } else if (motor.kind === 'carrier' && contact) { ball.x += (g.runtime?.dx || 0) * 1.04; ball.y += (g.runtime?.dy || 0) * 1.04; ball.vx += (g.runtime?.dx || 0) * 0.18; ball.vy += (g.runtime?.dy || 0) * 0.18; ball.y = Math.min(ball.y, g.y - 34); } else if (motor.kind === 'tether' && near) addForce((g.x - ball.x) / 90, (g.y - ball.y) / 90, motorPower(motor, 0.28) * falloff * dt * 60); else if (motor.kind === 'orbit' && near) { const d = distance || 1; addForce(-dy / d, dx / d, motorPower(motor, 0.42) * falloff * dt * 60); } else if (motor.kind === 'catchRelease') catchRelease(g, motor, index, contact); else if (motor.kind === 'pendulum') collideLine(g.x, g.y, g.angle, bodyLength(g), 1.28, g.runtime?.dx || 0, g.runtime?.dy || 0); else if (motor.kind === 'portal' && contact && motorReady(g, index, 70)) { const out = motorVector(g, { ...motor, direction: motor.direction === 'angle' ? 'angle' : motor.direction }, dx, dy); ball.x = clamp(g.x + out.x * (190 + motor.power * 150), 60, WORLD.w - 60); ball.y = Math.max(80, g.y + out.y * (190 + motor.power * 150)); launchBall(out, motorPower(motor, 7.4), -0.6); toast('ワープ！'); } else if (motor.kind === 'phase' && contact) { ball.phaseUntil = state.runTime + motor.duration; ball.vy -= motorPower(motor, 1.8); } else if (motor.kind === 'gravityFlip' && near) addForce(0, -1, motorPower(motor, 0.88) * falloff * dt * 60); else if (motor.kind === 'slow' && near) { const k = clamp(1 - motorPower(motor, 0.034) * falloff * dt * 60, 0.74, 1); ball.vx *= k; ball.vy *= k; } else if (motor.kind === 'speedFloor' && near) { const speed = Math.hypot(ball.vx, ball.vy); if (speed < 5.8) addForce(v.x, v.y, motorPower(motor, 0.48) * (1 - speed / 5.8) * dt * 60); } }
+function applyMotor(g, motor, index, distance, dx, dy, dt) { const ball = state.ball; const range = motorRange(motor); const near = distance < range; const contact = distance < Math.max(52, 42 + (g.body?.size || 0.65) * 34); const falloff = near ? (1 - distance / range) : 0; const v = motorVector(g, motor, dx, dy); if (motor.kind === 'kick' && contact && motorReady(g, index, 28)) { launchBall(v, motorPower(motor, 10.5), -0.45); separate(g, 68); } else if (motor.kind === 'cannon' && contact && motorReady(g, index, 42)) { launchBall(v, motorPower(motor, 13.2), -0.85); separate(g, 72); } else if (motor.kind === 'spring' && contact && motorReady(g, index, 24)) { const d = distance || 1; const mix = { x: dx / d + v.x * 0.65, y: dy / d + v.y * 0.65 - 0.25 }; normalizeLaunch(mix, motorPower(motor, 11.2)); separate(g, 72); } else if (motor.kind === 'wind' && near) addForce(v.x, v.y, motorPower(motor, 0.48) * falloff * dt * 60); else if (motor.kind === 'updraft' && near) addForce(0, -1, motorPower(motor, 0.56) * falloff * dt * 60); else if (motor.kind === 'vortex' && near) { const d = distance || 1; addForce(-dy / d, dx / d, motorPower(motor, 0.34) * falloff * dt * 60); addForce(-dx / d, -dy / d, motorPower(motor, 0.16) * falloff * dt * 60); } else if (motor.kind === 'current' && near) addForce(v.x, v.y, motorPower(motor, 0.62) * falloff * dt * 60); else if (motor.kind === 'antiFall' && near && ball.vy > 0) addForce(0, -1, motorPower(motor, 0.72) * falloff * dt * 60); else if (motor.kind === 'redirect' && contact && motorReady(g, index, 22)) { const speed = Math.max(8.2, Math.hypot(ball.vx, ball.vy) * 0.92); normalizeLaunch(v, speed * (0.75 + motor.power * 0.55)); separate(g, 66); } else if (motor.kind === 'mirror') { if (g.body?.shape !== 'line' && g.body?.shape !== 'rail') collideLine(g.x, g.y, g.angle, bodyLength(g), 1.22, g.runtime?.dx || 0, g.runtime?.dy || 0); } else if (motor.kind === 'curve' && near) addForce(-v.y, v.x, motorPower(motor, 0.26) * falloff * dt * 60); else if (motor.kind === 'rail' && near) railAssist(g, motor, falloff, dt); else if (motor.kind === 'oneWay' && contact) { const forward = ball.vx * Math.cos(g.angle) + ball.vy * Math.sin(g.angle); if (forward < 0) normalizeLaunch({ x: Math.cos(g.angle), y: Math.sin(g.angle) }, motorPower(motor, 8.4)); } else if (motor.kind === 'carrier' && contact) { ball.x += (g.runtime?.dx || 0) * 1.04; ball.y += (g.runtime?.dy || 0) * 1.04; ball.vx += (g.runtime?.dx || 0) * 0.18; ball.vy += (g.runtime?.dy || 0) * 0.18; ball.y = Math.min(ball.y, g.y - 34); } else if (motor.kind === 'tether' && near) addForce((g.x - ball.x) / 90, (g.y - ball.y) / 90, motorPower(motor, 0.28) * falloff * dt * 60); else if (motor.kind === 'orbit' && near) { const d = distance || 1; addForce(-dy / d, dx / d, motorPower(motor, 0.42) * falloff * dt * 60); } else if (motor.kind === 'catchRelease') catchRelease(g, motor, index, contact); else if (motor.kind === 'pendulum') collideLine(g.x, g.y, g.angle, bodyLength(g), 1.28, g.runtime?.dx || 0, g.runtime?.dy || 0); else if (motor.kind === 'portal' && contact && motorReady(g, index, 70)) { const out = motorVector(g, { ...motor, direction: motor.direction === 'angle' ? 'angle' : motor.direction }, dx, dy); ball.x = clamp(g.x + out.x * (190 + motor.power * 150), 60, WORLD.w - 60); ball.y = Math.max(80, g.y + out.y * (190 + motor.power * 150)); launchBall(out, motorPower(motor, 7.4), -0.6); toast('ワープ！'); } else if (motor.kind === 'phase' && contact) { ball.phaseUntil = state.runTime + motor.duration; ball.vy -= motorPower(motor, 1.8); } else if (motor.kind === 'gravityFlip' && near) addForce(0, -1, motorPower(motor, 0.88) * falloff * dt * 60); else if (motor.kind === 'slow' && near) { const k = clamp(1 - motorPower(motor, 0.034) * falloff * dt * 60, 0.74, 1); ball.vx *= k; ball.vy *= k; } else if (motor.kind === 'speedFloor' && near) { const speed = Math.hypot(ball.vx, ball.vy); if (speed < 5.8) addForce(v.x, v.y, motorPower(motor, 0.48) * (1 - speed / 5.8) * dt * 60); } }
 function addForce(x, y, f) { state.ball.vx += x * f; state.ball.vy += y * f; }
 function launchBall(v, speed, extraY = 0) { const vec = { x: v.x, y: v.y + extraY }; normalizeLaunch(vec, speed); }
 function normalizeLaunch(v, speed) { const d = Math.hypot(v.x, v.y) || 1; state.ball.vx = v.x / d * speed; state.ball.vy = v.y / d * speed; }
@@ -263,7 +134,6 @@ function collideLine(cx, cy, angle, length, bounce, moveDx = 0, moveDy = 0) { co
 function checkCollect() { state.fieldEmojis = state.fieldEmojis.filter((emoji) => { if (Math.hypot(state.ball.x - emoji.x, state.ball.y - emoji.y) < state.ball.r + emoji.r) { state.inventory.push({ id: uid(), emoji: emoji.emoji }); toast(`素材 ${emoji.emoji} 回収`); render(); return false; } return true; }); }
 function checkGoals() { for (const ownGoal of state.ownGoals) { if (inRect(state.ball, ownGoal)) { ownGoalReset(); return; } } let scored = false; for (const goal of state.goals) { if (!goal.done && inRect(state.ball, goal)) { goal.done = true; scored = true; state.ball.vy = Math.min(state.ball.vy, -5); state.ball.vx += goal.x < WORLD.w / 2 ? 2 : -2; toast(`GOAL ${goal.label}`); } } if (scored) render(); if (state.goals.every((goal) => goal.done)) roundClearSequence(); }
 function inRect(ball, rect) { return Math.abs(ball.x - rect.x) < rect.w / 2 && Math.abs(ball.y - rect.y) < rect.h / 2; }
-
 function render() { els.nav.hidden = !state.tabUnlocked; els.dock.hidden = !state.generateUnlocked || !state.gimmicks.length; els.round.textContent = `R${state.round}`; els.goal.textContent = `${state.goals.filter((goal) => goal.done).length}/${state.goals.length}`; els.emojiCount.textContent = `${state.inventory.length}個`; document.querySelector('[data-tab="generate"]').classList.toggle('is-locked', !state.generateUnlocked); renderEmojis(); renderSelected(); renderDock(); els.kick.disabled = state.phase === 'run' || state.phase === 'between'; }
 function renderEmojis() { els.emojiGrid.replaceChildren(); state.inventory.forEach((item) => { const button = document.createElement('button'); button.className = 'emoji-btn'; button.textContent = item.emoji; button.type = 'button'; if (state.selected.some((selected) => selected.id === item.id)) button.classList.add('is-selected'); button.onclick = () => toggleEmoji(item); els.emojiGrid.appendChild(button); }); }
 function toggleEmoji(item) { const index = state.selected.findIndex((selected) => selected.id === item.id); if (index >= 0) state.selected.splice(index, 1); else { if (state.selected.length >= 3) state.selected.shift(); state.selected.push(item); } render(); }
@@ -293,7 +163,6 @@ function startCardDrag(event, g) { event.preventDefault(); state.placing = g.id;
 function onDown(event) { if (state.phase === 'run' || state.phase === 'between' || state.gameover) return; const point = worldFromEvent(event); const handleTarget = [...state.gimmicks].reverse().find((g) => g.placed && Math.hypot(handlePos(g).x - point.x, handlePos(g).y - point.y) < 34); if (handleTarget) { state.focusGimmick = handleTarget.id; drag = { type: 'rotate', id: handleTarget.id }; showHelp('黄色い「回転」ハンドルで角度を変えられます。'); return; } const hit = hitGimmick(point); if (hit) { state.focusGimmick = hit.id; drag = { type: 'move', id: hit.id, dx: hit.x - point.x, dy: hit.y - point.y }; showHelp('ドラッグで移動。黄色い「回転」ハンドルで角度変更。'); render(); draw(); return; } if (state.placing) { const g = state.gimmicks.find((item) => item.id === state.placing); if (g) { g.x = point.x; g.y = point.y; g.placed = true; saveGimmickHome(g); state.focusGimmick = g.id; drag = { type: 'move', id: g.id, dx: 0, dy: 0 }; render(); draw(); return; } } drag = { type: 'pan', startY: event.clientY, camera: state.cameraY }; }
 function onMove(event) { if (!drag) return; event.preventDefault(); const point = worldFromEvent(event); const g = state.gimmicks.find((item) => item.id === drag.id); if (drag.type === 'new' && point.inside && g) { g.x = point.x; g.y = point.y; g.placed = true; state.focusGimmick = g.id; saveGimmickHome(g); draw(); return; } if (drag.type === 'move' && g) { g.x = clamp(point.x + (drag.dx || 0), 40, WORLD.w - 40); g.y = point.y + (drag.dy || 0); saveGimmickHome(g); draw(); return; } if (drag.type === 'rotate' && g) { g.angle = Math.atan2(point.y - g.y, point.x - g.x); saveGimmickHome(g); draw(); return; } if (drag.type === 'pan') { state.cameraY = drag.camera - (event.clientY - drag.startY) / (canvas.width / WORLD.w); draw(); } }
 function onUp() { if (!drag) return; const g = state.gimmicks.find((item) => item.id === drag.id); if (g && g.placed) { saveGimmickHome(g); state.placing = null; state.focusGimmick = g.id; hideHelp(); setCoach('配置完了', `${g.visualLabel || '装置'}：${g.shortEffect || 'ボールの動きを変える'}`); if (state.tutorial === 'place') { showModal('角度も変えられる', '編集もサッカーのうち', '置いたギミックに出ている黄色い「回転」ハンドルをドラッグすると角度が変わります。調整したらキックオフ！', '了解', () => closeModal()); state.tutorial = 'edit'; } } drag = null; render(); draw(); }
-
 els.modalPrimary.onclick = () => { if (modalAction) modalAction(); };
 els.modalSecondary.onclick = closeModal;
 els.kick.onclick = startRun;
