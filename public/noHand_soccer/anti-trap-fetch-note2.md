@@ -1,1 +1,0 @@
-Client generation guard note.
