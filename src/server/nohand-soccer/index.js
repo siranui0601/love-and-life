@@ -31,6 +31,8 @@ const BODY_SHAPES = ["point", "line", "area", "fan", "gate", "rail", "carrier", 
 const BODY_MOTIONS = ["none", "spin", "slide", "bob", "swing", "orbit", "pendulum"];
 const TRIGGERS = ["contact", "inside", "enter", "periodic", "timer"];
 const DIRECTIONS = ["angle", "up", "down", "left", "right", "radialIn", "radialOut", "tangent", "towardNextGoal", "awayFromBall"];
+const TRAP_RISK_KINDS = ["slow", "updraft", "vortex", "orbit", "tether", "antiFall", "gravityFlip"];
+const EXIT_KINDS = ["kick", "cannon", "spring", "current", "redirect", "rail", "oneWay", "carrier", "catchRelease", "pendulum", "portal", "speedFloor"];
 
 function hash(str) {
   let h = 2166136261;
@@ -120,10 +122,10 @@ function localFallback(emojis = []) {
   const seed = hash(emojis.join("|"));
   const first = pick(MOTOR_KINDS, seed);
   const second = pick(MOTOR_KINDS.filter((kind) => kind !== first), seed >>> 5);
-  const motors = [
+  const motors = addAntiTrapMotors([
     { kind: first, trigger: "contact", direction: "angle", power: 0.72, range: 0.58, duration: 0.35 },
     { kind: second, trigger: "inside", direction: "angle", power: 0.45, range: 0.52, duration: 0.6 },
-  ];
+  ]);
   const shape = defaultShapeForMotors(motors);
   return {
     name: `審議中${emojis.join("")}`.slice(0, 24),
@@ -133,6 +135,39 @@ function localFallback(emojis = []) {
     body: { shape, solid: isSolidShape(shape, motors), size: 0.65, motion: defaultMotionForMotors(motors), motionPower: 0.55 },
     motors,
   };
+}
+
+function hasTrapRisk(motors) {
+  const hasRiskField = motors.some((m) => TRAP_RISK_KINDS.includes(m.kind));
+  const hasInwardField = motors.some((m) => ["wind", "current"].includes(m.kind) && ["radialIn", "tangent"].includes(m.direction));
+  const hasSlowWithoutRelease = motors.some((m) => m.kind === "slow") && !motors.some((m) => ["current", "speedFloor", "redirect", "kick", "cannon", "spring", "portal", "rail", "carrier", "catchRelease", "pendulum"].includes(m.kind));
+  const hasExit = motors.some((m) => EXIT_KINDS.includes(m.kind) && !(m.kind === "current" && ["radialIn", "tangent"].includes(m.direction)));
+  return (hasRiskField || hasInwardField || hasSlowWithoutRelease) && !hasExit;
+}
+
+function addAntiTrapMotors(motors) {
+  const result = [...motors];
+  if (!hasTrapRisk(result)) return result.slice(0, 5);
+
+  const maxRange = Math.max(0.62, ...result.map((m) => Number(m.range) || 0));
+  while (result.length > 3) result.pop();
+  result.push({
+    kind: "current",
+    trigger: "inside",
+    direction: "towardNextGoal",
+    power: 0.78,
+    range: Math.min(1, maxRange + 0.12),
+    duration: 0.8,
+  });
+  result.push({
+    kind: "speedFloor",
+    trigger: "inside",
+    direction: "towardNextGoal",
+    power: 0.68,
+    range: Math.min(1, maxRange + 0.12),
+    duration: 0.8,
+  });
+  return result.slice(0, 5);
 }
 
 function normalizeMotors(rawMotors, fallbackMotors) {
@@ -162,7 +197,7 @@ function normalizeMotors(rawMotors, fallbackMotors) {
     motors.push({ kind: assistKind, trigger: "inside", direction: only.direction || "angle", power: 0.35, range: Math.max(0.45, only.range || 0.5), duration: 0.6 });
   }
 
-  return motors.slice(0, 5);
+  return addAntiTrapMotors(motors);
 }
 
 function normalizeBody(rawBody, motors, fallbackBody) {
