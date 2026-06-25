@@ -1,0 +1,1 @@
+Runtime pass for pitagora devices.
