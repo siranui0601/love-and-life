@@ -234,7 +234,7 @@ export function mountNoHandSoccerRoutes(app) {
     }
 
     const fallback = localFallback(emojis);
-    const prompt = `絵文字3つから、派手に動くサッカー用ピタゴラ装置を生成。日本語。kindは物理的に独立した役割だけを使う。最低2 motors。分裂は分身もゴール判定あり。JSONのみ:{"name":"","visualLabel":"","flavor":"","shortEffect":"","body":{"shape":"point|line|area|fan|gate|rail|carrier|arm|platform","solid":false,"size":0.7,"motion":"none|spin|slide|bob|swing|orbit|pendulum","motionPower":0.7},"motors":[{"kind":"launcher|bumper|fieldForce|gravityShift|split|portal|rail|carrier|flipper|phase|dragZone|timerRelease","trigger":"contact|inside|enter|periodic|timer","direction":"angle|up|down|left|right|radialIn|radialOut|tangent|towardNextGoal|awayFromBall","power":0.8,"range":0.7,"duration":0.8,"angle":180,"count":2,"spreadAngle":38,"mode":""}],"exit":{"direction":"angle|towardNextGoal|radialOut|up|left|right","minSpeed":7,"afterSeconds":0.8,"label":""}} 絵文字:${emojis.join(" ")}`;
+    const prompt = `絵文字3つから、ユニークで個性的な派手に動くピタゴラ装置を生成。最低2 motors。JSONのみ:{"name":"","visualLabel":"","flavor":"","shortEffect":"","body":{"shape":"point|line|area|fan|gate|rail|carrier|arm|platform","solid":false,"size":0.7,"motion":"none|spin|slide|bob|swing|orbit|pendulum","motionPower":0.7},"motors":[{"kind":"launcher|bumper|fieldForce|gravityShift|split|portal|rail|carrier|flipper|phase|dragZone|timerRelease","trigger":"contact|inside|enter|periodic|timer","direction":"angle|up|down|left|right|radialIn|radialOut|tangent|towardNextGoal|awayFromBall","power":0.8,"range":0.7,"duration":0.8,"angle":180,"count":2,"spreadAngle":38,"mode":""}],"exit":{"direction":"angle|towardNextGoal|radialOut|up|left|right","minSpeed":7,"afterSeconds":0.8,"label":""}} 絵文字:${emojis.join(" ")}`;
 
     try {
       const text = await genWithFallback(prompt, {
