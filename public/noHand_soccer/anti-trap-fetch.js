@@ -1,24 +1,50 @@
 (() => {
   const originalFetch = window.fetch.bind(window);
-  const TRAP_RISK_KINDS = new Set(['slow', 'updraft', 'vortex', 'orbit', 'tether', 'antiFall', 'gravityFlip']);
-  const EXIT_KINDS = new Set(['kick', 'cannon', 'spring', 'current', 'redirect', 'rail', 'oneWay', 'carrier', 'catchRelease', 'pendulum', 'portal', 'speedFloor']);
+  const LEGACY_KIND_MAP = {
+    kick: 'launcher', cannon: 'launcher', spring: 'launcher', wind: 'fieldForce', updraft: 'fieldForce', vortex: 'fieldForce', current: 'fieldForce', antiFall: 'fieldForce', redirect: 'launcher', mirror: 'bumper', curve: 'fieldForce', oneWay: 'rail', tether: 'fieldForce', orbit: 'fieldForce', catchRelease: 'timerRelease', pendulum: 'flipper', gravityFlip: 'gravityShift', slow: 'dragZone', speedFloor: 'fieldForce',
+  };
+  const PATH_NEED = new Set(['fieldForce', 'gravityShift', 'dragZone', 'rail', 'carrier', 'timerRelease']);
+  const SHOWY = new Set(['launcher', 'bumper', 'gravityShift', 'split', 'portal', 'flipper', 'timerRelease']);
 
-  function hasTrapRisk(motors) {
-    const hasRiskField = motors.some((m) => TRAP_RISK_KINDS.has(m.kind));
-    const hasInwardField = motors.some((m) => ['wind', 'current'].includes(m.kind) && ['radialIn', 'tangent'].includes(m.direction));
-    const hasSlowWithoutRelease = motors.some((m) => m.kind === 'slow') && !motors.some((m) => ['current', 'speedFloor', 'redirect', 'kick', 'cannon', 'spring', 'portal', 'rail', 'carrier', 'catchRelease', 'pendulum'].includes(m.kind));
-    const hasExit = motors.some((m) => EXIT_KINDS.has(m.kind) && !(m.kind === 'current' && ['radialIn', 'tangent'].includes(m.direction)));
-    return (hasRiskField || hasInwardField || hasSlowWithoutRelease) && !hasExit;
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function kindOf(kind) {
+    const raw = String(kind || '').trim();
+    if (['launcher','bumper','fieldForce','gravityShift','split','portal','rail','carrier','flipper','phase','dragZone','timerRelease'].includes(raw)) return raw;
+    return LEGACY_KIND_MAP[raw] || LEGACY_KIND_MAP[raw.toLowerCase()] || 'launcher';
   }
-
+  function normalizeMotors(motors) {
+    const list = (Array.isArray(motors) ? motors : []).slice(0, 5).map((motor) => {
+      const kind = kindOf(motor.kind);
+      return {
+        ...motor,
+        kind,
+        power: clamp(Number(motor.power ?? 0.78), 0.18, 1),
+        range: clamp(Number(motor.range ?? 0.58), 0.15, 1),
+        duration: clamp(Number(motor.duration ?? 0.65), 0.05, 3),
+        angle: clamp(Number(motor.angle ?? 180), -360, 360),
+        count: Math.round(clamp(Number(motor.count ?? 2), 2, 4)),
+        spreadAngle: clamp(Number(motor.spreadAngle ?? 38), 10, 140),
+      };
+    });
+    if (!list.length) list.push({ kind: 'launcher', trigger: 'contact', direction: 'angle', power: 0.78, range: 0.55, duration: 0.45, angle: 180, count: 2, spreadAngle: 38 });
+    if (!list.some((m) => SHOWY.has(m.kind))) list.push({ kind: 'launcher', trigger: 'contact', direction: 'angle', power: 0.72, range: 0.5, duration: 0.45, mode: 'assist' });
+    if (list.length === 1) list.push({ kind: PATH_NEED.has(list[0].kind) ? 'launcher' : 'fieldForce', trigger: 'inside', direction: 'towardNextGoal', power: 0.58, range: 0.65, duration: 0.8, mode: 'exit' });
+    return list.slice(0, 5);
+  }
+  function normalizeExit(exit, motors) {
+    const needsExit = motors.some((m) => PATH_NEED.has(m.kind));
+    if (!needsExit && !exit) return null;
+    return {
+      direction: ['angle','towardNextGoal','radialOut','up','left','right'].includes(exit?.direction) ? exit.direction : 'towardNextGoal',
+      minSpeed: clamp(Number(exit?.minSpeed ?? 7.2), 5.8, 11),
+      afterSeconds: clamp(Number(exit?.afterSeconds ?? 0.75), 0.25, 1.8),
+      label: String(exit?.label || '出口補助').slice(0, 16),
+    };
+  }
   function normalizeGimmick(gimmick) {
     if (!gimmick || !Array.isArray(gimmick.motors)) return gimmick;
-    if (!hasTrapRisk(gimmick.motors)) return gimmick;
-    const maxRange = Math.max(0.62, ...gimmick.motors.map((m) => Number(m.range) || 0));
-    const motors = gimmick.motors.slice(0, 3);
-    motors.push({ kind: 'current', trigger: 'inside', direction: 'towardNextGoal', power: 0.78, range: Math.min(1, maxRange + 0.12), duration: 0.8 });
-    motors.push({ kind: 'speedFloor', trigger: 'inside', direction: 'towardNextGoal', power: 0.68, range: Math.min(1, maxRange + 0.12), duration: 0.8 });
-    return { ...gimmick, motors };
+    const motors = normalizeMotors(gimmick.motors);
+    return { ...gimmick, motors, exit: normalizeExit(gimmick.exit, motors) };
   }
 
   window.fetch = async (input, init) => {
@@ -27,11 +53,7 @@
     if (!String(url).includes('/api/nohand-soccer/gimmick') || !response.ok) return response;
     try {
       const data = normalizeGimmick(await response.clone().json());
-      return new Response(JSON.stringify(data), {
-        status: response.status,
-        statusText: response.statusText,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(JSON.stringify(data), { status: response.status, statusText: response.statusText, headers: { 'Content-Type': 'application/json' } });
     } catch {
       return response;
     }
