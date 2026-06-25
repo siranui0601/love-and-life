@@ -2,35 +2,49 @@ import { genWithFallback, stripJsonFence } from "../../foundation/gemini.js";
 import { appendNoHandSoccerGimmickLog } from "./sheet-log.js";
 
 const MOTOR_KINDS = [
-  "kick",
-  "cannon",
-  "spring",
-  "wind",
-  "updraft",
-  "vortex",
-  "current",
-  "antiFall",
-  "redirect",
-  "mirror",
-  "curve",
-  "rail",
-  "oneWay",
-  "carrier",
-  "tether",
-  "orbit",
-  "catchRelease",
-  "pendulum",
+  "launcher",
+  "bumper",
+  "fieldForce",
+  "gravityShift",
+  "split",
   "portal",
+  "rail",
+  "carrier",
+  "flipper",
   "phase",
-  "gravityFlip",
-  "slow",
-  "speedFloor",
+  "dragZone",
+  "timerRelease",
 ];
+
+const LEGACY_KIND_MAP = {
+  kick: "launcher",
+  cannon: "launcher",
+  spring: "launcher",
+  wind: "fieldForce",
+  updraft: "fieldForce",
+  vortex: "fieldForce",
+  current: "fieldForce",
+  antiFall: "fieldForce",
+  redirect: "launcher",
+  mirror: "bumper",
+  curve: "fieldForce",
+  oneWay: "rail",
+  tether: "fieldForce",
+  orbit: "fieldForce",
+  catchRelease: "timerRelease",
+  pendulum: "flipper",
+  gravityFlip: "gravityShift",
+  slow: "dragZone",
+  speedFloor: "fieldForce",
+};
 
 const BODY_SHAPES = ["point", "line", "area", "fan", "gate", "rail", "carrier", "arm", "platform"];
 const BODY_MOTIONS = ["none", "spin", "slide", "bob", "swing", "orbit", "pendulum"];
 const TRIGGERS = ["contact", "inside", "enter", "periodic", "timer"];
 const DIRECTIONS = ["angle", "up", "down", "left", "right", "radialIn", "radialOut", "tangent", "towardNextGoal", "awayFromBall"];
+const EXIT_DIRECTIONS = ["angle", "towardNextGoal", "radialOut", "up", "left", "right"];
+const PATH_NEED_KINDS = ["fieldForce", "gravityShift", "dragZone", "rail", "carrier", "timerRelease"];
+const SHOWY_KINDS = ["launcher", "bumper", "gravityShift", "split", "portal", "flipper", "timerRelease"];
 
 function hash(str) {
   let h = 2166136261;
@@ -67,116 +81,126 @@ function normalizeEnum(value, allowed, fallback) {
   return allowed.includes(raw) ? raw : fallback;
 }
 
-function normalizeKind(kind, fallback = "kick") {
-  const raw = String(kind || "").toLowerCase();
+function normalizeKind(kind, fallback = "launcher") {
+  const raw = String(kind || "").trim();
+  const lower = raw.toLowerCase();
   if (MOTOR_KINDS.includes(raw)) return raw;
-  if (/cannon|gun|shoot|砲|大砲|射/.test(raw)) return "cannon";
-  if (/spring|jump|bounce|バネ|跳|弾/.test(raw)) return "spring";
-  if (/wind|fan|flow|風|扇|流/.test(raw)) return "wind";
-  if (/updraft|lift|float|上昇|浮|雲/.test(raw)) return "updraft";
-  if (/vortex|spin|twister|渦|竜巻/.test(raw)) return "vortex";
-  if (/current|river|belt|流れ|水流|ベルト/.test(raw)) return "current";
-  if (/anti.?fall|parachute|落下|傘/.test(raw)) return "antiFall";
-  if (/redirect|turn|curve|曲|向き/.test(raw)) return "redirect";
-  if (/mirror|reflect|反射|鏡/.test(raw)) return "mirror";
-  if (/rail|track|レール|軌道/.test(raw)) return "rail";
-  if (/carrier|lift|move|運|リフト|台車/.test(raw)) return "carrier";
-  if (/tether|rope|string|糸|鎖|引/.test(raw)) return "tether";
-  if (/orbit|circle|周|衛星/.test(raw)) return "orbit";
-  if (/catch|hold|release|掴|捕|放/.test(raw)) return "catchRelease";
-  if (/pendulum|swing|振り子|揺/.test(raw)) return "pendulum";
-  if (/portal|warp|door|ワープ|扉|穴/.test(raw)) return "portal";
-  if (/phase|ghost|pass|透|幽霊/.test(raw)) return "phase";
-  if (/gravity|重力/.test(raw)) return "gravityFlip";
-  if (/slow|brake|減速|ブレーキ/.test(raw)) return "slow";
-  if (/speed|boost|最低速度|加速/.test(raw)) return "speedFloor";
-  if (/kick|punch|push|蹴|パンチ|押/.test(raw)) return "kick";
+  if (LEGACY_KIND_MAP[raw]) return LEGACY_KIND_MAP[raw];
+  if (LEGACY_KIND_MAP[lower]) return LEGACY_KIND_MAP[lower];
+  if (/split|clone|分裂|分身|複製/.test(lower)) return "split";
+  if (/gravity|重力/.test(lower)) return "gravityShift";
+  if (/portal|warp|door|ワープ|扉|穴/.test(lower)) return "portal";
+  if (/rail|track|レール|軌道/.test(lower)) return "rail";
+  if (/carrier|lift|move|運|リフト|台車/.test(lower)) return "carrier";
+  if (/flipper|arm|pendulum|振り子|腕|叩/.test(lower)) return "flipper";
+  if (/phase|ghost|pass|透|幽霊/.test(lower)) return "phase";
+  if (/slow|drag|brake|減速|抵抗/.test(lower)) return "dragZone";
+  if (/catch|hold|release|掴|捕|放/.test(lower)) return "timerRelease";
+  if (/bumper|mirror|bounce|反射|反発/.test(lower)) return "bumper";
+  if (/force|wind|flow|vortex|tether|風|流|渦|引|押/.test(lower)) return "fieldForce";
   return fallback;
 }
 
+function needsPath(kind) {
+  return PATH_NEED_KINDS.includes(kind);
+}
+
 function defaultShapeForMotors(motors) {
-  if (motors.some((m) => ["rail", "mirror", "oneWay"].includes(m.kind))) return "rail";
-  if (motors.some((m) => ["carrier"].includes(m.kind))) return "carrier";
-  if (motors.some((m) => ["pendulum"].includes(m.kind))) return "arm";
+  if (motors.some((m) => m.kind === "rail")) return "rail";
+  if (motors.some((m) => m.kind === "carrier")) return "carrier";
+  if (motors.some((m) => m.kind === "flipper")) return "arm";
   if (motors.some((m) => ["portal", "phase"].includes(m.kind))) return "gate";
-  if (motors.some((m) => ["wind", "updraft", "vortex", "current"].includes(m.kind))) return "fan";
-  if (motors.some((m) => ["tether", "orbit", "antiFall", "slow", "speedFloor"].includes(m.kind))) return "area";
+  if (motors.some((m) => ["fieldForce", "gravityShift", "dragZone", "split"].includes(m.kind))) return "fan";
   return "point";
 }
 
 function defaultMotionForMotors(motors) {
-  if (motors.some((m) => m.kind === "pendulum")) return "pendulum";
+  if (motors.some((m) => m.kind === "flipper")) return "pendulum";
   if (motors.some((m) => m.kind === "carrier")) return "slide";
-  if (motors.some((m) => m.kind === "rotate" || m.kind === "vortex" || m.kind === "orbit")) return "spin";
+  if (motors.some((m) => m.kind === "fieldForce" && ["tangent", "radialIn"].includes(m.direction))) return "spin";
   return "none";
 }
 
 function isSolidShape(shape, motors) {
   if (["rail", "platform", "line", "carrier", "arm"].includes(shape)) return true;
-  return motors.some((m) => ["mirror", "rail", "oneWay", "pendulum", "carrier"].includes(m.kind));
+  return motors.some((m) => ["bumper", "rail", "carrier", "flipper"].includes(m.kind));
+}
+
+function defaultTrigger(kind) {
+  return ["fieldForce", "gravityShift", "dragZone", "carrier", "rail"].includes(kind) ? "inside" : "contact";
 }
 
 function localFallback(emojis = []) {
   const seed = hash(emojis.join("|"));
-  const first = pick(MOTOR_KINDS, seed);
-  const second = pick(MOTOR_KINDS.filter((kind) => kind !== first), seed >>> 5);
-  const motors = [
-    { kind: first, trigger: "contact", direction: "angle", power: 0.72, range: 0.58, duration: 0.35 },
-    { kind: second, trigger: "inside", direction: "angle", power: 0.45, range: 0.52, duration: 0.6 },
-  ];
+  const first = pick(["launcher", "split", "gravityShift", "bumper", "portal", "flipper"], seed);
+  const second = pick(["fieldForce", "rail", "carrier", "dragZone", "timerRelease"], seed >>> 5);
+  const motors = normalizeMotors([
+    { kind: first, trigger: "contact", direction: "angle", power: 0.78, range: 0.58, duration: 0.55, angle: 180, count: 2, spreadAngle: 38 },
+    { kind: second, trigger: "inside", direction: "towardNextGoal", power: 0.55, range: 0.62, duration: 0.8, angle: 90, count: 2, spreadAngle: 38 },
+  ]);
   const shape = defaultShapeForMotors(motors);
   return {
     name: `審議中${emojis.join("")}`.slice(0, 24),
-    visualLabel: pick(["装置", "細工", "仕掛け", "ゲート", "足場", "流れ", "振り子"], seed >>> 8),
+    visualLabel: pick(["装置", "細工", "仕掛け", "ゲート", "足場", "分裂", "重力"], seed >>> 8),
     flavor: `${emojis.join("")}から生まれたボール細工。`,
-    shortEffect: "触れるとボールを次の動きへつなげる。",
-    body: { shape, solid: isSolidShape(shape, motors), size: 0.65, motion: defaultMotionForMotors(motors), motionPower: 0.55 },
+    shortEffect: "触れると派手に動き、次の動きへつなげる。",
+    body: { shape, solid: isSolidShape(shape, motors), size: 0.68, motion: defaultMotionForMotors(motors), motionPower: 0.65 },
     motors,
+    exit: { direction: "towardNextGoal", minSpeed: 7.2, afterSeconds: 0.7, label: "出口補助" },
   };
 }
 
-function normalizeMotors(rawMotors, fallbackMotors) {
+function normalizeMotors(rawMotors, fallbackMotors = []) {
   const source = Array.isArray(rawMotors) ? rawMotors : [];
   const normalized = source.slice(0, 5).map((motor, index) => {
-    const fallback = fallbackMotors[index] || fallbackMotors[0] || { kind: "kick", trigger: "contact", direction: "angle", power: 0.7, range: 0.55, duration: 0.35 };
+    const fallback = fallbackMotors[index] || fallbackMotors[0] || { kind: "launcher", trigger: "contact", direction: "angle", power: 0.78, range: 0.58, duration: 0.55, angle: 180, count: 2, spreadAngle: 38 };
+    const kind = normalizeKind(motor?.kind, fallback.kind);
     return {
-      kind: normalizeKind(motor?.kind, fallback.kind),
-      trigger: normalizeEnum(motor?.trigger, TRIGGERS, fallback.trigger || "contact"),
+      kind,
+      trigger: normalizeEnum(motor?.trigger, TRIGGERS, fallback.trigger || defaultTrigger(kind)),
       direction: normalizeEnum(motor?.direction, DIRECTIONS, fallback.direction || "angle"),
-      power: normalizeNumber(motor?.power, fallback.power ?? 0.7, 0.18, 1),
-      range: normalizeNumber(motor?.range, fallback.range ?? 0.55, 0.15, 1),
-      duration: normalizeNumber(motor?.duration, fallback.duration ?? 0.35, 0.05, 2.5),
+      power: normalizeNumber(motor?.power, fallback.power ?? 0.78, 0.18, 1),
+      range: normalizeNumber(motor?.range, fallback.range ?? 0.58, 0.15, 1),
+      duration: normalizeNumber(motor?.duration, fallback.duration ?? 0.65, 0.05, 3),
+      angle: normalizeNumber(motor?.angle, fallback.angle ?? 180, -360, 360),
+      count: Math.round(normalizeNumber(motor?.count, fallback.count ?? 2, 2, 4)),
+      spreadAngle: normalizeNumber(motor?.spreadAngle, fallback.spreadAngle ?? 38, 10, 140),
+      mode: normalizeString(motor?.mode, fallback.mode || "", 16),
     };
   });
 
   const motors = normalized.length ? normalized : fallbackMotors;
-  const hasStrongOutput = motors.some((m) => ["kick", "cannon", "spring", "redirect", "portal", "carrier", "pendulum", "rail"].includes(m.kind));
-  const hasSustain = motors.some((m) => ["wind", "updraft", "vortex", "current", "tether", "orbit", "antiFall", "speedFloor"].includes(m.kind));
-
-  if (!hasStrongOutput && !hasSustain) {
-    motors.push({ kind: "speedFloor", trigger: "inside", direction: "angle", power: 0.55, range: 0.6, duration: 0.5 });
-  }
+  if (!motors.length) motors.push({ kind: "launcher", trigger: "contact", direction: "angle", power: 0.78, range: 0.55, duration: 0.45, angle: 180, count: 2, spreadAngle: 38, mode: "" });
   if (motors.length === 1) {
-    const only = motors[0];
-    const assistKind = ["kick", "cannon", "spring"].includes(only.kind) ? "updraft" : "speedFloor";
-    motors.push({ kind: assistKind, trigger: "inside", direction: only.direction || "angle", power: 0.35, range: Math.max(0.45, only.range || 0.5), duration: 0.6 });
+    motors.push({ kind: needsPath(motors[0].kind) ? "launcher" : "fieldForce", trigger: "inside", direction: "towardNextGoal", power: 0.58, range: 0.65, duration: 0.8, angle: 0, count: 2, spreadAngle: 38, mode: "exit" });
   }
-
+  if (!motors.some((m) => SHOWY_KINDS.includes(m.kind))) {
+    motors.push({ kind: "launcher", trigger: "contact", direction: "angle", power: 0.72, range: 0.5, duration: 0.45, angle: 0, count: 2, spreadAngle: 38, mode: "assist" });
+  }
   return motors.slice(0, 5);
+}
+
+function normalizeExit(rawExit, motors) {
+  const risky = motors.some((m) => needsPath(m.kind));
+  if (!risky && rawExit == null) return null;
+  return {
+    direction: normalizeEnum(rawExit?.direction, EXIT_DIRECTIONS, "towardNextGoal"),
+    minSpeed: normalizeNumber(rawExit?.minSpeed, 7.2, 5.8, 11),
+    afterSeconds: normalizeNumber(rawExit?.afterSeconds, 0.75, 0.25, 1.8),
+    label: normalizeJapanese(rawExit?.label, "出口補助", 16),
+  };
 }
 
 function normalizeBody(rawBody, motors, fallbackBody) {
   const fallbackShape = fallbackBody?.shape || defaultShapeForMotors(motors);
-  let shape = normalizeEnum(rawBody?.shape, BODY_SHAPES, fallbackShape);
-  const inferred = defaultShapeForMotors(motors);
-  if (["line", "platform", "rail"].includes(shape) && !isSolidShape(shape, motors)) shape = inferred;
+  const shape = normalizeEnum(rawBody?.shape, BODY_SHAPES, fallbackShape);
   const motion = normalizeEnum(rawBody?.motion, BODY_MOTIONS, fallbackBody?.motion || defaultMotionForMotors(motors));
   return {
     shape,
     solid: Boolean(rawBody?.solid ?? isSolidShape(shape, motors)),
-    size: normalizeNumber(rawBody?.size, fallbackBody?.size ?? 0.65, 0.35, 1),
+    size: normalizeNumber(rawBody?.size, fallbackBody?.size ?? 0.68, 0.35, 1),
     motion,
-    motionPower: normalizeNumber(rawBody?.motionPower, fallbackBody?.motionPower ?? 0.55, 0, 1),
+    motionPower: normalizeNumber(rawBody?.motionPower, fallbackBody?.motionPower ?? 0.65, 0, 1),
   };
 }
 
@@ -189,6 +213,7 @@ function normalizeResult(raw, fallback) {
     shortEffect: normalizeJapanese(raw?.shortEffect, fallback.shortEffect, 44),
     body: normalizeBody(raw?.body || { shape: raw?.shape }, motors, fallback.body),
     motors,
+    exit: normalizeExit(raw?.exit, motors),
   };
 }
 
@@ -209,7 +234,7 @@ export function mountNoHandSoccerRoutes(app) {
     }
 
     const fallback = localFallback(emojis);
-    const prompt = `絵文字3つから、ボールを動かすギミックを生成。日本語で。絵文字:${emojis.join(" ")}。JSONのみ:{"name":"","visualLabel":"","flavor":"","shortEffect":"","body":{"shape":"point|line|area|fan|gate|rail|carrier|arm|platform","solid":false,"size":0.6,"motion":"none|spin|slide|bob|swing|orbit|pendulum","motionPower":0.5},"motors":[{"kind":"","trigger":"contact|inside|enter|periodic|timer","direction":"angle|up|down|left|right|radialIn|radialOut|tangent|towardNextGoal|awayFromBall","power":0.7,"range":0.6,"duration":0.5}]}`;
+    const prompt = `絵文字3つから、派手に動くサッカー用ピタゴラ装置を生成。日本語。kindは物理的に独立した役割だけを使う。最低2 motors。分裂は分身もゴール判定あり。JSONのみ:{"name":"","visualLabel":"","flavor":"","shortEffect":"","body":{"shape":"point|line|area|fan|gate|rail|carrier|arm|platform","solid":false,"size":0.7,"motion":"none|spin|slide|bob|swing|orbit|pendulum","motionPower":0.7},"motors":[{"kind":"launcher|bumper|fieldForce|gravityShift|split|portal|rail|carrier|flipper|phase|dragZone|timerRelease","trigger":"contact|inside|enter|periodic|timer","direction":"angle|up|down|left|right|radialIn|radialOut|tangent|towardNextGoal|awayFromBall","power":0.8,"range":0.7,"duration":0.8,"angle":180,"count":2,"spreadAngle":38,"mode":""}],"exit":{"direction":"angle|towardNextGoal|radialOut|up|left|right","minSpeed":7,"afterSeconds":0.8,"label":""}} 絵文字:${emojis.join(" ")}`;
 
     try {
       const text = await genWithFallback(prompt, {
