@@ -7,6 +7,17 @@
   const SHOWY = new Set(['launcher', 'bumper', 'gravityShift', 'split', 'portal', 'flipper', 'timerRelease']);
 
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function cleanText(text, fallback = '') {
+    return String(text || fallback)
+      .replace(/サッカー/g, 'ピタゴラ')
+      .replace(/ゴール/g, '出口')
+      .replace(/得点/g, '通過')
+      .replace(/勝利/g, '成功')
+      .replace(/シュート/g, '発射')
+      .replace(/キック/g, '起動')
+      .slice(0, 80);
+  }
+  function cleanDirection(direction) { return direction === 'towardExit' ? 'towardNextGoal' : direction; }
   function kindOf(kind) {
     const raw = String(kind || '').trim();
     if (['launcher','bumper','fieldForce','gravityShift','split','portal','rail','carrier','flipper','phase','dragZone','timerRelease'].includes(raw)) return raw;
@@ -18,6 +29,8 @@
       return {
         ...motor,
         kind,
+        direction: cleanDirection(motor.direction || 'angle'),
+        mode: cleanText(motor.mode, '').slice(0, 16),
         power: clamp(Number(motor.power ?? 0.78), 0.18, 1),
         range: clamp(Number(motor.range ?? 0.58), 0.15, 1),
         duration: clamp(Number(motor.duration ?? 0.65), 0.05, 3),
@@ -34,17 +47,26 @@
   function normalizeExit(exit, motors) {
     const needsExit = motors.some((m) => PATH_NEED.has(m.kind));
     if (!needsExit && !exit) return null;
+    const direction = cleanDirection(exit?.direction || 'towardNextGoal');
     return {
-      direction: ['angle','towardNextGoal','radialOut','up','left','right'].includes(exit?.direction) ? exit.direction : 'towardNextGoal',
+      direction: ['angle','towardNextGoal','radialOut','up','left','right'].includes(direction) ? direction : 'towardNextGoal',
       minSpeed: clamp(Number(exit?.minSpeed ?? 7.2), 5.8, 11),
       afterSeconds: clamp(Number(exit?.afterSeconds ?? 0.75), 0.25, 1.8),
-      label: String(exit?.label || '出口補助').slice(0, 16),
+      label: cleanText(exit?.label, '出口補助').slice(0, 16),
     };
   }
   function normalizeGimmick(gimmick) {
     if (!gimmick || !Array.isArray(gimmick.motors)) return gimmick;
     const motors = normalizeMotors(gimmick.motors);
-    return { ...gimmick, motors, exit: normalizeExit(gimmick.exit, motors) };
+    return {
+      ...gimmick,
+      name: cleanText(gimmick.name, 'ピタゴラ装置').slice(0, 24),
+      visualLabel: cleanText(gimmick.visualLabel, '細工').slice(0, 12),
+      flavor: cleanText(gimmick.flavor, ''),
+      shortEffect: cleanText(gimmick.shortEffect, 'ボールの動きを変える').slice(0, 44),
+      motors,
+      exit: normalizeExit(gimmick.exit, motors),
+    };
   }
 
   window.fetch = async (input, init) => {
