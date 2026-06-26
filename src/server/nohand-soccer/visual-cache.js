@@ -12,8 +12,8 @@ const MANIFEST_PATH = path.join(ROOT, "visual-cache.json");
 const URL_ROOT = "/generated/nohand-soccer";
 const SHAPES = new Set(["point", "line", "area", "fan", "gate", "rail", "carrier", "arm", "platform"]);
 const GREEN = [0, 255, 0];
-const SOLID_TOLERANCE = 46;
-const EDGE_TOLERANCE = 118;
+const SOLID_TOLERANCE = 86;
+const EDGE_TOLERANCE = 184;
 const PNG_SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const CRC_TABLE = makeCrcTable();
 
@@ -25,6 +25,9 @@ function sha(input) { return crypto.createHash("sha256").update(String(input || 
 function shapeOf(value) { const shape = text(value, 24); return SHAPES.has(shape) ? shape : "point"; }
 function safeFile(value, max = 42) {
   return String(value || "visual").normalize("NFKC").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "").slice(0, max) || "visual";
+}
+function list(value, max = 5) {
+  return (Array.isArray(value) ? value : []).map((item) => text(item, 24)).filter(Boolean).slice(0, max);
 }
 function extFromMime(mimeType) {
   const mime = String(mimeType || "").toLowerCase();
@@ -52,14 +55,31 @@ function shapePrompt(shape) {
     line: "横長の棒・ガイド。細すぎず、衝突する実体として見える形。",
     rail: "横長または緩い曲線のレール。ボールが沿って動けそうな形。",
     carrier: "横長の動く足場や台車。足場部分と移動装置が一体に見える形。",
-    gate: "縦長の門・通過ゲート。中央に通過口がある形。",
+    gate: "縦長の門・通過ゲート。中央に通れる隙間がある形。",
     fan: "扇形または放射状の装置。風を出す機械として分かる形。",
     area: "正方形寄りの範囲装置。床置きの機械・フィールド発生器の形。",
     point: "正方形寄りの小型装置。発射台・反発装置・スイッチのような形。",
   }[shape] || "単体のゲーム用ギミック装置。";
 }
-function buildPrompt(visualLabel, shape) {
-  return `ゲーム用の単体ギミック素材を1つだけ描く。テーマ:${visualLabel}\n構図:${shapePrompt(shape)}\n必須: 背景は完全な #00FF00 の単色グリーンバック。背景にグラデーション、模様、影、床面を入れない。文字、数字、UI、ラベル、アイコン、ボール、ゴール、サッカー場、人物を描かない。装置だけを中央に大きく描く。輪郭をはっきり描く。背景と装置の境界を明確にする。影は最小限。かわいいが物理的な当たり判定が想像しやすい形にする。`;
+function buildPrompt({ visualLabel, shape, deviceType, visualMotifs, motionIdea, mainMotorKinds }) {
+  const motifs = list(visualMotifs).join("、") || visualLabel;
+  const motors = list(mainMotorKinds).join("、") || "接触反応";
+  return `ゲーム用の単体ギミック素材を1つだけ描く。
+テーマ:${visualLabel}
+装置分類:${deviceType || shape}
+見た目に必ず含める要素:${motifs}
+動きの意図:${motionIdea || "ボールの動きを変える装置。"}
+主な物理効果:${motors}
+構図:${shapePrompt(shape)}
+必須:
+- 背景は完全な #00FF00 の単色グリーンバック。
+- 背景にグラデーション、模様、影、床面を入れない。
+- 装置本体に緑色、黄緑色、蛍光グリーンを使わない。背景と紛らわしい色を避ける。
+- 文字、数字、UI、ラベル、説明アイコン、ボール、ゴール、サッカー場、人物を描かない。
+- 装置だけを中央に大きく描く。
+- 見た目から「${motionIdea || "何をする装置か"}」が想像できる形にする。
+- 輪郭をはっきり描き、背景と装置の境界を明確にする。
+- 影は最小限。クロマキー透過しやすくする。`;
 }
 async function generateImage(prompt) {
   if (!GEMINI_API_KEY) throw new Error("gemini_api_key_missing");
@@ -123,13 +143,25 @@ function unfilter(data, width, height, bpp) {
   }
   return out;
 }
-function alphaFor(r, g, b, a) {
+function greenScore(r, g, b) {
   const distance = Math.max(Math.abs(r - GREEN[0]), Math.abs(g - GREEN[1]), Math.abs(b - GREEN[2]));
-  if (distance <= SOLID_TOLERANCE) return 0;
-  if (g > r + 38 && g > b + 38 && distance <= EDGE_TOLERANCE) {
-    return Math.round(a * ((distance - SOLID_TOLERANCE) / (EDGE_TOLERANCE - SOLID_TOLERANCE)));
+  const greenDominance = g - Math.max(r, b);
+  return { distance, greenDominance };
+}
+function alphaFor(r, g, b, a) {
+  const { distance, greenDominance } = greenScore(r, g, b);
+  if (distance <= SOLID_TOLERANCE || (g > 150 && greenDominance > 34 && r < 130 && b < 130)) return 0;
+  if (g > 110 && greenDominance > 18 && distance <= EDGE_TOLERANCE) {
+    return Math.round(a * Math.max(0, Math.min(1, (distance - SOLID_TOLERANCE) / (EDGE_TOLERANCE - SOLID_TOLERANCE))));
   }
   return a;
+}
+function desaturateGreen(r, g, b, alpha) {
+  if (alpha === 0) return [r, g, b];
+  const { greenDominance } = greenScore(r, g, b);
+  if (greenDominance <= 18) return [r, g, b];
+  const bleed = Math.min(greenDominance, 80) * (alpha < 230 ? 0.85 : 0.38);
+  return [r, Math.max(0, Math.round(g - bleed)), b];
 }
 function chromaKeyPng(buffer) {
   const list = chunks(buffer);
@@ -146,7 +178,9 @@ function chromaKeyPng(buffer) {
     const source = y * stride + x * bpp;
     const target = (y * width + x) * 4;
     const r = pixels[source], g = pixels[source + 1], b = pixels[source + 2], a = colorType === 6 ? pixels[source + 3] : 255;
-    rgba[target] = r; rgba[target + 1] = g; rgba[target + 2] = b; rgba[target + 3] = alphaFor(r, g, b, a);
+    const alpha = alphaFor(r, g, b, a);
+    const [rr, gg, bb] = desaturateGreen(r, g, b, alpha);
+    rgba[target] = rr; rgba[target + 1] = gg; rgba[target + 2] = bb; rgba[target + 3] = alpha;
   }
   return encodePng(width, height, rgba);
 }
@@ -160,25 +194,32 @@ function encodePng(width, height, rgba) {
   const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4); ihdr[8] = 8; ihdr[9] = 6;
   return Buffer.concat([PNG_SIG, chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(scan)), chunk("IEND", Buffer.alloc(0))]);
 }
-function response(record, cached) { return { visualLabel: record.visualLabel, shape: record.shape, imageUrl: record.status === "ready" ? record.transparentImagePath : "", originalImageUrl: record.originalImagePath || "", cached, status: record.status }; }
-export async function getOrCreateNoHandGimmickVisual({ visualLabel, shape } = {}) {
-  const label = text(visualLabel, 12);
-  const cleanShape = shapeOf(shape);
-  if (!label || label === "undefined" || label === "null") return { visualLabel: label, shape: cleanShape, imageUrl: "", originalImageUrl: "", cached: false, status: "skipped" };
+function response(record, cached) {
+  return { visualLabel: record.visualLabel, conceptKey: record.conceptKey, deviceType: record.deviceType, shape: record.shape, imageUrl: record.status === "ready" ? record.transparentImagePath : "", originalImageUrl: record.originalImagePath || "", cached, status: record.status };
+}
+export async function getOrCreateNoHandGimmickVisual(input = {}) {
+  const label = text(input.visualLabel, 32);
+  const cleanShape = shapeOf(input.shape);
+  const deviceType = text(input.deviceType, 24);
+  const visualMotifs = list(input.visualMotifs);
+  const motionIdea = text(input.motionIdea, 160);
+  const mainMotorKinds = list(input.mainMotorKinds);
+  const rawConceptKey = text(input.conceptKey, 220) || [label, deviceType, cleanShape, visualMotifs.join("+"), mainMotorKinds.join("+")].join("|");
+  const conceptKey = sha(rawConceptKey).slice(0, 24);
+  if (!label || label === "undefined" || label === "null") return { visualLabel: label, conceptKey, shape: cleanShape, imageUrl: "", originalImageUrl: "", cached: false, status: "skipped" };
   await ensureDirs();
   const manifest = await readManifest();
-  const existing = manifest[label];
+  const existing = manifest[conceptKey];
   if (existing?.status === "ready" && await hasCachedFile(existing.transparentImagePath).catch(() => false)) return response(existing, true);
   const now = new Date().toISOString();
-  const key = sha(label).slice(0, 16);
-  const prompt = buildPrompt(label, cleanShape);
-  const base = { visualLabel: label, shape: existing?.shape || cleanShape, imagePrompt: prompt, originalImagePath: existing?.originalImagePath || "", transparentImagePath: existing?.transparentImagePath || "", createdAt: existing?.createdAt || now, updatedAt: now, status: "generating" };
-  manifest[label] = base;
+  const prompt = buildPrompt({ visualLabel: label, shape: cleanShape, deviceType, visualMotifs, motionIdea, mainMotorKinds });
+  const base = { conceptKey, rawConceptKey, visualLabel: label, deviceType, visualMotifs, motionIdea, mainMotorKinds, shape: existing?.shape || cleanShape, imagePrompt: prompt, originalImagePath: existing?.originalImagePath || "", transparentImagePath: existing?.transparentImagePath || "", createdAt: existing?.createdAt || now, updatedAt: now, status: "generating" };
+  manifest[conceptKey] = base;
   await writeManifest(manifest);
   try {
     const image = await generateImage(prompt);
-    const originalName = `${key}-${safeFile(label)}-greenback.${extFromMime(image.mimeType)}`;
-    const transparentName = `${key}-${safeFile(label)}-transparent.png`;
+    const originalName = `${conceptKey}-${safeFile(label)}-greenback.${extFromMime(image.mimeType)}`;
+    const transparentName = `${conceptKey}-${safeFile(label)}-transparent.png`;
     await fs.writeFile(path.join(ORIGINAL_DIR, originalName), image.buffer);
     const record = { ...base, originalImagePath: urlFor("original", originalName), updatedAt: new Date().toISOString(), status: "original-only", modelName: image.model, mimeType: image.mimeType };
     try {
@@ -187,21 +228,29 @@ export async function getOrCreateNoHandGimmickVisual({ visualLabel, shape } = {}
       record.status = "ready";
     } catch (error) {
       record.error = `transparent_failed:${err(error)}`;
-      console.warn("[noHand-soccer] chroma key failed", { visualLabel: label, error: err(error) });
+      console.warn("[noHand-soccer] chroma key failed", { visualLabel: label, conceptKey, error: err(error) });
     }
-    const latest = await readManifest(); latest[label] = record; await writeManifest(latest);
+    const latest = await readManifest(); latest[conceptKey] = record; await writeManifest(latest);
     return response(record, false);
   } catch (error) {
     const failed = { ...base, updatedAt: new Date().toISOString(), status: "failed", error: err(error) };
-    const latest = await readManifest(); latest[label] = failed; await writeManifest(latest);
-    console.warn("[noHand-soccer] gimmick visual generation failed", { visualLabel: label, error: err(error) });
+    const latest = await readManifest(); latest[conceptKey] = failed; await writeManifest(latest);
+    console.warn("[noHand-soccer] gimmick visual generation failed", { visualLabel: label, conceptKey, error: err(error) });
     return response(failed, false);
   }
 }
 export function mountNoHandSoccerVisualRoutes(app) {
   app.post("/api/nohand-soccer/gimmick-visual", async (req, res) => {
-    const visualLabel = text(req.body?.visualLabel, 12);
+    const visualLabel = text(req.body?.visualLabel, 32);
     if (!visualLabel) return res.status(400).json({ error: "visualLabel is required." });
-    return res.json(await getOrCreateNoHandGimmickVisual({ visualLabel, shape: req.body?.shape }));
+    return res.json(await getOrCreateNoHandGimmickVisual({
+      visualLabel,
+      conceptKey: req.body?.conceptKey,
+      deviceType: req.body?.deviceType,
+      shape: req.body?.shape,
+      visualMotifs: req.body?.visualMotifs,
+      motionIdea: req.body?.motionIdea,
+      mainMotorKinds: req.body?.mainMotorKinds,
+    }));
   });
 }
