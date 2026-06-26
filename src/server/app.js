@@ -1,11 +1,13 @@
 import express from "express";
 import path from "path";
+import { mountNoHandSoccerVisualRoutes } from "./nohand-soccer/visual-cache.js";
 
 export function createApp() {
   const app = express();
 
   // JSON
   app.use(express.json({ limit: "12mb" }));
+  mountNoHandSoccerVisualRoutes(app);
 
   // 既存トップページ用（必要なら）
   app.use(express.static("public"));
