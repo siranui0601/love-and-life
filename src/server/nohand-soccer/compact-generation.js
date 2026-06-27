@@ -24,19 +24,36 @@ function pair(value, fallback = [0, 0], min = -100, max = 100) {
   const src = Array.isArray(value) ? value : fallback;
   return [clamp(src[0], fallback[0] ?? 0, min, max), clamp(src[1], fallback[1] ?? 0, min, max)];
 }
-function rawPoints(value, maxPoints = 6) {
-  return (Array.isArray(value) ? value : []).filter(Array.isArray).slice(0, maxPoints).map((p) => pair(p));
+function stagePoint(value, fallback = { $x: 70, $y: -30 }) {
+  const src = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return { $x: clamp(src.$x, fallback.$x, -100, 100), $y: clamp(src.$y, fallback.$y, -100, 100) };
 }
-function strengthenAxis(list, axis) {
+function coordPoint(value, fallback = [0, 0], preferStage = false) {
+  if (value && typeof value === "object" && !Array.isArray(value) && ("$x" in value || "$y" in value)) {
+    const fb = Array.isArray(fallback) ? { $x: fallback[0] || 0, $y: fallback[1] || 0 } : fallback;
+    return stagePoint(value, fb);
+  }
+  const local = pair(value, Array.isArray(fallback) ? fallback : [fallback.$x || 0, fallback.$y || 0]);
+  return preferStage ? { $x: local[0], $y: local[1] } : local;
+}
+function isStagePoint(value) {
+  return value && typeof value === "object" && !Array.isArray(value) && ("$x" in value || "$y" in value);
+}
+function rawPoints(value, maxPoints = 6) {
+  return (Array.isArray(value) ? value : []).slice(0, maxPoints).map((p) => coordPoint(p)).filter(Boolean);
+}
+function strengthenAxis(points, axis) {
+  const indexed = points.map((p, index) => ({ p, index })).filter(({ p }) => Array.isArray(p));
+  if (indexed.length <= 1) return points;
   let min = Infinity;
   let max = -Infinity;
-  for (const p of list) { min = Math.min(min, p[axis]); max = Math.max(max, p[axis]); }
+  for (const { p } of indexed) { min = Math.min(min, p[axis]); max = Math.max(max, p[axis]); }
   const span = max - min;
-  if (!Number.isFinite(span) || span <= 0) return list;
+  if (!Number.isFinite(span) || span <= 0) return points;
   const center = (min + max) / 2;
   const scale = span < MIN_PATH_SPAN ? MIN_PATH_SPAN / span : 1;
-  return list.map((p, index) => {
-    if (index === 0) return p;
+  return points.map((p, index) => {
+    if (!Array.isArray(p) || index === 0) return p;
     let value = center + (p[axis] - center) * scale;
     if (value !== 0 && Math.abs(value) < MIN_PATH_DELTA) value = Math.sign(value) * MIN_PATH_DELTA;
     const next = [...p];
@@ -91,7 +108,7 @@ function normalizeSplit(raw) {
 }
 function normalizeWarp(raw) {
   if (!raw || typeof raw !== "object") return undefined;
-  return defined({ to: pair(raw.to || raw.pos, [70, -30]) });
+  return defined({ to: coordPoint(raw.to || raw.pos, { $x: 70, $y: -30 }, true) });
 }
 function angleFromDirection(direction) {
   const [x, y] = pair(direction, [0, -100]);
@@ -218,7 +235,7 @@ function prompt(emojis) {
 返答はJSONのみ。
 
 出力するJSONの形:
-- summary: この装置の動き方を20〜35文字で要約。flowに実際に書いた動きだけを要約する
+- summary: この装置の動き方を20〜35文字で要約。summaryはこの装置で起きる動きの設計図。summaryに書いた主要な動きや効果はflow内で必ず実行する
 - trigger: { step }。ボールが最初に触れる開始step
 - flow: step配列。各stepは actors, pos, duration を持ち、必要に応じて ball / device / hit / split / warp / gravity を1つ以上持つ
 
@@ -229,16 +246,20 @@ function prompt(emojis) {
 - device.path: [[x,y], ...]。絵文字部品の動き。ball.pathと同じ動きなら運搬風になるし、yを+にしていけば落下した様になる
 - hit: { velocity:[x,y], radius }。ボールを弾く
 - split: { count, spread }。ボールを分裂させる
-- warp: { to:[x,y] }。ボールを転移させる
+- warp: { to:{"$x":x,"$y":y} }。ボールをステージ上の離れた位置へ転移させる
 - gravity: { angle }。そのstepの間、重力方向を変える。0=上、90=右、180=下、270=左
 
 ルール:
+- [x,y] はstep中心からの相対座標。{"$x":x,"$y":y} はステージ全体の絶対座標
+- {"$x":x,"$y":y} は ball.path / device.path / warp.to の中でも使える
+- $x,$yは-100〜100。$x=-100が左端、100が右端。$y=-100が上端、100が下端
 - pathのx,yの各最小値は15
 - flowは上から順番に実行される。最後のstepが終わったら装置は終了する
 - 各stepのduration中に、そのstepのball / device / gravityが動く
 - 3つの絵文字が装置の一部に見えるようにflowへ含める
-- split / warp / gravity は特殊効果だが、絵文字の主題からこれらが連想される場合は使う。ただし、1つのギミックに特殊効果を複数重ねすぎない
-- pos / path / velocity / to はギミック中心またはstep中心からの相対座標。範囲は-100〜100。xは右が+、yは下が+。`;
+- split / warp / gravity は特殊効果。絵文字の主題から自然に連想でき、通常のpathやhitより適切になる場合だけ使う
+- summaryに分裂・転移・重力反転などを書く場合、それに対応するsplit / warp / gravityをflowに入れる
+- pos / path / velocity / to は範囲-100〜100。xは右が+、yは下が+。`;
 }
 async function logGimmick(emojis, gimmick, source) {
   try { await appendNoHandSoccerGimmickLog({ emojis, gimmick, source }); }
@@ -252,7 +273,7 @@ export function mountCompactNoHandSoccerRoutes(app) {
       const output = await genWithFallback(prompt(emojis), { generationConfig: { responseMimeType: "application/json", temperature: 0.88 } });
       const raw = JSON.parse(extractFirstJsonObject(output));
       const gimmick = normalize(raw, emojis);
-      await logGimmick(emojis, gimmick, "gemini-angle-gravity-flow");
+      await logGimmick(emojis, gimmick, "gemini-stage-absolute-flow");
       return res.json(gimmick);
     } catch (error) {
       console.warn("[noHand-soccer] primitive flow fallback", error);
