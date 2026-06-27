@@ -1,41 +1,139 @@
 import { genWithFallback, stripJsonFence } from "../../foundation/gemini.js";
 import { appendNoHandSoccerGimmickLog } from "./sheet-log.js";
 
-const KINDS = ["launcher", "bumper", "fieldForce", "gravityShift", "split", "portal", "rail", "carrier", "flipper", "phase", "dragZone", "timerRelease"];
-const SHAPES = ["point", "line", "area", "fan", "gate", "rail", "carrier", "arm", "platform"];
-const MOTIONS = ["none", "spin", "slide", "bob", "swing", "orbit", "pendulum"];
-const DIRECTIONS = ["angle", "up", "down", "left", "right", "radialIn", "radialOut", "tangent", "awayFromBall"];
-const FIELD_KINDS = new Set(["fieldForce", "gravityShift", "dragZone", "rail", "carrier"]);
-const EMOJI_HINTS = [
-  [/⛩️|🚪|🛕/, "鳥居門", "門", "通過・門"],
-  [/🤛|👊|🥊|🔨|🪓|⚒️/, "打撃機構", "拳・ハンマー", "打撃・押し出し"],
-  [/🔗|⛓️|🪝/, "連鎖機構", "鎖", "連結・引き起こし"],
-  [/🪨|🧱|🪵|🧊/, "重り", "岩・台座", "重さ・反発"],
-  [/💌|💄|💋|❤️|💘|🌹|💍/, "恋文機構", "恋愛モチーフ", "受け渡し・押印"],
-  [/🚀|⚡|🔥|🏹/, "推進機", "ノズル", "発射・加速"],
-  [/🧲|🌀|🌪️|🕳️/, "吸引核", "渦・磁石", "吸引・向き変更"],
-  [/🛞|🚗|🚚|🚃/, "運搬台", "車輪つき台", "移動・運搬"],
-  [/🛤️|🪜|🛝|🧵/, "誘導路", "レール", "誘導・滑走"],
-];
-function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i += 1) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-function pick(arr, n) { return arr[Math.abs(Number(n) || 0) % arr.length]; }
-function text(value, fallback = "", max = 80) { return String(value || fallback || "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max); }
-function jp(value, fallback, max = 80) { const s = text(value, fallback, max); return /[ぁ-んァ-ン一-龥]/.test(s) ? s : text(fallback, "絵文字装置", max); }
-function num(value, fallback, min, max) { const n = Number(value); return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback; }
-function one(value, allowed, fallback) { const v = String(value || ""); return allowed.includes(v) ? v : fallback; }
-function hintFor(emoji, index) { const found = EMOJI_HINTS.find(([re]) => re.test(emoji)); return found ? { emoji, role: found[1], motif: found[2], mechanic: found[3] } : { emoji, role: ["主素材", "補助機構", "仕上げ機構"][index] || "素材", motif: emoji, mechanic: "接触・変化" }; }
-function m(kind, direction, power, range, duration, mode) { return { kind, direction, power, range, duration, angle: 0, count: 2, spreadAngle: 34, mode }; }
-function localRaw(emojis) { const seed = hash(emojis.join("|")); const has = (re) => emojis.some((e) => re.test(e)); if (has(/🔨|🤛|👊|🥊|⛩️/)) return [m("timerRelease", "angle", .42, .36, .28, "hold"), m("launcher", "angle", .74, .4, .18, "hit")]; if (has(/🛤️|🛝|🪜/)) return [m("rail", "angle", .52, .42, .7, "guide"), m("launcher", "angle", .4, .3, .22, "exit")]; if (has(/🧲|🌀|🌪️/)) return [m("fieldForce", pick(["radialIn", "radialOut", "tangent"], seed), .44, .52, .7, "field"), m("dragZone", "angle", .18, .38, .35, "trim")]; return [m("launcher", "angle", .62, .36, .24, "push"), m("bumper", "radialOut", .42, .3, .18, "rim")]; }
-function kind(value, fallback = "launcher") { return KINDS.includes(value) ? value : fallback; }
-function normalizeMotor(raw, fallback) { const k = kind(raw?.kind, fallback?.kind); return { kind: k, trigger: FIELD_KINDS.has(k) ? "inside" : "contact", direction: one(raw?.direction, DIRECTIONS, fallback?.direction || "angle"), power: num(raw?.power, fallback?.power ?? .6, .18, 1), range: num(raw?.range, fallback?.range ?? .4, .15, 1), duration: num(raw?.duration, fallback?.duration ?? .3, .08, 3), angle: num(raw?.angle, fallback?.angle ?? 0, -360, 360), count: Math.round(num(raw?.count, fallback?.count ?? 2, 2, 4)), spreadAngle: num(raw?.spreadAngle, fallback?.spreadAngle ?? 34, 10, 120), mode: text(raw?.mode, fallback?.mode || "", 14) }; }
-function normalizeMotors(raw, fallback) { const src = Array.isArray(raw) && raw.length ? raw : fallback; const out = src.slice(0, 4).map((motor, i) => normalizeMotor(motor, fallback[i] || fallback[0])); if (out.length === 1) out.push(normalizeMotor({ kind: "launcher", direction: "angle", power: .5, range: .3, duration: .18, mode: "assist" }, out[0])); return out; }
-function shapeFor(motors) { if (motors.some((m) => m.kind === "rail")) return "rail"; if (motors.some((m) => m.kind === "carrier")) return "carrier"; if (motors.some((m) => m.kind === "flipper")) return "arm"; if (motors.some((m) => ["portal", "phase", "timerRelease"].includes(m.kind))) return "gate"; if (motors.some((m) => ["fieldForce", "gravityShift", "dragZone"].includes(m.kind))) return "area"; return "point"; }
-function solidFor(shape, motors) { return ["line", "platform", "rail", "carrier", "arm"].includes(shape) || motors.some((m) => ["bumper", "rail", "carrier", "flipper"].includes(m.kind)); }
-function makeLabel(reading, motors) { const noun = motors.some((m) => m.kind === "timerRelease") ? "捕球機" : motors.some((m) => m.kind === "rail") ? "誘導路" : motors.some((m) => m.kind === "fieldForce") ? "力場" : "射出台"; return jp(`${reading[0]?.role || "絵文字"}${reading[1]?.role || ""}${noun}`.replace(/[^぀-ヿ㐀-鿿ー々]/g, ""), "絵文字装置", 18); }
-function sanitizeLabel(label, reading, motors) { const clean = text(label, "", 18).replace(/\p{Extended_Pictographic}/gu, "").replace(/^[・\s]+|[・\s]+$/g, ""); if (/[ぁ-んァ-ン一-龥]/.test(clean) && !/^(ゲート|装置|細工|仕掛け|射出台)$/.test(clean)) return clean; return makeLabel(reading, motors); }
-function effect(motors, motifs = []) { const a = motors[0], b = motors[1]; if (a?.kind === "timerRelease" && b?.kind === "launcher") return `一瞬受け止め、${motifs[1] || motifs[0] || "装置"}で向いている方向へ打ち出す`; if (a?.kind === "rail") return "触れたボールをレールに沿わせる"; if (a?.kind === "fieldForce") return "範囲内のボールをゆっくり流す"; if (a?.kind === "bumper") return "触れたボールを跳ね返す"; return "触れると向いている方向へ押し出す"; }
-function finish(raw, emojis) { const reading = emojis.map((emoji, i) => { const h = hintFor(emoji, i); const r = Array.isArray(raw?.emojiReading) ? raw.emojiReading[i] : null; return { emoji, role: jp(r?.role, h.role, 14), mechanic: jp(r?.mechanic, h.mechanic, 18) }; }); const motifs = (Array.isArray(raw?.visualMotifs) ? raw.visualMotifs : reading.map((r) => hintFor(r.emoji, 0).motif)).map((x) => jp(x, "素材", 16)).slice(0, 4); const fallbackMotors = localRaw(emojis); const motors = normalizeMotors(raw?.motors, fallbackMotors); const shape = one(raw?.body?.shape, SHAPES, shapeFor(motors)); const visualLabel = sanitizeLabel(raw?.visualLabel, reading, motors); const result = { name: emojis.join(""), visualLabel, emojiReading: reading, visualMotifs: motifs, motionIdea: jp(raw?.motionIdea, `${motifs.join("・")}でボールを動かす。`, 70), body: { shape, solid: solidFor(shape, motors) || Boolean(raw?.body?.solid), size: num(raw?.body?.size, .7, .35, 1), motion: one(raw?.body?.motion, MOTIONS, "none"), motionPower: num(raw?.body?.motionPower, .45, 0, 1) }, motors, exit: motors.some((m) => FIELD_KINDS.has(m.kind)) ? { direction: "radialOut", minSpeed: 6.2, afterSeconds: 1.4, label: "救済" } : null };
-  result.mainMotorKinds = [...new Set(motors.map((x) => x.kind))].slice(0, 3); result.shortEffect = effect(motors, motifs); result.conceptKey = [result.name, result.visualLabel, result.mainMotorKinds.join("+")].join("|"); return result; }
-function prompt(emojis) { return `3絵文字から装置JSONを作る。短く。trigger/name/shortEffect/deviceType不要。contactはshape判定で処理。\n{"visualLabel":"固有名","emojiReading":[{"emoji":"${emojis[0]}","role":"","mechanic":""},{"emoji":"${emojis[1]}","role":"","mechanic":""},{"emoji":"${emojis[2]}","role":"","mechanic":""}],"visualMotifs":[""],"motionIdea":"1文","body":{"shape":"point|area|fan|gate|rail|carrier|arm|platform","solid":false,"size":0.7,"motion":"none|spin|slide|bob|swing|orbit|pendulum","motionPower":0.4},"motors":[{"kind":"launcher|bumper|fieldForce|gravityShift|split|portal|rail|carrier|flipper|phase|dragZone|timerRelease","direction":"angle|up|down|left|right|radialIn|radialOut|tangent|awayFromBall","power":0.6,"range":0.4,"duration":0.3,"angle":0,"count":2,"spreadAngle":34,"mode":""}]}\nvisualLabelは絵文字だけ+ゲート禁止。motors最大3。絵文字:${emojis.join(" ")}`; }
-async function log(emojis, gimmick, source) { try { await appendNoHandSoccerGimmickLog({ emojis, gimmick, source }); } catch (error) { console.warn("[noHand-soccer] compact log skipped", error); } }
-export function mountCompactNoHandSoccerRoutes(app) { app.post("/api/nohand-soccer/gimmick", async (req, res) => { const emojis = Array.isArray(req.body?.emojis) ? req.body.emojis.slice(0, 3).map(String) : []; if (emojis.length !== 3 || emojis.some((emoji) => !emoji.trim())) return res.status(400).json({ error: "emojis must contain exactly 3 items." }); try { const raw = JSON.parse(stripJsonFence(await genWithFallback(prompt(emojis), { generationConfig: { responseMimeType: "application/json", temperature: .9 } }))); const gimmick = finish(raw, emojis); await log(emojis, gimmick, "gemini-compact"); return res.json(gimmick); } catch (error) { console.warn("[noHand-soccer] compact fallback", error); const gimmick = { ...finish({}, emojis), source: "fallback" }; await log(emojis, gimmick, "fallback-compact"); return res.json(gimmick); } }); }
+function text(value, fallback = "", max = 160) {
+  return String(value || fallback || "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+}
+function clamp(value, fallback, min, max) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
+}
+function pair(value, fallback = [0, 0]) {
+  const src = Array.isArray(value) ? value : fallback;
+  return [clamp(src[0], fallback[0] ?? 0, -1, 1), clamp(src[1], fallback[1] ?? 0, -1, 1)];
+}
+function points(value) {
+  return (Array.isArray(value) ? value : []).filter(Array.isArray).slice(0, 8).map((p) => pair(p));
+}
+function defined(object) {
+  return Object.fromEntries(Object.entries(object).filter(([, v]) => {
+    if (v == null) return false;
+    if (Array.isArray(v)) return v.length;
+    if (typeof v === "object") return Object.keys(v).length;
+    return true;
+  }));
+}
+function maybeNumber(value, min, max) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : undefined;
+}
+function ball(raw = {}) {
+  return defined({
+    velocity: Array.isArray(raw.velocity) ? pair(raw.velocity) : undefined,
+    force: Array.isArray(raw.force) ? pair(raw.force) : undefined,
+    path: points(raw.path),
+    hold: maybeNumber(raw.hold, 0, 0.8),
+    carry: maybeNumber(raw.carry, 0, 1),
+    spin: maybeNumber(raw.spin, -1, 1),
+    bounce: maybeNumber(raw.bounce, 0, 1),
+  });
+}
+function device(raw = {}) {
+  const swing = raw.swing && typeof raw.swing === "object" ? defined({
+    pivot: Array.isArray(raw.swing.pivot) ? pair(raw.swing.pivot) : undefined,
+    angle: maybeNumber(raw.swing.angle, -1, 1),
+    cycles: maybeNumber(raw.swing.cycles, 0, 3),
+  }) : {};
+  return defined({
+    move: Array.isArray(raw.move) ? pair(raw.move) : undefined,
+    rotate: maybeNumber(raw.rotate, -1, 1),
+    swing,
+  });
+}
+function effects(raw = {}) {
+  return defined({
+    split: maybeNumber(raw.split, 1, 4),
+    spread: maybeNumber(raw.spread, 0, 1),
+    warp: Array.isArray(raw.warp) ? pair(raw.warp) : undefined,
+    gravity: Array.isArray(raw.gravity) ? pair(raw.gravity, [0, -1]) : undefined,
+    merge: ["none", "faster", "farther", "average", "original"].includes(raw.merge) ? raw.merge : undefined,
+  });
+}
+function beat(raw = {}, index = 0) {
+  const out = defined({
+    duration: clamp(raw.duration ?? raw.t, index ? 0.32 : 0.18, 0.06, 1.4),
+    ball: ball(raw.ball || raw),
+    device: device(raw.device || raw.rig),
+    effects: effects(raw.effects || raw.fx),
+    branches: (Array.isArray(raw.branches) ? raw.branches : []).slice(0, 4).map((b) => defined({ ball: ball(b.ball || b) })).filter((b) => Object.keys(b).length),
+  });
+  return out.ball || out.device || out.effects || out.branches ? out : null;
+}
+function fallbackBeats() {
+  return [
+    { duration: 0.16, ball: { velocity: [0.1, -0.35], spin: 0.12, bounce: 0.25 } },
+    { duration: 0.34, ball: { path: [[0, 0], [0.2, -0.24], [0.42, -0.44]], carry: 0.45 } },
+    { duration: 0.18, ball: { velocity: [0.32, -0.55], spin: 0.16 } },
+  ];
+}
+function normalize(raw, emojis) {
+  const motion = text(raw?.motion, `${emojis.join("")}に触れたボールが向きを変えて進む。`);
+  const beats = (Array.isArray(raw?.beats) ? raw.beats : []).slice(0, 5).map(beat).filter(Boolean);
+  const finalBeats = beats.length >= 2 ? beats : fallbackBeats();
+  const motors = legacyMotors(finalBeats);
+  return {
+    visualLabel: emojis.join(""),
+    motion,
+    motionIdea: motion,
+    beats: finalBeats,
+    motors,
+    body: legacyBody(finalBeats),
+    mainMotorKinds: [...new Set(motors.map((m) => m.kind))].slice(0, 3),
+    shortEffect: motion,
+    conceptKey: [emojis.join(""), motion, JSON.stringify(finalBeats)].join("|"),
+  };
+}
+function legacyMotors(beats) {
+  const has = (fn) => beats.some(fn);
+  const motors = [];
+  if (has((b) => b.ball?.hold || b.ball?.carry || b.device)) motors.push(motor("timerRelease", "angle", 0.46, 0.38, 0.28, "hold"));
+  if (has((b) => Number(b.effects?.split) > 1)) motors.push(motor("split", "angle", 0.58, 0.42, 0.5, "split"));
+  if (has((b) => Array.isArray(b.effects?.warp))) motors.push(motor("portal", "angle", 0.52, 0.36, 0.18, "warp"));
+  if (has((b) => Array.isArray(b.effects?.gravity))) motors.push(motor("gravityShift", "angle", 0.52, 0.56, 0.9, "gravity"));
+  if (has((b) => Array.isArray(b.ball?.path) && b.ball.path.length > 1)) motors.push(motor("rail", "angle", 0.5, 0.46, 0.7, "path"));
+  if (has((b) => Number(b.ball?.bounce) > 0.18)) motors.push(motor("bumper", "radialOut", 0.5, 0.34, 0.18, "bounce"));
+  motors.push(motor("launcher", "angle", 0.52, 0.34, 0.2, "release"));
+  return motors.slice(0, 4);
+}
+function legacyBody(beats) {
+  const moving = beats.some((b) => b.device?.swing || b.device?.rotate || b.device?.move);
+  const path = beats.some((b) => Array.isArray(b.ball?.path) && b.ball.path.length > 1);
+  return { shape: path ? "rail" : moving ? "carrier" : "point", solid: path || moving, size: 0.68, motion: beats.some((b) => b.device?.swing) ? "pendulum" : moving ? "slide" : "none", motionPower: 0.55 };
+}
+function motor(kind, direction, power, range, duration, mode) {
+  return { kind, trigger: ["rail", "gravityShift"].includes(kind) ? "inside" : "contact", direction, power, range, duration, angle: 0, count: 2, spreadAngle: 34, mode };
+}
+function prompt(emojis) {
+  return `${emojis.join(" ")}\n\nこんなピタゴラ装置（3つ合わせて1つのギミック）があるとしたら、この装置に触れた落下中のボールはどんな挙動をすると思いますか？\nまずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂・ワープ・重力反転等を取り入れても構わないが、それらは装置をより面白くできる場合に限る。\n\n次のJSONだけを返してください。\n\n{"motion":"接触後のボールの動きの要約","beats":[{"duration":0.2,"ball":{"velocity":[0,-0.5],"force":[0.2,-0.3],"path":[[0,0],[0.3,-0.4]],"hold":0.1,"carry":0.5,"spin":0.1,"bounce":0.3},"device":{"move":[0,-0.2],"rotate":0.2,"swing":{"pivot":[0,-0.6],"angle":0.4,"cycles":0.5}},"effects":{"split":2,"spread":0.4,"warp":[0.4,-0.6],"gravity":[-1,0],"merge":"faster"},"branches":[{"ball":{"path":[[-0.2,0],[-0.6,-0.5]],"velocity":[-0.3,-0.4],"bounce":0.5}}]}]}\n\n各beatは、duration秒の間に起きる動きを表す。\nballはボールへの作用、deviceは装置全体の動き、effectsは分裂・ワープ・重力などの特殊効果を表す。\n使わない項目は省略する。\nbeatsは3〜5個。\npath / warp / pivot は、ギミック中心を[0,0]とした-1〜1の相対座標。\nvelocity / force / gravity / move は、-1〜1の方向と強さ。\nJSONにない項目は追加しない。`;
+}
+async function logGimmick(emojis, gimmick, source) {
+  try { await appendNoHandSoccerGimmickLog({ emojis, gimmick, source }); }
+  catch (error) { console.warn("[noHand-soccer] compact log skipped", error); }
+}
+export function mountCompactNoHandSoccerRoutes(app) {
+  app.post("/api/nohand-soccer/gimmick", async (req, res) => {
+    const emojis = Array.isArray(req.body?.emojis) ? req.body.emojis.slice(0, 3).map(String) : [];
+    if (emojis.length !== 3 || emojis.some((emoji) => !emoji.trim())) return res.status(400).json({ error: "emojis must contain exactly 3 items." });
+    try {
+      const raw = JSON.parse(stripJsonFence(await genWithFallback(prompt(emojis), { generationConfig: { responseMimeType: "application/json", temperature: 0.92 } })));
+      const gimmick = normalize(raw, emojis);
+      await logGimmick(emojis, gimmick, "gemini-beats");
+      return res.json(gimmick);
+    } catch (error) {
+      console.warn("[noHand-soccer] beat fallback", error);
+      const gimmick = { ...normalize({}, emojis), source: "fallback" };
+      await logGimmick(emojis, gimmick, "fallback-beats");
+      return res.json(gimmick);
+    }
+  });
+}
