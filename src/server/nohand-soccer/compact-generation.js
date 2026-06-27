@@ -61,18 +61,16 @@ function normalizeBall(raw = {}) {
   });
 }
 function normalizeDevice(raw = {}) {
+  const path = points(raw.path, 5);
   const swing = raw.swing && typeof raw.swing === "object" ? defined({
     pivot: pair(raw.swing.pivot, [0, -55]),
     angle: intClamp(raw.swing.angle, 65, -120, 120),
     length: intClamp(raw.swing.length, 58, 18, 95),
     cycles: clamp(raw.swing.cycles, 0.6, 0.2, 2.5),
   }) : undefined;
-  return defined({
-    path: points(raw.path, 5),
-    swing,
-    rotate: intClamp(raw.rotate, 0, -120, 120) || undefined,
-    duration: clamp(raw.duration, 0.35, 0.08, 1.2),
-  });
+  const rotate = intClamp(raw.rotate, 0, -120, 120) || undefined;
+  if (!path.length && !swing && !rotate) return undefined;
+  return defined({ path, swing, rotate, duration: clamp(raw.duration, 0.35, 0.08, 1.2) });
 }
 function normalizeHit(raw = {}) {
   return defined({
@@ -83,11 +81,7 @@ function normalizeHit(raw = {}) {
 }
 function normalizeSplit(raw) {
   if (!raw || typeof raw !== "object") return undefined;
-  return defined({
-    count: intClamp(raw.count, 2, 2, 4),
-    spread: intClamp(raw.spread, 55, 10, 100),
-    power: intClamp(raw.power, 55, 10, 100),
-  });
+  return defined({ count: intClamp(raw.count, 2, 2, 4), spread: intClamp(raw.spread, 55, 10, 100), power: intClamp(raw.power, 55, 10, 100) });
 }
 function normalizeWarp(raw) {
   if (!raw || typeof raw !== "object") return undefined;
@@ -95,10 +89,7 @@ function normalizeWarp(raw) {
 }
 function normalizeGravity(raw) {
   if (!raw || typeof raw !== "object") return undefined;
-  return defined({
-    direction: pair(raw.direction, [0, -100]),
-    strength: intClamp(raw.strength, 60, 10, 100),
-  });
+  return defined({ direction: pair(raw.direction, [0, -100]), strength: intClamp(raw.strength, 60, 10, 100) });
 }
 function flowStep(raw = {}, index = 0, usedActors = new Set()) {
   let actors = cleanActors(raw.actors);
@@ -176,11 +167,7 @@ function layoutFromFlow(flow, emojis) {
   const rows = [];
   for (const step of flow) {
     const offsets = step.actors.length === 2 ? [[-14, 0], [14, 0]] : [[0, 0]];
-    step.actors.forEach((actor, i) => rows.push({
-      actor,
-      emoji: emojis[actor] || "❓",
-      pos: [clamp(step.pos[0] + offsets[i][0], 0, -100, 100) / 100, clamp(step.pos[1] + offsets[i][1], 0, -100, 100) / 100],
-    }));
+    step.actors.forEach((actor, i) => rows.push({ actor, emoji: emojis[actor] || "❓", pos: [clamp(step.pos[0] + offsets[i][0], 0, -100, 100) / 100, clamp(step.pos[1] + offsets[i][1], 0, -100, 100) / 100] }));
   }
   return rows.sort((a, b) => a.actor - b.actor);
 }
@@ -224,16 +211,10 @@ function prompt(emojis) {
 返答はJSONのみ。
 modeではなく、ball / device / hit / split / warp / gravity / next の組み合わせで、装置の意味構造と動きを直接書いてください。
 
-出力形式:
-{
-  "summary": "短い動きの要約",
-  "trigger": { "step": 0, "radius": 28 },
-  "flow": [
-    { "step": 0, "actors": [0], "pos": [-70, -20], "ball": { "impulse": [20, -45], "power": 35 }, "next": "assist", "duration": 0.2 },
-    { "step": 1, "actors": [2], "pos": [0, -70], "device": { "path": [[0, -50], [0, 20]], "duration": 0.35 }, "hit": { "radius": 30, "impulse": [35, 35], "power": 55 }, "next": "assist", "duration": 0.35 },
-    { "step": 2, "actors": [1], "pos": [70, 10], "device": { "swing": { "pivot": [-25, -45], "angle": 70 } }, "hit": { "impulse": [85, -35], "power": 75 }, "next": "terminal", "duration": 0.28 }
-  ]
-}
+出力するJSONの形:
+- summary: カード表示用の短い要約。
+- trigger: { step, radius }。ボールが最初に触れる開始step。
+- flow: step配列。各stepは actors, pos, duration, next を持ち、必要に応じて ball / device / hit / split / warp / gravity を1つ以上持つ。
 
 使える指定:
 - ball.path: ボールを指定軌道で運ぶ。蛇行・波・滑り台のような動きに使う。
@@ -244,17 +225,17 @@ modeではなく、ball / device / hit / split / warp / gravity / next の組み
 - device.path: その絵文字部品が動く軌道。落下物・押し出し・移動床に使う。
 - device.swing: 支点を中心に振れる動き。鎖・ハンマー・振り子に使う。
 - hit: そのstepの部品がボールに当たったように力を与える。
-- split / warp / gravity: 特殊効果。絵文字3つの意味から見て、その効果が一番自然で面白い場合だけ使う。
+- split / warp / gravity は特殊効果だが、絵文字の主題からこれらが連想される場合は積極的に使う。ただし、1つのギミックに特殊効果を複数重ねすぎない。
 - next: time / assist / terminal。assistは接触っぽく補正しながら必ず次へ進める。
 
 ルール:
-- summaryはカード表示用。20〜35文字程度。
-- flowは、配置・部品・発動順をまとめたもの。
+- この説明文の数値や順番をテンプレートとして真似しない。必ず絵文字3つの意味から毎回配置と動きを考える。
+- summaryは20〜35文字程度。
 - actorsは絵文字番号。左から0,1,2。actors:[0,1] や actors:[1,2] のように隣り合う絵文字を1つのstepにまとめてもよい。
 - actorsは全体で重複させない。
 - pos / path / pivot / impulse / direction はギミック中心またはstep中心からの相対座標。範囲は-100〜100。xは右がプラス、yは下がプラス。
 - posはボールの流れに合うように配置する。入力順ではなく、動作として自然な位置を優先する。
-- trigger.stepは、ボールが最初に触れるstep。ユーザーに分かりやすい開始地点にする。
+- trigger.stepはユーザーに分かりやすい開始地点にする。
 - 1つのflow stepで主役にする効果は1つ。補助としてhitを足すのはよい。
 - splitを使うstepはnextをterminalにする。
 - JSONにない項目は追加しない。mode / layout / units / beats / motion / motionIdea / shortEffect / force / motors / body / role / description / label / id / name / size / hitbox は書かない。`;
@@ -268,10 +249,10 @@ export function mountCompactNoHandSoccerRoutes(app) {
     const emojis = Array.isArray(req.body?.emojis) ? req.body.emojis.slice(0, 3).map(String) : [];
     if (emojis.length !== 3 || emojis.some((emoji) => !emoji.trim())) return res.status(400).json({ error: "emojis must contain exactly 3 items." });
     try {
-      const output = await genWithFallback(prompt(emojis), { generationConfig: { responseMimeType: "application/json", temperature: 0.86 } });
+      const output = await genWithFallback(prompt(emojis), { generationConfig: { responseMimeType: "application/json", temperature: 0.88 } });
       const raw = JSON.parse(extractFirstJsonObject(output));
       const gimmick = normalize(raw, emojis);
-      await logGimmick(emojis, gimmick, "gemini-primitive-flow");
+      await logGimmick(emojis, gimmick, "gemini-primitive-flow-visual");
       return res.json(gimmick);
     } catch (error) {
       console.warn("[noHand-soccer] primitive flow fallback", error);
