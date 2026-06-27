@@ -2,6 +2,8 @@ import { genWithFallback, stripJsonFence } from "../../foundation/gemini.js";
 import { appendNoHandSoccerGimmickLog } from "./sheet-log.js";
 
 const DEFAULT_FLOW_POS = [[-75, 20], [0, -35], [75, 20]];
+const MIN_PATH_DELTA = 15;
+const MIN_PATH_SPAN = 30;
 
 function text(value, fallback = "", max = 180) {
   return String(value || fallback || "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
@@ -22,8 +24,32 @@ function pair(value, fallback = [0, 0], min = -100, max = 100) {
   const src = Array.isArray(value) ? value : fallback;
   return [clamp(src[0], fallback[0] ?? 0, min, max), clamp(src[1], fallback[1] ?? 0, min, max)];
 }
-function points(value, maxPoints = 6) {
+function rawPoints(value, maxPoints = 6) {
   return (Array.isArray(value) ? value : []).filter(Array.isArray).slice(0, maxPoints).map((p) => pair(p));
+}
+function strengthenAxis(list, axis) {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const p of list) { min = Math.min(min, p[axis]); max = Math.max(max, p[axis]); }
+  const span = max - min;
+  if (!Number.isFinite(span) || span <= 0) return list;
+  const center = (min + max) / 2;
+  const scale = span < MIN_PATH_SPAN ? MIN_PATH_SPAN / span : 1;
+  return list.map((p, index) => {
+    if (index === 0) return p;
+    let value = center + (p[axis] - center) * scale;
+    if (value !== 0 && Math.abs(value) < MIN_PATH_DELTA) value = Math.sign(value) * MIN_PATH_DELTA;
+    const next = [...p];
+    next[axis] = clamp(value, p[axis], -100, 100);
+    return next;
+  });
+}
+function visiblePoints(value, maxPoints = 6) {
+  let list = rawPoints(value, maxPoints);
+  if (list.length <= 1) return list;
+  list = strengthenAxis(list, 0);
+  list = strengthenAxis(list, 1);
+  return list;
 }
 function defined(object) {
   return Object.fromEntries(Object.entries(object).filter(([, v]) => {
@@ -42,13 +68,13 @@ function cleanActors(value) {
 }
 function normalizeBall(raw = {}) {
   return defined({
-    path: points(raw.path),
+    path: visiblePoints(raw.path),
     hold: clamp(raw.hold, 0, 0, 3) || undefined,
     spin: intClamp(raw.spin, 0, -100, 100) || undefined,
   });
 }
 function normalizeDevice(raw = {}) {
-  const path = points(raw.path, 5);
+  const path = visiblePoints(raw.path, 5);
   if (!path.length) return undefined;
   return { path };
 }
@@ -67,9 +93,14 @@ function normalizeWarp(raw) {
   if (!raw || typeof raw !== "object") return undefined;
   return defined({ to: pair(raw.to || raw.pos, [70, -30]) });
 }
+function angleFromDirection(direction) {
+  const [x, y] = pair(direction, [0, -100]);
+  return (Math.atan2(x, -y) * 180 / Math.PI + 360) % 360;
+}
 function normalizeGravity(raw) {
   if (!raw || typeof raw !== "object") return undefined;
-  return defined({ direction: pair(raw.direction, [0, -100]) });
+  const angle = Number.isFinite(Number(raw.angle)) ? Number(raw.angle) : angleFromDirection(raw.direction);
+  return { angle: ((angle % 360) + 360) % 360 };
 }
 function flowStep(raw = {}, index = 0, usedActors = new Set()) {
   let actors = cleanActors(raw.actors);
@@ -92,6 +123,7 @@ function flowStep(raw = {}, index = 0, usedActors = new Set()) {
     gravity: normalizeGravity(raw.gravity),
   });
   if (step.ball?.hold) step.duration = Math.max(step.duration, step.ball.hold);
+  if (!step.device && (step.gravity || step.split || step.warp)) step.device = { path: [[0, 0], [0, -15], [0, 0]] };
   if (!step.ball && !step.device && !step.hit && !step.split && !step.warp && !step.gravity) {
     step.ball = index === 0 ? { path: [[0, 0], [70, -15]] } : undefined;
     step.hit = index === 0 ? undefined : { velocity: [65, -35], radius: 30 };
@@ -135,7 +167,8 @@ function normalizeFlow(rawFlow) {
 }
 function normalizeTrigger(raw = {}, flow = []) {
   const step = Number.isInteger(Number(raw.step)) ? Math.max(0, Math.min(flow.length - 1, Number(raw.step))) : 0;
-  return { step, radius: intClamp(raw.radius, 28, 16, 55) };
+  const actorCount = flow[step]?.actors?.length || 1;
+  return { step, radius: actorCount > 1 ? 46 : 38 };
 }
 function layoutFromFlow(flow, emojis) {
   const rows = [];
@@ -185,8 +218,8 @@ function prompt(emojis) {
 返答はJSONのみ。
 
 出力するJSONの形:
-- summary: この装置の動き方を20〜35文字で要約
-- trigger: { step, radius }。ボールが最初に触れる開始step
+- summary: この装置の動き方を20〜35文字で要約。flowに実際に書いた動きだけを要約する
+- trigger: { step }。ボールが最初に触れる開始step
 - flow: step配列。各stepは actors, pos, duration を持ち、必要に応じて ball / device / hit / split / warp / gravity を1つ以上持つ
 
 使える指定:
@@ -196,16 +229,16 @@ function prompt(emojis) {
 - device.path: [[x,y], ...]。絵文字部品の動き。ball.pathと同じ動きなら運搬風になるし、yを+にしていけば落下した様になる
 - hit: { velocity:[x,y], radius }。ボールを弾く
 - split: { count, spread }。ボールを分裂させる
-- warp: { to:[x,y] }。ボールを移動させる
-- gravity: { direction:[x,y] }。そのstepの間、重力方向を変える
+- warp: { to:[x,y] }。ボールを転移させる
+- gravity: { angle }。そのstepの間、重力方向を変える。0=上、90=右、180=下、270=左
 
 ルール:
-- flowは上から順番に実行される。最後のstepが終わったら装置は終了する。
-- 各stepのduration中に、そのstepのball / device / gravityが動く。
-- split / warp / gravity は特殊効果だが、絵文字の主題からこれらが連想される場合は積極的に使う。ただし、1つのギミックに特殊効果を複数重ねすぎない。
-- actorsは絵文字番号。左から0,1,2。actors:[0,1] や actors:[1,2] のように隣り合う絵文字を1つのstepにまとめてもよい。actorsは全体で重複させない。
-- pos / path / velocity / direction はギミック中心またはstep中心からの相対座標。範囲は-100〜100。xは右が+、yは下が+。
-- posはボールの流れに合うように配置する。入力順ではなく、動作として自然な位置を優先する。`;
+- pathのx,yの各最小値は15
+- flowは上から順番に実行される。最後のstepが終わったら装置は終了する
+- 各stepのduration中に、そのstepのball / device / gravityが動く
+- 3つの絵文字が装置の一部に見えるようにflowへ含める
+- split / warp / gravity は特殊効果だが、絵文字の主題からこれらが連想される場合は使う。ただし、1つのギミックに特殊効果を複数重ねすぎない
+- pos / path / velocity / to はギミック中心またはstep中心からの相対座標。範囲は-100〜100。xは右が+、yは下が+。`;
 }
 async function logGimmick(emojis, gimmick, source) {
   try { await appendNoHandSoccerGimmickLog({ emojis, gimmick, source }); }
@@ -219,7 +252,7 @@ export function mountCompactNoHandSoccerRoutes(app) {
       const output = await genWithFallback(prompt(emojis), { generationConfig: { responseMimeType: "application/json", temperature: 0.88 } });
       const raw = JSON.parse(extractFirstJsonObject(output));
       const gimmick = normalize(raw, emojis);
-      await logGimmick(emojis, gimmick, "gemini-simplified-primitive-flow");
+      await logGimmick(emojis, gimmick, "gemini-angle-gravity-flow");
       return res.json(gimmick);
     } catch (error) {
       console.warn("[noHand-soccer] primitive flow fallback", error);
