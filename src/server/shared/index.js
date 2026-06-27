@@ -9,7 +9,6 @@ import { mountSecretToolRoutes } from "../secret-tool/index.js";
 import { mountOriginMagicCircleRoutes } from "../origin-magic-circle/index.js";
 import { mountHundredOreRoutes } from "../100ore/index.js";
 import { mountCompactNoHandSoccerRoutes } from "../nohand-soccer/compact-generation.js";
-import { mountNoHandSoccerRoutes } from "../nohand-soccer/index.js";
 
 export function createServerContext() {
   const app = createApp();
@@ -24,7 +23,6 @@ export function createServerContext() {
   mountOriginMagicCircleRoutes(app, io);
   mountHundredOreRoutes(app);
   mountCompactNoHandSoccerRoutes(app);
-  mountNoHandSoccerRoutes(app);
 
   return { app, httpServer, io };
 }
