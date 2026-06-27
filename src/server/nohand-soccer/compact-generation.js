@@ -85,13 +85,6 @@ function beat(raw = {}, index = 0) {
   });
   return out.ball || out.device || out.effects || out.branches ? out : null;
 }
-function part(raw = {}, index = 0, emojis = []) {
-  return defined({
-    actor: actorIndex(raw.actor, index),
-    emoji: text(raw.emoji, emojis[index] || "", 16),
-    role: text(raw.role || raw.action, "", 36),
-  });
-}
 function contact(raw = {}) {
   const start = ["any", "nearestActor"].includes(raw.start) ? raw.start : "any";
   const sequence = ["fixed", "fromTouched"].includes(raw.sequence) ? raw.sequence : "fixed";
@@ -110,19 +103,17 @@ function normalize(raw, emojis) {
   const beats = (Array.isArray(raw?.beats) ? raw.beats : []).slice(0, 5).map(beat).filter(Boolean);
   const finalBeats = beats.length >= 2 ? beats : fallbackBeats();
   const motors = legacyMotors(finalBeats);
-  const parts = (Array.isArray(raw?.parts) ? raw.parts : emojis.map((emoji, actor) => ({ actor, emoji }))).slice(0, 3).map((p, i) => part(p, i, emojis));
   return {
     visualLabel: emojis.join(""),
     motion,
     motionIdea: motion,
     contact: contact(raw?.contact || {}),
-    parts,
     beats: finalBeats,
     motors,
     body: { shape: "point", solid: false, size: 0.7, motion: "none", motionPower: 0.5 },
     mainMotorKinds: [...new Set(motors.map((m) => m.kind))].slice(0, 3),
     shortEffect: motion,
-    conceptKey: [emojis.join(""), motion, JSON.stringify(parts), JSON.stringify(finalBeats)].join("|"),
+    conceptKey: [emojis.join(""), motion, JSON.stringify(finalBeats)].join("|"),
   };
 }
 function legacyMotors(beats) {
@@ -163,7 +154,7 @@ function extractFirstJsonObject(input) {
   throw new SyntaxError("JSON object was not closed");
 }
 function prompt(emojis) {
-  return `${emojis.join(" ")}\n\nこんなピタゴラ装置（3つ合わせて1つのギミック）があるとしたら、この装置に触れた落下中のボールはどんな挙動をすると思いますか？\nまずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂・ワープ・重力反転等を取り入れても構わないが、それらは装置をより面白くできる場合に限る。\n\n次のJSONだけを返してください。\n\n{"motion":"絵文字3つから連想した具体的な動き","contact":{"start":"any","sequence":"fixed"},"parts":[{"actor":0,"role":"左の絵文字がすること"},{"actor":1,"role":"中央の絵文字がすること"},{"actor":2,"role":"右の絵文字がすること"}],"beats":[{"actor":0,"duration":0.2,"ball":{"velocity":[0,-0.5],"force":[0.2,-0.3],"path":[[0,0],[0.3,-0.4]],"hold":0.1,"carry":0.5,"spin":0.1,"bounce":0.3},"device":{"move":[0,-0.2],"rotate":0.2,"swing":{"pivot":[0,-0.6],"angle":0.4,"cycles":0.5}},"effects":{"split":2,"spread":0.4,"warp":[0.4,-0.6],"gravity":[-1,0],"merge":"faster"},"branches":[{"actor":1,"ball":{"path":[[-0.2,0],[-0.6,-0.5]],"velocity":[-0.3,-0.4],"bounce":0.5}}]}]}\n\nmotionは「要約」などの説明語ではなく、絵文字から連想したボールの具体的な動きにする。\nactorは左から0,1,2。各beatはどの絵文字がボールに作用するかをactorで示す。\ncontact.startはanyかnearestActor。sequenceはfixedかfromTouched。迷う場合はany/fixed。\npartsには各絵文字の役割を短く書く。\n各beatはduration秒の間に起きる動きを表す。\nballはボールへの作用、deviceは装置全体の動き、effectsは分裂・ワープ・重力などの特殊効果を表す。\n使わない項目は省略する。beatsは3〜5個。\npath / warp / pivot は、そのactorの絵文字中心を[0,0]とした-1〜1の相対座標。\nvelocity / force / gravity / move は、-1〜1の方向と強さ。\nJSONにない項目は追加しない。`;
+  return `${emojis.join(" ")}\n\nこんなピタゴラ装置（3つ合わせて1つのギミック）があるとしたら、この装置に触れた落下中のボールはどんな挙動をすると思いますか？\nまずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂・ワープ・重力変更等を取り入れても構わないが、それらは装置をより面白くできる場合に限る。\n\n次のJSONだけを返してください。\n\n{"motion":"絵文字3つから連想した具体的な動き","contact":{"start":"any","sequence":"fixed"},"beats":[{"actor":0,"duration":0.24,"ball":{"velocity":[0.3,-0.5],"bounce":0.35,"spin":0.15}},{"actor":1,"duration":0.36,"ball":{"path":[[0,0],[0.45,-0.25]],"carry":0.45}},{"actor":2,"duration":0.28,"effects":{"split":2,"spread":0.55},"branches":[{"ball":{"velocity":[-0.45,-0.35]}},{"ball":{"velocity":[0.45,-0.35]}}]}]}\n\nmotionは「要約」などの説明語ではなく、絵文字から連想したボールの具体的な動きにする。\nactorは左から0,1,2。各beatはどの絵文字がボールに作用するかをactorで示す。\ncontact.startはanyかnearestActor。sequenceはfixedかfromTouched。迷う場合はany/fixed。\n各beatはduration秒の間に起きる動きを表す。beatsは3〜5個。\n1つのbeatに詰め込む主効果は1〜2個まで。split / warp / gravity は同じbeatに重ねない。\ndeviceは装置全体が本当に動く場合だけ使う。迷う場合はdeviceを省略する。\nballはボールへの作用、effectsは分裂・ワープ・重力などの特殊効果を表す。使わない項目は省略する。\npath / warp / pivot は、そのactorの絵文字中心を[0,0]とした-1〜1の相対座標。\nvelocity / force / gravity / move は、-1〜1の方向と強さ。\n分裂する場合はbranchesに左右など異なるvelocityを入れる。\nparts / role / label / description / name / id / size / hitbox は書かない。\nJSONにない項目は追加しない。`;
 }
 async function logGimmick(emojis, gimmick, source) {
   try { await appendNoHandSoccerGimmickLog({ emojis, gimmick, source }); }
