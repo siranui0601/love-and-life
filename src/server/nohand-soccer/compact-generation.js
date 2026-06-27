@@ -96,6 +96,7 @@ function normalize(raw, emojis) {
 function legacyMotors(beats) {
   const has = (fn) => beats.some(fn);
   const motors = [];
+  // UI表示と旧fallback用の最低限の橋渡し。beatsが存在する場合、フロントではbeatsが優先実行される。
   if (has((b) => b.ball?.hold || b.ball?.carry || b.device)) motors.push(motor("timerRelease", "angle", 0.46, 0.38, 0.28, "hold"));
   if (has((b) => Number(b.effects?.split) > 1)) motors.push(motor("split", "angle", 0.58, 0.42, 0.5, "split"));
   if (has((b) => Array.isArray(b.effects?.warp))) motors.push(motor("portal", "angle", 0.52, 0.36, 0.18, "warp"));
