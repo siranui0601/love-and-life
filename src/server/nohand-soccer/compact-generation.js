@@ -1,12 +1,12 @@
 import { genWithFallback, stripJsonFence } from "../../foundation/gemini.js";
 import { appendNoHandSoccerGimmickLog } from "./sheet-log.js";
 
-function text(value, fallback = "", max = 160) {
+function text(value, fallback = "", max = 180) {
   return String(value || fallback || "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
-function fallbackMotion(emojis) { return `${emojis.join("")}に触れたボールが、落下の勢いを別方向へ変えて進む。`; }
+function fallbackMotion(emojis) { return `${emojis.join("")}に触れたボールが、3つの絵文字を順番に渡りながら落下の勢いを変える。`; }
 function isGenericMotion(value) {
-  const s = text(value, "", 220);
+  const s = text(value, "", 240);
   return !s || /要約|説明|具体的|接触後のボールの動き/.test(s) || s.length < 8;
 }
 function clamp(value, fallback, min, max) {
@@ -31,6 +31,10 @@ function defined(object) {
 function maybeNumber(value, min, max) {
   const n = Number(value);
   return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : undefined;
+}
+function actorIndex(value, fallback = undefined) {
+  const n = Number(value);
+  return Number.isInteger(n) ? Math.max(0, Math.min(2, n)) : fallback;
 }
 function ball(raw = {}) {
   return defined({
@@ -64,21 +68,40 @@ function effects(raw = {}) {
     merge: ["none", "faster", "farther", "average", "original"].includes(raw.merge) ? raw.merge : undefined,
   });
 }
+function branch(raw = {}) {
+  return defined({
+    actor: actorIndex(raw.actor),
+    ball: ball(raw.ball || raw),
+  });
+}
 function beat(raw = {}, index = 0) {
   const out = defined({
+    actor: actorIndex(raw.actor, index % 3),
     duration: clamp(raw.duration ?? raw.t, index ? 0.32 : 0.18, 0.06, 1.4),
     ball: ball(raw.ball || raw),
     device: device(raw.device || raw.rig),
     effects: effects(raw.effects || raw.fx),
-    branches: (Array.isArray(raw.branches) ? raw.branches : []).slice(0, 4).map((b) => defined({ ball: ball(b.ball || b) })).filter((b) => Object.keys(b).length),
+    branches: (Array.isArray(raw.branches) ? raw.branches : []).slice(0, 4).map(branch).filter((b) => Object.keys(b).length),
   });
   return out.ball || out.device || out.effects || out.branches ? out : null;
 }
+function part(raw = {}, index = 0, emojis = []) {
+  return defined({
+    actor: actorIndex(raw.actor, index),
+    emoji: text(raw.emoji, emojis[index] || "", 16),
+    role: text(raw.role || raw.action, "", 36),
+  });
+}
+function contact(raw = {}) {
+  const start = ["any", "nearestActor"].includes(raw.start) ? raw.start : "any";
+  const sequence = ["fixed", "fromTouched"].includes(raw.sequence) ? raw.sequence : "fixed";
+  return { start, sequence };
+}
 function fallbackBeats() {
   return [
-    { duration: 0.16, ball: { velocity: [0.1, -0.35], spin: 0.12, bounce: 0.25 } },
-    { duration: 0.34, ball: { path: [[0, 0], [0.2, -0.24], [0.42, -0.44]], carry: 0.45 } },
-    { duration: 0.18, ball: { velocity: [0.32, -0.55], spin: 0.16 } },
+    { actor: 0, duration: 0.16, ball: { velocity: [0.1, -0.35], spin: 0.12, bounce: 0.25 } },
+    { actor: 1, duration: 0.34, ball: { path: [[0, 0], [0.2, -0.24], [0.42, -0.44]], carry: 0.45 } },
+    { actor: 2, duration: 0.18, ball: { velocity: [0.32, -0.55], spin: 0.16 } },
   ];
 }
 function normalize(raw, emojis) {
@@ -87,22 +110,24 @@ function normalize(raw, emojis) {
   const beats = (Array.isArray(raw?.beats) ? raw.beats : []).slice(0, 5).map(beat).filter(Boolean);
   const finalBeats = beats.length >= 2 ? beats : fallbackBeats();
   const motors = legacyMotors(finalBeats);
+  const parts = (Array.isArray(raw?.parts) ? raw.parts : emojis.map((emoji, actor) => ({ actor, emoji }))).slice(0, 3).map((p, i) => part(p, i, emojis));
   return {
     visualLabel: emojis.join(""),
     motion,
     motionIdea: motion,
+    contact: contact(raw?.contact || {}),
+    parts,
     beats: finalBeats,
     motors,
-    body: legacyBody(finalBeats),
+    body: { shape: "point", solid: false, size: 0.7, motion: "none", motionPower: 0.5 },
     mainMotorKinds: [...new Set(motors.map((m) => m.kind))].slice(0, 3),
     shortEffect: motion,
-    conceptKey: [emojis.join(""), motion, JSON.stringify(finalBeats)].join("|"),
+    conceptKey: [emojis.join(""), motion, JSON.stringify(parts), JSON.stringify(finalBeats)].join("|"),
   };
 }
 function legacyMotors(beats) {
   const has = (fn) => beats.some(fn);
   const motors = [];
-  // UI表示と旧fallback用の最低限の橋渡し。beatsが存在する場合、フロントではbeatsが優先実行される。
   if (has((b) => b.ball?.hold || b.ball?.carry || b.device)) motors.push(motor("timerRelease", "angle", 0.46, 0.38, 0.28, "hold"));
   if (has((b) => Number(b.effects?.split) > 1)) motors.push(motor("split", "angle", 0.58, 0.42, 0.5, "split"));
   if (has((b) => Array.isArray(b.effects?.warp))) motors.push(motor("portal", "angle", 0.52, 0.36, 0.18, "warp"));
@@ -112,16 +137,33 @@ function legacyMotors(beats) {
   motors.push(motor("launcher", "angle", 0.52, 0.34, 0.2, "release"));
   return motors.slice(0, 4);
 }
-function legacyBody(beats) {
-  const moving = beats.some((b) => b.device?.swing || b.device?.rotate || b.device?.move);
-  const path = beats.some((b) => Array.isArray(b.ball?.path) && b.ball.path.length > 1);
-  return { shape: path ? "rail" : moving ? "carrier" : "point", solid: path || moving, size: 0.68, motion: beats.some((b) => b.device?.swing) ? "pendulum" : moving ? "slide" : "none", motionPower: 0.55 };
-}
 function motor(kind, direction, power, range, duration, mode) {
   return { kind, trigger: ["rail", "gravityShift"].includes(kind) ? "inside" : "contact", direction, power, range, duration, angle: 0, count: 2, spreadAngle: 34, mode };
 }
+function extractFirstJsonObject(input) {
+  const s = stripJsonFence(String(input || ""));
+  const start = s.indexOf("{");
+  if (start < 0) throw new SyntaxError("JSON object not found");
+  let depth = 0, inString = false, escape = false;
+  for (let i = start; i < s.length; i += 1) {
+    const ch = s[i];
+    if (inString) {
+      if (escape) escape = false;
+      else if (ch === "\\") escape = true;
+      else if (ch === "\"") inString = false;
+      continue;
+    }
+    if (ch === "\"") inString = true;
+    else if (ch === "{") depth += 1;
+    else if (ch === "}") {
+      depth -= 1;
+      if (depth === 0) return s.slice(start, i + 1);
+    }
+  }
+  throw new SyntaxError("JSON object was not closed");
+}
 function prompt(emojis) {
-  return `${emojis.join(" ")}\n\nこんなピタゴラ装置（3つ合わせて1つのギミック）があるとしたら、この装置に触れた落下中のボールはどんな挙動をすると思いますか？\nまずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂・ワープ・重力反転等を取り入れても構わないが、それらは装置をより面白くできる場合に限る。\n\n次のJSONだけを返してください。\n\n{"motion":"絵文字から連想した具体的な動き","beats":[{"duration":0.2,"ball":{"velocity":[0,-0.5],"force":[0.2,-0.3],"path":[[0,0],[0.3,-0.4]],"hold":0.1,"carry":0.5,"spin":0.1,"bounce":0.3},"device":{"move":[0,-0.2],"rotate":0.2,"swing":{"pivot":[0,-0.6],"angle":0.4,"cycles":0.5}},"effects":{"split":2,"spread":0.4,"warp":[0.4,-0.6],"gravity":[-1,0],"merge":"faster"},"branches":[{"ball":{"path":[[-0.2,0],[-0.6,-0.5]],"velocity":[-0.3,-0.4],"bounce":0.5}}]}]}\n\nmotionは「要約」などの説明語ではなく、絵文字から連想したボールの具体的な動きにする。\n各beatは、duration秒の間に起きる動きを表す。\nballはボールへの作用、deviceは装置全体の動き、effectsは分裂・ワープ・重力などの特殊効果を表す。\n使わない項目は省略する。\nbeatsは3〜5個。\npath / warp / pivot は、ギミック中心を[0,0]とした-1〜1の相対座標。\nvelocity / force / gravity / move は、-1〜1の方向と強さ。\nJSONにない項目は追加しない。`;
+  return `${emojis.join(" ")}\n\nこんなピタゴラ装置（3つ合わせて1つのギミック）があるとしたら、この装置に触れた落下中のボールはどんな挙動をすると思いますか？\nまずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂・ワープ・重力反転等を取り入れても構わないが、それらは装置をより面白くできる場合に限る。\n\n次のJSONだけを返してください。\n\n{"motion":"絵文字3つから連想した具体的な動き","contact":{"start":"any","sequence":"fixed"},"parts":[{"actor":0,"role":"左の絵文字がすること"},{"actor":1,"role":"中央の絵文字がすること"},{"actor":2,"role":"右の絵文字がすること"}],"beats":[{"actor":0,"duration":0.2,"ball":{"velocity":[0,-0.5],"force":[0.2,-0.3],"path":[[0,0],[0.3,-0.4]],"hold":0.1,"carry":0.5,"spin":0.1,"bounce":0.3},"device":{"move":[0,-0.2],"rotate":0.2,"swing":{"pivot":[0,-0.6],"angle":0.4,"cycles":0.5}},"effects":{"split":2,"spread":0.4,"warp":[0.4,-0.6],"gravity":[-1,0],"merge":"faster"},"branches":[{"actor":1,"ball":{"path":[[-0.2,0],[-0.6,-0.5]],"velocity":[-0.3,-0.4],"bounce":0.5}}]}]}\n\nmotionは「要約」などの説明語ではなく、絵文字から連想したボールの具体的な動きにする。\nactorは左から0,1,2。各beatはどの絵文字がボールに作用するかをactorで示す。\ncontact.startはanyかnearestActor。sequenceはfixedかfromTouched。迷う場合はany/fixed。\npartsには各絵文字の役割を短く書く。\n各beatはduration秒の間に起きる動きを表す。\nballはボールへの作用、deviceは装置全体の動き、effectsは分裂・ワープ・重力などの特殊効果を表す。\n使わない項目は省略する。beatsは3〜5個。\npath / warp / pivot は、そのactorの絵文字中心を[0,0]とした-1〜1の相対座標。\nvelocity / force / gravity / move は、-1〜1の方向と強さ。\nJSONにない項目は追加しない。`;
 }
 async function logGimmick(emojis, gimmick, source) {
   try { await appendNoHandSoccerGimmickLog({ emojis, gimmick, source }); }
@@ -132,14 +174,15 @@ export function mountCompactNoHandSoccerRoutes(app) {
     const emojis = Array.isArray(req.body?.emojis) ? req.body.emojis.slice(0, 3).map(String) : [];
     if (emojis.length !== 3 || emojis.some((emoji) => !emoji.trim())) return res.status(400).json({ error: "emojis must contain exactly 3 items." });
     try {
-      const raw = JSON.parse(stripJsonFence(await genWithFallback(prompt(emojis), { generationConfig: { responseMimeType: "application/json", temperature: 0.92 } })));
+      const text = await genWithFallback(prompt(emojis), { generationConfig: { responseMimeType: "application/json", temperature: 0.92 } });
+      const raw = JSON.parse(extractFirstJsonObject(text));
       const gimmick = normalize(raw, emojis);
-      await logGimmick(emojis, gimmick, "gemini-beats");
+      await logGimmick(emojis, gimmick, "gemini-actor-beats");
       return res.json(gimmick);
     } catch (error) {
       console.warn("[noHand-soccer] beat fallback", error);
       const gimmick = { ...normalize({}, emojis), source: "fallback" };
-      await logGimmick(emojis, gimmick, "fallback-beats");
+      await logGimmick(emojis, gimmick, "fallback-actor-beats");
       return res.json(gimmick);
     }
   });

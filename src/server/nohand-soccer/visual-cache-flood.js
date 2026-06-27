@@ -38,21 +38,21 @@ function emojiSvg(body) {
   const emojis = selectedEmojis(body);
   while (emojis.length < 3) emojis.push("❓");
   const [a, b, c] = emojis.map(escapeXml);
-  const motion = escapeXml(clean(body?.motion || body?.motionIdea || "", 42));
   return `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
   <defs>
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#00150c" flood-opacity="0.55"/></filter>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#000000" flood-opacity="0.45"/></filter>
   </defs>
   <g filter="url(#shadow)">
-    <path d="M42 150 C78 58 176 58 214 150 C190 218 68 218 42 150 Z" fill="#182f25" stroke="#e8ff59" stroke-width="8" opacity="0.96"/>
-    <path d="M71 149 C111 120 145 120 185 149" fill="none" stroke="#76f0a1" stroke-width="10" stroke-linecap="round" opacity="0.72"/>
-    <text x="75" y="133" text-anchor="middle" dominant-baseline="central" font-size="74" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${a}</text>
-    <text x="128" y="107" text-anchor="middle" dominant-baseline="central" font-size="82" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${b}</text>
-    <text x="181" y="133" text-anchor="middle" dominant-baseline="central" font-size="74" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${c}</text>
-    <circle cx="128" cy="187" r="20" fill="#e8ff59" opacity="0.95"/>
-    <path d="M116 187 L140 187 M128 175 L128 199" stroke="#06150e" stroke-width="6" stroke-linecap="round" opacity="0.65"/>
+    <path d="M60 152 C86 100 170 100 196 152" fill="none" stroke="#e8ff59" stroke-width="8" stroke-linecap="round" opacity="0.86"/>
+    <line x1="82" y1="146" x2="128" y2="108" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.58"/>
+    <line x1="174" y1="146" x2="128" y2="108" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.58"/>
+    <circle cx="82" cy="150" r="48" fill="#101820" stroke="#e8ff59" stroke-width="5" opacity="0.92"/>
+    <circle cx="128" cy="108" r="52" fill="#101820" stroke="#76f0a1" stroke-width="5" opacity="0.94"/>
+    <circle cx="174" cy="150" r="48" fill="#101820" stroke="#e8ff59" stroke-width="5" opacity="0.92"/>
+    <text x="82" y="150" text-anchor="middle" dominant-baseline="central" font-size="62" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${a}</text>
+    <text x="128" y="108" text-anchor="middle" dominant-baseline="central" font-size="68" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${b}</text>
+    <text x="174" y="150" text-anchor="middle" dominant-baseline="central" font-size="62" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${c}</text>
   </g>
-  ${motion ? `<text x="128" y="238" text-anchor="middle" font-size="18" font-weight="800" fill="#ffffff" font-family="system-ui, sans-serif">${motion}</text>` : ""}
 </svg>`;
 }
 
