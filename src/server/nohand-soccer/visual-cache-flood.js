@@ -7,15 +7,9 @@ function clean(value, max = 80) {
   }
   return Array.from(out.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim()).slice(0, max).join("");
 }
-
 function escapeXml(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return String(value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-
 function graphemes(value) {
   const text = clean(value, 48);
   if (typeof Intl !== "undefined" && Intl.Segmenter) {
@@ -24,39 +18,62 @@ function graphemes(value) {
   }
   return Array.from(text).filter((x) => x.trim());
 }
-
 function selectedEmojis(body) {
   const source = body?.emojis || body?.visualLabel || body?.name || "❓❓❓";
   return graphemes(source).filter((x) => !/\s/.test(x)).slice(0, 3);
 }
-
-function dataSvg(svg) {
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+function dataSvg(svg) { return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`; }
+function clamp(value, fallback, min, max) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
 }
-
+function actorLayout(body, emojis) {
+  const fallback = [[-0.62, 0.22], [0, -0.22], [0.62, 0.22]];
+  const rows = Array.isArray(body?.layout) ? body.layout : [];
+  return emojis.map((emoji, actor) => {
+    const row = rows.find((x) => Number(x?.actor) === actor) || {};
+    const pos = Array.isArray(row.pos) ? row.pos : fallback[actor];
+    return {
+      actor,
+      emoji,
+      x: 128 + clamp(pos[0], fallback[actor][0], -1, 1) * 92,
+      y: 128 + clamp(pos[1], fallback[actor][1], -1, 1) * 92,
+    };
+  });
+}
+function triggerActor(body) {
+  const trigger = body?.trigger || {};
+  if (Number.isInteger(Number(trigger.actor))) return Math.max(0, Math.min(2, Number(trigger.actor)));
+  if (Number.isInteger(Number(trigger.unit)) && Array.isArray(body?.units)) {
+    const unit = body.units.find((x) => Number(x?.unit) === Number(trigger.unit));
+    const actor = Number(unit?.actors?.[0]);
+    if (Number.isInteger(actor)) return Math.max(0, Math.min(2, actor));
+  }
+  return 0;
+}
 function emojiSvg(body) {
   const emojis = selectedEmojis(body);
   while (emojis.length < 3) emojis.push("❓");
-  const [a, b, c] = emojis.map(escapeXml);
+  const nodes = actorLayout(body, emojis);
+  const start = triggerActor(body);
+  const lines = nodes.slice(0, -1).map((node, i) => {
+    const next = nodes[i + 1];
+    return `<line x1="${node.x.toFixed(1)}" y1="${node.y.toFixed(1)}" x2="${next.x.toFixed(1)}" y2="${next.y.toFixed(1)}" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.45"/>`;
+  }).join("\n    ");
+  const actors = nodes.map((node, i) => {
+    const r = i === 1 ? 42 : 38;
+    const stroke = i === 1 ? "#76f0a1" : "#e8ff59";
+    const mark = i === start ? `<circle cx="${node.x.toFixed(1)}" cy="${node.y.toFixed(1)}" r="${r + 12}" fill="none" stroke="#e8ff59" stroke-width="4" stroke-dasharray="8 8" opacity="0.82"/>` : "";
+    return `${mark}<circle cx="${node.x.toFixed(1)}" cy="${node.y.toFixed(1)}" r="${r}" fill="#101820" stroke="${stroke}" stroke-width="5" opacity="0.94"/><text x="${node.x.toFixed(1)}" y="${node.y.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-size="${i === 1 ? 60 : 54}" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${escapeXml(node.emoji)}</text>`;
+  }).join("\n    ");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs>
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#000000" flood-opacity="0.45"/></filter>
-  </defs>
+  <defs><filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#000000" flood-opacity="0.45"/></filter></defs>
   <g filter="url(#shadow)">
-    <path d="M42 166 C74 82 182 82 214 166" fill="none" stroke="#e8ff59" stroke-width="7" stroke-linecap="round" opacity="0.84"/>
-    <line x1="42" y1="166" x2="128" y2="82" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.48"/>
-    <line x1="214" y1="166" x2="128" y2="82" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.48"/>
-    <circle cx="42" cy="166" r="38" fill="#101820" stroke="#e8ff59" stroke-width="5" opacity="0.94"/>
-    <circle cx="128" cy="82" r="42" fill="#101820" stroke="#76f0a1" stroke-width="5" opacity="0.96"/>
-    <circle cx="214" cy="166" r="38" fill="#101820" stroke="#e8ff59" stroke-width="5" opacity="0.94"/>
-    <circle cx="42" cy="166" r="50" fill="none" stroke="#e8ff59" stroke-width="4" stroke-dasharray="8 8" opacity="0.82"/>
-    <text x="42" y="166" text-anchor="middle" dominant-baseline="central" font-size="54" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${a}</text>
-    <text x="128" y="82" text-anchor="middle" dominant-baseline="central" font-size="60" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${b}</text>
-    <text x="214" y="166" text-anchor="middle" dominant-baseline="central" font-size="54" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${c}</text>
+    ${lines}
+    ${actors}
   </g>
 </svg>`;
 }
-
 export function mountFloodNoHandSoccerVisualRoutes(app) {
   app.post("/api/nohand-soccer/gimmick-visual", async (req, res) => {
     const visualLabel = clean(req.body?.visualLabel || req.body?.emojis || req.body?.name || "❓❓❓", 48);
