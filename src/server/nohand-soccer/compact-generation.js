@@ -4,6 +4,11 @@ import { appendNoHandSoccerGimmickLog } from "./sheet-log.js";
 function text(value, fallback = "", max = 160) {
   return String(value || fallback || "").replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
 }
+function fallbackMotion(emojis) { return `${emojis.join("")}に触れたボールが、落下の勢いを別方向へ変えて進む。`; }
+function isGenericMotion(value) {
+  const s = text(value, "", 220);
+  return !s || /要約|説明|具体的|接触後のボールの動き/.test(s) || s.length < 8;
+}
 function clamp(value, fallback, min, max) {
   const n = Number(value);
   return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
@@ -77,7 +82,8 @@ function fallbackBeats() {
   ];
 }
 function normalize(raw, emojis) {
-  const motion = text(raw?.motion, `${emojis.join("")}に触れたボールが向きを変えて進む。`);
+  const fallback = fallbackMotion(emojis);
+  const motion = isGenericMotion(raw?.motion) ? fallback : text(raw?.motion, fallback);
   const beats = (Array.isArray(raw?.beats) ? raw.beats : []).slice(0, 5).map(beat).filter(Boolean);
   const finalBeats = beats.length >= 2 ? beats : fallbackBeats();
   const motors = legacyMotors(finalBeats);
@@ -115,7 +121,7 @@ function motor(kind, direction, power, range, duration, mode) {
   return { kind, trigger: ["rail", "gravityShift"].includes(kind) ? "inside" : "contact", direction, power, range, duration, angle: 0, count: 2, spreadAngle: 34, mode };
 }
 function prompt(emojis) {
-  return `${emojis.join(" ")}\n\nこんなピタゴラ装置（3つ合わせて1つのギミック）があるとしたら、この装置に触れた落下中のボールはどんな挙動をすると思いますか？\nまずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂・ワープ・重力反転等を取り入れても構わないが、それらは装置をより面白くできる場合に限る。\n\n次のJSONだけを返してください。\n\n{"motion":"接触後のボールの動きの要約","beats":[{"duration":0.2,"ball":{"velocity":[0,-0.5],"force":[0.2,-0.3],"path":[[0,0],[0.3,-0.4]],"hold":0.1,"carry":0.5,"spin":0.1,"bounce":0.3},"device":{"move":[0,-0.2],"rotate":0.2,"swing":{"pivot":[0,-0.6],"angle":0.4,"cycles":0.5}},"effects":{"split":2,"spread":0.4,"warp":[0.4,-0.6],"gravity":[-1,0],"merge":"faster"},"branches":[{"ball":{"path":[[-0.2,0],[-0.6,-0.5]],"velocity":[-0.3,-0.4],"bounce":0.5}}]}]}\n\n各beatは、duration秒の間に起きる動きを表す。\nballはボールへの作用、deviceは装置全体の動き、effectsは分裂・ワープ・重力などの特殊効果を表す。\n使わない項目は省略する。\nbeatsは3〜5個。\npath / warp / pivot は、ギミック中心を[0,0]とした-1〜1の相対座標。\nvelocity / force / gravity / move は、-1〜1の方向と強さ。\nJSONにない項目は追加しない。`;
+  return `${emojis.join(" ")}\n\nこんなピタゴラ装置（3つ合わせて1つのギミック）があるとしたら、この装置に触れた落下中のボールはどんな挙動をすると思いますか？\nまずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂・ワープ・重力反転等を取り入れても構わないが、それらは装置をより面白くできる場合に限る。\n\n次のJSONだけを返してください。\n\n{"motion":"絵文字から連想した具体的な動き","beats":[{"duration":0.2,"ball":{"velocity":[0,-0.5],"force":[0.2,-0.3],"path":[[0,0],[0.3,-0.4]],"hold":0.1,"carry":0.5,"spin":0.1,"bounce":0.3},"device":{"move":[0,-0.2],"rotate":0.2,"swing":{"pivot":[0,-0.6],"angle":0.4,"cycles":0.5}},"effects":{"split":2,"spread":0.4,"warp":[0.4,-0.6],"gravity":[-1,0],"merge":"faster"},"branches":[{"ball":{"path":[[-0.2,0],[-0.6,-0.5]],"velocity":[-0.3,-0.4],"bounce":0.5}}]}]}\n\nmotionは「要約」などの説明語ではなく、絵文字から連想したボールの具体的な動きにする。\n各beatは、duration秒の間に起きる動きを表す。\nballはボールへの作用、deviceは装置全体の動き、effectsは分裂・ワープ・重力などの特殊効果を表す。\n使わない項目は省略する。\nbeatsは3〜5個。\npath / warp / pivot は、ギミック中心を[0,0]とした-1〜1の相対座標。\nvelocity / force / gravity / move は、-1〜1の方向と強さ。\nJSONにない項目は追加しない。`;
 }
 async function logGimmick(emojis, gimmick, source) {
   try { await appendNoHandSoccerGimmickLog({ emojis, gimmick, source }); }
