@@ -1,37 +1,71 @@
-import crypto from "node:crypto";
-import fs from "node:fs/promises";
-import path from "node:path";
-import zlib from "node:zlib";
-import { GEMINI_API_KEY } from "../../foundation/env.js";
+function clean(value, max = 80) {
+  let out = "";
+  for (const ch of String(value || "")) {
+    const code = ch.codePointAt(0);
+    if (code >= 0xd800 && code <= 0xdfff) continue;
+    out += ch;
+  }
+  return Array.from(out.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim()).slice(0, max).join("");
+}
 
-const ROOT = path.join(process.cwd(), "public/generated/nohand-soccer");
-const ORIGINAL = path.join(ROOT, "original");
-const TRANSPARENT = path.join(ROOT, "transparent");
-const MANIFEST = path.join(ROOT, "visual-cache-flood.json");
-const URL_ROOT = "/generated/nohand-soccer";
-const SIG = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-const CRC = makeCrcTable();
-function well(v) { let out = ""; for (const ch of String(v || "")) { const c = ch.codePointAt(0); if (c >= 0xd800 && c <= 0xdfff) continue; out += ch; } return out; }
-function clip(v, n) { const s = well(v).replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim(); return Array.from(s).slice(0, n).join(""); }
-function t(v, n = 80) { return clip(v, n); }
-function arr(v, n = 5) { return (Array.isArray(v) ? v : []).map((x) => t(x, 24)).filter(Boolean).slice(0, n); }
-function sha(v) { return crypto.createHash("sha256").update(well(v)).digest("hex"); }
-function safe(v) { return t(v, 40).normalize("NFKC").replace(/[\\/:*?"<>|\u0000-\u001f\s]+/g, "-").replace(/^-|-$/g, "") || "visual"; }
-async function dirs() { await fs.mkdir(ORIGINAL, { recursive: true }); await fs.mkdir(TRANSPARENT, { recursive: true }); }
-async function readJson() { try { return JSON.parse(await fs.readFile(MANIFEST, "utf8")); } catch { return {}; } }
-async function writeJson(x) { await dirs(); await fs.writeFile(MANIFEST, JSON.stringify(x, null, 2)); }
-function url(kind, file) { return `${URL_ROOT}/${kind}/${encodeURIComponent(well(file))}`; }
-async function exists(imageUrl) { if (!imageUrl) return false; const rel = decodeURIComponent(imageUrl.slice(URL_ROOT.length).replace(/^\//, "")); await fs.access(path.resolve(ROOT, rel)); return true; }
-function prompt(x) { const emojis = t(x.emojis || x.name || x.visualLabel, 48); const motion = t(x.motion || x.motionIdea, 140); const extra = arr(x.visualMotifs).join("、"); return `単体ゲーム素材。絵文字:${emojis}\n動き:${motion}\n補足:${extra}\n背景は完全な #00FF00 の単色グリーンバック。装置本体に緑/黄緑を使わない。文字/UI/ボール/ゴールなし。装置だけ中央に大きく。`; }
-async function gen(p) { if (!GEMINI_API_KEY) throw new Error("gemini_api_key_missing"); const models = ["gemini-2.5-flash-image", "gemini-3-pro-image-preview", "gemini-2.5-flash-image-preview"]; let last; for (const model of models) { try { const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: p }] }], generationConfig: { responseModalities: ["IMAGE", "TEXT"] } }) }); const j = await r.json().catch(() => ({})); const part = (j?.candidates?.[0]?.content?.parts || []).find((x) => x.inlineData?.data); if (!r.ok || !part) throw new Error(j?.error?.message || "no_image"); return { buffer: Buffer.from(part.inlineData.data, "base64"), mime: part.inlineData.mimeType || "image/png", model }; } catch (e) { last = e; } } throw last || new Error("image_failed"); }
-function parts(buf) { if (!buf.subarray(0, 8).equals(SIG)) throw new Error("not_png"); const out = []; for (let o = 8; o + 12 <= buf.length;) { const len = buf.readUInt32BE(o); const type = buf.subarray(o + 4, o + 8).toString("ascii"); out.push({ type, data: buf.subarray(o + 8, o + 8 + len) }); o += len + 12; if (type === "IEND") break; } return out; }
-function paeth(a, b, c) { const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c); return pa <= pb && pa <= pc ? a : pb <= pc ? b : c; }
-function decode(buf) { const ps = parts(buf); const h = ps.find((p) => p.type === "IHDR")?.data; if (!h) throw new Error("bad_png"); const w = h.readUInt32BE(0), ht = h.readUInt32BE(4), type = h[9], bpp = type === 6 ? 4 : 3; if (h[8] !== 8 || ![2, 6].includes(type) || h[12]) throw new Error("unsupported_png"); const raw = zlib.inflateSync(Buffer.concat(ps.filter((p) => p.type === "IDAT").map((p) => p.data))); const pix = Buffer.alloc(w * ht * bpp); let i = 0; for (let y = 0; y < ht; y++) { const f = raw[i++], row = y * w * bpp, prev = (y - 1) * w * bpp; for (let x = 0; x < w * bpp; x++) { const a = x >= bpp ? pix[row + x - bpp] : 0, b = y ? pix[prev + x] : 0, c = y && x >= bpp ? pix[prev + x - bpp] : 0; let v = raw[i++]; if (f === 1) v += a; else if (f === 2) v += b; else if (f === 3) v += Math.floor((a + b) / 2); else if (f === 4) v += paeth(a, b, c); pix[row + x] = v & 255; } } const rgba = Buffer.alloc(w * ht * 4); for (let p = 0, q = 0; p < pix.length; p += bpp, q += 4) { rgba[q] = pix[p]; rgba[q + 1] = pix[p + 1]; rgba[q + 2] = pix[p + 2]; rgba[q + 3] = bpp === 4 ? pix[p + 3] : 255; } return { w, h: ht, rgba }; }
-function green(r, g, b) { return (g > 115 && g - Math.max(r, b) > 24 && r < 170 && b < 170) || Math.max(r, 255 - g, b) < 145; }
-function flood(w, h, rgba) { const m = new Uint8Array(w * h), q = []; const push = (x, y) => { if (x < 0 || y < 0 || x >= w || y >= h) return; const i = y * w + x, p = i * 4; if (!m[i] && green(rgba[p], rgba[p + 1], rgba[p + 2])) { m[i] = 1; q.push(i); } }; for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); } for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); } for (let a = 0; a < q.length; a++) { const i = q[a], x = i % w, y = Math.floor(i / w); push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1); } return m; }
-function chroma(buf) { const { w, h, rgba } = decode(buf); const m = flood(w, h, rgba); for (let i = 0; i < m.length; i++) { const p = i * 4; if (m[i]) { rgba[p + 3] = 0; continue; } const bleed = rgba[p + 1] - Math.max(rgba[p], rgba[p + 2]); if (bleed > 12) rgba[p + 1] = Math.max(0, rgba[p + 1] - Math.min(bleed, 90)); } return encode(w, h, rgba); }
-function makeCrcTable() { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; }
-function crc32(b) { let c = 0xffffffff; for (const x of b) c = CRC[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
-function chunk(type, data) { const n = Buffer.from(type), len = Buffer.alloc(4), crc = Buffer.alloc(4); len.writeUInt32BE(data.length); crc.writeUInt32BE(crc32(Buffer.concat([n, data]))); return Buffer.concat([len, n, data, crc]); }
-function encode(w, h, rgba) { const stride = w * 4, scan = Buffer.alloc((stride + 1) * h); for (let y = 0; y < h; y++) { scan[y * (stride + 1)] = 0; rgba.copy(scan, y * (stride + 1) + 1, y * stride, y * stride + stride); } const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 6; return Buffer.concat([SIG, chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(scan)), chunk("IEND", Buffer.alloc(0))]); }
-export function mountFloodNoHandSoccerVisualRoutes(app) { app.post("/api/nohand-soccer/gimmick-visual", async (req, res, next) => { const label = t(req.body?.visualLabel || req.body?.emojis, 48); if (!label) return next(); await dirs(); const key = sha(req.body?.conceptKey || label).slice(0, 24); const manifest = await readJson(); const cached = manifest[key]; if (cached?.imageUrl && await exists(cached.imageUrl).catch(() => false)) return res.json({ visualLabel: label, conceptKey: key, imageUrl: cached.imageUrl, originalImageUrl: cached.originalImageUrl || "", cached: true, status: "ready" }); try { const image = await gen(prompt({ ...req.body, visualLabel: label })); const original = `${key}-${safe(label)}-greenback.png`; const transparent = `${key}-${safe(label)}-transparent.png`; await fs.writeFile(path.join(ORIGINAL, original), image.buffer); await fs.writeFile(path.join(TRANSPARENT, transparent), chroma(image.buffer)); manifest[key] = { visualLabel: label, conceptKey: key, imageUrl: url("transparent", transparent), originalImageUrl: url("original", original), status: "ready", updatedAt: new Date().toISOString() }; await writeJson(manifest); return res.json({ ...manifest[key], cached: false }); } catch (error) { console.warn("[noHand-soccer] flood visual fallback", error); return next(); } }); }
+function escapeXml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function graphemes(value) {
+  const text = clean(value, 48);
+  if (typeof Intl !== "undefined" && Intl.Segmenter) {
+    const segmenter = new Intl.Segmenter("ja", { granularity: "grapheme" });
+    return Array.from(segmenter.segment(text), (x) => x.segment).filter((x) => x.trim());
+  }
+  return Array.from(text).filter((x) => x.trim());
+}
+
+function selectedEmojis(body) {
+  const source = body?.emojis || body?.visualLabel || body?.name || "❓❓❓";
+  return graphemes(source).filter((x) => !/\s/.test(x)).slice(0, 3);
+}
+
+function dataSvg(svg) {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function emojiSvg(body) {
+  const emojis = selectedEmojis(body);
+  while (emojis.length < 3) emojis.push("❓");
+  const [a, b, c] = emojis.map(escapeXml);
+  const motion = escapeXml(clean(body?.motion || body?.motionIdea || "", 42));
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#00150c" flood-opacity="0.55"/></filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <path d="M42 150 C78 58 176 58 214 150 C190 218 68 218 42 150 Z" fill="#182f25" stroke="#e8ff59" stroke-width="8" opacity="0.96"/>
+    <path d="M71 149 C111 120 145 120 185 149" fill="none" stroke="#76f0a1" stroke-width="10" stroke-linecap="round" opacity="0.72"/>
+    <text x="75" y="133" text-anchor="middle" dominant-baseline="central" font-size="74" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${a}</text>
+    <text x="128" y="107" text-anchor="middle" dominant-baseline="central" font-size="82" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${b}</text>
+    <text x="181" y="133" text-anchor="middle" dominant-baseline="central" font-size="74" font-family="Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif">${c}</text>
+    <circle cx="128" cy="187" r="20" fill="#e8ff59" opacity="0.95"/>
+    <path d="M116 187 L140 187 M128 175 L128 199" stroke="#06150e" stroke-width="6" stroke-linecap="round" opacity="0.65"/>
+  </g>
+  ${motion ? `<text x="128" y="238" text-anchor="middle" font-size="18" font-weight="800" fill="#ffffff" font-family="system-ui, sans-serif">${motion}</text>` : ""}
+</svg>`;
+}
+
+export function mountFloodNoHandSoccerVisualRoutes(app) {
+  app.post("/api/nohand-soccer/gimmick-visual", async (req, res) => {
+    const visualLabel = clean(req.body?.visualLabel || req.body?.emojis || req.body?.name || "❓❓❓", 48);
+    return res.json({
+      visualLabel,
+      conceptKey: clean(req.body?.conceptKey || visualLabel, 120),
+      imageUrl: dataSvg(emojiSvg(req.body || {})),
+      originalImageUrl: "",
+      cached: true,
+      status: "emoji-svg",
+    });
+  });
+}
