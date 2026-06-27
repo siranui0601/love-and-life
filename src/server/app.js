@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import { mountFloodNoHandSoccerVisualRoutes } from "./nohand-soccer/visual-cache-flood.js";
 import { mountNoHandSoccerVisualRoutes } from "./nohand-soccer/visual-cache.js";
 
 export function createApp() {
@@ -7,6 +8,7 @@ export function createApp() {
 
   // JSON
   app.use(express.json({ limit: "12mb" }));
+  mountFloodNoHandSoccerVisualRoutes(app);
   mountNoHandSoccerVisualRoutes(app);
 
   // 既存トップページ用（必要なら）
