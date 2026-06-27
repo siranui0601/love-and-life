@@ -24,14 +24,6 @@
       };
       window.makeGimmickFromData.__emojiNamePatched = true;
     }
-
-    if (typeof window.handlePos === 'function' && !window.handlePos.__visibleHandlePatched) {
-      window.handleRadius = function visibleHandleRadius() { return 104; };
-      window.handlePos = function visibleHandlePos(g) {
-        return { x: g.x + Math.cos(g.angle) * 104, y: g.y + Math.sin(g.angle) * 104 };
-      };
-      window.handlePos.__visibleHandlePatched = true;
-    }
   }
 
   let tries = 0;
