@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-import { mkdir, writeFile, readFile, readdir } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -12,59 +11,50 @@ const DEFAULT_PROFILES = 'public/noHand_soccer/emoji_physics_profiles.json';
 const DEFAULT_OUT_DIR = 'tools/nohand/profile_queue';
 const DEFAULT_BATCH_SIZE = 50;
 
-function readArg(name, fallback = null) {
-  const prefix = `${name}=`;
-  const exactIndex = process.argv.indexOf(name);
-  if (exactIndex >= 0 && process.argv[exactIndex + 1]) return process.argv[exactIndex + 1];
-  const paired = process.argv.find((arg) => arg.startsWith(prefix));
-  return paired ? paired.slice(prefix.length) : fallback;
+function arg(name, fallback) {
+  const exact = process.argv.indexOf(name);
+  if (exact >= 0 && process.argv[exact + 1]) return process.argv[exact + 1];
+  const pair = process.argv.find((value) => value.startsWith(`${name}=`));
+  return pair ? pair.slice(name.length + 1) : fallback;
 }
 
 function hasFlag(name) {
   return process.argv.includes(name);
 }
 
-function resolveRepoPath(repoRelativePath) {
-  return path.resolve(REPO_ROOT, repoRelativePath);
+function repoPath(file) {
+  return path.resolve(REPO_ROOT, file);
 }
 
-async function readJson(repoRelativePath) {
-  const raw = await readFile(resolveRepoPath(repoRelativePath), 'utf8');
-  return JSON.parse(raw);
+async function readJson(file) {
+  return JSON.parse(await readFile(repoPath(file), 'utf8'));
 }
 
-function padOrdinal(value) {
+function pad(value) {
   return String(value).padStart(4, '0');
 }
 
-function toQueueItem(catalogItem, catalogIndex) {
+function queueItem(item, index) {
   return {
-    ordinal: catalogIndex + 1,
-    catalogIndex,
-    emoji: catalogItem.emoji,
-    name: catalogItem.name,
+    ordinal: index + 1,
+    catalogIndex: index,
+    emoji: item.emoji,
+    name: item.name,
   };
 }
 
-function chunkItems(items, size) {
-  const chunks = [];
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
+async function queueFiles(dir) {
+  try {
+    return await readdir(repoPath(dir));
+  } catch {
+    return [];
   }
-  return chunks;
 }
 
-async function readDoneEmoji(outDir) {
+async function profiledQueueEmoji(dir) {
   const done = new Set();
-  let files = [];
-  try {
-    files = await readdir(resolveRepoPath(outDir));
-  } catch {
-    return done;
-  }
-
-  for (const file of files.filter((name) => name.endsWith('.profiled.json'))) {
-    const queue = await readJson(path.join(outDir, file));
+  for (const file of (await queueFiles(dir)).filter((name) => name.endsWith('.profiled.json'))) {
+    const queue = await readJson(path.join(dir, file));
     for (const item of queue.sourceItems ?? []) {
       if (item?.emoji) done.add(item.emoji);
     }
@@ -72,15 +62,44 @@ async function readDoneEmoji(outDir) {
       done.add(emoji);
     }
   }
-
   return done;
 }
 
+function runtimeEmoji(catalog, profileFile) {
+  const count = Number(profileFile.profileRange?.count ?? 0);
+  const safeCount = Math.max(0, Math.min(count, catalog.length));
+  return new Set(catalog.slice(0, safeCount).map((item) => item.emoji));
+}
+
+function buildContinuousChunks(catalog, done, size) {
+  const chunks = [];
+  let current = [];
+
+  function flush() {
+    if (current.length > 0) chunks.push(current);
+    current = [];
+  }
+
+  for (let index = 0; index < catalog.length; index += 1) {
+    const item = catalog[index];
+    if (done.has(item.emoji)) {
+      flush();
+      continue;
+    }
+
+    current.push(queueItem(item, index));
+    if (current.length === size) flush();
+  }
+
+  flush();
+  return chunks;
+}
+
 async function main() {
-  const catalogPath = readArg('--catalog', DEFAULT_CATALOG);
-  const profilesPath = readArg('--profiles', DEFAULT_PROFILES);
-  const outDir = readArg('--out-dir', DEFAULT_OUT_DIR);
-  const batchSize = Number(readArg('--size', String(DEFAULT_BATCH_SIZE)));
+  const catalogPath = arg('--catalog', DEFAULT_CATALOG);
+  const profilesPath = arg('--profiles', DEFAULT_PROFILES);
+  const outDir = arg('--out-dir', DEFAULT_OUT_DIR);
+  const batchSize = Number(arg('--size', String(DEFAULT_BATCH_SIZE)));
   const firstOnly = hasFlag('--first');
 
   if (!Number.isInteger(batchSize) || batchSize <= 0) {
@@ -89,35 +108,28 @@ async function main() {
 
   const catalog = await readJson(catalogPath);
   const profileFile = await readJson(profilesPath);
-  const profiles = profileFile.profiles ?? {};
-  const runtimeDone = new Set(Object.keys(profiles));
-  const queueDone = await readDoneEmoji(outDir);
-  const done = new Set([...runtimeDone, ...queueDone]);
+  const done = new Set([
+    ...runtimeEmoji(catalog, profileFile),
+    ...(await profiledQueueEmoji(outDir)),
+  ]);
 
-  const missing = catalog
-    .map((item, catalogIndex) => ({ item, catalogIndex }))
-    .filter(({ item }) => !done.has(item.emoji))
-    .map(({ item, catalogIndex }) => toQueueItem(item, catalogIndex));
+  const chunks = buildContinuousChunks(catalog, done, batchSize);
+  const selected = firstOnly ? chunks.slice(0, 1) : chunks;
 
-  if (missing.length === 0) {
-    console.log('No unprofiled emoji remain.');
-    return;
-  }
+  await mkdir(repoPath(outDir), { recursive: true });
 
-  const chunks = firstOnly ? [missing.slice(0, batchSize)] : chunkItems(missing, batchSize);
-  await mkdir(resolveRepoPath(outDir), { recursive: true });
-
-  for (const items of chunks) {
+  for (const items of selected) {
     const first = items[0];
     const last = items[items.length - 1];
-    const filename = `catalog_${padOrdinal(first.ordinal)}_${padOrdinal(last.ordinal)}.pending.json`;
+    const filename = `catalog_${pad(first.ordinal)}_${pad(last.ordinal)}.pending.json`;
     const queue = {
       version: 1,
       status: 'pending',
       sourceCatalog: catalogPath,
       sourceProfiles: profilesPath,
-      generatedFromProfileCount: Object.keys(profiles).length,
-      generatedFromProfiledQueueCount: queueDone.size,
+      generatedFromProfileRangeCount: profileFile.profileRange?.count ?? 0,
+      generatedFromRuntimeProfileObjectCount: Object.keys(profileFile.profiles ?? {}).length,
+      generatedFromProfiledQueueCount: done.size - runtimeEmoji(catalog, profileFile).size,
       range: {
         startOrdinal: first.ordinal,
         endOrdinal: last.ordinal,
@@ -130,7 +142,7 @@ async function main() {
     };
 
     const outPath = path.join(outDir, filename);
-    await writeFile(resolveRepoPath(outPath), `${JSON.stringify(queue, null, 2)}\n`, 'utf8');
+    await writeFile(repoPath(outPath), `${JSON.stringify(queue, null, 2)}\n`, 'utf8');
     console.log(`Wrote ${outPath}`);
   }
 }
