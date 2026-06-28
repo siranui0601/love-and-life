@@ -39,18 +39,23 @@
 
 ## ファイル構成
 
-正式には次の2ファイル運用にする。
+プロファイル関連ファイルは次の2つだけで管理する。
 
 - `emoji_physics_profiles.json`
 - `emoji_physics_profiles.md`
 
-PR #226では、レビュー用の追加バッチとして `emoji_physics_profiles_131_180_draft.json` を一時的に置いている。レビュー後、正式取り込み時に `emoji_physics_profiles.json` へ統合し、このdraftファイルは削除する。
+分割JSONやdraft JSONは作らない。追加バッチも必ず `emoji_physics_profiles.json` の `profiles` に統合する。
 
 ## 現在の登録範囲
 
-正式登録済み: `emoji_catalog_full_ja.json` の先頭130件。
+`emoji_catalog_full_ja.json` の先頭180件。
 
-レビュー中: index 130〜179、50件。
+- 001-030: 初期バッチ
+- 031-055: 泣き顔、水晶玉、目、投げキス、医療系の顔など
+- 056-080: 目回し、月、幽霊、手袋、笑顔系など
+- 081-105: ハート、キス、ラブユーの手など
+- 106-130: ラブユー手の肌色差分、facepalm、frowning、猿・ねずみ・口・新月など
+- 131-180: オレンジハート、パーティー顔、person facepalming/frowning、帽子の人、豚、うんち、プードル、8ボール、ドクロ、眠り、天使の輪、ハート目、角つき笑顔など
 
 ## プロファイル形式
 
@@ -122,9 +127,7 @@ PR #226では、レビュー用の追加バッチとして `emoji_physics_profil
 | `fakeRoute` | フェイント軌道を作る |
 | `delayedRelease` | 時間差で放つ |
 
-## 131-180 draftメモ
-
-今回のdraftでは、量より正確性を優先して50件のみ追加した。
+## 131-180 追加メモ
 
 - `🥳`: パーティークラッカー的に `burstScatter` / `randomBounce`。
 - `👲` 系: 人物分類ではなく、帽子・頭部で受けて上へ弾く `reflectShield` / `popLaunch`。
