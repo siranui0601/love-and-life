@@ -59,7 +59,7 @@ async function main() {
   const profilesPath = readArg('--profiles', DEFAULT_PROFILES);
   const outDir = readArg('--out-dir', DEFAULT_OUT_DIR);
   const batchSize = Number(readArg('--size', String(DEFAULT_BATCH_SIZE)));
-  const writeAll = hasFlag('--all');
+  const firstOnly = hasFlag('--first');
 
   if (!Number.isInteger(batchSize) || batchSize <= 0) {
     throw new Error(`Invalid --size: ${batchSize}`);
@@ -80,15 +80,16 @@ async function main() {
     return;
   }
 
-  const chunks = writeAll ? chunkItems(missing, batchSize) : [missing.slice(0, batchSize)];
+  const chunks = firstOnly ? [missing.slice(0, batchSize)] : chunkItems(missing, batchSize);
   await mkdir(resolveRepoPath(outDir), { recursive: true });
 
   for (const items of chunks) {
     const first = items[0];
     const last = items[items.length - 1];
-    const filename = `catalog_${padOrdinal(first.ordinal)}_${padOrdinal(last.ordinal)}.json`;
+    const filename = `catalog_${padOrdinal(first.ordinal)}_${padOrdinal(last.ordinal)}.pending.json`;
     const queue = {
       version: 1,
+      status: 'pending',
       sourceCatalog: catalogPath,
       sourceProfiles: profilesPath,
       generatedFromProfileCount: Object.keys(profiles).length,
