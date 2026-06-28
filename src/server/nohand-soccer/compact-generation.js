@@ -119,6 +119,10 @@ function normalizeContact(raw, actors, hasContactEffect) {
   if (Number.isInteger(n) && actors.includes(n)) return n;
   return actors[0];
 }
+function normalizeToActor(raw) {
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 0 && n <= 2 ? n : undefined;
+}
 function flowStep(raw = {}, index = 0, usedActors = new Set()) {
   let actors = cleanActors(raw.actors);
   if (!actors.length && Number.isInteger(Number(raw.actor))) actors = cleanActors([Number(raw.actor)]);
@@ -135,13 +139,13 @@ function flowStep(raw = {}, index = 0, usedActors = new Set()) {
   const gravity = normalizeGravity(raw.gravity);
   const hasContactEffect = Boolean(hold || spin || hit || split || warp || gravity);
   const step = defined({
-    step: index,
     actors,
     pos: pair(raw.pos, DEFAULT_FLOW_POS[index] || [0, 0]),
     duration: clamp(raw.duration, ball?.path || raw.device ? 0.6 : 0.35, 0.08, 3),
     ball,
     device: normalizeDevice(raw.device || {}),
     contact: normalizeContact(raw.contact ?? raw.touch, actors, hasContactEffect),
+    toActor: normalizeToActor(raw.toActor),
     hold,
     spin,
     hit,
@@ -159,18 +163,18 @@ function flowStep(raw = {}, index = 0, usedActors = new Set()) {
 }
 function fallbackFlow() {
   return [
-    { step: 0, actors: [0], pos: [-75, 20], ball: { path: [[0, 0], [70, -20]] }, device: { followBall: true }, duration: 0.6 },
-    { step: 1, actors: [1], pos: [0, -35], contact: 1, hit: { velocity: [70, -35], radius: 30 }, duration: 0.35 },
-    { step: 2, actors: [2], pos: [75, 20], contact: 2, hit: { velocity: [75, -30], radius: 30 }, duration: 0.25 },
+    { actors: [0], pos: [-75, 20], ball: { path: [[0, 0], [70, -20]] }, device: { followBall: true }, duration: 0.6 },
+    { actors: [1], pos: [0, -35], contact: 1, hit: { velocity: [70, -35], radius: 30 }, duration: 0.35 },
+    { actors: [2], pos: [75, 20], contact: 2, hit: { velocity: [75, -30], radius: 30 }, duration: 0.25 },
   ];
 }
 function ensureAllActors(flow) {
   const used = new Set(flow.flatMap((step) => step.actors || []));
   const out = [...flow];
   for (let actor = 0; actor < 3; actor += 1) {
-    if (!used.has(actor)) out.push({ step: out.length, actors: [actor], pos: DEFAULT_FLOW_POS[actor], contact: actor, hit: { velocity: [55, -25], radius: 30 }, duration: 0.22 });
+    if (!used.has(actor)) out.push({ actors: [actor], pos: DEFAULT_FLOW_POS[actor], contact: actor, hit: { velocity: [55, -25], radius: 30 }, duration: 0.22 });
   }
-  return out.slice(0, 5).map((step, index) => ({ ...step, step: index }));
+  return out.slice(0, 5);
 }
 function normalizeFlowSpacing(flow) {
   if (flow.length <= 1) return flow;
@@ -187,15 +191,21 @@ function normalizeFlowSpacing(flow) {
     return { ...step, pos: group ? [clamp(x, x, -82, 82), clamp(y, y, -82, 82)] : [x, y] };
   });
 }
+function wireToActors(flow) {
+  return flow.map((step, index) => {
+    if (Number.isInteger(step.toActor)) return step;
+    const nextActor = flow[index + 1]?.actors?.[0];
+    return Number.isInteger(nextActor) ? { ...step, toActor: nextActor } : step;
+  });
+}
 function normalizeFlow(rawFlow) {
   const used = new Set();
   const steps = (Array.isArray(rawFlow) ? rawFlow : []).slice(0, 5).map((step, index) => flowStep(step, index, used)).filter(Boolean);
-  return normalizeFlowSpacing(ensureAllActors(steps.length >= 2 ? steps : fallbackFlow()));
+  return wireToActors(normalizeFlowSpacing(ensureAllActors(steps.length >= 2 ? steps : fallbackFlow())));
 }
 function normalizeTrigger(raw = {}, flow = []) {
-  const step = Number.isInteger(Number(raw.step)) ? Math.max(0, Math.min(flow.length - 1, Number(raw.step))) : 0;
-  const actorCount = flow[step]?.actors?.length || 1;
-  return { step, radius: actorCount > 1 ? 46 : 38 };
+  const actorCount = flow[0]?.actors?.length || 1;
+  return { step: 0, radius: actorCount > 1 ? 46 : 38 };
 }
 function layoutFromFlow(flow, emojis) {
   const rows = [];
@@ -205,8 +215,8 @@ function layoutFromFlow(flow, emojis) {
   }
   return rows.sort((a, b) => a.actor - b.actor);
 }
-function unitsFromFlow(flow) { return flow.map((step) => ({ unit: step.step, actors: step.actors })); }
-function beatsFromFlow(flow) { return flow.map((step, index) => ({ ...step, unit: step.step, actor: step.actors?.[0], next: index === flow.length - 1 || step.split ? "terminal" : "assist" })); }
+function unitsFromFlow(flow) { return flow.map((step, index) => ({ unit: index, actors: step.actors })); }
+function beatsFromFlow(flow) { return flow.map((step, index) => ({ ...step, step: index, unit: index, actor: step.actors?.[0], next: index === flow.length - 1 || step.split ? "terminal" : "assist" })); }
 function hashCode(input) {
   let h = 2166136261;
   for (const ch of String(input)) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); }
@@ -241,18 +251,21 @@ function prompt(emojis) {
 
 こんなピタゴラ装置（3つ合わせて1つのギミック）があるとしたら、この装置に触れた落下中のボールはどんな挙動をすると思いますか？
 まずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂(split), ワープ(warp), 重力向き変更(gravity)等を取り入れても構わないが、それらは装置を必ず面白くでき、絵文字の意味としても自然な場合に限る。
-その動きを、JSONに落とし込んで
+その動きを、JSONに落とし込んで。
+
+返答はJSONのみ。
 
 出力するJSONの形:
 summary: この装置の動き方を20〜35文字で要約。summaryはこの装置で起きる動きの設計図。summaryに書いた主要な動きや効果はflow内で**必ず**実行する。
-trigger: { step }。ボールが最初に触れる開始step
-flow: step配列。各stepは actors, pos, duration を持ち、必要に応じて ball / device / contact / hold / spin / hit / split / warp / gravity を持つ
+trigger: { step: 0 }。ボールが最初に触れる開始位置。flowの先頭が必ず最初に実行される
+flow: 配列。配列の順番が実行順。各要素は actors, pos, duration を持ち、必要に応じて ball / device / contact / toActor / hold / spin / hit / split / warp / gravity を持つ。stepは書かない
 
 使える指定:
 ball.path: [[x,y], ...]。ボールを指定軌道で動かす
 device.path: [[x,y], ...]。絵文字部品の動き。yを+にしていけば落下した様になる
 device.followBall: true。絵文字部品がボールと一緒に動く。運ぶ・抱える・乗せる・一緒に落ちる表現に使う
 contact: 絵文字番号。指定した絵文字がボールに触れたように見せ、その接触で効果を発火する
+toActor: 絵文字番号。ボールを次に渡す相手。ball.pathやhit後の行き先として使う
 hold: { seconds }。接触後、ボールを止める
 spin: { amount, seconds }。接触後、ボールに回転を加える
 hit: { velocity:[x,y] }。接触後、ボールを弾く
@@ -264,11 +277,12 @@ gravity: { angle, seconds }。接触後、指定秒数だけ重力方向を変�
 [x,y] はstep中心からの相対座標。{"$x":x,"$y":y} はステージ全体の絶対座標。どちらも-100〜100で指定する。xは右が+、yは下が+
 {"$x":x,"$y":y} は ball.path / device.path / warp の中でも使える
 pathで動かす軸の変化量は15以上にする。蛇行・螺旋・回り込みならx,yの両方を大きく変化させる
-flowは上から順番に実行される。最後のstepが終わったら装置は終了する
-durationは、そのstepでボールと絵文字が接触して効果が発火するまでの演出秒数
+flowは上から順番に実行される。最後の要素が終わったら装置は終了する
+durationは、その要素でボールと絵文字が接触して効果が発火するまでの演出秒数
 ball.path / device.path / device.followBall はduration中に動く
 hold / spin / hit / split / warp / gravity はcontactで指定した絵文字とボールの接触後に発火する
-hold / spin / hit / split / warp / gravity を使うstepでは、必ずcontactを指定する
+hold / spin / hit / split / warp / gravity を使う要素では、必ずcontactを指定する
+次の絵文字へ受け渡す動きではtoActorを指定する。contactやhitの直後に次の絵文字へ向かわせたい場合もtoActorを使う
 ボールを不自然にactorへ寄せない。接触させたい場合は、device.pathやdevice.followBallで絵文字部品がボールへ近づくように見せる
 3つの絵文字が装置の一部に見えるようにflowへ含める
 split / warp / gravity は特殊効果。絵文字の主題から自然に連想でき、通常のpathやhitより適切になる場合だけ使う
@@ -286,7 +300,7 @@ export function mountCompactNoHandSoccerRoutes(app) {
       const output = await genWithFallback(prompt(emojis), { generationConfig: { responseMimeType: "application/json", temperature: 0.88 } });
       const raw = JSON.parse(extractFirstJsonObject(output));
       const gimmick = normalize(raw, emojis);
-      await logGimmick(emojis, gimmick, "gemini-contact-effect-flow");
+      await logGimmick(emojis, gimmick, "gemini-ordered-to-actor-flow");
       return res.json(gimmick);
     } catch (error) {
       console.warn("[noHand-soccer] primitive flow fallback", error);
