@@ -39,12 +39,59 @@
 
 ## ファイル構成
 
-プロファイル関連ファイルは次の2つだけで管理する。
+runtime / 本番用のプロファイル関連ファイルは次の2つだけで管理する。
 
 - `emoji_physics_profiles.json`
 - `emoji_physics_profiles.md`
 
-分割JSONやdraft JSONは作らない。追加バッチも必ず `emoji_physics_profiles.json` の `profiles` に統合する。
+分割profile JSONやdraft profile JSONは作らない。追加バッチも必ず `emoji_physics_profiles.json` の `profiles` に統合する。
+
+作業用の未処理カタログキューは `tools/nohand/profile_queue/` に置く。これは本番プロファイルではなく、AIが50件ずつ精査するための入力である。
+
+```txt
+public/noHand_soccer/
+  emoji_catalog_full_ja.json
+  emoji_physics_profiles.json
+  emoji_physics_profiles.md
+
+tools/nohand/
+  generate_profile_queue.mjs
+  validate_profiles.mjs
+  profile_queue/
+    catalog_0231_0280.json
+```
+
+## 作業キュー運用
+
+1. `generate_profile_queue.mjs` が `emoji_catalog_full_ja.json` と `emoji_physics_profiles.json` を比較する。
+2. まだprofile化されていない絵文字だけを抽出する。
+3. 50件単位で `tools/nohand/profile_queue/catalog_XXXX_YYYY.json` に保存する。
+4. AIはqueueを1つずつ読み、各絵文字の意味と効果を吟味する。
+5. 作ったprofileは `emoji_physics_profiles.json` の `profiles` へ統合する。
+6. `validate_profiles.mjs` で抜け・重複・分類タグ混入・sourceName不一致を検査する。
+7. `emoji_physics_profiles.md` に追加範囲とレビュー観点を追記する。
+
+queue JSONには `emoji` と英語 `name` だけを入れる。`jaName` / `shopCategory` / `price` / `codepoints` はAI判断のノイズになるため入れない。
+
+### queue生成
+
+```bash
+node tools/nohand/generate_profile_queue.mjs
+```
+
+デフォルトでは、まだprofile化されていない先頭50件だけを生成する。
+
+```bash
+node tools/nohand/generate_profile_queue.mjs --size 50 --all
+```
+
+`--all` を付けると、未処理分を50件ずつまとめて生成する。
+
+### 検証
+
+```bash
+node tools/nohand/validate_profiles.mjs
+```
 
 ## 現在の登録範囲
 
@@ -57,6 +104,8 @@
 - 106-130: ラブユー手の肌色差分、facepalm、frowning、猿・ねずみ・口・新月など
 - 131-180: オレンジハート、パーティー顔、person facepalming/frowning、帽子の人、豚、うんち、プードル、8ボール、ドクロ、眠り、天使の輪、ハート目、角つき笑顔など
 - 181-230: 舌出し顔、太陽、汗しぶき、日めくり、考える顔、虎、舌、2つのハート、逆さ顔、風の顔、女性facepalm/frowning、酔い顔、あくび、目覚まし時計、アメフト、アーティスト、パレット、宇宙飛行士など
+
+次のqueue: `tools/nohand/profile_queue/catalog_0231_0280.json`。
 
 ## プロファイル形式
 
@@ -130,6 +179,48 @@
 | `timedRelease` | 指定タイミングで放つ |
 | `paintTrail` | 描いた線・塗料の流れで軌道を作る |
 | `silenceHold` | 音や動きを抑えて静かに保持する |
+
+## High confidence profiles
+
+| 絵文字 | 理由 |
+|---|---|
+| `🥊` | 接触、打撃、射出が直感的。`impactLaunch` の代表にできる。 |
+| `🥣` | 受ける、回す、すくう、渡す流れが自然。 |
+| `🎱` | 転がり、回転、精密パスが絵文字の意味と一致する。 |
+| `🌬️` | 風で押す・曲げる・流す挙動がそのまま物理化できる。 |
+| `🌞` | 熱、光、上昇、放射が自然につながる。 |
+| `💦` | 複数しずくなので、流れと分裂の両方が自然。 |
+| `👅` / `😛` / `😜` / `😝` | 舌で引っかける、曲げる、弾く動きが明確。 |
+| `⏰` | 時間差発動と振動射出の代表にできる。 |
+| `🧑‍🚀` 系 | 低重力・周回・照準補正が自然。 |
+| `🔮` / `👁️` / `👀` / `🤖` | 照準補正、予測、追尾の代表として安定している。 |
+
+## Review candidates
+
+| 絵文字 | 理由 |
+|---|---|
+| `🤎` | 茶色から土・重さへ寄せているが、絵文字単体の意味としてはやや弱い。 |
+| `🤍` / `💛` / `🧡` / `💜` | 色違いハートの差別化が抽象的。全体的に吸着＋軽い補正へ寄りやすい。 |
+| `😁` / `😀` / `😃` / `😄` / `☺️` / `😊` / `🙂` | 笑顔系は `lightBoost` / `softPass` に寄りやすく、主役ギミックになりにくい。 |
+| `🙍` / `🙁` / `☹️` / `😞` / `😔` / `😟` / `😫` / `😩` | 落ち込み・疲れ顔は `slowDampen` / `dropRelease` に寄りやすく差が小さい。 |
+| `👲` 系 | 帽子・頭部で反射する解釈は使えるが、絵文字本来の意味からは少し離れる。 |
+| `💩` | `poisonDampen` は自然だが、演出が不快に寄りすぎないよう調整が必要。 |
+| `🧑‍🎨` / `🎨` | `paintTrail` は良いが、compiler実装時に軌道定義が曖昧になりやすい。 |
+
+## Compiler-sensitive abilities
+
+| ability | 注意点 |
+|---|---|
+| `multiExit` | 出口位置の決定規則が必要。複数出口から出す場合、次actorとの接続を壊しやすい。 |
+| `hiddenRoute` | 見えない経路の開始・終了位置を決めないとワープと区別しにくい。 |
+| `splitScatter` | 分身をどこまで有効なボールとして扱うかを決めないと強すぎる。 |
+| `burstScatter` | 放射状速度の上限と本体/分身の扱いを決める必要がある。 |
+| `paintTrail` | 線に沿うのか、塗料の流れで押すのかをcompiler側で分ける必要がある。 |
+| `timedRelease` | 保持時間の上限を決めないとテンポが止まる。 |
+| `sleepFloat` | 低重力・減速・遅延の組み合わせが長くなりすぎないよう注意。 |
+| `gravityShift` | 画面全体ではなく局所的な重力変更にしないと破綻しやすい。 |
+| `phaseThrough` | すり抜け中も次actorへの接続を保証する必要がある。 |
+| `magnetPull` | 引力が強すぎるとボールが吸着して止まりやすい。 |
 
 ## 181-230 追加メモ
 
