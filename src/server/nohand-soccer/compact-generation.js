@@ -113,7 +113,7 @@ function normalizeGravity(raw) {
   const angle = Number.isFinite(Number(raw.angle)) ? Number(raw.angle) : angleFromDirection(raw.direction);
   return { angle: ((angle % 360) + 360) % 360, seconds: clamp(raw.seconds, 1, 0.1, 3) };
 }
-function normalizeTouch(raw, actors, hasContactEffect) {
+function normalizeContact(raw, actors, hasContactEffect) {
   if (!hasContactEffect) return undefined;
   const n = Number(raw);
   if (Number.isInteger(n) && actors.includes(n)) return n;
@@ -141,7 +141,7 @@ function flowStep(raw = {}, index = 0, usedActors = new Set()) {
     duration: clamp(raw.duration, ball?.path || raw.device ? 0.6 : 0.35, 0.08, 3),
     ball,
     device: normalizeDevice(raw.device || {}),
-    touch: normalizeTouch(raw.touch, actors, hasContactEffect),
+    contact: normalizeContact(raw.contact ?? raw.touch, actors, hasContactEffect),
     hold,
     spin,
     hit,
@@ -153,22 +153,22 @@ function flowStep(raw = {}, index = 0, usedActors = new Set()) {
   if (!step.ball && !step.device && !hasContactEffect) {
     step.ball = index === 0 ? { path: [[0, 0], [70, -15]] } : undefined;
     step.hit = index === 0 ? undefined : { velocity: [65, -35], radius: 30 };
-    if (step.hit) step.touch = actors[0];
+    if (step.hit) step.contact = actors[0];
   }
   return step;
 }
 function fallbackFlow() {
   return [
     { step: 0, actors: [0], pos: [-75, 20], ball: { path: [[0, 0], [70, -20]] }, device: { followBall: true }, duration: 0.6 },
-    { step: 1, actors: [1], pos: [0, -35], touch: 1, hit: { velocity: [70, -35], radius: 30 }, duration: 0.35 },
-    { step: 2, actors: [2], pos: [75, 20], touch: 2, hit: { velocity: [75, -30], radius: 30 }, duration: 0.25 },
+    { step: 1, actors: [1], pos: [0, -35], contact: 1, hit: { velocity: [70, -35], radius: 30 }, duration: 0.35 },
+    { step: 2, actors: [2], pos: [75, 20], contact: 2, hit: { velocity: [75, -30], radius: 30 }, duration: 0.25 },
   ];
 }
 function ensureAllActors(flow) {
   const used = new Set(flow.flatMap((step) => step.actors || []));
   const out = [...flow];
   for (let actor = 0; actor < 3; actor += 1) {
-    if (!used.has(actor)) out.push({ step: out.length, actors: [actor], pos: DEFAULT_FLOW_POS[actor], touch: actor, hit: { velocity: [55, -25], radius: 30 }, duration: 0.22 });
+    if (!used.has(actor)) out.push({ step: out.length, actors: [actor], pos: DEFAULT_FLOW_POS[actor], contact: actor, hit: { velocity: [55, -25], radius: 30 }, duration: 0.22 });
   }
   return out.slice(0, 5).map((step, index) => ({ ...step, step: index }));
 }
@@ -247,13 +247,13 @@ function prompt(emojis) {
 出力するJSONの形:
 summary: この装置の動き方を20〜35文字で要約。summaryはこの装置で起きる動きの設計図。summaryに書いた主要な動きや効果はflow内で必ず実行する
 trigger: { step }。ボールが最初に触れる開始step
-flow: step配列。各stepは actors, pos, duration を持ち、必要に応じて ball / device / touch / hold / spin / hit / split / warp / gravity を持つ
+flow: step配列。各stepは actors, pos, duration を持ち、必要に応じて ball / device / contact / hold / spin / hit / split / warp / gravity を持つ
 
 使える指定:
 ball.path: [[x,y], ...]。ボールを指定軌道で動かす
 device.path: [[x,y], ...]。絵文字部品の動き。yを+にしていけば落下した様になる
 device.followBall: true。絵文字部品がボールと一緒に動く。運ぶ・抱える・乗せる・一緒に落ちる表現に使う
-touch: 絵文字番号。指定した絵文字がボールに触れたように見せ、その接触で効果を発火する
+contact: 絵文字番号。指定した絵文字がボールに触れたように見せ、その接触で効果を発火する
 hold: { seconds }。接触後、ボールを止める
 spin: { amount, seconds }。接触後、ボールに回転を加える
 hit: { velocity:[x,y] }。接触後、ボールを弾く
@@ -268,8 +268,8 @@ pathで動かす軸の変化量は15以上にする。蛇行・螺旋・回り�
 flowは上から順番に実行される。最後のstepが終わったら装置は終了する
 durationは、そのstepでボールと絵文字が接触して効果が発火するまでの演出秒数
 ball.path / device.path / device.followBall はduration中に動く
-hold / spin / hit / split / warp / gravity はtouchで指定した絵文字とボールの接触後に発火する
-hold / spin / hit / split / warp / gravity を使うstepでは、必ずtouchを指定する
+hold / spin / hit / split / warp / gravity はcontactで指定した絵文字とボールの接触後に発火する
+hold / spin / hit / split / warp / gravity を使うstepでは、必ずcontactを指定する
 ボールを不自然にactorへ寄せない。接触させたい場合は、device.pathやdevice.followBallで絵文字部品がボールへ近づくように見せる
 3つの絵文字が装置の一部に見えるようにflowへ含める
 split / warp / gravity は特殊効果。絵文字の主題から自然に連想でき、通常のpathやhitより適切になる場合だけ使う
