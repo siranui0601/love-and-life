@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 381,
+    "endOrdinal": 430,
+    "startCatalogIndex": 380,
+    "endCatalogIndex": 429,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 381,
+      "catalogIndex": 380,
+      "emoji": "👨‍👨‍👦",
+      "name": "family: man, man, boy"
+    },
+    {
+      "ordinal": 382,
+      "catalogIndex": 381,
+      "emoji": "👨‍👨‍👦‍👦",
+      "name": "family: man, man, boy, boy"
+    },
+    {
+      "ordinal": 383,
+      "catalogIndex": 382,
+      "emoji": "👨‍👨‍👧",
+      "name": "family: man, man, girl"
+    },
+    {
+      "ordinal": 384,
+      "catalogIndex": 383,
+      "emoji": "👨‍👨‍👧‍👦",
+      "name": "family: man, man, girl, boy"
+    },
+    {
+      "ordinal": 385,
+      "catalogIndex": 384,
+      "emoji": "👨‍👨‍👧‍👧",
+      "name": "family: man, man, girl, girl"
+    },
+    {
+      "ordinal": 386,
+      "catalogIndex": 385,
+      "emoji": "👨‍👩‍👦",
+      "name": "family: man, woman, boy"
+    },
+    {
+      "ordinal": 387,
+      "catalogIndex": 386,
+      "emoji": "👨‍👩‍👦‍👦",
+      "name": "family: man, woman, boy, boy"
+    },
+    {
+      "ordinal": 388,
+      "catalogIndex": 387,
+      "emoji": "👨‍👩‍👧",
+      "name": "family: man, woman, girl"
+    },
+    {
+      "ordinal": 389,
+      "catalogIndex": 388,
+      "emoji": "👨‍👩‍👧‍👦",
+      "name": "family: man, woman, girl, boy"
+    },
+    {
+      "ordinal": 390,
+      "catalogIndex": 389,
+      "emoji": "👨‍👩‍👧‍👧",
+      "name": "family: man, woman, girl, girl"
+    },
+    {
+      "ordinal": 391,
+      "catalogIndex": 390,
+      "emoji": "👩‍👦",
+      "name": "family: woman, boy"
+    },
+    {
+      "ordinal": 392,
+      "catalogIndex": 391,
+      "emoji": "👩‍👦‍👦",
+      "name": "family: woman, boy, boy"
+    },
+    {
+      "ordinal": 393,
+      "catalogIndex": 392,
+      "emoji": "👩‍👧",
+      "name": "family: woman, girl"
+    },
+    {
+      "ordinal": 394,
+      "catalogIndex": 393,
+      "emoji": "👩‍👧‍👦",
+      "name": "family: woman, girl, boy"
+    },
+    {
+      "ordinal": 395,
+      "catalogIndex": 394,
+      "emoji": "👩‍👧‍👧",
+      "name": "family: woman, girl, girl"
+    },
+    {
+      "ordinal": 396,
+      "catalogIndex": 395,
+      "emoji": "👩‍👩‍👦",
+      "name": "family: woman, woman, boy"
+    },
+    {
+      "ordinal": 397,
+      "catalogIndex": 396,
+      "emoji": "👩‍👩‍👦‍👦",
+      "name": "family: woman, woman, boy, boy"
+    },
+    {
+      "ordinal": 398,
+      "catalogIndex": 397,
+      "emoji": "👩‍👩‍👧",
+      "name": "family: woman, woman, girl"
+    },
+    {
+      "ordinal": 399,
+      "catalogIndex": 398,
+      "emoji": "👩‍👩‍👧‍👦",
+      "name": "family: woman, woman, girl, boy"
+    },
+    {
+      "ordinal": 400,
+      "catalogIndex": 399,
+      "emoji": "👩‍👩‍👧‍👧",
+      "name": "family: woman, woman, girl, girl"
+    },
+    {
+      "ordinal": 401,
+      "catalogIndex": 400,
+      "emoji": "🧑‍🌾",
+      "name": "farmer"
+    },
+    {
+      "ordinal": 402,
+      "catalogIndex": 401,
+      "emoji": "🧑🏿‍🌾",
+      "name": "farmer: dark skin tone"
+    },
+    {
+      "ordinal": 403,
+      "catalogIndex": 402,
+      "emoji": "🧑🏻‍🌾",
+      "name": "farmer: light skin tone"
+    },
+    {
+      "ordinal": 404,
+      "catalogIndex": 403,
+      "emoji": "🧑🏽‍🌾",
+      "name": "farmer: medium skin tone"
+    },
+    {
+      "ordinal": 405,
+      "catalogIndex": 404,
+      "emoji": "🧑🏾‍🌾",
+      "name": "farmer: medium-dark skin tone"
+    },
+    {
+      "ordinal": 406,
+      "catalogIndex": 405,
+      "emoji": "🧑🏼‍🌾",
+      "name": "farmer: medium-light skin tone"
+    },
+    {
+      "ordinal": 407,
+      "catalogIndex": 406,
+      "emoji": "🙏",
+      "name": "folded hands"
+    },
+    {
+      "ordinal": 408,
+      "catalogIndex": 407,
+      "emoji": "🙏🏿",
+      "name": "folded hands: dark skin tone"
+    },
+    {
+      "ordinal": 409,
+      "catalogIndex": 408,
+      "emoji": "🙏🏻",
+      "name": "folded hands: light skin tone"
+    },
+    {
+      "ordinal": 410,
+      "catalogIndex": 409,
+      "emoji": "🙏🏽",
+      "name": "folded hands: medium skin tone"
+    },
+    {
+      "ordinal": 411,
+      "catalogIndex": 410,
+      "emoji": "🙏🏾",
+      "name": "folded hands: medium-dark skin tone"
+    },
+    {
+      "ordinal": 412,
+      "catalogIndex": 411,
+      "emoji": "🙏🏼",
+      "name": "folded hands: medium-light skin tone"
+    },
+    {
+      "ordinal": 413,
+      "catalogIndex": 412,
+      "emoji": "🦶",
+      "name": "foot"
+    },
+    {
+      "ordinal": 414,
+      "catalogIndex": 413,
+      "emoji": "🦶🏿",
+      "name": "foot: dark skin tone"
+    },
+    {
+      "ordinal": 415,
+      "catalogIndex": 414,
+      "emoji": "🦶🏻",
+      "name": "foot: light skin tone"
+    },
+    {
+      "ordinal": 416,
+      "catalogIndex": 415,
+      "emoji": "🦶🏽",
+      "name": "foot: medium skin tone"
+    },
+    {
+      "ordinal": 417,
+      "catalogIndex": 416,
+      "emoji": "🦶🏾",
+      "name": "foot: medium-dark skin tone"
+    },
+    {
+      "ordinal": 418,
+      "catalogIndex": 417,
+      "emoji": "🦶🏼",
+      "name": "foot: medium-light skin tone"
+    },
+    {
+      "ordinal": 419,
+      "catalogIndex": 418,
+      "emoji": "👣",
+      "name": "footprints"
+    },
+    {
+      "ordinal": 420,
+      "catalogIndex": 419,
+      "emoji": "🥠",
+      "name": "fortune cookie"
+    },
+    {
+      "ordinal": 421,
+      "catalogIndex": 420,
+      "emoji": "🐥",
+      "name": "front-facing baby chick"
+    },
+    {
+      "ordinal": 422,
+      "catalogIndex": 421,
+      "emoji": "⚙️",
+      "name": "gear"
+    },
+    {
+      "ordinal": 423,
+      "catalogIndex": 422,
+      "emoji": "🧞",
+      "name": "genie"
+    },
+    {
+      "ordinal": 424,
+      "catalogIndex": 423,
+      "emoji": "👧",
+      "name": "girl"
+    },
+    {
+      "ordinal": 425,
+      "catalogIndex": 424,
+      "emoji": "👧🏿",
+      "name": "girl: dark skin tone"
+    },
+    {
+      "ordinal": 426,
+      "catalogIndex": 425,
+      "emoji": "👧🏻",
+      "name": "girl: light skin tone"
+    },
+    {
+      "ordinal": 427,
+      "catalogIndex": 426,
+      "emoji": "👧🏽",
+      "name": "girl: medium skin tone"
+    },
+    {
+      "ordinal": 428,
+      "catalogIndex": 427,
+      "emoji": "👧🏾",
+      "name": "girl: medium-dark skin tone"
+    },
+    {
+      "ordinal": 429,
+      "catalogIndex": 428,
+      "emoji": "👧🏼",
+      "name": "girl: medium-light skin tone"
+    },
+    {
+      "ordinal": 430,
+      "catalogIndex": 429,
+      "emoji": "💂",
+      "name": "guard"
+    }
+  ]
+}

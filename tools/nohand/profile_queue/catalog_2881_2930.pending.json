@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 2881,
+    "endOrdinal": 2930,
+    "startCatalogIndex": 2880,
+    "endCatalogIndex": 2929,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2881,
+      "catalogIndex": 2880,
+      "emoji": "🔞",
+      "name": "no one under eighteen"
+    },
+    {
+      "ordinal": 2882,
+      "catalogIndex": 2881,
+      "emoji": "🚷",
+      "name": "no pedestrians"
+    },
+    {
+      "ordinal": 2883,
+      "catalogIndex": 2882,
+      "emoji": "🚭",
+      "name": "no smoking"
+    },
+    {
+      "ordinal": 2884,
+      "catalogIndex": 2883,
+      "emoji": "🅾️",
+      "name": "o button (blood type)"
+    },
+    {
+      "ordinal": 2885,
+      "catalogIndex": 2884,
+      "emoji": "👹",
+      "name": "ogre"
+    },
+    {
+      "ordinal": 2886,
+      "catalogIndex": 2885,
+      "emoji": "🆗",
+      "name": "ok button"
+    },
+    {
+      "ordinal": 2887,
+      "catalogIndex": 2886,
+      "emoji": "🕉️",
+      "name": "om"
+    },
+    {
+      "ordinal": 2888,
+      "catalogIndex": 2887,
+      "emoji": "🔛",
+      "name": "on! arrow"
+    },
+    {
+      "ordinal": 2889,
+      "catalogIndex": 2888,
+      "emoji": "👊",
+      "name": "oncoming fist"
+    },
+    {
+      "ordinal": 2890,
+      "catalogIndex": 2889,
+      "emoji": "🕜",
+      "name": "one-thirty"
+    },
+    {
+      "ordinal": 2891,
+      "catalogIndex": 2890,
+      "emoji": "⛎",
+      "name": "ophiuchus"
+    },
+    {
+      "ordinal": 2892,
+      "catalogIndex": 2891,
+      "emoji": "💿",
+      "name": "optical disk"
+    },
+    {
+      "ordinal": 2893,
+      "catalogIndex": 2892,
+      "emoji": "🦪",
+      "name": "oyster"
+    },
+    {
+      "ordinal": 2894,
+      "catalogIndex": 2893,
+      "emoji": "🅿️",
+      "name": "p button"
+    },
+    {
+      "ordinal": 2895,
+      "catalogIndex": 2894,
+      "emoji": "📦",
+      "name": "package"
+    },
+    {
+      "ordinal": 2896,
+      "catalogIndex": 2895,
+      "emoji": "📄",
+      "name": "page facing up"
+    },
+    {
+      "ordinal": 2897,
+      "catalogIndex": 2896,
+      "emoji": "📃",
+      "name": "page with curl"
+    },
+    {
+      "ordinal": 2898,
+      "catalogIndex": 2897,
+      "emoji": "📟",
+      "name": "pager"
+    },
+    {
+      "ordinal": 2899,
+      "catalogIndex": 2898,
+      "emoji": "⏸️",
+      "name": "pause button"
+    },
+    {
+      "ordinal": 2900,
+      "catalogIndex": 2899,
+      "emoji": "☮️",
+      "name": "peace symbol"
+    },
+    {
+      "ordinal": 2901,
+      "catalogIndex": 2900,
+      "emoji": "🍑",
+      "name": "peach"
+    },
+    {
+      "ordinal": 2902,
+      "catalogIndex": 2901,
+      "emoji": "🧫",
+      "name": "petri dish"
+    },
+    {
+      "ordinal": 2903,
+      "catalogIndex": 2902,
+      "emoji": "♓",
+      "name": "pisces"
+    },
+    {
+      "ordinal": 2904,
+      "catalogIndex": 2903,
+      "emoji": "🔫",
+      "name": "pistol"
+    },
+    {
+      "ordinal": 2905,
+      "catalogIndex": 2904,
+      "emoji": "🪅",
+      "name": "piñata"
+    },
+    {
+      "ordinal": 2906,
+      "catalogIndex": 2905,
+      "emoji": "▶️",
+      "name": "play button"
+    },
+    {
+      "ordinal": 2907,
+      "catalogIndex": 2906,
+      "emoji": "⏯️",
+      "name": "play or pause button"
+    },
+    {
+      "ordinal": 2908,
+      "catalogIndex": 2907,
+      "emoji": "🪠",
+      "name": "plunger"
+    },
+    {
+      "ordinal": 2909,
+      "catalogIndex": 2908,
+      "emoji": "➕",
+      "name": "plus"
+    },
+    {
+      "ordinal": 2910,
+      "catalogIndex": 2909,
+      "emoji": "🏤",
+      "name": "post office"
+    },
+    {
+      "ordinal": 2911,
+      "catalogIndex": 2910,
+      "emoji": "📯",
+      "name": "postal horn"
+    },
+    {
+      "ordinal": 2912,
+      "catalogIndex": 2911,
+      "emoji": "🍲",
+      "name": "pot of food"
+    },
+    {
+      "ordinal": 2913,
+      "catalogIndex": 2912,
+      "emoji": "📿",
+      "name": "prayer beads"
+    },
+    {
+      "ordinal": 2914,
+      "catalogIndex": 2913,
+      "emoji": "🤴",
+      "name": "prince"
+    },
+    {
+      "ordinal": 2915,
+      "catalogIndex": 2914,
+      "emoji": "👸",
+      "name": "princess"
+    },
+    {
+      "ordinal": 2916,
+      "catalogIndex": 2915,
+      "emoji": "🚫",
+      "name": "prohibited"
+    },
+    {
+      "ordinal": 2917,
+      "catalogIndex": 2916,
+      "emoji": "🟣",
+      "name": "purple circle"
+    },
+    {
+      "ordinal": 2918,
+      "catalogIndex": 2917,
+      "emoji": "🟪",
+      "name": "purple square"
+    },
+    {
+      "ordinal": 2919,
+      "catalogIndex": 2918,
+      "emoji": "❓",
+      "name": "question mark"
+    },
+    {
+      "ordinal": 2920,
+      "catalogIndex": 2919,
+      "emoji": "📻",
+      "name": "radio"
+    },
+    {
+      "ordinal": 2921,
+      "catalogIndex": 2920,
+      "emoji": "🔘",
+      "name": "radio button"
+    },
+    {
+      "ordinal": 2922,
+      "catalogIndex": 2921,
+      "emoji": "☢️",
+      "name": "radioactive"
+    },
+    {
+      "ordinal": 2923,
+      "catalogIndex": 2922,
+      "emoji": "✊",
+      "name": "raised fist"
+    },
+    {
+      "ordinal": 2924,
+      "catalogIndex": 2923,
+      "emoji": "⏺️",
+      "name": "record button"
+    },
+    {
+      "ordinal": 2925,
+      "catalogIndex": 2924,
+      "emoji": "♻️",
+      "name": "recycling symbol"
+    },
+    {
+      "ordinal": 2926,
+      "catalogIndex": 2925,
+      "emoji": "🔴",
+      "name": "red circle"
+    },
+    {
+      "ordinal": 2927,
+      "catalogIndex": 2926,
+      "emoji": "🟥",
+      "name": "red square"
+    },
+    {
+      "ordinal": 2928,
+      "catalogIndex": 2927,
+      "emoji": "🔻",
+      "name": "red triangle pointed down"
+    },
+    {
+      "ordinal": 2929,
+      "catalogIndex": 2928,
+      "emoji": "🔺",
+      "name": "red triangle pointed up"
+    },
+    {
+      "ordinal": 2930,
+      "catalogIndex": 2929,
+      "emoji": "®️",
+      "name": "registered"
+    }
+  ]
+}

@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 2781,
+    "endOrdinal": 2830,
+    "startCatalogIndex": 2780,
+    "endCatalogIndex": 2829,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2781,
+      "catalogIndex": 2780,
+      "emoji": "♀️",
+      "name": "female sign"
+    },
+    {
+      "ordinal": 2782,
+      "catalogIndex": 2781,
+      "emoji": "🎡",
+      "name": "ferris wheel"
+    },
+    {
+      "ordinal": 2783,
+      "catalogIndex": 2782,
+      "emoji": "🕠",
+      "name": "five-thirty"
+    },
+    {
+      "ordinal": 2784,
+      "catalogIndex": 2783,
+      "emoji": "⛳",
+      "name": "flag in hole"
+    },
+    {
+      "ordinal": 2785,
+      "catalogIndex": 2784,
+      "emoji": "⚜️",
+      "name": "fleur-de-lis"
+    },
+    {
+      "ordinal": 2786,
+      "catalogIndex": 2785,
+      "emoji": "💪",
+      "name": "flexed biceps"
+    },
+    {
+      "ordinal": 2787,
+      "catalogIndex": 2786,
+      "emoji": "💾",
+      "name": "floppy disk"
+    },
+    {
+      "ordinal": 2788,
+      "catalogIndex": 2787,
+      "emoji": "🫕",
+      "name": "fondue"
+    },
+    {
+      "ordinal": 2789,
+      "catalogIndex": 2788,
+      "emoji": "🕟",
+      "name": "four-thirty"
+    },
+    {
+      "ordinal": 2790,
+      "catalogIndex": 2789,
+      "emoji": "🆓",
+      "name": "free button"
+    },
+    {
+      "ordinal": 2791,
+      "catalogIndex": 2790,
+      "emoji": "🍤",
+      "name": "fried shrimp"
+    },
+    {
+      "ordinal": 2792,
+      "catalogIndex": 2791,
+      "emoji": "⛽",
+      "name": "fuel pump"
+    },
+    {
+      "ordinal": 2793,
+      "catalogIndex": 2792,
+      "emoji": "👺",
+      "name": "goblin"
+    },
+    {
+      "ordinal": 2794,
+      "catalogIndex": 2793,
+      "emoji": "🎓",
+      "name": "graduation cap"
+    },
+    {
+      "ordinal": 2795,
+      "catalogIndex": 2794,
+      "emoji": "🟢",
+      "name": "green circle"
+    },
+    {
+      "ordinal": 2796,
+      "catalogIndex": 2795,
+      "emoji": "🥗",
+      "name": "green salad"
+    },
+    {
+      "ordinal": 2797,
+      "catalogIndex": 2796,
+      "emoji": "🟩",
+      "name": "green square"
+    },
+    {
+      "ordinal": 2798,
+      "catalogIndex": 2797,
+      "emoji": "💲",
+      "name": "heavy dollar sign"
+    },
+    {
+      "ordinal": 2799,
+      "catalogIndex": 2798,
+      "emoji": "⚡",
+      "name": "high voltage"
+    },
+    {
+      "ordinal": 2800,
+      "catalogIndex": 2799,
+      "emoji": "🕳️",
+      "name": "hole"
+    },
+    {
+      "ordinal": 2801,
+      "catalogIndex": 2800,
+      "emoji": "⭕",
+      "name": "hollow red circle"
+    },
+    {
+      "ordinal": 2802,
+      "catalogIndex": 2801,
+      "emoji": "🚥",
+      "name": "horizontal traffic light"
+    },
+    {
+      "ordinal": 2803,
+      "catalogIndex": 2802,
+      "emoji": "💯",
+      "name": "hundred points"
+    },
+    {
+      "ordinal": 2804,
+      "catalogIndex": 2803,
+      "emoji": "🧊",
+      "name": "ice"
+    },
+    {
+      "ordinal": 2805,
+      "catalogIndex": 2804,
+      "emoji": "🍨",
+      "name": "ice cream"
+    },
+    {
+      "ordinal": 2806,
+      "catalogIndex": 2805,
+      "emoji": "🆔",
+      "name": "id button"
+    },
+    {
+      "ordinal": 2807,
+      "catalogIndex": 2806,
+      "emoji": "☝️",
+      "name": "index pointing up"
+    },
+    {
+      "ordinal": 2808,
+      "catalogIndex": 2807,
+      "emoji": "♾️",
+      "name": "infinity"
+    },
+    {
+      "ordinal": 2809,
+      "catalogIndex": 2808,
+      "emoji": "ℹ️",
+      "name": "information"
+    },
+    {
+      "ordinal": 2810,
+      "catalogIndex": 2809,
+      "emoji": "🔤",
+      "name": "input latin letters"
+    },
+    {
+      "ordinal": 2811,
+      "catalogIndex": 2810,
+      "emoji": "🔡",
+      "name": "input latin lowercase"
+    },
+    {
+      "ordinal": 2812,
+      "catalogIndex": 2811,
+      "emoji": "🔠",
+      "name": "input latin uppercase"
+    },
+    {
+      "ordinal": 2813,
+      "catalogIndex": 2812,
+      "emoji": "🔢",
+      "name": "input numbers"
+    },
+    {
+      "ordinal": 2814,
+      "catalogIndex": 2813,
+      "emoji": "🔣",
+      "name": "input symbols"
+    },
+    {
+      "ordinal": 2815,
+      "catalogIndex": 2814,
+      "emoji": "🎎",
+      "name": "japanese dolls"
+    },
+    {
+      "ordinal": 2816,
+      "catalogIndex": 2815,
+      "emoji": "🏣",
+      "name": "japanese post office"
+    },
+    {
+      "ordinal": 2817,
+      "catalogIndex": 2816,
+      "emoji": "🔰",
+      "name": "japanese symbol for beginner"
+    },
+    {
+      "ordinal": 2818,
+      "catalogIndex": 2817,
+      "emoji": "🉑",
+      "name": "japanese “acceptable” button"
+    },
+    {
+      "ordinal": 2819,
+      "catalogIndex": 2818,
+      "emoji": "🉐",
+      "name": "japanese “bargain” button"
+    },
+    {
+      "ordinal": 2820,
+      "catalogIndex": 2819,
+      "emoji": "🈹",
+      "name": "japanese “discount” button"
+    },
+    {
+      "ordinal": 2821,
+      "catalogIndex": 2820,
+      "emoji": "🈚",
+      "name": "japanese “free of charge” button"
+    },
+    {
+      "ordinal": 2822,
+      "catalogIndex": 2821,
+      "emoji": "🈁",
+      "name": "japanese “here” button"
+    },
+    {
+      "ordinal": 2823,
+      "catalogIndex": 2822,
+      "emoji": "🈷️",
+      "name": "japanese “monthly amount” button"
+    },
+    {
+      "ordinal": 2824,
+      "catalogIndex": 2823,
+      "emoji": "🈵",
+      "name": "japanese “no vacancy” button"
+    },
+    {
+      "ordinal": 2825,
+      "catalogIndex": 2824,
+      "emoji": "🈶",
+      "name": "japanese “not free of charge” button"
+    },
+    {
+      "ordinal": 2826,
+      "catalogIndex": 2825,
+      "emoji": "🈴",
+      "name": "japanese “passing grade” button"
+    },
+    {
+      "ordinal": 2827,
+      "catalogIndex": 2826,
+      "emoji": "🈲",
+      "name": "japanese “prohibited” button"
+    },
+    {
+      "ordinal": 2828,
+      "catalogIndex": 2827,
+      "emoji": "🈯",
+      "name": "japanese “reserved” button"
+    },
+    {
+      "ordinal": 2829,
+      "catalogIndex": 2828,
+      "emoji": "㊙️",
+      "name": "japanese “secret” button"
+    },
+    {
+      "ordinal": 2830,
+      "catalogIndex": 2829,
+      "emoji": "🈂️",
+      "name": "japanese “service charge” button"
+    }
+  ]
+}

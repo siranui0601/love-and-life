@@ -54,7 +54,40 @@ function chunkItems(items, size) {
   return chunks;
 }
 
-async function readDoneEmoji(outDir) {
+function contiguousRuns(items) {
+  const runs = [];
+  let current = [];
+
+  for (const item of items) {
+    const previous = current[current.length - 1];
+    if (previous && item.catalogIndex !== previous.catalogIndex + 1) {
+      runs.push(current);
+      current = [];
+    }
+    current.push(item);
+  }
+
+  if (current.length > 0) runs.push(current);
+  return runs;
+}
+
+function readRuntimeDoneCatalogIndexes(catalog, profileFile) {
+  const startIndex = profileFile.profileRange?.startIndex ?? 0;
+  const count = profileFile.profileRange?.count ?? 0;
+  const done = new Set();
+
+  if (!Number.isInteger(startIndex) || !Number.isInteger(count) || count < 0) {
+    throw new Error('Invalid profileRange in runtime profiles.');
+  }
+
+  for (let index = startIndex; index < Math.min(catalog.length, startIndex + count); index += 1) {
+    done.add(index);
+  }
+
+  return done;
+}
+
+async function readDoneCatalogIndexes(outDir, catalogByEmoji) {
   const done = new Set();
   let files = [];
   try {
@@ -65,11 +98,17 @@ async function readDoneEmoji(outDir) {
 
   for (const file of files.filter((name) => name.endsWith('.profiled.json'))) {
     const queue = await readJson(path.join(outDir, file));
-    for (const item of queue.sourceItems ?? []) {
-      if (item?.emoji) done.add(item.emoji);
+    const sourceItems = queue.sourceItems ?? [];
+    if (sourceItems.length > 0) {
+      for (const item of sourceItems) {
+        if (Number.isInteger(item?.catalogIndex)) done.add(item.catalogIndex);
+      }
+      continue;
     }
+
     for (const emoji of Object.keys(queue.profiles ?? {})) {
-      done.add(emoji);
+      const catalogIndex = catalogByEmoji.get(emoji);
+      if (Number.isInteger(catalogIndex)) done.add(catalogIndex);
     }
   }
 
@@ -90,13 +129,14 @@ async function main() {
   const catalog = await readJson(catalogPath);
   const profileFile = await readJson(profilesPath);
   const profiles = profileFile.profiles ?? {};
-  const runtimeDone = new Set(Object.keys(profiles));
-  const queueDone = await readDoneEmoji(outDir);
+  const catalogByEmoji = new Map(catalog.map((item, catalogIndex) => [item.emoji, catalogIndex]));
+  const runtimeDone = readRuntimeDoneCatalogIndexes(catalog, profileFile);
+  const queueDone = await readDoneCatalogIndexes(outDir, catalogByEmoji);
   const done = new Set([...runtimeDone, ...queueDone]);
 
   const missing = catalog
     .map((item, catalogIndex) => ({ item, catalogIndex }))
-    .filter(({ item }) => !done.has(item.emoji))
+    .filter(({ catalogIndex }) => !done.has(catalogIndex))
     .map(({ item, catalogIndex }) => toQueueItem(item, catalogIndex));
 
   if (missing.length === 0) {
@@ -104,7 +144,8 @@ async function main() {
     return;
   }
 
-  const chunks = firstOnly ? [missing.slice(0, batchSize)] : chunkItems(missing, batchSize);
+  const contiguousChunks = contiguousRuns(missing).flatMap((run) => chunkItems(run, batchSize));
+  const chunks = firstOnly ? contiguousChunks.slice(0, 1) : contiguousChunks;
   await mkdir(resolveRepoPath(outDir), { recursive: true });
 
   for (const items of chunks) {
@@ -116,6 +157,7 @@ async function main() {
       status: 'pending',
       sourceCatalog: catalogPath,
       sourceProfiles: profilesPath,
+      generatedFromRuntimeProfileCount: runtimeDone.size,
       generatedFromProfileCount: Object.keys(profiles).length,
       generatedFromProfiledQueueCount: queueDone.size,
       range: {

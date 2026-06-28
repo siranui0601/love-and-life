@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 1831,
+    "endOrdinal": 1880,
+    "startCatalogIndex": 1830,
+    "endCatalogIndex": 1879,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 1831,
+      "catalogIndex": 1830,
+      "emoji": "👭🏿",
+      "name": "women holding hands: dark skin tone"
+    },
+    {
+      "ordinal": 1832,
+      "catalogIndex": 1831,
+      "emoji": "👩🏿‍🤝‍👩🏻",
+      "name": "women holding hands: dark skin tone, light skin tone"
+    },
+    {
+      "ordinal": 1833,
+      "catalogIndex": 1832,
+      "emoji": "👩🏿‍🤝‍👩🏽",
+      "name": "women holding hands: dark skin tone, medium skin tone"
+    },
+    {
+      "ordinal": 1834,
+      "catalogIndex": 1833,
+      "emoji": "👩🏿‍🤝‍👩🏾",
+      "name": "women holding hands: dark skin tone, medium-dark skin tone"
+    },
+    {
+      "ordinal": 1835,
+      "catalogIndex": 1834,
+      "emoji": "👩🏿‍🤝‍👩🏼",
+      "name": "women holding hands: dark skin tone, medium-light skin tone"
+    },
+    {
+      "ordinal": 1836,
+      "catalogIndex": 1835,
+      "emoji": "👭🏻",
+      "name": "women holding hands: light skin tone"
+    },
+    {
+      "ordinal": 1837,
+      "catalogIndex": 1836,
+      "emoji": "👩🏻‍🤝‍👩🏿",
+      "name": "women holding hands: light skin tone, dark skin tone"
+    },
+    {
+      "ordinal": 1838,
+      "catalogIndex": 1837,
+      "emoji": "👩🏻‍🤝‍👩🏽",
+      "name": "women holding hands: light skin tone, medium skin tone"
+    },
+    {
+      "ordinal": 1839,
+      "catalogIndex": 1838,
+      "emoji": "👩🏻‍🤝‍👩🏾",
+      "name": "women holding hands: light skin tone, medium-dark skin tone"
+    },
+    {
+      "ordinal": 1840,
+      "catalogIndex": 1839,
+      "emoji": "👩🏻‍🤝‍👩🏼",
+      "name": "women holding hands: light skin tone, medium-light skin tone"
+    },
+    {
+      "ordinal": 1841,
+      "catalogIndex": 1840,
+      "emoji": "👭🏽",
+      "name": "women holding hands: medium skin tone"
+    },
+    {
+      "ordinal": 1842,
+      "catalogIndex": 1841,
+      "emoji": "👩🏽‍🤝‍👩🏿",
+      "name": "women holding hands: medium skin tone, dark skin tone"
+    },
+    {
+      "ordinal": 1843,
+      "catalogIndex": 1842,
+      "emoji": "👩🏽‍🤝‍👩🏻",
+      "name": "women holding hands: medium skin tone, light skin tone"
+    },
+    {
+      "ordinal": 1844,
+      "catalogIndex": 1843,
+      "emoji": "👩🏽‍🤝‍👩🏾",
+      "name": "women holding hands: medium skin tone, medium-dark skin tone"
+    },
+    {
+      "ordinal": 1845,
+      "catalogIndex": 1844,
+      "emoji": "👩🏽‍🤝‍👩🏼",
+      "name": "women holding hands: medium skin tone, medium-light skin tone"
+    },
+    {
+      "ordinal": 1846,
+      "catalogIndex": 1845,
+      "emoji": "👭🏾",
+      "name": "women holding hands: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1847,
+      "catalogIndex": 1846,
+      "emoji": "👩🏾‍🤝‍👩🏿",
+      "name": "women holding hands: medium-dark skin tone, dark skin tone"
+    },
+    {
+      "ordinal": 1848,
+      "catalogIndex": 1847,
+      "emoji": "👩🏾‍🤝‍👩🏻",
+      "name": "women holding hands: medium-dark skin tone, light skin tone"
+    },
+    {
+      "ordinal": 1849,
+      "catalogIndex": 1848,
+      "emoji": "👩🏾‍🤝‍👩🏽",
+      "name": "women holding hands: medium-dark skin tone, medium skin tone"
+    },
+    {
+      "ordinal": 1850,
+      "catalogIndex": 1849,
+      "emoji": "👩🏾‍🤝‍👩🏼",
+      "name": "women holding hands: medium-dark skin tone, medium-light skin tone"
+    },
+    {
+      "ordinal": 1851,
+      "catalogIndex": 1850,
+      "emoji": "👭🏼",
+      "name": "women holding hands: medium-light skin tone"
+    },
+    {
+      "ordinal": 1852,
+      "catalogIndex": 1851,
+      "emoji": "👩🏼‍🤝‍👩🏿",
+      "name": "women holding hands: medium-light skin tone, dark skin tone"
+    },
+    {
+      "ordinal": 1853,
+      "catalogIndex": 1852,
+      "emoji": "👩🏼‍🤝‍👩🏻",
+      "name": "women holding hands: medium-light skin tone, light skin tone"
+    },
+    {
+      "ordinal": 1854,
+      "catalogIndex": 1853,
+      "emoji": "👩🏼‍🤝‍👩🏽",
+      "name": "women holding hands: medium-light skin tone, medium skin tone"
+    },
+    {
+      "ordinal": 1855,
+      "catalogIndex": 1854,
+      "emoji": "👩🏼‍🤝‍👩🏾",
+      "name": "women holding hands: medium-light skin tone, medium-dark skin tone"
+    },
+    {
+      "ordinal": 1856,
+      "catalogIndex": 1855,
+      "emoji": "👯‍♀️",
+      "name": "women with bunny ears"
+    },
+    {
+      "ordinal": 1857,
+      "catalogIndex": 1856,
+      "emoji": "✍️",
+      "name": "writing hand"
+    },
+    {
+      "ordinal": 1858,
+      "catalogIndex": 1857,
+      "emoji": "✍🏿",
+      "name": "writing hand: dark skin tone"
+    },
+    {
+      "ordinal": 1859,
+      "catalogIndex": 1858,
+      "emoji": "✍🏻",
+      "name": "writing hand: light skin tone"
+    },
+    {
+      "ordinal": 1860,
+      "catalogIndex": 1859,
+      "emoji": "✍🏽",
+      "name": "writing hand: medium skin tone"
+    },
+    {
+      "ordinal": 1861,
+      "catalogIndex": 1860,
+      "emoji": "✍🏾",
+      "name": "writing hand: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1862,
+      "catalogIndex": 1861,
+      "emoji": "✍🏼",
+      "name": "writing hand: medium-light skin tone"
+    },
+    {
+      "ordinal": 1863,
+      "catalogIndex": 1862,
+      "emoji": "🧟",
+      "name": "zombie"
+    },
+    {
+      "ordinal": 1864,
+      "catalogIndex": 1863,
+      "emoji": "🚡",
+      "name": "aerial tramway"
+    },
+    {
+      "ordinal": 1865,
+      "catalogIndex": 1864,
+      "emoji": "🐜",
+      "name": "ant"
+    },
+    {
+      "ordinal": 1866,
+      "catalogIndex": 1865,
+      "emoji": "📶",
+      "name": "antenna bars"
+    },
+    {
+      "ordinal": 1867,
+      "catalogIndex": 1866,
+      "emoji": "🦡",
+      "name": "badger"
+    },
+    {
+      "ordinal": 1868,
+      "catalogIndex": 1867,
+      "emoji": "🗳️",
+      "name": "ballot box with ballot"
+    },
+    {
+      "ordinal": 1869,
+      "catalogIndex": 1868,
+      "emoji": "🦇",
+      "name": "bat"
+    },
+    {
+      "ordinal": 1870,
+      "catalogIndex": 1869,
+      "emoji": "🛁",
+      "name": "bathtub"
+    },
+    {
+      "ordinal": 1871,
+      "catalogIndex": 1870,
+      "emoji": "🔋",
+      "name": "battery"
+    },
+    {
+      "ordinal": 1872,
+      "catalogIndex": 1871,
+      "emoji": "🏖️",
+      "name": "beach with umbrella"
+    },
+    {
+      "ordinal": 1873,
+      "catalogIndex": 1872,
+      "emoji": "🦫",
+      "name": "beaver"
+    },
+    {
+      "ordinal": 1874,
+      "catalogIndex": 1873,
+      "emoji": "🪲",
+      "name": "beetle"
+    },
+    {
+      "ordinal": 1875,
+      "catalogIndex": 1874,
+      "emoji": "🐦",
+      "name": "bird"
+    },
+    {
+      "ordinal": 1876,
+      "catalogIndex": 1875,
+      "emoji": "🦬",
+      "name": "bison"
+    },
+    {
+      "ordinal": 1877,
+      "catalogIndex": 1876,
+      "emoji": "🐈‍⬛",
+      "name": "black cat"
+    },
+    {
+      "ordinal": 1878,
+      "catalogIndex": 1877,
+      "emoji": "🌼",
+      "name": "blossom"
+    },
+    {
+      "ordinal": 1879,
+      "catalogIndex": 1878,
+      "emoji": "🐡",
+      "name": "blowfish"
+    },
+    {
+      "ordinal": 1880,
+      "catalogIndex": 1879,
+      "emoji": "🐗",
+      "name": "boar"
+    }
+  ]
+}

@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 1681,
+    "endOrdinal": 1730,
+    "startCatalogIndex": 1680,
+    "endCatalogIndex": 1729,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 1681,
+      "catalogIndex": 1680,
+      "emoji": "🏃🏼‍♀️",
+      "name": "woman running: medium-light skin tone"
+    },
+    {
+      "ordinal": 1682,
+      "catalogIndex": 1681,
+      "emoji": "👩‍🔬",
+      "name": "woman scientist"
+    },
+    {
+      "ordinal": 1683,
+      "catalogIndex": 1682,
+      "emoji": "👩🏿‍🔬",
+      "name": "woman scientist: dark skin tone"
+    },
+    {
+      "ordinal": 1684,
+      "catalogIndex": 1683,
+      "emoji": "👩🏻‍🔬",
+      "name": "woman scientist: light skin tone"
+    },
+    {
+      "ordinal": 1685,
+      "catalogIndex": 1684,
+      "emoji": "👩🏽‍🔬",
+      "name": "woman scientist: medium skin tone"
+    },
+    {
+      "ordinal": 1686,
+      "catalogIndex": 1685,
+      "emoji": "👩🏾‍🔬",
+      "name": "woman scientist: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1687,
+      "catalogIndex": 1686,
+      "emoji": "👩🏼‍🔬",
+      "name": "woman scientist: medium-light skin tone"
+    },
+    {
+      "ordinal": 1688,
+      "catalogIndex": 1687,
+      "emoji": "🤷‍♀️",
+      "name": "woman shrugging"
+    },
+    {
+      "ordinal": 1689,
+      "catalogIndex": 1688,
+      "emoji": "🤷🏿‍♀️",
+      "name": "woman shrugging: dark skin tone"
+    },
+    {
+      "ordinal": 1690,
+      "catalogIndex": 1689,
+      "emoji": "🤷🏻‍♀️",
+      "name": "woman shrugging: light skin tone"
+    },
+    {
+      "ordinal": 1691,
+      "catalogIndex": 1690,
+      "emoji": "🤷🏽‍♀️",
+      "name": "woman shrugging: medium skin tone"
+    },
+    {
+      "ordinal": 1692,
+      "catalogIndex": 1691,
+      "emoji": "🤷🏾‍♀️",
+      "name": "woman shrugging: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1693,
+      "catalogIndex": 1692,
+      "emoji": "🤷🏼‍♀️",
+      "name": "woman shrugging: medium-light skin tone"
+    },
+    {
+      "ordinal": 1694,
+      "catalogIndex": 1693,
+      "emoji": "👩‍🎤",
+      "name": "woman singer"
+    },
+    {
+      "ordinal": 1695,
+      "catalogIndex": 1694,
+      "emoji": "👩🏿‍🎤",
+      "name": "woman singer: dark skin tone"
+    },
+    {
+      "ordinal": 1696,
+      "catalogIndex": 1695,
+      "emoji": "👩🏻‍🎤",
+      "name": "woman singer: light skin tone"
+    },
+    {
+      "ordinal": 1697,
+      "catalogIndex": 1696,
+      "emoji": "👩🏽‍🎤",
+      "name": "woman singer: medium skin tone"
+    },
+    {
+      "ordinal": 1698,
+      "catalogIndex": 1697,
+      "emoji": "👩🏾‍🎤",
+      "name": "woman singer: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1699,
+      "catalogIndex": 1698,
+      "emoji": "👩🏼‍🎤",
+      "name": "woman singer: medium-light skin tone"
+    },
+    {
+      "ordinal": 1700,
+      "catalogIndex": 1699,
+      "emoji": "🧍‍♀️",
+      "name": "woman standing"
+    },
+    {
+      "ordinal": 1701,
+      "catalogIndex": 1700,
+      "emoji": "🧍🏿‍♀️",
+      "name": "woman standing: dark skin tone"
+    },
+    {
+      "ordinal": 1702,
+      "catalogIndex": 1701,
+      "emoji": "🧍🏻‍♀️",
+      "name": "woman standing: light skin tone"
+    },
+    {
+      "ordinal": 1703,
+      "catalogIndex": 1702,
+      "emoji": "🧍🏽‍♀️",
+      "name": "woman standing: medium skin tone"
+    },
+    {
+      "ordinal": 1704,
+      "catalogIndex": 1703,
+      "emoji": "🧍🏾‍♀️",
+      "name": "woman standing: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1705,
+      "catalogIndex": 1704,
+      "emoji": "🧍🏼‍♀️",
+      "name": "woman standing: medium-light skin tone"
+    },
+    {
+      "ordinal": 1706,
+      "catalogIndex": 1705,
+      "emoji": "👩‍🎓",
+      "name": "woman student"
+    },
+    {
+      "ordinal": 1707,
+      "catalogIndex": 1706,
+      "emoji": "👩🏿‍🎓",
+      "name": "woman student: dark skin tone"
+    },
+    {
+      "ordinal": 1708,
+      "catalogIndex": 1707,
+      "emoji": "👩🏻‍🎓",
+      "name": "woman student: light skin tone"
+    },
+    {
+      "ordinal": 1709,
+      "catalogIndex": 1708,
+      "emoji": "👩🏽‍🎓",
+      "name": "woman student: medium skin tone"
+    },
+    {
+      "ordinal": 1710,
+      "catalogIndex": 1709,
+      "emoji": "👩🏾‍🎓",
+      "name": "woman student: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1711,
+      "catalogIndex": 1710,
+      "emoji": "👩🏼‍🎓",
+      "name": "woman student: medium-light skin tone"
+    },
+    {
+      "ordinal": 1712,
+      "catalogIndex": 1711,
+      "emoji": "🦸‍♀️",
+      "name": "woman superhero"
+    },
+    {
+      "ordinal": 1713,
+      "catalogIndex": 1712,
+      "emoji": "🦸🏿‍♀️",
+      "name": "woman superhero: dark skin tone"
+    },
+    {
+      "ordinal": 1714,
+      "catalogIndex": 1713,
+      "emoji": "🦸🏻‍♀️",
+      "name": "woman superhero: light skin tone"
+    },
+    {
+      "ordinal": 1715,
+      "catalogIndex": 1714,
+      "emoji": "🦸🏽‍♀️",
+      "name": "woman superhero: medium skin tone"
+    },
+    {
+      "ordinal": 1716,
+      "catalogIndex": 1715,
+      "emoji": "🦸🏾‍♀️",
+      "name": "woman superhero: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1717,
+      "catalogIndex": 1716,
+      "emoji": "🦸🏼‍♀️",
+      "name": "woman superhero: medium-light skin tone"
+    },
+    {
+      "ordinal": 1718,
+      "catalogIndex": 1717,
+      "emoji": "🦹‍♀️",
+      "name": "woman supervillain"
+    },
+    {
+      "ordinal": 1719,
+      "catalogIndex": 1718,
+      "emoji": "🦹🏿‍♀️",
+      "name": "woman supervillain: dark skin tone"
+    },
+    {
+      "ordinal": 1720,
+      "catalogIndex": 1719,
+      "emoji": "🦹🏻‍♀️",
+      "name": "woman supervillain: light skin tone"
+    },
+    {
+      "ordinal": 1721,
+      "catalogIndex": 1720,
+      "emoji": "🦹🏽‍♀️",
+      "name": "woman supervillain: medium skin tone"
+    },
+    {
+      "ordinal": 1722,
+      "catalogIndex": 1721,
+      "emoji": "🦹🏾‍♀️",
+      "name": "woman supervillain: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1723,
+      "catalogIndex": 1722,
+      "emoji": "🦹🏼‍♀️",
+      "name": "woman supervillain: medium-light skin tone"
+    },
+    {
+      "ordinal": 1724,
+      "catalogIndex": 1723,
+      "emoji": "🏄‍♀️",
+      "name": "woman surfing"
+    },
+    {
+      "ordinal": 1725,
+      "catalogIndex": 1724,
+      "emoji": "🏄🏿‍♀️",
+      "name": "woman surfing: dark skin tone"
+    },
+    {
+      "ordinal": 1726,
+      "catalogIndex": 1725,
+      "emoji": "🏄🏻‍♀️",
+      "name": "woman surfing: light skin tone"
+    },
+    {
+      "ordinal": 1727,
+      "catalogIndex": 1726,
+      "emoji": "🏄🏽‍♀️",
+      "name": "woman surfing: medium skin tone"
+    },
+    {
+      "ordinal": 1728,
+      "catalogIndex": 1727,
+      "emoji": "🏄🏾‍♀️",
+      "name": "woman surfing: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1729,
+      "catalogIndex": 1728,
+      "emoji": "🏄🏼‍♀️",
+      "name": "woman surfing: medium-light skin tone"
+    },
+    {
+      "ordinal": 1730,
+      "catalogIndex": 1729,
+      "emoji": "🏊‍♀️",
+      "name": "woman swimming"
+    }
+  ]
+}
