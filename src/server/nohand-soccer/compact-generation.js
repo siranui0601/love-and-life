@@ -17,9 +17,7 @@ function clamp(value, fallback, min, max) {
   const n = Number(value);
   return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
 }
-function intClamp(value, fallback, min, max) {
-  return Math.round(clamp(value, fallback, min, max));
-}
+function intClamp(value, fallback, min, max) { return Math.round(clamp(value, fallback, min, max)); }
 function pair(value, fallback = [0, 0], min = -100, max = 100) {
   const src = Array.isArray(value) ? value : fallback;
   return [clamp(src[0], fallback[0] ?? 0, min, max), clamp(src[1], fallback[1] ?? 0, min, max)];
@@ -35,9 +33,6 @@ function coordPoint(value, fallback = [0, 0], preferStage = false) {
   }
   const local = pair(value, Array.isArray(fallback) ? fallback : [fallback.$x || 0, fallback.$y || 0]);
   return preferStage ? { $x: local[0], $y: local[1] } : local;
-}
-function isStagePoint(value) {
-  return value && typeof value === "object" && !Array.isArray(value) && ("$x" in value || "$y" in value);
 }
 function rawPoints(value, maxPoints = 6) {
   return (Array.isArray(value) ? value : []).slice(0, maxPoints).map((p) => coordPoint(p)).filter(Boolean);
@@ -83,24 +78,23 @@ function cleanActors(value) {
   if (actors.length === 2 && Math.abs(actors[0] - actors[1]) !== 1) return actors.slice(0, 1);
   return actors;
 }
-function normalizeBall(raw = {}) {
-  return defined({
-    path: visiblePoints(raw.path),
-    hold: clamp(raw.hold, 0, 0, 3) || undefined,
-    spin: intClamp(raw.spin, 0, -100, 100) || undefined,
-  });
-}
+function normalizeBall(raw = {}) { return defined({ path: visiblePoints(raw.path) }); }
 function normalizeDevice(raw = {}) {
   const path = visiblePoints(raw.path, 5);
-  if (!path.length) return undefined;
-  return { path };
+  return defined({ path, followBall: raw.followBall === true ? true : undefined });
+}
+function normalizeHold(raw) {
+  if (raw == null) return undefined;
+  const seconds = typeof raw === "object" ? raw.seconds : raw;
+  return { seconds: clamp(seconds, 0.6, 0.1, 3) };
+}
+function normalizeSpin(raw) {
+  if (raw == null) return undefined;
+  return { amount: intClamp(typeof raw === "object" ? raw.amount : raw, 60, -100, 100), seconds: clamp(typeof raw === "object" ? raw.seconds : 0.8, 0.8, 0.1, 3) };
 }
 function normalizeHit(raw = {}) {
   const velocity = Array.isArray(raw.velocity) ? pair(raw.velocity, [75, -30]) : Array.isArray(raw.impulse) ? pair(raw.impulse, [75, -30]) : undefined;
-  return defined({
-    velocity,
-    radius: intClamp(raw.radius, 30, 10, 65),
-  });
+  return defined({ velocity, radius: intClamp(raw.radius, 30, 10, 65) });
 }
 function normalizeSplit(raw) {
   if (!raw || typeof raw !== "object") return undefined;
@@ -108,7 +102,7 @@ function normalizeSplit(raw) {
 }
 function normalizeWarp(raw) {
   if (!raw || typeof raw !== "object") return undefined;
-  return defined({ to: coordPoint(raw.to || raw.pos, { $x: 70, $y: -30 }, true) });
+  return coordPoint(raw.to || raw.pos || raw, { $x: 70, $y: -30 }, true);
 }
 function angleFromDirection(direction) {
   const [x, y] = pair(direction, [0, -100]);
@@ -117,7 +111,13 @@ function angleFromDirection(direction) {
 function normalizeGravity(raw) {
   if (!raw || typeof raw !== "object") return undefined;
   const angle = Number.isFinite(Number(raw.angle)) ? Number(raw.angle) : angleFromDirection(raw.direction);
-  return { angle: ((angle % 360) + 360) % 360 };
+  return { angle: ((angle % 360) + 360) % 360, seconds: clamp(raw.seconds, 1, 0.1, 3) };
+}
+function normalizeContact(raw, actors, hasContactEffect) {
+  if (!hasContactEffect) return undefined;
+  const n = Number(raw);
+  if (Number.isInteger(n) && actors.includes(n)) return n;
+  return actors[0];
 }
 function flowStep(raw = {}, index = 0, usedActors = new Set()) {
   let actors = cleanActors(raw.actors);
@@ -127,38 +127,48 @@ function flowStep(raw = {}, index = 0, usedActors = new Set()) {
   if (!actors.length) return null;
   actors.forEach((actor) => usedActors.add(actor));
   const ball = normalizeBall(raw.ball || {});
+  const hold = normalizeHold(raw.hold ?? raw.ball?.hold);
+  const spin = normalizeSpin(raw.spin ?? raw.ball?.spin);
+  const hit = raw.hit ? normalizeHit(raw.hit) : undefined;
+  const split = normalizeSplit(raw.split);
+  const warp = normalizeWarp(raw.warp);
+  const gravity = normalizeGravity(raw.gravity);
+  const hasContactEffect = Boolean(hold || spin || hit || split || warp || gravity);
   const step = defined({
     step: index,
     actors,
     pos: pair(raw.pos, DEFAULT_FLOW_POS[index] || [0, 0]),
-    duration: clamp(raw.duration, ball?.hold || raw.device || ball?.path ? 0.5 : 0.3, 0.08, 3),
+    duration: clamp(raw.duration, ball?.path || raw.device ? 0.6 : 0.35, 0.08, 3),
     ball,
     device: normalizeDevice(raw.device || {}),
-    hit: raw.hit ? normalizeHit(raw.hit) : undefined,
-    split: normalizeSplit(raw.split),
-    warp: normalizeWarp(raw.warp),
-    gravity: normalizeGravity(raw.gravity),
+    contact: normalizeContact(raw.contact ?? raw.touch, actors, hasContactEffect),
+    hold,
+    spin,
+    hit,
+    split,
+    warp,
+    gravity,
   });
-  if (step.ball?.hold) step.duration = Math.max(step.duration, step.ball.hold);
-  if (!step.device && (step.gravity || step.split || step.warp)) step.device = { path: [[0, 0], [0, -15], [0, 0]] };
-  if (!step.ball && !step.device && !step.hit && !step.split && !step.warp && !step.gravity) {
+  if (!step.device && hasContactEffect) step.device = { path: [[0, 0], [0, -15], [0, 0]] };
+  if (!step.ball && !step.device && !hasContactEffect) {
     step.ball = index === 0 ? { path: [[0, 0], [70, -15]] } : undefined;
     step.hit = index === 0 ? undefined : { velocity: [65, -35], radius: 30 };
+    if (step.hit) step.contact = actors[0];
   }
   return step;
 }
 function fallbackFlow() {
   return [
-    { step: 0, actors: [0], pos: [-75, 20], ball: { path: [[0, 0], [70, -20]] }, duration: 0.5 },
-    { step: 1, actors: [1], pos: [0, -35], hit: { velocity: [70, -35], radius: 30 }, duration: 0.3 },
-    { step: 2, actors: [2], pos: [75, 20], hit: { velocity: [75, -30], radius: 30 }, duration: 0.25 },
+    { step: 0, actors: [0], pos: [-75, 20], ball: { path: [[0, 0], [70, -20]] }, device: { followBall: true }, duration: 0.6 },
+    { step: 1, actors: [1], pos: [0, -35], contact: 1, hit: { velocity: [70, -35], radius: 30 }, duration: 0.35 },
+    { step: 2, actors: [2], pos: [75, 20], contact: 2, hit: { velocity: [75, -30], radius: 30 }, duration: 0.25 },
   ];
 }
 function ensureAllActors(flow) {
   const used = new Set(flow.flatMap((step) => step.actors || []));
   const out = [...flow];
   for (let actor = 0; actor < 3; actor += 1) {
-    if (!used.has(actor)) out.push({ step: out.length, actors: [actor], pos: DEFAULT_FLOW_POS[actor], hit: { velocity: [55, -25], radius: 30 }, duration: 0.22 });
+    if (!used.has(actor)) out.push({ step: out.length, actors: [actor], pos: DEFAULT_FLOW_POS[actor], contact: actor, hit: { velocity: [55, -25], radius: 30 }, duration: 0.22 });
   }
   return out.slice(0, 5).map((step, index) => ({ ...step, step: index }));
 }
@@ -230,36 +240,40 @@ function prompt(emojis) {
   return `${emojis.join("")}
 
 こんなピタゴラ装置（3つ合わせて1つのギミック）があるとしたら、この装置に触れた落下中のボールはどんな挙動をすると思いますか？
-まずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂・ワープ・重力反転等を取り入れても構わないが、それらは装置を必ず面白くできる場合に限る。
+まずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂(split), ワープ(warp), 重力向き変更(gravity)等を取り入れても構わないが、それらは装置を必ず面白くできる場合に限る。
 
 返答はJSONのみ。
 
 出力するJSONの形:
-- summary: この装置の動き方を20〜35文字で要約。summaryはこの装置で起きる動きの設計図。summaryに書いた主要な動きや効果はflow内で必ず実行する
-- trigger: { step }。ボールが最初に触れる開始step
-- flow: step配列。各stepは actors, pos, duration を持ち、必要に応じて ball / device / hit / split / warp / gravity を1つ以上持つ
+summary: この装置の動き方を20〜35文字で要約。summaryはこの装置で起きる動きの設計図。summaryに書いた主要な動きや効果はflow内で必ず実行する
+trigger: { step }。ボールが最初に触れる開始step
+flow: step配列。各stepは actors, pos, duration を持ち、必要に応じて ball / device / contact / hold / spin / hit / split / warp / gravity を持つ
 
 使える指定:
-- ball.path: [[x,y], ...]。ボールを指定軌道で動かす
-- ball.hold: 秒数。ボールを止める
-- ball.spin: 数値。ボールに回転を加える
-- device.path: [[x,y], ...]。絵文字部品の動き。ball.pathと同じ動きなら運搬風になるし、yを+にしていけば落下した様になる
-- hit: { velocity:[x,y], radius }。ボールを弾く
-- split: { count, spread }。ボールを分裂させる
-- warp: { to:{"$x":x,"$y":y} }。ボールをステージ上の離れた位置へ転移させる
-- gravity: { angle }。そのstepの間、重力方向を変える。0=上、90=右、180=下、270=左
+ball.path: [[x,y], ...]。ボールを指定軌道で動かす
+device.path: [[x,y], ...]。絵文字部品の動き。yを+にしていけば落下した様になる
+device.followBall: true。絵文字部品がボールと一緒に動く。運ぶ・抱える・乗せる・一緒に落ちる表現に使う
+contact: 絵文字番号。指定した絵文字がボールに触れたように見せ、その接触で効果を発火する
+hold: { seconds }。接触後、ボールを止める
+spin: { amount, seconds }。接触後、ボールに回転を加える
+hit: { velocity:[x,y] }。接触後、ボールを弾く
+split: { count, spread }。接触後、ボールを分裂させる
+warp: { "$x":x, "$y":y }。接触後、ボールをステージ上の離れた位置へ転移させる
+gravity: { angle, seconds }。接触後、指定秒数だけ重力方向を変える。0=上、90=右、180=下、270=左
 
 ルール:
-- [x,y] はstep中心からの相対座標。{"$x":x,"$y":y} はステージ全体の絶対座標
-- {"$x":x,"$y":y} は ball.path / device.path / warp.to の中でも使える
-- $x,$yは-100〜100。$x=-100が左端、100が右端。$y=-100が上端、100が下端
-- pathのx,yの各最小値は15
-- flowは上から順番に実行される。最後のstepが終わったら装置は終了する
-- 各stepのduration中に、そのstepのball / device / gravityが動く
-- 3つの絵文字が装置の一部に見えるようにflowへ含める
-- split / warp / gravity は特殊効果。絵文字の主題から自然に連想でき、通常のpathやhitより適切になる場合だけ使う
-- summaryに分裂・転移・重力反転などを書く場合、それに対応するsplit / warp / gravityをflowに入れる
-- pos / path / velocity / to は範囲-100〜100。xは右が+、yは下が+。`;
+[x,y] はstep中心からの相対座標。{"$x":x,"$y":y} はステージ全体の絶対座標。どちらも-100〜100で指定する。xは右が+、yは下が+
+{"$x":x,"$y":y} は ball.path / device.path / warp の中でも使える
+pathで動かす軸の変化量は15以上にする。蛇行・螺旋・回り込みならx,yの両方を大きく変化させる
+flowは上から順番に実行される。最後のstepが終わったら装置は終了する
+durationは、そのstepでボールと絵文字が接触して効果が発火するまでの演出秒数
+ball.path / device.path / device.followBall はduration中に動く
+hold / spin / hit / split / warp / gravity はcontactで指定した絵文字とボールの接触後に発火する
+hold / spin / hit / split / warp / gravity を使うstepでは、必ずcontactを指定する
+ボールを不自然にactorへ寄せない。接触させたい場合は、device.pathやdevice.followBallで絵文字部品がボールへ近づくように見せる
+3つの絵文字が装置の一部に見えるようにflowへ含める
+split / warp / gravity は特殊効果。絵文字の主題から自然に連想でき、通常のpathやhitより適切になる場合だけ使う
+split / warp / gravity を使う場合はsummaryにも明記し、summaryに書いた場合は対応するsplit / warp / gravityをflowに必ず入れる`;
 }
 async function logGimmick(emojis, gimmick, source) {
   try { await appendNoHandSoccerGimmickLog({ emojis, gimmick, source }); }
@@ -273,7 +287,7 @@ export function mountCompactNoHandSoccerRoutes(app) {
       const output = await genWithFallback(prompt(emojis), { generationConfig: { responseMimeType: "application/json", temperature: 0.88 } });
       const raw = JSON.parse(extractFirstJsonObject(output));
       const gimmick = normalize(raw, emojis);
-      await logGimmick(emojis, gimmick, "gemini-stage-absolute-flow");
+      await logGimmick(emojis, gimmick, "gemini-contact-effect-flow");
       return res.json(gimmick);
     } catch (error) {
       console.warn("[noHand-soccer] primitive flow fallback", error);
