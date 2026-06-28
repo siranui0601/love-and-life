@@ -48,7 +48,7 @@
 
 ## 現在の登録範囲
 
-`emoji_catalog_full_ja.json` の先頭180件。
+`emoji_catalog_full_ja.json` の先頭230件。
 
 - 001-030: 初期バッチ
 - 031-055: 泣き顔、水晶玉、目、投げキス、医療系の顔など
@@ -56,6 +56,7 @@
 - 081-105: ハート、キス、ラブユーの手など
 - 106-130: ラブユー手の肌色差分、facepalm、frowning、猿・ねずみ・口・新月など
 - 131-180: オレンジハート、パーティー顔、person facepalming/frowning、帽子の人、豚、うんち、プードル、8ボール、ドクロ、眠り、天使の輪、ハート目、角つき笑顔など
+- 181-230: 舌出し顔、太陽、汗しぶき、日めくり、考える顔、虎、舌、2つのハート、逆さ顔、風の顔、女性facepalm/frowning、酔い顔、あくび、目覚まし時計、アメフト、アーティスト、パレット、宇宙飛行士など
 
 ## プロファイル形式
 
@@ -126,15 +127,21 @@
 | `randomBounce` | 予測不能に跳ね返す |
 | `fakeRoute` | フェイント軌道を作る |
 | `delayedRelease` | 時間差で放つ |
+| `timedRelease` | 指定タイミングで放つ |
+| `paintTrail` | 描いた線・塗料の流れで軌道を作る |
+| `silenceHold` | 音や動きを抑えて静かに保持する |
 
-## 131-180 追加メモ
+## 181-230 追加メモ
 
-- `🥳`: パーティークラッカー的に `burstScatter` / `randomBounce`。
-- `👲` 系: 人物分類ではなく、帽子・頭部で受けて上へ弾く `reflectShield` / `popLaunch`。
-- `💩`: 不快になりすぎない範囲で、粘り・毒による `poisonDampen`。
-- `🎱`: ビリヤード球として `rollCarry` / `precisionPass` / `spinRedirect`。
-- `💀` / `☠️`: 骨・危険標識として `splitScatter` / `poisonDampen`。
-- `😴`: 眠り系の標準候補として `sleepFloat`。
+- `🌞`: 太陽の熱と光を `heatLift` / `burnBoost` / `burstScatter` に寄せた。
+- `💦`: 複数のしずくとして `slipFlow` / `flowCarry` / `splitScatter` を持たせた。
+- `📆`: 日めくりの時間差を `timedRelease` / `delayedRelease` / `dropRelease` にした。
+- `🙃`: 逆さ顔として `gravityShift` / `spinRedirect` を採用した。
+- `🌬️`: 風で吹く顔として `breathLaunch` / `flowCarry` / `curveRedirect` にした。
+- `⏰`: 目覚ましの振動と時間指定から `timedRelease` / `pulseBoost` / `burstScatter` にした。
+- `🏈`: 楕円球のスピンを `spinRedirect`、ロングパスを `impactLaunch` / `precisionPass` にした。
+- `🧑‍🎨` / `🎨`: 描いた線や塗料の流れを `paintTrail` で扱う。
+- `🧑‍🚀`: 低重力・周回を `lowGravityField` / `orbitCarry` へ寄せた。
 
 ## 実装メモ
 
@@ -143,4 +150,5 @@
 - `splitScatter` は `splitEffect` + `burstRelease` + 放射状速度へ変換する。
 - `multiExit` は複数の出口候補を作り、次actorまたは安全な出口方向へ渡す。
 - `hiddenRoute` は見えない経路演出を挟んで、`warpExit` に近い転送として扱う。
+- `paintTrail` は表示上の塗料・線に沿って `curvePath` / `flowPath` を作る。
 - 似た意味の新語彙を増やす前に、このmdの語彙表を確認する。
