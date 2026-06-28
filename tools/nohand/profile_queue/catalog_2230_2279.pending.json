@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 2230,
+    "endOrdinal": 2279,
+    "startCatalogIndex": 2229,
+    "endCatalogIndex": 2278,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2230,
+      "catalogIndex": 2229,
+      "emoji": "🛬",
+      "name": "airplane arrival"
+    },
+    {
+      "ordinal": 2231,
+      "catalogIndex": 2230,
+      "emoji": "🛫",
+      "name": "airplane departure"
+    },
+    {
+      "ordinal": 2232,
+      "catalogIndex": 2231,
+      "emoji": "🚑",
+      "name": "ambulance"
+    },
+    {
+      "ordinal": 2233,
+      "catalogIndex": 2232,
+      "emoji": "⚓",
+      "name": "anchor"
+    },
+    {
+      "ordinal": 2234,
+      "catalogIndex": 2233,
+      "emoji": "🚗",
+      "name": "automobile"
+    },
+    {
+      "ordinal": 2235,
+      "catalogIndex": 2234,
+      "emoji": "🏦",
+      "name": "bank"
+    },
+    {
+      "ordinal": 2236,
+      "catalogIndex": 2235,
+      "emoji": "🚲",
+      "name": "bicycle"
+    },
+    {
+      "ordinal": 2237,
+      "catalogIndex": 2236,
+      "emoji": "🧱",
+      "name": "brick"
+    },
+    {
+      "ordinal": 2238,
+      "catalogIndex": 2237,
+      "emoji": "🏗️",
+      "name": "building construction"
+    },
+    {
+      "ordinal": 2239,
+      "catalogIndex": 2238,
+      "emoji": "🚌",
+      "name": "bus"
+    },
+    {
+      "ordinal": 2240,
+      "catalogIndex": 2239,
+      "emoji": "🚏",
+      "name": "bus stop"
+    },
+    {
+      "ordinal": 2241,
+      "catalogIndex": 2240,
+      "emoji": "🛶",
+      "name": "canoe"
+    },
+    {
+      "ordinal": 2242,
+      "catalogIndex": 2241,
+      "emoji": "📇",
+      "name": "card index"
+    },
+    {
+      "ordinal": 2243,
+      "catalogIndex": 2242,
+      "emoji": "🗂️",
+      "name": "card index dividers"
+    },
+    {
+      "ordinal": 2244,
+      "catalogIndex": 2243,
+      "emoji": "🎏",
+      "name": "carp streamer"
+    },
+    {
+      "ordinal": 2245,
+      "catalogIndex": 2244,
+      "emoji": "🪚",
+      "name": "carpentry saw"
+    },
+    {
+      "ordinal": 2246,
+      "catalogIndex": 2245,
+      "emoji": "🏰",
+      "name": "castle"
+    },
+    {
+      "ordinal": 2247,
+      "catalogIndex": 2246,
+      "emoji": "⛪",
+      "name": "church"
+    },
+    {
+      "ordinal": 2248,
+      "catalogIndex": 2247,
+      "emoji": "🎪",
+      "name": "circus tent"
+    },
+    {
+      "ordinal": 2249,
+      "catalogIndex": 2248,
+      "emoji": "🏛️",
+      "name": "classical building"
+    },
+    {
+      "ordinal": 2250,
+      "catalogIndex": 2249,
+      "emoji": "🔃",
+      "name": "clockwise vertical arrows"
+    },
+    {
+      "ordinal": 2251,
+      "catalogIndex": 2250,
+      "emoji": "🧭",
+      "name": "compass"
+    },
+    {
+      "ordinal": 2252,
+      "catalogIndex": 2251,
+      "emoji": "🏪",
+      "name": "convenience store"
+    },
+    {
+      "ordinal": 2253,
+      "catalogIndex": 2252,
+      "emoji": "🔄",
+      "name": "counterclockwise arrows button"
+    },
+    {
+      "ordinal": 2254,
+      "catalogIndex": 2253,
+      "emoji": "💳",
+      "name": "credit card"
+    },
+    {
+      "ordinal": 2255,
+      "catalogIndex": 2254,
+      "emoji": "🚚",
+      "name": "delivery truck"
+    },
+    {
+      "ordinal": 2256,
+      "catalogIndex": 2255,
+      "emoji": "🏬",
+      "name": "department store"
+    },
+    {
+      "ordinal": 2257,
+      "catalogIndex": 2256,
+      "emoji": "🏚️",
+      "name": "derelict house"
+    },
+    {
+      "ordinal": 2258,
+      "catalogIndex": 2257,
+      "emoji": "💵",
+      "name": "dollar banknote"
+    },
+    {
+      "ordinal": 2259,
+      "catalogIndex": 2258,
+      "emoji": "🕗",
+      "name": "eight o’clock"
+    },
+    {
+      "ordinal": 2260,
+      "catalogIndex": 2259,
+      "emoji": "🕚",
+      "name": "eleven o’clock"
+    },
+    {
+      "ordinal": 2261,
+      "catalogIndex": 2260,
+      "emoji": "💶",
+      "name": "euro banknote"
+    },
+    {
+      "ordinal": 2262,
+      "catalogIndex": 2261,
+      "emoji": "🏭",
+      "name": "factory"
+    },
+    {
+      "ordinal": 2263,
+      "catalogIndex": 2262,
+      "emoji": "⛴️",
+      "name": "ferry"
+    },
+    {
+      "ordinal": 2264,
+      "catalogIndex": 2263,
+      "emoji": "🕔",
+      "name": "five o’clock"
+    },
+    {
+      "ordinal": 2265,
+      "catalogIndex": 2264,
+      "emoji": "⛲",
+      "name": "fountain"
+    },
+    {
+      "ordinal": 2266,
+      "catalogIndex": 2265,
+      "emoji": "🖋️",
+      "name": "fountain pen"
+    },
+    {
+      "ordinal": 2267,
+      "catalogIndex": 2266,
+      "emoji": "🕓",
+      "name": "four o’clock"
+    },
+    {
+      "ordinal": 2268,
+      "catalogIndex": 2267,
+      "emoji": "🌐",
+      "name": "globe with meridians"
+    },
+    {
+      "ordinal": 2269,
+      "catalogIndex": 2268,
+      "emoji": "🚁",
+      "name": "helicopter"
+    },
+    {
+      "ordinal": 2270,
+      "catalogIndex": 2269,
+      "emoji": "🛕",
+      "name": "hindu temple"
+    },
+    {
+      "ordinal": 2271,
+      "catalogIndex": 2270,
+      "emoji": "🏥",
+      "name": "hospital"
+    },
+    {
+      "ordinal": 2272,
+      "catalogIndex": 2271,
+      "emoji": "🏨",
+      "name": "hotel"
+    },
+    {
+      "ordinal": 2273,
+      "catalogIndex": 2272,
+      "emoji": "⌛",
+      "name": "hourglass done"
+    },
+    {
+      "ordinal": 2274,
+      "catalogIndex": 2273,
+      "emoji": "⏳",
+      "name": "hourglass not done"
+    },
+    {
+      "ordinal": 2275,
+      "catalogIndex": 2274,
+      "emoji": "🏠",
+      "name": "house"
+    },
+    {
+      "ordinal": 2276,
+      "catalogIndex": 2275,
+      "emoji": "🏡",
+      "name": "house with garden"
+    },
+    {
+      "ordinal": 2277,
+      "catalogIndex": 2276,
+      "emoji": "🏘️",
+      "name": "houses"
+    },
+    {
+      "ordinal": 2278,
+      "catalogIndex": 2277,
+      "emoji": "🛖",
+      "name": "hut"
+    },
+    {
+      "ordinal": 2279,
+      "catalogIndex": 2278,
+      "emoji": "🏯",
+      "name": "japanese castle"
+    }
+  ]
+}

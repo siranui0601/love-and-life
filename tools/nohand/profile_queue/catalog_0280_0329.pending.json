@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 280,
+    "endOrdinal": 329,
+    "startCatalogIndex": 279,
+    "endCatalogIndex": 328,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 280,
+      "catalogIndex": 279,
+      "emoji": "👦🏽",
+      "name": "boy: medium skin tone"
+    },
+    {
+      "ordinal": 281,
+      "catalogIndex": 280,
+      "emoji": "👦🏾",
+      "name": "boy: medium-dark skin tone"
+    },
+    {
+      "ordinal": 282,
+      "catalogIndex": 281,
+      "emoji": "👦🏼",
+      "name": "boy: medium-light skin tone"
+    },
+    {
+      "ordinal": 283,
+      "catalogIndex": 282,
+      "emoji": "🧠",
+      "name": "brain"
+    },
+    {
+      "ordinal": 284,
+      "catalogIndex": 283,
+      "emoji": "👤",
+      "name": "bust in silhouette"
+    },
+    {
+      "ordinal": 285,
+      "catalogIndex": 284,
+      "emoji": "👥",
+      "name": "busts in silhouette"
+    },
+    {
+      "ordinal": 286,
+      "catalogIndex": 285,
+      "emoji": "🤙",
+      "name": "call me hand"
+    },
+    {
+      "ordinal": 287,
+      "catalogIndex": 286,
+      "emoji": "🤙🏿",
+      "name": "call me hand: dark skin tone"
+    },
+    {
+      "ordinal": 288,
+      "catalogIndex": 287,
+      "emoji": "🤙🏻",
+      "name": "call me hand: light skin tone"
+    },
+    {
+      "ordinal": 289,
+      "catalogIndex": 288,
+      "emoji": "🤙🏽",
+      "name": "call me hand: medium skin tone"
+    },
+    {
+      "ordinal": 290,
+      "catalogIndex": 289,
+      "emoji": "🤙🏾",
+      "name": "call me hand: medium-dark skin tone"
+    },
+    {
+      "ordinal": 291,
+      "catalogIndex": 290,
+      "emoji": "🤙🏼",
+      "name": "call me hand: medium-light skin tone"
+    },
+    {
+      "ordinal": 292,
+      "catalogIndex": 291,
+      "emoji": "🧒",
+      "name": "child"
+    },
+    {
+      "ordinal": 293,
+      "catalogIndex": 292,
+      "emoji": "🧒🏿",
+      "name": "child: dark skin tone"
+    },
+    {
+      "ordinal": 294,
+      "catalogIndex": 293,
+      "emoji": "🧒🏻",
+      "name": "child: light skin tone"
+    },
+    {
+      "ordinal": 295,
+      "catalogIndex": 294,
+      "emoji": "🧒🏽",
+      "name": "child: medium skin tone"
+    },
+    {
+      "ordinal": 296,
+      "catalogIndex": 295,
+      "emoji": "🧒🏾",
+      "name": "child: medium-dark skin tone"
+    },
+    {
+      "ordinal": 297,
+      "catalogIndex": 296,
+      "emoji": "🧒🏼",
+      "name": "child: medium-light skin tone"
+    },
+    {
+      "ordinal": 298,
+      "catalogIndex": 297,
+      "emoji": "🚸",
+      "name": "children crossing"
+    },
+    {
+      "ordinal": 299,
+      "catalogIndex": 298,
+      "emoji": "👏",
+      "name": "clapping hands"
+    },
+    {
+      "ordinal": 300,
+      "catalogIndex": 299,
+      "emoji": "👏🏿",
+      "name": "clapping hands: dark skin tone"
+    },
+    {
+      "ordinal": 301,
+      "catalogIndex": 300,
+      "emoji": "👏🏻",
+      "name": "clapping hands: light skin tone"
+    },
+    {
+      "ordinal": 302,
+      "catalogIndex": 301,
+      "emoji": "👏🏽",
+      "name": "clapping hands: medium skin tone"
+    },
+    {
+      "ordinal": 303,
+      "catalogIndex": 302,
+      "emoji": "👏🏾",
+      "name": "clapping hands: medium-dark skin tone"
+    },
+    {
+      "ordinal": 304,
+      "catalogIndex": 303,
+      "emoji": "👏🏼",
+      "name": "clapping hands: medium-light skin tone"
+    },
+    {
+      "ordinal": 305,
+      "catalogIndex": 304,
+      "emoji": "👷",
+      "name": "construction worker"
+    },
+    {
+      "ordinal": 306,
+      "catalogIndex": 305,
+      "emoji": "👷🏿",
+      "name": "construction worker: dark skin tone"
+    },
+    {
+      "ordinal": 307,
+      "catalogIndex": 306,
+      "emoji": "👷🏻",
+      "name": "construction worker: light skin tone"
+    },
+    {
+      "ordinal": 308,
+      "catalogIndex": 307,
+      "emoji": "👷🏽",
+      "name": "construction worker: medium skin tone"
+    },
+    {
+      "ordinal": 309,
+      "catalogIndex": 308,
+      "emoji": "👷🏾",
+      "name": "construction worker: medium-dark skin tone"
+    },
+    {
+      "ordinal": 310,
+      "catalogIndex": 309,
+      "emoji": "👷🏼",
+      "name": "construction worker: medium-light skin tone"
+    },
+    {
+      "ordinal": 311,
+      "catalogIndex": 310,
+      "emoji": "🧑‍🍳",
+      "name": "cook"
+    },
+    {
+      "ordinal": 312,
+      "catalogIndex": 311,
+      "emoji": "🧑🏿‍🍳",
+      "name": "cook: dark skin tone"
+    },
+    {
+      "ordinal": 313,
+      "catalogIndex": 312,
+      "emoji": "🧑🏻‍🍳",
+      "name": "cook: light skin tone"
+    },
+    {
+      "ordinal": 314,
+      "catalogIndex": 313,
+      "emoji": "🧑🏽‍🍳",
+      "name": "cook: medium skin tone"
+    },
+    {
+      "ordinal": 315,
+      "catalogIndex": 314,
+      "emoji": "🧑🏾‍🍳",
+      "name": "cook: medium-dark skin tone"
+    },
+    {
+      "ordinal": 316,
+      "catalogIndex": 315,
+      "emoji": "🧑🏼‍🍳",
+      "name": "cook: medium-light skin tone"
+    },
+    {
+      "ordinal": 317,
+      "catalogIndex": 316,
+      "emoji": "🍚",
+      "name": "cooked rice"
+    },
+    {
+      "ordinal": 318,
+      "catalogIndex": 317,
+      "emoji": "🍪",
+      "name": "cookie"
+    },
+    {
+      "ordinal": 319,
+      "catalogIndex": 318,
+      "emoji": "🍳",
+      "name": "cooking"
+    },
+    {
+      "ordinal": 320,
+      "catalogIndex": 319,
+      "emoji": "🤞",
+      "name": "crossed fingers"
+    },
+    {
+      "ordinal": 321,
+      "catalogIndex": 320,
+      "emoji": "🤞🏿",
+      "name": "crossed fingers: dark skin tone"
+    },
+    {
+      "ordinal": 322,
+      "catalogIndex": 321,
+      "emoji": "🤞🏻",
+      "name": "crossed fingers: light skin tone"
+    },
+    {
+      "ordinal": 323,
+      "catalogIndex": 322,
+      "emoji": "🤞🏽",
+      "name": "crossed fingers: medium skin tone"
+    },
+    {
+      "ordinal": 324,
+      "catalogIndex": 323,
+      "emoji": "🤞🏾",
+      "name": "crossed fingers: medium-dark skin tone"
+    },
+    {
+      "ordinal": 325,
+      "catalogIndex": 324,
+      "emoji": "🤞🏼",
+      "name": "crossed fingers: medium-light skin tone"
+    },
+    {
+      "ordinal": 326,
+      "catalogIndex": 325,
+      "emoji": "🧏‍♂️",
+      "name": "deaf man"
+    },
+    {
+      "ordinal": 327,
+      "catalogIndex": 326,
+      "emoji": "🧏🏿‍♂️",
+      "name": "deaf man: dark skin tone"
+    },
+    {
+      "ordinal": 328,
+      "catalogIndex": 327,
+      "emoji": "🧏🏻‍♂️",
+      "name": "deaf man: light skin tone"
+    },
+    {
+      "ordinal": 329,
+      "catalogIndex": 328,
+      "emoji": "🧏🏽‍♂️",
+      "name": "deaf man: medium skin tone"
+    }
+  ]
+}

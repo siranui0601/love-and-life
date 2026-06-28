@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 680,
+    "endOrdinal": 729,
+    "startCatalogIndex": 679,
+    "endCatalogIndex": 728,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 680,
+      "catalogIndex": 679,
+      "emoji": "👨🏾‍🔧",
+      "name": "man mechanic: medium-dark skin tone"
+    },
+    {
+      "ordinal": 681,
+      "catalogIndex": 680,
+      "emoji": "👨🏼‍🔧",
+      "name": "man mechanic: medium-light skin tone"
+    },
+    {
+      "ordinal": 682,
+      "catalogIndex": 681,
+      "emoji": "🚵‍♂️",
+      "name": "man mountain biking"
+    },
+    {
+      "ordinal": 683,
+      "catalogIndex": 682,
+      "emoji": "🚵🏿‍♂️",
+      "name": "man mountain biking: dark skin tone"
+    },
+    {
+      "ordinal": 684,
+      "catalogIndex": 683,
+      "emoji": "🚵🏻‍♂️",
+      "name": "man mountain biking: light skin tone"
+    },
+    {
+      "ordinal": 685,
+      "catalogIndex": 684,
+      "emoji": "🚵🏽‍♂️",
+      "name": "man mountain biking: medium skin tone"
+    },
+    {
+      "ordinal": 686,
+      "catalogIndex": 685,
+      "emoji": "🚵🏾‍♂️",
+      "name": "man mountain biking: medium-dark skin tone"
+    },
+    {
+      "ordinal": 687,
+      "catalogIndex": 686,
+      "emoji": "🚵🏼‍♂️",
+      "name": "man mountain biking: medium-light skin tone"
+    },
+    {
+      "ordinal": 688,
+      "catalogIndex": 687,
+      "emoji": "👨‍💼",
+      "name": "man office worker"
+    },
+    {
+      "ordinal": 689,
+      "catalogIndex": 688,
+      "emoji": "👨🏿‍💼",
+      "name": "man office worker: dark skin tone"
+    },
+    {
+      "ordinal": 690,
+      "catalogIndex": 689,
+      "emoji": "👨🏻‍💼",
+      "name": "man office worker: light skin tone"
+    },
+    {
+      "ordinal": 691,
+      "catalogIndex": 690,
+      "emoji": "👨🏽‍💼",
+      "name": "man office worker: medium skin tone"
+    },
+    {
+      "ordinal": 692,
+      "catalogIndex": 691,
+      "emoji": "👨🏾‍💼",
+      "name": "man office worker: medium-dark skin tone"
+    },
+    {
+      "ordinal": 693,
+      "catalogIndex": 692,
+      "emoji": "👨🏼‍💼",
+      "name": "man office worker: medium-light skin tone"
+    },
+    {
+      "ordinal": 694,
+      "catalogIndex": 693,
+      "emoji": "👨‍✈️",
+      "name": "man pilot"
+    },
+    {
+      "ordinal": 695,
+      "catalogIndex": 694,
+      "emoji": "👨🏿‍✈️",
+      "name": "man pilot: dark skin tone"
+    },
+    {
+      "ordinal": 696,
+      "catalogIndex": 695,
+      "emoji": "👨🏻‍✈️",
+      "name": "man pilot: light skin tone"
+    },
+    {
+      "ordinal": 697,
+      "catalogIndex": 696,
+      "emoji": "👨🏽‍✈️",
+      "name": "man pilot: medium skin tone"
+    },
+    {
+      "ordinal": 698,
+      "catalogIndex": 697,
+      "emoji": "👨🏾‍✈️",
+      "name": "man pilot: medium-dark skin tone"
+    },
+    {
+      "ordinal": 699,
+      "catalogIndex": 698,
+      "emoji": "👨🏼‍✈️",
+      "name": "man pilot: medium-light skin tone"
+    },
+    {
+      "ordinal": 700,
+      "catalogIndex": 699,
+      "emoji": "🤾‍♂️",
+      "name": "man playing handball"
+    },
+    {
+      "ordinal": 701,
+      "catalogIndex": 700,
+      "emoji": "🤾🏿‍♂️",
+      "name": "man playing handball: dark skin tone"
+    },
+    {
+      "ordinal": 702,
+      "catalogIndex": 701,
+      "emoji": "🤾🏻‍♂️",
+      "name": "man playing handball: light skin tone"
+    },
+    {
+      "ordinal": 703,
+      "catalogIndex": 702,
+      "emoji": "🤾🏽‍♂️",
+      "name": "man playing handball: medium skin tone"
+    },
+    {
+      "ordinal": 704,
+      "catalogIndex": 703,
+      "emoji": "🤾🏾‍♂️",
+      "name": "man playing handball: medium-dark skin tone"
+    },
+    {
+      "ordinal": 705,
+      "catalogIndex": 704,
+      "emoji": "🤾🏼‍♂️",
+      "name": "man playing handball: medium-light skin tone"
+    },
+    {
+      "ordinal": 706,
+      "catalogIndex": 705,
+      "emoji": "🤽‍♂️",
+      "name": "man playing water polo"
+    },
+    {
+      "ordinal": 707,
+      "catalogIndex": 706,
+      "emoji": "🤽🏿‍♂️",
+      "name": "man playing water polo: dark skin tone"
+    },
+    {
+      "ordinal": 708,
+      "catalogIndex": 707,
+      "emoji": "🤽🏻‍♂️",
+      "name": "man playing water polo: light skin tone"
+    },
+    {
+      "ordinal": 709,
+      "catalogIndex": 708,
+      "emoji": "🤽🏽‍♂️",
+      "name": "man playing water polo: medium skin tone"
+    },
+    {
+      "ordinal": 710,
+      "catalogIndex": 709,
+      "emoji": "🤽🏾‍♂️",
+      "name": "man playing water polo: medium-dark skin tone"
+    },
+    {
+      "ordinal": 711,
+      "catalogIndex": 710,
+      "emoji": "🤽🏼‍♂️",
+      "name": "man playing water polo: medium-light skin tone"
+    },
+    {
+      "ordinal": 712,
+      "catalogIndex": 711,
+      "emoji": "👮‍♂️",
+      "name": "man police officer"
+    },
+    {
+      "ordinal": 713,
+      "catalogIndex": 712,
+      "emoji": "👮🏿‍♂️",
+      "name": "man police officer: dark skin tone"
+    },
+    {
+      "ordinal": 714,
+      "catalogIndex": 713,
+      "emoji": "👮🏻‍♂️",
+      "name": "man police officer: light skin tone"
+    },
+    {
+      "ordinal": 715,
+      "catalogIndex": 714,
+      "emoji": "👮🏽‍♂️",
+      "name": "man police officer: medium skin tone"
+    },
+    {
+      "ordinal": 716,
+      "catalogIndex": 715,
+      "emoji": "👮🏾‍♂️",
+      "name": "man police officer: medium-dark skin tone"
+    },
+    {
+      "ordinal": 717,
+      "catalogIndex": 716,
+      "emoji": "👮🏼‍♂️",
+      "name": "man police officer: medium-light skin tone"
+    },
+    {
+      "ordinal": 718,
+      "catalogIndex": 717,
+      "emoji": "🙎‍♂️",
+      "name": "man pouting"
+    },
+    {
+      "ordinal": 719,
+      "catalogIndex": 718,
+      "emoji": "🙎🏿‍♂️",
+      "name": "man pouting: dark skin tone"
+    },
+    {
+      "ordinal": 720,
+      "catalogIndex": 719,
+      "emoji": "🙎🏻‍♂️",
+      "name": "man pouting: light skin tone"
+    },
+    {
+      "ordinal": 721,
+      "catalogIndex": 720,
+      "emoji": "🙎🏽‍♂️",
+      "name": "man pouting: medium skin tone"
+    },
+    {
+      "ordinal": 722,
+      "catalogIndex": 721,
+      "emoji": "🙎🏾‍♂️",
+      "name": "man pouting: medium-dark skin tone"
+    },
+    {
+      "ordinal": 723,
+      "catalogIndex": 722,
+      "emoji": "🙎🏼‍♂️",
+      "name": "man pouting: medium-light skin tone"
+    },
+    {
+      "ordinal": 724,
+      "catalogIndex": 723,
+      "emoji": "🙋‍♂️",
+      "name": "man raising hand"
+    },
+    {
+      "ordinal": 725,
+      "catalogIndex": 724,
+      "emoji": "🙋🏿‍♂️",
+      "name": "man raising hand: dark skin tone"
+    },
+    {
+      "ordinal": 726,
+      "catalogIndex": 725,
+      "emoji": "🙋🏻‍♂️",
+      "name": "man raising hand: light skin tone"
+    },
+    {
+      "ordinal": 727,
+      "catalogIndex": 726,
+      "emoji": "🙋🏽‍♂️",
+      "name": "man raising hand: medium skin tone"
+    },
+    {
+      "ordinal": 728,
+      "catalogIndex": 727,
+      "emoji": "🙋🏾‍♂️",
+      "name": "man raising hand: medium-dark skin tone"
+    },
+    {
+      "ordinal": 729,
+      "catalogIndex": 728,
+      "emoji": "🙋🏼‍♂️",
+      "name": "man raising hand: medium-light skin tone"
+    }
+  ]
+}

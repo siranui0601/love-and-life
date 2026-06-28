@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 1230,
+    "endOrdinal": 1279,
+    "startCatalogIndex": 1229,
+    "endCatalogIndex": 1278,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 1230,
+      "catalogIndex": 1229,
+      "emoji": "👳🏿",
+      "name": "person wearing turban: dark skin tone"
+    },
+    {
+      "ordinal": 1231,
+      "catalogIndex": 1230,
+      "emoji": "👳🏻",
+      "name": "person wearing turban: light skin tone"
+    },
+    {
+      "ordinal": 1232,
+      "catalogIndex": 1231,
+      "emoji": "👳🏽",
+      "name": "person wearing turban: medium skin tone"
+    },
+    {
+      "ordinal": 1233,
+      "catalogIndex": 1232,
+      "emoji": "👳🏾",
+      "name": "person wearing turban: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1234,
+      "catalogIndex": 1233,
+      "emoji": "👳🏼",
+      "name": "person wearing turban: medium-light skin tone"
+    },
+    {
+      "ordinal": 1235,
+      "catalogIndex": 1234,
+      "emoji": "👰",
+      "name": "person with veil"
+    },
+    {
+      "ordinal": 1236,
+      "catalogIndex": 1235,
+      "emoji": "👰🏿",
+      "name": "person with veil: dark skin tone"
+    },
+    {
+      "ordinal": 1237,
+      "catalogIndex": 1236,
+      "emoji": "👰🏻",
+      "name": "person with veil: light skin tone"
+    },
+    {
+      "ordinal": 1238,
+      "catalogIndex": 1237,
+      "emoji": "👰🏽",
+      "name": "person with veil: medium skin tone"
+    },
+    {
+      "ordinal": 1239,
+      "catalogIndex": 1238,
+      "emoji": "👰🏾",
+      "name": "person with veil: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1240,
+      "catalogIndex": 1239,
+      "emoji": "👰🏼",
+      "name": "person with veil: medium-light skin tone"
+    },
+    {
+      "ordinal": 1241,
+      "catalogIndex": 1240,
+      "emoji": "🧑‍🦯",
+      "name": "person with white cane"
+    },
+    {
+      "ordinal": 1242,
+      "catalogIndex": 1241,
+      "emoji": "🧑🏿‍🦯",
+      "name": "person with white cane: dark skin tone"
+    },
+    {
+      "ordinal": 1243,
+      "catalogIndex": 1242,
+      "emoji": "🧑🏻‍🦯",
+      "name": "person with white cane: light skin tone"
+    },
+    {
+      "ordinal": 1244,
+      "catalogIndex": 1243,
+      "emoji": "🧑🏽‍🦯",
+      "name": "person with white cane: medium skin tone"
+    },
+    {
+      "ordinal": 1245,
+      "catalogIndex": 1244,
+      "emoji": "🧑🏾‍🦯",
+      "name": "person with white cane: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1246,
+      "catalogIndex": 1245,
+      "emoji": "🧑🏼‍🦯",
+      "name": "person with white cane: medium-light skin tone"
+    },
+    {
+      "ordinal": 1247,
+      "catalogIndex": 1246,
+      "emoji": "🧑‍🦲",
+      "name": "person: bald"
+    },
+    {
+      "ordinal": 1248,
+      "catalogIndex": 1247,
+      "emoji": "👱",
+      "name": "person: blond hair"
+    },
+    {
+      "ordinal": 1249,
+      "catalogIndex": 1248,
+      "emoji": "🧑‍🦱",
+      "name": "person: curly hair"
+    },
+    {
+      "ordinal": 1250,
+      "catalogIndex": 1249,
+      "emoji": "🧑🏿",
+      "name": "person: dark skin tone"
+    },
+    {
+      "ordinal": 1251,
+      "catalogIndex": 1250,
+      "emoji": "🧑🏿‍🦲",
+      "name": "person: dark skin tone, bald"
+    },
+    {
+      "ordinal": 1252,
+      "catalogIndex": 1251,
+      "emoji": "👱🏿",
+      "name": "person: dark skin tone, blond hair"
+    },
+    {
+      "ordinal": 1253,
+      "catalogIndex": 1252,
+      "emoji": "🧑🏿‍🦱",
+      "name": "person: dark skin tone, curly hair"
+    },
+    {
+      "ordinal": 1254,
+      "catalogIndex": 1253,
+      "emoji": "🧑🏿‍🦰",
+      "name": "person: dark skin tone, red hair"
+    },
+    {
+      "ordinal": 1255,
+      "catalogIndex": 1254,
+      "emoji": "🧑🏿‍🦳",
+      "name": "person: dark skin tone, white hair"
+    },
+    {
+      "ordinal": 1256,
+      "catalogIndex": 1255,
+      "emoji": "🧑🏻",
+      "name": "person: light skin tone"
+    },
+    {
+      "ordinal": 1257,
+      "catalogIndex": 1256,
+      "emoji": "🧑🏻‍🦲",
+      "name": "person: light skin tone, bald"
+    },
+    {
+      "ordinal": 1258,
+      "catalogIndex": 1257,
+      "emoji": "👱🏻",
+      "name": "person: light skin tone, blond hair"
+    },
+    {
+      "ordinal": 1259,
+      "catalogIndex": 1258,
+      "emoji": "🧑🏻‍🦱",
+      "name": "person: light skin tone, curly hair"
+    },
+    {
+      "ordinal": 1260,
+      "catalogIndex": 1259,
+      "emoji": "🧑🏻‍🦰",
+      "name": "person: light skin tone, red hair"
+    },
+    {
+      "ordinal": 1261,
+      "catalogIndex": 1260,
+      "emoji": "🧑🏻‍🦳",
+      "name": "person: light skin tone, white hair"
+    },
+    {
+      "ordinal": 1262,
+      "catalogIndex": 1261,
+      "emoji": "🧑🏽",
+      "name": "person: medium skin tone"
+    },
+    {
+      "ordinal": 1263,
+      "catalogIndex": 1262,
+      "emoji": "🧑🏽‍🦲",
+      "name": "person: medium skin tone, bald"
+    },
+    {
+      "ordinal": 1264,
+      "catalogIndex": 1263,
+      "emoji": "👱🏽",
+      "name": "person: medium skin tone, blond hair"
+    },
+    {
+      "ordinal": 1265,
+      "catalogIndex": 1264,
+      "emoji": "🧑🏽‍🦱",
+      "name": "person: medium skin tone, curly hair"
+    },
+    {
+      "ordinal": 1266,
+      "catalogIndex": 1265,
+      "emoji": "🧑🏽‍🦰",
+      "name": "person: medium skin tone, red hair"
+    },
+    {
+      "ordinal": 1267,
+      "catalogIndex": 1266,
+      "emoji": "🧑🏽‍🦳",
+      "name": "person: medium skin tone, white hair"
+    },
+    {
+      "ordinal": 1268,
+      "catalogIndex": 1267,
+      "emoji": "🧑🏾",
+      "name": "person: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1269,
+      "catalogIndex": 1268,
+      "emoji": "🧑🏾‍🦲",
+      "name": "person: medium-dark skin tone, bald"
+    },
+    {
+      "ordinal": 1270,
+      "catalogIndex": 1269,
+      "emoji": "👱🏾",
+      "name": "person: medium-dark skin tone, blond hair"
+    },
+    {
+      "ordinal": 1271,
+      "catalogIndex": 1270,
+      "emoji": "🧑🏾‍🦱",
+      "name": "person: medium-dark skin tone, curly hair"
+    },
+    {
+      "ordinal": 1272,
+      "catalogIndex": 1271,
+      "emoji": "🧑🏾‍🦰",
+      "name": "person: medium-dark skin tone, red hair"
+    },
+    {
+      "ordinal": 1273,
+      "catalogIndex": 1272,
+      "emoji": "🧑🏾‍🦳",
+      "name": "person: medium-dark skin tone, white hair"
+    },
+    {
+      "ordinal": 1274,
+      "catalogIndex": 1273,
+      "emoji": "🧑🏼",
+      "name": "person: medium-light skin tone"
+    },
+    {
+      "ordinal": 1275,
+      "catalogIndex": 1274,
+      "emoji": "🧑🏼‍🦲",
+      "name": "person: medium-light skin tone, bald"
+    },
+    {
+      "ordinal": 1276,
+      "catalogIndex": 1275,
+      "emoji": "👱🏼",
+      "name": "person: medium-light skin tone, blond hair"
+    },
+    {
+      "ordinal": 1277,
+      "catalogIndex": 1276,
+      "emoji": "🧑🏼‍🦱",
+      "name": "person: medium-light skin tone, curly hair"
+    },
+    {
+      "ordinal": 1278,
+      "catalogIndex": 1277,
+      "emoji": "🧑🏼‍🦰",
+      "name": "person: medium-light skin tone, red hair"
+    },
+    {
+      "ordinal": 1279,
+      "catalogIndex": 1278,
+      "emoji": "🧑🏼‍🦳",
+      "name": "person: medium-light skin tone, white hair"
+    }
+  ]
+}

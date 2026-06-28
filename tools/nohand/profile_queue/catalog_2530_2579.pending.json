@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 2530,
+    "endOrdinal": 2579,
+    "startCatalogIndex": 2529,
+    "endCatalogIndex": 2578,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2530,
+      "catalogIndex": 2529,
+      "emoji": "🧺",
+      "name": "basket"
+    },
+    {
+      "ordinal": 2531,
+      "catalogIndex": 2530,
+      "emoji": "🛏️",
+      "name": "bed"
+    },
+    {
+      "ordinal": 2532,
+      "catalogIndex": 2531,
+      "emoji": "🔔",
+      "name": "bell"
+    },
+    {
+      "ordinal": 2533,
+      "catalogIndex": 2532,
+      "emoji": "🔕",
+      "name": "bell with slash"
+    },
+    {
+      "ordinal": 2534,
+      "catalogIndex": 2533,
+      "emoji": "🛎️",
+      "name": "bellhop bell"
+    },
+    {
+      "ordinal": 2535,
+      "catalogIndex": 2534,
+      "emoji": "👙",
+      "name": "bikini"
+    },
+    {
+      "ordinal": 2536,
+      "catalogIndex": 2535,
+      "emoji": "📘",
+      "name": "blue book"
+    },
+    {
+      "ordinal": 2537,
+      "catalogIndex": 2536,
+      "emoji": "💣",
+      "name": "bomb"
+    },
+    {
+      "ordinal": 2538,
+      "catalogIndex": 2537,
+      "emoji": "🔖",
+      "name": "bookmark"
+    },
+    {
+      "ordinal": 2539,
+      "catalogIndex": 2538,
+      "emoji": "📑",
+      "name": "bookmark tabs"
+    },
+    {
+      "ordinal": 2540,
+      "catalogIndex": 2539,
+      "emoji": "📚",
+      "name": "books"
+    },
+    {
+      "ordinal": 2541,
+      "catalogIndex": 2540,
+      "emoji": "🪃",
+      "name": "boomerang"
+    },
+    {
+      "ordinal": 2542,
+      "catalogIndex": 2541,
+      "emoji": "🏹",
+      "name": "bow and arrow"
+    },
+    {
+      "ordinal": 2543,
+      "catalogIndex": 2542,
+      "emoji": "💼",
+      "name": "briefcase"
+    },
+    {
+      "ordinal": 2544,
+      "catalogIndex": 2543,
+      "emoji": "🧹",
+      "name": "broom"
+    },
+    {
+      "ordinal": 2545,
+      "catalogIndex": 2544,
+      "emoji": "🪣",
+      "name": "bucket"
+    },
+    {
+      "ordinal": 2546,
+      "catalogIndex": 2545,
+      "emoji": "📅",
+      "name": "calendar"
+    },
+    {
+      "ordinal": 2547,
+      "catalogIndex": 2546,
+      "emoji": "📷",
+      "name": "camera"
+    },
+    {
+      "ordinal": 2548,
+      "catalogIndex": 2547,
+      "emoji": "📸",
+      "name": "camera with flash"
+    },
+    {
+      "ordinal": 2549,
+      "catalogIndex": 2548,
+      "emoji": "🕯️",
+      "name": "candle"
+    },
+    {
+      "ordinal": 2550,
+      "catalogIndex": 2549,
+      "emoji": "⛓️",
+      "name": "chains"
+    },
+    {
+      "ordinal": 2551,
+      "catalogIndex": 2550,
+      "emoji": "🪑",
+      "name": "chair"
+    },
+    {
+      "ordinal": 2552,
+      "catalogIndex": 2551,
+      "emoji": "🚬",
+      "name": "cigarette"
+    },
+    {
+      "ordinal": 2553,
+      "catalogIndex": 2552,
+      "emoji": "🗜️",
+      "name": "clamp"
+    },
+    {
+      "ordinal": 2554,
+      "catalogIndex": 2553,
+      "emoji": "🥂",
+      "name": "clinking glasses"
+    },
+    {
+      "ordinal": 2555,
+      "catalogIndex": 2554,
+      "emoji": "📕",
+      "name": "closed book"
+    },
+    {
+      "ordinal": 2556,
+      "catalogIndex": 2555,
+      "emoji": "👝",
+      "name": "clutch bag"
+    },
+    {
+      "ordinal": 2557,
+      "catalogIndex": 2556,
+      "emoji": "🧥",
+      "name": "coat"
+    },
+    {
+      "ordinal": 2558,
+      "catalogIndex": 2557,
+      "emoji": "⚰️",
+      "name": "coffin"
+    },
+    {
+      "ordinal": 2559,
+      "catalogIndex": 2558,
+      "emoji": "🪙",
+      "name": "coin"
+    },
+    {
+      "ordinal": 2560,
+      "catalogIndex": 2559,
+      "emoji": "💽",
+      "name": "computer disk"
+    },
+    {
+      "ordinal": 2561,
+      "catalogIndex": 2560,
+      "emoji": "🛋️",
+      "name": "couch and lamp"
+    },
+    {
+      "ordinal": 2562,
+      "catalogIndex": 2561,
+      "emoji": "🖍️",
+      "name": "crayon"
+    },
+    {
+      "ordinal": 2563,
+      "catalogIndex": 2562,
+      "emoji": "⚔️",
+      "name": "crossed swords"
+    },
+    {
+      "ordinal": 2564,
+      "catalogIndex": 2563,
+      "emoji": "👑",
+      "name": "crown"
+    },
+    {
+      "ordinal": 2565,
+      "catalogIndex": 2564,
+      "emoji": "🗡️",
+      "name": "dagger"
+    },
+    {
+      "ordinal": 2566,
+      "catalogIndex": 2565,
+      "emoji": "🖥️",
+      "name": "desktop computer"
+    },
+    {
+      "ordinal": 2567,
+      "catalogIndex": 2566,
+      "emoji": "🚪",
+      "name": "door"
+    },
+    {
+      "ordinal": 2568,
+      "catalogIndex": 2567,
+      "emoji": "👗",
+      "name": "dress"
+    },
+    {
+      "ordinal": 2569,
+      "catalogIndex": 2568,
+      "emoji": "🛗",
+      "name": "elevator"
+    },
+    {
+      "ordinal": 2570,
+      "catalogIndex": 2569,
+      "emoji": "✉️",
+      "name": "envelope"
+    },
+    {
+      "ordinal": 2571,
+      "catalogIndex": 2570,
+      "emoji": "📩",
+      "name": "envelope with arrow"
+    },
+    {
+      "ordinal": 2572,
+      "catalogIndex": 2571,
+      "emoji": "📁",
+      "name": "file folder"
+    },
+    {
+      "ordinal": 2573,
+      "catalogIndex": 2572,
+      "emoji": "📽️",
+      "name": "film projector"
+    },
+    {
+      "ordinal": 2574,
+      "catalogIndex": 2573,
+      "emoji": "🔦",
+      "name": "flashlight"
+    },
+    {
+      "ordinal": 2575,
+      "catalogIndex": 2574,
+      "emoji": "🥿",
+      "name": "flat shoe"
+    },
+    {
+      "ordinal": 2576,
+      "catalogIndex": 2575,
+      "emoji": "⚱️",
+      "name": "funeral urn"
+    },
+    {
+      "ordinal": 2577,
+      "catalogIndex": 2576,
+      "emoji": "💎",
+      "name": "gem stone"
+    },
+    {
+      "ordinal": 2578,
+      "catalogIndex": 2577,
+      "emoji": "♊",
+      "name": "gemini"
+    },
+    {
+      "ordinal": 2579,
+      "catalogIndex": 2578,
+      "emoji": "👓",
+      "name": "glasses"
+    }
+  ]
+}

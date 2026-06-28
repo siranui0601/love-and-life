@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 1180,
+    "endOrdinal": 1229,
+    "startCatalogIndex": 1179,
+    "endCatalogIndex": 1228,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 1180,
+      "catalogIndex": 1179,
+      "emoji": "🚣🏼",
+      "name": "person rowing boat: medium-light skin tone"
+    },
+    {
+      "ordinal": 1181,
+      "catalogIndex": 1180,
+      "emoji": "🏃",
+      "name": "person running"
+    },
+    {
+      "ordinal": 1182,
+      "catalogIndex": 1181,
+      "emoji": "🏃🏿",
+      "name": "person running: dark skin tone"
+    },
+    {
+      "ordinal": 1183,
+      "catalogIndex": 1182,
+      "emoji": "🏃🏻",
+      "name": "person running: light skin tone"
+    },
+    {
+      "ordinal": 1184,
+      "catalogIndex": 1183,
+      "emoji": "🏃🏽",
+      "name": "person running: medium skin tone"
+    },
+    {
+      "ordinal": 1185,
+      "catalogIndex": 1184,
+      "emoji": "🏃🏾",
+      "name": "person running: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1186,
+      "catalogIndex": 1185,
+      "emoji": "🏃🏼",
+      "name": "person running: medium-light skin tone"
+    },
+    {
+      "ordinal": 1187,
+      "catalogIndex": 1186,
+      "emoji": "🤷",
+      "name": "person shrugging"
+    },
+    {
+      "ordinal": 1188,
+      "catalogIndex": 1187,
+      "emoji": "🤷🏿",
+      "name": "person shrugging: dark skin tone"
+    },
+    {
+      "ordinal": 1189,
+      "catalogIndex": 1188,
+      "emoji": "🤷🏻",
+      "name": "person shrugging: light skin tone"
+    },
+    {
+      "ordinal": 1190,
+      "catalogIndex": 1189,
+      "emoji": "🤷🏽",
+      "name": "person shrugging: medium skin tone"
+    },
+    {
+      "ordinal": 1191,
+      "catalogIndex": 1190,
+      "emoji": "🤷🏾",
+      "name": "person shrugging: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1192,
+      "catalogIndex": 1191,
+      "emoji": "🤷🏼",
+      "name": "person shrugging: medium-light skin tone"
+    },
+    {
+      "ordinal": 1193,
+      "catalogIndex": 1192,
+      "emoji": "🧍",
+      "name": "person standing"
+    },
+    {
+      "ordinal": 1194,
+      "catalogIndex": 1193,
+      "emoji": "🧍🏿",
+      "name": "person standing: dark skin tone"
+    },
+    {
+      "ordinal": 1195,
+      "catalogIndex": 1194,
+      "emoji": "🧍🏻",
+      "name": "person standing: light skin tone"
+    },
+    {
+      "ordinal": 1196,
+      "catalogIndex": 1195,
+      "emoji": "🧍🏽",
+      "name": "person standing: medium skin tone"
+    },
+    {
+      "ordinal": 1197,
+      "catalogIndex": 1196,
+      "emoji": "🧍🏾",
+      "name": "person standing: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1198,
+      "catalogIndex": 1197,
+      "emoji": "🧍🏼",
+      "name": "person standing: medium-light skin tone"
+    },
+    {
+      "ordinal": 1199,
+      "catalogIndex": 1198,
+      "emoji": "🏄",
+      "name": "person surfing"
+    },
+    {
+      "ordinal": 1200,
+      "catalogIndex": 1199,
+      "emoji": "🏄🏿",
+      "name": "person surfing: dark skin tone"
+    },
+    {
+      "ordinal": 1201,
+      "catalogIndex": 1200,
+      "emoji": "🏄🏻",
+      "name": "person surfing: light skin tone"
+    },
+    {
+      "ordinal": 1202,
+      "catalogIndex": 1201,
+      "emoji": "🏄🏽",
+      "name": "person surfing: medium skin tone"
+    },
+    {
+      "ordinal": 1203,
+      "catalogIndex": 1202,
+      "emoji": "🏄🏾",
+      "name": "person surfing: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1204,
+      "catalogIndex": 1203,
+      "emoji": "🏄🏼",
+      "name": "person surfing: medium-light skin tone"
+    },
+    {
+      "ordinal": 1205,
+      "catalogIndex": 1204,
+      "emoji": "🏊",
+      "name": "person swimming"
+    },
+    {
+      "ordinal": 1206,
+      "catalogIndex": 1205,
+      "emoji": "🏊🏿",
+      "name": "person swimming: dark skin tone"
+    },
+    {
+      "ordinal": 1207,
+      "catalogIndex": 1206,
+      "emoji": "🏊🏻",
+      "name": "person swimming: light skin tone"
+    },
+    {
+      "ordinal": 1208,
+      "catalogIndex": 1207,
+      "emoji": "🏊🏽",
+      "name": "person swimming: medium skin tone"
+    },
+    {
+      "ordinal": 1209,
+      "catalogIndex": 1208,
+      "emoji": "🏊🏾",
+      "name": "person swimming: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1210,
+      "catalogIndex": 1209,
+      "emoji": "🏊🏼",
+      "name": "person swimming: medium-light skin tone"
+    },
+    {
+      "ordinal": 1211,
+      "catalogIndex": 1210,
+      "emoji": "🛀",
+      "name": "person taking bath"
+    },
+    {
+      "ordinal": 1212,
+      "catalogIndex": 1211,
+      "emoji": "🛀🏿",
+      "name": "person taking bath: dark skin tone"
+    },
+    {
+      "ordinal": 1213,
+      "catalogIndex": 1212,
+      "emoji": "🛀🏻",
+      "name": "person taking bath: light skin tone"
+    },
+    {
+      "ordinal": 1214,
+      "catalogIndex": 1213,
+      "emoji": "🛀🏽",
+      "name": "person taking bath: medium skin tone"
+    },
+    {
+      "ordinal": 1215,
+      "catalogIndex": 1214,
+      "emoji": "🛀🏾",
+      "name": "person taking bath: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1216,
+      "catalogIndex": 1215,
+      "emoji": "🛀🏼",
+      "name": "person taking bath: medium-light skin tone"
+    },
+    {
+      "ordinal": 1217,
+      "catalogIndex": 1216,
+      "emoji": "💁",
+      "name": "person tipping hand"
+    },
+    {
+      "ordinal": 1218,
+      "catalogIndex": 1217,
+      "emoji": "💁🏿",
+      "name": "person tipping hand: dark skin tone"
+    },
+    {
+      "ordinal": 1219,
+      "catalogIndex": 1218,
+      "emoji": "💁🏻",
+      "name": "person tipping hand: light skin tone"
+    },
+    {
+      "ordinal": 1220,
+      "catalogIndex": 1219,
+      "emoji": "💁🏽",
+      "name": "person tipping hand: medium skin tone"
+    },
+    {
+      "ordinal": 1221,
+      "catalogIndex": 1220,
+      "emoji": "💁🏾",
+      "name": "person tipping hand: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1222,
+      "catalogIndex": 1221,
+      "emoji": "💁🏼",
+      "name": "person tipping hand: medium-light skin tone"
+    },
+    {
+      "ordinal": 1223,
+      "catalogIndex": 1222,
+      "emoji": "🚶",
+      "name": "person walking"
+    },
+    {
+      "ordinal": 1224,
+      "catalogIndex": 1223,
+      "emoji": "🚶🏿",
+      "name": "person walking: dark skin tone"
+    },
+    {
+      "ordinal": 1225,
+      "catalogIndex": 1224,
+      "emoji": "🚶🏻",
+      "name": "person walking: light skin tone"
+    },
+    {
+      "ordinal": 1226,
+      "catalogIndex": 1225,
+      "emoji": "🚶🏽",
+      "name": "person walking: medium skin tone"
+    },
+    {
+      "ordinal": 1227,
+      "catalogIndex": 1226,
+      "emoji": "🚶🏾",
+      "name": "person walking: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1228,
+      "catalogIndex": 1227,
+      "emoji": "🚶🏼",
+      "name": "person walking: medium-light skin tone"
+    },
+    {
+      "ordinal": 1229,
+      "catalogIndex": 1228,
+      "emoji": "👳",
+      "name": "person wearing turban"
+    }
+  ]
+}

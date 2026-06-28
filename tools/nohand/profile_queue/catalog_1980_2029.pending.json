@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 1980,
+    "endOrdinal": 2029,
+    "startCatalogIndex": 1979,
+    "endCatalogIndex": 2028,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 1980,
+      "catalogIndex": 1979,
+      "emoji": "🌭",
+      "name": "hot dog"
+    },
+    {
+      "ordinal": 1981,
+      "catalogIndex": 1980,
+      "emoji": "📥",
+      "name": "inbox tray"
+    },
+    {
+      "ordinal": 1982,
+      "catalogIndex": 1981,
+      "emoji": "🎃",
+      "name": "jack-o-lantern"
+    },
+    {
+      "ordinal": 1983,
+      "catalogIndex": 1982,
+      "emoji": "🈸",
+      "name": "japanese “application” button"
+    },
+    {
+      "ordinal": 1984,
+      "catalogIndex": 1983,
+      "emoji": "㊗️",
+      "name": "japanese “congratulations” button"
+    },
+    {
+      "ordinal": 1985,
+      "catalogIndex": 1984,
+      "emoji": "🦘",
+      "name": "kangaroo"
+    },
+    {
+      "ordinal": 1986,
+      "catalogIndex": 1985,
+      "emoji": "⌨️",
+      "name": "keyboard"
+    },
+    {
+      "ordinal": 1987,
+      "catalogIndex": 1986,
+      "emoji": "🐨",
+      "name": "koala"
+    },
+    {
+      "ordinal": 1988,
+      "catalogIndex": 1987,
+      "emoji": "🐞",
+      "name": "lady beetle"
+    },
+    {
+      "ordinal": 1989,
+      "catalogIndex": 1988,
+      "emoji": "🌗",
+      "name": "last quarter moon"
+    },
+    {
+      "ordinal": 1990,
+      "catalogIndex": 1989,
+      "emoji": "🍃",
+      "name": "leaf fluttering in wind"
+    },
+    {
+      "ordinal": 1991,
+      "catalogIndex": 1990,
+      "emoji": "🐆",
+      "name": "leopard"
+    },
+    {
+      "ordinal": 1992,
+      "catalogIndex": 1991,
+      "emoji": "🦁",
+      "name": "lion"
+    },
+    {
+      "ordinal": 1993,
+      "catalogIndex": 1992,
+      "emoji": "🦎",
+      "name": "lizard"
+    },
+    {
+      "ordinal": 1994,
+      "catalogIndex": 1993,
+      "emoji": "🦙",
+      "name": "llama"
+    },
+    {
+      "ordinal": 1995,
+      "catalogIndex": 1994,
+      "emoji": "🀄",
+      "name": "mahjong red dragon"
+    },
+    {
+      "ordinal": 1996,
+      "catalogIndex": 1995,
+      "emoji": "🦣",
+      "name": "mammoth"
+    },
+    {
+      "ordinal": 1997,
+      "catalogIndex": 1996,
+      "emoji": "🍁",
+      "name": "maple leaf"
+    },
+    {
+      "ordinal": 1998,
+      "catalogIndex": 1997,
+      "emoji": "🦠",
+      "name": "microbe"
+    },
+    {
+      "ordinal": 1999,
+      "catalogIndex": 1998,
+      "emoji": "💸",
+      "name": "money with wings"
+    },
+    {
+      "ordinal": 2000,
+      "catalogIndex": 1999,
+      "emoji": "🐒",
+      "name": "monkey"
+    },
+    {
+      "ordinal": 2001,
+      "catalogIndex": 2000,
+      "emoji": "🎑",
+      "name": "moon viewing ceremony"
+    },
+    {
+      "ordinal": 2002,
+      "catalogIndex": 2001,
+      "emoji": "🦟",
+      "name": "mosquito"
+    },
+    {
+      "ordinal": 2003,
+      "catalogIndex": 2002,
+      "emoji": "⛰️",
+      "name": "mountain"
+    },
+    {
+      "ordinal": 2004,
+      "catalogIndex": 2003,
+      "emoji": "🚠",
+      "name": "mountain cableway"
+    },
+    {
+      "ordinal": 2005,
+      "catalogIndex": 2004,
+      "emoji": "🚞",
+      "name": "mountain railway"
+    },
+    {
+      "ordinal": 2006,
+      "catalogIndex": 2005,
+      "emoji": "🐁",
+      "name": "mouse"
+    },
+    {
+      "ordinal": 2007,
+      "catalogIndex": 2006,
+      "emoji": "🪤",
+      "name": "mouse trap"
+    },
+    {
+      "ordinal": 2008,
+      "catalogIndex": 2007,
+      "emoji": "🎹",
+      "name": "musical keyboard"
+    },
+    {
+      "ordinal": 2009,
+      "catalogIndex": 2008,
+      "emoji": "🪆",
+      "name": "nesting dolls"
+    },
+    {
+      "ordinal": 2010,
+      "catalogIndex": 2009,
+      "emoji": "🌑",
+      "name": "new moon"
+    },
+    {
+      "ordinal": 2011,
+      "catalogIndex": 2010,
+      "emoji": "🌃",
+      "name": "night with stars"
+    },
+    {
+      "ordinal": 2012,
+      "catalogIndex": 2011,
+      "emoji": "🚱",
+      "name": "non-potable water"
+    },
+    {
+      "ordinal": 2013,
+      "catalogIndex": 2012,
+      "emoji": "📔",
+      "name": "notebook with decorative cover"
+    },
+    {
+      "ordinal": 2014,
+      "catalogIndex": 2013,
+      "emoji": "🐙",
+      "name": "octopus"
+    },
+    {
+      "ordinal": 2015,
+      "catalogIndex": 2014,
+      "emoji": "🦧",
+      "name": "orangutan"
+    },
+    {
+      "ordinal": 2016,
+      "catalogIndex": 2015,
+      "emoji": "☦️",
+      "name": "orthodox cross"
+    },
+    {
+      "ordinal": 2017,
+      "catalogIndex": 2016,
+      "emoji": "🦦",
+      "name": "otter"
+    },
+    {
+      "ordinal": 2018,
+      "catalogIndex": 2017,
+      "emoji": "📤",
+      "name": "outbox tray"
+    },
+    {
+      "ordinal": 2019,
+      "catalogIndex": 2018,
+      "emoji": "🦉",
+      "name": "owl"
+    },
+    {
+      "ordinal": 2020,
+      "catalogIndex": 2019,
+      "emoji": "🐂",
+      "name": "ox"
+    },
+    {
+      "ordinal": 2021,
+      "catalogIndex": 2020,
+      "emoji": "🌴",
+      "name": "palm tree"
+    },
+    {
+      "ordinal": 2022,
+      "catalogIndex": 2021,
+      "emoji": "🤲",
+      "name": "palms up together"
+    },
+    {
+      "ordinal": 2023,
+      "catalogIndex": 2022,
+      "emoji": "🤲🏿",
+      "name": "palms up together: dark skin tone"
+    },
+    {
+      "ordinal": 2024,
+      "catalogIndex": 2023,
+      "emoji": "🤲🏻",
+      "name": "palms up together: light skin tone"
+    },
+    {
+      "ordinal": 2025,
+      "catalogIndex": 2024,
+      "emoji": "🤲🏽",
+      "name": "palms up together: medium skin tone"
+    },
+    {
+      "ordinal": 2026,
+      "catalogIndex": 2025,
+      "emoji": "🤲🏾",
+      "name": "palms up together: medium-dark skin tone"
+    },
+    {
+      "ordinal": 2027,
+      "catalogIndex": 2026,
+      "emoji": "🤲🏼",
+      "name": "palms up together: medium-light skin tone"
+    },
+    {
+      "ordinal": 2028,
+      "catalogIndex": 2027,
+      "emoji": "🐼",
+      "name": "panda"
+    },
+    {
+      "ordinal": 2029,
+      "catalogIndex": 2028,
+      "emoji": "🦜",
+      "name": "parrot"
+    }
+  ]
+}

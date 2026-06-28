@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 2180,
+    "endOrdinal": 2229,
+    "startCatalogIndex": 2179,
+    "endCatalogIndex": 2228,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2180,
+      "catalogIndex": 2179,
+      "emoji": "🥝",
+      "name": "kiwi fruit"
+    },
+    {
+      "ordinal": 2181,
+      "catalogIndex": 2180,
+      "emoji": "🔶",
+      "name": "large orange diamond"
+    },
+    {
+      "ordinal": 2182,
+      "catalogIndex": 2181,
+      "emoji": "🥬",
+      "name": "leafy green"
+    },
+    {
+      "ordinal": 2183,
+      "catalogIndex": 2182,
+      "emoji": "🍋",
+      "name": "lemon"
+    },
+    {
+      "ordinal": 2184,
+      "catalogIndex": 2183,
+      "emoji": "🍭",
+      "name": "lollipop"
+    },
+    {
+      "ordinal": 2185,
+      "catalogIndex": 2184,
+      "emoji": "🍈",
+      "name": "melon"
+    },
+    {
+      "ordinal": 2186,
+      "catalogIndex": 2185,
+      "emoji": "🌌",
+      "name": "milky way"
+    },
+    {
+      "ordinal": 2187,
+      "catalogIndex": 2186,
+      "emoji": "🥮",
+      "name": "moon cake"
+    },
+    {
+      "ordinal": 2188,
+      "catalogIndex": 2187,
+      "emoji": "🍄",
+      "name": "mushroom"
+    },
+    {
+      "ordinal": 2189,
+      "catalogIndex": 2188,
+      "emoji": "🍢",
+      "name": "oden"
+    },
+    {
+      "ordinal": 2190,
+      "catalogIndex": 2189,
+      "emoji": "🫒",
+      "name": "olive"
+    },
+    {
+      "ordinal": 2191,
+      "catalogIndex": 2190,
+      "emoji": "🩱",
+      "name": "one-piece swimsuit"
+    },
+    {
+      "ordinal": 2192,
+      "catalogIndex": 2191,
+      "emoji": "🧅",
+      "name": "onion"
+    },
+    {
+      "ordinal": 2193,
+      "catalogIndex": 2192,
+      "emoji": "📙",
+      "name": "orange book"
+    },
+    {
+      "ordinal": 2194,
+      "catalogIndex": 2193,
+      "emoji": "🟠",
+      "name": "orange circle"
+    },
+    {
+      "ordinal": 2195,
+      "catalogIndex": 2194,
+      "emoji": "🟧",
+      "name": "orange square"
+    },
+    {
+      "ordinal": 2196,
+      "catalogIndex": 2195,
+      "emoji": "🥞",
+      "name": "pancakes"
+    },
+    {
+      "ordinal": 2197,
+      "catalogIndex": 2196,
+      "emoji": "🥜",
+      "name": "peanuts"
+    },
+    {
+      "ordinal": 2198,
+      "catalogIndex": 2197,
+      "emoji": "🥧",
+      "name": "pie"
+    },
+    {
+      "ordinal": 2199,
+      "catalogIndex": 2198,
+      "emoji": "🍍",
+      "name": "pineapple"
+    },
+    {
+      "ordinal": 2200,
+      "catalogIndex": 2199,
+      "emoji": "🍕",
+      "name": "pizza"
+    },
+    {
+      "ordinal": 2201,
+      "catalogIndex": 2200,
+      "emoji": "🍿",
+      "name": "popcorn"
+    },
+    {
+      "ordinal": 2202,
+      "catalogIndex": 2201,
+      "emoji": "🥔",
+      "name": "potato"
+    },
+    {
+      "ordinal": 2203,
+      "catalogIndex": 2202,
+      "emoji": "🥨",
+      "name": "pretzel"
+    },
+    {
+      "ordinal": 2204,
+      "catalogIndex": 2203,
+      "emoji": "🧩",
+      "name": "puzzle piece"
+    },
+    {
+      "ordinal": 2205,
+      "catalogIndex": 2204,
+      "emoji": "🍎",
+      "name": "red apple"
+    },
+    {
+      "ordinal": 2206,
+      "catalogIndex": 2205,
+      "emoji": "🍙",
+      "name": "rice ball"
+    },
+    {
+      "ordinal": 2207,
+      "catalogIndex": 2206,
+      "emoji": "🍘",
+      "name": "rice cracker"
+    },
+    {
+      "ordinal": 2208,
+      "catalogIndex": 2207,
+      "emoji": "🍠",
+      "name": "roasted sweet potato"
+    },
+    {
+      "ordinal": 2209,
+      "catalogIndex": 2208,
+      "emoji": "🍶",
+      "name": "sake"
+    },
+    {
+      "ordinal": 2210,
+      "catalogIndex": 2209,
+      "emoji": "🧂",
+      "name": "salt"
+    },
+    {
+      "ordinal": 2211,
+      "catalogIndex": 2210,
+      "emoji": "🥪",
+      "name": "sandwich"
+    },
+    {
+      "ordinal": 2212,
+      "catalogIndex": 2211,
+      "emoji": "🌾",
+      "name": "sheaf of rice"
+    },
+    {
+      "ordinal": 2213,
+      "catalogIndex": 2212,
+      "emoji": "🍰",
+      "name": "shortcake"
+    },
+    {
+      "ordinal": 2214,
+      "catalogIndex": 2213,
+      "emoji": "🔸",
+      "name": "small orange diamond"
+    },
+    {
+      "ordinal": 2215,
+      "catalogIndex": 2214,
+      "emoji": "🍝",
+      "name": "spaghetti"
+    },
+    {
+      "ordinal": 2216,
+      "catalogIndex": 2215,
+      "emoji": "🍜",
+      "name": "steaming bowl"
+    },
+    {
+      "ordinal": 2217,
+      "catalogIndex": 2216,
+      "emoji": "🍓",
+      "name": "strawberry"
+    },
+    {
+      "ordinal": 2218,
+      "catalogIndex": 2217,
+      "emoji": "🥙",
+      "name": "stuffed flatbread"
+    },
+    {
+      "ordinal": 2219,
+      "catalogIndex": 2218,
+      "emoji": "🍣",
+      "name": "sushi"
+    },
+    {
+      "ordinal": 2220,
+      "catalogIndex": 2219,
+      "emoji": "🌮",
+      "name": "taco"
+    },
+    {
+      "ordinal": 2221,
+      "catalogIndex": 2220,
+      "emoji": "🫔",
+      "name": "tamale"
+    },
+    {
+      "ordinal": 2222,
+      "catalogIndex": 2221,
+      "emoji": "🫖",
+      "name": "teapot"
+    },
+    {
+      "ordinal": 2223,
+      "catalogIndex": 2222,
+      "emoji": "🍅",
+      "name": "tomato"
+    },
+    {
+      "ordinal": 2224,
+      "catalogIndex": 2223,
+      "emoji": "🍹",
+      "name": "tropical drink"
+    },
+    {
+      "ordinal": 2225,
+      "catalogIndex": 2224,
+      "emoji": "🦄",
+      "name": "unicorn"
+    },
+    {
+      "ordinal": 2226,
+      "catalogIndex": 2225,
+      "emoji": "🧇",
+      "name": "waffle"
+    },
+    {
+      "ordinal": 2227,
+      "catalogIndex": 2226,
+      "emoji": "🍉",
+      "name": "watermelon"
+    },
+    {
+      "ordinal": 2228,
+      "catalogIndex": 2227,
+      "emoji": "🍷",
+      "name": "wine glass"
+    },
+    {
+      "ordinal": 2229,
+      "catalogIndex": 2228,
+      "emoji": "✈️",
+      "name": "airplane"
+    }
+  ]
+}

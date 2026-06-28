@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 1530,
+    "endOrdinal": 1579,
+    "startCatalogIndex": 1529,
+    "endCatalogIndex": 1578,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 1530,
+      "catalogIndex": 1529,
+      "emoji": "💇🏾‍♀️",
+      "name": "woman getting haircut: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1531,
+      "catalogIndex": 1530,
+      "emoji": "💇🏼‍♀️",
+      "name": "woman getting haircut: medium-light skin tone"
+    },
+    {
+      "ordinal": 1532,
+      "catalogIndex": 1531,
+      "emoji": "💆‍♀️",
+      "name": "woman getting massage"
+    },
+    {
+      "ordinal": 1533,
+      "catalogIndex": 1532,
+      "emoji": "💆🏿‍♀️",
+      "name": "woman getting massage: dark skin tone"
+    },
+    {
+      "ordinal": 1534,
+      "catalogIndex": 1533,
+      "emoji": "💆🏻‍♀️",
+      "name": "woman getting massage: light skin tone"
+    },
+    {
+      "ordinal": 1535,
+      "catalogIndex": 1534,
+      "emoji": "💆🏽‍♀️",
+      "name": "woman getting massage: medium skin tone"
+    },
+    {
+      "ordinal": 1536,
+      "catalogIndex": 1535,
+      "emoji": "💆🏾‍♀️",
+      "name": "woman getting massage: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1537,
+      "catalogIndex": 1536,
+      "emoji": "💆🏼‍♀️",
+      "name": "woman getting massage: medium-light skin tone"
+    },
+    {
+      "ordinal": 1538,
+      "catalogIndex": 1537,
+      "emoji": "🏌️‍♀️",
+      "name": "woman golfing"
+    },
+    {
+      "ordinal": 1539,
+      "catalogIndex": 1538,
+      "emoji": "🏌🏿‍♀️",
+      "name": "woman golfing: dark skin tone"
+    },
+    {
+      "ordinal": 1540,
+      "catalogIndex": 1539,
+      "emoji": "🏌🏻‍♀️",
+      "name": "woman golfing: light skin tone"
+    },
+    {
+      "ordinal": 1541,
+      "catalogIndex": 1540,
+      "emoji": "🏌🏽‍♀️",
+      "name": "woman golfing: medium skin tone"
+    },
+    {
+      "ordinal": 1542,
+      "catalogIndex": 1541,
+      "emoji": "🏌🏾‍♀️",
+      "name": "woman golfing: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1543,
+      "catalogIndex": 1542,
+      "emoji": "🏌🏼‍♀️",
+      "name": "woman golfing: medium-light skin tone"
+    },
+    {
+      "ordinal": 1544,
+      "catalogIndex": 1543,
+      "emoji": "💂‍♀️",
+      "name": "woman guard"
+    },
+    {
+      "ordinal": 1545,
+      "catalogIndex": 1544,
+      "emoji": "💂🏿‍♀️",
+      "name": "woman guard: dark skin tone"
+    },
+    {
+      "ordinal": 1546,
+      "catalogIndex": 1545,
+      "emoji": "💂🏻‍♀️",
+      "name": "woman guard: light skin tone"
+    },
+    {
+      "ordinal": 1547,
+      "catalogIndex": 1546,
+      "emoji": "💂🏽‍♀️",
+      "name": "woman guard: medium skin tone"
+    },
+    {
+      "ordinal": 1548,
+      "catalogIndex": 1547,
+      "emoji": "💂🏾‍♀️",
+      "name": "woman guard: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1549,
+      "catalogIndex": 1548,
+      "emoji": "💂🏼‍♀️",
+      "name": "woman guard: medium-light skin tone"
+    },
+    {
+      "ordinal": 1550,
+      "catalogIndex": 1549,
+      "emoji": "👩‍⚕️",
+      "name": "woman health worker"
+    },
+    {
+      "ordinal": 1551,
+      "catalogIndex": 1550,
+      "emoji": "👩🏿‍⚕️",
+      "name": "woman health worker: dark skin tone"
+    },
+    {
+      "ordinal": 1552,
+      "catalogIndex": 1551,
+      "emoji": "👩🏻‍⚕️",
+      "name": "woman health worker: light skin tone"
+    },
+    {
+      "ordinal": 1553,
+      "catalogIndex": 1552,
+      "emoji": "👩🏽‍⚕️",
+      "name": "woman health worker: medium skin tone"
+    },
+    {
+      "ordinal": 1554,
+      "catalogIndex": 1553,
+      "emoji": "👩🏾‍⚕️",
+      "name": "woman health worker: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1555,
+      "catalogIndex": 1554,
+      "emoji": "👩🏼‍⚕️",
+      "name": "woman health worker: medium-light skin tone"
+    },
+    {
+      "ordinal": 1556,
+      "catalogIndex": 1555,
+      "emoji": "🧘‍♀️",
+      "name": "woman in lotus position"
+    },
+    {
+      "ordinal": 1557,
+      "catalogIndex": 1556,
+      "emoji": "🧘🏿‍♀️",
+      "name": "woman in lotus position: dark skin tone"
+    },
+    {
+      "ordinal": 1558,
+      "catalogIndex": 1557,
+      "emoji": "🧘🏻‍♀️",
+      "name": "woman in lotus position: light skin tone"
+    },
+    {
+      "ordinal": 1559,
+      "catalogIndex": 1558,
+      "emoji": "🧘🏽‍♀️",
+      "name": "woman in lotus position: medium skin tone"
+    },
+    {
+      "ordinal": 1560,
+      "catalogIndex": 1559,
+      "emoji": "🧘🏾‍♀️",
+      "name": "woman in lotus position: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1561,
+      "catalogIndex": 1560,
+      "emoji": "🧘🏼‍♀️",
+      "name": "woman in lotus position: medium-light skin tone"
+    },
+    {
+      "ordinal": 1562,
+      "catalogIndex": 1561,
+      "emoji": "👩‍🦽",
+      "name": "woman in manual wheelchair"
+    },
+    {
+      "ordinal": 1563,
+      "catalogIndex": 1562,
+      "emoji": "👩🏿‍🦽",
+      "name": "woman in manual wheelchair: dark skin tone"
+    },
+    {
+      "ordinal": 1564,
+      "catalogIndex": 1563,
+      "emoji": "👩🏻‍🦽",
+      "name": "woman in manual wheelchair: light skin tone"
+    },
+    {
+      "ordinal": 1565,
+      "catalogIndex": 1564,
+      "emoji": "👩🏽‍🦽",
+      "name": "woman in manual wheelchair: medium skin tone"
+    },
+    {
+      "ordinal": 1566,
+      "catalogIndex": 1565,
+      "emoji": "👩🏾‍🦽",
+      "name": "woman in manual wheelchair: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1567,
+      "catalogIndex": 1566,
+      "emoji": "👩🏼‍🦽",
+      "name": "woman in manual wheelchair: medium-light skin tone"
+    },
+    {
+      "ordinal": 1568,
+      "catalogIndex": 1567,
+      "emoji": "👩‍🦼",
+      "name": "woman in motorized wheelchair"
+    },
+    {
+      "ordinal": 1569,
+      "catalogIndex": 1568,
+      "emoji": "👩🏿‍🦼",
+      "name": "woman in motorized wheelchair: dark skin tone"
+    },
+    {
+      "ordinal": 1570,
+      "catalogIndex": 1569,
+      "emoji": "👩🏻‍🦼",
+      "name": "woman in motorized wheelchair: light skin tone"
+    },
+    {
+      "ordinal": 1571,
+      "catalogIndex": 1570,
+      "emoji": "👩🏽‍🦼",
+      "name": "woman in motorized wheelchair: medium skin tone"
+    },
+    {
+      "ordinal": 1572,
+      "catalogIndex": 1571,
+      "emoji": "👩🏾‍🦼",
+      "name": "woman in motorized wheelchair: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1573,
+      "catalogIndex": 1572,
+      "emoji": "👩🏼‍🦼",
+      "name": "woman in motorized wheelchair: medium-light skin tone"
+    },
+    {
+      "ordinal": 1574,
+      "catalogIndex": 1573,
+      "emoji": "🧖‍♀️",
+      "name": "woman in steamy room"
+    },
+    {
+      "ordinal": 1575,
+      "catalogIndex": 1574,
+      "emoji": "🧖🏿‍♀️",
+      "name": "woman in steamy room: dark skin tone"
+    },
+    {
+      "ordinal": 1576,
+      "catalogIndex": 1575,
+      "emoji": "🧖🏻‍♀️",
+      "name": "woman in steamy room: light skin tone"
+    },
+    {
+      "ordinal": 1577,
+      "catalogIndex": 1576,
+      "emoji": "🧖🏽‍♀️",
+      "name": "woman in steamy room: medium skin tone"
+    },
+    {
+      "ordinal": 1578,
+      "catalogIndex": 1577,
+      "emoji": "🧖🏾‍♀️",
+      "name": "woman in steamy room: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1579,
+      "catalogIndex": 1578,
+      "emoji": "🧖🏼‍♀️",
+      "name": "woman in steamy room: medium-light skin tone"
+    }
+  ]
+}

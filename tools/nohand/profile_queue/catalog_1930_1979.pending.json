@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 1930,
+    "endOrdinal": 1979,
+    "startCatalogIndex": 1929,
+    "endCatalogIndex": 1978,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 1930,
+      "catalogIndex": 1929,
+      "emoji": "🐑",
+      "name": "ewe"
+    },
+    {
+      "ordinal": 1931,
+      "catalogIndex": 1930,
+      "emoji": "🍂",
+      "name": "fallen leaf"
+    },
+    {
+      "ordinal": 1932,
+      "catalogIndex": 1931,
+      "emoji": "🪶",
+      "name": "feather"
+    },
+    {
+      "ordinal": 1933,
+      "catalogIndex": 1932,
+      "emoji": "🎞️",
+      "name": "film frames"
+    },
+    {
+      "ordinal": 1934,
+      "catalogIndex": 1933,
+      "emoji": "🔥",
+      "name": "fire"
+    },
+    {
+      "ordinal": 1935,
+      "catalogIndex": 1934,
+      "emoji": "🚒",
+      "name": "fire engine"
+    },
+    {
+      "ordinal": 1936,
+      "catalogIndex": 1935,
+      "emoji": "🧯",
+      "name": "fire extinguisher"
+    },
+    {
+      "ordinal": 1937,
+      "catalogIndex": 1936,
+      "emoji": "🧨",
+      "name": "firecracker"
+    },
+    {
+      "ordinal": 1938,
+      "catalogIndex": 1937,
+      "emoji": "🧑‍🚒",
+      "name": "firefighter"
+    },
+    {
+      "ordinal": 1939,
+      "catalogIndex": 1938,
+      "emoji": "🧑🏿‍🚒",
+      "name": "firefighter: dark skin tone"
+    },
+    {
+      "ordinal": 1940,
+      "catalogIndex": 1939,
+      "emoji": "🧑🏻‍🚒",
+      "name": "firefighter: light skin tone"
+    },
+    {
+      "ordinal": 1941,
+      "catalogIndex": 1940,
+      "emoji": "🧑🏽‍🚒",
+      "name": "firefighter: medium skin tone"
+    },
+    {
+      "ordinal": 1942,
+      "catalogIndex": 1941,
+      "emoji": "🧑🏾‍🚒",
+      "name": "firefighter: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1943,
+      "catalogIndex": 1942,
+      "emoji": "🧑🏼‍🚒",
+      "name": "firefighter: medium-light skin tone"
+    },
+    {
+      "ordinal": 1944,
+      "catalogIndex": 1943,
+      "emoji": "🎆",
+      "name": "fireworks"
+    },
+    {
+      "ordinal": 1945,
+      "catalogIndex": 1944,
+      "emoji": "🌓",
+      "name": "first quarter moon"
+    },
+    {
+      "ordinal": 1946,
+      "catalogIndex": 1945,
+      "emoji": "🐟",
+      "name": "fish"
+    },
+    {
+      "ordinal": 1947,
+      "catalogIndex": 1946,
+      "emoji": "🎣",
+      "name": "fishing pole"
+    },
+    {
+      "ordinal": 1948,
+      "catalogIndex": 1947,
+      "emoji": "🦩",
+      "name": "flamingo"
+    },
+    {
+      "ordinal": 1949,
+      "catalogIndex": 1948,
+      "emoji": "🎴",
+      "name": "flower playing cards"
+    },
+    {
+      "ordinal": 1950,
+      "catalogIndex": 1949,
+      "emoji": "🪰",
+      "name": "fly"
+    },
+    {
+      "ordinal": 1951,
+      "catalogIndex": 1950,
+      "emoji": "🥏",
+      "name": "flying disc"
+    },
+    {
+      "ordinal": 1952,
+      "catalogIndex": 1951,
+      "emoji": "🛸",
+      "name": "flying saucer"
+    },
+    {
+      "ordinal": 1953,
+      "catalogIndex": 1952,
+      "emoji": "🌫️",
+      "name": "fog"
+    },
+    {
+      "ordinal": 1954,
+      "catalogIndex": 1953,
+      "emoji": "🌁",
+      "name": "foggy"
+    },
+    {
+      "ordinal": 1955,
+      "catalogIndex": 1954,
+      "emoji": "🦊",
+      "name": "fox"
+    },
+    {
+      "ordinal": 1956,
+      "catalogIndex": 1955,
+      "emoji": "🖼️",
+      "name": "framed picture"
+    },
+    {
+      "ordinal": 1957,
+      "catalogIndex": 1956,
+      "emoji": "🐸",
+      "name": "frog"
+    },
+    {
+      "ordinal": 1958,
+      "catalogIndex": 1957,
+      "emoji": "🌕",
+      "name": "full moon"
+    },
+    {
+      "ordinal": 1959,
+      "catalogIndex": 1958,
+      "emoji": "🦒",
+      "name": "giraffe"
+    },
+    {
+      "ordinal": 1960,
+      "catalogIndex": 1959,
+      "emoji": "🌎",
+      "name": "globe showing americas"
+    },
+    {
+      "ordinal": 1961,
+      "catalogIndex": 1960,
+      "emoji": "🌏",
+      "name": "globe showing asia-australia"
+    },
+    {
+      "ordinal": 1962,
+      "catalogIndex": 1961,
+      "emoji": "🌍",
+      "name": "globe showing europe-africa"
+    },
+    {
+      "ordinal": 1963,
+      "catalogIndex": 1962,
+      "emoji": "🌟",
+      "name": "glowing star"
+    },
+    {
+      "ordinal": 1964,
+      "catalogIndex": 1963,
+      "emoji": "🐐",
+      "name": "goat"
+    },
+    {
+      "ordinal": 1965,
+      "catalogIndex": 1964,
+      "emoji": "🦍",
+      "name": "gorilla"
+    },
+    {
+      "ordinal": 1966,
+      "catalogIndex": 1965,
+      "emoji": "🦮",
+      "name": "guide dog"
+    },
+    {
+      "ordinal": 1967,
+      "catalogIndex": 1966,
+      "emoji": "🐹",
+      "name": "hamster"
+    },
+    {
+      "ordinal": 1968,
+      "catalogIndex": 1967,
+      "emoji": "🦔",
+      "name": "hedgehog"
+    },
+    {
+      "ordinal": 1969,
+      "catalogIndex": 1968,
+      "emoji": "🌿",
+      "name": "herb"
+    },
+    {
+      "ordinal": 1970,
+      "catalogIndex": 1969,
+      "emoji": "🌺",
+      "name": "hibiscus"
+    },
+    {
+      "ordinal": 1971,
+      "catalogIndex": 1970,
+      "emoji": "🚄",
+      "name": "high-speed train"
+    },
+    {
+      "ordinal": 1972,
+      "catalogIndex": 1971,
+      "emoji": "🦛",
+      "name": "hippopotamus"
+    },
+    {
+      "ordinal": 1973,
+      "catalogIndex": 1972,
+      "emoji": "🐎",
+      "name": "horse"
+    },
+    {
+      "ordinal": 1974,
+      "catalogIndex": 1973,
+      "emoji": "🏇",
+      "name": "horse racing"
+    },
+    {
+      "ordinal": 1975,
+      "catalogIndex": 1974,
+      "emoji": "🏇🏿",
+      "name": "horse racing: dark skin tone"
+    },
+    {
+      "ordinal": 1976,
+      "catalogIndex": 1975,
+      "emoji": "🏇🏻",
+      "name": "horse racing: light skin tone"
+    },
+    {
+      "ordinal": 1977,
+      "catalogIndex": 1976,
+      "emoji": "🏇🏽",
+      "name": "horse racing: medium skin tone"
+    },
+    {
+      "ordinal": 1978,
+      "catalogIndex": 1977,
+      "emoji": "🏇🏾",
+      "name": "horse racing: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1979,
+      "catalogIndex": 1978,
+      "emoji": "🏇🏼",
+      "name": "horse racing: medium-light skin tone"
+    }
+  ]
+}

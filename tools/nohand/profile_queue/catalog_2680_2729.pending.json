@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 2680,
+    "endOrdinal": 2729,
+    "startCatalogIndex": 2679,
+    "endCatalogIndex": 2728,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2680,
+      "catalogIndex": 2679,
+      "emoji": "🩴",
+      "name": "thong sandal"
+    },
+    {
+      "ordinal": 2681,
+      "catalogIndex": 2680,
+      "emoji": "🚽",
+      "name": "toilet"
+    },
+    {
+      "ordinal": 2682,
+      "catalogIndex": 2681,
+      "emoji": "🎩",
+      "name": "top hat"
+    },
+    {
+      "ordinal": 2683,
+      "catalogIndex": 2682,
+      "emoji": "📐",
+      "name": "triangular ruler"
+    },
+    {
+      "ordinal": 2684,
+      "catalogIndex": 2683,
+      "emoji": "🔓",
+      "name": "unlocked"
+    },
+    {
+      "ordinal": 2685,
+      "catalogIndex": 2684,
+      "emoji": "📹",
+      "name": "video camera"
+    },
+    {
+      "ordinal": 2686,
+      "catalogIndex": 2685,
+      "emoji": "📼",
+      "name": "videocassette"
+    },
+    {
+      "ordinal": 2687,
+      "catalogIndex": 2686,
+      "emoji": "🗑️",
+      "name": "wastebasket"
+    },
+    {
+      "ordinal": 2688,
+      "catalogIndex": 2687,
+      "emoji": "🪟",
+      "name": "window"
+    },
+    {
+      "ordinal": 2689,
+      "catalogIndex": 2688,
+      "emoji": "🔧",
+      "name": "wrench"
+    },
+    {
+      "ordinal": 2690,
+      "catalogIndex": 2689,
+      "emoji": "🅰️",
+      "name": "a button (blood type)"
+    },
+    {
+      "ordinal": 2691,
+      "catalogIndex": 2690,
+      "emoji": "🆎",
+      "name": "ab button (blood type)"
+    },
+    {
+      "ordinal": 2692,
+      "catalogIndex": 2691,
+      "emoji": "🧮",
+      "name": "abacus"
+    },
+    {
+      "ordinal": 2693,
+      "catalogIndex": 2692,
+      "emoji": "🪗",
+      "name": "accordion"
+    },
+    {
+      "ordinal": 2694,
+      "catalogIndex": 2693,
+      "emoji": "⚗️",
+      "name": "alembic"
+    },
+    {
+      "ordinal": 2695,
+      "catalogIndex": 2694,
+      "emoji": "🏺",
+      "name": "amphora"
+    },
+    {
+      "ordinal": 2696,
+      "catalogIndex": 2695,
+      "emoji": "💢",
+      "name": "anger symbol"
+    },
+    {
+      "ordinal": 2697,
+      "catalogIndex": 2696,
+      "emoji": "♒",
+      "name": "aquarius"
+    },
+    {
+      "ordinal": 2698,
+      "catalogIndex": 2697,
+      "emoji": "♈",
+      "name": "aries"
+    },
+    {
+      "ordinal": 2699,
+      "catalogIndex": 2698,
+      "emoji": "🏧",
+      "name": "atm sign"
+    },
+    {
+      "ordinal": 2700,
+      "catalogIndex": 2699,
+      "emoji": "⚛️",
+      "name": "atom symbol"
+    },
+    {
+      "ordinal": 2701,
+      "catalogIndex": 2700,
+      "emoji": "🛺",
+      "name": "auto rickshaw"
+    },
+    {
+      "ordinal": 2702,
+      "catalogIndex": 2701,
+      "emoji": "🅱️",
+      "name": "b button (blood type)"
+    },
+    {
+      "ordinal": 2703,
+      "catalogIndex": 2702,
+      "emoji": "🔙",
+      "name": "back arrow"
+    },
+    {
+      "ordinal": 2704,
+      "catalogIndex": 2703,
+      "emoji": "💈",
+      "name": "barber pole"
+    },
+    {
+      "ordinal": 2705,
+      "catalogIndex": 2704,
+      "emoji": "🧢",
+      "name": "billed cap"
+    },
+    {
+      "ordinal": 2706,
+      "catalogIndex": 2705,
+      "emoji": "☣️",
+      "name": "biohazard"
+    },
+    {
+      "ordinal": 2707,
+      "catalogIndex": 2706,
+      "emoji": "⚫",
+      "name": "black circle"
+    },
+    {
+      "ordinal": 2708,
+      "catalogIndex": 2707,
+      "emoji": "⬛",
+      "name": "black large square"
+    },
+    {
+      "ordinal": 2709,
+      "catalogIndex": 2708,
+      "emoji": "◼️",
+      "name": "black medium square"
+    },
+    {
+      "ordinal": 2710,
+      "catalogIndex": 2709,
+      "emoji": "◾",
+      "name": "black medium-small square"
+    },
+    {
+      "ordinal": 2711,
+      "catalogIndex": 2710,
+      "emoji": "✒️",
+      "name": "black nib"
+    },
+    {
+      "ordinal": 2712,
+      "catalogIndex": 2711,
+      "emoji": "▪️",
+      "name": "black small square"
+    },
+    {
+      "ordinal": 2713,
+      "catalogIndex": 2712,
+      "emoji": "🔲",
+      "name": "black square button"
+    },
+    {
+      "ordinal": 2714,
+      "catalogIndex": 2713,
+      "emoji": "🔵",
+      "name": "blue circle"
+    },
+    {
+      "ordinal": 2715,
+      "catalogIndex": 2714,
+      "emoji": "🟦",
+      "name": "blue square"
+    },
+    {
+      "ordinal": 2716,
+      "catalogIndex": 2715,
+      "emoji": "🍾",
+      "name": "bottle with popping cork"
+    },
+    {
+      "ordinal": 2717,
+      "catalogIndex": 2716,
+      "emoji": "🤱",
+      "name": "breast-feeding"
+    },
+    {
+      "ordinal": 2718,
+      "catalogIndex": 2717,
+      "emoji": "🌉",
+      "name": "bridge at night"
+    },
+    {
+      "ordinal": 2719,
+      "catalogIndex": 2718,
+      "emoji": "🩲",
+      "name": "briefs"
+    },
+    {
+      "ordinal": 2720,
+      "catalogIndex": 2719,
+      "emoji": "🔆",
+      "name": "bright button"
+    },
+    {
+      "ordinal": 2721,
+      "catalogIndex": 2720,
+      "emoji": "🟤",
+      "name": "brown circle"
+    },
+    {
+      "ordinal": 2722,
+      "catalogIndex": 2721,
+      "emoji": "🟫",
+      "name": "brown square"
+    },
+    {
+      "ordinal": 2723,
+      "catalogIndex": 2722,
+      "emoji": "🧈",
+      "name": "butter"
+    },
+    {
+      "ordinal": 2724,
+      "catalogIndex": 2723,
+      "emoji": "♋",
+      "name": "cancer"
+    },
+    {
+      "ordinal": 2725,
+      "catalogIndex": 2724,
+      "emoji": "🥫",
+      "name": "canned food"
+    },
+    {
+      "ordinal": 2726,
+      "catalogIndex": 2725,
+      "emoji": "✔️",
+      "name": "check mark"
+    },
+    {
+      "ordinal": 2727,
+      "catalogIndex": 2726,
+      "emoji": "✅",
+      "name": "check mark button"
+    },
+    {
+      "ordinal": 2728,
+      "catalogIndex": 2727,
+      "emoji": "🍒",
+      "name": "cherries"
+    },
+    {
+      "ordinal": 2729,
+      "catalogIndex": 2728,
+      "emoji": "🎦",
+      "name": "cinema"
+    }
+  ]
+}

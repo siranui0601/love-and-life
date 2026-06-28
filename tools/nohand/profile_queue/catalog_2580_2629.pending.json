@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 2580,
+    "endOrdinal": 2629,
+    "startCatalogIndex": 2579,
+    "endCatalogIndex": 2628,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2580,
+      "catalogIndex": 2579,
+      "emoji": "🥽",
+      "name": "goggles"
+    },
+    {
+      "ordinal": 2581,
+      "catalogIndex": 2580,
+      "emoji": "📗",
+      "name": "green book"
+    },
+    {
+      "ordinal": 2582,
+      "catalogIndex": 2581,
+      "emoji": "🔨",
+      "name": "hammer"
+    },
+    {
+      "ordinal": 2583,
+      "catalogIndex": 2582,
+      "emoji": "⚒️",
+      "name": "hammer and pick"
+    },
+    {
+      "ordinal": 2584,
+      "catalogIndex": 2583,
+      "emoji": "🛠️",
+      "name": "hammer and wrench"
+    },
+    {
+      "ordinal": 2585,
+      "catalogIndex": 2584,
+      "emoji": "🐣",
+      "name": "hatching chick"
+    },
+    {
+      "ordinal": 2586,
+      "catalogIndex": 2585,
+      "emoji": "🎧",
+      "name": "headphone"
+    },
+    {
+      "ordinal": 2587,
+      "catalogIndex": 2586,
+      "emoji": "🪦",
+      "name": "headstone"
+    },
+    {
+      "ordinal": 2588,
+      "catalogIndex": 2587,
+      "emoji": "👠",
+      "name": "high-heeled shoe"
+    },
+    {
+      "ordinal": 2589,
+      "catalogIndex": 2588,
+      "emoji": "🥾",
+      "name": "hiking boot"
+    },
+    {
+      "ordinal": 2590,
+      "catalogIndex": 2589,
+      "emoji": "🪝",
+      "name": "hook"
+    },
+    {
+      "ordinal": 2591,
+      "catalogIndex": 2590,
+      "emoji": "♨️",
+      "name": "hot springs"
+    },
+    {
+      "ordinal": 2592,
+      "catalogIndex": 2591,
+      "emoji": "📨",
+      "name": "incoming envelope"
+    },
+    {
+      "ordinal": 2593,
+      "catalogIndex": 2592,
+      "emoji": "👖",
+      "name": "jeans"
+    },
+    {
+      "ordinal": 2594,
+      "catalogIndex": 2593,
+      "emoji": "🔑",
+      "name": "key"
+    },
+    {
+      "ordinal": 2595,
+      "catalogIndex": 2594,
+      "emoji": "0️⃣",
+      "name": "keycap: 0"
+    },
+    {
+      "ordinal": 2596,
+      "catalogIndex": 2595,
+      "emoji": "1️⃣",
+      "name": "keycap: 1"
+    },
+    {
+      "ordinal": 2597,
+      "catalogIndex": 2596,
+      "emoji": "🔟",
+      "name": "keycap: 10"
+    },
+    {
+      "ordinal": 2598,
+      "catalogIndex": 2597,
+      "emoji": "2️⃣",
+      "name": "keycap: 2"
+    },
+    {
+      "ordinal": 2599,
+      "catalogIndex": 2598,
+      "emoji": "3️⃣",
+      "name": "keycap: 3"
+    },
+    {
+      "ordinal": 2600,
+      "catalogIndex": 2599,
+      "emoji": "4️⃣",
+      "name": "keycap: 4"
+    },
+    {
+      "ordinal": 2601,
+      "catalogIndex": 2600,
+      "emoji": "5️⃣",
+      "name": "keycap: 5"
+    },
+    {
+      "ordinal": 2602,
+      "catalogIndex": 2601,
+      "emoji": "6️⃣",
+      "name": "keycap: 6"
+    },
+    {
+      "ordinal": 2603,
+      "catalogIndex": 2602,
+      "emoji": "7️⃣",
+      "name": "keycap: 7"
+    },
+    {
+      "ordinal": 2604,
+      "catalogIndex": 2603,
+      "emoji": "8️⃣",
+      "name": "keycap: 8"
+    },
+    {
+      "ordinal": 2605,
+      "catalogIndex": 2604,
+      "emoji": "9️⃣",
+      "name": "keycap: 9"
+    },
+    {
+      "ordinal": 2606,
+      "catalogIndex": 2605,
+      "emoji": "*️⃣",
+      "name": "keycap: asterisk"
+    },
+    {
+      "ordinal": 2607,
+      "catalogIndex": 2606,
+      "emoji": "#️⃣",
+      "name": "keycap: hash"
+    },
+    {
+      "ordinal": 2608,
+      "catalogIndex": 2607,
+      "emoji": "👘",
+      "name": "kimono"
+    },
+    {
+      "ordinal": 2609,
+      "catalogIndex": 2608,
+      "emoji": "🔪",
+      "name": "kitchen knife"
+    },
+    {
+      "ordinal": 2610,
+      "catalogIndex": 2609,
+      "emoji": "🥼",
+      "name": "lab coat"
+    },
+    {
+      "ordinal": 2611,
+      "catalogIndex": 2610,
+      "emoji": "🪜",
+      "name": "ladder"
+    },
+    {
+      "ordinal": 2612,
+      "catalogIndex": 2611,
+      "emoji": "💡",
+      "name": "light bulb"
+    },
+    {
+      "ordinal": 2613,
+      "catalogIndex": 2612,
+      "emoji": "🖇️",
+      "name": "linked paperclips"
+    },
+    {
+      "ordinal": 2614,
+      "catalogIndex": 2613,
+      "emoji": "💄",
+      "name": "lipstick"
+    },
+    {
+      "ordinal": 2615,
+      "catalogIndex": 2614,
+      "emoji": "🔒",
+      "name": "locked"
+    },
+    {
+      "ordinal": 2616,
+      "catalogIndex": 2615,
+      "emoji": "🔐",
+      "name": "locked with key"
+    },
+    {
+      "ordinal": 2617,
+      "catalogIndex": 2616,
+      "emoji": "🔏",
+      "name": "locked with pen"
+    },
+    {
+      "ordinal": 2618,
+      "catalogIndex": 2617,
+      "emoji": "🧴",
+      "name": "lotion bottle"
+    },
+    {
+      "ordinal": 2619,
+      "catalogIndex": 2618,
+      "emoji": "📢",
+      "name": "loudspeaker"
+    },
+    {
+      "ordinal": 2620,
+      "catalogIndex": 2619,
+      "emoji": "📣",
+      "name": "megaphone"
+    },
+    {
+      "ordinal": 2621,
+      "catalogIndex": 2620,
+      "emoji": "📝",
+      "name": "memo"
+    },
+    {
+      "ordinal": 2622,
+      "catalogIndex": 2621,
+      "emoji": "🎤",
+      "name": "microphone"
+    },
+    {
+      "ordinal": 2623,
+      "catalogIndex": 2622,
+      "emoji": "🔬",
+      "name": "microscope"
+    },
+    {
+      "ordinal": 2624,
+      "catalogIndex": 2623,
+      "emoji": "🪖",
+      "name": "military helmet"
+    },
+    {
+      "ordinal": 2625,
+      "catalogIndex": 2624,
+      "emoji": "🪞",
+      "name": "mirror"
+    },
+    {
+      "ordinal": 2626,
+      "catalogIndex": 2625,
+      "emoji": "📱",
+      "name": "mobile phone"
+    },
+    {
+      "ordinal": 2627,
+      "catalogIndex": 2626,
+      "emoji": "📴",
+      "name": "mobile phone off"
+    },
+    {
+      "ordinal": 2628,
+      "catalogIndex": 2627,
+      "emoji": "📲",
+      "name": "mobile phone with arrow"
+    },
+    {
+      "ordinal": 2629,
+      "catalogIndex": 2628,
+      "emoji": "💰",
+      "name": "money bag"
+    }
+  ]
+}

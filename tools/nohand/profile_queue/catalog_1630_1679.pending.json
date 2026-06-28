@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromProfileCount": 229,
+  "range": {
+    "startOrdinal": 1630,
+    "endOrdinal": 1679,
+    "startCatalogIndex": 1629,
+    "endCatalogIndex": 1678,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 1630,
+      "catalogIndex": 1629,
+      "emoji": "👩🏻‍💼",
+      "name": "woman office worker: light skin tone"
+    },
+    {
+      "ordinal": 1631,
+      "catalogIndex": 1630,
+      "emoji": "👩🏽‍💼",
+      "name": "woman office worker: medium skin tone"
+    },
+    {
+      "ordinal": 1632,
+      "catalogIndex": 1631,
+      "emoji": "👩🏾‍💼",
+      "name": "woman office worker: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1633,
+      "catalogIndex": 1632,
+      "emoji": "👩🏼‍💼",
+      "name": "woman office worker: medium-light skin tone"
+    },
+    {
+      "ordinal": 1634,
+      "catalogIndex": 1633,
+      "emoji": "👩‍✈️",
+      "name": "woman pilot"
+    },
+    {
+      "ordinal": 1635,
+      "catalogIndex": 1634,
+      "emoji": "👩🏿‍✈️",
+      "name": "woman pilot: dark skin tone"
+    },
+    {
+      "ordinal": 1636,
+      "catalogIndex": 1635,
+      "emoji": "👩🏻‍✈️",
+      "name": "woman pilot: light skin tone"
+    },
+    {
+      "ordinal": 1637,
+      "catalogIndex": 1636,
+      "emoji": "👩🏽‍✈️",
+      "name": "woman pilot: medium skin tone"
+    },
+    {
+      "ordinal": 1638,
+      "catalogIndex": 1637,
+      "emoji": "👩🏾‍✈️",
+      "name": "woman pilot: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1639,
+      "catalogIndex": 1638,
+      "emoji": "👩🏼‍✈️",
+      "name": "woman pilot: medium-light skin tone"
+    },
+    {
+      "ordinal": 1640,
+      "catalogIndex": 1639,
+      "emoji": "🤾‍♀️",
+      "name": "woman playing handball"
+    },
+    {
+      "ordinal": 1641,
+      "catalogIndex": 1640,
+      "emoji": "🤾🏿‍♀️",
+      "name": "woman playing handball: dark skin tone"
+    },
+    {
+      "ordinal": 1642,
+      "catalogIndex": 1641,
+      "emoji": "🤾🏻‍♀️",
+      "name": "woman playing handball: light skin tone"
+    },
+    {
+      "ordinal": 1643,
+      "catalogIndex": 1642,
+      "emoji": "🤾🏽‍♀️",
+      "name": "woman playing handball: medium skin tone"
+    },
+    {
+      "ordinal": 1644,
+      "catalogIndex": 1643,
+      "emoji": "🤾🏾‍♀️",
+      "name": "woman playing handball: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1645,
+      "catalogIndex": 1644,
+      "emoji": "🤾🏼‍♀️",
+      "name": "woman playing handball: medium-light skin tone"
+    },
+    {
+      "ordinal": 1646,
+      "catalogIndex": 1645,
+      "emoji": "🤽‍♀️",
+      "name": "woman playing water polo"
+    },
+    {
+      "ordinal": 1647,
+      "catalogIndex": 1646,
+      "emoji": "🤽🏿‍♀️",
+      "name": "woman playing water polo: dark skin tone"
+    },
+    {
+      "ordinal": 1648,
+      "catalogIndex": 1647,
+      "emoji": "🤽🏻‍♀️",
+      "name": "woman playing water polo: light skin tone"
+    },
+    {
+      "ordinal": 1649,
+      "catalogIndex": 1648,
+      "emoji": "🤽🏽‍♀️",
+      "name": "woman playing water polo: medium skin tone"
+    },
+    {
+      "ordinal": 1650,
+      "catalogIndex": 1649,
+      "emoji": "🤽🏾‍♀️",
+      "name": "woman playing water polo: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1651,
+      "catalogIndex": 1650,
+      "emoji": "🤽🏼‍♀️",
+      "name": "woman playing water polo: medium-light skin tone"
+    },
+    {
+      "ordinal": 1652,
+      "catalogIndex": 1651,
+      "emoji": "👮‍♀️",
+      "name": "woman police officer"
+    },
+    {
+      "ordinal": 1653,
+      "catalogIndex": 1652,
+      "emoji": "👮🏿‍♀️",
+      "name": "woman police officer: dark skin tone"
+    },
+    {
+      "ordinal": 1654,
+      "catalogIndex": 1653,
+      "emoji": "👮🏻‍♀️",
+      "name": "woman police officer: light skin tone"
+    },
+    {
+      "ordinal": 1655,
+      "catalogIndex": 1654,
+      "emoji": "👮🏽‍♀️",
+      "name": "woman police officer: medium skin tone"
+    },
+    {
+      "ordinal": 1656,
+      "catalogIndex": 1655,
+      "emoji": "👮🏾‍♀️",
+      "name": "woman police officer: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1657,
+      "catalogIndex": 1656,
+      "emoji": "👮🏼‍♀️",
+      "name": "woman police officer: medium-light skin tone"
+    },
+    {
+      "ordinal": 1658,
+      "catalogIndex": 1657,
+      "emoji": "🙎‍♀️",
+      "name": "woman pouting"
+    },
+    {
+      "ordinal": 1659,
+      "catalogIndex": 1658,
+      "emoji": "🙎🏿‍♀️",
+      "name": "woman pouting: dark skin tone"
+    },
+    {
+      "ordinal": 1660,
+      "catalogIndex": 1659,
+      "emoji": "🙎🏻‍♀️",
+      "name": "woman pouting: light skin tone"
+    },
+    {
+      "ordinal": 1661,
+      "catalogIndex": 1660,
+      "emoji": "🙎🏽‍♀️",
+      "name": "woman pouting: medium skin tone"
+    },
+    {
+      "ordinal": 1662,
+      "catalogIndex": 1661,
+      "emoji": "🙎🏾‍♀️",
+      "name": "woman pouting: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1663,
+      "catalogIndex": 1662,
+      "emoji": "🙎🏼‍♀️",
+      "name": "woman pouting: medium-light skin tone"
+    },
+    {
+      "ordinal": 1664,
+      "catalogIndex": 1663,
+      "emoji": "🙋‍♀️",
+      "name": "woman raising hand"
+    },
+    {
+      "ordinal": 1665,
+      "catalogIndex": 1664,
+      "emoji": "🙋🏿‍♀️",
+      "name": "woman raising hand: dark skin tone"
+    },
+    {
+      "ordinal": 1666,
+      "catalogIndex": 1665,
+      "emoji": "🙋🏻‍♀️",
+      "name": "woman raising hand: light skin tone"
+    },
+    {
+      "ordinal": 1667,
+      "catalogIndex": 1666,
+      "emoji": "🙋🏽‍♀️",
+      "name": "woman raising hand: medium skin tone"
+    },
+    {
+      "ordinal": 1668,
+      "catalogIndex": 1667,
+      "emoji": "🙋🏾‍♀️",
+      "name": "woman raising hand: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1669,
+      "catalogIndex": 1668,
+      "emoji": "🙋🏼‍♀️",
+      "name": "woman raising hand: medium-light skin tone"
+    },
+    {
+      "ordinal": 1670,
+      "catalogIndex": 1669,
+      "emoji": "🚣‍♀️",
+      "name": "woman rowing boat"
+    },
+    {
+      "ordinal": 1671,
+      "catalogIndex": 1670,
+      "emoji": "🚣🏿‍♀️",
+      "name": "woman rowing boat: dark skin tone"
+    },
+    {
+      "ordinal": 1672,
+      "catalogIndex": 1671,
+      "emoji": "🚣🏻‍♀️",
+      "name": "woman rowing boat: light skin tone"
+    },
+    {
+      "ordinal": 1673,
+      "catalogIndex": 1672,
+      "emoji": "🚣🏽‍♀️",
+      "name": "woman rowing boat: medium skin tone"
+    },
+    {
+      "ordinal": 1674,
+      "catalogIndex": 1673,
+      "emoji": "🚣🏾‍♀️",
+      "name": "woman rowing boat: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1675,
+      "catalogIndex": 1674,
+      "emoji": "🚣🏼‍♀️",
+      "name": "woman rowing boat: medium-light skin tone"
+    },
+    {
+      "ordinal": 1676,
+      "catalogIndex": 1675,
+      "emoji": "🏃‍♀️",
+      "name": "woman running"
+    },
+    {
+      "ordinal": 1677,
+      "catalogIndex": 1676,
+      "emoji": "🏃🏿‍♀️",
+      "name": "woman running: dark skin tone"
+    },
+    {
+      "ordinal": 1678,
+      "catalogIndex": 1677,
+      "emoji": "🏃🏻‍♀️",
+      "name": "woman running: light skin tone"
+    },
+    {
+      "ordinal": 1679,
+      "catalogIndex": 1678,
+      "emoji": "🏃🏽‍♀️",
+      "name": "woman running: medium skin tone"
+    }
+  ]
+}
