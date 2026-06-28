@@ -135,7 +135,10 @@ node tools/nohand/sync_ability_specs.mjs --check
 - 581-630: `tools/nohand/profile_queue/catalog_0581_0630.profiled.json` 作成済み。runtime JSON には未統合。
 - 631-680: `tools/nohand/profile_queue/catalog_0631_0680.profiled.json` 作成済み。runtime JSON には未統合。
 - 681-730: `tools/nohand/profile_queue/catalog_0681_0730.profiled.json` 作成済み。runtime JSON には未統合。
-- 次の候補: `tools/nohand/profile_queue/catalog_0731_0780.pending.json`。
+- 731-780: `tools/nohand/profile_queue/catalog_0731_0780.profiled.json` 作成済み。runtime JSON には未統合。
+- 781-830: `tools/nohand/profile_queue/catalog_0781_0830.profiled.json` 作成済み。runtime JSON には未統合。
+- 831-880: `tools/nohand/profile_queue/catalog_0831_0880.profiled.json` 作成済み。runtime JSON には未統合。
+- 次の候補: `tools/nohand/profile_queue/catalog_0881_0930.pending.json`。
 
 ## profiled queue 形式
 
@@ -263,6 +266,30 @@ node tools/nohand/sync_ability_specs.mjs --check
 | `gravityShift` | 画面全体ではなく局所的な重力変更にしないと破綻しやすい。 |
 | `warpExit` | 出口候補を固定しないと、次actorとの接続が不安定になる。 |
 | `magnetPull` | 引力が強すぎるとボールが吸着して止まりやすい。 |
+
+## 731-880 profiled queue メモ
+
+- `🚣` 系: オールで水を押すため `flowCarry` / `pushRedirect` / `precisionPass`。前回の `🚣‍♂️` と同じ安定搬送。
+- `🏃` 系: 走る勢いを `dashCarry` / `aimAssist` / `lightBoost` にし、短い加速搬送に留めた。
+- `👨‍🔬` 系: 実験・観察の比喩から `aimAssist` / `precisionPass` / `delayedRelease`。強いランダム実験にはしない。
+- `🤷` 系: 分からない仕草として `fakeRoute` / `randomBounce` / `softLanding`。意味が抽象的なのでreview候補。
+- `👨‍🎤` 系: 歌声の息と音波から `breathLaunch` / `pulseBoost` / `aimAssist`。
+- `🧍` 系: 立ち止まる姿勢を `stillHold` / `softLanding` / `pushRedirect` にした。人物単体なので弱め。
+- `👨‍🎓` 系: 学習・確認として `aimAssist` / `precisionPass` / `delayedRelease`。review候補。
+- `🦸` 系: ヒーローの飛行・防御として `impactLaunch` / `reflectShield` / `lowGravityField`。
+- `🦹` 系: 悪役として `trapHold` / `fakeRoute` / `poisonDampen`。妨害寄りだが、ワープや分裂は使わず抑制。
+- `🏄` 系: 波乗りとして `flowCarry` / `curveRedirect` / `softLanding`。
+- `🏊` 系: 泳ぎの推進力として `flowCarry` / `dashCarry` / `curveRedirect`。
+- `👨‍🏫` 系: 教える・導く役割から `aimAssist` / `precisionPass` / `delayedRelease`。
+- `👨‍💻` 系: 入力・デバッグの比喩から `precisionPass` / `aimAssist` / `delayedRelease`。
+- `💁` 系: 差し出す手を案内として扱い、`aimAssist` / `curveRedirect` / `softLanding`。
+- `🧛` 系: 吸血鬼として `absorbHold` / `chaseCatch` / `poisonDampen`。
+- `🚶` 系: 歩行として弱い `dashCarry` / `softLanding` / `aimAssist`。走る系より控えめ。
+- `👳` 系: 巻いた布の連想から `wrapHold` / `curveRedirect` / `softLanding`。意味が弱いためreview候補。
+- `👰‍♂️` 系: ベールで包む連想から `wrapHold` / `softLanding` / `delayedRelease`。
+- `👨‍🦯` 系: 白杖で進路を探るため `aimAssist` / `precisionPass` / `softLanding`。
+- `🧟‍♂️`: ゾンビとして `chaseCatch` / `slowDampen` / `poisonDampen`。
+- `👨` 髪型・肌色差分: 人物分類タグにはせず、髪型の形状から最小限の物理差分にした。坊主頭は軽い反射、ひげは弱い絡め取り、金髪は弱い光補正、巻き毛は回転補正、赤毛は弱い勢い、白髪は減速・静止。全体的にreview候補。
 
 ## 581-730 profiled queue メモ
 
