@@ -48,7 +48,27 @@
 - `emoji_physics_profiles.json`
 - `emoji_physics_profiles.md`
 
-PR #224 で追加した分割ファイルは削除する。
+PR #224 で追加した分割JSONと追加バッチMarkdownは削除する。
+
+## JSON形式
+
+`emoji_physics_profiles.json` は、人間が直接レビューできる展開済みJSONとして管理する。
+
+- `storage` や `gzip+base64` は使わない。
+- `profiles` は絵文字をキーにしたオブジェクト。
+- GitHub上で差分を追いやすいよう、1絵文字を1行のプロファイルとして並べる。
+
+```json
+{
+  "version": 1,
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "profileRange": { "startIndex": 0, "count": 130 },
+  "rules": { ... },
+  "profiles": {
+    "👽": { "sourceName": "alien", "displayNameJa": "宇宙人", ... }
+  }
+}
+```
 
 ## 現在の登録範囲
 
@@ -60,21 +80,9 @@ PR #224 で追加した分割ファイルは削除する。
 - 081-105: ハート、キス、ラブユーの手など
 - 106-130: ラブユー手の肌色差分、facepalm、frowning、猿・ねずみ・口・新月など
 
-## JSON保存形式
-
-`emoji_physics_profiles.json` は1ファイルに統合するため、展開済みJSONを `storage.profileJsonGzipBase64` に `gzip+base64` で格納している。
-
-展開後のJSONは、従来と同じ `version` / `sourceCatalog` / `profileRange` / `rules` / `profiles` 構造で、`profiles` には130件が入る。
-
-展開用コマンドはJSON内の `storage.decodeHint` にも入れている。
-
-```bash
-node -e "const fs=require('fs'),zlib=require('zlib');const j=require('./public/noHand_soccer/emoji_physics_profiles.json');fs.writeFileSync('emoji_physics_profiles.expanded.json',zlib.gunzipSync(Buffer.from(j.storage.profileJsonGzipBase64,'base64')));"
-```
-
 ## プロファイル形式
 
-展開後の各プロファイルは次の形式。
+各プロファイルは次の形式。
 
 ```json
 {
