@@ -43,12 +43,12 @@
 
 ## ファイル構成
 
-プロファイル関連ファイルは次の2つだけに統合した。
+正式プロファイル関連ファイルは次の2つだけに統合する。
 
 - `emoji_physics_profiles.json`
 - `emoji_physics_profiles.md`
 
-PR #224 で追加した分割JSONと追加バッチMarkdownは削除する。
+PR #226では、レビュー用の追加バッチとして `emoji_physics_profiles_131_180_draft.json` を一時的に置いている。レビュー後、正式取り込み時には `emoji_physics_profiles.json` へ統合し、このdraftファイルは削除する。
 
 ## JSON形式
 
@@ -72,13 +72,16 @@ PR #224 で追加した分割JSONと追加バッチMarkdownは削除する。
 
 ## 現在の登録範囲
 
-`emoji_catalog_full_ja.json` の先頭130件。
+正式登録済み: `emoji_catalog_full_ja.json` の先頭130件。
+
+レビュー中: index 130〜179、50件。
 
 - 001-030: 初期バッチ
 - 031-055: 泣き顔、水晶玉、目、投げキス、医療系の顔など
 - 056-080: 目回し、月、幽霊、手袋、笑顔系など
 - 081-105: ハート、キス、ラブユーの手など
 - 106-130: ラブユー手の肌色差分、facepalm、frowning、猿・ねずみ・口・新月など
+- 131-180 draft: オレンジハート、パーティー顔、person facepalming/frowning、帽子の人、豚、うんち、プードル、8ボール、ドクロ、眠り、天使の輪、ハート目、角つき笑顔など
 
 ## プロファイル形式
 
@@ -305,12 +308,15 @@ PR #224 で追加した分割JSONと追加バッチMarkdownは削除する。
 | `pushRedirect` | 押して方向転換する |
 | `randomBounce` | 予測不能に跳ね返す |
 | `reflectShield` | 反射・防御する |
+| `rollCarry` | 転がしながら運ぶ |
 | `scoopRedirect` | すくって方向転換する |
 | `silenceHold` | 静かに保持する |
+| `sleepFloat` | 眠るように浮遊・減速させる |
 | `slingLaunch` | しならせて射出する |
 | `slipFlow` | 滑る液体で流す |
 | `slowDampen` | 勢いを減衰させる |
 | `snapLaunch` | 溜めて弾く |
+| `softLanding` | やわらかく着地・減速させる |
 | `spinRedirect` | 回転で方向転換する |
 | `splitScatter` | 本体・分身を分けて散らす |
 | `stillHold` | 静止して保持する |
@@ -334,6 +340,9 @@ PR #224 で追加した分割JSONと追加バッチMarkdownは削除する。
 | `🏩` | `hiddenRoute` / `multiExit` / `splitScatter` を追加した。建物・ゲート系の基準として後続と整合確認が必要。 |
 | `🤟` 系 | 手の形として `grabHold` / `pushRedirect` にした。今後の手・指系プロファイルと統合検討。 |
 | `🙍` / `🙍‍♂️` 系 | 表情差分としては正しいが、単体ギミックとしては地味。 |
+| `👲` 系 | 帽子・頭部で弾く解釈にした。人物系ではなく装備系として見ているが、今後の帽子系と整合確認。 |
+| `💩` | `poisonDampen` は自然だが、ゲーム内で不快になりすぎない演出調整が必要。 |
+| `😴` | `sleepFloat` が新規。眠り系の標準能力として妥当か要確認。 |
 
 ## 実装メモ
 
@@ -343,6 +352,7 @@ PR #224 で追加した分割JSONと追加バッチMarkdownは削除する。
 - 例: `splitScatter` は `splitEffect` + `burstRelease` + 放射状速度へ変換する。
 - 例: `multiExit` は複数の出口候補を作り、次actorまたは安全な出口方向へ渡す。
 - 例: `hiddenRoute` は見えない経路演出を挟んで、`warpExit` に近い転送として扱う。
+- 131-180 draftは、レビュー後に `emoji_physics_profiles.json` へ統合してdraftファイルを削除する。
 - `kind` 的な分類タグは最後まで入れない。
 - 似た意味の新語彙を増やす前に、この.mdの語彙表を必ず確認する。
 - スキントーン差分・性別差分は、物理挙動が変わらない場合は同じプロファイルを使う。
