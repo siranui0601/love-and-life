@@ -122,7 +122,10 @@ node tools/nohand/validate_profiles.mjs
 - 281-330: `tools/nohand/profile_queue/catalog_0281_0330.profiled.json` 作成済み。runtime JSON には未統合。
 - 331-380: `tools/nohand/profile_queue/catalog_0331_0380.profiled.json` 作成済み。runtime JSON には未統合。
 - 381-430: `tools/nohand/profile_queue/catalog_0381_0430.profiled.json` 作成済み。runtime JSON には未統合。
-- 次の候補: `tools/nohand/profile_queue/catalog_0431_0480.pending.json`。
+- 431-480: `tools/nohand/profile_queue/catalog_0431_0480.profiled.json` 作成済み。runtime JSON には未統合。
+- 481-530: `tools/nohand/profile_queue/catalog_0481_0530.profiled.json` 作成済み。runtime JSON には未統合。
+- 531-580: `tools/nohand/profile_queue/catalog_0531_0580.profiled.json` 作成済み。runtime JSON には未統合。
+- 次の候補: `tools/nohand/profile_queue/catalog_0581_0630.pending.json`。
 
 ## profiled queue 形式
 
@@ -166,11 +169,6 @@ node tools/nohand/validate_profiles.mjs
 - `abilities`: 複数の `effects` / `receive` / `path` / `release` を組み合わせるための汎用能力。
 
 `abilities` には、`lemonBomb` や `roomSplit` のような絵文字固有名は入れない。絵文字固有のノリは `note` に書き、能力名は複数絵文字で再利用できるものにする。
-
-例:
-
-- `🍋` や `🎇` に使えそうな能力は `burstScatter` / `splitScatter`。
-- `🏩` に使えそうな能力は `trapHold` / `hiddenRoute` / `multiExit` / `splitScatter` / `delayedRelease`。
 
 ## 主要 abilities 語彙
 
@@ -255,6 +253,33 @@ node tools/nohand/validate_profiles.mjs
 | `gravityShift` | 画面全体ではなく局所的な重力変更にしないと破綻しやすい。 |
 | `warpExit` | 出口候補を固定しないと、次actorとの接続が不安定になる。 |
 | `magnetPull` | 引力が強すぎるとボールが吸着して止まりやすい。 |
+
+## 431-580 profiled queue メモ
+
+- `💂` 系: 衛兵として `reflectShield` / `stillHold` / `pushRedirect`。守る・止める挙動を明確化。
+- `🖐️` 系: 開いた掌で受け止めるため、`reflectShield` / `pushRedirect` / `stillHold` に寄せた。
+- `👜`: バッグにしまう連想から `absorbHold` / `delayedRelease` / `softLanding`。
+- `🤝`: 握手の「つなぐ」意味から `chainPass` / `attractHold` / `softLanding`。
+- `🧑‍⚕️` 系: 攻撃ではなく安全化。`softLanding` / `slowDampen` / `aimAssist`。
+- `🙉`: 耳を塞ぐため `silenceHold` / `slowDampen` / `fakeRoute`。
+- `🧑‍⚖️` 系: 判定して正しい方向へ通すため `precisionPass` / `stillHold` / `pushRedirect`。
+- `🦵` 系: 脚の蹴り・踏み出しから `impactLaunch` / `dashCarry` / `pushRedirect`。
+- `🫁`: 吸う・吐く循環から `breathLaunch` / `flowCarry` / `slowDampen`。
+- `🧙` 系: 魔法として `warpExit` / `lowGravityField` / `curveRedirect`。`warpExit` はcompilerSensitive。
+- `👨‍🎨` 系: 描画線を `paintTrail` として使う。
+- `👨‍🚀` 系: 低重力・周回・狙い補正を継承。
+- `🚴` 系: 車輪で `rollCarry`、走行で `dashCarry`、安定化に `precisionPass`。
+- `⛹️` 系: 弾ませる動作から `popLaunch` / `randomBounce` / `aimAssist`。
+- `🙇` 系: お辞儀の沈み込みを `dropRelease` / `softLanding` / `slowDampen` にした。
+- `🤸` 系: 側転の回転を `spinRedirect` / `orbitCarry` / `popLaunch` にした。
+- `🧗` 系: 掴んで登るため `grabHold` / `aimAssist` / `slowDampen`。
+- `👷‍♂️` / `👨‍🏭` 系: 現場・機械作業として、受け止め・正確な押し出しに寄せた。
+- `👨‍🍳` 系: フライパン返しから `heatLift` / `popLaunch` / `curveRedirect`。
+- `🕺` 系: ダンスのステップと回転から `spinRedirect` / `curveRedirect` / `lightBoost`。
+- `🕵️` 系: 探偵として `hiddenRoute` / `aimAssist` / `precisionPass`。`hiddenRoute` はcompilerSensitive。
+- `🧞‍♂️`: ジーニーとして `warpExit` / `lowGravityField` / `luckyRedirect`。
+- `🙅` 系: 拒否ジェスチャーで受け止め、横へ押し返す。
+- `🙆‍♂️`: OKの輪で通してよい方向へ曲げる。
 
 ## 281-430 profiled queue メモ
 
