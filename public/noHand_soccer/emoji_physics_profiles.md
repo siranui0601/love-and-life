@@ -116,7 +116,10 @@ node tools/nohand/validate_profiles.mjs
 - 131-180: オレンジハート、パーティー顔、person facepalming/frowning、帽子の人、豚、うんち、プードル、8ボール、ドクロ、眠り、天使の輪、ハート目、角つき笑顔など
 - 181-230: 舌出し顔、太陽、汗しぶき、日めくり、考える顔、虎、舌、2つのハート、逆さ顔、風の顔、女性facepalm/frowning、酔い顔、あくび、目覚まし時計、アメフト、アーティスト、パレット、宇宙飛行士など
 
-次のqueue: `tools/nohand/profile_queue/catalog_0231_0280.pending.json`。
+## 作業キュー進捗
+
+- 231-280: `tools/nohand/profile_queue/catalog_0231_0280.profiled.json` 作成済み。runtime JSON には未統合。
+- 次の候補: `tools/nohand/profile_queue/catalog_0281_0330.pending.json`。存在しない場合は `node tools/nohand/generate_profile_queue.mjs` で生成する。
 
 ## profiled queue 形式
 
@@ -247,8 +250,22 @@ node tools/nohand/validate_profiles.mjs
 | `timedRelease` | 保持時間の上限を決めないとテンポが止まる。 |
 | `sleepFloat` | 低重力・減速・遅延の組み合わせが長くなりすぎないよう注意。 |
 | `gravityShift` | 画面全体ではなく局所的な重力変更にしないと破綻しやすい。 |
-| `phaseThrough` | すり抜け中も次actorへの接続を保証する必要がある。 |
+| `warpExit` | 出口候補を固定しないと、次actorとの接続が不安定になる。 |
 | `magnetPull` | 引力が強すぎるとボールが吸着して止まりやすい。 |
+
+## 231-280 profiled queue メモ
+
+- `👶` / `👶` 肌色差分: 強い発射ではなく `softLanding` / `slowDampen` / `delayedRelease` に寄せた。赤ちゃんらしい軽さと安全性を優先。
+- `👼` 系: 羽と輪から `lowGravityField` / `reflectShield` を採用。天使性が明確なので確信度は高め。
+- `🍼`: 哺乳瓶の中に受けて傾けて流すため、`absorbHold` / `flowCarry` が自然。
+- `🐤`: 小さく跳ねるひよことして `popLaunch` を採用。過剰な加速ではなく短いポップにする。
+- `🚼`: 標識なので直接的な物理性は弱い。安全ゲートとして `softLanding` / `slowDampen` に寄せた。
+- `👇` / `👈` / `👉` / `👆` 系: 指差し方向をそのまま `pushRedirect` として扱う。下は `gravityShift`、上は `popLaunch`、左右は `snapLaunch` に寄せた。
+- `🐻`: 大きな体で受けて抱え、押し返すため `grabHold` / `impactLaunch` を採用。
+- `🦴`: 硬さ・転がり・割れの連想から `rollCarry` / `splitScatter` / `reflectShield` にした。
+- `👦` 系: 人物分類タグにはせず、小走りで運ぶ `dashCarry` と軽い `aimAssist` にした。意味が広いためreview候補。
+- `🧠`: 判断・神経パルスの連想から `aimAssist` / `timedRelease` / `hiddenRoute` にした。
+- `👤` / `👥`: 影として実体を薄くし、`hiddenRoute` / `warpExit` / `multiExit` に寄せた。
 
 ## 181-230 追加メモ
 
