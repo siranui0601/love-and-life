@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -54,6 +54,28 @@ function chunkItems(items, size) {
   return chunks;
 }
 
+async function readDoneEmoji(outDir) {
+  const done = new Set();
+  let files = [];
+  try {
+    files = await readdir(resolveRepoPath(outDir));
+  } catch {
+    return done;
+  }
+
+  for (const file of files.filter((name) => name.endsWith('.profiled.json'))) {
+    const queue = await readJson(path.join(outDir, file));
+    for (const item of queue.sourceItems ?? []) {
+      if (item?.emoji) done.add(item.emoji);
+    }
+    for (const emoji of Object.keys(queue.profiles ?? {})) {
+      done.add(emoji);
+    }
+  }
+
+  return done;
+}
+
 async function main() {
   const catalogPath = readArg('--catalog', DEFAULT_CATALOG);
   const profilesPath = readArg('--profiles', DEFAULT_PROFILES);
@@ -68,11 +90,13 @@ async function main() {
   const catalog = await readJson(catalogPath);
   const profileFile = await readJson(profilesPath);
   const profiles = profileFile.profiles ?? {};
-  const profiledEmoji = new Set(Object.keys(profiles));
+  const runtimeDone = new Set(Object.keys(profiles));
+  const queueDone = await readDoneEmoji(outDir);
+  const done = new Set([...runtimeDone, ...queueDone]);
 
   const missing = catalog
     .map((item, catalogIndex) => ({ item, catalogIndex }))
-    .filter(({ item }) => !profiledEmoji.has(item.emoji))
+    .filter(({ item }) => !done.has(item.emoji))
     .map(({ item, catalogIndex }) => toQueueItem(item, catalogIndex));
 
   if (missing.length === 0) {
@@ -93,6 +117,7 @@ async function main() {
       sourceCatalog: catalogPath,
       sourceProfiles: profilesPath,
       generatedFromProfileCount: Object.keys(profiles).length,
+      generatedFromProfiledQueueCount: queueDone.size,
       range: {
         startOrdinal: first.ordinal,
         endOrdinal: last.ordinal,
