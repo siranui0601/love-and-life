@@ -14,6 +14,8 @@ const ABILITY_SPECS_PATH = 'tools/nohand/ability_specs.json';
 
 const REQUIRED_ARRAY_FIELDS = ['receive', 'path', 'release', 'motion', 'effects', 'abilities'];
 const REQUIRED_STRING_FIELDS = ['sourceName', 'displayNameJa', 'note'];
+const ABILITY_EXAMPLE_LIMIT = 8;
+
 const DISALLOWED_PROFILE_TERMS = new Set([
   'animal',
   'food',
@@ -241,9 +243,53 @@ function validateCompilerSensitiveReview(errors, warnings, repoPath, queue, abil
   }
 }
 
+function validateQueueCoverage(errors, queueSummaries) {
+  const sorted = [...queueSummaries].sort((a, b) => a.range.startOrdinal - b.range.startOrdinal);
+  const seenEmoji = new Map();
+  const seenCatalogIndexes = new Map();
+
+  for (const summary of sorted) {
+    const { repoPath, range, items } = summary;
+    if (range.startOrdinal !== items[0]?.ordinal || range.endOrdinal !== items.at(-1)?.ordinal) {
+      fail(errors, `${repoPath}: range ordinal bounds do not match first/last item.`);
+    }
+    if (range.startCatalogIndex !== items[0]?.catalogIndex || range.endCatalogIndex !== items.at(-1)?.catalogIndex) {
+      fail(errors, `${repoPath}: range catalogIndex bounds do not match first/last item.`);
+    }
+
+    for (const item of items) {
+      const previousEmojiFile = seenEmoji.get(item.emoji);
+      if (previousEmojiFile) {
+        fail(errors, `${repoPath}: ${item.emoji} duplicates queue item from ${previousEmojiFile}.`);
+      } else {
+        seenEmoji.set(item.emoji, repoPath);
+      }
+
+      const previousIndexFile = seenCatalogIndexes.get(item.catalogIndex);
+      if (previousIndexFile) {
+        fail(errors, `${repoPath}: catalogIndex ${item.catalogIndex} duplicates queue item from ${previousIndexFile}.`);
+      } else {
+        seenCatalogIndexes.set(item.catalogIndex, repoPath);
+      }
+    }
+  }
+
+  for (let index = 1; index < sorted.length; index += 1) {
+    const previous = sorted[index - 1];
+    const current = sorted[index];
+    if (current.range.startOrdinal !== previous.range.endOrdinal + 1) {
+      fail(errors, `${current.repoPath}: range starts at ${current.range.startOrdinal}; expected ${previous.range.endOrdinal + 1} after ${previous.repoPath}.`);
+    }
+    if (current.range.startCatalogIndex !== previous.range.endCatalogIndex + 1) {
+      fail(errors, `${current.repoPath}: catalogIndex range starts at ${current.range.startCatalogIndex}; expected ${previous.range.endCatalogIndex + 1} after ${previous.repoPath}.`);
+    }
+  }
+}
+
 async function validateQueueFiles(catalog, profileFile, abilitySpecs) {
   const errors = [];
   const warnings = [];
+  const queueSummaries = [];
   const queueDir = resolveRepoPath(QUEUE_DIR);
 
   let files = [];
@@ -278,9 +324,60 @@ async function validateQueueFiles(catalog, profileFile, abilitySpecs) {
     } else {
       fail(errors, `${repoPath}: status must be pending or profiled.`);
     }
+
+    queueSummaries.push({ repoPath, status: queue.status, range: queue.range, items: queueItems(queue) });
   }
 
+  validateQueueCoverage(errors, queueSummaries);
+
   return { errors, warnings };
+}
+
+function collectAbilityUsageFromProfiles(target, profiles) {
+  for (const [emoji, profile] of Object.entries(profiles ?? {})) {
+    for (const ability of profile.abilities ?? []) {
+      if (typeof ability !== 'string' || ability.trim() === '') continue;
+      if (!target.has(ability)) target.set(ability, { occurrences: 0, examples: [] });
+      const usage = target.get(ability);
+      usage.occurrences += 1;
+      if (usage.examples.length < ABILITY_EXAMPLE_LIMIT) usage.examples.push(emoji);
+    }
+  }
+}
+
+async function validateAbilitySpecsSync(errors, profileFile, abilitySpecsFile) {
+  const actualUsage = new Map();
+  collectAbilityUsageFromProfiles(actualUsage, profileFile.profiles);
+
+  const queueDir = resolveRepoPath(QUEUE_DIR);
+  let files = [];
+  try {
+    files = await readdir(queueDir);
+  } catch {
+    files = [];
+  }
+
+  for (const filename of files.filter((file) => file.endsWith('.profiled.json')).sort()) {
+    const queue = await readJson(path.join(QUEUE_DIR, filename));
+    collectAbilityUsageFromProfiles(actualUsage, queue.profiles);
+  }
+
+  for (const ability of actualUsage.keys()) {
+    if (!Object.prototype.hasOwnProperty.call(abilitySpecsFile.abilities ?? {}, ability)) {
+      fail(errors, `${ABILITY_SPECS_PATH}: missing ability spec for '${ability}'.`);
+    }
+  }
+
+  for (const [ability, spec] of Object.entries(abilitySpecsFile.abilities ?? {})) {
+    const actual = actualUsage.get(ability) ?? { occurrences: 0, examples: [] };
+    if (spec.occurrences !== actual.occurrences) {
+      fail(errors, `${ABILITY_SPECS_PATH}: ${ability}.occurrences is ${spec.occurrences}, expected ${actual.occurrences}. Run node tools/nohand/sync_ability_specs.mjs.`);
+    }
+    const expectedExamples = actual.examples;
+    if (JSON.stringify(spec.examples ?? []) !== JSON.stringify(expectedExamples)) {
+      fail(errors, `${ABILITY_SPECS_PATH}: ${ability}.examples are stale. Run node tools/nohand/sync_ability_specs.mjs.`);
+    }
+  }
 }
 
 async function main() {
@@ -298,7 +395,9 @@ async function main() {
 
   const profileResult = validateProfiles(catalog, profileFile, abilitySpecs);
   const queueResult = await validateQueueFiles(catalog, profileFile, abilitySpecs);
-  const errors = [...profileResult.errors, ...queueResult.errors];
+  const abilitySpecSyncErrors = [];
+  await validateAbilitySpecsSync(abilitySpecSyncErrors, profileFile, abilitySpecsFile);
+  const errors = [...profileResult.errors, ...queueResult.errors, ...abilitySpecSyncErrors];
   const warnings = [...profileResult.warnings, ...queueResult.warnings];
 
   for (const warning of warnings) {

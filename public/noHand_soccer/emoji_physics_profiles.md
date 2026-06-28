@@ -104,6 +104,13 @@ node tools/nohand/merge_all_profiled_batches.mjs
 node tools/nohand/validate_profiles.mjs
 ```
 
+`ability_specs.json` の `occurrences` / `examples` は runtime profiles と `.profiled.json` の集計値に同期する。手作業更新ではなく次を使う。
+
+```bash
+node tools/nohand/sync_ability_specs.mjs
+node tools/nohand/sync_ability_specs.mjs --check
+```
+
 ## 現在の登録範囲
 
 `emoji_catalog_full_ja.json` の先頭230件。
@@ -118,7 +125,7 @@ node tools/nohand/validate_profiles.mjs
 
 ## 作業キュー進捗
 
-- 231-280: `tools/nohand/profile_queue/catalog_0231_0280.profiled.json` 作成済み。runtime JSON には未統合。
+- 236-280: `tools/nohand/profile_queue/catalog_0236_0280.profiled.json` 作成済み。runtime JSON には未統合。
 - 281-330: `tools/nohand/profile_queue/catalog_0281_0330.profiled.json` 作成済み。runtime JSON には未統合。
 - 331-380: `tools/nohand/profile_queue/catalog_0331_0380.profiled.json` 作成済み。runtime JSON には未統合。
 - 381-430: `tools/nohand/profile_queue/catalog_0381_0430.profiled.json` 作成済み。runtime JSON には未統合。
