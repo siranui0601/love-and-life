@@ -240,12 +240,11 @@ function prompt(emojis) {
   return `${emojis.join("")}
 
 こんなピタゴラ装置（3つ合わせて1つのギミック）があるとしたら、この装置に触れた落下中のボールはどんな挙動をすると思いますか？
-まずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂(split), ワープ(warp), 重力向き変更(gravity)等を取り入れても構わないが、それらは装置を必ず面白くできる場合に限る。
-
-返答はJSONのみ。
+まずは絵文字から自然に連想できる動きを考えてください。必要であれば、分裂(split), ワープ(warp), 重力向き変更(gravity)等を取り入れても構わないが、それらは装置を必ず面白くでき、絵文字の意味としても自然な場合に限る。
+その動きを、JSONに落とし込んで
 
 出力するJSONの形:
-summary: この装置の動き方を20〜35文字で要約。summaryはこの装置で起きる動きの設計図。summaryに書いた主要な動きや効果はflow内で必ず実行する
+summary: この装置の動き方を20〜35文字で要約。summaryはこの装置で起きる動きの設計図。summaryに書いた主要な動きや効果はflow内で**必ず**実行する。
 trigger: { step }。ボールが最初に触れる開始step
 flow: step配列。各stepは actors, pos, duration を持ち、必要に応じて ball / device / contact / hold / spin / hit / split / warp / gravity を持つ
 
