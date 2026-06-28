@@ -132,7 +132,10 @@ node tools/nohand/sync_ability_specs.mjs --check
 - 431-480: `tools/nohand/profile_queue/catalog_0431_0480.profiled.json` 作成済み。runtime JSON には未統合。
 - 481-530: `tools/nohand/profile_queue/catalog_0481_0530.profiled.json` 作成済み。runtime JSON には未統合。
 - 531-580: `tools/nohand/profile_queue/catalog_0531_0580.profiled.json` 作成済み。runtime JSON には未統合。
-- 次の候補: `tools/nohand/profile_queue/catalog_0581_0630.pending.json`。
+- 581-630: `tools/nohand/profile_queue/catalog_0581_0630.profiled.json` 作成済み。runtime JSON には未統合。
+- 631-680: `tools/nohand/profile_queue/catalog_0631_0680.profiled.json` 作成済み。runtime JSON には未統合。
+- 681-730: `tools/nohand/profile_queue/catalog_0681_0730.profiled.json` 作成済み。runtime JSON には未統合。
+- 次の候補: `tools/nohand/profile_queue/catalog_0731_0780.pending.json`。
 
 ## profiled queue 形式
 
@@ -260,6 +263,33 @@ node tools/nohand/sync_ability_specs.mjs --check
 | `gravityShift` | 画面全体ではなく局所的な重力変更にしないと破綻しやすい。 |
 | `warpExit` | 出口候補を固定しないと、次actorとの接続が不安定になる。 |
 | `magnetPull` | 引力が強すぎるとボールが吸着して止まりやすい。 |
+
+## 581-730 profiled queue メモ
+
+- `🙆` 系: OKの輪として `aimAssist` / `curveRedirect` / `softLanding`。通してよい方向へ曲げる。
+- `💇` 系: 散髪の精密な調整から `precisionPass` / `slowDampen` / `softLanding`。切断ではなく余分な勢いを整える解釈に抑えた。
+- `💆` 系: マッサージの緩和から `slowDampen` / `softLanding` / `stillHold`。
+- `🏌️` 系: ゴルフクラブのスイングとして `impactLaunch` / `precisionPass` / `curveRedirect`。
+- `💂` / `👮` 系: 守る・制止する役割として `reflectShield` / `pushRedirect` / `precisionPass` または `stillHold`。
+- `👨‍⚕️` 系: 攻撃ではなく安全化。`softLanding` / `slowDampen` / `aimAssist`。
+- `🧘` 系: 瞑想の静止感として `stillHold` / `silenceHold` / `softLanding`。
+- `👨‍🦽` / `👨‍🦼` 系: 車輪で安全に運ぶ。手動は `rollCarry` / `precisionPass` / `softLanding`、電動は `rollCarry` / `precisionPass` / `dashCarry`。
+- `🧖` 系: 湯気の流れで包み、`flowCarry` / `slowDampen` / `softLanding`。
+- `🤵` 系: 礼装の整った所作として `precisionPass` / `softLanding` / `aimAssist`。意味が抽象的なのでreview候補。
+- `👨‍⚖️` 系: 判定して正しい方向へ通すため `precisionPass` / `stillHold` / `pushRedirect`。
+- `🤹` 系: ジャグリングの周回軌道から `orbitCarry` / `popLaunch` / `aimAssist`。`multiExit` は使わず実装負荷を抑えた。
+- `🧎` 系: 低姿勢で受け止めるため `stillHold` / `softLanding` / `slowDampen`。
+- `🏋️` 系: 重量挙げとして `heavyBlock` / `impactLaunch` / `pushRedirect`。
+- `🧙` 系: 魔法として `warpExit` / `lowGravityField` / `curveRedirect`。`warpExit` はcompilerSensitive。
+- `👨‍🔧` 系: 工具で噛み合わせを調整し、`spinRedirect` / `precisionPass` / `pushRedirect`。
+- `🚵` 系: 山道の凹凸を小さな `randomBounce` としつつ、`rollCarry` / `dashCarry` で運ぶ。
+- `👨‍💼` 系: 会社員は抽象的なので、整理・確認の比喩で `precisionPass` / `delayedRelease` / `aimAssist`。review候補。
+- `👨‍✈️` 系: 操縦として `precisionPass` / `curveRedirect` / `aimAssist`。
+- `🤾` 系: 手で掴んで投げるため `impactLaunch` / `aimAssist` / `curveRedirect`。
+- `🤽` 系: 水球として `flowCarry` / `popLaunch` / `aimAssist`。
+- `🙎` 系: ふくれっ面の重さとして `slowDampen` / `dropRelease` / `softLanding`。顔・感情系に近いためreview候補。
+- `🙋` 系: 挙手の上方向の動きとして `popLaunch` / `aimAssist` / `softLanding`。
+- `🚣‍♂️`: オールで水を押すため `flowCarry` / `pushRedirect` / `precisionPass`。
 
 ## 431-580 profiled queue メモ
 
