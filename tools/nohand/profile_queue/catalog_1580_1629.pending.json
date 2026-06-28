@@ -4,6 +4,7 @@
   "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
   "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
   "generatedFromProfileCount": 229,
+  "generatedFromProfiledQueueCount": 50,
   "range": {
     "startOrdinal": 1580,
     "endOrdinal": 1629,
