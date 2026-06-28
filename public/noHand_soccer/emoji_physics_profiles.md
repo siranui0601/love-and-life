@@ -94,11 +94,24 @@ PR #224 で追加した分割JSONと追加バッチMarkdownは削除する。
     "release": [],
     "motion": [],
     "effects": [],
+    "abilities": [],
     "confidence": 0.8,
     "note": "採用理由"
   }
 }
 ```
+
+## effects と abilities の違い
+
+- `effects`: runtimeが直接扱いやすい基本的な物理効果。
+- `abilities`: 複数のeffects / receive / path / releaseを組み合わせるための汎用能力。
+
+`abilities` には、`lemonBomb` や `roomSplit` のような絵文字固有名は入れない。絵文字固有のノリは `note` に書き、能力名は複数絵文字で再利用できるものにする。
+
+例:
+
+- `🍋` や `🎇` に使えそうな能力は `burstScatter` / `splitScatter`。
+- `🏩` に使えそうな能力は `trapHold` / `hiddenRoute` / `multiExit` / `splitScatter` / `delayedRelease`。
 
 ## 語彙表
 
@@ -247,26 +260,89 @@ PR #224 で追加した分割JSONと追加バッチMarkdownは削除する。
 | `poisonSlow` | 毒・気持ち悪さで粘って減速させる |
 | `focusTrack` | 計算・注視で精密に照準補正する |
 
+### abilities
+
+| 語彙 | 意味 |
+|---|---|
+| `absorbHold` | 吸い込んで一時保持する |
+| `aimAssist` | 次の対象へ狙いを補正する |
+| `attractHold` | 引き寄せて保持する |
+| `breathLaunch` | 息や噴出で射出する |
+| `burnBoost` | 熱や火で加速する |
+| `burstScatter` | 中心から放射状に飛ばす |
+| `chainPass` | 連鎖的に渡す |
+| `chaseCatch` | 追いかけて捕まえる |
+| `curveRedirect` | 曲線的に方向転換する |
+| `dashCarry` | 突進しながら運ぶ |
+| `delayedRelease` | 時間差で放つ |
+| `diveDrop` | 潜るように下へ運ぶ |
+| `dropRelease` | 下へ落として放つ |
+| `electricJolt` | 電撃で弾く |
+| `fakeRoute` | フェイント軌道を作る |
+| `flowCarry` | 流れで運ぶ |
+| `freezeSlip` | 凍結・滑走させる |
+| `glideCarry` | 滑空して運ぶ |
+| `grabHold` | 掴んで一時保持する |
+| `gravityShift` | 重力方向を変える |
+| `growthLift` | 膨張・成長で持ち上げる |
+| `heatLift` | 熱気で持ち上げる |
+| `heavyBlock` | 重く受け止める |
+| `hiddenRoute` | 見えない経路を通す |
+| `hookPull` | 引っかけて引く |
+| `impactLaunch` | 衝撃で強く射出する |
+| `lightBoost` | 軽い勢いを足す |
+| `lowGravityField` | 低重力領域を作る |
+| `luckyRedirect` | 予測しづらい好転方向へ曲げる |
+| `magnetPull` | 磁力のように引き寄せる |
+| `multiExit` | 複数出口から出す |
+| `orbitCarry` | 周回させながら運ぶ |
+| `panicKick` | 慌てて不規則に弾く |
+| `phaseThrough` | すり抜けさせる |
+| `poisonDampen` | 毒や粘りで減速させる |
+| `popLaunch` | ポンと射出する |
+| `precisionPass` | 精密な直線パスを作る |
+| `pulseBoost` | 脈動で押し出す |
+| `pushRedirect` | 押して方向転換する |
+| `randomBounce` | 予測不能に跳ね返す |
+| `reflectShield` | 反射・防御する |
+| `scoopRedirect` | すくって方向転換する |
+| `silenceHold` | 静かに保持する |
+| `slingLaunch` | しならせて射出する |
+| `slipFlow` | 滑る液体で流す |
+| `slowDampen` | 勢いを減衰させる |
+| `snapLaunch` | 溜めて弾く |
+| `spinRedirect` | 回転で方向転換する |
+| `splitScatter` | 本体・分身を分けて散らす |
+| `stillHold` | 静止して保持する |
+| `timedRelease` | タイミングを合わせて放つ |
+| `trapHold` | 閉じ込めて保持する |
+| `warpExit` | 別地点から出す |
+| `wrapHold` | 巻き付けて保持する |
+| `zigzagRedirect` | ジグザグに方向転換する |
+
 ## 将来見直した方が良い絵文字
 
 | 絵文字 | 理由 |
 |---|---|
 | `😧` | 物理的な連想が弱く、`dropPath + slowEffect` がやや暫定的。 |
-| `😁` / `😀` / `😃` / `😄` | 笑顔系は `softPass + boostEffect` に寄りやすく、差別化が課題。 |
+| `😁` / `😀` / `😃` / `😄` | 笑顔系は `lightBoost` に寄りやすく、差別化が課題。 |
 | `🤎` | 茶色から土・重さへ寄せたが、絵文字単体の意味としては弱い。 |
-| `😖` / `😕` / `😞` / `☹️` | 困惑・落ち込み系は `dropPath` / `slowEffect` に寄りやすい。 |
+| `😖` / `😕` / `😞` / `☹️` | 困惑・落ち込み系は `dropPath` / `slowEffect` / `slowDampen` に寄りやすい。 |
 | `🐮` | 牛顔のみで「頭で押す」まで行くのが少し解釈寄り。大型動物系で再検討。 |
-| `😶` | 口がないことを `silenceHold` にしたが、ゲーム上の見栄えは要確認。 |
-| `💟` | ハート装飾として `orbitPath` に寄せたが、装飾感の物理化が弱い可能性あり。 |
-| `🏩` | 建物系として `gateReceive + charmPull` にした。後続の建物語彙との整合確認が必要。 |
-| `🤟` 系 | 手の形として `gestureFlickPass` にした。今後の手・指系プロファイルと統合検討。 |
+| `😶` | 口がないことを `stillHold` / `silenceHold` にしたが、ゲーム上の見栄えは要確認。 |
+| `💟` | ハート装飾として `orbitCarry` に寄せたが、装飾感の物理化が弱い可能性あり。 |
+| `🏩` | `hiddenRoute` / `multiExit` / `splitScatter` を追加した。建物・ゲート系の基準として後続と整合確認が必要。 |
+| `🤟` 系 | 手の形として `grabHold` / `pushRedirect` にした。今後の手・指系プロファイルと統合検討。 |
 | `🙍` / `🙍‍♂️` 系 | 表情差分としては正しいが、単体ギミックとしては地味。 |
 
 ## 実装メモ
 
 - runtime本体にはまだ接続しない。
-- 50〜100件ほど溜まったので、次は validator と compiler stub を作れる段階。
-- compilerは `receive → path → release → motion/effects` を phase に変換する。
+- `abilities` は compiler が flow / phase へ変換するための中間語彙。
+- compilerは `abilities` を優先し、足りない場合に `effects` / `receive` / `path` / `release` / `motion` で補完する。
+- 例: `splitScatter` は `splitEffect` + `burstRelease` + 放射状速度へ変換する。
+- 例: `multiExit` は複数の出口候補を作り、次actorまたは安全な出口方向へ渡す。
+- 例: `hiddenRoute` は見えない経路演出を挟んで、`warpExit` に近い転送として扱う。
 - `kind` 的な分類タグは最後まで入れない。
 - 似た意味の新語彙を増やす前に、この.mdの語彙表を必ず確認する。
 - スキントーン差分・性別差分は、物理挙動が変わらない場合は同じプロファイルを使う。
