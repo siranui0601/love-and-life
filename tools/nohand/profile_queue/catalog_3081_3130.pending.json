@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 3081,
+    "endOrdinal": 3130,
+    "startCatalogIndex": 3080,
+    "endCatalogIndex": 3129,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 3081,
+      "catalogIndex": 3080,
+      "emoji": "🇰🇲",
+      "name": "flag: comoros"
+    },
+    {
+      "ordinal": 3082,
+      "catalogIndex": 3081,
+      "emoji": "🇨🇬",
+      "name": "flag: congo - brazzaville"
+    },
+    {
+      "ordinal": 3083,
+      "catalogIndex": 3082,
+      "emoji": "🇨🇩",
+      "name": "flag: congo - kinshasa"
+    },
+    {
+      "ordinal": 3084,
+      "catalogIndex": 3083,
+      "emoji": "🇨🇰",
+      "name": "flag: cook islands"
+    },
+    {
+      "ordinal": 3085,
+      "catalogIndex": 3084,
+      "emoji": "🇨🇷",
+      "name": "flag: costa rica"
+    },
+    {
+      "ordinal": 3086,
+      "catalogIndex": 3085,
+      "emoji": "🇭🇷",
+      "name": "flag: croatia"
+    },
+    {
+      "ordinal": 3087,
+      "catalogIndex": 3086,
+      "emoji": "🇨🇺",
+      "name": "flag: cuba"
+    },
+    {
+      "ordinal": 3088,
+      "catalogIndex": 3087,
+      "emoji": "🇨🇼",
+      "name": "flag: curaçao"
+    },
+    {
+      "ordinal": 3089,
+      "catalogIndex": 3088,
+      "emoji": "🇨🇾",
+      "name": "flag: cyprus"
+    },
+    {
+      "ordinal": 3090,
+      "catalogIndex": 3089,
+      "emoji": "🇨🇿",
+      "name": "flag: czechia"
+    },
+    {
+      "ordinal": 3091,
+      "catalogIndex": 3090,
+      "emoji": "🇨🇮",
+      "name": "flag: côte d’ivoire"
+    },
+    {
+      "ordinal": 3092,
+      "catalogIndex": 3091,
+      "emoji": "🇩🇰",
+      "name": "flag: denmark"
+    },
+    {
+      "ordinal": 3093,
+      "catalogIndex": 3092,
+      "emoji": "🇩🇬",
+      "name": "flag: diego garcia"
+    },
+    {
+      "ordinal": 3094,
+      "catalogIndex": 3093,
+      "emoji": "🇩🇯",
+      "name": "flag: djibouti"
+    },
+    {
+      "ordinal": 3095,
+      "catalogIndex": 3094,
+      "emoji": "🇩🇲",
+      "name": "flag: dominica"
+    },
+    {
+      "ordinal": 3096,
+      "catalogIndex": 3095,
+      "emoji": "🇩🇴",
+      "name": "flag: dominican republic"
+    },
+    {
+      "ordinal": 3097,
+      "catalogIndex": 3096,
+      "emoji": "🇪🇨",
+      "name": "flag: ecuador"
+    },
+    {
+      "ordinal": 3098,
+      "catalogIndex": 3097,
+      "emoji": "🇪🇬",
+      "name": "flag: egypt"
+    },
+    {
+      "ordinal": 3099,
+      "catalogIndex": 3098,
+      "emoji": "🇸🇻",
+      "name": "flag: el salvador"
+    },
+    {
+      "ordinal": 3100,
+      "catalogIndex": 3099,
+      "emoji": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+      "name": "flag: england"
+    },
+    {
+      "ordinal": 3101,
+      "catalogIndex": 3100,
+      "emoji": "🇬🇶",
+      "name": "flag: equatorial guinea"
+    },
+    {
+      "ordinal": 3102,
+      "catalogIndex": 3101,
+      "emoji": "🇪🇷",
+      "name": "flag: eritrea"
+    },
+    {
+      "ordinal": 3103,
+      "catalogIndex": 3102,
+      "emoji": "🇪🇪",
+      "name": "flag: estonia"
+    },
+    {
+      "ordinal": 3104,
+      "catalogIndex": 3103,
+      "emoji": "🇸🇿",
+      "name": "flag: eswatini"
+    },
+    {
+      "ordinal": 3105,
+      "catalogIndex": 3104,
+      "emoji": "🇪🇹",
+      "name": "flag: ethiopia"
+    },
+    {
+      "ordinal": 3106,
+      "catalogIndex": 3105,
+      "emoji": "🇪🇺",
+      "name": "flag: european union"
+    },
+    {
+      "ordinal": 3107,
+      "catalogIndex": 3106,
+      "emoji": "🇫🇰",
+      "name": "flag: falkland islands"
+    },
+    {
+      "ordinal": 3108,
+      "catalogIndex": 3107,
+      "emoji": "🇫🇴",
+      "name": "flag: faroe islands"
+    },
+    {
+      "ordinal": 3109,
+      "catalogIndex": 3108,
+      "emoji": "🇫🇯",
+      "name": "flag: fiji"
+    },
+    {
+      "ordinal": 3110,
+      "catalogIndex": 3109,
+      "emoji": "🇫🇮",
+      "name": "flag: finland"
+    },
+    {
+      "ordinal": 3111,
+      "catalogIndex": 3110,
+      "emoji": "🇫🇷",
+      "name": "flag: france"
+    },
+    {
+      "ordinal": 3112,
+      "catalogIndex": 3111,
+      "emoji": "🇬🇫",
+      "name": "flag: french guiana"
+    },
+    {
+      "ordinal": 3113,
+      "catalogIndex": 3112,
+      "emoji": "🇵🇫",
+      "name": "flag: french polynesia"
+    },
+    {
+      "ordinal": 3114,
+      "catalogIndex": 3113,
+      "emoji": "🇹🇫",
+      "name": "flag: french southern territories"
+    },
+    {
+      "ordinal": 3115,
+      "catalogIndex": 3114,
+      "emoji": "🇬🇦",
+      "name": "flag: gabon"
+    },
+    {
+      "ordinal": 3116,
+      "catalogIndex": 3115,
+      "emoji": "🇬🇲",
+      "name": "flag: gambia"
+    },
+    {
+      "ordinal": 3117,
+      "catalogIndex": 3116,
+      "emoji": "🇬🇪",
+      "name": "flag: georgia"
+    },
+    {
+      "ordinal": 3118,
+      "catalogIndex": 3117,
+      "emoji": "🇩🇪",
+      "name": "flag: germany"
+    },
+    {
+      "ordinal": 3119,
+      "catalogIndex": 3118,
+      "emoji": "🇬🇭",
+      "name": "flag: ghana"
+    },
+    {
+      "ordinal": 3120,
+      "catalogIndex": 3119,
+      "emoji": "🇬🇮",
+      "name": "flag: gibraltar"
+    },
+    {
+      "ordinal": 3121,
+      "catalogIndex": 3120,
+      "emoji": "🇬🇷",
+      "name": "flag: greece"
+    },
+    {
+      "ordinal": 3122,
+      "catalogIndex": 3121,
+      "emoji": "🇬🇱",
+      "name": "flag: greenland"
+    },
+    {
+      "ordinal": 3123,
+      "catalogIndex": 3122,
+      "emoji": "🇬🇩",
+      "name": "flag: grenada"
+    },
+    {
+      "ordinal": 3124,
+      "catalogIndex": 3123,
+      "emoji": "🇬🇵",
+      "name": "flag: guadeloupe"
+    },
+    {
+      "ordinal": 3125,
+      "catalogIndex": 3124,
+      "emoji": "🇬🇺",
+      "name": "flag: guam"
+    },
+    {
+      "ordinal": 3126,
+      "catalogIndex": 3125,
+      "emoji": "🇬🇹",
+      "name": "flag: guatemala"
+    },
+    {
+      "ordinal": 3127,
+      "catalogIndex": 3126,
+      "emoji": "🇬🇬",
+      "name": "flag: guernsey"
+    },
+    {
+      "ordinal": 3128,
+      "catalogIndex": 3127,
+      "emoji": "🇬🇳",
+      "name": "flag: guinea"
+    },
+    {
+      "ordinal": 3129,
+      "catalogIndex": 3128,
+      "emoji": "🇬🇼",
+      "name": "flag: guinea-bissau"
+    },
+    {
+      "ordinal": 3130,
+      "catalogIndex": 3129,
+      "emoji": "🇬🇾",
+      "name": "flag: guyana"
+    }
+  ]
+}

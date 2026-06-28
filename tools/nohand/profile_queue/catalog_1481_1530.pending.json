@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 1481,
+    "endOrdinal": 1530,
+    "startCatalogIndex": 1480,
+    "endCatalogIndex": 1529,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 1481,
+      "catalogIndex": 1480,
+      "emoji": "🧝🏾‍♀️",
+      "name": "woman elf: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1482,
+      "catalogIndex": 1481,
+      "emoji": "🧝🏼‍♀️",
+      "name": "woman elf: medium-light skin tone"
+    },
+    {
+      "ordinal": 1483,
+      "catalogIndex": 1482,
+      "emoji": "👩‍🏭",
+      "name": "woman factory worker"
+    },
+    {
+      "ordinal": 1484,
+      "catalogIndex": 1483,
+      "emoji": "👩🏿‍🏭",
+      "name": "woman factory worker: dark skin tone"
+    },
+    {
+      "ordinal": 1485,
+      "catalogIndex": 1484,
+      "emoji": "👩🏻‍🏭",
+      "name": "woman factory worker: light skin tone"
+    },
+    {
+      "ordinal": 1486,
+      "catalogIndex": 1485,
+      "emoji": "👩🏽‍🏭",
+      "name": "woman factory worker: medium skin tone"
+    },
+    {
+      "ordinal": 1487,
+      "catalogIndex": 1486,
+      "emoji": "👩🏾‍🏭",
+      "name": "woman factory worker: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1488,
+      "catalogIndex": 1487,
+      "emoji": "👩🏼‍🏭",
+      "name": "woman factory worker: medium-light skin tone"
+    },
+    {
+      "ordinal": 1489,
+      "catalogIndex": 1488,
+      "emoji": "🧚‍♀️",
+      "name": "woman fairy"
+    },
+    {
+      "ordinal": 1490,
+      "catalogIndex": 1489,
+      "emoji": "🧚🏿‍♀️",
+      "name": "woman fairy: dark skin tone"
+    },
+    {
+      "ordinal": 1491,
+      "catalogIndex": 1490,
+      "emoji": "🧚🏻‍♀️",
+      "name": "woman fairy: light skin tone"
+    },
+    {
+      "ordinal": 1492,
+      "catalogIndex": 1491,
+      "emoji": "🧚🏽‍♀️",
+      "name": "woman fairy: medium skin tone"
+    },
+    {
+      "ordinal": 1493,
+      "catalogIndex": 1492,
+      "emoji": "🧚🏾‍♀️",
+      "name": "woman fairy: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1494,
+      "catalogIndex": 1493,
+      "emoji": "🧚🏼‍♀️",
+      "name": "woman fairy: medium-light skin tone"
+    },
+    {
+      "ordinal": 1495,
+      "catalogIndex": 1494,
+      "emoji": "👩‍🌾",
+      "name": "woman farmer"
+    },
+    {
+      "ordinal": 1496,
+      "catalogIndex": 1495,
+      "emoji": "👩🏿‍🌾",
+      "name": "woman farmer: dark skin tone"
+    },
+    {
+      "ordinal": 1497,
+      "catalogIndex": 1496,
+      "emoji": "👩🏻‍🌾",
+      "name": "woman farmer: light skin tone"
+    },
+    {
+      "ordinal": 1498,
+      "catalogIndex": 1497,
+      "emoji": "👩🏽‍🌾",
+      "name": "woman farmer: medium skin tone"
+    },
+    {
+      "ordinal": 1499,
+      "catalogIndex": 1498,
+      "emoji": "👩🏾‍🌾",
+      "name": "woman farmer: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1500,
+      "catalogIndex": 1499,
+      "emoji": "👩🏼‍🌾",
+      "name": "woman farmer: medium-light skin tone"
+    },
+    {
+      "ordinal": 1501,
+      "catalogIndex": 1500,
+      "emoji": "👩‍🍼",
+      "name": "woman feeding baby"
+    },
+    {
+      "ordinal": 1502,
+      "catalogIndex": 1501,
+      "emoji": "👩🏿‍🍼",
+      "name": "woman feeding baby: dark skin tone"
+    },
+    {
+      "ordinal": 1503,
+      "catalogIndex": 1502,
+      "emoji": "👩🏻‍🍼",
+      "name": "woman feeding baby: light skin tone"
+    },
+    {
+      "ordinal": 1504,
+      "catalogIndex": 1503,
+      "emoji": "👩🏽‍🍼",
+      "name": "woman feeding baby: medium skin tone"
+    },
+    {
+      "ordinal": 1505,
+      "catalogIndex": 1504,
+      "emoji": "👩🏾‍🍼",
+      "name": "woman feeding baby: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1506,
+      "catalogIndex": 1505,
+      "emoji": "👩🏼‍🍼",
+      "name": "woman feeding baby: medium-light skin tone"
+    },
+    {
+      "ordinal": 1507,
+      "catalogIndex": 1506,
+      "emoji": "👩‍🚒",
+      "name": "woman firefighter"
+    },
+    {
+      "ordinal": 1508,
+      "catalogIndex": 1507,
+      "emoji": "👩🏿‍🚒",
+      "name": "woman firefighter: dark skin tone"
+    },
+    {
+      "ordinal": 1509,
+      "catalogIndex": 1508,
+      "emoji": "👩🏻‍🚒",
+      "name": "woman firefighter: light skin tone"
+    },
+    {
+      "ordinal": 1510,
+      "catalogIndex": 1509,
+      "emoji": "👩🏽‍🚒",
+      "name": "woman firefighter: medium skin tone"
+    },
+    {
+      "ordinal": 1511,
+      "catalogIndex": 1510,
+      "emoji": "👩🏾‍🚒",
+      "name": "woman firefighter: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1512,
+      "catalogIndex": 1511,
+      "emoji": "👩🏼‍🚒",
+      "name": "woman firefighter: medium-light skin tone"
+    },
+    {
+      "ordinal": 1513,
+      "catalogIndex": 1512,
+      "emoji": "🧞‍♀️",
+      "name": "woman genie"
+    },
+    {
+      "ordinal": 1514,
+      "catalogIndex": 1513,
+      "emoji": "🙅‍♀️",
+      "name": "woman gesturing no"
+    },
+    {
+      "ordinal": 1515,
+      "catalogIndex": 1514,
+      "emoji": "🙅🏿‍♀️",
+      "name": "woman gesturing no: dark skin tone"
+    },
+    {
+      "ordinal": 1516,
+      "catalogIndex": 1515,
+      "emoji": "🙅🏻‍♀️",
+      "name": "woman gesturing no: light skin tone"
+    },
+    {
+      "ordinal": 1517,
+      "catalogIndex": 1516,
+      "emoji": "🙅🏽‍♀️",
+      "name": "woman gesturing no: medium skin tone"
+    },
+    {
+      "ordinal": 1518,
+      "catalogIndex": 1517,
+      "emoji": "🙅🏾‍♀️",
+      "name": "woman gesturing no: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1519,
+      "catalogIndex": 1518,
+      "emoji": "🙅🏼‍♀️",
+      "name": "woman gesturing no: medium-light skin tone"
+    },
+    {
+      "ordinal": 1520,
+      "catalogIndex": 1519,
+      "emoji": "🙆‍♀️",
+      "name": "woman gesturing ok"
+    },
+    {
+      "ordinal": 1521,
+      "catalogIndex": 1520,
+      "emoji": "🙆🏿‍♀️",
+      "name": "woman gesturing ok: dark skin tone"
+    },
+    {
+      "ordinal": 1522,
+      "catalogIndex": 1521,
+      "emoji": "🙆🏻‍♀️",
+      "name": "woman gesturing ok: light skin tone"
+    },
+    {
+      "ordinal": 1523,
+      "catalogIndex": 1522,
+      "emoji": "🙆🏽‍♀️",
+      "name": "woman gesturing ok: medium skin tone"
+    },
+    {
+      "ordinal": 1524,
+      "catalogIndex": 1523,
+      "emoji": "🙆🏾‍♀️",
+      "name": "woman gesturing ok: medium-dark skin tone"
+    },
+    {
+      "ordinal": 1525,
+      "catalogIndex": 1524,
+      "emoji": "🙆🏼‍♀️",
+      "name": "woman gesturing ok: medium-light skin tone"
+    },
+    {
+      "ordinal": 1526,
+      "catalogIndex": 1525,
+      "emoji": "💇‍♀️",
+      "name": "woman getting haircut"
+    },
+    {
+      "ordinal": 1527,
+      "catalogIndex": 1526,
+      "emoji": "💇🏿‍♀️",
+      "name": "woman getting haircut: dark skin tone"
+    },
+    {
+      "ordinal": 1528,
+      "catalogIndex": 1527,
+      "emoji": "💇🏻‍♀️",
+      "name": "woman getting haircut: light skin tone"
+    },
+    {
+      "ordinal": 1529,
+      "catalogIndex": 1528,
+      "emoji": "💇🏽‍♀️",
+      "name": "woman getting haircut: medium skin tone"
+    },
+    {
+      "ordinal": 1530,
+      "catalogIndex": 1529,
+      "emoji": "💇🏾‍♀️",
+      "name": "woman getting haircut: medium-dark skin tone"
+    }
+  ]
+}

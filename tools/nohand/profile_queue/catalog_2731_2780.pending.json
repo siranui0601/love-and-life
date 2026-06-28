@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 2731,
+    "endOrdinal": 2780,
+    "startCatalogIndex": 2730,
+    "endCatalogIndex": 2779,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2731,
+      "catalogIndex": 2730,
+      "emoji": "🏙️",
+      "name": "cityscape"
+    },
+    {
+      "ordinal": 2732,
+      "catalogIndex": 2731,
+      "emoji": "🌆",
+      "name": "cityscape at dusk"
+    },
+    {
+      "ordinal": 2733,
+      "catalogIndex": 2732,
+      "emoji": "🆑",
+      "name": "cl button"
+    },
+    {
+      "ordinal": 2734,
+      "catalogIndex": 2733,
+      "emoji": "♣️",
+      "name": "club suit"
+    },
+    {
+      "ordinal": 2735,
+      "catalogIndex": 2734,
+      "emoji": "💥",
+      "name": "collision"
+    },
+    {
+      "ordinal": 2736,
+      "catalogIndex": 2735,
+      "emoji": "🚧",
+      "name": "construction"
+    },
+    {
+      "ordinal": 2737,
+      "catalogIndex": 2736,
+      "emoji": "🎛️",
+      "name": "control knobs"
+    },
+    {
+      "ordinal": 2738,
+      "catalogIndex": 2737,
+      "emoji": "🆒",
+      "name": "cool button"
+    },
+    {
+      "ordinal": 2739,
+      "catalogIndex": 2738,
+      "emoji": "©️",
+      "name": "copyright"
+    },
+    {
+      "ordinal": 2740,
+      "catalogIndex": 2739,
+      "emoji": "🦀",
+      "name": "crab"
+    },
+    {
+      "ordinal": 2741,
+      "catalogIndex": 2740,
+      "emoji": "❌",
+      "name": "cross mark"
+    },
+    {
+      "ordinal": 2742,
+      "catalogIndex": 2741,
+      "emoji": "❎",
+      "name": "cross mark button"
+    },
+    {
+      "ordinal": 2743,
+      "catalogIndex": 2742,
+      "emoji": "🥤",
+      "name": "cup with straw"
+    },
+    {
+      "ordinal": 2744,
+      "catalogIndex": 2743,
+      "emoji": "🥌",
+      "name": "curling stone"
+    },
+    {
+      "ordinal": 2745,
+      "catalogIndex": 2744,
+      "emoji": "➰",
+      "name": "curly loop"
+    },
+    {
+      "ordinal": 2746,
+      "catalogIndex": 2745,
+      "emoji": "💱",
+      "name": "currency exchange"
+    },
+    {
+      "ordinal": 2747,
+      "catalogIndex": 2746,
+      "emoji": "🛃",
+      "name": "customs"
+    },
+    {
+      "ordinal": 2748,
+      "catalogIndex": 2747,
+      "emoji": "💨",
+      "name": "dashing away"
+    },
+    {
+      "ordinal": 2749,
+      "catalogIndex": 2748,
+      "emoji": "🕵️",
+      "name": "detective"
+    },
+    {
+      "ordinal": 2750,
+      "catalogIndex": 2749,
+      "emoji": "♦️",
+      "name": "diamond suit"
+    },
+    {
+      "ordinal": 2751,
+      "catalogIndex": 2750,
+      "emoji": "💠",
+      "name": "diamond with a dot"
+    },
+    {
+      "ordinal": 2752,
+      "catalogIndex": 2751,
+      "emoji": "🔅",
+      "name": "dim button"
+    },
+    {
+      "ordinal": 2753,
+      "catalogIndex": 2752,
+      "emoji": "🎯",
+      "name": "direct hit"
+    },
+    {
+      "ordinal": 2754,
+      "catalogIndex": 2753,
+      "emoji": "➗",
+      "name": "divide"
+    },
+    {
+      "ordinal": 2755,
+      "catalogIndex": 2754,
+      "emoji": "🪔",
+      "name": "diya lamp"
+    },
+    {
+      "ordinal": 2756,
+      "catalogIndex": 2755,
+      "emoji": "🧬",
+      "name": "dna"
+    },
+    {
+      "ordinal": 2757,
+      "catalogIndex": 2756,
+      "emoji": "➿",
+      "name": "double curly loop"
+    },
+    {
+      "ordinal": 2758,
+      "catalogIndex": 2757,
+      "emoji": "‼️",
+      "name": "double exclamation mark"
+    },
+    {
+      "ordinal": 2759,
+      "catalogIndex": 2758,
+      "emoji": "🍩",
+      "name": "doughnut"
+    },
+    {
+      "ordinal": 2760,
+      "catalogIndex": 2759,
+      "emoji": "⬇️",
+      "name": "down arrow"
+    },
+    {
+      "ordinal": 2761,
+      "catalogIndex": 2760,
+      "emoji": "↙️",
+      "name": "down-left arrow"
+    },
+    {
+      "ordinal": 2762,
+      "catalogIndex": 2761,
+      "emoji": "↘️",
+      "name": "down-right arrow"
+    },
+    {
+      "ordinal": 2763,
+      "catalogIndex": 2762,
+      "emoji": "🔽",
+      "name": "downwards button"
+    },
+    {
+      "ordinal": 2764,
+      "catalogIndex": 2763,
+      "emoji": "🩸",
+      "name": "drop of blood"
+    },
+    {
+      "ordinal": 2765,
+      "catalogIndex": 2764,
+      "emoji": "📀",
+      "name": "dvd"
+    },
+    {
+      "ordinal": 2766,
+      "catalogIndex": 2765,
+      "emoji": "📧",
+      "name": "e-mail"
+    },
+    {
+      "ordinal": 2767,
+      "catalogIndex": 2766,
+      "emoji": "✳️",
+      "name": "eight-spoked asterisk"
+    },
+    {
+      "ordinal": 2768,
+      "catalogIndex": 2767,
+      "emoji": "🕣",
+      "name": "eight-thirty"
+    },
+    {
+      "ordinal": 2769,
+      "catalogIndex": 2768,
+      "emoji": "⏏️",
+      "name": "eject button"
+    },
+    {
+      "ordinal": 2770,
+      "catalogIndex": 2769,
+      "emoji": "🔌",
+      "name": "electric plug"
+    },
+    {
+      "ordinal": 2771,
+      "catalogIndex": 2770,
+      "emoji": "🕦",
+      "name": "eleven-thirty"
+    },
+    {
+      "ordinal": 2772,
+      "catalogIndex": 2771,
+      "emoji": "🔚",
+      "name": "end arrow"
+    },
+    {
+      "ordinal": 2773,
+      "catalogIndex": 2772,
+      "emoji": "❗",
+      "name": "exclamation mark"
+    },
+    {
+      "ordinal": 2774,
+      "catalogIndex": 2773,
+      "emoji": "⁉️",
+      "name": "exclamation question mark"
+    },
+    {
+      "ordinal": 2775,
+      "catalogIndex": 2774,
+      "emoji": "🤯",
+      "name": "exploding head"
+    },
+    {
+      "ordinal": 2776,
+      "catalogIndex": 2775,
+      "emoji": "⏬",
+      "name": "fast down button"
+    },
+    {
+      "ordinal": 2777,
+      "catalogIndex": 2776,
+      "emoji": "⏪",
+      "name": "fast reverse button"
+    },
+    {
+      "ordinal": 2778,
+      "catalogIndex": 2777,
+      "emoji": "⏫",
+      "name": "fast up button"
+    },
+    {
+      "ordinal": 2779,
+      "catalogIndex": 2778,
+      "emoji": "⏩",
+      "name": "fast-forward button"
+    },
+    {
+      "ordinal": 2780,
+      "catalogIndex": 2779,
+      "emoji": "📠",
+      "name": "fax machine"
+    }
+  ]
+}

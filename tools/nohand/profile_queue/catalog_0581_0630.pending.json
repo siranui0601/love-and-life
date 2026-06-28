@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 581,
+    "endOrdinal": 630,
+    "startCatalogIndex": 580,
+    "endCatalogIndex": 629,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 581,
+      "catalogIndex": 580,
+      "emoji": "🙆🏿‍♂️",
+      "name": "man gesturing ok: dark skin tone"
+    },
+    {
+      "ordinal": 582,
+      "catalogIndex": 581,
+      "emoji": "🙆🏻‍♂️",
+      "name": "man gesturing ok: light skin tone"
+    },
+    {
+      "ordinal": 583,
+      "catalogIndex": 582,
+      "emoji": "🙆🏽‍♂️",
+      "name": "man gesturing ok: medium skin tone"
+    },
+    {
+      "ordinal": 584,
+      "catalogIndex": 583,
+      "emoji": "🙆🏾‍♂️",
+      "name": "man gesturing ok: medium-dark skin tone"
+    },
+    {
+      "ordinal": 585,
+      "catalogIndex": 584,
+      "emoji": "🙆🏼‍♂️",
+      "name": "man gesturing ok: medium-light skin tone"
+    },
+    {
+      "ordinal": 586,
+      "catalogIndex": 585,
+      "emoji": "💇‍♂️",
+      "name": "man getting haircut"
+    },
+    {
+      "ordinal": 587,
+      "catalogIndex": 586,
+      "emoji": "💇🏿‍♂️",
+      "name": "man getting haircut: dark skin tone"
+    },
+    {
+      "ordinal": 588,
+      "catalogIndex": 587,
+      "emoji": "💇🏻‍♂️",
+      "name": "man getting haircut: light skin tone"
+    },
+    {
+      "ordinal": 589,
+      "catalogIndex": 588,
+      "emoji": "💇🏽‍♂️",
+      "name": "man getting haircut: medium skin tone"
+    },
+    {
+      "ordinal": 590,
+      "catalogIndex": 589,
+      "emoji": "💇🏾‍♂️",
+      "name": "man getting haircut: medium-dark skin tone"
+    },
+    {
+      "ordinal": 591,
+      "catalogIndex": 590,
+      "emoji": "💇🏼‍♂️",
+      "name": "man getting haircut: medium-light skin tone"
+    },
+    {
+      "ordinal": 592,
+      "catalogIndex": 591,
+      "emoji": "💆‍♂️",
+      "name": "man getting massage"
+    },
+    {
+      "ordinal": 593,
+      "catalogIndex": 592,
+      "emoji": "💆🏿‍♂️",
+      "name": "man getting massage: dark skin tone"
+    },
+    {
+      "ordinal": 594,
+      "catalogIndex": 593,
+      "emoji": "💆🏻‍♂️",
+      "name": "man getting massage: light skin tone"
+    },
+    {
+      "ordinal": 595,
+      "catalogIndex": 594,
+      "emoji": "💆🏽‍♂️",
+      "name": "man getting massage: medium skin tone"
+    },
+    {
+      "ordinal": 596,
+      "catalogIndex": 595,
+      "emoji": "💆🏾‍♂️",
+      "name": "man getting massage: medium-dark skin tone"
+    },
+    {
+      "ordinal": 597,
+      "catalogIndex": 596,
+      "emoji": "💆🏼‍♂️",
+      "name": "man getting massage: medium-light skin tone"
+    },
+    {
+      "ordinal": 598,
+      "catalogIndex": 597,
+      "emoji": "🏌️‍♂️",
+      "name": "man golfing"
+    },
+    {
+      "ordinal": 599,
+      "catalogIndex": 598,
+      "emoji": "🏌🏿‍♂️",
+      "name": "man golfing: dark skin tone"
+    },
+    {
+      "ordinal": 600,
+      "catalogIndex": 599,
+      "emoji": "🏌🏻‍♂️",
+      "name": "man golfing: light skin tone"
+    },
+    {
+      "ordinal": 601,
+      "catalogIndex": 600,
+      "emoji": "🏌🏽‍♂️",
+      "name": "man golfing: medium skin tone"
+    },
+    {
+      "ordinal": 602,
+      "catalogIndex": 601,
+      "emoji": "🏌🏾‍♂️",
+      "name": "man golfing: medium-dark skin tone"
+    },
+    {
+      "ordinal": 603,
+      "catalogIndex": 602,
+      "emoji": "🏌🏼‍♂️",
+      "name": "man golfing: medium-light skin tone"
+    },
+    {
+      "ordinal": 604,
+      "catalogIndex": 603,
+      "emoji": "💂‍♂️",
+      "name": "man guard"
+    },
+    {
+      "ordinal": 605,
+      "catalogIndex": 604,
+      "emoji": "💂🏿‍♂️",
+      "name": "man guard: dark skin tone"
+    },
+    {
+      "ordinal": 606,
+      "catalogIndex": 605,
+      "emoji": "💂🏻‍♂️",
+      "name": "man guard: light skin tone"
+    },
+    {
+      "ordinal": 607,
+      "catalogIndex": 606,
+      "emoji": "💂🏽‍♂️",
+      "name": "man guard: medium skin tone"
+    },
+    {
+      "ordinal": 608,
+      "catalogIndex": 607,
+      "emoji": "💂🏾‍♂️",
+      "name": "man guard: medium-dark skin tone"
+    },
+    {
+      "ordinal": 609,
+      "catalogIndex": 608,
+      "emoji": "💂🏼‍♂️",
+      "name": "man guard: medium-light skin tone"
+    },
+    {
+      "ordinal": 610,
+      "catalogIndex": 609,
+      "emoji": "👨‍⚕️",
+      "name": "man health worker"
+    },
+    {
+      "ordinal": 611,
+      "catalogIndex": 610,
+      "emoji": "👨🏿‍⚕️",
+      "name": "man health worker: dark skin tone"
+    },
+    {
+      "ordinal": 612,
+      "catalogIndex": 611,
+      "emoji": "👨🏻‍⚕️",
+      "name": "man health worker: light skin tone"
+    },
+    {
+      "ordinal": 613,
+      "catalogIndex": 612,
+      "emoji": "👨🏽‍⚕️",
+      "name": "man health worker: medium skin tone"
+    },
+    {
+      "ordinal": 614,
+      "catalogIndex": 613,
+      "emoji": "👨🏾‍⚕️",
+      "name": "man health worker: medium-dark skin tone"
+    },
+    {
+      "ordinal": 615,
+      "catalogIndex": 614,
+      "emoji": "👨🏼‍⚕️",
+      "name": "man health worker: medium-light skin tone"
+    },
+    {
+      "ordinal": 616,
+      "catalogIndex": 615,
+      "emoji": "🧘‍♂️",
+      "name": "man in lotus position"
+    },
+    {
+      "ordinal": 617,
+      "catalogIndex": 616,
+      "emoji": "🧘🏿‍♂️",
+      "name": "man in lotus position: dark skin tone"
+    },
+    {
+      "ordinal": 618,
+      "catalogIndex": 617,
+      "emoji": "🧘🏻‍♂️",
+      "name": "man in lotus position: light skin tone"
+    },
+    {
+      "ordinal": 619,
+      "catalogIndex": 618,
+      "emoji": "🧘🏽‍♂️",
+      "name": "man in lotus position: medium skin tone"
+    },
+    {
+      "ordinal": 620,
+      "catalogIndex": 619,
+      "emoji": "🧘🏾‍♂️",
+      "name": "man in lotus position: medium-dark skin tone"
+    },
+    {
+      "ordinal": 621,
+      "catalogIndex": 620,
+      "emoji": "🧘🏼‍♂️",
+      "name": "man in lotus position: medium-light skin tone"
+    },
+    {
+      "ordinal": 622,
+      "catalogIndex": 621,
+      "emoji": "👨‍🦽",
+      "name": "man in manual wheelchair"
+    },
+    {
+      "ordinal": 623,
+      "catalogIndex": 622,
+      "emoji": "👨🏿‍🦽",
+      "name": "man in manual wheelchair: dark skin tone"
+    },
+    {
+      "ordinal": 624,
+      "catalogIndex": 623,
+      "emoji": "👨🏻‍🦽",
+      "name": "man in manual wheelchair: light skin tone"
+    },
+    {
+      "ordinal": 625,
+      "catalogIndex": 624,
+      "emoji": "👨🏽‍🦽",
+      "name": "man in manual wheelchair: medium skin tone"
+    },
+    {
+      "ordinal": 626,
+      "catalogIndex": 625,
+      "emoji": "👨🏾‍🦽",
+      "name": "man in manual wheelchair: medium-dark skin tone"
+    },
+    {
+      "ordinal": 627,
+      "catalogIndex": 626,
+      "emoji": "👨🏼‍🦽",
+      "name": "man in manual wheelchair: medium-light skin tone"
+    },
+    {
+      "ordinal": 628,
+      "catalogIndex": 627,
+      "emoji": "👨‍🦼",
+      "name": "man in motorized wheelchair"
+    },
+    {
+      "ordinal": 629,
+      "catalogIndex": 628,
+      "emoji": "👨🏿‍🦼",
+      "name": "man in motorized wheelchair: dark skin tone"
+    },
+    {
+      "ordinal": 630,
+      "catalogIndex": 629,
+      "emoji": "👨🏻‍🦼",
+      "name": "man in motorized wheelchair: light skin tone"
+    }
+  ]
+}

@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 2081,
+    "endOrdinal": 2130,
+    "startCatalogIndex": 2080,
+    "endCatalogIndex": 2129,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2081,
+      "catalogIndex": 2080,
+      "emoji": "🐚",
+      "name": "spiral shell"
+    },
+    {
+      "ordinal": 2082,
+      "catalogIndex": 2081,
+      "emoji": "🐳",
+      "name": "spouting whale"
+    },
+    {
+      "ordinal": 2083,
+      "catalogIndex": 2082,
+      "emoji": "⭐",
+      "name": "star"
+    },
+    {
+      "ordinal": 2084,
+      "catalogIndex": 2083,
+      "emoji": "☪️",
+      "name": "star and crescent"
+    },
+    {
+      "ordinal": 2085,
+      "catalogIndex": 2084,
+      "emoji": "✡️",
+      "name": "star of david"
+    },
+    {
+      "ordinal": 2086,
+      "catalogIndex": 2085,
+      "emoji": "🤩",
+      "name": "star-struck"
+    },
+    {
+      "ordinal": 2087,
+      "catalogIndex": 2086,
+      "emoji": "☀️",
+      "name": "sun"
+    },
+    {
+      "ordinal": 2088,
+      "catalogIndex": 2087,
+      "emoji": "⛅",
+      "name": "sun behind cloud"
+    },
+    {
+      "ordinal": 2089,
+      "catalogIndex": 2088,
+      "emoji": "🌥️",
+      "name": "sun behind large cloud"
+    },
+    {
+      "ordinal": 2090,
+      "catalogIndex": 2089,
+      "emoji": "🌦️",
+      "name": "sun behind rain cloud"
+    },
+    {
+      "ordinal": 2091,
+      "catalogIndex": 2090,
+      "emoji": "🌤️",
+      "name": "sun behind small cloud"
+    },
+    {
+      "ordinal": 2092,
+      "catalogIndex": 2091,
+      "emoji": "🌻",
+      "name": "sunflower"
+    },
+    {
+      "ordinal": 2093,
+      "catalogIndex": 2092,
+      "emoji": "🕶️",
+      "name": "sunglasses"
+    },
+    {
+      "ordinal": 2094,
+      "catalogIndex": 2093,
+      "emoji": "🌅",
+      "name": "sunrise"
+    },
+    {
+      "ordinal": 2095,
+      "catalogIndex": 2094,
+      "emoji": "🌄",
+      "name": "sunrise over mountains"
+    },
+    {
+      "ordinal": 2096,
+      "catalogIndex": 2095,
+      "emoji": "🌇",
+      "name": "sunset"
+    },
+    {
+      "ordinal": 2097,
+      "catalogIndex": 2096,
+      "emoji": "🦢",
+      "name": "swan"
+    },
+    {
+      "ordinal": 2098,
+      "catalogIndex": 2097,
+      "emoji": "🥡",
+      "name": "takeout box"
+    },
+    {
+      "ordinal": 2099,
+      "catalogIndex": 2098,
+      "emoji": "🎋",
+      "name": "tanabata tree"
+    },
+    {
+      "ordinal": 2100,
+      "catalogIndex": 2099,
+      "emoji": "🐅",
+      "name": "tiger"
+    },
+    {
+      "ordinal": 2101,
+      "catalogIndex": 2100,
+      "emoji": "🧰",
+      "name": "toolbox"
+    },
+    {
+      "ordinal": 2102,
+      "catalogIndex": 2101,
+      "emoji": "🌪️",
+      "name": "tornado"
+    },
+    {
+      "ordinal": 2103,
+      "catalogIndex": 2102,
+      "emoji": "🚆",
+      "name": "train"
+    },
+    {
+      "ordinal": 2104,
+      "catalogIndex": 2103,
+      "emoji": "🚊",
+      "name": "tram"
+    },
+    {
+      "ordinal": 2105,
+      "catalogIndex": 2104,
+      "emoji": "🚋",
+      "name": "tram car"
+    },
+    {
+      "ordinal": 2106,
+      "catalogIndex": 2105,
+      "emoji": "🐠",
+      "name": "tropical fish"
+    },
+    {
+      "ordinal": 2107,
+      "catalogIndex": 2106,
+      "emoji": "🌷",
+      "name": "tulip"
+    },
+    {
+      "ordinal": 2108,
+      "catalogIndex": 2107,
+      "emoji": "🦃",
+      "name": "turkey"
+    },
+    {
+      "ordinal": 2109,
+      "catalogIndex": 2108,
+      "emoji": "🐢",
+      "name": "turtle"
+    },
+    {
+      "ordinal": 2110,
+      "catalogIndex": 2109,
+      "emoji": "🐫",
+      "name": "two-hump camel"
+    },
+    {
+      "ordinal": 2111,
+      "catalogIndex": 2110,
+      "emoji": "☂️",
+      "name": "umbrella"
+    },
+    {
+      "ordinal": 2112,
+      "catalogIndex": 2111,
+      "emoji": "⛱️",
+      "name": "umbrella on ground"
+    },
+    {
+      "ordinal": 2113,
+      "catalogIndex": 2112,
+      "emoji": "☔",
+      "name": "umbrella with rain drops"
+    },
+    {
+      "ordinal": 2114,
+      "catalogIndex": 2113,
+      "emoji": "📳",
+      "name": "vibration mode"
+    },
+    {
+      "ordinal": 2115,
+      "catalogIndex": 2114,
+      "emoji": "🌋",
+      "name": "volcano"
+    },
+    {
+      "ordinal": 2116,
+      "catalogIndex": 2115,
+      "emoji": "🌘",
+      "name": "waning crescent moon"
+    },
+    {
+      "ordinal": 2117,
+      "catalogIndex": 2116,
+      "emoji": "🌖",
+      "name": "waning gibbous moon"
+    },
+    {
+      "ordinal": 2118,
+      "catalogIndex": 2117,
+      "emoji": "🐃",
+      "name": "water buffalo"
+    },
+    {
+      "ordinal": 2119,
+      "catalogIndex": 2118,
+      "emoji": "🚾",
+      "name": "water closet"
+    },
+    {
+      "ordinal": 2120,
+      "catalogIndex": 2119,
+      "emoji": "🌊",
+      "name": "water wave"
+    },
+    {
+      "ordinal": 2121,
+      "catalogIndex": 2120,
+      "emoji": "🌒",
+      "name": "waxing crescent moon"
+    },
+    {
+      "ordinal": 2122,
+      "catalogIndex": 2121,
+      "emoji": "🌔",
+      "name": "waxing gibbous moon"
+    },
+    {
+      "ordinal": 2123,
+      "catalogIndex": 2122,
+      "emoji": "🐋",
+      "name": "whale"
+    },
+    {
+      "ordinal": 2124,
+      "catalogIndex": 2123,
+      "emoji": "💮",
+      "name": "white flower"
+    },
+    {
+      "ordinal": 2125,
+      "catalogIndex": 2124,
+      "emoji": "🥀",
+      "name": "wilted flower"
+    },
+    {
+      "ordinal": 2126,
+      "catalogIndex": 2125,
+      "emoji": "🐺",
+      "name": "wolf"
+    },
+    {
+      "ordinal": 2127,
+      "catalogIndex": 2126,
+      "emoji": "🪱",
+      "name": "worm"
+    },
+    {
+      "ordinal": 2128,
+      "catalogIndex": 2127,
+      "emoji": "🦓",
+      "name": "zebra"
+    },
+    {
+      "ordinal": 2129,
+      "catalogIndex": 2128,
+      "emoji": "🥑",
+      "name": "avocado"
+    },
+    {
+      "ordinal": 2130,
+      "catalogIndex": 2129,
+      "emoji": "🥓",
+      "name": "bacon"
+    }
+  ]
+}

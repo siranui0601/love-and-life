@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 2931,
+    "endOrdinal": 2980,
+    "startCatalogIndex": 2930,
+    "endCatalogIndex": 2979,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2931,
+      "catalogIndex": 2930,
+      "emoji": "🔁",
+      "name": "repeat button"
+    },
+    {
+      "ordinal": 2932,
+      "catalogIndex": 2931,
+      "emoji": "🔂",
+      "name": "repeat single button"
+    },
+    {
+      "ordinal": 2933,
+      "catalogIndex": 2932,
+      "emoji": "🚻",
+      "name": "restroom"
+    },
+    {
+      "ordinal": 2934,
+      "catalogIndex": 2933,
+      "emoji": "◀️",
+      "name": "reverse button"
+    },
+    {
+      "ordinal": 2935,
+      "catalogIndex": 2934,
+      "emoji": "🗯️",
+      "name": "right anger bubble"
+    },
+    {
+      "ordinal": 2936,
+      "catalogIndex": 2935,
+      "emoji": "➡️",
+      "name": "right arrow"
+    },
+    {
+      "ordinal": 2937,
+      "catalogIndex": 2936,
+      "emoji": "⤵️",
+      "name": "right arrow curving down"
+    },
+    {
+      "ordinal": 2938,
+      "catalogIndex": 2937,
+      "emoji": "↩️",
+      "name": "right arrow curving left"
+    },
+    {
+      "ordinal": 2939,
+      "catalogIndex": 2938,
+      "emoji": "⤴️",
+      "name": "right arrow curving up"
+    },
+    {
+      "ordinal": 2940,
+      "catalogIndex": 2939,
+      "emoji": "🤜",
+      "name": "right-facing fist"
+    },
+    {
+      "ordinal": 2941,
+      "catalogIndex": 2940,
+      "emoji": "🎢",
+      "name": "roller coaster"
+    },
+    {
+      "ordinal": 2942,
+      "catalogIndex": 2941,
+      "emoji": "♐",
+      "name": "sagittarius"
+    },
+    {
+      "ordinal": 2943,
+      "catalogIndex": 2942,
+      "emoji": "🦕",
+      "name": "sauropod"
+    },
+    {
+      "ordinal": 2944,
+      "catalogIndex": 2943,
+      "emoji": "🧑‍🔬",
+      "name": "scientist"
+    },
+    {
+      "ordinal": 2945,
+      "catalogIndex": 2944,
+      "emoji": "♏",
+      "name": "scorpio"
+    },
+    {
+      "ordinal": 2946,
+      "catalogIndex": 2945,
+      "emoji": "📜",
+      "name": "scroll"
+    },
+    {
+      "ordinal": 2947,
+      "catalogIndex": 2946,
+      "emoji": "💺",
+      "name": "seat"
+    },
+    {
+      "ordinal": 2948,
+      "catalogIndex": 2947,
+      "emoji": "🕢",
+      "name": "seven-thirty"
+    },
+    {
+      "ordinal": 2949,
+      "catalogIndex": 2948,
+      "emoji": "🥘",
+      "name": "shallow pan of food"
+    },
+    {
+      "ordinal": 2950,
+      "catalogIndex": 2949,
+      "emoji": "🍧",
+      "name": "shaved ice"
+    },
+    {
+      "ordinal": 2951,
+      "catalogIndex": 2950,
+      "emoji": "🦐",
+      "name": "shrimp"
+    },
+    {
+      "ordinal": 2952,
+      "catalogIndex": 2951,
+      "emoji": "🤘",
+      "name": "sign of the horns"
+    },
+    {
+      "ordinal": 2953,
+      "catalogIndex": 2952,
+      "emoji": "🕡",
+      "name": "six-thirty"
+    },
+    {
+      "ordinal": 2954,
+      "catalogIndex": 2953,
+      "emoji": "🛷",
+      "name": "sled"
+    },
+    {
+      "ordinal": 2955,
+      "catalogIndex": 2954,
+      "emoji": "🎰",
+      "name": "slot machine"
+    },
+    {
+      "ordinal": 2956,
+      "catalogIndex": 2955,
+      "emoji": "🔹",
+      "name": "small blue diamond"
+    },
+    {
+      "ordinal": 2957,
+      "catalogIndex": 2956,
+      "emoji": "🧦",
+      "name": "socks"
+    },
+    {
+      "ordinal": 2958,
+      "catalogIndex": 2957,
+      "emoji": "🍦",
+      "name": "soft ice cream"
+    },
+    {
+      "ordinal": 2959,
+      "catalogIndex": 2958,
+      "emoji": "🔜",
+      "name": "soon arrow"
+    },
+    {
+      "ordinal": 2960,
+      "catalogIndex": 2959,
+      "emoji": "🆘",
+      "name": "sos button"
+    },
+    {
+      "ordinal": 2961,
+      "catalogIndex": 2960,
+      "emoji": "♠️",
+      "name": "spade suit"
+    },
+    {
+      "ordinal": 2962,
+      "catalogIndex": 2961,
+      "emoji": "❇️",
+      "name": "sparkle"
+    },
+    {
+      "ordinal": 2963,
+      "catalogIndex": 2962,
+      "emoji": "✨",
+      "name": "sparkles"
+    },
+    {
+      "ordinal": 2964,
+      "catalogIndex": 2963,
+      "emoji": "🗣️",
+      "name": "speaking head"
+    },
+    {
+      "ordinal": 2965,
+      "catalogIndex": 2964,
+      "emoji": "🗒️",
+      "name": "spiral notepad"
+    },
+    {
+      "ordinal": 2966,
+      "catalogIndex": 2965,
+      "emoji": "🦑",
+      "name": "squid"
+    },
+    {
+      "ordinal": 2967,
+      "catalogIndex": 2966,
+      "emoji": "🗽",
+      "name": "statue of liberty"
+    },
+    {
+      "ordinal": 2968,
+      "catalogIndex": 2967,
+      "emoji": "⏹️",
+      "name": "stop button"
+    },
+    {
+      "ordinal": 2969,
+      "catalogIndex": 2968,
+      "emoji": "🛑",
+      "name": "stop sign"
+    },
+    {
+      "ordinal": 2970,
+      "catalogIndex": 2969,
+      "emoji": "🧑‍🎓",
+      "name": "student"
+    },
+    {
+      "ordinal": 2971,
+      "catalogIndex": 2970,
+      "emoji": "🦸",
+      "name": "superhero"
+    },
+    {
+      "ordinal": 2972,
+      "catalogIndex": 2971,
+      "emoji": "🦹",
+      "name": "supervillain"
+    },
+    {
+      "ordinal": 2973,
+      "catalogIndex": 2972,
+      "emoji": "🦖",
+      "name": "t-rex"
+    },
+    {
+      "ordinal": 2974,
+      "catalogIndex": 2973,
+      "emoji": "🍊",
+      "name": "tangerine"
+    },
+    {
+      "ordinal": 2975,
+      "catalogIndex": 2974,
+      "emoji": "♉",
+      "name": "taurus"
+    },
+    {
+      "ordinal": 2976,
+      "catalogIndex": 2975,
+      "emoji": "🧑‍💻",
+      "name": "technologist"
+    },
+    {
+      "ordinal": 2977,
+      "catalogIndex": 2976,
+      "emoji": "📺",
+      "name": "television"
+    },
+    {
+      "ordinal": 2978,
+      "catalogIndex": 2977,
+      "emoji": "🕥",
+      "name": "ten-thirty"
+    },
+    {
+      "ordinal": 2979,
+      "catalogIndex": 2978,
+      "emoji": "🌡️",
+      "name": "thermometer"
+    },
+    {
+      "ordinal": 2980,
+      "catalogIndex": 2979,
+      "emoji": "🧵",
+      "name": "thread"
+    }
+  ]
+}

@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 1881,
+    "endOrdinal": 1930,
+    "startCatalogIndex": 1880,
+    "endCatalogIndex": 1929,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 1881,
+      "catalogIndex": 1880,
+      "emoji": "💐",
+      "name": "bouquet"
+    },
+    {
+      "ordinal": 1882,
+      "catalogIndex": 1881,
+      "emoji": "🐛",
+      "name": "bug"
+    },
+    {
+      "ordinal": 1883,
+      "catalogIndex": 1882,
+      "emoji": "🚅",
+      "name": "bullet train"
+    },
+    {
+      "ordinal": 1884,
+      "catalogIndex": 1883,
+      "emoji": "🦋",
+      "name": "butterfly"
+    },
+    {
+      "ordinal": 1885,
+      "catalogIndex": 1884,
+      "emoji": "🌵",
+      "name": "cactus"
+    },
+    {
+      "ordinal": 1886,
+      "catalogIndex": 1885,
+      "emoji": "🐪",
+      "name": "camel"
+    },
+    {
+      "ordinal": 1887,
+      "catalogIndex": 1886,
+      "emoji": "🏕️",
+      "name": "camping"
+    },
+    {
+      "ordinal": 1888,
+      "catalogIndex": 1887,
+      "emoji": "🗃️",
+      "name": "card file box"
+    },
+    {
+      "ordinal": 1889,
+      "catalogIndex": 1888,
+      "emoji": "🎠",
+      "name": "carousel horse"
+    },
+    {
+      "ordinal": 1890,
+      "catalogIndex": 1889,
+      "emoji": "🐈",
+      "name": "cat"
+    },
+    {
+      "ordinal": 1891,
+      "catalogIndex": 1890,
+      "emoji": "☑️",
+      "name": "check box with check"
+    },
+    {
+      "ordinal": 1892,
+      "catalogIndex": 1891,
+      "emoji": "🌸",
+      "name": "cherry blossom"
+    },
+    {
+      "ordinal": 1893,
+      "catalogIndex": 1892,
+      "emoji": "♟️",
+      "name": "chess pawn"
+    },
+    {
+      "ordinal": 1894,
+      "catalogIndex": 1893,
+      "emoji": "🐔",
+      "name": "chicken"
+    },
+    {
+      "ordinal": 1895,
+      "catalogIndex": 1894,
+      "emoji": "🐿️",
+      "name": "chipmunk"
+    },
+    {
+      "ordinal": 1896,
+      "catalogIndex": 1895,
+      "emoji": "🎄",
+      "name": "christmas tree"
+    },
+    {
+      "ordinal": 1897,
+      "catalogIndex": 1896,
+      "emoji": "🎬",
+      "name": "clapper board"
+    },
+    {
+      "ordinal": 1898,
+      "catalogIndex": 1897,
+      "emoji": "📋",
+      "name": "clipboard"
+    },
+    {
+      "ordinal": 1899,
+      "catalogIndex": 1898,
+      "emoji": "🌂",
+      "name": "closed umbrella"
+    },
+    {
+      "ordinal": 1900,
+      "catalogIndex": 1899,
+      "emoji": "☁️",
+      "name": "cloud"
+    },
+    {
+      "ordinal": 1901,
+      "catalogIndex": 1900,
+      "emoji": "🌩️",
+      "name": "cloud with lightning"
+    },
+    {
+      "ordinal": 1902,
+      "catalogIndex": 1901,
+      "emoji": "⛈️",
+      "name": "cloud with lightning and rain"
+    },
+    {
+      "ordinal": 1903,
+      "catalogIndex": 1902,
+      "emoji": "🌧️",
+      "name": "cloud with rain"
+    },
+    {
+      "ordinal": 1904,
+      "catalogIndex": 1903,
+      "emoji": "🌨️",
+      "name": "cloud with snow"
+    },
+    {
+      "ordinal": 1905,
+      "catalogIndex": 1904,
+      "emoji": "🪳",
+      "name": "cockroach"
+    },
+    {
+      "ordinal": 1906,
+      "catalogIndex": 1905,
+      "emoji": "☄️",
+      "name": "comet"
+    },
+    {
+      "ordinal": 1907,
+      "catalogIndex": 1906,
+      "emoji": "🖱️",
+      "name": "computer mouse"
+    },
+    {
+      "ordinal": 1908,
+      "catalogIndex": 1907,
+      "emoji": "🐄",
+      "name": "cow"
+    },
+    {
+      "ordinal": 1909,
+      "catalogIndex": 1908,
+      "emoji": "🌙",
+      "name": "crescent moon"
+    },
+    {
+      "ordinal": 1910,
+      "catalogIndex": 1909,
+      "emoji": "🦗",
+      "name": "cricket"
+    },
+    {
+      "ordinal": 1911,
+      "catalogIndex": 1910,
+      "emoji": "🏏",
+      "name": "cricket game"
+    },
+    {
+      "ordinal": 1912,
+      "catalogIndex": 1911,
+      "emoji": "🐊",
+      "name": "crocodile"
+    },
+    {
+      "ordinal": 1913,
+      "catalogIndex": 1912,
+      "emoji": "🌀",
+      "name": "cyclone"
+    },
+    {
+      "ordinal": 1914,
+      "catalogIndex": 1913,
+      "emoji": "🌳",
+      "name": "deciduous tree"
+    },
+    {
+      "ordinal": 1915,
+      "catalogIndex": 1914,
+      "emoji": "🦌",
+      "name": "deer"
+    },
+    {
+      "ordinal": 1916,
+      "catalogIndex": 1915,
+      "emoji": "🏜️",
+      "name": "desert"
+    },
+    {
+      "ordinal": 1917,
+      "catalogIndex": 1916,
+      "emoji": "🏝️",
+      "name": "desert island"
+    },
+    {
+      "ordinal": 1918,
+      "catalogIndex": 1917,
+      "emoji": "🦤",
+      "name": "dodo"
+    },
+    {
+      "ordinal": 1919,
+      "catalogIndex": 1918,
+      "emoji": "🐕",
+      "name": "dog"
+    },
+    {
+      "ordinal": 1920,
+      "catalogIndex": 1919,
+      "emoji": "🐬",
+      "name": "dolphin"
+    },
+    {
+      "ordinal": 1921,
+      "catalogIndex": 1920,
+      "emoji": "🔯",
+      "name": "dotted six-pointed star"
+    },
+    {
+      "ordinal": 1922,
+      "catalogIndex": 1921,
+      "emoji": "🕊️",
+      "name": "dove"
+    },
+    {
+      "ordinal": 1923,
+      "catalogIndex": 1922,
+      "emoji": "🐉",
+      "name": "dragon"
+    },
+    {
+      "ordinal": 1924,
+      "catalogIndex": 1923,
+      "emoji": "💧",
+      "name": "droplet"
+    },
+    {
+      "ordinal": 1925,
+      "catalogIndex": 1924,
+      "emoji": "🦆",
+      "name": "duck"
+    },
+    {
+      "ordinal": 1926,
+      "catalogIndex": 1925,
+      "emoji": "🦅",
+      "name": "eagle"
+    },
+    {
+      "ordinal": 1927,
+      "catalogIndex": 1926,
+      "emoji": "✴️",
+      "name": "eight-pointed star"
+    },
+    {
+      "ordinal": 1928,
+      "catalogIndex": 1927,
+      "emoji": "🐘",
+      "name": "elephant"
+    },
+    {
+      "ordinal": 1929,
+      "catalogIndex": 1928,
+      "emoji": "🌲",
+      "name": "evergreen tree"
+    },
+    {
+      "ordinal": 1930,
+      "catalogIndex": 1929,
+      "emoji": "🐑",
+      "name": "ewe"
+    }
+  ]
+}

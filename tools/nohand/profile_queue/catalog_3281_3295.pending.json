@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 3281,
+    "endOrdinal": 3295,
+    "startCatalogIndex": 3280,
+    "endCatalogIndex": 3294,
+    "count": 15
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 3281,
+      "catalogIndex": 3280,
+      "emoji": "🇻🇳",
+      "name": "flag: vietnam"
+    },
+    {
+      "ordinal": 3282,
+      "catalogIndex": 3281,
+      "emoji": "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+      "name": "flag: wales"
+    },
+    {
+      "ordinal": 3283,
+      "catalogIndex": 3282,
+      "emoji": "🇼🇫",
+      "name": "flag: wallis & futuna"
+    },
+    {
+      "ordinal": 3284,
+      "catalogIndex": 3283,
+      "emoji": "🇪🇭",
+      "name": "flag: western sahara"
+    },
+    {
+      "ordinal": 3285,
+      "catalogIndex": 3284,
+      "emoji": "🇾🇪",
+      "name": "flag: yemen"
+    },
+    {
+      "ordinal": 3286,
+      "catalogIndex": 3285,
+      "emoji": "🇿🇲",
+      "name": "flag: zambia"
+    },
+    {
+      "ordinal": 3287,
+      "catalogIndex": 3286,
+      "emoji": "🇿🇼",
+      "name": "flag: zimbabwe"
+    },
+    {
+      "ordinal": 3288,
+      "catalogIndex": 3287,
+      "emoji": "🇦🇽",
+      "name": "flag: Åland islands"
+    },
+    {
+      "ordinal": 3289,
+      "catalogIndex": 3288,
+      "emoji": "📭",
+      "name": "open mailbox with lowered flag"
+    },
+    {
+      "ordinal": 3290,
+      "catalogIndex": 3289,
+      "emoji": "📬",
+      "name": "open mailbox with raised flag"
+    },
+    {
+      "ordinal": 3291,
+      "catalogIndex": 3290,
+      "emoji": "🏴‍☠️",
+      "name": "pirate flag"
+    },
+    {
+      "ordinal": 3292,
+      "catalogIndex": 3291,
+      "emoji": "🏳️‍🌈",
+      "name": "rainbow flag"
+    },
+    {
+      "ordinal": 3293,
+      "catalogIndex": 3292,
+      "emoji": "🏳️‍⚧️",
+      "name": "transgender flag"
+    },
+    {
+      "ordinal": 3294,
+      "catalogIndex": 3293,
+      "emoji": "🚩",
+      "name": "triangular flag"
+    },
+    {
+      "ordinal": 3295,
+      "catalogIndex": 3294,
+      "emoji": "🏳️",
+      "name": "white flag"
+    }
+  ]
+}

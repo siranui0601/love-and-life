@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "status": "pending",
+  "sourceCatalog": "public/noHand_soccer/emoji_catalog_full_ja.json",
+  "sourceProfiles": "public/noHand_soccer/emoji_physics_profiles.json",
+  "generatedFromRuntimeProfileCount": 230,
+  "generatedFromProfileCount": 230,
+  "generatedFromProfiledQueueCount": 50,
+  "range": {
+    "startOrdinal": 2431,
+    "endOrdinal": 2480,
+    "startCatalogIndex": 2430,
+    "endCatalogIndex": 2479,
+    "count": 50
+  },
+  "itemFields": [
+    "ordinal",
+    "catalogIndex",
+    "emoji",
+    "name"
+  ],
+  "items": [
+    {
+      "ordinal": 2431,
+      "catalogIndex": 2430,
+      "emoji": "👊🏽",
+      "name": "oncoming fist: medium skin tone"
+    },
+    {
+      "ordinal": 2432,
+      "catalogIndex": 2431,
+      "emoji": "👊🏾",
+      "name": "oncoming fist: medium-dark skin tone"
+    },
+    {
+      "ordinal": 2433,
+      "catalogIndex": 2432,
+      "emoji": "👊🏼",
+      "name": "oncoming fist: medium-light skin tone"
+    },
+    {
+      "ordinal": 2434,
+      "catalogIndex": 2433,
+      "emoji": "〽️",
+      "name": "part alternation mark"
+    },
+    {
+      "ordinal": 2435,
+      "catalogIndex": 2434,
+      "emoji": "🎉",
+      "name": "party popper"
+    },
+    {
+      "ordinal": 2436,
+      "catalogIndex": 2435,
+      "emoji": "🛂",
+      "name": "passport control"
+    },
+    {
+      "ordinal": 2437,
+      "catalogIndex": 2436,
+      "emoji": "🎭",
+      "name": "performing arts"
+    },
+    {
+      "ordinal": 2438,
+      "catalogIndex": 2437,
+      "emoji": "🏓",
+      "name": "ping pong"
+    },
+    {
+      "ordinal": 2439,
+      "catalogIndex": 2438,
+      "emoji": "🤴🏿",
+      "name": "prince: dark skin tone"
+    },
+    {
+      "ordinal": 2440,
+      "catalogIndex": 2439,
+      "emoji": "🤴🏻",
+      "name": "prince: light skin tone"
+    },
+    {
+      "ordinal": 2441,
+      "catalogIndex": 2440,
+      "emoji": "🤴🏽",
+      "name": "prince: medium skin tone"
+    },
+    {
+      "ordinal": 2442,
+      "catalogIndex": 2441,
+      "emoji": "🤴🏾",
+      "name": "prince: medium-dark skin tone"
+    },
+    {
+      "ordinal": 2443,
+      "catalogIndex": 2442,
+      "emoji": "🤴🏼",
+      "name": "prince: medium-light skin tone"
+    },
+    {
+      "ordinal": 2444,
+      "catalogIndex": 2443,
+      "emoji": "👸🏿",
+      "name": "princess: dark skin tone"
+    },
+    {
+      "ordinal": 2445,
+      "catalogIndex": 2444,
+      "emoji": "👸🏻",
+      "name": "princess: light skin tone"
+    },
+    {
+      "ordinal": 2446,
+      "catalogIndex": 2445,
+      "emoji": "👸🏽",
+      "name": "princess: medium skin tone"
+    },
+    {
+      "ordinal": 2447,
+      "catalogIndex": 2446,
+      "emoji": "👸🏾",
+      "name": "princess: medium-dark skin tone"
+    },
+    {
+      "ordinal": 2448,
+      "catalogIndex": 2447,
+      "emoji": "👸🏼",
+      "name": "princess: medium-light skin tone"
+    },
+    {
+      "ordinal": 2449,
+      "catalogIndex": 2448,
+      "emoji": "✊🏿",
+      "name": "raised fist: dark skin tone"
+    },
+    {
+      "ordinal": 2450,
+      "catalogIndex": 2449,
+      "emoji": "✊🏻",
+      "name": "raised fist: light skin tone"
+    },
+    {
+      "ordinal": 2451,
+      "catalogIndex": 2450,
+      "emoji": "✊🏽",
+      "name": "raised fist: medium skin tone"
+    },
+    {
+      "ordinal": 2452,
+      "catalogIndex": 2451,
+      "emoji": "✊🏾",
+      "name": "raised fist: medium-dark skin tone"
+    },
+    {
+      "ordinal": 2453,
+      "catalogIndex": 2452,
+      "emoji": "✊🏼",
+      "name": "raised fist: medium-light skin tone"
+    },
+    {
+      "ordinal": 2454,
+      "catalogIndex": 2453,
+      "emoji": "🎗️",
+      "name": "reminder ribbon"
+    },
+    {
+      "ordinal": 2455,
+      "catalogIndex": 2454,
+      "emoji": "🎀",
+      "name": "ribbon"
+    },
+    {
+      "ordinal": 2456,
+      "catalogIndex": 2455,
+      "emoji": "🤜🏿",
+      "name": "right-facing fist: dark skin tone"
+    },
+    {
+      "ordinal": 2457,
+      "catalogIndex": 2456,
+      "emoji": "🤜🏻",
+      "name": "right-facing fist: light skin tone"
+    },
+    {
+      "ordinal": 2458,
+      "catalogIndex": 2457,
+      "emoji": "🤜🏽",
+      "name": "right-facing fist: medium skin tone"
+    },
+    {
+      "ordinal": 2459,
+      "catalogIndex": 2458,
+      "emoji": "🤜🏾",
+      "name": "right-facing fist: medium-dark skin tone"
+    },
+    {
+      "ordinal": 2460,
+      "catalogIndex": 2459,
+      "emoji": "🤜🏼",
+      "name": "right-facing fist: medium-light skin tone"
+    },
+    {
+      "ordinal": 2461,
+      "catalogIndex": 2460,
+      "emoji": "🎷",
+      "name": "saxophone"
+    },
+    {
+      "ordinal": 2462,
+      "catalogIndex": 2461,
+      "emoji": "🧑🏿‍🔬",
+      "name": "scientist: dark skin tone"
+    },
+    {
+      "ordinal": 2463,
+      "catalogIndex": 2462,
+      "emoji": "🧑🏻‍🔬",
+      "name": "scientist: light skin tone"
+    },
+    {
+      "ordinal": 2464,
+      "catalogIndex": 2463,
+      "emoji": "🧑🏽‍🔬",
+      "name": "scientist: medium skin tone"
+    },
+    {
+      "ordinal": 2465,
+      "catalogIndex": 2464,
+      "emoji": "🧑🏾‍🔬",
+      "name": "scientist: medium-dark skin tone"
+    },
+    {
+      "ordinal": 2466,
+      "catalogIndex": 2465,
+      "emoji": "🧑🏼‍🔬",
+      "name": "scientist: medium-light skin tone"
+    },
+    {
+      "ordinal": 2467,
+      "catalogIndex": 2466,
+      "emoji": "🤘🏿",
+      "name": "sign of the horns: dark skin tone"
+    },
+    {
+      "ordinal": 2468,
+      "catalogIndex": 2467,
+      "emoji": "🤘🏻",
+      "name": "sign of the horns: light skin tone"
+    },
+    {
+      "ordinal": 2469,
+      "catalogIndex": 2468,
+      "emoji": "🤘🏽",
+      "name": "sign of the horns: medium skin tone"
+    },
+    {
+      "ordinal": 2470,
+      "catalogIndex": 2469,
+      "emoji": "🤘🏾",
+      "name": "sign of the horns: medium-dark skin tone"
+    },
+    {
+      "ordinal": 2471,
+      "catalogIndex": 2470,
+      "emoji": "🤘🏼",
+      "name": "sign of the horns: medium-light skin tone"
+    },
+    {
+      "ordinal": 2472,
+      "catalogIndex": 2471,
+      "emoji": "⛷️",
+      "name": "skier"
+    },
+    {
+      "ordinal": 2473,
+      "catalogIndex": 2472,
+      "emoji": "🎿",
+      "name": "skis"
+    },
+    {
+      "ordinal": 2474,
+      "catalogIndex": 2473,
+      "emoji": "⚽",
+      "name": "soccer ball"
+    },
+    {
+      "ordinal": 2475,
+      "catalogIndex": 2474,
+      "emoji": "🥎",
+      "name": "softball"
+    },
+    {
+      "ordinal": 2476,
+      "catalogIndex": 2475,
+      "emoji": "🎇",
+      "name": "sparkler"
+    },
+    {
+      "ordinal": 2477,
+      "catalogIndex": 2476,
+      "emoji": "💬",
+      "name": "speech balloon"
+    },
+    {
+      "ordinal": 2478,
+      "catalogIndex": 2477,
+      "emoji": "🚙",
+      "name": "sport utility vehicle"
+    },
+    {
+      "ordinal": 2479,
+      "catalogIndex": 2478,
+      "emoji": "🏅",
+      "name": "sports medal"
+    },
+    {
+      "ordinal": 2480,
+      "catalogIndex": 2479,
+      "emoji": "🧑🏿‍🎓",
+      "name": "student: dark skin tone"
+    }
+  ]
+}

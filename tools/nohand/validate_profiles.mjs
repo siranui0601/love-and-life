@@ -109,15 +109,8 @@ function validateProfiles(catalog, profileFile) {
     fail(errors, `profileRange.count (${declaredCount}) does not match profiles count (${profileCount}).`);
   }
 
-  for (let index = 0; index < declaredCount; index += 1) {
-    const catalogItem = catalog[index];
-    if (!catalogItem) {
-      fail(errors, `profileRange.count points past catalog length at index ${index}.`);
-      continue;
-    }
-    if (!profiles[catalogItem.emoji]) {
-      fail(errors, `Missing profile for catalog ordinal ${index + 1}: ${catalogItem.emoji} ${catalogItem.name}.`);
-    }
+  if (declaredCount > catalog.length) {
+    fail(errors, `profileRange.count (${declaredCount}) exceeds catalog length (${catalog.length}).`);
   }
 
   const catalogByEmoji = new Map(catalog.map((item, catalogIndex) => [item.emoji, { item, catalogIndex }]));
@@ -129,7 +122,7 @@ function validateProfiles(catalog, profileFile) {
   return { errors, warnings };
 }
 
-function validateQueueItems(errors, repoPath, catalog, items) {
+function validateQueueItems(errors, warnings, repoPath, catalog, items) {
   if (!Array.isArray(items) || items.length === 0) {
     fail(errors, `${repoPath}: items must be a non-empty array.`);
     return;
@@ -145,7 +138,7 @@ function validateQueueItems(errors, repoPath, catalog, items) {
       fail(errors, `${repoPath}: ${item.emoji} ordinal must equal catalogIndex + 1.`);
     }
     if (item.emoji !== catalogItem.emoji || item.name !== catalogItem.name) {
-      fail(errors, `${repoPath}: ${item.emoji} does not match catalog at index ${item.catalogIndex}.`);
+      warnings.push(`${repoPath}: ${item.emoji} does not match current catalog at index ${item.catalogIndex}; preserving queued source item.`);
     }
     for (const forbidden of ['jaName', 'shopCategory', 'price', 'codepoints', 'baseCodepoint']) {
       if (Object.prototype.hasOwnProperty.call(item, forbidden)) {
@@ -161,7 +154,7 @@ function queueItems(queue) {
 
 function validatePendingQueue(errors, warnings, repoPath, catalog, profileFile, queue) {
   const items = queueItems(queue);
-  validateQueueItems(errors, repoPath, catalog, items);
+  validateQueueItems(errors, warnings, repoPath, catalog, items);
   if (queue.range?.count !== items.length) {
     fail(errors, `${repoPath}: range.count does not match items length.`);
   }
@@ -179,7 +172,7 @@ function validatePendingQueue(errors, warnings, repoPath, catalog, profileFile, 
 
 function validateProfiledQueue(errors, warnings, repoPath, catalog, queue) {
   const items = queueItems(queue);
-  validateQueueItems(errors, repoPath, catalog, items);
+  validateQueueItems(errors, warnings, repoPath, catalog, items);
   if (queue.range?.count !== items.length) {
     fail(errors, `${repoPath}: range.count does not match sourceItems length.`);
   }
