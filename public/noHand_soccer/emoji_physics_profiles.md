@@ -44,9 +44,9 @@ runtime / 本番用のプロファイル関連ファイルは次の2つだけで
 - `emoji_physics_profiles.json`
 - `emoji_physics_profiles.md`
 
-分割profile JSONやdraft profile JSONは作らない。追加バッチも必ず `emoji_physics_profiles.json` の `profiles` に統合する。
+分割profile JSONやdraft profile JSONは作らない。追加バッチは、最後または節目で必ず `emoji_physics_profiles.json` の `profiles` に統合する。
 
-作業用の未処理カタログキューは `tools/nohand/profile_queue/` に置く。これは本番プロファイルではなく、AIが50件ずつ精査するための入力である。
+作業用キューは `tools/nohand/profile_queue/` に置く。これは本番プロファイルではなく、AIが50件ずつ精査するための入力・作業結果である。
 
 ```txt
 public/noHand_soccer/
@@ -56,36 +56,47 @@ public/noHand_soccer/
 
 tools/nohand/
   generate_profile_queue.mjs
+  merge_all_profiled_batches.mjs
   validate_profiles.mjs
   profile_queue/
-    catalog_0231_0280.json
+    catalog_0231_0280.pending.json
+    catalog_0231_0280.profiled.json
 ```
 
-## 作業キュー運用
+## pending / profiled キュー運用
 
 1. `generate_profile_queue.mjs` が `emoji_catalog_full_ja.json` と `emoji_physics_profiles.json` を比較する。
-2. まだprofile化されていない絵文字だけを抽出する。
-3. 50件単位で `tools/nohand/profile_queue/catalog_XXXX_YYYY.json` に保存する。
-4. AIはqueueを1つずつ読み、各絵文字の意味と効果を吟味する。
-5. 作ったprofileは `emoji_physics_profiles.json` の `profiles` へ統合する。
-6. `validate_profiles.mjs` で抜け・重複・分類タグ混入・sourceName不一致を検査する。
-7. `emoji_physics_profiles.md` に追加範囲とレビュー観点を追記する。
+2. まだprofile化されていない絵文字を50件単位で `.pending.json` として作る。
+3. AIは `.pending.json` を1つ読み、各絵文字の意味と効果を吟味する。
+4. プロファイル化できたら同じ範囲の `.profiled.json` を作り、元の `.pending.json` は削除する。
+5. `.profiled.json` には `sourceItems`、`profiles`、`review` を入れる。
+6. 作業中は `emoji_physics_profiles.md` に追加範囲、見直し候補、compiler注意点を随時更新する。
+7. 全部または節目までprofiled化できたら、`merge_all_profiled_batches.mjs` で `emoji_physics_profiles.json` に統合する。
+8. `validate_profiles.mjs` で抜け・重複・分類タグ混入・sourceName不一致を検査する。
 
 queue JSONには `emoji` と英語 `name` だけを入れる。`jaName` / `shopCategory` / `price` / `codepoints` はAI判断のノイズになるため入れない。
 
-### queue生成
+### 全pending queue生成
 
 ```bash
 node tools/nohand/generate_profile_queue.mjs
 ```
 
-デフォルトでは、まだprofile化されていない先頭50件だけを生成する。
+デフォルトでは、まだprofile化されていない全絵文字を50件ずつ `.pending.json` として生成する。
 
 ```bash
-node tools/nohand/generate_profile_queue.mjs --size 50 --all
+node tools/nohand/generate_profile_queue.mjs --size 50 --first
 ```
 
-`--all` を付けると、未処理分を50件ずつまとめて生成する。
+`--first` を付けると、未処理の先頭50件だけを生成する。
+
+### profiled queue 統合
+
+```bash
+node tools/nohand/merge_all_profiled_batches.mjs
+```
+
+`tools/nohand/profile_queue/*.profiled.json` をファイル名順・range順に読み込み、単一の `emoji_physics_profiles.json` へ統合する。
 
 ### 検証
 
@@ -105,23 +116,40 @@ node tools/nohand/validate_profiles.mjs
 - 131-180: オレンジハート、パーティー顔、person facepalming/frowning、帽子の人、豚、うんち、プードル、8ボール、ドクロ、眠り、天使の輪、ハート目、角つき笑顔など
 - 181-230: 舌出し顔、太陽、汗しぶき、日めくり、考える顔、虎、舌、2つのハート、逆さ顔、風の顔、女性facepalm/frowning、酔い顔、あくび、目覚まし時計、アメフト、アーティスト、パレット、宇宙飛行士など
 
-次のqueue: `tools/nohand/profile_queue/catalog_0231_0280.json`。
+次のqueue: `tools/nohand/profile_queue/catalog_0231_0280.pending.json`。
 
-## プロファイル形式
+## profiled queue 形式
 
 ```json
 {
-  "emoji": {
-    "sourceName": "catalog name",
-    "displayNameJa": "整理した日本語名",
-    "receive": [],
-    "path": [],
-    "release": [],
-    "motion": [],
-    "effects": [],
-    "abilities": [],
-    "confidence": 0.8,
-    "note": "採用理由"
+  "version": 1,
+  "status": "profiled",
+  "range": {
+    "startOrdinal": 231,
+    "endOrdinal": 280,
+    "count": 50
+  },
+  "sourceItems": [
+    { "ordinal": 231, "catalogIndex": 230, "emoji": "👶", "name": "baby" }
+  ],
+  "profiles": {
+    "👶": {
+      "sourceName": "baby",
+      "displayNameJa": "赤ちゃん",
+      "receive": [],
+      "path": [],
+      "release": [],
+      "motion": [],
+      "effects": [],
+      "abilities": [],
+      "confidence": 0.8,
+      "note": "採用理由"
+    }
+  },
+  "review": {
+    "highConfidence": [],
+    "reviewCandidates": [],
+    "compilerSensitive": []
   }
 }
 ```
