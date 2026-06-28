@@ -1571,11 +1571,7 @@
     ],
     "compilerSensitive": [
       "gravityShift",
-      "hiddenRoute",
-      "multiExit",
-      "splitScatter",
-      "timedRelease",
-      "warpExit"
+      "splitScatter"
     ]
   }
 }
