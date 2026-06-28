@@ -54,14 +54,35 @@ function chunkItems(items, size) {
   return chunks;
 }
 
-async function readDoneEmoji(outDir) {
-  const done = new Set();
-  let files = [];
-  try {
-    files = await readdir(resolveRepoPath(outDir));
-  } catch {
-    return done;
+function groupContinuousItems(items) {
+  const groups = [];
+  let current = [];
+
+  for (const item of items) {
+    const previous = current[current.length - 1];
+    if (!previous || item.catalogIndex === previous.catalogIndex + 1) {
+      current.push(item);
+      continue;
+    }
+    groups.push(current);
+    current = [item];
   }
+
+  if (current.length > 0) groups.push(current);
+  return groups;
+}
+
+async function listQueueFiles(outDir) {
+  try {
+    return await readdir(resolveRepoPath(outDir));
+  } catch {
+    return [];
+  }
+}
+
+async function readQueueDoneEmoji(outDir) {
+  const done = new Set();
+  const files = await listQueueFiles(outDir);
 
   for (const file of files.filter((name) => name.endsWith('.profiled.json'))) {
     const queue = await readJson(path.join(outDir, file));
@@ -74,6 +95,12 @@ async function readDoneEmoji(outDir) {
   }
 
   return done;
+}
+
+function readRuntimeDoneEmoji(catalog, profileFile) {
+  const declaredCount = Number(profileFile.profileRange?.count ?? 0);
+  const safeCount = Math.max(0, Math.min(declaredCount, catalog.length));
+  return new Set(catalog.slice(0, safeCount).map((item) => item.emoji));
 }
 
 async function main() {
@@ -89,9 +116,8 @@ async function main() {
 
   const catalog = await readJson(catalogPath);
   const profileFile = await readJson(profilesPath);
-  const profiles = profileFile.profiles ?? {};
-  const runtimeDone = new Set(Object.keys(profiles));
-  const queueDone = await readDoneEmoji(outDir);
+  const runtimeDone = readRuntimeDoneEmoji(catalog, profileFile);
+  const queueDone = await readQueueDoneEmoji(outDir);
   const done = new Set([...runtimeDone, ...queueDone]);
 
   const missing = catalog
@@ -104,10 +130,12 @@ async function main() {
     return;
   }
 
-  const chunks = firstOnly ? [missing.slice(0, batchSize)] : chunkItems(missing, batchSize);
+  const groups = groupContinuousItems(missing);
+  const chunks = groups.flatMap((group) => chunkItems(group, batchSize));
+  const selectedChunks = firstOnly ? chunks.slice(0, 1) : chunks;
   await mkdir(resolveRepoPath(outDir), { recursive: true });
 
-  for (const items of chunks) {
+  for (const items of selectedChunks) {
     const first = items[0];
     const last = items[items.length - 1];
     const filename = `catalog_${padOrdinal(first.ordinal)}_${padOrdinal(last.ordinal)}.pending.json`;
@@ -116,7 +144,8 @@ async function main() {
       status: 'pending',
       sourceCatalog: catalogPath,
       sourceProfiles: profilesPath,
-      generatedFromProfileCount: Object.keys(profiles).length,
+      generatedFromProfileRangeCount: profileFile.profileRange?.count ?? 0,
+      generatedFromRuntimeProfileObjectCount: Object.keys(profileFile.profiles ?? {}).length,
       generatedFromProfiledQueueCount: queueDone.size,
       range: {
         startOrdinal: first.ordinal,
