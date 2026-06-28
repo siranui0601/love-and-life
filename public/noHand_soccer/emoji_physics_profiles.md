@@ -119,7 +119,10 @@ node tools/nohand/validate_profiles.mjs
 ## 作業キュー進捗
 
 - 231-280: `tools/nohand/profile_queue/catalog_0231_0280.profiled.json` 作成済み。runtime JSON には未統合。
-- 次の候補: `tools/nohand/profile_queue/catalog_0281_0330.pending.json`。存在しない場合は `node tools/nohand/generate_profile_queue.mjs` で生成する。
+- 281-330: `tools/nohand/profile_queue/catalog_0281_0330.profiled.json` 作成済み。runtime JSON には未統合。
+- 331-380: `tools/nohand/profile_queue/catalog_0331_0380.profiled.json` 作成済み。runtime JSON には未統合。
+- 381-430: `tools/nohand/profile_queue/catalog_0381_0430.profiled.json` 作成済み。runtime JSON には未統合。
+- 次の候補: `tools/nohand/profile_queue/catalog_0431_0480.pending.json`。
 
 ## profiled queue 形式
 
@@ -252,6 +255,26 @@ node tools/nohand/validate_profiles.mjs
 | `gravityShift` | 画面全体ではなく局所的な重力変更にしないと破綻しやすい。 |
 | `warpExit` | 出口候補を固定しないと、次actorとの接続が不安定になる。 |
 | `magnetPull` | 引力が強すぎるとボールが吸着して止まりやすい。 |
+
+## 281-430 profiled queue メモ
+
+- `🤙` 系: 親指と小指の形をフックにして、`curveRedirect` / `snapLaunch` / `aimAssist` にした。
+- `🧒` / `👧` 系: 人物分類にはせず、子どもらしい小走りと軽い受け渡しとして `dashCarry` / `softLanding` に寄せた。review候補。
+- `🚸`: 標識なので、安全ゲートとして `slowDampen` / `softLanding` / `pushRedirect` に寄せた。
+- `👏` 系: 両手で挟む衝撃を拍手パルスとして `pulseBoost` / `popLaunch` / `impactLaunch` にした。
+- `👷` / `🧑‍🏭` 系: ヘルメット・工場機械の連想から、受け止めて安全方向または直線方向へ押し出す。
+- `🧑‍🍳` / `🍳`: フライパン返しと熱から `heatLift` / `popLaunch` / `curveRedirect` にした。
+- `🍚`: 粘りで勢いを吸収するため `slowDampen` / `softLanding` にした。
+- `🍪` / `🌽` / `🥠`: 割れ・粒・中身の連想から `splitScatter` を採用。compilerSensitiveとして要注意。
+- `🤞` 系: 幸運のジェスチャーとして `luckyRedirect` を使うが、強すぎない補正に留める。
+- `🧏` / `👂` / `🦻` 系: 聴覚・補聴の連想から、静音化・狙い補正・精密パスに寄せた。
+- `🧝` / `🧚` / `🧞`: ファンタジー系は低重力・曲線・ワープに寄せたが、`warpExit` は実装要注意。
+- `👪` 以降の家族系: 多人数を `multiExit` ではなく `chainPass` / `attractHold` / `softLanding` に抑え、実装の複雑化を避けた。
+- `🧑‍🌾`: 農作業として `growthLift` / `flowCarry` / `slowDampen` にした。
+- `🙏` 系: 祈り・静止感から `stillHold` / `softLanding` / `delayedRelease` にした。
+- `🦶` 系: 足として `impactLaunch` / `pushRedirect` / `dashCarry`。明確な蹴りギミック。
+- `⚙️`: 歯車として `spinRedirect` / `precisionPass` / `pushRedirect` にした。
+- `💂`: 衛兵として `reflectShield` / `stillHold` / `pushRedirect` にした。
 
 ## 231-280 profiled queue メモ
 
