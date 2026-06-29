@@ -144,7 +144,13 @@ node tools/nohand/sync_ability_specs.mjs --check
 - 1031-1080: `tools/nohand/profile_queue/catalog_1031_1080.profiled.json` 作成済み。runtime JSON には未統合。
 - 1081-1130: `tools/nohand/profile_queue/catalog_1081_1130.profiled.json` 作成済み。runtime JSON には未統合。
 - 1131-1180: `tools/nohand/profile_queue/catalog_1131_1180.profiled.json` 作成済み。runtime JSON には未統合。
-- 次の候補: `tools/nohand/profile_queue/catalog_1181_1230.pending.json`。
+- 1181-1230: `tools/nohand/profile_queue/catalog_1181_1230.profiled.json` 作成済み。runtime JSON には未統合。
+- 1231-1280: `tools/nohand/profile_queue/catalog_1231_1280.profiled.json` 作成済み。runtime JSON には未統合。
+- 1281-1330: `tools/nohand/profile_queue/catalog_1281_1330.profiled.json` 作成済み。runtime JSON には未統合。
+- 1331-1380: `tools/nohand/profile_queue/catalog_1331_1380.profiled.json` 作成済み。runtime JSON には未統合。
+- 1381-1430: `tools/nohand/profile_queue/catalog_1381_1430.profiled.json` 作成済み。runtime JSON には未統合。
+- 1431-1480: `tools/nohand/profile_queue/catalog_1431_1480.profiled.json` 作成済み。runtime JSON には未統合。
+- 次の候補: `tools/nohand/profile_queue/catalog_1481_1530.pending.json`。
 
 ## profiled queue 形式
 
@@ -272,6 +278,27 @@ node tools/nohand/sync_ability_specs.mjs --check
 | `gravityShift` | 画面全体ではなく局所的な重力変更にしないと破綻しやすい。 |
 | `warpExit` | 出口候補を固定しないと、次actorとの接続が不安定になる。 |
 | `magnetPull` | 引力が強すぎるとボールが吸着して止まりやすい。 |
+
+
+## 1181-1480 profiled queue メモ
+
+- `🏃` / `🚶` 系: 走る・歩く動作として `dashCarry` / `aimAssist` / `lightBoost` または `softLanding`。走る系は短い加速、歩く系はより控えめな搬送にした。
+- `🤷` / `🧍` 系: 肩すくめは `fakeRoute` / `randomBounce` / `softLanding`、立つ姿勢は `stillHold` / `softLanding` / `pushRedirect`。抽象ジェスチャー・人物姿勢なのでreview候補として残す。
+- `🏄` / `🏊` / `🛀` 系: サーフィンは波の `flowCarry` / `curveRedirect` / `softLanding`、泳ぎは `flowCarry` / `dashCarry` / `curveRedirect`、入浴は `flowCarry` / `slowDampen` / `softLanding`。水流ギミックに統一し、強い射出にはしない。
+- `💁` / `👳` / `👰` 系: 案内する手は `aimAssist` / `curveRedirect` / `softLanding`、ターバンは `wrapHold` / `curveRedirect` / `softLanding`、ベールは `wrapHold` / `softLanding` / `delayedRelease`。布・手の形状から弱い補正に留める。
+- `🧑‍🦯` 系: 白杖で進路を探るため `aimAssist` / `precisionPass` / `softLanding`。障害表現ではなく杖による安全な進路補正として扱う。
+- `🧑` / `👩` と髪型系: 通常人物・女性単体は `dashCarry` / `aimAssist` / `softLanding`。坊主頭は `reflectShield` / `curveRedirect` / `softLanding`、金髪・赤毛は `lightBoost` と照準または曲線補正、巻き毛は `spinRedirect` / `wrapHold` / `softLanding`、白髪は `slowDampen` / `stillHold` / `softLanding`。人物・外見由来なので過剰能力にしない。
+- `🐽` / `🐻‍❄️` / `🍗`: 豚の鼻は `aimAssist` / `breathLaunch` / `pushRedirect`、ホッキョクグマは `heavyBlock` / `grabHold` / `softLanding`、鶏もも肉は `slowDampen` / `reflectShield` / `softLanding`。形状・重さ・柔らかさから最小限にした。
+- `🧑‍✈️` / `🤌` / `🤏`: パイロットは `precisionPass` / `curveRedirect` / `aimAssist`、つまんだ指は `grabHold` / `snapLaunch` / `precisionPass`、つまむ手は `grabHold` / `precisionPass` / `softLanding`。操縦・指先の精密制御として扱う。
+- `🚓` / `🚨` / `👮` 系: パトカーは `reflectShield` / `chaseCatch` / `pushRedirect`、パトランプは `pulseBoost` / `aimAssist` / `pushRedirect`、警察官は `reflectShield` / `pushRedirect` / `precisionPass`。追跡・制止・誘導を中心にした。
+- `🤰` / `🤚` / `✋` / `🙌` 系: 妊娠中の女性は `softLanding` / `slowDampen` / `stillHold`。上げた手・手の甲は `reflectShield` / `pushRedirect` / `stillHold`、両手上げは `popLaunch` / `lightBoost` / `aimAssist`。人物・ジェスチャー系は強すぎない範囲に抑える。
+- `⛑️` / `🏉` / `🎽` / `👟`: 救助用ヘルメットは `reflectShield` / `heavyBlock` / `softLanding`、ラグビーボールは `randomBounce` / `impactLaunch` / `curveRedirect`、ランニングシャツは `dashCarry` / `lightBoost` / `softLanding`、ランニングシューズは `dashCarry` / `impactLaunch` / `pushRedirect`。
+- `🤳` / `🧑‍🎤` / `☃️` / `⛄` / `🧑‍🏫`: 自撮りは `aimAssist` / `snapLaunch` / `precisionPass`、歌手は `pulseBoost` / `breathLaunch` / `aimAssist`、雪だるまは `freezeSlip` / `slowDampen` / `softLanding`、先生は `aimAssist` / `precisionPass` / `delayedRelease`。先生系のreleaseラベルに `timedRelease` が出ても、compiler-sensitive判定はabilities側の `delayedRelease` を見る。
+- `🍵` / `🧸` / `🦷` / `🪥` / `🚎`: 湯のみは `flowCarry` / `heatLift` / `softLanding`、テディベアは `softLanding` / `absorbHold` / `slowDampen`、歯は `reflectShield` / `pushRedirect` / `precisionPass`、歯ブラシは `pushRedirect` / `precisionPass` / `slowDampen`、トロリーバスは `rollCarry` / `electricJolt` / `precisionPass`。
+- `🧛` / `✌️` / `👋` / `🙀` / `☸️`: 吸血鬼は `absorbHold` / `chaseCatch` / `slowDampen`、ピースは `aimAssist` / `precisionPass` / `softLanding`、手を振る動作は `pushRedirect` / `curveRedirect` / `softLanding`、驚いた猫は `panicKick` / `randomBounce` / `softLanding`、法輪は `orbitCarry` / `spinRedirect` / `rollCarry`。
+- `👫` / `👩‍🎨` / `👩‍🚀`: 手つなぎは `chainPass` / `attractHold` / `softLanding`。女性アーティストは `paintTrail` / `curveRedirect` / `precisionPass`、女性宇宙飛行士は `lowGravityField` / `orbitCarry` / `softLanding`。`paintTrail` は現行ability台帳ではcompiler-sensitiveではないためreview.compilerSensitiveには入れない。
+- `🚴‍♀️` / `⛹️‍♀️` / `🙇‍♀️` / `🤸‍♀️` / `🧗‍♀️`: 女性の自転車は `rollCarry` / `dashCarry` / `precisionPass`、ボール弾ませは `popLaunch` / `randomBounce` / `aimAssist`、お辞儀は `dropRelease` / `softLanding` / `slowDampen`、側転は `spinRedirect` / `orbitCarry` / `popLaunch`、登る動作は `grabHold` / `aimAssist` / `slowDampen`。
+- `👷‍♀️` / `👩‍🍳` / `💃` / `🕵️‍♀️` / `🧝‍♀️`: 女性の建設作業員は `heavyBlock` / `pushRedirect` / `precisionPass`、料理人は `heatLift` / `flowCarry` / `precisionPass`、踊る女性は `spinRedirect` / `curveRedirect` / `lightBoost`、女性探偵は `hiddenRoute` / `aimAssist` / `precisionPass`、女性エルフは `lightBoost` / `curveRedirect` / `softLanding`。この範囲のcompiler-sensitive能力は女性探偵の `hiddenRoute` のみ。
 
 ## 881-1180 profiled queue メモ
 
