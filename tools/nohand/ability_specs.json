@@ -648,7 +648,7 @@
       ]
     },
     "sleepFloat": {
-      "compilerSensitive": false,
+      "compilerSensitive": true,
       "occurrences": 8,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [

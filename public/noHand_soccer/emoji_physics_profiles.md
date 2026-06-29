@@ -138,7 +138,13 @@ node tools/nohand/sync_ability_specs.mjs --check
 - 731-780: `tools/nohand/profile_queue/catalog_0731_0780.profiled.json` 作成済み。runtime JSON には未統合。
 - 781-830: `tools/nohand/profile_queue/catalog_0781_0830.profiled.json` 作成済み。runtime JSON には未統合。
 - 831-880: `tools/nohand/profile_queue/catalog_0831_0880.profiled.json` 作成済み。runtime JSON には未統合。
-- 次の候補: `tools/nohand/profile_queue/catalog_0881_0930.pending.json`。
+- 881-930: `tools/nohand/profile_queue/catalog_0881_0930.profiled.json` 作成済み。runtime JSON には未統合。
+- 931-980: `tools/nohand/profile_queue/catalog_0931_0980.profiled.json` 作成済み。runtime JSON には未統合。
+- 981-1030: `tools/nohand/profile_queue/catalog_0981_1030.profiled.json` 作成済み。runtime JSON には未統合。
+- 1031-1080: `tools/nohand/profile_queue/catalog_1031_1080.profiled.json` 作成済み。runtime JSON には未統合。
+- 1081-1130: `tools/nohand/profile_queue/catalog_1081_1130.profiled.json` 作成済み。runtime JSON には未統合。
+- 1131-1180: `tools/nohand/profile_queue/catalog_1131_1180.profiled.json` 作成済み。runtime JSON には未統合。
+- 次の候補: `tools/nohand/profile_queue/catalog_1181_1230.pending.json`。
 
 ## profiled queue 形式
 
@@ -266,6 +272,35 @@ node tools/nohand/sync_ability_specs.mjs --check
 | `gravityShift` | 画面全体ではなく局所的な重力変更にしないと破綻しやすい。 |
 | `warpExit` | 出口候補を固定しないと、次actorとの接続が不安定になる。 |
 | `magnetPull` | 引力が強すぎるとボールが吸着して止まりやすい。 |
+
+## 881-1180 profiled queue メモ
+
+- `🥭` 系: 柔らかい果実として `softLanding` / `slowDampen` / `flowCarry`。潰れる・流れる比喩に留め、爆発や強反射には寄せない。
+- `🕰️` 系: 時計として `timedRelease` / `delayedRelease` / `stillHold`。時間差保持はcompiler-sensitiveとしてreviewに残す。
+- `🦽` / `🧑‍🦽` 系: 手動車椅子は `rollCarry` / `precisionPass` / `softLanding`。車輪で運ぶが人物系なので過剰加速は避ける。
+- `🧑‍🦼` 系: 電動車椅子は `rollCarry` / `precisionPass` / `dashCarry`。手動との差分として短い推進だけを足す。
+- `👞` 系: 靴は踏み込み・蹴り出しとして `impactLaunch` / `pushRedirect` / `dashCarry`。
+- `🦾` / `🦿` 系: 機械腕は `grabHold` / `pushRedirect` / `precisionPass`、機械脚は `impactLaunch` / `dashCarry` / `pushRedirect`。義肢の形状・動作から機械的な保持や推進に限定する。
+- `👬` / `🧑‍🤝‍🧑` 系: 手つなぎは `chainPass` / `attractHold` / `softLanding`。複数人物だが分裂ではなく連結搬送として扱う。
+- `👯` 系: バニー耳の跳ねとして `popLaunch` / `randomBounce` / `lightBoost`。人物本体ではなく跳ねる動作を弱めに採用。
+- `🧜` 系: 人魚・水流として `flowCarry` / `curveRedirect` / `softLanding`。水中の流れで曲げる。
+- `🖕` 系: 立った指のバンパーとして `snapLaunch` / `pushRedirect` / `precisionPass`。ジェスチャーの意味ではなく形状の弾きに寄せる。
+- `🥷` 系: 忍者は `hiddenRoute` / `dashCarry` / `fakeRoute`。見えない経路はcompiler-sensitiveとしてreviewに残す。
+- `👃` 系: 匂い・息の追跡として `aimAssist` / `breathLaunch` / `chaseCatch`。鼻の形状より追跡・呼気の役割を採用。
+- `👌` / `🙆` 系: OKの輪やジェスチャーは `aimAssist` / `precisionPass` または `curveRedirect` / `softLanding`。通してよい方向へ整える。
+- `👴` / `👵` / `🧓` 系: 高齢者は `slowDampen` / `stillHold` / `softLanding`。人物・外見系なので落ち着いた弱効果に抑える。
+- `🚔`: 対向パトカーは `reflectShield` / `chaseCatch` / `pushRedirect`。追跡と制止の車両ギミック。
+- `👐` / `🫂` / `🤼` 系: 開いた両手は `attractHold` / `softLanding` / `pushRedirect`、ハグは `attractHold` / `absorbHold` / `softLanding`、レスリングは `grabHold` / `pushRedirect` / `randomBounce`。保持系でも必ず押し出し・着地を持たせる。
+- `🚴` / `🚵` 系: 自転車は `rollCarry` / `dashCarry` / `precisionPass`、マウンテンバイクは凹凸の `randomBounce` を足す。
+- `⛹️` / `🤾` / `🤽` 系: ボール競技は弾ませ・投げ・水流をそれぞれ `popLaunch` / `randomBounce` / `aimAssist`、`impactLaunch` / `aimAssist` / `curveRedirect`、`flowCarry` / `popLaunch` / `aimAssist` に整理。
+- `🙇` / `🤸` / `🧗` 系: お辞儀は `dropRelease` / `softLanding` / `slowDampen`、側転は `spinRedirect` / `orbitCarry` / `popLaunch`、登る動作は `grabHold` / `aimAssist` / `slowDampen`。動作由来の差分に限定する。
+- `🧑‍🍼`: 授乳・哺乳瓶の流れとして `flowCarry` / `softLanding` / `delayedRelease`。人物属性ではなく瓶からの流れを採用。
+- `🤺` / `🙅`: フェンシングは `precisionPass` / `pushRedirect` / `reflectShield`、NOジェスチャーは `reflectShield` / `pushRedirect` / `stillHold`。細い突きと拒否の制止で差別化。
+- `💇` / `💆`: 散髪は `precisionPass` / `slowDampen` / `softLanding`、マッサージは `slowDampen` / `softLanding` / `stillHold`。人物・髪型系の過剰能力化を避ける。
+- `🏌️` / `🏋️`: ゴルフは `impactLaunch` / `precisionPass` / `curveRedirect`、重量挙げは `heavyBlock` / `impactLaunch` / `pushRedirect`。スポーツ道具・重量から自然な物理だけを採用。
+- `🛌` / `🧘` / `🧖` / `🕴️`: 睡眠は `sleepFloat` / `softLanding` / `slowDampen`、瞑想は `stillHold` / `silenceHold` / `softLanding`、湯気は `flowCarry` / `slowDampen` / `softLanding`、浮遊は `lowGravityField` / `stillHold` / `softLanding`。長時間停止・低重力はテンポ管理に注意。
+- `🤵` / `🤹` / `🧎`: タキシードは `precisionPass` / `softLanding` / `aimAssist`、ジャグリングは `orbitCarry` / `popLaunch` / `aimAssist`、ひざまずきは `stillHold` / `softLanding` / `slowDampen`。人物系は動作や姿勢から控えめに採用。
+- `🙎` / `🙋` / `🚣`: ふくれっ面は `slowDampen` / `dropRelease` / `softLanding`、挙手は `popLaunch` / `aimAssist` / `softLanding`、ボート漕ぎは `flowCarry` / `pushRedirect` / `precisionPass`。感情・ジェスチャーは弱め、道具や水流は搬送に使う。
 
 ## 731-880 profiled queue メモ
 
