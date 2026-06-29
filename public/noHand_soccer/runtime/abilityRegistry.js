@@ -20,7 +20,19 @@ export const abilityRegistry = {
   grabHold: make('短時間つかんで狙いを作る', 'gimmick/contact', 900, 1300, .62, 0, 'claw hold', (b, c) => c.primitives.holdBall(b, c.gimmickCenter, .62, 780, c.now)),
   absorbHold: make('勢いを吸収して保持する', 'gimmick/contact', 1000, 1350, .48, 0, 'dark absorb halo', (b, c) => { c.primitives.dampenVelocity(b, .18); return c.primitives.holdBall(b, c.gimmickCenter, .48, 900, c.now); }),
   stillHold: make('ほぼ静止させてから離す', 'gimmick/contact', 850, 1400, .75, 0, 'still square', (b, c) => { c.primitives.dampenVelocity(b, .05); return c.primitives.holdBall(b, c.gimmickCenter, .75, 700, c.now); }),
-  lowGravityField: make('低重力フィールドでふわっと伸ばす', 'field/tick', 1400, 1100, 0.38, 120, 'mint low-g dome', (b) => { b.gravityScale = .38; b.vy -= 38; return 'gravityScale(0.38) + lift'; }),
+  lowGravityField: make('低重力フィールドで重力を斜め上へ曲げる', 'field/tick', 1400, 0, 1, 0, 'mint low-g vector arrow', (b) => { b.gravity.x = 180; b.gravity.y = -260; return 'gravityVector(+180,-260)'; }),
+  warpExit: make('ギミック基準の固定相対座標へワープする', 'gimmick/contact', 520, 950, 1, 120, 'magenta fixed warp exit', (b, c) => {
+    const offset = { x: 220, y: -90 };
+    const warp = c.primitives.warpToRelative(b, c.gimmickCenter, offset, c.bounds);
+    b.lastWarpOffset = warp.offset;
+    b.lastWarpTarget = warp.target;
+    b.lastWarpFrom = warp.from;
+    const exitDir = c.primitives.norm(offset);
+    const speed = Math.max(180, Math.min(Math.hypot(b.vx, b.vy), 420));
+    b.vx = b.vx * .35 + exitDir.x * speed * .65;
+    b.vy = b.vy * .35 + exitDir.y * speed * .65;
+    return `warpExit(${offset.x >= 0 ? '+' : ''}${offset.x},${offset.y >= 0 ? '+' : ''}${offset.y})`;
+  }),
   hiddenRoute: make('半透明の補助ルートに短時間乗せる', 'gimmick/contact', 950, 1300, .58, 0, 'transparent route rail', (b, c) => { b.x += (c.hiddenRoute.y - b.y) * .04; return c.primitives.redirectVelocity(b, c.routeDirection, .58, Math.PI / 7); }),
   lightBoost: make('軽い加速でテンポを足す', 'gimmick/contact', 360, 450, 150, 115, 'white light trail', (b, c) => c.primitives.applyImpulse(b, goalDir(b, c), 150, 115))
 };

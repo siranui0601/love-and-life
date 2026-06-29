@@ -86,6 +86,22 @@ function createPrimitives(maxSpeed) {
     applyLift(ball, strength, maxDelta) { return this.applyImpulse(ball, { x: 0, y: -1 }, strength, maxDelta); },
     applyOrbit(ball, center, strength, maxDelta) { const radial = toward(center, ball); const tangent = { x: -radial.y, y: radial.x }; return this.applyCarryForce(ball, add(tangent, mul(toward(ball, center), .45)), strength, maxDelta); },
     applySeededJitter(ball, random, strength, maxDelta) { const a = (random() * 2 - 1) * Math.PI; return this.applyImpulse(ball, { x: Math.cos(a), y: Math.sin(a) }, strength, maxDelta); },
+    clampPosition(ball, bounds = {}) {
+      const minX = bounds.minX ?? ball.r ?? 0;
+      const maxX = bounds.maxX ?? ((bounds.width ?? 0) - (ball.r ?? 0));
+      const minY = bounds.minY ?? ball.r ?? 0;
+      const maxY = bounds.maxY ?? ((bounds.height ?? 0) - (ball.r ?? 0));
+      ball.x = clamp(ball.x, minX, maxX);
+      ball.y = clamp(ball.y, minY, maxY);
+      return `clampPosition(${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})`;
+    },
+    warpToRelative(ball, anchor, offset, bounds) {
+      const from = { x: ball.x, y: ball.y };
+      ball.x = (anchor?.x ?? 0) + (offset?.x ?? 0);
+      ball.y = (anchor?.y ?? 0) + (offset?.y ?? 0);
+      this.clampPosition(ball, bounds);
+      return { from, target: { x: ball.x, y: ball.y }, offset: { x: offset?.x ?? 0, y: offset?.y ?? 0 } };
+    },
     toward, norm, clamp
   };
 }

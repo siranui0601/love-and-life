@@ -63,7 +63,11 @@ function resetBall() {
     vx: 0,
     vy: 0,
     r: 15,
+    gravity: { x: 0, y: 720 },
     gravityScale: 1,
+    lastWarpOffset: null,
+    lastWarpTarget: null,
+    lastWarpFrom: null,
     holdUntil: 0,
     launched: false
   };
@@ -78,6 +82,7 @@ function abilityContext(now) {
     gimmickCenter: { x: gimmick.x, y: gimmick.y },
     routeDirection,
     hiddenRoute,
+    bounds: { minX: ball.r, maxX: field.w - ball.r, minY: ball.r, maxY: field.floor - ball.r },
     onWarning: (warning) => { lastEffect = warning; }
   };
 }
@@ -107,11 +112,16 @@ function launch() {
 function tick(now) {
   const dt = Math.min((now - last) / 1000, 0.033);
   last = now;
+  ball.gravity.x = 0;
+  ball.gravity.y = 720;
   ball.gravityScale = 1;
   if (ball.launched) {
     runAbilities('field', now);
     if (ball.y > field.floor - 55 && ball.vy > 120) runAbilities('floor', now);
-    if (now > ball.holdUntil) ball.vy += 720 * ball.gravityScale * dt;
+    if (now > ball.holdUntil) {
+      ball.vx += ball.gravity.x * ball.gravityScale * dt;
+      ball.vy += ball.gravity.y * ball.gravityScale * dt;
+    }
     ball.x += ball.vx * dt;
     ball.y += ball.vy * dt;
     collide(now);
@@ -135,6 +145,10 @@ function tick(now) {
     lastEffect,
     warnings: engine.warnings,
     gravityScale: ball.gravityScale,
+    gravityX: ball.gravity.x,
+    gravityY: ball.gravity.y,
+    lastWarpOffset: ball.lastWarpOffset,
+    lastWarpTarget: ball.lastWarpTarget,
     seed
   });
   requestAnimationFrame(tick);
@@ -186,8 +200,61 @@ function draw() {
   ctx.fillStyle = 'rgba(168,85,247,.22)'; ctx.beginPath(); ctx.arc(gimmick.x, gimmick.y, gimmick.r, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = contactActive ? '#fbbf24' : '#a855f7'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.font = '34px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(selected?.emoji ?? '⚽', gimmick.x, gimmick.y + 12);
   ctx.strokeStyle = '#67e8f9'; ctx.lineWidth = 3; ctx.beginPath(); trail.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
+  drawWarpVisuals();
+  drawGravityVector();
   if (!ball.launched) drawGuide();
   ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#111827'; ctx.font = '20px sans-serif'; ctx.fillText('⚽', ball.x, ball.y + 7);
+}
+
+function drawWarpVisuals() {
+  if (!ball.lastWarpTarget) return;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(244,114,182,.92)';
+  ctx.fillStyle = 'rgba(244,114,182,.18)';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([7, 7]);
+  if (ball.lastWarpFrom) {
+    ctx.beginPath();
+    ctx.moveTo(ball.lastWarpFrom.x, ball.lastWarpFrom.y);
+    ctx.lineTo(ball.lastWarpTarget.x, ball.lastWarpTarget.y);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.arc(ball.lastWarpTarget.x, ball.lastWarpTarget.y, 24, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'center';
+  const o = ball.lastWarpOffset;
+  ctx.fillStyle = '#fbcfe8';
+  ctx.fillText(`warpExit(${o.x >= 0 ? '+' : ''}${o.x},${o.y >= 0 ? '+' : ''}${o.y})`, ball.lastWarpTarget.x, ball.lastWarpTarget.y - 32);
+  ctx.restore();
+}
+
+function drawGravityVector() {
+  if (!ball.launched || (Math.abs(ball.gravity.x) < 1 && Math.abs(ball.gravity.y - 720) < 1)) return;
+  const scale = 0.18;
+  const start = { x: 90, y: 110 };
+  const end = { x: start.x + ball.gravity.x * scale, y: start.y + ball.gravity.y * scale };
+  ctx.save();
+  ctx.strokeStyle = '#34d399';
+  ctx.fillStyle = '#34d399';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(start.x, start.y);
+  ctx.lineTo(end.x, end.y);
+  ctx.stroke();
+  const angle = Math.atan2(end.y - start.y, end.x - start.x);
+  ctx.beginPath();
+  ctx.moveTo(end.x, end.y);
+  ctx.lineTo(end.x - Math.cos(angle - .5) * 13, end.y - Math.sin(angle - .5) * 13);
+  ctx.lineTo(end.x - Math.cos(angle + .5) * 13, end.y - Math.sin(angle + .5) * 13);
+  ctx.closePath();
+  ctx.fill();
+  ctx.font = '13px sans-serif';
+  ctx.fillText(`gravity (${ball.gravity.x.toFixed(0)}, ${ball.gravity.y.toFixed(0)})`, start.x, start.y - 12);
+  ctx.restore();
 }
 
 function renderProfileList(list) {

@@ -15,6 +15,10 @@ export function renderDebug(target, state) {
     `last effect: ${state.lastEffect || 'none'}`,
     `warnings: ${state.warnings.length ? state.warnings.join(' / ') : 'none'}`,
     `gravityScale: ${state.gravityScale.toFixed(2)}`,
+    `gravityX: ${(state.gravityX ?? 0).toFixed(1)}`,
+    `gravityY: ${(state.gravityY ?? 720).toFixed(1)}`,
+    `lastWarpOffset: ${state.lastWarpOffset ? `(${state.lastWarpOffset.x}, ${state.lastWarpOffset.y})` : 'none'}`,
+    `lastWarpTarget: ${state.lastWarpTarget ? `(${state.lastWarpTarget.x.toFixed(1)}, ${state.lastWarpTarget.y.toFixed(1)})` : 'none'}`,
     `seed: ${state.seed}`
   ].join('\n');
 }
