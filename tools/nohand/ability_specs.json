@@ -14,7 +14,10 @@
     "tools/nohand/profile_queue/catalog_0681_0730.profiled.json",
     "tools/nohand/profile_queue/catalog_0731_0780.profiled.json",
     "tools/nohand/profile_queue/catalog_0781_0830.profiled.json",
-    "tools/nohand/profile_queue/catalog_0831_0880.profiled.json"
+    "tools/nohand/profile_queue/catalog_0831_0880.profiled.json",
+    "tools/nohand/profile_queue/catalog_0881_0930.profiled.json",
+    "tools/nohand/profile_queue/catalog_0931_0980.profiled.json",
+    "tools/nohand/profile_queue/catalog_0981_1030.profiled.json"
   ],
   "notes": [
     "profiles の abilities 語彙を固定するための台帳。",
@@ -23,7 +26,7 @@
   "abilities": {
     "absorbHold": {
       "compilerSensitive": false,
-      "occurrences": 17,
+      "occurrences": 18,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "😮",
@@ -38,7 +41,7 @@
     },
     "aimAssist": {
       "compilerSensitive": false,
-      "occurrences": 285,
+      "occurrences": 310,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🐱",
@@ -53,7 +56,7 @@
     },
     "attractHold": {
       "compilerSensitive": false,
-      "occurrences": 70,
+      "occurrences": 129,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "💓",
@@ -68,7 +71,7 @@
     },
     "breathLaunch": {
       "compilerSensitive": false,
-      "occurrences": 9,
+      "occurrences": 15,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🐲",
@@ -108,7 +111,7 @@
     },
     "chainPass": {
       "compilerSensitive": false,
-      "occurrences": 28,
+      "occurrences": 80,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "💕",
@@ -123,7 +126,7 @@
     },
     "chaseCatch": {
       "compilerSensitive": false,
-      "occurrences": 10,
+      "occurrences": 17,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🐶",
@@ -138,7 +141,7 @@
     },
     "curveRedirect": {
       "compilerSensitive": false,
-      "occurrences": 154,
+      "occurrences": 168,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "👿",
@@ -153,7 +156,7 @@
     },
     "dashCarry": {
       "compilerSensitive": false,
-      "occurrences": 80,
+      "occurrences": 95,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🐶",
@@ -168,7 +171,7 @@
     },
     "delayedRelease": {
       "compilerSensitive": false,
-      "occurrences": 67,
+      "occurrences": 74,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "💑",
@@ -191,7 +194,7 @@
     },
     "dropRelease": {
       "compilerSensitive": false,
-      "occurrences": 55,
+      "occurrences": 56,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🤦‍♂️",
@@ -221,7 +224,7 @@
     },
     "fakeRoute": {
       "compilerSensitive": false,
-      "occurrences": 17,
+      "occurrences": 23,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🥸",
@@ -236,7 +239,7 @@
     },
     "flowCarry": {
       "compilerSensitive": false,
-      "occurrences": 69,
+      "occurrences": 82,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "💙",
@@ -267,7 +270,7 @@
     },
     "grabHold": {
       "compilerSensitive": false,
-      "occurrences": 16,
+      "occurrences": 18,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🧤",
@@ -342,7 +345,7 @@
     },
     "hiddenRoute": {
       "compilerSensitive": true,
-      "occurrences": 10,
+      "occurrences": 16,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🏩",
@@ -369,7 +372,7 @@
     },
     "impactLaunch": {
       "compilerSensitive": false,
-      "occurrences": 62,
+      "occurrences": 64,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🥊",
@@ -384,7 +387,7 @@
     },
     "lightBoost": {
       "compilerSensitive": false,
-      "occurrences": 54,
+      "occurrences": 58,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "😁",
@@ -515,7 +518,7 @@
     },
     "popLaunch": {
       "compilerSensitive": false,
-      "occurrences": 80,
+      "occurrences": 88,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "😲",
@@ -530,7 +533,7 @@
     },
     "precisionPass": {
       "compilerSensitive": false,
-      "occurrences": 148,
+      "occurrences": 174,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🧐",
@@ -560,7 +563,7 @@
     },
     "pushRedirect": {
       "compilerSensitive": false,
-      "occurrences": 145,
+      "occurrences": 162,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🐮",
@@ -575,7 +578,7 @@
     },
     "randomBounce": {
       "compilerSensitive": false,
-      "occurrences": 24,
+      "occurrences": 33,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🤡",
@@ -590,7 +593,7 @@
     },
     "reflectShield": {
       "compilerSensitive": false,
-      "occurrences": 79,
+      "occurrences": 81,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🤕",
@@ -605,7 +608,7 @@
     },
     "rollCarry": {
       "compilerSensitive": false,
-      "occurrences": 30,
+      "occurrences": 38,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🐷",
@@ -673,7 +676,7 @@
     },
     "slowDampen": {
       "compilerSensitive": false,
-      "occurrences": 181,
+      "occurrences": 205,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "😧",
@@ -688,7 +691,7 @@
     },
     "snapLaunch": {
       "compilerSensitive": false,
-      "occurrences": 26,
+      "occurrences": 32,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🐱",
@@ -703,7 +706,7 @@
     },
     "softLanding": {
       "compilerSensitive": false,
-      "occurrences": 255,
+      "occurrences": 361,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "😌",
@@ -718,7 +721,7 @@
     },
     "spinRedirect": {
       "compilerSensitive": false,
-      "occurrences": 32,
+      "occurrences": 33,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "💫",
@@ -748,7 +751,7 @@
     },
     "stillHold": {
       "compilerSensitive": false,
-      "occurrences": 74,
+      "occurrences": 95,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "😑",
@@ -763,14 +766,15 @@
     },
     "timedRelease": {
       "compilerSensitive": true,
-      "occurrences": 5,
+      "occurrences": 6,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🫀",
         "📆",
         "🤔",
         "⏰",
-        "🧠"
+        "🧠",
+        "🕰️"
       ]
     },
     "trapHold": {
@@ -805,7 +809,7 @@
     },
     "wrapHold": {
       "compilerSensitive": false,
-      "occurrences": 25,
+      "occurrences": 26,
       "description": "TODO: compiler/runtime実装時に物理挙動を固定する。",
       "examples": [
         "🤕",
