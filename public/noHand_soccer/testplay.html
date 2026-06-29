@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>noHand soccer ability testplay</title>
+  <link rel="stylesheet" href="./testplay.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="stage-panel">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">noHand soccer</p>
+          <h1>Ability Testplay Harness</h1>
+        </div>
+        <div class="controls">
+          <button id="launchButton">発射</button>
+          <button id="retryButton" class="secondary">リトライ</button>
+        </div>
+      </header>
+      <canvas id="fieldCanvas" width="960" height="540" aria-label="ability test field"></canvas>
+      <p class="hint">ドラッグで発射方向を調整 / ギミック接触で selected emoji の abilities をテスト</p>
+    </section>
+
+    <aside class="side-panel">
+      <label class="search-label" for="emojiSearch">emoji 検索</label>
+      <input id="emojiSearch" type="search" placeholder="例: 🐈 / cat / 低重力" autocomplete="off">
+      <select id="emojiSelect" size="8"></select>
+
+      <section class="card">
+        <h2 id="profileTitle">読み込み中...</h2>
+        <p id="profileNote"></p>
+        <dl id="profileMeta"></dl>
+      </section>
+
+      <section class="card">
+        <h2>Abilities</h2>
+        <div id="abilityList" class="ability-list"></div>
+      </section>
+
+      <section class="card debug-card">
+        <h2>Debug</h2>
+        <pre id="debugOverlay"></pre>
+      </section>
+    </aside>
+  </main>
+  <script type="module" src="./testplay.js"></script>
+</body>
+</html>
