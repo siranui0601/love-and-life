@@ -15,12 +15,20 @@
           <h1>Ability Testplay Harness</h1>
         </div>
         <div class="controls">
-          <button id="launchButton">発射</button>
+          <label class="mode-label" for="contactMode">接触モード</label>
+          <select id="contactMode" class="mode-select" aria-label="接触モード">
+            <option value="drop">落下接触</option>
+            <option value="side">横から接触</option>
+            <option value="bounce">下からバウンド接触</option>
+            <option value="fast">高速衝突</option>
+            <option value="still">静止接触</option>
+          </select>
+          <button id="launchButton">落下開始</button>
           <button id="retryButton" class="secondary">リトライ</button>
         </div>
       </header>
       <canvas id="fieldCanvas" width="960" height="540" aria-label="ability test field"></canvas>
-      <p class="hint">ドラッグで発射方向を調整 / ギミック接触で selected emoji の abilities をテスト</p>
+      <p class="hint">ドラッグで落下位置を調整 / 発射で落下開始 / ギミック接触で selected emoji の abilities をテスト</p>
     </section>
 
     <aside class="side-panel">

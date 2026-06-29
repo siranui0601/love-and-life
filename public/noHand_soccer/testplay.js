@@ -7,6 +7,7 @@ const canvas = document.querySelector('#fieldCanvas');
 const ctx = canvas.getContext('2d');
 const search = document.querySelector('#emojiSearch');
 const select = document.querySelector('#emojiSelect');
+const modeSelect = document.querySelector('#contactMode');
 const launchButton = document.querySelector('#launchButton');
 const retryButton = document.querySelector('#retryButton');
 const debugTarget = document.querySelector('#debugOverlay');
@@ -17,27 +18,55 @@ const abilityList = document.querySelector('#abilityList');
 
 const field = { w: canvas.width, h: canvas.height, floor: 484 };
 const goal = { x: 890, y: 260, w: 24, h: 150 };
-const gimmick = { x: 455, y: 292, r: 50 };
+const gimmick = { x: 455, y: 292, r: 58, contactPadding: 12 };
 const routeDirection = { x: 1, y: -0.18 };
 const hiddenRoute = { y: 250 };
+const contactCooldownMs = 180;
+const modeConfigs = {
+  drop: { label: '落下接触', x: gimmick.x, y: gimmick.y - 180, vx: 0, vy: 0, drag: 'free' },
+  side: { label: '横から接触', x: gimmick.x - 235, y: gimmick.y - 8, vx: 390, vy: -8, drag: 'free' },
+  bounce: { label: '下からバウンド接触', x: gimmick.x, y: field.floor - 18, vx: 0, vy: -520, drag: 'x' },
+  fast: { label: '高速衝突', x: gimmick.x - 285, y: gimmick.y - 26, vx: 720, vy: -20, drag: 'free' },
+  still: { label: '静止接触', x: gimmick.x, y: gimmick.y - gimmick.r - 15, vx: 0, vy: 0, drag: 'free' }
+};
+let contactMode = 'drop';
 let profiles = [];
 let selected = null;
 let seed = 20260629;
 let random = createSeededRandom(seed);
 let engine = createAbilityEngine(abilityRegistry, { maxSpeed: 880 });
 let last = performance.now();
-let dragTarget = { x: 315, y: 300 };
 let dragging = false;
 let lastEffect = '';
+let lastTriggeredAbilities = [];
 let trail = [];
 let ball;
+let contactActive = false;
+let lastContactTime = 0;
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
 
 function resetBall() {
   seed += 1;
   random = createSeededRandom(seed);
   engine.reset();
   lastEffect = '';
-  ball = { x: 100, y: field.floor - 18, vx: 0, vy: 0, r: 15, gravityScale: 1, holdUntil: 0, launched: false };
+  lastTriggeredAbilities = [];
+  contactActive = false;
+  lastContactTime = 0;
+  const config = modeConfigs[contactMode];
+  ball = {
+    x: config.x,
+    y: config.y,
+    vx: 0,
+    vy: 0,
+    r: 15,
+    gravityScale: 1,
+    holdUntil: 0,
+    launched: false
+  };
   trail = [{ x: ball.x, y: ball.y }];
 }
 
@@ -54,21 +83,23 @@ function abilityContext(now) {
 }
 
 function runAbilities(trigger, now) {
+  const triggered = [];
   for (const name of selected?.abilities ?? []) {
     const spec = abilityRegistry[name];
     if (!spec || spec.trigger.includes(trigger) || trigger === 'contact') {
       const result = engine.trigger(name, ball, abilityContext(now));
+      triggered.push(name);
       if (result) lastEffect = `${name}: ${result.effect}`;
     }
   }
+  if (triggered.length) lastTriggeredAbilities = triggered;
 }
 
 function launch() {
-  const dx = dragTarget.x - ball.x;
-  const dy = dragTarget.y - ball.y;
-  const l = Math.hypot(dx, dy) || 1;
-  ball.vx = (dx / l) * 520;
-  ball.vy = (dy / l) * 520;
+  if (ball.launched) return;
+  const config = modeConfigs[contactMode];
+  ball.vx = config.vx;
+  ball.vy = config.vy;
   ball.launched = true;
   runAbilities('launch', performance.now());
 }
@@ -77,25 +108,72 @@ function tick(now) {
   const dt = Math.min((now - last) / 1000, 0.033);
   last = now;
   ball.gravityScale = 1;
-  if (ball.launched) runAbilities('field', now);
-  if (ball.y > field.floor - 55 && ball.vy > 120) runAbilities('floor', now);
-  if (now > ball.holdUntil) ball.vy += 720 * ball.gravityScale * dt;
-  ball.x += ball.vx * dt;
-  ball.y += ball.vy * dt;
-  collide(now);
-  engine.tick(ball, abilityContext(now));
-  trail.push({ x: ball.x, y: ball.y });
-  if (trail.length > 180) trail.shift();
+  if (ball.launched) {
+    runAbilities('field', now);
+    if (ball.y > field.floor - 55 && ball.vy > 120) runAbilities('floor', now);
+    if (now > ball.holdUntil) ball.vy += 720 * ball.gravityScale * dt;
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+    collide(now);
+    engine.tick(ball, abilityContext(now));
+    trail.push({ x: ball.x, y: ball.y });
+    if (trail.length > 180) trail.shift();
+  }
   draw();
-  renderDebug(debugTarget, { speed: Math.hypot(ball.vx, ball.vy), vx: ball.vx, vy: ball.vy, activeAbilities: engine.getActive(), lastEffect, warnings: engine.warnings, gravityScale: ball.gravityScale, seed });
+  renderDebug(debugTarget, {
+    mode: `drop test / ${modeConfigs[contactMode].label}`,
+    launched: ball.launched,
+    ballX: ball.x,
+    ballY: ball.y,
+    gimmickContact: contactActive,
+    lastContactTime,
+    lastTriggeredAbilities,
+    speed: Math.hypot(ball.vx, ball.vy),
+    vx: ball.vx,
+    vy: ball.vy,
+    activeAbilities: engine.getActive(),
+    lastEffect,
+    warnings: engine.warnings,
+    gravityScale: ball.gravityScale,
+    seed
+  });
   requestAnimationFrame(tick);
 }
 
 function collide(now) {
   if (ball.y + ball.r > field.floor) { ball.y = field.floor - ball.r; ball.vy = -Math.abs(ball.vy) * .58; ball.vx *= .985; runAbilities('wall', now); }
-  if (ball.x - ball.r < 0 || ball.x + ball.r > field.w) { ball.x = Math.max(ball.r, Math.min(field.w - ball.r, ball.x)); ball.vx *= -0.72; runAbilities('wall', now); }
+  if (ball.x - ball.r < 0 || ball.x + ball.r > field.w) { ball.x = clamp(ball.x, ball.r, field.w - ball.r); ball.vx *= -0.72; runAbilities('wall', now); }
   if (ball.y - ball.r < 0) { ball.y = ball.r; ball.vy *= -0.72; runAbilities('wall', now); }
-  if (Math.hypot(ball.x - gimmick.x, ball.y - gimmick.y) < ball.r + gimmick.r) runAbilities('contact', now);
+
+  const contactDistance = ball.r + gimmick.r + gimmick.contactPadding;
+  const distance = Math.hypot(ball.x - gimmick.x, ball.y - gimmick.y);
+  contactActive = distance < contactDistance;
+  if (contactActive && now - lastContactTime > contactCooldownMs) {
+    lastContactTime = now;
+    runAbilities('contact', now);
+  }
+}
+
+function drawGuide() {
+  const contactDistance = ball.r + gimmick.r + gimmick.contactPadding;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(251,191,36,.82)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([9, 8]);
+  ctx.beginPath();
+  if (contactMode === 'drop' || contactMode === 'bounce' || contactMode === 'still') {
+    ctx.moveTo(ball.x, Math.max(ball.r, ball.y - 50));
+    ctx.lineTo(ball.x, field.floor);
+  } else {
+    ctx.moveTo(ball.x, ball.y);
+    ctx.lineTo(gimmick.x, gimmick.y);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(251,191,36,.36)';
+  ctx.beginPath();
+  ctx.arc(gimmick.x, gimmick.y, contactDistance, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function draw() {
@@ -106,14 +184,14 @@ function draw() {
   ctx.fillStyle = 'rgba(103,232,249,.10)'; ctx.fillRect(goal.x, goal.y, goal.w, goal.h);
   ctx.strokeStyle = 'rgba(250,204,21,.36)'; ctx.setLineDash([14, 12]); ctx.beginPath(); ctx.moveTo(340, hiddenRoute.y); ctx.quadraticCurveTo(560, hiddenRoute.y - 80, goal.x, goal.y + goal.h / 2); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillStyle = 'rgba(168,85,247,.22)'; ctx.beginPath(); ctx.arc(gimmick.x, gimmick.y, gimmick.r, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#a855f7'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.font = '34px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(selected?.emoji ?? '⚽', gimmick.x, gimmick.y + 12);
+  ctx.strokeStyle = contactActive ? '#fbbf24' : '#a855f7'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.font = '34px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(selected?.emoji ?? '⚽', gimmick.x, gimmick.y + 12);
   ctx.strokeStyle = '#67e8f9'; ctx.lineWidth = 3; ctx.beginPath(); trail.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
-  if (!ball.launched) { ctx.strokeStyle = '#fbbf24'; ctx.beginPath(); ctx.moveTo(ball.x, ball.y); ctx.lineTo(dragTarget.x, dragTarget.y); ctx.stroke(); }
+  if (!ball.launched) drawGuide();
   ctx.fillStyle = '#f8fafc'; ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#111827'; ctx.font = '20px sans-serif'; ctx.fillText('⚽', ball.x, ball.y + 7);
 }
 
 function renderProfileList(list) {
-  select.innerHTML = list.map((p, i) => `<option value="${profiles.indexOf(p)}">${p.emoji} ${p.displayNameJa ?? p.sourceName} (${(p.abilities ?? []).join(', ') || 'no abilities'})</option>`).join('');
+  select.innerHTML = list.map((p) => `<option value="${profiles.indexOf(p)}">${p.emoji} ${p.displayNameJa ?? p.sourceName} (${(p.abilities ?? []).join(', ') || 'no abilities'})</option>`).join('');
   if (!selected && list[0]) select.value = profiles.indexOf(list[0]);
 }
 
@@ -127,11 +205,22 @@ function renderSelected() {
   }).join('') || '<p>abilitiesなし</p>';
 }
 
-canvas.addEventListener('pointerdown', (e) => { dragging = true; canvas.setPointerCapture(e.pointerId); });
-canvas.addEventListener('pointermove', (e) => { if (!dragging) return; const r = canvas.getBoundingClientRect(); dragTarget = { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height }; });
+function moveHeldBall(e) {
+  const r = canvas.getBoundingClientRect();
+  const x = (e.clientX - r.left) * canvas.width / r.width;
+  const y = (e.clientY - r.top) * canvas.height / r.height;
+  const config = modeConfigs[contactMode];
+  ball.x = clamp(x, ball.r, field.w - ball.r);
+  if (config.drag === 'free') ball.y = clamp(y, ball.r, field.floor - ball.r);
+  trail = [{ x: ball.x, y: ball.y }];
+}
+
+canvas.addEventListener('pointerdown', (e) => { if (ball.launched) return; dragging = true; canvas.setPointerCapture(e.pointerId); moveHeldBall(e); });
+canvas.addEventListener('pointermove', (e) => { if (!dragging || ball.launched) return; moveHeldBall(e); });
 canvas.addEventListener('pointerup', () => { dragging = false; });
 launchButton.addEventListener('click', launch);
 retryButton.addEventListener('click', resetBall);
+modeSelect.addEventListener('change', () => { contactMode = modeSelect.value; resetBall(); });
 search.addEventListener('input', () => renderProfileList(filterProfiles(profiles, search.value)));
 select.addEventListener('change', () => { selected = profiles[Number(select.value)]; resetBall(); renderSelected(); });
 
