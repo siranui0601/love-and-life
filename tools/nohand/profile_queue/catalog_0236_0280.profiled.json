@@ -305,10 +305,10 @@
         "lowGravity"
       ],
       "abilities": [
-        "softLanding",
-        "slowDampen",
-        "delayedRelease"
-      ],
+  "softLanding",
+  "slowDampen",
+  "timedRelease"
+],
       "confidence": 0.73,
       "note": "赤ちゃんの軽さと不安定さを、落下を殺してふわっと受け渡す挙動に寄せる。強い発射ではなく安全な減速ギミックにする。"
     },
@@ -502,10 +502,10 @@
         "slowEffect"
       ],
       "abilities": [
-        "absorbHold",
-        "flowCarry",
-        "softLanding"
-      ],
+  "trapHold",
+  "flowCarry",
+  "softLanding"
+],
       "confidence": 0.84,
       "note": "哺乳瓶は一度中に受けて、傾けるとミルクが流れる。吸収保持からゆるい流路で押し出すのが自然。"
     },
@@ -586,10 +586,10 @@
         "lowGravity"
       ],
       "abilities": [
-        "softLanding",
-        "slowDampen",
-        "delayedRelease"
-      ],
+  "softLanding",
+  "slowDampen",
+  "timedRelease"
+],
       "confidence": 0.73,
       "note": "赤ちゃんの肌色差分。通常版と同じく、軽く受けて減速し、少し遅れて安全に渡す。"
     },
@@ -614,10 +614,10 @@
         "lowGravity"
       ],
       "abilities": [
-        "softLanding",
-        "slowDampen",
-        "delayedRelease"
-      ],
+  "softLanding",
+  "slowDampen",
+  "timedRelease"
+],
       "confidence": 0.73,
       "note": "赤ちゃんの肌色差分。通常版と同じく、軽く受けて減速し、少し遅れて安全に渡す。"
     },
@@ -642,10 +642,10 @@
         "lowGravity"
       ],
       "abilities": [
-        "softLanding",
-        "slowDampen",
-        "delayedRelease"
-      ],
+  "softLanding",
+  "slowDampen",
+  "timedRelease"
+],
       "confidence": 0.73,
       "note": "赤ちゃんの肌色差分。通常版と同じく、軽く受けて減速し、少し遅れて安全に渡す。"
     },
@@ -670,10 +670,10 @@
         "lowGravity"
       ],
       "abilities": [
-        "softLanding",
-        "slowDampen",
-        "delayedRelease"
-      ],
+  "softLanding",
+  "slowDampen",
+  "timedRelease"
+],
       "confidence": 0.73,
       "note": "赤ちゃんの肌色差分。通常版と同じく、軽く受けて減速し、少し遅れて安全に渡す。"
     },
@@ -698,10 +698,10 @@
         "lowGravity"
       ],
       "abilities": [
-        "softLanding",
-        "slowDampen",
-        "delayedRelease"
-      ],
+  "softLanding",
+  "slowDampen",
+  "timedRelease"
+],
       "confidence": 0.73,
       "note": "赤ちゃんの肌色差分。通常版と同じく、軽く受けて減速し、少し遅れて安全に渡す。"
     },
@@ -1570,8 +1570,9 @@
       "👦"
     ],
     "compilerSensitive": [
-      "gravityShift",
-      "splitScatter"
-    ]
+  "gravityShift",
+  "splitScatter",
+  "timedRelease"
+]
   }
 }
