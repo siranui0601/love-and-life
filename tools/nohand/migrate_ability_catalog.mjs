@@ -9,7 +9,9 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '../..');
 const RUNTIME_PROFILES = 'public/noHand_soccer/emoji_physics_profiles.json';
 const QUEUE_DIR = 'tools/nohand/profile_queue';
 
-const DEPRECATED_REPLACEMENTS = Object.freeze({
+// Force-replacements for abilities that should not remain as standalone combo vocabulary,
+// even if the catalog still has a selectable compatibility entry.
+const REPLACEMENTS = Object.freeze({
   fakeRoute: ['hiddenRoute'],
   luckyRedirect: ['aimAssist'],
   heavyBlock: ['reflectShield'],
@@ -52,18 +54,20 @@ function migrateAbilities(profile) {
   const after = [];
   const notes = [];
   for (const ability of before) {
+    if (REPLACEMENTS[ability]) {
+      notes.push({ ability, type: 'replacement', to: REPLACEMENTS[ability] });
+      after.push(...REPLACEMENTS[ability]);
+      continue;
+    }
     const resolved = resolveCatalogAbility(ability);
     if (!resolved) {
       notes.push({ ability, type: 'missing', to: ability });
       after.push(ability);
       continue;
     }
-    const entry = abilityCatalog[ability];
     const resolvedEntry = resolved.entry;
-    if (entry?.status === 'deprecated') {
-      const replacement = DEPRECATED_REPLACEMENTS[ability] || [];
-      notes.push({ ability, type: 'deprecated', to: replacement });
-      after.push(...replacement);
+    if (resolvedEntry.status === 'deprecated') {
+      notes.push({ ability, type: 'deprecatedWithoutReplacement', to: null });
       continue;
     }
     if (resolved.aliasFrom) {
