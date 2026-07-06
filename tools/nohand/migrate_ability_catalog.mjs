@@ -49,6 +49,33 @@ function fallbackAbility(profile) {
   return 'hiddenRoute';
 }
 
+function compilerSensitiveAbilities(profiles) {
+  const found = new Set();
+  for (const profile of Object.values(profiles || {})) {
+    for (const ability of profile.abilities || []) {
+      if (abilityCatalog[ability]?.compilerSensitive || abilityCatalog[ability]?.status === 'alias') continue;
+      const resolved = resolveCatalogAbility(ability);
+      if (resolved?.entry?.compilerSensitive) found.add(resolved.name);
+    }
+  }
+  return [...found].sort();
+}
+
+function syncCompilerSensitiveReview(container, stats, file) {
+  if (!container.review || !container.profiles) return;
+  const before = Array.isArray(container.review.compilerSensitive) ? container.review.compilerSensitive : [];
+  const actual = compilerSensitiveAbilities(container.profiles);
+  const merged = dedupe([...before, ...actual]).sort();
+  if (JSON.stringify(before) === JSON.stringify(merged)) return;
+  container.review.compilerSensitive = merged;
+  const added = merged.filter((ability) => !before.includes(ability));
+  for (const ability of added) {
+    const key = `review.compilerSensitive:${ability}`;
+    stats.changes.set(key, (stats.changes.get(key) || 0) + 1);
+  }
+  if (stats.reviewExamples.length < 20) stats.reviewExamples.push({ file, before, after: merged, added });
+}
+
 function migrateAbilities(profile) {
   const before = Array.isArray(profile.abilities) ? profile.abilities : [];
   const after = [];
@@ -106,6 +133,7 @@ function migrateProfileSet(container, stats, file) {
       stats.examples.push({ file, emoji, before: result.before, after: result.after, notes: result.notes });
     }
   }
+  syncCompilerSensitiveReview(container, stats, file);
 }
 
 async function collectFiles() {
@@ -133,12 +161,18 @@ function printReport(stats, write) {
   for (const example of stats.examples) {
     console.log(`  ${example.file} ${example.emoji}: ${example.before.join(',')} -> ${example.after.join(',')}`);
   }
+  if (stats.reviewExamples.length) {
+    console.log('review.compilerSensitive examples:');
+    for (const example of stats.reviewExamples) {
+      console.log(`  ${example.file}: +${example.added.join(',')}`);
+    }
+  }
 }
 
 async function main() {
   const write = hasFlag('--write');
   const files = await collectFiles();
-  const stats = { profileCount: 0, changedProfiles: 0, changes: new Map(), examples: [] };
+  const stats = { profileCount: 0, changedProfiles: 0, changes: new Map(), examples: [], reviewExamples: [] };
   for (const file of files) {
     const data = await readJson(file);
     migrateProfileSet(data, stats, file);
