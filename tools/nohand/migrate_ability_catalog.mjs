@@ -53,16 +53,41 @@ async function readJsonWithSource(file) {
   const raw = await readFile(repoPath(file), 'utf8');
   return { raw, data: JSON.parse(raw) };
 }
-function stringifyLikeSource(raw, data) {
-  const trimmed = raw.trim();
-  const newlineCount = (trimmed.match(/\n/g) || []).length;
-  const compact = newlineCount <= 2;
-  return `${JSON.stringify(data, null, compact ? 0 : 2)}\n`;
-}
-async function writeJsonLikeSource(file, raw, data) {
-  await writeFile(repoPath(file), stringifyLikeSource(raw, data), 'utf8');
-}
 function dedupe(values) { return [...new Set(values.filter(Boolean))]; }
+function escapeRegExp(value) { return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function parseStringArray(inner) {
+  const wrapped = `[${inner.trim().replace(/,\s*$/, '')}]`;
+  try {
+    const parsed = JSON.parse(wrapped);
+    return Array.isArray(parsed) && parsed.every((item) => typeof item === 'string') ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function formatStringArray(prefix, inner, values) {
+  const compact = !inner.includes('\n');
+  const encoded = values.map((value) => JSON.stringify(value));
+  if (compact) return `${prefix}[${encoded.join(',')}]`;
+  const lineStart = prefix.lastIndexOf('\n') + 1;
+  const indentMatch = prefix.slice(lineStart).match(/^\s*/);
+  const baseIndent = indentMatch ? indentMatch[0] : '';
+  const itemIndent = `${baseIndent}  `;
+  return `${prefix}[\n${itemIndent}${encoded.join(`,\n${itemIndent}`)}\n${baseIndent}]`;
+}
+
+function replaceJsonStringArray(raw, propertyName, transform) {
+  const escaped = escapeRegExp(propertyName);
+  const pattern = new RegExp(`("${escaped}"\\s*:\\s*)\\[([\\s\\S]*?)\\]`, 'g');
+  return raw.replace(pattern, (match, prefix, inner) => {
+    const values = parseStringArray(inner);
+    if (!values) return match;
+    const next = transform(values);
+    if (!next || JSON.stringify(values) === JSON.stringify(next)) return match;
+    return formatStringArray(prefix, inner, next);
+  });
+}
 
 function fallbackAbility(profile) {
   for (const [effect, ability] of FALLBACK_BY_EFFECT) {
@@ -98,8 +123,7 @@ function syncCompilerSensitiveReview(container, stats, file) {
   if (stats.reviewExamples.length < 20) stats.reviewExamples.push({ file, before, after: merged, added });
 }
 
-function migrateAbilities(profile) {
-  const before = Array.isArray(profile.abilities) ? profile.abilities : [];
+function migrateAbilityList(before, profile = null) {
   const after = [];
   const notes = [];
   for (const ability of before) {
@@ -132,11 +156,16 @@ function migrateAbilities(profile) {
   }
   const normalized = dedupe(after);
   if (!normalized.length) {
-    const fallback = fallbackAbility(profile);
+    const fallback = profile ? fallbackAbility(profile) : 'hiddenRoute';
     normalized.push(fallback);
     notes.push({ ability: null, type: 'emptyFallback', to: fallback });
   }
   return { before, after: normalized, notes, changed: JSON.stringify(before) !== JSON.stringify(normalized) };
+}
+
+function migrateAbilities(profile) {
+  const before = Array.isArray(profile.abilities) ? profile.abilities : [];
+  return migrateAbilityList(before, profile);
 }
 
 function migrateProfileSet(container, stats, file) {
@@ -156,6 +185,18 @@ function migrateProfileSet(container, stats, file) {
     }
   }
   syncCompilerSensitiveReview(container, stats, file);
+}
+
+function migrateRawSource(raw, migratedData) {
+  let next = replaceJsonStringArray(raw, 'abilities', (values) => migrateAbilityList(values).after);
+  if (migratedData.review?.compilerSensitive) {
+    const desiredCompilerSensitive = migratedData.review.compilerSensitive;
+    next = replaceJsonStringArray(next, 'compilerSensitive', (values) => {
+      const merged = dedupe([...values, ...desiredCompilerSensitive]).sort();
+      return merged;
+    });
+  }
+  return next;
 }
 
 async function collectFiles() {
@@ -198,7 +239,7 @@ async function main() {
   for (const file of files) {
     const { raw, data } = await readJsonWithSource(file);
     migrateProfileSet(data, stats, file);
-    if (write) await writeJsonLikeSource(file, raw, data);
+    if (write) await writeFile(repoPath(file), migrateRawSource(raw, data), 'utf8');
   }
   printReport(stats, write);
 }
