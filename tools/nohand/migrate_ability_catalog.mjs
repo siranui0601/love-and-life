@@ -49,8 +49,19 @@ function argValue(name, fallback = null) {
   const paired = process.argv.find((arg) => arg.startsWith(prefix));
   return paired ? paired.slice(prefix.length) : fallback;
 }
-async function readJson(file) { return JSON.parse(await readFile(repoPath(file), 'utf8')); }
-async function writeJson(file, data) { await writeFile(repoPath(file), `${JSON.stringify(data, null, 2)}\n`, 'utf8'); }
+async function readJsonWithSource(file) {
+  const raw = await readFile(repoPath(file), 'utf8');
+  return { raw, data: JSON.parse(raw) };
+}
+function stringifyLikeSource(raw, data) {
+  const trimmed = raw.trim();
+  const newlineCount = (trimmed.match(/\n/g) || []).length;
+  const compact = newlineCount <= 2;
+  return `${JSON.stringify(data, null, compact ? 0 : 2)}\n`;
+}
+async function writeJsonLikeSource(file, raw, data) {
+  await writeFile(repoPath(file), stringifyLikeSource(raw, data), 'utf8');
+}
 function dedupe(values) { return [...new Set(values.filter(Boolean))]; }
 
 function fallbackAbility(profile) {
@@ -185,9 +196,9 @@ async function main() {
   const files = await collectFiles();
   const stats = { profileCount: 0, changedProfiles: 0, changes: new Map(), examples: [], reviewExamples: [] };
   for (const file of files) {
-    const data = await readJson(file);
+    const { raw, data } = await readJsonWithSource(file);
     migrateProfileSet(data, stats, file);
-    if (write) await writeJson(file, data);
+    if (write) await writeJsonLikeSource(file, raw, data);
   }
   printReport(stats, write);
 }
