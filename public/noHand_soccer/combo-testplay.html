@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>noHand combo device testplay</title>
+  <link rel="stylesheet" href="./combo-testplay.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="stage-panel">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">noHand soccer</p>
+          <h1>3絵文字 合成装置プレビュー</h1>
+        </div>
+        <div class="controls">
+          <button id="randomButton" type="button">ランダム3つ</button>
+          <button id="compileButton" type="button">合成</button>
+        </div>
+      </header>
+      <canvas id="comboCanvas" width="960" height="560" aria-label="combo device preview field"></canvas>
+      <p class="hint">3つの絵文字プロフィールから、AIを使わずに1つの可視ピタゴラ装置をコンパイルします。</p>
+    </section>
+
+    <aside class="side-panel">
+      <section class="card selector-card">
+        <h2>素材絵文字</h2>
+        <div id="selectors" class="selectors"></div>
+      </section>
+
+      <section class="card">
+        <h2 id="deviceTitle">読み込み中...</h2>
+        <p id="deviceSummary" class="summary"></p>
+        <dl id="deviceMeta" class="meta"></dl>
+      </section>
+
+      <section class="card">
+        <h2>Actions</h2>
+        <div id="actionList" class="action-list"></div>
+      </section>
+
+      <section class="card debug-card">
+        <h2>Compiled JSON</h2>
+        <pre id="jsonPreview"></pre>
+      </section>
+    </aside>
+  </main>
+  <script type="module" src="./combo-testplay.js"></script>
+</body>
+</html>
