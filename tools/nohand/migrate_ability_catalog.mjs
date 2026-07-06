@@ -9,6 +9,17 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, '../..');
 const RUNTIME_PROFILES = 'public/noHand_soccer/emoji_physics_profiles.json';
 const QUEUE_DIR = 'tools/nohand/profile_queue';
 
+// Keep this aligned with tools/nohand/ability_specs.json compilerSensitive=true entries.
+const COMPILER_SENSITIVE_ABILITIES = new Set([
+  'gravityShift',
+  'hiddenRoute',
+  'multiExit',
+  'sleepFloat',
+  'splitScatter',
+  'timedRelease',
+  'warpExit',
+]);
+
 // Force-replacements for abilities that should not remain as standalone combo vocabulary,
 // even if the catalog still has a selectable compatibility entry.
 const REPLACEMENTS = Object.freeze({
@@ -53,9 +64,9 @@ function compilerSensitiveAbilities(profiles) {
   const found = new Set();
   for (const profile of Object.values(profiles || {})) {
     for (const ability of profile.abilities || []) {
-      if (abilityCatalog[ability]?.compilerSensitive || abilityCatalog[ability]?.status === 'alias') continue;
       const resolved = resolveCatalogAbility(ability);
-      if (resolved?.entry?.compilerSensitive) found.add(resolved.name);
+      const resolvedName = resolved?.name || ability;
+      if (COMPILER_SENSITIVE_ABILITIES.has(resolvedName)) found.add(resolvedName);
     }
   }
   return [...found].sort();
