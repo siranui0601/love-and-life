@@ -1,54 +1,322 @@
 import { loadProfiles } from './runtime/profileLoader.js';
-import { compileComboAbility, createComboAbilityRuntime, stepRuntimeCollisions } from './runtime/comboAbilityRuntime.js';
+import { compileComboDevice } from './runtime/comboDeviceCompiler.js';
+import { compileComboAbility, createComboAbilityRuntime } from './runtime/comboAbilityRuntime.js';
+import { hashStringToUint32 } from './runtime/comboParamResolver.js';
 
 const canvas = document.querySelector('#fieldCanvas');
 const ctx = canvas.getContext('2d');
 const selects = ['#emoji1', '#emoji2', '#emoji3'].map((s) => document.querySelector(s));
 const debug = document.querySelector('#debugOverlay');
 const abilityList = document.querySelector('#abilityList');
+const actionList = document.querySelector('#actionList');
 const comboTitle = document.querySelector('#comboTitle');
+const comboSummary = document.querySelector('#comboSummary');
 const launchButton = document.querySelector('#launchButton');
 const retryButton = document.querySelector('#retryButton');
+const launchMode = document.querySelector('#launchMode');
+
 const field = { w: canvas.width, h: canvas.height, floor: 484, gravity: 760, deathY: 535 };
-const goals = [{ x: 890, y: 242, w: 28, h: 168 }];
-const device = { x: 455, y: 292, r: 58 };
+const goals = [{ x: 890, y: 230, w: 34, h: 174 }];
+const device = { x: 462, y: 292, r: 62 };
+const roleNames = ['core', 'modifier', 'output'];
+const roleLabels = { core: '主役', modifier: '変質', output: '出口' };
+
 let profiles = [];
-let runtime;
-let compiled;
+let compiledDevice = null;
+let compiledRuntime = null;
+let runtime = null;
 let launched = false;
 let dragging = false;
 let last = performance.now();
+let spawnQueue = [];
 
-function comboProfiles() { return selects.map((s) => profiles[Number(s.value)]).filter(Boolean); }
-function comboKey() { return comboProfiles().map((p) => p.emoji).join('|'); }
-function rebuild() {
-  const abilities = comboProfiles().flatMap((p) => p.abilities ?? []);
-  compiled = compileComboAbility({ comboKey: comboKey(), abilities });
-  runtime = createComboAbilityRuntime(compiled, { field, goals, device, ball: { x: 180, y: 80, vx: 0, vy: 0 } });
-  launched = false;
-  comboTitle.textContent = comboKey();
-  abilityList.innerHTML = compiled.abilities.map((a) => `<div class="ability implemented"><strong>${a}</strong><small>${JSON.stringify(compiled.params[a])}</small></div>`).join('') || '<p>supported combo abilitiesなし</p>';
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[ch]));
 }
-function launch() { const b = runtime.state.balls[0]; b.vx = 285; b.vy = -20; launched = true; }
-function draw() {
-  ctx.clearRect(0, 0, field.w, field.h); ctx.fillStyle = '#0e1b31'; ctx.fillRect(0, 0, field.w, field.h); ctx.fillStyle = '#19314c'; ctx.fillRect(0, field.floor, field.w, field.h - field.floor);
-  ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.strokeRect(goals[0].x, goals[0].y, goals[0].w, goals[0].h); ctx.fillStyle = 'rgba(103,232,249,.10)'; ctx.fillRect(goals[0].x, goals[0].y, goals[0].w, goals[0].h);
-  ctx.fillStyle = 'rgba(168,85,247,.22)'; ctx.beginPath(); ctx.arc(device.x, device.y, device.r, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#a855f7'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.font = '28px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(comboProfiles().map((p) => p.emoji).join(''), device.x, device.y + 10);
-  runtime.draw(ctx);
-  for (const b of runtime.state.balls) {
-    ctx.strokeStyle = b.paintHue == null ? '#67e8f9' : `hsl(${b.paintHue} 90% 60%)`; ctx.beginPath(); b.trail.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.stroke();
-    if (!b.alive) continue; ctx.fillStyle = b.flags.splitClone ? '#fde68a' : '#f8fafc'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#111827'; ctx.font = '20px sans-serif'; ctx.fillText('⚽', b.x, b.y + 7);
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function comboProfiles() { return selects.map((s) => profiles[Number(s.value)]).filter(Boolean).slice(0, 3); }
+function comboKey() { return comboProfiles().map((p) => p.emoji).join('|'); }
+function unit(name) { return hashStringToUint32(`live-lab:v2|${comboKey()}|${launchMode.value}|${name}`) / 4294967296; }
+function range(name, min, max) { return min + (max - min) * unit(name); }
+function intRange(name, min, max) { return Math.floor(range(name, min, max + 1)); }
+function goalCenter() { const g = goals[0]; return { x: g.x + g.w / 2, y: g.y + g.h / 2 }; }
+
+function poseFor(mode, index = 0) {
+  const jitter = range(`jitter:${index}`, -42, 42);
+  if (mode === 'topDrop') return { x: device.x + jitter, y: 30 + index * 12, vx: range(`topVx:${index}`, -55, 55), vy: range(`topVy:${index}`, 70, 150) };
+  if (mode === 'diagonalDrop') return { x: clamp(device.x - range(`diagDist:${index}`, 190, 320), 34, field.w - 34), y: 34 + index * 12, vx: range(`diagVx:${index}`, 170, 285), vy: range(`diagVy:${index}`, 85, 185) };
+  if (mode === 'leftShot') return { x: 58, y: clamp(device.y + range(`leftY:${index}`, -145, 95), 45, field.floor - 45), vx: range(`leftVx:${index}`, 320, 485), vy: range(`leftVy:${index}`, -125, 70) };
+  if (mode === 'wallBank') return { x: field.w - 62, y: clamp(device.y - range(`bankY:${index}`, 120, 210), 44, field.floor - 90), vx: -range(`bankVx:${index}`, 310, 470), vy: range(`bankVy:${index}`, 95, 210) };
+  if (mode === 'paintFollow') return { x: device.x + jitter + index * 26, y: 28 - index * 44, vx: range(`paintVx:${index}`, -35, 60), vy: range(`paintVy:${index}`, 80, 160) };
+  return { x: device.x + jitter + (index - 1) * 78, y: 28 - index * 28, vx: range(`rainVx:${index}`, -82, 82), vy: range(`rainVy:${index}`, 70, 165) };
+}
+
+function buildCompiled() {
+  const selected = comboProfiles();
+  if (selected.length !== 3) return;
+  compiledDevice = compileComboDevice(selected);
+  const actionAbilities = compiledDevice.actions.map((action) => action.name);
+  const fallbackAbilities = selected.flatMap((profile) => profile.abilities ?? []);
+  compiledRuntime = compileComboAbility({ comboKey: compiledDevice.comboKey, abilities: actionAbilities.length ? actionAbilities : fallbackAbilities, maxAbilities: 6 });
+  runtime = createComboAbilityRuntime(compiledRuntime, { field, goals, device, ball: { ...poseFor(launchMode.value, 0), vx: 0, vy: 0 } });
+}
+
+function rebuild() {
+  launched = false;
+  spawnQueue = [];
+  last = performance.now();
+  try {
+    buildCompiled();
+    renderPanels();
+  } catch (error) {
+    comboTitle.textContent = 'compile error';
+    comboSummary.textContent = String(error?.stack || error);
   }
 }
+
+function renderPanels() {
+  comboTitle.textContent = `${compiledDevice.recipe.join('')} 合成装置`;
+  comboSummary.textContent = compiledDevice.summary;
+  actionList.innerHTML = compiledDevice.actions.map((action) => `
+    <article class="ability action-card ${escapeHtml(action.role)}">
+      <strong>${escapeHtml(roleLabels[action.role] ?? action.role)}: ${escapeHtml(action.sourceEmoji)} ${escapeHtml(action.name)}</strong>
+      <small>${escapeHtml(action.intent)}</small>
+      <code>${escapeHtml(action.action)} / ${escapeHtml(action.family)}</code>
+    </article>
+  `).join('');
+  abilityList.innerHTML = compiledRuntime.abilities.map((name) => `
+    <article class="ability implemented">
+      <strong>${escapeHtml(name)}</strong>
+      <small>${escapeHtml(JSON.stringify(compiledRuntime.params[name]))}</small>
+    </article>
+  `).join('') || '<p>runtime対応abilityなし</p>';
+}
+
+function launch() {
+  if (!runtime) return;
+  const mode = launchMode.value;
+  runtime.reset(poseFor(mode, 0));
+  spawnQueue = [];
+  if (mode === 'rain3') {
+    spawnQueue.push({ at: 260, pose: poseFor(mode, 1) }, { at: 520, pose: poseFor(mode, 2) });
+  }
+  if (mode === 'paintFollow') {
+    spawnQueue.push({ at: 560, pose: poseFor(mode, 1) }, { at: 1040, pose: poseFor(mode, 2) });
+  }
+  launched = true;
+  last = performance.now();
+}
+
 function tick(now) {
-  const dt = Math.min(now - last, 33); last = now; if (launched) runtime.tick(dt); else stepRuntimeCollisions(runtime.state, runtime.state.balls[0]); draw();
-  debug.textContent = JSON.stringify({ comboKey: compiled.comboKey, version: compiled.version, params: compiled.params, balls: runtime.state.balls.length, goals: runtime.state.goalsScored, dead: runtime.state.deadBalls }, null, 2);
+  const dt = Math.min(now - last, 33);
+  last = now;
+  if (runtime && launched) {
+    runtime.tick(dt);
+    const due = spawnQueue.filter((item) => item.at <= runtime.state.timeMs);
+    spawnQueue = spawnQueue.filter((item) => item.at > runtime.state.timeMs);
+    for (const item of due) runtime.addBall({ ...item.pose, flags: { labQueued: true } });
+  }
+  draw();
+  renderDebug();
   requestAnimationFrame(tick);
 }
-function options() { return profiles.map((p, i) => `<option value="${i}">${p.emoji} ${p.displayNameJa ?? p.sourceName}</option>`).join(''); }
-canvas.addEventListener('pointerdown', (e) => { dragging = true; canvas.setPointerCapture(e.pointerId); moveDevice(e); });
-canvas.addEventListener('pointermove', (e) => { if (dragging) moveDevice(e); });
+
+function draw() {
+  drawField();
+  drawPrediction();
+  if (runtime) runtime.draw(ctx);
+  drawDevice();
+  if (runtime) drawBalls();
+}
+
+function drawField() {
+  ctx.clearRect(0, 0, field.w, field.h);
+  const bg = ctx.createLinearGradient(0, 0, field.w, field.h);
+  bg.addColorStop(0, '#0b8b48');
+  bg.addColorStop(0.6, '#076533');
+  bg.addColorStop(1, '#04391f');
+  ctx.fillStyle = '#04120c';
+  ctx.fillRect(0, 0, field.w, field.h);
+  ctx.fillStyle = bg;
+  roundedRect(22, 28, field.w - 44, field.floor - 42, 20, true, false);
+  ctx.strokeStyle = 'rgba(255,255,255,.12)';
+  ctx.lineWidth = 2;
+  for (let y = 78; y < field.floor - 20; y += 68) { ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(field.w - 30, y); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(232,255,89,.36)';
+  ctx.lineWidth = 4;
+  roundedRect(50, 50, field.w - 100, field.floor - 86, 22, false, true);
+  ctx.fillStyle = '#10283d';
+  ctx.fillRect(0, field.floor, field.w, field.h - field.floor);
+  ctx.fillStyle = 'rgba(248,113,113,.2)';
+  ctx.fillRect(0, field.deathY - 4, field.w, 8);
+  drawGoal();
+}
+
+function drawGoal() {
+  const g = goals[0];
+  ctx.save();
+  ctx.strokeStyle = '#e8ff59';
+  ctx.fillStyle = 'rgba(232,255,89,.16)';
+  ctx.lineWidth = 8;
+  roundedRect(g.x, g.y, g.w, g.h, 16, true, true);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 16px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText('GOAL', g.x + g.w / 2, g.y - 14);
+  ctx.restore();
+}
+
+function drawPrediction() {
+  if (!compiledRuntime || launched) return;
+  const count = launchMode.value === 'rain3' || launchMode.value === 'paintFollow' ? 3 : 1;
+  for (let i = 0; i < count; i += 1) {
+    const p = poseFor(launchMode.value, i);
+    const delayAlpha = i === 0 ? 1 : 0.58;
+    ctx.save();
+    ctx.strokeStyle = `rgba(232,255,89,${0.72 * delayAlpha})`;
+    ctx.fillStyle = `rgba(232,255,89,${0.16 * delayAlpha})`;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([12, 10]);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.quadraticCurveTo((p.x + device.x) / 2, p.y + 120 + i * 26, device.x, device.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 17, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '20px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⚽', p.x, p.y + 1);
+    ctx.restore();
+  }
+}
+
+function drawDevice() {
+  const selected = comboProfiles();
+  const t = performance.now() / 1000;
+  ctx.save();
+  ctx.translate(device.x, device.y);
+  ctx.shadowColor = '#38bdf8';
+  ctx.shadowBlur = 24;
+  ctx.fillStyle = 'rgba(56,189,248,.20)';
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, device.r * 1.55, device.r * 1.08, Math.sin(t * 1.4) * 0.08, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(232,255,89,.65)';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([9, 8]);
+  ctx.beginPath();
+  ctx.arc(0, 0, device.r * 1.85 + Math.sin(t * 5) * 4, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  const points = [{ x: -48, y: -10 }, { x: 0, y: 26 }, { x: 48, y: -10 }];
+  selected.forEach((profile, index) => {
+    const p = points[index];
+    ctx.fillStyle = 'rgba(0,0,0,.30)';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 27, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '31px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(profile.emoji, p.x, p.y + 1);
+  });
+  ctx.restore();
+}
+
+function drawBalls() {
+  for (const b of runtime.state.balls) {
+    ctx.save();
+    ctx.strokeStyle = b.paintHue == null ? '#67e8f9' : `hsl(${b.paintHue} 90% 62%)`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    b.trail.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+    ctx.stroke();
+    if (!b.alive) { ctx.restore(); continue; }
+    ctx.fillStyle = b.flags.splitClone || b.flags.labQueued ? '#fde68a' : '#f8fafc';
+    ctx.strokeStyle = b.flags.splitClone ? '#f59e0b' : '#111827';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#111827';
+    ctx.font = '20px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⚽', b.x, b.y + 1);
+    ctx.restore();
+  }
+}
+
+function renderDebug() {
+  if (!compiledRuntime || !runtime) return;
+  debug.textContent = JSON.stringify({
+    comboKey: compiledRuntime.comboKey,
+    launchMode: launchMode.value,
+    compilerActions: compiledDevice.actions.map((a) => `${a.role}:${a.name}`),
+    runtimeAbilities: compiledRuntime.abilities,
+    seed: compiledDevice.seed,
+    balls: runtime.state.balls.length,
+    alive: runtime.state.balls.filter((b) => b.alive).length,
+    goals: runtime.state.goalsScored,
+    dead: runtime.state.deadBalls,
+    paintSegments: runtime.state.paintSegments.length,
+    effects: runtime.state.activeEffects.map((e) => e.type),
+  }, null, 2);
+}
+
+function options() {
+  return profiles.map((p, i) => `<option value="${i}">${escapeHtml(p.emoji)} ${escapeHtml(p.displayNameJa ?? p.sourceName)} / ${escapeHtml((p.abilities ?? []).slice(0, 3).join(', '))}</option>`).join('');
+}
+function roundedRect(x, y, w, h, r, fill = false, stroke = false) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.lineTo(x + w - rr, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+  ctx.lineTo(x + w, y + h - rr);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+  ctx.lineTo(x + rr, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+  ctx.lineTo(x, y + rr);
+  ctx.quadraticCurveTo(x, y, x + rr, y);
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
+
+canvas.addEventListener('pointerdown', (e) => { dragging = true; canvas.setPointerCapture(e.pointerId); moveDevice(e); rebuild(); });
+canvas.addEventListener('pointermove', (e) => { if (!dragging) return; moveDevice(e); if (!launched) rebuild(); });
 canvas.addEventListener('pointerup', () => { dragging = false; });
-function moveDevice(e) { const r = canvas.getBoundingClientRect(); device.x = (e.clientX - r.left) * canvas.width / r.width; device.y = (e.clientY - r.top) * canvas.height / r.height; }
-launchButton.addEventListener('click', launch); retryButton.addEventListener('click', rebuild); selects.forEach((s) => s.addEventListener('change', rebuild));
-loadProfiles().then((loaded) => { profiles = loaded.profiles; selects.forEach((s, i) => { s.innerHTML = options(); s.value = i; }); rebuild(); requestAnimationFrame(tick); }).catch((e) => { debug.textContent = String(e.stack || e); });
+canvas.addEventListener('pointercancel', () => { dragging = false; });
+function moveDevice(e) {
+  const r = canvas.getBoundingClientRect();
+  device.x = clamp((e.clientX - r.left) * canvas.width / r.width, 120, field.w - 190);
+  device.y = clamp((e.clientY - r.top) * canvas.height / r.height, 115, field.floor - 100);
+}
+
+launchButton.addEventListener('click', launch);
+retryButton.addEventListener('click', rebuild);
+launchMode.addEventListener('change', rebuild);
+selects.forEach((s) => s.addEventListener('change', rebuild));
+
+loadProfiles().then((loaded) => {
+  profiles = loaded.profiles;
+  const defaults = ['🍀', '🤡', '🥸'];
+  selects.forEach((s, index) => {
+    s.innerHTML = options();
+    const found = profiles.findIndex((profile) => profile.emoji === defaults[index]);
+    s.value = String(found >= 0 ? found : index);
+  });
+  rebuild();
+  requestAnimationFrame(tick);
+}).catch((error) => { debug.textContent = String(error?.stack || error); });
