@@ -3,24 +3,39 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>noHand soccer combo testplay</title>
+  <title>noHand soccer combo runtime testplay</title>
   <link rel="stylesheet" href="./testplay.css">
 </head>
 <body>
-  <main class="shell">
+  <main class="shell runtime-v2">
     <section class="stage-panel">
       <header class="topbar">
-        <div><p class="eyebrow">noHand soccer</p><h1>Combo Ability Runtime Testplay</h1></div>
-        <div class="controls"><button id="launchButton">発射</button><button id="retryButton" class="secondary">リトライ</button></div>
+        <div>
+          <p class="eyebrow">NOHAND SOCCER / RUNTIME TEST</p>
+          <h1>3絵文字 合成装置 実機テスト</h1>
+        </div>
+        <div class="controls">
+          <label class="mode-label" for="launchMode">落下/入射</label>
+          <select id="launchMode" class="mode-select">
+            <option value="topDrop">真上から落下</option>
+            <option value="diagonalDrop">斜め上から落下</option>
+            <option value="leftShot">左から打ち出し</option>
+            <option value="rain3">3球連続落下</option>
+          </select>
+          <button id="launchButton">発射</button>
+          <button id="retryButton" class="secondary">リセット</button>
+        </div>
       </header>
       <canvas id="fieldCanvas" width="960" height="540" aria-label="combo runtime test field"></canvas>
-      <p class="hint">3 emoji combo は slot-order-sensitive（emoji1|emoji2|emoji3）。ドラッグで device 配置、発射で deterministic runtime simulation。</p>
+      <p class="hint">ドラッグで装置配置。入射モードを変えて、上から落ちるボール・斜め入射・複数球で ability の実挙動を確認します。</p>
     </section>
     <aside class="side-panel">
-      <label class="search-label">Combo slots</label>
-      <select id="emoji1" size="5"></select><select id="emoji2" size="5"></select><select id="emoji3" size="5"></select>
+      <label class="search-label">Combo slots / 順番で結果が変わる</label>
+      <select id="emoji1" size="5"></select>
+      <select id="emoji2" size="5"></select>
+      <select id="emoji3" size="5"></select>
       <section class="card"><h2 id="comboTitle">Combo</h2><div id="abilityList" class="ability-list"></div></section>
-      <section class="card debug-card"><h2>Compiled params</h2><pre id="debugOverlay"></pre></section>
+      <section class="card debug-card"><h2>Runtime state</h2><pre id="debugOverlay"></pre></section>
     </aside>
   </main>
   <script type="module" src="./combo-testplay.js"></script>
