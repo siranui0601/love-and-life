@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>noHand soccer combo testplay</title>
+  <link rel="stylesheet" href="./testplay.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="stage-panel">
+      <header class="topbar">
+        <div><p class="eyebrow">noHand soccer</p><h1>Combo Ability Runtime Testplay</h1></div>
+        <div class="controls"><button id="launchButton">発射</button><button id="retryButton" class="secondary">リトライ</button></div>
+      </header>
+      <canvas id="fieldCanvas" width="960" height="540" aria-label="combo runtime test field"></canvas>
+      <p class="hint">3 emoji combo は slot-order-sensitive（emoji1|emoji2|emoji3）。ドラッグで device 配置、発射で deterministic runtime simulation。</p>
+    </section>
+    <aside class="side-panel">
+      <label class="search-label">Combo slots</label>
+      <select id="emoji1" size="5"></select><select id="emoji2" size="5"></select><select id="emoji3" size="5"></select>
+      <section class="card"><h2 id="comboTitle">Combo</h2><div id="abilityList" class="ability-list"></div></section>
+      <section class="card debug-card"><h2>Compiled params</h2><pre id="debugOverlay"></pre></section>
+    </aside>
+  </main>
+  <script type="module" src="./combo-testplay.js"></script>
+</body>
+</html>
