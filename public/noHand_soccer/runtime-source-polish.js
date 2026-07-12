@@ -49,6 +49,13 @@
       'update'
     );
 
+    out = replaceOne(
+      out,
+      /function draw\(\) \{[^\n]+\}/,
+      `function draw() { if (!state) return; fit(); const scale = canvas.width / WORLD.w; const viewH = canvas.height / scale; state.cameraY = clamp(state.cameraY, -120, fallLine() - viewH + 120); for (let i = 0; i < 12; i += 1) ctx.restore(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.setLineDash([]); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.scale(scale, scale); ctx.translate(0, -state.cameraY); try { drawField(viewH); state.fieldEmojis.forEach(drawEmoji); state.goals.forEach(drawGoal); state.ownGoals.forEach(drawOwn); for (const gimmick of state.gimmicks.filter((g) => g.placed)) { try { drawGimmick(g); } catch (error) { console.warn('[noHand] drawGimmick failed', error); for (let i = 0; i < 12; i += 1) ctx.restore(); ctx.setTransform(scale, 0, 0, scale, 0, -state.cameraY * scale); ctx.globalAlpha = 1; ctx.setLineDash([]); } } state.balls.forEach(drawBall); } finally { for (let i = 0; i < 12; i += 1) ctx.restore(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.setLineDash([]); } }`,
+      'draw guard'
+    );
+
     out += `
 
 // Injected by runtime-source-polish.js after app-runtime-boot patches this source.
@@ -97,7 +104,6 @@ function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor);
       return {};
     };
 
-    const originalCompileCodeSnippet = compileCodeSnippet;
     compileCodeSnippet = function stableCompileCodeSnippet(g, slot, field) {
       const rt = g.runtime || makeRuntime();
       g.runtime = rt;
@@ -189,11 +195,6 @@ function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor);
       const zone = originalBodyZone(g);
       zone.r = Math.max(zone.r || 0, (g.radius || 72) + 28);
       return zone;
-    };
-
-    const originalDrawCodeDevice = drawCodeDevice;
-    drawCodeDevice = function stableDrawCodeDevice(g) {
-      return originalDrawCodeDevice(g);
     };
 
     drawHandle = function stableDrawHandle(g) {
