@@ -23,11 +23,11 @@
   }
 
   function startCardDragSource() {
-    return `function startCardDrag(event, g) { event.preventDefault(); if (event?.currentTarget?.setPointerCapture && event.pointerId != null) { try { event.currentTarget.setPointerCapture(event.pointerId); } catch (_) {} } state.placing = g.id; state.focusGimmick = g.id; drag = { type: 'new', id: g.id }; showHelp(\`${'${g.visualLabel || \'装置\'}'}をコートへドラッグすると設置できます。\`); render(); }`;
+    return `function startCardDrag(event, g) { event.preventDefault(); if (event && event.currentTarget && event.currentTarget.setPointerCapture && event.pointerId != null) { try { event.currentTarget.setPointerCapture(event.pointerId); } catch (_) {} } state.placing = g.id; state.focusGimmick = g.id; drag = { type: 'new', id: g.id }; showHelp((g.visualLabel || '装置') + 'をコートへドラッグすると設置できます。'); render(); }`;
   }
 
   function onUpSource() {
-    return `function onUp(event) { if (!drag) return; if (drag.type === 'new' && event) { const placingGimmick = state.gimmicks.find((item) => item.id === drag.id); const point = worldFromEvent(event); if (placingGimmick && point.inside) { placingGimmick.x = point.x; placingGimmick.y = point.y; placingGimmick.placed = true; state.focusGimmick = placingGimmick.id; saveGimmickHome(placingGimmick); } } const g = state.gimmicks.find((item) => item.id === drag.id); if (g && g.placed) { saveGimmickHome(g); state.placing = null; state.focusGimmick = g.id; hideHelp(); setCoach('配置完了', \`${'${g.visualLabel || \'装置\'}'}：${'${g.shortEffect || \'ボールの動きを変える\'}'}\`); if (state.tutorial === 'place') { showModal('角度も変えられる', '編集もサッカーのうち', '置いたギミックに出ている黄色い「回転」ハンドルをドラッグすると角度が変わります。調整したらキックオフ！', '了解', () => closeModal()); state.tutorial = 'edit'; } } drag = null; render(); draw(); }`;
+    return `function onUp(event) { if (!drag) return; if (drag.type === 'new' && event) { const placingGimmick = state.gimmicks.find((item) => item.id === drag.id); const point = worldFromEvent(event); if (placingGimmick && point.inside) { placingGimmick.x = point.x; placingGimmick.y = point.y; placingGimmick.placed = true; state.focusGimmick = placingGimmick.id; saveGimmickHome(placingGimmick); } } const g = state.gimmicks.find((item) => item.id === drag.id); if (g && g.placed) { saveGimmickHome(g); state.placing = null; state.focusGimmick = g.id; hideHelp(); setCoach('配置完了', (g.visualLabel || '装置') + '：' + (g.shortEffect || 'ボールの動きを変える')); if (state.tutorial === 'place') { showModal('角度も変えられる', '編集もサッカーのうち', '置いたギミックに出ている黄色い「回転」ハンドルをドラッグすると角度が変わります。調整したらキックオフ！', '了解', () => closeModal()); state.tutorial = 'edit'; } } drag = null; render(); draw(); }`;
   }
 
   function patchSource(source) {
