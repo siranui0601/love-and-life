@@ -76,3 +76,147 @@ function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor);
     }
   };
 })();
+
+(() => {
+  function installCodeToolboxStability() {
+    if (typeof hasCodeDevice !== 'function' || typeof compileCodeSnippet !== 'function' || typeof makeCodeApi !== 'function' || typeof drawCodeDevice !== 'function' || typeof bodyZone !== 'function') {
+      setTimeout(installCodeToolboxStability, 40);
+      return;
+    }
+    if (window.__noHandCodeToolboxStabilityV2) return;
+    window.__noHandCodeToolboxStabilityV2 = true;
+
+    const toFinite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+    const isBallLike = (ball) => ball && Number.isFinite(Number(ball.x)) && Number.isFinite(Number(ball.y));
+    const pxsSafe = (value) => clamp(toFinite(value, 0) / 60, -32, 32);
+    const normalizeEffectArgs = (args) => {
+      if (args.length === 1 && args[0] && typeof args[0] === 'object') return { ...args[0] };
+      if (args.length >= 2 && Number.isFinite(Number(args[0])) && Number.isFinite(Number(args[1]))) {
+        return { ...(args[2] && typeof args[2] === 'object' ? args[2] : {}), x: Number(args[0]), y: Number(args[1]) };
+      }
+      return {};
+    };
+
+    const originalCompileCodeSnippet = compileCodeSnippet;
+    compileCodeSnippet = function stableCompileCodeSnippet(g, slot, field) {
+      const rt = g.runtime || makeRuntime();
+      g.runtime = rt;
+      rt.compiled = rt.compiled || {};
+      const key = `stable-v2:${slot}.${field}`;
+      if (rt.compiled[key]) return rt.compiled[key];
+      const src = safeCode(g.code?.[slot]?.[field] || '');
+      if (!src) return null;
+      rt.compiled[key] = new Function('ctx', 'api', `"use strict";\nconst ball = ctx.ball;\nconst balls = ctx.balls;\nconst device = ctx.device;\nconst baseDevice = ctx.baseDevice;\nconst codeState = ctx.state;\nconst localState = ctx.state;\nif (ball && !Number.isFinite(Number(ball.angle))) ball.angle = Math.atan2(ball.vy || 0, ball.vx || 1) * 180 / Math.PI;\n${src}`);
+      return rt.compiled[key];
+    };
+
+    const originalMakeCodeApi = makeCodeApi;
+    makeCodeApi = function stableMakeCodeApi(g, c) {
+      const api = originalMakeCodeApi(g, c);
+      const body = api.body || {};
+      const vec = api.vec || {};
+      const addVelocityFinite = (ball, x, y, asImpulse) => {
+        if (!isBallLike(ball)) return;
+        const fx = toFinite(x, 0);
+        const fy = toFinite(y, 0);
+        if (asImpulse) { ball.vx += pxsSafe(fx); ball.vy += pxsSafe(fy); }
+        else { ball.vx += fx / 60; ball.vy += fy / 60; }
+      };
+      const scaleVec = (v, amount = 1) => ({ x: toFinite(v?.x, 0) * toFinite(amount, 1), y: toFinite(v?.y, 0) * toFinite(amount, 1) });
+
+      api.body = {
+        ...body,
+        applyForce(ball, x, y) {
+          if (typeof x === 'object') { const v = scaleVec(x, y ?? 1); return addVelocityFinite(ball, v.x, v.y, false); }
+          return addVelocityFinite(ball, x, y, false);
+        },
+        applyImpulse(ball, x, y) {
+          if (typeof x === 'object') { const v = scaleVec(x, y ?? 1); return addVelocityFinite(ball, v.x, v.y, true); }
+          return addVelocityFinite(ball, x, y, true);
+        },
+        addVelocity(ball, x, y) {
+          if (typeof x === 'object') { const v = scaleVec(x, y ?? 1); return addVelocityFinite(ball, v.x, v.y, true); }
+          return addVelocityFinite(ball, x, y, true);
+        },
+        setVelocity(ball, x, y) {
+          if (!isBallLike(ball)) return;
+          if (typeof x === 'object') { const v = scaleVec(x, y ?? 1); ball.vx = pxsSafe(v.x); ball.vy = pxsSafe(v.y); return; }
+          ball.vx = pxsSafe(x); ball.vy = pxsSafe(y);
+        },
+        applyForceVec(ball, v, amount = 1) { const s = scaleVec(v, amount); addVelocityFinite(ball, s.x, s.y, false); },
+        applyImpulseVec(ball, v, amount = 1) { const s = scaleVec(v, amount); addVelocityFinite(ball, s.x, s.y, true); },
+        setVelocityVec(ball, v, speed = 1) {
+          if (!isBallLike(ball)) return;
+          const n = vec.normalize ? vec.normalize(v || { x: 1, y: 0 }, speed) : scaleVec(v || { x: 1, y: 0 }, speed);
+          ball.vx = pxsSafe(n.x); ball.vy = pxsSafe(n.y);
+        },
+        addVelocityVec(ball, v, speed = 1) {
+          const n = vec.normalize ? vec.normalize(v || { x: 1, y: 0 }, speed) : scaleVec(v || { x: 1, y: 0 }, speed);
+          addVelocityFinite(ball, n.x, n.y, true);
+        },
+        launchToward(ball, point, speed = 720) {
+          if (!isBallLike(ball) || !point) return;
+          const dx = toFinite(point.x, ball.x) - ball.x;
+          const dy = toFinite(point.y, ball.y) - ball.y;
+          const d = Math.hypot(dx, dy) || 1;
+          ball.vx = pxsSafe(dx / d * speed);
+          ball.vy = pxsSafe(dy / d * speed);
+        },
+        setGravityVec(ball, v, ms = 900) {
+          if (!isBallLike(ball)) return;
+          const n = vec.normalize ? vec.normalize(v || { x: 0, y: 1 }, c.field?.gravity || 1296) : scaleVec(v || { x: 0, y: 1 }, c.field?.gravity || 1296);
+          body.setGravity?.(ball, n.x, n.y, ms);
+        },
+      };
+
+      const baseEffect = api.effect || {};
+      api.effect = {
+        ...baseEffect,
+        particles(...args) { return baseEffect.particles?.(normalizeEffectArgs(args)); },
+        flash(...args) { return baseEffect.flash?.(normalizeEffectArgs(args)); },
+        ring(...args) { return baseEffect.ring?.(normalizeEffectArgs(args)); },
+        emoji(...args) { return baseEffect.emoji?.(normalizeEffectArgs(args)); },
+        trail(...args) {
+          if (args.length >= 2 && args[0] && typeof args[1] === 'object') return baseEffect.trail?.({ ...args[1], ball: args[0] });
+          return baseEffect.trail?.(normalizeEffectArgs(args));
+        },
+      };
+      return api;
+    };
+
+    const originalBodyZone = bodyZone;
+    bodyZone = function stableBodyZone(g) {
+      const zone = originalBodyZone(g);
+      zone.r = Math.max(zone.r || 0, (g.radius || 72) + 28);
+      return zone;
+    };
+
+    const originalDrawCodeDevice = drawCodeDevice;
+    drawCodeDevice = function stableDrawCodeDevice(g) {
+      return originalDrawCodeDevice(g);
+    };
+
+    drawHandle = function stableDrawHandle(g) {
+      const r = Math.max(112, (g.radius || 72) + 54);
+      ctx.save();
+      ctx.strokeStyle = '#e8ff59';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(r, 0);
+      ctx.stroke();
+      ctx.fillStyle = '#e8ff59';
+      ctx.beginPath();
+      ctx.arc(r, 0, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#06150e';
+      ctx.font = '900 13px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('回転', r, 0);
+      ctx.restore();
+    };
+  }
+
+  installCodeToolboxStability();
+})();
