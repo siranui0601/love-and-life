@@ -18,6 +18,18 @@
     return next;
   }
 
+  function stableDrawSource() {
+    return `function draw() { if (!state) return; fit(); const scale = canvas.width / WORLD.w; const viewH = canvas.height / scale; state.cameraY = clamp(state.cameraY, -120, fallLine() - viewH + 120); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.setLineDash([]); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.scale(scale, scale); ctx.translate(0, -state.cameraY); try { drawField(viewH); state.fieldEmojis.forEach(drawEmoji); state.goals.forEach(drawGoal); state.ownGoals.forEach(drawOwn); for (const gimmick of state.gimmicks.filter((g) => g.placed)) { ctx.save(); try { drawGimmick(gimmick); } catch (error) { console.warn('[noHand] drawGimmick skipped', error); } finally { ctx.restore(); ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.setLineDash([]); } } state.balls.forEach(drawBall); } finally { ctx.restore(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.setLineDash([]); } }`;
+  }
+
+  function startCardDragSource() {
+    return `function startCardDrag(event, g) { event.preventDefault(); if (event && event.currentTarget && event.currentTarget.setPointerCapture && event.pointerId != null) { try { event.currentTarget.setPointerCapture(event.pointerId); } catch (_) {} } state.placing = g.id; state.focusGimmick = g.id; drag = { type: 'new', id: g.id }; showHelp((g.visualLabel || '装置') + 'をコートへドラッグすると設置できます。'); render(); }`;
+  }
+
+  function onUpSource() {
+    return `function onUp(event) { if (!drag) return; if (drag.type === 'new' && event) { const placingGimmick = state.gimmicks.find((item) => item.id === drag.id); const point = worldFromEvent(event); if (placingGimmick && point.inside) { placingGimmick.x = point.x; placingGimmick.y = point.y; placingGimmick.placed = true; state.focusGimmick = placingGimmick.id; saveGimmickHome(placingGimmick); } } const g = state.gimmicks.find((item) => item.id === drag.id); if (g && g.placed) { saveGimmickHome(g); state.placing = null; state.focusGimmick = g.id; hideHelp(); setCoach('配置完了', (g.visualLabel || '装置') + '：' + (g.shortEffect || 'ボールの動きを変える')); if (state.tutorial === 'place') { showModal('角度も変えられる', '編集もサッカーのうち', '置いたギミックに出ている黄色い「回転」ハンドルをドラッグすると角度が変わります。調整したらキックオフ！', '了解', () => closeModal()); state.tutorial = 'edit'; } } drag = null; render(); draw(); }`;
+  }
+
   function polishSource(source) {
     let out = source;
 
@@ -26,13 +38,6 @@
       /function startRun\(\) \{[^\n]+\}/,
       `function startRun() { if (state.phase === 'run' || state.phase === 'between') return; state.gameover = false; state.mainDownNotice = false; resetGimmicksToHome(); state.phase = 'run'; state.runTime = 0; state.balls = [makeBall({ main: true })]; setCoach('キックオフ中', 'この1回のキックオフで、黄色いゴールを全部くぐろう。'); hideHelp(); render(); fitCameraToGoals(); }`,
       'startRun'
-    );
-
-    out = replaceOne(
-      out,
-      /function splitBall\(ball, g, motor\) \{[^\n]+\}/,
-      `function splitBall(ball, g, motor) { if (state.balls.length >= 10) return; const count = Math.round(clamp(motor.count || 2, 2, 4)); const baseSpeed = Math.max(8.4, Math.hypot(ball.vx, ball.vy) * 1.08, motorPower(motor, 9.8)); const baseAngle = Math.atan2(ball.vy, ball.vx) || g.angle; const spread = (motor.spreadAngle || 44) * Math.PI / 180; const life = clamp(motor.duration || 3.8, 1.2, 6.5); for (let i = 0; i < count - 1 && state.balls.length < 10; i += 1) { const offset = (i - (count - 2) / 2) * spread; const angle = baseAngle + offset; state.balls.push(makeBall({ main: false, generation: ball.generation + 1, x: ball.x + Math.cos(angle) * 18, y: ball.y + Math.sin(angle) * 18, vx: Math.cos(angle) * baseSpeed, vy: Math.sin(angle) * baseSpeed, expiresAt: state.runTime + life })); } const selfAngle = baseAngle - spread * 0.45; ball.vx = Math.cos(selfAngle) * baseSpeed; ball.vy = Math.sin(selfAngle) * baseSpeed; toast('分裂！'); }`,
-      'splitBall'
     );
 
     out = replaceOne(
@@ -49,34 +54,24 @@
       'update'
     );
 
-    out = replaceOne(
-      out,
-      /function draw\(\) \{[^\n]+\}/,
-      `function draw() { if (!state) return; fit(); const scale = canvas.width / WORLD.w; const viewH = canvas.height / scale; state.cameraY = clamp(state.cameraY, -120, fallLine() - viewH + 120); for (let i = 0; i < 12; i += 1) ctx.restore(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.setLineDash([]); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.scale(scale, scale); ctx.translate(0, -state.cameraY); try { drawField(viewH); state.fieldEmojis.forEach(drawEmoji); state.goals.forEach(drawGoal); state.ownGoals.forEach(drawOwn); for (const gimmick of state.gimmicks.filter((g) => g.placed)) { try { drawGimmick(g); } catch (error) { console.warn('[noHand] drawGimmick failed', error); for (let i = 0; i < 12; i += 1) ctx.restore(); ctx.setTransform(scale, 0, 0, scale, 0, -state.cameraY * scale); ctx.globalAlpha = 1; ctx.setLineDash([]); } } state.balls.forEach(drawBall); } finally { for (let i = 0; i < 12; i += 1) ctx.restore(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.setLineDash([]); } }`,
-      'draw guard'
-    );
-
-    out += `
-
-// Injected by runtime-source-polish.js after app-runtime-boot patches this source.
-function applyImpulseToward(ball, target, power) { const dx = target.x - ball.x; const dy = target.y - ball.y; const d = Math.hypot(dx, dy) || 1; const p = Number.isFinite(Number(power)) ? clamp(Number(power) / 100, 0.12, 1.2) : 0.82; const speed = 8 + p * 9.5; ball.vx = ball.vx * 0.16 + dx / d * speed; ball.vy = ball.vy * 0.16 + dy / d * speed; }
-function splitPrimitiveBall(g, ball, beat, actor) { const split = beat.split || {}; const count = Math.round(clamp(Number(split.count || 2), 2, 4)); if (state.balls.length >= 10) return; const speed = Math.max(9.2, Math.hypot(ball.vx, ball.vy) * 1.12, 9.8); const spread = clamp(Number(split.spread || 60), 16, 100) / 100; const origin = actorWorldPoint(g, actor); const base = Math.atan2(ball.vy, ball.vx || 1); for (let i = 1; i < count && state.balls.length < 10; i += 1) { const centered = count <= 2 ? (i === 1 ? 1 : -1) : ((i - 1) / Math.max(1, count - 2)) * 2 - 1; const angle = base + centered * spread * 0.95; state.balls.push(makeBall({ main: false, generation: ball.generation + 1, x: origin.x + Math.cos(angle) * 24, y: origin.y + Math.sin(angle) * 24, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, expiresAt: state.runTime + 6.5 })); } ball.vx *= 1.05; ball.vy *= 1.05; toast('分裂！'); }
-function releaseBeatEffect(ball, release) { const g = release.g, beat = release.beat || {}, actor = release.actor, index = release.index || 0; if (beat.spin) { ball.spinUntil = Math.max(ball.spinUntil || 0, state.runTime + clamp(Number(beat.spin.seconds || 0.8), 0.1, 3)); ball.spinAmount = clamp(Number(beat.spin.amount || 60), -100, 100); } const target = toActorWorldPoint(g, beat); if (beat.hit) { if (target) applyImpulseToward(ball, target, beat.hit.power); else applyImpulse(g, ball, beat.hit.velocity || beat.hit.impulse || directionToNext(g, beat, index), beat.hit.power); } else if (release.fallback) { const v = target ? { x: target.x - ball.x, y: target.y - ball.y } : { x: Math.cos(g.angle || 0), y: Math.sin(g.angle || 0) }; const d = Math.hypot(v.x, v.y) || 1; const speed = target ? 8.6 : 7.8; ball.vx = ball.vx * 0.18 + v.x / d * speed; ball.vy = ball.vy * 0.18 + v.y / d * speed; } if (beat.split) splitPrimitiveBall(g, ball, beat, actor); if (beat.warp) { const p = localToWorld(g, actor, beat.warp); ball.x = clamp(p.x, 50, WORLD.w - 50); ball.y = clamp(p.y, 70, WORLD.h - 70); toast('ワープ！'); } if (beat.gravity) { const angle = Number.isFinite(Number(beat.gravity.angle)) ? Number(beat.gravity.angle) : 0; ball.gravityAngle = ((angle % 360) + 360) % 360 - 180; ball.gravityStrength = 1.8; ball.gravityUntil = Math.max(ball.gravityUntil || 0, state.runTime + clamp(Number(beat.gravity.seconds || 1), 0.1, 3)); if (angle !== 180 && ball.vy > 0) ball.vy *= 0.82; } }
-function fireContactEffects(g, ball, beat, run, actor, index) { if (beat.hold) { const seconds = clamp(Number(beat.hold.seconds || 0.6), 0.1, 3); ball.holdUntil = Math.max(ball.holdUntil || 0, state.runTime + seconds); ball.holdX = ball.x; ball.holdY = ball.y; ball.vx *= 0.1; ball.vy *= 0.1; const hasReleaseEffect = Boolean(beat.spin || beat.hit || beat.split || beat.warp || beat.gravity); ball.pendingRelease = { at: state.runTime + seconds, g, beat, actor, index, fallback: !hasReleaseEffect }; return; } releaseBeatEffect(ball, { at: state.runTime, g, beat, actor, index, fallback: false }); }
-function updateBall(ball, dt) { if (ball.pendingRelease && state.runTime >= ball.pendingRelease.at) { const release = ball.pendingRelease; delete ball.pendingRelease; ball.holdUntil = 0; releaseBeatEffect(ball, release); } if (state.runTime < (ball.holdUntil || 0)) { ball.x += ((ball.holdX ?? ball.x) - ball.x) * 0.35; ball.y += ((ball.holdY ?? ball.y) - ball.y) * 0.35; ball.vx *= 0.2; ball.vy *= 0.2; return; } const gravityActive = state.runTime < ball.gravityUntil; let gv = { x: 0, y: WORLD.gravity }; if (gravityActive) { const rad = (90 + ball.gravityAngle) * Math.PI / 180; gv = { x: Math.cos(rad) * WORLD.gravity * ball.gravityStrength, y: Math.sin(rad) * WORLD.gravity * ball.gravityStrength }; if (ball.vy > 0 && gv.y <= WORLD.gravity * 0.2) ball.vy *= 0.82; } if (state.runTime < (ball.spinUntil || 0)) { const s = clamp(Number(ball.spinAmount || 0), -100, 100) / 100; ball.vx += -ball.vy * 0.006 * s * dt * 60; ball.vy += ball.vx * 0.006 * s * dt * 60; } ball.vx += gv.x * dt * 60; ball.vy += gv.y * dt * 60; ball.vx *= 0.996; ball.vy *= 0.999; ball.x += ball.vx * dt * 60; ball.y += ball.vy * dt * 60; if (ball.x < ball.r) { ball.x = ball.r; ball.vx = Math.abs(ball.vx) * WORLD.wallBounce; } if (ball.x > WORLD.w - ball.r) { ball.x = WORLD.w - ball.r; ball.vx = -Math.abs(ball.vx) * WORLD.wallBounce; } }
-function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor); const active = activePrimitiveBeat(g); if (!active) return base; const beat = active.beat || {}; const actors = Array.isArray(beat.actors) ? beat.actors : [beat.actor]; const isActiveActor = actors.map(Number).includes(Number(actor)); if (!isActiveActor) { const nextBeat = (g.beats || [])[active.index + 1]; if (Number(nextBeat?.contact) === Number(actor) && active.run.contactWorld?.[active.index + 1]) { const target = worldToLocalPoint(g, active.run.contactWorld[active.index + 1]); const t = clamp((active.local - 0.12) / 0.6, 0, 1); return { x: base.x + (target.x - base.x) * t, y: base.y + (target.y - base.y) * t }; } return base; } let point = base; const path = beat.device?.path; if (Array.isArray(path) && path.length) point = sampleGuidePath(g, base, path, active.local); if (beat.device?.followBall && active.run.followWorld?.[active.index]) point = worldToLocalPoint(g, active.run.followWorld[active.index]); if (Number(beat.contact) === Number(actor) && active.run.contactWorld?.[active.index]) { const target = worldToLocalPoint(g, active.run.contactWorld[active.index]); const t = Math.min(1, active.local / 0.72); return { x: point.x + (target.x - point.x) * t, y: point.y + (target.y - point.y) * t }; } return point; }
-`;
+    out = replaceOne(out, /function draw\(\) \{[^\n]+\}/, stableDrawSource(), 'draw');
+    out = replaceOne(out, /function startCardDrag\(event, g\) \{[^\n]+\}/, startCardDragSource(), 'startCardDrag');
+    out = replaceOne(out, /function onUp\([^)]*\) \{[^\n]+\}/, onUpSource(), 'onUp');
 
     return out;
   }
 
-  window.fetch = async function patchedFetch(input, init) {
+  window.fetch = async function polishedFetch(input, init) {
     const response = await nativeFetch(input, init);
     if (!isRuntimeSource(input)) return response;
     try {
       const source = await response.text();
       const polished = polishSource(source);
-      return new Response(polished, { status: response.status, statusText: response.statusText, headers: response.headers });
+      return new Response(polished, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
     } catch (error) {
       console.warn('[noHand] source polish failed; using original runtime', error);
       return response;
@@ -86,29 +81,38 @@ function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor);
 
 (() => {
   function installCodeToolboxStability() {
-    if (typeof hasCodeDevice !== 'function' || typeof compileCodeSnippet !== 'function' || typeof makeCodeApi !== 'function' || typeof drawCodeDevice !== 'function' || typeof bodyZone !== 'function') {
+    if (typeof hasCodeDevice !== 'function' || typeof compileCodeSnippet !== 'function' || typeof makeCodeApi !== 'function' || typeof bodyZone !== 'function') {
       setTimeout(installCodeToolboxStability, 40);
       return;
     }
-    if (window.__noHandCodeToolboxStabilityV2) return;
-    window.__noHandCodeToolboxStabilityV2 = true;
+    if (window.__noHandCodeToolboxStabilityV3) return;
+    window.__noHandCodeToolboxStabilityV3 = true;
 
     const toFinite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
     const isBallLike = (ball) => ball && Number.isFinite(Number(ball.x)) && Number.isFinite(Number(ball.y));
     const pxsSafe = (value) => clamp(toFinite(value, 0) / 60, -32, 32);
-    const normalizeEffectArgs = (args) => {
-      if (args.length === 1 && args[0] && typeof args[0] === 'object') return { ...args[0] };
-      if (args.length >= 2 && Number.isFinite(Number(args[0])) && Number.isFinite(Number(args[1]))) {
-        return { ...(args[2] && typeof args[2] === 'object' ? args[2] : {}), x: Number(args[0]), y: Number(args[1]) };
-      }
-      return {};
+    const fallbackPoint = (g, c) => {
+      const b = c?.ball;
+      if (isBallLike(b)) return { x: b.x, y: b.y };
+      return { x: toFinite(g?.x, 0), y: toFinite(g?.y, 0) };
+    };
+    const normalizeEffectArgs = (args, g, c) => {
+      let out;
+      if (args.length === 1 && args[0] && typeof args[0] === 'object') out = { ...args[0] };
+      else if (args.length >= 2 && Number.isFinite(Number(args[0])) && Number.isFinite(Number(args[1]))) {
+        out = { ...(args[2] && typeof args[2] === 'object' ? args[2] : {}), x: Number(args[0]), y: Number(args[1]) };
+      } else out = {};
+      const p = fallbackPoint(g, c);
+      if (!Number.isFinite(Number(out.x))) out.x = p.x;
+      if (!Number.isFinite(Number(out.y))) out.y = p.y;
+      return out;
     };
 
     compileCodeSnippet = function stableCompileCodeSnippet(g, slot, field) {
       const rt = g.runtime || makeRuntime();
       g.runtime = rt;
       rt.compiled = rt.compiled || {};
-      const key = `stable-v2:${slot}.${field}`;
+      const key = `stable-v3:${slot}.${field}`;
       if (rt.compiled[key]) return rt.compiled[key];
       const src = safeCode(g.code?.[slot]?.[field] || '');
       if (!src) return null;
@@ -178,13 +182,14 @@ function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor);
       const baseEffect = api.effect || {};
       api.effect = {
         ...baseEffect,
-        particles(...args) { return baseEffect.particles?.(normalizeEffectArgs(args)); },
-        flash(...args) { return baseEffect.flash?.(normalizeEffectArgs(args)); },
-        ring(...args) { return baseEffect.ring?.(normalizeEffectArgs(args)); },
-        emoji(...args) { return baseEffect.emoji?.(normalizeEffectArgs(args)); },
+        particles(...args) { return baseEffect.particles?.(normalizeEffectArgs(args, g, c)); },
+        flash(...args) { return baseEffect.flash?.(normalizeEffectArgs(args, g, c)); },
+        ring(...args) { return baseEffect.ring?.(normalizeEffectArgs(args, g, c)); },
+        emoji(...args) { return baseEffect.emoji?.(normalizeEffectArgs(args, g, c)); },
+        text(...args) { return baseEffect.text?.(normalizeEffectArgs(args, g, c)); },
         trail(...args) {
-          if (args.length >= 2 && args[0] && typeof args[1] === 'object') return baseEffect.trail?.({ ...args[1], ball: args[0] });
-          return baseEffect.trail?.(normalizeEffectArgs(args));
+          if (args.length >= 2 && args[0] && typeof args[1] === 'object') return baseEffect.trail?.({ ...normalizeEffectArgs([args[1]], g, c), ball: args[0] });
+          return baseEffect.trail?.(normalizeEffectArgs(args, g, c));
         },
       };
       return api;
