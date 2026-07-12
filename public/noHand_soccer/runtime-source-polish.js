@@ -49,6 +49,13 @@
       'update'
     );
 
+    out = replaceOne(
+      out,
+      /function draw\(\) \{[^\n]+\}/,
+      `function draw() { if (!state) return; fit(); ctx.setTransform(1, 0, 0, 1, 0, 0); const scale = canvas.width / WORLD.w; const viewH = canvas.height / scale; state.cameraY = clamp(state.cameraY, -120, fallLine() - viewH + 120); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); try { ctx.scale(scale, scale); ctx.translate(0, -state.cameraY); drawField(viewH); state.fieldEmojis.forEach(drawEmoji); state.goals.forEach(drawGoal); state.ownGoals.forEach(drawOwn); state.gimmicks.filter((g) => g.placed).forEach(drawGimmick); state.balls.forEach(drawBall); } finally { ctx.restore(); ctx.setTransform(1, 0, 0, 1, 0, 0); } }`,
+      'draw transform reset'
+    );
+
     out += `
 
 // Injected by runtime-source-polish.js after app-runtime-boot patches this source.
@@ -83,8 +90,8 @@ function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor);
       setTimeout(installCodeToolboxStability, 40);
       return;
     }
-    if (window.__noHandCodeToolboxStabilityV2) return;
-    window.__noHandCodeToolboxStabilityV2 = true;
+    if (window.__noHandCodeToolboxStabilityV3) return;
+    window.__noHandCodeToolboxStabilityV3 = true;
 
     const toFinite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
     const isBallLike = (ball) => ball && Number.isFinite(Number(ball.x)) && Number.isFinite(Number(ball.y));
@@ -102,7 +109,7 @@ function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor);
       const rt = g.runtime || makeRuntime();
       g.runtime = rt;
       rt.compiled = rt.compiled || {};
-      const key = `stable-v2:${slot}.${field}`;
+      const key = `stable-v3:${slot}.${field}`;
       if (rt.compiled[key]) return rt.compiled[key];
       const src = safeCode(g.code?.[slot]?.[field] || '');
       if (!src) return null;
@@ -189,11 +196,6 @@ function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor);
       const zone = originalBodyZone(g);
       zone.r = Math.max(zone.r || 0, (g.radius || 72) + 28);
       return zone;
-    };
-
-    const originalDrawCodeDevice = drawCodeDevice;
-    drawCodeDevice = function stableDrawCodeDevice(g) {
-      return originalDrawCodeDevice(g);
     };
 
     drawHandle = function stableDrawHandle(g) {
