@@ -23,6 +23,7 @@ const SLOT_DEFS = [
 ];
 
 const SLOT_BY_NAME = Object.fromEntries(SLOT_DEFS.map((slot) => [slot.slot, slot]));
+const SIDE_EFFECT_RE = /\b(api\.body|api\.effect|ctx\.state|ctx\.balls|ctx\.ball)\b/;
 
 function targetSlots(emojis) {
   return [
@@ -81,8 +82,8 @@ apiは完成済み能力リストではない。物理操作・幾何・描画�
 
 slot別の権限:
 - core.onCatch / core.update: ボール操作、分身、スピン、重力、位置変更、effect、ctx.stateの使用が可能。
-- motion.update: 装置の現在位置/角度/拡大率/半径をreturnするだけ。body/effect/ctx.stateで副作用を作らない。
-- trigger.zones: 追加捕獲zone配列をreturnするだけ。body/effect/ctx.stateで副作用を作らない。
+- motion.update: 装置の現在位置/角度/拡大率/半径をreturnするだけ。api.body、api.effect、ctx.ball、ctx.balls、ctx.stateは禁止。
+- trigger.zones: 追加捕獲zone配列をreturnするだけ。api.body、api.effect、ctx.ball、ctx.balls、ctx.stateは禁止。
 
 api.math:
 - clamp(v,min,max)
@@ -105,19 +106,13 @@ api.vec:
 
 api.body: core専用。第1引数は必ずball。
 - applyForce(ball,x,y)
-- applyForceVec(ball,vec,amount)
 - applyImpulse(ball,x,y)
-- applyImpulseVec(ball,vec,amount)
 - setVelocity(ball,x,y)
-- setVelocityVec(ball,vec,speed)
 - addVelocity(ball,x,y)
-- addVelocityVec(ball,vec,speed)
-- launchToward(ball,point,speed)
 - setPosition(ball,x,y)
 - pullTo(ball,point,strength=0.12)
 - addSpin(ball,amount,ms=900)
 - setGravity(ball,x,y,ms=900)
-- setGravityVec(ball,vec,ms=900)
 - resetGravity(ball)
 - clone(ball,options): options={x,y,vx,vy,r,temporaryMs,main}
 - remove(ball)
@@ -234,6 +229,16 @@ function repairTriggerZonesSnippet(code) {
   return `return [${calls.join(",")}];`;
 }
 
+function validateSnippetPermissions(target, field, snippet) {
+  if (!snippet) return;
+  if (target.slot !== "core" && SIDE_EFFECT_RE.test(snippet)) {
+    throw new Error(`Generated ${target.slot}.${field} contains forbidden side-effect API.`);
+  }
+  if (/\b(draw|summary|flavor|description|name)\b/.test(field)) {
+    throw new Error(`Generated unexpected field: ${target.slot}.${field}`);
+  }
+}
+
 function normalizeGeneratedCode(raw, targets) {
   const codeRoot = raw?.code && typeof raw.code === "object" ? raw.code : raw;
   const out = [];
@@ -245,6 +250,7 @@ function normalizeGeneratedCode(raw, targets) {
     for (const field of def.fields) {
       let snippet = normalizeSnippet(rawSlot[field]);
       if (target.slot === "trigger" && field === "zones") snippet = repairTriggerZonesSnippet(snippet);
+      validateSnippetPermissions(target, field, snippet);
       code[field] = snippet;
     }
     if (!Object.values(code).some(Boolean)) throw new Error(`Generated slot has no code: ${target.slot}`);
