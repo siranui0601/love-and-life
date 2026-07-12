@@ -101,7 +101,9 @@ export async function saveNoHandCodeSlots({ entries, comboKey = "", source = "ge
     if (slot && emoji) existing.set(`${slot}:${emoji}`, index + 2);
   });
 
-  await Promise.all(entries.map(async (entry) => {
+  // Save sequentially. Parallel append calls to the same sheet/range can race and
+  // leave only a subset visible immediately after generation.
+  for (const entry of entries) {
     const slot = String(entry.slot || "");
     const emoji = String(entry.emoji || "");
     if (!SLOT_ORDER.includes(slot) || !emoji) throw new Error(`Invalid noHand code slot: ${slot}:${emoji}`);
@@ -125,6 +127,7 @@ export async function saveNoHandCodeSlots({ entries, comboKey = "", source = "ge
         valueInputOption: "RAW",
         requestBody: { values },
       });
+      existing.set(codeKey, null);
     }
-  }));
+  }
 }
