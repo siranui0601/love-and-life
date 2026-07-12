@@ -5,20 +5,20 @@ const SLOT_DEFS = [
   {
     slot: "core",
     label: "core",
-    role: "主効果。絵文字らしさを物理挙動と見た目で派手に表す。触れた瞬間の単発加速だけは禁止。",
-    fields: ["onCatch", "update", "draw"],
+    role: "主効果。1番目の絵文字らしさを、ボールの物理挙動と見た目で派手に表す。単なる加速や角度補正だけは禁止。",
+    fields: ["onCatch", "update"],
   },
   {
     slot: "motion",
     label: "motion",
-    role: "装置本体の周期的な動き。ランダムではなく、再現性のある運動にする。必ずupdateで現在の装置座標をreturnする。",
-    fields: ["update", "draw"],
+    role: "装置本体の周期的な動き。2番目の絵文字らしさを、ランダムではなく再現性のある運動で表す。",
+    fields: ["update"],
   },
   {
     slot: "trigger",
     label: "catch",
-    role: "本体接触以外の追加の拾い方。装置本体への接触は無効化しない。追加範囲は必ず見える形にする。",
-    fields: ["zones", "draw"],
+    role: "本体接触以外の追加の拾い方。3番目の絵文字らしい、見える捕獲範囲だけを作る。本体接触は無効化しない。",
+    fields: ["zones"],
   },
 ];
 
@@ -79,6 +79,11 @@ api = { math, rng, vec, body, path, zone, hit, effect, field }
 apiは完成済み能力リストではない。物理操作・幾何・描画の低レイヤー工作道具である。
 既存効果名を選ぶのではなく、絵文字から連想される装置挙動をJSで組み立てること。
 
+slot別の権限:
+- core.onCatch / core.update: ボール操作、分身、スピン、重力、位置変更、effect、ctx.stateの使用が可能。
+- motion.update: 装置の現在位置/角度/拡大率/半径をreturnするだけ。body/effect/ctx.stateで副作用を作らない。
+- trigger.zones: 追加捕獲zone配列をreturnするだけ。body/effect/ctx.stateで副作用を作らない。
+
 api.math:
 - clamp(v,min,max)
 - lerp(a,b,t)
@@ -98,17 +103,23 @@ api.vec:
 - length(v)
 - normalize(v,length=1)
 
-api.body:
-- applyForce(ball,x,y): 毎フレーム用の力を加える。第1引数は必ずball
-- applyImpulse(ball,x,y): 瞬間的な速度変化を加える。値はpx/sec基準。第1引数は必ずball
-- setVelocity(ball,x,y): 速度を直接設定する。値はpx/sec基準。第1引数は必ずball
-- addVelocity(ball,x,y): 速度を加える。値はpx/sec基準。第1引数は必ずball
-- setPosition(ball,x,y): 座標を直接設定する。第1引数は必ずball
-- pullTo(ball,point,strength=0.12): pointへなめらかに引く。第1引数は必ずball
+api.body: core専用。第1引数は必ずball。
+- applyForce(ball,x,y)
+- applyForceVec(ball,vec,amount)
+- applyImpulse(ball,x,y)
+- applyImpulseVec(ball,vec,amount)
+- setVelocity(ball,x,y)
+- setVelocityVec(ball,vec,speed)
+- addVelocity(ball,x,y)
+- addVelocityVec(ball,vec,speed)
+- launchToward(ball,point,speed)
+- setPosition(ball,x,y)
+- pullTo(ball,point,strength=0.12)
 - addSpin(ball,amount,ms=900)
-- setGravity(ball,x,y,ms=900): ballごとの一時重力ベクトル
+- setGravity(ball,x,y,ms=900)
+- setGravityVec(ball,vec,ms=900)
 - resetGravity(ball)
-- clone(ball,options): 分身を作る。options={x,y,vx,vy,r,temporaryMs,main}
+- clone(ball,options): options={x,y,vx,vy,r,temporaryMs,main}
 - remove(ball)
 - markTemporary(ball,ms)
 - stop(ball)
@@ -120,8 +131,7 @@ api.path:
 - orbit(ball,{center,radius,angleDeg,strength})
 - follow(ball,point,strength)
 
-api.zone:
-- body(): 装置本体の接触範囲。本体接触は常に発火に含める
+api.zone: trigger専用。trigger.zonesでは追加範囲だけ返す。装置本体zoneは実行側が自動で足す。
 - circle({x,y,r,label,visible})
 - ring({x,y,r,thickness,label,visible})
 - fan({x,y,r,angleDeg,spreadDeg,label,visible})
@@ -129,11 +139,7 @@ api.zone:
 - rect({x,y,w,h,label,visible})
 - capsule({x1,y1,x2,y2,r,label,visible})
 
-api.hit:
-- ballInZone(ball,zone)
-- ballInAny(ball,zones)
-
-api.effect:
+api.effect: core専用。onCatch/update中だけ実行され、編集中は無効。
 - ring({x,y,r,color,ms})
 - arc({x,y,r,startDeg,endDeg,color,ms})
 - line({x1,y1,x2,y2,color,ms})
@@ -150,13 +156,24 @@ api.field:
 - clampToCourt(point,padding=30)
 - isNearDeathLine(ball,margin=120)
 
-重要:
-- motion.updateは必ず { x, y, angle, scaleX, scaleY, radius } の一部または全部をreturnする。ctx.deviceをapi.bodyで動かしても実際の装置位置は変わらない。
-- trigger.zonesは必ずreturnで配列を返す。例: return [api.zone.circle({x:ctx.device.x+90,y:ctx.device.y,r:70,label:'拾',visible:true})];
-- triggerの追加範囲は本体と重ねない。本体より80px以上離す、扇形を広げる、ラインを伸ばすなど、画面上で拾い方が分かる形にする。
-- trigger.drawは補助表示だけ。赤い円を大量に重ねる演出は禁止。
-- core.onCatch/updateはctx.ballを中心に操作する。分身、スピン、重力、強射出、周回、ワープ的な位置変更などを自由に組み立ててよい。
-- coreは「接触したら速度を少し変えるだけ」禁止。最低でも、捕獲/周回/分裂/ワープ的移動/強射出/重力変化/見える軌跡のうち2つ以上を組み合わせる。`;
+motion.updateの必須:
+- 必ず { x, y, angle, scaleX, scaleY, radius } の一部または全部をreturnする。
+- x/yはctx.baseDeviceを中心にした周期運動にする。
+- ランダムは禁止。api.rngかctx.seedで固定されたphaseのみ使う。
+
+trigger.zonesの必須:
+- 必ずreturnで配列を返す。
+- 例: return [api.zone.circle({x:ctx.device.x+90,y:ctx.device.y,r:70,label:'拾',visible:true})];
+- 本体と重なるだけは禁止。本体より80px以上離す、扇形を広げる、ラインを伸ばすなど、拾い方が見える形にする。
+- zoneは1〜3個にする。大量生成は禁止。
+
+coreの必須:
+- onCatchは触れた瞬間の開始処理。updateは捕獲後/継続処理。
+- ctx.stateを使って多段処理を作ってよい。
+- 「速度を少し変えるだけ」は禁止。
+- 最低でも、捕獲/周回/分裂/ワープ的移動/強射出/スピン/重力変化/見える粒子演出のうち2つ以上を組み合わせる。
+- 分身を出す場合はtemporaryMsを設定する。
+- effectは毎フレーム大量追加せず、ctx.stateで一度だけ出す。`;
 }
 
 function buildPrompt({ comboKey, targets }) {
@@ -181,7 +198,7 @@ ${roles}
 鉄則:
 - ここに記載されていないslotは出力しない。
 - 出力JSONのcodeには、生成対象slotだけを含める。
-- フレーバーテキスト、装置名、summary、説明文は禁止。
+- draw、summary、name、flavor、description、説明文は禁止。
 - 本体接触は必ず発火する。
 - triggerは追加捕獲のみ。本体接触を無効化しない。
 - triggerの追加捕獲範囲は必ず可視化できる形にする。
@@ -267,7 +284,7 @@ function composeDevice({ emojis, existing, generatedEntries = [] }) {
     comboKey: emojis.join("|"),
     name: emojis.join(""),
     visualLabel: emojis.join(""),
-    shortEffect: "工作道具APIで動く合成装置",
+    shortEffect: "主効果 / 動き / 拾い方",
     slots,
     code,
     generatedSlots: generatedEntries.map((entry) => entry.slot),
