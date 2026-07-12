@@ -11,13 +11,13 @@ const SLOT_DEFS = [
   {
     slot: "motion",
     label: "motion",
-    role: "装置本体の周期的な動き。ランダムではなく、再現性のある運動にする。",
+    role: "装置本体の周期的な動き。ランダムではなく、再現性のある運動にする。必ずupdateで現在の装置座標をreturnする。",
     fields: ["update", "draw"],
   },
   {
     slot: "trigger",
-    label: "trigger",
-    role: "本体接触以外の追加捕獲方法。本体接触は無効化しない。",
+    label: "catch",
+    role: "本体接触以外の追加の拾い方。装置本体への接触は無効化しない。追加範囲は必ず見える形にする。",
     fields: ["zones", "draw"],
   },
 ];
@@ -148,7 +148,12 @@ api.field:
 - goalCenter()
 - fallLine()
 - clampToCourt(point,padding=30)
-- isNearDeathLine(ball,margin=120)`;
+- isNearDeathLine(ball,margin=120)
+
+重要:
+- motion.updateは必ず { x, y, angle, scaleX, scaleY, radius } の一部または全部をreturnする。ctx.deviceをapi.bodyで動かしても実際の装置位置は変わらない。
+- trigger.zonesは必ず配列をreturnする。api.zone.body()は実行側が自動で足すので、追加捕獲範囲だけ返してよい。
+- core.onCatch/updateはctx.ballを中心に操作する。分身、スピン、重力、強射出、周回、ワープ的な位置変更などを自由に組み立ててよい。`;
 }
 
 function buildPrompt({ comboKey, targets }) {
@@ -288,8 +293,9 @@ export function mountCompactNoHandSoccerRoutes(app) {
         source: "gemini-code-toolbox",
       });
 
-      const refreshed = await readNoHandCodeSlots(targets);
-      return res.json(composeDevice({ emojis, existing: refreshed, generatedEntries: [] }));
+      // Do not depend on an immediate Sheets re-read here. Use the just generated
+      // entries for the current response, then future requests can reuse the rows.
+      return res.json(composeDevice({ emojis, existing, generatedEntries }));
     } catch (error) {
       console.warn("[noHand-soccer] code toolbox generation failed", error);
       return res.status(500).json({
