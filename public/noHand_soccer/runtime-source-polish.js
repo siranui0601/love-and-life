@@ -52,8 +52,8 @@
     out = replaceOne(
       out,
       /function draw\(\) \{[^\n]+\}/,
-      `function draw() { if (!state) return; fit(); ctx.setTransform(1, 0, 0, 1, 0, 0); const scale = canvas.width / WORLD.w; const viewH = canvas.height / scale; state.cameraY = clamp(state.cameraY, -120, fallLine() - viewH + 120); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); try { ctx.scale(scale, scale); ctx.translate(0, -state.cameraY); drawField(viewH); state.fieldEmojis.forEach(drawEmoji); state.goals.forEach(drawGoal); state.ownGoals.forEach(drawOwn); state.gimmicks.filter((g) => g.placed).forEach(drawGimmick); state.balls.forEach(drawBall); } finally { ctx.restore(); ctx.setTransform(1, 0, 0, 1, 0, 0); } }`,
-      'draw transform reset'
+      `function draw() { if (!state) return; fit(); const scale = canvas.width / WORLD.w; const viewH = canvas.height / scale; state.cameraY = clamp(state.cameraY, -120, fallLine() - viewH + 120); for (let i = 0; i < 12; i += 1) ctx.restore(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.setLineDash([]); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.scale(scale, scale); ctx.translate(0, -state.cameraY); try { drawField(viewH); state.fieldEmojis.forEach(drawEmoji); state.goals.forEach(drawGoal); state.ownGoals.forEach(drawOwn); for (const gimmick of state.gimmicks.filter((g) => g.placed)) { try { drawGimmick(g); } catch (error) { console.warn('[noHand] drawGimmick failed', error); for (let i = 0; i < 12; i += 1) ctx.restore(); ctx.setTransform(scale, 0, 0, scale, 0, -state.cameraY * scale); ctx.globalAlpha = 1; ctx.setLineDash([]); } } state.balls.forEach(drawBall); } finally { for (let i = 0; i < 12; i += 1) ctx.restore(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.setLineDash([]); } }`,
+      'draw guard'
     );
 
     out += `
@@ -90,8 +90,8 @@ function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor);
       setTimeout(installCodeToolboxStability, 40);
       return;
     }
-    if (window.__noHandCodeToolboxStabilityV3) return;
-    window.__noHandCodeToolboxStabilityV3 = true;
+    if (window.__noHandCodeToolboxStabilityV2) return;
+    window.__noHandCodeToolboxStabilityV2 = true;
 
     const toFinite = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
     const isBallLike = (ball) => ball && Number.isFinite(Number(ball.x)) && Number.isFinite(Number(ball.y));
@@ -104,12 +104,11 @@ function localActorPoint(g, actor) { const base = baseLocalActorPoint(g, actor);
       return {};
     };
 
-    const originalCompileCodeSnippet = compileCodeSnippet;
     compileCodeSnippet = function stableCompileCodeSnippet(g, slot, field) {
       const rt = g.runtime || makeRuntime();
       g.runtime = rt;
       rt.compiled = rt.compiled || {};
-      const key = `stable-v3:${slot}.${field}`;
+      const key = `stable-v2:${slot}.${field}`;
       if (rt.compiled[key]) return rt.compiled[key];
       const src = safeCode(g.code?.[slot]?.[field] || '');
       if (!src) return null;
