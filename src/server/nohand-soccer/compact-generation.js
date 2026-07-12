@@ -5,7 +5,7 @@ const SLOT_DEFS = [
   {
     slot: "core",
     label: "core",
-    role: "主効果。絵文字らしさを物理挙動と見た目で派手に表す。",
+    role: "主効果。絵文字らしさを物理挙動と見た目で派手に表す。触れた瞬間の単発加速だけは禁止。",
     fields: ["onCatch", "update", "draw"],
   },
   {
@@ -99,12 +99,12 @@ api.vec:
 - normalize(v,length=1)
 
 api.body:
-- applyForce(ball,x,y): 毎フレーム用の力を加える
-- applyImpulse(ball,x,y): 瞬間的な速度変化を加える。値はpx/sec基準
-- setVelocity(ball,x,y): 速度を直接設定する。値はpx/sec基準
-- addVelocity(ball,x,y): 速度を加える。値はpx/sec基準
-- setPosition(ball,x,y): 座標を直接設定する
-- pullTo(ball,point,strength=0.12): pointへなめらかに引く
+- applyForce(ball,x,y): 毎フレーム用の力を加える。第1引数は必ずball
+- applyImpulse(ball,x,y): 瞬間的な速度変化を加える。値はpx/sec基準。第1引数は必ずball
+- setVelocity(ball,x,y): 速度を直接設定する。値はpx/sec基準。第1引数は必ずball
+- addVelocity(ball,x,y): 速度を加える。値はpx/sec基準。第1引数は必ずball
+- setPosition(ball,x,y): 座標を直接設定する。第1引数は必ずball
+- pullTo(ball,point,strength=0.12): pointへなめらかに引く。第1引数は必ずball
 - addSpin(ball,amount,ms=900)
 - setGravity(ball,x,y,ms=900): ballごとの一時重力ベクトル
 - resetGravity(ball)
@@ -152,8 +152,11 @@ api.field:
 
 重要:
 - motion.updateは必ず { x, y, angle, scaleX, scaleY, radius } の一部または全部をreturnする。ctx.deviceをapi.bodyで動かしても実際の装置位置は変わらない。
-- trigger.zonesは必ず配列をreturnする。api.zone.body()は実行側が自動で足すので、追加捕獲範囲だけ返してよい。
-- core.onCatch/updateはctx.ballを中心に操作する。分身、スピン、重力、強射出、周回、ワープ的な位置変更などを自由に組み立ててよい。`;
+- trigger.zonesは必ずreturnで配列を返す。例: return [api.zone.circle({x:ctx.device.x+90,y:ctx.device.y,r:70,label:'拾',visible:true})];
+- triggerの追加範囲は本体と重ねない。本体より80px以上離す、扇形を広げる、ラインを伸ばすなど、画面上で拾い方が分かる形にする。
+- trigger.drawは補助表示だけ。赤い円を大量に重ねる演出は禁止。
+- core.onCatch/updateはctx.ballを中心に操作する。分身、スピン、重力、強射出、周回、ワープ的な位置変更などを自由に組み立ててよい。
+- coreは「接触したら速度を少し変えるだけ」禁止。最低でも、捕獲/周回/分裂/ワープ的移動/強射出/重力変化/見える軌跡のうち2つ以上を組み合わせる。`;
 }
 
 function buildPrompt({ comboKey, targets }) {
@@ -204,6 +207,16 @@ function normalizeSnippet(value) {
   return value.trim();
 }
 
+function repairTriggerZonesSnippet(code) {
+  if (!code || /\breturn\b/.test(code)) return code;
+  const calls = code
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => /^api\.zone\./.test(part));
+  if (!calls.length) return code;
+  return `return [${calls.join(",")}];`;
+}
+
 function normalizeGeneratedCode(raw, targets) {
   const codeRoot = raw?.code && typeof raw.code === "object" ? raw.code : raw;
   const out = [];
@@ -213,7 +226,9 @@ function normalizeGeneratedCode(raw, targets) {
     if (!rawSlot || typeof rawSlot !== "object") throw new Error(`Missing generated slot: ${target.slot}`);
     const code = {};
     for (const field of def.fields) {
-      code[field] = normalizeSnippet(rawSlot[field]);
+      let snippet = normalizeSnippet(rawSlot[field]);
+      if (target.slot === "trigger" && field === "zones") snippet = repairTriggerZonesSnippet(snippet);
+      code[field] = snippet;
     }
     if (!Object.values(code).some(Boolean)) throw new Error(`Generated slot has no code: ${target.slot}`);
     out.push({ slot: target.slot, emoji: target.emoji, code });
@@ -281,7 +296,7 @@ export function mountCompactNoHandSoccerRoutes(app) {
       const output = await genWithFallback(buildPrompt({ comboKey, targets: missing }), {
         generationConfig: {
           responseMimeType: "application/json",
-          temperature: 0.96,
+          temperature: 0.98,
         },
       });
       const raw = JSON.parse(extractFirstJsonObject(output));
@@ -293,8 +308,6 @@ export function mountCompactNoHandSoccerRoutes(app) {
         source: "gemini-code-toolbox",
       });
 
-      // Do not depend on an immediate Sheets re-read here. Use the just generated
-      // entries for the current response, then future requests can reuse the rows.
       return res.json(composeDevice({ emojis, existing, generatedEntries }));
     } catch (error) {
       console.warn("[noHand-soccer] code toolbox generation failed", error);
