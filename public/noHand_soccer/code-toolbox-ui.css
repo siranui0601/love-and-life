@@ -1,0 +1,91 @@
+.selected-row{
+  position:relative;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  grid-template-areas:"motion core catch";
+  align-items:end;
+  gap:9px;
+  margin:16px 0 18px;
+  padding:4px 0 16px;
+}
+.selected-row::before,
+.selected-row::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:58%;
+  width:28%;
+  height:3px;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(232,255,89,.18),rgba(232,255,89,.58));
+  transform-origin:left center;
+  pointer-events:none;
+}
+.selected-row::before{transform:translate(-50%,-50%) rotate(154deg)}
+.selected-row::after{transform:translate(-2%,-50%) rotate(26deg)}
+.role-slot{
+  position:relative;
+  z-index:1;
+  min-height:82px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:4px;
+  border-radius:24px;
+  background:rgba(0,0,0,.24);
+  border:1px solid rgba(255,255,255,.14);
+}
+.role-slot:nth-child(1){
+  grid-area:core;
+  z-index:2;
+  min-height:104px;
+  border-radius:32px;
+  transform:translateY(-8px);
+  outline:2px solid rgba(232,255,89,.62);
+  background:linear-gradient(180deg,rgba(232,255,89,.16),rgba(0,0,0,.25));
+}
+.role-slot:nth-child(2){
+  grid-area:motion;
+  transform:translateY(18px) rotate(-2deg);
+}
+.role-slot:nth-child(3){
+  grid-area:catch;
+  transform:translateY(18px) rotate(2deg);
+}
+.role-slot small{
+  display:block;
+  color:var(--muted);
+  font-weight:950;
+  line-height:1.05;
+  letter-spacing:-.02em;
+  font-size:0;
+}
+.role-slot small::after{
+  font-size:.76rem;
+  white-space:nowrap;
+}
+.role-slot:nth-child(1) small::after{content:"主効果"}
+.role-slot:nth-child(2) small::after{content:"動き"}
+.role-slot:nth-child(3) small::after{content:"拾い方"}
+.role-slot b{
+  display:block;
+  font-size:1.82rem;
+  line-height:1.08;
+}
+.role-slot:nth-child(1) b{font-size:2.15rem}
+.role-slot.empty b,
+.role-slot.empty{
+  color:rgba(255,255,255,.46);
+}
+.role-slot.empty b{font-size:1rem}
+.generate-card p#generateHint{
+  line-height:1.55;
+}
+@media(max-width:420px){
+  .selected-row{gap:7px;margin-top:14px;padding-bottom:14px}
+  .role-slot{min-height:74px;border-radius:20px}
+  .role-slot:nth-child(1){min-height:94px;border-radius:28px}
+  .role-slot b{font-size:1.55rem}
+  .role-slot:nth-child(1) b{font-size:1.85rem}
+  .role-slot small::after{font-size:.68rem}
+}
