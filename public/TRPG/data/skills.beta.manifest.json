@@ -10,7 +10,7 @@
     "partNamePattern": "skills.beta.json.gz.b64.part-XX",
     "gzipBytes": 99450,
     "uncompressedBytes": 1167498,
-    "sha256": "37504f840d8710a9ac967bd76cb1613ae1b6a89579c29ae815bdf3da052dd448"
+    "sha256": "4d3b277479fbb96138fb5ec65713b99cd74f06fe60faba2a24ea207e806755d5"
   },
   "summary": {
     "total": 1141,
