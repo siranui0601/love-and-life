@@ -6,7 +6,7 @@ import { mountFloodNoHandSoccerVisualRoutes } from "./nohand-soccer/visual-cache
 
 const TRPG_SKILL_CATALOG_PART_COUNT = 8;
 const TRPG_SKILL_CATALOG_SHA256 =
-  "37504f840d8710a9ac967bd76cb1613ae1b6a89579c29ae815bdf3da052dd448";
+  "4d3b277479fbb96138fb5ec65713b99cd74f06fe60faba2a24ea207e806755d5";
 
 function createTrpgSkillCatalogLoader() {
   const dataDirectory = path.join(process.cwd(), "public/TRPG/data");
