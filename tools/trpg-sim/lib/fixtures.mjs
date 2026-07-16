@@ -1,0 +1,51 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
+export const simulationRoot = path.resolve(moduleDirectory, "..");
+export const fixturesDirectory = path.join(simulationRoot, "fixtures");
+
+function readJson(fileName) {
+  return JSON.parse(fs.readFileSync(path.join(fixturesDirectory, fileName), "utf8"));
+}
+
+export function loadWorldSnapshot() {
+  return readJson("world.snapshot.json");
+}
+
+export function loadBattleSnapshot() {
+  return readJson("battle.snapshot.json");
+}
+
+export function loadSkillSupportSnapshot() {
+  return readJson("skills-support.snapshot.json");
+}
+
+export function loadSkills() {
+  return [
+    "skills-0001-0300.snapshot.json",
+    "skills-0301-0600.snapshot.json",
+    "skills-0601-0900.snapshot.json",
+    "skills-0901-1141.snapshot.json",
+  ].flatMap((fileName) => readJson(fileName).skills);
+}
+
+export function tableFromTab(tab, headerRowIndex = 3, { idColumn = 0 } = {}) {
+  const headers = tab[headerRowIndex] ?? [];
+  return tab
+    .slice(headerRowIndex + 1)
+    .filter((row) => row?.[idColumn] !== null && row?.[idColumn] !== undefined && row?.[idColumn] !== "")
+    .map((row) =>
+      Object.fromEntries(headers.map((header, index) => [header, row?.[index] ?? null]))
+    );
+}
+
+export function loadAllFixtures() {
+  return {
+    world: loadWorldSnapshot(),
+    battle: loadBattleSnapshot(),
+    skillSupport: loadSkillSupportSnapshot(),
+    skills: loadSkills(),
+  };
+}

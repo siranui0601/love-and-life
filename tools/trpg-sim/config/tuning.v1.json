@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "world": {
+    "neutralMitigationProbability": 0.58,
+    "resolutionDifficultyScale": 0.6,
+    "difficultyScaleByTrouble": {
+      "T13": 0.92
+    },
+    "selectionReason": "16-point grid search plus a dedicated T13 branch calibration: increases small-event diversity while retaining both late-game routes"
+  },
+  "economy": {
+    "starterPackage": {
+      "mealCount": 1,
+      "lodgingNights": 1,
+      "gold": 0,
+      "minimumEquivalentGold": 5
+    },
+    "selectionReason": "removes the Day1 zero-gold survival lock without inflating the wider market"
+  },
+  "battle": {
+    "candidateExhaustionFallback": "normal_attack",
+    "partyEnemyCountMultiplierByTier": {
+      "1": 3,
+      "2": 2,
+      "3": 2,
+      "4": 2,
+      "5": 2,
+      "6": 2,
+      "7": 2,
+      "8": 2,
+      "9": 1,
+      "10": 1
+    },
+    "modifierAliases": {
+      "physicalPower": "physical_power"
+    },
+    "magicBalancePolicy": "do not change source numbers until MP recovery, consumables, passive damage and provisionalRule effects are structured",
+    "targetWinRate": {
+      "standard": [0.55, 0.8],
+      "elite": [0.4, 0.65],
+      "boss": [0.3, 0.55]
+    }
+  },
+  "progression": {
+    "spPolicy": "keep_1_plus_level",
+    "respecRecommended": true,
+    "excludeUnwiredGrants": true
+  }
+}
