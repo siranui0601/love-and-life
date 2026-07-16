@@ -1,0 +1,499 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://siranui.jp/TRPG/data/skills.beta.schema.json",
+  "title": "TRPG(仮題) Skill Catalog Beta",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "catalogVersion",
+    "game",
+    "runtime",
+    "summary",
+    "skills"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "type": "string"
+    },
+    "catalogVersion": {
+      "type": "string"
+    },
+    "game": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "sitePath"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "sitePath": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "generatedAt": {
+      "type": "string"
+    },
+    "runtime": {
+      "type": "object"
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "total",
+        "enabled",
+        "classifications",
+        "implementation"
+      ]
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/skill"
+      }
+    }
+  },
+  "$defs": {
+    "predicate": {
+      "type": "object",
+      "required": [
+        "scope",
+        "path",
+        "op"
+      ],
+      "properties": {
+        "scope": {
+          "enum": [
+            "player",
+            "progress",
+            "world",
+            "inventory",
+            "equipment",
+            "self",
+            "target",
+            "battle",
+            "field",
+            "history"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "op": {
+          "enum": [
+            "eq",
+            "ne",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "between",
+            "isTrue",
+            "isFalse",
+            "contains",
+            "notContains",
+            "containsAll",
+            "containsAny"
+          ]
+        },
+        "value": {}
+      },
+      "additionalProperties": false
+    },
+    "condition": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/predicate"
+        },
+        {
+          "type": "object",
+          "required": [
+            "all"
+          ],
+          "properties": {
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "any"
+          ],
+          "properties": {
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "not"
+          ],
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/condition"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "cost": {
+      "type": "object",
+      "required": [
+        "resource",
+        "mode"
+      ],
+      "properties": {
+        "resource": {
+          "enum": [
+            "mp",
+            "hp",
+            "gold",
+            "item",
+            "equipment"
+          ]
+        },
+        "mode": {
+          "type": "string"
+        },
+        "value": {},
+        "itemId": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "effect": {
+      "type": "object",
+      "required": [
+        "id",
+        "command"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "command": {
+          "enum": [
+            "DAMAGE",
+            "HEAL",
+            "MODIFY_RESOURCE",
+            "APPLY_MODIFIER",
+            "APPLY_DEBUFF",
+            "REMOVE_DEBUFF",
+            "REMOVE_MODIFIER",
+            "APPLY_SPECIAL_STATE",
+            "REMOVE_SPECIAL_STATE",
+            "SUMMON_UNIT",
+            "PLACE_TRAP",
+            "MODIFY_FIELD",
+            "REPEAT_LAST_SKILL",
+            "REPEAT_WHILE_HIT",
+            "TRANSFER_DEBUFF",
+            "SPREAD_DEBUFF",
+            "MODIFY_DEBUFF",
+            "MODIFY_ESCAPE",
+            "NO_OP",
+            "CUSTOM_RULE"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "conditionalEffect": {
+      "type": "object",
+      "required": [
+        "id",
+        "when"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "when": {
+          "$ref": "#/$defs/condition"
+        },
+        "priority": {
+          "type": "integer"
+        },
+        "exclusiveGroup": {
+          "type": "string"
+        },
+        "modify": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "effectId",
+              "op",
+              "path",
+              "value"
+            ],
+            "properties": {
+              "effectId": {
+                "type": "string"
+              },
+              "op": {
+                "enum": [
+                  "set",
+                  "add",
+                  "multiply",
+                  "clamp",
+                  "replace",
+                  "merge"
+                ]
+              },
+              "path": {
+                "type": "string"
+              },
+              "value": {}
+            },
+            "additionalProperties": false
+          }
+        },
+        "addEffects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effect"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "skill": {
+      "type": "object",
+      "required": [
+        "id",
+        "no",
+        "name",
+        "category",
+        "family",
+        "rank",
+        "kind",
+        "description",
+        "status",
+        "enabled",
+        "acquisition",
+        "activation",
+        "effects",
+        "implementation"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^SKL-[0-9]{4}$"
+        },
+        "no": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": "string"
+        },
+        "family": {
+          "type": "string"
+        },
+        "rank": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kind": {
+          "enum": [
+            "active",
+            "passive",
+            "reaction",
+            "none"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "basic_level_up",
+            "flag_unlocked",
+            "equipment_granted",
+            "event_granted",
+            "deleted",
+            "non_skill"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "acquisition": {
+          "type": "object",
+          "required": [
+            "source",
+            "visibility",
+            "spCost",
+            "requiredLevel"
+          ],
+          "properties": {
+            "source": {
+              "type": "string"
+            },
+            "visibility": {
+              "type": "string"
+            },
+            "spCost": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "requiredLevel": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "prerequisiteSkills": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "revealConditions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            },
+            "learnConditions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            },
+            "grantConditions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "activation": {
+          "type": "object",
+          "required": [
+            "target",
+            "onInvalidAtResolution"
+          ],
+          "properties": {
+            "conditions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            },
+            "target": {
+              "type": "string"
+            },
+            "onInvalidAtResolution": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "costs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/cost"
+          }
+        },
+        "cooldown": {
+          "type": "object",
+          "properties": {
+            "turns": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "worldMinutes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "usesPerBattle": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "usesPerDay": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effect"
+          }
+        },
+        "conditionalEffects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/conditionalEffect"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "implementation": {
+          "type": "object",
+          "required": [
+            "status"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "runtime_ready",
+                "custom_handler_required",
+                "removed"
+              ]
+            },
+            "handlers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
