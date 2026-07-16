@@ -1,11 +1,20 @@
 # TRPG(仮題) public data
 
+## Directory and public routes
+
+The only physical game directory is `public/TRPG`.
+
+- `/TRPG/`: direct development path
+- `/TRPG(仮題)/`: public title alias served from the same directory
+
+Do not recreate `public/TRPG(仮題)`. The Japanese-title URL is mounted by `src/server/app.js`.
+
 ## Public endpoints
 
-- `/TRPG/data/skills.beta.json`: 全1,141件と共通命令を含む、実際に参照可能なスキルJSON β版
+- `/TRPG/data/skills.beta.json`: 全1,141件と共通命令を含むスキルJSON β版
+- `/TRPG/data/skills.beta.health.json`: 読み込み・検証状態、件数、容量、チェックサム
 - `/TRPG/data/skills.beta.schema.json`: JSON Schema Draft 2020-12
 - `/TRPG/data/skills.beta.manifest.json`: バージョン、容量、チェックサム、分割情報
-- `/TRPG(仮題)/`: 開発中のゲーム入口
 
 ## Repository storage
 
@@ -20,9 +29,11 @@ GitHub上ではgzip済みカタログを、次の8個のbase64テキストへ分
 - `data/skills.beta.json.gz.b64.part-07`
 - `data/skills.beta.json.gz.b64.part-08`
 
-`src/server/app.js`が起動後の初回アクセス時に8ファイルを結合し、base64を復号する。復号後のgzipデータをSHA-256で検証し、`Content-Encoding: gzip`を付けて返す。ブラウザやNodeの`fetch()`からは通常のJSONとして参照できる。
+`src/server/app.js`は自身のモジュール位置からプロジェクトルートを解決するため、PM2の`cwd`に依存しない。初回アクセス時に8ファイルを結合し、base64復号、SHA-256検証、gzip展開、JSON構造検証を行う。検証済みの通常JSONをメモリへキャッシュして返す。
 
-`app.js`は公開JSONを実際に読み込み、件数表示と簡易検索を行う最小クライアントである。
+手動で`Content-Encoding: gzip`を付けたレスポンスは使わない。リバースプロキシやモバイルブラウザでの二重圧縮・展開不整合を避けるためである。
+
+`app.js`は最初にhealth endpointを確認し、その後カタログを読み込んで件数表示と簡易検索を行う。
 
 ## Runtime policy
 
