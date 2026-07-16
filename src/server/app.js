@@ -12,6 +12,23 @@ export function createApp() {
   // 既存トップページ用（必要なら）
   app.use(express.static("public"));
 
+  // TRPG(仮題) スキルJSON β版。
+  // Git上ではgzip実体を保持し、公開URLでは通常のJSONとして参照できるようにする。
+  const trpgSkillCatalogPath = path.join(
+    process.cwd(),
+    "public/TRPG/data/skills.beta.json.gz"
+  );
+
+  app.get("/TRPG/data/skills.beta.json", (req, res, next) => {
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Encoding", "gzip");
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.setHeader("Vary", "Accept-Encoding");
+    res.sendFile(trpgSkillCatalogPath, (error) => {
+      if (error) next(error);
+    });
+  });
+
   // 部分ツイートの新しい画像パス(/2D画像)を既存素材ディレクトリへ紐づける
   const twoDImagePath = "/2D画像";
   const twoDImageEncodedPath = encodeURI(twoDImagePath);
