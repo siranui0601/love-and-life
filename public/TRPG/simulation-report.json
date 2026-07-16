@@ -1,0 +1,1775 @@
+{
+  "schemaVersion": "1.0.0",
+  "meta": {
+    "generatedAt": "2026-07-16T18:44:57.273Z",
+    "seed": "trpg-v4-20260717",
+    "days": 100,
+    "worldSeedsPerMode": 100,
+    "sources": [
+      "TRPG",
+      "TRPG_スキル設計マスターv4_イベントフラグ再設計",
+      "TRPG_戦闘データマスターβ1"
+    ],
+    "sourceDetails": [
+      {
+        "spreadsheetId": "15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk",
+        "title": "TRPG",
+        "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk",
+        "retrievedAt": "2026-07-17",
+        "valueRenderOption": "UNFORMATTED_VALUE"
+      },
+      {
+        "spreadsheetId": "1uTztUPNkuPGWHkvLq5CFej0SZOy5eaNPmBPjGe7wWgg",
+        "title": "TRPG_スキル設計マスターv4_イベントフラグ再設計",
+        "url": "https://docs.google.com/spreadsheets/d/1uTztUPNkuPGWHkvLq5CFej0SZOy5eaNPmBPjGe7wWgg",
+        "retrievedAt": "2026-07-17"
+      },
+      {
+        "spreadsheetId": "1-2mUA20d7h1lmv1G9fCH0EryFEYyFQ2nkamN51uCPqw",
+        "title": "TRPG_戦闘データマスターβ1",
+        "url": "https://docs.google.com/spreadsheets/d/1-2mUA20d7h1lmv1G9fCH0EryFEYyFQ2nkamN51uCPqw",
+        "retrievedAt": "2026-07-17",
+        "valueRenderOption": "UNFORMATTED_VALUE"
+      }
+    ]
+  },
+  "quality": {
+    "passed": true,
+    "warning": true,
+    "testCount": 29,
+    "invariantFailures": 0,
+    "sourceWarnings": 6
+  },
+  "sourceCounts": {
+    "troubles": 19,
+    "chains": 23,
+    "npcs": 110,
+    "facilities": 103,
+    "products": 219,
+    "skills": 1141,
+    "equipment": 116,
+    "stock": 123,
+    "monsters": 77,
+    "monsterSkills": 96,
+    "monsterActions": 285,
+    "encounters": 76
+  },
+  "world": {
+    "summary": {
+      "troubleStates": {
+        "failed": 13,
+        "resolved": 4,
+        "suppressed": 2
+      },
+      "terminalTroubles": 19,
+      "totalTroubles": 19,
+      "npcContributors": 47,
+      "movements": 37,
+      "appliedChains": 15,
+      "worldEnded": true
+    },
+    "days": [
+      {
+        "day": 1,
+        "active": 1,
+        "critical": 0,
+        "terminal": 1,
+        "travelingNpcs": 5,
+        "movements": 13,
+        "transitions": 3,
+        "goapPlans": 186
+      },
+      {
+        "day": 2,
+        "active": 0,
+        "critical": 1,
+        "terminal": 1,
+        "travelingNpcs": 0,
+        "movements": 6,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 3,
+        "active": 0,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 4,
+        "active": 0,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 5,
+        "active": 1,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 6,
+        "active": 1,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 7,
+        "active": 1,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 8,
+        "active": 2,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 9,
+        "active": 2,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 10,
+        "active": 3,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 11,
+        "active": 3,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 12,
+        "active": 4,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 13,
+        "active": 4,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 14,
+        "active": 4,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 15,
+        "active": 5,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 2,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 16,
+        "active": 6,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 17,
+        "active": 6,
+        "critical": 0,
+        "terminal": 2,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 18,
+        "active": 5,
+        "critical": 1,
+        "terminal": 3,
+        "travelingNpcs": 0,
+        "movements": 2,
+        "transitions": 3,
+        "goapPlans": 192
+      },
+      {
+        "day": 19,
+        "active": 5,
+        "critical": 1,
+        "terminal": 3,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 20,
+        "active": 5,
+        "critical": 2,
+        "terminal": 3,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 2,
+        "goapPlans": 192
+      },
+      {
+        "day": 21,
+        "active": 5,
+        "critical": 2,
+        "terminal": 3,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 22,
+        "active": 5,
+        "critical": 2,
+        "terminal": 3,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 23,
+        "active": 5,
+        "critical": 2,
+        "terminal": 3,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 24,
+        "active": 6,
+        "critical": 2,
+        "terminal": 3,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 25,
+        "active": 6,
+        "critical": 2,
+        "terminal": 3,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 26,
+        "active": 7,
+        "critical": 2,
+        "terminal": 3,
+        "travelingNpcs": 1,
+        "movements": 2,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 27,
+        "active": 7,
+        "critical": 2,
+        "terminal": 4,
+        "travelingNpcs": 0,
+        "movements": 2,
+        "transitions": 2,
+        "goapPlans": 192
+      },
+      {
+        "day": 28,
+        "active": 7,
+        "critical": 2,
+        "terminal": 4,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 29,
+        "active": 7,
+        "critical": 2,
+        "terminal": 4,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 30,
+        "active": 8,
+        "critical": 2,
+        "terminal": 5,
+        "travelingNpcs": 0,
+        "movements": 2,
+        "transitions": 3,
+        "goapPlans": 192
+      },
+      {
+        "day": 31,
+        "active": 8,
+        "critical": 2,
+        "terminal": 5,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 32,
+        "active": 7,
+        "critical": 3,
+        "terminal": 5,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 33,
+        "active": 7,
+        "critical": 3,
+        "terminal": 5,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 34,
+        "active": 7,
+        "critical": 3,
+        "terminal": 5,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 35,
+        "active": 7,
+        "critical": 1,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 2,
+        "goapPlans": 192
+      },
+      {
+        "day": 36,
+        "active": 7,
+        "critical": 1,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 37,
+        "active": 7,
+        "critical": 1,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 38,
+        "active": 6,
+        "critical": 2,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 39,
+        "active": 6,
+        "critical": 2,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 40,
+        "active": 6,
+        "critical": 2,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 41,
+        "active": 5,
+        "critical": 3,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 42,
+        "active": 5,
+        "critical": 3,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 43,
+        "active": 5,
+        "critical": 3,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 44,
+        "active": 4,
+        "critical": 4,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 45,
+        "active": 3,
+        "critical": 5,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 46,
+        "active": 3,
+        "critical": 5,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 47,
+        "active": 3,
+        "critical": 5,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 48,
+        "active": 3,
+        "critical": 5,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 49,
+        "active": 2,
+        "critical": 6,
+        "terminal": 7,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 50,
+        "active": 2,
+        "critical": 5,
+        "terminal": 8,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 51,
+        "active": 2,
+        "critical": 5,
+        "terminal": 8,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 52,
+        "active": 2,
+        "critical": 5,
+        "terminal": 8,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 53,
+        "active": 2,
+        "critical": 5,
+        "terminal": 8,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 54,
+        "active": 2,
+        "critical": 5,
+        "terminal": 8,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 55,
+        "active": 3,
+        "critical": 4,
+        "terminal": 9,
+        "travelingNpcs": 0,
+        "movements": 6,
+        "transitions": 2,
+        "goapPlans": 192
+      },
+      {
+        "day": 56,
+        "active": 2,
+        "critical": 4,
+        "terminal": 10,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 2,
+        "goapPlans": 192
+      },
+      {
+        "day": 57,
+        "active": 2,
+        "critical": 4,
+        "terminal": 10,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 58,
+        "active": 1,
+        "critical": 5,
+        "terminal": 10,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 59,
+        "active": 1,
+        "critical": 5,
+        "terminal": 10,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 60,
+        "active": 1,
+        "critical": 3,
+        "terminal": 12,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 2,
+        "goapPlans": 192
+      },
+      {
+        "day": 61,
+        "active": 1,
+        "critical": 3,
+        "terminal": 13,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 62,
+        "active": 2,
+        "critical": 3,
+        "terminal": 13,
+        "travelingNpcs": 0,
+        "movements": 2,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 63,
+        "active": 2,
+        "critical": 2,
+        "terminal": 15,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 2,
+        "goapPlans": 192
+      },
+      {
+        "day": 64,
+        "active": 2,
+        "critical": 2,
+        "terminal": 15,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 65,
+        "active": 2,
+        "critical": 2,
+        "terminal": 15,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 66,
+        "active": 2,
+        "critical": 2,
+        "terminal": 15,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 67,
+        "active": 2,
+        "critical": 2,
+        "terminal": 15,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 68,
+        "active": 2,
+        "critical": 2,
+        "terminal": 15,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 69,
+        "active": 2,
+        "critical": 2,
+        "terminal": 15,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 70,
+        "active": 2,
+        "critical": 1,
+        "terminal": 16,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 71,
+        "active": 2,
+        "critical": 1,
+        "terminal": 16,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 72,
+        "active": 1,
+        "critical": 2,
+        "terminal": 16,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 73,
+        "active": 1,
+        "critical": 2,
+        "terminal": 16,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 74,
+        "active": 1,
+        "critical": 2,
+        "terminal": 16,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 75,
+        "active": 1,
+        "critical": 1,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 76,
+        "active": 1,
+        "critical": 1,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 77,
+        "active": 1,
+        "critical": 1,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 78,
+        "active": 1,
+        "critical": 1,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 79,
+        "active": 1,
+        "critical": 1,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 80,
+        "active": 0,
+        "critical": 2,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 1,
+        "goapPlans": 192
+      },
+      {
+        "day": 81,
+        "active": 0,
+        "critical": 2,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 82,
+        "active": 0,
+        "critical": 2,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 83,
+        "active": 0,
+        "critical": 2,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 84,
+        "active": 0,
+        "critical": 2,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 85,
+        "active": 0,
+        "critical": 2,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 86,
+        "active": 0,
+        "critical": 2,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 87,
+        "active": 0,
+        "critical": 2,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 88,
+        "active": 0,
+        "critical": 2,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 89,
+        "active": 0,
+        "critical": 2,
+        "terminal": 17,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 90,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 2,
+        "goapPlans": 192
+      },
+      {
+        "day": 91,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 92,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 93,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 94,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 95,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 96,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 97,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 98,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 99,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      },
+      {
+        "day": 100,
+        "active": 0,
+        "critical": 0,
+        "terminal": 19,
+        "travelingNpcs": 0,
+        "movements": 0,
+        "transitions": 0,
+        "goapPlans": 192
+      }
+    ],
+    "transitions": [
+      {
+        "troubleId": "T01",
+        "from": "scheduled",
+        "to": "active",
+        "day": 1,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T13",
+        "from": "scheduled",
+        "to": "active",
+        "day": 1,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T13",
+        "from": "active",
+        "to": "resolved",
+        "day": 1,
+        "phaseIndex": 2,
+        "phase": "evening",
+        "reason": "autonomous-goap-threshold"
+      },
+      {
+        "troubleId": "T01",
+        "from": "active",
+        "to": "critical",
+        "day": 2,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T01",
+        "from": "critical",
+        "to": "failed",
+        "day": 3,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T02",
+        "from": "scheduled",
+        "to": "active",
+        "day": 5,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T03",
+        "from": "scheduled",
+        "to": "active",
+        "day": 8,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T17",
+        "from": "scheduled",
+        "to": "active",
+        "day": 10,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T04",
+        "from": "scheduled",
+        "to": "active",
+        "day": 12,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T14",
+        "from": "scheduled",
+        "to": "active",
+        "day": 15,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T05",
+        "from": "scheduled",
+        "to": "active",
+        "day": 16,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T07",
+        "from": "scheduled",
+        "to": "active",
+        "day": 18,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T07",
+        "from": "active",
+        "to": "resolved",
+        "day": 18,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "autonomous-goap-threshold"
+      },
+      {
+        "troubleId": "T02",
+        "from": "active",
+        "to": "critical",
+        "day": 18,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T11",
+        "from": "scheduled",
+        "to": "active",
+        "day": 20,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T03",
+        "from": "active",
+        "to": "critical",
+        "day": 20,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T06",
+        "from": "scheduled",
+        "to": "active",
+        "day": 24,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T10",
+        "from": "scheduled",
+        "to": "active",
+        "day": 26,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T09",
+        "from": "scheduled",
+        "to": "active",
+        "day": 27,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T09",
+        "from": "active",
+        "to": "resolved",
+        "day": 27,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "autonomous-goap-threshold"
+      },
+      {
+        "troubleId": "T08",
+        "from": "scheduled",
+        "to": "active",
+        "day": 30,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T12",
+        "from": "scheduled",
+        "to": "active",
+        "day": 30,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T12",
+        "from": "active",
+        "to": "resolved",
+        "day": 30,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "autonomous-goap-threshold"
+      },
+      {
+        "troubleId": "T04",
+        "from": "active",
+        "to": "critical",
+        "day": 32,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T02",
+        "from": "critical",
+        "to": "failed",
+        "day": 35,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T03",
+        "from": "critical",
+        "to": "failed",
+        "day": 35,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T05",
+        "from": "active",
+        "to": "critical",
+        "day": 38,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T17",
+        "from": "active",
+        "to": "critical",
+        "day": 41,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T10",
+        "from": "active",
+        "to": "critical",
+        "day": 44,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T06",
+        "from": "active",
+        "to": "critical",
+        "day": 45,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T11",
+        "from": "active",
+        "to": "critical",
+        "day": 49,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T04",
+        "from": "critical",
+        "to": "failed",
+        "day": 50,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T15",
+        "from": "scheduled",
+        "to": "active",
+        "day": 55,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "gate-open:any-failure"
+      },
+      {
+        "troubleId": "T05",
+        "from": "critical",
+        "to": "failed",
+        "day": 55,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T06",
+        "from": "critical",
+        "to": "failed",
+        "day": 56,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T14",
+        "from": "active",
+        "to": "critical",
+        "day": 56,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T08",
+        "from": "active",
+        "to": "critical",
+        "day": 58,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T08",
+        "from": "critical",
+        "to": "failed",
+        "day": 60,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T11",
+        "from": "critical",
+        "to": "failed",
+        "day": 60,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T18",
+        "from": "scheduled",
+        "to": "suppressed",
+        "day": 61,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "gate-closed:all-failure"
+      },
+      {
+        "troubleId": "T16",
+        "from": "scheduled",
+        "to": "active",
+        "day": 62,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "scheduled-onset"
+      },
+      {
+        "troubleId": "T19",
+        "from": "scheduled",
+        "to": "suppressed",
+        "day": 63,
+        "phaseIndex": 0,
+        "phase": "morning",
+        "reason": "gate-closed:all-failure"
+      },
+      {
+        "troubleId": "T17",
+        "from": "critical",
+        "to": "failed",
+        "day": 63,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T10",
+        "from": "critical",
+        "to": "failed",
+        "day": 70,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T15",
+        "from": "active",
+        "to": "critical",
+        "day": 72,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T14",
+        "from": "critical",
+        "to": "failed",
+        "day": 75,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T16",
+        "from": "active",
+        "to": "critical",
+        "day": 80,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "major-deadline-missed"
+      },
+      {
+        "troubleId": "T15",
+        "from": "critical",
+        "to": "failed",
+        "day": 90,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      },
+      {
+        "troubleId": "T16",
+        "from": "critical",
+        "to": "failed",
+        "day": 90,
+        "phaseIndex": 3,
+        "phase": "night",
+        "reason": "final-worsening-reached"
+      }
+    ],
+    "baseline": {
+      "resolved": {
+        "mean": 1.82,
+        "median": 2,
+        "minimum": 1,
+        "maximum": 3
+      },
+      "invariantFailures": 0
+    },
+    "tuned": {
+      "resolved": {
+        "mean": 4.28,
+        "median": 4,
+        "minimum": 2,
+        "maximum": 7
+      },
+      "invariantFailures": 0
+    }
+  },
+  "progression": {
+    "profiles": [
+      {
+        "id": "balanced",
+        "label": "均衡型",
+        "maxLevel": 20,
+        "acquiredCount": 21,
+        "visibleCount": 402,
+        "unlockedCount": 212,
+        "spRemaining": 0
+      },
+      {
+        "id": "martial",
+        "label": "物理熟練型",
+        "maxLevel": 24,
+        "acquiredCount": 25,
+        "visibleCount": 393,
+        "unlockedCount": 190,
+        "spRemaining": 0
+      },
+      {
+        "id": "arcane",
+        "label": "魔法研究型",
+        "maxLevel": 22,
+        "acquiredCount": 23,
+        "visibleCount": 427,
+        "unlockedCount": 259,
+        "spRemaining": 0
+      },
+      {
+        "id": "guardian",
+        "label": "守護回復型",
+        "maxLevel": 20,
+        "acquiredCount": 21,
+        "visibleCount": 370,
+        "unlockedCount": 167,
+        "spRemaining": 0
+      },
+      {
+        "id": "ranger",
+        "label": "探索技巧型",
+        "maxLevel": 21,
+        "acquiredCount": 22,
+        "visibleCount": 379,
+        "unlockedCount": 137,
+        "spRemaining": 0
+      },
+      {
+        "id": "completionist",
+        "label": "網羅検証型",
+        "maxLevel": 24,
+        "acquiredCount": 25,
+        "visibleCount": 499,
+        "unlockedCount": 499,
+        "spRemaining": 0
+      }
+    ],
+    "unreachableCount": 0
+  },
+  "economy": {
+    "startingGold": 0,
+    "minimumFood": 1,
+    "minimumLodging": 4,
+    "softLockRisk": true
+  },
+  "battle": {
+    "totalBattles": 304000,
+    "scenarios": [
+      {
+        "label": "physical-lv1 / Tier 1",
+        "encounterId": "Tier-1",
+        "buildId": "physical-lv1",
+        "runs": 2000,
+        "winRate": 0.7555,
+        "averageTurns": 4.15,
+        "resourceExhaustionRate": 0
+      },
+      {
+        "label": "magic-lv5 / Tier 2",
+        "encounterId": "Tier-2",
+        "buildId": "magic-lv5",
+        "runs": 7000,
+        "winRate": 0.5731,
+        "averageTurns": 46.54,
+        "resourceExhaustionRate": 0
+      },
+      {
+        "label": "physical-lv5 / Tier 2",
+        "encounterId": "Tier-2",
+        "buildId": "physical-lv5",
+        "runs": 7000,
+        "winRate": 0.9909,
+        "averageTurns": 6.34,
+        "resourceExhaustionRate": 0
+      },
+      {
+        "label": "magic-lv5 / Tier 3",
+        "encounterId": "Tier-3",
+        "buildId": "magic-lv5",
+        "runs": 5500,
+        "winRate": 0.1495,
+        "averageTurns": 67.3,
+        "resourceExhaustionRate": 0
+      },
+      {
+        "label": "physical-lv5 / Tier 3",
+        "encounterId": "Tier-3",
+        "buildId": "physical-lv5",
+        "runs": 5500,
+        "winRate": 0.5664,
+        "averageTurns": 8.13,
+        "resourceExhaustionRate": 0
+      },
+      {
+        "label": "magic-lv10 / Tier 4",
+        "encounterId": "Tier-4",
+        "buildId": "magic-lv10",
+        "runs": 4500,
+        "winRate": 0.5342,
+        "averageTurns": 11.14,
+        "resourceExhaustionRate": 0.2551
+      },
+      {
+        "label": "physical-lv10 / Tier 4",
+        "encounterId": "Tier-4",
+        "buildId": "physical-lv10",
+        "runs": 4500,
+        "winRate": 0.7271,
+        "averageTurns": 4.9,
+        "resourceExhaustionRate": 0
+      },
+      {
+        "label": "magic-lv10 / Tier 5",
+        "encounterId": "Tier-5",
+        "buildId": "magic-lv10",
+        "runs": 5500,
+        "winRate": 0.262,
+        "averageTurns": 13.55,
+        "resourceExhaustionRate": 0.3889
+      },
+      {
+        "label": "physical-lv10 / Tier 5",
+        "encounterId": "Tier-5",
+        "buildId": "physical-lv10",
+        "runs": 5500,
+        "winRate": 0.5825,
+        "averageTurns": 5.21,
+        "resourceExhaustionRate": 0
+      },
+      {
+        "label": "4人混成・人数補正 / Tier 1",
+        "encounterId": "Tier-1",
+        "buildId": "matched-party",
+        "runs": 1000,
+        "winRate": 0.752,
+        "averageTurns": 6.12,
+        "resourceExhaustionRate": 0
+      },
+      {
+        "label": "4人混成・人数補正 / Tier 2",
+        "encounterId": "Tier-2",
+        "buildId": "matched-party",
+        "runs": 3500,
+        "winRate": 0.7597,
+        "averageTurns": 12.21,
+        "resourceExhaustionRate": 0
+      },
+      {
+        "label": "4人混成・人数補正 / Tier 3",
+        "encounterId": "Tier-3",
+        "buildId": "matched-party",
+        "runs": 2750,
+        "winRate": 0.5469,
+        "averageTurns": 19.55,
+        "resourceExhaustionRate": 0
+      }
+    ]
+  },
+  "findings": [
+    {
+      "severity": "verified",
+      "title": "100日×100 seedを不変条件違反ゼロで完走",
+      "detail": "既定・調整後とも全seedが400 tickを完走。110 NPC、19事件、23連鎖、37回の移動で、テレポート・未知拠点・期限前遷移は0件です。"
+    },
+    {
+      "severity": "applied",
+      "title": "NPCだけで生まれる結末の偏りを緩和",
+      "detail": "既定は平均1.82/19件解決。16点探索から中立NPCの抑止判断58%・通常事件難度係数0.6・T13係数0.92を採用し、平均4.28件、T13成功44/100 seedまで分岐を拡張しました。"
+    },
+    {
+      "severity": "blocker",
+      "title": "イベント付与スキル325件に構造化供給元がない",
+      "detail": "イベント、訓練、契約、書物からスキルIDを付与する表がないため、条件を満たしても自動取得できません。推測付与はせず、供給元が定義されるまで候補外に保ちます。"
+    },
+    {
+      "severity": "blocker",
+      "title": "装備付与スキル121件が装備マスターから未参照",
+      "detail": "equipment_granted 162件のうち121件がどの装備にも接続されず、さらに8件は取得分類が不一致です。IDを自動で当て推量せず、監査エラーとして固定しました。"
+    },
+    {
+      "severity": "applied",
+      "title": "初日0Gの生活ソフトロックをスターター支援で解消",
+      "detail": "田園の村は食事1G＋宿4Gが必要ですが開始資金0Gです。市場価格を膨らませず、食事1回＋宿1泊（最低5G相当）を構造化初期支援として採用しました。"
+    },
+    {
+      "severity": "warning",
+      "title": "装備価格は性能に対して中程度の相関に留まる",
+      "detail": "価格性能Pearson=0.5619、同枠・同種でPareto劣後30件。槍ITM045は商品60Gと装備在庫160Gが衝突しています。特殊効果を数値化するまでは一括価格改変を行いません。"
+    },
+    {
+      "severity": "warning",
+      "title": "物理・魔法差はMP系未実装を分離して再測定が必要",
+      "detail": "全76エンカウントを固定・推奨Lv一致・4人混成で304,000戦実行。Lv帯外装備は修正済みですが、魔法はMP回復・消耗品が未構造化で、98件の暫定効果も除外されるため、原表の威力値を直接変更しません。"
+    },
+    {
+      "severity": "applied",
+      "title": "4人パーティー用の敵編成数補正をTier別に導入",
+      "detail": "等倍ではTier1〜8の平均勝率が82〜100%でした。Tier1を3倍、Tier2〜8を2倍、Tier9以降を等倍にし、中盤を概ね44〜78%へ移動。Tier10はLv24上限パーティーでも約5%のため、上限後レイドとして別調整対象に残します。"
+    },
+    {
+      "severity": "applied",
+      "title": "敵AI候補枯渇を決定的フォールバックで停止回避",
+      "detail": "MON-0076に無条件行動がない問題は通常攻撃へ安全退避。physicalPower表記もphysical_powerへ正規化し、未知コマンド9件・状態不一致5件は診断値として残します。"
+    },
+    {
+      "severity": "verified",
+      "title": "499候補を25SPで選ぶ専門化は構造上成立",
+      "detail": "Lv24供給25SPで、6プロファイルは21〜25件を取得。構造的到達不能は0件ですが、どのAIも選ばない候補が410件あるため、SP増量より再訓練手段と効用タグ整備を優先します。"
+    },
+    {
+      "severity": "warning",
+      "title": "NPC参照施設が2件未定義",
+      "detail": "LOC_FARM_BOARD（NPC003）とLOC_TRADE_DOCK（NPC015）が施設マスターにありません。現在は所属拠点へ安全に丸め、未知位置や瞬間移動を発生させません。"
+    },
+    {
+      "severity": "blocker",
+      "title": "既存スキル公開カタログは破損したまま",
+      "detail": "8分割gzipのSHA-256がmanifestと一致せず、展開も失敗します（e63d703b22281dea386c6eb4a2d0893216cdc16addb22b8c2da7ac077fc709e6）。今回はsrcを変更しない条件のため、独立したシミュレーション画面を公開し、本編JSON経路は別修正事項として残します。"
+    }
+  ]
+}

@@ -3,7 +3,11 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "trpg:test": "node --test tools/trpg-sim/test/*.test.mjs",
+    "trpg:check": "npm run trpg:test",
+    "trpg:simulate": "npm run trpg:test && node tools/trpg-sim/cli.mjs",
+    "trpg:preview": "node tools/trpg-sim/static-server.mjs"
   },
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.0",

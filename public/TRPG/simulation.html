@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101817" />
+  <meta name="description" content="TRPG（仮題）の100日自律世界・戦闘・成長・経済シミュレーション結果" />
+  <title>100日自律世界シミュレーション | TRPG（仮題）</title>
+  <link rel="stylesheet" href="/TRPG/simulation.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/TRPG(仮題)/" aria-label="TRPG（仮題）に戻る">
+      <span class="brand-mark" aria-hidden="true">火</span>
+      <span><small>SHIRANUI TRPG LAB</small>百日観測局</span>
+    </a>
+    <div class="header-meta">
+      <span id="runStatus" class="run-status" data-state="loading">読込中</span>
+      <span id="generatedAt">—</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="pageTitle">
+      <div class="hero-copy">
+        <p class="eyebrow">AUTONOMOUS WORLD / DAY 1—100</p>
+        <h1 id="pageTitle">プレイヤーが眠っていても、<br /><em>世界は進み続ける。</em></h1>
+        <p class="lede">
+          GOAPで動くNPC、時刻と因果で進む事件、モンテカルロ戦闘、スキル取得と市場経済を、
+          同じ100日間の中で検証した観測記録です。
+        </p>
+      </div>
+      <div class="hero-seal" aria-label="シミュレーション期間">
+        <span>SIMULATED</span><strong>100</strong><span>DAYS</span>
+      </div>
+    </section>
+
+    <section class="metrics" aria-label="検証概要">
+      <article><span>WORLD</span><strong id="metricWorld">—</strong><small>事件終端率</small></article>
+      <article><span>AGENTS</span><strong id="metricNpcs">—</strong><small>NPC</small></article>
+      <article><span>COMBAT</span><strong id="metricBattles">—</strong><small>模擬戦</small></article>
+      <article><span>SKILLS</span><strong id="metricSkills">—</strong><small>登録スキル</small></article>
+    </section>
+
+    <section class="observer-grid">
+      <article class="panel timeline-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="kicker">WORLD OBSERVER</p>
+            <h2>百日の世界線</h2>
+          </div>
+          <div class="legend" aria-label="グラフ凡例">
+            <span><i class="legend-active"></i>進行中</span>
+            <span><i class="legend-critical"></i>危機</span>
+            <span><i class="legend-terminal"></i>終端</span>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="worldChart" viewBox="0 0 900 260" role="img" aria-labelledby="worldChartTitle worldChartDesc">
+            <title id="worldChartTitle">100日間の事件状態推移</title>
+            <desc id="worldChartDesc">日ごとの進行中、危機、終端事件数を示します。</desc>
+          </svg>
+        </div>
+        <div class="day-controls">
+          <button id="playButton" class="play-button" type="button" aria-label="日付を自動再生">▶</button>
+          <label for="daySlider">DAY <output id="dayOutput" for="daySlider">1</output></label>
+          <input id="daySlider" type="range" min="1" max="100" value="1" step="1" />
+        </div>
+      </article>
+
+      <aside class="panel day-panel" aria-live="polite">
+        <p class="kicker">FIELD NOTE</p>
+        <div class="day-number"><span>DAY</span><strong id="selectedDay">01</strong></div>
+        <dl class="day-stats">
+          <div><dt>進行中</dt><dd id="dayActive">—</dd></div>
+          <div><dt>危機</dt><dd id="dayCritical">—</dd></div>
+          <div><dt>終端</dt><dd id="dayTerminal">—</dd></div>
+          <div><dt>NPC移動</dt><dd id="dayMovements">—</dd></div>
+          <div><dt>GOAP計画</dt><dd id="dayPlans">—</dd></div>
+        </dl>
+        <div class="day-events">
+          <h3>状態遷移</h3>
+          <ul id="dayEvents"><li class="muted">この日の遷移はありません。</li></ul>
+        </div>
+      </aside>
+    </section>
+
+    <section class="split-grid">
+      <article class="panel combat-panel">
+        <div class="panel-heading">
+          <div><p class="kicker">MONTE CARLO COMBAT</p><h2>戦闘バランス</h2></div>
+          <span id="battleRunCount" class="datum-chip">— runs</span>
+        </div>
+        <p class="panel-note">ビルドごとの勝率と決着ターン。帯が中央に近いほど、想定難度に適合します。</p>
+        <div id="battleRows" class="battle-rows"></div>
+      </article>
+
+      <article class="panel progression-panel">
+        <div class="panel-heading">
+          <div><p class="kicker">GROWTH & ECONOMY</p><h2>成長と暮らし</h2></div>
+        </div>
+        <div id="profileRows" class="profile-rows"></div>
+        <div class="economy-strip">
+          <div><span>開始資金</span><strong id="startingGold">—</strong></div>
+          <div><span>最低食費</span><strong id="minimumFood">—</strong></div>
+          <div><span>最低宿代</span><strong id="minimumLodging">—</strong></div>
+          <div><span>取得不能</span><strong id="unreachableSkills">—</strong></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel findings-panel">
+      <div class="panel-heading">
+        <div><p class="kicker">TUNING DECISIONS</p><h2>採用した調整と残課題</h2></div>
+        <span id="findingCount" class="datum-chip">— items</span>
+      </div>
+      <ol id="findings" class="findings"></ol>
+    </section>
+
+    <section class="method-note">
+      <p><strong>再現性:</strong> 同じスナップショット・seed・設定から同じ結果を生成します。</p>
+      <p id="sourceNote">出典を読み込んでいます。</p>
+      <a href="/TRPG/simulation-report.json">検証JSONを開く →</a>
+    </section>
+  </main>
+
+  <footer>
+    <span>TRPG（仮題） / Autonomous Simulation Observatory</span>
+    <a href="/TRPG(仮題)/">本編へ戻る</a>
+  </footer>
+
+  <template id="emptyTemplate">
+    <div class="empty-state"><strong>観測データを表示できませんでした。</strong><span>simulation-report.json を確認してください。</span></div>
+  </template>
+  <script type="module" src="/TRPG/simulation.js"></script>
+</body>
+</html>
