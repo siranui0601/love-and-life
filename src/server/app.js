@@ -1,9 +1,53 @@
+import crypto from "crypto";
+import fs from "fs";
 import express from "express";
 import path from "path";
 import { mountFloodNoHandSoccerVisualRoutes } from "./nohand-soccer/visual-cache-flood.js";
 
+const TRPG_SKILL_CATALOG_PART_COUNT = 8;
+const TRPG_SKILL_CATALOG_SHA256 =
+  "37504f840d8710a9ac967bd76cb1613ae1b6a89579c29ae815bdf3da052dd448";
+
+function createTrpgSkillCatalogLoader() {
+  const dataDirectory = path.join(process.cwd(), "public/TRPG/data");
+  const partPaths = Array.from(
+    { length: TRPG_SKILL_CATALOG_PART_COUNT },
+    (_, index) =>
+      path.join(
+        dataDirectory,
+        `skills.beta.json.gz.b64.part-${String(index + 1).padStart(2, "0")}`
+      )
+  );
+
+  let cachedGzip = null;
+
+  return function getTrpgSkillCatalogGzip() {
+    if (cachedGzip) return cachedGzip;
+
+    const encodedCatalog = partPaths
+      .map((partPath) => fs.readFileSync(partPath, "utf8").trim())
+      .join("");
+
+    const gzipCatalog = Buffer.from(encodedCatalog, "base64");
+    const actualSha256 = crypto
+      .createHash("sha256")
+      .update(gzipCatalog)
+      .digest("hex");
+
+    if (actualSha256 !== TRPG_SKILL_CATALOG_SHA256) {
+      throw new Error(
+        `TRPG skill catalog checksum mismatch: expected ${TRPG_SKILL_CATALOG_SHA256}, got ${actualSha256}`
+      );
+    }
+
+    cachedGzip = gzipCatalog;
+    return cachedGzip;
+  };
+}
+
 export function createApp() {
   const app = express();
+  const getTrpgSkillCatalogGzip = createTrpgSkillCatalogLoader();
 
   // JSON
   app.use(express.json({ limit: "12mb" }));
@@ -13,20 +57,19 @@ export function createApp() {
   app.use(express.static("public"));
 
   // TRPG(仮題) スキルJSON β版。
-  // Git上ではgzip実体を保持し、公開URLでは通常のJSONとして参照できるようにする。
-  const trpgSkillCatalogPath = path.join(
-    process.cwd(),
-    "public/TRPG/data/skills.beta.json.gz"
-  );
-
+  // リポジトリ内ではgzipをbase64分割して保持し、公開URLでは通常のJSONとして返す。
   app.get("/TRPG/data/skills.beta.json", (req, res, next) => {
-    res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.setHeader("Content-Encoding", "gzip");
-    res.setHeader("Cache-Control", "public, max-age=300");
-    res.setHeader("Vary", "Accept-Encoding");
-    res.sendFile(trpgSkillCatalogPath, (error) => {
-      if (error) next(error);
-    });
+    try {
+      const gzipCatalog = getTrpgSkillCatalogGzip();
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Content-Encoding", "gzip");
+      res.setHeader("Content-Length", String(gzipCatalog.length));
+      res.setHeader("Cache-Control", "public, max-age=300");
+      res.setHeader("Vary", "Accept-Encoding");
+      res.send(gzipCatalog);
+    } catch (error) {
+      next(error);
+    }
   });
 
   // 部分ツイートの新しい画像パス(/2D画像)を既存素材ディレクトリへ紐づける
@@ -55,8 +98,7 @@ export function createApp() {
   app.use(literaryClubPath, literaryClubAssets);
   app.use(literaryClubEncodedPath, literaryClubAssets);
 
-
-    // 部分ツイートを /部分ツイート で配信
+  // 部分ツイートを /部分ツイート で配信
   const partialTweetPath = "/部分ツイート";
   const partialTweetEncodedPath = encodeURI(partialTweetPath);
   const partialTweetAssets = express.static(
