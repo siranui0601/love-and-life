@@ -1,4 +1,5 @@
 const DATA_URL = "/TRPG/data/skills.beta.json";
+const HEALTH_URL = "/TRPG/data/skills.beta.health.json";
 
 const elements = {
   loadStatus: document.querySelector("#loadStatus"),
@@ -49,12 +50,38 @@ function findSkill(query) {
   ) || null;
 }
 
-async function loadCatalog() {
+async function fetchJson(url, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(DATA_URL, { cache: "no-cache" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    catalog = await response.json();
+    const response = await fetch(url, {
+      cache: "no-cache",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    const body = await response.text();
+    if (!response.ok) {
+      let detail = body.slice(0, 240);
+      try {
+        detail = JSON.parse(body)?.error || detail;
+      } catch (_) {
+        // Keep the short text response for diagnostics.
+      }
+      throw new Error(`HTTP ${response.status}${detail ? `: ${detail}` : ""}`);
+    }
+    return JSON.parse(body);
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
 
+async function loadCatalog() {
+  elements.loadStatus.classList.remove("error");
+  try {
+    const health = await fetchJson(HEALTH_URL, 8000);
+    if (!health.ok) throw new Error(health.error || "ヘルスチェックに失敗しました");
+
+    catalog = await fetchJson(DATA_URL, 20000);
     if (!Array.isArray(catalog.skills) || !catalog.runtime?.commands) {
       throw new Error("スキルカタログ形式が不正です");
     }
@@ -63,20 +90,24 @@ async function loadCatalog() {
     elements.enabled.textContent = catalog.summary.enabled.toLocaleString("ja-JP");
     elements.runtimeReady.textContent = (catalog.summary.implementation.runtime_ready || 0).toLocaleString("ja-JP");
     elements.customHandlers.textContent = (catalog.summary.implementation.custom_handler_required || 0).toLocaleString("ja-JP");
-    elements.loadStatus.textContent = `schema ${catalog.schemaVersion} / catalog ${catalog.catalogVersion} を読み込みました。`;
+    elements.loadStatus.textContent = `schema ${catalog.schemaVersion} / catalog ${catalog.catalogVersion} / ${health.bytes.toLocaleString("ja-JP")} bytes を読み込みました。`;
 
     const encore = catalog.skills.find((skill) => skill.name === "アンコール");
     renderSkill(encore || catalog.skills.find((skill) => skill.enabled));
   } catch (error) {
     console.error("TRPG skill catalog load failed", error);
-    elements.loadStatus.textContent = `読み込みに失敗しました: ${error.message}`;
+    const reason = error?.name === "AbortError" ? "タイムアウト" : error.message;
+    elements.loadStatus.textContent = `読み込みに失敗しました: ${reason}`;
     elements.loadStatus.classList.add("error");
   }
 }
 
 elements.search?.addEventListener("input", (event) => {
   const query = event.currentTarget.value;
-  if (!query.trim()) return;
+  if (!query.trim()) {
+    renderSkill(catalog?.skills.find((skill) => skill.name === "アンコール"));
+    return;
+  }
   renderSkill(findSkill(query));
 });
 
