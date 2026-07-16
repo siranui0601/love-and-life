@@ -1,0 +1,32 @@
+{
+  "game": "TRPG(仮題)",
+  "schemaVersion": "0.1.0-beta",
+  "catalogVersion": "4.1.0-beta",
+  "publicJsonUrl": "/TRPG/data/skills.beta.json",
+  "schemaUrl": "/TRPG/data/skills.beta.schema.json",
+  "storage": {
+    "encoding": "gzip+base64-shards",
+    "partCount": 8,
+    "partNamePattern": "skills.beta.json.gz.b64.part-XX",
+    "gzipBytes": 99450,
+    "uncompressedBytes": 1167498,
+    "sha256": "37504f840d8710a9ac967bd76cb1613ae1b6a89579c29ae815bdf3da052dd448"
+  },
+  "summary": {
+    "total": 1141,
+    "enabled": 986,
+    "classifications": {
+      "basic_level_up": 63,
+      "flag_unlocked": 436,
+      "equipment_granted": 162,
+      "event_granted": 325,
+      "deleted": 113,
+      "non_skill": 42
+    },
+    "implementation": {
+      "runtime_ready": 890,
+      "custom_handler_required": 96,
+      "removed": 155
+    }
+  }
+}
