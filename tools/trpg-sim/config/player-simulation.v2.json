@@ -32,7 +32,7 @@
     "travelEncounterBaseChance": 0.05,
     "defeatRecoveryMinutes": 360,
     "maxActions": 5000,
-    "soloCombatPowerMultiplier": 1.55,
+    "soloCombatPowerMultiplier": 1.90,
     "missionPreparationBonusPerEvidence": 0.45,
     "missionPreparationBonusMax": 2.25,
     "wildEncounterCooldownMinutes": 540,
