@@ -13,36 +13,48 @@ function stable(value) {
   return JSON.stringify(value, (_key, item) => item instanceof Set ? [...item].sort() : item);
 }
 
-function worldKey(state) {
-  return stable({
-    level: state.player.level,
-    skills: state.player.skills,
-    gold: state.player.gold,
-    location: state.player.location,
-    facilityId: state.player.facilityId,
-    equipment: state.player.equipment,
-    items: state.player.inventory.items,
-    progress: state.progress,
-    worldFlags: state.worldFlags,
-    troubles: Object.fromEntries(Object.entries(state.troubles).map(([id, runtime]) => [id, runtime.status])),
-  });
+function readPath(root, path) {
+  let value = root;
+  for (const segment of String(path ?? "").split(".").filter(Boolean)) {
+    if (value == null) return undefined;
+    value = value[segment];
+  }
+  return value;
 }
 
-function levelKey(state) {
-  return stable({ level: state.player.level, sp: state.player.sp, skills: state.player.skills, equipment: state.player.equipment });
+function conditionDependencies(skills) {
+  const byKey = new Map();
+  const fields = ["revealConditions", "eventUnlockConditions", "grantConditions", "learnConditions"];
+  for (const skill of skills) {
+    for (const field of fields) {
+      for (const leaf of flattenConditionLeaves(skill[field])) {
+        if (!leaf?.scope || !leaf?.path) continue;
+        const key = `${leaf.scope}:${leaf.path}`;
+        if (!byKey.has(key)) byKey.set(key, { scope: leaf.scope, path: leaf.path });
+      }
+    }
+  }
+  return [...byKey.values()].sort((left, right) => `${left.scope}:${left.path}`.localeCompare(`${right.scope}:${right.path}`));
 }
 
 function ensureIndex(state, skills) {
   if (state.skillState.index) return state.skillState.index;
   const usable = skills.filter((skill) => !["non_skill", "none", "design_only", "deleted"].includes(String(skill.acquisitionCode ?? "")));
+  const level = usable.filter((skill) => LEVEL_CODES.has(skill.acquisitionCode));
+  const flags = usable.filter((skill) => skill.acquisitionCode === "flag_unlocked");
+  const events = usable.filter((skill) => String(skill.acquisitionCode ?? "").includes("event") && (skill.grantConditions != null || skill.eventUnlockConditions != null));
+  const automatic = usable.filter((skill) => AUTO_CODES.has(skill.acquisitionCode));
+  const revealWorld = usable.filter((skill) => (skill.eventUnlockConditions != null || String(skill.acquisitionCode ?? "").includes("event")) && skill.revealConditions != null);
+  const revealLevel = usable.filter((skill) => LEVEL_CODES.has(skill.acquisitionCode) && skill.revealConditions != null);
   const index = {
     byId: new Map(usable.map((skill) => [skill.id, skill])),
-    level: usable.filter((skill) => LEVEL_CODES.has(skill.acquisitionCode)),
-    flags: usable.filter((skill) => skill.acquisitionCode === "flag_unlocked"),
-    events: usable.filter((skill) => String(skill.acquisitionCode ?? "").includes("event") && (skill.grantConditions != null || skill.eventUnlockConditions != null)),
-    automatic: usable.filter((skill) => AUTO_CODES.has(skill.acquisitionCode)),
-    revealWorld: usable.filter((skill) => (skill.eventUnlockConditions != null || String(skill.acquisitionCode ?? "").includes("event")) && skill.revealConditions != null),
-    revealLevel: usable.filter((skill) => LEVEL_CODES.has(skill.acquisitionCode) && skill.revealConditions != null),
+    level,
+    flags,
+    events,
+    automatic,
+    revealWorld,
+    revealLevel,
+    worldDependencies: conditionDependencies([...flags, ...events, ...automatic, ...revealWorld]),
   };
   state.skillState.index = index;
   return index;
@@ -61,6 +73,18 @@ export function skillContextV2(state, data) {
     self: { hpRatio: state.player.hpRatio, mpRatio: state.player.mpRatio, ailments: new Set(), modifiers: {}, specialStates: new Set() },
     field: { locationId: state.player.location, facilityId: state.player.facilityId, tags: new Set() },
   };
+}
+
+function worldKey(state, index, context) {
+  return stable({
+    skills: state.player.skills,
+    equipment: state.player.equipment,
+    values: index.worldDependencies.map((dependency) => [dependency.scope, dependency.path, readPath(context[dependency.scope], dependency.path)]),
+  });
+}
+
+function levelKey(state) {
+  return stable({ level: state.player.level, sp: state.player.sp, skills: state.player.skills, equipment: state.player.equipment });
 }
 
 function skillScore(skill, profile) {
@@ -103,13 +127,12 @@ function refreshEquipmentGrants(state, data) {
   state.skillState.equipmentActive = active;
 }
 
-function refreshWorldRules(state, data, index, context) {
+function refreshWorldRules(state, index, context) {
   for (const skill of index.revealWorld) if (!state.skillState.revealed.has(skill.id) && evaluateConditions(skill.revealConditions, context)) mark(state, "revealed", "revealedAt", skill, "SKILL_REVEALED");
   for (const skill of index.flags) if (!state.skillState.flagUnlocked.has(skill.id) && evaluateConditions(skill.eventUnlockConditions, context)) mark(state, "flagUnlocked", "flagUnlockedAt", skill, "SKILL_FLAG_UNLOCKED");
   for (const skill of index.events) {
     if (state.player.skills.has(skill.id)) continue;
-    const prerequisitesMet = prerequisitesOf(skill).every((id) => state.player.skills.has(id));
-    if (!prerequisitesMet) continue;
+    if (!prerequisitesOf(skill).every((id) => state.player.skills.has(id))) continue;
     const grantConditions = skill.grantConditions != null && evaluateConditions(skill.grantConditions, context);
     const flagUnlocked = skill.eventUnlockConditions != null && evaluateConditions(skill.eventUnlockConditions, context);
     const learnedConditions = evaluateConditions(skill.learnConditions, context);
@@ -157,12 +180,12 @@ function refreshLevelRules(state, index, context, profile) {
 
 export function refreshSkillStateV2(state, data, skills, profile) {
   const index = ensureIndex(state, skills);
-  const nextWorldKey = worldKey(state);
-  const nextLevelKey = levelKey(state);
   refreshEquipmentGrants(state, data);
   let context = skillContextV2(state, data);
+  const nextWorldKey = worldKey(state, index, context);
+  const nextLevelKey = levelKey(state);
   if (state.skillState.lastWorldKey !== nextWorldKey) {
-    refreshWorldRules(state, data, index, context);
+    refreshWorldRules(state, index, context);
     state.skillState.lastWorldKey = nextWorldKey;
     context = skillContextV2(state, data);
   }
