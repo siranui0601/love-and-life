@@ -1,0 +1,20 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { runIntegratedPlayerSimulationSuiteV2 } from "./lib/player-suite-v2.mjs";
+import { renderPlayerSimulationMarkdownV2 } from "./lib/player-report-v2.mjs";
+
+const root = path.dirname(fileURLToPath(import.meta.url));
+const reportDir = path.join(root, "reports");
+const siteDir = path.resolve(root, "..", "..", "public", "TRPG");
+fs.mkdirSync(reportDir, { recursive: true });
+fs.mkdirSync(siteDir, { recursive: true });
+const report = await runIntegratedPlayerSimulationSuiteV2();
+const markdown = renderPlayerSimulationMarkdownV2(report);
+const json = JSON.stringify(report, null, 2) + "\n";
+fs.writeFileSync(path.join(reportDir, "player-v2-latest.json"), json);
+fs.writeFileSync(path.join(reportDir, "player-v2-latest.md"), markdown);
+fs.writeFileSync(path.join(siteDir, "player-simulation-v2-report.json"), json);
+console.log(markdown);
+console.log("PLAYER_SIM_V2_QUALITY=" + (report.quality.passed ? "PASS" : "BLOCKED"));
+if (!report.quality.passed) process.exitCode = 1;
