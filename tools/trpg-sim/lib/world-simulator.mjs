@@ -1,6 +1,16 @@
 import { createHash } from "node:crypto";
 import { planDijkstra } from "./goap.mjs";
 import {
+  auditNpcLifeSimulation,
+  completeNpcLifeTick,
+  createNpcLifeEngine,
+  finalizeNpcLifeEngine,
+  isNpcLifeEligible,
+  npcRandom,
+  prepareNpcLifeTick,
+  settleNpcLifeAtEnd,
+} from "./npc-life-engine.mjs";
+import {
   TERMINAL_TROUBLE_STATES,
   TIME_SLOTS,
   createSeededRandom,
@@ -17,6 +27,7 @@ export const DEFAULT_WORLD_TUNING = Object.freeze({
   neutralMitigationProbability: 0.52,
   resolutionDifficultyScale: 1,
   difficultyScaleByTrouble: Object.freeze({}),
+  playerInterventionMode: false,
 });
 
 const LARGE_SCALE_TROUBLES = new Set(["T13", "T15", "T16", "T17", "T18", "T19"]);
@@ -85,6 +96,9 @@ function initialTroubleState(trouble, tuning) {
     status: "scheduled",
     resolutionProgress: 0,
     escalationProgress: 0,
+    casualtyMitigation: 0,
+    lifeResolutionProgress: 0,
+    lifeEscalationProgress: 0,
     resolutionThreshold: eventDifficulty(trouble, tuning),
     chainPressure: 0,
     gate: null,
@@ -288,8 +302,10 @@ function contributeToTrouble(runtime, npc, npcState, trouble, time) {
   const disposition = contributionDisposition(npc, runtime.rng, runtime.tuning);
   const amount = Number((npc.importanceWeight * (0.82 + runtime.rng() * 0.36)).toFixed(6));
   const troubleState = runtime.troubleStates[trouble.id];
-  if (disposition === "mitigate") troubleState.resolutionProgress += amount;
-  else troubleState.escalationProgress += amount;
+  if (disposition === "mitigate") {
+    if (runtime.tuning.playerInterventionMode) troubleState.resolutionProgress += amount;
+    else troubleState.casualtyMitigation = Number(((troubleState.casualtyMitigation ?? 0) + amount).toFixed(6));
+  } else troubleState.escalationProgress += amount;
   const contribution = {
     npcId: npc.id,
     troubleId: trouble.id,
@@ -302,6 +318,53 @@ function contributeToTrouble(runtime, npc, npcState, trouble, time) {
   troubleState.contributors.push(contribution);
   npcState.contributions.push(contribution);
   npcState.status = `${disposition}:${trouble.id}`;
+  runtime.contributions.push(contribution);
+  return true;
+}
+
+const NPC_LIFE_AUTONOMOUS_LOCAL_TROUBLES = new Set(["T01", "T03", "T04", "T09"]);
+
+function applyNpcLifeCrisisAction(runtime, intent, time) {
+  const trouble = runtime.model.troubleById[intent.troubleId];
+  const troubleState = runtime.troubleStates[intent.troubleId];
+  if (!trouble || !troubleState || !["active", "critical"].includes(troubleState.status)) return false;
+  const key = `${intent.npc.id}:${intent.troubleId}:${time.day}:${intent.action}`;
+  if (runtime.lifeContributionKeys.has(key)) return false;
+  runtime.lifeContributionKeys.add(key);
+
+  const mitigating = intent.action !== "escalate-crisis";
+  if (mitigating && !NPC_LIFE_AUTONOMOUS_LOCAL_TROUBLES.has(intent.troubleId)) return false;
+  const cap = troubleState.resolutionThreshold * (mitigating ? 0.35 : 0.25);
+  const used = mitigating
+    ? Number(troubleState.lifeResolutionProgress ?? 0)
+    : Number(troubleState.lifeEscalationProgress ?? 0);
+  if (used >= cap - 1e-9) return false;
+  const base = 0.035 + intent.npc.importanceWeight * 0.025;
+  const variance = 0.85 + npcRandom(runtime.seed, intent.npc.id, time.day, time.phaseIndex, `crisis-action:${intent.troubleId}`) * 0.3;
+  const amount = Number(Math.min(base * variance, cap - used).toFixed(6));
+  if (!(amount > 0)) return false;
+  if (mitigating) {
+    if (runtime.tuning.playerInterventionMode) troubleState.resolutionProgress += amount;
+    else troubleState.casualtyMitigation = Number(((troubleState.casualtyMitigation ?? 0) + amount).toFixed(6));
+    troubleState.lifeResolutionProgress = used + amount;
+  } else {
+    troubleState.escalationProgress += amount;
+    troubleState.lifeEscalationProgress = used + amount;
+  }
+  const contribution = {
+    npcId: intent.npc.id,
+    troubleId: trouble.id,
+    disposition: mitigating ? "mitigate" : "escalate",
+    amount,
+    day: time.day,
+    phaseIndex: time.phaseIndex,
+    location: intent.state.location,
+    facilityId: intent.state.position?.facilityId ?? null,
+    source: "npc-life-engine",
+    action: intent.action,
+  };
+  troubleState.contributors.push(contribution);
+  intent.state.contributions.push(contribution);
   runtime.contributions.push(contribution);
   return true;
 }
@@ -347,6 +410,7 @@ function beginFirstRoute(runtime, npcState, planCandidate, time) {
 
 function actNpc(runtime, npc, npcState, time) {
   settleNpcTravel(runtime, npcState, time);
+  if (!isNpcLifeEligible(npcState)) return;
   if (npcState.travel) return;
 
   if (npc.behaviorType === "routine") {
@@ -400,7 +464,8 @@ function actNpc(runtime, npc, npcState, time) {
   }
 }
 
-function canAutonomouslyResolve(troubleState) {
+function canAutonomouslyResolve(troubleState, tuning = DEFAULT_WORLD_TUNING) {
+  if (!tuning.playerInterventionMode) return false;
   return troubleState.resolutionProgress >= troubleState.resolutionThreshold &&
     troubleState.resolutionProgress > troubleState.escalationProgress + 0.5;
 }
@@ -409,7 +474,7 @@ function progressTroubles(runtime, time) {
   for (const trouble of runtime.model.troubles) {
     const state = runtime.troubleStates[trouble.id];
     if (state.status === "active" && beforeOrAt(time.day, time.phaseIndex, trouble.deadlineDay, trouble.deadlinePhase)) {
-      if (canAutonomouslyResolve(state)) {
+      if (canAutonomouslyResolve(state, runtime.tuning)) {
         transitionTrouble(runtime, trouble, "resolved", time, "autonomous-goap-threshold");
         continue;
       }
@@ -434,7 +499,7 @@ function timelineConditionMet(runtime, entry) {
       const trouble = runtime.model.troubleById[id];
       if (!state || !trouble) return false;
       if (isFailureLike(state.status)) return true;
-      return state.status === "active" && entry.day >= trouble.deadlineDay && !canAutonomouslyResolve(state);
+      return state.status === "active" && entry.day >= trouble.deadlineDay && !canAutonomouslyResolve(state, runtime.tuning);
     });
   }
   return true;
@@ -481,7 +546,7 @@ function normalizeWorldTuning(tuning = {}) {
 
 function createRuntime(model, seed, tuning) {
   const normalizedTuning = normalizeWorldTuning(tuning);
-  return {
+  const runtime = {
     model,
     seed: String(seed),
     tuning: normalizedTuning,
@@ -500,6 +565,7 @@ function createRuntime(model, seed, tuning) {
       capitalFallen: false,
     },
     contributionKeys: new Set(),
+    lifeContributionKeys: new Set(),
     appliedChainIds: new Set(),
     appliedChains: [],
     worldEffects: [],
@@ -514,6 +580,13 @@ function createRuntime(model, seed, tuning) {
     ticks: [],
     stats: { goapPlans: 0, goapWaits: 0, routineDecisions: 0 },
   };
+  runtime.npcLife = createNpcLifeEngine({
+    model,
+    seed,
+    npcStates: runtime.npcStates,
+    departures: runtime.departures,
+  });
+  return runtime;
 }
 
 function terminalStateCounts(troubleStates) {
@@ -525,10 +598,23 @@ function terminalStateCounts(troubleStates) {
 function finalizeRuntime(runtime, endDay) {
   const finalAbsoluteHour = (endDay - 1) * 24 + 14;
   const finalTime = { day: endDay, phaseIndex: 3, hour: 24, absoluteHour: finalAbsoluteHour };
+  const movementStart = runtime.movements.length;
   for (const npcState of Object.values(runtime.npcStates)) settleNpcTravel(runtime, npcState, finalTime);
+  const endSettlement = settleNpcLifeAtEnd(runtime.npcLife, { time: finalTime });
+  const finalTick = runtime.ticks.at(-1);
+  if (finalTick) {
+    finalTick.movementsCompleted += runtime.movements.length - movementStart;
+    finalTick.localMovementsCompleted += endSettlement.localMovementsCompleted;
+    finalTick.travelingNpcs = endSettlement.population.traveling;
+  }
+  const npcLife = finalizeNpcLifeEngine(runtime.npcLife);
 
   const result = {
-    schemaVersion: "1.0.0",
+    schemaVersion: "2.0.0",
+    engineVersion: "living-world-v2",
+    rngVersion: "stateless-fnv1a32-v1",
+    simulationMode: "no-player",
+    rules: { npcMitigationCanResolve: false },
     seed: runtime.seed,
     tuning: runtime.tuning,
     start: { day: 1, hour: 10 },
@@ -540,6 +626,7 @@ function finalizeRuntime(runtime, endDay) {
       troubles: runtime.model.troubles.length,
       chains: runtime.model.chains.length,
       npcs: runtime.model.npcs.length,
+      facilities: runtime.model.facilities?.length ?? 0,
     },
     assumptions: runtime.model.assumptions,
     diagnostics: runtime.model.diagnostics,
@@ -558,12 +645,24 @@ function finalizeRuntime(runtime, endDay) {
     goapCandidateExhaustions: runtime.goapCandidateExhaustions,
     ticks: runtime.ticks,
     stats: runtime.stats,
+    npcTraces: npcLife.npcTraces,
+    lifeEvents: npcLife.lifeEvents,
+    knowledgeEvents: npcLife.knowledgeEvents,
+    decisionEvents: npcLife.decisionEvents,
+    localMovementEvents: npcLife.localMovementEvents,
+    populationByTick: npcLife.populationByTick,
+    activityCoverage: npcLife.activityCoverage,
+    npcLifeTraceFingerprint: npcLife.traceFingerprint,
     summary: {
       troubleStates: terminalStateCounts(runtime.troubleStates),
       terminalTroubles: Object.values(runtime.troubleStates).filter((state) => TERMINAL_TROUBLE_STATES.includes(state.status)).length,
       totalTroubles: runtime.model.troubles.length,
       npcContributors: new Set(runtime.contributions.map((entry) => entry.npcId)).size,
       movements: runtime.movements.length,
+      localMovements: npcLife.localMovementEvents.length,
+      knowledgeEvents: npcLife.knowledgeEvents.length,
+      lifeEvents: npcLife.lifeEvents.length,
+      activeNpcCoverage: npcLife.activityCoverage.coverage,
       appliedChains: runtime.appliedChains.length,
     },
   };
@@ -588,10 +687,31 @@ export function simulateWorld({ model = loadWorldModel(), seed = "world-default"
         absoluteHour: absoluteHour(day, slot.index),
       };
       const movementStart = runtime.movements.length;
+      const localMovementStart = runtime.npcLife.localMovementEvents.length;
       const transitionStart = runtime.eventTransitions.length;
       const planStart = runtime.stats.goapPlans;
+      const decisionStart = runtime.npcLife.decisionEvents.length;
       activateScheduledTroubles(runtime, time);
-      for (const npc of model.npcs) actNpc(runtime, npc, runtime.npcStates[npc.id], time);
+      for (const npc of [...model.npcs].sort((left, right) => left.id.localeCompare(right.id, "en"))) {
+        settleNpcTravel(runtime, runtime.npcStates[npc.id], time);
+      }
+      prepareNpcLifeTick(runtime.npcLife, {
+        time,
+        troubleStates: runtime.troubleStates,
+        worldFlags: runtime.worldFlags,
+      });
+      const lifeCrisisActions = completeNpcLifeTick(runtime.npcLife, {
+        time,
+        troubleStates: runtime.troubleStates,
+        worldFlags: runtime.worldFlags,
+      });
+      for (const decision of runtime.npcLife.decisionEvents.slice(decisionStart)) {
+        const npc = model.npcById[decision.npcId];
+        if (npc?.behaviorType === "routine") runtime.stats.routineDecisions += 1;
+        else if (decision.replanned) runtime.stats.goapPlans += 1;
+        if (["rest", "eat", "socialize", "work", "hide", "observe", "wait-no-route"].includes(decision.action)) runtime.stats.goapWaits += 1;
+      }
+      for (const intent of lifeCrisisActions) applyNpcLifeCrisisAction(runtime, intent, time);
       progressTroubles(runtime, time);
       recordTimeline(runtime, time);
       const counts = terminalStateCounts(runtime.troubleStates);
@@ -603,8 +723,9 @@ export function simulateWorld({ model = loadWorldModel(), seed = "world-default"
         active: counts.active ?? 0,
         critical: counts.critical ?? 0,
         terminal: (counts.failed ?? 0) + (counts.resolved ?? 0) + (counts.suppressed ?? 0),
-        travelingNpcs: Object.values(runtime.npcStates).filter((state) => state.travel).length,
+        travelingNpcs: Object.values(runtime.npcStates).filter((state) => state.travel || state.localTravel).length,
         movementsCompleted: runtime.movements.length - movementStart,
+        localMovementsCompleted: runtime.npcLife.localMovementEvents.length - localMovementStart,
         transitions: runtime.eventTransitions.length - transitionStart,
         goapPlans: runtime.stats.goapPlans - planStart,
       });
@@ -627,9 +748,10 @@ export function auditWorldSimulation(result, model) {
   const gateViolations = [];
   const missingChainApplications = [];
   const structuralViolations = [];
+  const unauthorizedTroubleResolutionViolations = [];
 
   if (result.tickCount !== 400) structuralViolations.push({ code: "TICK_COUNT", expected: 400, actual: result.tickCount });
-  for (const [key, expected] of Object.entries({ routes: 15, troubles: 19, chains: 23, npcs: 110 })) {
+  for (const [key, expected] of Object.entries({ routes: 15, troubles: 19, chains: 23, npcs: 110, facilities: 103 })) {
     if (result.modelCounts[key] !== expected) structuralViolations.push({ code: `COUNT_${key.toUpperCase()}`, expected, actual: result.modelCounts[key] });
   }
 
@@ -673,6 +795,12 @@ export function auditWorldSimulation(result, model) {
     .filter((state) => !TERMINAL_TROUBLE_STATES.includes(state.status))
     .map((state) => ({ troubleId: state.id, status: state.status }));
 
+  if (!result.tuning?.playerInterventionMode) {
+    for (const state of Object.values(result.troubleStates)) {
+      if (state.status === "resolved") unauthorizedTroubleResolutionViolations.push({ troubleId: state.id, status: state.status });
+    }
+  }
+
   const sortedTimeline = [...result.timelineLog].sort(chronologicalCompare);
   for (let index = 0; index < result.timelineLog.length; index += 1) {
     if (result.timelineLog[index].timelineId !== sortedTimeline[index].timelineId) {
@@ -700,6 +828,7 @@ export function auditWorldSimulation(result, model) {
     if (shouldApply && !applied.has(chain.id)) missingChainApplications.push(chain.id);
   }
 
+  const lifeAudit = auditNpcLifeSimulation(result, model);
   const categories = {
     teleports,
     unknownLocations,
@@ -711,6 +840,8 @@ export function auditWorldSimulation(result, model) {
     gateViolations,
     missingChainApplications,
     structuralViolations,
+    unauthorizedTroubleResolutionViolations,
+    ...lifeAudit,
   };
   return {
     ok: Object.values(categories).every((entries) => entries.length === 0),
@@ -734,6 +865,12 @@ export function stableSimulationFingerprint(result) {
     chains: result.appliedChains.map((chain) => chain.chainId),
     movements: result.movements,
     contributions: result.contributions,
+    npcLifeTraceFingerprint: result.npcLifeTraceFingerprint,
+    lifeEvents: result.lifeEvents,
+    knowledgeEvents: result.knowledgeEvents,
+    localMovementEvents: result.localMovementEvents,
+    populationByTick: result.populationByTick,
+    activityCoverage: result.activityCoverage,
   };
   return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
 }

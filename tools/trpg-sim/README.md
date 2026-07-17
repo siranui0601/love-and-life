@@ -37,6 +37,9 @@ npm run trpg:test
 `trpg:simulate` writes the full machine-readable result and a compact public
 report used by `public/TRPG/simulation.html`.
 
+The no-player NPC state, rumor propagation, movement, lifecycle, and
+determinism requirements are defined in [`LIVING_WORLD.md`](./LIVING_WORLD.md).
+
 The default run performs two 100-seed Day1–100 world sweeps plus 304,000
 combat trials across all 76 encounters: fixed comparison builds,
 recommended-level matched builds, and four-character parties. Run

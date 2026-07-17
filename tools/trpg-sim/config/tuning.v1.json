@@ -1,12 +1,13 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "world": {
+    "playerInterventionMode": false,
     "neutralMitigationProbability": 0.58,
     "resolutionDifficultyScale": 0.6,
     "difficultyScaleByTrouble": {
       "T13": 0.92
     },
-    "selectionReason": "16-point grid search plus a dedicated T13 branch calibration: increases small-event diversity while retaining both late-game routes"
+    "selectionReason": "No-player contract: NPC actions alter casualties, evacuation and knowledge propagation but never resolve authored troubles; deterministic source fates drive the 100-day failure world"
   },
   "economy": {
     "starterPackage": {

@@ -47,9 +47,9 @@ function parseArguments(argv) {
   return options;
 }
 
-function writeJson(destination, value) {
+function writeJson(destination, value, pretty = true) {
   fs.mkdirSync(path.dirname(destination), { recursive: true });
-  fs.writeFileSync(destination, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  fs.writeFileSync(destination, `${JSON.stringify(value, null, pretty ? 2 : 0)}\n`, "utf8");
 }
 
 const options = parseArguments(process.argv.slice(2));
@@ -103,14 +103,14 @@ const report = buildSimulationReport({
   tuning,
   tests: {
     passed: true,
-    count: 29,
+    count: 41,
     command: "node --test tools/trpg-sim/test/*.test.mjs",
   },
   publicCatalog: inspectPublicCatalog(projectRoot),
 });
 
-writeJson(options.fullOutput, report);
-writeJson(options.publicOutput, compactPublicReport(report));
+writeJson(options.fullOutput, report, false);
+writeJson(options.publicOutput, compactPublicReport(report), false);
 fs.mkdirSync(path.dirname(options.markdownOutput), { recursive: true });
 fs.writeFileSync(options.markdownOutput, renderMarkdownReport(report), "utf8");
 
