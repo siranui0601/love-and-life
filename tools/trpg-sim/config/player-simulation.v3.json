@@ -1,5 +1,5 @@
 {
-  "version": "3.0.1",
+  "version": "3.0.2",
   "seedsPerProfile": 4,
   "baseline": {
     "startingGold": 0,
@@ -74,6 +74,11 @@
     "crisisRumorResponseRateMin": 0.80,
     "staleEscalationAfterResolutionMax": 0,
     "unrelatedNpcReplanMax": 0,
-    "npcResolutionAuthorityViolationMax": 0
+    "npcResolutionAuthorityViolationMax": 0,
+    "npcPlanExecutionRateMin": 0.95,
+    "npcResolutionPlanChangeRateMin": 0.90,
+    "npcStaleCrisisPlanMax": 0,
+    "npcRoleMismatchMax": 0,
+    "npcImpossiblePlanMax": 0
   }
 }
