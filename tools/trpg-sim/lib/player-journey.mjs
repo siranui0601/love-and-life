@@ -537,7 +537,12 @@ function addExperience(state, amount, source, data, skills, profile) {
   if (!gain) return;
   state.player.exp += gain;
   state.progress.experience.total += gain;
-  const sourceType = source.startsWith("battle:") ? "battle" : source.startsWith("mission:MSN-T") ? "specialMission" : source.startsWith("mission:") ? "permanentMission" : "other";
+  const missionId = source.startsWith("mission:") ? source.slice("mission:".length) : null;
+  const sourceType = source.startsWith("battle:")
+    ? "battle"
+    : missionId
+      ? state.catalog.byId.get(missionId)?.kind === "special" ? "specialMission" : "permanentMission"
+      : "other";
   inc(state.progress, `experience.bySource.${sourceType}`, gain);
   state.history.push({ type: "EXP_GAIN", minute: state.absoluteMinute, amount: gain, source, sourceType });
   while (state.player.level < 24 && state.player.exp >= experienceToNextLevel(state.player.level)) {
@@ -693,7 +698,7 @@ function rewards(state, data, result, key, skills, profile) {
   result.monsterIds.forEach((id, index) => {
     const monster = data.monsterById.get(id);
     if (!monster) return;
-    exp += Number(monster.exp ?? 0);
+    exp += Number(monster.exp ?? 0) * Number(state.tuning.battleExpMultiplier ?? 1);
     gold += Math.round(Number(monster.goldMin ?? 0) + unit(key, id, index) * (Number(monster.goldMax ?? 0) - Number(monster.goldMin ?? 0)));
     kills += 1;
     inc(state.progress.combat.killsByName, monster.name);
@@ -705,6 +710,7 @@ function rewards(state, data, result, key, skills, profile) {
   if (weaponPath) inc(state.progress, `weapon.${weaponPath}.kills`, kills);
   state.player.gold += gold;
   state.progress.economy.goldFromBattles += gold;
+  exp = Math.max(0, Math.round(exp));
   addExperience(state, exp, `battle:${result.encounterId}`, data, skills, profile);
   return { exp, gold, kills };
 }
