@@ -40,7 +40,12 @@ function localTalk(state, model) {
 
 export function actionUtilityV2(action, state, profile) {
   let score = unitV2(state.seed, state.absoluteMinute, action.id) * .2;
-  if (["conversation", "investigate", "support", "missionBattle", "resolveMission"].includes(action.type)) score += profile.story * 11 + Number(action.difficulty ?? 1);
+  const missionAction = Boolean(action.missionId) && ["conversation", "investigate", "support", "missionBattle", "resolveMission"].includes(action.type);
+  if (missionAction) score += profile.story * 11 + Number(action.difficulty ?? 1);
+  if (action.type === "conversation" && !action.missionId) {
+    score += profile.story * 1.2;
+    if (state.history.slice(-12).some((entry) => entry.type === "PLAYER_ACTION_RESOLVED" && entry.actionId === action.id)) score -= 6;
+  }
   if (["seekBattle", "missionBattle"].includes(action.type)) score += profile.combat * 9;
   if (action.type === "resolveMission") {
     const focus = action.resolutionOption?.focus;
