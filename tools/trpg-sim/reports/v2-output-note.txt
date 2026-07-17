@@ -1,0 +1,1 @@
+The v2 player simulation writes player-v2-latest JSON and Markdown reports, plus compatibility player-latest outputs.
