@@ -10,6 +10,7 @@ import {
   generateChoiceActionsV2, simulatePlayerJourneyV2,
 } from "../lib/player-journey-v2.mjs";
 import { issueEventSkillRewardV2, refreshSkillStateV2 } from "../lib/journey-v2-skills.mjs";
+import { refreshMissionsV2 } from "../lib/journey-v2-missions.mjs";
 import { resolveMovementActionV2 } from "../lib/journey-v2-resolver.mjs";
 
 const model = loadWorldModel();
@@ -27,6 +28,22 @@ test("v2 mission catalog has 40 sequential permanent and 19 special missions", (
   assert.equal(state.catalog.permanent.length, 40);
   assert.equal(state.catalog.special.length, 19);
   assert.equal(state.catalog.permanent.filter((mission) => state.missions[mission.id].status === "active").length, 8);
+});
+
+test("special mission journal caps active missions and queues excess discoveries", () => {
+  const state = fresh();
+  for (const mission of state.catalog.special) {
+    state.troubles[mission.troubleId].status = "active";
+    const rumorId = `TEST-RUMOR-${mission.troubleId}`;
+    state.rumorById[rumorId] = { id: rumorId, troubleId: mission.troubleId };
+    state.player.knownRumorIds.add(rumorId);
+  }
+  refreshMissionsV2(state, battleData, skills, balanced);
+  const active = state.catalog.special.filter((mission) => state.missions[mission.id].status === "active");
+  const available = state.catalog.special.filter((mission) => state.missions[mission.id].status === "available");
+  assert.equal(active.length, config.tuned.maxActiveSpecialMissions);
+  assert.equal(active.length + available.length, state.catalog.special.length);
+  assert.equal(state.metrics.maxActiveSpecialMissions <= config.tuned.maxActiveSpecialMissions, true);
 });
 
 test("three choices remain separate from complete local and regional movement menus", () => {
