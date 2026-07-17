@@ -54,7 +54,7 @@ function runMode({ mode, tuning, profiles, seeds, model, battleData, skills, roo
   return { mode, tuning, runs: profiles.length * seeds, seedsPerProfile: seeds, profiles: output, representative };
 }
 
-function initialAudit({ model, battleData, skills, tuning, profiles }) {
+function auditInitialState({ model, battleData, skills, tuning, profiles }) {
   const issues = [];
   for (const profile of profiles) {
     const state = createInitialJourneyStateV2({ model, battleData, skills, profile, tuning, seed: `audit-v2:${profile.id}` });
@@ -101,7 +101,7 @@ export async function runIntegratedPlayerSimulationSuiteV2(options = {}) {
   const config = options.config ?? loadPlayerSimulationConfigV2(); const profiles = options.profiles ?? PLAYER_PROFILES_V2;
   const seeds = Number(options.seedsPerProfile ?? process.env.TRPG_PLAYER_V2_SEEDS ?? config.seedsPerProfile ?? 8); const rootSeed = options.rootSeed ?? "trpg-player-v2-20260717";
   const model = options.model ?? loadWorldModel(); const battleData = options.battleData ?? await loadBattleData(); const skills = options.skills ?? loadSkills();
-  const initialAudit = initialAudit({ model, battleData, skills, tuning: config.tuned, profiles });
+  const initialAudit = auditInitialState({ model, battleData, skills, tuning: config.tuned, profiles });
   const report = {
     schemaVersion: "2.0.0", generatedAt: new Date().toISOString(), engineVersion: "integrated-player-journey-v2", rootSeed,
     sourceCounts: { locations: model.locations.length, facilities: model.facilities.length, routes: model.routes.length, troubles: model.troubles.length, npcs: model.npcs.length, equipment: battleData.equipment.length, monsters: battleData.monsters.length, encounters: battleData.encounters.length, skills: skills.length },
