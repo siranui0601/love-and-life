@@ -99,7 +99,7 @@ export function refreshSkillStateV2(state, data, skills, profile) {
   state.skillState.effective = effectiveSkillIdsV2(state, data);
   state.player.magicSkillCount = [...state.skillState.effective].filter((id) => /魔法|魔導|杖|本/u.test(`${data.playerSkillById.get(id)?.category ?? ""}`)).length;
   state.metrics.maxEffectiveSkills = Math.max(state.metrics.maxEffectiveSkills, state.skillState.effective.size);
-  state.skillState.lastRefreshKey = refreshKey(state);
+  state.skillState.lastRefreshKey = beforeKey;
   return state.skillState.effective;
 }
 
