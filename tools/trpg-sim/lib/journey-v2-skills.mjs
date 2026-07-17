@@ -16,6 +16,7 @@ function stable(value) {
 function worldKey(state) {
   return stable({
     level: state.player.level,
+    skills: state.player.skills,
     gold: state.player.gold,
     location: state.player.location,
     facilityId: state.player.facilityId,
