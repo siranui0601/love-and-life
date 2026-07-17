@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "seedsPerProfile": 12,
   "baseline": {
     "startingGold": 0,
@@ -10,6 +10,9 @@
     "specialMissionExpBase": 95,
     "travelEncounterBaseChance": 0.22,
     "defeatRecoveryMinutes": 480,
+    "soloCombatPowerMultiplier": 1.0,
+    "missionPreparationBonusPerEvidence": 0.05,
+    "missionPreparationBonusMax": 0.2,
     "workGoldThreshold": 20,
     "restPrice": 4,
     "shop": { "minimumUpgradeGain": 3 }
@@ -23,6 +26,9 @@
     "specialMissionExpBase": 115,
     "travelEncounterBaseChance": 0.14,
     "defeatRecoveryMinutes": 360,
+    "soloCombatPowerMultiplier": 1.35,
+    "missionPreparationBonusPerEvidence": 0.22,
+    "missionPreparationBonusMax": 0.9,
     "workGoldThreshold": 34,
     "restPrice": 4,
     "shop": { "minimumUpgradeGain": 2 }
