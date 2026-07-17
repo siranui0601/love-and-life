@@ -33,3 +33,8 @@ jobs:
             tools/trpg-sim/reports/player-v2-latest.json
             tools/trpg-sim/reports/player-v2-latest.md
             public/TRPG/player-simulation-v2-report.json
+            tools/trpg-sim/lib
+            tools/trpg-sim/config
+            tools/trpg-sim/test
+            tools/trpg-sim/cli-player-v2.mjs
+            package.json
