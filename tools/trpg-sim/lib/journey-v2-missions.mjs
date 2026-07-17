@@ -76,10 +76,13 @@ function playerKnowsTrouble(state, troubleId) {
 }
 
 export function refreshMissionsV2(state, data, skills, profile) {
+  const activeLimit = Math.max(1, Number(state.tuning.maxActiveSpecialMissions ?? 10));
+  let activeSpecial = state.catalog.special.filter((mission) => state.missions[mission.id].status === "active").length;
   for (const mission of state.catalog.special) {
     const runtime = state.missions[mission.id];
     const trouble = state.troubles[mission.troubleId];
     if (["failed", "suppressed"].includes(trouble.status) && runtime.status !== "completed") {
+      if (runtime.status === "active") activeSpecial = Math.max(0, activeSpecial - 1);
       runtime.status = "failed";
       runtime.failedAt ??= state.absoluteMinute;
       runtime.outcome = trouble.status;
@@ -88,12 +91,28 @@ export function refreshMissionsV2(state, data, skills, profile) {
     if (runtime.status === "locked" && ["active", "critical"].includes(trouble.status)) {
       const discovered = playerKnowsTrouble(state, mission.troubleId) || mission.targetLocations.includes(state.player.location);
       if (discovered) {
-        runtime.status = "active";
-        runtime.activatedAt = state.absoluteMinute;
+        runtime.status = activeSpecial < activeLimit ? "active" : "available";
+        runtime.activatedAt = runtime.status === "active" ? state.absoluteMinute : null;
         runtime.discoveredAt = state.absoluteMinute;
+        if (runtime.status === "active") activeSpecial += 1;
         state.metrics.specialMissionsDiscovered += 1;
-        state.history.push({ type: "MISSION_DISCOVERED", minute: state.absoluteMinute, missionId: mission.id, troubleId: mission.troubleId });
+        state.history.push({ type: "MISSION_DISCOVERED", minute: state.absoluteMinute, missionId: mission.id, troubleId: mission.troubleId, status: runtime.status });
       }
+    }
+  }
+
+  const openSlots = Math.max(0, activeLimit - activeSpecial);
+  if (openSlots > 0) {
+    const waiting = state.catalog.special
+      .filter((mission) => state.missions[mission.id].status === "available")
+      .filter((mission) => ["active", "critical"].includes(state.troubles[mission.troubleId].status))
+      .sort((left, right) => left.finalDay - right.finalDay || right.difficulty - left.difficulty || left.id.localeCompare(right.id));
+    for (const mission of waiting.slice(0, openSlots)) {
+      const runtime = state.missions[mission.id];
+      runtime.status = "active";
+      runtime.activatedAt = state.absoluteMinute;
+      activeSpecial += 1;
+      state.history.push({ type: "MISSION_ACTIVATED", minute: state.absoluteMinute, missionId: mission.id, reason: "journal-slot-opened" });
     }
   }
 
@@ -107,7 +126,7 @@ export function refreshMissionsV2(state, data, skills, profile) {
   }
 
   const activePermanent = state.catalog.permanent.filter((mission) => state.missions[mission.id].status === "active").length;
-  const activeSpecial = state.catalog.special.filter((mission) => state.missions[mission.id].status === "active").length;
+  activeSpecial = state.catalog.special.filter((mission) => state.missions[mission.id].status === "active").length;
   state.metrics.missionSamples += 1;
   state.metrics.activeMissionSum += activePermanent + activeSpecial;
   state.metrics.activeSpecialSum += activeSpecial;
