@@ -107,8 +107,22 @@ export function resolvePlayerActionV2(state, model, data, skills, profile, actio
   } else if (action.type === "missionBattle") {
     const readyAt = Number(runtime.lastAttemptAt ?? -Infinity) + Number(state.tuning.missionRetryCooldownMinutes ?? 360);
     if (state.absoluteMinute < readyAt) { advanceV2(state, model, Math.min(60, readyAt - state.absoluteMinute), "mission-retry-wait"); outcome = { ok: false, type: action.type, reason: "mission_retry_cooldown" }; }
-    else { advanceV2(state, model, action.minutes, `mission-battle:${action.missionId}`); runtime.attempts += 1; runtime.lastAttemptAt = state.absoluteMinute; const encounterId = action.encounterId ?? weighted(encounters(state, data, profile, true), `${state.seed}:${action.id}`)?.id;
-      if (!encounterId) outcome = { ok: false, type: action.type, reason: "no_encounter" }; else { const evidence = Number(state.player.evidenceByTrouble[mission.troubleId] ?? 0); const bonus = Math.min(Number(state.tuning.missionPreparationBonusMax ?? 1.5), evidence * Number(state.tuning.missionPreparationBonusPerEvidence ?? .25)); outcome.battle = runBattleV2({ state, model, data, profile, encounterId, key: `${state.seed}:mission:${action.missionId}:${state.metrics.battles}`, situationalMultiplier: 1 + bonus, addExperience: addExp(state, data, skills, profile) }); if (outcome.battle.won && step) finishMissionStepV2(state, mission, runtime, step); }
+    else {
+      advanceV2(state, model, action.minutes, `mission-battle:${action.missionId}`);
+      runtime.attempts += 1;
+      runtime.lastAttemptAt = state.absoluteMinute;
+      const encounterId = action.encounterId ?? weighted(encounters(state, data, profile, true), `${state.seed}:${action.id}`)?.id;
+      if (!encounterId) outcome = { ok: false, type: action.type, reason: "no_encounter" };
+      else {
+        const evidence = Number(state.player.evidenceByTrouble[mission.troubleId] ?? 0);
+        const bonus = Math.min(Number(state.tuning.missionPreparationBonusMax ?? 1.5), evidence * Number(state.tuning.missionPreparationBonusPerEvidence ?? .25));
+        outcome.battle = runBattleV2({ state, model, data, profile, encounterId, key: `${state.seed}:mission:${action.missionId}:${state.metrics.battles}`, situationalMultiplier: 1 + bonus, addExperience: addExp(state, data, skills, profile) });
+        if (outcome.battle.won && step) finishMissionStepV2(state, mission, runtime, step);
+        else if (!outcome.battle.won && runtime.attempts >= Number(state.tuning.maxMissionBattleAttempts ?? 3)) {
+          failMission(state, model, mission, runtime, `mission-battle-attempts-exhausted:${encounterId}`);
+          outcome.reason = "mission_battle_attempts_exhausted";
+        }
+      }
     }
   } else if (action.type === "resolveMission") {
     const incomplete = mission.steps.filter((x) => x.id !== step.id).some((x) => Number(runtime.progress[x.id] ?? 0) < Number(x.required ?? 1));
