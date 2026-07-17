@@ -31,9 +31,9 @@ function aggregate(profile, runs) {
     maxActiveSpecialMissions: field("maxActiveSpecialMissions"), missionExpShare: field("missionExpShare"),
     resolvedTroubles: stats(summaries.map((x) => Number(x.troubleCounts.resolved ?? 0))), failedTroubles: stats(summaries.map((x) => Number(x.troubleCounts.failed ?? 0))),
     playerResolved: field("troubleResolvedByPlayerAction"), playerFailed: field("troubleFailedByPlayerAction"), partialResolutions: field("troublePartialByPlayerAction"),
-    learnedSkills: field("learnedSkills"), flagSkillsLearned: field("flagSkillsLearned"), eventGrantedSkills: field("eventGrantedSkills"), equipmentGrantActivations: field("equipmentGrantActivations"),
-    revealedSkills: field("revealedSkills"), flagUnlockedSkills: field("flagUnlockedSkills"), localMovementActions: field("localMovementActions"), regionalMovementActions: field("regionalMovementActions"),
-    visitedHubs: field("visitedHubs"), visitedFacilities: field("visitedFacilities"), movementBlocked: summaries.reduce((sum, x) => sum + x.movementBlocked, 0),
+    learnedSkills: field("learnedSkills"), flagSkillsLearned: field("flagSkillsLearned"), eventGrantedSkills: field("eventGrantedSkills"), eventGrantSignals: field("eventGrantSignals"), equipmentGrantActivations: field("equipmentGrantActivations"),
+    revealedSkills: field("revealedSkills"), flagUnlockedSkills: field("flagUnlockedSkills"), flagUnlockPathCount: field("flagUnlockPathCount"), localMovementActions: field("localMovementActions"), regionalMovementActions: field("regionalMovementActions"),
+    visitedHubs: field("visitedHubs"), visitedFacilities: field("visitedFacilities"), movementBlocked: summaries.reduce((sum, x) => sum + x.movementBlocked, 0), movementObjectivesWaiting: field("movementObjectivesWaiting"), travelInterrupted: field("travelInterrupted"),
     choiceDeadEnds: summaries.reduce((sum, x) => sum + x.choiceDeadEnds, 0), replayMismatches: summaries.reduce((sum, x) => sum + x.replayMismatches, 0),
     skillAcquisitionViolations: summaries.reduce((sum, x) => sum + x.skillAcquisitionViolations, 0), invalidTroubleResolutions: summaries.reduce((sum, x) => sum + x.invalidTroubleResolutions, 0),
     terminatedByActionCap: summaries.filter((x) => x.terminatedByActionCap).length,
@@ -69,11 +69,13 @@ function auditInitialState({ model, battleData, skills, tuning, profiles }) {
 function findings(report, targets) {
   const all = report.tuned.profiles; const profile = (id) => all.find((x) => x.profileId === id); const scalarSum = (key) => all.reduce((sum, x) => sum + Number(x[key] ?? 0), 0); const medianSum = (key) => all.reduce((sum, x) => sum + Number(x[key]?.median ?? 0), 0);
   const medianLevel = quantile(all.map((x) => x.level.median), .5); const firstLevel = quantile(all.map((x) => x.firstLevelUpDay.median), .5); const missionShare = quantile(all.map((x) => x.missionExpShare.median), .5);
-  const story = profile("story"); const fighter = profile("fighter"); const balanced = profile("balanced"); const catalogTotal = report.tuned.representative.balanced.summary.missionCatalog.total;
-  const activeMean = quantile(all.map((x) => x.activeMissionMean.median), .5); const activeSpecialMax = Math.max(...all.map((x) => x.maxActiveSpecialMissions.max)); const result = []; const add = (severity, code, detail) => result.push({ severity, code, detail });
+  const story = profile("story"); const fighter = profile("fighter"); const balanced = profile("balanced"); const merchant = profile("merchant"); const catalogTotal = report.tuned.representative.balanced.summary.missionCatalog.total;
+  const activeMean = quantile(all.map((x) => x.activeMissionMean.median), .5); const activeSpecialMax = Math.max(...all.map((x) => x.maxActiveSpecialMissions.max));
+  const flagLearningProfiles = all.filter((entry) => Number(entry.flagSkillsLearned.median ?? 0) > 0).length;
+  const result = []; const add = (severity, code, detail) => result.push({ severity, code, detail });
   add(mean(all.map((x) => x.reachedEndRate)) >= targets.reachedEndRate ? "verified" : "blocker", "DAY100", `Day100到達率 ${(mean(all.map((x) => x.reachedEndRate)) * 100).toFixed(1)}%`);
   add(scalarSum("terminatedByActionCap") === 0 ? "verified" : "blocker", "ACTION_CAP", `停止run ${scalarSum("terminatedByActionCap")}`);
-  add(scalarSum("movementBlocked") === 0 && scalarSum("choiceDeadEnds") === 0 ? "verified" : "blocker", "ACTION_ACCESS", `移動不能 ${scalarSum("movementBlocked")} / 3択枯渇 ${scalarSum("choiceDeadEnds")}`);
+  add(scalarSum("movementBlocked") <= Number(targets.movementBlockedMax ?? 0) && scalarSum("choiceDeadEnds") === 0 ? "verified" : "blocker", "ACTION_ACCESS", `不正な移動不能 ${scalarSum("movementBlocked")} / アクセス待ち ${medianSum("movementObjectivesWaiting")} / 3択枯渇 ${scalarSum("choiceDeadEnds")}`);
   add(scalarSum("replayMismatches") === 0 ? "verified" : "blocker", "DETERMINISM", `不一致 ${scalarSum("replayMismatches")}`);
   add(medianLevel >= targets.medianLevelMin && medianLevel <= targets.medianLevelMax ? "verified" : "warning", "LEVEL_PACING", `Lv中央値 ${medianLevel}`);
   add(firstLevel >= targets.firstLevelUpMedianDayMin && firstLevel <= targets.firstLevelUpMedianDayMax ? "verified" : "warning", "FIRST_LEVEL", `初回LvUP Day${firstLevel}`);
@@ -82,11 +84,13 @@ function findings(report, targets) {
   add(missionShare >= targets.missionExpShareMin && missionShare <= targets.missionExpShareMax ? "verified" : "warning", "MISSION_EXP", `ミッションEXP比率中央値 ${(missionShare * 100).toFixed(1)}%`);
   add(story.specialMissionsCompleted.median >= targets.storySpecialResolvedMin && story.specialMissionsCompleted.median <= targets.storySpecialResolvedMax ? "verified" : "warning", "MISSION_RESOLUTION", `事件調査型解決中央値 ${story.specialMissionsCompleted.median}`);
   add(fighter.battles.median <= targets.fighterBattleMedianMax ? "verified" : "warning", "BATTLE_DENSITY", `戦闘型戦闘中央値 ${fighter.battles.median}`);
+  add(merchant.regionalMovementActions.median <= targets.merchantRegionalMovementMedianMax ? "verified" : "warning", "MERCHANT_MOVEMENT_DENSITY", `商人型地域外移動中央値 ${merchant.regionalMovementActions.median}`);
   add(balanced.winRate.median >= targets.balancedWinRateMin && balanced.winRate.median <= targets.balancedWinRateMax ? "verified" : "warning", "BATTLE_BALANCE", `均衡型勝率 ${(balanced.winRate.median * 100).toFixed(1)}%`);
   add(scalarSum("skillAcquisitionViolations") === 0 && scalarSum("invalidTroubleResolutions") === 0 ? "verified" : "blocker", "STATE_AUTHORITY", `不正スキル取得 ${scalarSum("skillAcquisitionViolations")} / 不正トラブル解決 ${scalarSum("invalidTroubleResolutions")}`);
   add(medianSum("localMovementActions") > 0 && medianSum("regionalMovementActions") > 0 ? "verified" : "blocker", "MOVEMENT_COVERAGE", `地域内移動中央値合計 ${medianSum("localMovementActions")} / 地域外 ${medianSum("regionalMovementActions")}`);
-  add(medianSum("flagUnlockedSkills") > 0 && scalarSum("skillAcquisitionViolations") === 0 ? "verified" : "warning", "SKILL_FLAG_RUNTIME", `解禁済み技能中央値合計 ${medianSum("flagUnlockedSkills")} / 習得 ${medianSum("flagSkillsLearned")}`);
-  add(medianSum("eventGrantedSkills") + medianSum("equipmentGrantActivations") > 0 ? "verified" : "warning", "SKILL_GRANT_RUNTIME", `イベント付与 ${medianSum("eventGrantedSkills")} / 装備付与作動 ${medianSum("equipmentGrantActivations")}`);
+  add(medianSum("flagUnlockedSkills") > 0 && flagLearningProfiles >= Number(targets.flagLearnedProfileCountMin ?? 1) && scalarSum("skillAcquisitionViolations") === 0 ? "verified" : "warning", "SKILL_FLAG_RUNTIME", `解禁済み技能中央値合計 ${medianSum("flagUnlockedSkills")} / 習得 ${medianSum("flagSkillsLearned")} / 習得方針 ${flagLearningProfiles}/${all.length}`);
+  add(medianSum("eventGrantedSkills") >= Number(targets.eventGrantMedianSumMin ?? 1) && medianSum("eventGrantSignals") >= medianSum("eventGrantedSkills") ? "verified" : "warning", "SKILL_EVENT_GRANT_RUNTIME", `イベント付与 ${medianSum("eventGrantedSkills")} / 構造化付与信号 ${medianSum("eventGrantSignals")}`);
+  add(medianSum("equipmentGrantActivations") > 0 ? "verified" : "warning", "SKILL_EQUIPMENT_GRANT_RUNTIME", `装備付与作動 ${medianSum("equipmentGrantActivations")}`);
   add(report.skillCatalogAudit.missingPrerequisites.length === 0 && report.skillCatalogAudit.equipmentGrantMissing.length === 0 ? "verified" : "warning", "SKILL_REFERENCE_AUDIT", `欠落前提 ${report.skillCatalogAudit.missingPrerequisites.length} / 欠落装備付与 ${report.skillCatalogAudit.equipmentGrantMissing.length}`);
   add(medianSum("playerResolved") > 0 && medianSum("failedTroubles") > 0 ? "verified" : "warning", "TROUBLE_OUTCOME_COVERAGE", `プレイヤー解決 ${medianSum("playerResolved")} / 失敗 ${medianSum("failedTroubles")}`);
   add(report.initialAudit.ok ? "verified" : "blocker", "INITIAL_AUDIT", report.initialAudit.ok ? "正常" : `${report.initialAudit.issues.length}件`);
