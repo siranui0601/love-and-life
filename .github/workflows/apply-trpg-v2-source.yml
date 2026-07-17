@@ -1,0 +1,52 @@
+name: Apply TRPG v2 source
+
+on:
+  push:
+    branches:
+      - agent/trpg-player-simulation-v2-20260717
+    paths:
+      - ".github/workflows/apply-trpg-v2-source.yml"
+      - "tools/trpg-sim/.v2-source/**"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/trpg-player-simulation-v2-20260717
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Assemble v2 source
+        run: |
+          {
+            cat tools/trpg-sim/.v2-source/journey/part-00
+            tail -n +11 tools/trpg-sim/.v2-source/journey/part-01
+            cat tools/trpg-sim/.v2-source/journey/part-02-03
+            cat tools/trpg-sim/.v2-source/journey/part-04-05
+            cat tools/trpg-sim/.v2-source/journey/part-06-07
+            cat tools/trpg-sim/.v2-source/journey/part-08-09
+          } > tools/trpg-sim/lib/player-journey.mjs
+          cat tools/trpg-sim/.v2-source/suite/part-00-01 tools/trpg-sim/.v2-source/suite/part-02-03 > tools/trpg-sim/lib/player-suite.mjs
+          node --check tools/trpg-sim/lib/player-journey.mjs
+          node --check tools/trpg-sim/lib/player-suite.mjs
+      - run: npm ci
+      - name: Run TRPG tests
+        run: npm run trpg:test
+      - name: Commit assembled source
+        run: |
+          rm -rf tools/trpg-sim/.v2-source tools/trpg-sim/.v2-payload
+          rm -f .github/workflows/apply-trpg-v2-source.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "TRPG v2: assemble integrated player simulation" || exit 0
+          git push origin HEAD:agent/trpg-player-simulation-v2-20260717
