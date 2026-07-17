@@ -22,11 +22,9 @@ function stats(values, digits = 3) { const clean = values.map(Number).filter(Num
 export function loadPlayerSimulationConfigV2(file = CONFIG) { return JSON.parse(fs.readFileSync(file, "utf8")); }
 
 function aggregate(profile, runs) {
-  const summaries = runs.map((run) => run.summary);
-  const field = (name) => stats(summaries.map((summary) => summary[name]));
+  const summaries = runs.map((run) => run.summary); const field = (name) => stats(summaries.map((summary) => summary[name]));
   return {
-    profileId: profile.id, label: profile.label, runs: runs.length,
-    reachedEndRate: mean(summaries.map((x) => x.reachedEnd ? 1 : 0)),
+    profileId: profile.id, label: profile.label, runs: runs.length, reachedEndRate: mean(summaries.map((x) => x.reachedEnd ? 1 : 0)),
     level: field("level"), firstLevelUpDay: stats(summaries.map((x) => x.firstLevelUpDay ?? 101)), battles: field("battles"), winRate: field("winRate"),
     missionsCompleted: field("missionsCompleted"), permanentMissionsCompleted: field("permanentMissionsCompleted"), specialMissionsCompleted: field("specialMissionsCompleted"),
     specialMissionsDiscovered: field("specialMissionsDiscovered"), failedSpecialMissions: field("failedSpecialMissions"), activeMissionMean: field("activeMissionMean"),
@@ -47,8 +45,7 @@ function runMode({ mode, tuning, profiles, seeds, model, battleData, skills, roo
   for (const profile of profiles) {
     const runs = [];
     for (let index = 0; index < seeds; index += 1) runs.push(simulatePlayerJourneyV2({ model, battleData, skills, profile, tuning, seed: `${rootSeed}:${mode}:${profile.id}:${index}`, maxActions: Number(tuning.maxActions ?? 6000) }));
-    output.push(aggregate(profile, runs));
-    const selected = runs[Math.floor(runs.length / 2)];
+    output.push(aggregate(profile, runs)); const selected = runs[Math.floor(runs.length / 2)];
     representative[profile.id] = { summary: selected.summary, recentHistory: selected.state.history.slice(-50), missionStates: Object.values(selected.state.missions).filter((mission) => mission.status !== "locked").slice(0, 70) };
   }
   return { mode, tuning, runs: profiles.length * seeds, seedsPerProfile: seeds, profiles: output, representative };
@@ -61,8 +58,7 @@ function auditInitialState({ model, battleData, skills, tuning, profiles }) {
     const choices = generateChoiceActionsV2(state, model, battleData, profile, () => true);
     if (choices.length !== 3 || new Set(choices.map((x) => x.id)).size !== 3) issues.push({ code: "THREE_CHOICE", profileId: profile.id });
     if (choices.some((x) => ["localTravel", "regionalTravel"].includes(x.type))) issues.push({ code: "MOVEMENT_INSIDE_CHOICES", profileId: profile.id });
-    const local = availableLocalMovementActionsV2(state, model);
-    const expectedLocal = (model.facilitiesByHub[state.player.location] ?? []).filter((x) => x.id !== state.player.facilityId).length;
+    const local = availableLocalMovementActionsV2(state, model); const expectedLocal = (model.facilitiesByHub[state.player.location] ?? []).filter((x) => x.id !== state.player.facilityId).length;
     if (local.length !== expectedLocal) issues.push({ code: "LOCAL_MOVEMENT_INCOMPLETE", profileId: profile.id, expectedLocal, actual: local.length });
     const regional = availableRegionalMovementActionsV2(state, model); const listed = new Set(regional.map((x) => x.destination));
     for (const hub of model.locations) if (hub !== state.player.location && listed.has(hub) !== Boolean(shortestTravelPlan(model, state, state.player.location, hub))) issues.push({ code: "REGIONAL_MOVEMENT_INCOMPLETE", profileId: profile.id, hub });
@@ -71,18 +67,14 @@ function auditInitialState({ model, battleData, skills, tuning, profiles }) {
 }
 
 function findings(report, targets) {
-  const all = report.tuned.profiles; const profile = (id) => all.find((x) => x.profileId === id);
-  const sums = (key) => all.reduce((sum, x) => sum + Number(x[key] ?? 0), 0);
-  const medianLevel = quantile(all.map((x) => x.level.median), .5); const firstLevel = quantile(all.map((x) => x.firstLevelUpDay.median), .5);
-  const missionShare = quantile(all.map((x) => x.missionExpShare.median), .5); const story = profile("story"); const fighter = profile("fighter"); const balanced = profile("balanced");
-  const catalogTotal = report.tuned.representative.balanced.summary.missionCatalog.total;
-  const activeMean = quantile(all.map((x) => x.activeMissionMean.median), .5); const activeSpecialMax = Math.max(...all.map((x) => x.maxActiveSpecialMissions.max));
-  const result = [];
-  const add = (severity, code, detail) => result.push({ severity, code, detail });
+  const all = report.tuned.profiles; const profile = (id) => all.find((x) => x.profileId === id); const scalarSum = (key) => all.reduce((sum, x) => sum + Number(x[key] ?? 0), 0); const medianSum = (key) => all.reduce((sum, x) => sum + Number(x[key]?.median ?? 0), 0);
+  const medianLevel = quantile(all.map((x) => x.level.median), .5); const firstLevel = quantile(all.map((x) => x.firstLevelUpDay.median), .5); const missionShare = quantile(all.map((x) => x.missionExpShare.median), .5);
+  const story = profile("story"); const fighter = profile("fighter"); const balanced = profile("balanced"); const catalogTotal = report.tuned.representative.balanced.summary.missionCatalog.total;
+  const activeMean = quantile(all.map((x) => x.activeMissionMean.median), .5); const activeSpecialMax = Math.max(...all.map((x) => x.maxActiveSpecialMissions.max)); const result = []; const add = (severity, code, detail) => result.push({ severity, code, detail });
   add(mean(all.map((x) => x.reachedEndRate)) >= targets.reachedEndRate ? "verified" : "blocker", "DAY100", `Day100到達率 ${(mean(all.map((x) => x.reachedEndRate)) * 100).toFixed(1)}%`);
-  add(sums("terminatedByActionCap") === 0 ? "verified" : "blocker", "ACTION_CAP", `停止run ${sums("terminatedByActionCap")}`);
-  add(sums("movementBlocked") === 0 && sums("choiceDeadEnds") === 0 ? "verified" : "blocker", "ACTION_ACCESS", `移動不能 ${sums("movementBlocked")} / 3択枯渇 ${sums("choiceDeadEnds")}`);
-  add(sums("replayMismatches") === 0 ? "verified" : "blocker", "DETERMINISM", `不一致 ${sums("replayMismatches")}`);
+  add(scalarSum("terminatedByActionCap") === 0 ? "verified" : "blocker", "ACTION_CAP", `停止run ${scalarSum("terminatedByActionCap")}`);
+  add(scalarSum("movementBlocked") === 0 && scalarSum("choiceDeadEnds") === 0 ? "verified" : "blocker", "ACTION_ACCESS", `移動不能 ${scalarSum("movementBlocked")} / 3択枯渇 ${scalarSum("choiceDeadEnds")}`);
+  add(scalarSum("replayMismatches") === 0 ? "verified" : "blocker", "DETERMINISM", `不一致 ${scalarSum("replayMismatches")}`);
   add(medianLevel >= targets.medianLevelMin && medianLevel <= targets.medianLevelMax ? "verified" : "warning", "LEVEL_PACING", `Lv中央値 ${medianLevel}`);
   add(firstLevel >= targets.firstLevelUpMedianDayMin && firstLevel <= targets.firstLevelUpMedianDayMax ? "verified" : "warning", "FIRST_LEVEL", `初回LvUP Day${firstLevel}`);
   add(catalogTotal >= targets.missionCatalogMin && catalogTotal <= targets.missionCatalogMax ? "verified" : "warning", "MISSION_COUNT", `ミッション総数 ${catalogTotal}`);
@@ -91,26 +83,22 @@ function findings(report, targets) {
   add(story.specialMissionsCompleted.median >= targets.storySpecialResolvedMin && story.specialMissionsCompleted.median <= targets.storySpecialResolvedMax ? "verified" : "warning", "MISSION_RESOLUTION", `事件調査型解決中央値 ${story.specialMissionsCompleted.median}`);
   add(fighter.battles.median <= targets.fighterBattleMedianMax ? "verified" : "warning", "BATTLE_DENSITY", `戦闘型戦闘中央値 ${fighter.battles.median}`);
   add(balanced.winRate.median >= targets.balancedWinRateMin && balanced.winRate.median <= targets.balancedWinRateMax ? "verified" : "warning", "BATTLE_BALANCE", `均衡型勝率 ${(balanced.winRate.median * 100).toFixed(1)}%`);
-  add(sums("skillAcquisitionViolations") === 0 && sums("invalidTroubleResolutions") === 0 ? "verified" : "blocker", "STATE_AUTHORITY", `不正スキル取得 ${sums("skillAcquisitionViolations")} / 不正トラブル解決 ${sums("invalidTroubleResolutions")}`);
-  add(sums("localMovementActions") > 0 && sums("regionalMovementActions") > 0 ? "verified" : "blocker", "MOVEMENT_COVERAGE", `地域内中央値合計 ${sums("localMovementActions")} / 地域外 ${sums("regionalMovementActions")}`);
+  add(scalarSum("skillAcquisitionViolations") === 0 && scalarSum("invalidTroubleResolutions") === 0 ? "verified" : "blocker", "STATE_AUTHORITY", `不正スキル取得 ${scalarSum("skillAcquisitionViolations")} / 不正トラブル解決 ${scalarSum("invalidTroubleResolutions")}`);
+  add(medianSum("localMovementActions") > 0 && medianSum("regionalMovementActions") > 0 ? "verified" : "blocker", "MOVEMENT_COVERAGE", `地域内移動中央値合計 ${medianSum("localMovementActions")} / 地域外 ${medianSum("regionalMovementActions")}`);
+  add(medianSum("flagUnlockedSkills") > 0 && scalarSum("skillAcquisitionViolations") === 0 ? "verified" : "warning", "SKILL_FLAG_RUNTIME", `解禁済み技能中央値合計 ${medianSum("flagUnlockedSkills")} / 習得 ${medianSum("flagSkillsLearned")}`);
+  add(medianSum("eventGrantedSkills") + medianSum("equipmentGrantActivations") > 0 ? "verified" : "warning", "SKILL_GRANT_RUNTIME", `イベント付与 ${medianSum("eventGrantedSkills")} / 装備付与作動 ${medianSum("equipmentGrantActivations")}`);
+  add(report.skillCatalogAudit.missingPrerequisites.length === 0 && report.skillCatalogAudit.equipmentGrantMissing.length === 0 ? "verified" : "warning", "SKILL_REFERENCE_AUDIT", `欠落前提 ${report.skillCatalogAudit.missingPrerequisites.length} / 欠落装備付与 ${report.skillCatalogAudit.equipmentGrantMissing.length}`);
+  add(medianSum("playerResolved") > 0 && medianSum("failedTroubles") > 0 ? "verified" : "warning", "TROUBLE_OUTCOME_COVERAGE", `プレイヤー解決 ${medianSum("playerResolved")} / 失敗 ${medianSum("failedTroubles")}`);
   add(report.initialAudit.ok ? "verified" : "blocker", "INITIAL_AUDIT", report.initialAudit.ok ? "正常" : `${report.initialAudit.issues.length}件`);
   return result;
 }
 
 export async function runIntegratedPlayerSimulationSuiteV2(options = {}) {
-  const config = options.config ?? loadPlayerSimulationConfigV2(); const profiles = options.profiles ?? PLAYER_PROFILES_V2;
-  const seeds = Number(options.seedsPerProfile ?? process.env.TRPG_PLAYER_V2_SEEDS ?? config.seedsPerProfile ?? 8); const rootSeed = options.rootSeed ?? "trpg-player-v2-20260717";
-  const model = options.model ?? loadWorldModel(); const battleData = options.battleData ?? await loadBattleData(); const skills = options.skills ?? loadSkills();
-  const initialAudit = auditInitialState({ model, battleData, skills, tuning: config.tuned, profiles });
-  const report = {
-    schemaVersion: "2.0.0", generatedAt: new Date().toISOString(), engineVersion: "integrated-player-journey-v2", rootSeed,
+  const config = options.config ?? loadPlayerSimulationConfigV2(); const profiles = options.profiles ?? PLAYER_PROFILES_V2; const seeds = Number(options.seedsPerProfile ?? process.env.TRPG_PLAYER_V2_SEEDS ?? config.seedsPerProfile ?? 8); const rootSeed = options.rootSeed ?? "trpg-player-v2-20260717";
+  const model = options.model ?? loadWorldModel(); const battleData = options.battleData ?? await loadBattleData(); const skills = options.skills ?? loadSkills(); const initialAudit = auditInitialState({ model, battleData, skills, tuning: config.tuned, profiles });
+  const report = { schemaVersion: "2.0.0", generatedAt: new Date().toISOString(), engineVersion: "integrated-player-journey-v2", rootSeed,
     sourceCounts: { locations: model.locations.length, facilities: model.facilities.length, routes: model.routes.length, troubles: model.troubles.length, npcs: model.npcs.length, equipment: battleData.equipment.length, monsters: battleData.monsters.length, encounters: battleData.encounters.length, skills: skills.length },
-    noPlayerReference: simulateWorld({ model, seed: `${rootSeed}:no-player`, endDay: 100 }).summary.troubleStates,
-    skillCatalogAudit: auditSkillCatalogV2(skills, battleData), initialAudit,
-    baseline: runMode({ mode: "baseline", tuning: config.baseline, profiles, seeds, model, battleData, skills, rootSeed }),
-    tuned: runMode({ mode: "tuned", tuning: config.tuned, profiles, seeds, model, battleData, skills, rootSeed }), qualityTargets: config.qualityTargets,
-  };
-  report.findings = findings(report, config.qualityTargets);
-  report.quality = { passed: report.findings.every((x) => x.severity !== "blocker"), blockers: report.findings.filter((x) => x.severity === "blocker").length, warnings: report.findings.filter((x) => x.severity === "warning").length };
-  return report;
+    noPlayerReference: simulateWorld({ model, seed: `${rootSeed}:no-player`, endDay: 100 }).summary.troubleStates, skillCatalogAudit: auditSkillCatalogV2(skills, battleData), initialAudit,
+    baseline: runMode({ mode: "baseline", tuning: config.baseline, profiles, seeds, model, battleData, skills, rootSeed }), tuned: runMode({ mode: "tuned", tuning: config.tuned, profiles, seeds, model, battleData, skills, rootSeed }), qualityTargets: config.qualityTargets };
+  report.findings = findings(report, config.qualityTargets); report.quality = { passed: report.findings.every((x) => x.severity !== "blocker"), blockers: report.findings.filter((x) => x.severity === "blocker").length, warnings: report.findings.filter((x) => x.severity === "warning").length }; return report;
 }
