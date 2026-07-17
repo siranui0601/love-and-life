@@ -30,8 +30,7 @@ function dedupeDiagnostics(state) {
 
 function shop(state, data, skills, profile) {
   if (profile.trade < .2 && state.player.gold < 80) return;
-  const sellerHere = data.inventory.some((stock) => stock.location === state.player.location && (!stock.sellerId || stock.sellerId === state.player.facilityId));
-  if (!sellerHere) return;
+  if (!data.inventory.some((stock) => stock.location === state.player.location)) return;
   const before = state.absoluteMinute;
   const bought = autoShop(state, data, state.shop, profile, state.tuning.shop ?? {});
   state.metrics.purchases += bought.length;
