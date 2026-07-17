@@ -1,0 +1,192 @@
+{
+  "schemaVersion": "1.0.0-summary",
+  "generatedAt": "2026-07-17T05:47:29.548Z",
+  "engineVersion": "integrated-player-journey-v1",
+  "rootSeed": "trpg-player-v1-20260717",
+  "runs": {
+    "baseline": 28,
+    "tuned": 28
+  },
+  "sourceCounts": {
+    "locations": 11,
+    "routes": 15,
+    "troubles": 19,
+    "npcs": 110,
+    "equipment": 116,
+    "stock": 123,
+    "monsters": 77,
+    "encounters": 76,
+    "skills": 1141
+  },
+  "quality": {
+    "passed": true,
+    "blockers": 0,
+    "warnings": 1
+  },
+  "noPlayerReference": {
+    "fingerprint": "4ad38ab5390be933112ea1845435fa8a8d69708aa70a8423c07623d049de9676",
+    "troubleStates": {
+      "failed": 19
+    },
+    "invariantOk": true
+  },
+  "initialInteraction": {
+    "ok": true,
+    "issues": []
+  },
+  "tunedProfiles": [
+    {
+      "profileId": "balanced",
+      "label": "均衡型",
+      "levelMedian": 19,
+      "firstLevelUpDayMedian": 1,
+      "battlesMedian": 83,
+      "winRateMedian": 0.185,
+      "specialMissionsMedian": 11,
+      "resolvedTroublesMedian": 11,
+      "visitedHubsMedian": 9,
+      "travelBlocked": 0
+    },
+    {
+      "profileId": "story",
+      "label": "事件調査型",
+      "levelMedian": 22,
+      "firstLevelUpDayMedian": 1,
+      "battlesMedian": 17,
+      "winRateMedian": 1,
+      "specialMissionsMedian": 15,
+      "resolvedTroublesMedian": 15,
+      "visitedHubsMedian": 9,
+      "travelBlocked": 0
+    },
+    {
+      "profileId": "fighter",
+      "label": "戦闘優先型",
+      "levelMedian": 24,
+      "firstLevelUpDayMedian": 1,
+      "battlesMedian": 1540,
+      "winRateMedian": 1,
+      "specialMissionsMedian": 0,
+      "resolvedTroublesMedian": 0,
+      "visitedHubsMedian": 1,
+      "travelBlocked": 0
+    },
+    {
+      "profileId": "explorer",
+      "label": "探索優先型",
+      "levelMedian": 19,
+      "firstLevelUpDayMedian": 1,
+      "battlesMedian": 88,
+      "winRateMedian": 0.205,
+      "specialMissionsMedian": 10,
+      "resolvedTroublesMedian": 10,
+      "visitedHubsMedian": 10,
+      "travelBlocked": 0
+    },
+    {
+      "profileId": "merchant",
+      "label": "商人型",
+      "levelMedian": 19,
+      "firstLevelUpDayMedian": 1,
+      "battlesMedian": 86,
+      "winRateMedian": 0.905,
+      "specialMissionsMedian": 0,
+      "resolvedTroublesMedian": 0,
+      "visitedHubsMedian": 2,
+      "travelBlocked": 0
+    },
+    {
+      "profileId": "cautious",
+      "label": "生存優先型",
+      "levelMedian": 22,
+      "firstLevelUpDayMedian": 1,
+      "battlesMedian": 16,
+      "winRateMedian": 1,
+      "specialMissionsMedian": 15,
+      "resolvedTroublesMedian": 15,
+      "visitedHubsMedian": 9,
+      "travelBlocked": 0
+    },
+    {
+      "profileId": "random",
+      "label": "ランダム有効選択型",
+      "levelMedian": 24,
+      "firstLevelUpDayMedian": 1,
+      "battlesMedian": 418,
+      "winRateMedian": 1,
+      "specialMissionsMedian": 1,
+      "resolvedTroublesMedian": 1,
+      "visitedHubsMedian": 1,
+      "travelBlocked": 0
+    }
+  ],
+  "findings": [
+    {
+      "severity": "verified",
+      "code": "DAY100_REACHABILITY",
+      "detail": "Day100到達率100.0%（28 tuned runs）"
+    },
+    {
+      "severity": "verified",
+      "code": "ACTION_CAP",
+      "detail": "最大行動数に達してDay100前に停止したrun 0"
+    },
+    {
+      "severity": "verified",
+      "code": "TRAVEL_AVAILABILITY",
+      "detail": "到達可能なのに移動選択を生成できなかった回数0"
+    },
+    {
+      "severity": "verified",
+      "code": "CHOICE_DEAD_END",
+      "detail": "3択候補が枯渇した回数0"
+    },
+    {
+      "severity": "verified",
+      "code": "KNOWN_RESULT_DETERMINISM",
+      "detail": "非戦闘アクションの同一replayKey結果不一致0"
+    },
+    {
+      "severity": "verified",
+      "code": "LEVEL_PACING",
+      "detail": "全プロファイルの到達Lv中央値22（target 10–22）"
+    },
+    {
+      "severity": "verified",
+      "code": "FIRST_LEVEL_UP",
+      "detail": "初回レベルアップ日の中央値Day1"
+    },
+    {
+      "severity": "verified",
+      "code": "STORY_INTERVENTION",
+      "detail": "事件調査型の特別ミッション解決中央値15"
+    },
+    {
+      "severity": "warning",
+      "code": "SOLO_BATTLE_RATE",
+      "detail": "均衡型の戦闘勝率中央値18.5%"
+    },
+    {
+      "severity": "verified",
+      "code": "INITIAL_INTERACTION",
+      "detail": "初期状態の移動一覧・3択監査正常"
+    }
+  ],
+  "additionalObservations": [
+    {
+      "severity": "warning",
+      "code": "COMBAT_POLICY_EXTREMES",
+      "detail": "戦闘優先型は中央値1540戦・勝率100%、ランダム型は418戦・勝率100%。均衡型18.5%、探索型20.5%との乖離が大きい。"
+    },
+    {
+      "severity": "warning",
+      "code": "SHOP_RULE_NORMALIZATION",
+      "detail": "主要な日本語条件は処理可能だが、全自由文条件の構造化と診断の重複排除は未完了。"
+    },
+    {
+      "severity": "warning",
+      "code": "GRANT_SOURCE_COMPLETENESS",
+      "detail": "イベント付与325件と装備付与スキルの全供給元は完全配線ではなく、現在はベータ接続。"
+    }
+  ]
+}
