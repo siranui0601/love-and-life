@@ -1,0 +1,152 @@
+import { createHash } from "node:crypto";
+import { createPlayerBuild } from "./battle-model.mjs";
+import { simulateBattle } from "./battle-simulator.mjs";
+import { evaluateConditions, flattenConditionLeaves } from "./skill-progression.mjs";
+import {
+  checkPermanentMission,
+  createMissionCatalog,
+  createMissionRuntime,
+  experienceToNextLevel,
+  unlockNextPermanentMission,
+} from "./mission-model.mjs";
+import { autoShop, createShopRuntime } from "./shop-runtime.mjs";
+
+export const GAME_END_MINUTE = 99 * 1440 + 14 * 60;
+export const PLAYER_PROFILES = Object.freeze([
+  { id: "balanced", label: "均衡型", weaponTypes: ["oneHandedSword", "shield"], story: 0.78, combat: 0.55, explore: 0.55, trade: 0.35, caution: 0.55 },
+  { id: "story", label: "事件調査型", weaponTypes: ["oneHandedSword", "shield"], story: 1, combat: 0.45, explore: 0.65, trade: 0.25, caution: 0.5 },
+  { id: "fighter", label: "戦闘優先型", weaponTypes: ["twoHandedSword", "axe", "spear", "oneHandedSword"], story: 0.4, combat: 1, explore: 0.3, trade: 0.2, caution: 0.25 },
+  { id: "explorer", label: "探索優先型", weaponTypes: ["bow", "oneHandedSword"], story: 0.65, combat: 0.5, explore: 1, trade: 0.2, caution: 0.45 },
+  { id: "merchant", label: "商人型", weaponTypes: ["oneHandedSword", "staff", "book"], story: 0.35, combat: 0.25, explore: 0.6, trade: 1, caution: 0.65 },
+  { id: "cautious", label: "生存優先型", weaponTypes: ["oneHandedSword", "shield"], story: 0.65, combat: 0.2, explore: 0.4, trade: 0.35, caution: 1 },
+  { id: "random", label: "ランダム有効選択型", weaponTypes: ["oneHandedSword", "bow", "staff"], story: 0.5, combat: 0.5, explore: 0.5, trade: 0.5, caution: 0.5 },
+].map(Object.freeze));
+
+const PROFILE = new Map(PLAYER_PROFILES.map((profile) => [profile.id, profile]));
+const GATES = { T15: ["any", "T05", "T06"], T18: ["all", "T13"], T19: ["all", "T13"] };
+const TERMINAL = new Set(["resolved", "failed", "suppressed"]);
+
+const hash = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+function hash32(text) {
+  let value = 2166136261;
+  for (const character of String(text)) {
+    value ^= character.codePointAt(0);
+    value = Math.imul(value, 16777619);
+  }
+  return value >>> 0;
+}
+const unit = (...parts) => hash32(parts.join("\0")) / 4294967296;
+
+function inc(root, path, amount = 1) {
+  const segments = String(path).split(".");
+  let cursor = root;
+  for (const segment of segments.slice(0, -1)) cursor = cursor[segment] ??= {};
+  const key = segments.at(-1);
+  cursor[key] = Number(cursor[key] ?? 0) + Number(amount);
+  return cursor[key];
+}
+
+function prerequisitesOf(skill) {
+  if (!skill.prerequisites) return [];
+  return Array.isArray(skill.prerequisites)
+    ? skill.prerequisites
+    : String(skill.prerequisites).split(",").map((value) => value.trim()).filter(Boolean);
+}
+
+export function clockFromMinute(minute) {
+  if (minute >= GAME_END_MINUTE) return { day: 100, hour: 24, minute: 0, minuteOfDay: 1440 };
+  const value = 600 + Math.max(0, Math.floor(minute));
+  const minuteOfDay = value % 1440;
+  return {
+    day: Math.floor(value / 1440) + 1,
+    hour: Math.floor(minuteOfDay / 60),
+    minute: minuteOfDay % 60,
+    minuteOfDay,
+  };
+}
+
+function syncClock(state) {
+  Object.assign(state, clockFromMinute(state.absoluteMinute));
+  state.phaseIndex = state.minuteOfDay >= 1320 || state.minuteOfDay < 600 ? 3 : state.minuteOfDay >= 1080 ? 2 : state.minuteOfDay >= 840 ? 1 : 0;
+  state.daypart = state.minuteOfDay < 480 ? "dawn" : state.minuteOfDay < 1080 ? "day" : state.minuteOfDay < 1320 ? "dusk" : "night";
+}
+
+const moment = (day, phase) => (day - 1) * 1440 + ([600, 840, 1080, 1320][phase] ?? 600) - 600;
+const failedLike = (status) => status === "failed" || status === "critical";
+
+function gateOpen(state, troubleId) {
+  const gate = GATES[troubleId];
+  if (!gate) return true;
+  const hits = gate.slice(1).filter((id) => failedLike(state.troubles[id]?.status)).length;
+  return gate[0] === "any" ? hits > 0 : hits === gate.length - 1;
+}
+
+function consequences(state, troubleId, status) {
+  const fail = failedLike(status);
+  const before = JSON.stringify(state.worldFlags);
+  if (troubleId === "T13" && fail) Object.assign(state.worldFlags, { worldTreeFallen: true, forestMazeOpen: true });
+  if (troubleId === "T08" && status === "resolved") state.worldFlags.elfApproval = true;
+  if (troubleId === "T12" && status === "resolved") state.worldFlags.blackridgePermit = true;
+  if (troubleId === "T15" && fail) state.worldFlags.foreignFleetLanded = true;
+  if (troubleId === "T17" && status === "resolved") state.worldFlags.secondSummoningStopped = true;
+  if (troubleId === "T18" && fail) state.worldFlags.colossusAwake = true;
+  if (troubleId === "T19" && status === "critical") state.worldFlags.blackridgeArmyAtCapital = true;
+  if (troubleId === "T19" && status === "failed") state.worldFlags.capitalFallen = true;
+  if (before !== JSON.stringify(state.worldFlags)) state.routeCache = {};
+}
+
+function publishRumor(state, model, data) {
+  const id = data.id ?? `RUM-${String(state.rumors.length + 1).padStart(6, "0")}`;
+  if (state.rumorById[id]) return;
+  const rumor = {
+    id,
+    troubleId: data.troubleId ?? null,
+    text: data.text,
+    origin: data.origin ?? state.player.location,
+    originMinute: state.absoluteMinute,
+    importance: data.importance ?? 0.7,
+    recipients: {},
+  };
+  state.rumors.push(rumor);
+  state.rumorById[id] = rumor;
+  if (data.playerKnows !== false) state.player.knownRumorIds.add(id);
+  state.history.push({ type: "RUMOR_PUBLISHED", minute: state.absoluteMinute, rumorId: id, troubleId: rumor.troubleId });
+}
+
+function transition(state, model, troubleId, to, reason) {
+  const runtime = state.troubles[troubleId];
+  if (!runtime || runtime.status === to) return false;
+  const from = runtime.status;
+  runtime.status = to;
+  runtime.transitions.push({ from, to, minute: state.absoluteMinute, reason });
+  if (to === "active") runtime.activatedAt = state.absoluteMinute;
+  if (TERMINAL.has(to)) runtime.terminalAt = state.absoluteMinute;
+  consequences(state, troubleId, to);
+  const trouble = model.troubleById[troubleId];
+  publishRumor(state, model, {
+    id: `RUM-${troubleId}-${to}`,
+    troubleId,
+    origin: trouble.primaryLocations[0],
+    importance: TERMINAL.has(to) || to === "critical" ? 0.95 : 0.75,
+    playerKnows: state.player.location === trouble.primaryLocations[0],
+    text: `${trouble.name}:${to}`,
+  });
+  state.history.push({ type: "TROUBLE_TRANSITION", minute: state.absoluteMinute, troubleId, from, to, reason });
+  return true;
+}
+
+function updateTroubles(state, model) {
+  for (const trouble of model.troubles) {
+    const runtime = state.troubles[trouble.id];
+    if (runtime.status === "scheduled" && state.absoluteMinute >= moment(trouble.startDay, trouble.startPhase)) {
+      const open = gateOpen(state, trouble.id);
+      transition(state, model, trouble.id, open ? "active" : "suppressed", open ? "scheduled-onset" : "gate-closed");
+    }
+    if (runtime.status === "active" && state.absoluteMinute >= moment(trouble.deadlineDay, trouble.deadlinePhase)) {
+      transition(state, model, trouble.id, "critical", "deadline-missed");
+    }
+    if (runtime.status === "critical" && state.absoluteMinute >= moment(trouble.finalDay, trouble.finalPhase)) {
+      transition(state, model, trouble.id, "failed", "final-deadline-missed");
+    }
+  }
+}
