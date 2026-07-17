@@ -89,6 +89,7 @@ function runMode({ mode, tuning, profiles, seedsPerProfile, model, battleData, s
         profile,
         tuning,
         seed: `${rootSeed}:${mode}:${profile.id}:${index}`,
+        maxActions: Number(tuning.maxActions ?? 6500),
       });
       runs.push(run);
     }
