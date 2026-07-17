@@ -9,7 +9,7 @@ import {
   availableRegionalMovementActionsV2, createInitialJourneyStateV2,
   generateChoiceActionsV2, simulatePlayerJourneyV2,
 } from "../lib/player-journey-v2.mjs";
-import { refreshSkillStateV2 } from "../lib/journey-v2-skills.mjs";
+import { issueEventSkillRewardV2, refreshSkillStateV2 } from "../lib/journey-v2-skills.mjs";
 import { resolveMovementActionV2 } from "../lib/journey-v2-resolver.mjs";
 
 const model = loadWorldModel();
@@ -67,6 +67,34 @@ test("flag unlocked skill requires event unlock and learn conditions", () => {
   assert.equal(state.metrics.skillAcquisitionViolations, 0);
 });
 
+test("reserved skill point remains available for a later flag unlock", () => {
+  const basics = skills.filter((entry) => entry.acquisitionCode === "basic_level_up" && Number(entry.requiredLevel ?? 1) <= 1 && !entry.prerequisites).slice(0, 3);
+  const flag = skills.find((entry) => entry.id === "SKL-0002");
+  assert.equal(basics.length, 3);
+  assert.ok(flag);
+  const sample = [...basics, flag];
+  const state = createInitialJourneyStateV2({ model, battleData, skills: sample, profile: balanced, tuning: config.tuned, seed: "flag-reserve-v2" });
+  assert.equal(state.player.skills.size, 2);
+  state.player.level = 2; state.player.sp += 1; refreshSkillStateV2(state, battleData, sample, balanced);
+  assert.equal(state.player.skills.size, 3);
+  state.player.level = 3; state.player.sp += 1; state.progress.combat.physicalKills = 2; refreshSkillStateV2(state, battleData, sample, balanced);
+  assert.equal(state.player.sp, 1);
+  state.progress.combat.physicalKills = 3; refreshSkillStateV2(state, battleData, sample, balanced);
+  assert.equal(state.player.skills.has(flag.id), true);
+  assert.equal(state.player.sp, 0);
+});
+
+test("special mission reward emits a structured event skill grant signal", () => {
+  const state = fresh();
+  state.player.level = 12;
+  const skillId = issueEventSkillRewardV2(state, battleData, skills, balanced, { missionId: "MSN2-TEST", troubleId: "T01", difficulty: 4 });
+  assert.ok(skillId);
+  assert.equal(state.player.skills.has(skillId), true);
+  assert.equal(state.metrics.eventGrantSignals, 1);
+  assert.equal(state.metrics.eventSkillGrants, 1);
+  assert.equal(state.metrics.skillAcquisitionViolations, 0);
+});
+
 test("equipment granted skill is effective only while its equipment is active", () => {
   const equipment = battleData.equipment.find((item) => item.grantedSkillId && battleData.playerSkillById.has(item.grantedSkillId));
   assert.ok(equipment);
@@ -86,6 +114,7 @@ test("same seed reproduces v2 journey and trouble resolutions are player-authori
   assert.equal(left.summary.fingerprint, right.summary.fingerprint);
   assert.equal(left.summary.replayMismatches, 0);
   assert.equal(left.summary.invalidTroubleResolutions, 0);
+  assert.equal(left.summary.movementBlocked, 0);
   assert.ok(left.summary.localMovementActions > 0);
   assert.ok(left.summary.specialMissionsDiscovered > 0);
 });
