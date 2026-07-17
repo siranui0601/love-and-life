@@ -12,7 +12,7 @@ on:
 jobs:
   simulate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,7 +23,7 @@ jobs:
       - run: npm run trpg:test
       - name: Run integrated player journeys v2
         env:
-          TRPG_PLAYER_V2_SEEDS: 1
+          TRPG_PLAYER_V2_SEEDS: 2
         run: node tools/trpg-sim/cli-player-v2.mjs
       - uses: actions/upload-artifact@v4
         if: always()
@@ -35,6 +35,7 @@ jobs:
             public/TRPG/player-simulation-v2-report.json
             tools/trpg-sim/lib
             tools/trpg-sim/config
+            tools/trpg-sim/fixtures
             tools/trpg-sim/test
             tools/trpg-sim/cli-player-v2.mjs
             package.json
