@@ -1,0 +1,35 @@
+name: TRPG integrated player simulation
+
+on:
+  pull_request:
+    paths:
+      - "tools/trpg-sim/**"
+      - "public/TRPG/**"
+      - "package.json"
+      - ".github/workflows/trpg-player-simulation.yml"
+  workflow_dispatch:
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run trpg:test
+      - name: Run integrated player journeys
+        env:
+          TRPG_PLAYER_SEEDS: 4
+        run: node tools/trpg-sim/cli-player.mjs --strict
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trpg-player-simulation
+          path: |
+            tools/trpg-sim/reports/player-latest.json
+            tools/trpg-sim/reports/player-latest.md
+            public/TRPG/player-simulation-report.json
