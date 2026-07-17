@@ -83,7 +83,10 @@ export function runBattleV2({ state, model, data, profile, encounterId, key, sit
   if (won) {
     state.metrics.wins += 1;
     gained = rewards(state, data, result, key);
-    addExperience(gained.exp, `battle:${encounterId}`);
+    const rawExp = gained.exp;
+    const awardedExp = Math.max(0, Math.round(rawExp * Number(state.tuning.battleExpMultiplier ?? 1)));
+    gained = { ...gained, rawExp, exp: awardedExp };
+    addExperience(awardedExp, `battle:${encounterId}`);
   } else {
     state.metrics.losses += 1;
     state.player.gold = Math.floor(state.player.gold * .9);
