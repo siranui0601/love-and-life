@@ -115,13 +115,14 @@ export function createSpecialMission(trouble, battleData, model, tuning = {}) {
   const difficulty = troubleDifficulty(trouble);
   const encounterId = eventEncounterForTrouble(trouble, battleData);
   const multiplier = Number(tuning.missionExpMultiplier ?? 1);
+  const specialMultiplier = Number(tuning.specialMissionExpMultiplier ?? 1);
   const activeDays = Math.max(1, Number(trouble.finalDay) - Number(trouble.startDay) + 1);
   const urgency = Math.max(0, 8 - activeDays);
   const steps = specialSteps(trouble, difficulty, encounterId, model);
   const weightedSteps = steps.reduce((sum, step) => sum + Number(step.required ?? 1), 0);
   const rawReward = trouble.id === "T01"
-    ? 60
-    : 35 + difficulty * 18 + weightedSteps * 8 + urgency * 4;
+    ? 85
+    : 50 + difficulty * 24 + weightedSteps * 10 + urgency * 5;
   return {
     id: `MSN-${trouble.id}`,
     kind: "special",
@@ -132,7 +133,7 @@ export function createSpecialMission(trouble, battleData, model, tuning = {}) {
     deadlineDay: trouble.deadlineDay,
     finalDay: trouble.finalDay,
     targetLocations: [...trouble.primaryLocations],
-    expReward: round10(rawReward * multiplier),
+    expReward: round10(rawReward * multiplier * specialMultiplier),
     goldReward: round10((5 + difficulty * 5) * (1 + difficulty / 8)),
     steps,
     sourceText: {
@@ -161,14 +162,18 @@ function permanentMission(id, chainId, tier, title, metric, target, expReward, d
 }
 
 const PERMANENT_CHAINS = Object.freeze([
-  { id: "kill", metric: "progress.combat.totalKills", rows: [[5, 35, 1], [20, 120, 3], [60, 360, 6]], title: (n) => `魔物を${n}体倒す` },
-  { id: "walk", metric: "progress.walkMinutes.total", rows: [[60, 30, 1], [300, 110, 3], [900, 320, 6]], title: (n) => `${n / 60}時間歩く` },
-  { id: "hub", metric: "progress.travel.distinctHubs", rows: [[3, 40, 1], [7, 150, 4], [11, 420, 7]], title: (n) => `${n}つの地域を訪れる` },
-  { id: "facility", metric: "progress.travel.distinctFacilities", rows: [[6, 35, 1], [20, 130, 4], [50, 380, 7]], title: (n) => `${n}か所の地域内施設を訪れる` },
-  { id: "win", metric: "progress.battles.wins", rows: [[3, 50, 2], [12, 180, 4], [35, 500, 7]], title: (n) => `戦闘に${n}回勝つ` },
-  { id: "investigate", metric: "progress.investigation.total", rows: [[3, 40, 1], [12, 150, 4], [30, 420, 7]], title: (n) => `${n}回調査する` },
-  { id: "talk", metric: "progress.social.conversations", rows: [[5, 30, 1], [20, 120, 3], [50, 350, 6]], title: (n) => `${n}回人と話す` },
-  { id: "special", metric: "progress.missions.specialCompleted", rows: [[1, 70, 2], [5, 260, 5], [12, 700, 8]], title: (n) => `特別ミッションを${n}件解決する` },
+  { id: "kill", metric: "progress.combat.totalKills", rows: [[5, 50, 1], [20, 180, 3], [60, 520, 6], [150, 1200, 9]], title: (n) => `魔物を${n}体倒す` },
+  { id: "walk", metric: "progress.walkMinutes.total", rows: [[60, 45, 1], [300, 160, 3], [900, 480, 6], [2400, 1100, 9]], title: (n) => `${n / 60}時間歩く` },
+  { id: "hub", metric: "progress.travel.distinctHubs", rows: [[3, 60, 1], [6, 220, 4], [9, 650, 7], [11, 1300, 9]], title: (n) => `${n}つの地域を訪れる` },
+  { id: "facility", metric: "progress.travel.distinctFacilities", rows: [[6, 50, 1], [20, 190, 4], [50, 600, 7], [85, 1400, 10]], title: (n) => `${n}か所の地域内施設を訪れる` },
+  { id: "win", metric: "progress.battles.wins", rows: [[3, 70, 2], [12, 260, 4], [35, 800, 7], [80, 1800, 10]], title: (n) => `戦闘に${n}回勝つ` },
+  { id: "investigate", metric: "progress.investigation.total", rows: [[3, 60, 1], [12, 220, 4], [30, 650, 7], [70, 1500, 10]], title: (n) => `${n}回調査する` },
+  { id: "talk", metric: "progress.social.conversations", rows: [[5, 50, 1], [20, 180, 3], [50, 520, 6], [120, 1200, 9]], title: (n) => `${n}回人と話す` },
+  { id: "special", metric: "progress.missions.specialCompleted", rows: [[1, 100, 2], [5, 400, 5], [12, 1100, 8], [18, 2200, 10]], title: (n) => `特別ミッションを${n}件解決する` },
+  { id: "earn", metric: "derived.economy.totalEarned", rows: [[30, 40, 1], [120, 150, 3], [350, 450, 6], [900, 1000, 9]], title: (n) => `累計${n}Gを稼ぐ` },
+  { id: "spend", metric: "progress.economy.goldSpent", rows: [[20, 40, 1], [80, 160, 3], [250, 500, 6], [700, 1200, 9]], title: (n) => `累計${n}Gを使う` },
+  { id: "rumor", metric: "derived.rumors.influence", rows: [[5, 60, 1], [30, 220, 4], [100, 700, 7], [300, 1600, 10]], title: (n) => `噂の影響を${n}点広げる` },
+  { id: "skill", metric: "derived.skills.totalUses", rows: [[10, 60, 1], [50, 240, 4], [150, 750, 7], [400, 1700, 10]], title: (n) => `スキルを${n}回使う` },
 ]);
 
 export function createPermanentMissions(tuning = {}) {
@@ -201,7 +206,7 @@ export function createMissionCatalog(model, battleData, tuning = {}) {
   const permanent = createPermanentMissions(tuning);
   const special = model.troubles.map((trouble) => createSpecialMission(trouble, battleData, model, tuning));
   return {
-    schemaVersion: "2.0.0",
+    schemaVersion: "3.0.0",
     permanent,
     special,
     byId: new Map([...permanent, ...special].map((mission) => [mission.id, mission])),
@@ -240,10 +245,26 @@ export function getPath(object, path) {
   return value;
 }
 
+function derivedMetric(gameState, metric) {
+  if (metric === "derived.economy.totalEarned") {
+    const economy = gameState.progress.economy ?? {};
+    return Number(economy.goldFromBattles ?? 0) + Number(economy.goldFromWork ?? 0) + Number(economy.goldEarnedFromSales ?? 0);
+  }
+  if (metric === "derived.rumors.influence") {
+    const rumors = gameState.progress.rumors ?? {};
+    return Number(rumors.npcRecipients ?? 0) + Number(rumors.npcReplans ?? 0) * 2;
+  }
+  if (metric === "derived.skills.totalUses") {
+    return Number(gameState.progress.combat?.physicalSkillUses ?? 0) + Number(gameState.progress.magic?.totalCasts ?? 0);
+  }
+  return null;
+}
+
 export function checkPermanentMission(mission, gameState) {
   let actual;
   if (mission.metric === "progress.travel.distinctHubs") actual = gameState.progress.travel.visitedHubs.size;
   else if (mission.metric === "progress.travel.distinctFacilities") actual = gameState.progress.travel.visitedFacilities.size;
+  else if (mission.metric.startsWith("derived.")) actual = Number(derivedMetric(gameState, mission.metric) ?? 0);
   else actual = Number(getPath(gameState, mission.metric) ?? 0);
   return { actual, complete: actual >= mission.target };
 }
