@@ -940,11 +940,15 @@ function choose(state, actions, profile) {
 function selectEncounter(state, data, profile, key) {
   const candidates = encounters(state, data, profile);
   const limit = dangerLimit(state, profile);
+  const safeTier = Math.max(1, Math.min(limit, 1 + Math.floor((state.player.level - 1) / 4)));
+  const targetTier = profile.id === "fighter" ? limit : profile.id === "cautious" ? Math.max(1, safeTier - 1) : safeTier;
   return weighted(candidates, key, (encounter) => {
-    const distance = Math.abs(Number(encounter.dangerTier ?? 1) - limit);
-    if (profile.id === "fighter") return Number(encounter.baseWeight || 1) * (1 + Number(encounter.dangerTier ?? 1) * 0.2);
-    if (profile.caution > profile.combat) return Number(encounter.baseWeight || 1) / (1 + distance + Number(encounter.dangerTier ?? 1) * 0.2);
-    return Number(encounter.baseWeight || 1) / (1 + distance * 0.5);
+    const tier = Number(encounter.dangerTier ?? 1);
+    const distance = Math.abs(tier - targetTier);
+    const base = Number(encounter.baseWeight || 1);
+    if (profile.id === "fighter") return base * (1 + tier * 0.2);
+    if (profile.caution > profile.combat) return base / (1 + distance * 1.5 + Math.max(0, tier - targetTier) * 0.5);
+    return base / (1 + distance);
   });
 }
 
