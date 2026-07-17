@@ -1,0 +1,153 @@
+    }
+    if (runtime.status === "active" && state.absoluteMinute >= moment(trouble.deadlineDay, trouble.deadlinePhase)) {
+      transition(state, model, trouble.id, "critical", "deadline-missed");
+    }
+    if (runtime.status === "critical" && state.absoluteMinute >= moment(trouble.finalDay, trouble.finalPhase)) {
+      transition(state, model, trouble.id, "failed", "final-deadline-missed");
+    }
+  }
+}
+
+function routeAllowed(state, route, from, to) {
+  if (route.gate === "elf-access") {
+    return from === "エルフの隠れ里" || to !== "エルフの隠れ里" || state.worldFlags.worldTreeFallen || state.worldFlags.elfApproval;
+  }
+  if (route.gate === "blackridge-forest-access") {
+    return state.worldFlags.worldTreeFallen || state.worldFlags.blackridgePermit || from === "黒嶺連合領";
+  }
+  return true;
+}
+
+export function shortestTravelPlan(model, state, from, destination) {
+  if (from === destination) return { destination, hours: 0, routeIds: [], hubs: [from] };
+  const queue = [{ hub: from, cost: 0, routeIds: [], hubs: [from] }];
+  const best = new Map([[from, 0]]);
+  while (queue.length) {
+    queue.sort((left, right) => left.cost - right.cost || left.hub.localeCompare(right.hub, "ja"));
+    const current = queue.shift();
+    if (current.hub === destination) return { destination, hours: current.cost, routeIds: current.routeIds, hubs: current.hubs };
+    if (current.cost > best.get(current.hub)) continue;
+    for (const edge of model.adjacency[current.hub] ?? []) {
+      const route = model.routeById[edge.routeId];
+      if (!route || !routeAllowed(state, route, edge.from, edge.to)) continue;
+      const cost = current.cost + edge.hours;
+      if (cost >= (best.get(edge.to) ?? Infinity)) continue;
+      best.set(edge.to, cost);
+      queue.push({ hub: edge.to, cost, routeIds: [...current.routeIds, edge.routeId], hubs: [...current.hubs, edge.to] });
+    }
+  }
+  return null;
+}
+
+function preferredArrivalFacility(model, hub) {
+  const facilities = model.facilitiesByHub[hub] ?? [];
+  return facilities.find((facility) => /門|入口|広場|駅|港|船着|宿|詰所/u.test(`${facility.name} ${facility.type}`)) ?? facilities[0] ?? null;
+}
+
+function localMoveMinutes(model, state, facility) {
+  const facilities = model.facilitiesByHub[state.player.location] ?? [];
+  const fromIndex = Math.max(0, facilities.findIndex((entry) => entry.id === state.player.facilityId));
+  const toIndex = Math.max(0, facilities.findIndex((entry) => entry.id === facility.id));
+  const spread = Math.abs(toIndex - fromIndex);
+  const typePenalty = /坑道|森|外れ|地下|遺跡|世界樹|港/u.test(`${facility.name} ${facility.type}`) ? 5 : 0;
+  return Math.max(4, Math.min(24, 5 + spread * 2 + typePenalty));
+}
+
+export function availableLocalMovementActions(state, model) {
+  return (model.facilitiesByHub[state.player.location] ?? [])
+    .filter((facility) => facility.id !== state.player.facilityId)
+    .map((facility) => ({
+      id: `MOVE_LOCAL:${facility.id}`,
+      type: "move",
+      movementScope: "local",
+      destination: state.player.location,
+      destinationHub: state.player.location,
+      destinationFacilityId: facility.id,
+      minutes: localMoveMinutes(model, state, facility),
+      label: `${facility.name}へ移動する（地域内・${localMoveMinutes(model, state, facility)}分）`,
+    }))
+    .sort((left, right) => left.minutes - right.minutes || left.destinationFacilityId.localeCompare(right.destinationFacilityId));
+}
+
+export function availableTravelActions(state, model) {
+  return model.locations
+    .filter((location) => location !== state.player.location)
+    .map((location) => shortestTravelPlan(model, state, state.player.location, location))
+    .filter(Boolean)
+    .map((plan) => {
+      const arrival = preferredArrivalFacility(model, plan.destination);
+      return {
+        id: `MOVE_REGION:${plan.destination}`,
+        type: "move",
+        movementScope: "regional",
+        destination: plan.destination,
+        destinationHub: plan.destination,
+        destinationFacilityId: arrival?.id ?? null,
+        minutes: Math.max(10, Math.round(plan.hours * 60)),
+        routeIds: plan.routeIds,
+        hubs: plan.hubs,
+        label: `${plan.destination}へ移動する（地域間・${plan.hours.toFixed(2)}時間）`,
+      };
+    })
+    .sort((left, right) => left.minutes - right.minutes || left.destination.localeCompare(right.destination, "ja"));
+}
+
+export function availableMovementActions(state, model) {
+  return [...availableLocalMovementActions(state, model), ...availableTravelActions(state, model)];
+}
+
+function routeTags(model, routeIds) {
+  const text = routeIds.map((id) => `${model.routeById[id]?.nature ?? ""} ${model.routeById[id]?.from ?? ""} ${model.routeById[id]?.to ?? ""}`).join(" ");
+  return [
+    /森|林/u.test(text) && "forest",
+    /荒野|街道|近郊|平原/u.test(text) && "wilderness",
+    /洞窟|坑道/u.test(text) && "cave",
+    /川|河|水|港|海/u.test(text) && "waterSide",
+  ].filter(Boolean);
+}
+
+function npcHub(npc, day) {
+  return day <= 1 ? npc.initialLocation : npc.home || npc.initialLocation;
+}
+
+function npcFacility(npc, day) {
+  return day <= 1 ? npc.initialFacilityId : npc.mainFacilityId || npc.initialFacilityId;
+}
+
+function routeHours(state, model, from, to) {
+  const key = `${from}->${to}`;
+  if (state.routeCache[key] !== undefined) return state.routeCache[key];
+  state.routeCache[key] = shortestTravelPlan(model, state, from, to)?.hours ?? Infinity;
+  return state.routeCache[key];
+}
+
+function propagateRumors(state, model) {
+  for (const rumor of state.rumors) {
+    for (const npc of model.npcs) {
+      if (rumor.recipients[npc.id]) continue;
+      const hub = npcHub(npc, state.day);
+      const hours = routeHours(state, model, rumor.origin, hub);
+      if (state.absoluteMinute < rumor.originMinute + Math.ceil(hours * 60) + 30) continue;
+      if (!(rumor.importance >= 0.8 || npc.relatedTroubleIds.includes(rumor.troubleId) || npc.initialKnowledge?.interests?.some((interest) => rumor.text.includes(interest)))) continue;
+      rumor.recipients[npc.id] = { minute: state.absoluteMinute, hub };
+      inc(state.progress, "rumors.npcRecipients");
+      if (rumor.troubleId && npc.relatedTroubleIds.includes(rumor.troubleId)) {
+        inc(state.progress, "rumors.npcReplans");
+        if (npc.disposition === "mitigate") state.troubles[rumor.troubleId].casualtyMitigation += npc.importanceWeight * 0.05;
+      }
+    }
+  }
+}
+
+function advance(state, model, minutes, reason) {
+  const value = Math.max(0, Math.round(Number(minutes) || 0));
+  if (!value) return;
+  const before = state.absoluteMinute;
+  state.absoluteMinute = Math.min(GAME_END_MINUTE, state.absoluteMinute + value);
+  syncClock(state);
+  updateTroubles(state, model);
+  propagateRumors(state, model);
+  state.history.push({ type: "TIME_ADVANCE", minute: before, minutes: value, reason, afterMinute: state.absoluteMinute });
+}
+
+function conditionAtom(text, state) {
