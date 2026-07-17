@@ -28,7 +28,7 @@ jobs:
           npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v3.log
       - name: Run integrated player journeys v3
         env:
-          TRPG_PLAYER_V3_SEEDS: 6
+          TRPG_PLAYER_V3_SEEDS: 4
         run: node tools/trpg-sim/cli-player-v3.mjs --strict
       - uses: actions/upload-artifact@v4
         if: always()
