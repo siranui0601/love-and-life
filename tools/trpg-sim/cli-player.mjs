@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { PLAYER_PROFILES } from "./lib/player-journey.mjs";
 import {
   renderPlayerSimulationMarkdown,
   runIntegratedPlayerSimulationSuite,
@@ -12,7 +13,19 @@ const publicDirectory = path.resolve(HERE, "..", "..", "public", "TRPG");
 fs.mkdirSync(reportsDirectory, { recursive: true });
 fs.mkdirSync(publicDirectory, { recursive: true });
 
-const report = await runIntegratedPlayerSimulationSuite();
+// Active crises should outrank idle small talk for profiles that intend to engage
+// with the story. Once no urgent mission action is available, observation should
+// beat repeatedly talking to the same local population all day.
+const simulationProfiles = PLAYER_PROFILES.map((profile) => {
+  const crisisStory = profile.story >= 0.55 ? 1 : profile.story;
+  return Object.freeze({
+    ...profile,
+    story: crisisStory,
+    explore: Math.max(profile.explore, crisisStory * 2.6),
+  });
+});
+
+const report = await runIntegratedPlayerSimulationSuite({ profiles: simulationProfiles });
 const markdown = renderPlayerSimulationMarkdown(report);
 const json = `${JSON.stringify(report, null, 2)}\n`;
 fs.writeFileSync(path.join(reportsDirectory, "player-latest.json"), json);
