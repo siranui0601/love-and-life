@@ -9,6 +9,7 @@
     "trpg:simulate": "npm run trpg:test && node tools/trpg-sim/cli.mjs",
     "trpg:player-simulate": "npm run trpg:test && node tools/trpg-sim/cli-player.mjs",
     "trpg:player-simulate:v2": "npm run trpg:test && node tools/trpg-sim/cli-player.mjs",
+    "trpg:player-simulate:v3": "npm run trpg:test && node tools/trpg-sim/cli-player-v3.mjs",
     "trpg:preview": "node tools/trpg-sim/static-server.mjs"
   },
   "dependencies": {

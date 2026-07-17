@@ -12,7 +12,7 @@ on:
 jobs:
   simulate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,19 +20,25 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run trpg:test
-      - name: Run integrated player journeys v2
+      - name: Run TRPG tests
+        shell: bash
+        run: |
+          mkdir -p tools/trpg-sim/reports
+          set -o pipefail
+          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v3.log
+      - name: Run integrated player journeys v3
         env:
-          TRPG_PLAYER_SEEDS: 4
-        run: node tools/trpg-sim/cli-player.mjs --strict
+          TRPG_PLAYER_V3_SEEDS: 4
+        run: node tools/trpg-sim/cli-player-v3.mjs --strict
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trpg-player-simulation-v2
+          name: trpg-player-simulation-v3
           path: |
-            tools/trpg-sim/reports/player-v2-latest.json
-            tools/trpg-sim/reports/player-v2-latest.md
+            tools/trpg-sim/reports/test-v3.log
+            tools/trpg-sim/reports/player-v3-latest.json
+            tools/trpg-sim/reports/player-v3-latest.md
             tools/trpg-sim/reports/player-latest.json
             tools/trpg-sim/reports/player-latest.md
             public/TRPG/player-simulation-report.json
-            public/TRPG/player-simulation-v2-report.json
+            public/TRPG/player-simulation-v3-report.json

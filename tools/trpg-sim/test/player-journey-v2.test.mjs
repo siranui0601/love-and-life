@@ -50,12 +50,12 @@ test("mission catalog has staged permanent chains and one special mission per tr
   const state = fresh();
   const audit = auditMissionCatalog(state.catalog, model, battleData);
   assert.equal(audit.ok, true);
-  assert.equal(audit.counts.permanentDefinitions, 24);
-  assert.equal(audit.counts.permanentChains, 8);
-  assert.equal(audit.counts.initialActivePermanent, 8);
+  assert.equal(audit.counts.permanentDefinitions, 48);
+  assert.equal(audit.counts.permanentChains, 12);
+  assert.equal(audit.counts.initialActivePermanent, 12);
   assert.equal(audit.counts.special, model.troubles.length);
   const activePermanent = state.catalog.permanent.filter((mission) => state.missions[mission.id].status === "active");
-  assert.equal(activePermanent.length, 8);
+  assert.equal(activePermanent.length, 12);
 });
 
 test("early and late trouble action paths can resolve through player actions", () => {
