@@ -29,7 +29,11 @@ function encounterAllowed(encounter, state) {
   return text.split(/\s+AND\s+/iu).every((part) => conditionAtom(part, state));
 }
 
-function dangerLimit(state, profile) { return Math.max(1, Math.min(10, 1 + Math.floor((state.player.level - 1) / 3) + (profile.combat - profile.caution > .4 ? 2 : profile.combat > profile.caution ? 1 : 0))); }
+function dangerLimit(state, profile) {
+  const levelBand = 1 + Math.floor((state.player.level - 1) / 4);
+  const appetite = profile.combat - profile.caution > .4 ? 2 : profile.combat > profile.caution ? 1 : 0;
+  return Math.max(1, Math.min(10, levelBand + appetite));
+}
 function encounters(state, data, profile, eventOnly = false) { const limit = dangerLimit(state, profile); return data.encounters.filter((x) => x.region === state.player.location && x.status === "active" && encounterAllowed(x, state)).filter((x) => eventOnly ? x.avoidability === "event" : !["event", "authorization", "diplomacy"].includes(x.avoidability)).filter((x) => x.dangerTier <= limit + (profile.id === "fighter" ? 1 : 0)); }
 function weighted(items, key) { if (!items.length) return null; const total = items.reduce((sum, item) => sum + Math.max(1, Number(item.baseWeight || 1)), 0); let cursor = unitV2(key) * total; for (const item of items) { cursor -= Math.max(1, Number(item.baseWeight || 1)); if (cursor <= 0) return item; } return items.at(-1); }
 
@@ -46,7 +50,16 @@ function travelEncounter(state, model, data, skills, profile, action) {
   const chance = Number(state.tuning.travelEncounterBaseChance ?? .1) * Math.min(2, action.minutes / 180);
   if (unitV2(state.seed, "travel", state.metrics.regionalMovementActions, state.metrics.battles) >= chance) return null;
   const encounter = weighted(encounters(state, data, profile), `${state.seed}:travel:${state.metrics.regionalMovementActions}`);
-  return encounter ? runBattleV2({ state, model, data, profile, encounterId: encounter.id, key: `${state.seed}:travel:${state.metrics.regionalMovementActions}:${encounter.id}:${state.metrics.battles}`, addExperience: addExp(state, data, skills, profile) }) : null;
+  if (!encounter) return null;
+  const safeTier = 1 + Math.floor((state.player.level - 1) / 4);
+  const tierRisk = Math.max(0, Number(encounter.dangerTier ?? 1) - safeTier);
+  const avoidChance = Math.min(.92, .15 + profile.caution * .55 + tierRisk * .18 + (1 - state.player.hpRatio) * .25);
+  if (unitV2(state.seed, "travel-avoid", state.metrics.regionalMovementActions, encounter.id, state.day) < avoidChance) {
+    state.metrics.travelEncountersAvoided += 1;
+    state.history.push({ type: "TRAVEL_ENCOUNTER_AVOIDED", minute: state.absoluteMinute, encounterId: encounter.id, dangerTier: encounter.dangerTier, avoidChance });
+    return null;
+  }
+  return runBattleV2({ state, model, data, profile, encounterId: encounter.id, key: `${state.seed}:travel:${state.metrics.regionalMovementActions}:${encounter.id}:${state.metrics.battles}`, addExperience: addExp(state, data, skills, profile) });
 }
 
 export function resolveMovementActionV2(state, model, data, skills, profile, action) {
