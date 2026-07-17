@@ -21,14 +21,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run trpg:test
-      - name: Run integrated player journeys v1
-        env:
-          TRPG_PLAYER_SEEDS: 4
-        run: node tools/trpg-sim/cli-player.mjs --strict
       - name: Run integrated player journeys v2
         env:
           TRPG_PLAYER_V2_SEEDS: 4
         run: node tools/trpg-sim/cli-player-v2.mjs
+      - name: Run integrated player journeys v1
+        env:
+          TRPG_PLAYER_SEEDS: 4
+        run: node tools/trpg-sim/cli-player.mjs --strict
       - uses: actions/upload-artifact@v4
         if: always()
         with:
