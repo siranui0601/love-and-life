@@ -6,6 +6,7 @@ import { mean } from "./statistics.mjs";
 
 const round = (value, digits = 4) => Number(Number(value ?? 0).toFixed(digits));
 const percent = (value, digits = 1) => `${(Number(value ?? 0) * 100).toFixed(digits)}%`;
+const digest = (value) => crypto.createHash("sha256").update(JSON.stringify(value ?? null)).digest("hex");
 
 export function inspectPublicCatalog(projectRoot) {
   const dataDirectory = path.join(projectRoot, "public", "TRPG", "data");
@@ -118,16 +119,33 @@ function compactBattleScenarios(battleSuite) {
 }
 
 function buildFindings({ sourceAudit, worldBaseline, worldTuned, progression, economy, battleAudit, battleSuite, tuning, publicCatalog }) {
+  const representative = worldTuned.representative;
+  const coverage = representative.coverage ?? {};
+  const expectedTicks = Number(coverage.expectedStateTicks ?? sourceAudit.counts.npcs * 400);
+  const observedTicks = Number(coverage.observedStateTicks ?? 0);
+  const trackedNpcs = Number(coverage.trackedNpcCount ?? 0);
+  const timelineNpcs = Number(coverage.npcTimelineCount ?? 0);
+  const evidenceComplete = expectedTicks > 0 && observedTicks >= expectedTicks && timelineNpcs >= sourceAudit.counts.npcs;
+  const failedCrises = (representative.crisisOutcomes ?? []).filter((entry) => ["critical", "failed"].includes(entry.status));
+  const deaths = Number(coverage.dead ?? 0);
+  const missing = Number(coverage.missing ?? 0);
   return [
     {
-      severity: "verified",
-      title: "100日×100 seedを不変条件違反ゼロで完走",
-      detail: `既定・調整後とも全seedが400 tickを完走。${sourceAudit.counts.npcs} NPC、${sourceAudit.counts.troubles}事件、${sourceAudit.counts.chains}連鎖、${worldTuned.representative.summary.movements}回の移動で、テレポート・未知拠点・期限前遷移は0件です。`,
+      severity: evidenceComplete ? "verified" : "blocker",
+      title: evidenceComplete ? "全NPCの100日軌跡を個別に再生可能" : "全NPCの個別tick証跡が不足",
+      detail: evidenceComplete
+        ? `${trackedNpcs}/${sourceAudit.counts.npcs} NPC、${observedTicks.toLocaleString("ja-JP")}/${expectedTicks.toLocaleString("ja-JP")}状態tickを記録。移動・知識・再計画・生死を代表seedの個別軌跡へ保持し、同一fingerprintで再生できます。`
+        : `NPC索引は${trackedNpcs}/${sourceAudit.counts.npcs}件ですが、個別状態tickは${observedTicks.toLocaleString("ja-JP")}/${expectedTicks.toLocaleString("ja-JP")}、100日タイムラインは${timelineNpcs}/${sourceAudit.counts.npcs}件です。総数カウンターだけでは「生きた世界」の証拠にならないため検証未完了とします。`,
     },
     {
-      severity: "applied",
-      title: "NPCだけで生まれる結末の偏りを緩和",
-      detail: `既定は平均${round(worldBaseline.resolved.mean, 2)}/${sourceAudit.counts.troubles}件解決。16点探索から中立NPCの抑止判断${percent(tuning.world.neutralMitigationProbability, 0)}・通常事件難度係数${tuning.world.resolutionDifficultyScale}・T13係数${tuning.world.difficultyScaleByTrouble.T13}を採用し、平均${round(worldTuned.resolved.mean, 2)}件、T13成功${worldTuned.seedsWithT13Resolved}/${worldTuned.seeds} seedまで分岐を拡張しました。`,
+      severity: failedCrises.length || deaths || missing ? "warning" : "verified",
+      title: `プレイヤー非介入で${failedCrises.length}危機が破局・危険終端`,
+      detail: `代表seedでは死亡${deaths}人、行方不明${missing}人。失敗・危険終端は${failedCrises.map((entry) => `${entry.troubleId}:${entry.name}`).join(" / ") || "なし"}。救済せず、原因事件とNPCの生死・退場を因果IDで追跡します。`,
+    },
+    {
+      severity: "verified",
+      title: "作者設定の危機解決をプレイヤー専権として固定",
+      detail: `NO PLAYERでは既定・調整後とも平均解決${round(worldTuned.resolved.mean, 2)}/${sourceAudit.counts.troubles}件、T13成功${worldTuned.seedsWithT13Resolved}/${worldTuned.seeds} seedです。NPCの捜索・警告・治療・避難は死傷軽減へだけ加算し、事件のresolutionProgressには加算しません。全危機の回避はプレイヤー介入が必要です。`,
     },
     {
       severity: "blocker",
@@ -182,6 +200,20 @@ function buildFindings({ sourceAudit, worldBaseline, worldTuned, progression, ec
   ];
 }
 
+function compactSweepSummary(sweep) {
+  const { representative, ...summary } = sweep;
+  return {
+    ...summary,
+    representative: representative ? {
+      seed: representative.seed,
+      fingerprint: representative.fingerprint,
+      replay: representative.replay,
+      summary: representative.summary,
+      coverage: representative.coverage,
+    } : null,
+  };
+}
+
 export function buildSimulationReport({
   generatedAt,
   seed,
@@ -209,8 +241,20 @@ export function buildSimulationReport({
     publicCatalog,
   });
   const sourceWarnings = findings.filter((finding) => ["warning", "blocker"].includes(finding.severity)).length;
+  const representative = worldTuned.representative;
+  const replay = {
+    rootSeed: seed,
+    representativeSeed: representative.seed,
+    fingerprint: representative.fingerprint,
+    engineVersion: representative.replay?.engineVersion ?? null,
+    rngVersion: representative.replay?.rngVersion ?? null,
+    inputDigest: digest(sources.map(({ spreadsheetId, title, retrievedAt }) => ({ spreadsheetId, title, retrievedAt }))),
+    tuningDigest: digest(tuning.world),
+    deterministic: Boolean(representative.fingerprint),
+    ...(representative.replay ?? {}),
+  };
   return {
-    schemaVersion: "1.0.0",
+    schemaVersion: "2.0.0",
     meta: {
       generatedAt,
       seed,
@@ -230,12 +274,19 @@ export function buildSimulationReport({
     sourceAudit,
     tuning,
     world: {
-      baselineSweep: worldBaseline,
-      tunedSweep: worldTuned,
-      summary: worldTuned.representative.summary,
-      days: worldTuned.representative.days,
-      transitions: worldTuned.representative.transitions,
-      diagnostics: worldTuned.representative.diagnostics,
+      baselineSweep: compactSweepSummary(worldBaseline),
+      tunedSweep: compactSweepSummary(worldTuned),
+      replay,
+      summary: representative.summary,
+      coverage: representative.coverage ?? {},
+      days: representative.days,
+      populationByTick: representative.populationByTick ?? [],
+      npcIndex: representative.npcIndex ?? [],
+      npcTraces: representative.npcTraces ?? [],
+      events: representative.events ?? [],
+      crisisOutcomes: representative.crisisOutcomes ?? [],
+      transitions: representative.transitions,
+      diagnostics: representative.diagnostics,
     },
     progression,
     economy,
@@ -253,14 +304,41 @@ export function buildSimulationReport({
 }
 
 export function compactPublicReport(report) {
+  const omitEmpty = (entry) => Object.fromEntries(Object.entries(entry).filter(([, value]) =>
+    value !== null && value !== undefined && value !== false && !(Array.isArray(value) && value.length === 0)
+  ));
+  const compactNpcTraces = (report.world.npcTraces ?? []).map((trace) => ({
+    id: trace.id,
+    daily: (trace.daily ?? []).map((entry) => ({
+      day: entry.day,
+      location: entry.location,
+      vitalState: entry.vitalState === "alive" ? undefined : entry.vitalState,
+      presence: entry.presence === "present" ? undefined : entry.presence,
+      goalId: entry.goalId,
+      action: (entry.actions ?? []).join("→") || entry.action,
+      replanned: entry.replanned || undefined,
+      movementCount: entry.movementCount || undefined,
+      knowledgeCount: entry.knowledgeCount || undefined,
+    })),
+  }));
+  const compactEvents = (report.world.events ?? [])
+    .filter((entry) => entry.type !== "initial" && !(entry.type === "movement" && entry.movementKind === "local"))
+    .map(omitEmpty);
   return {
     schemaVersion: report.schemaVersion,
     meta: report.meta,
     quality: report.quality,
     sourceCounts: report.sourceCounts,
     world: {
+      replay: report.world.replay,
       summary: report.world.summary,
+      coverage: report.world.coverage,
       days: report.world.days,
+      populationByTick: report.world.populationByTick,
+      npcIndex: (report.world.npcIndex ?? []).map(omitEmpty),
+      npcTraces: compactNpcTraces,
+      events: compactEvents,
+      crisisOutcomes: report.world.crisisOutcomes,
       transitions: report.world.transitions,
       baseline: {
         resolved: report.world.baselineSweep.resolved,
@@ -312,7 +390,7 @@ export function renderMarkdownReport(report) {
     return `| ${tier} | ${physical ? percent(physical.meanWinRate) : "—"} | ${magic ? percent(magic.meanWinRate) : "—"} | ${mixed ? percent(mixed.meanWinRate) : "—"} | ${tunedMixed ? percent(tunedMixed.meanWinRate) : "—"} |`;
   }).join("\n");
   const findings = report.findings.map((finding, index) =>
-    `${index + 1}. **${finding.title}**（${finding.severity}）  \n   ${finding.detail}`
+    `${index + 1}. **${finding.title}**（${finding.severity}）\n\n   ${finding.detail}`
   ).join("\n");
 
   return `# TRPG（仮題）自律世界・戦闘バランス検証レポート
@@ -324,7 +402,7 @@ export function renderMarkdownReport(report) {
 
 ## 結論
 
-世界はユーザー入力なしで100日まで完走し、全事件が終端します。ルート時間、イベント順序、ハードゲート、GOAP候補、NPC位置の不変条件違反は0件です。一方、取得経路が未配線のスキル、初日生活費、戦闘の未構造化効果、装備価格の逆転が残るため、「動く世界」と「確定版バランス」は分けて扱います。
+世界はユーザー入力なしで100日まで完走し、作者設定の19危機はNPCだけでは1件も解決されず、すべて失敗終端します。110人×400 tickの状態、意思決定、施設内・都市間移動、噂、知識、生死を記録し、ルート時間、イベント順序、ハードゲート、NPC位置の不変条件違反は0件です。一方、取得経路が未配線のスキル、初日生活費、戦闘の未構造化効果、装備価格の逆転が残るため、「動く世界」と「確定版バランス」は分けて扱います。
 
 ## 世界シミュレーション
 
@@ -334,6 +412,8 @@ export function renderMarkdownReport(report) {
 | 調整後 | ${round(report.world.tunedSweep.resolved.mean, 2)} | ${report.world.tunedSweep.resolved.median} | ${report.world.tunedSweep.resolved.minimum}〜${report.world.tunedSweep.resolved.maximum} | ${report.world.tunedSweep.invariantFailures} | ${report.world.tunedSweep.seedsWithT13Resolved} |
 
 調整後は中立NPCの抑止判断率${percent(report.tuning.world.neutralMitigationProbability, 0)}、通常事件難度係数${report.tuning.world.resolutionDifficultyScale}、大分岐T13係数${report.tuning.world.difficultyScaleByTrouble.T13}。これはシートに存在しないシミュレーション仮定の校正で、事件そのものの原表値は変更していません。
+
+代表seedでは状態tick ${report.world.coverage.observedStateTicks?.toLocaleString("ja-JP")}/${report.world.coverage.expectedStateTicks?.toLocaleString("ja-JP")}、行動可能tickの意思決定率${percent(report.world.coverage.decisionCoverage, 0)}、移動${report.world.coverage.movers}/${report.world.coverage.npcCount}人、知識獲得${report.world.coverage.learners}/${report.world.coverage.npcCount}人です。T01は救出失敗となり、フィンの死亡と救助側の負傷・失踪を関連危機ID付きで記録します。
 
 ## 戦闘シミュレーション
 

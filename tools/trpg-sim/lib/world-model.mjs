@@ -41,6 +41,51 @@ const CANONICAL_HUBS = Object.freeze([
   "黒嶺連合領",
 ]);
 
+const FACILITY_HUB_TABS = Object.freeze([
+  "北陵要塞",
+  "ドワーフ洞窟",
+  "交易都市",
+  "犯罪都市",
+  "辺境の村",
+  "古代神殿",
+  "田園の村",
+  "王都",
+  "森",
+  "エルフの隠れ里",
+  "魔王領",
+]);
+
+const FACILITY_REFERENCE_FALLBACKS = Object.freeze({
+  "NPC003:LOC_FARM_BOARD": "LOC_FARM_SQUARE",
+  "NPC015:LOC_TRADE_DOCK": "LOC_TRADE_PORT",
+});
+
+const FATE_OUTCOME_KEYWORDS = Object.freeze([
+  "死亡",
+  "戦死",
+  "行方不明",
+  "消息不明",
+  "消息不安定",
+  "未救出",
+  "負傷",
+  "衰弱",
+  "病状悪化",
+  "体調悪化",
+  "逃亡",
+  "避難",
+  "退去",
+  "追放",
+  "失職",
+  "信用失墜",
+  "閉鎖",
+  "停止",
+  "消滅",
+  "精霊化",
+  "力を失う",
+  "治療力喪失",
+  "口封じ",
+]);
+
 const IMPORTANCE_WEIGHT = Object.freeze({ S: 1.6, A: 1.25, B: 0.85, C: 0.5 });
 
 const SUPPORTIVE_GOAL = /阻止|救|守|見つけ|特定|維持|止め|改善|生き延び|真相|平和|安全|保護|避難|警告|治療|和解|調べ|突き止め|届ける|見極め|避ける|鎮める|明らか/u;
@@ -64,6 +109,14 @@ function asText(value) {
 
 function extractTroubleIds(value) {
   return [...new Set((asText(value).match(/T\d{2}/gu) ?? []))];
+}
+
+function extractFacilityIds(value) {
+  return [...new Set((asText(value).match(/LOC_[A-Z0-9_]+/gu) ?? []))];
+}
+
+function splitTags(value) {
+  return asText(value).split(/[,、，]/u).map(asText).filter(Boolean);
 }
 
 function parseDay(value, label) {
@@ -270,17 +323,161 @@ function parseChains(rows) {
     });
 }
 
-function parseNpcs(rows) {
+function parseFacilities(snapshot) {
+  const facilities = [];
+  for (const sourceHub of FACILITY_HUB_TABS) {
+    const rows = snapshot.tabs[sourceHub];
+    if (!Array.isArray(rows)) throw new Error(`施設タブがありません: ${sourceHub}`);
+    const headerIndex = rows.findIndex((row) => asText(row?.[0]) === "施設ID");
+    if (headerIndex < 0) throw new Error(`施設ヘッダーが見つかりません: ${sourceHub}`);
+    const hub = canonicalizeLocation(sourceHub);
+    for (const [rowOffset, row] of rows.slice(headerIndex + 1).entries()) {
+      const id = asText(row?.[0]);
+      if (!/^LOC_[A-Z0-9_]+$/u.test(id)) continue;
+      facilities.push({
+        id,
+        sourceOrder: facilities.length,
+        sourceRow: headerIndex + rowOffset + 2,
+        sourceHub,
+        hub,
+        name: asText(row[1]),
+        type: asText(row[2]),
+        function: asText(row[3]),
+        relatedNpcText: asText(row[4]),
+        relatedNpcIds: [],
+        productPriceText: asText(row[5]),
+        relatedTroubleText: asText(row[6]),
+        relatedTroubleIds: extractTroubleIds(row[6]),
+        notes: asText(row[7]),
+      });
+    }
+  }
+  return facilities;
+}
+
+function resolveFacilityNpcIds(facilities, npcs) {
+  const namedNpcs = npcs.filter((npc) => npc.name.length >= 2);
+  return facilities.map((facility) => ({
+    ...facility,
+    relatedNpcIds: namedNpcs
+      .filter((npc) => facility.relatedNpcText.includes(npc.name))
+      .map((npc) => npc.id),
+  }));
+}
+
+function resolveRelatedFacilityIds(npcId, rawIds, facilityById) {
+  const resolved = [];
+  const fallbacks = [];
+  const unknown = [];
+  for (const sourceId of rawIds) {
+    if (facilityById[sourceId]) {
+      resolved.push(sourceId);
+      continue;
+    }
+    const fallbackId = FACILITY_REFERENCE_FALLBACKS[`${npcId}:${sourceId}`];
+    if (fallbackId && facilityById[fallbackId]) {
+      resolved.push(fallbackId);
+      fallbacks.push({ field: "relatedFacilities", sourceId, fallbackId });
+    } else {
+      unknown.push(sourceId);
+    }
+  }
+  return {
+    ids: [...new Set(resolved)],
+    fallbacks,
+    unknown,
+  };
+}
+
+function chooseMainFacilityId(sourceMainFacilityId, home, initialLocation, relatedFacilityIds, facilityById, facilitiesByHub) {
+  if (facilityById[sourceMainFacilityId]) return sourceMainFacilityId;
+  const relatedAtHome = relatedFacilityIds.find((id) => facilityById[id]?.hub === home);
+  if (relatedAtHome) return relatedAtHome;
+  const relatedAtInitial = relatedFacilityIds.find((id) => facilityById[id]?.hub === initialLocation);
+  if (relatedAtInitial) return relatedAtInitial;
+  if (relatedFacilityIds[0]) return relatedFacilityIds[0];
+  return facilitiesByHub[home]?.[0]?.id ?? facilitiesByHub[initialLocation]?.[0]?.id ?? null;
+}
+
+function chooseInitialFacility(sourceInitialLocation, initialLocation, mainFacilityId, relatedFacilityIds, facilities, facilityById, facilitiesByHub) {
+  const exactSourceMatch = facilities.find((facility) => facility.name === sourceInitialLocation);
+  if (exactSourceMatch) return exactSourceMatch.id;
+  if (facilityById[mainFacilityId]?.hub === initialLocation) return mainFacilityId;
+  const relatedAtInitial = relatedFacilityIds.find((id) => facilityById[id]?.hub === initialLocation);
+  if (relatedAtInitial) return relatedAtInitial;
+  if (facilityById[mainFacilityId]) return mainFacilityId;
+  return facilitiesByHub[initialLocation]?.[0]?.id ?? null;
+}
+
+function parseInitialKnowledge(knowledgeTags, secretText) {
+  const [factsText = "", interestsText = ""] = asText(knowledgeTags).split(/\//u, 2);
+  const [misconceptionText = "", ...secretParts] = asText(secretText).split(/\//u);
+  return {
+    facts: [...new Set(splitTags(factsText))],
+    interests: [...new Set(splitTags(interestsText))],
+    misconceptions: misconceptionText ? [misconceptionText] : [],
+    secrets: secretParts.length ? [secretParts.join("/").trim()].filter(Boolean) : [],
+  };
+}
+
+function parseFateHints(value) {
+  const sourceText = asText(value);
+  return {
+    sourceText,
+    dayAnchors: [...new Set([...sourceText.matchAll(/Day\s*(\d+)/giu)].map((match) => Number(match[1])))],
+    troubleIds: extractTroubleIds(sourceText),
+    outcomeKeywords: FATE_OUTCOME_KEYWORDS.filter((keyword) => sourceText.includes(keyword)),
+  };
+}
+
+function parseAllowedHubs(allowedRange, home, initialLocation, facilityIds, facilityById) {
+  const mentioned = new Set([home, initialLocation]);
+  const text = asText(allowedRange);
+  for (const sourceHub of FACILITY_HUB_TABS) {
+    if (text.includes(sourceHub)) mentioned.add(canonicalizeLocation(sourceHub));
+  }
+  for (const hub of CANONICAL_HUBS) if (text.includes(hub)) mentioned.add(hub);
+  for (const id of facilityIds) if (facilityById[id]) mentioned.add(facilityById[id].hub);
+  return CANONICAL_HUBS.filter((hub) => mentioned.has(hub));
+}
+
+function parseNpcs(rows, { facilities, facilityById, facilitiesByHub }) {
   const headerIndex = rows.findIndex((row) => asText(row?.[0]) === "NPC ID");
   if (headerIndex < 0) throw new Error("NPC一覧ヘッダーが見つかりません");
   return rows.slice(headerIndex + 1)
     .filter((row) => /^NPC\d{3}$/u.test(asText(row?.[0])))
     .map((row, index) => {
+      const id = asText(row[0]);
       const home = canonicalizeLocation(row[8]);
-      const initialLocation = normalizeNpcLocation(row[9], home);
+      const sourceInitialLocation = asText(row[9]);
+      const normalizedInitialLocation = normalizeNpcLocation(sourceInitialLocation, home);
+      const sourceMainFacilityId = asText(row[21]);
+      const sourceRelatedFacilityIds = extractFacilityIds(row[22]);
+      const resolvedRelated = resolveRelatedFacilityIds(id, sourceRelatedFacilityIds, facilityById);
+      const mainFacilityId = chooseMainFacilityId(
+        sourceMainFacilityId,
+        home,
+        normalizedInitialLocation,
+        resolvedRelated.ids,
+        facilityById,
+        facilitiesByHub,
+      );
+      const initialFacilityId = chooseInitialFacility(
+        sourceInitialLocation,
+        normalizedInitialLocation,
+        mainFacilityId,
+        resolvedRelated.ids,
+        facilities,
+        facilityById,
+        facilitiesByHub,
+      );
+      const initialLocation = facilityById[initialFacilityId]?.hub ?? normalizedInitialLocation;
       const primaryGoal = asText(row[14]);
+      const knowledgeTags = asText(row[16]);
+      const secrets = asText(row[17]);
+      const nonInterventionFate = asText(row[18]);
       return {
-        id: asText(row[0]),
+        id,
         sourceOrder: index,
         name: asText(row[1]),
         importance: asText(row[2]),
@@ -291,21 +488,36 @@ function parseNpcs(rows) {
         age: row[5],
         gender: asText(row[7]),
         home,
-        sourceInitialLocation: asText(row[9]),
+        sourceInitialLocation,
         initialLocation,
+        initialFacilityId,
         allowedRange: asText(row[10]),
         occupation: asText(row[11]),
         relatedTroubleIds: extractTroubleIds(row[12]),
         mbti: asText(row[13]),
         primaryGoal,
         routine: parseRoutine(row[15]),
-        knowledgeTags: asText(row[16]),
-        secrets: asText(row[17]),
-        nonInterventionFate: asText(row[18]),
+        knowledgeTags,
+        secrets,
+        initialKnowledge: parseInitialKnowledge(knowledgeTags, secrets),
+        nonInterventionFate,
+        fateHints: parseFateHints(nonInterventionFate),
         initialStatus: asText(row[19]) || "通常",
         speechStyle: asText(row[20]),
-        mainFacilityId: asText(row[21]),
+        sourceMainFacilityId,
+        mainFacilityId,
         relatedFacilities: asText(row[22]),
+        sourceRelatedFacilityIds,
+        relatedFacilityIds: resolvedRelated.ids,
+        facilityReferenceFallbacks: resolvedRelated.fallbacks,
+        unknownFacilityIds: resolvedRelated.unknown,
+        allowedHubs: parseAllowedHubs(
+          row[10],
+          home,
+          initialLocation,
+          [mainFacilityId, initialFacilityId, ...resolvedRelated.ids].filter(Boolean),
+          facilityById,
+        ),
         disposition: inferDisposition(primaryGoal, row[11], row[18]),
       };
     });
@@ -327,7 +539,14 @@ function buildAdjacency(routes) {
   return adjacency;
 }
 
-function structuralDiagnostics({ routes, troubles, timeline, chains, npcs }) {
+function groupFacilitiesByHub(facilities) {
+  return Object.fromEntries(CANONICAL_HUBS.map((hub) => [
+    hub,
+    facilities.filter((facility) => facility.hub === hub),
+  ]));
+}
+
+function structuralDiagnostics({ routes, troubles, timeline, chains, facilities, npcs }) {
   const result = [
     diagnostic("ASSUMPTION_DAY1_START", "info", SAFE_ASSUMPTIONS.day1Start),
     diagnostic("ALIAS_NORMALIZED", "warning", SAFE_ASSUMPTIONS.locationAliases, {
@@ -348,8 +567,26 @@ function structuralDiagnostics({ routes, troubles, timeline, chains, npcs }) {
     }),
   ];
 
-  const expected = { routes: 15, troubles: 19, timeline: 55, chains: 23, npcs: 110 };
-  const actual = { routes: routes.length, troubles: troubles.length, timeline: timeline.length, chains: chains.length, npcs: npcs.length };
+  for (const npc of npcs) {
+    for (const fallback of npc.facilityReferenceFallbacks) {
+      result.push(diagnostic(
+        "NPC_FACILITY_REFERENCE_FALLBACK",
+        "warning",
+        `${npc.id} の施設参照 ${fallback.sourceId} を ${fallback.fallbackId} に正規化する。`,
+        { npcId: npc.id, ...fallback },
+      ));
+    }
+  }
+
+  const expected = { routes: 15, troubles: 19, timeline: 55, chains: 23, facilities: 103, npcs: 110 };
+  const actual = {
+    routes: routes.length,
+    troubles: troubles.length,
+    timeline: timeline.length,
+    chains: chains.length,
+    facilities: facilities.length,
+    npcs: npcs.length,
+  };
   for (const [key, count] of Object.entries(expected)) {
     if (actual[key] !== count) {
       result.push(diagnostic("STRUCTURAL_COUNT_MISMATCH", "error", `${key} は ${count} 件必要だが ${actual[key]} 件`, {
@@ -366,8 +603,25 @@ function structuralDiagnostics({ routes, troubles, timeline, chains, npcs }) {
     for (const id of chain.affectedTroubleIds) if (!troubleIds.has(id)) unknownReferences.push({ source: chain.id, id });
   }
   for (const npc of npcs) for (const id of npc.relatedTroubleIds) if (!troubleIds.has(id)) unknownReferences.push({ source: npc.id, id });
+  for (const facility of facilities) {
+    for (const id of facility.relatedTroubleIds) if (!troubleIds.has(id)) unknownReferences.push({ source: facility.id, id });
+  }
   if (unknownReferences.length) {
     result.push(diagnostic("UNKNOWN_TROUBLE_REFERENCE", "error", "未知のトラブル参照がある。", { unknownReferences }));
+  }
+
+  const unknownFacilityReferences = npcs.flatMap((npc) =>
+    npc.unknownFacilityIds.map((id) => ({ source: npc.id, id }))
+  );
+  if (unknownFacilityReferences.length) {
+    result.push(diagnostic("UNKNOWN_FACILITY_REFERENCE", "error", "未知の施設参照がある。", { unknownFacilityReferences }));
+  }
+
+  const duplicateFacilityIds = [...new Set(facilities
+    .filter((facility, index) => facilities.findIndex((candidate) => candidate.id === facility.id) !== index)
+    .map((facility) => facility.id))];
+  if (duplicateFacilityIds.length) {
+    result.push(diagnostic("DUPLICATE_FACILITY_ID", "error", "施設IDが重複している。", { duplicateFacilityIds }));
   }
 
   return result;
@@ -384,9 +638,19 @@ export function buildWorldModel(snapshot) {
   const troubles = parseTroubles(snapshot.tabs["トラブル一覧"]);
   const timeline = parseTimeline(snapshot.tabs["トラブルタイムライン"]);
   const chains = parseChains(snapshot.tabs["トラブル連鎖"]);
-  const npcs = parseNpcs(snapshot.tabs["NPC一覧"]);
+  const parsedFacilities = parseFacilities(snapshot);
+  const parsedFacilityById = Object.fromEntries(parsedFacilities.map((facility) => [facility.id, facility]));
+  const parsedFacilitiesByHub = groupFacilitiesByHub(parsedFacilities);
+  const npcs = parseNpcs(snapshot.tabs["NPC一覧"], {
+    facilities: parsedFacilities,
+    facilityById: parsedFacilityById,
+    facilitiesByHub: parsedFacilitiesByHub,
+  });
+  const facilities = resolveFacilityNpcIds(parsedFacilities, npcs);
+  const facilityById = Object.fromEntries(facilities.map((facility) => [facility.id, facility]));
+  const facilitiesByHub = groupFacilitiesByHub(facilities);
   const locations = [...new Set(routes.flatMap((route) => [route.from, route.to]))];
-  const diagnostics = structuralDiagnostics({ routes, troubles, timeline, chains, npcs });
+  const diagnostics = structuralDiagnostics({ routes, troubles, timeline, chains, facilities, npcs });
 
   const model = {
     schemaVersion: "1.0.0",
@@ -402,6 +666,9 @@ export function buildWorldModel(snapshot) {
     troubleById: Object.fromEntries(troubles.map((trouble) => [trouble.id, trouble])),
     timeline,
     chains,
+    facilities,
+    facilityById,
+    facilitiesByHub,
     npcs,
     npcById: Object.fromEntries(npcs.map((npc) => [npc.id, npc])),
     diagnostics,
@@ -425,6 +692,24 @@ export function assertWorldModel(model) {
   }
   for (const npc of model.npcs) {
     if (!known.has(npc.initialLocation)) throw new Error(`NPC ${npc.id} の初期位置が未知: ${npc.initialLocation}`);
+    const initialFacility = model.facilityById[npc.initialFacilityId];
+    if (!initialFacility) throw new Error(`NPC ${npc.id} の初期施設が未知: ${npc.initialFacilityId}`);
+    if (initialFacility.hub !== npc.initialLocation) {
+      throw new Error(`NPC ${npc.id} の初期施設と拠点が不一致: ${npc.initialFacilityId}/${npc.initialLocation}`);
+    }
+    if (!model.facilityById[npc.mainFacilityId]) throw new Error(`NPC ${npc.id} の主施設が未知: ${npc.mainFacilityId}`);
+    for (const id of npc.relatedFacilityIds) {
+      if (!model.facilityById[id]) throw new Error(`NPC ${npc.id} の関連施設が未知: ${id}`);
+    }
+    for (const hub of npc.allowedHubs) if (!known.has(hub)) throw new Error(`NPC ${npc.id} の許可拠点が未知: ${hub}`);
+  }
+  const npcIds = new Set(model.npcs.map((npc) => npc.id));
+  for (const facility of model.facilities) {
+    if (!known.has(facility.hub)) throw new Error(`施設 ${facility.id} の所属拠点が未知: ${facility.hub}`);
+    for (const id of facility.relatedNpcIds) if (!npcIds.has(id)) throw new Error(`施設 ${facility.id} の関連NPCが未知: ${id}`);
+    for (const id of facility.relatedTroubleIds) {
+      if (!model.troubleById[id]) throw new Error(`施設 ${facility.id} の関連トラブルが未知: ${id}`);
+    }
   }
   for (const trouble of model.troubles) {
     if (trouble.deadlineDay < trouble.startDay || trouble.finalDay < trouble.deadlineDay) {

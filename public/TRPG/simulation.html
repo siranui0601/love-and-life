@@ -26,8 +26,8 @@
         <p class="eyebrow">AUTONOMOUS WORLD / DAY 1—100</p>
         <h1 id="pageTitle">プレイヤーが眠っていても、<br /><em>世界は進み続ける。</em></h1>
         <p class="lede">
-          GOAPで動くNPC、時刻と因果で進む事件、モンテカルロ戦闘、スキル取得と市場経済を、
-          同じ100日間の中で検証した観測記録です。
+          110人それぞれの居場所、行動、知識、再計画、生死を朝・昼・夕・夜ごとに記録し、
+          プレイヤーが介入しない百日間の因果を同じ条件から再生する観測記録です。
         </p>
       </div>
       <div class="hero-seal" aria-label="シミュレーション期間">
@@ -37,9 +37,24 @@
 
     <section class="metrics" aria-label="検証概要">
       <article><span>WORLD</span><strong id="metricWorld">—</strong><small>事件終端率</small></article>
-      <article><span>AGENTS</span><strong id="metricNpcs">—</strong><small>NPC</small></article>
+      <article><span>AGENTS</span><strong id="metricNpcs">—</strong><small>個別追跡NPC</small></article>
       <article><span>COMBAT</span><strong id="metricBattles">—</strong><small>模擬戦</small></article>
       <article><span>SKILLS</span><strong id="metricSkills">—</strong><small>登録スキル</small></article>
+    </section>
+
+    <section class="evidence-metrics" aria-label="NPC証跡の完全性">
+      <article><span>STATE TRACE</span><strong id="metricStateCoverage">—</strong><small id="stateCoverageDetail">個別状態tick</small></article>
+      <article><span>DECISIONS</span><strong id="metricDecisionCoverage">—</strong><small>行動可能tickの判断記録</small></article>
+      <article><span>KNOWLEDGE</span><strong id="metricLearners">—</strong><small>知識を得たNPC</small></article>
+      <article><span>FATES</span><strong id="metricFates">—</strong><small>非介入運命の評価</small></article>
+    </section>
+
+    <section class="replay-strip" aria-label="決定的リプレイ情報">
+      <div><span>RUN MODE</span><code id="simulationMode">NO PLAYER</code></div>
+      <div><span>REPLAY SEED</span><code id="replaySeed">—</code></div>
+      <div><span>WORLD FINGERPRINT</span><code id="replayFingerprint">—</code></div>
+      <div><span>ENGINE</span><code id="replayEngine">—</code></div>
+      <p id="replayStatus">再現情報を読み込んでいます。</p>
     </section>
 
     <section class="observer-grid">
@@ -62,27 +77,90 @@
           </svg>
         </div>
         <div class="day-controls">
-          <button id="playButton" class="play-button" type="button" aria-label="日付を自動再生">▶</button>
-          <label for="daySlider">DAY <output id="dayOutput" for="daySlider">1</output></label>
-          <input id="daySlider" type="range" min="1" max="100" value="1" step="1" />
+          <button id="playButton" class="play-button" type="button" aria-label="時刻を自動再生">▶</button>
+          <label for="tickSlider">DAY <output id="dayOutput" for="tickSlider">1</output> <strong id="phaseOutput">朝</strong></label>
+          <input id="tickSlider" type="range" min="0" max="399" value="0" step="1" />
         </div>
       </article>
 
       <aside class="panel day-panel" aria-live="polite">
         <p class="kicker">FIELD NOTE</p>
-        <div class="day-number"><span>DAY</span><strong id="selectedDay">01</strong></div>
+        <div class="day-number"><span>DAY</span><strong id="selectedDay">01</strong><em id="selectedPhase">朝</em></div>
+        <dl class="population-stats" aria-label="選択時刻のNPC状態">
+          <div><dt>生存</dt><dd id="populationAlive">—</dd></div>
+          <div><dt>負傷</dt><dd id="populationInjured">—</dd></div>
+          <div><dt>移動中</dt><dd id="populationTraveling">—</dd></div>
+          <div><dt>行方不明</dt><dd id="populationMissing">—</dd></div>
+          <div><dt>死亡</dt><dd id="populationDead">—</dd></div>
+        </dl>
         <dl class="day-stats">
           <div><dt>進行中</dt><dd id="dayActive">—</dd></div>
           <div><dt>危機</dt><dd id="dayCritical">—</dd></div>
           <div><dt>終端</dt><dd id="dayTerminal">—</dd></div>
           <div><dt>NPC移動</dt><dd id="dayMovements">—</dd></div>
           <div><dt>GOAP計画</dt><dd id="dayPlans">—</dd></div>
+          <div><dt>知識獲得</dt><dd id="dayKnowledge">—</dd></div>
+          <div><dt>再計画</dt><dd id="dayReplans">—</dd></div>
         </dl>
         <div class="day-events">
-          <h3>状態遷移</h3>
-          <ul id="dayEvents"><li class="muted">この日の遷移はありません。</li></ul>
+          <h3>この時刻の因果イベント</h3>
+          <ul id="dayEvents"><li class="muted">この時刻の遷移はありません。</li></ul>
         </div>
       </aside>
+    </section>
+
+    <section class="panel crisis-panel">
+      <div class="panel-heading">
+        <div><p class="kicker">NO-PLAYER OUTCOMES</p><h2>介入しなかった世界の危機</h2></div>
+        <span id="crisisFailureCount" class="datum-chip">— failures</span>
+      </div>
+      <p class="panel-note">NO PLAYERモードではNPCの軽減行動だけで事件を解決済みにしません。T01を含む破局・死亡・救助者負傷・行方不明を原因事件と一緒に残します。</p>
+      <div id="crisisRows" class="crisis-rows"></div>
+    </section>
+
+    <section class="panel npc-observer-panel">
+      <div class="panel-heading npc-heading">
+        <div><p class="kicker">110 AGENT LEDGER</p><h2>全NPC・百日の行動行列</h2></div>
+        <div class="npc-controls">
+          <label for="npcSearch">NPCを検索<input id="npcSearch" type="search" placeholder="名前 / NPC ID / 拠点" autocomplete="off" /></label>
+          <label for="npcStatusFilter">状態<select id="npcStatusFilter"><option value="all">すべて</option><option value="alive">生存</option><option value="injured">負傷</option><option value="missing">行方不明</option><option value="dead">死亡</option><option value="departed">退場</option></select></label>
+        </div>
+      </div>
+      <p id="npcCoverageNote" class="panel-note">個別軌跡を読み込んでいます。</p>
+      <div class="matrix-legend" aria-label="行動行列の凡例">
+        <span><i data-kind="routine"></i>通常行動</span><span><i data-kind="move"></i>移動</span><span><i data-kind="learn"></i>知識</span><span><i data-kind="replan"></i>再計画</span><span><i data-kind="missing"></i>行方不明</span><span><i data-kind="dead"></i>死亡</span>
+      </div>
+      <div class="matrix-scroll" tabindex="0" aria-label="横方向にスクロールできる全NPC行動行列">
+        <div class="matrix-days" id="matrixDays" aria-hidden="true"></div>
+        <div id="npcMatrix" class="npc-matrix" role="grid" aria-label="NPCごとの100日状態"></div>
+      </div>
+    </section>
+
+    <section class="selected-npc-grid">
+      <article class="panel npc-dossier" aria-live="polite">
+        <p class="kicker">SELECTED AGENT</p>
+        <h2 id="selectedNpcName">NPCを選択</h2>
+        <p id="selectedNpcIdentity" class="npc-identity">行列からNPCを選んでください。</p>
+        <dl class="npc-facts">
+          <div><dt>現在地</dt><dd id="selectedNpcLocation">—</dd></div>
+          <div><dt>生命</dt><dd id="selectedNpcVital">—</dd></div>
+          <div><dt>舞台状態</dt><dd id="selectedNpcPresence">—</dd></div>
+          <div><dt>目標</dt><dd id="selectedNpcGoal">—</dd></div>
+          <div><dt>行動</dt><dd id="selectedNpcAction">—</dd></div>
+        </dl>
+      </article>
+
+      <article class="panel npc-timeline-panel">
+        <div class="panel-heading">
+          <div><p class="kicker">CAUSAL TRACE</p><h2>居場所・行動・知識・生死</h2></div>
+          <span id="selectedNpcDay" class="datum-chip">DAY —</span>
+        </div>
+        <div id="npcLanes" class="npc-lanes" aria-label="選択NPCの100日レーン"></div>
+        <div class="causal-detail">
+          <h3>この判断を変えたもの</h3>
+          <ul id="npcCausalEvents"><li class="muted">因果イベントはありません。</li></ul>
+        </div>
+      </article>
     </section>
 
     <section class="split-grid">
@@ -118,7 +196,7 @@
     </section>
 
     <section class="method-note">
-      <p><strong>再現性:</strong> 同じスナップショット・seed・設定から同じ結果を生成します。</p>
+      <p><strong>再現性:</strong> 入力digest・seed・engine・全NPC traceのfingerprintを照合します。</p>
       <p id="sourceNote">出典を読み込んでいます。</p>
       <a href="/TRPG/simulation-report.json">検証JSONを開く →</a>
     </section>

@@ -13,6 +13,7 @@ import {
   planNpcTravel,
   simulateWorld,
 } from "../lib/world-simulator.mjs";
+import { compactWorldRun } from "../lib/world-suite.mjs";
 
 const model = loadWorldModel();
 const baseline = simulateWorld({ model, seed: "world-regression-v1" });
@@ -112,7 +113,7 @@ test("T15/T18/T19 hard gates distinguish active, critical and resolved prerequis
   }
 });
 
-test("Day1 through Day100 autonomously reach a strict terminal world", () => {
+test("Day1 through Day100 no-player run reaches a strict failed world with complete NPC traces", () => {
   assert.equal(baseline.tickCount, 400);
   assert.deepEqual(baseline.start, { day: 1, hour: 10 });
   assert.deepEqual(baseline.end, { day: 100, hour: 24 });
@@ -120,6 +121,9 @@ test("Day1 through Day100 autonomously reach a strict terminal world", () => {
   assert.equal(baseline.summary.totalTroubles, 19);
   assert.equal(baseline.summary.worldEnded, true);
   assert.ok(Object.values(baseline.troubleStates).every((state) => TERMINAL_TROUBLE_STATES.includes(state.status)));
+  assert.equal(baseline.summary.troubleStates.failed, 19);
+  assert.equal(baseline.summary.troubleStates.resolved ?? 0, 0);
+  assert.equal(baseline.summary.troubleStates.suppressed ?? 0, 0);
 
   assert.equal(baseline.invariants.ok, true, JSON.stringify(baseline.invariants));
   for (const key of [
@@ -133,15 +137,50 @@ test("Day1 through Day100 autonomously reach a strict terminal world", () => {
     "gateViolations",
     "missingChainApplications",
     "structuralViolations",
+    "traceCoverageViolations",
+    "decisionCoverageViolations",
+    "postMortemActionViolations",
+    "postInactiveKnowledgeViolations",
+    "knowledgeProvenanceViolations",
+    "knowledgeCausalityViolations",
+    "positionViolations",
+    "lifeTransitionViolations",
   ]) assert.deepEqual(baseline.invariants[key], [], key);
 
-  assert.equal(baseline.stats.routineDecisions, 62 * 400);
-  assert.ok(baseline.stats.goapPlans > 0);
+  assert.equal(Object.keys(baseline.npcTraces).length, 110);
+  assert.ok(Object.values(baseline.npcTraces).every((trace) => trace.length === 400));
+  assert.equal(baseline.activityCoverage.coverage, 1);
+  assert.equal(baseline.activityCoverage.eligibleTicks, baseline.activityCoverage.decisionTicks);
+  assert.ok(baseline.decisionEvents.length > 35_000);
+  assert.ok(baseline.localMovementEvents.length > 1_000);
   assert.ok(baseline.movements.length > 0);
+  assert.ok(new Set([...baseline.localMovementEvents, ...baseline.movements].map((entry) => entry.npcId)).size >= 100);
+  assert.ok(baseline.knowledgeEvents.some((entry) => entry.type === "rumor-pickup"));
+  assert.ok(baseline.lifeEvents.some((entry) => entry.npcId === "NPC001" && entry.toLifeStatus === "dead"));
   assert.ok(baseline.contributions.length > 0);
   assert.ok(baseline.summary.npcContributors > 0);
-  assert.ok(Object.values(baseline.troubleStates).some((state) => state.status === "resolved"));
-  assert.ok(Object.values(baseline.troubleStates).some((state) => state.status === "failed"));
+});
+
+test("report compaction preserves all NPC ticks, movement coverage, replay metadata and T01 casualties", () => {
+  const compact = compactWorldRun(baseline);
+  assert.equal(compact.coverage.expectedStateTicks, 44_000);
+  assert.equal(compact.coverage.observedStateTicks, 44_000);
+  assert.equal(compact.coverage.stateCoverage, 1);
+  assert.equal(compact.coverage.eligibleDecisionTicks, baseline.activityCoverage.eligibleTicks);
+  assert.equal(compact.coverage.decisionsLogged, baseline.activityCoverage.decisionTicks);
+  assert.equal(compact.coverage.decisionCoverage, 1);
+  assert.equal(compact.coverage.movers, 109);
+  assert.equal(compact.coverage.fateEvaluated, 110);
+  assert.equal(compact.coverage.fateEvaluationCoverage, 1);
+  assert.ok(compact.npcTraces.every((trace) => trace.daily.length === 100 && trace.stats.stateTicks === 400));
+  assert.equal(compact.replay.engineVersion, "living-world-v2");
+  assert.equal(compact.replay.rngVersion, "stateless-fnv1a32-v1");
+  const rumorPickups = compact.knowledgeEvents.filter((entry) => entry.type === "rumor-pickup");
+  assert.ok(rumorPickups.some((entry) => entry.day > 1));
+  assert.ok(rumorPickups.every((entry) => entry.latencyTicks > 0 && entry.sourceLearnedAt < entry.learnedAt));
+  const t01 = compact.crisisOutcomes.find((entry) => entry.troubleId === "T01");
+  assert.ok(t01.deaths >= 1);
+  assert.ok(t01.injured + t01.missing >= 1);
 });
 
 test("event gates, chains and same-day timeline order are retained in the run", () => {
@@ -161,14 +200,15 @@ test("event gates, chains and same-day timeline order are retained in the run", 
   assert.deepEqual(baseline.timelineLog.map((entry) => entry.timelineId), sorted.map((entry) => entry.timelineId));
 });
 
-test("the alternate T13-success route suppresses T18/T19 and applies C22", () => {
+test("a formerly successful seed still follows the no-player T13 failure route", () => {
   const branch = simulateWorld({ model, seed: "branch-12" });
-  assert.equal(branch.troubleStates.T13.status, "resolved");
-  assert.equal(branch.troubleStates.T18.status, "suppressed");
-  assert.equal(branch.troubleStates.T19.status, "suppressed");
-  assert.equal(branch.worldFlags.worldTreeFallen, false);
-  assert.ok(branch.appliedChains.some((chain) => chain.chainId === "C22"));
-  assert.ok(!branch.appliedChains.some((chain) => ["C13", "C14", "C15"].includes(chain.chainId)));
+  assert.equal(branch.troubleStates.T13.status, "failed");
+  assert.equal(branch.troubleStates.T18.status, "failed");
+  assert.equal(branch.troubleStates.T19.status, "failed");
+  assert.equal(branch.worldFlags.worldTreeFallen, true);
+  assert.ok(!branch.appliedChains.some((chain) => chain.chainId === "C22"));
+  assert.ok(branch.appliedChains.some((chain) => ["C13", "C14", "C15"].includes(chain.chainId)));
+  assert.ok(Object.values(branch.troubleStates).every((state) => state.status === "failed"));
   assert.equal(branch.invariants.ok, true, JSON.stringify(branch.invariants));
 });
 
@@ -178,6 +218,9 @@ test("a seed reproduces the exact simulation and another seed changes the trace"
   assert.equal(replay.fingerprint, baseline.fingerprint);
   assert.deepEqual(replay.eventTransitions, baseline.eventTransitions);
   assert.deepEqual(replay.contributions, baseline.contributions);
+  assert.deepEqual(replay.npcTraces, baseline.npcTraces);
+  assert.deepEqual(replay.knowledgeEvents, baseline.knowledgeEvents);
+  assert.deepEqual(replay.lifeEvents, baseline.lifeEvents);
   assert.notEqual(alternate.fingerprint, baseline.fingerprint);
   assert.equal(alternate.invariants.ok, true);
 });
