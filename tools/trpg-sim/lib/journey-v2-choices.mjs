@@ -88,8 +88,12 @@ export function movementObjectiveV2(state, model, data, profile) {
     if (hubs.length) return { hub: hubs[0].hub, facilityId: null, reason: "explore-region" };
   }
   if (profile.id === "merchant" && state.player.gold >= 20) {
-    const stock = data.inventory.filter((item) => item.location !== state.player.location || item.sellerId !== state.player.facilityId).map((item) => ({ item, plan: item.location === state.player.location ? { hours: 0 } : shortestTravelPlan(model, state, state.player.location, item.location) })).filter((entry) => entry.plan).sort((a, b) => a.plan.hours - b.plan.hours || Number(a.item.basePrice) - Number(b.item.basePrice));
-    if (stock.length) return { hub: stock[0].item.location, facilityId: stock[0].item.sellerId ?? null, reason: "merchant-stock" };
+    const regions = [...new Set(data.inventory.map((item) => item.location))]
+      .filter((location) => location !== state.player.location)
+      .map((location) => ({ location, plan: shortestTravelPlan(model, state, state.player.location, location) }))
+      .filter((entry) => entry.plan)
+      .sort((a, b) => a.plan.hours - b.plan.hours || a.location.localeCompare(b.location, "ja"));
+    if (regions.length) return { hub: regions[0].location, facilityId: null, reason: "merchant-region" };
   }
   if (profile.id === "random" && unitV2(state.seed, state.metrics.actions, "movement") < .16) {
     const actions = availableMovementActionsV2(state, model);
