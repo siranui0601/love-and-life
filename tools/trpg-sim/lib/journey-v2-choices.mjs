@@ -46,7 +46,10 @@ export function actionUtilityV2(action, state, profile) {
     score += profile.story * 1.2;
     if (state.history.slice(-12).some((entry) => entry.type === "PLAYER_ACTION_RESOLVED" && entry.actionId === action.id)) score -= 6;
   }
-  if (["seekBattle", "missionBattle"].includes(action.type)) score += profile.combat * 9;
+  if (action.type === "missionBattle") score += profile.combat * 9;
+  if (action.type === "seekBattle") {
+    score += profile.combat * 9 - profile.caution * 5 - (1 - state.player.hpRatio) * 10;
+  }
   if (action.type === "resolveMission") {
     const focus = action.resolutionOption?.focus;
     if (focus === "combat") score += profile.combat * 5;
@@ -71,15 +74,53 @@ export function generateChoiceActionsV2(state, model, data, profile, canSeekBatt
   return result;
 }
 
-function currentMissionObjective(state, profile) {
-  const active = state.catalog.special.map((mission) => ({ mission, runtime: state.missions[mission.id] })).filter(({ runtime }) => runtime.status === "active").map(({ mission, runtime }) => ({ mission, step: currentMissionStepV2(mission, runtime) })).filter(({ step }) => step).sort((a, b) => a.mission.finalDay - b.mission.finalDay || b.mission.difficulty - a.mission.difficulty);
+function objectiveReachable(state, model, objective) {
+  if (!objective?.hub) return false;
+  if (objective.hub === state.player.location) {
+    if (!objective.facilityId) return true;
+    const facility = model.facilityById[objective.facilityId];
+    return Boolean(facility && facility.hub === state.player.location);
+  }
+  return Boolean(shortestTravelPlan(model, state, state.player.location, objective.hub));
+}
+
+function noteWaitingObjective(state, mission, step, objective) {
+  const key = `${mission.id}:${step.id}:${objective.hub}:${objective.facilityId ?? ""}`;
+  if (state.ai.inaccessibleObjectiveKeys.has(key)) return;
+  state.ai.inaccessibleObjectiveKeys.add(key);
+  state.metrics.movementObjectivesWaiting += 1;
+  state.history.push({
+    type: "MISSION_OBJECTIVE_WAITING_FOR_ACCESS",
+    minute: state.absoluteMinute,
+    missionId: mission.id,
+    stepId: step.id,
+    targetHub: objective.hub,
+    targetFacilityId: objective.facilityId,
+  });
+}
+
+function currentMissionObjective(state, profile, model) {
+  const active = state.catalog.special
+    .map((mission) => ({ mission, runtime: state.missions[mission.id] }))
+    .filter(({ runtime }) => runtime.status === "active")
+    .map(({ mission, runtime }) => ({ mission, step: currentMissionStepV2(mission, runtime) }))
+    .filter(({ step }) => step)
+    .sort((a, b) => a.mission.finalDay - b.mission.finalDay || b.mission.difficulty - a.mission.difficulty);
   if (!active.length || profile.story < .5) return null;
-  const selected = active[0];
-  return { hub: selected.step.targetHub ?? selected.mission.targetLocations[0], facilityId: selected.step.targetFacilityId ?? null, reason: `mission:${selected.mission.id}` };
+  for (const selected of active) {
+    const objective = {
+      hub: selected.step.targetHub ?? selected.mission.targetLocations[0],
+      facilityId: selected.step.targetFacilityId ?? null,
+      reason: `mission:${selected.mission.id}`,
+    };
+    if (objectiveReachable(state, model, objective)) return objective;
+    noteWaitingObjective(state, selected.mission, selected.step, objective);
+  }
+  return null;
 }
 
 export function movementObjectiveV2(state, model, data, profile) {
-  const mission = currentMissionObjective(state, profile);
+  const mission = currentMissionObjective(state, profile, model);
   if (mission && (mission.hub !== state.player.location || mission.facilityId && mission.facilityId !== state.player.facilityId)) return mission;
   if (profile.id === "explorer" || profile.explore >= .8) {
     const local = (model.facilitiesByHub[state.player.location] ?? []).filter((facility) => !state.progress.travel.visitedFacilities.has(facility.id));
@@ -87,12 +128,16 @@ export function movementObjectiveV2(state, model, data, profile) {
     const hubs = model.locations.filter((hub) => !state.progress.travel.visitedHubs.has(hub)).map((hub) => ({ hub, plan: shortestTravelPlan(model, state, state.player.location, hub) })).filter((entry) => entry.plan).sort((a, b) => a.plan.hours - b.plan.hours || a.hub.localeCompare(b.hub, "ja"));
     if (hubs.length) return { hub: hubs[0].hub, facilityId: null, reason: "explore-region" };
   }
-  if (profile.id === "merchant" && state.player.gold >= 20) {
+  if (profile.id === "merchant" && state.player.gold >= 20 && state.absoluteMinute >= Number(state.ai.nextMerchantRegionalAt ?? 0)) {
     const regions = [...new Set(data.inventory.map((item) => item.location))]
       .filter((location) => location !== state.player.location)
-      .map((location) => ({ location, plan: shortestTravelPlan(model, state, state.player.location, location) }))
+      .map((location) => ({
+        location,
+        plan: shortestTravelPlan(model, state, state.player.location, location),
+        lastVisitedAt: Number(state.ai.merchantVisitedAt[location] ?? -Infinity),
+      }))
       .filter((entry) => entry.plan)
-      .sort((a, b) => a.plan.hours - b.plan.hours || a.location.localeCompare(b.location, "ja"));
+      .sort((a, b) => a.lastVisitedAt - b.lastVisitedAt || a.plan.hours - b.plan.hours || a.location.localeCompare(b.location, "ja"));
     if (regions.length) return { hub: regions[0].location, facilityId: null, reason: "merchant-region" };
   }
   if (profile.id === "random" && unitV2(state.seed, state.metrics.actions, "movement") < .16) {
