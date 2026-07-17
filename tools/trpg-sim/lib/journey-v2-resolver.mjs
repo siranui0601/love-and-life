@@ -3,7 +3,7 @@ import {
   advanceV2, arrivalFacilityV2, incV2, publishRumorV2, routeTagsV2,
   transitionTroubleV2, unitV2,
 } from "./journey-v2-core.mjs";
-import { refreshSkillStateV2 } from "./journey-v2-skills.mjs";
+import { issueEventSkillRewardV2, refreshSkillStateV2 } from "./journey-v2-skills.mjs";
 import {
   addExperienceV2, claimMissionV2, finishMissionStepV2,
   resolutionScoreV2,
@@ -56,10 +56,19 @@ export function resolveMovementActionV2(state, model, data, skills, profile, act
     state.history.push({ type: "LOCAL_TRAVEL_COMPLETED", minute: state.absoluteMinute, hub: state.player.location, fromFacilityId: from, toFacilityId: action.destinationFacilityId }); refreshSkillStateV2(state, data, skills, profile); return true;
   }
   if (action.type === "regionalTravel") {
-    const from = state.player.location; const battle = travelEncounter(state, model, data, skills, profile, action); if (battle && !battle.won && profile.caution > .5) return false;
+    const from = state.player.location; const battle = travelEncounter(state, model, data, skills, profile, action);
+    if (battle && !battle.won && profile.caution > .5) {
+      state.metrics.travelInterrupted += 1;
+      state.history.push({ type: "REGIONAL_TRAVEL_INTERRUPTED", minute: state.absoluteMinute, from, to: action.destination, reason: "battle-defeat" });
+      return false;
+    }
     advanceV2(state, model, action.minutes, `regional-travel:${from}->${action.destination}`); state.player.location = action.destination; state.player.facilityId = action.destinationFacilityId ?? arrivalFacilityV2(model, action.destination)?.id ?? null;
     state.progress.travel.visitedHubs.add(action.destination); if (state.player.facilityId) state.progress.travel.visitedFacilities.add(state.player.facilityId);
     incV2(state.progress, "travel.actions"); incV2(state.progress, "travel.regionalActions"); incV2(state.progress, "walkMinutes.total", action.minutes); incV2(state.progress, "walkMinutes.regional", action.minutes); for (const tag of routeTagsV2(model, action.routeIds ?? [])) incV2(state.progress, `walkMinutes.byTag.${tag}`, action.minutes); state.metrics.regionalMovementActions += 1;
+    if (profile.id === "merchant") {
+      state.ai.merchantVisitedAt[action.destination] = state.absoluteMinute;
+      state.ai.nextMerchantRegionalAt = state.absoluteMinute + Number(state.tuning.merchantRegionalCooldownMinutes ?? 1440);
+    }
     state.history.push({ type: "REGIONAL_TRAVEL_COMPLETED", minute: state.absoluteMinute, from, to: action.destination, facilityId: state.player.facilityId }); refreshSkillStateV2(state, data, skills, profile); return true;
   }
   return false;
@@ -74,7 +83,12 @@ export function resolvePlayerActionV2(state, model, data, skills, profile, actio
     advanceV2(state, model, action.minutes, `conversation:${action.targetNpcId ?? action.missionId ?? "local"}`); incV2(state.progress, "social.conversations"); if (step) finishMissionStepV2(state, mission, runtime, step);
     if (mission) { publishRumorV2(state, { id: `RUM2-PLAYER-${mission.troubleId}`, troubleId: mission.troubleId, text: `${mission.title}の情報を得た` }); incV2(state.player.reputation, state.player.location, 2); } else { incV2(state.player.reputation, state.player.location, 1); discoverRumor(state, true); }
   } else if (action.type === "investigate") {
-    advanceV2(state, model, action.minutes, `investigate:${action.missionId}`); if (step) { finishMissionStepV2(state, mission, runtime, step); incV2(state.player.evidenceByTrouble, mission.troubleId); incV2(state.progress, "investigation.total"); }
+    advanceV2(state, model, action.minutes, `investigate:${action.missionId}`);
+    if (step) {
+      finishMissionStepV2(state, mission, runtime, step); incV2(state.player.evidenceByTrouble, mission.troubleId); incV2(state.progress, "investigation.total");
+      if (mission.troubleId === "T08" && !state.worldFlags.elfApproval) { state.worldFlags.elfApproval = true; state.routeCache = {}; state.history.push({ type: "ACCESS_PERMISSION_GAINED", minute: state.absoluteMinute, access: "elf", missionId: mission.id }); }
+      if (mission.troubleId === "T12" && !state.worldFlags.blackridgePermit) { state.worldFlags.blackridgePermit = true; state.routeCache = {}; state.history.push({ type: "ACCESS_PERMISSION_GAINED", minute: state.absoluteMinute, access: "blackridge", missionId: mission.id }); }
+    }
   } else if (action.type === "support") {
     advanceV2(state, model, action.minutes, `support:${action.missionId}`); if (step) finishMissionStepV2(state, mission, runtime, step); incV2(state.progress, "social.supportActions"); incV2(state.player.reputation, state.player.location, 3 + mission.difficulty * .5); state.troubles[mission.troubleId].casualtyMitigation += .25 + mission.difficulty * .03;
   } else if (action.type === "missionBattle") {
@@ -86,7 +100,11 @@ export function resolvePlayerActionV2(state, model, data, skills, profile, actio
   } else if (action.type === "resolveMission") {
     const incomplete = mission.steps.filter((x) => x.id !== step.id).some((x) => Number(runtime.progress[x.id] ?? 0) < Number(x.required ?? 1));
     if (incomplete) outcome = { ok: false, type: action.type, reason: "incomplete" }; else { advanceV2(state, model, action.minutes, `resolve:${mission.id}:${action.resolutionOption.id}`); runtime.attempts += 1; runtime.lastAttemptAt = state.absoluteMinute; const score = resolutionScoreV2(state, mission, runtime, action.resolutionOption, profile, data); outcome.resolution = { ...score, optionId: action.resolutionOption.id }; state.metrics.troubleResolutionAttempts += 1;
-      if (score.score >= score.threshold) { finishMissionStepV2(state, mission, runtime, step); transitionTroubleV2(state, model, mission.troubleId, "resolved", `player-resolution:${action.resolutionOption.id}`); claimMissionV2(state, mission, runtime, data, skills, profile); incV2(state.player.reputation, state.player.location, 8 + mission.difficulty); state.metrics.troubleResolvedByPlayerAction += 1; outcome.resolution.result = "resolved"; }
+      if (score.score >= score.threshold) {
+        finishMissionStepV2(state, mission, runtime, step); transitionTroubleV2(state, model, mission.troubleId, "resolved", `player-resolution:${action.resolutionOption.id}`); claimMissionV2(state, mission, runtime, data, skills, profile);
+        outcome.eventSkillId = issueEventSkillRewardV2(state, data, skills, profile, { missionId: mission.id, troubleId: mission.troubleId, difficulty: mission.difficulty });
+        incV2(state.player.reputation, state.player.location, 8 + mission.difficulty); state.metrics.troubleResolvedByPlayerAction += 1; outcome.resolution.result = "resolved";
+      }
       else if (score.score >= score.threshold - 2 && action.resolutionOption.failureSeverity !== "fail") { runtime.outcome = "partial"; runtime.progress.partial = Number(runtime.progress.partial ?? 0) + 1; incV2(state.player.evidenceByTrouble, mission.troubleId); state.troubles[mission.troubleId].casualtyMitigation += .4; state.metrics.troublePartialByPlayerAction += 1; outcome.resolution.result = "partial"; }
       else if (action.resolutionOption.failureSeverity === "fail" || runtime.attempts >= Number(state.tuning.maxResolutionAttempts ?? 3)) { failMission(state, model, mission, runtime, `failed-resolution:${action.resolutionOption.id}`); outcome.resolution.result = "failed"; }
       else { runtime.outcome = "retry"; state.player.reputation[state.player.location] = Math.max(0, Number(state.player.reputation[state.player.location] ?? 0) - 2); outcome.resolution.result = "retry"; }
