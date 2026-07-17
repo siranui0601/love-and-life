@@ -1,0 +1,219 @@
+    const local = movement.find((action) => action.movementScope === "local" && !state.progress.travel.visitedFacilities.has(action.destinationFacilityId));
+    if (local) return local;
+    const regional = movement
+      .filter((action) => action.movementScope === "regional" && !state.progress.travel.visitedHubs.has(action.destinationHub))
+      .sort((left, right) => left.minutes - right.minutes)[0];
+    if (regional) return regional;
+  }
+  if (profile.id === "merchant" && state.player.gold >= 20) {
+    const stock = state.battleData.inventory.find((entry) => entry.location === state.player.location && entry.sellerId && entry.sellerId !== state.player.facilityId);
+    if (stock) return movement.find((action) => action.destinationFacilityId === stock.sellerId) ?? null;
+    const destination = [...new Set(state.battleData.inventory.map((entry) => entry.location))]
+      .filter((hub) => hub !== state.player.location)
+      .map((hub) => movement.find((action) => action.movementScope === "regional" && action.destinationHub === hub))
+      .find(Boolean);
+    if (destination) return destination;
+  }
+  return null;
+}
+
+function choose(state, actions, profile) {
+  if (profile.id === "random") return actions[Math.floor(unit(state.seed, state.absoluteMinute, state.metrics.actions, "choice") * actions.length)];
+  return [...actions].sort((left, right) => utility(right, state, profile) - utility(left, state, profile) || left.id.localeCompare(right.id))[0];
+}
+
+function selectEncounter(state, data, profile, key) {
+  const candidates = encounters(state, data, profile);
+  const limit = dangerLimit(state, profile);
+  return weighted(candidates, key, (encounter) => {
+    const distance = Math.abs(Number(encounter.dangerTier ?? 1) - limit);
+    if (profile.id === "fighter") return Number(encounter.baseWeight || 1) * (1 + Number(encounter.dangerTier ?? 1) * 0.2);
+    if (profile.caution > profile.combat) return Number(encounter.baseWeight || 1) / (1 + distance + Number(encounter.dangerTier ?? 1) * 0.2);
+    return Number(encounter.baseWeight || 1) / (1 + distance * 0.5);
+  });
+}
+
+function travelEncounter(state, model, data, skills, profile, action) {
+  if (state.tuning.disableTravelEncounters) return null;
+  const chance = (state.tuning.travelEncounterBaseChance ?? 0.12) * Math.min(1.5, action.minutes / 180);
+  if (unit(state.seed, "travel", state.metrics.regionalMoves, state.metrics.battles) >= chance) return null;
+  const encounter = selectEncounter(state, data, profile, `${state.seed}:travel:${state.metrics.regionalMoves}`);
+  return encounter ? runBattle(state, model, data, skills, profile, encounter.id, `${state.seed}:travel:${state.metrics.regionalMoves}:${encounter.id}:${state.metrics.battles}`) : null;
+}
+
+export function resolveMovementAction(state, model, data, skills, profileInput, action) {
+  const profile = typeof profileInput === "string" ? PROFILE.get(profileInput) : profileInput;
+  if (!action || action.type !== "move") return { ok: false, reason: "not_movement" };
+  const fromHub = state.player.location;
+  const fromFacilityId = state.player.facilityId;
+  if (action.movementScope === "local") {
+    const facility = model.facilityById[action.destinationFacilityId];
+    if (!facility || facility.hub !== state.player.location) return { ok: false, reason: "invalid_local_destination" };
+    advance(state, model, action.minutes, `local-move:${fromFacilityId}->${facility.id}`);
+    state.player.facilityId = facility.id;
+    inc(state.progress, "travel.actions");
+    inc(state.progress, "travel.localActions");
+    inc(state.progress, "walkMinutes.total", action.minutes);
+    state.progress.travel.visitedFacilities.add(facility.id);
+    state.progress.facilities.visitedIds.add(facility.id);
+    state.metrics.localMoves += 1;
+    state.history.push({ type: "LOCAL_MOVE_COMPLETED", minute: state.absoluteMinute, hub: state.player.location, fromFacilityId, toFacilityId: facility.id });
+    return { ok: true, type: "move", movementScope: "local" };
+  }
+  if (action.movementScope !== "regional") return { ok: false, reason: "unknown_movement_scope" };
+  const currentPlan = shortestTravelPlan(model, state, state.player.location, action.destinationHub);
+  if (!currentPlan) return { ok: false, reason: "unreachable_destination" };
+  const battle = travelEncounter(state, model, data, skills, profile, action);
+  if (battle && !battle.won && profile.caution > 0.5) return { ok: false, reason: "travel_defeat", battle };
+  advance(state, model, action.minutes, `regional-move:${fromHub}->${action.destinationHub}`);
+  state.player.location = action.destinationHub;
+  const arrival = action.destinationFacilityId ? model.facilityById[action.destinationFacilityId] : preferredArrivalFacility(model, action.destinationHub);
+  state.player.facilityId = arrival?.id ?? null;
+  state.progress.travel.visitedHubs.add(action.destinationHub);
+  if (state.player.facilityId) {
+    state.progress.travel.visitedFacilities.add(state.player.facilityId);
+    state.progress.facilities.visitedIds.add(state.player.facilityId);
+  }
+  inc(state.progress, "travel.actions");
+  inc(state.progress, "travel.regionalActions");
+  inc(state.progress, "walkMinutes.total", action.minutes);
+  for (const tag of routeTags(model, action.routeIds ?? currentPlan.routeIds)) inc(state.progress, `walkMinutes.byTag.${tag}`, action.minutes);
+  state.metrics.regionalMoves += 1;
+  state.history.push({ type: "REGIONAL_MOVE_COMPLETED", minute: state.absoluteMinute, from: fromHub, to: action.destinationHub, facilityId: state.player.facilityId });
+  return { ok: true, type: "move", movementScope: "regional", battle };
+}
+
+export function resolvePlayerAction(state, model, data, skills, catalog, profileInput, action) {
+  const profile = typeof profileInput === "string" ? PROFILE.get(profileInput) : profileInput;
+  const preHash = stateFingerprint(state);
+  const replayKey = hash({ preHash, actionId: action.id });
+  let output = { ok: true, type: action.type };
+  const missionDefinition = action.missionId ? mission(catalog, action.missionId) : null;
+  const runtime = missionDefinition ? state.missions[missionDefinition.id] : null;
+  const step = missionDefinition ? missionDefinition.steps.find((entry) => entry.id === action.stepId) : null;
+
+  if (action.type === "conversation") {
+    advance(state, model, action.minutes, `conversation:${action.targetNpcId ?? action.missionId ?? "local"}`);
+    inc(state.progress, "social.conversations");
+    if (step) finishStep(state, missionDefinition, runtime, step);
+    if (missionDefinition) {
+      publishRumor(state, model, { id: `RUM-PLAYER-${missionDefinition.troubleId}-HEARD`, troubleId: missionDefinition.troubleId, text: `${missionDefinition.title}の情報を得た` });
+      inc(state.player.reputation, state.player.location, 2);
+    } else inc(state.player.reputation, state.player.location, 1);
+  } else if (action.type === "investigate") {
+    advance(state, model, action.minutes, `investigate:${action.missionId}`);
+    if (step) {
+      finishStep(state, missionDefinition, runtime, step);
+      inc(state.player.evidenceByTrouble, missionDefinition.troubleId);
+      inc(state.progress, "investigation.total");
+      const chance = 0.04 + missionDefinition.difficulty * 0.015;
+      if (!state.tuning.probeMode && unit(state.seed, action.id, state.metrics.actions) < chance) {
+        const encounter = selectEncounter(state, data, profile, `${state.seed}:investigate:${action.id}:${state.metrics.actions}`);
+        if (encounter) output.battle = runBattle(state, model, data, skills, profile, encounter.id, `${state.seed}:investigate:${state.metrics.battles}:${encounter.id}`);
+      }
+    }
+  } else if (action.type === "missionBattle") {
+    advance(state, model, action.minutes, `mission-battle:${action.missionId}`);
+    const encounterId = action.encounterId ?? weighted(encounters(state, data, profile, { eventOnly: true }), `${state.seed}:${action.id}`)?.id;
+    if (!encounterId) output = { ok: false, type: action.type, reason: "no_encounter" };
+    else {
+      const evidence = Number(state.player.evidenceByTrouble[missionDefinition.troubleId] ?? 0);
+      const preparation = Math.min(Number(state.tuning.missionPreparationBonusMax ?? 0.75), evidence * Number(state.tuning.missionPreparationBonusPerEvidence ?? 0.16));
+      const probe = state.tuning.probeMode ? Number(state.tuning.probeMissionPowerMultiplier ?? 10) : 1;
+      output.battle = runBattle(state, model, data, skills, profile, encounterId, `${state.seed}:mission:${action.missionId}:${state.metrics.battles}`, (1 + preparation) * probe);
+      if (output.battle.won && step) finishStep(state, missionDefinition, runtime, step);
+    }
+  } else if (action.type === "resolveMission") {
+    advance(state, model, action.minutes, `resolve:${action.missionId}`);
+    const incomplete = missionDefinition.steps.filter((entry) => entry.id !== step.id)
+      .some((entry) => Number(runtime.progress[entry.id] ?? 0) < Number(entry.required ?? 1));
+    if (incomplete) output = { ok: false, type: action.type, reason: "incomplete" };
+    else {
+      finishStep(state, missionDefinition, runtime, step);
+      transition(state, model, missionDefinition.troubleId, "resolved", "player-mission-resolution");
+      claim(state, missionDefinition, runtime, data, skills, profile);
+      inc(state.player.reputation, state.player.location, 8 + missionDefinition.difficulty);
+    }
+  } else if (action.type === "seekBattle") {
+    advance(state, model, action.minutes, "seek-battle");
+    const encounter = selectEncounter(state, data, profile, `${state.seed}:seek:${state.metrics.actions}:${state.player.location}`);
+    if (!encounter) output = { ok: false, type: action.type, reason: "no_encounter" };
+    else output.battle = runBattle(state, model, data, skills, profile, encounter.id, `${state.seed}:seek:${state.metrics.battles}:${encounter.id}`);
+    const baseCooldown = Number(state.tuning.wildEncounterCooldownMinutes ?? 540);
+    const profileFactor = profile.id === "fighter" ? 0.7 : profile.id === "cautious" ? 1.2 : 1;
+    state.encounterAvailability[state.player.location] = state.absoluteMinute + Math.round(baseCooldown * profileFactor);
+  } else if (action.type === "rest") {
+    const price = state.player.freeLodging > 0 ? 0 : (state.tuning.restPrice ?? 4);
+    if (price > state.player.gold) {
+      advance(state, model, Math.min(action.minutes, 180), "outdoor-rest");
+      state.player.hpRatio = Math.min(1, state.player.hpRatio + 0.25);
+      state.player.mpRatio = Math.min(1, state.player.mpRatio + 0.18);
+    } else {
+      if (price) state.player.gold -= price;
+      else state.player.freeLodging -= 1;
+      advance(state, model, action.minutes, "inn-rest");
+      state.player.hpRatio = 1;
+      state.player.mpRatio = 1;
+    }
+  } else if (action.type === "work") {
+    advance(state, model, action.minutes, "odd-job");
+    const wage = 5 + Math.floor(unit(state.seed, state.absoluteMinute, state.player.location, "wage") * 8);
+    state.player.gold += wage;
+    state.progress.economy.goldFromWork += wage;
+  } else {
+    advance(state, model, action.minutes ?? 45, "observe");
+  }
+
+  const postHash = stateFingerprint(state);
+  const resultHash = hash({ actionId: action.id, outcome: { type: output.type, ok: output.ok, reason: output.reason }, postHash });
+  if (state.replayResults[replayKey] && state.replayResults[replayKey] !== resultHash && !["seekBattle", "missionBattle", "investigate"].includes(action.type)) {
+    state.metrics.replayMismatches += 1;
+  }
+  state.replayResults[replayKey] = resultHash;
+  state.history.push({ type: "PLAYER_ACTION_RESOLVED", minute: state.absoluteMinute, actionId: action.id, replayKey, preHash, postHash });
+  autoLearn(state, data, skills, profile);
+  refreshMissions(state, model, catalog, data, skills, profile);
+  return output;
+}
+
+function progress() {
+  return {
+    experience: { total: 0, bySource: { battle: 0, permanentMission: 0, specialMission: 0, other: 0 } },
+    missions: {
+      totalCompleted: 0,
+      permanentCompleted: 0,
+      specialCompleted: 0,
+      completedIds: new Set(),
+      attemptedTroubleIds: new Set(),
+      resolvedTroubleIds: new Set(),
+    },
+    travel: { actions: 0, localActions: 0, regionalActions: 0, visitedHubs: new Set(["田園の村"]), visitedFacilities: new Set() },
+    facilities: { visitedIds: new Set() },
+    walkMinutes: { total: 0, byTag: {} },
+    battles: { totalCount: 0, wins: 0, defeatCount: 0, nightCount: 0, byDaypart: { dawn: 0, day: 0, dusk: 0, night: 0 }, byDay: {}, byRegion: {} },
+    combat: { totalKills: 0, physicalKills: 0, physicalSkillUses: 0, criticalHits: 0, killsByName: {} },
+    economy: { goldSpent: 0, maxSinglePurchase: 0, goldEarnedFromSales: 0, goldFromBattles: 0, goldFromWork: 0, orphanageDonations: 0 },
+    investigation: { total: 0, appraisals: 0 },
+    social: { conversations: 0 },
+    rumors: { npcRecipients: 0, npcReplans: 0 },
+    weapon: { oneHanded: {}, twoHanded: {}, axe: {}, spear: {}, bow: {}, staff: {}, book: {} },
+    magic: { totalCasts: 0, mpSpent: 0 },
+    debuffs: { stat: { successfulApplications: 0 } },
+    buffs: { successfulApplications: 0 },
+    multiHit: { actions: 0 },
+    events: { grantedSkillIds: new Set(), completedTroubleIds: new Set() },
+    skills: { learnedBySource: {} },
+  };
+}
+
+function initialFacility(model) {
+  return preferredArrivalFacility(model, "田園の村");
+}
+
+export function createInitialJourneyState({ model, battleData, skills, profile, tuning = {}, seed = "player-journey" }) {
+  const resolvedProfile = typeof profile === "string" ? PROFILE.get(profile) : profile;
+  if (!resolvedProfile) throw new Error(`Unknown profile ${profile}`);
+  const catalog = createMissionCatalog(model, battleData, tuning);
+  const equipment = {};
+  const owned = {};
+  for (const id of tuning.starterEquipmentIds ?? ["EQP-W-0005", "EQP-A-0001"]) {
