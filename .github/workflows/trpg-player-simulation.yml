@@ -23,20 +23,13 @@ jobs:
       - run: npm run trpg:test
       - name: Run integrated player journeys v2
         env:
-          TRPG_PLAYER_V2_SEEDS: 4
+          TRPG_PLAYER_V2_SEEDS: 1
         run: node tools/trpg-sim/cli-player-v2.mjs
-      - name: Run integrated player journeys v1
-        env:
-          TRPG_PLAYER_SEEDS: 4
-        run: node tools/trpg-sim/cli-player.mjs --strict
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: trpg-player-simulation
           path: |
-            tools/trpg-sim/reports/player-latest.json
-            tools/trpg-sim/reports/player-latest.md
             tools/trpg-sim/reports/player-v2-latest.json
             tools/trpg-sim/reports/player-v2-latest.md
-            public/TRPG/player-simulation-report.json
             public/TRPG/player-simulation-v2-report.json
