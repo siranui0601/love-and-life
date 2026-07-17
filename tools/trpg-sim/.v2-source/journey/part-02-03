@@ -1,0 +1,264 @@
+  const value = String(text ?? "").trim();
+  if (!value) return true;
+  let match = value.match(/Day\s*(>=|<=|>|<|=)?\s*(\d+)/iu);
+  if (match) {
+    const day = Number(match[2]);
+    if (match[1] === ">=") return state.day >= day;
+    if (match[1] === "<=") return state.day <= day;
+    if (match[1] === ">") return state.day > day;
+    if (match[1] === "<") return state.day < day;
+    return state.day === day;
+  }
+  match = value.match(/(T\d{2})\.(?:status)?\s*(!=|=)\s*(resolved|failed|active|critical|suppressed|scheduled)/iu);
+  if (match) return match[2] === "!=" ? state.troubles[match[1]]?.status !== match[3] : state.troubles[match[1]]?.status === match[3];
+  match = value.match(/(T\d{2})(?:進行中|\.active)/iu);
+  if (match) return ["active", "critical"].includes(state.troubles[match[1]]?.status);
+  if (/stage</u.test(value)) return !/critical|failed/u.test(value);
+  if (/discovered|engaged|investigation|operation|boss|final|rescue|ambush|hostile|permit|entered|climax|reconnaissance|militarized|market hostility|illegal lab/u.test(value)) return false;
+  return true;
+}
+
+function encounterAllowed(encounter, state, forced = false) {
+  if (state.day < encounter.startDay || state.day > encounter.endDay) return false;
+  if (encounter.dayparts && encounter.dayparts !== "any" && !String(encounter.dayparts).split("|").includes(state.daypart)) return false;
+  if (forced || !String(encounter.condition ?? "").trim()) return true;
+  const text = String(encounter.condition);
+  const alternatives = text.split(/\s+OR\s+/iu);
+  if (alternatives.length > 1) return alternatives.some((entry) => conditionAtom(entry, state));
+  return text.split(/\s+AND\s+/iu).every((entry) => conditionAtom(entry, state));
+}
+
+function dangerLimit(state, profile) {
+  return Math.max(1, Math.min(10, 1 + Math.floor((state.player.level - 1) / 3) + (profile.combat - profile.caution > 0.4 ? 2 : profile.combat > profile.caution ? 1 : 0)));
+}
+
+function encounters(state, data, profile, { forcedId = null, eventOnly = false } = {}) {
+  if (forcedId) return data.encounterById.has(forcedId) ? [data.encounterById.get(forcedId)] : [];
+  const limit = dangerLimit(state, profile);
+  return data.encounters
+    .filter((encounter) => encounter.region === state.player.location && encounter.status === "active" && encounterAllowed(encounter, state))
+    .filter((encounter) => eventOnly ? encounter.avoidability === "event" : !["event", "authorization", "diplomacy"].includes(encounter.avoidability))
+    .filter((encounter) => encounter.dangerTier <= limit + (profile.id === "fighter" ? 1 : 0));
+}
+
+function weighted(items, key, weight = (item) => Number(item.baseWeight || 1)) {
+  if (!items.length) return null;
+  const total = items.reduce((sum, item) => sum + Math.max(0.001, Number(weight(item)) || 0.001), 0);
+  let cursor = unit(key) * total;
+  for (const item of items) {
+    cursor -= Math.max(0.001, Number(weight(item)) || 0.001);
+    if (cursor <= 0) return item;
+  }
+  return items.at(-1);
+}
+
+function troubleStatusContext(state) {
+  return Object.fromEntries(Object.entries(state.troubles).map(([id, runtime]) => [id, { status: runtime.status }]));
+}
+
+function skillContext(state, data) {
+  const equipmentIds = Object.values(state.player.equipment).filter(Boolean);
+  const grantedSkillIds = equipmentIds.map((id) => data.equipmentById.get(id)?.grantedSkillId).filter(Boolean);
+  return {
+    player: { level: state.player.level, skills: new Set(state.player.skills) },
+    progress: state.progress,
+    world: { ...state.worldFlags, troubles: troubleStatusContext(state) },
+    inventory: { itemIds: new Set(Object.keys(state.player.inventory.items)), gold: state.player.gold },
+    equipment: {
+      activeWeaponTypes: new Set(equipmentIds.map((id) => data.equipmentById.get(id)?.weaponType).filter(Boolean)),
+      grantedSkillIds: new Set(grantedSkillIds),
+      equippedIds: new Set(equipmentIds),
+    },
+  };
+}
+
+function skillScore(skill, profile) {
+  const text = `${skill.category ?? ""} ${skill.originalCategory ?? ""}`;
+  let score = Number(skill.rank ?? 0) * 4 - Number(skill.requiredLevel ?? 0) * 0.5;
+  if (profile.id === "fighter" && /物理|剣|斧|槍|弓/u.test(text)) score += 30;
+  if (profile.id === "cautious" && /防御|回復|盾/u.test(text)) score += 35;
+  if (profile.id === "explorer" && /弓|罠|探索|技巧/u.test(text)) score += 30;
+  if (profile.id === "story" && /汎用|支援|回復|デバフ/u.test(text)) score += 15;
+  if (profile.id === "merchant" && /金|商|道具|汎用/u.test(text)) score += 12;
+  return score;
+}
+
+function revealEligible(skill, context) {
+  return Number(skill.requiredLevel ?? 1) <= Number(context.player.level ?? 1)
+    && evaluateConditions(skill.revealConditions, context)
+    && evaluateConditions(skill.eventUnlockConditions, context);
+}
+
+function learnEligible(skill, context, state) {
+  const cost = Math.max(1, Number(skill.spCost ?? 1));
+  return ["basic_level_up", "flag_unlocked"].includes(skill.acquisitionCode)
+    && !state.player.skills.has(skill.id)
+    && Number(skill.requiredLevel ?? 1) <= state.player.level
+    && cost <= state.player.sp
+    && prerequisitesOf(skill).every((id) => state.player.skills.has(id))
+    && evaluateConditions(skill.eventUnlockConditions, context)
+    && evaluateConditions(skill.learnConditions, context);
+}
+
+function refreshSkillVisibility(state, data, skills) {
+  const context = skillContext(state, data);
+  state.player.visibleSkillIds = new Set(skills.filter((skill) => revealEligible(skill, context)).map((skill) => skill.id));
+  state.player.flagEligibleSkillIds = new Set(skills
+    .filter((skill) => skill.acquisitionCode === "flag_unlocked" && learnEligible(skill, context, state))
+    .map((skill) => skill.id));
+}
+
+function autoLearn(state, data, skills, profile) {
+  let count = 0;
+  refreshSkillVisibility(state, data, skills);
+  while (state.player.sp > 0) {
+    const context = skillContext(state, data);
+    const candidates = skills
+      .filter((skill) => learnEligible(skill, context, state))
+      .sort((left, right) => skillScore(right, profile) - skillScore(left, profile) || left.id.localeCompare(right.id));
+    const selected = candidates[0];
+    if (!selected) break;
+    const cost = Math.max(1, Number(selected.spCost ?? 1));
+    const validAtAcquisition = learnEligible(selected, context, state);
+    if (!validAtAcquisition) {
+      state.metrics.skillConditionViolations += 1;
+      break;
+    }
+    state.player.skills.add(selected.id);
+    state.player.sp -= cost;
+    count += 1;
+    inc(state.progress, `skills.learnedBySource.${selected.acquisitionCode}`);
+    state.history.push({
+      type: "SKILL_LEARNED",
+      minute: state.absoluteMinute,
+      skillId: selected.id,
+      acquisitionCode: selected.acquisitionCode,
+      spCost: cost,
+      validAtAcquisition,
+    });
+  }
+  refreshSkillVisibility(state, data, skills);
+  state.player.magicSkillCount = [...state.player.skills].filter((id) => /魔法|魔導|杖|本/u.test(`${data.playerSkillById.get(id)?.category ?? ""}`)).length;
+  return count;
+}
+
+function conditionMentionsEvent(skill, event) {
+  const text = `${skill.eventFlagSummary ?? ""} ${skill.notes ?? ""} ${skill.classificationReason ?? ""}`;
+  if ([event.troubleId, event.missionId].filter(Boolean).some((id) => text.includes(id))) return true;
+  return flattenConditionLeaves(skill.grantConditions).some((leaf) => {
+    const serialized = `${leaf.scope ?? ""}.${leaf.path ?? ""}:${JSON.stringify(leaf.value)}`;
+    return [event.troubleId, event.missionId].filter(Boolean).some((id) => serialized.includes(id));
+  });
+}
+
+function grantEventSkills(state, data, skills, event) {
+  const context = skillContext(state, data);
+  const candidates = skills
+    .filter((skill) => skill.acquisitionCode === "event_granted")
+    .filter((skill) => !state.player.skills.has(skill.id))
+    .filter((skill) => Number(skill.requiredLevel ?? 1) <= state.player.level + Number(state.tuning.eventSkillLevelGrace ?? 2))
+    .filter((skill) => conditionMentionsEvent(skill, event))
+    .filter((skill) => evaluateConditions(skill.grantConditions, context))
+    .sort((left, right) => Number(left.requiredLevel ?? 1) - Number(right.requiredLevel ?? 1) || left.id.localeCompare(right.id));
+  const limit = Math.max(0, Number(state.tuning.maxEventSkillsPerMission ?? 1));
+  const granted = candidates.slice(0, limit);
+  for (const skill of granted) {
+    state.player.skills.add(skill.id);
+    state.progress.events.grantedSkillIds.add(skill.id);
+    state.history.push({ type: "SKILL_GRANTED", minute: state.absoluteMinute, skillId: skill.id, event });
+  }
+  state.metrics.eventGrantMatchedCandidates += candidates.length;
+  if (!candidates.length) state.metrics.eventGrantMisses += 1;
+  refreshSkillVisibility(state, data, skills);
+  return granted.map((skill) => skill.id);
+}
+
+function addExperience(state, amount, source, data, skills, profile) {
+  const gain = Math.max(0, Math.round(Number(amount) || 0));
+  if (!gain) return;
+  state.player.exp += gain;
+  state.progress.experience.total += gain;
+  const sourceType = source.startsWith("battle:") ? "battle" : source.startsWith("mission:MSN-T") ? "specialMission" : source.startsWith("mission:") ? "permanentMission" : "other";
+  inc(state.progress, `experience.bySource.${sourceType}`, gain);
+  state.history.push({ type: "EXP_GAIN", minute: state.absoluteMinute, amount: gain, source, sourceType });
+  while (state.player.level < 24 && state.player.exp >= experienceToNextLevel(state.player.level)) {
+    state.player.exp -= experienceToNextLevel(state.player.level);
+    state.player.level += 1;
+    state.player.sp += 1;
+    if (!state.metrics.firstLevelUpDay) state.metrics.firstLevelUpDay = state.day;
+    const points = state.player.level % 5 === 0 ? 6 : 4;
+    const ratios = profile.id === "fighter" ? [0.55, 0.2, 0.2, 0.05]
+      : profile.id === "cautious" ? [0.2, 0.5, 0.2, 0.1]
+        : profile.id === "explorer" ? [0.25, 0.15, 0.45, 0.15]
+          : [0.35, 0.3, 0.25, 0.1];
+    const names = ["attack", "defense", "agility", "luck"];
+    let remaining = points;
+    names.forEach((name, index) => {
+      const value = index === names.length - 1 ? remaining : Math.floor(points * ratios[index]);
+      state.player.stats[name] += value;
+      remaining -= value;
+    });
+    state.history.push({ type: "LEVEL_UP", minute: state.absoluteMinute, level: state.player.level });
+  }
+  autoLearn(state, data, skills, profile);
+}
+
+function mission(catalog, id) {
+  return catalog.byId?.get(id) ?? [...catalog.permanent, ...catalog.special].find((entry) => entry.id === id);
+}
+
+function currentStep(missionDefinition, runtime) {
+  return missionDefinition.steps?.find((step) => Number(runtime.progress[step.id] ?? 0) < Number(step.required ?? 1)) ?? null;
+}
+
+function markMissionAttempt(state, missionDefinition, runtime) {
+  if (runtime.attemptedAt == null) runtime.attemptedAt = state.absoluteMinute;
+  if (missionDefinition.kind === "special") state.progress.missions.attemptedTroubleIds.add(missionDefinition.troubleId);
+}
+
+function finishStep(state, missionDefinition, runtime, step, amount = 1) {
+  markMissionAttempt(state, missionDefinition, runtime);
+  runtime.progress[step.id] = Math.min(Number(step.required ?? 1), Number(runtime.progress[step.id] ?? 0) + amount);
+  state.history.push({ type: "MISSION_STEP", minute: state.absoluteMinute, missionId: missionDefinition.id, stepId: step.id, value: runtime.progress[step.id] });
+}
+
+function claim(state, missionDefinition, runtime, data, skills, profile) {
+  if (runtime.status === "completed") return;
+  runtime.status = "completed";
+  runtime.completedAt = state.absoluteMinute;
+  runtime.rewardClaimed = true;
+  inc(state.progress, "missions.totalCompleted");
+  state.progress.missions.completedIds.add(missionDefinition.id);
+  if (missionDefinition.kind === "special") {
+    inc(state.progress, "missions.specialCompleted");
+    state.progress.missions.resolvedTroubleIds.add(missionDefinition.troubleId);
+    state.progress.events.completedTroubleIds.add(missionDefinition.troubleId);
+  } else {
+    inc(state.progress, "missions.permanentCompleted");
+  }
+  addExperience(state, missionDefinition.expReward, `mission:${missionDefinition.id}`, data, skills, profile);
+  state.player.gold += Number(missionDefinition.goldReward ?? 0);
+  if (missionDefinition.kind === "special") {
+    grantEventSkills(state, data, skills, { missionId: missionDefinition.id, troubleId: missionDefinition.troubleId, outcome: "resolved" });
+  } else {
+    unlockNextPermanentMission(state.catalog, state.missions, missionDefinition);
+  }
+  state.history.push({ type: "MISSION_COMPLETED", minute: state.absoluteMinute, missionId: missionDefinition.id, exp: missionDefinition.expReward });
+}
+
+function updateMissionPeaks(state) {
+  const activePermanent = state.catalog.permanent.filter((missionDefinition) => state.missions[missionDefinition.id]?.status === "active").length;
+  const activeSpecial = state.catalog.special.filter((missionDefinition) => state.missions[missionDefinition.id]?.status === "active").length;
+  state.metrics.maxActivePermanent = Math.max(state.metrics.maxActivePermanent, activePermanent);
+  state.metrics.maxActiveSpecial = Math.max(state.metrics.maxActiveSpecial, activeSpecial);
+}
+
+function refreshMissions(state, model, catalog, data, skills, profile) {
+  for (const missionDefinition of catalog.special) {
+    const runtime = state.missions[missionDefinition.id];
+    const trouble = state.troubles[missionDefinition.troubleId];
+    if (runtime.status === "locked" && ["active", "critical"].includes(trouble.status)) runtime.status = "active";
+    if (["failed", "suppressed"].includes(trouble.status) && runtime.status !== "completed") {
+      runtime.status = "failed";
+      runtime.failedAt ??= state.absoluteMinute;
+    }
