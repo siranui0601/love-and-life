@@ -21,7 +21,7 @@ const simulationProfiles = PLAYER_PROFILES.map((profile) => {
   return Object.freeze({
     ...profile,
     story: crisisStory,
-    explore: Math.max(profile.explore, crisisStory * 2.6),
+    explore: Math.max(profile.explore, crisisStory * 2.85),
   });
 });
 
