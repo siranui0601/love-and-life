@@ -34,10 +34,10 @@ function encounters(state, data, profile, eventOnly = false) { const limit = dan
 function weighted(items, key) { if (!items.length) return null; const total = items.reduce((sum, item) => sum + Math.max(1, Number(item.baseWeight || 1)), 0); let cursor = unitV2(key) * total; for (const item of items) { cursor -= Math.max(1, Number(item.baseWeight || 1)); if (cursor <= 0) return item; } return items.at(-1); }
 
 function dailyCount(state) { return Number(state.dailyBattleCounts[state.day] ?? 0); }
-export function canSeekBattleV2(state, profile) { const base = Number(state.tuning.maxNormalBattlesPerDay ?? 2); const cap = profile.id === "fighter" ? base + 2 : profile.id === "random" ? base + 1 : base; return state.absoluteMinute >= Number(state.encounterCooldowns[state.player.location] ?? 0) && dailyCount(state) < cap; }
+export function canSeekBattleV2(state, profile) { const base = Number(state.tuning.maxNormalBattlesPerDay ?? 2); const cap = profile.id === "fighter" ? base + 1 : profile.id === "random" ? base + 1 : base; return state.absoluteMinute >= Number(state.encounterCooldowns[state.player.location] ?? 0) && dailyCount(state) < cap; }
 function addExp(state, data, skills, profile) { return (amount, source) => addExperienceV2(state, data, skills, profile, amount, source); }
 
-function discoverRumor(state, localOnly = false) {
+function discoverRumor(state, localOnly = true) {
   const list = state.rumors.filter((rumor) => !state.player.knownRumorIds.has(rumor.id)).filter((rumor) => !localOnly || rumor.origin === state.player.location || Object.values(rumor.recipients).some((entry) => entry.hub === state.player.location)).sort((a, b) => b.importance - a.importance || a.originMinute - b.originMinute);
   const rumor = list[0]; if (!rumor) return null; state.player.knownRumorIds.add(rumor.id); state.history.push({ type: "RUMOR_LEARNED", minute: state.absoluteMinute, rumorId: rumor.id, troubleId: rumor.troubleId }); return rumor;
 }
@@ -96,6 +96,6 @@ export function resolvePlayerActionV2(state, model, data, skills, profile, actio
   } else if (action.type === "rest") {
     const price = state.player.freeLodging > 0 ? 0 : Number(state.tuning.restPrice ?? 4); if (price > state.player.gold) { advanceV2(state, model, Math.min(action.minutes, 180), "outdoor-rest"); state.player.hpRatio = Math.min(1, state.player.hpRatio + .25); state.player.mpRatio = Math.min(1, state.player.mpRatio + .18); } else { if (price) state.player.gold -= price; else state.player.freeLodging -= 1; advanceV2(state, model, action.minutes, "inn-rest"); state.player.hpRatio = 1; state.player.mpRatio = 1; }
   } else if (action.type === "work") { advanceV2(state, model, action.minutes, "odd-job"); const wage = 5 + Math.floor(unitV2(state.seed, state.absoluteMinute, state.player.location, "wage") * 8); state.player.gold += wage; state.progress.economy.goldFromWork += wage; }
-  else { advanceV2(state, model, action.minutes ?? 30, "observe"); discoverRumor(state, false); }
+  else { advanceV2(state, model, action.minutes ?? 30, "observe"); discoverRumor(state, true); }
   refreshSkillStateV2(state, data, skills, profile); const post = stateFingerprintV2(state); const result = createHash("sha256").update(JSON.stringify({ actionId: action.id, outcome: { type: outcome.type, ok: outcome.ok, reason: outcome.reason, resolution: outcome.resolution?.result }, post })).digest("hex"); if (state.replayResults[replay] && state.replayResults[replay] !== result && !["seekBattle", "missionBattle", "investigate"].includes(action.type)) state.metrics.replayMismatches += 1; state.replayResults[replay] = result; state.history.push({ type: "PLAYER_ACTION_RESOLVED", minute: state.absoluteMinute, actionId: action.id, replayKey: replay, preHash: pre, postHash: post }); return outcome;
 }
