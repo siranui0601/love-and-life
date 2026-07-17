@@ -64,7 +64,7 @@ export function createInitialJourneyStateV2({ model, battleData, skills, profile
     shop: createShopRuntime(battleData), history: [], replayResults: {},
     metrics: {
       actions: 0, localMovementActions: 0, regionalMovementActions: 0, battles: 0, wins: 0, losses: 0, firstLevelUpDay: null,
-      choiceDeadEnds: 0, movementBlocked: 0, movementObjectivesWaiting: 0, travelInterrupted: 0, replayMismatches: 0, purchases: 0, zeroTimePurchases: 0, terminatedByActionCap: false,
+      choiceDeadEnds: 0, movementBlocked: 0, movementObjectivesWaiting: 0, travelInterrupted: 0, travelEncountersAvoided: 0, replayMismatches: 0, purchases: 0, zeroTimePurchases: 0, terminatedByActionCap: false,
       missionSamples: 0, activeMissionSum: 0, activeSpecialSum: 0, maxActiveMissions: 0, maxActiveSpecialMissions: 0,
       permanentMissionsCompleted: 0, specialMissionsCompleted: 0, specialMissionsDiscovered: 0,
       skillsLearnedByCode: {}, flagSkillsLearned: 0, eventSkillGrants: 0, eventGrantSignals: 0, equipmentGrantActivations: 0, skillAcquisitionViolations: 0, maxEffectiveSkills: 0,
@@ -119,7 +119,7 @@ export function summarizeJourneyV2(state, model) {
     troublePartialByPlayerAction: state.metrics.troublePartialByPlayerAction, troubleFailedByPlayerAction: state.metrics.troubleFailedByPlayerAction,
     troubleFailedByDeadline: state.metrics.troubleFailedByDeadline, invalidTroubleResolutions: invalid.length,
     rumorCount: state.rumors.length, rumorRecipients: state.progress.rumors.npcRecipients, npcReplans: state.progress.rumors.npcReplans,
-    firstLevelUpDay: state.metrics.firstLevelUpDay, choiceDeadEnds: state.metrics.choiceDeadEnds, movementBlocked: state.metrics.movementBlocked, movementObjectivesWaiting: state.metrics.movementObjectivesWaiting, travelInterrupted: state.metrics.travelInterrupted,
+    firstLevelUpDay: state.metrics.firstLevelUpDay, choiceDeadEnds: state.metrics.choiceDeadEnds, movementBlocked: state.metrics.movementBlocked, movementObjectivesWaiting: state.metrics.movementObjectivesWaiting, travelInterrupted: state.metrics.travelInterrupted, travelEncountersAvoided: state.metrics.travelEncountersAvoided,
     replayMismatches: state.metrics.replayMismatches, purchases: state.metrics.purchases, zeroTimePurchases: state.metrics.zeroTimePurchases,
     shopDiagnostics: state.shop.diagnostics.length, terminatedByActionCap: state.metrics.terminatedByActionCap,
     fingerprint: stateFingerprintV2(state), missionCatalog: missionCatalogStatsV2(state.catalog),
