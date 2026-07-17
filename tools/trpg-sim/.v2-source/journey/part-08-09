@@ -1,0 +1,300 @@
+    const item = battleData.equipmentById.get(id);
+    if (!item) continue;
+    equipment[item.slot] ??= id;
+    owned[id] = (owned[id] ?? 0) + 1;
+  }
+  const arrival = initialFacility(model);
+  const state = {
+    schemaVersion: "2.0.0",
+    seed: String(seed),
+    profileId: resolvedProfile.id,
+    tuning,
+    absoluteMinute: 0,
+    day: 1,
+    hour: 10,
+    minute: 0,
+    minuteOfDay: 600,
+    phaseIndex: 0,
+    daypart: "day",
+    player: {
+      location: "田園の村",
+      facilityId: arrival?.id ?? null,
+      level: 1,
+      exp: 0,
+      sp: 2,
+      stats: { attack: 4, defense: 3, agility: 2, luck: 1 },
+      gold: Number(tuning.startingGold ?? 0),
+      hpRatio: 1,
+      mpRatio: 1,
+      freeMeals: Number(tuning.freeStarterMeals ?? 1),
+      freeLodging: Number(tuning.freeStarterLodging ?? 1),
+      inventory: { items: {}, equipment: owned },
+      equipment,
+      skills: new Set(),
+      visibleSkillIds: new Set(),
+      flagEligibleSkillIds: new Set(),
+      magicSkillCount: 0,
+      knownRumorIds: new Set(),
+      evidenceByTrouble: {},
+      reputation: {},
+    },
+    progress: progress(),
+    troubles: Object.fromEntries(model.troubles.map((trouble) => [trouble.id, { id: trouble.id, status: "scheduled", casualtyMitigation: 0, transitions: [] }])),
+    worldFlags: {
+      worldTreeFallen: false,
+      forestMazeOpen: false,
+      elfApproval: false,
+      blackridgePermit: false,
+      foreignFleetLanded: false,
+      secondSummoningStopped: false,
+      colossusAwake: false,
+      blackridgeArmyAtCapital: false,
+      capitalFallen: false,
+    },
+    missions: createMissionRuntime(catalog),
+    rumors: [],
+    rumorById: {},
+    routeCache: {},
+    encounterAvailability: {},
+    shop: createShopRuntime(battleData),
+    history: [],
+    replayResults: {},
+    metrics: {
+      actions: 0,
+      localMoves: 0,
+      regionalMoves: 0,
+      battles: 0,
+      wins: 0,
+      losses: 0,
+      firstLevelUpDay: null,
+      choiceDeadEnds: 0,
+      movementBlocked: 0,
+      travelBlocked: 0,
+      replayMismatches: 0,
+      purchases: 0,
+      zeroTimePurchases: 0,
+      terminatedByActionCap: false,
+      maxActivePermanent: 0,
+      maxActiveSpecial: 0,
+      skillConditionViolations: 0,
+      eventGrantMatchedCandidates: 0,
+      eventGrantMisses: 0,
+    },
+    battleData,
+    catalog,
+  };
+  if (arrival) {
+    state.progress.travel.visitedFacilities.add(arrival.id);
+    state.progress.facilities.visitedIds.add(arrival.id);
+  }
+  autoLearn(state, battleData, skills, resolvedProfile);
+  updateTroubles(state, model);
+  refreshMissions(state, model, catalog, battleData, skills, resolvedProfile);
+  return state;
+}
+
+function shop(state, data, profile) {
+  if (profile.trade < 0.2 && state.player.gold < 80) return;
+  const before = state.absoluteMinute;
+  const bought = autoShop(state, data, state.shop, profile, state.tuning.shop ?? {});
+  state.metrics.purchases += bought.length;
+  if (bought.length && state.absoluteMinute === before) state.metrics.zeroTimePurchases += bought.length;
+}
+
+function statusCounts(entries, key = "status") {
+  const counts = {};
+  for (const entry of entries) counts[entry[key]] = (counts[entry[key]] ?? 0) + 1;
+  return counts;
+}
+
+function equipmentGrantedSkills(state, data) {
+  return [...new Set(Object.values(state.player.equipment).map((id) => data.equipmentById.get(id)?.grantedSkillId).filter(Boolean))];
+}
+
+function summary(state, model, data) {
+  const troubleCounts = statusCounts(Object.values(state.troubles));
+  const missionCounts = statusCounts(Object.values(state.missions));
+  const attempted = [...state.progress.missions.attemptedTroubleIds];
+  const resolved = [...state.progress.missions.resolvedTroubleIds];
+  const failedAfterAttempt = attempted.filter((id) => ["failed", "suppressed"].includes(state.troubles[id]?.status));
+  const expSources = state.progress.experience.bySource;
+  const missionExp = Number(expSources.permanentMission ?? 0) + Number(expSources.specialMission ?? 0);
+  const totalExp = Math.max(1, Number(state.progress.experience.total ?? 0));
+  return {
+    seed: state.seed,
+    profileId: state.profileId,
+    reachedEnd: state.absoluteMinute >= GAME_END_MINUTE,
+    day: state.day,
+    minute: state.absoluteMinute,
+    level: state.player.level,
+    expIntoLevel: state.player.exp,
+    nextLevelExp: experienceToNextLevel(state.player.level),
+    sp: state.player.sp,
+    learnedSkills: state.player.skills.size,
+    spLearnedSkills: Number(state.progress.skills.learnedBySource.basic_level_up ?? 0) + Number(state.progress.skills.learnedBySource.flag_unlocked ?? 0),
+    flagLearnedSkills: Number(state.progress.skills.learnedBySource.flag_unlocked ?? 0),
+    flagEligibleSkills: state.player.flagEligibleSkillIds.size,
+    visibleSkillCount: state.player.visibleSkillIds.size,
+    eventGrantedSkills: state.progress.events.grantedSkillIds.size,
+    equipmentGrantedSkills: equipmentGrantedSkills(state, data).length,
+    skillConditionViolations: state.metrics.skillConditionViolations,
+    eventGrantMatchedCandidates: state.metrics.eventGrantMatchedCandidates,
+    eventGrantMisses: state.metrics.eventGrantMisses,
+    gold: state.player.gold,
+    equipment: { ...state.player.equipment },
+    hpRatio: Number(state.player.hpRatio.toFixed(3)),
+    mpRatio: Number(state.player.mpRatio.toFixed(3)),
+    battles: state.metrics.battles,
+    wins: state.metrics.wins,
+    losses: state.metrics.losses,
+    winRate: state.metrics.battles ? state.metrics.wins / state.metrics.battles : 0,
+    actions: state.metrics.actions,
+    movementActions: state.metrics.localMoves + state.metrics.regionalMoves,
+    localMoves: state.metrics.localMoves,
+    regionalMoves: state.metrics.regionalMoves,
+    visitedHubs: state.progress.travel.visitedHubs.size,
+    visitedFacilities: state.progress.travel.visitedFacilities.size,
+    walkMinutes: state.progress.walkMinutes.total,
+    missionsCompleted: state.progress.missions.totalCompleted,
+    permanentMissionsCompleted: state.progress.missions.permanentCompleted,
+    specialMissionsCompleted: state.progress.missions.specialCompleted,
+    missionCounts,
+    maxActivePermanent: state.metrics.maxActivePermanent,
+    maxActiveSpecial: state.metrics.maxActiveSpecial,
+    experienceBySource: { ...expSources },
+    missionExpShare: missionExp / totalExp,
+    troubleCounts,
+    attemptedTroubles: attempted.length,
+    resolvedTroubleIds: resolved.sort(),
+    failedAfterAttemptIds: failedAfterAttempt.sort(),
+    rumorCount: state.rumors.length,
+    rumorRecipients: state.progress.rumors.npcRecipients,
+    npcReplans: state.progress.rumors.npcReplans,
+    firstLevelUpDay: state.metrics.firstLevelUpDay,
+    choiceDeadEnds: state.metrics.choiceDeadEnds,
+    movementBlocked: state.metrics.movementBlocked,
+    travelBlocked: state.metrics.travelBlocked,
+    replayMismatches: state.metrics.replayMismatches,
+    purchases: state.metrics.purchases,
+    zeroTimePurchases: state.metrics.zeroTimePurchases,
+    shopDiagnostics: state.shop.diagnostics.length,
+    terminatedByActionCap: state.metrics.terminatedByActionCap,
+    fingerprint: stateFingerprint(state),
+    terminalTroubles: model.troubles.length - Number(troubleCounts.active ?? 0) - Number(troubleCounts.scheduled ?? 0) - Number(troubleCounts.critical ?? 0),
+  };
+}
+
+export function simulatePlayerJourney({ model, battleData, skills, profile = "balanced", tuning = {}, seed = "player-journey", endMinute = GAME_END_MINUTE, maxActions = 4000 } = {}) {
+  if (!model || !battleData || !skills) throw new Error("simulatePlayerJourney requires model, battleData and skills");
+  const resolvedProfile = typeof profile === "string" ? PROFILE.get(profile) : profile;
+  const state = createInitialJourneyState({ model, battleData, skills, profile: resolvedProfile, tuning, seed });
+  while (state.absoluteMinute < endMinute && state.metrics.actions < maxActions) {
+    updateTroubles(state, model);
+    propagateRumors(state, model);
+    refreshMissions(state, model, state.catalog, battleData, skills, resolvedProfile);
+    shop(state, battleData, resolvedProfile);
+    const movement = objectiveMovementAction(state, model, state.catalog, resolvedProfile);
+    if (movement) {
+      const result = resolveMovementAction(state, model, battleData, skills, resolvedProfile, movement);
+      if (!result.ok) state.metrics.movementBlocked += 1;
+      state.metrics.actions += 1;
+      autoLearn(state, battleData, skills, resolvedProfile);
+      refreshMissions(state, model, state.catalog, battleData, skills, resolvedProfile);
+      continue;
+    }
+    const choices = generateChoiceActions(state, model, battleData, state.catalog, resolvedProfile);
+    if (!choices.length) {
+      state.metrics.choiceDeadEnds += 1;
+      advance(state, model, 45, "dead-end");
+    } else {
+      resolvePlayerAction(state, model, battleData, skills, state.catalog, resolvedProfile, choose(state, choices, resolvedProfile));
+    }
+    state.metrics.actions += 1;
+  }
+  if (state.absoluteMinute < endMinute && state.metrics.actions >= maxActions) {
+    state.metrics.terminatedByActionCap = true;
+    state.history.push({ type: "SIMULATION_ACTION_CAP", minute: state.absoluteMinute, maxActions });
+  }
+  refreshMissions(state, model, state.catalog, battleData, skills, resolvedProfile);
+  return {
+    schemaVersion: "2.0.0",
+    engineVersion: "integrated-player-journey-v2",
+    rngPolicy: "state-keyed narrative; encounter and battle keyed by action attempt",
+    profile: resolvedProfile,
+    tuning,
+    summary: summary(state, model, battleData),
+    state,
+  };
+}
+
+function forceMoveForProbe(state, model, data, skills, profile, targetHub, targetFacilityId) {
+  if (targetHub !== state.player.location) {
+    const action = availableTravelActions(state, model).find((entry) => entry.destinationHub === targetHub);
+    if (!action) return { ok: false, reason: "probe_unreachable_hub", targetHub };
+    const result = resolveMovementAction(state, model, data, skills, profile, action);
+    if (!result.ok) return result;
+  }
+  if (targetFacilityId && targetFacilityId !== state.player.facilityId) {
+    const action = availableLocalMovementActions(state, model).find((entry) => entry.destinationFacilityId === targetFacilityId);
+    if (!action) return { ok: false, reason: "probe_unreachable_facility", targetFacilityId };
+    const result = resolveMovementAction(state, model, data, skills, profile, action);
+    if (!result.ok) return result;
+  }
+  return { ok: true };
+}
+
+export function probeTroubleResolution({ model, battleData, skills, troubleId, tuning = {}, seed = `probe:${troubleId}` }) {
+  const profile = PROFILE.get("story");
+  const state = createInitialJourneyState({
+    model,
+    battleData,
+    skills,
+    profile,
+    tuning: {
+      ...tuning,
+      probeMode: true,
+      disableTravelEncounters: true,
+      probeMissionPowerMultiplier: Number(tuning.probeMissionPowerMultiplier ?? 12),
+    },
+    seed,
+  });
+  Object.assign(state.worldFlags, { worldTreeFallen: true, forestMazeOpen: true, elfApproval: true, blackridgePermit: true });
+  state.routeCache = {};
+  state.player.level = 24;
+  state.player.sp = 24;
+  state.player.stats = { attack: 70, defense: 70, agility: 50, luck: 30 };
+  state.player.hpRatio = 1;
+  state.player.mpRatio = 1;
+  const trouble = model.troubleById[troubleId];
+  const missionDefinition = state.catalog.special.find((entry) => entry.troubleId === troubleId);
+  if (!trouble || !missionDefinition) return { ok: false, troubleId, reason: "missing_definition" };
+  state.absoluteMinute = moment(trouble.startDay, trouble.startPhase);
+  syncClock(state);
+  state.troubles[troubleId].status = "active";
+  state.missions[missionDefinition.id].status = "active";
+  autoLearn(state, battleData, skills, profile);
+  const trace = [];
+  let guard = 0;
+  while (state.troubles[troubleId].status !== "resolved" && guard < 40) {
+    guard += 1;
+    const runtime = state.missions[missionDefinition.id];
+    const step = currentStep(missionDefinition, runtime);
+    if (!step) break;
+    const targetHub = step.targetLocation ?? missionDefinition.targetLocations[0];
+    const move = forceMoveForProbe(state, model, battleData, skills, profile, targetHub, step.targetFacilityId);
+    if (!move.ok) return { ok: false, troubleId, reason: move.reason, trace };
+    const action = missionActions(state, state.catalog).find((entry) => entry.missionId === missionDefinition.id && entry.stepId === step.id);
+    if (!action) return { ok: false, troubleId, reason: "missing_action", stepId: step.id, trace };
+    const result = resolvePlayerAction(state, model, battleData, skills, state.catalog, profile, action);
+    trace.push({ stepId: step.id, result: { ok: result.ok, reason: result.reason, won: result.battle?.won } });
+    if (!result.ok || (result.battle && !result.battle.won)) return { ok: false, troubleId, reason: result.reason ?? "battle_lost", trace };
+  }
+  return {
+    ok: state.troubles[troubleId].status === "resolved",
+    troubleId,
+    missionId: missionDefinition.id,
+    finalStatus: state.troubles[troubleId].status,
+    level: state.player.level,
+    trace,
+  };
+}
