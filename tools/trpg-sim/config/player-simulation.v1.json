@@ -1,0 +1,42 @@
+{
+  "version": "1.0.0",
+  "seedsPerProfile": 12,
+  "baseline": {
+    "startingGold": 0,
+    "starterEquipmentIds": [],
+    "freeStarterMeals": 0,
+    "freeStarterLodging": 0,
+    "missionExpMultiplier": 0.8,
+    "specialMissionExpBase": 95,
+    "travelEncounterBaseChance": 0.22,
+    "defeatRecoveryMinutes": 480,
+    "workGoldThreshold": 20,
+    "restPrice": 4,
+    "shop": { "minimumUpgradeGain": 3 }
+  },
+  "tuned": {
+    "startingGold": 0,
+    "starterEquipmentIds": ["EQP-W-0005", "EQP-A-0001"],
+    "freeStarterMeals": 1,
+    "freeStarterLodging": 1,
+    "missionExpMultiplier": 1.12,
+    "specialMissionExpBase": 115,
+    "travelEncounterBaseChance": 0.14,
+    "defeatRecoveryMinutes": 360,
+    "workGoldThreshold": 34,
+    "restPrice": 4,
+    "shop": { "minimumUpgradeGain": 2 }
+  },
+  "qualityTargets": {
+    "reachedEndRate": 1,
+    "travelBlockedRate": 0,
+    "choiceDeadEndRate": 0,
+    "replayMismatchRate": 0,
+    "medianLevelMin": 10,
+    "medianLevelMax": 22,
+    "storyMedianSpecialResolvedMin": 5,
+    "balancedMedianWinRateMin": 0.4,
+    "balancedMedianWinRateMax": 0.85,
+    "firstLevelUpMedianDayMax": 10
+  }
+}
