@@ -23,6 +23,10 @@ function progressState() {
     buffs: { successfulApplications: 0 },
     multiHit: { actions: 0 },
     events: { grantedSkillIds: new Set(), completedTroubleIds: new Set() },
+    training: { grantedSkillIds: new Set() },
+    manuals: { grantedSkillIds: new Set() },
+    contracts: { grantedSkillIds: new Set() },
+    eventSkillGrants: { byTheme: {} },
   };
 }
 
@@ -51,18 +55,19 @@ export function createInitialJourneyStateV2({ model, battleData, skills, profile
       inventory: { items: {}, equipment: owned }, equipment, skills: new Set(), magicSkillCount: 0,
       knownRumorIds: new Set(), evidenceByTrouble: {}, reputation: {},
     },
-    skillState: { revealed: new Set(), flagUnlocked: new Set(), equipmentActive: new Set(), equipmentEverActive: new Set(), effective: new Set(), revealedAt: {}, flagUnlockedAt: {} },
+    skillState: { revealed: new Set(), flagUnlocked: new Set(), flagUnlockPaths: new Set(), equipmentActive: new Set(), equipmentEverActive: new Set(), effective: new Set(), revealedAt: {}, flagUnlockedAt: {} },
     progress: progressState(),
     troubles: Object.fromEntries(model.troubles.map((trouble) => [trouble.id, { id: trouble.id, status: "scheduled", casualtyMitigation: 0, transitions: [] }])),
-    worldFlags: { worldTreeFallen: false, forestMazeOpen: false, elfApproval: false, blackridgePermit: false, foreignFleetLanded: false, secondSummoningStopped: false, colossusAwake: false, blackridgeArmyAtCapital: false, capitalFallen: false, knightOrderCooperation: false, mageTowerPermit: false, farmFestivalHeld: false, executionGroundDeal: false, royalProof: false },
+    worldFlags: { worldTreeFallen: false, forestMazeOpen: false, elfApproval: false, blackridgePermit: false, foreignFleetLanded: false, secondSummoningStopped: false, colossusAwake: false, blackridgeArmyAtCapital: false, capitalFallen: false, knightOrderCooperation: false, mageTowerPermit: false, farmFestivalHeld: false, executionGroundDeal: false, royalProof: false, skillGrants: {} },
     catalog, missions: null, rumors: [], rumorById: {}, routeCache: {}, encounterCooldowns: {}, dailyBattleCounts: {},
+    ai: { inaccessibleObjectiveKeys: new Set(), nextMerchantRegionalAt: 0, merchantVisitedAt: { "田園の村": 0 } },
     shop: createShopRuntime(battleData), history: [], replayResults: {},
     metrics: {
       actions: 0, localMovementActions: 0, regionalMovementActions: 0, battles: 0, wins: 0, losses: 0, firstLevelUpDay: null,
-      choiceDeadEnds: 0, movementBlocked: 0, replayMismatches: 0, purchases: 0, zeroTimePurchases: 0, terminatedByActionCap: false,
+      choiceDeadEnds: 0, movementBlocked: 0, movementObjectivesWaiting: 0, travelInterrupted: 0, replayMismatches: 0, purchases: 0, zeroTimePurchases: 0, terminatedByActionCap: false,
       missionSamples: 0, activeMissionSum: 0, activeSpecialSum: 0, maxActiveMissions: 0, maxActiveSpecialMissions: 0,
       permanentMissionsCompleted: 0, specialMissionsCompleted: 0, specialMissionsDiscovered: 0,
-      skillsLearnedByCode: {}, flagSkillsLearned: 0, eventSkillGrants: 0, equipmentGrantActivations: 0, skillAcquisitionViolations: 0, maxEffectiveSkills: 0,
+      skillsLearnedByCode: {}, flagSkillsLearned: 0, eventSkillGrants: 0, eventGrantSignals: 0, equipmentGrantActivations: 0, skillAcquisitionViolations: 0, maxEffectiveSkills: 0,
       troubleResolutionAttempts: 0, troubleResolvedByPlayerAction: 0, troublePartialByPlayerAction: 0, troubleFailedByPlayerAction: 0, troubleFailedByDeadline: 0,
     }, battleData, model,
   };
@@ -79,10 +84,11 @@ function compact(state) {
   return {
     minute: state.absoluteMinute,
     player: { location: state.player.location, facilityId: state.player.facilityId, level: state.player.level, exp: state.player.exp, gold: state.player.gold, hp: +state.player.hpRatio.toFixed(4), mp: +state.player.mpRatio.toFixed(4), equipment: state.player.equipment, skills: sorted(state.player.skills), effectiveSkills: sorted(state.skillState.effective), rumors: sorted(state.player.knownRumorIds), evidence: state.player.evidenceByTrouble, reputation: state.player.reputation },
-    progress: { missions: state.progress.missions, travel: { actions: state.progress.travel.actions, local: state.progress.travel.localActions, regional: state.progress.travel.regionalActions, hubs: sorted(state.progress.travel.visitedHubs), facilities: sorted(state.progress.travel.visitedFacilities) }, walk: state.progress.walkMinutes, battles: state.progress.battles, combat: state.progress.combat, economy: state.progress.economy, investigation: state.progress.investigation, social: state.progress.social, events: { granted: sorted(state.progress.events.grantedSkillIds), troubles: sorted(state.progress.events.completedTroubleIds) } },
+    progress: { missions: state.progress.missions, travel: { actions: state.progress.travel.actions, local: state.progress.travel.localActions, regional: state.progress.travel.regionalActions, hubs: sorted(state.progress.travel.visitedHubs), facilities: sorted(state.progress.travel.visitedFacilities) }, walk: state.progress.walkMinutes, battles: state.progress.battles, combat: state.progress.combat, economy: state.progress.economy, investigation: state.progress.investigation, social: state.progress.social, events: { granted: sorted(state.progress.events.grantedSkillIds), troubles: sorted(state.progress.events.completedTroubleIds) }, training: { granted: sorted(state.progress.training.grantedSkillIds) }, manuals: { granted: sorted(state.progress.manuals.grantedSkillIds) }, contracts: { granted: sorted(state.progress.contracts.grantedSkillIds) }, eventSkillGrants: Object.fromEntries(Object.entries(state.progress.eventSkillGrants.byTheme).map(([key, value]) => [key, sorted(value)])) },
     worldFlags: state.worldFlags,
     troubles: Object.fromEntries(Object.entries(state.troubles).map(([id, runtime]) => [id, runtime.status])),
     missions: Object.fromEntries(Object.entries(state.missions).map(([id, runtime]) => [id, { status: runtime.status, progress: runtime.progress, baseline: runtime.baselineValue, attempts: runtime.attempts, outcome: runtime.outcome }])),
+    ai: { waitingObjectives: sorted(state.ai.inaccessibleObjectiveKeys), nextMerchantRegionalAt: state.ai.nextMerchantRegionalAt, merchantVisitedAt: state.ai.merchantVisitedAt },
   };
 }
 
@@ -96,8 +102,8 @@ export function summarizeJourneyV2(state, model) {
     seed: state.seed, profileId: state.profileId, reachedEnd: state.absoluteMinute >= 99 * 1440 + 14 * 60, day: state.day, minute: state.absoluteMinute,
     level: state.player.level, expIntoLevel: state.player.exp, nextLevelExp: experienceToNextLevelV2(state.player.level), sp: state.player.sp,
     learnedSkills: state.player.skills.size, effectiveSkills: state.skillState.effective.size, flagSkillsLearned: state.metrics.flagSkillsLearned,
-    eventGrantedSkills: state.metrics.eventSkillGrants, equipmentGrantActivations: state.metrics.equipmentGrantActivations,
-    revealedSkills: state.skillState.revealed.size, flagUnlockedSkills: state.skillState.flagUnlocked.size, skillAcquisitionViolations: state.metrics.skillAcquisitionViolations,
+    eventGrantedSkills: state.metrics.eventSkillGrants, eventGrantSignals: state.metrics.eventGrantSignals, equipmentGrantActivations: state.metrics.equipmentGrantActivations,
+    revealedSkills: state.skillState.revealed.size, flagUnlockedSkills: state.skillState.flagUnlocked.size, flagUnlockPathCount: state.skillState.flagUnlockPaths.size, skillAcquisitionViolations: state.metrics.skillAcquisitionViolations,
     skillsLearnedByCode: state.metrics.skillsLearnedByCode, gold: state.player.gold, battles: state.metrics.battles, wins: state.metrics.wins, losses: state.metrics.losses,
     winRate: state.metrics.battles ? state.metrics.wins / state.metrics.battles : 0, actions: state.metrics.actions,
     localMovementActions: state.metrics.localMovementActions, regionalMovementActions: state.metrics.regionalMovementActions,
@@ -113,7 +119,7 @@ export function summarizeJourneyV2(state, model) {
     troublePartialByPlayerAction: state.metrics.troublePartialByPlayerAction, troubleFailedByPlayerAction: state.metrics.troubleFailedByPlayerAction,
     troubleFailedByDeadline: state.metrics.troubleFailedByDeadline, invalidTroubleResolutions: invalid.length,
     rumorCount: state.rumors.length, rumorRecipients: state.progress.rumors.npcRecipients, npcReplans: state.progress.rumors.npcReplans,
-    firstLevelUpDay: state.metrics.firstLevelUpDay, choiceDeadEnds: state.metrics.choiceDeadEnds, movementBlocked: state.metrics.movementBlocked,
+    firstLevelUpDay: state.metrics.firstLevelUpDay, choiceDeadEnds: state.metrics.choiceDeadEnds, movementBlocked: state.metrics.movementBlocked, movementObjectivesWaiting: state.metrics.movementObjectivesWaiting, travelInterrupted: state.metrics.travelInterrupted,
     replayMismatches: state.metrics.replayMismatches, purchases: state.metrics.purchases, zeroTimePurchases: state.metrics.zeroTimePurchases,
     shopDiagnostics: state.shop.diagnostics.length, terminatedByActionCap: state.metrics.terminatedByActionCap,
     fingerprint: stateFingerprintV2(state), missionCatalog: missionCatalogStatsV2(state.catalog),
