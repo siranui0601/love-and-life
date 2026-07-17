@@ -13,6 +13,12 @@ function stable(value) {
   return JSON.stringify(value, (_key, item) => item instanceof Set ? [...item].sort() : item);
 }
 
+function stableNumber(text) {
+  let value = 2166136261;
+  for (const character of String(text)) { value ^= character.codePointAt(0); value = Math.imul(value, 16777619); }
+  return value >>> 0;
+}
+
 function readPath(root, path) {
   let value = root;
   for (const segment of String(path ?? "").split(".").filter(Boolean)) {
@@ -129,7 +135,14 @@ function refreshEquipmentGrants(state, data) {
 
 function refreshWorldRules(state, index, context) {
   for (const skill of index.revealWorld) if (!state.skillState.revealed.has(skill.id) && evaluateConditions(skill.revealConditions, context)) mark(state, "revealed", "revealedAt", skill, "SKILL_REVEALED");
-  for (const skill of index.flags) if (!state.skillState.flagUnlocked.has(skill.id) && evaluateConditions(skill.eventUnlockConditions, context)) mark(state, "flagUnlocked", "flagUnlockedAt", skill, "SKILL_FLAG_UNLOCKED");
+  for (const skill of index.flags) {
+    if (state.skillState.flagUnlocked.has(skill.id) || !evaluateConditions(skill.eventUnlockConditions, context)) continue;
+    if (mark(state, "flagUnlocked", "flagUnlockedAt", skill, "SKILL_FLAG_UNLOCKED")) {
+      for (const leaf of flattenConditionLeaves(skill.eventUnlockConditions)) {
+        if (leaf?.scope && leaf?.path) state.skillState.flagUnlockPaths.add(`${leaf.scope}.${leaf.path}`);
+      }
+    }
+  }
   for (const skill of index.events) {
     if (state.player.skills.has(skill.id)) continue;
     if (!prerequisitesOf(skill).every((id) => state.player.skills.has(id))) continue;
@@ -157,13 +170,19 @@ function refreshLevelRules(state, index, context, profile) {
   for (const skill of index.revealLevel) if (!state.skillState.revealed.has(skill.id) && evaluateConditions(skill.revealConditions, context)) mark(state, "revealed", "revealedAt", skill, "SKILL_REVEALED");
   while (state.player.sp > 0) {
     context = { ...context, player: { ...context.player, level: state.player.level, skills: [...state.player.skills] } };
-    const selected = index.level
+    const candidates = index.level
       .filter((skill) => !state.player.skills.has(skill.id))
       .filter((skill) => Number(skill.spCost ?? 0) > 0 && Number(skill.spCost ?? 0) <= state.player.sp)
       .filter((skill) => prerequisitesOf(skill).every((id) => state.player.skills.has(id)))
       .filter((skill) => evaluateConditions(skill.learnConditions, context))
-      .filter((skill) => skill.acquisitionCode !== "flag_unlocked" || evaluateConditions(skill.eventUnlockConditions, context))
-      .sort((left, right) => skillScore(right, profile) - skillScore(left, profile) || left.id.localeCompare(right.id))[0];
+      .filter((skill) => skill.acquisitionCode !== "flag_unlocked" || evaluateConditions(skill.eventUnlockConditions, context));
+    const unlockedFlags = candidates.filter((skill) => skill.acquisitionCode === "flag_unlocked");
+    const learnedSpendSkills = [...state.player.skills].filter((id) => LEVEL_CODES.has(index.byId.get(id)?.acquisitionCode)).length;
+    const reserve = Math.max(0, Number(state.tuning.skillPointReserve ?? 1));
+    const starterMinimum = Math.max(0, Number(state.tuning.starterSkillMinimum ?? 3));
+    if (!unlockedFlags.length && learnedSpendSkills >= starterMinimum && state.player.sp <= reserve) break;
+    const pool = unlockedFlags.length ? unlockedFlags : candidates;
+    const selected = pool.sort((left, right) => skillScore(right, profile) - skillScore(left, profile) || left.id.localeCompare(right.id))[0];
     if (!selected) break;
     const valid = evaluateConditions(selected.learnConditions, context) && (selected.acquisitionCode !== "flag_unlocked" || evaluateConditions(selected.eventUnlockConditions, context));
     if (!valid) {
@@ -207,6 +226,67 @@ export function battleSkillIdsV2(state, data) {
     if (containsBattleScope(skill.activationConditions)) return true;
     return evaluateConditions(skill.activationConditions, context);
   });
+}
+
+function grantSignalLeaf(skill) {
+  return flattenConditionLeaves(skill.grantConditions).find((leaf) =>
+    leaf?.scope === "progress" && leaf.op === "contains" && leaf.value === skill.id
+    || leaf?.scope === "world" && leaf.op === "isTrue"
+  ) ?? null;
+}
+
+function ensureSetAt(root, path) {
+  const segments = String(path).split(".");
+  let cursor = root;
+  for (const segment of segments.slice(0, -1)) cursor = cursor[segment] ??= {};
+  const key = segments.at(-1);
+  if (!(cursor[key] instanceof Set)) cursor[key] = new Set();
+  return cursor[key];
+}
+
+function setBooleanAt(root, path) {
+  const segments = String(path).split(".");
+  let cursor = root;
+  for (const segment of segments.slice(0, -1)) cursor = cursor[segment] ??= {};
+  cursor[segments.at(-1)] = true;
+}
+
+function grantChannel(leaf) {
+  if (leaf.scope === "world") return "world";
+  return String(leaf.path).split(".")[0];
+}
+
+export function issueEventSkillRewardV2(state, data, skills, profile, source = {}) {
+  const index = ensureIndex(state, skills);
+  const eligible = index.events
+    .filter((skill) => !state.player.skills.has(skill.id))
+    .filter((skill) => prerequisitesOf(skill).every((id) => state.player.skills.has(id)))
+    .map((skill) => ({ skill, leaf: grantSignalLeaf(skill) }))
+    .filter((entry) => entry.leaf);
+  if (!eligible.length) return null;
+  const difficulty = Number(source.difficulty ?? 1);
+  const preferredChannels = difficulty >= 8
+    ? new Set(["world", "eventSkillGrants"])
+    : difficulty >= 5
+      ? new Set(["manuals", "contracts", "eventSkillGrants"])
+      : new Set(["training", "events", "manuals"]);
+  const preferred = eligible.filter((entry) => preferredChannels.has(grantChannel(entry.leaf)));
+  const ranked = (preferred.length ? preferred : eligible).sort((left, right) =>
+    skillScore(right.skill, profile) - skillScore(left.skill, profile)
+    || Number(left.skill.requiredLevel ?? 1) - Number(right.skill.requiredLevel ?? 1)
+    || left.skill.id.localeCompare(right.skill.id)
+  );
+  const window = ranked.slice(0, Math.min(12, ranked.length));
+  const selected = window[stableNumber(`${state.seed}:${source.missionId ?? "event"}:${source.troubleId ?? ""}:${state.metrics.eventGrantSignals}`) % window.length];
+  if (selected.leaf.scope === "progress") ensureSetAt(state.progress, selected.leaf.path).add(selected.leaf.value);
+  else setBooleanAt(state.worldFlags, selected.leaf.path);
+  state.metrics.eventGrantSignals += 1;
+  state.history.push({
+    type: "SKILL_GRANT_SIGNAL", minute: state.absoluteMinute, skillId: selected.skill.id,
+    channel: grantChannel(selected.leaf), missionId: source.missionId ?? null, troubleId: source.troubleId ?? null,
+  });
+  refreshSkillStateV2(state, data, skills, profile);
+  return state.player.skills.has(selected.skill.id) ? selected.skill.id : null;
 }
 
 export function auditSkillCatalogV2(skills, data) {
