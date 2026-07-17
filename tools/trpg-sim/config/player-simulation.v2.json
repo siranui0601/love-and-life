@@ -20,11 +20,20 @@
     "maxNormalBattlesPerDay": 4,
     "workGoldThreshold": 20,
     "restPrice": 4,
-    "shop": { "minimumUpgradeGain": 3 }
+    "shop": {
+      "minimumUpgradeGain": 3
+    },
+    "battleExpMultiplier": 1.0,
+    "skillPointReserve": 0,
+    "starterSkillMinimum": 0,
+    "merchantRegionalCooldownMinutes": 360
   },
   "tuned": {
     "startingGold": 0,
-    "starterEquipmentIds": ["EQP-W-0005", "EQP-A-0001"],
+    "starterEquipmentIds": [
+      "EQP-W-0005",
+      "EQP-A-0001"
+    ],
     "freeStarterMeals": 1,
     "freeStarterLodging": 1,
     "missionExpMultiplier": 0.82,
@@ -37,11 +46,17 @@
     "missionPreparationBonusMax": 1.5,
     "missionRetryCooldownMinutes": 360,
     "maxResolutionAttempts": 3,
-    "encounterRespawnMinutes": 300,
-    "maxNormalBattlesPerDay": 2,
+    "encounterRespawnMinutes": 480,
+    "maxNormalBattlesPerDay": 1,
     "workGoldThreshold": 32,
     "restPrice": 4,
-    "shop": { "minimumUpgradeGain": 2 }
+    "shop": {
+      "minimumUpgradeGain": 2
+    },
+    "battleExpMultiplier": 0.35,
+    "skillPointReserve": 1,
+    "starterSkillMinimum": 3,
+    "merchantRegionalCooldownMinutes": 1440
   },
   "qualityTargets": {
     "reachedEndRate": 1,
@@ -57,8 +72,12 @@
     "missionExpShareMax": 0.8,
     "storySpecialResolvedMin": 5,
     "storySpecialResolvedMax": 17,
-    "fighterBattleMedianMax": 260,
+    "fighterBattleMedianMax": 220,
     "balancedWinRateMin": 0.3,
-    "balancedWinRateMax": 0.9
+    "balancedWinRateMax": 0.9,
+    "merchantRegionalMovementMedianMax": 150,
+    "eventGrantMedianSumMin": 1,
+    "flagLearnedProfileCountMin": 4,
+    "movementBlockedMax": 0
   }
 }
