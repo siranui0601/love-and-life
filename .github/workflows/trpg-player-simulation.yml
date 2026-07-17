@@ -20,7 +20,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run trpg:test
+      - name: Run TRPG tests
+        shell: bash
+        run: |
+          mkdir -p tools/trpg-sim/reports
+          set -o pipefail
+          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v3.log
       - name: Run integrated player journeys v3
         env:
           TRPG_PLAYER_V3_SEEDS: 6
@@ -30,6 +35,7 @@ jobs:
         with:
           name: trpg-player-simulation-v3
           path: |
+            tools/trpg-sim/reports/test-v3.log
             tools/trpg-sim/reports/player-v3-latest.json
             tools/trpg-sim/reports/player-v3-latest.md
             tools/trpg-sim/reports/player-latest.json
