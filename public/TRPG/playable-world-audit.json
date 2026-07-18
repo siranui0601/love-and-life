@@ -1,0 +1,204 @@
+{
+  "schemaVersion": "playable-world-audit-v1",
+  "contentRevision": "5ce2058f43c89b01ac1060ba",
+  "resolverVersion": "trpg-player-world-v2",
+  "scenarioCount": 3,
+  "allPassed": true,
+  "deterministicReplay": true,
+  "scenarios": [
+    {
+      "policyId": "story",
+      "profileId": "story",
+      "seed": "playable-audit:story",
+      "contentRevision": "5ce2058f43c89b01ac1060ba",
+      "resolverVersion": "trpg-player-world-v2",
+      "reachedEnd": true,
+      "day": 100,
+      "absoluteMinute": 143400,
+      "commands": 180,
+      "commandsByType": {
+        "LEARN_SKILL": 16,
+        "MOVE": 157,
+        "CHOOSE": 5,
+        "SHOP_BUY": 2
+      },
+      "rejectedCommands": 0,
+      "level": 15,
+      "exp": 571,
+      "sp": 0,
+      "learnedSkills": 17,
+      "gold": 28,
+      "purchases": 2,
+      "battles": 17,
+      "wins": 16,
+      "losses": 1,
+      "missionsCompleted": 15,
+      "troubleCounts": {
+        "resolved": 1,
+        "failed": 18
+      },
+      "resolvedTroubleIds": [
+        "T01"
+      ],
+      "t01": {
+        "troubleStatus": "resolved",
+        "missionStatus": "completed",
+        "finnLifeStatus": "alive",
+        "finnPresence": "present",
+        "playerRescueEvent": true
+      },
+      "npc": {
+        "total": 110,
+        "activeNpcCount": 109,
+        "tracedNpcCount": 110,
+        "population": {
+          "alive": 88,
+          "injured": 10,
+          "dead": 8,
+          "missing": 4,
+          "traveling": 0,
+          "departed": 5,
+          "present": 93
+        },
+        "decisions": 39704,
+        "knowledgeEvents": 3014,
+        "lifeEvents": 77,
+        "localMovements": 17488,
+        "rumorSources": 57
+      },
+      "shopDiagnostics": 0,
+      "invariantViolations": [],
+      "stateHash": "b9d7d2c305d9f4575e3f16067d8e6a086782962a847c6b32121a0e9699afb422",
+      "ok": true
+    },
+    {
+      "policyId": "fighter",
+      "profileId": "fighter",
+      "seed": "playable-audit:fighter",
+      "contentRevision": "5ce2058f43c89b01ac1060ba",
+      "resolverVersion": "trpg-player-world-v2",
+      "reachedEnd": true,
+      "day": 100,
+      "absoluteMinute": 143400,
+      "commands": 170,
+      "commandsByType": {
+        "LEARN_SKILL": 17,
+        "MOVE": 153
+      },
+      "rejectedCommands": 0,
+      "level": 16,
+      "exp": 1353,
+      "sp": 0,
+      "learnedSkills": 17,
+      "gold": 32,
+      "purchases": 0,
+      "battles": 20,
+      "wins": 14,
+      "losses": 6,
+      "missionsCompleted": 13,
+      "troubleCounts": {
+        "failed": 19
+      },
+      "resolvedTroubleIds": [],
+      "t01": {
+        "troubleStatus": "failed",
+        "missionStatus": "failed",
+        "finnLifeStatus": "dead",
+        "finnPresence": "dead",
+        "playerRescueEvent": false
+      },
+      "npc": {
+        "total": 110,
+        "activeNpcCount": 108,
+        "tracedNpcCount": 110,
+        "population": {
+          "alive": 87,
+          "injured": 10,
+          "dead": 8,
+          "missing": 5,
+          "traveling": 0,
+          "departed": 5,
+          "present": 92
+        },
+        "decisions": 39305,
+        "knowledgeEvents": 2599,
+        "lifeEvents": 87,
+        "localMovements": 17372,
+        "rumorSources": 57
+      },
+      "shopDiagnostics": 0,
+      "invariantViolations": [],
+      "stateHash": "fec0b00f91120502d12d8329b75c1412cf9e23605b9cee4e0fc34b1aacf1e89f",
+      "ok": true
+    },
+    {
+      "policyId": "merchant",
+      "profileId": "merchant",
+      "seed": "playable-audit:merchant",
+      "contentRevision": "5ce2058f43c89b01ac1060ba",
+      "resolverVersion": "trpg-player-world-v2",
+      "reachedEnd": true,
+      "day": 100,
+      "absoluteMinute": 143400,
+      "commands": 2155,
+      "commandsByType": {
+        "LEARN_SKILL": 6,
+        "CHOOSE": 2148,
+        "MOVE": 1
+      },
+      "rejectedCommands": 0,
+      "level": 5,
+      "exp": 89,
+      "sp": 0,
+      "learnedSkills": 6,
+      "gold": 22,
+      "purchases": 0,
+      "battles": 0,
+      "wins": 0,
+      "losses": 0,
+      "missionsCompleted": 3,
+      "troubleCounts": {
+        "failed": 19
+      },
+      "resolvedTroubleIds": [],
+      "t01": {
+        "troubleStatus": "failed",
+        "missionStatus": "failed",
+        "finnLifeStatus": "dead",
+        "finnPresence": "dead",
+        "playerRescueEvent": false
+      },
+      "npc": {
+        "total": 110,
+        "activeNpcCount": 108,
+        "tracedNpcCount": 110,
+        "population": {
+          "alive": 86,
+          "injured": 10,
+          "dead": 8,
+          "missing": 6,
+          "traveling": 0,
+          "departed": 5,
+          "present": 91
+        },
+        "decisions": 38917,
+        "knowledgeEvents": 2839,
+        "lifeEvents": 84,
+        "localMovements": 17100,
+        "rumorSources": 57
+      },
+      "shopDiagnostics": 0,
+      "invariantViolations": [],
+      "stateHash": "ca33b0803c13d8eff0b3a40a7387c710a90fda2c53dfa9f5744c783b06d04c37",
+      "ok": true
+    }
+  ],
+  "findings": {
+    "atLeastOnePlayerResolution": true,
+    "noScenarioSolvedEverything": true,
+    "noPlayerT01KillsFinn": true,
+    "playerT01RescueChangesFate": true,
+    "allNpcsHaveCausalTrace": true
+  },
+  "generatedAt": "2026-07-18T14:20:58.062Z"
+}

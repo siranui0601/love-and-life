@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#111914" />
+  <title>スキル資料 | TRPG（仮題）</title>
+  <link rel="stylesheet" href="/TRPG/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#catalogMain">資料本文へ移動</a>
+  <header class="site-header">
+    <a class="brand" href="/TRPG/"><span class="brand-mark" aria-hidden="true">火</span><span><b>TRPG</b><small>仮題</small></span></a>
+    <nav class="site-links" aria-label="関連ページ"><a href="/TRPG/">ゲームを始める</a><a href="/TRPG/simulation.html">世界観測</a><a href="/">遊技場へ戻る</a></nav>
+  </header>
+  <main id="catalogMain" class="catalog-shell">
+    <section class="catalog-hero">
+      <p class="eyebrow">REFERENCE ARCHIVE</p>
+      <h1>スキル資料</h1>
+      <p>開発・検証用の既存スキル公開カタログです。実際のゲームでは、現在の条件で取得・使用できるスキルだけが能力画面に表示されます。</p>
+    </section>
+    <section class="catalog-panel" aria-labelledby="dataTitle">
+      <div class="catalog-panel-heading">
+        <div><p class="eyebrow">RUNTIME DATA</p><h2 id="dataTitle">公開カタログ</h2></div>
+        <a class="catalog-link" href="/TRPG/data/skills.beta.json">JSONを直接開く</a>
+      </div>
+      <p id="loadStatus" class="load-status" aria-live="polite">スキルJSONを読み込んでいます…</p>
+      <div class="metrics" aria-label="スキルデータ概要">
+        <div class="metric"><strong id="totalSkills">—</strong><span>全登録</span></div>
+        <div class="metric"><strong id="enabledSkills">—</strong><span>使用候補</span></div>
+        <div class="metric"><strong id="runtimeReady">—</strong><span>共通命令対応</span></div>
+        <div class="metric"><strong id="customHandlers">—</strong><span>個別処理待ち</span></div>
+      </div>
+      <div class="search-box">
+        <label for="skillSearch">スキル名・IDを検索</label>
+        <input id="skillSearch" type="search" placeholder="例：アンコール / SKL-0001" autocomplete="off" />
+      </div>
+      <div id="skillPreview" class="skill-preview" hidden></div>
+    </section>
+  </main>
+  <script type="module" src="/TRPG/catalog.js"></script>
+</body>
+</html>

@@ -52,7 +52,7 @@ export function evaluateJapaneseRule(text, state, diagnostics = null) {
   match = normalized.match(/(T\d{2})関連証拠/u);
   if (match) return Number(state.player.evidenceByTrouble?.[match[1]] ?? 0) > 0;
 
-  match = normalized.match(/([\p{Script=Han}ァ-ヶー]+)(?:信頼|評判)(\d+)以上/u);
+  match = normalized.match(/(.+?)(?:信頼|評判|信用)\s*(?:>=|≧)?\s*(\d+)(?:以上)?/u);
   if (match) return Number(state.player.reputation?.[match[1]] ?? 0) >= Number(match[2]);
 
   match = normalized.match(/(.+?)を(\d+)体以上撃破/u);
@@ -128,11 +128,37 @@ export function createShopRuntime(battleData) {
   return { quantities, purchaseCounts: {}, salesCounts: {}, diagnostics: [] };
 }
 
-export function availableStockAt(state, battleData, shopRuntime, location = state.player.location) {
+function shopScope(state, scope = {}) {
+  if (typeof scope === "string") {
+    return { location: scope, facilityId: null, allFacilities: true };
+  }
+  return {
+    location: scope.location ?? state.player.location,
+    facilityId: scope.facilityId ?? state.player.facilityId ?? null,
+    allFacilities: scope.allFacilities === true,
+  };
+}
+
+function stockMatchesScope(stock, scope) {
+  return stock.location === scope.location
+    && (scope.allFacilities || (scope.facilityId !== null && stock.sellerId === scope.facilityId));
+}
+
+function sameEquipmentKind(left, right) {
+  if (!left || !right || left.slot !== right.slot) return false;
+  if (left.slot === "mainHand") return left.weaponType === right.weaponType;
+  if (left.slot === "body") return left.armorClass === right.armorClass;
+  return true;
+}
+
+export function availableStockAt(state, battleData, shopRuntime, locationOptions = {}) {
+  const resolvedScope = shopScope(state, locationOptions);
   return battleData.inventory
-    .filter((stock) => stock.location === location)
+    .filter((stock) => stockMatchesScope(stock, resolvedScope))
     .flatMap((stock) => {
-      const unlocked = stock.initiallySold || evaluateJapaneseRule(stock.unlockCondition, state, shopRuntime.diagnostics);
+      const unlocked = stock.unlockCondition
+        ? evaluateJapaneseRule(stock.unlockCondition, state, shopRuntime.diagnostics)
+        : stock.initiallySold;
       if (!unlocked) return [];
       const priceState = priceForStock(stock, state, shopRuntime.diagnostics);
       const baseQuantity = shopRuntime.quantities[stock.id];
@@ -143,8 +169,8 @@ export function availableStockAt(state, battleData, shopRuntime, location = stat
     .sort((left, right) => left.price - right.price || left.id.localeCompare(right.id));
 }
 
-export function buyEquipment(state, battleData, shopRuntime, stockId) {
-  const stock = availableStockAt(state, battleData, shopRuntime).find((entry) => entry.id === stockId);
+export function buyEquipment(state, battleData, shopRuntime, stockId, locationOptions = {}) {
+  const stock = availableStockAt(state, battleData, shopRuntime, locationOptions).find((entry) => entry.id === stockId);
   if (!stock) return { ok: false, reason: "not_available" };
   if (state.player.gold < stock.price) return { ok: false, reason: "insufficient_gold", price: stock.price };
   const equipment = battleData.equipmentById.get(stock.equipmentId);
@@ -159,12 +185,18 @@ export function buyEquipment(state, battleData, shopRuntime, stockId) {
   return { ok: true, equipment, price: stock.price };
 }
 
-export function sellEquipment(state, battleData, shopRuntime, equipmentId) {
+export function sellEquipment(state, battleData, shopRuntime, equipmentId, locationOptions = {}) {
   const owned = Number(state.player.inventory.equipment[equipmentId] ?? 0);
   if (owned <= 0) return { ok: false, reason: "not_owned" };
   if (Object.values(state.player.equipment).includes(equipmentId)) return { ok: false, reason: "equipped" };
   const equipment = battleData.equipmentById.get(equipmentId);
   if (!equipment) return { ok: false, reason: "missing_equipment" };
+  const resolvedScope = shopScope(state, locationOptions);
+  const compatibleSeller = battleData.inventory.some((stock) => {
+    if (!stockMatchesScope(stock, resolvedScope)) return false;
+    return sameEquipmentKind(equipment, battleData.equipmentById.get(stock.equipmentId));
+  });
+  if (!compatibleSeller) return { ok: false, reason: "no_compatible_seller" };
   const sourcePrices = battleData.inventory.filter((stock) => stock.equipmentId === equipmentId && stock.basePrice > 0).map((stock) => stock.basePrice);
   const referencePrice = sourcePrices.length ? Math.min(...sourcePrices) : Math.max(1, equipment.performanceIndex * 5);
   const price = Math.max(1, Math.floor(referencePrice * Number(equipment.sellRatio || 0.4)));
@@ -184,7 +216,7 @@ function profileAccepts(profile, equipment) {
 
 export function autoShop(state, battleData, shopRuntime, profile, tuning = {}) {
   const purchases = [];
-  const stock = availableStockAt(state, battleData, shopRuntime);
+  const stock = availableStockAt(state, battleData, shopRuntime, tuning.scope ?? {});
   for (const slot of ["mainHand", "offHand", "body", "accessory"]) {
     const currentId = state.player.equipment[slot];
     const current = currentId ? battleData.equipmentById.get(currentId) : null;
@@ -200,7 +232,7 @@ export function autoShop(state, battleData, shopRuntime, profile, tuning = {}) {
       });
     const selected = candidates[0];
     if (!selected) continue;
-    const result = buyEquipment(state, battleData, shopRuntime, selected.entry.id);
+    const result = buyEquipment(state, battleData, shopRuntime, selected.entry.id, tuning.scope ?? {});
     if (!result.ok) continue;
     state.player.equipment[slot] = selected.equipment.id;
     purchases.push({ stockId: selected.entry.id, equipmentId: selected.equipment.id, price: result.price, slot });

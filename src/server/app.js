@@ -6,6 +6,7 @@ import zlib from "zlib";
 import { fileURLToPath } from "url";
 import { mountFloodNoHandSoccerVisualRoutes } from "./nohand-soccer/visual-cache-flood.js";
 import { mountTrpgNarrativeRoutes } from "./trpg/routes.js";
+import { mountTrpgGameRoutes } from "./trpg/game/routes.js";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(currentDirectory, "../..");
@@ -96,9 +97,18 @@ export function createApp() {
   const app = express();
   const trpgSkillCatalog = createTrpgSkillCatalogLoader();
 
+  // Game commands contain only short IDs. Parse them under a tight limit
+  // before the wider legacy JSON parser so journal storage cannot be abused.
+  app.use("/TRPG/api/game", express.json({ limit: "16kb" }));
   app.use(express.json({ limit: "12mb" }));
   mountFloodNoHandSoccerVisualRoutes(app);
-  mountTrpgNarrativeRoutes(app);
+  const trpgNarrator = mountTrpgNarrativeRoutes(app);
+  mountTrpgGameRoutes(app, { narrator: trpgNarrator });
+  app.use("/TRPG/api/game", (error, req, res, next) => {
+    if (error?.type === "entity.too.large") return res.status(413).json({ ok: false, error: "game_command_body_too_large" });
+    if (error instanceof SyntaxError && error?.status === 400) return res.status(400).json({ ok: false, error: "invalid_game_command_json" });
+    return next(error);
+  });
 
   // Reverse proxies and some mobile clients handle a normal JSON response more
   // reliably than a manually tagged gzip body. The source remains compressed

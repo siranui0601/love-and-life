@@ -105,6 +105,10 @@ function publishRumor(state, model, data) {
     origin: data.origin ?? state.player.location,
     originMinute: state.absoluteMinute,
     importance: data.importance ?? 0.7,
+    // Hearing a rumor is not the same as spreading it. Callers must mark an
+    // explicit player sharing/intervention action before permanent mission
+    // credit can accrue.
+    playerOriginated: data.playerOriginated === true,
     recipients: {},
   };
   state.rumors.push(rumor);
@@ -273,8 +277,10 @@ function propagateRumors(state, model) {
       if (!(rumor.importance >= 0.8 || npc.relatedTroubleIds.includes(rumor.troubleId) || npc.initialKnowledge?.interests?.some((interest) => rumor.text.includes(interest)))) continue;
       rumor.recipients[npc.id] = { minute: state.absoluteMinute, hub };
       inc(state.progress, "rumors.npcRecipients");
+      if (rumor.playerOriginated) inc(state.progress, "rumors.playerRecipients");
       if (rumor.troubleId && npc.relatedTroubleIds.includes(rumor.troubleId)) {
         inc(state.progress, "rumors.npcReplans");
+        if (rumor.playerOriginated) inc(state.progress, "rumors.playerReplans");
         if (npc.disposition === "mitigate") state.troubles[rumor.troubleId].casualtyMitigation += npc.importanceWeight * 0.05;
       }
     }
@@ -403,9 +409,84 @@ function refreshSkillVisibility(state, data, skills) {
     .map((skill) => skill.id));
 }
 
+function updateMagicSkillCount(state, data) {
+  state.player.magicSkillCount = [...state.player.skills]
+    .filter((id) => /魔法|魔導|杖|本/u.test(`${data.playerSkillById.get(id)?.category ?? ""}`))
+    .length;
+}
+
+export function listLearnablePlayerSkills(state, data, skills) {
+  refreshSkillVisibility(state, data, skills);
+  const context = skillContext(state, data);
+  return skills
+    .filter((skill) => ["basic_level_up", "flag_unlocked"].includes(skill.acquisitionCode))
+    .map((skill) => {
+      const cost = Math.max(1, Number(skill.spCost ?? 1));
+      const missingPrerequisiteIds = prerequisitesOf(skill).filter((id) => !state.player.skills.has(id));
+      const reasons = [];
+      if (state.player.skills.has(skill.id)) reasons.push("already_learned");
+      if (Number(skill.requiredLevel ?? 1) > state.player.level) reasons.push("insufficient_level");
+      if (cost > state.player.sp) reasons.push("insufficient_sp");
+      if (missingPrerequisiteIds.length) reasons.push("missing_prerequisites");
+      if (!evaluateConditions(skill.eventUnlockConditions, context)) reasons.push("event_unlock_conditions_unmet");
+      if (!evaluateConditions(skill.learnConditions, context)) reasons.push("learn_conditions_unmet");
+      if (!state.player.visibleSkillIds.has(skill.id)) reasons.push("not_visible");
+      return {
+        id: skill.id,
+        name: skill.name,
+        acquisitionCode: skill.acquisitionCode,
+        requiredLevel: Number(skill.requiredLevel ?? 1),
+        spCost: cost,
+        missingPrerequisiteIds,
+        learnable: reasons.length === 0,
+        reason: reasons[0] ?? "learnable",
+        reasons,
+      };
+    })
+    .sort((left, right) => Number(right.learnable) - Number(left.learnable)
+      || left.requiredLevel - right.requiredLevel
+      || left.id.localeCompare(right.id));
+}
+
+export function learnPlayerSkill(state, data, skills, skillId) {
+  if (state.tuning?.manualSkillSelection !== true) {
+    return { ok: false, reason: "manual_skill_selection_disabled", reasons: ["manual_skill_selection_disabled"] };
+  }
+  const skill = skills.find((entry) => entry.id === skillId);
+  if (!skill) return { ok: false, reason: "unknown_skill", reasons: ["unknown_skill"] };
+  const candidate = listLearnablePlayerSkills(state, data, skills).find((entry) => entry.id === skillId);
+  if (!candidate) return { ok: false, reason: "unsupported_acquisition", reasons: ["unsupported_acquisition"] };
+  if (!candidate.learnable) return { ok: false, reason: candidate.reasons[0], reasons: candidate.reasons, candidate };
+
+  const context = skillContext(state, data);
+  if (!learnEligible(skill, context, state)) {
+    state.metrics.skillConditionViolations += 1;
+    return { ok: false, reason: "conditions_changed", reasons: ["conditions_changed"] };
+  }
+  state.player.skills.add(skill.id);
+  state.player.sp -= candidate.spCost;
+  inc(state.progress, `skills.learnedBySource.${skill.acquisitionCode}`);
+  state.history.push({
+    type: "SKILL_LEARNED",
+    minute: state.absoluteMinute,
+    skillId: skill.id,
+    acquisitionCode: skill.acquisitionCode,
+    spCost: candidate.spCost,
+    validAtAcquisition: true,
+    selection: "manual",
+  });
+  refreshSkillVisibility(state, data, skills);
+  updateMagicSkillCount(state, data);
+  return { ok: true, skillId: skill.id, spCost: candidate.spCost, remainingSp: state.player.sp };
+}
+
 function autoLearn(state, data, skills, profile) {
   let count = 0;
   refreshSkillVisibility(state, data, skills);
+  if (state.tuning?.manualSkillSelection === true) {
+    updateMagicSkillCount(state, data);
+    return 0;
+  }
   while (state.player.sp > 0) {
     const context = skillContext(state, data);
     const candidates = skills
@@ -433,7 +514,7 @@ function autoLearn(state, data, skills, profile) {
     });
   }
   refreshSkillVisibility(state, data, skills);
-  state.player.magicSkillCount = [...state.player.skills].filter((id) => /魔法|魔導|杖|本/u.test(`${data.playerSkillById.get(id)?.category ?? ""}`)).length;
+  updateMagicSkillCount(state, data);
   return count;
 }
 
@@ -792,11 +873,22 @@ function compact(state) {
 
 export const stateFingerprint = (state) => hash(compact(state));
 
+function playerKnowsSpecialMission(state, missionDefinition) {
+  if (state.tuning?.requireKnownSpecialMissions !== true) return true;
+  const troubleId = missionDefinition.troubleId;
+  if (state.progress.missions.attemptedTroubleIds.has(troubleId)
+    || state.progress.missions.resolvedTroubleIds.has(troubleId)
+    || state.progress.missions.completedIds.has(missionDefinition.id)) return true;
+  return state.rumors.some((rumor) => rumor.troubleId === troubleId
+    && state.player.knownRumorIds.has(rumor.id));
+}
+
 function missionActions(state, catalog) {
   const result = [];
   for (const missionDefinition of catalog.special) {
     const runtime = state.missions[missionDefinition.id];
     if (runtime.status !== "active") continue;
+    if (!playerKnowsSpecialMission(state, missionDefinition)) continue;
     const step = currentStep(missionDefinition, runtime);
     if (!step) continue;
     const location = step.targetLocation ?? missionDefinition.targetLocations[0];
@@ -826,8 +918,14 @@ function missionActions(state, catalog) {
 function localTalk(state, model, profile) {
   const dailyLimit = Number(state.tuning.maxConversationsPerDay ?? 4) + (profile.story >= 0.8 ? 2 : 0);
   if (Number(state.progress.social.byDay[state.day] ?? 0) >= dailyLimit) return null;
-  const list = model.npcs.filter((npc) => npcHub(npc, state.day) === state.player.location
-    && npcFacility(npc, state.day) === state.player.facilityId
+  const authoritativeIds = state.authoritativePresentNpcIds instanceof Set
+    ? state.authoritativePresentNpcIds
+    : Array.isArray(state.authoritativePresentNpcIds)
+      ? new Set(state.authoritativePresentNpcIds)
+      : null;
+  const list = model.npcs.filter((npc) => (authoritativeIds
+    ? authoritativeIds.has(npc.id)
+    : npcHub(npc, state.day) === state.player.location && npcFacility(npc, state.day) === state.player.facilityId)
     && state.absoluteMinute >= Number(state.conversationAvailability[npc.id] ?? 0)
     && !/死亡/u.test(npc.initialStatus));
   if (!list.length) return null;
@@ -896,7 +994,7 @@ function objectiveMovementAction(state, model, catalog, profile) {
   const movement = availableMovementActions(state, model);
   const active = catalog.special
     .map((missionDefinition) => ({ mission: missionDefinition, runtime: state.missions[missionDefinition.id] }))
-    .filter((entry) => entry.runtime.status === "active")
+    .filter((entry) => entry.runtime.status === "active" && playerKnowsSpecialMission(state, entry.mission))
     .map((entry) => ({ ...entry, step: currentStep(entry.mission, entry.runtime) }))
     .filter((entry) => entry.step)
     .sort((left, right) => left.mission.finalDay - right.mission.finalDay || right.mission.difficulty - left.mission.difficulty);
@@ -977,6 +1075,7 @@ export function resolveMovementAction(state, model, data, skills, profileInput, 
     state.progress.facilities.visitedIds.add(facility.id);
     state.metrics.localMoves += 1;
     state.history.push({ type: "LOCAL_MOVE_COMPLETED", minute: state.absoluteMinute, hub: state.player.location, fromFacilityId, toFacilityId: facility.id });
+    refreshMissions(state, model, state.catalog, data, skills, profile);
     return { ok: true, type: "move", movementScope: "local" };
   }
   if (action.movementScope !== "regional") return { ok: false, reason: "unknown_movement_scope" };
@@ -999,6 +1098,7 @@ export function resolveMovementAction(state, model, data, skills, profileInput, 
   for (const tag of routeTags(model, action.routeIds ?? currentPlan.routeIds)) inc(state.progress, `walkMinutes.byTag.${tag}`, action.minutes);
   state.metrics.regionalMoves += 1;
   state.history.push({ type: "REGIONAL_MOVE_COMPLETED", minute: state.absoluteMinute, from: fromHub, to: action.destinationHub, facilityId: state.player.facilityId });
+  refreshMissions(state, model, state.catalog, data, skills, profile);
   return { ok: true, type: "move", movementScope: "regional", battle };
 }
 
@@ -1116,7 +1216,7 @@ function progress() {
     economy: { goldSpent: 0, maxSinglePurchase: 0, goldEarnedFromSales: 0, goldFromBattles: 0, goldFromWork: 0, orphanageDonations: 0 },
     investigation: { total: 0, appraisals: 0 },
     social: { conversations: 0, byDay: {} },
-    rumors: { npcRecipients: 0, npcReplans: 0 },
+    rumors: { npcRecipients: 0, npcReplans: 0, playerRecipients: 0, playerReplans: 0 },
     weapon: { oneHanded: {}, twoHanded: {}, axe: {}, spear: {}, bow: {}, staff: {}, book: {} },
     magic: { totalCasts: 0, mpSpent: 0 },
     debuffs: { stat: { successfulApplications: 0 } },
@@ -1128,6 +1228,8 @@ function progress() {
 }
 
 function initialFacility(model) {
+  const configuredStart = model.facilityById?.LOC_FARM_FIELD;
+  if (configuredStart?.hub === "田園の村") return configuredStart;
   return preferredArrivalFacility(model, "田園の村");
 }
 

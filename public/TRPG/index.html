@@ -2,57 +2,150 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#111827" />
-  <title>TRPG(仮題) | 不知火遊技場</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111914" />
+  <meta name="description" content="100日間進み続ける世界を旅する、一人用異世界TRPG。" />
+  <title>TRPG（仮題） | 不知火遊技場</title>
   <link rel="stylesheet" href="/TRPG/style.css" />
 </head>
 <body>
-  <main class="shell">
-    <a class="back-link" href="/" aria-label="不知火遊技場へ戻る">← 不知火遊技場</a>
+  <a class="skip-link" href="#mainContent">ゲーム本文へ移動</a>
 
-    <section class="hero" aria-labelledby="title">
-      <p class="eyebrow">100日間、世界は待ってくれない。</p>
-      <h1 id="title">TRPG<span>（仮題）</span></h1>
-      <p class="lead">
-        AIが描写を担い、サーバーが世界状態と戦闘結果を管理する、
-        時間進行型の異世界ゲームブックです。
-      </p>
-      <div class="status-chip">100日自律世界シミュレーション β1 公開中</div>
-    </section>
+  <header class="site-header">
+    <a class="brand" href="/TRPG/" aria-label="TRPG（仮題）トップ">
+      <span class="brand-mark" aria-hidden="true">火</span>
+      <span><b>TRPG</b><small>仮題</small></span>
+    </a>
+    <nav class="site-links" aria-label="関連ページ">
+      <a href="/TRPG/simulation.html">世界観測</a>
+      <a href="/TRPG/catalog.html">スキル資料</a>
+      <a href="/">遊技場へ戻る</a>
+    </nav>
+  </header>
 
-    <section class="panel" aria-labelledby="data-title">
-      <div class="panel-heading">
-        <div>
-          <p class="panel-kicker">Runtime data</p>
-          <h2 id="data-title">スキルデータ</h2>
+  <main id="mainContent">
+    <section id="launchScreen" class="launch-screen" aria-labelledby="launchTitle">
+      <div class="launch-copy">
+        <p class="eyebrow">A WORLD THAT MOVES WITHOUT YOU</p>
+        <h1 id="launchTitle">100日間、<br />世界は待たない。</h1>
+        <p>
+          噂を追い、人と出会い、危機へ介入する一人用異世界TRPG。
+          あなたが選ばなかった出来事も、同じ時間の中で進んでいきます。
+        </p>
+        <div class="launch-facts" aria-label="ゲームの特徴">
+          <span>AIによる3択</span><span>自律するNPC</span><span>自動保存</span>
         </div>
-        <a class="json-link" href="/TRPG/data/skills.beta.json">JSONを直接開く</a>
       </div>
 
-      <p id="loadStatus" class="load-status" aria-live="polite">スキルJSONを読み込んでいます…</p>
+      <div class="launch-card">
+        <div class="launch-tabs" role="tablist" aria-label="開始方法">
+          <button id="newTab" role="tab" aria-selected="true" aria-controls="newGamePanel">新しい旅</button>
+          <button id="resumeTab" role="tab" aria-selected="false" aria-controls="resumePanel">続きから</button>
+        </div>
 
-      <div class="metrics" aria-label="スキルデータ概要">
-        <div class="metric"><strong id="totalSkills">—</strong><span>全登録</span></div>
-        <div class="metric"><strong id="enabledSkills">—</strong><span>使用候補</span></div>
-        <div class="metric"><strong id="runtimeReady">—</strong><span>共通命令対応</span></div>
-        <div class="metric"><strong id="customHandlers">—</strong><span>個別処理待ち</span></div>
-      </div>
+        <section id="newGamePanel" role="tabpanel" aria-labelledby="newTab">
+          <form id="newGameForm">
+            <label for="playerName">旅人の名前</label>
+            <input id="playerName" name="playerName" maxlength="24" autocomplete="nickname" required placeholder="名前を入力" />
 
-      <div class="search-box">
-        <label for="skillSearch">スキル名・IDを試しに検索</label>
-        <input id="skillSearch" type="search" placeholder="例：アンコール / SKL-0001" autocomplete="off" />
+            <fieldset>
+              <legend>旅の方針</legend>
+              <div class="profile-grid">
+                <label><input type="radio" name="profileId" value="balanced" checked /><span><b>均衡型</b><small>物語と戦闘をバランスよく</small></span></label>
+                <label><input type="radio" name="profileId" value="story" /><span><b>事件調査型</b><small>噂と手がかりを優先</small></span></label>
+                <label><input type="radio" name="profileId" value="fighter" /><span><b>戦闘優先型</b><small>危険へ正面から挑む</small></span></label>
+                <label><input type="radio" name="profileId" value="explorer" /><span><b>探索優先型</b><small>知らない土地を歩く</small></span></label>
+                <label><input type="radio" name="profileId" value="merchant" /><span><b>商人型</b><small>売買と装備を重視</small></span></label>
+                <label><input type="radio" name="profileId" value="cautious" /><span><b>生存優先型</b><small>準備と安全を重視</small></span></label>
+              </div>
+            </fieldset>
+            <button class="primary-button" type="submit">この旅を始める</button>
+          </form>
+        </section>
+
+        <section id="resumePanel" role="tabpanel" aria-labelledby="resumeTab" hidden>
+          <p id="saveListStatus" class="quiet">保存データを確認しています…</p>
+          <p class="quiet">保存はこの端末で最大3件、最終プレイから30日間です。不要な旅は一覧から削除できます。</p>
+          <div id="saveList" class="save-list"></div>
+          <button id="refreshSaves" class="text-button" type="button">保存データを再読み込み</button>
+        </section>
+
+        <div id="launchError" class="error-box" role="alert" hidden></div>
       </div>
-      <div id="skillPreview" class="skill-preview" hidden></div>
     </section>
 
-    <section class="panel compact" aria-labelledby="next-title">
-      <p class="panel-kicker">Simulation observatory</p>
-      <h2 id="next-title">100日間の自律世界を観測</h2>
-      <p>NPCのGOAP行動、事件の因果、全エンカウントの模擬戦、スキル取得と市場経済の検証結果を公開しています。</p>
-      <a class="json-link" href="/TRPG/simulation.html">シミュレーションを見る →</a>
+    <section id="gameScreen" class="game-screen" aria-label="ゲーム画面" hidden>
+      <div id="sceneBackdrop" class="scene-backdrop" data-background-key="default">
+        <div class="scene-shade"></div>
+
+        <header class="game-hud">
+          <button id="returnToTitle" class="icon-button" type="button" aria-label="旅の選択画面へ戻る">←</button>
+          <div class="place-heading">
+            <span id="locationName">—</span>
+            <strong id="facilityName">—</strong>
+          </div>
+          <div class="clock" aria-label="現在時刻">
+            <span id="dayLabel">Day —</span>
+            <strong id="timeLabel">--:--</strong>
+            <small id="daypartLabel">—</small>
+          </div>
+          <div id="saveIndicator" class="save-indicator" data-status="saved" aria-live="polite">保存済み</div>
+        </header>
+
+        <div id="npcStage" class="npc-stage" aria-label="この場にいる人物"></div>
+
+        <section class="story-console" aria-labelledby="sceneTitle">
+          <div class="story-meta">
+            <p id="sceneTitle" class="eyebrow">CURRENT SCENE</p>
+            <button id="openChronicle" class="text-button" type="button">これまでの記録</button>
+          </div>
+          <p id="narrativeText" class="narrative">物語を読み込んでいます…</p>
+          <p id="lastOutcome" class="last-outcome" hidden></p>
+
+          <div id="choiceRegion" class="choices" aria-label="行動を選ぶ"></div>
+          <p class="choice-help"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> キーでも選択できます</p>
+          <div id="gameError" class="error-box" role="alert" hidden></div>
+        </section>
+      </div>
+
+      <aside class="player-rail" aria-label="プレイヤー概要">
+        <div class="player-heading">
+          <div class="player-avatar" aria-hidden="true">旅</div>
+          <div><strong id="playerDisplayName">—</strong><span id="playerLevel">Lv —</span></div>
+          <b id="playerGold">— G</b>
+        </div>
+        <div class="vital-row">
+          <label>HP <progress id="hpBar" max="1" value="1"></progress><span id="hpText">100%</span></label>
+          <label>MP <progress id="mpBar" max="1" value="1"></progress><span id="mpText">100%</span></label>
+        </div>
+        <div class="rail-summary">
+          <button type="button" data-open-panel="missions"><span>任務</span><b id="missionBadge">0</b></button>
+          <button type="button" data-open-panel="rumors"><span>噂</span><b id="rumorBadge">0</b></button>
+          <button type="button" data-open-panel="skills"><span>SP</span><b id="spBadge">0</b></button>
+        </div>
+      </aside>
+
+      <nav class="utility-nav" aria-label="旅のメニュー">
+        <button type="button" data-open-panel="movement"><span aria-hidden="true">⌖</span>移動</button>
+        <button type="button" data-open-panel="inventory"><span aria-hidden="true">◇</span>持ち物</button>
+        <button type="button" data-open-panel="skills"><span aria-hidden="true">✦</span>能力</button>
+        <button type="button" data-open-panel="missions"><span aria-hidden="true">▤</span>任務</button>
+        <button type="button" data-open-panel="shop"><span aria-hidden="true">♙</span>店</button>
+      </nav>
     </section>
   </main>
+
+  <dialog id="detailDialog" class="detail-dialog" aria-labelledby="dialogTitle">
+    <div class="dialog-heading">
+      <div><p id="dialogKicker" class="eyebrow">JOURNEY</p><h2 id="dialogTitle">詳細</h2></div>
+      <button id="closeDialog" class="icon-button" type="button" aria-label="閉じる">×</button>
+    </div>
+    <div id="dialogBody" class="dialog-body"></div>
+  </dialog>
+
+  <div id="busyOverlay" class="busy-overlay" role="status" aria-live="polite" hidden>
+    <span class="spinner" aria-hidden="true"></span><b>世界が動いています…</b>
+  </div>
 
   <script type="module" src="/TRPG/app.js"></script>
 </body>

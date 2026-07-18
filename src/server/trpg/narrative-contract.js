@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash-lite";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.2";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.3";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",
@@ -146,12 +146,43 @@ function normalizeNpc(npc) {
   };
 }
 
+function npcIsPresentAtPlace(npc, state) {
+  const presence = boundedText(npc?.presence, 40).toLowerCase();
+  const lifeStatus = boundedText(npc?.lifeStatus ?? npc?.vitalState, 40).toLowerCase();
+  if (presence && presence !== "present") return false;
+  if (["dead", "missing"].includes(lifeStatus)) return false;
+  const npcLocation = boundedText(npc?.locationId ?? npc?.currentLocation ?? npc?.location, 100);
+  const stateLocation = boundedText(state?.locationId ?? state?.location, 100);
+  if (npcLocation && stateLocation && npcLocation !== stateLocation) return false;
+  const npcFacility = boundedText(npc?.facilityId ?? npc?.currentFacilityId, 100);
+  const stateFacility = boundedText(state?.facilityId, 100);
+  if (npcFacility && stateFacility && npcFacility !== stateFacility) return false;
+  return true;
+}
+
+function normalizeActionCandidate(candidate, localNpcIds) {
+  const id = boundedText(candidate?.id ?? candidate?.actionCandidateId, 120);
+  const intentType = INTENT_TYPES.includes(candidate?.intentType) ? candidate.intentType : null;
+  const rawTargetNpcId = boundedText(candidate?.targetNpcId, 80) || null;
+  if (!id || !intentType || (rawTargetNpcId && !localNpcIds.has(rawTargetNpcId))) return null;
+  return {
+    id,
+    label: boundedText(candidate?.label, 180) || id,
+    intentType,
+    targetNpcId: rawTargetNpcId,
+  };
+}
+
 function normalizeMission(mission) {
+  const rawStep = mission?.currentStep ?? mission?.step;
+  const currentStep = rawStep && typeof rawStep === "object"
+    ? boundedText(rawStep.label ?? rawStep.id, 180)
+    : boundedText(rawStep, 180);
   return {
     id: boundedText(mission?.id, 80),
     title: boundedText(mission?.title, 120),
     status: boundedText(mission?.status, 40),
-    currentStep: boundedText(mission?.currentStep ?? mission?.step, 180),
+    currentStep,
     troubleId: boundedText(mission?.troubleId, 40) || null,
   };
 }
@@ -169,15 +200,16 @@ export function buildLocalNarrativeContext(input = {}) {
   const state = input.authoritativeState ?? input.state ?? {};
   const action = input.action ?? {};
   const presentNpcIds = new Set(
-    [...(state.presentNpcIds ?? []), action.targetNpcId]
+    [...(state.presentNpcIds ?? [])]
       .filter(Boolean)
       .map(String),
   );
   const suppliedNpcs = Array.isArray(state.npcs) ? state.npcs : [];
   const localNpcs = suppliedNpcs
-    .filter((npc) => presentNpcIds.has(String(npc?.id)))
+    .filter((npc) => presentNpcIds.has(String(npc?.id)) && npcIsPresentAtPlace(npc, state))
     .map(normalizeNpc)
     .filter((npc) => npc.id)
+    .sort((left, right) => left.id.localeCompare(right.id))
     .slice(0, 12);
   const localNpcIds = new Set(localNpcs.map((npc) => npc.id));
   const excludedNpcIds = suppliedNpcs
@@ -192,13 +224,25 @@ export function buildLocalNarrativeContext(input = {}) {
       return !locations.length || locations.includes(state.locationId ?? state.location);
     })
     .map(normalizeMission)
+    .sort((left, right) => left.id.localeCompare(right.id))
     .slice(0, 12);
 
   const visibleRumorIds = new Set((state.visibleRumorIds ?? []).map(String));
   const rumors = (Array.isArray(state.localRumors) ? state.localRumors : state.rumors ?? [])
     .filter((rumor) => !visibleRumorIds.size || visibleRumorIds.has(String(rumor?.id)))
     .map(normalizeRumor)
+    .sort((left, right) => left.id.localeCompare(right.id))
     .slice(-12);
+
+  const rawActionCandidates = state.allowedActionCandidates
+    ?? state.availableActionCandidates
+    ?? input.allowedActionCandidates
+    ?? [];
+  const allowedActionCandidates = (Array.isArray(rawActionCandidates) ? rawActionCandidates : [])
+    .map((candidate) => normalizeActionCandidate(candidate, localNpcIds))
+    .filter(Boolean)
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .slice(0, 3);
 
   const context = {
     contractVersion: "trpg-local-context-v1",
@@ -231,6 +275,7 @@ export function buildLocalNarrativeContext(input = {}) {
     localNpcs,
     missions,
     localRumors: rumors,
+    allowedActionCandidates,
     visibleFlags: stableValue(state.visibleFlags ?? {}),
   };
 
@@ -241,6 +286,9 @@ export function buildLocalNarrativeContext(input = {}) {
       includedNpcIds: [...localNpcIds].sort(),
       excludedNpcIds: [...new Set(excludedNpcIds)].sort(),
       remoteNpcDataRemoved: excludedNpcIds.length,
+      rejectedActionTargetId: action.targetNpcId && !localNpcIds.has(String(action.targetNpcId))
+        ? String(action.targetNpcId)
+        : null,
     },
   };
 }
@@ -249,6 +297,7 @@ export function narrativeReplayKey(context, options = {}) {
   return sha256({
     model: options.model ?? TRPG_NARRATIVE_MODEL,
     promptVersion: options.promptVersion ?? TRPG_NARRATIVE_PROMPT_VERSION,
+    policy: stableValue(options.policy ?? {}),
     context,
   });
 }
@@ -309,6 +358,10 @@ function validateProposal(proposal, index, localNpcIds, errors) {
   if (proposal.type === "flag_candidate" && !allowedFlagPath(proposal.flagPath)) {
     errors.push(`proposals[${index}].flagPath is not allowlisted`);
   }
+  if (proposal.type === "npc_intent") {
+    if (!boundedText(proposal.targetNpcId, 80)) errors.push(`proposals[${index}].targetNpcId is required for npc_intent`);
+    if (!boundedText(proposal.intent, 120)) errors.push(`proposals[${index}].intent is required for npc_intent`);
+  }
   const forbidden = [...forbiddenKeys(proposal)];
   if (forbidden.length) errors.push(`proposals[${index}] contains authoritative keys: ${forbidden.join(",")}`);
 }
@@ -324,6 +377,14 @@ export function validateNarrativeOutput(value, context) {
   choices.forEach((choice, index) => validateChoice(choice, index, localNpcIds, errors));
   const choiceIds = choices.map((choice) => String(choice?.id ?? ""));
   if (new Set(choiceIds).size !== choiceIds.length) errors.push("choice ids are duplicated");
+  const allowedChoiceIds = (context.allowedActionCandidates ?? []).map((candidate) => candidate.id);
+  if (allowedChoiceIds.length) {
+    const actual = [...choiceIds].sort();
+    const expected = [...allowedChoiceIds].sort();
+    if (actual.length !== expected.length || actual.some((id, index) => id !== expected[index])) {
+      errors.push("choice ids must exactly match allowedActionCandidates");
+    }
+  }
   const speeches = Array.isArray(value.speeches) ? value.speeches : [];
   if (speeches.length > 6) errors.push("too many speeches");
   speeches.forEach((speech, index) => {
@@ -339,6 +400,9 @@ export function validateNarrativeOutput(value, context) {
 }
 
 function defaultChoices(context) {
+  if ((context.allowedActionCandidates ?? []).length === 3) {
+    return context.allowedActionCandidates.map((candidate) => ({ ...candidate }));
+  }
   const targetNpcId = context.action.targetNpcId ?? context.localNpcs[0]?.id ?? null;
   const candidates = targetNpcId
     ? [
@@ -354,6 +418,24 @@ function defaultChoices(context) {
   return candidates;
 }
 
+function sentenceFragment(value) {
+  return boundedText(value, 360).replace(/[。．.!！?？]+$/gu, "").trim();
+}
+
+function safeFallbackSpeeches(context) {
+  const npc = context.localNpcs.find((entry) => entry.id === context.action.targetNpcId)
+    ?? context.localNpcs[0]
+    ?? null;
+  if (!npc) return [];
+  let text = "私が知っているのは、今話したことまでだ。";
+  if (npc.relationship <= -20 || /hostile|敵対|警戒/iu.test(npc.mood)) {
+    text = "……信用していない。話せることはそれだけだ。";
+  } else if (npc.relationship >= 20 || /friendly|友好|好意/iu.test(npc.mood)) {
+    text = "分かる範囲なら、もう少し話せる。";
+  }
+  return [{ actorId: npc.id, text, emotion: null }];
+}
+
 export function deterministicNarrativeFallback(context, reason = "model_unavailable") {
   const place = context.place.facilityName ?? context.place.locationId ?? "その場";
   const outcome = boundedText(
@@ -362,12 +444,13 @@ export function deterministicNarrativeFallback(context, reason = "model_unavaila
       ?? context.action.label,
     360,
   );
+  const normalizedOutcome = sentenceFragment(outcome);
   return {
-    narrative: outcome
-      ? `${place}では、${outcome}。周囲の状況を確かめながら、次の行動を選べる。`
+    narrative: normalizedOutcome
+      ? `${place}では、${normalizedOutcome}。周囲の状況を確かめながら、次の行動を選べる。`
       : `${place}の状況に大きな変化はない。周囲を見渡し、次の行動を選ぶ。`,
     choices: defaultChoices(context),
-    speeches: [],
+    speeches: safeFallbackSpeeches(context),
     proposals: [],
     fallbackReason: reason,
   };
@@ -375,6 +458,7 @@ export function deterministicNarrativeFallback(context, reason = "model_unavaila
 
 export function sanitizeNarrativeOutput(value, context) {
   const localNpcIds = new Set(context.localNpcs.map((npc) => npc.id));
+  const allowedChoiceIds = new Set((context.allowedActionCandidates ?? []).map((candidate) => candidate.id));
   const fallback = deterministicNarrativeFallback(context, "sanitized_output");
   const choices = [];
   const usedIds = new Set();
@@ -386,16 +470,15 @@ export function sanitizeNarrativeOutput(value, context) {
     const targetNpcId = candidate.targetNpcId && localNpcIds.has(String(candidate.targetNpcId))
       ? String(candidate.targetNpcId)
       : null;
-    if (!id || !label || !intentType || usedIds.has(id)) continue;
+    if (!id || !label || !intentType || usedIds.has(id) || (allowedChoiceIds.size && !allowedChoiceIds.has(id))) continue;
     usedIds.add(id);
     choices.push({ id, label, intentType, targetNpcId });
   }
   for (const candidate of fallback.choices) {
     if (choices.length >= 3) break;
-    let id = candidate.id;
-    while (usedIds.has(id)) id = `${id}F`;
-    usedIds.add(id);
-    choices.push({ ...candidate, id });
+    if (usedIds.has(candidate.id)) continue;
+    usedIds.add(candidate.id);
+    choices.push({ ...candidate });
   }
 
   const speeches = (Array.isArray(value?.speeches) ? value.speeches : [])
@@ -413,6 +496,7 @@ export function sanitizeNarrativeOutput(value, context) {
       if (!plainObject(proposal) || !PROPOSAL_TYPES.includes(proposal.type)) return false;
       if (proposal.targetNpcId && !localNpcIds.has(String(proposal.targetNpcId))) return false;
       if (proposal.type === "flag_candidate" && !allowedFlagPath(proposal.flagPath)) return false;
+      if (proposal.type === "npc_intent" && (!boundedText(proposal.targetNpcId, 80) || !boundedText(proposal.intent, 120))) return false;
       return forbiddenKeys(proposal).size === 0;
     })
     .map((proposal) => ({
@@ -445,11 +529,23 @@ export function resolveNarrativeProposals(output, context, rules = {}) {
   const rejected = [];
   for (const proposal of output.proposals ?? []) {
     let reason = null;
-    if (proposal.targetNpcId && !localNpcIds.has(String(proposal.targetNpcId))) reason = "remote_npc";
+    if (proposal.type === "npc_intent" && !boundedText(proposal.targetNpcId, 80)) reason = "npc_intent_target_required";
+    else if (proposal.type === "npc_intent" && !boundedText(proposal.intent, 120)) reason = "npc_intent_required";
+    else if (proposal.targetNpcId && !localNpcIds.has(String(proposal.targetNpcId))) reason = "remote_npc";
     else if (proposal.type === "flag_candidate" && !allowedFlagPath(proposal.flagPath)) reason = "flag_not_allowlisted";
     else if (proposal.type === "special_mission_candidate" && !allowedMissionTemplates.has(proposal.templateId)) reason = "unknown_mission_template";
     else if (proposal.troubleId && !allowedTroubleIds.has(proposal.troubleId)) reason = "invisible_trouble";
     else if (forbiddenKeys(proposal).size) reason = "authoritative_mutation";
+    else if (proposal.type === "npc_intent" && typeof rules.validateNpcIntentCandidate === "function") {
+      try {
+        const verdict = rules.validateNpcIntentCandidate(proposal, context);
+        if (verdict === false) reason = "npc_intent_rejected";
+        else if (typeof verdict === "string" && verdict) reason = verdict;
+        else if (plainObject(verdict) && verdict.ok === false) reason = boundedText(verdict.reason, 120) || "npc_intent_rejected";
+      } catch {
+        reason = "npc_intent_validator_error";
+      }
+    }
     if (reason) rejected.push({ proposal, reason });
     else accepted.push({ proposal, status: "candidate_for_authoritative_resolver" });
   }

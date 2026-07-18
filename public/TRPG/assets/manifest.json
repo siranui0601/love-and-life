@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0.0",
+  "backgrounds": {
+    "LOC_FARM_FIELD": "/TRPG/assets/backgrounds/farm-field.png",
+    "LOC_FARM_SQUARE": "/TRPG/assets/backgrounds/farm-square.png",
+    "LOC_FARM_EDGE": "/TRPG/assets/backgrounds/farm-edge.png"
+  },
+  "portraits": {
+    "NPC001": {
+      "default": "/TRPG/assets/portraits/NPC001.png",
+      "neutral": "/TRPG/assets/portraits/NPC001.png",
+      "負傷": "/TRPG/assets/portraits/NPC001.png"
+    },
+    "NPC002": {
+      "default": "/TRPG/assets/portraits/NPC002.png",
+      "neutral": "/TRPG/assets/portraits/NPC002.png"
+    },
+    "NPC003": {
+      "default": "/TRPG/assets/portraits/NPC003.png",
+      "neutral": "/TRPG/assets/portraits/NPC003.png"
+    },
+    "NPC004": {
+      "default": "/TRPG/assets/portraits/NPC004.png",
+      "neutral": "/TRPG/assets/portraits/NPC004.png"
+    }
+  },
+  "notes": "T01 vertical-slice art. Backgrounds are keyed by facilityId; portraits by authoritative present NPC id. Finn is intentionally rendered only after rescue."
+}

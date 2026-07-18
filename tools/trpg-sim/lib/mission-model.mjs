@@ -252,6 +252,9 @@ function derivedMetric(gameState, metric) {
   }
   if (metric === "derived.rumors.influence") {
     const rumors = gameState.progress.rumors ?? {};
+    if (gameState.tuning?.playerOwnedRumorMissionProgress === true) {
+      return Number(rumors.playerRecipients ?? 0) + Number(rumors.playerReplans ?? 0) * 2;
+    }
     return Number(rumors.npcRecipients ?? 0) + Number(rumors.npcReplans ?? 0) * 2;
   }
   if (metric === "derived.skills.totalUses") {
