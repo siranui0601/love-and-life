@@ -591,6 +591,68 @@ function initializeState(data, options, rng) {
   };
 }
 
+function playbackStatuses(actor) {
+  return [
+    ...[...actor.modifiers].map(([id, entry]) => `modifier:${id}:${Number(entry?.stage ?? 0)}`),
+    ...[...actor.debuffs.keys()].map((id) => `debuff:${id}`),
+    ...[...actor.specialStates.keys()].map((id) => `state:${id}`),
+  ].sort();
+}
+
+function playbackSnapshot(state) {
+  return [...state.players, ...state.enemies].map((actor) => ({
+    instanceId: actor.instanceId,
+    id: actor.id,
+    name: actor.name,
+    side: actor.side,
+    hp: actor.hp,
+    maxHp: actor.maxHp,
+    mp: actor.mp,
+    maxMp: actor.maxMp,
+    alive: actor.alive,
+    statuses: playbackStatuses(actor),
+  }));
+}
+
+function playbackEffects(before, after) {
+  const beforeById = new Map(before.map((actor) => [actor.instanceId, actor]));
+  return after.flatMap((actor) => {
+    const previous = beforeById.get(actor.instanceId);
+    if (!previous) return [];
+    const statusesChanged = previous.statuses.length !== actor.statuses.length
+      || previous.statuses.some((status, index) => status !== actor.statuses[index]);
+    if (previous.hp === actor.hp
+      && previous.mp === actor.mp
+      && previous.alive === actor.alive
+      && !statusesChanged) return [];
+    return [{
+      targetInstanceId: actor.instanceId,
+      hpBefore: previous.hp,
+      hpAfter: actor.hp,
+      mpBefore: previous.mp,
+      mpAfter: actor.mp,
+      aliveBefore: previous.alive,
+      aliveAfter: actor.alive,
+      ...(statusesChanged ? {
+        statusesBefore: previous.statuses,
+        statusesAfter: actor.statuses,
+      } : {}),
+    }];
+  });
+}
+
+function playbackAction(action) {
+  if (action.type === 'normal') {
+    return { kind: 'attack', actionId: '__normal__', skillId: null, name: 'こうげき' };
+  }
+  return {
+    kind: 'skill',
+    actionId: action.type === 'monsterSkill' ? action.action?.id ?? action.skill.id : action.skill.id,
+    skillId: action.skill.id,
+    name: action.skill.name ?? action.skill.id,
+  };
+}
+
 export function simulateBattle(options) {
   const { data } = options;
   if (!data) throw new Error('simulateBattle requires data');
@@ -603,10 +665,23 @@ export function simulateBattle(options) {
   let fallbackAttacks = 0;
   let totalHits = 0;
   let totalCriticals = 0;
+  const captureTimeline = options.captureTimeline === true;
+  const initialCombatants = captureTimeline ? playbackSnapshot(state) : null;
+  const frames = captureTimeline ? [] : null;
+  let frameSequence = 0;
+
+  const recordFrame = (frame, before, includeWhenEmpty = false) => {
+    if (!captureTimeline) return;
+    const effects = playbackEffects(before, playbackSnapshot(state));
+    if (!includeWhenEmpty && effects.length === 0) return;
+    frames.push({ seq: ++frameSequence, round: state.turn, ...frame, effects });
+  };
 
   for (let turn = 1; turn <= maxTurns; turn += 1) {
     state.turn = turn;
+    const beforeRoundStart = captureTimeline ? playbackSnapshot(state) : null;
     startRound(state);
+    recordFrame({ phase: 'round_start', actorInstanceId: null, actorSide: null }, beforeRoundStart);
     const actors = living([...state.players, ...state.enemies])
       .map((actor) => ({ actor, tie: rng() }))
       .sort((a, b) => actorStat(b.actor, 'agility') - actorStat(a.actor, 'agility') || a.tie - b.tie)
@@ -616,6 +691,20 @@ export function simulateBattle(options) {
       if (!living(state.players).length || !living(state.enemies).length) break;
       if (failureFromDebuff(actor, rng)) {
         diagnostics.add('actionFailureFromDebuff', { actorId: actor.id, turn });
+        if (captureTimeline) {
+          const snapshot = playbackSnapshot(state);
+          recordFrame({
+            phase: 'action',
+            actorInstanceId: actor.instanceId,
+            actorSide: actor.side,
+            action: { kind: 'status_failure', actionId: '__status_failure__', skillId: null, name: '行動できない' },
+            primaryTargetInstanceId: null,
+            hits: 0,
+            criticals: 0,
+            damage: 0,
+            healing: 0,
+          }, snapshot, true);
+        }
         continue;
       }
       const action = actor.side === 'player'
@@ -624,6 +713,7 @@ export function simulateBattle(options) {
       if (action.fallback) fallbackAttacks += 1;
       const usageId = action.type === 'normal' ? '__normal__' : action.skill.id;
       actionUsage.set(usageId, (actionUsage.get(usageId) ?? 0) + 1);
+      const beforeAction = captureTimeline ? playbackSnapshot(state) : null;
       const result = action.type === 'monsterSkill'
         ? executeMonsterSkill({ state, action, data, rng, diagnostics })
         : action.type === 'playerSkill'
@@ -631,8 +721,21 @@ export function simulateBattle(options) {
           : executeNormalAttack(action, state, rng);
       totalHits += Number(result.hits || 0);
       totalCriticals += Number(result.criticals || 0);
+      recordFrame({
+        phase: 'action',
+        actorInstanceId: actor.instanceId,
+        actorSide: actor.side,
+        action: playbackAction(action),
+        primaryTargetInstanceId: action.target?.instanceId ?? null,
+        hits: Number(result.hits || 0),
+        criticals: Number(result.criticals || 0),
+        damage: Number(result.damage || 0),
+        healing: Number(result.healing || 0),
+      }, beforeAction, true);
     }
+    const beforeRoundEnd = captureTimeline ? playbackSnapshot(state) : null;
     endRound(state);
+    recordFrame({ phase: 'round_end', actorInstanceId: null, actorSide: null }, beforeRoundEnd);
     if (!living(state.enemies).length) { winner = 'players'; break; }
     if (!living(state.players).length) { winner = 'enemies'; break; }
   }
@@ -657,6 +760,13 @@ export function simulateBattle(options) {
     candidateExhaustion: diagnosticSnapshot.counts.candidateExhaustion ?? 0,
     diagnostics: diagnosticSnapshot,
     assumptions: BATTLE_ASSUMPTIONS,
+    ...(captureTimeline ? {
+      timeline: {
+        version: 1,
+        combatants: initialCombatants,
+        frames,
+      },
+    } : {}),
   };
 }
 

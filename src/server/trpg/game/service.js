@@ -932,7 +932,145 @@ function resolvedActionForPresentation(action) {
   };
 }
 
-function safeOutcome(result) {
+const MAX_BATTLE_PLAYBACK_FRAMES = 96;
+const MAX_BATTLE_PLAYBACK_BYTES = 60 * 1024;
+
+function battleNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? Number(number.toFixed(4)) : fallback;
+}
+
+function centeredFrameSample(frames, limit) {
+  if (frames.length <= limit) return frames;
+  const head = Math.ceil(limit / 2);
+  return [...frames.slice(0, head), ...frames.slice(-(limit - head))];
+}
+
+export function safeBattlePlayback(battle, data) {
+  const timeline = battle?.timeline;
+  if (!timeline || !Array.isArray(timeline.combatants) || !Array.isArray(timeline.frames)) return null;
+  const battleData = data?.battleData;
+  const combatantSource = timeline.combatants.slice(0, 24);
+  const knownInstanceIds = new Set(combatantSource.map((actor) => cleanText(actor?.instanceId, 100)));
+  const combatants = combatantSource.map((actor) => {
+    const monster = actor?.side === "enemy" ? battleData?.monsterById?.get(actor.id) : null;
+    return {
+      instanceId: cleanText(actor?.instanceId, 100),
+      actorId: cleanText(actor?.id, 100),
+      side: actor?.side === "enemy" ? "enemy" : "player",
+      name: cleanText(monster?.name ?? actor?.name ?? (actor?.side === "enemy" ? "敵" : "冒険者"), 48),
+      hp: battleNumber(actor?.hp),
+      maxHp: Math.max(1, battleNumber(actor?.maxHp, 1)),
+      mp: battleNumber(actor?.mp),
+      maxMp: Math.max(0, battleNumber(actor?.maxMp)),
+      alive: actor?.alive !== false,
+    };
+  });
+  const sourceFrames = timeline.frames;
+  const sourceEntries = sourceFrames.map((frame, sourceIndex) => ({ frame, sourceIndex }));
+  let selectedEntries = centeredFrameSample(sourceEntries, MAX_BATTLE_PLAYBACK_FRAMES);
+  const checkpointAt = (sourceIndex) => {
+    const actors = new Map(combatants.map((actor) => [actor.instanceId, {
+      instanceId: actor.instanceId,
+      hp: actor.hp,
+      mp: actor.mp,
+      alive: actor.alive,
+    }]));
+    sourceFrames.slice(0, sourceIndex).forEach((sourceFrame) => {
+      (Array.isArray(sourceFrame?.effects) ? sourceFrame.effects : []).forEach((effect) => {
+        const actor = actors.get(cleanText(effect?.targetInstanceId, 100));
+        if (!actor) return;
+        actor.hp = Math.max(0, battleNumber(effect?.hpAfter, actor.hp));
+        actor.mp = Math.max(0, battleNumber(effect?.mpAfter, actor.mp));
+        actor.alive = effect?.aliveAfter !== false;
+      });
+    });
+    return [...actors.values()];
+  };
+  const sanitizeFrame = ({ frame, sourceIndex }, previousSourceIndex = -1) => {
+    const skillId = cleanText(frame?.action?.skillId, 100) || null;
+    const knownSkill = battleData?.playerSkillById?.get(skillId) ?? battleData?.monsterSkillById?.get(skillId);
+    const actionKind = ["attack", "skill", "status_failure"].includes(frame?.action?.kind)
+      ? frame.action.kind
+      : null;
+    const actionName = frame?.phase === "round_start"
+      ? "ラウンド開始時の効果"
+      : frame?.phase === "round_end"
+        ? "ラウンド終了時の効果"
+        : cleanText(knownSkill?.name ?? frame?.action?.name ?? "行動", 64);
+    const omittedBefore = previousSourceIndex >= 0 ? Math.max(0, sourceIndex - previousSourceIndex - 1) : sourceIndex;
+    return {
+      seq: Math.max(0, Math.trunc(battleNumber(frame?.seq))),
+      round: Math.max(0, Math.trunc(battleNumber(frame?.round))),
+      phase: ["action", "round_start", "round_end"].includes(frame?.phase) ? frame.phase : "action",
+      actorInstanceId: knownInstanceIds.has(cleanText(frame?.actorInstanceId, 100))
+        ? cleanText(frame.actorInstanceId, 100)
+        : null,
+      actorSide: ["player", "enemy"].includes(frame?.actorSide) ? frame.actorSide : null,
+      action: actionKind ? {
+        kind: actionKind,
+        actionId: cleanText(frame?.action?.actionId, 100) || null,
+        skillId,
+        name: actionName,
+      } : null,
+      primaryTargetInstanceId: knownInstanceIds.has(cleanText(frame?.primaryTargetInstanceId, 100))
+        ? cleanText(frame.primaryTargetInstanceId, 100)
+        : null,
+      hits: Math.max(0, Math.trunc(battleNumber(frame?.hits))),
+      criticals: Math.max(0, Math.trunc(battleNumber(frame?.criticals))),
+      damage: Math.max(0, battleNumber(frame?.damage)),
+      healing: Math.max(0, battleNumber(frame?.healing)),
+      effects: (Array.isArray(frame?.effects) ? frame.effects : []).slice(0, 24).flatMap((effect) => {
+        const targetInstanceId = cleanText(effect?.targetInstanceId, 100);
+        if (!knownInstanceIds.has(targetInstanceId)) return [];
+        return [{
+          targetInstanceId,
+          hpBefore: Math.max(0, battleNumber(effect?.hpBefore)),
+          hpAfter: Math.max(0, battleNumber(effect?.hpAfter)),
+          mpBefore: Math.max(0, battleNumber(effect?.mpBefore)),
+          mpAfter: Math.max(0, battleNumber(effect?.mpAfter)),
+          aliveBefore: effect?.aliveBefore !== false,
+          aliveAfter: effect?.aliveAfter !== false,
+          ...(Array.isArray(effect?.statusesBefore) || Array.isArray(effect?.statusesAfter) ? {
+            statusesBefore: (Array.isArray(effect?.statusesBefore) ? effect.statusesBefore : [])
+              .slice(0, 12)
+              .map((status) => cleanText(status, 48)),
+            statusesAfter: (Array.isArray(effect?.statusesAfter) ? effect.statusesAfter : [])
+              .slice(0, 12)
+              .map((status) => cleanText(status, 48)),
+          } : {}),
+        }];
+      }),
+      ...(omittedBefore > 0 ? {
+        omittedBefore,
+        checkpoint: checkpointAt(sourceIndex),
+      } : {}),
+    };
+  };
+  const sanitizeSelection = (entries) => entries.map((entry, index) => sanitizeFrame(entry, entries[index - 1]?.sourceIndex ?? -1));
+  let frames = sanitizeSelection(selectedEntries);
+  const encounterId = battle.encounterId ?? battle.encounter?.id ?? null;
+  const encounter = battleData?.encounterById?.get(encounterId);
+  const build = () => ({
+    version: 1,
+    encounter: {
+      id: cleanText(encounterId, 100) || null,
+      name: cleanText(encounter?.name ?? "戦闘", 64),
+    },
+    combatants,
+    frames,
+    truncatedFrames: Math.max(0, sourceFrames.length - frames.length),
+  });
+  let playback = build();
+  while (Buffer.byteLength(JSON.stringify(playback), "utf8") > MAX_BATTLE_PLAYBACK_BYTES && frames.length > 8) {
+    selectedEntries = centeredFrameSample(selectedEntries, Math.max(8, Math.floor(frames.length * 0.8)));
+    frames = sanitizeSelection(selectedEntries);
+    playback = build();
+  }
+  return playback;
+}
+
+function safeOutcome(result, data = null) {
   const output = { ok: result?.ok !== false, type: result?.type ?? null, reason: result?.reason ?? null };
   if (result?.committed === true) output.committed = true;
   if (result?.price !== undefined) output.price = result.price;
@@ -948,6 +1086,8 @@ function safeOutcome(result) {
       exp: result.battle.exp ?? result.battle.rewards?.exp ?? null,
       gold: result.battle.gold ?? result.battle.rewards?.gold ?? null,
     };
+    const playback = safeBattlePlayback(result.battle, data);
+    if (playback) output.battle.playback = playback;
   }
   if (result?.summary) output.summary = cleanText(result.summary, 360);
   else if (!output.ok) output.summary = {
@@ -963,6 +1103,12 @@ function safeOutcome(result) {
   else if (output.learnedRumorCount) output.summary = `${output.learnedRumorCount}件の噂を新しく知った。`;
   else output.summary = "行動の結果が世界へ反映された。";
   return output;
+}
+
+function replayOutcome(outcome) {
+  if (!outcome?.battle?.playback) return outcome;
+  const { playback: _presentationOnly, ...battle } = outcome.battle;
+  return { ...outcome, battle };
 }
 
 function errorFromResult(result) {
@@ -1065,12 +1211,13 @@ export function executeGameRuntimeCommand(runtime, data, command) {
       profileFor(runtime.playerState.profileId),
       action,
     );
+    const resolveWithPlayback = () => withTemporaryTuning(runtime.playerState, "captureBattleTimeline", true, resolve);
     const suppressUnpreparedInvestigationEncounter = Boolean(runtime.tutorial
       && runtime.playerState.player.skills.size === 0
       && action.type === "investigate");
     result = suppressUnpreparedInvestigationEncounter
-      ? withTemporaryTuning(runtime.playerState, "probeMode", true, resolve)
-      : resolve();
+      ? withTemporaryTuning(runtime.playerState, "probeMode", true, resolveWithPlayback)
+      : resolveWithPlayback();
     runtime.playerState.metrics.actions += 1;
   } else if (command.type === "MOVE") {
     const action = movementActions(runtime, data).find((entry) => entry.id === payload.moveId);
@@ -1085,12 +1232,13 @@ export function executeGameRuntimeCommand(runtime, data, command) {
       profileFor(runtime.playerState.profileId),
       action,
     );
+    const resolveWithPlayback = () => withTemporaryTuning(runtime.playerState, "captureBattleTimeline", true, resolve);
     const suppressUnpreparedTravelEncounter = Boolean(runtime.tutorial
       && runtime.playerState.player.skills.size === 0
       && action.movementScope === "regional");
     result = suppressUnpreparedTravelEncounter
-      ? withTemporaryTuning(runtime.playerState, "disableTravelEncounters", true, resolve)
-      : resolve();
+      ? withTemporaryTuning(runtime.playerState, "disableTravelEncounters", true, resolveWithPlayback)
+      : resolveWithPlayback();
     runtime.playerState.metrics.actions += 1;
   } else if (command.type === "SHOP_BUY") {
     resolvedActionId = payload.stockId;
@@ -1144,7 +1292,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   return {
     resolvedActionId,
     resolvedAction: resolvedActionForPresentation(resolvedPlayerAction),
-    outcome: safeOutcome(result),
+    outcome: safeOutcome(result, data),
   };
 }
 
@@ -1503,7 +1651,7 @@ function tutorialView(runtime, data) {
     emphasisTarget: "skills",
   };
   const battleAvailable = choiceActions(runtime, data).some((choice) => ["missionBattle", "seekBattle"].includes(choice.type));
-  if (battleAvailable && !acknowledged.has("combat")) return {
+  if (battleAvailable && runtime.playerState.metrics.battles === 0 && !acknowledged.has("combat")) return {
     ...base,
     id: "combat",
     title: "赤い「戦闘」表示は、危険を伴う行動",
@@ -1964,6 +2112,7 @@ function narrativeInput(record, runtime, data, action, outcome) {
   const missions = missionView(runtime, data).filter((mission) => mission.status === "active");
   const rumors = rumorView(runtime);
   const resolvedAction = action?.resolvedAction ?? action;
+  const authoritativeOutcome = replayOutcome(outcome) ?? { type: "start", ok: true };
   return {
     locale: "ja-JP",
     playerName: record.playerName,
@@ -1975,7 +2124,7 @@ function narrativeInput(record, runtime, data, action, outcome) {
       targetNpcName: resolvedAction?.targetNpcName ?? null,
       dialogueTopic: resolvedAction?.dialogueTopic ?? null,
     },
-    authoritativeOutcome: outcome ?? { type: "start", ok: true },
+    authoritativeOutcome,
     authoritativeState: {
       day: runtime.playerState.day,
       hour: runtime.playerState.hour,
@@ -1996,7 +2145,7 @@ function narrativeInput(record, runtime, data, action, outcome) {
       visibleMissionIds: missions.map((mission) => mission.id),
       localRumors: rumors,
       visibleRumorIds: rumors.map((rumor) => rumor.id),
-      authoritativeOutcome: outcome ?? { type: "start", ok: true },
+      authoritativeOutcome,
       allowedActionCandidates: choices.map((choice) => ({
         id: choice.choiceId,
         actionCandidateId: choice.id,
@@ -2305,7 +2454,7 @@ export class TrpgGameService {
         type: command.type,
         payload: command.payload,
         resolvedActionId: result.resolvedActionId,
-        outcome: result.outcome,
+        outcome: replayOutcome(result.outcome),
       };
       record.commandLog.push(journalEntry);
       await updatePresentation(record, runtime, this.data, this.narrator, { ...command, ...result }, result.outcome);
@@ -2338,7 +2487,7 @@ export class TrpgGameService {
         revisionMatches: entry.revisionBefore === expectedSeq - 1 && entry.revisionAfter === expectedSeq,
         beforeMatches: beforeHash === entry.stateBeforeHash,
         actionMatches: result.resolvedActionId === entry.resolvedActionId,
-        outcomeMatches: canonicalJson(result.outcome) === canonicalJson(entry.outcome),
+        outcomeMatches: canonicalJson(replayOutcome(result.outcome)) === canonicalJson(replayOutcome(entry.outcome)),
         afterMatches: afterHash === entry.stateAfterHash,
       });
       if (!checks.at(-1).sequenceMatches

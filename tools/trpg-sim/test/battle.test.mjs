@@ -137,6 +137,81 @@ test("the same battle seed produces the same complete result", () => {
   assert.deepEqual(simulateBattle(options), simulateBattle(options));
 });
 
+test("timeline capture is deterministic and does not change battle resolution", () => {
+  const build = createDefaultBuilds(data)[0];
+  const options = {
+    data,
+    seed: "timeline-determinism",
+    encounterId: "ENC-0001",
+    playerBuild: build,
+    maxTurns: 40,
+  };
+  const withoutTimeline = simulateBattle(options);
+  const first = simulateBattle({ ...options, captureTimeline: true });
+  const second = simulateBattle({ ...options, captureTimeline: true });
+  const { timeline, ...capturedResult } = first;
+
+  assert.equal("timeline" in withoutTimeline, false, "bulk simulations must not capture playback by default");
+  assert.deepEqual(capturedResult, withoutTimeline, "capture must not consume RNG or alter combat rewards/results");
+  assert.deepEqual(first.timeline, second.timeline);
+  assert.equal(timeline.version, 1);
+  assert.ok(timeline.combatants.length >= 2);
+  assert.ok(timeline.frames.length > 0);
+  assert.deepEqual(timeline.frames.map((frame) => frame.seq), timeline.frames.map((_, index) => index + 1));
+  assert.ok(timeline.frames.every((frame, index, frames) => index === 0 || frame.round >= frames[index - 1].round));
+
+  const finalByInstance = new Map(timeline.combatants.map((actor) => [actor.instanceId, {
+    hp: actor.hp,
+    mp: actor.mp,
+    alive: actor.alive,
+  }]));
+  for (const frame of timeline.frames) {
+    for (const effect of frame.effects) {
+      const current = finalByInstance.get(effect.targetInstanceId);
+      assert.ok(current, `${effect.targetInstanceId} must be one of the initial combatants`);
+      assert.equal(effect.hpBefore, current.hp);
+      assert.equal(effect.mpBefore, current.mp);
+      assert.equal(effect.aliveBefore, current.alive);
+      finalByInstance.set(effect.targetInstanceId, {
+        hp: effect.hpAfter,
+        mp: effect.mpAfter,
+        alive: effect.aliveAfter,
+      });
+    }
+  }
+  const finalActors = [...first.players, ...first.enemies];
+  timeline.combatants.forEach((combatant, index) => {
+    const final = finalByInstance.get(combatant.instanceId);
+    assert.equal(final.hp, finalActors[index].hp);
+    assert.equal(final.mp, finalActors[index].mp ?? combatant.mp);
+    assert.equal(final.alive, finalActors[index].alive);
+  });
+});
+
+test("timeline includes deterministic end-of-round resource effects", () => {
+  const first = simulateBattle({
+    data,
+    seed: "round-effect-4",
+    monsterIds: ["MON-0010"],
+    playerBuild: observerBuild(),
+    maxTurns: 5,
+    captureTimeline: true,
+  });
+  const second = simulateBattle({
+    data,
+    seed: "round-effect-4",
+    monsterIds: ["MON-0010"],
+    playerBuild: observerBuild(),
+    maxTurns: 5,
+    captureTimeline: true,
+  });
+  const roundEffects = first.timeline.frames.filter((frame) => frame.phase === "round_end");
+
+  assert.deepEqual(first.timeline, second.timeline);
+  assert.ok(roundEffects.length > 0);
+  assert.ok(roundEffects.some((frame) => frame.effects.some((effect) => effect.hpAfter < effect.hpBefore)));
+});
+
 test("MON-0076 candidate exhaustion is diagnosed and falls back to normal attacks", () => {
   const result = simulateBattle({
     data,
