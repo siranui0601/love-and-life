@@ -5,6 +5,8 @@ on:
     paths:
       - "tools/trpg-sim/**"
       - "public/TRPG/**"
+      - "src/server/trpg/**"
+      - "src/server/app.js"
       - "package.json"
       - ".github/workflows/trpg-player-simulation.yml"
   workflow_dispatch:
@@ -12,7 +14,7 @@ on:
 jobs:
   simulate:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,20 +27,21 @@ jobs:
         run: |
           mkdir -p tools/trpg-sim/reports
           set -o pipefail
-          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v3.log
-      - name: Run integrated player journeys v3
+          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v4.log
+      - name: Run integrated player, GOAP and Gemini journeys v4
         env:
-          TRPG_PLAYER_V3_SEEDS: 4
-        run: node tools/trpg-sim/cli-player-v3.mjs --strict
+          TRPG_PLAYER_V4_SEEDS: 2
+          TRPG_GOAP_V4_SEEDS: 2
+        run: node tools/trpg-sim/cli-player-v4.mjs --strict
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trpg-player-simulation-v3
+          name: trpg-player-simulation-v4
           path: |
-            tools/trpg-sim/reports/test-v3.log
-            tools/trpg-sim/reports/player-v3-latest.json
-            tools/trpg-sim/reports/player-v3-latest.md
+            tools/trpg-sim/reports/test-v4.log
+            tools/trpg-sim/reports/player-v4-latest.json
+            tools/trpg-sim/reports/player-v4-latest.md
             tools/trpg-sim/reports/player-latest.json
             tools/trpg-sim/reports/player-latest.md
             public/TRPG/player-simulation-report.json
-            public/TRPG/player-simulation-v3-report.json
+            public/TRPG/player-simulation-v4-report.json
