@@ -1,8 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createTrpgNarrator } from "../../../src/server/trpg/gemini-narrator.js";
+import { buildNarrativePrompt, createTrpgNarrator } from "../../../src/server/trpg/gemini-narrator.js";
 import { createNarrativeReplayCache } from "../../../src/server/trpg/narrative-cache.js";
-import { buildLocalNarrativeContext } from "../../../src/server/trpg/narrative-contract.js";
+import {
+  buildLocalNarrativeContext,
+  deterministicNarrativeFallback,
+  resolveNarrativeProposals,
+  sanitizeNarrativeOutput,
+  validateNarrativeOutput,
+} from "../../../src/server/trpg/narrative-contract.js";
 
 function scenario() {
   return {
@@ -20,7 +26,13 @@ function scenario() {
         { id: "NPC-LOCAL", name: "村の衛兵", role: "衛兵", mood: "警戒中" },
         { id: "NPC-REMOTE", name: "王都の司書", role: "司書", mood: "勤務中" },
       ],
-      missions: [{ id: "MSN-T01", title: "少年を助ける", troubleId: "T01", targetLocations: ["田園の村"] }],
+      missions: [{
+        id: "MSN-T01",
+        title: "少年を助ける",
+        troubleId: "T01",
+        currentStep: { id: "hear", label: "村で少年の行方を聞く" },
+        targetLocations: ["田園の村"],
+      }],
       localRumors: [{ id: "RUM-T01-active", troubleId: "T01", text: "少年が戻らない" }],
       player: { displayName: "旅人" },
       authoritativeOutcome: { kind: "conversation_started", summary: "衛兵が話せる状態になった" },
@@ -34,6 +46,105 @@ test("local narrative context excludes NPCs who are not present", () => {
   assert.deepEqual(built.audit.excludedNpcIds, ["NPC-REMOTE"]);
   assert.equal(built.context.localNpcs.length, 1);
   assert.equal(JSON.stringify(built.context).includes("王都の司書"), false);
+  assert.equal(built.context.missions[0].currentStep, "村で少年の行方を聞く");
+});
+
+test("an action target cannot add an absent, missing, or remote NPC to local context", () => {
+  const input = scenario();
+  input.action.targetNpcId = "NPC-REMOTE";
+  input.authoritativeState.presentNpcIds = ["NPC-LOCAL", "NPC-REMOTE"];
+  input.authoritativeState.npcs[1] = {
+    ...input.authoritativeState.npcs[1],
+    presence: "missing",
+    locationId: "王都",
+  };
+  const built = buildLocalNarrativeContext(input);
+  assert.deepEqual(built.audit.includedNpcIds, ["NPC-LOCAL"]);
+  assert.equal(built.audit.rejectedActionTargetId, "NPC-REMOTE");
+  assert.equal(built.context.action.targetNpcId, null);
+});
+
+test("choice ids exactly match authoritative allowed action candidates", () => {
+  const input = scenario();
+  input.authoritativeState.allowedActionCandidates = [
+    { id: "ACT-ASK", label: "衛兵に詳しく聞く", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+    { id: "ACT-LOOK", label: "足跡を調べる", intentType: "investigate" },
+    { id: "ACT-LEAVE", label: "広場を離れる", intentType: "leave" },
+  ];
+  const context = buildLocalNarrativeContext(input).context;
+  const output = {
+    narrative: "衛兵は静かに返事を待っている。",
+    choices: [
+      { id: "C1", label: "聞く", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+      { id: "C2", label: "見る", intentType: "observe" },
+      { id: "C3", label: "去る", intentType: "leave" },
+    ],
+    speeches: [],
+    proposals: [],
+  };
+  const invalid = validateNarrativeOutput(output, context);
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors.includes("choice ids must exactly match allowedActionCandidates"));
+  const fallback = deterministicNarrativeFallback(context);
+  assert.deepEqual(fallback.choices.map((choice) => choice.id).sort(), ["ACT-ASK", "ACT-LEAVE", "ACT-LOOK"]);
+  const sanitized = sanitizeNarrativeOutput({
+    ...output,
+    choices: [
+      { id: "ACT-ASK", label: "詳しく聞く", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+      { id: "ACT-LOOK", label: "足跡を見る", intentType: "investigate" },
+      { id: "MADE-UP", label: "存在しない行動", intentType: "prepare" },
+    ],
+  }, context);
+  assert.deepEqual(sanitized.choices.map((choice) => choice.id).sort(), ["ACT-ASK", "ACT-LEAVE", "ACT-LOOK"]);
+});
+
+test("prompt states mission template policy and routine leave flag rule", () => {
+  const context = buildLocalNarrativeContext(scenario()).context;
+  const prompt = buildNarrativePrompt(context, {
+    policy: {
+      allowedMissionTemplateIds: ["local-investigation"],
+      allowedTroubleIds: ["T13"],
+    },
+  });
+  assert.match(prompt, /"templateId":"local-investigation"/u);
+  assert.match(prompt, /"troubleId":"T13"/u);
+  assert.match(prompt, /普通に立ち去る.*flag_candidate/u);
+  assert.match(prompt, /MSN-T13.*templateId/u);
+});
+
+test("npc_intent requires a local target and concrete intent before resolver validation", () => {
+  const context = buildLocalNarrativeContext(scenario()).context;
+  const missing = resolveNarrativeProposals({
+    proposals: [{ type: "npc_intent", reason: "様子を見る" }],
+  }, context);
+  assert.equal(missing.rejected[0].reason, "npc_intent_target_required");
+
+  const proposal = {
+    type: "npc_intent",
+    targetNpcId: "NPC-LOCAL",
+    intent: "verify_tracks",
+    reason: "足跡を確認できる",
+  };
+  const rejected = resolveNarrativeProposals({ proposals: [proposal] }, context, {
+    validateNpcIntentCandidate: () => ({ ok: false, reason: "schedule_conflict" }),
+  });
+  assert.equal(rejected.rejected[0].reason, "schedule_conflict");
+  const accepted = resolveNarrativeProposals({ proposals: [proposal] }, context, {
+    validateNpcIntentCandidate: () => true,
+  });
+  assert.equal(accepted.accepted.length, 1);
+});
+
+test("fallback normalizes punctuation and preserves one deterministic local NPC line", () => {
+  const input = scenario();
+  input.authoritativeState.npcs[0].relationship = -35;
+  input.authoritativeState.npcs[0].mood = "hostile";
+  input.authoritativeState.authoritativeOutcome.summary = "情報屋はプレイヤーを信用していない。";
+  const fallback = deterministicNarrativeFallback(buildLocalNarrativeContext(input).context);
+  assert.doesNotMatch(fallback.narrative, /。。/u);
+  assert.equal(fallback.speeches.length, 1);
+  assert.equal(fallback.speeches[0].actorId, "NPC-LOCAL");
+  assert.match(fallback.speeches[0].text, /信用していない/u);
 });
 
 test("invalid Gemini output is repaired and exact replay bypasses the provider", async () => {
@@ -118,4 +229,78 @@ test("authoritative mutations and unknown missions are rejected as candidates", 
   assert.equal(result.proposalResolution.accepted.length, 0);
   assert.equal(result.proposalResolution.rejected.length, 1);
   assert.equal(result.proposalResolution.rejected[0].reason, "unknown_mission_template");
+});
+
+test("cache replay recalculates proposal resolution and concurrent misses call provider once", async () => {
+  let calls = 0;
+  const provider = {
+    async generate() {
+      calls += 1;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return JSON.stringify({
+        narrative: "衛兵は足跡を確認しようとしている。",
+        choices: [
+          { id: "C1", label: "詳しく聞く", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+          { id: "C2", label: "周囲を見る", intentType: "observe", targetNpcId: null },
+          { id: "C3", label: "会話を終える", intentType: "leave", targetNpcId: null },
+        ],
+        speeches: [{ actorId: "NPC-LOCAL", text: "足跡を確認してみる。" }],
+        proposals: [{
+          type: "npc_intent",
+          targetNpcId: "NPC-LOCAL",
+          intent: "verify_tracks",
+          reason: "現地で確認できる",
+        }],
+      });
+    },
+  };
+  const narrator = createTrpgNarrator({
+    provider,
+    cache: createNarrativeReplayCache({ memoryOnly: true }),
+    memoryOnlyCache: true,
+    auditLog: false,
+  });
+  const acceptingRules = { validateNpcIntentCandidate: () => true };
+  const [first, simultaneous] = await Promise.all([
+    narrator.generate(scenario(), acceptingRules),
+    narrator.generate(scenario(), acceptingRules),
+  ]);
+  assert.equal(calls, 1);
+  assert.equal(first.proposalResolution.accepted.length, 1);
+  assert.equal(simultaneous.narrative, first.narrative);
+
+  const replay = await narrator.generate(scenario(), {
+    validateNpcIntentCandidate: () => ({ ok: false, reason: "schedule_conflict" }),
+  });
+  assert.equal(calls, 1);
+  assert.equal(replay.meta.source, "replay_cache");
+  assert.equal(replay.proposalResolution.accepted.length, 0);
+  assert.equal(replay.proposalResolution.rejected[0].reason, "schedule_conflict");
+});
+
+test("mission policy participates in the generation cache key", async () => {
+  let calls = 0;
+  const provider = {
+    async generate() {
+      calls += 1;
+      return JSON.stringify({
+        narrative: "衛兵から話を聞いた。",
+        choices: [
+          { id: "C1", label: "聞く", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+          { id: "C2", label: "見る", intentType: "observe", targetNpcId: null },
+          { id: "C3", label: "戻る", intentType: "leave", targetNpcId: null },
+        ],
+        speeches: [],
+        proposals: [],
+      });
+    },
+  };
+  const narrator = createTrpgNarrator({
+    provider,
+    cache: createNarrativeReplayCache({ memoryOnly: true }),
+    auditLog: false,
+  });
+  await narrator.generate(scenario(), { allowedMissionTemplateIds: ["local-investigation"] });
+  await narrator.generate(scenario(), { allowedMissionTemplateIds: ["local-rescue"] });
+  assert.equal(calls, 2);
 });

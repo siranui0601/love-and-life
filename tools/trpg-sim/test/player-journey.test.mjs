@@ -7,10 +7,13 @@ import {
   availableTravelActions,
   createInitialJourneyState,
   generateChoiceActions,
+  learnPlayerSkill,
+  listLearnablePlayerSkills,
+  resolvePlayerAction,
   shortestTravelPlan,
   simulatePlayerJourney,
 } from "../lib/player-journey.mjs";
-import { buyEquipment, availableStockAt } from "../lib/shop-runtime.mjs";
+import { buyEquipment, availableStockAt, sellEquipment } from "../lib/shop-runtime.mjs";
 import { loadPlayerSimulationConfig } from "../lib/player-suite.mjs";
 import { loadWorldModel } from "../lib/world-model.mjs";
 
@@ -27,6 +30,15 @@ test("experience curve matches the design formula", () => {
   assert.equal(experienceToNextLevel(1), 100);
   assert.equal(experienceToNextLevel(2), 122);
   assert.ok(experienceToNextLevel(10) > experienceToNextLevel(9));
+});
+
+test("player starts at the wheat field on Day1 at 10:00", () => {
+  const state = fresh();
+  assert.equal(state.day, 1);
+  assert.equal(state.hour, 10);
+  assert.equal(state.minute, 0);
+  assert.equal(state.player.location, "田園の村");
+  assert.equal(state.player.facilityId, "LOC_FARM_FIELD");
 });
 
 test("three choices are separate from a complete reachable travel menu", () => {
@@ -47,6 +59,7 @@ test("three choices are separate from a complete reachable travel menu", () => {
 
 test("ordinary shop purchase advances no time", () => {
   const state = fresh();
+  state.player.facilityId = "LOC_FARM_SQUARE";
   state.player.gold = 1000;
   const available = availableStockAt(state, battleData, state.shop);
   assert.ok(available.length > 0);
@@ -54,6 +67,85 @@ test("ordinary shop purchase advances no time", () => {
   const result = buyEquipment(state, battleData, state.shop, available[0].id);
   assert.equal(result.ok, true);
   assert.equal(state.absoluteMinute, before);
+});
+
+test("shop inventory and transactions are restricted to the current seller facility", () => {
+  const state = fresh();
+  state.player.gold = 1000;
+  state.player.facilityId = "LOC_FARM_SQUARE";
+  const local = availableStockAt(state, battleData, state.shop);
+  assert.ok(local.length > 0);
+  assert.ok(local.every((entry) => entry.sellerId === "LOC_FARM_SQUARE"));
+  const hubWide = availableStockAt(state, battleData, state.shop, { allFacilities: true });
+  assert.ok(hubWide.length > local.length);
+  assert.ok(hubWide.some((entry) => entry.sellerId !== "LOC_FARM_SQUARE"));
+  assert.deepEqual(
+    availableStockAt(state, battleData, state.shop, state.player.location).map((entry) => entry.id),
+    hubWide.map((entry) => entry.id),
+  );
+
+  const remoteBuy = buyEquipment(state, battleData, state.shop, "STK-0004");
+  assert.deepEqual(remoteBuy, { ok: false, reason: "not_available" });
+
+  state.player.inventory.equipment["EQP-W-0006"] = 1;
+  state.player.facilityId = "LOC_FARM_INN";
+  assert.equal(sellEquipment(state, battleData, state.shop, "EQP-W-0006").reason, "no_compatible_seller");
+  state.player.facilityId = "LOC_FARM_SQUARE";
+  assert.equal(sellEquipment(state, battleData, state.shop, "EQP-W-0006").ok, true);
+});
+
+test("an initially listed item still requires its unlock condition", () => {
+  const state = fresh();
+  state.player.facilityId = "LOC_FARM_CHIEF";
+  const locked = availableStockAt(state, battleData, state.shop);
+  assert.equal(locked.some((entry) => entry.id === "STK-0119"), false);
+  assert.equal(locked.some((entry) => entry.id === "STK-0003"), false);
+  state.player.reputation["田園の村"] = 20;
+  const unlocked = availableStockAt(state, battleData, state.shop);
+  assert.equal(unlocked.some((entry) => entry.id === "STK-0003"), true);
+});
+
+test("manual skill mode exposes reasons and never auto-learns after resolving an action", () => {
+  const state = createInitialJourneyState({
+    model,
+    battleData,
+    skills,
+    profile: "balanced",
+    tuning: { ...config.tuned, manualSkillSelection: true },
+    seed: "manual-skill-test",
+  });
+  assert.equal(state.player.skills.size, 0);
+  assert.ok(state.player.visibleSkillIds.size > 0);
+  const candidates = listLearnablePlayerSkills(state, battleData, skills);
+  assert.ok(candidates.some((entry) => entry.learnable));
+  assert.ok(candidates.some((entry) => !entry.learnable && entry.reasons.length > 0));
+
+  const observe = { id: "MANUAL-OBSERVE", type: "observe", minutes: 45, label: "observe" };
+  resolvePlayerAction(state, model, battleData, skills, state.catalog, "balanced", observe);
+  assert.equal(state.player.skills.size, 0);
+
+  const selected = listLearnablePlayerSkills(state, battleData, skills).find((entry) => entry.learnable);
+  const spBeforeLearning = state.player.sp;
+  const result = learnPlayerSkill(state, battleData, skills, selected.id);
+  assert.equal(result.ok, true);
+  assert.equal(state.player.skills.has(selected.id), true);
+  assert.equal(state.player.sp, spBeforeLearning - selected.spCost);
+  assert.equal(learnPlayerSkill(state, battleData, skills, selected.id).reason, "already_learned");
+});
+
+test("authoritative present NPC ids prevent conversation with absent NPCs", () => {
+  const state = fresh("story");
+  const authoritativeNpc = model.npcs.find((npc) => npc.id === "NPC100");
+  assert.ok(authoritativeNpc);
+  state.authoritativePresentNpcIds = [authoritativeNpc.id];
+  const choices = generateChoiceActions(state, model, battleData, state.catalog);
+  const talks = choices.filter((entry) => entry.id.startsWith("TALK:"));
+  assert.equal(talks.length, 1);
+  assert.equal(talks[0].targetNpcId, authoritativeNpc.id);
+
+  state.authoritativePresentNpcIds = new Set();
+  const withoutNpcs = generateChoiceActions(state, model, battleData, state.catalog);
+  assert.equal(withoutNpcs.some((entry) => entry.id.startsWith("TALK:")), false);
 });
 
 test("same seed and profile replay to the same world fingerprint", () => {

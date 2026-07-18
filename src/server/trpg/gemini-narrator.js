@@ -68,8 +68,14 @@ async function writeAuditSafely(auditLog, payload) {
   }
 }
 
-export function buildNarrativePrompt(context, { repair = null } = {}) {
+export function buildNarrativePrompt(context, { repair = null, policy = {} } = {}) {
   const present = context.localNpcs.map((npc) => `${npc.id}:${npc.name}`).join(", ") || "なし";
+  const allowedMissionTemplateIds = [...(policy.allowedMissionTemplateIds ?? [])];
+  const allowedTroubleIds = [...(policy.allowedTroubleIds ?? [])];
+  const exampleTemplateId = allowedMissionTemplateIds.includes("local-investigation")
+    ? "local-investigation"
+    : allowedMissionTemplateIds[0] ?? "local-investigation";
+  const exampleTroubleId = allowedTroubleIds[0] ?? "T13";
   const core = `あなたはTRPG（仮題）の表示文章生成器です。ゲーム状態を決定する権限はありません。
 
 絶対規則:
@@ -81,6 +87,15 @@ export function buildNarrativePrompt(context, { repair = null } = {}) {
 6. choicesは必ず3件。移動先一覧は別UIなので、移動を強制する選択肢だけで埋めない。
 7. 同じ入力では再利用できるよう、余計なランダム設定や未提示の固有名詞を作らない。
 8. JSON以外を出力しない。
+9. 普通に立ち去る、待つ、会話を終えるだけならflag_candidateを提案しない。
+10. allowedActionCandidatesが3件ある場合、choicesのidはその3件と完全一致させ、別IDを作らない。
+11. npc_intentには、その場にいるtargetNpcIdと具体的なintentを必ず含める。
+
+提案ポリシー:
+- 許可ミッションテンプレート: ${allowedMissionTemplateIds.join(", ") || "なし"}
+- 許可troubleId: ${allowedTroubleIds.join(", ") || "なし"}
+- 特別ミッション候補の正しい例: {"type":"special_mission_candidate","templateId":"${exampleTemplateId}","troubleId":"${exampleTroubleId}","reason":"現地で追加対応が必要"}
+- MSN-T13のようなmission IDをtemplateIdへ入れない。
 
 現在その場にいるNPC: ${present}
 
@@ -94,6 +109,19 @@ ${stableStringify(context)}`;
 ${repair.errors.map((entry) => `- ${entry}`).join("\n")}
 前回出力:
 ${String(repair.raw ?? "").slice(0, 5000)}`;
+}
+
+function normalizeNarrativePolicy(rules = {}, context = {}) {
+  const sortedUnique = (values) => [...new Set((values ?? []).filter(Boolean).map(String))].sort();
+  return {
+    version: String(rules.policyVersion ?? "trpg-narrative-policy-v1").slice(0, 80),
+    allowedMissionTemplateIds: sortedUnique(rules.allowedMissionTemplateIds),
+    allowedTroubleIds: sortedUnique(
+      rules.allowedTroubleIds
+        ?? context.missions?.map((mission) => mission.troubleId).filter(Boolean)
+        ?? [],
+    ),
+  };
 }
 
 export function createGoogleGeminiProvider({ apiKey = GEMINI_API_KEY, model = TRPG_NARRATIVE_MODEL } = {}) {
@@ -169,6 +197,7 @@ export function createTrpgNarrator(options = {}) {
       filePath: options.auditFilePath,
       memoryOnly: options.memoryOnlyAudit ?? options.memoryOnlyCache ?? false,
     });
+  const inFlight = new Map();
 
   return {
     model,
@@ -178,17 +207,20 @@ export function createTrpgNarrator(options = {}) {
     async generate(input, resolverRules = {}) {
       const startedAt = Date.now();
       const { context, audit: contextAudit } = buildLocalNarrativeContext(input);
-      const key = narrativeReplayKey(context, { model, promptVersion });
+      const policy = normalizeNarrativePolicy(resolverRules, context);
+      const key = narrativeReplayKey(context, { model, promptVersion, policy });
       const cached = cache.get(key);
       if (cached) {
         const response = {
           ...cached.response,
+          proposalResolution: resolveNarrativeProposals(cached.response, context, resolverRules),
           meta: {
             ...cached.response.meta,
             source: "replay_cache",
             cacheKey: key,
             providerCalls: 0,
             contextAudit,
+            policy,
           },
         };
         await writeAuditSafely(auditLog, createNarrativeAuditRecord({
@@ -201,6 +233,42 @@ export function createTrpgNarrator(options = {}) {
         return response;
       }
 
+      const pending = inFlight.get(key);
+      if (pending) {
+        const shared = await pending;
+        const response = {
+          ...shared,
+          proposalResolution: resolveNarrativeProposals(shared, context, resolverRules),
+          meta: {
+            ...shared.meta,
+            source: "replay_cache",
+            cacheKey: key,
+            providerCalls: 0,
+            contextAudit,
+            policy,
+          },
+        };
+        await writeAuditSafely(auditLog, createNarrativeAuditRecord({
+          input,
+          context,
+          response,
+          startedAt,
+          finishedAt: Date.now(),
+        }));
+        return response;
+      }
+
+      let resolvePending;
+      let rejectPending;
+      const pendingGeneration = new Promise((resolve, reject) => {
+        resolvePending = resolve;
+        rejectPending = reject;
+      });
+      pendingGeneration.catch(() => {});
+      inFlight.set(key, pendingGeneration);
+
+      try {
+
       const audit = {
         source: provider ? "gemini" : "deterministic_fallback",
         cacheKey: key,
@@ -212,6 +280,7 @@ export function createTrpgNarrator(options = {}) {
         validationErrors: [],
         usageMetadata: null,
         contextAudit,
+        policy,
       };
 
       let raw = null;
@@ -222,7 +291,7 @@ export function createTrpgNarrator(options = {}) {
       if (provider) {
         try {
           const primaryResult = normalizeProviderResult(await callProvider(provider, {
-            prompt: buildNarrativePrompt(context),
+            prompt: buildNarrativePrompt(context, { policy }),
             useSchema: true,
             mode: "primary",
             context,
@@ -241,7 +310,7 @@ export function createTrpgNarrator(options = {}) {
             audit.validationErrors.push(...validation.errors);
             audit.repairCalls += 1;
             const repairedResult = normalizeProviderResult(await callProvider(provider, {
-              prompt: buildNarrativePrompt(context, { repair: { errors: validation.errors, raw } }),
+              prompt: buildNarrativePrompt(context, { repair: { errors: validation.errors, raw }, policy }),
               useSchema: true,
               mode: "repair",
               context,
@@ -285,6 +354,7 @@ export function createTrpgNarrator(options = {}) {
         model,
         promptVersion,
         contextHash: key,
+        policy,
       });
       await writeAuditSafely(auditLog, createNarrativeAuditRecord({
         input,
@@ -295,7 +365,14 @@ export function createTrpgNarrator(options = {}) {
         startedAt,
         finishedAt: Date.now(),
       }));
+      resolvePending(response);
       return response;
+      } catch (error) {
+        rejectPending(error);
+        throw error;
+      } finally {
+        if (inFlight.get(key) === pendingGeneration) inFlight.delete(key);
+      }
     },
   };
 }

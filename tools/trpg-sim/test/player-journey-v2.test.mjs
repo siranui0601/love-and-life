@@ -46,6 +46,16 @@ test("local movement advances time and records the visited facility", () => {
   assert.ok(state.progress.travel.visitedFacilities.has(action.destinationFacilityId));
 });
 
+test("movement across a crisis deadline fails its still-open special mission immediately", () => {
+  const state = fresh("fighter");
+  state.absoluteMinute = (3 - 1) * 1440 + 3 * 360 - 1;
+  const action = availableMovementActions(state, model).find((entry) => entry.movementScope === "local");
+  assert.ok(action);
+  resolveMovementAction(state, model, battleData, skills, "fighter", action);
+  assert.equal(state.troubles.T01.status, "failed");
+  assert.equal(state.missions["MSN-T01"].status, "failed");
+});
+
 test("mission catalog has staged permanent chains and one special mission per trouble", () => {
   const state = fresh();
   const audit = auditMissionCatalog(state.catalog, model, battleData);

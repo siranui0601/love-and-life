@@ -11,6 +11,8 @@
     "trpg:player-simulate:v2": "npm run trpg:test && node tools/trpg-sim/cli-player.mjs",
     "trpg:player-simulate:v3": "npm run trpg:test && node tools/trpg-sim/cli-player-v3.mjs",
     "trpg:player-simulate:v4": "npm run trpg:test && node tools/trpg-sim/cli-player-v4.mjs",
+    "trpg:playable-audit": "node tools/trpg-sim/cli-playable-world.mjs",
+    "trpg:assets": "node tools/trpg-assets/generate.mjs --missing-only",
     "trpg:narrative-live": "TRPG_NARRATIVE_AUDIT_FILE=runtime-data/TRPG/narrative-live-audit.jsonl TRPG_NARRATIVE_AUDIT_CURSOR_FILE=runtime-data/TRPG/narrative-live-sheet-cursor.json node tools/trpg-sim/cli-narrative-live.mjs",
     "trpg:narrative-sync": "TRPG_NARRATIVE_AUDIT_FILE=runtime-data/TRPG/narrative-live-audit.jsonl TRPG_NARRATIVE_AUDIT_CURSOR_FILE=runtime-data/TRPG/narrative-live-sheet-cursor.json node tools/trpg-sim/cli-narrative-sync.mjs",
     "trpg:preview": "node tools/trpg-sim/static-server.mjs"
@@ -21,6 +23,7 @@
     "dotenv": "^17.2.1",
     "express": "^4.19.2",
     "googleapis": "^105.0.0",
+    "sharp": "^0.34.0",
     "socket.io": "^4.7.5"
   }
 }
