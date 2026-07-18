@@ -56,10 +56,10 @@ export function evaluateNarrativeAuditRecord({ context, response }) {
   const rejected = response?.proposalResolution?.rejected ?? [];
   const validationErrors = response?.meta?.validationErrors ?? [];
   const checks = {
+    narrativePresent: Boolean(String(response?.narrative ?? "").trim()),
     threeChoices: choices.length === 3,
     uniqueChoiceIds: new Set(choices.map((choice) => choice.id)).size === choices.length,
     localNpcOnly: remoteSpeechActors.length === 0,
-    noFinalInvalid: !response?.meta?.usedFallback || validationErrors.length >= 0,
     authorityFiltered: rejected.every((entry) => entry && entry.reason),
   };
   return {
@@ -178,11 +178,18 @@ export function narrativeAuditRecordToSheetRow(record) {
   ];
 }
 
-export function createNarrativeAuditLog({ filePath = process.env.TRPG_NARRATIVE_AUDIT_FILE ?? DEFAULT_NARRATIVE_AUDIT_FILE, memoryOnly = false } = {}) {
+export function createNarrativeAuditLog({
+  filePath = process.env.TRPG_NARRATIVE_AUDIT_FILE ?? DEFAULT_NARRATIVE_AUDIT_FILE,
+  memoryOnly = false,
+  memoryLimit = Number(process.env.TRPG_NARRATIVE_AUDIT_MEMORY_LIMIT ?? 100),
+} = {}) {
   const records = [];
+  const normalizedMemoryLimit = memoryOnly ? Infinity : Math.max(0, Number(memoryLimit) || 0);
   const state = {
     filePath,
     memoryOnly,
+    memoryLimit: normalizedMemoryLimit,
+    totalRecords: 0,
     writes: 0,
     errors: 0,
     lastRecordAt: null,
@@ -193,8 +200,12 @@ export function createNarrativeAuditLog({ filePath = process.env.TRPG_NARRATIVE_
   return {
     async record(entry) {
       const normalized = { ...entry, recordedAt: entry?.recordedAt ?? new Date().toISOString() };
-      records.push(normalized);
+      state.totalRecords += 1;
       state.lastRecordAt = normalized.recordedAt;
+      if (normalizedMemoryLimit > 0) {
+        records.push(normalized);
+        if (records.length > normalizedMemoryLimit) records.splice(0, records.length - normalizedMemoryLimit);
+      }
       if (memoryOnly) {
         state.writes += 1;
         return normalized;
@@ -220,6 +231,11 @@ export function createNarrativeAuditLog({ filePath = process.env.TRPG_NARRATIVE_
   };
 }
 
+function writeCursor(cursorFilePath, payload) {
+  fs.mkdirSync(path.dirname(cursorFilePath), { recursive: true });
+  fs.writeFileSync(cursorFilePath, JSON.stringify(payload, null, 2));
+}
+
 export async function syncNarrativeAuditToSheet(options = {}) {
   const filePath = options.filePath ?? process.env.TRPG_NARRATIVE_AUDIT_FILE ?? DEFAULT_NARRATIVE_AUDIT_FILE;
   const cursorFilePath = options.cursorFilePath ?? process.env.TRPG_NARRATIVE_AUDIT_CURSOR_FILE ?? DEFAULT_NARRATIVE_AUDIT_CURSOR_FILE;
@@ -230,11 +246,8 @@ export async function syncNarrativeAuditToSheet(options = {}) {
 
   const lines = fs.readFileSync(filePath, "utf8").split(/\r?\n/u).filter(Boolean);
   const cursor = safeReadJson(cursorFilePath, { syncedLines: 0 });
-  const start = Math.max(0, Math.min(lines.length, Number(cursor.syncedLines ?? 0)));
-  const parsed = lines.slice(start).map(safeJsonLine);
-  const corrupt = parsed.filter((entry) => !entry).length;
-  const records = parsed.filter(Boolean);
-  if (!records.length) return { ok: true, found: lines.length, synced: 0, remaining: 0, corrupt };
+  let cursorIndex = Math.max(0, Math.min(lines.length, Number(cursor.syncedLines ?? 0)));
+  if (cursorIndex >= lines.length) return { ok: true, found: lines.length, synced: 0, remaining: 0, corrupt: 0 };
 
   let sheets = options.sheets;
   if (!sheets) {
@@ -243,29 +256,38 @@ export async function syncNarrativeAuditToSheet(options = {}) {
   }
 
   let synced = 0;
-  for (let index = 0; index < records.length; index += batchSize) {
-    const batch = records.slice(index, index + batchSize);
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: `'${sheetName}'!A2:AJ`,
-      valueInputOption: "USER_ENTERED",
-      insertDataOption: "INSERT_ROWS",
-      requestBody: { values: batch.map(narrativeAuditRecordToSheetRow) },
-    });
-    synced += batch.length;
-    fs.mkdirSync(path.dirname(cursorFilePath), { recursive: true });
-    fs.writeFileSync(cursorFilePath, JSON.stringify({
-      syncedLines: start + synced + corrupt,
+  let corrupt = 0;
+  while (cursorIndex < lines.length) {
+    const rawBatch = lines.slice(cursorIndex, cursorIndex + batchSize);
+    const parsedBatch = rawBatch.map(safeJsonLine);
+    const records = parsedBatch.filter(Boolean);
+    corrupt += parsedBatch.length - records.length;
+    if (records.length) {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId,
+        range: `'${sheetName}'!A2:AJ`,
+        valueInputOption: "USER_ENTERED",
+        insertDataOption: "INSERT_ROWS",
+        requestBody: { values: records.map(narrativeAuditRecordToSheetRow) },
+      });
+      synced += records.length;
+    }
+    cursorIndex += rawBatch.length;
+    writeCursor(cursorFilePath, {
+      syncedLines: cursorIndex,
       updatedAt: new Date().toISOString(),
       spreadsheetId,
       sheetName,
-    }, null, 2));
+      syncedRecords: Number(cursor.syncedRecords ?? 0) + synced,
+      corruptLines: Number(cursor.corruptLines ?? 0) + corrupt,
+    });
   }
+
   return {
     ok: true,
     found: lines.length,
     synced,
-    remaining: Math.max(0, records.length - synced),
+    remaining: Math.max(0, lines.length - cursorIndex),
     corrupt,
     spreadsheetId,
     sheetName,
