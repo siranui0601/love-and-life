@@ -16,6 +16,10 @@ import {
   validateNarrativeOutput,
 } from "./narrative-contract.js";
 import { createNarrativeReplayCache } from "./narrative-cache.js";
+import {
+  createNarrativeAuditLog,
+  createNarrativeAuditRecord,
+} from "./narrative-audit.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CACHE_PATH = path.resolve(HERE, "../../../runtime-data/TRPG/narrative-cache.jsonl");
@@ -34,6 +38,34 @@ function transient(error) {
 function schemaError(error) {
   const status = Number(error?.status ?? error?.response?.status ?? 0);
   return status === 400 && /schema|generationconfig|responsemime|invalid argument/iu.test(String(error?.message ?? ""));
+}
+
+function normalizeProviderResult(result) {
+  if (typeof result === "string") return { text: result, usageMetadata: null };
+  if (result && typeof result.text === "string") {
+    return { text: result.text, usageMetadata: result.usageMetadata ?? null };
+  }
+  return { text: String(result ?? ""), usageMetadata: null };
+}
+
+function mergeUsageMetadata(current, next) {
+  if (!next) return current ?? null;
+  if (!current) return { ...next };
+  const merged = { ...current };
+  for (const [key, value] of Object.entries(next)) {
+    if (Number.isFinite(Number(value))) merged[key] = Number(merged[key] ?? 0) + Number(value);
+    else if (value !== undefined) merged[key] = value;
+  }
+  return merged;
+}
+
+async function writeAuditSafely(auditLog, payload) {
+  if (!auditLog) return;
+  try {
+    await auditLog.record(payload);
+  } catch (error) {
+    console.error("TRPG narrative audit record failed", error);
+  }
 }
 
 export function buildNarrativePrompt(context, { repair = null } = {}) {
@@ -81,7 +113,10 @@ export function createGoogleGeminiProvider({ apiKey = GEMINI_API_KEY, model = TR
       const instance = client.getGenerativeModel({ model, generationConfig });
       try {
         const result = await instance.generateContent(prompt);
-        return result.response.text();
+        return {
+          text: result.response.text(),
+          usageMetadata: result.response.usageMetadata ?? null,
+        };
       } catch (error) {
         if (useSchema && schemaError(error)) {
           const compatible = client.getGenerativeModel({
@@ -89,7 +124,10 @@ export function createGoogleGeminiProvider({ apiKey = GEMINI_API_KEY, model = TR
             generationConfig: { ...generationConfig, responseSchema: undefined },
           });
           const result = await compatible.generateContent(prompt);
-          return result.response.text();
+          return {
+            text: result.response.text(),
+            usageMetadata: result.response.usageMetadata ?? null,
+          };
         }
         throw error;
       }
@@ -125,17 +163,25 @@ export function createTrpgNarrator(options = {}) {
     filePath: options.cacheFilePath ?? process.env.TRPG_NARRATIVE_CACHE_FILE ?? DEFAULT_CACHE_PATH,
     memoryOnly: options.memoryOnlyCache ?? false,
   });
+  const auditLog = options.auditLog === false
+    ? null
+    : options.auditLog ?? createNarrativeAuditLog({
+      filePath: options.auditFilePath,
+      memoryOnly: options.memoryOnlyAudit ?? options.memoryOnlyCache ?? false,
+    });
 
   return {
     model,
     promptVersion,
     cache,
+    auditLog,
     async generate(input, resolverRules = {}) {
+      const startedAt = Date.now();
       const { context, audit: contextAudit } = buildLocalNarrativeContext(input);
       const key = narrativeReplayKey(context, { model, promptVersion });
       const cached = cache.get(key);
       if (cached) {
-        return {
+        const response = {
           ...cached.response,
           meta: {
             ...cached.response.meta,
@@ -145,6 +191,14 @@ export function createTrpgNarrator(options = {}) {
             contextAudit,
           },
         };
+        await writeAuditSafely(auditLog, createNarrativeAuditRecord({
+          input,
+          context,
+          response,
+          startedAt,
+          finishedAt: Date.now(),
+        }));
+        return response;
       }
 
       const audit = {
@@ -156,15 +210,27 @@ export function createTrpgNarrator(options = {}) {
         repairCalls: 0,
         providerErrors: [],
         validationErrors: [],
+        usageMetadata: null,
         contextAudit,
       };
 
       let raw = null;
+      let rawPrimary = "";
+      let rawFinal = "";
       let parsed = null;
       let validation = null;
       if (provider) {
         try {
-          raw = await callProvider(provider, { prompt: buildNarrativePrompt(context), useSchema: true, mode: "primary", context }, audit);
+          const primaryResult = normalizeProviderResult(await callProvider(provider, {
+            prompt: buildNarrativePrompt(context),
+            useSchema: true,
+            mode: "primary",
+            context,
+          }, audit));
+          raw = primaryResult.text;
+          rawPrimary = raw;
+          rawFinal = raw;
+          audit.usageMetadata = mergeUsageMetadata(audit.usageMetadata, primaryResult.usageMetadata);
           try {
             parsed = parseNarrativeJson(raw);
             validation = validateNarrativeOutput(parsed, context);
@@ -174,17 +240,19 @@ export function createTrpgNarrator(options = {}) {
           if (!validation.ok) {
             audit.validationErrors.push(...validation.errors);
             audit.repairCalls += 1;
-            const repairedRaw = await callProvider(provider, {
+            const repairedResult = normalizeProviderResult(await callProvider(provider, {
               prompt: buildNarrativePrompt(context, { repair: { errors: validation.errors, raw } }),
               useSchema: true,
               mode: "repair",
               context,
               previousRaw: raw,
               validationErrors: validation.errors,
-            }, audit);
-            raw = repairedRaw;
+            }, audit));
+            raw = repairedResult.text;
+            rawFinal = raw;
+            audit.usageMetadata = mergeUsageMetadata(audit.usageMetadata, repairedResult.usageMetadata);
             try {
-              parsed = parseNarrativeJson(repairedRaw);
+              parsed = parseNarrativeJson(raw);
               validation = validateNarrativeOutput(parsed, context);
             } catch (error) {
               validation = { ok: false, errors: [`repair_json_parse: ${String(error?.message ?? error)}`] };
@@ -218,6 +286,15 @@ export function createTrpgNarrator(options = {}) {
         promptVersion,
         contextHash: key,
       });
+      await writeAuditSafely(auditLog, createNarrativeAuditRecord({
+        input,
+        context,
+        response,
+        rawPrimary,
+        rawFinal,
+        startedAt,
+        finishedAt: Date.now(),
+      }));
       return response;
     },
   };

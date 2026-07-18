@@ -11,6 +11,8 @@
     "trpg:player-simulate:v2": "npm run trpg:test && node tools/trpg-sim/cli-player.mjs",
     "trpg:player-simulate:v3": "npm run trpg:test && node tools/trpg-sim/cli-player-v3.mjs",
     "trpg:player-simulate:v4": "npm run trpg:test && node tools/trpg-sim/cli-player-v4.mjs",
+    "trpg:narrative-live": "TRPG_NARRATIVE_AUDIT_FILE=runtime-data/TRPG/narrative-live-audit.jsonl TRPG_NARRATIVE_AUDIT_CURSOR_FILE=runtime-data/TRPG/narrative-live-sheet-cursor.json node tools/trpg-sim/cli-narrative-live.mjs",
+    "trpg:narrative-sync": "TRPG_NARRATIVE_AUDIT_FILE=runtime-data/TRPG/narrative-live-audit.jsonl TRPG_NARRATIVE_AUDIT_CURSOR_FILE=runtime-data/TRPG/narrative-live-sheet-cursor.json node tools/trpg-sim/cli-narrative-sync.mjs",
     "trpg:preview": "node tools/trpg-sim/static-server.mjs"
   },
   "dependencies": {
