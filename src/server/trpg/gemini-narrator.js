@@ -167,7 +167,7 @@ export function createTrpgNarrator(options = {}) {
     ? null
     : options.auditLog ?? createNarrativeAuditLog({
       filePath: options.auditFilePath,
-      memoryOnly: options.memoryOnlyAudit ?? false,
+      memoryOnly: options.memoryOnlyAudit ?? options.memoryOnlyCache ?? false,
     });
 
   return {
