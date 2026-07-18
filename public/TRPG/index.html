@@ -39,26 +39,15 @@
 
       <div class="launch-card">
         <div class="launch-tabs" role="tablist" aria-label="開始方法">
-          <button id="newTab" role="tab" aria-selected="true" aria-controls="newGamePanel">新しい旅</button>
-          <button id="resumeTab" role="tab" aria-selected="false" aria-controls="resumePanel">続きから</button>
+          <button id="newTab" role="tab" aria-selected="true" aria-controls="newGamePanel" tabindex="0">新しい旅</button>
+          <button id="resumeTab" role="tab" aria-selected="false" aria-controls="resumePanel" tabindex="-1">続きから</button>
         </div>
 
         <section id="newGamePanel" role="tabpanel" aria-labelledby="newTab">
           <form id="newGameForm">
             <label for="playerName">旅人の名前</label>
-            <input id="playerName" name="playerName" maxlength="24" autocomplete="nickname" required placeholder="名前を入力" />
-
-            <fieldset>
-              <legend>旅の方針</legend>
-              <div class="profile-grid">
-                <label><input type="radio" name="profileId" value="balanced" checked /><span><b>均衡型</b><small>物語と戦闘をバランスよく</small></span></label>
-                <label><input type="radio" name="profileId" value="story" /><span><b>事件調査型</b><small>噂と手がかりを優先</small></span></label>
-                <label><input type="radio" name="profileId" value="fighter" /><span><b>戦闘優先型</b><small>危険へ正面から挑む</small></span></label>
-                <label><input type="radio" name="profileId" value="explorer" /><span><b>探索優先型</b><small>知らない土地を歩く</small></span></label>
-                <label><input type="radio" name="profileId" value="merchant" /><span><b>商人型</b><small>売買と装備を重視</small></span></label>
-                <label><input type="radio" name="profileId" value="cautious" /><span><b>生存優先型</b><small>準備と安全を重視</small></span></label>
-              </div>
-            </fieldset>
+            <input id="playerName" name="playerName" maxlength="24" autocomplete="nickname" required placeholder="名前を入力" aria-describedby="startHelp" />
+            <p id="startHelp" class="start-note">名前だけで始められます。遊び方は、旅の中で一つずつ案内します。</p>
             <button class="primary-button" type="submit">この旅を始める</button>
           </form>
         </section>
@@ -74,7 +63,14 @@
       </div>
     </section>
 
-    <section id="gameScreen" class="game-screen" aria-label="ゲーム画面" hidden>
+    <section id="gameScreen" class="game-screen" aria-label="ゲーム画面" aria-busy="false" hidden>
+      <aside class="mobile-player-hud" aria-label="旅人の状態">
+        <div><span>HP</span><b id="mobileHpText">100%</b></div>
+        <div><span>所持金</span><b id="mobileGold">0 G</b></div>
+        <button type="button" data-open-panel="missions"><span>任務</span><b id="mobileMissionBadge">0</b></button>
+        <button type="button" data-open-panel="skills"><span>SP</span><b id="mobileSpBadge">0</b></button>
+      </aside>
+
       <div id="sceneBackdrop" class="scene-backdrop" data-background-key="default">
         <div class="scene-shade"></div>
 
@@ -96,15 +92,43 @@
 
         <section class="story-console" aria-labelledby="sceneTitle">
           <div class="story-meta">
-            <p id="sceneTitle" class="eyebrow">CURRENT SCENE</p>
+            <h2 id="sceneTitle" class="eyebrow" tabindex="-1">現在の場面</h2>
             <button id="openChronicle" class="text-button" type="button">これまでの記録</button>
           </div>
-          <p id="narrativeText" class="narrative">物語を読み込んでいます…</p>
-          <p id="lastOutcome" class="last-outcome" hidden></p>
 
-          <div id="choiceRegion" class="choices" aria-label="行動を選ぶ"></div>
+          <aside id="guidanceBar" class="guidance-bar" aria-labelledby="guidanceTitle" hidden>
+            <div>
+              <p id="guidanceKicker" class="guidance-kicker">現在の目的</p>
+              <h3 id="guidanceTitle">次の一歩</h3>
+              <p id="guidanceDetail"></p>
+            </div>
+            <div class="guidance-actions">
+              <span id="guidanceDeadline" class="deadline-label" hidden></span>
+              <button id="guidanceAction" class="guidance-action" type="button" hidden>詳しく見る</button>
+            </div>
+          </aside>
+
+          <aside id="tutorialCard" class="tutorial-card" aria-labelledby="tutorialTitle" hidden>
+            <div>
+              <p class="tutorial-kicker">旅の案内</p>
+              <h3 id="tutorialTitle">遊び方</h3>
+              <p id="tutorialBody"></p>
+              <small id="tutorialProgress" hidden></small>
+            </div>
+            <button id="tutorialAction" class="tutorial-action" type="button" hidden>確認する</button>
+          </aside>
+
+          <p id="narrativeText" class="narrative">物語を読み込んでいます…</p>
+          <p id="lastOutcome" class="last-outcome" tabindex="-1" hidden></p>
+
+          <div class="choice-heading">
+            <h3 id="choiceHeading">この場所で行うこと</h3>
+            <p>3つのうち1つを選びます。場所を変えるときは、下の「移動」を使います。</p>
+          </div>
+          <div id="choiceRegion" class="choices" aria-labelledby="choiceHeading"></div>
           <p class="choice-help"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> キーでも選択できます</p>
           <div id="gameError" class="error-box" role="alert" hidden></div>
+          <p id="sceneAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></p>
         </section>
       </div>
 
@@ -126,24 +150,25 @@
       </aside>
 
       <nav class="utility-nav" aria-label="旅のメニュー">
-        <button type="button" data-open-panel="movement"><span aria-hidden="true">⌖</span>移動</button>
-        <button type="button" data-open-panel="inventory"><span aria-hidden="true">◇</span>持ち物</button>
-        <button type="button" data-open-panel="skills"><span aria-hidden="true">✦</span>能力</button>
-        <button type="button" data-open-panel="missions"><span aria-hidden="true">▤</span>任務</button>
-        <button type="button" data-open-panel="shop"><span aria-hidden="true">♙</span>店</button>
+        <button type="button" data-open-panel="movement"><span class="utility-icon" aria-hidden="true">⌖</span><span class="utility-label">移動</span></button>
+        <button type="button" data-open-panel="inventory"><span class="utility-icon" aria-hidden="true">◇</span><span class="utility-label">持ち物</span></button>
+        <button type="button" data-open-panel="skills"><span class="utility-icon" aria-hidden="true">✦</span><span class="utility-label">能力</span><b id="utilitySpBadge" class="nav-badge">0</b></button>
+        <button type="button" data-open-panel="missions"><span class="utility-icon" aria-hidden="true">▤</span><span class="utility-label">任務</span><b id="utilityMissionBadge" class="nav-badge">0</b></button>
+        <button type="button" data-open-panel="rumors"><span class="utility-icon" aria-hidden="true">◌</span><span class="utility-label">噂</span><b id="utilityRumorBadge" class="nav-badge">0</b></button>
+        <button type="button" data-open-panel="shop"><span class="utility-icon" aria-hidden="true">♙</span><span class="utility-label">店</span></button>
       </nav>
     </section>
   </main>
 
-  <dialog id="detailDialog" class="detail-dialog" aria-labelledby="dialogTitle">
+  <dialog id="detailDialog" class="detail-dialog" aria-labelledby="dialogTitle" aria-busy="false">
     <div class="dialog-heading">
-      <div><p id="dialogKicker" class="eyebrow">JOURNEY</p><h2 id="dialogTitle">詳細</h2></div>
+      <div><p id="dialogKicker" class="eyebrow">JOURNEY</p><h2 id="dialogTitle" tabindex="-1">詳細</h2></div>
       <button id="closeDialog" class="icon-button" type="button" aria-label="閉じる">×</button>
     </div>
     <div id="dialogBody" class="dialog-body"></div>
   </dialog>
 
-  <div id="busyOverlay" class="busy-overlay" role="status" aria-live="polite" hidden>
+  <div id="busyOverlay" class="busy-overlay" role="status" aria-live="polite" aria-atomic="true" hidden>
     <span class="spinner" aria-hidden="true"></span><b>世界が動いています…</b>
   </div>
 

@@ -1,10 +1,20 @@
 const INACTIVE_PRESENCE = new Set(["dead", "missing", "departed", "sealed", "not-yet-present", "traveling"]);
 
+// Explicitly reviewed, player-safe presentation fields. Authoring occupations
+// remain private because some of them disclose a culprit or hidden allegiance.
+const SAFE_PUBLIC_PERSONA = Object.freeze({
+  NPC001: { role: "冒険家に憧れる村の少年", speechStyle: "少年らしく早口。冒険の話になると夢中になる" },
+  NPC002: { role: "心配そうな村の女性", speechStyle: "震えを抑えながら、相手へすがるように話す" },
+  NPC003: { role: "田園の村の村長", speechStyle: "慎重で、要点を順序立てて話す" },
+  NPC004: { role: "麦畑で働く村人", speechStyle: "温かい田舎言葉。まず相手の体調を気遣う" },
+  NPC062: { role: "落ち着かない村の子ども", speechStyle: "正直だが、言い出すまでにためらう" },
+});
+
 function publicRole(npc) {
   // The authoring occupation and GOAP goal may themselves reveal the answer to
   // a mystery. Until the sheet has an explicit public-role column, keep the
   // API and Gemini boundary neutral instead of relying on a fragile blacklist.
-  return `${npc.home || npc.initialLocation || "この土地"}の住人`;
+  return SAFE_PUBLIC_PERSONA[npc.id]?.role ?? `${npc.home || npc.initialLocation || "この土地"}の住人`;
 }
 
 export function publicNpc(npc, state) {
@@ -13,7 +23,7 @@ export function publicNpc(npc, state) {
     name: npc.name,
     role: publicRole(npc),
     species: npc.species,
-    speechStyle: null,
+    speechStyle: SAFE_PUBLIC_PERSONA[npc.id]?.speechStyle ?? null,
     importance: null,
     mood: state.lifeStatus === "injured" ? "負傷" : "通常",
     lifeStatus: state.lifeStatus,
