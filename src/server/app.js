@@ -5,6 +5,7 @@ import path from "path";
 import zlib from "zlib";
 import { fileURLToPath } from "url";
 import { mountFloodNoHandSoccerVisualRoutes } from "./nohand-soccer/visual-cache-flood.js";
+import { mountTrpgNarrativeRoutes } from "./trpg/routes.js";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(currentDirectory, "../..");
@@ -97,6 +98,7 @@ export function createApp() {
 
   app.use(express.json({ limit: "12mb" }));
   mountFloodNoHandSoccerVisualRoutes(app);
+  mountTrpgNarrativeRoutes(app);
 
   // Reverse proxies and some mobile clients handle a normal JSON response more
   // reliably than a manually tagged gzip body. The source remains compressed
