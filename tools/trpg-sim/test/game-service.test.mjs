@@ -7,6 +7,7 @@ import {
   createGameRuntime,
   executeGameRuntimeCommand,
   gameStateHash,
+  safeBattlePlayback,
   TrpgGameService,
 } from "../../../src/server/trpg/game/service.js";
 import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
@@ -290,6 +291,106 @@ test("a defeated regional journey persists its battle and elapsed time instead o
   assert.equal(persisted.playerState.metrics.battles, 1);
   assert.equal(persisted.playerState.metrics.losses, 1);
   assert.ok(persisted.playerState.history.some((entry) => entry.type === "REGIONAL_MOVE_INTERRUPTED"));
+});
+
+test("real-game battle capture is ephemeral, deterministic, and leaves runtime tuning unchanged", () => {
+  const { game } = service();
+  const source = createGameRuntime(game.data, {
+    seed: "cap-reward-0",
+    profileId: "balanced",
+    playerName: "記録係",
+    tutorial: false,
+  });
+  source.playerState.player.skills.add("SKL-0001");
+  const first = deserializeRuntime(serializeRuntime(source), game.data);
+  const second = deserializeRuntime(serializeRuntime(source), game.data);
+  const action = availableGameRuntimeActions(first, game.data).choices.find((entry) => entry.id === "SEEK_BATTLE");
+  assert.ok(action);
+
+  const firstResult = executeGameRuntimeCommand(first, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: action.choiceId },
+  });
+  const secondResult = executeGameRuntimeCommand(second, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: action.choiceId },
+  });
+  const { playback: firstPlayback, ...firstBattle } = firstResult.outcome.battle;
+  const { playback: secondPlayback, ...secondBattle } = secondResult.outcome.battle;
+
+  assert.ok(firstPlayback);
+  assert.deepEqual(firstPlayback, secondPlayback);
+  assert.deepEqual(firstBattle, secondBattle);
+  assert.equal(Object.hasOwn(first.playerState.tuning, "captureBattleTimeline"), false);
+  assert.equal(Object.hasOwn(second.playerState.tuning, "captureBattleTimeline"), false);
+  assert.deepEqual({
+    hp: first.playerState.player.hpRatio,
+    mp: first.playerState.player.mpRatio,
+    gold: first.playerState.player.gold,
+    exp: first.playerState.player.exp,
+    wins: first.playerState.metrics.wins,
+    losses: first.playerState.metrics.losses,
+  }, {
+    hp: second.playerState.player.hpRatio,
+    mp: second.playerState.player.mpRatio,
+    gold: second.playerState.player.gold,
+    exp: second.playerState.player.exp,
+    wins: second.playerState.metrics.wins,
+    losses: second.playerState.metrics.losses,
+  });
+});
+
+test("truncated battle playback carries a deterministic checkpoint across the omitted middle", () => {
+  const { game } = service();
+  const frames = Array.from({ length: 120 }, (_, index) => ({
+    seq: index + 1,
+    round: Math.floor(index / 2) + 1,
+    phase: "action",
+    actorInstanceId: "PLAYER#1",
+    actorSide: "player",
+    action: { kind: "attack", actionId: "__normal__", skillId: null, name: "こうげき" },
+    primaryTargetInstanceId: "MON-0001#1",
+    hits: 1,
+    criticals: 0,
+    damage: 1,
+    healing: 0,
+    effects: [{
+      targetInstanceId: "MON-0001#1",
+      hpBefore: 300 - index,
+      hpAfter: 299 - index,
+      mpBefore: 0,
+      mpAfter: 0,
+      aliveBefore: true,
+      aliveAfter: true,
+    }],
+  }));
+  const playback = safeBattlePlayback({
+    encounterId: "ENC-0001",
+    timeline: {
+      combatants: [
+        { instanceId: "PLAYER#1", id: "PLAYER", name: "Player", side: "player", hp: 200, maxHp: 200, mp: 20, maxMp: 20, alive: true },
+        { instanceId: "MON-0001#1", id: "MON-0001", name: "Enemy", side: "enemy", hp: 300, maxHp: 300, mp: 0, maxMp: 0, alive: true },
+      ],
+      frames,
+    },
+  }, game.data);
+
+  assert.ok(playback.frames.length <= 96);
+  assert.equal(playback.truncatedFrames, 120 - playback.frames.length);
+  const gapFrame = playback.frames.find((frame) => frame.omittedBefore > 0);
+  assert.ok(gapFrame);
+  assert.equal(gapFrame.checkpoint.find((actor) => actor.instanceId === "MON-0001#1").hp, gapFrame.effects[0].hpBefore);
+  const actors = new Map(playback.combatants.map((actor) => [actor.instanceId, { ...actor }]));
+  playback.frames.forEach((frame) => {
+    frame.checkpoint?.forEach((checkpoint) => Object.assign(actors.get(checkpoint.instanceId), checkpoint));
+    frame.effects.forEach((effect) => Object.assign(actors.get(effect.targetInstanceId), {
+      hp: effect.hpAfter,
+      mp: effect.mpAfter,
+      alive: effect.aliveAfter,
+    }));
+  });
+  assert.equal(actors.get("MON-0001#1").hp, 180);
+  assert.ok(Buffer.byteLength(JSON.stringify(playback), "utf8") <= 60 * 1024);
 });
 
 test("the authored opening reveals Eda, movement and T01 in that order and survives replay", async () => {
@@ -797,7 +898,14 @@ test("acknowledging the skill primer without learning a skill never unlocks deli
 });
 
 test("T01 can be played from inquiry through battle and rescue without ever speaking as missing Finn", async () => {
-  const { game, store } = service();
+  const narrativeInputs = [];
+  const narrator = {
+    async generate(input) {
+      narrativeInputs.push(input);
+      return { narrative: "選んだ行動の結果が反映された。", speeches: [], choices: [], proposals: [], meta: { source: "test" } };
+    },
+  };
+  const { game, store } = service(true, { narrator });
   const initial = await game.create(owner, { playerName: "救助者", profileId: "story", seed: "t01-success" });
   const runner = commandRunner(game, initial);
   const moveTo = async (facilityId) => {
@@ -821,6 +929,27 @@ test("T01 can be played from inquiry through battle and rescue without ever spea
   await chooseAction("ACTION:MSN-T01:search");
   await chooseAction("ACTION:MSN-T01:rescue");
   assert.equal(runner.save.scene.lastOutcome.battle.won, true);
+  const playback = runner.save.scene.lastOutcome.battle.playback;
+  assert.ok(playback, "a real-game battle must expose its deterministic playback");
+  assert.equal(playback.encounter.name, game.data.battleData.encounterById.get(playback.encounter.id).name);
+  assert.ok(playback.frames.length > 0);
+  assert.ok(playback.frames.length <= 96);
+  assert.ok(playback.frames.some((frame) => frame.phase === "action"));
+  assert.ok(playback.combatants.some((actor) => actor.side === "player"));
+  for (const enemy of playback.combatants.filter((actor) => actor.side === "enemy")) {
+    assert.equal(enemy.name, game.data.battleData.monsterById.get(enemy.actorId).name);
+  }
+  assert.ok(Buffer.byteLength(JSON.stringify(playback), "utf8") <= 64 * 1024);
+  const battleRecord = await store.get(runner.save.id);
+  const battleJournal = battleRecord.commandLog.findLast((entry) => entry.outcome?.battle);
+  const battleNarrativeInput = narrativeInputs.findLast((input) => input.authoritativeOutcome?.battle);
+  assert.ok(battleRecord.lastOutcome?.battle?.playback, "latest presentation keeps playback");
+  assert.equal(battleJournal.outcome.battle.playback, undefined, "replay journal stays compatible with v4 outcomes");
+  assert.ok(battleNarrativeInput, "battle outcome reaches the narrator");
+  assert.equal(battleNarrativeInput.authoritativeOutcome.battle.playback, undefined, "playback is excluded from Gemini input");
+  assert.equal(battleNarrativeInput.authoritativeState.authoritativeOutcome.battle.playback, undefined);
+  assert.equal(runner.save.tutorial?.complete, true, "the combat coach does not return after a battle was experienced");
+  assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
   await moveTo("LOC_FARM_SQUARE");
   await chooseAction("ACTION:MSN-T01:decide");
 

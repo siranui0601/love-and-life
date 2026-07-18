@@ -817,7 +817,14 @@ function runBattle(state, model, data, skills, profile, encounterId, key, situat
     maxHp: Math.max(1, Math.round(fullBuild.maxHp * Math.max(0.18, state.player.hpRatio))),
     maxMp: Math.max(0, Math.round(fullBuild.maxMp * Math.max(0.03, state.player.mpRatio))),
   };
-  const result = simulateBattle({ data, encounterId, playerBuild: scaledBuild, seed: key, maxTurns: 100 });
+  const result = simulateBattle({
+    data,
+    encounterId,
+    playerBuild: scaledBuild,
+    seed: key,
+    maxTurns: 100,
+    captureTimeline: state.tuning.captureBattleTimeline === true,
+  });
   state.metrics.battles += 1;
   const actor = result.players[0];
   state.player.hpRatio = Math.max(0, Math.min(1, state.player.hpRatio * actor.hp / Math.max(1, scaledBuild.maxHp)));

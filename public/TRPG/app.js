@@ -46,18 +46,34 @@ const ui = {
   backdrop: $("#sceneBackdrop"),
   npcStage: $("#npcStage"),
   choices: $("#choiceRegion"),
+  decision: $("#decisionTray"),
+  dialogue: $("#dialogueAdvance"),
+  dialogueSpeaker: $("#dialogueSpeaker"),
+  dialogueLine: $("#dialogueLine"),
+  outcome: $("#outcomeToast"),
   guidance: $("#guidanceBar"),
   tutorial: $("#tutorialCard"),
   announcer: $("#sceneAnnouncer"),
+  quickMenu: $("#quickMenu"),
   dialog: $("#detailDialog"),
+  dialogError: $("#dialogError"),
   dialogTitle: $("#dialogTitle"),
   dialogKicker: $("#dialogKicker"),
   dialogBody: $("#dialogBody"),
+  battleDialog: $("#battleDialog"),
+  battleScene: $("#battleScene"),
+  battleEnemies: $("#battleEnemies"),
+  battleStatus: $("#battleStatus"),
+  battleMessage: $("#battleMessage"),
 };
 
 let currentSave = null;
 let assetManifest = { backgrounds: {}, portraits: {} };
 let busy = false;
+let scenePlayback = null;
+let battlePlayback = null;
+let lastPresentedBattleKey = "";
+let outcomeTimer = null;
 const busyDisabledState = new Map();
 
 function escapeText(value, fallback = "—") {
@@ -176,7 +192,10 @@ function setBusy(value, message = "世界が動いています…") {
     if (element.isConnected) element.disabled = wasDisabled;
   });
   busyDisabledState.clear();
-  if (currentSave) renderTutorialUnlocks(currentSave.tutorial);
+  if (currentSave) {
+    renderTutorialUnlocks(currentSave.tutorial);
+    window.requestAnimationFrame(positionTutorialCoach);
+  }
 }
 
 function showError(target, message, retry = null) {
@@ -198,6 +217,7 @@ function showError(target, message, retry = null) {
 function clearErrors() {
   ui.launchError.hidden = true;
   ui.gameError.hidden = true;
+  ui.dialogError.hidden = true;
 }
 
 function switchLaunchTab(tab, { focusPanel = true } = {}) {
@@ -230,19 +250,15 @@ function portraitUrl(npc) {
   return validAssetUrl(url) ? url : null;
 }
 
-function renderNpcs(npcs) {
+function renderNpcs(npcs, activeActorId = null) {
   ui.npcStage.replaceChildren();
   const entries = list(npcs).slice(0, 5);
-  if (!entries.length) {
-    const empty = document.createElement("p");
-    empty.className = "empty-stage";
-    empty.textContent = "今、この場に話せる人物はいない。";
-    ui.npcStage.append(empty);
-    return;
-  }
+  ui.npcStage.dataset.count = String(entries.length);
+  const visibleActorId = activeActorId || "";
   entries.forEach((npc, index) => {
     const card = document.createElement("article");
-    card.className = "npc-card";
+    card.className = `npc-card${npc.id === visibleActorId ? " is-active" : ""}`;
+    card.dataset.npcId = npc.id;
     card.style.setProperty("--npc-index", index);
     const imageUrl = portraitUrl(npc);
     if (imageUrl) {
@@ -268,15 +284,38 @@ function renderNpcs(npcs) {
   });
 }
 
+function setActiveNpc(actorId) {
+  const cards = $$(".npc-card", ui.npcStage);
+  const activeId = actorId && cards.some((card) => card.dataset.npcId === actorId) ? actorId : "";
+  cards.forEach((card) => card.classList.toggle("is-active", card.dataset.npcId === activeId));
+}
+
 function renderChoices(choices, ended = false) {
   ui.choices.replaceChildren();
   const entries = list(choices).slice(0, 3);
   if (!entries.length) {
     const empty = document.createElement("div");
     empty.className = "empty-message";
-    empty.textContent = ended
-      ? "100日間の旅は完結しました。年代記から、あなたの選択が残した結果を振り返れます。"
-      : "選択肢を準備できませんでした。画面を再読み込みしてください。";
+    const message = document.createElement("p");
+    message.textContent = ended
+      ? "100日間の旅は完結しました。あなたの選択が残した結果を振り返れます。"
+      : "選択肢を準備できませんでした。最新の状態を読み込んでください。";
+    const action = document.createElement("button");
+    action.type = "button";
+    action.className = "choice-button ending-choice";
+    const marker = document.createElement("span");
+    marker.className = "choice-number";
+    marker.setAttribute("aria-hidden", "true");
+    marker.textContent = ended ? "終" : "↻";
+    const label = document.createElement("span");
+    label.className = "choice-label";
+    label.textContent = ended ? "旅の年代記を見る" : "最新の状態を読み込む";
+    action.append(marker, label);
+    action.addEventListener("click", () => {
+      if (ended) openPanelFromUi("chronicle");
+      else loadGame(currentSave.id);
+    });
+    empty.append(message, action);
     ui.choices.append(empty);
     return;
   }
@@ -305,27 +344,105 @@ function renderChoices(choices, ended = false) {
   });
 }
 
-function renderSpeeches(speeches, npcs) {
-  let container = $("#speechList");
-  if (!container) {
-    container = document.createElement("div");
-    container.id = "speechList";
-    container.className = "speech-list";
-    container.setAttribute("aria-label", "この場の会話");
-    $("#narrativeText").insertAdjacentElement("afterend", container);
-  }
-  container.replaceChildren();
-  const npcById = new Map(list(npcs).map((npc) => [npc.id, npc]));
-  list(speeches).forEach((speech) => {
-    const row = document.createElement("p");
-    const name = document.createElement("strong");
-    name.textContent = escapeText(npcById.get(speech.actorId)?.name, speech.actorId);
-    const text = document.createElement("span");
-    text.textContent = `「${escapeText(speech.text, "……")}」`;
-    row.append(name, text);
-    container.append(row);
+function segmentJapaneseText(value, maxLength = 62) {
+  const text = escapeText(value, "").replace(/\s+/gu, " ").trim();
+  if (!text) return [];
+  const sentences = text.match(/[^。！？!?]+[。！？!?]?/gu) ?? [text];
+  const segments = [];
+  let current = "";
+  const push = (chunk) => {
+    let rest = chunk.trim();
+    while (rest.length > maxLength) {
+      const window = rest.slice(0, maxLength + 1);
+      const breakAt = Math.max(window.lastIndexOf("、"), window.lastIndexOf("，"), window.lastIndexOf(" "));
+      const length = breakAt >= Math.floor(maxLength * .55) ? breakAt + 1 : maxLength;
+      segments.push(rest.slice(0, length).trim());
+      rest = rest.slice(length).trim();
+    }
+    if (rest) segments.push(rest);
+  };
+  sentences.forEach((sentence) => {
+    const candidate = `${current}${sentence}`;
+    if (candidate.length <= maxLength) current = candidate;
+    else {
+      if (current) push(current);
+      current = sentence;
+    }
   });
-  container.hidden = container.childElementCount === 0;
+  if (current) push(current);
+  return segments;
+}
+
+function buildSceneBeats(save) {
+  const scene = save?.scene ?? {};
+  const npcById = new Map(list(scene.presentNpcs).map((npc) => [npc.id, npc]));
+  const beats = segmentJapaneseText(scene.narrative, 62).map((text) => ({
+    type: "narration",
+    actorId: null,
+    speaker: "",
+    text,
+  }));
+  list(scene.speeches).forEach((speech) => {
+    segmentJapaneseText(speech.text, 58).forEach((text) => beats.push({
+      type: "speech",
+      actorId: speech.actorId,
+      speaker: escapeText(npcById.get(speech.actorId)?.name, ""),
+      text,
+    }));
+  });
+  if (!beats.length) beats.push({ type: "narration", actorId: null, speaker: "", text: "静かな時間が流れている。" });
+  return beats;
+}
+
+function startScenePlayback(save, { preserve = false } = {}) {
+  const key = `${save.id}:${save.revision}`;
+  if (scenePlayback?.key === key) {
+    renderScenePlayback();
+    return;
+  }
+  const previous = preserve ? scenePlayback : null;
+  const beats = buildSceneBeats(save);
+  scenePlayback = {
+    key,
+    beats,
+    index: previous ? Math.min(previous.index, beats.length - 1) : 0,
+    done: Boolean(previous?.done),
+  };
+  renderScenePlayback();
+}
+
+function renderScenePlayback() {
+  if (!scenePlayback) return;
+  if (scenePlayback.done) {
+    ui.dialogue.hidden = true;
+    ui.decision.hidden = false;
+    const lastSpeaker = [...scenePlayback.beats].reverse().find((beat) => beat.actorId)?.actorId;
+    setActiveNpc(lastSpeaker);
+  } else {
+    const beat = scenePlayback.beats[scenePlayback.index];
+    ui.dialogue.hidden = false;
+    ui.decision.hidden = true;
+    ui.dialogueSpeaker.hidden = !beat.speaker;
+    ui.dialogueSpeaker.textContent = beat.speaker;
+    ui.dialogueLine.textContent = beat.text;
+    setActiveNpc(beat.actorId);
+  }
+  window.requestAnimationFrame(positionTutorialCoach);
+}
+
+function focusCurrentStoryControl() {
+  if (ui.game.hidden || ui.dialog.open || ui.battleDialog.open) return;
+  if (!ui.dialogue.hidden) ui.dialogue.focus();
+  else $(".choice-button", ui.choices)?.focus();
+}
+
+function advanceDialogue() {
+  if (!scenePlayback || scenePlayback.done || busy) return;
+  ui.outcome.hidden = true;
+  if (scenePlayback.index < scenePlayback.beats.length - 1) scenePlayback.index += 1;
+  else scenePlayback.done = true;
+  renderScenePlayback();
+  if (scenePlayback.done) window.requestAnimationFrame(focusCurrentStoryControl);
 }
 
 function activeStoryMissions(save = currentSave) {
@@ -392,6 +509,8 @@ function renderGuidance(save) {
   ui.guidance.hidden = !guidance;
   if (!guidance) {
     ui.guidance.removeAttribute("data-target-facility-id");
+    ui.guidance.removeAttribute("data-panel");
+    ui.guidance.disabled = true;
     return;
   }
   $("#guidanceKicker").textContent = escapeText(guidance.kicker, "現在の目的");
@@ -400,59 +519,123 @@ function renderGuidance(save) {
   const deadline = $("#guidanceDeadline");
   deadline.textContent = escapeText(guidance.deadlineLabel, "");
   deadline.hidden = !deadline.textContent;
-  const action = $("#guidanceAction");
   const targetPanel = panelName(guidance.actionPanel);
-  action.hidden = !targetPanel;
-  action.dataset.panel = targetPanel ?? "";
-  action.dataset.targetFacilityId = escapeText(guidance.targetFacilityId, "");
-  action.textContent = panelActionLabel(targetPanel);
+  ui.guidance.disabled = !targetPanel;
+  ui.guidance.dataset.panel = targetPanel ?? "";
+  ui.guidance.dataset.targetFacilityId = escapeText(guidance.targetFacilityId, "");
+  const guidanceLabel = [guidance.title, guidance.detail, guidance.deadlineLabel, targetPanel ? panelActionLabel(targetPanel) : ""]
+    .filter(Boolean)
+    .map((part) => String(part).trim().replace(/[。．.!！?？]+$/u, ""))
+    .join("。");
+  ui.guidance.setAttribute("aria-label", guidanceLabel);
   if (guidance.targetFacilityId) ui.guidance.dataset.targetFacilityId = guidance.targetFacilityId;
   else ui.guidance.removeAttribute("data-target-facility-id");
 }
 
 function clearTutorialEmphasis() {
   $$(".tutorial-emphasis").forEach((element) => element.classList.remove("tutorial-emphasis"));
+  $$('[data-tutorial-described="true"]').forEach((element) => {
+    const tokens = String(element.getAttribute("aria-describedby") ?? "")
+      .split(/\s+/u)
+      .filter((token) => token && token !== "tutorialBody");
+    if (tokens.length) element.setAttribute("aria-describedby", tokens.join(" "));
+    else element.removeAttribute("aria-describedby");
+    delete element.dataset.tutorialDescribed;
+  });
 }
 
 function applyTutorialEmphasis(value) {
   clearTutorialEmphasis();
   const key = String(value ?? "").replace(/^panel:/u, "").trim();
   const selectors = {
-    choices: "#choiceRegion",
-    choice: "#choiceRegion",
+    choices: "#decisionTray",
+    choice: "#decisionTray",
     guidance: "#guidanceBar",
-    movement: '[data-open-panel="movement"]',
-    inventory: '[data-open-panel="inventory"]',
-    skills: '[data-open-panel="skills"]',
-    missions: '[data-open-panel="missions"]',
-    rumors: '[data-open-panel="rumors"]',
-    shop: '[data-open-panel="shop"]',
+    movement: "#locationButton",
+    inventory: '.scene-topbar [data-open-panel="inventory"]',
+    skills: '.scene-topbar [data-open-panel="skills"]',
+    missions: '.scene-topbar [data-open-panel="missions"]',
+    rumors: "#openQuickMenu",
+    shop: ui.quickMenu.hidden ? "#openQuickMenu" : '#quickMenu [data-open-panel="shop"]',
   };
   const selector = selectors[key];
-  if (!selector) return;
+  if (!selector) return null;
   const visible = $$(selector).find((element) => !element.hidden && element.getClientRects().length > 0);
-  if (visible) visible.classList.add("tutorial-emphasis");
+  if (visible) {
+    visible.classList.add("tutorial-emphasis");
+    const tokens = new Set(String(visible.getAttribute("aria-describedby") ?? "").split(/\s+/u).filter(Boolean));
+    tokens.add("tutorialBody");
+    visible.setAttribute("aria-describedby", [...tokens].join(" "));
+    visible.dataset.tutorialDescribed = "true";
+  }
+  return visible ?? null;
+}
+
+const TUTORIAL_COACH_COPY = Object.freeze({
+  "first-choice": "気になる行動を1つ選ぼう",
+  "first-conversation": "返したい言葉を選ぼう",
+  "conversation-depth": "もう一つ、聞きたいことを選ぼう",
+  "first-movement": "現在地をタップして、村の広場へ",
+  "discover-trouble": "話を聞く相手を選ぼう",
+  "world-keeps-moving": "現在地をタップして、広場へ戻ろう",
+  "trouble-aftermath": "誰か一人に、起きたことを聞こう",
+  "mission-log": "ミッションをタップして、今の目的を確認",
+  shop: "メニューから店を開いてみよう",
+  skills: "スキルをタップして、戦う技を1つ覚えよう",
+  combat: "赤い選択肢は戦闘。準備できたら進もう",
+});
+
+function positionTutorialCoach() {
+  if (ui.tutorial.hidden) return;
+  const targetKey = ui.tutorial.dataset.targetKey;
+  const target = applyTutorialEmphasis(targetKey);
+  if (!target || (targetKey === "choices" && ui.decision.hidden)) {
+    ui.tutorial.style.visibility = "hidden";
+    return;
+  }
+  ui.tutorial.style.visibility = "hidden";
+  ui.tutorial.style.left = "0px";
+  ui.tutorial.style.top = "0px";
+  const targetRect = target.getBoundingClientRect();
+  const coachRect = ui.tutorial.getBoundingClientRect();
+  const margin = 9;
+  const roomAbove = targetRect.top - coachRect.height - margin;
+  const placement = roomAbove >= 8 ? "above" : "below";
+  const top = placement === "above"
+    ? targetRect.top - coachRect.height - margin
+    : targetRect.bottom + margin;
+  const left = Math.max(8, Math.min(window.innerWidth - coachRect.width - 8, targetRect.left + targetRect.width / 2 - coachRect.width / 2));
+  const clampedTop = Math.max(8, Math.min(window.innerHeight - coachRect.height - 8, top));
+  ui.tutorial.dataset.placement = placement;
+  ui.tutorial.style.left = `${Math.round(left)}px`;
+  ui.tutorial.style.top = `${Math.round(clampedTop)}px`;
+  ui.tutorial.style.setProperty("--coach-arrow-left", `${Math.max(14, Math.min(coachRect.width - 14, targetRect.left + targetRect.width / 2 - left))}px`);
+  ui.tutorial.style.visibility = "visible";
 }
 
 function renderTutorial(tutorial) {
   const value = tutorial && typeof tutorial === "object" ? tutorial : null;
-  const visible = Boolean(value && (value.title || value.body || value.actionLabel || value.progressLabel));
+  const visible = Boolean(value && value.complete !== true && (value.id || value.emphasisTarget));
   ui.tutorial.hidden = !visible;
   clearTutorialEmphasis();
   if (!visible) return;
   $("#tutorialTitle").textContent = escapeText(value.title, "旅の案内");
-  $("#tutorialBody").textContent = escapeText(value.body, "画面の案内に沿って、次の行動を選びましょう。");
+  $("#tutorialBody").textContent = TUTORIAL_COACH_COPY[value.id]
+    ?? escapeText(value.actionLabel || value.title, "次の操作を試してみよう");
   const progress = $("#tutorialProgress");
   progress.textContent = escapeText(value.progressLabel, "");
   progress.hidden = !progress.textContent;
   const action = $("#tutorialAction");
   const targetPanel = panelName(value.actionPanel);
-  action.hidden = !(targetPanel || (value.acknowledgeable && value.id));
-  action.textContent = escapeText(value.actionLabel, targetPanel ? panelActionLabel(targetPanel) : "わかった");
+  action.hidden = true;
   action.dataset.panel = targetPanel ?? "";
   action.dataset.tutorialId = escapeText(value.id, "");
   action.dataset.acknowledgeable = String(Boolean(value.acknowledgeable && value.id));
-  applyTutorialEmphasis(value.emphasisTarget);
+  ui.tutorial.dataset.targetKey = String(value.emphasisTarget ?? "").replace(/^panel:/u, "").trim();
+  ui.tutorial.dataset.panel = targetPanel ?? "";
+  ui.tutorial.dataset.tutorialId = escapeText(value.id, "");
+  ui.tutorial.dataset.acknowledgeable = String(Boolean(value.acknowledgeable && value.id));
+  window.requestAnimationFrame(positionTutorialCoach);
 }
 
 function renderTutorialUnlocks(tutorial) {
@@ -465,26 +648,20 @@ function renderTutorialUnlocks(tutorial) {
     if (!controlledPanels.has(name)) return;
     const locked = Boolean(unlocks && unlocks[name] === false);
     if (locked) {
-      if (button.dataset.tutorialLocked !== "true") {
-        button.dataset.tutorialPreviousDisabled = String(button.disabled);
-      }
       button.dataset.tutorialLocked = "true";
-      button.dataset.lockLabel = "未解放";
-      button.disabled = true;
-      button.setAttribute("aria-disabled", "true");
-      button.title = "導入を進めると解放されます";
-      button.classList.add("is-tutorial-locked");
+      if (name === "movement") {
+        button.disabled = true;
+        button.setAttribute("aria-disabled", "true");
+      } else {
+        button.hidden = true;
+      }
       return;
     }
     if (button.dataset.tutorialLocked === "true") {
-      button.disabled = button.dataset.tutorialPreviousDisabled === "true";
+      button.disabled = false;
+      button.hidden = false;
       delete button.dataset.tutorialLocked;
-      delete button.dataset.tutorialPreviousDisabled;
-      delete button.dataset.lockLabel;
-      button.classList.remove("is-tutorial-locked");
-      button.removeAttribute("title");
-      if (button.disabled) button.setAttribute("aria-disabled", "true");
-      else button.removeAttribute("aria-disabled");
+      button.removeAttribute("aria-disabled");
     }
   });
 }
@@ -509,25 +686,23 @@ function renderPlayer(player = {}) {
   $("#playerDisplayName").textContent = escapeText(player.name, "旅人");
   $("#playerLevel").textContent = `Lv ${number(player.level, 1)}`;
   $("#playerGold").textContent = `${gold.toLocaleString("ja-JP")} G`;
-  $("#mobileGold").textContent = `${gold.toLocaleString("ja-JP")} G`;
   $("#spBadge").textContent = sp;
-  $("#mobileSpBadge").textContent = sp;
-  $("#utilitySpBadge").textContent = sp;
+  $("#spBadge").closest("button")?.setAttribute("aria-label", `能力とスキルを見る（所持SP ${sp}）`);
   const hp = Math.max(0, Math.min(1, number(player.hpRatio, 1)));
   const mp = Math.max(0, Math.min(1, number(player.mpRatio, 1)));
   $("#hpBar").value = hp;
   $("#mpBar").value = mp;
   $("#hpText").textContent = formatPercent(hp);
   $("#mpText").textContent = formatPercent(mp);
-  $("#mobileHpText").textContent = formatPercent(hp);
 }
 
-function renderSave(save, { focus = "preserve", announce = false } = {}) {
+function renderSave(save, { focus = "preserve", announce = false, preserveDialogue = false } = {}) {
   currentSave = save;
   localStorage.setItem(LAST_SAVE_KEY, save.id);
   clearErrors();
   ui.launch.hidden = true;
   ui.game.hidden = false;
+  document.body.classList.add("is-playing");
 
   const clock = formatClock(save.clock);
   const scene = save.scene ?? {};
@@ -536,18 +711,19 @@ function renderSave(save, { focus = "preserve", announce = false } = {}) {
   $("#daypartLabel").textContent = clock.daypart;
   $("#locationName").textContent = escapeText(scene.location, "未知の地域");
   $("#facilityName").textContent = escapeText(scene.facilityName, "移動中");
-  $("#narrativeText").textContent = escapeText(scene.narrative, "静かな時間が流れている。");
-  renderSpeeches(scene.speeches, scene.presentNpcs);
   const outcome = scene.lastOutcome;
-  $("#lastOutcome").hidden = !outcome;
-  $("#lastOutcome").textContent = typeof outcome === "string" ? outcome : escapeText(outcome?.summary || outcome?.message, "行動の結果が反映された。");
+  ui.outcome.hidden = !outcome;
+  ui.outcome.textContent = typeof outcome === "string" ? outcome : escapeText(outcome?.summary || outcome?.message, "行動の結果が反映された。");
+  if (outcomeTimer) window.clearTimeout(outcomeTimer);
+  if (outcome) outcomeTimer = window.setTimeout(() => {
+    if (document.activeElement === ui.outcome) focusCurrentStoryControl();
+    ui.outcome.hidden = true;
+  }, 4200);
   const missionCount = activeStoryMissions(save).length;
   $("#missionBadge").textContent = missionCount;
-  $("#mobileMissionBadge").textContent = missionCount;
-  $("#utilityMissionBadge").textContent = missionCount;
+  $("#missionBadge").closest("button")?.setAttribute("aria-label", `ミッションを見る（進行中${missionCount}件）`);
   const rumorCount = list(save.rumors).length;
   $("#rumorBadge").textContent = rumorCount;
-  $("#utilityRumorBadge").textContent = rumorCount;
   const saveStatus = escapeText(save.saveStatus, "saved");
   $("#saveIndicator").dataset.status = saveStatus;
   $("#saveIndicator").textContent = saveStatus === "saving" ? "保存中…" : saveStatus === "error" ? "保存エラー" : "保存済み";
@@ -555,7 +731,7 @@ function renderSave(save, { focus = "preserve", announce = false } = {}) {
   const backgroundKey = scene.backgroundKey || scene.facilityId || "default";
   ui.backdrop.dataset.backgroundKey = backgroundKey;
   const imageUrl = backgroundUrl(backgroundKey);
-  ui.backdrop.style.backgroundImage = imageUrl ? `linear-gradient(180deg, rgba(7,12,9,.12), rgba(7,12,9,.84)), url(${JSON.stringify(imageUrl)})` : "";
+  ui.backdrop.style.backgroundImage = imageUrl ? `url(${JSON.stringify(imageUrl)})` : "";
 
   renderNpcs(scene.presentNpcs);
   renderChoices(save.choices, save.world?.ended === true);
@@ -563,19 +739,208 @@ function renderSave(save, { focus = "preserve", announce = false } = {}) {
   renderGuidance(save);
   renderTutorial(save.tutorial);
   if (!busy) renderTutorialUnlocks(save.tutorial);
+  startScenePlayback(save, { preserve: preserveDialogue });
   if (ui.dialog.open) renderPanel(ui.dialog.dataset.panel);
   if (busy) disableBusyControls();
   if (announce) announceScene(save);
+  queueBattlePlayback(save);
   if (focus !== "preserve") {
     window.requestAnimationFrame(() => {
       if (ui.dialog.open) {
         ui.dialogTitle.focus();
         return;
       }
-      if (focus === "result" && !$("#lastOutcome").hidden) $("#lastOutcome").focus();
-      else $("#sceneTitle").focus();
+      focusCurrentStoryControl();
     });
   }
+}
+
+function battleActorName(actors, instanceId, fallback = "敵") {
+  const actor = actors.get(instanceId);
+  if (actor?.side === "player") return escapeText(currentSave?.player?.name || actor.name, fallback);
+  return escapeText(actor?.name, fallback);
+}
+
+function battleDisplayNumber(value, fallback = 0) {
+  return Math.max(0, Math.round(number(value, fallback)));
+}
+
+function battleFrameMessage(frame, actors) {
+  if (frame.phase !== "action") {
+    const changes = list(frame.effects).map((effect) => {
+      const target = battleActorName(actors, effect.targetInstanceId, "誰か");
+      const damage = battleDisplayNumber(number(effect.hpBefore) - number(effect.hpAfter));
+      const healing = battleDisplayNumber(number(effect.hpAfter) - number(effect.hpBefore));
+      if (damage) return `${target}は${damage}のダメージを受けた。`;
+      if (healing) return `${target}のHPが${healing}回復した。`;
+      return "";
+    }).filter(Boolean);
+    return changes.join(" ") || (frame.phase === "round_start" ? "戦いの流れが動き出す。" : "互いに息を整えた。");
+  }
+
+  const actor = battleActorName(actors, frame.actorInstanceId, frame.actorSide === "enemy" ? "敵" : "旅人");
+  const action = escapeText(frame.action?.name, frame.action?.kind === "attack" ? "こうげき" : "行動");
+  const parts = frame.action?.kind === "status_failure"
+    ? [`${actor}は動けない！`]
+    : [`${actor}の${action}！`];
+  if (number(frame.criticals) > 0) parts.push("会心の一撃！");
+  list(frame.effects).forEach((effect) => {
+    const target = battleActorName(actors, effect.targetInstanceId, "相手");
+    const damage = battleDisplayNumber(number(effect.hpBefore) - number(effect.hpAfter));
+    const healing = battleDisplayNumber(number(effect.hpAfter) - number(effect.hpBefore));
+    const mpLoss = battleDisplayNumber(number(effect.mpBefore) - number(effect.mpAfter));
+    if (damage) parts.push(`${target}に${damage}のダメージ！`);
+    if (healing) parts.push(`${target}のHPが${healing}回復！`);
+    if (!damage && !healing && mpLoss) parts.push(`${target}はMPを${mpLoss}使った。`);
+    if (effect.aliveBefore !== false && effect.aliveAfter === false) parts.push(`${target}を倒した！`);
+  });
+  return parts.join(" ");
+}
+
+function battlePages(battle) {
+  const playback = battle.playback;
+  const initialActors = new Map(list(playback.combatants).map((actor) => [actor.instanceId, { ...actor }]));
+  const enemyNames = [...initialActors.values()].filter((actor) => actor.side === "enemy").map((actor) => escapeText(actor.name, "敵"));
+  const pages = [{
+    kind: "intro",
+    round: 1,
+    message: enemyNames.length ? `${enemyNames.join("、")}が現れた！` : "敵が現れた！",
+    frameCount: 0,
+  }];
+  list(playback.frames).forEach((frame, index) => {
+    if (number(frame.omittedBefore) > 0 && list(frame.checkpoint).length) {
+      pages.push({
+        kind: "gap",
+        round: Math.max(1, number(frame.round, 1)),
+        message: `戦いは${battleDisplayNumber(frame.omittedBefore)}手進んだ……。`,
+        frameCount: index,
+        checkpoint: frame.checkpoint,
+      });
+    }
+    pages.push({
+      kind: "frame",
+      round: Math.max(1, number(frame.round, 1)),
+      message: battleFrameMessage(frame, initialActors),
+      frameCount: index + 1,
+    });
+  });
+  const reward = [number(battle.exp) > 0 ? `${number(battle.exp)} EXP` : "", number(battle.gold) > 0 ? `${number(battle.gold)} G` : ""].filter(Boolean).join("、");
+  pages.push({
+    kind: "result",
+    round: Math.max(1, number(battle.rounds, 1)),
+    message: battle.won ? `勝利した！${reward ? ` ${reward}を得た。` : ""}` : "戦いに敗れ、どうにか撤退した……。",
+    frameCount: list(playback.frames).length,
+  });
+  return { pages, initialActors };
+}
+
+function applyBattleCheckpoint(actors, checkpoint) {
+  list(checkpoint).forEach((entry) => {
+    const actor = actors.get(entry.instanceId);
+    if (!actor) return;
+    actor.hp = number(entry.hp, actor.hp);
+    actor.mp = number(entry.mp, actor.mp);
+    actor.alive = entry.alive !== false;
+  });
+}
+
+function actorsAtBattlePage(state, page) {
+  const actors = new Map([...state.initialActors].map(([id, actor]) => [id, { ...actor }]));
+  list(state.playback.frames).slice(0, page.frameCount).forEach((frame) => {
+    if (list(frame.checkpoint).length) applyBattleCheckpoint(actors, frame.checkpoint);
+    list(frame.effects).forEach((effect) => {
+      const actor = actors.get(effect.targetInstanceId);
+      if (!actor) return;
+      actor.hp = number(effect.hpAfter, actor.hp);
+      actor.mp = number(effect.mpAfter, actor.mp);
+      actor.alive = effect.aliveAfter !== false;
+    });
+  });
+  if (list(page.checkpoint).length) applyBattleCheckpoint(actors, page.checkpoint);
+  return actors;
+}
+
+function renderBattlePage() {
+  if (!battlePlayback) return;
+  const page = battlePlayback.pages[battlePlayback.index];
+  const actors = actorsAtBattlePage(battlePlayback, page);
+  $("#battleRound").textContent = page.kind === "result" ? "RESULT" : `ROUND ${page.round}`;
+  ui.battleMessage.textContent = page.message;
+  ui.battleEnemies.replaceChildren();
+  [...actors.values()].filter((actor) => actor.side === "enemy").forEach((actor) => {
+    const card = document.createElement("article");
+    card.className = `battle-enemy${actor.alive === false || number(actor.hp) <= 0 ? " is-defeated" : ""}`;
+    const silhouette = document.createElement("div");
+    silhouette.className = "enemy-silhouette";
+    silhouette.setAttribute("aria-hidden", "true");
+    const name = document.createElement("b");
+    name.textContent = escapeText(actor.name, "敵");
+    const hp = document.createElement("progress");
+    hp.max = Math.max(1, battleDisplayNumber(actor.maxHp, 1));
+    hp.value = battleDisplayNumber(actor.hp);
+    hp.setAttribute("aria-label", `${name.textContent} HP ${hp.value}/${hp.max}`);
+    card.append(silhouette, name, hp);
+    ui.battleEnemies.append(card);
+  });
+  ui.battleStatus.replaceChildren();
+  [...actors.values()].filter((actor) => actor.side === "player").forEach((actor) => {
+    const name = document.createElement("strong");
+    name.textContent = escapeText(currentSave?.player?.name || actor.name, "旅人");
+    const hp = document.createElement("span");
+    hp.textContent = `HP ${battleDisplayNumber(actor.hp)} / ${Math.max(1, battleDisplayNumber(actor.maxHp, 1))}`;
+    const mp = document.createElement("span");
+    mp.textContent = `MP ${battleDisplayNumber(actor.mp)} / ${battleDisplayNumber(actor.maxMp)}`;
+    const stateLabel = document.createElement("span");
+    stateLabel.textContent = actor.alive === false ? "戦闘不能" : "";
+    ui.battleStatus.append(name, hp, mp, stateLabel);
+  });
+  const isFinal = battlePlayback.index === battlePlayback.pages.length - 1;
+  $("#battleNext").hidden = isFinal;
+  $("#battleClose").hidden = !isFinal;
+  $("#battleSkip").hidden = isFinal;
+  ui.battleDialog.dataset.readyToClose = String(isFinal);
+}
+
+function openBattlePlayback(save, battle, key) {
+  const playback = battle?.playback;
+  if (!playback || !list(playback.combatants).length) return;
+  const prepared = battlePages(battle);
+  battlePlayback = {
+    key,
+    battle,
+    playback,
+    pages: prepared.pages,
+    initialActors: prepared.initialActors,
+    index: 0,
+  };
+  $("#battleTitle").textContent = escapeText(playback.encounter?.name, "戦闘");
+  ui.battleScene.style.backgroundImage = ui.backdrop.style.backgroundImage;
+  renderBattlePage();
+  if (!ui.battleDialog.open) ui.battleDialog.showModal();
+  $("#battleNext").focus();
+}
+
+function queueBattlePlayback(save) {
+  const battle = save?.scene?.lastOutcome?.battle;
+  if (!battle?.playback) return;
+  const key = `${save.id}:${save.revision}:${battle.playback.encounter?.id ?? battle.encounterId ?? "battle"}`;
+  if (key === lastPresentedBattleKey) return;
+  lastPresentedBattleKey = key;
+  window.setTimeout(() => openBattlePlayback(save, battle, key), 0);
+}
+
+function advanceBattle() {
+  if (!battlePlayback) return;
+  battlePlayback.index = Math.min(battlePlayback.pages.length - 1, battlePlayback.index + 1);
+  renderBattlePage();
+  (battlePlayback.index === battlePlayback.pages.length - 1 ? $("#battleClose") : $("#battleNext")).focus();
+}
+
+function skipBattle() {
+  if (!battlePlayback) return;
+  battlePlayback.index = battlePlayback.pages.length - 1;
+  renderBattlePage();
+  $("#battleClose").focus();
 }
 
 async function createGame(form) {
@@ -675,22 +1040,23 @@ async function sendCommand(type, payload, commandId = crypto.randomUUID()) {
       }),
     });
     if (type === "MOVE" && ui.dialog.open) ui.dialog.close();
-    renderSave(result.save, { focus: "result", announce: true });
+    renderSave(result.save, { focus: "result", announce: true, preserveDialogue: type === "TUTORIAL_ACK" });
     return true;
   } catch (error) {
     const code = error.data?.error;
+    const errorTarget = ui.dialog.open ? ui.dialogError : ui.gameError;
     if (code === "revision_conflict") {
-      showError(ui.gameError, "別の画面で旅が進んだようです。最新の状態を読み込みます。", () => loadGame(currentSave.id));
+      showError(errorTarget, "別の画面で旅が進んだようです。最新の状態を読み込みます。", () => loadGame(currentSave.id));
     } else if (code === "game_ended") {
-      showError(ui.gameError, "100日間の旅は完結しています。最新の年代記を読み込んでください。", () => loadGame(currentSave.id));
+      showError(errorTarget, "100日間の旅は完結しています。最新の年代記を読み込んでください。", () => loadGame(currentSave.id));
     } else if (code === "tutorial_feature_locked") {
-      showError(ui.gameError, "その機能はまだ案内されていません。画面中央の導入を進めてください。");
+      showError(errorTarget, "その機能はまだ案内されていません。画面中央の導入を進めてください。");
     } else if (code === "insufficient_gold") {
-      showError(ui.gameError, "所持金が足りません。仕事や任務で資金を得てから購入できます。");
+      showError(errorTarget, "所持金が足りません。仕事や任務で資金を得てから購入できます。");
     } else if (code === "insufficient_sp") {
-      showError(ui.gameError, "SPが足りません。レベルアップなどでSPを得てから取得できます。");
+      showError(errorTarget, "SPが足りません。レベルアップなどでSPを得てから取得できます。");
     } else {
-      showError(ui.gameError, error.message, () => sendCommand(type, payload, commandId));
+      showError(errorTarget, error.message, () => sendCommand(type, payload, commandId));
     }
     $("#saveIndicator").dataset.status = "error";
     $("#saveIndicator").textContent = "保存エラー";
@@ -1188,12 +1554,36 @@ function renderPanel(name) {
 
 function openPanel(name, { targetFacilityId = "" } = {}) {
   if (!currentSave) return;
+  ui.dialogError.hidden = true;
   const normalized = panelName(name) ?? "chronicle";
   if (normalized === "movement" && targetFacilityId) ui.dialog.dataset.targetFacilityId = targetFacilityId;
   else ui.dialog.removeAttribute("data-target-facility-id");
   renderPanel(normalized);
   if (!ui.dialog.open) ui.dialog.showModal();
   ui.dialogTitle.focus();
+}
+
+function closeQuickMenu({ restoreFocus = false } = {}) {
+  const focusWasInside = ui.quickMenu.contains(document.activeElement);
+  ui.quickMenu.hidden = true;
+  $("#openQuickMenu").setAttribute("aria-expanded", "false");
+  if (restoreFocus || focusWasInside) $("#openQuickMenu").focus();
+  window.requestAnimationFrame(positionTutorialCoach);
+}
+
+async function openPanelFromUi(name, { targetFacilityId = "" } = {}) {
+  if (busy || !currentSave) return;
+  const normalized = panelName(name) ?? "chronicle";
+  closeQuickMenu();
+  const tutorial = currentSave.tutorial;
+  const shouldAcknowledge = tutorial?.acknowledgeable === true
+    && tutorial.id
+    && panelName(tutorial.actionPanel) === normalized;
+  if (shouldAcknowledge) {
+    const acknowledged = await sendCommand("TUTORIAL_ACK", { tutorialId: tutorial.id });
+    if (!acknowledged) return;
+  }
+  openPanel(normalized, { targetFacilityId });
 }
 
 async function loadManifest() {
@@ -1222,41 +1612,78 @@ ui.newForm.addEventListener("submit", (event) => { event.preventDefault(); creat
 $("#refreshSaves").addEventListener("click", loadSaveList);
 $("#returnToTitle").addEventListener("click", () => {
   if (ui.dialog.open) ui.dialog.close();
+  if (ui.battleDialog.open) ui.battleDialog.close();
+  closeQuickMenu();
   ui.game.hidden = true;
   ui.launch.hidden = false;
+  document.body.classList.remove("is-playing");
   switchLaunchTab("resume");
 });
 $("#closeDialog").addEventListener("click", () => ui.dialog.close());
 ui.dialog.addEventListener("click", (event) => {
   if (event.target === ui.dialog) ui.dialog.close();
 });
-ui.dialog.addEventListener("close", () => ui.dialog.removeAttribute("data-target-facility-id"));
-$("#openChronicle").addEventListener("click", () => openPanel("chronicle"));
-$$('[data-open-panel]').forEach((button) => button.addEventListener("click", () => openPanel(button.dataset.openPanel)));
-$("#guidanceAction").addEventListener("click", (event) => {
-  const button = event.currentTarget;
-  const name = panelName(button.dataset.panel);
-  if (name) openPanel(name, { targetFacilityId: button.dataset.targetFacilityId });
+ui.dialog.addEventListener("close", () => {
+  ui.dialog.removeAttribute("data-target-facility-id");
+  window.requestAnimationFrame(positionTutorialCoach);
 });
-$("#tutorialAction").addEventListener("click", async (event) => {
-  if (busy) return;
-  const button = event.currentTarget;
-  const name = panelName(button.dataset.panel);
-  const tutorialId = button.dataset.tutorialId;
-  const acknowledgeable = button.dataset.acknowledgeable === "true";
-  if (acknowledgeable && tutorialId) {
-    const acknowledged = await sendCommand("TUTORIAL_ACK", { tutorialId });
-    if (!acknowledged) return;
+$$('[data-open-panel]').forEach((button) => button.addEventListener("click", () => {
+  const targetFacilityId = button.dataset.openPanel === "movement" ? guidanceView(currentSave)?.targetFacilityId : "";
+  openPanelFromUi(button.dataset.openPanel, { targetFacilityId });
+}));
+ui.guidance.addEventListener("click", () => {
+  const name = panelName(ui.guidance.dataset.panel);
+  if (name) openPanelFromUi(name, { targetFacilityId: ui.guidance.dataset.targetFacilityId });
+});
+$("#openQuickMenu").addEventListener("click", (event) => {
+  event.stopPropagation();
+  const opening = ui.quickMenu.hidden;
+  if (!opening) {
+    closeQuickMenu({ restoreFocus: true });
+    return;
   }
-  if (name) {
-    const targetFacilityId = name === "movement" ? guidanceView(currentSave)?.targetFacilityId : "";
-    openPanel(name, { targetFacilityId });
+  ui.quickMenu.hidden = false;
+  event.currentTarget.setAttribute("aria-expanded", "true");
+  window.requestAnimationFrame(() => $("button", ui.quickMenu)?.focus());
+  window.requestAnimationFrame(positionTutorialCoach);
+});
+ui.quickMenu.addEventListener("click", (event) => event.stopPropagation());
+document.addEventListener("click", () => {
+  if (ui.quickMenu.hidden) return;
+  closeQuickMenu();
+});
+ui.dialogue.addEventListener("click", advanceDialogue);
+$("#battleNext").addEventListener("click", advanceBattle);
+$("#battleSkip").addEventListener("click", skipBattle);
+$("#battleClose").addEventListener("click", () => {
+  if (ui.battleDialog.dataset.readyToClose === "true") ui.battleDialog.close();
+});
+ui.battleDialog.addEventListener("close", () => {
+  battlePlayback = null;
+  window.requestAnimationFrame(focusCurrentStoryControl);
+});
+ui.battleDialog.addEventListener("cancel", (event) => {
+  if (ui.battleDialog.dataset.readyToClose !== "true") {
+    event.preventDefault();
+    skipBattle();
   }
 });
+window.addEventListener("resize", positionTutorialCoach);
 
 document.addEventListener("keydown", (event) => {
-  if (busy || ui.game.hidden || ui.dialog.open || event.altKey || event.ctrlKey || event.metaKey) return;
+  if (busy || ui.game.hidden || ui.dialog.open || ui.battleDialog.open || event.altKey || event.ctrlKey || event.metaKey) return;
+  if (event.key === "Escape" && !ui.quickMenu.hidden) {
+    event.preventDefault();
+    closeQuickMenu({ restoreFocus: true });
+    return;
+  }
   if (/^(INPUT|TEXTAREA|SELECT|BUTTON)$/u.test(document.activeElement?.tagName)) return;
+  if (!ui.dialogue.hidden && ["Enter", " "].includes(event.key)) {
+    event.preventDefault();
+    advanceDialogue();
+    return;
+  }
+  if (ui.decision.hidden) return;
   const index = Number(event.key) - 1;
   const choices = $$(".choice-button", ui.choices);
   if (index >= 0 && index < choices.length) {

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#111914" />
   <meta name="description" content="100日間進み続ける世界を旅する、一人用異世界TRPG。" />
   <title>TRPG（仮題） | 不知火遊技場</title>
-  <link rel="stylesheet" href="/TRPG/style.css" />
+  <link rel="stylesheet" href="/TRPG/style.css?v=20260719-vn3" />
 </head>
 <body>
   <a class="skip-link" href="#mainContent">ゲーム本文へ移動</a>
@@ -64,99 +64,88 @@
     </section>
 
     <section id="gameScreen" class="game-screen" aria-label="ゲーム画面" aria-busy="false" hidden>
-      <aside class="mobile-player-hud" aria-label="旅人の状態">
-        <div><span>HP</span><b id="mobileHpText">100%</b></div>
-        <div><span>所持金</span><b id="mobileGold">0 G</b></div>
-        <button type="button" data-open-panel="missions"><span>任務</span><b id="mobileMissionBadge">0</b></button>
-        <button type="button" data-open-panel="skills"><span>SP</span><b id="mobileSpBadge">0</b></button>
-      </aside>
-
       <div id="sceneBackdrop" class="scene-backdrop" data-background-key="default">
-        <div class="scene-shade"></div>
+        <div class="scene-shade" aria-hidden="true"></div>
 
-        <header class="game-hud">
-          <button id="returnToTitle" class="icon-button" type="button" aria-label="旅の選択画面へ戻る">←</button>
-          <div class="place-heading">
-            <span id="locationName">—</span>
-            <strong id="facilityName">—</strong>
-          </div>
-          <div class="clock" aria-label="現在時刻">
-            <span id="dayLabel">Day —</span>
-            <strong id="timeLabel">--:--</strong>
-            <small id="daypartLabel">—</small>
-          </div>
-          <div id="saveIndicator" class="save-indicator" data-status="saved" aria-live="polite">保存済み</div>
+        <header class="scene-topbar">
+          <button id="locationButton" class="location-button" type="button" data-open-panel="movement" aria-label="現在地と移動先を確認">
+            <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.3 6-11a6 6 0 1 0-12 0c0 5.7 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></svg>
+            <span class="location-copy"><strong id="facilityName">—</strong><small id="locationName">—</small></span>
+            <span class="compact-clock"><span id="dayLabel">Day —</span><time id="timeLabel">--:--</time><span id="daypartLabel" class="sr-only">—</span></span>
+          </button>
+
+          <nav class="scene-tools" aria-label="旅の機能">
+            <button class="tool-button" type="button" data-open-panel="inventory" aria-label="持ち物を見る">
+              <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10l2 12H5L7 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+            </button>
+            <button class="tool-button" type="button" data-open-panel="missions" aria-label="ミッションを見る">
+              <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+              <b id="missionBadge" class="nav-badge" aria-label="進行中のミッション数">0</b>
+            </button>
+            <button class="tool-button" type="button" data-open-panel="skills" aria-label="能力とスキルを見る">
+              <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7L12 2Z"/></svg>
+              <b id="spBadge" class="nav-badge" aria-label="所持SP">0</b>
+            </button>
+            <button id="openQuickMenu" class="tool-button" type="button" aria-label="その他のメニュー" aria-expanded="false" aria-controls="quickMenu">
+              <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+            </button>
+          </nav>
         </header>
+
+        <div class="scene-status" aria-label="旅人の状態">
+          <span id="playerDisplayName" class="sr-only">旅人</span>
+          <b id="playerLevel">Lv 1</b>
+          <label>HP <progress id="hpBar" max="1" value="1"></progress><span id="hpText">100%</span></label>
+          <label>MP <progress id="mpBar" max="1" value="1"></progress><span id="mpText">100%</span></label>
+          <b id="playerGold">0 G</b>
+        </div>
+
+        <button id="guidanceBar" class="objective-chip" type="button" hidden>
+          <span aria-hidden="true">◆</span>
+          <strong id="guidanceTitle">次の一歩</strong>
+          <span id="guidanceDeadline" class="deadline-label" hidden></span>
+          <span id="guidanceDetail" class="sr-only"></span>
+          <span id="guidanceKicker" class="sr-only">現在の目的</span>
+        </button>
+
+        <div id="quickMenu" class="quick-menu" hidden>
+          <button type="button" data-open-panel="shop"><span aria-hidden="true">♙</span>店</button>
+          <button type="button" data-open-panel="rumors"><span aria-hidden="true">◌</span>噂 <b id="rumorBadge">0</b></button>
+          <button id="openChronicle" type="button" data-open-panel="chronicle"><span aria-hidden="true">▤</span>年代記</button>
+          <button id="returnToTitle" type="button"><span aria-hidden="true">↩</span>タイトルへ</button>
+        </div>
 
         <div id="npcStage" class="npc-stage" aria-label="この場にいる人物"></div>
 
-        <section class="story-console" aria-labelledby="sceneTitle">
-          <div class="story-meta">
-            <h2 id="sceneTitle" class="eyebrow" tabindex="-1">現在の場面</h2>
-            <button id="openChronicle" class="text-button" type="button">これまでの記録</button>
-          </div>
+        <section id="storyConsole" class="story-console" aria-labelledby="sceneTitle">
+          <h2 id="sceneTitle" class="sr-only" tabindex="-1">物語</h2>
+          <button id="dialogueAdvance" class="dialogue-box" type="button" aria-describedby="advanceInstruction">
+            <span id="dialogueSpeaker" class="dialogue-name" hidden></span>
+            <span id="dialogueLine" class="dialogue-line">物語を読み込んでいます…</span>
+            <span class="dialogue-next" aria-hidden="true">▼</span>
+          </button>
+          <span id="advanceInstruction" class="sr-only">次の文章へ進みます</span>
 
-          <aside id="guidanceBar" class="guidance-bar" aria-labelledby="guidanceTitle" hidden>
-            <div>
-              <p id="guidanceKicker" class="guidance-kicker">現在の目的</p>
-              <h3 id="guidanceTitle">次の一歩</h3>
-              <p id="guidanceDetail"></p>
-            </div>
-            <div class="guidance-actions">
-              <span id="guidanceDeadline" class="deadline-label" hidden></span>
-              <button id="guidanceAction" class="guidance-action" type="button" hidden>詳しく見る</button>
-            </div>
-          </aside>
+          <section id="decisionTray" class="decision-tray" aria-labelledby="choiceHeading" hidden>
+            <h3 id="choiceHeading">どうする？</h3>
+            <div id="choiceRegion" class="choices"></div>
+          </section>
 
-          <aside id="tutorialCard" class="tutorial-card" aria-labelledby="tutorialTitle" hidden>
-            <div>
-              <p class="tutorial-kicker">旅の案内</p>
-              <h3 id="tutorialTitle">遊び方</h3>
-              <p id="tutorialBody"></p>
-              <small id="tutorialProgress" hidden></small>
-            </div>
-            <button id="tutorialAction" class="tutorial-action" type="button" hidden>確認する</button>
-          </aside>
-
-          <p id="narrativeText" class="narrative">物語を読み込んでいます…</p>
-          <p id="lastOutcome" class="last-outcome" tabindex="-1" hidden></p>
-
-          <div class="choice-heading">
-            <h3 id="choiceHeading">この場所で行うこと</h3>
-            <p>3つのうち1つを選びます。場所を変えるときは、下の「移動」を使います。</p>
-          </div>
-          <div id="choiceRegion" class="choices" aria-labelledby="choiceHeading"></div>
-          <p class="choice-help"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> キーでも選択できます</p>
-          <div id="gameError" class="error-box" role="alert" hidden></div>
+          <p id="outcomeToast" class="outcome-toast" hidden></p>
+          <div id="gameError" class="error-box scene-error" role="alert" hidden></div>
           <p id="sceneAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></p>
         </section>
+
+        <aside id="tutorialCard" class="tutorial-coach" hidden>
+          <span class="coach-arrow" aria-hidden="true"></span>
+          <p id="tutorialBody"></p>
+          <span id="tutorialTitle" class="sr-only">遊び方</span>
+          <span id="tutorialProgress" class="sr-only" hidden></span>
+          <button id="tutorialAction" type="button" hidden>確認する</button>
+        </aside>
+
+        <div id="saveIndicator" class="sr-only" data-status="saved">保存済み</div>
       </div>
-
-      <aside class="player-rail" aria-label="プレイヤー概要">
-        <div class="player-heading">
-          <div class="player-avatar" aria-hidden="true">旅</div>
-          <div><strong id="playerDisplayName">—</strong><span id="playerLevel">Lv —</span></div>
-          <b id="playerGold">— G</b>
-        </div>
-        <div class="vital-row">
-          <label>HP <progress id="hpBar" max="1" value="1"></progress><span id="hpText">100%</span></label>
-          <label>MP <progress id="mpBar" max="1" value="1"></progress><span id="mpText">100%</span></label>
-        </div>
-        <div class="rail-summary">
-          <button type="button" data-open-panel="missions"><span>任務</span><b id="missionBadge">0</b></button>
-          <button type="button" data-open-panel="rumors"><span>噂</span><b id="rumorBadge">0</b></button>
-          <button type="button" data-open-panel="skills"><span>SP</span><b id="spBadge">0</b></button>
-        </div>
-      </aside>
-
-      <nav class="utility-nav" aria-label="旅のメニュー">
-        <button type="button" data-open-panel="movement"><span class="utility-icon" aria-hidden="true">⌖</span><span class="utility-label">移動</span></button>
-        <button type="button" data-open-panel="inventory"><span class="utility-icon" aria-hidden="true">◇</span><span class="utility-label">持ち物</span></button>
-        <button type="button" data-open-panel="skills"><span class="utility-icon" aria-hidden="true">✦</span><span class="utility-label">能力</span><b id="utilitySpBadge" class="nav-badge">0</b></button>
-        <button type="button" data-open-panel="missions"><span class="utility-icon" aria-hidden="true">▤</span><span class="utility-label">任務</span><b id="utilityMissionBadge" class="nav-badge">0</b></button>
-        <button type="button" data-open-panel="rumors"><span class="utility-icon" aria-hidden="true">◌</span><span class="utility-label">噂</span><b id="utilityRumorBadge" class="nav-badge">0</b></button>
-        <button type="button" data-open-panel="shop"><span class="utility-icon" aria-hidden="true">♙</span><span class="utility-label">店</span></button>
-      </nav>
     </section>
   </main>
 
@@ -165,13 +154,32 @@
       <div><p id="dialogKicker" class="eyebrow">JOURNEY</p><h2 id="dialogTitle" tabindex="-1">詳細</h2></div>
       <button id="closeDialog" class="icon-button" type="button" aria-label="閉じる">×</button>
     </div>
+    <div id="dialogError" class="error-box dialog-error" role="alert" hidden></div>
     <div id="dialogBody" class="dialog-body"></div>
+  </dialog>
+
+  <dialog id="battleDialog" class="battle-dialog" aria-labelledby="battleTitle" aria-describedby="battleMessage">
+    <div id="battleScene" class="battle-scene">
+      <header class="battle-heading">
+        <div><span id="battleRound">ROUND 1</span><h2 id="battleTitle">戦闘</h2></div>
+        <button id="battleSkip" class="battle-skip" type="button">結果まで進む</button>
+      </header>
+      <div id="battleEnemies" class="battle-enemies" aria-label="敵"></div>
+      <section id="battleStatus" class="battle-status" aria-label="戦闘中の状態"></section>
+      <section class="battle-message">
+        <p id="battleMessage" role="status" aria-live="polite" aria-atomic="true">敵が現れた！</p>
+        <div class="battle-controls">
+          <button id="battleNext" type="button">次へ</button>
+          <button id="battleClose" type="button" hidden>冒険へ戻る</button>
+        </div>
+      </section>
+    </div>
   </dialog>
 
   <div id="busyOverlay" class="busy-overlay" role="status" aria-live="polite" aria-atomic="true" hidden>
     <span class="spinner" aria-hidden="true"></span><b>世界が動いています…</b>
   </div>
 
-  <script type="module" src="/TRPG/app.js"></script>
+  <script type="module" src="/TRPG/app.js?v=20260719-vn3"></script>
 </body>
 </html>
