@@ -1,7 +1,7 @@
 {
   "schemaVersion": "playable-world-audit-v1",
   "contentRevision": "5ce2058f43c89b01ac1060ba",
-  "resolverVersion": "trpg-player-world-v2",
+  "resolverVersion": "trpg-player-world-v4",
   "scenarioCount": 3,
   "allPassed": true,
   "deterministicReplay": true,
@@ -11,7 +11,7 @@
       "profileId": "story",
       "seed": "playable-audit:story",
       "contentRevision": "5ce2058f43c89b01ac1060ba",
-      "resolverVersion": "trpg-player-world-v2",
+      "resolverVersion": "trpg-player-world-v4",
       "reachedEnd": true,
       "day": 100,
       "absoluteMinute": 143400,
@@ -68,7 +68,7 @@
       },
       "shopDiagnostics": 0,
       "invariantViolations": [],
-      "stateHash": "b9d7d2c305d9f4575e3f16067d8e6a086782962a847c6b32121a0e9699afb422",
+      "stateHash": "861fb27135c28c8d47d191a69d43ccd93467c45af8a4339e59d60331e356d03f",
       "ok": true
     },
     {
@@ -76,7 +76,7 @@
       "profileId": "fighter",
       "seed": "playable-audit:fighter",
       "contentRevision": "5ce2058f43c89b01ac1060ba",
-      "resolverVersion": "trpg-player-world-v2",
+      "resolverVersion": "trpg-player-world-v4",
       "reachedEnd": true,
       "day": 100,
       "absoluteMinute": 143400,
@@ -121,14 +121,14 @@
           "present": 92
         },
         "decisions": 39305,
-        "knowledgeEvents": 2599,
-        "lifeEvents": 87,
-        "localMovements": 17372,
-        "rumorSources": 57
+        "knowledgeEvents": 2737,
+        "lifeEvents": 86,
+        "localMovements": 17323,
+        "rumorSources": 56
       },
       "shopDiagnostics": 0,
       "invariantViolations": [],
-      "stateHash": "fec0b00f91120502d12d8329b75c1412cf9e23605b9cee4e0fc34b1aacf1e89f",
+      "stateHash": "663c9f47b994b6d6ac713f2a2cba83cd31561ade4f8b8926bec2328dd0ee0fb3",
       "ok": true
     },
     {
@@ -136,7 +136,7 @@
       "profileId": "merchant",
       "seed": "playable-audit:merchant",
       "contentRevision": "5ce2058f43c89b01ac1060ba",
-      "resolverVersion": "trpg-player-world-v2",
+      "resolverVersion": "trpg-player-world-v4",
       "reachedEnd": true,
       "day": 100,
       "absoluteMinute": 143400,
@@ -182,14 +182,14 @@
           "present": 91
         },
         "decisions": 38917,
-        "knowledgeEvents": 2839,
+        "knowledgeEvents": 2758,
         "lifeEvents": 84,
-        "localMovements": 17100,
-        "rumorSources": 57
+        "localMovements": 17109,
+        "rumorSources": 56
       },
       "shopDiagnostics": 0,
       "invariantViolations": [],
-      "stateHash": "ca33b0803c13d8eff0b3a40a7387c710a90fda2c53dfa9f5744c783b06d04c37",
+      "stateHash": "227f2963369eb1e2fa71d2c8b2490b06d133d9e1ff0e483441ac3675c69d8155",
       "ok": true
     }
   ],
@@ -200,5 +200,5 @@
     "playerT01RescueChangesFate": true,
     "allNpcsHaveCausalTrace": true
   },
-  "generatedAt": "2026-07-18T14:20:58.062Z"
+  "generatedAt": "2026-07-18T16:53:33.775Z"
 }

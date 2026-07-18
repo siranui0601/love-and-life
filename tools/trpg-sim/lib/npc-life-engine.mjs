@@ -92,7 +92,8 @@ function factKey(text) {
 }
 
 function addKnowledgeEvent(engine, event) {
-  const id = `K${String(engine.knowledgeEvents.length + 1).padStart(7, "0")}`;
+  engine.knowledgeEventSequence = Number(engine.knowledgeEventSequence ?? engine.knowledgeEvents.length) + 1;
+  const id = `K${String(engine.knowledgeEventSequence).padStart(7, "0")}`;
   const offset = Number.isFinite(event.learnedAt) && event.learnedAt >= 0 ? event.learnedAt % 24 : -1;
   const derivedPhase = offset < 0 ? -1 : offset >= 12 ? 3 : offset >= 8 ? 2 : offset >= 4 ? 1 : 0;
   const enriched = {
@@ -239,6 +240,8 @@ export function createNpcLifeEngine({ model, seed, npcStates, departures = [] } 
     knowledgeEvents: [],
     decisionEvents: [],
     localMovementEvents: [],
+    knowledgeEventSequence: 0,
+    decisionEventSequence: 0,
     populationByTick: [],
     facilityRumors: Object.fromEntries(model.facilities.map((facility) => [facility.id, new Map()])),
     hubRumors: Object.fromEntries(model.locations.map((hub) => [hub, new Map()])),
@@ -1075,7 +1078,8 @@ function executeDecision(engine, npc, state, decision, time, worldFlags) {
 }
 
 function recordDecision(engine, npc, state, decision, actualAction, time, replanned) {
-  const id = `D${String(engine.decisionEvents.length + 1).padStart(7, "0")}`;
+  engine.decisionEventSequence = Number(engine.decisionEventSequence ?? engine.decisionEvents.length) + 1;
+  const id = `D${String(engine.decisionEventSequence).padStart(7, "0")}`;
   const event = {
     id,
     eventId: id,

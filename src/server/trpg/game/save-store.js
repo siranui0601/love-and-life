@@ -22,6 +22,7 @@ function indexedRecord(record) {
     contentRevision: record.contentRevision,
     playerName: record.playerName,
     profileId: record.profileId,
+    tutorialVersion: record.tutorialVersion,
     revision: record.revision,
     stateHash: record.stateHash,
     createdAt: record.createdAt,

@@ -185,10 +185,10 @@ export function buyEquipment(state, battleData, shopRuntime, stockId, locationOp
   return { ok: true, equipment, price: stock.price };
 }
 
-export function sellEquipment(state, battleData, shopRuntime, equipmentId, locationOptions = {}) {
+export function quoteEquipmentSale(state, battleData, equipmentId, locationOptions = {}) {
   const owned = Number(state.player.inventory.equipment[equipmentId] ?? 0);
   if (owned <= 0) return { ok: false, reason: "not_owned" };
-  if (Object.values(state.player.equipment).includes(equipmentId)) return { ok: false, reason: "equipped" };
+  const equipped = Object.values(state.player.equipment).includes(equipmentId);
   const equipment = battleData.equipmentById.get(equipmentId);
   if (!equipment) return { ok: false, reason: "missing_equipment" };
   const resolvedScope = shopScope(state, locationOptions);
@@ -200,6 +200,15 @@ export function sellEquipment(state, battleData, shopRuntime, equipmentId, locat
   const sourcePrices = battleData.inventory.filter((stock) => stock.equipmentId === equipmentId && stock.basePrice > 0).map((stock) => stock.basePrice);
   const referencePrice = sourcePrices.length ? Math.min(...sourcePrices) : Math.max(1, equipment.performanceIndex * 5);
   const price = Math.max(1, Math.floor(referencePrice * Number(equipment.sellRatio || 0.4)));
+  return equipped
+    ? { ok: false, reason: "equipped", equipment, price }
+    : { ok: true, equipment, price };
+}
+
+export function sellEquipment(state, battleData, shopRuntime, equipmentId, locationOptions = {}) {
+  const quote = quoteEquipmentSale(state, battleData, equipmentId, locationOptions);
+  if (!quote.ok) return quote;
+  const { equipment, price } = quote;
   state.player.inventory.equipment[equipmentId] -= 1;
   state.player.gold += price;
   shopRuntime.salesCounts[equipmentId] = (shopRuntime.salesCounts[equipmentId] ?? 0) + 1;

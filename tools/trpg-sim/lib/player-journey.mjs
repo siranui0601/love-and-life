@@ -147,7 +147,13 @@ function updateTroubles(state, model) {
       transition(state, model, trouble.id, open ? "active" : "suppressed", open ? "scheduled-onset" : "gate-closed");
     }
     if (runtime.status === "active" && state.absoluteMinute >= moment(trouble.deadlineDay, trouble.deadlinePhase)) {
-      transition(state, model, trouble.id, "critical", "deadline-missed");
+      transition(
+        state,
+        model,
+        trouble.id,
+        trouble.id === "T01" ? "failed" : "critical",
+        trouble.id === "T01" ? "rescue-window-missed" : "deadline-missed",
+      );
     }
     if (runtime.status === "critical" && state.absoluteMinute >= moment(trouble.finalDay, trouble.finalPhase)) {
       transition(state, model, trouble.id, "failed", "final-deadline-missed");
@@ -652,6 +658,13 @@ function mission(catalog, id) {
   return catalog.byId?.get(id) ?? [...catalog.permanent, ...catalog.special].find((entry) => entry.id === id);
 }
 
+function missionClosedAfterTimeAdvance(state, missionDefinition) {
+  if (missionDefinition?.kind !== "special") return null;
+  const status = state.troubles[missionDefinition.troubleId]?.status;
+  if (["active", "critical"].includes(status)) return null;
+  return status === "failed" || status === "suppressed" ? "mission_expired" : "mission_unavailable";
+}
+
 function currentStep(missionDefinition, runtime) {
   return missionDefinition.steps?.find((step) => Number(runtime.progress[step.id] ?? 0) < Number(step.required ?? 1)) ?? null;
 }
@@ -1082,7 +1095,22 @@ export function resolveMovementAction(state, model, data, skills, profileInput, 
   const currentPlan = shortestTravelPlan(model, state, state.player.location, action.destinationHub);
   if (!currentPlan) return { ok: false, reason: "unreachable_destination" };
   const battle = travelEncounter(state, model, data, skills, profile, action);
-  if (battle && !battle.won && profile.caution > 0.5) return { ok: false, reason: "travel_defeat", battle };
+  if (battle && !battle.won && profile.caution > 0.5) {
+    const setbackMinutes = Math.max(30, Number(action.minutes ?? 0));
+    advance(state, model, setbackMinutes, `regional-move-defeat:${fromHub}->${action.destinationHub}`);
+    inc(state.progress, "travel.actions");
+    inc(state.progress, "walkMinutes.total", setbackMinutes);
+    state.history.push({
+      type: "REGIONAL_MOVE_INTERRUPTED",
+      minute: state.absoluteMinute,
+      from: fromHub,
+      intendedDestination: action.destinationHub,
+      reason: "travel_defeat",
+      encounterId: battle.encounterId ?? battle.encounter?.id ?? null,
+    });
+    refreshMissions(state, model, state.catalog, data, skills, profile);
+    return { ok: false, committed: true, reason: "travel_defeat", type: "move", movementScope: "regional", battle };
+  }
   advance(state, model, action.minutes, `regional-move:${fromHub}->${action.destinationHub}`);
   state.player.location = action.destinationHub;
   const arrival = action.destinationFacilityId ? model.facilityById[action.destinationFacilityId] : preferredArrivalFacility(model, action.destinationHub);
@@ -1116,14 +1144,18 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     inc(state.progress, "social.conversations");
     inc(state.progress, `social.byDay.${state.day}`);
     if (action.targetNpcId) state.conversationAvailability[action.targetNpcId] = state.absoluteMinute + Number(state.tuning.conversationCooldownMinutes ?? 720);
-    if (step) finishStep(state, missionDefinition, runtime, step);
-    if (missionDefinition) {
+    const closedReason = missionClosedAfterTimeAdvance(state, missionDefinition);
+    if (closedReason) output = { ok: false, committed: true, type: action.type, reason: closedReason };
+    else if (step) finishStep(state, missionDefinition, runtime, step);
+    if (missionDefinition && !closedReason) {
       publishRumor(state, model, { id: `RUM-PLAYER-${missionDefinition.troubleId}-HEARD`, troubleId: missionDefinition.troubleId, text: `${missionDefinition.title}の情報を得た` });
       inc(state.player.reputation, state.player.location, 2);
-    } else inc(state.player.reputation, state.player.location, 1);
+    } else if (!missionDefinition) inc(state.player.reputation, state.player.location, 1);
   } else if (action.type === "investigate") {
     advance(state, model, action.minutes, `investigate:${action.missionId}`);
-    if (step) {
+    const closedReason = missionClosedAfterTimeAdvance(state, missionDefinition);
+    if (closedReason) output = { ok: false, committed: true, type: action.type, reason: closedReason };
+    else if (step) {
       finishStep(state, missionDefinition, runtime, step);
       inc(state.player.evidenceByTrouble, missionDefinition.troubleId);
       inc(state.progress, "investigation.total");
@@ -1135,8 +1167,10 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     }
   } else if (action.type === "missionBattle") {
     advance(state, model, action.minutes, `mission-battle:${action.missionId}`);
-    const encounterId = action.encounterId ?? weighted(encounters(state, data, profile, { eventOnly: true }), `${state.seed}:${action.id}`)?.id;
-    if (!encounterId) output = { ok: false, type: action.type, reason: "no_encounter" };
+    const closedReason = missionClosedAfterTimeAdvance(state, missionDefinition);
+    const encounterId = closedReason ? null : action.encounterId ?? weighted(encounters(state, data, profile, { eventOnly: true }), `${state.seed}:${action.id}`)?.id;
+    if (closedReason) output = { ok: false, committed: true, type: action.type, reason: closedReason };
+    else if (!encounterId) output = { ok: false, committed: true, type: action.type, reason: "no_encounter" };
     else {
       const evidence = Number(state.player.evidenceByTrouble[missionDefinition.troubleId] ?? 0);
       const preparation = Math.min(Number(state.tuning.missionPreparationBonusMax ?? 0.75), evidence * Number(state.tuning.missionPreparationBonusPerEvidence ?? 0.16));
@@ -1146,9 +1180,11 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     }
   } else if (action.type === "resolveMission") {
     advance(state, model, action.minutes, `resolve:${action.missionId}`);
-    const incomplete = missionDefinition.steps.filter((entry) => entry.id !== step.id)
+    const closedReason = missionClosedAfterTimeAdvance(state, missionDefinition);
+    const incomplete = !closedReason && missionDefinition.steps.filter((entry) => entry.id !== step.id)
       .some((entry) => Number(runtime.progress[entry.id] ?? 0) < Number(entry.required ?? 1));
-    if (incomplete) output = { ok: false, type: action.type, reason: "incomplete" };
+    if (closedReason) output = { ok: false, committed: true, type: action.type, reason: closedReason };
+    else if (incomplete) output = { ok: false, committed: true, type: action.type, reason: "incomplete" };
     else {
       finishStep(state, missionDefinition, runtime, step);
       transition(state, model, missionDefinition.troubleId, "resolved", "player-mission-resolution");
@@ -1158,7 +1194,7 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
   } else if (action.type === "seekBattle") {
     advance(state, model, action.minutes, "seek-battle");
     const encounter = selectEncounter(state, data, profile, `${state.seed}:seek:${state.metrics.actions}:${state.player.location}`);
-    if (!encounter) output = { ok: false, type: action.type, reason: "no_encounter" };
+    if (!encounter) output = { ok: false, committed: true, type: action.type, reason: "no_encounter" };
     else output.battle = runBattle(state, model, data, skills, profile, encounter.id, `${state.seed}:seek:${state.metrics.battles}:${encounter.id}`);
     const baseCooldown = Number(state.tuning.wildEncounterCooldownMinutes ?? 540);
     const profileFactor = profile.id === "fighter" ? 0.7 : profile.id === "cautious" ? 1.2 : 1;

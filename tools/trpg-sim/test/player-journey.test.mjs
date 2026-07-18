@@ -13,7 +13,12 @@ import {
   shortestTravelPlan,
   simulatePlayerJourney,
 } from "../lib/player-journey.mjs";
-import { buyEquipment, availableStockAt, sellEquipment } from "../lib/shop-runtime.mjs";
+import {
+  availableStockAt,
+  buyEquipment,
+  quoteEquipmentSale,
+  sellEquipment,
+} from "../lib/shop-runtime.mjs";
 import { loadPlayerSimulationConfig } from "../lib/player-suite.mjs";
 import { loadWorldModel } from "../lib/world-model.mjs";
 
@@ -91,7 +96,11 @@ test("shop inventory and transactions are restricted to the current seller facil
   state.player.facilityId = "LOC_FARM_INN";
   assert.equal(sellEquipment(state, battleData, state.shop, "EQP-W-0006").reason, "no_compatible_seller");
   state.player.facilityId = "LOC_FARM_SQUARE";
-  assert.equal(sellEquipment(state, battleData, state.shop, "EQP-W-0006").ok, true);
+  const quote = quoteEquipmentSale(state, battleData, "EQP-W-0006");
+  assert.equal(quote.ok, true);
+  const sale = sellEquipment(state, battleData, state.shop, "EQP-W-0006");
+  assert.equal(sale.ok, true);
+  assert.equal(sale.price, quote.price);
 });
 
 test("an initially listed item still requires its unlock condition", () => {
@@ -146,6 +155,34 @@ test("authoritative present NPC ids prevent conversation with absent NPCs", () =
   state.authoritativePresentNpcIds = new Set();
   const withoutNpcs = generateChoiceActions(state, model, battleData, state.catalog);
   assert.equal(withoutNpcs.some((entry) => entry.id.startsWith("TALK:")), false);
+});
+
+test("T01 actions crossing the Day2 rescue deadline persist failure without progress or resurrection", () => {
+  const state = fresh("story");
+  const definition = state.catalog.byId.get("MSN-T01");
+  const runtime = state.missions[definition.id];
+  state.troubles.T01.status = "active";
+  runtime.status = "active";
+  for (const step of definition.steps) runtime.progress[step.id] = step.id === "decide" ? 0 : Number(step.required ?? 1);
+  state.absoluteMinute = 2150; // Day2 21:50; T01's source fate is anchored at 22:00.
+
+  const result = resolvePlayerAction(state, model, battleData, skills, state.catalog, "story", {
+    id: "ACTION:MSN-T01:decide",
+    type: "resolveMission",
+    missionId: "MSN-T01",
+    stepId: "decide",
+    minutes: 18,
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.committed, true);
+  assert.equal(result.reason, "mission_expired");
+  assert.equal(state.absoluteMinute, 2168);
+  assert.equal(state.troubles.T01.status, "failed");
+  assert.equal(runtime.status, "failed");
+  assert.equal(runtime.progress.decide, 0);
+  assert.equal(runtime.rewardClaimed, false);
+  assert.equal(state.progress.missions.resolvedTroubleIds.has("T01"), false);
 });
 
 test("same seed and profile replay to the same world fingerprint", () => {
