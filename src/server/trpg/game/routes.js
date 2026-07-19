@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
+import fs from "node:fs/promises";
 import net from "node:net";
+import { TrpgRuntimeAssetManager } from "../assets/runtime.js";
 import { TrpgGameError, TrpgGameService, hashResumeToken } from "./service.js";
 
 const COOKIE_NAME = "trpg_resume";
@@ -96,6 +98,10 @@ function sendError(res, error) {
 
 export function mountTrpgGameRoutes(app, options = {}) {
   const service = options.service ?? new TrpgGameService(options);
+  const assetManager = options.assetManager ?? new TrpgRuntimeAssetManager({
+    data: service.data,
+    ...(options.assetOptions ?? {}),
+  });
   const readLimiter = new FixedWindowLimiter(120, 60_000);
   const commandLimiter = new FixedWindowLimiter(60, 60_000);
   const replayLimiter = new FixedWindowLimiter(3, 60_000);
@@ -104,8 +110,45 @@ export function mountTrpgGameRoutes(app, options = {}) {
   const networkReplayLimiter = new FixedWindowLimiter(10, 60_000);
   const createLimiter = new FixedWindowLimiter(6, 60 * 60_000);
 
+  const enqueueVisibleAssets = (save) => {
+    try {
+      // This only schedules authoritative ids found in the server-built view;
+      // generation is intentionally detached from response latency.
+      assetManager.enqueueForSave(save);
+    } catch (error) {
+      console.warn("TRPG asset queue rejected a game view", String(error?.message ?? error).slice(0, 240));
+    }
+  };
+
+  // This route intentionally precedes express.static. The tracked manifest is
+  // immutable in production; runtime-generated mappings are merged at read time.
+  app.get("/TRPG/assets/manifest.json", async (req, res) => {
+    try {
+      res.set("Cache-Control", "no-cache, max-age=0, must-revalidate");
+      return res.json(await assetManager.combinedManifest());
+    } catch (error) {
+      return sendError(res, error);
+    }
+  });
+
+  app.get("/TRPG/assets/generated/:kind/:file", async (req, res) => {
+    try {
+      const filePath = assetManager.generatedFilePath(req.params.kind, req.params.file);
+      if (!filePath) return res.status(404).send("not found");
+      await fs.access(filePath);
+      res.set("Cache-Control", "public, max-age=31536000, immutable");
+      res.set("X-Content-Type-Options", "nosniff");
+      return res.sendFile(filePath);
+    } catch {
+      return res.status(404).send("not found");
+    }
+  });
+
   app.get("/TRPG/api/game/health", (req, res) => {
-    res.json(service.health());
+    res.json({
+      ...service.health(),
+      assetGeneration: typeof assetManager.health === "function" ? assetManager.health() : { enabled: false },
+    });
   });
 
   app.get("/TRPG/api/game/saves", async (req, res) => {
@@ -126,6 +169,7 @@ export function mountTrpgGameRoutes(app, options = {}) {
       const ownerHash = owner(req, res, { create: true });
       if (!enforceRateLimit(res, commandLimiter, ownerHash)) return;
       const save = await service.create(ownerHash, req.body ?? {});
+      enqueueVisibleAssets(save);
       return res.status(201).json({ ok: true, save });
     } catch (error) {
       return sendError(res, error);
@@ -139,6 +183,7 @@ export function mountTrpgGameRoutes(app, options = {}) {
       if (!ownerHash) throw new TrpgGameError(404, "save_not_found");
       if (!enforceRateLimit(res, readLimiter, ownerHash)) return;
       const save = await service.get(ownerHash, req.params.saveId);
+      enqueueVisibleAssets(save);
       return res.json({ ok: true, save });
     } catch (error) {
       return sendError(res, error);
@@ -153,6 +198,7 @@ export function mountTrpgGameRoutes(app, options = {}) {
       if (!ownerHash) throw new TrpgGameError(404, "save_not_found");
       if (!enforceRateLimit(res, commandLimiter, ownerHash)) return;
       const result = await service.command(ownerHash, req.params.saveId, req.body ?? {});
+      enqueueVisibleAssets(result.save);
       return res.json({ ok: true, ...result });
     } catch (error) {
       return sendError(res, error);

@@ -10,6 +10,14 @@ const SAFE_PUBLIC_PERSONA = Object.freeze({
   NPC062: { role: "落ち着かない村の子ども", speechStyle: "正直だが、言い出すまでにためらう" },
 });
 
+const UNKNOWN_NPC_LABELS = Object.freeze({
+  NPC001: "行方不明の少年",
+  NPC002: "取り乱した女性",
+  NPC003: "年配の村人",
+  NPC004: "見知らぬ女性",
+  NPC062: "落ち着かない少年",
+});
+
 function publicRole(npc) {
   // The authoring occupation and GOAP goal may themselves reveal the answer to
   // a mystery. Until the sheet has an explicit public-role column, keep the
@@ -17,10 +25,11 @@ function publicRole(npc) {
   return SAFE_PUBLIC_PERSONA[npc.id]?.role ?? `${npc.home || npc.initialLocation || "この土地"}の住人`;
 }
 
-export function publicNpc(npc, state) {
+export function publicNpc(npc, state, { known = true } = {}) {
   return {
     id: npc.id,
-    name: npc.name,
+    name: known ? npc.name : UNKNOWN_NPC_LABELS[npc.id] ?? "見知らぬ人物",
+    identified: Boolean(known),
     role: publicRole(npc),
     species: npc.species,
     speechStyle: SAFE_PUBLIC_PERSONA[npc.id]?.speechStyle ?? null,
@@ -46,7 +55,9 @@ export function presentNpcsAt(runtime, data, { location, facilityId } = {}) {
       if (state.presence !== "present") return [];
       if ((state.position?.hubId ?? state.location) !== hubId) return [];
       if ((state.position?.facilityId ?? null) !== (localFacilityId ?? null)) return [];
-      return [publicNpc(npc, state)];
+      const knownNpcIds = runtime.playerKnowledge?.knownNpcIds;
+      const known = !knownNpcIds || knownNpcIds.has(npc.id);
+      return [publicNpc(npc, state, { known })];
     })
     .sort((left, right) => left.id.localeCompare(right.id));
 }

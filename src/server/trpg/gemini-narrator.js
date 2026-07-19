@@ -90,6 +90,17 @@ export function buildNarrativePrompt(context, { repair = null, policy = {} } = {
 9. 普通に立ち去る、待つ、会話を終えるだけならflag_candidateを提案しない。
 10. allowedActionCandidatesが3件ある場合、choicesのidはその3件と完全一致させ、別IDを作らない。
 11. npc_intentには、その場にいるtargetNpcIdと具体的なintentを必ず含める。
+12. action.typeがconversationの場合、action.playerUtteranceが直前にプレイヤー画面へ出た実際の発言である。NPCの台詞はその内容へ一文目から直接答え、前件のない「もっともだ」「そうだね」などの相槌だけで始めない。
+13. placeのfacilityName、facilityType、publicDescriptionを現在地の公開情報の正本として扱う。別施設の景観や機能を混ぜず、公開情報にない事件・用途・未来の変化を推測しない。
+14. 「こちらを見ている」「静かな時間が流れる」だけで行動結果を終えない。authoritativeOutcomeを変えず、現在地で具体的に見聞きできた対象・動作・変化を最低一つ描く。
+15. conversationでは、対象NPCの返答を合計55〜260文字程度で作り、(a)直前の質問への答え、(b)そのNPCだけが知る具体的な情報または感情、(c)次に聞く・調べる・決断するきっかけ、の三つを含める。一言だけで会話を打ち切らない。
+16. previouslyAskedTopicsを言い直さず、conversationTurnが進むほど情報を一段深くする。ただしNPCが知らない秘密は作らず、「知らない」と理由や知っていそうな相手を自然に返す。
+17. choicesの文言は、調べる・人へ働きかける・危険を引き受ける・保留する等、結果の違いが一目で分かるようにする。同義語だけの三択にしない。
+18. allowedActionCandidatesがある場合、各choiceは同じidだけでなく、対応するintentTypeも変えない。文言はその行動結果を正確に表す範囲で具体化する。
+19. action.firstIntroductionがtrueなら、action.introductionNameは対象NPCが最初の返答で自然に自分の名前を名乗るためだけに使う。本名をnarrative、choices、別NPCの台詞へ書いてはならない。localNpcs上の匿名名は自己紹介が終わるまで維持する。既知の人物には毎回名乗らせない。
+20. localNpcs.knownLocalFactsは、そのNPCが話せる事実の上限である。そこにない秘密を作らない。話せる事実がない場合も、知らない理由と次に当たる相手・場所のどちらかを具体的に示す。
+21. conversationの一往復ごとに、localRumors、knownLocalFacts、missions、現在地のいずれかに根拠を持つ新情報、NPCの明確な感情、次の具体的行動の手掛かりを最低一つ与える。進展のない見つめ合いや一言返答は禁止する。
+22. action.requiredDisclosureがある場合、それはこの質問でプレイヤーが取得する唯一の新しい事実である。対象NPCの台詞にその文字列を原文のまま必ず含め、意味を変えずに前後の会話を自然に広げる。ない場合はknownLocalFactsにない新事実を開示しない。
 
 提案ポリシー:
 - 許可ミッションテンプレート: ${allowedMissionTemplateIds.join(", ") || "なし"}

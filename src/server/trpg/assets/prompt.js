@@ -75,3 +75,31 @@ export function buildBackgroundPrompt(facility) {
     ].join("\n"),
   };
 }
+
+/**
+ * Builds a public, spoiler-free combat cutout prompt. Monster stats, drop
+ * tables, hidden appearance conditions and AI rules are deliberately omitted:
+ * the image only needs the identity that the player has already encountered.
+ */
+export function buildMonsterPrompt(monster, { keyColor = null } = {}) {
+  const publicDescription = clean(monster?.raw?.["説明"] ?? monster?.description, 180);
+  const visibleText = `${monster?.name ?? ""} ${publicDescription}`;
+  const selectedKey = keyColor === "pink" || keyColor === "green"
+    ? keyColor
+    : /緑|翠|苔|植物|スライム/iu.test(visibleText) ? "pink" : "green";
+  const keyHex = selectedKey === "pink" ? "#FF00FF" : "#00FF00";
+  const forbiddenColors = selectedKey === "pink"
+    ? "pink, magenta, fuchsia"
+    : "green, lime, neon green";
+  return {
+    keyColor: selectedKey,
+    prompt: [
+      "Japanese dark-fantasy TRPG monster battle cutout, painterly hand-painted game art, matching one coherent medieval-fantasy visual style.",
+      `Monster: ${clean(monster?.name, 60) || "unknown creature"}. Classification: ${clean(monster?.classification, 30) || "monster"}. Public role: ${clean(monster?.role, 30) || "creature"}. Region: ${clean(monster?.region, 50)}. Habitat: ${clean(monster?.zone, 50)}.`,
+      publicDescription ? `Visible bestiary description: ${publicDescription}.` : "Design a readable silhouette appropriate to its public name and habitat.",
+      "Show exactly one complete creature (or one tightly composed swarm when the public name explicitly says it is a group), full body, front three-quarter view, grounded combat stance, readable at smartphone size, vertical 2:3 framing, 8-12% clear margin around the silhouette.",
+      `The entire background must be one perfectly uniform flat ${keyHex} chroma-key color. No scenery, ground plane, shadows outside the creature, text, labels, border, UI, particles, gradient, or texture in the background. Do not use ${forbiddenColors} anywhere on the creature.`,
+      "No humans, no rider, no extra unrelated creatures, no gore, no hidden story event, no future form, and no secret weakness.",
+    ].join("\n"),
+  };
+}

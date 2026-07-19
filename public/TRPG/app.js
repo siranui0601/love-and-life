@@ -1,6 +1,7 @@
 const API_BASE = "/TRPG/api/game";
 const LAST_SAVE_KEY = "trpg:last-save-id";
 const REQUEST_TIMEOUT = 30000;
+const ASSET_REFRESH_DELAYS = Object.freeze([2500, 5000, 10000, 20000, 40000, 60000, 60000, 60000, 60000]);
 const PANEL_NAMES = new Set(["movement", "inventory", "skills", "missions", "rumors", "shop", "chronicle"]);
 const DAYPART_LABELS = Object.freeze({
   dawn: "明け方",
@@ -65,15 +66,23 @@ const ui = {
   battleEnemies: $("#battleEnemies"),
   battleStatus: $("#battleStatus"),
   battleMessage: $("#battleMessage"),
+  battleError: $("#battleError"),
+  battlePlaybackControls: $("#battlePlaybackControls"),
+  battleCommandPanel: $("#battleCommandPanel"),
+  battleCommandPrompt: $("#battleCommandPrompt"),
+  battleCommandMenu: $("#battleCommandMenu"),
 };
 
 let currentSave = null;
-let assetManifest = { backgrounds: {}, portraits: {} };
+let assetManifest = { backgrounds: {}, portraits: {}, monsters: {} };
 let busy = false;
 let scenePlayback = null;
 let battlePlayback = null;
+let interactiveBattleState = null;
 let lastPresentedBattleKey = "";
 let outcomeTimer = null;
+let assetRefreshTimer = null;
+let assetRefreshToken = 0;
 const busyDisabledState = new Map();
 
 function escapeText(value, fallback = "—") {
@@ -175,6 +184,10 @@ function disableBusyControls() {
     if (!busyDisabledState.has(element)) busyDisabledState.set(element, element.disabled);
     element.disabled = true;
   });
+  $$('button, input, select, textarea', ui.battleDialog).forEach((element) => {
+    if (!busyDisabledState.has(element)) busyDisabledState.set(element, element.disabled);
+    element.disabled = true;
+  });
 }
 
 function setBusy(value, message = "世界が動いています…") {
@@ -184,6 +197,7 @@ function setBusy(value, message = "世界が動いています…") {
   ui.launch.setAttribute("aria-busy", String(value));
   ui.game.setAttribute("aria-busy", String(value));
   ui.dialog.setAttribute("aria-busy", String(value));
+  ui.battleDialog.setAttribute("aria-busy", String(value));
   if (value) {
     disableBusyControls();
     return;
@@ -195,6 +209,9 @@ function setBusy(value, message = "世界が動いています…") {
   if (currentSave) {
     renderTutorialUnlocks(currentSave.tutorial);
     window.requestAnimationFrame(positionTutorialCoach);
+    if (currentSave.battle?.status === "active") {
+      window.requestAnimationFrame(() => $("button:not(:disabled)", ui.battleCommandMenu)?.focus());
+    }
   }
 }
 
@@ -218,6 +235,7 @@ function clearErrors() {
   ui.launchError.hidden = true;
   ui.gameError.hidden = true;
   ui.dialogError.hidden = true;
+  ui.battleError.hidden = true;
 }
 
 function switchLaunchTab(tab, { focusPanel = true } = {}) {
@@ -248,6 +266,59 @@ function portraitUrl(npc) {
   const emotion = npc.emotion || npc.mood || "default";
   const url = entry?.[emotion] ?? entry?.default ?? entry?.neutral;
   return validAssetUrl(url) ? url : null;
+}
+
+function monsterUrl(actor) {
+  const entry = assetManifest.monsters?.[actor.actorId] ?? assetManifest.monsters?.[actor.id];
+  const url = typeof entry === "string" ? entry : entry?.src ?? entry?.default;
+  return validAssetUrl(url) ? url : null;
+}
+
+function activeSceneActorId() {
+  if (!scenePlayback) return null;
+  if (!scenePlayback.done) return scenePlayback.beats[scenePlayback.index]?.actorId ?? null;
+  return [...scenePlayback.beats].reverse().find((beat) => beat.actorId)?.actorId ?? null;
+}
+
+function visibleAssetsMissing(save = currentSave) {
+  if (!save) return false;
+  const scene = save.scene ?? {};
+  const backgroundKey = scene.backgroundKey || scene.facilityId || "default";
+  if (!backgroundUrl(backgroundKey)) return true;
+  if (list(scene.presentNpcs).some((npc) => !portraitUrl(npc))) return true;
+  return list(save.battle?.actors).some((actor) => actor.side === "enemy" && !monsterUrl(actor));
+}
+
+function applyVisibleAssets() {
+  if (!currentSave) return;
+  const scene = currentSave.scene ?? {};
+  const backgroundKey = scene.backgroundKey || scene.facilityId || "default";
+  const imageUrl = backgroundUrl(backgroundKey);
+  ui.backdrop.style.backgroundImage = imageUrl ? `url(${JSON.stringify(imageUrl)})` : "";
+  renderNpcs(scene.presentNpcs, activeSceneActorId());
+  if (currentSave.battle?.status === "active" && ui.battleDialog.open) {
+    renderBattleActors(new Map(list(currentSave.battle.actors).map((actor) => [actor.instanceId, { ...actor }])));
+  } else if (battlePlayback && ui.battleDialog.open) {
+    renderBattlePage();
+  }
+}
+
+function scheduleAssetRefresh(save = currentSave) {
+  assetRefreshToken += 1;
+  const token = assetRefreshToken;
+  if (assetRefreshTimer) window.clearTimeout(assetRefreshTimer);
+  assetRefreshTimer = null;
+  if (!visibleAssetsMissing(save)) return;
+  let attempt = 0;
+  const refresh = async () => {
+    if (token !== assetRefreshToken || currentSave?.id !== save?.id) return;
+    const changed = await loadManifest();
+    if (token !== assetRefreshToken) return;
+    if (changed) applyVisibleAssets();
+    if (!visibleAssetsMissing() || attempt >= ASSET_REFRESH_DELAYS.length) return;
+    assetRefreshTimer = window.setTimeout(refresh, ASSET_REFRESH_DELAYS[attempt++]);
+  };
+  assetRefreshTimer = window.setTimeout(refresh, ASSET_REFRESH_DELAYS[attempt++]);
 }
 
 function renderNpcs(npcs, activeActorId = null) {
@@ -376,6 +447,29 @@ function segmentJapaneseText(value, maxLength = 62) {
 function buildSceneBeats(save) {
   const scene = save?.scene ?? {};
   const npcById = new Map(list(scene.presentNpcs).map((npc) => [npc.id, npc]));
+  const ordered = list(scene.beats);
+  if (ordered.length) {
+    const beats = [];
+    ordered.forEach((beat) => {
+      const speaker = beat.kind === "player"
+        ? escapeText(beat.speakerLabel, "あなた")
+        : beat.actorId
+          ? escapeText(beat.speakerLabel || npcById.get(beat.actorId)?.name, "")
+          : escapeText(beat.speakerLabel, "");
+      const segments = segmentJapaneseText(beat.text, window.matchMedia("(max-width: 700px)").matches ? 42 : 58);
+      const introductionToken = escapeText(beat.introductionToken ?? beat.introduction?.token, "");
+      segments.forEach((text, index) => beats.push({
+        type: beat.kind === "npc" || beat.kind === "player" ? "speech" : "narration",
+        actorId: beat.actorId ?? null,
+        speaker,
+        text,
+        // Recognition is acknowledged only after the complete authored/model
+        // speech has actually been shown, never when an earlier split appears.
+        introductionToken: introductionToken && index === segments.length - 1 ? introductionToken : null,
+      }));
+    });
+    if (beats.length) return beats;
+  }
   const beats = segmentJapaneseText(scene.narrative, 62).map((text) => ({
     type: "narration",
     actorId: null,
@@ -415,7 +509,7 @@ function renderScenePlayback() {
   if (!scenePlayback) return;
   if (scenePlayback.done) {
     ui.dialogue.hidden = true;
-    ui.decision.hidden = false;
+    ui.decision.hidden = list(currentSave?.choices).length === 0 && currentSave?.world?.ended !== true;
     const lastSpeaker = [...scenePlayback.beats].reverse().find((beat) => beat.actorId)?.actorId;
     setActiveNpc(lastSpeaker);
   } else {
@@ -433,12 +527,43 @@ function renderScenePlayback() {
 function focusCurrentStoryControl() {
   if (ui.game.hidden || ui.dialog.open || ui.battleDialog.open) return;
   if (!ui.dialogue.hidden) ui.dialogue.focus();
-  else $(".choice-button", ui.choices)?.focus();
+  else {
+    const emphasisTarget = String(currentSave?.tutorial?.emphasisTarget ?? "").replace(/^panel:/u, "").trim();
+    const tutorialTarget = !["", "choice", "choices"].includes(emphasisTarget)
+      ? applyTutorialEmphasis(emphasisTarget)
+      : null;
+    if (tutorialTarget && !tutorialTarget.disabled) tutorialTarget.focus();
+    else if (!ui.decision.hidden) $(".choice-button", ui.choices)?.focus();
+    else if (emphasisTarget === "movement") $("#locationButton")?.focus();
+  }
 }
 
-function advanceDialogue() {
+function introductionAckCommandId(token) {
+  const stableToken = String(token ?? "").replace(/[\u0000-\u001f\u007f]/gu, "").slice(0, 88);
+  return `npc-intro:${stableToken}`;
+}
+
+async function advanceDialogue() {
   if (!scenePlayback || scenePlayback.done || busy) return;
   ui.outcome.hidden = true;
+  const displayedIndex = scenePlayback.index;
+  const displayedBeat = scenePlayback.beats[displayedIndex];
+  const introductionToken = escapeText(displayedBeat?.introductionToken, "");
+  if (introductionToken) {
+    const acknowledged = await sendCommand(
+      "ACK_NPC_INTRODUCTION",
+      { token: introductionToken },
+      introductionAckCommandId(introductionToken),
+    );
+    // Keep the introduction visible when recognition could not be persisted.
+    // The retry path reuses the same command id, so a lost response is safe.
+    if (!acknowledged || !scenePlayback || scenePlayback.done) return;
+    const resumedBeat = scenePlayback.beats[displayedIndex];
+    if (!resumedBeat
+      || resumedBeat.actorId !== displayedBeat.actorId
+      || resumedBeat.text !== displayedBeat.text) return;
+    resumedBeat.introductionToken = null;
+  }
   if (scenePlayback.index < scenePlayback.beats.length - 1) scenePlayback.index += 1;
   else scenePlayback.done = true;
   renderScenePlayback();
@@ -712,10 +837,13 @@ function renderSave(save, { focus = "preserve", announce = false, preserveDialog
   $("#locationName").textContent = escapeText(scene.location, "未知の地域");
   $("#facilityName").textContent = escapeText(scene.facilityName, "移動中");
   const outcome = scene.lastOutcome;
-  ui.outcome.hidden = !outcome;
-  ui.outcome.textContent = typeof outcome === "string" ? outcome : escapeText(outcome?.summary || outcome?.message, "行動の結果が反映された。");
+  const showOutcome = Boolean(outcome && ["shop_buy", "shop_sell", "learn_skill", "equip", "unequip"].includes(String(outcome.type ?? "").toLowerCase()));
+  ui.outcome.hidden = !showOutcome;
+  ui.outcome.textContent = showOutcome
+    ? (typeof outcome === "string" ? outcome : escapeText(outcome?.summary || outcome?.message, "操作を完了しました。"))
+    : "";
   if (outcomeTimer) window.clearTimeout(outcomeTimer);
-  if (outcome) outcomeTimer = window.setTimeout(() => {
+  if (showOutcome) outcomeTimer = window.setTimeout(() => {
     if (document.activeElement === ui.outcome) focusCurrentStoryControl();
     ui.outcome.hidden = true;
   }, 4200);
@@ -743,7 +871,8 @@ function renderSave(save, { focus = "preserve", announce = false, preserveDialog
   if (ui.dialog.open) renderPanel(ui.dialog.dataset.panel);
   if (busy) disableBusyControls();
   if (announce) announceScene(save);
-  queueBattlePlayback(save);
+  queueBattlePresentation(save);
+  scheduleAssetRefresh(save);
   if (focus !== "preserve") {
     window.requestAnimationFrame(() => {
       if (ui.dialog.open) {
@@ -779,6 +908,12 @@ function battleFrameMessage(frame, actors) {
   }
 
   const actor = battleActorName(actors, frame.actorInstanceId, frame.actorSide === "enemy" ? "敵" : "旅人");
+  if (frame.action?.kind === "defend") return `${actor}は身を守っている！`;
+  if (frame.action?.kind === "flee") {
+    return frame.escapeSucceeded === true
+      ? `${actor}は戦いから逃げ出した！`
+      : `${actor}は逃げようとした。しかし、回り込まれた！`;
+  }
   const action = escapeText(frame.action?.name, frame.action?.kind === "attack" ? "こうげき" : "行動");
   const parts = frame.action?.kind === "status_failure"
     ? [`${actor}は動けない！`]
@@ -860,30 +995,34 @@ function actorsAtBattlePage(state, page) {
   return actors;
 }
 
-function renderBattlePage() {
-  if (!battlePlayback) return;
-  const page = battlePlayback.pages[battlePlayback.index];
-  const actors = actorsAtBattlePage(battlePlayback, page);
-  $("#battleRound").textContent = page.kind === "result" ? "RESULT" : `ROUND ${page.round}`;
-  ui.battleMessage.textContent = page.message;
+function renderBattleActors(actors) {
+  const entries = actors instanceof Map ? [...actors.values()] : list(actors);
   ui.battleEnemies.replaceChildren();
-  [...actors.values()].filter((actor) => actor.side === "enemy").forEach((actor) => {
+  entries.filter((actor) => actor.side === "enemy").forEach((actor) => {
     const card = document.createElement("article");
     card.className = `battle-enemy${actor.alive === false || number(actor.hp) <= 0 ? " is-defeated" : ""}`;
-    const silhouette = document.createElement("div");
-    silhouette.className = "enemy-silhouette";
-    silhouette.setAttribute("aria-hidden", "true");
+    const imageUrl = monsterUrl(actor);
+    const visual = imageUrl ? document.createElement("img") : document.createElement("div");
+    visual.className = imageUrl ? "battle-enemy-image" : "enemy-silhouette";
+    if (imageUrl) {
+      visual.src = imageUrl;
+      visual.alt = "";
+      visual.loading = "eager";
+      visual.decoding = "async";
+    } else {
+      visual.setAttribute("aria-hidden", "true");
+    }
     const name = document.createElement("b");
     name.textContent = escapeText(actor.name, "敵");
     const hp = document.createElement("progress");
     hp.max = Math.max(1, battleDisplayNumber(actor.maxHp, 1));
     hp.value = battleDisplayNumber(actor.hp);
     hp.setAttribute("aria-label", `${name.textContent} HP ${hp.value}/${hp.max}`);
-    card.append(silhouette, name, hp);
+    card.append(visual, name, hp);
     ui.battleEnemies.append(card);
   });
   ui.battleStatus.replaceChildren();
-  [...actors.values()].filter((actor) => actor.side === "player").forEach((actor) => {
+  entries.filter((actor) => actor.side === "player").forEach((actor) => {
     const name = document.createElement("strong");
     name.textContent = escapeText(currentSave?.player?.name || actor.name, "旅人");
     const hp = document.createElement("span");
@@ -894,6 +1033,195 @@ function renderBattlePage() {
     stateLabel.textContent = actor.alive === false ? "戦闘不能" : "";
     ui.battleStatus.append(name, hp, mp, stateLabel);
   });
+}
+
+function interactiveRoundMessage(battle, actors) {
+  const actionFrames = list(battle.lastRound?.frames).filter((frame) => frame.phase === "action");
+  if (!actionFrames.length) {
+    const enemies = [...actors.values()].filter((actor) => actor.side === "enemy" && actor.alive !== false);
+    return enemies.length ? `${enemies.map((actor) => escapeText(actor.name, "敵")).join("、")}が現れた！` : "次の行動を選んでください。";
+  }
+  const messages = actionFrames.map((frame) => battleFrameMessage(frame, actors)).filter(Boolean);
+  const selected = messages.length <= 2 ? messages : [messages[0], messages[messages.length - 1]];
+  const summary = selected.join(" ");
+  return summary.length <= 150 ? summary : `${summary.slice(0, 147)}…`;
+}
+
+const BATTLE_DISABLED_REASONS = Object.freeze({
+  cooldown: "再使用まで待つ必要がある",
+  uses_exhausted: "この戦闘ではもう使えない",
+  conditions_not_met: "今は発動条件を満たしていない",
+  insufficient_resource: "MP・HPが足りない",
+  no_target: "対象がいない",
+  not_active: "戦闘中には使えない",
+});
+
+function battleCommandCost(command) {
+  return [number(command.mpCost) > 0 ? `MP ${number(command.mpCost)}` : "", number(command.hpCost) > 0 ? `HP ${number(command.hpCost)}` : ""]
+    .filter(Boolean)
+    .join(" / ");
+}
+
+function createBattleCommandButton(label, { command = null, detail = "", disabled = false, onClick }) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "battle-command-button";
+  button.disabled = disabled;
+  const main = document.createElement("span");
+  main.textContent = label;
+  button.append(main);
+  const subtext = detail || (command?.available === false
+    ? BATTLE_DISABLED_REASONS[command.disabledReason] ?? "今は使えない"
+    : battleCommandCost(command ?? {}));
+  if (subtext) {
+    const small = document.createElement("small");
+    small.textContent = subtext;
+    button.append(small);
+  }
+  button.setAttribute("aria-label", [label, subtext].filter(Boolean).join("。"));
+  button.addEventListener("click", onClick);
+  return button;
+}
+
+async function submitInteractiveBattleCommand(battle, command, targetInstanceId = null) {
+  if (busy || command?.available === false) return;
+  interactiveBattleState.mode = "root";
+  interactiveBattleState.selectedActionId = null;
+  ui.battleMessage.textContent = `${escapeText(command.name, "行動")}を選んだ。`;
+  await sendCommand("BATTLE_ACT", {
+    battleId: battle.id,
+    actionId: command.actionId,
+    ...(targetInstanceId ? { targetInstanceId } : {}),
+  });
+}
+
+function selectInteractiveBattleCommand(battle, command) {
+  if (!command || command.available === false) return;
+  const targets = list(command.targets);
+  if (targets.length) {
+    interactiveBattleState.mode = "targets";
+    interactiveBattleState.selectedActionId = command.actionId;
+    renderInteractiveBattleCommands(battle, { focus: true });
+    return;
+  }
+  submitInteractiveBattleCommand(battle, command);
+}
+
+function renderInteractiveBattleCommands(battle, { focus = false } = {}) {
+  const commands = list(battle.commands);
+  const mode = interactiveBattleState?.mode ?? "root";
+  ui.battleCommandMenu.replaceChildren();
+  ui.battleCommandMenu.dataset.mode = mode;
+  if (mode === "skills") {
+    ui.battleCommandPrompt.textContent = "どのスキルを使う？";
+    commands.filter((command) => command.kind === "skill").forEach((command) => {
+      const cost = battleCommandCost(command);
+      const detail = command.available === false
+        ? BATTLE_DISABLED_REASONS[command.disabledReason] ?? "今は使えない"
+        : [cost, escapeText(command.description, "")].filter(Boolean).join("・");
+      ui.battleCommandMenu.append(createBattleCommandButton(escapeText(command.name, "スキル"), {
+        command,
+        detail,
+        disabled: command.available === false,
+        onClick: () => selectInteractiveBattleCommand(battle, command),
+      }));
+    });
+    ui.battleCommandMenu.append(createBattleCommandButton("もどる", {
+      onClick: () => {
+        interactiveBattleState.mode = "root";
+        renderInteractiveBattleCommands(battle, { focus: true });
+      },
+    }));
+  } else if (mode === "targets") {
+    const command = commands.find((entry) => entry.actionId === interactiveBattleState.selectedActionId);
+    if (!command) {
+      interactiveBattleState.mode = "root";
+      renderInteractiveBattleCommands(battle, { focus });
+      return;
+    }
+    ui.battleCommandPrompt.textContent = "だれを狙う？";
+    list(command.targets).forEach((target) => {
+      const detail = `HP ${battleDisplayNumber(target.hp)} / ${Math.max(1, battleDisplayNumber(target.maxHp, 1))}`;
+      ui.battleCommandMenu.append(createBattleCommandButton(escapeText(target.name, "対象"), {
+        detail,
+        onClick: () => submitInteractiveBattleCommand(battle, command, target.instanceId),
+      }));
+    });
+    ui.battleCommandMenu.append(createBattleCommandButton("もどる", {
+      onClick: () => {
+        interactiveBattleState.mode = command.kind === "skill" ? "skills" : "root";
+        interactiveBattleState.selectedActionId = null;
+        renderInteractiveBattleCommands(battle, { focus: true });
+      },
+    }));
+  } else {
+    ui.battleCommandPrompt.textContent = "どうする？";
+    const attack = commands.find((command) => command.kind === "attack");
+    const defend = commands.find((command) => command.kind === "defend");
+    const flee = commands.find((command) => command.kind === "flee");
+    const skills = commands.filter((command) => command.kind === "skill");
+    ui.battleCommandMenu.append(
+      createBattleCommandButton("たたかう", {
+        command: attack,
+        disabled: !attack || attack.available === false,
+        onClick: () => selectInteractiveBattleCommand(battle, attack),
+      }),
+      createBattleCommandButton("スキル", {
+        detail: skills.length ? `${skills.filter((command) => command.available !== false).length}個 使用可能` : "習得スキルなし",
+        disabled: !skills.length,
+        onClick: () => {
+          interactiveBattleState.mode = "skills";
+          renderInteractiveBattleCommands(battle, { focus: true });
+        },
+      }),
+      createBattleCommandButton("ぼうぎょ", {
+        command: defend,
+        detail: "受けるダメージを抑える",
+        disabled: !defend || defend.available === false,
+        onClick: () => selectInteractiveBattleCommand(battle, defend),
+      }),
+      createBattleCommandButton("にげる", {
+        command: flee,
+        detail: "逃走を試みる",
+        disabled: !flee || flee.available === false,
+        onClick: () => selectInteractiveBattleCommand(battle, flee),
+      }),
+    );
+  }
+  if (focus) window.requestAnimationFrame(() => $("button:not(:disabled)", ui.battleCommandMenu)?.focus());
+}
+
+function renderInteractiveBattle(save) {
+  const battle = save.battle;
+  if (!battle || battle.status !== "active") return;
+  const isNewBattle = interactiveBattleState?.id !== battle.id;
+  if (isNewBattle) interactiveBattleState = { id: battle.id, mode: "root", selectedActionId: null };
+  battlePlayback = null;
+  const actors = new Map(list(battle.actors).map((actor) => [actor.instanceId, { ...actor }]));
+  $("#battleRound").textContent = `ROUND ${Math.max(1, number(battle.round, 1))}`;
+  $("#battleTitle").textContent = escapeText(battle.encounterName, "戦闘");
+  ui.battleScene.style.backgroundImage = ui.backdrop.style.backgroundImage;
+  ui.battleMessage.textContent = interactiveRoundMessage(battle, actors);
+  renderBattleActors(actors);
+  $("#battleSkip").hidden = true;
+  ui.battlePlaybackControls.hidden = true;
+  ui.battleCommandPanel.hidden = false;
+  ui.battleDialog.dataset.mode = "interactive";
+  ui.battleDialog.dataset.readyToClose = "false";
+  renderInteractiveBattleCommands(battle, { focus: isNewBattle || !busy });
+  if (!ui.battleDialog.open) ui.battleDialog.showModal();
+}
+
+function renderBattlePage() {
+  if (!battlePlayback) return;
+  const page = battlePlayback.pages[battlePlayback.index];
+  const actors = actorsAtBattlePage(battlePlayback, page);
+  $("#battleRound").textContent = page.kind === "result" ? "RESULT" : `ROUND ${page.round}`;
+  ui.battleMessage.textContent = page.message;
+  renderBattleActors(actors);
+  ui.battleCommandPanel.hidden = true;
+  ui.battlePlaybackControls.hidden = false;
+  ui.battleDialog.dataset.mode = "playback";
   const isFinal = battlePlayback.index === battlePlayback.pages.length - 1;
   $("#battleNext").hidden = isFinal;
   $("#battleClose").hidden = !isFinal;
@@ -901,7 +1229,7 @@ function renderBattlePage() {
   ui.battleDialog.dataset.readyToClose = String(isFinal);
 }
 
-function openBattlePlayback(save, battle, key) {
+function openBattlePlayback(save, battle, key, { resultOnly = false } = {}) {
   const playback = battle?.playback;
   if (!playback || !list(playback.combatants).length) return;
   const prepared = battlePages(battle);
@@ -911,22 +1239,38 @@ function openBattlePlayback(save, battle, key) {
     playback,
     pages: prepared.pages,
     initialActors: prepared.initialActors,
-    index: 0,
+    index: resultOnly ? prepared.pages.length - 1 : 0,
   };
   $("#battleTitle").textContent = escapeText(playback.encounter?.name, "戦闘");
   ui.battleScene.style.backgroundImage = ui.backdrop.style.backgroundImage;
   renderBattlePage();
   if (!ui.battleDialog.open) ui.battleDialog.showModal();
-  $("#battleNext").focus();
+  (resultOnly ? $("#battleClose") : $("#battleNext")).focus();
 }
 
-function queueBattlePlayback(save) {
+function queueBattlePlayback(save, { resultOnly = false } = {}) {
   const battle = save?.scene?.lastOutcome?.battle;
   if (!battle?.playback) return;
   const key = `${save.id}:${save.revision}:${battle.playback.encounter?.id ?? battle.encounterId ?? "battle"}`;
   if (key === lastPresentedBattleKey) return;
   lastPresentedBattleKey = key;
-  window.setTimeout(() => openBattlePlayback(save, battle, key), 0);
+  window.setTimeout(() => openBattlePlayback(save, battle, key, { resultOnly }), 0);
+}
+
+function queueBattlePresentation(save) {
+  if (save?.battle?.status === "active") {
+    renderInteractiveBattle(save);
+    return;
+  }
+  const completedInteractiveBattle = Boolean(interactiveBattleState?.id);
+  interactiveBattleState = null;
+  const completedBattle = save?.scene?.lastOutcome?.battle;
+  if (completedInteractiveBattle && !completedBattle?.playback && ui.battleDialog.open) {
+    ui.battleDialog.dataset.readyToClose = "true";
+    ui.battleDialog.close();
+    return;
+  }
+  queueBattlePlayback(save, { resultOnly: completedInteractiveBattle });
 }
 
 function advanceBattle() {
@@ -1040,11 +1384,12 @@ async function sendCommand(type, payload, commandId = crypto.randomUUID()) {
       }),
     });
     if (type === "MOVE" && ui.dialog.open) ui.dialog.close();
-    renderSave(result.save, { focus: "result", announce: true, preserveDialogue: type === "TUTORIAL_ACK" });
+    const preserveDialogue = ["TUTORIAL_ACK", "ACK_NPC_INTRODUCTION"].includes(type);
+    renderSave(result.save, { focus: "result", announce: type !== "ACK_NPC_INTRODUCTION", preserveDialogue });
     return true;
   } catch (error) {
     const code = error.data?.error;
-    const errorTarget = ui.dialog.open ? ui.dialogError : ui.gameError;
+    const errorTarget = ui.battleDialog.open ? ui.battleError : ui.dialog.open ? ui.dialogError : ui.gameError;
     if (code === "revision_conflict") {
       showError(errorTarget, "別の画面で旅が進んだようです。最新の状態を読み込みます。", () => loadGame(currentSave.id));
     } else if (code === "game_ended") {
@@ -1055,6 +1400,23 @@ async function sendCommand(type, payload, commandId = crypto.randomUUID()) {
       showError(errorTarget, "所持金が足りません。仕事や任務で資金を得てから購入できます。");
     } else if (code === "insufficient_sp") {
       showError(errorTarget, "SPが足りません。レベルアップなどでSPを得てから取得できます。");
+    } else if (["battle_not_active", "battle_id_mismatch"].includes(code)) {
+      showError(errorTarget, "戦闘状態を更新できませんでした。最新の状態を読み込みます。", () => loadGame(currentSave.id));
+    } else if ([
+      "battle_action_invalid",
+      "battle_target_invalid",
+      "battle_action_rejected",
+      "unknown_action",
+      "invalid_target",
+      "action_unavailable",
+      "no_target",
+      "not_active",
+      "cooldown",
+      "uses_exhausted",
+      "conditions_not_met",
+      "insufficient_resource",
+    ].includes(code)) {
+      showError(errorTarget, "その戦闘行動は選べません。別のコマンドを選んでください。");
     } else {
       showError(errorTarget, error.message, () => sendCommand(type, payload, commandId));
     }
@@ -1587,12 +1949,16 @@ async function openPanelFromUi(name, { targetFacilityId = "" } = {}) {
 }
 
 async function loadManifest() {
+  const previous = JSON.stringify(assetManifest);
   try {
     const response = await fetch("/TRPG/assets/manifest.json", { cache: "no-store" });
     if (response.ok) assetManifest = await response.json();
   } catch {
-    assetManifest = { backgrounds: {}, portraits: {} };
+    if (!assetManifest || typeof assetManifest !== "object") {
+      assetManifest = { backgrounds: {}, portraits: {}, monsters: {} };
+    }
   }
+  return previous !== JSON.stringify(assetManifest);
 }
 
 ui.newTab.addEventListener("click", () => switchLaunchTab("new"));

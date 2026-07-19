@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
-export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash-lite";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.3";
+export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.7";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",
@@ -135,9 +135,9 @@ function normalizeNpc(npc) {
   return {
     id: boundedText(npc?.id, 80),
     name: boundedText(npc?.name, 80),
-    role: boundedText(npc?.role ?? npc?.occupation ?? npc?.type, 120),
+    role: boundedText(npc?.role ?? npc?.type, 120),
     mood: boundedText(npc?.mood ?? npc?.initialStatus, 120),
-    currentGoal: boundedText(npc?.currentGoal ?? npc?.goal, 180),
+    currentGoal: boundedText(npc?.currentGoal, 180),
     relationship: Number.isFinite(Number(npc?.relationship)) ? Number(npc.relationship) : 0,
     speechStyle: boundedText(npc?.speechStyle, 180),
     knownLocalFacts: Array.isArray(npc?.knownLocalFacts)
@@ -257,6 +257,8 @@ export function buildLocalNarrativeContext(input = {}) {
       locationId: boundedText(state.locationId ?? state.location, 100),
       facilityId: boundedText(state.facilityId, 100) || null,
       facilityName: boundedText(state.facilityName, 120) || null,
+      facilityType: boundedText(state.facilityType, 120) || null,
+      publicDescription: boundedText(state.publicDescription, 300) || null,
     },
     player: {
       displayName: boundedText(state.player?.displayName ?? input.playerName ?? "旅人", 80),
@@ -269,7 +271,21 @@ export function buildLocalNarrativeContext(input = {}) {
       id: boundedText(action.id, 120),
       type: boundedText(action.type, 60),
       label: boundedText(action.label, 180),
+      playerUtterance: boundedText(action.playerUtterance, 240) || null,
       targetNpcId: localNpcIds.has(String(action.targetNpcId)) ? String(action.targetNpcId) : null,
+      dialogueTopic: boundedText(action.dialogueTopic, 100) || null,
+      firstIntroduction: action.firstIntroduction === true,
+      // The canonical name is deliberately isolated from localNpcs.  Before
+      // the introduction acknowledgement, every public NPC surface keeps the
+      // anonymous label; only the target's first spoken reply may use this.
+      introductionName: action.firstIntroduction === true
+        ? boundedText(action.introductionName, 80) || null
+        : null,
+      conversationTurn: Math.max(0, Math.min(12, Number(action.conversationTurn ?? 0))),
+      previouslyAskedTopics: Array.isArray(action.previouslyAskedTopics)
+        ? action.previouslyAskedTopics.slice(0, 10).map((entry) => boundedText(entry, 100))
+        : [],
+      requiredDisclosure: boundedText(action.requiredDisclosure, 180) || null,
     },
     authoritativeOutcome: stableValue(state.authoritativeOutcome ?? input.authoritativeOutcome ?? {}),
     localNpcs,
@@ -377,6 +393,8 @@ export function validateNarrativeOutput(value, context) {
   choices.forEach((choice, index) => validateChoice(choice, index, localNpcIds, errors));
   const choiceIds = choices.map((choice) => String(choice?.id ?? ""));
   if (new Set(choiceIds).size !== choiceIds.length) errors.push("choice ids are duplicated");
+  const choiceLabels = choices.map((choice) => boundedText(choice?.label, 120).replace(/[\s、。！？!?・「」『』（）()]/gu, ""));
+  if (new Set(choiceLabels).size !== choiceLabels.length) errors.push("choice labels are semantically duplicated");
   const allowedChoiceIds = (context.allowedActionCandidates ?? []).map((candidate) => candidate.id);
   if (allowedChoiceIds.length) {
     const actual = [...choiceIds].sort();
@@ -384,6 +402,16 @@ export function validateNarrativeOutput(value, context) {
     if (actual.length !== expected.length || actual.some((id, index) => id !== expected[index])) {
       errors.push("choice ids must exactly match allowedActionCandidates");
     }
+    const candidatesById = new Map((context.allowedActionCandidates ?? []).map((candidate) => [candidate.id, candidate]));
+    choices.forEach((choice, index) => {
+      const candidate = candidatesById.get(String(choice?.id ?? ""));
+      if (candidate && choice.intentType !== candidate.intentType) {
+        errors.push(`choices[${index}].intentType must match its authoritative action candidate`);
+      }
+      if (candidate && (choice.targetNpcId ?? null) !== (candidate.targetNpcId ?? null)) {
+        errors.push(`choices[${index}].targetNpcId must match its authoritative action candidate`);
+      }
+    });
   }
   const speeches = Array.isArray(value.speeches) ? value.speeches : [];
   if (speeches.length > 6) errors.push("too many speeches");
@@ -393,6 +421,39 @@ export function validateNarrativeOutput(value, context) {
     }
     if (!boundedText(speech?.text, 500)) errors.push(`speeches[${index}].text is empty`);
   });
+  if (context.action.type === "conversation" && context.action.targetNpcId) {
+    const directReplies = speeches.filter((speech) => String(speech?.actorId) === context.action.targetNpcId);
+    const replyLength = directReplies.reduce((sum, speech) => sum + boundedText(speech?.text, 500).length, 0);
+    if (!directReplies.length) errors.push("conversation must include a reply from the target NPC");
+    if (replyLength < 55) errors.push("conversation reply is too short to answer, add useful detail, and create a next hook");
+    const firstReply = boundedText(directReplies[0]?.text, 500);
+    if (/^(?:もっとも|そうだね|そうだな|なるほど|ふむ)[、。…\s]/u.test(firstReply)) {
+      errors.push("conversation reply starts with an orphan acknowledgement instead of answering the player's actual words");
+    }
+    if (context.action.firstIntroduction) {
+      const targetName = context.action.introductionName
+        ?? context.localNpcs.find((npc) => npc.id === context.action.targetNpcId)?.name;
+      if (targetName && !firstReply.includes(targetName)) {
+        errors.push("first conversation must introduce the target NPC by name before continuing");
+      }
+      if (context.action.introductionName) {
+        if (narrative.includes(context.action.introductionName)) {
+          errors.push("first-introduction narrative must keep the target NPC anonymous");
+        }
+        choices.forEach((choice, index) => {
+          if (boundedText(choice?.label, 120).includes(context.action.introductionName)) {
+            errors.push(`choices[${index}].label reveals the target NPC name before introduction acknowledgement`);
+          }
+        });
+      }
+    }
+    if (context.action.requiredDisclosure) {
+      const combinedReply = directReplies.map((speech) => boundedText(speech?.text, 500)).join("\n");
+      if (!combinedReply.includes(context.action.requiredDisclosure)) {
+        errors.push("conversation reply must include the authoritative disclosed fact verbatim");
+      }
+    }
+  }
   const proposals = Array.isArray(value.proposals) ? value.proposals : [];
   if (proposals.length > 5) errors.push("too many proposals");
   proposals.forEach((proposal, index) => validateProposal(proposal, index, localNpcIds, errors));
@@ -427,17 +488,74 @@ function safeFallbackSpeeches(context) {
     ?? context.localNpcs[0]
     ?? null;
   if (!npc) return [];
-  let text = "私が知っているのは、今話したことまでだ。";
+  const fact = context.action.requiredDisclosure
+    ?? npc.knownLocalFacts?.[0]
+    ?? context.localRumors?.[0]?.text
+    ?? null;
+  const mission = context.missions.find((entry) => ["active", "available", "in_progress"].includes(entry.status))
+    ?? context.missions[0]
+    ?? null;
+  const place = context.place.facilityName ?? context.place.locationId ?? "この辺り";
+  const introductionName = context.action.introductionName ?? npc.name;
+  const introduction = context.action.firstIntroduction ? `私は${introductionName}。` : "";
+  const verification = "私の話だけで決めず、現場か最初に見た人へ確かめてほしい。聞いた相手と時刻も覚えておくと、古い噂と今の事実を分けられる。";
+  const detail = {
+    active_mission: mission
+      ? `「${mission.title}」なら、今は「${mission.currentStep || "手掛かりを集める"}」を先に進めるべきだ。期限と行き先を確かめてから動いてくれ。`
+      : `今すぐ任務として頼める話は持っていない。掲示や人だかりが出た時は、事情と期限を聞いてから動くといい。`,
+    route_to_lead: mission
+      ? `「${mission.currentStep || mission.title}」へ向かうなら、${place}を出る前に目印と危険な分かれ道を確かめてくれ。明るいうちに着ける時間を選ぶ方がいい。`
+      : `${place}から先の道は、今日そこを通った人に目印と危険な分かれ道を聞くのが確実だ。`,
+    local_concern: fact
+      ? `${fact}という話が、今いちばん気に掛かっている。放っておけば困る人が増えるかもしれない。${verification}`
+      : `${place}では、普段と違う人の出入りや品物の減り方が最初の兆しになる。まだ断言はできない。${verification}`,
+    local_change: fact
+      ? `${fact}という変化までは確かめた。ただ、いつから変わったかは、ここを毎日使う人にも聞いてほしい。${verification}`
+      : `${place}を通る顔ぶれと運ばれる物が、いつもと少し違う。時間を変えてもう一度見れば、見間違いかどうか分かるはずだ。`,
+    personal_stake: `${place}は私も毎日使う場所で、困っている顔を見れば放っておけない。それでも一人で決めつけるのは危険だから、確かな手掛かりを持ち帰ってほしい。`,
+    local_rumor: context.action.requiredDisclosure
+      ? `${context.action.requiredDisclosure}。そこから先は、話が届いた時刻と最初に見た人も辿って確かめてほしい。`
+      : fact
+        ? `${fact}という話は聞いている。誰が最初に、いつ話したのかまで辿れば、今も続く異変か古い噂かを分けられる。${verification}`
+      : `その噂はまだ私のところまで届いていない。人が集まる場所で、誰が最初に、いつ話したのかまで尋ねてみてくれ。`,
+    work_offer: `${place}で今すぐ手が要るのは、運搬や片づけのような短い仕事だ。始める前に仕事内容と賃金を確かめ、終わったら頼んだ本人へ報告してくれ。`,
+    end_conversation: "分かった。ここで聞いた話も、現場が変われば古くなる。行き先で何を見つけたか、また会えた時に聞かせてくれ。",
+  }[context.action.dialogueTopic] ?? (fact
+    ? `${fact}という話なら知っている。${verification}`
+    : `その件について、私が確かに知っていることはまだ少ない。ここで作り話をするより、人が集まる場所か現場を毎日使う人へ尋ねた方がいい。${verification}`);
+  let text = `${introduction}${detail}`;
   if (npc.relationship <= -20 || /hostile|敵対|警戒/iu.test(npc.mood)) {
-    text = "……信用していない。話せることはそれだけだ。";
+    text = `${introduction}まだ信用していない。それでも今話せる範囲は話す。${detail}`;
   } else if (npc.relationship >= 20 || /friendly|友好|好意/iu.test(npc.mood)) {
-    text = "分かる範囲なら、もう少し話せる。";
+    text = `${introduction}分かる範囲なら、順に話そう。${detail}`;
   }
   return [{ actorId: npc.id, text, emotion: null }];
 }
 
+function fallbackNarrativeForAction(context, npc, place, normalizedOutcome) {
+  if (npc && ["conversation", "talk"].includes(context.action.type)) {
+    return {
+      active_mission: `${npc.name}は任務の期限と手掛かりを思い返し、次に急ぐべき行動を整理した。`,
+      route_to_lead: `${npc.name}は${place}から先の道を思い浮かべ、目印と危険な分かれ道を順に説明した。`,
+      local_concern: `${npc.name}は周囲を見回し、ここで今いちばん気に掛けている問題を一つ挙げた。`,
+      local_change: `${npc.name}は普段の様子と見比べながら、最近気づいた変化を具体的に話した。`,
+      personal_stake: `${npc.name}は少し言葉を選び、この問題を放っておけない理由を自分の言葉で話した。`,
+      local_rumor: `${npc.name}は噂を聞いた相手と時刻を思い返し、確かな部分と未確認の部分を分けた。`,
+      work_offer: `${npc.name}は今ここで必要な仕事を挙げ、内容と賃金を先に説明した。`,
+      end_conversation: `${npc.name}へ礼を伝え、聞いた情報を確かめるために会話を切り上げた。`,
+    }[context.action.dialogueTopic]
+      ?? `${npc.name}は問いかけを最後まで聞き、知っている事実と推測を分けて答えた。`;
+  }
+  return normalizedOutcome
+    ? `${place}では、${normalizedOutcome}。周囲の状況を確かめながら、次の行動を選べる。`
+    : `${place}の状況に大きな変化はない。周囲を見渡し、次の行動を選ぶ。`;
+}
+
 export function deterministicNarrativeFallback(context, reason = "model_unavailable") {
   const place = context.place.facilityName ?? context.place.locationId ?? "その場";
+  const npc = context.localNpcs.find((entry) => entry.id === context.action.targetNpcId)
+    ?? context.localNpcs[0]
+    ?? null;
   const outcome = boundedText(
     context.authoritativeOutcome?.summary
       ?? context.authoritativeOutcome?.message
@@ -446,9 +564,7 @@ export function deterministicNarrativeFallback(context, reason = "model_unavaila
   );
   const normalizedOutcome = sentenceFragment(outcome);
   return {
-    narrative: normalizedOutcome
-      ? `${place}では、${normalizedOutcome}。周囲の状況を確かめながら、次の行動を選べる。`
-      : `${place}の状況に大きな変化はない。周囲を見渡し、次の行動を選ぶ。`,
+    narrative: fallbackNarrativeForAction(context, npc, place, normalizedOutcome),
     choices: defaultChoices(context),
     speeches: safeFallbackSpeeches(context),
     proposals: [],

@@ -653,6 +653,366 @@ function playbackAction(action) {
   };
 }
 
+const INTERACTIVE_BATTLE_VERSION = 1;
+const INTERACTIVE_GUARD_REDUCTION = 0.5;
+
+function interactiveState(state) {
+  const copy = structuredClone(state);
+  if (copy.encounter) {
+    copy.encounter = {
+      id: copy.encounter.id,
+      name: copy.encounter.name,
+      dangerTier: copy.encounter.dangerTier,
+      avoidability: copy.encounter.avoidability,
+      region: copy.encounter.region,
+      route: copy.encounter.route,
+    };
+  }
+  for (const actor of [...copy.players, ...copy.enemies]) delete actor.raw;
+  return copy;
+}
+
+function interactiveResult(session) {
+  const state = session.state;
+  const diagnostics = session.diagnostics ?? { counts: {}, samples: {} };
+  return {
+    seed: session.seed,
+    winner: session.winner ?? 'draw',
+    turns: state.turn,
+    encounterId: state.encounter?.id ?? null,
+    monsterIds: [...state.monsterIds],
+    players: state.players.map((actor) => ({
+      id: actor.id,
+      hp: actor.hp,
+      maxHp: actor.maxHp,
+      mp: actor.mp,
+      maxMp: actor.maxMp,
+      alive: actor.alive,
+      mpSpent: actor.mpSpent,
+      damageDealt: actor.damageDealt,
+    })),
+    enemies: state.enemies.map((actor) => ({
+      id: actor.id,
+      hp: actor.hp,
+      maxHp: actor.maxHp,
+      alive: actor.alive,
+    })),
+    totalPlayerMpSpent: state.players.reduce((sum, actor) => sum + actor.mpSpent, 0),
+    actionUsage: Object.fromEntries(Object.entries(session.actionUsage).sort(([a], [b]) => a.localeCompare(b))),
+    totalHits: session.totalHits,
+    totalCriticals: session.totalCriticals,
+    fallbackAttacks: session.fallbackAttacks,
+    candidateExhaustion: diagnostics.counts?.candidateExhaustion ?? 0,
+    diagnostics,
+    assumptions: BATTLE_ASSUMPTIONS,
+    timeline: {
+      version: 1,
+      combatants: session.initialCombatants,
+      frames: session.frames,
+    },
+  };
+}
+
+function nextInteractiveState(session) {
+  const state = structuredClone(session.state);
+  state.turn += 1;
+  startRound(state);
+  return state;
+}
+
+function interactiveSkillAvailability(data, state, actor, skill, diagnostics) {
+  const target = living(state.enemies)[0];
+  if (skill.kind !== 'active') return { available: false, reason: 'not_active' };
+  if (isOnCooldown(actor, skill.id)) return { available: false, reason: 'cooldown' };
+  if (skill.cooldown?.usesPerBattle !== null && skill.cooldown?.usesPerBattle !== undefined
+    && (actor.uses.get(skill.id) ?? 0) >= Number(skill.cooldown.usesPerBattle)) {
+    return { available: false, reason: 'uses_exhausted' };
+  }
+  if (!evaluateStructuredConditions(skill.activationConditions, battleContext(state, actor, target), diagnostics)) {
+    return { available: false, reason: 'conditions_not_met' };
+  }
+  if (!canPayPlayerCost(actor, skill)) return { available: false, reason: 'insufficient_resource' };
+  return { available: true, reason: null };
+}
+
+function selectableTargets(state, targetSpec) {
+  const actors = targetSpec === 'single_ally' ? living(state.players) : living(state.enemies);
+  return actors.map((actor) => ({
+    instanceId: actor.instanceId,
+    actorId: actor.id,
+    name: actor.name,
+    side: actor.side,
+    hp: actor.hp,
+    maxHp: actor.maxHp,
+  }));
+}
+
+/**
+ * Starts a server-authoritative, single-player battle without resolving a turn.
+ * The returned session contains only structured-clone/JSON-replacer compatible
+ * values, including Maps and Sets already supported by the game serializer.
+ */
+export function beginInteractiveBattle(options) {
+  const { data } = options;
+  if (!data) throw new Error('beginInteractiveBattle requires data');
+  const seed = options.seed ?? 'battle';
+  const requestedMaxTurns = Number(options.maxTurns ?? 100);
+  const maxTurns = Number.isFinite(requestedMaxTurns) ? Math.max(1, Math.floor(requestedMaxTurns)) : 100;
+  const rng = createSeededRng(`${seed}:interactive:encounter`);
+  const state = initializeState(data, options, rng);
+  if (state.players.length !== 1) throw new Error('interactive battle currently requires exactly one player');
+  const serializableState = interactiveState(state);
+  return {
+    version: INTERACTIVE_BATTLE_VERSION,
+    status: 'active',
+    winner: null,
+    seed,
+    maxTurns,
+    state: serializableState,
+    initialCombatants: playbackSnapshot(serializableState),
+    frames: [],
+    frameSequence: 0,
+    actionUsage: {},
+    totalHits: 0,
+    totalCriticals: 0,
+    fallbackAttacks: 0,
+    diagnostics: { counts: {}, samples: {} },
+    lastRound: null,
+  };
+}
+
+/** Lists the actions the player may submit for the next round. */
+export function listInteractiveBattleCommands({ data, session }) {
+  if (!data) throw new Error('listInteractiveBattleCommands requires data');
+  if (!session || session.version !== INTERACTIVE_BATTLE_VERSION || session.status !== 'active') return [];
+  const state = nextInteractiveState(session);
+  const actor = living(state.players)[0];
+  if (!actor || !living(state.enemies).length) return [];
+  const diagnostics = new DiagnosticBag();
+  const enemyTargets = selectableTargets(state, 'single_enemy');
+  const commands = [{
+    actionId: 'ATTACK',
+    kind: 'attack',
+    name: 'こうげき',
+    target: 'single_enemy',
+    available: enemyTargets.length > 0,
+    disabledReason: enemyTargets.length ? null : 'no_target',
+    targets: enemyTargets,
+  }];
+  for (const skillId of actor.skillIds) {
+    const skill = data.playerSkillById.get(skillId);
+    if (!skill || skill.kind !== 'active') continue;
+    const availability = interactiveSkillAvailability(data, state, actor, skill, diagnostics);
+    const targetSpec = skill.target === 'contextual' ? 'single_enemy' : skill.target;
+    commands.push({
+      actionId: `SKILL:${skill.id}`,
+      kind: 'skill',
+      skillId: skill.id,
+      name: skill.name ?? skill.id,
+      description: skill.description ?? '',
+      mpCost: skill.costs?.mpMode === 'all_current' ? actor.mp : Number(skill.costs?.mp ?? 0),
+      hpCost: Number(skill.costs?.hp ?? 0),
+      target: targetSpec,
+      available: availability.available,
+      disabledReason: availability.reason,
+      targets: ['single_enemy', 'single_ally'].includes(targetSpec)
+        ? selectableTargets(state, targetSpec)
+        : [],
+    });
+  }
+  commands.push({
+    actionId: 'DEFEND',
+    kind: 'defend',
+    name: 'ぼうぎょ',
+    target: 'self',
+    available: true,
+    disabledReason: null,
+    targets: [],
+  }, {
+    actionId: 'FLEE',
+    kind: 'flee',
+    name: 'にげる',
+    target: 'none',
+    available: true,
+    disabledReason: null,
+    targets: [],
+  });
+  return commands;
+}
+
+function commandTarget(state, commandDefinition, targetInstanceId) {
+  if (!['single_enemy', 'single_ally'].includes(commandDefinition.target)) {
+    return commandDefinition.target === 'self' ? living(state.players)[0] : living(state.enemies)[0];
+  }
+  const candidates = commandDefinition.target === 'single_ally' ? living(state.players) : living(state.enemies);
+  return candidates.find((actor) => actor.instanceId === targetInstanceId) ?? null;
+}
+
+function interactiveFleeChance(state, actor) {
+  const opponents = living(state.enemies);
+  const averageEnemyAgility = opponents.length
+    ? opponents.reduce((sum, enemy) => sum + actorStat(enemy, 'agility'), 0) / opponents.length
+    : 0;
+  return Math.max(0.1, Math.min(0.9, 0.5 + (actorStat(actor, 'agility') - averageEnemyAgility) * 0.02));
+}
+
+/**
+ * Resolves one round from a validated player command. It is intentionally
+ * pure: the input session is never mutated. Invalid commands return the same
+ * session and consume no deterministic round RNG.
+ */
+export function resolveInteractiveBattleRound({ data, session, command }) {
+  if (!data) throw new Error('resolveInteractiveBattleRound requires data');
+  if (!session || session.version !== INTERACTIVE_BATTLE_VERSION || session.status !== 'active') {
+    return { ok: false, reason: 'battle_not_active', session };
+  }
+  const actionId = String(command?.actionId ?? '');
+  const definitions = listInteractiveBattleCommands({ data, session });
+  const definition = definitions.find((entry) => entry.actionId === actionId);
+  if (!definition) return { ok: false, reason: 'unknown_action', session };
+  if (!definition.available) return { ok: false, reason: definition.disabledReason ?? 'action_unavailable', session };
+  const needsTarget = ['single_enemy', 'single_ally'].includes(definition.target);
+  if (needsTarget && !definition.targets.some((target) => target.instanceId === command?.targetInstanceId)) {
+    return { ok: false, reason: 'invalid_target', session };
+  }
+
+  const next = structuredClone(session);
+  const state = structuredClone(next.state);
+  const beforeRoundStart = playbackSnapshot(state);
+  state.turn += 1;
+  startRound(state);
+  next.state = state;
+  const diagnostics = new DiagnosticBag().merge(next.diagnostics);
+  const rng = createSeededRng(`${next.seed}:interactive:round:${state.turn}`);
+  const roundFrames = [];
+  const recordFrame = (frame, before, includeWhenEmpty = false) => {
+    const effects = playbackEffects(before, playbackSnapshot(state));
+    if (!includeWhenEmpty && effects.length === 0) return;
+    const entry = { seq: ++next.frameSequence, round: state.turn, ...frame, effects };
+    next.frames.push(entry);
+    roundFrames.push(entry);
+  };
+  recordFrame({ phase: 'round_start', actorInstanceId: null, actorSide: null }, beforeRoundStart);
+  // Guard is a stance for the whole selected round. Apply it before initiative
+  // so a faster enemy cannot bypass the player's explicit DEFEND command.
+  if (definition.kind === 'defend') {
+    const player = living(state.players)[0];
+    if (player) {
+      applySpecialState(player, {
+        type: 'guard',
+        stateId: 'guard',
+        durationTurns: 1,
+        params: { damageReduction: INTERACTIVE_GUARD_REDUCTION },
+      });
+    }
+  }
+  const actors = living([...state.players, ...state.enemies])
+    .map((actor) => ({ actor, tie: rng() }))
+    .sort((a, b) => actorStat(b.actor, 'agility') - actorStat(a.actor, 'agility') || a.tie - b.tie)
+    .map(({ actor }) => actor);
+  let escaped = false;
+
+  for (const actor of actors) {
+    if (!actor.alive || escaped) continue;
+    if (!living(state.players).length || !living(state.enemies).length) break;
+    if (failureFromDebuff(actor, rng)) {
+      diagnostics.add('actionFailureFromDebuff', { actorId: actor.id, turn: state.turn });
+      const snapshot = playbackSnapshot(state);
+      recordFrame({
+        phase: 'action',
+        actorInstanceId: actor.instanceId,
+        actorSide: actor.side,
+        action: { kind: 'status_failure', actionId: '__status_failure__', skillId: null, name: '行動できない' },
+        primaryTargetInstanceId: null,
+        hits: 0,
+        criticals: 0,
+        damage: 0,
+        healing: 0,
+      }, snapshot, true);
+      continue;
+    }
+
+    let action;
+    let result = { damage: 0, hits: 0, criticals: 0, healing: 0 };
+    let playback = null;
+    if (actor.side === 'enemy') {
+      action = selectEnemyAction({ data, state, actor, rng, diagnostics });
+      if (action.fallback) next.fallbackAttacks += 1;
+      const usageId = action.type === 'normal' ? '__normal__' : action.skill.id;
+      next.actionUsage[usageId] = Number(next.actionUsage[usageId] ?? 0) + 1;
+      const beforeAction = playbackSnapshot(state);
+      result = action.type === 'monsterSkill'
+        ? executeMonsterSkill({ state, action, data, rng, diagnostics })
+        : executeNormalAttack(action, state, rng);
+      playback = playbackAction(action);
+      next.totalHits += Number(result.hits || 0);
+      next.totalCriticals += Number(result.criticals || 0);
+      recordFrame({
+        phase: 'action', actorInstanceId: actor.instanceId, actorSide: actor.side,
+        action: playback, primaryTargetInstanceId: action.target?.instanceId ?? null,
+        hits: Number(result.hits || 0), criticals: Number(result.criticals || 0),
+        damage: Number(result.damage || 0), healing: Number(result.healing || 0),
+      }, beforeAction, true);
+      continue;
+    }
+
+    const target = commandTarget(state, definition, command?.targetInstanceId);
+    const beforeAction = playbackSnapshot(state);
+    if (definition.kind === 'attack') {
+      action = { type: 'normal', actor, target, fallback: false };
+      result = executeNormalAttack(action, state, rng);
+      playback = playbackAction(action);
+      next.actionUsage.__normal__ = Number(next.actionUsage.__normal__ ?? 0) + 1;
+    } else if (definition.kind === 'skill') {
+      const skill = data.playerSkillById.get(definition.skillId);
+      action = { type: 'playerSkill', actor, target, skill, fallback: false };
+      result = executePlayerSkill({ state, action, rng, diagnostics });
+      playback = playbackAction(action);
+      next.actionUsage[skill.id] = Number(next.actionUsage[skill.id] ?? 0) + 1;
+    } else if (definition.kind === 'defend') {
+      actor.lastActionTag = 'defend';
+      actor.lastSkillId = '__defend__';
+      playback = { kind: 'defend', actionId: '__defend__', skillId: null, name: 'ぼうぎょ' };
+      next.actionUsage.__defend__ = Number(next.actionUsage.__defend__ ?? 0) + 1;
+    } else if (definition.kind === 'flee') {
+      escaped = rng.bool(interactiveFleeChance(state, actor));
+      actor.lastActionTag = 'flee';
+      actor.lastSkillId = '__flee__';
+      playback = { kind: 'flee', actionId: '__flee__', skillId: null, name: 'にげる' };
+      next.actionUsage.__flee__ = Number(next.actionUsage.__flee__ ?? 0) + 1;
+    }
+    next.totalHits += Number(result.hits || 0);
+    next.totalCriticals += Number(result.criticals || 0);
+    recordFrame({
+      phase: 'action', actorInstanceId: actor.instanceId, actorSide: actor.side,
+      action: playback, primaryTargetInstanceId: target?.instanceId ?? null,
+      hits: Number(result.hits || 0), criticals: Number(result.criticals || 0),
+      damage: Number(result.damage || 0), healing: Number(result.healing || 0),
+      ...(definition.kind === 'flee' ? { escapeSucceeded: escaped } : {}),
+    }, beforeAction, true);
+  }
+
+  if (!escaped) {
+    const beforeRoundEnd = playbackSnapshot(state);
+    endRound(state);
+    recordFrame({ phase: 'round_end', actorInstanceId: null, actorSide: null }, beforeRoundEnd);
+  }
+  if (escaped) next.winner = 'fled';
+  else if (!living(state.enemies).length) next.winner = 'players';
+  else if (!living(state.players).length) next.winner = 'enemies';
+  else if (state.turn >= next.maxTurns) next.winner = 'draw';
+  if (next.winner) next.status = 'finished';
+  next.diagnostics = diagnostics.snapshot();
+  next.lastRound = { round: state.turn, frames: roundFrames };
+  return {
+    ok: true,
+    session: next,
+    round: next.lastRound,
+    commands: next.status === 'active' ? listInteractiveBattleCommands({ data, session: next }) : [],
+    result: next.status === 'finished' ? interactiveResult(next) : null,
+  };
+}
+
 export function simulateBattle(options) {
   const { data } = options;
   if (!data) throw new Error('simulateBattle requires data');

@@ -1,6 +1,11 @@
 import crypto from "node:crypto";
 import * as journey from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 import {
+  beginInteractiveBattle,
+  listInteractiveBattleCommands,
+  resolveInteractiveBattleRound,
+} from "../../../../tools/trpg-sim/lib/battle-simulator.mjs";
+import {
   availableStockAt,
   buyEquipment,
   quoteEquipmentSale,
@@ -17,11 +22,58 @@ import { deserializeRuntime, serializeRuntime } from "./serializer.js";
 import { FileTrpgSaveStore } from "./save-store.js";
 import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
 
-export const TRPG_GAME_SCHEMA_VERSION = "1.1.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v4";
+export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v8";
 
 const PLAYABLE_PROFILE_ID = "balanced";
-const TUTORIAL_VERSION = "trpg-progressive-onboarding-v2";
+const TUTORIAL_VERSION = "trpg-progressive-onboarding-v4";
+
+const PUBLIC_FACILITY_COPY = Object.freeze({
+  LOC_FARM_FIELD: { type: "農地", description: "風に揺れる麦畑。畑仕事の様子と、村へ続く道を確かめられる。" },
+  LOC_FARM_SQUARE: { type: "広場", description: "村人が行き交い、掲示や日々の知らせが集まる田園の村の広場。" },
+  LOC_FARM_WELL: { type: "水場", description: "村人が水を汲みに訪れ、暮らしの変化が表れやすい共同井戸。" },
+  LOC_FARM_EDGE: { type: "村外れ", description: "家並みが途切れ、草に埋もれた道が村の外へ続いている。" },
+});
+
+const PUBLIC_TROUBLE_RUMOR_COPY = Object.freeze({
+  T01: "村の少年が戻らず、捜索が続いている",
+  T02: "共同穀倉の火の気と食料の扱いに不安が出ている",
+  T03: "村と森の境で狼による被害が増えている",
+  T04: "古代神殿へ向かった巡礼者と連絡が取れない",
+  T05: "交易都市の領主の周辺で不穏な動きがある",
+  T06: "交易都市の港で働く人々の不満が高まっている",
+  T07: "故郷を離れたエルフを狙う危険な人の動きがある",
+  T08: "森へ入る道の通行が厳しく制限されている",
+  T09: "ドワーフ洞窟で崩落が起きている",
+  T10: "王都の孤児院が立ち退きを迫られている",
+  T11: "王都の要人を狙う不穏な動きがある",
+  T12: "北陵要塞の周辺で正体の分からない襲撃が起きている",
+  T13: "森を流れる川の水量と魔力に異変がある",
+  T14: "犯罪都市から武器が不正に運ばれている",
+  T15: "交易都市へ外国の船団が近づいている",
+  T16: "王都で亜人への敵意と衝突が広がっている",
+  T17: "王都と古代神殿で大きな召喚儀式の準備が進んでいる",
+  T18: "古代神殿の地下で大型機械の封印が揺らいでいる",
+  T19: "黒嶺連合領と森の境で軍の動きが強まっている",
+});
+
+const PUBLIC_BELIEF_DETAIL_COPY = Object.freeze({
+  捜索: "村の少年を捜す動きが続いている",
+  食料: "食料の減り方に気になる動きがある",
+  川水量: "川の水量が普段と違う",
+  穀倉放火: "共同穀倉で火の気を疑う話がある",
+  狼被害: "村と森の境で狼による被害が出ている",
+});
+
+const HIDDEN_NPC_ROLE_PATTERN = /犯人|黒幕|放火犯|暗殺|密偵|間者|内通|裏切|偽装|首謀|共犯|工作員/u;
+
+const FARM_SQUARE_DISCOVERIES = Object.freeze([
+  "LOC_FARM_FIELD",
+  "LOC_FARM_SQUARE",
+  "LOC_FARM_INN",
+  "LOC_FARM_BAKERY",
+  "LOC_FARM_WELL",
+]);
 
 const OPENING_CLUES = Object.freeze({
   "inquiry:garo": {
@@ -47,7 +99,7 @@ const OPENING_AFTERMATH_FACT = Object.freeze({
 });
 
 const PROFILE_BY_ID = new Map(journey.PLAYER_PROFILES.map((profile) => [profile.id, profile]));
-const COMMAND_TYPES = new Set(["CHOOSE", "MOVE", "SHOP_BUY", "SHOP_SELL", "EQUIP", "UNEQUIP", "LEARN_SKILL", "TUTORIAL_ACK"]);
+const COMMAND_TYPES = new Set(["CHOOSE", "MOVE", "SHOP_BUY", "SHOP_SELL", "EQUIP", "UNEQUIP", "LEARN_SKILL", "TUTORIAL_ACK", "ACK_NPC_INTRODUCTION", "BATTLE_ACT"]);
 const COMMAND_PAYLOAD_KEY = Object.freeze({
   CHOOSE: "choiceId",
   MOVE: "moveId",
@@ -57,6 +109,7 @@ const COMMAND_PAYLOAD_KEY = Object.freeze({
   UNEQUIP: "slot",
   LEARN_SKILL: "skillId",
   TUTORIAL_ACK: "tutorialId",
+  ACK_NPC_INTRODUCTION: "token",
 });
 const PHASE_MINUTES = [0, 240, 480, 720];
 const PHASE_NAMES = ["morning", "afternoon", "evening", "night"];
@@ -94,6 +147,14 @@ function boundedPositiveInteger(value, fallback, maximum) {
 }
 
 function commandPayload(type, input) {
+  if (type === "BATTLE_ACT") {
+    const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
+    return {
+      battleId: cleanText(source.battleId, 120),
+      actionId: cleanText(source.actionId, 120),
+      targetInstanceId: cleanText(source.targetInstanceId, 120),
+    };
+  }
   const key = COMMAND_PAYLOAD_KEY[type];
   if (!key) return {};
   const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
@@ -269,6 +330,51 @@ function createTutorialState() {
   };
 }
 
+function createPlayerKnowledge() {
+  return {
+    knownNpcIds: new Set(),
+    knownFacilityIds: new Set(["LOC_FARM_FIELD"]),
+    knownHubIds: new Set(["田園の村"]),
+  };
+}
+
+function ensurePlayerKnowledge(runtime) {
+  runtime.playerKnowledge ??= createPlayerKnowledge();
+  runtime.playerKnowledge.knownNpcIds ??= new Set();
+  runtime.playerKnowledge.knownFacilityIds ??= new Set([runtime.playerState.player.facilityId].filter(Boolean));
+  runtime.playerKnowledge.knownHubIds ??= new Set([runtime.playerState.player.location].filter(Boolean));
+  return runtime.playerKnowledge;
+}
+
+function discoverNpc(runtime, npcId) {
+  if (npcId) ensurePlayerKnowledge(runtime).knownNpcIds.add(npcId);
+}
+
+function discoverFacility(runtime, facilityId) {
+  if (facilityId) ensurePlayerKnowledge(runtime).knownFacilityIds.add(facilityId);
+}
+
+function discoverArrival(runtime, data) {
+  const knowledge = ensurePlayerKnowledge(runtime);
+  const hubId = runtime.playerState.player.location;
+  const facilityId = runtime.playerState.player.facilityId;
+  if (hubId) knowledge.knownHubIds.add(hubId);
+  if (facilityId) knowledge.knownFacilityIds.add(facilityId);
+  if (facilityId === "LOC_FARM_SQUARE") {
+    FARM_SQUARE_DISCOVERIES.forEach((id) => knowledge.knownFacilityIds.add(id));
+    return;
+  }
+  // Entering a new town through its public arrival point exposes its signed,
+  // ordinary facilities. Secret/event-only locations remain mission-gated.
+  if (runtime.playerState.progress.travel.visitedHubs.has(hubId) && hubId !== "田園の村") {
+    for (const facility of data.model.facilitiesByHub[hubId] ?? []) {
+      if (!/隠|秘密|地下|処刑|牢|祭壇|封印|見張り小屋|裏路地/u.test(`${facility.name} ${facility.type}`)) {
+        knowledge.knownFacilityIds.add(facility.id);
+      }
+    }
+  }
+}
+
 function prepareOpeningTutorial(livingWorld, absoluteMinute = null) {
   const eda = livingWorld.npcStates.NPC004;
   if (!eda || ["dead", "missing", "departed"].includes(eda.lifeStatus)) return;
@@ -368,7 +474,7 @@ function openingChoiceActions(runtime) {
         "NPC003",
         "ガロ村長",
         8,
-        "ガロ村長に、捜索がどう終わったのか聞く",
+        "捜索記録を持つ年配の村人に、何が起きたのか聞く",
         "掲示板に残された捜索記録を読む",
       ),
       aftermathAction(
@@ -377,7 +483,7 @@ function openingChoiceActions(runtime) {
         "NPC002",
         "ミラ",
         10,
-        "ミラのそばに座り、語り始めるまで待つ",
+        "古い地図を握る女性のそばに座り、語り始めるまで待つ",
         "広場に残る捜索隊の荷物を確かめる",
       ),
       aftermathAction(
@@ -386,7 +492,7 @@ function openingChoiceActions(runtime) {
         "NPC062",
         "コビー",
         9,
-        "俯くコビーに、何があったのか静かに尋ねる",
+        "広場の端で俯く少年に、何があったのか静かに尋ねる",
         "村外れから戻った足跡と傷ついた装備を見る",
       ),
     ]);
@@ -397,42 +503,91 @@ function openingChoiceActions(runtime) {
 function dialogueFollowupActions(runtime) {
   const session = runtime.dialogueSession;
   if (!session || runtime.tutorial?.stage && runtime.tutorial.stage !== "free") return null;
-  if (runtime.playerState.absoluteMinute - Number(session.openedAtMinute ?? -Infinity) > 30) return null;
+  if (runtime.playerState.absoluteMinute
+    - Number(session.lastInteractionAtMinute ?? session.openedAtMinute ?? -Infinity) > 30) return null;
   if (session.facilityId !== runtime.playerState.player.facilityId || session.location !== runtime.playerState.player.location) return null;
   const presentIds = runtime.playerState.authoritativePresentNpcIds;
   if (!(presentIds instanceof Set) || !presentIds.has(session.npcId)) return null;
-  return withChoiceIds([
-    {
-      id: `DIALOGUE:${session.npcId}:CONCERN`,
-      type: "conversation",
-      dialogueFollowup: true,
-      dialogueTopic: "local_concern",
-      targetNpcId: session.npcId,
-      targetNpcName: session.npcName,
+  const state = runtime.playerState;
+  const definitions = [...state.catalog.special, ...state.catalog.permanent];
+  const activeMission = definitions.find((definition) => ["active", "available", "in_progress"].includes(state.missions[definition.id]?.status)
+    && (definition.kind !== "special" || state.rumors.some((rumor) => rumor.troubleId === definition.troubleId && state.player.knownRumorIds.has(rumor.id))));
+  const activeRuntime = activeMission ? state.missions[activeMission.id] : null;
+  const activeStep = activeMission?.steps?.find((step) => Number(activeRuntime?.progress?.[step.id] ?? 0) < Number(step.required ?? 1));
+  const facility = runtime.livingWorld.model?.facilityById?.[state.player.facilityId];
+  const asked = session.askedTopics instanceof Set ? session.askedTopics : new Set(session.askedTopics ?? []);
+  const topics = [
+    activeMission ? {
+      id: "active_mission",
+      label: `「${activeMission.title}」について、${activeStep?.label ?? "次にすべきこと"}を詳しく聞く`,
+      minutes: 9,
+    } : null,
+    activeStep?.targetFacilityId ? {
+      id: "route_to_lead",
+      label: `${activeStep.targetFacilityId === state.player.facilityId ? "この場所" : "手掛かりのある場所"}へ向かう道と危険を聞く`,
       minutes: 7,
-      label: `${session.npcName}に、この辺りで困っていることを尋ねる`,
-    },
+    } : null,
     {
-      id: `DIALOGUE:${session.npcId}:RUMOR`,
-      type: "conversation",
-      dialogueFollowup: true,
-      dialogueTopic: "local_rumor",
-      targetNpcId: session.npcId,
-      targetNpcName: session.npcName,
+      id: "local_concern",
+      label: `${facility?.name ?? "この辺り"}で、今いちばん困っていることを聞く`,
       minutes: 8,
-      label: `${session.npcName}に、最近耳にした噂がないか尋ねる`,
     },
     {
-      id: `DIALOGUE:${session.npcId}:END`,
+      id: "local_change",
+      label: `${facility?.name ?? "この場所"}で、普段と違う人や物を見なかったか尋ねる`,
+      minutes: 8,
+    },
+    {
+      id: "personal_stake",
+      label: `${session.npcName}がこの問題を気にかける理由を尋ねる`,
+      minutes: 7,
+    },
+    session.lastDisclosedRumorId && state.player.knownRumorIds.has(session.lastDisclosedRumorId) ? {
+      id: "local_rumor",
+      label: "今聞いた話を、いつ、どこで知ったのか確かめる",
+      minutes: 8,
+    } : null,
+    state.player.gold < 20 ? {
+      id: "work_offer",
+      label: `自分に手伝える仕事がないか、具体的に相談する`,
+      minutes: 6,
+    } : null,
+  ].filter(Boolean).filter((topic) => !asked.has(topic.id));
+  const offset = Number(session.turnCount ?? 0) % Math.max(1, topics.length);
+  const rotated = topics.length ? [...topics.slice(offset), ...topics.slice(0, offset)] : [];
+  const questions = rotated.slice(0, 2).map((topic) => ({
+    id: `DIALOGUE:${session.npcId}:${Number(session.turnCount ?? 0) + 1}:${topic.id}`,
+    type: "conversation",
+    dialogueFollowup: true,
+    dialogueTopic: topic.id,
+    targetNpcId: session.npcId,
+    targetNpcName: session.npcName,
+    minutes: topic.minutes,
+    label: topic.label,
+  }));
+  while (questions.length < 2) {
+    const id = `clarify_${questions.length + 1}`;
+    questions.push({
+      id: `DIALOGUE:${session.npcId}:${Number(session.turnCount ?? 0) + 1}:${id}`,
       type: "conversation",
       dialogueFollowup: true,
-      dialogueTopic: "end_conversation",
+      dialogueTopic: id,
       targetNpcId: session.npcId,
       targetNpcName: session.npcName,
-      minutes: 2,
-      label: `${session.npcName}に礼を言い、会話を終える`,
-    },
-  ]);
+      minutes: 6,
+      label: questions.length ? "今の話で、まだ曖昧な点を一つ確かめる" : "その話を、最初から順に説明してもらう",
+    });
+  }
+  return withChoiceIds([...questions, {
+    id: `DIALOGUE:${session.npcId}:${Number(session.turnCount ?? 0) + 1}:END`,
+    type: "conversation",
+    dialogueFollowup: true,
+    dialogueTopic: "end_conversation",
+    targetNpcId: session.npcId,
+    targetNpcName: session.npcName,
+    minutes: 2,
+    label: `${session.npcName}に礼を言い、次の行動へ移る`,
+  }]);
 }
 
 function worldTicksThrough(targetMinute) {
@@ -634,6 +789,9 @@ export function createGameRuntime(data, { seed, profileId, playerName, tutorial 
     livingWorld,
     lastWorldTickMinute: -1,
     playerInterventions: new Set(),
+    playerKnowledge: createPlayerKnowledge(),
+    pendingBattle: null,
+    pendingNpcIntroduction: null,
     tutorial: tutorial ? createTutorialState() : null,
     dialogueSession: null,
   };
@@ -652,6 +810,9 @@ function hydrateRuntime(record, data) {
   const runtime = deserializeRuntime(record.runtimeSnapshot, data);
   applyGameplayCatalogOverrides(runtime.playerState.catalog);
   runtime.playerInterventions ??= new Set();
+  ensurePlayerKnowledge(runtime);
+  runtime.pendingBattle ??= null;
+  runtime.pendingNpcIntroduction ??= null;
   syncAuthoritativePresentNpcIds(runtime, data);
   return runtime;
 }
@@ -666,29 +827,174 @@ function choiceIntent(action) {
   if (["missionBattle", "seekBattle"].includes(action.type)) return "prepare";
   if (action.type === "resolveMission") return "help";
   if (action.type === "rest") return "wait";
+  if (action.type === "wait") return "wait";
+  if (action.type === "localInvestigate") return "investigate";
+  if (action.type === "plan") return "prepare";
   if (action.type === "work") return "help";
   return "observe";
 }
 
+function contextualLocalAction(action, runtime, data) {
+  const facility = data.model.facilityById[runtime.playerState.player.facilityId];
+  const facilityId = facility?.id ?? "UNKNOWN";
+  const publicNpc = presentNpcsAt(runtime, data)[0] ?? null;
+  if (action.type === "conversation" && action.targetNpcId) {
+    const target = presentNpcsAt(runtime, data).find((npc) => npc.id === action.targetNpcId);
+    return target ? {
+      ...action,
+      targetNpcName: target.name,
+      label: action.missionId ? action.label : `${target.name}に話しかける`,
+    } : action;
+  }
+  if (action.type === "work") {
+    const label = {
+      LOC_FARM_FIELD: "エダに、畑仕事を手伝えるか尋ねる",
+      LOC_FARM_SQUARE: "荷運びの仕事を探し、村の世話役に声をかける",
+      LOC_FARM_INN: "麦穂亭で、皿洗いの仕事を申し出る",
+      LOC_FARM_BAKERY: "パン屋で、薪運びの仕事を申し出る",
+      LOC_FARM_WELL: "水桶を運ぶ手伝いを申し出る",
+    }[facilityId] ?? `${facility?.name ?? runtime.playerState.player.location}で、短い仕事を探す`;
+    return { ...action, id: `WORK:${facilityId}`, label, sceneActorNpcId: publicNpc?.id ?? null };
+  }
+  if (action.type === "wait" || (action.type === "observe" && String(action.id).startsWith("WAIT-"))) {
+    const label = publicNpc
+      ? `${publicNpc.name}の様子を見ながら、話せる機会を待つ`
+      : `${facility?.name ?? "この場所"}で、人の出入りが変わるまで待つ`;
+    return { ...action, id: `WAIT:${facilityId}:${action.id}`, type: "wait", label, sceneActorNpcId: publicNpc?.id ?? null };
+  }
+  if (action.type === "observe") {
+    const localVariant = runtime.playerState.history.filter((entry) => entry.type === "PLAYER_ACTION_RESOLVED"
+      && String(entry.actionId ?? "").startsWith(`INSPECT:${facilityId}:`)).length % 3;
+    const labels = {
+      LOC_FARM_FIELD: [
+        "倒れた麦と、土に残る不自然な跡を調べる",
+        "畑の縁を歩き、出入りした足跡を見分ける",
+        "麦の傷み方から、何が上を通ったのか考える",
+      ],
+      LOC_FARM_SQUARE: [
+        "掲示板の新しい紙と、剥がされた跡を調べる",
+        "荷車の行き先を見比べ、品物の流れを追う",
+        "立ち話に耳を澄まし、同じ話の食い違いを探す",
+      ],
+      LOC_FARM_INN: [
+        "客席の泥と置き忘れから、旅人の動きを探る",
+        "宿帳の公開欄を見て、昨夜の出入りを確かめる",
+        "食堂で繰り返される噂の、最初の話し手を探す",
+      ],
+      LOC_FARM_BAKERY: [
+        "棚の品数と値札から、食料事情を確かめる",
+        "粉袋の減り方と納品札を見比べる",
+        "保存パンを買った人と、その行き先を尋ねる",
+      ],
+      LOC_FARM_WELL: [
+        "井戸縄の擦れと水位を、手で確かめる",
+        "汲み上げた水の色と、桶に残る沈殿を比べる",
+        "水汲みの列を見て、普段より増えた家を探す",
+      ],
+      LOC_FARM_GRANARY: [
+        "穀袋の積み方と床の痕跡を調べる",
+        "帳簿の入庫数と、実際の袋の数を照合する",
+        "扉と灯りの油に、誰かが触れた跡を探す",
+      ],
+      LOC_FARM_EDGE: [
+        "道に残る足跡と、折れた草の向きを追う",
+        "獣の爪痕と小さな靴跡が重なる地点を探す",
+        "見張り小屋へ続く道で、落とし物を探す",
+      ],
+    }[facilityId] ?? [
+      `${facility?.name ?? "現在地"}で、目につく変化を一つずつ調べる`,
+      `${facility?.name ?? "現在地"}を使う人と物の流れを追う`,
+      `${facility?.name ?? "現在地"}で、普段と違う痕跡を探す`,
+    ];
+    return {
+      ...action,
+      id: `INSPECT:${facilityId}:${localVariant + 1}`,
+      type: "localInvestigate",
+      label: labels[localVariant],
+      localVariant,
+      sceneActorNpcId: publicNpc?.id ?? null,
+    };
+  }
+  return action;
+}
+
+function authoritativeMissionConversationAction(action, runtime, data) {
+  if (action.type !== "conversation" || !action.missionId) return action;
+  const definition = [...runtime.playerState.catalog.special, ...runtime.playerState.catalog.permanent]
+    .find((entry) => entry.id === action.missionId);
+  if (!definition?.troubleId) return null;
+  const candidates = [];
+  for (const publicView of presentNpcsAt(runtime, data).sort((left, right) => left.id.localeCompare(right.id))) {
+    const npc = data.model.npcById?.[publicView.id]
+      ?? data.model.npcs.find((entry) => entry.id === publicView.id);
+    const npcState = runtime.livingWorld.npcStates[publicView.id];
+    if (!npcState || !npcCanDiscloseBeliefs(npc)) continue;
+    for (const belief of Object.values(npcState.beliefs ?? {})) {
+      if (!belief?.factId
+        || belief.secret === true
+        || !["fact", "trouble"].includes(belief.kind ?? "fact")
+        || Number(belief.importance ?? 0) < 0.2
+        || beliefTroubleId(belief) !== definition.troubleId
+        || !beliefSpokenFact(belief)) continue;
+      candidates.push({ publicView, belief });
+    }
+  }
+  candidates.sort((left, right) => Number(right.belief.importance ?? 0) - Number(left.belief.importance ?? 0)
+    || Number(right.belief.learnedAt ?? -1) - Number(left.belief.learnedAt ?? -1)
+    || left.publicView.id.localeCompare(right.publicView.id)
+    || String(left.belief.factId).localeCompare(String(right.belief.factId)));
+  const selected = candidates[0];
+  if (!selected) return null;
+  return {
+    ...action,
+    targetNpcId: selected.publicView.id,
+    targetNpcName: selected.publicView.name,
+    dialogueTopic: "mission_clue",
+    missionTroubleId: definition.troubleId,
+    missionBeliefFactId: selected.belief.factId,
+    missionTitle: definition.title,
+    deferMissionConversationCompletion: true,
+    label: `${selected.publicView.name}に「${definition.title}」の手掛かりを聞く`,
+  };
+}
+
 function choiceActions(runtime, data) {
+  if (runtime.pendingBattle?.session?.status === "active") return [];
   if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
   syncAuthoritativePresentNpcIds(runtime, data);
   const authored = openingChoiceActions(runtime);
   if (authored) return authored;
+  if (runtime.tutorial && ["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) return [];
   const followup = dialogueFollowupActions(runtime);
   if (followup) return followup;
+  const authorizedMissionActions = new Map();
   const generated = journey.generateChoiceActions(
     runtime.playerState,
     data.model,
     data.battleData,
     runtime.playerState.catalog,
     profileFor(runtime.playerState.profileId),
-  );
+    {
+      candidateFilter(action) {
+        if (action.type !== "conversation" || !action.missionId) return true;
+        const authorized = authoritativeMissionConversationAction(action, runtime, data);
+        if (!authorized) return false;
+        authorizedMissionActions.set(action.id, authorized);
+        return true;
+      },
+    },
+  ).map((action) => contextualLocalAction(
+    authorizedMissionActions.has(action.id)
+      ? { ...authorizedMissionActions.get(action.id), choiceId: action.choiceId }
+      : action,
+    runtime,
+    data,
+  ));
   const fillers = [
     { id: "TUTORIAL:PAUSE:OBSERVE", type: "observe", minutes: 20, label: "今いる場所の様子を、もう少し確かめる" },
-    { id: "TUTORIAL:PAUSE:BREATHE", type: "observe", minutes: 12, label: "深呼吸して、分かったことを整理する" },
-    { id: "TUTORIAL:PAUSE:WAIT", type: "observe", minutes: 15, label: "人の流れを眺めながら少し待つ" },
-  ];
+    { id: "TUTORIAL:PAUSE:PLAN", type: "plan", minutes: 12, label: "知っている噂と目的を照らし合わせ、次の一手を決める" },
+    { id: "TUTORIAL:PAUSE:WAIT", type: "wait", minutes: 15, label: "人の流れを眺めながら少し待つ" },
+  ].map((action) => contextualLocalAction(action, runtime, data));
   if (!runtime.tutorial) return generated;
   if (runtime.tutorial.stage === "free") {
     const needsSkillPrimer = runtime.playerState.player.skills.size === 0;
@@ -702,11 +1008,121 @@ function choiceActions(runtime, data) {
 }
 
 function movementActions(runtime, data) {
+  if (runtime.pendingBattle?.session?.status === "active") return [];
   if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
-  const actions = journey.availableMovementActions(runtime.playerState, data.model);
+  const knowledge = ensurePlayerKnowledge(runtime);
+  for (const rumor of runtime.playerState.rumors ?? []) {
+    if (runtime.playerState.player.knownRumorIds.has(rumor.id) && rumor.origin) knowledge.knownHubIds.add(rumor.origin);
+  }
+  for (const definition of [...runtime.playerState.catalog.special, ...runtime.playerState.catalog.permanent]) {
+    const missionRuntime = runtime.playerState.missions[definition.id];
+    if (!missionRuntime || !["active", "available", "in_progress"].includes(missionRuntime.status)) continue;
+    if (definition.kind === "special") {
+      const known = runtime.playerState.rumors.some((rumor) => rumor.troubleId === definition.troubleId
+        && runtime.playerState.player.knownRumorIds.has(rumor.id));
+      if (!known) continue;
+    }
+    const step = definition.steps?.find((entry) => Number(missionRuntime.progress?.[entry.id] ?? 0) < Number(entry.required ?? 1));
+    if (step?.targetLocation) knowledge.knownHubIds.add(step.targetLocation);
+    if (step?.targetFacilityId) knowledge.knownFacilityIds.add(step.targetFacilityId);
+  }
+  const actions = journey.availableMovementActions(runtime.playerState, data.model)
+    .filter((action) => action.movementScope === "local"
+      ? knowledge.knownFacilityIds.has(action.destinationFacilityId)
+      : knowledge.knownHubIds.has(action.destinationHub));
   if (!runtime.tutorial || runtime.tutorial.stage === "free") return actions;
   if (!["movement", "mission_intro", "movement_aftermath", "aftermath_intro"].includes(runtime.tutorial.stage)) return [];
+  if (["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) {
+    return actions
+      .filter((action) => action.movementScope === "local" && action.destinationFacilityId === "LOC_FARM_SQUARE")
+      .map((action) => ({ ...action, label: runtime.tutorial.stage === "movement" ? "エダについて村の広場へ向かう" : "村の広場へ向かう" }));
+  }
   return actions.filter((action) => action.movementScope === "local");
+}
+
+function publicBeliefDetail(belief) {
+  return String(belief?.text ?? "")
+    .replace(/^T\d{2}[_：:\s-]*/u, "")
+    .replaceAll("_", "・")
+    .trim();
+}
+
+function beliefTroubleId(belief) {
+  return belief?.troubleId
+    ?? belief?.troubleIds?.[0]
+    ?? String(belief?.text ?? "").match(/^(T\d{2})[_：:\s-]/u)?.[1]
+    ?? null;
+}
+
+function npcCanDiscloseBeliefs(npc) {
+  return Boolean(npc
+    && npc.disposition !== "escalate"
+    && !HIDDEN_NPC_ROLE_PATTERN.test(String(npc.occupation ?? "")));
+}
+
+function beliefSpokenFact(belief) {
+  const troubleId = beliefTroubleId(belief);
+  const publicTrouble = PUBLIC_TROUBLE_RUMOR_COPY[troubleId];
+  const detail = publicBeliefDetail(belief);
+  const reviewedDetail = PUBLIC_BELIEF_DETAIL_COPY[detail];
+  const naturalDetail = detail.length >= 8
+    && /[ぁ-んァ-ヶ一-龠々]/u.test(detail)
+    && /[はがをにでとへ]/u.test(detail)
+    && !/[A-Za-z][A-Za-z0-9_-]{2,}/u.test(detail)
+    ? detail.replace(/[。．.!！?？]+$/gu, "")
+    : null;
+  if (publicTrouble) {
+    const status = {
+      critical: "事態が差し迫っている",
+      failed: "すでに被害が出ている",
+      resolved: "状況が変わり、ひとまず落ち着いている",
+    }[belief?.troubleStatus];
+    const base = reviewedDetail ?? naturalDetail ?? publicTrouble;
+    return status ? `${base}。${status}` : base;
+  }
+  if (!detail || !/[ぁ-んァ-ヶ一-龠々]/u.test(detail) || /[A-Za-z][A-Za-z0-9_-]{2,}/u.test(detail)) return null;
+  if (belief?.kind === "misconception") return `${detail}という見方もあるが、まだ確かめられていない`;
+  return detail.replace(/[。．.!！?？]+$/gu, "");
+}
+
+function beliefPublicProvenance(belief) {
+  const hopCount = Number(belief?.hopCount ?? 0);
+  const pathLength = Array.isArray(belief?.path) ? belief.path.length : 0;
+  if (hopCount > 0 || pathLength > 1) return "何人かの話し手を経て、ここまで届いたものだ";
+  if (belief?.sourceNpcId) return "別の人から直接聞いたものだ";
+  if (belief?.sourceType === "sheet") return "以前から自分で気に掛け、見聞きしてきたことだ";
+  if (Number.isFinite(Number(belief?.learnedAt)) && Number(belief.learnedAt) >= 0) return "その時に自分で見聞きしたことだ";
+  return "自分で確かめられた範囲の話だ";
+}
+
+function dialogueTopicBeliefScore(topic, belief) {
+  const detail = publicBeliefDetail(belief);
+  const status = String(belief?.troubleStatus ?? "");
+  if (topic === "mission_clue") return beliefTroubleId(belief) ? 10 : 0;
+  if (topic === "local_concern") {
+    const concernWords = /困|不足|食料|水量|捜索|被害|失踪|危険|襲|病|負傷|死亡|争|火事|放火|盗|崩|枯|汚|異変|問題|助け|救|警戒/u;
+    return (concernWords.test(detail) ? 6 : 0)
+      + (belief?.kind === "trouble" ? 3 : 0)
+      + (/active|critical|failed/u.test(status) ? 2 : 0);
+  }
+  if (topic === "local_change") {
+    const changeWords = /変|水量|増|減|消|現れ|目撃|最近|昨日|今朝|崩|枯|濁|なくな|戻ら|倒|起き|発生|移った|壊/u;
+    return (changeWords.test(detail) ? 6 : 0)
+      + (/critical|failed|resolved/u.test(status) ? 2 : 0);
+  }
+  if (topic === "local_rumor") {
+    const provenance = belief?.sourceNpcId || belief?.sourceType || belief?.path || Number.isFinite(Number(belief?.hopCount));
+    return 3 + (provenance ? 2 : 0);
+  }
+  return 0;
+}
+
+function localBeliefScore(runtime, data, belief) {
+  const troubleId = beliefTroubleId(belief);
+  const trouble = troubleId ? data.model.troubleById[troubleId] : null;
+  if (trouble?.primaryLocations?.includes(runtime.playerState.player.location)) return 2;
+  const beliefLocation = belief?.location ?? belief?.origin ?? belief?.hubId ?? null;
+  return beliefLocation === runtime.playerState.player.location ? 2 : beliefLocation ? 0 : 1;
 }
 
 function learnLocalLivingRumors(runtime, data, action, limit) {
@@ -718,6 +1134,21 @@ function learnLocalLivingRumors(runtime, data, action, limit) {
     ? runtime.livingWorld.npcStates[action.targetNpcId]
     : null;
   const sourceNpc = sourceNpcState ? data.model.npcById?.[action.targetNpcId] ?? data.model.npcs.find((npc) => npc.id === action.targetNpcId) : null;
+  if (sourceNpcState) {
+    const presentIds = runtime.playerState.authoritativePresentNpcIds;
+    if (!(presentIds instanceof Set) || !presentIds.has(action.targetNpcId) || !npcCanDiscloseBeliefs(sourceNpc)) return [];
+  }
+  if (sourceNpcState && action?.dialogueTopic === "local_rumor") {
+    const rumorId = runtime.dialogueSession?.lastDisclosedRumorId ?? null;
+    const rumor = rumorId ? state.rumorById?.[rumorId] : null;
+    if (rumor?.sourceNpcId === action.targetNpcId && rumor.spokenFact) {
+      action.requiredDisclosure = `${rumor.spokenFact}という話は、${rumor.provenanceText ?? "自分で確かめられた範囲の話だ"}`;
+      action.disclosedRumorId = rumor.id;
+    }
+    return [];
+  }
+  const disclosureTopics = new Set(["local_concern", "local_change", "mission_clue"]);
+  if (sourceNpcState && !disclosureTopics.has(action?.dialogueTopic)) return [];
   const currentHour = state.absoluteMinute / 60;
   const sourceBeliefs = sourceNpcState
     ? Object.values(sourceNpcState.beliefs ?? {})
@@ -726,36 +1157,90 @@ function learnLocalLivingRumors(runtime, data, action, limit) {
         .filter((entry) => Number(entry?.propagationAt ?? entry?.belief?.propagationAt ?? 0) <= currentHour)
         .map((entry) => entry?.belief ?? entry)
       : [];
+  const minimumImportance = sourceNpcState ? 0.2 : 0.55;
+  const missionTroubleIds = new Set([...state.catalog.special, ...state.catalog.permanent]
+    .filter((definition) => ["active", "available", "in_progress"].includes(state.missions[definition.id]?.status))
+    .map((definition) => definition.troubleId)
+    .filter(Boolean));
   const candidates = sourceBeliefs
-    .filter((belief) => belief?.factId && belief.secret !== true && Number(belief.importance ?? 0) >= 0.55)
-    .filter((belief) => !state.player.knownRumorIds.has(`RUM-LIVING-${belief.factId}`))
-    .sort((left, right) => Number(right.importance ?? 0) - Number(left.importance ?? 0)
-      || String(left.factId).localeCompare(String(right.factId)))
+    .filter((belief) => belief?.factId
+      && belief.secret !== true
+      && ["fact", "trouble", "misconception"].includes(belief.kind ?? "fact")
+      && Number(belief.importance ?? 0) >= minimumImportance)
+    .filter((belief) => Boolean(beliefSpokenFact(belief)))
+    .filter((belief) => action?.dialogueTopic !== "mission_clue"
+      || (belief.factId === action.missionBeliefFactId
+        && beliefTroubleId(belief) === action.missionTroubleId))
+    .filter((belief) => action?.dialogueTopic === "mission_clue"
+      || !state.player.knownRumorIds.has(`RUM-LIVING-${belief.factId}`))
+    .filter((belief) => !sourceNpcState || dialogueTopicBeliefScore(action.dialogueTopic, belief) > 0)
+    .sort((left, right) => {
+      const leftTrouble = beliefTroubleId(left);
+      const rightTrouble = beliefTroubleId(right);
+      const leftMissionScore = missionTroubleIds.has(leftTrouble) ? 1 : 0;
+      const rightMissionScore = missionTroubleIds.has(rightTrouble) ? 1 : 0;
+      const recency = action?.dialogueTopic === "local_change"
+        ? Number(right.learnedAt ?? -1) - Number(left.learnedAt ?? -1)
+        : 0;
+      return (sourceNpcState ? dialogueTopicBeliefScore(action.dialogueTopic, right) - dialogueTopicBeliefScore(action.dialogueTopic, left) : 0)
+        || localBeliefScore(runtime, data, right) - localBeliefScore(runtime, data, left)
+        || rightMissionScore - leftMissionScore
+        || recency
+        || Number(right.importance ?? 0) - Number(left.importance ?? 0)
+        || String(left.factId).localeCompare(String(right.factId));
+    })
     .slice(0, limit);
   const learned = [];
   for (const belief of candidates) {
     const id = `RUM-LIVING-${belief.factId}`;
-    const trouble = belief.troubleId ? data.model.troubleById[belief.troubleId] : null;
+    const troubleId = beliefTroubleId(belief);
+    const trouble = troubleId ? data.model.troubleById[troubleId] : null;
+    const detail = publicBeliefDetail(belief);
+    const spokenFact = beliefSpokenFact(belief);
+    if (state.player.knownRumorIds.has(id)) {
+      if (sourceNpcState && spokenFact && !action.requiredDisclosure) {
+        action.requiredDisclosure = spokenFact;
+        action.disclosedRumorId = id;
+      }
+      continue;
+    }
     const statusText = belief.troubleStatus === "critical" ? "危機が差し迫っている"
       : belief.troubleStatus === "failed" ? "被害が発生した"
         : belief.troubleStatus === "resolved" ? "状況が変わった"
           : "異変が起きている";
     const rumor = {
       id,
-      troubleId: belief.troubleId ?? null,
-      text: trouble ? `${trouble.name}について、${statusText}という噂を聞いた。` : String(belief.text ?? "現地で気になる噂を聞いた。"),
+      troubleId,
+      text: (() => {
+        if (belief.kind === "misconception") return `${spokenFact || detail || "確かでない話"}という、未確認の話を聞いた。`;
+        if (spokenFact) return `${spokenFact}と聞いた。`;
+        if (trouble) return `この土地の異変について、${statusText}という噂を聞いた。`;
+        return detail || "現地で気になる噂を聞いた。";
+      })(),
       origin: state.player.location,
       originMinute: Math.max(0, Math.round(Number(belief.learnedAt ?? state.absoluteMinute / 60) * 60)),
       importance: Number(belief.importance ?? 0.6),
       playerOriginated: false,
       sourceNpcId: sourceNpcState?.id ?? null,
       sourceNpcName: sourceNpc?.name ?? null,
+      sourceNpcAnonymousLabel: sourceNpcState
+        ? action?.speakerLabelBeforeIntroduction ?? "その人物"
+        : null,
       sourceType: sourceNpcState ? "npc-conversation" : "local-observation",
+      spokenFact,
+      provenanceText: beliefPublicProvenance(belief),
       recipients: {},
     };
     state.rumors.push(rumor);
     state.rumorById[id] = rumor;
     state.player.knownRumorIds.add(id);
+    if (sourceNpcState && spokenFact && !action.requiredDisclosure) {
+      // A conversation may grant knowledge only when the exact fact is also
+      // required in the on-screen reply. The Gemini contract and the service
+      // presentation guard both enforce this boundary.
+      action.requiredDisclosure = spokenFact;
+      action.disclosedRumorId = id;
+    }
     state.history.push({
       type: "RUMOR_LEARNED_LOCAL",
       minute: state.absoluteMinute,
@@ -776,20 +1261,20 @@ function tutorialBeatSummary(beat) {
     "awake:body": "体に大きな怪我はない。だが、服にも記憶にも、この麦畑へ来た手掛かりはなかった。",
     "awake:listen": "風に鳴る麦の向こうから、鐘と人の暮らしの音が聞こえた。",
     "awake:ground": "倒れた麦は自分を中心に広がっている。ここまで歩いて来た足跡は見つからなかった。",
-    "contact:where": "ここが田園の村の麦畑で、目の前の女性がエダだと分かった。",
-    "contact:memory": "見知らぬ世界から来たという話を、エダは笑わずに受け止めた。",
-    "contact:who": "女性はエダと名乗り、こちらを警戒するより先に体調を気遣った。",
+    "contact:where": "ここが田園の村の麦畑で、目の前の女性が村人だと分かった。",
+    "contact:memory": "見知らぬ世界から来たという話を、女性は笑わずに受け止めた。",
+    "contact:who": "女性はこちらを警戒するより先に体調を気遣い、自分のことを話し始めた。",
     "orient:voices": "村の広場で誰かを捜しているらしい。詳しい事情は、まだ分からない。",
     "orient:found": "麦畑の中に倒れていて、周囲には歩いて来た跡がなかったと聞いた。",
     "orient:help": "エダが一食と今夜の寝床を世話してくれることになった。",
     "movement:square": "移動を使って村の広場へ着いた。人だかりの中心で、切迫した呼び声が聞こえる。",
     "movement:aftermath": "村の広場へ着いた時には捜索が終わっていた。選ばなかった時間にも、世界は先へ進んでいた。",
-    "inquiry:garo": "ガロ村長から、フィンの捜索範囲と期限を聞いた。",
-    "inquiry:mira": "ミラから、息子フィンが地図を持って姿を消したと聞いた。",
-    "inquiry:coby": "コビーから、フィンが古い見張り小屋へ行きたがっていたと聞いた。",
-    "aftermath:garo": "ガロ村長から、捜索が間に合わずフィンを救えなかった経緯を聞いた。",
-    "aftermath:mira": "ミラの沈黙と広場の空気から、取り返せない結末が訪れたことを知った。",
-    "aftermath:coby": "コビーから、フィンを止められなかった後悔と捜索の結末を聞いた。",
+    "inquiry:garo": "年配の村人から、フィンの捜索範囲と期限を聞いた。",
+    "inquiry:mira": "取り乱した女性から、息子フィンが地図を持って姿を消したと聞いた。",
+    "inquiry:coby": "落ち着かない少年から、フィンが古い見張り小屋へ行きたがっていたと聞いた。",
+    "aftermath:garo": "年配の村人から、捜索が間に合わずフィンを救えなかった経緯を聞いた。",
+    "aftermath:mira": "女性の沈黙と広場の空気から、取り返せない結末が訪れたことを知った。",
+    "aftermath:coby": "落ち着かない少年から、フィンを止められなかった後悔と捜索の結末を聞いた。",
   };
   return summaries[beat] ?? "選んだ行動から、新しいことが分かった。";
 }
@@ -806,10 +1291,13 @@ function progressTutorial(runtime, action, result) {
     placeOpeningGuide(runtime.livingWorld, runtime.playerState.absoluteMinute);
   } else if (tutorial.stage === "first_contact" && beat?.startsWith("contact:")) {
     tutorial.firstReply = action.id;
+    if (beat === "contact:where") ensurePlayerKnowledge(runtime).knownHubIds.add("王都");
     tutorial.stage = "orientation";
     tutorial.lastBeat = beat;
   } else if (tutorial.stage === "orientation" && beat?.startsWith("orient:")) {
     tutorial.orientationChoice = action.id;
+    discoverFacility(runtime, "LOC_FARM_SQUARE");
+    if (beat === "orient:help") discoverFacility(runtime, "LOC_FARM_INN");
     tutorial.stage = "movement";
     tutorial.lastBeat = beat;
   } else if (tutorial.stage === "movement" && action?.destinationFacilityId === "LOC_FARM_SQUARE") {
@@ -822,6 +1310,7 @@ function progressTutorial(runtime, action, result) {
     placeOpeningAftermathCast(runtime.livingWorld, runtime.playerState.absoluteMinute);
   } else if (tutorial.stage === "mission_intro" && beat?.startsWith("inquiry:")) {
     tutorial.inquirySource = action.id;
+    discoverFacility(runtime, "LOC_FARM_EDGE");
     const clue = OPENING_CLUES[beat];
     if (clue) {
       tutorial.openingFacts.add(clue.id);
@@ -888,16 +1377,45 @@ function stabilizeOpeningTutorialCast(runtime) {
 function updateDialogueSession(runtime, action) {
   if (!action) return;
   if (action.dialogueFollowup) {
-    runtime.dialogueSession = null;
+    const session = runtime.dialogueSession;
+    if (!session || session.npcId !== action.targetNpcId) {
+      runtime.dialogueSession = null;
+      return;
+    }
+    const askedTopics = session.askedTopics instanceof Set
+      ? session.askedTopics
+      : new Set(session.askedTopics ?? []);
+    action.conversationTurn = Number(session.turnCount ?? 1) + 1;
+    action.previouslyAskedTopics = [...askedTopics];
+    if (action.dialogueTopic === "end_conversation") {
+      runtime.dialogueSession = null;
+      return;
+    }
+    if (action.dialogueTopic) askedTopics.add(action.dialogueTopic);
+    session.askedTopics = askedTopics;
+    if (action.disclosedRumorId) session.lastDisclosedRumorId = action.disclosedRumorId;
+    session.turnCount = action.conversationTurn;
+    session.lastInteractionAtMinute = runtime.playerState.absoluteMinute;
+    session.lastPlayerActionLabel = action.label ?? null;
     return;
   }
-  if (action.type === "conversation" && action.targetNpcId && !action.missionId && !action.tutorialBeat) {
+  if (action.type === "conversation"
+    && action.targetNpcId
+    && (!action.missionId || Boolean(action.requiredDisclosure))
+    && !action.tutorialBeat) {
+    action.conversationTurn = 1;
+    action.previouslyAskedTopics = [];
     runtime.dialogueSession = {
       npcId: action.targetNpcId,
       npcName: action.targetNpcName ?? action.targetNpcId,
       openedAtMinute: runtime.playerState.absoluteMinute,
+      lastInteractionAtMinute: runtime.playerState.absoluteMinute,
       location: runtime.playerState.player.location,
       facilityId: runtime.playerState.player.facilityId,
+      askedTopics: new Set(action.dialogueTopic ? [action.dialogueTopic] : []),
+      lastDisclosedRumorId: action.disclosedRumorId ?? null,
+      turnCount: 1,
+      lastPlayerActionLabel: action.label ?? null,
     };
     return;
   }
@@ -908,7 +1426,8 @@ function expireDialogueSession(runtime) {
   const session = runtime.dialogueSession;
   if (!session) return;
   const presentIds = runtime.playerState.authoritativePresentNpcIds;
-  const expired = runtime.playerState.absoluteMinute - Number(session.openedAtMinute ?? -Infinity) > 30;
+  const expired = runtime.playerState.absoluteMinute
+    - Number(session.lastInteractionAtMinute ?? session.openedAtMinute ?? -Infinity) > 30;
   const leftScene = session.location !== runtime.playerState.player.location
     || session.facilityId !== runtime.playerState.player.facilityId;
   const targetAbsent = !(presentIds instanceof Set) || !presentIds.has(session.npcId);
@@ -925,7 +1444,22 @@ function resolvedActionForPresentation(action) {
     targetNpcName: action.targetNpcName ?? null,
     missionId: action.missionId ?? null,
     stepId: action.stepId ?? null,
+    missionTitle: action.missionTitle ?? null,
+    missionTroubleId: action.missionTroubleId ?? null,
+    missionBeliefFactId: action.missionBeliefFactId ?? null,
     dialogueTopic: action.dialogueTopic ?? null,
+    dialogueFollowup: Boolean(action.dialogueFollowup),
+    conversationTurn: Number(action.conversationTurn ?? 0),
+    previouslyAskedTopics: Array.isArray(action.previouslyAskedTopics) ? [...action.previouslyAskedTopics] : [],
+    requiredDisclosure: cleanText(action.requiredDisclosure, 180) || null,
+    disclosedRumorId: action.disclosedRumorId ?? null,
+    speakerLabelBeforeIntroduction: cleanText(action.speakerLabelBeforeIntroduction, 80) || null,
+    firstIntroduction: Boolean(action.firstIntroduction),
+    introductionName: cleanText(action.introductionName, 80) || null,
+    introductionToken: cleanText(action.introductionToken, 120) || null,
+    tutorialBeat: action.tutorialBeat ?? null,
+    sceneActorNpcId: action.sceneActorNpcId ?? null,
+    localVariant: Number(action.localVariant ?? 0),
     destinationFacilityId: action.destinationFacilityId ?? null,
     destinationHub: action.destinationHub ?? null,
     movementScope: action.movementScope ?? null,
@@ -990,7 +1524,7 @@ export function safeBattlePlayback(battle, data) {
   const sanitizeFrame = ({ frame, sourceIndex }, previousSourceIndex = -1) => {
     const skillId = cleanText(frame?.action?.skillId, 100) || null;
     const knownSkill = battleData?.playerSkillById?.get(skillId) ?? battleData?.monsterSkillById?.get(skillId);
-    const actionKind = ["attack", "skill", "status_failure"].includes(frame?.action?.kind)
+    const actionKind = ["attack", "skill", "status_failure", "defend", "flee"].includes(frame?.action?.kind)
       ? frame.action.kind
       : null;
     const actionName = frame?.phase === "round_start"
@@ -1020,6 +1554,7 @@ export function safeBattlePlayback(battle, data) {
       criticals: Math.max(0, Math.trunc(battleNumber(frame?.criticals))),
       damage: Math.max(0, battleNumber(frame?.damage)),
       healing: Math.max(0, battleNumber(frame?.healing)),
+      ...(actionKind === "flee" ? { escapeSucceeded: frame?.escapeSucceeded === true } : {}),
       effects: (Array.isArray(frame?.effects) ? frame.effects : []).slice(0, 24).flatMap((effect) => {
         const targetInstanceId = cleanText(effect?.targetInstanceId, 100);
         if (!knownInstanceIds.has(targetInstanceId)) return [];
@@ -1070,13 +1605,80 @@ export function safeBattlePlayback(battle, data) {
   return playback;
 }
 
+function interactiveBattleView(runtime, data) {
+  const pending = runtime.pendingBattle;
+  if (!pending?.session || pending.session.status !== "active") return null;
+  const session = pending.session;
+  const encounter = data.battleData.encounterById.get(pending.continuation.encounterId);
+  const actors = [...session.state.players, ...session.state.enemies].map((actor) => ({
+    instanceId: actor.instanceId,
+    actorId: actor.id,
+    side: actor.side,
+    name: actor.side === "enemy"
+      ? data.battleData.monsterById.get(actor.id)?.name ?? actor.name ?? "敵"
+      : runtime.playerState.player.displayName ?? actor.name ?? "旅人",
+    hp: battleNumber(actor.hp),
+    maxHp: Math.max(1, battleNumber(actor.maxHp, 1)),
+    mp: battleNumber(actor.mp),
+    maxMp: Math.max(0, battleNumber(actor.maxMp)),
+    alive: actor.alive !== false,
+  }));
+  const commands = listInteractiveBattleCommands({ data: data.battleData, session }).map((command) => ({
+    actionId: command.actionId,
+    kind: command.kind,
+    skillId: command.skillId ?? null,
+    name: cleanText(command.name, 64),
+    description: cleanText(command.description, 180),
+    mpCost: battleNumber(command.mpCost),
+    hpCost: battleNumber(command.hpCost),
+    available: command.available !== false,
+    disabledReason: command.disabledReason ?? null,
+    targets: (command.targets ?? []).map((target) => ({
+      instanceId: target.instanceId,
+      actorId: target.actorId,
+      name: target.side === "enemy"
+        ? data.battleData.monsterById.get(target.actorId)?.name ?? target.name ?? "敵"
+        : runtime.playerState.player.displayName ?? target.name ?? "旅人",
+      side: target.side,
+      hp: battleNumber(target.hp),
+      maxHp: Math.max(1, battleNumber(target.maxHp, 1)),
+    })),
+  }));
+  const lastRoundPlayback = session.lastRound ? safeBattlePlayback({
+    encounterId: pending.continuation.encounterId,
+    timeline: {
+      combatants: session.initialCombatants,
+      frames: session.lastRound.frames,
+    },
+  }, data) : null;
+  return {
+    id: pending.id,
+    status: "active",
+    encounterId: pending.continuation.encounterId,
+    encounterName: encounter?.name ?? "戦闘",
+    round: Number(session.state.turn ?? 0) + 1,
+    actors,
+    commands,
+    lastRound: session.lastRound ? {
+      round: session.lastRound.round,
+      frames: lastRoundPlayback?.frames ?? [],
+    } : null,
+    itemCommandAvailable: false,
+    itemCommandMessage: "戦闘用アイテムの効果データは整備中です",
+  };
+}
+
 function safeOutcome(result, data = null) {
   const output = { ok: result?.ok !== false, type: result?.type ?? null, reason: result?.reason ?? null };
   if (result?.committed === true) output.committed = true;
+  if (result?.battlePending === true) output.battlePending = true;
+  if (result?.battleRound !== undefined) output.battleRound = Number(result.battleRound);
+  if (result?.encounterId) output.encounterId = result.encounterId;
   if (result?.price !== undefined) output.price = result.price;
   if (result?.equipment) output.item = { id: result.equipment.id, name: result.equipment.name };
   if (result?.skillId) output.skillId = result.skillId;
   if (result?.spCost) output.spCost = result.spCost;
+  if (result?.goldDelta !== undefined) output.goldDelta = Number(result.goldDelta);
   if (result?.learnedRumorIds?.length) output.learnedRumorCount = result.learnedRumorIds.length;
   if (result?.battle) {
     output.battle = {
@@ -1176,7 +1778,15 @@ function withTemporaryTuning(state, key, value, operation) {
 
 export function executeGameRuntimeCommand(runtime, data, command) {
   if (!COMMAND_TYPES.has(command.type)) throw new TrpgGameError(400, "unknown_command_type");
-  if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) {
+  const activeBattle = runtime.pendingBattle?.session?.status === "active";
+  if (activeBattle && command.type !== "BATTLE_ACT") {
+    throw new TrpgGameError(409, "battle_command_required", "Finish or flee from the current battle first");
+  }
+  if (!activeBattle && command.type === "BATTLE_ACT") {
+    throw new TrpgGameError(409, "battle_not_active");
+  }
+  if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE
+    && !["BATTLE_ACT", "ACK_NPC_INTRODUCTION"].includes(command.type)) {
     throw new TrpgGameError(409, "game_ended", "The Day 1-100 journey has already ended");
   }
   const tutorialFeature = {
@@ -1191,34 +1801,75 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     });
   }
   const payload = command.payload && typeof command.payload === "object" ? command.payload : {};
-  if (runtime.tutorial) runtime.tutorial.lastBeat = null;
+  const pendingIntroductionAtStart = runtime.pendingNpcIntroduction;
+  if (runtime.tutorial && command.type !== "ACK_NPC_INTRODUCTION") runtime.tutorial.lastBeat = null;
+  const goldBefore = Number(runtime.playerState.player.gold ?? 0);
   const previousTroubleStates = Object.fromEntries(Object.entries(runtime.playerState.troubles).map(([id, value]) => [id, value.status]));
   let result;
   let resolvedActionId = null;
   let resolvedPlayerAction = null;
+  let deferredMissionConversation = null;
   if (command.type === "CHOOSE") {
     const choices = choiceActions(runtime, data);
     const action = choices.find((entry) => entry.choiceId === payload.choiceId);
     if (!action) throw new TrpgGameError(400, "choice_not_available");
     resolvedPlayerAction = action;
     resolvedActionId = action.id;
-    const resolve = () => journey.resolvePlayerAction(
-      runtime.playerState,
-      data.model,
-      data.battleData,
-      data.skills,
-      runtime.playerState.catalog,
-      profileFor(runtime.playerState.profileId),
-      action,
-    );
-    const resolveWithPlayback = () => withTemporaryTuning(runtime.playerState, "captureBattleTimeline", true, resolve);
-    const suppressUnpreparedInvestigationEncounter = Boolean(runtime.tutorial
-      && runtime.playerState.player.skills.size === 0
-      && action.type === "investigate");
-    result = suppressUnpreparedInvestigationEncounter
-      ? withTemporaryTuning(runtime.playerState, "probeMode", true, resolveWithPlayback)
-      : resolveWithPlayback();
-    runtime.playerState.metrics.actions += 1;
+    if (["missionBattle", "seekBattle"].includes(action.type)) {
+      const opening = journey.beginInteractiveBattleAction(
+        runtime.playerState,
+        data.model,
+        data.battleData,
+        data.skills,
+        runtime.playerState.catalog,
+        profileFor(runtime.playerState.profileId),
+        action,
+      );
+      if (!opening.ok) result = opening;
+      else {
+        const battleId = `BATTLE-${sha256(`${opening.continuation.key}:${runtime.playerState.metrics.actions}`).slice(0, 16)}`;
+        const session = beginInteractiveBattle({
+          data: data.battleData,
+          encounterId: opening.continuation.encounterId,
+          playerBuild: opening.continuation.prepared.scaledBuild,
+          seed: opening.continuation.key,
+          maxTurns: 100,
+        });
+        runtime.pendingBattle = {
+          id: battleId,
+          continuation: opening.continuation,
+          resolvedAction: resolvedActionForPresentation(action),
+          startedAtMinute: runtime.playerState.absoluteMinute,
+          session,
+        };
+        result = {
+          ok: true,
+          type: "battleStart",
+          battlePending: true,
+          encounterId: opening.continuation.encounterId,
+          summary: "敵と遭遇した。次の行動を選ぶ。",
+        };
+      }
+    } else {
+      const resolve = () => journey.resolvePlayerAction(
+        runtime.playerState,
+        data.model,
+        data.battleData,
+        data.skills,
+        runtime.playerState.catalog,
+        profileFor(runtime.playerState.profileId),
+        action,
+      );
+      const resolveWithPlayback = () => withTemporaryTuning(runtime.playerState, "captureBattleTimeline", true, resolve);
+      const suppressUnpreparedInvestigationEncounter = Boolean(runtime.tutorial
+        && runtime.playerState.player.skills.size === 0
+        && action.type === "investigate");
+      result = suppressUnpreparedInvestigationEncounter
+        ? withTemporaryTuning(runtime.playerState, "probeMode", true, resolveWithPlayback)
+        : resolveWithPlayback();
+      if (result?.missionConversationPending) deferredMissionConversation = result;
+    }
+    if (!deferredMissionConversation) runtime.playerState.metrics.actions += 1;
   } else if (command.type === "MOVE") {
     const action = movementActions(runtime, data).find((entry) => entry.id === payload.moveId);
     if (!action) throw new TrpgGameError(400, "movement_not_available");
@@ -1268,24 +1919,146 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     resolvedActionId = `TUTORIAL_ACK:${current.id}`;
     result = { ok: true, type: "tutorial", summary: `「${current.title}」の案内を確認した。` };
     runtime.playerState.history.push({ type: "TUTORIAL_ACKNOWLEDGED", minute: runtime.playerState.absoluteMinute, tutorialId: current.id, text: result.summary });
+  } else if (command.type === "ACK_NPC_INTRODUCTION") {
+    const pending = runtime.pendingNpcIntroduction;
+    if (!pending || !payload.token || payload.token !== pending.token) {
+      throw new TrpgGameError(409, "npc_introduction_not_available");
+    }
+    syncAuthoritativePresentNpcIds(runtime, data);
+    if (!(runtime.playerState.authoritativePresentNpcIds instanceof Set)
+      || !runtime.playerState.authoritativePresentNpcIds.has(pending.npcId)) {
+      throw new TrpgGameError(409, "npc_introduction_not_available");
+    }
+    discoverNpc(runtime, pending.npcId);
+    if (runtime.dialogueSession?.npcId === pending.npcId) {
+      runtime.dialogueSession.npcName = pending.canonicalName;
+    }
+    runtime.pendingNpcIntroduction = null;
+    resolvedActionId = `ACK_NPC_INTRODUCTION:${pending.npcId}`;
+    result = { ok: true, type: "npcIntroduction", summary: `${pending.canonicalName}の名前を知った。` };
+    runtime.playerState.history.push({
+      type: "PLAYER_NPC_IDENTIFIED",
+      minute: runtime.playerState.absoluteMinute,
+      npcId: pending.npcId,
+    });
+  } else if (command.type === "BATTLE_ACT") {
+    const pending = runtime.pendingBattle;
+    if (!pending || pending.id !== payload.battleId) throw new TrpgGameError(409, "battle_id_mismatch");
+    const turn = resolveInteractiveBattleRound({
+      data: data.battleData,
+      session: pending.session,
+      command: { actionId: payload.actionId, targetInstanceId: payload.targetInstanceId || null },
+    });
+    if (!turn.ok) throw new TrpgGameError(400, turn.reason ?? "battle_action_rejected");
+    pending.session = turn.session;
+    resolvedActionId = `BATTLE_ACT:${payload.actionId}`;
+    resolvedPlayerAction = pending.resolvedAction;
+    if (turn.result) {
+      result = journey.settleInteractiveBattleAction(
+        runtime.playerState,
+        data.model,
+        data.battleData,
+        data.skills,
+        runtime.playerState.catalog,
+        profileFor(runtime.playerState.profileId),
+        pending.continuation,
+        turn.result,
+      );
+      runtime.pendingBattle = null;
+    } else {
+      result = { ok: true, type: "battleRound", battlePending: true, battleRound: turn.round.round };
+    }
   }
   if (!result?.ok && result?.committed !== true) throw errorFromResult(result);
+  if ((result?.ok || result?.committed === true)
+    && pendingIntroductionAtStart
+    && !["ACK_NPC_INTRODUCTION", "TUTORIAL_ACK"].includes(command.type)
+    && runtime.pendingNpcIntroduction?.token === pendingIntroductionAtStart.token) {
+    // Leaving a visible introduction without acknowledging it must never make
+    // the canonical name part of player knowledge. A later meeting can offer
+    // a fresh, deterministic introduction beat.
+    runtime.pendingNpcIntroduction = null;
+  }
+  if (result.ok && resolvedPlayerAction?.type === "work") {
+    result.goldDelta = Number(runtime.playerState.player.gold ?? 0) - goldBefore;
+    result.summary = `${result.goldDelta}Gの賃金を受け取った。`;
+  }
   if (command.type === "MOVE" && result.ok && !result.summary) {
     const destinationName = data.model.facilityById[resolvedPlayerAction?.destinationFacilityId]?.name
       ?? resolvedPlayerAction?.destinationHub
       ?? "目的地";
     result.summary = `${destinationName}へ移動した。`;
   }
+  if (result.ok
+    && resolvedPlayerAction?.type === "conversation"
+    && resolvedPlayerAction.targetNpcId
+    && !ensurePlayerKnowledge(runtime).knownNpcIds.has(resolvedPlayerAction.targetNpcId)) {
+    const publicTarget = presentNpcsAt(runtime, data).find((npc) => npc.id === resolvedPlayerAction.targetNpcId);
+    resolvedPlayerAction.firstIntroduction = true;
+    resolvedPlayerAction.speakerLabelBeforeIntroduction = publicTarget?.name ?? "見知らぬ人物";
+    const introducedNpc = data.model.npcById?.[resolvedPlayerAction.targetNpcId]
+      ?? data.model.npcs.find((npc) => npc.id === resolvedPlayerAction.targetNpcId);
+    if (introducedNpc?.name) {
+      resolvedPlayerAction.introductionName = introducedNpc.name;
+      resolvedPlayerAction.targetNpcName = introducedNpc.name;
+    }
+  }
   if (result.ok && ["CHOOSE", "MOVE"].includes(command.type)) progressTutorial(runtime, resolvedPlayerAction, result);
+  if (result.ok && command.type === "MOVE") discoverArrival(runtime, data);
   applyPlayerWorldInterventions(runtime, previousTroubleStates);
   advanceLivingWorld(runtime, runtime.playerState.absoluteMinute);
   reconcileOpeningCrisis(runtime);
   stabilizeOpeningTutorialCast(runtime);
   syncAuthoritativePresentNpcIds(runtime, data);
-  if (["conversation", "observe"].includes(resolvedPlayerAction?.type)
+  if (["conversation", "observe", "localInvestigate", "wait"].includes(resolvedPlayerAction?.type)
     && !resolvedPlayerAction?.tutorialBeat
     && (!runtime.tutorial || runtime.tutorial.stage === "free")) {
-    result.learnedRumorIds = learnLocalLivingRumors(runtime, data, resolvedPlayerAction, resolvedPlayerAction.type === "observe" ? 3 : 1);
+    result.learnedRumorIds = learnLocalLivingRumors(
+      runtime,
+      data,
+      resolvedPlayerAction,
+      ["observe", "localInvestigate"].includes(resolvedPlayerAction.type) ? 3 : 1,
+    );
+  }
+  if (deferredMissionConversation) {
+    const learnedRumorIds = result.learnedRumorIds ?? [];
+    result = journey.settleMissionConversationAction(
+      runtime.playerState,
+      data.model,
+      data.battleData,
+      data.skills,
+      runtime.playerState.catalog,
+      profileFor(runtime.playerState.profileId),
+      resolvedPlayerAction,
+      deferredMissionConversation,
+    );
+    result.learnedRumorIds = learnedRumorIds;
+    runtime.playerState.metrics.actions += 1;
+  }
+  if (resolvedPlayerAction?.firstIntroduction && resolvedPlayerAction.targetNpcId) {
+    const targetPresent = runtime.playerState.authoritativePresentNpcIds instanceof Set
+      && runtime.playerState.authoritativePresentNpcIds.has(resolvedPlayerAction.targetNpcId);
+    if (targetPresent && resolvedPlayerAction.introductionName) {
+      const token = sha256([
+        runtime.playerState.seed,
+        resolvedPlayerAction.id,
+        resolvedPlayerAction.targetNpcId,
+        runtime.playerState.absoluteMinute,
+      ].join(":"));
+      runtime.pendingNpcIntroduction = {
+        token,
+        npcId: resolvedPlayerAction.targetNpcId,
+        canonicalName: resolvedPlayerAction.introductionName,
+        anonymousLabel: resolvedPlayerAction.speakerLabelBeforeIntroduction ?? "見知らぬ人物",
+        sourceActionId: resolvedPlayerAction.id,
+      };
+      resolvedPlayerAction.introductionToken = token;
+    } else {
+      resolvedPlayerAction.firstIntroduction = false;
+      resolvedPlayerAction.introductionName = null;
+      resolvedPlayerAction.introductionToken = null;
+      resolvedPlayerAction.speakerLabelBeforeIntroduction = null;
+    }
   }
   updateDialogueSession(runtime, resolvedPlayerAction);
   expireDialogueSession(runtime);
@@ -1403,20 +2176,26 @@ function missionView(runtime, data) {
 
 function rumorView(runtime) {
   const state = runtime.playerState;
+  const knownNpcIds = ensurePlayerKnowledge(runtime).knownNpcIds;
   return state.rumors
     .filter((rumor) => state.player.knownRumorIds.has(rumor.id))
     .slice(-30)
     .reverse()
-    .map((rumor) => ({
-      id: rumor.id,
-      troubleId: rumor.troubleId,
-      text: rumor.text,
-      origin: rumor.origin,
-      originMinute: rumor.originMinute,
-      importance: rumor.importance,
-      source: rumor.sourceNpcName ? `${rumor.sourceNpcName}から聞いた` : rumor.sourceType === "local-observation" ? "現地で確かめた" : null,
-      sourceNpcId: rumor.sourceNpcId ?? null,
-    }));
+    .map((rumor) => {
+      const sourceNpcLabel = rumor.sourceNpcId && knownNpcIds.has(rumor.sourceNpcId)
+        ? rumor.sourceNpcName
+        : rumor.sourceNpcAnonymousLabel ?? (rumor.sourceNpcId ? "その人物" : null);
+      return {
+        id: rumor.id,
+        troubleId: rumor.troubleId,
+        text: rumor.text,
+        origin: rumor.origin,
+        originMinute: rumor.originMinute,
+        importance: rumor.importance,
+        source: sourceNpcLabel ? `${sourceNpcLabel}から聞いた` : rumor.sourceType === "local-observation" ? "現地で確かめた" : null,
+        sourceNpcId: rumor.sourceNpcId ?? null,
+      };
+    });
 }
 
 function chronicleView(runtime) {
@@ -1540,7 +2319,7 @@ function tutorialView(runtime, data) {
     actionPanel: null,
     emphasisTarget: null,
     unlocked: {
-      choices: true,
+      choices: !["movement", "movement_aftermath"].includes(tutorial.stage),
       movement: ["movement", "mission_intro", "movement_aftermath", "aftermath_intro", "free"].includes(tutorial.stage),
       missions: tutorial.stage === "free",
       shop: tutorial.stage === "free",
@@ -1551,32 +2330,32 @@ function tutorialView(runtime, data) {
   if (tutorial.stage === "awakening") return {
     ...base,
     id: "first-choice",
-    title: "まずは、今できることを一つ選ぶ",
-    body: "中央の3つは、この場所で今すぐ行う行動です。選ぶと時間と世界が進みます。最初に正解や不正解はありません。気になるものを選んでください。",
+    title: "気になる行動を選んでみよう",
+    body: "3つの中から、今したいことを一つタップ。",
     progressLabel: "導入 1 / 5",
     emphasisTarget: "choices",
   };
   if (tutorial.stage === "first_contact") return {
     ...base,
     id: "first-conversation",
-    title: "返し方を選んで、会話を続ける",
-    body: "会話も3択で進みます。誰に何を聞くかで、知る事実や相手の受け止め方が変わります。",
+    title: "返事を選んでみよう",
+    body: "知りたいこと、伝えたいことを一つ選ぶ。",
     progressLabel: "導入 2 / 5",
     emphasisTarget: "choices",
   };
   if (tutorial.stage === "orientation") return {
     ...base,
     id: "conversation-depth",
-    title: "気になることを、もう一つだけ尋ねる",
-    body: "一度話しただけで会話は終わりません。今知りたいことを選ぶと、その答えから次の行動が見えてきます。",
+    title: "もう一つ聞いてみよう",
+    body: "答えの続きから、次の手掛かりを選ぶ。",
     progressLabel: "導入 3 / 5",
     emphasisTarget: "choices",
   };
   if (tutorial.stage === "movement") return {
     ...base,
     id: "first-movement",
-    title: "3択とは別に、場所を移動できる",
-    body: "3択は今いる場所での行動です。場所を変えたいときは、画面下の「移動」を使います。まずは村の広場へ向かってみましょう。",
+    title: "エダについて村へ行こう",
+    body: "上の現在地をタップし、「村の広場」へ。",
     progressLabel: "導入 4 / 5",
     actionLabel: "移動先を見る",
     actionPanel: "movement",
@@ -1585,16 +2364,16 @@ function tutorialView(runtime, data) {
   if (tutorial.stage === "mission_intro") return {
     ...base,
     id: "discover-trouble",
-    title: "会話から、起きている問題を知る",
-    body: "広場にいる人は、それぞれ違う立場から同じ騒ぎを見ています。誰に聞くかを選び、何が起きているのか確かめてください。",
+    title: "人だかりで事情を聞こう",
+    body: "気になる相手を一人選び、何が起きたか尋ねる。",
     progressLabel: "導入 5 / 5",
     emphasisTarget: "choices",
   };
   if (tutorial.stage === "movement_aftermath") return {
     ...base,
     id: "world-keeps-moving",
-    title: "選ばなかった時間にも、世界は進む",
-    body: "村の捜索は旅人を待たずに結末を迎えました。移動を開いて村の広場へ行き、起きたことを自分の目で確かめてください。",
+    title: "村の広場へ急ごう",
+    body: "世界は待っていない。上の現在地から広場へ。",
     progressLabel: "導入 5 / 5",
     actionLabel: "移動先を見る",
     actionPanel: "movement",
@@ -1603,8 +2382,8 @@ function tutorialView(runtime, data) {
   if (tutorial.stage === "aftermath_intro") return {
     ...base,
     id: "trouble-aftermath",
-    title: "間に合わなかった危機にも、結果が残る",
-    body: "危機には期限があり、介入しなければ失敗や犠牲が起こります。広場で一人を選び、何が起きたのか聞いてください。",
+    title: "捜索の結末を聞こう",
+    body: "広場に残った一人を選び、起きたことを聞く。",
     progressLabel: "導入 5 / 5",
     emphasisTarget: "choices",
   };
@@ -1615,8 +2394,8 @@ function tutorialView(runtime, data) {
   if (t01 && !acknowledged.has("mission-log")) return {
     ...base,
     id: "mission-log",
-    title: "ミッションは、自由な冒険の道しるべ",
-    body: "問題を知るとミッションに記録されます。必ず従う必要はありませんが、次に調べる場所と期限をいつでも確認できます。",
+    title: "ミッション発見：フィンを捜せ",
+    body: "助けに行く道筋が記録された。開いて次の目的を確認。",
     progressLabel: "旅の案内",
     actionLabel: "ミッションを確認",
     actionPanel: "missions",
@@ -1628,8 +2407,8 @@ function tutorialView(runtime, data) {
   if (shopAvailable && !acknowledged.has("shop")) return {
     ...base,
     id: "shop",
-    title: "店では、3択を選ばずに売買できる",
-    body: "店のある場所では、行動の3択とは別に品物を購入・売却できます。所持金が足りない品は、仕事や冒険の報酬を得てから戻れます。",
+    title: "店では、いつでも売買できる",
+    body: "3択を使わず、必要な品を買う・持ち物を売る。",
     progressLabel: "旅の案内",
     actionLabel: "店を見る",
     actionPanel: "shop",
@@ -1640,10 +2419,10 @@ function tutorialView(runtime, data) {
   if (atFirstSearchArea && runtime.playerState.player.skills.size === 0) return {
     ...base,
     id: "skills",
-    title: acknowledged.has("skills") ? "戦う前に、使えるスキルを一つ取得する" : "危険へ進む前に、スキルを選ぶ",
+    title: acknowledged.has("skills") ? "使えるスキルを一つ取得しよう" : "危険へ進む前に、技を覚えよう",
     body: acknowledged.has("skills")
-      ? "まだ戦闘スキルを取得していません。能力画面の「今の装備におすすめ」から一つ選ぶと、危険な選択肢が解放されます。"
-      : "SPを1使うと、条件を満たしたスキルを取得できます。最初から全てを決める必要はありません。今の装備で使える技を一つ選ぶと、戦闘で詰まりにくくなります。",
+      ? "「今の装備におすすめ」から一つ選ぶ。"
+      : "能力を開き、おすすめの技を一つ取得する。",
     progressLabel: "戦闘準備",
     actionLabel: "取得可能スキルを見る",
     actionPanel: "skills",
@@ -1654,8 +2433,8 @@ function tutorialView(runtime, data) {
   if (battleAvailable && runtime.playerState.metrics.battles === 0 && !acknowledged.has("combat")) return {
     ...base,
     id: "combat",
-    title: "赤い「戦闘」表示は、危険を伴う行動",
-    body: "戦闘を選ぶ前にHP・装備・スキルを確認できます。敗北しても旅は終わりませんが、回復の時間が進み、その間も世界の危機は進行します。",
+    title: "準備ができたら、捜索を続けよう",
+    body: "戦闘では、攻撃・スキル・防御・逃走を自分で選ぶ。",
     progressLabel: "戦闘準備",
     actionLabel: "能力を確認",
     actionPanel: "skills",
@@ -1686,10 +2465,19 @@ function guidanceView(runtime, data, missions) {
     deadlineLabel: null,
     actionPanel: null,
   };
-  if (["first_contact", "orientation"].includes(stage)) return {
+  if (stage === "first_contact") return {
     kicker: "いま話していること",
-    title: "麦畑で出会ったエダに応える",
-    detail: "返答を選び、ここがどこなのかを少しずつ確かめる。",
+    title: "麦畑で出会った女性に応える",
+    detail: "返答を選び、相手が誰なのか、ここがどこなのかを確かめる。",
+    targetFacilityId: null,
+    targetFacilityName: null,
+    deadlineLabel: null,
+    actionPanel: null,
+  };
+  if (stage === "orientation") return {
+    kicker: "いま話していること",
+    title: "エダに、もう一つだけ尋ねる",
+    detail: "今いちばん知りたいことを選び、その答えを聞く。",
     targetFacilityId: null,
     targetFacilityName: null,
     deadlineLabel: null,
@@ -1698,7 +2486,7 @@ function guidanceView(runtime, data, missions) {
   if (stage === "movement") return {
     kicker: "次の一歩",
     title: "村の広場へ移動する",
-    detail: "画面下の「移動」を開き、村の中の移動先から「村の広場」を選ぶ。",
+    detail: "上の現在地を開き、エダについて「村の広場」へ向かう。",
     targetFacilityId: "LOC_FARM_SQUARE",
     targetFacilityName: facilityName("LOC_FARM_SQUARE"),
     deadlineLabel: null,
@@ -1773,6 +2561,70 @@ function fallbackNarrative(runtime, action = null, outcome = null) {
   return "選んだ行動の結果が世界へ刻まれ、時計の針が先へ進んだ。";
 }
 
+function playerUtterance(action) {
+  if (!action || action.type !== "conversation") return null;
+  const authored = {
+    "contact:where": "ここは、どこですか？",
+    "contact:memory": "ここは、私の知っている世界ではありません。",
+    "contact:who": "その前に、あなたの名前を教えてください。",
+    "orient:voices": "さっきから聞こえる呼び声は、何ですか？",
+    "orient:found": "私は、どんな状態で見つかったんですか？",
+    "orient:help": "水を少し。それから、落ち着ける場所はありますか？",
+    "inquiry:garo": "すみません。誰が、いつからいなくなったのか教えてください。",
+    "inquiry:mira": "捜しているのは、あなたのご家族ですか？",
+    "inquiry:coby": "何か知っているなら、怒らないから話してくれる？",
+  }[action.tutorialBeat];
+  if (authored) return authored;
+  const topicLine = {
+    mission_clue: `「${action.missionTitle ?? "この異変"}」について、あなたが確かに知っている手掛かりを教えてください。`,
+    active_mission: "今のミッションについて、次に何をすべきか詳しく教えてください。",
+    route_to_lead: "手掛かりのある場所までの道と、途中の危険を教えてください。",
+    local_concern: "この辺りでは、今いちばん何に困っていますか？",
+    local_change: "最近ここで、普段と違う人や物を見ませんでしたか？",
+    personal_stake: "あなたがこの問題を気にかけている理由を、聞いてもいいですか？",
+    local_rumor: "今聞いた話は、いつ、どこで知ったものですか？",
+    work_offer: "私にも手伝える仕事はありますか？　内容と賃金を先に教えてください。",
+    end_conversation: "ありがとう。教えてもらったことを確かめてきます。",
+  }[action.dialogueTopic];
+  if (topicLine) return topicLine;
+  const quoted = String(action.label ?? "").match(/「([^」]+)」/u)?.[1];
+  if (quoted) return quoted;
+  if (/話しかける|話を聞く/u.test(String(action.label ?? ""))) return "少し、お話を聞かせてもらえますか？";
+  return `${String(action.label ?? "この辺りのこと")
+    .replace(/(?:について)?(?:詳しく)?(?:尋ねる|聞く|話す)$/u, "")
+    .replace(/[。、]+$/u, "")
+    .trim()}について、教えてもらえますか？`;
+}
+
+function presentationWithOrderedBeats(runtime, data, action, presentation) {
+  const beats = [];
+  const utterance = playerUtterance(action);
+  if (utterance) beats.push({ kind: "player", actorId: null, speakerLabel: "あなた", text: utterance });
+  if (presentation.narrative) beats.push({ kind: "narration", actorId: null, speakerLabel: null, text: presentation.narrative });
+  let introductionLabelPending = Boolean(action?.firstIntroduction && action?.speakerLabelBeforeIntroduction);
+  for (const speech of presentation.speeches ?? []) {
+    const isIntroducingTarget = introductionLabelPending && speech.actorId === action?.targetNpcId;
+    const introductionToken = isIntroducingTarget
+      && action?.introductionToken
+      && action?.introductionName
+      && speech.text.includes(action.introductionName)
+      && runtime.pendingNpcIntroduction?.token === action.introductionToken
+      ? action.introductionToken
+      : null;
+    beats.push({
+      kind: "npc",
+      actorId: speech.actorId,
+      speakerLabel: isIntroducingTarget ? action.speakerLabelBeforeIntroduction : null,
+      text: speech.text,
+      emotion: speech.emotion ?? null,
+      introductionToken,
+      introductionNpcId: introductionToken ? action.targetNpcId : null,
+    });
+    if (isIntroducingTarget) introductionLabelPending = false;
+  }
+  return { ...presentation, beats };
+}
+
 function authoredOpeningPresentation(runtime) {
   const tutorial = runtime.tutorial;
   if (!tutorial) return null;
@@ -1798,7 +2650,7 @@ function authoredOpeningPresentation(runtime) {
     const response = {
       "contact:where": "ここは田園の村の麦畑だよ。王都へ続く畑道のそばさ。あたしはエダ。まず、あんたが立てるか見せておくれ。",
       "contact:memory": "見知らぬ世界から来た、か。妙な話だけど、今は笑うところじゃないね。あたしはエダ。水を飲んで、ゆっくり話せばいい。",
-      "contact:who": "もっともだね。あたしはエダ、この村で畑をやってる。あんたを縛る気も、役人へ突き出す気もないよ。顔色が心配なだけさ。",
+      "contact:who": "ああ、先に名乗るべきだったね。あたしはエダ、この村で畑をやってる。あんたを縛る気も、役人へ突き出す気もないよ。顔色が心配なだけさ。",
     }[beat];
     return {
       narrative: "乾いた喉から言葉を絞り出す。女性は急かさずに聞き、腰の水筒を差し出した。",
@@ -1815,7 +2667,7 @@ function authoredOpeningPresentation(runtime) {
       narrative: "水が喉を通り、ようやく周囲を見る余裕が戻る。麦畑の先には、小さな家並みと一本の道が見えた。",
       speeches: [
         { actorId: "NPC004", text: response, emotion: "説明" },
-        { actorId: "NPC004", text: "村の広場は、この道の先だよ。行き先を変えたくなったら、自分の足でどこへ向かうか決められる。あたしも畑を片づけたら追いつくよ。", emotion: "促す" },
+        { actorId: "NPC004", text: "村の広場は、この道の先だよ。今は土地勘もないだろう？　あたしについておいで。歩きながら、道の見方も教えるよ。", emotion: "促す" },
       ],
     };
   }
@@ -1861,23 +2713,23 @@ function authoredOpeningPresentation(runtime) {
   if (beat?.startsWith("inquiry:")) {
     const presentation = {
       "inquiry:garo": {
-        narrative: "ガロ村長は地面に簡単な地図を描き、捜索済みの道と、まだ誰も戻っていない村外れを指した。",
+        narrative: "年配の男は地面に簡単な地図を描き、捜索済みの道と、まだ誰も戻っていない村外れを指した。話す前に一度息を整え、こちらへ向き直る。",
         speeches: [
-          { actorId: "NPC003", text: "消えたのはフィン、十二歳の少年だ。朝から戻らん。古い見張り小屋へ続く道が手薄だが、あの辺りは獣も出る。日が二度落ちる前には見つけねばならん。", emotion: "厳しい" },
+          { actorId: "NPC003", text: "私はガロ、この村の村長だ。消えたのはフィン、十二歳の少年だ。朝から戻らん。古い見張り小屋へ続く道が手薄だが、あの辺りは獣も出る。日が二度落ちる前には見つけねばならん。", emotion: "厳しい" },
           { actorId: "NPC004", text: "あんたは来たばかりだ。無理に背負わなくていい。でも手を貸すなら、村のみんなが忘れないよ。", emotion: "気遣う" },
         ],
       },
       "inquiry:mira": {
-        narrative: "女性はミラと名乗り、握りしめていた小さな布切れを見せる。声は震えているが、息子のことを一つずつ話そうとする。",
+        narrative: "女性は握りしめていた小さな布切れを見せる。声は震えているが、息子のことを一つずつ話そうとする。",
         speeches: [
-          { actorId: "NPC002", text: "息子のフィンです。冒険家になりたいって、いつも村の外へ憧れていて……今朝、古い地図までなくなっていました。どうか、村外れの道を見てください。", emotion: "懇願" },
+          { actorId: "NPC002", text: "私はミラです。捜しているのは息子のフィン。冒険家になりたいって、いつも村の外へ憧れていて……今朝、古い地図までなくなっていました。どうか、村外れの道を見てください。", emotion: "懇願" },
           { actorId: "NPC004", text: "ミラ、息をして。話してくれて助かったよ。見張り小屋の道なら、広場から村外れへ出られる。", emotion: "支える" },
         ],
       },
       "inquiry:coby": {
-        narrative: "少年の前に屈んで待つ。責める声が来ないと分かるまで、コビーは何度も唇を噛んだ。やがて、小さな声がこぼれる。",
+        narrative: "少年の前に屈んで待つ。責める声が来ないと分かるまで、少年は何度も唇を噛んだ。やがて小さな声で話し始める。",
         speeches: [
-          { actorId: "NPC062", text: "フィン、昨日……古い見張り小屋を見つけたら、本物の冒険家になれるって。ぼく、止めなかった。村外れの細い道を知ってるんだ。", emotion: "後悔" },
+          { actorId: "NPC062", text: "ぼくはコビー。フィンが昨日……古い見張り小屋を見つけたら、本物の冒険家になれるって言ってたのに、止めなかった。村外れの細い道を知ってるんだ。", emotion: "後悔" },
           { actorId: "NPC003", text: "重要な手掛かりだ。今話した勇気まで、誰も責めはせん。", emotion: "落ち着かせる" },
         ],
       },
@@ -1887,16 +2739,16 @@ function authoredOpeningPresentation(runtime) {
   if (beat?.startsWith("aftermath:")) {
     const presentation = {
       "aftermath:garo": {
-        narrative: "ガロ村長は捜索記録を閉じ、見つかった時刻と、村外れで負傷した者の名を一つずつ説明した。",
-        speeches: [{ actorId: "NPC003", text: "フィンを見つけた時には、もう息がなかった。助けようと先へ出た者も重傷だ。決断が遅れれば、危機はこうして人の命を奪う。", emotion: "悔恨" }],
+        narrative: "年配の男は捜索記録を閉じ、見つかった時刻と、村外れで負傷した者のことを一つずつ説明しようとする。",
+        speeches: [{ actorId: "NPC003", text: "私はガロ、この村の村長だ。フィンを見つけた時には、もう息がなかった。助けようと先へ出た者も重傷だ。決断が遅れれば、危機はこうして人の命を奪う。", emotion: "悔恨" }],
       },
       "aftermath:mira": {
-        narrative: "ミラの隣に座る。しばらく言葉はなく、握りしめた古い地図が震える音だけが聞こえた。",
-        speeches: [{ actorId: "NPC002", text: "あの子は、帰ってきませんでした。……もし次に誰かの助けを求める声を聞いたら、どうか、間に合ううちに動いてください。", emotion: "悲嘆" }],
+        narrative: "女性の隣に座ってもしばらく言葉はなく、握りしめた古い地図が震える音だけが聞こえた。やがて女性は顔を上げる。",
+        speeches: [{ actorId: "NPC002", text: "私はミラです。あの子は、帰ってきませんでした。……もし次に誰かの助けを求める声を聞いたら、どうか、間に合ううちに動いてください。", emotion: "悲嘆" }],
       },
       "aftermath:coby": {
-        narrative: "コビーは村外れへ続く道を見つめたまま、途切れ途切れに昨日の約束を話した。",
-        speeches: [{ actorId: "NPC062", text: "ぼく、見張り小屋へ行くって知ってた。もっと早く言えばよかった。時間が過ぎたら、言えなかったことまで消えないんだ。", emotion: "後悔" }],
+        narrative: "少年は村外れへ続く道を見つめたまま、途切れ途切れに昨日の約束を話し始める。",
+        speeches: [{ actorId: "NPC062", text: "ぼくはコビー。見張り小屋へ行くって知ってた。もっと早く言えばよかった。時間が過ぎたら、言えなかったことまで消えないんだ。", emotion: "後悔" }],
       },
     }[beat];
     return presentation ?? { narrative: OPENING_AFTERMATH_FACT.text, speeches: [] };
@@ -1928,18 +2780,124 @@ function deterministicFallbackPresentation(runtime, data, action, outcome) {
     }[facilityId] ?? `${facilityName}へ着いた。人の流れと周囲の様子を確かめ、ここで次に何をするか選べる。`;
     return { narrative, speeches: [] };
   }
+  if (["work", "localInvestigate", "wait", "plan"].includes(resolved?.type)) {
+    const facilityId = runtime.playerState.player.facilityId;
+    const present = presentNpcsAt(runtime, data);
+    const actor = present.find((npc) => npc.id === resolved.sceneActorNpcId) ?? present[0] ?? null;
+    if (resolved.type === "work") {
+      const wage = Math.max(0, Number(outcome?.goldDelta ?? 0));
+      const narrative = {
+        LOC_FARM_FIELD: `畝の間へ入り、刈った麦を束ねて荷車まで運ぶ。慣れない手つきを笑う者はいない。汗が乾く頃、仕事の区切りがついた。`,
+        LOC_FARM_SQUARE: `広場で荷下ろしを待つ荷車を見つけ、穀袋を共同倉庫の軒下まで運ぶ。誰の荷をどこへ置くか、村の世話役が一つずつ教えた。`,
+        LOC_FARM_INN: `麦穂亭の裏へ回り、山積みの皿を洗い、薪を厨房まで運ぶ。客席の会話が途切れる頃、最後の卓も片づいた。`,
+        LOC_FARM_BAKERY: `粉袋を運び、窯へ入れる薪を長さごとに分ける。焼けた小麦の匂いの中で、店の忙しさが少しだけ和らいだ。`,
+        LOC_FARM_WELL: `井戸と家々を何度も往復し、水桶を必要な場所へ届ける。縄の重さと、村で水がどれほど大切かを体で知った。`,
+      }[facilityId] ?? `頼まれた荷運びと片づけを終える。土地のやり方を教わりながら働き、短い仕事の区切りをつけた。`;
+      const speeches = actor ? [{ actorId: actor.id, text: `助かったよ。これは今日の分、${wage}Gだ。無理をせず、必要ならまた声をかけな。`, emotion: "感謝" }] : [];
+      return { narrative, speeches };
+    }
+    if (resolved.type === "localInvestigate") {
+      const variant = Number(resolved.localVariant ?? 0) % 3;
+      const narratives = {
+        LOC_FARM_FIELD: [
+          "倒れた麦は一か所を中心に外へ向かって伏せている。歩いて入った跡ではなく、上から強い風圧を受けたような形だ。",
+          "畑の縁を一周すると、大人の靴跡は農道へ戻る一方、小さな裸足の跡だけが用水路の方角で途切れている。",
+          "穂の先に焼け跡はなく、茎だけが同じ高さで傷んでいる。火ではなく、大きな何かが低く通り抜けた痕に見える。",
+        ],
+        LOC_FARM_SQUARE: [
+          "掲示板には古い売買札に混じって、捜索人員を募った紙の剥がし跡がある。広場を急ぐ者は、皆同じ村外れを気にしていた。",
+          "荷車の札を見比べると、パン屋へ向かう粉だけが予定より少ない。御者は、街道の遅れではなく共同穀倉の都合だと話した。",
+          "同じ噂でも『今朝見た』と言う者と『昨夜聞いた』と言う者がいる。発生源に近いのは、夜の宿にいた人物らしい。",
+        ],
+        LOC_FARM_INN: [
+          "客席の泥は街道の赤土と、村外れの黒い土が混じっている。夜明け前に外から戻った客がいたらしい。",
+          "宿帳の公開欄には夜明け前の出立が一件あるが、食事の数は宿泊者より一人分多い。記録にない客が席を使ったようだ。",
+          "三つの卓で同じ話が繰り返されているが、誰も自分が見たとは言わない。話は厨房側の席から広がったらしい。",
+        ],
+        LOC_FARM_BAKERY: [
+          "棚の端だけ値札が書き直され、保存用のパンが先に減っている。誰かが、普段より長く外へ出る支度をしている。",
+          "納品札と粉袋を数えると、届かなかった一袋が帳面では受領済みになっている。配達の途中か、受け取り後に消えたことになる。",
+          "保存パンをまとめて買ったのは村の者だが、受け取り先は家ではなく広場だった。捜索か長旅の準備に使われたようだ。",
+        ],
+        LOC_FARM_WELL: [
+          "井戸縄の一部だけが新しく毛羽立ち、水面までの長さを示す結び目が昨日の印より下へ来ている。わずかだが、水位が落ちている。",
+          "二つの桶から水を皿へ移すと、一方だけ細かな黒い粒が沈んだ。井戸そのものではなく、特定の桶か汲んだ時間に原因がありそうだ。",
+          "列を数えると、共同穀倉から来た水桶だけが普段の倍になっている。火の用心か、別の用途で水を蓄えているらしい。",
+        ],
+        LOC_FARM_GRANARY: [
+          "穀袋の列に、人ひとりが通れる不自然な隙間がある。床には麦粒だけでなく、油を拭ったような黒い筋が残っていた。",
+          "帳簿の数より袋が一つ少ない。破れた麦粒の筋は出口ではなく、奥の壁際で急に途切れている。",
+          "扉の金具には新しい油が差されているのに、灯り用の油壺は口だけ汚れている。別の容器へ移した者がいる。",
+        ],
+        LOC_FARM_EDGE: [
+          "折れた草は見張り小屋の方へ続き、小さな靴跡に重なるように獣の爪痕が刻まれている。時間が経つほど追跡は難しくなる。",
+          "爪痕は小さな靴跡を追うように現れ、途中から横へ回り込んでいる。獣は偶然通ったのではなく、獲物として追っていた。",
+          "道端の枝に、子どもの上着と同じ色の糸が残っている。その先は見張り小屋ではなく、崩れた斜面へそれていた。",
+        ],
+      };
+      const narrative = narratives[facilityId]?.[variant]
+        ?? `${data.model.facilityById[facilityId]?.name ?? "この場所"}を歩き、普段の使われ方と今だけ違う痕跡を一つ見つけた。`;
+      const speeches = actor && facilityId === "LOC_FARM_WELL"
+        ? [{ actorId: actor.id, text: "その結び目、あたしも気になってたんだよ。昨日より桶が水へ届くまで長くかかる。気のせいで済めばいいけどね。", emotion: "懸念" }]
+        : [];
+      return { narrative, speeches };
+    }
+    if (resolved.type === "plan") {
+      const mission = missionView(runtime, data).find((entry) => ["active", "available", "in_progress"].includes(entry.status));
+      return {
+        narrative: mission?.currentStep
+          ? `知っている噂と記録を並べる。今の目的は「${mission.currentStep.label}」。期限は${mission.deadlineLabel ?? "まだ余裕がある"}。現地へ急ぐか、情報や装備を増やすかを選べる。`
+          : "聞いた噂を、発生した場所・聞いた相手・時刻に分けて整理する。まだ確かな依頼はないが、人が集まる場所と未訪問の土地が次の候補として残った。",
+        speeches: [],
+      };
+    }
+    const minuteBand = Math.floor(runtime.playerState.absoluteMinute / 15) % 3;
+    const narrative = facilityId === "LOC_FARM_WELL"
+      ? [
+        "桶が石縁へ当たる音のあと、村人たちは水の濁りを確かめてから家ごとの壺へ分け始めた。井戸端は、ただ立ち止まる場所ではなく生活の順番が見える場所だ。",
+        "しばらくすると空の桶を抱えた子どもが駆け込み、大人が列を譲った。水を汲む回数と家族の人数が、会話の端から分かる。",
+        "日が傾くにつれ、井戸を訪れる顔ぶれが畑仕事の者から宿の者へ変わった。交わされる話題も、収穫から今夜の旅人へ移っていく。",
+      ][minuteBand]
+      : `少し待つうちに、${data.model.facilityById[facilityId]?.name ?? "この場所"}を使う人と運ばれる物が入れ替わった。誰がどの道から来たかを確かめ、次に声をかける相手を見定める。`;
+    const speeches = actor ? [{ actorId: actor.id, text: "待っていたのかい？　今なら少し手が空いたよ。聞きたいことがあるなら、分かる範囲で話そう。", emotion: "応対" }] : [];
+    return { narrative, speeches };
+  }
   if (resolved?.type !== "conversation" || !resolved.targetNpcId) {
     return { narrative: fallback, speeches: [] };
   }
   const npc = presentNpcsAt(runtime, data).find((entry) => entry.id === resolved.targetNpcId);
   if (!npc) return { narrative: fallback, speeches: [] };
-  const line = {
-    local_concern: "この辺りにも、表からは見えない困り事がある。人の集まる場所で声を聞けば、今何が必要か見えてくるはずだよ。",
-    local_rumor: "噂は人から人へ届くから、聞いた時には少し古いこともある。確かなことから順に話そう。",
-    end_conversation: "ああ、気をつけて。また何か聞きたくなったら声をかけて。",
-  }[resolved.dialogueTopic] ?? "何を知りたい？　話せる範囲なら、順に答えよう。";
+  const activeMission = missionView(runtime, data).find((mission) => mission.status === "active");
+  const learnedFromNpc = resolved.requiredDisclosure
+    ?? rumorView(runtime).find((rumor) => rumor.sourceNpcId === npc.id)?.text;
+  const facilityName = data.model.facilityById[runtime.playerState.player.facilityId]?.name ?? "この辺り";
+  const subject = cleanText(resolved.label, 100) || "今の話";
+  const coreLine = {
+    mission_clue: learnedFromNpc
+      ? `${learnedFromNpc}。これは私が確かに知っていることだ。いつ、どこで見聞きしたかも、順に説明しよう。`
+      : `その件について確かな手掛かりを持っている者は、今ここにはいない。別の時間か場所で聞いてほしい。`,
+    active_mission: activeMission
+      ? `${activeMission.title}なら、今は「${activeMission.currentStep?.label ?? "手掛かりを集める"}」が先だ。急ぐなら、期限と行き先をもう一度確かめてから動いた方がいい。`
+      : "今すぐ任務として頼める話は持っていない。ただ、掲示や人だかりが出た時は、事情を聞いてから動けば無駄足を減らせる。",
+    route_to_lead: activeMission?.currentStep?.targetFacilityName
+      ? `${activeMission.currentStep.targetFacilityName}へ行くなら、人通りのある道を外れない方がいい。必要な準備を済ませ、明るいうちに着ける時間を選びな。`
+      : `${facilityName}から先の道は、目印を知る者に聞くのが確実だ。広場か宿なら、今日そこを通った人を見つけやすい。`,
+    local_concern: learnedFromNpc
+      ? `${learnedFromNpc}　まだ噂の部分もあるが、放っておけば困る人が増える。まず現場と、最初に見た人の話を照らし合わせてほしい。`
+      : `${facilityName}では、普段と違う人の出入りや品物の減り方が最初の兆しになる。今は断言できないから、現場を見た人にも確かめてほしい。`,
+    local_change: learnedFromNpc
+      ? `${learnedFromNpc}　私が気づいた変化はそこまでだ。いつから変わったかは、ここを毎日使う人なら絞り込めるはずだ。`
+      : `${facilityName}を通る顔ぶれと運ばれる物が、いつもと少し違う。私だけの見間違いかもしれないから、時間を変えてもう一度見てほしい。`,
+    personal_stake: `ここは私の暮らす場所で、困っている顔を毎日見るから放っておけない。それでも私一人で決めつけるのは危険だ。確かな手掛かりを持ち帰ってほしい。`,
+    local_rumor: learnedFromNpc
+      ? `${learnedFromNpc}。出所まで確かめたいなら、話が届いた時刻と最初に見た人も辿ると、古い噂か今も続く異変かを分けられる。`
+      : `噂はまだ私のところまで届いていない。人が集まる広場か宿で、誰が最初にその話をしたのかまで尋ねるといい。`,
+    work_offer: `${facilityName}で今すぐ手が要るのは、運搬や片づけのような短い仕事だ。先に仕事内容と賃金を確かめ、終わったら頼んだ本人へ報告してくれ。`,
+    end_conversation: "分かった。ここで聞いた話も、現場が変われば古くなる。行き先で何を見つけたか、また会えた時に聞かせてくれ。",
+  }[resolved.dialogueTopic] ?? `「${subject}」についてだね。私が確かに言えることと、まだ噂のことは分けて話す。まず現場を見て、それから関係する人の話を確かめるといい。`;
+  const line = `${resolved.firstIntroduction ? `私は${resolved.introductionName ?? npc.name}。` : ""}${coreLine}`;
   return {
-    narrative: `${npc.name}はこちらへ向き直り、急かさずに言葉を待った。`,
+    narrative: `${npc.name}は質問の内容を確かめるように一度うなずき、分かっていることと推測を分けて答えた。`,
     speeches: [{ actorId: npc.id, text: line, emotion: "応答" }],
   };
 }
@@ -1950,6 +2908,25 @@ function timeText(state) {
 
 function backgroundKey(state) {
   return state.player.facilityId || `HUB:${state.player.location}`;
+}
+
+function publicFacilityContext(facility) {
+  if (!facility) return { type: "現在地", description: "今いる場所の様子と、人や物の動きを確かめられる。" };
+  const reviewed = PUBLIC_FACILITY_COPY[facility.id];
+  if (reviewed) return reviewed;
+  const name = String(facility.name ?? "この場所");
+  const rule = [
+    [/宿|酒場|食堂|茶屋/u, "宿・交流所", `${name}には旅人や土地の人が立ち寄り、休息や会話ができる。`],
+    [/店|商|市場|工房|鍛冶|薬/u, "商業施設", `${name}では、扱っている品と店先の様子を確かめられる。`],
+    [/広場|掲示|集会/u, "公共の場", `${name}には人が集まり、日々の知らせや往来に触れられる。`],
+    [/神殿|教会|祠|聖堂/u, "信仰の場", `${name}は人々が祈りや用事のために訪れる場所だ。`],
+    [/門|街道|港|船着|駅|橋/u, "交通の要所", `${name}では、行き交う人や荷と、先へ続く道を確かめられる。`],
+    [/森|林|山|谷|洞窟|遺跡|塔/u, "探索地", `${name}は周囲を警戒しながら進み、目に見える痕跡を調べる場所だ。`],
+    [/城|屋敷|館|役所|詰所/u, "建物", `${name}では、訪れている人とその場の様子を確かめられる。`],
+  ].find(([pattern]) => pattern.test(name));
+  return rule
+    ? { type: rule[1], description: rule[2] }
+    : { type: "訪問先", description: `${name}の景観、人の往来、目に見える変化を確かめられる。` };
 }
 
 function presentationChoices(record, choices) {
@@ -2024,6 +3001,7 @@ export function buildGameView(record, runtime, data) {
     };
   });
   const facility = data.model.facilityById[state.player.facilityId];
+  const publicFacility = publicFacilityContext(facility);
   return {
     id: record.id,
     schemaVersion: record.schemaVersion,
@@ -2045,10 +3023,12 @@ export function buildGameView(record, runtime, data) {
       location: state.player.location,
       facilityId: state.player.facilityId,
       facilityName: facility?.name ?? state.player.facilityId,
-      facilityType: facility?.type ?? null,
+      facilityType: publicFacility.type,
+      publicDescription: publicFacility.description,
       backgroundKey: backgroundKey(state),
       narrative: record.presentation?.narrative ?? fallbackNarrative(runtime),
       speeches: record.presentation?.speeches ?? [],
+      beats: record.presentation?.beats ?? [],
       presentNpcs,
       lastOutcome: record.lastOutcome ?? null,
     },
@@ -2056,8 +3036,11 @@ export function buildGameView(record, runtime, data) {
     movement,
     tutorial,
     guidance,
+    battle: interactiveBattleView(runtime, data),
     shop: {
-      available: data.battleData.inventory.some((entry) => entry.location === state.player.location && entry.sellerId === state.player.facilityId),
+      available: !runtime.pendingBattle?.session || runtime.pendingBattle.session.status !== "active"
+        ? data.battleData.inventory.some((entry) => entry.location === state.player.location && entry.sellerId === state.player.facilityId)
+        : false,
       facilityName: facility?.name ?? null,
       stock,
       saleQuotes,
@@ -2093,6 +3076,9 @@ export function buildGameView(record, runtime, data) {
 }
 
 export function availableGameRuntimeActions(runtime, data) {
+  if (runtime.pendingBattle?.session?.status === "active") {
+    return { choices: [], movement: [], stock: [], learnableSkills: [] };
+  }
   if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) {
     return { choices: [], movement: [], stock: [], learnableSkills: [] };
   }
@@ -2105,13 +3091,63 @@ export function availableGameRuntimeActions(runtime, data) {
   };
 }
 
+function narrativePublicGoal(npc, npcState) {
+  if (npcState?.lifeStatus === "injured") return "傷をかばいながら、その場ですべきことを続ける";
+  if (npc?.disposition === "escalate") return "自分に不利な話題を避け、相手の出方をうかがう";
+  const goal = String(npcState?.currentGoal ?? "");
+  if (/respond|assist|search|warn|evacuate|treat/u.test(goal)) return "身近で起きている問題を気にかけている";
+  if (/rest|recover/u.test(goal)) return "疲れを癒やし、次の行動に備える";
+  if (/work|routine/u.test(goal)) return "自分の仕事と日課を進める";
+  return "周囲の様子を見ながら、自分の用事を進める";
+}
+
+function narrativeNpcContexts(runtime, data, publicNpcs, { targetNpcId = null, requiredDisclosure = null } = {}) {
+  const locationReputation = Number(runtime.playerState.player.reputation?.[runtime.playerState.player.location] ?? 0);
+  return publicNpcs.map((publicView) => {
+    const npc = data.model.npcById?.[publicView.id] ?? data.model.npcs.find((entry) => entry.id === publicView.id);
+    const npcState = runtime.livingWorld.npcStates[publicView.id];
+    const mustWithhold = !npcCanDiscloseBeliefs(npc);
+    // Only the fact selected by the authoritative resolver may cross the
+    // dialogue boundary. Sending every belief lets the model reveal facts the
+    // player did not ask about and that the save did not record.
+    const knownLocalFacts = !mustWithhold
+      && publicView.id === targetNpcId
+      && requiredDisclosure
+      ? [requiredDisclosure]
+      : [];
+    const stress = Number(npcState?.needs?.stress ?? 0);
+    const mood = npcState?.lifeStatus === "injured" ? "負傷"
+      : stress >= 70 ? "強く緊張している"
+        : stress >= 45 ? "落ち着かない"
+          : mustWithhold ? "警戒している"
+            : publicView.mood;
+    return {
+      ...publicView,
+      // The authoring occupation is never sent to Gemini. Even a seemingly
+      // ordinary job title may later become the answer to a mystery; the
+      // reviewed public persona is the only safe role boundary.
+      role: publicView.role,
+      mood,
+      speechStyle: publicView.speechStyle ?? `${publicView.role}として、今いる相手へ自然で簡潔に話す`,
+      currentGoal: narrativePublicGoal(npc, npcState),
+      relationship: locationReputation,
+      knownLocalFacts,
+    };
+  });
+}
+
 function narrativeInput(record, runtime, data, action, outcome) {
   const presentNpcs = presentNpcsAt(runtime, data);
   const choices = choiceActions(runtime, data);
   const facility = data.model.facilityById[runtime.playerState.player.facilityId];
+  const publicFacility = publicFacilityContext(facility);
   const missions = missionView(runtime, data).filter((mission) => mission.status === "active");
   const rumors = rumorView(runtime);
   const resolvedAction = action?.resolvedAction ?? action;
+  const narrativeNpcs = narrativeNpcContexts(runtime, data, presentNpcs, {
+    targetNpcId: resolvedAction?.targetNpcId ?? null,
+    requiredDisclosure: resolvedAction?.requiredDisclosure ?? null,
+  });
   const authoritativeOutcome = replayOutcome(outcome) ?? { type: "start", ok: true };
   return {
     locale: "ja-JP",
@@ -2123,6 +3159,16 @@ function narrativeInput(record, runtime, data, action, outcome) {
       targetNpcId: resolvedAction?.targetNpcId ?? null,
       targetNpcName: resolvedAction?.targetNpcName ?? null,
       dialogueTopic: resolvedAction?.dialogueTopic ?? null,
+      firstIntroduction: resolvedAction?.firstIntroduction === true,
+      introductionName: resolvedAction?.firstIntroduction === true
+        ? resolvedAction?.introductionName ?? null
+        : null,
+      playerUtterance: playerUtterance(resolvedAction),
+      conversationTurn: Number(resolvedAction?.conversationTurn ?? runtime.dialogueSession?.turnCount ?? 0),
+      previouslyAskedTopics: Array.isArray(resolvedAction?.previouslyAskedTopics)
+        ? [...resolvedAction.previouslyAskedTopics]
+        : [...(runtime.dialogueSession?.askedTopics ?? [])],
+      requiredDisclosure: resolvedAction?.requiredDisclosure ?? null,
     },
     authoritativeOutcome,
     authoritativeState: {
@@ -2134,8 +3180,10 @@ function narrativeInput(record, runtime, data, action, outcome) {
       locationId: runtime.playerState.player.location,
       facilityId: runtime.playerState.player.facilityId,
       facilityName: facility?.name ?? null,
+      facilityType: publicFacility.type,
+      publicDescription: publicFacility.description,
       presentNpcIds: presentNpcs.map((npc) => npc.id),
-      npcs: presentNpcs,
+      npcs: narrativeNpcs,
       player: {
         displayName: record.playerName,
         visibleCondition: "行動可能",
@@ -2159,30 +3207,33 @@ function narrativeInput(record, runtime, data, action, outcome) {
 
 async function updatePresentation(record, runtime, data, narrator, action = null, outcome = null) {
   const fallback = fallbackNarrative(runtime, action, outcome);
-  if (action?.type === "TUTORIAL_ACK" && record.presentation) {
+  if (["TUTORIAL_ACK", "ACK_NPC_INTRODUCTION"].includes(action?.type) && record.presentation) {
     record.presentation = { ...record.presentation, revision: record.revision, choiceLabels: {} };
     return;
   }
   const authored = authoredOpeningPresentation(runtime);
   if (authored) {
     const presentIds = new Set(presentNpcsAt(runtime, data).map((npc) => npc.id));
-    record.presentation = {
+    const base = {
       revision: record.revision,
       source: "authored_tutorial",
       narrative: authored.narrative,
       speeches: authored.speeches.filter((speech) => presentIds.has(speech.actorId)),
       choiceLabels: {},
     };
+    record.presentation = presentationWithOrderedBeats(runtime, data, action?.resolvedAction ?? action, base);
     return;
   }
   const deterministic = deterministicFallbackPresentation(runtime, data, action, outcome);
   const resolvedAction = action?.resolvedAction ?? action;
-  if (resolvedAction?.type === "move") {
-    record.presentation = { revision: record.revision, source: "deterministic_movement", ...deterministic, choiceLabels: {} };
+  if (["move", "work", "localInvestigate", "wait", "plan"].includes(resolvedAction?.type)) {
+    const base = { revision: record.revision, source: `deterministic_${resolvedAction.type}`, ...deterministic, choiceLabels: {} };
+    record.presentation = presentationWithOrderedBeats(runtime, data, resolvedAction, base);
     return;
   }
   if (!narrator) {
-    record.presentation = { revision: record.revision, source: "deterministic_fallback", ...deterministic, choiceLabels: {} };
+    const base = { revision: record.revision, source: "deterministic_fallback", ...deterministic, choiceLabels: {} };
+    record.presentation = presentationWithOrderedBeats(runtime, data, resolvedAction, base);
     return;
   }
   try {
@@ -2206,17 +3257,24 @@ async function updatePresentation(record, runtime, data, narrator, action = null
     const speeches = (result.speeches ?? [])
       .filter((speech) => presentIds.has(speech.actorId) && allowedSpeechIds.has(speech.actorId))
       .map((speech) => ({ actorId: speech.actorId, text: cleanText(speech.text, 300), emotion: cleanText(speech.emotion, 40) || null }));
-    record.presentation = {
+    const requiredDisclosure = cleanText(resolvedAction?.requiredDisclosure, 180);
+    const disclosureIncluded = !requiredDisclosure || speeches.some((speech) => (
+      speech.actorId === resolvedAction?.targetNpcId && speech.text.includes(requiredDisclosure)
+    ));
+    const guardedSpeeches = disclosureIncluded ? speeches : deterministic.speeches;
+    const base = {
       revision: record.revision,
-      source: result.meta?.source ?? "unknown",
+      source: disclosureIncluded ? result.meta?.source ?? "unknown" : "deterministic_disclosure_guard",
       narrative: cleanText(result.narrative, 1500) || fallback,
-      speeches,
+      speeches: guardedSpeeches,
       choiceLabels,
       cacheKey: result.meta?.cacheKey ?? null,
     };
+    record.presentation = presentationWithOrderedBeats(runtime, data, resolvedAction, base);
   } catch (error) {
     console.error("TRPG gameplay narrative failed; deterministic presentation retained", error);
-    record.presentation = { revision: record.revision, source: "deterministic_fallback", ...deterministic, choiceLabels: {} };
+    const base = { revision: record.revision, source: "deterministic_fallback", ...deterministic, choiceLabels: {} };
+    record.presentation = presentationWithOrderedBeats(runtime, data, resolvedAction, base);
   }
 }
 
@@ -2457,7 +3515,13 @@ export class TrpgGameService {
         outcome: replayOutcome(result.outcome),
       };
       record.commandLog.push(journalEntry);
-      await updatePresentation(record, runtime, this.data, this.narrator, { ...command, ...result }, result.outcome);
+      if (command.type === "BATTLE_ACT" && runtime.pendingBattle?.session?.status === "active") {
+        record.presentation = record.presentation
+          ? { ...record.presentation, revision: record.revision, choiceLabels: {} }
+          : null;
+      } else {
+        await updatePresentation(record, runtime, this.data, this.narrator, { ...command, ...result }, result.outcome);
+      }
       await this.store.put(record);
       return { duplicate: false, save: buildGameView(record, runtime, this.data) };
     });
