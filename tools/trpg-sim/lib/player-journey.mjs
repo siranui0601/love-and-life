@@ -759,7 +759,8 @@ function build(state, data, situationalMultiplier = 1) {
 function battleProgress(state, data, result, fullBuild) {
   inc(state.progress, "battles.totalCount");
   const won = result.winner === "players";
-  inc(state.progress, won ? "battles.wins" : "battles.defeatCount");
+  if (won) inc(state.progress, "battles.wins");
+  else if (result.winner !== "fled") inc(state.progress, "battles.defeatCount");
   inc(state.progress, `battles.byDaypart.${state.daypart}`);
   if (state.daypart === "night") inc(state.progress, "battles.nightCount");
   inc(state.progress, `battles.byDay.${state.day}`);
@@ -809,7 +810,7 @@ function rewards(state, data, result, key, skills, profile) {
   return { exp, gold, kills };
 }
 
-function runBattle(state, model, data, skills, profile, encounterId, key, situationalMultiplier = 1) {
+export function prepareJourneyBattle(state, data, encounterId, key, situationalMultiplier = 1) {
   const fullBuild = build(state, data, situationalMultiplier);
   const scaledBuild = {
     ...fullBuild,
@@ -817,23 +818,24 @@ function runBattle(state, model, data, skills, profile, encounterId, key, situat
     maxHp: Math.max(1, Math.round(fullBuild.maxHp * Math.max(0.18, state.player.hpRatio))),
     maxMp: Math.max(0, Math.round(fullBuild.maxMp * Math.max(0.03, state.player.mpRatio))),
   };
-  const result = simulateBattle({
-    data,
-    encounterId,
-    playerBuild: scaledBuild,
-    seed: key,
-    maxTurns: 100,
-    captureTimeline: state.tuning.captureBattleTimeline === true,
-  });
+  return { encounterId, key, fullBuild, scaledBuild };
+}
+
+export function settleJourneyBattle(state, model, data, skills, profileInput, result, prepared) {
+  const profile = typeof profileInput === "string" ? PROFILE.get(profileInput) : profileInput;
+  const { encounterId, key, fullBuild, scaledBuild } = prepared;
   state.metrics.battles += 1;
   const actor = result.players[0];
   state.player.hpRatio = Math.max(0, Math.min(1, state.player.hpRatio * actor.hp / Math.max(1, scaledBuild.maxHp)));
   state.player.mpRatio = scaledBuild.maxMp ? Math.max(0, Math.min(1, state.player.mpRatio * actor.mp / scaledBuild.maxMp)) : 0;
   const won = battleProgress(state, data, result, fullBuild);
+  const fled = result.winner === "fled";
   let gain = { exp: 0, gold: 0, kills: 0 };
   if (won) {
     state.metrics.wins += 1;
     gain = rewards(state, data, result, key, skills, profile);
+  } else if (fled) {
+    inc(state.metrics, "escapes");
   } else {
     state.metrics.losses += 1;
     state.player.gold = Math.floor(state.player.gold * 0.9);
@@ -841,8 +843,21 @@ function runBattle(state, model, data, skills, profile, encounterId, key, situat
     state.player.mpRatio = Math.max(state.player.mpRatio, 0.2);
     advance(state, model, state.tuning.defeatRecoveryMinutes ?? 360, "defeat-recovery");
   }
-  state.history.push({ type: "BATTLE_RESOLVED", minute: state.absoluteMinute, encounterId, winner: result.winner, rewards: gain });
-  return { ...result, won, rewards: gain };
+  state.history.push({ type: fled ? "BATTLE_FLED" : "BATTLE_RESOLVED", minute: state.absoluteMinute, encounterId, winner: result.winner, rewards: gain });
+  return { ...result, won, fled, rewards: gain };
+}
+
+function runBattle(state, model, data, skills, profile, encounterId, key, situationalMultiplier = 1) {
+  const prepared = prepareJourneyBattle(state, data, encounterId, key, situationalMultiplier);
+  const result = simulateBattle({
+    data,
+    encounterId,
+    playerBuild: prepared.scaledBuild,
+    seed: key,
+    maxTurns: 100,
+    captureTimeline: state.tuning.captureBattleTimeline === true,
+  });
+  return settleJourneyBattle(state, model, data, skills, profile, result, prepared);
 }
 
 function compact(state) {
@@ -988,7 +1003,7 @@ function utility(action, state, profile) {
   return score;
 }
 
-export function generateChoiceActions(state, model, data, catalog, profile = PROFILE.get(state.profileId)) {
+export function generateChoiceActions(state, model, data, catalog, profile = PROFILE.get(state.profileId), options = {}) {
   const candidates = missionActions(state, catalog);
   const talk = localTalk(state, model, profile);
   if (talk) candidates.push(talk);
@@ -1000,7 +1015,10 @@ export function generateChoiceActions(state, model, data, catalog, profile = PRO
   }
   if (state.player.gold < (state.tuning.workGoldThreshold ?? 30)) candidates.push({ id: "WORK", type: "work", minutes: 120, label: "仕事をして路銀を得る" });
   candidates.push({ id: "OBSERVE", type: "observe", minutes: 45, label: "周囲の噂と変化を確かめる" });
-  const result = [...new Map(candidates.map((action) => [action.id, action])).values()]
+  const eligibleCandidates = typeof options.candidateFilter === "function"
+    ? candidates.filter((action) => options.candidateFilter(action) !== false)
+    : candidates;
+  const result = [...new Map(eligibleCandidates.map((action) => [action.id, action])).values()]
     .sort((left, right) => utility(right, state, profile) - utility(left, state, profile) || left.id.localeCompare(right.id))
     .slice(0, 3)
     .map((action, index) => ({ ...action, choiceId: `CHOICE-${index + 1}` }));
@@ -1137,6 +1155,160 @@ export function resolveMovementAction(state, model, data, skills, profileInput, 
   return { ok: true, type: "move", movementScope: "regional", battle };
 }
 
+/**
+ * Advances a deliberate battle action to the point where a player command is
+ * required. The returned continuation is serializable and is settled only
+ * after the interactive battle engine reports a final winner.
+ */
+export function beginInteractiveBattleAction(state, model, data, skills, catalog, profileInput, action) {
+  const profile = typeof profileInput === "string" ? PROFILE.get(profileInput) : profileInput;
+  if (!action || !["missionBattle", "seekBattle"].includes(action.type)) {
+    return { ok: false, reason: "not_interactive_battle_action" };
+  }
+  const preHash = stateFingerprint(state);
+  const missionDefinition = action.missionId ? mission(catalog, action.missionId) : null;
+  const missionRuntime = missionDefinition ? state.missions[missionDefinition.id] : null;
+  const step = missionDefinition ? missionDefinition.steps.find((entry) => entry.id === action.stepId) : null;
+  let encounterId = null;
+  let key = null;
+  let situationalMultiplier = 1;
+
+  if (action.type === "missionBattle") {
+    advance(state, model, action.minutes, `mission-battle:${action.missionId}`);
+    const closedReason = missionClosedAfterTimeAdvance(state, missionDefinition);
+    encounterId = closedReason ? null : action.encounterId
+      ?? weighted(encounters(state, data, profile, { eventOnly: true }), `${state.seed}:${action.id}`)?.id;
+    if (closedReason) return { ok: false, committed: true, type: action.type, reason: closedReason };
+    if (!encounterId) return { ok: false, committed: true, type: action.type, reason: "no_encounter" };
+    const evidence = Number(state.player.evidenceByTrouble[missionDefinition.troubleId] ?? 0);
+    const preparation = Math.min(
+      Number(state.tuning.missionPreparationBonusMax ?? 0.75),
+      evidence * Number(state.tuning.missionPreparationBonusPerEvidence ?? 0.16),
+    );
+    situationalMultiplier = 1 + preparation;
+    key = `${state.seed}:mission:${action.missionId}:${state.metrics.battles}`;
+  } else {
+    advance(state, model, action.minutes, "seek-battle");
+    const encounter = selectEncounter(state, data, profile, `${state.seed}:seek:${state.metrics.actions}:${state.player.location}`);
+    if (!encounter) return { ok: false, committed: true, type: action.type, reason: "no_encounter" };
+    encounterId = encounter.id;
+    key = `${state.seed}:seek:${state.metrics.battles}:${encounterId}`;
+    const baseCooldown = Number(state.tuning.wildEncounterCooldownMinutes ?? 540);
+    const profileFactor = profile.id === "fighter" ? 0.7 : profile.id === "cautious" ? 1.2 : 1;
+    state.encounterAvailability[state.player.location] = state.absoluteMinute + Math.round(baseCooldown * profileFactor);
+  }
+
+  return {
+    ok: true,
+    type: action.type,
+    continuation: {
+      version: 1,
+      action: {
+        id: action.id,
+        type: action.type,
+        missionId: action.missionId ?? null,
+        stepId: action.stepId ?? null,
+      },
+      encounterId,
+      key,
+      preHash,
+      prepared: prepareJourneyBattle(state, data, encounterId, key, situationalMultiplier),
+      mission: missionDefinition ? { id: missionDefinition.id, stepId: step?.id ?? null } : null,
+    },
+  };
+}
+
+export function settleInteractiveBattleAction(state, model, data, skills, catalog, profileInput, continuation, battleResult) {
+  const profile = typeof profileInput === "string" ? PROFILE.get(profileInput) : profileInput;
+  if (!continuation?.prepared || !battleResult) return { ok: false, reason: "interactive_battle_result_missing" };
+  const battle = settleJourneyBattle(state, model, data, skills, profile, battleResult, continuation.prepared);
+  const action = continuation.action;
+  if (action.type === "missionBattle" && battle.won && continuation.mission) {
+    const definition = mission(catalog, continuation.mission.id);
+    const missionRuntime = state.missions[definition.id];
+    const step = definition.steps.find((entry) => entry.id === continuation.mission.stepId);
+    if (step) finishStep(state, definition, missionRuntime, step);
+  }
+  const postHash = stateFingerprint(state);
+  const replayKey = hash({ preHash: continuation.preHash, actionId: action.id });
+  state.replayResults[replayKey] = hash({
+    actionId: action.id,
+    outcome: { type: action.type, ok: true, winner: battle.winner },
+    postHash,
+  });
+  state.history.push({
+    type: "PLAYER_ACTION_RESOLVED",
+    minute: state.absoluteMinute,
+    actionId: action.id,
+    replayKey,
+    preHash: continuation.preHash,
+    postHash,
+  });
+  autoLearn(state, data, skills, profile);
+  refreshMissions(state, model, catalog, data, skills, profile);
+  return { ok: true, type: action.type, battle };
+}
+
+function finalizeResolvedPlayerAction(state, model, data, skills, catalog, profile, action, output, preHash, replayKey) {
+  const postHash = stateFingerprint(state);
+  const resultHash = hash({ actionId: action.id, outcome: { type: output.type, ok: output.ok, reason: output.reason }, postHash });
+  if (state.replayResults[replayKey] && state.replayResults[replayKey] !== resultHash && !["seekBattle", "missionBattle", "investigate"].includes(action.type)) {
+    state.metrics.replayMismatches += 1;
+  }
+  state.replayResults[replayKey] = resultHash;
+  state.history.push({ type: "PLAYER_ACTION_RESOLVED", minute: state.absoluteMinute, actionId: action.id, replayKey, preHash, postHash });
+  autoLearn(state, data, skills, profile);
+  refreshMissions(state, model, catalog, data, skills, profile);
+  return output;
+}
+
+export function settleMissionConversationAction(state, model, data, skills, catalog, profileInput, action, pendingResult) {
+  const profile = typeof profileInput === "string" ? PROFILE.get(profileInput) : profileInput;
+  const continuation = pendingResult?.missionConversationContinuation;
+  if (!pendingResult?.missionConversationPending
+    || !continuation
+    || continuation.actionId !== action?.id
+    || continuation.missionId !== action?.missionId
+    || continuation.stepId !== action?.stepId) {
+    throw new Error("Invalid deferred mission conversation continuation");
+  }
+  const missionDefinition = mission(catalog, continuation.missionId);
+  const runtime = state.missions[missionDefinition.id];
+  const step = missionDefinition.steps.find((entry) => entry.id === continuation.stepId);
+  if (!runtime || !step) throw new Error("Deferred mission conversation no longer exists");
+
+  const completed = Boolean(action.targetNpcId && String(action.requiredDisclosure ?? "").trim());
+  const output = {
+    ok: true,
+    type: "conversation",
+    missionConversationCompleted: completed,
+    summary: completed
+      ? `${action.speakerLabelBeforeIntroduction ?? action.targetNpcName ?? "その人物"}から「${missionDefinition.title}」の手掛かりを聞いた。`
+      : "話を聞き終える前に相手がその場を離れ、ミッションの手掛かりはまだ得られなかった。",
+  };
+  if (completed) {
+    finishStep(state, missionDefinition, runtime, step);
+    publishRumor(state, model, {
+      id: `RUM-PLAYER-${missionDefinition.troubleId}-HEARD`,
+      troubleId: missionDefinition.troubleId,
+      text: `${missionDefinition.title}の手掛かりを得た`,
+    });
+    inc(state.player.reputation, state.player.location, 2);
+  }
+  return finalizeResolvedPlayerAction(
+    state,
+    model,
+    data,
+    skills,
+    catalog,
+    profile,
+    action,
+    output,
+    continuation.preHash,
+    continuation.replayKey,
+  );
+}
+
 export function resolvePlayerAction(state, model, data, skills, catalog, profileInput, action) {
   const profile = typeof profileInput === "string" ? PROFILE.get(profileInput) : profileInput;
   const preHash = stateFingerprint(state);
@@ -1145,6 +1317,12 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
   const missionDefinition = action.missionId ? mission(catalog, action.missionId) : null;
   const runtime = missionDefinition ? state.missions[missionDefinition.id] : null;
   const step = missionDefinition ? missionDefinition.steps.find((entry) => entry.id === action.stepId) : null;
+  const deferredMissionConversation = Boolean(
+    missionDefinition
+    && step
+    && action.type === "conversation"
+    && action.deferMissionConversationCompletion === true,
+  );
 
   if (action.type === "conversation") {
     advance(state, model, action.minutes, `conversation:${action.targetNpcId ?? action.missionId ?? "local"}`);
@@ -1153,11 +1331,24 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     if (action.targetNpcId) state.conversationAvailability[action.targetNpcId] = state.absoluteMinute + Number(state.tuning.conversationCooldownMinutes ?? 720);
     const closedReason = missionClosedAfterTimeAdvance(state, missionDefinition);
     if (closedReason) output = { ok: false, committed: true, type: action.type, reason: closedReason };
-    else if (step) finishStep(state, missionDefinition, runtime, step);
-    if (missionDefinition && !closedReason) {
+    else if (step && !deferredMissionConversation) finishStep(state, missionDefinition, runtime, step);
+    if (missionDefinition && !closedReason && !deferredMissionConversation) {
       publishRumor(state, model, { id: `RUM-PLAYER-${missionDefinition.troubleId}-HEARD`, troubleId: missionDefinition.troubleId, text: `${missionDefinition.title}の情報を得た` });
       inc(state.player.reputation, state.player.location, 2);
     } else if (!missionDefinition) inc(state.player.reputation, state.player.location, 1);
+    if (deferredMissionConversation && !closedReason) {
+      return {
+        ...output,
+        missionConversationPending: true,
+        missionConversationContinuation: {
+          preHash,
+          replayKey,
+          actionId: action.id,
+          missionId: missionDefinition.id,
+          stepId: step.id,
+        },
+      };
+    }
   } else if (action.type === "investigate") {
     advance(state, model, action.minutes, `investigate:${action.missionId}`);
     const closedReason = missionClosedAfterTimeAdvance(state, missionDefinition);
@@ -1224,20 +1415,14 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     const wage = 5 + Math.floor(unit(state.seed, state.absoluteMinute, state.player.location, "wage") * 8);
     state.player.gold += wage;
     state.progress.economy.goldFromWork += wage;
+  } else if (action.type === "localInvestigate") {
+    advance(state, model, action.minutes ?? 45, `local-investigate:${state.player.facilityId ?? state.player.location}`);
+    inc(state.progress, "investigation.total");
   } else {
     advance(state, model, action.minutes ?? 45, "observe");
   }
 
-  const postHash = stateFingerprint(state);
-  const resultHash = hash({ actionId: action.id, outcome: { type: output.type, ok: output.ok, reason: output.reason }, postHash });
-  if (state.replayResults[replayKey] && state.replayResults[replayKey] !== resultHash && !["seekBattle", "missionBattle", "investigate"].includes(action.type)) {
-    state.metrics.replayMismatches += 1;
-  }
-  state.replayResults[replayKey] = resultHash;
-  state.history.push({ type: "PLAYER_ACTION_RESOLVED", minute: state.absoluteMinute, actionId: action.id, replayKey, preHash, postHash });
-  autoLearn(state, data, skills, profile);
-  refreshMissions(state, model, catalog, data, skills, profile);
-  return output;
+  return finalizeResolvedPlayerAction(state, model, data, skills, catalog, profile, action, output, preHash, replayKey);
 }
 
 function progress() {

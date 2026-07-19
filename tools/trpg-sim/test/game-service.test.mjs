@@ -23,12 +23,12 @@ function service(seedSupport = true, options = {}) {
   return { store, game: new TrpgGameService({ store, allowCustomSeed: seedSupport, ...options }) };
 }
 
-function commandRunner(game, initial) {
+function commandRunner(game, initial, commandPrefix = "command") {
   let save = initial;
   let sequence = 0;
   return {
     get save() { return save; },
-    async run(type, payload, commandId = `command-${++sequence}`) {
+    async run(type, payload, commandId = `${commandPrefix}-${++sequence}`) {
       const response = await game.command(owner, save.id, {
         commandId,
         expectedRevision: save.revision,
@@ -39,6 +39,13 @@ function commandRunner(game, initial) {
       return response;
     },
   };
+}
+
+async function acknowledgeVisibleIntroduction(runner) {
+  const beat = runner.save.scene.beats.find((entry) => entry.introductionToken);
+  if (!beat) return false;
+  await runner.run("ACK_NPC_INTRODUCTION", { token: beat.introductionToken });
+  return true;
 }
 
 async function completeOpening(runner, {
@@ -54,12 +61,131 @@ async function completeOpening(runner, {
   };
   await choose(awakening);
   await choose(contact);
+  await acknowledgeVisibleIntroduction(runner);
   await choose(orientation);
   const square = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FARM_SQUARE");
   assert.ok(square, "the movement tutorial must point to the village square");
   await runner.run("MOVE", { moveId: square.moveId });
   await choose(inquiry);
+  await acknowledgeVisibleIntroduction(runner);
   return runner.save;
+}
+
+function runtimeView(runtime, data) {
+  return buildGameView({
+    id: "runtime-test",
+    schemaVersion: "test",
+    contentRevision: data.contentRevision,
+    revision: 0,
+    stateHash: gameStateHash(runtime, data),
+    playerName: runtime.playerState.player.displayName ?? "テスト旅人",
+    presentation: null,
+    lastOutcome: null,
+  }, runtime, data);
+}
+
+function prepareMissionClueConversation(runtime, npcId = "NPC003") {
+  const state = runtime.playerState;
+  runtime.tutorial = null;
+  runtime.lastWorldTickMinute = 0;
+  state.player.location = "田園の村";
+  state.player.facilityId = "LOC_FARM_SQUARE";
+  state.troubles.T02.status = "active";
+  state.missions["MSN-T02"].status = "active";
+  state.missions["MSN-T02"].progress.hear = 0;
+  const knownRumor = {
+    id: "TEST-T02-KNOWN",
+    troubleId: "T02",
+    text: "共同穀倉に火の気があるという噂",
+    origin: "田園の村",
+    originMinute: 0,
+    importance: 1,
+    recipients: {},
+  };
+  state.rumors.push(knownRumor);
+  state.rumorById[knownRumor.id] = knownRumor;
+  state.player.knownRumorIds.add(knownRumor.id);
+  for (const npcState of Object.values(runtime.livingWorld.npcStates)) {
+    for (const [factId, belief] of Object.entries(npcState.beliefs ?? {})) {
+      const troubleId = belief.troubleId ?? belief.troubleIds?.[0] ?? String(belief.text ?? "").match(/^(T\d{2})[_・\s-]/u)?.[1];
+      if (troubleId === "T02") delete npcState.beliefs[factId];
+    }
+  }
+  const npcState = runtime.livingWorld.npcStates[npcId];
+  npcState.lifeStatus = "alive";
+  npcState.presence = "present";
+  npcState.location = "田園の村";
+  npcState.position = { hubId: "田園の村", facilityId: "LOC_FARM_SQUARE" };
+  npcState.travel = null;
+  npcState.localTravel = null;
+  npcState.beliefs = {
+    ...npcState.beliefs,
+    "TEST-T02-CLUE": {
+      factId: "TEST-T02-CLUE",
+      kind: "fact",
+      text: "T02_穀倉放火",
+      troubleIds: ["T02"],
+      importance: 1,
+      learnedAt: 0,
+      secret: false,
+      sourceType: "sheet",
+      hopCount: 0,
+      path: [npcId],
+    },
+  };
+  return npcState;
+}
+
+function preferredBattleCommand(battle) {
+  const available = battle.commands.filter((command) => command.available !== false);
+  return available.find((command) => command.kind === "skill")
+    ?? available.find((command) => command.kind === "attack")
+    ?? available.find((command) => command.kind === "defend")
+    ?? available.find((command) => command.kind === "flee");
+}
+
+function battlePayload(battle, command) {
+  const target = command.targets?.find((entry) => entry.side === "enemy") ?? command.targets?.[0];
+  return {
+    battleId: battle.id,
+    actionId: command.actionId,
+    ...(target ? { targetInstanceId: target.instanceId } : {}),
+  };
+}
+
+function finishRuntimeBattle(runtime, data) {
+  const rounds = [];
+  let finalResult = null;
+  for (let guard = 0; guard < 120; guard += 1) {
+    const battle = runtimeView(runtime, data).battle;
+    if (!battle) break;
+    const action = preferredBattleCommand(battle);
+    assert.ok(action, `round ${battle.round} must expose an available player command`);
+    finalResult = executeGameRuntimeCommand(runtime, data, {
+      type: "BATTLE_ACT",
+      payload: battlePayload(battle, action),
+    });
+    rounds.push(finalResult);
+  }
+  assert.equal(runtime.pendingBattle, null, "interactive battle must finish within its turn limit");
+  assert.ok(finalResult?.outcome?.battle, "the final battle command must settle the encounter");
+  return { rounds, finalResult };
+}
+
+async function finishRunnerBattle(runner) {
+  const rounds = [];
+  let finalResponse = null;
+  for (let guard = 0; guard < 120; guard += 1) {
+    const battle = runner.save.battle;
+    if (!battle) break;
+    const action = preferredBattleCommand(battle);
+    assert.ok(action, `round ${battle.round} must expose an available player command`);
+    finalResponse = await runner.run("BATTLE_ACT", battlePayload(battle, action));
+    rounds.push(finalResponse);
+  }
+  assert.equal(runner.save.battle, null, "interactive battle must finish within its turn limit");
+  assert.ok(finalResponse?.save?.scene?.lastOutcome?.battle, "the final battle command must settle the encounter");
+  return { rounds, finalResponse };
 }
 
 test("playable save starts alone in the Day1 wheat field with a progressive, profile-free opening", async () => {
@@ -266,6 +392,7 @@ test("a defeated regional journey persists its battle and elapsed time instead o
   runtime.playerState.player.facilityId = "LOC_CRIME_DOCK";
   runtime.playerState.player.level = 10;
   runtime.playerState.player.hpRatio = 0.01;
+  runtime.playerKnowledge.knownHubIds.add("黒嶺連合領");
   const move = availableGameRuntimeActions(runtime, game.data).movement
     .find((entry) => entry.id === "MOVE_REGION:黒嶺連合領");
   assert.ok(move);
@@ -293,7 +420,7 @@ test("a defeated regional journey persists its battle and elapsed time instead o
   assert.ok(persisted.playerState.history.some((entry) => entry.type === "REGIONAL_MOVE_INTERRUPTED"));
 });
 
-test("real-game battle capture is ephemeral, deterministic, and leaves runtime tuning unchanged", () => {
+test("interactive real-game battle capture is deterministic and leaves runtime tuning unchanged", () => {
   const { game } = service();
   const source = createGameRuntime(game.data, {
     seed: "cap-reward-0",
@@ -315,8 +442,19 @@ test("real-game battle capture is ephemeral, deterministic, and leaves runtime t
     type: "CHOOSE",
     payload: { choiceId: action.choiceId },
   });
-  const { playback: firstPlayback, ...firstBattle } = firstResult.outcome.battle;
-  const { playback: secondPlayback, ...secondBattle } = secondResult.outcome.battle;
+  assert.equal(firstResult.outcome.battlePending, true);
+  assert.equal(secondResult.outcome.battlePending, true);
+  assert.deepEqual(runtimeView(first, game.data).battle, runtimeView(second, game.data).battle);
+
+  const firstResolution = finishRuntimeBattle(first, game.data);
+  const secondResolution = finishRuntimeBattle(second, game.data);
+  assert.equal(firstResolution.rounds.length, secondResolution.rounds.length);
+  assert.deepEqual(
+    firstResolution.rounds.map((entry) => entry.outcome),
+    secondResolution.rounds.map((entry) => entry.outcome),
+  );
+  const { playback: firstPlayback, ...firstBattle } = firstResolution.finalResult.outcome.battle;
+  const { playback: secondPlayback, ...secondBattle } = secondResolution.finalResult.outcome.battle;
 
   assert.ok(firstPlayback);
   assert.deepEqual(firstPlayback, secondPlayback);
@@ -396,32 +534,61 @@ test("truncated battle playback carries a deterministic checkpoint across the om
 test("the authored opening reveals Eda, movement and T01 in that order and survives replay", async () => {
   const { game } = service();
   const runner = commandRunner(game, await game.create(owner, { playerName: "初見", seed: "opening-order" }));
+  assert.equal(runner.save.scene.facilityType, "農地");
+  assert.match(runner.save.scene.publicDescription, /麦畑/u);
+  assert.doesNotMatch(JSON.stringify(runner.save.scene), /農地\/開始地点|召喚開始地点|Day1召喚|T13水不足|プレイヤー初期地点/u);
   const startMinute = runner.save.clock.absoluteMinute;
   await runner.run("CHOOSE", { choiceId: runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:AWAKEN:GROUND").choiceId });
-  assert.equal(runner.save.scene.presentNpcs.some((npc) => npc.id === "NPC004"), true);
+  const unknownEda = runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC004");
+  assert.equal(unknownEda?.name, "見知らぬ女性");
+  assert.equal(unknownEda?.identified, false);
+  assert.doesNotMatch(runner.save.choices.map((choice) => choice.label).join("\n"), /エダ/u);
   assert.equal(runner.save.tutorial.id, "first-conversation");
   assert.equal(runner.save.clock.absoluteMinute, startMinute + 6);
   assert.equal(runner.save.missions.length, 0);
   await runner.run("CHOOSE", { choiceId: runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:CONTACT:WHO").choiceId });
+  const edaIntroduction = runner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === "NPC004");
+  assert.equal(edaIntroduction?.speakerLabel, "見知らぬ女性");
+  assert.match(edaIntroduction?.text ?? "", /エダ/u);
+  assert.equal(typeof edaIntroduction?.introductionToken, "string");
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC004")?.identified, false);
+  await acknowledgeVisibleIntroduction(runner);
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC004")?.identified, true);
   await runner.run("CHOOSE", { choiceId: runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:ORIENT:FOUND").choiceId });
   assert.equal(runner.save.tutorial.id, "first-movement");
   assert.deepEqual(runner.save.tutorial.unlocked, {
-    choices: true,
+    choices: false,
     movement: true,
     missions: false,
     shop: false,
     skills: false,
     battle: false,
   });
-  assert.ok(runner.save.movement.length > 0);
+  assert.deepEqual(runner.save.choices, []);
+  assert.equal(runner.save.movement.length, 1);
   assert.ok(runner.save.movement.every((move) => move.scope === "local"));
   assert.equal(runner.save.movement.some((move) => move.recommended && move.destinationFacilityId === "LOC_FARM_SQUARE"), true);
   const square = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FARM_SQUARE");
   await runner.run("MOVE", { moveId: square.moveId });
   assert.equal(runner.save.tutorial.id, "discover-trouble");
   assert.equal(runner.save.missions.length, 0);
-  assert.ok(runner.save.scene.presentNpcs.some((npc) => npc.id === "NPC002"));
+  assert.deepEqual(Object.fromEntries(runner.save.scene.presentNpcs
+    .filter((npc) => ["NPC002", "NPC003", "NPC062"].includes(npc.id))
+    .map((npc) => [npc.id, { name: npc.name, identified: npc.identified }])), {
+    NPC002: { name: "取り乱した女性", identified: false },
+    NPC003: { name: "年配の村人", identified: false },
+    NPC062: { name: "落ち着かない少年", identified: false },
+  });
+  assert.doesNotMatch(runner.save.choices.map((choice) => choice.label).join("\n"), /ガロ|ミラ|コビー/u);
   await runner.run("CHOOSE", { choiceId: runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:INQUIRY:COBY").choiceId });
+  const cobyIntroduction = runner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === "NPC062");
+  assert.equal(cobyIntroduction?.speakerLabel, "落ち着かない少年");
+  assert.match(cobyIntroduction?.text ?? "", /コビー/u);
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC062")?.identified, false);
+  await acknowledgeVisibleIntroduction(runner);
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC062")?.identified, true);
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC002")?.identified, false);
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC003")?.identified, false);
   assert.equal(runner.save.tutorial.id, "mission-log");
   assert.deepEqual(runner.save.tutorial.unlocked, {
     choices: true,
@@ -434,6 +601,78 @@ test("the authored opening reveals Eda, movement and T01 in that order and survi
   assert.ok(runner.save.missions.some((mission) => mission.id === "MSN-T01"));
   assert.equal(runner.save.guidance.targetFacilityId, "LOC_FARM_EDGE");
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
+});
+
+test("an unknown NPC becomes identified only after the visible self-introduction is acknowledged", async () => {
+  const { game, store } = service();
+  const runner = commandRunner(game, await game.create(owner, {
+    playerName: "名前を聞く旅人",
+    seed: "introduction-ack-boundary",
+  }));
+  await runner.run("CHOOSE", {
+    choiceId: runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:AWAKEN:LISTEN").choiceId,
+  });
+  await runner.run("CHOOSE", {
+    choiceId: runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:CONTACT:WHO").choiceId,
+  });
+  const introduction = runner.save.scene.beats.find((beat) => beat.actorId === "NPC004" && beat.introductionToken);
+  assert.ok(introduction?.introductionToken);
+  assert.equal(introduction.speakerLabel, "見知らぬ女性");
+  assert.match(introduction.text, /エダ/u);
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC004")?.identified, false);
+  assert.doesNotMatch(runner.save.scene.lastOutcome.summary, /エダ/u);
+  assert.doesNotMatch(runner.save.choices.map((choice) => choice.label).join("\n"), /エダ/u);
+
+  const beforeMinute = runner.save.clock.absoluteMinute;
+  const token = introduction.introductionToken;
+  const commandId = `ack-introduction-${token.slice(0, 20)}`;
+  const acknowledged = await runner.run("ACK_NPC_INTRODUCTION", { token }, commandId);
+  assert.equal(acknowledged.save.clock.absoluteMinute, beforeMinute);
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC004")?.identified, true);
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC004")?.name, "エダ");
+
+  const duplicate = await game.command(owner, runner.save.id, {
+    commandId,
+    expectedRevision: runner.save.revision,
+    type: "ACK_NPC_INTRODUCTION",
+    payload: { token },
+  });
+  assert.equal(duplicate.duplicate, true);
+  await assert.rejects(() => game.command(owner, runner.save.id, {
+    commandId: "stale-introduction-token",
+    expectedRevision: runner.save.revision,
+    type: "ACK_NPC_INTRODUCTION",
+    payload: { token: `${token}-stale` },
+  }), (error) => error?.code === "npc_introduction_not_available");
+
+  const record = await store.get(runner.save.id);
+  const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
+  assert.equal(runtime.playerKnowledge.knownNpcIds.has("NPC004"), true);
+  assert.equal(runtime.pendingNpcIntroduction, null);
+  assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
+});
+
+test("an introduction token cannot identify an NPC after that NPC leaves the scene", () => {
+  const { game } = service();
+  const runtime = createGameRuntime(game.data, {
+    seed: "introduction-target-left",
+    profileId: "balanced",
+    playerName: "待ち人",
+    tutorial: false,
+  });
+  const talk = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.type === "conversation" && action.targetNpcId === "NPC004");
+  executeGameRuntimeCommand(runtime, game.data, { type: "CHOOSE", payload: { choiceId: talk.choiceId } });
+  const token = runtime.pendingNpcIntroduction?.token;
+  assert.ok(token);
+  const eda = runtime.livingWorld.npcStates.NPC004;
+  eda.presence = "traveling";
+  eda.position = { hubId: "田園の村", facilityId: "LOC_FARM_WELL" };
+  assert.throws(() => executeGameRuntimeCommand(runtime, game.data, {
+    type: "ACK_NPC_INTRODUCTION",
+    payload: { token },
+  }), (error) => error?.code === "npc_introduction_not_available");
+  assert.equal(runtime.playerKnowledge.knownNpcIds.has("NPC004"), false);
 });
 
 test("replay verification rejects journal outcome, sequence and revision tampering", async () => {
@@ -462,38 +701,34 @@ test("replay verification rejects journal outcome, sequence and revision tamperi
   assert.equal(sequenceVerification.checks[0].revisionMatches, false);
 });
 
-test("opening cast remains present when square arrival crosses an NPC life tick", async () => {
+test("opening cast remains present when guided square arrival crosses an NPC life tick", () => {
   const { game } = service();
-  const runner = commandRunner(game, await game.create(owner, { playerName: "境界旅人", seed: "tick-cross-a" }));
-  const choose = async (actionId) => {
-    const choice = runner.save.choices.find((entry) => entry.actionId === actionId);
-    assert.ok(choice, `${actionId} must be available at the boundary setup`);
-    await runner.run("CHOOSE", { choiceId: choice.choiceId });
-  };
+  const runtime = createGameRuntime(game.data, {
+    seed: "tick-cross-a",
+    profileId: "balanced",
+    playerName: "境界旅人",
+    tutorial: true,
+  });
+  runtime.tutorial.stage = "movement";
+  runtime.playerKnowledge.knownFacilityIds.add("LOC_FARM_SQUARE");
+  runtime.playerState.absoluteMinute = 229;
+  Object.assign(runtime.playerState, clockFromMinute(229));
+  assert.deepEqual(availableGameRuntimeActions(runtime, game.data).choices, []);
 
-  for (const actionId of [
-    "TUTORIAL:AWAKEN:GROUND",
-    "TUTORIAL:CONTACT:WHERE",
-    "TUTORIAL:ORIENT:FOUND",
-    "WORK",
-    "OBSERVE",
-    "OBSERVE",
-  ]) await choose(actionId);
-  assert.equal(runner.save.clock.absoluteMinute, 229);
-
-  const square = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FARM_SQUARE");
+  const square = availableGameRuntimeActions(runtime, game.data).movement
+    .find((move) => move.destinationFacilityId === "LOC_FARM_SQUARE");
   assert.ok(square);
-  await runner.run("MOVE", { moveId: square.moveId });
-  assert.equal(runner.save.clock.absoluteMinute, 240);
-  const presentIds = new Set(runner.save.scene.presentNpcs.map((npc) => npc.id));
+  executeGameRuntimeCommand(runtime, game.data, { type: "MOVE", payload: { moveId: square.id } });
+  const view = runtimeView(runtime, game.data);
+  assert.equal(view.clock.absoluteMinute, 240);
+  const presentIds = new Set(view.scene.presentNpcs.map((npc) => npc.id));
   assert.ok(presentIds.size > 0);
-  assert.ok(runner.save.choices.every((choice) => !choice.targetNpcId || presentIds.has(choice.targetNpcId)));
-  assert.deepEqual(runner.save.choices.map((choice) => choice.actionId), [
+  assert.ok(view.choices.every((choice) => !choice.targetNpcId || presentIds.has(choice.targetNpcId)));
+  assert.deepEqual(view.choices.map((choice) => choice.actionId), [
     "TUTORIAL:INQUIRY:GARO",
     "TUTORIAL:INQUIRY:MIRA",
     "TUTORIAL:INQUIRY:COBY",
   ]);
-  assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
 });
 
 test("an opening inquiry crossing Finn's rescue deadline becomes aftermath instead of stale progress", () => {
@@ -528,9 +763,9 @@ test("an opening inquiry crossing Finn's rescue deadline becomes aftermath inste
 
 test("each opening inquiry records only its authoritative clue and survives replay", async () => {
   const branches = [
-    { inquiry: "TUTORIAL:INQUIRY:GARO", factId: "T01_SEARCH_BOUNDARY", evidence: 1 },
-    { inquiry: "TUTORIAL:INQUIRY:MIRA", factId: "T01_FINN_MAP", evidence: 1 },
-    { inquiry: "TUTORIAL:INQUIRY:COBY", factId: "T01_LOOKOUT_CLUE", evidence: 2 },
+    { inquiry: "TUTORIAL:INQUIRY:GARO", factId: "T01_SEARCH_BOUNDARY", evidence: 1, npcId: "NPC003", anonymous: "年配の村人", name: "ガロ" },
+    { inquiry: "TUTORIAL:INQUIRY:MIRA", factId: "T01_FINN_MAP", evidence: 1, npcId: "NPC002", anonymous: "取り乱した女性", name: "ミラ" },
+    { inquiry: "TUTORIAL:INQUIRY:COBY", factId: "T01_LOOKOUT_CLUE", evidence: 2, npcId: "NPC062", anonymous: "落ち着かない少年", name: "コビー" },
   ];
   const authoritativeOutcomes = [];
 
@@ -541,6 +776,10 @@ test("each opening inquiry records only its authoritative clue and survives repl
       seed: `opening-clue-${branch.factId}`,
     }));
     await completeOpening(runner, { inquiry: branch.inquiry });
+
+    const introductionBeat = runner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === branch.npcId);
+    assert.equal(introductionBeat?.speakerLabel, branch.anonymous);
+    assert.match(introductionBeat?.text ?? "", new RegExp(branch.name, "u"));
 
     const record = await store.get(runner.save.id);
     const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
@@ -577,37 +816,39 @@ test("a late arrival sees T01 aftermath instead of stale Day1 inquiry and can fi
 
   await choose("TUTORIAL:AWAKEN:BODY");
   await choose("TUTORIAL:CONTACT:MEMORY");
+  await acknowledgeVisibleIntroduction(runner);
   await choose("TUTORIAL:ORIENT:HELP");
 
-  // The player can legitimately ignore the recommended destination while the world clock keeps moving.
-  while (runner.save.clock.day < 4) {
-    const longestSafeChoice = [...runner.save.choices]
-      .filter((choice) => !choice.danger && !choice.actionId.startsWith("TUTORIAL:INQUIRY:"))
-      .sort((left, right) => right.minutes - left.minutes)[0];
-    assert.ok(longestSafeChoice, "onboarding must retain a non-combat way to spend time");
-    await runner.run("CHOOSE", { choiceId: longestSafeChoice.choiceId });
-  }
-
+  // The guided movement stage intentionally has no ordinary choices. Recreate a
+  // restored save whose clock advanced while it was offline, then resolve the
+  // authoritative world catch-up on the next movement command.
   let record = await store.get(runner.save.id);
-  let runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
-  assert.equal(runtime.playerState.troubles.T01.status, "failed");
-  assert.equal(runtime.livingWorld.npcStates.NPC001.lifeStatus, "dead");
+  const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
+  runtime.playerState.absoluteMinute = 3 * 1440;
+  Object.assign(runtime.playerState, clockFromMinute(runtime.playerState.absoluteMinute));
+  record.runtimeSnapshot = serializeRuntime(runtime);
+  record.stateHash = gameStateHash(runtime, game.data);
+  await store.put(record);
+  const lateRunner = commandRunner(game, await game.get(owner, runner.save.id), "late-command");
+  assert.deepEqual(lateRunner.save.choices, []);
 
-  const square = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FARM_SQUARE");
+  const square = lateRunner.save.movement.find((move) => move.destinationFacilityId === "LOC_FARM_SQUARE");
   assert.ok(square);
-  await runner.run("MOVE", { moveId: square.moveId });
-  assert.equal(runner.save.choices.some((choice) => choice.actionId.startsWith("TUTORIAL:INQUIRY:")), false);
-  assert.equal(runner.save.tutorial.id, "trouble-aftermath");
-  const aftermath = runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:AFTERMATH:T01");
+  await lateRunner.run("MOVE", { moveId: square.moveId });
+  assert.equal(lateRunner.save.choices.some((choice) => choice.actionId.startsWith("TUTORIAL:INQUIRY:")), false);
+  assert.equal(lateRunner.save.tutorial.id, "trouble-aftermath");
+  assert.doesNotMatch(lateRunner.save.choices.map((choice) => choice.label).join("\n"), /ガロ|ミラ|コビー/u);
+  const aftermath = lateRunner.save.choices.find((choice) => choice.actionId === "TUTORIAL:AFTERMATH:T01");
   assert.ok(aftermath, "late arrivals need an authored way to learn what happened");
-  await runner.run("CHOOSE", { choiceId: aftermath.choiceId });
+  await lateRunner.run("CHOOSE", { choiceId: aftermath.choiceId });
 
-  record = await store.get(runner.save.id);
-  runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
-  assert.equal(runtime.tutorial.stage, "free");
-  assert.equal(runner.save.choices.some((choice) => choice.actionId.startsWith("TUTORIAL:INQUIRY:")), false);
-  assert.equal(runner.save.missions.find((mission) => mission.id === "MSN-T01")?.status, "failed");
-  assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
+  record = await store.get(lateRunner.save.id);
+  const resolvedRuntime = deserializeRuntime(record.runtimeSnapshot, game.data);
+  assert.equal(resolvedRuntime.tutorial.stage, "free");
+  assert.equal(resolvedRuntime.playerState.troubles.T01.status, "failed");
+  assert.equal(resolvedRuntime.livingWorld.npcStates.NPC001.lifeStatus, "dead");
+  assert.equal(lateRunner.save.choices.some((choice) => choice.actionId.startsWith("TUTORIAL:INQUIRY:")), false);
+  assert.equal(lateRunner.save.missions.find((mission) => mission.id === "MSN-T01")?.status, "failed");
 });
 
 test("public game view does not expose omniscient population or trouble aggregates", async () => {
@@ -742,7 +983,7 @@ test("world-originated rumor spread does not grant player levels during an ordin
   const initial = await game.create(owner, { playerName: "働き手", profileId: "story", seed: "balance-contract" });
   const runner = commandRunner(game, initial);
   await completeOpening(runner);
-  const work = runner.save.choices.find((choice) => choice.actionId === "WORK");
+  const work = runner.save.choices.find((choice) => choice.type === "work");
   assert.ok(work);
   await runner.run("CHOOSE", { choiceId: work.choiceId });
   assert.equal(runner.save.player.level, 1);
@@ -752,16 +993,24 @@ test("world-originated rumor spread does not grant player levels during an ordin
 });
 
 test("a public living-world rumor becomes a mission only after the player hears it locally", async () => {
-  const { game } = service();
+  const { game, store } = service();
   const initial = await game.create(owner, { playerName: "聞き手", profileId: "story", seed: "forest-rumor" });
-  const runner = commandRunner(game, initial);
+  let runner = commandRunner(game, initial);
   assert.equal(runner.save.missions.some((mission) => mission.id === "MSN-T13"), false);
   await completeOpening(runner);
+  const record = await store.get(runner.save.id);
+  const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
+  runtime.playerKnowledge.knownHubIds.add("森");
+  runtime.playerKnowledge.knownFacilityIds.add("LOC_FOREST_EDGE");
+  record.runtimeSnapshot = serializeRuntime(runtime);
+  record.stateHash = gameStateHash(runtime, game.data);
+  await store.put(record);
+  runner = commandRunner(game, await game.get(owner, runner.save.id), "forest-command");
   const forest = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FOREST_EDGE");
   assert.ok(forest);
   await runner.run("MOVE", { moveId: forest.moveId });
   assert.equal(runner.save.missions.some((mission) => mission.id === "MSN-T13"), false);
-  const hearLocal = runner.save.choices.find((choice) => choice.type === "observe");
+  const hearLocal = runner.save.choices.find((choice) => choice.type === "localInvestigate");
   assert.ok(hearLocal);
   const response = await runner.run("CHOOSE", { choiceId: hearLocal.choiceId });
   assert.equal(response.save.scene.lastOutcome.learnedRumorCount, 1);
@@ -777,12 +1026,13 @@ test("conversation reveals only beliefs held by the NPC who is actually speaking
     seed: "npc-rumor-provenance",
     profileId: "balanced",
     playerName: "聞き分ける旅人",
+    tutorial: false,
   });
   const eda = runtime.livingWorld.npcStates.NPC004;
   const ownBelief = {
     factId: "TEST-EDA-KNOWS",
     kind: "fact",
-    text: "エダだけが知る畑の出来事",
+    text: "畑で水不足が起きて村人が困っている",
     importance: 0.9,
     confidence: 1,
     learnedAt: 0,
@@ -791,27 +1041,365 @@ test("conversation reveals only beliefs held by the NPC who is actually speaking
   const foreignBelief = {
     factId: "TEST-SOMEONE-ELSE-KNOWS",
     kind: "fact",
-    text: "別の人物だけが知る出来事",
+    text: "別の土地で食料不足が起きている",
     importance: 1,
     confidence: 1,
     learnedAt: 0,
     secret: false,
   };
+  eda.beliefs = {};
   eda.beliefs[ownBelief.factId] = ownBelief;
   runtime.livingWorld.facilityRumors.LOC_FARM_FIELD.set(foreignBelief.factId, { belief: foreignBelief });
   const talk = availableGameRuntimeActions(runtime, game.data).choices
     .find((action) => action.type === "conversation" && action.targetNpcId === "NPC004");
   assert.ok(talk);
 
-  const result = executeGameRuntimeCommand(runtime, game.data, {
+  const greeting = executeGameRuntimeCommand(runtime, game.data, {
     type: "CHOOSE",
     payload: { choiceId: talk.choiceId },
+  });
+  assert.equal(greeting.outcome.learnedRumorCount, undefined, "a greeting alone must not grant an unspoken rumor");
+  const concern = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.dialogueTopic === "local_concern");
+  assert.ok(concern);
+  const result = executeGameRuntimeCommand(runtime, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: concern.choiceId },
   });
 
   assert.equal(result.outcome.learnedRumorCount, 1);
   assert.equal(runtime.playerState.player.knownRumorIds.has("RUM-LIVING-TEST-EDA-KNOWS"), true);
   assert.equal(runtime.playerState.player.knownRumorIds.has("RUM-LIVING-TEST-SOMEONE-ELSE-KNOWS"), false);
   assert.ok(runtime.playerState.history.some((entry) => entry.type === "RUMOR_LEARNED_LOCAL" && entry.sourceNpcId === "NPC004"));
+});
+
+test("mission clue choices require a co-present NPC with an authoritative public belief", () => {
+  const { game } = service();
+  const runtime = createGameRuntime(game.data, {
+    seed: "mission-clue-authority",
+    profileId: "balanced",
+    playerName: "聞き手",
+    tutorial: false,
+  });
+  const npcState = prepareMissionClueConversation(runtime);
+  const available = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.id === "ACTION:MSN-T02:hear");
+  assert.ok(available);
+  assert.equal(available.targetNpcId, "NPC003");
+  assert.equal(available.dialogueTopic, "mission_clue");
+  assert.equal(available.missionBeliefFactId, "TEST-T02-CLUE");
+
+  npcState.presence = "traveling";
+  assert.equal(availableGameRuntimeActions(runtime, game.data).choices
+    .some((action) => action.id === "ACTION:MSN-T02:hear"), false);
+  npcState.presence = "present";
+  npcState.beliefs["TEST-T02-CLUE"].secret = true;
+  assert.equal(availableGameRuntimeActions(runtime, game.data).choices
+    .some((action) => action.id === "ACTION:MSN-T02:hear"), false);
+});
+
+test("all nineteen special-mission hearings are bound to a present authoritative NPC", () => {
+  const { game } = service();
+  const covered = [];
+  for (const definitionTemplate of createGameRuntime(game.data, {
+    seed: "mission-hearing-catalog",
+    profileId: "balanced",
+    playerName: "聞き手",
+    tutorial: false,
+  }).playerState.catalog.special) {
+    const runtime = createGameRuntime(game.data, {
+      seed: `mission-hearing-${definitionTemplate.troubleId}`,
+      profileId: "balanced",
+      playerName: "聞き手",
+      tutorial: false,
+    });
+    const state = runtime.playerState;
+    const definition = state.catalog.special.find((entry) => entry.id === definitionTemplate.id);
+    const hearing = definition.steps.find((step) => step.type === "conversation");
+    for (const other of state.catalog.special) state.missions[other.id].status = "locked";
+    state.missions[definition.id].status = "active";
+    state.missions[definition.id].progress[hearing.id] = 0;
+    state.troubles[definition.troubleId].status = "active";
+    state.player.location = hearing.targetLocation;
+    state.player.facilityId = hearing.targetFacilityId ?? null;
+    runtime.playerKnowledge.knownHubIds.add(hearing.targetLocation);
+    if (hearing.targetFacilityId) runtime.playerKnowledge.knownFacilityIds.add(hearing.targetFacilityId);
+
+    const rumor = {
+      id: `TEST-${definition.troubleId}-KNOWN`,
+      troubleId: definition.troubleId,
+      text: `${definition.troubleId}に関係する異変が起きている`,
+      origin: hearing.targetLocation,
+      originMinute: 0,
+      importance: 1,
+      recipients: {},
+    };
+    state.rumors.push(rumor);
+    state.rumorById[rumor.id] = rumor;
+    state.player.knownRumorIds.add(rumor.id);
+
+    const npcState = runtime.livingWorld.npcStates.NPC003;
+    npcState.lifeStatus = "alive";
+    npcState.presence = "present";
+    npcState.location = hearing.targetLocation;
+    npcState.position = { hubId: hearing.targetLocation, facilityId: hearing.targetFacilityId ?? null };
+    npcState.travel = null;
+    npcState.localTravel = null;
+    npcState.beliefs = {
+      [`TEST-${definition.troubleId}-CLUE`]: {
+        factId: `TEST-${definition.troubleId}-CLUE`,
+        kind: "fact",
+        text: `${definition.troubleId}_現地で確かめた手掛かり`,
+        troubleIds: [definition.troubleId],
+        importance: 1,
+        learnedAt: 0,
+        secret: false,
+        sourceType: "test",
+        hopCount: 0,
+        path: ["NPC003"],
+      },
+    };
+
+    const action = availableGameRuntimeActions(runtime, game.data).choices
+      .find((entry) => entry.id === `ACTION:${definition.id}:${hearing.id}`);
+    assert.ok(action, `${definition.id} must expose its hearing only through a present informed NPC`);
+    assert.equal(action.targetNpcId, "NPC003");
+    assert.equal(action.dialogueTopic, "mission_clue");
+    const result = executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: action.choiceId },
+    });
+    assert.ok((result.resolvedAction.requiredDisclosure ?? "").length > 0);
+    assert.equal(state.missions[definition.id].progress[hearing.id], 1);
+    covered.push(definition.troubleId);
+  }
+  assert.deepEqual(covered, Array.from({ length: 19 }, (_, index) => `T${String(index + 1).padStart(2, "0")}`));
+});
+
+test("mission clue progress commits only after the assigned NPC actually discloses the fact", () => {
+  const { game } = service();
+  const successful = createGameRuntime(game.data, {
+    seed: "mission-clue-spoken",
+    profileId: "balanced",
+    playerName: "聞き手",
+    tutorial: false,
+  });
+  prepareMissionClueConversation(successful);
+  const action = availableGameRuntimeActions(successful, game.data).choices
+    .find((entry) => entry.id === "ACTION:MSN-T02:hear");
+  const disclosed = executeGameRuntimeCommand(successful, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: action.choiceId },
+  });
+  assert.equal(successful.playerState.missions["MSN-T02"].progress.hear, 1);
+  assert.match(disclosed.resolvedAction.requiredDisclosure, /穀倉|火/u);
+  assert.doesNotMatch(disclosed.outcome.summary, /ガロ/u,
+    "the result must not reveal an NPC name before the introduction is acknowledged");
+  const anonymousRumor = runtimeView(successful, game.data).rumors
+    .find((rumor) => rumor.id === "RUM-LIVING-TEST-T02-CLUE");
+  assert.equal(anonymousRumor?.source, "年配の村人から聞いた");
+  successful.playerKnowledge.knownNpcIds.add("NPC003");
+  const identifiedRumor = runtimeView(successful, game.data).rumors
+    .find((rumor) => rumor.id === "RUM-LIVING-TEST-T02-CLUE");
+  assert.match(identifiedRumor?.source ?? "", /^ガロ.*から聞いた$/u);
+  assert.equal(successful.dialogueSession?.npcId, "NPC003");
+  assert.ok(availableGameRuntimeActions(successful, game.data).choices
+    .every((entry) => entry.id.startsWith("DIALOGUE:NPC003:")));
+
+  const interrupted = createGameRuntime(game.data, {
+    seed: "mission-clue-interrupted",
+    profileId: "balanced",
+    playerName: "聞き手",
+    tutorial: false,
+  });
+  const departingNpc = prepareMissionClueConversation(interrupted);
+  departingNpc.localTravel = {
+    routeId: "TEST:SQUARE->WELL",
+    hubId: "田園の村",
+    fromFacilityId: "LOC_FARM_SQUARE",
+    toFacilityId: "LOC_FARM_WELL",
+    departedAt: 0,
+    arriveAt: 0.1,
+  };
+  const interruptedAction = availableGameRuntimeActions(interrupted, game.data).choices
+    .find((entry) => entry.id === "ACTION:MSN-T02:hear");
+  const noDisclosure = executeGameRuntimeCommand(interrupted, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: interruptedAction.choiceId },
+  });
+  assert.equal(interrupted.playerState.missions["MSN-T02"].progress.hear, 0);
+  assert.equal(noDisclosure.resolvedAction.requiredDisclosure, null);
+  assert.equal(interrupted.dialogueSession, null);
+});
+
+test("dialogue topics select a relevant fact, preserve its provenance, and never learn on farewell", () => {
+  const { game } = service();
+  const runtime = createGameRuntime(game.data, {
+    seed: "dialogue-topic-provenance",
+    profileId: "balanced",
+    playerName: "聞き手",
+    tutorial: false,
+  });
+  const eda = runtime.livingWorld.npcStates.NPC004;
+  eda.beliefs = {
+    "TEST-ROUTE": {
+      factId: "TEST-ROUTE",
+      kind: "fact",
+      text: "村外れへの近道は石橋を渡る",
+      troubleIds: ["T01"],
+      importance: 1,
+      learnedAt: 0,
+      secret: false,
+      sourceType: "sheet",
+      hopCount: 0,
+      path: ["NPC004"],
+    },
+    "TEST-CONCERN": {
+      factId: "TEST-CONCERN",
+      kind: "fact",
+      text: "共同穀倉のパンが足りず村人が困っている",
+      troubleIds: ["T01"],
+      importance: 0.25,
+      learnedAt: 0,
+      secret: false,
+      sourceType: "sheet",
+      hopCount: 0,
+      path: ["NPC004"],
+    },
+  };
+  const talk = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.type === "conversation" && action.targetNpcId === "NPC004");
+  executeGameRuntimeCommand(runtime, game.data, { type: "CHOOSE", payload: { choiceId: talk.choiceId } });
+  runtime.dialogueSession.turnCount = 0;
+  runtime.dialogueSession.askedTopics = new Set(["active_mission", "route_to_lead"]);
+  const concern = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.dialogueTopic === "local_concern");
+  assert.ok(concern);
+  const learned = executeGameRuntimeCommand(runtime, game.data, { type: "CHOOSE", payload: { choiceId: concern.choiceId } });
+  assert.equal(learned.outcome.learnedRumorCount, 1);
+  assert.equal(runtime.playerState.player.knownRumorIds.has("RUM-LIVING-TEST-CONCERN"), true);
+  assert.equal(runtime.playerState.player.knownRumorIds.has("RUM-LIVING-TEST-ROUTE"), false);
+  assert.equal(learned.resolvedAction.disclosedRumorId, "RUM-LIVING-TEST-CONCERN");
+  assert.match(learned.resolvedAction.requiredDisclosure, /共同穀倉|パン/u);
+
+  runtime.dialogueSession.turnCount = 2;
+  const provenanceChoice = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.dialogueTopic === "local_rumor");
+  assert.ok(provenanceChoice, "the provenance question appears only after a fact was disclosed");
+  const knownBeforeProvenance = runtime.playerState.player.knownRumorIds.size;
+  const provenance = executeGameRuntimeCommand(runtime, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: provenanceChoice.choiceId },
+  });
+  assert.equal(provenance.outcome.learnedRumorCount, undefined);
+  assert.equal(runtime.playerState.player.knownRumorIds.size, knownBeforeProvenance);
+  assert.equal(provenance.resolvedAction.disclosedRumorId, "RUM-LIVING-TEST-CONCERN");
+  assert.match(provenance.resolvedAction.requiredDisclosure, /という話は、.*見聞き/u);
+
+  eda.beliefs["TEST-FAREWELL-LEAK"] = {
+    factId: "TEST-FAREWELL-LEAK",
+    kind: "fact",
+    text: "別の深刻な被害で村人が困っている",
+    importance: 1,
+    learnedAt: 0,
+    secret: false,
+  };
+  const end = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.dialogueTopic === "end_conversation");
+  const historyBeforeEnd = runtime.playerState.history.filter((entry) => entry.type === "RUMOR_LEARNED_LOCAL").length;
+  const farewell = executeGameRuntimeCommand(runtime, game.data, { type: "CHOOSE", payload: { choiceId: end.choiceId } });
+  assert.equal(farewell.outcome.learnedRumorCount, undefined);
+  assert.equal(farewell.resolvedAction.requiredDisclosure, null);
+  assert.equal(runtime.playerState.player.knownRumorIds.has("RUM-LIVING-TEST-FAREWELL-LEAK"), false);
+  assert.equal(runtime.playerState.history.filter((entry) => entry.type === "RUMOR_LEARNED_LOCAL").length, historyBeforeEnd);
+});
+
+test("an NPC with a hidden hostile role cannot disclose even a non-secret belief", () => {
+  const { game } = service();
+  const npc = game.data.model.npcById.NPC004;
+  const previous = { occupation: npc.occupation, disposition: npc.disposition };
+  try {
+    npc.occupation = "共同穀倉の放火犯";
+    npc.disposition = "escalate";
+    const runtime = createGameRuntime(game.data, {
+      seed: "hidden-role-disclosure",
+      profileId: "balanced",
+      playerName: "警戒する旅人",
+      tutorial: false,
+    });
+    runtime.livingWorld.npcStates.NPC004.beliefs = {
+      "TEST-HIDDEN-LEAK": {
+        factId: "TEST-HIDDEN-LEAK",
+        kind: "fact",
+        text: "穀倉の火事で村人が困っている",
+        importance: 1,
+        learnedAt: 0,
+        secret: false,
+      },
+    };
+    const talk = availableGameRuntimeActions(runtime, game.data).choices
+      .find((action) => action.type === "conversation" && action.targetNpcId === "NPC004");
+    executeGameRuntimeCommand(runtime, game.data, { type: "CHOOSE", payload: { choiceId: talk.choiceId } });
+    runtime.dialogueSession.turnCount = 0;
+    runtime.dialogueSession.askedTopics = new Set(["active_mission", "route_to_lead"]);
+    const concern = availableGameRuntimeActions(runtime, game.data).choices
+      .find((action) => action.dialogueTopic === "local_concern");
+    const result = executeGameRuntimeCommand(runtime, game.data, { type: "CHOOSE", payload: { choiceId: concern.choiceId } });
+    assert.equal(result.outcome.learnedRumorCount, undefined);
+    assert.equal(result.resolvedAction.requiredDisclosure, null);
+    assert.equal(runtime.playerState.player.knownRumorIds.has("RUM-LIVING-TEST-HIDDEN-LEAK"), false);
+  } finally {
+    npc.occupation = previous.occupation;
+    npc.disposition = previous.disposition;
+  }
+});
+
+test("a conversation grants no fact when its NPC leaves before the reply is presented", () => {
+  const { game } = service();
+  const runtime = createGameRuntime(game.data, {
+    seed: "conversation-interrupted-by-travel",
+    profileId: "balanced",
+    playerName: "待ち人",
+    tutorial: false,
+  });
+  const talk = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.type === "conversation" && action.targetNpcId === "NPC004");
+  executeGameRuntimeCommand(runtime, game.data, { type: "CHOOSE", payload: { choiceId: talk.choiceId } });
+
+  runtime.playerState.absoluteMinute = 239;
+  Object.assign(runtime.playerState, clockFromMinute(239));
+  runtime.dialogueSession.lastInteractionAtMinute = 239;
+  runtime.dialogueSession.openedAtMinute = 239;
+  runtime.dialogueSession.turnCount = 0;
+  runtime.dialogueSession.askedTopics = new Set(["active_mission", "route_to_lead"]);
+  const eda = runtime.livingWorld.npcStates.NPC004;
+  eda.beliefs = {
+    "TEST-INTERRUPTED": {
+      factId: "TEST-INTERRUPTED",
+      kind: "fact",
+      text: "畑の水不足で村人が困っている",
+      importance: 1,
+      learnedAt: 0,
+      secret: false,
+    },
+  };
+  eda.localTravel = {
+    routeId: "TEST:FIELD->WELL",
+    hubId: "田園の村",
+    fromFacilityId: "LOC_FARM_FIELD",
+    toFacilityId: "LOC_FARM_WELL",
+    departedAt: 3.9,
+    arriveAt: 4,
+  };
+  eda.presence = "present";
+  const concern = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.dialogueTopic === "local_concern");
+  assert.ok(concern);
+  const result = executeGameRuntimeCommand(runtime, game.data, { type: "CHOOSE", payload: { choiceId: concern.choiceId } });
+  assert.equal(runtime.livingWorld.npcStates.NPC004.position.facilityId, "LOC_FARM_WELL");
+  assert.equal(result.outcome.learnedRumorCount, undefined);
+  assert.equal(result.resolvedAction.requiredDisclosure, null);
+  assert.equal(runtime.playerState.player.knownRumorIds.has("RUM-LIVING-TEST-INTERRUPTED"), false);
 });
 
 test("local observation cannot reveal a facility rumor before its propagation time", () => {
@@ -825,23 +1413,23 @@ test("local observation cannot reveal a facility rumor before its propagation ti
   runtime.playerState.player.location = "田園の村";
   runtime.playerState.player.facilityId = "LOC_FARM_BAKERY";
   const currentHour = runtime.playerState.absoluteMinute / 60;
-  const belief = (factId, propagationAt, importance) => ({
+  const belief = (factId, text, propagationAt, importance) => ({
     factId,
     kind: "fact",
-    text: factId,
+    text,
     importance,
     confidence: 1,
     learnedAt: currentHour,
     propagationAt,
     secret: false,
   });
-  const ready = belief("TEST-RUMOR-READY", currentHour, 0.99);
-  const queued = belief("TEST-RUMOR-QUEUED", currentHour + 4, 1);
+  const ready = belief("TEST-RUMOR-READY", "パン屋へ届く小麦が減っている", currentHour, 0.99);
+  const queued = belief("TEST-RUMOR-QUEUED", "夜の荷車が増えている", currentHour + 4, 1);
   const pool = runtime.livingWorld.facilityRumors.LOC_FARM_BAKERY;
   pool.set(ready.factId, { factId: ready.factId, belief: ready, propagationAt: ready.propagationAt });
   pool.set(queued.factId, { factId: queued.factId, belief: queued, propagationAt: queued.propagationAt });
   const observe = availableGameRuntimeActions(runtime, game.data).choices
-    .find((action) => action.type === "observe");
+    .find((action) => action.type === "localInvestigate");
   assert.ok(observe);
 
   executeGameRuntimeCommand(runtime, game.data, {
@@ -917,7 +1505,7 @@ test("T01 can be played from inquiry through battle and rescue without ever spea
     const choice = runner.save.choices.find((entry) => entry.actionId === actionId);
     assert.ok(choice, `${actionId} must be one of the three current choices`);
     assert.equal(choice.targetNpcId === "NPC001", false);
-    await runner.run("CHOOSE", { choiceId: choice.choiceId });
+    return runner.run("CHOOSE", { choiceId: choice.choiceId });
   };
 
   await completeOpening(runner);
@@ -927,7 +1515,11 @@ test("T01 can be played from inquiry through battle and rescue without ever spea
   await runner.run("LEARN_SKILL", { skillId: runner.save.skills.learnable[0].id });
   await chooseAction("ACTION:MSN-T01:search");
   await chooseAction("ACTION:MSN-T01:search");
-  await chooseAction("ACTION:MSN-T01:rescue");
+  const battleStart = await chooseAction("ACTION:MSN-T01:rescue");
+  assert.equal(battleStart.save.scene.lastOutcome.battlePending, true);
+  assert.equal(battleStart.save.battle?.status, "active");
+  const { finalResponse: battleResponse } = await finishRunnerBattle(runner);
+  assert.ok(battleResponse);
   assert.equal(runner.save.scene.lastOutcome.battle.won, true);
   const playback = runner.save.scene.lastOutcome.battle.playback;
   assert.ok(playback, "a real-game battle must expose its deterministic playback");
@@ -981,7 +1573,7 @@ test("playable profile input is ignored and tutorial acknowledgement is journale
   assert.equal((await left.game.verifyReplay(owner, runner.save.id)).ok, true);
 });
 
-test("ordinary NPC conversation offers one meaningful follow-up and passes the resolved action to narration", async () => {
+test("ordinary NPC conversation supports distinct multi-turn follow-ups until the player ends it", async () => {
   const inputs = [];
   const narrator = {
     async generate(input) {
@@ -999,11 +1591,103 @@ test("ordinary NPC conversation offers one meaningful follow-up and passes the r
   assert.ok(runner.save.choices.every((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)));
   assert.equal(inputs.at(-1).action.id, talk.actionId);
   assert.equal(inputs.at(-1).action.targetNpcId, talk.targetNpcId);
-  const rumorFollowup = runner.save.choices.find((choice) => choice.actionId.endsWith(":RUMOR"));
-  await runner.run("CHOOSE", { choiceId: rumorFollowup.choiceId });
+  const narrativeState = inputs.at(-1).authoritativeState;
+  assert.equal(narrativeState.facilityType, "広場");
+  assert.match(narrativeState.publicDescription, /村人|知らせ/u);
+  assert.equal("facilityFunction" in narrativeState, false);
+  assert.equal("facilityNotes" in narrativeState, false);
+  assert.doesNotMatch(JSON.stringify(narrativeState), /T01捜索|T02後の村会合|情報ハブ|事件導線|開始地点/u);
+  assert.ok(narrativeState.npcs.every((npc) => !("occupation" in npc)));
+  const firstFollowup = runner.save.choices.find((choice) => !choice.actionId.endsWith(":END"));
+  assert.ok(firstFollowup);
+  await runner.run("CHOOSE", { choiceId: firstFollowup.choiceId });
+  const firstTopic = inputs.at(-1).action.dialogueTopic;
+  assert.ok(firstTopic);
+  assert.equal(inputs.at(-1).action.conversationTurn, 2);
+  assert.ok(runner.save.choices.every((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)));
+
+  const secondFollowup = runner.save.choices.find((choice) => !choice.actionId.endsWith(":END"));
+  assert.ok(secondFollowup);
+  await runner.run("CHOOSE", { choiceId: secondFollowup.choiceId });
+  assert.notEqual(inputs.at(-1).action.dialogueTopic, firstTopic);
+  assert.equal(inputs.at(-1).action.conversationTurn, 3);
+  assert.ok(inputs.at(-1).action.previouslyAskedTopics.includes(firstTopic));
+  assert.ok(runner.save.choices.some((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)));
+
+  const endConversation = runner.save.choices.find((choice) => choice.actionId.endsWith(":END"));
+  assert.ok(endConversation);
+  await runner.run("CHOOSE", { choiceId: endConversation.choiceId });
   assert.equal(runner.save.choices.some((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)), false);
-  assert.equal(inputs.at(-1).action.dialogueTopic, "local_rumor");
+  assert.equal(inputs.at(-1).action.dialogueTopic, "end_conversation");
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
+});
+
+test("the service replaces a Gemini reply that omits the fact recorded as learned", async () => {
+  const narrator = {
+    async generate(input) {
+      const targetNpcId = input.action.targetNpcId;
+      return {
+        narrative: "相手は問いの意味を考え、知っている範囲を順に説明しようとした。",
+        speeches: targetNpcId ? [{
+          actorId: targetNpcId,
+          text: "話せることはあるが、ここでは肝心の具体的な事実を意図的に省いている。別の場所も確かめてから判断してほしい。急いで決めつけるのは危険だ。",
+          emotion: "慎重",
+        }] : [],
+        choices: input.authoritativeState.allowedActionCandidates.map((choice) => ({
+          id: choice.id,
+          label: choice.label,
+          intentType: choice.intentType,
+          targetNpcId: choice.targetNpcId,
+        })),
+        proposals: [],
+        meta: { source: "mock_gemini" },
+      };
+    },
+  };
+  const { game, store } = service(true, { narrator });
+  let runner = commandRunner(game, await game.create(owner, { playerName: "記録する旅人", seed: "disclosure-guard" }));
+  await completeOpening(runner);
+  const talk = runner.save.choices.find((choice) => choice.type === "conversation" && !choice.missionId);
+  assert.ok(talk);
+
+  let record = await store.get(runner.save.id);
+  let runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
+  runtime.livingWorld.npcStates[talk.targetNpcId].beliefs = {
+    "TEST-GUARDED-DISCLOSURE": {
+      factId: "TEST-GUARDED-DISCLOSURE",
+      kind: "fact",
+      text: "共同穀倉で食料不足が起きて村人が困っている",
+      troubleIds: ["T02"],
+      importance: 1,
+      learnedAt: 0,
+      secret: false,
+      sourceType: "sheet",
+      hopCount: 0,
+      path: [talk.targetNpcId],
+    },
+  };
+  record.runtimeSnapshot = serializeRuntime(runtime);
+  record.stateHash = gameStateHash(runtime, game.data);
+  await store.put(record);
+  runner = commandRunner(game, await game.get(owner, runner.save.id), "guard-command");
+  await runner.run("CHOOSE", { choiceId: runner.save.choices.find((choice) => choice.actionId === talk.actionId).choiceId });
+
+  record = await store.get(runner.save.id);
+  runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
+  runtime.dialogueSession.turnCount = 0;
+  runtime.dialogueSession.askedTopics = new Set(["active_mission", "route_to_lead"]);
+  record.runtimeSnapshot = serializeRuntime(runtime);
+  record.stateHash = gameStateHash(runtime, game.data);
+  await store.put(record);
+  runner = commandRunner(game, await game.get(owner, runner.save.id), "guard-followup");
+  const concern = runner.save.choices.find((choice) => choice.actionId.endsWith(":local_concern"));
+  assert.ok(concern);
+  await runner.run("CHOOSE", { choiceId: concern.choiceId });
+
+  record = await store.get(runner.save.id);
+  assert.equal(record.presentation.source, "deterministic_disclosure_guard");
+  assert.ok(record.presentation.speeches.some((speech) => /共同穀倉|食料/u.test(speech.text)));
+  assert.equal(runner.save.scene.lastOutcome.learnedRumorCount, 1);
 });
 
 test("an unanswered dialogue follow-up expires instead of resurfacing hours later", async () => {

@@ -27,19 +27,30 @@ async function atomicJson(filePath, value) {
 }
 
 export class TrpgAssetStore {
-  constructor({ root, metadataRoot, urlRoot = "/TRPG/assets" }) {
+  constructor({
+    root,
+    metadataRoot,
+    urlRoot = "/TRPG/assets",
+    generationManifestPath = null,
+    uiManifestPath = null,
+  }) {
     if (!metadataRoot) throw new Error("asset_metadata_root_required");
     this.root = path.resolve(root);
     this.metadataRoot = path.resolve(metadataRoot);
     this.urlRoot = urlRoot.replace(/\/$/u, "");
-    this.generationManifestPath = path.join(this.metadataRoot, "generation-manifest.json");
-    this.uiManifestPath = path.join(this.root, "manifest.json");
+    this.generationManifestPath = generationManifestPath
+      ? path.resolve(generationManifestPath)
+      : path.join(this.metadataRoot, "generation-manifest.json");
+    this.uiManifestPath = uiManifestPath
+      ? path.resolve(uiManifestPath)
+      : path.join(this.root, "manifest.json");
   }
 
   async ensure() {
     await Promise.all([
       fs.mkdir(path.join(this.root, "portraits"), { recursive: true }),
       fs.mkdir(path.join(this.root, "backgrounds"), { recursive: true }),
+      fs.mkdir(path.join(this.root, "monsters"), { recursive: true }),
       fs.mkdir(path.join(this.metadataRoot, "originals"), { recursive: true }),
     ]);
   }
@@ -71,7 +82,13 @@ export class TrpgAssetStore {
   }
 
   file(type, id, suffix, extension) {
-    const directory = type === "portrait" ? "portraits" : type === "background" ? "backgrounds" : "originals";
+    const directory = type === "portrait"
+      ? "portraits"
+      : type === "background"
+        ? "backgrounds"
+        : type === "monster"
+          ? "monsters"
+          : "originals";
     const fileName = `${safeName(id)}${suffix ? `-${safeName(suffix)}` : ""}.${extension}`;
     const privateAsset = type === "original";
     const targetRoot = privateAsset ? this.metadataRoot : this.root;

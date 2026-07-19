@@ -32,9 +32,18 @@ test("every direct app id reference exists in the HTML", () => {
 });
 
 test("dialogue and three-choice tray are mutually exclusive", () => {
-  assert.match(app, /scenePlayback\.done[\s\S]*?ui\.dialogue\.hidden\s*=\s*true;[\s\S]*?ui\.decision\.hidden\s*=\s*false;/u);
+  assert.match(app, /scenePlayback\.done[\s\S]*?ui\.dialogue\.hidden\s*=\s*true;[\s\S]*?ui\.decision\.hidden\s*=\s*list\(currentSave\?\.choices\)\.length\s*===\s*0\s*&&\s*currentSave\?\.world\?\.ended\s*!==\s*true;/u);
   assert.match(app, /else\s*\{[\s\S]*?ui\.dialogue\.hidden\s*=\s*false;[\s\S]*?ui\.decision\.hidden\s*=\s*true;/u);
   assert.match(app, /list\(choices\)\.slice\(0,\s*3\)/u);
+});
+
+test("an introduction is acknowledged only after its final visible segment", () => {
+  assert.match(app, /const introductionToken = escapeText\(beat\.introductionToken \?\? beat\.introduction\?\.token, ""\)/u);
+  assert.match(app, /introductionToken:\s*introductionToken && index === segments\.length - 1 \? introductionToken : null/u);
+  assert.match(app, /async function advanceDialogue\(\)[\s\S]*?sendCommand\(\s*"ACK_NPC_INTRODUCTION",\s*\{ token: introductionToken \},\s*introductionAckCommandId\(introductionToken\)/u);
+  assert.match(app, /if \(!acknowledged \|\| !scenePlayback \|\| scenePlayback\.done\) return;[\s\S]*?scenePlayback\.index \+= 1/u);
+  assert.match(app, /return `npc-intro:\$\{stableToken\}`/u);
+  assert.match(app, /\["TUTORIAL_ACK", "ACK_NPC_INTRODUCTION"\]\.includes\(type\)[\s\S]*?preserveDialogue/u);
 });
 
 test("primary touch controls retain mobile-sized targets", () => {
@@ -49,12 +58,14 @@ test("keyboard focus survives dialogue, menus, battle, and transient outcomes", 
   assert.match(app, /closeQuickMenu\(\{ restoreFocus: true \}\)/u);
   assert.match(app, /battleDialog\.addEventListener\("close"[\s\S]*?focusCurrentStoryControl/u);
   assert.doesNotMatch(app, /ui\.outcome\.focus\(\)/u);
+  assert.match(app, /applyTutorialEmphasis\(emphasisTarget\)[\s\S]*?tutorialTarget\.focus\(\)[\s\S]*?else if \(!ui\.decision\.hidden\)/u);
 });
 
 test("an empty or completed choice state still exposes a focusable action", () => {
   assert.match(app, /label\.textContent = ended \? "旅の年代記を見る" : "最新の状態を読み込む"/u);
   assert.match(app, /action\.className = "choice-button ending-choice"/u);
   assert.match(css, /\.decision-tray \.empty-message\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/su);
+  assert.match(app, /currentSave\?\.world\?\.ended\s*!==\s*true/u);
 });
 
 test("screen-reader announcements have a single owner during story playback", () => {
@@ -65,7 +76,8 @@ test("screen-reader announcements have a single owner during story playback", ()
 
 test("modal command errors remain inside the active dialog", () => {
   assert.match(html, /id="dialogError"[^>]*role="alert"/u);
-  assert.match(app, /const errorTarget = ui\.dialog\.open \? ui\.dialogError : ui\.gameError/u);
+  assert.match(html, /id="battleError"[^>]*role="alert"/u);
+  assert.match(app, /const errorTarget = ui\.battleDialog\.open \? ui\.battleError : ui\.dialog\.open \? ui\.dialogError : ui\.gameError/u);
 });
 
 test("visible choice text is not line-clamped", () => {
@@ -73,13 +85,34 @@ test("visible choice text is not line-clamped", () => {
   assert.match(css, /\.decision-tray\s*\{[^}]*overflow-y:\s*auto/su);
 });
 
-test("battle playback has only playback controls, not fake combat commands", () => {
+test("battle supports authoritative interactive commands and preserves completed playback", () => {
   assert.match(html, /id="battleNext"/u);
   assert.match(html, /id="battleSkip"/u);
   assert.match(html, /id="battleClose"/u);
-  assert.doesNotMatch(html, />\s*(?:たたかう|ぼうぎょ|にげる)\s*</u);
+  assert.match(html, /id="battleCommandPanel"/u);
+  assert.match(app, /createBattleCommandButton\("たたかう"/u);
+  assert.match(app, /createBattleCommandButton\("スキル"/u);
+  assert.match(app, /createBattleCommandButton\("ぼうぎょ"/u);
+  assert.match(app, /createBattleCommandButton\("にげる"/u);
+  assert.match(app, /sendCommand\("BATTLE_ACT",\s*\{[\s\S]*?battleId:\s*battle\.id,[\s\S]*?actionId:\s*command\.actionId,[\s\S]*?targetInstanceId/u);
+  assert.match(app, /save\?\.battle\?\.status === "active"[\s\S]*?renderInteractiveBattle\(save\)/u);
+  assert.match(app, /ui\.battleDialog\.dataset\.readyToClose = "false"/u);
   assert.match(app, /frame\.action\?\.kind === "status_failure"[\s\S]*?`\$\{actor\}は動けない！`/u);
+  assert.match(app, /function openBattlePlayback/u);
   assert.doesNotMatch(app, /parts\.length === 1 && frame\.action\?\.kind === "status_failure"/u);
+  assert.match(css, /\.battle-command-button\s*\{[^}]*min-height:\s*48px/su);
+  assert.match(css, /env\(safe-area-inset-bottom\)/u);
+  assert.match(css, /@media \(max-width:\s*700px\)[\s\S]*?\.battle-dialog\[data-mode="interactive"\] \.battle-message\s*\{[^}]*height:\s*202px;[^}]*max-height:\s*202px;[^}]*overflow:\s*hidden;/u);
+  assert.match(css, /@media \(max-width:\s*700px\)[\s\S]*?\.battle-command-panel\s*\{[^}]*max-height:\s*118px;/u);
+});
+
+test("first-encounter Gemini art refreshes from the persisted manifest without blocking play", () => {
+  assert.match(app, /const ASSET_REFRESH_DELAYS = Object\.freeze\(\[2500, 5000, 10000, 20000, 40000, 60000, 60000, 60000, 60000\]\)/u);
+  assert.match(app, /fetch\("\/TRPG\/assets\/manifest\.json", \{ cache: "no-store" \}\)/u);
+  assert.match(app, /function scheduleAssetRefresh[\s\S]*?loadManifest\(\)[\s\S]*?applyVisibleAssets\(\)/u);
+  assert.match(app, /list\(save\.battle\?\.actors\)\.some\(\(actor\) => actor\.side === "enemy" && !monsterUrl\(actor\)\)/u);
+  assert.match(app, /queueBattlePresentation\(save\);\s*scheduleAssetRefresh\(save\);/u);
+  assert.match(html, /20260719-agency-v4/u);
 });
 
 test("manifest portraits are real transparent cutouts", async () => {

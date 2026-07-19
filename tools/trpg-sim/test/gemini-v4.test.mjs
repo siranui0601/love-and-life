@@ -41,12 +41,21 @@ function scenario() {
 }
 
 test("local narrative context excludes NPCs who are not present", () => {
-  const built = buildLocalNarrativeContext(scenario());
+  const input = scenario();
+  input.authoritativeState.facilityType = "広場";
+  input.authoritativeState.publicDescription = "村人が行き交い、日々の知らせが集まる広場。";
+  input.authoritativeState.facilityFunction = "T01捜索、T03狼遭遇";
+  input.authoritativeState.facilityNotes = "失敗時に別の店へ置換";
+  input.authoritativeState.npcs[0].occupation = "密輸倉庫番";
+  input.authoritativeState.npcs[0].goal = "証拠を隠す";
+  const built = buildLocalNarrativeContext(input);
   assert.deepEqual(built.audit.includedNpcIds, ["NPC-LOCAL"]);
   assert.deepEqual(built.audit.excludedNpcIds, ["NPC-REMOTE"]);
   assert.equal(built.context.localNpcs.length, 1);
   assert.equal(JSON.stringify(built.context).includes("王都の司書"), false);
   assert.equal(built.context.missions[0].currentStep, "村で少年の行方を聞く");
+  assert.equal(built.context.place.publicDescription, "村人が行き交い、日々の知らせが集まる広場。");
+  assert.doesNotMatch(JSON.stringify(built.context), /T01捜索|T03狼遭遇|失敗時|密輸倉庫番|証拠を隠す/u);
 });
 
 test("an action target cannot add an absent, missing, or remote NPC to local context", () => {
@@ -85,6 +94,15 @@ test("choice ids exactly match authoritative allowed action candidates", () => {
   const invalid = validateNarrativeOutput(output, context);
   assert.equal(invalid.ok, false);
   assert.ok(invalid.errors.includes("choice ids must exactly match allowedActionCandidates"));
+  const mismatchedTarget = validateNarrativeOutput({
+    ...output,
+    choices: [
+      { id: "ACT-ASK", label: "誰かに聞く", intentType: "ask", targetNpcId: null },
+      { id: "ACT-LOOK", label: "足跡を見る", intentType: "investigate", targetNpcId: null },
+      { id: "ACT-LEAVE", label: "広場を離れる", intentType: "leave", targetNpcId: null },
+    ],
+  }, context);
+  assert.ok(mismatchedTarget.errors.includes("choices[0].targetNpcId must match its authoritative action candidate"));
   const fallback = deterministicNarrativeFallback(context);
   assert.deepEqual(fallback.choices.map((choice) => choice.id).sort(), ["ACT-ASK", "ACT-LEAVE", "ACT-LOOK"]);
   const sanitized = sanitizeNarrativeOutput({
@@ -145,6 +163,58 @@ test("fallback normalizes punctuation and preserves one deterministic local NPC 
   assert.equal(fallback.speeches.length, 1);
   assert.equal(fallback.speeches[0].actorId, "NPC-LOCAL");
   assert.match(fallback.speeches[0].text, /信用していない/u);
+});
+
+test("conversation fallback directly answers the selected topic without repeating a system outcome", () => {
+  const input = scenario();
+  input.action = {
+    ...input.action,
+    type: "conversation",
+    dialogueTopic: "route_to_lead",
+    playerUtterance: "手掛かりのある場所までの道と、途中の危険を教えてください。",
+  };
+  input.authoritativeState.authoritativeOutcome.summary = "1件の噂を新しく知った。";
+  const fallback = deterministicNarrativeFallback(buildLocalNarrativeContext(input).context);
+  assert.match(fallback.narrative, /道|目印|分かれ道/u);
+  assert.doesNotMatch(fallback.narrative, /1件の噂/u);
+  assert.match(fallback.speeches[0].text, /村で少年の行方を聞く|目印|危険/u);
+  assert.ok(fallback.speeches[0].text.length >= 55);
+});
+
+test("a learned fact must appear verbatim in the target reply and in deterministic fallback", () => {
+  const input = scenario();
+  input.action = {
+    ...input.action,
+    type: "conversation",
+    dialogueTopic: "local_concern",
+    playerUtterance: "この辺りで、今いちばん困っていることは何ですか？",
+    requiredDisclosure: "共同穀倉の食料が不足している",
+  };
+  input.authoritativeState.npcs[0].knownLocalFacts = [input.action.requiredDisclosure];
+  const context = buildLocalNarrativeContext(input).context;
+  const fallback = deterministicNarrativeFallback(context);
+  assert.ok(fallback.speeches.some((speech) => speech.text.includes(context.action.requiredDisclosure)));
+
+  const omitted = {
+    ...fallback,
+    speeches: [{
+      actorId: "NPC-LOCAL",
+      text: "この辺りには気になることがある。だが、今は詳しく言えない。ほかの人や現場にも当たり、複数の話を比べてから判断してほしい。",
+      emotion: null,
+    }],
+  };
+  const invalid = validateNarrativeOutput(omitted, context);
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors.includes("conversation reply must include the authoritative disclosed fact verbatim"));
+
+  const included = {
+    ...omitted,
+    speeches: [{
+      ...omitted.speeches[0],
+      text: `共同穀倉の食料が不足している。これは私が確かめた範囲の話だ。現場と帳簿を見比べ、誰がいつ気づいたかも聞いてほしい。`,
+    }],
+  };
+  assert.equal(validateNarrativeOutput(included, context).ok, true);
 });
 
 test("invalid Gemini output is repaired and exact replay bypasses the provider", async () => {

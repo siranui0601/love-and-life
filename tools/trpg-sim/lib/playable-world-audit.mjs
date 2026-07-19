@@ -5,6 +5,7 @@ import {
   gameStateHash,
   TRPG_GAME_RESOLVER_VERSION,
 } from "../../../src/server/trpg/game/service.js";
+import { listInteractiveBattleCommands } from "./battle-simulator.mjs";
 import { npcPopulationSummary, presentNpcsAt } from "../../../src/server/trpg/game/presence.js";
 import { loadTrpgGameData } from "../../../src/server/trpg/game/game-data.js";
 import { GAME_END_MINUTE } from "./player-journey.mjs";
@@ -46,13 +47,58 @@ function affordableUpgrade(runtime, data, stock) {
       || left.entry.price - right.entry.price)[0]?.entry ?? null;
 }
 
+function activeBattleCommand(runtime, data, counters) {
+  const pending = runtime.pendingBattle;
+  if (!pending?.session || pending.session.status !== "active") return null;
+  const commands = listInteractiveBattleCommands({ data: data.battleData, session: pending.session });
+  const selected = commands.find((command) => command.actionId === "ATTACK" && command.available)
+    ?? commands.find((command) => command.available);
+  if (!selected) {
+    counters.invariantViolations.push({
+      code: "battle_command_missing",
+      minute: runtime.playerState.absoluteMinute,
+      battleId: pending.id,
+    });
+    return null;
+  }
+  return {
+    type: "BATTLE_ACT",
+    payload: {
+      battleId: pending.id,
+      actionId: selected.actionId,
+      targetInstanceId: selected.targets?.[0]?.instanceId ?? null,
+    },
+  };
+}
+
+function tutorialRequiresMovement(runtime) {
+  return Boolean(runtime.tutorial && ["movement", "movement_aftermath"].includes(runtime.tutorial.stage));
+}
+
 function choosePolicyCommand(runtime, data, policy, counters) {
   const actions = availableGameRuntimeActions(runtime, data);
+  const battleCommand = activeBattleCommand(runtime, data, counters);
+  if (battleCommand) return battleCommand;
+
+  if (tutorialRequiresMovement(runtime)) {
+    if (actions.choices.length !== 0) {
+      counters.invariantViolations.push({ code: "tutorial_movement_exposed_choices", minute: runtime.playerState.absoluteMinute });
+    }
+    const guidedMove = actions.movement.find((move) => move.destinationFacilityId === "LOC_FARM_SQUARE")
+      ?? actions.movement[0];
+    if (!guidedMove) {
+      counters.invariantViolations.push({ code: "tutorial_movement_missing", minute: runtime.playerState.absoluteMinute });
+      return null;
+    }
+    return { type: "MOVE", payload: { moveId: guidedMove.id } };
+  }
+
   if (actions.choices.length !== 3 || new Set(actions.choices.map((choice) => choice.choiceId)).size !== 3) {
     counters.invariantViolations.push({ code: "choice_contract", minute: runtime.playerState.absoluteMinute });
   }
 
-  if (actions.learnableSkills.length && counters.zeroTimeStreak < 2) {
+  const skillsUnlocked = !runtime.tutorial || runtime.tutorial.stage === "free";
+  if (skillsUnlocked && actions.learnableSkills.length && counters.zeroTimeStreak < 2) {
     return { type: "LEARN_SKILL", payload: { skillId: actions.learnableSkills[0].id } };
   }
 
@@ -88,6 +134,10 @@ function choosePolicyCommand(runtime, data, policy, counters) {
     .filter((choice) => !["seekBattle", "missionBattle", "investigate"].includes(choice.type))
     .sort((left, right) => Number(right.minutes ?? 0) - Number(left.minutes ?? 0) || left.id.localeCompare(right.id))[0]
     ?? actions.choices[0];
+  if (!safe) {
+    counters.invariantViolations.push({ code: "free_choice_missing", minute: runtime.playerState.absoluteMinute });
+    return null;
+  }
   return { type: "CHOOSE", payload: { choiceId: safe.choiceId } };
 }
 
@@ -121,11 +171,17 @@ export function runPlayableWorldScenario({
   seed = `playable-audit:${policyId}`,
   endMinute = GAME_END_MINUTE,
   maxCommands = 5000,
+  tutorial = true,
   data = loadTrpgGameData(),
 } = {}) {
   const policy = POLICIES[policyId];
   if (!policy) throw new Error(`Unknown playable audit policy: ${policyId}`);
-  const runtime = createGameRuntime(data, { seed, profileId: policy.profileId, playerName: `監査-${policyId}` });
+  const runtime = createGameRuntime(data, {
+    seed,
+    profileId: policy.profileId,
+    playerName: `監査-${policyId}`,
+    tutorial,
+  });
   const counters = {
     commands: 0,
     byType: {},
@@ -139,13 +195,18 @@ export function runPlayableWorldScenario({
     checkPresence(runtime, data, counters);
     const before = runtime.playerState.absoluteMinute;
     const command = choosePolicyCommand(runtime, data, policy, counters);
+    if (!command) break;
     try {
       executeGameRuntimeCommand(runtime, data, command);
       counters.commands += 1;
       increment(counters.byType, command.type);
       if (command.type === "SHOP_BUY") counters.purchases += 1;
       const after = runtime.playerState.absoluteMinute;
-      counters.zeroTimeStreak = after === before ? counters.zeroTimeStreak + 1 : 0;
+      counters.zeroTimeStreak = command.type === "BATTLE_ACT"
+        ? 0
+        : after === before
+          ? counters.zeroTimeStreak + 1
+          : 0;
       if (after < before) counters.invariantViolations.push({ code: "time_reversed", before, after });
       if (counters.zeroTimeStreak > 5) counters.invariantViolations.push({ code: "zero_time_loop", minute: after });
     } catch (error) {
