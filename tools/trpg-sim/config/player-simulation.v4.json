@@ -93,6 +93,7 @@
     "geminiFinalInvalidMax": 0,
     "geminiReplayMismatchMax": 0,
     "geminiCacheHitRateMin": 1,
+    "geminiTransientRetryRateMin": 1,
     "geminiRemoteNpcLeakMax": 0
   }
 }

@@ -219,6 +219,35 @@ function rawPrimaryAudit(provider, scenarios) {
   }));
 }
 
+export function summarizeNarrativeReplayBehavior(firstPass, secondPass) {
+  const paired = Math.min(firstPass.length, secondPass.length);
+  let cacheEligible = 0;
+  let replayCacheHits = 0;
+  let retryEligible = 0;
+  let retryAttempts = 0;
+  let unclassified = Math.abs(firstPass.length - secondPass.length);
+  for (let index = 0; index < paired; index += 1) {
+    const firstPersisted = firstPass[index]?.meta?.cachePersisted;
+    const secondMeta = secondPass[index]?.meta ?? {};
+    if (firstPersisted === true) {
+      cacheEligible += 1;
+      if (secondMeta.source === "replay_cache") replayCacheHits += 1;
+    } else if (firstPersisted === false) {
+      retryEligible += 1;
+      if (secondMeta.source !== "replay_cache" && Number(secondMeta.providerCalls ?? 0) > 0) retryAttempts += 1;
+    } else {
+      unclassified += 1;
+    }
+  }
+  return {
+    cacheEligible,
+    replayCacheHits,
+    retryEligible,
+    retryAttempts,
+    unclassified,
+  };
+}
+
 export async function runGeminiNarrativeSimulationV4(runs, model, options = {}) {
   const scenarios = buildNarrativeScenarios(runs, model, { perRun: options.perRun ?? 6 });
   const baselineProvider = createAdversarialGeminiProvider(`${options.seed ?? "v4"}:baseline`);
@@ -273,6 +302,7 @@ export async function runGeminiNarrativeSimulationV4(runs, model, options = {}) 
     const context = buildLocalNarrativeContext(scenarios[index]).context;
     return !validateNarrativeOutput(result, context).ok;
   }).length;
+  const replayBehavior = summarizeNarrativeReplayBehavior(firstPass, secondPass);
   return {
     schemaVersion: "gemini-narrative-simulation-v4",
     simulationType: "adversarial fault injection; not a measurement of live Gemini accuracy",
@@ -294,7 +324,7 @@ export async function runGeminiNarrativeSimulationV4(runs, model, options = {}) 
       rejectedProposals: sum((result) => result.proposalResolution.rejected.length),
       acceptedCandidates: sum((result) => result.proposalResolution.accepted.length),
       remoteNpcRecordsRemoved: sum((result) => result.meta.contextAudit.remoteNpcDataRemoved),
-      replayCacheHits: secondPass.filter((result) => result.meta.source === "replay_cache").length,
+      ...replayBehavior,
       replayMismatches,
       cache: cache.snapshot(),
     },

@@ -14,6 +14,7 @@ import {
   sanitizeNarrativeOutput,
   validateNarrativeOutput,
 } from "../../../src/server/trpg/narrative-contract.js";
+import { summarizeNarrativeReplayBehavior } from "../lib/gemini-simulation-v4.mjs";
 
 function scenario() {
   return {
@@ -338,6 +339,30 @@ test("a transient Gemini timeout falls back once without poisoning replay cache"
   assert.equal(recovered.meta.usedFallback, false);
   assert.equal(recovered.meta.cachePersisted, true);
   assert.match(recovered.narrative, /足跡/u);
+});
+
+test("Gemini simulation audits cached successes separately from retryable fallbacks", () => {
+  const summary = summarizeNarrativeReplayBehavior(
+    [
+      { meta: { cachePersisted: true } },
+      { meta: { cachePersisted: false } },
+      { meta: { cachePersisted: true } },
+      { meta: { cachePersisted: false } },
+    ],
+    [
+      { meta: { source: "replay_cache", providerCalls: 0 } },
+      { meta: { source: "deterministic_fallback", providerCalls: 2 } },
+      { meta: { source: "replay_cache", providerCalls: 0 } },
+      { meta: { source: "gemini", providerCalls: 1 } },
+    ],
+  );
+  assert.deepEqual(summary, {
+    cacheEligible: 2,
+    replayCacheHits: 2,
+    retryEligible: 2,
+    retryAttempts: 2,
+    unclassified: 0,
+  });
 });
 
 test("authoritative mutations and unknown missions are rejected as candidates", async () => {
