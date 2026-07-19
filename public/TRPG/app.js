@@ -396,6 +396,7 @@ function renderChoices(choices, ended = false) {
     button.className = "choice-button";
     const choiceId = choice.choiceId || choice.id;
     if (choiceId) button.dataset.choiceId = choiceId;
+    if (choice.actionId) button.dataset.actionId = choice.actionId;
     const label = escapeText(choice.label, "行動する");
     const kind = choiceKind(choice);
     const minutes = number(choice.minutes);
@@ -410,7 +411,10 @@ function renderChoices(choices, ended = false) {
     dangerElement.textContent = danger;
     button.setAttribute("aria-label", `${label}。${kind}。${minutes > 0 ? `所要${minutes}分` : "時間消費なし"}${danger ? `。${danger}` : ""}`);
     button.disabled = !choiceId;
-    button.addEventListener("click", () => sendCommand("CHOOSE", { choiceId: button.dataset.choiceId }));
+    button.addEventListener("click", () => sendCommand("CHOOSE", {
+      choiceId: button.dataset.choiceId,
+      actionId: button.dataset.actionId || "",
+    }));
     ui.choices.append(button);
   });
 }
@@ -604,15 +608,16 @@ function guidanceView(save) {
     save,
   );
   const deadlineLabel = escapeText(mission.deadlineLabel, mission.deadlineDay ? `期限 Day ${mission.deadlineDay}` : "");
-  const detailParts = [facilityName ? `${facilityName}へ向かう` : "", stepLabel].filter(Boolean);
+  const mustMove = Boolean(targetFacilityId && targetFacilityId !== save?.scene?.facilityId);
+  const resolvedStepLabel = escapeText(stepLabel, "次の手掛かりを探す");
   return {
     kicker: "現在の目的",
-    title: escapeText(mission.title || mission.name, "物語を進める"),
-    detail: detailParts.join("：") || "任務一覧で次の行動を確認しましょう。",
+    title: mustMove && facilityName ? `${facilityName}へ：${resolvedStepLabel}` : resolvedStepLabel,
+    detail: `${escapeText(mission.title || mission.name, "物語を進める")}。${mustMove ? "現在地を開いて目的地へ向かう。" : "中央の3択から進め方を選ぶ。"}`,
     targetFacilityId,
     targetFacilityName: facilityName,
     deadlineLabel,
-    actionPanel: targetFacilityId ? "movement" : "missions",
+    actionPanel: mustMove ? "movement" : null,
   };
 }
 
@@ -1087,12 +1092,25 @@ async function submitInteractiveBattleCommand(battle, command, targetInstanceId 
   if (busy || command?.available === false) return;
   interactiveBattleState.mode = "root";
   interactiveBattleState.selectedActionId = null;
-  ui.battleMessage.textContent = `${escapeText(command.name, "行動")}を選んだ。`;
-  await sendCommand("BATTLE_ACT", {
+  ui.battleMessage.textContent = `${escapeText(command.name, "行動")}を選んだ。戦闘結果を計算しています…`;
+  ui.battleCommandPrompt.textContent = "行動を解決しています…";
+  ui.battleCommandMenu.dataset.mode = "pending";
+  ui.battleCommandMenu.replaceChildren();
+  const pending = document.createElement("p");
+  pending.className = "battle-command-pending";
+  pending.textContent = "そのままお待ちください";
+  pending.setAttribute("role", "status");
+  ui.battleCommandMenu.append(pending);
+  const accepted = await sendCommand("BATTLE_ACT", {
     battleId: battle.id,
     actionId: command.actionId,
     ...(targetInstanceId ? { targetInstanceId } : {}),
   });
+  if (!accepted && currentSave?.battle?.id === battle.id) {
+    interactiveBattleState.mode = "root";
+    interactiveBattleState.selectedActionId = null;
+    renderInteractiveBattleCommands(currentSave.battle, { focus: true });
+  }
 }
 
 function selectInteractiveBattleCommand(battle, command) {
@@ -1390,8 +1408,11 @@ async function sendCommand(type, payload, commandId = crypto.randomUUID()) {
   } catch (error) {
     const code = error.data?.error;
     const errorTarget = ui.battleDialog.open ? ui.battleError : ui.dialog.open ? ui.dialogError : ui.gameError;
-    if (code === "revision_conflict") {
-      showError(errorTarget, "別の画面で旅が進んだようです。最新の状態を読み込みます。", () => loadGame(currentSave.id));
+    if (["revision_conflict", "choice_action_mismatch"].includes(code)) {
+      const message = code === "choice_action_mismatch"
+        ? "表示中の選択肢と世界状態が一致しませんでした。誤った行動は実行せず、最新の選択肢を読み込みます。"
+        : "別の画面で旅が進んだようです。最新の状態を読み込みます。";
+      showError(errorTarget, message, () => loadGame(currentSave.id));
     } else if (code === "game_ended") {
       showError(errorTarget, "100日間の旅は完結しています。最新の年代記を読み込んでください。", () => loadGame(currentSave.id));
     } else if (code === "tutorial_feature_locked") {

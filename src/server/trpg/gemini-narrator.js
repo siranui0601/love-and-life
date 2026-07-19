@@ -23,6 +23,12 @@ import {
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CACHE_PATH = path.resolve(HERE, "../../../runtime-data/TRPG/narrative-cache.jsonl");
+export function boundedNarrativeRequestTimeout(value, fallback = 18_000) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(3_000, Math.min(25_000, parsed)) : fallback;
+}
+
+const NARRATIVE_REQUEST_TIMEOUT_MS = boundedNarrativeRequestTimeout(process.env.TRPG_NARRATIVE_REQUEST_TIMEOUT_MS);
 
 function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -101,6 +107,8 @@ export function buildNarrativePrompt(context, { repair = null, policy = {} } = {
 20. localNpcs.knownLocalFactsは、そのNPCが話せる事実の上限である。そこにない秘密を作らない。話せる事実がない場合も、知らない理由と次に当たる相手・場所のどちらかを具体的に示す。
 21. conversationの一往復ごとに、localRumors、knownLocalFacts、missions、現在地のいずれかに根拠を持つ新情報、NPCの明確な感情、次の具体的行動の手掛かりを最低一つ与える。進展のない見つめ合いや一言返答は禁止する。
 22. action.requiredDisclosureがある場合、それはこの質問でプレイヤーが取得する唯一の新しい事実である。対象NPCの台詞にその文字列を原文のまま必ず含め、意味を変えずに前後の会話を自然に広げる。ない場合はknownLocalFactsにない新事実を開示しない。
+23. authoritativeOutcome.discoveryがある場合、そのtextは今回確定した発見である。narrativeへ具体的に反映し、「結果が反映された」のような抽象文へ置き換えない。
+24. missionsのcurrentStepProgress/currentStepRequiredとdiscoveriesを参照し、既に発見済みの内容を新発見として繰り返さない。進捗後のchoicesは次の段階に対応する差のある三択にする。
 
 提案ポリシー:
 - 許可ミッションテンプレート: ${allowedMissionTemplateIds.join(", ") || "なし"}
@@ -119,7 +127,12 @@ ${stableStringify(context)}`;
 検証エラー:
 ${repair.errors.map((entry) => `- ${entry}`).join("\n")}
 前回出力:
-${String(repair.raw ?? "").slice(0, 5000)}`;
+${String(repair.raw ?? "").slice(0, 5000)}
+修復時は各文字列を簡潔にし、全体を1200文字以内の閉じたJSONにしてください。`;
+}
+
+function requestTimedOut(error) {
+  return /abort|timeout|deadline/iu.test(`${error?.name ?? ""} ${error?.message ?? ""}`);
 }
 
 function normalizeNarrativePolicy(rules = {}, context = {}) {
@@ -135,6 +148,22 @@ function normalizeNarrativePolicy(rules = {}, context = {}) {
   };
 }
 
+export function geminiNarrativeGenerationConfig({ model = TRPG_NARRATIVE_MODEL, useSchema = true } = {}) {
+  const isGemini25Flash = /^gemini-2\.5-flash(?:$|-)/u.test(String(model));
+  return {
+    temperature: 0.35,
+    topP: 0.9,
+    maxOutputTokens: 2_048,
+    responseMimeType: "application/json",
+    // Gemini 2.5 Flash otherwise spends the shared output allowance on
+    // internal thinking and can truncate a small JSON response mid-string.
+    // This task is bounded JSON rendering, so reserve the allowance for the
+    // player-visible answer. Other model families keep their native setting.
+    ...(isGemini25Flash ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+    ...(useSchema ? { responseSchema: GEMINI_NARRATIVE_RESPONSE_SCHEMA } : {}),
+  };
+}
+
 export function createGoogleGeminiProvider({ apiKey = GEMINI_API_KEY, model = TRPG_NARRATIVE_MODEL } = {}) {
   if (!apiKey) return null;
   const client = new GoogleGenerativeAI(apiKey);
@@ -142,16 +171,10 @@ export function createGoogleGeminiProvider({ apiKey = GEMINI_API_KEY, model = TR
     name: "google-gemini",
     model,
     async generate({ prompt, useSchema = true }) {
-      const generationConfig = {
-        temperature: 0.35,
-        topP: 0.9,
-        maxOutputTokens: 1600,
-        responseMimeType: "application/json",
-        ...(useSchema ? { responseSchema: GEMINI_NARRATIVE_RESPONSE_SCHEMA } : {}),
-      };
+      const generationConfig = geminiNarrativeGenerationConfig({ model, useSchema });
       const instance = client.getGenerativeModel({ model, generationConfig });
       try {
-        const result = await instance.generateContent(prompt);
+        const result = await instance.generateContent(prompt, { timeout: NARRATIVE_REQUEST_TIMEOUT_MS });
         return {
           text: result.response.text(),
           usageMetadata: result.response.usageMetadata ?? null,
@@ -162,7 +185,7 @@ export function createGoogleGeminiProvider({ apiKey = GEMINI_API_KEY, model = TR
             model,
             generationConfig: { ...generationConfig, responseSchema: undefined },
           });
-          const result = await compatible.generateContent(prompt);
+          const result = await compatible.generateContent(prompt, { timeout: NARRATIVE_REQUEST_TIMEOUT_MS });
           return {
             text: result.response.text(),
             usageMetadata: result.response.usageMetadata ?? null,
@@ -187,7 +210,9 @@ async function callProvider(provider, payload, audit) {
         status: error?.status ?? null,
         message: String(error?.message ?? error).slice(0, 300),
       });
-      if (!transient(error) || attempt === 1) break;
+      // A timed-out request already consumed the full latency budget. Retrying
+      // it here would hold the save lock long enough for the browser to abort.
+      if (requestTimedOut(error) || !transient(error) || attempt === 1) break;
       await sleep(250 * (attempt + 1));
     }
   }
@@ -361,12 +386,20 @@ export function createTrpgNarrator(options = {}) {
           usedFallback: !validation?.ok,
         },
       };
-      await cache.set(key, response, {
-        model,
-        promptVersion,
-        contextHash: key,
-        policy,
-      });
+      // A provider outage, timeout, or malformed reply must not poison the
+      // replay cache for every future player who reaches the same scene.
+      // The current save still persists its deterministic presentation, while
+      // a later independent generation is allowed to try Gemini again.
+      const cachePersisted = Boolean(validation?.ok || !provider);
+      response.meta.cachePersisted = cachePersisted;
+      if (cachePersisted) {
+        await cache.set(key, response, {
+          model,
+          promptVersion,
+          contextHash: key,
+          policy,
+        });
+      }
       await writeAuditSafely(auditLog, createNarrativeAuditRecord({
         input,
         context,

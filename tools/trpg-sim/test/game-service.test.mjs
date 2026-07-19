@@ -8,6 +8,7 @@ import {
   executeGameRuntimeCommand,
   gameStateHash,
   safeBattlePlayback,
+  TRPG_GAME_RESOLVER_VERSION,
   TrpgGameService,
 } from "../../../src/server/trpg/game/service.js";
 import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
@@ -903,14 +904,14 @@ test("anonymous save capacity is bounded per owner", async () => {
   assert.ok(await game.create(owner, { seed: "quota-after-delete" }));
 });
 
-test("obsolete saves are pruned and global capacity preserves existing saves", async () => {
+test("unknown save versions are preserved while expired saves alone are pruned", async () => {
   const obsolete = service(true, { maxSavesPerOwner: 1, maxTotalSaves: 2 });
   const old = await obsolete.game.create(owner, { seed: "obsolete-one" });
   const oldRecord = await obsolete.store.get(old.id);
   oldRecord.resolverVersion = "obsolete-resolver";
   await obsolete.store.put(oldRecord);
   assert.ok(await obsolete.game.create(owner, { seed: "obsolete-two" }));
-  assert.equal(await obsolete.store.get(old.id), null);
+  assert.ok(await obsolete.store.get(old.id), "an unrecognized save is retained for recovery instead of being deleted");
 
   const bounded = service(true, { maxSavesPerOwner: 2, maxTotalSaves: 1 });
   const first = await bounded.game.create("owner-a", { seed: "lru-one" });
@@ -924,6 +925,96 @@ test("obsolete saves are pruned and global capacity preserves existing saves", a
   await expired.store.put(staleRecord);
   await assert.rejects(() => expired.game.get(owner, stale.id), (error) => error.code === "save_expired" && error.status === 404);
   assert.equal(await expired.store.get(stale.id), null);
+});
+
+test("a v8 save migrates to v9 without losing its world state or future replay", async () => {
+  const { game, store } = service();
+  const runner = commandRunner(game, await game.create(owner, { playerName: "移行旅人", seed: "v8-to-v9" }));
+  await completeOpening(runner);
+  const before = await store.get(runner.save.id);
+  const revisionBefore = before.revision;
+  const v9HashBefore = before.stateHash;
+  const legacyRuntime = deserializeRuntime(before.runtimeSnapshot, game.data);
+  const v8HashBefore = gameStateHash(legacyRuntime, game.data, "trpg-player-world-v8");
+  before.resolverVersion = "trpg-player-world-v8";
+  before.stateHash = v8HashBefore;
+  before.presentation = {
+    ...before.presentation,
+    choiceLabels: { "CHOICE-1": "移行前の古い選択肢ラベル" },
+    cacheKey: "legacy-v8-cache-key",
+  };
+  await store.put(before);
+
+  assert.ok((await game.list(owner)).some((entry) => entry.id === runner.save.id));
+  const resumed = await game.get(owner, runner.save.id);
+  const migratedRunner = commandRunner(game, resumed, "migration-command");
+  assert.equal(migratedRunner.save.revision, revisionBefore);
+  assert.equal(migratedRunner.save.stateHash, v9HashBefore);
+  assert.notEqual(migratedRunner.save.stateHash, v8HashBefore);
+  const migrated = await store.get(migratedRunner.save.id);
+  assert.equal(migrated.resolverVersion, TRPG_GAME_RESOLVER_VERSION);
+  assert.equal(migrated.replayBase.revision, revisionBefore);
+  assert.equal(migrated.replayBase.resolverVersion, "trpg-player-world-v8");
+  assert.equal(migrated.replayBase.stateHash, v8HashBefore);
+  assert.equal(migrated.replayBase.runtimeSnapshot, serializeRuntime(legacyRuntime));
+  assert.deepEqual(migrated.presentation.choiceLabels, {});
+  assert.equal(migrated.presentation.cacheKey, null);
+  assert.equal(migratedRunner.save.choices.some((choice) => choice.label === "移行前の古い選択肢ラベル"), false);
+  assert.equal(migrated.commandLog.length, before.commandLog.length);
+
+  const choice = migratedRunner.save.choices[0];
+  assert.ok(choice?.actionId);
+  await migratedRunner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
+  const replay = await game.verifyReplay(owner, migratedRunner.save.id);
+  assert.equal(replay.baseMatches, true);
+  assert.equal(replay.ok, true);
+  assert.equal(replay.revision, migratedRunner.save.revision);
+});
+
+test("first-read migration and a concurrent command cannot overwrite one another", async () => {
+  const { game, store } = service();
+  const runner = commandRunner(game, await game.create(owner, { playerName: "競合確認", seed: "v8-migration-lock" }));
+  await completeOpening(runner);
+  const before = await store.get(runner.save.id);
+  const legacyRuntime = deserializeRuntime(before.runtimeSnapshot, game.data);
+  before.resolverVersion = "trpg-player-world-v8";
+  before.stateHash = gameStateHash(legacyRuntime, game.data, before.resolverVersion);
+  await store.put(before);
+
+  const originalPut = store.put.bind(store);
+  let releaseFirstMigration;
+  let markFirstMigrationStarted;
+  const firstMigrationStarted = new Promise((resolve) => { markFirstMigrationStarted = resolve; });
+  const firstMigrationRelease = new Promise((resolve) => { releaseFirstMigration = resolve; });
+  let pauseFirstMigration = true;
+  store.put = async (record) => {
+    if (pauseFirstMigration && record.migratedAt && record.resolverVersion === TRPG_GAME_RESOLVER_VERSION) {
+      pauseFirstMigration = false;
+      markFirstMigrationStarted();
+      await firstMigrationRelease;
+    }
+    return originalPut(record);
+  };
+
+  const firstRead = game.get(owner, runner.save.id);
+  await firstMigrationStarted;
+  const displayedChoice = runner.save.choices[0];
+  assert.ok(displayedChoice?.actionId);
+  const concurrentCommand = game.command(owner, runner.save.id, {
+    commandId: "migration-concurrent-command",
+    expectedRevision: before.revision,
+    type: "CHOOSE",
+    payload: { choiceId: displayedChoice.choiceId, actionId: displayedChoice.actionId },
+  });
+  releaseFirstMigration();
+
+  const [migratedView, commandResult] = await Promise.all([firstRead, concurrentCommand]);
+  assert.equal(migratedView.revision, before.revision);
+  assert.equal(commandResult.save.revision, before.revision + 1);
+  const persisted = await store.get(runner.save.id);
+  assert.equal(persisted.revision, before.revision + 1);
+  assert.equal(persisted.resolverVersion, TRPG_GAME_RESOLVER_VERSION);
+  assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
 });
 
 test("a save with an obsolete schema is rejected before hydration", async () => {
@@ -1477,12 +1568,67 @@ test("acknowledging the skill primer without learning a skill never unlocks deli
 
   // Investigation may uncover the encounter, but the resolver must not offer a deliberate fight until a skill is learned.
   for (let searchCount = 0; searchCount < 2; searchCount += 1) {
-    const search = runner.save.choices.find((choice) => choice.actionId === "ACTION:MSN-T01:search");
+    const search = runner.save.choices.find((choice) => choice.missionId === "MSN-T01"
+      && choice.stepId === "search"
+      && choice.type === "investigate");
     assert.ok(search, "the non-combat investigation path must remain available");
-    await runner.run("CHOOSE", { choiceId: search.choiceId });
+    await runner.run("CHOOSE", { choiceId: search.choiceId, actionId: search.actionId });
     assertNoDeliberateBattle();
   }
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
+});
+
+test("T01 exploration binds the displayed action and replaces all three choices after a concrete discovery", async () => {
+  const { game, store } = service();
+  const runner = commandRunner(game, await game.create(owner, { playerName: "探索者", seed: "t01-branch-binding" }));
+  await completeOpening(runner);
+  await runner.run("TUTORIAL_ACK", { tutorialId: "mission-log" });
+  const edge = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FARM_EDGE");
+  assert.ok(edge);
+  await runner.run("MOVE", { moveId: edge.moveId });
+
+  const searchChoices = () => runner.save.choices.filter((choice) => choice.missionId === "MSN-T01"
+    && choice.stepId === "search"
+    && choice.type === "investigate");
+  const firstStage = searchChoices();
+  assert.equal(firstStage.length, 3);
+  assert.equal(new Set(firstStage.map((choice) => choice.actionId)).size, 3);
+  assert.equal(new Set(firstStage.map((choice) => choice.label)).size, 3);
+
+  const selected = firstStage.find((choice) => choice.actionId.endsWith(":claw-marks"));
+  assert.ok(selected);
+  const minuteBefore = runner.save.clock.absoluteMinute;
+  await runner.run("CHOOSE", { choiceId: selected.choiceId, actionId: selected.actionId });
+  assert.equal(runner.save.clock.absoluteMinute - minuteBefore, selected.minutes);
+  assert.equal(runner.save.scene.lastOutcome.discovery.id, "T01-CLUE-WOLF-PURSUIT");
+  assert.match(runner.save.scene.lastOutcome.discovery.text, /赤牙狼.*少年/u);
+  assert.equal(runner.save.scene.narrative, runner.save.scene.lastOutcome.discovery.text);
+
+  const secondStage = searchChoices();
+  assert.equal(secondStage.length, 3);
+  assert.equal(secondStage.some((choice) => firstStage.some((previous) => previous.actionId === choice.actionId)), false);
+  const record = await store.get(runner.save.id);
+  const journal = record.commandLog.at(-1);
+  assert.equal(journal.payload.actionId, selected.actionId);
+  assert.equal(journal.resolvedActionId, selected.actionId);
+
+  const revisionBeforeMismatch = runner.save.revision;
+  await assert.rejects(
+    game.command(owner, runner.save.id, {
+      commandId: "t01-mismatched-visible-action",
+      expectedRevision: revisionBeforeMismatch,
+      type: "CHOOSE",
+      payload: { choiceId: secondStage[0].choiceId, actionId: secondStage[1].actionId },
+    }),
+    (error) => error?.code === "choice_action_mismatch" && error?.status === 409,
+  );
+  assert.equal((await game.get(owner, runner.save.id)).revision, revisionBeforeMismatch);
+
+  const followup = secondStage.find((choice) => choice.actionId.endsWith(":faint-voice"));
+  assert.ok(followup);
+  await runner.run("CHOOSE", { choiceId: followup.choiceId, actionId: followup.actionId });
+  assert.equal(runner.save.scene.lastOutcome.discovery.id, "T01-CLUE-FAINT-VOICE");
+  assert.equal(searchChoices().length, 0);
 });
 
 test("T01 can be played from inquiry through battle and rescue without ever speaking as missing Finn", async () => {
@@ -1490,7 +1636,13 @@ test("T01 can be played from inquiry through battle and rescue without ever spea
   const narrator = {
     async generate(input) {
       narrativeInputs.push(input);
-      return { narrative: "選んだ行動の結果が反映された。", speeches: [], choices: [], proposals: [], meta: { source: "test" } };
+      return {
+        narrative: input.authoritativeOutcome?.discovery?.text ?? "選んだ行動の結果が反映された。",
+        speeches: [],
+        choices: [],
+        proposals: [],
+        meta: { source: "test" },
+      };
     },
   };
   const { game, store } = service(true, { narrator });
@@ -1505,7 +1657,14 @@ test("T01 can be played from inquiry through battle and rescue without ever spea
     const choice = runner.save.choices.find((entry) => entry.actionId === actionId);
     assert.ok(choice, `${actionId} must be one of the three current choices`);
     assert.equal(choice.targetNpcId === "NPC001", false);
-    return runner.run("CHOOSE", { choiceId: choice.choiceId });
+    return runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
+  };
+  const chooseSearch = async (approachId) => {
+    const choice = runner.save.choices.find((entry) => entry.missionId === "MSN-T01"
+      && entry.stepId === "search"
+      && entry.actionId.endsWith(`:${approachId}`));
+    assert.ok(choice, `${approachId} must be one of the current T01 search approaches`);
+    return runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
   };
 
   await completeOpening(runner);
@@ -1513,8 +1672,19 @@ test("T01 can be played from inquiry through battle and rescue without ever spea
   await moveTo("LOC_FARM_EDGE");
   assert.equal(runner.save.tutorial.id, "skills");
   await runner.run("LEARN_SKILL", { skillId: runner.save.skills.learnable[0].id });
-  await chooseAction("ACTION:MSN-T01:search");
-  await chooseAction("ACTION:MSN-T01:search");
+  await chooseSearch("tracks");
+  await chooseSearch("faint-voice");
+  const searchInputs = narrativeInputs.filter((input) => input.action?.stepId === "search");
+  assert.equal(searchInputs.length, 2);
+  assert.equal(searchInputs[0].authoritativeOutcome.discovery.id, "T01-CLUE-BOOT-TRACKS");
+  assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
+    ?.currentStep.progress, 1);
+  assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
+    ?.currentStep.required, 2);
+  assert.deepEqual(searchInputs[1].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
+    ?.discoveries.map((discovery) => discovery.id), ["T01-CLUE-BOOT-TRACKS", "T01-CLUE-FAINT-VOICE"]);
+  assert.equal(runner.save.guidance.title, "赤牙狼の兆候を退ける");
+  assert.equal(runner.save.guidance.actionPanel, null, "an on-site objective points at the visible choices instead of opening an unrelated panel");
   const battleStart = await chooseAction("ACTION:MSN-T01:rescue");
   assert.equal(battleStart.save.scene.lastOutcome.battlePending, true);
   assert.equal(battleStart.save.battle?.status, "active");
@@ -1537,10 +1707,13 @@ test("T01 can be played from inquiry through battle and rescue without ever spea
   const battleNarrativeInput = narrativeInputs.findLast((input) => input.authoritativeOutcome?.battle);
   assert.ok(battleRecord.lastOutcome?.battle?.playback, "latest presentation keeps playback");
   assert.equal(battleJournal.outcome.battle.playback, undefined, "replay journal stays compatible with v4 outcomes");
-  assert.ok(battleNarrativeInput, "battle outcome reaches the narrator");
-  assert.equal(battleNarrativeInput.authoritativeOutcome.battle.playback, undefined, "playback is excluded from Gemini input");
-  assert.equal(battleNarrativeInput.authoritativeState.authoritativeOutcome.battle.playback, undefined);
+  assert.equal(battleNarrativeInput, undefined, "the decisive battle tap must not wait for live narrative generation");
+  assert.equal(battleRecord.presentation.source, "deterministic_fallback");
+  assert.match(battleRecord.presentation.narrative, /フィン.*息はある/u);
   assert.equal(runner.save.tutorial?.complete, true, "the combat coach does not return after a battle was experienced");
+  assert.equal(runner.save.guidance.title, "村の広場へ：少年を連れ帰る");
+  assert.equal(runner.save.guidance.actionPanel, "movement");
+  assert.match(runner.save.guidance.detail, /冒険家志望の少年失踪/u);
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
   await moveTo("LOC_FARM_SQUARE");
   await chooseAction("ACTION:MSN-T01:decide");

@@ -882,6 +882,18 @@ body.is-playing .site-header { display: none; }
   scrollbar-width: thin;
 }
 .battle-command-menu[data-mode="skills"] { grid-template-columns: 1fr; }
+.battle-command-menu[data-mode="pending"] { display: block; }
+.battle-command-pending {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(237, 240, 243, .55);
+  border-radius: 5px;
+  color: #fff2b9;
+  background: rgba(23, 46, 77, .82);
+  font-size: .78rem;
+  font-weight: 800;
+  text-align: center;
+}
 .battle-command-button {
   display: grid;
   min-width: 0;
