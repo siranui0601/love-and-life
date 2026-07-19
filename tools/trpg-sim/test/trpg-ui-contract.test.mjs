@@ -112,7 +112,7 @@ test("first-encounter Gemini art refreshes from the persisted manifest without b
   assert.match(app, /function scheduleAssetRefresh[\s\S]*?loadManifest\(\)[\s\S]*?applyVisibleAssets\(\)/u);
   assert.match(app, /list\(save\.battle\?\.actors\)\.some\(\(actor\) => actor\.side === "enemy" && !monsterUrl\(actor\)\)/u);
   assert.match(app, /queueBattlePresentation\(save\);\s*scheduleAssetRefresh\(save\);/u);
-  assert.match(html, /20260719-agency-v4/u);
+  assert.match(html, /20260719-agency-v5/u);
 });
 
 test("manifest portraits are real transparent cutouts", async () => {
