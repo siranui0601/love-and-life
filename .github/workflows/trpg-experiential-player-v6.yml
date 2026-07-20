@@ -24,11 +24,7 @@ jobs:
         with:
           ref: chatgpt/trpg-experiential-simulation-v6
           fetch-depth: 1
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
+          show-progress: false
       - name: Apply reviewed experiential source changes
         shell: bash
         run: |
@@ -46,8 +42,13 @@ jobs:
           if [ -f "${patches[0]}" ]; then
             rm -f src/server/trpg/game/service.js.orig
             for patch_file in "${patches[@]}"; do
-              git apply --check "$patch_file"
+              echo "CHECKING $patch_file"
+              if ! git apply --check "$patch_file"; then
+                echo "FAILED_PATCH=$patch_file"
+                exit 1
+              fi
               git apply "$patch_file"
+              echo "APPLIED $patch_file"
             done
 
             python - <<'PY'
@@ -75,7 +76,14 @@ jobs:
               tools/trpg-v6-followup.patch \
               src/server/trpg/game/service.js.orig \
               .github/workflows/trpg-apply-v6-patches.yml
+          else
+            echo "Source patch files are already absent."
           fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - name: Run finalized regression tests
         run: npm run trpg:test
       - name: Commit finalized source
@@ -105,6 +113,7 @@ jobs:
         with:
           ref: chatgpt/trpg-experiential-simulation-v6
           fetch-depth: 1
+          show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
