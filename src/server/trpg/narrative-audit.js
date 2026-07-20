@@ -23,6 +23,37 @@ function bool(value) {
   return Boolean(value);
 }
 
+function normalizedChoiceLabel(value) {
+  return String(value ?? "").replace(/[\s、。！？!?・「」『』（）()]/gu, "").toLowerCase();
+}
+
+function bigrams(value) {
+  const text = normalizedChoiceLabel(value);
+  if (text.length < 2) return new Set(text ? [text] : []);
+  return new Set(Array.from({ length: text.length - 1 }, (_, index) => text.slice(index, index + 2)));
+}
+
+function labelSimilarity(left, right) {
+  const a = bigrams(left);
+  const b = bigrams(right);
+  if (!a.size || !b.size) return 0;
+  const intersection = [...a].filter((token) => b.has(token)).length;
+  return intersection / Math.max(a.size, b.size);
+}
+
+function choicesAreMeaningfullyDifferent(choices) {
+  for (let left = 0; left < choices.length; left += 1) {
+    for (let right = left + 1; right < choices.length; right += 1) {
+      const a = choices[left] ?? {};
+      const b = choices[right] ?? {};
+      const sameIntent = String(a.intentType ?? "") === String(b.intentType ?? "");
+      const sameTarget = String(a.targetNpcId ?? "") === String(b.targetNpcId ?? "");
+      if (sameIntent && sameTarget && labelSimilarity(a.label, b.label) >= 0.58) return false;
+    }
+  }
+  return true;
+}
+
 function safeReadJson(filePath, fallback) {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -50,17 +81,38 @@ function usageFromMeta(meta = {}) {
 
 export function evaluateNarrativeAuditRecord({ context, response }) {
   const localNpcIds = new Set((context?.localNpcs ?? []).map((npc) => npc.id));
-  const speechActors = (response?.speeches ?? []).map((speech) => speech.actorId).filter(Boolean);
+  const speeches = response?.speeches ?? [];
+  const speechActors = speeches.map((speech) => speech.actorId).filter(Boolean);
   const remoteSpeechActors = speechActors.filter((id) => !localNpcIds.has(id));
   const choices = response?.choices ?? [];
   const rejected = response?.proposalResolution?.rejected ?? [];
   const validationErrors = response?.meta?.validationErrors ?? [];
+  const action = context?.action ?? {};
+  const targetReplies = action.targetNpcId
+    ? speeches.filter((speech) => speech.actorId === action.targetNpcId).map((speech) => String(speech.text ?? "")).join("\n")
+    : "";
+  const requiredDisclosure = String(action.requiredDisclosure ?? "").trim();
+  const choiceSignatures = new Set(choices.map((choice) => [
+    String(choice.intentType ?? ""),
+    String(choice.targetNpcId ?? ""),
+    String(choice.label ?? "").replace(/[\s、。！？!?・「」『』（）()]/gu, "").slice(0, 18),
+  ].join("|")));
+  const genericSpeech = speeches.some((speech) => /^(?:\.{3}|…+|ふむ|そうだな|なるほど)[。…\s]*$/u.test(String(speech.text ?? "").trim()));
+  const isConversation = ["conversation", "talk"].includes(String(action.type ?? ""));
+  const isWorkOffer = action.dialogueTopic === "work_offer";
+  const isEscort = action.dialogueTopic === "t01_escort";
   const checks = {
     narrativePresent: Boolean(String(response?.narrative ?? "").trim()),
     threeChoices: choices.length === 3,
     uniqueChoiceIds: new Set(choices.map((choice) => choice.id)).size === choices.length,
+    choiceMeaningsDiffer: choiceSignatures.size === choices.length && choicesAreMeaningfullyDifferent(choices),
     localNpcOnly: remoteSpeechActors.length === 0,
     authorityFiltered: rejected.every((entry) => entry && entry.reason),
+    conversationHasSubstance: !isConversation || targetReplies.length >= 55,
+    requiredDisclosurePresent: !requiredDisclosure || targetReplies.includes(requiredDisclosure),
+    workOfferIsConcrete: !isWorkOffer || (requiredDisclosure && /(?:G|賃金|報酬)/u.test(targetReplies)),
+    escortHasHumanRequest: !isEscort || /(?:歩け|足|戻|広場|一緒|置いて)/u.test(targetReplies),
+    noEmptyReactionSpeech: !genericSpeech,
   };
   return {
     passed: Object.values(checks).every(Boolean),

@@ -72,6 +72,9 @@
       stepLabel,
       progress: Number.isFinite(progress) ? progress : null,
       required: Number.isFinite(required) ? required : null,
+      discoveryReason: text(raw?.discoveryReason),
+      deadlineLabel: text(raw?.deadlineLabel),
+      optional: raw?.optional === true,
     };
   }
 
@@ -181,9 +184,9 @@
         const missionTutorialAlreadyVisible = save?.tutorial?.id === "mission-log";
         if (ACTIVE_MISSION_STATUSES.has(next.status) && !missionTutorialAlreadyVisible) {
           enqueueToast({
-            kicker: "依頼発生",
+            kicker: next.optional ? "困り事を知った" : "依頼を知った",
             title: next.title,
-            detail: next.stepLabel || "巻物に新しい依頼が記された。",
+            detail: [next.discoveryReason, next.deadlineLabel, next.stepLabel ? `次：${next.stepLabel}` : ""].filter(Boolean).join("　") || "巻物に新しい出来事が記された。",
             tone: "start",
             dedupeKey: `mission-start:${id}:${next.status}`,
           });
@@ -194,9 +197,9 @@
       if (!ACTIVE_MISSION_STATUSES.has(previous.status) && ACTIVE_MISSION_STATUSES.has(next.status)) {
         if (save?.tutorial?.id !== "mission-log") {
           enqueueToast({
-            kicker: "依頼発生",
+            kicker: next.optional ? "困り事を知った" : "依頼を知った",
             title: next.title,
-            detail: next.stepLabel || "巻物に新しい依頼が記された。",
+            detail: [next.discoveryReason, next.deadlineLabel, next.stepLabel ? `次：${next.stepLabel}` : ""].filter(Boolean).join("　") || "巻物に新しい出来事が記された。",
             tone: "start",
             dedupeKey: `mission-start:${id}:${next.status}`,
           });
@@ -248,27 +251,19 @@
     runtime.missions = nextMissions;
   }
 
-  function skillTutorialRequiresChoicePause(save) {
-    return save?.tutorial?.id === "skills" && learnedSkillCount(save) === 0;
-  }
-
   function syncContextualTutorialGuard() {
     runtime.syncQueued = false;
-    const pauseChoices = skillTutorialRequiresChoicePause(runtime.save);
+    const skillLessonVisible = runtime.save?.tutorial?.id === "skills" && learnedSkillCount(runtime.save) === 0;
     const tray = document.getElementById("decisionTray");
-    tray?.classList.toggle("is-context-tutorial-paused", pauseChoices);
+    tray?.classList.toggle("is-context-tutorial-visible", skillLessonVisible);
 
-    document.querySelectorAll("#choiceRegion .choice-button").forEach((button) => {
+    // The lesson highlights the existing ability control, but it never disables
+    // story choices. Players may proceed underprepared and accept the risk.
+    document.querySelectorAll("#choiceRegion .choice-button[data-p0-tutorial-locked]").forEach((button) => {
       if (!(button instanceof HTMLButtonElement)) return;
-      if (pauseChoices && !button.disabled) {
-        button.dataset.p0TutorialLocked = "true";
-        button.disabled = true;
-        button.setAttribute("aria-disabled", "true");
-      } else if (!pauseChoices && button.dataset.p0TutorialLocked === "true") {
-        button.disabled = false;
-        button.removeAttribute("aria-disabled");
-        delete button.dataset.p0TutorialLocked;
-      }
+      button.disabled = false;
+      button.removeAttribute("aria-disabled");
+      delete button.dataset.p0TutorialLocked;
     });
   }
 
