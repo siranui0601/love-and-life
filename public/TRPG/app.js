@@ -705,13 +705,12 @@ const TUTORIAL_COACH_COPY = Object.freeze({
   "first-choice": "気になる行動を1つ選ぼう",
   "first-conversation": "返したい言葉を選ぼう",
   "conversation-depth": "もう一つ、聞きたいことを選ぼう",
-  "first-movement": "現在地をタップして、村の広場へ",
+  "first-movement": "現在地を開き、「村の広場」を選ぶ",
   "discover-trouble": "話を聞く相手を選ぼう",
-  "world-keeps-moving": "現在地をタップして、広場へ戻ろう",
   "trouble-aftermath": "誰か一人に、起きたことを聞こう",
-  "mission-log": "ミッションをタップして、今の目的を確認",
+  "mission-log": "右上の巻物で、目的と期限を確認",
   shop: "メニューから店を開いてみよう",
-  skills: "スキルをタップして、戦う技を1つ覚えよう",
+  skills: "右上の能力から、技を一つ覚える",
   combat: "赤い選択肢は戦闘。準備できたら進もう",
 });
 
@@ -745,7 +744,7 @@ function positionTutorialCoach() {
 
 function renderTutorial(tutorial) {
   const value = tutorial && typeof tutorial === "object" ? tutorial : null;
-  const visible = Boolean(value && value.complete !== true && (value.id || value.emphasisTarget));
+  const visible = Boolean(value && value.visible !== false && value.complete !== true && (value.id || value.emphasisTarget));
   ui.tutorial.hidden = !visible;
   clearTutorialEmphasis();
   if (!visible) return;

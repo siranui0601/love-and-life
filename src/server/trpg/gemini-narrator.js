@@ -109,6 +109,8 @@ export function buildNarrativePrompt(context, { repair = null, policy = {} } = {
 22. action.requiredDisclosureがある場合、それはこの質問でプレイヤーが取得する唯一の新しい事実である。対象NPCの台詞にその文字列を原文のまま必ず含め、意味を変えずに前後の会話を自然に広げる。ない場合はknownLocalFactsにない新事実を開示しない。
 23. authoritativeOutcome.discoveryがある場合、そのtextは今回確定した発見である。narrativeへ具体的に反映し、「結果が反映された」のような抽象文へ置き換えない。
 24. missionsのcurrentStepProgress/currentStepRequiredとdiscoveriesを参照し、既に発見済みの内容を新発見として繰り返さない。進捗後のchoicesは次の段階に対応する差のある三択にする。
+25. narrativeとspeechesは世界内の描写と発言だけを書く。NPCや地の文に、ミッション、クエスト、選択肢、3択、ボタン、タップ、クリック、画面、UI、メニュー、フラグ、プレイヤー、ゲーム、チュートリアル、SP、HP、MP、レベル、ステータス、ログ、システム、resolver、Gemini等の操作・実装用語を話させない。必要な概念は依頼、技、体力、魔力、経験、記録など世界内の語へ置き換える。操作説明は別のチュートリアルUIが担う。
+26. NPCの発言はrole、mood、speechStyle、currentGoal、relationship、knownLocalFactsに従う。NPCを全知の解説役やゲームルールの代弁者にせず、プレイヤーへ教訓を説くための台詞を作らない。責任、恐れ、望み、見聞きした事実を、その人物自身の立場から話させる。
 
 提案ポリシー:
 - 許可ミッションテンプレート: ${allowedMissionTemplateIds.join(", ") || "なし"}

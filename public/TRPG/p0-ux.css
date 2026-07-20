@@ -1,31 +1,31 @@
-/* P0 player-experience corrections layered over the current TRPG theme. */
+/* P0 corrections that preserve the existing tutorial and control hierarchy. */
 
 .mission-toast-region {
   position: fixed;
   z-index: 1200;
-  top: calc(env(safe-area-inset-top, 0px) + 72px);
-  right: 12px;
+  top: calc(env(safe-area-inset-top, 0px) + 68px);
+  right: 10px;
   display: grid;
-  width: min(390px, calc(100vw - 24px));
-  gap: 8px;
+  width: min(320px, calc(100vw - 20px));
+  gap: 6px;
   pointer-events: none;
 }
 
 .mission-lifecycle-toast {
   display: grid;
   width: 100%;
-  gap: 3px;
-  padding: 13px 15px;
-  border: 1px solid rgba(237, 240, 243, 0.78);
-  border-left: 5px solid #e7c46b;
-  border-radius: 7px;
+  gap: 2px;
+  padding: 9px 11px;
+  border: 1px solid rgba(225, 232, 239, 0.58);
+  border-left: 3px solid #d6b964;
+  border-radius: 6px;
   color: #f7f2df;
-  background: linear-gradient(135deg, rgba(10, 29, 48, 0.98), rgba(15, 42, 67, 0.98));
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42);
+  background: rgba(9, 28, 46, 0.96);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.34);
   text-align: left;
   opacity: 0;
-  transform: translate3d(18px, -6px, 0);
-  transition: opacity 180ms ease, transform 220ms ease;
+  transform: translate3d(10px, -4px, 0);
+  transition: opacity 160ms ease, transform 180ms ease;
   pointer-events: auto;
   cursor: pointer;
 }
@@ -37,128 +37,44 @@
 
 .mission-lifecycle-toast.is-complete,
 .mission-lifecycle-toast.is-rescue {
-  border-left-color: #9fd9b5;
+  border-left-color: #8cc9a4;
 }
 
 .mission-lifecycle-toast.is-failed {
-  border-left-color: #d98d86;
-}
-
-.mission-lifecycle-toast.is-update {
-  border-left-color: #91b7e7;
+  border-left-color: #cf827d;
 }
 
 .mission-toast-kicker {
-  color: #e7c46b;
-  font-size: 0.67rem;
+  color: #dfc773;
+  font-size: 0.61rem;
   font-weight: 900;
-  letter-spacing: 0.17em;
-}
-
-.mission-lifecycle-toast.is-complete .mission-toast-kicker,
-.mission-lifecycle-toast.is-rescue .mission-toast-kicker {
-  color: #bce7ca;
-}
-
-.mission-lifecycle-toast.is-failed .mission-toast-kicker {
-  color: #f0aaa4;
+  letter-spacing: 0.14em;
 }
 
 .mission-lifecycle-toast strong {
   color: #fff;
-  font-size: 0.98rem;
-  line-height: 1.35;
+  font-size: 0.86rem;
+  line-height: 1.3;
 }
 
 .mission-toast-detail {
-  color: rgba(241, 245, 248, 0.82);
-  font-size: 0.76rem;
-  line-height: 1.55;
+  color: rgba(241, 245, 248, 0.78);
+  font-size: 0.7rem;
+  line-height: 1.45;
 }
 
-.progression-actions {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 10px;
-  border: 1px solid rgba(217, 224, 232, 0.48);
-  border-radius: 7px;
-  background: rgba(5, 19, 35, 0.84);
-}
-
-.progression-actions[hidden] {
-  display: none;
-}
-
-.progression-actions.is-skill-primer {
-  border-color: rgba(231, 196, 107, 0.82);
-  box-shadow: inset 0 0 0 1px rgba(231, 196, 107, 0.18), 0 0 20px rgba(231, 196, 107, 0.09);
-}
-
-.progression-notice {
-  margin: 0 2px 2px;
-  color: #fff0bd;
-  font-size: 0.78rem;
-  font-weight: 750;
-  line-height: 1.65;
-}
-
-.progression-notice[hidden],
-.progression-action[hidden] {
-  display: none;
-}
-
-.progression-action {
-  min-height: 48px;
-  padding: 10px 14px;
-  border: 1px solid rgba(239, 243, 248, 0.72);
-  border-radius: 6px;
-  color: #f8fbff;
-  background: rgba(31, 65, 102, 0.9);
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 850;
-  letter-spacing: 0.03em;
-  text-align: left;
-  cursor: pointer;
-}
-
-.progression-action::after {
-  float: right;
-  content: "›";
-  font-size: 1.25rem;
-  line-height: 1;
-}
-
-.progression-action.is-primary {
-  border-color: #f3d681;
-  color: #102034;
-  background: linear-gradient(180deg, #ffe9a8, #e6c466);
-  box-shadow: 0 5px 18px rgba(228, 191, 89, 0.24);
-}
-
-.progression-action.is-secondary.is-recommended {
-  border-color: #c9dfef;
-  background: linear-gradient(180deg, rgba(63, 103, 147, 0.98), rgba(37, 72, 111, 0.98));
-  box-shadow: 0 5px 16px rgba(40, 93, 145, 0.2);
-}
-
-.progression-action:focus-visible,
 .mission-lifecycle-toast:focus-visible {
   outline: 3px solid #fff4b7;
   outline-offset: 2px;
 }
 
-.decision-tray.is-skill-locked .choice-button[data-p0-skill-locked="true"] {
-  opacity: 0.38;
+/* During the contextual skill lesson, the existing skill icon remains the only call to action. */
+.decision-tray.is-context-tutorial-paused .choice-button[data-p0-tutorial-locked="true"] {
+  opacity: 0.34;
   filter: saturate(0.35);
 }
 
-.decision-tray.is-skill-locked .choice-button[data-p0-skill-locked="true"]::after {
-  content: "先にスキル取得";
-}
-
-/* The previous 118px mobile cap clipped the second row of battle commands. */
+/* The former mobile height cap clipped the second row of battle commands. */
 @media (max-width: 720px) {
   .battle-dialog[open] {
     overflow: hidden;
@@ -194,14 +110,9 @@
   }
 
   .mission-toast-region {
-    top: calc(env(safe-area-inset-top, 0px) + 58px);
-    right: 8px;
-    width: calc(100vw - 16px);
-  }
-
-  .progression-actions {
-    margin-top: 8px;
-    padding: 8px;
+    top: calc(env(safe-area-inset-top, 0px) + 56px);
+    right: 7px;
+    width: min(310px, calc(100vw - 14px));
   }
 }
 
