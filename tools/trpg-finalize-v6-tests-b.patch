@@ -1,0 +1,93 @@
+--- a/tools/trpg-sim/test/game-service.test.mjs
++++ b/tools/trpg-sim/test/game-service.test.mjs
+@@ -762,48 +767,49 @@
+   assert.equal(runtime.livingWorld.npcStates.NPC001.lifeStatus, "dead");
+ });
+ 
+-test("each opening inquiry records only its authoritative clue and survives replay", async () => {
+-  const branches = [
+-    { inquiry: "TUTORIAL:INQUIRY:GARO", factId: "T01_SEARCH_BOUNDARY", evidence: 1, npcId: "NPC003", anonymous: "年配の村人", name: "ガロ" },
+-    { inquiry: "TUTORIAL:INQUIRY:MIRA", factId: "T01_FINN_MAP", evidence: 1, npcId: "NPC002", anonymous: "取り乱した女性", name: "ミラ" },
+-    { inquiry: "TUTORIAL:INQUIRY:COBY", factId: "T01_LOOKOUT_CLUE", evidence: 2, npcId: "NPC062", anonymous: "落ち着かない少年", name: "コビー" },
+-  ];
+-  const authoritativeOutcomes = [];
+-
+-  for (const branch of branches) {
+-    const { game, store } = service();
+-    const runner = commandRunner(game, await game.create(owner, {
+-      playerName: "clue-tester",
+-      seed: `opening-clue-${branch.factId}`,
+-    }));
+-    await completeOpening(runner, { inquiry: branch.inquiry });
+-
+-    const introductionBeat = runner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === branch.npcId);
+-    assert.equal(introductionBeat?.speakerLabel, branch.anonymous);
+-    assert.match(introductionBeat?.text ?? "", new RegExp(branch.name, "u"));
+-
+-    const record = await store.get(runner.save.id);
+-    const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
+-    assert.equal(runtime.tutorial.inquirySource, branch.inquiry);
+-    assert.deepEqual([...runtime.tutorial.openingFacts], [branch.factId]);
+-    assert.equal(runtime.playerState.player.evidenceByTrouble.T01, branch.evidence);
+-
+-    const mission = runner.save.missions.find((entry) => entry.id === "MSN-T01");
+-    assert.ok(mission, "hearing an opening clue must reveal T01 to the player");
+-    assert.deepEqual(mission.knownClues.map((clue) => clue.id), [branch.factId]);
+-    assert.equal(typeof mission.knownClues[0].text, "string");
+-    assert.ok(mission.knownClues[0].text.trim().length > 0);
+-
+-    authoritativeOutcomes.push(JSON.stringify({
+-      inquirySource: runtime.tutorial.inquirySource,
+-      facts: [...runtime.tutorial.openingFacts],
+-      knownClues: mission.knownClues,
+-      evidence: runtime.playerState.player.evidenceByTrouble.T01,
+-    }));
+-    assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
+-  }
++test("opening branches preserve help, paid work and leaving as replayable choices", async () => {
++  const helpService = service();
++  const helpRunner = commandRunner(helpService.game, await helpService.game.create(owner, {
++    playerName: "help-branch",
++    seed: "opening-help-branch",
++  }));
++  await completeOpening(helpRunner, { inquiry: "TUTORIAL:INQUIRY:MIRA" });
++  const introductionBeat = helpRunner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === "NPC002");
++  assert.equal(introductionBeat?.speakerLabel, "取り乱した女性");
++  assert.match(introductionBeat?.text ?? "", /ミラ/u);
++  const helpRecord = await helpService.store.get(helpRunner.save.id);
++  const helpRuntime = deserializeRuntime(helpRecord.runtimeSnapshot, helpService.game.data);
++  assert.equal(helpRuntime.tutorial.inquirySource, "TUTORIAL:INQUIRY:MIRA");
++  assert.deepEqual([...helpRuntime.tutorial.openingFacts], ["T01_FINN_MAP"]);
++  assert.equal(helpRuntime.playerState.player.evidenceByTrouble.T01, 1);
++  const helpMission = helpRunner.save.missions.find((entry) => entry.id === "MSN-T01");
++  assert.equal(helpMission.optional, false);
++  assert.deepEqual(helpMission.knownClues.map((clue) => clue.id), ["T01_FINN_MAP"]);
++  assert.equal((await helpService.game.verifyReplay(owner, helpRunner.save.id)).ok, true);
++
++  const workService = service();
++  const workRunner = commandRunner(workService.game, await workService.game.create(owner, {
++    playerName: "work-branch",
++    seed: "opening-work-branch",
++  }));
++  await completeOpening(workRunner, { inquiry: "TUTORIAL:DEFER:WORK" });
++  assert.equal(workRunner.save.missions.find((entry) => entry.id === "MSN-T01")?.optional, true);
++  assert.deepEqual(workRunner.save.choices.map((choice) => choice.actionId.split(":")[0]), [
++    "WORK_CONFIRM",
++    "WORK_CLARIFY",
++    "WORK_DECLINE",
++  ]);
++  assert.equal((await workService.game.verifyReplay(owner, workRunner.save.id)).ok, true);
+ 
+-  assert.equal(new Set(authoritativeOutcomes).size, branches.length);
++  const leaveService = service();
++  const leaveRunner = commandRunner(leaveService.game, await leaveService.game.create(owner, {
++    playerName: "leave-branch",
++    seed: "opening-leave-branch",
++  }));
++  await completeOpening(leaveRunner, { inquiry: "TUTORIAL:DEFER:LEAVE" });
++  assert.equal(leaveRunner.save.missions.find((entry) => entry.id === "MSN-T01")?.optional, true);
++  assert.ok(leaveRunner.save.movement.some((move) => move.destinationFacilityId === "LOC_CAP_LOWER_INN"));
++  assert.equal((await leaveService.game.verifyReplay(owner, leaveRunner.save.id)).ok, true);
+ });
+ 
+ test("a late arrival sees T01 aftermath instead of stale Day1 inquiry and can finish onboarding", async () => {
