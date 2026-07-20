@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.7";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.8";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",
@@ -178,11 +178,29 @@ function normalizeMission(mission) {
   const currentStep = rawStep && typeof rawStep === "object"
     ? boundedText(rawStep.label ?? rawStep.id, 180)
     : boundedText(rawStep, 180);
+  const discoveries = (Array.isArray(mission?.discoveries) ? mission.discoveries : [])
+    .map((discovery) => ({
+      id: boundedText(discovery?.id, 120),
+      text: boundedText(discovery?.text, 500),
+      stepId: boundedText(discovery?.stepId, 80) || null,
+      stage: Number.isFinite(Number(discovery?.stage)) ? Number(discovery.stage) : null,
+      approachId: boundedText(discovery?.approachId, 80) || null,
+    }))
+    .filter((discovery) => discovery.id && discovery.text)
+    .slice(-8);
   return {
     id: boundedText(mission?.id, 80),
     title: boundedText(mission?.title, 120),
     status: boundedText(mission?.status, 40),
     currentStep,
+    currentStepId: rawStep && typeof rawStep === "object" ? boundedText(rawStep.id, 80) || null : null,
+    currentStepProgress: rawStep && typeof rawStep === "object" && Number.isFinite(Number(rawStep.progress))
+      ? Number(rawStep.progress)
+      : null,
+    currentStepRequired: rawStep && typeof rawStep === "object" && Number.isFinite(Number(rawStep.required))
+      ? Number(rawStep.required)
+      : null,
+    discoveries,
     troubleId: boundedText(mission?.troubleId, 40) || null,
   };
 }

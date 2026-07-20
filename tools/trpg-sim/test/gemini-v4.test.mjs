@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildNarrativePrompt, createTrpgNarrator } from "../../../src/server/trpg/gemini-narrator.js";
+import {
+  boundedNarrativeRequestTimeout,
+  buildNarrativePrompt,
+  createTrpgNarrator,
+  geminiNarrativeGenerationConfig,
+} from "../../../src/server/trpg/gemini-narrator.js";
 import { createNarrativeReplayCache } from "../../../src/server/trpg/narrative-cache.js";
 import {
   buildLocalNarrativeContext,
@@ -9,6 +14,7 @@ import {
   sanitizeNarrativeOutput,
   validateNarrativeOutput,
 } from "../../../src/server/trpg/narrative-contract.js";
+import { summarizeNarrativeReplayBehavior } from "../lib/gemini-simulation-v4.mjs";
 
 function scenario() {
   return {
@@ -30,7 +36,14 @@ function scenario() {
         id: "MSN-T01",
         title: "少年を助ける",
         troubleId: "T01",
-        currentStep: { id: "hear", label: "村で少年の行方を聞く" },
+        currentStep: { id: "hear", label: "村で少年の行方を聞く", progress: 1, required: 2 },
+        discoveries: [{
+          id: "T01-CLUE-TRACKS",
+          text: "小さな靴跡が見張り小屋へ続いている。",
+          stepId: "search",
+          stage: 0,
+          approachId: "tracks",
+        }],
         targetLocations: ["田園の村"],
       }],
       localRumors: [{ id: "RUM-T01-active", troubleId: "T01", text: "少年が戻らない" }],
@@ -54,8 +67,31 @@ test("local narrative context excludes NPCs who are not present", () => {
   assert.equal(built.context.localNpcs.length, 1);
   assert.equal(JSON.stringify(built.context).includes("王都の司書"), false);
   assert.equal(built.context.missions[0].currentStep, "村で少年の行方を聞く");
+  assert.equal(built.context.missions[0].currentStepProgress, 1);
+  assert.equal(built.context.missions[0].currentStepRequired, 2);
+  assert.deepEqual(built.context.missions[0].discoveries, [{
+    id: "T01-CLUE-TRACKS",
+    text: "小さな靴跡が見張り小屋へ続いている。",
+    stepId: "search",
+    stage: 0,
+    approachId: "tracks",
+  }]);
   assert.equal(built.context.place.publicDescription, "村人が行き交い、日々の知らせが集まる広場。");
   assert.doesNotMatch(JSON.stringify(built.context), /T01捜索|T03狼遭遇|失敗時|密輸倉庫番|証拠を隠す/u);
+});
+
+test("Gemini 2.5 Flash reserves its output budget for complete narrative JSON", () => {
+  const flash = geminiNarrativeGenerationConfig({ model: "gemini-2.5-flash", useSchema: true });
+  assert.equal(flash.maxOutputTokens, 2_048);
+  assert.deepEqual(flash.thinkingConfig, { thinkingBudget: 0 });
+  assert.ok(flash.responseSchema);
+
+  const other = geminiNarrativeGenerationConfig({ model: "gemini-3.1-pro-preview", useSchema: false });
+  assert.equal("thinkingConfig" in other, false);
+  assert.equal("responseSchema" in other, false);
+  assert.equal(boundedNarrativeRequestTimeout("not-a-number"), 18_000);
+  assert.equal(boundedNarrativeRequestTimeout(1), 3_000);
+  assert.equal(boundedNarrativeRequestTimeout(99_000), 25_000);
 });
 
 test("an action target cannot add an absent, missing, or remote NPC to local context", () => {
@@ -265,6 +301,68 @@ test("invalid Gemini output is repaired and exact replay bypasses the provider",
   assert.equal(second.meta.providerCalls, 0);
   assert.equal(second.narrative, first.narrative);
   assert.deepEqual(second.choices, first.choices);
+});
+
+test("a transient Gemini timeout falls back once without poisoning replay cache", async () => {
+  let calls = 0;
+  const provider = {
+    async generate() {
+      calls += 1;
+      if (calls === 1) {
+        const error = new Error("request timeout");
+        error.name = "AbortError";
+        throw error;
+      }
+      return JSON.stringify({
+        narrative: "衛兵は足跡が村外れへ続くと説明した。",
+        choices: [
+          { id: "C1", label: "詳しく聞く", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+          { id: "C2", label: "周囲を見る", intentType: "observe", targetNpcId: null },
+          { id: "C3", label: "会話を終える", intentType: "leave", targetNpcId: null },
+        ],
+        speeches: [{ actorId: "NPC-LOCAL", text: "小さな足跡なら村外れへ続いていた。" }],
+        proposals: [],
+      });
+    },
+  };
+  const narrator = createTrpgNarrator({
+    provider,
+    cache: createNarrativeReplayCache({ memoryOnly: true }),
+    memoryOnlyCache: true,
+    auditLog: false,
+  });
+  const fallback = await narrator.generate(scenario());
+  assert.equal(fallback.meta.usedFallback, true);
+  assert.equal(fallback.meta.cachePersisted, false);
+  const recovered = await narrator.generate(scenario());
+  assert.equal(calls, 2);
+  assert.equal(recovered.meta.usedFallback, false);
+  assert.equal(recovered.meta.cachePersisted, true);
+  assert.match(recovered.narrative, /足跡/u);
+});
+
+test("Gemini simulation audits cached successes separately from retryable fallbacks", () => {
+  const summary = summarizeNarrativeReplayBehavior(
+    [
+      { meta: { cachePersisted: true } },
+      { meta: { cachePersisted: false } },
+      { meta: { cachePersisted: true } },
+      { meta: { cachePersisted: false } },
+    ],
+    [
+      { meta: { source: "replay_cache", providerCalls: 0 } },
+      { meta: { source: "deterministic_fallback", providerCalls: 2 } },
+      { meta: { source: "replay_cache", providerCalls: 0 } },
+      { meta: { source: "gemini", providerCalls: 1 } },
+    ],
+  );
+  assert.deepEqual(summary, {
+    cacheEligible: 2,
+    replayCacheHits: 2,
+    retryEligible: 2,
+    retryAttempts: 2,
+    unclassified: 0,
+  });
 });
 
 test("authoritative mutations and unknown missions are rejected as candidates", async () => {

@@ -23,7 +23,8 @@ import { FileTrpgSaveStore } from "./save-store.js";
 import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v8";
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v9";
+const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
 const TUTORIAL_VERSION = "trpg-progressive-onboarding-v4";
@@ -147,6 +148,13 @@ function boundedPositiveInteger(value, fallback, maximum) {
 }
 
 function commandPayload(type, input) {
+  if (type === "CHOOSE") {
+    const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
+    return {
+      choiceId: cleanText(source.choiceId, 120),
+      actionId: cleanText(source.actionId, 120),
+    };
+  }
   if (type === "BATTLE_ACT") {
     const source = input && typeof input === "object" && !Array.isArray(input) ? input : {};
     return {
@@ -817,8 +825,8 @@ function hydrateRuntime(record, data) {
   return runtime;
 }
 
-export function gameStateHash(runtime, data) {
-  return sha256(`${data.contentRevision}\n${TRPG_GAME_RESOLVER_VERSION}\n${serializeRuntime(runtime)}`);
+export function gameStateHash(runtime, data, resolverVersion = TRPG_GAME_RESOLVER_VERSION) {
+  return sha256(`${data.contentRevision}\n${resolverVersion}\n${serializeRuntime(runtime)}`);
 }
 
 function choiceIntent(action) {
@@ -1463,6 +1471,12 @@ function resolvedActionForPresentation(action) {
     destinationFacilityId: action.destinationFacilityId ?? null,
     destinationHub: action.destinationHub ?? null,
     movementScope: action.movementScope ?? null,
+    investigationStage: Number.isFinite(Number(action.investigationStage))
+      ? Number(action.investigationStage)
+      : null,
+    approachId: cleanText(action.approachId, 80) || null,
+    discoveryId: cleanText(action.discoveryId, 120) || null,
+    discoveryText: cleanText(action.discoveryText, 500) || null,
   };
 }
 
@@ -1680,6 +1694,16 @@ function safeOutcome(result, data = null) {
   if (result?.spCost) output.spCost = result.spCost;
   if (result?.goldDelta !== undefined) output.goldDelta = Number(result.goldDelta);
   if (result?.learnedRumorIds?.length) output.learnedRumorCount = result.learnedRumorIds.length;
+  if (result?.discovery?.id && result?.discovery?.text) {
+    output.discovery = {
+      id: cleanText(result.discovery.id, 120),
+      text: cleanText(result.discovery.text, 500),
+      missionId: cleanText(result.discovery.missionId, 80) || null,
+      stepId: cleanText(result.discovery.stepId, 80) || null,
+      stage: Number.isFinite(Number(result.discovery.stage)) ? Number(result.discovery.stage) : null,
+      approachId: cleanText(result.discovery.approachId, 80) || null,
+    };
+  }
   if (result?.battle) {
     output.battle = {
       encounterId: result.battle.encounterId ?? result.battle.encounter?.id ?? null,
@@ -1813,6 +1837,13 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     const choices = choiceActions(runtime, data);
     const action = choices.find((entry) => entry.choiceId === payload.choiceId);
     if (!action) throw new TrpgGameError(400, "choice_not_available");
+    if (payload.actionId && payload.actionId !== action.id) {
+      throw new TrpgGameError(409, "choice_action_mismatch", "The displayed choice no longer resolves to the same action", {
+        choiceId: payload.choiceId,
+        displayedActionId: payload.actionId,
+        currentActionId: action.id,
+      });
+    }
     resolvedPlayerAction = action;
     resolvedActionId = action.id;
     if (["missionBattle", "seekBattle"].includes(action.type)) {
@@ -2158,6 +2189,16 @@ function missionView(runtime, data) {
         targetFacilityId,
         targetFacilityName: data.model.facilityById[targetFacilityId]?.name ?? null,
         knownClues: openingKnownClues(runtime, definition.troubleId),
+        discoveries: Array.isArray(current.discoveries)
+          ? current.discoveries.map((discovery) => ({
+            id: cleanText(discovery.id, 120),
+            text: cleanText(discovery.text, 500),
+            stepId: cleanText(discovery.stepId, 80) || null,
+            stage: Number.isFinite(Number(discovery.stage)) ? Number(discovery.stage) : null,
+            approachId: cleanText(discovery.approachId, 80) || null,
+            discoveredAtMinute: Number(discovery.discoveredAtMinute ?? 0),
+          }))
+          : [],
         progressRatio: step
           ? Math.min(1, Number(current.progress[step.id] ?? 0) / Math.max(1, Number(step.required ?? 1)))
           : definition.metric
@@ -2523,14 +2564,17 @@ function guidanceView(runtime, data, missions) {
   if (mission) {
     const step = mission.currentStep;
     const targetFacilityId = step?.targetFacilityId ?? mission.targetFacilityId;
+    const targetName = step?.targetFacilityName ?? mission.targetFacilityName ?? null;
+    const stepLabel = step?.label ?? "次の手掛かりを探す";
+    const mustMove = Boolean(targetFacilityId && targetFacilityId !== runtime.playerState.player.facilityId);
     return {
       kicker: "現在の目的",
-      title: mission.title,
-      detail: step?.label ?? "次の手掛かりを探す。",
+      title: mustMove && targetName ? `${targetName}へ：${stepLabel}` : stepLabel,
+      detail: `${mission.title}。${mustMove ? "現在地を開いて目的地へ向かう。" : "中央の3択から進め方を選ぶ。"}`,
       targetFacilityId: targetFacilityId ?? null,
-      targetFacilityName: step?.targetFacilityName ?? mission.targetFacilityName ?? null,
+      targetFacilityName: targetName,
       deadlineLabel: mission.deadlineLabel,
-      actionPanel: targetFacilityId && targetFacilityId !== runtime.playerState.player.facilityId ? "movement" : "missions",
+      actionPanel: mustMove ? "movement" : null,
     };
   }
   return {
@@ -2762,6 +2806,28 @@ function authoredOpeningPresentation(runtime) {
 function deterministicFallbackPresentation(runtime, data, action, outcome) {
   const resolved = action?.resolvedAction ?? action;
   const fallback = fallbackNarrative(runtime, resolved, outcome);
+  if (resolved?.type === "investigate") {
+    const discovery = cleanText(outcome?.discovery?.text ?? outcome?.summary, 500);
+    if (discovery && discovery !== "行動の結果が世界へ反映された。") {
+      return { narrative: discovery, speeches: [] };
+    }
+    return {
+      narrative: `${cleanText(resolved.label, 180) || "現場を調べた"}。しかし、確かな新情報までは得られなかった。別の方法か場所を選ぶ必要がある。`,
+      speeches: [],
+    };
+  }
+  if (outcome?.battle?.won === true) {
+    if (resolved?.missionId === "MSN-T01" && resolved?.stepId === "rescue") {
+      return {
+        narrative: "赤牙狼が地に伏すと、斜面の下から咳き込む声が返った。泥だらけのフィンは脚を痛めているが、息はある。肩を貸して立たせ、村へ戻る道を確保した。",
+        speeches: [],
+      };
+    }
+    return {
+      narrative: "最後の敵が退き、張り詰めていた気配がほどける。傷と周囲を確かめ、戦いの目的だった人や手掛かりへ向き直った。",
+      speeches: [],
+    };
+  }
   if (outcome?.reason === "travel_defeat" || (resolved?.type === "move" && outcome?.battle?.won === false)) {
     const currentFacility = data.model.facilityById[runtime.playerState.player.facilityId]?.name
       ?? runtime.playerState.player.location;
@@ -3156,6 +3222,12 @@ function narrativeInput(record, runtime, data, action, outcome) {
       id: resolvedAction?.id ?? action?.resolvedActionId ?? action?.type ?? "GAME_START",
       type: resolvedAction?.type ?? action?.type ?? "start",
       label: resolvedAction?.label ?? "物語を始める",
+      missionId: resolvedAction?.missionId ?? null,
+      stepId: resolvedAction?.stepId ?? null,
+      investigationStage: Number.isFinite(Number(resolvedAction?.investigationStage))
+        ? Number(resolvedAction.investigationStage)
+        : null,
+      approachId: resolvedAction?.approachId ?? null,
       targetNpcId: resolvedAction?.targetNpcId ?? null,
       targetNpcName: resolvedAction?.targetNpcName ?? null,
       dialogueTopic: resolvedAction?.dialogueTopic ?? null,
@@ -3348,7 +3420,8 @@ export class TrpgGameService {
   currentRecord(record, now = Date.now()) {
     const updatedAt = Date.parse(record?.updatedAt ?? "");
     return record?.schemaVersion === TRPG_GAME_SCHEMA_VERSION
-      && record?.resolverVersion === TRPG_GAME_RESOLVER_VERSION
+      && (record?.resolverVersion === TRPG_GAME_RESOLVER_VERSION
+        || MIGRATABLE_RESOLVER_VERSIONS.has(record?.resolverVersion))
       && record?.contentRevision === this.data.contentRevision
       && record?.tutorialVersion === TUTORIAL_VERSION
       && Number.isFinite(updatedAt)
@@ -3362,20 +3435,20 @@ export class TrpgGameService {
 
   async pruneObsoleteSaves(now = Date.now()) {
     const records = await this.store.all();
-    const current = [];
+    const retained = [];
     for (const record of records) {
-      if (this.currentRecord(record, now)) current.push(record);
+      if (this.withinRetention(record, now)) retained.push(record);
       else await this.store.delete(record.id);
     }
-    return current;
+    return retained;
   }
 
   async create(ownerHash, input = {}) {
     return this.runLocked("global-create", async () => {
-      const currentRecords = await this.pruneObsoleteSaves();
-      const ownerRecords = currentRecords.filter((record) => record.ownerHash === ownerHash);
+      const retainedRecords = await this.pruneObsoleteSaves();
+      const ownerRecords = retainedRecords.filter((record) => record.ownerHash === ownerHash && this.currentRecord(record));
       if (ownerRecords.length >= this.maxSavesPerOwner) throw new TrpgGameError(429, "owner_save_quota_reached");
-      if (currentRecords.length >= this.maxTotalSaves) {
+      if (retainedRecords.length >= this.maxTotalSaves) {
         throw new TrpgGameError(503, "global_save_capacity_reached");
       }
       const playerName = cleanText(input.playerName || "旅人", 24) || "旅人";
@@ -3430,9 +3503,11 @@ export class TrpgGameService {
       await this.store.delete(id);
       throw new TrpgGameError(404, "save_expired");
     }
+    const resolverIsCurrent = record.resolverVersion === TRPG_GAME_RESOLVER_VERSION;
+    const resolverIsMigratable = MIGRATABLE_RESOLVER_VERSIONS.has(record.resolverVersion);
     if (record.schemaVersion !== TRPG_GAME_SCHEMA_VERSION
       || record.contentRevision !== this.data.contentRevision
-      || record.resolverVersion !== TRPG_GAME_RESOLVER_VERSION
+      || (!resolverIsCurrent && !resolverIsMigratable)
       || record.tutorialVersion !== TUTORIAL_VERSION) {
       throw new TrpgGameError(409, "save_content_version_mismatch", "This save is pinned to a different content revision", {
         saveSchemaVersion: record.schemaVersion,
@@ -3445,15 +3520,46 @@ export class TrpgGameService {
         currentTutorialVersion: TUTORIAL_VERSION,
       });
     }
+    if (resolverIsMigratable) {
+      const runtime = hydrateRuntime(record, this.data);
+      const legacyHash = gameStateHash(runtime, this.data, record.resolverVersion);
+      if (legacyHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
+      const normalizedSnapshot = serializeRuntime(runtime);
+      record.replayBase = {
+        resolverVersion: record.resolverVersion,
+        revision: record.revision,
+        stateHash: legacyHash,
+        runtimeSnapshot: normalizedSnapshot,
+      };
+      record.resolverVersion = TRPG_GAME_RESOLVER_VERSION;
+      record.runtimeSnapshot = normalizedSnapshot;
+      record.stateHash = gameStateHash(runtime, this.data);
+      if (record.presentation) {
+        record.presentation = {
+          ...record.presentation,
+          revision: record.revision,
+          choiceLabels: {},
+          cacheKey: null,
+        };
+      }
+      record.migratedAt = new Date().toISOString();
+      await this.store.put(record);
+    }
     return record;
   }
 
-  async get(ownerHash, id) {
-    const record = await this.recordForOwner(ownerHash, id);
+  gameViewForRecord(record) {
     const runtime = hydrateRuntime(record, this.data);
     const actualHash = gameStateHash(runtime, this.data);
     if (actualHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
     return buildGameView(record, runtime, this.data);
+  }
+
+  async get(ownerHash, id) {
+    return this.runLocked(id, async () => {
+      const record = await this.recordForOwner(ownerHash, id);
+      return this.gameViewForRecord(record);
+    });
   }
 
   async runLocked(key, operation) {
@@ -3480,10 +3586,11 @@ export class TrpgGameService {
       if (duplicate) {
         const requestedType = cleanText(input.type, 40);
         const requestedPayload = commandPayload(requestedType, input.payload);
-        if (duplicate.type !== requestedType || JSON.stringify(duplicate.payload) !== JSON.stringify(requestedPayload)) {
+        const recordedPayload = commandPayload(duplicate.type, duplicate.payload);
+        if (duplicate.type !== requestedType || JSON.stringify(recordedPayload) !== JSON.stringify(requestedPayload)) {
           throw new TrpgGameError(409, "command_id_conflict", "The command id was already used for a different command");
         }
-        const save = await this.get(ownerHash, id);
+        const save = this.gameViewForRecord(record);
         return { duplicate: true, originalRevision: duplicate.revisionAfter, save };
       }
       if (!Number.isInteger(input.expectedRevision) || input.expectedRevision !== record.revision) {
@@ -3520,7 +3627,14 @@ export class TrpgGameService {
           ? { ...record.presentation, revision: record.revision, choiceLabels: {} }
           : null;
       } else {
-        await updatePresentation(record, runtime, this.data, this.narrator, { ...command, ...result }, result.outcome);
+        // Finishing an interactive battle must acknowledge the decisive tap
+        // immediately. Live narrative generation is intentionally skipped for
+        // this transition: provider latency must never hold the per-save lock
+        // after the enemy has already been defeated. The authoritative battle
+        // playback supplies the result, while later conversations continue to
+        // use Gemini normally.
+        const presentationNarrator = command.type === "BATTLE_ACT" ? null : this.narrator;
+        await updatePresentation(record, runtime, this.data, presentationNarrator, { ...command, ...result }, result.outcome);
       }
       await this.store.put(record);
       return { duplicate: false, save: buildGameView(record, runtime, this.data) };
@@ -3528,57 +3642,78 @@ export class TrpgGameService {
   }
 
   async verifyReplay(ownerHash, id) {
-    const record = await this.recordForOwner(ownerHash, id);
-    let runtime = createGameRuntime(this.data, {
-      seed: record.seed,
-      profileId: record.profileId,
-      playerName: record.playerName,
-      tutorial: record.tutorialVersion === TUTORIAL_VERSION,
+    return this.runLocked(id, async () => {
+      const record = await this.recordForOwner(ownerHash, id);
+      const replayBase = record.replayBase;
+      let runtime;
+      let revision;
+      let entries;
+      if (replayBase?.runtimeSnapshot && Number.isInteger(replayBase.revision)) {
+        runtime = deserializeRuntime(replayBase.runtimeSnapshot, this.data);
+        applyGameplayCatalogOverrides(runtime.playerState.catalog);
+        syncAuthoritativePresentNpcIds(runtime, this.data);
+        compactPlayableRuntime(runtime);
+        const baseHash = gameStateHash(runtime, this.data, replayBase.resolverVersion);
+        if (baseHash !== replayBase.stateHash) {
+          return { ok: false, revision: replayBase.revision, stateHash: gameStateHash(runtime, this.data), checks: [], baseMatches: false };
+        }
+        revision = replayBase.revision;
+        entries = record.commandLog.filter((entry) => Number(entry.seq) > replayBase.revision);
+      } else {
+        runtime = createGameRuntime(this.data, {
+          seed: record.seed,
+          profileId: record.profileId,
+          playerName: record.playerName,
+          tutorial: record.tutorialVersion === TUTORIAL_VERSION,
+        });
+        compactPlayableRuntime(runtime);
+        revision = 0;
+        entries = record.commandLog;
+      }
+      const checks = [];
+      for (const entry of entries) {
+        const expectedSeq = revision + 1;
+        const beforeHash = gameStateHash(runtime, this.data);
+        const result = executeGameRuntimeCommand(runtime, this.data, entry);
+        revision = expectedSeq;
+        compactPlayableRuntime(runtime);
+        const afterHash = gameStateHash(runtime, this.data);
+        checks.push({
+          seq: entry.seq,
+          sequenceMatches: entry.seq === expectedSeq,
+          revisionMatches: entry.revisionBefore === expectedSeq - 1 && entry.revisionAfter === expectedSeq,
+          beforeMatches: beforeHash === entry.stateBeforeHash,
+          actionMatches: result.resolvedActionId === entry.resolvedActionId,
+          outcomeMatches: canonicalJson(replayOutcome(result.outcome)) === canonicalJson(replayOutcome(entry.outcome)),
+          afterMatches: afterHash === entry.stateAfterHash,
+        });
+        if (!checks.at(-1).sequenceMatches
+          || !checks.at(-1).revisionMatches
+          || !checks.at(-1).beforeMatches
+          || !checks.at(-1).actionMatches
+          || !checks.at(-1).outcomeMatches
+          || !checks.at(-1).afterMatches) break;
+        // Production commands cross a persisted snapshot boundary. Rehydrate on
+        // replay too so no mutable derived catalog can affect later commands.
+        runtime = deserializeRuntime(serializeRuntime(runtime), this.data);
+        applyGameplayCatalogOverrides(runtime.playerState.catalog);
+        syncAuthoritativePresentNpcIds(runtime, this.data);
+      }
+      return {
+        ok: checks.every((entry) => entry.sequenceMatches
+          && entry.revisionMatches
+          && entry.beforeMatches
+          && entry.actionMatches
+          && entry.outcomeMatches
+          && entry.afterMatches)
+          && revision === record.revision
+          && gameStateHash(runtime, this.data) === record.stateHash,
+        revision,
+        stateHash: gameStateHash(runtime, this.data),
+        checks,
+        baseMatches: true,
+      };
     });
-    compactPlayableRuntime(runtime);
-    let revision = 0;
-    const checks = [];
-    for (const entry of record.commandLog) {
-      const expectedSeq = revision + 1;
-      const beforeHash = gameStateHash(runtime, this.data);
-      const result = executeGameRuntimeCommand(runtime, this.data, entry);
-      revision = expectedSeq;
-      compactPlayableRuntime(runtime);
-      const afterHash = gameStateHash(runtime, this.data);
-      checks.push({
-        seq: entry.seq,
-        sequenceMatches: entry.seq === expectedSeq,
-        revisionMatches: entry.revisionBefore === expectedSeq - 1 && entry.revisionAfter === expectedSeq,
-        beforeMatches: beforeHash === entry.stateBeforeHash,
-        actionMatches: result.resolvedActionId === entry.resolvedActionId,
-        outcomeMatches: canonicalJson(replayOutcome(result.outcome)) === canonicalJson(replayOutcome(entry.outcome)),
-        afterMatches: afterHash === entry.stateAfterHash,
-      });
-      if (!checks.at(-1).sequenceMatches
-        || !checks.at(-1).revisionMatches
-        || !checks.at(-1).beforeMatches
-        || !checks.at(-1).actionMatches
-        || !checks.at(-1).outcomeMatches
-        || !checks.at(-1).afterMatches) break;
-      // Production commands cross a persisted snapshot boundary. Rehydrate on
-      // replay too so no mutable derived catalog can affect later commands.
-      runtime = deserializeRuntime(serializeRuntime(runtime), this.data);
-      applyGameplayCatalogOverrides(runtime.playerState.catalog);
-      syncAuthoritativePresentNpcIds(runtime, this.data);
-    }
-    return {
-      ok: checks.every((entry) => entry.sequenceMatches
-        && entry.revisionMatches
-        && entry.beforeMatches
-        && entry.actionMatches
-        && entry.outcomeMatches
-        && entry.afterMatches)
-        && revision === record.revision
-        && gameStateHash(runtime, this.data) === record.stateHash,
-      revision,
-      stateHash: gameStateHash(runtime, this.data),
-      checks,
-    };
   }
 }
 

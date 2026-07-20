@@ -31,6 +31,39 @@ function fresh(profile = "balanced") {
   return createInitialJourneyState({ model, battleData, skills, profile, tuning: config.tuned, seed: `test:${profile}` });
 }
 
+function prepareT01Search(state) {
+  const definition = state.catalog.byId.get("MSN-T01");
+  const runtime = state.missions[definition.id];
+  const searchStep = definition.steps.find((step) => step.id === "search");
+  state.player.location = "田園の村";
+  state.player.facilityId = searchStep.targetFacilityId;
+  state.troubles.T01.status = "active";
+  runtime.status = "active";
+  runtime.progress.hear = 1;
+  runtime.progress.search = 0;
+  state.progress.missions.attemptedTroubleIds.add("T01");
+  state.authoritativePresentNpcIds = new Set();
+  return { definition, runtime };
+}
+
+function t01SearchChoices(state) {
+  return generateChoiceActions(state, model, battleData, state.catalog, undefined, {
+    candidateFilter: (action) => action.missionId === "MSN-T01" && action.stepId === "search",
+  });
+}
+
+function searchChoiceShape(choice) {
+  return {
+    id: choice.id,
+    label: choice.label,
+    minutes: choice.minutes,
+    investigationStage: choice.investigationStage,
+    approachId: choice.approachId,
+    discoveryId: choice.discoveryId,
+    discoveryText: choice.discoveryText,
+  };
+}
+
 test("experience curve matches the design formula", () => {
   assert.equal(experienceToNextLevel(1), 100);
   assert.equal(experienceToNextLevel(2), 122);
@@ -183,6 +216,84 @@ test("T01 actions crossing the Day2 rescue deadline persist failure without prog
   assert.equal(runtime.progress.decide, 0);
   assert.equal(runtime.rewardClaimed, false);
   assert.equal(state.progress.missions.resolvedTroubleIds.has("T01"), false);
+});
+
+test("T01 search offers three concrete, non-repeating approaches at each investigation stage", () => {
+  const state = fresh("story");
+  prepareT01Search(state);
+
+  const firstStage = t01SearchChoices(state);
+  assert.equal(firstStage.length, 3);
+  for (const key of ["id", "label", "minutes", "discoveryId", "discoveryText"]) {
+    assert.equal(new Set(firstStage.map((choice) => choice[key])).size, 3, `stage 0 ${key}`);
+  }
+  assert.ok(firstStage.every((choice) => choice.investigationStage === 0));
+
+  const firstSelection = firstStage.find((choice) => choice.approachId === "claw-marks");
+  const firstResult = resolvePlayerAction(
+    state,
+    model,
+    battleData,
+    skills,
+    state.catalog,
+    "story",
+    firstSelection,
+  );
+  assert.equal(firstResult.ok, true);
+  assert.equal(firstResult.discovery.id, firstSelection.discoveryId);
+  assert.equal(firstResult.summary, firstSelection.discoveryText);
+  assert.deepEqual(state.missions["MSN-T01"].discoveries.map((entry) => entry.id), [firstSelection.discoveryId]);
+  assert.ok(state.history.some((entry) => entry.type === "MISSION_DISCOVERY"
+    && entry.discoveryId === firstSelection.discoveryId
+    && entry.discoveryText === firstSelection.discoveryText));
+
+  const secondStage = t01SearchChoices(state);
+  assert.equal(secondStage.length, 3);
+  for (const key of ["id", "label", "minutes", "discoveryId", "discoveryText"]) {
+    assert.equal(new Set(secondStage.map((choice) => choice[key])).size, 3, `stage 1 ${key}`);
+  }
+  assert.ok(secondStage.every((choice) => choice.investigationStage === 1));
+  const allApproaches = [...firstStage, ...secondStage];
+  for (const key of ["id", "label", "minutes", "discoveryId", "discoveryText"]) {
+    assert.equal(new Set(allApproaches.map((choice) => choice[key])).size, 6, `all stages ${key}`);
+  }
+});
+
+test("T01 search discoveries are deterministic and two selected approaches advance to rescue", () => {
+  const left = fresh("story");
+  const right = fresh("story");
+  const leftPrepared = prepareT01Search(left);
+  const rightPrepared = prepareT01Search(right);
+
+  const chooseApproach = (state, approachId) => {
+    const offered = t01SearchChoices(state);
+    const action = offered.find((choice) => choice.approachId === approachId);
+    assert.ok(action, `${approachId} must be offered`);
+    return {
+      action,
+      result: resolvePlayerAction(state, model, battleData, skills, state.catalog, "story", action),
+    };
+  };
+
+  assert.deepEqual(t01SearchChoices(left).map(searchChoiceShape), t01SearchChoices(right).map(searchChoiceShape));
+  const leftFirst = chooseApproach(left, "tracks");
+  const rightFirst = chooseApproach(right, "tracks");
+  assert.deepEqual(leftFirst.result.discovery, rightFirst.result.discovery);
+  assert.deepEqual(t01SearchChoices(left).map(searchChoiceShape), t01SearchChoices(right).map(searchChoiceShape));
+
+  const leftSecond = chooseApproach(left, "faint-voice");
+  const rightSecond = chooseApproach(right, "faint-voice");
+  assert.deepEqual(leftSecond.result.discovery, rightSecond.result.discovery);
+  assert.deepEqual(leftPrepared.runtime.discoveries, rightPrepared.runtime.discoveries);
+  assert.equal(leftPrepared.runtime.progress.search, 2);
+  assert.equal(rightPrepared.runtime.progress.search, 2);
+  assert.equal(leftPrepared.definition.steps.find((step) => step.id === "search").required, 2);
+
+  const leftAfterSearch = generateChoiceActions(left, model, battleData, left.catalog);
+  const rightAfterSearch = generateChoiceActions(right, model, battleData, right.catalog);
+  assert.deepEqual(leftAfterSearch.map((choice) => choice.id), rightAfterSearch.map((choice) => choice.id));
+  assert.ok(leftAfterSearch.some((choice) => choice.id === "ACTION:MSN-T01:rescue" && choice.type === "missionBattle"));
+  assert.equal(leftAfterSearch.some((choice) => choice.stepId === "search"), false);
 });
 
 test("same seed and profile replay to the same world fingerprint", () => {

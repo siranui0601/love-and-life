@@ -37,6 +37,13 @@ test("dialogue and three-choice tray are mutually exclusive", () => {
   assert.match(app, /list\(choices\)\.slice\(0,\s*3\)/u);
 });
 
+test("a visible choice sends both its slot id and authoritative action id", () => {
+  assert.match(app, /button\.dataset\.choiceId = choiceId/u);
+  assert.match(app, /button\.dataset\.actionId = choice\.actionId/u);
+  assert.match(app, /sendCommand\("CHOOSE", \{[\s\S]*?choiceId: button\.dataset\.choiceId,[\s\S]*?actionId: button\.dataset\.actionId/u);
+  assert.match(app, /"choice_action_mismatch"[\s\S]*?誤った行動は実行せず/u);
+});
+
 test("an introduction is acknowledged only after its final visible segment", () => {
   assert.match(app, /const introductionToken = escapeText\(beat\.introductionToken \?\? beat\.introduction\?\.token, ""\)/u);
   assert.match(app, /introductionToken:\s*introductionToken && index === segments\.length - 1 \? introductionToken : null/u);
@@ -95,6 +102,8 @@ test("battle supports authoritative interactive commands and preserves completed
   assert.match(app, /createBattleCommandButton\("ぼうぎょ"/u);
   assert.match(app, /createBattleCommandButton\("にげる"/u);
   assert.match(app, /sendCommand\("BATTLE_ACT",\s*\{[\s\S]*?battleId:\s*battle\.id,[\s\S]*?actionId:\s*command\.actionId,[\s\S]*?targetInstanceId/u);
+  assert.match(app, /battleCommandMenu\.dataset\.mode = "pending"[\s\S]*?battle-command-pending[\s\S]*?const accepted = await sendCommand\("BATTLE_ACT"/u);
+  assert.match(app, /if \(!accepted && currentSave\?\.battle\?\.id === battle\.id\)[\s\S]*?renderInteractiveBattleCommands\(currentSave\.battle/u);
   assert.match(app, /save\?\.battle\?\.status === "active"[\s\S]*?renderInteractiveBattle\(save\)/u);
   assert.match(app, /ui\.battleDialog\.dataset\.readyToClose = "false"/u);
   assert.match(app, /frame\.action\?\.kind === "status_failure"[\s\S]*?`\$\{actor\}は動けない！`/u);
@@ -112,7 +121,7 @@ test("first-encounter Gemini art refreshes from the persisted manifest without b
   assert.match(app, /function scheduleAssetRefresh[\s\S]*?loadManifest\(\)[\s\S]*?applyVisibleAssets\(\)/u);
   assert.match(app, /list\(save\.battle\?\.actors\)\.some\(\(actor\) => actor\.side === "enemy" && !monsterUrl\(actor\)\)/u);
   assert.match(app, /queueBattlePresentation\(save\);\s*scheduleAssetRefresh\(save\);/u);
-  assert.match(html, /20260719-agency-v5/u);
+  assert.match(html, /20260719-agency-v7/u);
 });
 
 test("manifest portraits are real transparent cutouts", async () => {

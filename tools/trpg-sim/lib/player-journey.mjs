@@ -902,7 +902,13 @@ function compact(state) {
     },
     worldFlags: state.worldFlags,
     troubles: Object.fromEntries(Object.entries(state.troubles).map(([id, runtime]) => [id, runtime.status])),
-    missions: Object.fromEntries(Object.entries(state.missions).map(([id, runtime]) => [id, { status: runtime.status, progress: runtime.progress }])),
+    missions: Object.fromEntries(Object.entries(state.missions).map(([id, runtime]) => [id, {
+      status: runtime.status,
+      progress: runtime.progress,
+      ...(Array.isArray(runtime.discoveries) && runtime.discoveries.length
+        ? { discoveries: runtime.discoveries.map((discovery) => ({ ...discovery })) }
+        : {}),
+    }])),
   };
 }
 
@@ -916,6 +922,71 @@ function playerKnowsSpecialMission(state, missionDefinition) {
     || state.progress.missions.completedIds.has(missionDefinition.id)) return true;
   return state.rumors.some((rumor) => rumor.troubleId === troubleId
     && state.player.knownRumorIds.has(rumor.id));
+}
+
+const T01_SEARCH_APPROACHES = Object.freeze({
+  0: Object.freeze([
+    Object.freeze({
+      approachId: "tracks",
+      minutes: 24,
+      label: "小さな靴跡を選び、折れた草の向きへたどる",
+      discoveryId: "T01-CLUE-BOOT-TRACKS",
+      discoveryText: "子どもの小さな靴跡は村へ戻らず、折れた草の列に沿って古い見張り小屋へ続いている。",
+    }),
+    Object.freeze({
+      approachId: "claw-marks",
+      minutes: 31,
+      label: "爪痕の深さと向きを調べ、獣が追った経路を読む",
+      discoveryId: "T01-CLUE-WOLF-PURSUIT",
+      discoveryText: "赤牙狼の爪痕は靴跡の後ろから現れ、途中で横へ回り込んでいる。獣は少年を獲物として追っていた。",
+    }),
+    Object.freeze({
+      approachId: "jacket-thread",
+      minutes: 38,
+      label: "枝に絡んだ青い糸を手掛かりに、崩れた斜面を探す",
+      discoveryId: "T01-CLUE-JACKET-THREAD",
+      discoveryText: "道端の枝に子どもの上着と同じ青い糸が残り、その先の足跡だけが見張り小屋裏の崩れた斜面へそれている。",
+    }),
+  ]),
+  1: Object.freeze([
+    Object.freeze({
+      approachId: "dropped-map",
+      minutes: 27,
+      label: "泥に落ちた古い地図を拾い、見張り小屋の裏道と照合する",
+      discoveryId: "T01-CLUE-DROPPED-MAP",
+      discoveryText: "泥の中からフィンが持ち出した古い地図を見つけた。書き込みは見張り小屋の裏から斜面下へ抜ける道を示している。",
+    }),
+    Object.freeze({
+      approachId: "faint-voice",
+      minutes: 34,
+      label: "風が止むのを待ち、斜面の下から聞こえる声を探す",
+      discoveryId: "T01-CLUE-FAINT-VOICE",
+      discoveryText: "風の切れ間に、斜面の下から子どもの弱い呼び声が届いた。フィンはまだ生きているが、声の近くで獣が唸っている。",
+    }),
+    Object.freeze({
+      approachId: "wolf-blockade",
+      minutes: 41,
+      label: "風下へ回り、赤牙狼が塞いでいる退路を突き止める",
+      discoveryId: "T01-CLUE-WOLF-BLOCKADE",
+      discoveryText: "風下から見張り小屋裏を確かめると、赤牙狼が斜面の出口を塞いでいた。少年を救うには、まずこの獣を退ける必要がある。",
+    }),
+  ]),
+});
+
+function t01SearchActions(base, runtime, step) {
+  const stage = Math.max(0, Math.floor(Number(runtime.progress[step.id] ?? 0)));
+  const approaches = T01_SEARCH_APPROACHES[stage] ?? [];
+  return approaches.map((approach) => ({
+    ...base,
+    id: `ACTION:MSN-T01:search:${approach.approachId}`,
+    type: "investigate",
+    minutes: approach.minutes,
+    label: approach.label,
+    investigationStage: stage,
+    approachId: approach.approachId,
+    discoveryId: approach.discoveryId,
+    discoveryText: approach.discoveryText,
+  }));
 }
 
 function missionActions(state, catalog) {
@@ -940,6 +1011,10 @@ function missionActions(state, catalog) {
           : step.type === "battle" ? 25
             : 18,
     };
+    if (missionDefinition.id === "MSN-T01" && step.id === "search" && step.type === "investigate") {
+      result.push(...t01SearchActions(base, runtime, step));
+      continue;
+    }
     result.push({
       ...base,
       type: step.type === "battle" ? "missionBattle" : step.type === "resolve" ? "resolveMission" : step.type,
@@ -1354,6 +1429,35 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     const closedReason = missionClosedAfterTimeAdvance(state, missionDefinition);
     if (closedReason) output = { ok: false, committed: true, type: action.type, reason: closedReason };
     else if (step) {
+      if (action.discoveryId && action.discoveryText) {
+        runtime.discoveries ??= [];
+        const existing = runtime.discoveries.find((entry) => entry.id === action.discoveryId);
+        const discovery = existing ?? {
+          id: action.discoveryId,
+          text: action.discoveryText,
+          missionId: missionDefinition.id,
+          stepId: step.id,
+          stage: Math.max(0, Math.floor(Number(action.investigationStage ?? runtime.progress[step.id] ?? 0))),
+          approachId: action.approachId ?? null,
+          actionId: action.id,
+          discoveredAtMinute: state.absoluteMinute,
+        };
+        if (!existing) {
+          runtime.discoveries.push(discovery);
+          state.history.push({
+            type: "MISSION_DISCOVERY",
+            minute: state.absoluteMinute,
+            missionId: missionDefinition.id,
+            stepId: step.id,
+            discoveryId: discovery.id,
+            discoveryText: discovery.text,
+            actionId: action.id,
+            stage: discovery.stage,
+          });
+        }
+        output.discovery = { ...discovery };
+        output.summary = discovery.text;
+      }
       finishStep(state, missionDefinition, runtime, step);
       inc(state.player.evidenceByTrouble, missionDefinition.troubleId);
       inc(state.progress, "investigation.total");

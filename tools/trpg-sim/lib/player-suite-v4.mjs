@@ -52,8 +52,11 @@ function v4Findings(report, targets) {
   const push = (severity, code, detail) => findings.push({ severity, code, detail });
   const goap = report.goapExecution;
   const gemini = report.geminiNarrative.protectedPipeline;
-  const cacheHitRate = report.geminiNarrative.scenarios
-    ? gemini.replayCacheHits / report.geminiNarrative.scenarios
+  const cacheHitRate = gemini.cacheEligible
+    ? gemini.replayCacheHits / gemini.cacheEligible
+    : 1;
+  const transientRetryRate = gemini.retryEligible
+    ? gemini.retryAttempts / gemini.retryEligible
     : 1;
 
   push(goap.completed >= targets.goapCompletedMin ? "verified" : "blocker", "V4_GOAP_EXECUTED", `施設行動完了${goap.completed}件`);
@@ -66,7 +69,9 @@ function v4Findings(report, targets) {
 
   push(gemini.finalInvalid <= targets.geminiFinalInvalidMax ? "verified" : "blocker", "V4_GEMINI_SCHEMA_SAFETY", `補正後の不正出力${gemini.finalInvalid}件`);
   push(gemini.replayMismatches <= targets.geminiReplayMismatchMax ? "verified" : "blocker", "V4_GEMINI_DETERMINISTIC_REPLAY", `同一入力の再生不一致${gemini.replayMismatches}件`);
-  push(cacheHitRate >= targets.geminiCacheHitRateMin ? "verified" : "blocker", "V4_GEMINI_CACHE_BYPASS", `2回目AI非呼出率${(cacheHitRate * 100).toFixed(1)}%`);
+  push((gemini.unclassified ?? 0) === 0 ? "verified" : "blocker", "V4_GEMINI_CACHE_CLASSIFICATION", `キャッシュ可否未分類${gemini.unclassified ?? 0}件`);
+  push(cacheHitRate >= targets.geminiCacheHitRateMin ? "verified" : "blocker", "V4_GEMINI_CACHE_BYPASS", `保存対象の2回目AI非呼出率${(cacheHitRate * 100).toFixed(1)}%（${gemini.replayCacheHits}/${gemini.cacheEligible}）`);
+  push(transientRetryRate >= (targets.geminiTransientRetryRateMin ?? 1) ? "verified" : "blocker", "V4_GEMINI_TRANSIENT_RETRY", `未保存フォールバックの次回再試行率${(transientRetryRate * 100).toFixed(1)}%（${gemini.retryAttempts}/${gemini.retryEligible}）`);
   push((gemini.remoteNpcLeaks ?? 0) <= targets.geminiRemoteNpcLeakMax ? "verified" : "blocker", "V4_GEMINI_LOCAL_CONTEXT", `その場にいないNPCへの出力参照${gemini.remoteNpcLeaks ?? 0}件`);
   push(report.liveGeminiSmoke.attempted ? "verified" : "warning", "V4_GEMINI_LIVE_SMOKE", report.liveGeminiSmoke.attempted
     ? `実API ${report.liveGeminiSmoke.total}シナリオを試験`
@@ -181,10 +186,11 @@ v3の行動計画を、予定表だけで終わらせず、出発、街道区間
 - 却下した権限外提案: ${protectedResult.rejectedProposals}件
 - 入力から除外した遠隔NPCレコード: ${protectedResult.remoteNpcRecordsRemoved}件
 - 出力に残った遠隔NPC参照: ${protectedResult.remoteNpcLeaks ?? 0}件
-- 2回目の同一入力でキャッシュ使用: ${protectedResult.replayCacheHits}/${gemini.scenarios}
+- 保存可能な同一入力の2回目でキャッシュ使用: ${protectedResult.replayCacheHits}/${protectedResult.cacheEligible}
+- 一時フォールバックを保存せず次回再試行: ${protectedResult.retryAttempts}/${protectedResult.retryEligible}
 - 同一入力の結果不一致: ${protectedResult.replayMismatches}件
 
-同一のローカル状態、確定済み行動結果、プロンプト版、モデルが一致する場合はJSONL再生台帳から返し、Geminiを呼び出さない。戦闘・遭遇などの乱数結果は、先にサーバーresolverが確定した結果をキーへ含める。
+同一のローカル状態、確定済み行動結果、プロンプト版、モデルが一致し、検証済みの完全な出力が保存されている場合はJSONL再生台帳から返し、Geminiを呼び出さない。一時的な通信失敗や不完全JSONのフォールバックは台帳を汚染せず、次の独立リクエストでGeminiを再試行する。戦闘・遭遇などの乱数結果は、先にサーバーresolverが確定した結果をキーへ含める。
 
 ## 実Gemini API試験
 

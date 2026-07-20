@@ -106,8 +106,10 @@ function choosePolicyCommand(runtime, data, policy, counters) {
     const step = activeMissionStep(runtime, "MSN-T01");
     const move = movementToward(actions, runtime.playerState, step);
     if (move) return { type: "MOVE", payload: { moveId: move.id } };
-    const choice = actions.choices.find((candidate) => candidate.id === `ACTION:MSN-T01:${step?.id}`);
-    if (choice) return { type: "CHOOSE", payload: { choiceId: choice.choiceId } };
+    const choice = actions.choices
+      .filter((candidate) => candidate.missionId === "MSN-T01" && candidate.stepId === step?.id)
+      .sort((left, right) => left.id.localeCompare(right.id))[0];
+    if (choice) return { type: "CHOOSE", payload: { choiceId: choice.choiceId, actionId: choice.id } };
   }
 
   const upgrade = affordableUpgrade(runtime, data, actions.stock);
@@ -138,7 +140,7 @@ function choosePolicyCommand(runtime, data, policy, counters) {
     counters.invariantViolations.push({ code: "free_choice_missing", minute: runtime.playerState.absoluteMinute });
     return null;
   }
-  return { type: "CHOOSE", payload: { choiceId: safe.choiceId } };
+  return { type: "CHOOSE", payload: { choiceId: safe.choiceId, actionId: safe.id } };
 }
 
 function checkPresence(runtime, data, counters) {
