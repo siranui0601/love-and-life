@@ -12,12 +12,14 @@ const service = read("src/server/trpg/game/service.js");
 const narrator = read("src/server/trpg/gemini-narrator.js");
 const contract = read("src/server/trpg/narrative-contract.js");
 const app = read("public/TRPG/app.js");
+const p0Ux = read("public/TRPG/p0-ux.js");
 
 test("tutorial teaches movement once through the existing location control", () => {
   assert.match(service, /title: "村の広場へ向かおう"/u);
   assert.match(service, /画面上部の現在地を開き/u);
   assert.doesNotMatch(service, /世界は待っていない。上の現在地から広場へ/u);
   assert.doesNotMatch(app, /"world-keeps-moving"/u);
+  assert.doesNotMatch(p0Ux, /progressionMovementButton/u);
 });
 
 test("opening characters speak from their own stakes instead of explaining the game", () => {
@@ -29,7 +31,7 @@ test("opening characters speak from their own stakes instead of explaining the g
 });
 
 test("Gemini contract rejects game and UI vocabulary in narration and NPC speech", () => {
-  assert.match(contract, /trpg-narrative-v4.9/u);
+  assert.match(contract, /trpg-narrative-v4\.9/u);
   assert.match(contract, /DIEGETIC_META_PATTERN/u);
   assert.match(contract, /narrative contains non-diegetic game or UI language/u);
   assert.match(contract, /text contains non-diegetic game or UI language/u);
