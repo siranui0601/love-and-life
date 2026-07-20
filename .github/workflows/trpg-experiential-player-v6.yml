@@ -29,8 +29,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -f src/server/trpg/game/service.js.orig
           if [ -f tools/trpg-v6-followup.patch ]; then
-            patch -p1 < tools/trpg-v6-followup.patch
+            patch --batch --forward -p1 < tools/trpg-v6-followup.patch
           fi
           rm -f src/server/trpg/game/service.js.orig
       - uses: actions/setup-node@v4
