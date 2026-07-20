@@ -37,7 +37,6 @@ jobs:
             tools/trpg-finalize-v6-tests-a.patch
             tools/trpg-finalize-v6-tests-b.patch
             tools/trpg-finalize-v6-test-work.patch
-            tools/trpg-finalize-v6-test-skill.patch
             tools/trpg-finalize-v6-tests-d.patch
             tools/trpg-finalize-v6-wage.patch
           )
@@ -73,10 +72,72 @@ jobs:
           if old not in source:
               raise SystemExit("old mobile battle contract was not found")
           ux_test.write_text(source.replace(old, new, 1))
+
+          game_test = Path("tools/trpg-sim/test/game-service.test.mjs")
+          source = game_test.read_text()
+          old = '''test("acknowledging the skill primer without learning a skill never unlocks deliberate battle choices", async () => {
+            const { game } = service();
+            const runner = commandRunner(game, await game.create(owner, { playerName: "unprepared", seed: "skill-ack-is-not-training" }));
+            await completeOpening(runner);
+            await runner.run("TUTORIAL_ACK", { tutorialId: "mission-log" });
+            const edge = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FARM_EDGE");
+            assert.ok(edge);
+            await runner.run("MOVE", { moveId: edge.moveId });
+            assert.equal(runner.save.tutorial.id, "skills");
+            assert.equal(runner.save.skills.learned.length, 0);
+            await runner.run("TUTORIAL_ACK", { tutorialId: "skills" });
+
+            const assertNoDeliberateBattle = () => {
+              assert.equal(runner.save.skills.learned.length, 0);
+              assert.equal(runner.save.choices.some((choice) => choice.danger), false);
+              assert.equal(runner.save.choices.some((choice) => ["missionBattle", "seekBattle"].includes(choice.type)), false);
+            };
+            assertNoDeliberateBattle();
+
+            // Investigation may uncover the encounter, but the resolver must not offer a deliberate fight until a skill is learned.
+            for (let searchCount = 0; searchCount < 2; searchCount += 1) {
+              const search = runner.save.choices.find((choice) => choice.missionId === "MSN-T01"
+                && choice.stepId === "search"
+                && choice.type === "investigate");
+              assert.ok(search, "the non-combat investigation path must remain available");
+              await runner.run("CHOOSE", { choiceId: search.choiceId, actionId: search.actionId });
+              assertNoDeliberateBattle();
+            }
+            assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
+          });'''
+          new = '''test("the skill primer explains the risk but never blocks an underprepared player", async () => {
+            const { game } = service();
+            const runner = commandRunner(game, await game.create(owner, { playerName: "unprepared", seed: "skill-ack-is-not-training" }));
+            await completeOpening(runner);
+            await runner.run("TUTORIAL_ACK", { tutorialId: "mission-log" });
+            const edge = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FARM_EDGE");
+            assert.ok(edge);
+            await runner.run("MOVE", { moveId: edge.moveId });
+            assert.equal(runner.save.tutorial.id, "skills");
+            assert.match(runner.save.tutorial.body, /取得せず進むこともできる/u);
+            assert.equal(runner.save.skills.learned.length, 0);
+            await runner.run("TUTORIAL_ACK", { tutorialId: "skills" });
+
+            for (let searchCount = 0; searchCount < 2; searchCount += 1) {
+              const search = runner.save.choices.find((choice) => choice.missionId === "MSN-T01"
+                && choice.stepId === "search"
+                && choice.type === "investigate");
+              assert.ok(search, "the investigation path remains available without learning a skill");
+              await runner.run("CHOOSE", { choiceId: search.choiceId, actionId: search.actionId });
+            }
+            assert.equal(runner.save.skills.learned.length, 0);
+            assert.equal(runner.save.choices.some((choice) => choice.danger), true);
+            assert.equal(runner.save.choices.some((choice) => choice.type === "missionBattle"), true);
+            assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
+          });'''
+          if old not in source:
+              raise SystemExit("old optional-skill regression block was not found")
+          game_test.write_text(source.replace(old, new, 1))
           PY
 
             rm -f \
               "${patches[@]}" \
+              tools/trpg-finalize-v6-test-skill.patch \
               tools/trpg-v6-followup.patch \
               src/server/trpg/game/service.js.orig \
               .github/workflows/trpg-apply-v6-patches.yml
