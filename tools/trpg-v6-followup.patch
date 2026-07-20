@@ -1,0 +1,32 @@
+--- a/src/server/trpg/game/service.js
++++ b/src/server/trpg/game/service.js
+@@ -250,6 +250,21 @@ export function applyGameplayCatalogOverrides(catalog) {
+   const t01 = catalog.special.find((mission) => mission.id === "MSN-T01");
+   if (!t01) return catalog;
++  if (!t01.steps.some((step) => step.id === "escort")) {
++    const decideIndex = t01.steps.findIndex((step) => step.id === "decide");
++    const escortStep = {
++      id: "escort",
++      type: "conversation",
++      targetLocation: "田園の村",
++      targetFacilityId: "LOC_FARM_EDGE",
++      required: 1,
++      label: "負傷したフィンに声をかけ、村の広場まで同行する",
++    };
++    if (decideIndex >= 0) t01.steps.splice(decideIndex, 0, escortStep);
++    else t01.steps.push(escortStep);
++  }
+   for (const step of t01.steps) {
+     if (step.id === "hear") step.targetFacilityId = "LOC_FARM_SQUARE";
+     if (["search", "rescue", "escort"].includes(step.id)) step.targetFacilityId = "LOC_FARM_EDGE";
+--- a/src/server/trpg/narrative-contract.js
++++ b/src/server/trpg/narrative-contract.js
+@@ -1,7 +1,7 @@
+ import crypto from "node:crypto";
+ 
+ export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
+-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.9";
++export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.0-experiential";
+ 
+ const PROPOSAL_TYPES = new Set(["special_mission_candidate", "rumor_candidate", "npc_intent", "flag_candidate"]);
+ const META_NARRATIVE_PATTERN = /(ミッション|クエスト|選択肢|3択|ボタン|タップ|クリック|画面|UI|メニュー|フラグ|プレイヤー|ゲーム|チュートリアル|SP|HP|MP|レベル|ステータス|ログ|システム|resolver|Gemini)/iu;
