@@ -1,0 +1,41 @@
+--- a/tools/trpg-sim/test/game-service.test.mjs
++++ b/tools/trpg-sim/test/game-service.test.mjs
+@@ -581,15 +581,20 @@
+     NPC062: { name: "落ち着かない少年", identified: false },
+   });
+   assert.doesNotMatch(runner.save.choices.map((choice) => choice.label).join("\n"), /ガロ|ミラ|コビー/u);
+-  await runner.run("CHOOSE", { choiceId: runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:INQUIRY:COBY").choiceId });
+-  const cobyIntroduction = runner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === "NPC062");
+-  assert.equal(cobyIntroduction?.speakerLabel, "落ち着かない少年");
+-  assert.match(cobyIntroduction?.text ?? "", /コビー/u);
+-  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC062")?.identified, false);
+-  await acknowledgeVisibleIntroduction(runner);
+-  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC062")?.identified, true);
++  assert.deepEqual(runner.save.choices.map((choice) => choice.actionId), [
++    "TUTORIAL:INQUIRY:MIRA",
++    "TUTORIAL:DEFER:WORK",
++    "TUTORIAL:DEFER:LEAVE",
++  ]);
++  await runner.run("CHOOSE", { choiceId: runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:INQUIRY:MIRA").choiceId });
++  const miraIntroduction = runner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === "NPC002");
++  assert.equal(miraIntroduction?.speakerLabel, "取り乱した女性");
++  assert.match(miraIntroduction?.text ?? "", /ミラ/u);
+   assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC002")?.identified, false);
++  await acknowledgeVisibleIntroduction(runner);
++  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC002")?.identified, true);
+   assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC003")?.identified, false);
++  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC062")?.identified, false);
+   assert.equal(runner.save.tutorial.id, "mission-log");
+   assert.deepEqual(runner.save.tutorial.unlocked, {
+     choices: true,
+@@ -726,9 +731,9 @@
+   assert.ok(presentIds.size > 0);
+   assert.ok(view.choices.every((choice) => !choice.targetNpcId || presentIds.has(choice.targetNpcId)));
+   assert.deepEqual(view.choices.map((choice) => choice.actionId), [
+-    "TUTORIAL:INQUIRY:GARO",
+     "TUTORIAL:INQUIRY:MIRA",
+-    "TUTORIAL:INQUIRY:COBY",
++    "TUTORIAL:DEFER:WORK",
++    "TUTORIAL:DEFER:LEAVE",
+   ]);
+ });
