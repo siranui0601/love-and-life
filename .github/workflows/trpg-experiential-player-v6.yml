@@ -25,6 +25,14 @@ jobs:
       TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
     steps:
       - uses: actions/checkout@v4
+      - name: Apply pending experiential follow-up
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f tools/trpg-v6-followup.patch ]; then
+            patch -p1 < tools/trpg-v6-followup.patch
+          fi
+          rm -f src/server/trpg/game/service.js.orig
       - uses: actions/setup-node@v4
         with:
           node-version: 22
