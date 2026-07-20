@@ -1,0 +1,270 @@
+--- a/src/server/trpg/game/service.js
++++ b/src/server/trpg/game/service.js
+@@ -23,11 +23,11 @@
+ import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
+ 
+ export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
+-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v9";
+-const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8"]);
++export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v10";
++const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9"]);
+ 
+ const PLAYABLE_PROFILE_ID = "balanced";
+-const TUTORIAL_VERSION = "trpg-progressive-onboarding-v5";
++const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
+ 
+ const PUBLIC_FACILITY_COPY = Object.freeze({
+   LOC_FARM_FIELD: { type: "農地", description: "風に揺れる麦畑。畑仕事の様子と、村へ続く道を確かめられる。" },
+@@ -254,7 +254,7 @@
+   if (!t01) return catalog;
+   for (const step of t01.steps) {
+     if (step.id === "hear") step.targetFacilityId = "LOC_FARM_SQUARE";
+-    if (["search", "rescue"].includes(step.id)) step.targetFacilityId = "LOC_FARM_EDGE";
++    if (["search", "rescue", "escort"].includes(step.id)) step.targetFacilityId = "LOC_FARM_EDGE";
+     if (step.id === "decide") step.targetFacilityId = "LOC_FARM_SQUARE";
+   }
+   return catalog;
+@@ -463,9 +463,9 @@
+     && runtime.playerState.player.facilityId === "LOC_FARM_SQUARE"
+     && ["active", "critical"].includes(t01Status)) {
+     return withChoiceIds([
+-      { id: "TUTORIAL:INQUIRY:GARO", type: "conversation", tutorialBeat: "inquiry:garo", targetNpcId: "NPC003", targetNpcName: "ガロ村長", missionId: "MSN-T01", stepId: "hear", minutes: 10, label: "捜索を指揮する村長に、状況を整理してもらう" },
+-      { id: "TUTORIAL:INQUIRY:MIRA", type: "conversation", tutorialBeat: "inquiry:mira", targetNpcId: "NPC002", targetNpcName: "ミラ", missionId: "MSN-T01", stepId: "hear", minutes: 12, label: "震える女性へ近づき、誰を捜しているのか聞く" },
+-      { id: "TUTORIAL:INQUIRY:COBY", type: "conversation", tutorialBeat: "inquiry:coby", targetNpcId: "NPC062", targetNpcName: "コビー", missionId: "MSN-T01", stepId: "hear", minutes: 14, label: "何かを言いたそうな少年と、目線を合わせて話す" },
++      { id: "TUTORIAL:INQUIRY:MIRA", type: "conversation", tutorialBeat: "inquiry:mira", targetNpcId: "NPC002", targetNpcName: "ミラ", missionId: "MSN-T01", stepId: "hear", minutes: 12, label: "泣きそうな女性に、捜している子のことを聞く" },
++      { id: "TUTORIAL:DEFER:WORK", type: "conversation", tutorialBeat: "defer:work", workOffer: true, targetNpcId: "NPC004", targetNpcName: "エダ", minutes: 6, label: "今は捜索を保留し、エダに仕事と賃金を尋ねる" },
++      { id: "TUTORIAL:DEFER:LEAVE", type: "plan", tutorialBeat: "defer:leave", minutes: 2, label: "捜索には関わらず、王都へ続く道を確かめる" },
+     ]);
+   }
+   if (tutorial.stage === "aftermath_intro" && runtime.playerState.player.facilityId === "LOC_FARM_SQUARE") {
+@@ -724,6 +724,121 @@
+   });
+ }
+ 
++function ensureT01EscortState(runtime) {
++  return runtime.t01Escort ??= {
++    found: false,
++    active: false,
++    arrivedSquare: false,
++    reunited: false,
++    foundAtMinute: null,
++    acceptedAtMinute: null,
++    reunionBeatAtMinute: null,
++    abandonedAtMinute: null,
++  };
++}
++
++function playerCompanionIds(runtime) {
++  const player = runtime.playerState.player;
++  if (!(player.companionNpcIds instanceof Set)) {
++    player.companionNpcIds = new Set(player.companionNpcIds ?? []);
++  }
++  return player.companionNpcIds;
++}
++
++function revealFinnAfterRescueBattle(runtime, action, result) {
++  if (action?.missionId !== "MSN-T01" || action?.stepId !== "rescue" || result?.battle?.won !== true) return false;
++  const escort = ensureT01EscortState(runtime);
++  if (escort.found) return false;
++  const finn = runtime.livingWorld.npcStates.NPC001;
++  if (!finn || finn.lifeStatus === "dead") return false;
++  escort.found = true;
++  escort.foundAtMinute = runtime.playerState.absoluteMinute;
++  finn.presence = "present";
++  finn.lifeStatus = "injured";
++  finn.health = Math.max(38, Number(finn.health ?? 38));
++  finn.status = "負傷・救助待ち";
++  finn.location = "田園の村";
++  finn.position = { hubId: "田園の村", facilityId: "LOC_FARM_EDGE" };
++  finn.currentGoal = "ask-player-for-escort";
++  finn.travel = null;
++  finn.localTravel = null;
++  discoverNpc(runtime, "NPC001");
++  runtime.playerState.history.push({
++    type: "T01_FINN_FOUND_ALIVE",
++    minute: runtime.playerState.absoluteMinute,
++    npcId: "NPC001",
++    facilityId: "LOC_FARM_EDGE",
++  });
++  return true;
++}
++
++function activateFinnEscort(runtime, action, result) {
++  if (action?.missionId !== "MSN-T01" || action?.stepId !== "escort" || result?.ok !== true) return false;
++  const escort = ensureT01EscortState(runtime);
++  if (!escort.found) return false;
++  escort.active = true;
++  escort.acceptedAtMinute = runtime.playerState.absoluteMinute;
++  playerCompanionIds(runtime).add("NPC001");
++  const finn = runtime.livingWorld.npcStates.NPC001;
++  if (finn) {
++    finn.currentGoal = "return-to-village-with-player";
++    finn.status = "負傷・同行中";
++  }
++  result.summary = "フィンに肩を貸し、村の広場まで一緒に戻ることになった。";
++  return true;
++}
++
++function followFinnDuringMovement(runtime, action, result) {
++  const escort = ensureT01EscortState(runtime);
++  if (!escort.active || result?.ok !== true || action?.type !== "move") return false;
++  const finn = runtime.livingWorld.npcStates.NPC001;
++  if (!finn) return false;
++  if (action.movementScope === "regional") {
++    escort.active = false;
++    escort.abandonedAtMinute = runtime.playerState.absoluteMinute;
++    playerCompanionIds(runtime).delete("NPC001");
++    finn.status = "負傷・村外れで待機";
++    finn.currentGoal = "wait-for-help-at-outskirts";
++    runtime.playerState.history.push({
++      type: "T01_ESCORT_ABANDONED",
++      minute: runtime.playerState.absoluteMinute,
++      destinationHub: action.destinationHub ?? null,
++    });
++    return false;
++  }
++  const facilityId = action.destinationFacilityId ?? runtime.playerState.player.facilityId;
++  finn.location = runtime.playerState.player.location;
++  finn.position = { hubId: runtime.playerState.player.location, facilityId };
++  finn.presence = "present";
++  finn.travel = null;
++  finn.localTravel = null;
++  escort.arrivedSquare = facilityId === "LOC_FARM_SQUARE";
++  if (escort.arrivedSquare) {
++    placeOpeningCrisisCast(runtime.livingWorld, runtime.playerState.absoluteMinute);
++    finn.location = "田園の村";
++    finn.position = { hubId: "田園の村", facilityId: "LOC_FARM_SQUARE" };
++    finn.presence = "present";
++    finn.status = "負傷・広場へ帰還";
++    finn.currentGoal = "reunite-with-family";
++    escort.reunited = true;
++    escort.reunionBeatAtMinute = runtime.playerState.absoluteMinute;
++    runtime.playerState.history.push({
++      type: "T01_FINN_ESCORTED_TO_SQUARE",
++      minute: runtime.playerState.absoluteMinute,
++      npcId: "NPC001",
++    });
++  }
++  return escort.arrivedSquare;
++}
++
++function clearFinnEscortOnFailure(runtime) {
++  const status = runtime.playerState.troubles.T01?.status;
++  if (!["failed", "suppressed"].includes(status)) return;
++  const escort = ensureT01EscortState(runtime);
++  escort.active = false;
++  playerCompanionIds(runtime).delete("NPC001");
++}
++
+ function applyPlayerWorldInterventions(runtime, previousTroubleStates) {
+   const before = previousTroubleStates?.T01;
+   const after = runtime.playerState.troubles.T01?.status;
+@@ -740,9 +855,16 @@
+     finn.presence = "present";
+     finn.lifeStatus = "injured";
+     finn.health = Math.max(42, Number(finn.health ?? 42));
+-    finn.status = "救出・療養中";
++    finn.status = "救出・家族と再会";
++    finn.location = "田園の村";
+     finn.position = { hubId: "田園の村", facilityId: "LOC_FARM_SQUARE" };
+     finn.currentGoal = "recover-after-rescue";
++    const escort = ensureT01EscortState(runtime);
++    escort.found = true;
++    escort.active = false;
++    escort.arrivedSquare = true;
++    escort.reunited = true;
++    playerCompanionIds(runtime).delete("NPC001");
+     finn.travel = null;
+     finn.localTravel = null;
+     runtime.livingWorld.appliedFates.add("NPC001:source-fate");
+@@ -842,6 +964,90 @@
+   return "observe";
+ }
+ 
++function deterministicWorkWage(runtime, facilityId, actorId) {
++  const digest = sha256([runtime.playerState.seed, runtime.playerState.day, facilityId, actorId, "work-offer"].join(":"));
++  return 5 + (Number.parseInt(digest.slice(0, 8), 16) % 8);
++}
++
++function workDescription(facilityId) {
++  return {
++    LOC_FARM_FIELD: "刈った麦を束ねて荷車まで運ぶ",
++    LOC_FARM_SQUARE: "届いた穀袋を共同倉庫の軒下まで運ぶ",
++    LOC_FARM_INN: "麦穂亭で皿洗いと薪運びを手伝う",
++    LOC_FARM_BAKERY: "粉袋と窯の薪を運ぶ",
++    LOC_FARM_WELL: "井戸から必要な家へ水桶を届ける",
++  }[facilityId] ?? "荷運びと片づけを手伝う";
++}
++
++function decorateWorkOfferAction(action, runtime, data, preferredNpcId = null) {
++  if (!action?.workOffer && action?.type !== "work") return action;
++  const facilityId = runtime.playerState.player.facilityId;
++  const present = presentNpcsAt(runtime, data);
++  const actor = present.find((npc) => npc.id === preferredNpcId)
++    ?? present.find((npc) => npc.id === action.targetNpcId)
++    ?? present[0]
++    ?? null;
++  if (!actor) return null;
++  const wage = deterministicWorkWage(runtime, facilityId, actor.id);
++  const job = workDescription(facilityId);
++  return {
++    ...action,
++    id: action.id === "WORK" ? `WORK_OFFER:${facilityId}:${actor.id}` : action.id,
++    type: "conversation",
++    workOffer: true,
++    quotedWage: wage,
++    workDescription: job,
++    targetNpcId: actor.id,
++    targetNpcName: actor.name,
++    dialogueTopic: "work_offer",
++    requiredDisclosure: `仕事は「${job}」、報酬は${wage}G`,
++    minutes: Math.min(10, Number(action.minutes ?? 6)),
++  };
++}
++
++function pendingWorkOfferActions(runtime, data) {
++  const offer = runtime.pendingWorkOffer;
++  if (!offer) return null;
++  if (offer.facilityId !== runtime.playerState.player.facilityId) {
++    runtime.pendingWorkOffer = null;
++    return null;
++  }
++  const presentIds = runtime.playerState.authoritativePresentNpcIds;
++  if (!(presentIds instanceof Set) || !presentIds.has(offer.actorNpcId)) {
++    runtime.pendingWorkOffer = null;
++    return null;
++  }
++  return withChoiceIds([
++    {
++      id: `WORK_CONFIRM:${offer.facilityId}:${offer.actorNpcId}:${offer.wage}`,
++      type: "work",
++      wage: offer.wage,
++      minutes: offer.minutes,
++      sceneActorNpcId: offer.actorNpcId,
++      workDescription: offer.description,
++      label: `引き受ける：${offer.description}（${offer.minutes}分・${offer.wage}G）`,
++    },
++    {
++      id: `WORK_CLARIFY:${offer.facilityId}:${offer.actorNpcId}`,
++      type: "conversation",
++      dialogueFollowup: true,
++      dialogueTopic: "work_offer",
++      targetNpcId: offer.actorNpcId,
++      targetNpcName: offer.actorName,
++      requiredDisclosure: `仕事は「${offer.description}」、報酬は${offer.wage}G`,
++      minutes: 3,
++      label: "作業の手順と、終わりの目安をもう一度確かめる",
++    },
++    {
++      id: `WORK_DECLINE:${offer.facilityId}:${offer.actorNpcId}`,
++      type: "plan",
++      workDecline: true,
++      minutes: 1,
++      label: "今回は断り、別の行動を選ぶ",
++    },
++  ]);
++}
++
+ function contextualLocalAction(action, runtime, data) {
+   const facility = data.model.facilityById[runtime.playerState.player.facilityId];
+   const facilityId = facility?.id ?? "UNKNOWN";
