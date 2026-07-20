@@ -1,0 +1,47 @@
+--- a/tools/trpg-sim/test/game-service.test.mjs
++++ b/tools/trpg-sim/test/game-service.test.mjs
+@@ -1631,7 +1635,7 @@
+   assert.equal(searchChoices().length, 0);
+ });
+ 
+-test("T01 can be played from inquiry through battle and rescue without ever speaking as missing Finn", async () => {
++test("T01 speaks through discovery, rescue, escort and reunion before completion", async () => {
+   const narrativeInputs = [];
+   const narrator = {
+     async generate(input) {
+@@ -1656,7 +1660,7 @@
+   const chooseAction = async (actionId) => {
+     const choice = runner.save.choices.find((entry) => entry.actionId === actionId);
+     assert.ok(choice, `${actionId} must be one of the three current choices`);
+-    assert.equal(choice.targetNpcId === "NPC001", false);
++    if (actionId !== "ACTION:MSN-T01:escort") assert.equal(choice.targetNpcId === "NPC001", false);
+     return runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
+   };
+   const chooseSearch = async (approachId) => {
+@@ -1709,13 +1713,24 @@
+   assert.equal(battleJournal.outcome.battle.playback, undefined, "replay journal stays compatible with v4 outcomes");
+   assert.equal(battleNarrativeInput, undefined, "the decisive battle tap must not wait for live narrative generation");
+   assert.equal(battleRecord.presentation.source, "deterministic_fallback");
+-  assert.match(battleRecord.presentation.narrative, /フィン.*息はある/u);
++  assert.match(battleRecord.presentation.narrative, /斜面の下.*少年/u);
++  assert.ok(battleRecord.presentation.speeches.some((speech) => speech.actorId === "NPC001"
++    && /僕、フィン.*村の広場.*一緒に戻って/u.test(speech.text)));
+   assert.equal(runner.save.tutorial?.complete, true, "the combat coach does not return after a battle was experienced");
++  assert.equal(runner.save.missions.find((entry) => entry.id === "MSN-T01")?.currentStep?.id, "escort");
++  assert.equal(runner.save.guidance.targetFacilityId, "LOC_FARM_EDGE");
++  assert.equal(runner.save.guidance.actionPanel, null);
++  await chooseAction("ACTION:MSN-T01:escort");
++  assert.ok(runner.save.scene.beats.some((beat) => beat.actorId === "NPC001"
++    && /足を痛めて.*村の広場.*一緒に戻って/u.test(beat.text)));
+   assert.equal(runner.save.guidance.title, "村の広場へ：少年を連れ帰る");
+   assert.equal(runner.save.guidance.actionPanel, "movement");
+-  assert.match(runner.save.guidance.detail, /冒険家志望の少年失踪/u);
+   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
+   await moveTo("LOC_FARM_SQUARE");
++  const reunionText = runner.save.scene.beats.map((beat) => beat.text).join("\n");
++  assert.match(reunionText, /母さん……ただいま/u);
++  assert.match(reunionText, /よかった.*ありがとうございます/u);
++  assert.match(reunionText, /村を預かる者として礼を言う/u);
+   await chooseAction("ACTION:MSN-T01:decide");
+ 
+   const mission = runner.save.missions.find((entry) => entry.id === "MSN-T01");
