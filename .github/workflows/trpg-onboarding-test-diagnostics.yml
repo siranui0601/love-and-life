@@ -30,12 +30,12 @@ jobs:
       - name: Capture test output
         run: |
           set +e
-          npm run test:trpg > /tmp/trpg-test.log 2>&1
+          npm run trpg:test > /tmp/trpg-test.log 2>&1
           status=$?
           {
             echo "exit_code=$status"
             echo
-            tail -n 320 /tmp/trpg-test.log
+            tail -n 420 /tmp/trpg-test.log
           } > tools/trpg-sim/test-diagnostics.log
           exit 0
       - name: Commit diagnostics
