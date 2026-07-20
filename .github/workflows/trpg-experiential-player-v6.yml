@@ -25,14 +25,50 @@ jobs:
       TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
     steps:
       - uses: actions/checkout@v4
-      - name: Apply pending experiential follow-up
+      - name: Prepare experiential mission contract
         shell: bash
         run: |
           set -euo pipefail
-          rm -f src/server/trpg/game/service.js.orig
-          if [ -f tools/trpg-v6-followup.patch ]; then
-            patch --batch --forward -p1 < tools/trpg-v6-followup.patch
-          fi
+          python - <<'PY'
+          from pathlib import Path
+
+          service = Path("src/server/trpg/game/service.js")
+          source = service.read_text()
+          before = '''export function applyGameplayCatalogOverrides(catalog) {
+            const t01 = catalog.special.find((mission) => mission.id === "MSN-T01");
+            if (!t01) return catalog;
+            for (const step of t01.steps) {
+          '''
+          after = '''export function applyGameplayCatalogOverrides(catalog) {
+            const t01 = catalog.special.find((mission) => mission.id === "MSN-T01");
+            if (!t01) return catalog;
+            if (!t01.steps.some((step) => step.id === "escort")) {
+              const decideIndex = t01.steps.findIndex((step) => step.id === "decide");
+              const escortStep = {
+                id: "escort",
+                type: "conversation",
+                targetLocation: "田園の村",
+                targetFacilityId: "LOC_FARM_EDGE",
+                required: 1,
+                label: "負傷したフィンに声をかけ、村の広場まで同行する",
+              };
+              if (decideIndex >= 0) t01.steps.splice(decideIndex, 0, escortStep);
+              else t01.steps.push(escortStep);
+            }
+            for (const step of t01.steps) {
+          '''
+          if before not in source:
+              raise SystemExit("T01 catalog insertion point was not found")
+          service.write_text(source.replace(before, after, 1))
+
+          contract = Path("src/server/trpg/narrative-contract.js")
+          source = contract.read_text()
+          old = 'export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.9";'
+          new = 'export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.0-experiential";'
+          if old not in source:
+              raise SystemExit("narrative prompt version insertion point was not found")
+          contract.write_text(source.replace(old, new, 1))
+          PY
           rm -f src/server/trpg/game/service.js.orig
       - uses: actions/setup-node@v4
         with:
