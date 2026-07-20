@@ -26,7 +26,7 @@ test("onboarding does not create a parallel movement or skill control", () => {
   assert.doesNotMatch(uxScript, /progressionMovementButton/u);
   assert.doesNotMatch(uxScript, /progressionSkillButton/u);
   assert.doesNotMatch(uxScript, /中央の3択を繰り返す/u);
-  assert.match(uxScript, /tutorial\?\.id === "skills"/u);
+  assert.match(uxScript, /save\?\.tutorial\?\.id === "skills"/u);
   assert.match(uxScript, /data-p0-tutorial-locked/u);
 });
 
