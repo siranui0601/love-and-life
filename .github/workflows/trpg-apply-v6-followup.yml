@@ -1,0 +1,34 @@
+name: Apply TRPG v6 follow-up patch
+
+on:
+  push:
+    branches:
+      - chatgpt/trpg-experiential-simulation-v6
+    paths:
+      - ".github/workflows/trpg-apply-v6-followup.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-experiential-simulation-v6
+          fetch-depth: 1
+      - name: Apply escort and prompt-version follow-up
+        shell: bash
+        run: |
+          set -euo pipefail
+          patch -p1 < tools/trpg-v6-followup.patch
+          rm -f \
+            tools/trpg-v6-followup.patch \
+            src/server/trpg/game/service.js.orig \
+            .github/workflows/trpg-apply-v6-followup.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(trpg): add Finn escort step and invalidate narrative cache"
+          git push origin HEAD:chatgpt/trpg-experiential-simulation-v6
