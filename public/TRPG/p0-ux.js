@@ -123,16 +123,6 @@
     return /連れ帰|広場へ戻|村へ戻|帰還/u.test(`${mission.stepId} ${mission.stepLabel}`);
   }
 
-  function enqueueToast(toast) {
-    const key = text(toast.dedupeKey, `${toast.kicker}:${toast.title}:${toast.detail}`);
-    const now = Date.now();
-    const previous = runtime.recentToastKeys.get(key) ?? 0;
-    if (now - previous < 4_000) return;
-    runtime.recentToastKeys.set(key, now);
-    runtime.toastQueue.push({ ...toast, dedupeKey: key });
-    drainToastQueue();
-  }
-
   function toastRegion() {
     return document.getElementById("missionToastRegion");
   }
@@ -145,10 +135,20 @@
     clickElement(document.querySelector('[data-open-panel="missions"]'));
   }
 
+  function enqueueToast(toast) {
+    const key = text(toast.dedupeKey, `${toast.kicker}:${toast.title}:${toast.detail}`);
+    const now = Date.now();
+    if (now - (runtime.recentToastKeys.get(key) ?? 0) < 4_000) return;
+    runtime.recentToastKeys.set(key, now);
+    runtime.toastQueue.push({ ...toast, dedupeKey: key });
+    drainToastQueue();
+  }
+
   function drainToastQueue() {
     if (runtime.toastActive || !runtime.toastQueue.length) return;
     const region = toastRegion();
     if (!region) return;
+
     runtime.toastActive = true;
     const toast = runtime.toastQueue.shift();
     const element = document.createElement("button");
@@ -373,11 +373,17 @@
 
     const gameScreen = document.getElementById("gameScreen");
     const battleDialog = document.getElementById("battleDialog");
+    const decisionTray = document.getElementById("decisionTray");
     const gameVisible = Boolean(gameScreen && !gameScreen.hidden);
     const battleOpen = Boolean(battleDialog?.open);
+    const decisionVisible = Boolean(decisionTray && !decisionTray.hidden);
+    const movementRequested = guidanceRequestsMovement(save);
     const skillRequired = gameVisible && !battleOpen && skillPrimerRequired(save);
-    const movementVisible = gameVisible && !battleOpen && movementIsUnlocked(save);
-    const movementRecommended = movementVisible && guidanceRequestsMovement(save);
+    const movementVisible = gameVisible
+      && !battleOpen
+      && movementIsUnlocked(save)
+      && (decisionVisible || movementRequested);
+    const movementRecommended = movementVisible && movementRequested;
 
     const notice = document.getElementById("progressionNotice");
     const skillButton = document.getElementById("progressionSkillButton");
