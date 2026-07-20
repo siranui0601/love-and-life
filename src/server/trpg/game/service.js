@@ -2412,7 +2412,8 @@ function tutorialView(runtime, data) {
   };
   if (tutorial.stage === "movement_aftermath") return {
     ...base,
-    id: null,
+    id: "world-keeps-moving",
+    visible: false,
     title: null,
     body: null,
     progressLabel: null,
@@ -2420,7 +2421,8 @@ function tutorialView(runtime, data) {
   };
   if (tutorial.stage === "aftermath_intro") return {
     ...base,
-    id: null,
+    id: "trouble-aftermath",
+    visible: false,
     title: null,
     body: null,
     progressLabel: null,
@@ -2436,7 +2438,7 @@ function tutorialView(runtime, data) {
     title: "依頼が記録された",
     body: "右上の巻物を開くと、目的と期限をいつでも確認できる。",
     progressLabel: "旅の案内",
-    actionLabel: "ミッションを確認",
+    actionLabel: "依頼を確認",
     actionPanel: "missions",
     acknowledgeable: true,
     emphasisTarget: "missions",
@@ -2450,7 +2452,7 @@ function tutorialView(runtime, data) {
     progressLabel: "戦闘準備",
     actionLabel: "取得可能スキルを見る",
     actionPanel: "skills",
-    acknowledgeable: false,
+    acknowledgeable: !acknowledged.has("skills"),
     emphasisTarget: "skills",
   };
   const battleAvailable = choiceActions(runtime, data).some((choice) => ["missionBattle", "seekBattle"].includes(choice.type));

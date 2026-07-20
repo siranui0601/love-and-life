@@ -744,7 +744,7 @@ function positionTutorialCoach() {
 
 function renderTutorial(tutorial) {
   const value = tutorial && typeof tutorial === "object" ? tutorial : null;
-  const visible = Boolean(value && value.complete !== true && (value.id || value.emphasisTarget));
+  const visible = Boolean(value && value.visible !== false && value.complete !== true && (value.id || value.emphasisTarget));
   ui.tutorial.hidden = !visible;
   clearTutorialEmphasis();
   if (!visible) return;

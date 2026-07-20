@@ -1,40 +1,16 @@
 exit_code=1
 
---- failing subtests ---
-193:not ok 32 - a late arrival sees T01 aftermath instead of stale Day1 inquiry and can finish onboarding
-337:not ok 53 - acknowledging the skill primer without learning a skill never unlocks deliberate battle choices
-855:not ok 137 - onboarding does not create a parallel movement or skill control
-1517:not ok 138 - mission notices are restrained and do not duplicate the mission tutorial
-2179:not ok 139 - mobile battle commands remain fully reachable
+824:not ok 137 - onboarding does not create a parallel movement or skill control
 
---- assertion locations and messages ---
-199:  error: |-
-206:  code: 'ERR_ASSERTION'
-207:  name: 'AssertionError'
-210:  operator: 'strictEqual'
-212:    TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/game-service.test.mjs:840:10)
-343:  error: 'tutorial_ack_not_available'
-351:    async TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/game-service.test.mjs:1560:3)
-861:  error: |-
-1153:  code: 'ERR_ASSERTION'
-1154:  name: 'AssertionError'
-1506:  operator: 'match'
-1508:    TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/trpg-p0-ux-contract.test.mjs:29:10)
-1523:  error: |-
-1815:  code: 'ERR_ASSERTION'
-1816:  name: 'AssertionError'
-2168:  operator: 'match'
-2170:    TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/trpg-p0-ux-contract.test.mjs:34:10)
-2185:  error: |-
-2322:  code: 'ERR_ASSERTION'
-2323:  name: 'AssertionError'
-2460:  operator: 'match'
-2462:    TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/trpg-p0-ux-contract.test.mjs:40:10)
+830:  error: |-
+1122:  code: 'ERR_ASSERTION'
+1123:  name: 'AssertionError'
+1475:  operator: 'match'
+1477:    TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/trpg-p0-ux-contract.test.mjs:30:10)
 
---- summary ---
 # tests 169
-# pass 164
-# fail 5
+# pass 168
+# fail 1
 # cancelled 0
 # skipped 0
-# duration_ms 30306.288265
+# duration_ms 28032.233026
