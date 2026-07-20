@@ -13,178 +13,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  finalize-source:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: chatgpt/trpg-experiential-simulation-v6
-          fetch-depth: 1
-          show-progress: false
-      - name: Apply reviewed experiential source changes
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p tools/trpg-sim/reports
-          status_file=tools/trpg-sim/reports/finalize-v6-status.txt
-          : > "$status_file"
-          patches=(
-            tools/trpg-finalize-v6-service.patch
-            tools/trpg-finalize-v6-tests-a.patch
-            tools/trpg-finalize-v6-tests-b.patch
-            tools/trpg-finalize-v6-test-work.patch
-            tools/trpg-finalize-v6-tests-d.patch
-            tools/trpg-finalize-v6-wage.patch
-          )
-
-          if [ -f "${patches[0]}" ]; then
-            rm -f src/server/trpg/game/service.js.orig
-            for patch_file in "${patches[@]}"; do
-              echo "CHECKING $patch_file" | tee -a "$status_file"
-              if ! git apply --check "$patch_file" 2> /tmp/patch-error.txt; then
-                echo "FAILED_PATCH=$patch_file" | tee -a "$status_file"
-                cat /tmp/patch-error.txt | tee -a "$status_file"
-                exit 1
-              fi
-              git apply "$patch_file"
-              echo "APPLIED $patch_file" | tee -a "$status_file"
-            done
-
-            python - <<'PY'
-          from pathlib import Path
-
-          contract = Path("src/server/trpg/narrative-contract.js")
-          source = contract.read_text()
-          old = 'export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.9";'
-          new = 'export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.0-experiential";'
-          if old not in source:
-              raise SystemExit("old narrative prompt version was not found")
-          contract.write_text(source.replace(old, new, 1))
-
-          ux_test = Path("tools/trpg-sim/test/trpg-p0-ux-contract.test.mjs")
-          source = ux_test.read_text()
-          old = '  assert.match(uxStyle, /max-height: min\\(42dvh, 240px\\) !important/u);\n  assert.match(uxStyle, /battle-command-menu\\[data-mode="root"\\]/u);'
-          new = '  assert.match(uxStyle, /max-height: none !important/u);\n  assert.match(uxStyle, /battle-command-menu\\[data-mode="skills"\\][\\s\\S]*overflow-y: auto/u);\n  assert.match(uxStyle, /battle-command-menu\\[data-mode="root"\\]/u);'
-          if old not in source:
-              raise SystemExit("old mobile battle contract was not found")
-          ux_test.write_text(source.replace(old, new, 1))
-
-          game_test = Path("tools/trpg-sim/test/game-service.test.mjs")
-          source = game_test.read_text()
-          old = '''test("acknowledging the skill primer without learning a skill never unlocks deliberate battle choices", async () => {
-            const { game } = service();
-            const runner = commandRunner(game, await game.create(owner, { playerName: "unprepared", seed: "skill-ack-is-not-training" }));
-            await completeOpening(runner);
-            await runner.run("TUTORIAL_ACK", { tutorialId: "mission-log" });
-            const edge = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FARM_EDGE");
-            assert.ok(edge);
-            await runner.run("MOVE", { moveId: edge.moveId });
-            assert.equal(runner.save.tutorial.id, "skills");
-            assert.equal(runner.save.skills.learned.length, 0);
-            await runner.run("TUTORIAL_ACK", { tutorialId: "skills" });
-
-            const assertNoDeliberateBattle = () => {
-              assert.equal(runner.save.skills.learned.length, 0);
-              assert.equal(runner.save.choices.some((choice) => choice.danger), false);
-              assert.equal(runner.save.choices.some((choice) => ["missionBattle", "seekBattle"].includes(choice.type)), false);
-            };
-            assertNoDeliberateBattle();
-
-            // Investigation may uncover the encounter, but the resolver must not offer a deliberate fight until a skill is learned.
-            for (let searchCount = 0; searchCount < 2; searchCount += 1) {
-              const search = runner.save.choices.find((choice) => choice.missionId === "MSN-T01"
-                && choice.stepId === "search"
-                && choice.type === "investigate");
-              assert.ok(search, "the non-combat investigation path must remain available");
-              await runner.run("CHOOSE", { choiceId: search.choiceId, actionId: search.actionId });
-              assertNoDeliberateBattle();
-            }
-            assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
-          });'''
-          new = '''test("the skill primer explains the risk but never blocks an underprepared player", async () => {
-            const { game } = service();
-            const runner = commandRunner(game, await game.create(owner, { playerName: "unprepared", seed: "skill-ack-is-not-training" }));
-            await completeOpening(runner);
-            await runner.run("TUTORIAL_ACK", { tutorialId: "mission-log" });
-            const edge = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FARM_EDGE");
-            assert.ok(edge);
-            await runner.run("MOVE", { moveId: edge.moveId });
-            assert.equal(runner.save.tutorial.id, "skills");
-            assert.match(runner.save.tutorial.body, /取得せず進むこともできる/u);
-            assert.equal(runner.save.skills.learned.length, 0);
-            await runner.run("TUTORIAL_ACK", { tutorialId: "skills" });
-
-            for (let searchCount = 0; searchCount < 2; searchCount += 1) {
-              const search = runner.save.choices.find((choice) => choice.missionId === "MSN-T01"
-                && choice.stepId === "search"
-                && choice.type === "investigate");
-              assert.ok(search, "the investigation path remains available without learning a skill");
-              await runner.run("CHOOSE", { choiceId: search.choiceId, actionId: search.actionId });
-            }
-            assert.equal(runner.save.skills.learned.length, 0);
-            assert.equal(runner.save.choices.some((choice) => choice.danger), true);
-            assert.equal(runner.save.choices.some((choice) => choice.type === "missionBattle"), true);
-            assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
-          });'''
-          if old not in source:
-              raise SystemExit("old optional-skill regression block was not found")
-          game_test.write_text(source.replace(old, new, 1))
-          PY
-
-            rm -f \
-              "${patches[@]}" \
-              tools/trpg-finalize-v6-test-skill.patch \
-              tools/trpg-v6-followup.patch \
-              src/server/trpg/game/service.js.orig \
-              .github/workflows/trpg-apply-v6-patches.yml
-            echo "PATCH_APPLICATION_COMPLETE" >> "$status_file"
-          else
-            echo "SOURCE_ALREADY_FINALIZED" >> "$status_file"
-          fi
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: trpg-finalize-v6-diagnostic
-          path: tools/trpg-sim/reports/finalize-v6-status.txt
-          if-no-files-found: warn
-          retention-days: 2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Run finalized regression tests
-        shell: bash
-        run: |
-          set -o pipefail
-          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/finalized-test.log
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: trpg-finalize-v6-test-log
-          path: tools/trpg-sim/reports/finalized-test.log
-          if-no-files-found: warn
-          retention-days: 2
-      - name: Commit finalized source
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "Source is already finalized."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "feat(trpg): finalize experiential player simulation v6"
-          git push origin HEAD:chatgpt/trpg-experiential-simulation-v6
-
   experiential:
-    needs: finalize-source
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -203,7 +35,11 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Run TRPG regression tests
-        run: npm run trpg:test
+        shell: bash
+        run: |
+          mkdir -p tools/trpg-sim/reports
+          set -o pipefail
+          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/experiential-regression.log
       - name: Run rescue, work-first, and capital-first journeys
         run: npm run trpg:experiential:v6
       - uses: actions/upload-artifact@v4
@@ -211,6 +47,7 @@ jobs:
         with:
           name: trpg-experiential-player-v6
           path: |
+            tools/trpg-sim/reports/experiential-regression.log
             tools/trpg-sim/reports/experiential-player-v6-latest.json
             tools/trpg-sim/reports/experiential-player-v6-latest.md
             tools/trpg-sim/reports/experiential-v6-*-narrative-audit.jsonl
