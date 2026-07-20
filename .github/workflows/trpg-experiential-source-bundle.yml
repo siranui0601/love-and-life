@@ -6,6 +6,11 @@ on:
       - chatgpt/trpg-experiential-simulation-v6
     paths:
       - .github/workflows/trpg-experiential-source-bundle.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/trpg-experiential-source-bundle.yml
 
 permissions:
   contents: read
