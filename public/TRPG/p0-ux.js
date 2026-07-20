@@ -8,14 +8,6 @@
   const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
   const COMPLETED_MISSION_STATUSES = new Set(["completed", "resolved"]);
   const FAILED_MISSION_STATUSES = new Set(["failed", "expired", "unavailable"]);
-  const EARLY_TUTORIAL_STAGES = new Set(["awakening", "first_contact", "orientation"]);
-  const MOVEMENT_TUTORIAL_STAGES = new Set([
-    "movement",
-    "mission_intro",
-    "movement_aftermath",
-    "aftermath_intro",
-    "free",
-  ]);
 
   const runtime = {
     save: null,
@@ -31,12 +23,6 @@
   function text(value, fallback = "") {
     const normalized = String(value ?? "").trim();
     return normalized || fallback;
-  }
-
-  function objectValues(value) {
-    return value && typeof value === "object" && !Array.isArray(value)
-      ? Object.values(value)
-      : [];
   }
 
   function findSave(value, depth = 0) {
@@ -60,15 +46,13 @@
     if (Array.isArray(value)) return value.flatMap((entry) => flattenMissions(entry, depth + 1));
     if (typeof value !== "object") return [];
     if (value.id || value.missionId) return [value];
-    return objectValues(value).flatMap((entry) => flattenMissions(entry, depth + 1));
+    return Object.values(value).flatMap((entry) => flattenMissions(entry, depth + 1));
   }
 
   function normalizeMission(raw) {
     const id = text(raw?.id ?? raw?.missionId);
     if (!id) return null;
-    const currentStep = raw?.currentStep && typeof raw.currentStep === "object"
-      ? raw.currentStep
-      : null;
+    const currentStep = raw?.currentStep && typeof raw.currentStep === "object" ? raw.currentStep : null;
     const stepLabel = text(
       currentStep?.label
         ?? currentStep?.title
@@ -80,7 +64,7 @@
     const required = Number(currentStep?.required ?? raw?.currentStepRequired);
     return {
       id,
-      title: text(raw?.title ?? raw?.name, "ミッション"),
+      title: text(raw?.title ?? raw?.name, "依頼"),
       kind: text(raw?.kind),
       troubleId: text(raw?.troubleId),
       status: text(raw?.status).toLowerCase(),
@@ -140,7 +124,7 @@
     const now = Date.now();
     if (now - (runtime.recentToastKeys.get(key) ?? 0) < 4_000) return;
     runtime.recentToastKeys.set(key, now);
-    runtime.toastQueue.push({ ...toast, dedupeKey: key });
+    runtime.toastQueue.push(toast);
     drainToastQueue();
   }
 
@@ -158,9 +142,9 @@
     const kicker = element.querySelector(".mission-toast-kicker");
     const title = element.querySelector("strong");
     const detail = element.querySelector(".mission-toast-detail");
-    kicker.textContent = text(toast.kicker, "MISSION");
-    title.textContent = text(toast.title, "ミッションが更新されました");
-    detail.textContent = text(toast.detail, "ミッション一覧で内容を確認できます。");
+    kicker.textContent = text(toast.kicker, "依頼");
+    title.textContent = text(toast.title, "状況が変わった");
+    detail.textContent = text(toast.detail, "巻物から記録を確認できる。");
     element.setAttribute("aria-label", `${kicker.textContent}。${title.textContent}。${detail.textContent}`);
 
     let dismissed = false;
@@ -172,7 +156,7 @@
         element.remove();
         runtime.toastActive = false;
         drainToastQueue();
-      }, 220);
+      }, 180);
     };
 
     element.addEventListener("click", () => {
@@ -181,10 +165,10 @@
     });
     region.append(element);
     requestAnimationFrame(() => element.classList.add("is-visible"));
-    window.setTimeout(dismiss, Number(toast.durationMs ?? 5_800));
+    window.setTimeout(dismiss, Number(toast.durationMs ?? 4_800));
   }
 
-  function compareMissionLifecycle(nextMissions) {
+  function compareMissionLifecycle(nextMissions, save) {
     if (!runtime.baselineReady) {
       runtime.missions = nextMissions;
       runtime.baselineReady = true;
@@ -194,11 +178,12 @@
     for (const [id, next] of nextMissions) {
       const previous = runtime.missions.get(id);
       if (!previous) {
-        if (ACTIVE_MISSION_STATUSES.has(next.status)) {
+        const missionTutorialAlreadyVisible = save?.tutorial?.id === "mission-log";
+        if (ACTIVE_MISSION_STATUSES.has(next.status) && !missionTutorialAlreadyVisible) {
           enqueueToast({
-            kicker: "ミッション発生",
+            kicker: "依頼発生",
             title: next.title,
-            detail: next.stepLabel || "新しい依頼の内容を確認しよう。",
+            detail: next.stepLabel || "巻物に新しい依頼が記された。",
             tone: "start",
             dedupeKey: `mission-start:${id}:${next.status}`,
           });
@@ -207,23 +192,25 @@
       }
 
       if (!ACTIVE_MISSION_STATUSES.has(previous.status) && ACTIVE_MISSION_STATUSES.has(next.status)) {
-        enqueueToast({
-          kicker: "ミッション発生",
-          title: next.title,
-          detail: next.stepLabel || "新しい依頼の内容を確認しよう。",
-          tone: "start",
-          dedupeKey: `mission-start:${id}:${next.status}`,
-        });
+        if (save?.tutorial?.id !== "mission-log") {
+          enqueueToast({
+            kicker: "依頼発生",
+            title: next.title,
+            detail: next.stepLabel || "巻物に新しい依頼が記された。",
+            tone: "start",
+            dedupeKey: `mission-start:${id}:${next.status}`,
+          });
+        }
         continue;
       }
 
       if (!COMPLETED_MISSION_STATUSES.has(previous.status) && COMPLETED_MISSION_STATUSES.has(next.status)) {
         enqueueToast({
-          kicker: "ミッション完了",
+          kicker: "依頼完了",
           title: next.title,
-          detail: "行動の結果が世界へ反映された。",
+          detail: "この出来事は旅の記録へ残された。",
           tone: "complete",
-          durationMs: 7_000,
+          durationMs: 6_000,
           dedupeKey: `mission-complete:${id}:${next.status}`,
         });
         continue;
@@ -231,25 +218,29 @@
 
       if (!FAILED_MISSION_STATUSES.has(previous.status) && FAILED_MISSION_STATUSES.has(next.status)) {
         enqueueToast({
-          kicker: "ミッション失敗",
+          kicker: "依頼失敗",
           title: next.title,
-          detail: "期限や状況が変化した。年代記とミッション一覧を確認しよう。",
+          detail: "期限か状況が変わった。巻物から結末を確認できる。",
           tone: "failed",
-          durationMs: 7_000,
+          durationMs: 6_000,
           dedupeKey: `mission-failed:${id}:${next.status}`,
         });
         continue;
       }
 
-      if (ACTIVE_MISSION_STATUSES.has(next.status) && missionStepKey(previous) !== missionStepKey(next)) {
-        const finnReturn = missionIsFinnRescue(next) && missionRequiresReturn(next) && !missionRequiresReturn(previous);
+      const finnReturn = ACTIVE_MISSION_STATUSES.has(next.status)
+        && missionIsFinnRescue(next)
+        && missionRequiresReturn(next)
+        && !missionRequiresReturn(previous)
+        && missionStepKey(previous) !== missionStepKey(next);
+      if (finnReturn) {
         enqueueToast({
-          kicker: finnReturn ? "救出成功" : "ミッション更新",
-          title: finnReturn ? "フィンを村へ連れ帰ろう" : next.title,
-          detail: next.stepLabel || "次の目的が更新された。",
-          tone: finnReturn ? "rescue" : "update",
-          durationMs: finnReturn ? 7_500 : 5_800,
-          dedupeKey: `mission-step:${id}:${missionStepKey(next)}`,
+          kicker: "救出成功",
+          title: "フィンは生きている",
+          detail: next.stepLabel || "負傷したフィンを村へ連れ帰ろう。",
+          tone: "rescue",
+          durationMs: 6_500,
+          dedupeKey: `mission-rescue:${id}:${missionStepKey(next)}`,
         });
       }
     }
@@ -257,160 +248,34 @@
     runtime.missions = nextMissions;
   }
 
-  function tutorialView(save) {
-    return save?.tutorial && typeof save.tutorial === "object" ? save.tutorial : {};
+  function skillTutorialRequiresChoicePause(save) {
+    return save?.tutorial?.id === "skills" && learnedSkillCount(save) === 0;
   }
 
-  function skillPrimerRequired(save) {
-    if (!save || learnedSkillCount(save) > 0) return false;
-    const tutorial = tutorialView(save);
-    if (tutorial.id === "skills" || tutorial.emphasisTarget === "skills") return true;
-    const guidance = `${text(save?.guidance?.title)} ${text(save?.guidance?.detail)} ${text(tutorial.title)} ${text(tutorial.body)}`;
-    const domGuidance = `${text(document.getElementById("guidanceTitle")?.textContent)} ${text(document.getElementById("tutorialBody")?.textContent)}`;
-    return /スキル|技を覚|能力を開/u.test(`${guidance} ${domGuidance}`);
-  }
-
-  function movementIsUnlocked(save) {
-    const tutorial = tutorialView(save);
-    if (tutorial.unlocked?.movement === true) return true;
-    if (tutorial.unlocked?.movement === false) return false;
-    const stage = text(tutorial.stage);
-    if (EARLY_TUTORIAL_STAGES.has(stage)) return false;
-    return !stage || MOVEMENT_TUTORIAL_STAGES.has(stage);
-  }
-
-  function guidanceRequestsMovement(save) {
-    const guidance = save?.guidance ?? {};
-    if (guidance.actionPanel === "movement" || guidance.targetFacilityId) return true;
-    const content = `${text(guidance.title)} ${text(guidance.detail)} ${text(document.getElementById("guidanceTitle")?.textContent)} ${text(document.getElementById("guidanceDetail")?.textContent)}`;
-    return /移動|へ向か|へ戻|連れ帰/u.test(content);
-  }
-
-  function movementButtonLabel(save) {
-    const guidance = save?.guidance ?? {};
-    const title = text(guidance.title, text(document.getElementById("guidanceTitle")?.textContent));
-    const finnReturn = [...runtime.missions.values()].some((mission) => missionIsFinnRescue(mission) && missionRequiresReturn(mission));
-    if (finnReturn) return "フィンと村の広場へ移動する";
-    const explicitTarget = text(guidance.targetFacilityName);
-    if (explicitTarget) return `${explicitTarget}へ移動する`;
-    const titleTarget = title.match(/^(.+?)へ(?:：|$)/u)?.[1];
-    return titleTarget ? `${titleTarget}へ移動する` : "移動する";
-  }
-
-  function ensureProgressionActions() {
-    const storyConsole = document.getElementById("storyConsole");
-    const decisionTray = document.getElementById("decisionTray");
-    if (!storyConsole || !decisionTray) return null;
-    let container = document.getElementById("progressionActions");
-    if (container) return container;
-
-    container = document.createElement("section");
-    container.id = "progressionActions";
-    container.className = "progression-actions";
-    container.hidden = true;
-    container.setAttribute("aria-label", "進行に必要な操作");
-
-    const notice = document.createElement("p");
-    notice.id = "progressionNotice";
-    notice.className = "progression-notice";
-    notice.hidden = true;
-
-    const skillButton = document.createElement("button");
-    skillButton.id = "progressionSkillButton";
-    skillButton.type = "button";
-    skillButton.className = "progression-action is-primary";
-    skillButton.textContent = "スキルを取得して捜索を続ける";
-    skillButton.hidden = true;
-    skillButton.addEventListener("click", () => {
-      clickElement(document.querySelector('[data-open-panel="skills"]'));
-    });
-
-    const movementButton = document.createElement("button");
-    movementButton.id = "progressionMovementButton";
-    movementButton.type = "button";
-    movementButton.className = "progression-action is-secondary";
-    movementButton.textContent = "移動する";
-    movementButton.hidden = true;
-    movementButton.addEventListener("click", () => {
-      clickElement(document.getElementById("locationButton"));
-    });
-
-    container.append(notice, skillButton, movementButton);
-    decisionTray.insertAdjacentElement("afterend", container);
-    return container;
-  }
-
-  function setChoiceSkillLock(locked) {
-    const heading = document.getElementById("choiceHeading");
-    if (heading) {
-      if (locked) {
-        if (!heading.dataset.p0OriginalText) heading.dataset.p0OriginalText = heading.textContent;
-        heading.textContent = "先に戦闘準備をしよう";
-      } else if (heading.dataset.p0OriginalText) {
-        heading.textContent = heading.dataset.p0OriginalText;
-        delete heading.dataset.p0OriginalText;
-      }
-    }
+  function syncContextualTutorialGuard() {
+    runtime.syncQueued = false;
+    const pauseChoices = skillTutorialRequiresChoicePause(runtime.save);
+    const tray = document.getElementById("decisionTray");
+    tray?.classList.toggle("is-context-tutorial-paused", pauseChoices);
 
     document.querySelectorAll("#choiceRegion .choice-button").forEach((button) => {
       if (!(button instanceof HTMLButtonElement)) return;
-      if (locked && !button.disabled) {
-        button.dataset.p0SkillLocked = "true";
+      if (pauseChoices && !button.disabled) {
+        button.dataset.p0TutorialLocked = "true";
         button.disabled = true;
-      } else if (!locked && button.dataset.p0SkillLocked === "true") {
+        button.setAttribute("aria-disabled", "true");
+      } else if (!pauseChoices && button.dataset.p0TutorialLocked === "true") {
         button.disabled = false;
-        delete button.dataset.p0SkillLocked;
+        button.removeAttribute("aria-disabled");
+        delete button.dataset.p0TutorialLocked;
       }
     });
-    document.getElementById("decisionTray")?.classList.toggle("is-skill-locked", locked);
   }
 
-  function syncProgressionActions() {
-    runtime.syncQueued = false;
-    const save = runtime.save;
-    const container = ensureProgressionActions();
-    if (!container) return;
-
-    const gameScreen = document.getElementById("gameScreen");
-    const battleDialog = document.getElementById("battleDialog");
-    const decisionTray = document.getElementById("decisionTray");
-    const gameVisible = Boolean(gameScreen && !gameScreen.hidden);
-    const battleOpen = Boolean(battleDialog?.open);
-    const decisionVisible = Boolean(decisionTray && !decisionTray.hidden);
-    const movementRequested = guidanceRequestsMovement(save);
-    const skillRequired = gameVisible && !battleOpen && skillPrimerRequired(save);
-    const movementVisible = gameVisible
-      && !battleOpen
-      && movementIsUnlocked(save)
-      && (decisionVisible || movementRequested);
-    const movementRecommended = movementVisible && movementRequested;
-
-    const notice = document.getElementById("progressionNotice");
-    const skillButton = document.getElementById("progressionSkillButton");
-    const movementButton = document.getElementById("progressionMovementButton");
-
-    if (notice) {
-      notice.hidden = !skillRequired;
-      notice.textContent = skillRequired
-        ? "この先では戦闘が起こります。中央の3択を繰り返す前に、所持SPで使う技を一つ取得してください。"
-        : "";
-    }
-    if (skillButton) skillButton.hidden = !skillRequired;
-    if (movementButton) {
-      movementButton.hidden = !movementVisible;
-      movementButton.textContent = movementButtonLabel(save);
-      movementButton.classList.toggle("is-recommended", movementRecommended && !skillRequired);
-    }
-
-    container.hidden = !(skillRequired || movementVisible);
-    container.classList.toggle("is-skill-primer", skillRequired);
-    setChoiceSkillLock(skillRequired);
-  }
-
-  function scheduleProgressionSync() {
+  function scheduleTutorialSync() {
     if (runtime.syncQueued) return;
     runtime.syncQueued = true;
-    window.requestAnimationFrame(syncProgressionActions);
+    requestAnimationFrame(syncContextualTutorialGuard);
   }
 
   function resetForDifferentSave(nextIdentity) {
@@ -430,23 +295,10 @@
       resetForDifferentSave(nextIdentity);
     }
 
-    const hadPreviousSave = Boolean(runtime.save);
-    const previousSkillCount = learnedSkillCount(runtime.save);
-    const nextSkillCount = learnedSkillCount(save);
-    compareMissionLifecycle(storyMissions(save));
+    compareMissionLifecycle(storyMissions(save), save);
     runtime.save = save;
     runtime.saveIdentity = nextIdentity || runtime.saveIdentity;
-
-    if (hadPreviousSave && previousSkillCount === 0 && nextSkillCount > 0) {
-      enqueueToast({
-        kicker: "戦闘準備完了",
-        title: "新しいスキルを取得した",
-        detail: "中央の選択肢から、フィンの捜索を続けられる。",
-        tone: "complete",
-        dedupeKey: `skill-primer-complete:${nextSkillCount}`,
-      });
-    }
-    scheduleProgressionSync();
+    scheduleTutorialSync();
   }
 
   function observeJsonPayload(payload) {
@@ -464,39 +316,33 @@
   const originalFetch = window.fetch.bind(window);
   window.fetch = async (...args) => {
     const response = await originalFetch(...args);
-    const url = requestUrl(args[0]);
-    if (API_ROUTE_PATTERN.test(url)) {
+    if (API_ROUTE_PATTERN.test(requestUrl(args[0]))) {
       response.clone().json().then(observeJsonPayload).catch(() => {});
     }
     return response;
   };
 
-  function initializeDomObservers() {
+  function initialize() {
     const region = toastRegion();
     if (region) {
       region.setAttribute("aria-live", "polite");
       region.setAttribute("aria-atomic", "false");
     }
-    ensureProgressionActions();
-    const observer = new MutationObserver(scheduleProgressionSync);
+    const observer = new MutationObserver(scheduleTutorialSync);
     observer.observe(document.body, {
       subtree: true,
       childList: true,
       attributes: true,
       attributeFilter: ["hidden", "open", "aria-hidden"],
     });
-    scheduleProgressionSync();
-    drainToastQueue();
+    scheduleTutorialSync();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializeDomObservers, { once: true });
+    document.addEventListener("DOMContentLoaded", initialize, { once: true });
   } else {
-    initializeDomObservers();
+    initialize();
   }
 
-  window.__trpgP0Ux = Object.freeze({
-    observeJsonPayload,
-    syncProgressionActions,
-  });
+  window.__trpgP0Ux = Object.freeze({ observeJsonPayload, syncContextualTutorialGuard });
 })();
