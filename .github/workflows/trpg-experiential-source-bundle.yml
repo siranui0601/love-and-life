@@ -1,0 +1,29 @@
+name: TRPG experiential source bundle
+
+on:
+  push:
+    branches:
+      - chatgpt/trpg-experiential-simulation-v6
+    paths:
+      - .github/workflows/trpg-experiential-source-bundle.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-experiential-simulation-v6
+          fetch-depth: 1
+      - name: Create source archive
+        run: |
+          zip -qr /tmp/trpg-source.zip . \
+            -x '.git/*' 'node_modules/*' 'runtime-data/*' 'tools/trpg-sim/reports/*'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trpg-experiential-source
+          path: /tmp/trpg-source.zip
+          retention-days: 1
