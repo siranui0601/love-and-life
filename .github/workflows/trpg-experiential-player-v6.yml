@@ -158,7 +158,17 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Run finalized regression tests
-        run: npm run trpg:test
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/finalized-test.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trpg-finalize-v6-test-log
+          path: tools/trpg-sim/reports/finalized-test.log
+          if-no-files-found: warn
+          retention-days: 2
       - name: Commit finalized source
         shell: bash
         run: |
