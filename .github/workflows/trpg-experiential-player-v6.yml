@@ -29,6 +29,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p tools/trpg-sim/reports
+          status_file=tools/trpg-sim/reports/finalize-v6-status.txt
+          : > "$status_file"
           patches=(
             tools/trpg-finalize-v6-service.patch
             tools/trpg-finalize-v6-tests-a.patch
@@ -42,13 +45,14 @@ jobs:
           if [ -f "${patches[0]}" ]; then
             rm -f src/server/trpg/game/service.js.orig
             for patch_file in "${patches[@]}"; do
-              echo "CHECKING $patch_file"
-              if ! git apply --check "$patch_file"; then
-                echo "FAILED_PATCH=$patch_file"
+              echo "CHECKING $patch_file" | tee -a "$status_file"
+              if ! git apply --check "$patch_file" 2> /tmp/patch-error.txt; then
+                echo "FAILED_PATCH=$patch_file" | tee -a "$status_file"
+                cat /tmp/patch-error.txt | tee -a "$status_file"
                 exit 1
               fi
               git apply "$patch_file"
-              echo "APPLIED $patch_file"
+              echo "APPLIED $patch_file" | tee -a "$status_file"
             done
 
             python - <<'PY'
@@ -76,9 +80,17 @@ jobs:
               tools/trpg-v6-followup.patch \
               src/server/trpg/game/service.js.orig \
               .github/workflows/trpg-apply-v6-patches.yml
+            echo "PATCH_APPLICATION_COMPLETE" >> "$status_file"
           else
-            echo "Source patch files are already absent."
+            echo "SOURCE_ALREADY_FINALIZED" >> "$status_file"
           fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trpg-finalize-v6-diagnostic
+          path: tools/trpg-sim/reports/finalize-v6-status.txt
+          if-no-files-found: warn
+          retention-days: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
