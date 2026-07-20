@@ -1,0 +1,222 @@
+/* P0 player-experience corrections layered over the current TRPG theme. */
+
+.mission-toast-region {
+  position: fixed;
+  z-index: 1200;
+  top: calc(env(safe-area-inset-top, 0px) + 72px);
+  right: 12px;
+  display: grid;
+  width: min(390px, calc(100vw - 24px));
+  gap: 8px;
+  pointer-events: none;
+}
+
+.mission-lifecycle-toast {
+  display: grid;
+  width: 100%;
+  gap: 3px;
+  padding: 13px 15px;
+  border: 1px solid rgba(237, 240, 243, 0.78);
+  border-left: 5px solid #e7c46b;
+  border-radius: 7px;
+  color: #f7f2df;
+  background: linear-gradient(135deg, rgba(10, 29, 48, 0.98), rgba(15, 42, 67, 0.98));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42);
+  text-align: left;
+  opacity: 0;
+  transform: translate3d(18px, -6px, 0);
+  transition: opacity 180ms ease, transform 220ms ease;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.mission-lifecycle-toast.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.mission-lifecycle-toast.is-complete,
+.mission-lifecycle-toast.is-rescue {
+  border-left-color: #9fd9b5;
+}
+
+.mission-lifecycle-toast.is-failed {
+  border-left-color: #d98d86;
+}
+
+.mission-lifecycle-toast.is-update {
+  border-left-color: #91b7e7;
+}
+
+.mission-toast-kicker {
+  color: #e7c46b;
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.17em;
+}
+
+.mission-lifecycle-toast.is-complete .mission-toast-kicker,
+.mission-lifecycle-toast.is-rescue .mission-toast-kicker {
+  color: #bce7ca;
+}
+
+.mission-lifecycle-toast.is-failed .mission-toast-kicker {
+  color: #f0aaa4;
+}
+
+.mission-lifecycle-toast strong {
+  color: #fff;
+  font-size: 0.98rem;
+  line-height: 1.35;
+}
+
+.mission-toast-detail {
+  color: rgba(241, 245, 248, 0.82);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.progression-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(217, 224, 232, 0.48);
+  border-radius: 7px;
+  background: rgba(5, 19, 35, 0.84);
+}
+
+.progression-actions[hidden] {
+  display: none;
+}
+
+.progression-actions.is-skill-primer {
+  border-color: rgba(231, 196, 107, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(231, 196, 107, 0.18), 0 0 20px rgba(231, 196, 107, 0.09);
+}
+
+.progression-notice {
+  margin: 0 2px 2px;
+  color: #fff0bd;
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.65;
+}
+
+.progression-notice[hidden],
+.progression-action[hidden] {
+  display: none;
+}
+
+.progression-action {
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid rgba(239, 243, 248, 0.72);
+  border-radius: 6px;
+  color: #f8fbff;
+  background: rgba(31, 65, 102, 0.9);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.progression-action::after {
+  float: right;
+  content: "›";
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.progression-action.is-primary {
+  border-color: #f3d681;
+  color: #102034;
+  background: linear-gradient(180deg, #ffe9a8, #e6c466);
+  box-shadow: 0 5px 18px rgba(228, 191, 89, 0.24);
+}
+
+.progression-action.is-secondary.is-recommended {
+  border-color: #c9dfef;
+  background: linear-gradient(180deg, rgba(63, 103, 147, 0.98), rgba(37, 72, 111, 0.98));
+  box-shadow: 0 5px 16px rgba(40, 93, 145, 0.2);
+}
+
+.progression-action:focus-visible,
+.mission-lifecycle-toast:focus-visible {
+  outline: 3px solid #fff4b7;
+  outline-offset: 2px;
+}
+
+.decision-tray.is-skill-locked .choice-button[data-p0-skill-locked="true"] {
+  opacity: 0.38;
+  filter: saturate(0.35);
+}
+
+.decision-tray.is-skill-locked .choice-button[data-p0-skill-locked="true"]::after {
+  content: "先にスキル取得";
+}
+
+/* The previous 118px mobile cap clipped the second row of battle commands. */
+@media (max-width: 720px) {
+  .battle-dialog[open] {
+    overflow: hidden;
+  }
+
+  .battle-dialog .battle-message {
+    min-height: 0;
+    padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .battle-dialog .battle-command-panel:not([hidden]) {
+    display: block;
+    max-height: min(42dvh, 240px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .battle-dialog .battle-command-menu[data-mode="root"] {
+    min-height: 108px;
+    overflow: visible;
+  }
+
+  .battle-dialog .battle-command-menu[data-mode="skills"] {
+    max-height: min(32dvh, 210px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .battle-dialog .battle-command-button {
+    min-height: 48px;
+  }
+
+  .mission-toast-region {
+    top: calc(env(safe-area-inset-top, 0px) + 58px);
+    right: 8px;
+    width: calc(100vw - 16px);
+  }
+
+  .progression-actions {
+    margin-top: 8px;
+    padding: 8px;
+  }
+}
+
+@media (max-height: 620px) and (max-width: 720px) {
+  .battle-dialog .battle-command-panel:not([hidden]) {
+    max-height: min(38dvh, 190px) !important;
+  }
+
+  .battle-dialog .battle-command-menu[data-mode="skills"] {
+    max-height: min(28dvh, 155px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mission-lifecycle-toast {
+    transition: none;
+  }
+}
