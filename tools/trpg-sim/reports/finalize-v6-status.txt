@@ -1,0 +1,13 @@
+CHECKING tools/trpg-finalize-v6-service.patch
+APPLIED tools/trpg-finalize-v6-service.patch
+CHECKING tools/trpg-finalize-v6-tests-a.patch
+APPLIED tools/trpg-finalize-v6-tests-a.patch
+CHECKING tools/trpg-finalize-v6-tests-b.patch
+APPLIED tools/trpg-finalize-v6-tests-b.patch
+CHECKING tools/trpg-finalize-v6-test-work.patch
+APPLIED tools/trpg-finalize-v6-test-work.patch
+CHECKING tools/trpg-finalize-v6-tests-d.patch
+APPLIED tools/trpg-finalize-v6-tests-d.patch
+CHECKING tools/trpg-finalize-v6-wage.patch
+APPLIED tools/trpg-finalize-v6-wage.patch
+PATCH_APPLICATION_COMPLETE

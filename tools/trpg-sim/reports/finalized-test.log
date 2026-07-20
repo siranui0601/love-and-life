@@ -1,0 +1,1047 @@
+
+> trpg:test
+> node --test tools/trpg-sim/test/*.test.mjs
+
+TAP version 13
+# Subtest: battle fixture joins every combat table and all four skill shards
+ok 1 - battle fixture joins every combat table and all four skill shards
+  ---
+  duration_ms: 1.986988
+  type: 'test'
+  ...
+# Subtest: sheet damage formula and explicit hit/critical caps are stable
+ok 2 - sheet damage formula and explicit hit/critical caps are stable
+  ---
+  duration_ms: 0.456421
+  type: 'test'
+  ...
+# Subtest: seeded RNG and encounter party expansion are reproducible
+ok 3 - seeded RNG and encounter party expansion are reproducible
+  ---
+  duration_ms: 0.785043
+  type: 'test'
+  ...
+# Subtest: battle data audit preserves actionable state and command inconsistencies
+ok 4 - battle data audit preserves actionable state and command inconsistencies
+  ---
+  duration_ms: 0.281781
+  type: 'test'
+  ...
+# Subtest: the same battle seed produces the same complete result
+ok 5 - the same battle seed produces the same complete result
+  ---
+  duration_ms: 20.470055
+  type: 'test'
+  ...
+# Subtest: interactive battle begins before a turn and lists only authoritative first-slice commands
+ok 6 - interactive battle begins before a turn and lists only authoritative first-slice commands
+  ---
+  duration_ms: 8.558153
+  type: 'test'
+  ...
+# Subtest: the same interactive command sequence produces the same complete state and round frames
+ok 7 - the same interactive command sequence produces the same complete state and round frames
+  ---
+  duration_ms: 7.43122
+  type: 'test'
+  ...
+# Subtest: invalid interactive commands do not mutate state, advance rounds, or consume future randomness
+ok 8 - invalid interactive commands do not mutate state, advance rounds, or consume future randomness
+  ---
+  duration_ms: 1.74707
+  type: 'test'
+  ...
+# Subtest: interactive skills spend MP and obey cooldowns without changing the auto simulator
+ok 9 - interactive skills spend MP and obey cooldowns without changing the auto simulator
+  ---
+  duration_ms: 3.369513
+  type: 'test'
+  ...
+# Subtest: interactive defend applies a one-round guard before later enemy actions
+ok 10 - interactive defend applies a one-round guard before later enemy actions
+  ---
+  duration_ms: 1.359972
+  type: 'test'
+  ...
+# Subtest: interactive flee is deterministic and a successful escape ends without inventing a victory
+ok 11 - interactive flee is deterministic and a successful escape ends without inventing a victory
+  ---
+  duration_ms: 1.458459
+  type: 'test'
+  ...
+# Subtest: timeline capture is deterministic and does not change battle resolution
+ok 12 - timeline capture is deterministic and does not change battle resolution
+  ---
+  duration_ms: 2.563749
+  type: 'test'
+  ...
+# Subtest: timeline includes deterministic end-of-round resource effects
+ok 13 - timeline includes deterministic end-of-round resource effects
+  ---
+  duration_ms: 1.871926
+  type: 'test'
+  ...
+# Subtest: MON-0076 candidate exhaustion is diagnosed and falls back to normal attacks
+ok 14 - MON-0076 candidate exhaustion is diagnosed and falls back to normal attacks
+  ---
+  duration_ms: 0.668388
+  type: 'test'
+  ...
+# Subtest: Monte Carlo reports win, turns, MP, usage and exhaustion per build
+ok 15 - Monte Carlo reports win, turns, MP, usage and exhaustion per build
+  ---
+  duration_ms: 15.794908
+  type: 'test'
+  ...
+# Subtest: T01 places escort between battle and village handoff
+ok 16 - T01 places escort between battle and village handoff
+  ---
+  duration_ms: 140.692627
+  type: 'test'
+  ...
+# Subtest: the revised prompt uses a new replay-cache namespace
+ok 17 - the revised prompt uses a new replay-cache namespace
+  ---
+  duration_ms: 0.280659
+  type: 'test'
+  ...
+# Subtest: the live player CLI includes all three routes and sheet sync
+ok 18 - the live player CLI includes all three routes and sheet sync
+  ---
+  duration_ms: 0.393428
+  type: 'test'
+  ...
+# Subtest: playable save starts alone in the Day1 wheat field with a progressive, profile-free opening
+ok 19 - playable save starts alone in the Day1 wheat field with a progressive, profile-free opening
+  ---
+  duration_ms: 174.195018
+  type: 'test'
+  ...
+# Subtest: locked tutorial features cannot be bypassed through direct commands
+ok 20 - locked tutorial features cannot be bypassed through direct commands
+  ---
+  duration_ms: 138.897756
+  type: 'test'
+  ...
+# Subtest: Day100 ending is immutable and has an explicit player-facing conclusion
+ok 21 - Day100 ending is immutable and has an explicit player-facing conclusion
+  ---
+  duration_ms: 20.042597
+  type: 'test'
+  ...
+# Subtest: playable snapshots compact audit-only history while retaining current NPC state and causal totals
+ok 22 - playable snapshots compact audit-only history while retaining current NPC state and causal totals
+  ---
+  duration_ms: 35.568467
+  type: 'test'
+  ...
+# Subtest: a compacted playable journey reaches Day100 within the persisted snapshot budget
+ok 23 - a compacted playable journey reaches Day100 within the persisted snapshot budget
+  ---
+  duration_ms: 16293.226738
+  type: 'test'
+  ...
+# Subtest: two-handed weapons and off-hand equipment cannot remain equipped together
+ok 24 - two-handed weapons and off-hand equipment cannot remain equipped together
+  ---
+  duration_ms: 7.508041
+  type: 'test'
+  ...
+# Subtest: a defeated regional journey persists its battle and elapsed time instead of rolling back
+ok 25 - a defeated regional journey persists its battle and elapsed time instead of rolling back
+  ---
+  duration_ms: 879.540745
+  type: 'test'
+  ...
+# Subtest: interactive real-game battle capture is deterministic and leaves runtime tuning unchanged
+ok 26 - interactive real-game battle capture is deterministic and leaves runtime tuning unchanged
+  ---
+  duration_ms: 291.860177
+  type: 'test'
+  ...
+# Subtest: truncated battle playback carries a deterministic checkpoint across the omitted middle
+ok 27 - truncated battle playback carries a deterministic checkpoint across the omitted middle
+  ---
+  duration_ms: 2.898528
+  type: 'test'
+  ...
+# Subtest: the authored opening reveals Eda, movement and T01 in that order and survives replay
+ok 28 - the authored opening reveals Eda, movement and T01 in that order and survives replay
+  ---
+  duration_ms: 685.664904
+  type: 'test'
+  ...
+# Subtest: an unknown NPC becomes identified only after the visible self-introduction is acknowledged
+ok 29 - an unknown NPC becomes identified only after the visible self-introduction is acknowledged
+  ---
+  duration_ms: 311.264741
+  type: 'test'
+  ...
+# Subtest: an introduction token cannot identify an NPC after that NPC leaves the scene
+ok 30 - an introduction token cannot identify an NPC after that NPC leaves the scene
+  ---
+  duration_ms: 9.923688
+  type: 'test'
+  ...
+# Subtest: replay verification rejects journal outcome, sequence and revision tampering
+ok 31 - replay verification rejects journal outcome, sequence and revision tampering
+  ---
+  duration_ms: 192.455682
+  type: 'test'
+  ...
+# Subtest: opening cast remains present when guided square arrival crosses an NPC life tick
+ok 32 - opening cast remains present when guided square arrival crosses an NPC life tick
+  ---
+  duration_ms: 21.549884
+  type: 'test'
+  ...
+# Subtest: an opening inquiry crossing Finn's rescue deadline becomes aftermath instead of stale progress
+ok 33 - an opening inquiry crossing Finn's rescue deadline becomes aftermath instead of stale progress
+  ---
+  duration_ms: 22.349932
+  type: 'test'
+  ...
+# Subtest: opening branches preserve help, paid work and leaving as replayable choices
+ok 34 - opening branches preserve help, paid work and leaving as replayable choices
+  ---
+  duration_ms: 1531.981243
+  type: 'test'
+  ...
+# Subtest: a late arrival sees T01 aftermath instead of stale Day1 inquiry and can finish onboarding
+ok 35 - a late arrival sees T01 aftermath instead of stale Day1 inquiry and can finish onboarding
+  ---
+  duration_ms: 338.902554
+  type: 'test'
+  ...
+# Subtest: public game view does not expose omniscient population or trouble aggregates
+ok 36 - public game view does not expose omniscient population or trouble aggregates
+  ---
+  duration_ms: 18.405201
+  type: 'test'
+  ...
+# Subtest: public NPC data never exposes authored occupations, goals, or private beliefs
+ok 37 - public NPC data never exposes authored occupations, goals, or private beliefs
+  ---
+  duration_ms: 0.272762
+  type: 'test'
+  ...
+# Subtest: rate-limit identity ignores client-prepended XFF values behind the local proxy
+ok 38 - rate-limit identity ignores client-prepended XFF values behind the local proxy
+  ---
+  duration_ms: 0.403053
+  type: 'test'
+  ...
+# Subtest: anonymous save capacity is bounded per owner
+ok 39 - anonymous save capacity is bounded per owner
+  ---
+  duration_ms: 43.277274
+  type: 'test'
+  ...
+# Subtest: unknown save versions are preserved while expired saves alone are pruned
+ok 40 - unknown save versions are preserved while expired saves alone are pruned
+  ---
+  duration_ms: 75.798232
+  type: 'test'
+  ...
+# Subtest: a v8 save migrates to v9 without losing its world state or future replay
+ok 41 - a v8 save migrates to v9 without losing its world state or future replay
+  ---
+  duration_ms: 453.218444
+  type: 'test'
+  ...
+# Subtest: first-read migration and a concurrent command cannot overwrite one another
+ok 42 - first-read migration and a concurrent command cannot overwrite one another
+  ---
+  duration_ms: 446.892776
+  type: 'test'
+  ...
+# Subtest: a save with an obsolete schema is rejected before hydration
+ok 43 - a save with an obsolete schema is rejected before hydration
+  ---
+  duration_ms: 18.682089
+  type: 'test'
+  ...
+# Subtest: shop stock is facility-scoped and a duplicate command cannot advance a save twice
+ok 44 - shop stock is facility-scoped and a duplicate command cannot advance a save twice
+  ---
+  duration_ms: 339.708801
+  type: 'test'
+  ...
+# Subtest: a conversational job pays the quoted wage without granting player levels
+ok 45 - a conversational job pays the quoted wage without granting player levels
+  ---
+  duration_ms: 283.083721
+  type: 'test'
+  ...
+# Subtest: a public living-world rumor becomes a mission only after the player hears it locally
+ok 46 - a public living-world rumor becomes a mission only after the player hears it locally
+  ---
+  duration_ms: 402.782456
+  type: 'test'
+  ...
+# Subtest: conversation reveals only beliefs held by the NPC who is actually speaking
+ok 47 - conversation reveals only beliefs held by the NPC who is actually speaking
+  ---
+  duration_ms: 12.483129
+  type: 'test'
+  ...
+# Subtest: mission clue choices require a co-present NPC with an authoritative public belief
+ok 48 - mission clue choices require a co-present NPC with an authoritative public belief
+  ---
+  duration_ms: 12.359416
+  type: 'test'
+  ...
+# Subtest: all nineteen special-mission hearings are bound to a present authoritative NPC
+ok 49 - all nineteen special-mission hearings are bound to a present authoritative NPC
+  ---
+  duration_ms: 161.880475
+  type: 'test'
+  ...
+# Subtest: mission clue progress commits only after the assigned NPC actually discloses the fact
+ok 50 - mission clue progress commits only after the assigned NPC actually discloses the fact
+  ---
+  duration_ms: 31.853962
+  type: 'test'
+  ...
+# Subtest: dialogue topics select a relevant fact, preserve its provenance, and never learn on farewell
+ok 51 - dialogue topics select a relevant fact, preserve its provenance, and never learn on farewell
+  ---
+  duration_ms: 13.452696
+  type: 'test'
+  ...
+# Subtest: an NPC with a hidden hostile role cannot disclose even a non-secret belief
+ok 52 - an NPC with a hidden hostile role cannot disclose even a non-secret belief
+  ---
+  duration_ms: 9.29386
+  type: 'test'
+  ...
+# Subtest: a conversation grants no fact when its NPC leaves before the reply is presented
+ok 53 - a conversation grants no fact when its NPC leaves before the reply is presented
+  ---
+  duration_ms: 10.424956
+  type: 'test'
+  ...
+# Subtest: local observation cannot reveal a facility rumor before its propagation time
+ok 54 - local observation cannot reveal a facility rumor before its propagation time
+  ---
+  duration_ms: 7.874089
+  type: 'test'
+  ...
+# Subtest: manual skill acquisition spends SP once and survives deterministic replay
+ok 55 - manual skill acquisition spends SP once and survives deterministic replay
+  ---
+  duration_ms: 563.030731
+  type: 'test'
+  ...
+# Subtest: the skill primer explains the risk but never blocks an underprepared player
+ok 56 - the skill primer explains the risk but never blocks an underprepared player
+  ---
+  duration_ms: 839.887198
+  type: 'test'
+  ...
+# Subtest: T01 exploration binds the displayed action and replaces all three choices after a concrete discovery
+ok 57 - T01 exploration binds the displayed action and replaces all three choices after a concrete discovery
+  ---
+  duration_ms: 449.817424
+  type: 'test'
+  ...
+# Subtest: T01 speaks through discovery, rescue, escort and reunion before completion
+ok 58 - T01 speaks through discovery, rescue, escort and reunion before completion
+  ---
+  duration_ms: 2239.735879
+  type: 'test'
+  ...
+# Subtest: playable profile input is ignored and tutorial acknowledgement is journaled without time passing
+ok 59 - playable profile input is ignored and tutorial acknowledgement is journaled without time passing
+  ---
+  duration_ms: 580.820132
+  type: 'test'
+  ...
+# Subtest: ordinary NPC conversation supports distinct multi-turn follow-ups until the player ends it
+ok 60 - ordinary NPC conversation supports distinct multi-turn follow-ups until the player ends it
+  ---
+  duration_ms: 775.326361
+  type: 'test'
+  ...
+# Subtest: the service replaces a Gemini reply that omits the fact recorded as learned
+ok 61 - the service replaces a Gemini reply that omits the fact recorded as learned
+  ---
+  duration_ms: 439.183051
+  type: 'test'
+  ...
+# Subtest: an unanswered dialogue follow-up expires instead of resurfacing hours later
+ok 62 - an unanswered dialogue follow-up expires instead of resurfacing hours later
+  ---
+  duration_ms: 333.075466
+  type: 'test'
+  ...
+# Subtest: the same content revision, seed and command sequence produce the same state hash
+ok 63 - the same content revision, seed and command sequence produce the same state hash
+  ---
+  duration_ms: 238.850072
+  type: 'test'
+  ...
+# [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  write to custom object with { processEnv: myObject }
+# Subtest: local narrative context excludes NPCs who are not present
+ok 64 - local narrative context excludes NPCs who are not present
+  ---
+  duration_ms: 3.334571
+  type: 'test'
+  ...
+# Subtest: Gemini 2.5 Flash reserves its output budget for complete narrative JSON
+ok 65 - Gemini 2.5 Flash reserves its output budget for complete narrative JSON
+  ---
+  duration_ms: 0.507629
+  type: 'test'
+  ...
+# Subtest: an action target cannot add an absent, missing, or remote NPC to local context
+ok 66 - an action target cannot add an absent, missing, or remote NPC to local context
+  ---
+  duration_ms: 0.380178
+  type: 'test'
+  ...
+# Subtest: choice ids exactly match authoritative allowed action candidates
+ok 67 - choice ids exactly match authoritative allowed action candidates
+  ---
+  duration_ms: 11.58891
+  type: 'test'
+  ...
+# Subtest: prompt states mission template policy and routine leave flag rule
+ok 68 - prompt states mission template policy and routine leave flag rule
+  ---
+  duration_ms: 2.211953
+  type: 'test'
+  ...
+# Subtest: npc_intent requires a local target and concrete intent before resolver validation
+ok 69 - npc_intent requires a local target and concrete intent before resolver validation
+  ---
+  duration_ms: 0.834707
+  type: 'test'
+  ...
+# Subtest: fallback normalizes punctuation and preserves one deterministic local NPC line
+ok 70 - fallback normalizes punctuation and preserves one deterministic local NPC line
+  ---
+  duration_ms: 0.57606
+  type: 'test'
+  ...
+# Subtest: conversation fallback directly answers the selected topic without repeating a system outcome
+ok 71 - conversation fallback directly answers the selected topic without repeating a system outcome
+  ---
+  duration_ms: 0.509461
+  type: 'test'
+  ...
+# Subtest: a learned fact must appear verbatim in the target reply and in deterministic fallback
+ok 72 - a learned fact must appear verbatim in the target reply and in deterministic fallback
+  ---
+  duration_ms: 1.134635
+  type: 'test'
+  ...
+# Subtest: invalid Gemini output is repaired and exact replay bypasses the provider
+ok 73 - invalid Gemini output is repaired and exact replay bypasses the provider
+  ---
+  duration_ms: 5.888395
+  type: 'test'
+  ...
+# Subtest: a transient Gemini timeout falls back once without poisoning replay cache
+ok 74 - a transient Gemini timeout falls back once without poisoning replay cache
+  ---
+  duration_ms: 1.486661
+  type: 'test'
+  ...
+# Subtest: Gemini simulation audits cached successes separately from retryable fallbacks
+ok 75 - Gemini simulation audits cached successes separately from retryable fallbacks
+  ---
+  duration_ms: 0.226448
+  type: 'test'
+  ...
+# Subtest: authoritative mutations and unknown missions are rejected as candidates
+ok 76 - authoritative mutations and unknown missions are rejected as candidates
+  ---
+  duration_ms: 0.774737
+  type: 'test'
+  ...
+# Subtest: cache replay recalculates proposal resolution and concurrent misses call provider once
+ok 77 - cache replay recalculates proposal resolution and concurrent misses call provider once
+  ---
+  duration_ms: 12.78692
+  type: 'test'
+  ...
+# Subtest: mission policy participates in the generation cache key
+ok 78 - mission policy participates in the generation cache key
+  ---
+  duration_ms: 1.299431
+  type: 'test'
+  ...
+# Subtest: GOAP execution reaches a facility and records the completed action
+ok 79 - GOAP execution reaches a facility and records the completed action
+  ---
+  duration_ms: 3.22714
+  type: 'test'
+  ...
+# Subtest: a resolved rumor cancels the old crisis plan before it starts
+ok 80 - a resolved rumor cancels the old crisis plan before it starts
+  ---
+  duration_ms: 0.809018
+  type: 'test'
+  ...
+# Subtest: tuned autonomous world remains deterministic and strictly valid
+ok 81 - tuned autonomous world remains deterministic and strictly valid
+  ---
+  duration_ms: 3924.316707
+  type: 'test'
+  ...
+# Subtest: world tuning rejects invalid probabilities and scales
+ok 82 - world tuning rejects invalid probabilities and scales
+  ---
+  duration_ms: 17.60384
+  type: 'test'
+  ...
+# Subtest: matched battle builds cover every encounter level and suite mode
+ok 83 - matched battle builds cover every encounter level and suite mode
+  ---
+  duration_ms: 1119.057641
+  type: 'test'
+  ...
+# Subtest: broken legacy public catalog is visible to the report instead of silently accepted
+ok 84 - broken legacy public catalog is visible to the report instead of silently accepted
+  ---
+  duration_ms: 10.840329
+  type: 'test'
+  ...
+# Subtest: all 110 NPCs retain a 400-tick causal history and eligible actors decide every tick
+ok 85 - all 110 NPCs retain a 400-tick causal history and eligible actors decide every tick
+  ---
+  duration_ms: 6.236574
+  type: 'test'
+  ...
+# Subtest: rumors spread after their source event and low-importance rumors are interest-selective
+ok 86 - rumors spread after their source event and low-importance rumors are interest-selective
+  ---
+  duration_ms: 56.282426
+  type: 'test'
+  ...
+# Subtest: acquired facts are recorded as causes of replanning and crisis behavior
+ok 87 - acquired facts are recorded as causes of replanning and crisis behavior
+  ---
+  duration_ms: 12.392287
+  type: 'test'
+  ...
+# Subtest: no-player mode cannot solve authored crises and T01 kills Finn
+ok 88 - no-player mode cannot solve authored crises and T01 kills Finn
+  ---
+  duration_ms: 5328.904162
+  type: 'test'
+  ...
+# Subtest: source non-intervention fates change life state at deterministic anchors
+ok 89 - source non-intervention fates change life state at deterministic anchors
+  ---
+  duration_ms: 0.411315
+  type: 'test'
+  ...
+# Subtest: stateless per-NPC randomness is invariant to source NPC row order
+ok 90 - stateless per-NPC randomness is invariant to source NPC row order
+  ---
+  duration_ms: 3198.221613
+  type: 'test'
+  ...
+# Subtest: narrative audit rows match the 36-column TRPG sheet contract
+ok 91 - narrative audit rows match the 36-column TRPG sheet contract
+  ---
+  duration_ms: 1.306281
+  type: 'test'
+  ...
+# Subtest: sheet sync appends only unsynced JSONL records
+ok 92 - sheet sync appends only unsynced JSONL records
+  ---
+  duration_ms: 10.482625
+  type: 'test'
+  ...
+# Subtest: NPC response plan changes after player resolution
+ok 93 - NPC response plan changes after player resolution
+  ---
+  duration_ms: 2.364471
+  type: 'test'
+  ...
+# Subtest: playable audit crosses guided movement and an interactive battle without weakening free-choice checks
+ok 94 - playable audit crosses guided movement and an interactive battle without weakening free-choice checks
+  ---
+  duration_ms: 587.031435
+  type: 'test'
+  ...
+# Subtest: movement menu includes local facilities and reachable regions while choices remain separate
+ok 95 - movement menu includes local facilities and reachable regions while choices remain separate
+  ---
+  duration_ms: 16.145943
+  type: 'test'
+  ...
+# Subtest: local movement advances time and records the visited facility
+ok 96 - local movement advances time and records the visited facility
+  ---
+  duration_ms: 20.13379
+  type: 'test'
+  ...
+# Subtest: movement across a crisis deadline fails its still-open special mission immediately
+ok 97 - movement across a crisis deadline fails its still-open special mission immediately
+  ---
+  duration_ms: 22.675745
+  type: 'test'
+  ...
+# Subtest: mission catalog has staged permanent chains and one special mission per trouble
+ok 98 - mission catalog has staged permanent chains and one special mission per trouble
+  ---
+  duration_ms: 6.179469
+  type: 'test'
+  ...
+# Subtest: early and late trouble action paths can resolve through player actions
+ok 99 - early and late trouble action paths can resolve through player actions
+  ---
+  duration_ms: 193.721626
+  type: 'test'
+  ...
+# Subtest: journey never learns a skill while its acquisition conditions are false
+ok 100 - journey never learns a skill while its acquisition conditions are false
+  ---
+  duration_ms: 933.147051
+  type: 'test'
+  ...
+# Subtest: experience curve matches the design formula
+ok 101 - experience curve matches the design formula
+  ---
+  duration_ms: 1.468824
+  type: 'test'
+  ...
+# Subtest: player starts at the wheat field on Day1 at 10:00
+ok 102 - player starts at the wheat field on Day1 at 10:00
+  ---
+  duration_ms: 12.588681
+  type: 'test'
+  ...
+# Subtest: three choices are separate from a complete reachable travel menu
+ok 103 - three choices are separate from a complete reachable travel menu
+  ---
+  duration_ms: 14.033919
+  type: 'test'
+  ...
+# Subtest: ordinary shop purchase advances no time
+ok 104 - ordinary shop purchase advances no time
+  ---
+  duration_ms: 9.529262
+  type: 'test'
+  ...
+# Subtest: shop inventory and transactions are restricted to the current seller facility
+ok 105 - shop inventory and transactions are restricted to the current seller facility
+  ---
+  duration_ms: 5.732962
+  type: 'test'
+  ...
+# Subtest: an initially listed item still requires its unlock condition
+ok 106 - an initially listed item still requires its unlock condition
+  ---
+  duration_ms: 8.3163
+  type: 'test'
+  ...
+# Subtest: manual skill mode exposes reasons and never auto-learns after resolving an action
+ok 107 - manual skill mode exposes reasons and never auto-learns after resolving an action
+  ---
+  duration_ms: 40.881805
+  type: 'test'
+  ...
+# Subtest: authoritative present NPC ids prevent conversation with absent NPCs
+ok 108 - authoritative present NPC ids prevent conversation with absent NPCs
+  ---
+  duration_ms: 3.148602
+  type: 'test'
+  ...
+# Subtest: T01 actions crossing the Day2 rescue deadline persist failure without progress or resurrection
+ok 109 - T01 actions crossing the Day2 rescue deadline persist failure without progress or resurrection
+  ---
+  duration_ms: 9.014203
+  type: 'test'
+  ...
+# Subtest: T01 search offers three concrete, non-repeating approaches at each investigation stage
+ok 110 - T01 search offers three concrete, non-repeating approaches at each investigation stage
+  ---
+  duration_ms: 17.778932
+  type: 'test'
+  ...
+# Subtest: T01 search discoveries are deterministic and two selected approaches advance to rescue
+ok 111 - T01 search discoveries are deterministic and two selected approaches advance to rescue
+  ---
+  duration_ms: 21.586098
+  type: 'test'
+  ...
+# Subtest: same seed and profile replay to the same world fingerprint
+ok 112 - same seed and profile replay to the same world fingerprint
+  ---
+  duration_ms: 482.764891
+  type: 'test'
+  ...
+# Subtest: story profile can interact with early trouble, missions, combat, and levels
+ok 113 - story profile can interact with early trouble, missions, combat, and levels
+  ---
+  duration_ms: 303.671738
+  type: 'test'
+  ...
+# Subtest: v3 permanent missions contain 12 chains and 48 sequential definitions
+ok 114 - v3 permanent missions contain 12 chains and 48 sequential definitions
+  ---
+  duration_ms: 2.951908
+  type: 'test'
+  ...
+# Subtest: v3 derived mission metrics combine economy, rumor and skill counters
+ok 115 - v3 derived mission metrics combine economy, rumor and skill counters
+  ---
+  duration_ms: 1.168145
+  type: 'test'
+  ...
+# Subtest: NPC intervention audit attributes related replans to player resolution
+ok 116 - NPC intervention audit attributes related replans to player resolution
+  ---
+  duration_ms: 1.7809
+  type: 'test'
+  ...
+# Subtest: generic predicate evaluator supports every required logical and leaf operator
+ok 117 - generic predicate evaluator supports every required logical and leaf operator
+  ---
+  duration_ms: 1.978504
+  type: 'test'
+  ...
+# Subtest: skill progression runs six reproducible Day1-100 profiles with bounded SP
+ok 118 - skill progression runs six reproducible Day1-100 profiles with bounded SP
+  ---
+  duration_ms: 7757.990316
+  type: 'test'
+  ...
+# Subtest: skill audit exposes missing grant supply without confusing it with prerequisite corruption
+ok 119 - skill audit exposes missing grant supply without confusing it with prerequisite corruption
+  ---
+  duration_ms: 2020.399461
+  type: 'test'
+  ...
+# Subtest: economy audit joins all product, equipment, stock and monster snapshots
+ok 120 - economy audit joins all product, equipment, stock and monster snapshots
+  ---
+  duration_ms: 25.277334
+  type: 'test'
+  ...
+# Subtest: economy diagnostics catch the zero-gold opening and legacy price conflict
+ok 121 - economy diagnostics catch the zero-gold opening and legacy price conflict
+  ---
+  duration_ms: 11.00425
+  type: 'test'
+  ...
+# Subtest: three spreadsheet snapshots contain every expected design row
+ok 122 - three spreadsheet snapshots contain every expected design row
+  ---
+  duration_ms: 1.709866
+  type: 'test'
+  ...
+# Subtest: hard foreign-key references are internally valid
+ok 123 - hard foreign-key references are internally valid
+  ---
+  duration_ms: 0.268106
+  type: 'test'
+  ...
+# Subtest: known source-contract gaps remain visible instead of being silently repaired
+ok 124 - known source-contract gaps remain visible instead of being silently repaired
+  ---
+  duration_ms: 0.432899
+  type: 'test'
+  ...
+# Subtest: green chroma key removes only the edge-connected background
+ok 125 - green chroma key removes only the edge-connected background
+  ---
+  duration_ms: 7.551796
+  type: 'test'
+  ...
+# Subtest: pink chroma key removes only the edge-connected background
+ok 126 - pink chroma key removes only the edge-connected background
+  ---
+  duration_ms: 1.618381
+  type: 'test'
+  ...
+# Subtest: Gemini image generation sends bounded references and falls back between models
+ok 127 - Gemini image generation sends bounded references and falls back between models
+  ---
+  duration_ms: 2.465803
+  type: 'test'
+  ...
+# Subtest: image generation rejects a claimed MIME type that does not match the bytes
+ok 128 - image generation rejects a claimed MIME type that does not match the bytes
+  ---
+  duration_ms: 0.903425
+  type: 'test'
+  ...
+# Subtest: native PNG decoding rejects oversized declared dimensions before inflation
+ok 129 - native PNG decoding rejects oversized declared dimensions before inflation
+  ---
+  duration_ms: 0.537544
+  type: 'test'
+  ...
+# Subtest: asset prompts use only supplied public visual fields
+ok 130 - asset prompts use only supplied public visual fields
+  ---
+  duration_ms: 1.562488
+  type: 'test'
+  ...
+# Subtest: runtime manifest merge accepts only generated asset URLs and path resolution rejects traversal
+ok 131 - runtime manifest merge accepts only generated asset URLs and path resolution rejects traversal
+  ---
+  duration_ms: 0.792771
+  type: 'test'
+  ...
+# Subtest: authoritative game views are the only source of first-encounter asset ids
+ok 132 - authoritative game views are the only source of first-encounter asset ids
+  ---
+  duration_ms: 0.481401
+  type: 'test'
+  ...
+# Subtest: runtime generation is deduplicated, serialized, persisted separately, and reused
+ok 133 - runtime generation is deduplicated, serialized, persisted separately, and reused
+  ---
+  duration_ms: 119.324826
+  type: 'test'
+  ...
+# Subtest: runtime generation failure is contained and enters retry backoff
+ok 134 - runtime generation failure is contained and enters retry backoff
+  ---
+  duration_ms: 33.272667
+  type: 'test'
+  ...
+# Subtest: the legacy manifest URL is served by the static/runtime merger
+ok 135 - the legacy manifest URL is served by the static/runtime merger
+  ---
+  duration_ms: 36.802196
+  type: 'test'
+  ...
+# Subtest: tutorial teaches movement once through the existing location control
+ok 136 - tutorial teaches movement once through the existing location control
+  ---
+  duration_ms: 1.087276
+  type: 'test'
+  ...
+# Subtest: opening characters speak from their own stakes instead of explaining the game
+ok 137 - opening characters speak from their own stakes instead of explaining the game
+  ---
+  duration_ms: 0.262998
+  type: 'test'
+  ...
+# Subtest: Gemini contract rejects game and UI vocabulary in narration and NPC speech
+ok 138 - Gemini contract rejects game and UI vocabulary in narration and NPC speech
+  ---
+  duration_ms: 0.165545
+  type: 'test'
+  ...
+# Subtest: P0 observer loads before the main TRPG module
+ok 139 - P0 observer loads before the main TRPG module
+  ---
+  duration_ms: 0.900139
+  type: 'test'
+  ...
+# Subtest: onboarding does not create a parallel movement or skill control
+ok 140 - onboarding does not create a parallel movement or skill control
+  ---
+  duration_ms: 0.628689
+  type: 'test'
+  ...
+# Subtest: mission notices are restrained and do not duplicate the mission tutorial
+ok 141 - mission notices are restrained and do not duplicate the mission tutorial
+  ---
+  duration_ms: 0.215509
+  type: 'test'
+  ...
+# Subtest: mobile battle commands remain fully reachable
+ok 142 - mobile battle commands remain fully reachable
+  ---
+  duration_ms: 0.188639
+  type: 'test'
+  ...
+# Subtest: play UI exposes one visual-novel surface and no legacy scrolling rails
+ok 143 - play UI exposes one visual-novel surface and no legacy scrolling rails
+  ---
+  duration_ms: 1.497101
+  type: 'test'
+  ...
+# Subtest: every direct app id reference exists in the HTML
+ok 144 - every direct app id reference exists in the HTML
+  ---
+  duration_ms: 1.412056
+  type: 'test'
+  ...
+# Subtest: dialogue and three-choice tray are mutually exclusive
+ok 145 - dialogue and three-choice tray are mutually exclusive
+  ---
+  duration_ms: 0.418368
+  type: 'test'
+  ...
+# Subtest: a visible choice sends both its slot id and authoritative action id
+ok 146 - a visible choice sends both its slot id and authoritative action id
+  ---
+  duration_ms: 0.276118
+  type: 'test'
+  ...
+# Subtest: an introduction is acknowledged only after its final visible segment
+ok 147 - an introduction is acknowledged only after its final visible segment
+  ---
+  duration_ms: 0.371148
+  type: 'test'
+  ...
+# Subtest: primary touch controls retain mobile-sized targets
+ok 148 - primary touch controls retain mobile-sized targets
+  ---
+  duration_ms: 0.346792
+  type: 'test'
+  ...
+# Subtest: keyboard focus survives dialogue, menus, battle, and transient outcomes
+ok 149 - keyboard focus survives dialogue, menus, battle, and transient outcomes
+  ---
+  duration_ms: 0.421582
+  type: 'test'
+  ...
+# Subtest: an empty or completed choice state still exposes a focusable action
+ok 150 - an empty or completed choice state still exposes a focusable action
+  ---
+  duration_ms: 0.287475
+  type: 'test'
+  ...
+# Subtest: screen-reader announcements have a single owner during story playback
+ok 151 - screen-reader announcements have a single owner during story playback
+  ---
+  duration_ms: 0.512337
+  type: 'test'
+  ...
+# Subtest: modal command errors remain inside the active dialog
+ok 152 - modal command errors remain inside the active dialog
+  ---
+  duration_ms: 0.511625
+  type: 'test'
+  ...
+# Subtest: visible choice text is not line-clamped
+ok 153 - visible choice text is not line-clamped
+  ---
+  duration_ms: 0.298541
+  type: 'test'
+  ...
+# Subtest: battle supports authoritative interactive commands and preserves completed playback
+ok 154 - battle supports authoritative interactive commands and preserves completed playback
+  ---
+  duration_ms: 0.850867
+  type: 'test'
+  ...
+# Subtest: first-encounter Gemini art refreshes from the persisted manifest without blocking play
+ok 155 - first-encounter Gemini art refreshes from the persisted manifest without blocking play
+  ---
+  duration_ms: 0.242519
+  type: 'test'
+  ...
+# Subtest: manifest portraits are real transparent cutouts
+ok 156 - manifest portraits are real transparent cutouts
+  ---
+  duration_ms: 84.502705
+  type: 'test'
+  ...
+# Subtest: all source facilities retain their canonical hub ownership
+ok 157 - all source facilities retain their canonical hub ownership
+  ---
+  duration_ms: 1.493025
+  type: 'test'
+  ...
+# Subtest: every NPC has a non-collapsed initial facility and valid movement scope
+ok 158 - every NPC has a non-collapsed initial facility and valid movement scope
+  ---
+  duration_ms: 0.486269
+  type: 'test'
+  ...
+# Subtest: only the two known stale facility references receive audited fallbacks
+ok 159 - only the two known stale facility references receive audited fallbacks
+  ---
+  duration_ms: 0.302237
+  type: 'test'
+  ...
+# Subtest: knowledge fields split into facts, interests, misconceptions and secrets without loss
+ok 160 - knowledge fields split into facts, interests, misconceptions and secrets without loss
+  ---
+  duration_ms: 0.299692
+  type: 'test'
+  ...
+# Subtest: fate hints retain narrative provenance and deterministic anchors
+ok 161 - fate hints retain narrative provenance and deterministic anchors
+  ---
+  duration_ms: 0.180226
+  type: 'test'
+  ...
+# Subtest: generic GOAP uses the cheapest deterministic Dijkstra/A* plan
+ok 162 - generic GOAP uses the cheapest deterministic Dijkstra/A* plan
+  ---
+  duration_ms: 3.676772
+  type: 'test'
+  ...
+# Subtest: GOAP reports an exhausted state space without fabricating an action
+ok 163 - GOAP reports an exhausted state space without fabricating an action
+  ---
+  duration_ms: 0.403997
+  type: 'test'
+  ...
+# Subtest: world snapshot normalizes every required entity and safe assumption
+ok 164 - world snapshot normalizes every required entity and safe assumption
+  ---
+  duration_ms: 0.713894
+  type: 'test'
+  ...
+# Subtest: all route costs are honored and conditional forest gates are explicit
+ok 165 - all route costs are honored and conditional forest gates are explicit
+  ---
+  duration_ms: 1.898494
+  type: 'test'
+  ...
+# Subtest: T15/T18/T19 hard gates distinguish active, critical and resolved prerequisites
+ok 166 - T15/T18/T19 hard gates distinguish active, critical and resolved prerequisites
+  ---
+  duration_ms: 0.374644
+  type: 'test'
+  ...
+# Subtest: Day1 through Day100 no-player run reaches a strict failed world with complete NPC traces
+ok 167 - Day1 through Day100 no-player run reaches a strict failed world with complete NPC traces
+  ---
+  duration_ms: 2.652218
+  type: 'test'
+  ...
+# Subtest: report compaction preserves all NPC ticks, movement coverage, replay metadata and T01 casualties
+ok 168 - report compaction preserves all NPC ticks, movement coverage, replay metadata and T01 casualties
+  ---
+  duration_ms: 373.888983
+  type: 'test'
+  ...
+# Subtest: event gates, chains and same-day timeline order are retained in the run
+ok 169 - event gates, chains and same-day timeline order are retained in the run
+  ---
+  duration_ms: 0.739733
+  type: 'test'
+  ...
+# Subtest: a formerly successful seed still follows the no-player T13 failure route
+ok 170 - a formerly successful seed still follows the no-player T13 failure route
+  ---
+  duration_ms: 1561.156589
+  type: 'test'
+  ...
+# Subtest: a seed reproduces the exact simulation and another seed changes the trace
+ok 171 - a seed reproduces the exact simulation and another seed changes the trace
+  ---
+  duration_ms: 3233.943563
+  type: 'test'
+  ...
+# Subtest: strict audit detects route-time corruption and terminal leakage
+ok 172 - strict audit detects route-time corruption and terminal leakage
+  ---
+  duration_ms: 479.350773
+  type: 'test'
+  ...
+1..172
+# tests 172
+# suites 0
+# pass 172
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 29932.245603

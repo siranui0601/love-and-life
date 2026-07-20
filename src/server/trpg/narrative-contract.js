@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.9";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.0-experiential";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",

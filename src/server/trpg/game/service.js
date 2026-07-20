@@ -252,6 +252,19 @@ function gameplayTuning() {
 export function applyGameplayCatalogOverrides(catalog) {
   const t01 = catalog.special.find((mission) => mission.id === "MSN-T01");
   if (!t01) return catalog;
+  if (!t01.steps.some((step) => step.id === "escort")) {
+    const decideIndex = t01.steps.findIndex((step) => step.id === "decide");
+    const escortStep = {
+      id: "escort",
+      type: "conversation",
+      targetLocation: "田園の村",
+      targetFacilityId: "LOC_FARM_EDGE",
+      required: 1,
+      label: "負傷したフィンに声をかけ、村の広場まで同行する",
+    };
+    if (decideIndex >= 0) t01.steps.splice(decideIndex, 0, escortStep);
+    else t01.steps.push(escortStep);
+  }
   for (const step of t01.steps) {
     if (step.id === "hear") step.targetFacilityId = "LOC_FARM_SQUARE";
     if (["search", "rescue", "escort"].includes(step.id)) step.targetFacilityId = "LOC_FARM_EDGE";
@@ -1247,17 +1260,34 @@ function choiceActions(runtime, data) {
     && !action.missionId
     && action.targetNpcId
     && missionConversationTargets.has(action.targetNpcId)));
+  const actionPriority = (action) => {
+    if (action.missionId) return 0;
+    if (action.type === "localInvestigate") return 1;
+    if (action.type === "conversation" && !action.workOffer) return 2;
+    const hasLearnedSkill = runtime.playerState.player.skills.size > 0;
+    if (action.workOffer) return hasLearnedSkill ? 4 : 3;
+    if (action.type === "seekBattle") return hasLearnedSkill ? 3 : 4;
+    return 5;
+  };
+  const prioritized = deduplicated
+    .map((action, index) => ({ action, index }))
+    .sort((left, right) => actionPriority(left.action) - actionPriority(right.action) || left.index - right.index)
+    .map((entry) => entry.action);
   const fillers = [
     { id: "TUTORIAL:PAUSE:OBSERVE", type: "observe", minutes: 45, label: "今いる場所の様子を、もう少し確かめる" },
     { id: "TUTORIAL:PAUSE:WAIT", type: "wait", minutes: 30, label: "物音と人の動きが変わるまで、少し待つ" },
     { id: "TUTORIAL:PAUSE:PLAN", type: "plan", minutes: 30, label: "知っている噂と目的を照らし合わせ、次の一手を決める" },
   ].map((action) => contextualLocalAction(action, runtime, data)).filter(Boolean);
+  const combined = [...prioritized, ...fillers]
+    .map((action, index) => ({ action, index }))
+    .sort((left, right) => actionPriority(left.action) - actionPriority(right.action) || left.index - right.index)
+    .map((entry) => entry.action);
   if (!runtime.tutorial || runtime.tutorial.stage === "free") {
-    const result = [...new Map([...deduplicated, ...fillers].map((action) => [action.id, action])).values()].slice(0, 3);
+    const result = [...new Map(combined.map((action) => [action.id, action])).values()].slice(0, 3);
     return withChoiceIds(result);
   }
-  const safe = deduplicated.filter((action) => !["seekBattle", "missionBattle", "investigate"].includes(action.type));
-  const result = [...new Map([...safe, ...fillers].map((action) => [action.id, action])).values()].slice(0, 3);
+  const safe = combined.filter((action) => !["seekBattle", "missionBattle", "investigate"].includes(action.type));
+  const result = [...new Map(safe.map((action) => [action.id, action])).values()].slice(0, 3);
   return withChoiceIds(result);
 }
 
@@ -1508,6 +1538,33 @@ function learnLocalLivingRumors(runtime, data, action, limit) {
     learned.push(id);
   }
   return learned;
+}
+
+function applyLocallyLearnedRumorsToMissionHearSteps(runtime, learnedRumorIds = []) {
+  if (!learnedRumorIds.length) return [];
+  const state = runtime.playerState;
+  const advanced = [];
+  for (const rumorId of learnedRumorIds) {
+    const rumor = state.rumorById?.[rumorId] ?? state.rumors?.find((entry) => entry.id === rumorId);
+    if (!rumor?.troubleId) continue;
+    const definition = [...state.catalog.special, ...state.catalog.permanent]
+      .find((entry) => entry.troubleId === rumor.troubleId);
+    const mission = definition ? state.missions?.[definition.id] : null;
+    const hear = definition?.steps?.find((step) => step.id === "hear");
+    if (!mission || !hear || !["active", "available", "in_progress"].includes(mission.status)) continue;
+    const required = Math.max(1, Number(hear.required ?? 1));
+    if (Number(mission.progress?.hear ?? 0) >= required) continue;
+    mission.progress.hear = required;
+    state.history.push({
+      type: "MISSION_HEAR_SATISFIED_BY_LOCAL_RUMOR",
+      minute: state.absoluteMinute,
+      missionId: definition.id,
+      troubleId: rumor.troubleId,
+      rumorId,
+    });
+    advanced.push(definition.id);
+  }
+  return advanced;
 }
 
 function learnOpeningT01Rumor(runtime) {
@@ -2382,6 +2439,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
       resolvedPlayerAction,
       ["observe", "localInvestigate"].includes(resolvedPlayerAction.type) ? 3 : 1,
     );
+    result.advancedMissionIds = applyLocallyLearnedRumorsToMissionHearSteps(runtime, result.learnedRumorIds);
   }
   if (deferredMissionConversation) {
     const learnedRumorIds = result.learnedRumorIds ?? [];

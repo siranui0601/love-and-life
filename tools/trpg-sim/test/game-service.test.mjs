@@ -581,15 +581,20 @@ test("the authored opening reveals Eda, movement and T01 in that order and survi
     NPC062: { name: "落ち着かない少年", identified: false },
   });
   assert.doesNotMatch(runner.save.choices.map((choice) => choice.label).join("\n"), /ガロ|ミラ|コビー/u);
-  await runner.run("CHOOSE", { choiceId: runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:INQUIRY:COBY").choiceId });
-  const cobyIntroduction = runner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === "NPC062");
-  assert.equal(cobyIntroduction?.speakerLabel, "落ち着かない少年");
-  assert.match(cobyIntroduction?.text ?? "", /コビー/u);
-  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC062")?.identified, false);
-  await acknowledgeVisibleIntroduction(runner);
-  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC062")?.identified, true);
+  assert.deepEqual(runner.save.choices.map((choice) => choice.actionId), [
+    "TUTORIAL:INQUIRY:MIRA",
+    "TUTORIAL:DEFER:WORK",
+    "TUTORIAL:DEFER:LEAVE",
+  ]);
+  await runner.run("CHOOSE", { choiceId: runner.save.choices.find((choice) => choice.actionId === "TUTORIAL:INQUIRY:MIRA").choiceId });
+  const miraIntroduction = runner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === "NPC002");
+  assert.equal(miraIntroduction?.speakerLabel, "取り乱した女性");
+  assert.match(miraIntroduction?.text ?? "", /ミラ/u);
   assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC002")?.identified, false);
+  await acknowledgeVisibleIntroduction(runner);
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC002")?.identified, true);
   assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC003")?.identified, false);
+  assert.equal(runner.save.scene.presentNpcs.find((npc) => npc.id === "NPC062")?.identified, false);
   assert.equal(runner.save.tutorial.id, "mission-log");
   assert.deepEqual(runner.save.tutorial.unlocked, {
     choices: true,
@@ -726,9 +731,9 @@ test("opening cast remains present when guided square arrival crosses an NPC lif
   assert.ok(presentIds.size > 0);
   assert.ok(view.choices.every((choice) => !choice.targetNpcId || presentIds.has(choice.targetNpcId)));
   assert.deepEqual(view.choices.map((choice) => choice.actionId), [
-    "TUTORIAL:INQUIRY:GARO",
     "TUTORIAL:INQUIRY:MIRA",
-    "TUTORIAL:INQUIRY:COBY",
+    "TUTORIAL:DEFER:WORK",
+    "TUTORIAL:DEFER:LEAVE",
   ]);
 });
 
@@ -762,48 +767,49 @@ test("an opening inquiry crossing Finn's rescue deadline becomes aftermath inste
   assert.equal(runtime.livingWorld.npcStates.NPC001.lifeStatus, "dead");
 });
 
-test("each opening inquiry records only its authoritative clue and survives replay", async () => {
-  const branches = [
-    { inquiry: "TUTORIAL:INQUIRY:GARO", factId: "T01_SEARCH_BOUNDARY", evidence: 1, npcId: "NPC003", anonymous: "年配の村人", name: "ガロ" },
-    { inquiry: "TUTORIAL:INQUIRY:MIRA", factId: "T01_FINN_MAP", evidence: 1, npcId: "NPC002", anonymous: "取り乱した女性", name: "ミラ" },
-    { inquiry: "TUTORIAL:INQUIRY:COBY", factId: "T01_LOOKOUT_CLUE", evidence: 2, npcId: "NPC062", anonymous: "落ち着かない少年", name: "コビー" },
-  ];
-  const authoritativeOutcomes = [];
+test("opening branches preserve help, paid work and leaving as replayable choices", async () => {
+  const helpService = service();
+  const helpRunner = commandRunner(helpService.game, await helpService.game.create(owner, {
+    playerName: "help-branch",
+    seed: "opening-help-branch",
+  }));
+  await completeOpening(helpRunner, { inquiry: "TUTORIAL:INQUIRY:MIRA" });
+  const introductionBeat = helpRunner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === "NPC002");
+  assert.equal(introductionBeat?.speakerLabel, "取り乱した女性");
+  assert.match(introductionBeat?.text ?? "", /ミラ/u);
+  const helpRecord = await helpService.store.get(helpRunner.save.id);
+  const helpRuntime = deserializeRuntime(helpRecord.runtimeSnapshot, helpService.game.data);
+  assert.equal(helpRuntime.tutorial.inquirySource, "TUTORIAL:INQUIRY:MIRA");
+  assert.deepEqual([...helpRuntime.tutorial.openingFacts], ["T01_FINN_MAP"]);
+  assert.equal(helpRuntime.playerState.player.evidenceByTrouble.T01, 1);
+  const helpMission = helpRunner.save.missions.find((entry) => entry.id === "MSN-T01");
+  assert.equal(helpMission.optional, false);
+  assert.deepEqual(helpMission.knownClues.map((clue) => clue.id), ["T01_FINN_MAP"]);
+  assert.equal((await helpService.game.verifyReplay(owner, helpRunner.save.id)).ok, true);
 
-  for (const branch of branches) {
-    const { game, store } = service();
-    const runner = commandRunner(game, await game.create(owner, {
-      playerName: "clue-tester",
-      seed: `opening-clue-${branch.factId}`,
-    }));
-    await completeOpening(runner, { inquiry: branch.inquiry });
+  const workService = service();
+  const workRunner = commandRunner(workService.game, await workService.game.create(owner, {
+    playerName: "work-branch",
+    seed: "opening-work-branch",
+  }));
+  await completeOpening(workRunner, { inquiry: "TUTORIAL:DEFER:WORK" });
+  assert.equal(workRunner.save.missions.find((entry) => entry.id === "MSN-T01")?.optional, true);
+  assert.deepEqual(workRunner.save.choices.map((choice) => choice.actionId.split(":")[0]), [
+    "WORK_CONFIRM",
+    "WORK_CLARIFY",
+    "WORK_DECLINE",
+  ]);
+  assert.equal((await workService.game.verifyReplay(owner, workRunner.save.id)).ok, true);
 
-    const introductionBeat = runner.save.scene.beats.find((beat) => beat.kind === "npc" && beat.actorId === branch.npcId);
-    assert.equal(introductionBeat?.speakerLabel, branch.anonymous);
-    assert.match(introductionBeat?.text ?? "", new RegExp(branch.name, "u"));
-
-    const record = await store.get(runner.save.id);
-    const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
-    assert.equal(runtime.tutorial.inquirySource, branch.inquiry);
-    assert.deepEqual([...runtime.tutorial.openingFacts], [branch.factId]);
-    assert.equal(runtime.playerState.player.evidenceByTrouble.T01, branch.evidence);
-
-    const mission = runner.save.missions.find((entry) => entry.id === "MSN-T01");
-    assert.ok(mission, "hearing an opening clue must reveal T01 to the player");
-    assert.deepEqual(mission.knownClues.map((clue) => clue.id), [branch.factId]);
-    assert.equal(typeof mission.knownClues[0].text, "string");
-    assert.ok(mission.knownClues[0].text.trim().length > 0);
-
-    authoritativeOutcomes.push(JSON.stringify({
-      inquirySource: runtime.tutorial.inquirySource,
-      facts: [...runtime.tutorial.openingFacts],
-      knownClues: mission.knownClues,
-      evidence: runtime.playerState.player.evidenceByTrouble.T01,
-    }));
-    assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
-  }
-
-  assert.equal(new Set(authoritativeOutcomes).size, branches.length);
+  const leaveService = service();
+  const leaveRunner = commandRunner(leaveService.game, await leaveService.game.create(owner, {
+    playerName: "leave-branch",
+    seed: "opening-leave-branch",
+  }));
+  await completeOpening(leaveRunner, { inquiry: "TUTORIAL:DEFER:LEAVE" });
+  assert.equal(leaveRunner.save.missions.find((entry) => entry.id === "MSN-T01")?.optional, true);
+  assert.ok(leaveRunner.save.movement.some((move) => move.destinationFacilityId === "LOC_CAP_LOWER_INN"));
+  assert.equal((await leaveService.game.verifyReplay(owner, leaveRunner.save.id)).ok, true);
 });
 
 test("a late arrival sees T01 aftermath instead of stale Day1 inquiry and can finish onboarding", async () => {
@@ -1069,17 +1075,20 @@ test("shop stock is facility-scoped and a duplicate command cannot advance a sav
   }), (error) => error.code === "command_id_conflict" && error.status === 409);
 });
 
-test("world-originated rumor spread does not grant player levels during an ordinary job", async () => {
+test("a conversational job pays the quoted wage without granting player levels", async () => {
   const { game } = service();
   const initial = await game.create(owner, { playerName: "働き手", profileId: "story", seed: "balance-contract" });
   const runner = commandRunner(game, initial);
-  await completeOpening(runner);
-  const work = runner.save.choices.find((choice) => choice.type === "work");
-  assert.ok(work);
-  await runner.run("CHOOSE", { choiceId: work.choiceId });
+  await completeOpening(runner, { inquiry: "TUTORIAL:DEFER:WORK" });
+  const offer = runner.save.choices.find((choice) => choice.actionId.startsWith("WORK_CONFIRM:"));
+  assert.ok(offer);
+  const quotedWage = Number(offer.actionId.split(":").at(-1));
+  const goldBefore = runner.save.player.gold;
+  await runner.run("CHOOSE", { choiceId: offer.choiceId });
   assert.equal(runner.save.player.level, 1);
   assert.equal(runner.save.player.exp, 0);
-  assert.ok(runner.save.player.gold > 0);
+  assert.equal(runner.save.player.gold - goldBefore, quotedWage);
+  assert.match(runner.save.scene.lastOutcome.summary, new RegExp(`${quotedWage}G`, "u"));
   assert.notEqual(runner.save.missions.find((mission) => mission.id === "MSN-RUMOR-005")?.status, "completed");
 });
 
@@ -1547,7 +1556,7 @@ test("manual skill acquisition spends SP once and survives deterministic replay"
   assert.ok(verification.checks.every((entry) => entry.beforeMatches && entry.actionMatches && entry.afterMatches));
 });
 
-test("acknowledging the skill primer without learning a skill never unlocks deliberate battle choices", async () => {
+test("the skill primer explains the risk but never blocks an underprepared player", async () => {
   const { game } = service();
   const runner = commandRunner(game, await game.create(owner, { playerName: "unprepared", seed: "skill-ack-is-not-training" }));
   await completeOpening(runner);
@@ -1556,25 +1565,20 @@ test("acknowledging the skill primer without learning a skill never unlocks deli
   assert.ok(edge);
   await runner.run("MOVE", { moveId: edge.moveId });
   assert.equal(runner.save.tutorial.id, "skills");
+  assert.match(runner.save.tutorial.body, /取得せず進むこともできる/u);
   assert.equal(runner.save.skills.learned.length, 0);
   await runner.run("TUTORIAL_ACK", { tutorialId: "skills" });
 
-  const assertNoDeliberateBattle = () => {
-    assert.equal(runner.save.skills.learned.length, 0);
-    assert.equal(runner.save.choices.some((choice) => choice.danger), false);
-    assert.equal(runner.save.choices.some((choice) => ["missionBattle", "seekBattle"].includes(choice.type)), false);
-  };
-  assertNoDeliberateBattle();
-
-  // Investigation may uncover the encounter, but the resolver must not offer a deliberate fight until a skill is learned.
   for (let searchCount = 0; searchCount < 2; searchCount += 1) {
     const search = runner.save.choices.find((choice) => choice.missionId === "MSN-T01"
       && choice.stepId === "search"
       && choice.type === "investigate");
-    assert.ok(search, "the non-combat investigation path must remain available");
+    assert.ok(search, "the investigation path remains available without learning a skill");
     await runner.run("CHOOSE", { choiceId: search.choiceId, actionId: search.actionId });
-    assertNoDeliberateBattle();
   }
+  assert.equal(runner.save.skills.learned.length, 0);
+  assert.equal(runner.save.choices.some((choice) => choice.danger), true);
+  assert.equal(runner.save.choices.some((choice) => choice.type === "missionBattle"), true);
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
 });
 
@@ -1631,7 +1635,7 @@ test("T01 exploration binds the displayed action and replaces all three choices 
   assert.equal(searchChoices().length, 0);
 });
 
-test("T01 can be played from inquiry through battle and rescue without ever speaking as missing Finn", async () => {
+test("T01 speaks through discovery, rescue, escort and reunion before completion", async () => {
   const narrativeInputs = [];
   const narrator = {
     async generate(input) {
@@ -1656,7 +1660,7 @@ test("T01 can be played from inquiry through battle and rescue without ever spea
   const chooseAction = async (actionId) => {
     const choice = runner.save.choices.find((entry) => entry.actionId === actionId);
     assert.ok(choice, `${actionId} must be one of the three current choices`);
-    assert.equal(choice.targetNpcId === "NPC001", false);
+    if (actionId !== "ACTION:MSN-T01:escort") assert.equal(choice.targetNpcId === "NPC001", false);
     return runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
   };
   const chooseSearch = async (approachId) => {
@@ -1709,13 +1713,24 @@ test("T01 can be played from inquiry through battle and rescue without ever spea
   assert.equal(battleJournal.outcome.battle.playback, undefined, "replay journal stays compatible with v4 outcomes");
   assert.equal(battleNarrativeInput, undefined, "the decisive battle tap must not wait for live narrative generation");
   assert.equal(battleRecord.presentation.source, "deterministic_fallback");
-  assert.match(battleRecord.presentation.narrative, /フィン.*息はある/u);
+  assert.match(battleRecord.presentation.narrative, /斜面の下.*少年/u);
+  assert.ok(battleRecord.presentation.speeches.some((speech) => speech.actorId === "NPC001"
+    && /僕、フィン.*村の広場.*一緒に戻って/u.test(speech.text)));
   assert.equal(runner.save.tutorial?.complete, true, "the combat coach does not return after a battle was experienced");
+  assert.equal(runner.save.missions.find((entry) => entry.id === "MSN-T01")?.currentStep?.id, "escort");
+  assert.equal(runner.save.guidance.targetFacilityId, "LOC_FARM_EDGE");
+  assert.equal(runner.save.guidance.actionPanel, null);
+  await chooseAction("ACTION:MSN-T01:escort");
+  assert.ok(runner.save.scene.beats.some((beat) => beat.actorId === "NPC001"
+    && /足を痛めて.*村の広場.*一緒に戻って/u.test(beat.text)));
   assert.equal(runner.save.guidance.title, "村の広場へ：少年を連れ帰る");
   assert.equal(runner.save.guidance.actionPanel, "movement");
-  assert.match(runner.save.guidance.detail, /冒険家志望の少年失踪/u);
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
   await moveTo("LOC_FARM_SQUARE");
+  const reunionText = runner.save.scene.beats.map((beat) => beat.text).join("\n");
+  assert.match(reunionText, /母さん……ただいま/u);
+  assert.match(reunionText, /よかった.*ありがとうございます/u);
+  assert.match(reunionText, /村を預かる者として礼を言う/u);
   await chooseAction("ACTION:MSN-T01:decide");
 
   const mission = runner.save.missions.find((entry) => entry.id === "MSN-T01");
