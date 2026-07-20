@@ -1,0 +1,344 @@
+--- a/package.json
++++ b/package.json
+@@ -15,7 +15,8 @@
+     "trpg:assets": "node tools/trpg-assets/generate.mjs --missing-only",
+     "trpg:narrative-live": "TRPG_NARRATIVE_AUDIT_FILE=runtime-data/TRPG/narrative-live-audit.jsonl TRPG_NARRATIVE_AUDIT_CURSOR_FILE=runtime-data/TRPG/narrative-live-sheet-cursor.json node tools/trpg-sim/cli-narrative-live.mjs",
+     "trpg:narrative-sync": "TRPG_NARRATIVE_AUDIT_FILE=runtime-data/TRPG/narrative-live-audit.jsonl TRPG_NARRATIVE_AUDIT_CURSOR_FILE=runtime-data/TRPG/narrative-live-sheet-cursor.json node tools/trpg-sim/cli-narrative-sync.mjs",
+-    "trpg:preview": "node tools/trpg-sim/static-server.mjs"
++    "trpg:preview": "node tools/trpg-sim/static-server.mjs",
++    "trpg:experiential:v6": "node tools/trpg-sim/cli-experiential-player-v6.mjs"
+   },
+   "dependencies": {
+     "@google-cloud/local-auth": "^2.1.0",
+--- a/public/TRPG/app.js
++++ b/public/TRPG/app.js
+@@ -85,6 +85,14 @@
+ let assetRefreshToken = 0;
+ const busyDisabledState = new Map();
+ 
++function syncBattleVisualViewport() {
++  const viewport = window.visualViewport;
++  const height = Math.max(320, Math.round(viewport?.height ?? window.innerHeight));
++  const offsetTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0));
++  document.documentElement.style.setProperty("--battle-visual-height", `${height}px`);
++  document.documentElement.style.setProperty("--battle-visual-offset-top", `${offsetTop}px`);
++}
++
+ function escapeText(value, fallback = "—") {
+   const text = value == null ? "" : String(value).trim();
+   return text || fallback;
+@@ -710,7 +718,7 @@
+   "trouble-aftermath": "誰か一人に、起きたことを聞こう",
+   "mission-log": "右上の巻物で、目的と期限を確認",
+   shop: "メニューから店を開いてみよう",
+-  skills: "右上の能力から、技を一つ覚える",
++  skills: "右上の能力を開く → おすすめ技の必要SPを確認 → 取得。今は取得せず、捜索を中断する選択もできる",
+   combat: "赤い選択肢は戦闘。準備できたら進もう",
+ });
+ 
+@@ -1053,12 +1061,28 @@
+ 
+ const BATTLE_DISABLED_REASONS = Object.freeze({
+   cooldown: "再使用まで待つ必要がある",
+-  uses_exhausted: "この戦闘ではもう使えない",
+-  conditions_not_met: "今は発動条件を満たしていない",
+-  insufficient_resource: "MP・HPが足りない",
+-  no_target: "対象がいない",
+-  not_active: "戦闘中には使えない",
++  uses_exhausted: "この戦闘では使用回数を使い切った",
++  conditions_not_met: "発動条件を満たしていない",
++  insufficient_resource: "消費するHP・MPが足りない",
++  no_target: "効果を向けられる対象がいない",
++  not_active: "戦闘中に使う技ではない",
+ });
++
++function battleDisabledDetail(command = {}) {
++  if (command.disabledDetail) return escapeText(command.disabledDetail, "今は使えない");
++  const reason = BATTLE_DISABLED_REASONS[command.disabledReason] ?? "今は使えない";
++  if (command.disabledReason === "insufficient_resource") {
++    const requirements = [
++      number(command.mpCost) > 0 ? `必要MP ${number(command.mpCost)}／現在 ${number(command.currentMp)}` : "",
++      number(command.hpCost) > 0 ? `必要HP ${number(command.hpCost) + 1}以上／現在 ${number(command.currentHp)}` : "",
++    ].filter(Boolean).join("、");
++    return requirements ? `${reason}（${requirements}）` : reason;
++  }
++  if (command.disabledReason === "cooldown" && number(command.cooldownRemaining) > 0) {
++    return `${reason}（あと${number(command.cooldownRemaining)}ラウンド）`;
++  }
++  return reason;
++}
+ 
+ function battleCommandCost(command) {
+   return [number(command.mpCost) > 0 ? `MP ${number(command.mpCost)}` : "", number(command.hpCost) > 0 ? `HP ${number(command.hpCost)}` : ""]
+@@ -1075,7 +1099,7 @@
+   main.textContent = label;
+   button.append(main);
+   const subtext = detail || (command?.available === false
+-    ? BATTLE_DISABLED_REASONS[command.disabledReason] ?? "今は使えない"
++    ? battleDisabledDetail(command)
+     : battleCommandCost(command ?? {}));
+   if (subtext) {
+     const small = document.createElement("small");
+@@ -1083,6 +1107,10 @@
+     button.append(small);
+   }
+   button.setAttribute("aria-label", [label, subtext].filter(Boolean).join("。"));
++  if (disabled && subtext) {
++    button.title = subtext;
++    button.dataset.disabledExplanation = subtext;
++  }
+   button.addEventListener("click", onClick);
+   return button;
+ }
+@@ -1134,7 +1162,7 @@
+     commands.filter((command) => command.kind === "skill").forEach((command) => {
+       const cost = battleCommandCost(command);
+       const detail = command.available === false
+-        ? BATTLE_DISABLED_REASONS[command.disabledReason] ?? "今は使えない"
++        ? battleDisabledDetail(command)
+         : [cost, escapeText(command.description, "")].filter(Boolean).join("・");
+       ui.battleCommandMenu.append(createBattleCommandButton(escapeText(command.name, "スキル"), {
+         command,
+@@ -1210,6 +1238,7 @@
+ 
+ function renderInteractiveBattle(save) {
+   const battle = save.battle;
++  syncBattleVisualViewport();
+   if (!battle || battle.status !== "active") return;
+   const isNewBattle = interactiveBattleState?.id !== battle.id;
+   if (isNewBattle) interactiveBattleState = { id: battle.id, mode: "root", selectedActionId: null };
+@@ -1247,6 +1276,7 @@
+ }
+ 
+ function openBattlePlayback(save, battle, key, { resultOnly = false } = {}) {
++  syncBattleVisualViewport();
+   const playback = battle?.playback;
+   if (!playback || !list(playback.combatants).length) return;
+   const prepared = battlePages(battle);
+@@ -1436,7 +1466,11 @@
+       "conditions_not_met",
+       "insufficient_resource",
+     ].includes(code)) {
+-      showError(errorTarget, "その戦闘行動は選べません。別のコマンドを選んでください。");
++      const detail = escapeText(error.data?.details?.summary ?? error.data?.details?.reasonDetail, "");
++      const reason = BATTLE_DISABLED_REASONS[code] ?? "その戦闘行動は選べません";
++      showError(errorTarget, detail && detail !== code
++        ? `${reason}。${detail}`
++        : `${reason}。別のコマンドを選ぶか、条件を整えてください。`);
+     } else {
+       showError(errorTarget, error.message, () => sendCommand(type, payload, commandId));
+     }
+@@ -1664,7 +1698,11 @@
+   ui.dialogBody.append(status);
+   const intro = document.createElement("p");
+   intro.className = "skill-intro";
+-  intro.textContent = "SPはスキルポイントです。必要SPを消費すると、新しい能力を取得できます。";
++  const skillTutorialActive = currentSave?.tutorial?.id === "skills" && list(currentSave?.skills?.learned).length === 0;
++  intro.textContent = skillTutorialActive
++    ? "この先では魔物と遭遇することがあります。①下の『今の装備におすすめ』を見る ②必要SPを確認する ③『取得』を押す。取得せず進むこともできますが、通常攻撃だけで戦うことになります。"
++    : "SPはスキルポイントです。必要SPを消費すると、新しい能力を取得できます。取得条件と、現在の装備で使えるかを確認してください。";
++  if (skillTutorialActive) intro.classList.add("is-tutorial-primer");
+   ui.dialogBody.append(intro);
+   const statGrid = document.createElement("div");
+   statGrid.className = "stat-grid";
+@@ -1749,7 +1787,9 @@
+     .map((clue) => escapeText(clue?.text, ""))
+     .filter(Boolean)
+     .map((text) => `手掛かり：${text}`);
+-  [facilityName ? `目的施設：${facilityName}` : targetLocation ? `地域：${targetLocation}` : "", deadline, ...knownClues].filter(Boolean).forEach((label) => {
++  const discoveryReason = escapeText(mission?.discoveryReason, "");
++  const optionalLabel = mission?.optional === true ? "任意：関わらずに別の土地や仕事を選べる" : "";
++  [discoveryReason ? `分かったきっかけ：${discoveryReason}` : "", optionalLabel, facilityName ? `目的施設：${facilityName}` : targetLocation ? `地域：${targetLocation}` : "", deadline, ...knownClues].filter(Boolean).forEach((label) => {
+     const item = document.createElement("li");
+     item.textContent = label;
+     meta.append(item);
+@@ -2054,7 +2094,13 @@
+     skipBattle();
+   }
+ });
+-window.addEventListener("resize", positionTutorialCoach);
++window.addEventListener("resize", () => {
++  positionTutorialCoach();
++  syncBattleVisualViewport();
++});
++window.visualViewport?.addEventListener("resize", syncBattleVisualViewport);
++window.visualViewport?.addEventListener("scroll", syncBattleVisualViewport);
++syncBattleVisualViewport();
+ 
+ document.addEventListener("keydown", (event) => {
+   if (busy || ui.game.hidden || ui.dialog.open || ui.battleDialog.open || event.altKey || event.ctrlKey || event.metaKey) return;
+--- a/public/TRPG/p0-ux.css
++++ b/public/TRPG/p0-ux.css
+@@ -86,12 +86,10 @@
+   }
+ 
+   .battle-dialog .battle-command-panel:not([hidden]) {
+-    display: block;
+-    max-height: min(42dvh, 240px) !important;
+-    overflow-y: auto !important;
+-    overscroll-behavior: contain;
+-    scrollbar-gutter: stable;
+-    -webkit-overflow-scrolling: touch;
++    display: grid;
++    min-height: 0;
++    max-height: none !important;
++    overflow: hidden !important;
+   }
+ 
+   .battle-dialog .battle-command-menu[data-mode="root"] {
+@@ -100,9 +98,11 @@
+   }
+ 
+   .battle-dialog .battle-command-menu[data-mode="skills"] {
+-    max-height: min(32dvh, 210px);
++    min-height: 0;
++    max-height: none;
+     overflow-y: auto;
+     overscroll-behavior: contain;
++    -webkit-overflow-scrolling: touch;
+   }
+ 
+   .battle-dialog .battle-command-button {
+@@ -117,12 +117,9 @@
+ }
+ 
+ @media (max-height: 620px) and (max-width: 720px) {
+-  .battle-dialog .battle-command-panel:not([hidden]) {
+-    max-height: min(38dvh, 190px) !important;
+-  }
+-
+-  .battle-dialog .battle-command-menu[data-mode="skills"] {
+-    max-height: min(28dvh, 155px);
++  .battle-dialog[data-mode="interactive"] .battle-message {
++    min-height: min(210px, 52%);
++    max-height: 54%;
+   }
+ }
+ 
+--- a/public/TRPG/p0-ux.js
++++ b/public/TRPG/p0-ux.js
+@@ -72,6 +72,9 @@
+       stepLabel,
+       progress: Number.isFinite(progress) ? progress : null,
+       required: Number.isFinite(required) ? required : null,
++      discoveryReason: text(raw?.discoveryReason),
++      deadlineLabel: text(raw?.deadlineLabel),
++      optional: raw?.optional === true,
+     };
+   }
+ 
+@@ -181,9 +184,9 @@
+         const missionTutorialAlreadyVisible = save?.tutorial?.id === "mission-log";
+         if (ACTIVE_MISSION_STATUSES.has(next.status) && !missionTutorialAlreadyVisible) {
+           enqueueToast({
+-            kicker: "依頼発生",
++            kicker: next.optional ? "困り事を知った" : "依頼を知った",
+             title: next.title,
+-            detail: next.stepLabel || "巻物に新しい依頼が記された。",
++            detail: [next.discoveryReason, next.deadlineLabel, next.stepLabel ? `次：${next.stepLabel}` : ""].filter(Boolean).join("　") || "巻物に新しい出来事が記された。",
+             tone: "start",
+             dedupeKey: `mission-start:${id}:${next.status}`,
+           });
+@@ -194,9 +197,9 @@
+       if (!ACTIVE_MISSION_STATUSES.has(previous.status) && ACTIVE_MISSION_STATUSES.has(next.status)) {
+         if (save?.tutorial?.id !== "mission-log") {
+           enqueueToast({
+-            kicker: "依頼発生",
++            kicker: next.optional ? "困り事を知った" : "依頼を知った",
+             title: next.title,
+-            detail: next.stepLabel || "巻物に新しい依頼が記された。",
++            detail: [next.discoveryReason, next.deadlineLabel, next.stepLabel ? `次：${next.stepLabel}` : ""].filter(Boolean).join("　") || "巻物に新しい出来事が記された。",
+             tone: "start",
+             dedupeKey: `mission-start:${id}:${next.status}`,
+           });
+@@ -248,27 +251,19 @@
+     runtime.missions = nextMissions;
+   }
+ 
+-  function skillTutorialRequiresChoicePause(save) {
+-    return save?.tutorial?.id === "skills" && learnedSkillCount(save) === 0;
+-  }
+-
+   function syncContextualTutorialGuard() {
+     runtime.syncQueued = false;
+-    const pauseChoices = skillTutorialRequiresChoicePause(runtime.save);
++    const skillLessonVisible = runtime.save?.tutorial?.id === "skills" && learnedSkillCount(runtime.save) === 0;
+     const tray = document.getElementById("decisionTray");
+-    tray?.classList.toggle("is-context-tutorial-paused", pauseChoices);
+-
+-    document.querySelectorAll("#choiceRegion .choice-button").forEach((button) => {
++    tray?.classList.toggle("is-context-tutorial-visible", skillLessonVisible);
++
++    // The lesson highlights the existing ability control, but it never disables
++    // story choices. Players may proceed underprepared and accept the risk.
++    document.querySelectorAll("#choiceRegion .choice-button[data-p0-tutorial-locked]").forEach((button) => {
+       if (!(button instanceof HTMLButtonElement)) return;
+-      if (pauseChoices && !button.disabled) {
+-        button.dataset.p0TutorialLocked = "true";
+-        button.disabled = true;
+-        button.setAttribute("aria-disabled", "true");
+-      } else if (!pauseChoices && button.dataset.p0TutorialLocked === "true") {
+-        button.disabled = false;
+-        button.removeAttribute("aria-disabled");
+-        delete button.dataset.p0TutorialLocked;
+-      }
++      button.disabled = false;
++      button.removeAttribute("aria-disabled");
++      delete button.dataset.p0TutorialLocked;
+     });
+   }
+ 
+--- a/public/TRPG/style.css
++++ b/public/TRPG/style.css
+@@ -735,11 +735,13 @@
+ .tutorial-emphasis { outline: 3px solid #ffd984 !important; outline-offset: 3px; animation: tutorial-pulse 1.45s ease-in-out infinite; }
+ 
+ .battle-dialog {
++  position: fixed;
+   width: 100vw;
+   max-width: none;
+-  height: 100dvh;
+-  max-height: none;
++  height: var(--battle-visual-height, 100dvh);
++  max-height: var(--battle-visual-height, 100dvh);
+   margin: 0;
++  inset: var(--battle-visual-offset-top, 0px) 0 auto;
+   padding: 0;
+   overflow: hidden;
+   border: 0;
+@@ -948,12 +950,30 @@
+   .battle-message p { min-height: 3em; }
+   .battle-controls { grid-template-columns: 1fr; }
+   .battle-controls button { width: 100%; }
+-  .battle-dialog[data-mode="interactive"] .battle-enemies { bottom: 49%; }
+-  .battle-dialog[data-mode="interactive"] .battle-status { bottom: calc(max(8px, env(safe-area-inset-bottom)) + 218px); }
+-  .battle-dialog[data-mode="interactive"] .battle-message { height: 202px; max-height: 202px; min-height: 202px; grid-template-columns: 1fr; gap: 6px; overflow: hidden; padding-bottom: calc(11px + env(safe-area-inset-bottom)); }
+-  .battle-dialog[data-mode="interactive"] .battle-message > #battleMessage { min-height: 0; font-size: .88rem; line-height: 1.45; }
+-  .battle-command-panel { min-width: 0; max-height: 118px; }
++  .battle-dialog[data-mode="interactive"] .battle-enemies { bottom: min(54%, 360px); }
++  .battle-dialog[data-mode="interactive"] .battle-status { bottom: min(48%, 306px); }
++  .battle-dialog[data-mode="interactive"] .battle-message {
++    height: auto;
++    max-height: min(48%, 360px);
++    min-height: min(238px, 44%);
++    grid-template-columns: 1fr;
++    grid-template-rows: auto minmax(0, 1fr);
++    gap: 8px;
++    overflow: hidden;
++    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
++  }
++  .battle-dialog[data-mode="interactive"] .battle-message > #battleMessage {
++    min-height: 0;
++    max-height: 4.4em;
++    overflow-y: auto;
++    font-size: .88rem;
++    line-height: 1.45;
++  }
++  .battle-command-panel { min-width: 0; min-height: 0; max-height: none; overflow: hidden; }
++  .battle-command-menu { min-height: 0; padding-bottom: 2px; }
+   .battle-command-button { min-height: 48px; padding-block: 6px; }
++  .battle-command-button small { white-space: normal; }
++  .skill-intro.is-tutorial-primer { border-left: 4px solid var(--gold); background: rgba(233,189,104,.1); }
+ }
+ 
+ @media (max-width: 360px) {
