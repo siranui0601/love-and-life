@@ -44,3 +44,5 @@ jobs:
             tools/trpg-sim/reports/experiential-v6-*-narrative-audit.jsonl
           if-no-files-found: warn
           retention-days: 14
+
+# Manual rerun marker after repository secrets were configured.
