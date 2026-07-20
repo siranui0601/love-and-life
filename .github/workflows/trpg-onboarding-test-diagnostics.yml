@@ -35,7 +35,14 @@ jobs:
           {
             echo "exit_code=$status"
             echo
-            tail -n 420 /tmp/trpg-test.log
+            echo "--- failing subtests ---"
+            grep -nE '^not ok ' /tmp/trpg-test.log || true
+            echo
+            echo "--- assertion locations and messages ---"
+            grep -nE 'AssertionError|ERR_ASSERTION|TestContext\.<anonymous>|error:|operator:' /tmp/trpg-test.log || true
+            echo
+            echo "--- summary ---"
+            grep -E '^# (tests|pass|fail|cancelled|skipped|duration_ms)' /tmp/trpg-test.log || true
           } > tools/trpg-sim/test-diagnostics.log
           exit 0
       - name: Commit diagnostics
@@ -43,5 +50,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add tools/trpg-sim/test-diagnostics.log
-          git commit -m "chore(trpg): capture failing test diagnostics" || exit 0
+          git commit -m "chore(trpg): summarize failing test diagnostics" || exit 0
           git push origin HEAD:chatgpt/trpg-onboarding-immersion-redesign
