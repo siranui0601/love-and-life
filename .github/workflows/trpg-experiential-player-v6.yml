@@ -13,10 +13,87 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  finalize-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-experiential-simulation-v6
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply reviewed experiential source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          patches=(
+            tools/trpg-finalize-v6-service.patch
+            tools/trpg-finalize-v6-tests-a.patch
+            tools/trpg-finalize-v6-tests-b.patch
+            tools/trpg-finalize-v6-test-work.patch
+            tools/trpg-finalize-v6-test-skill.patch
+            tools/trpg-finalize-v6-tests-d.patch
+            tools/trpg-finalize-v6-wage.patch
+          )
+
+          if [ -f "${patches[0]}" ]; then
+            rm -f src/server/trpg/game/service.js.orig
+            for patch_file in "${patches[@]}"; do
+              git apply --check "$patch_file"
+              git apply "$patch_file"
+            done
+
+            python - <<'PY'
+          from pathlib import Path
+
+          contract = Path("src/server/trpg/narrative-contract.js")
+          source = contract.read_text()
+          old = 'export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.9";'
+          new = 'export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.0-experiential";'
+          if old not in source:
+              raise SystemExit("old narrative prompt version was not found")
+          contract.write_text(source.replace(old, new, 1))
+
+          ux_test = Path("tools/trpg-sim/test/trpg-p0-ux-contract.test.mjs")
+          source = ux_test.read_text()
+          old = '  assert.match(uxStyle, /max-height: min\\(42dvh, 240px\\) !important/u);\n  assert.match(uxStyle, /battle-command-menu\\[data-mode="root"\\]/u);'
+          new = '  assert.match(uxStyle, /max-height: none !important/u);\n  assert.match(uxStyle, /battle-command-menu\\[data-mode="skills"\\][\\s\\S]*overflow-y: auto/u);\n  assert.match(uxStyle, /battle-command-menu\\[data-mode="root"\\]/u);'
+          if old not in source:
+              raise SystemExit("old mobile battle contract was not found")
+          ux_test.write_text(source.replace(old, new, 1))
+          PY
+
+            rm -f \
+              "${patches[@]}" \
+              tools/trpg-v6-followup.patch \
+              src/server/trpg/game/service.js.orig \
+              .github/workflows/trpg-apply-v6-patches.yml
+          fi
+      - name: Run finalized regression tests
+        run: npm run trpg:test
+      - name: Commit finalized source
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "Source is already finalized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(trpg): finalize experiential player simulation v6"
+          git push origin HEAD:chatgpt/trpg-experiential-simulation-v6
+
   experiential:
+    needs: finalize-source
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -25,51 +102,9 @@ jobs:
       TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare experiential mission contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-
-          service = Path("src/server/trpg/game/service.js")
-          source = service.read_text()
-          before = '''export function applyGameplayCatalogOverrides(catalog) {
-            const t01 = catalog.special.find((mission) => mission.id === "MSN-T01");
-            if (!t01) return catalog;
-            for (const step of t01.steps) {
-          '''
-          after = '''export function applyGameplayCatalogOverrides(catalog) {
-            const t01 = catalog.special.find((mission) => mission.id === "MSN-T01");
-            if (!t01) return catalog;
-            if (!t01.steps.some((step) => step.id === "escort")) {
-              const decideIndex = t01.steps.findIndex((step) => step.id === "decide");
-              const escortStep = {
-                id: "escort",
-                type: "conversation",
-                targetLocation: "田園の村",
-                targetFacilityId: "LOC_FARM_EDGE",
-                required: 1,
-                label: "負傷したフィンに声をかけ、村の広場まで同行する",
-              };
-              if (decideIndex >= 0) t01.steps.splice(decideIndex, 0, escortStep);
-              else t01.steps.push(escortStep);
-            }
-            for (const step of t01.steps) {
-          '''
-          if before not in source:
-              raise SystemExit("T01 catalog insertion point was not found")
-          service.write_text(source.replace(before, after, 1))
-
-          contract = Path("src/server/trpg/narrative-contract.js")
-          source = contract.read_text()
-          old = 'export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.9";'
-          new = 'export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.0-experiential";'
-          if old not in source:
-              raise SystemExit("narrative prompt version insertion point was not found")
-          contract.write_text(source.replace(old, new, 1))
-          PY
-          rm -f src/server/trpg/game/service.js.orig
+        with:
+          ref: chatgpt/trpg-experiential-simulation-v6
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: 22
