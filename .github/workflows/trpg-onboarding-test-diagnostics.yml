@@ -1,0 +1,47 @@
+name: Capture TRPG onboarding test diagnostics
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/trpg-onboarding-test-diagnostics.yml
+      - src/server/trpg/**
+      - public/TRPG/**
+      - tools/trpg-sim/test/**
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'chatgpt/trpg-onboarding-immersion-redesign'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-onboarding-immersion-redesign
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Capture test output
+        run: |
+          set +e
+          npm run test:trpg > /tmp/trpg-test.log 2>&1
+          status=$?
+          {
+            echo "exit_code=$status"
+            echo
+            tail -n 320 /tmp/trpg-test.log
+          } > tools/trpg-sim/test-diagnostics.log
+          exit 0
+      - name: Commit diagnostics
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/trpg-sim/test-diagnostics.log
+          git commit -m "chore(trpg): capture failing test diagnostics" || exit 0
+          git push origin HEAD:chatgpt/trpg-onboarding-immersion-redesign
