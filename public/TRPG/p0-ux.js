@@ -19,6 +19,7 @@
 
   const runtime = {
     save: null,
+    saveIdentity: "",
     missions: new Map(),
     baselineReady: false,
     syncQueued: false,
@@ -48,6 +49,10 @@
       if (found) return found;
     }
     return null;
+  }
+
+  function saveIdentity(save) {
+    return text(save?.id ?? save?.saveId ?? save?.meta?.saveId);
   }
 
   function flattenMissions(value, depth = 0) {
@@ -132,9 +137,12 @@
     return document.getElementById("missionToastRegion");
   }
 
+  function clickElement(element) {
+    if (element && typeof element.click === "function") element.click();
+  }
+
   function openMissionPanel() {
-    const button = document.querySelector('[data-open-panel="missions"]');
-    if (button instanceof HTMLButtonElement) button.click();
+    clickElement(document.querySelector('[data-open-panel="missions"]'));
   }
 
   function drainToastQueue() {
@@ -147,17 +155,13 @@
     element.type = "button";
     element.className = `mission-lifecycle-toast is-${text(toast.tone, "info")}`;
     element.innerHTML = "<span class=\"mission-toast-kicker\"></span><strong></strong><span class=\"mission-toast-detail\"></span>";
-    element.querySelector(".mission-toast-kicker").textContent = text(toast.kicker, "MISSION");
-    element.querySelector("strong").textContent = text(toast.title, "ミッションが更新されました");
+    const kicker = element.querySelector(".mission-toast-kicker");
+    const title = element.querySelector("strong");
     const detail = element.querySelector(".mission-toast-detail");
+    kicker.textContent = text(toast.kicker, "MISSION");
+    title.textContent = text(toast.title, "ミッションが更新されました");
     detail.textContent = text(toast.detail, "ミッション一覧で内容を確認できます。");
-    element.setAttribute("aria-label", `${element.querySelector(".mission-toast-kicker").textContent}。${element.querySelector("strong").textContent}。${detail.textContent}`);
-    element.addEventListener("click", () => {
-      dismiss();
-      openMissionPanel();
-    });
-    region.append(element);
-    requestAnimationFrame(() => element.classList.add("is-visible"));
+    element.setAttribute("aria-label", `${kicker.textContent}。${title.textContent}。${detail.textContent}`);
 
     let dismissed = false;
     const dismiss = () => {
@@ -170,6 +174,13 @@
         drainToastQueue();
       }, 220);
     };
+
+    element.addEventListener("click", () => {
+      dismiss();
+      openMissionPanel();
+    });
+    region.append(element);
+    requestAnimationFrame(() => element.classList.add("is-visible"));
     window.setTimeout(dismiss, Number(toast.durationMs ?? 5_800));
   }
 
@@ -311,8 +322,7 @@
     skillButton.textContent = "スキルを取得して捜索を続ける";
     skillButton.hidden = true;
     skillButton.addEventListener("click", () => {
-      const button = document.querySelector('[data-open-panel="skills"]');
-      if (button instanceof HTMLButtonElement) button.click();
+      clickElement(document.querySelector('[data-open-panel="skills"]'));
     });
 
     const movementButton = document.createElement("button");
@@ -322,8 +332,7 @@
     movementButton.textContent = "移動する";
     movementButton.hidden = true;
     movementButton.addEventListener("click", () => {
-      const button = document.getElementById("locationButton");
-      if (button instanceof HTMLButtonElement) button.click();
+      clickElement(document.getElementById("locationButton"));
     });
 
     container.append(notice, skillButton, movementButton);
@@ -364,8 +373,8 @@
 
     const gameScreen = document.getElementById("gameScreen");
     const battleDialog = document.getElementById("battleDialog");
-    const gameVisible = gameScreen && !gameScreen.hidden;
-    const battleOpen = battleDialog instanceof HTMLDialogElement && battleDialog.open;
+    const gameVisible = Boolean(gameScreen && !gameScreen.hidden);
+    const battleOpen = Boolean(battleDialog?.open);
     const skillRequired = gameVisible && !battleOpen && skillPrimerRequired(save);
     const movementVisible = gameVisible && !battleOpen && movementIsUnlocked(save);
     const movementRecommended = movementVisible && guidanceRequestsMovement(save);
@@ -398,13 +407,31 @@
     window.requestAnimationFrame(syncProgressionActions);
   }
 
+  function resetForDifferentSave(nextIdentity) {
+    runtime.save = null;
+    runtime.saveIdentity = nextIdentity;
+    runtime.missions = new Map();
+    runtime.baselineReady = false;
+    runtime.toastQueue.length = 0;
+    runtime.toastActive = false;
+    toastRegion()?.replaceChildren();
+  }
+
   function acceptSave(save) {
     if (!save || typeof save !== "object") return;
+    const nextIdentity = saveIdentity(save);
+    if (runtime.save && runtime.saveIdentity && nextIdentity && runtime.saveIdentity !== nextIdentity) {
+      resetForDifferentSave(nextIdentity);
+    }
+
+    const hadPreviousSave = Boolean(runtime.save);
     const previousSkillCount = learnedSkillCount(runtime.save);
     const nextSkillCount = learnedSkillCount(save);
     compareMissionLifecycle(storyMissions(save));
     runtime.save = save;
-    if (previousSkillCount === 0 && nextSkillCount > 0) {
+    runtime.saveIdentity = nextIdentity || runtime.saveIdentity;
+
+    if (hadPreviousSave && previousSkillCount === 0 && nextSkillCount > 0) {
       enqueueToast({
         kicker: "戦闘準備完了",
         title: "新しいスキルを取得した",
@@ -423,8 +450,8 @@
 
   function requestUrl(input) {
     if (typeof input === "string") return input;
-    if (input instanceof URL) return input.href;
-    if (input instanceof Request) return input.url;
+    if (typeof URL !== "undefined" && input instanceof URL) return input.href;
+    if (typeof Request !== "undefined" && input instanceof Request) return input.url;
     return "";
   }
 
