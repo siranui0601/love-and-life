@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.8";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.9";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",
@@ -46,6 +46,12 @@ const FORBIDDEN_PROPOSAL_KEYS = new Set([
   "teleport",
   "worldflags",
 ]);
+
+const DIEGETIC_META_PATTERN = /(?:ミッション|クエスト|選択肢|3択|三択|ボタン|タップ|クリック|画面|メニュー|フラグ|プレイヤー|ゲーム|チュートリアル|レベル|ステータス|システム|resolver|Gemini|(?:^|[^A-Za-z])(?:UI|SP|HP|MP)(?:[^A-Za-z]|$)|ログ(?:を|へ|で|に|が|は|一覧|画面))/iu;
+
+function containsDiegeticMetaLanguage(value) {
+  return DIEGETIC_META_PATTERN.test(String(value ?? ""));
+}
 
 export const GEMINI_NARRATIVE_RESPONSE_SCHEMA = Object.freeze({
   type: "OBJECT",
@@ -406,6 +412,7 @@ export function validateNarrativeOutput(value, context) {
   if (!plainObject(value)) return { ok: false, errors: ["response is not an object"] };
   const narrative = boundedText(value.narrative, 1400);
   if (!narrative) errors.push("narrative is empty");
+  if (containsDiegeticMetaLanguage(narrative)) errors.push("narrative contains non-diegetic game or UI language");
   const choices = Array.isArray(value.choices) ? value.choices : [];
   if (choices.length !== 3) errors.push(`choices must contain exactly 3 entries, got ${choices.length}`);
   choices.forEach((choice, index) => validateChoice(choice, index, localNpcIds, errors));
@@ -438,6 +445,7 @@ export function validateNarrativeOutput(value, context) {
       errors.push(`speeches[${index}] actor is not present`);
     }
     if (!boundedText(speech?.text, 500)) errors.push(`speeches[${index}].text is empty`);
+    if (containsDiegeticMetaLanguage(speech?.text)) errors.push(`speeches[${index}].text contains non-diegetic game or UI language`);
   });
   if (context.action.type === "conversation" && context.action.targetNpcId) {
     const directReplies = speeches.filter((speech) => String(speech?.actorId) === context.action.targetNpcId);
@@ -519,7 +527,7 @@ function safeFallbackSpeeches(context) {
   const verification = "私の話だけで決めず、現場か最初に見た人へ確かめてほしい。聞いた相手と時刻も覚えておくと、古い噂と今の事実を分けられる。";
   const detail = {
     active_mission: mission
-      ? `「${mission.title}」なら、今は「${mission.currentStep || "手掛かりを集める"}」を先に進めるべきだ。期限と行き先を確かめてから動いてくれ。`
+      ? `この件なら、今は「${mission.currentStep || "手掛かりを集める"}」を先に進めるべきだ。期限と行き先を確かめてから動いてくれ。`
       : `今すぐ任務として頼める話は持っていない。掲示や人だかりが出た時は、事情と期限を聞いてから動くといい。`,
     route_to_lead: mission
       ? `「${mission.currentStep || mission.title}」へ向かうなら、${place}を出る前に目印と危険な分かれ道を確かめてくれ。明るいうちに着ける時間を選ぶ方がいい。`
@@ -553,7 +561,7 @@ function safeFallbackSpeeches(context) {
 function fallbackNarrativeForAction(context, npc, place, normalizedOutcome) {
   if (npc && ["conversation", "talk"].includes(context.action.type)) {
     return {
-      active_mission: `${npc.name}は任務の期限と手掛かりを思い返し、次に急ぐべき行動を整理した。`,
+      active_mission: `${npc.name}はこの件の期限と手掛かりを思い返し、次に急ぐべき行動を整理した。`,
       route_to_lead: `${npc.name}は${place}から先の道を思い浮かべ、目印と危険な分かれ道を順に説明した。`,
       local_concern: `${npc.name}は周囲を見回し、ここで今いちばん気に掛けている問題を一つ挙げた。`,
       local_change: `${npc.name}は普段の様子と見比べながら、最近気づいた変化を具体的に話した。`,

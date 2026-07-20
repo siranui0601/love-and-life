@@ -27,7 +27,7 @@ export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v9";
 const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
-const TUTORIAL_VERSION = "trpg-progressive-onboarding-v4";
+const TUTORIAL_VERSION = "trpg-progressive-onboarding-v5";
 
 const PUBLIC_FACILITY_COPY = Object.freeze({
   LOC_FARM_FIELD: { type: "農地", description: "風に揺れる麦畑。畑仕事の様子と、村へ続く道を確かめられる。" },
@@ -96,7 +96,7 @@ const OPENING_CLUES = Object.freeze({
 
 const OPENING_AFTERMATH_FACT = Object.freeze({
   id: "T01_FAILED_BEFORE_PLAYER_INTERVENTION",
-  text: "捜索が間に合わず、フィンは帰らなかった。世界の危機は、旅人を待たずに結末へ進む。",
+  text: "捜索は間に合わず、フィンは帰らなかった。村外れへ向かった者にも重傷者が出た。",
 });
 
 const PROFILE_BY_ID = new Map(journey.PLAYER_PROFILES.map((profile) => [profile.id, profile]));
@@ -2395,8 +2395,8 @@ function tutorialView(runtime, data) {
   if (tutorial.stage === "movement") return {
     ...base,
     id: "first-movement",
-    title: "エダについて村へ行こう",
-    body: "上の現在地をタップし、「村の広場」へ。",
+    title: "村の広場へ向かおう",
+    body: "画面上部の現在地を開き、「村の広場」を選ぶ。",
     progressLabel: "導入 4 / 5",
     actionLabel: "移動先を見る",
     actionPanel: "movement",
@@ -2412,21 +2412,19 @@ function tutorialView(runtime, data) {
   };
   if (tutorial.stage === "movement_aftermath") return {
     ...base,
-    id: "world-keeps-moving",
-    title: "村の広場へ急ごう",
-    body: "世界は待っていない。上の現在地から広場へ。",
-    progressLabel: "導入 5 / 5",
-    actionLabel: "移動先を見る",
-    actionPanel: "movement",
-    emphasisTarget: "movement",
+    id: null,
+    title: null,
+    body: null,
+    progressLabel: null,
+    emphasisTarget: null,
   };
   if (tutorial.stage === "aftermath_intro") return {
     ...base,
-    id: "trouble-aftermath",
-    title: "捜索の結末を聞こう",
-    body: "広場に残った一人を選び、起きたことを聞く。",
-    progressLabel: "導入 5 / 5",
-    emphasisTarget: "choices",
+    id: null,
+    title: null,
+    body: null,
+    progressLabel: null,
+    emphasisTarget: null,
   };
 
   const acknowledged = tutorial.acknowledged;
@@ -2435,39 +2433,24 @@ function tutorialView(runtime, data) {
   if (t01 && !acknowledged.has("mission-log")) return {
     ...base,
     id: "mission-log",
-    title: "ミッション発見：フィンを捜せ",
-    body: "助けに行く道筋が記録された。開いて次の目的を確認。",
+    title: "依頼が記録された",
+    body: "右上の巻物を開くと、目的と期限をいつでも確認できる。",
     progressLabel: "旅の案内",
     actionLabel: "ミッションを確認",
     actionPanel: "missions",
     acknowledgeable: true,
     emphasisTarget: "missions",
   };
-  const shopAvailable = data.battleData.inventory.some((entry) => entry.location === runtime.playerState.player.location
-    && entry.sellerId === runtime.playerState.player.facilityId);
-  if (shopAvailable && !acknowledged.has("shop")) return {
-    ...base,
-    id: "shop",
-    title: "店では、いつでも売買できる",
-    body: "3択を使わず、必要な品を買う・持ち物を売る。",
-    progressLabel: "旅の案内",
-    actionLabel: "店を見る",
-    actionPanel: "shop",
-    acknowledgeable: true,
-    emphasisTarget: "shop",
-  };
   const atFirstSearchArea = runtime.playerState.player.facilityId === "LOC_FARM_EDGE";
   if (atFirstSearchArea && runtime.playerState.player.skills.size === 0) return {
     ...base,
     id: "skills",
-    title: acknowledged.has("skills") ? "使えるスキルを一つ取得しよう" : "危険へ進む前に、技を覚えよう",
-    body: acknowledged.has("skills")
-      ? "「今の装備におすすめ」から一つ選ぶ。"
-      : "能力を開き、おすすめの技を一つ取得する。",
+    title: "村外れへ出る前に、技を一つ覚える",
+    body: "右上の能力を開き、「今の装備におすすめ」から一つ選ぶ。",
     progressLabel: "戦闘準備",
     actionLabel: "取得可能スキルを見る",
     actionPanel: "skills",
-    acknowledgeable: !acknowledged.has("skills"),
+    acknowledgeable: false,
     emphasisTarget: "skills",
   };
   const battleAvailable = choiceActions(runtime, data).some((choice) => ["missionBattle", "seekBattle"].includes(choice.type));
@@ -2545,7 +2528,7 @@ function guidanceView(runtime, data, missions) {
   if (stage === "movement_aftermath") return {
     kicker: "時間が残した結果",
     title: "村の広場で、終わった捜索を確かめる",
-    detail: "移動を開き、村の広場へ向かう。世界は行動を選ばない間にも進んでいる。",
+    detail: "捜索隊が戻ったらしい。現在地から村の広場へ向かう。",
     targetFacilityId: "LOC_FARM_SQUARE",
     targetFacilityName: facilityName("LOC_FARM_SQUARE"),
     deadlineLabel: "捜索期限を超過",
@@ -2570,7 +2553,9 @@ function guidanceView(runtime, data, missions) {
     return {
       kicker: "現在の目的",
       title: mustMove && targetName ? `${targetName}へ：${stepLabel}` : stepLabel,
-      detail: `${mission.title}。${mustMove ? "現在地を開いて目的地へ向かう。" : "中央の3択から進め方を選ぶ。"}`,
+      detail: mustMove
+        ? `「${mission.title}」の手掛かりは${targetName ?? "別の場所"}にある。`
+        : `「${mission.title}」を進めるため、${stepLabel}。`,
       targetFacilityId: targetFacilityId ?? null,
       targetFacilityName: targetName,
       deadlineLabel: mission.deadlineLabel,
@@ -2580,7 +2565,7 @@ function guidanceView(runtime, data, missions) {
   return {
     kicker: "自由行動",
     title: "気になる場所と人を、自分の順番で訪ねる",
-    detail: "3択で今いる場所を調べるか、移動で別の土地へ向かい、噂や困り事を見つける。",
+    detail: "今いる場所で人に話を聞くか、現在地から別の場所へ向かえる。",
     targetFacilityId: null,
     targetFacilityName: null,
     deadlineLabel: null,
@@ -2602,7 +2587,7 @@ function fallbackNarrative(runtime, action = null, outcome = null) {
   if (actionType === "SHOP_BUY") return "品物を受け取り、代金と在庫が帳面に記された。";
   if (actionType === "SHOP_SELL") return "店主は品を確かめ、相応の代金を差し出した。";
   if (actionType === "LEARN_SKILL") return "積み重ねた経験が、使える技として形になった。";
-  return "選んだ行動の結果が世界へ刻まれ、時計の針が先へ進んだ。";
+  return "ひと通り行動を終える頃には、人の流れと空の色が少し変わっていた。";
 }
 
 function playerUtterance(action) {
@@ -2621,7 +2606,7 @@ function playerUtterance(action) {
   if (authored) return authored;
   const topicLine = {
     mission_clue: `「${action.missionTitle ?? "この異変"}」について、あなたが確かに知っている手掛かりを教えてください。`,
-    active_mission: "今のミッションについて、次に何をすべきか詳しく教えてください。",
+    active_mission: "この件について、次に何を確かめるべきか教えてください。",
     route_to_lead: "手掛かりのある場所までの道と、途中の危険を教えてください。",
     local_concern: "この辺りでは、今いちばん何に困っていますか？",
     local_change: "最近ここで、普段と違う人や物を見ませんでしたか？",
@@ -2711,7 +2696,7 @@ function authoredOpeningPresentation(runtime) {
       narrative: "水が喉を通り、ようやく周囲を見る余裕が戻る。麦畑の先には、小さな家並みと一本の道が見えた。",
       speeches: [
         { actorId: "NPC004", text: response, emotion: "説明" },
-        { actorId: "NPC004", text: "村の広場は、この道の先だよ。今は土地勘もないだろう？　あたしについておいで。歩きながら、道の見方も教えるよ。", emotion: "促す" },
+        { actorId: "NPC004", text: "村の広場は、この道の先だよ。あたしも戻るところだから、一緒に行こう。人が集まっているなら、事情を知ってる者もいるはずさ。", emotion: "促す" },
       ],
     };
   }
@@ -2730,13 +2715,13 @@ function authoredOpeningPresentation(runtime) {
       narrative: "村の広場へ着く。人だかりはもうなく、泥のついた担架と、使われなかった松明だけが掲示板の下に残されている。捜索は、こちらが歩き出すより先に終わっていた。",
       speeches: [
         { actorId: "NPC004", text: "……遅かった。フィンは見つかったけど、助けて連れ帰ることはできなかったんだ。捜しに出た者にも、ひどい怪我人が出たよ。", emotion: "沈痛" },
-        { actorId: "NPC003", text: "世界は待ってはくれん。何が起きたか知りたいなら、隠さず話そう。", emotion: "疲労" },
+        { actorId: "NPC003", text: "……間に合わなかった。捜索の記録は残してある。聞く覚悟があるなら、私が知る限りを話そう。", emotion: "疲労" },
       ],
     };
   }
   if (beat === "deadline:aftermath") {
     return {
-      narrative: "事情を聞いている間に、捜索の期限を告げる鐘が鳴った。やがて村外れから戻った担架を見て、間に合わなかったことを知る。選んだ行動の途中にも、世界の時間は進んでいた。",
+      narrative: "事情を聞いている間に、村外れの方角から鐘が鳴った。ほどなく泥だらけの捜索隊が戻り、その後ろに布を掛けた担架が続いた。広場のざわめきが、ひと息で消えた。",
       speeches: [
         { actorId: "NPC003", text: "……捜索隊が戻った。フィンは救えず、先へ出た者にも重傷者がいる。今から話すのは、もう捜索ではなく、その結末だ。", emotion: "沈痛" },
       ],
@@ -2744,13 +2729,13 @@ function authoredOpeningPresentation(runtime) {
   }
   if (tutorial.stage === "mission_intro") {
     return {
-      narrative: "人々の言葉は断片的で、まだ全体が見えない。泣きそうな女性、捜索を指揮する村長、何かを隠すように俯く少年。それぞれが、違う手掛かりを持っていそうだ。",
+      narrative: "人々の言葉は断片的で、まだ全体が見えない。泣きそうな女性、捜索を指揮する村長、何かを隠すように俯く少年。三人は、互いに違うことを知っているようだ。",
       speeches: [],
     };
   }
   if (tutorial.stage === "aftermath_intro") {
     return {
-      narrative: "広場に残る人々は、同じ失敗を違う痛みとして抱えている。誰の言葉を受け取るかは選べるが、起きた結末そのものは巻き戻らない。",
+      narrative: "ミラは古い地図を握り、コビーは村外れの道を見つめ、ガロは濡れた捜索記録を閉じている。誰も、こちらから声をかけるまでは口を開かなかった。",
       speeches: [],
     };
   }
@@ -2760,7 +2745,7 @@ function authoredOpeningPresentation(runtime) {
         narrative: "年配の男は地面に簡単な地図を描き、捜索済みの道と、まだ誰も戻っていない村外れを指した。話す前に一度息を整え、こちらへ向き直る。",
         speeches: [
           { actorId: "NPC003", text: "私はガロ、この村の村長だ。消えたのはフィン、十二歳の少年だ。朝から戻らん。古い見張り小屋へ続く道が手薄だが、あの辺りは獣も出る。日が二度落ちる前には見つけねばならん。", emotion: "厳しい" },
-          { actorId: "NPC004", text: "あんたは来たばかりだ。無理に背負わなくていい。でも手を貸すなら、村のみんなが忘れないよ。", emotion: "気遣う" },
+          { actorId: "NPC004", text: "あんたは来たばかりだ。無理に背負わなくていい。けど村外れへ出るなら、獣の足跡と藪の音には気をつけな。", emotion: "気遣う" },
         ],
       },
       "inquiry:mira": {
@@ -2784,15 +2769,15 @@ function authoredOpeningPresentation(runtime) {
     const presentation = {
       "aftermath:garo": {
         narrative: "年配の男は捜索記録を閉じ、見つかった時刻と、村外れで負傷した者のことを一つずつ説明しようとする。",
-        speeches: [{ actorId: "NPC003", text: "私はガロ、この村の村長だ。フィンを見つけた時には、もう息がなかった。助けようと先へ出た者も重傷だ。決断が遅れれば、危機はこうして人の命を奪う。", emotion: "悔恨" }],
+        speeches: [{ actorId: "NPC003", text: "私はガロ、この村の村長だ。フィンを見つけた時には、もう息がなかった。北の道へ人を回す決断が遅れた。先へ出た者まで重傷を負わせたのは、村長である私の責任だ。", emotion: "悔恨" }],
       },
       "aftermath:mira": {
         narrative: "女性の隣に座ってもしばらく言葉はなく、握りしめた古い地図が震える音だけが聞こえた。やがて女性は顔を上げる。",
-        speeches: [{ actorId: "NPC002", text: "私はミラです。あの子は、帰ってきませんでした。……もし次に誰かの助けを求める声を聞いたら、どうか、間に合ううちに動いてください。", emotion: "悲嘆" }],
+        speeches: [{ actorId: "NPC002", text: "私はミラです。あの子は、帰ってきませんでした。朝、地図がないと気づいた時に、もっと強く引き止めていれば……。ごめんなさい。今は、あの子の話をする声さえ出ないんです。", emotion: "悲嘆" }],
       },
       "aftermath:coby": {
         narrative: "少年は村外れへ続く道を見つめたまま、途切れ途切れに昨日の約束を話し始める。",
-        speeches: [{ actorId: "NPC062", text: "ぼくはコビー。見張り小屋へ行くって知ってた。もっと早く言えばよかった。時間が過ぎたら、言えなかったことまで消えないんだ。", emotion: "後悔" }],
+        speeches: [{ actorId: "NPC062", text: "ぼくはコビー。見張り小屋へ行くって、ぼくは知ってた。怒られるのが怖くて黙ってた。フィンが戻らないって分かってから言っても、もう遅かった。", emotion: "後悔" }],
       },
     }[beat];
     return presentation ?? { narrative: OPENING_AFTERMATH_FACT.text, speeches: [] };
