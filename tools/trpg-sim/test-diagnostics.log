@@ -1,0 +1,7 @@
+exit_code=1
+
+npm error Missing script: "test:trpg"
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-07-20T09_58_34_929Z-debug-0.log
