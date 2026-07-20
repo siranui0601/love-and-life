@@ -9,7 +9,7 @@
    const { game } = service();
    const runner = commandRunner(game, await game.create(owner, { playerName: "unprepared", seed: "skill-ack-is-not-training" }));
    await completeOpening(runner);
-@@ -1556,25 +1565,20 @@
+@@ -1556,23 +1565,19 @@
    assert.ok(edge);
    await runner.run("MOVE", { moveId: edge.moveId });
    assert.equal(runner.save.tutorial.id, "skills");
