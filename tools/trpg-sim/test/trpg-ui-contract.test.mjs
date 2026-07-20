@@ -109,10 +109,11 @@ test("battle supports authoritative interactive commands and preserves completed
   assert.match(app, /frame\.action\?\.kind === "status_failure"[\s\S]*?`\$\{actor\}は動けない！`/u);
   assert.match(app, /function openBattlePlayback/u);
   assert.doesNotMatch(app, /parts\.length === 1 && frame\.action\?\.kind === "status_failure"/u);
+  assert.match(app, /function syncBattleVisualViewport/u);
   assert.match(css, /\.battle-command-button\s*\{[^}]*min-height:\s*48px/su);
   assert.match(css, /env\(safe-area-inset-bottom\)/u);
-  assert.match(css, /@media \(max-width:\s*700px\)[\s\S]*?\.battle-dialog\[data-mode="interactive"\] \.battle-message\s*\{[^}]*height:\s*202px;[^}]*max-height:\s*202px;[^}]*overflow:\s*hidden;/u);
-  assert.match(css, /@media \(max-width:\s*700px\)[\s\S]*?\.battle-command-panel\s*\{[^}]*max-height:\s*118px;/u);
+  assert.match(css, /@media \(max-width:\s*700px\)[\s\S]*?\.battle-dialog\[data-mode="interactive"\] \.battle-message\s*\{[^}]*height:\s*auto;[^}]*max-height:\s*min\(48%, 360px\);[^}]*overflow:\s*hidden;/u);
+  assert.match(css, /@media \(max-width:\s*700px\)[\s\S]*?\.battle-command-panel\s*\{[^}]*min-height:\s*0;[^}]*max-height:\s*none;[^}]*overflow:\s*hidden;/u);
 });
 
 test("first-encounter Gemini art refreshes from the persisted manifest without blocking play", () => {
@@ -128,7 +129,7 @@ test("manifest portraits are real transparent cutouts", async () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, "public/TRPG/assets/manifest.json"), "utf8"));
   for (const [npcId, entry] of Object.entries(manifest.portraits)) {
     const url = typeof entry === "string" ? entry : entry.default;
-    const file = path.join(ROOT, "public", url.replace(/^\/+/u, ""));
+    const file = path.join(ROOT, "public", url.replace(/^\/+/, ""));
     assert.ok(fs.existsSync(file), `${npcId} portrait must exist`);
     assert.ok(fs.statSync(file).size < 1024 * 1024, `${npcId} portrait must stay below 1 MiB for mobile delivery`);
     const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
