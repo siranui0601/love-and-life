@@ -28,7 +28,7 @@
    assert.equal(runner.save.tutorial.id, "mission-log");
    assert.deepEqual(runner.save.tutorial.unlocked, {
      choices: true,
-@@ -726,9 +731,9 @@
+@@ -726,8 +731,8 @@
    assert.ok(presentIds.size > 0);
    assert.ok(view.choices.every((choice) => !choice.targetNpcId || presentIds.has(choice.targetNpcId)));
    assert.deepEqual(view.choices.map((choice) => choice.actionId), [
