@@ -1,6 +1,6 @@
 --- a/tools/trpg-sim/test/game-service.test.mjs
 +++ b/tools/trpg-sim/test/game-service.test.mjs
-@@ -1069,17 +1075,20 @@
+@@ -1069,16 +1075,19 @@
    }), (error) => error.code === "command_id_conflict" && error.status === 409);
  });
  
