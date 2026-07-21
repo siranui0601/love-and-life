@@ -1,0 +1,114 @@
++  const unique = [...new Map(combined.map((action) => [action.id, action])).values()];
++  const eligible = !runtime.tutorial || runtime.tutorial.stage === "free"
++    ? unique
++    : unique.filter((action) => !["seekBattle", "missionBattle", "investigate"].includes(action.type));
++  return eligible.slice(0, Math.max(3, Math.min(12, Number(limit) || 9)));
++}
++
++function narrativeChoicePoolKey(runtime, actions) {
++  return sha256(JSON.stringify({
++    minute: runtime.playerState.absoluteMinute,
++    location: runtime.playerState.player.location,
++    facilityId: runtime.playerState.player.facilityId,
++    tutorialStage: runtime.tutorial?.stage ?? null,
++    pendingWorkOffer: runtime.pendingWorkOffer?.openedAtMinute ?? null,
++    actionIds: actions.map((action) => action.id),
++  })).slice(0, 24);
++}
++
++function generatedChoiceDetail(action, runtime, selection) {
++  const detail = selection?.detailsById?.[action.id];
++  if (!detail) return action;
++  let resolved = {
++    ...action,
++    label: cleanText(detail.label, 180) || action.label,
++    generatedApproach: cleanText(detail.approach, 180) || null,
++  };
++  if (action.workOffer && detail.workProposal?.title) {
++    const durationClass = ["short", "half_day", "full_day"].includes(detail.workProposal.durationClass)
++      ? detail.workProposal.durationClass
++      : "short";
++    const riskClass = ["low", "medium", "high"].includes(detail.workProposal.riskClass)
++      ? detail.workProposal.riskClass
++      : "low";
++    const minutes = { short: 120, half_day: 240, full_day: 480 }[durationClass];
++    const description = cleanText(detail.workProposal.title, 120);
++    const wage = deterministicWorkWage(runtime, runtime.playerState.player.facilityId, action.targetNpcId, { minutes, riskClass });
++    resolved = {
++      ...resolved,
++      quotedWage: wage,
++      workDescription: description,
++      workDurationMinutes: minutes,
++      workRiskClass: riskClass,
++      requiredDisclosure: `仕事は「${description}」、所要時間は${minutes}分、報酬は${wage}G`,
++    };
+   }
+-  const safe = combined.filter((action) => !["seekBattle", "missionBattle", "investigate"].includes(action.type));
+-  const result = [...new Map(safe.map((action) => [action.id, action])).values()].slice(0, 3);
+-  return withChoiceIds(result);
++  return resolved;
++}
++
++function selectedChoiceActions(runtime, actions) {
++  if (!actions.length) return [];
++  const key = narrativeChoicePoolKey(runtime, actions);
++  const selection = runtime.narrativeChoiceSelection?.poolKey === key
++    ? runtime.narrativeChoiceSelection
++    : null;
++  const byId = new Map(actions.map((action) => [action.id, action]));
++  const selected = [];
++  for (const id of selection?.actionIds ?? []) {
++    const action = byId.get(id);
++    if (action && !selected.some((entry) => entry.id === id)) selected.push(action);
++    if (selected.length >= 3) break;
++  }
++  for (const action of actions) {
++    if (selected.length >= 3) break;
++    if (!selected.some((entry) => entry.id === action.id)) selected.push(action);
++  }
++  return withChoiceIds(selected.slice(0, 3).map((action) => generatedChoiceDetail(action, runtime, selection)));
++}
++
++function choiceActions(runtime, data) {
++  return selectedChoiceActions(runtime, choiceActionPool(runtime, data));
+ }
+ 
+ function movementActions(runtime, data) {
+@@ -2180,6 +2299,8 @@ export function executeGameRuntimeCommand(runtime, data, command) {
+   const pendingIntroductionAtStart = runtime.pendingNpcIntroduction;
+   if (runtime.tutorial && command.type !== "ACK_NPC_INTRODUCTION") runtime.tutorial.lastBeat = null;
+   const goldBefore = Number(runtime.playerState.player.gold ?? 0);
++  const levelBefore = Number(runtime.playerState.player.level ?? 1);
++  const expBefore = Number(runtime.playerState.player.exp ?? 0);
+   const previousTroubleStates = Object.fromEntries(Object.entries(runtime.playerState.troubles).map(([id, value]) => [id, value.status]));
+   let result;
+   let resolvedActionId = null;
+@@ -2380,8 +2501,12 @@ export function executeGameRuntimeCommand(runtime, data, command) {
+         runtime,
+         runtime.playerState.player.facilityId,
+         resolvedPlayerAction.targetNpcId,
++        {
++          minutes: Number(resolvedPlayerAction.workDurationMinutes ?? 120),
++          riskClass: resolvedPlayerAction.workRiskClass ?? "low",
++        },
+       )),
+-      minutes: 120,
++      minutes: Number(resolvedPlayerAction.workDurationMinutes ?? 120),
+       openedAtMinute: runtime.playerState.absoluteMinute,
+     };
+     result.summary = `${resolvedPlayerAction.targetNpcName ?? "相手"}から仕事内容と賃金を聞いた。引き受けるか選べる。`;
+@@ -2392,6 +2517,10 @@ export function executeGameRuntimeCommand(runtime, data, command) {
+     result.summary = "仕事は断り、別の行動を選ぶことにした。";
+   }
+   if (result.ok && resolvedPlayerAction?.type === "work") {
++    // Ordinary employment changes time, money and the living world, but it is
++    // not combat/training experience and must not become a leveling exploit.
++    runtime.playerState.player.level = levelBefore;
++    runtime.playerState.player.exp = expBefore;
+     result.goldDelta = Number(runtime.playerState.player.gold ?? 0) - goldBefore;
+     result.summary = `${resolvedPlayerAction.workDescription ?? "頼まれた仕事"}を終え、${result.goldDelta}Gの賃金を受け取った。`;
+     runtime.pendingWorkOffer = null;
+@@ -3421,7 +3550,7 @@ function presentationChoices(record, choices) {
+   return choices.map((action) => ({
+     choiceId: action.choiceId,
+     actionId: action.id,
