@@ -46,7 +46,6 @@ jobs:
 
           source = Path('/tmp/trpg-world-v7.raw.b64').read_text(encoding='ascii')
           target = '18d6bfac83e158eaab42040cc73ccd7791bf8bde3fa87a7d9d2be39abcaeb1d6'
-          candidates = []
           variants = [(None, source)]
           if len(source) % 4 == 1:
               variants = ((index, source[:index] + source[index + 1:]) for index in range(len(source)))
@@ -56,26 +55,18 @@ jobs:
               except Exception:
                   continue
               if hashlib.sha256(payload).hexdigest() == target:
-                  candidates.append((index, encoded, payload))
+                  Path('/tmp/trpg-world-v7.patch.gz').write_bytes(payload)
+                  print(f'Reconstructed payload by removing index={index}; encoded={len(encoded)} bytes; gzip={len(payload)} bytes')
                   break
-          if not candidates:
+          else:
               raise SystemExit(f'Could not reconstruct payload: source_length={len(source)} mod4={len(source) % 4}')
-          index, encoded, payload = candidates[0]
-          Path('/tmp/trpg-world-v7.patch.gz.b64').write_text(encoded, encoding='ascii')
-          Path('/tmp/trpg-world-v7.patch.gz').write_bytes(payload)
-          print(f'Reconstructed payload by removing index={index}; encoded={len(encoded)} bytes; gzip={len(payload)} bytes')
           PY
             gzip -t /tmp/trpg-world-v7.patch.gz
-            sha256sum /tmp/trpg-world-v7.patch.gz
             gzip -dc /tmp/trpg-world-v7.patch.gz > /tmp/trpg-world-v7.patch
-            wc -c /tmp/trpg-world-v7.patch
-            sha256sum /tmp/trpg-world-v7.patch
             git apply --check --verbose /tmp/trpg-world-v7.patch
             git apply --verbose /tmp/trpg-world-v7.patch
           } > "$LOG" 2>&1
           cat "$LOG"
-          rm -rf tools/trpg-world-v7
-          rm -f tools/trpg-world-v7.patch.gz.b64 .github/workflows/apply-trpg-world-v7.yml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -86,12 +77,12 @@ jobs:
       - run: npm ci
       - name: Run full TRPG regression suite
         run: npm run trpg:test
-      - name: Commit normal source files
+      - name: Commit normal source files only
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add -A -- public/TRPG src/server/trpg tools/trpg-sim tools/trpg-director-v52-round2.patch.gz.b64
           git commit -m "feat(trpg): generate actions and add living world needs"
           git push origin HEAD:chatgpt/trpg-generative-actions-world-needs
