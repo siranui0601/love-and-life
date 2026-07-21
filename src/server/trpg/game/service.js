@@ -21,6 +21,8 @@ import { loadTrpgGameData } from "./game-data.js";
 import { deserializeRuntime, serializeRuntime } from "./serializer.js";
 import { FileTrpgSaveStore } from "./save-store.js";
 import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
+import { facilityVisibility } from "../resolvers/facility-visibility-resolver.js";
+import { resolveCanonicalWeather, WEATHER_RULESET_VERSION } from "../resolvers/weather-resolver.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
 export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v11";
@@ -1438,7 +1440,10 @@ function movementActions(runtime, data) {
     if (step?.targetLocation) knowledge.knownHubIds.add(step.targetLocation);
     if (step?.targetFacilityId) knowledge.knownFacilityIds.add(step.targetFacilityId);
   }
+  const facilityWorldState = { day: runtime.playerState.day, troubles: runtime.playerState.troubles };
   const actions = journey.availableMovementActions(runtime.playerState, data.model)
+    .filter((action) => action.movementScope !== "local"
+      || facilityVisibility(action.destinationFacilityId, facilityWorldState).visible)
     .filter((action) => action.movementScope === "local"
       ? knowledge.knownFacilityIds.has(action.destinationFacilityId)
       : knowledge.knownHubIds.has(action.destinationHub));
@@ -3647,6 +3652,11 @@ function presentationChoices(record, choices) {
 
 export function buildGameView(record, runtime, data) {
   const state = runtime.playerState;
+  const weather = resolveCanonicalWeather({
+    day: state.day,
+    regionId: state.player.location,
+    daypart: state.daypart,
+  });
   const presentNpcs = presentNpcsAt(runtime, data);
   const choices = presentationChoices(record, choiceActions(runtime, data));
   const missions = missionView(runtime, data);
@@ -3718,7 +3728,10 @@ export function buildGameView(record, runtime, data) {
       minute: state.minute,
       daypart: state.daypart,
       absoluteMinute: state.absoluteMinute,
+      weatherId: weather.id,
+      weatherLabel: weather.label,
     },
+    weather,
     scene: {
       location: state.player.location,
       facilityId: state.player.facilityId,
@@ -3771,6 +3784,7 @@ export function buildGameView(record, runtime, data) {
       ended: state.absoluteMinute >= journey.GAME_END_MINUTE,
       endedAt: state.absoluteMinute >= journey.GAME_END_MINUTE ? "Day 100 24:00" : null,
       knownResolvedTroubleIds: [...state.progress.missions.resolvedTroubleIds].sort(),
+      weatherRulesetVersion: WEATHER_RULESET_VERSION,
     },
   };
 }
