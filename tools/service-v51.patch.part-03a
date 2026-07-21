@@ -1,0 +1,58 @@
+-    scenarioId: `${record.playerName}:${resolvedAction?.id ?? action?.type ?? "GAME_START"}:${record.revision}`,
+-    playerName: record.playerName,
++    scenarioId: `オレゴン:${resolvedAction?.id ?? action?.type ?? "GAME_START"}:${record.revision}`,
++    playerName: "オレゴン",
++    sceneMode: narrativeSceneMode(resolvedAction, authoritativeOutcome),
+     action: {
+       id: resolvedAction?.id ?? action?.resolvedActionId ?? action?.type ?? "GAME_START",
+       type: resolvedAction?.type ?? action?.type ?? "start",
+@@ -3680,26 +3887,129 @@ function narrativeInput(record, runtime, data, action, outcome) {
+       presentNpcIds: presentNpcs.map((npc) => npc.id),
+       npcs: narrativeNpcs,
+       player: {
+-        displayName: record.playerName,
++        displayName: "オレゴン",
+         visibleCondition: "行動可能",
+-        knownFacts: [...openingKnownFactTexts(runtime), ...rumors.map((rumor) => rumor.text)],
++        knownFacts: [
++          ...openingKnownFactTexts(runtime),
++          ...rumors.map((rumor) => rumor.text),
++          ...ensureNarrativeMemory(runtime).localFacts
++            .filter((fact) => !fact.locationId || fact.locationId === runtime.playerState.player.location || fact.facilityId === runtime.playerState.player.facilityId)
++            .slice(-6)
++            .map((fact) => fact.summary),
++          ...ensureNarrativeMemory(runtime).missionLeads.slice(-6).map((lead) => lead.summary),
++        ].filter(Boolean),
+       },
+       missions,
+       visibleMissionIds: missions.map((mission) => mission.id),
+       localRumors: rumors,
+       visibleRumorIds: rumors.map((rumor) => rumor.id),
+       authoritativeOutcome,
+-      allowedActionCandidates: choices.map((choice) => ({
+-        id: choice.choiceId,
+-        actionCandidateId: choice.id,
++      progressContract,
++      workMarket: narrativeWorkMarket(runtime),
++      visibleFlags: { ...ensureNarrativeMemory(runtime).semanticFlags },
++      availableActionCandidates: choicePool.map((choice) => ({
++        id: choice.id,
+         label: choice.label,
+         intentType: choiceIntent(choice),
++        actionType: choice.type,
+         targetNpcId: choice.targetNpcId ?? null,
++        missionId: choice.missionId ?? null,
++        stepId: choice.stepId ?? null,
++        minutes: Number(choice.minutes ?? 0),
++        workOffer: choice.workOffer === true,
++        progressRole: progressContract.anchorCandidateIds.includes(choice.id) ? "progress" : "optional",
+       })),
+     },
+   };
+ }
+ 
++function replacePlayerAlias(value, playerName) {
++  return cleanText(value, 2000).replaceAll("オレゴン", playerName);
++}
++
++function applyNarrativeChoiceSelection(runtime, data, result) {
