@@ -1,0 +1,46 @@
+name: Apply TRPG Director v5.2 refinements
+
+on:
+  push:
+    branches:
+      - chatgpt/trpg-director-v52-refinement
+    paths:
+      - ".github/workflows/apply-director-v52.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-director-v52-refinement
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply reviewed source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d tools/trpg-director-v52.patch.gz.b64 > /tmp/director-v52.patch.gz
+          gzip -dc /tmp/director-v52.patch.gz > /tmp/director-v52.patch
+          git apply --check /tmp/director-v52.patch
+          git apply /tmp/director-v52.patch
+          rm -f tools/trpg-director-v52.patch.gz.b64 .github/workflows/apply-director-v52.yml
+      - run: npm ci
+      - name: Run full TRPG regression suite
+        run: npm run trpg:test
+      - name: Commit reviewed implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(trpg): refine director context and partial recovery"
+          git push origin HEAD:chatgpt/trpg-director-v52-refinement
