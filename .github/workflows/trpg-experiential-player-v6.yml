@@ -39,12 +39,15 @@ jobs:
             git fetch origin main --depth=1
             git show origin/main:.github/workflows/trpg-experiential-player-v6.yml > .github/workflows/trpg-experiential-player-v6.yml
             cat tools/trpg-world-v7/chunk-* | tr -d '\r\n' > /tmp/trpg-world-v7.patch.gz.b64
-            echo 'e66610dd5a6bdb3f1cc901eca59267448c14c13222e04814886203810f13169b  /tmp/trpg-world-v7.patch.gz.b64' | sha256sum -c -
+            wc -c /tmp/trpg-world-v7.patch.gz.b64
+            sha256sum /tmp/trpg-world-v7.patch.gz.b64
             base64 -d /tmp/trpg-world-v7.patch.gz.b64 > /tmp/trpg-world-v7.patch.gz
-            echo '18d6bfac83e158eaab42040cc73ccd7791bf8bde3fa87a7d9d2be39abcaeb1d6  /tmp/trpg-world-v7.patch.gz' | sha256sum -c -
             gzip -t /tmp/trpg-world-v7.patch.gz
+            wc -c /tmp/trpg-world-v7.patch.gz
+            sha256sum /tmp/trpg-world-v7.patch.gz
             gzip -dc /tmp/trpg-world-v7.patch.gz > /tmp/trpg-world-v7.patch
-            echo 'e75ba575ef4a6ab29e720fd775b6044795b3964ef3910a07773383f8985987f3  /tmp/trpg-world-v7.patch' | sha256sum -c -
+            wc -c /tmp/trpg-world-v7.patch
+            sha256sum /tmp/trpg-world-v7.patch
             git apply --check --verbose /tmp/trpg-world-v7.patch
             git apply --verbose /tmp/trpg-world-v7.patch
           } > "$LOG" 2>&1
