@@ -336,9 +336,26 @@ function renderNpcs(npcs, activeActorId = null) {
   const visibleActorId = activeActorId || "";
   entries.forEach((npc, index) => {
     const card = document.createElement("article");
-    card.className = `npc-card${npc.id === visibleActorId ? " is-active" : ""}`;
+    const canTalk = npc.directTalkAvailable === true;
+    card.className = `npc-card${npc.id === visibleActorId ? " is-active" : ""}${canTalk ? " is-talkable" : ""}`;
     card.dataset.npcId = npc.id;
     card.style.setProperty("--npc-index", index);
+    if (canTalk) {
+      const talk = () => {
+        if (busy || (scenePlayback && !scenePlayback.done)) return;
+        sendCommand("TALK", { npcId: npc.id });
+      };
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", `${escapeText(npc.name, "人物")}に話しかける`);
+      card.title = `${escapeText(npc.name, "人物")}に話しかける`;
+      card.addEventListener("click", talk);
+      card.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        talk();
+      });
+    }
     const imageUrl = portraitUrl(npc);
     if (imageUrl) {
       const image = document.createElement("img");

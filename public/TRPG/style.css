@@ -560,6 +560,9 @@ body.is-playing .site-header { display: none; }
   filter: saturate(.72) brightness(.72);
 }
 .game-screen .npc-card.is-active { z-index: 2; opacity: 1; transform: none; filter: none; }
+.game-screen .npc-card.is-talkable { pointer-events: auto; cursor: pointer; }
+.game-screen .npc-card.is-talkable:hover,
+.game-screen .npc-card.is-talkable:focus-visible { z-index: 3; opacity: 1; transform: translateY(-1.5%); filter: none; outline: 2px solid rgba(240, 202, 124, .9); outline-offset: -2px; }
 .game-screen .npc-card img,
 .game-screen .portrait-fallback {
   width: 100%;

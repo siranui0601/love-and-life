@@ -102,9 +102,10 @@ const OPENING_AFTERMATH_FACT = Object.freeze({
 });
 
 const PROFILE_BY_ID = new Map(journey.PLAYER_PROFILES.map((profile) => [profile.id, profile]));
-const COMMAND_TYPES = new Set(["CHOOSE", "MOVE", "SHOP_BUY", "SHOP_SELL", "EQUIP", "UNEQUIP", "LEARN_SKILL", "TUTORIAL_ACK", "ACK_NPC_INTRODUCTION", "BATTLE_ACT"]);
+const COMMAND_TYPES = new Set(["CHOOSE", "TALK", "MOVE", "SHOP_BUY", "SHOP_SELL", "EQUIP", "UNEQUIP", "LEARN_SKILL", "TUTORIAL_ACK", "ACK_NPC_INTRODUCTION", "BATTLE_ACT"]);
 const COMMAND_PAYLOAD_KEY = Object.freeze({
   CHOOSE: "choiceId",
+  TALK: "npcId",
   MOVE: "moveId",
   SHOP_BUY: "stockId",
   SHOP_SELL: "equipmentId",
@@ -1277,6 +1278,25 @@ function authoritativeMissionConversationAction(action, runtime, data) {
   };
 }
 
+function directNpcConversationActions(runtime, data) {
+  if (runtime.pendingBattle?.session?.status === "active") return [];
+  if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
+  if (runtime.tutorial && runtime.tutorial.stage !== "free") return [];
+  syncAuthoritativePresentNpcIds(runtime, data);
+  return presentNpcsAt(runtime, data)
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((npc) => ({
+      id: `DIRECT_TALK:${npc.id}`,
+      type: "conversation",
+      directTalk: true,
+      targetNpcId: npc.id,
+      targetNpcName: npc.name,
+      dialogueTopic: "direct_contact",
+      minutes: 5,
+      label: `${npc.name}に話しかける`,
+    }));
+}
+
 function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   if (runtime.pendingBattle?.session?.status === "active") return [];
   if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
@@ -2320,11 +2340,17 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   let resolvedActionId = null;
   let resolvedPlayerAction = null;
   let deferredMissionConversation = null;
-  if (command.type === "CHOOSE") {
-    const choices = choiceActions(runtime, data);
-    const action = choices.find((entry) => entry.choiceId === payload.choiceId);
-    if (!action) throw new TrpgGameError(400, "choice_not_available");
-    if (payload.actionId && payload.actionId !== action.id) {
+  if (["CHOOSE", "TALK"].includes(command.type)) {
+    const choices = command.type === "TALK"
+      ? directNpcConversationActions(runtime, data)
+      : choiceActions(runtime, data);
+    const action = command.type === "TALK"
+      ? choices.find((entry) => entry.targetNpcId === payload.npcId)
+      : choices.find((entry) => entry.choiceId === payload.choiceId);
+    if (!action) {
+      throw new TrpgGameError(400, command.type === "TALK" ? "npc_talk_not_available" : "choice_not_available");
+    }
+    if (command.type === "CHOOSE" && payload.actionId && payload.actionId !== action.id) {
       throw new TrpgGameError(409, "choice_action_mismatch", "The displayed choice no longer resolves to the same action", {
         choiceId: payload.choiceId,
         displayedActionId: payload.actionId,
@@ -3657,7 +3683,11 @@ export function buildGameView(record, runtime, data) {
     regionId: state.player.location,
     daypart: state.daypart,
   });
-  const presentNpcs = presentNpcsAt(runtime, data);
+  const directTalkNpcIds = new Set(directNpcConversationActions(runtime, data).map((action) => action.targetNpcId));
+  const presentNpcs = presentNpcsAt(runtime, data).map((npc) => ({
+    ...npc,
+    directTalkAvailable: directTalkNpcIds.has(npc.id),
+  }));
   const choices = presentationChoices(record, choiceActions(runtime, data));
   const missions = missionView(runtime, data);
   const tutorial = tutorialView(runtime, data);
