@@ -1,0 +1,31 @@
+
+function normalizeRumor(rumor) {
+  return {
+    id: boundedText(rumor?.id, 100),
+    troubleId: boundedText(rumor?.troubleId, 40) || null,
+    text: boundedText(rumor?.text, 240),
+    importance: Number.isFinite(Number(rumor?.importance)) ? Number(rumor.importance) : 0.5,
+  };
+}
+
+export function buildLocalNarrativeContext(input = {}) {
+  const state = input.authoritativeState ?? input.state ?? {};
+  const action = input.action ?? {};
+  const presentNpcIds = new Set(
+    [...(state.presentNpcIds ?? [])]
+      .filter(Boolean)
+      .map(String),
+  );
+  const suppliedNpcs = Array.isArray(state.npcs) ? state.npcs : [];
+  const localNpcs = suppliedNpcs
+    .filter((npc) => presentNpcIds.has(String(npc?.id)) && npcIsPresentAtPlace(npc, state))
+    .map(normalizeNpc)
+    .filter((npc) => npc.id)
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .slice(0, 12);
+  const localNpcIds = new Set(localNpcs.map((npc) => npc.id));
+  const excludedNpcIds = suppliedNpcs
+    .map((npc) => String(npc?.id ?? ""))
+    .filter((id) => id && !localNpcIds.has(id));
+
+  const visibleMissionIds = new Set((state.visibleMissionIds ?? []).map(String));
