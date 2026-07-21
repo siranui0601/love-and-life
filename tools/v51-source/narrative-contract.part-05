@@ -1,0 +1,90 @@
+function validateProposal(proposal, index, localNpcIds, errors) {
+  if (!plainObject(proposal)) {
+    errors.push(`proposals[${index}] is not an object`);
+    return;
+  }
+  if (!PROPOSAL_TYPES.includes(proposal.type)) errors.push(`proposals[${index}].type is invalid`);
+  if (!boundedText(proposal.reason, 240)) errors.push(`proposals[${index}].reason is empty`);
+  if (proposal.targetNpcId && !localNpcIds.has(String(proposal.targetNpcId))) {
+    errors.push(`proposals[${index}] targets an NPC who is not present`);
+  }
+  if (proposal.type === "flag_candidate" && !allowedFlagPath(proposal.flagPath)) {
+    errors.push(`proposals[${index}].flagPath is not allowlisted`);
+  }
+  if (proposal.type === "npc_intent") {
+    if (!boundedText(proposal.targetNpcId, 80)) errors.push(`proposals[${index}].targetNpcId is required for npc_intent`);
+    if (!boundedText(proposal.intent, 120)) errors.push(`proposals[${index}].intent is required for npc_intent`);
+  }
+  if (["local_fact_candidate", "npc_memory_candidate"].includes(proposal.type)) {
+    if (!boundedText(proposal.subjectId, 120)) errors.push(`proposals[${index}].subjectId is required`);
+    if (!boundedText(proposal.predicate, 120)) errors.push(`proposals[${index}].predicate is required`);
+  }
+  if (proposal.type === "mission_lead_candidate") {
+    if (!boundedText(proposal.troubleId, 40)) errors.push(`proposals[${index}].troubleId is required for mission_lead_candidate`);
+    if (!boundedText(proposal.summary, 240)) errors.push(`proposals[${index}].summary is required for mission_lead_candidate`);
+  }
+  const forbidden = [...forbiddenKeys(proposal)];
+  if (forbidden.length) errors.push(`proposals[${index}] contains authoritative keys: ${forbidden.join(",")}`);
+}
+
+export function validateNarrativeOutput(value, context) {
+  const errors = [];
+  const localNpcIds = new Set(context.localNpcs.map((npc) => npc.id));
+  if (!plainObject(value)) return { ok: false, errors: ["response is not an object"] };
+  const narrative = boundedText(value.narrative, 1400);
+  if (!narrative) errors.push("narrative is empty");
+  if (containsDiegeticMetaLanguage(narrative)) errors.push("narrative contains non-diegetic game or UI language");
+  const choices = Array.isArray(value.choices) ? value.choices : [];
+  if (choices.length !== 3) errors.push(`choices must contain exactly 3 entries, got ${choices.length}`);
+  choices.forEach((choice, index) => validateChoice(choice, index, localNpcIds, errors));
+  const choiceIds = choices.map((choice) => String(choice?.id ?? ""));
+  if (new Set(choiceIds).size !== choiceIds.length) errors.push("choice ids are duplicated");
+  const choiceLabels = choices.map((choice) => boundedText(choice?.label, 120).replace(/[\s、。！？!?・「」『』（）()]/gu, ""));
+  if (new Set(choiceLabels).size !== choiceLabels.length) errors.push("choice labels are semantically duplicated");
+  const allowedChoiceIds = new Set((context.allowedActionCandidates ?? []).map((candidate) => candidate.id));
+  if (allowedChoiceIds.size) {
+    const candidatesById = new Map((context.allowedActionCandidates ?? []).map((candidate) => [candidate.id, candidate]));
+    choices.forEach((choice, index) => {
+      const candidate = candidatesById.get(String(choice?.id ?? ""));
+      if (!candidate) {
+        errors.push(`choices[${index}].id is not in the executable candidate pool`);
+        return;
+      }
+      if (choice.intentType !== candidate.intentType) {
+        errors.push(`choices[${index}].intentType must match its authoritative action candidate`);
+      }
+      if ((choice.targetNpcId ?? null) !== (candidate.targetNpcId ?? null)) {
+        errors.push(`choices[${index}].targetNpcId must match its authoritative action candidate`);
+      }
+      if (choice.workProposal && !candidate.workOffer) {
+        errors.push(`choices[${index}].workProposal is only allowed for a work candidate`);
+      }
+    });
+  }
+  if (context.progressContract?.mode === "must_offer_progress") {
+    const anchors = new Set(context.progressContract.anchorCandidateIds ?? []);
+    if (![...choiceIds].some((id) => anchors.has(id))) {
+      errors.push("choices must include at least one progress anchor candidate");
+    }
+  }
+  const speeches = Array.isArray(value.speeches) ? value.speeches : [];
+  if (speeches.length > 6) errors.push("too many speeches");
+  speeches.forEach((speech, index) => {
+    if (!plainObject(speech) || !localNpcIds.has(String(speech?.actorId))) {
+      errors.push(`speeches[${index}] actor is not present`);
+    }
+    if (!boundedText(speech?.text, 500)) errors.push(`speeches[${index}].text is empty`);
+    if (containsDiegeticMetaLanguage(speech?.text)) errors.push(`speeches[${index}].text contains non-diegetic game or UI language`);
+  });
+  if (context.action.type === "conversation" && context.action.targetNpcId) {
+    const directReplies = speeches.filter((speech) => String(speech?.actorId) === context.action.targetNpcId);
+    const replyLength = directReplies.reduce((sum, speech) => sum + boundedText(speech?.text, 500).length, 0);
+    if (!directReplies.length) errors.push("conversation must include a reply from the target NPC");
+    if (directReplies.length && replyLength < 12) errors.push("conversation reply is too short to carry useful meaning");
+    const firstReply = boundedText(directReplies[0]?.text, 500);
+    if (/^(?:もっとも|そうだね|そうだな|なるほど|ふむ)[、。…\s]/u.test(firstReply)) {
+      errors.push("conversation reply starts with an orphan acknowledgement instead of answering the player's actual words");
+    }
+    if (context.action.firstIntroduction) {
+      const targetName = context.action.introductionName
+        ?? context.localNpcs.find((npc) => npc.id === context.action.targetNpcId)?.name;
