@@ -38,7 +38,8 @@ test("mission notices are restrained and do not duplicate the mission tutorial",
 
 test("mobile battle commands remain fully reachable", () => {
   assert.match(uxStyle, /battle-command-panel:not\(\[hidden\]\)/u);
-  assert.match(uxStyle, /max-height: min\(42dvh, 240px\) !important/u);
+  assert.match(uxStyle, /max-height: none !important/u);
+  assert.match(uxStyle, /battle-command-menu\[data-mode="skills"\][\s\S]*overflow-y: auto/u);
   assert.match(uxStyle, /battle-command-menu\[data-mode="root"\]/u);
   assert.match(uxStyle, /min-height: 108px/u);
 });

@@ -8,6 +8,7 @@ import {
   TRPG_NARRATIVE_PROMPT_VERSION,
   buildLocalNarrativeContext,
   deterministicNarrativeFallback,
+  mergeNarrativeOutputs,
   narrativeReplayKey,
   parseNarrativeJson,
   resolveNarrativeProposals,
@@ -74,63 +75,78 @@ async function writeAuditSafely(auditLog, payload) {
   }
 }
 
+function sceneSpecificRules(context) {
+  const rules = [];
+  if (context.sceneMode === "conversation") {
+    rules.push("対象NPCはplayerUtteranceへ直接答え、プロフィール・知っている事実・現在の感情から自然に返す");
+    rules.push("会話を同じ言い換えで停滞させず、新情報・感情の変化・次の具体的な糸口のどれかを一つ加える");
+  }
+  if (context.sceneMode === "exploration") {
+    rules.push("authoritativeOutcomeや発見済み情報を具体的な感覚・痕跡として描き、同じ発見を繰り返さない");
+  }
+  if (context.sceneMode === "battle_aftermath") {
+    rules.push("戦闘結果を変更せず、その場にいる当事者の負傷・安堵・恐怖・次の目的への反応を描く");
+  }
+  if (context.sceneMode === "arrival") {
+    rules.push("到着先の公開情報と同席人物だけを使い、到着によって自然に起きる最初の反応を描く");
+  }
+  if (context.sceneMode === "work_generation") {
+    rules.push("workOffer=trueの候補を選ぶ場合だけworkProposalを付け、現在地・時刻・人物・localDemandTagsに合う具体的な仕事を一件作る");
+    rules.push("workProposalでは賃金額を決めない。title、durationClass、riskClassだけを返し、金額はサーバーに任せる");
+  }
+  if (context.action.requiredDisclosure) {
+    rules.push(`対象NPCの発言に次の確定情報を意味を変えず含める: ${context.action.requiredDisclosure}`);
+  }
+  if (context.action.firstIntroduction && context.action.introductionName) {
+    rules.push(`対象NPCは最初の発言で「${context.action.introductionName}」と自然に名乗る。地の文や選択肢では先に名前を明かさない`);
+  }
+  // T01固有の要件は、その場面に到達した時だけ加える。別の土地や後続章のプロンプトへ持ち越さない。
+  if (context.action.dialogueTopic === "t01_escort") {
+    rules.push("この場面では、負傷した本人が一人で歩けない事情と村へ戻りたい希望を、自分の言葉で同行者へ伝える");
+  }
+  if (context.action.dialogueTopic === "t01_rescue_aftermath") {
+    rules.push("この場面では、狼から救われた負傷者本人が名乗り、助かった安堵と一人で歩けない状態を旅人へ伝える");
+  }
+  if (context.action.dialogueTopic === "t01_reunion") {
+    rules.push("この場面では、帰還した本人、迎えた家族、村の責任者が、到着直後の再会と感謝をそれぞれの立場から交わす");
+  }
+  return rules;
+}
+
 export function buildNarrativePrompt(context, { repair = null, policy = {} } = {}) {
-  const present = context.localNpcs.map((npc) => `${npc.id}:${npc.name}`).join(", ") || "なし";
+  const modeRules = sceneSpecificRules(context);
   const allowedMissionTemplateIds = [...(policy.allowedMissionTemplateIds ?? [])];
   const allowedTroubleIds = [...(policy.allowedTroubleIds ?? [])];
-  const exampleTemplateId = allowedMissionTemplateIds.includes("local-investigation")
-    ? "local-investigation"
-    : allowedMissionTemplateIds[0] ?? "local-investigation";
-  const exampleTroubleId = allowedTroubleIds[0] ?? "T13";
-  const core = `あなたはTRPG（仮題）の表示文章生成器です。ゲーム状態を決定する権限はありません。
+  const core = `あなたはTRPGの場面監督です。サーバーが示す現実の範囲内で、場面描写、会話、次の三つの行動、必要なら世界状態の提案を生成してください。
 
-絶対規則:
-1. authoritativeOutcomeはサーバーが確定した事実であり、変更・否定・追加しない。
-2. 会話・発言・NPC intent候補は、現在同じ施設または同じ場にいるlocalNpcsだけを対象にする。
-3. localNpcsにないNPCの現在行動、感情、移動、発言を推測しない。遠隔NPCを動かさない。
-4. EXP、所持金、レベル、スキル、HP、MP、装備、所持品、事件status、world flagを直接変更しない。
-5. proposalsは候補にすぎない。特別ミッションやフラグは、サーバーresolverが採否を決める。
-6. choicesは必ず3件。移動先一覧は別UIなので、移動を強制する選択肢だけで埋めない。
-7. 同じ入力では再利用できるよう、余計なランダム設定や未提示の固有名詞を作らない。
+共通規則:
+1. authoritativeOutcome、現在地、時刻、人物の生死・所在、所持品、戦闘結果を変更しない。
+2. 発言・感情・行動を描ける人物はlocalNpcsだけ。知らない秘密や遠隔人物の現在を作らない。
+3. choicesはallowedActionCandidatesから異なる3件を選び、id・intentType・targetNpcIdを候補どおり使う。labelとapproachは場面に合わせて具体化してよい。
+4. progressContract.modeがmust_offer_progressなら、anchorCandidateIdsから少なくとも1件を含める。残りは仕事、会話、調査、保留など別の結果を持たせる。
+5. proposalsは候補であり確定ではない。重大な報酬、生死、事件解決、所持品変更を提案で決めない。
+6. narrativeとspeechesは世界内の表現だけにし、ゲーム、UI、選択肢、フラグ等の実装語を使わない。
+7. オレゴンは旅人を指す固定別名である。別名の由来を説明せず、必要な場合だけ自然に呼ぶ。
 8. JSON以外を出力しない。
-9. 普通に立ち去る、待つ、会話を終えるだけならflag_candidateを提案しない。
-10. allowedActionCandidatesが3件ある場合、choicesのidはその3件と完全一致させ、別IDを作らない。
-11. npc_intentには、その場にいるtargetNpcIdと具体的なintentを必ず含める。
-12. action.typeがconversationの場合、action.playerUtteranceが直前にプレイヤー画面へ出た実際の発言である。NPCの台詞はその内容へ一文目から直接答え、前件のない「もっともだ」「そうだね」などの相槌だけで始めない。
-13. placeのfacilityName、facilityType、publicDescriptionを現在地の公開情報の正本として扱う。別施設の景観や機能を混ぜず、公開情報にない事件・用途・未来の変化を推測しない。
-14. 「こちらを見ている」「静かな時間が流れる」だけで行動結果を終えない。authoritativeOutcomeを変えず、現在地で具体的に見聞きできた対象・動作・変化を最低一つ描く。
-15. conversationでは、対象NPCの返答を合計55〜260文字程度で作り、(a)直前の質問への答え、(b)そのNPCだけが知る具体的な情報または感情、(c)次に聞く・調べる・決断するきっかけ、の三つを含める。一言だけで会話を打ち切らない。
-16. previouslyAskedTopicsを言い直さず、conversationTurnが進むほど情報を一段深くする。ただしNPCが知らない秘密は作らず、「知らない」と理由や知っていそうな相手を自然に返す。
-17. choicesの文言は、調べる・人へ働きかける・危険を引き受ける・保留する等、結果の違いが一目で分かるようにする。同義語だけの三択にしない。
-18. allowedActionCandidatesがある場合、各choiceは同じidだけでなく、対応するintentTypeも変えない。文言はその行動結果を正確に表す範囲で具体化する。
-19. action.firstIntroductionがtrueなら、action.introductionNameは対象NPCが最初の返答で自然に自分の名前を名乗るためだけに使う。本名をnarrative、choices、別NPCの台詞へ書いてはならない。localNpcs上の匿名名は自己紹介が終わるまで維持する。既知の人物には毎回名乗らせない。
-20. localNpcs.knownLocalFactsは、そのNPCが話せる事実の上限である。そこにない秘密を作らない。話せる事実がない場合も、知らない理由と次に当たる相手・場所のどちらかを具体的に示す。
-21. conversationの一往復ごとに、localRumors、knownLocalFacts、missions、現在地のいずれかに根拠を持つ新情報、NPCの明確な感情、次の具体的行動の手掛かりを最低一つ与える。進展のない見つめ合いや一言返答は禁止する。
-22. action.requiredDisclosureがある場合、それはこの質問でプレイヤーが取得する唯一の新しい事実である。対象NPCの台詞にその文字列を原文のまま必ず含め、意味を変えずに前後の会話を自然に広げる。ない場合はknownLocalFactsにない新事実を開示しない。
-23. authoritativeOutcome.discoveryがある場合、そのtextは今回確定した発見である。narrativeへ具体的に反映し、「結果が反映された」のような抽象文へ置き換えない。
-24. missionsのcurrentStepProgress/currentStepRequiredとdiscoveriesを参照し、既に発見済みの内容を新発見として繰り返さない。進捗後のchoicesは次の段階に対応する差のある三択にする。
-25. narrativeとspeechesは世界内の描写と発言だけを書く。NPCや地の文に、ミッション、クエスト、選択肢、3択、ボタン、タップ、クリック、画面、UI、メニュー、フラグ、プレイヤー、ゲーム、チュートリアル、SP、HP、MP、レベル、ステータス、ログ、システム、resolver、Gemini等の操作・実装用語を話させない。必要な概念は依頼、技、体力、魔力、経験、記録など世界内の語へ置き換える。操作説明は別のチュートリアルUIが担う。
-26. NPCの発言はrole、mood、speechStyle、currentGoal、relationship、knownLocalFactsに従う。NPCを全知の解説役やゲームルールの代弁者にせず、プレイヤーへ教訓を説くための台詞を作らない。責任、恐れ、望み、見聞きした事実を、その人物自身の立場から話させる。
 
-提案ポリシー:
+今回の場面規則:
+${modeRules.length ? modeRules.map((rule) => `- ${rule}`).join("\n") : "- 現在地で具体的に見聞きできる変化を一つ描く"}
+
+提案可能範囲:
 - 許可ミッションテンプレート: ${allowedMissionTemplateIds.join(", ") || "なし"}
 - 許可troubleId: ${allowedTroubleIds.join(", ") || "なし"}
-- 特別ミッション候補の正しい例: {"type":"special_mission_candidate","templateId":"${exampleTemplateId}","troubleId":"${exampleTroubleId}","reason":"現地で追加対応が必要"}
-- MSN-T13のようなmission IDをtemplateIdへ入れない。
-
-現在その場にいるNPC: ${present}
+- local_fact_candidate、npc_memory_candidate、mission_lead_candidateは意味的な候補として返し、内部フラグ名を無理に発明しない。
 
 入力JSON:
 ${stableStringify(context)}`;
   if (!repair) return core;
   return `${core}
 
-前回出力は検証に失敗しました。次の違反をすべて修正し、完全なJSONだけを再出力してください。
-検証エラー:
+前回の使用可能な部分は残し、次の不備がある部品だけ直してください。JSON全体を返してください。
+不備:
 ${repair.errors.map((entry) => `- ${entry}`).join("\n")}
-前回出力:
-${String(repair.raw ?? "").slice(0, 5000)}
-修復時は各文字列を簡潔にし、全体を1200文字以内の閉じたJSONにしてください。`;
+前回の整形済み出力:
+${stableStringify(repair.previous ?? {}).slice(0, 6000)}`;
 }
 
 function requestTimedOut(error) {
@@ -219,6 +235,14 @@ async function callProvider(provider, payload, audit) {
     }
   }
   throw lastError;
+}
+
+function componentRepairErrors(rawValidation, sanitizedValidation) {
+  const structuralPattern = /(?:json_parse|choices must contain|choice ids are duplicated|id is not in the executable candidate pool|workProposal|progress anchor|conversation must include a reply|narrative is empty)/iu;
+  return [...new Set([
+    ...(sanitizedValidation?.errors ?? []),
+    ...(rawValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),
+  ])];
 }
 
 export function createTrpgNarrator(options = {}) {
@@ -325,7 +349,9 @@ export function createTrpgNarrator(options = {}) {
       let rawPrimary = "";
       let rawFinal = "";
       let parsed = null;
+      let output = null;
       let validation = null;
+      let providerProducedContent = false;
       if (provider) {
         try {
           const primaryResult = normalizeProviderResult(await callProvider(provider, {
@@ -338,17 +364,24 @@ export function createTrpgNarrator(options = {}) {
           rawPrimary = raw;
           rawFinal = raw;
           audit.usageMetadata = mergeUsageMetadata(audit.usageMetadata, primaryResult.usageMetadata);
+          let repairErrors = [];
           try {
             parsed = parseNarrativeJson(raw);
-            validation = validateNarrativeOutput(parsed, context);
+            providerProducedContent = Boolean(parsed && typeof parsed === "object");
+            const rawValidation = validateNarrativeOutput(parsed, context);
+            output = sanitizeNarrativeOutput(parsed, context);
+            validation = validateNarrativeOutput(output, context);
+            repairErrors = componentRepairErrors(rawValidation, validation);
           } catch (error) {
             validation = { ok: false, errors: [`json_parse: ${String(error?.message ?? error)}`] };
+            repairErrors = [...validation.errors];
           }
-          if (!validation.ok) {
-            audit.validationErrors.push(...validation.errors);
+          if (repairErrors.length) {
+            audit.validationErrors.push(...repairErrors);
             audit.repairCalls += 1;
+            const previous = output ?? sanitizeNarrativeOutput(parsed ?? {}, context);
             const repairedResult = normalizeProviderResult(await callProvider(provider, {
-              prompt: buildNarrativePrompt(context, { repair: { errors: validation.errors, raw }, policy }),
+              prompt: buildNarrativePrompt(context, { repair: { errors: repairErrors, previous }, policy }),
               useSchema: true,
               mode: "repair",
               context,
@@ -359,9 +392,12 @@ export function createTrpgNarrator(options = {}) {
             rawFinal = raw;
             audit.usageMetadata = mergeUsageMetadata(audit.usageMetadata, repairedResult.usageMetadata);
             try {
-              parsed = parseNarrativeJson(raw);
-              validation = validateNarrativeOutput(parsed, context);
+              const repaired = parseNarrativeJson(raw);
+              providerProducedContent = true;
+              output = mergeNarrativeOutputs(previous, repaired, context);
+              validation = validateNarrativeOutput(output, context);
             } catch (error) {
+              output = previous;
               validation = { ok: false, errors: [`repair_json_parse: ${String(error?.message ?? error)}`] };
             }
             if (!validation.ok) audit.validationErrors.push(...validation.errors);
@@ -371,10 +407,17 @@ export function createTrpgNarrator(options = {}) {
         }
       }
 
-      const output = validation?.ok
-        ? sanitizeNarrativeOutput(parsed, context)
-        : deterministicNarrativeFallback(context, provider ? "invalid_or_failed_model_output" : "gemini_key_missing");
+      if (!output) {
+        output = providerProducedContent
+          ? sanitizeNarrativeOutput(parsed ?? {}, context)
+          : deterministicNarrativeFallback(context, provider ? "provider_unavailable" : "gemini_key_missing");
+      }
       const proposalResolution = resolveNarrativeProposals(output, context, resolverRules);
+      const source = !providerProducedContent
+        ? "deterministic_fallback"
+        : validation?.ok
+          ? audit.repairCalls ? "gemini_repaired" : "gemini"
+          : "gemini_partial";
       const response = {
         narrative: output.narrative,
         choices: output.choices,
@@ -383,15 +426,15 @@ export function createTrpgNarrator(options = {}) {
         proposalResolution,
         meta: {
           ...audit,
-          source: validation?.ok ? audit.source : "deterministic_fallback",
+          source,
           validAfterRepair: Boolean(validation?.ok && audit.repairCalls),
-          usedFallback: !validation?.ok,
+          usedFallback: !providerProducedContent,
+          partialOutputUsed: Boolean(providerProducedContent && !validation?.ok),
         },
       };
-      // A provider outage, timeout, or malformed reply must not poison the
-      // replay cache for every future player who reaches the same scene.
-      // The current save still persists its deterministic presentation, while
-      // a later independent generation is allowed to try Gemini again.
+      // Only fully validated model output is shared across future saves. A
+      // partial response is useful for the current turn, but must be regenerated
+      // next time so one weak scene never becomes a permanent cache entry.
       const cachePersisted = Boolean(validation?.ok || !provider);
       response.meta.cachePersisted = cachePersisted;
       if (cachePersisted) {

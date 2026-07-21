@@ -1093,11 +1093,13 @@ export function generateChoiceActions(state, model, data, catalog, profile = PRO
   const eligibleCandidates = typeof options.candidateFilter === "function"
     ? candidates.filter((action) => options.candidateFilter(action) !== false)
     : candidates;
+  const limit = Math.max(1, Math.min(12, Number(options.limit ?? 3) || 3));
+  const fillTo = Math.max(0, Math.min(limit, Number(options.fillTo ?? 3) || 0));
   const result = [...new Map(eligibleCandidates.map((action) => [action.id, action])).values()]
     .sort((left, right) => utility(right, state, profile) - utility(left, state, profile) || left.id.localeCompare(right.id))
-    .slice(0, 3)
+    .slice(0, limit)
     .map((action, index) => ({ ...action, choiceId: `CHOICE-${index + 1}` }));
-  while (result.length < 3) {
+  while (result.length < fillTo) {
     result.push({ id: `WAIT-${result.length + 1}`, type: "observe", minutes: 45, label: "少し待つ", choiceId: `CHOICE-${result.length + 1}` });
   }
   return result;
@@ -1516,7 +1518,10 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     }
   } else if (action.type === "work") {
     advance(state, model, action.minutes, "odd-job");
-    const wage = 5 + Math.floor(unit(state.seed, state.absoluteMinute, state.player.location, "wage") * 8);
+    const quotedWage = Number(action.wage);
+    const wage = Number.isFinite(quotedWage) && quotedWage >= 0
+      ? Math.floor(quotedWage)
+      : 5 + Math.floor(unit(state.seed, state.absoluteMinute, state.player.location, "wage") * 8);
     state.player.gold += wage;
     state.progress.economy.goldFromWork += wage;
   } else if (action.type === "localInvestigate") {

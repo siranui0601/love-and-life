@@ -1,0 +1,55 @@
+name: TRPG experiential player simulation v6
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "public/TRPG/**"
+      - "src/server/trpg/**"
+      - "tools/trpg-sim/**"
+      - "package.json"
+      - ".github/workflows/trpg-experiential-player-v6.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  experiential:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-experiential-simulation-v6
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Run regression and live Gemini journeys in the same finalized checkout.
+      - name: Run TRPG regression tests
+        shell: bash
+        run: |
+          mkdir -p tools/trpg-sim/reports
+          set -o pipefail
+          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/experiential-regression.log
+      - name: Run rescue, work-first, and capital-first journeys
+        run: npm run trpg:experiential:v6
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trpg-experiential-player-v6
+          path: |
+            tools/trpg-sim/reports/experiential-regression.log
+            tools/trpg-sim/reports/experiential-player-v6-latest.json
+            tools/trpg-sim/reports/experiential-player-v6-latest.md
+            tools/trpg-sim/reports/experiential-v6-*-narrative-audit.jsonl
+          if-no-files-found: warn
+          retention-days: 14

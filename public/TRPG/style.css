@@ -735,11 +735,13 @@ body.is-playing .site-header { display: none; }
 .tutorial-emphasis { outline: 3px solid #ffd984 !important; outline-offset: 3px; animation: tutorial-pulse 1.45s ease-in-out infinite; }
 
 .battle-dialog {
+  position: fixed;
   width: 100vw;
   max-width: none;
-  height: 100dvh;
-  max-height: none;
+  height: var(--battle-visual-height, 100dvh);
+  max-height: var(--battle-visual-height, 100dvh);
   margin: 0;
+  inset: var(--battle-visual-offset-top, 0px) 0 auto;
   padding: 0;
   overflow: hidden;
   border: 0;
@@ -948,12 +950,30 @@ body.is-playing .site-header { display: none; }
   .battle-message p { min-height: 3em; }
   .battle-controls { grid-template-columns: 1fr; }
   .battle-controls button { width: 100%; }
-  .battle-dialog[data-mode="interactive"] .battle-enemies { bottom: 49%; }
-  .battle-dialog[data-mode="interactive"] .battle-status { bottom: calc(max(8px, env(safe-area-inset-bottom)) + 218px); }
-  .battle-dialog[data-mode="interactive"] .battle-message { height: 202px; max-height: 202px; min-height: 202px; grid-template-columns: 1fr; gap: 6px; overflow: hidden; padding-bottom: calc(11px + env(safe-area-inset-bottom)); }
-  .battle-dialog[data-mode="interactive"] .battle-message > #battleMessage { min-height: 0; font-size: .88rem; line-height: 1.45; }
-  .battle-command-panel { min-width: 0; max-height: 118px; }
+  .battle-dialog[data-mode="interactive"] .battle-enemies { bottom: min(54%, 360px); }
+  .battle-dialog[data-mode="interactive"] .battle-status { bottom: min(48%, 306px); }
+  .battle-dialog[data-mode="interactive"] .battle-message {
+    height: auto;
+    max-height: min(48%, 360px);
+    min-height: min(238px, 44%);
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
+    overflow: hidden;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  }
+  .battle-dialog[data-mode="interactive"] .battle-message > #battleMessage {
+    min-height: 0;
+    max-height: 4.4em;
+    overflow-y: auto;
+    font-size: .88rem;
+    line-height: 1.45;
+  }
+  .battle-command-panel { min-width: 0; min-height: 0; max-height: none; overflow: hidden; }
+  .battle-command-menu { min-height: 0; padding-bottom: 2px; }
   .battle-command-button { min-height: 48px; padding-block: 6px; }
+  .battle-command-button small { white-space: normal; }
+  .skill-intro.is-tutorial-primer { border-left: 4px solid var(--gold); background: rgba(233,189,104,.1); }
 }
 
 @media (max-width: 360px) {

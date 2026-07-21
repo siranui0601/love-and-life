@@ -86,12 +86,10 @@
   }
 
   .battle-dialog .battle-command-panel:not([hidden]) {
-    display: block;
-    max-height: min(42dvh, 240px) !important;
-    overflow-y: auto !important;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
-    -webkit-overflow-scrolling: touch;
+    display: grid;
+    min-height: 0;
+    max-height: none !important;
+    overflow: hidden !important;
   }
 
   .battle-dialog .battle-command-menu[data-mode="root"] {
@@ -100,9 +98,11 @@
   }
 
   .battle-dialog .battle-command-menu[data-mode="skills"] {
-    max-height: min(32dvh, 210px);
+    min-height: 0;
+    max-height: none;
     overflow-y: auto;
     overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .battle-dialog .battle-command-button {
@@ -117,12 +117,9 @@
 }
 
 @media (max-height: 620px) and (max-width: 720px) {
-  .battle-dialog .battle-command-panel:not([hidden]) {
-    max-height: min(38dvh, 190px) !important;
-  }
-
-  .battle-dialog .battle-command-menu[data-mode="skills"] {
-    max-height: min(28dvh, 155px);
+  .battle-dialog[data-mode="interactive"] .battle-message {
+    min-height: min(210px, 52%);
+    max-height: 54%;
   }
 }
 

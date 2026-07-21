@@ -85,6 +85,14 @@ let assetRefreshTimer = null;
 let assetRefreshToken = 0;
 const busyDisabledState = new Map();
 
+function syncBattleVisualViewport() {
+  const viewport = window.visualViewport;
+  const height = Math.max(320, Math.round(viewport?.height ?? window.innerHeight));
+  const offsetTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0));
+  document.documentElement.style.setProperty("--battle-visual-height", `${height}px`);
+  document.documentElement.style.setProperty("--battle-visual-offset-top", `${offsetTop}px`);
+}
+
 function escapeText(value, fallback = "—") {
   const text = value == null ? "" : String(value).trim();
   return text || fallback;
@@ -710,7 +718,7 @@ const TUTORIAL_COACH_COPY = Object.freeze({
   "trouble-aftermath": "誰か一人に、起きたことを聞こう",
   "mission-log": "右上の巻物で、目的と期限を確認",
   shop: "メニューから店を開いてみよう",
-  skills: "右上の能力から、技を一つ覚える",
+  skills: "右上の能力を開く → おすすめ技の必要SPを確認 → 取得。今は取得せず、捜索を中断する選択もできる",
   combat: "赤い選択肢は戦闘。準備できたら進もう",
 });
 
@@ -1053,12 +1061,28 @@ function interactiveRoundMessage(battle, actors) {
 
 const BATTLE_DISABLED_REASONS = Object.freeze({
   cooldown: "再使用まで待つ必要がある",
-  uses_exhausted: "この戦闘ではもう使えない",
-  conditions_not_met: "今は発動条件を満たしていない",
-  insufficient_resource: "MP・HPが足りない",
-  no_target: "対象がいない",
-  not_active: "戦闘中には使えない",
+  uses_exhausted: "この戦闘では使用回数を使い切った",
+  conditions_not_met: "発動条件を満たしていない",
+  insufficient_resource: "消費するHP・MPが足りない",
+  no_target: "効果を向けられる対象がいない",
+  not_active: "戦闘中に使う技ではない",
 });
+
+function battleDisabledDetail(command = {}) {
+  if (command.disabledDetail) return escapeText(command.disabledDetail, "今は使えない");
+  const reason = BATTLE_DISABLED_REASONS[command.disabledReason] ?? "今は使えない";
+  if (command.disabledReason === "insufficient_resource") {
+    const requirements = [
+      number(command.mpCost) > 0 ? `必要MP ${number(command.mpCost)}／現在 ${number(command.currentMp)}` : "",
+      number(command.hpCost) > 0 ? `必要HP ${number(command.hpCost) + 1}以上／現在 ${number(command.currentHp)}` : "",
+    ].filter(Boolean).join("、");
+    return requirements ? `${reason}（${requirements}）` : reason;
+  }
+  if (command.disabledReason === "cooldown" && number(command.cooldownRemaining) > 0) {
+    return `${reason}（あと${number(command.cooldownRemaining)}ラウンド）`;
+  }
+  return reason;
+}
 
 function battleCommandCost(command) {
   return [number(command.mpCost) > 0 ? `MP ${number(command.mpCost)}` : "", number(command.hpCost) > 0 ? `HP ${number(command.hpCost)}` : ""]
@@ -1075,7 +1099,7 @@ function createBattleCommandButton(label, { command = null, detail = "", disable
   main.textContent = label;
   button.append(main);
   const subtext = detail || (command?.available === false
-    ? BATTLE_DISABLED_REASONS[command.disabledReason] ?? "今は使えない"
+    ? battleDisabledDetail(command)
     : battleCommandCost(command ?? {}));
   if (subtext) {
     const small = document.createElement("small");
@@ -1083,6 +1107,10 @@ function createBattleCommandButton(label, { command = null, detail = "", disable
     button.append(small);
   }
   button.setAttribute("aria-label", [label, subtext].filter(Boolean).join("。"));
+  if (disabled && subtext) {
+    button.title = subtext;
+    button.dataset.disabledExplanation = subtext;
+  }
   button.addEventListener("click", onClick);
   return button;
 }
@@ -1134,7 +1162,7 @@ function renderInteractiveBattleCommands(battle, { focus = false } = {}) {
     commands.filter((command) => command.kind === "skill").forEach((command) => {
       const cost = battleCommandCost(command);
       const detail = command.available === false
-        ? BATTLE_DISABLED_REASONS[command.disabledReason] ?? "今は使えない"
+        ? battleDisabledDetail(command)
         : [cost, escapeText(command.description, "")].filter(Boolean).join("・");
       ui.battleCommandMenu.append(createBattleCommandButton(escapeText(command.name, "スキル"), {
         command,
@@ -1210,6 +1238,7 @@ function renderInteractiveBattleCommands(battle, { focus = false } = {}) {
 
 function renderInteractiveBattle(save) {
   const battle = save.battle;
+  syncBattleVisualViewport();
   if (!battle || battle.status !== "active") return;
   const isNewBattle = interactiveBattleState?.id !== battle.id;
   if (isNewBattle) interactiveBattleState = { id: battle.id, mode: "root", selectedActionId: null };
@@ -1247,6 +1276,7 @@ function renderBattlePage() {
 }
 
 function openBattlePlayback(save, battle, key, { resultOnly = false } = {}) {
+  syncBattleVisualViewport();
   const playback = battle?.playback;
   if (!playback || !list(playback.combatants).length) return;
   const prepared = battlePages(battle);
@@ -1436,7 +1466,11 @@ async function sendCommand(type, payload, commandId = crypto.randomUUID()) {
       "conditions_not_met",
       "insufficient_resource",
     ].includes(code)) {
-      showError(errorTarget, "その戦闘行動は選べません。別のコマンドを選んでください。");
+      const detail = escapeText(error.data?.details?.summary ?? error.data?.details?.reasonDetail, "");
+      const reason = BATTLE_DISABLED_REASONS[code] ?? "その戦闘行動は選べません";
+      showError(errorTarget, detail && detail !== code
+        ? `${reason}。${detail}`
+        : `${reason}。別のコマンドを選ぶか、条件を整えてください。`);
     } else {
       showError(errorTarget, error.message, () => sendCommand(type, payload, commandId));
     }
@@ -1664,7 +1698,11 @@ function renderSkills() {
   ui.dialogBody.append(status);
   const intro = document.createElement("p");
   intro.className = "skill-intro";
-  intro.textContent = "SPはスキルポイントです。必要SPを消費すると、新しい能力を取得できます。";
+  const skillTutorialActive = currentSave?.tutorial?.id === "skills" && list(currentSave?.skills?.learned).length === 0;
+  intro.textContent = skillTutorialActive
+    ? "この先では魔物と遭遇することがあります。①下の『今の装備におすすめ』を見る ②必要SPを確認する ③『取得』を押す。取得せず進むこともできますが、通常攻撃だけで戦うことになります。"
+    : "SPはスキルポイントです。必要SPを消費すると、新しい能力を取得できます。取得条件と、現在の装備で使えるかを確認してください。";
+  if (skillTutorialActive) intro.classList.add("is-tutorial-primer");
   ui.dialogBody.append(intro);
   const statGrid = document.createElement("div");
   statGrid.className = "stat-grid";
@@ -1749,7 +1787,9 @@ function missionArticle(mission) {
     .map((clue) => escapeText(clue?.text, ""))
     .filter(Boolean)
     .map((text) => `手掛かり：${text}`);
-  [facilityName ? `目的施設：${facilityName}` : targetLocation ? `地域：${targetLocation}` : "", deadline, ...knownClues].filter(Boolean).forEach((label) => {
+  const discoveryReason = escapeText(mission?.discoveryReason, "");
+  const optionalLabel = mission?.optional === true ? "任意：関わらずに別の土地や仕事を選べる" : "";
+  [discoveryReason ? `分かったきっかけ：${discoveryReason}` : "", optionalLabel, facilityName ? `目的施設：${facilityName}` : targetLocation ? `地域：${targetLocation}` : "", deadline, ...knownClues].filter(Boolean).forEach((label) => {
     const item = document.createElement("li");
     item.textContent = label;
     meta.append(item);
@@ -2054,7 +2094,13 @@ ui.battleDialog.addEventListener("cancel", (event) => {
     skipBattle();
   }
 });
-window.addEventListener("resize", positionTutorialCoach);
+window.addEventListener("resize", () => {
+  positionTutorialCoach();
+  syncBattleVisualViewport();
+});
+window.visualViewport?.addEventListener("resize", syncBattleVisualViewport);
+window.visualViewport?.addEventListener("scroll", syncBattleVisualViewport);
+syncBattleVisualViewport();
 
 document.addEventListener("keydown", (event) => {
   if (busy || ui.game.hidden || ui.dialog.open || ui.battleDialog.open || event.altKey || event.ctrlKey || event.metaKey) return;
