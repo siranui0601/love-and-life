@@ -21,6 +21,7 @@ jobs:
           show-progress: false
       - name: Create source archive
         run: |
+          # This archive is for local regression analysis of the current PR revision.
           zip -qr /tmp/trpg-source.zip . \
             -x '.git/*' 'node_modules/*' 'runtime-data/*' 'tools/trpg-sim/reports/*'
       - uses: actions/upload-artifact@v4
