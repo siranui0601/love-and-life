@@ -213,3 +213,17 @@ test("being hungry does not invent food where no food source exists", () => {
   const actions = playerNeedActions(state, model);
   assert.equal(actions.some((entry) => entry.type === "eat"), false);
 });
+
+test("paid food and lodging are not offered when the player cannot afford them", () => {
+  const state = fresh();
+  state.player.location = "王都";
+  state.player.facilityId = "LOC_CAP_LOWER_INN";
+  state.player.freeMeals = 0;
+  state.player.freeLodging = 0;
+  state.player.gold = 0;
+  state.player.satiety = 10;
+  state.player.fatigue = 90;
+  const actions = playerNeedActions(state, model);
+  assert.equal(actions.some((entry) => entry.type === "eat"), false);
+  assert.equal(actions.some((entry) => entry.type === "sleep"), false);
+});

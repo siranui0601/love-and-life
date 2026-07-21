@@ -406,7 +406,7 @@ export function playerNeedActions(state, model) {
   const hasPortableMeal = Number(state.player.freeMeals ?? 0) > 0;
   if (servesFood || hasPortableMeal) {
     const price = hasPortableMeal ? 0 : Math.max(2, Number(state.tuning.mealPrice ?? 6));
-    actions.push({
+    if (price <= Number(state.player.gold ?? 0)) actions.push({
       id: `NEED:EAT:${state.player.facilityId ?? state.player.location}`,
       type: "eat",
       minutes: 30,
@@ -421,7 +421,7 @@ export function playerNeedActions(state, model) {
     const untilMorning = overnight
       ? ((24 * 60 - state.minuteOfDay + 420) % 1440 || 480)
       : 480;
-    actions.push({
+    if (price <= Number(state.player.gold ?? 0)) actions.push({
       id: `NEED:SLEEP:${state.player.facilityId ?? state.player.location}`,
       type: "sleep",
       minutes: untilMorning,

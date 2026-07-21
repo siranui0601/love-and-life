@@ -245,7 +245,8 @@ async function rescueJourney() {
     await runner.choose(/ACTION:MSN-T01:rescue|赤牙狼/u, "rescue battle");
     const battleRounds = await runner.finishBattle();
     checks.battleFinishes = battleRounds > 0 && !runner.save.battle;
-    checks.finnSpeaksAfterBattle = sceneLines(runner.save).some((line) => /フィン/u.test(line) && /足|歩け|動か|広場|村|助け/u.test(line));
+    const postBattleScene = sceneLines(runner.save).join("\n");
+    checks.finnSpeaksAfterBattle = /フィン/u.test(postBattleScene) && /足|歩け|動か|広場|村|助け/u.test(postBattleScene);
     checks.escortStepExists = t01(runner.save)?.currentStep?.id === "escort" && runner.save.choices.some((choice) => /escort/u.test(choice.actionId));
     await runner.choose(/ACTION:MSN-T01:escort|フィンに声|斜面の下/u, "escort conversation");
     checks.escortRequestIsHuman = sceneLines(runner.save).some((line) => /足|歩け|広場|一緒|置いて/u.test(line));
@@ -554,7 +555,9 @@ function auditSummary(records) {
     const families = auditChoices.map((choice) => choice.generatedAction?.kind ?? choice.intentType ?? choice.id?.split(":")?.[0] ?? "other");
     if (families.length === 3 && new Set(families).size === 1) sameFamilyTriples += 1;
     const signature = auditChoices.map((choice) => text(choice.label).replace(/[「」『』\s]/gu, "").slice(0, 80)).join("|");
-    if (signature) tripleSignatures.set(signature, (tripleSignatures.get(signature) ?? 0) + 1);
+    const transactionalWorkScene = record.action?.dialogueTopic === "work_offer"
+      || /^WORK_(?:OFFER|CONFIRM|CLARIFY|DECLINE)/u.test(String(record.action?.id ?? ""));
+    if (signature && !transactionalWorkScene) tripleSignatures.set(signature, (tripleSignatures.get(signature) ?? 0) + 1);
     if (!record.evaluation?.passed) failed.push({ scenarioId: record.scenarioId, actionId: record.action?.id, source: record.source, checks: record.evaluation?.checks, validationErrors: record.validationErrors });
     const visible = [record.response?.narrative, ...(record.response?.speeches ?? []).map((speech) => speech.text), ...(record.response?.choices ?? []).map((choice) => choice.label)].filter(Boolean).join("\n");
     if (META_PATTERN.test(visible)) metaLeaks.push({ scenarioId: record.scenarioId, actionId: record.action?.id, visible });

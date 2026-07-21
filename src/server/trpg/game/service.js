@@ -1100,7 +1100,9 @@ function decorateWorkOfferAction(action, runtime, data, preferredNpcId = null) {
     ?? present[0]
     ?? null;
   if (!actor) return null;
-  const wage = deterministicWorkWage(runtime, facilityId, actor.id);
+  const jobMinutes = Math.max(30, Number(action.workDurationMinutes ?? 120));
+  const riskClass = ["low", "medium", "high"].includes(action.workRiskClass) ? action.workRiskClass : "low";
+  const wage = deterministicWorkWage(runtime, facilityId, actor.id, { minutes: jobMinutes, riskClass });
   const job = workDescription(facilityId);
   return {
     ...action,
@@ -1109,10 +1111,12 @@ function decorateWorkOfferAction(action, runtime, data, preferredNpcId = null) {
     workOffer: true,
     quotedWage: wage,
     workDescription: job,
+    workDurationMinutes: jobMinutes,
+    workRiskClass: riskClass,
     targetNpcId: actor.id,
     targetNpcName: actor.name,
     dialogueTopic: "work_offer",
-    requiredDisclosure: `仕事は「${job}」、報酬は${wage}G`,
+    requiredDisclosure: `仕事は「${job}」、所要時間は${jobMinutes}分、報酬は${wage}G`,
     minutes: Math.min(10, Number(action.minutes ?? 6)),
   };
 }
@@ -1146,7 +1150,7 @@ function pendingWorkOfferActions(runtime, data) {
       dialogueTopic: "work_offer",
       targetNpcId: offer.actorNpcId,
       targetNpcName: offer.actorName,
-      requiredDisclosure: `仕事は「${offer.description}」、報酬は${offer.wage}G`,
+      requiredDisclosure: `仕事は「${offer.description}」、所要時間は${offer.minutes}分、報酬は${offer.wage}G`,
       minutes: 3,
       label: "作業の手順と、終わりの目安をもう一度確かめる",
     },
@@ -1474,15 +1478,25 @@ function compileGeneratedChoice(runtime, data, choice, index = 0) {
     };
   }
   if (generated.kind === "move") {
-    const movement = movementActions(runtime, data).find((action) => (generated.destinationFacilityId && action.destinationFacilityId === generated.destinationFacilityId)
-      || (generated.destinationHub && action.destinationHub === generated.destinationHub));
+    const movements = movementActions(runtime, data);
+    const movement = generated.destinationFacilityId
+      ? movements.find((action) => action.destinationFacilityId === generated.destinationFacilityId)
+      : generated.destinationHub
+        ? movements.find((action) => action.destinationHub === generated.destinationHub)
+        : null;
     if (!movement) return null;
-    return { ...movement, id: `GENERATED:MOVE:${digest}`, sourceMovementId: movement.id, generatedApproach: approach, label: label || movement.label };
+    const destinationName = data.model.facilityById?.[movement.destinationFacilityId]?.name ?? movement.destinationHub;
+    const safeLabel = label && destinationName && label.includes(destinationName)
+      ? label
+      : movement.label;
+    return { ...movement, id: `GENERATED:MOVE:${digest}`, sourceMovementId: movement.id, generatedApproach: approach, label: safeLabel };
   }
   if (["eat", "sleep", "rest"].includes(generated.kind)) {
     const need = journey.playerNeedActions(runtime.playerState, data.model).find((action) => action.type === generated.kind);
     if (!need) return null;
-    return { ...need, id: `GENERATED:${generated.kind.toUpperCase()}:${digest}`, generatedApproach: approach, label: label || need.label };
+    // Needs are authoritative single actions. A generated label that combines
+    // eating with sleeping or movement would promise effects the resolver does not apply.
+    return { ...need, id: `GENERATED:${generated.kind.toUpperCase()}:${digest}`, generatedApproach: approach, label: need.label };
   }
   if (generated.kind === "work") {
     const employer = eligibleWorkEmployers(runtime, data).find((npc) => npc.id === generated.targetNpcId)
@@ -4077,13 +4091,19 @@ function narrativeActionContract(runtime, resolvedAction, authoritativeOutcome) 
 function narrativeSceneMode(resolvedAction, authoritativeOutcome) {
   if (resolvedAction?.dialogueTopic === "work_offer") return "work_generation";
   if (["conversation", "talk"].includes(resolvedAction?.type)) return "conversation";
-  if (authoritativeOutcome?.battle || ["missionBattle", "seekBattle"].includes(resolvedAction?.type)) return "battle_aftermath";
+  if (authoritativeOutcome?.battlePending === true || authoritativeOutcome?.type === "battleStart") return "battle_start";
+  if (authoritativeOutcome?.battle || authoritativeOutcome?.type === "battleComplete") return "battle_aftermath";
   if (resolvedAction?.type === "move") return "arrival";
   if (["investigate", "localInvestigate", "observe"].includes(resolvedAction?.type)) return "exploration";
   return "free_roam";
 }
 
 function narrativeProgressContract(runtime, missions, actions) {
+  // A work offer is a modal three-way decision. Requiring an unrelated mission
+  // anchor here makes the model fight the transaction and causes needless repairs.
+  if (runtime.pendingWorkOffer || ensureNarrativeMemory(runtime).activityFocus?.intent === "work") {
+    return { mode: "free", anchorCandidateIds: [], missionId: null, currentStep: null, rationale: "現在の仕事または契約判断を優先する" };
+  }
   const needs = journey.ensurePlayerNeeds(runtime.playerState);
   const urgentNeeds = actions.filter((candidate) => (candidate.type === "eat" && needs.satiety <= 20)
     || (candidate.type === "sleep" && needs.fatigue >= 80));

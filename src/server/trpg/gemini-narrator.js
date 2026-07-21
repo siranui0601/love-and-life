@@ -87,8 +87,12 @@ function sceneSpecificRules(context) {
   if (context.sceneMode === "exploration") {
     rules.push("authoritativeOutcomeや発見済み情報を具体的な感覚・痕跡として描き、同じ発見を繰り返さない");
   }
+  if (context.sceneMode === "battle_start") {
+    rules.push("戦闘は今から始まる。敵を倒した、逃げた、救助したなど、まだ確定していない結末を書かない");
+    rules.push("敵が姿を現した瞬間と切迫した状況だけを短く描き、戦闘結果は戦闘処理に任せる");
+  }
   if (context.sceneMode === "battle_aftermath") {
-    rules.push("戦闘結果を変更せず、その場にいる当事者の負傷・安堵・恐怖・次の目的への反応を描く");
+    rules.push("確定した戦闘結果だけを描き、その場にいる当事者の負傷・安堵・恐怖・次の目的への反応を描く");
   }
   if (context.sceneMode === "arrival") {
     rules.push("到着先の公開情報と同席人物だけを使い、道中の天候・距離・疲れ・危険の有無を一文以上描いてから、到着によって自然に起きる最初の反応を描く");
@@ -261,14 +265,13 @@ async function callProvider(provider, payload, audit) {
   throw lastError;
 }
 
-function componentRepairErrors(rawValidation, sanitizedValidation) {
-  // Optional proposal mistakes are normalized or discarded locally. A second
-  // model call is reserved for player-visible or progression-critical parts.
-  const structuralPattern = /(?:json_parse|choices must contain|choice ids are duplicated|choice labels are semantically duplicated|distinct action families|id is not in the executable candidate pool|generatedAction|workProposal|progress anchor|active player-intent continuation|conversation must include a reply|required reaction actor missing|narrative is empty)/iu;
-  return [...new Set([
-    ...(sanitizedValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),
-    ...(rawValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),
-  ])];
+function componentRepairErrors(_rawValidation, sanitizedValidation) {
+  // The sanitizer already drops malformed proposals, compiles valid generated
+  // actions, fills missing choices, and the service injects authoritative
+  // progress/continuity anchors. Do not pay for a second model call when that
+  // local recovery succeeded. Repair only defects still visible after it.
+  const visibleFailurePattern = /(?:choices must contain|choice ids are duplicated|choice labels are semantically duplicated|distinct action families|conversation must include a reply|required reaction actor missing|narrative is empty)/iu;
+  return [...new Set((sanitizedValidation?.errors ?? []).filter((error) => visibleFailurePattern.test(error)))];
 }
 
 export function createTrpgNarrator(options = {}) {

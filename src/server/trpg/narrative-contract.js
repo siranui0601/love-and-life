@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.4-generative-director";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.5-generative-director";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",
@@ -642,8 +642,11 @@ export function validateNarrativeOutput(value, context) {
           errors.push(`choices[${index}].generatedAction targets an unavailable NPC`);
         }
         if (kind === "move") {
-          const valid = affordances.movements?.some((move) => (generated.destinationFacilityId && move.destinationFacilityId === generated.destinationFacilityId)
-            || (generated.destinationHub && move.destinationHub === generated.destinationHub));
+          const valid = generated.destinationFacilityId
+            ? affordances.movements?.some((move) => move.destinationFacilityId === generated.destinationFacilityId)
+            : generated.destinationHub
+              ? affordances.movements?.some((move) => move.destinationHub === generated.destinationHub)
+              : false;
           if (!valid) errors.push(`choices[${index}].generatedAction targets an unavailable destination`);
         }
         if (["eat", "sleep", "rest"].includes(kind) && !affordances.needActions?.some((entry) => entry.kind === kind)) {

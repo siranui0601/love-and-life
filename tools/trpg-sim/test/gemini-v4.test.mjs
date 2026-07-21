@@ -404,7 +404,7 @@ test("a learned fact must appear verbatim in the target reply and in determinist
   assert.equal(validateNarrativeOutput(included, context).ok, true);
 });
 
-test("invalid Gemini output is repaired and exact replay bypasses the provider", async () => {
+test("locally recoverable Gemini output is normalized once and exact replay bypasses the provider", async () => {
   const calls = [];
   const provider = {
     async generate(payload) {
@@ -445,9 +445,10 @@ test("invalid Gemini output is repaired and exact replay bypasses the provider",
   const first = await narrator.generate(scenario(), { allowedTroubleIds: ["T01"] });
   const second = await narrator.generate(scenario(), { allowedTroubleIds: ["T01"] });
   assert.equal(first.choices.length, 3);
-  assert.equal(first.speeches[0].actorId, "NPC-LOCAL");
-  assert.equal(first.meta.validAfterRepair, true);
-  assert.deepEqual(calls, ["primary", "repair"]);
+  assert.equal(first.speeches.length, 0);
+  assert.equal(first.meta.repairCalls, 0);
+  assert.equal(first.meta.source, "gemini");
+  assert.deepEqual(calls, ["primary"]);
   assert.equal(second.meta.source, "replay_cache");
   assert.equal(second.meta.providerCalls, 0);
   assert.equal(second.narrative, first.narrative);
