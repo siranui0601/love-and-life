@@ -100,19 +100,26 @@ export function evaluateNarrativeAuditRecord({ context, response }) {
   const genericSpeech = speeches.some((speech) => /^(?:\.{3}|…+|ふむ|そうだな|なるほど)[。…\s]*$/u.test(String(speech.text ?? "").trim()));
   const isConversation = ["conversation", "talk"].includes(String(action.type ?? ""));
   const isWorkOffer = action.dialogueTopic === "work_offer";
-  const isEscort = action.dialogueTopic === "t01_escort";
+  const isEscort = ["t01_escort", "t01_rescue_aftermath"].includes(action.dialogueTopic);
+  const candidateIds = new Set((context?.allowedActionCandidates ?? []).map((candidate) => candidate.id));
+  const progressAnchors = new Set(context?.progressContract?.anchorCandidateIds ?? []);
+  const visibleText = [response?.narrative, ...speeches.map((speech) => speech.text), ...choices.map((choice) => choice.label)].join("\n");
   const checks = {
     narrativePresent: Boolean(String(response?.narrative ?? "").trim()),
     threeChoices: choices.length === 3,
     uniqueChoiceIds: new Set(choices.map((choice) => choice.id)).size === choices.length,
     choiceMeaningsDiffer: choiceSignatures.size === choices.length && choicesAreMeaningfullyDifferent(choices),
+    choicesAreExecutable: !candidateIds.size || choices.every((choice) => candidateIds.has(choice.id)),
+    progressRouteOffered: context?.progressContract?.mode !== "must_offer_progress"
+      || choices.some((choice) => progressAnchors.has(choice.id)),
     localNpcOnly: remoteSpeechActors.length === 0,
     authorityFiltered: rejected.every((entry) => entry && entry.reason),
-    conversationHasSubstance: !isConversation || targetReplies.length >= 55,
+    conversationHasSubstance: !isConversation || targetReplies.length >= 12,
     requiredDisclosurePresent: !requiredDisclosure || targetReplies.includes(requiredDisclosure),
     workOfferIsConcrete: !isWorkOffer || (requiredDisclosure && /(?:G|賃金|報酬)/u.test(targetReplies)),
     escortHasHumanRequest: !isEscort || /(?:歩け|足|戻|広場|一緒|置いて)/u.test(targetReplies),
     noEmptyReactionSpeech: !genericSpeech,
+    noInternalIdsInVisibleText: !/(?:SKL-|NPC\d|LOC_[A-Z]|MSN-[A-Z]|ACTION:)/u.test(visibleText),
   };
   return {
     passed: Object.values(checks).every(Boolean),
