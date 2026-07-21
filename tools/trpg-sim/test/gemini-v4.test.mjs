@@ -124,6 +124,13 @@ test("Gemini selects three executable actions from a broader pool and keeps a pr
     missionId: "MSN-T01",
     currentStep: "少年の行方を追う",
   };
+  input.authoritativeState.actionAffordances = {
+    allowedKinds: ["talk", "investigate", "observe"],
+    talkNpcIds: ["NPC-LOCAL"],
+    movements: [],
+    needActions: [],
+    workEmployerNpcIds: ["NPC-LOCAL"],
+  };
   const context = buildLocalNarrativeContext(input).context;
   assert.equal(context.allowedActionCandidates.length, 5);
   const valid = {
@@ -137,12 +144,21 @@ test("Gemini selects three executable actions from a broader pool and keeps a pr
     proposals: [],
   };
   assert.equal(validateNarrativeOutput(valid, context).ok, true);
+  const generated = validateNarrativeOutput({
+    ...valid,
+    choices: [
+      valid.choices[0],
+      { id: "GENERATED:1", label: "衛兵に路地の見張りについて聞く", intentType: "talk", targetNpcId: "NPC-LOCAL", generatedAction: { kind: "talk", targetNpcId: "NPC-LOCAL" } },
+      { id: "GENERATED:2", label: "井戸端から広場全体の人の流れを観察する", intentType: "observe", generatedAction: { kind: "observe", approach: "高い位置から人の流れを見る" } },
+    ],
+  }, context);
+  assert.equal(generated.ok, true);
   const invalid = validateNarrativeOutput({
     ...valid,
     choices: [valid.choices[1], valid.choices[2], { id: "MADE-UP", label: "存在しない行動", intentType: "prepare" }],
   }, context);
   assert.equal(invalid.ok, false);
-  assert.ok(invalid.errors.some((error) => /executable candidate pool/u.test(error)));
+  assert.ok(invalid.errors.some((error) => /executable candidate or provide generatedAction/u.test(error)));
   assert.ok(invalid.errors.includes("choices must include at least one progress anchor candidate"));
 
   const sanitized = sanitizeNarrativeOutput({

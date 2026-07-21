@@ -23,7 +23,7 @@ import { FileTrpgSaveStore } from "./save-store.js";
 import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v11";
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v12";
 const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
@@ -100,7 +100,7 @@ const OPENING_AFTERMATH_FACT = Object.freeze({
 });
 
 const PROFILE_BY_ID = new Map(journey.PLAYER_PROFILES.map((profile) => [profile.id, profile]));
-const COMMAND_TYPES = new Set(["CHOOSE", "MOVE", "SHOP_BUY", "SHOP_SELL", "EQUIP", "UNEQUIP", "LEARN_SKILL", "TUTORIAL_ACK", "ACK_NPC_INTRODUCTION", "BATTLE_ACT"]);
+const COMMAND_TYPES = new Set(["CHOOSE", "MOVE", "TALK_NPC", "SHOP_BUY", "SHOP_SELL", "EQUIP", "UNEQUIP", "LEARN_SKILL", "TUTORIAL_ACK", "ACK_NPC_INTRODUCTION", "BATTLE_ACT"]);
 const COMMAND_PAYLOAD_KEY = Object.freeze({
   CHOOSE: "choiceId",
   MOVE: "moveId",
@@ -365,6 +365,7 @@ function createNarrativeMemory() {
     npcMemories: [],
     missionLeads: [],
     recentWorkTitles: [],
+    recentChoiceSignatures: [],
     activityFocus: null,
     semanticFlags: {},
   };
@@ -376,6 +377,7 @@ function ensureNarrativeMemory(runtime) {
   runtime.narrativeMemory.npcMemories ??= [];
   runtime.narrativeMemory.missionLeads ??= [];
   runtime.narrativeMemory.recentWorkTitles ??= [];
+  runtime.narrativeMemory.recentChoiceSignatures ??= [];
   runtime.narrativeMemory.activityFocus ??= null;
   runtime.narrativeMemory.semanticFlags ??= {};
   return runtime.narrativeMemory;
@@ -415,11 +417,31 @@ function discoverArrival(runtime, data) {
   // ordinary facilities. Secret/event-only locations remain mission-gated.
   if (runtime.playerState.progress.travel.visitedHubs.has(hubId) && hubId !== "田園の村") {
     for (const facility of data.model.facilitiesByHub[hubId] ?? []) {
-      if (!/隠|秘密|地下|処刑|牢|祭壇|封印|見張り小屋|裏路地/u.test(`${facility.name} ${facility.type}`)) {
+      if (journey.facilityAvailableAt(runtime.playerState, data.model, facility)
+        && !/隠|秘密|地下|処刑|牢|祭壇|封印|見張り小屋|裏路地/u.test(`${facility.name} ${facility.type}`)) {
         knowledge.knownFacilityIds.add(facility.id);
       }
     }
   }
+}
+
+function reconcileFacilityAvailability(runtime, data) {
+  const current = data.model.facilityById[runtime.playerState.player.facilityId];
+  if (!current || journey.facilityAvailableAt(runtime.playerState, data.model, current)) return false;
+  const replacement = (data.model.facilitiesByHub[runtime.playerState.player.location] ?? [])
+    .filter((facility) => journey.facilityAvailableAt(runtime.playerState, data.model, facility))
+    .sort((left, right) => {
+      const publicScore = (facility) => /広場|門|駅|港|宿|通り/u.test(`${facility.name} ${facility.type}`) ? 0 : 1;
+      return publicScore(left) - publicScore(right) || left.sourceOrder - right.sourceOrder;
+    })[0] ?? null;
+  runtime.playerState.player.facilityId = replacement?.id ?? null;
+  runtime.playerState.history.push({
+    type: "FACILITY_BECAME_UNAVAILABLE",
+    minute: runtime.playerState.absoluteMinute,
+    fromFacilityId: current.id,
+    toFacilityId: replacement?.id ?? null,
+  });
+  return true;
 }
 
 function prepareOpeningTutorial(livingWorld, absoluteMinute = null) {
@@ -986,6 +1008,8 @@ function hydrateRuntime(record, data) {
   runtime.pendingNpcIntroduction ??= null;
   runtime.narrativeChoiceSelection ??= null;
   ensureNarrativeMemory(runtime);
+  journey.ensurePlayerNeeds(runtime.playerState);
+  reconcileFacilityAvailability(runtime, data);
   syncAuthoritativePresentNpcIds(runtime, data);
   return runtime;
 }
@@ -1000,10 +1024,12 @@ function choiceIntent(action) {
   if (["missionBattle", "seekBattle"].includes(action.type)) return "prepare";
   if (action.type === "resolveMission") return "help";
   if (action.type === "rest") return "wait";
+  if (["eat", "sleep"].includes(action.type)) return action.type;
+  if (action.type === "move") return "move";
   if (action.type === "wait") return "wait";
   if (action.type === "localInvestigate") return "investigate";
   if (action.type === "plan") return "prepare";
-  if (action.type === "work") return "help";
+  if (action.type === "work") return "work";
   return "observe";
 }
 
@@ -1050,10 +1076,24 @@ function workDescription(facilityId) {
   }[facilityId] ?? "荷運びと片づけを手伝う";
 }
 
+function eligibleWorkEmployers(runtime, data) {
+  return presentNpcsAt(runtime, data).filter((publicNpc) => {
+    const npc = data.model.npcById?.[publicNpc.id] ?? data.model.npcs.find((entry) => entry.id === publicNpc.id);
+    const state = runtime.livingWorld.npcStates[publicNpc.id];
+    const text = `${publicNpc.role ?? ""} ${npc?.occupation ?? ""}`;
+    if (state?.lifeStatus === "injured") return false;
+    if (/子ども|少年|少女|幼児|児童|患者|行方不明/u.test(text)) return false;
+    return true;
+  }).sort((left, right) => {
+    const score = (npc) => /村長|店主|主人|農|職人|商人|管理|受付|隊長|工房|宿/u.test(npc.role ?? "") ? 0 : 1;
+    return score(left) - score(right) || left.id.localeCompare(right.id);
+  });
+}
+
 function decorateWorkOfferAction(action, runtime, data, preferredNpcId = null) {
   if (!action?.workOffer && action?.type !== "work") return action;
   const facilityId = runtime.playerState.player.facilityId;
-  const present = presentNpcsAt(runtime, data);
+  const present = eligibleWorkEmployers(runtime, data);
   const actor = present.find((npc) => npc.id === preferredNpcId)
     ?? present.find((npc) => npc.id === action.targetNpcId)
     ?? present[0]
@@ -1321,6 +1361,8 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     && action.targetNpcId
     && missionConversationTargets.has(action.targetNpcId)));
   const actionPriority = (action) => {
+    const needs = journey.ensurePlayerNeeds(runtime.playerState);
+    if (["eat", "sleep"].includes(action.type) && (needs.satiety <= 20 || needs.fatigue >= 80)) return -1;
     if (action.missionId) return 0;
     if (action.type === "localInvestigate") return 1;
     if (action.type === "conversation" && !action.workOffer) return 2;
@@ -1338,6 +1380,7 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     ? null
     : contextualLocalAction({ id: "WORK", type: "work", workOffer: true, minutes: 6, label: "この場所で受けられる仕事を尋ねる" }, runtime, data);
   const fillers = [
+    ...journey.playerNeedActions(runtime.playerState, data.model),
     ...(localWorkCandidate ? [localWorkCandidate] : []),
     { id: "TUTORIAL:PAUSE:OBSERVE", type: "observe", minutes: 45, label: "今いる場所の様子を、もう少し確かめる" },
     { id: "TUTORIAL:PAUSE:WAIT", type: "wait", minutes: 30, label: "物音と人の動きが変わるまで、少し待つ" },
@@ -1395,12 +1438,99 @@ function generatedChoiceDetail(action, runtime, selection) {
   return resolved;
 }
 
+function generatedActionIdentity(action) {
+  return [
+    action.type,
+    action.targetNpcId ?? "",
+    action.destinationFacilityId ?? "",
+    action.destinationHub ?? "",
+    action.generatedApproach ?? "",
+  ].join(":");
+}
+
+function compileGeneratedChoice(runtime, data, choice, index = 0) {
+  const generated = choice?.generatedAction;
+  if (!generated?.kind) return null;
+  const label = cleanText(choice.label, 180);
+  const approach = cleanText(generated.approach ?? choice.approach, 180) || null;
+  const digest = sha256(`${runtime.playerState.absoluteMinute}:${runtime.playerState.player.facilityId}:${choice.id}:${JSON.stringify(generated)}`).slice(0, 12);
+  if (generated.kind === "talk") {
+    const target = presentNpcsAt(runtime, data).find((npc) => npc.id === generated.targetNpcId);
+    if (!target) return null;
+    return {
+      id: `GENERATED:TALK:${target.id}:${digest}`,
+      type: "conversation",
+      targetNpcId: target.id,
+      targetNpcName: target.name,
+      dialogueTopic: "player_generated",
+      generatedApproach: approach,
+      minutes: 10,
+      label: label || `${target.name}に話しかける`,
+    };
+  }
+  if (generated.kind === "move") {
+    const movement = movementActions(runtime, data).find((action) => (generated.destinationFacilityId && action.destinationFacilityId === generated.destinationFacilityId)
+      || (generated.destinationHub && action.destinationHub === generated.destinationHub));
+    if (!movement) return null;
+    return { ...movement, id: `GENERATED:MOVE:${digest}`, sourceMovementId: movement.id, generatedApproach: approach, label: label || movement.label };
+  }
+  if (["eat", "sleep", "rest"].includes(generated.kind)) {
+    const need = journey.playerNeedActions(runtime.playerState, data.model).find((action) => action.type === generated.kind);
+    if (!need) return null;
+    return { ...need, id: `GENERATED:${generated.kind.toUpperCase()}:${digest}`, generatedApproach: approach, label: label || need.label };
+  }
+  if (generated.kind === "work") {
+    const employer = eligibleWorkEmployers(runtime, data).find((npc) => npc.id === generated.targetNpcId)
+      ?? eligibleWorkEmployers(runtime, data)[0];
+    if (!employer) return null;
+    const action = decorateWorkOfferAction({
+      id: `GENERATED:WORK:${digest}`,
+      type: "work",
+      workOffer: true,
+      targetNpcId: employer.id,
+      label: label || `${employer.name}に、この場所で必要な仕事を尋ねる`,
+      minutes: 6,
+    }, runtime, data, employer.id);
+    if (!action) return null;
+    if (choice.workProposal?.title) {
+      const durationClass = ["short", "half_day", "full_day"].includes(choice.workProposal.durationClass) ? choice.workProposal.durationClass : "short";
+      const riskClass = ["low", "medium", "high"].includes(choice.workProposal.riskClass) ? choice.workProposal.riskClass : "low";
+      const minutes = { short: 120, half_day: 240, full_day: 480 }[durationClass];
+      const description = cleanText(choice.workProposal.title, 120);
+      const wage = deterministicWorkWage(runtime, runtime.playerState.player.facilityId, employer.id, { minutes, riskClass });
+      Object.assign(action, {
+        workDescription: description,
+        workDurationMinutes: minutes,
+        workRiskClass: riskClass,
+        quotedWage: wage,
+        requiredDisclosure: `仕事は「${description}」、所要時間は${minutes}分、報酬は${wage}G`,
+      });
+    }
+    return action;
+  }
+  const map = {
+    investigate: { type: "localInvestigate", minutes: 45 },
+    observe: { type: "observe", minutes: 35 },
+    wait: { type: "wait", minutes: 30 },
+    plan: { type: "plan", minutes: 25 },
+  };
+  const definition = map[generated.kind];
+  if (!definition) return null;
+  return {
+    id: `GENERATED:${generated.kind.toUpperCase()}:${digest}:${index}`,
+    ...definition,
+    generatedApproach: approach,
+    label: label || "周囲の状況から、別の手掛かりを探す",
+  };
+}
+
 function selectedChoiceActions(runtime, actions) {
   if (!actions.length) return [];
   const key = narrativeChoicePoolKey(runtime, actions);
   const selection = runtime.narrativeChoiceSelection?.poolKey === key
     ? runtime.narrativeChoiceSelection
     : null;
+  if (selection?.resolvedActions?.length) return withChoiceIds(selection.resolvedActions.slice(0, 3));
   const byId = new Map(actions.map((action) => [action.id, action]));
   const selected = [];
   for (const id of selection?.actionIds ?? []) {
@@ -1417,6 +1547,31 @@ function selectedChoiceActions(runtime, actions) {
 
 function choiceActions(runtime, data) {
   return selectedChoiceActions(runtime, choiceActionPool(runtime, data));
+}
+
+function narrativeActionAffordances(runtime, data) {
+  const movement = movementActions(runtime, data);
+  const needActions = journey.playerNeedActions(runtime.playerState, data.model);
+  const employers = eligibleWorkEmployers(runtime, data);
+  const allowedKinds = new Set(["investigate", "observe", "wait", "plan"]);
+  if (presentNpcsAt(runtime, data).length) allowedKinds.add("talk");
+  if (movement.length) allowedKinds.add("move");
+  if (employers.length) allowedKinds.add("work");
+  needActions.forEach((action) => allowedKinds.add(action.type));
+  return {
+    allowedKinds: [...allowedKinds],
+    talkNpcIds: presentNpcsAt(runtime, data).map((npc) => npc.id),
+    movements: movement.slice(0, 20).map((action) => ({
+      id: action.id,
+      label: action.label,
+      scope: action.movementScope,
+      destinationFacilityId: action.destinationFacilityId ?? null,
+      destinationHub: action.destinationHub ?? null,
+    })),
+    needActions: needActions.map((action) => ({ id: action.id, kind: action.type, label: action.label })),
+    workEmployerNpcIds: employers.map((npc) => npc.id),
+    recentChoiceSignatures: ensureNarrativeMemory(runtime).recentChoiceSignatures.slice(-12),
+  };
 }
 
 function movementActions(runtime, data) {
@@ -1443,6 +1598,7 @@ function movementActions(runtime, data) {
       ? knowledge.knownFacilityIds.has(action.destinationFacilityId)
       : knowledge.knownHubIds.has(action.destinationHub));
   if (!runtime.tutorial || runtime.tutorial.stage === "free") return actions;
+  if (runtime.tutorial.stage === "skills") return actions;
   if (!["movement", "mission_intro", "movement_aftermath", "aftermath_intro"].includes(runtime.tutorial.stage)) return [];
   if (["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) {
     return actions
@@ -2328,7 +2484,17 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     }
     resolvedPlayerAction = action;
     resolvedActionId = action.id;
-    if (["missionBattle", "seekBattle"].includes(action.type)) {
+    if (action.type === "move") {
+      const resolve = () => journey.resolveMovementAction(
+        runtime.playerState,
+        data.model,
+        data.battleData,
+        data.skills,
+        profileFor(runtime.playerState.profileId),
+        action,
+      );
+      result = withTemporaryTuning(runtime.playerState, "captureBattleTimeline", true, resolve);
+    } else if (["missionBattle", "seekBattle"].includes(action.type)) {
       const opening = journey.beginInteractiveBattleAction(
         runtime.playerState,
         data.model,
@@ -2383,6 +2549,30 @@ export function executeGameRuntimeCommand(runtime, data, command) {
       if (result?.missionConversationPending) deferredMissionConversation = result;
     }
     if (!deferredMissionConversation) runtime.playerState.metrics.actions += 1;
+  } else if (command.type === "TALK_NPC") {
+    const target = presentNpcsAt(runtime, data).find((npc) => npc.id === payload.npcId);
+    if (!target) throw new TrpgGameError(400, "npc_not_present");
+    const action = {
+      id: `TALK_DIRECT:${target.id}:${runtime.playerState.absoluteMinute}`,
+      type: "conversation",
+      targetNpcId: target.id,
+      targetNpcName: target.name,
+      dialogueTopic: "direct_contact",
+      minutes: 10,
+      label: `${target.name}に話しかける`,
+    };
+    resolvedPlayerAction = action;
+    resolvedActionId = action.id;
+    result = journey.resolvePlayerAction(
+      runtime.playerState,
+      data.model,
+      data.battleData,
+      data.skills,
+      runtime.playerState.catalog,
+      profileFor(runtime.playerState.profileId),
+      action,
+    );
+    runtime.playerState.metrics.actions += 1;
   } else if (command.type === "MOVE") {
     const action = movementActions(runtime, data).find((entry) => entry.id === payload.moveId);
     if (!action) throw new TrpgGameError(400, "movement_not_available");
@@ -2559,7 +2749,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     followFinnDuringMovement(runtime, resolvedPlayerAction, result);
   }
   clearFinnEscortOnFailure(runtime);
-  if (command.type === "MOVE" && result.ok && !result.summary) {
+  if (resolvedPlayerAction?.type === "move" && result.ok && !result.summary) {
     const destinationName = data.model.facilityById[resolvedPlayerAction?.destinationFacilityId]?.name
       ?? resolvedPlayerAction?.destinationHub
       ?? "目的地";
@@ -2580,9 +2770,10 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     }
   }
   if (result.ok && ["CHOOSE", "MOVE"].includes(command.type)) progressTutorial(runtime, resolvedPlayerAction, result);
-  if (result.ok && command.type === "MOVE") discoverArrival(runtime, data);
+  if (result.ok && resolvedPlayerAction?.type === "move") discoverArrival(runtime, data);
   applyPlayerWorldInterventions(runtime, previousTroubleStates);
   advanceLivingWorld(runtime, runtime.playerState.absoluteMinute);
+  reconcileFacilityAvailability(runtime, data);
   reconcileOpeningCrisis(runtime);
   stabilizeOpeningTutorialCast(runtime);
   syncAuthoritativePresentNpcIds(runtime, data);
@@ -3639,6 +3830,9 @@ function presentationChoices(record, choices) {
     type: action.type,
     intentType: choiceIntent(action),
     targetNpcId: action.targetNpcId ?? null,
+    destinationFacilityId: action.destinationFacilityId ?? null,
+    destinationHub: action.destinationHub ?? null,
+    generated: String(action.id ?? "").startsWith("GENERATED:"),
     missionId: action.missionId ?? null,
     stepId: action.stepId ?? null,
     danger: ["missionBattle", "seekBattle"].includes(action.type),
@@ -3647,6 +3841,8 @@ function presentationChoices(record, choices) {
 
 export function buildGameView(record, runtime, data) {
   const state = runtime.playerState;
+  const needs = journey.ensurePlayerNeeds(state);
+  const weather = journey.weatherForState(state);
   const presentNpcs = presentNpcsAt(runtime, data);
   const choices = presentationChoices(record, choiceActions(runtime, data));
   const missions = missionView(runtime, data);
@@ -3718,6 +3914,7 @@ export function buildGameView(record, runtime, data) {
       minute: state.minute,
       daypart: state.daypart,
       absoluteMinute: state.absoluteMinute,
+      weather,
     },
     scene: {
       location: state.player.location,
@@ -3754,6 +3951,8 @@ export function buildGameView(record, runtime, data) {
       gold: state.player.gold,
       hpRatio: state.player.hpRatio,
       mpRatio: state.player.mpRatio,
+      satiety: needs.satiety,
+      fatigue: needs.fatigue,
       stats: { ...state.player.stats },
       equipment: Object.fromEntries(equippedSlots.map(({ slot, id }) => [slot, equipmentView(data, id, state.player.inventory.equipment[id] ?? 0, equippedSlots)])),
       inventory: {
@@ -3877,6 +4076,18 @@ function narrativeSceneMode(resolvedAction, authoritativeOutcome) {
 }
 
 function narrativeProgressContract(runtime, missions, actions) {
+  const needs = journey.ensurePlayerNeeds(runtime.playerState);
+  const urgentNeeds = actions.filter((candidate) => (candidate.type === "eat" && needs.satiety <= 20)
+    || (candidate.type === "sleep" && needs.fatigue >= 80));
+  if (urgentNeeds.length) {
+    return {
+      mode: "must_offer_progress",
+      anchorCandidateIds: urgentNeeds.map((candidate) => candidate.id),
+      missionId: null,
+      currentStep: needs.satiety <= 20 ? "まず食事を取る" : "休める場所で眠る",
+      rationale: "空腹または疲労が危険域にあるため、身を立て直す行動を一つ残す",
+    };
+  }
   const activeIds = new Set(missions.filter((mission) => mission.status === "active").map((mission) => mission.id));
   const anchors = actions.filter((candidate) => candidate.missionId && activeIds.has(candidate.missionId))
     .filter((candidate) => !["wait", "plan", "rest"].includes(candidate.type));
@@ -3940,6 +4151,8 @@ function narrativeInput(record, runtime, data, action, outcome) {
   const progressContract = narrativeProgressContract(runtime, missions, choicePool);
   const continuityContract = narrativeContinuityContract(runtime, choicePool);
   const reactionContract = narrativeReactionContract(resolvedAction, presentNpcs.map((npc) => npc.id));
+  const weather = journey.weatherForState(runtime.playerState);
+  const needs = journey.ensurePlayerNeeds(runtime.playerState);
   return {
     locale: "ja-JP",
     runId: process.env.TRPG_NARRATIVE_RUN_ID ?? "",
@@ -3969,6 +4182,9 @@ function narrativeInput(record, runtime, data, action, outcome) {
         ? [...resolvedAction.previouslyAskedTopics]
         : [...(runtime.dialogueSession?.askedTopics ?? [])],
       requiredDisclosure: resolvedAction?.requiredDisclosure ?? null,
+      movementScope: resolvedAction?.movementScope ?? null,
+      destinationHub: resolvedAction?.destinationHub ?? null,
+      destinationFacilityId: resolvedAction?.destinationFacilityId ?? null,
     },
     authoritativeOutcome,
     authoritativeState: {
@@ -3986,7 +4202,8 @@ function narrativeInput(record, runtime, data, action, outcome) {
       npcs: narrativeNpcs,
       player: {
         displayName: "オレゴン",
-        visibleCondition: "行動可能",
+        visibleCondition: needs.satiety <= 20 ? "強い空腹" : needs.fatigue >= 80 ? "強い疲労" : needs.fatigue >= 55 ? "疲れている" : "行動可能",
+        needs,
         knownFacts: [
           ...(t01NarrativeRelevant(runtime, resolvedAction, missions) ? openingKnownFactTexts(runtime) : []),
           ...rumors.map((rumor) => rumor.text),
@@ -4006,6 +4223,8 @@ function narrativeInput(record, runtime, data, action, outcome) {
       continuityContract,
       reactionContract,
       workMarket: narrativeWorkMarket(runtime),
+      weather,
+      actionAffordances: narrativeActionAffordances(runtime, data),
       visibleFlags: { ...ensureNarrativeMemory(runtime).semanticFlags },
       availableActionCandidates: choicePool.map((choice) => ({
         id: choice.id,
@@ -4038,26 +4257,42 @@ function applyNarrativeChoiceSelection(runtime, data, result) {
   const poolIds = new Set(pool.map((action) => action.id));
   const actionIds = [];
   const detailsById = {};
-  for (const choice of result?.choices ?? []) {
+  const resolvedActions = [];
+  for (const [index, choice] of (result?.choices ?? []).entries()) {
     const id = cleanText(choice?.id, 120);
-    if (!id || !poolIds.has(id) || actionIds.includes(id)) continue;
-    actionIds.push(id);
-    detailsById[id] = {
-      label: cleanText(choice.label, 180),
-      approach: cleanText(choice.approach, 180) || null,
-      workProposal: choice.workProposal ? {
-        title: cleanText(choice.workProposal.title, 120),
-        durationClass: cleanText(choice.workProposal.durationClass, 20),
-        riskClass: cleanText(choice.workProposal.riskClass, 20),
-      } : null,
-    };
-    if (actionIds.length >= 3) break;
+    if (id && poolIds.has(id) && !actionIds.includes(id)) {
+      actionIds.push(id);
+      detailsById[id] = {
+        label: cleanText(choice.label, 180),
+        approach: cleanText(choice.approach, 180) || null,
+        workProposal: choice.workProposal ? {
+          title: cleanText(choice.workProposal.title, 120),
+          durationClass: cleanText(choice.workProposal.durationClass, 20),
+          riskClass: cleanText(choice.workProposal.riskClass, 20),
+        } : null,
+      };
+      const candidate = pool.find((action) => action.id === id);
+      if (candidate) resolvedActions.push(generatedChoiceDetail(candidate, runtime, { detailsById }));
+    } else {
+      const compiled = compileGeneratedChoice(runtime, data, choice, index);
+      if (compiled && !resolvedActions.some((entry) => generatedActionIdentity(entry) === generatedActionIdentity(compiled))) resolvedActions.push(compiled);
+    }
+    if (resolvedActions.length >= 3) break;
   }
   for (const action of pool) {
-    if (actionIds.length >= 3) break;
-    if (!actionIds.includes(action.id)) actionIds.push(action.id);
+    if (resolvedActions.length >= 3) break;
+    if (!actionIds.includes(action.id)) {
+      actionIds.push(action.id);
+      resolvedActions.push(action);
+    }
   }
-  runtime.narrativeChoiceSelection = { poolKey, actionIds, detailsById };
+  const signature = resolvedActions.slice(0, 3).map((action) => `${action.type}:${action.targetNpcId ?? action.destinationFacilityId ?? action.destinationHub ?? action.generatedApproach ?? action.label}`).join(" | ");
+  const memory = ensureNarrativeMemory(runtime);
+  if (signature) {
+    memory.recentChoiceSignatures.push(signature);
+    if (memory.recentChoiceSignatures.length > 20) memory.recentChoiceSignatures.splice(0, memory.recentChoiceSignatures.length - 20);
+  }
+  runtime.narrativeChoiceSelection = { poolKey, actionIds, detailsById, resolvedActions: resolvedActions.slice(0, 3) };
   return runtime.narrativeChoiceSelection;
 }
 

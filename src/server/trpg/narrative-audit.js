@@ -102,6 +102,7 @@ export function evaluateNarrativeAuditRecord({ context, response }) {
   const isWorkOffer = action.dialogueTopic === "work_offer";
   const isEscort = ["t01_escort", "t01_rescue_aftermath"].includes(action.dialogueTopic);
   const candidateIds = new Set((context?.allowedActionCandidates ?? []).map((candidate) => candidate.id));
+  const generatedKinds = new Set(context?.actionAffordances?.allowedKinds ?? []);
   const progressAnchors = new Set(context?.progressContract?.anchorCandidateIds ?? []);
   const continuityCandidates = new Set(context?.continuityContract?.candidateIds ?? []);
   const requiredReactionActors = (context?.reactionContract?.requiredActorIds ?? []).filter((id) => localNpcIds.has(id));
@@ -111,7 +112,9 @@ export function evaluateNarrativeAuditRecord({ context, response }) {
     threeChoices: choices.length === 3,
     uniqueChoiceIds: new Set(choices.map((choice) => choice.id)).size === choices.length,
     choiceMeaningsDiffer: choiceSignatures.size === choices.length && choicesAreMeaningfullyDifferent(choices),
-    choicesAreExecutable: !candidateIds.size || choices.every((choice) => candidateIds.has(choice.id)),
+    choicesAreExecutable: choices.every((choice) => candidateIds.has(choice.id)
+      || (choice.generatedAction?.kind && generatedKinds.has(choice.generatedAction.kind))),
+    choicesUseDistinctActionFamilies: new Set(choices.map((choice) => choice.generatedAction?.kind ?? choice.intentType ?? "")).size >= 2,
     progressRouteOffered: context?.progressContract?.mode !== "must_offer_progress"
       || choices.some((choice) => progressAnchors.has(choice.id)),
     activeIntentContinuationOffered: context?.continuityContract?.mode !== "must_offer_continuation"

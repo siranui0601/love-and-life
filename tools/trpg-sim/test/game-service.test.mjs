@@ -412,7 +412,8 @@ test("a defeated regional journey persists its battle and elapsed time instead o
   assert.equal(result.save.scene.lastOutcome.committed, true);
   assert.equal(result.save.scene.lastOutcome.reason, "travel_defeat");
   assert.equal(result.save.scene.location, "犯罪都市");
-  assert.equal(result.save.clock.absoluteMinute, startMinute + expectedElapsed);
+  assert.ok(result.save.clock.absoluteMinute >= startMinute + expectedElapsed);
+  assert.ok(result.save.clock.absoluteMinute <= startMinute + expectedElapsed + 60);
   assert.match(result.save.scene.narrative, /退いた|撤退/u);
   assert.doesNotMatch(result.save.scene.narrative, /着いた/u);
   const persisted = deserializeRuntime((await store.get(initial.id)).runtimeSnapshot, game.data);

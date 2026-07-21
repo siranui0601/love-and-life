@@ -24,6 +24,8 @@ const CHOICE_KIND_LABELS = Object.freeze({
   resolveMission: "任務",
   wait: "休息",
   rest: "休息",
+  eat: "食事",
+  sleep: "宿泊",
   work: "仕事",
   move: "移動",
 });
@@ -337,6 +339,9 @@ function renderNpcs(npcs, activeActorId = null) {
   entries.forEach((npc, index) => {
     const card = document.createElement("article");
     card.className = `npc-card${npc.id === visibleActorId ? " is-active" : ""}`;
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `${escapeText(npc.name, "人物")}に話しかける`);
     card.dataset.npcId = npc.id;
     card.style.setProperty("--npc-index", index);
     const imageUrl = portraitUrl(npc);
@@ -357,8 +362,21 @@ function renderNpcs(npcs, activeActorId = null) {
     name.textContent = escapeText(npc.name, "名もなき人物");
     const role = document.createElement("span");
     role.textContent = escapeText(npc.role || npc.occupation || npc.mood, "この場にいる");
-    caption.append(name, role);
+    const talk = document.createElement("small");
+    talk.className = "npc-talk-hint";
+    talk.textContent = "話す";
+    caption.append(name, role, talk);
     card.append(caption);
+    const talkToNpc = () => {
+      if (!busy && currentSave?.scene?.presentNpcs?.some?.((entry) => entry.id === npc.id)) sendCommand("TALK_NPC", { npcId: npc.id });
+    };
+    card.addEventListener("click", talkToNpc);
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        talkToNpc();
+      }
+    });
     ui.npcStage.append(card);
   });
 }
@@ -831,6 +849,10 @@ function renderPlayer(player = {}) {
   $("#mpBar").value = mp;
   $("#hpText").textContent = formatPercent(hp);
   $("#mpText").textContent = formatPercent(mp);
+  const satiety = Math.max(0, Math.min(100, number(player.satiety, 82)));
+  const fatigue = Math.max(0, Math.min(100, number(player.fatigue, 12)));
+  $("#needStatus").textContent = `${satiety <= 20 ? "空腹" : satiety <= 45 ? "小腹" : "満腹"}・${fatigue >= 80 ? "限界" : fatigue >= 55 ? "疲労" : "元気"}`;
+  $("#needStatus").setAttribute("aria-label", `満腹度${Math.round(satiety)}、疲労度${Math.round(fatigue)}`);
 }
 
 function renderSave(save, { focus = "preserve", announce = false, preserveDialogue = false } = {}) {
@@ -846,6 +868,7 @@ function renderSave(save, { focus = "preserve", announce = false, preserveDialog
   $("#dayLabel").textContent = clock.day;
   $("#timeLabel").textContent = clock.time;
   $("#daypartLabel").textContent = clock.daypart;
+  $("#weatherStatus").textContent = escapeText(save.clock?.weather?.label, "晴れ");
   $("#locationName").textContent = escapeText(scene.location, "未知の地域");
   $("#facilityName").textContent = escapeText(scene.facilityName, "移動中");
   const outcome = scene.lastOutcome;
