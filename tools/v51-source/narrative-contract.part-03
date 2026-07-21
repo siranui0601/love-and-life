@@ -1,0 +1,90 @@
+  const missions = (Array.isArray(state.missions) ? state.missions : [])
+    .filter((mission) => !visibleMissionIds.size || visibleMissionIds.has(String(mission?.id)))
+    .filter((mission) => {
+      const locations = mission?.locations ?? mission?.targetLocations ?? [];
+      return !locations.length || locations.includes(state.locationId ?? state.location);
+    })
+    .map(normalizeMission)
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .slice(0, 12);
+
+  const visibleRumorIds = new Set((state.visibleRumorIds ?? []).map(String));
+  const rumors = (Array.isArray(state.localRumors) ? state.localRumors : state.rumors ?? [])
+    .filter((rumor) => !visibleRumorIds.size || visibleRumorIds.has(String(rumor?.id)))
+    .map(normalizeRumor)
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .slice(-12);
+
+  const rawActionCandidates = state.allowedActionCandidates
+    ?? state.availableActionCandidates
+    ?? input.allowedActionCandidates
+    ?? [];
+  const allowedActionCandidates = (Array.isArray(rawActionCandidates) ? rawActionCandidates : [])
+    .map((candidate) => normalizeActionCandidate(candidate, localNpcIds))
+    .filter(Boolean)
+    .sort((left, right) => (left.progressRole === right.progressRole ? 0 : left.progressRole === "progress" ? -1 : 1)
+      || left.id.localeCompare(right.id))
+    .slice(0, 9);
+
+  const progressContract = plainObject(state.progressContract) ? {
+    mode: state.progressContract.mode === "must_offer_progress" ? "must_offer_progress" : "free",
+    anchorCandidateIds: Array.isArray(state.progressContract.anchorCandidateIds)
+      ? state.progressContract.anchorCandidateIds.map((entry) => boundedText(entry, 120)).filter(Boolean).slice(0, 9)
+      : [],
+    missionId: boundedText(state.progressContract.missionId, 80) || null,
+    currentStep: boundedText(state.progressContract.currentStep, 180) || null,
+    rationale: boundedText(state.progressContract.rationale, 240) || null,
+  } : { mode: "free", anchorCandidateIds: [], missionId: null, currentStep: null, rationale: null };
+  const workMarket = plainObject(state.workMarket) ? {
+    region: boundedText(state.workMarket.region, 100) || null,
+    baseHourlyWage: Number.isFinite(Number(state.workMarket.baseHourlyWage)) ? Number(state.workMarket.baseHourlyWage) : null,
+    daypart: boundedText(state.workMarket.daypart, 40) || null,
+    localDemandTags: Array.isArray(state.workMarket.localDemandTags)
+      ? state.workMarket.localDemandTags.map((entry) => boundedText(entry, 80)).filter(Boolean).slice(0, 10)
+      : [],
+    durationClasses: ["short", "half_day", "full_day"],
+    riskClasses: ["low", "medium", "high"],
+    note: boundedText(state.workMarket.note, 240) || null,
+  } : null;
+
+  const context = {
+    contractVersion: "trpg-local-context-v2",
+    locale: boundedText(input.locale ?? "ja-JP", 20),
+    sceneMode: boundedText(input.sceneMode ?? state.sceneMode ?? "free_roam", 40),
+    time: {
+      day: Math.max(1, Number(state.day ?? 1)),
+      hour: Math.max(0, Math.min(24, Number(state.hour ?? 10))),
+      minute: Math.max(0, Math.min(59, Number(state.minute ?? 0))),
+      daypart: boundedText(state.daypart ?? "day", 20),
+    },
+    place: {
+      locationId: boundedText(state.locationId ?? state.location, 100),
+      facilityId: boundedText(state.facilityId, 100) || null,
+      facilityName: boundedText(state.facilityName, 120) || null,
+      facilityType: boundedText(state.facilityType, 120) || null,
+      publicDescription: boundedText(state.publicDescription, 300) || null,
+    },
+    player: {
+      displayName: boundedText(state.player?.displayName ?? input.playerName ?? "旅人", 80),
+      visibleCondition: boundedText(state.player?.visibleCondition, 160),
+      knownFacts: Array.isArray(state.player?.knownFacts)
+        ? state.player.knownFacts.slice(0, 12).map((entry) => boundedText(entry, 180))
+        : [],
+    },
+    action: {
+      id: boundedText(action.id, 120),
+      type: boundedText(action.type, 60),
+      label: boundedText(action.label, 180),
+      playerUtterance: boundedText(action.playerUtterance, 240) || null,
+      targetNpcId: localNpcIds.has(String(action.targetNpcId)) ? String(action.targetNpcId) : null,
+      dialogueTopic: boundedText(action.dialogueTopic, 100) || null,
+      firstIntroduction: action.firstIntroduction === true,
+      // The canonical name is deliberately isolated from localNpcs.  Before
+      // the introduction acknowledgement, every public NPC surface keeps the
+      // anonymous label; only the target's first spoken reply may use this.
+      introductionName: action.firstIntroduction === true
+        ? boundedText(action.introductionName, 80) || null
+        : null,
+      conversationTurn: Math.max(0, Math.min(12, Number(action.conversationTurn ?? 0))),
+      previouslyAskedTopics: Array.isArray(action.previouslyAskedTopics)
+        ? action.previouslyAskedTopics.slice(0, 10).map((entry) => boundedText(entry, 100))
