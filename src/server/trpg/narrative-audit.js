@@ -97,12 +97,14 @@ export function evaluateNarrativeAuditRecord({ context, response }) {
     String(choice.targetNpcId ?? ""),
     String(choice.label ?? "").replace(/[\s、。！？!?・「」『』（）()]/gu, "").slice(0, 18),
   ].join("|")));
-  const genericSpeech = speeches.some((speech) => /^(?:\.{3}|…+|ふむ|そうだな|なるほど)[。…\s]*$/u.test(String(speech.text ?? "").trim()));
+  const genericSpeech = speeches.some((speech) => /^(?:[.．。…・⋯—―\-\s]+|(?:ふむ|そうだな|なるほど)[。…\s]*)$/u.test(String(speech.text ?? "").trim()));
   const isConversation = ["conversation", "talk"].includes(String(action.type ?? ""));
   const isWorkOffer = action.dialogueTopic === "work_offer";
   const isEscort = ["t01_escort", "t01_rescue_aftermath"].includes(action.dialogueTopic);
   const candidateIds = new Set((context?.allowedActionCandidates ?? []).map((candidate) => candidate.id));
   const progressAnchors = new Set(context?.progressContract?.anchorCandidateIds ?? []);
+  const continuityCandidates = new Set(context?.continuityContract?.candidateIds ?? []);
+  const requiredReactionActors = (context?.reactionContract?.requiredActorIds ?? []).filter((id) => localNpcIds.has(id));
   const visibleText = [response?.narrative, ...speeches.map((speech) => speech.text), ...choices.map((choice) => choice.label)].join("\n");
   const checks = {
     narrativePresent: Boolean(String(response?.narrative ?? "").trim()),
@@ -112,6 +114,11 @@ export function evaluateNarrativeAuditRecord({ context, response }) {
     choicesAreExecutable: !candidateIds.size || choices.every((choice) => candidateIds.has(choice.id)),
     progressRouteOffered: context?.progressContract?.mode !== "must_offer_progress"
       || choices.some((choice) => progressAnchors.has(choice.id)),
+    activeIntentContinuationOffered: context?.continuityContract?.mode !== "must_offer_continuation"
+      || !continuityCandidates.size
+      || choices.some((choice) => continuityCandidates.has(choice.id)),
+    requiredActorsReact: requiredReactionActors.every((actorId) => speeches.some((speech) => speech.actorId === actorId
+      && !/^(?:[.．。…・⋯—―\-\s]+)$/u.test(String(speech.text ?? "").trim()))),
     localNpcOnly: remoteSpeechActors.length === 0,
     authorityFiltered: rejected.every((entry) => entry && entry.reason),
     conversationHasSubstance: !isConversation || targetReplies.length >= 12,
@@ -167,6 +174,11 @@ export function createNarrativeAuditRecord({
       id: context?.action?.id ?? input?.action?.id ?? "",
       type: context?.action?.type ?? input?.action?.type ?? "",
       label: context?.action?.label ?? input?.action?.label ?? "",
+    },
+    contracts: {
+      progress: context?.progressContract ?? null,
+      continuity: context?.continuityContract ?? null,
+      reaction: context?.reactionContract ?? null,
     },
     presentNpcIds: (context?.localNpcs ?? []).map((npc) => npc.id),
     authoritativeOutcome: context?.authoritativeOutcome ?? input?.authoritativeState?.authoritativeOutcome ?? null,

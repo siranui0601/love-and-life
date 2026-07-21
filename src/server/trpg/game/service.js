@@ -364,6 +364,8 @@ function createNarrativeMemory() {
     localFacts: [],
     npcMemories: [],
     missionLeads: [],
+    recentWorkTitles: [],
+    activityFocus: null,
     semanticFlags: {},
   };
 }
@@ -373,6 +375,8 @@ function ensureNarrativeMemory(runtime) {
   runtime.narrativeMemory.localFacts ??= [];
   runtime.narrativeMemory.npcMemories ??= [];
   runtime.narrativeMemory.missionLeads ??= [];
+  runtime.narrativeMemory.recentWorkTitles ??= [];
+  runtime.narrativeMemory.activityFocus ??= null;
   runtime.narrativeMemory.semanticFlags ??= {};
   return runtime.narrativeMemory;
 }
@@ -1232,7 +1236,7 @@ function authoritativeMissionConversationAction(action, runtime, data) {
       targetNpcId: "NPC001",
       targetNpcName: "フィン",
       dialogueTopic: "t01_escort",
-      requiredDisclosure: "足を痛めて一人では歩けない。村の広場まで一緒に戻ってほしい",
+      requiredDisclosure: null,
       label: "斜面の下へ降り、負傷したフィンに声をかける",
     };
   }
@@ -1329,7 +1333,12 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     .map((action, index) => ({ action, index }))
     .sort((left, right) => actionPriority(left.action) - actionPriority(right.action) || left.index - right.index)
     .map((entry) => entry.action);
+  const hasWorkCandidate = prioritized.some((action) => action.workOffer === true || action.type === "work");
+  const localWorkCandidate = hasWorkCandidate
+    ? null
+    : contextualLocalAction({ id: "WORK", type: "work", workOffer: true, minutes: 6, label: "この場所で受けられる仕事を尋ねる" }, runtime, data);
   const fillers = [
+    ...(localWorkCandidate ? [localWorkCandidate] : []),
     { id: "TUTORIAL:PAUSE:OBSERVE", type: "observe", minutes: 45, label: "今いる場所の様子を、もう少し確かめる" },
     { id: "TUTORIAL:PAUSE:WAIT", type: "wait", minutes: 30, label: "物音と人の動きが変わるまで、少し待つ" },
     { id: "TUTORIAL:PAUSE:PLAN", type: "plan", minutes: 30, label: "知っている噂と目的を照らし合わせ、次の一手を決める" },
@@ -2514,6 +2523,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   if (result.ok && resolvedPlayerAction?.workDecline) {
     runtime.pendingWorkOffer = null;
     runtime.dialogueSession = null;
+    ensureNarrativeMemory(runtime).activityFocus = null;
     result.summary = "仕事は断り、別の行動を選ぶことにした。";
   }
   if (result.ok && resolvedPlayerAction?.type === "work") {
@@ -2522,9 +2532,26 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     runtime.playerState.player.level = levelBefore;
     runtime.playerState.player.exp = expBefore;
     result.goldDelta = Number(runtime.playerState.player.gold ?? 0) - goldBefore;
-    result.summary = `${resolvedPlayerAction.workDescription ?? "頼まれた仕事"}を終え、${result.goldDelta}Gの賃金を受け取った。`;
+    const memory = ensureNarrativeMemory(runtime);
+    const completedWorkTitle = cleanText(resolvedPlayerAction.workDescription ?? "頼まれた仕事", 120);
+    if (completedWorkTitle && !memory.recentWorkTitles.includes(completedWorkTitle)) {
+      memory.recentWorkTitles.push(completedWorkTitle);
+      if (memory.recentWorkTitles.length > 12) memory.recentWorkTitles.splice(0, memory.recentWorkTitles.length - 12);
+    }
+    memory.activityFocus = {
+      intent: "work",
+      locationId: runtime.playerState.player.location,
+      recordedAtMinute: runtime.playerState.absoluteMinute,
+    };
+    result.summary = `${completedWorkTitle}を終え、${result.goldDelta}Gの賃金を受け取った。`;
     runtime.pendingWorkOffer = null;
     runtime.dialogueSession = null;
+  } else if (result.ok && resolvedPlayerAction
+    && !resolvedPlayerAction.workOffer
+    && !["WORK_CLARIFY"].some((prefix) => String(resolvedPlayerAction.id ?? "").startsWith(prefix))
+    && !["TUTORIAL_ACK", "ACK_NPC_INTRODUCTION"].includes(command.type)) {
+    const focus = ensureNarrativeMemory(runtime).activityFocus;
+    if (focus?.intent === "work") ensureNarrativeMemory(runtime).activityFocus = null;
   }
   if (result.ok || result.committed === true) {
     revealFinnAfterRescueBattle(runtime, resolvedPlayerAction, result);
@@ -2655,6 +2682,63 @@ function openingKnownFactTexts(runtime) {
     [OPENING_AFTERMATH_FACT.id, OPENING_AFTERMATH_FACT.text],
   ]);
   return [...runtime.tutorial.openingFacts].map((id) => facts.get(id)).filter(Boolean);
+}
+
+function t01NarrativeRelevant(runtime, resolvedAction, missions) {
+  if (runtime.playerState.player.location !== "田園の村") return false;
+  if (resolvedAction?.missionId === "MSN-T01" || /^t01_/u.test(String(resolvedAction?.dialogueTopic ?? ""))) return true;
+  return missions.some((mission) => mission.id === "MSN-T01" && mission.status === "active");
+}
+
+function relevantMissionLeadTexts(runtime, missions) {
+  const visibleTroubleIds = new Set(missions.map((mission) => mission.troubleId).filter(Boolean));
+  const locationId = runtime.playerState.player.location;
+  const facilityId = runtime.playerState.player.facilityId;
+  return ensureNarrativeMemory(runtime).missionLeads
+    .filter((lead) => (!lead.troubleId || visibleTroubleIds.has(lead.troubleId))
+      && (!lead.locationId || lead.locationId === locationId || lead.facilityId === facilityId))
+    .slice(-6)
+    .map((lead) => lead.summary)
+    .filter(Boolean);
+}
+
+function narrativeContinuityContract(runtime, actions) {
+  const focus = ensureNarrativeMemory(runtime).activityFocus;
+  if (focus?.intent !== "work") {
+    return { mode: "free", intent: null, candidateIds: [], rationale: null };
+  }
+  const candidates = actions.filter((action) => action.workOffer === true || action.type === "work");
+  return {
+    mode: candidates.length ? "must_offer_continuation" : "free",
+    intent: "仕事を続ける",
+    candidateIds: candidates.map((action) => action.id),
+    rationale: candidates.length
+      ? "直前に仕事を続ける意思を示しているため、同じ活動を継続できる道を一つ残す"
+      : "この場では依頼主または実行可能な仕事を確認できない",
+  };
+}
+
+function narrativeReactionContract(resolvedAction, presentNpcIds) {
+  const present = new Set(presentNpcIds);
+  if (resolvedAction?.dialogueTopic === "t01_rescue_aftermath") {
+    return {
+      requiredActorIds: ["NPC001"].filter((id) => present.has(id)),
+      goals: ["救助された本人が名乗る", "負傷して一人では歩けないことを伝える", "村へ戻るため同行を頼む"],
+    };
+  }
+  if (resolvedAction?.dialogueTopic === "t01_escort") {
+    return {
+      requiredActorIds: ["NPC001"].filter((id) => present.has(id)),
+      goals: ["負傷した本人が一人では歩けないことを伝える", "村へ戻りたい希望を伝える", "同行を自分の言葉で頼む"],
+    };
+  }
+  if (resolvedAction?.dialogueTopic === "t01_reunion") {
+    return {
+      requiredActorIds: ["NPC001", "NPC002", "NPC003"].filter((id) => present.has(id)),
+      goals: ["帰還した本人が無事を伝える", "家族が再会へ反応する", "村の責任者が救助と同行へ礼を述べる"],
+    };
+  }
+  return { requiredActorIds: [], goals: [] };
 }
 
 function missionView(runtime, data) {
@@ -3768,7 +3852,7 @@ function narrativeActionContract(runtime, resolvedAction, authoritativeOutcome) 
       targetNpcId: "NPC001",
       targetNpcName: "フィン",
       dialogueTopic: "t01_rescue_aftermath",
-      requiredDisclosure: "僕、フィン。足を痛めて一人では歩けない。村の広場まで一緒に戻ってほしい",
+      requiredDisclosure: null,
     };
   }
   const escort = ensureT01EscortState(runtime);
@@ -3823,6 +3907,7 @@ function narrativeWorkMarket(runtime) {
         : ["運搬", "修繕", "案内", "採集", "警備"],
     durationClasses: ["short", "half_day", "full_day"],
     riskClasses: ["low", "medium", "high"],
+    recentWorkTitles: ensureNarrativeMemory(runtime).recentWorkTitles.slice(-8),
     note: "仕事内容は場所・時刻・人物に合わせて生成し、賃金はサーバーが地域相場・所要時間・危険度から確定する",
   };
 }
@@ -3832,16 +3917,29 @@ function narrativeInput(record, runtime, data, action, outcome) {
   const choicePool = choiceActionPool(runtime, data, { limit: 9 });
   const facility = data.model.facilityById[runtime.playerState.player.facilityId];
   const publicFacility = publicFacilityContext(facility);
-  const missions = missionView(runtime, data).filter((mission) => mission.status === "active");
-  const rumors = rumorView(runtime);
+  const allActiveMissions = missionView(runtime, data).filter((mission) => mission.status === "active");
+  const allRumors = rumorView(runtime);
   const rawResolvedAction = action?.resolvedAction ?? action;
   const authoritativeOutcome = replayOutcome(outcome) ?? { type: "start", ok: true };
   const resolvedAction = narrativeActionContract(runtime, rawResolvedAction, authoritativeOutcome);
+  const currentLocation = runtime.playerState.player.location;
+  const currentFacilityId = runtime.playerState.player.facilityId;
+  const missions = allActiveMissions.filter((mission) => mission.id === resolvedAction?.missionId
+    || mission.targetLocation === currentLocation
+    || mission.currentStep?.targetLocation === currentLocation
+    || mission.targetFacilityId === currentFacilityId
+    || mission.currentStep?.targetFacilityId === currentFacilityId);
+  const visibleTroubleIds = new Set(missions.map((mission) => mission.troubleId).filter(Boolean));
+  const rumors = allRumors.filter((rumor) => rumor.origin === currentLocation
+    || visibleTroubleIds.has(rumor.troubleId)
+    || resolvedAction?.missionTroubleId === rumor.troubleId);
   const narrativeNpcs = narrativeNpcContexts(runtime, data, presentNpcs, {
     targetNpcId: resolvedAction?.targetNpcId ?? null,
     requiredDisclosure: resolvedAction?.requiredDisclosure ?? null,
   });
   const progressContract = narrativeProgressContract(runtime, missions, choicePool);
+  const continuityContract = narrativeContinuityContract(runtime, choicePool);
+  const reactionContract = narrativeReactionContract(resolvedAction, presentNpcs.map((npc) => npc.id));
   return {
     locale: "ja-JP",
     runId: process.env.TRPG_NARRATIVE_RUN_ID ?? "",
@@ -3890,13 +3988,13 @@ function narrativeInput(record, runtime, data, action, outcome) {
         displayName: "オレゴン",
         visibleCondition: "行動可能",
         knownFacts: [
-          ...openingKnownFactTexts(runtime),
+          ...(t01NarrativeRelevant(runtime, resolvedAction, missions) ? openingKnownFactTexts(runtime) : []),
           ...rumors.map((rumor) => rumor.text),
           ...ensureNarrativeMemory(runtime).localFacts
             .filter((fact) => !fact.locationId || fact.locationId === runtime.playerState.player.location || fact.facilityId === runtime.playerState.player.facilityId)
             .slice(-6)
             .map((fact) => fact.summary),
-          ...ensureNarrativeMemory(runtime).missionLeads.slice(-6).map((lead) => lead.summary),
+          ...relevantMissionLeadTexts(runtime, missions),
         ].filter(Boolean),
       },
       missions,
@@ -3905,6 +4003,8 @@ function narrativeInput(record, runtime, data, action, outcome) {
       visibleRumorIds: rumors.map((rumor) => rumor.id),
       authoritativeOutcome,
       progressContract,
+      continuityContract,
+      reactionContract,
       workMarket: narrativeWorkMarket(runtime),
       visibleFlags: { ...ensureNarrativeMemory(runtime).semanticFlags },
       availableActionCandidates: choicePool.map((choice) => ({
@@ -3918,6 +4018,7 @@ function narrativeInput(record, runtime, data, action, outcome) {
         minutes: Number(choice.minutes ?? 0),
         workOffer: choice.workOffer === true,
         progressRole: progressContract.anchorCandidateIds.includes(choice.id) ? "progress" : "optional",
+        continuityRole: continuityContract.candidateIds.includes(choice.id) ? "continuation" : "optional",
       })),
     },
   };
@@ -4080,20 +4181,8 @@ async function updatePresentation(record, runtime, data, narrator, action = null
         directReply.text = `${directReply.text}${directReply.text && !/[。！？!?]$/u.test(directReply.text) ? "。" : ""}${disclosure}`.slice(0, 500);
       }
     }
-    if (["t01_rescue_aftermath", "t01_reunion"].includes(narrativeAction.dialogueTopic)) {
-      for (const fallbackSpeech of deterministic.speeches ?? []) {
-        if (!speeches.some((speech) => speech.actorId === fallbackSpeech.actorId)) speeches.push({ ...fallbackSpeech });
-      }
-    }
     const generatedNarrative = replacePlayerAlias(result.narrative, record.playerName).slice(0, 1500);
-    const criticalNarrativePattern = narrativeAction.dialogueTopic === "t01_rescue_aftermath"
-      ? /フィン|少年|斜面|狼/u
-      : narrativeAction.dialogueTopic === "t01_reunion"
-        ? /フィン|広場|母|帰/u
-        : null;
-    const narrative = criticalNarrativePattern && !criticalNarrativePattern.test(generatedNarrative)
-      ? deterministic.narrative
-      : generatedNarrative || deterministic.narrative || fallback;
+    const narrative = generatedNarrative || deterministic.narrative || fallback;
     const base = {
       revision: record.revision,
       source: result.meta?.source ?? "unknown",

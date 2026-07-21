@@ -158,6 +158,114 @@ test("Gemini selects three executable actions from a broader pool and keeps a pr
   assert.ok(sanitized.choices.some((choice) => choice.id === "ACT-ASK"));
 });
 
+test("continuity contracts keep the player's current activity available without fixing all three choices", () => {
+  const input = scenario();
+  input.authoritativeState.availableActionCandidates = [
+    { id: "ACT-PROGRESS", label: "足跡を追う", intentType: "investigate", missionId: "MSN-T01", progressRole: "progress" },
+    { id: "ACT-WORK", label: "別の仕事を尋ねる", intentType: "help", targetNpcId: "NPC-LOCAL", workOffer: true },
+    { id: "ACT-TALK", label: "衛兵と話す", intentType: "talk", targetNpcId: "NPC-LOCAL" },
+    { id: "ACT-WAIT", label: "少し待つ", intentType: "wait" },
+  ];
+  input.authoritativeState.progressContract = {
+    mode: "must_offer_progress",
+    anchorCandidateIds: ["ACT-PROGRESS"],
+  };
+  input.authoritativeState.continuityContract = {
+    mode: "must_offer_continuation",
+    intent: "仕事を続ける",
+    candidateIds: ["ACT-WORK"],
+  };
+  const context = buildLocalNarrativeContext(input).context;
+  const sanitized = sanitizeNarrativeOutput({
+    narrative: "広場では荷車の積み替えと捜索の相談が同時に続いている。",
+    choices: [
+      { id: "ACT-PROGRESS", label: "足跡を追う", intentType: "investigate" },
+      { id: "ACT-TALK", label: "衛兵と話す", intentType: "talk", targetNpcId: "NPC-LOCAL" },
+      { id: "ACT-WAIT", label: "少し待つ", intentType: "wait" },
+    ],
+    speeches: [],
+    proposals: [],
+  }, context);
+  assert.equal(sanitized.choices.length, 3);
+  assert.ok(sanitized.choices.some((choice) => choice.id === "ACT-PROGRESS"));
+  assert.ok(sanitized.choices.some((choice) => choice.id === "ACT-WORK"));
+  assert.equal(validateNarrativeOutput(sanitized, context).ok, true);
+});
+
+test("sanitizer removes empty reactions and internal ids while salvaging optional semantic proposals", () => {
+  const input = scenario();
+  input.authoritativeState.availableActionCandidates = [
+    { id: "ACT-ASK", label: "衛兵に聞く", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+    { id: "ACT-LOOK", label: "広場を見る", intentType: "observe" },
+    { id: "ACT-WAIT", label: "待つ", intentType: "wait" },
+  ];
+  const context = buildLocalNarrativeContext(input).context;
+  const sanitized = sanitizeNarrativeOutput({
+    narrative: "見知らぬ人物（NPC016）が広場を見回している。",
+    choices: [
+      { id: "ACT-ASK", label: "見知らぬ人物（NPC016）に聞く", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+      { id: "ACT-LOOK", label: "広場を見る", intentType: "observe" },
+      { id: "ACT-WAIT", label: "待つ", intentType: "wait" },
+    ],
+    speeches: [
+      { actorId: "NPC-LOCAL", text: "……。" },
+      { actorId: "NPC-LOCAL", text: "門の外で小さな足跡を見た。" },
+    ],
+    proposals: [
+      {
+        type: "local_fact_candidate",
+        reason: "広場で衛兵の証言を聞いた",
+        text: "門の外に小さな足跡がある",
+      },
+      {
+        type: "npc_memory_candidate",
+        subjectId: "NPC-LOCAL",
+        reason: "衛兵が旅人との会話を覚えた",
+        text: "旅人へ足跡の話をした",
+      },
+    ],
+  }, context);
+  assert.doesNotMatch(sanitized.narrative, /NPC016/u);
+  assert.doesNotMatch(sanitized.choices[0].label, /NPC016/u);
+  assert.deepEqual(sanitized.speeches.map((speech) => speech.text), ["門の外で小さな足跡を見た。"]);
+  assert.equal(sanitized.proposals.length, 2);
+  assert.equal(sanitized.proposals[0].subjectId, "FAC-1");
+  assert.equal(sanitized.proposals[0].predicate, "observed_state");
+  assert.equal(sanitized.proposals[1].predicate, "remembered_event");
+  assert.equal(validateNarrativeOutput(sanitized, context).ok, true);
+});
+
+test("critical reactions are validated by actor contract rather than fixed production dialogue", () => {
+  const input = scenario();
+  input.authoritativeState.availableActionCandidates = [
+    { id: "ACT-ASK", label: "話を聞く", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+    { id: "ACT-LOOK", label: "周囲を見る", intentType: "observe" },
+    { id: "ACT-WAIT", label: "待つ", intentType: "wait" },
+  ];
+  input.authoritativeState.reactionContract = {
+    requiredActorIds: ["NPC-LOCAL"],
+    goals: ["負傷者が自分の状態を伝える"],
+  };
+  const context = buildLocalNarrativeContext(input).context;
+  const base = {
+    narrative: "負傷者が顔を上げる。",
+    choices: [
+      { id: "ACT-ASK", label: "話を聞く", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+      { id: "ACT-LOOK", label: "周囲を見る", intentType: "observe" },
+      { id: "ACT-WAIT", label: "待つ", intentType: "wait" },
+    ],
+    speeches: [],
+    proposals: [],
+  };
+  const missing = validateNarrativeOutput(base, context);
+  assert.ok(missing.errors.includes("required reaction actor missing: NPC-LOCAL"));
+  const present = validateNarrativeOutput({
+    ...base,
+    speeches: [{ actorId: "NPC-LOCAL", text: "足を痛めて、今は一人で歩けない。" }],
+  }, context);
+  assert.equal(present.ok, true);
+});
+
 test("the director prompt is short, scene-specific, and never carries Finn into unrelated scenes", () => {
   const context = buildLocalNarrativeContext(scenario()).context;
   const prompt = buildNarrativePrompt(context, {
@@ -188,9 +296,11 @@ test("the director prompt is short, scene-specific, and never carries Finn into 
     region: "田園の村",
     baseHourlyWage: 24,
     localDemandTags: ["収穫", "運搬"],
+    recentWorkTitles: ["麦束を荷車へ運ぶ"],
   };
   const workPrompt = buildNarrativePrompt(buildLocalNarrativeContext(workInput).context);
   assert.match(workPrompt, /賃金額を決めない/u);
+  assert.match(workPrompt, /麦束を荷車へ運ぶ/u);
   assert.doesNotMatch(workPrompt, /村へ戻りたい希望/u);
 });
 

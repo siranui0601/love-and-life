@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.1-director";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.2-director";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",
@@ -54,6 +54,21 @@ const DIEGETIC_META_PATTERN = /(?:ミッション|クエスト|選択肢|3択|�
 
 function containsDiegeticMetaLanguage(value) {
   return DIEGETIC_META_PATTERN.test(String(value ?? ""));
+}
+
+const INTERNAL_VISIBLE_ID_PATTERN = /(?:[（(]\s*(?:NPC\d+|SKL-[A-Z0-9-]+|LOC_[A-Z0-9_]+|MSN-[A-Z0-9-]+|ACTION:[^)）\s]+)\s*[）)]|\b(?:NPC\d+|SKL-[A-Z0-9-]+|LOC_[A-Z0-9_]+|MSN-[A-Z0-9-]+|ACTION:[^\s、。！？!?）)]+)\b)/gu;
+const EMPTY_REACTION_PATTERN = /^(?:[.．。…・⋯—―\-\s]+|(?:ふむ|そうだな|なるほど)[。…\s]*)$/u;
+
+function stripInternalVisibleIds(value) {
+  return String(value ?? "")
+    .replace(INTERNAL_VISIBLE_ID_PATTERN, "")
+    .replace(/[ \t]{2,}/gu, " ")
+    .replace(/\s+([、。！？!?])/gu, "$1")
+    .trim();
+}
+
+function isEmptyReaction(value) {
+  return EMPTY_REACTION_PATTERN.test(String(value ?? "").trim());
 }
 
 export const GEMINI_NARRATIVE_RESPONSE_SCHEMA = Object.freeze({
@@ -305,12 +320,31 @@ export function buildLocalNarrativeContext(input = {}) {
     currentStep: boundedText(state.progressContract.currentStep, 180) || null,
     rationale: boundedText(state.progressContract.rationale, 240) || null,
   } : { mode: "free", anchorCandidateIds: [], missionId: null, currentStep: null, rationale: null };
+  const continuityContract = plainObject(state.continuityContract) ? {
+    mode: state.continuityContract.mode === "must_offer_continuation" ? "must_offer_continuation" : "free",
+    intent: boundedText(state.continuityContract.intent, 40) || null,
+    candidateIds: Array.isArray(state.continuityContract.candidateIds)
+      ? state.continuityContract.candidateIds.map((entry) => boundedText(entry, 120)).filter(Boolean).slice(0, 9)
+      : [],
+    rationale: boundedText(state.continuityContract.rationale, 240) || null,
+  } : { mode: "free", intent: null, candidateIds: [], rationale: null };
+  const reactionContract = plainObject(state.reactionContract) ? {
+    requiredActorIds: Array.isArray(state.reactionContract.requiredActorIds)
+      ? state.reactionContract.requiredActorIds.map((entry) => boundedText(entry, 80)).filter((id) => localNpcIds.has(id)).slice(0, 6)
+      : [],
+    goals: Array.isArray(state.reactionContract.goals)
+      ? state.reactionContract.goals.map((entry) => boundedText(entry, 180)).filter(Boolean).slice(0, 8)
+      : [],
+  } : { requiredActorIds: [], goals: [] };
   const workMarket = plainObject(state.workMarket) ? {
     region: boundedText(state.workMarket.region, 100) || null,
     baseHourlyWage: Number.isFinite(Number(state.workMarket.baseHourlyWage)) ? Number(state.workMarket.baseHourlyWage) : null,
     daypart: boundedText(state.workMarket.daypart, 40) || null,
     localDemandTags: Array.isArray(state.workMarket.localDemandTags)
       ? state.workMarket.localDemandTags.map((entry) => boundedText(entry, 80)).filter(Boolean).slice(0, 10)
+      : [],
+    recentWorkTitles: Array.isArray(state.workMarket.recentWorkTitles)
+      ? state.workMarket.recentWorkTitles.map((entry) => boundedText(entry, 120)).filter(Boolean).slice(-8)
       : [],
     durationClasses: ["short", "half_day", "full_day"],
     riskClasses: ["low", "medium", "high"],
@@ -367,6 +401,8 @@ export function buildLocalNarrativeContext(input = {}) {
     localRumors: rumors,
     allowedActionCandidates,
     progressContract,
+    continuityContract,
+    reactionContract,
     workMarket,
     visibleFlags: stableValue(state.visibleFlags ?? {}),
   };
@@ -517,6 +553,12 @@ export function validateNarrativeOutput(value, context) {
       errors.push("choices must include at least one progress anchor candidate");
     }
   }
+  if (context.continuityContract?.mode === "must_offer_continuation") {
+    const continuations = new Set(context.continuityContract.candidateIds ?? []);
+    if (continuations.size && ![...choiceIds].some((id) => continuations.has(id))) {
+      errors.push("choices must include the active player-intent continuation candidate");
+    }
+  }
   const speeches = Array.isArray(value.speeches) ? value.speeches : [];
   if (speeches.length > 6) errors.push("too many speeches");
   speeches.forEach((speech, index) => {
@@ -524,8 +566,14 @@ export function validateNarrativeOutput(value, context) {
       errors.push(`speeches[${index}] actor is not present`);
     }
     if (!boundedText(speech?.text, 500)) errors.push(`speeches[${index}].text is empty`);
+    if (isEmptyReaction(speech?.text)) errors.push(`speeches[${index}].text is an empty reaction`);
     if (containsDiegeticMetaLanguage(speech?.text)) errors.push(`speeches[${index}].text contains non-diegetic game or UI language`);
   });
+  for (const actorId of context.reactionContract?.requiredActorIds ?? []) {
+    if (localNpcIds.has(actorId) && !speeches.some((speech) => String(speech?.actorId) === actorId && !isEmptyReaction(speech?.text))) {
+      errors.push(`required reaction actor missing: ${actorId}`);
+    }
+  }
   if (context.action.type === "conversation" && context.action.targetNpcId) {
     const directReplies = speeches.filter((speech) => String(speech?.actorId) === context.action.targetNpcId);
     const replyLength = directReplies.reduce((sum, speech) => sum + boundedText(speech?.text, 500).length, 0);
@@ -566,7 +614,7 @@ export function validateNarrativeOutput(value, context) {
 }
 
 function sanitizeDiegeticText(value, maximum = 1400) {
-  return boundedText(value, maximum)
+  return stripInternalVisibleIds(boundedText(value, maximum)
     .replaceAll("ミッション", "依頼")
     .replaceAll("クエスト", "依頼")
     .replaceAll("選択肢", "行動")
@@ -590,7 +638,7 @@ function sanitizeDiegeticText(value, maximum = 1400) {
     .replaceAll("SP", "技の余力")
     .replace(/\bUI\b/gu, "表示")
     .replace(/\bGemini\b/gu, "語り手")
-    .trim();
+    .trim());
 }
 
 function candidateChoice(candidate, overrides = {}) {
@@ -686,6 +734,53 @@ function normalizedWorkProposal(value) {
   };
 }
 
+function normalizedProposal(proposal, context, localNpcIds) {
+  if (!plainObject(proposal) || !PROPOSAL_TYPES.includes(proposal.type)) return null;
+  if (forbiddenKeys(proposal).size) return null;
+  const reason = sanitizeDiegeticText(proposal.reason, 240);
+  if (!reason) return null;
+  const targetNpcId = proposal.targetNpcId && localNpcIds.has(String(proposal.targetNpcId))
+    ? String(proposal.targetNpcId)
+    : null;
+  const placeSubject = context.place.facilityId ?? context.place.locationId ?? null;
+  const normalized = {
+    type: proposal.type,
+    targetNpcId,
+    intent: sanitizeDiegeticText(proposal.intent ?? proposal.text, 120) || null,
+    flagPath: boundedText(proposal.flagPath, 160) || null,
+    value: sanitizeDiegeticText(proposal.value, 240) || null,
+    templateId: boundedText(proposal.templateId, 100) || null,
+    troubleId: boundedText(proposal.troubleId, 40) || null,
+    text: sanitizeDiegeticText(proposal.text, 300) || null,
+    subjectId: boundedText(proposal.subjectId, 120) || null,
+    predicate: boundedText(proposal.predicate, 120) || null,
+    scope: boundedText(proposal.scope, 80) || null,
+    locationId: boundedText(proposal.locationId, 100) || null,
+    summary: sanitizeDiegeticText(proposal.summary ?? proposal.text ?? proposal.reason, 300) || null,
+    reason,
+  };
+  if (normalized.type === "flag_candidate" && !allowedFlagPath(normalized.flagPath)) return null;
+  if (normalized.type === "npc_intent") {
+    if (!normalized.targetNpcId || !normalized.intent) return null;
+  }
+  if (normalized.type === "local_fact_candidate") {
+    normalized.subjectId ??= placeSubject;
+    normalized.predicate ??= "observed_state";
+    normalized.locationId ??= context.place.locationId ?? null;
+    if (!normalized.subjectId || !normalized.summary) return null;
+  }
+  if (normalized.type === "npc_memory_candidate") {
+    normalized.subjectId ??= normalized.targetNpcId;
+    normalized.predicate ??= "remembered_event";
+    if (!normalized.subjectId || !localNpcIds.has(normalized.subjectId) || !normalized.summary) return null;
+  }
+  if (normalized.type === "mission_lead_candidate") {
+    if (!normalized.troubleId || !normalized.summary) return null;
+    normalized.locationId ??= context.place.locationId ?? null;
+  }
+  return normalized;
+}
+
 export function sanitizeNarrativeOutput(value, context) {
   const localNpcIds = new Set(context.localNpcs.map((npc) => npc.id));
   const candidatesById = new Map((context.allowedActionCandidates ?? []).map((candidate) => [candidate.id, candidate]));
@@ -718,6 +813,20 @@ export function sanitizeNarrativeOutput(value, context) {
       usedIds.add(anchor.id);
     }
   }
+  const continuityIds = new Set(context.continuityContract?.candidateIds ?? []);
+  if (context.continuityContract?.mode === "must_offer_continuation"
+    && continuityIds.size
+    && !choices.some((choice) => continuityIds.has(choice.id))) {
+    const continuation = (context.allowedActionCandidates ?? []).find((candidate) => continuityIds.has(candidate.id));
+    if (continuation) {
+      if (choices.length >= 3) {
+        const replaceIndex = choices.findIndex((choice) => !anchors.has(choice.id) && !continuityIds.has(choice.id));
+        choices.splice(replaceIndex >= 0 ? replaceIndex : choices.length - 1, 1);
+      }
+      choices.push(candidateChoice(continuation));
+      usedIds.add(continuation.id);
+    }
+  }
   for (const candidate of fallback.choices) {
     if (choices.length >= 3) break;
     if (usedIds.has(candidate.id)) continue;
@@ -732,7 +841,7 @@ export function sanitizeNarrativeOutput(value, context) {
       text: sanitizeDiegeticText(speech.text, 500),
       emotion: sanitizeDiegeticText(speech.emotion, 60) || null,
     }))
-    .filter((speech) => speech.text)
+    .filter((speech) => speech.text && !isEmptyReaction(speech.text))
     .slice(0, 6);
 
   if (context.action.type === "conversation" && context.action.targetNpcId) {
@@ -751,30 +860,8 @@ export function sanitizeNarrativeOutput(value, context) {
   }
 
   const proposals = (Array.isArray(value?.proposals) ? value.proposals : [])
-    .filter((proposal) => {
-      if (!plainObject(proposal) || !PROPOSAL_TYPES.includes(proposal.type)) return false;
-      if (proposal.targetNpcId && !localNpcIds.has(String(proposal.targetNpcId))) return false;
-      if (proposal.type === "flag_candidate" && !allowedFlagPath(proposal.flagPath)) return false;
-      if (proposal.type === "npc_intent" && (!boundedText(proposal.targetNpcId, 80) || !boundedText(proposal.intent, 120))) return false;
-      return forbiddenKeys(proposal).size === 0;
-    })
-    .map((proposal) => ({
-      type: proposal.type,
-      targetNpcId: proposal.targetNpcId ? String(proposal.targetNpcId) : null,
-      intent: sanitizeDiegeticText(proposal.intent, 120) || null,
-      flagPath: boundedText(proposal.flagPath, 160) || null,
-      value: sanitizeDiegeticText(proposal.value, 240) || null,
-      templateId: boundedText(proposal.templateId, 100) || null,
-      troubleId: boundedText(proposal.troubleId, 40) || null,
-      text: sanitizeDiegeticText(proposal.text, 300) || null,
-      subjectId: boundedText(proposal.subjectId, 120) || null,
-      predicate: boundedText(proposal.predicate, 120) || null,
-      scope: boundedText(proposal.scope, 80) || null,
-      locationId: boundedText(proposal.locationId, 100) || null,
-      summary: sanitizeDiegeticText(proposal.summary, 300) || null,
-      reason: sanitizeDiegeticText(proposal.reason, 240),
-    }))
-    .filter((proposal) => proposal.reason)
+    .map((proposal) => normalizedProposal(proposal, context, localNpcIds))
+    .filter(Boolean)
     .slice(0, 5);
 
   return {

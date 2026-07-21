@@ -1640,9 +1640,27 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   const narrator = {
     async generate(input) {
       narrativeInputs.push(input);
+      const required = new Set(input.authoritativeState?.reactionContract?.requiredActorIds ?? []);
+      const speeches = [];
+      if (required.has("NPC001") && input.action?.dialogueTopic === "t01_rescue_aftermath") {
+        speeches.push({ actorId: "NPC001", text: "僕はフィン。足を痛めて一人では歩けない。村の広場まで一緒に戻ってほしい。", emotion: "安堵と痛み" });
+      }
+      if (required.has("NPC001") && input.action?.dialogueTopic === "t01_escort") {
+        speeches.push({ actorId: "NPC001", text: "足を痛めて、僕一人では歩けないんだ。村の広場まで一緒に戻ってくれない？", emotion: "懇願" });
+      }
+      if (input.action?.dialogueTopic === "t01_reunion") {
+        if (required.has("NPC001")) speeches.push({ actorId: "NPC001", text: "母さん、ただいま。助けてもらって、ここまで戻れたよ。", emotion: "安堵" });
+        if (required.has("NPC002")) speeches.push({ actorId: "NPC002", text: "よかった……帰ってきてくれて。連れ帰ってくださって、ありがとうございます。", emotion: "涙" });
+        if (required.has("NPC003")) speeches.push({ actorId: "NPC003", text: "村を預かる者として、救助と帰路を支えてくれたことに礼を言う。", emotion: "感謝" });
+      }
       return {
-        narrative: input.authoritativeOutcome?.discovery?.text ?? "選んだ行動の結果が反映された。",
-        speeches: [],
+        narrative: input.authoritativeOutcome?.discovery?.text
+          ?? (input.action?.dialogueTopic === "t01_rescue_aftermath"
+            ? "斜面の下で、救われた少年が痛む足をかばいながら顔を上げた。"
+            : input.action?.dialogueTopic === "t01_reunion"
+              ? "村の広場へ戻ると、待っていた家族と村人が二人を迎えた。"
+              : "選んだ行動の結果が反映された。"),
+        speeches,
         choices: [],
         proposals: [],
         meta: { source: "test" },
@@ -1714,15 +1732,23 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   assert.ok(battleNarrativeInput, "the decisive result now receives a scene-specific Gemini aftermath request");
   assert.equal(battleNarrativeInput.action.dialogueTopic, "t01_rescue_aftermath");
   assert.equal(battleNarrativeInput.action.targetNpcId, "NPC001");
+  assert.equal(battleNarrativeInput.action.requiredDisclosure, null);
+  assert.deepEqual(battleNarrativeInput.authoritativeState.reactionContract.requiredActorIds, ["NPC001"]);
+  assert.ok(battleNarrativeInput.authoritativeState.reactionContract.goals.some((goal) => /一人では歩けない/u.test(goal)));
   assert.equal(battleRecord.presentation.source, "test");
   assert.match(battleRecord.presentation.narrative, /斜面の下.*少年/u);
   assert.ok(battleRecord.presentation.speeches.some((speech) => speech.actorId === "NPC001"
-    && /僕、フィン.*村の広場.*一緒に戻って/u.test(speech.text)));
+    && /フィン.*足.*歩けない.*村の広場/u.test(speech.text)));
   assert.equal(runner.save.tutorial?.complete, true, "the combat coach does not return after a battle was experienced");
   assert.equal(runner.save.missions.find((entry) => entry.id === "MSN-T01")?.currentStep?.id, "escort");
   assert.equal(runner.save.guidance.targetFacilityId, "LOC_FARM_EDGE");
   assert.equal(runner.save.guidance.actionPanel, null);
   await chooseAction("ACTION:MSN-T01:escort");
+  const escortInput = narrativeInputs.findLast((input) => input.action?.dialogueTopic === "t01_escort");
+  assert.ok(escortInput);
+  assert.equal(escortInput.action.requiredDisclosure, null);
+  assert.deepEqual(escortInput.authoritativeState.reactionContract.requiredActorIds, ["NPC001"]);
+  assert.ok(escortInput.authoritativeState.reactionContract.goals.some((goal) => /同行/u.test(goal)));
   assert.ok(runner.save.scene.beats.some((beat) => beat.actorId === "NPC001"
     && /足を痛めて.*村の広場.*一緒に戻って/u.test(beat.text)));
   assert.equal(runner.save.guidance.title, "村の広場へ：少年を連れ帰る");
@@ -1730,9 +1756,9 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
   await moveTo("LOC_FARM_SQUARE");
   const reunionText = runner.save.scene.beats.map((beat) => beat.text).join("\n");
-  assert.match(reunionText, /母さん……ただいま/u);
+  assert.match(reunionText, /母さん[、……]*ただいま/u);
   assert.match(reunionText, /よかった.*ありがとうございます/u);
-  assert.match(reunionText, /村を預かる者として礼を言う/u);
+  assert.match(reunionText, /村を預かる者として.*礼を言う/u);
   await chooseAction("ACTION:MSN-T01:decide");
 
   const mission = runner.save.missions.find((entry) => entry.id === "MSN-T01");
@@ -1910,4 +1936,89 @@ test("the same content revision, seed and command sequence produce the same stat
     await b.run("CHOOSE", { choiceId: b.save.choices[0].choiceId });
     assert.equal(a.save.stateHash, b.save.stateHash);
   }
+});
+
+test("completed work preserves a server-valid work route and sends recent work to the director", async () => {
+  const inputs = [];
+  const narrator = {
+    async generate(input) {
+      inputs.push(input);
+      const candidates = input.authoritativeState.availableActionCandidates ?? [];
+      const continuationIds = new Set(input.authoritativeState.continuityContract?.candidateIds ?? []);
+      const ordered = [
+        ...candidates.filter((candidate) => continuationIds.has(candidate.id)),
+        ...candidates.filter((candidate) => !continuationIds.has(candidate.id)),
+      ].slice(0, 3);
+      return {
+        narrative: "その場の仕事と人の動きを確かめた。",
+        choices: ordered.map((candidate) => ({
+          id: candidate.id,
+          label: candidate.workOffer ? "この場所で別の仕事の内容を尋ねる" : candidate.label,
+          intentType: candidate.intentType,
+          targetNpcId: candidate.targetNpcId ?? null,
+          ...(candidate.workOffer ? {
+            workProposal: {
+              title: "広場へ届いた木箱を商店ごとに仕分ける",
+              durationClass: "short",
+              riskClass: "low",
+            },
+          } : {}),
+        })),
+        speeches: [],
+        proposals: [],
+        meta: { source: "test" },
+      };
+    },
+  };
+  const { game } = service(true, { narrator });
+  const runner = commandRunner(game, await game.create(owner, { playerName: "働き手", seed: "work-continuity-director" }));
+  await completeOpening(runner, { inquiry: "TUTORIAL:DEFER:WORK" });
+  const confirm = runner.save.choices.find((choice) => choice.actionId.startsWith("WORK_CONFIRM:"));
+  assert.ok(confirm);
+  await runner.run("CHOOSE", { choiceId: confirm.choiceId, actionId: confirm.actionId });
+
+  const completedWorkInput = inputs.findLast((input) => input.action?.type === "work");
+  assert.ok(completedWorkInput);
+  assert.equal(completedWorkInput.authoritativeState.continuityContract.mode, "must_offer_continuation");
+  assert.ok(completedWorkInput.authoritativeState.continuityContract.candidateIds.some((id) => id.startsWith("WORK:")));
+  assert.ok(completedWorkInput.authoritativeState.availableActionCandidates.some((candidate) => candidate.workOffer === true));
+  assert.ok(completedWorkInput.authoritativeState.workMarket.recentWorkTitles.some((title) => /穀袋/u.test(title)));
+  assert.ok(runner.save.choices.some((choice) => choice.actionId.startsWith("WORK:") && /別の仕事/u.test(choice.label)));
+});
+
+test("leaving for the capital removes the village T01 thread from later Gemini context", async () => {
+  const inputs = [];
+  const narrator = {
+    async generate(input) {
+      inputs.push(input);
+      const choices = (input.authoritativeState.availableActionCandidates ?? []).slice(0, 3).map((candidate) => ({
+        id: candidate.id,
+        label: candidate.label,
+        intentType: candidate.intentType,
+        targetNpcId: candidate.targetNpcId ?? null,
+      }));
+      return {
+        narrative: "現在地の人通りと建物を見渡した。",
+        choices,
+        speeches: [],
+        proposals: [],
+        meta: { source: "test" },
+      };
+    },
+  };
+  const { game } = service(true, { narrator });
+  const runner = commandRunner(game, await game.create(owner, { playerName: "遠出する旅人", seed: "capital-no-village-thread" }));
+  await completeOpening(runner, { inquiry: "TUTORIAL:DEFER:LEAVE" });
+  if (runner.save.tutorial?.acknowledgeable) {
+    await runner.run("TUTORIAL_ACK", { tutorialId: runner.save.tutorial.id });
+  }
+  const capital = runner.save.movement.find((move) => move.destination === "王都");
+  assert.ok(capital);
+  await runner.run("MOVE", { moveId: capital.moveId });
+
+  const capitalInput = inputs.findLast((input) => input.authoritativeState?.location === "王都");
+  assert.ok(capitalInput);
+  assert.equal(capitalInput.authoritativeState.missions.some((mission) => mission.id === "MSN-T01" || mission.troubleId === "T01"), false);
+  assert.equal(capitalInput.authoritativeState.player.knownFacts.some((fact) => /フィン|少年失踪|赤牙狼/u.test(fact)), false);
+  assert.equal(capitalInput.authoritativeState.availableActionCandidates.some((candidate) => /MSN-T01|フィン|少年失踪/u.test(`${candidate.id} ${candidate.label}`)), false);
 });
