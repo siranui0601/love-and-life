@@ -1,0 +1,90 @@
+        : [],
+      requiredDisclosure: boundedText(action.requiredDisclosure, 180) || null,
+    },
+    authoritativeOutcome: stableValue(state.authoritativeOutcome ?? input.authoritativeOutcome ?? {}),
+    localNpcs,
+    missions,
+    localRumors: rumors,
+    allowedActionCandidates,
+    progressContract,
+    workMarket,
+    visibleFlags: stableValue(state.visibleFlags ?? {}),
+  };
+
+  return {
+    context,
+    audit: {
+      suppliedNpcCount: suppliedNpcs.length,
+      includedNpcIds: [...localNpcIds].sort(),
+      excludedNpcIds: [...new Set(excludedNpcIds)].sort(),
+      remoteNpcDataRemoved: excludedNpcIds.length,
+      rejectedActionTargetId: action.targetNpcId && !localNpcIds.has(String(action.targetNpcId))
+        ? String(action.targetNpcId)
+        : null,
+    },
+  };
+}
+
+export function narrativeReplayKey(context, options = {}) {
+  return sha256({
+    model: options.model ?? TRPG_NARRATIVE_MODEL,
+    promptVersion: options.promptVersion ?? TRPG_NARRATIVE_PROMPT_VERSION,
+    policy: stableValue(options.policy ?? {}),
+    context,
+  });
+}
+
+function stripFence(text) {
+  return String(text ?? "")
+    .trim()
+    .replace(/^```(?:json)?\s*/iu, "")
+    .replace(/\s*```$/u, "")
+    .trim();
+}
+
+export function parseNarrativeJson(raw) {
+  if (plainObject(raw)) return raw;
+  return JSON.parse(stripFence(raw));
+}
+
+function forbiddenKeys(value, found = new Set()) {
+  if (Array.isArray(value)) {
+    value.forEach((entry) => forbiddenKeys(entry, found));
+    return found;
+  }
+  if (!plainObject(value)) return found;
+  for (const [key, entry] of Object.entries(value)) {
+    if (FORBIDDEN_PROPOSAL_KEYS.has(String(key).toLowerCase())) found.add(key);
+    forbiddenKeys(entry, found);
+  }
+  return found;
+}
+
+function allowedFlagPath(path) {
+  return ALLOWED_FLAG_PREFIXES.some((prefix) => String(path ?? "").startsWith(prefix));
+}
+
+function validateChoice(choice, index, localNpcIds, errors) {
+  if (!plainObject(choice)) {
+    errors.push(`choices[${index}] is not an object`);
+    return;
+  }
+  if (!boundedText(choice.id, 120)) errors.push(`choices[${index}].id is empty`);
+  if (!boundedText(choice.label, 180)) errors.push(`choices[${index}].label is empty`);
+  if (!INTENT_TYPES.includes(choice.intentType)) errors.push(`choices[${index}].intentType is invalid`);
+  if (choice.targetNpcId && !localNpcIds.has(String(choice.targetNpcId))) {
+    errors.push(`choices[${index}] targets an NPC who is not present`);
+  }
+  if (choice.workProposal !== undefined && choice.workProposal !== null) {
+    if (!plainObject(choice.workProposal) || !boundedText(choice.workProposal.title, 120)) {
+      errors.push(`choices[${index}].workProposal.title is required`);
+    }
+    if (!["short", "half_day", "full_day"].includes(choice.workProposal?.durationClass)) {
+      errors.push(`choices[${index}].workProposal.durationClass is invalid`);
+    }
+    if (!["low", "medium", "high"].includes(choice.workProposal?.riskClass)) {
+      errors.push(`choices[${index}].workProposal.riskClass is invalid`);
+    }
+  }
+}
+
