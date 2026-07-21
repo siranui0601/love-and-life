@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.3-generative-actions";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.4-generative-director";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",
@@ -613,6 +613,17 @@ export function validateNarrativeOutput(value, context) {
   if (new Set(choiceIds).size !== choiceIds.length) errors.push("choice ids are duplicated");
   const choiceLabels = choices.map((choice) => boundedText(choice?.label, 120).replace(/[\s、。！？!?・「」『』（）()]/gu, ""));
   if (new Set(choiceLabels).size !== choiceLabels.length) errors.push("choice labels are semantically duplicated");
+  const candidateFamilyById = new Map((context.allowedActionCandidates ?? []).map((candidate) => [candidate.id, candidate.actionType ?? candidate.intentType]));
+  const choiceFamilies = choices.map((choice) => boundedText(choice?.generatedAction?.kind, 40)
+    || boundedText(candidateFamilyById.get(String(choice?.id ?? "")), 40)
+    || boundedText(choice?.intentType, 40));
+  const availableFamilies = new Set([
+    ...(context.actionAffordances?.allowedKinds ?? []),
+    ...candidateFamilyById.values(),
+  ].map((entry) => boundedText(entry, 40)).filter(Boolean));
+  if (choices.length === 3 && availableFamilies.size >= 3 && new Set(choiceFamilies).size < 3) {
+    errors.push("choices must use three distinct action families");
+  }
   const allowedChoiceIds = new Set((context.allowedActionCandidates ?? []).map((candidate) => candidate.id));
   if (allowedChoiceIds.size || context.actionAffordances?.allowedKinds?.length) {
     const candidatesById = new Map((context.allowedActionCandidates ?? []).map((candidate) => [candidate.id, candidate]));
@@ -797,72 +808,63 @@ function generatedChoice(choice, generatedAction) {
 
 function defaultChoices(context) {
   const pool = context.allowedActionCandidates ?? [];
-  if (!pool.length) {
-    const targetNpcId = context.action.targetNpcId ?? context.localNpcs[0]?.id ?? null;
-    return targetNpcId
-      ? [
-        { id: "C1", label: "もう少し詳しく話を聞く", intentType: "ask", targetNpcId },
-        { id: "C2", label: "周囲の様子を確かめる", intentType: "observe", targetNpcId: null },
-        { id: "C3", label: "いったん会話を終える", intentType: "leave", targetNpcId: null },
-      ]
-      : [
-        { id: "C1", label: "周囲を観察する", intentType: "observe", targetNpcId: null },
-        { id: "C2", label: "手掛かりを調べる", intentType: "investigate", targetNpcId: null },
-        { id: "C3", label: "別の行動へ移る", intentType: "leave", targetNpcId: null },
-      ];
-  }
-  const anchors = new Set(context.progressContract?.anchorCandidateIds ?? []);
-  const selected = [];
-  const add = (candidate) => {
-    if (candidate && !selected.some((entry) => entry.id === candidate.id)) selected.push(candidateChoice(candidate));
-  };
-  if (context.progressContract?.mode === "must_offer_progress") add(pool.find((candidate) => anchors.has(candidate.id)));
   const affordances = context.actionAffordances ?? {};
-  const addGenerated = (choice) => {
+  const transactional = pool.length >= 3
+    && pool.slice(0, 3).every((candidate) => /^(?:WORK_CONFIRM|WORK_CLARIFY|WORK_DECLINE):/u.test(candidate.id));
+  if (transactional) return pool.slice(0, 3).map((candidate) => candidateChoice(candidate));
+
+  const selected = [];
+  const semantics = new Set();
+  const add = (choice, semantic = null) => {
     if (!choice || selected.length >= 3) return;
-    const signature = `${choice.generatedAction?.kind}:${choice.generatedAction?.targetNpcId ?? choice.generatedAction?.destinationFacilityId ?? choice.generatedAction?.destinationHub ?? ""}`;
-    if (selected.some((entry) => `${entry.generatedAction?.kind}:${entry.generatedAction?.targetNpcId ?? entry.generatedAction?.destinationFacilityId ?? entry.generatedAction?.destinationHub ?? ""}` === signature)) return;
+    const key = semantic ?? `${choice.generatedAction?.kind ?? choice.intentType}:${choice.generatedAction?.targetNpcId ?? choice.generatedAction?.destinationFacilityId ?? choice.generatedAction?.destinationHub ?? choice.id}`;
+    const label = sanitizeDiegeticText(choice.label, 180).replace(/[\s、。！？!?・「」『』（）()]/gu, "");
+    if (semantics.has(key) || selected.some((entry) => sanitizeDiegeticText(entry.label, 180).replace(/[\s、。！？!?・「」『』（）()]/gu, "") === label)) return;
+    semantics.add(key);
     selected.push(choice);
   };
-  const urgentNeed = affordances.needActions?.[0];
-  if (urgentNeed) addGenerated({
-    id: "GENERATED:FALLBACK:NEED",
-    label: urgentNeed.label,
-    intentType: urgentNeed.kind,
-    targetNpcId: null,
-    generatedAction: { kind: urgentNeed.kind },
-  });
+  const addCandidate = (candidate) => add(candidate && candidateChoice(candidate), `candidate:${candidate?.id}`);
+  const addGenerated = (kind, label, detail = {}) => add({
+    id: `GENERATED:FALLBACK:${kind.toUpperCase()}`,
+    label,
+    intentType: kind,
+    targetNpcId: detail.targetNpcId ?? null,
+    generatedAction: {
+      kind,
+      targetNpcId: detail.targetNpcId ?? null,
+      destinationFacilityId: detail.destinationFacilityId ?? null,
+      destinationHub: detail.destinationHub ?? null,
+      approach: detail.approach ?? null,
+    },
+  }, `generated:${kind}:${detail.targetNpcId ?? detail.destinationFacilityId ?? detail.destinationHub ?? ""}`);
+
+  const anchors = new Set(context.progressContract?.anchorCandidateIds ?? []);
+  const continuations = new Set(context.continuityContract?.candidateIds ?? []);
+  if (context.progressContract?.mode === "must_offer_progress") addCandidate(pool.find((candidate) => anchors.has(candidate.id)));
+  else if (context.continuityContract?.mode === "must_offer_continuation") addCandidate(pool.find((candidate) => continuations.has(candidate.id)));
+
+  const need = affordances.needActions?.[0];
+  if (need) addGenerated(need.kind, need.label);
   const talkNpcId = affordances.talkNpcIds?.[0];
   const talkNpc = context.localNpcs.find((npc) => npc.id === talkNpcId);
-  if (talkNpcId) addGenerated({
-    id: "GENERATED:FALLBACK:TALK",
-    label: `${talkNpc?.name ?? "この場の人物"}に、今この場所で起きていることを尋ねる`,
-    intentType: "talk",
-    targetNpcId: talkNpcId,
-    generatedAction: { kind: "talk", targetNpcId: talkNpcId },
-  });
+  if (talkNpcId) addGenerated("talk", `${talkNpc?.name ?? "この場の人物"}に、この場所で起きていることを尋ねる`, { targetNpcId: talkNpcId });
   const movement = affordances.movements?.[0];
-  if (movement) addGenerated({
-    id: "GENERATED:FALLBACK:MOVE",
-    label: movement.label,
-    intentType: "move",
-    targetNpcId: null,
-    generatedAction: { kind: "move", destinationFacilityId: movement.destinationFacilityId, destinationHub: movement.destinationHub },
+  if (movement) addGenerated("move", movement.label, {
+    destinationFacilityId: movement.destinationFacilityId,
+    destinationHub: movement.destinationHub,
   });
-  if (affordances.allowedKinds?.includes("observe")) addGenerated({
-    id: "GENERATED:FALLBACK:OBSERVE",
-    label: "人の流れと周囲の変化を見比べる",
-    intentType: "observe",
-    targetNpcId: null,
-    generatedAction: { kind: "observe", approach: "人と場所の変化を観察する" },
-  });
-  for (const candidate of pool) {
-    if (selected.length >= 3) break;
-    if (!selected.some((entry) => entry.intentType === candidate.intentType)) add(candidate);
+  if (affordances.workEmployerNpcIds?.length) {
+    addGenerated("work", "この場所で今必要とされている仕事を尋ねる", { targetNpcId: affordances.workEmployerNpcIds[0] });
   }
-  for (const candidate of pool) {
-    if (selected.length >= 3) break;
-    add(candidate);
+  if (affordances.allowedKinds?.includes("investigate")) addGenerated("investigate", "目についた違和感を一つ選び、詳しく確かめる", { approach: "目についた違和感の原因を調べる" });
+  if (affordances.allowedKinds?.includes("observe")) addGenerated("observe", "人の流れと周囲の変化を見比べる", { approach: "人と場所の変化を観察する" });
+  if (affordances.allowedKinds?.includes("wait")) addGenerated("wait", "少し待ち、場の様子が変わるか確かめる", { approach: "短時間待って変化を見る" });
+  if (affordances.allowedKinds?.includes("plan")) addGenerated("plan", "分かっている事実を整理し、次の行き先を決める", { approach: "既知の情報から次の行動を考える" });
+  for (const candidate of pool) addCandidate(candidate);
+  if (selected.length < 3 && !(affordances.allowedKinds?.length) && !pool.length) {
+    add({ id: "C1", label: "周囲の様子を落ち着いて見直す", intentType: "observe", targetNpcId: null }, "legacy:observe");
+    add({ id: "C2", label: "分かっていることを整理して次の手を考える", intentType: "prepare", targetNpcId: null }, "legacy:prepare");
+    add({ id: "C3", label: "その場を離れるか、別の場所へ向かう", intentType: "leave", targetNpcId: null }, "legacy:leave");
   }
   return selected.slice(0, 3);
 }
@@ -1018,10 +1020,17 @@ export function sanitizeNarrativeOutput(value, context) {
       usedIds.add(continuation.id);
     }
   }
+  const choiceSemanticKey = (choice) => `${choice.generatedAction?.kind ?? choice.intentType}:${choice.generatedAction?.targetNpcId ?? choice.generatedAction?.destinationFacilityId ?? choice.generatedAction?.destinationHub ?? choice.id}`;
+  const usedSemantics = new Set(choices.map(choiceSemanticKey));
+  const usedLabels = new Set(choices.map((choice) => sanitizeDiegeticText(choice.label, 180).replace(/[\s、。！？!?・「」『』（）()]/gu, "")));
   for (const candidate of fallback.choices) {
     if (choices.length >= 3) break;
-    if (usedIds.has(candidate.id)) continue;
+    const semantic = choiceSemanticKey(candidate);
+    const label = sanitizeDiegeticText(candidate.label, 180).replace(/[\s、。！？!?・「」『』（）()]/gu, "");
+    if (usedIds.has(candidate.id) || usedSemantics.has(semantic) || usedLabels.has(label)) continue;
     usedIds.add(candidate.id);
+    usedSemantics.add(semantic);
+    usedLabels.add(label);
     choices.push({ ...candidate });
   }
 

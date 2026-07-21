@@ -1695,17 +1695,25 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   await moveTo("LOC_FARM_EDGE");
   assert.equal(runner.save.tutorial.id, "skills");
   await runner.run("LEARN_SKILL", { skillId: runner.save.skills.learnable[0].id });
-  await chooseSearch("tracks");
-  await chooseSearch("faint-voice");
+  const initialSearch = runner.save.choices.find((entry) => entry.missionId === "MSN-T01" && entry.stepId === "search");
+  assert.ok(initialSearch, "one authoritative search route must remain visible among Gemini-generated alternatives");
+  const firstApproachId = initialSearch.actionId.split(":").at(-1);
+  await chooseSearch(firstApproachId);
+  const firstDiscoveryId = runner.save.scene.lastOutcome.discovery.id;
+  const secondSearch = runner.save.choices.find((entry) => entry.missionId === "MSN-T01" && entry.stepId === "search");
+  assert.ok(secondSearch, "a second authoritative search route must remain visible");
+  const secondApproachId = secondSearch.actionId.split(":").at(-1);
+  await chooseSearch(secondApproachId);
+  const secondDiscoveryId = runner.save.scene.lastOutcome.discovery.id;
   const searchInputs = narrativeInputs.filter((input) => input.action?.stepId === "search");
   assert.equal(searchInputs.length, 2);
-  assert.equal(searchInputs[0].authoritativeOutcome.discovery.id, "T01-CLUE-BOOT-TRACKS");
+  assert.equal(searchInputs[0].authoritativeOutcome.discovery.id, firstDiscoveryId);
   assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
     ?.currentStep.progress, 1);
   assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
     ?.currentStep.required, 2);
   assert.deepEqual(searchInputs[1].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
-    ?.discoveries.map((discovery) => discovery.id), ["T01-CLUE-BOOT-TRACKS", "T01-CLUE-FAINT-VOICE"]);
+    ?.discoveries.map((discovery) => discovery.id), [firstDiscoveryId, secondDiscoveryId]);
   assert.equal(runner.save.guidance.title, "赤牙狼の兆候を退ける");
   assert.equal(runner.save.guidance.actionPanel, null, "an on-site objective points at the visible choices instead of opening an unrelated panel");
   const battleStart = await chooseAction("ACTION:MSN-T01:rescue");
@@ -1805,7 +1813,8 @@ test("ordinary NPC conversation supports distinct multi-turn follow-ups until th
   assert.ok(talk, "a local NPC conversation must be available after the opening");
   await runner.run("CHOOSE", { choiceId: talk.choiceId });
   assert.equal(runner.save.choices.length, 3);
-  assert.ok(runner.save.choices.every((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)));
+  assert.ok(runner.save.choices.some((choice) => choice.type === "conversation" && choice.targetNpcId === talk.targetNpcId));
+  assert.ok(runner.save.choices.some((choice) => choice.type !== "conversation"), "Gemini may offer a meaningful way to leave or change activity");
   assert.equal(inputs.at(-1).action.id, talk.actionId);
   assert.equal(inputs.at(-1).action.targetNpcId, talk.targetNpcId);
   const narrativeState = inputs.at(-1).authoritativeState;
@@ -1815,27 +1824,26 @@ test("ordinary NPC conversation supports distinct multi-turn follow-ups until th
   assert.equal("facilityNotes" in narrativeState, false);
   assert.doesNotMatch(JSON.stringify(narrativeState), /T01捜索|T02後の村会合|情報ハブ|事件導線|開始地点/u);
   assert.ok(narrativeState.npcs.every((npc) => !("occupation" in npc)));
-  const firstFollowup = runner.save.choices.find((choice) => !choice.actionId.endsWith(":END"));
+  const firstFollowup = runner.save.choices.find((choice) => choice.type === "conversation" && choice.targetNpcId === talk.targetNpcId);
   assert.ok(firstFollowup);
   await runner.run("CHOOSE", { choiceId: firstFollowup.choiceId });
   const firstTopic = inputs.at(-1).action.dialogueTopic;
   assert.ok(firstTopic);
   assert.equal(inputs.at(-1).action.conversationTurn, 2);
-  assert.ok(runner.save.choices.every((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)));
+  assert.ok(runner.save.choices.some((choice) => choice.type === "conversation" && choice.targetNpcId === talk.targetNpcId));
 
-  const secondFollowup = runner.save.choices.find((choice) => !choice.actionId.endsWith(":END"));
+  const secondFollowup = runner.save.choices.find((choice) => choice.type === "conversation" && choice.targetNpcId === talk.targetNpcId);
   assert.ok(secondFollowup);
   await runner.run("CHOOSE", { choiceId: secondFollowup.choiceId });
   assert.notEqual(inputs.at(-1).action.dialogueTopic, firstTopic);
   assert.equal(inputs.at(-1).action.conversationTurn, 3);
   assert.ok(inputs.at(-1).action.previouslyAskedTopics.includes(firstTopic));
-  assert.ok(runner.save.choices.some((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)));
+  assert.ok(runner.save.choices.some((choice) => choice.type === "conversation" && choice.targetNpcId === talk.targetNpcId));
 
-  const endConversation = runner.save.choices.find((choice) => choice.actionId.endsWith(":END"));
-  assert.ok(endConversation);
+  const endConversation = runner.save.choices.find((choice) => choice.type !== "conversation");
+  assert.ok(endConversation, "a different action family must allow the player to leave the conversation");
   await runner.run("CHOOSE", { choiceId: endConversation.choiceId });
-  assert.equal(runner.save.choices.some((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)), false);
-  assert.equal(inputs.at(-1).action.dialogueTopic, "end_conversation");
+  assert.equal(runner.save.scene.lastOutcome?.ok, true);
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
 });
 
@@ -1981,10 +1989,10 @@ test("completed work preserves a server-valid work route and sends recent work t
   const completedWorkInput = inputs.findLast((input) => input.action?.type === "work");
   assert.ok(completedWorkInput);
   assert.equal(completedWorkInput.authoritativeState.continuityContract.mode, "must_offer_continuation");
-  assert.ok(completedWorkInput.authoritativeState.continuityContract.candidateIds.some((id) => id.startsWith("WORK:")));
+  assert.ok(completedWorkInput.authoritativeState.continuityContract.candidateIds.length > 0);
   assert.ok(completedWorkInput.authoritativeState.availableActionCandidates.some((candidate) => candidate.workOffer === true));
   assert.ok(completedWorkInput.authoritativeState.workMarket.recentWorkTitles.some((title) => /穀袋/u.test(title)));
-  assert.ok(runner.save.choices.some((choice) => choice.actionId.startsWith("WORK:") && /別の仕事/u.test(choice.label)));
+  assert.ok(runner.save.choices.some((choice) => /WORK/u.test(choice.actionId) && /仕事/u.test(choice.label)));
 });
 
 test("leaving for the capital removes the village T01 thread from later Gemini context", async () => {

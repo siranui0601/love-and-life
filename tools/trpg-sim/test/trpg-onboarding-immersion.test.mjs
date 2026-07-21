@@ -31,7 +31,7 @@ test("opening characters speak from their own stakes instead of explaining the g
 });
 
 test("Gemini contract rejects game and UI vocabulary in narration and NPC speech", () => {
-  assert.match(contract, /trpg-narrative-v5\.3-generative-actions/u);
+  assert.match(contract, /trpg-narrative-v5\.4-generative-director/u);
   assert.match(contract, /DIEGETIC_META_PATTERN/u);
   assert.match(contract, /narrative contains non-diegetic game or UI language/u);
   assert.match(contract, /text contains non-diegetic game or UI language/u);

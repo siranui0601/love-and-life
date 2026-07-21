@@ -403,14 +403,16 @@ export function playerNeedActions(state, model) {
   const servesFood = /宿|飯|食堂|酒場|屋台|市場|店/u.test(facilityText);
   const offersBed = /宿|旅籠|宿泊|寝台/u.test(facilityText);
   const actions = [];
-  if (servesFood || needs.satiety <= 45) {
-    const price = state.player.freeMeals > 0 ? 0 : Math.max(2, Number(state.tuning.mealPrice ?? 6));
+  const hasPortableMeal = Number(state.player.freeMeals ?? 0) > 0;
+  if (servesFood || hasPortableMeal) {
+    const price = hasPortableMeal ? 0 : Math.max(2, Number(state.tuning.mealPrice ?? 6));
     actions.push({
       id: `NEED:EAT:${state.player.facilityId ?? state.player.location}`,
       type: "eat",
       minutes: 30,
       price,
-      label: price ? `${facility?.name ?? "この場所"}で食事を取る（${price}G）` : "手持ちの食事を取る",
+      portableMeal: hasPortableMeal,
+      label: price ? `${facility?.name ?? "この場所"}で食事を取る（${price}G）` : "携帯食を一つ食べる",
     });
   }
   if (offersBed || needs.fatigue >= 55 || state.daypart === "night") {

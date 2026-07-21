@@ -104,6 +104,7 @@ const COMMAND_TYPES = new Set(["CHOOSE", "MOVE", "TALK_NPC", "SHOP_BUY", "SHOP_S
 const COMMAND_PAYLOAD_KEY = Object.freeze({
   CHOOSE: "choiceId",
   MOVE: "moveId",
+  TALK_NPC: "npcId",
   SHOP_BUY: "stockId",
   SHOP_SELL: "equipmentId",
   EQUIP: "equipmentId",
@@ -1163,6 +1164,9 @@ function contextualLocalAction(action, runtime, data) {
   const facility = data.model.facilityById[runtime.playerState.player.facilityId];
   const facilityId = facility?.id ?? "UNKNOWN";
   const publicNpc = presentNpcsAt(runtime, data)[0] ?? null;
+  if (action?.workOffer === true) {
+    return decorateWorkOfferAction({ ...action, type: "work" }, runtime, data, action.targetNpcId ?? publicNpc?.id ?? null);
+  }
   if (action.type === "conversation" && action.targetNpcId) {
     const target = presentNpcsAt(runtime, data).find((npc) => npc.id === action.targetNpcId);
     return target ? {
@@ -1462,7 +1466,8 @@ function compileGeneratedChoice(runtime, data, choice, index = 0) {
       type: "conversation",
       targetNpcId: target.id,
       targetNpcName: target.name,
-      dialogueTopic: "player_generated",
+      dialogueTopic: `player_generated:${digest}`,
+      dialogueFollowup: runtime.dialogueSession?.npcId === target.id,
       generatedApproach: approach,
       minutes: 10,
       label: label || `${target.name}に話しかける`,
@@ -2473,8 +2478,11 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   let deferredMissionConversation = null;
   if (command.type === "CHOOSE") {
     const choices = choiceActions(runtime, data);
-    const action = choices.find((entry) => entry.choiceId === payload.choiceId);
-    if (!action) throw new TrpgGameError(400, "choice_not_available");
+    const displayedAction = choices.find((entry) => entry.choiceId === payload.choiceId);
+    if (!displayedAction) throw new TrpgGameError(400, "choice_not_available");
+    const action = displayedAction.workOffer === true
+      ? contextualLocalAction(displayedAction, runtime, data) ?? displayedAction
+      : displayedAction;
     if (payload.actionId && payload.actionId !== action.id) {
       throw new TrpgGameError(409, "choice_action_mismatch", "The displayed choice no longer resolves to the same action", {
         choiceId: payload.choiceId,
@@ -2902,7 +2910,7 @@ function narrativeContinuityContract(runtime, actions) {
   return {
     mode: candidates.length ? "must_offer_continuation" : "free",
     intent: "仕事を続ける",
-    candidateIds: candidates.map((action) => action.id),
+    candidateIds: candidates.slice(0, 1).map((action) => action.id),
     rationale: candidates.length
       ? "直前に仕事を続ける意思を示しているため、同じ活動を継続できる道を一つ残す"
       : "この場では依頼主または実行可能な仕事を確認できない",
@@ -4082,7 +4090,7 @@ function narrativeProgressContract(runtime, missions, actions) {
   if (urgentNeeds.length) {
     return {
       mode: "must_offer_progress",
-      anchorCandidateIds: urgentNeeds.map((candidate) => candidate.id),
+      anchorCandidateIds: urgentNeeds.slice(0, 1).map((candidate) => candidate.id),
       missionId: null,
       currentStep: needs.satiety <= 20 ? "まず食事を取る" : "休める場所で眠る",
       rationale: "空腹または疲労が危険域にあるため、身を立て直す行動を一つ残す",
@@ -4096,7 +4104,7 @@ function narrativeProgressContract(runtime, missions, actions) {
     .sort((left, right) => Number(left.deadline?.remainingMinutes ?? Infinity) - Number(right.deadline?.remainingMinutes ?? Infinity))[0] ?? null;
   return {
     mode: anchors.length ? "must_offer_progress" : "free",
-    anchorCandidateIds: anchors.map((candidate) => candidate.id),
+    anchorCandidateIds: anchors.slice(0, 1).map((candidate) => candidate.id),
     missionId: urgent?.id ?? null,
     currentStep: urgent?.currentStep?.label ?? urgent?.currentStep ?? null,
     rationale: anchors.length
@@ -4121,6 +4129,25 @@ function narrativeWorkMarket(runtime) {
     recentWorkTitles: ensureNarrativeMemory(runtime).recentWorkTitles.slice(-8),
     note: "仕事内容は場所・時刻・人物に合わせて生成し、賃金はサーバーが地域相場・所要時間・危険度から確定する",
   };
+}
+
+function narrativeAuthoritativeCandidates(runtime, choicePool, progressContract, continuityContract) {
+  // Transactional confirmation is intentionally authored: accepting, clarifying,
+  // and declining must retain the exact offer that the player just received.
+  if (runtime.pendingWorkOffer) return choicePool.slice(0, 3);
+  const preferredIds = [
+    ...(continuityContract?.mode === "must_offer_continuation" ? continuityContract.candidateIds ?? [] : []),
+    ...(progressContract?.anchorCandidateIds ?? []),
+  ];
+  const selected = [];
+  for (const id of preferredIds) {
+    const candidate = choicePool.find((entry) => entry.id === id);
+    if (candidate && !selected.some((entry) => entry.id === candidate.id)) selected.push(candidate);
+    // Normal scenes expose at most one authoritative story/continuity anchor.
+    // Gemini creates the remaining choices from actionAffordances.
+    if (selected.length >= 1) break;
+  }
+  return selected;
 }
 
 function narrativeInput(record, runtime, data, action, outcome) {
@@ -4150,6 +4177,7 @@ function narrativeInput(record, runtime, data, action, outcome) {
   });
   const progressContract = narrativeProgressContract(runtime, missions, choicePool);
   const continuityContract = narrativeContinuityContract(runtime, choicePool);
+  const authoritativeCandidates = narrativeAuthoritativeCandidates(runtime, choicePool, progressContract, continuityContract);
   const reactionContract = narrativeReactionContract(resolvedAction, presentNpcs.map((npc) => npc.id));
   const weather = journey.weatherForState(runtime.playerState);
   const needs = journey.ensurePlayerNeeds(runtime.playerState);
@@ -4226,7 +4254,7 @@ function narrativeInput(record, runtime, data, action, outcome) {
       weather,
       actionAffordances: narrativeActionAffordances(runtime, data),
       visibleFlags: { ...ensureNarrativeMemory(runtime).semanticFlags },
-      availableActionCandidates: choicePool.map((choice) => ({
+      availableActionCandidates: authoritativeCandidates.map((choice) => ({
         id: choice.id,
         label: choice.label,
         intentType: choiceIntent(choice),
@@ -4245,6 +4273,42 @@ function narrativeInput(record, runtime, data, action, outcome) {
 
 function replacePlayerAlias(value, playerName) {
   return cleanText(value, 2000).replaceAll("オレゴン", playerName);
+}
+
+function emergencyGeneratedChoiceInputs(runtime, data) {
+  const affordances = narrativeActionAffordances(runtime, data);
+  const inputs = [];
+  const add = (kind, label, detail = {}) => {
+    if (!affordances.allowedKinds.includes(kind)) return;
+    inputs.push({
+      id: `GENERATED:SERVER-REPAIR:${kind.toUpperCase()}:${inputs.length + 1}`,
+      label,
+      intentType: kind,
+      targetNpcId: detail.targetNpcId ?? null,
+      generatedAction: {
+        kind,
+        targetNpcId: detail.targetNpcId ?? null,
+        destinationFacilityId: detail.destinationFacilityId ?? null,
+        destinationHub: detail.destinationHub ?? null,
+        approach: detail.approach ?? null,
+      },
+    });
+  };
+  const need = affordances.needActions[0];
+  if (need) add(need.kind, need.label);
+  const sessionNpcId = runtime.dialogueSession?.npcId;
+  const talkNpcId = (sessionNpcId && affordances.talkNpcIds.includes(sessionNpcId) ? sessionNpcId : null)
+    ?? affordances.talkNpcIds[0];
+  const talkNpc = presentNpcsAt(runtime, data).find((npc) => npc.id === talkNpcId);
+  if (talkNpcId) add("talk", `${talkNpc?.name ?? "この場の人物"}に、目の前の出来事について尋ねる`, { targetNpcId: talkNpcId });
+  const movement = affordances.movements[0];
+  if (movement) add("move", movement.label, { destinationFacilityId: movement.destinationFacilityId, destinationHub: movement.destinationHub });
+  if (affordances.workEmployerNpcIds[0]) add("work", "この場所で必要とされている仕事を尋ねる", { targetNpcId: affordances.workEmployerNpcIds[0] });
+  add("investigate", "目についた違和感を一つ選び、原因を確かめる", { approach: "目についた違和感の原因を調べる" });
+  add("observe", "人の動きと周囲の変化を見比べる", { approach: "人と場所の変化を観察する" });
+  add("wait", "少し待ち、場の様子が変わるか確かめる", { approach: "短時間待って変化を見る" });
+  add("plan", "分かっていることを整理し、次の行き先を決める", { approach: "既知の情報から次の行動を考える" });
+  return inputs;
 }
 
 function applyNarrativeChoiceSelection(runtime, data, result) {
@@ -4279,11 +4343,31 @@ function applyNarrativeChoiceSelection(runtime, data, result) {
     }
     if (resolvedActions.length >= 3) break;
   }
-  for (const action of pool) {
-    if (resolvedActions.length >= 3) break;
-    if (!actionIds.includes(action.id)) {
-      actionIds.push(action.id);
-      resolvedActions.push(action);
+  if (runtime.pendingWorkOffer) {
+    for (const action of pool) {
+      if (resolvedActions.length >= 3) break;
+      if (!actionIds.includes(action.id)) {
+        actionIds.push(action.id);
+        resolvedActions.push(action);
+      }
+    }
+  } else {
+    const activeMissions = missionView(runtime, data).filter((mission) => mission.status === "active");
+    const progressContract = narrativeProgressContract(runtime, activeMissions, pool);
+    const continuityContract = narrativeContinuityContract(runtime, pool);
+    const authoritativeAnchors = narrativeAuthoritativeCandidates(runtime, pool, progressContract, continuityContract);
+    for (const anchor of authoritativeAnchors) {
+      if (resolvedActions.some((entry) => entry.id === anchor.id)) continue;
+      if (resolvedActions.length >= 3) resolvedActions.pop();
+      resolvedActions.unshift(anchor);
+      actionIds.unshift(anchor.id);
+    }
+    for (const [index, choice] of emergencyGeneratedChoiceInputs(runtime, data).entries()) {
+      if (resolvedActions.length >= 3) break;
+      const compiled = compileGeneratedChoice(runtime, data, choice, index + resolvedActions.length);
+      if (!compiled) continue;
+      if (resolvedActions.some((entry) => generatedActionIdentity(entry) === generatedActionIdentity(compiled))) continue;
+      resolvedActions.push(compiled);
     }
   }
   const signature = resolvedActions.slice(0, 3).map((action) => `${action.type}:${action.targetNpcId ?? action.destinationFacilityId ?? action.destinationHub ?? action.generatedApproach ?? action.label}`).join(" | ");

@@ -141,23 +141,17 @@ export function buildNarrativePrompt(context, { repair = null, policy = {} } = {
   const modeRules = sceneSpecificRules(context);
   const allowedMissionTemplateIds = [...(policy.allowedMissionTemplateIds ?? [])];
   const allowedTroubleIds = [...(policy.allowedTroubleIds ?? [])];
-  const core = `あなたはTRPGの場面監督です。サーバーが示す現実の範囲内で、場面描写、会話、次の三つの行動、必要なら世界状態の提案を生成してください。
+  const core = `あなたはTRPGの場面監督です。サーバーが示す現実の中で、短い場面描写、必要な会話、次の三つの行動を生成してください。
 
 共通規則:
 1. authoritativeOutcome、現在地、時刻、人物の生死・所在、所持品、戦闘結果を変更しない。
-2. 発言・感情・行動を描ける人物はlocalNpcsだけ。知らない秘密や遠隔人物の現在を作らない。
-3. choicesは三つとも、結果・対象・進め方の違いが分かる具体的な行動にする。三つの調査法を並べるなど、同じ動詞と目的だけの言い換えにしない。
-4. 確定済みの進行行動はallowedActionCandidatesから選べる。それ以外はactionAffordancesの範囲でgeneratedActionを作ってよい。既存候補を使う時はid・intentType・targetNpcIdを候補どおり使う。生成行動のidはGENERATED:1、GENERATED:2、GENERATED:3のようにする。
-5. generatedActionは現在地にいる人物、移動可能な行先、食事・睡眠・仕事の可否と矛盾させない。話しかける相手や移動先はactionAffordancesにあるものだけを使う。
-6. progressContract.modeがmust_offer_progressならanchorCandidateIdsから一件、continuityContract.modeがmust_offer_continuationならcandidateIdsから一件を含める。同じ候補が両方を満たしてもよい。残りは自由生成してよい。
-7. recentChoiceSignaturesに近い三つ組や定型句を避け、現在の人物・時刻・天候・欲求・目的に合わせて変化させる。
-8. proposalsは任意の候補であり、確信がなければ空配列にする。重大な報酬、生死、事件解決、所持品変更を提案で決めない。
-9. local_fact_candidateはsubjectId・predicate・summary、npc_memory_candidateはsubjectId・predicate・summary、mission_lead_candidateはtroubleId・summaryを必ず含める。欠けるならその提案を出さない。
-10. narrativeとspeechesは世界内の表現だけにし、ゲーム、UI、選択肢、フラグ等の実装語やNPC/LOC/SKL等の内部IDを表示文へ書かない。
-11. オレゴンは旅人を指す固定別名である。別名の由来を説明せず、必要な場合だけ自然に呼ぶ。
-12. 「……」だけの発言は作らない。言葉がない人物はspeechesへ含めず、沈黙はnarrativeで描く。
-13. JSON以外を出力しない。
-
+2. 発言できるのはlocalNpcsだけ。NPCは自分の立場と知識から、短く具体的に答える。
+3. choicesは必ず3件。通常場面では三つとも行動の種類と結果を変え、同じ調査や同じ会話の言い換えを並べない。
+4. allowedActionCandidatesは進行保証などの権威的アンカーである。要求された時だけ最大1件を使い、残りはactionAffordancesからgeneratedActionとして作る。
+5. generatedActionの人物・移動先・食事・睡眠・仕事はactionAffordancesに存在するものだけを使う。
+6. proposalsは任意。重大な報酬、生死、事件解決、所持品変更を決めず、不確かなら[]にする。
+7. 世界内の言葉だけを使い、ゲーム・UI・選択肢・フラグ・内部IDを本文へ出さない。「……」だけの発言も作らない。オレゴンは旅人を指す固定別名で、由来は説明しない。
+8. JSONだけを返し、出力を長くしすぎない。
 今回の場面規則:
 ${modeRules.length ? modeRules.map((rule) => `- ${rule}`).join("\n") : "- 現在地で具体的に見聞きできる変化を一つ描く"}
 
@@ -270,7 +264,7 @@ async function callProvider(provider, payload, audit) {
 function componentRepairErrors(rawValidation, sanitizedValidation) {
   // Optional proposal mistakes are normalized or discarded locally. A second
   // model call is reserved for player-visible or progression-critical parts.
-  const structuralPattern = /(?:json_parse|choices must contain|choice ids are duplicated|id is not in the executable candidate pool|workProposal|progress anchor|active player-intent continuation|conversation must include a reply|required reaction actor missing|narrative is empty)/iu;
+  const structuralPattern = /(?:json_parse|choices must contain|choice ids are duplicated|choice labels are semantically duplicated|distinct action families|id is not in the executable candidate pool|generatedAction|workProposal|progress anchor|active player-intent continuation|conversation must include a reply|required reaction actor missing|narrative is empty)/iu;
   return [...new Set([
     ...(sanitizedValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),
     ...(rawValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),

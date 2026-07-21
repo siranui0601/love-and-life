@@ -17,6 +17,7 @@ import {
   executeGameRuntimeCommand,
 } from "../../../src/server/trpg/game/service.js";
 import { presentNpcsAt } from "../../../src/server/trpg/game/presence.js";
+import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
 import {
   buildLocalNarrativeContext,
   sanitizeNarrativeOutput,
@@ -144,4 +145,71 @@ test("every visible NPC can be addressed through TALK_NPC independently of the t
   const result = executeGameRuntimeCommand(runtime, game.data, { type: "TALK_NPC", payload: { npcId: target.id } });
   assert.equal(result.resolvedAction.type, "conversation");
   assert.equal(result.resolvedAction.targetNpcId, target.id);
+});
+
+
+test("TALK_NPC survives the public command payload boundary", async () => {
+  const game = new TrpgGameService({
+    store: new MemoryTrpgSaveStore(),
+    narrator: null,
+    allowCustomSeed: true,
+  });
+  const owner = "direct-talk-owner";
+  let current = await game.create(owner, {
+    seed: "direct-talk-command-boundary",
+    profileId: "balanced",
+    playerName: "旅人",
+    tutorial: true,
+  });
+  let sequence = 0;
+  const choose = async (actionId) => {
+    const choice = current.choices.find((entry) => entry.actionId === actionId);
+    assert.ok(choice, actionId);
+    current = (await game.command(owner, current.id, {
+      commandId: `direct-talk-opening-${++sequence}`,
+      expectedRevision: current.revision,
+      type: "CHOOSE",
+      payload: { choiceId: choice.choiceId },
+    })).save;
+  };
+  await choose("TUTORIAL:AWAKEN:LISTEN");
+  await choose("TUTORIAL:CONTACT:WHERE");
+  const introduction = current.scene.beats.find((beat) => beat.introductionToken);
+  if (introduction) {
+    current = (await game.command(owner, current.id, {
+      commandId: `direct-talk-opening-${++sequence}`,
+      expectedRevision: current.revision,
+      type: "ACK_NPC_INTRODUCTION",
+      payload: { token: introduction.introductionToken },
+    })).save;
+  }
+  await choose("TUTORIAL:ORIENT:VOICES");
+  const square = current.movement.find((entry) => entry.destinationFacilityId === "LOC_FARM_SQUARE");
+  assert.ok(square, "a populated village facility must be reachable");
+  current = (await game.command(owner, current.id, {
+    commandId: `direct-talk-opening-${++sequence}`,
+    expectedRevision: current.revision,
+    type: "MOVE",
+    payload: { moveId: square.moveId },
+  })).save;
+  const target = current.scene.presentNpcs[0];
+  assert.ok(target);
+  const response = await game.command(owner, current.id, {
+    commandId: "talk-directly-once",
+    expectedRevision: current.revision,
+    type: "TALK_NPC",
+    payload: { npcId: target.id },
+  });
+  assert.equal(response.save.scene.lastOutcome?.ok, true);
+  assert.equal(response.save.scene.lastOutcome?.type, "conversation");
+});
+
+test("being hungry does not invent food where no food source exists", () => {
+  const state = fresh();
+  state.player.location = "田園の村";
+  state.player.facilityId = "LOC_FARM_EDGE";
+  state.player.freeMeals = 0;
+  state.player.satiety = 5;
+  const actions = playerNeedActions(state, model);
+  assert.equal(actions.some((entry) => entry.type === "eat"), false);
 });
