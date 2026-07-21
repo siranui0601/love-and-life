@@ -1,0 +1,90 @@
+    },
+    speeches: {
+      type: "ARRAY",
+      maxItems: 6,
+      items: {
+        type: "OBJECT",
+        required: ["actorId", "text"],
+        properties: {
+          actorId: { type: "STRING" },
+          text: { type: "STRING" },
+          emotion: { type: "STRING", nullable: true },
+        },
+      },
+    },
+    proposals: {
+      type: "ARRAY",
+      maxItems: 5,
+      items: {
+        type: "OBJECT",
+        required: ["type", "reason"],
+        properties: {
+          type: { type: "STRING", enum: [...PROPOSAL_TYPES] },
+          targetNpcId: { type: "STRING", nullable: true },
+          intent: { type: "STRING", nullable: true },
+          flagPath: { type: "STRING", nullable: true },
+          value: { type: "STRING", nullable: true },
+          templateId: { type: "STRING", nullable: true },
+          troubleId: { type: "STRING", nullable: true },
+          text: { type: "STRING", nullable: true },
+          subjectId: { type: "STRING", nullable: true },
+          predicate: { type: "STRING", nullable: true },
+          scope: { type: "STRING", nullable: true },
+          locationId: { type: "STRING", nullable: true },
+          summary: { type: "STRING", nullable: true },
+          reason: { type: "STRING" },
+        },
+      },
+    },
+  },
+});
+
+function plainObject(value) {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!plainObject(value)) return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .map((key) => [key, stableValue(value[key])]),
+  );
+}
+
+export function stableStringify(value) {
+  return JSON.stringify(stableValue(value));
+}
+
+export function sha256(value) {
+  return crypto.createHash("sha256").update(typeof value === "string" ? value : stableStringify(value)).digest("hex");
+}
+
+function boundedText(value, maximum) {
+  return String(value ?? "").trim().slice(0, maximum);
+}
+
+function normalizeNpc(npc) {
+  return {
+    id: boundedText(npc?.id, 80),
+    name: boundedText(npc?.name, 80),
+    role: boundedText(npc?.role ?? npc?.type, 120),
+    mood: boundedText(npc?.mood ?? npc?.initialStatus, 120),
+    currentGoal: boundedText(npc?.currentGoal, 180),
+    relationship: Number.isFinite(Number(npc?.relationship)) ? Number(npc.relationship) : 0,
+    speechStyle: boundedText(npc?.speechStyle, 180),
+    knownLocalFacts: Array.isArray(npc?.knownLocalFacts)
+      ? npc.knownLocalFacts.slice(0, 8).map((entry) => boundedText(entry, 180))
+      : [],
+    recentMemories: Array.isArray(npc?.recentMemories)
+      ? npc.recentMemories.slice(-6).map((entry) => boundedText(entry, 240)).filter(Boolean)
+      : [],
+  };
+}
+
+function npcIsPresentAtPlace(npc, state) {
+  const presence = boundedText(npc?.presence, 40).toLowerCase();
+  const lifeStatus = boundedText(npc?.lifeStatus ?? npc?.vitalState, 40).toLowerCase();
+  if (presence && presence !== "present") return false;
+  if (["dead", "missing"].includes(lifeStatus)) return false;
