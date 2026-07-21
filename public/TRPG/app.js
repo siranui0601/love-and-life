@@ -809,7 +809,9 @@ function announceScene(save) {
   const outcome = save?.scene?.lastOutcome;
   const outcomeText = typeof outcome === "string" ? outcome : outcome?.summary || outcome?.message;
   const guidance = guidanceView(save);
-  const parts = [`${clock.day} ${clock.time}、${facility}`];
+  const weather = save?.clock?.weather ?? save?.scene?.weather;
+  const weatherText = weather?.label ? `、天気は${escapeText(weather.label)}` : "";
+  const parts = [`${clock.day} ${clock.time}、${facility}${weatherText}`];
   if (outcomeText) parts.push(escapeText(outcomeText));
   if (guidance?.title) parts.push(`現在の目的、${escapeText(guidance.title)}`);
   const announcement = `${parts.map((part) => String(part).replace(/[。．.]+$/gu, "")).join("。")}。`;
@@ -831,6 +833,14 @@ function renderPlayer(player = {}) {
   $("#mpBar").value = mp;
   $("#hpText").textContent = formatPercent(hp);
   $("#mpText").textContent = formatPercent(mp);
+  const hunger = Math.max(0, Math.min(100, number(player.needs?.hunger, 0)));
+  const fatigue = Math.max(0, Math.min(100, number(player.needs?.fatigue, 0)));
+  $("#hungerStatus").textContent = `食 ${Math.round(hunger)}`;
+  $("#hungerStatus").title = `空腹度 ${Math.round(hunger)}：${escapeText(player.needs?.hungerLabel, "状態不明")}`;
+  $("#hungerStatus").dataset.level = hunger >= 80 ? "critical" : hunger >= 55 ? "warning" : "normal";
+  $("#fatigueStatus").textContent = `疲 ${Math.round(fatigue)}`;
+  $("#fatigueStatus").title = `疲労度 ${Math.round(fatigue)}：${escapeText(player.needs?.fatigueLabel, "状態不明")}`;
+  $("#fatigueStatus").dataset.level = fatigue >= 80 ? "critical" : fatigue >= 55 ? "warning" : "normal";
 }
 
 function renderSave(save, { focus = "preserve", announce = false, preserveDialogue = false } = {}) {
@@ -846,6 +856,11 @@ function renderSave(save, { focus = "preserve", announce = false, preserveDialog
   $("#dayLabel").textContent = clock.day;
   $("#timeLabel").textContent = clock.time;
   $("#daypartLabel").textContent = clock.daypart;
+  const weather = save.clock?.weather ?? scene.weather ?? {};
+  $("#weatherLabel").textContent = weather.label
+    ? `${escapeText(weather.label)}${Number.isFinite(Number(weather.temperatureC)) ? ` ${Math.round(Number(weather.temperatureC))}°` : ""}`
+    : "天気—";
+  $("#weatherLabel").title = escapeText(weather.description, "天候情報なし");
   $("#locationName").textContent = escapeText(scene.location, "未知の地域");
   $("#facilityName").textContent = escapeText(scene.facilityName, "移動中");
   const outcome = scene.lastOutcome;

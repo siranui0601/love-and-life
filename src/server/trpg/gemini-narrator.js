@@ -90,6 +90,10 @@ function sceneSpecificRules(context) {
   if (context.sceneMode === "arrival") {
     rules.push("到着先の公開情報と同席人物だけを使い、到着によって自然に起きる最初の反応を描く");
   }
+  if (context.sceneMode === "travel_arrival") {
+    rules.push("出発地から到着地までを瞬間移動のように省略せず、道中で一つだけ具体的な景色・人・天候・危険の変化を描いてから到着を描く");
+    rules.push("道中の出来事で戦闘結果や所持品を勝手に変えず、確定したtravelMinutesと天候だけを使う");
+  }
   const hasWorkCandidate = (context.allowedActionCandidates ?? []).some((candidate) => candidate.workOffer === true);
   if (context.sceneMode === "work_generation" || hasWorkCandidate) {
     rules.push("workOffer=trueの候補を選ぶ場合はworkProposalを付け、現在地・時刻・人物・localDemandTagsに合う具体的な仕事を一件作る");
@@ -97,6 +101,21 @@ function sceneSpecificRules(context) {
     if (context.workMarket?.recentWorkTitles?.length) {
       rules.push(`直近に行った仕事と同じ内容を繰り返さない: ${context.workMarket.recentWorkTitles.join(" / ")}`);
     }
+  }
+  if (context.time?.weather?.description) {
+    rules.push(`現在の天候を背景として自然に反映する: ${context.time.weather.description}`);
+  }
+  if (Number(context.player?.needs?.hunger ?? 0) >= 55 || Number(context.player?.needs?.fatigue ?? 0) >= 55) {
+    rules.push("空腹や疲労が高い場合は、無関係な三択だけにせず、食事・休息・宿泊が実行可能なら少なくとも一つ現実的な対処を候補にできる");
+  }
+  if (context.worldAffordances?.presentNpcIds?.length) {
+    rules.push("画面内に人物がいるのに全ての行動が無視する形を避け、話す価値がある場面ではその人物へ直接働きかける道を一つ含める");
+  }
+  if (Number(context.choiceDiversityContract?.minimumGeneratedChoices ?? 0) > 0) {
+    rules.push(`三つのうち少なくとも${context.choiceDiversityContract.minimumGeneratedChoices}件は、allowedActionCandidatesの言い換えではなくworldAffordancesから作る具体的な行動にする`);
+  }
+  if (context.recentChoices?.length) {
+    rules.push(`直近に表示した次の行動と同じ内容・同じ言い回しを繰り返さない: ${context.recentChoices.slice(-8).join(" / ")}`);
   }
   if (context.action.requiredDisclosure) {
     rules.push(`対象NPCの発言に次の確定情報を意味を変えず含める: ${context.action.requiredDisclosure}`);
@@ -133,8 +152,11 @@ export function buildNarrativePrompt(context, { repair = null, policy = {} } = {
 共通規則:
 1. authoritativeOutcome、現在地、時刻、人物の生死・所在、所持品、戦闘結果を変更しない。
 2. 発言・感情・行動を描ける人物はlocalNpcsだけ。知らない秘密や遠隔人物の現在を作らない。
-3. choicesはallowedActionCandidatesから異なる3件を選び、id・intentType・targetNpcIdを候補どおり使う。labelとapproachは場面に合わせて具体化してよい。
-4. progressContract.modeがmust_offer_progressならanchorCandidateIdsから一件、continuityContract.modeがmust_offer_continuationならcandidateIdsから一件を含める。同じ候補が両方を満たしてもよい。
+3. choicesは、サーバーが固定した候補の言い換えだけにしない。確定進行に必要な最小限だけcandidateを使い、残りは現在の世界から新しく作る。次の二方式を使える。
+   - 物語上の確定進行・戦闘・任務工程を選ぶ時: actionKind="candidate"、candidateIdにallowedActionCandidatesのIDを入れる。
+   - 自由行動を作る時: worldAffordancesの範囲でactionKindをtalk / investigate / move_local / move_region / wait / rest / eat / work / prepareから選び、対象・目的地・方法を具体化する。idはGEN-1等の一時IDにする。
+   自由行動は現在地、同席人物、既知の移動先、空腹、疲労、時刻、天候と矛盾させない。
+4. progressContract.modeがmust_offer_progressならanchorCandidateIdsからactionKind="candidate"の一件を必ず含める。continuityContract.modeがmust_offer_continuationならcandidateIdsから一件を含める。同じ候補が両方を満たしてもよい。choiceDiversityContractのminimumGeneratedChoicesとmaximumCandidateChoicesも必ず守る。
 5. proposalsは任意の候補であり、確信がなければ空配列にする。重大な報酬、生死、事件解決、所持品変更を提案で決めない。
 6. local_fact_candidateはsubjectId・predicate・summary、npc_memory_candidateはsubjectId・predicate・summary、mission_lead_candidateはtroubleId・summaryを必ず含める。欠けるならその提案を出さない。
 7. narrativeとspeechesは世界内の表現だけにし、ゲーム、UI、選択肢、フラグ等の実装語やNPC/LOC/SKL等の内部IDを表示文へ書かない。
@@ -144,6 +166,16 @@ export function buildNarrativePrompt(context, { repair = null, policy = {} } = {
 
 今回の場面規則:
 ${modeRules.length ? modeRules.map((rule) => `- ${rule}`).join("\n") : "- 現在地で具体的に見聞きできる変化を一つ描く"}
+
+行動生成の書式:
+- candidate: candidateId必須。idはcandidateIdと同じでもよい。
+- talk: targetNpcId必須。topicに尋ねる内容を短く書く。
+- investigate: approachに、その場で何をどう確かめるかを書く。
+- move_local: destinationFacilityId必須。
+- move_region: destinationHub必須。
+- wait / rest / eat / prepare: minutesは必要なら指定する。
+- work: workProposalにtitle、durationClass、riskClassを入れる。賃金額は書かない。
+- 三つとも結果・目的・危険の異なる行動にし、同じ痕跡を言い換えた三択にしない。
 
 提案可能範囲:
 - 許可ミッションテンプレート: ${allowedMissionTemplateIds.join(", ") || "なし"}
@@ -254,7 +286,7 @@ async function callProvider(provider, payload, audit) {
 function componentRepairErrors(rawValidation, sanitizedValidation) {
   // Optional proposal mistakes are normalized or discarded locally. A second
   // model call is reserved for player-visible or progression-critical parts.
-  const structuralPattern = /(?:json_parse|choices must contain|choice ids are duplicated|id is not in the executable candidate pool|workProposal|progress anchor|active player-intent continuation|conversation must include a reply|required reaction actor missing|narrative is empty)/iu;
+  const structuralPattern = /(?:json_parse|choices must contain|choice ids are duplicated|candidateId is not in the executable candidate pool|generated world actions|server candidate actions|workProposal|progress anchor|active player-intent continuation|conversation must include a reply|required reaction actor missing|narrative is empty)/iu;
   return [...new Set([
     ...(sanitizedValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),
     ...(rawValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),

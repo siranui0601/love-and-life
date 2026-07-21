@@ -12,6 +12,7 @@ import {
   sellEquipment,
 } from "../../../../tools/trpg-sim/lib/shop-runtime.mjs";
 import { experienceToNextLevel } from "../../../../tools/trpg-sim/lib/mission-model.mjs";
+import { deterministicWeather } from "../../../../tools/trpg-sim/lib/world-weather.mjs";
 import {
   completeNpcLifeTick,
   createNpcLifeEngine,
@@ -23,8 +24,8 @@ import { FileTrpgSaveStore } from "./save-store.js";
 import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v11";
-const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10"]);
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v12";
+const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
 const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
@@ -67,6 +68,74 @@ const PUBLIC_BELIEF_DETAIL_COPY = Object.freeze({
 });
 
 const HIDDEN_NPC_ROLE_PATTERN = /犯人|黒幕|放火犯|暗殺|密偵|間者|内通|裏切|偽装|首謀|共犯|工作員/u;
+
+function troubleStatus(runtime, troubleId) {
+  return runtime?.playerState?.troubles?.[troubleId]?.status ?? "scheduled";
+}
+
+function facilityTemporallyAvailable(runtime, facility) {
+  if (!facility) return false;
+  const day = Number(runtime.playerState.day ?? 1);
+  if (facility.id === "LOC_CAP_BIG_STORE") {
+    return troubleStatus(runtime, "T10") === "failed" && day >= 70;
+  }
+  if (facility.id === "LOC_CAP_ORPHANAGE") {
+    return !(day >= 57 && ["critical", "failed"].includes(troubleStatus(runtime, "T10")));
+  }
+  return true;
+}
+
+function currentWeather(runtime) {
+  const state = runtime.playerState;
+  return deterministicWeather({ day: state.day, hour: state.hour, location: state.player.location });
+}
+
+const REGION_MEAL_PRICE = Object.freeze({
+  "田園の村": 4,
+  "王都": 8,
+  "交易都市": 7,
+  "犯罪都市": 9,
+  "辺境の村": 6,
+  "北陵要塞": 7,
+  "ドワーフ洞窟": 8,
+  "エルフの隠れ里": 6,
+  "古代神殿": 8,
+  "魔王領": 12,
+});
+
+const REGION_LODGING_PRICE = Object.freeze({
+  "田園の村": 12,
+  "王都": 28,
+  "交易都市": 24,
+  "犯罪都市": 22,
+  "辺境の村": 16,
+  "北陵要塞": 18,
+  "ドワーフ洞窟": 20,
+  "エルフの隠れ里": 18,
+  "古代神殿": 20,
+  "魔王領": 35,
+});
+
+function facilityOffersMeals(facility) {
+  return /宿|飯|食堂|酒場|茶屋|パン|市場|料理|厨房/u.test(`${facility?.name ?? ""} ${facility?.type ?? ""}`);
+}
+
+function facilityOffersLodging(facility) {
+  return /宿|旅籠|宿泊/u.test(`${facility?.name ?? ""} ${facility?.type ?? ""}`);
+}
+
+function survivalNeedState(runtime) {
+  const needs = runtime.playerState.player.needs ?? { hunger: 15, fatigue: 8, lastMealMinute: 0, lastSleepMinute: 0 };
+  return {
+    hunger: Math.max(0, Math.min(100, Number(needs.hunger ?? 0))),
+    fatigue: Math.max(0, Math.min(100, Number(needs.fatigue ?? 0))),
+  };
+}
+
+function ensureSurvivalNeedState(runtime) {
+  runtime.playerState.player.needs ??= { hunger: 15, fatigue: 8, lastMealMinute: 0, lastSleepMinute: 0 };
+  return survivalNeedState(runtime);
+}
 
 const FARM_SQUARE_DISCOVERIES = Object.freeze([
   "LOC_FARM_FIELD",
@@ -365,6 +434,7 @@ function createNarrativeMemory() {
     npcMemories: [],
     missionLeads: [],
     recentWorkTitles: [],
+    recentChoiceLabels: [],
     activityFocus: null,
     semanticFlags: {},
   };
@@ -376,6 +446,7 @@ function ensureNarrativeMemory(runtime) {
   runtime.narrativeMemory.npcMemories ??= [];
   runtime.narrativeMemory.missionLeads ??= [];
   runtime.narrativeMemory.recentWorkTitles ??= [];
+  runtime.narrativeMemory.recentChoiceLabels ??= [];
   runtime.narrativeMemory.activityFocus ??= null;
   runtime.narrativeMemory.semanticFlags ??= {};
   return runtime.narrativeMemory;
@@ -415,7 +486,8 @@ function discoverArrival(runtime, data) {
   // ordinary facilities. Secret/event-only locations remain mission-gated.
   if (runtime.playerState.progress.travel.visitedHubs.has(hubId) && hubId !== "田園の村") {
     for (const facility of data.model.facilitiesByHub[hubId] ?? []) {
-      if (!/隠|秘密|地下|処刑|牢|祭壇|封印|見張り小屋|裏路地/u.test(`${facility.name} ${facility.type}`)) {
+      if (!/隠|秘密|地下|処刑|牢|祭壇|封印|見張り小屋|裏路地/u.test(`${facility.name} ${facility.type}`)
+        && facilityTemporallyAvailable(runtime, facility)) {
         knowledge.knownFacilityIds.add(facility.id);
       }
     }
@@ -966,6 +1038,8 @@ export function createGameRuntime(data, { seed, profileId, playerName, tutorial 
     narrativeChoiceSelection: null,
     narrativeMemory: createNarrativeMemory(),
   };
+  ensureSurvivalNeedState(runtime);
+  playerState.weather = currentWeather(runtime);
   advanceLivingWorld(runtime, playerState.absoluteMinute);
   if (tutorial) {
     prepareOpeningTutorial(livingWorld, playerState.absoluteMinute);
@@ -1004,6 +1078,8 @@ function choiceIntent(action) {
   if (action.type === "localInvestigate") return "investigate";
   if (action.type === "plan") return "prepare";
   if (action.type === "work") return "help";
+  if (action.type === "eat") return "prepare";
+  if (action.type === "move") return "leave";
   return "observe";
 }
 
@@ -1050,10 +1126,32 @@ function workDescription(facilityId) {
   }[facilityId] ?? "荷運びと片づけを手伝う";
 }
 
+function npcCanOfferWork(runtime, data, publicNpc) {
+  if (!publicNpc?.id) return false;
+  const npc = data.model.npcById?.[publicNpc.id] ?? data.model.npcs.find((entry) => entry.id === publicNpc.id);
+  const state = runtime.livingWorld.npcStates?.[publicNpc.id];
+  if (!npc || !state || state.presence !== "present" || ["dead", "missing", "injured"].includes(state.lifeStatus)) return false;
+  if (Number(npc.age ?? 99) < 16) return false;
+  if (/少年|少女|子ども|孤児|幼児|児童|患者|負傷者|行方不明/u.test(`${npc.occupation ?? ""} ${publicNpc.role ?? ""}`)) return false;
+  if (playerCompanionIds(runtime).has(publicNpc.id)) return false;
+  return true;
+}
+
+function eligibleWorkEmployers(runtime, data) {
+  return presentNpcsAt(runtime, data)
+    .filter((npc) => npcCanOfferWork(runtime, data, npc))
+    .sort((left, right) => {
+      const sourceLeft = data.model.npcById?.[left.id];
+      const sourceRight = data.model.npcById?.[right.id];
+      const priority = (npc) => /村長|店主|宿|農|職人|商人|管理|受付|隊長|工房|役人|司祭|院長/u.test(String(npc?.occupation ?? "")) ? 0 : 1;
+      return priority(sourceLeft) - priority(sourceRight) || left.id.localeCompare(right.id);
+    });
+}
+
 function decorateWorkOfferAction(action, runtime, data, preferredNpcId = null) {
   if (!action?.workOffer && action?.type !== "work") return action;
   const facilityId = runtime.playerState.player.facilityId;
-  const present = presentNpcsAt(runtime, data);
+  const present = eligibleWorkEmployers(runtime, data);
   const actor = present.find((npc) => npc.id === preferredNpcId)
     ?? present.find((npc) => npc.id === action.targetNpcId)
     ?? present[0]
@@ -1123,6 +1221,7 @@ function contextualLocalAction(action, runtime, data) {
   const facility = data.model.facilityById[runtime.playerState.player.facilityId];
   const facilityId = facility?.id ?? "UNKNOWN";
   const publicNpc = presentNpcsAt(runtime, data)[0] ?? null;
+  const workNpc = eligibleWorkEmployers(runtime, data)[0] ?? null;
   if (action.type === "conversation" && action.targetNpcId) {
     const target = presentNpcsAt(runtime, data).find((npc) => npc.id === action.targetNpcId);
     return target ? {
@@ -1132,15 +1231,39 @@ function contextualLocalAction(action, runtime, data) {
     } : action;
   }
   if (action.type === "work") {
-    if (facilityId === "LOC_FARM_EDGE" || !publicNpc) return null;
-    const label = {
-      LOC_FARM_FIELD: "エダに、畑仕事を手伝えるか尋ねる",
-      LOC_FARM_SQUARE: "荷運びを頼める人に、仕事内容と賃金を聞く",
-      LOC_FARM_INN: "麦穂亭で、皿洗いの仕事内容と賃金を聞く",
-      LOC_FARM_BAKERY: "パン屋で、薪運びの仕事内容と賃金を聞く",
-      LOC_FARM_WELL: "水桶運びの仕事内容と賃金を聞く",
-    }[facilityId] ?? `${facility?.name ?? runtime.playerState.player.location}で、仕事の内容と賃金を尋ねる`;
-    return decorateWorkOfferAction({ ...action, id: `WORK:${facilityId}`, label, workOffer: true }, runtime, data, publicNpc?.id ?? null);
+    if (facilityId === "LOC_FARM_EDGE" || !workNpc) return null;
+    const label = `${workNpc.name}に、${facility?.name ?? "この場所"}で受けられる仕事の内容と賃金を尋ねる`;
+    return decorateWorkOfferAction({ ...action, id: `WORK:${facilityId}`, label, workOffer: true }, runtime, data, workNpc?.id ?? null);
+  }
+  if (action.type === "eat") {
+    if (!facilityOffersMeals(facility)) return null;
+    const price = runtime.playerState.player.freeMeals > 0 ? 0 : Number(REGION_MEAL_PRICE[runtime.playerState.player.location] ?? 6);
+    return {
+      ...action,
+      id: `EAT:${facilityId}:${price}`,
+      type: "eat",
+      minutes: Math.max(20, Number(action.minutes ?? 30)),
+      price,
+      nutrition: 58,
+      label: price > 0 ? `${facility?.name ?? "この場所"}で食事を取る（${price}G）` : `${facility?.name ?? "この場所"}で用意された食事を取る`,
+    };
+  }
+  if (action.type === "rest") {
+    const lodging = facilityOffersLodging(facility);
+    const price = lodging && runtime.playerState.player.freeLodging <= 0
+      ? Number(REGION_LODGING_PRICE[runtime.playerState.player.location] ?? 20)
+      : 0;
+    return {
+      ...action,
+      id: lodging ? `LODGE:${facilityId}:${price}` : `REST_OUTDOOR:${facilityId}`,
+      type: "rest",
+      lodging,
+      price,
+      minutes: lodging ? Math.max(420, Number(action.minutes ?? 480)) : Math.min(180, Number(action.minutes ?? 120)),
+      label: lodging
+        ? price > 0 ? `${facility?.name ?? "宿"}に泊まる（${price}G）` : `${facility?.name ?? "宿"}で今夜は休む`
+        : "安全そうな場所を探し、短く休息する",
+    };
   }
   if (action.type === "wait" || (action.type === "observe" && String(action.id).startsWith("WAIT-"))) {
     const escort = facilityId === "LOC_FARM_EDGE" ? ensureT01EscortState(runtime) : null;
@@ -1313,6 +1436,24 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   )).filter(Boolean).filter((action) => !(action.missionId === "MSN-T01"
     && action.stepId === "decide"
     && !ensureT01EscortState(runtime).arrivedSquare));
+  const directTalkActions = presentNpcsAt(runtime, data).map((npc) => ({
+    id: `TALK:${npc.id}`,
+    type: "conversation",
+    targetNpcId: npc.id,
+    targetNpcName: npc.name,
+    minutes: 8,
+    label: `${npc.name}に話しかける`,
+  }));
+  const movementChoiceActions = movementActions(runtime, data).map((action) => ({ ...action, type: "move" }));
+  const needs = survivalNeedState(runtime);
+  const facility = data.model.facilityById[runtime.playerState.player.facilityId];
+  const survivalActions = [
+    ...(facilityOffersMeals(facility) && needs.hunger >= 28 ? [contextualLocalAction({ id: "EAT", type: "eat", minutes: 30 }, runtime, data)] : []),
+    ...((facilityOffersLodging(facility) && (runtime.playerState.hour >= 18 || needs.fatigue >= 42)) || needs.fatigue >= 72
+      ? [contextualLocalAction({ id: "REST", type: "rest", minutes: runtime.playerState.hour >= 20 ? 480 : 120 }, runtime, data)]
+      : []),
+  ].filter(Boolean);
+  generated.push(...directTalkActions, ...movementChoiceActions, ...survivalActions);
   const missionConversationTargets = new Set(generated
     .filter((action) => action.missionId && action.type === "conversation" && action.targetNpcId)
     .map((action) => action.targetNpcId));
@@ -1324,6 +1465,8 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     if (action.missionId) return 0;
     if (action.type === "localInvestigate") return 1;
     if (action.type === "conversation" && !action.workOffer) return 2;
+    if (action.type === "move") return 3;
+    if (["eat", "rest"].includes(action.type)) return 3;
     const hasLearnedSkill = runtime.playerState.player.skills.size > 0;
     if (action.workOffer) return hasLearnedSkill ? 4 : 3;
     if (action.type === "seekBattle") return hasLearnedSkill ? 3 : 4;
@@ -1395,12 +1538,123 @@ function generatedChoiceDetail(action, runtime, selection) {
   return resolved;
 }
 
+function generatedChoiceActionId(runtime, choice, kind) {
+  return `GEN:${kind}:${sha256(JSON.stringify([
+    runtime.playerState.absoluteMinute,
+    runtime.playerState.player.location,
+    runtime.playerState.player.facilityId,
+    choice.label,
+    choice.targetNpcId,
+    choice.destinationFacilityId,
+    choice.destinationHub,
+  ])).slice(0, 16)}`;
+}
+
+function applyGeneratedWorkProposal(action, choice, runtime) {
+  if (!action?.workOffer || !choice?.workProposal?.title) return action;
+  const durationClass = ["short", "half_day", "full_day"].includes(choice.workProposal.durationClass)
+    ? choice.workProposal.durationClass
+    : "short";
+  const riskClass = ["low", "medium", "high"].includes(choice.workProposal.riskClass)
+    ? choice.workProposal.riskClass
+    : "low";
+  const minutes = { short: 120, half_day: 240, full_day: 480 }[durationClass];
+  const description = cleanText(choice.workProposal.title, 120);
+  const wage = deterministicWorkWage(runtime, runtime.playerState.player.facilityId, action.targetNpcId, { minutes, riskClass });
+  return {
+    ...action,
+    label: cleanText(choice.label, 180) || action.label,
+    generatedApproach: cleanText(choice.approach, 180) || null,
+    quotedWage: wage,
+    workDescription: description,
+    workDurationMinutes: minutes,
+    workRiskClass: riskClass,
+    requiredDisclosure: `仕事は「${description}」、所要時間は${minutes}分、報酬は${wage}G`,
+  };
+}
+
+function compileNarrativeChoice(runtime, data, pool, choice) {
+  const kind = cleanText(choice?.actionKind, 40) || (pool.some((action) => action.id === choice?.id) ? "candidate" : null);
+  if (!kind) return null;
+  if (kind === "candidate") {
+    const candidateId = cleanText(choice?.candidateId ?? choice?.id, 120);
+    const candidate = pool.find((action) => action.id === candidateId);
+    if (!candidate) return null;
+    return applyGeneratedWorkProposal({
+      ...candidate,
+      label: cleanText(choice.label, 180) || candidate.label,
+      generatedApproach: cleanText(choice.approach, 180) || null,
+    }, choice, runtime);
+  }
+  const label = cleanText(choice?.label, 180);
+  const minutes = Math.max(1, Math.min(1440, Number(choice?.minutes ?? 0) || 0));
+  if (kind === "talk") {
+    const target = presentNpcsAt(runtime, data).find((npc) => npc.id === choice?.targetNpcId);
+    if (!target) return null;
+    return {
+      id: generatedChoiceActionId(runtime, choice, kind),
+      type: "conversation",
+      targetNpcId: target.id,
+      targetNpcName: target.name,
+      dialogueTopic: "generated_topic",
+      generatedTopic: cleanText(choice.topic ?? choice.approach, 180) || null,
+      generatedApproach: cleanText(choice.approach, 180) || null,
+      minutes: minutes || 8,
+      label: label || `${target.name}に話しかける`,
+    };
+  }
+  if (kind === "investigate") {
+    return {
+      id: generatedChoiceActionId(runtime, choice, kind),
+      type: "localInvestigate",
+      generatedApproach: cleanText(choice.approach ?? choice.topic, 220) || label,
+      minutes: minutes || 45,
+      label: label || "この場所を詳しく調べる",
+    };
+  }
+  if (["move_local", "move_region"].includes(kind)) {
+    const movement = movementActions(runtime, data).find((action) => kind === "move_local"
+      ? action.destinationFacilityId === choice?.destinationFacilityId
+      : action.destinationHub === choice?.destinationHub);
+    return movement ? { ...movement, type: "move", label: label || movement.label } : null;
+  }
+  if (kind === "wait") {
+    const action = contextualLocalAction({ id: generatedChoiceActionId(runtime, choice, kind), type: "wait", minutes: minutes || 30, label }, runtime, data);
+    return action ? { ...action, label: label || action.label } : null;
+  }
+  if (kind === "rest") {
+    const action = contextualLocalAction({ id: generatedChoiceActionId(runtime, choice, kind), type: "rest", minutes: minutes || 120, label }, runtime, data);
+    return action ? { ...action, label: label || action.label } : null;
+  }
+  if (kind === "eat") {
+    const action = contextualLocalAction({ id: generatedChoiceActionId(runtime, choice, kind), type: "eat", minutes: minutes || 30, label }, runtime, data);
+    return action ? { ...action, label: label || action.label } : null;
+  }
+  if (kind === "work") {
+    const action = contextualLocalAction({ id: generatedChoiceActionId(runtime, choice, kind), type: "work", minutes: 6, label, workOffer: true }, runtime, data);
+    return action ? applyGeneratedWorkProposal(action, choice, runtime) : null;
+  }
+  if (kind === "prepare") {
+    return {
+      id: generatedChoiceActionId(runtime, choice, kind),
+      type: "plan",
+      generatedApproach: cleanText(choice.approach ?? choice.topic, 220) || null,
+      minutes: minutes || 30,
+      label: label || "次の行動に備えて考えを整理する",
+    };
+  }
+  return null;
+}
+
 function selectedChoiceActions(runtime, actions) {
   if (!actions.length) return [];
   const key = narrativeChoicePoolKey(runtime, actions);
   const selection = runtime.narrativeChoiceSelection?.poolKey === key
     ? runtime.narrativeChoiceSelection
     : null;
+  if (Array.isArray(selection?.compiledActions) && selection.compiledActions.length) {
+    return withChoiceIds(selection.compiledActions.slice(0, 3).map((action) => ({ ...action })));
+  }
   const byId = new Map(actions.map((action) => [action.id, action]));
   const selected = [];
   for (const id of selection?.actionIds ?? []) {
@@ -1416,7 +1670,7 @@ function selectedChoiceActions(runtime, actions) {
 }
 
 function choiceActions(runtime, data) {
-  return selectedChoiceActions(runtime, choiceActionPool(runtime, data));
+  return selectedChoiceActions(runtime, choiceActionPool(runtime, data, { limit: 12 }));
 }
 
 function movementActions(runtime, data) {
@@ -1441,7 +1695,9 @@ function movementActions(runtime, data) {
   const actions = journey.availableMovementActions(runtime.playerState, data.model)
     .filter((action) => action.movementScope === "local"
       ? knowledge.knownFacilityIds.has(action.destinationFacilityId)
-      : knowledge.knownHubIds.has(action.destinationHub));
+      : knowledge.knownHubIds.has(action.destinationHub))
+    .filter((action) => action.movementScope !== "local"
+      || facilityTemporallyAvailable(runtime, data.model.facilityById[action.destinationFacilityId]));
   if (!runtime.tutorial || runtime.tutorial.stage === "free") return actions;
   if (!["movement", "mission_intro", "movement_aftermath", "aftermath_intro"].includes(runtime.tutorial.stage)) return [];
   if (["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) {
@@ -2304,6 +2560,8 @@ export function executeGameRuntimeCommand(runtime, data, command) {
       feature: tutorialFeature,
     });
   }
+  ensureSurvivalNeedState(runtime);
+  runtime.playerState.weather = currentWeather(runtime);
   const payload = command.payload && typeof command.payload === "object" ? command.payload : {};
   const pendingIntroductionAtStart = runtime.pendingNpcIntroduction;
   if (runtime.tutorial && command.type !== "ACK_NPC_INTRODUCTION") runtime.tutorial.lastBeat = null;
@@ -2328,7 +2586,28 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     }
     resolvedPlayerAction = action;
     resolvedActionId = action.id;
-    if (["missionBattle", "seekBattle"].includes(action.type)) {
+    if (action.type === "move") {
+      const originLocation = runtime.playerState.player.location;
+      const originFacilityId = runtime.playerState.player.facilityId;
+      const departureWeather = currentWeather(runtime);
+      resolvedPlayerAction = { ...action, originLocation, originFacilityId, departureWeather };
+      const resolve = () => journey.resolveMovementAction(
+        runtime.playerState,
+        data.model,
+        data.battleData,
+        data.skills,
+        profileFor(runtime.playerState.profileId),
+        action,
+      );
+      const resolveWithPlayback = () => withTemporaryTuning(runtime.playerState, "captureBattleTimeline", true, resolve);
+      result = resolveWithPlayback();
+      resolvedPlayerAction.arrivalWeather = deterministicWeather({
+        day: runtime.playerState.day,
+        hour: runtime.playerState.hour,
+        location: runtime.playerState.player.location,
+      });
+      runtime.playerState.metrics.actions += 1;
+    } else if (["missionBattle", "seekBattle"].includes(action.type)) {
       const opening = journey.beginInteractiveBattleAction(
         runtime.playerState,
         data.model,
@@ -2386,7 +2665,10 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   } else if (command.type === "MOVE") {
     const action = movementActions(runtime, data).find((entry) => entry.id === payload.moveId);
     if (!action) throw new TrpgGameError(400, "movement_not_available");
-    resolvedPlayerAction = action;
+    const originLocation = runtime.playerState.player.location;
+    const originFacilityId = runtime.playerState.player.facilityId;
+    const departureWeather = currentWeather(runtime);
+    resolvedPlayerAction = { ...action, originLocation, originFacilityId, departureWeather };
     resolvedActionId = action.id;
     const resolve = () => journey.resolveMovementAction(
       runtime.playerState,
@@ -2403,6 +2685,11 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     result = suppressUnpreparedTravelEncounter
       ? withTemporaryTuning(runtime.playerState, "disableTravelEncounters", true, resolveWithPlayback)
       : resolveWithPlayback();
+    resolvedPlayerAction.arrivalWeather = deterministicWeather({
+      day: runtime.playerState.day,
+      hour: runtime.playerState.hour,
+      location: runtime.playerState.player.location,
+    });
     runtime.playerState.metrics.actions += 1;
   } else if (command.type === "SHOP_BUY") {
     resolvedActionId = payload.stockId;
@@ -2553,6 +2840,16 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     const focus = ensureNarrativeMemory(runtime).activityFocus;
     if (focus?.intent === "work") ensureNarrativeMemory(runtime).activityFocus = null;
   }
+  if (result.ok && resolvedPlayerAction?.type === "eat") {
+    const hunger = survivalNeedState(runtime).hunger;
+    result.summary = `食事を取り、空腹が和らいだ（空腹度${Math.round(hunger)}）。`;
+  }
+  if (result.ok && resolvedPlayerAction?.type === "rest") {
+    const fatigue = survivalNeedState(runtime).fatigue;
+    result.summary = resolvedPlayerAction.lodging
+      ? `宿で休み、疲れを取った（疲労度${Math.round(fatigue)}）。`
+      : `短く休息し、少し疲れを取った（疲労度${Math.round(fatigue)}）。`;
+  }
   if (result.ok || result.committed === true) {
     revealFinnAfterRescueBattle(runtime, resolvedPlayerAction, result);
     activateFinnEscort(runtime, resolvedPlayerAction, result);
@@ -2583,6 +2880,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   if (result.ok && command.type === "MOVE") discoverArrival(runtime, data);
   applyPlayerWorldInterventions(runtime, previousTroubleStates);
   advanceLivingWorld(runtime, runtime.playerState.absoluteMinute);
+  runtime.playerState.weather = currentWeather(runtime);
   reconcileOpeningCrisis(runtime);
   stabilizeOpeningTutorialCast(runtime);
   syncAuthoritativePresentNpcIds(runtime, data);
@@ -2715,6 +3013,22 @@ function narrativeContinuityContract(runtime, actions) {
     rationale: candidates.length
       ? "直前に仕事を続ける意思を示しているため、同じ活動を継続できる道を一つ残す"
       : "この場では依頼主または実行可能な仕事を確認できない",
+  };
+}
+
+function narrativeChoiceDiversityContract(progressContract, continuityContract) {
+  const progressIds = new Set(progressContract?.mode === "must_offer_progress" ? progressContract.anchorCandidateIds ?? [] : []);
+  const continuityIds = new Set(continuityContract?.mode === "must_offer_continuation" ? continuityContract.candidateIds ?? [] : []);
+  let requiredCandidateSlots = 0;
+  if (progressIds.size && continuityIds.size) {
+    requiredCandidateSlots = [...progressIds].some((id) => continuityIds.has(id)) ? 1 : 2;
+  } else if (progressIds.size || continuityIds.size) {
+    requiredCandidateSlots = 1;
+  }
+  return {
+    minimumGeneratedChoices: Math.max(1, 3 - requiredCandidateSlots),
+    maximumCandidateChoices: Math.min(2, requiredCandidateSlots || 1),
+    rationale: "確定進行はサーバー候補で守り、それ以外は現在の人物・場所・移動・生活状態から新しい行動として具体化する",
   };
 }
 
@@ -3238,6 +3552,7 @@ function playerUtterance(action) {
     end_conversation: "ありがとう。教えてもらったことを確かめてきます。",
   }[action.dialogueTopic];
   if (topicLine) return topicLine;
+  if (action.generatedTopic) return `${String(action.generatedTopic).replace(/[。！？!?]+$/u, "")}について、聞かせてもらえますか？`;
   const quoted = String(action.label ?? "").match(/「([^」]+)」/u)?.[1];
   if (quoted) return quoted;
   if (/話しかける|話を聞く/u.test(String(action.label ?? ""))) return "少し、お話を聞かせてもらえますか？";
@@ -3647,6 +3962,8 @@ function presentationChoices(record, choices) {
 
 export function buildGameView(record, runtime, data) {
   const state = runtime.playerState;
+  const weather = currentWeather(runtime);
+  const needs = survivalNeedState(runtime);
   const presentNpcs = presentNpcsAt(runtime, data);
   const choices = presentationChoices(record, choiceActions(runtime, data));
   const missions = missionView(runtime, data);
@@ -3718,6 +4035,7 @@ export function buildGameView(record, runtime, data) {
       minute: state.minute,
       daypart: state.daypart,
       absoluteMinute: state.absoluteMinute,
+      weather: { ...weather },
     },
     scene: {
       location: state.player.location,
@@ -3725,6 +4043,7 @@ export function buildGameView(record, runtime, data) {
       facilityName: facility?.name ?? state.player.facilityId,
       facilityType: publicFacility.type,
       publicDescription: publicFacility.description,
+      weather: { ...weather },
       backgroundKey: backgroundKey(state),
       narrative: record.presentation?.narrative ?? fallbackNarrative(runtime),
       speeches: record.presentation?.speeches ?? [],
@@ -3754,6 +4073,12 @@ export function buildGameView(record, runtime, data) {
       gold: state.player.gold,
       hpRatio: state.player.hpRatio,
       mpRatio: state.player.mpRatio,
+      needs: {
+        hunger: needs.hunger,
+        fatigue: needs.fatigue,
+        hungerLabel: needs.hunger >= 80 ? "空腹" : needs.hunger >= 55 ? "腹が減っている" : needs.hunger >= 30 ? "少し空腹" : "満たされている",
+        fatigueLabel: needs.fatigue >= 80 ? "疲労困憊" : needs.fatigue >= 55 ? "疲れている" : needs.fatigue >= 30 ? "少し疲れている" : "元気",
+      },
       stats: { ...state.player.stats },
       equipment: Object.fromEntries(equippedSlots.map(({ slot, id }) => [slot, equipmentView(data, id, state.player.inventory.equipment[id] ?? 0, equippedSlots)])),
       inventory: {
@@ -3771,6 +4096,7 @@ export function buildGameView(record, runtime, data) {
       ended: state.absoluteMinute >= journey.GAME_END_MINUTE,
       endedAt: state.absoluteMinute >= journey.GAME_END_MINUTE ? "Day 100 24:00" : null,
       knownResolvedTroubleIds: [...state.progress.missions.resolvedTroubleIds].sort(),
+      weather: { ...weather },
     },
   };
 }
@@ -3871,7 +4197,7 @@ function narrativeSceneMode(resolvedAction, authoritativeOutcome) {
   if (resolvedAction?.dialogueTopic === "work_offer") return "work_generation";
   if (["conversation", "talk"].includes(resolvedAction?.type)) return "conversation";
   if (authoritativeOutcome?.battle || ["missionBattle", "seekBattle"].includes(resolvedAction?.type)) return "battle_aftermath";
-  if (resolvedAction?.type === "move") return "arrival";
+  if (resolvedAction?.type === "move") return "travel_arrival";
   if (["investigate", "localInvestigate", "observe"].includes(resolvedAction?.type)) return "exploration";
   return "free_roam";
 }
@@ -3891,6 +4217,35 @@ function narrativeProgressContract(runtime, missions, actions) {
     rationale: anchors.length
       ? "少なくとも一つは、現在進行中の出来事を前へ進められる選択肢にする"
       : "この場で確実に進行できる手段をサーバーが確認できないため、無理に進展を捏造しない",
+  };
+}
+
+function narrativeWorldAffordances(runtime, data) {
+  const movement = movementActions(runtime, data);
+  const facility = data.model.facilityById[runtime.playerState.player.facilityId];
+  const needs = survivalNeedState(runtime);
+  return {
+    presentNpcIds: presentNpcsAt(runtime, data).map((npc) => npc.id),
+    localFacilities: movement
+      .filter((action) => action.movementScope === "local")
+      .map((action) => ({
+        id: action.destinationFacilityId,
+        name: data.model.facilityById[action.destinationFacilityId]?.name ?? action.destinationFacilityId,
+        minutes: action.minutes,
+      })),
+    regionalDestinations: movement
+      .filter((action) => action.movementScope === "regional")
+      .map((action) => ({ hub: action.destinationHub, minutes: action.minutes })),
+    canInvestigate: true,
+    canWait: true,
+    canPrepare: true,
+    canWork: eligibleWorkEmployers(runtime, data).length > 0 && runtime.playerState.player.facilityId !== "LOC_FARM_EDGE",
+    canEat: facilityOffersMeals(facility),
+    canRest: needs.fatigue >= 35 || runtime.playerState.hour >= 20,
+    canLodge: facilityOffersLodging(facility),
+    hunger: needs.hunger,
+    fatigue: needs.fatigue,
+    note: "候補リストの言い換えに限定せず、この範囲で現在の場所・人物・移動・生活に即した具体的な行動を作れる",
   };
 }
 
@@ -3914,7 +4269,7 @@ function narrativeWorkMarket(runtime) {
 
 function narrativeInput(record, runtime, data, action, outcome) {
   const presentNpcs = presentNpcsAt(runtime, data);
-  const choicePool = choiceActionPool(runtime, data, { limit: 9 });
+  const choicePool = choiceActionPool(runtime, data, { limit: 12 });
   const facility = data.model.facilityById[runtime.playerState.player.facilityId];
   const publicFacility = publicFacilityContext(facility);
   const allActiveMissions = missionView(runtime, data).filter((mission) => mission.status === "active");
@@ -3939,6 +4294,7 @@ function narrativeInput(record, runtime, data, action, outcome) {
   });
   const progressContract = narrativeProgressContract(runtime, missions, choicePool);
   const continuityContract = narrativeContinuityContract(runtime, choicePool);
+  const choiceDiversityContract = narrativeChoiceDiversityContract(progressContract, continuityContract);
   const reactionContract = narrativeReactionContract(resolvedAction, presentNpcs.map((npc) => npc.id));
   return {
     locale: "ja-JP",
@@ -3969,6 +4325,14 @@ function narrativeInput(record, runtime, data, action, outcome) {
         ? [...resolvedAction.previouslyAskedTopics]
         : [...(runtime.dialogueSession?.askedTopics ?? [])],
       requiredDisclosure: resolvedAction?.requiredDisclosure ?? null,
+      movementScope: resolvedAction?.movementScope ?? null,
+      originLocation: resolvedAction?.originLocation ?? null,
+      originFacilityId: resolvedAction?.originFacilityId ?? null,
+      destinationHub: resolvedAction?.destinationHub ?? null,
+      destinationFacilityId: resolvedAction?.destinationFacilityId ?? null,
+      travelMinutes: Number(resolvedAction?.minutes ?? 0),
+      departureWeather: resolvedAction?.departureWeather ?? null,
+      arrivalWeather: resolvedAction?.arrivalWeather ?? null,
     },
     authoritativeOutcome,
     authoritativeState: {
@@ -3976,6 +4340,7 @@ function narrativeInput(record, runtime, data, action, outcome) {
       hour: runtime.playerState.hour,
       minute: runtime.playerState.minute,
       daypart: runtime.playerState.daypart,
+      weather: currentWeather(runtime),
       location: runtime.playerState.player.location,
       locationId: runtime.playerState.player.location,
       facilityId: runtime.playerState.player.facilityId,
@@ -3986,7 +4351,14 @@ function narrativeInput(record, runtime, data, action, outcome) {
       npcs: narrativeNpcs,
       player: {
         displayName: "オレゴン",
-        visibleCondition: "行動可能",
+        visibleCondition: (() => {
+          const need = survivalNeedState(runtime);
+          const parts = [];
+          if (need.hunger >= 55) parts.push(need.hunger >= 80 ? "強い空腹" : "空腹");
+          if (need.fatigue >= 55) parts.push(need.fatigue >= 80 ? "強い疲労" : "疲労");
+          return parts.length ? parts.join("・") : "行動可能";
+        })(),
+        needs: { ...survivalNeedState(runtime) },
         knownFacts: [
           ...(t01NarrativeRelevant(runtime, resolvedAction, missions) ? openingKnownFactTexts(runtime) : []),
           ...rumors.map((rumor) => rumor.text),
@@ -4004,8 +4376,11 @@ function narrativeInput(record, runtime, data, action, outcome) {
       authoritativeOutcome,
       progressContract,
       continuityContract,
+      choiceDiversityContract,
       reactionContract,
       workMarket: narrativeWorkMarket(runtime),
+      recentChoices: ensureNarrativeMemory(runtime).recentChoiceLabels.slice(-12),
+      worldAffordances: narrativeWorldAffordances(runtime, data),
       visibleFlags: { ...ensureNarrativeMemory(runtime).semanticFlags },
       availableActionCandidates: choicePool.map((choice) => ({
         id: choice.id,
@@ -4028,36 +4403,69 @@ function replacePlayerAlias(value, playerName) {
   return cleanText(value, 2000).replaceAll("オレゴン", playerName);
 }
 
-function applyNarrativeChoiceSelection(runtime, data, result) {
-  const pool = choiceActionPool(runtime, data, { limit: 9 });
+function applyNarrativeChoiceSelection(runtime, data, result, resolvedAction = null) {
+  const pool = choiceActionPool(runtime, data, { limit: 12 });
   if (!pool.length) {
     runtime.narrativeChoiceSelection = null;
     return null;
   }
   const poolKey = narrativeChoicePoolKey(runtime, pool);
-  const poolIds = new Set(pool.map((action) => action.id));
-  const actionIds = [];
-  const detailsById = {};
+  const compiledActions = [];
   for (const choice of result?.choices ?? []) {
-    const id = cleanText(choice?.id, 120);
-    if (!id || !poolIds.has(id) || actionIds.includes(id)) continue;
-    actionIds.push(id);
-    detailsById[id] = {
-      label: cleanText(choice.label, 180),
-      approach: cleanText(choice.approach, 180) || null,
-      workProposal: choice.workProposal ? {
-        title: cleanText(choice.workProposal.title, 120),
-        durationClass: cleanText(choice.workProposal.durationClass, 20),
-        riskClass: cleanText(choice.workProposal.riskClass, 20),
-      } : null,
-    };
-    if (actionIds.length >= 3) break;
+    const action = compileNarrativeChoice(runtime, data, pool, choice);
+    if (!action || compiledActions.some((entry) => entry.id === action.id)) continue;
+    compiledActions.push(action);
+    if (compiledActions.length >= 3) break;
+  }
+  const progress = narrativeProgressContract(runtime, missionView(runtime, data).filter((mission) => mission.status === "active"), pool);
+  if (progress.mode === "must_offer_progress"
+    && !compiledActions.some((action) => progress.anchorCandidateIds.includes(action.id))) {
+    const anchor = pool.find((action) => progress.anchorCandidateIds.includes(action.id));
+    if (anchor) {
+      const replaceIndex = compiledActions.findIndex((action) => !action.missionId);
+      if (compiledActions.length >= 3) compiledActions.splice(replaceIndex >= 0 ? replaceIndex : compiledActions.length - 1, 1);
+      compiledActions.unshift(anchor);
+    }
+  }
+  const continuity = narrativeContinuityContract(runtime, pool);
+  const protectedChoiceIds = new Set([
+    ...(progress.anchorCandidateIds ?? []),
+    ...(continuity.candidateIds ?? []),
+  ]);
+  const talkCandidate = pool.find((action) => action.type === "conversation" && action.targetNpcId && !action.workOffer);
+  if (talkCandidate && !compiledActions.some((action) => action.type === "conversation" && action.targetNpcId)) {
+    const replaceIndex = compiledActions.findLastIndex((action) => !protectedChoiceIds.has(action.id) && !action.missionId);
+    if (compiledActions.length >= 3) {
+      const fallbackIndex = compiledActions.findLastIndex((action) => !protectedChoiceIds.has(action.id));
+      const index = replaceIndex >= 0 ? replaceIndex : fallbackIndex;
+      if (index >= 0) compiledActions.splice(index, 1);
+    }
+    if (compiledActions.length < 3) compiledActions.push(talkCandidate);
+  }
+  const arrivalMoveCandidate = resolvedAction?.type === "move" && resolvedAction?.movementScope === "regional"
+    ? pool.find((action) => action.type === "move" && action.movementScope === "local")
+    : null;
+  if (arrivalMoveCandidate && !compiledActions.some((action) => action.type === "move" && action.movementScope === "local")) {
+    const replaceIndex = compiledActions.findLastIndex((action) => !protectedChoiceIds.has(action.id)
+      && !(action.type === "conversation" && action.targetNpcId));
+    if (compiledActions.length >= 3 && replaceIndex >= 0) compiledActions.splice(replaceIndex, 1);
+    if (compiledActions.length < 3) compiledActions.push(arrivalMoveCandidate);
   }
   for (const action of pool) {
-    if (actionIds.length >= 3) break;
-    if (!actionIds.includes(action.id)) actionIds.push(action.id);
+    if (compiledActions.length >= 3) break;
+    if (!compiledActions.some((entry) => entry.id === action.id)) compiledActions.push(action);
   }
-  runtime.narrativeChoiceSelection = { poolKey, actionIds, detailsById };
+  runtime.narrativeChoiceSelection = {
+    poolKey,
+    compiledActions: compiledActions.slice(0, 3).map((action) => JSON.parse(JSON.stringify(action))),
+  };
+  const memory = ensureNarrativeMemory(runtime);
+  for (const action of runtime.narrativeChoiceSelection.compiledActions) {
+    const label = cleanText(action.label, 180);
+    if (!label) continue;
+    memory.recentChoiceLabels.push(label);
+  }
+  if (memory.recentChoiceLabels.length > 18) memory.recentChoiceLabels.splice(0, memory.recentChoiceLabels.length - 18);
   return runtime.narrativeChoiceSelection;
 }
 
@@ -4149,7 +4557,7 @@ async function updatePresentation(record, runtime, data, narrator, action = null
         return Boolean(proposal.targetNpcId && proposal.intent && presentIds.has(proposal.targetNpcId));
       },
     });
-    const selection = applyNarrativeChoiceSelection(runtime, data, result);
+    const selection = applyNarrativeChoiceSelection(runtime, data, result, resolvedAction);
     applyNarrativeProposalCandidates(runtime, result, record.playerName);
     const legalChoiceIds = new Set(input.authoritativeState.availableActionCandidates.map((choice) => choice.id));
     const choiceLabels = Object.fromEntries((result.choices ?? [])

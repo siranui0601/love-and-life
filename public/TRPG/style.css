@@ -1012,3 +1012,9 @@ body.is-playing .site-header { display: none; }
   .battle-command-prompt { display: none; }
   .battle-command-button { min-height: 44px; padding-block: 4px; }
 }
+
+.weather-label { color: #c9d8c6; font-size: .58rem; white-space: nowrap; }
+.need-status { padding: 1px 4px; border-radius: 999px; color: #dfe8dc; background: rgba(255,255,255,.08); font-size: .58rem; white-space: nowrap; }
+.need-status[data-level="warning"] { color: #ffe0a0; background: rgba(160,104,20,.22); }
+.need-status[data-level="critical"] { color: #ffd0c6; background: rgba(150,45,30,.32); }
+@media (max-width: 420px) { .weather-label { max-width: 64px; overflow: hidden; text-overflow: ellipsis; } .scene-status { gap: 4px; } .need-status { padding-inline: 3px; } }

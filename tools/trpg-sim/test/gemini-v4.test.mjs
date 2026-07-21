@@ -129,9 +129,9 @@ test("Gemini selects three executable actions from a broader pool and keeps a pr
   const valid = {
     narrative: "衛兵の向こうで、村外れへ続く道に泥が残っている。",
     choices: [
-      { id: "ACT-PROGRESS", label: "泥に残る小さな足跡を村外れまで追う", intentType: "investigate", targetNpcId: null },
-      { id: "ACT-ASK", label: "衛兵に最後に少年を見た時刻を尋ねる", intentType: "ask", targetNpcId: "NPC-LOCAL" },
-      { id: "ACT-WORK", label: "急ぎの仕事がないか衛兵に尋ねる", intentType: "help", targetNpcId: "NPC-LOCAL", workProposal: { title: "門前の荷車から食料袋を倉庫へ運ぶ", durationClass: "half_day", riskClass: "low" } },
+      { id: "ACT-PROGRESS", actionKind: "candidate", candidateId: "ACT-PROGRESS", label: "泥に残る小さな足跡を村外れまで追う", intentType: "investigate", targetNpcId: null },
+      { id: "ACT-ASK", actionKind: "candidate", candidateId: "ACT-ASK", label: "衛兵に最後に少年を見た時刻を尋ねる", intentType: "ask", targetNpcId: "NPC-LOCAL" },
+      { id: "ACT-WORK", actionKind: "candidate", candidateId: "ACT-WORK", label: "急ぎの仕事がないか衛兵に尋ねる", intentType: "help", targetNpcId: "NPC-LOCAL", workProposal: { title: "門前の荷車から食料袋を倉庫へ運ぶ", durationClass: "half_day", riskClass: "low" } },
     ],
     speeches: [],
     proposals: [],
@@ -139,10 +139,10 @@ test("Gemini selects three executable actions from a broader pool and keeps a pr
   assert.equal(validateNarrativeOutput(valid, context).ok, true);
   const invalid = validateNarrativeOutput({
     ...valid,
-    choices: [valid.choices[1], valid.choices[2], { id: "MADE-UP", label: "存在しない行動", intentType: "prepare" }],
+    choices: [valid.choices[1], valid.choices[2], { id: "MADE-UP", actionKind: "move_local", destinationFacilityId: "LOC-NOT-AVAILABLE", label: "存在しない場所へ向かう", intentType: "leave" }],
   }, context);
   assert.equal(invalid.ok, false);
-  assert.ok(invalid.errors.some((error) => /executable candidate pool/u.test(error)));
+  assert.ok(invalid.errors.some((error) => /local destination is not available/u.test(error)));
   assert.ok(invalid.errors.includes("choices must include at least one progress anchor candidate"));
 
   const sanitized = sanitizeNarrativeOutput({
