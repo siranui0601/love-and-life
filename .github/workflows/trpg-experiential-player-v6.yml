@@ -1,4 +1,4 @@
-name: Apply and verify TRPG world actions round 2
+name: Diagnose and verify TRPG world actions round 2
 
 on:
   pull_request:
@@ -36,18 +36,36 @@ jobs:
       - name: Apply second live-run refinement
         shell: bash
         run: |
-          set -euo pipefail
-          if [ -f tools/world-actions-round2.patch.gz.b64 ]; then
-            echo '83f19042c65a81f14297f3cebaf07b13a103b511be04f9f1e57f9e0add6f5490  tools/world-actions-round2.patch.gz.b64' | sha256sum -c -
+          mkdir -p tools/trpg-sim/reports
+          set +e
+          {
+            echo "== repository =="
+            git rev-parse HEAD
+            git status --short
+            echo "== encoded patch =="
+            ls -l tools/world-actions-round2.patch.gz.b64
+            sha256sum tools/world-actions-round2.patch.gz.b64
+            echo "expected 83f19042c65a81f14297f3cebaf07b13a103b511be04f9f1e57f9e0add6f5490"
             base64 -d tools/world-actions-round2.patch.gz.b64 > /tmp/world-actions-round2.patch.gz
-            echo 'e1eac10d515c46e523dc4b9cca25f2a8bf7d5ed96d65f7ac756bb5bc429d4b4e  /tmp/world-actions-round2.patch.gz' | sha256sum -c -
+            decode_status=$?
+            echo "base64 status=$decode_status"
+            sha256sum /tmp/world-actions-round2.patch.gz
+            echo "expected e1eac10d515c46e523dc4b9cca25f2a8bf7d5ed96d65f7ac756bb5bc429d4b4e"
             gzip -dc /tmp/world-actions-round2.patch.gz > /tmp/world-actions-round2.patch
-            echo 'fcb3b58fb54d655a8a767e79f2902dbe32d7d54d23eac9eacdd8c4d5f1531f97  /tmp/world-actions-round2.patch' | sha256sum -c -
+            gzip_status=$?
+            echo "gzip status=$gzip_status"
+            sha256sum /tmp/world-actions-round2.patch
+            echo "expected fcb3b58fb54d655a8a767e79f2902dbe32d7d54d23eac9eacdd8c4d5f1531f97"
+            echo "== patch files =="
+            grep '^diff --git ' /tmp/world-actions-round2.patch || true
+            echo "== apply =="
             git apply --3way --verbose /tmp/world-actions-round2.patch
-            rm -f tools/world-actions-round2.patch.gz.b64
-          else
-            echo "Second refinement is already applied."
-          fi
+            apply_status=$?
+            echo "apply status=$apply_status"
+            git status --short
+            exit "$apply_status"
+          } 2>&1 | tee tools/trpg-sim/reports/world-actions-round2-apply.log
+          exit ${PIPESTATUS[0]}
       - run: npm ci
       - name: Run all TRPG regression tests
         shell: bash
@@ -59,6 +77,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -f tools/world-actions-round2.patch.gz.b64
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A -- ':!.github/workflows/trpg-experiential-player-v6.yml'
@@ -75,6 +94,7 @@ jobs:
         with:
           name: trpg-world-actions-round2
           path: |
+            tools/trpg-sim/reports/world-actions-round2-apply.log
             tools/trpg-sim/reports/experiential-regression.log
             tools/trpg-sim/reports/experiential-player-v6-latest.json
             tools/trpg-sim/reports/experiential-player-v6-latest.md
