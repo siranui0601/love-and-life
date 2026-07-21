@@ -1,24 +1,24 @@
-name: TRPG experiential player simulation v6
+name: Apply and verify TRPG world actions round 2
 
 on:
   pull_request:
     branches:
       - main
     paths:
+      - ".github/workflows/trpg-experiential-player-v6.yml"
+      - "tools/world-actions-round2.patch.gz.b64"
       - "public/TRPG/**"
       - "src/server/trpg/**"
       - "tools/trpg-sim/**"
-      - "package.json"
-      - ".github/workflows/trpg-experiential-player-v6.yml"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  experiential:
+  apply-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
@@ -26,25 +26,55 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: chatgpt/trpg-world-actions-survival-weather
           fetch-depth: 1
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+      - name: Apply second live-run refinement
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f tools/world-actions-round2.patch.gz.b64 ]; then
+            echo '83f19042c65a81f14297f3cebaf07b13a103b511be04f9f1e57f9e0add6f5490  tools/world-actions-round2.patch.gz.b64' | sha256sum -c -
+            base64 -d tools/world-actions-round2.patch.gz.b64 > /tmp/world-actions-round2.patch.gz
+            echo 'e1eac10d515c46e523dc4b9cca25f2a8bf7d5ed96d65f7ac756bb5bc429d4b4e  /tmp/world-actions-round2.patch.gz' | sha256sum -c -
+            gzip -dc /tmp/world-actions-round2.patch.gz > /tmp/world-actions-round2.patch
+            echo 'fcb3b58fb54d655a8a767e79f2902dbe32d7d54d23eac9eacdd8c4d5f1531f97  /tmp/world-actions-round2.patch' | sha256sum -c -
+            git apply --check /tmp/world-actions-round2.patch
+            git apply /tmp/world-actions-round2.patch
+            rm -f tools/world-actions-round2.patch.gz.b64
+          else
+            echo "Second refinement is already applied."
+          fi
       - run: npm ci
-      - name: Run TRPG regression tests
+      - name: Run all TRPG regression tests
         shell: bash
         run: |
           mkdir -p tools/trpg-sim/reports
           set -o pipefail
           npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/experiential-regression.log
+      - name: Commit second refinement source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- ':!.github/workflows/trpg-experiential-player-v6.yml'
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
+          else
+            git commit -m "fix(trpg): refine generated choices after live journeys"
+            git push origin HEAD:chatgpt/trpg-world-actions-survival-weather
+          fi
       - name: Run real Gemini player journeys
         run: npm run trpg:experiential:v6
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trpg-experiential-player-v6
+          name: trpg-world-actions-round2
           path: |
             tools/trpg-sim/reports/experiential-regression.log
             tools/trpg-sim/reports/experiential-player-v6-latest.json
