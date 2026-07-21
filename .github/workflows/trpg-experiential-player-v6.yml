@@ -1,4 +1,4 @@
-name: Apply and verify TRPG generative world v7
+name: TRPG experiential player simulation v7
 
 on:
   pull_request:
@@ -7,82 +7,48 @@ on:
     paths:
       - "public/TRPG/**"
       - "src/server/trpg/**"
-      - "tools/**"
+      - "tools/trpg-sim/**"
+      - "package.json"
       - ".github/workflows/trpg-experiential-player-v6.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply:
+  experiential:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+      TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: chatgpt/trpg-generative-actions-world-needs
           fetch-depth: 1
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - name: Reassemble and apply reviewed patch
+      - run: npm ci
+      - name: Run full TRPG regression suite
         shell: bash
         run: |
-          set -euo pipefail
           mkdir -p tools/trpg-sim/reports
-          LOG=tools/trpg-sim/reports/world-v7-apply.log
-          {
-            set -x
-            git fetch origin main --depth=1
-            git show origin/main:.github/workflows/trpg-experiential-player-v6.yml > .github/workflows/trpg-experiential-player-v6.yml
-            LC_ALL=C cat tools/trpg-world-v7/chunk-* | LC_ALL=C tr -cd 'A-Za-z0-9+/=' > /tmp/trpg-world-v7.raw.b64
-            python - <<'PY'
-          import base64
-          import hashlib
-          from pathlib import Path
-
-          source = Path('/tmp/trpg-world-v7.raw.b64').read_text(encoding='ascii')
-          target = '18d6bfac83e158eaab42040cc73ccd7791bf8bde3fa87a7d9d2be39abcaeb1d6'
-          variants = [(None, source)]
-          if len(source) % 4 == 1:
-              variants = ((index, source[:index] + source[index + 1:]) for index in range(len(source)))
-          for index, encoded in variants:
-              try:
-                  payload = base64.b64decode(encoded, validate=True)
-              except Exception:
-                  continue
-              if hashlib.sha256(payload).hexdigest() == target:
-                  Path('/tmp/trpg-world-v7.patch.gz').write_bytes(payload)
-                  print(f'Reconstructed payload by removing index={index}; encoded={len(encoded)} bytes; gzip={len(payload)} bytes')
-                  break
-          else:
-              raise SystemExit(f'Could not reconstruct payload: source_length={len(source)} mod4={len(source) % 4}')
-          PY
-            gzip -t /tmp/trpg-world-v7.patch.gz
-            gzip -dc /tmp/trpg-world-v7.patch.gz > /tmp/trpg-world-v7.patch
-            git apply --check --verbose /tmp/trpg-world-v7.patch
-            git apply --verbose /tmp/trpg-world-v7.patch
-          } > "$LOG" 2>&1
-          cat "$LOG"
+          set -o pipefail
+          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/experiential-regression.log
+      - name: Run rescue, work-first, capital-first, and world-system journeys
+        run: npm run trpg:experiential:v6
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trpg-world-v7-apply-diagnostic
-          path: tools/trpg-sim/reports/world-v7-apply.log
+          name: trpg-experiential-player-v7
+          path: |
+            tools/trpg-sim/reports/experiential-regression.log
+            tools/trpg-sim/reports/experiential-player-v6-latest.json
+            tools/trpg-sim/reports/experiential-player-v6-latest.md
+            tools/trpg-sim/reports/experiential-v6-*-narrative-audit.jsonl
           if-no-files-found: warn
-          retention-days: 3
-      - run: npm ci
-      - name: Run full TRPG regression suite
-        run: npm run trpg:test
-      - name: Commit normal source files only
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A -- public/TRPG src/server/trpg tools/trpg-sim tools/trpg-director-v52-round2.patch.gz.b64
-          git commit -m "feat(trpg): generate actions and add living world needs"
-          git push origin HEAD:chatgpt/trpg-generative-actions-world-needs
+          retention-days: 14
