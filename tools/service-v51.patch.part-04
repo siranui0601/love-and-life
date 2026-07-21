@@ -1,0 +1,84 @@
++      recordedAtMinute: runtime.playerState.absoluteMinute,
++    };
++    if (proposal.type === "local_fact_candidate" && base.summary) {
++      appendNarrativeMemoryEntry(memory.localFacts, base);
++    } else if (proposal.type === "npc_memory_candidate" && base.subjectId && base.summary) {
++      appendNarrativeMemoryEntry(memory.npcMemories, base);
++    } else if (proposal.type === "mission_lead_candidate" && base.troubleId && base.summary) {
++      appendNarrativeMemoryEntry(memory.missionLeads, base);
++    } else if (proposal.type === "flag_candidate" && proposal.flagPath) {
++      memory.semanticFlags[cleanText(proposal.flagPath, 160)] = replacePlayerAlias(proposal.value, playerName) || true;
++    }
++  }
++}
++
+ async function updatePresentation(record, runtime, data, narrator, action = null, outcome = null) {
+   const fallback = fallbackNarrative(runtime, action, outcome);
+   if (["TUTORIAL_ACK", "ACK_NPC_INTRODUCTION"].includes(action?.type) && record.presentation) {
+@@ -3721,12 +4031,8 @@ async function updatePresentation(record, runtime, data, narrator, action = null
+   }
+   const deterministic = deterministicFallbackPresentation(runtime, data, action, outcome);
+   const resolvedAction = action?.resolvedAction ?? action;
+-  if (["move", "work", "localInvestigate", "wait", "plan"].includes(resolvedAction?.type)) {
+-    const base = { revision: record.revision, source: `deterministic_${resolvedAction.type}`, ...deterministic, choiceLabels: {} };
+-    record.presentation = presentationWithOrderedBeats(runtime, data, resolvedAction, base);
+-    return;
+-  }
+   if (!narrator) {
++    runtime.narrativeChoiceSelection = null;
+     const base = { revision: record.revision, source: "deterministic_fallback", ...deterministic, choiceLabels: {} };
+     record.presentation = presentationWithOrderedBeats(runtime, data, resolvedAction, base);
+     return;
+@@ -3735,39 +4041,72 @@ async function updatePresentation(record, runtime, data, narrator, action = null
+     const input = narrativeInput(record, runtime, data, action, outcome);
+     const presentIds = new Set(input.authoritativeState.presentNpcIds);
+     const result = await narrator.generate(input, {
+-      policyVersion: "trpg-gameplay-v1",
++      policyVersion: "trpg-gameplay-v2",
+       allowedMissionTemplateIds: ["local-rescue", "local-investigation", "local-delivery", "local-escort", "local-negotiation"],
+       allowedTroubleIds: input.authoritativeState.missions.map((mission) => mission.troubleId).filter(Boolean),
+       validateNpcIntentCandidate(proposal) {
+         return Boolean(proposal.targetNpcId && proposal.intent && presentIds.has(proposal.targetNpcId));
+       },
+     });
+-    const legalChoiceIds = new Set(input.authoritativeState.allowedActionCandidates.map((choice) => choice.id));
++    const selection = applyNarrativeChoiceSelection(runtime, data, result);
++    applyNarrativeProposalCandidates(runtime, result, record.playerName);
++    const legalChoiceIds = new Set(input.authoritativeState.availableActionCandidates.map((choice) => choice.id));
+     const choiceLabels = Object.fromEntries((result.choices ?? [])
+       .filter((choice) => legalChoiceIds.has(choice.id))
+-      .map((choice) => [choice.id, cleanText(choice.label, 180)]));
++      .map((choice) => [choice.id, replacePlayerAlias(choice.label, record.playerName)]));
+     const allowedSpeechIds = resolvedAction?.type === "conversation" && resolvedAction.targetNpcId
+       ? new Set([resolvedAction.targetNpcId])
+-      : new Set();
++      : presentIds;
+     const speeches = (result.speeches ?? [])
+       .filter((speech) => presentIds.has(speech.actorId) && allowedSpeechIds.has(speech.actorId))
+-      .map((speech) => ({ actorId: speech.actorId, text: cleanText(speech.text, 300), emotion: cleanText(speech.emotion, 40) || null }));
+-    const requiredDisclosure = cleanText(resolvedAction?.requiredDisclosure, 180);
+-    const disclosureIncluded = !requiredDisclosure || speeches.some((speech) => (
+-      speech.actorId === resolvedAction?.targetNpcId && speech.text.includes(requiredDisclosure)
+-    ));
+-    const guardedSpeeches = disclosureIncluded ? speeches : deterministic.speeches;
++      .map((speech) => ({
++        actorId: speech.actorId,
++        text: replacePlayerAlias(speech.text, record.playerName).slice(0, 500),
++        emotion: cleanText(speech.emotion, 40) || null,
++      }));
++    const narrativeAction = input.action ?? {};
++    if (narrativeAction.type === "conversation" && narrativeAction.targetNpcId) {
++      let directReply = speeches.find((speech) => speech.actorId === narrativeAction.targetNpcId);
++      if (!directReply && narrativeAction.requiredDisclosure) {
++        directReply = { actorId: narrativeAction.targetNpcId, text: "", emotion: null };
++        speeches.unshift(directReply);
++      }
++      if (directReply && narrativeAction.firstIntroduction && narrativeAction.introductionName
++        && !directReply.text.includes(narrativeAction.introductionName)) {
++        directReply.text = `私は${narrativeAction.introductionName}。${directReply.text}`;
++      }
++      const disclosure = replacePlayerAlias(narrativeAction.requiredDisclosure, record.playerName);
++      if (directReply && disclosure && !directReply.text.includes(disclosure)) {
++        directReply.text = `${directReply.text}${directReply.text && !/[。！？!?]$/u.test(directReply.text) ? "。" : ""}${disclosure}`.slice(0, 500);
++      }
++    }
