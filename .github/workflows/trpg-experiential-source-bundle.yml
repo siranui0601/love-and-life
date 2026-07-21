@@ -1,4 +1,4 @@
-name: Finalize TRPG experiential v6 source
+name: TRPG experiential source bundle
 
 on:
   push:
@@ -6,121 +6,26 @@ on:
       - chatgpt/trpg-experiential-simulation-v6
     paths:
       - .github/workflows/trpg-experiential-source-bundle.yml
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  finalize:
+  bundle:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/trpg-experiential-simulation-v6
           fetch-depth: 1
-      - name: Apply reviewed source and test changes
-        shell: bash
+          show-progress: false
+      - name: Create source archive
         run: |
-          set -euo pipefail
-          for patch_file in \
-            tools/trpg-finalize-v6-service.patch \
-            tools/trpg-finalize-v6-tests-a.patch \
-            tools/trpg-finalize-v6-tests-b.patch \
-            tools/trpg-finalize-v6-test-work.patch \
-            tools/trpg-finalize-v6-test-skill.patch \
-            tools/trpg-finalize-v6-tests-d.patch \
-            tools/trpg-finalize-v6-wage.patch
-          do
-            patch --batch --forward -p1 < "$patch_file"
-          done
-
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          contract = Path("src/server/trpg/narrative-contract.js")
-          source = contract.read_text()
-          old = 'export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v4.9";'
-          new = 'export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.0-experiential";'
-          if old not in source:
-              raise SystemExit("old narrative prompt version was not found")
-          contract.write_text(source.replace(old, new, 1))
-
-          ux_test = Path("tools/trpg-sim/test/trpg-p0-ux-contract.test.mjs")
-          source = ux_test.read_text()
-          old = '''  assert.match(uxStyle, /max-height: min\\(42dvh, 240px\\) !important/u);\n  assert.match(uxStyle, /battle-command-menu\\[data-mode="root"\\]/u);'''
-          new = '''  assert.match(uxStyle, /max-height: none !important/u);\n  assert.match(uxStyle, /battle-command-menu\\[data-mode="skills"\\][\\s\\S]*overflow-y: auto/u);\n  assert.match(uxStyle, /battle-command-menu\\[data-mode="root"\\]/u);'''
-          if old not in source:
-              raise SystemExit("old mobile battle contract was not found")
-          ux_test.write_text(source.replace(old, new, 1))
-
-          workflow = Path(".github/workflows/trpg-experiential-player-v6.yml")
-          source = workflow.read_text()
-          source, count = re.subn(
-              r'      - name: Prepare experiential mission contract\n.*?(?=      - uses: actions/setup-node@v4\n)',
-              '',
-              source,
-              count=1,
-              flags=re.S,
-          )
-          if count != 1:
-              raise SystemExit("temporary experiential preparation step was not found")
-          workflow.write_text(source)
-          PY
-
-          rm -f \
-            tools/trpg-v6-followup.patch \
-            tools/trpg-finalize-v6-service.patch \
-            tools/trpg-finalize-v6-tests-a.patch \
-            tools/trpg-finalize-v6-tests-b.patch \
-            tools/trpg-finalize-v6-test-work.patch \
-            tools/trpg-finalize-v6-test-skill.patch \
-            tools/trpg-finalize-v6-tests-d.patch \
-            tools/trpg-finalize-v6-wage.patch \
-            tools/trpg-finalize-v6-contract.patch \
-            tools/trpg-finalize-v6-p0-test.patch \
-            src/server/trpg/game/service.js.orig \
-            .github/workflows/trpg-apply-v6-patches.yml
-
-          cat > .github/workflows/trpg-experiential-source-bundle.yml <<'YAML'
-          name: TRPG experiential source bundle
-
-          on:
-            push:
-              branches:
-                - chatgpt/trpg-experiential-simulation-v6
-              paths:
-                - .github/workflows/trpg-experiential-source-bundle.yml
-            pull_request:
-              branches:
-                - main
-              paths:
-                - .github/workflows/trpg-experiential-source-bundle.yml
-
-          permissions:
-            contents: read
-
-          jobs:
-            bundle:
-              runs-on: ubuntu-latest
-              steps:
-                - uses: actions/checkout@v4
-                  with:
-                    ref: chatgpt/trpg-experiential-simulation-v6
-                    fetch-depth: 1
-                - name: Create source archive
-                  run: |
-                    zip -qr /tmp/trpg-source.zip . \
-                      -x '.git/*' 'node_modules/*' 'runtime-data/*' 'tools/trpg-sim/reports/*'
-                - uses: actions/upload-artifact@v4
-                  with:
-                    name: trpg-experiential-source
-                    path: /tmp/trpg-source.zip
-                    retention-days: 1
-          YAML
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "feat(trpg): finalize experiential player simulation v6"
-          git push origin HEAD:chatgpt/trpg-experiential-simulation-v6
+          zip -qr /tmp/trpg-source.zip . \
+            -x '.git/*' 'node_modules/*' 'runtime-data/*' 'tools/trpg-sim/reports/*'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trpg-experiential-source
+          path: /tmp/trpg-source.zip
+          retention-days: 1
