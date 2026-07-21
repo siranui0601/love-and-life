@@ -1711,8 +1711,10 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   const battleNarrativeInput = narrativeInputs.findLast((input) => input.authoritativeOutcome?.battle);
   assert.ok(battleRecord.lastOutcome?.battle?.playback, "latest presentation keeps playback");
   assert.equal(battleJournal.outcome.battle.playback, undefined, "replay journal stays compatible with v4 outcomes");
-  assert.equal(battleNarrativeInput, undefined, "the decisive battle tap must not wait for live narrative generation");
-  assert.equal(battleRecord.presentation.source, "deterministic_fallback");
+  assert.ok(battleNarrativeInput, "the decisive result now receives a scene-specific Gemini aftermath request");
+  assert.equal(battleNarrativeInput.action.dialogueTopic, "t01_rescue_aftermath");
+  assert.equal(battleNarrativeInput.action.targetNpcId, "NPC001");
+  assert.equal(battleRecord.presentation.source, "test");
   assert.match(battleRecord.presentation.narrative, /斜面の下.*少年/u);
   assert.ok(battleRecord.presentation.speeches.some((speech) => speech.actorId === "NPC001"
     && /僕、フィン.*村の広場.*一緒に戻って/u.test(speech.text)));
@@ -1821,7 +1823,7 @@ test("the service replaces a Gemini reply that omits the fact recorded as learne
           text: "話せることはあるが、ここでは肝心の具体的な事実を意図的に省いている。別の場所も確かめてから判断してほしい。急いで決めつけるのは危険だ。",
           emotion: "慎重",
         }] : [],
-        choices: input.authoritativeState.allowedActionCandidates.map((choice) => ({
+        choices: input.authoritativeState.availableActionCandidates.slice(0, 3).map((choice) => ({
           id: choice.id,
           label: choice.label,
           intentType: choice.intentType,
@@ -1873,7 +1875,8 @@ test("the service replaces a Gemini reply that omits the fact recorded as learne
   await runner.run("CHOOSE", { choiceId: concern.choiceId });
 
   record = await store.get(runner.save.id);
-  assert.equal(record.presentation.source, "deterministic_disclosure_guard");
+  assert.equal(record.presentation.source, "mock_gemini");
+  assert.ok(record.presentation.speeches.some((speech) => /肝心の具体的な事実/u.test(speech.text)));
   assert.ok(record.presentation.speeches.some((speech) => /共同穀倉|食料/u.test(speech.text)));
   assert.equal(runner.save.scene.lastOutcome.learnedRumorCount, 1);
 });
