@@ -7,6 +7,12 @@ on:
     paths:
       - ".github/workflows/trpg-experiential-player-v6.yml"
       - "tools/world-actions/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/trpg-experiential-player-v6.yml"
+      - "tools/world-actions/**"
   workflow_dispatch:
 
 permissions:
