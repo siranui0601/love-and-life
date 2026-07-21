@@ -1,0 +1,90 @@
+      if (targetName && !firstReply.includes(targetName)) {
+        errors.push("first conversation must introduce the target NPC by name before continuing");
+      }
+      if (context.action.introductionName) {
+        if (narrative.includes(context.action.introductionName)) {
+          errors.push("first-introduction narrative must keep the target NPC anonymous");
+        }
+        choices.forEach((choice, index) => {
+          if (boundedText(choice?.label, 120).includes(context.action.introductionName)) {
+            errors.push(`choices[${index}].label reveals the target NPC name before introduction acknowledgement`);
+          }
+        });
+      }
+    }
+    if (context.action.requiredDisclosure) {
+      const combinedReply = directReplies.map((speech) => boundedText(speech?.text, 500)).join("\n");
+      if (!combinedReply.includes(context.action.requiredDisclosure)) {
+        errors.push("conversation reply must include the authoritative disclosed fact verbatim");
+      }
+    }
+  }
+  const proposals = Array.isArray(value.proposals) ? value.proposals : [];
+  if (proposals.length > 5) errors.push("too many proposals");
+  proposals.forEach((proposal, index) => validateProposal(proposal, index, localNpcIds, errors));
+  return { ok: errors.length === 0, errors };
+}
+
+function sanitizeDiegeticText(value, maximum = 1400) {
+  return boundedText(value, maximum)
+    .replaceAll("ミッション", "依頼")
+    .replaceAll("クエスト", "依頼")
+    .replaceAll("選択肢", "行動")
+    .replaceAll("三択", "三つの道")
+    .replaceAll("3択", "三つの道")
+    .replaceAll("プレイヤー", "旅人")
+    .replaceAll("チュートリアル", "案内")
+    .replaceAll("ステータス", "状態")
+    .replaceAll("システム", "仕組み")
+    .replaceAll("ボタン", "印")
+    .replaceAll("タップ", "触れる")
+    .replaceAll("クリック", "選ぶ")
+    .replaceAll("画面", "視界")
+    .replaceAll("メニュー", "一覧")
+    .replaceAll("フラグ", "兆し")
+    .replaceAll("レベル", "段階")
+    .replaceAll("resolver", "裁定")
+    .replaceAll("ログ", "記録")
+    .replaceAll("HP", "体力")
+    .replaceAll("MP", "魔力")
+    .replaceAll("SP", "技の余力")
+    .replace(/\bUI\b/gu, "表示")
+    .replace(/\bGemini\b/gu, "語り手")
+    .trim();
+}
+
+function candidateChoice(candidate, overrides = {}) {
+  return {
+    id: candidate.id,
+    label: sanitizeDiegeticText(overrides.label ?? candidate.label, 180) || candidate.label,
+    intentType: candidate.intentType,
+    targetNpcId: candidate.targetNpcId ?? null,
+    approach: sanitizeDiegeticText(overrides.approach, 180) || null,
+    ...(overrides.workProposal ? { workProposal: overrides.workProposal } : {}),
+  };
+}
+
+function defaultChoices(context) {
+  const pool = context.allowedActionCandidates ?? [];
+  if (!pool.length) {
+    const targetNpcId = context.action.targetNpcId ?? context.localNpcs[0]?.id ?? null;
+    return targetNpcId
+      ? [
+        { id: "C1", label: "もう少し詳しく話を聞く", intentType: "ask", targetNpcId },
+        { id: "C2", label: "周囲の様子を確かめる", intentType: "observe", targetNpcId: null },
+        { id: "C3", label: "いったん会話を終える", intentType: "leave", targetNpcId: null },
+      ]
+      : [
+        { id: "C1", label: "周囲を観察する", intentType: "observe", targetNpcId: null },
+        { id: "C2", label: "手掛かりを調べる", intentType: "investigate", targetNpcId: null },
+        { id: "C3", label: "別の行動へ移る", intentType: "leave", targetNpcId: null },
+      ];
+  }
+  const anchors = new Set(context.progressContract?.anchorCandidateIds ?? []);
+  const selected = [];
+  const add = (candidate) => {
+    if (candidate && !selected.some((entry) => entry.id === candidate.id)) selected.push(candidateChoice(candidate));
+  };
+  if (context.progressContract?.mode === "must_offer_progress") add(pool.find((candidate) => anchors.has(candidate.id)));
+  for (const candidate of pool) {
+    if (selected.length >= 3) break;
