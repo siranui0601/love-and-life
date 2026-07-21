@@ -22,33 +22,21 @@ service = replaceOnce(
 );
 service = replaceOnce(
   service,
-  `  const actionPriority = (action) => {\n    if (action.missionId) return 0;\n    if (action.type === "localInvestigate") return 1;\n    if (action.type === "conversation" && !action.workOffer) return 2;\n    const hasLearnedSkill = runtime.playerState.player.skills.size > 0;`,
-  `  const actionPriority = (action) => {\n    if (action.missionId) return 0;\n    if (action.type === "localInvestigate") return 1;\n    if (action.type === "move") return 2;\n    if (action.type === "conversation" && !action.workOffer) return 3;\n    const hasLearnedSkill = runtime.playerState.player.skills.size > 0;`,
-  "movement choice priority",
-);
-service = replaceOnce(
-  service,
   `  const hasWorkCandidate = prioritized.some((action) => action.workOffer === true || action.type === "work");`,
   `  const movementCandidates = (!runtime.tutorial || runtime.tutorial.stage === "free")\n    ? movementActions(runtime, data).slice(0, 6).map((action) => ({\n      ...action,\n      label: action.movementScope === "regional"\n        ? \`\${action.destinationHub}へ向かう\`\n        : \`\${data.model.facilityById[action.destinationFacilityId]?.name ?? action.destinationFacilityId}へ向かう\`,\n    }))\n    : [];\n  const hasWorkCandidate = prioritized.some((action) => action.workOffer === true || action.type === "work");`,
   "movement choice candidates",
 );
 service = replaceOnce(
   service,
-  `  const combined = [...prioritized, ...fillers]`,
-  `  const combined = [...prioritized, ...movementCandidates, ...fillers]`,
-  "movement candidates in pool",
+  `  return eligible.slice(0, Math.max(3, Math.min(12, Number(limit) || 9)));\n}\n\nfunction narrativeChoicePoolKey`,
+  `  const cap = Math.max(3, Math.min(12, Number(limit) || 9));\n  const selected = eligible.slice(0, cap);\n  if (cap > 3 && movementCandidates.length && !selected.some((action) => action.type === "move")) {\n    const movement = movementCandidates.find((action) => !selected.some((entry) => entry.id === action.id));\n    if (movement) {\n      if (selected.length >= cap) selected[selected.length - 1] = movement;\n      else selected.push(movement);\n    }\n  }\n  return selected;\n}\n\nexport function availableGameRuntimeChoiceCandidates(runtime, data, options = {}) {\n  return choiceActionPool(runtime, data, options);\n}\n\nfunction narrativeChoicePoolKey`,
+  "movement candidate reservation and testable pool",
 );
 service = replaceOnce(
   service,
   `function selectedChoiceActions(runtime, actions) {\n  if (!actions.length) return [];\n  const key = narrativeChoicePoolKey(runtime, actions);\n  const selection = runtime.narrativeChoiceSelection?.poolKey === key\n    ? runtime.narrativeChoiceSelection\n    : null;\n  const byId = new Map(actions.map((action) => [action.id, action]));\n  const selected = [];\n  for (const id of selection?.actionIds ?? []) {\n    const action = byId.get(id);\n    if (action && !selected.some((entry) => entry.id === id)) selected.push(action);\n    if (selected.length >= 3) break;\n  }\n  for (const action of actions) {\n    if (selected.length >= 3) break;\n    if (!selected.some((entry) => entry.id === action.id)) selected.push(action);\n  }\n  return withChoiceIds(selected.slice(0, 3).map((action) => generatedChoiceDetail(action, runtime, selection)));\n}`,
-  `function selectedChoiceActions(runtime, actions) {\n  if (!actions.length) return [];\n  const key = narrativeChoicePoolKey(runtime, actions);\n  const selection = runtime.narrativeChoiceSelection?.poolKey === key\n    ? runtime.narrativeChoiceSelection\n    : null;\n  const byId = new Map(actions.map((action) => [action.id, action]));\n  const preferred = [];\n  for (const id of selection?.actionIds ?? []) {\n    const action = byId.get(id);\n    if (action && !preferred.some((entry) => entry.id === id)) preferred.push(action);\n  }\n  const ordered = [\n    ...preferred,\n    ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),\n  ];\n  const diversified = selectDiverseChoices(ordered, { expectedCount: Math.min(3, ordered.length) });\n  return withChoiceIds(diversified.map((action) => generatedChoiceDetail(action, runtime, selection)));\n}`,
-  "semantic choice diversification",
-);
-service = replaceOnce(
-  service,
-  `    if (["missionBattle", "seekBattle"].includes(action.type)) {`,
-  `    if (["missionBattle", "seekBattle"].includes(action.type)) {`,
-  "battle branch anchor",
+  `function selectedChoiceActions(runtime, actions) {\n  if (!actions.length) return [];\n  const key = narrativeChoicePoolKey(runtime, actions);\n  const selection = runtime.narrativeChoiceSelection?.poolKey === key\n    ? runtime.narrativeChoiceSelection\n    : null;\n  const byId = new Map(actions.map((action) => [action.id, action]));\n  const preferred = [];\n  for (const id of selection?.actionIds ?? []) {\n    const action = byId.get(id);\n    if (action && !preferred.some((entry) => entry.id === id)) preferred.push(action);\n    if (preferred.length >= 3) break;\n  }\n  const legacy = [\n    ...preferred,\n    ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),\n  ].slice(0, 3);\n  const preserveReviewedOrder = !selection || (runtime.tutorial && runtime.tutorial.stage !== "free");\n  const selected = preserveReviewedOrder\n    ? legacy\n    : selectDiverseChoices([\n      ...preferred,\n      ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),\n    ], { expectedCount: Math.min(3, actions.length) });\n  return withChoiceIds(selected.map((action) => generatedChoiceDetail(action, runtime, selection)));\n}`,
+  "Gemini-only semantic choice diversification",
 );
 service = replaceOnce(
   service,
