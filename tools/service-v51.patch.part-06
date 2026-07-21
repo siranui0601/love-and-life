@@ -1,0 +1,24 @@
++            ? JSON.parse(JSON.stringify(entry.choiceSelectionBefore))
++            : null;
++        }
++        if (Object.hasOwn(entry, "narrativeMemoryBefore")) {
++          runtime.narrativeMemory = entry.narrativeMemoryBefore
++            ? JSON.parse(JSON.stringify(entry.narrativeMemoryBefore))
++            : createNarrativeMemory();
++        }
+         const beforeHash = gameStateHash(runtime, this.data);
+         const result = executeGameRuntimeCommand(runtime, this.data, entry);
+         revision = expectedSeq;
++        if (Object.hasOwn(entry, "choiceSelectionAfter")) {
++          runtime.narrativeChoiceSelection = entry.choiceSelectionAfter
++            ? JSON.parse(JSON.stringify(entry.choiceSelectionAfter))
++            : null;
++        }
++        if (Object.hasOwn(entry, "narrativeMemoryAfter")) {
++          runtime.narrativeMemory = entry.narrativeMemoryAfter
++            ? JSON.parse(JSON.stringify(entry.narrativeMemoryAfter))
++            : createNarrativeMemory();
++        }
+         compactPlayableRuntime(runtime);
+         const afterHash = gameStateHash(runtime, this.data);
+         checks.push({
