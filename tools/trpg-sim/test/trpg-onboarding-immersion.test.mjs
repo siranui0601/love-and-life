@@ -31,10 +31,12 @@ test("opening characters speak from their own stakes instead of explaining the g
 });
 
 test("Gemini contract rejects game and UI vocabulary in narration and NPC speech", () => {
-  assert.match(contract, /trpg-narrative-v5\.0-experiential/u);
+  assert.match(contract, /trpg-narrative-v5\.1-director/u);
   assert.match(contract, /DIEGETIC_META_PATTERN/u);
   assert.match(contract, /narrative contains non-diegetic game or UI language/u);
   assert.match(contract, /text contains non-diegetic game or UI language/u);
-  assert.match(narrator, /操作説明は別のチュートリアルUIが担う/u);
-  assert.match(narrator, /NPCを全知の解説役やゲームルールの代弁者にせず/u);
+  assert.match(narrator, /場面監督/u);
+  assert.match(narrator, /sceneSpecificRules/u);
+  assert.match(narrator, /dialogueTopic === "t01_escort"/u);
+  assert.match(narrator, /別の土地や後続章のプロンプトへ持ち越さない/u);
 });

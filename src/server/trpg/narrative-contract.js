@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.0-experiential";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.1-director";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",
@@ -18,6 +18,9 @@ export const INTENT_TYPES = Object.freeze([
 export const PROPOSAL_TYPES = Object.freeze([
   "npc_intent",
   "flag_candidate",
+  "local_fact_candidate",
+  "npc_memory_candidate",
+  "mission_lead_candidate",
   "special_mission_candidate",
   "rumor_candidate",
 ]);
@@ -73,6 +76,16 @@ export const GEMINI_NARRATIVE_RESPONSE_SCHEMA = Object.freeze({
           label: { type: "STRING" },
           intentType: { type: "STRING", enum: [...INTENT_TYPES] },
           targetNpcId: { type: "STRING", nullable: true },
+          approach: { type: "STRING", nullable: true },
+          workProposal: {
+            type: "OBJECT",
+            nullable: true,
+            properties: {
+              title: { type: "STRING" },
+              durationClass: { type: "STRING", enum: ["short", "half_day", "full_day"] },
+              riskClass: { type: "STRING", enum: ["low", "medium", "high"] },
+            },
+          },
         },
       },
     },
@@ -104,6 +117,11 @@ export const GEMINI_NARRATIVE_RESPONSE_SCHEMA = Object.freeze({
           templateId: { type: "STRING", nullable: true },
           troubleId: { type: "STRING", nullable: true },
           text: { type: "STRING", nullable: true },
+          subjectId: { type: "STRING", nullable: true },
+          predicate: { type: "STRING", nullable: true },
+          scope: { type: "STRING", nullable: true },
+          locationId: { type: "STRING", nullable: true },
+          summary: { type: "STRING", nullable: true },
           reason: { type: "STRING" },
         },
       },
@@ -149,6 +167,9 @@ function normalizeNpc(npc) {
     knownLocalFacts: Array.isArray(npc?.knownLocalFacts)
       ? npc.knownLocalFacts.slice(0, 8).map((entry) => boundedText(entry, 180))
       : [],
+    recentMemories: Array.isArray(npc?.recentMemories)
+      ? npc.recentMemories.slice(-6).map((entry) => boundedText(entry, 240)).filter(Boolean)
+      : [],
   };
 }
 
@@ -175,7 +196,13 @@ function normalizeActionCandidate(candidate, localNpcIds) {
     id,
     label: boundedText(candidate?.label, 180) || id,
     intentType,
+    actionType: boundedText(candidate?.actionType, 60) || null,
     targetNpcId: rawTargetNpcId,
+    missionId: boundedText(candidate?.missionId, 80) || null,
+    stepId: boundedText(candidate?.stepId, 80) || null,
+    minutes: Number.isFinite(Number(candidate?.minutes)) ? Math.max(0, Number(candidate.minutes)) : 0,
+    workOffer: candidate?.workOffer === true,
+    progressRole: candidate?.progressRole === "progress" ? "progress" : "optional",
   };
 }
 
@@ -265,12 +292,35 @@ export function buildLocalNarrativeContext(input = {}) {
   const allowedActionCandidates = (Array.isArray(rawActionCandidates) ? rawActionCandidates : [])
     .map((candidate) => normalizeActionCandidate(candidate, localNpcIds))
     .filter(Boolean)
-    .sort((left, right) => left.id.localeCompare(right.id))
-    .slice(0, 3);
+    .sort((left, right) => (left.progressRole === right.progressRole ? 0 : left.progressRole === "progress" ? -1 : 1)
+      || left.id.localeCompare(right.id))
+    .slice(0, 9);
+
+  const progressContract = plainObject(state.progressContract) ? {
+    mode: state.progressContract.mode === "must_offer_progress" ? "must_offer_progress" : "free",
+    anchorCandidateIds: Array.isArray(state.progressContract.anchorCandidateIds)
+      ? state.progressContract.anchorCandidateIds.map((entry) => boundedText(entry, 120)).filter(Boolean).slice(0, 9)
+      : [],
+    missionId: boundedText(state.progressContract.missionId, 80) || null,
+    currentStep: boundedText(state.progressContract.currentStep, 180) || null,
+    rationale: boundedText(state.progressContract.rationale, 240) || null,
+  } : { mode: "free", anchorCandidateIds: [], missionId: null, currentStep: null, rationale: null };
+  const workMarket = plainObject(state.workMarket) ? {
+    region: boundedText(state.workMarket.region, 100) || null,
+    baseHourlyWage: Number.isFinite(Number(state.workMarket.baseHourlyWage)) ? Number(state.workMarket.baseHourlyWage) : null,
+    daypart: boundedText(state.workMarket.daypart, 40) || null,
+    localDemandTags: Array.isArray(state.workMarket.localDemandTags)
+      ? state.workMarket.localDemandTags.map((entry) => boundedText(entry, 80)).filter(Boolean).slice(0, 10)
+      : [],
+    durationClasses: ["short", "half_day", "full_day"],
+    riskClasses: ["low", "medium", "high"],
+    note: boundedText(state.workMarket.note, 240) || null,
+  } : null;
 
   const context = {
-    contractVersion: "trpg-local-context-v1",
+    contractVersion: "trpg-local-context-v2",
     locale: boundedText(input.locale ?? "ja-JP", 20),
+    sceneMode: boundedText(input.sceneMode ?? state.sceneMode ?? "free_roam", 40),
     time: {
       day: Math.max(1, Number(state.day ?? 1)),
       hour: Math.max(0, Math.min(24, Number(state.hour ?? 10))),
@@ -316,6 +366,8 @@ export function buildLocalNarrativeContext(input = {}) {
     missions,
     localRumors: rumors,
     allowedActionCandidates,
+    progressContract,
+    workMarket,
     visibleFlags: stableValue(state.visibleFlags ?? {}),
   };
 
@@ -377,11 +429,22 @@ function validateChoice(choice, index, localNpcIds, errors) {
     errors.push(`choices[${index}] is not an object`);
     return;
   }
-  if (!boundedText(choice.id, 80)) errors.push(`choices[${index}].id is empty`);
-  if (!boundedText(choice.label, 120)) errors.push(`choices[${index}].label is empty`);
+  if (!boundedText(choice.id, 120)) errors.push(`choices[${index}].id is empty`);
+  if (!boundedText(choice.label, 180)) errors.push(`choices[${index}].label is empty`);
   if (!INTENT_TYPES.includes(choice.intentType)) errors.push(`choices[${index}].intentType is invalid`);
   if (choice.targetNpcId && !localNpcIds.has(String(choice.targetNpcId))) {
     errors.push(`choices[${index}] targets an NPC who is not present`);
+  }
+  if (choice.workProposal !== undefined && choice.workProposal !== null) {
+    if (!plainObject(choice.workProposal) || !boundedText(choice.workProposal.title, 120)) {
+      errors.push(`choices[${index}].workProposal.title is required`);
+    }
+    if (!["short", "half_day", "full_day"].includes(choice.workProposal?.durationClass)) {
+      errors.push(`choices[${index}].workProposal.durationClass is invalid`);
+    }
+    if (!["low", "medium", "high"].includes(choice.workProposal?.riskClass)) {
+      errors.push(`choices[${index}].workProposal.riskClass is invalid`);
+    }
   }
 }
 
@@ -402,6 +465,14 @@ function validateProposal(proposal, index, localNpcIds, errors) {
     if (!boundedText(proposal.targetNpcId, 80)) errors.push(`proposals[${index}].targetNpcId is required for npc_intent`);
     if (!boundedText(proposal.intent, 120)) errors.push(`proposals[${index}].intent is required for npc_intent`);
   }
+  if (["local_fact_candidate", "npc_memory_candidate"].includes(proposal.type)) {
+    if (!boundedText(proposal.subjectId, 120)) errors.push(`proposals[${index}].subjectId is required`);
+    if (!boundedText(proposal.predicate, 120)) errors.push(`proposals[${index}].predicate is required`);
+  }
+  if (proposal.type === "mission_lead_candidate") {
+    if (!boundedText(proposal.troubleId, 40)) errors.push(`proposals[${index}].troubleId is required for mission_lead_candidate`);
+    if (!boundedText(proposal.summary, 240)) errors.push(`proposals[${index}].summary is required for mission_lead_candidate`);
+  }
   const forbidden = [...forbiddenKeys(proposal)];
   if (forbidden.length) errors.push(`proposals[${index}] contains authoritative keys: ${forbidden.join(",")}`);
 }
@@ -420,23 +491,31 @@ export function validateNarrativeOutput(value, context) {
   if (new Set(choiceIds).size !== choiceIds.length) errors.push("choice ids are duplicated");
   const choiceLabels = choices.map((choice) => boundedText(choice?.label, 120).replace(/[\s、。！？!?・「」『』（）()]/gu, ""));
   if (new Set(choiceLabels).size !== choiceLabels.length) errors.push("choice labels are semantically duplicated");
-  const allowedChoiceIds = (context.allowedActionCandidates ?? []).map((candidate) => candidate.id);
-  if (allowedChoiceIds.length) {
-    const actual = [...choiceIds].sort();
-    const expected = [...allowedChoiceIds].sort();
-    if (actual.length !== expected.length || actual.some((id, index) => id !== expected[index])) {
-      errors.push("choice ids must exactly match allowedActionCandidates");
-    }
+  const allowedChoiceIds = new Set((context.allowedActionCandidates ?? []).map((candidate) => candidate.id));
+  if (allowedChoiceIds.size) {
     const candidatesById = new Map((context.allowedActionCandidates ?? []).map((candidate) => [candidate.id, candidate]));
     choices.forEach((choice, index) => {
       const candidate = candidatesById.get(String(choice?.id ?? ""));
-      if (candidate && choice.intentType !== candidate.intentType) {
+      if (!candidate) {
+        errors.push(`choices[${index}].id is not in the executable candidate pool`);
+        return;
+      }
+      if (choice.intentType !== candidate.intentType) {
         errors.push(`choices[${index}].intentType must match its authoritative action candidate`);
       }
-      if (candidate && (choice.targetNpcId ?? null) !== (candidate.targetNpcId ?? null)) {
+      if ((choice.targetNpcId ?? null) !== (candidate.targetNpcId ?? null)) {
         errors.push(`choices[${index}].targetNpcId must match its authoritative action candidate`);
       }
+      if (choice.workProposal && !candidate.workOffer) {
+        errors.push(`choices[${index}].workProposal is only allowed for a work candidate`);
+      }
     });
+  }
+  if (context.progressContract?.mode === "must_offer_progress") {
+    const anchors = new Set(context.progressContract.anchorCandidateIds ?? []);
+    if (![...choiceIds].some((id) => anchors.has(id))) {
+      errors.push("choices must include at least one progress anchor candidate");
+    }
   }
   const speeches = Array.isArray(value.speeches) ? value.speeches : [];
   if (speeches.length > 6) errors.push("too many speeches");
@@ -451,7 +530,7 @@ export function validateNarrativeOutput(value, context) {
     const directReplies = speeches.filter((speech) => String(speech?.actorId) === context.action.targetNpcId);
     const replyLength = directReplies.reduce((sum, speech) => sum + boundedText(speech?.text, 500).length, 0);
     if (!directReplies.length) errors.push("conversation must include a reply from the target NPC");
-    if (replyLength < 55) errors.push("conversation reply is too short to answer, add useful detail, and create a next hook");
+    if (directReplies.length && replyLength < 12) errors.push("conversation reply is too short to carry useful meaning");
     const firstReply = boundedText(directReplies[0]?.text, 500);
     if (/^(?:もっとも|そうだね|そうだな|なるほど|ふむ)[、。…\s]/u.test(firstReply)) {
       errors.push("conversation reply starts with an orphan acknowledgement instead of answering the player's actual words");
@@ -486,111 +565,111 @@ export function validateNarrativeOutput(value, context) {
   return { ok: errors.length === 0, errors };
 }
 
+function sanitizeDiegeticText(value, maximum = 1400) {
+  return boundedText(value, maximum)
+    .replaceAll("ミッション", "依頼")
+    .replaceAll("クエスト", "依頼")
+    .replaceAll("選択肢", "行動")
+    .replaceAll("三択", "三つの道")
+    .replaceAll("3択", "三つの道")
+    .replaceAll("プレイヤー", "旅人")
+    .replaceAll("チュートリアル", "案内")
+    .replaceAll("ステータス", "状態")
+    .replaceAll("システム", "仕組み")
+    .replaceAll("ボタン", "印")
+    .replaceAll("タップ", "触れる")
+    .replaceAll("クリック", "選ぶ")
+    .replaceAll("画面", "視界")
+    .replaceAll("メニュー", "一覧")
+    .replaceAll("フラグ", "兆し")
+    .replaceAll("レベル", "段階")
+    .replaceAll("resolver", "裁定")
+    .replaceAll("ログ", "記録")
+    .replaceAll("HP", "体力")
+    .replaceAll("MP", "魔力")
+    .replaceAll("SP", "技の余力")
+    .replace(/\bUI\b/gu, "表示")
+    .replace(/\bGemini\b/gu, "語り手")
+    .trim();
+}
+
+function candidateChoice(candidate, overrides = {}) {
+  return {
+    id: candidate.id,
+    label: sanitizeDiegeticText(overrides.label ?? candidate.label, 180) || candidate.label,
+    intentType: candidate.intentType,
+    targetNpcId: candidate.targetNpcId ?? null,
+    approach: sanitizeDiegeticText(overrides.approach, 180) || null,
+    ...(overrides.workProposal ? { workProposal: overrides.workProposal } : {}),
+  };
+}
+
 function defaultChoices(context) {
-  if ((context.allowedActionCandidates ?? []).length === 3) {
-    return context.allowedActionCandidates.map((candidate) => ({ ...candidate }));
+  const pool = context.allowedActionCandidates ?? [];
+  if (!pool.length) {
+    const targetNpcId = context.action.targetNpcId ?? context.localNpcs[0]?.id ?? null;
+    return targetNpcId
+      ? [
+        { id: "C1", label: "もう少し詳しく話を聞く", intentType: "ask", targetNpcId },
+        { id: "C2", label: "周囲の様子を確かめる", intentType: "observe", targetNpcId: null },
+        { id: "C3", label: "いったん会話を終える", intentType: "leave", targetNpcId: null },
+      ]
+      : [
+        { id: "C1", label: "周囲を観察する", intentType: "observe", targetNpcId: null },
+        { id: "C2", label: "手掛かりを調べる", intentType: "investigate", targetNpcId: null },
+        { id: "C3", label: "別の行動へ移る", intentType: "leave", targetNpcId: null },
+      ];
   }
-  const targetNpcId = context.action.targetNpcId ?? context.localNpcs[0]?.id ?? null;
-  const candidates = targetNpcId
-    ? [
-      { id: "C1", label: "もう少し詳しく話を聞く", intentType: "ask", targetNpcId },
-      { id: "C2", label: "周囲の様子を確かめる", intentType: "observe", targetNpcId: null },
-      { id: "C3", label: "いったん会話を終える", intentType: "leave", targetNpcId: null },
-    ]
-    : [
-      { id: "C1", label: "周囲を観察する", intentType: "observe", targetNpcId: null },
-      { id: "C2", label: "手掛かりを調べる", intentType: "investigate", targetNpcId: null },
-      { id: "C3", label: "別の行動へ移る", intentType: "leave", targetNpcId: null },
-    ];
-  return candidates;
+  const anchors = new Set(context.progressContract?.anchorCandidateIds ?? []);
+  const selected = [];
+  const add = (candidate) => {
+    if (candidate && !selected.some((entry) => entry.id === candidate.id)) selected.push(candidateChoice(candidate));
+  };
+  if (context.progressContract?.mode === "must_offer_progress") add(pool.find((candidate) => anchors.has(candidate.id)));
+  for (const candidate of pool) {
+    if (selected.length >= 3) break;
+    if (!selected.some((entry) => entry.intentType === candidate.intentType)) add(candidate);
+  }
+  for (const candidate of pool) {
+    if (selected.length >= 3) break;
+    add(candidate);
+  }
+  return selected.slice(0, 3);
 }
 
 function sentenceFragment(value) {
-  return boundedText(value, 360).replace(/[。．.!！?？]+$/gu, "").trim();
+  return sanitizeDiegeticText(value, 360).replace(/[。．.!！?？]+$/gu, "").trim();
 }
 
 function safeFallbackSpeeches(context) {
-  const npc = context.localNpcs.find((entry) => entry.id === context.action.targetNpcId)
-    ?? context.localNpcs[0]
-    ?? null;
-  if (!npc) return [];
-  const fact = context.action.requiredDisclosure
-    ?? npc.knownLocalFacts?.[0]
-    ?? context.localRumors?.[0]?.text
-    ?? null;
-  const mission = context.missions.find((entry) => ["active", "available", "in_progress"].includes(entry.status))
-    ?? context.missions[0]
-    ?? null;
-  const place = context.place.facilityName ?? context.place.locationId ?? "この辺り";
+  const npc = context.localNpcs.find((entry) => entry.id === context.action.targetNpcId) ?? null;
+  if (!npc || !context.action.requiredDisclosure) return [];
   const introductionName = context.action.introductionName ?? npc.name;
-  const introduction = context.action.firstIntroduction ? `私は${introductionName}。` : "";
-  const verification = "私の話だけで決めず、現場か最初に見た人へ確かめてほしい。聞いた相手と時刻も覚えておくと、古い噂と今の事実を分けられる。";
-  const detail = {
-    active_mission: mission
-      ? `この件なら、今は「${mission.currentStep || "手掛かりを集める"}」を先に進めるべきだ。期限と行き先を確かめてから動いてくれ。`
-      : `今すぐ任務として頼める話は持っていない。掲示や人だかりが出た時は、事情と期限を聞いてから動くといい。`,
-    route_to_lead: mission
-      ? `「${mission.currentStep || mission.title}」へ向かうなら、${place}を出る前に目印と危険な分かれ道を確かめてくれ。明るいうちに着ける時間を選ぶ方がいい。`
-      : `${place}から先の道は、今日そこを通った人に目印と危険な分かれ道を聞くのが確実だ。`,
-    local_concern: fact
-      ? `${fact}という話が、今いちばん気に掛かっている。放っておけば困る人が増えるかもしれない。${verification}`
-      : `${place}では、普段と違う人の出入りや品物の減り方が最初の兆しになる。まだ断言はできない。${verification}`,
-    local_change: fact
-      ? `${fact}という変化までは確かめた。ただ、いつから変わったかは、ここを毎日使う人にも聞いてほしい。${verification}`
-      : `${place}を通る顔ぶれと運ばれる物が、いつもと少し違う。時間を変えてもう一度見れば、見間違いかどうか分かるはずだ。`,
-    personal_stake: `${place}は私も毎日使う場所で、困っている顔を見れば放っておけない。それでも一人で決めつけるのは危険だから、確かな手掛かりを持ち帰ってほしい。`,
-    local_rumor: context.action.requiredDisclosure
-      ? `${context.action.requiredDisclosure}。そこから先は、話が届いた時刻と最初に見た人も辿って確かめてほしい。`
-      : fact
-        ? `${fact}という話は聞いている。誰が最初に、いつ話したのかまで辿れば、今も続く異変か古い噂かを分けられる。${verification}`
-      : `その噂はまだ私のところまで届いていない。人が集まる場所で、誰が最初に、いつ話したのかまで尋ねてみてくれ。`,
-    work_offer: `${place}で今すぐ手が要るのは、運搬や片づけのような短い仕事だ。始める前に仕事内容と賃金を確かめ、終わったら頼んだ本人へ報告してくれ。`,
-    end_conversation: "分かった。ここで聞いた話も、現場が変われば古くなる。行き先で何を見つけたか、また会えた時に聞かせてくれ。",
-  }[context.action.dialogueTopic] ?? (fact
-    ? `${fact}という話なら知っている。${verification}`
-    : `その件について、私が確かに知っていることはまだ少ない。ここで作り話をするより、人が集まる場所か現場を毎日使う人へ尋ねた方がいい。${verification}`);
-  let text = `${introduction}${detail}`;
-  if (npc.relationship <= -20 || /hostile|敵対|警戒/iu.test(npc.mood)) {
-    text = `${introduction}まだ信用していない。それでも今話せる範囲は話す。${detail}`;
-  } else if (npc.relationship >= 20 || /friendly|友好|好意/iu.test(npc.mood)) {
-    text = `${introduction}分かる範囲なら、順に話そう。${detail}`;
-  }
-  return [{ actorId: npc.id, text, emotion: null }];
+  const introduction = context.action.firstIntroduction && introductionName ? `私は${introductionName}。` : "";
+  return [{
+    actorId: npc.id,
+    text: `${introduction}${sanitizeDiegeticText(context.action.requiredDisclosure, 360)}`,
+    emotion: null,
+  }];
 }
 
 function fallbackNarrativeForAction(context, npc, place, normalizedOutcome) {
+  if (normalizedOutcome) return `${place}では、${normalizedOutcome}。`;
   if (npc && ["conversation", "talk"].includes(context.action.type)) {
-    return {
-      active_mission: `${npc.name}はこの件の期限と手掛かりを思い返し、次に急ぐべき行動を整理した。`,
-      route_to_lead: `${npc.name}は${place}から先の道を思い浮かべ、目印と危険な分かれ道を順に説明した。`,
-      local_concern: `${npc.name}は周囲を見回し、ここで今いちばん気に掛けている問題を一つ挙げた。`,
-      local_change: `${npc.name}は普段の様子と見比べながら、最近気づいた変化を具体的に話した。`,
-      personal_stake: `${npc.name}は少し言葉を選び、この問題を放っておけない理由を自分の言葉で話した。`,
-      local_rumor: `${npc.name}は噂を聞いた相手と時刻を思い返し、確かな部分と未確認の部分を分けた。`,
-      work_offer: `${npc.name}は今ここで必要な仕事を挙げ、内容と賃金を先に説明した。`,
-      end_conversation: `${npc.name}へ礼を伝え、聞いた情報を確かめるために会話を切り上げた。`,
-    }[context.action.dialogueTopic]
-      ?? `${npc.name}は問いかけを最後まで聞き、知っている事実と推測を分けて答えた。`;
+    return `${npc.name}は問いかけを聞き、返す言葉を探している。`;
   }
-  return normalizedOutcome
-    ? `${place}では、${normalizedOutcome}。周囲の状況を確かめながら、次の行動を選べる。`
-    : `${place}の状況に大きな変化はない。周囲を見渡し、次の行動を選ぶ。`;
+  return `${place}の様子を確かめ、次に取れる行動を見定める。`;
 }
 
 export function deterministicNarrativeFallback(context, reason = "model_unavailable") {
   const place = context.place.facilityName ?? context.place.locationId ?? "その場";
-  const npc = context.localNpcs.find((entry) => entry.id === context.action.targetNpcId)
-    ?? context.localNpcs[0]
-    ?? null;
-  const outcome = boundedText(
-    context.authoritativeOutcome?.summary
-      ?? context.authoritativeOutcome?.message
-      ?? context.action.label,
-    360,
-  );
-  const normalizedOutcome = sentenceFragment(outcome);
+  const npc = context.localNpcs.find((entry) => entry.id === context.action.targetNpcId) ?? null;
+  const outcome = context.authoritativeOutcome?.summary
+    ?? context.authoritativeOutcome?.message
+    ?? context.authoritativeOutcome?.discovery?.text
+    ?? context.action.label;
   return {
-    narrative: fallbackNarrativeForAction(context, npc, place, normalizedOutcome),
+    narrative: fallbackNarrativeForAction(context, npc, place, sentenceFragment(outcome)),
     choices: defaultChoices(context),
     speeches: safeFallbackSpeeches(context),
     proposals: [],
@@ -598,23 +677,46 @@ export function deterministicNarrativeFallback(context, reason = "model_unavaila
   };
 }
 
+function normalizedWorkProposal(value) {
+  if (!plainObject(value) || !boundedText(value.title, 120)) return null;
+  return {
+    title: sanitizeDiegeticText(value.title, 120),
+    durationClass: ["short", "half_day", "full_day"].includes(value.durationClass) ? value.durationClass : "short",
+    riskClass: ["low", "medium", "high"].includes(value.riskClass) ? value.riskClass : "low",
+  };
+}
+
 export function sanitizeNarrativeOutput(value, context) {
   const localNpcIds = new Set(context.localNpcs.map((npc) => npc.id));
-  const allowedChoiceIds = new Set((context.allowedActionCandidates ?? []).map((candidate) => candidate.id));
+  const candidatesById = new Map((context.allowedActionCandidates ?? []).map((candidate) => [candidate.id, candidate]));
   const fallback = deterministicNarrativeFallback(context, "sanitized_output");
   const choices = [];
   const usedIds = new Set();
-  for (const candidate of Array.isArray(value?.choices) ? value.choices : []) {
-    if (!plainObject(candidate) || choices.length >= 3) continue;
-    const id = boundedText(candidate.id, 80);
-    const label = boundedText(candidate.label, 120);
-    const intentType = INTENT_TYPES.includes(candidate.intentType) ? candidate.intentType : null;
-    const targetNpcId = candidate.targetNpcId && localNpcIds.has(String(candidate.targetNpcId))
-      ? String(candidate.targetNpcId)
-      : null;
-    if (!id || !label || !intentType || usedIds.has(id) || (allowedChoiceIds.size && !allowedChoiceIds.has(id))) continue;
+  for (const generated of Array.isArray(value?.choices) ? value.choices : []) {
+    if (!plainObject(generated) || choices.length >= 3) continue;
+    const id = boundedText(generated.id, 120);
+    const candidate = candidatesById.get(id);
+    if (!candidate || usedIds.has(id)) continue;
+    const workProposal = candidate.workOffer ? normalizedWorkProposal(generated.workProposal) : null;
     usedIds.add(id);
-    choices.push({ id, label, intentType, targetNpcId });
+    choices.push(candidateChoice(candidate, {
+      label: generated.label,
+      approach: generated.approach,
+      workProposal,
+    }));
+  }
+
+  const anchors = new Set(context.progressContract?.anchorCandidateIds ?? []);
+  if (context.progressContract?.mode === "must_offer_progress" && !choices.some((choice) => anchors.has(choice.id))) {
+    const anchor = (context.allowedActionCandidates ?? []).find((candidate) => anchors.has(candidate.id));
+    if (anchor) {
+      if (choices.length >= 3) {
+        const replaceIndex = choices.findIndex((choice) => !anchors.has(choice.id));
+        choices.splice(replaceIndex >= 0 ? replaceIndex : choices.length - 1, 1);
+      }
+      choices.unshift(candidateChoice(anchor));
+      usedIds.add(anchor.id);
+    }
   }
   for (const candidate of fallback.choices) {
     if (choices.length >= 3) break;
@@ -627,11 +729,26 @@ export function sanitizeNarrativeOutput(value, context) {
     .filter((speech) => plainObject(speech) && localNpcIds.has(String(speech.actorId)))
     .map((speech) => ({
       actorId: String(speech.actorId),
-      text: boundedText(speech.text, 500),
-      emotion: boundedText(speech.emotion, 60) || null,
+      text: sanitizeDiegeticText(speech.text, 500),
+      emotion: sanitizeDiegeticText(speech.emotion, 60) || null,
     }))
     .filter((speech) => speech.text)
     .slice(0, 6);
+
+  if (context.action.type === "conversation" && context.action.targetNpcId) {
+    let target = speeches.find((speech) => speech.actorId === context.action.targetNpcId);
+    if (!target && context.action.requiredDisclosure) {
+      target = { actorId: context.action.targetNpcId, text: "", emotion: null };
+      speeches.unshift(target);
+    }
+    if (target && context.action.firstIntroduction && context.action.introductionName && !target.text.includes(context.action.introductionName)) {
+      target.text = `私は${context.action.introductionName}。${target.text}`;
+    }
+    const disclosure = sanitizeDiegeticText(context.action.requiredDisclosure, 360);
+    if (target && disclosure && !target.text.includes(disclosure)) {
+      target.text = `${target.text}${target.text && !/[。！？!?]$/u.test(target.text) ? "。" : ""}${disclosure}`;
+    }
+  }
 
   const proposals = (Array.isArray(value?.proposals) ? value.proposals : [])
     .filter((proposal) => {
@@ -644,24 +761,40 @@ export function sanitizeNarrativeOutput(value, context) {
     .map((proposal) => ({
       type: proposal.type,
       targetNpcId: proposal.targetNpcId ? String(proposal.targetNpcId) : null,
-      intent: boundedText(proposal.intent, 120) || null,
+      intent: sanitizeDiegeticText(proposal.intent, 120) || null,
       flagPath: boundedText(proposal.flagPath, 160) || null,
-      value: boundedText(proposal.value, 240) || null,
+      value: sanitizeDiegeticText(proposal.value, 240) || null,
       templateId: boundedText(proposal.templateId, 100) || null,
       troubleId: boundedText(proposal.troubleId, 40) || null,
-      text: boundedText(proposal.text, 300) || null,
-      reason: boundedText(proposal.reason, 240),
+      text: sanitizeDiegeticText(proposal.text, 300) || null,
+      subjectId: boundedText(proposal.subjectId, 120) || null,
+      predicate: boundedText(proposal.predicate, 120) || null,
+      scope: boundedText(proposal.scope, 80) || null,
+      locationId: boundedText(proposal.locationId, 100) || null,
+      summary: sanitizeDiegeticText(proposal.summary, 300) || null,
+      reason: sanitizeDiegeticText(proposal.reason, 240),
     }))
     .filter((proposal) => proposal.reason)
     .slice(0, 5);
 
   return {
-    narrative: boundedText(value?.narrative, 1400) || fallback.narrative,
-    choices,
+    narrative: sanitizeDiegeticText(value?.narrative, 1400) || fallback.narrative,
+    choices: choices.slice(0, 3),
     speeches,
     proposals,
   };
 }
+
+export function mergeNarrativeOutputs(primary, repair, context) {
+  const merged = {
+    narrative: boundedText(repair?.narrative, 1400) || boundedText(primary?.narrative, 1400),
+    choices: Array.isArray(repair?.choices) && repair.choices.length ? repair.choices : primary?.choices,
+    speeches: Array.isArray(repair?.speeches) && repair.speeches.length ? repair.speeches : primary?.speeches,
+    proposals: Array.isArray(repair?.proposals) ? repair.proposals : primary?.proposals,
+  };
+  return sanitizeNarrativeOutput(merged, context);
+}
+
 
 export function resolveNarrativeProposals(output, context, rules = {}) {
   const localNpcIds = new Set(context.localNpcs.map((npc) => npc.id));
@@ -675,6 +808,9 @@ export function resolveNarrativeProposals(output, context, rules = {}) {
     else if (proposal.type === "npc_intent" && !boundedText(proposal.intent, 120)) reason = "npc_intent_required";
     else if (proposal.targetNpcId && !localNpcIds.has(String(proposal.targetNpcId))) reason = "remote_npc";
     else if (proposal.type === "flag_candidate" && !allowedFlagPath(proposal.flagPath)) reason = "flag_not_allowlisted";
+    else if (proposal.type === "local_fact_candidate"
+      && ![context.place.locationId, context.place.facilityId].filter(Boolean).includes(proposal.subjectId)) reason = "nonlocal_fact_subject";
+    else if (proposal.type === "npc_memory_candidate" && !localNpcIds.has(String(proposal.subjectId))) reason = "remote_memory_subject";
     else if (proposal.type === "special_mission_candidate" && !allowedMissionTemplates.has(proposal.templateId)) reason = "unknown_mission_template";
     else if (proposal.troubleId && !allowedTroubleIds.has(proposal.troubleId)) reason = "invisible_trouble";
     else if (forbiddenKeys(proposal).size) reason = "authoritative_mutation";

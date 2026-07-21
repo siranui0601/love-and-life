@@ -23,8 +23,8 @@ import { FileTrpgSaveStore } from "./save-store.js";
 import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v10";
-const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9"]);
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v11";
+const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
 const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
@@ -357,6 +357,28 @@ function createPlayerKnowledge() {
     knownFacilityIds: new Set(["LOC_FARM_FIELD"]),
     knownHubIds: new Set(["田園の村"]),
   };
+}
+
+function createNarrativeMemory() {
+  return {
+    localFacts: [],
+    npcMemories: [],
+    missionLeads: [],
+    semanticFlags: {},
+  };
+}
+
+function ensureNarrativeMemory(runtime) {
+  runtime.narrativeMemory ??= createNarrativeMemory();
+  runtime.narrativeMemory.localFacts ??= [];
+  runtime.narrativeMemory.npcMemories ??= [];
+  runtime.narrativeMemory.missionLeads ??= [];
+  runtime.narrativeMemory.semanticFlags ??= {};
+  return runtime.narrativeMemory;
+}
+
+function cloneNarrativeMemory(runtime) {
+  return JSON.parse(JSON.stringify(ensureNarrativeMemory(runtime)));
 }
 
 function ensurePlayerKnowledge(runtime) {
@@ -937,6 +959,8 @@ export function createGameRuntime(data, { seed, profileId, playerName, tutorial 
     pendingNpcIntroduction: null,
     tutorial: tutorial ? createTutorialState() : null,
     dialogueSession: null,
+    narrativeChoiceSelection: null,
+    narrativeMemory: createNarrativeMemory(),
   };
   advanceLivingWorld(runtime, playerState.absoluteMinute);
   if (tutorial) {
@@ -956,6 +980,8 @@ function hydrateRuntime(record, data) {
   ensurePlayerKnowledge(runtime);
   runtime.pendingBattle ??= null;
   runtime.pendingNpcIntroduction ??= null;
+  runtime.narrativeChoiceSelection ??= null;
+  ensureNarrativeMemory(runtime);
   syncAuthoritativePresentNpcIds(runtime, data);
   return runtime;
 }
@@ -977,9 +1003,37 @@ function choiceIntent(action) {
   return "observe";
 }
 
-function deterministicWorkWage(runtime, facilityId, actorId) {
-  const digest = sha256([runtime.playerState.seed, runtime.playerState.day, facilityId, actorId, "work-offer"].join(":"));
-  return 5 + (Number.parseInt(digest.slice(0, 8), 16) % 8);
+const REGION_BASE_HOURLY_WAGE = Object.freeze({
+  "田園の村": 24,
+  "王都": 38,
+  "交易都市": 34,
+  "犯罪都市": 42,
+  "辺境の村": 30,
+  "北陵要塞": 36,
+  "ドワーフ洞窟": 40,
+  "エルフの隠れ里": 32,
+  "古代神殿": 35,
+  "魔王領": 50,
+});
+
+function deterministicWorkWage(runtime, facilityId, actorId, options = {}) {
+  const minutes = Math.max(30, Math.min(480, Number(options.minutes ?? 120) || 120));
+  const riskClass = ["low", "medium", "high"].includes(options.riskClass) ? options.riskClass : "low";
+  const location = runtime.playerState.player.location;
+  const hourly = Number(REGION_BASE_HOURLY_WAGE[location] ?? 30);
+  const facilityFactor = Number({
+    LOC_FARM_FIELD: 1.08,
+    LOC_FARM_SQUARE: 1.12,
+    LOC_FARM_INN: 0.95,
+    LOC_FARM_BAKERY: 1.02,
+    LOC_FARM_WELL: 1.1,
+  }[facilityId] ?? 1);
+  const riskFactor = Number({ low: 1, medium: 1.35, high: 1.8 }[riskClass]);
+  const nightFactor = ["night", "late_night"].includes(runtime.playerState.daypart) || runtime.playerState.hour >= 20 ? 1.25 : 1;
+  const digest = sha256([runtime.playerState.seed, runtime.playerState.day, location, facilityId, actorId, riskClass, minutes, "work-offer-v2"].join(":"));
+  const marketFactor = 0.92 + (Number.parseInt(digest.slice(0, 8), 16) % 29) / 100;
+  const raw = hourly * (minutes / 60) * facilityFactor * riskFactor * nightFactor * marketFactor;
+  return Math.max(15, Math.round(raw / 5) * 5);
 }
 
 function workDescription(facilityId) {
@@ -1217,7 +1271,7 @@ function authoritativeMissionConversationAction(action, runtime, data) {
   };
 }
 
-function choiceActions(runtime, data) {
+function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   if (runtime.pendingBattle?.session?.status === "active") return [];
   if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
   syncAuthoritativePresentNpcIds(runtime, data);
@@ -1236,6 +1290,8 @@ function choiceActions(runtime, data) {
     runtime.playerState.catalog,
     profileFor(runtime.playerState.profileId),
     {
+      limit: Math.max(3, Math.min(12, Number(limit) || 9)),
+      fillTo: 0,
       candidateFilter(action) {
         if (action.type !== "conversation" || !action.missionId) return true;
         const authorized = authoritativeMissionConversationAction(action, runtime, data);
@@ -1282,13 +1338,76 @@ function choiceActions(runtime, data) {
     .map((action, index) => ({ action, index }))
     .sort((left, right) => actionPriority(left.action) - actionPriority(right.action) || left.index - right.index)
     .map((entry) => entry.action);
-  if (!runtime.tutorial || runtime.tutorial.stage === "free") {
-    const result = [...new Map(combined.map((action) => [action.id, action])).values()].slice(0, 3);
-    return withChoiceIds(result);
+  const unique = [...new Map(combined.map((action) => [action.id, action])).values()];
+  const eligible = !runtime.tutorial || runtime.tutorial.stage === "free"
+    ? unique
+    : unique.filter((action) => !["seekBattle", "missionBattle", "investigate"].includes(action.type));
+  return eligible.slice(0, Math.max(3, Math.min(12, Number(limit) || 9)));
+}
+
+function narrativeChoicePoolKey(runtime, actions) {
+  return sha256(JSON.stringify({
+    minute: runtime.playerState.absoluteMinute,
+    location: runtime.playerState.player.location,
+    facilityId: runtime.playerState.player.facilityId,
+    tutorialStage: runtime.tutorial?.stage ?? null,
+    pendingWorkOffer: runtime.pendingWorkOffer?.openedAtMinute ?? null,
+    actionIds: actions.map((action) => action.id),
+  })).slice(0, 24);
+}
+
+function generatedChoiceDetail(action, runtime, selection) {
+  const detail = selection?.detailsById?.[action.id];
+  if (!detail) return action;
+  let resolved = {
+    ...action,
+    label: cleanText(detail.label, 180) || action.label,
+    generatedApproach: cleanText(detail.approach, 180) || null,
+  };
+  if (action.workOffer && detail.workProposal?.title) {
+    const durationClass = ["short", "half_day", "full_day"].includes(detail.workProposal.durationClass)
+      ? detail.workProposal.durationClass
+      : "short";
+    const riskClass = ["low", "medium", "high"].includes(detail.workProposal.riskClass)
+      ? detail.workProposal.riskClass
+      : "low";
+    const minutes = { short: 120, half_day: 240, full_day: 480 }[durationClass];
+    const description = cleanText(detail.workProposal.title, 120);
+    const wage = deterministicWorkWage(runtime, runtime.playerState.player.facilityId, action.targetNpcId, { minutes, riskClass });
+    resolved = {
+      ...resolved,
+      quotedWage: wage,
+      workDescription: description,
+      workDurationMinutes: minutes,
+      workRiskClass: riskClass,
+      requiredDisclosure: `仕事は「${description}」、所要時間は${minutes}分、報酬は${wage}G`,
+    };
   }
-  const safe = combined.filter((action) => !["seekBattle", "missionBattle", "investigate"].includes(action.type));
-  const result = [...new Map(safe.map((action) => [action.id, action])).values()].slice(0, 3);
-  return withChoiceIds(result);
+  return resolved;
+}
+
+function selectedChoiceActions(runtime, actions) {
+  if (!actions.length) return [];
+  const key = narrativeChoicePoolKey(runtime, actions);
+  const selection = runtime.narrativeChoiceSelection?.poolKey === key
+    ? runtime.narrativeChoiceSelection
+    : null;
+  const byId = new Map(actions.map((action) => [action.id, action]));
+  const selected = [];
+  for (const id of selection?.actionIds ?? []) {
+    const action = byId.get(id);
+    if (action && !selected.some((entry) => entry.id === id)) selected.push(action);
+    if (selected.length >= 3) break;
+  }
+  for (const action of actions) {
+    if (selected.length >= 3) break;
+    if (!selected.some((entry) => entry.id === action.id)) selected.push(action);
+  }
+  return withChoiceIds(selected.slice(0, 3).map((action) => generatedChoiceDetail(action, runtime, selection)));
+}
+
+function choiceActions(runtime, data) {
+  return selectedChoiceActions(runtime, choiceActionPool(runtime, data));
 }
 
 function movementActions(runtime, data) {
@@ -2180,6 +2299,8 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   const pendingIntroductionAtStart = runtime.pendingNpcIntroduction;
   if (runtime.tutorial && command.type !== "ACK_NPC_INTRODUCTION") runtime.tutorial.lastBeat = null;
   const goldBefore = Number(runtime.playerState.player.gold ?? 0);
+  const levelBefore = Number(runtime.playerState.player.level ?? 1);
+  const expBefore = Number(runtime.playerState.player.exp ?? 0);
   const previousTroubleStates = Object.fromEntries(Object.entries(runtime.playerState.troubles).map(([id, value]) => [id, value.status]));
   let result;
   let resolvedActionId = null;
@@ -2380,8 +2501,12 @@ export function executeGameRuntimeCommand(runtime, data, command) {
         runtime,
         runtime.playerState.player.facilityId,
         resolvedPlayerAction.targetNpcId,
+        {
+          minutes: Number(resolvedPlayerAction.workDurationMinutes ?? 120),
+          riskClass: resolvedPlayerAction.workRiskClass ?? "low",
+        },
       )),
-      minutes: 120,
+      minutes: Number(resolvedPlayerAction.workDurationMinutes ?? 120),
       openedAtMinute: runtime.playerState.absoluteMinute,
     };
     result.summary = `${resolvedPlayerAction.targetNpcName ?? "相手"}から仕事内容と賃金を聞いた。引き受けるか選べる。`;
@@ -2392,6 +2517,10 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     result.summary = "仕事は断り、別の行動を選ぶことにした。";
   }
   if (result.ok && resolvedPlayerAction?.type === "work") {
+    // Ordinary employment changes time, money and the living world, but it is
+    // not combat/training experience and must not become a leveling exploit.
+    runtime.playerState.player.level = levelBefore;
+    runtime.playerState.player.exp = expBefore;
     result.goldDelta = Number(runtime.playerState.player.gold ?? 0) - goldBefore;
     result.summary = `${resolvedPlayerAction.workDescription ?? "頼まれた仕事"}を終え、${result.goldDelta}Gの賃金を受け取った。`;
     runtime.pendingWorkOffer = null;
@@ -3421,7 +3550,7 @@ function presentationChoices(record, choices) {
   return choices.map((action) => ({
     choiceId: action.choiceId,
     actionId: action.id,
-    label: cleanText(labels[action.choiceId] ?? action.label, 180),
+    label: cleanText(labels[action.id] ?? labels[action.choiceId] ?? action.label, 180),
     minutes: Number(action.minutes ?? 0),
     type: action.type,
     intentType: choiceIntent(action),
@@ -3602,6 +3731,11 @@ function narrativeNpcContexts(runtime, data, publicNpcs, { targetNpcId = null, r
       && requiredDisclosure
       ? [requiredDisclosure]
       : [];
+    const recentMemories = ensureNarrativeMemory(runtime).npcMemories
+      .filter((memory) => memory.subjectId === publicView.id)
+      .slice(-4)
+      .map((memory) => memory.summary)
+      .filter(Boolean);
     const stress = Number(npcState?.needs?.stress ?? 0);
     const mood = npcState?.lifeStatus === "injured" ? "負傷"
       : stress >= 70 ? "強く緊張している"
@@ -3619,28 +3753,101 @@ function narrativeNpcContexts(runtime, data, publicNpcs, { targetNpcId = null, r
       currentGoal: narrativePublicGoal(npc, npcState),
       relationship: locationReputation,
       knownLocalFacts,
+      recentMemories,
     };
   });
 }
 
+function narrativeActionContract(runtime, resolvedAction, authoritativeOutcome) {
+  if (authoritativeOutcome?.battle?.won === true
+    && resolvedAction?.missionId === "MSN-T01"
+    && resolvedAction?.stepId === "rescue") {
+    return {
+      ...resolvedAction,
+      type: "conversation",
+      targetNpcId: "NPC001",
+      targetNpcName: "フィン",
+      dialogueTopic: "t01_rescue_aftermath",
+      requiredDisclosure: "僕、フィン。足を痛めて一人では歩けない。村の広場まで一緒に戻ってほしい",
+    };
+  }
+  const escort = ensureT01EscortState(runtime);
+  if (resolvedAction?.type === "move"
+    && runtime.playerState.player.facilityId === "LOC_FARM_SQUARE"
+    && escort.reunionBeatAtMinute === runtime.playerState.absoluteMinute) {
+    return {
+      ...resolvedAction,
+      dialogueTopic: "t01_reunion",
+    };
+  }
+  return resolvedAction ?? {};
+}
+
+function narrativeSceneMode(resolvedAction, authoritativeOutcome) {
+  if (resolvedAction?.dialogueTopic === "work_offer") return "work_generation";
+  if (["conversation", "talk"].includes(resolvedAction?.type)) return "conversation";
+  if (authoritativeOutcome?.battle || ["missionBattle", "seekBattle"].includes(resolvedAction?.type)) return "battle_aftermath";
+  if (resolvedAction?.type === "move") return "arrival";
+  if (["investigate", "localInvestigate", "observe"].includes(resolvedAction?.type)) return "exploration";
+  return "free_roam";
+}
+
+function narrativeProgressContract(runtime, missions, actions) {
+  const activeIds = new Set(missions.filter((mission) => mission.status === "active").map((mission) => mission.id));
+  const anchors = actions.filter((candidate) => candidate.missionId && activeIds.has(candidate.missionId))
+    .filter((candidate) => !["wait", "plan", "rest"].includes(candidate.type));
+  const urgent = missions
+    .filter((mission) => mission.status === "active")
+    .sort((left, right) => Number(left.deadline?.remainingMinutes ?? Infinity) - Number(right.deadline?.remainingMinutes ?? Infinity))[0] ?? null;
+  return {
+    mode: anchors.length ? "must_offer_progress" : "free",
+    anchorCandidateIds: anchors.map((candidate) => candidate.id),
+    missionId: urgent?.id ?? null,
+    currentStep: urgent?.currentStep?.label ?? urgent?.currentStep ?? null,
+    rationale: anchors.length
+      ? "少なくとも一つは、現在進行中の出来事を前へ進められる選択肢にする"
+      : "この場で確実に進行できる手段をサーバーが確認できないため、無理に進展を捏造しない",
+  };
+}
+
+function narrativeWorkMarket(runtime) {
+  const location = runtime.playerState.player.location;
+  return {
+    region: location,
+    baseHourlyWage: Number(REGION_BASE_HOURLY_WAGE[location] ?? 30),
+    daypart: runtime.playerState.daypart,
+    localDemandTags: location === "田園の村"
+      ? ["農作業", "収穫", "運搬", "家畜", "生活用水"]
+      : location === "王都"
+        ? ["配達", "商店補助", "書類整理", "護衛", "建物管理"]
+        : ["運搬", "修繕", "案内", "採集", "警備"],
+    durationClasses: ["short", "half_day", "full_day"],
+    riskClasses: ["low", "medium", "high"],
+    note: "仕事内容は場所・時刻・人物に合わせて生成し、賃金はサーバーが地域相場・所要時間・危険度から確定する",
+  };
+}
+
 function narrativeInput(record, runtime, data, action, outcome) {
   const presentNpcs = presentNpcsAt(runtime, data);
-  const choices = choiceActions(runtime, data);
+  const choicePool = choiceActionPool(runtime, data, { limit: 9 });
   const facility = data.model.facilityById[runtime.playerState.player.facilityId];
   const publicFacility = publicFacilityContext(facility);
   const missions = missionView(runtime, data).filter((mission) => mission.status === "active");
   const rumors = rumorView(runtime);
-  const resolvedAction = action?.resolvedAction ?? action;
+  const rawResolvedAction = action?.resolvedAction ?? action;
+  const authoritativeOutcome = replayOutcome(outcome) ?? { type: "start", ok: true };
+  const resolvedAction = narrativeActionContract(runtime, rawResolvedAction, authoritativeOutcome);
   const narrativeNpcs = narrativeNpcContexts(runtime, data, presentNpcs, {
     targetNpcId: resolvedAction?.targetNpcId ?? null,
     requiredDisclosure: resolvedAction?.requiredDisclosure ?? null,
   });
-  const authoritativeOutcome = replayOutcome(outcome) ?? { type: "start", ok: true };
+  const progressContract = narrativeProgressContract(runtime, missions, choicePool);
   return {
     locale: "ja-JP",
     runId: process.env.TRPG_NARRATIVE_RUN_ID ?? "",
-    scenarioId: `${record.playerName}:${resolvedAction?.id ?? action?.type ?? "GAME_START"}:${record.revision}`,
-    playerName: record.playerName,
+    scenarioId: `オレゴン:${resolvedAction?.id ?? action?.type ?? "GAME_START"}:${record.revision}`,
+    playerName: "オレゴン",
+    sceneMode: narrativeSceneMode(resolvedAction, authoritativeOutcome),
     action: {
       id: resolvedAction?.id ?? action?.resolvedActionId ?? action?.type ?? "GAME_START",
       type: resolvedAction?.type ?? action?.type ?? "start",
@@ -3680,24 +3887,127 @@ function narrativeInput(record, runtime, data, action, outcome) {
       presentNpcIds: presentNpcs.map((npc) => npc.id),
       npcs: narrativeNpcs,
       player: {
-        displayName: record.playerName,
+        displayName: "オレゴン",
         visibleCondition: "行動可能",
-        knownFacts: [...openingKnownFactTexts(runtime), ...rumors.map((rumor) => rumor.text)],
+        knownFacts: [
+          ...openingKnownFactTexts(runtime),
+          ...rumors.map((rumor) => rumor.text),
+          ...ensureNarrativeMemory(runtime).localFacts
+            .filter((fact) => !fact.locationId || fact.locationId === runtime.playerState.player.location || fact.facilityId === runtime.playerState.player.facilityId)
+            .slice(-6)
+            .map((fact) => fact.summary),
+          ...ensureNarrativeMemory(runtime).missionLeads.slice(-6).map((lead) => lead.summary),
+        ].filter(Boolean),
       },
       missions,
       visibleMissionIds: missions.map((mission) => mission.id),
       localRumors: rumors,
       visibleRumorIds: rumors.map((rumor) => rumor.id),
       authoritativeOutcome,
-      allowedActionCandidates: choices.map((choice) => ({
-        id: choice.choiceId,
-        actionCandidateId: choice.id,
+      progressContract,
+      workMarket: narrativeWorkMarket(runtime),
+      visibleFlags: { ...ensureNarrativeMemory(runtime).semanticFlags },
+      availableActionCandidates: choicePool.map((choice) => ({
+        id: choice.id,
         label: choice.label,
         intentType: choiceIntent(choice),
+        actionType: choice.type,
         targetNpcId: choice.targetNpcId ?? null,
+        missionId: choice.missionId ?? null,
+        stepId: choice.stepId ?? null,
+        minutes: Number(choice.minutes ?? 0),
+        workOffer: choice.workOffer === true,
+        progressRole: progressContract.anchorCandidateIds.includes(choice.id) ? "progress" : "optional",
       })),
     },
   };
+}
+
+function replacePlayerAlias(value, playerName) {
+  return cleanText(value, 2000).replaceAll("オレゴン", playerName);
+}
+
+function applyNarrativeChoiceSelection(runtime, data, result) {
+  const pool = choiceActionPool(runtime, data, { limit: 9 });
+  if (!pool.length) {
+    runtime.narrativeChoiceSelection = null;
+    return null;
+  }
+  const poolKey = narrativeChoicePoolKey(runtime, pool);
+  const poolIds = new Set(pool.map((action) => action.id));
+  const actionIds = [];
+  const detailsById = {};
+  for (const choice of result?.choices ?? []) {
+    const id = cleanText(choice?.id, 120);
+    if (!id || !poolIds.has(id) || actionIds.includes(id)) continue;
+    actionIds.push(id);
+    detailsById[id] = {
+      label: cleanText(choice.label, 180),
+      approach: cleanText(choice.approach, 180) || null,
+      workProposal: choice.workProposal ? {
+        title: cleanText(choice.workProposal.title, 120),
+        durationClass: cleanText(choice.workProposal.durationClass, 20),
+        riskClass: cleanText(choice.workProposal.riskClass, 20),
+      } : null,
+    };
+    if (actionIds.length >= 3) break;
+  }
+  for (const action of pool) {
+    if (actionIds.length >= 3) break;
+    if (!actionIds.includes(action.id)) actionIds.push(action.id);
+  }
+  runtime.narrativeChoiceSelection = { poolKey, actionIds, detailsById };
+  return runtime.narrativeChoiceSelection;
+}
+
+function cloneNarrativeChoiceSelection(runtime) {
+  return runtime.narrativeChoiceSelection
+    ? JSON.parse(JSON.stringify(runtime.narrativeChoiceSelection))
+    : null;
+}
+
+function appendNarrativeMemoryEntry(list, entry, limit = 80) {
+  const signature = JSON.stringify([
+    entry.type,
+    entry.subjectId ?? null,
+    entry.predicate ?? null,
+    entry.value ?? null,
+    entry.troubleId ?? null,
+    entry.summary ?? null,
+  ]);
+  if (list.some((current) => current.signature === signature)) return;
+  list.push({ ...entry, signature });
+  if (list.length > limit) list.splice(0, list.length - limit);
+}
+
+function applyNarrativeProposalCandidates(runtime, result, playerName) {
+  const memory = ensureNarrativeMemory(runtime);
+  const accepted = result?.proposalResolution?.accepted ?? [];
+  for (const entry of accepted) {
+    const proposal = entry?.proposal ?? entry;
+    if (!proposal?.type) continue;
+    const base = {
+      type: proposal.type,
+      subjectId: cleanText(proposal.subjectId, 120) || null,
+      predicate: cleanText(proposal.predicate, 120) || null,
+      value: replacePlayerAlias(proposal.value, playerName) || null,
+      reason: replacePlayerAlias(proposal.reason, playerName) || null,
+      summary: replacePlayerAlias(proposal.summary ?? proposal.text ?? proposal.reason, playerName) || null,
+      troubleId: cleanText(proposal.troubleId, 40) || null,
+      locationId: cleanText(proposal.locationId, 100) || runtime.playerState.player.location,
+      facilityId: runtime.playerState.player.facilityId,
+      recordedAtMinute: runtime.playerState.absoluteMinute,
+    };
+    if (proposal.type === "local_fact_candidate" && base.summary) {
+      appendNarrativeMemoryEntry(memory.localFacts, base);
+    } else if (proposal.type === "npc_memory_candidate" && base.subjectId && base.summary) {
+      appendNarrativeMemoryEntry(memory.npcMemories, base);
+    } else if (proposal.type === "mission_lead_candidate" && base.troubleId && base.summary) {
+      appendNarrativeMemoryEntry(memory.missionLeads, base);
+    } else if (proposal.type === "flag_candidate" && proposal.flagPath) {
+      memory.semanticFlags[cleanText(proposal.flagPath, 160)] = replacePlayerAlias(proposal.value, playerName) || true;
+    }
+  }
 }
 
 async function updatePresentation(record, runtime, data, narrator, action = null, outcome = null) {
@@ -3721,12 +4031,8 @@ async function updatePresentation(record, runtime, data, narrator, action = null
   }
   const deterministic = deterministicFallbackPresentation(runtime, data, action, outcome);
   const resolvedAction = action?.resolvedAction ?? action;
-  if (["move", "work", "localInvestigate", "wait", "plan"].includes(resolvedAction?.type)) {
-    const base = { revision: record.revision, source: `deterministic_${resolvedAction.type}`, ...deterministic, choiceLabels: {} };
-    record.presentation = presentationWithOrderedBeats(runtime, data, resolvedAction, base);
-    return;
-  }
   if (!narrator) {
+    runtime.narrativeChoiceSelection = null;
     const base = { revision: record.revision, source: "deterministic_fallback", ...deterministic, choiceLabels: {} };
     record.presentation = presentationWithOrderedBeats(runtime, data, resolvedAction, base);
     return;
@@ -3735,39 +4041,72 @@ async function updatePresentation(record, runtime, data, narrator, action = null
     const input = narrativeInput(record, runtime, data, action, outcome);
     const presentIds = new Set(input.authoritativeState.presentNpcIds);
     const result = await narrator.generate(input, {
-      policyVersion: "trpg-gameplay-v1",
+      policyVersion: "trpg-gameplay-v2",
       allowedMissionTemplateIds: ["local-rescue", "local-investigation", "local-delivery", "local-escort", "local-negotiation"],
       allowedTroubleIds: input.authoritativeState.missions.map((mission) => mission.troubleId).filter(Boolean),
       validateNpcIntentCandidate(proposal) {
         return Boolean(proposal.targetNpcId && proposal.intent && presentIds.has(proposal.targetNpcId));
       },
     });
-    const legalChoiceIds = new Set(input.authoritativeState.allowedActionCandidates.map((choice) => choice.id));
+    const selection = applyNarrativeChoiceSelection(runtime, data, result);
+    applyNarrativeProposalCandidates(runtime, result, record.playerName);
+    const legalChoiceIds = new Set(input.authoritativeState.availableActionCandidates.map((choice) => choice.id));
     const choiceLabels = Object.fromEntries((result.choices ?? [])
       .filter((choice) => legalChoiceIds.has(choice.id))
-      .map((choice) => [choice.id, cleanText(choice.label, 180)]));
+      .map((choice) => [choice.id, replacePlayerAlias(choice.label, record.playerName)]));
     const allowedSpeechIds = resolvedAction?.type === "conversation" && resolvedAction.targetNpcId
       ? new Set([resolvedAction.targetNpcId])
-      : new Set();
+      : presentIds;
     const speeches = (result.speeches ?? [])
       .filter((speech) => presentIds.has(speech.actorId) && allowedSpeechIds.has(speech.actorId))
-      .map((speech) => ({ actorId: speech.actorId, text: cleanText(speech.text, 300), emotion: cleanText(speech.emotion, 40) || null }));
-    const requiredDisclosure = cleanText(resolvedAction?.requiredDisclosure, 180);
-    const disclosureIncluded = !requiredDisclosure || speeches.some((speech) => (
-      speech.actorId === resolvedAction?.targetNpcId && speech.text.includes(requiredDisclosure)
-    ));
-    const guardedSpeeches = disclosureIncluded ? speeches : deterministic.speeches;
+      .map((speech) => ({
+        actorId: speech.actorId,
+        text: replacePlayerAlias(speech.text, record.playerName).slice(0, 500),
+        emotion: cleanText(speech.emotion, 40) || null,
+      }));
+    const narrativeAction = input.action ?? {};
+    if (narrativeAction.type === "conversation" && narrativeAction.targetNpcId) {
+      let directReply = speeches.find((speech) => speech.actorId === narrativeAction.targetNpcId);
+      if (!directReply && narrativeAction.requiredDisclosure) {
+        directReply = { actorId: narrativeAction.targetNpcId, text: "", emotion: null };
+        speeches.unshift(directReply);
+      }
+      if (directReply && narrativeAction.firstIntroduction && narrativeAction.introductionName
+        && !directReply.text.includes(narrativeAction.introductionName)) {
+        directReply.text = `私は${narrativeAction.introductionName}。${directReply.text}`;
+      }
+      const disclosure = replacePlayerAlias(narrativeAction.requiredDisclosure, record.playerName);
+      if (directReply && disclosure && !directReply.text.includes(disclosure)) {
+        directReply.text = `${directReply.text}${directReply.text && !/[。！？!?]$/u.test(directReply.text) ? "。" : ""}${disclosure}`.slice(0, 500);
+      }
+    }
+    if (["t01_rescue_aftermath", "t01_reunion"].includes(narrativeAction.dialogueTopic)) {
+      for (const fallbackSpeech of deterministic.speeches ?? []) {
+        if (!speeches.some((speech) => speech.actorId === fallbackSpeech.actorId)) speeches.push({ ...fallbackSpeech });
+      }
+    }
+    const generatedNarrative = replacePlayerAlias(result.narrative, record.playerName).slice(0, 1500);
+    const criticalNarrativePattern = narrativeAction.dialogueTopic === "t01_rescue_aftermath"
+      ? /フィン|少年|斜面|狼/u
+      : narrativeAction.dialogueTopic === "t01_reunion"
+        ? /フィン|広場|母|帰/u
+        : null;
+    const narrative = criticalNarrativePattern && !criticalNarrativePattern.test(generatedNarrative)
+      ? deterministic.narrative
+      : generatedNarrative || deterministic.narrative || fallback;
     const base = {
       revision: record.revision,
-      source: disclosureIncluded ? result.meta?.source ?? "unknown" : "deterministic_disclosure_guard",
-      narrative: cleanText(result.narrative, 1500) || fallback,
-      speeches: guardedSpeeches,
+      source: result.meta?.source ?? "unknown",
+      narrative,
+      speeches,
       choiceLabels,
+      selectedActionIds: selection?.actionIds ?? [],
       cacheKey: result.meta?.cacheKey ?? null,
     };
     record.presentation = presentationWithOrderedBeats(runtime, data, resolvedAction, base);
   } catch (error) {
     console.error("TRPG gameplay narrative failed; deterministic presentation retained", error);
+    runtime.narrativeChoiceSelection = null;
     const base = { revision: record.revision, source: "deterministic_fallback", ...deterministic, choiceLabels: {} };
     record.presentation = presentationWithOrderedBeats(runtime, data, resolvedAction, base);
   }
@@ -3899,8 +4238,8 @@ export class TrpgGameService {
         stateHash: null,
         summary: null,
       };
-      updateRecordSnapshot(record, runtime, this.data);
       await updatePresentation(record, runtime, this.data, this.narrator);
+      updateRecordSnapshot(record, runtime, this.data);
       await this.store.put(record);
       return buildGameView(record, runtime, this.data);
     });
@@ -4021,6 +4360,8 @@ export class TrpgGameService {
       }
       if (record.commandLog.length >= MAX_COMMANDS) throw new TrpgGameError(409, "command_limit_reached");
       const runtime = hydrateRuntime(record, this.data);
+      const choiceSelectionBefore = cloneNarrativeChoiceSelection(runtime);
+      const narrativeMemoryBefore = cloneNarrativeMemory(runtime);
       const beforeHash = gameStateHash(runtime, this.data);
       const command = {
         commandId,
@@ -4031,6 +4372,17 @@ export class TrpgGameService {
       record.revision += 1;
       record.updatedAt = new Date().toISOString();
       record.lastOutcome = result.outcome;
+      if (command.type === "BATTLE_ACT" && runtime.pendingBattle?.session?.status === "active") {
+        runtime.narrativeChoiceSelection = null;
+        record.presentation = record.presentation
+          ? { ...record.presentation, revision: record.revision, choiceLabels: {}, selectedActionIds: [] }
+          : null;
+      } else {
+        // Once the decisive battle command has committed, the authoritative
+        // result is fixed. Gemini may now direct the aftermath and next three
+        // actions, but it cannot change the battle outcome.
+        await updatePresentation(record, runtime, this.data, this.narrator, { ...command, ...result }, result.outcome);
+      }
       updateRecordSnapshot(record, runtime, this.data);
       const journalEntry = {
         seq: record.commandLog.length + 1,
@@ -4043,22 +4395,12 @@ export class TrpgGameService {
         payload: command.payload,
         resolvedActionId: result.resolvedActionId,
         outcome: replayOutcome(result.outcome),
+        choiceSelectionBefore,
+        choiceSelectionAfter: cloneNarrativeChoiceSelection(runtime),
+        narrativeMemoryBefore,
+        narrativeMemoryAfter: cloneNarrativeMemory(runtime),
       };
       record.commandLog.push(journalEntry);
-      if (command.type === "BATTLE_ACT" && runtime.pendingBattle?.session?.status === "active") {
-        record.presentation = record.presentation
-          ? { ...record.presentation, revision: record.revision, choiceLabels: {} }
-          : null;
-      } else {
-        // Finishing an interactive battle must acknowledge the decisive tap
-        // immediately. Live narrative generation is intentionally skipped for
-        // this transition: provider latency must never hold the per-save lock
-        // after the enemy has already been defeated. The authoritative battle
-        // playback supplies the result, while later conversations continue to
-        // use Gemini normally.
-        const presentationNarrator = command.type === "BATTLE_ACT" ? null : this.narrator;
-        await updatePresentation(record, runtime, this.data, presentationNarrator, { ...command, ...result }, result.outcome);
-      }
       await this.store.put(record);
       return { duplicate: false, save: buildGameView(record, runtime, this.data) };
     });
@@ -4096,9 +4438,29 @@ export class TrpgGameService {
       const checks = [];
       for (const entry of entries) {
         const expectedSeq = revision + 1;
+        if (Object.hasOwn(entry, "choiceSelectionBefore")) {
+          runtime.narrativeChoiceSelection = entry.choiceSelectionBefore
+            ? JSON.parse(JSON.stringify(entry.choiceSelectionBefore))
+            : null;
+        }
+        if (Object.hasOwn(entry, "narrativeMemoryBefore")) {
+          runtime.narrativeMemory = entry.narrativeMemoryBefore
+            ? JSON.parse(JSON.stringify(entry.narrativeMemoryBefore))
+            : createNarrativeMemory();
+        }
         const beforeHash = gameStateHash(runtime, this.data);
         const result = executeGameRuntimeCommand(runtime, this.data, entry);
         revision = expectedSeq;
+        if (Object.hasOwn(entry, "choiceSelectionAfter")) {
+          runtime.narrativeChoiceSelection = entry.choiceSelectionAfter
+            ? JSON.parse(JSON.stringify(entry.choiceSelectionAfter))
+            : null;
+        }
+        if (Object.hasOwn(entry, "narrativeMemoryAfter")) {
+          runtime.narrativeMemory = entry.narrativeMemoryAfter
+            ? JSON.parse(JSON.stringify(entry.narrativeMemoryAfter))
+            : createNarrativeMemory();
+        }
         compactPlayableRuntime(runtime);
         const afterHash = gameStateHash(runtime, this.data);
         checks.push({
