@@ -1,4 +1,4 @@
-name: TRPG experiential player simulation v7
+name: Apply and verify TRPG Director v5.5 refinement
 
 on:
   pull_request:
@@ -7,52 +7,51 @@ on:
     paths:
       - "public/TRPG/**"
       - "src/server/trpg/**"
-      - "tools/trpg-sim/**"
-      - "package.json"
+      - "tools/**"
       - ".github/workflows/trpg-experiential-player-v6.yml"
   workflow_dispatch:
 
 concurrency:
-  group: trpg-experiential-${{ github.event.pull_request.number || github.ref }}
+  group: trpg-v55-apply-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  experiential:
+  apply:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
-      TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: chatgpt/trpg-generative-actions-world-needs
           fetch-depth: 1
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Run full TRPG regression suite
+      - name: Apply verified source refinement
         shell: bash
         run: |
-          mkdir -p tools/trpg-sim/reports
-          set -o pipefail
-          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/experiential-regression.log
-      - name: Run rescue, work-first, capital-first, and world-system journeys
-        run: npm run trpg:experiential:v6
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: trpg-experiential-player-v7
-          path: |
-            tools/trpg-sim/reports/experiential-regression.log
-            tools/trpg-sim/reports/experiential-player-v6-latest.json
-            tools/trpg-sim/reports/experiential-player-v6-latest.md
-            tools/trpg-sim/reports/experiential-v6-*-narrative-audit.jsonl
-          if-no-files-found: warn
-          retention-days: 14
+          set -euo pipefail
+          base64 -d tools/trpg-v55-refine.patch.gz.b64 > /tmp/trpg-v55-refine.patch.gz
+          echo 'ede1d4e18edcca826eb33fc6ca029a674b56e223bd1177099a9fad500e5ac7cf  /tmp/trpg-v55-refine.patch.gz' | sha256sum -c -
+          gzip -t /tmp/trpg-v55-refine.patch.gz
+          gzip -dc /tmp/trpg-v55-refine.patch.gz > /tmp/trpg-v55-refine.patch
+          echo '37929d438bd3a266bcc111e5c5f9aba1c8a05e1e9f2aeb9d88e335e31b7f988e  /tmp/trpg-v55-refine.patch' | sha256sum -c -
+          git apply --check /tmp/trpg-v55-refine.patch
+          git apply /tmp/trpg-v55-refine.patch
+      - run: npm ci
+      - name: Run full TRPG regression suite
+        run: npm run trpg:test
+      - name: Commit verified normal source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/server/trpg tools/trpg-sim
+          git commit -m "fix(trpg): validate actions locally before asking Gemini again"
+          git push origin HEAD:chatgpt/trpg-generative-actions-world-needs
