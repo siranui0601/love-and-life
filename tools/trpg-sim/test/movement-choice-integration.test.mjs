@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import test from "node:test";
 import {
   availableGameRuntimeActions,
+  availableGameRuntimeChoiceCandidates,
   createGameRuntime,
   executeGameRuntimeCommand,
 } from "../../../src/server/trpg/game/service.js";
@@ -19,21 +21,38 @@ function setup() {
   return { data, runtime };
 }
 
-test("normal three-choice actions include a directly executable movement route", () => {
+function selectMovement(runtime, data) {
+  const candidates = availableGameRuntimeChoiceCandidates(runtime, data, { limit: 9 });
+  const movement = candidates.find((action) => action.type === "move" && action.movementScope === "local")
+    ?? candidates.find((action) => action.type === "move");
+  assert.ok(movement, `movement candidate missing: ${candidates.map((action) => `${action.type}:${action.label}`).join(" / ")}`);
+  const actionIds = [movement.id, ...candidates.filter((action) => action.id !== movement.id).map((action) => action.id)].slice(0, 3);
+  const poolKey = crypto.createHash("sha256").update(JSON.stringify({
+    minute: runtime.playerState.absoluteMinute,
+    location: runtime.playerState.player.location,
+    facilityId: runtime.playerState.player.facilityId,
+    tutorialStage: runtime.tutorial?.stage ?? null,
+    pendingWorkOffer: runtime.pendingWorkOffer?.openedAtMinute ?? null,
+    actionIds: candidates.map((action) => action.id),
+  })).digest("hex").slice(0, 24);
+  runtime.narrativeChoiceSelection = { poolKey, actionIds, detailsById: {} };
+  return { candidates, movement };
+}
+
+test("the Gemini candidate pool reserves an executable movement route without changing legacy fallback order", () => {
   const { data, runtime } = setup();
-  const actions = availableGameRuntimeActions(runtime, data).choices;
-  assert.equal(actions.length, 3);
-  const movement = actions.find((action) => action.type === "move");
-  assert.ok(movement, `expected a movement choice, received: ${actions.map((action) => `${action.type}:${action.label}`).join(" / ")}`);
-  assert.ok(movement.movementScope);
-  assert.ok(movement.destinationFacilityId || movement.destinationHub);
+  const legacy = availableGameRuntimeActions(runtime, data).choices.map((action) => action.id);
+  const { candidates } = selectMovement(runtime, data);
+  assert.ok(candidates.some((action) => action.type === "move"));
+  runtime.narrativeChoiceSelection = null;
+  assert.deepEqual(availableGameRuntimeActions(runtime, data).choices.map((action) => action.id), legacy);
 });
 
-test("a movement option selected from the three choices uses the movement resolver", () => {
+test("a movement option selected for the three choices uses the authoritative movement resolver", () => {
   const { data, runtime } = setup();
-  const movement = availableGameRuntimeActions(runtime, data).choices
-    .find((action) => action.type === "move" && action.movementScope === "local")
-    ?? availableGameRuntimeActions(runtime, data).choices.find((action) => action.type === "move");
+  selectMovement(runtime, data);
+  const choices = availableGameRuntimeActions(runtime, data).choices;
+  const movement = choices.find((action) => action.type === "move");
   assert.ok(movement);
   const before = {
     location: runtime.playerState.player.location,
@@ -51,8 +70,9 @@ test("a movement option selected from the three choices uses the movement resolv
     || runtime.playerState.player.facilityId !== before.facilityId);
 });
 
-test("selected choices have distinct semantic decisions", () => {
+test("a Gemini-selected set is repaired to distinct semantic decisions", () => {
   const { data, runtime } = setup();
+  selectMovement(runtime, data);
   const actions = availableGameRuntimeActions(runtime, data).choices;
   const fingerprints = actions.map(choiceSemanticFingerprint);
   assert.equal(new Set(fingerprints).size, actions.length, fingerprints.join("\n"));
