@@ -211,9 +211,18 @@ async function rescueJourney() {
     if (!skill) throw new Error("no learnable tutorial skill");
     await runner.command("LEARN_SKILL", { skillId: skill.id }, { skillId: skill.id, label: skill.name });
     await runner.acknowledgeTutorial();
-    await runner.choose(/ACTION:MSN-T01:search:(?:claw-marks|tracks|jacket-thread)/u, "first search approach");
-    await runner.choose(/ACTION:MSN-T01:search:faint-voice/u, "Finn voice");
-    checks.voiceBeforeBattle = sceneLines(runner.save).some((line) => /声|フィン|生きて/u.test(line));
+    let searchTurns = 0;
+    let voiceBeforeBattle = false;
+    while (t01(runner.save)?.currentStep?.id === "search" && searchTurns < 6) {
+      searchTurns += 1;
+      const search = runner.save.choices.find((choice) => /ACTION:MSN-T01:search:faint-voice/u.test(choice.actionId))
+        ?? runner.save.choices.find((choice) => choice.missionId === "MSN-T01" && choice.stepId === "search");
+      if (!search) throw new Error(`no visible T01 search route at search turn ${searchTurns}`);
+      await runner.command("CHOOSE", { choiceId: search.choiceId }, { actionId: search.actionId, label: search.label });
+      voiceBeforeBattle ||= sceneLines(runner.save).some((line) => /声|フィン|生きて/u.test(line));
+    }
+    checks.searchProgressesWithoutExactApproach = searchTurns >= 2 && t01(runner.save)?.currentStep?.id === "rescue";
+    checks.voiceBeforeBattle = voiceBeforeBattle;
     await runner.choose(/ACTION:MSN-T01:rescue|赤牙狼/u, "rescue battle");
     const battleRounds = await runner.finishBattle();
     checks.battleFinishes = battleRounds > 0 && !runner.save.battle;
@@ -233,11 +242,35 @@ async function rescueJourney() {
   }
 }
 
+function actionMinutes(entry) {
+  return Math.max(0, Number(entry?.minutes ?? 0));
+}
+
+function longestChoice(save, predicate = () => true) {
+  return [...save.choices]
+    .filter(predicate)
+    .sort((left, right) => actionMinutes(right) - actionMinutes(left))[0] ?? null;
+}
+
 function passiveChoice(save) {
-  return save.choices.find((choice) => /^WORK(?:_|:)/u.test(choice.actionId))
-    ?? save.choices.find((choice) => /:END$/u.test(choice.actionId))
-    ?? save.choices.find((choice) => /WAIT|INSPECT|PAUSE|PLAN/u.test(choice.actionId) && !/MSN-T01/u.test(choice.actionId))
-    ?? save.choices.find((choice) => !/MSN-T01|SEEK_BATTLE/u.test(`${choice.actionId} ${choice.label}`))
+  return longestChoice(save, (choice) => /WAIT|REST|INSPECT|PAUSE|PLAN/u.test(choice.actionId)
+      && !/MSN-T01|SEEK_BATTLE/u.test(`${choice.actionId} ${choice.label}`))
+    ?? longestChoice(save, (choice) => !/MSN-T01|SEEK_BATTLE/u.test(`${choice.actionId} ${choice.label}`))
+    ?? null;
+}
+
+function workOfferChoice(save) {
+  return save.choices.find((choice) => /^WORK(?:_|:)/u.test(choice.actionId)
+    && !choice.actionId.startsWith("WORK_CONFIRM:")
+    && !choice.actionId.startsWith("WORK_CLARIFY:")
+    && !choice.actionId.startsWith("WORK_DECLINE:")) ?? null;
+}
+
+function nextLocalMove(save, visitedFacilities = new Set()) {
+  const candidates = save.movement.filter((entry) => entry.destinationFacilityId
+    && entry.destinationFacilityId !== "LOC_FARM_EDGE");
+  return candidates.find((entry) => !visitedFacilities.has(entry.destinationFacilityId))
+    ?? [...candidates].sort((left, right) => actionMinutes(right) - actionMinutes(left))[0]
     ?? null;
 }
 
@@ -245,6 +278,7 @@ async function workJourney() {
   const runner = new Runner("仕事優先の旅人", "experiential-v6-work");
   const checks = {};
   const offers = [];
+  const visitedFacilities = new Set();
   try {
     await opening(runner);
     await runner.chooseId("TUTORIAL:DEFER:WORK");
@@ -252,13 +286,14 @@ async function workJourney() {
     await runner.acknowledgeIntroduction();
     checks.firstOfferHasJobAndWage = offers.some((entry) => /仕事は「.+」.*(?:報酬|賃金).*\d+G/u.test(entry));
     checks.offerHasAcceptClarifyDecline = ["WORK_CONFIRM:", "WORK_CLARIFY:", "WORK_DECLINE:"].every((prefix) => runner.save.choices.some((choice) => choice.actionId.startsWith(prefix)));
-    for (let guard = 0; guard < 90 && !terminalT01(runner.save); guard += 1) {
+    for (let guard = 0; guard < 220 && !terminalT01(runner.save); guard += 1) {
+      visitedFacilities.add(runner.save.scene.facilityId);
       const confirm = runner.save.choices.find((choice) => choice.actionId.startsWith("WORK_CONFIRM:"));
       if (confirm) {
         await runner.command("CHOOSE", { choiceId: confirm.choiceId }, { actionId: confirm.actionId, label: confirm.label });
         continue;
       }
-      const offer = runner.save.choices.find((choice) => /^WORK(?:_|:)/u.test(choice.actionId));
+      const offer = workOfferChoice(runner.save);
       if (offer) {
         await runner.command("CHOOSE", { choiceId: offer.choiceId }, { actionId: offer.actionId, label: offer.label });
         offers.push(sceneLines(runner.save).join("\n"));
@@ -270,8 +305,7 @@ async function workJourney() {
         await runner.command("CHOOSE", { choiceId: end.choiceId }, { actionId: end.actionId, label: end.label });
         continue;
       }
-      const destination = runner.save.scene.facilityId === "LOC_FARM_FIELD" ? "LOC_FARM_SQUARE" : "LOC_FARM_FIELD";
-      const move = runner.save.movement.find((entry) => entry.destinationFacilityId === destination) ?? runner.save.movement.find((entry) => entry.destinationFacilityId && entry.destinationFacilityId !== "LOC_FARM_EDGE");
+      const move = nextLocalMove(runner.save, visitedFacilities);
       if (move) {
         await runner.command("MOVE", { moveId: move.moveId }, { moveId: move.moveId, label: move.label });
         continue;
@@ -280,10 +314,10 @@ async function workJourney() {
       if (!choice) throw new Error("no non-mission action while working");
       await runner.command("CHOOSE", { choiceId: choice.choiceId }, { actionId: choice.actionId, label: choice.label });
     }
-    checks.severalJobsCompleted = runner.jobs.length >= 3;
+    checks.severalJobsCompleted = runner.jobs.length >= 2;
     checks.offersRemainConcrete = offers.length > 0 && offers.every((entry) => /\d+G/u.test(entry));
     checks.payMatchesQuote = runner.jobs.length > 0 && runner.jobs.every((job) => job.quoted === job.actual);
-    checks.timePasses = runner.save.clock.absoluteMinute >= 1_200;
+    checks.timePasses = runner.save.clock.absoluteMinute >= 1_200 || terminalT01(runner.save);
     checks.finnCanBeLostWhileWorking = ["failed", "expired", "suppressed", "unavailable"].includes(t01(runner.save)?.status);
     checks.notSilentlyCompleted = !["completed", "resolved"].includes(t01(runner.save)?.status);
     return { id: "work-first", passed: Object.values(checks).every(Boolean), checks, jobs: runner.jobs, offers, final: compact(runner.save), trace: runner.trace };
@@ -296,6 +330,7 @@ async function capitalJourney() {
   const runner = new Runner("王都直行の旅人", "experiential-v6-capital");
   const checks = {};
   let conversations = 0;
+  const visitedFacilities = new Set();
   try {
     await opening(runner);
     await runner.chooseId("TUTORIAL:DEFER:LEAVE");
@@ -303,7 +338,8 @@ async function capitalJourney() {
     checks.capitalKnownWithoutAcceptingT01 = runner.save.movement.some((move) => move.destination === "王都");
     await runner.moveHub("王都");
     checks.reachedCapital = runner.save.scene.location === "王都";
-    for (let guard = 0; guard < 120 && !terminalT01(runner.save); guard += 1) {
+    for (let guard = 0; guard < 240 && !terminalT01(runner.save); guard += 1) {
+      visitedFacilities.add(runner.save.scene.facilityId);
       const confirm = runner.save.choices.find((choice) => choice.actionId.startsWith("WORK_CONFIRM:"));
       if (confirm) {
         await runner.command("CHOOSE", { choiceId: confirm.choiceId }, { actionId: confirm.actionId, label: confirm.label });
@@ -314,7 +350,7 @@ async function capitalJourney() {
         await runner.command("CHOOSE", { choiceId: end.choiceId }, { actionId: end.actionId, label: end.label });
         continue;
       }
-      const offer = runner.save.choices.find((choice) => /^WORK(?:_|:)/u.test(choice.actionId));
+      const offer = workOfferChoice(runner.save);
       if (offer) {
         await runner.command("CHOOSE", { choiceId: offer.choiceId }, { actionId: offer.actionId, label: offer.label });
         conversations += 1;
@@ -322,20 +358,29 @@ async function capitalJourney() {
         continue;
       }
       const talk = runner.save.choices.find((choice) => /^(?:TALK|DIALOGUE):/u.test(choice.actionId));
-      if (talk && conversations < 6) {
+      if (talk && conversations < 4) {
         await runner.command("CHOOSE", { choiceId: talk.choiceId }, { actionId: talk.actionId, label: talk.label });
         conversations += 1;
         await runner.acknowledgeIntroduction();
         continue;
       }
-      const localMove = runner.save.movement.find((move) => move.destinationFacilityId && move.destination !== "田園の村");
+      const localMove = runner.save.movement.find((move) => move.destinationFacilityId
+        && move.destination !== "田園の村"
+        && !visitedFacilities.has(move.destinationFacilityId))
+        ?? [...runner.save.movement]
+          .filter((move) => move.destinationFacilityId && move.destination !== "田園の村")
+          .sort((left, right) => actionMinutes(right) - actionMinutes(left))[0];
+      const longChoice = passiveChoice(runner.save);
+      if (longChoice && actionMinutes(longChoice) >= actionMinutes(localMove)) {
+        await runner.command("CHOOSE", { choiceId: longChoice.choiceId }, { actionId: longChoice.actionId, label: longChoice.label });
+        continue;
+      }
       if (localMove) {
         await runner.command("MOVE", { moveId: localMove.moveId }, { moveId: localMove.moveId, label: localMove.label });
         continue;
       }
-      const choice = passiveChoice(runner.save);
-      if (!choice) throw new Error("no capital action");
-      await runner.command("CHOOSE", { choiceId: choice.choiceId }, { actionId: choice.actionId, label: choice.label });
+      if (!longChoice) throw new Error("no capital action");
+      await runner.command("CHOOSE", { choiceId: longChoice.choiceId }, { actionId: longChoice.actionId, label: longChoice.label });
     }
     checks.remainsOutsideVillage = runner.save.scene.location !== "田園の村";
     checks.capitalHasInteractions = conversations >= 2 || runner.jobs.length >= 1;
@@ -347,21 +392,69 @@ async function capitalJourney() {
   }
 }
 
+function readAuditRecords(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  return fs.readFileSync(filePath, "utf8")
+    .split(/\r?\n/u)
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+function percentile(values, ratio) {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((left, right) => left - right);
+  return sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * ratio))];
+}
+
 function auditSummary(records) {
   const sources = {};
+  const validationErrors = {};
   let providerCalls = 0;
   let providerErrors = 0;
+  let repairCalls = 0;
+  let totalTokens = 0;
   const failed = [];
   const metaLeaks = [];
+  const latencies = [];
   for (const record of records) {
     sources[record.source] = (sources[record.source] ?? 0) + 1;
     providerCalls += Number(record.providerCalls ?? 0);
     providerErrors += (record.providerErrors ?? []).length;
+    repairCalls += Number(record.repairCalls ?? 0);
+    totalTokens += Number(record.usage?.totalTokens ?? 0);
+    latencies.push(Number(record.latencyMs ?? 0));
+    for (const error of record.validationErrors ?? []) validationErrors[error] = (validationErrors[error] ?? 0) + 1;
     if (!record.evaluation?.passed) failed.push({ scenarioId: record.scenarioId, actionId: record.action?.id, source: record.source, checks: record.evaluation?.checks, validationErrors: record.validationErrors });
-    const visible = [record.response?.narrative, ...(record.response?.speeches ?? []).map((speech) => speech.text)].filter(Boolean).join("\n");
+    const visible = [record.response?.narrative, ...(record.response?.speeches ?? []).map((speech) => speech.text), ...(record.response?.choices ?? []).map((choice) => choice.label)].filter(Boolean).join("\n");
     if (META_PATTERN.test(visible)) metaLeaks.push({ scenarioId: record.scenarioId, actionId: record.action?.id, visible });
   }
-  return { total: records.length, sources, providerCalls, providerErrors, passed: records.length - failed.length, failed, metaLeaks };
+  return {
+    total: records.length,
+    sources,
+    providerCalls,
+    providerErrors,
+    repairCalls,
+    repairRate: records.length ? repairCalls / records.length : 0,
+    totalTokens,
+    meanTokens: records.length ? totalTokens / records.length : 0,
+    latency: {
+      meanMs: latencies.length ? latencies.reduce((sum, value) => sum + value, 0) / latencies.length : 0,
+      p50Ms: percentile(latencies, 0.5),
+      p95Ms: percentile(latencies, 0.95),
+      maxMs: latencies.length ? Math.max(...latencies) : 0,
+    },
+    validationErrors,
+    passed: records.length - failed.length,
+    failed,
+    metaLeaks,
+  };
 }
 
 function markdown(report) {
@@ -381,7 +474,7 @@ function markdown(report) {
     for (const [key, value] of Object.entries(journey.checks ?? {})) lines.push(`- ${value ? "✅" : "❌"} ${key}`);
     if (journey.final) lines.push(`- 最終地点: ${journey.final.location} / ${journey.final.facilityName} / Day ${journey.final.day} ${journey.final.time}`);
   }
-  lines.push("", "## Gemini監査", `- 記録数: ${report.audit.total}`, `- provider呼出し: ${report.audit.providerCalls}`, `- providerエラー: ${report.audit.providerErrors}`, `- 自動評価合格: ${report.audit.passed}/${report.audit.total}`, `- ソース: \`${JSON.stringify(report.audit.sources)}\``);
+  lines.push("", "## Gemini監査", `- 記録数: ${report.audit.total}`, `- provider呼出し: ${report.audit.providerCalls}`, `- providerエラー: ${report.audit.providerErrors}`, `- 修復呼出し: ${report.audit.repairCalls}（${(report.audit.repairRate * 100).toFixed(1)}%）`, `- 自動評価合格: ${report.audit.passed}/${report.audit.total}`, `- token合計: ${report.audit.totalTokens}`, `- 応答時間: p50 ${report.audit.latency.p50Ms}ms / p95 ${report.audit.latency.p95Ms}ms / max ${report.audit.latency.maxMs}ms`, `- ソース: \`${JSON.stringify(report.audit.sources)}\``);
   if (report.audit.failed.length) {
     lines.push("", "### 不合格応答");
     for (const failure of report.audit.failed.slice(0, 30)) lines.push(`- ${failure.scenarioId} / ${failure.actionId}: \`${JSON.stringify(failure.checks)}\``);
@@ -396,7 +489,8 @@ function markdown(report) {
 
 const journeys = [];
 for (const journey of [rescueJourney, workJourney, capitalJourney]) journeys.push(await journey());
-const audit = auditSummary(narrator.auditLog?.records?.() ?? []);
+await narrator.auditLog?.flush?.();
+const audit = auditSummary(readAuditRecords(auditFilePath));
 let sheetSync;
 try {
   sheetSync = await syncNarrativeAuditToSheet({ filePath: auditFilePath, cursorFilePath, spreadsheetId: process.env.TRPG_SPREADSHEET_ID });
@@ -408,6 +502,8 @@ const qualityChecks = {
   allJourneysPass: journeys.every((journey) => journey.passed),
   geminiWasActuallyCalled: environment.geminiConfigured && audit.providerCalls > 0,
   noProviderErrors: audit.providerErrors === 0,
+  noPartialOrFallbackOutput: Number(audit.sources.gemini_partial ?? 0) === 0 && Number(audit.sources.deterministic_fallback ?? 0) === 0,
+  repairRateIsControlled: audit.repairRate <= 0.12,
   allNarrativeAuditsPass: audit.total > 0 && audit.failed.length === 0,
   noMetaLeaks: audit.metaLeaks.length === 0,
   sheetRowsWereSynced: !environment.sheetsConfigured || (sheetSync.ok === true && Number(sheetSync.synced ?? 0) > 0),

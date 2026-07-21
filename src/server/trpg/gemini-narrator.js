@@ -90,9 +90,13 @@ function sceneSpecificRules(context) {
   if (context.sceneMode === "arrival") {
     rules.push("到着先の公開情報と同席人物だけを使い、到着によって自然に起きる最初の反応を描く");
   }
-  if (context.sceneMode === "work_generation") {
-    rules.push("workOffer=trueの候補を選ぶ場合だけworkProposalを付け、現在地・時刻・人物・localDemandTagsに合う具体的な仕事を一件作る");
+  const hasWorkCandidate = (context.allowedActionCandidates ?? []).some((candidate) => candidate.workOffer === true);
+  if (context.sceneMode === "work_generation" || hasWorkCandidate) {
+    rules.push("workOffer=trueの候補を選ぶ場合はworkProposalを付け、現在地・時刻・人物・localDemandTagsに合う具体的な仕事を一件作る");
     rules.push("workProposalでは賃金額を決めない。title、durationClass、riskClassだけを返し、金額はサーバーに任せる");
+    if (context.workMarket?.recentWorkTitles?.length) {
+      rules.push(`直近に行った仕事と同じ内容を繰り返さない: ${context.workMarket.recentWorkTitles.join(" / ")}`);
+    }
   }
   if (context.action.requiredDisclosure) {
     rules.push(`対象NPCの発言に次の確定情報を意味を変えず含める: ${context.action.requiredDisclosure}`);
@@ -110,6 +114,13 @@ function sceneSpecificRules(context) {
   if (context.action.dialogueTopic === "t01_reunion") {
     rules.push("この場面では、帰還した本人、迎えた家族、村の責任者が、到着直後の再会と感謝をそれぞれの立場から交わす");
   }
+  if (context.continuityContract?.mode === "must_offer_continuation") {
+    rules.push(`プレイヤーが続けようとしている「${context.continuityContract.intent ?? "直前の活動"}」を継続できる候補を一件含める`);
+  }
+  if (context.reactionContract?.requiredActorIds?.length) {
+    rules.push(`次の人物はこの場面の当事者なので、無言記号だけではなく短くても意味のある発言を一つずつ返す: ${context.reactionContract.requiredActorIds.join(", ")}`);
+  }
+  for (const goal of context.reactionContract?.goals ?? []) rules.push(`当事者反応の要点: ${goal}`);
   return rules;
 }
 
@@ -123,11 +134,13 @@ export function buildNarrativePrompt(context, { repair = null, policy = {} } = {
 1. authoritativeOutcome、現在地、時刻、人物の生死・所在、所持品、戦闘結果を変更しない。
 2. 発言・感情・行動を描ける人物はlocalNpcsだけ。知らない秘密や遠隔人物の現在を作らない。
 3. choicesはallowedActionCandidatesから異なる3件を選び、id・intentType・targetNpcIdを候補どおり使う。labelとapproachは場面に合わせて具体化してよい。
-4. progressContract.modeがmust_offer_progressなら、anchorCandidateIdsから少なくとも1件を含める。残りは仕事、会話、調査、保留など別の結果を持たせる。
-5. proposalsは候補であり確定ではない。重大な報酬、生死、事件解決、所持品変更を提案で決めない。
-6. narrativeとspeechesは世界内の表現だけにし、ゲーム、UI、選択肢、フラグ等の実装語を使わない。
-7. オレゴンは旅人を指す固定別名である。別名の由来を説明せず、必要な場合だけ自然に呼ぶ。
-8. JSON以外を出力しない。
+4. progressContract.modeがmust_offer_progressならanchorCandidateIdsから一件、continuityContract.modeがmust_offer_continuationならcandidateIdsから一件を含める。同じ候補が両方を満たしてもよい。
+5. proposalsは任意の候補であり、確信がなければ空配列にする。重大な報酬、生死、事件解決、所持品変更を提案で決めない。
+6. local_fact_candidateはsubjectId・predicate・summary、npc_memory_candidateはsubjectId・predicate・summary、mission_lead_candidateはtroubleId・summaryを必ず含める。欠けるならその提案を出さない。
+7. narrativeとspeechesは世界内の表現だけにし、ゲーム、UI、選択肢、フラグ等の実装語やNPC/LOC/SKL等の内部IDを表示文へ書かない。
+8. オレゴンは旅人を指す固定別名である。別名の由来を説明せず、必要な場合だけ自然に呼ぶ。
+9. 「……」だけの発言は作らない。言葉がない人物はspeechesへ含めず、沈黙はnarrativeで描く。
+10. JSON以外を出力しない。
 
 今回の場面規則:
 ${modeRules.length ? modeRules.map((rule) => `- ${rule}`).join("\n") : "- 現在地で具体的に見聞きできる変化を一つ描く"}
@@ -136,6 +149,7 @@ ${modeRules.length ? modeRules.map((rule) => `- ${rule}`).join("\n") : "- 現在
 - 許可ミッションテンプレート: ${allowedMissionTemplateIds.join(", ") || "なし"}
 - 許可troubleId: ${allowedTroubleIds.join(", ") || "なし"}
 - local_fact_candidate、npc_memory_candidate、mission_lead_candidateは意味的な候補として返し、内部フラグ名を無理に発明しない。
+- 提案の構造に自信がなければproposalsは[]にする。会話・描写・三つの行動の品質を優先する。
 
 入力JSON:
 ${stableStringify(context)}`;
@@ -238,9 +252,11 @@ async function callProvider(provider, payload, audit) {
 }
 
 function componentRepairErrors(rawValidation, sanitizedValidation) {
-  const structuralPattern = /(?:json_parse|choices must contain|choice ids are duplicated|id is not in the executable candidate pool|workProposal|progress anchor|conversation must include a reply|narrative is empty)/iu;
+  // Optional proposal mistakes are normalized or discarded locally. A second
+  // model call is reserved for player-visible or progression-critical parts.
+  const structuralPattern = /(?:json_parse|choices must contain|choice ids are duplicated|id is not in the executable candidate pool|workProposal|progress anchor|active player-intent continuation|conversation must include a reply|required reaction actor missing|narrative is empty)/iu;
   return [...new Set([
-    ...(sanitizedValidation?.errors ?? []),
+    ...(sanitizedValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),
     ...(rawValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),
   ])];
 }
