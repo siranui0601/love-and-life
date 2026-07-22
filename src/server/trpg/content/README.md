@@ -49,3 +49,11 @@ Weather is global canon, not save-specific randomness. It is resolved from only:
 - daypart.
 
 Player ID, save ID, world seed, and playthrough number are intentionally excluded. Therefore, every player sees the same weather under the same calendar and location conditions.
+
+## 承認済みGemini再生
+
+- 実Gemini監査はまず通常のJSONL実行キャッシュへ保存する。
+- 人が監査レポートを確認した後、\`npm run trpg:narrative-approve -- --scenario <scenarioId>\`で指定した場面だけを承認する。
+- 承認対象は完全検証済みの\`gemini\`または\`gemini_repaired\`だけ。フォールバック、部分出力、通常キャッシュ再生は昇格できない。
+- 承認済みmanifestには描写、三択、発言、提案だけを保存し、生応答、利用量、秘密情報は保存しない。
+- 本番は承認済み再生、通常実行キャッシュ、Geminiの順に解決し、提案は現在のresolverで毎回再検証する。

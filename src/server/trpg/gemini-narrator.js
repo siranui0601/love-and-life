@@ -17,6 +17,7 @@ import {
   validateNarrativeOutput,
 } from "./narrative-contract.js";
 import { createNarrativeReplayCache } from "./narrative-cache.js";
+import { createApprovedNarrativeReplayCache } from "./approved-narrative-replays.js";
 import {
   createNarrativeAuditLog,
   createNarrativeAuditRecord,
@@ -24,6 +25,7 @@ import {
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CACHE_PATH = path.resolve(HERE, "../../../runtime-data/TRPG/narrative-cache.jsonl");
+const DEFAULT_APPROVED_REPLAY_PATH = path.resolve(HERE, "content/approved-narrative-replays.json");
 export function boundedNarrativeRequestTimeout(value, fallback = 18_000) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(3_000, Math.min(25_000, parsed)) : fallback;
@@ -269,6 +271,13 @@ export function createTrpgNarrator(options = {}) {
     filePath: options.cacheFilePath ?? process.env.TRPG_NARRATIVE_CACHE_FILE ?? DEFAULT_CACHE_PATH,
     memoryOnly: options.memoryOnlyCache ?? false,
   });
+  const approvedCache = options.approvedCache === false
+    ? null
+    : options.approvedCache ?? createApprovedNarrativeReplayCache({
+      filePath: options.approvedReplayFilePath
+        ?? process.env.TRPG_APPROVED_NARRATIVE_REPLAY_FILE
+        ?? DEFAULT_APPROVED_REPLAY_PATH,
+    });
   const auditLog = options.auditLog === false
     ? null
     : options.auditLog ?? createNarrativeAuditLog({
@@ -281,12 +290,47 @@ export function createTrpgNarrator(options = {}) {
     model,
     promptVersion,
     cache,
+    approvedCache,
     auditLog,
     async generate(input, resolverRules = {}) {
       const startedAt = Date.now();
       const { context, audit: contextAudit } = buildLocalNarrativeContext(input);
       const policy = normalizeNarrativePolicy(resolverRules, context);
       const key = narrativeReplayKey(context, { model, promptVersion, policy });
+      const approved = approvedCache?.get(key);
+      if (approved) {
+        const response = {
+          ...approved.response,
+          proposalResolution: resolveNarrativeProposals(approved.response, context, resolverRules),
+          meta: {
+            ...(approved.response.meta ?? {}),
+            source: "approved_replay",
+            cacheKey: key,
+            model,
+            promptVersion,
+            providerCalls: 0,
+            repairCalls: 0,
+            providerErrors: [],
+            validationErrors: [],
+            usageMetadata: null,
+            contextAudit,
+            policy,
+            usedFallback: false,
+            partialOutputUsed: false,
+            cachePersisted: true,
+            approvedMetadata: approved.metadata ?? {},
+            approvedAt: approved.approvedAt ?? null,
+          },
+        };
+        await writeAuditSafely(auditLog, createNarrativeAuditRecord({
+          input,
+          context,
+          response,
+          startedAt,
+          finishedAt: Date.now(),
+        }));
+        return response;
+      }
       const cached = cache.get(key);
       if (cached) {
         const response = {

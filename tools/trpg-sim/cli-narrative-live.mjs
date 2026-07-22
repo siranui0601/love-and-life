@@ -251,6 +251,9 @@ function summarizeResult(scenarioInput, response, elapsedMs) {
     scenarioId: scenarioInput.scenarioId,
     actionId: scenarioInput.action.id,
     source: response.meta?.source ?? "unknown",
+    cacheKey: response.meta?.cacheKey ?? null,
+    cachePersisted: response.meta?.cachePersisted === true,
+    partialOutputUsed: response.meta?.partialOutputUsed === true,
     repairCalls: Number(response.meta?.repairCalls ?? 0),
     usedFallback: Boolean(response.meta?.usedFallback),
     providerCalls: Number(response.meta?.providerCalls ?? 0),
@@ -268,7 +271,7 @@ function summarizeResult(scenarioInput, response, elapsedMs) {
 
 function renderMarkdown(report) {
   const rows = report.results.map((entry) => `| ${entry.scenarioId} | ${entry.source} | ${entry.repairCalls} | ${entry.usedFallback ? "yes" : "no"} | ${entry.elapsedMs} | ${entry.choices.length} |`).join("\n");
-  return `# TRPG Gemini実応答監査 v5\n\n- 実行ID: ${report.runId}\n- モデル: ${report.model}\n- シナリオ: ${report.total}\n- Gemini生成: ${report.summary.gemini}\n- 再生キャッシュ: ${report.summary.replayCache}\n- フォールバック: ${report.summary.fallback}\n- 修正再生成: ${report.summary.repaired}\n- エラー: ${report.summary.errors}\n- 平均応答時間: ${report.summary.averageElapsedMs.toFixed(1)}ms\n- Sheets同期: ${report.sheetSync.ok ? `${report.sheetSync.synced ?? 0}件` : `失敗: ${report.sheetSync.error}`}\n\n| scenario | source | repair | fallback | ms | choices |\n|---|---:|---:|---:|---:|---:|\n${rows}\n`;
+  return `# TRPG Gemini実応答監査 v5\n\n- 実行ID: ${report.runId}\n- モデル: ${report.model}\n- シナリオ: ${report.total}\n- Gemini生成: ${report.summary.gemini}\n- 承認済み再生: ${report.summary.approvedReplay}\n- 再生キャッシュ: ${report.summary.replayCache}\n- フォールバック: ${report.summary.fallback}\n- 修正再生成: ${report.summary.repaired}\n- エラー: ${report.summary.errors}\n- 平均応答時間: ${report.summary.averageElapsedMs.toFixed(1)}ms\n- Sheets同期: ${report.sheetSync.ok ? `${report.sheetSync.synced ?? 0}件` : `失敗: ${report.sheetSync.error}`}\n\n| scenario | source | repair | fallback | ms | choices |\n|---|---:|---:|---:|---:|---:|\n${rows}\n`;
 }
 
 if (!process.env.GEMINI_API_KEY) {
@@ -333,7 +336,8 @@ const report = {
   promptVersion: narrator.promptVersion,
   total: results.length,
   summary: {
-    gemini: results.filter((entry) => entry.source === "gemini").length,
+    gemini: results.filter((entry) => entry.source === "gemini" || entry.source === "gemini_repaired").length,
+    approvedReplay: results.filter((entry) => entry.source === "approved_replay").length,
     replayCache: results.filter((entry) => entry.source === "replay_cache").length,
     fallback: results.filter((entry) => entry.usedFallback).length,
     repaired: results.filter((entry) => entry.repairCalls > 0).length,
@@ -342,6 +346,7 @@ const report = {
   },
   audit: narrator.auditLog?.snapshot?.() ?? null,
   cache: narrator.cache.snapshot(),
+  approvedCache: narrator.approvedCache?.snapshot?.() ?? null,
   sheetSync,
   results,
 };
