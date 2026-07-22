@@ -1,0 +1,84 @@
+name: TRPG current PR live Gemini audit
+
+on:
+  push:
+    branches:
+      - chatgpt/trpg-authored-content-refactor
+    paths:
+      - ".github/workflows/trpg-current-pr-live-gemini-audit.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  live-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+      TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
+      TRPG_NARRATIVE_CACHE_FILE: tools/trpg-sim/reports/current-pr-live-cache.jsonl
+      TRPG_NARRATIVE_AUDIT_FILE: tools/trpg-sim/reports/current-pr-live-audit.jsonl
+      TRPG_NARRATIVE_AUDIT_CURSOR_FILE: tools/trpg-sim/reports/current-pr-live-cursor.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-authored-content-refactor
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run complete TRPG regression suite
+        shell: bash
+        run: |
+          mkdir -p tools/trpg-sim/reports
+          set +e
+          npm run trpg:test > tools/trpg-sim/reports/current-pr-regression.log 2>&1
+          echo "$?" > tools/trpg-sim/reports/current-pr-regression.status
+      - name: Run real player journeys with Gemini
+        shell: bash
+        run: |
+          set +e
+          TRPG_NARRATIVE_RUN_ID=current-pr-experiential-1 npm run trpg:experiential:v6 > tools/trpg-sim/reports/current-pr-experiential.log 2>&1
+          echo "$?" > tools/trpg-sim/reports/current-pr-experiential.status
+      - name: Generate twelve fresh live scenes
+        shell: bash
+        run: |
+          set +e
+          TRPG_NARRATIVE_LIVE_MAX=12 npm run trpg:narrative-live -- --no-sync > tools/trpg-sim/reports/current-pr-live-first.log 2>&1
+          first_status=$?
+          cp tools/trpg-sim/reports/gemini-live-v5-latest.json tools/trpg-sim/reports/current-pr-live-first.json 2>/dev/null || true
+          cp tools/trpg-sim/reports/gemini-live-v5-latest.md tools/trpg-sim/reports/current-pr-live-first.md 2>/dev/null || true
+          echo "$first_status" > tools/trpg-sim/reports/current-pr-live-first.status
+      - name: Replay the same twelve scenes without Gemini calls
+        shell: bash
+        run: |
+          set +e
+          TRPG_NARRATIVE_LIVE_MAX=12 npm run trpg:narrative-live -- --no-sync > tools/trpg-sim/reports/current-pr-live-replay.log 2>&1
+          replay_status=$?
+          cp tools/trpg-sim/reports/gemini-live-v5-latest.json tools/trpg-sim/reports/current-pr-live-replay.json 2>/dev/null || true
+          cp tools/trpg-sim/reports/gemini-live-v5-latest.md tools/trpg-sim/reports/current-pr-live-replay.md 2>/dev/null || true
+          echo "$replay_status" > tools/trpg-sim/reports/current-pr-live-replay.status
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trpg-current-pr-live-gemini-audit
+          path: |
+            tools/trpg-sim/reports/current-pr-*
+            tools/trpg-sim/reports/experiential-player-v6-latest.json
+            tools/trpg-sim/reports/experiential-player-v6-latest.md
+            tools/trpg-sim/reports/experiential-v6-*-narrative-audit.jsonl
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Enforce audit completion
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat tools/trpg-sim/reports/current-pr-regression.status)" = "0"
+          test "$(cat tools/trpg-sim/reports/current-pr-experiential.status)" = "0"
+          test "$(cat tools/trpg-sim/reports/current-pr-live-first.status)" = "0"
+          test "$(cat tools/trpg-sim/reports/current-pr-live-replay.status)" = "0"
