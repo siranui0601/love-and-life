@@ -4,15 +4,13 @@ on:
   push:
     branches:
       - chatgpt/trpg-authored-content-refactor
-    paths:
-      - ".github/workflows/apply-approved-narrative-replays-v1.yml"
-      - "tools/trpg-refactor/apply-approved-narrative-replays-v1.mjs"
-      - "src/server/trpg/approved-narrative-replays.js"
-      - "src/server/trpg/content/approved-narrative-replays.json"
-      - "tools/trpg-sim/approve-narrative-replays.mjs"
-      - "tools/trpg-sim/lib/approved-narrative-promotion.mjs"
-      - "tools/trpg-sim/test/approved-narrative-replays.test.mjs"
-      - "tools/trpg-sim/test/approved-narrative-priority.test.mjs"
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 permissions:
   contents: write
@@ -23,6 +21,7 @@ concurrency:
 
 jobs:
   integrate:
+    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'chatgpt/trpg-authored-content-refactor'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
