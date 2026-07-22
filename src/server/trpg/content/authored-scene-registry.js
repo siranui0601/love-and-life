@@ -3,7 +3,7 @@ import { validateChoiceSet } from "./choice-contract.js";
 import { FARM_TO_CAPITAL_SCENES } from "./authored/journeys/farm-to-capital.js";
 import { T01_RESCUE_SCENES } from "./authored/missions/t01-rescue.js";
 
-export const AUTHORED_CONTENT_VERSION = "authored-content-v2";
+export const AUTHORED_CONTENT_VERSION = "authored-content-v3";
 
 export const AUTHORED_SCENES = Object.freeze([
   ...T01_RESCUE_SCENES,

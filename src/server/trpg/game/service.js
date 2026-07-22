@@ -43,8 +43,8 @@ import { selectDiverseChoices } from "../content/choice-contract.js";
 import { resolveAuthoredScene } from "../content/authored-scene-registry.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v13";
-const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11", "trpg-player-world-v12"]);
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v14";
+const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11", "trpg-player-world-v12", "trpg-player-world-v13"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
 const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
@@ -1119,14 +1119,34 @@ function workDescription(facilityId) {
   }[facilityId] ?? "荷運びと片づけを手伝う";
 }
 
+const BLOCKED_WORK_GIVER_NPC_IDS = new Set(["NPC001", "NPC062"]);
+const PREFERRED_WORK_GIVER_BY_FACILITY = Object.freeze({
+  LOC_FARM_FIELD: "NPC004",
+  LOC_FARM_SQUARE: "NPC003",
+});
+
+function eligibleWorkGiver(runtime, npc) {
+  if (!npc || BLOCKED_WORK_GIVER_NPC_IDS.has(npc.id)) return false;
+  const state = runtime.livingWorld.npcStates?.[npc.id];
+  if (!state || state.presence !== "present") return false;
+  if (["injured", "missing", "dead"].includes(String(state.lifeStatus ?? ""))) return false;
+  return true;
+}
+
+function workGiverAt(runtime, data, facilityId, preferredNpcId = null) {
+  const present = presentNpcsAt(runtime, data).filter((npc) => eligibleWorkGiver(runtime, npc));
+  const preferredIds = [preferredNpcId, PREFERRED_WORK_GIVER_BY_FACILITY[facilityId]].filter(Boolean);
+  for (const npcId of preferredIds) {
+    const match = present.find((npc) => npc.id === npcId);
+    if (match) return match;
+  }
+  return present[0] ?? null;
+}
+
 function decorateWorkOfferAction(action, runtime, data, preferredNpcId = null) {
   if (!action?.workOffer && action?.type !== "work") return action;
   const facilityId = runtime.playerState.player.facilityId;
-  const present = presentNpcsAt(runtime, data);
-  const actor = present.find((npc) => npc.id === preferredNpcId)
-    ?? present.find((npc) => npc.id === action.targetNpcId)
-    ?? present[0]
-    ?? null;
+  const actor = workGiverAt(runtime, data, facilityId, preferredNpcId ?? action.targetNpcId);
   if (!actor) return null;
   const wage = deterministicWorkWage(runtime, facilityId, actor.id);
   const job = workDescription(facilityId);
@@ -1192,6 +1212,7 @@ function contextualLocalAction(action, runtime, data) {
   const facility = data.model.facilityById[runtime.playerState.player.facilityId];
   const facilityId = facility?.id ?? "UNKNOWN";
   const publicNpc = presentNpcsAt(runtime, data)[0] ?? null;
+  const workGiver = workGiverAt(runtime, data, facilityId);
   if (action.type === "conversation" && action.targetNpcId) {
     const target = presentNpcsAt(runtime, data).find((npc) => npc.id === action.targetNpcId);
     return target ? {
@@ -1201,7 +1222,7 @@ function contextualLocalAction(action, runtime, data) {
     } : action;
   }
   if (action.type === "work") {
-    if (facilityId === "LOC_FARM_EDGE" || !publicNpc) return null;
+    if (facilityId === "LOC_FARM_EDGE" || !workGiver) return null;
     const label = {
       LOC_FARM_FIELD: "エダに、畑仕事を手伝えるか尋ねる",
       LOC_FARM_SQUARE: "荷運びを頼める人に、仕事内容と賃金を聞く",
@@ -1209,7 +1230,7 @@ function contextualLocalAction(action, runtime, data) {
       LOC_FARM_BAKERY: "パン屋で、薪運びの仕事内容と賃金を聞く",
       LOC_FARM_WELL: "水桶運びの仕事内容と賃金を聞く",
     }[facilityId] ?? `${facility?.name ?? runtime.playerState.player.location}で、仕事の内容と賃金を尋ねる`;
-    return decorateWorkOfferAction({ ...action, id: `WORK:${facilityId}`, label, workOffer: true }, runtime, data, publicNpc?.id ?? null);
+    return decorateWorkOfferAction({ ...action, id: `WORK:${facilityId}`, label, workOffer: true }, runtime, data, workGiver.id);
   }
   if (action.type === "eat") {
     if (!facilityOffersMeals(facility)) return null;
@@ -1411,6 +1432,14 @@ function directNpcConversationActions(runtime, data) {
     }));
 }
 
+function t01FocusedChoiceAllowed(action, runtime) {
+  const mission = runtime.playerState.missions?.["MSN-T01"];
+  const focused = runtime.playerState.player.facilityId === "LOC_FARM_EDGE"
+    && ["active", "available", "in_progress"].includes(String(mission?.status ?? ""));
+  if (!focused || action.type !== "conversation") return true;
+  return action.missionId === "MSN-T01" || action.targetNpcId === "NPC001";
+}
+
 function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   if (runtime.pendingBattle?.session?.status === "active") return [];
   if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
@@ -1448,7 +1477,8 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     data,
   )).filter(Boolean).filter((action) => !(action.missionId === "MSN-T01"
     && action.stepId === "decide"
-    && !ensureT01EscortState(runtime).arrivedSquare));
+    && !ensureT01EscortState(runtime).arrivedSquare))
+    .filter((action) => t01FocusedChoiceAllowed(action, runtime));
   const missionConversationTargets = new Set(generated
     .filter((action) => action.missionId && action.type === "conversation" && action.targetNpcId)
     .map((action) => action.targetNpcId));
@@ -4547,6 +4577,7 @@ function authoredSceneContext(runtime, action, outcome) {
   const completedRegionalMoves = state.history.filter((entry) => entry.type === "REGIONAL_MOVE_COMPLETED");
   const latestRegionalMove = completedRegionalMoves.at(-1) ?? null;
   const arrivalVisitCount = completedRegionalMoves.filter((entry) => entry.to === state.player.location).length;
+  const t01Escort = ensureT01EscortState(runtime);
   return {
     action: {
       id: resolved.id ?? null,
@@ -4570,6 +4601,10 @@ function authoredSceneContext(runtime, action, outcome) {
       fromHub: latestRegionalMove?.from ?? null,
       toHub: latestRegionalMove?.to ?? null,
       arrivalVisitCount,
+    },
+    story: {
+      t01ReunionNow: state.player.facilityId === "LOC_FARM_SQUARE"
+        && t01Escort.reunionBeatAtMinute === state.absoluteMinute,
     },
     weather: canonicalWeatherForState(state),
     player: {

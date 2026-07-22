@@ -1606,12 +1606,16 @@ test("T01 exploration binds the displayed action and replaces all three choices 
   assert.equal(runner.save.clock.absoluteMinute - minuteBefore, selected.minutes);
   assert.equal(runner.save.scene.lastOutcome.discovery.id, "T01-CLUE-WOLF-PURSUIT");
   assert.match(runner.save.scene.lastOutcome.discovery.text, /赤牙狼.*少年/u);
-  assert.equal(runner.save.scene.narrative, runner.save.scene.lastOutcome.discovery.text);
+  assert.match(runner.save.scene.narrative, /赤牙狼の爪痕/u);
+  assert.match(runner.save.scene.narrative, /少年/u);
+  assert.doesNotMatch(runner.save.scene.narrative, /見知らぬ人物|青年/u);
 
   const secondStage = searchChoices();
   assert.equal(secondStage.length, 3);
   assert.equal(secondStage.some((choice) => firstStage.some((previous) => previous.actionId === choice.actionId)), false);
   const record = await store.get(runner.save.id);
+  assert.equal(record.presentation.source, "authored_scene");
+  assert.equal(record.presentation.sceneId, "t01.search.wolf_pursuit");
   const journal = record.commandLog.at(-1);
   assert.equal(journal.payload.actionId, selected.actionId);
   assert.equal(journal.resolvedActionId, selected.actionId);
@@ -1697,15 +1701,16 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   assert.equal(runner.save.tutorial.id, "skills");
   await runner.run("LEARN_SKILL", { skillId: runner.save.skills.learnable[0].id });
   const firstSearch = await chooseSearch("tracks");
+  assert.match(firstSearch.response.save.scene.narrative, /小さな靴跡|赤牙狼の爪痕|青い糸/u);
+  assert.doesNotMatch(firstSearch.response.save.scene.narrative, /見知らぬ人物|青年/u);
   const secondSearch = await chooseSearch("faint-voice");
+  assert.match(secondSearch.response.save.scene.narrative, /フィン|子ども/u);
+  assert.match(secondSearch.response.save.scene.narrative, /生きて|声|咳/u);
+  assert.match(secondSearch.response.save.scene.narrative, /狼|赤牙狼/u);
+  assert.doesNotMatch(secondSearch.response.save.scene.narrative, /見知らぬ人物|青年/u);
   const searchInputs = narrativeInputs.filter((input) => input.action?.stepId === "search");
-  assert.equal(searchInputs.length, 2);
-  assert.equal(searchInputs[0].authoritativeOutcome.discovery.id, firstSearch.discoveryId);
-  assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
-    ?.currentStep.progress, 1);
-  assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
-    ?.currentStep.required, 2);
-  assert.deepEqual(searchInputs[1].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
+  assert.equal(searchInputs.length, 0, "reviewed T01 search discoveries bypass Gemini generation");
+  assert.deepEqual(runner.save.missions.find((mission) => mission.id === "MSN-T01")
     ?.discoveries.map((discovery) => discovery.id), [firstSearch.discoveryId, secondSearch.discoveryId]);
   assert.equal(runner.save.guidance.title, "赤牙狼の兆候を退ける");
   assert.equal(runner.save.guidance.actionPanel, null, "an on-site objective points at the visible choices instead of opening an unrelated panel");
@@ -1734,21 +1739,22 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   assert.equal(battleNarrativeInput, undefined, "a reviewed authored aftermath bypasses Gemini generation");
   assert.equal(battleRecord.presentation.source, "authored_scene");
   assert.equal(battleRecord.presentation.sceneId, "t01.rescue.after_battle");
-  assert.match(battleRecord.presentation.narrative, /斜面の下.*青年/u);
+  assert.match(battleRecord.presentation.narrative, /斜面の下.*少年/u);
+  assert.doesNotMatch(battleRecord.presentation.narrative, /青年/u);
   assert.ok(battleRecord.presentation.speeches.some((speech) => speech.actorId === "NPC001"
-    && /フィン.*足.*一人では村まで戻れそうにない/u.test(speech.text)));
+    && /僕、フィン.*足が動かない.*置いていかないで.*村の広場/u.test(speech.text)));
   assert.equal(runner.save.tutorial?.complete, true, "the combat coach does not return after a battle was experienced");
   assert.equal(runner.save.missions.find((entry) => entry.id === "MSN-T01")?.currentStep?.id, "escort");
   assert.equal(runner.save.guidance.targetFacilityId, "LOC_FARM_EDGE");
   assert.equal(runner.save.guidance.actionPanel, null);
   await chooseAction("ACTION:MSN-T01:escort");
   const escortInput = narrativeInputs.findLast((input) => input.action?.dialogueTopic === "t01_escort");
-  assert.ok(escortInput);
-  assert.equal(escortInput.action.requiredDisclosure, null);
-  assert.deepEqual(escortInput.authoritativeState.reactionContract.requiredActorIds, ["NPC001"]);
-  assert.ok(escortInput.authoritativeState.reactionContract.goals.some((goal) => /同行/u.test(goal)));
+  assert.equal(escortInput, undefined, "the reviewed escort request bypasses Gemini generation");
+  const escortRecord = await store.get(runner.save.id);
+  assert.equal(escortRecord.presentation.source, "authored_scene");
+  assert.equal(escortRecord.presentation.sceneId, "t01.escort.request");
   assert.ok(runner.save.scene.beats.some((beat) => beat.actorId === "NPC001"
-    && /足を痛めて.*村の広場.*一緒に戻って/u.test(beat.text)));
+    && /足が動かない.*母さん.*肩を貸して.*置いていかないで/u.test(beat.text)));
   assert.equal(runner.save.guidance.title, "村の広場へ：少年を連れ帰る");
   assert.equal(runner.save.guidance.actionPanel, "movement");
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
