@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          TRPG_NARRATIVE_RUN_ID=current-pr-experiential-t01-v14 npm run trpg:experiential:v6 > tools/trpg-sim/reports/current-pr-experiential.log 2>&1
+          TRPG_NARRATIVE_RUN_ID=current-pr-experiential-work-v15 npm run trpg:experiential:v6 > tools/trpg-sim/reports/current-pr-experiential.log 2>&1
           echo "$?" > tools/trpg-sim/reports/current-pr-experiential.status
       - name: Generate twelve fresh live scenes
         shell: bash
@@ -85,6 +85,9 @@ jobs:
             battleRounds: journey?.battleRounds ?? null,
             conversations: journey?.conversations ?? null,
             jobCount: Array.isArray(journey?.jobs) ? journey.jobs.length : null,
+            totalWorkIncome: Array.isArray(journey?.jobs)
+              ? journey.jobs.reduce((sum, job) => sum + Number(job.actual ?? 0), 0)
+              : null,
             final: journey?.final ? {
               day: journey.final.day,
               time: journey.final.time,
@@ -92,6 +95,7 @@ jobs:
               facilityId: journey.final.facilityId,
               gold: journey.final.gold,
               t01Status: journey.final.t01?.status ?? null,
+              workMarket: journey.final.workMarket ?? null,
             } : null,
             error: journey?.error ? String(journey.error).slice(0, 500) : null,
           });
@@ -111,7 +115,7 @@ jobs:
             validationErrorCount: report.results?.reduce((sum, entry) => sum + (entry.validationErrors?.length ?? 0), 0) ?? 0,
           } : null;
           const summary = {
-            schemaVersion: 'trpg-current-pr-live-summary-v1',
+            schemaVersion: 'trpg-current-pr-live-summary-v2',
             generatedAt: new Date().toISOString(),
             commitSha: process.env.GITHUB_SHA ?? null,
             statuses: {
@@ -164,7 +168,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Audit summary is unchanged."
           else
-            git commit -m "test(trpg): record current PR live Gemini summary"
+            git commit -m "test(trpg): record bounded work live Gemini summary"
             git push origin HEAD:chatgpt/trpg-authored-content-refactor
           fi
       - name: Enforce audit completion
