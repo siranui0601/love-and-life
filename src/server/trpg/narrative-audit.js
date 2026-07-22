@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { minimumConversationReplyLength } from "./narrative-contract.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_TRPG_SPREADSHEET_ID = "15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk";
@@ -121,7 +122,7 @@ export function evaluateNarrativeAuditRecord({ context, response }) {
       && !/^(?:[.．。…・⋯—―\-\s]+)$/u.test(String(speech.text ?? "").trim()))),
     localNpcOnly: remoteSpeechActors.length === 0,
     authorityFiltered: rejected.every((entry) => entry && entry.reason),
-    conversationHasSubstance: !isConversation || targetReplies.length >= 12,
+    conversationHasSubstance: !isConversation || targetReplies.length >= minimumConversationReplyLength(action),
     requiredDisclosurePresent: !requiredDisclosure || targetReplies.includes(requiredDisclosure),
     workOfferIsConcrete: !isWorkOffer || (requiredDisclosure && /(?:G|賃金|報酬)/u.test(targetReplies)),
     escortHasHumanRequest: !isEscort || /(?:歩け|足|戻|広場|一緒|置いて)/u.test(targetReplies),

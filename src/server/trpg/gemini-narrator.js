@@ -8,6 +8,7 @@ import {
   TRPG_NARRATIVE_PROMPT_VERSION,
   buildLocalNarrativeContext,
   deterministicNarrativeFallback,
+  isConversationClosingAction,
   mergeNarrativeOutputs,
   narrativeReplayKey,
   parseNarrativeJson,
@@ -80,8 +81,13 @@ async function writeAuditSafely(auditLog, payload) {
 function sceneSpecificRules(context) {
   const rules = [];
   if (context.sceneMode === "conversation") {
-    rules.push("対象NPCはplayerUtteranceへ直接答え、プロフィール・知っている事実・現在の感情から自然に返す");
-    rules.push("会話を同じ言い換えで停滞させず、新情報・感情の変化・次の具体的な糸口のどれかを一つ加える");
+    if (isConversationClosingAction(context.action)) {
+      rules.push("会話を終える場面では、対象NPCは自然な短い別れの言葉を返す");
+      rules.push("別れ際に新しい情報や新たな依頼を無理に追加しない");
+    } else {
+      rules.push("対象NPCはplayerUtteranceへ直接答え、プロフィール・知っている事実・現在の感情から自然に返す");
+      rules.push("会話を同じ言い換えで停滞させず、新情報・感情の変化・次の具体的な糸口のどれかを一つ加える");
+    }
   }
   if (context.sceneMode === "exploration") {
     rules.push("authoritativeOutcomeや発見済み情報を具体的な感覚・痕跡として描き、同じ発見を繰り返さない");
@@ -432,6 +438,9 @@ export function createTrpgNarrator(options = {}) {
             output = sanitizeNarrativeOutput(parsed, context);
             validation = validateNarrativeOutput(output, context);
             repairErrors = componentRepairErrors(rawValidation, validation);
+            if (!validation.ok && !repairErrors.length) {
+              audit.validationErrors.push(...validation.errors);
+            }
           } catch (error) {
             validation = { ok: false, errors: [`json_parse: ${String(error?.message ?? error)}`] };
             repairErrors = [...validation.errors];
