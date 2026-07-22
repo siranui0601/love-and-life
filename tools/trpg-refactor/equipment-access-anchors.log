@@ -1,0 +1,525 @@
+
+===== src/server/trpg/game/service.js =====
+
+--- quoteEquipmentSale #1 line 11 ---
+import crypto from "node:crypto";
+import * as journey from "../../../../tools/trpg-sim/lib/player-journey.mjs";
+import {
+  beginInteractiveBattle,
+  listInteractiveBattleCommands,
+  resolveInteractiveBattleRound,
+} from "../../../../tools/trpg-sim/lib/battle-simulator.mjs";
+import {
+  availableStockAt,
+  buyEquipment,
+  quoteEquipmentSale,
+  sellEquipment,
+} from "../../../../tools/trpg-sim/lib/shop-runtime.mjs";
+import { experienceToNextLevel } from "../../../../tools/trpg-sim/lib/mission-model.mjs";
+import { ensurePlayerNeeds, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
+import {
+  completeNpcLifeTick,
+  createNpcLifeEngine,
+  prepareNpcLifeTick,
+} from "../../../../tools/trpg-sim/lib/npc-life-engine.mjs";
+import { loadTrpgGameData } from "./game-data.js";
+import { deserializeRuntime, serializeRuntime } from "./serializer.js";
+import { FileTrpgSaveStore } from "./save-store.js";
+import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
+import { facilityVisibility } from "../resolvers/facility-visibility-resolver.js";
+import { resolveCanonicalWeather, WEATHER_RULESET_VERSION } from "../resolvers/weather-resolver.js";
+import { selectDiverseChoices } from "../content/choice-contract.js";
+import { resolveAuthoredScene } from "../content/authored-scene-registry.js";
+
+export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v12";
+const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11"]);
+
+const PLAYABLE_PROFILE_ID = "balanced";
+const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
+
+const PUBLIC_FACILITY_COPY = Object.freeze({
+  LOC_FARM_FIELD: { type: "農地", description: "風に揺れる麦畑。畑仕事の様子と、村へ続く道を確かめられる。" },
+  LOC_FARM_SQUARE: { type: "広場", description: "村人が行き交い、掲示や日々の知らせが集まる田園の村の広場。" },
+  LOC_FARM_WELL: { type: "水場", description: "村人が水を汲みに訪れ、暮らしの変化が表れやすい共同井戸。" },
+  LOC_FARM_EDGE: { type: "村外れ", description: "家並みが途切れ、草に埋もれた道が村の外へ続いている。" },
+});
+
+const PUBLIC_TROUBLE_RUMOR_COPY = Object.freeze({
+  T01: "村の少年が戻らず、捜索が続いている",
+  T02: "共同穀倉の火の気と食料の扱いに不安が出ている",
+  T03: "村と森の境で狼による被害が増えている",
+  T04: "古代
+
+--- quoteEquipmentSale #2 line 3896 ---
+ return equipment ? {
+        slot: equipment.slot,
+        weaponType: equipment.weaponType,
+        physicalPower: equipment.physicalPower,
+        magicPower: equipment.magicPower,
+        defense: equipment.defense,
+        magicResistance: equipment.magicResistance,
+        performanceIndex: equipment.performanceIndex,
+      } : null;
+    })(),
+    slot: data.battleData.equipmentById.get(entry.equipmentId)?.slot ?? null,
+  }));
+  const equippedSlots = Object.entries(state.player.equipment).map(([slot, id]) => ({ slot, id }));
+  const inventoryEquipment = Object.entries(state.player.inventory.equipment)
+    .filter(([, quantity]) => Number(quantity) > 0)
+    .map(([id, quantity]) => equipmentView(data, id, Number(quantity), equippedSlots))
+    .sort((left, right) => left.name.localeCompare(right.name, "ja"));
+  const saleQuotes = inventoryEquipment.map((entry) => {
+    const quote = quoteEquipmentSale(state, data.battleData, entry.id);
+    return {
+      equipmentId: entry.id,
+      price: Number.isFinite(quote.price) ? quote.price : null,
+      available: quote.ok,
+      reason: quote.ok ? null : quote.reason,
+    };
+  });
+  const facility = data.model.facilityById[state.player.facilityId];
+  const publicFacility = publicFacilityContext(facility);
+  return {
+    id: record.id,
+    schemaVersion: record.schemaVersion,
+    contentRevision: record.contentRevision,
+    revision: record.revision,
+    stateHash: record.stateHash,
+    saveStatus: "saved",
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+    clock: {
+      day: state.day,
+      time: timeText(state),
+      hour: state.hour,
+      minute: state.minute,
+      daypart: state.daypart,
+      absoluteMinute: state.absoluteMinute,
+      weatherId: weather.id,
+      weatherLabel: weather.label,
+    },
+    weather,
+    scene: {
+      location: state.player.location,
+      facilityId: state.player.facilityId,
+      facilityName: facility?.name ?? state.player.facilityId,
+      facilityType: publicFacility.type,
+      publicDescription: publicFacility.description,
+      backgroundKey: backgroundKey(state),
+      narrative: record.presentation?.narrative ?? fallbackNarrative(runtime),
+      speeches: record.presentation?.speeches ?? [],
+      beats: record.presentation?.beats ?? [],
+      presentNpcs,
+      lastOutcome: record.lastOutcome ?? null,
+    },
+    choices,
+    movement,
+    tutorial,
+    guidance,
+    battle: interactiveBattleView(runtime, data),
+    shop: {
+      available: !runtime.pendingBattle?.session || runtime.pendingBattle.session.status !== "active"
+        ? data.battleData.inventory.some((entry) => entry.location === state.player.location && entry.sellerId === state.player.facilityId)
+        : false,
+      facilityName: facility?.name ?? null,
+      stock,
+  
+
+--- availableStockAt( #1 line 3866 ---
+.targetNpcId));
+  const presentNpcs = presentNpcsAt(runtime, data).map((npc) => ({
+    ...npc,
+    directTalkAvailable: directTalkNpcIds.has(npc.id),
+  }));
+  const choices = presentationChoices(record, choiceActions(runtime, data));
+  const missions = missionView(runtime, data);
+  const tutorial = tutorialView(runtime, data);
+  const guidance = guidanceView(runtime, data, missions);
+  const movement = movementActions(runtime, data).map((action) => ({
+    moveId: action.id,
+    label: action.label,
+    minutes: action.minutes,
+    scope: action.movementScope,
+    destination: action.destinationHub,
+    destinationFacilityId: action.destinationFacilityId,
+    destinationFacilityName: data.model.facilityById[action.destinationFacilityId]?.name ?? null,
+    recommended: Boolean(guidance?.targetFacilityId && action.destinationFacilityId === guidance.targetFacilityId),
+  }));
+  const stock = availableStockAt(state, data.battleData, state.shop).map((entry) => ({
+    stockId: entry.id,
+    equipmentId: entry.equipmentId,
+    name: entry.name,
+    price: entry.price,
+    quantity: Number.isFinite(entry.quantity) ? entry.quantity : null,
+    unlimited: !Number.isFinite(entry.quantity),
+    sellerId: entry.sellerId,
+    seller: entry.seller,
+    legality: entry.legality,
+    equipment: (() => {
+      const equipment = data.battleData.equipmentById.get(entry.equipmentId);
+      return equipment ? {
+        slot: equipment.slot,
+        weaponType: equipment.weaponType,
+        physicalPower: equipment.physicalPower,
+        magicPower: equipment.magicPower,
+        defense: equipment.defense,
+        magicResistance: equipment.magicResistance,
+        performanceIndex: equipment.performanceIndex,
+      } : null;
+    })(),
+    slot: data.battleData.equipmentById.get(entry.equipmentId)?.slot ?? null,
+  }));
+  const equippedSlots = Object.entries(state.player.equipment).map(([slot, id]) => ({ slot, id }));
+  const inventoryEquipment = Object.entries(state.player.inventory.equipment)
+    .filter(([, quantity]) => Number(quantity) > 0)
+    .map(([id, quantity]) => equipmentView(data, id, Number(quantity), equippedSlots))
+    .sort((left, right) => left.name.localeCompare(right.name, "ja"));
+  const saleQuotes = inventoryEquipment.map((entry) => {
+    const quote = quoteEquipmentSale(state, data.battleData, entry.id);
+    return {
+      equipmentId: entry.id,
+      price: Number.isFinite(quote.price) ? quote.price : null,
+      available: quote.ok,
+      reason: quote.ok ? null : quote.reason,
+    };
+  });
+  const facility = data.model.facilityById[state.player.facilityId];
+  const publicFacility = publicFacilityContext(facility);
+  return {
+    id: record.id,
+    schemaVersion: record.schemaVersion,
+    contentRevision: record.contentRevision,
+    revision: record.r
+
+--- availableStockAt( #2 line 3996 ---
+ntime, data),
+    missions,
+    rumors: rumorView(runtime),
+    chronicle: chronicleView(runtime),
+    world: {
+      dayLimit: 100,
+      ended: state.absoluteMinute >= journey.GAME_END_MINUTE,
+      endedAt: state.absoluteMinute >= journey.GAME_END_MINUTE ? "Day 100 24:00" : null,
+      knownResolvedTroubleIds: [...state.progress.missions.resolvedTroubleIds].sort(),
+      weatherRulesetVersion: WEATHER_RULESET_VERSION,
+    },
+  };
+}
+
+export function availableGameRuntimeActions(runtime, data) {
+  if (runtime.pendingBattle?.session?.status === "active") {
+    return { choices: [], movement: [], stock: [], learnableSkills: [] };
+  }
+  if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) {
+    return { choices: [], movement: [], stock: [], learnableSkills: [] };
+  }
+  return {
+    choices: choiceActions(runtime, data),
+    movement: movementActions(runtime, data),
+    stock: availableStockAt(runtime.playerState, data.battleData, runtime.playerState.shop),
+    learnableSkills: journey.listLearnablePlayerSkills(runtime.playerState, data.battleData, data.skills)
+      .filter((candidate) => candidate.learnable),
+  };
+}
+
+function narrativePublicGoal(npc, npcState) {
+  if (npcState?.lifeStatus === "injured") return "傷をかばいながら、その場ですべきことを続ける";
+  if (npc?.disposition === "escalate") return "自分に不利な話題を避け、相手の出方をうかがう";
+  const goal = String(npcState?.currentGoal ?? "");
+  if (/respond|assist|search|warn|evacuate|treat/u.test(goal)) return "身近で起きている問題を気にかけている";
+  if (/rest|recover/u.test(goal)) return "疲れを癒やし、次の行動に備える";
+  if (/work|routine/u.test(goal)) return "自分の仕事と日課を進める";
+  return "周囲の様子を見ながら、自分の用事を進める";
+}
+
+function narrativeNpcContexts(runtime, data, publicNpcs, { targetNpcId = null, requiredDisclosure = null } = {}) {
+  const locationReputation = Number(runtime.playerState.player.reputation?.[runtime.playerState.player.location] ?? 0);
+  return publicNpcs.map((publicView) => {
+    const npc = data.model.npcById?.[publicView.id] ?? data.model.npcs.find((entry) => entry.id === publicView.id);
+    const npcState = runtime.livingWorld.npcStates[publicView.id];
+    const mustWithhold = !npcCanDiscloseBeliefs(npc);
+    // Only the fact selected by the authoritative resolver may cross the
+    // dialogue boundary. Sending every belief lets the model reveal facts the
+    // player did not ask about and that the save did not record.
+    const knownLocalFacts = !mustWithhold
+      && publicView.id === targetNpcId
+      && requiredDisclosure
+      ? [requiredDisclosure]
+      : [];
+    const recentMemories = ensureNarrativeMemory(runtime).npcMemories
+      .filter((memory) => memory.subjectId === publicView.id)
+      .slice(-4)
+      .map((memory) => memory.summary)
+      .filter(Boolean);
+    const stress = Number(npcState?.needs?.stress ?? 0);
+    const m
+
+--- shop: { #1 line 3944 ---
+day,
+      time: timeText(state),
+      hour: state.hour,
+      minute: state.minute,
+      daypart: state.daypart,
+      absoluteMinute: state.absoluteMinute,
+      weatherId: weather.id,
+      weatherLabel: weather.label,
+    },
+    weather,
+    scene: {
+      location: state.player.location,
+      facilityId: state.player.facilityId,
+      facilityName: facility?.name ?? state.player.facilityId,
+      facilityType: publicFacility.type,
+      publicDescription: publicFacility.description,
+      backgroundKey: backgroundKey(state),
+      narrative: record.presentation?.narrative ?? fallbackNarrative(runtime),
+      speeches: record.presentation?.speeches ?? [],
+      beats: record.presentation?.beats ?? [],
+      presentNpcs,
+      lastOutcome: record.lastOutcome ?? null,
+    },
+    choices,
+    movement,
+    tutorial,
+    guidance,
+    battle: interactiveBattleView(runtime, data),
+    shop: {
+      available: !runtime.pendingBattle?.session || runtime.pendingBattle.session.status !== "active"
+        ? data.battleData.inventory.some((entry) => entry.location === state.player.location && entry.sellerId === state.player.facilityId)
+        : false,
+      facilityName: facility?.name ?? null,
+      stock,
+      saleQuotes,
+    },
+    player: {
+      name: record.playerName,
+      level: state.player.level,
+      exp: state.player.exp,
+      nextLevelExp: experienceToNextLevel(state.player.level),
+      sp: state.player.sp,
+      gold: state.player.gold,
+      hpRatio: state.player.hpRatio,
+      mpRatio: state.player.mpRatio,
+      needs: publicPlayerNeeds(state.player),
+      freeMeals: Number(state.player.freeMeals ?? 0),
+      freeLodging: Number(state.player.freeLodging ?? 0),
+      stats: { ...state.player.stats },
+      equipment: Object.fromEntries(equippedSlots.map(({ slot, id }) => [slot, equipmentView(data, id, state.player.inventory.equipment[id] ?? 0, equippedSlots)])),
+      inventory: {
+        items: { ...state.player.inventory.items },
+        equipment: inventoryEquipment,
+      },
+      reputation: { ...state.player.reputation },
+    },
+    skills: skillView(runtime, data),
+    missions,
+    rumors: rumorView(runtime),
+    chronicle: chronicleView(runtime),
+    world: {
+      dayLimit: 100,
+      ended: state.absoluteMinute >= journey.GAME_END_MINUTE,
+      endedAt: state.absoluteMinute >= journey.GAME_END_MINUTE ? "Day 100 24:00" : null,
+      knownResolvedTroubleIds: [...state.progress.missions.resolvedTroubleIds].sort(),
+      weatherRulesetVersion: WEATHER_RULESET_VERSION,
+    },
+  };
+}
+
+export function availableGameRuntimeActions(runtime, data) {
+  if (runtime.pendingBattle?.session?.status === "active") {
+    return { choices: [], movement: [], stock: [], learnableSkills: [] };
+  }
+  if (runtime.playerState.absoluteMinute >= jo
+
+--- export function buildGameView #1 line 3840 ---
+跡を調べる場所だ。`],
+    [/城|屋敷|館|役所|詰所/u, "建物", `${name}では、訪れている人とその場の様子を確かめられる。`],
+  ].find(([pattern]) => pattern.test(name));
+  return rule
+    ? { type: rule[1], description: rule[2] }
+    : { type: "訪問先", description: `${name}の景観、人の往来、目に見える変化を確かめられる。` };
+}
+
+function presentationChoices(record, choices) {
+  const labels = record.presentation?.revision === record.revision ? record.presentation.choiceLabels ?? {} : {};
+  return choices.map((action) => ({
+    choiceId: action.choiceId,
+    actionId: action.id,
+    label: cleanText(labels[action.id] ?? labels[action.choiceId] ?? action.label, 180),
+    minutes: Number(action.minutes ?? 0),
+    type: action.type,
+    intentType: choiceIntent(action),
+    targetNpcId: action.targetNpcId ?? null,
+    missionId: action.missionId ?? null,
+    stepId: action.stepId ?? null,
+    danger: ["missionBattle", "seekBattle"].includes(action.type),
+  }));
+}
+
+export function buildGameView(record, runtime, data) {
+  const state = runtime.playerState;
+  const weather = resolveCanonicalWeather({
+    day: state.day,
+    regionId: state.player.location,
+    daypart: state.daypart,
+  });
+  const directTalkNpcIds = new Set(directNpcConversationActions(runtime, data).map((action) => action.targetNpcId));
+  const presentNpcs = presentNpcsAt(runtime, data).map((npc) => ({
+    ...npc,
+    directTalkAvailable: directTalkNpcIds.has(npc.id),
+  }));
+  const choices = presentationChoices(record, choiceActions(runtime, data));
+  const missions = missionView(runtime, data);
+  const tutorial = tutorialView(runtime, data);
+  const guidance = guidanceView(runtime, data, missions);
+  const movement = movementActions(runtime, data).map((action) => ({
+    moveId: action.id,
+    label: action.label,
+    minutes: action.minutes,
+    scope: action.movementScope,
+    destination: action.destinationHub,
+    destinationFacilityId: action.destinationFacilityId,
+    destinationFacilityName: data.model.facilityById[action.destinationFacilityId]?.name ?? null,
+    recommended: Boolean(guidance?.targetFacilityId && action.destinationFacilityId === guidance.targetFacilityId),
+  }));
+  const stock = availableStockAt(state, data.battleData, state.shop).map((entry) => ({
+    stockId: entry.id,
+    equipmentId: entry.equipmentId,
+    name: entry.name,
+    price: entry.price,
+    quantity: Number.isFinite(entry.quantity) ? entry.quantity : null,
+    unlimited: !Number.isFinite(entry.quantity),
+    sellerId: entry.sellerId,
+    seller: entry.seller,
+    legality: entry.legality,
+    equipment: (() => {
+      const equipment = data.battleData.equipmentById.get(entry.equipmentId);
+      return equipment ? {
+        slot: equipment.slot,
+        weaponType: equipment.weaponType,
+        physicalPower: equipment.physicalPower,
+        magicPower: equipment.magicPower,
+
+--- function renderShop: not found ---
+
+--- function renderInventory: not found ---
+
+===== public/TRPG/app.js =====
+
+--- quoteEquipmentSale: not found ---
+
+--- availableStockAt(: not found ---
+
+--- shop: {: not found ---
+
+--- export function buildGameView: not found ---
+
+--- function renderShop #1 line 1899 ---
+.filter((mission) => mission.kind === "permanent");
+  appendMissionSection("物語任務", story);
+  if (permanent.length) appendMissionSection("長期目標", permanent, { disclosure: true });
+}
+
+function renderRumors() {
+  const rumors = list(currentSave.rumors);
+  if (!rumors.length) return ui.dialogBody.append(emptyPanel("知っている噂はまだありません。人に話しかけたり、周囲を調べたりしてみましょう。"));
+  rumors.forEach((rumor) => {
+    const article = document.createElement("article");
+    article.className = "rumor-card";
+    article.innerHTML = "<span>RUMOR</span><h3></h3><p></p><small></small>";
+    $("h3", article).textContent = escapeText(rumor.title || rumor.name, "耳にした話");
+    $("p", article).textContent = escapeText(rumor.text || rumor.description, "内容はまだ曖昧だ。");
+    $("small", article).textContent = [rumor.source, rumor.learnedAt, rumor.location].filter(Boolean).join(" ・ ") || "出所不明";
+    ui.dialogBody.append(article);
+  });
+}
+
+function renderShop() {
+  const shop = currentSave.shop ?? {};
+  if (!shop.available) return ui.dialogBody.append(emptyPanel("この施設では買い物ができません。店のある施設へ移動してください。"));
+  const banner = document.createElement("div");
+  banner.className = "shop-banner";
+  banner.innerHTML = "<span>所持金</span><b></b><small></small>";
+  $("b", banner).textContent = `${number(currentSave.player?.gold).toLocaleString("ja-JP")} G`;
+  $("small", banner).textContent = escapeText(shop.facilityName, "店舗");
+  ui.dialogBody.append(banner);
+  const owned = inventoryEntries(currentSave.player).filter((item) => item.group === "equipment" || item.kind === "equipment" || item.slot);
+  const equippedIds = new Set(Object.values(currentSave.player?.equipment ?? {}).map((item) => typeof item === "object" ? item.id : item));
+  const ownedQuantity = new Map(owned.map((item) => [item.equipmentId || item.id, number(item.quantity ?? item.count, 1)]));
+  const saleQuoteById = new Map(list(shop.saleQuotes).map((quote) => [quote.equipmentId, quote]));
+  const stock = list(shop.stock);
+  if (!stock.length) ui.dialogBody.append(emptyPanel("現在購入できる商品はありません。"));
+  stock.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "shop-row";
+    const text = document.createElement("div");
+    text.innerHTML = "<b></b><p></p><small></small>";
+    $("b", text).textContent = escapeText(item.name || item.equipmentName || item.id, "名称不明の商品");
+    const equipment = item.equipment ?? {};
+    const performance = [
+      number(equipment.physicalPower) ? `物理 ${number(equipment.physicalPower)}` : "",
+      number(equipment.magicPower) ? `魔導 ${number(equipment.magicPower)}` : "",
+      number(equipment.defense) ? `防御 ${number(equipment.defense)}` : "",
+    ].filter(Boolean).join(" / ");
+    $("p", text).textContent = escapeText(item.description, [item.slot ? `装備部位: ${item.slot}` : "", performance].filter(Bool
+
+--- function renderInventory #1 line 1635 ---
+ateElement("details");
+    details.className = "detail-disclosure movement-regional";
+    const summary = document.createElement("summary");
+    summary.textContent = `遠方の地域を見る（${regional.length}件）`;
+    const body = document.createElement("div");
+    body.className = "disclosure-body";
+    appendMovementRows(body, regional);
+    details.append(summary, body);
+    ui.dialogBody.append(details);
+  }
+}
+
+function inventoryEntries(player) {
+  const inventory = player?.inventory ?? {};
+  if (Array.isArray(inventory)) return inventory;
+  return Object.entries(inventory).flatMap(([group, entries]) => {
+    if (Array.isArray(entries)) return entries.map((entry) => ({ group, ...entry }));
+    if (entries && typeof entries === "object") return Object.entries(entries).map(([id, value]) => typeof value === "object" ? { group, id, ...value } : { group, id, quantity: value });
+    return [];
+  });
+}
+
+function renderInventory() {
+  const player = currentSave.player ?? {};
+  const equipment = player.equipment ?? {};
+  const equippedIds = new Set(Object.values(equipment).map((item) => typeof item === "object" ? item.id : item).filter(Boolean));
+  const equipSection = document.createElement("section");
+  equipSection.className = "detail-section equipment-grid";
+  equipSection.innerHTML = "<h3>装備中</h3>";
+  const slotNames = { mainHand: "武器", offHand: "副装備", body: "防具", accessory: "装飾品" };
+  Object.entries(slotNames).forEach(([slot, name]) => {
+    const value = equipment[slot];
+    const itemName = typeof value === "object" ? value.name : value;
+    const row = document.createElement("div");
+    row.className = "detail-row";
+    row.innerHTML = `<div><small>${name}</small><b></b></div>`;
+    $("b", row).textContent = escapeText(itemName, "装備なし");
+    if (value) row.append(actionButton("外す", "UNEQUIP", { slot }, false, `${escapeText(itemName, name)}を外す`));
+    equipSection.append(row);
+  });
+  ui.dialogBody.append(equipSection);
+
+  const entries = inventoryEntries(player);
+  const itemSection = document.createElement("section");
+  itemSection.className = "detail-section";
+  itemSection.innerHTML = "<h3>所持品</h3>";
+  if (!entries.length) itemSection.append(emptyPanel("持ち物はありません。"));
+  entries.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "detail-row";
+    const text = document.createElement("div");
+    text.innerHTML = "<b></b><small></small>";
+    $("b", text).textContent = escapeText(item.name || item.id, "名称不明");
+    $("small", text).textContent = `所持 ${number(item.quantity ?? item.count, 1)}`;
+    row.append(text);
+    const equipmentLike = item.group === "equipment" || item.kind === "equipment" || item.slot;
+    const equipmentId = item.equipmentId || item.id;
+    if (equipmentLike && equipmentId && !equippedIds.has(equipmentI
