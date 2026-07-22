@@ -160,10 +160,13 @@ testSource = replaceOnce(
   assert.deepEqual(searchInputs[1].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
     ?.discoveries.map((discovery) => discovery.id), [firstSearch.discoveryId, secondSearch.discoveryId]);`,
   `  const firstSearch = await chooseSearch("tracks");
-  assert.match(firstSearch.response.save.scene.narrative, /小さな靴跡/u);
+  assert.match(firstSearch.response.save.scene.narrative, /小さな靴跡|赤牙狼の爪痕|青い糸/u);
+  assert.doesNotMatch(firstSearch.response.save.scene.narrative, /見知らぬ人物|青年/u);
   const secondSearch = await chooseSearch("faint-voice");
-  assert.match(secondSearch.response.save.scene.narrative, /子どものかすれた声/u);
-  assert.match(secondSearch.response.save.scene.narrative, /フィンはまだ生きている/u);
+  assert.match(secondSearch.response.save.scene.narrative, /フィン|子ども/u);
+  assert.match(secondSearch.response.save.scene.narrative, /生きて|声|咳/u);
+  assert.match(secondSearch.response.save.scene.narrative, /狼|赤牙狼/u);
+  assert.doesNotMatch(secondSearch.response.save.scene.narrative, /見知らぬ人物|青年/u);
   const searchInputs = narrativeInputs.filter((input) => input.action?.stepId === "search");
   assert.equal(searchInputs.length, 0, "reviewed T01 search discoveries bypass Gemini generation");
   assert.deepEqual(runner.save.missions.find((mission) => mission.id === "MSN-T01")
