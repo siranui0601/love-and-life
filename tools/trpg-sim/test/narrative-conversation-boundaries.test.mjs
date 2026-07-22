@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createTrpgNarrator } from "../../../src/server/trpg/gemini-narrator.js";
+import {
+  buildNarrativePrompt,
+  createTrpgNarrator,
+} from "../../../src/server/trpg/gemini-narrator.js";
 import {
   buildLocalNarrativeContext,
-  buildNarrativePrompt,
   isConversationClosingAction,
   minimumConversationReplyLength,
   sanitizeNarrativeOutput,
