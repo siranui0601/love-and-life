@@ -1,0 +1,4201 @@
+
+> trpg:test
+> node --test tools/trpg-sim/test/*.test.mjs
+
+TAP version 13
+# file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/authored-journey-presentation.test.mjs:24
+#   assert.equal(validation.valid, true, validation.errors.join("
+#                                                               ^
+# SyntaxError: Invalid or unexpected token
+#     at compileSourceTextModule (node:internal/modules/esm/utils:346:16)
+#     at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:110:18)
+#     at \#translate (node:internal/modules/esm/loader:559:20)
+#     at afterLoad (node:internal/modules/esm/loader:612:29)
+#     at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:617:12)
+#     at \#createModuleJob (node:internal/modules/esm/loader:640:36)
+#     at \#getJobFromResolveResult (node:internal/modules/esm/loader:353:34)
+#     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:321:41)
+#     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:680:25)
+# Node.js v22.23.1
+# Subtest: tools/trpg-sim/test/authored-journey-presentation.test.mjs
+not ok 1 - tools/trpg-sim/test/authored-journey-presentation.test.mjs
+  ---
+  duration_ms: 48.468557
+  type: 'test'
+  location: '/home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/authored-journey-presentation.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: the reviewed T01 rescue aftermath resolves from authoritative state
+ok 2 - the reviewed T01 rescue aftermath resolves from authoritative state
+  ---
+  duration_ms: 3.672559
+  type: 'test'
+  ...
+# Subtest: the authored rescue scene does not resolve before the battle is won
+ok 3 - the authored rescue scene does not resolve before the battle is won
+  ---
+  duration_ms: 0.323096
+  type: 'test'
+  ...
+# Subtest: battle fixture joins every combat table and all four skill shards
+ok 4 - battle fixture joins every combat table and all four skill shards
+  ---
+  duration_ms: 1.918654
+  type: 'test'
+  ...
+# Subtest: sheet damage formula and explicit hit/critical caps are stable
+ok 5 - sheet damage formula and explicit hit/critical caps are stable
+  ---
+  duration_ms: 0.438559
+  type: 'test'
+  ...
+# Subtest: seeded RNG and encounter party expansion are reproducible
+ok 6 - seeded RNG and encounter party expansion are reproducible
+  ---
+  duration_ms: 0.740473
+  type: 'test'
+  ...
+# Subtest: battle data audit preserves actionable state and command inconsistencies
+ok 7 - battle data audit preserves actionable state and command inconsistencies
+  ---
+  duration_ms: 0.251719
+  type: 'test'
+  ...
+# Subtest: the same battle seed produces the same complete result
+ok 8 - the same battle seed produces the same complete result
+  ---
+  duration_ms: 20.145404
+  type: 'test'
+  ...
+# Subtest: interactive battle begins before a turn and lists only authoritative first-slice commands
+ok 9 - interactive battle begins before a turn and lists only authoritative first-slice commands
+  ---
+  duration_ms: 8.434886
+  type: 'test'
+  ...
+# Subtest: the same interactive command sequence produces the same complete state and round frames
+ok 10 - the same interactive command sequence produces the same complete state and round frames
+  ---
+  duration_ms: 7.3466
+  type: 'test'
+  ...
+# Subtest: invalid interactive commands do not mutate state, advance rounds, or consume future randomness
+ok 11 - invalid interactive commands do not mutate state, advance rounds, or consume future randomness
+  ---
+  duration_ms: 1.82329
+  type: 'test'
+  ...
+# Subtest: interactive skills spend MP and obey cooldowns without changing the auto simulator
+ok 12 - interactive skills spend MP and obey cooldowns without changing the auto simulator
+  ---
+  duration_ms: 3.523395
+  type: 'test'
+  ...
+# Subtest: interactive defend applies a one-round guard before later enemy actions
+ok 13 - interactive defend applies a one-round guard before later enemy actions
+  ---
+  duration_ms: 1.375678
+  type: 'test'
+  ...
+# Subtest: interactive flee is deterministic and a successful escape ends without inventing a victory
+ok 14 - interactive flee is deterministic and a successful escape ends without inventing a victory
+  ---
+  duration_ms: 1.398742
+  type: 'test'
+  ...
+# Subtest: timeline capture is deterministic and does not change battle resolution
+ok 15 - timeline capture is deterministic and does not change battle resolution
+  ---
+  duration_ms: 2.430363
+  type: 'test'
+  ...
+# Subtest: timeline includes deterministic end-of-round resource effects
+ok 16 - timeline includes deterministic end-of-round resource effects
+  ---
+  duration_ms: 1.813806
+  type: 'test'
+  ...
+# Subtest: MON-0076 candidate exhaustion is diagnosed and falls back to normal attacks
+ok 17 - MON-0076 candidate exhaustion is diagnosed and falls back to normal attacks
+  ---
+  duration_ms: 0.688174
+  type: 'test'
+  ...
+# Subtest: Monte Carlo reports win, turns, MP, usage and exhaustion per build
+ok 18 - Monte Carlo reports win, turns, MP, usage and exhaustion per build
+  ---
+  duration_ms: 24.357343
+  type: 'test'
+  ...
+# Subtest: three differently worded versions of the same investigation are rejected
+ok 19 - three differently worded versions of the same investigation are rejected
+  ---
+  duration_ms: 2.180387
+  type: 'test'
+  ...
+# Subtest: talk, move, and treatment form a valid rescue decision
+ok 20 - talk, move, and treatment form a valid rescue decision
+  ---
+  duration_ms: 4.163597
+  type: 'test'
+  ...
+# Subtest: choices cannot target an absent NPC or hidden facility
+ok 21 - choices cannot target an absent NPC or hidden facility
+  ---
+  duration_ms: 0.599351
+  type: 'test'
+  ...
+# Subtest: selectDiverseChoices prefers different action families and effects
+ok 22 - selectDiverseChoices prefers different action families and effects
+  ---
+  duration_ms: 0.676987
+  type: 'test'
+  ...
+# Subtest: portrait cards expose an accessible TALK interaction
+ok 23 - portrait cards expose an accessible TALK interaction
+  ---
+  duration_ms: 1.087204
+  type: 'test'
+  ...
+# Subtest: every present NPC exposes direct portrait conversation independently of the three choices
+ok 24 - every present NPC exposes direct portrait conversation independently of the three choices
+  ---
+  duration_ms: 183.247419
+  type: 'test'
+  ...
+# Subtest: TALK resolves a conversation with a visible NPC
+ok 25 - TALK resolves a conversation with a visible NPC
+  ---
+  duration_ms: 71.693619
+  type: 'test'
+  ...
+# Subtest: TALK rejects absent or stale NPC targets
+ok 26 - TALK rejects absent or stale NPC targets
+  ---
+  duration_ms: 34.293545
+  type: 'test'
+  ...
+# Subtest: T01 places escort between battle and village handoff
+ok 27 - T01 places escort between battle and village handoff
+  ---
+  duration_ms: 142.520335
+  type: 'test'
+  ...
+# Subtest: the revised prompt uses a new replay-cache namespace
+ok 28 - the revised prompt uses a new replay-cache namespace
+  ---
+  duration_ms: 0.318629
+  type: 'test'
+  ...
+# Subtest: the live player CLI includes all three routes and sheet sync
+ok 29 - the live player CLI includes all three routes and sheet sync
+  ---
+  duration_ms: 0.4529
+  type: 'test'
+  ...
+# Subtest: the orphanage is visible before T10 failure
+ok 30 - the orphanage is visible before T10 failure
+  ---
+  duration_ms: 1.873876
+  type: 'test'
+  ...
+# Subtest: the site is closed between T10 failure and Day 70
+ok 31 - the site is closed between T10 failure and Day 70
+  ---
+  duration_ms: 0.274202
+  type: 'test'
+  ...
+# Subtest: only the replacement store is visible from Day 70 after failure
+ok 32 - only the replacement store is visible from Day 70 after failure
+  ---
+  duration_ms: 0.487373
+  type: 'test'
+  ...
+# Subtest: playable save starts alone in the Day1 wheat field with a progressive, profile-free opening
+ok 33 - playable save starts alone in the Day1 wheat field with a progressive, profile-free opening
+  ---
+  duration_ms: 189.528177
+  type: 'test'
+  ...
+# Subtest: locked tutorial features cannot be bypassed through direct commands
+ok 34 - locked tutorial features cannot be bypassed through direct commands
+  ---
+  duration_ms: 150.818376
+  type: 'test'
+  ...
+# Subtest: Day100 ending is immutable and has an explicit player-facing conclusion
+ok 35 - Day100 ending is immutable and has an explicit player-facing conclusion
+  ---
+  duration_ms: 29.635325
+  type: 'test'
+  ...
+# Subtest: playable snapshots compact audit-only history while retaining current NPC state and causal totals
+ok 36 - playable snapshots compact audit-only history while retaining current NPC state and causal totals
+  ---
+  duration_ms: 62.001514
+  type: 'test'
+  ...
+# Subtest: a compacted playable journey reaches Day100 within the persisted snapshot budget
+ok 37 - a compacted playable journey reaches Day100 within the persisted snapshot budget
+  ---
+  duration_ms: 16685.319349
+  type: 'test'
+  ...
+# Subtest: two-handed weapons and off-hand equipment cannot remain equipped together
+ok 38 - two-handed weapons and off-hand equipment cannot remain equipped together
+  ---
+  duration_ms: 7.950833
+  type: 'test'
+  ...
+# Subtest: a defeated regional journey persists its battle and elapsed time instead of rolling back
+ok 39 - a defeated regional journey persists its battle and elapsed time instead of rolling back
+  ---
+  duration_ms: 1004.762277
+  type: 'test'
+  ...
+# Subtest: interactive real-game battle capture is deterministic and leaves runtime tuning unchanged
+ok 40 - interactive real-game battle capture is deterministic and leaves runtime tuning unchanged
+  ---
+  duration_ms: 292.566301
+  type: 'test'
+  ...
+# Subtest: truncated battle playback carries a deterministic checkpoint across the omitted middle
+ok 41 - truncated battle playback carries a deterministic checkpoint across the omitted middle
+  ---
+  duration_ms: 3.143596
+  type: 'test'
+  ...
+# Subtest: the authored opening reveals Eda, movement and T01 in that order and survives replay
+ok 42 - the authored opening reveals Eda, movement and T01 in that order and survives replay
+  ---
+  duration_ms: 819.383856
+  type: 'test'
+  ...
+# Subtest: an unknown NPC becomes identified only after the visible self-introduction is acknowledged
+ok 43 - an unknown NPC becomes identified only after the visible self-introduction is acknowledged
+  ---
+  duration_ms: 390.46911
+  type: 'test'
+  ...
+# Subtest: an introduction token cannot identify an NPC after that NPC leaves the scene
+ok 44 - an introduction token cannot identify an NPC after that NPC leaves the scene
+  ---
+  duration_ms: 15.427803
+  type: 'test'
+  ...
+# Subtest: replay verification rejects journal outcome, sequence and revision tampering
+ok 45 - replay verification rejects journal outcome, sequence and revision tampering
+  ---
+  duration_ms: 188.091023
+  type: 'test'
+  ...
+# Subtest: opening cast remains present when guided square arrival crosses an NPC life tick
+ok 46 - opening cast remains present when guided square arrival crosses an NPC life tick
+  ---
+  duration_ms: 19.867362
+  type: 'test'
+  ...
+# Subtest: an opening inquiry crossing Finn's rescue deadline becomes aftermath instead of stale progress
+ok 47 - an opening inquiry crossing Finn's rescue deadline becomes aftermath instead of stale progress
+  ---
+  duration_ms: 21.130189
+  type: 'test'
+  ...
+# Subtest: opening branches preserve help, paid work and leaving as replayable choices
+ok 48 - opening branches preserve help, paid work and leaving as replayable choices
+  ---
+  duration_ms: 1397.953695
+  type: 'test'
+  ...
+# Subtest: a late arrival sees T01 aftermath instead of stale Day1 inquiry and can finish onboarding
+ok 49 - a late arrival sees T01 aftermath instead of stale Day1 inquiry and can finish onboarding
+  ---
+  duration_ms: 345.96835
+  type: 'test'
+  ...
+# Subtest: public game view does not expose omniscient population or trouble aggregates
+ok 50 - public game view does not expose omniscient population or trouble aggregates
+  ---
+  duration_ms: 17.081656
+  type: 'test'
+  ...
+# Subtest: public NPC data never exposes authored occupations, goals, or private beliefs
+ok 51 - public NPC data never exposes authored occupations, goals, or private beliefs
+  ---
+  duration_ms: 0.295344
+  type: 'test'
+  ...
+# Subtest: rate-limit identity ignores client-prepended XFF values behind the local proxy
+ok 52 - rate-limit identity ignores client-prepended XFF values behind the local proxy
+  ---
+  duration_ms: 0.447835
+  type: 'test'
+  ...
+# Subtest: anonymous save capacity is bounded per owner
+ok 53 - anonymous save capacity is bounded per owner
+  ---
+  duration_ms: 41.012601
+  type: 'test'
+  ...
+# Subtest: unknown save versions are preserved while expired saves alone are pruned
+ok 54 - unknown save versions are preserved while expired saves alone are pruned
+  ---
+  duration_ms: 87.23428
+  type: 'test'
+  ...
+# Subtest: a v8 save migrates to v9 without losing its world state or future replay
+ok 55 - a v8 save migrates to v9 without losing its world state or future replay
+  ---
+  duration_ms: 454.779534
+  type: 'test'
+  ...
+# Subtest: first-read migration and a concurrent command cannot overwrite one another
+ok 56 - first-read migration and a concurrent command cannot overwrite one another
+  ---
+  duration_ms: 470.714052
+  type: 'test'
+  ...
+# Subtest: a save with an obsolete schema is rejected before hydration
+ok 57 - a save with an obsolete schema is rejected before hydration
+  ---
+  duration_ms: 22.592078
+  type: 'test'
+  ...
+# Subtest: shop stock is facility-scoped and a duplicate command cannot advance a save twice
+ok 58 - shop stock is facility-scoped and a duplicate command cannot advance a save twice
+  ---
+  duration_ms: 348.920248
+  type: 'test'
+  ...
+# Subtest: a conversational job pays the quoted wage without granting player levels
+ok 59 - a conversational job pays the quoted wage without granting player levels
+  ---
+  duration_ms: 271.983933
+  type: 'test'
+  ...
+# Subtest: a public living-world rumor becomes a mission only after the player hears it locally
+ok 60 - a public living-world rumor becomes a mission only after the player hears it locally
+  ---
+  duration_ms: 403.216673
+  type: 'test'
+  ...
+# Subtest: conversation reveals only beliefs held by the NPC who is actually speaking
+ok 61 - conversation reveals only beliefs held by the NPC who is actually speaking
+  ---
+  duration_ms: 13.575113
+  type: 'test'
+  ...
+# Subtest: mission clue choices require a co-present NPC with an authoritative public belief
+ok 62 - mission clue choices require a co-present NPC with an authoritative public belief
+  ---
+  duration_ms: 11.285163
+  type: 'test'
+  ...
+# Subtest: all nineteen special-mission hearings are bound to a present authoritative NPC
+ok 63 - all nineteen special-mission hearings are bound to a present authoritative NPC
+  ---
+  duration_ms: 175.777017
+  type: 'test'
+  ...
+# Subtest: mission clue progress commits only after the assigned NPC actually discloses the fact
+ok 64 - mission clue progress commits only after the assigned NPC actually discloses the fact
+  ---
+  duration_ms: 34.082099
+  type: 'test'
+  ...
+# Subtest: dialogue topics select a relevant fact, preserve its provenance, and never learn on farewell
+ok 65 - dialogue topics select a relevant fact, preserve its provenance, and never learn on farewell
+  ---
+  duration_ms: 12.782288
+  type: 'test'
+  ...
+# Subtest: an NPC with a hidden hostile role cannot disclose even a non-secret belief
+ok 66 - an NPC with a hidden hostile role cannot disclose even a non-secret belief
+  ---
+  duration_ms: 9.308244
+  type: 'test'
+  ...
+# Subtest: a conversation grants no fact when its NPC leaves before the reply is presented
+ok 67 - a conversation grants no fact when its NPC leaves before the reply is presented
+  ---
+  duration_ms: 14.979428
+  type: 'test'
+  ...
+# Subtest: local observation cannot reveal a facility rumor before its propagation time
+ok 68 - local observation cannot reveal a facility rumor before its propagation time
+  ---
+  duration_ms: 14.33624
+  type: 'test'
+  ...
+# Subtest: manual skill acquisition spends SP once and survives deterministic replay
+ok 69 - manual skill acquisition spends SP once and survives deterministic replay
+  ---
+  duration_ms: 582.172144
+  type: 'test'
+  ...
+# Subtest: the skill primer explains the risk but never blocks an underprepared player
+ok 70 - the skill primer explains the risk but never blocks an underprepared player
+  ---
+  duration_ms: 881.160227
+  type: 'test'
+  ...
+# Subtest: T01 exploration binds the displayed action and replaces all three choices after a concrete discovery
+ok 71 - T01 exploration binds the displayed action and replaces all three choices after a concrete discovery
+  ---
+  duration_ms: 456.832968
+  type: 'test'
+  ...
+# Subtest: T01 speaks through discovery, rescue, escort and reunion before completion
+not ok 72 - T01 speaks through discovery, rescue, escort and reunion before completion
+  ---
+  duration_ms: 727.934568
+  type: 'test'
+  location: '/home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/game-service.test.mjs:1638:1'
+  failureType: 'testCodeFailure'
+  error: 'the decisive result now receives a scene-specific Gemini aftermath request'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/game-service.test.mjs:1734:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: playable profile input is ignored and tutorial acknowledgement is journaled without time passing
+ok 73 - playable profile input is ignored and tutorial acknowledgement is journaled without time passing
+  ---
+  duration_ms: 586.868183
+  type: 'test'
+  ...
+# Subtest: ordinary NPC conversation supports distinct multi-turn follow-ups until the player ends it
+ok 74 - ordinary NPC conversation supports distinct multi-turn follow-ups until the player ends it
+  ---
+  duration_ms: 793.775571
+  type: 'test'
+  ...
+# Subtest: the service replaces a Gemini reply that omits the fact recorded as learned
+ok 75 - the service replaces a Gemini reply that omits the fact recorded as learned
+  ---
+  duration_ms: 470.909734
+  type: 'test'
+  ...
+# Subtest: an unanswered dialogue follow-up expires instead of resurfacing hours later
+ok 76 - an unanswered dialogue follow-up expires instead of resurfacing hours later
+  ---
+  duration_ms: 329.452857
+  type: 'test'
+  ...
+# Subtest: the same content revision, seed and command sequence produce the same state hash
+ok 77 - the same content revision, seed and command sequence produce the same state hash
+  ---
+  duration_ms: 240.92182
+  type: 'test'
+  ...
+# Subtest: completed work preserves a server-valid work route and sends recent work to the director
+ok 78 - completed work preserves a server-valid work route and sends recent work to the director
+  ---
+  duration_ms: 265.324821
+  type: 'test'
+  ...
+# Subtest: leaving for the capital removes the village T01 thread from later Gemini context
+not ok 79 - leaving for the capital removes the village T01 thread from later Gemini context
+  ---
+  duration_ms: 303.432466
+  type: 'test'
+  location: '/home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/game-service.test.mjs:1991:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert.ok(capitalInput)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/game-service.test.mjs:2022:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+# Subtest: local narrative context excludes NPCs who are not present
+ok 80 - local narrative context excludes NPCs who are not present
+  ---
+  duration_ms: 6.38815
+  type: 'test'
+  ...
+# Subtest: Gemini 2.5 Flash reserves its output budget for complete narrative JSON
+ok 81 - Gemini 2.5 Flash reserves its output budget for complete narrative JSON
+  ---
+  duration_ms: 0.435475
+  type: 'test'
+  ...
+# Subtest: an action target cannot add an absent, missing, or remote NPC to local context
+ok 82 - an action target cannot add an absent, missing, or remote NPC to local context
+  ---
+  duration_ms: 0.307612
+  type: 'test'
+  ...
+# Subtest: Gemini selects three executable actions from a broader pool and keeps a progress route
+ok 83 - Gemini selects three executable actions from a broader pool and keeps a progress route
+  ---
+  duration_ms: 22.57835
+  type: 'test'
+  ...
+# Subtest: continuity contracts keep the player's current activity available without fixing all three choices
+ok 84 - continuity contracts keep the player's current activity available without fixing all three choices
+  ---
+  duration_ms: 0.966542
+  type: 'test'
+  ...
+# Subtest: sanitizer removes empty reactions and internal ids while salvaging optional semantic proposals
+ok 85 - sanitizer removes empty reactions and internal ids while salvaging optional semantic proposals
+  ---
+  duration_ms: 1.691221
+  type: 'test'
+  ...
+# Subtest: critical reactions are validated by actor contract rather than fixed production dialogue
+ok 86 - critical reactions are validated by actor contract rather than fixed production dialogue
+  ---
+  duration_ms: 0.541694
+  type: 'test'
+  ...
+# Subtest: the director prompt is short, scene-specific, and never carries Finn into unrelated scenes
+ok 87 - the director prompt is short, scene-specific, and never carries Finn into unrelated scenes
+  ---
+  duration_ms: 1.855949
+  type: 'test'
+  ...
+# Subtest: npc_intent requires a local target and concrete intent before resolver validation
+ok 88 - npc_intent requires a local target and concrete intent before resolver validation
+  ---
+  duration_ms: 0.969267
+  type: 'test'
+  ...
+# Subtest: full provider failure uses a minimal factual fallback without inventing NPC dialogue
+ok 89 - full provider failure uses a minimal factual fallback without inventing NPC dialogue
+  ---
+  duration_ms: 0.634914
+  type: 'test'
+  ...
+# Subtest: conversation fallback does not fabricate a bespoke answer when no fact is authoritative
+ok 90 - conversation fallback does not fabricate a bespoke answer when no fact is authoritative
+  ---
+  duration_ms: 0.385619
+  type: 'test'
+  ...
+# Subtest: a learned fact must appear verbatim in the target reply and in deterministic fallback
+ok 91 - a learned fact must appear verbatim in the target reply and in deterministic fallback
+  ---
+  duration_ms: 0.731249
+  type: 'test'
+  ...
+# Subtest: invalid Gemini output is repaired and exact replay bypasses the provider
+ok 92 - invalid Gemini output is repaired and exact replay bypasses the provider
+  ---
+  duration_ms: 6.136822
+  type: 'test'
+  ...
+# Subtest: a transient Gemini timeout falls back once without poisoning replay cache
+ok 93 - a transient Gemini timeout falls back once without poisoning replay cache
+  ---
+  duration_ms: 1.606765
+  type: 'test'
+  ...
+# Subtest: Gemini simulation audits cached successes separately from retryable fallbacks
+ok 94 - Gemini simulation audits cached successes separately from retryable fallbacks
+  ---
+  duration_ms: 0.209745
+  type: 'test'
+  ...
+# Subtest: authoritative mutations and unknown missions are rejected as candidates
+ok 95 - authoritative mutations and unknown missions are rejected as candidates
+  ---
+  duration_ms: 1.120739
+  type: 'test'
+  ...
+# Subtest: cache replay recalculates proposal resolution and concurrent misses call provider once
+ok 96 - cache replay recalculates proposal resolution and concurrent misses call provider once
+  ---
+  duration_ms: 23.87215
+  type: 'test'
+  ...
+# Subtest: mission policy participates in the generation cache key
+ok 97 - mission policy participates in the generation cache key
+  ---
+  duration_ms: 1.953947
+  type: 'test'
+  ...
+# Subtest: GOAP execution reaches a facility and records the completed action
+ok 98 - GOAP execution reaches a facility and records the completed action
+  ---
+  duration_ms: 3.090614
+  type: 'test'
+  ...
+# Subtest: a resolved rumor cancels the old crisis plan before it starts
+ok 99 - a resolved rumor cancels the old crisis plan before it starts
+  ---
+  duration_ms: 0.976097
+  type: 'test'
+  ...
+# Subtest: tuned autonomous world remains deterministic and strictly valid
+ok 100 - tuned autonomous world remains deterministic and strictly valid
+  ---
+  duration_ms: 4280.844685
+  type: 'test'
+  ...
+# Subtest: world tuning rejects invalid probabilities and scales
+ok 101 - world tuning rejects invalid probabilities and scales
+  ---
+  duration_ms: 12.07076
+  type: 'test'
+  ...
+# Subtest: matched battle builds cover every encounter level and suite mode
+ok 102 - matched battle builds cover every encounter level and suite mode
+  ---
+  duration_ms: 888.239401
+  type: 'test'
+  ...
+# Subtest: broken legacy public catalog is visible to the report instead of silently accepted
+ok 103 - broken legacy public catalog is visible to the report instead of silently accepted
+  ---
+  duration_ms: 4.345576
+  type: 'test'
+  ...
+# Subtest: all 110 NPCs retain a 400-tick causal history and eligible actors decide every tick
+ok 104 - all 110 NPCs retain a 400-tick causal history and eligible actors decide every tick
+  ---
+  duration_ms: 6.688386
+  type: 'test'
+  ...
+# Subtest: rumors spread after their source event and low-importance rumors are interest-selective
+ok 105 - rumors spread after their source event and low-importance rumors are interest-selective
+  ---
+  duration_ms: 67.292994
+  type: 'test'
+  ...
+# Subtest: acquired facts are recorded as causes of replanning and crisis behavior
+ok 106 - acquired facts are recorded as causes of replanning and crisis behavior
+  ---
+  duration_ms: 10.729423
+  type: 'test'
+  ...
+# Subtest: no-player mode cannot solve authored crises and T01 kills Finn
+ok 107 - no-player mode cannot solve authored crises and T01 kills Finn
+  ---
+  duration_ms: 4568.228573
+  type: 'test'
+  ...
+# Subtest: source non-intervention fates change life state at deterministic anchors
+ok 108 - source non-intervention fates change life state at deterministic anchors
+  ---
+  duration_ms: 0.380168
+  type: 'test'
+  ...
+# Subtest: stateless per-NPC randomness is invariant to source NPC row order
+ok 109 - stateless per-NPC randomness is invariant to source NPC row order
+  ---
+  duration_ms: 3075.389602
+  type: 'test'
+  ...
+# Subtest: the Gemini candidate pool reserves an executable movement route without changing legacy fallback order
+ok 110 - the Gemini candidate pool reserves an executable movement route without changing legacy fallback order
+  ---
+  duration_ms: 165.823102
+  type: 'test'
+  ...
+# Subtest: a movement option selected for the three choices uses the authoritative movement resolver
+ok 111 - a movement option selected for the three choices uses the authoritative movement resolver
+  ---
+  duration_ms: 33.555576
+  type: 'test'
+  ...
+# Subtest: a Gemini-selected set is repaired to distinct semantic decisions
+ok 112 - a Gemini-selected set is repaired to distinct semantic decisions
+  ---
+  duration_ms: 24.944339
+  type: 'test'
+  ...
+# Subtest: narrative audit rows match the 36-column TRPG sheet contract
+ok 113 - narrative audit rows match the 36-column TRPG sheet contract
+  ---
+  duration_ms: 1.440763
+  type: 'test'
+  ...
+# Subtest: sheet sync appends only unsynced JSONL records
+ok 114 - sheet sync appends only unsynced JSONL records
+  ---
+  duration_ms: 8.57776
+  type: 'test'
+  ...
+# Subtest: NPC response plan changes after player resolution
+ok 115 - NPC response plan changes after player resolution
+  ---
+  duration_ms: 3.202727
+  type: 'test'
+  ...
+# Subtest: playable audit crosses guided movement and an interactive battle without weakening free-choice checks
+ok 116 - playable audit crosses guided movement and an interactive battle without weakening free-choice checks
+  ---
+  duration_ms: 518.469703
+  type: 'test'
+  ...
+# Subtest: movement menu includes local facilities and reachable regions while choices remain separate
+ok 117 - movement menu includes local facilities and reachable regions while choices remain separate
+  ---
+  duration_ms: 17.690972
+  type: 'test'
+  ...
+# Subtest: local movement advances time and records the visited facility
+ok 118 - local movement advances time and records the visited facility
+  ---
+  duration_ms: 17.644262
+  type: 'test'
+  ...
+# Subtest: movement across a crisis deadline fails its still-open special mission immediately
+ok 119 - movement across a crisis deadline fails its still-open special mission immediately
+  ---
+  duration_ms: 13.532356
+  type: 'test'
+  ...
+# Subtest: mission catalog has staged permanent chains and one special mission per trouble
+ok 120 - mission catalog has staged permanent chains and one special mission per trouble
+  ---
+  duration_ms: 5.636074
+  type: 'test'
+  ...
+# Subtest: early and late trouble action paths can resolve through player actions
+ok 121 - early and late trouble action paths can resolve through player actions
+  ---
+  duration_ms: 172.133674
+  type: 'test'
+  ...
+# Subtest: journey never learns a skill while its acquisition conditions are false
+ok 122 - journey never learns a skill while its acquisition conditions are false
+  ---
+  duration_ms: 910.300311
+  type: 'test'
+  ...
+# Subtest: experience curve matches the design formula
+ok 123 - experience curve matches the design formula
+  ---
+  duration_ms: 1.446011
+  type: 'test'
+  ...
+# Subtest: player starts at the wheat field on Day1 at 10:00
+ok 124 - player starts at the wheat field on Day1 at 10:00
+  ---
+  duration_ms: 15.618633
+  type: 'test'
+  ...
+# Subtest: three choices are separate from a complete reachable travel menu
+ok 125 - three choices are separate from a complete reachable travel menu
+  ---
+  duration_ms: 17.181504
+  type: 'test'
+  ...
+# Subtest: ordinary shop purchase advances no time
+ok 126 - ordinary shop purchase advances no time
+  ---
+  duration_ms: 10.741515
+  type: 'test'
+  ...
+# Subtest: shop inventory and transactions are restricted to the current seller facility
+ok 127 - shop inventory and transactions are restricted to the current seller facility
+  ---
+  duration_ms: 8.125304
+  type: 'test'
+  ...
+# Subtest: an initially listed item still requires its unlock condition
+ok 128 - an initially listed item still requires its unlock condition
+  ---
+  duration_ms: 4.501288
+  type: 'test'
+  ...
+# Subtest: manual skill mode exposes reasons and never auto-learns after resolving an action
+ok 129 - manual skill mode exposes reasons and never auto-learns after resolving an action
+  ---
+  duration_ms: 27.634593
+  type: 'test'
+  ...
+# Subtest: authoritative present NPC ids prevent conversation with absent NPCs
+ok 130 - authoritative present NPC ids prevent conversation with absent NPCs
+  ---
+  duration_ms: 5.66315
+  type: 'test'
+  ...
+# Subtest: T01 actions crossing the Day2 rescue deadline persist failure without progress or resurrection
+ok 131 - T01 actions crossing the Day2 rescue deadline persist failure without progress or resurrection
+  ---
+  duration_ms: 8.172085
+  type: 'test'
+  ...
+# Subtest: T01 search offers three concrete, non-repeating approaches at each investigation stage
+ok 132 - T01 search offers three concrete, non-repeating approaches at each investigation stage
+  ---
+  duration_ms: 14.956183
+  type: 'test'
+  ...
+# Subtest: T01 search discoveries are deterministic and two selected approaches advance to rescue
+ok 133 - T01 search discoveries are deterministic and two selected approaches advance to rescue
+  ---
+  duration_ms: 21.698441
+  type: 'test'
+  ...
+# Subtest: same seed and profile replay to the same world fingerprint
+ok 134 - same seed and profile replay to the same world fingerprint
+  ---
+  duration_ms: 398.033608
+  type: 'test'
+  ...
+# Subtest: story profile can interact with early trouble, missions, combat, and levels
+ok 135 - story profile can interact with early trouble, missions, combat, and levels
+  ---
+  duration_ms: 228.254313
+  type: 'test'
+  ...
+# Subtest: new games and the public view expose the formal needs contract
+ok 136 - new games and the public view expose the formal needs contract
+  ---
+  duration_ms: 120.123919
+  type: 'test'
+  ...
+# Subtest: an inn exposes affordable meal and lodging actions when needs are high
+ok 137 - an inn exposes affordable meal and lodging actions when needs are high
+  ---
+  duration_ms: 43.618803
+  type: 'test'
+  ...
+# Subtest: meals and lodging mutate hunger fatigue time and money authoritatively
+ok 138 - meals and lodging mutate hunger fatigue time and money authoritatively
+  ---
+  duration_ms: 31.217989
+  type: 'test'
+  ...
+# Subtest: unaffordable paid survival actions reject without advancing time
+ok 139 - unaffordable paid survival actions reject without advancing time
+  ---
+  duration_ms: 27.041958
+  type: 'test'
+  ...
+# Subtest: legacy hunger and fatigue state migrates without changing its visible values
+ok 140 - legacy hunger and fatigue state migrates without changing its visible values
+  ---
+  duration_ms: 1.225501
+  type: 'test'
+  ...
+# Subtest: the same elapsed action produces the same deterministic needs result
+ok 141 - the same elapsed action produces the same deterministic needs result
+  ---
+  duration_ms: 1.35849
+  type: 'test'
+  ...
+# Subtest: work and bad-weather travel are more tiring than quiet indoor time
+ok 142 - work and bad-weather travel are more tiring than quiet indoor time
+  ---
+  duration_ms: 1.422917
+  type: 'test'
+  ...
+# Subtest: a meal records its time and cannot reduce hunger below zero
+ok 143 - a meal records its time and cannot reduce hunger below zero
+  ---
+  duration_ms: 0.322251
+  type: 'test'
+  ...
+# Subtest: lodging fully restores fatigue while unsafe wet camping does not
+ok 144 - lodging fully restores fatigue while unsafe wet camping does not
+  ---
+  duration_ms: 0.432446
+  type: 'test'
+  ...
+# Subtest: public need state exposes stable labels and urgency thresholds
+ok 145 - public need state exposes stable labels and urgency thresholds
+  ---
+  duration_ms: 0.483833
+  type: 'test'
+  ...
+# Subtest: v3 permanent missions contain 12 chains and 48 sequential definitions
+ok 146 - v3 permanent missions contain 12 chains and 48 sequential definitions
+  ---
+  duration_ms: 2.084325
+  type: 'test'
+  ...
+# Subtest: v3 derived mission metrics combine economy, rumor and skill counters
+ok 147 - v3 derived mission metrics combine economy, rumor and skill counters
+  ---
+  duration_ms: 3.669129
+  type: 'test'
+  ...
+# Subtest: NPC intervention audit attributes related replans to player resolution
+ok 148 - NPC intervention audit attributes related replans to player resolution
+  ---
+  duration_ms: 1.795314
+  type: 'test'
+  ...
+# Subtest: generic predicate evaluator supports every required logical and leaf operator
+ok 149 - generic predicate evaluator supports every required logical and leaf operator
+  ---
+  duration_ms: 2.000961
+  type: 'test'
+  ...
+# Subtest: skill progression runs six reproducible Day1-100 profiles with bounded SP
+ok 150 - skill progression runs six reproducible Day1-100 profiles with bounded SP
+  ---
+  duration_ms: 7799.254819
+  type: 'test'
+  ...
+# Subtest: skill audit exposes missing grant supply without confusing it with prerequisite corruption
+ok 151 - skill audit exposes missing grant supply without confusing it with prerequisite corruption
+  ---
+  duration_ms: 1765.079953
+  type: 'test'
+  ...
+# Subtest: economy audit joins all product, equipment, stock and monster snapshots
+ok 152 - economy audit joins all product, equipment, stock and monster snapshots
+  ---
+  duration_ms: 23.380818
+  type: 'test'
+  ...
+# Subtest: economy diagnostics catch the zero-gold opening and legacy price conflict
+ok 153 - economy diagnostics catch the zero-gold opening and legacy price conflict
+  ---
+  duration_ms: 7.523646
+  type: 'test'
+  ...
+# Subtest: three spreadsheet snapshots contain every expected design row
+ok 154 - three spreadsheet snapshots contain every expected design row
+  ---
+  duration_ms: 1.2485
+  type: 'test'
+  ...
+# Subtest: hard foreign-key references are internally valid
+ok 155 - hard foreign-key references are internally valid
+  ---
+  duration_ms: 0.199264
+  type: 'test'
+  ...
+# Subtest: known source-contract gaps remain visible instead of being silently repaired
+ok 156 - known source-contract gaps remain visible instead of being silently repaired
+  ---
+  duration_ms: 0.27306
+  type: 'test'
+  ...
+# Subtest: green chroma key removes only the edge-connected background
+ok 157 - green chroma key removes only the edge-connected background
+  ---
+  duration_ms: 5.276657
+  type: 'test'
+  ...
+# Subtest: pink chroma key removes only the edge-connected background
+ok 158 - pink chroma key removes only the edge-connected background
+  ---
+  duration_ms: 1.686301
+  type: 'test'
+  ...
+# Subtest: Gemini image generation sends bounded references and falls back between models
+ok 159 - Gemini image generation sends bounded references and falls back between models
+  ---
+  duration_ms: 2.568613
+  type: 'test'
+  ...
+# Subtest: image generation rejects a claimed MIME type that does not match the bytes
+ok 160 - image generation rejects a claimed MIME type that does not match the bytes
+  ---
+  duration_ms: 0.923998
+  type: 'test'
+  ...
+# Subtest: native PNG decoding rejects oversized declared dimensions before inflation
+ok 161 - native PNG decoding rejects oversized declared dimensions before inflation
+  ---
+  duration_ms: 0.611646
+  type: 'test'
+  ...
+# Subtest: asset prompts use only supplied public visual fields
+ok 162 - asset prompts use only supplied public visual fields
+  ---
+  duration_ms: 1.575857
+  type: 'test'
+  ...
+# Subtest: runtime manifest merge accepts only generated asset URLs and path resolution rejects traversal
+ok 163 - runtime manifest merge accepts only generated asset URLs and path resolution rejects traversal
+  ---
+  duration_ms: 0.852726
+  type: 'test'
+  ...
+# Subtest: authoritative game views are the only source of first-encounter asset ids
+ok 164 - authoritative game views are the only source of first-encounter asset ids
+  ---
+  duration_ms: 0.58967
+  type: 'test'
+  ...
+# Subtest: runtime generation is deduplicated, serialized, persisted separately, and reused
+ok 165 - runtime generation is deduplicated, serialized, persisted separately, and reused
+  ---
+  duration_ms: 83.788093
+  type: 'test'
+  ...
+# Subtest: runtime generation failure is contained and enters retry backoff
+ok 166 - runtime generation failure is contained and enters retry backoff
+  ---
+  duration_ms: 14.17024
+  type: 'test'
+  ...
+# Subtest: the legacy manifest URL is served by the static/runtime merger
+ok 167 - the legacy manifest URL is served by the static/runtime merger
+  ---
+  duration_ms: 42.765512
+  type: 'test'
+  ...
+# Subtest: the playable UI renders canonical weather hunger and fatigue
+not ok 168 - the playable UI renders canonical weather hunger and fatigue
+  ---
+  duration_ms: 4.644619
+  type: 'test'
+  location: '/home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/trpg-needs-ui-contract.test.mjs:5:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /player.needs?.hunger/u. Input:
+    
+    'const API_BASE = "/TRPG/api/game";\n' +
+      'const LAST_SAVE_KEY = "trpg:last-save-id";\n' +
+      'const REQUEST_TIMEOUT = 30000;\n' +
+      'const ASSET_REFRESH_DELAYS = Object.freeze([2500, 5000, 10000, 20000, 40000, 60000, 60000, 60000, 60000]);\n' +
+      'const PANEL_NAMES = new Set(["movement", "inventory", "skills", "missions", "rumors", "shop", "chronicle"]);\n' +
+      'const DAYPART_LABELS = Object.freeze({\n' +
+      '  dawn: "明け方",\n' +
+      '  morning: "朝",\n' +
+      '  day: "昼",\n' +
+      '  afternoon: "昼",\n' +
+      '  dusk: "夕方",\n' +
+      '  evening: "夕方",\n' +
+      '  night: "夜",\n' +
+      '});\n' +
+      'const CHOICE_KIND_LABELS = Object.freeze({\n' +
+      '  talk: "会話",\n' +
+      '  conversation: "会話",\n' +
+      '  investigate: "調査",\n' +
+      '  observe: "観察",\n' +
+      '  prepare: "戦闘",\n' +
+      '  missionBattle: "戦闘",\n' +
+      '  seekBattle: "戦闘",\n' +
+      '  help: "任務",\n' +
+      '  resolveMission: "任務",\n' +
+      '  wait: "休息",\n' +
+      '  rest: "休息",\n' +
+      '  work: "仕事",\n' +
+      '  move: "移動",\n' +
+      '});\n' +
+      '\n' +
+      'const $ = (selector, root = document) => root.querySelector(selector);\n' +
+      'const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];\n' +
+      '\n' +
+      'const ui = {\n' +
+      '  launch: $("#launchScreen"),\n' +
+      '  game: $("#gameScreen"),\n' +
+      '  newTab: $("#newTab"),\n' +
+      '  resumeTab: $("#resumeTab"),\n' +
+      '  newPanel: $("#newGamePanel"),\n' +
+      '  resumePanel: $("#resumePanel"),\n' +
+      '  newForm: $("#newGameForm"),\n' +
+      '  saveList: $("#saveList"),\n' +
+      '  saveListStatus: $("#saveListStatus"),\n' +
+      '  launchError: $("#launchError"),\n' +
+      '  gameError: $("#gameError"),\n' +
+      '  busy: $("#busyOverlay"),\n' +
+      '  backdrop: $("#sceneBackdrop"),\n' +
+      '  npcStage: $("#npcStage"),\n' +
+      '  choices: $("#choiceRegion"),\n' +
+      '  decision: $("#decisionTray"),\n' +
+      '  dialogue: $("#dialogueAdvance"),\n' +
+      '  dialogueSpeaker: $("#dialogueSpeaker"),\n' +
+      '  dialogueLine: $("#dialogueLine"),\n' +
+      '  outcome: $("#outcomeToast"),\n' +
+      '  guidance: $("#guidanceBar"),\n' +
+      '  tutorial: $("#tutorialCard"),\n' +
+      '  announcer: $("#sceneAnnouncer"),\n' +
+      '  quickMenu: $("#quickMenu"),\n' +
+      '  dialog: $("#detailDialog"),\n' +
+      '  dialogError: $("#dialogError"),\n' +
+      '  dialogTitle: $("#dialogTitle"),\n' +
+      '  dialogKicker: $("#dialogKicker"),\n' +
+      '  dialogBody: $("#dialogBody"),\n' +
+      '  battleDialog: $("#battleDialog"),\n' +
+      '  battleScene: $("#battleScene"),\n' +
+      '  battleEnemies: $("#battleEnemies"),\n' +
+      '  battleStatus: $("#battleStatus"),\n' +
+      '  battleMessage: $("#battleMessage"),\n' +
+      '  battleError: $("#battleError"),\n' +
+      '  battlePlaybackControls: $("#battlePlaybackControls"),\n' +
+      '  battleCommandPanel: $("#battleCommandPanel"),\n' +
+      '  battleCommandPrompt: $("#battleCommandPrompt"),\n' +
+      '  battleCommandMenu: $("#battleCommandMenu"),\n' +
+      '};\n' +
+      '\n' +
+      'let currentSave = null;\n' +
+      'let assetManifest = { backgrounds: {}, portraits: {}, monsters: {} };\n' +
+      'let busy = false;\n' +
+      'let scenePlayback = null;\n' +
+      'let battlePlayback = null;\n' +
+      'let interactiveBattleState = null;\n' +
+      'let lastPresentedBattleKey = "";\n' +
+      'let outcomeTimer = null;\n' +
+      'let assetRefreshTimer = null;\n' +
+      'let assetRefreshToken = 0;\n' +
+      'const busyDisabledState = new Map();\n' +
+      '\n' +
+      'function syncBattleVisualViewport() {\n' +
+      '  const viewport = window.visualViewport;\n' +
+      '  const height = Math.max(320, Math.round(viewport?.height ?? window.innerHeight));\n' +
+      '  const offsetTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0));\n' +
+      '  document.documentElement.style.setProperty("--battle-visual-height", `${height}px`);\n' +
+      '  document.documentElement.style.setProperty("--battle-visual-offset-top", `${offsetTop}px`);\n' +
+      '}\n' +
+      '\n' +
+      'function escapeText(value, fallback = "—") {\n' +
+      '  const text = value == null ? "" : String(value).trim();\n' +
+      '  return text || fallback;\n' +
+      '}\n' +
+      '\n' +
+      'function number(value, fallback = 0) {\n' +
+      '  const parsed = Number(value);\n' +
+      '  return Number.isFinite(parsed) ? parsed : fallback;\n' +
+      '}\n' +
+      '\n' +
+      'function list(value) {\n' +
+      '  if (Array.isArray(value)) return value;\n' +
+      '  if (value && typeof value === "object") {\n' +
+      '    return Object.entries(value).map(([id, entry]) => typeof entry === "object" ? { id, ...entry } : { id, value: entry });\n' +
+      '  }\n' +
+      '  return [];\n' +
+      '}\n' +
+      '\n' +
+      'function formatPercent(value) {\n' +
+      '  return `${Math.round(Math.max(0, Math.min(1, number(value, 0))) * 100)}%`;\n' +
+      '}\n' +
+      '\n' +
+      'function formatClock(clock = {}) {\n' +
+      '  const time = typeof clock.time === "string"\n' +
+      '    ? clock.time\n' +
+      '    : `${String(number(clock.hour, 0)).padStart(2, "0")}:${String(number(clock.minute, 0)).padStart(2, "0")}`;\n' +
+      '  const rawDaypart = escapeText(clock.daypart, "昼");\n' +
+      '  const key = rawDaypart.toLowerCase();\n' +
+      '  const daypart = key === "day"\n' +
+      '    ? number(clock.hour, 0) < 12 ? "午前" : "日中"\n' +
+      '    : DAYPART_LABELS[key] ?? rawDaypart;\n' +
+      '  return { day: `Day ${number(clock.day, 1)}`, time, daypart };\n' +
+      '}\n' +
+      '\n' +
+      'function panelName(value) {\n' +
+      '  const name = String(value ?? "").trim();\n' +
+      '  return PANEL_NAMES.has(name) ? name : null;\n' +
+      '}\n' +
+      '\n' +
+      'function choiceKind(choice) {\n' +
+      '  const intent = String(choice?.intentType ?? "").trim();\n' +
+      '  const type = String(choice?.type ?? "").trim();\n' +
+      '  return CHOICE_KIND_LABELS[type] ?? CHOICE_KIND_LABELS[intent] ?? "行動";\n' +
+      '}\n' +
+      '\n' +
+      'function dangerLabel(value) {\n' +
+      '  const danger = value && typeof value === "object" ? value.level ?? value.severity : value;\n' +
+      '  if (danger === true) return "危険";\n' +
+      '  if (danger === false || danger == null || danger === "") return "";\n' +
+      '  if (typeof danger === "number") return danger >= 0.75 ? "高危険" : danger > 0 ? "注意" : "";\n' +
+      '  const key = String(danger).trim().toLowerCase();\n' +
+      '  if (["critical", "high", "severe", "deadly"].includes(key)) return "高危険";\n' +
+      '  if (["medium", "moderate", "danger", "dangerous"].includes(key)) return "危険";\n' +
+      '  if (["low", "caution", "warning"].includes(key)) return "注意";\n' +
+      '  return "危険あり";\n' +
+      '}\n' +
+      '\n' +
+      'async function requestJson(url, options = {}) {\n' +
+      '  const controller = new AbortController();\n' +
+      '  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);\n' +
+      '  try {\n' +
+      '    const response = await fetch(url, {\n' +
+      '      credentials: "same-origin",\n' +
+      '      cache: "no-store",\n' +
+      '      headers: { Accept: "application/json", ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },\n' +
+      '      ...options,\n' +
+      '      signal: controller.signal,\n' +
+      '    });\n' +
+      '    const text = await response.text();\n' +
+      '    let data = {};\n' +
+      '    try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text.slice(0, 240) }; }\n' +
+      '    if (!response.ok || data.ok === false) {\n' +
+      '      const message = response.status === 404\n' +
+      '        ? "実プレイ機能は現在サーバーで利用できません。公開準備が完了してから、もう一度お試しください。"\n' +
+      '        : data.error || data.message || `通信に失敗しました（HTTP ${response.status}）`;\n' +
+      '      const error = new Error(message);\n' +
+      '      error.status = response.status;\n' +
+      '      error.data = data;\n' +
+      '      throw error;\n' +
+      '    }\n' +
+      '    return data;\n' +
+      '  } catch (error) {\n' +
+      '    if (error.name === "AbortError") throw new Error("応答に時間がかかっています。通信環境を確認して、もう一度お試しください。");\n' +
+      '    if (error instanceof TypeError) throw new Error("ゲームサーバーへ接続できません。しばらく待ってから再度お試しください。");\n' +
+      '    throw error;\n' +
+      '  } finally {\n' +
+      '    window.clearTimeout(timeout);\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'function disableBusyControls() {\n' +
+      `  $$('button, input, select, textarea', $("#mainContent")).forEach((element) => {\n` +
+      '    if (!busyDisabledState.has(element)) busyDisabledState.set(element, element.disabled);\n' +
+      '    element.disabled = true;\n' +
+      '  });\n' +
+      "  $$('button, input, select, textarea', ui.dialog).forEach((element) => {\n" +
+      '    if (!busyDisabledState.has(element)) busyDisabledState.set(element, element.disabled);\n' +
+      '    element.disabled = true;\n' +
+      '  });\n' +
+      "  $$('button, input, select, textarea', ui.battleDialog).forEach((element) => {\n" +
+      '    if (!busyDisabledState.has(element)) busyDisabledState.set(element, element.disabled);\n' +
+      '    element.disabled = true;\n' +
+      '  });\n' +
+      '}\n' +
+      '\n' +
+      'function setBusy(value, message = "世界が動いています…") {\n' +
+      '  busy = value;\n' +
+      '  ui.busy.hidden = !value;\n' +
+      '  $("b", ui.busy).textContent = message;\n' +
+      '  ui.launch.setAttribute("aria-busy", String(value));\n' +
+      '  ui.game.setAttribute("aria-busy", String(value));\n' +
+      '  ui.dialog.setAttribute("aria-busy", String(value));\n' +
+      '  ui.battleDialog.setAttribute("aria-busy", String(value));\n' +
+      '  if (value) {\n' +
+      '    disableBusyControls();\n' +
+      '    return;\n' +
+      '  }\n' +
+      '  busyDisabledState.forEach((wasDisabled, element) => {\n' +
+      '    if (element.isConnected) element.disabled = wasDisabled;\n' +
+      '  });\n' +
+      '  busyDisabledState.clear();\n' +
+      '  if (currentSave) {\n' +
+      '    renderTutorialUnlocks(currentSave.tutorial);\n' +
+      '    window.requestAnimationFrame(positionTutorialCoach);\n' +
+      '    if (currentSave.battle?.status === "active") {\n' +
+      '      window.requestAnimationFrame(() => $("button:not(:disabled)", ui.battleCommandMenu)?.focus());\n' +
+      '    }\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'function showError(target, message, retry = null) {\n' +
+      '  target.hidden = false;\n' +
+      '  target.replaceChildren();\n' +
+      '  const text = document.createElement("p");\n' +
+      '  text.textContent = message;\n' +
+      '  target.append(text);\n' +
+      '  if (retry) {\n' +
+      '    const button = document.createElement("button");\n' +
+      '    button.type = "button";\n' +
+      '    button.className = "text-button";\n' +
+      '    button.textContent = "もう一度試す";\n' +
+      '    button.addEventListener("click", retry, { once: true });\n' +
+      '    target.append(button);\n' +
+      '  }\n' +
+      '}\n' +
+      '\n' +
+      'function clearErrors() {\n' +
+      '  ui.launchError.hidden = true;\n' +
+      '  ui.gameError.hidden = true;\n' +
+      '  ui.dialogError.hidden = true;\n' +
+      '  ui.battleError.hidden = true;\n' +
+      '}\n' +
+      '\n' +
+      'function switchLaunchTab(tab, { focusPanel = true } = {}) {\n' +
+      '  const isNew = tab === "new";\n' +
+      '  ui.newTab.setAttribute("aria-selected", String(isNew));\n' +
+      '  ui.resumeTab.setAttribute("aria-selected", String(!isNew));\n' +
+      '  ui.newTab.tabIndex = isNew ? 0 : -1;\n' +
+      '  ui.resumeTab.tabIndex = isNew ? -1 : 0;\n' +
+      '  ui.newPanel.hidden = !isNew;\n' +
+      '  ui.resumePanel.hidden = isNew;\n' +
+      '  if (focusPanel) (isNew ? $("#playerName") : $("#refreshSaves")).focus();\n' +
+      '  if (!isNew) loadSaveList();\n' +
+      '}\n' +
+      '\n' +
+      'function validAssetUrl(url) {\n' +
+      '  return typeof url === "string" && (/^\\/TRPG\\/assets\\//u.test(url) || /^\\.\\/assets\\//u.test(url));\n' +
+      '}\n' +
+      '\n' +
+      'function backgroundUrl(key) {\n' +
+      '  const entry = assetManifest.backgrounds?.[key];\n' +
+      '  const url = typeof entry === "string" ? entry : entry?.src;\n' +
+      '  return validAssetUrl(url) ? url : null;\n' +
+      '}\n' +
+      '\n' +
+      'function portraitUrl(npc) {\n' +
+      '  const entry = assetManifest.portraits?.[npc.id] ?? assetManifest.portraits?.[npc.portraitKey];\n' +
+      '  if (typeof entry === "string") return validAssetUrl(entry) ? entry : null;\n' +
+      '  const emotion = npc.emotion || npc.mood || "default";\n' +
+      '  const url = entry?.[emotion] ?? entry?.default ?? entry?.neutral;\n' +
+      '  return validAssetUrl(url) ? url : null;\n' +
+      '}\n' +
+      '\n' +
+      'function monsterUrl(actor) {\n' +
+      '  const entry = assetManifest.monsters?.[actor.actorId] ?? assetManifest.monsters?.[actor.id];\n' +
+      '  const url = typeof entry === "string" ? entry : entry?.src ?? entry?.default;\n' +
+      '  return validAssetUrl(url) ? url : null;\n' +
+      '}\n' +
+      '\n' +
+      'function activeSceneActorId() {\n' +
+      '  if (!scenePlayback) return null;\n' +
+      '  if (!scenePlayback.done) return'... 83115 more characters
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    const API_BASE = "/TRPG/api/game";
+    const LAST_SAVE_KEY = "trpg:last-save-id";
+    const REQUEST_TIMEOUT = 30000;
+    const ASSET_REFRESH_DELAYS = Object.freeze([2500, 5000, 10000, 20000, 40000, 60000, 60000, 60000, 60000]);
+    const PANEL_NAMES = new Set(["movement", "inventory", "skills", "missions", "rumors", "shop", "chronicle"]);
+    const DAYPART_LABELS = Object.freeze({
+      dawn: "明け方",
+      morning: "朝",
+      day: "昼",
+      afternoon: "昼",
+      dusk: "夕方",
+      evening: "夕方",
+      night: "夜",
+    });
+    const CHOICE_KIND_LABELS = Object.freeze({
+      talk: "会話",
+      conversation: "会話",
+      investigate: "調査",
+      observe: "観察",
+      prepare: "戦闘",
+      missionBattle: "戦闘",
+      seekBattle: "戦闘",
+      help: "任務",
+      resolveMission: "任務",
+      wait: "休息",
+      rest: "休息",
+      work: "仕事",
+      move: "移動",
+    });
+    
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+    
+    const ui = {
+      launch: $("#launchScreen"),
+      game: $("#gameScreen"),
+      newTab: $("#newTab"),
+      resumeTab: $("#resumeTab"),
+      newPanel: $("#newGamePanel"),
+      resumePanel: $("#resumePanel"),
+      newForm: $("#newGameForm"),
+      saveList: $("#saveList"),
+      saveListStatus: $("#saveListStatus"),
+      launchError: $("#launchError"),
+      gameError: $("#gameError"),
+      busy: $("#busyOverlay"),
+      backdrop: $("#sceneBackdrop"),
+      npcStage: $("#npcStage"),
+      choices: $("#choiceRegion"),
+      decision: $("#decisionTray"),
+      dialogue: $("#dialogueAdvance"),
+      dialogueSpeaker: $("#dialogueSpeaker"),
+      dialogueLine: $("#dialogueLine"),
+      outcome: $("#outcomeToast"),
+      guidance: $("#guidanceBar"),
+      tutorial: $("#tutorialCard"),
+      announcer: $("#sceneAnnouncer"),
+      quickMenu: $("#quickMenu"),
+      dialog: $("#detailDialog"),
+      dialogError: $("#dialogError"),
+      dialogTitle: $("#dialogTitle"),
+      dialogKicker: $("#dialogKicker"),
+      dialogBody: $("#dialogBody"),
+      battleDialog: $("#battleDialog"),
+      battleScene: $("#battleScene"),
+      battleEnemies: $("#battleEnemies"),
+      battleStatus: $("#battleStatus"),
+      battleMessage: $("#battleMessage"),
+      battleError: $("#battleError"),
+      battlePlaybackControls: $("#battlePlaybackControls"),
+      battleCommandPanel: $("#battleCommandPanel"),
+      battleCommandPrompt: $("#battleCommandPrompt"),
+      battleCommandMenu: $("#battleCommandMenu"),
+    };
+    
+    let currentSave = null;
+    let assetManifest = { backgrounds: {}, portraits: {}, monsters: {} };
+    let busy = false;
+    let scenePlayback = null;
+    let battlePlayback = null;
+    let interactiveBattleState = null;
+    let lastPresentedBattleKey = "";
+    let outcomeTimer = null;
+    let assetRefreshTimer = null;
+    let assetRefreshToken = 0;
+    const busyDisabledState = new Map();
+    
+    function syncBattleVisualViewport() {
+      const viewport = window.visualViewport;
+      const height = Math.max(320, Math.round(viewport?.height ?? window.innerHeight));
+      const offsetTop = Math.max(0, Math.round(viewport?.offsetTop ?? 0));
+      document.documentElement.style.setProperty("--battle-visual-height", `${height}px`);
+      document.documentElement.style.setProperty("--battle-visual-offset-top", `${offsetTop}px`);
+    }
+    
+    function escapeText(value, fallback = "—") {
+      const text = value == null ? "" : String(value).trim();
+      return text || fallback;
+    }
+    
+    function number(value, fallback = 0) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+    
+    function list(value) {
+      if (Array.isArray(value)) return value;
+      if (value && typeof value === "object") {
+        return Object.entries(value).map(([id, entry]) => typeof entry === "object" ? { id, ...entry } : { id, value: entry });
+      }
+      return [];
+    }
+    
+    function formatPercent(value) {
+      return `${Math.round(Math.max(0, Math.min(1, number(value, 0))) * 100)}%`;
+    }
+    
+    function formatClock(clock = {}) {
+      const time = typeof clock.time === "string"
+        ? clock.time
+        : `${String(number(clock.hour, 0)).padStart(2, "0")}:${String(number(clock.minute, 0)).padStart(2, "0")}`;
+      const rawDaypart = escapeText(clock.daypart, "昼");
+      const key = rawDaypart.toLowerCase();
+      const daypart = key === "day"
+        ? number(clock.hour, 0) < 12 ? "午前" : "日中"
+        : DAYPART_LABELS[key] ?? rawDaypart;
+      return { day: `Day ${number(clock.day, 1)}`, time, daypart };
+    }
+    
+    function panelName(value) {
+      const name = String(value ?? "").trim();
+      return PANEL_NAMES.has(name) ? name : null;
+    }
+    
+    function choiceKind(choice) {
+      const intent = String(choice?.intentType ?? "").trim();
+      const type = String(choice?.type ?? "").trim();
+      return CHOICE_KIND_LABELS[type] ?? CHOICE_KIND_LABELS[intent] ?? "行動";
+    }
+    
+    function dangerLabel(value) {
+      const danger = value && typeof value === "object" ? value.level ?? value.severity : value;
+      if (danger === true) return "危険";
+      if (danger === false || danger == null || danger === "") return "";
+      if (typeof danger === "number") return danger >= 0.75 ? "高危険" : danger > 0 ? "注意" : "";
+      const key = String(danger).trim().toLowerCase();
+      if (["critical", "high", "severe", "deadly"].includes(key)) return "高危険";
+      if (["medium", "moderate", "danger", "dangerous"].includes(key)) return "危険";
+      if (["low", "caution", "warning"].includes(key)) return "注意";
+      return "危険あり";
+    }
+    
+    async function requestJson(url, options = {}) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+      try {
+        const response = await fetch(url, {
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: { Accept: "application/json", ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers },
+          ...options,
+          signal: controller.signal,
+        });
+        const text = await response.text();
+        let data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text.slice(0, 240) }; }
+        if (!response.ok || data.ok === false) {
+          const message = response.status === 404
+            ? "実プレイ機能は現在サーバーで利用できません。公開準備が完了してから、もう一度お試しください。"
+            : data.error || data.message || `通信に失敗しました（HTTP ${response.status}）`;
+          const error = new Error(message);
+          error.status = response.status;
+          error.data = data;
+          throw error;
+        }
+        return data;
+      } catch (error) {
+        if (error.name === "AbortError") throw new Error("応答に時間がかかっています。通信環境を確認して、もう一度お試しください。");
+        if (error instanceof TypeError) throw new Error("ゲームサーバーへ接続できません。しばらく待ってから再度お試しください。");
+        throw error;
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+    
+    function disableBusyControls() {
+      $$('button, input, select, textarea', $("#mainContent")).forEach((element) => {
+        if (!busyDisabledState.has(element)) busyDisabledState.set(element, element.disabled);
+        element.disabled = true;
+      });
+      $$('button, input, select, textarea', ui.dialog).forEach((element) => {
+        if (!busyDisabledState.has(element)) busyDisabledState.set(element, element.disabled);
+        element.disabled = true;
+      });
+      $$('button, input, select, textarea', ui.battleDialog).forEach((element) => {
+        if (!busyDisabledState.has(element)) busyDisabledState.set(element, element.disabled);
+        element.disabled = true;
+      });
+    }
+    
+    function setBusy(value, message = "世界が動いています…") {
+      busy = value;
+      ui.busy.hidden = !value;
+      $("b", ui.busy).textContent = message;
+      ui.launch.setAttribute("aria-busy", String(value));
+      ui.game.setAttribute("aria-busy", String(value));
+      ui.dialog.setAttribute("aria-busy", String(value));
+      ui.battleDialog.setAttribute("aria-busy", String(value));
+      if (value) {
+        disableBusyControls();
+        return;
+      }
+      busyDisabledState.forEach((wasDisabled, element) => {
+        if (element.isConnected) element.disabled = wasDisabled;
+      });
+      busyDisabledState.clear();
+      if (currentSave) {
+        renderTutorialUnlocks(currentSave.tutorial);
+        window.requestAnimationFrame(positionTutorialCoach);
+        if (currentSave.battle?.status === "active") {
+          window.requestAnimationFrame(() => $("button:not(:disabled)", ui.battleCommandMenu)?.focus());
+        }
+      }
+    }
+    
+    function showError(target, message, retry = null) {
+      target.hidden = false;
+      target.replaceChildren();
+      const text = document.createElement("p");
+      text.textContent = message;
+      target.append(text);
+      if (retry) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "text-button";
+        button.textContent = "もう一度試す";
+        button.addEventListener("click", retry, { once: true });
+        target.append(button);
+      }
+    }
+    
+    function clearErrors() {
+      ui.launchError.hidden = true;
+      ui.gameError.hidden = true;
+      ui.dialogError.hidden = true;
+      ui.battleError.hidden = true;
+    }
+    
+    function switchLaunchTab(tab, { focusPanel = true } = {}) {
+      const isNew = tab === "new";
+      ui.newTab.setAttribute("aria-selected", String(isNew));
+      ui.resumeTab.setAttribute("aria-selected", String(!isNew));
+      ui.newTab.tabIndex = isNew ? 0 : -1;
+      ui.resumeTab.tabIndex = isNew ? -1 : 0;
+      ui.newPanel.hidden = !isNew;
+      ui.resumePanel.hidden = isNew;
+      if (focusPanel) (isNew ? $("#playerName") : $("#refreshSaves")).focus();
+      if (!isNew) loadSaveList();
+    }
+    
+    function validAssetUrl(url) {
+      return typeof url === "string" && (/^\/TRPG\/assets\//u.test(url) || /^\.\/assets\//u.test(url));
+    }
+    
+    function backgroundUrl(key) {
+      const entry = assetManifest.backgrounds?.[key];
+      const url = typeof entry === "string" ? entry : entry?.src;
+      return validAssetUrl(url) ? url : null;
+    }
+    
+    function portraitUrl(npc) {
+      const entry = assetManifest.portraits?.[npc.id] ?? assetManifest.portraits?.[npc.portraitKey];
+      if (typeof entry === "string") return validAssetUrl(entry) ? entry : null;
+      const emotion = npc.emotion || npc.mood || "default";
+      const url = entry?.[emotion] ?? entry?.default ?? entry?.neutral;
+      return validAssetUrl(url) ? url : null;
+    }
+    
+    function monsterUrl(actor) {
+      const entry = assetManifest.monsters?.[actor.actorId] ?? assetManifest.monsters?.[actor.id];
+      const url = typeof entry === "string" ? entry : entry?.src ?? entry?.default;
+      return validAssetUrl(url) ? url : null;
+    }
+    
+    function activeSceneActorId() {
+      if (!scenePlayback) return null;
+      if (!scenePlayback.done) return scenePlayback.beats[scenePlayback.index]?.actorId ?? null;
+      return [...scenePlayback.beats].reverse().find((beat) => beat.actorId)?.actorId ?? null;
+    }
+    
+    function visibleAssetsMissing(save = currentSave) {
+      if (!save) return false;
+      const scene = save.scene ?? {};
+      const backgroundKey = scene.backgroundKey || scene.facilityId || "default";
+      if (!backgroundUrl(backgroundKey)) return true;
+      if (list(scene.presentNpcs).some((npc) => !portraitUrl(npc))) return true;
+      return list(save.battle?.actors).some((actor) => actor.side === "enemy" && !monsterUrl(actor));
+    }
+    
+    function applyVisibleAssets() {
+      if (!currentSave) return;
+      const scene = currentSave.scene ?? {};
+      const backgroundKey = scene.backgroundKey || scene.facilityId || "default";
+      const imageUrl = backgroundUrl(backgroundKey);
+      ui.backdrop.style.backgroundImage = imageUrl ? `url(${JSON.stringify(imageUrl)})` : "";
+      renderNpcs(scene.presentNpcs, activeSceneActorId());
+      if (currentSave.battle?.status === "active" && ui.battleDialog.open) {
+        renderBattleActors(new Map(list(currentSave.battle.actors).map((actor) => [actor.instanceId, { ...actor }])));
+      } else if (battlePlayback && ui.battleDialog.open) {
+        renderBattlePage();
+      }
+    }
+    
+    function scheduleAssetRefresh(save = currentSave) {
+      assetRefreshToken += 1;
+      const token = assetRefreshToken;
+      if (assetRefreshTimer) window.clearTimeout(assetRefreshTimer);
+      assetRefreshTimer = null;
+      if (!visibleAssetsMissing(save)) return;
+      let attempt = 0;
+      const refresh = async () => {
+        if (token !== assetRefreshToken || currentSave?.id !== save?.id) return;
+        const changed = await loadManifest();
+        if (token !== assetRefreshToken) return;
+        if (changed) applyVisibleAssets();
+        if (!visibleAssetsMissing() || attempt >= ASSET_REFRESH_DELAYS.length) return;
+        assetRefreshTimer = window.setTimeout(refresh, ASSET_REFRESH_DELAYS[attempt++]);
+      };
+      assetRefreshTimer = window.setTimeout(refresh, ASSET_REFRESH_DELAYS[attempt++]);
+    }
+    
+    function renderNpcs(npcs, activeActorId = null) {
+      ui.npcStage.replaceChildren();
+      const entries = list(npcs).slice(0, 5);
+      ui.npcStage.dataset.count = String(entries.length);
+      const visibleActorId = activeActorId || "";
+      entries.forEach((npc, index) => {
+        const card = document.createElement("article");
+        const canTalk = npc.directTalkAvailable === true;
+        card.className = `npc-card${npc.id === visibleActorId ? " is-active" : ""}${canTalk ? " is-talkable" : ""}`;
+        card.dataset.npcId = npc.id;
+        card.style.setProperty("--npc-index", index);
+        if (canTalk) {
+          const talk = () => {
+            if (busy || (scenePlayback && !scenePlayback.done)) return;
+            sendCommand("TALK", { npcId: npc.id });
+          };
+          card.tabIndex = 0;
+          card.setAttribute("role", "button");
+          card.setAttribute("aria-label", `${escapeText(npc.name, "人物")}に話しかける`);
+          card.title = `${escapeText(npc.name, "人物")}に話しかける`;
+          card.addEventListener("click", talk);
+          card.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            talk();
+          });
+        }
+        const imageUrl = portraitUrl(npc);
+        if (imageUrl) {
+          const image = document.createElement("img");
+          image.src = imageUrl;
+          image.alt = `${escapeText(npc.name, "人物")}の立ち絵`;
+          card.append(image);
+        } else {
+          const fallback = document.createElement("div");
+          fallback.className = "portrait-fallback";
+          fallback.textContent = escapeText(npc.name, "人").slice(0, 1);
+          fallback.setAttribute("aria-hidden", "true");
+          card.append(fallback);
+        }
+        const caption = document.createElement("div");
+        const name = document.createElement("strong");
+        name.textContent = escapeText(npc.name, "名もなき人物");
+        const role = document.createElement("span");
+        role.textContent = escapeText(npc.role || npc.occupation || npc.mood, "この場にいる");
+        caption.append(name, role);
+        card.append(caption);
+        ui.npcStage.append(card);
+      });
+    }
+    
+    function setActiveNpc(actorId) {
+      const cards = $$(".npc-card", ui.npcStage);
+      const activeId = actorId && cards.some((card) => card.dataset.npcId === actorId) ? actorId : "";
+      cards.forEach((card) => card.classList.toggle("is-active", card.dataset.npcId === activeId));
+    }
+    
+    function renderChoices(choices, ended = false) {
+      ui.choices.replaceChildren();
+      const entries = list(choices).slice(0, 3);
+      if (!entries.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-message";
+        const message = document.createElement("p");
+        message.textContent = ended
+          ? "100日間の旅は完結しました。あなたの選択が残した結果を振り返れます。"
+          : "選択肢を準備できませんでした。最新の状態を読み込んでください。";
+        const action = document.createElement("button");
+        action.type = "button";
+        action.className = "choice-button ending-choice";
+        const marker = document.createElement("span");
+        marker.className = "choice-number";
+        marker.setAttribute("aria-hidden", "true");
+        marker.textContent = ended ? "終" : "↻";
+        const label = document.createElement("span");
+        label.className = "choice-label";
+        label.textContent = ended ? "旅の年代記を見る" : "最新の状態を読み込む";
+        action.append(marker, label);
+        action.addEventListener("click", () => {
+          if (ended) openPanelFromUi("chronicle");
+          else loadGame(currentSave.id);
+        });
+        empty.append(message, action);
+        ui.choices.append(empty);
+        return;
+      }
+      entries.forEach((choice, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "choice-button";
+        const choiceId = choice.choiceId || choice.id;
+        if (choiceId) button.dataset.choiceId = choiceId;
+        if (choice.actionId) button.dataset.actionId = choice.actionId;
+        const label = escapeText(choice.label, "行動する");
+        const kind = choiceKind(choice);
+        const minutes = number(choice.minutes);
+        const danger = dangerLabel(choice.danger);
+        if (danger) button.classList.add("is-danger");
+        button.innerHTML = `<span class="choice-number" aria-hidden="true">${index + 1}</span><span class="choice-content"><span class="choice-label"></span><span class="choice-meta"><span class="choice-kind"></span><span class="choice-time"></span><span class="choice-danger" hidden></span></span></span>`;
+        $(".choice-label", button).textContent = label;
+        $(".choice-kind", button).textContent = kind;
+        $(".choice-time", button).textContent = minutes > 0 ? `${minutes}分` : "時間消費なし";
+        const dangerElement = $(".choice-danger", button);
+        dangerElement.hidden = !danger;
+        dangerElement.textContent = danger;
+        button.setAttribute("aria-label", `${label}。${kind}。${minutes > 0 ? `所要${minutes}分` : "時間消費なし"}${danger ? `。${danger}` : ""}`);
+        button.disabled = !choiceId;
+        button.addEventListener("click", () => sendCommand("CHOOSE", {
+          choiceId: button.dataset.choiceId,
+          actionId: button.dataset.actionId || "",
+        }));
+        ui.choices.append(button);
+      });
+    }
+    
+    function segmentJapaneseText(value, maxLength = 62) {
+      const text = escapeText(value, "").replace(/\s+/gu, " ").trim();
+      if (!text) return [];
+      const sentences = text.match(/[^。！？!?]+[。！？!?]?/gu) ?? [text];
+      const segments = [];
+      let current = "";
+      const push = (chunk) => {
+        let rest = chunk.trim();
+        while (rest.length > maxLength) {
+          const window = rest.slice(0, maxLength + 1);
+          const breakAt = Math.max(window.lastIndexOf("、"), window.lastIndexOf("，"), window.lastIndexOf(" "));
+          const length = breakAt >= Math.floor(maxLength * .55) ? breakAt + 1 : maxLength;
+          segments.push(rest.slice(0, length).trim());
+          rest = rest.slice(length).trim();
+        }
+        if (rest) segments.push(rest);
+      };
+      sentences.forEach((sentence) => {
+        const candidate = `${current}${sentence}`;
+        if (candidate.length <= maxLength) current = candidate;
+        else {
+          if (current) push(current);
+          current = sentence;
+        }
+      });
+      if (current) push(current);
+      return segments;
+    }
+    
+    function buildSceneBeats(save) {
+      const scene = save?.scene ?? {};
+      const npcById = new Map(list(scene.presentNpcs).map((npc) => [npc.id, npc]));
+      const ordered = list(scene.beats);
+      if (ordered.length) {
+        const beats = [];
+        ordered.forEach((beat) => {
+          const speaker = beat.kind === "player"
+            ? escapeText(beat.speakerLabel, "あなた")
+            : beat.actorId
+              ? escapeText(beat.speakerLabel || npcById.get(beat.actorId)?.name, "")
+              : escapeText(beat.speakerLabel, "");
+          const segments = segmentJapaneseText(beat.text, window.matchMedia("(max-width: 700px)").matches ? 42 : 58);
+          const introductionToken = escapeText(beat.introductionToken ?? beat.introduction?.token, "");
+          segments.forEach((text, index) => beats.push({
+            type: beat.kind === "npc" || beat.kind === "player" ? "speech" : "narration",
+            actorId: beat.actorId ?? null,
+            speaker,
+            text,
+            // Recognition is acknowledged only after the complete authored/model
+            // speech has actually been shown, never when an earlier split appears.
+            introductionToken: introductionToken && index === segments.length - 1 ? introductionToken : null,
+          }));
+        });
+        if (beats.length) return beats;
+      }
+      const beats = segmentJapaneseText(scene.narrative, 62).map((text) => ({
+        type: "narration",
+        actorId: null,
+        speaker: "",
+        text,
+      }));
+      list(scene.speeches).forEach((speech) => {
+        segmentJapaneseText(speech.text, 58).forEach((text) => beats.push({
+          type: "speech",
+          actorId: speech.actorId,
+          speaker: escapeText(npcById.get(speech.actorId)?.name, ""),
+          text,
+        }));
+      });
+      if (!beats.length) beats.push({ type: "narration", actorId: null, speaker: "", text: "静かな時間が流れている。" });
+      return beats;
+    }
+    
+    function startScenePlayback(save, { preserve = false } = {}) {
+      const key = `${save.id}:${save.revision}`;
+      if (scenePlayback?.key === key) {
+        renderScenePlayback();
+        return;
+      }
+      const previous = preserve ? scenePlayback : null;
+      const beats = buildSceneBeats(save);
+      scenePlayback = {
+        key,
+        beats,
+        index: previous ? Math.min(previous.index, beats.length - 1) : 0,
+        done: Boolean(previous?.done),
+      };
+      renderScenePlayback();
+    }
+    
+    function renderScenePlayback() {
+      if (!scenePlayback) return;
+      if (scenePlayback.done) {
+        ui.dialogue.hidden = true;
+        ui.decision.hidden = list(currentSave?.choices).length === 0 && currentSave?.world?.ended !== true;
+        const lastSpeaker = [...scenePlayback.beats].reverse().find((beat) => beat.actorId)?.actorId;
+        setActiveNpc(lastSpeaker);
+      } else {
+        const beat = scenePlayback.beats[scenePlayback.index];
+        ui.dialogue.hidden = false;
+        ui.decision.hidden = true;
+        ui.dialogueSpeaker.hidden = !beat.speaker;
+        ui.dialogueSpeaker.textContent = beat.speaker;
+        ui.dialogueLine.textContent = beat.text;
+        setActiveNpc(beat.actorId);
+      }
+      window.requestAnimationFrame(positionTutorialCoach);
+    }
+    
+    function focusCurrentStoryControl() {
+      if (ui.game.hidden || ui.dialog.open || ui.battleDialog.open) return;
+      if (!ui.dialogue.hidden) ui.dialogue.focus();
+      else {
+        const emphasisTarget = String(currentSave?.tutorial?.emphasisTarget ?? "").replace(/^panel:/u, "").trim();
+        const tutorialTarget = !["", "choice", "choices"].includes(emphasisTarget)
+          ? applyTutorialEmphasis(emphasisTarget)
+          : null;
+        if (tutorialTarget && !tutorialTarget.disabled) tutorialTarget.focus();
+        else if (!ui.decision.hidden) $(".choice-button", ui.choices)?.focus();
+        else if (emphasisTarget === "movement") $("#locationButton")?.focus();
+      }
+    }
+    
+    function introductionAckCommandId(token) {
+      const stableToken = String(token ?? "").replace(/[\u0000-\u001f\u007f]/gu, "").slice(0, 88);
+      return `npc-intro:${stableToken}`;
+    }
+    
+    async function advanceDialogue() {
+      if (!scenePlayback || scenePlayback.done || busy) return;
+      ui.outcome.hidden = true;
+      const displayedIndex = scenePlayback.index;
+      const displayedBeat = scenePlayback.beats[displayedIndex];
+      const introductionToken = escapeText(displayedBeat?.introductionToken, "");
+      if (introductionToken) {
+        const acknowledged = await sendCommand(
+          "ACK_NPC_INTRODUCTION",
+          { token: introductionToken },
+          introductionAckCommandId(introductionToken),
+        );
+        // Keep the introduction visible when recognition could not be persisted.
+        // The retry path reuses the same command id, so a lost response is safe.
+        if (!acknowledged || !scenePlayback || scenePlayback.done) return;
+        const resumedBeat = scenePlayback.beats[displayedIndex];
+        if (!resumedBeat
+          || resumedBeat.actorId !== displayedBeat.actorId
+          || resumedBeat.text !== displayedBeat.text) return;
+        resumedBeat.introductionToken = null;
+      }
+      if (scenePlayback.index < scenePlayback.beats.length - 1) scenePlayback.index += 1;
+      else scenePlayback.done = true;
+      renderScenePlayback();
+      if (scenePlayback.done) window.requestAnimationFrame(focusCurrentStoryControl);
+    }
+    
+    function activeStoryMissions(save = currentSave) {
+      const statuses = new Set(["active", "available", "in_progress"]);
+      return list(save?.missions)
+        .filter((mission) => mission.kind !== "permanent" && statuses.has(mission.status))
+        .sort((left, right) => number(left.deadlineDay, 999) - number(right.deadlineDay, 999)
+          || String(left.id ?? "").localeCompare(String(right.id ?? "")));
+    }
+    
+    function targetFacilityName(targetFacilityId, suppliedName = "", save = currentSave) {
+      if (suppliedName) return escapeText(suppliedName);
+      if (!targetFacilityId) return "";
+      const movement = list(save?.movement).find((move) => (move.destinationFacilityId || move.targetFacilityId) === targetFacilityId);
+      return escapeText(movement?.destinationFacilityName || movement?.destinationName, "");
+    }
+    
+    function guidanceView(save) {
+      const supplied = save?.guidance && typeof save.guidance === "object" ? save.guidance : null;
+      if (supplied && [supplied.kicker, supplied.title, supplied.detail, supplied.deadlineLabel, supplied.actionPanel].some(Boolean)) {
+        return {
+          ...supplied,
+          targetFacilityName: targetFacilityName(supplied.targetFacilityId, supplied.targetFacilityName, save),
+        };
+      }
+      const mission = activeStoryMissions(save)[0];
+      if (!mission) return null;
+      const step = mission.currentStep;
+      const stepLabel = typeof step === "object" ? step?.label : step;
+      const targetFacilityId = typeof step === "object" ? step?.targetFacilityId : mission.targetFacilityId;
+      const facilityName = targetFacilityName(
+        targetFacilityId,
+        typeof step === "object" ? step?.targetFacilityName : mission.targetFacilityName,
+        save,
+      );
+      const deadlineLabel = escapeText(mission.deadlineLabel, mission.deadlineDay ? `期限 Day ${mission.deadlineDay}` : "");
+      const mustMove = Boolean(targetFacilityId && targetFacilityId !== save?.scene?.facilityId);
+      const resolvedStepLabel = escapeText(stepLabel, "次の手掛かりを探す");
+      return {
+        kicker: "現在の目的",
+        title: mustMove && facilityName ? `${facilityName}へ：${resolvedStepLabel}` : resolvedStepLabel,
+        detail: `${escapeText(mission.title || mission.name, "物語を進める")}。${mustMove ? "現在地を開いて目的地へ向かう。" : "中央の3択から進め方を選ぶ。"}`,
+        targetFacilityId,
+        targetFacilityName: facilityName,
+        deadlineLabel,
+        actionPanel: mustMove ? "movement" : null,
+      };
+    }
+    
+    function panelActionLabel(name) {
+      const labels = {
+        movement: "移動先を見る",
+        inventory: "持ち物を見る",
+        skills: "能力を見る",
+        missions: "任務を見る",
+        rumors: "噂を見る",
+        shop: "店を見る",
+        chronicle: "記録を見る",
+      };
+      return labels[name] ?? "詳しく見る";
+    }
+    
+    function renderGuidance(save) {
+      const guidance = guidanceView(save);
+      ui.guidance.hidden = !guidance;
+      if (!guidance) {
+        ui.guidance.removeAttribute("data-target-facility-id");
+        ui.guidance.removeAttribute("data-panel");
+        ui.guidance.disabled = true;
+        return;
+      }
+      $("#guidanceKicker").textContent = escapeText(guidance.kicker, "現在の目的");
+      $("#guidanceTitle").textContent = escapeText(guidance.title, "次の一歩");
+      $("#guidanceDetail").textContent = escapeText(guidance.detail, guidance.targetFacilityName ? `${guidance.targetFacilityName}へ向かいましょう。` : "旅を続けましょう。");
+      const deadline = $("#guidanceDeadline");
+      deadline.textContent = escapeText(guidance.deadlineLabel, "");
+      deadline.hidden = !deadline.textContent;
+      const targetPanel = panelName(guidance.actionPanel);
+      ui.guidance.disabled = !targetPanel;
+      ui.guidance.dataset.panel = targetPanel ?? "";
+      ui.guidance.dataset.targetFacilityId = escapeText(guidance.targetFacilityId, "");
+      const guidanceLabel = [guidance.title, guidance.detail, guidance.deadlineLabel, targetPanel ? panelActionLabel(targetPanel) : ""]
+        .filter(Boolean)
+        .map((part) => String(part).trim().replace(/[。．.!！?？]+$/u, ""))
+        .join("。");
+      ui.guidance.setAttribute("aria-label", guidanceLabel);
+      if (guidance.targetFacilityId) ui.guidance.dataset.targetFacilityId = guidance.targetFacilityId;
+      else ui.guidance.removeAttribute("data-target-facility-id");
+    }
+    
+    function clearTutorialEmphasis() {
+      $$(".tutorial-emphasis").forEach((element) => element.classList.remove("tutorial-emphasis"));
+      $$('[data-tutorial-described="true"]').forEach((element) => {
+        const tokens = String(element.getAttribute("aria-describedby") ?? "")
+          .split(/\s+/u)
+          .filter((token) => token && token !== "tutorialBody");
+        if (tokens.length) element.setAttribute("aria-describedby", tokens.join(" "));
+        else element.removeAttribute("aria-describedby");
+        delete element.dataset.tutorialDescribed;
+      });
+    }
+    
+    function applyTutorialEmphasis(value) {
+      clearTutorialEmphasis();
+      const key = String(value ?? "").replace(/^panel:/u, "").trim();
+      const selectors = {
+        choices: "#decisionTray",
+        choice: "#decisionTray",
+        guidance: "#guidanceBar",
+        movement: "#locationButton",
+        inventory: '.scene-topbar [data-open-panel="inventory"]',
+        skills: '.scene-topbar [data-open-panel="skills"]',
+        missions: '.scene-topbar [data-open-panel="missions"]',
+        rumors: "#openQuickMenu",
+        shop: ui.quickMenu.hidden ? "#openQuickMenu" : '#quickMenu [data-open-panel="shop"]',
+      };
+      const selector = selectors[key];
+      if (!selector) return null;
+      const visible = $$(selector).find((element) => !element.hidden && element.getClientRects().length > 0);
+      if (visible) {
+        visible.classList.add("tutorial-emphasis");
+        const tokens = new Set(String(visible.getAttribute("aria-describedby") ?? "").split(/\s+/u).filter(Boolean));
+        tokens.add("tutorialBody");
+        visible.setAttribute("aria-describedby", [...tokens].join(" "));
+        visible.dataset.tutorialDescribed = "true";
+      }
+      return visible ?? null;
+    }
+    
+    const TUTORIAL_COACH_COPY = Object.freeze({
+      "first-choice": "気になる行動を1つ選ぼう",
+      "first-conversation": "返したい言葉を選ぼう",
+      "conversation-depth": "もう一つ、聞きたいことを選ぼう",
+      "first-movement": "現在地を開き、「村の広場」を選ぶ",
+      "discover-trouble": "話を聞く相手を選ぼう",
+      "trouble-aftermath": "誰か一人に、起きたことを聞こう",
+      "mission-log": "右上の巻物で、目的と期限を確認",
+      shop: "メニューから店を開いてみよう",
+      skills: "右上の能力を開く → おすすめ技の必要SPを確認 → 取得。今は取得せず、捜索を中断する選択もできる",
+      combat: "赤い選択肢は戦闘。準備できたら進もう",
+    });
+    
+    function positionTutorialCoach() {
+      if (ui.tutorial.hidden) return;
+      const targetKey = ui.tutorial.dataset.targetKey;
+      const target = applyTutorialEmphasis(targetKey);
+      if (!target || (targetKey === "choices" && ui.decision.hidden)) {
+        ui.tutorial.style.visibility = "hidden";
+        return;
+      }
+      ui.tutorial.style.visibility = "hidden";
+      ui.tutorial.style.left = "0px";
+      ui.tutorial.style.top = "0px";
+      const targetRect = target.getBoundingClientRect();
+      const coachRect = ui.tutorial.getBoundingClientRect();
+      const margin = 9;
+      const roomAbove = targetRect.top - coachRect.height - margin;
+      const placement = roomAbove >= 8 ? "above" : "below";
+      const top = placement === "above"
+        ? targetRect.top - coachRect.height - margin
+        : targetRect.bottom + margin;
+      const left = Math.max(8, Math.min(window.innerWidth - coachRect.width - 8, targetRect.left + targetRect.width / 2 - coachRect.width / 2));
+      const clampedTop = Math.max(8, Math.min(window.innerHeight - coachRect.height - 8, top));
+      ui.tutorial.dataset.placement = placement;
+      ui.tutorial.style.left = `${Math.round(left)}px`;
+      ui.tutorial.style.top = `${Math.round(clampedTop)}px`;
+      ui.tutorial.style.setProperty("--coach-arrow-left", `${Math.max(14, Math.min(coachRect.width - 14, targetRect.left + targetRect.width / 2 - left))}px`);
+      ui.tutorial.style.visibility = "visible";
+    }
+    
+    function renderTutorial(tutorial) {
+      const value = tutorial && typeof tutorial === "object" ? tutorial : null;
+      const visible = Boolean(value && value.visible !== false && value.complete !== true && (value.id || value.emphasisTarget));
+      ui.tutorial.hidden = !visible;
+      clearTutorialEmphasis();
+      if (!visible) return;
+      $("#tutorialTitle").textContent = escapeText(value.title, "旅の案内");
+      $("#tutorialBody").textContent = TUTORIAL_COACH_COPY[value.id]
+        ?? escapeText(value.actionLabel || value.title, "次の操作を試してみよう");
+      const progress = $("#tutorialProgress");
+      progress.textContent = escapeText(value.progressLabel, "");
+      progress.hidden = !progress.textContent;
+      const action = $("#tutorialAction");
+      const targetPanel = panelName(value.actionPanel);
+      action.hidden = true;
+      action.dataset.panel = targetPanel ?? "";
+      action.dataset.tutorialId = escapeText(value.id, "");
+      action.dataset.acknowledgeable = String(Boolean(value.acknowledgeable && value.id));
+      ui.tutorial.dataset.targetKey = String(value.emphasisTarget ?? "").replace(/^panel:/u, "").trim();
+      ui.tutorial.dataset.panel = targetPanel ?? "";
+      ui.tutorial.dataset.tutorialId = escapeText(value.id, "");
+      ui.tutorial.dataset.acknowledgeable = String(Boolean(value.acknowledgeable && value.id));
+      window.requestAnimationFrame(positionTutorialCoach);
+    }
+    
+    function renderTutorialUnlocks(tutorial) {
+      const controlledPanels = new Set(["movement", "missions", "shop", "skills"]);
+      const unlocks = tutorial && tutorial.complete !== true && tutorial.unlocked && typeof tutorial.unlocked === "object"
+        ? tutorial.unlocked
+        : null;
+      $$('[data-open-panel]').forEach((button) => {
+        const name = panelName(button.dataset.openPanel);
+        if (!controlledPanels.has(name)) return;
+        const locked = Boolean(unlocks && unlocks[name] === false);
+        if (locked) {
+          button.dataset.tutorialLocked = "true";
+          if (name === "movement") {
+            button.disabled = true;
+            button.setAttribute("aria-disabled", "true");
+          } else {
+            button.hidden = true;
+          }
+          return;
+        }
+        if (button.dataset.tutorialLocked === "true") {
+          button.disabled = false;
+          button.hidden = false;
+          delete button.dataset.tutorialLocked;
+          button.removeAttribute("aria-disabled");
+        }
+      });
+    }
+    
+    function announceScene(save) {
+      const clock = formatClock(save?.clock);
+      const facility = escapeText(save?.scene?.facilityName || save?.scene?.location, "現在地");
+      const outcome = save?.scene?.lastOutcome;
+      const outcomeText = typeof outcome === "string" ? outcome : outcome?.summary || outcome?.message;
+      const guidance = guidanceView(save);
+      const weatherText = save?.weather?.label ? "、天気は" + escapeText(save.weather.label) : "";
+      const parts = [clock.day + " " + clock.time + "、" + facility + weatherText];
+      if (outcomeText) parts.push(escapeText(outcomeText));
+      if (guidance?.title) parts.push(`現在の目的、${escapeText(guidance.title)}`);
+      const announcement = `${parts.map((part) => String(part).replace(/[。．.]+$/gu, "")).join("。")}。`;
+      ui.announcer.textContent = "";
+      window.requestAnimationFrame(() => { ui.announcer.textContent = announcement; });
+    }
+    
+    function renderPlayer(player = {}) {
+      const gold = number(player.gold);
+      const sp = number(player.sp);
+      $("#playerDisplayName").textContent = escapeText(player.name, "旅人");
+      $("#playerLevel").textContent = `Lv ${number(player.level, 1)}`;
+      $("#playerGold").textContent = `${gold.toLocaleString("ja-JP")} G`;
+      $("#spBadge").textContent = sp;
+      $("#spBadge").closest("button")?.setAttribute("aria-label", `能力とスキルを見る（所持SP ${sp}）`);
+      const hp = Math.max(0, Math.min(1, number(player.hpRatio, 1)));
+      const mp = Math.max(0, Math.min(1, number(player.mpRatio, 1)));
+      $("#hpBar").value = hp;
+      $("#mpBar").value = mp;
+      $("#hpText").textContent = formatPercent(hp);
+      $("#mpText").textContent = formatPercent(mp);
+      const hunger = Math.max(0, Math.min(100, number(player.needs?.hunger, 0)));
+      const fatigue = Math.max(0, Math.min(100, number(player.needs?.fatigue, 0)));
+      const hungerStatus = $("#hungerStatus");
+      const fatigueStatus = $("#fatigueStatus");
+      hungerStatus.textContent = "食 " + Math.round(hunger);
+      hungerStatus.title = "空腹度 " + Math.round(hunger) + "：" + escapeText(player.needs?.hungerLabel, "状態不明");
+      hungerStatus.dataset.level = hunger >= 80 ? "critical" : hunger >= 55 ? "warning" : "normal";
+      fatigueStatus.textContent = "疲 " + Math.round(fatigue);
+      fatigueStatus.title = "疲労度 " + Math.round(fatigue) + "：" + escapeText(player.needs?.fatigueLabel, "状態不明");
+      fatigueStatus.dataset.level = fatigue >= 80 ? "critical" : fatigue >= 55 ? "warning" : "normal";
+    }
+    
+    function renderSave(save, { focus = "preserve", announce = false, preserveDialogue = false } = {}) {
+      currentSave = save;
+      localStorage.setItem(LAST_SAVE_KEY, save.id);
+      clearErrors();
+      ui.launch.hidden = true;
+      ui.game.hidden = false;
+      document.body.classList.add("is-playing");
+    
+      const clock = formatClock(save.clock);
+      const scene = save.scene ?? {};
+      $("#dayLabel").textContent = clock.day;
+      $("#timeLabel").textContent = clock.time;
+      $("#daypartLabel").textContent = clock.daypart;
+      const weather = save.weather ?? {};
+      $("#weatherLabel").textContent = weather.label ? escapeText(weather.label) : "天気—";
+      $("#weatherLabel").title = weather.label
+        ? escapeText(weather.label) + "。移動時間倍率 " + Number(weather.travelTimeMultiplier ?? 1).toFixed(2)
+        : "天候情報なし";
+      $("#locationName").textContent = escapeText(scene.location, "未知の地域");
+      $("#facilityName").textContent = escapeText(scene.facilityName, "移動中");
+      const outcome = scene.lastOutcome;
+      const showOutcome = Boolean(outcome && ["shop_buy", "shop_sell", "learn_skill", "equip", "unequip"].includes(String(outcome.type ?? "").toLowerCase()));
+      ui.outcome.hidden = !showOutcome;
+      ui.outcome.textContent = showOutcome
+        ? (typeof outcome === "string" ? outcome : escapeText(outcome?.summary || outcome?.message, "操作を完了しました。"))
+        : "";
+      if (outcomeTimer) window.clearTimeout(outcomeTimer);
+      if (showOutcome) outcomeTimer = window.setTimeout(() => {
+        if (document.activeElement === ui.outcome) focusCurrentStoryControl();
+        ui.outcome.hidden = true;
+      }, 4200);
+      const missionCount = activeStoryMissions(save).length;
+      $("#missionBadge").textContent = missionCount;
+      $("#missionBadge").closest("button")?.setAttribute("aria-label", `ミッションを見る（進行中${missionCount}件）`);
+      const rumorCount = list(save.rumors).length;
+      $("#rumorBadge").textContent = rumorCount;
+      const saveStatus = escapeText(save.saveStatus, "saved");
+      $("#saveIndicator").dataset.status = saveStatus;
+      $("#saveIndicator").textContent = saveStatus === "saving" ? "保存中…" : saveStatus === "error" ? "保存エラー" : "保存済み";
+    
+      const backgroundKey = scene.backgroundKey || scene.facilityId || "default";
+      ui.backdrop.dataset.backgroundKey = backgroundKey;
+      const imageUrl = backgroundUrl(backgroundKey);
+      ui.backdrop.style.backgroundImage = imageUrl ? `url(${JSON.stringify(imageUrl)})` : "";
+    
+      renderNpcs(scene.presentNpcs);
+      renderChoices(save.choices, save.world?.ended === true);
+      renderPlayer(save.player);
+      renderGuidance(save);
+      renderTutorial(save.tutorial);
+      if (!busy) renderTutorialUnlocks(save.tutorial);
+      startScenePlayback(save, { preserve: preserveDialogue });
+      if (ui.dialog.open) renderPanel(ui.dialog.dataset.panel);
+      if (busy) disableBusyControls();
+      if (announce) announceScene(save);
+      queueBattlePresentation(save);
+      scheduleAssetRefresh(save);
+      if (focus !== "preserve") {
+        window.requestAnimationFrame(() => {
+          if (ui.dialog.open) {
+            ui.dialogTitle.focus();
+            return;
+          }
+          focusCurrentStoryControl();
+        });
+      }
+    }
+    
+    function battleActorName(actors, instanceId, fallback = "敵") {
+      const actor = actors.get(instanceId);
+      if (actor?.side === "player") return escapeText(currentSave?.player?.name || actor.name, fallback);
+      return escapeText(actor?.name, fallback);
+    }
+    
+    function battleDisplayNumber(value, fallback = 0) {
+      return Math.max(0, Math.round(number(value, fallback)));
+    }
+    
+    function battleFrameMessage(frame, actors) {
+      if (frame.phase !== "action") {
+        const changes = list(frame.effects).map((effect) => {
+          const target = battleActorName(actors, effect.targetInstanceId, "誰か");
+          const damage = battleDisplayNumber(number(effect.hpBefore) - number(effect.hpAfter));
+          const healing = battleDisplayNumber(number(effect.hpAfter) - number(effect.hpBefore));
+          if (damage) return `${target}は${damage}のダメージを受けた。`;
+          if (healing) return `${target}のHPが${healing}回復した。`;
+          return "";
+        }).filter(Boolean);
+        return changes.join(" ") || (frame.phase === "round_start" ? "戦いの流れが動き出す。" : "互いに息を整えた。");
+      }
+    
+      const actor = battleActorName(actors, frame.actorInstanceId, frame.actorSide === "enemy" ? "敵" : "旅人");
+      if (frame.action?.kind === "defend") return `${actor}は身を守っている！`;
+      if (frame.action?.kind === "flee") {
+        return frame.escapeSucceeded === true
+          ? `${actor}は戦いから逃げ出した！`
+          : `${actor}は逃げようとした。しかし、回り込まれた！`;
+      }
+      const action = escapeText(frame.action?.name, frame.action?.kind === "attack" ? "こうげき" : "行動");
+      const parts = frame.action?.kind === "status_failure"
+        ? [`${actor}は動けない！`]
+        : [`${actor}の${action}！`];
+      if (number(frame.criticals) > 0) parts.push("会心の一撃！");
+      list(frame.effects).forEach((effect) => {
+        const target = battleActorName(actors, effect.targetInstanceId, "相手");
+        const damage = battleDisplayNumber(number(effect.hpBefore) - number(effect.hpAfter));
+        const healing = battleDisplayNumber(number(effect.hpAfter) - number(effect.hpBefore));
+        const mpLoss = battleDisplayNumber(number(effect.mpBefore) - number(effect.mpAfter));
+        if (damage) parts.push(`${target}に${damage}のダメージ！`);
+        if (healing) parts.push(`${target}のHPが${healing}回復！`);
+        if (!damage && !healing && mpLoss) parts.push(`${target}はMPを${mpLoss}使った。`);
+        if (effect.aliveBefore !== false && effect.aliveAfter === false) parts.push(`${target}を倒した！`);
+      });
+      return parts.join(" ");
+    }
+    
+    function battlePages(battle) {
+      const playback = battle.playback;
+      const initialActors = new Map(list(playback.combatants).map((actor) => [actor.instanceId, { ...actor }]));
+      const enemyNames = [...initialActors.values()].filter((actor) => actor.side === "enemy").map((actor) => escapeText(actor.name, "敵"));
+      const pages = [{
+        kind: "intro",
+        round: 1,
+        message: enemyNames.length ? `${enemyNames.join("、")}が現れた！` : "敵が現れた！",
+        frameCount: 0,
+      }];
+      list(playback.frames).forEach((frame, index) => {
+        if (number(frame.omittedBefore) > 0 && list(frame.checkpoint).length) {
+          pages.push({
+            kind: "gap",
+            round: Math.max(1, number(frame.round, 1)),
+            message: `戦いは${battleDisplayNumber(frame.omittedBefore)}手進んだ……。`,
+            frameCount: index,
+            checkpoint: frame.checkpoint,
+          });
+        }
+        pages.push({
+          kind: "frame",
+          round: Math.max(1, number(frame.round, 1)),
+          message: battleFrameMessage(frame, initialActors),
+          frameCount: index + 1,
+        });
+      });
+      const reward = [number(battle.exp) > 0 ? `${number(battle.exp)} EXP` : "", number(battle.gold) > 0 ? `${number(battle.gold)} G` : ""].filter(Boolean).join("、");
+      pages.push({
+        kind: "result",
+        round: Math.max(1, number(battle.rounds, 1)),
+        message: battle.won ? `勝利した！${reward ? ` ${reward}を得た。` : ""}` : "戦いに敗れ、どうにか撤退した……。",
+        frameCount: list(playback.frames).length,
+      });
+      return { pages, initialActors };
+    }
+    
+    function applyBattleCheckpoint(actors, checkpoint) {
+      list(checkpoint).forEach((entry) => {
+        const actor = actors.get(entry.instanceId);
+        if (!actor) return;
+        actor.hp = number(entry.hp, actor.hp);
+        actor.mp = number(entry.mp, actor.mp);
+        actor.alive = entry.alive !== false;
+      });
+    }
+    
+    function actorsAtBattlePage(state, page) {
+      const actors = new Map([...state.initialActors].map(([id, actor]) => [id, { ...actor }]));
+      list(state.playback.frames).slice(0, page.frameCount).forEach((frame) => {
+        if (list(frame.checkpoint).length) applyBattleCheckpoint(actors, frame.checkpoint);
+        list(frame.effects).forEach((effect) => {
+          const actor = actors.get(effect.targetInstanceId);
+          if (!actor) return;
+          actor.hp = number(effect.hpAfter, actor.hp);
+          actor.mp = number(effect.mpAfter, actor.mp);
+          actor.alive = effect.aliveAfter !== false;
+        });
+      });
+      if (list(page.checkpoint).length) applyBattleCheckpoint(actors, page.checkpoint);
+      return actors;
+    }
+    
+    function renderBattleActors(actors) {
+      const entries = actors instanceof Map ? [...actors.values()] : list(actors);
+      ui.battleEnemies.replaceChildren();
+      entries.filter((actor) => actor.side === "enemy").forEach((actor) => {
+        const card = document.createElement("article");
+        card.className = `battle-enemy${actor.alive === false || number(actor.hp) <= 0 ? " is-defeated" : ""}`;
+        const imageUrl = monsterUrl(actor);
+        const visual = imageUrl ? document.createElement("img") : document.createElement("div");
+        visual.className = imageUrl ? "battle-enemy-image" : "enemy-silhouette";
+        if (imageUrl) {
+          visual.src = imageUrl;
+          visual.alt = "";
+          visual.loading = "eager";
+          visual.decoding = "async";
+        } else {
+          visual.setAttribute("aria-hidden", "true");
+        }
+        const name = document.createElement("b");
+        name.textContent = escapeText(actor.name, "敵");
+        const hp = document.createElement("progress");
+        hp.max = Math.max(1, battleDisplayNumber(actor.maxHp, 1));
+        hp.value = battleDisplayNumber(actor.hp);
+        hp.setAttribute("aria-label", `${name.textContent} HP ${hp.value}/${hp.max}`);
+        card.append(visual, name, hp);
+        ui.battleEnemies.append(card);
+      });
+      ui.battleStatus.replaceChildren();
+      entries.filter((actor) => actor.side === "player").forEach((actor) => {
+        const name = document.createElement("strong");
+        name.textContent = escapeText(currentSave?.player?.name || actor.name, "旅人");
+        const hp = document.createElement("span");
+        hp.textContent = `HP ${battleDisplayNumber(actor.hp)} / ${Math.max(1, battleDisplayNumber(actor.maxHp, 1))}`;
+        const mp = document.createElement("span");
+        mp.textContent = `MP ${battleDisplayNumber(actor.mp)} / ${battleDisplayNumber(actor.maxMp)}`;
+        const stateLabel = document.createElement("span");
+        stateLabel.textContent = actor.alive === false ? "戦闘不能" : "";
+        ui.battleStatus.append(name, hp, mp, stateLabel);
+      });
+    }
+    
+    function interactiveRoundMessage(battle, actors) {
+      const actionFrames = list(battle.lastRound?.frames).filter((frame) => frame.phase === "action");
+      if (!actionFrames.length) {
+        const enemies = [...actors.values()].filter((actor) => actor.side === "enemy" && actor.alive !== false);
+        return enemies.length ? `${enemies.map((actor) => escapeText(actor.name, "敵")).join("、")}が現れた！` : "次の行動を選んでください。";
+      }
+      const messages = actionFrames.map((frame) => battleFrameMessage(frame, actors)).filter(Boolean);
+      const selected = messages.length <= 2 ? messages : [messages[0], messages[messages.length - 1]];
+      const summary = selected.join(" ");
+      return summary.length <= 150 ? summary : `${summary.slice(0, 147)}…`;
+    }
+    
+    const BATTLE_DISABLED_REASONS = Object.freeze({
+      cooldown: "再使用まで待つ必要がある",
+      uses_exhausted: "この戦闘では使用回数を使い切った",
+      conditions_not_met: "発動条件を満たしていない",
+      insufficient_resource: "消費するHP・MPが足りない",
+      no_target: "効果を向けられる対象がいない",
+      not_active: "戦闘中に使う技ではない",
+    });
+    
+    function battleDisabledDetail(command = {}) {
+      if (command.disabledDetail) return escapeText(command.disabledDetail, "今は使えない");
+      const reason = BATTLE_DISABLED_REASONS[command.disabledReason] ?? "今は使えない";
+      if (command.disabledReason === "insufficient_resource") {
+        const requirements = [
+          number(command.mpCost) > 0 ? `必要MP ${number(command.mpCost)}／現在 ${number(command.currentMp)}` : "",
+          number(command.hpCost) > 0 ? `必要HP ${number(command.hpCost) + 1}以上／現在 ${number(command.currentHp)}` : "",
+        ].filter(Boolean).join("、");
+        return requirements ? `${reason}（${requirements}）` : reason;
+      }
+      if (command.disabledReason === "cooldown" && number(command.cooldownRemaining) > 0) {
+        return `${reason}（あと${number(command.cooldownRemaining)}ラウンド）`;
+      }
+      return reason;
+    }
+    
+    function battleCommandCost(command) {
+      return [number(command.mpCost) > 0 ? `MP ${number(command.mpCost)}` : "", number(command.hpCost) > 0 ? `HP ${number(command.hpCost)}` : ""]
+        .filter(Boolean)
+        .join(" / ");
+    }
+    
+    function createBattleCommandButton(label, { command = null, detail = "", disabled = false, onClick }) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "battle-command-button";
+      button.disabled = disabled;
+      const main = document.createElement("span");
+      main.textContent = label;
+      button.append(main);
+      const subtext = detail || (command?.available === false
+        ? battleDisabledDetail(command)
+        : battleCommandCost(command ?? {}));
+      if (subtext) {
+        const small = document.createElement("small");
+        small.textContent = subtext;
+        button.append(small);
+      }
+      button.setAttribute("aria-label", [label, subtext].filter(Boolean).join("。"));
+      if (disabled && subtext) {
+        button.title = subtext;
+        button.dataset.disabledExplanation = subtext;
+      }
+      button.addEventListener("click", onClick);
+      return button;
+    }
+    
+    async function submitInteractiveBattleCommand(battle, command, targetInstanceId = null) {
+      if (busy || command?.available === false) return;
+      interactiveBattleState.mode = "root";
+      interactiveBattleState.selectedActionId = null;
+      ui.battleMessage.textContent = `${escapeText(command.name, "行動")}を選んだ。戦闘結果を計算しています…`;
+      ui.battleCommandPrompt.textContent = "行動を解決しています…";
+      ui.battleCommandMenu.dataset.mode = "pending";
+      ui.battleCommandMenu.replaceChildren();
+      const pending = document.createElement("p");
+      pending.className = "battle-command-pending";
+      pending.textContent = "そのままお待ちください";
+      pending.setAttribute("role", "status");
+      ui.battleCommandMenu.append(pending);
+      const accepted = await sendCommand("BATTLE_ACT", {
+        battleId: battle.id,
+        actionId: command.actionId,
+        ...(targetInstanceId ? { targetInstanceId } : {}),
+      });
+      if (!accepted && currentSave?.battle?.id === battle.id) {
+        interactiveBattleState.mode = "root";
+        interactiveBattleState.selectedActionId = null;
+        renderInteractiveBattleCommands(currentSave.battle, { focus: true });
+      }
+    }
+    
+    function selectInteractiveBattleCommand(battle, command) {
+      if (!command || command.available === false) return;
+      const targets = list(command.targets);
+      if (targets.length) {
+        interactiveBattleState.mode = "targets";
+        interactiveBattleState.selectedActionId = command.actionId;
+        renderInteractiveBattleCommands(battle, { focus: true });
+        return;
+      }
+      submitInteractiveBattleCommand(battle, command);
+    }
+    
+    function renderInteractiveBattleCommands(battle, { focus = false } = {}) {
+      const commands = list(battle.commands);
+      const mode = interactiveBattleState?.mode ?? "root";
+      ui.battleCommandMenu.replaceChildren();
+      ui.battleCommandMenu.dataset.mode = mode;
+      if (mode === "skills") {
+        ui.battleCommandPrompt.textContent = "どのスキルを使う？";
+        commands.filter((command) => command.kind === "skill").forEach((command) => {
+          const cost = battleCommandCost(command);
+          const detail = command.available === false
+            ? battleDisabledDetail(command)
+            : [cost, escapeText(command.description, "")].filter(Boolean).join("・");
+          ui.battleCommandMenu.append(createBattleCommandButton(escapeText(command.name, "スキル"), {
+            command,
+            detail,
+            disabled: command.available === false,
+            onClick: () => selectInteractiveBattleCommand(battle, command),
+          }));
+        });
+        ui.battleCommandMenu.append(createBattleCommandButton("もどる", {
+          onClick: () => {
+            interactiveBattleState.mode = "root";
+            renderInteractiveBattleCommands(battle, { focus: true });
+          },
+        }));
+      } else if (mode === "targets") {
+        const command = commands.find((entry) => entry.actionId === interactiveBattleState.selectedActionId);
+        if (!command) {
+          interactiveBattleState.mode = "root";
+          renderInteractiveBattleCommands(battle, { focus });
+          return;
+        }
+        ui.battleCommandPrompt.textContent = "だれを狙う？";
+        list(command.targets).forEach((target) => {
+          const detail = `HP ${battleDisplayNumber(target.hp)} / ${Math.max(1, battleDisplayNumber(target.maxHp, 1))}`;
+          ui.battleCommandMenu.append(createBattleCommandButton(escapeText(target.name, "対象"), {
+            detail,
+            onClick: () => submitInteractiveBattleCommand(battle, command, target.instanceId),
+          }));
+        });
+        ui.battleCommandMenu.append(createBattleCommandButton("もどる", {
+          onClick: () => {
+            interactiveBattleState.mode = command.kind === "skill" ? "skills" : "root";
+            interactiveBattleState.selectedActionId = null;
+            renderInteractiveBattleCommands(battle, { focus: true });
+          },
+        }));
+      } else {
+        ui.battleCommandPrompt.textContent = "どうする？";
+        const attack = commands.find((command) => command.kind === "attack");
+        const defend = commands.find((command) => command.kind === "defend");
+        const flee = commands.find((command) => command.kind === "flee");
+        const skills = commands.filter((command) => command.kind === "skill");
+        ui.battleCommandMenu.append(
+          createBattleCommandButton("たたかう", {
+            command: attack,
+            disabled: !attack || attack.available === false,
+            onClick: () => selectInteractiveBattleCommand(battle, attack),
+          }),
+          createBattleCommandButton("スキル", {
+            detail: skills.length ? `${skills.filter((command) => command.available !== false).length}個 使用可能` : "習得スキルなし",
+            disabled: !skills.length,
+            onClick: () => {
+              interactiveBattleState.mode = "skills";
+              renderInteractiveBattleCommands(battle, { focus: true });
+            },
+          }),
+          createBattleCommandButton("ぼうぎょ", {
+            command: defend,
+            detail: "受けるダメージを抑える",
+            disabled: !defend || defend.available === false,
+            onClick: () => selectInteractiveBattleCommand(battle, defend),
+          }),
+          createBattleCommandButton("にげる", {
+            command: flee,
+            detail: "逃走を試みる",
+            disabled: !flee || flee.available === false,
+            onClick: () => selectInteractiveBattleCommand(battle, flee),
+          }),
+        );
+      }
+      if (focus) window.requestAnimationFrame(() => $("button:not(:disabled)", ui.battleCommandMenu)?.focus());
+    }
+    
+    function renderInteractiveBattle(save) {
+      const battle = save.battle;
+      syncBattleVisualViewport();
+      if (!battle || battle.status !== "active") return;
+      const isNewBattle = interactiveBattleState?.id !== battle.id;
+      if (isNewBattle) interactiveBattleState = { id: battle.id, mode: "root", selectedActionId: null };
+      battlePlayback = null;
+      const actors = new Map(list(battle.actors).map((actor) => [actor.instanceId, { ...actor }]));
+      $("#battleRound").textContent = `ROUND ${Math.max(1, number(battle.round, 1))}`;
+      $("#battleTitle").textContent = escapeText(battle.encounterName, "戦闘");
+      ui.battleScene.style.backgroundImage = ui.backdrop.style.backgroundImage;
+      ui.battleMessage.textContent = interactiveRoundMessage(battle, actors);
+      renderBattleActors(actors);
+      $("#battleSkip").hidden = true;
+      ui.battlePlaybackControls.hidden = true;
+      ui.battleCommandPanel.hidden = false;
+      ui.battleDialog.dataset.mode = "interactive";
+      ui.battleDialog.dataset.readyToClose = "false";
+      renderInteractiveBattleCommands(battle, { focus: isNewBattle || !busy });
+      if (!ui.battleDialog.open) ui.battleDialog.showModal();
+    }
+    
+    function renderBattlePage() {
+      if (!battlePlayback) return;
+      const page = battlePlayback.pages[battlePlayback.index];
+      const actors = actorsAtBattlePage(battlePlayback, page);
+      $("#battleRound").textContent = page.kind === "result" ? "RESULT" : `ROUND ${page.round}`;
+      ui.battleMessage.textContent = page.message;
+      renderBattleActors(actors);
+      ui.battleCommandPanel.hidden = true;
+      ui.battlePlaybackControls.hidden = false;
+      ui.battleDialog.dataset.mode = "playback";
+      const isFinal = battlePlayback.index === battlePlayback.pages.length - 1;
+      $("#battleNext").hidden = isFinal;
+      $("#battleClose").hidden = !isFinal;
+      $("#battleSkip").hidden = isFinal;
+      ui.battleDialog.dataset.readyToClose = String(isFinal);
+    }
+    
+    function openBattlePlayback(save, battle, key, { resultOnly = false } = {}) {
+      syncBattleVisualViewport();
+      const playback = battle?.playback;
+      if (!playback || !list(playback.combatants).length) return;
+      const prepared = battlePages(battle);
+      battlePlayback = {
+        key,
+        battle,
+        playback,
+        pages: prepared.pages,
+        initialActors: prepared.initialActors,
+        index: resultOnly ? prepared.pages.length - 1 : 0,
+      };
+      $("#battleTitle").textContent = escapeText(playback.encounter?.name, "戦闘");
+      ui.battleScene.style.backgroundImage = ui.backdrop.style.backgroundImage;
+      renderBattlePage();
+      if (!ui.battleDialog.open) ui.battleDialog.showModal();
+      (resultOnly ? $("#battleClose") : $("#battleNext")).focus();
+    }
+    
+    function queueBattlePlayback(save, { resultOnly = false } = {}) {
+      const battle = save?.scene?.lastOutcome?.battle;
+      if (!battle?.playback) return;
+      const key = `${save.id}:${save.revision}:${battle.playback.encounter?.id ?? battle.encounterId ?? "battle"}`;
+      if (key === lastPresentedBattleKey) return;
+      lastPresentedBattleKey = key;
+      window.setTimeout(() => openBattlePlayback(save, battle, key, { resultOnly }), 0);
+    }
+    
+    function queueBattlePresentation(save) {
+      if (save?.battle?.status === "active") {
+        renderInteractiveBattle(save);
+        return;
+      }
+      const completedInteractiveBattle = Boolean(interactiveBattleState?.id);
+      interactiveBattleState = null;
+      const completedBattle = save?.scene?.lastOutcome?.battle;
+      if (completedInteractiveBattle && !completedBattle?.playback && ui.battleDialog.open) {
+        ui.battleDialog.dataset.readyToClose = "true";
+        ui.battleDialog.close();
+        return;
+      }
+      queueBattlePlayback(save, { resultOnly: completedInteractiveBattle });
+    }
+    
+    function advanceBattle() {
+      if (!battlePlayback) return;
+      battlePlayback.index = Math.min(battlePlayback.pages.length - 1, battlePlayback.index + 1);
+      renderBattlePage();
+      (battlePlayback.index === battlePlayback.pages.length - 1 ? $("#battleClose") : $("#battleNext")).focus();
+    }
+    
+    function skipBattle() {
+      if (!battlePlayback) return;
+      battlePlayback.index = battlePlayback.pages.length - 1;
+      renderBattlePage();
+      $("#battleClose").focus();
+    }
+    
+    async function createGame(form) {
+      if (busy) return;
+      const formData = new FormData(form);
+      const playerName = formData.get("playerName");
+      setBusy(true, "旅の始まりを準備しています…");
+      clearErrors();
+      try {
+        const result = await requestJson(`${API_BASE}/saves`, {
+          method: "POST",
+          body: JSON.stringify({ playerName }),
+        });
+        renderSave(result.save, { focus: "scene", announce: true });
+      } catch (error) {
+        showError(ui.launchError, error.message, () => createGame(form));
+      } finally {
+        setBusy(false);
+      }
+    }
+    
+    async function loadGame(id) {
+      if (!id || busy) return;
+      setBusy(true, "保存した旅を開いています…");
+      clearErrors();
+      try {
+        const result = await requestJson(`${API_BASE}/saves/${encodeURIComponent(id)}`);
+        renderSave(result.save, { focus: "scene", announce: true });
+      } catch (error) {
+        showError(ui.launchError, error.message, () => loadGame(id));
+      } finally {
+        setBusy(false);
+      }
+    }
+    
+    async function loadSaveList() {
+      ui.saveListStatus.hidden = false;
+      ui.saveListStatus.textContent = "保存データを確認しています…";
+      ui.saveList.replaceChildren();
+      clearErrors();
+      try {
+        const result = await requestJson(`${API_BASE}/saves`);
+        const saves = list(result.saves);
+        ui.saveListStatus.textContent = saves.length ? `${saves.length}件の旅があります。` : "この端末で再開できる旅はありません。";
+        saves.forEach((save) => {
+          const entry = document.createElement("div");
+          entry.className = "save-entry";
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "save-card";
+          const clock = formatClock(save.clock);
+          button.innerHTML = "<span><b></b><small></small></span><strong></strong>";
+          $("b", button).textContent = escapeText(save.player?.name || save.playerName, "旅人");
+          $("small", button).textContent = `${escapeText(save.scene?.location || save.location, "旅の途中")}・${clock.day} ${clock.time}`;
+          $("strong", button).textContent = "再開 →";
+          button.addEventListener("click", () => loadGame(save.id));
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "save-delete";
+          remove.textContent = "削除";
+          remove.setAttribute("aria-label", `${escapeText(save.player?.name || save.playerName, "旅人")}の旅を削除`);
+          remove.addEventListener("click", async () => {
+            if (!window.confirm("この旅の保存データを削除します。元には戻せません。")) return;
+            remove.disabled = true;
+            try {
+              await requestJson(`${API_BASE}/saves/${encodeURIComponent(save.id)}`, { method: "DELETE" });
+              if (localStorage.getItem(LAST_SAVE_KEY) === save.id) localStorage.removeItem(LAST_SAVE_KEY);
+              await loadSaveList();
+            } catch (error) {
+              remove.disabled = false;
+              showError(ui.launchError, error.message, loadSaveList);
+            }
+          });
+          entry.append(button, remove);
+          ui.saveList.append(entry);
+        });
+      } catch (error) {
+        ui.saveListStatus.textContent = "保存データを取得できませんでした。";
+        showError(ui.launchError, error.message, loadSaveList);
+      }
+    }
+    
+    async function sendCommand(type, payload, commandId = crypto.randomUUID()) {
+      if (!currentSave || busy) return false;
+      setBusy(true);
+      clearErrors();
+      $("#saveIndicator").dataset.status = "saving";
+      $("#saveIndicator").textContent = "保存中…";
+      try {
+        const result = await requestJson(`${API_BASE}/saves/${encodeURIComponent(currentSave.id)}/commands`, {
+          method: "POST",
+          body: JSON.stringify({
+            commandId,
+            expectedRevision: currentSave.revision,
+            type,
+            payload,
+          }),
+        });
+        if (type === "MOVE" && ui.dialog.open) ui.dialog.close();
+        const preserveDialogue = ["TUTORIAL_ACK", "ACK_NPC_INTRODUCTION"].includes(type);
+        renderSave(result.save, { focus: "result", announce: type !== "ACK_NPC_INTRODUCTION", preserveDialogue });
+        return true;
+      } catch (error) {
+        const code = error.data?.error;
+        const errorTarget = ui.battleDialog.open ? ui.battleError : ui.dialog.open ? ui.dialogError : ui.gameError;
+        if (["revision_conflict", "choice_action_mismatch"].includes(code)) {
+          const message = code === "choice_action_mismatch"
+            ? "表示中の選択肢と世界状態が一致しませんでした。誤った行動は実行せず、最新の選択肢を読み込みます。"
+            : "別の画面で旅が進んだようです。最新の状態を読み込みます。";
+          showError(errorTarget, message, () => loadGame(currentSave.id));
+        } else if (code === "game_ended") {
+          showError(errorTarget, "100日間の旅は完結しています。最新の年代記を読み込んでください。", () => loadGame(currentSave.id));
+        } else if (code === "tutorial_feature_locked") {
+          showError(errorTarget, "その機能はまだ案内されていません。画面中央の導入を進めてください。");
+        } else if (code === "insufficient_gold") {
+          showError(errorTarget, "所持金が足りません。仕事や任務で資金を得てから購入できます。");
+        } else if (code === "insufficient_sp") {
+          showError(errorTarget, "SPが足りません。レベルアップなどでSPを得てから取得できます。");
+        } else if (["battle_not_active", "battle_id_mismatch"].includes(code)) {
+          showError(errorTarget, "戦闘状態を更新できませんでした。最新の状態を読み込みます。", () => loadGame(currentSave.id));
+        } else if ([
+          "battle_action_invalid",
+          "battle_target_invalid",
+          "battle_action_rejected",
+          "unknown_action",
+          "invalid_target",
+          "action_unavailable",
+          "no_target",
+          "not_active",
+          "cooldown",
+          "uses_exhausted",
+          "conditions_not_met",
+          "insufficient_resource",
+        ].includes(code)) {
+          const detail = escapeText(error.data?.details?.summary ?? error.data?.details?.reasonDetail, "");
+          const reason = BATTLE_DISABLED_REASONS[code] ?? "その戦闘行動は選べません";
+          showError(errorTarget, detail && detail !== code
+            ? `${reason}。${detail}`
+            : `${reason}。別のコマンドを選ぶか、条件を整えてください。`);
+        } else {
+          showError(errorTarget, error.message, () => sendCommand(type, payload, commandId));
+        }
+        $("#saveIndicator").dataset.status = "error";
+        $("#saveIndicator").textContent = "保存エラー";
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    }
+    
+    function emptyPanel(message) {
+      const element = document.createElement("p");
+      element.className = "empty-message";
+      element.textContent = message;
+      return element;
+    }
+    
+    function actionButton(label, command, payload, disabled = false, accessibleName = label) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "row-action";
+      button.textContent = label;
+      button.disabled = disabled || currentSave?.world?.ended === true;
+      button.setAttribute("aria-label", accessibleName);
+      button.dataset.command = command;
+      const targetId = payload?.moveId || payload?.equipmentId || payload?.skillId || payload?.stockId || payload?.slot;
+      if (targetId) button.dataset.targetId = targetId;
+      button.addEventListener("click", () => sendCommand(command, payload));
+      return button;
+    }
+    
+    function movementName(move) {
+      if ((move?.scope === "regional" || move?.scope === "region") && move?.destination) {
+        const hub = escapeText(move.destination, "遠方の地域");
+        const arrival = escapeText(move.destinationFacilityName || move.destinationName, "");
+        return arrival && arrival !== hub ? `${hub}（到着：${arrival}）` : hub;
+      }
+      const explicit = move?.destinationFacilityName || move?.destinationName || move?.destination;
+      if (explicit) return escapeText(explicit, "移動先");
+      return escapeText(move?.label, "移動先")
+        .replace(/\s*（(?:地域内|地域間)[^）]*）\s*$/u, "")
+        .replace(/へ移動する\s*$/u, "");
+    }
+    
+    function movementIsRegional(move) {
+      return move?.scope === "regional" || move?.scope === "region";
+    }
+    
+    function appendMovementRows(parent, entries, { recommended = false } = {}) {
+      entries.forEach((move) => {
+        const name = movementName(move);
+        const minutes = number(move.minutes);
+        const moveId = move.moveId || move.id;
+        const row = document.createElement("div");
+        row.className = `detail-row movement-row${recommended ? " is-recommended" : ""}`;
+        const text = document.createElement("div");
+        text.innerHTML = "<span class=\"movement-name-line\"><b></b><em hidden></em></span><small></small>";
+        $("b", text).textContent = name;
+        const tag = $("em", text);
+        tag.hidden = !recommended;
+        tag.textContent = "おすすめ";
+        $("small", text).textContent = `${movementIsRegional(move) ? "遠方" : "村・街の中"}・${minutes > 0 ? `${minutes}分` : "時間消費なし"}`;
+        row.append(text, actionButton(
+          "移動",
+          "MOVE",
+          { moveId },
+          !moveId,
+          `${name}へ移動（${minutes > 0 ? `${minutes}分` : "時間消費なし"}）`,
+        ));
+        parent.append(row);
+      });
+    }
+    
+    function renderMovement() {
+      const moves = list(currentSave?.movement).slice();
+      if (!moves.length) return ui.dialogBody.append(emptyPanel("今いる場所から選べる移動先はありません。"));
+      const targetFacilityId = ui.dialog.dataset.targetFacilityId
+        || guidanceView(currentSave)?.targetFacilityId
+        || "";
+      const isRecommended = (move) => Boolean(move.recommended)
+        || Boolean(targetFacilityId && (move.destinationFacilityId || move.targetFacilityId) === targetFacilityId);
+      const sorter = (left, right) => Number(!isRecommended(left)) - Number(!isRecommended(right))
+        || number(left.minutes, 9999) - number(right.minutes, 9999)
+        || movementName(left).localeCompare(movementName(right), "ja");
+      moves.sort(sorter);
+      const recommended = moves.filter(isRecommended);
+      const recommendedSet = new Set(recommended);
+      const local = moves.filter((move) => !recommendedSet.has(move) && !movementIsRegional(move));
+      const regional = moves.filter((move) => !recommendedSet.has(move) && movementIsRegional(move));
+    
+      if (recommended.length) {
+        const section = document.createElement("section");
+        section.className = "detail-section movement-recommended";
+        section.innerHTML = "<h3>現在の目的におすすめ</h3>";
+        appendMovementRows(section, recommended, { recommended: true });
+        ui.dialogBody.append(section);
+      }
+      if (local.length) {
+        const section = document.createElement("section");
+        section.className = "detail-section";
+        section.innerHTML = "<h3>村・街の中</h3>";
+        appendMovementRows(section, local);
+        ui.dialogBody.append(section);
+      }
+      if (regional.length) {
+        const details = document.createElement("details");
+        details.className = "detail-disclosure movement-regional";
+        const summary = document.createElement("summary");
+        summary.textContent = `遠方の地域を見る（${regional.length}件）`;
+        const body = document.createElement("div");
+        body.className = "disclosure-body";
+        appendMovementRows(body, regional);
+        details.append(summary, body);
+        ui.dialogBody.append(details);
+      }
+    }
+    
+    function inventoryEntries(player) {
+      const inventory = player?.inventory ?? {};
+      if (Array.isArray(inventory)) return inventory;
+      return Object.entries(inventory).flatMap(([group, entries]) => {
+        if (Array.isArray(entries)) return entries.map((entry) => ({ group, ...entry }));
+        if (entries && typeof entries === "object") return Object.entries(entries).map(([id, value]) => typeof value === "object" ? { group, id, ...value } : { group, id, quantity: value });
+        return [];
+      });
+    }
+    
+    function renderInventory() {
+      const player = currentSave.player ?? {};
+      const equipment = player.equipment ?? {};
+      const equippedIds = new Set(Object.values(equipment).map((item) => typeof item === "object" ? item.id : item).filter(Boolean));
+      const equipSection = document.createElement("section");
+      equipSection.className = "detail-section equipment-grid";
+      equipSection.innerHTML = "<h3>装備中</h3>";
+      const slotNames = { mainHand: "武器", offHand: "副装備", body: "防具", accessory: "装飾品" };
+      Object.entries(slotNames).forEach(([slot, name]) => {
+        const value = equipment[slot];
+        const itemName = typeof value === "object" ? value.name : value;
+        const row = document.createElement("div");
+        row.className = "detail-row";
+        row.innerHTML = `<div><small>${name}</small><b></b></div>`;
+        $("b", row).textContent = escapeText(itemName, "装備なし");
+        if (value) row.append(actionButton("外す", "UNEQUIP", { slot }, false, `${escapeText(itemName, name)}を外す`));
+        equipSection.append(row);
+      });
+      ui.dialogBody.append(equipSection);
+    
+      const entries = inventoryEntries(player);
+      const itemSection = document.createElement("section");
+      itemSection.className = "detail-section";
+      itemSection.innerHTML = "<h3>所持品</h3>";
+      if (!entries.length) itemSection.append(emptyPanel("持ち物はありません。"));
+      entries.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "detail-row";
+        const text = document.createElement("div");
+        text.innerHTML = "<b></b><small></small>";
+        $("b", text).textContent = escapeText(item.name || item.id, "名称不明");
+        $("small", text).textContent = `所持 ${number(item.quantity ?? item.count, 1)}`;
+        row.append(text);
+        const equipmentLike = item.group === "equipment" || item.kind === "equipment" || item.slot;
+        const equipmentId = item.equipmentId || item.id;
+        if (equipmentLike && equipmentId && !equippedIds.has(equipmentId)) {
+          row.append(actionButton("装備", "EQUIP", { equipmentId }, false, `${escapeText(item.name || equipmentId, "装備品")}を装備`));
+        }
+        itemSection.append(row);
+      });
+      ui.dialogBody.append(itemSection);
+    }
+    
+    function skillEntry(skill, status) {
+      if (typeof skill === "string") skill = { id: skill, name: skill };
+      if (!skill || typeof skill !== "object") skill = {};
+      const row = document.createElement("div");
+      row.className = `skill-row is-${status}`;
+      if (skill.recommended === true) row.classList.add("is-recommended");
+      const text = document.createElement("div");
+      text.innerHTML = "<span class=\"skill-name-line\"><b></b><em hidden></em></span><p></p><small class=\"skill-equipment\" hidden></small><small class=\"skill-cost\"></small>";
+      $("b", text).textContent = escapeText(skill.name || skill.id, "名称不明のスキル");
+      const recommendation = $("em", text);
+      recommendation.hidden = skill.recommended !== true;
+      recommendation.textContent = "今の装備におすすめ";
+      const description = escapeText(skill.description, status === "learned" ? "取得済み" : "説明はまだありません。");
+      $("p", text).textContent = skill.recommended && skill.recommendationReason
+        ? `${description} ${escapeText(skill.recommendationReason)}`
+        : description;
+      const equipment = $(".skill-equipment", text);
+      equipment.textContent = escapeText(skill.equipmentNote, skill.usableNow === false ? "現在の装備では使用できません。" : "");
+      equipment.hidden = !equipment.textContent;
+      const lockLabels = {
+        insufficient_level: "必要なレベルに達していません",
+        insufficient_sp: "SPが不足しています",
+        missing_prerequisites: "先に取得するスキルがあります",
+        event_unlock_conditions_unmet: "物語上の条件を満たしていません",
+        learn_conditions_unmet: "取得条件を満たしていません",
+        not_visible: "まだ発見していません",
+      };
+      const rawReason = skill.lockReason || skill.reasonLabel || skill.requirement;
+      $(".skill-cost", text).textContent = status === "locked"
+        ? lockLabels[rawReason] ?? escapeText(rawReason, "取得条件を満たしていません")
+        : status === "learned" ? "取得済み" : `必要SP ${number(skill.spCost ?? skill.cost)}`;
+      row.append(text);
+      const skillId = skill.skillId || skill.id;
+      if (status === "learnable" && skillId) {
+        row.append(actionButton(
+          "取得",
+          "LEARN_SKILL",
+          { skillId },
+          number(currentSave.player?.sp) < number(skill.spCost ?? skill.cost),
+          `${escapeText(skill.name || skillId, "スキル")}を取得`,
+        ));
+      }
+      return row;
+    }
+    
+    function renderSkills() {
+      const player = currentSave?.player ?? {};
+      const exp = number(player.exp);
+      const next = Math.max(1, number(player.nextLevelExp, 1));
+      const status = document.createElement("section");
+      status.className = "character-card";
+      const stats = player.stats ?? {};
+      status.innerHTML = `<div><span>LEVEL</span><b>${number(player.level, 1)}</b></div><div><span>EXP</span><b>${exp} / ${next}</b><progress max="${next}" value="${Math.min(exp, next)}" aria-label="次のレベルまでの経験値"></progress></div><div><span>SP</span><b>${number(player.sp)}</b></div>`;
+      ui.dialogBody.append(status);
+      const intro = document.createElement("p");
+      intro.className = "skill-intro";
+      const skillTutorialActive = currentSave?.tutorial?.id === "skills" && list(currentSave?.skills?.learned).length === 0;
+      intro.textContent = skillTutorialActive
+        ? "この先では魔物と遭遇することがあります。①下の『今の装備におすすめ』を見る ②必要SPを確認する ③『取得』を押す。取得せず進むこともできますが、通常攻撃だけで戦うことになります。"
+        : "SPはスキルポイントです。必要SPを消費すると、新しい能力を取得できます。取得条件と、現在の装備で使えるかを確認してください。";
+      if (skillTutorialActive) intro.classList.add("is-tutorial-primer");
+      ui.dialogBody.append(intro);
+      const statGrid = document.createElement("div");
+      statGrid.className = "stat-grid";
+      const labels = { attack: "攻撃", defense: "防御", agility: "敏捷", luck: "幸運", magic: "魔力", vitality: "体力" };
+      Object.entries(stats).forEach(([key, value]) => {
+        const item = document.createElement("div");
+        item.innerHTML = `<span>${labels[key] || key}</span><b>${number(value)}</b>`;
+        statGrid.append(item);
+      });
+      ui.dialogBody.append(statGrid);
+      const skills = currentSave?.skills ?? {};
+      const learnable = list(skills.learnable);
+      const recommended = learnable.filter((skill) => skill?.recommended === true);
+      const otherLearnable = learnable.filter((skill) => skill?.recommended !== true);
+      const visibleSections = [
+        ...(recommended.length ? [["今の装備におすすめ", "learnable", recommended]] : []),
+        ["そのほかの取得可能スキル", "learnable", otherLearnable],
+        ["取得済み", "learned", list(skills.learned)],
+      ];
+      visibleSections.forEach(([title, key, entries]) => {
+        const section = document.createElement("section");
+        section.className = `detail-section${title === "今の装備におすすめ" ? " skill-recommended-section" : ""}`;
+        section.innerHTML = `<h3>${title} <small>${entries.length}</small></h3>`;
+        if (!entries.length) section.append(emptyPanel(`${title}のスキルはありません。`));
+        entries.forEach((skill) => section.append(skillEntry(skill, key)));
+        ui.dialogBody.append(section);
+      });
+      const locked = list(skills.locked);
+      const details = document.createElement("details");
+      details.className = "detail-disclosure skill-locked-group";
+      const summary = document.createElement("summary");
+      summary.textContent = `条件を満たすと取得できるスキル（${locked.length}件）`;
+      const body = document.createElement("div");
+      body.className = "disclosure-body";
+      if (!locked.length) body.append(emptyPanel("条件未達のスキルはありません。"));
+      locked.forEach((skill) => body.append(skillEntry(skill, "locked")));
+      details.append(summary, body);
+      ui.dialogBody.append(details);
+    }
+    
+    function missionStatus(status) {
+      const labels = {
+        active: "進行中",
+        available: "開始可能",
+        in_progress: "進行中",
+        completed: "完了",
+        resolved: "解決済み",
+        failed: "失敗",
+      };
+      return { key: Object.hasOwn(labels, status) ? status : "unknown", label: labels[status] ?? "状態不明" };
+    }
+    
+    function missionArticle(mission) {
+      const state = missionStatus(mission?.status);
+      const article = document.createElement("article");
+      article.className = `mission-card is-${state.key}`;
+      article.innerHTML = "<div class=\"mission-title\"><span></span><small></small></div><h3></h3><p class=\"mission-next\"></p><ul class=\"mission-meta\"></ul><div class=\"mission-progress-row\"><progress max=\"1\" value=\"0\"></progress><span></span></div><div class=\"mission-actions\"></div>";
+      $(".mission-title span", article).textContent = mission?.kind === "permanent" ? "長期目標" : "物語任務";
+      $(".mission-title small", article).textContent = state.label;
+      const title = escapeText(mission?.title || mission?.name, "名もなき任務");
+      $("h3", article).textContent = title;
+      const step = mission?.currentStep;
+      const stepLabel = typeof step === "object" && step !== null ? step.label : step;
+      const terminalText = mission?.status === "failed"
+        ? "結末：期限までに解決できず、危機の結果が世界に残った"
+        : ["completed", "resolved"].includes(mission?.status)
+          ? "結末：この任務は完了し、選択の結果が世界に反映された"
+          : null;
+      $(".mission-next", article).textContent = terminalText
+        ?? `次の行動：${escapeText(stepLabel || mission?.description, "手がかりを探す")}`;
+      const targetFacilityId = typeof step === "object" && step !== null ? step.targetFacilityId : mission?.targetFacilityId;
+      const facilityName = targetFacilityName(
+        targetFacilityId,
+        typeof step === "object" && step !== null ? step.targetFacilityName : mission?.targetFacilityName,
+      );
+      const targetLocation = typeof step === "object" && step !== null
+        ? step.targetLocation || mission?.targetLocation || mission?.location
+        : mission?.targetLocation || mission?.location;
+      const deadline = escapeText(mission?.deadlineLabel, mission?.deadlineDay ? `期限 Day ${mission.deadlineDay}` : "");
+      const meta = $(".mission-meta", article);
+      const knownClues = list(mission?.knownClues)
+        .map((clue) => escapeText(clue?.text, ""))
+        .filter(Boolean)
+        .map((text) => `手掛かり：${text}`);
+      const discoveryReason = escapeText(mission?.discoveryReason, "");
+      const optionalLabel = mission?.optional === true ? "任意：関わらずに別の土地や仕事を選べる" : "";
+      [discoveryReason ? `分かったきっかけ：${discoveryReason}` : "", optionalLabel, facilityName ? `目的施設：${facilityName}` : targetLocation ? `地域：${targetLocation}` : "", deadline, ...knownClues].filter(Boolean).forEach((label) => {
+        const item = document.createElement("li");
+        item.textContent = label;
+        meta.append(item);
+      });
+      meta.hidden = meta.childElementCount === 0;
+      const progress = Math.max(0, Math.min(1, number(mission?.progressRatio, mission?.complete ? 1 : 0)));
+      const progressElement = $("progress", article);
+      progressElement.value = progress;
+      progressElement.setAttribute("aria-label", `${title}の進捗`);
+      $(".mission-progress-row span", article).textContent = `${Math.round(progress * 100)}%`;
+      const currentFacilityId = currentSave?.scene?.facilityId;
+      if (targetFacilityId && targetFacilityId !== currentFacilityId && ["active", "available", "in_progress"].includes(mission?.status)) {
+        const action = document.createElement("button");
+        action.type = "button";
+        action.className = "row-action";
+        action.textContent = "移動先を見る";
+        action.setAttribute("aria-label", `${facilityName || "任務の目的地"}への移動先を見る`);
+        action.addEventListener("click", () => openPanel("movement", { targetFacilityId }));
+        $(".mission-actions", article).append(action);
+      }
+      return article;
+    }
+    
+    function appendMissionSection(title, missions, { disclosure = false } = {}) {
+      if (disclosure) {
+        const details = document.createElement("details");
+        details.className = "detail-disclosure mission-group";
+        const summary = document.createElement("summary");
+        summary.textContent = `${title}（${missions.length}件）`;
+        const body = document.createElement("div");
+        body.className = "disclosure-body";
+        missions.forEach((mission) => body.append(missionArticle(mission)));
+        details.append(summary, body);
+        ui.dialogBody.append(details);
+        return;
+      }
+      const section = document.createElement("section");
+      section.className = "detail-section mission-group";
+      const heading = document.createElement("h3");
+      heading.textContent = `${title} ${missions.length}`;
+      section.append(heading);
+      if (!missions.length) section.append(emptyPanel("進行中の物語任務はありません。人に話しかけたり、噂を調べたりしてみましょう。"));
+      missions.forEach((mission) => section.append(missionArticle(mission)));
+      ui.dialogBody.append(section);
+    }
+    
+    function renderMissions() {
+      const missions = list(currentSave?.missions).slice();
+      if (!missions.length) return ui.dialogBody.append(emptyPanel("受注・発見した任務はありません。人に話しかけたり、周囲を調べたりしてみましょう。"));
+      const statusRank = (mission) => ["active", "available", "in_progress"].includes(mission?.status) ? 0 : 1;
+      missions.sort((left, right) => statusRank(left) - statusRank(right)
+        || number(left.deadlineDay, 999) - number(right.deadlineDay, 999)
+        || String(left.id ?? "").localeCompare(String(right.id ?? "")));
+      const story = missions.filter((mission) => mission.kind !== "permanent");
+      const permanent = missions.filter((mission) => mission.kind === "permanent");
+      appendMissionSection("物語任務", story);
+      if (permanent.length) appendMissionSection("長期目標", permanent, { disclosure: true });
+    }
+    
+    function renderRumors() {
+      const rumors = list(currentSave.rumors);
+      if (!rumors.length) return ui.dialogBody.append(emptyPanel("知っている噂はまだありません。人に話しかけたり、周囲を調べたりしてみましょう。"));
+      rumors.forEach((rumor) => {
+        const article = document.createElement("article");
+        article.className = "rumor-card";
+        article.innerHTML = "<span>RUMOR</span><h3></h3><p></p><small></small>";
+        $("h3", article).textContent = escapeText(rumor.title || rumor.name, "耳にした話");
+        $("p", article).textContent = escapeText(rumor.text || rumor.description, "内容はまだ曖昧だ。");
+        $("small", article).textContent = [rumor.source, rumor.learnedAt, rumor.location].filter(Boolean).join(" ・ ") || "出所不明";
+        ui.dialogBody.append(article);
+      });
+    }
+    
+    function renderShop() {
+      const shop = currentSave.shop ?? {};
+      if (!shop.available) return ui.dialogBody.append(emptyPanel("この施設では買い物ができません。店のある施設へ移動してください。"));
+      const banner = document.createElement("div");
+      banner.className = "shop-banner";
+      banner.innerHTML = "<span>所持金</span><b></b><small></small>";
+      $("b", banner).textContent = `${number(currentSave.player?.gold).toLocaleString("ja-JP")} G`;
+      $("small", banner).textContent = escapeText(shop.facilityName, "店舗");
+      ui.dialogBody.append(banner);
+      const owned = inventoryEntries(currentSave.player).filter((item) => item.group === "equipment" || item.kind === "equipment" || item.slot);
+      const equippedIds = new Set(Object.values(currentSave.player?.equipment ?? {}).map((item) => typeof item === "object" ? item.id : item));
+      const ownedQuantity = new Map(owned.map((item) => [item.equipmentId || item.id, number(item.quantity ?? item.count, 1)]));
+      const saleQuoteById = new Map(list(shop.saleQuotes).map((quote) => [quote.equipmentId, quote]));
+      const stock = list(shop.stock);
+      if (!stock.length) ui.dialogBody.append(emptyPanel("現在購入できる商品はありません。"));
+      stock.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "shop-row";
+        const text = document.createElement("div");
+        text.innerHTML = "<b></b><p></p><small></small>";
+        $("b", text).textContent = escapeText(item.name || item.equipmentName || item.id, "名称不明の商品");
+        const equipment = item.equipment ?? {};
+        const performance = [
+          number(equipment.physicalPower) ? `物理 ${number(equipment.physicalPower)}` : "",
+          number(equipment.magicPower) ? `魔導 ${number(equipment.magicPower)}` : "",
+          number(equipment.defense) ? `防御 ${number(equipment.defense)}` : "",
+        ].filter(Boolean).join(" / ");
+        $("p", text).textContent = escapeText(item.description, [item.slot ? `装備部位: ${item.slot}` : "", performance].filter(Boolean).join(" ・ "));
+        const equipmentId = item.equipmentId || item.id;
+        const inventoryNote = ownedQuantity.has(equipmentId)
+          ? ` ・ 所持 ${ownedQuantity.get(equipmentId)}${equippedIds.has(equipmentId) ? "（装備中）" : ""}`
+          : "";
+        const unlimited = item.unlimited === true || item.quantity == null;
+        $("small", text).textContent = `${unlimited ? "在庫 ∞" : `在庫 ${number(item.quantity, 1)}`}${inventoryNote}`;
+        const price = number(item.price);
+        const itemName = escapeText(item.name || item.equipmentName || item.id, "商品");
+        row.append(text, actionButton(
+          `${price.toLocaleString("ja-JP")} G`,
+          "SHOP_BUY",
+          { stockId: item.stockId || item.id },
+          price > number(currentSave.player?.gold),
+          `${itemName}を${price.toLocaleString("ja-JP")}Gで購入`,
+        ));
+        ui.dialogBody.append(row);
+      });
+      const sellSection = document.createElement("section");
+      sellSection.className = "detail-section";
+      sellSection.innerHTML = "<h3>売却</h3>";
+      if (!owned.length) sellSection.append(emptyPanel("売却できる装備はありません。"));
+      owned.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "detail-row";
+        row.innerHTML = "<div><b></b><small></small></div>";
+        const equipmentId = item.equipmentId || item.id;
+        const quote = saleQuoteById.get(equipmentId);
+        const sellPrice = quote?.price == null ? null : number(quote.price);
+        $("b", row).textContent = escapeText(item.name || equipmentId);
+        $("small", row).textContent = [
+          `所持 ${number(item.quantity ?? item.count, 1)}`,
+          equippedIds.has(equipmentId) ? "装備中は売却できません" : quote?.available === false ? "この店では買い取れません" : "",
+        ].filter(Boolean).join(" ・ ");
+        row.append(actionButton(
+          sellPrice == null ? "売却不可" : `${sellPrice.toLocaleString("ja-JP")} Gで売却`,
+          "SHOP_SELL",
+          { equipmentId },
+          !equipmentId || quote?.available !== true,
+          sellPrice == null
+            ? `${escapeText(item.name || equipmentId, "装備品")}はこの店で売却できません`
+            : `${escapeText(item.name || equipmentId, "装備品")}を${sellPrice.toLocaleString("ja-JP")}Gで売却`,
+        ));
+        sellSection.append(row);
+      });
+      ui.dialogBody.append(sellSection);
+    }
+    
+    function renderChronicle() {
+      const entries = list(currentSave.chronicle);
+      if (!entries.length) return ui.dialogBody.append(emptyPanel("旅の記録はまだありません。"));
+      const timeline = document.createElement("ol");
+      timeline.className = "chronicle-list";
+      entries.forEach((entry) => {
+        const item = document.createElement("li");
+        item.innerHTML = "<time></time><p></p>";
+        $("time", item).textContent = escapeText(entry.time || entry.clock, entry.day ? `Day ${entry.day}` : "記録");
+        $("p", item).textContent = escapeText(entry.text || entry.summary || entry.message, "出来事があった。");
+        timeline.append(item);
+      });
+      ui.dialogBody.append(timeline);
+    }
+    
+    const panelMeta = {
+      movement: ["WORLD MAP", "地域と施設の移動", renderMovement],
+      inventory: ["BELONGINGS", "持ち物と装備", renderInventory],
+      skills: ["CHARACTER", "能力とスキル", renderSkills],
+      missions: ["MISSIONS", "ミッション一覧", renderMissions],
+      rumors: ["RUMORS", "知っている噂", renderRumors],
+      shop: ["SHOP", "購入・売却", renderShop],
+      chronicle: ["CHRONICLE", "これまでの記録", renderChronicle],
+    };
+    
+    function renderPanel(name) {
+      const normalized = panelName(name) ?? "chronicle";
+      const meta = panelMeta[normalized];
+      ui.dialog.dataset.panel = normalized;
+      ui.dialogKicker.textContent = meta[0];
+      ui.dialogTitle.textContent = meta[1];
+      ui.dialogBody.replaceChildren();
+      meta[2]();
+      if (busy) disableBusyControls();
+    }
+    
+    function openPanel(name, { targetFacilityId = "" } = {}) {
+      if (!currentSave) return;
+      ui.dialogError.hidden = true;
+      const normalized = panelName(name) ?? "chronicle";
+      if (normalized === "movement" && targetFacilityId) ui.dialog.dataset.targetFacilityId = targetFacilityId;
+      else ui.dialog.removeAttribute("data-target-facility-id");
+      renderPanel(normalized);
+      if (!ui.dialog.open) ui.dialog.showModal();
+      ui.dialogTitle.focus();
+    }
+    
+    function closeQuickMenu({ restoreFocus = false } = {}) {
+      const focusWasInside = ui.quickMenu.contains(document.activeElement);
+      ui.quickMenu.hidden = true;
+      $("#openQuickMenu").setAttribute("aria-expanded", "false");
+      if (restoreFocus || focusWasInside) $("#openQuickMenu").focus();
+      window.requestAnimationFrame(positionTutorialCoach);
+    }
+    
+    async function openPanelFromUi(name, { targetFacilityId = "" } = {}) {
+      if (busy || !currentSave) return;
+      const normalized = panelName(name) ?? "chronicle";
+      closeQuickMenu();
+      const tutorial = currentSave.tutorial;
+      const shouldAcknowledge = tutorial?.acknowledgeable === true
+        && tutorial.id
+        && panelName(tutorial.actionPanel) === normalized;
+      if (shouldAcknowledge) {
+        const acknowledged = await sendCommand("TUTORIAL_ACK", { tutorialId: tutorial.id });
+        if (!acknowledged) return;
+      }
+      openPanel(normalized, { targetFacilityId });
+    }
+    
+    async function loadManifest() {
+      const previous = JSON.stringify(assetManifest);
+      try {
+        const response = await fetch("/TRPG/assets/manifest.json", { cache: "no-store" });
+        if (response.ok) assetManifest = await response.json();
+      } catch {
+        if (!assetManifest || typeof assetManifest !== "object") {
+          assetManifest = { backgrounds: {}, portraits: {}, monsters: {} };
+        }
+      }
+      return previous !== JSON.stringify(assetManifest);
+    }
+    
+    ui.newTab.addEventListener("click", () => switchLaunchTab("new"));
+    ui.resumeTab.addEventListener("click", () => switchLaunchTab("resume"));
+    $(".launch-tabs").addEventListener("keydown", (event) => {
+      const tabs = [ui.newTab, ui.resumeTab];
+      const current = tabs.indexOf(event.target);
+      if (current < 0 || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === "Home" ? 0
+        : event.key === "End" ? tabs.length - 1
+          : (current + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+      switchLaunchTab(next === 0 ? "new" : "resume", { focusPanel: false });
+      tabs[next].focus();
+    });
+    ui.newForm.addEventListener("submit", (event) => { event.preventDefault(); createGame(event.currentTarget); });
+    $("#refreshSaves").addEventListener("click", loadSaveList);
+    $("#returnToTitle").addEventListener("click", () => {
+      if (ui.dialog.open) ui.dialog.close();
+      if (ui.battleDialog.open) ui.battleDialog.close();
+      closeQuickMenu();
+      ui.game.hidden = true;
+      ui.launch.hidden = false;
+      document.body.classList.remove("is-playing");
+      switchLaunchTab("resume");
+    });
+    $("#closeDialog").addEventListener("click", () => ui.dialog.close());
+    ui.dialog.addEventListener("click", (event) => {
+      if (event.target === ui.dialog) ui.dialog.close();
+    });
+    ui.dialog.addEventListener("close", () => {
+      ui.dialog.removeAttribute("data-target-facility-id");
+      window.requestAnimationFrame(positionTutorialCoach);
+    });
+    $$('[data-open-panel]').forEach((button) => button.addEventListener("click", () => {
+      const targetFacilityId = button.dataset.openPanel === "movement" ? guidanceView(currentSave)?.targetFacilityId : "";
+      openPanelFromUi(button.dataset.openPanel, { targetFacilityId });
+    }));
+    ui.guidance.addEventListener("click", () => {
+      const name = panelName(ui.guidance.dataset.panel);
+      if (name) openPanelFromUi(name, { targetFacilityId: ui.guidance.dataset.targetFacilityId });
+    });
+    $("#openQuickMenu").addEventListener("click", (event) => {
+      event.stopPropagation();
+      const opening = ui.quickMenu.hidden;
+      if (!opening) {
+        closeQuickMenu({ restoreFocus: true });
+        return;
+      }
+      ui.quickMenu.hidden = false;
+      event.currentTarget.setAttribute("aria-expanded", "true");
+      window.requestAnimationFrame(() => $("button", ui.quickMenu)?.focus());
+      window.requestAnimationFrame(positionTutorialCoach);
+    });
+    ui.quickMenu.addEventListener("click", (event) => event.stopPropagation());
+    document.addEventListener("click", () => {
+      if (ui.quickMenu.hidden) return;
+      closeQuickMenu();
+    });
+    ui.dialogue.addEventListener("click", advanceDialogue);
+    $("#battleNext").addEventListener("click", advanceBattle);
+    $("#battleSkip").addEventListener("click", skipBattle);
+    $("#battleClose").addEventListener("click", () => {
+      if (ui.battleDialog.dataset.readyToClose === "true") ui.battleDialog.close();
+    });
+    ui.battleDialog.addEventListener("close", () => {
+      battlePlayback = null;
+      window.requestAnimationFrame(focusCurrentStoryControl);
+    });
+    ui.battleDialog.addEventListener("cancel", (event) => {
+      if (ui.battleDialog.dataset.readyToClose !== "true") {
+        event.preventDefault();
+        skipBattle();
+      }
+    });
+    window.addEventListener("resize", () => {
+      positionTutorialCoach();
+      syncBattleVisualViewport();
+    });
+    window.visualViewport?.addEventListener("resize", syncBattleVisualViewport);
+    window.visualViewport?.addEventListener("scroll", syncBattleVisualViewport);
+    syncBattleVisualViewport();
+    
+    document.addEventListener("keydown", (event) => {
+      if (busy || ui.game.hidden || ui.dialog.open || ui.battleDialog.open || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.key === "Escape" && !ui.quickMenu.hidden) {
+        event.preventDefault();
+        closeQuickMenu({ restoreFocus: true });
+        return;
+      }
+      if (/^(INPUT|TEXTAREA|SELECT|BUTTON)$/u.test(document.activeElement?.tagName)) return;
+      if (!ui.dialogue.hidden && ["Enter", " "].includes(event.key)) {
+        event.preventDefault();
+        advanceDialogue();
+        return;
+      }
+      if (ui.decision.hidden) return;
+      const index = Number(event.key) - 1;
+      const choices = $$(".choice-button", ui.choices);
+      if (index >= 0 && index < choices.length) {
+        event.preventDefault();
+        choices[index].click();
+      }
+    });
+    
+    await loadManifest();
+    const lastSaveId = localStorage.getItem(LAST_SAVE_KEY);
+    if (lastSaveId) {
+      switchLaunchTab("resume", { focusPanel: false });
+    } else {
+      $("#playerName").focus();
+    }
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/trpg-needs-ui-contract.test.mjs:12:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: reviewed authored scenes are resolved before the Gemini branch
+ok 169 - reviewed authored scenes are resolved before the Gemini branch
+  ---
+  duration_ms: 1.822386
+  type: 'test'
+  ...
+# Subtest: tutorial teaches movement once through the existing location control
+ok 170 - tutorial teaches movement once through the existing location control
+  ---
+  duration_ms: 1.413881
+  type: 'test'
+  ...
+# Subtest: opening characters speak from their own stakes instead of explaining the game
+ok 171 - opening characters speak from their own stakes instead of explaining the game
+  ---
+  duration_ms: 0.360198
+  type: 'test'
+  ...
+# Subtest: Gemini contract rejects game and UI vocabulary in narration and NPC speech
+ok 172 - Gemini contract rejects game and UI vocabulary in narration and NPC speech
+  ---
+  duration_ms: 0.269525
+  type: 'test'
+  ...
+# Subtest: P0 observer loads before the main TRPG module
+ok 173 - P0 observer loads before the main TRPG module
+  ---
+  duration_ms: 1.369391
+  type: 'test'
+  ...
+# Subtest: onboarding does not create a parallel movement or skill control
+ok 174 - onboarding does not create a parallel movement or skill control
+  ---
+  duration_ms: 0.84292
+  type: 'test'
+  ...
+# Subtest: mission notices are restrained and do not duplicate the mission tutorial
+ok 175 - mission notices are restrained and do not duplicate the mission tutorial
+  ---
+  duration_ms: 0.290478
+  type: 'test'
+  ...
+# Subtest: mobile battle commands remain fully reachable
+ok 176 - mobile battle commands remain fully reachable
+  ---
+  duration_ms: 0.27887
+  type: 'test'
+  ...
+# Subtest: play UI exposes one visual-novel surface and no legacy scrolling rails
+ok 177 - play UI exposes one visual-novel surface and no legacy scrolling rails
+  ---
+  duration_ms: 2.087604
+  type: 'test'
+  ...
+# Subtest: every direct app id reference exists in the HTML
+ok 178 - every direct app id reference exists in the HTML
+  ---
+  duration_ms: 2.087324
+  type: 'test'
+  ...
+# Subtest: dialogue and three-choice tray are mutually exclusive
+ok 179 - dialogue and three-choice tray are mutually exclusive
+  ---
+  duration_ms: 0.562548
+  type: 'test'
+  ...
+# Subtest: a visible choice sends both its slot id and authoritative action id
+ok 180 - a visible choice sends both its slot id and authoritative action id
+  ---
+  duration_ms: 0.372167
+  type: 'test'
+  ...
+# Subtest: an introduction is acknowledged only after its final visible segment
+ok 181 - an introduction is acknowledged only after its final visible segment
+  ---
+  duration_ms: 0.50722
+  type: 'test'
+  ...
+# Subtest: primary touch controls retain mobile-sized targets
+ok 182 - primary touch controls retain mobile-sized targets
+  ---
+  duration_ms: 0.459615
+  type: 'test'
+  ...
+# Subtest: keyboard focus survives dialogue, menus, battle, and transient outcomes
+ok 183 - keyboard focus survives dialogue, menus, battle, and transient outcomes
+  ---
+  duration_ms: 0.575168
+  type: 'test'
+  ...
+# Subtest: an empty or completed choice state still exposes a focusable action
+ok 184 - an empty or completed choice state still exposes a focusable action
+  ---
+  duration_ms: 0.376193
+  type: 'test'
+  ...
+# Subtest: screen-reader announcements have a single owner during story playback
+ok 185 - screen-reader announcements have a single owner during story playback
+  ---
+  duration_ms: 0.715499
+  type: 'test'
+  ...
+# Subtest: modal command errors remain inside the active dialog
+ok 186 - modal command errors remain inside the active dialog
+  ---
+  duration_ms: 0.676657
+  type: 'test'
+  ...
+# Subtest: visible choice text is not line-clamped
+ok 187 - visible choice text is not line-clamped
+  ---
+  duration_ms: 0.41822
+  type: 'test'
+  ...
+# Subtest: battle supports authoritative interactive commands and preserves completed playback
+ok 188 - battle supports authoritative interactive commands and preserves completed playback
+  ---
+  duration_ms: 1.12182
+  type: 'test'
+  ...
+# Subtest: first-encounter Gemini art refreshes from the persisted manifest without blocking play
+not ok 189 - first-encounter Gemini art refreshes from the persisted manifest without blocking play
+  ---
+  duration_ms: 2.298958
+  type: 'test'
+  location: '/home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/trpg-ui-contract.test.mjs:119:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /20260719-agency-v7/u. Input:
+    
+    '<!DOCTYPE html>\n' +
+      '<html lang="ja">\n' +
+      '<head>\n' +
+      '  <meta charset="UTF-8" />\n' +
+      '  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />\n' +
+      '  <meta name="theme-color" content="#111914" />\n' +
+      '  <meta name="description" content="100日間進み続ける世界を旅する、一人用異世界TRPG。" />\n' +
+      '  <title>TRPG（仮題） | 不知火遊技場</title>\n' +
+      '  <link rel="stylesheet" href="/TRPG/style.css?v=20260722-needs-v2" />\n' +
+      '  <link rel="stylesheet" href="/TRPG/p0-ux.css?v=20260720-onboarding-v2" />\n' +
+      '</head>\n' +
+      '<body>\n' +
+      '  <a class="skip-link" href="#mainContent">ゲーム本文へ移動</a>\n' +
+      '\n' +
+      '  <header class="site-header">\n' +
+      '    <a class="brand" href="/TRPG/" aria-label="TRPG（仮題）トップ">\n' +
+      '      <span class="brand-mark" aria-hidden="true">火</span>\n' +
+      '      <span><b>TRPG</b><small>仮題</small></span>\n' +
+      '    </a>\n' +
+      '    <nav class="site-links" aria-label="関連ページ">\n' +
+      '      <a href="/TRPG/simulation.html">世界観測</a>\n' +
+      '      <a href="/TRPG/catalog.html">スキル資料</a>\n' +
+      '      <a href="/">遊技場へ戻る</a>\n' +
+      '    </nav>\n' +
+      '  </header>\n' +
+      '\n' +
+      '  <main id="mainContent">\n' +
+      '    <section id="launchScreen" class="launch-screen" aria-labelledby="launchTitle">\n' +
+      '      <div class="launch-copy">\n' +
+      '        <p class="eyebrow">A WORLD THAT MOVES WITHOUT YOU</p>\n' +
+      '        <h1 id="launchTitle">100日間、<br />世界は待たない。</h1>\n' +
+      '        <p>\n' +
+      '          噂を追い、人と出会い、危機へ介入する一人用異世界TRPG。\n' +
+      '          あなたが選ばなかった出来事も、同じ時間の中で進んでいきます。\n' +
+      '        </p>\n' +
+      '        <div class="launch-facts" aria-label="ゲームの特徴">\n' +
+      '          <span>AIによる3択</span><span>自律するNPC</span><span>自動保存</span>\n' +
+      '        </div>\n' +
+      '      </div>\n' +
+      '\n' +
+      '      <div class="launch-card">\n' +
+      '        <div class="launch-tabs" role="tablist" aria-label="開始方法">\n' +
+      '          <button id="newTab" role="tab" aria-selected="true" aria-controls="newGamePanel" tabindex="0">新しい旅</button>\n' +
+      '          <button id="resumeTab" role="tab" aria-selected="false" aria-controls="resumePanel" tabindex="-1">続きから</button>\n' +
+      '        </div>\n' +
+      '\n' +
+      '        <section id="newGamePanel" role="tabpanel" aria-labelledby="newTab">\n' +
+      '          <form id="newGameForm">\n' +
+      '            <label for="playerName">旅人の名前</label>\n' +
+      '            <input id="playerName" name="playerName" maxlength="24" autocomplete="nickname" required placeholder="名前を入力" aria-describedby="startHelp" />\n' +
+      '            <p id="startHelp" class="start-note">名前だけで始められます。遊び方は、旅の中で一つずつ案内します。</p>\n' +
+      '            <button class="primary-button" type="submit">この旅を始める</button>\n' +
+      '          </form>\n' +
+      '        </section>\n' +
+      '\n' +
+      '        <section id="resumePanel" role="tabpanel" aria-labelledby="resumeTab" hidden>\n' +
+      '          <p id="saveListStatus" class="quiet">保存データを確認しています…</p>\n' +
+      '          <p class="quiet">保存はこの端末で最大3件、最終プレイから30日間です。不要な旅は一覧から削除できます。</p>\n' +
+      '          <div id="saveList" class="save-list"></div>\n' +
+      '          <button id="refreshSaves" class="text-button" type="button">保存データを再読み込み</button>\n' +
+      '        </section>\n' +
+      '\n' +
+      '        <div id="launchError" class="error-box" role="alert" hidden></div>\n' +
+      '      </div>\n' +
+      '    </section>\n' +
+      '\n' +
+      '    <section id="gameScreen" class="game-screen" aria-label="ゲーム画面" aria-busy="false" hidden>\n' +
+      '      <div id="sceneBackdrop" class="scene-backdrop" data-background-key="default">\n' +
+      '        <div class="scene-shade" aria-hidden="true"></div>\n' +
+      '\n' +
+      '        <header class="scene-topbar">\n' +
+      '          <button id="locationButton" class="location-button" type="button" data-open-panel="movement" aria-label="現在地と移動先を確認">\n' +
+      '            <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.3 6-11a6 6 0 1 0-12 0c0 5.7 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></svg>\n' +
+      '            <span class="location-copy"><strong id="facilityName">—</strong><small id="locationName">—</small></span>\n' +
+      '            <span class="compact-clock"><span id="dayLabel">Day —</span><time id="timeLabel">--:--</time><span id="weatherLabel" class="weather-label">天気—</span><span id="daypartLabel" class="sr-only">—</span></span>\n' +
+      '          </button>\n' +
+      '\n' +
+      '          <nav class="scene-tools" aria-label="旅の機能">\n' +
+      '            <button class="tool-button" type="button" data-open-panel="inventory" aria-label="持ち物を見る">\n' +
+      '              <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10l2 12H5L7 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>\n' +
+      '            </button>\n' +
+      '            <button class="tool-button" type="button" data-open-panel="missions" aria-label="ミッションを見る">\n' +
+      '              <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>\n' +
+      '              <b id="missionBadge" class="nav-badge" aria-label="進行中のミッション数">0</b>\n' +
+      '            </button>\n' +
+      '            <button class="tool-button" type="button" data-open-panel="skills" aria-label="能力とスキルを見る">\n' +
+      '              <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7L12 2Z"/></svg>\n' +
+      '              <b id="spBadge" class="nav-badge" aria-label="所持SP">0</b>\n' +
+      '            </button>\n' +
+      '            <button id="openQuickMenu" class="tool-button" type="button" aria-label="その他のメニュー" aria-expanded="false" aria-controls="quickMenu">\n' +
+      '              <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>\n' +
+      '            </button>\n' +
+      '          </nav>\n' +
+      '        </header>\n' +
+      '\n' +
+      '        <div class="scene-status" aria-label="旅人の状態">\n' +
+      '          <span id="playerDisplayName" class="sr-only">旅人</span>\n' +
+      '          <b id="playerLevel">Lv 1</b>\n' +
+      '          <label>HP <progress id="hpBar" max="1" value="1"></progress><span id="hpText">100%</span></label>\n' +
+      '          <label>MP <progress id="mpBar" max="1" value="1"></progress><span id="mpText">100%</span></label>\n' +
+      '          <span id="hungerStatus" class="need-status" data-level="normal" title="空腹度">食 15</span>\n' +
+      '          <span id="fatigueStatus" class="need-status" data-level="normal" title="疲労度">疲 8</span>\n' +
+      '          <b id="playerGold">0 G</b>\n' +
+      '        </div>\n' +
+      '\n' +
+      '        <button id="guidanceBar" class="objective-chip" type="button" hidden>\n' +
+      '          <span aria-hidden="true">◆</span>\n' +
+      '          <strong id="guidanceTitle">次の一歩</strong>\n' +
+      '          <span id="guidanceDeadline" class="deadline-label" hidden></span>\n' +
+      '          <span id="guidanceDetail" class="sr-only"></span>\n' +
+      '          <span id="guidanceKicker" class="sr-only">現在の目的</span>\n' +
+      '        </button>\n' +
+      '\n' +
+      '        <div id="quickMenu" class="quick-menu" hidden>\n' +
+      '          <button type="button" data-open-panel="shop"><span aria-hidden="true">♙</span>店</button>\n' +
+      '          <button type="button" data-open-panel="rumors"><span aria-hidden="true">◌</span>噂 <b id="rumorBadge">0</b></button>\n' +
+      '          <button id="openChronicle" type="button" data-open-panel="chronicle"><span aria-hidden="true">▤</span>年代記</button>\n' +
+      '          <button id="returnToTitle" type="button"><span aria-hidden="true">↩</span>タイトルへ</button>\n' +
+      '        </div>\n' +
+      '\n' +
+      '        <div id="npcStage" class="npc-stage" aria-label="この場にいる人物"></div>\n' +
+      '\n' +
+      '        <section id="storyConsole" class="story-console" aria-labelledby="sceneTitle">\n' +
+      '          <h2 id="sceneTitle" class="sr-only" tabindex="-1">物語</h2>\n' +
+      '          <button id="dialogueAdvance" class="dialogue-box" type="button" aria-describedby="advanceInstruction">\n' +
+      '            <span id="dialogueSpeaker" class="dialogue-name" hidden></span>\n' +
+      '            <span id="dialogueLine" class="dialogue-line">物語を読み込んでいます…</span>\n' +
+      '            <span class="dialogue-next" aria-hidden="true">▼</span>\n' +
+      '          </button>\n' +
+      '          <span id="advanceInstruction" class="sr-only">次の文章へ進みます</span>\n' +
+      '\n' +
+      '          <section id="decisionTray" class="decision-tray" aria-labelledby="choiceHeading" hidden>\n' +
+      '            <h3 id="choiceHeading">どうする？</h3>\n' +
+      '            <div id="choiceRegion" class="choices"></div>\n' +
+      '          </section>\n' +
+      '\n' +
+      '          <p id="outcomeToast" class="outcome-toast" hidden></p>\n' +
+      '          <div id="gameError" class="error-box scene-error" role="alert" hidden></div>\n' +
+      '          <p id="sceneAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></p>\n' +
+      '        </section>\n' +
+      '\n' +
+      '        <aside id="tutorialCard" class="tutorial-coach" hidden>\n' +
+      '          <span class="coach-arrow" aria-hidden="true"></span>\n' +
+      '          <p id="tutorialBody"></p>\n' +
+      '          <span id="tutorialTitle" class="sr-only">遊び方</span>\n' +
+      '          <span id="tutorialProgress" class="sr-only" hidden></span>\n' +
+      '          <button id="tutorialAction" type="button" hidden>確認する</button>\n' +
+      '        </aside>\n' +
+      '\n' +
+      '        <div id="saveIndicator" class="sr-only" data-status="saved">保存済み</div>\n' +
+      '      </div>\n' +
+      '    </section>\n' +
+      '  </main>\n' +
+      '\n' +
+      '  <dialog id="detailDialog" class="detail-dialog" aria-labelledby="dialogTitle" aria-busy="false">\n' +
+      '    <div class="dialog-heading">\n' +
+      '      <div><p id="dialogKicker" class="eyebrow">JOURNEY</p><h2 id="dialogTitle" tabindex="-1">詳細</h2></div>\n' +
+      '      <button id="closeDialog" class="icon-button" type="button" aria-label="閉じる">×</button>\n' +
+      '    </div>\n' +
+      '    <div id="dialogError" class="error-box dialog-error" role="alert" hidden></div>\n' +
+      '    <div id="dialogBody" class="dialog-body"></div>\n' +
+      '  </dialog>\n' +
+      '\n' +
+      '  <dialog id="battleDialog" class="battle-dialog" aria-labelledby="battleTitle" aria-describedby="battleMessage">\n' +
+      '    <div id="battleScene" class="battle-scene">\n' +
+      '      <header class="battle-heading">\n' +
+      '        <div><span id="battleRound">ROUND 1</span><h2 id="battleTitle">戦闘</h2></div>\n' +
+      '        <button id="battleSkip" class="battle-skip" type="button">結果まで進む</button>\n' +
+      '      </header>\n' +
+      '      <div id="battleEnemies" class="battle-enemies" aria-label="敵"></div>\n' +
+      '      <section id="battleStatus" class="battle-status" aria-label="戦闘中の状態"></section>\n' +
+      '      <div id="battleError" class="battle-error" role="alert" hidden></div>\n' +
+      '      <section class="battle-message">\n' +
+      '        <p id="battleMessage" role="status" aria-live="polite" aria-atomic="true">敵が現れた！</p>\n' +
+      '        <div id="battlePlaybackControls" class="battle-controls">\n' +
+      '          <button id="battleNext" type="button">次へ</button>\n' +
+      '          <button id="battleClose" type="button" hidden>冒険へ戻る</button>\n' +
+      '        </div>\n' +
+      '        <section id="battleCommandPanel" class="battle-command-panel" aria-label="戦闘コマンド" hidden>\n' +
+      '          <p id="battleCommandPrompt" class="battle-command-prompt">どうする？</p>\n' +
+      '          <div id="batt'... 539 more characters
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <meta name="theme-color" content="#111914" />
+      <meta name="description" content="100日間進み続ける世界を旅する、一人用異世界TRPG。" />
+      <title>TRPG（仮題） | 不知火遊技場</title>
+      <link rel="stylesheet" href="/TRPG/style.css?v=20260722-needs-v2" />
+      <link rel="stylesheet" href="/TRPG/p0-ux.css?v=20260720-onboarding-v2" />
+    </head>
+    <body>
+      <a class="skip-link" href="#mainContent">ゲーム本文へ移動</a>
+    
+      <header class="site-header">
+        <a class="brand" href="/TRPG/" aria-label="TRPG（仮題）トップ">
+          <span class="brand-mark" aria-hidden="true">火</span>
+          <span><b>TRPG</b><small>仮題</small></span>
+        </a>
+        <nav class="site-links" aria-label="関連ページ">
+          <a href="/TRPG/simulation.html">世界観測</a>
+          <a href="/TRPG/catalog.html">スキル資料</a>
+          <a href="/">遊技場へ戻る</a>
+        </nav>
+      </header>
+    
+      <main id="mainContent">
+        <section id="launchScreen" class="launch-screen" aria-labelledby="launchTitle">
+          <div class="launch-copy">
+            <p class="eyebrow">A WORLD THAT MOVES WITHOUT YOU</p>
+            <h1 id="launchTitle">100日間、<br />世界は待たない。</h1>
+            <p>
+              噂を追い、人と出会い、危機へ介入する一人用異世界TRPG。
+              あなたが選ばなかった出来事も、同じ時間の中で進んでいきます。
+            </p>
+            <div class="launch-facts" aria-label="ゲームの特徴">
+              <span>AIによる3択</span><span>自律するNPC</span><span>自動保存</span>
+            </div>
+          </div>
+    
+          <div class="launch-card">
+            <div class="launch-tabs" role="tablist" aria-label="開始方法">
+              <button id="newTab" role="tab" aria-selected="true" aria-controls="newGamePanel" tabindex="0">新しい旅</button>
+              <button id="resumeTab" role="tab" aria-selected="false" aria-controls="resumePanel" tabindex="-1">続きから</button>
+            </div>
+    
+            <section id="newGamePanel" role="tabpanel" aria-labelledby="newTab">
+              <form id="newGameForm">
+                <label for="playerName">旅人の名前</label>
+                <input id="playerName" name="playerName" maxlength="24" autocomplete="nickname" required placeholder="名前を入力" aria-describedby="startHelp" />
+                <p id="startHelp" class="start-note">名前だけで始められます。遊び方は、旅の中で一つずつ案内します。</p>
+                <button class="primary-button" type="submit">この旅を始める</button>
+              </form>
+            </section>
+    
+            <section id="resumePanel" role="tabpanel" aria-labelledby="resumeTab" hidden>
+              <p id="saveListStatus" class="quiet">保存データを確認しています…</p>
+              <p class="quiet">保存はこの端末で最大3件、最終プレイから30日間です。不要な旅は一覧から削除できます。</p>
+              <div id="saveList" class="save-list"></div>
+              <button id="refreshSaves" class="text-button" type="button">保存データを再読み込み</button>
+            </section>
+    
+            <div id="launchError" class="error-box" role="alert" hidden></div>
+          </div>
+        </section>
+    
+        <section id="gameScreen" class="game-screen" aria-label="ゲーム画面" aria-busy="false" hidden>
+          <div id="sceneBackdrop" class="scene-backdrop" data-background-key="default">
+            <div class="scene-shade" aria-hidden="true"></div>
+    
+            <header class="scene-topbar">
+              <button id="locationButton" class="location-button" type="button" data-open-panel="movement" aria-label="現在地と移動先を確認">
+                <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.3 6-11a6 6 0 1 0-12 0c0 5.7 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></svg>
+                <span class="location-copy"><strong id="facilityName">—</strong><small id="locationName">—</small></span>
+                <span class="compact-clock"><span id="dayLabel">Day —</span><time id="timeLabel">--:--</time><span id="weatherLabel" class="weather-label">天気—</span><span id="daypartLabel" class="sr-only">—</span></span>
+              </button>
+    
+              <nav class="scene-tools" aria-label="旅の機能">
+                <button class="tool-button" type="button" data-open-panel="inventory" aria-label="持ち物を見る">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10l2 12H5L7 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+                </button>
+                <button class="tool-button" type="button" data-open-panel="missions" aria-label="ミッションを見る">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+                  <b id="missionBadge" class="nav-badge" aria-label="進行中のミッション数">0</b>
+                </button>
+                <button class="tool-button" type="button" data-open-panel="skills" aria-label="能力とスキルを見る">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.7 6.3L20 10l-6.3 1.7L12 18l-1.7-6.3L4 10l6.3-1.7L12 2Z"/></svg>
+                  <b id="spBadge" class="nav-badge" aria-label="所持SP">0</b>
+                </button>
+                <button id="openQuickMenu" class="tool-button" type="button" aria-label="その他のメニュー" aria-expanded="false" aria-controls="quickMenu">
+                  <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+              </nav>
+            </header>
+    
+            <div class="scene-status" aria-label="旅人の状態">
+              <span id="playerDisplayName" class="sr-only">旅人</span>
+              <b id="playerLevel">Lv 1</b>
+              <label>HP <progress id="hpBar" max="1" value="1"></progress><span id="hpText">100%</span></label>
+              <label>MP <progress id="mpBar" max="1" value="1"></progress><span id="mpText">100%</span></label>
+              <span id="hungerStatus" class="need-status" data-level="normal" title="空腹度">食 15</span>
+              <span id="fatigueStatus" class="need-status" data-level="normal" title="疲労度">疲 8</span>
+              <b id="playerGold">0 G</b>
+            </div>
+    
+            <button id="guidanceBar" class="objective-chip" type="button" hidden>
+              <span aria-hidden="true">◆</span>
+              <strong id="guidanceTitle">次の一歩</strong>
+              <span id="guidanceDeadline" class="deadline-label" hidden></span>
+              <span id="guidanceDetail" class="sr-only"></span>
+              <span id="guidanceKicker" class="sr-only">現在の目的</span>
+            </button>
+    
+            <div id="quickMenu" class="quick-menu" hidden>
+              <button type="button" data-open-panel="shop"><span aria-hidden="true">♙</span>店</button>
+              <button type="button" data-open-panel="rumors"><span aria-hidden="true">◌</span>噂 <b id="rumorBadge">0</b></button>
+              <button id="openChronicle" type="button" data-open-panel="chronicle"><span aria-hidden="true">▤</span>年代記</button>
+              <button id="returnToTitle" type="button"><span aria-hidden="true">↩</span>タイトルへ</button>
+            </div>
+    
+            <div id="npcStage" class="npc-stage" aria-label="この場にいる人物"></div>
+    
+            <section id="storyConsole" class="story-console" aria-labelledby="sceneTitle">
+              <h2 id="sceneTitle" class="sr-only" tabindex="-1">物語</h2>
+              <button id="dialogueAdvance" class="dialogue-box" type="button" aria-describedby="advanceInstruction">
+                <span id="dialogueSpeaker" class="dialogue-name" hidden></span>
+                <span id="dialogueLine" class="dialogue-line">物語を読み込んでいます…</span>
+                <span class="dialogue-next" aria-hidden="true">▼</span>
+              </button>
+              <span id="advanceInstruction" class="sr-only">次の文章へ進みます</span>
+    
+              <section id="decisionTray" class="decision-tray" aria-labelledby="choiceHeading" hidden>
+                <h3 id="choiceHeading">どうする？</h3>
+                <div id="choiceRegion" class="choices"></div>
+              </section>
+    
+              <p id="outcomeToast" class="outcome-toast" hidden></p>
+              <div id="gameError" class="error-box scene-error" role="alert" hidden></div>
+              <p id="sceneAnnouncer" class="sr-only" aria-live="polite" aria-atomic="true"></p>
+            </section>
+    
+            <aside id="tutorialCard" class="tutorial-coach" hidden>
+              <span class="coach-arrow" aria-hidden="true"></span>
+              <p id="tutorialBody"></p>
+              <span id="tutorialTitle" class="sr-only">遊び方</span>
+              <span id="tutorialProgress" class="sr-only" hidden></span>
+              <button id="tutorialAction" type="button" hidden>確認する</button>
+            </aside>
+    
+            <div id="saveIndicator" class="sr-only" data-status="saved">保存済み</div>
+          </div>
+        </section>
+      </main>
+    
+      <dialog id="detailDialog" class="detail-dialog" aria-labelledby="dialogTitle" aria-busy="false">
+        <div class="dialog-heading">
+          <div><p id="dialogKicker" class="eyebrow">JOURNEY</p><h2 id="dialogTitle" tabindex="-1">詳細</h2></div>
+          <button id="closeDialog" class="icon-button" type="button" aria-label="閉じる">×</button>
+        </div>
+        <div id="dialogError" class="error-box dialog-error" role="alert" hidden></div>
+        <div id="dialogBody" class="dialog-body"></div>
+      </dialog>
+    
+      <dialog id="battleDialog" class="battle-dialog" aria-labelledby="battleTitle" aria-describedby="battleMessage">
+        <div id="battleScene" class="battle-scene">
+          <header class="battle-heading">
+            <div><span id="battleRound">ROUND 1</span><h2 id="battleTitle">戦闘</h2></div>
+            <button id="battleSkip" class="battle-skip" type="button">結果まで進む</button>
+          </header>
+          <div id="battleEnemies" class="battle-enemies" aria-label="敵"></div>
+          <section id="battleStatus" class="battle-status" aria-label="戦闘中の状態"></section>
+          <div id="battleError" class="battle-error" role="alert" hidden></div>
+          <section class="battle-message">
+            <p id="battleMessage" role="status" aria-live="polite" aria-atomic="true">敵が現れた！</p>
+            <div id="battlePlaybackControls" class="battle-controls">
+              <button id="battleNext" type="button">次へ</button>
+              <button id="battleClose" type="button" hidden>冒険へ戻る</button>
+            </div>
+            <section id="battleCommandPanel" class="battle-command-panel" aria-label="戦闘コマンド" hidden>
+              <p id="battleCommandPrompt" class="battle-command-prompt">どうする？</p>
+              <div id="battleCommandMenu" class="battle-command-menu"></div>
+            </section>
+          </section>
+        </div>
+      </dialog>
+    
+      <div id="missionToastRegion" class="mission-toast-region" aria-label="ミッション通知"></div>
+    
+      <div id="busyOverlay" class="busy-overlay" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <span class="spinner" aria-hidden="true"></span><b>世界が動いています…</b>
+      </div>
+    
+      <script src="/TRPG/p0-ux.js?v=20260720-onboarding-v2"></script>
+      <script type="module" src="/TRPG/app.js?v=20260722-needs-v2"></script>
+    </body>
+    </html>
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/trpg-ui-contract.test.mjs:125:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: manifest portraits are real transparent cutouts
+ok 190 - manifest portraits are real transparent cutouts
+  ---
+  duration_ms: 86.07091
+  type: 'test'
+  ...
+# Subtest: game views expose the same canonical weather across different save seeds
+ok 191 - game views expose the same canonical weather across different save seeds
+  ---
+  duration_ms: 237.879486
+  type: 'test'
+  ...
+# Subtest: canonical weather is shared by every player and playthrough
+ok 192 - canonical weather is shared by every player and playthrough
+  ---
+  duration_ms: 2.522981
+  type: 'test'
+  ...
+# Subtest: all Day 1-100 schedules resolve to known weather
+ok 193 - all Day 1-100 schedules resolve to known weather
+  ---
+  duration_ms: 8.814008
+  type: 'test'
+  ...
+# Subtest: daypart aliases resolve to the same canonical slot
+ok 194 - daypart aliases resolve to the same canonical slot
+  ---
+  duration_ms: 0.437791
+  type: 'test'
+  ...
+# Subtest: canonicalWeatherDay returns the four shared phase forecasts
+ok 195 - canonicalWeatherDay returns the four shared phase forecasts
+  ---
+  duration_ms: 0.358405
+  type: 'test'
+  ...
+# Subtest: invalid days and dayparts are rejected
+ok 196 - invalid days and dayparts are rejected
+  ---
+  duration_ms: 0.737083
+  type: 'test'
+  ...
+# Subtest: all source facilities retain their canonical hub ownership
+ok 197 - all source facilities retain their canonical hub ownership
+  ---
+  duration_ms: 2.153789
+  type: 'test'
+  ...
+# Subtest: every NPC has a non-collapsed initial facility and valid movement scope
+ok 198 - every NPC has a non-collapsed initial facility and valid movement scope
+  ---
+  duration_ms: 0.712173
+  type: 'test'
+  ...
+# Subtest: only the two known stale facility references receive audited fallbacks
+ok 199 - only the two known stale facility references receive audited fallbacks
+  ---
+  duration_ms: 0.397948
+  type: 'test'
+  ...
+# Subtest: knowledge fields split into facts, interests, misconceptions and secrets without loss
+ok 200 - knowledge fields split into facts, interests, misconceptions and secrets without loss
+  ---
+  duration_ms: 0.437
+  type: 'test'
+  ...
+# Subtest: fate hints retain narrative provenance and deterministic anchors
+ok 201 - fate hints retain narrative provenance and deterministic anchors
+  ---
+  duration_ms: 0.246259
+  type: 'test'
+  ...
+# Subtest: generic GOAP uses the cheapest deterministic Dijkstra/A* plan
+ok 202 - generic GOAP uses the cheapest deterministic Dijkstra/A* plan
+  ---
+  duration_ms: 2.681945
+  type: 'test'
+  ...
+# Subtest: GOAP reports an exhausted state space without fabricating an action
+ok 203 - GOAP reports an exhausted state space without fabricating an action
+  ---
+  duration_ms: 0.295392
+  type: 'test'
+  ...
+# Subtest: world snapshot normalizes every required entity and safe assumption
+ok 204 - world snapshot normalizes every required entity and safe assumption
+  ---
+  duration_ms: 0.508141
+  type: 'test'
+  ...
+# Subtest: all route costs are honored and conditional forest gates are explicit
+ok 205 - all route costs are honored and conditional forest gates are explicit
+  ---
+  duration_ms: 1.204203
+  type: 'test'
+  ...
+# Subtest: T15/T18/T19 hard gates distinguish active, critical and resolved prerequisites
+ok 206 - T15/T18/T19 hard gates distinguish active, critical and resolved prerequisites
+  ---
+  duration_ms: 0.32019
+  type: 'test'
+  ...
+# Subtest: Day1 through Day100 no-player run reaches a strict failed world with complete NPC traces
+ok 207 - Day1 through Day100 no-player run reaches a strict failed world with complete NPC traces
+  ---
+  duration_ms: 1.929288
+  type: 'test'
+  ...
+# Subtest: report compaction preserves all NPC ticks, movement coverage, replay metadata and T01 casualties
+ok 208 - report compaction preserves all NPC ticks, movement coverage, replay metadata and T01 casualties
+  ---
+  duration_ms: 291.121268
+  type: 'test'
+  ...
+# Subtest: event gates, chains and same-day timeline order are retained in the run
+ok 209 - event gates, chains and same-day timeline order are retained in the run
+  ---
+  duration_ms: 0.42739
+  type: 'test'
+  ...
+# Subtest: a formerly successful seed still follows the no-player T13 failure route
+ok 210 - a formerly successful seed still follows the no-player T13 failure route
+  ---
+  duration_ms: 1593.313574
+  type: 'test'
+  ...
+# Subtest: a seed reproduces the exact simulation and another seed changes the trace
+ok 211 - a seed reproduces the exact simulation and another seed changes the trace
+  ---
+  duration_ms: 3341.33707
+  type: 'test'
+  ...
+# Subtest: strict audit detects route-time corruption and terminal leakage
+ok 212 - strict audit detects route-time corruption and terminal leakage
+  ---
+  duration_ms: 530.492627
+  type: 'test'
+  ...
+1..212
+# tests 212
+# suites 0
+# pass 207
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 30192.909282
