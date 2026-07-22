@@ -5,6 +5,7 @@ on:
     branches:
       - chatgpt/trpg-authored-content-refactor
     paths:
+      - ".github/workflows/trpg-day100-player.yml"
       - "tools/trpg-sim/lib/day100-player-policy.mjs"
       - "tools/trpg-sim/lib/day100-player-runner.mjs"
       - "tools/trpg-sim/cli-day100-player.mjs"
@@ -46,7 +47,7 @@ jobs:
         run: |
           mkdir -p tools/trpg-sim/reports
           set +e
-          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v5 npm run trpg:day100-player -- --strict \
+          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v6 npm run trpg:day100-player -- --strict \
             > tools/trpg-sim/reports/day100-player-console.log 2>&1
           status=$?
           cat tools/trpg-sim/reports/day100-player-console.log
