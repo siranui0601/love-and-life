@@ -3,1565 +3,1638 @@
 > node --test tools/trpg-sim/test/*.test.mjs
 
 TAP version 13
-# [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+# [dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  override existing env vars with { override: true }
 # Subtest: approved replay is resolved before runtime cache and provider
 ok 1 - approved replay is resolved before runtime cache and provider
   ---
-  duration_ms: 18.433851
+  duration_ms: 12.18769
   type: 'test'
   ...
 # Subtest: approved replay cache is read-only, rejects malformed entries, and returns clones
 ok 2 - approved replay cache is read-only, rejects malformed entries, and returns clones
   ---
-  duration_ms: 2.111527
+  duration_ms: 3.419694
   type: 'test'
   ...
 # Subtest: only fully validated model output is eligible for explicit approval
 ok 3 - only fully validated model output is eligible for explicit approval
   ---
-  duration_ms: 0.24546
+  duration_ms: 0.306446
   type: 'test'
   ...
 # Subtest: promotion requires explicit scenario ids and preserves an existing approved key
 ok 4 - promotion requires explicit scenario ids and preserves an existing approved key
   ---
-  duration_ms: 0.905035
+  duration_ms: 1.078686
   type: 'test'
   ...
 # Subtest: the first farm-to-capital arrival resolves as a presentation-only reviewed scene
 ok 5 - the first farm-to-capital arrival resolves as a presentation-only reviewed scene
   ---
-  duration_ms: 2.126878
+  duration_ms: 1.161866
   type: 'test'
   ...
 # Subtest: authoritative regional travel to the capital selects the reviewed lower-inn arrival
 ok 6 - authoritative regional travel to the capital selects the reviewed lower-inn arrival
   ---
-  duration_ms: 141.283258
+  duration_ms: 110.878919
   type: 'test'
   ...
 # Subtest: weather-tagged reviewed prose takes precedence over the generic arrival prose
 ok 7 - weather-tagged reviewed prose takes precedence over the generic arrival prose
   ---
-  duration_ms: 13.977522
+  duration_ms: 12.295968
   type: 'test'
   ...
 # Subtest: reviewed T01 search T01-CLUE-BOOT-TRACKS remains focused on Finn
 ok 8 - reviewed T01 search T01-CLUE-BOOT-TRACKS remains focused on Finn
   ---
-  duration_ms: 1.827714
+  duration_ms: 1.352542
   type: 'test'
   ...
 # Subtest: reviewed T01 search T01-CLUE-WOLF-PURSUIT remains focused on Finn
 ok 9 - reviewed T01 search T01-CLUE-WOLF-PURSUIT remains focused on Finn
   ---
-  duration_ms: 0.354237
+  duration_ms: 0.23769
   type: 'test'
   ...
 # Subtest: reviewed T01 search T01-CLUE-JACKET-THREAD remains focused on Finn
 ok 10 - reviewed T01 search T01-CLUE-JACKET-THREAD remains focused on Finn
   ---
-  duration_ms: 0.176154
+  duration_ms: 0.14799
   type: 'test'
   ...
 # Subtest: reviewed T01 search T01-CLUE-DROPPED-MAP remains focused on Finn
 ok 11 - reviewed T01 search T01-CLUE-DROPPED-MAP remains focused on Finn
   ---
-  duration_ms: 0.264432
+  duration_ms: 0.197807
   type: 'test'
   ...
 # Subtest: reviewed T01 search T01-CLUE-FAINT-VOICE remains focused on Finn
 ok 12 - reviewed T01 search T01-CLUE-FAINT-VOICE remains focused on Finn
   ---
-  duration_ms: 0.267094
+  duration_ms: 0.170044
   type: 'test'
   ...
 # Subtest: reviewed T01 search T01-CLUE-WOLF-BLOCKADE remains focused on Finn
 ok 13 - reviewed T01 search T01-CLUE-WOLF-BLOCKADE remains focused on Finn
   ---
-  duration_ms: 0.150657
+  duration_ms: 0.099094
   type: 'test'
   ...
 # Subtest: the second-stage search branches make Finn's survival or immediate danger explicit
 ok 14 - the second-stage search branches make Finn's survival or immediate danger explicit
   ---
-  duration_ms: 0.472485
+  duration_ms: 0.391418
   type: 'test'
   ...
 # Subtest: the reviewed T01 rescue aftermath keeps Finn age- and voice-consistent
 ok 15 - the reviewed T01 rescue aftermath keeps Finn age- and voice-consistent
   ---
-  duration_ms: 1.817899
+  duration_ms: 1.277836
   type: 'test'
   ...
 # Subtest: the reviewed escort request is direct, human, and focused on returning home
 ok 16 - the reviewed escort request is direct, human, and focused on returning home
   ---
-  duration_ms: 0.498261
+  duration_ms: 0.349663
   type: 'test'
   ...
 # Subtest: the reviewed reunion happens on the authoritative escort arrival minute
 ok 17 - the reviewed reunion happens on the authoritative escort arrival minute
   ---
-  duration_ms: 0.67461
+  duration_ms: 0.507539
   type: 'test'
   ...
 # Subtest: the authored rescue scene does not resolve before the battle is won
 ok 18 - the authored rescue scene does not resolve before the battle is won
   ---
-  duration_ms: 0.263122
+  duration_ms: 0.198088
   type: 'test'
   ...
 # Subtest: battle fixture joins every combat table and all four skill shards
 ok 19 - battle fixture joins every combat table and all four skill shards
   ---
-  duration_ms: 1.352736
+  duration_ms: 1.147012
   type: 'test'
   ...
 # Subtest: sheet damage formula and explicit hit/critical caps are stable
 ok 20 - sheet damage formula and explicit hit/critical caps are stable
   ---
-  duration_ms: 0.351269
+  duration_ms: 0.267065
   type: 'test'
   ...
 # Subtest: seeded RNG and encounter party expansion are reproducible
 ok 21 - seeded RNG and encounter party expansion are reproducible
   ---
-  duration_ms: 0.517929
+  duration_ms: 0.436037
   type: 'test'
   ...
 # Subtest: battle data audit preserves actionable state and command inconsistencies
 ok 22 - battle data audit preserves actionable state and command inconsistencies
   ---
-  duration_ms: 0.221986
+  duration_ms: 0.155632
   type: 'test'
   ...
 # Subtest: the same battle seed produces the same complete result
 ok 23 - the same battle seed produces the same complete result
   ---
-  duration_ms: 13.713312
+  duration_ms: 10.757647
   type: 'test'
   ...
 # Subtest: interactive battle begins before a turn and lists only authoritative first-slice commands
 ok 24 - interactive battle begins before a turn and lists only authoritative first-slice commands
   ---
-  duration_ms: 2.51483
+  duration_ms: 4.093632
   type: 'test'
   ...
 # Subtest: the same interactive command sequence produces the same complete state and round frames
 ok 25 - the same interactive command sequence produces the same complete state and round frames
   ---
-  duration_ms: 6.038902
+  duration_ms: 4.257687
   type: 'test'
   ...
 # Subtest: invalid interactive commands do not mutate state, advance rounds, or consume future randomness
 ok 26 - invalid interactive commands do not mutate state, advance rounds, or consume future randomness
   ---
-  duration_ms: 1.954825
+  duration_ms: 1.024212
   type: 'test'
   ...
 # Subtest: interactive skills spend MP and obey cooldowns without changing the auto simulator
 ok 27 - interactive skills spend MP and obey cooldowns without changing the auto simulator
   ---
-  duration_ms: 4.552784
+  duration_ms: 2.042244
   type: 'test'
   ...
 # Subtest: interactive defend applies a one-round guard before later enemy actions
 ok 28 - interactive defend applies a one-round guard before later enemy actions
   ---
-  duration_ms: 1.515536
+  duration_ms: 0.81738
   type: 'test'
   ...
 # Subtest: interactive flee is deterministic and a successful escape ends without inventing a victory
 ok 29 - interactive flee is deterministic and a successful escape ends without inventing a victory
   ---
-  duration_ms: 1.59459
+  duration_ms: 0.807164
   type: 'test'
   ...
 # Subtest: timeline capture is deterministic and does not change battle resolution
 ok 30 - timeline capture is deterministic and does not change battle resolution
   ---
-  duration_ms: 2.645033
+  duration_ms: 1.326542
   type: 'test'
   ...
 # Subtest: timeline includes deterministic end-of-round resource effects
 ok 31 - timeline includes deterministic end-of-round resource effects
   ---
-  duration_ms: 1.891139
+  duration_ms: 1.02344
   type: 'test'
   ...
 # Subtest: MON-0076 candidate exhaustion is diagnosed and falls back to normal attacks
 ok 32 - MON-0076 candidate exhaustion is diagnosed and falls back to normal attacks
   ---
-  duration_ms: 0.655912
+  duration_ms: 0.387442
   type: 'test'
   ...
 # Subtest: Monte Carlo reports win, turns, MP, usage and exhaustion per build
 ok 33 - Monte Carlo reports win, turns, MP, usage and exhaustion per build
   ---
-  duration_ms: 16.824773
+  duration_ms: 13.87382
   type: 'test'
   ...
 # Subtest: three differently worded versions of the same investigation are rejected
 ok 34 - three differently worded versions of the same investigation are rejected
   ---
-  duration_ms: 2.081168
+  duration_ms: 1.59551
   type: 'test'
   ...
 # Subtest: talk, move, and treatment form a valid rescue decision
 ok 35 - talk, move, and treatment form a valid rescue decision
   ---
-  duration_ms: 1.462324
+  duration_ms: 1.178852
   type: 'test'
   ...
 # Subtest: choices cannot target an absent NPC or hidden facility
 ok 36 - choices cannot target an absent NPC or hidden facility
   ---
-  duration_ms: 0.610355
+  duration_ms: 0.500408
   type: 'test'
   ...
 # Subtest: selectDiverseChoices prefers different action families and effects
 ok 37 - selectDiverseChoices prefers different action families and effects
   ---
-  duration_ms: 0.598938
+  duration_ms: 0.488058
   type: 'test'
   ...
 # Subtest: portrait cards expose an accessible TALK interaction
 ok 38 - portrait cards expose an accessible TALK interaction
   ---
-  duration_ms: 0.791433
+  duration_ms: 0.855489
   type: 'test'
   ...
 # Subtest: every present NPC exposes direct portrait conversation independently of the three choices
 ok 39 - every present NPC exposes direct portrait conversation independently of the three choices
   ---
-  duration_ms: 116.664817
+  duration_ms: 147.937354
   type: 'test'
   ...
 # Subtest: TALK resolves a conversation with a visible NPC
 ok 40 - TALK resolves a conversation with a visible NPC
   ---
-  duration_ms: 55.517541
+  duration_ms: 47.406356
   type: 'test'
   ...
 # Subtest: TALK rejects absent or stale NPC targets
 ok 41 - TALK rejects absent or stale NPC targets
   ---
-  duration_ms: 31.595312
+  duration_ms: 24.093912
   type: 'test'
   ...
 # Subtest: resolver v15 initializes equipment access and exposes stock pathways
 ok 42 - resolver v15 initializes equipment access and exposes stock pathways
   ---
-  duration_ms: 162.34418
+  duration_ms: 136.070913
   type: 'test'
   ...
 # Subtest: SHOP_TRY compares equipment without granting ownership
 ok 43 - SHOP_TRY compares equipment without granting ownership
   ---
-  duration_ms: 44.922592
+  duration_ms: 34.139193
   type: 'test'
   ...
 # Subtest: used purchase, borrowing, equipping and return use the shared shop state
 ok 44 - used purchase, borrowing, equipping and return use the shared shop state
   ---
-  duration_ms: 62.339589
+  duration_ms: 59.770265
   type: 'test'
   ...
 # Subtest: newly completed missions create one claimable equipment reward
 ok 45 - newly completed missions create one claimable equipment reward
   ---
-  duration_ms: 34.878513
+  duration_ms: 38.417132
   type: 'test'
   ...
 # Subtest: trial previews stat differences without granting or equipping the item
 ok 46 - trial previews stat differences without granting or equipping the item
   ---
-  duration_ms: 3.594779
+  duration_ms: 2.434964
   type: 'test'
   ...
 # Subtest: used offers are deterministic, discounted, and claimable only once
 ok 47 - used offers are deterministic, discounted, and claimable only once
   ---
-  duration_ms: 2.816181
+  duration_ms: 1.915817
   type: 'test'
   ...
 # Subtest: a mission-bound loan can be equipped and is returned with its deposit when the mission closes
 ok 48 - a mission-bound loan can be equipped and is returned with its deposit when the mission closes
   ---
-  duration_ms: 1.148465
+  duration_ms: 0.860447
   type: 'test'
   ...
 # Subtest: manual loan return is allowed only at the lending facility
 ok 49 - manual loan return is allowed only at the lending facility
   ---
-  duration_ms: 0.544592
+  duration_ms: 0.393953
   type: 'test'
   ...
 # Subtest: completed missions create one claimable equipment reward from the existing catalog
 ok 50 - completed missions create one claimable equipment reward from the existing catalog
   ---
-  duration_ms: 0.872652
+  duration_ms: 0.542743
   type: 'test'
   ...
 # Subtest: legacy saves receive an empty serializable equipment access state
 ok 51 - legacy saves receive an empty serializable equipment access state
   ---
-  duration_ms: 0.251598
+  duration_ms: 0.203817
   type: 'test'
   ...
 # Subtest: T01 places escort between battle and village handoff
 ok 52 - T01 places escort between battle and village handoff
   ---
-  duration_ms: 112.42585
+  duration_ms: 86.995143
   type: 'test'
   ...
 # Subtest: the revised prompt uses a new replay-cache namespace
 ok 53 - the revised prompt uses a new replay-cache namespace
   ---
-  duration_ms: 0.2119
+  duration_ms: 0.242367
   type: 'test'
   ...
 # Subtest: the live player CLI includes all three routes and sheet sync
 ok 54 - the live player CLI includes all three routes and sheet sync
   ---
-  duration_ms: 0.344579
+  duration_ms: 0.392771
   type: 'test'
   ...
 # Subtest: the orphanage is visible before T10 failure
 ok 55 - the orphanage is visible before T10 failure
   ---
-  duration_ms: 2.063915
+  duration_ms: 1.135054
   type: 'test'
   ...
 # Subtest: the site is closed between T10 failure and Day 70
 ok 56 - the site is closed between T10 failure and Day 70
   ---
-  duration_ms: 0.297112
+  duration_ms: 0.188493
   type: 'test'
   ...
 # Subtest: only the replacement store is visible from Day 70 after failure
 ok 57 - only the replacement store is visible from Day 70 after failure
   ---
-  duration_ms: 0.559173
+  duration_ms: 0.339808
   type: 'test'
   ...
 # Subtest: playable save starts alone in the Day1 wheat field with a progressive, profile-free opening
 ok 58 - playable save starts alone in the Day1 wheat field with a progressive, profile-free opening
   ---
-  duration_ms: 187.966012
+  duration_ms: 140.137688
   type: 'test'
   ...
 # Subtest: locked tutorial features cannot be bypassed through direct commands
 ok 59 - locked tutorial features cannot be bypassed through direct commands
   ---
-  duration_ms: 129.276359
+  duration_ms: 114.293892
   type: 'test'
   ...
 # Subtest: Day100 ending is immutable and has an explicit player-facing conclusion
 ok 60 - Day100 ending is immutable and has an explicit player-facing conclusion
   ---
-  duration_ms: 12.992472
+  duration_ms: 18.228487
   type: 'test'
   ...
 # Subtest: playable snapshots compact audit-only history while retaining current NPC state and causal totals
 ok 61 - playable snapshots compact audit-only history while retaining current NPC state and causal totals
   ---
-  duration_ms: 68.131049
+  duration_ms: 30.635168
   type: 'test'
   ...
 # Subtest: a compacted playable journey reaches Day100 within the persisted snapshot budget
 ok 62 - a compacted playable journey reaches Day100 within the persisted snapshot budget
   ---
-  duration_ms: 19413.908148
+  duration_ms: 15404.685331
   type: 'test'
   ...
 # Subtest: two-handed weapons and off-hand equipment cannot remain equipped together
 ok 63 - two-handed weapons and off-hand equipment cannot remain equipped together
   ---
-  duration_ms: 9.674446
+  duration_ms: 7.162499
   type: 'test'
   ...
 # Subtest: a defeated regional journey persists its battle and elapsed time instead of rolling back
 ok 64 - a defeated regional journey persists its battle and elapsed time instead of rolling back
   ---
-  duration_ms: 716.526439
+  duration_ms: 607.041613
   type: 'test'
   ...
 # Subtest: interactive real-game battle capture is deterministic and leaves runtime tuning unchanged
 ok 65 - interactive real-game battle capture is deterministic and leaves runtime tuning unchanged
   ---
-  duration_ms: 208.849877
+  duration_ms: 133.334113
   type: 'test'
   ...
 # Subtest: truncated battle playback carries a deterministic checkpoint across the omitted middle
 ok 66 - truncated battle playback carries a deterministic checkpoint across the omitted middle
   ---
-  duration_ms: 1.928719
+  duration_ms: 1.495128
   type: 'test'
   ...
 # Subtest: the authored opening reveals Eda, movement and T01 in that order and survives replay
 ok 67 - the authored opening reveals Eda, movement and T01 in that order and survives replay
   ---
-  duration_ms: 598.344373
+  duration_ms: 413.236733
   type: 'test'
   ...
 # Subtest: an unknown NPC becomes identified only after the visible self-introduction is acknowledged
 ok 68 - an unknown NPC becomes identified only after the visible self-introduction is acknowledged
   ---
-  duration_ms: 341.44505
+  duration_ms: 239.532559
   type: 'test'
   ...
 # Subtest: an introduction token cannot identify an NPC after that NPC leaves the scene
 ok 69 - an introduction token cannot identify an NPC after that NPC leaves the scene
   ---
-  duration_ms: 10.116686
+  duration_ms: 8.02991
   type: 'test'
   ...
 # Subtest: replay verification rejects journal outcome, sequence and revision tampering
 ok 70 - replay verification rejects journal outcome, sequence and revision tampering
   ---
-  duration_ms: 155.6186
+  duration_ms: 122.315735
   type: 'test'
   ...
 # Subtest: opening cast remains present when guided square arrival crosses an NPC life tick
 ok 71 - opening cast remains present when guided square arrival crosses an NPC life tick
   ---
-  duration_ms: 21.168234
+  duration_ms: 18.53969
   type: 'test'
   ...
 # Subtest: an opening inquiry crossing Finn's rescue deadline becomes aftermath instead of stale progress
 ok 72 - an opening inquiry crossing Finn's rescue deadline becomes aftermath instead of stale progress
   ---
-  duration_ms: 22.100807
+  duration_ms: 17.836188
   type: 'test'
   ...
 # Subtest: opening branches preserve help, paid work and leaving as replayable choices
 ok 73 - opening branches preserve help, paid work and leaving as replayable choices
   ---
-  duration_ms: 1442.994058
+  duration_ms: 1125.087311
   type: 'test'
   ...
 # Subtest: a late arrival sees T01 aftermath instead of stale Day1 inquiry and can finish onboarding
 ok 74 - a late arrival sees T01 aftermath instead of stale Day1 inquiry and can finish onboarding
   ---
-  duration_ms: 368.094543
+  duration_ms: 295.628254
   type: 'test'
   ...
 # Subtest: public game view does not expose omniscient population or trouble aggregates
 ok 75 - public game view does not expose omniscient population or trouble aggregates
   ---
-  duration_ms: 19.77277
+  duration_ms: 14.063691
   type: 'test'
   ...
 # Subtest: public NPC data never exposes authored occupations, goals, or private beliefs
 ok 76 - public NPC data never exposes authored occupations, goals, or private beliefs
   ---
-  duration_ms: 0.306927
+  duration_ms: 0.257045
   type: 'test'
   ...
 # Subtest: rate-limit identity ignores client-prepended XFF values behind the local proxy
 ok 77 - rate-limit identity ignores client-prepended XFF values behind the local proxy
   ---
-  duration_ms: 0.431103
+  duration_ms: 0.326128
   type: 'test'
   ...
 # Subtest: anonymous save capacity is bounded per owner
 ok 78 - anonymous save capacity is bounded per owner
   ---
-  duration_ms: 43.395737
+  duration_ms: 34.040072
   type: 'test'
   ...
 # Subtest: unknown save versions are preserved while expired saves alone are pruned
 ok 79 - unknown save versions are preserved while expired saves alone are pruned
   ---
-  duration_ms: 83.612421
+  duration_ms: 67.505975
   type: 'test'
   ...
 # Subtest: a v8 save migrates to v9 without losing its world state or future replay
 ok 80 - a v8 save migrates to v9 without losing its world state or future replay
   ---
-  duration_ms: 480.956322
+  duration_ms: 384.937204
   type: 'test'
   ...
 # Subtest: first-read migration and a concurrent command cannot overwrite one another
 ok 81 - first-read migration and a concurrent command cannot overwrite one another
   ---
-  duration_ms: 471.613923
+  duration_ms: 372.113199
   type: 'test'
   ...
 # Subtest: a save with an obsolete schema is rejected before hydration
 ok 82 - a save with an obsolete schema is rejected before hydration
   ---
-  duration_ms: 19.575503
+  duration_ms: 16.585526
   type: 'test'
   ...
 # Subtest: shop stock is facility-scoped and a duplicate command cannot advance a save twice
 ok 83 - shop stock is facility-scoped and a duplicate command cannot advance a save twice
   ---
-  duration_ms: 357.560431
+  duration_ms: 292.872766
   type: 'test'
   ...
 # Subtest: a conversational job pays the quoted wage without granting player levels
 ok 84 - a conversational job pays the quoted wage without granting player levels
   ---
-  duration_ms: 287.251315
+  duration_ms: 216.700407
   type: 'test'
   ...
 # Subtest: a public living-world rumor becomes a mission only after the player hears it locally
 ok 85 - a public living-world rumor becomes a mission only after the player hears it locally
   ---
-  duration_ms: 431.599148
+  duration_ms: 326.972351
   type: 'test'
   ...
 # Subtest: conversation reveals only beliefs held by the NPC who is actually speaking
 ok 86 - conversation reveals only beliefs held by the NPC who is actually speaking
   ---
-  duration_ms: 13.942525
+  duration_ms: 10.999054
   type: 'test'
   ...
 # Subtest: mission clue choices require a co-present NPC with an authoritative public belief
 ok 87 - mission clue choices require a co-present NPC with an authoritative public belief
   ---
-  duration_ms: 12.463842
+  duration_ms: 11.371691
   type: 'test'
   ...
 # Subtest: all nineteen special-mission hearings are bound to a present authoritative NPC
 ok 88 - all nineteen special-mission hearings are bound to a present authoritative NPC
   ---
-  duration_ms: 198.942377
+  duration_ms: 155.9097
   type: 'test'
   ...
 # Subtest: mission clue progress commits only after the assigned NPC actually discloses the fact
 ok 89 - mission clue progress commits only after the assigned NPC actually discloses the fact
   ---
-  duration_ms: 38.035083
+  duration_ms: 31.334612
   type: 'test'
   ...
 # Subtest: dialogue topics select a relevant fact, preserve its provenance, and never learn on farewell
 ok 90 - dialogue topics select a relevant fact, preserve its provenance, and never learn on farewell
   ---
-  duration_ms: 15.763031
+  duration_ms: 12.668663
   type: 'test'
   ...
 # Subtest: an NPC with a hidden hostile role cannot disclose even a non-secret belief
 ok 91 - an NPC with a hidden hostile role cannot disclose even a non-secret belief
   ---
-  duration_ms: 11.101945
+  duration_ms: 7.324364
   type: 'test'
   ...
 # Subtest: a conversation grants no fact when its NPC leaves before the reply is presented
 ok 92 - a conversation grants no fact when its NPC leaves before the reply is presented
   ---
-  duration_ms: 16.934896
+  duration_ms: 13.172877
   type: 'test'
   ...
 # Subtest: local observation cannot reveal a facility rumor before its propagation time
 ok 93 - local observation cannot reveal a facility rumor before its propagation time
   ---
-  duration_ms: 15.545003
+  duration_ms: 8.621985
   type: 'test'
   ...
 # Subtest: manual skill acquisition spends SP once and survives deterministic replay
 ok 94 - manual skill acquisition spends SP once and survives deterministic replay
   ---
-  duration_ms: 595.075037
+  duration_ms: 459.042858
   type: 'test'
   ...
 # Subtest: the skill primer explains the risk but never blocks an underprepared player
 ok 95 - the skill primer explains the risk but never blocks an underprepared player
   ---
-  duration_ms: 903.474979
+  duration_ms: 689.380633
   type: 'test'
   ...
 # Subtest: T01 exploration binds the displayed action and replaces all three choices after a concrete discovery
 ok 96 - T01 exploration binds the displayed action and replaces all three choices after a concrete discovery
   ---
-  duration_ms: 473.146093
+  duration_ms: 384.728812
   type: 'test'
   ...
 # Subtest: T01 speaks through discovery, rescue, escort and reunion before completion
 ok 97 - T01 speaks through discovery, rescue, escort and reunion before completion
   ---
-  duration_ms: 2363.945885
+  duration_ms: 1798.57122
   type: 'test'
   ...
 # Subtest: playable profile input is ignored and tutorial acknowledgement is journaled without time passing
 ok 98 - playable profile input is ignored and tutorial acknowledgement is journaled without time passing
   ---
-  duration_ms: 596.124585
+  duration_ms: 479.325091
   type: 'test'
   ...
 # Subtest: ordinary NPC conversation supports distinct multi-turn follow-ups until the player ends it
 ok 99 - ordinary NPC conversation supports distinct multi-turn follow-ups until the player ends it
   ---
-  duration_ms: 790.410311
+  duration_ms: 655.620158
   type: 'test'
   ...
 # Subtest: the service replaces a Gemini reply that omits the fact recorded as learned
 ok 100 - the service replaces a Gemini reply that omits the fact recorded as learned
   ---
-  duration_ms: 460.086091
+  duration_ms: 355.511842
   type: 'test'
   ...
 # Subtest: an unanswered dialogue follow-up expires instead of resurfacing hours later
 ok 101 - an unanswered dialogue follow-up expires instead of resurfacing hours later
   ---
-  duration_ms: 334.107612
+  duration_ms: 256.179442
   type: 'test'
   ...
 # Subtest: the same content revision, seed and command sequence produce the same state hash
 ok 102 - the same content revision, seed and command sequence produce the same state hash
   ---
-  duration_ms: 245.090944
+  duration_ms: 190.10883
   type: 'test'
   ...
 # Subtest: completed work preserves a server-valid work route and sends recent work to the director
 ok 103 - completed work preserves a server-valid work route and sends recent work to the director
   ---
-  duration_ms: 286.554624
+  duration_ms: 211.938377
   type: 'test'
   ...
 # Subtest: leaving for the capital removes the village T01 thread from later Gemini context
 ok 104 - leaving for the capital removes the village T01 thread from later Gemini context
   ---
-  duration_ms: 354.602262
+  duration_ms: 271.042438
   type: 'test'
   ...
-# [dotenv@17.2.1] injecting env (0) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+# [dotenv@17.2.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
 # Subtest: local narrative context excludes NPCs who are not present
 ok 105 - local narrative context excludes NPCs who are not present
   ---
-  duration_ms: 3.513665
+  duration_ms: 2.733608
   type: 'test'
   ...
 # Subtest: Gemini 2.5 Flash reserves its output budget for complete narrative JSON
 ok 106 - Gemini 2.5 Flash reserves its output budget for complete narrative JSON
   ---
-  duration_ms: 1.256202
+  duration_ms: 1.330158
   type: 'test'
   ...
 # Subtest: an action target cannot add an absent, missing, or remote NPC to local context
 ok 107 - an action target cannot add an absent, missing, or remote NPC to local context
   ---
-  duration_ms: 0.446936
+  duration_ms: 0.327499
   type: 'test'
   ...
 # Subtest: Gemini selects three executable actions from a broader pool and keeps a progress route
 ok 108 - Gemini selects three executable actions from a broader pool and keeps a progress route
   ---
-  duration_ms: 15.791547
+  duration_ms: 9.220999
   type: 'test'
   ...
 # Subtest: continuity contracts keep the player's current activity available without fixing all three choices
 ok 109 - continuity contracts keep the player's current activity available without fixing all three choices
   ---
-  duration_ms: 0.925129
+  duration_ms: 0.494689
   type: 'test'
   ...
 # Subtest: sanitizer removes empty reactions and internal ids while salvaging optional semantic proposals
 ok 110 - sanitizer removes empty reactions and internal ids while salvaging optional semantic proposals
   ---
-  duration_ms: 1.217369
+  duration_ms: 0.81085
   type: 'test'
   ...
 # Subtest: critical reactions are validated by actor contract rather than fixed production dialogue
 ok 111 - critical reactions are validated by actor contract rather than fixed production dialogue
   ---
-  duration_ms: 0.363174
+  duration_ms: 0.265713
   type: 'test'
   ...
 # Subtest: the director prompt is short, scene-specific, and never carries Finn into unrelated scenes
 ok 112 - the director prompt is short, scene-specific, and never carries Finn into unrelated scenes
   ---
-  duration_ms: 1.174358
+  duration_ms: 0.988256
   type: 'test'
   ...
 # Subtest: npc_intent requires a local target and concrete intent before resolver validation
 ok 113 - npc_intent requires a local target and concrete intent before resolver validation
   ---
-  duration_ms: 0.615808
+  duration_ms: 0.561753
   type: 'test'
   ...
 # Subtest: full provider failure uses a minimal factual fallback without inventing NPC dialogue
 ok 114 - full provider failure uses a minimal factual fallback without inventing NPC dialogue
   ---
-  duration_ms: 0.507672
+  duration_ms: 0.372378
   type: 'test'
   ...
 # Subtest: conversation fallback does not fabricate a bespoke answer when no fact is authoritative
 ok 115 - conversation fallback does not fabricate a bespoke answer when no fact is authoritative
   ---
-  duration_ms: 0.344775
+  duration_ms: 0.260164
   type: 'test'
   ...
 # Subtest: a learned fact must appear verbatim in the target reply and in deterministic fallback
 ok 116 - a learned fact must appear verbatim in the target reply and in deterministic fallback
   ---
-  duration_ms: 0.638929
+  duration_ms: 0.527029
   type: 'test'
   ...
 # Subtest: invalid Gemini output is repaired and exact replay bypasses the provider
 ok 117 - invalid Gemini output is repaired and exact replay bypasses the provider
   ---
-  duration_ms: 4.39786
+  duration_ms: 3.756017
   type: 'test'
   ...
 # Subtest: a transient Gemini timeout falls back once without poisoning replay cache
 ok 118 - a transient Gemini timeout falls back once without poisoning replay cache
   ---
-  duration_ms: 1.526589
+  duration_ms: 1.080199
   type: 'test'
   ...
 # Subtest: Gemini simulation audits cached successes separately from retryable fallbacks
 ok 119 - Gemini simulation audits cached successes separately from retryable fallbacks
   ---
-  duration_ms: 0.257636
+  duration_ms: 0.158547
   type: 'test'
   ...
 # Subtest: authoritative mutations and unknown missions are rejected as candidates
 ok 120 - authoritative mutations and unknown missions are rejected as candidates
   ---
-  duration_ms: 1.108929
+  duration_ms: 0.783627
   type: 'test'
   ...
 # Subtest: cache replay recalculates proposal resolution and concurrent misses call provider once
 ok 121 - cache replay recalculates proposal resolution and concurrent misses call provider once
   ---
-  duration_ms: 12.759164
+  duration_ms: 12.129515
   type: 'test'
   ...
 # Subtest: mission policy participates in the generation cache key
 ok 122 - mission policy participates in the generation cache key
   ---
-  duration_ms: 1.398641
+  duration_ms: 1.286779
   type: 'test'
   ...
 # Subtest: GOAP execution reaches a facility and records the completed action
 ok 123 - GOAP execution reaches a facility and records the completed action
   ---
-  duration_ms: 3.549624
+  duration_ms: 2.79253
   type: 'test'
   ...
 # Subtest: a resolved rumor cancels the old crisis plan before it starts
 ok 124 - a resolved rumor cancels the old crisis plan before it starts
   ---
-  duration_ms: 0.928008
+  duration_ms: 0.633204
   type: 'test'
   ...
 # Subtest: tuned autonomous world remains deterministic and strictly valid
 ok 125 - tuned autonomous world remains deterministic and strictly valid
   ---
-  duration_ms: 4643.280304
+  duration_ms: 3328.575487
   type: 'test'
   ...
 # Subtest: world tuning rejects invalid probabilities and scales
 ok 126 - world tuning rejects invalid probabilities and scales
   ---
-  duration_ms: 14.740366
+  duration_ms: 10.345379
   type: 'test'
   ...
 # Subtest: matched battle builds cover every encounter level and suite mode
 ok 127 - matched battle builds cover every encounter level and suite mode
   ---
-  duration_ms: 1278.170044
+  duration_ms: 963.176127
   type: 'test'
   ...
 # Subtest: broken legacy public catalog is visible to the report instead of silently accepted
 ok 128 - broken legacy public catalog is visible to the report instead of silently accepted
   ---
-  duration_ms: 11.681554
+  duration_ms: 9.746055
   type: 'test'
   ...
 # Subtest: all 110 NPCs retain a 400-tick causal history and eligible actors decide every tick
 ok 129 - all 110 NPCs retain a 400-tick causal history and eligible actors decide every tick
   ---
-  duration_ms: 12.124337
+  duration_ms: 5.143466
   type: 'test'
   ...
 # Subtest: rumors spread after their source event and low-importance rumors are interest-selective
 ok 130 - rumors spread after their source event and low-importance rumors are interest-selective
   ---
-  duration_ms: 110.140984
+  duration_ms: 44.77355
   type: 'test'
   ...
 # Subtest: acquired facts are recorded as causes of replanning and crisis behavior
 ok 131 - acquired facts are recorded as causes of replanning and crisis behavior
   ---
-  duration_ms: 9.265808
+  duration_ms: 7.084703
   type: 'test'
   ...
 # Subtest: no-player mode cannot solve authored crises and T01 kills Finn
 ok 132 - no-player mode cannot solve authored crises and T01 kills Finn
   ---
-  duration_ms: 5752.945717
+  duration_ms: 4450.975595
   type: 'test'
   ...
 # Subtest: source non-intervention fates change life state at deterministic anchors
 ok 133 - source non-intervention fates change life state at deterministic anchors
   ---
-  duration_ms: 0.297064
+  duration_ms: 0.342341
   type: 'test'
   ...
 # Subtest: stateless per-NPC randomness is invariant to source NPC row order
 ok 134 - stateless per-NPC randomness is invariant to source NPC row order
   ---
-  duration_ms: 3619.252556
+  duration_ms: 2809.594004
   type: 'test'
   ...
 # Subtest: the Gemini candidate pool reserves an executable movement route without changing legacy fallback order
 ok 135 - the Gemini candidate pool reserves an executable movement route without changing legacy fallback order
   ---
-  duration_ms: 172.227145
+  duration_ms: 143.932654
   type: 'test'
   ...
 # Subtest: a movement option selected for the three choices uses the authoritative movement resolver
 ok 136 - a movement option selected for the three choices uses the authoritative movement resolver
   ---
-  duration_ms: 32.849653
+  duration_ms: 34.566608
   type: 'test'
   ...
 # Subtest: a Gemini-selected set is repaired to distinct semantic decisions
 ok 137 - a Gemini-selected set is repaired to distinct semantic decisions
   ---
-  duration_ms: 21.16407
+  duration_ms: 18.863708
   type: 'test'
   ...
 # Subtest: narrative audit rows match the 36-column TRPG sheet contract
 ok 138 - narrative audit rows match the 36-column TRPG sheet contract
   ---
-  duration_ms: 1.50541
+  duration_ms: 1.020423
   type: 'test'
   ...
 # Subtest: sheet sync appends only unsynced JSONL records
 ok 139 - sheet sync appends only unsynced JSONL records
   ---
-  duration_ms: 8.382311
+  duration_ms: 8.347699
   type: 'test'
   ...
-# file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/narrative-conversation-boundaries.test.mjs:6
-#   buildNarrativePrompt,
-#   ^^^^^^^^^^^^^^^^^^^^
-# SyntaxError: The requested module '../../../src/server/trpg/narrative-contract.js' does not provide an export named 'buildNarrativePrompt'
-#     at ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)
-#     at async ModuleJob.run (node:internal/modules/esm/module_job:335:5)
-#     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
-#     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
-# Node.js v22.23.1
-# Subtest: tools/trpg-sim/test/narrative-conversation-boundaries.test.mjs
-not ok 20 - tools/trpg-sim/test/narrative-conversation-boundaries.test.mjs
+# [dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 version env with Radar: https://dotenvx.com/radar
+# Subtest: first introductions keep the name in speech but remove it from narrative and next-action labels
+ok 140 - first introductions keep the name in speech but remove it from narrative and next-action labels
   ---
-  duration_ms: 95.193318
+  duration_ms: 13.891722
   type: 'test'
-  location: '/home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/narrative-conversation-boundaries.test.mjs:1:1'
+  ...
+# Subtest: a farewell accepts a brief meaningful reply while ordinary information talk does not
+ok 141 - a farewell accepts a brief meaningful reply while ordinary information talk does not
+  ---
+  duration_ms: 1.225198
+  type: 'test'
+  ...
+# Subtest: the closing prompt asks for a natural farewell instead of inventing another lead
+not ok 142 - the closing prompt asks for a natural farewell instead of inventing another lead
+  ---
+  duration_ms: 1.388473
+  type: 'test'
+  location: '/home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/narrative-conversation-boundaries.test.mjs:112:1'
   failureType: 'testCodeFailure'
-  exitCode: 1
-  signal: ~
-  error: 'test failed'
-  code: 'ERR_TEST_FAILURE'
+  error: |-
+    The input did not match the regular expression /短い別れの言葉/u. Input:
+    
+    'あなたはTRPGの場面監督です。サーバーが示す現実の範囲内で、場面描写、会話、次の三つの行動、必要なら世界状態の提案を生成してください。\n' +
+      '\n' +
+      '共通規則:\n' +
+      '1. authoritativeOutcome、現在地、時刻、人物の生死・所在、所持品、戦闘結果を変更しない。\n' +
+      '2. 発言・感情・行動を描ける人物はlocalNpcsだけ。知らない秘密や遠隔人物の現在を作らない。\n' +
+      '3. choicesはallowedActionCandidatesから異なる3件を選び、id・intentType・targetNpcIdを候補どおり使う。labelとapproachは場面に合わせて具体化してよい。\n' +
+      '4. progressContract.modeがmust_offer_progressならanchorCandidateIdsから一件、continuityContract.modeがmust_offer_continuationならcandidateIdsから一件を含める。同じ候補が両方を満たしてもよい。\n' +
+      '5. proposalsは任意の候補であり、確信がなければ空配列にする。重大な報酬、生死、事件解決、所持品変更を提案で決めない。\n' +
+      '6. local_fact_candidateはsubjectId・predicate・summary、npc_memory_candidateはsubjectId・predicate・summary、mission_lead_candidateはtroubleId・summaryを必ず含める。欠けるならその提案を出さない。\n' +
+      '7. narrativeとspeechesは世界内の表現だけにし、ゲーム、UI、選択肢、フラグ等の実装語やNPC/LOC/SKL等の内部IDを表示文へ書かない。\n' +
+      '8. オレゴンは旅人を指す固定別名である。別名の由来を説明せず、必要な場合だけ自然に呼ぶ。\n' +
+      '9. 「……」だけの発言は作らない。言葉がない人物はspeechesへ含めず、沈黙はnarrativeで描く。\n' +
+      '10. JSON以外を出力しない。\n' +
+      '\n' +
+      '今回の場面規則:\n' +
+      '- 現在地で具体的に見聞きできる変化を一つ描く\n' +
+      '\n' +
+      '提案可能範囲:\n' +
+      '- 許可ミッションテンプレート: なし\n' +
+      '- 許可troubleId: なし\n' +
+      '- local_fact_candidate、npc_memory_candidate、mission_lead_candidateは意味的な候補として返し、内部フラグ名を無理に発明しない。\n' +
+      '- 提案の構造に自信がなければproposalsは[]にする。会話・描写・三つの行動の品質を優先する。\n' +
+      '\n' +
+      '入力JSON:\n' +
+      '{"action":{"conversationTurn":0,"dialogueTopic":null,"firstIntroduction":false,"id":"DIALOGUE:NPC-LOCAL:2:END","introductionName":null,"label":"相手に礼を言い、会話を終える","playerUtterance":null,"previouslyAskedTopics":[],"requiredDisclosure":null,"targetNpcId":"NPC-LOCAL","type":"conversation"},"allowedActionCandidates":[{"actionType":"meal","id":"ACT-EAT","intentType":"prepare","label":"食事を取る","minutes":0,"missionId":null,"progressRole":"optional","stepId":null,"targetNpcId":null,"workOffer":false},{"actionType":"investigate","id":"ACT-LOOK","intentType":"investigate","label":"宿の様子を調べる","minutes":0,"missionId":null,"progressRole":"optional","stepId":null,"targetNpcId":null,"workOffer":false},{"actionType":"move","id":"ACT-MOVE","intentType":"leave","label":"中央市場へ向かう","minutes":0,"missionId":null,"progressRole":"optional","stepId":null,"targetNpcId":null,"workOffer":false}],"authoritativeOutcome":{"kind":"conversation","summary":"相手が会話に応じた。"},"continuityContract":{"candidateIds":[],"intent":null,"mode":"free","rationale":null},"contractVersion":"trpg-local-context-v2","localNpcs":[{"currentGoal":"","id":"NPC-LOCAL","knownLocalFacts":[],"mood":"警戒","name":"レン","recentMemories":[],"relationship":0,"role":"旅人","speechStyle":""}],"localRumors":[],"locale":"ja-JP","missions":[],"place":{"facilityId":"LOC_CAP_LOWER_INN","facilityName":"下層の安宿","facilityType":null,"locationId":"王都","publicDescription":null},"player":{"displayName":"旅人","knownFacts":[],"visibleCondition":""},"progressContract":{"anchorCandidateIds":[],"currentStep":null,"missionId":null,"mode":"free","rationale":null},"reactionContract":{"goals":[],"requiredActorIds":[]},"sceneMode":"free_roam","time":{"day":2,"daypart":"day","hour":12,"minute":15},"visibleFlags":{},"workMarket":null}'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    あなたはTRPGの場面監督です。サーバーが示す現実の範囲内で、場面描写、会話、次の三つの行動、必要なら世界状態の提案を生成してください。
+    
+    共通規則:
+    1. authoritativeOutcome、現在地、時刻、人物の生死・所在、所持品、戦闘結果を変更しない。
+    2. 発言・感情・行動を描ける人物はlocalNpcsだけ。知らない秘密や遠隔人物の現在を作らない。
+    3. choicesはallowedActionCandidatesから異なる3件を選び、id・intentType・targetNpcIdを候補どおり使う。labelとapproachは場面に合わせて具体化してよい。
+    4. progressContract.modeがmust_offer_progressならanchorCandidateIdsから一件、continuityContract.modeがmust_offer_continuationならcandidateIdsから一件を含める。同じ候補が両方を満たしてもよい。
+    5. proposalsは任意の候補であり、確信がなければ空配列にする。重大な報酬、生死、事件解決、所持品変更を提案で決めない。
+    6. local_fact_candidateはsubjectId・predicate・summary、npc_memory_candidateはsubjectId・predicate・summary、mission_lead_candidateはtroubleId・summaryを必ず含める。欠けるならその提案を出さない。
+    7. narrativeとspeechesは世界内の表現だけにし、ゲーム、UI、選択肢、フラグ等の実装語やNPC/LOC/SKL等の内部IDを表示文へ書かない。
+    8. オレゴンは旅人を指す固定別名である。別名の由来を説明せず、必要な場合だけ自然に呼ぶ。
+    9. 「……」だけの発言は作らない。言葉がない人物はspeechesへ含めず、沈黙はnarrativeで描く。
+    10. JSON以外を出力しない。
+    
+    今回の場面規則:
+    - 現在地で具体的に見聞きできる変化を一つ描く
+    
+    提案可能範囲:
+    - 許可ミッションテンプレート: なし
+    - 許可troubleId: なし
+    - local_fact_candidate、npc_memory_candidate、mission_lead_candidateは意味的な候補として返し、内部フラグ名を無理に発明しない。
+    - 提案の構造に自信がなければproposalsは[]にする。会話・描写・三つの行動の品質を優先する。
+    
+    入力JSON:
+    {"action":{"conversationTurn":0,"dialogueTopic":null,"firstIntroduction":false,"id":"DIALOGUE:NPC-LOCAL:2:END","introductionName":null,"label":"相手に礼を言い、会話を終える","playerUtterance":null,"previouslyAskedTopics":[],"requiredDisclosure":null,"targetNpcId":"NPC-LOCAL","type":"conversation"},"allowedActionCandidates":[{"actionType":"meal","id":"ACT-EAT","intentType":"prepare","label":"食事を取る","minutes":0,"missionId":null,"progressRole":"optional","stepId":null,"targetNpcId":null,"workOffer":false},{"actionType":"investigate","id":"ACT-LOOK","intentType":"investigate","label":"宿の様子を調べる","minutes":0,"missionId":null,"progressRole":"optional","stepId":null,"targetNpcId":null,"workOffer":false},{"actionType":"move","id":"ACT-MOVE","intentType":"leave","label":"中央市場へ向かう","minutes":0,"missionId":null,"progressRole":"optional","stepId":null,"targetNpcId":null,"workOffer":false}],"authoritativeOutcome":{"kind":"conversation","summary":"相手が会話に応じた。"},"continuityContract":{"candidateIds":[],"intent":null,"mode":"free","rationale":null},"contractVersion":"trpg-local-context-v2","localNpcs":[{"currentGoal":"","id":"NPC-LOCAL","knownLocalFacts":[],"mood":"警戒","name":"レン","recentMemories":[],"relationship":0,"role":"旅人","speechStyle":""}],"localRumors":[],"locale":"ja-JP","missions":[],"place":{"facilityId":"LOC_CAP_LOWER_INN","facilityName":"下層の安宿","facilityType":null,"locationId":"王都","publicDescription":null},"player":{"displayName":"旅人","knownFacts":[],"visibleCondition":""},"progressContract":{"anchorCandidateIds":[],"currentStep":null,"missionId":null,"mode":"free","rationale":null},"reactionContract":{"goals":[],"requiredActorIds":[]},"sceneMode":"free_roam","time":{"day":2,"daypart":"day","hour":12,"minute":15},"visibleFlags":{},"workMarket":null}
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/narrative-conversation-boundaries.test.mjs:115:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: partial model output records its concrete validation errors even without a repair call
+ok 143 - partial model output records its concrete validation errors even without a repair call
+  ---
+  duration_ms: 4.561447
+  type: 'test'
   ...
 # Subtest: NPC response plan changes after player resolution
-ok 141 - NPC response plan changes after player resolution
+ok 144 - NPC response plan changes after player resolution
   ---
-  duration_ms: 2.84865
+  duration_ms: 1.883
   type: 'test'
   ...
 # Subtest: playable audit crosses guided movement and an interactive battle without weakening free-choice checks
-ok 142 - playable audit crosses guided movement and an interactive battle without weakening free-choice checks
+ok 145 - playable audit crosses guided movement and an interactive battle without weakening free-choice checks
   ---
-  duration_ms: 536.156148
+  duration_ms: 531.335703
   type: 'test'
   ...
 # Subtest: movement menu includes local facilities and reachable regions while choices remain separate
-ok 143 - movement menu includes local facilities and reachable regions while choices remain separate
+ok 146 - movement menu includes local facilities and reachable regions while choices remain separate
   ---
-  duration_ms: 12.360244
+  duration_ms: 16.880032
   type: 'test'
   ...
 # Subtest: local movement advances time and records the visited facility
-ok 144 - local movement advances time and records the visited facility
+ok 147 - local movement advances time and records the visited facility
   ---
-  duration_ms: 8.861335
+  duration_ms: 21.050807
   type: 'test'
   ...
 # Subtest: movement across a crisis deadline fails its still-open special mission immediately
-ok 145 - movement across a crisis deadline fails its still-open special mission immediately
+ok 148 - movement across a crisis deadline fails its still-open special mission immediately
   ---
-  duration_ms: 17.789021
+  duration_ms: 23.446262
   type: 'test'
   ...
 # Subtest: mission catalog has staged permanent chains and one special mission per trouble
-ok 146 - mission catalog has staged permanent chains and one special mission per trouble
+ok 149 - mission catalog has staged permanent chains and one special mission per trouble
   ---
-  duration_ms: 4.288316
+  duration_ms: 5.765234
   type: 'test'
   ...
 # Subtest: early and late trouble action paths can resolve through player actions
-ok 147 - early and late trouble action paths can resolve through player actions
+ok 150 - early and late trouble action paths can resolve through player actions
   ---
-  duration_ms: 150.41935
+  duration_ms: 189.762877
   type: 'test'
   ...
 # Subtest: journey never learns a skill while its acquisition conditions are false
-ok 148 - journey never learns a skill while its acquisition conditions are false
+ok 151 - journey never learns a skill while its acquisition conditions are false
   ---
-  duration_ms: 688.683789
+  duration_ms: 758.162736
   type: 'test'
   ...
 # Subtest: experience curve matches the design formula
-ok 149 - experience curve matches the design formula
+ok 152 - experience curve matches the design formula
   ---
-  duration_ms: 1.4859
+  duration_ms: 0.779733
   type: 'test'
   ...
 # Subtest: player starts at the wheat field on Day1 at 10:00
-ok 150 - player starts at the wheat field on Day1 at 10:00
+ok 153 - player starts at the wheat field on Day1 at 10:00
   ---
-  duration_ms: 13.347734
+  duration_ms: 6.63326
   type: 'test'
   ...
 # Subtest: three choices are separate from a complete reachable travel menu
-ok 151 - three choices are separate from a complete reachable travel menu
+ok 154 - three choices are separate from a complete reachable travel menu
   ---
-  duration_ms: 11.932035
+  duration_ms: 9.020292
   type: 'test'
   ...
 # Subtest: ordinary shop purchase advances no time
-ok 152 - ordinary shop purchase advances no time
+ok 155 - ordinary shop purchase advances no time
   ---
-  duration_ms: 14.00718
+  duration_ms: 6.547602
   type: 'test'
   ...
 # Subtest: shop inventory and transactions are restricted to the current seller facility
-ok 153 - shop inventory and transactions are restricted to the current seller facility
+ok 156 - shop inventory and transactions are restricted to the current seller facility
   ---
-  duration_ms: 6.203228
+  duration_ms: 4.190104
   type: 'test'
   ...
 # Subtest: an initially listed item still requires its unlock condition
-ok 154 - an initially listed item still requires its unlock condition
+ok 157 - an initially listed item still requires its unlock condition
   ---
-  duration_ms: 5.11556
+  duration_ms: 3.999689
   type: 'test'
   ...
 # Subtest: manual skill mode exposes reasons and never auto-learns after resolving an action
-ok 155 - manual skill mode exposes reasons and never auto-learns after resolving an action
+ok 158 - manual skill mode exposes reasons and never auto-learns after resolving an action
   ---
-  duration_ms: 30.443083
+  duration_ms: 16.871429
   type: 'test'
   ...
 # Subtest: authoritative present NPC ids prevent conversation with absent NPCs
-ok 156 - authoritative present NPC ids prevent conversation with absent NPCs
+ok 159 - authoritative present NPC ids prevent conversation with absent NPCs
   ---
-  duration_ms: 3.267283
+  duration_ms: 3.695846
   type: 'test'
   ...
 # Subtest: T01 actions crossing the Day2 rescue deadline persist failure without progress or resurrection
-ok 157 - T01 actions crossing the Day2 rescue deadline persist failure without progress or resurrection
+ok 160 - T01 actions crossing the Day2 rescue deadline persist failure without progress or resurrection
   ---
-  duration_ms: 8.733297
+  duration_ms: 4.018637
   type: 'test'
   ...
 # Subtest: T01 search offers three concrete, non-repeating approaches at each investigation stage
-ok 158 - T01 search offers three concrete, non-repeating approaches at each investigation stage
+ok 161 - T01 search offers three concrete, non-repeating approaches at each investigation stage
   ---
-  duration_ms: 14.490436
+  duration_ms: 7.518291
   type: 'test'
   ...
 # Subtest: T01 search discoveries are deterministic and two selected approaches advance to rescue
-ok 159 - T01 search discoveries are deterministic and two selected approaches advance to rescue
+ok 162 - T01 search discoveries are deterministic and two selected approaches advance to rescue
   ---
-  duration_ms: 22.112563
+  duration_ms: 12.499335
   type: 'test'
   ...
 # Subtest: same seed and profile replay to the same world fingerprint
-ok 160 - same seed and profile replay to the same world fingerprint
+ok 163 - same seed and profile replay to the same world fingerprint
   ---
-  duration_ms: 403.807343
+  duration_ms: 239.774447
   type: 'test'
   ...
 # Subtest: story profile can interact with early trouble, missions, combat, and levels
-ok 161 - story profile can interact with early trouble, missions, combat, and levels
+ok 164 - story profile can interact with early trouble, missions, combat, and levels
   ---
-  duration_ms: 234.382009
+  duration_ms: 178.772545
   type: 'test'
   ...
 # Subtest: new games and the public view expose the formal needs contract
-ok 162 - new games and the public view expose the formal needs contract
+ok 165 - new games and the public view expose the formal needs contract
   ---
-  duration_ms: 172.519151
+  duration_ms: 140.533222
   type: 'test'
   ...
 # Subtest: an inn exposes affordable meal and lodging actions when needs are high
-ok 163 - an inn exposes affordable meal and lodging actions when needs are high
+ok 166 - an inn exposes affordable meal and lodging actions when needs are high
   ---
-  duration_ms: 22.702427
+  duration_ms: 15.006154
   type: 'test'
   ...
 # Subtest: meals and lodging mutate hunger fatigue time and money authoritatively
-ok 164 - meals and lodging mutate hunger fatigue time and money authoritatively
+ok 167 - meals and lodging mutate hunger fatigue time and money authoritatively
   ---
-  duration_ms: 26.024915
+  duration_ms: 18.255204
   type: 'test'
   ...
 # Subtest: unaffordable paid survival actions reject without advancing time
-ok 165 - unaffordable paid survival actions reject without advancing time
+ok 168 - unaffordable paid survival actions reject without advancing time
   ---
-  duration_ms: 19.909453
+  duration_ms: 20.386294
   type: 'test'
   ...
 # Subtest: legacy hunger and fatigue state migrates without changing its visible values
-ok 166 - legacy hunger and fatigue state migrates without changing its visible values
+ok 169 - legacy hunger and fatigue state migrates without changing its visible values
   ---
-  duration_ms: 0.792929
+  duration_ms: 0.71239
   type: 'test'
   ...
 # Subtest: the same elapsed action produces the same deterministic needs result
-ok 167 - the same elapsed action produces the same deterministic needs result
+ok 170 - the same elapsed action produces the same deterministic needs result
   ---
-  duration_ms: 0.910875
+  duration_ms: 0.818382
   type: 'test'
   ...
 # Subtest: work and bad-weather travel are more tiring than quiet indoor time
-ok 168 - work and bad-weather travel are more tiring than quiet indoor time
+ok 171 - work and bad-weather travel are more tiring than quiet indoor time
   ---
-  duration_ms: 1.015071
+  duration_ms: 0.892383
   type: 'test'
   ...
 # Subtest: a meal records its time and cannot reduce hunger below zero
-ok 169 - a meal records its time and cannot reduce hunger below zero
+ok 172 - a meal records its time and cannot reduce hunger below zero
   ---
-  duration_ms: 0.2203
+  duration_ms: 0.182076
   type: 'test'
   ...
 # Subtest: lodging fully restores fatigue while unsafe wet camping does not
-ok 170 - lodging fully restores fatigue while unsafe wet camping does not
+ok 173 - lodging fully restores fatigue while unsafe wet camping does not
   ---
-  duration_ms: 0.263955
+  duration_ms: 0.223705
   type: 'test'
   ...
 # Subtest: public need state exposes stable labels and urgency thresholds
-ok 171 - public need state exposes stable labels and urgency thresholds
+ok 174 - public need state exposes stable labels and urgency thresholds
   ---
-  duration_ms: 0.353231
+  duration_ms: 0.310726
   type: 'test'
   ...
 # Subtest: v3 permanent missions contain 12 chains and 48 sequential definitions
-ok 172 - v3 permanent missions contain 12 chains and 48 sequential definitions
+ok 175 - v3 permanent missions contain 12 chains and 48 sequential definitions
   ---
-  duration_ms: 1.944924
+  duration_ms: 1.606595
   type: 'test'
   ...
 # Subtest: v3 derived mission metrics combine economy, rumor and skill counters
-ok 173 - v3 derived mission metrics combine economy, rumor and skill counters
+ok 176 - v3 derived mission metrics combine economy, rumor and skill counters
   ---
-  duration_ms: 0.918676
+  duration_ms: 0.64525
   type: 'test'
   ...
 # Subtest: NPC intervention audit attributes related replans to player resolution
-ok 174 - NPC intervention audit attributes related replans to player resolution
+ok 177 - NPC intervention audit attributes related replans to player resolution
   ---
-  duration_ms: 1.708332
+  duration_ms: 0.965743
   type: 'test'
   ...
 # Subtest: generic predicate evaluator supports every required logical and leaf operator
-ok 175 - generic predicate evaluator supports every required logical and leaf operator
+ok 178 - generic predicate evaluator supports every required logical and leaf operator
   ---
-  duration_ms: 2.874883
+  duration_ms: 1.884128
   type: 'test'
   ...
 # Subtest: skill progression runs six reproducible Day1-100 profiles with bounded SP
-ok 176 - skill progression runs six reproducible Day1-100 profiles with bounded SP
+ok 179 - skill progression runs six reproducible Day1-100 profiles with bounded SP
   ---
-  duration_ms: 7077.299718
+  duration_ms: 5182.942958
   type: 'test'
   ...
 # Subtest: skill audit exposes missing grant supply without confusing it with prerequisite corruption
-ok 177 - skill audit exposes missing grant supply without confusing it with prerequisite corruption
+ok 180 - skill audit exposes missing grant supply without confusing it with prerequisite corruption
   ---
-  duration_ms: 2017.140075
+  duration_ms: 1704.370155
   type: 'test'
   ...
 # Subtest: economy audit joins all product, equipment, stock and monster snapshots
-ok 178 - economy audit joins all product, equipment, stock and monster snapshots
+ok 181 - economy audit joins all product, equipment, stock and monster snapshots
   ---
-  duration_ms: 27.281332
+  duration_ms: 19.835695
   type: 'test'
   ...
 # Subtest: economy diagnostics catch the zero-gold opening and legacy price conflict
-ok 179 - economy diagnostics catch the zero-gold opening and legacy price conflict
+ok 182 - economy diagnostics catch the zero-gold opening and legacy price conflict
   ---
-  duration_ms: 8.119762
+  duration_ms: 8.500487
   type: 'test'
   ...
 # Subtest: three spreadsheet snapshots contain every expected design row
-ok 180 - three spreadsheet snapshots contain every expected design row
+ok 183 - three spreadsheet snapshots contain every expected design row
   ---
-  duration_ms: 1.851329
+  duration_ms: 1.438126
   type: 'test'
   ...
 # Subtest: hard foreign-key references are internally valid
-ok 181 - hard foreign-key references are internally valid
+ok 184 - hard foreign-key references are internally valid
   ---
-  duration_ms: 0.319028
+  duration_ms: 0.255592
   type: 'test'
   ...
 # Subtest: known source-contract gaps remain visible instead of being silently repaired
-ok 182 - known source-contract gaps remain visible instead of being silently repaired
+ok 185 - known source-contract gaps remain visible instead of being silently repaired
   ---
-  duration_ms: 0.40496
+  duration_ms: 0.300078
   type: 'test'
   ...
 # Subtest: resolver v15 keeps the player-view and work-market fixes migratable
-ok 183 - resolver v15 keeps the player-view and work-market fixes migratable
+ok 186 - resolver v15 keeps the player-view and work-market fixes migratable
   ---
-  duration_ms: 1.117978
+  duration_ms: 0.931921
   type: 'test'
   ...
 # Subtest: an injured Finn and a child bystander cannot become work employers
-ok 184 - an injured Finn and a child bystander cannot become work employers
+ok 187 - an injured Finn and a child bystander cannot become work employers
   ---
-  duration_ms: 146.896952
+  duration_ms: 110.007035
   type: 'test'
   ...
 # Subtest: the ordinary three-choice pool stays on T01 at the village edge
-ok 185 - the ordinary three-choice pool stays on T01 at the village edge
+ok 188 - the ordinary three-choice pool stays on T01 at the village edge
   ---
-  duration_ms: 19.048553
+  duration_ms: 11.482387
   type: 'test'
   ...
 # Subtest: green chroma key removes only the edge-connected background
-ok 186 - green chroma key removes only the edge-connected background
+ok 189 - green chroma key removes only the edge-connected background
   ---
-  duration_ms: 5.446376
+  duration_ms: 4.394429
   type: 'test'
   ...
 # Subtest: pink chroma key removes only the edge-connected background
-ok 187 - pink chroma key removes only the edge-connected background
+ok 190 - pink chroma key removes only the edge-connected background
   ---
-  duration_ms: 1.847622
+  duration_ms: 1.346099
   type: 'test'
   ...
 # Subtest: Gemini image generation sends bounded references and falls back between models
-ok 188 - Gemini image generation sends bounded references and falls back between models
+ok 191 - Gemini image generation sends bounded references and falls back between models
   ---
-  duration_ms: 2.636109
+  duration_ms: 2.003791
   type: 'test'
   ...
 # Subtest: image generation rejects a claimed MIME type that does not match the bytes
-ok 189 - image generation rejects a claimed MIME type that does not match the bytes
+ok 192 - image generation rejects a claimed MIME type that does not match the bytes
   ---
-  duration_ms: 0.926835
+  duration_ms: 0.734516
   type: 'test'
   ...
 # Subtest: native PNG decoding rejects oversized declared dimensions before inflation
-ok 190 - native PNG decoding rejects oversized declared dimensions before inflation
+ok 193 - native PNG decoding rejects oversized declared dimensions before inflation
   ---
-  duration_ms: 0.596769
+  duration_ms: 0.457983
   type: 'test'
   ...
 # Subtest: asset prompts use only supplied public visual fields
-ok 191 - asset prompts use only supplied public visual fields
+ok 194 - asset prompts use only supplied public visual fields
   ---
-  duration_ms: 1.643363
+  duration_ms: 1.274212
   type: 'test'
   ...
 # Subtest: runtime manifest merge accepts only generated asset URLs and path resolution rejects traversal
-ok 192 - runtime manifest merge accepts only generated asset URLs and path resolution rejects traversal
+ok 195 - runtime manifest merge accepts only generated asset URLs and path resolution rejects traversal
   ---
-  duration_ms: 0.882532
+  duration_ms: 0.631753
   type: 'test'
   ...
 # Subtest: authoritative game views are the only source of first-encounter asset ids
-ok 193 - authoritative game views are the only source of first-encounter asset ids
+ok 196 - authoritative game views are the only source of first-encounter asset ids
   ---
-  duration_ms: 0.544735
+  duration_ms: 0.416912
   type: 'test'
   ...
 # Subtest: runtime generation is deduplicated, serialized, persisted separately, and reused
-ok 194 - runtime generation is deduplicated, serialized, persisted separately, and reused
+ok 197 - runtime generation is deduplicated, serialized, persisted separately, and reused
   ---
-  duration_ms: 77.7028
+  duration_ms: 79.262564
   type: 'test'
   ...
 # Subtest: runtime generation failure is contained and enters retry backoff
-ok 195 - runtime generation failure is contained and enters retry backoff
+ok 198 - runtime generation failure is contained and enters retry backoff
   ---
-  duration_ms: 21.217182
+  duration_ms: 23.728114
   type: 'test'
   ...
 # Subtest: the legacy manifest URL is served by the static/runtime merger
-ok 196 - the legacy manifest URL is served by the static/runtime merger
+ok 199 - the legacy manifest URL is served by the static/runtime merger
   ---
-  duration_ms: 50.737037
+  duration_ms: 38.352301
   type: 'test'
   ...
 # Subtest: shop UI exposes trial used loan return and reward commands
-ok 197 - shop UI exposes trial used loan return and reward commands
+ok 200 - shop UI exposes trial used loan return and reward commands
   ---
-  duration_ms: 1.748811
+  duration_ms: 1.847007
   type: 'test'
   ...
 # Subtest: borrowed inventory items remain equipable but are excluded from sale
-ok 198 - borrowed inventory items remain equipable but are excluded from sale
+ok 201 - borrowed inventory items remain equipable but are excluded from sale
   ---
-  duration_ms: 0.775901
+  duration_ms: 0.803268
   type: 'test'
   ...
 # Subtest: the playable UI renders canonical weather hunger and fatigue
-ok 199 - the playable UI renders canonical weather hunger and fatigue
+ok 202 - the playable UI renders canonical weather hunger and fatigue
   ---
-  duration_ms: 1.59739
+  duration_ms: 1.176596
   type: 'test'
   ...
 # Subtest: reviewed authored scenes are resolved before the Gemini branch
-ok 200 - reviewed authored scenes are resolved before the Gemini branch
+ok 203 - reviewed authored scenes are resolved before the Gemini branch
   ---
-  duration_ms: 1.517935
+  duration_ms: 1.080593
   type: 'test'
   ...
 # Subtest: tutorial teaches movement once through the existing location control
-ok 201 - tutorial teaches movement once through the existing location control
+ok 204 - tutorial teaches movement once through the existing location control
   ---
-  duration_ms: 1.069767
+  duration_ms: 0.857449
   type: 'test'
   ...
 # Subtest: opening characters speak from their own stakes instead of explaining the game
-ok 202 - opening characters speak from their own stakes instead of explaining the game
+ok 205 - opening characters speak from their own stakes instead of explaining the game
   ---
-  duration_ms: 0.278177
+  duration_ms: 0.244415
   type: 'test'
   ...
 # Subtest: Gemini contract rejects game and UI vocabulary in narration and NPC speech
-ok 203 - Gemini contract rejects game and UI vocabulary in narration and NPC speech
+ok 206 - Gemini contract rejects game and UI vocabulary in narration and NPC speech
   ---
-  duration_ms: 0.17396
+  duration_ms: 0.137475
   type: 'test'
   ...
 # Subtest: P0 observer loads before the main TRPG module
-ok 204 - P0 observer loads before the main TRPG module
+ok 207 - P0 observer loads before the main TRPG module
   ---
-  duration_ms: 0.840266
+  duration_ms: 0.718853
   type: 'test'
   ...
 # Subtest: onboarding does not create a parallel movement or skill control
-ok 205 - onboarding does not create a parallel movement or skill control
+ok 208 - onboarding does not create a parallel movement or skill control
   ---
-  duration_ms: 0.615144
+  duration_ms: 0.469851
   type: 'test'
   ...
 # Subtest: mission notices are restrained and do not duplicate the mission tutorial
-ok 206 - mission notices are restrained and do not duplicate the mission tutorial
+ok 209 - mission notices are restrained and do not duplicate the mission tutorial
   ---
-  duration_ms: 0.195326
+  duration_ms: 0.163684
   type: 'test'
   ...
 # Subtest: mobile battle commands remain fully reachable
-ok 207 - mobile battle commands remain fully reachable
+ok 210 - mobile battle commands remain fully reachable
   ---
-  duration_ms: 0.172729
+  duration_ms: 0.222131
   type: 'test'
   ...
 # Subtest: play UI exposes one visual-novel surface and no legacy scrolling rails
-ok 208 - play UI exposes one visual-novel surface and no legacy scrolling rails
+ok 211 - play UI exposes one visual-novel surface and no legacy scrolling rails
   ---
-  duration_ms: 1.441064
+  duration_ms: 1.244878
   type: 'test'
   ...
 # Subtest: every direct app id reference exists in the HTML
-ok 209 - every direct app id reference exists in the HTML
+ok 212 - every direct app id reference exists in the HTML
   ---
-  duration_ms: 1.388196
+  duration_ms: 1.195495
   type: 'test'
   ...
 # Subtest: dialogue and three-choice tray are mutually exclusive
-ok 210 - dialogue and three-choice tray are mutually exclusive
+ok 213 - dialogue and three-choice tray are mutually exclusive
   ---
-  duration_ms: 0.349055
+  duration_ms: 0.405946
   type: 'test'
   ...
 # Subtest: a visible choice sends both its slot id and authoritative action id
-ok 211 - a visible choice sends both its slot id and authoritative action id
+ok 214 - a visible choice sends both its slot id and authoritative action id
   ---
-  duration_ms: 0.268421
+  duration_ms: 0.29473
   type: 'test'
   ...
 # Subtest: an introduction is acknowledged only after its final visible segment
-ok 212 - an introduction is acknowledged only after its final visible segment
+ok 215 - an introduction is acknowledged only after its final visible segment
   ---
-  duration_ms: 0.327691
+  duration_ms: 0.323173
   type: 'test'
   ...
 # Subtest: primary touch controls retain mobile-sized targets
-ok 213 - primary touch controls retain mobile-sized targets
+ok 216 - primary touch controls retain mobile-sized targets
   ---
-  duration_ms: 0.338006
+  duration_ms: 0.273298
   type: 'test'
   ...
 # Subtest: keyboard focus survives dialogue, menus, battle, and transient outcomes
-ok 214 - keyboard focus survives dialogue, menus, battle, and transient outcomes
+ok 217 - keyboard focus survives dialogue, menus, battle, and transient outcomes
   ---
-  duration_ms: 0.410922
+  duration_ms: 0.342701
   type: 'test'
   ...
 # Subtest: an empty or completed choice state still exposes a focusable action
-ok 215 - an empty or completed choice state still exposes a focusable action
+ok 218 - an empty or completed choice state still exposes a focusable action
   ---
-  duration_ms: 0.235866
+  duration_ms: 0.230714
   type: 'test'
   ...
 # Subtest: screen-reader announcements have a single owner during story playback
-ok 216 - screen-reader announcements have a single owner during story playback
+ok 219 - screen-reader announcements have a single owner during story playback
   ---
-  duration_ms: 0.480502
+  duration_ms: 0.428499
   type: 'test'
   ...
 # Subtest: modal command errors remain inside the active dialog
-ok 217 - modal command errors remain inside the active dialog
+ok 220 - modal command errors remain inside the active dialog
   ---
-  duration_ms: 0.419872
+  duration_ms: 0.372165
   type: 'test'
   ...
 # Subtest: visible choice text is not line-clamped
-ok 218 - visible choice text is not line-clamped
+ok 221 - visible choice text is not line-clamped
   ---
-  duration_ms: 0.289004
+  duration_ms: 0.256543
   type: 'test'
   ...
 # Subtest: battle supports authoritative interactive commands and preserves completed playback
-ok 219 - battle supports authoritative interactive commands and preserves completed playback
+ok 222 - battle supports authoritative interactive commands and preserves completed playback
   ---
-  duration_ms: 0.817092
+  duration_ms: 0.658473
   type: 'test'
   ...
 # Subtest: first-encounter Gemini art refreshes from the persisted manifest without blocking play
-ok 220 - first-encounter Gemini art refreshes from the persisted manifest without blocking play
+ok 223 - first-encounter Gemini art refreshes from the persisted manifest without blocking play
   ---
-  duration_ms: 0.236968
+  duration_ms: 0.204135
   type: 'test'
   ...
 # Subtest: manifest portraits are real transparent cutouts
-ok 221 - manifest portraits are real transparent cutouts
+ok 224 - manifest portraits are real transparent cutouts
   ---
-  duration_ms: 83.180521
+  duration_ms: 78.866478
   type: 'test'
   ...
 # Subtest: game views expose the same canonical weather across different save seeds
-ok 222 - game views expose the same canonical weather across different save seeds
+ok 225 - game views expose the same canonical weather across different save seeds
   ---
-  duration_ms: 143.936995
+  duration_ms: 128.689089
   type: 'test'
   ...
 # Subtest: canonical weather is shared by every player and playthrough
-ok 223 - canonical weather is shared by every player and playthrough
+ok 226 - canonical weather is shared by every player and playthrough
   ---
-  duration_ms: 2.576436
+  duration_ms: 1.533709
   type: 'test'
   ...
 # Subtest: all Day 1-100 schedules resolve to known weather
-ok 224 - all Day 1-100 schedules resolve to known weather
+ok 227 - all Day 1-100 schedules resolve to known weather
   ---
-  duration_ms: 13.434461
+  duration_ms: 5.748259
   type: 'test'
   ...
 # Subtest: daypart aliases resolve to the same canonical slot
-ok 225 - daypart aliases resolve to the same canonical slot
+ok 228 - daypart aliases resolve to the same canonical slot
   ---
-  duration_ms: 0.50005
+  duration_ms: 0.22153
   type: 'test'
   ...
 # Subtest: canonicalWeatherDay returns the four shared phase forecasts
-ok 226 - canonicalWeatherDay returns the four shared phase forecasts
+ok 229 - canonicalWeatherDay returns the four shared phase forecasts
   ---
-  duration_ms: 0.365701
+  duration_ms: 0.216233
   type: 'test'
   ...
 # Subtest: invalid days and dayparts are rejected
-ok 227 - invalid days and dayparts are rejected
+ok 230 - invalid days and dayparts are rejected
   ---
-  duration_ms: 0.737183
+  duration_ms: 0.395119
   type: 'test'
   ...
 # Subtest: work schedules close ordinary facilities before night and keep inns open later
-ok 228 - work schedules close ordinary facilities before night and keep inns open later
+ok 231 - work schedules close ordinary facilities before night and keep inns open later
   ---
-  duration_ms: 2.034238
+  duration_ms: 1.107102
   type: 'test'
   ...
 # Subtest: work availability requires the job to finish before closing
-ok 229 - work availability requires the job to finish before closing
+ok 232 - work availability requires the job to finish before closing
   ---
-  duration_ms: 0.894752
+  duration_ms: 0.464063
   type: 'test'
   ...
 # Subtest: exhaustion and dangerous hunger prevent taking a job
-ok 230 - exhaustion and dangerous hunger prevent taking a job
+ok 233 - exhaustion and dangerous hunger prevent taking a job
   ---
-  duration_ms: 0.292033
+  duration_ms: 0.155842
   type: 'test'
   ...
 # Subtest: ordinary wages are deterministic and proportionate to meals and lodging
-ok 231 - ordinary wages are deterministic and proportionate to meals and lodging
+ok 234 - ordinary wages are deterministic and proportionate to meals and lodging
   ---
-  duration_ms: 1.009226
+  duration_ms: 0.593997
   type: 'test'
   ...
 # Subtest: an employer can offer one job per day, a facility two, and the player three
-ok 232 - an employer can offer one job per day, a facility two, and the player three
+ok 235 - an employer can offer one job per day, a facility two, and the player three
   ---
-  duration_ms: 1.455427
+  duration_ms: 0.774806
   type: 'test'
   ...
 # Subtest: pending work offers expire and keep a deterministic offer id
-ok 233 - pending work offers expire and keep a deterministic offer id
+ok 236 - pending work offers expire and keep a deterministic offer id
   ---
-  duration_ms: 0.447641
+  duration_ms: 0.238056
   type: 'test'
   ...
 # Subtest: work-market state remains plain serializable data
-ok 234 - work-market state remains plain serializable data
+ok 237 - work-market state remains plain serializable data
   ---
-  duration_ms: 0.403137
+  duration_ms: 0.215962
   type: 'test'
   ...
 # Subtest: resolver v15 includes a serialized bounded work market
-ok 235 - resolver v15 includes a serialized bounded work market
+ok 238 - resolver v15 includes a serialized bounded work market
   ---
-  duration_ms: 139.764861
+  duration_ms: 92.786214
   type: 'test'
   ...
 # Subtest: the broad candidate pool contains an authoritative bounded work offer
-ok 236 - the broad candidate pool contains an authoritative bounded work offer
+ok 239 - the broad candidate pool contains an authoritative bounded work offer
   ---
-  duration_ms: 30.080915
+  duration_ms: 18.418861
   type: 'test'
   ...
 # Subtest: a staged authoritative offer becomes confirmable and completes without granting levels
-ok 237 - a staged authoritative offer becomes confirmable and completes without granting levels
+ok 240 - a staged authoritative offer becomes confirmable and completes without granting levels
   ---
-  duration_ms: 66.051353
+  duration_ms: 40.302181
   type: 'test'
   ...
 # Subtest: the same employer does not generate another offer until the next day
-ok 238 - the same employer does not generate another offer until the next day
+ok 241 - the same employer does not generate another offer until the next day
   ---
-  duration_ms: 37.757245
+  duration_ms: 24.99169
   type: 'test'
   ...
 # Subtest: jobs that cannot finish during business hours are absent from the broad pool
-ok 239 - jobs that cannot finish during business hours are absent from the broad pool
+ok 242 - jobs that cannot finish during business hours are absent from the broad pool
   ---
-  duration_ms: 16.835878
+  duration_ms: 9.07183
   type: 'test'
   ...
 # Subtest: a stale pending offer is cleared instead of exposing a confirm action
-ok 240 - a stale pending offer is cleared instead of exposing a confirm action
+ok 243 - a stale pending offer is cleared instead of exposing a confirm action
   ---
-  duration_ms: 16.854336
+  duration_ms: 9.609873
   type: 'test'
   ...
 # Subtest: all source facilities retain their canonical hub ownership
-ok 241 - all source facilities retain their canonical hub ownership
+ok 244 - all source facilities retain their canonical hub ownership
   ---
-  duration_ms: 2.361592
+  duration_ms: 1.197537
   type: 'test'
   ...
 # Subtest: every NPC has a non-collapsed initial facility and valid movement scope
-ok 242 - every NPC has a non-collapsed initial facility and valid movement scope
+ok 245 - every NPC has a non-collapsed initial facility and valid movement scope
   ---
-  duration_ms: 0.762157
+  duration_ms: 0.384283
   type: 'test'
   ...
 # Subtest: only the two known stale facility references receive audited fallbacks
-ok 243 - only the two known stale facility references receive audited fallbacks
+ok 246 - only the two known stale facility references receive audited fallbacks
   ---
-  duration_ms: 0.408197
+  duration_ms: 0.2075
   type: 'test'
   ...
 # Subtest: knowledge fields split into facts, interests, misconceptions and secrets without loss
-ok 244 - knowledge fields split into facts, interests, misconceptions and secrets without loss
+ok 247 - knowledge fields split into facts, interests, misconceptions and secrets without loss
   ---
-  duration_ms: 0.437995
+  duration_ms: 0.250834
   type: 'test'
   ...
 # Subtest: fate hints retain narrative provenance and deterministic anchors
-ok 245 - fate hints retain narrative provenance and deterministic anchors
+ok 248 - fate hints retain narrative provenance and deterministic anchors
   ---
-  duration_ms: 0.260903
+  duration_ms: 0.137655
   type: 'test'
   ...
 # Subtest: generic GOAP uses the cheapest deterministic Dijkstra/A* plan
-ok 246 - generic GOAP uses the cheapest deterministic Dijkstra/A* plan
+ok 249 - generic GOAP uses the cheapest deterministic Dijkstra/A* plan
   ---
-  duration_ms: 2.498948
+  duration_ms: 2.986207
   type: 'test'
   ...
 # Subtest: GOAP reports an exhausted state space without fabricating an action
-ok 247 - GOAP reports an exhausted state space without fabricating an action
+ok 250 - GOAP reports an exhausted state space without fabricating an action
   ---
-  duration_ms: 0.285918
+  duration_ms: 0.310233
   type: 'test'
   ...
 # Subtest: world snapshot normalizes every required entity and safe assumption
-ok 248 - world snapshot normalizes every required entity and safe assumption
+ok 251 - world snapshot normalizes every required entity and safe assumption
   ---
-  duration_ms: 0.480858
+  duration_ms: 0.566375
   type: 'test'
   ...
 # Subtest: all route costs are honored and conditional forest gates are explicit
-ok 249 - all route costs are honored and conditional forest gates are explicit
+ok 252 - all route costs are honored and conditional forest gates are explicit
   ---
-  duration_ms: 1.199733
+  duration_ms: 1.483614
   type: 'test'
   ...
 # Subtest: T15/T18/T19 hard gates distinguish active, critical and resolved prerequisites
-ok 250 - T15/T18/T19 hard gates distinguish active, critical and resolved prerequisites
+ok 253 - T15/T18/T19 hard gates distinguish active, critical and resolved prerequisites
   ---
-  duration_ms: 0.256361
+  duration_ms: 0.300538
   type: 'test'
   ...
 # Subtest: Day1 through Day100 no-player run reaches a strict failed world with complete NPC traces
-ok 251 - Day1 through Day100 no-player run reaches a strict failed world with complete NPC traces
+ok 254 - Day1 through Day100 no-player run reaches a strict failed world with complete NPC traces
   ---
-  duration_ms: 1.596926
+  duration_ms: 1.825204
   type: 'test'
   ...
 # Subtest: report compaction preserves all NPC ticks, movement coverage, replay metadata and T01 casualties
-ok 252 - report compaction preserves all NPC ticks, movement coverage, replay metadata and T01 casualties
+ok 255 - report compaction preserves all NPC ticks, movement coverage, replay metadata and T01 casualties
   ---
-  duration_ms: 294.650877
+  duration_ms: 348.714487
   type: 'test'
   ...
 # Subtest: event gates, chains and same-day timeline order are retained in the run
-ok 253 - event gates, chains and same-day timeline order are retained in the run
+ok 256 - event gates, chains and same-day timeline order are retained in the run
   ---
-  duration_ms: 0.392043
+  duration_ms: 0.490022
   type: 'test'
   ...
 # Subtest: a formerly successful seed still follows the no-player T13 failure route
-ok 254 - a formerly successful seed still follows the no-player T13 failure route
+ok 257 - a formerly successful seed still follows the no-player T13 failure route
   ---
-  duration_ms: 1696.718088
+  duration_ms: 1255.504155
   type: 'test'
   ...
 # Subtest: a seed reproduces the exact simulation and another seed changes the trace
-ok 255 - a seed reproduces the exact simulation and another seed changes the trace
+ok 258 - a seed reproduces the exact simulation and another seed changes the trace
   ---
-  duration_ms: 2493.554813
+  duration_ms: 1782.573304
   type: 'test'
   ...
 # Subtest: strict audit detects route-time corruption and terminal leakage
-ok 256 - strict audit detects route-time corruption and terminal leakage
+ok 259 - strict audit detects route-time corruption and terminal leakage
   ---
-  duration_ms: 498.932133
+  duration_ms: 426.169736
   type: 'test'
   ...
-1..256
-# tests 256
+1..259
+# tests 259
 # suites 0
-# pass 255
+# pass 258
 # fail 1
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 34424.703999
+# duration_ms 27114.652236
