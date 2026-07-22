@@ -19,6 +19,42 @@ function actionText(entry) {
   return `${entry?.actionId ?? entry?.moveId ?? ""} ${entry?.label ?? ""}`;
 }
 
+function actionPrice(entry) {
+  for (const value of [entry?.price, entry?.cost, entry?.goldCost, entry?.mealPrice]) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+  }
+  const labelMatch = String(entry?.label ?? "").match(/(?:^|[（(・\s])([0-9]+)G(?:[）)・\s]|$)/u);
+  if (labelMatch) return Number(labelMatch[1]);
+  const idMatch = String(entry?.actionId ?? "").match(/(?:^|:)([0-9]+)$/u);
+  return idMatch ? Number(idMatch[1]) : null;
+}
+
+function decisionContextSignature(save) {
+  return [
+    save?.scene?.location ?? "",
+    save?.scene?.facilityId ?? "",
+    Number(save?.player?.gold ?? 0),
+    Number(save?.player?.freeMeals ?? 0),
+    Number(save?.player?.freeLodging ?? 0),
+  ].join("|");
+}
+
+function rejectionReason(outcome) {
+  return String(outcome?.reason ?? outcome?.error ?? outcome?.message ?? outcome?.summary ?? outcome?.type ?? "rejected");
+}
+
+function isDecisionBlocked(state, key, save) {
+  const blocked = state.blockedDecisionKeys?.[key];
+  return Boolean(blocked && blocked.contextSignature === decisionContextSignature(save));
+}
+
+function mealAffordable(choice, save) {
+  if (Number(save?.player?.freeMeals ?? 0) > 0) return true;
+  const price = actionPrice(choice);
+  return price == null || price <= Number(save?.player?.gold ?? 0);
+}
+
 function missionProgress(mission) {
   if (!mission) return 0;
   if (Number.isFinite(Number(mission.progressRatio))) return Number(mission.progressRatio);
@@ -66,7 +102,11 @@ export function createDay100CoverageState(model) {
     visitedHubs: {},
     recentDecisionKeys: [],
     acknowledgedIntroductionTokens: [],
+    blockedDecisionKeys: {},
+    knownMealSources: {},
     actionCount: 0,
+    acceptedActionCount: 0,
+    rejectedActionCount: 0,
     deadEndCount: 0,
     battleCount: 0,
     workCount: 0,
@@ -88,6 +128,17 @@ export function observeDay100Coverage(state, save, decision = null) {
   const facilityId = save?.scene?.facilityId ?? null;
   if (hub) state.visitedHubs[hub] = (state.visitedHubs[hub] ?? 0) + 1;
   if (facilityId) state.visitedFacilities[facilityId] = (state.visitedFacilities[facilityId] ?? 0) + 1;
+  const mealPrices = (save?.choices ?? [])
+    .filter((choice) => choice.type === "eat" || SURVIVAL_MEAL_PATTERN.test(actionText(choice)))
+    .map((choice) => actionPrice(choice))
+    .filter((price) => Number.isFinite(price));
+  if (facilityId && mealPrices.length) {
+    state.knownMealSources[facilityId] = {
+      facilityId,
+      hub,
+      minimumPrice: Math.min(...mealPrices),
+    };
+  }
 
   for (const entry of Object.values(state.trouble)) {
     const rumor = (save?.rumors ?? []).find((item) => item.troubleId === entry.id);
@@ -120,10 +171,25 @@ export function observeDay100Coverage(state, save, decision = null) {
     const key = decision.key ?? `${decision.type}:${decision.actionId ?? decision.moveId ?? decision.reason ?? "unknown"}`;
     state.recentDecisionKeys.push(key);
     if (state.recentDecisionKeys.length > 18) state.recentDecisionKeys.shift();
-    if (decision.type === "ACK_NPC_INTRODUCTION") {
+    const accepted = decision.accepted !== false;
+    if (accepted) {
+      state.acceptedActionCount += 1;
+      delete state.blockedDecisionKeys[key];
+    } else {
+      state.rejectedActionCount += 1;
+      const previous = state.blockedDecisionKeys[key];
+      state.blockedDecisionKeys[key] = {
+        key,
+        count: Number(previous?.count ?? 0) + 1,
+        contextSignature: decisionContextSignature(save),
+        reason: rejectionReason(decision.outcome),
+        minute,
+      };
+    }
+    if (accepted && decision.type === "ACK_NPC_INTRODUCTION") {
       appendUnique(state.acknowledgedIntroductionTokens, decision.payload?.token, 80);
     }
-    if (decision.missionId) {
+    if (accepted && decision.missionId) {
       const mission = (save?.missions ?? []).find((item) => item.id === decision.missionId);
       const troubleId = mission?.troubleId ?? decision.troubleId;
       const ledger = state.trouble[troubleId];
@@ -132,10 +198,10 @@ export function observeDay100Coverage(state, save, decision = null) {
         appendUnique(ledger.actionIds, decision.actionId ?? decision.moveId ?? decision.reason, 80);
       }
     }
-    if (decision.type === "BATTLE") state.battleCount += 1;
-    if (decision.category === "work") state.workCount += 1;
-    if (decision.category === "meal") state.mealCount += 1;
-    if (decision.category === "rest") state.restCount += 1;
+    if (accepted && decision.type === "BATTLE") state.battleCount += 1;
+    if (accepted && decision.category === "work") state.workCount += 1;
+    if (accepted && decision.category === "meal") state.mealCount += 1;
+    if (accepted && decision.category === "rest") state.restCount += 1;
   }
   state.lastObservedMinute = minute;
   return state;
@@ -179,6 +245,7 @@ function findChoice(save, predicate) {
 
 function bestChoice(save, state, predicate, baseScore = 100) {
   return (save?.choices ?? [])
+    .filter((choice) => !isDecisionBlocked(state, `CHOOSE:${choice.actionId}`, save))
     .filter(predicate)
     .map((choice) => ({ choice, score: baseScore - recentPenalty(state, `CHOOSE:${choice.actionId}`) }))
     .sort((left, right) => right.score - left.score || String(left.choice.actionId).localeCompare(String(right.choice.actionId)))[0]?.choice ?? null;
@@ -206,16 +273,17 @@ function regionalFirstHop(model, from, target) {
 }
 
 function movementToward(save, model, state, { facilityId = null, hub = null } = {}) {
+  const movement = (save.movement ?? []).filter((move) => !isDecisionBlocked(state, `MOVE:${move.moveId}`, save));
   if (facilityId) {
-    const exact = (save.movement ?? []).find((move) => move.destinationFacilityId === facilityId);
+    const exact = movement.find((move) => move.destinationFacilityId === facilityId);
     if (exact) return exact;
   }
   if (!hub || hub === save.scene?.location) return null;
-  const direct = (save.movement ?? []).find((move) => move.destination === hub);
+  const direct = movement.find((move) => move.destination === hub);
   if (direct) return direct;
   const hop = regionalFirstHop(model, save.scene?.location, hub);
   if (!hop) return null;
-  return (save.movement ?? []).find((move) => move.destination === hop) ?? null;
+  return movement.find((move) => move.destination === hop) ?? null;
 }
 
 function facilityLooksLike(move, pattern) {
@@ -229,10 +297,25 @@ function survivalDecision(save, model, state) {
   const hour = number(save.clock?.hour, Number(String(save.clock?.time ?? "0").split(":")[0]));
 
   if (hunger >= 72) {
-    const meal = bestChoice(save, state, (choice) => choice.type === "eat" || SURVIVAL_MEAL_PATTERN.test(actionText(choice)), 170);
-    if (meal) return choiceDecision(meal, "空腹が強まる前に食事を取る", { category: "meal" });
-    const mealMove = (save.movement ?? []).find((move) => facilityLooksLike(move, /宿|食堂|酒場|茶屋|パン|市場/u));
-    if (mealMove) return moveDecision(mealMove, "食事を取れる施設へ向かう", { category: "meal" });
+    const meal = bestChoice(save, state, (choice) => (choice.type === "eat" || SURVIVAL_MEAL_PATTERN.test(actionText(choice)))
+      && mealAffordable(choice, save), 170);
+    if (meal) return choiceDecision(meal, "空腹が強まる前に、支払える食事を取る", { category: "meal" });
+    const affordableSource = Object.values(state.knownMealSources ?? {})
+      .filter((source) => Number(source.minimumPrice) <= Number(save.player?.gold ?? 0))
+      .sort((left, right) => Number(left.minimumPrice) - Number(right.minimumPrice))[0];
+    if (affordableSource) {
+      const knownMealMove = movementToward(save, model, state, {
+        facilityId: affordableSource.hub === save.scene?.location ? affordableSource.facilityId : null,
+        hub: affordableSource.hub,
+      });
+      if (knownMealMove) return moveDecision(knownMealMove, "所持金で食べられる食事処へ戻る", { category: "meal" });
+    }
+    const work = bestChoice(save, state, (choice) => WORK_PATTERN.test(actionText(choice)), 160);
+    if (work) return choiceDecision(work, "食費を確保するため、実行可能な仕事を探す", { category: "work" });
+    const mealMove = (save.movement ?? [])
+      .filter((move) => !isDecisionBlocked(state, `MOVE:${move.moveId}`, save))
+      .find((move) => facilityLooksLike(move, /宿|食堂|酒場|茶屋|パン|市場/u));
+    if (mealMove) return moveDecision(mealMove, "別の食事処で価格や無料の食事を確かめる", { category: "meal" });
   }
 
   if (fatigue >= 72 || hour >= 21) {
@@ -338,7 +421,7 @@ function economyDecision(save, state) {
 }
 
 function fallbackDecision(save, model, state) {
-  const workConfirm = findChoice(save, (choice) => /WORK_CONFIRM/iu.test(actionText(choice)));
+  const workConfirm = bestChoice(save, state, (choice) => /WORK_CONFIRM/iu.test(actionText(choice)), 150);
   if (workConfirm) return choiceDecision(workConfirm, "提示済みの仕事を完了する", { category: "work" });
 
   const wait = bestChoice(save, state, (choice) => ["wait", "rest"].includes(choice.type), 75);
@@ -448,6 +531,9 @@ export function finalizeDay100Coverage(state, { save, runtime, model }) {
     finalFacilityId: save.scene?.facilityId ?? null,
     finalGold: number(save.player?.gold),
     actions: state.actionCount,
+    acceptedActions: state.acceptedActionCount,
+    rejectedActions: state.rejectedActionCount,
+    blockedDecisionCount: Object.keys(state.blockedDecisionKeys ?? {}).length,
     deadEnds: state.deadEndCount,
     battles: state.battleCount,
     jobs: state.workCount,
@@ -466,4 +552,8 @@ export const DAY100_POLICY_INTERNALS = Object.freeze({
   regionalFirstHop,
   movementToward,
   missionProgress,
+  actionPrice,
+  decisionContextSignature,
+  isDecisionBlocked,
+  mealAffordable,
 });

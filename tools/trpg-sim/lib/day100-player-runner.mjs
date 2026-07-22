@@ -32,12 +32,15 @@ function number(value, fallback = 0) {
 function compactSave(save) {
   return {
     revision: save.revision,
+    stateHash: save.stateHash ?? null,
     day: save.clock?.day ?? null,
     time: save.clock?.time ?? null,
     minute: save.clock?.absoluteMinute ?? null,
     location: save.scene?.location ?? null,
     facilityId: save.scene?.facilityId ?? null,
     gold: save.player?.gold ?? null,
+    freeMeals: save.player?.freeMeals ?? 0,
+    freeLodging: save.player?.freeLodging ?? 0,
     hunger: save.player?.needs?.hunger ?? null,
     fatigue: save.player?.needs?.fatigue ?? null,
     choiceIds: (save.choices ?? []).map((choice) => choice.actionId),
@@ -53,6 +56,7 @@ function compactSave(save) {
         required: mission.currentStep?.required ?? null,
       })),
     battle: save.battle ? { id: save.battle.id, round: save.battle.round, status: save.battle.status } : null,
+    lastOutcome: save.scene?.lastOutcome ?? null,
     ended: Boolean(save.world?.ended),
   };
 }
@@ -217,7 +221,10 @@ export class Day100GameRunner {
       payload,
     });
     this.save = response.save;
-    observeDay100Coverage(this.coverage, this.save, decision);
+    const outcome = this.save.scene?.lastOutcome ?? null;
+    const accepted = outcome?.ok !== false && outcome?.success !== false && outcome?.accepted !== false;
+    const observedDecision = { ...decision, accepted, outcome };
+    observeDay100Coverage(this.coverage, this.save, observedDecision);
     this.trace.push({
       event: type,
       decision: {
@@ -227,7 +234,10 @@ export class Day100GameRunner {
         missionId: decision?.missionId ?? null,
         troubleId: decision?.troubleId ?? null,
         category: decision?.category ?? null,
+        accepted,
+        rejectionReason: accepted ? null : text(outcome?.reason ?? outcome?.error ?? outcome?.message ?? outcome?.summary ?? outcome?.type),
       },
+      outcome,
       before,
       after: compactSave(this.save),
     });
@@ -332,7 +342,7 @@ export function renderDay100PlayerMarkdown(report) {
   return `# TRPG Day1→Day100 単一路線プレイヤー監査
 
 - 到達: ${report.reachedDay100 ? "Day100完走" : `Day ${report.finalClock?.day ?? "?"}で停止`}
-- 行動数: ${report.actions} / 上限${report.maxActions}
+- 行動数: ${report.actions}（成功${report.acceptedActions}・拒否${report.rejectedActions}） / 上限${report.maxActions}
 - 地域: ${report.visitedHubCount} / 施設: ${report.visitedFacilityCount}
 - トラブル: 発見${report.counts.discovered}/${report.counts.total}・関与${report.counts.engaged}・進行${report.counts.progressed}・解決${report.counts.resolved}・失敗${report.counts.failed}・終端${report.counts.terminal}
 - 生活: 食事${report.meals}・休息${report.rests}・仕事${report.jobs}・戦闘${report.battles}
