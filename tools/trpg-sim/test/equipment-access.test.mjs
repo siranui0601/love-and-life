@@ -90,7 +90,7 @@ test("used offers are deterministic, discounted, and claimable only once", () =>
   assert.ok(firstOffer.price < firstOffer.originalPrice);
   const purchase = buyUsedEquipment(first.state, first.battleData, first.shopRuntime, firstOffer.offerId, first.scope);
   assert.equal(purchase.ok, true);
-  assert.equal(first.state.player.inventory.equipment["EQ-B"], 1);
+  assert.equal(first.state.player.inventory.equipment[firstOffer.equipmentId], 1);
   assert.equal(first.state.player.gold, 100 - firstOffer.price);
   assert.equal(buyUsedEquipment(first.state, first.battleData, first.shopRuntime, firstOffer.offerId, first.scope).ok, false);
 });
@@ -101,15 +101,16 @@ test("a mission-bound loan can be equipped and is returned with its deposit when
   assert.ok(loan);
   const borrowed = borrowMissionEquipment(state, battleData, shopRuntime, loan.loanId, scope);
   assert.equal(borrowed.ok, true);
-  assert.equal(equipmentAvailableToPlayer(state, "EQ-B"), true);
-  state.player.equipment.mainHand = "EQ-B";
+  assert.equal(equipmentAvailableToPlayer(state, loan.equipmentId), true);
+  const equipment = battleData.equipmentById.get(loan.equipmentId);
+  state.player.equipment[equipment.slot] = loan.equipmentId;
   const afterDeposit = state.player.gold;
   state.missions[loan.missionId].status = "completed";
   const returned = reconcileEquipmentLoans(state);
   assert.equal(returned.length, 1);
-  assert.equal(state.player.equipment.mainHand, null);
+  assert.equal(state.player.equipment[equipment.slot], null);
   assert.equal(state.player.gold, afterDeposit + loan.deposit);
-  assert.equal(equipmentAvailableToPlayer(state, "EQ-B"), false);
+  assert.equal(equipmentAvailableToPlayer(state, loan.equipmentId), false);
 });
 
 test("manual loan return is allowed only at the lending facility", () => {
