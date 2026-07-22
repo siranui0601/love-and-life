@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          node tools/trpg-refactor/apply-work-market-v1.mjs > tools/trpg-work-market-integration.log 2>&1
+          node tools/trpg-refactor/run-work-market-v1.mjs > tools/trpg-work-market-integration.log 2>&1
           status=$?
           cat tools/trpg-work-market-integration.log
           if [ "$status" -ne 0 ]; then
@@ -58,6 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -f tools/trpg-work-market-integration.log tools/trpg-work-market-regression.log
+          rm -f tools/trpg-refactor/run-work-market-v1.mjs
           rm -f .github/workflows/apply-work-market-v1.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
