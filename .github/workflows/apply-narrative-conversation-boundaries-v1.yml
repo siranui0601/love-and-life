@@ -1,0 +1,66 @@
+name: Apply TRPG narrative conversation boundaries v1
+
+on:
+  push:
+    branches:
+      - chatgpt/trpg-authored-content-refactor
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-authored-content-refactor
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply conversation-boundary integration
+        shell: bash
+        run: |
+          set +e
+          node tools/trpg-refactor/apply-narrative-conversation-boundaries-v1.mjs > tools/trpg-conversation-boundaries-integration.log 2>&1
+          status=$?
+          cat tools/trpg-conversation-boundaries-integration.log
+          if [ "$status" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/trpg-conversation-boundaries-integration.log
+            git commit -m "test(trpg): record conversation-boundary integration failure"
+            git push origin HEAD:chatgpt/trpg-authored-content-refactor
+            exit "$status"
+          fi
+      - run: npm ci
+      - name: Run complete TRPG regression suite
+        shell: bash
+        run: |
+          set +e
+          npm run trpg:test > tools/trpg-conversation-boundaries-regression.log 2>&1
+          status=$?
+          cat tools/trpg-conversation-boundaries-regression.log
+          if [ "$status" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/trpg-conversation-boundaries-regression.log
+            git commit -m "test(trpg): record conversation-boundary regression failure"
+            git push origin HEAD:chatgpt/trpg-authored-content-refactor
+            exit "$status"
+          fi
+      - name: Commit integrated source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f tools/trpg-conversation-boundaries-integration.log tools/trpg-conversation-boundaries-regression.log
+          rm -f .github/workflows/apply-narrative-conversation-boundaries-v1.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(trpg): distinguish introductions and farewells"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
