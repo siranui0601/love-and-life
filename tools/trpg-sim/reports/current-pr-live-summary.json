@@ -1,0 +1,154 @@
+{
+  "schemaVersion": "trpg-current-pr-live-summary-v1",
+  "generatedAt": "2026-07-22T10:32:07.944Z",
+  "commitSha": "bc4cba9e260ac5ce5d05f1e4605b8c42eb3e36e2",
+  "statuses": {
+    "regression": 0,
+    "experiential": 1,
+    "liveFirst": 0,
+    "liveReplay": 0
+  },
+  "experiential": {
+    "qualityPassed": false,
+    "journeys": [
+      {
+        "id": "rescue",
+        "passed": true,
+        "checks": {
+          "openingHasHelpWorkAndLeave": true,
+          "skillTutorialIsStepwise": true,
+          "skillTutorialDoesNotLockChoices": true,
+          "searchProgressesWithoutExactApproach": true,
+          "voiceBeforeBattle": true,
+          "battleFinishes": true,
+          "finnSpeaksAfterBattle": true,
+          "escortStepExists": true,
+          "escortRequestIsHuman": true,
+          "reunionBeforeChoice": true,
+          "completesAfterHandoff": true
+        },
+        "battleRounds": 2,
+        "conversations": null,
+        "jobCount": null,
+        "final": {
+          "day": 1,
+          "time": "13:35",
+          "location": "田園の村",
+          "facilityId": "LOC_FARM_SQUARE",
+          "gold": 42,
+          "t01Status": "completed"
+        },
+        "error": null
+      },
+      {
+        "id": "work-first",
+        "passed": true,
+        "checks": {
+          "firstOfferHasJobAndWage": true,
+          "offerHasAcceptClarifyDecline": true,
+          "severalJobsCompleted": true,
+          "offersRemainConcrete": true,
+          "payMatchesQuote": true,
+          "timePasses": true,
+          "finnCanBeLostWhileWorking": true,
+          "notSilentlyCompleted": true
+        },
+        "battleRounds": null,
+        "conversations": null,
+        "jobCount": 15,
+        "final": {
+          "day": 2,
+          "time": "22:42",
+          "location": "王都",
+          "facilityId": "LOC_CAP_LOWER_INN",
+          "gold": 1280,
+          "t01Status": "failed"
+        },
+        "error": null
+      },
+      {
+        "id": "capital-first",
+        "passed": true,
+        "checks": {
+          "capitalKnownWithoutAcceptingT01": true,
+          "reachedCapital": true,
+          "remainsOutsideVillage": true,
+          "capitalHasInteractions": true,
+          "t01FailsWithoutPlayer": true,
+          "worldRemainsPlayable": true
+        },
+        "battleRounds": null,
+        "conversations": 9,
+        "jobCount": 8,
+        "final": {
+          "day": 2,
+          "time": "23:11",
+          "location": "王都",
+          "facilityId": "LOC_CAP_LOWER_INN",
+          "gold": 650,
+          "t01Status": "failed"
+        },
+        "error": null
+      }
+    ],
+    "audit": {
+      "total": 83,
+      "sources": {
+        "gemini": 76,
+        "gemini_repaired": 7
+      },
+      "providerCalls": 90,
+      "providerErrors": 0,
+      "repairCalls": 7,
+      "passed": 82,
+      "failedCount": 1,
+      "metaLeakCount": 0
+    },
+    "sheetSync": {
+      "ok": true,
+      "synced": 83
+    }
+  },
+  "freshGeneration": {
+    "total": 12,
+    "model": "gemini-2.5-flash",
+    "promptVersion": "trpg-narrative-v5.2-director",
+    "summary": {
+      "gemini": 12,
+      "approvedReplay": 0,
+      "replayCache": 0,
+      "fallback": 0,
+      "repaired": 0,
+      "errors": 0,
+      "averageElapsedMs": 2967.5
+    },
+    "sources": {
+      "gemini": 12
+    },
+    "providerCalls": 12,
+    "fallbackCount": 0,
+    "partialCount": 0,
+    "validationErrorCount": 0
+  },
+  "replayGeneration": {
+    "total": 12,
+    "model": "gemini-2.5-flash",
+    "promptVersion": "trpg-narrative-v5.2-director",
+    "summary": {
+      "gemini": 0,
+      "approvedReplay": 0,
+      "replayCache": 12,
+      "fallback": 0,
+      "repaired": 0,
+      "errors": 0,
+      "averageElapsedMs": 0.9166666666666666
+    },
+    "sources": {
+      "replay_cache": 12
+    },
+    "providerCalls": 0,
+    "fallbackCount": 0,
+    "partialCount": 0,
+    "validationErrorCount": 0
+  }
+}
