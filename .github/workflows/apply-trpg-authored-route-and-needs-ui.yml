@@ -1,0 +1,73 @@
+name: Apply TRPG authored route and needs UI
+
+on:
+  push:
+    branches:
+      - chatgpt/trpg-authored-content-refactor
+    paths:
+      - ".github/workflows/apply-trpg-authored-route-and-needs-ui.yml"
+      - "tools/trpg-refactor/apply-authored-route-and-needs-ui.mjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trpg-authored-route-needs-ui
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-authored-content-refactor
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Integrate reviewed journey scenes and playable needs UI
+        shell: bash
+        run: |
+          set +e
+          mkdir -p tools/trpg-refactor
+          node tools/trpg-refactor/apply-authored-route-and-needs-ui.mjs > tools/trpg-refactor/authored-route-ui-integration.log 2>&1
+          status=$?
+          cat tools/trpg-refactor/authored-route-ui-integration.log
+          if [ "$status" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/trpg-refactor/authored-route-ui-integration.log
+            git commit -m "test(trpg): record authored route UI integration failure"
+            git push origin HEAD:chatgpt/trpg-authored-content-refactor
+            exit "$status"
+          fi
+      - run: npm ci
+      - name: Run complete TRPG regression suite
+        shell: bash
+        run: |
+          set +e
+          npm run trpg:test > tools/trpg-authored-route-ui-regression.log 2>&1
+          status=$?
+          cat tools/trpg-authored-route-ui-regression.log
+          if [ "$status" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/trpg-authored-route-ui-regression.log
+            git commit -m "test(trpg): record authored route UI regression failure"
+            git push origin HEAD:chatgpt/trpg-authored-content-refactor
+            exit "$status"
+          fi
+      - name: Commit integrated source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f tools/trpg-authored-route-ui-regression.log tools/trpg-refactor/authored-route-ui-integration.log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(trpg): connect reviewed journey scenes and needs UI"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
