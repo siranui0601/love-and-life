@@ -22,12 +22,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Apply T01 player-view integration
+      - name: Apply T01 player-view integration when still staged
         shell: bash
         run: |
           set +e
-          node tools/trpg-refactor/apply-t01-player-view-v1.mjs > tools/trpg-t01-player-view-integration.log 2>&1
-          status=$?
+          if [ -f tools/trpg-refactor/apply-t01-player-view-v1.mjs ]; then
+            node tools/trpg-refactor/apply-t01-player-view-v1.mjs > tools/trpg-t01-player-view-integration.log 2>&1
+            status=$?
+          else
+            printf '%s\n' 'T01 player-view integration already applied.' > tools/trpg-t01-player-view-integration.log
+            status=0
+          fi
           cat tools/trpg-t01-player-view-integration.log
           if [ "$status" -ne 0 ]; then
             git config user.name "github-actions[bot]"
