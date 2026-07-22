@@ -32,8 +32,15 @@ jobs:
           node-version: 22
           cache: npm
       - name: Apply staged Day100 runner correction
+        shell: bash
         run: |
-          node tools/trpg-refactor/apply-day100-introduction-ledger-v1.mjs
+          set -euo pipefail
+          script="tools/trpg-refactor/apply-day100-rejection-ledger-v1.mjs"
+          if [ -f "$script" ]; then
+            node "$script"
+          else
+            echo "Day100 rejection ledger is already integrated."
+          fi
           git diff --check
       - run: npm ci
       - name: Run complete TRPG regression suite
@@ -43,7 +50,7 @@ jobs:
         run: |
           mkdir -p tools/trpg-sim/reports
           set +e
-          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v2 npm run trpg:day100-player -- --strict \
+          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v3 npm run trpg:day100-player -- --strict \
             > tools/trpg-sim/reports/day100-player-console.log 2>&1
           status=$?
           cat tools/trpg-sim/reports/day100-player-console.log
@@ -67,14 +74,16 @@ jobs:
           cp tools/trpg-sim/reports/day100-player-latest.json tools/trpg-sim/reports/day100-player-pr-summary.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A \
-            tools/trpg-refactor/apply-day100-introduction-ledger-v1.mjs \
+          git add -A -- \
+            tools/trpg-refactor/apply-day100-rejection-ledger-v1.mjs \
             tools/trpg-sim/lib/day100-player-policy.mjs \
+            tools/trpg-sim/lib/day100-player-runner.mjs \
+            tools/trpg-sim/test/day100-rejection-ledger.test.mjs \
             tools/trpg-sim/reports/day100-player-pr-summary.json
           if git diff --cached --quiet; then
             echo "Day100 source and summary are unchanged."
           else
-            git commit -m "test(trpg): continue Day100 single-player coverage"
+            git commit -m "test(trpg): continue rejection-aware Day100 coverage"
             git push origin HEAD:chatgpt/trpg-authored-content-refactor
           fi
       - name: Enforce journey quality gate
