@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/apply-trpg-player-needs-v2.yml"
       - "tools/trpg-refactor/apply-player-needs-v2.mjs"
+      - "tools/trpg-refactor/fix-player-needs-direct-object.mjs"
 
 permissions:
   contents: write
@@ -45,6 +46,8 @@ jobs:
             git push origin HEAD:chatgpt/trpg-authored-content-refactor
             exit "$status"
           fi
+      - name: Preserve direct needs object mutations
+        run: node tools/trpg-refactor/fix-player-needs-direct-object.mjs
       - run: npm ci
       - name: Run complete TRPG regression suite
         shell: bash
