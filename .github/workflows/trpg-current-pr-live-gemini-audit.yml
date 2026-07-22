@@ -8,7 +8,7 @@ on:
       - ".github/workflows/trpg-current-pr-live-gemini-audit.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   live-audit:
@@ -63,6 +63,86 @@ jobs:
           cp tools/trpg-sim/reports/gemini-live-v5-latest.json tools/trpg-sim/reports/current-pr-live-replay.json 2>/dev/null || true
           cp tools/trpg-sim/reports/gemini-live-v5-latest.md tools/trpg-sim/reports/current-pr-live-replay.md 2>/dev/null || true
           echo "$replay_status" > tools/trpg-sim/reports/current-pr-live-replay.status
+      - name: Write secret-free audit summary
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const dir = 'tools/trpg-sim/reports';
+          const readJson = (name) => {
+            try { return JSON.parse(fs.readFileSync(`${dir}/${name}`, 'utf8')); } catch { return null; }
+          };
+          const readStatus = (name) => {
+            try { return Number(fs.readFileSync(`${dir}/${name}`, 'utf8').trim()); } catch { return null; }
+          };
+          const experiential = readJson('experiential-player-v6-latest.json');
+          const first = readJson('current-pr-live-first.json');
+          const replay = readJson('current-pr-live-replay.json');
+          const compactJourney = (journey) => ({
+            id: journey?.id ?? null,
+            passed: Boolean(journey?.passed),
+            checks: journey?.checks ?? {},
+            battleRounds: journey?.battleRounds ?? null,
+            conversations: journey?.conversations ?? null,
+            jobCount: Array.isArray(journey?.jobs) ? journey.jobs.length : null,
+            final: journey?.final ? {
+              day: journey.final.day,
+              time: journey.final.time,
+              location: journey.final.location,
+              facilityId: journey.final.facilityId,
+              gold: journey.final.gold,
+              t01Status: journey.final.t01?.status ?? null,
+            } : null,
+            error: journey?.error ? String(journey.error).slice(0, 500) : null,
+          });
+          const compactLive = (report) => report ? {
+            total: report.total ?? 0,
+            model: report.model ?? null,
+            promptVersion: report.promptVersion ?? null,
+            summary: report.summary ?? {},
+            sources: Object.fromEntries(Object.entries(report.results?.reduce((acc, entry) => {
+              const source = entry.source ?? 'unknown';
+              acc[source] = (acc[source] ?? 0) + 1;
+              return acc;
+            }, {}) ?? {}).sort()),
+            providerCalls: report.results?.reduce((sum, entry) => sum + Number(entry.providerCalls ?? 0), 0) ?? 0,
+            fallbackCount: report.results?.filter((entry) => entry.usedFallback).length ?? 0,
+            partialCount: report.results?.filter((entry) => entry.partialOutputUsed).length ?? 0,
+            validationErrorCount: report.results?.reduce((sum, entry) => sum + (entry.validationErrors?.length ?? 0), 0) ?? 0,
+          } : null;
+          const summary = {
+            schemaVersion: 'trpg-current-pr-live-summary-v1',
+            generatedAt: new Date().toISOString(),
+            commitSha: process.env.GITHUB_SHA ?? null,
+            statuses: {
+              regression: readStatus('current-pr-regression.status'),
+              experiential: readStatus('current-pr-experiential.status'),
+              liveFirst: readStatus('current-pr-live-first.status'),
+              liveReplay: readStatus('current-pr-live-replay.status'),
+            },
+            experiential: experiential ? {
+              qualityPassed: Boolean(experiential.quality?.passed),
+              journeys: (experiential.journeys ?? []).map(compactJourney),
+              audit: {
+                total: experiential.audit?.total ?? 0,
+                sources: experiential.audit?.sources ?? {},
+                providerCalls: experiential.audit?.providerCalls ?? 0,
+                providerErrors: experiential.audit?.providerErrors ?? 0,
+                repairCalls: experiential.audit?.repairCalls ?? 0,
+                passed: experiential.audit?.passed ?? 0,
+                failedCount: experiential.audit?.failed?.length ?? 0,
+                metaLeakCount: experiential.audit?.metaLeaks?.length ?? 0,
+              },
+              sheetSync: experiential.sheetSync ? {
+                ok: Boolean(experiential.sheetSync.ok),
+                synced: experiential.sheetSync.synced ?? 0,
+              } : null,
+            } : null,
+            freshGeneration: compactLive(first),
+            replayGeneration: compactLive(replay),
+          };
+          fs.writeFileSync(`${dir}/current-pr-live-summary.json`, `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
+          NODE
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -74,6 +154,19 @@ jobs:
             tools/trpg-sim/reports/experiential-v6-*-narrative-audit.jsonl
           if-no-files-found: warn
           retention-days: 14
+      - name: Commit secret-free audit summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/trpg-sim/reports/current-pr-live-summary.json
+          if git diff --cached --quiet; then
+            echo "Audit summary is unchanged."
+          else
+            git commit -m "test(trpg): record current PR live Gemini summary"
+            git push origin HEAD:chatgpt/trpg-authored-content-refactor
+          fi
       - name: Enforce audit completion
         shell: bash
         run: |
