@@ -2,9 +2,6 @@ import fs from "node:fs";
 
 const journeyPath = "tools/trpg-sim/lib/player-journey.mjs";
 const servicePath = "src/server/trpg/game/service.js";
-const indexPath = "public/TRPG/index.html";
-const appPath = "public/TRPG/app.js";
-const stylePath = "public/TRPG/style.css";
 const integrationTestPath = "tools/trpg-sim/test/player-needs-integration.test.mjs";
 const workflowPath = ".github/workflows/apply-trpg-player-needs-v2.yml";
 const scriptPath = "tools/trpg-refactor/apply-player-needs-v2.mjs";
@@ -13,22 +10,23 @@ function replaceOnce(source, needle, replacement, label) {
   const first = source.indexOf(needle);
   if (first < 0) throw new Error(`Missing integration anchor: ${label}`);
   if (source.indexOf(needle, first + needle.length) >= 0) throw new Error(`Ambiguous integration anchor: ${label}`);
-  return `${source.slice(0, first)}${replacement}${source.slice(first + needle.length)}`;
+  return source.slice(0, first) + replacement + source.slice(first + needle.length);
 }
 
 let journey = fs.readFileSync(journeyPath, "utf8");
 journey = replaceOnce(
   journey,
   'import { autoShop, createShopRuntime } from "./shop-runtime.mjs";\n',
-  'import { autoShop, createShopRuntime } from "./shop-runtime.mjs";\n'
-    + 'import {\n'
-    + '  advancePlayerNeeds,\n'
-    + '  completePlayerRest,\n'
-    + '  consumeMeal,\n'
-    + '  createPlayerNeeds,\n'
-    + '  needsUtility,\n'
-    + '  publicPlayerNeeds,\n'
-    + '} from "./player-needs.mjs";\n',
+  `import { autoShop, createShopRuntime } from "./shop-runtime.mjs";
+import {
+  advancePlayerNeeds,
+  completePlayerRest,
+  consumeMeal,
+  createPlayerNeeds,
+  needsUtility,
+  publicPlayerNeeds,
+} from "./player-needs.mjs";
+`,
   "player needs import",
 );
 journey = replaceOnce(
@@ -184,15 +182,10 @@ journey = replaceOnce(
       });
       state.player.hpRatio = lodging ? 1 : Math.min(1, state.player.hpRatio + 0.25);
       state.player.mpRatio = lodging ? 1 : Math.min(1, state.player.mpRatio + 0.18);
-      output.rest = {
-        lodging,
-        price,
-        quality: rest.quality,
-        fatigueReduced: rest.fatigueReduced,
-      };
+      output.rest = { lodging, price, quality: rest.quality, fatigueReduced: rest.fatigueReduced };
       output.summary = lodging
-        ? `宿で${duration}分休み、疲労を回復した。`
-        : `${duration}分休息し、疲労を${Math.round(rest.fatigueReduced)}軽減した。`;
+        ? "宿で" + duration + "分休み、疲労を回復した。"
+        : duration + "分休息し、疲労を" + Math.round(rest.fatigueReduced) + "軽減した。";
     }
   } else if (action.type === "eat") {
     const price = state.player.freeMeals > 0
@@ -211,12 +204,8 @@ journey = replaceOnce(
         quality: action.mealQuality ?? "standard",
       });
       state.player.hpRatio = Math.min(1, state.player.hpRatio + 0.05);
-      output.meal = {
-        price,
-        quality: meal.quality,
-        hungerReduced: meal.hungerReduced,
-      };
-      output.summary = `食事を取り、空腹を${Math.round(meal.hungerReduced)}軽減した。`;
+      output.meal = { price, quality: meal.quality, hungerReduced: meal.hungerReduced };
+      output.summary = "食事を取り、空腹を" + Math.round(meal.hungerReduced) + "軽減した。";
     }
   } else if (action.type === "work") {`,
   "authoritative meal and rest resolution",
@@ -238,8 +227,9 @@ let service = fs.readFileSync(servicePath, "utf8");
 service = replaceOnce(
   service,
   'import { experienceToNextLevel } from "../../../../tools/trpg-sim/lib/mission-model.mjs";\n',
-  'import { experienceToNextLevel } from "../../../../tools/trpg-sim/lib/mission-model.mjs";\n'
-    + 'import { ensurePlayerNeeds, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";\n',
+  `import { experienceToNextLevel } from "../../../../tools/trpg-sim/lib/mission-model.mjs";
+import { ensurePlayerNeeds, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
+`,
   "service player needs import",
 );
 service = replaceOnce(
@@ -289,21 +279,15 @@ const REGION_LODGING_PRICE = Object.freeze({
 });
 
 function facilityOffersMeals(facility) {
-  return /宿|飯|食堂|酒場|茶屋|パン|市場|料理|厨房/u.test(
-    \`${"${facility?.name ?? \"\"}"} ${"${facility?.type ?? \"\"}"}\`,
-  );
+  return /宿|飯|食堂|酒場|茶屋|パン|市場|料理|厨房/u.test(String(facility?.name ?? "") + " " + String(facility?.type ?? ""));
 }
 
 function facilityOffersLodging(facility) {
-  return /宿|旅籠|宿泊/u.test(\`${"${facility?.name ?? \"\"}"} ${"${facility?.type ?? \"\"}"}\`);
+  return /宿|旅籠|宿泊/u.test(String(facility?.name ?? "") + " " + String(facility?.type ?? ""));
 }
 
 function canonicalWeatherForState(state) {
-  return resolveCanonicalWeather({
-    day: state.day,
-    regionId: state.player.location,
-    daypart: state.daypart,
-  });
+  return resolveCanonicalWeather({ day: state.day, regionId: state.player.location, daypart: state.daypart });
 }
 
 const REGION_BASE_HOURLY_WAGE = Object.freeze({`,
@@ -330,30 +314,8 @@ service = replaceOnce(
 );
 service = replaceOnce(
   service,
-  `  if (action.type === "work") {
-    if (facilityId === "LOC_FARM_EDGE" || !publicNpc) return null;
-    const label = {
-      LOC_FARM_FIELD: "エダに、畑仕事を手伝えるか尋ねる",
-      LOC_FARM_SQUARE: "荷運びを頼める人に、仕事内容と賃金を聞く",
-      LOC_FARM_INN: "麦穂亭で、皿洗いの仕事内容と賃金を聞く",
-      LOC_FARM_BAKERY: "パン屋で、薪運びの仕事内容と賃金を聞く",
-      LOC_FARM_WELL: "水桶運びの仕事内容と賃金を聞く",
-    }[facilityId] ?? \`${"${facility?.name ?? runtime.playerState.player.location}"}で、仕事の内容と賃金を尋ねる\`;
-    return decorateWorkOfferAction({ ...action, id: \`WORK:${"${facilityId}"}\`, label, workOffer: true }, runtime, data, publicNpc?.id ?? null);
-  }
-  if (action.type === "wait" || (action.type === "observe" && String(action.id).startsWith("WAIT-"))) {`,
-  `  if (action.type === "work") {
-    if (facilityId === "LOC_FARM_EDGE" || !publicNpc) return null;
-    const label = {
-      LOC_FARM_FIELD: "エダに、畑仕事を手伝えるか尋ねる",
-      LOC_FARM_SQUARE: "荷運びを頼める人に、仕事内容と賃金を聞く",
-      LOC_FARM_INN: "麦穂亭で、皿洗いの仕事内容と賃金を聞く",
-      LOC_FARM_BAKERY: "パン屋で、薪運びの仕事内容と賃金を聞く",
-      LOC_FARM_WELL: "水桶運びの仕事内容と賃金を聞く",
-    }[facilityId] ?? \`${"${facility?.name ?? runtime.playerState.player.location}"}で、仕事の内容と賃金を尋ねる\`;
-    return decorateWorkOfferAction({ ...action, id: \`WORK:${"${facilityId}"}\`, label, workOffer: true }, runtime, data, publicNpc?.id ?? null);
-  }
-  if (action.type === "eat") {
+  `  if (action.type === "wait" || (action.type === "observe" && String(action.id).startsWith("WAIT-"))) {`,
+  `  if (action.type === "eat") {
     if (!facilityOffersMeals(facility)) return null;
     const price = runtime.playerState.player.freeMeals > 0
       ? 0
@@ -361,15 +323,15 @@ service = replaceOnce(
     if (price > runtime.playerState.player.gold) return null;
     return {
       ...action,
-      id: \`EAT:${"${facilityId}"}:${"${price}"}\`,
+      id: "EAT:" + facilityId + ":" + price,
       type: "eat",
       minutes: Math.max(20, Number(action.minutes ?? 30)),
       price,
       nutrition: 58,
       mealQuality: facilityId === "LOC_FARM_INN" ? "hearty" : "standard",
       label: price > 0
-        ? \`${"${facility?.name ?? \"この場所\"}"}で食事を取る（${"${price}"}G）\`
-        : \`${"${facility?.name ?? \"この場所\"}"}で用意された食事を取る\`,
+        ? String(facility?.name ?? "この場所") + "で食事を取る（" + price + "G）"
+        : String(facility?.name ?? "この場所") + "で用意された食事を取る",
     };
   }
   if (action.type === "rest") {
@@ -379,15 +341,14 @@ service = replaceOnce(
       : Number(REGION_LODGING_PRICE[runtime.playerState.player.location] ?? 20);
     const canAffordLodging = lodgingAvailable
       && (runtime.playerState.player.freeLodging > 0 || lodgingPrice <= runtime.playerState.player.gold);
-    const lodging = canAffordLodging && (runtime.playerState.hour >= 18
-      || publicPlayerNeeds(runtime.playerState.player).fatigue >= 70
-      || Number(action.minutes ?? 0) >= 420);
+    const needs = publicPlayerNeeds(runtime.playerState.player);
+    const lodging = canAffordLodging && (runtime.playerState.hour >= 18 || needs.fatigue >= 70 || Number(action.minutes ?? 0) >= 420);
     const price = lodging ? lodgingPrice : 0;
-    const severeWeather = new Set(runtime.playerState.weather?.tags ?? []).has("storm")
-      || new Set(runtime.playerState.weather?.tags ?? []).has("snow");
+    const tags = new Set(runtime.playerState.weather?.tags ?? []);
+    const severeWeather = tags.has("storm") || tags.has("snow");
     return {
       ...action,
-      id: lodging ? \`LODGE:${"${facilityId}"}:${"${price}"}\` : \`REST_OUTDOOR:${"${facilityId}"}\`,
+      id: lodging ? "LODGE:" + facilityId + ":" + price : "REST_OUTDOOR:" + facilityId,
       type: "rest",
       lodging,
       price,
@@ -395,8 +356,8 @@ service = replaceOnce(
       minutes: lodging ? Math.max(420, Number(action.minutes ?? 480)) : Math.min(180, Number(action.minutes ?? 120)),
       label: lodging
         ? price > 0
-          ? \`${"${facility?.name ?? \"宿\"}"}に泊まる（${"${price}"}G）\`
-          : \`${"${facility?.name ?? \"宿\"}"}で今夜は休む\`
+          ? String(facility?.name ?? "宿") + "に泊まる（" + price + "G）"
+          : String(facility?.name ?? "宿") + "で今夜は休む"
         : severeWeather
           ? "風雨を避けられる場所を探し、短く休息する"
           : "安全そうな場所を探し、短く休息する",
@@ -437,7 +398,7 @@ service = replaceOnce(
   `function errorFromResult(result) {
   const code = result?.reason ?? "command_rejected";
   const status = ["insufficient_gold", "insufficient_sp", "insufficient_gold_for_meal", "insufficient_gold_for_lodging"].includes(code) ? 409 : 400;`,
-  "survival command conflict statuses",
+  "survival command statuses",
 );
 service = replaceOnce(
   service,
@@ -447,7 +408,7 @@ service = replaceOnce(
   if (!COMMAND_TYPES.has(command.type)) throw new TrpgGameError(400, "unknown_command_type");
   ensurePlayerNeeds(runtime.playerState.player);
   runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);`,
-  "normalize needs before every command",
+  "normalize needs before command",
 );
 service = replaceOnce(
   service,
@@ -466,7 +427,7 @@ service = replaceOnce(
   `  if (resolved?.type === "eat") {
     return {
       narrative: outcome?.meal?.hungerReduced
-        ? \`温かい食事を取り、空腹が和らいだ。急いで流し込むのではなく、次に歩けるだけの力が戻るまで腰を落ち着けた。\`
+        ? "温かい食事を取り、空腹が和らいだ。次に歩けるだけの力が戻るまで腰を落ち着けた。"
         : "食事を取り、次の行動に備えた。",
       speeches: [],
     };
@@ -480,7 +441,7 @@ service = replaceOnce(
     };
   }
   if (["work", "localInvestigate", "wait", "plan"].includes(resolved?.type)) {`,
-  "meal and rest deterministic narrative",
+  "survival deterministic presentation",
 );
 service = replaceOnce(
   service,
@@ -510,7 +471,7 @@ service = replaceOnce(
       freeMeals: Number(state.player.freeMeals ?? 0),
       freeLodging: Number(state.player.freeLodging ?? 0),
       stats: { ...state.player.stats },`,
-  "needs in public game view",
+  "needs in game view",
 );
 service = replaceOnce(
   service,
@@ -520,7 +481,7 @@ service = replaceOnce(
       runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
       const normalizedSnapshot = serializeRuntime(runtime);
       record.replayBase = {`,
-  "normalize needs after legacy hash verification",
+  "needs after legacy hash verification",
 );
 service = replaceOnce(
   service,
@@ -534,93 +495,9 @@ service = replaceOnce(
         ensurePlayerNeeds(runtime.playerState.player);
         runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
         revision = replayBase.revision;`,
-  "normalize replay base after legacy verification",
+  "needs in replay migration",
 );
 fs.writeFileSync(servicePath, service);
-
-let index = fs.readFileSync(indexPath, "utf8");
-index = replaceOnce(index, "/TRPG/style.css?v=20260719-agency-v7", "/TRPG/style.css?v=20260722-needs-v2", "needs css cache version");
-index = replaceOnce(
-  index,
-  `            <span class="compact-clock"><span id="dayLabel">Day —</span><time id="timeLabel">--:--</time><span id="daypartLabel" class="sr-only">—</span></span>`,
-  `            <span class="compact-clock"><span id="dayLabel">Day —</span><time id="timeLabel">--:--</time><span id="weatherLabel" class="weather-label">天気—</span><span id="daypartLabel" class="sr-only">—</span></span>`,
-  "weather label in compact clock",
-);
-index = replaceOnce(
-  index,
-  `          <label>MP <progress id="mpBar" max="1" value="1"></progress><span id="mpText">100%</span></label>
-          <b id="playerGold">0 G</b>`,
-  `          <label>MP <progress id="mpBar" max="1" value="1"></progress><span id="mpText">100%</span></label>
-          <span id="hungerStatus" class="need-status" title="空腹度">食 15</span>
-          <span id="fatigueStatus" class="need-status" title="疲労度">疲 8</span>
-          <b id="playerGold">0 G</b>`,
-  "need status chips",
-);
-index = replaceOnce(index, "/TRPG/app.js?v=20260720-onboarding-v2", "/TRPG/app.js?v=20260722-needs-v2", "needs app cache version");
-fs.writeFileSync(indexPath, index);
-
-let app = fs.readFileSync(appPath, "utf8");
-app = replaceOnce(
-  app,
-  `  const guidance = guidanceView(save);
-  const parts = [\`${"${clock.day}"} ${"${clock.time}"}、${"${facility}"}\`];`,
-  `  const guidance = guidanceView(save);
-  const weather = save?.weather ?? null;
-  const weatherText = weather?.label ? \`、天気は${"${escapeText(weather.label)}"}\` : "";
-  const parts = [\`${"${clock.day}"} ${"${clock.time}"}、${"${facility}"}${"${weatherText}"}\`];`,
-  "weather announcement",
-);
-app = replaceOnce(
-  app,
-  `  $("#hpText").textContent = formatPercent(hp);
-  $("#mpText").textContent = formatPercent(mp);
-}`,
-  `  $("#hpText").textContent = formatPercent(hp);
-  $("#mpText").textContent = formatPercent(mp);
-  const hunger = Math.max(0, Math.min(100, number(player.needs?.hunger, 0)));
-  const fatigue = Math.max(0, Math.min(100, number(player.needs?.fatigue, 0)));
-  const hungerStatus = $("#hungerStatus");
-  const fatigueStatus = $("#fatigueStatus");
-  hungerStatus.textContent = \`食 ${"${Math.round(hunger)}"}\`;
-  hungerStatus.title = \`空腹度 ${"${Math.round(hunger)}"}：${"${escapeText(player.needs?.hungerLabel, \"状態不明\")}"}\`;
-  hungerStatus.dataset.level = hunger >= 80 ? "critical" : hunger >= 55 ? "warning" : "normal";
-  fatigueStatus.textContent = \`疲 ${"${Math.round(fatigue)}"}\`;
-  fatigueStatus.title = \`疲労度 ${"${Math.round(fatigue)}"}：${"${escapeText(player.needs?.fatigueLabel, \"状態不明\")}"}\`;
-  fatigueStatus.dataset.level = fatigue >= 80 ? "critical" : fatigue >= 55 ? "warning" : "normal";
-}`,
-  "render public needs",
-);
-app = replaceOnce(
-  app,
-  `  $("#timeLabel").textContent = clock.time;
-  $("#daypartLabel").textContent = clock.daypart;
-  $("#locationName").textContent = escapeText(scene.location, "未知の地域");`,
-  `  $("#timeLabel").textContent = clock.time;
-  $("#daypartLabel").textContent = clock.daypart;
-  const weather = save.weather ?? {};
-  $("#weatherLabel").textContent = weather.label ? escapeText(weather.label) : "天気—";
-  $("#weatherLabel").title = weather.label
-    ? \`${"${escapeText(weather.label)}"}。移動時間倍率 ${"${Number(weather.travelTimeMultiplier ?? 1).toFixed(2)}"}\`
-    : "天候情報なし";
-  $("#locationName").textContent = escapeText(scene.location, "未知の地域");`,
-  "render canonical weather",
-);
-fs.writeFileSync(appPath, app);
-
-let style = fs.readFileSync(stylePath, "utf8");
-style += `
-
-.weather-label { color: #c9d8c6; font-size: .58rem; white-space: nowrap; }
-.need-status { padding: 1px 4px; border-radius: 999px; color: #dfe8dc; background: rgba(255,255,255,.08); font-size: .58rem; white-space: nowrap; }
-.need-status[data-level="warning"] { color: #ffe0a0; background: rgba(160,104,20,.22); }
-.need-status[data-level="critical"] { color: #ffd0c6; background: rgba(150,45,30,.32); }
-@media (max-width: 420px) {
-  .weather-label { max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
-  .scene-status { gap: 4px; }
-  .need-status { padding-inline: 3px; }
-}
-`;
-fs.writeFileSync(stylePath, style);
 
 fs.writeFileSync(integrationTestPath, `import assert from "node:assert/strict";
 import test from "node:test";
@@ -649,12 +526,7 @@ function view(runtime, data) {
 
 test("new games and the public view expose the formal needs contract", () => {
   const game = new TrpgGameService({ allowCustomSeed: true });
-  const runtime = createGameRuntime(game.data, {
-    seed: "needs-public-view",
-    profileId: "balanced",
-    playerName: "旅人",
-    tutorial: false,
-  });
+  const runtime = createGameRuntime(game.data, { seed: "needs-public-view", profileId: "balanced", playerName: "旅人", tutorial: false });
   const publicView = view(runtime, game.data);
   assert.equal(runtime.playerState.player.needs.version, PLAYER_NEEDS_VERSION);
   assert.equal(publicView.player.needs.version, PLAYER_NEEDS_VERSION);
@@ -664,12 +536,7 @@ test("new games and the public view expose the formal needs contract", () => {
 
 test("an inn exposes affordable meal and lodging actions when needs are high", () => {
   const game = new TrpgGameService({ allowCustomSeed: true });
-  const runtime = createGameRuntime(game.data, {
-    seed: "needs-affordances",
-    profileId: "balanced",
-    playerName: "旅人",
-    tutorial: false,
-  });
+  const runtime = createGameRuntime(game.data, { seed: "needs-affordances", profileId: "balanced", playerName: "旅人", tutorial: false });
   runtime.playerState.player.facilityId = "LOC_FARM_INN";
   runtime.playerState.player.gold = 100;
   runtime.playerState.player.freeMeals = 0;
@@ -683,20 +550,15 @@ test("an inn exposes affordable meal and lodging actions when needs are high", (
   const candidates = availableGameRuntimeChoiceCandidates(runtime, game.data, { limit: 9 });
   const meal = candidates.find((action) => action.type === "eat");
   const lodging = candidates.find((action) => action.type === "rest" && action.lodging === true);
-  assert.ok(meal, candidates.map((entry) => `${entry.type}:${entry.label}`).join(" / "));
-  assert.ok(lodging, candidates.map((entry) => `${entry.type}:${entry.label}`).join(" / "));
+  assert.ok(meal, candidates.map((entry) => entry.type + ":" + entry.label).join(" / "));
+  assert.ok(lodging, candidates.map((entry) => entry.type + ":" + entry.label).join(" / "));
   assert.equal(meal.price, 4);
   assert.equal(lodging.price, 12);
 });
 
 test("meals and lodging mutate hunger fatigue time and money authoritatively", () => {
   const game = new TrpgGameService({ allowCustomSeed: true });
-  const runtime = createGameRuntime(game.data, {
-    seed: "needs-resolution",
-    profileId: "balanced",
-    playerName: "旅人",
-    tutorial: false,
-  });
+  const runtime = createGameRuntime(game.data, { seed: "needs-resolution", profileId: "balanced", playerName: "旅人", tutorial: false });
   const state = runtime.playerState;
   state.player.gold = 100;
   state.player.freeMeals = 0;
@@ -704,53 +566,32 @@ test("meals and lodging mutate hunger fatigue time and money authoritatively", (
   state.player.needs.hunger = 82;
   state.player.needs.fatigue = 88;
   const beforeMeal = state.absoluteMinute;
-  const meal = resolvePlayerAction(state, game.data.model, game.data.battleData, game.data.skills, state.catalog, "balanced", {
-    id: "TEST:EAT",
-    type: "eat",
-    minutes: 30,
-    price: 8,
-    nutrition: 58,
-  });
+  const meal = resolvePlayerAction(state, game.data.model, game.data.battleData, game.data.skills, state.catalog, "balanced", { id: "TEST:EAT", type: "eat", minutes: 30, price: 8, nutrition: 58 });
   assert.equal(meal.ok, true);
   assert.equal(state.player.gold, 92);
   assert.ok(state.player.needs.hunger < 30);
   assert.equal(state.absoluteMinute, beforeMeal + 30);
   const beforeSleep = state.absoluteMinute;
-  const rest = resolvePlayerAction(state, game.data.model, game.data.battleData, game.data.skills, state.catalog, "balanced", {
-    id: "TEST:LODGE",
-    type: "rest",
-    lodging: true,
-    minutes: 480,
-    price: 28,
-  });
+  const rest = resolvePlayerAction(state, game.data.model, game.data.battleData, game.data.skills, state.catalog, "balanced", { id: "TEST:LODGE", type: "rest", lodging: true, minutes: 480, price: 28 });
   assert.equal(rest.ok, true);
   assert.equal(state.player.gold, 64);
   assert.equal(state.player.needs.fatigue, 0);
   assert.equal(state.absoluteMinute, beforeSleep + 480);
 });
 
-test("an unaffordable paid meal or lodging is rejected without advancing time", () => {
+test("unaffordable paid survival actions reject without advancing time", () => {
   const game = new TrpgGameService({ allowCustomSeed: true });
-  const runtime = createGameRuntime(game.data, {
-    seed: "needs-insufficient-gold",
-    profileId: "balanced",
-    playerName: "旅人",
-    tutorial: false,
-  });
+  const runtime = createGameRuntime(game.data, { seed: "needs-insufficient-gold", profileId: "balanced", playerName: "旅人", tutorial: false });
   const state = runtime.playerState;
   state.player.gold = 0;
   state.player.freeMeals = 0;
   state.player.freeLodging = 0;
   const minute = state.absoluteMinute;
-  const meal = resolvePlayerAction(state, game.data.model, game.data.battleData, game.data.skills, state.catalog, "balanced", {
-    id: "TEST:EAT:EXPENSIVE", type: "eat", minutes: 30, price: 8,
-  });
+  const meal = resolvePlayerAction(state, game.data.model, game.data.battleData, game.data.skills, state.catalog, "balanced", { id: "TEST:EAT:EXPENSIVE", type: "eat", minutes: 30, price: 8 });
   assert.equal(meal.ok, false);
   assert.equal(meal.reason, "insufficient_gold_for_meal");
   assert.equal(state.absoluteMinute, minute);
-  const lodging = resolvePlayerAction(state, game.data.model, game.data.battleData, game.data.skills, state.catalog, "balanced", {
-    id: "TEST:LODGE:EXPENSIVE", type: "rest", lodging: true, minutes: 480, price: 28,
-  });
+  const lodging = resolvePlayerAction(state, game.data.model, game.data.battleData, game.data.skills, state.catalog, "balanced", { id: "TEST:LODGE:EXPENSIVE", type: "rest", lodging: true, minutes: 480, price: 28 });
   assert.equal(lodging.ok, false);
   assert.equal(lodging.reason, "insufficient_gold_for_lodging");
   assert.equal(state.absoluteMinute, minute);
