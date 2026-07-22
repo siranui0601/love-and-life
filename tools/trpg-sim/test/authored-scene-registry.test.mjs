@@ -27,7 +27,7 @@ test("reviewed T01 search tracks remain focused on Finn's physical trail", () =>
   assert.equal(validateAuthoredScene(scene).valid, true);
 });
 
-test("the second reviewed search beat makes the child's voice explicit before battle", () => {
+test("the dropped-map branch makes the child's voice explicit before battle", () => {
   const scene = resolveT01({
     stepId: "search",
     outcome: { discovery: { id: "T01-CLUE-DROPPED-MAP" } },
@@ -35,6 +35,18 @@ test("the second reviewed search beat makes the child's voice explicit before ba
   assert.equal(scene?.sceneId, "t01.search.dropped_map_and_voice");
   assert.match(scene.narrative, /子どもの弱い声/u);
   assert.match(scene.narrative, /フィンは、まだ生きている/u);
+  assert.doesNotMatch(scene.narrative, /見知らぬ人物/u);
+});
+
+test("the faint-voice branch identifies a living child and the immediate danger", () => {
+  const scene = resolveT01({
+    stepId: "search",
+    outcome: { discovery: { id: "T01-CLUE-FAINT-VOICE" } },
+  });
+  assert.equal(scene?.sceneId, "t01.search.faint_voice");
+  assert.match(scene.narrative, /子どものかすれた声/u);
+  assert.match(scene.narrative, /フィンはまだ生きている/u);
+  assert.match(scene.narrative, /赤牙狼/u);
   assert.doesNotMatch(scene.narrative, /見知らぬ人物/u);
 });
 
