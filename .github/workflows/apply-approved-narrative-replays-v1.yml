@@ -4,24 +4,12 @@ on:
   push:
     branches:
       - chatgpt/trpg-authored-content-refactor
-  pull_request:
-    branches:
-      - main
-    types:
-      - opened
-      - reopened
-      - synchronize
 
 permissions:
   contents: write
 
-concurrency:
-  group: trpg-approved-narrative-replays-v1
-  cancel-in-progress: true
-
 jobs:
   integrate:
-    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'chatgpt/trpg-authored-content-refactor'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
