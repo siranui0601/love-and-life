@@ -8,6 +8,7 @@ on:
       - ".github/workflows/apply-trpg-authored-route-and-needs-ui.yml"
       - "tools/trpg-refactor/apply-authored-route-and-needs-ui.mjs"
       - "tools/trpg-refactor/fix-authored-route-test-generator.mjs"
+      - "tools/trpg-refactor/update-authored-priority-tests.mjs"
 
 permissions:
   contents: write
@@ -48,6 +49,8 @@ jobs:
             git push origin HEAD:chatgpt/trpg-authored-content-refactor
             exit "$status"
           fi
+      - name: Align tests with authored-first priority
+        run: node tools/trpg-refactor/update-authored-priority-tests.mjs
       - run: npm ci
       - name: Run complete TRPG regression suite
         shell: bash
