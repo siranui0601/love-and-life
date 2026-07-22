@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Integrate corrected movement choices and semantic diversification
+      - name: Integrate movement choices with authoritative topic fingerprints
         shell: bash
         run: |
           set +e
