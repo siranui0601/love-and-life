@@ -37,8 +37,18 @@ jobs:
       - name: Apply approved replay integration
         shell: bash
         run: |
-          set -euo pipefail
-          node tools/trpg-refactor/apply-approved-narrative-replays-v1.mjs
+          set +e
+          node tools/trpg-refactor/apply-approved-narrative-replays-v1.mjs > tools/trpg-approved-replay-integration.log 2>&1
+          status=$?
+          cat tools/trpg-approved-replay-integration.log
+          if [ "$status" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/trpg-approved-replay-integration.log
+            git commit -m "test(trpg): record approved replay integration failure"
+            git push origin HEAD:chatgpt/trpg-authored-content-refactor
+            exit "$status"
+          fi
       - run: npm ci
       - name: Run complete TRPG regression suite
         shell: bash
@@ -59,7 +69,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f tools/trpg-approved-replay-regression.log
+          rm -f tools/trpg-approved-replay-integration.log tools/trpg-approved-replay-regression.log
           rm -f .github/workflows/apply-approved-narrative-replays-v1.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
