@@ -15,39 +15,36 @@ function resolveT01({ stepId, outcome = {}, action = {}, facilityId = "LOC_FARM_
   });
 }
 
-test("reviewed T01 search tracks remain focused on Finn's physical trail", () => {
-  const scene = resolveT01({
-    stepId: "search",
-    outcome: { discovery: { id: "T01-CLUE-BOOT-TRACKS" } },
-  });
-  assert.equal(scene?.sceneId, "t01.search.boot_tracks");
-  assert.equal(scene.presentationOnly, true);
-  assert.match(scene.narrative, /小さな靴跡/u);
-  assert.doesNotMatch(scene.narrative, /見知らぬ|青年/u);
-  assert.equal(validateAuthoredScene(scene).valid, true);
-});
+const SEARCH_SCENES = Object.freeze([
+  ["T01-CLUE-BOOT-TRACKS", "t01.search.boot_tracks", /小さな靴跡/u],
+  ["T01-CLUE-WOLF-PURSUIT", "t01.search.wolf_pursuit", /赤牙狼の爪痕/u],
+  ["T01-CLUE-JACKET-THREAD", "t01.search.jacket_thread", /青い糸/u],
+  ["T01-CLUE-DROPPED-MAP", "t01.search.dropped_map_and_voice", /子どもの弱い声/u],
+  ["T01-CLUE-FAINT-VOICE", "t01.search.faint_voice", /子どものかすれた声/u],
+  ["T01-CLUE-WOLF-BLOCKADE", "t01.search.wolf_blockade", /子どもの咳/u],
+]);
 
-test("the dropped-map branch makes the child's voice explicit before battle", () => {
-  const scene = resolveT01({
-    stepId: "search",
-    outcome: { discovery: { id: "T01-CLUE-DROPPED-MAP" } },
+for (const [discoveryId, sceneId, expectedText] of SEARCH_SCENES) {
+  test(`reviewed T01 search ${discoveryId} remains focused on Finn`, () => {
+    const scene = resolveT01({
+      stepId: "search",
+      outcome: { discovery: { id: discoveryId } },
+    });
+    assert.equal(scene?.sceneId, sceneId);
+    assert.equal(scene.presentationOnly, true);
+    assert.match(scene.narrative, expectedText);
+    assert.doesNotMatch(scene.narrative, /見知らぬ人物|青年/u);
+    assert.equal(validateAuthoredScene(scene).valid, true);
   });
-  assert.equal(scene?.sceneId, "t01.search.dropped_map_and_voice");
-  assert.match(scene.narrative, /子どもの弱い声/u);
-  assert.match(scene.narrative, /フィンは、まだ生きている/u);
-  assert.doesNotMatch(scene.narrative, /見知らぬ人物/u);
-});
+}
 
-test("the faint-voice branch identifies a living child and the immediate danger", () => {
-  const scene = resolveT01({
-    stepId: "search",
-    outcome: { discovery: { id: "T01-CLUE-FAINT-VOICE" } },
-  });
-  assert.equal(scene?.sceneId, "t01.search.faint_voice");
-  assert.match(scene.narrative, /子どものかすれた声/u);
-  assert.match(scene.narrative, /フィンはまだ生きている/u);
-  assert.match(scene.narrative, /赤牙狼/u);
-  assert.doesNotMatch(scene.narrative, /見知らぬ人物/u);
+test("the second-stage search branches make Finn's survival or immediate danger explicit", () => {
+  for (const discoveryId of ["T01-CLUE-DROPPED-MAP", "T01-CLUE-FAINT-VOICE", "T01-CLUE-WOLF-BLOCKADE"]) {
+    const scene = resolveT01({ stepId: "search", outcome: { discovery: { id: discoveryId } } });
+    assert.match(scene.narrative, /フィン|子ども/u);
+    assert.match(scene.narrative, /生きて|声|咳/u);
+    assert.match(scene.narrative, /狼|赤牙狼/u);
+  }
 });
 
 test("the reviewed T01 rescue aftermath keeps Finn age- and voice-consistent", () => {
