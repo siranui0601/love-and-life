@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/apply-trpg-equipment-access-v1.yml"
       - "tools/trpg-refactor/apply-equipment-access-v1.mjs"
+      - "tools/trpg-refactor/fix-equipment-access-ui-test.mjs"
       - "tools/trpg-sim/lib/equipment-access.mjs"
       - "tools/trpg-sim/test/equipment-access.test.mjs"
 
@@ -47,6 +48,8 @@ jobs:
             git push origin HEAD:chatgpt/trpg-authored-content-refactor
             exit "$status"
           fi
+      - name: Repair generated equipment UI contract
+        run: node tools/trpg-refactor/fix-equipment-access-ui-test.mjs
       - run: npm ci
       - name: Run complete TRPG regression suite
         shell: bash
