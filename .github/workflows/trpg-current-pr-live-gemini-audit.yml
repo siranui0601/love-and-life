@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          TRPG_NARRATIVE_RUN_ID=current-pr-experiential-1 npm run trpg:experiential:v6 > tools/trpg-sim/reports/current-pr-experiential.log 2>&1
+          TRPG_NARRATIVE_RUN_ID=current-pr-experiential-t01-v14 npm run trpg:experiential:v6 > tools/trpg-sim/reports/current-pr-experiential.log 2>&1
           echo "$?" > tools/trpg-sim/reports/current-pr-experiential.status
       - name: Generate twelve fresh live scenes
         shell: bash
