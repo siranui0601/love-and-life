@@ -37,6 +37,13 @@ jobs:
           set -euo pipefail
           script="tools/trpg-refactor/apply-day100-rejection-ledger-v1.mjs"
           if [ -f "$script" ]; then
+            python - <<'PY'
+          from pathlib import Path
+          path = Path("tools/trpg-refactor/apply-day100-rejection-ledger-v1.mjs")
+          source = path.read_text(encoding="utf-8")
+          source = source.replace("}\n `,\n    `function actionText", "}\n`,\n    `function actionText", 1)
+          path.write_text(source, encoding="utf-8")
+          PY
             node "$script"
           else
             echo "Day100 rejection ledger is already integrated."
@@ -50,7 +57,7 @@ jobs:
         run: |
           mkdir -p tools/trpg-sim/reports
           set +e
-          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v3 npm run trpg:day100-player -- --strict \
+          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v4 npm run trpg:day100-player -- --strict \
             > tools/trpg-sim/reports/day100-player-console.log 2>&1
           status=$?
           cat tools/trpg-sim/reports/day100-player-console.log
