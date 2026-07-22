@@ -1,7 +1,7 @@
 export const T01_RESCUE_SCENES = Object.freeze([
   Object.freeze({
     sceneId: "t01.search.boot_tracks",
-    priority: 1040,
+    priority: 1050,
     presentationOnly: true,
     when: Object.freeze({
       all: Object.freeze([
@@ -17,7 +17,7 @@ export const T01_RESCUE_SCENES = Object.freeze([
   }),
   Object.freeze({
     sceneId: "t01.search.dropped_map_and_voice",
-    priority: 1030,
+    priority: 1040,
     presentationOnly: true,
     when: Object.freeze({
       all: Object.freeze([
@@ -32,8 +32,24 @@ export const T01_RESCUE_SCENES = Object.freeze([
     choices: Object.freeze([]),
   }),
   Object.freeze({
+    sceneId: "t01.search.faint_voice",
+    priority: 1035,
+    presentationOnly: true,
+    when: Object.freeze({
+      all: Object.freeze([
+        Object.freeze({ path: "mission.id", op: "eq", value: "MSN-T01" }),
+        Object.freeze({ path: "mission.stepId", op: "eq", value: "search" }),
+        Object.freeze({ path: "outcome.discovery.id", op: "eq", value: "T01-CLUE-FAINT-VOICE" }),
+        Object.freeze({ path: "location.facilityId", op: "eq", value: "LOC_FARM_EDGE" }),
+      ]),
+    }),
+    narrative: "獣の唸り声が止んだ一瞬、崩れた斜面の下から子どものかすれた声が届いた。『だれか……いるの？　狼が、まだ近くに……』。声の位置は分かった。フィンはまだ生きているが、すぐそばを赤牙狼がうろついている。",
+    beats: Object.freeze([]),
+    choices: Object.freeze([]),
+  }),
+  Object.freeze({
     sceneId: "t01.rescue.after_battle",
-    priority: 1020,
+    priority: 1030,
     when: Object.freeze({
       all: Object.freeze([
         Object.freeze({ path: "mission.id", op: "eq", value: "MSN-T01" }),
@@ -84,7 +100,7 @@ export const T01_RESCUE_SCENES = Object.freeze([
   }),
   Object.freeze({
     sceneId: "t01.escort.request",
-    priority: 1010,
+    priority: 1020,
     presentationOnly: true,
     when: Object.freeze({
       all: Object.freeze([
@@ -107,7 +123,7 @@ export const T01_RESCUE_SCENES = Object.freeze([
   }),
   Object.freeze({
     sceneId: "t01.escort.reunion_arrival",
-    priority: 1000,
+    priority: 1010,
     presentationOnly: true,
     when: Object.freeze({
       all: Object.freeze([
