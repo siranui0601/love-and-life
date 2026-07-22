@@ -26,12 +26,17 @@ jobs:
         shell: bash
         run: |
           set +e
+          : > tools/trpg-t01-player-view-integration.log
           if [ -f tools/trpg-refactor/apply-t01-player-view-v1.mjs ]; then
-            node tools/trpg-refactor/apply-t01-player-view-v1.mjs > tools/trpg-t01-player-view-integration.log 2>&1
+            node tools/trpg-refactor/apply-t01-player-view-v1.mjs >> tools/trpg-t01-player-view-integration.log 2>&1
             status=$?
           else
-            printf '%s\n' 'T01 player-view integration already applied.' > tools/trpg-t01-player-view-integration.log
+            printf '%s\n' 'T01 player-view source integration already applied.' >> tools/trpg-t01-player-view-integration.log
             status=0
+          fi
+          if [ "$status" -eq 0 ] && [ -f tools/trpg-refactor/apply-t01-authored-presentation-test-v1.mjs ]; then
+            node tools/trpg-refactor/apply-t01-authored-presentation-test-v1.mjs >> tools/trpg-t01-player-view-integration.log 2>&1
+            status=$?
           fi
           cat tools/trpg-t01-player-view-integration.log
           if [ "$status" -ne 0 ]; then
