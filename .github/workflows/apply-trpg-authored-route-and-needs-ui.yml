@@ -9,6 +9,7 @@ on:
       - "tools/trpg-refactor/apply-authored-route-and-needs-ui.mjs"
       - "tools/trpg-refactor/fix-authored-route-test-generator.mjs"
       - "tools/trpg-refactor/update-authored-priority-tests.mjs"
+      - "tools/trpg-refactor/update-needs-ui-cache-test.mjs"
 
 permissions:
   contents: write
@@ -51,6 +52,8 @@ jobs:
           fi
       - name: Align tests with authored-first priority
         run: node tools/trpg-refactor/update-authored-priority-tests.mjs
+      - name: Update needs UI cache contract
+        run: node tools/trpg-refactor/update-needs-ui-cache-test.mjs
       - run: npm ci
       - name: Run complete TRPG regression suite
         shell: bash
