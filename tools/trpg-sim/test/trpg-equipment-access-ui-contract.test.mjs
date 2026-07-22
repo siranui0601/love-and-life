@@ -1,9 +1,4 @@
-import fs from "node:fs";
-
-const targetPath = "tools/trpg-sim/test/trpg-equipment-access-ui-contract.test.mjs";
-const selfPath = "tools/trpg-refactor/fix-equipment-access-ui-test.mjs";
-
-fs.writeFileSync(targetPath, `import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 
@@ -27,6 +22,3 @@ test("borrowed inventory items remain equipable but are excluded from sale", () 
   assert.ok(app.includes('"借用品"'));
   assert.ok(app.includes('"EQUIP"'));
 });
-`);
-
-fs.rmSync(selfPath, { force: true });

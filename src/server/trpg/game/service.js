@@ -14,6 +14,21 @@ import {
 import { experienceToNextLevel } from "../../../../tools/trpg-sim/lib/mission-model.mjs";
 import { ensurePlayerNeeds, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 import {
+  EQUIPMENT_ACCESS_VERSION,
+  activeEquipmentLoans,
+  borrowMissionEquipment,
+  buyUsedEquipment,
+  claimEquipmentReward,
+  createMissionEquipmentRewardOffer,
+  ensureEquipmentAccessState,
+  equipmentAvailableToPlayer,
+  listEquipmentAccessOffers,
+  pendingEquipmentRewards,
+  previewEquipmentTrial,
+  reconcileEquipmentLoans,
+  returnEquipmentLoan,
+} from "../../../../tools/trpg-sim/lib/equipment-access.mjs";
+import {
   completeNpcLifeTick,
   createNpcLifeEngine,
   prepareNpcLifeTick,
@@ -28,8 +43,8 @@ import { selectDiverseChoices } from "../content/choice-contract.js";
 import { resolveAuthoredScene } from "../content/authored-scene-registry.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v12";
-const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11"]);
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v13";
+const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11", "trpg-player-world-v12"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
 const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
@@ -105,13 +120,18 @@ const OPENING_AFTERMATH_FACT = Object.freeze({
 });
 
 const PROFILE_BY_ID = new Map(journey.PLAYER_PROFILES.map((profile) => [profile.id, profile]));
-const COMMAND_TYPES = new Set(["CHOOSE", "TALK", "MOVE", "SHOP_BUY", "SHOP_SELL", "EQUIP", "UNEQUIP", "LEARN_SKILL", "TUTORIAL_ACK", "ACK_NPC_INTRODUCTION", "BATTLE_ACT"]);
+const COMMAND_TYPES = new Set(["CHOOSE", "TALK", "MOVE", "SHOP_BUY", "SHOP_SELL", "SHOP_TRY", "SHOP_BUY_USED", "SHOP_BORROW", "SHOP_RETURN_LOAN", "CLAIM_EQUIPMENT_REWARD", "EQUIP", "UNEQUIP", "LEARN_SKILL", "TUTORIAL_ACK", "ACK_NPC_INTRODUCTION", "BATTLE_ACT"]);
 const COMMAND_PAYLOAD_KEY = Object.freeze({
   CHOOSE: "choiceId",
   TALK: "npcId",
   MOVE: "moveId",
   SHOP_BUY: "stockId",
   SHOP_SELL: "equipmentId",
+  SHOP_TRY: "stockId",
+  SHOP_BUY_USED: "offerId",
+  SHOP_BORROW: "loanId",
+  SHOP_RETURN_LOAN: "loanId",
+  CLAIM_EQUIPMENT_REWARD: "rewardId",
   EQUIP: "equipmentId",
   UNEQUIP: "slot",
   LEARN_SKILL: "skillId",
@@ -950,6 +970,7 @@ export function createGameRuntime(data, { seed, profileId, playerName, tutorial 
   playerState.player.displayName = playerName;
   playerState.player.name = playerName;
   ensurePlayerNeeds(playerState.player);
+  ensureEquipmentAccessState(playerState);
   playerState.weather = canonicalWeatherForState(playerState);
   Object.assign(playerState.worldFlags, {
     knightOrderCooperation: false,
@@ -2305,6 +2326,15 @@ function safeOutcome(result, data = null) {
   if (result?.requiredGold !== undefined) output.requiredGold = Number(result.requiredGold);
   if (result?.meal) output.meal = { ...result.meal };
   if (result?.rest) output.rest = { ...result.rest };
+  if (result?.comparison) output.comparison = JSON.parse(JSON.stringify(result.comparison));
+  if (result?.offerId) output.offerId = cleanText(result.offerId, 160);
+  if (result?.loanId) output.loanId = cleanText(result.loanId, 160);
+  if (result?.rewardId) output.rewardId = cleanText(result.rewardId, 160);
+  if (result?.conditionLabel) output.conditionLabel = cleanText(result.conditionLabel, 80);
+  if (result?.deposit !== undefined) output.deposit = Number(result.deposit);
+  if (result?.depositRefunded !== undefined) output.depositRefunded = Number(result.depositRefunded);
+  if (result?.equipmentRewardOffers?.length) output.equipmentRewardOffers = result.equipmentRewardOffers.map((entry) => ({ ...entry }));
+  if (result?.equipmentLoanReturns?.length) output.equipmentLoanReturns = result.equipmentLoanReturns.map((entry) => ({ ...entry }));
   if (result?.reasonDetail) output.reasonDetail = cleanText(result.reasonDetail, 240);
   if (result?.command && typeof result.command === "object") {
     output.command = {
@@ -2373,7 +2403,19 @@ function replayOutcome(outcome) {
 
 function errorFromResult(result) {
   const code = result?.reason ?? "command_rejected";
-  const status = ["insufficient_gold", "insufficient_sp", "insufficient_gold_for_meal", "insufficient_gold_for_lodging"].includes(code) ? 409 : 400;
+  const status = [
+    "insufficient_gold",
+    "insufficient_sp",
+    "insufficient_gold_for_meal",
+    "insufficient_gold_for_lodging",
+    "used_offer_unavailable",
+    "used_offer_claimed",
+    "loan_unavailable",
+    "loan_already_active",
+    "loan_not_active",
+    "loan_return_wrong_facility",
+    "reward_unavailable",
+  ].includes(code) ? 409 : 400;
   return new TrpgGameError(status, code, code, safeOutcome(result));
 }
 
@@ -2381,7 +2423,7 @@ function equip(runtime, data, equipmentId) {
   const state = runtime.playerState;
   const equipment = data.battleData.equipmentById.get(equipmentId);
   if (!equipment) return { ok: false, reason: "unknown_equipment" };
-  if (Number(state.player.inventory.equipment[equipmentId] ?? 0) <= 0) return { ok: false, reason: "not_owned" };
+  if (!equipmentAvailableToPlayer(state, equipmentId)) return { ok: false, reason: "not_owned_or_borrowed" };
   if (equipment.slot === "mainHand" && ["twoHand", "twoHanded"].includes(equipment.grip) && state.player.equipment.offHand) {
     const removedEquipmentId = state.player.equipment.offHand;
     delete state.player.equipment.offHand;
@@ -2422,6 +2464,51 @@ function unequip(runtime, slot) {
   return { ok: true, type: "unequip", equipmentId, slot };
 }
 
+function equipmentComparisonSummary(comparison) {
+  const labels = {
+    physicalPower: "物理",
+    magicPower: "魔導",
+    defense: "防御",
+    magicResistance: "魔防",
+    agility: "敏捷",
+    luck: "幸運",
+    accuracy: "命中",
+    evasion: "回避",
+    critical: "会心",
+    maxHp: "HP",
+    maxMp: "MP",
+    performanceIndex: "総合",
+  };
+  const changes = Object.entries(comparison?.delta ?? {})
+    .filter(([, value]) => Number(value) !== 0)
+    .sort((left, right) => Math.abs(Number(right[1])) - Math.abs(Number(left[1])))
+    .slice(0, 4)
+    .map(([key, value]) => (labels[key] ?? key) + (Number(value) > 0 ? "+" : "") + Number(value));
+  return changes.length ? changes.join("、") : "主要性能に差はない";
+}
+
+export function reconcileEquipmentAccessAfterCommand(runtime, data, completedMissionIdsBefore = new Set()) {
+  const state = runtime.playerState;
+  ensureEquipmentAccessState(state);
+  const completed = state.progress?.missions?.completedIds instanceof Set
+    ? state.progress.missions.completedIds
+    : new Set(state.progress?.missions?.completedIds ?? []);
+  const definitions = [...(state.catalog?.special ?? []), ...(state.catalog?.permanent ?? [])];
+  const rewards = [];
+  for (const missionId of completed) {
+    if (completedMissionIdsBefore.has(missionId)) continue;
+    const definition = state.catalog?.byId?.get?.(missionId)
+      ?? definitions.find((entry) => entry.id === missionId);
+    if (!definition) continue;
+    const reward = createMissionEquipmentRewardOffer(state, data.battleData, definition, {
+      facilityId: state.player.facilityId,
+    });
+    if (reward) rewards.push(reward);
+  }
+  const returns = reconcileEquipmentLoans(state);
+  return { rewards, returns };
+}
+
 function withTemporaryTuning(state, key, value, operation) {
   const existed = Object.hasOwn(state.tuning, key);
   const previous = state.tuning[key];
@@ -2437,6 +2524,7 @@ function withTemporaryTuning(state, key, value, operation) {
 export function executeGameRuntimeCommand(runtime, data, command) {
   if (!COMMAND_TYPES.has(command.type)) throw new TrpgGameError(400, "unknown_command_type");
   ensurePlayerNeeds(runtime.playerState.player);
+  ensureEquipmentAccessState(runtime.playerState);
   runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
   const activeBattle = runtime.pendingBattle?.session?.status === "active";
   if (activeBattle && command.type !== "BATTLE_ACT") {
@@ -2453,6 +2541,11 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     MOVE: "movement",
     SHOP_BUY: "shop",
     SHOP_SELL: "shop",
+    SHOP_TRY: "shop",
+    SHOP_BUY_USED: "shop",
+    SHOP_BORROW: "shop",
+    SHOP_RETURN_LOAN: "shop",
+    CLAIM_EQUIPMENT_REWARD: "shop",
     LEARN_SKILL: "skills",
   }[command.type];
   if (runtime.tutorial && tutorialFeature && tutorialView(runtime, data)?.unlocked?.[tutorialFeature] !== true) {
@@ -2467,6 +2560,9 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   const levelBefore = Number(runtime.playerState.player.level ?? 1);
   const expBefore = Number(runtime.playerState.player.exp ?? 0);
   const previousTroubleStates = Object.fromEntries(Object.entries(runtime.playerState.troubles).map(([id, value]) => [id, value.status]));
+  const completedMissionIdsBefore = runtime.playerState.progress?.missions?.completedIds instanceof Set
+    ? new Set(runtime.playerState.progress.missions.completedIds)
+    : new Set(runtime.playerState.progress?.missions?.completedIds ?? []);
   let result;
   let resolvedActionId = null;
   let resolvedPlayerAction = null;
@@ -2589,6 +2685,50 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   } else if (command.type === "SHOP_SELL") {
     resolvedActionId = payload.equipmentId;
     result = sellEquipment(runtime.playerState, data.battleData, runtime.playerState.shop, payload.equipmentId);
+  } else if (command.type === "SHOP_TRY") {
+    resolvedActionId = payload.stockId;
+    result = previewEquipmentTrial(runtime.playerState, data.battleData, runtime.playerState.shop, payload.stockId, {
+      location: runtime.playerState.player.location,
+      facilityId: runtime.playerState.player.facilityId,
+    });
+    if (result.ok) {
+      result.summary = result.comparison.candidateEquipmentName + "を試し、" + result.comparison.currentEquipmentName + "との差を確認した（" + equipmentComparisonSummary(result.comparison) + "）。";
+    }
+  } else if (command.type === "SHOP_BUY_USED") {
+    resolvedActionId = payload.offerId;
+    result = buyUsedEquipment(runtime.playerState, data.battleData, runtime.playerState.shop, payload.offerId, {
+      location: runtime.playerState.player.location,
+      facilityId: runtime.playerState.player.facilityId,
+    });
+    if (result.ok) {
+      result.equipment = data.battleData.equipmentById.get(result.equipmentId);
+      result.summary = result.equipment.name + "を中古品として" + result.price + "Gで購入した（" + result.conditionLabel + "）。";
+      runtime.playerState.metrics.purchases += 1;
+      runtime.playerState.metrics.zeroTimePurchases += 1;
+    }
+  } else if (command.type === "SHOP_BORROW") {
+    resolvedActionId = payload.loanId;
+    result = borrowMissionEquipment(runtime.playerState, data.battleData, runtime.playerState.shop, payload.loanId, {
+      location: runtime.playerState.player.location,
+      facilityId: runtime.playerState.player.facilityId,
+    });
+    if (result.ok) {
+      result.equipment = data.battleData.equipmentById.get(result.equipmentId);
+      result.summary = result.equipment.name + "を「" + result.missionTitle + "」の間だけ借りた。保証金は" + result.deposit + "G。";
+    }
+  } else if (command.type === "SHOP_RETURN_LOAN") {
+    resolvedActionId = payload.loanId;
+    result = returnEquipmentLoan(runtime.playerState, payload.loanId, {
+      facilityId: runtime.playerState.player.facilityId,
+    });
+    if (result.ok) {
+      result.equipment = data.battleData.equipmentById.get(result.equipmentId);
+      result.summary = result.equipment.name + "を返却し、保証金" + result.depositRefunded + "Gを受け取った。";
+    }
+  } else if (command.type === "CLAIM_EQUIPMENT_REWARD") {
+    resolvedActionId = payload.rewardId;
+    result = claimEquipmentReward(runtime.playerState, data.battleData, payload.rewardId);
+    if (result.ok) result.summary = "依頼報酬として" + result.equipment.name + "を受け取った。";
   } else if (command.type === "EQUIP") {
     resolvedActionId = payload.equipmentId;
     result = equip(runtime, data, payload.equipmentId);
@@ -2786,6 +2926,27 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     );
     result.learnedRumorIds = learnedRumorIds;
     runtime.playerState.metrics.actions += 1;
+  }
+  const equipmentAccessChanges = reconcileEquipmentAccessAfterCommand(runtime, data, completedMissionIdsBefore);
+  if (equipmentAccessChanges.rewards.length) {
+    result.equipmentRewardOffers = equipmentAccessChanges.rewards.map((reward) => ({
+      rewardId: reward.rewardId,
+      missionId: reward.missionId,
+      missionTitle: reward.missionTitle,
+      equipmentId: reward.equipmentId,
+      equipmentName: reward.equipmentName,
+    }));
+    const names = equipmentAccessChanges.rewards.map((reward) => reward.equipmentName).join("、");
+    result.summary = (result.summary ? result.summary + " " : "") + "依頼報酬として受け取れる装備が用意された：" + names + "。";
+  }
+  if (equipmentAccessChanges.returns.length) {
+    result.equipmentLoanReturns = equipmentAccessChanges.returns.map((entry) => ({
+      loanId: entry.loanId,
+      equipmentId: entry.equipmentId,
+      depositRefunded: entry.depositRefunded,
+    }));
+    const refund = equipmentAccessChanges.returns.reduce((sum, entry) => sum + Number(entry.depositRefunded ?? 0), 0);
+    result.summary = (result.summary ? result.summary + " " : "") + "依頼用の借用品を返却し、保証金" + refund + "Gが戻った。";
   }
   if (resolvedPlayerAction?.firstIntroduction && resolvedPlayerAction.targetNpcId) {
     const targetPresent = runtime.playerState.authoritativePresentNpcIds instanceof Set
@@ -3383,6 +3544,11 @@ function fallbackNarrative(runtime, action = null, outcome = null) {
   if (actionType === "MOVE") return "移動を終えると、そこにいる人々と店の様子が入れ替わった。";
   if (actionType === "SHOP_BUY") return "品物を受け取り、代金と在庫が帳面に記された。";
   if (actionType === "SHOP_SELL") return "店主は品を確かめ、相応の代金を差し出した。";
+  if (actionType === "SHOP_TRY" || actionType === "SHOP_TRIAL") return "店主の見守る前で装備を構え、今の装備との重さや扱いやすさを比べた。所有権と代金は動いていない。";
+  if (actionType === "SHOP_BUY_USED") return "使い込まれた箇所と手入れの状態を確かめ、中古品として受け取った。";
+  if (actionType === "SHOP_BORROW") return "依頼中だけ使う約束と返却条件を確認し、装備を借り受けた。";
+  if (actionType === "SHOP_RETURN_LOAN") return "借りていた装備を返却し、預けていた保証金を受け取った。";
+  if (actionType === "CLAIM_EQUIPMENT_REWARD") return "依頼への働きが認められ、報酬の装備を受け取った。";
   if (actionType === "LEARN_SKILL") return "積み重ねた経験が、使える技として形になった。";
   return "ひと通り行動を終える頃には、人の流れと空の色が少し変わっていた。";
 }
@@ -3863,6 +4029,11 @@ export function buildGameView(record, runtime, data) {
     destinationFacilityName: data.model.facilityById[action.destinationFacilityId]?.name ?? null,
     recommended: Boolean(guidance?.targetFacilityId && action.destinationFacilityId === guidance.targetFacilityId),
   }));
+  const equipmentAccessOffers = listEquipmentAccessOffers(state, data.battleData, state.shop, {
+    location: state.player.location,
+    facilityId: state.player.facilityId,
+  });
+  const accessOfferByStockId = new Map(equipmentAccessOffers.map((entry) => [entry.stockId, entry]));
   const stock = availableStockAt(state, data.battleData, state.shop).map((entry) => ({
     stockId: entry.id,
     equipmentId: entry.equipmentId,
@@ -3886,13 +4057,25 @@ export function buildGameView(record, runtime, data) {
       } : null;
     })(),
     slot: data.battleData.equipmentById.get(entry.equipmentId)?.slot ?? null,
+    access: accessOfferByStockId.get(entry.id) ?? null,
   }));
   const equippedSlots = Object.entries(state.player.equipment).map(([slot, id]) => ({ slot, id }));
-  const inventoryEquipment = Object.entries(state.player.inventory.equipment)
+  const activeLoans = activeEquipmentLoans(state);
+  const activeLoanByEquipmentId = new Map(activeLoans.map((loan) => [loan.equipmentId, loan]));
+  const ownedInventoryEquipment = Object.entries(state.player.inventory.equipment)
     .filter(([, quantity]) => Number(quantity) > 0)
-    .map(([id, quantity]) => equipmentView(data, id, Number(quantity), equippedSlots))
+    .map(([id, quantity]) => equipmentView(data, id, Number(quantity), equippedSlots));
+  const loanInventoryEquipment = activeLoans.map((loan) => ({
+    ...equipmentView(data, loan.equipmentId, 0, equippedSlots),
+    borrowed: true,
+    loanId: loan.loanId,
+    missionId: loan.missionId,
+    missionTitle: loan.missionTitle,
+    returnFacilityId: loan.sellerFacilityId,
+  }));
+  const inventoryEquipment = [...ownedInventoryEquipment, ...loanInventoryEquipment]
     .sort((left, right) => left.name.localeCompare(right.name, "ja"));
-  const saleQuotes = inventoryEquipment.map((entry) => {
+  const saleQuotes = ownedInventoryEquipment.map((entry) => {
     const quote = quoteEquipmentSale(state, data.battleData, entry.id);
     return {
       equipmentId: entry.id,
@@ -3901,6 +4084,33 @@ export function buildGameView(record, runtime, data) {
       reason: quote.ok ? null : quote.reason,
     };
   });
+  const equipmentRewards = pendingEquipmentRewards(state).map((reward) => ({
+    ...reward,
+    equipment: (() => {
+      const equipment = data.battleData.equipmentById.get(reward.equipmentId);
+      return equipment ? {
+        slot: equipment.slot,
+        weaponType: equipment.weaponType,
+        physicalPower: equipment.physicalPower,
+        magicPower: equipment.magicPower,
+        defense: equipment.defense,
+        magicResistance: equipment.magicResistance,
+        performanceIndex: equipment.performanceIndex,
+      } : null;
+    })(),
+  }));
+  const publicLoans = activeLoans.map((loan) => ({
+    loanId: loan.loanId,
+    equipmentId: loan.equipmentId,
+    equipmentName: data.battleData.equipmentById.get(loan.equipmentId)?.name ?? loan.equipmentId,
+    missionId: loan.missionId,
+    missionTitle: loan.missionTitle,
+    deposit: Number(loan.deposit ?? 0),
+    sellerFacilityId: loan.sellerFacilityId,
+    sellerFacilityName: data.model.facilityById[loan.sellerFacilityId]?.name ?? loan.sellerFacilityId,
+    canReturnHere: loan.sellerFacilityId === state.player.facilityId,
+    equipped: Object.values(state.player.equipment).includes(loan.equipmentId),
+  }));
   const facility = data.model.facilityById[state.player.facilityId];
   const publicFacility = publicFacilityContext(facility);
   return {
@@ -3942,12 +4152,14 @@ export function buildGameView(record, runtime, data) {
     guidance,
     battle: interactiveBattleView(runtime, data),
     shop: {
-      available: !runtime.pendingBattle?.session || runtime.pendingBattle.session.status !== "active"
-        ? data.battleData.inventory.some((entry) => entry.location === state.player.location && entry.sellerId === state.player.facilityId)
-        : false,
+      available: (!runtime.pendingBattle?.session || runtime.pendingBattle.session.status !== "active")
+        && (stock.length > 0 || publicLoans.some((loan) => loan.canReturnHere) || equipmentRewards.length > 0),
       facilityName: facility?.name ?? null,
       stock,
       saleQuotes,
+      loans: publicLoans,
+      rewards: equipmentRewards,
+      accessVersion: EQUIPMENT_ACCESS_VERSION,
     },
     player: {
       name: record.playerName,
@@ -3962,7 +4174,11 @@ export function buildGameView(record, runtime, data) {
       freeMeals: Number(state.player.freeMeals ?? 0),
       freeLodging: Number(state.player.freeLodging ?? 0),
       stats: { ...state.player.stats },
-      equipment: Object.fromEntries(equippedSlots.map(({ slot, id }) => [slot, equipmentView(data, id, state.player.inventory.equipment[id] ?? 0, equippedSlots)])),
+      equipment: Object.fromEntries(equippedSlots.map(({ slot, id }) => [slot, {
+        ...equipmentView(data, id, state.player.inventory.equipment[id] ?? 0, equippedSlots),
+        borrowed: activeLoanByEquipmentId.has(id),
+        loanId: activeLoanByEquipmentId.get(id)?.loanId ?? null,
+      }])),
       inventory: {
         items: { ...state.player.inventory.items },
         equipment: inventoryEquipment,
@@ -3979,6 +4195,7 @@ export function buildGameView(record, runtime, data) {
       endedAt: state.absoluteMinute >= journey.GAME_END_MINUTE ? "Day 100 24:00" : null,
       knownResolvedTroubleIds: [...state.progress.missions.resolvedTroubleIds].sort(),
       weatherRulesetVersion: WEATHER_RULESET_VERSION,
+      equipmentAccessVersion: EQUIPMENT_ACCESS_VERSION,
     },
   };
 }
@@ -4672,6 +4889,7 @@ export class TrpgGameService {
       const legacyHash = gameStateHash(runtime, this.data, record.resolverVersion);
       if (legacyHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
       ensurePlayerNeeds(runtime.playerState.player);
+      ensureEquipmentAccessState(runtime.playerState);
       runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
       const normalizedSnapshot = serializeRuntime(runtime);
       record.replayBase = {
@@ -4810,6 +5028,7 @@ export class TrpgGameService {
           return { ok: false, revision: replayBase.revision, stateHash: gameStateHash(runtime, this.data), checks: [], baseMatches: false };
         }
         ensurePlayerNeeds(runtime.playerState.player);
+        ensureEquipmentAccessState(runtime.playerState);
         runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
         revision = replayBase.revision;
         entries = record.commandLog.filter((entry) => Number(entry.seq) > replayBase.revision);

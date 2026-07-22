@@ -1047,3 +1047,24 @@ body.is-playing .site-header { display: none; }
   .scene-status { gap: 4px; }
   .need-status { padding-inline: 3px; }
 }
+
+
+.shop-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: min(42%, 280px);
+}
+.shop-actions .row-action {
+  min-width: 72px;
+}
+.equipment-access-section {
+  border-color: rgba(208, 181, 111, .26);
+  background: rgba(208, 181, 111, .05);
+}
+@media (max-width: 620px) {
+  .shop-row { align-items: stretch; }
+  .shop-actions { max-width: none; width: 100%; justify-content: flex-start; }
+}

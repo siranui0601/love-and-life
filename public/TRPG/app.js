@@ -1663,7 +1663,9 @@ function renderInventory() {
     const text = document.createElement("div");
     text.innerHTML = "<b></b><small></small>";
     $("b", text).textContent = escapeText(item.name || item.id, "名称不明");
-    $("small", text).textContent = `所持 ${number(item.quantity ?? item.count, 1)}`;
+    $("small", text).textContent = item.borrowed
+      ? ["借用品", item.missionTitle ? "依頼「" + escapeText(item.missionTitle) + "」用" : "", item.returnFacilityId ? "返却先 " + escapeText(item.returnFacilityId) : ""].filter(Boolean).join(" ・ ")
+      : "所持 " + number(item.quantity ?? item.count, 1);
     row.append(text);
     const equipmentLike = item.group === "equipment" || item.kind === "equipment" || item.slot;
     const equipmentId = item.equipmentId || item.id;
@@ -1905,7 +1907,7 @@ function renderShop() {
   $("b", banner).textContent = `${number(currentSave.player?.gold).toLocaleString("ja-JP")} G`;
   $("small", banner).textContent = escapeText(shop.facilityName, "店舗");
   ui.dialogBody.append(banner);
-  const owned = inventoryEntries(currentSave.player).filter((item) => item.group === "equipment" || item.kind === "equipment" || item.slot);
+  const owned = inventoryEntries(currentSave.player).filter((item) => !item.borrowed && (item.group === "equipment" || item.kind === "equipment" || item.slot));
   const equippedIds = new Set(Object.values(currentSave.player?.equipment ?? {}).map((item) => typeof item === "object" ? item.id : item));
   const ownedQuantity = new Map(owned.map((item) => [item.equipmentId || item.id, number(item.quantity ?? item.count, 1)]));
   const saleQuoteById = new Map(list(shop.saleQuotes).map((quote) => [quote.equipmentId, quote]));
@@ -1932,15 +1934,101 @@ function renderShop() {
     $("small", text).textContent = `${unlimited ? "在庫 ∞" : `在庫 ${number(item.quantity, 1)}`}${inventoryNote}`;
     const price = number(item.price);
     const itemName = escapeText(item.name || item.equipmentName || item.id, "商品");
-    row.append(text, actionButton(
-      `${price.toLocaleString("ja-JP")} G`,
+    const actions = document.createElement("div");
+    actions.className = "shop-actions";
+    if (item.access?.trial?.available === true) {
+      actions.append(actionButton(
+        "試す",
+        "SHOP_TRY",
+        { stockId: item.stockId || item.id },
+        false,
+        itemName + "を試し、現在の装備と比較する",
+      ));
+    }
+    actions.append(actionButton(
+      price.toLocaleString("ja-JP") + " G",
       "SHOP_BUY",
       { stockId: item.stockId || item.id },
       price > number(currentSave.player?.gold),
-      `${itemName}を${price.toLocaleString("ja-JP")}Gで購入`,
+      itemName + "を" + price.toLocaleString("ja-JP") + "Gで購入",
     ));
+    const used = item.access?.used;
+    if (used) {
+      const usedPrice = number(used.price);
+      actions.append(actionButton(
+        "中古 " + usedPrice.toLocaleString("ja-JP") + " G",
+        "SHOP_BUY_USED",
+        { offerId: used.offerId },
+        usedPrice > number(currentSave.player?.gold),
+        itemName + "を中古品として" + usedPrice.toLocaleString("ja-JP") + "Gで購入。" + escapeText(used.conditionLabel, "状態確認済み"),
+      ));
+    }
+    const loan = item.access?.loan;
+    if (loan) {
+      actions.append(actionButton(
+        "借りる " + number(loan.deposit).toLocaleString("ja-JP") + " G",
+        "SHOP_BORROW",
+        { loanId: loan.loanId },
+        number(loan.deposit) > number(currentSave.player?.gold),
+        itemName + "を「" + escapeText(loan.missionTitle, "現在の依頼") + "」の間だけ借りる",
+      ));
+    }
+    row.append(text, actions);
     ui.dialogBody.append(row);
   });
+  const rewards = list(shop.rewards);
+  if (rewards.length) {
+    const rewardSection = document.createElement("section");
+    rewardSection.className = "detail-section equipment-access-section";
+    rewardSection.innerHTML = "<h3>依頼報酬</h3>";
+    rewards.forEach((reward) => {
+      const row = document.createElement("div");
+      row.className = "detail-row";
+      const text = document.createElement("div");
+      text.innerHTML = "<b></b><small></small>";
+      $("b", text).textContent = escapeText(reward.equipmentName, "報酬装備");
+      $("small", text).textContent = "依頼「" + escapeText(reward.missionTitle, reward.missionId) + "」の報酬";
+      row.append(text, actionButton(
+        "受け取る",
+        "CLAIM_EQUIPMENT_REWARD",
+        { rewardId: reward.rewardId },
+        false,
+        escapeText(reward.equipmentName, "報酬装備") + "を受け取る",
+      ));
+      rewardSection.append(row);
+    });
+    ui.dialogBody.append(rewardSection);
+  }
+  const loans = list(shop.loans);
+  if (loans.length) {
+    const loanSection = document.createElement("section");
+    loanSection.className = "detail-section equipment-access-section";
+    loanSection.innerHTML = "<h3>借用品</h3>";
+    loans.forEach((loan) => {
+      const row = document.createElement("div");
+      row.className = "detail-row";
+      const text = document.createElement("div");
+      text.innerHTML = "<b></b><small></small>";
+      $("b", text).textContent = escapeText(loan.equipmentName, "借用品");
+      $("small", text).textContent = [
+        "依頼「" + escapeText(loan.missionTitle, loan.missionId) + "」用",
+        "保証金 " + number(loan.deposit).toLocaleString("ja-JP") + "G",
+        "返却先 " + escapeText(loan.sellerFacilityName, loan.sellerFacilityId),
+        loan.equipped ? "装備中" : "",
+      ].filter(Boolean).join(" ・ ");
+      row.append(text, actionButton(
+        loan.canReturnHere ? "返却" : "返却先へ移動",
+        "SHOP_RETURN_LOAN",
+        { loanId: loan.loanId },
+        loan.canReturnHere !== true,
+        loan.canReturnHere
+          ? escapeText(loan.equipmentName, "借用品") + "を返却する"
+          : "返却先は" + escapeText(loan.sellerFacilityName, loan.sellerFacilityId),
+      ));
+      loanSection.append(row);
+    });
+    ui.dialogBody.append(loanSection);
+  }
   const sellSection = document.createElement("section");
   sellSection.className = "detail-section";
   sellSection.innerHTML = "<h3>売却</h3>";
@@ -1992,7 +2080,7 @@ const panelMeta = {
   skills: ["CHARACTER", "能力とスキル", renderSkills],
   missions: ["MISSIONS", "ミッション一覧", renderMissions],
   rumors: ["RUMORS", "知っている噂", renderRumors],
-  shop: ["SHOP", "購入・売却", renderShop],
+  shop: ["SHOP", "購入・試用・借用・売却", renderShop],
   chronicle: ["CHRONICLE", "これまでの記録", renderChronicle],
 };
 
