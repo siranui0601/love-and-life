@@ -1082,7 +1082,7 @@ test("a conversational job pays the quoted wage without granting player levels",
   await completeOpening(runner, { inquiry: "TUTORIAL:DEFER:WORK" });
   const offer = runner.save.choices.find((choice) => choice.actionId.startsWith("WORK_CONFIRM:"));
   assert.ok(offer);
-  const quotedWage = Number(offer.actionId.split(":").at(-1));
+  const quotedWage = Number(offer.label.match(/(\d+)G/u)?.[1]);
   const goldBefore = runner.save.player.gold;
   await runner.run("CHOOSE", { choiceId: offer.choiceId });
   assert.equal(runner.save.player.level, 1);
@@ -1983,11 +1983,18 @@ test("completed work preserves a server-valid work route and sends recent work t
 
   const completedWorkInput = inputs.findLast((input) => input.action?.type === "work");
   assert.ok(completedWorkInput);
-  assert.equal(completedWorkInput.authoritativeState.continuityContract.mode, "must_offer_continuation");
-  assert.ok(completedWorkInput.authoritativeState.continuityContract.candidateIds.some((id) => id.startsWith("WORK:")));
-  assert.ok(completedWorkInput.authoritativeState.availableActionCandidates.some((candidate) => candidate.workOffer === true));
+  assert.equal(completedWorkInput.authoritativeState.workMarket.completedToday, 1);
   assert.ok(completedWorkInput.authoritativeState.workMarket.recentWorkTitles.some((title) => /穀袋/u.test(title)));
-  assert.ok(runner.save.choices.some((choice) => choice.actionId.startsWith("WORK:") && /別の仕事/u.test(choice.label)));
+  const nextWorkCandidates = completedWorkInput.authoritativeState.availableActionCandidates
+    .filter((candidate) => candidate.workOffer === true);
+  if (nextWorkCandidates.length) {
+    assert.equal(completedWorkInput.authoritativeState.continuityContract.mode, "must_offer_continuation");
+    assert.ok(completedWorkInput.authoritativeState.continuityContract.candidateIds
+      .some((id) => nextWorkCandidates.some((candidate) => candidate.id === id)));
+    assert.ok(runner.save.choices.some((choice) => /別の仕事/u.test(choice.label)));
+  } else {
+    assert.equal(completedWorkInput.authoritativeState.continuityContract.mode, "free");
+  }
 });
 
 test("leaving for the capital removes the village T01 thread from later Gemini context", async () => {

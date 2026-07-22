@@ -52,10 +52,10 @@ function setup() {
   return { game, runtime, state, mission };
 }
 
-test("resolver v14 initializes equipment access and exposes stock pathways", () => {
+test("resolver v15 initializes equipment access and exposes stock pathways", () => {
   const { game, runtime } = setup();
   const view = buildGameView(record(runtime, game.data), runtime, game.data);
-  assert.equal(TRPG_GAME_RESOLVER_VERSION, "trpg-player-world-v14");
+  assert.equal(TRPG_GAME_RESOLVER_VERSION, "trpg-player-world-v15");
   assert.equal(view.world.equipmentAccessVersion, "equipment-access-v1");
   assert.ok(view.shop.stock.length > 0);
   assert.equal(view.shop.stock[0].access.trial.available, true);
