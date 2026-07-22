@@ -23,6 +23,7 @@ import { FileTrpgSaveStore } from "./save-store.js";
 import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
 import { facilityVisibility } from "../resolvers/facility-visibility-resolver.js";
 import { resolveCanonicalWeather, WEATHER_RULESET_VERSION } from "../resolvers/weather-resolver.js";
+import { selectDiverseChoices } from "../content/choice-contract.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
 export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v11";
@@ -1355,6 +1356,14 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     .map((action, index) => ({ action, index }))
     .sort((left, right) => actionPriority(left.action) - actionPriority(right.action) || left.index - right.index)
     .map((entry) => entry.action);
+  const movementCandidates = (!runtime.tutorial || runtime.tutorial.stage === "free")
+    ? movementActions(runtime, data).slice(0, 6).map((action) => ({
+      ...action,
+      label: action.movementScope === "regional"
+        ? `${action.destinationHub}へ向かう`
+        : `${data.model.facilityById[action.destinationFacilityId]?.name ?? action.destinationFacilityId}へ向かう`,
+    }))
+    : [];
   const hasWorkCandidate = prioritized.some((action) => action.workOffer === true || action.type === "work");
   const localWorkCandidate = hasWorkCandidate
     ? null
@@ -1373,7 +1382,20 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   const eligible = !runtime.tutorial || runtime.tutorial.stage === "free"
     ? unique
     : unique.filter((action) => !["seekBattle", "missionBattle", "investigate"].includes(action.type));
-  return eligible.slice(0, Math.max(3, Math.min(12, Number(limit) || 9)));
+  const cap = Math.max(3, Math.min(12, Number(limit) || 9));
+  const selected = eligible.slice(0, cap);
+  if (cap > 3 && movementCandidates.length && !selected.some((action) => action.type === "move")) {
+    const movement = movementCandidates.find((action) => !selected.some((entry) => entry.id === action.id));
+    if (movement) {
+      if (selected.length >= cap) selected[selected.length - 1] = movement;
+      else selected.push(movement);
+    }
+  }
+  return selected;
+}
+
+export function availableGameRuntimeChoiceCandidates(runtime, data, options = {}) {
+  return choiceActionPool(runtime, data, options);
 }
 
 function narrativeChoicePoolKey(runtime, actions) {
@@ -1424,17 +1446,24 @@ function selectedChoiceActions(runtime, actions) {
     ? runtime.narrativeChoiceSelection
     : null;
   const byId = new Map(actions.map((action) => [action.id, action]));
-  const selected = [];
+  const preferred = [];
   for (const id of selection?.actionIds ?? []) {
     const action = byId.get(id);
-    if (action && !selected.some((entry) => entry.id === id)) selected.push(action);
-    if (selected.length >= 3) break;
+    if (action && !preferred.some((entry) => entry.id === id)) preferred.push(action);
+    if (preferred.length >= 3) break;
   }
-  for (const action of actions) {
-    if (selected.length >= 3) break;
-    if (!selected.some((entry) => entry.id === action.id)) selected.push(action);
-  }
-  return withChoiceIds(selected.slice(0, 3).map((action) => generatedChoiceDetail(action, runtime, selection)));
+  const legacy = [
+    ...preferred,
+    ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),
+  ].slice(0, 3);
+  const preserveReviewedOrder = !selection || (runtime.tutorial && runtime.tutorial.stage !== "free");
+  const selected = preserveReviewedOrder
+    ? legacy
+    : selectDiverseChoices([
+      ...preferred,
+      ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),
+    ], { expectedCount: Math.min(3, actions.length) });
+  return withChoiceIds(selected.map((action) => generatedChoiceDetail(action, runtime, selection)));
 }
 
 function choiceActions(runtime, data) {
@@ -2394,6 +2423,19 @@ export function executeGameRuntimeCommand(runtime, data, command) {
           summary: "敵と遭遇した。次の行動を選ぶ。",
         };
       }
+    } else if (action.type === "move" && action.movementScope) {
+      const resolve = () => journey.resolveMovementAction(
+        runtime.playerState,
+        data.model,
+        data.battleData,
+        data.skills,
+        profileFor(runtime.playerState.profileId),
+        action,
+      );
+      const resolveWithPlayback = () => withTemporaryTuning(runtime.playerState, "captureBattleTimeline", true, resolve);
+      result = action.movementScope === "regional" && runtime.tutorial && runtime.playerState.player.skills.size === 0
+        ? withTemporaryTuning(runtime.playerState, "disableTravelEncounters", true, resolveWithPlayback)
+        : resolveWithPlayback();
     } else {
       const resolve = () => journey.resolvePlayerAction(
         runtime.playerState,
@@ -2590,7 +2632,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     followFinnDuringMovement(runtime, resolvedPlayerAction, result);
   }
   clearFinnEscortOnFailure(runtime);
-  if (command.type === "MOVE" && result.ok && !result.summary) {
+  if (resolvedPlayerAction?.type === "move" && result.ok && !result.summary) {
     const destinationName = data.model.facilityById[resolvedPlayerAction?.destinationFacilityId]?.name
       ?? resolvedPlayerAction?.destinationHub
       ?? "目的地";
@@ -2611,7 +2653,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     }
   }
   if (result.ok && ["CHOOSE", "MOVE"].includes(command.type)) progressTutorial(runtime, resolvedPlayerAction, result);
-  if (result.ok && command.type === "MOVE") discoverArrival(runtime, data);
+  if (result.ok && resolvedPlayerAction?.type === "move") discoverArrival(runtime, data);
   applyPlayerWorldInterventions(runtime, previousTroubleStates);
   advanceLivingWorld(runtime, runtime.playerState.absoluteMinute);
   reconcileOpeningCrisis(runtime);

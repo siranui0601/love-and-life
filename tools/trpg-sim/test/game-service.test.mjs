@@ -1681,12 +1681,14 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
     if (actionId !== "ACTION:MSN-T01:escort") assert.equal(choice.targetNpcId === "NPC001", false);
     return runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
   };
-  const chooseSearch = async (approachId) => {
-    const choice = runner.save.choices.find((entry) => entry.missionId === "MSN-T01"
-      && entry.stepId === "search"
-      && entry.actionId.endsWith(`:${approachId}`));
-    assert.ok(choice, `${approachId} must be one of the current T01 search approaches`);
-    return runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
+  const chooseSearch = async (preferredApproachId = null) => {
+    const available = runner.save.choices.filter((entry) => entry.missionId === "MSN-T01"
+      && entry.stepId === "search");
+    const choice = available.find((entry) => preferredApproachId && entry.actionId.endsWith(`:${preferredApproachId}`))
+      ?? available[0];
+    assert.ok(choice, "at least one T01 search approach must remain among the diverse decisions");
+    const response = await runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
+    return { response, discoveryId: response.save.scene.lastOutcome.discovery.id };
   };
 
   await completeOpening(runner);
@@ -1694,17 +1696,17 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   await moveTo("LOC_FARM_EDGE");
   assert.equal(runner.save.tutorial.id, "skills");
   await runner.run("LEARN_SKILL", { skillId: runner.save.skills.learnable[0].id });
-  await chooseSearch("tracks");
-  await chooseSearch("faint-voice");
+  const firstSearch = await chooseSearch("tracks");
+  const secondSearch = await chooseSearch("faint-voice");
   const searchInputs = narrativeInputs.filter((input) => input.action?.stepId === "search");
   assert.equal(searchInputs.length, 2);
-  assert.equal(searchInputs[0].authoritativeOutcome.discovery.id, "T01-CLUE-BOOT-TRACKS");
+  assert.equal(searchInputs[0].authoritativeOutcome.discovery.id, firstSearch.discoveryId);
   assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
     ?.currentStep.progress, 1);
   assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
     ?.currentStep.required, 2);
   assert.deepEqual(searchInputs[1].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
-    ?.discoveries.map((discovery) => discovery.id), ["T01-CLUE-BOOT-TRACKS", "T01-CLUE-FAINT-VOICE"]);
+    ?.discoveries.map((discovery) => discovery.id), [firstSearch.discoveryId, secondSearch.discoveryId]);
   assert.equal(runner.save.guidance.title, "赤牙狼の兆候を退ける");
   assert.equal(runner.save.guidance.actionPanel, null, "an on-site objective points at the visible choices instead of opening an unrelated panel");
   const battleStart = await chooseAction("ACTION:MSN-T01:rescue");

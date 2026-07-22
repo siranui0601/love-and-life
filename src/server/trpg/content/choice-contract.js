@@ -65,6 +65,8 @@ function targetTokens(choice) {
     choice?.targetNpcId,
     choice?.targetFacilityId,
     choice?.targetLocationId,
+    choice?.destinationFacilityId,
+    choice?.destinationHub,
     choice?.targetId,
     command.targetNpcId,
     command.npcId,
