@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   availableGameRuntimeActions,
+  availableGameRuntimeChoiceCandidates,
   createGameRuntime,
   executeGameRuntimeCommand,
   TRPG_GAME_RESOLVER_VERSION,
@@ -62,8 +63,30 @@ function setup(seed = "work-market-service") {
   return { data, runtime };
 }
 
-function visibleWorkOffer(runtime, data) {
-  return availableGameRuntimeActions(runtime, data).choices.find((entry) => entry.workOffer === true);
+function candidateWorkOffer(runtime, data) {
+  return availableGameRuntimeChoiceCandidates(runtime, data, { limit: 12 })
+    .find((entry) => entry.workOffer === true);
+}
+
+function stagePendingWorkOffer(runtime, offer) {
+  runtime.pendingWorkOffer = {
+    offerId: offer.workOfferId,
+    day: runtime.playerState.day,
+    facilityId: runtime.playerState.player.facilityId,
+    actorNpcId: offer.targetNpcId,
+    actorName: offer.targetNpcName,
+    description: offer.workDescription,
+    wage: offer.quotedWage,
+    minutes: Number(offer.workDurationMinutes ?? 120),
+    riskClass: offer.workRiskClass ?? "low",
+    openedAtMinute: runtime.playerState.absoluteMinute,
+  };
+  return runtime.pendingWorkOffer;
+}
+
+function confirmAction(runtime, data) {
+  return availableGameRuntimeActions(runtime, data).choices
+    .find((entry) => entry.id.startsWith("WORK_CONFIRM:"));
 }
 
 function execute(runtime, data, action) {
@@ -79,25 +102,31 @@ test("resolver v15 includes a serialized bounded work market", () => {
   assert.equal(ensureWorkMarket(runtime).version, "work-market-v1");
 });
 
-test("a work offer becomes a confirmable job with a bounded wage", () => {
-  const { data, runtime } = setup("work-market-offer");
-  const offer = visibleWorkOffer(runtime, data);
-  assert.ok(offer, JSON.stringify(availableGameRuntimeActions(runtime, data).choices, null, 2));
+test("the broad candidate pool contains an authoritative bounded work offer", () => {
+  const { data, runtime } = setup("work-market-candidate");
+  const offer = candidateWorkOffer(runtime, data);
+  assert.ok(offer, JSON.stringify(availableGameRuntimeChoiceCandidates(runtime, data, { limit: 12 }), null, 2));
   assert.equal(offer.targetNpcId, "NPC003");
+  assert.ok(offer.workOfferId);
+  assert.equal(offer.workDurationMinutes, 120);
   assert.ok(offer.quotedWage >= 10 && offer.quotedWage <= 15, `wage=${offer.quotedWage}`);
+  assert.match(offer.requiredDisclosure, /所要時間は120分、報酬は\d+G/u);
+});
 
-  const offerResult = execute(runtime, data, offer);
-  assert.equal(offerResult.outcome.ok, true);
-  assert.ok(runtime.pendingWorkOffer?.offerId);
-  assert.equal(runtime.pendingWorkOffer.actorNpcId, "NPC003");
-
+test("a staged authoritative offer becomes confirmable and completes without granting levels", () => {
+  const { data, runtime } = setup("work-market-confirm");
+  const offer = candidateWorkOffer(runtime, data);
+  assert.ok(offer);
+  stagePendingWorkOffer(runtime, offer);
   placeNpc(runtime, "NPC003", "LOC_FARM_SQUARE");
-  const confirm = availableGameRuntimeActions(runtime, data).choices.find((entry) => entry.id.startsWith("WORK_CONFIRM:"));
+
+  const confirm = confirmAction(runtime, data);
   assert.ok(confirm, JSON.stringify(availableGameRuntimeActions(runtime, data).choices, null, 2));
   const goldBefore = runtime.playerState.player.gold;
   const levelBefore = runtime.playerState.player.level;
   const expBefore = runtime.playerState.player.exp;
   const result = execute(runtime, data, confirm);
+
   assert.equal(result.outcome.ok, true);
   assert.equal(result.outcome.goldDelta, runtime.playerState.player.gold - goldBefore);
   assert.equal(result.outcome.goldDelta, offer.quotedWage);
@@ -108,41 +137,41 @@ test("a work offer becomes a confirmable job with a bounded wage", () => {
   assert.equal(ensureWorkMarket(runtime).completed[0].employerId, "NPC003");
 });
 
-test("the same employer does not offer another job until the next day", () => {
+test("the same employer does not generate another offer until the next day", () => {
   const { data, runtime } = setup("work-market-employer-limit");
-  const offer = visibleWorkOffer(runtime, data);
-  assert.ok(offer);
-  execute(runtime, data, offer);
+  const firstOffer = candidateWorkOffer(runtime, data);
+  assert.ok(firstOffer);
+  stagePendingWorkOffer(runtime, firstOffer);
   placeNpc(runtime, "NPC003", "LOC_FARM_SQUARE");
-  const confirm = availableGameRuntimeActions(runtime, data).choices.find((entry) => entry.id.startsWith("WORK_CONFIRM:"));
+  const confirm = confirmAction(runtime, data);
   assert.ok(confirm);
   execute(runtime, data, confirm);
 
   placeNpc(runtime, "NPC003", "LOC_FARM_SQUARE");
-  assert.equal(visibleWorkOffer(runtime, data), undefined);
+  assert.equal(candidateWorkOffer(runtime, data), undefined);
 
   setClock(runtime, { day: 2, hour: 8 });
   placeNpc(runtime, "NPC003", "LOC_FARM_SQUARE");
-  assert.ok(visibleWorkOffer(runtime, data));
+  assert.ok(candidateWorkOffer(runtime, data));
 });
 
-test("jobs that cannot finish during business hours are not offered", () => {
+test("jobs that cannot finish during business hours are absent from the broad pool", () => {
   const { data, runtime } = setup("work-market-hours");
   setClock(runtime, { day: 1, hour: 17, minute: 30 });
   placeNpc(runtime, "NPC003", "LOC_FARM_SQUARE");
-  assert.equal(visibleWorkOffer(runtime, data), undefined);
+  assert.equal(candidateWorkOffer(runtime, data), undefined);
 });
 
-test("a stale pending offer cannot be accepted after its expiry window", () => {
+test("a stale pending offer is cleared instead of exposing a confirm action", () => {
   const { data, runtime } = setup("work-market-expiry");
-  const offer = visibleWorkOffer(runtime, data);
+  const offer = candidateWorkOffer(runtime, data);
   assert.ok(offer);
-  execute(runtime, data, offer);
+  stagePendingWorkOffer(runtime, offer);
   runtime.playerState.absoluteMinute += 181;
   runtime.playerState.hour = 11;
-  runtime.playerState.minute = 7;
+  runtime.playerState.minute = 1;
   placeNpc(runtime, "NPC003", "LOC_FARM_SQUARE");
-  const choices = availableGameRuntimeActions(runtime, data).choices;
-  assert.equal(choices.some((entry) => entry.id.startsWith("WORK_CONFIRM:")), false);
+
+  assert.equal(confirmAction(runtime, data), undefined);
   assert.equal(runtime.pendingWorkOffer, null);
 });
