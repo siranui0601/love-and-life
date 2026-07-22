@@ -2,35 +2,35 @@
   "schemaVersion": "trpg-day100-player-report-v1",
   "reachedDay100": false,
   "finalClock": {
-    "day": 1,
-    "time": "10:09",
-    "hour": 10,
-    "minute": 9,
+    "day": 25,
+    "time": "14:44",
+    "hour": 14,
+    "minute": 44,
     "daypart": "day",
-    "absoluteMinute": 9,
+    "absoluteMinute": 34844,
     "weatherId": "clear",
     "weatherLabel": "晴れ"
   },
-  "finalLocation": "田園の村",
-  "finalFacilityId": "LOC_FARM_FIELD",
-  "finalGold": 0,
-  "actions": 3,
+  "finalLocation": "王都",
+  "finalFacilityId": "LOC_CAP_MARKET",
+  "finalGold": 2,
+  "actions": 4200,
   "deadEnds": 0,
-  "battles": 0,
-  "jobs": 0,
-  "meals": 0,
-  "rests": 0,
-  "visitedHubCount": 1,
-  "visitedFacilityCount": 1,
+  "battles": 1,
+  "jobs": 10,
+  "meals": 4034,
+  "rests": 9,
+  "visitedHubCount": 2,
+  "visitedFacilityCount": 8,
   "counts": {
     "total": 19,
-    "discovered": 0,
-    "engaged": 0,
-    "progressed": 0,
-    "terminal": 0,
-    "resolved": 0,
+    "discovered": 4,
+    "engaged": 2,
+    "progressed": 1,
+    "terminal": 1,
+    "resolved": 1,
     "failed": 0,
-    "neverDiscovered": 19
+    "neverDiscovered": 15
   },
   "troubles": [
     {
@@ -43,24 +43,88 @@
         "田園の村",
         "森"
       ],
-      "firstRumorMinute": null,
-      "firstMissionMinute": null,
-      "firstProgressMinute": null,
-      "firstPlayerActionMinute": null,
-      "maximumProgressRatio": 0,
+      "firstRumorMinute": 26,
+      "firstMissionMinute": 38,
+      "firstProgressMinute": 86,
+      "firstPlayerActionMinute": 38,
+      "maximumProgressRatio": 1,
       "visitedPrimaryLocations": [
         "田園の村"
       ],
-      "missionStatusTimeline": [],
-      "actionIds": [],
+      "missionStatusTimeline": [
+        {
+          "minute": 38,
+          "day": 1,
+          "status": "active",
+          "stepId": "search",
+          "progress": 0,
+          "required": 2,
+          "signature": "active:search:0"
+        },
+        {
+          "minute": 86,
+          "day": 1,
+          "status": "active",
+          "stepId": "search",
+          "progress": 1,
+          "required": 2,
+          "signature": "active:search:1"
+        },
+        {
+          "minute": 113,
+          "day": 1,
+          "status": "active",
+          "stepId": "rescue",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:rescue:0"
+        },
+        {
+          "minute": 138,
+          "day": 1,
+          "status": "active",
+          "stepId": "escort",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:escort:0"
+        },
+        {
+          "minute": 155,
+          "day": 1,
+          "status": "active",
+          "stepId": "decide",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:decide:0"
+        },
+        {
+          "minute": 194,
+          "day": 1,
+          "status": "completed",
+          "stepId": null,
+          "progress": null,
+          "required": null,
+          "signature": "completed:none:0"
+        }
+      ],
+      "actionIds": [
+        "TUTORIAL:INQUIRY:MIRA",
+        "MOVE_LOCAL:LOC_FARM_EDGE",
+        "ACTION:MSN-T01:search:tracks",
+        "ACTION:MSN-T01:search:dropped-map",
+        "ACTION:MSN-T01:rescue",
+        "ACTION:MSN-T01:escort",
+        "MOVE_LOCAL:LOC_FARM_SQUARE",
+        "ACTION:MSN-T01:decide"
+      ],
       "stalledTurns": 0,
-      "finalTroubleStatus": "active",
-      "finalMissionStatus": "active",
-      "discovered": false,
-      "engaged": false,
-      "progressed": false,
-      "terminal": false,
-      "resolved": false
+      "finalTroubleStatus": "resolved",
+      "finalMissionStatus": "completed",
+      "discovered": true,
+      "engaged": true,
+      "progressed": true,
+      "terminal": true,
+      "resolved": true
     },
     {
       "id": "T02",
@@ -72,21 +136,33 @@
         "田園の村",
         "交易都市"
       ],
-      "firstRumorMinute": null,
-      "firstMissionMinute": null,
+      "firstRumorMinute": 5804,
+      "firstMissionMinute": 5804,
       "firstProgressMinute": null,
-      "firstPlayerActionMinute": null,
+      "firstPlayerActionMinute": 6443,
       "maximumProgressRatio": 0,
       "visitedPrimaryLocations": [
         "田園の村"
       ],
-      "missionStatusTimeline": [],
-      "actionIds": [],
+      "missionStatusTimeline": [
+        {
+          "minute": 5804,
+          "day": 5,
+          "status": "active",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:hear:0"
+        }
+      ],
+      "actionIds": [
+        "MOVE_REGION:田園の村"
+      ],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
-      "discovered": false,
-      "engaged": false,
+      "finalTroubleStatus": "critical",
+      "finalMissionStatus": "active",
+      "discovered": true,
+      "engaged": true,
       "progressed": false,
       "terminal": false,
       "resolved": false
@@ -112,8 +188,8 @@
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
+      "finalTroubleStatus": "critical",
+      "finalMissionStatus": "active",
       "discovered": false,
       "engaged": false,
       "progressed": false,
@@ -136,12 +212,14 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
+      "finalTroubleStatus": "active",
+      "finalMissionStatus": "active",
       "discovered": false,
       "engaged": false,
       "progressed": false,
@@ -168,8 +246,8 @@
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
+      "finalTroubleStatus": "active",
+      "finalMissionStatus": "active",
       "discovered": false,
       "engaged": false,
       "progressed": false,
@@ -194,8 +272,8 @@
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
+      "finalTroubleStatus": "active",
+      "finalMissionStatus": "active",
       "discovered": false,
       "engaged": false,
       "progressed": false,
@@ -219,12 +297,14 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
+      "finalTroubleStatus": "active",
+      "finalMissionStatus": "active",
       "discovered": false,
       "engaged": false,
       "progressed": false,
@@ -247,7 +327,9 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
@@ -299,7 +381,9 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
@@ -322,18 +406,30 @@
         "犯罪都市",
         "交易都市"
       ],
-      "firstRumorMinute": null,
-      "firstMissionMinute": null,
+      "firstRumorMinute": 5007,
+      "firstMissionMinute": 27361,
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
-      "missionStatusTimeline": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
+      "missionStatusTimeline": [
+        {
+          "minute": 27361,
+          "day": 20,
+          "status": "active",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:hear:0"
+        }
+      ],
       "actionIds": [],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
-      "discovered": false,
+      "finalTroubleStatus": "active",
+      "finalMissionStatus": "active",
+      "discovered": true,
       "engaged": false,
       "progressed": false,
       "terminal": false,
@@ -385,7 +481,8 @@
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
       "visitedPrimaryLocations": [
-        "田園の村"
+        "田園の村",
+        "王都"
       ],
       "missionStatusTimeline": [],
       "actionIds": [],
@@ -415,12 +512,14 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
+      "finalTroubleStatus": "active",
+      "finalMissionStatus": "active",
       "discovered": false,
       "engaged": false,
       "progressed": false,
@@ -442,7 +541,9 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
@@ -470,7 +571,9 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
@@ -493,18 +596,30 @@
         "古代神殿",
         "黒嶺連合領"
       ],
-      "firstRumorMinute": null,
-      "firstMissionMinute": null,
+      "firstRumorMinute": 12962,
+      "firstMissionMinute": 12962,
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
-      "missionStatusTimeline": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
+      "missionStatusTimeline": [
+        {
+          "minute": 12962,
+          "day": 10,
+          "status": "active",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:hear:0"
+        }
+      ],
       "actionIds": [],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
-      "discovered": false,
+      "finalTroubleStatus": "active",
+      "finalMissionStatus": "active",
+      "discovered": true,
       "engaged": false,
       "progressed": false,
       "terminal": false,
@@ -526,7 +641,9 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
@@ -555,7 +672,9 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
@@ -571,48 +690,44 @@
   "seed": "trpg-day100-player-v1",
   "playerName": "百日の旅人",
   "maxActions": 4200,
-  "stoppedByActionLimit": false,
-  "errors": [
-    {
-      "action": 3,
-      "minute": 9,
-      "message": "TrpgGameError: npc_introduction_not_available\n    at executeGameRuntimeCommand (file:///home/runner/work/love-and-life/love-and-life/src/server/trpg/game/service.js:2853:13)\n    at file:///home/runner/work/love-and-life/love-and-life/src/server/trpg/game/service.js:5112:22\n    at async TrpgGameService.runLocked (file:///home/runner/work/love-and-life/love-and-life/src/server/trpg/game/service.js:5076:14)\n    at async Day100GameRunner.command (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/lib/day100-player-runner.mjs:213:22)\n    at async Day100GameRunner.step (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/lib/day100-player-runner.mjs:283:5)\n    at async Day100GameRunner.run (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/lib/day100-player-runner.mjs:291:26)\n    at async file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/cli-day100-player.mjs:23:16",
-      "save": {
-        "revision": 3,
-        "day": 1,
-        "time": "10:09",
-        "minute": 9,
-        "location": "田園の村",
-        "facilityId": "LOC_FARM_FIELD",
-        "gold": 0,
-        "hunger": 15.68,
-        "fatigue": 8.52,
-        "choiceIds": [
-          "TUTORIAL:ORIENT:VOICES",
-          "TUTORIAL:ORIENT:FOUND",
-          "TUTORIAL:ORIENT:HELP"
-        ],
-        "movementIds": [],
-        "activeMissions": [],
-        "battle": null,
-        "ended": false
-      }
-    }
-  ],
+  "stoppedByActionLimit": true,
+  "errors": [],
   "narrative": {
     "liveLimit": 48,
-    "liveCalls": 0,
-    "policyFallbacks": 0,
-    "liveKeys": [],
-    "sourceCounts": {}
+    "liveCalls": 17,
+    "policyFallbacks": 4153,
+    "liveKeys": [
+      "arrival:T01:MSN-T01:search:move:田園の村",
+      "battle_aftermath:T01:MSN-T01:rescue:missionBattle:田園の村",
+      "free_roam:none:MSN-T01:decide:resolveMission:田園の村",
+      "work_generation:none:none:none:work_offer:田園の村",
+      "arrival:none:none:none:move:田園の村",
+      "arrival:none:none:none:move:王都",
+      "work_generation:none:none:none:work_offer:王都",
+      "conversation:none:none:none:conversation:王都",
+      "conversation:none:none:none:local_change:王都",
+      "conversation:none:none:none:active_mission:王都",
+      "conversation:none:none:none:local_concern:王都",
+      "conversation:none:none:none:clarify_2:王都",
+      "conversation:none:none:none:local_rumor:王都",
+      "free_roam:T02:MSN-T02:hear:work:田園の村",
+      "arrival:T02:MSN-T02:hear:move:田園の村",
+      "free_roam:T02:MSN-T02:hear:eat:田園の村",
+      "arrival:T17:MSN-T17:hear:move:王都"
+    ],
+    "sourceCounts": {
+      "gemini": 16,
+      "day100_policy_fallback": 4153,
+      "gemini_repaired": 1
+    }
   },
   "quality": {
     "reachedDay100": false,
     "noDeadEnd": true,
     "allTroublesTerminal": false,
-    "laterTroubleDiscovered": false,
+    "laterTroubleDiscovered": true,
     "laterTroubleProgressed": false,
-    "noRunnerError": false,
+    "noRunnerError": true,
     "passed": false
   }
 }

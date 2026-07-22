@@ -65,6 +65,7 @@ export function createDay100CoverageState(model) {
     visitedFacilities: {},
     visitedHubs: {},
     recentDecisionKeys: [],
+    acknowledgedIntroductionTokens: [],
     actionCount: 0,
     deadEndCount: 0,
     battleCount: 0,
@@ -119,6 +120,9 @@ export function observeDay100Coverage(state, save, decision = null) {
     const key = decision.key ?? `${decision.type}:${decision.actionId ?? decision.moveId ?? decision.reason ?? "unknown"}`;
     state.recentDecisionKeys.push(key);
     if (state.recentDecisionKeys.length > 18) state.recentDecisionKeys.shift();
+    if (decision.type === "ACK_NPC_INTRODUCTION") {
+      appendUnique(state.acknowledgedIntroductionTokens, decision.payload?.token, 80);
+    }
     if (decision.missionId) {
       const mission = (save?.missions ?? []).find((item) => item.id === decision.missionId);
       const troubleId = mission?.troubleId ?? decision.troubleId;
@@ -367,7 +371,9 @@ export function selectDay100Decision({ save, model, state }) {
   if (save.world?.ended) return null;
   if (save.battle?.status === "active" || save.battle) return { type: "BATTLE", reason: "進行中の戦闘を権威的なコマンドで完了する", key: `BATTLE:${save.battle?.id ?? "active"}` };
 
-  const introduction = (save.scene?.beats ?? []).find((beat) => beat.introductionToken);
+  const acknowledgedIntroductionTokens = state.acknowledgedIntroductionTokens ?? [];
+  const introduction = (save.scene?.beats ?? []).find((beat) => beat.introductionToken
+    && !acknowledgedIntroductionTokens.includes(beat.introductionToken));
   if (introduction) {
     return {
       type: "ACK_NPC_INTRODUCTION",
