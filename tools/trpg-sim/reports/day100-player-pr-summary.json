@@ -2,35 +2,38 @@
   "schemaVersion": "trpg-day100-player-report-v1",
   "reachedDay100": false,
   "finalClock": {
-    "day": 25,
-    "time": "14:44",
-    "hour": 14,
-    "minute": 44,
+    "day": 27,
+    "time": "16:31",
+    "hour": 16,
+    "minute": 31,
     "daypart": "day",
-    "absoluteMinute": 34844,
+    "absoluteMinute": 37831,
     "weatherId": "clear",
     "weatherLabel": "晴れ"
   },
   "finalLocation": "王都",
   "finalFacilityId": "LOC_CAP_MARKET",
-  "finalGold": 2,
+  "finalGold": 0,
   "actions": 4200,
+  "acceptedActions": 4200,
+  "rejectedActions": 0,
+  "blockedDecisionCount": 0,
   "deadEnds": 0,
   "battles": 1,
-  "jobs": 10,
-  "meals": 4034,
-  "rests": 9,
-  "visitedHubCount": 2,
-  "visitedFacilityCount": 8,
+  "jobs": 16,
+  "meals": 4025,
+  "rests": 10,
+  "visitedHubCount": 3,
+  "visitedFacilityCount": 11,
   "counts": {
     "total": 19,
-    "discovered": 4,
+    "discovered": 5,
     "engaged": 2,
-    "progressed": 1,
-    "terminal": 1,
-    "resolved": 1,
+    "progressed": 2,
+    "terminal": 2,
+    "resolved": 2,
     "failed": 0,
-    "neverDiscovered": 15
+    "neverDiscovered": 14
   },
   "troubles": [
     {
@@ -136,36 +139,74 @@
         "田園の村",
         "交易都市"
       ],
-      "firstRumorMinute": 5804,
-      "firstMissionMinute": 5804,
-      "firstProgressMinute": null,
-      "firstPlayerActionMinute": 6443,
-      "maximumProgressRatio": 0,
+      "firstRumorMinute": 5799,
+      "firstMissionMinute": 5799,
+      "firstProgressMinute": 7614,
+      "firstPlayerActionMinute": 5806,
+      "maximumProgressRatio": 1,
       "visitedPrimaryLocations": [
-        "田園の村"
+        "田園の村",
+        "交易都市"
       ],
       "missionStatusTimeline": [
         {
-          "minute": 5804,
+          "minute": 5799,
           "day": 5,
           "status": "active",
           "stepId": "hear",
           "progress": 0,
           "required": 1,
           "signature": "active:hear:0"
+        },
+        {
+          "minute": 6082,
+          "day": 5,
+          "status": "active",
+          "stepId": "investigate",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:investigate:0"
+        },
+        {
+          "minute": 6122,
+          "day": 5,
+          "status": "active",
+          "stepId": "resolve",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:resolve:0"
+        },
+        {
+          "minute": 7614,
+          "day": 6,
+          "status": "completed",
+          "stepId": null,
+          "progress": null,
+          "required": null,
+          "signature": "completed:none:0"
         }
       ],
       "actionIds": [
-        "MOVE_REGION:田園の村"
+        "MOVE_LOCAL:LOC_FARM_SQUARE",
+        "INSPECT:LOC_FARM_SQUARE:1",
+        "INSPECT:LOC_FARM_SQUARE:2",
+        "INSPECT:LOC_FARM_SQUARE:3",
+        "WORK:LOC_FARM_SQUARE",
+        "ACTION:MSN-T02:hear",
+        "MOVE_LOCAL:LOC_FARM_GRANARY",
+        "ACTION:MSN-T02:investigate",
+        "MOVE_REGION:交易都市",
+        "MOVE_LOCAL:LOC_TRADE_GUILD",
+        "ACTION:MSN-T02:resolve"
       ],
-      "stalledTurns": 0,
-      "finalTroubleStatus": "critical",
-      "finalMissionStatus": "active",
+      "stalledTurns": 1,
+      "finalTroubleStatus": "resolved",
+      "finalMissionStatus": "completed",
       "discovered": true,
       "engaged": true,
-      "progressed": false,
-      "terminal": false,
-      "resolved": false
+      "progressed": true,
+      "terminal": true,
+      "resolved": true
     },
     {
       "id": "T03",
@@ -242,7 +283,9 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "交易都市"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
@@ -268,7 +311,9 @@
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
-      "visitedPrimaryLocations": [],
+      "visitedPrimaryLocations": [
+        "交易都市"
+      ],
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
@@ -359,8 +404,8 @@
       "missionStatusTimeline": [],
       "actionIds": [],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
+      "finalTroubleStatus": "active",
+      "finalMissionStatus": "active",
       "discovered": false,
       "engaged": false,
       "progressed": false,
@@ -376,20 +421,30 @@
       "primaryLocations": [
         "王都"
       ],
-      "firstRumorMinute": null,
-      "firstMissionMinute": null,
+      "firstRumorMinute": 36004,
+      "firstMissionMinute": 36004,
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
       "visitedPrimaryLocations": [
         "王都"
       ],
-      "missionStatusTimeline": [],
+      "missionStatusTimeline": [
+        {
+          "minute": 36004,
+          "day": 26,
+          "status": "active",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:hear:0"
+        }
+      ],
       "actionIds": [],
       "stalledTurns": 0,
-      "finalTroubleStatus": "scheduled",
-      "finalMissionStatus": "locked",
-      "discovered": false,
+      "finalTroubleStatus": "active",
+      "finalMissionStatus": "active",
+      "discovered": true,
       "engaged": false,
       "progressed": false,
       "terminal": false,
@@ -406,17 +461,18 @@
         "犯罪都市",
         "交易都市"
       ],
-      "firstRumorMinute": 5007,
-      "firstMissionMinute": 27361,
+      "firstRumorMinute": 8728,
+      "firstMissionMinute": 27366,
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
       "visitedPrimaryLocations": [
-        "王都"
+        "王都",
+        "交易都市"
       ],
       "missionStatusTimeline": [
         {
-          "minute": 27361,
+          "minute": 27366,
           "day": 20,
           "status": "active",
           "stepId": "hear",
@@ -513,7 +569,8 @@
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
       "visitedPrimaryLocations": [
-        "王都"
+        "王都",
+        "交易都市"
       ],
       "missionStatusTimeline": [],
       "actionIds": [],
@@ -542,7 +599,8 @@
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
       "visitedPrimaryLocations": [
-        "王都"
+        "王都",
+        "交易都市"
       ],
       "missionStatusTimeline": [],
       "actionIds": [],
@@ -572,7 +630,8 @@
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
       "visitedPrimaryLocations": [
-        "王都"
+        "王都",
+        "交易都市"
       ],
       "missionStatusTimeline": [],
       "actionIds": [],
@@ -596,8 +655,8 @@
         "古代神殿",
         "黒嶺連合領"
       ],
-      "firstRumorMinute": 12962,
-      "firstMissionMinute": 12962,
+      "firstRumorMinute": 12960,
+      "firstMissionMinute": 12960,
       "firstProgressMinute": null,
       "firstPlayerActionMinute": null,
       "maximumProgressRatio": 0,
@@ -606,7 +665,7 @@
       ],
       "missionStatusTimeline": [
         {
-          "minute": 12962,
+          "minute": 12960,
           "day": 10,
           "status": "active",
           "stepId": "hear",
@@ -694,8 +753,8 @@
   "errors": [],
   "narrative": {
     "liveLimit": 48,
-    "liveCalls": 17,
-    "policyFallbacks": 4153,
+    "liveCalls": 25,
+    "policyFallbacks": 4145,
     "liveKeys": [
       "arrival:T01:MSN-T01:search:move:田園の村",
       "battle_aftermath:T01:MSN-T01:rescue:missionBattle:田園の村",
@@ -703,21 +762,29 @@
       "work_generation:none:none:none:work_offer:田園の村",
       "arrival:none:none:none:move:田園の村",
       "arrival:none:none:none:move:王都",
+      "exploration:T02:MSN-T02:hear:localInvestigate:田園の村",
+      "arrival:T02:MSN-T02:hear:move:田園の村",
+      "work_generation:T02:MSN-T02:hear:work_offer:田園の村",
+      "free_roam:T02:MSN-T02:hear:work:田園の村",
+      "conversation:T02:MSN-T02:hear:mission_clue:田園の村",
+      "arrival:T02:MSN-T02:investigate:move:田園の村",
+      "exploration:T02:MSN-T02:investigate:investigate:田園の村",
+      "arrival:T02:MSN-T02:resolve:move:交易都市",
+      "battle_aftermath:none:none:none:move:田園の村",
+      "free_roam:none:MSN-T02:resolve:resolveMission:交易都市",
+      "work_generation:none:none:none:work_offer:交易都市",
       "work_generation:none:none:none:work_offer:王都",
       "conversation:none:none:none:conversation:王都",
       "conversation:none:none:none:local_change:王都",
-      "conversation:none:none:none:active_mission:王都",
-      "conversation:none:none:none:local_concern:王都",
-      "conversation:none:none:none:clarify_2:王都",
       "conversation:none:none:none:local_rumor:王都",
-      "free_roam:T02:MSN-T02:hear:work:田園の村",
-      "arrival:T02:MSN-T02:hear:move:田園の村",
-      "free_roam:T02:MSN-T02:hear:eat:田園の村",
+      "conversation:none:none:none:local_concern:王都",
+      "conversation:none:none:none:active_mission:王都",
+      "conversation:none:none:none:clarify_2:王都",
       "arrival:T17:MSN-T17:hear:move:王都"
     ],
     "sourceCounts": {
-      "gemini": 16,
-      "day100_policy_fallback": 4153,
+      "gemini": 24,
+      "day100_policy_fallback": 4145,
       "gemini_repaired": 1
     }
   },
@@ -726,7 +793,7 @@
     "noDeadEnd": true,
     "allTroublesTerminal": false,
     "laterTroubleDiscovered": true,
-    "laterTroubleProgressed": false,
+    "laterTroubleProgressed": true,
     "noRunnerError": true,
     "passed": false
   }
