@@ -21,6 +21,7 @@ function input({
   return {
     locale: "ja-JP",
     playerName: "旅人",
+    sceneMode: "conversation",
     action: {
       id: actionId,
       type: "conversation",
