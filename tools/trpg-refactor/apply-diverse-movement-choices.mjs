@@ -2,6 +2,7 @@ import fs from "node:fs";
 
 const servicePath = "src/server/trpg/game/service.js";
 const contractPath = "src/server/trpg/content/choice-contract.js";
+const gameServiceTestPath = "tools/trpg-sim/test/game-service.test.mjs";
 const workflowPath = ".github/workflows/apply-trpg-diverse-movement-choices.yml";
 const scriptPath = "tools/trpg-refactor/apply-diverse-movement-choices.mjs";
 
@@ -66,6 +67,21 @@ contract = replaceOnce(
   "top-level movement targets",
 );
 fs.writeFileSync(contractPath, contract);
+
+let gameServiceTest = fs.readFileSync(gameServiceTestPath, "utf8");
+gameServiceTest = replaceOnce(
+  gameServiceTest,
+  `  const chooseSearch = async (approachId) => {\n    const choice = runner.save.choices.find((entry) => entry.missionId === "MSN-T01"\n      && entry.stepId === "search"\n      && entry.actionId.endsWith(\`:\${approachId}\`));\n    assert.ok(choice, \`\${approachId} must be one of the current T01 search approaches\`);\n    return runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });\n  };`,
+  `  const chooseSearch = async (preferredApproachId = null) => {\n    const available = runner.save.choices.filter((entry) => entry.missionId === "MSN-T01"\n      && entry.stepId === "search");\n    const choice = available.find((entry) => preferredApproachId && entry.actionId.endsWith(\`:\${preferredApproachId}\`))\n      ?? available[0];\n    assert.ok(choice, "at least one T01 search approach must remain among the diverse decisions");\n    const response = await runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });\n    return { response, discoveryId: response.save.scene.lastOutcome.discovery.id };\n  };`,
+  "dynamic T01 search helper",
+);
+gameServiceTest = replaceOnce(
+  gameServiceTest,
+  `  await chooseSearch("tracks");\n  await chooseSearch("faint-voice");\n  const searchInputs = narrativeInputs.filter((input) => input.action?.stepId === "search");\n  assert.equal(searchInputs.length, 2);\n  assert.equal(searchInputs[0].authoritativeOutcome.discovery.id, "T01-CLUE-BOOT-TRACKS");\n  assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")\n    ?.currentStep.progress, 1);\n  assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")\n    ?.currentStep.required, 2);\n  assert.deepEqual(searchInputs[1].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")\n    ?.discoveries.map((discovery) => discovery.id), ["T01-CLUE-BOOT-TRACKS", "T01-CLUE-FAINT-VOICE"]);`,
+  `  const firstSearch = await chooseSearch("tracks");\n  const secondSearch = await chooseSearch("faint-voice");\n  const searchInputs = narrativeInputs.filter((input) => input.action?.stepId === "search");\n  assert.equal(searchInputs.length, 2);\n  assert.equal(searchInputs[0].authoritativeOutcome.discovery.id, firstSearch.discoveryId);\n  assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")\n    ?.currentStep.progress, 1);\n  assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")\n    ?.currentStep.required, 2);\n  assert.deepEqual(searchInputs[1].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")\n    ?.discoveries.map((discovery) => discovery.id), [firstSearch.discoveryId, secondSearch.discoveryId]);`,
+  "dynamic T01 discovery assertions",
+);
+fs.writeFileSync(gameServiceTestPath, gameServiceTest);
 
 fs.rmSync(workflowPath, { force: true });
 fs.rmSync(scriptPath, { force: true });
