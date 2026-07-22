@@ -82,10 +82,17 @@ function effectTokens(choice) {
   const command = commandOf(choice);
   return uniqueSorted([
     command.type,
+    command.topicId,
     choice?.effectKind,
     choice?.gainedFactId,
     choice?.missionId,
     choice?.stepId,
+    choice?.dialogueTopic,
+    choice?.tutorialBeat,
+    choice?.approachId,
+    choice?.investigationStage,
+    choice?.localVariant,
+    choice?.discoveryId,
     ...(Array.isArray(choice?.expectedChanges) ? choice.expectedChanges : []),
     ...(Array.isArray(choice?.gainedFactIds) ? choice.gainedFactIds : []),
   ]);
