@@ -24,7 +24,7 @@ edit("src/server/trpg/narrative-contract.js", (input) => {
     `function isEmptyReaction(value) {
   return EMPTY_REACTION_PATTERN.test(String(value ?? "").trim());
 }
- `,
+`,
     `function isEmptyReaction(value) {
   return EMPTY_REACTION_PATTERN.test(String(value ?? "").trim());
 }
@@ -40,7 +40,7 @@ export function isConversationClosingAction(action = {}) {
 export function minimumConversationReplyLength(action = {}) {
   return isConversationClosingAction(action) ? 4 : 12;
 }
- `,
+`,
     "conversation-boundary-helpers",
   );
   source = replaceOnce(
