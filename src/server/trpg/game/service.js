@@ -25,6 +25,7 @@ import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
 import { facilityVisibility } from "../resolvers/facility-visibility-resolver.js";
 import { resolveCanonicalWeather, WEATHER_RULESET_VERSION } from "../resolvers/weather-resolver.js";
 import { selectDiverseChoices } from "../content/choice-contract.js";
+import { resolveAuthoredScene } from "../content/authored-scene-registry.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
 export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v12";
@@ -4323,6 +4324,75 @@ function applyNarrativeProposalCandidates(runtime, result, playerName) {
   }
 }
 
+function authoredSceneContext(runtime, action, outcome) {
+  const resolved = action?.resolvedAction ?? action ?? {};
+  const state = runtime.playerState;
+  const completedRegionalMoves = state.history.filter((entry) => entry.type === "REGIONAL_MOVE_COMPLETED");
+  const latestRegionalMove = completedRegionalMoves.at(-1) ?? null;
+  const arrivalVisitCount = completedRegionalMoves.filter((entry) => entry.to === state.player.location).length;
+  return {
+    action: {
+      id: resolved.id ?? null,
+      type: resolved.type ?? null,
+      movementScope: resolved.movementScope ?? null,
+      destinationHub: resolved.destinationHub ?? null,
+      destinationFacilityId: resolved.destinationFacilityId ?? null,
+      lodging: resolved.lodging === true,
+      price: Number.isFinite(Number(resolved.price)) ? Number(resolved.price) : null,
+    },
+    outcome: outcome ?? {},
+    mission: {
+      id: resolved.missionId ?? null,
+      stepId: resolved.stepId ?? null,
+    },
+    location: {
+      hub: state.player.location,
+      facilityId: state.player.facilityId,
+    },
+    journey: {
+      fromHub: latestRegionalMove?.from ?? null,
+      toHub: latestRegionalMove?.to ?? null,
+      arrivalVisitCount,
+    },
+    weather: canonicalWeatherForState(state),
+    player: {
+      needs: publicPlayerNeeds(state.player),
+    },
+  };
+}
+
+function authoredNarrativeForWeather(scene, weather) {
+  const byId = scene?.narrativeByWeatherId?.[weather?.id];
+  if (String(byId ?? "").trim()) return String(byId).trim();
+  const tags = new Set(weather?.tags ?? []);
+  const priority = ["storm", "snow", "rain", "fog", "wind", "dry", "clear"];
+  for (const tag of priority) {
+    const candidate = scene?.narrativeByWeatherTag?.[tag];
+    if (tags.has(tag) && String(candidate ?? "").trim()) return String(candidate).trim();
+  }
+  return String(scene?.narrative ?? "").trim();
+}
+
+export function resolveReviewedAuthoredPresentation(runtime, data, action = null, outcome = null) {
+  const context = authoredSceneContext(runtime, action, outcome);
+  const scene = resolveAuthoredScene(context);
+  if (!scene) return null;
+  const presentIds = new Set(presentNpcsAt(runtime, data).map((npc) => npc.id));
+  const speeches = (scene.beats ?? [])
+    .filter((beat) => beat?.kind === "npc" && beat.actorId && presentIds.has(beat.actorId))
+    .map((beat) => ({
+      actorId: beat.actorId,
+      text: cleanText(beat.text, 500),
+      emotion: cleanText(beat.emotion, 40) || null,
+    }));
+  return {
+    sceneId: scene.sceneId,
+    presentationOnly: scene.presentationOnly === true,
+    narrative: authoredNarrativeForWeather(scene, context.weather),
+    speeches,
+  };
+}
+
 async function updatePresentation(record, runtime, data, narrator, action = null, outcome = null) {
   const fallback = fallbackNarrative(runtime, action, outcome);
   if (["TUTORIAL_ACK", "ACK_NPC_INTRODUCTION"].includes(action?.type) && record.presentation) {
@@ -4337,6 +4407,20 @@ async function updatePresentation(record, runtime, data, narrator, action = null
       source: "authored_tutorial",
       narrative: authored.narrative,
       speeches: authored.speeches.filter((speech) => presentIds.has(speech.actorId)),
+      choiceLabels: {},
+    };
+    record.presentation = presentationWithOrderedBeats(runtime, data, action?.resolvedAction ?? action, base);
+    return;
+  }
+  const reviewed = resolveReviewedAuthoredPresentation(runtime, data, action, outcome);
+  if (reviewed) {
+    runtime.narrativeChoiceSelection = null;
+    const base = {
+      revision: record.revision,
+      source: "authored_scene",
+      sceneId: reviewed.sceneId,
+      narrative: reviewed.narrative,
+      speeches: reviewed.speeches,
       choiceLabels: {},
     };
     record.presentation = presentationWithOrderedBeats(runtime, data, action?.resolvedAction ?? action, base);

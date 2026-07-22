@@ -1731,16 +1731,12 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   const battleNarrativeInput = narrativeInputs.findLast((input) => input.authoritativeOutcome?.battle);
   assert.ok(battleRecord.lastOutcome?.battle?.playback, "latest presentation keeps playback");
   assert.equal(battleJournal.outcome.battle.playback, undefined, "replay journal stays compatible with v4 outcomes");
-  assert.ok(battleNarrativeInput, "the decisive result now receives a scene-specific Gemini aftermath request");
-  assert.equal(battleNarrativeInput.action.dialogueTopic, "t01_rescue_aftermath");
-  assert.equal(battleNarrativeInput.action.targetNpcId, "NPC001");
-  assert.equal(battleNarrativeInput.action.requiredDisclosure, null);
-  assert.deepEqual(battleNarrativeInput.authoritativeState.reactionContract.requiredActorIds, ["NPC001"]);
-  assert.ok(battleNarrativeInput.authoritativeState.reactionContract.goals.some((goal) => /一人では歩けない/u.test(goal)));
-  assert.equal(battleRecord.presentation.source, "test");
-  assert.match(battleRecord.presentation.narrative, /斜面の下.*少年/u);
+  assert.equal(battleNarrativeInput, undefined, "a reviewed authored aftermath bypasses Gemini generation");
+  assert.equal(battleRecord.presentation.source, "authored_scene");
+  assert.equal(battleRecord.presentation.sceneId, "t01.rescue.after_battle");
+  assert.match(battleRecord.presentation.narrative, /斜面の下.*青年/u);
   assert.ok(battleRecord.presentation.speeches.some((speech) => speech.actorId === "NPC001"
-    && /フィン.*足.*歩けない.*村の広場/u.test(speech.text)));
+    && /フィン.*足.*一人では村まで戻れそうにない/u.test(speech.text)));
   assert.equal(runner.save.tutorial?.complete, true, "the combat coach does not return after a battle was experienced");
   assert.equal(runner.save.missions.find((entry) => entry.id === "MSN-T01")?.currentStep?.id, "escort");
   assert.equal(runner.save.guidance.targetFacilityId, "LOC_FARM_EDGE");
@@ -2017,6 +2013,10 @@ test("leaving for the capital removes the village T01 thread from later Gemini c
   const capital = runner.save.movement.find((move) => move.destination === "王都");
   assert.ok(capital);
   await runner.run("MOVE", { moveId: capital.moveId });
+  const followup = runner.save.choices.find((choice) => !String(choice.actionId).startsWith("MOVE_REGION:"))
+    ?? runner.save.choices[0];
+  assert.ok(followup, "the reviewed capital arrival must still expose a next action");
+  await runner.run("CHOOSE", { choiceId: followup.choiceId, actionId: followup.actionId });
 
   const capitalInput = inputs.findLast((input) => input.authoritativeState?.location === "王都");
   assert.ok(capitalInput);
