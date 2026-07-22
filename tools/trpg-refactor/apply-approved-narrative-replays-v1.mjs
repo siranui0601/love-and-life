@@ -124,8 +124,8 @@ live = replaceOnce(
 );
 live = replaceOnce(
   live,
-  `- Gemini生成: \${report.summary.gemini}\n- 再生キャッシュ: \${report.summary.replayCache}\n`,
-  `- Gemini生成: \${report.summary.gemini}\n- 承認済み再生: \${report.summary.approvedReplay}\n- 再生キャッシュ: \${report.summary.replayCache}\n`,
+  '- 再生キャッシュ: ${report.summary.replayCache}\\n',
+  '- 承認済み再生: ${report.summary.approvedReplay}\\n- 再生キャッシュ: ${report.summary.replayCache}\\n',
   "live-markdown-approved",
 );
 live = replaceOnce(
