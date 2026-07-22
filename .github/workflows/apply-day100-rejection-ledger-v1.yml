@@ -1,0 +1,66 @@
+name: Apply TRPG Day100 rejection ledger v1
+
+on:
+  push:
+    branches:
+      - chatgpt/trpg-authored-content-refactor
+    paths:
+      - ".github/workflows/apply-day100-rejection-ledger-v1.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-authored-content-refactor
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply rejection-aware Day100 policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("tools/trpg-refactor/apply-day100-rejection-ledger-v1.mjs")
+          source = path.read_text(encoding="utf-8")
+          source = source.replace("}\n `,\n    `function actionText", "}\n`,\n    `function actionText", 1)
+          path.write_text(source, encoding="utf-8")
+          PY
+          node tools/trpg-refactor/apply-day100-rejection-ledger-v1.mjs
+          git diff --check
+      - run: npm ci
+      - name: Run complete TRPG regression suite
+        shell: bash
+        run: |
+          set +e
+          npm run trpg:test > tools/trpg-day100-rejection-regression.log 2>&1
+          status=$?
+          cat tools/trpg-day100-rejection-regression.log
+          if [ "$status" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/trpg-day100-rejection-regression.log
+            git commit -m "test(trpg): record Day100 rejection-ledger failure"
+            git push origin HEAD:chatgpt/trpg-authored-content-refactor
+            exit "$status"
+          fi
+      - name: Commit verified modular runner source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f tools/trpg-day100-rejection-regression.log
+          rm -f .github/workflows/apply-day100-rejection-ledger-v1.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(trpg): stop Day100 player retrying rejected actions"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
