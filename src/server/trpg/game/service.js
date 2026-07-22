@@ -12,6 +12,7 @@ import {
   sellEquipment,
 } from "../../../../tools/trpg-sim/lib/shop-runtime.mjs";
 import { experienceToNextLevel } from "../../../../tools/trpg-sim/lib/mission-model.mjs";
+import { ensurePlayerNeeds, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 import {
   completeNpcLifeTick,
   createNpcLifeEngine,
@@ -26,8 +27,8 @@ import { resolveCanonicalWeather, WEATHER_RULESET_VERSION } from "../resolvers/w
 import { selectDiverseChoices } from "../content/choice-contract.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v11";
-const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10"]);
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v12";
+const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
 const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
@@ -249,6 +250,7 @@ function gameplayTuning() {
     maxWildBattlesPerDay: 2,
     wildEncounterCooldownMinutes: 480,
     workGoldThreshold: 24,
+    mealPrice: 4,
     restPrice: 4,
   };
 }
@@ -946,6 +948,8 @@ export function createGameRuntime(data, { seed, profileId, playerName, tutorial 
   });
   playerState.player.displayName = playerName;
   playerState.player.name = playerName;
+  ensurePlayerNeeds(playerState.player);
+  playerState.weather = canonicalWeatherForState(playerState);
   Object.assign(playerState.worldFlags, {
     knightOrderCooperation: false,
     mageTowerPermit: false,
@@ -1000,6 +1004,7 @@ export function gameStateHash(runtime, data, resolverVersion = TRPG_GAME_RESOLVE
 
 function choiceIntent(action) {
   if (action.type === "conversation") return action.targetNpcId ? "talk" : "investigate";
+  if (action.type === "eat") return "prepare";
   if (action.type === "investigate") return "investigate";
   if (["missionBattle", "seekBattle"].includes(action.type)) return "prepare";
   if (action.type === "resolveMission") return "help";
@@ -1009,6 +1014,44 @@ function choiceIntent(action) {
   if (action.type === "plan") return "prepare";
   if (action.type === "work") return "help";
   return "observe";
+}
+
+const REGION_MEAL_PRICE = Object.freeze({
+  "田園の村": 4,
+  "王都": 8,
+  "交易都市": 7,
+  "犯罪都市": 9,
+  "辺境の村": 6,
+  "北陵要塞": 7,
+  "ドワーフ洞窟": 8,
+  "エルフの隠れ里": 6,
+  "古代神殿": 8,
+  "魔王領": 12,
+});
+
+const REGION_LODGING_PRICE = Object.freeze({
+  "田園の村": 12,
+  "王都": 28,
+  "交易都市": 24,
+  "犯罪都市": 22,
+  "辺境の村": 16,
+  "北陵要塞": 18,
+  "ドワーフ洞窟": 20,
+  "エルフの隠れ里": 18,
+  "古代神殿": 20,
+  "魔王領": 35,
+});
+
+function facilityOffersMeals(facility) {
+  return /宿|飯|食堂|酒場|茶屋|パン|市場|料理|厨房/u.test(String(facility?.name ?? "") + " " + String(facility?.type ?? ""));
+}
+
+function facilityOffersLodging(facility) {
+  return /宿|旅籠|宿泊/u.test(String(facility?.name ?? "") + " " + String(facility?.type ?? ""));
+}
+
+function canonicalWeatherForState(state) {
+  return resolveCanonicalWeather({ day: state.day, regionId: state.player.location, daypart: state.daypart });
 }
 
 const REGION_BASE_HOURLY_WAGE = Object.freeze({
@@ -1145,6 +1188,54 @@ function contextualLocalAction(action, runtime, data) {
       LOC_FARM_WELL: "水桶運びの仕事内容と賃金を聞く",
     }[facilityId] ?? `${facility?.name ?? runtime.playerState.player.location}で、仕事の内容と賃金を尋ねる`;
     return decorateWorkOfferAction({ ...action, id: `WORK:${facilityId}`, label, workOffer: true }, runtime, data, publicNpc?.id ?? null);
+  }
+  if (action.type === "eat") {
+    if (!facilityOffersMeals(facility)) return null;
+    const price = runtime.playerState.player.freeMeals > 0
+      ? 0
+      : Number(REGION_MEAL_PRICE[runtime.playerState.player.location] ?? 6);
+    if (price > runtime.playerState.player.gold) return null;
+    return {
+      ...action,
+      id: "EAT:" + facilityId + ":" + price,
+      type: "eat",
+      minutes: Math.max(20, Number(action.minutes ?? 30)),
+      price,
+      nutrition: 58,
+      mealQuality: facilityId === "LOC_FARM_INN" ? "hearty" : "standard",
+      label: price > 0
+        ? String(facility?.name ?? "この場所") + "で食事を取る（" + price + "G）"
+        : String(facility?.name ?? "この場所") + "で用意された食事を取る",
+    };
+  }
+  if (action.type === "rest") {
+    const lodgingAvailable = facilityOffersLodging(facility);
+    const lodgingPrice = runtime.playerState.player.freeLodging > 0
+      ? 0
+      : Number(REGION_LODGING_PRICE[runtime.playerState.player.location] ?? 20);
+    const canAffordLodging = lodgingAvailable
+      && (runtime.playerState.player.freeLodging > 0 || lodgingPrice <= runtime.playerState.player.gold);
+    const needs = publicPlayerNeeds(runtime.playerState.player);
+    const lodging = canAffordLodging && (runtime.playerState.hour >= 18 || needs.fatigue >= 70 || Number(action.minutes ?? 0) >= 420);
+    const price = lodging ? lodgingPrice : 0;
+    const tags = new Set(runtime.playerState.weather?.tags ?? []);
+    const severeWeather = tags.has("storm") || tags.has("snow");
+    return {
+      ...action,
+      id: lodging ? "LODGE:" + facilityId + ":" + price : "REST_OUTDOOR:" + facilityId,
+      type: "rest",
+      lodging,
+      price,
+      safety: lodging ? "good" : severeWeather ? "poor" : "normal",
+      minutes: lodging ? Math.max(420, Number(action.minutes ?? 480)) : Math.min(180, Number(action.minutes ?? 120)),
+      label: lodging
+        ? price > 0
+          ? String(facility?.name ?? "宿") + "に泊まる（" + price + "G）"
+          : String(facility?.name ?? "宿") + "で今夜は休む"
+        : severeWeather
+          ? "風雨を避けられる場所を探し、短く休息する"
+          : "安全そうな場所を探し、短く休息する",
+    };
   }
   if (action.type === "wait" || (action.type === "observe" && String(action.id).startsWith("WAIT-"))) {
     const escort = facilityId === "LOC_FARM_EDGE" ? ensureT01EscortState(runtime) : null;
@@ -1984,6 +2075,11 @@ function resolvedActionForPresentation(action) {
     workDecline: Boolean(action.workDecline),
     quotedWage: Number.isFinite(Number(action.quotedWage)) ? Number(action.quotedWage) : null,
     workDescription: cleanText(action.workDescription, 180) || null,
+    lodging: action.lodging === true,
+    price: Number.isFinite(Number(action.price)) ? Number(action.price) : null,
+    nutrition: Number.isFinite(Number(action.nutrition)) ? Number(action.nutrition) : null,
+    mealQuality: cleanText(action.mealQuality, 40) || null,
+    safety: cleanText(action.safety, 40) || null,
     localVariant: Number(action.localVariant ?? 0),
     destinationFacilityId: action.destinationFacilityId ?? null,
     destinationHub: action.destinationHub ?? null,
@@ -2205,6 +2301,9 @@ function interactiveBattleView(runtime, data) {
 
 function safeOutcome(result, data = null) {
   const output = { ok: result?.ok !== false, type: result?.type ?? null, reason: result?.reason ?? null };
+  if (result?.requiredGold !== undefined) output.requiredGold = Number(result.requiredGold);
+  if (result?.meal) output.meal = { ...result.meal };
+  if (result?.rest) output.rest = { ...result.rest };
   if (result?.reasonDetail) output.reasonDetail = cleanText(result.reasonDetail, 240);
   if (result?.command && typeof result.command === "object") {
     output.command = {
@@ -2273,7 +2372,7 @@ function replayOutcome(outcome) {
 
 function errorFromResult(result) {
   const code = result?.reason ?? "command_rejected";
-  const status = ["insufficient_gold", "insufficient_sp"].includes(code) ? 409 : 400;
+  const status = ["insufficient_gold", "insufficient_sp", "insufficient_gold_for_meal", "insufficient_gold_for_lodging"].includes(code) ? 409 : 400;
   return new TrpgGameError(status, code, code, safeOutcome(result));
 }
 
@@ -2336,6 +2435,8 @@ function withTemporaryTuning(state, key, value, operation) {
 
 export function executeGameRuntimeCommand(runtime, data, command) {
   if (!COMMAND_TYPES.has(command.type)) throw new TrpgGameError(400, "unknown_command_type");
+  ensurePlayerNeeds(runtime.playerState.player);
+  runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
   const activeBattle = runtime.pendingBattle?.session?.status === "active";
   if (activeBattle && command.type !== "BATTLE_ACT") {
     throw new TrpgGameError(409, "battle_command_required", "Finish or flee from the current battle first");
@@ -2712,6 +2813,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   }
   updateDialogueSession(runtime, resolvedPlayerAction);
   expireDialogueSession(runtime);
+  runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
   return {
     resolvedActionId,
     resolvedAction: resolvedActionForPresentation(resolvedPlayerAction),
@@ -3548,6 +3650,22 @@ function deterministicFallbackPresentation(runtime, data, action, outcome) {
     }[facilityId] ?? `${facilityName}へ着いた。人の流れと周囲の様子を確かめ、ここで次に何をするか選べる。`;
     return { narrative, speeches: [] };
   }
+  if (resolved?.type === "eat") {
+    return {
+      narrative: outcome?.meal?.hungerReduced
+        ? "温かい食事を取り、空腹が和らいだ。次に歩けるだけの力が戻るまで腰を落ち着けた。"
+        : "食事を取り、次の行動に備えた。",
+      speeches: [],
+    };
+  }
+  if (resolved?.type === "rest") {
+    return {
+      narrative: resolved.lodging
+        ? "戸を閉められる寝床を確保し、装備を手の届く所へ置いて横になる。目を覚ます頃には、身体の重さが抜けていた。"
+        : "風と人目を避けられる場所を選び、荷物を抱えたまま短く身体を休める。宿ほど深くは眠れないが、歩き続けるよりはましだ。",
+      speeches: [],
+    };
+  }
   if (["work", "localInvestigate", "wait", "plan"].includes(resolved?.type)) {
     const facilityId = runtime.playerState.player.facilityId;
     const present = presentNpcsAt(runtime, data);
@@ -3839,6 +3957,9 @@ export function buildGameView(record, runtime, data) {
       gold: state.player.gold,
       hpRatio: state.player.hpRatio,
       mpRatio: state.player.mpRatio,
+      needs: publicPlayerNeeds(state.player),
+      freeMeals: Number(state.player.freeMeals ?? 0),
+      freeLodging: Number(state.player.freeLodging ?? 0),
       stats: { ...state.player.stats },
       equipment: Object.fromEntries(equippedSlots.map(({ slot, id }) => [slot, equipmentView(data, id, state.player.inventory.equipment[id] ?? 0, equippedSlots)])),
       inventory: {
@@ -4072,7 +4193,12 @@ function narrativeInput(record, runtime, data, action, outcome) {
       npcs: narrativeNpcs,
       player: {
         displayName: "オレゴン",
-        visibleCondition: "行動可能",
+        visibleCondition: publicPlayerNeeds(runtime.playerState.player).critical
+          ? "空腹か疲労が限界に近い"
+          : publicPlayerNeeds(runtime.playerState.player).urgent
+            ? "空腹か疲労が強い"
+            : "行動可能",
+        needs: publicPlayerNeeds(runtime.playerState.player),
         knownFacts: [
           ...(t01NarrativeRelevant(runtime, resolvedAction, missions) ? openingKnownFactTexts(runtime) : []),
           ...rumors.map((rumor) => rumor.text),
@@ -4461,6 +4587,8 @@ export class TrpgGameService {
       const runtime = hydrateRuntime(record, this.data);
       const legacyHash = gameStateHash(runtime, this.data, record.resolverVersion);
       if (legacyHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
+      ensurePlayerNeeds(runtime.playerState.player);
+      runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
       const normalizedSnapshot = serializeRuntime(runtime);
       record.replayBase = {
         resolverVersion: record.resolverVersion,
@@ -4597,6 +4725,8 @@ export class TrpgGameService {
         if (baseHash !== replayBase.stateHash) {
           return { ok: false, revision: replayBase.revision, stateHash: gameStateHash(runtime, this.data), checks: [], baseMatches: false };
         }
+        ensurePlayerNeeds(runtime.playerState.player);
+        runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
         revision = replayBase.revision;
         entries = record.commandLog.filter((entry) => Number(entry.seq) > replayBase.revision);
       } else {

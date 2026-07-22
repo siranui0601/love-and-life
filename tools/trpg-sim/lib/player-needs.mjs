@@ -89,7 +89,14 @@ export function ensurePlayerNeeds(playerOrNeeds) {
     : null;
   const source = owner ? owner.needs : playerOrNeeds;
   const migrated = createPlayerNeeds(source ?? {});
-  if (owner) owner.needs = migrated;
+  if (owner) {
+    owner.needs = migrated;
+    return owner.needs;
+  }
+  if (playerOrNeeds && typeof playerOrNeeds === "object") {
+    Object.assign(playerOrNeeds, migrated);
+    return playerOrNeeds;
+  }
   return migrated;
 }
 
