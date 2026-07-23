@@ -90,7 +90,7 @@ test("coverage distinguishes discovery, progress, engagement and terminal state"
     missions: [{ id: "MSN-T02", troubleId: "T02", kind: "special", title: "王都の異変", status: "active", currentStep: { id: "hear", progress: 0, required: 1 } }],
   });
   observeDay100Coverage(state, initial);
-  const discovered = finalizeDay100Coverage(state, model, initial);
+  const discovered = finalizeDay100Coverage(state, { save: initial, runtime: null, model });
   assert.equal(discovered.counts.discovered, 1);
   assert.equal(discovered.counts.engaged, 0);
   assert.equal(discovered.counts.progressed, 0);
@@ -109,7 +109,7 @@ test("coverage distinguishes discovery, progress, engagement and terminal state"
     accepted: true,
     outcome: { ok: true },
   });
-  const engaged = finalizeDay100Coverage(state, model, progressed);
+  const engaged = finalizeDay100Coverage(state, { save: progressed, runtime: null, model });
   assert.equal(engaged.counts.engaged, 1);
   assert.equal(engaged.counts.progressed, 1);
 
@@ -120,7 +120,7 @@ test("coverage distinguishes discovery, progress, engagement and terminal state"
     rumors: initial.rumors,
   });
   observeDay100Coverage(state, completed);
-  const terminal = finalizeDay100Coverage(state, model, completed);
+  const terminal = finalizeDay100Coverage(state, { save: completed, runtime: null, model });
   assert.equal(terminal.counts.terminal, 1);
   assert.equal(terminal.counts.resolved, 1);
 });
