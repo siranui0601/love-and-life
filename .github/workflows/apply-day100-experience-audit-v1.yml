@@ -6,6 +6,7 @@ on:
       - chatgpt/trpg-authored-content-refactor
     paths:
       - ".github/workflows/apply-day100-experience-audit-v1.yml"
+      - "tools/trpg-refactor/apply-day100-experience-audit-v1.mjs"
 
 permissions:
   contents: write
