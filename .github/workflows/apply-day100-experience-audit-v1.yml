@@ -8,6 +8,10 @@ on:
       - ".github/workflows/apply-day100-experience-audit-v1.yml"
       - "tools/trpg-refactor/apply-day100-experience-audit-v1.mjs"
 
+concurrency:
+  group: trpg-day100-experience-audit-v1
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -28,8 +32,18 @@ jobs:
       - name: Apply strict Day100 simulation contract
         shell: bash
         run: |
-          set -euo pipefail
-          node tools/trpg-refactor/apply-day100-experience-audit-v1.mjs
+          set +e
+          node tools/trpg-refactor/apply-day100-experience-audit-v1.mjs > tools/trpg-day100-experience-integration.log 2>&1
+          status=$?
+          cat tools/trpg-day100-experience-integration.log
+          if [ "$status" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/trpg-day100-experience-integration.log
+            git commit -m "test(trpg): record Day100 experience integration failure"
+            git push origin HEAD:chatgpt/trpg-authored-content-refactor
+            exit "$status"
+          fi
           git diff --check
       - run: npm ci
       - name: Run complete TRPG regression suite
@@ -51,7 +65,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f tools/trpg-day100-experience-regression.log
+          rm -f tools/trpg-day100-experience-integration.log tools/trpg-day100-experience-regression.log
           rm -f .github/workflows/apply-day100-experience-audit-v1.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
