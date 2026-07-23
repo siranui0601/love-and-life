@@ -33,6 +33,16 @@ jobs:
         shell: bash
         run: |
           set +e
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("tools/trpg-refactor/apply-day100-experience-audit-v1.mjs")
+          source = path.read_text(encoding="utf-8")
+          old = '&& /battle|戦|討伐|護衛/u.test(`${mission.currentStep?.type ?? ""} ${mission.currentStep?.label ?? ""}`));'
+          new = '&& /battle|戦|討伐|護衛/u.test(String(mission.currentStep?.type ?? "") + " " + String(mission.currentStep?.label ?? "")));'
+          if source.count(old) != 1:
+              raise SystemExit(f"nested template anchor count: {source.count(old)}")
+          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+          PY
           node tools/trpg-refactor/apply-day100-experience-audit-v1.mjs > tools/trpg-day100-experience-integration.log 2>&1
           status=$?
           cat tools/trpg-day100-experience-integration.log
