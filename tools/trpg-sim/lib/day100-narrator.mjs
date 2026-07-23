@@ -123,11 +123,22 @@ export function createDay100Narrator({
       const source = response?.meta?.source ?? "unknown";
       stats.sourceCounts[source] = number(stats.sourceCounts[source]) + 1;
       const acceptedSources = offlineAuthoring ? OFFLINE_REVIEWED_SOURCES : LIVE_VALID_SOURCES;
+      const meaningful = meaningfulNarrativeScene(input);
       const invalidMeaningfulSource = !acceptedSources.has(source)
         || response?.meta?.usedFallback === true
         || response?.meta?.partialOutputUsed === true;
-      if (meaningfulNarrativeScene(input) && invalidMeaningfulSource) {
+      if (meaningful && invalidMeaningfulSource) {
         stats.meaningfulFallbacks += 1;
+        if (offlineAuthoring) {
+          response = {
+            ...response,
+            meta: {
+              ...(response?.meta ?? {}),
+              source: "offline_unapproved",
+              originalSource: source,
+            },
+          };
+        }
       }
       if (experienceAudit) observeNarrativeExperience(experienceAudit, input, response);
       return response;
