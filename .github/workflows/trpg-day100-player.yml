@@ -8,6 +8,8 @@ on:
       - ".github/workflows/trpg-day100-player.yml"
       - "tools/trpg-sim/lib/day100-player-policy.mjs"
       - "tools/trpg-sim/lib/day100-player-runner.mjs"
+      - "tools/trpg-sim/lib/day100-narrator.mjs"
+      - "tools/trpg-sim/lib/day100-experience-audit.mjs"
       - "tools/trpg-sim/cli-day100-player.mjs"
       - "tools/trpg-sim/test/day100-*.test.mjs"
   workflow_dispatch:
@@ -25,7 +27,7 @@ jobs:
     timeout-minutes: 180
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      TRPG_DAY100_LIVE_MAX: 48
+      TRPG_DAY100_NARRATIVE_MAX: 600
       TRPG_DAY100_MAX_ACTIONS: 4200
       TRPG_DAY100_SEED: trpg-day100-player-v1
       TRPG_NARRATIVE_REQUEST_TIMEOUT_MS: 25000
@@ -42,12 +44,12 @@ jobs:
       - run: npm ci
       - name: Run complete TRPG regression suite
         run: npm run trpg:test
-      - name: Run one player-authority Day1 to Day100 journey
+      - name: Run one strict player-authority Day1 to Day100 journey
         shell: bash
         run: |
           mkdir -p tools/trpg-sim/reports
           set +e
-          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v6 npm run trpg:day100-player -- --strict \
+          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v7 npm run trpg:day100-player -- --strict \
             > tools/trpg-sim/reports/day100-player-console.log 2>&1
           status=$?
           cat tools/trpg-sim/reports/day100-player-console.log
@@ -75,7 +77,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Day100 summary is unchanged."
           else
-            git commit -m "test(trpg): record rejection-aware Day100 coverage"
+            git commit -m "test(trpg): record strict Day100 conversation and build coverage"
             git push origin HEAD:chatgpt/trpg-authored-content-refactor
           fi
       - name: Enforce journey quality gate
