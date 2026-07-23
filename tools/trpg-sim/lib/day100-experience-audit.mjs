@@ -45,7 +45,8 @@ function skillIds(save) {
 }
 
 function inventoryEquipment(save) {
-  return Array.isArray(save?.player?.inventory?.equipment) ? save.player.inventory.equipment : [];
+  if (Array.isArray(save?.player?.inventory?.equipment)) return save.player.inventory.equipment;
+  return Array.isArray(save?.inventoryEquipment) ? save.inventoryEquipment : [];
 }
 
 function equippedWeaponTypes(save) {
@@ -111,7 +112,7 @@ export function meaningfulNarrativeScene(input) {
   const action = input?.action ?? {};
   if (MEANINGFUL_SCENE_MODES.has(input?.sceneMode)) return true;
   if (action?.missionId || action?.firstIntroduction) return true;
-  return false;
+  return /^(?:SHOP_|CLAIM_EQUIPMENT_REWARD|EQUIP|LEARN_SKILL)/u.test(String(action?.type ?? action?.id ?? ""));
 }
 
 export function observeNarrativeExperience(audit, input, response) {
