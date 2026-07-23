@@ -1,0 +1,48 @@
+name: TRPG Day100 information-loop integration
+
+on:
+  push:
+    branches:
+      - chatgpt/trpg-authored-content-refactor
+    paths:
+      - ".github/workflows/trpg-day100-information-loop-fix.yml"
+      - "tools/trpg-sim/apply-day100-information-loop-fix.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trpg-day100-information-loop-fix-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-authored-content-refactor
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply reviewed runner-policy fix
+        run: node tools/trpg-sim/apply-day100-information-loop-fix.mjs
+      - name: Run complete TRPG regression suite
+        run: npm run trpg:test
+      - name: Commit integrated fix and remove staging files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm tools/trpg-sim/apply-day100-information-loop-fix.mjs
+          git rm .github/workflows/trpg-day100-information-loop-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/trpg-sim/lib/day100-player-policy.mjs tools/trpg-sim/test/day100-player-policy.test.mjs
+          git commit -m "fix(trpg): stop repeating exhausted information probes"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
