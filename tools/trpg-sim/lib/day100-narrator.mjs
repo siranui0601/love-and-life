@@ -10,10 +10,16 @@ import {
 } from "./day100-experience-audit.mjs";
 
 const ROUTINE_ACTION_TYPES = new Set(["eat", "rest", "wait", "work", "plan"]);
+const LIVE_VALID_SOURCES = new Set(["gemini", "gemini_repaired", "approved_replay", "replay_cache"]);
+const OFFLINE_REVIEWED_SOURCES = new Set(["approved_replay"]);
 
 function number(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function enabled(value) {
+  return /^(?:1|true|yes|on)$/iu.test(String(value ?? "").trim());
 }
 
 function candidateChoice(candidate) {
@@ -81,17 +87,20 @@ export function createDay100Narrator({
   provider,
   cache,
   approvedCache,
+  offlineAuthoring = enabled(process.env.TRPG_DAY100_OFFLINE_AUTHORING),
 } = {}) {
+  const resolvedProvider = provider === undefined && offlineAuthoring ? false : provider;
   const live = createTrpgNarrator({
     auditFilePath,
     memoryOnlyAudit: false,
     memoryOnlyCache: cache ? undefined : true,
-    ...(provider ? { provider } : {}),
+    ...(resolvedProvider !== undefined ? { provider: resolvedProvider } : {}),
     ...(cache ? { cache } : {}),
     ...(approvedCache ? { approvedCache } : {}),
   });
   const stats = {
     maxNarrativeCalls: Math.max(1, number(maxNarrativeCalls, 600)),
+    offlineAuthoring,
     liveCalls: 0,
     routineTemplates: 0,
     meaningfulFallbacks: 0,
@@ -113,8 +122,11 @@ export function createDay100Narrator({
       }
       const source = response?.meta?.source ?? "unknown";
       stats.sourceCounts[source] = number(stats.sourceCounts[source]) + 1;
-      if (meaningfulNarrativeScene(input)
-        && !new Set(["gemini", "gemini_repaired", "approved_replay", "replay_cache"]).has(source)) {
+      const acceptedSources = offlineAuthoring ? OFFLINE_REVIEWED_SOURCES : LIVE_VALID_SOURCES;
+      const invalidMeaningfulSource = !acceptedSources.has(source)
+        || response?.meta?.usedFallback === true
+        || response?.meta?.partialOutputUsed === true;
+      if (meaningfulNarrativeScene(input) && invalidMeaningfulSource) {
         stats.meaningfulFallbacks += 1;
       }
       if (experienceAudit) observeNarrativeExperience(experienceAudit, input, response);
