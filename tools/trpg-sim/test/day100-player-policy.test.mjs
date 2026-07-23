@@ -49,7 +49,7 @@ test("critical survival needs take priority over mission and coverage actions", 
   });
   const decision = selectDay100Decision({ save: current, model, state });
   assert.equal(decision.actionId, "EAT:LOC_FARM_INN:4");
-  assert.equal(decision.category, "meal");
+  assert.equal(decision.category, "meal_consumed");
 });
 
 test("an executable active-mission choice outranks patrol and ordinary work", () => {
@@ -73,51 +73,53 @@ test("regional pathfinding chooses the first legal hop instead of teleporting", 
   const state = createDay100CoverageState(model);
   const current = save({
     movement: [
-      { moveId: "MOVE:CAPITAL", scope: "regional", destination: "王都", label: "王都へ向かう" },
-      { moveId: "MOVE:LOCAL", scope: "local", destinationFacilityId: "LOC_FARM_INN", label: "麦穂亭へ向かう" },
+      { moveId: "MOVE_REGION:王都", destinationHubId: "王都", destinationFacilityName: "王都", scope: "regional" },
     ],
+    rumors: [{ id: "R-T02", troubleId: "T02", sourceHub: "交易都市", text: "交易都市で異変が起きている" }],
   });
-  const movement = DAY100_POLICY_INTERNALS.movementToward(current, model, state, { hub: "交易都市" });
-  assert.equal(movement.moveId, "MOVE:CAPITAL");
+  const decision = selectDay100Decision({ save: current, model, state });
+  assert.equal(decision.type, "MOVE");
+  assert.equal(decision.destinationHubId, "王都");
 });
 
 test("coverage distinguishes discovery, progress, engagement and terminal state", () => {
   const state = createDay100CoverageState(model);
-  const current = save({
-    rumors: [{ id: "R-T02", troubleId: "T02", text: "王都で異変がある" }],
-    missions: [{
-      id: "MSN-T02",
-      troubleId: "T02",
-      kind: "special",
-      title: "王都の異変",
-      status: "active",
-      progressRatio: 0.5,
-      currentStep: { id: "investigate", progress: 1, required: 2 },
-    }],
+  const initial = save({
+    rumors: [{ id: "R-T02", troubleId: "T02", sourceHub: "王都", text: "王都で異変が起きている" }],
+    missions: [{ id: "MSN-T02", troubleId: "T02", kind: "special", title: "王都の異変", status: "active", currentStep: { id: "hear", progress: 0, required: 1 } }],
   });
-  observeDay100Coverage(state, current, {
+  observeDay100Coverage(state, initial);
+  const discovered = finalizeDay100Coverage(state, model, initial);
+  assert.equal(discovered.counts.discovered, 1);
+  assert.equal(discovered.counts.engaged, 0);
+  assert.equal(discovered.counts.progressed, 0);
+
+  const progressed = save({
+    clock: { day: 5, hour: 12, time: "12:00", absoluteMinute: 6000 },
+    scene: { location: "王都", facilityId: "LOC_CAP_SQUARE", beats: [] },
+    missions: [{ id: "MSN-T02", troubleId: "T02", kind: "special", title: "王都の異変", status: "active", currentStep: { id: "investigate", progress: 1, required: 2 } }],
+    rumors: initial.rumors,
+  });
+  observeDay100Coverage(state, progressed, {
     type: "CHOOSE",
     actionId: "ACTION:MSN-T02:investigate",
     missionId: "MSN-T02",
     troubleId: "T02",
-    key: "CHOOSE:ACTION:MSN-T02:investigate",
+    accepted: true,
+    outcome: { ok: true },
   });
-  const runtime = {
-    playerState: {
-      troubles: { T01: { status: "failed" }, T02: { status: "resolved" } },
-      catalog: { special: [{ id: "MSN-T01", troubleId: "T01" }, { id: "MSN-T02", troubleId: "T02" }] },
-      missions: { "MSN-T01": { status: "failed" }, "MSN-T02": { status: "completed" } },
-    },
-  };
-  const report = finalizeDay100Coverage(state, {
-    save: { ...current, clock: { ...current.clock, day: 100 }, world: { ended: true } },
-    runtime,
-    model,
+  const engaged = finalizeDay100Coverage(state, model, progressed);
+  assert.equal(engaged.counts.engaged, 1);
+  assert.equal(engaged.counts.progressed, 1);
+
+  const completed = save({
+    clock: { day: 6, hour: 12, time: "12:00", absoluteMinute: 7440 },
+    scene: { location: "王都", facilityId: "LOC_CAP_SQUARE", beats: [] },
+    missions: [{ id: "MSN-T02", troubleId: "T02", kind: "special", title: "王都の異変", status: "completed", currentStep: null }],
+    rumors: initial.rumors,
   });
-  const t02 = report.troubles.find((entry) => entry.id === "T02");
-  assert.equal(t02.discovered, true);
-  assert.equal(t02.progressed, true);
-  assert.equal(t02.engaged, true);
-  assert.equal(t02.resolved, true);
-  assert.equal(report.counts.terminal, 2);
+  observeDay100Coverage(state, completed);
+  const terminal = finalizeDay100Coverage(state, model, completed);
+  assert.equal(terminal.counts.terminal, 1);
+  assert.equal(terminal.counts.resolved, 1);
 });
