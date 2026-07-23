@@ -40,6 +40,12 @@ import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
 import { facilityVisibility } from "../resolvers/facility-visibility-resolver.js";
 import { resolveCanonicalWeather, WEATHER_RULESET_VERSION } from "../resolvers/weather-resolver.js";
 import { selectDiverseChoices } from "../content/choice-contract.js";
+import {
+  CAPITAL_ARRIVAL_GUIDANCE_VERSION,
+  ensureCapitalWeaponShopChoice,
+  prioritizeCapitalWeaponShopMovement,
+  recordCapitalArrivalGuidance,
+} from "../resolvers/capital-arrival-guidance.js";
 import { resolveAuthoredScene } from "../content/authored-scene-registry.js";
 import {
   WORK_MARKET_VERSION,
@@ -442,6 +448,11 @@ function discoverArrival(runtime, data) {
   const knowledge = ensurePlayerKnowledge(runtime);
   const hubId = runtime.playerState.player.location;
   const facilityId = runtime.playerState.player.facilityId;
+  recordCapitalArrivalGuidance(runtime, {
+    hubId,
+    facilityId,
+    absoluteMinute: runtime.playerState.absoluteMinute,
+  });
   if (hubId) knowledge.knownHubIds.add(hubId);
   if (facilityId) knowledge.knownFacilityIds.add(facilityId);
   if (facilityId === "LOC_FARM_SQUARE") {
@@ -1009,6 +1020,7 @@ export function createGameRuntime(data, { seed, profileId, playerName, tutorial 
     narrativeMemory: createNarrativeMemory(),
   };
   ensureWorkMarket(runtime);
+  recordCapitalArrivalGuidance(runtime);
   advanceLivingWorld(runtime, playerState.absoluteMinute);
   if (tutorial) {
     prepareOpeningTutorial(livingWorld, playerState.absoluteMinute);
@@ -1030,6 +1042,7 @@ function hydrateRuntime(record, data) {
   runtime.narrativeChoiceSelection ??= null;
   ensureNarrativeMemory(runtime);
   ensureWorkMarket(runtime);
+  recordCapitalArrivalGuidance(runtime);
   syncAuthoritativePresentNpcIds(runtime, data);
   return runtime;
 }
@@ -1648,7 +1661,8 @@ function selectedChoiceActions(runtime, actions, data) {
       ...preferred,
       ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),
     ], { expectedCount: Math.min(3, actions.length) });
-  return withChoiceIds(selected.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
+  const guided = ensureCapitalWeaponShopChoice(selected, actions, runtime);
+  return withChoiceIds(guided.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
 }
 
 function choiceActions(runtime, data) {
@@ -1681,7 +1695,9 @@ function movementActions(runtime, data) {
     .filter((action) => action.movementScope === "local"
       ? knowledge.knownFacilityIds.has(action.destinationFacilityId)
       : knowledge.knownHubIds.has(action.destinationHub));
-  if (!runtime.tutorial || runtime.tutorial.stage === "free") return actions;
+  if (!runtime.tutorial || runtime.tutorial.stage === "free") {
+    return prioritizeCapitalWeaponShopMovement(actions, runtime);
+  }
   if (!["movement", "mission_intro", "movement_aftermath", "aftermath_intro"].includes(runtime.tutorial.stage)) return [];
   if (["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) {
     return actions
@@ -4316,6 +4332,7 @@ export function buildGameView(record, runtime, data) {
       weatherRulesetVersion: WEATHER_RULESET_VERSION,
       equipmentAccessVersion: EQUIPMENT_ACCESS_VERSION,
       workMarketVersion: WORK_MARKET_VERSION,
+      capitalArrivalGuidanceVersion: CAPITAL_ARRIVAL_GUIDANCE_VERSION,
       workMarket: publicWorkMarket(runtime, facility),
     },
   };

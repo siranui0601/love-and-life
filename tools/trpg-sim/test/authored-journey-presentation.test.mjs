@@ -50,6 +50,20 @@ test("authoritative regional travel to the capital selects the reviewed lower-in
   assert.equal(presentation?.sceneId, "journey.farm_to_capital.first_arrival");
   assert.match(presentation.narrative, /王都/u);
   assert.match(presentation.narrative, /安宿/u);
+  assert.match(presentation.narrative, /王都武器屋/u);
+  assert.match(presentation.narrative, /剣.*槍.*弓.*杖/u);
+  const capitalActions = availableGameRuntimeActions(runtime, game.data);
+  const weaponShopChoice = capitalActions.choices.find((entry) => entry.destinationFacilityId === "LOC_CAP_WEAPON_SHOP");
+  assert.ok(weaponShopChoice, "first capital arrival must expose the weapon shop in the visible choices");
+  assert.equal(weaponShopChoice.capitalArrivalGuidance, true);
+  const weaponShopMove = capitalActions.movement.find((entry) => entry.destinationFacilityId === "LOC_CAP_WEAPON_SHOP");
+  assert.ok(weaponShopMove, "weapon shop must remain an authoritative MOVE action");
+  executeGameRuntimeCommand(runtime, game.data, {
+    type: "MOVE",
+    payload: { moveId: weaponShopMove.id },
+  });
+  assert.equal(runtime.playerState.player.facilityId, "LOC_CAP_WEAPON_SHOP");
+  assert.equal(availableGameRuntimeActions(runtime, game.data).choices.some((entry) => entry.capitalArrivalGuidance === true), false);
 });
 
 test("weather-tagged reviewed prose takes precedence over the generic arrival prose", () => {
