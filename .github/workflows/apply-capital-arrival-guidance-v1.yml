@@ -6,6 +6,7 @@ on:
       - chatgpt/trpg-authored-content-refactor
     paths:
       - ".github/workflows/apply-capital-arrival-guidance-v1.yml"
+      - "tools/trpg-refactor/apply-capital-arrival-guidance-v1.mjs"
 
 permissions:
   contents: write
