@@ -1,21 +1,22 @@
 name: TRPG Day1 to Day100 single player journey
 
 on:
-  push:
+  pull_request:
     branches:
-      - chatgpt/trpg-authored-content-refactor
+      - main
     paths:
       - ".github/workflows/trpg-day100-player.yml"
       - "tools/trpg-sim/lib/day100-player-policy.mjs"
       - "tools/trpg-sim/lib/day100-player-runner.mjs"
       - "tools/trpg-sim/lib/day100-narrator.mjs"
       - "tools/trpg-sim/lib/day100-experience-audit.mjs"
+      - "tools/trpg-sim/lib/day100-replay-candidates.mjs"
       - "tools/trpg-sim/cli-day100-player.mjs"
       - "tools/trpg-sim/test/day100-*.test.mjs"
   workflow_dispatch:
 
 concurrency:
-  group: trpg-day100-player-${{ github.ref }}
+  group: trpg-day100-player-${{ github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -23,6 +24,7 @@ permissions:
 
 jobs:
   day100-player:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
@@ -30,6 +32,7 @@ jobs:
       TRPG_DAY100_NARRATIVE_MAX: 600
       TRPG_DAY100_MAX_ACTIONS: 4200
       TRPG_DAY100_SEED: trpg-day100-player-v1
+      TRPG_DAY100_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
       TRPG_NARRATIVE_REQUEST_TIMEOUT_MS: 25000
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +52,7 @@ jobs:
         run: |
           mkdir -p tools/trpg-sim/reports
           set +e
-          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v7 npm run trpg:day100-player -- --strict \
+          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v8 npm run trpg:day100-player -- --strict \
             > tools/trpg-sim/reports/day100-player-console.log 2>&1
           status=$?
           cat tools/trpg-sim/reports/day100-player-console.log
@@ -64,20 +67,24 @@ jobs:
             tools/trpg-sim/reports/day100-player-*
           if-no-files-found: error
           retention-days: 14
-      - name: Commit secret-free compact summary
+      - name: Commit secret-free summary and replay candidates
         if: always()
         shell: bash
         run: |
           set -euo pipefail
           test -f tools/trpg-sim/reports/day100-player-latest.json
+          test -f tools/trpg-sim/reports/day100-player-latest-replay-candidates.json
           cp tools/trpg-sim/reports/day100-player-latest.json tools/trpg-sim/reports/day100-player-pr-summary.json
+          cp tools/trpg-sim/reports/day100-player-latest-replay-candidates.json tools/trpg-sim/reports/day100-player-pr-replay-candidates.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools/trpg-sim/reports/day100-player-pr-summary.json
+          git add \
+            tools/trpg-sim/reports/day100-player-pr-summary.json \
+            tools/trpg-sim/reports/day100-player-pr-replay-candidates.json
           if git diff --cached --quiet; then
-            echo "Day100 summary is unchanged."
+            echo "Day100 summary and replay candidates are unchanged."
           else
-            git commit -m "test(trpg): record strict Day100 conversation and build coverage"
+            git commit -m "test(trpg): record strict Day100 route and replay candidates"
             git push origin HEAD:chatgpt/trpg-authored-content-refactor
           fi
       - name: Enforce journey quality gate
