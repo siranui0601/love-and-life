@@ -73,13 +73,14 @@ test("regional pathfinding chooses the first legal hop instead of teleporting", 
   const state = createDay100CoverageState(model);
   const current = save({
     movement: [
-      { moveId: "MOVE_REGION:王都", destinationHubId: "王都", destinationFacilityName: "王都", scope: "regional" },
+      { moveId: "MOVE_REGION:王都", destination: "王都", destinationFacilityName: "王都", scope: "regional" },
     ],
     rumors: [{ id: "R-T02", troubleId: "T02", sourceHub: "交易都市", text: "交易都市で異変が起きている" }],
   });
   const decision = selectDay100Decision({ save: current, model, state });
   assert.equal(decision.type, "MOVE");
-  assert.equal(decision.destinationHubId, "王都");
+  assert.equal(decision.moveId, "MOVE_REGION:王都");
+  assert.equal(decision.payload.moveId, "MOVE_REGION:王都");
 });
 
 test("coverage distinguishes discovery, progress, engagement and terminal state", () => {
