@@ -46,3 +46,4 @@ jobs:
           git add tools/trpg-sim/lib/day100-player-policy.mjs tools/trpg-sim/test/day100-player-policy.test.mjs
           git commit -m "fix(trpg): stop repeating exhausted information probes"
           git push origin HEAD:chatgpt/trpg-authored-content-refactor
+# trigger: reviewed run 15 artifact
