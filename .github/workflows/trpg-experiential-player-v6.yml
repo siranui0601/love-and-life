@@ -1,15 +1,6 @@
 name: TRPG experiential player simulation v6
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "public/TRPG/**"
-      - "src/server/trpg/**"
-      - "tools/trpg-sim/**"
-      - "package.json"
-      - ".github/workflows/trpg-experiential-player-v6.yml"
   workflow_dispatch:
 
 permissions:
@@ -20,7 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
       TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
     steps:
@@ -39,7 +29,7 @@ jobs:
           mkdir -p tools/trpg-sim/reports
           set -o pipefail
           npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/experiential-regression.log
-      - name: Run rescue, work-first, and capital-first journeys
+      - name: Run offline experiential journeys
         run: npm run trpg:experiential:v6
       - uses: actions/upload-artifact@v4
         if: always()
