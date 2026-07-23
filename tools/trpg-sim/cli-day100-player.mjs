@@ -12,6 +12,7 @@ const REPORTS = path.join(HERE, "reports");
 const stamp = new Date().toISOString().replace(/[:.]/gu, "-");
 const runId = process.env.TRPG_NARRATIVE_RUN_ID || `day100-player-${stamp}`;
 const seed = process.env.TRPG_DAY100_SEED || "trpg-day100-player-v1";
+const sourceCommit = process.env.TRPG_DAY100_SOURCE_COMMIT || process.env.GITHUB_SHA || "";
 const auditFilePath = path.join(REPORTS, `day100-player-${stamp}-narrative-audit.jsonl`);
 process.env.TRPG_NARRATIVE_RUN_ID = runId;
 
@@ -31,14 +32,14 @@ const replayCandidates = writeDay100ReplayCandidateManifest({
   outputFilePath: latestReplayCandidatesPath,
   runId,
   seed,
-  sourceCommit: process.env.GITHUB_SHA || "",
+  sourceCommit,
 });
 writeDay100ReplayCandidateManifest({
   auditFilePath,
   outputFilePath: stampedReplayCandidatesPath,
   runId,
   seed,
-  sourceCommit: process.env.GITHUB_SHA || "",
+  sourceCommit,
 });
 result.report.replayCandidates = replayCandidates.stats;
 
