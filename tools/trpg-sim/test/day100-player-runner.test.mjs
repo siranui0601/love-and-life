@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createDay100SampledNarrator } from "../lib/day100-player-runner.mjs";
+import { createDay100ExperienceAudit } from "../lib/day100-experience-audit.mjs";
+import { createDay100Narrator } from "../lib/day100-narrator.mjs";
 
 function scenario() {
   return {
@@ -29,13 +30,15 @@ function scenario() {
   };
 }
 
-test("Day100 sampled narrator can run a routine scene without a Gemini provider call", async () => {
-  const narrator = createDay100SampledNarrator({ liveSampleLimit: 0 });
+test("Day100 narrator limits server templates to routine life processing", async () => {
+  const experienceAudit = createDay100ExperienceAudit();
+  const narrator = createDay100Narrator({ maxNarrativeCalls: 1, experienceAudit });
   const response = await narrator.generate(scenario());
-  assert.equal(response.meta.source, "day100_policy_fallback");
+  assert.equal(response.meta.source, "routine_server_template");
   assert.equal(response.meta.providerCalls, 0);
   assert.equal(response.choices.length, 3);
   assert.deepEqual(new Set(response.choices.map((choice) => choice.id)), new Set(["WAIT", "INSPECT", "MOVE"]));
   assert.equal(narrator.stats.liveCalls, 0);
-  assert.equal(narrator.stats.policyFallbacks, 1);
+  assert.equal(narrator.stats.routineTemplates, 1);
+  assert.equal(experienceAudit.narrative.meaningfulScenes, 0);
 });

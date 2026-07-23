@@ -40,6 +40,19 @@ function decisionContextSignature(save) {
   ].join("|");
 }
 
+function resourceContextSignature(save) {
+  const hunger = Math.floor(number(save?.player?.needs?.hunger) / 10) * 10;
+  return [
+    Number(save?.player?.gold ?? 0),
+    Number(save?.player?.freeMeals ?? 0),
+    hunger,
+  ].join("|");
+}
+
+function mealSourceBlocked(state, facilityId, save) {
+  return state.failedMealSourceContexts?.[facilityId] === resourceContextSignature(save);
+}
+
 function rejectionReason(outcome) {
   return String(outcome?.reason ?? outcome?.error ?? outcome?.message ?? outcome?.summary ?? outcome?.type ?? "rejected");
 }
@@ -104,6 +117,10 @@ export function createDay100CoverageState(model) {
     acknowledgedIntroductionTokens: [],
     blockedDecisionKeys: {},
     knownMealSources: {},
+    failedMealSourceContexts: {},
+    triedStockIds: [],
+    weaponTypesTried: [],
+    equippedEquipmentIds: [],
     actionCount: 0,
     acceptedActionCount: 0,
     rejectedActionCount: 0,
@@ -111,6 +128,7 @@ export function createDay100CoverageState(model) {
     battleCount: 0,
     workCount: 0,
     mealCount: 0,
+    mealSearchMoveCount: 0,
     restCount: 0,
     lastObservedMinute: null,
   };
@@ -200,7 +218,19 @@ export function observeDay100Coverage(state, save, decision = null) {
     }
     if (accepted && decision.type === "BATTLE") state.battleCount += 1;
     if (accepted && decision.category === "work") state.workCount += 1;
-    if (accepted && decision.category === "meal") state.mealCount += 1;
+    if (accepted && decision.category === "meal_consumed") state.mealCount += 1;
+    if (accepted && decision.category === "meal_search_move") {
+      state.mealSearchMoveCount += 1;
+      const hasAffordableMeal = (save?.choices ?? []).some((choice) => choice.type === "eat" && mealAffordable(choice, save));
+      if (!hasAffordableMeal && facilityId) {
+        state.failedMealSourceContexts[facilityId] = resourceContextSignature(save);
+      }
+    }
+    if (accepted && decision.type === "SHOP_TRY") {
+      appendUnique(state.triedStockIds, decision.stockId, 100);
+      appendUnique(state.weaponTypesTried, decision.weaponType, 40);
+    }
+    if (accepted && decision.type === "EQUIP") appendUnique(state.equippedEquipmentIds, decision.equipmentId, 100);
     if (accepted && decision.category === "rest") state.restCount += 1;
   }
   state.lastObservedMinute = minute;
@@ -222,6 +252,19 @@ function choiceDecision(choice, reason, extras = {}) {
     stepId: choice.stepId ?? extras.stepId ?? null,
     key: `CHOOSE:${choice.actionId}`,
     label: choice.label,
+    reason,
+    ...extras,
+  };
+}
+
+function commandDecision(type, payload, reason, extras = {}) {
+  const identity = payload?.skillId ?? payload?.stockId ?? payload?.offerId ?? payload?.loanId
+    ?? payload?.rewardId ?? payload?.equipmentId ?? "command";
+  return {
+    type,
+    payload,
+    key: String(type) + ":" + String(identity),
+    actionId: String(type) + ":" + String(identity),
     reason,
     ...extras,
   };
@@ -290,6 +333,86 @@ function facilityLooksLike(move, pattern) {
   return pattern.test(`${move.destinationFacilityName ?? ""} ${move.label ?? ""}`);
 }
 
+function skillLearningDecision(save) {
+  const learnable = [...(save?.skills?.learnable ?? [])]
+    .sort((left, right) => Number(Boolean(right.recommended)) - Number(Boolean(left.recommended))
+      || Number(left.spCost ?? left.cost ?? 0) - Number(right.spCost ?? right.cost ?? 0)
+      || String(left.id).localeCompare(String(right.id), "en"));
+  const skill = learnable[0];
+  if (!skill) return null;
+  return commandDecision("LEARN_SKILL", { skillId: skill.id }, `取得可能な「${skill.name ?? skill.id}」を覚える`, {
+    skillId: skill.id,
+    category: "skill_learning",
+  });
+}
+
+function shopDecision(save, state) {
+  const guidedChoice = (save?.choices ?? []).find((choice) => /LOC_CAP_WEAPON_SHOP|王都武器屋/u.test(actionText(choice)));
+  if (guidedChoice) return choiceDecision(guidedChoice, "王都で案内された武器屋を訪ねる", { category: "shop_discovery" });
+
+  const reward = save?.shop?.rewards?.[0];
+  if (reward) {
+    return commandDecision("CLAIM_EQUIPMENT_REWARD", { rewardId: reward.rewardId }, "依頼で得た装備報酬を受け取る", {
+      equipmentId: reward.equipmentId,
+      category: "equipment_reward",
+    });
+  }
+  if (!save?.shop?.available) return null;
+
+  const stock = save.shop.stock ?? [];
+  const trial = stock.find((entry) => entry.access?.trial?.available !== false
+    && entry.access?.trial
+    && !state.triedStockIds.includes(entry.stockId)
+    && entry.equipment?.weaponType
+    && !state.weaponTypesTried.includes(entry.equipment.weaponType));
+  if (trial && state.weaponTypesTried.length < 4) {
+    return commandDecision("SHOP_TRY", { stockId: trial.stockId }, `${trial.name}を試し、今の装備と扱いを比べる`, {
+      stockId: trial.stockId,
+      equipmentId: trial.equipmentId,
+      weaponType: trial.equipment.weaponType,
+      category: "equipment_trial",
+    });
+  }
+
+  const equippedIds = new Set(Object.values(save?.player?.equipment ?? {}).map((entry) => entry?.id ?? entry).filter(Boolean));
+  const owned = (save?.player?.inventory?.equipment ?? []).find((entry) => entry.weaponType
+    && !equippedIds.has(entry.id)
+    && !state.equippedEquipmentIds.includes(entry.id));
+  if (owned) {
+    return commandDecision("EQUIP", { equipmentId: owned.id }, `${owned.name ?? owned.id}を装備して使い心地を確かめる`, {
+      equipmentId: owned.id,
+      weaponType: owned.weaponType,
+      category: "equipment_change",
+    });
+  }
+
+  const hasActiveBattleMission = (save?.missions ?? []).some((mission) => mission.status === "active"
+    && /battle|戦|討伐|護衛/u.test(String(mission.currentStep?.type ?? "") + " " + String(mission.currentStep?.label ?? "")));
+  const loanEntry = hasActiveBattleMission && !(save.shop.loans ?? []).length
+    ? stock.find((entry) => entry.access?.loan && entry.access.loan.available !== false) : null;
+  if (loanEntry) {
+    return commandDecision("SHOP_BORROW", { loanId: loanEntry.access.loan.loanId }, `依頼用に${loanEntry.name}を借りる`, {
+      equipmentId: loanEntry.equipmentId,
+      weaponType: loanEntry.equipment?.weaponType ?? null,
+      category: "equipment_loan",
+    });
+  }
+
+  const usedEntry = stock.find((entry) => entry.access?.used
+    && entry.access.used.available !== false
+    && Number(entry.access.used.price ?? Infinity) <= Math.max(0, Number(save.player?.gold ?? 0) - 12)
+    && entry.equipment?.weaponType
+    && !state.weaponTypesTried.includes(entry.equipment.weaponType));
+  if (usedEntry) {
+    return commandDecision("SHOP_BUY_USED", { offerId: usedEntry.access.used.offerId }, `中古の${usedEntry.name}を購入する`, {
+      equipmentId: usedEntry.equipmentId,
+      weaponType: usedEntry.equipment.weaponType,
+      category: "equipment_purchase",
+    });
+  }
+  return null;
+}
+
 function survivalDecision(save, model, state) {
   const needs = save.player?.needs ?? {};
   const hunger = number(needs.hunger);
@@ -299,23 +422,25 @@ function survivalDecision(save, model, state) {
   if (hunger >= 72) {
     const meal = bestChoice(save, state, (choice) => (choice.type === "eat" || SURVIVAL_MEAL_PATTERN.test(actionText(choice)))
       && mealAffordable(choice, save), 170);
-    if (meal) return choiceDecision(meal, "空腹が強まる前に、支払える食事を取る", { category: "meal" });
+    if (meal) return choiceDecision(meal, "空腹が強まる前に、支払える食事を取る", { category: "meal_consumed" });
     const affordableSource = Object.values(state.knownMealSources ?? {})
       .filter((source) => Number(source.minimumPrice) <= Number(save.player?.gold ?? 0))
+      .filter((source) => !mealSourceBlocked(state, source.facilityId, save))
       .sort((left, right) => Number(left.minimumPrice) - Number(right.minimumPrice))[0];
     if (affordableSource) {
       const knownMealMove = movementToward(save, model, state, {
         facilityId: affordableSource.hub === save.scene?.location ? affordableSource.facilityId : null,
         hub: affordableSource.hub,
       });
-      if (knownMealMove) return moveDecision(knownMealMove, "所持金で食べられる食事処へ戻る", { category: "meal" });
+      if (knownMealMove) return moveDecision(knownMealMove, "所持金で食べられる食事処へ戻る", { category: "meal_search_move" });
     }
     const work = bestChoice(save, state, (choice) => WORK_PATTERN.test(actionText(choice)), 160);
     if (work) return choiceDecision(work, "食費を確保するため、実行可能な仕事を探す", { category: "work" });
     const mealMove = (save.movement ?? [])
       .filter((move) => !isDecisionBlocked(state, `MOVE:${move.moveId}`, save))
+      .filter((move) => !mealSourceBlocked(state, move.destinationFacilityId, save))
       .find((move) => facilityLooksLike(move, /宿|食堂|酒場|茶屋|パン|市場/u));
-    if (mealMove) return moveDecision(mealMove, "別の食事処で価格や無料の食事を確かめる", { category: "meal" });
+    if (mealMove) return moveDecision(mealMove, "別の食事処で価格や無料の食事を確かめる", { category: "meal_search_move" });
   }
 
   if (fatigue >= 72 || hour >= 21) {
@@ -444,7 +569,7 @@ function fallbackDecision(save, model, state) {
 }
 
 function choiceCategory(choice) {
-  if (choice?.type === "eat" || SURVIVAL_MEAL_PATTERN.test(actionText(choice))) return "meal";
+  if (choice?.type === "eat") return "meal_consumed";
   if (choice?.type === "rest" || SURVIVAL_REST_PATTERN.test(actionText(choice))) return "rest";
   if (WORK_PATTERN.test(actionText(choice))) return "work";
   return null;
@@ -489,7 +614,9 @@ export function selectDay100Decision({ save, model, state }) {
     if (move) return moveDecision(move, "導入で案内された村の広場へ向かう");
   }
 
-  return survivalDecision(save, model, state)
+  return skillLearningDecision(save)
+    ?? shopDecision(save, state)
+    ?? survivalDecision(save, model, state)
     ?? activeMissionDecision(save, model, state)
     ?? economyDecision(save, state)
     ?? discoveryDecision(save, model, state)
@@ -538,6 +665,7 @@ export function finalizeDay100Coverage(state, { save, runtime, model }) {
     battles: state.battleCount,
     jobs: state.workCount,
     meals: state.mealCount,
+    mealSeekingMoves: state.mealSearchMoveCount,
     rests: state.restCount,
     visitedHubCount: Object.keys(state.visitedHubs).length,
     visitedFacilityCount: Object.keys(state.visitedFacilities).length,
@@ -554,6 +682,8 @@ export const DAY100_POLICY_INTERNALS = Object.freeze({
   missionProgress,
   actionPrice,
   decisionContextSignature,
+  resourceContextSignature,
+  mealSourceBlocked,
   isDecisionBlocked,
   mealAffordable,
 });

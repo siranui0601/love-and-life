@@ -39,7 +39,7 @@ test("a rejected meal is counted as a rejected attempt, not as a completed meal"
     payload: { choiceId: "CHOICE-1" },
     actionId: "EAT:LOC_CAP_MARKET:6",
     key: "CHOOSE:EAT:LOC_CAP_MARKET:6",
-    category: "meal",
+    category: "meal_consumed",
     accepted: false,
     outcome: { ok: false, reason: "insufficient_gold" },
   });
@@ -57,7 +57,7 @@ test("an unaffordable or blocked meal yields to an executable work recovery", ()
     type: "CHOOSE",
     actionId: "EAT:LOC_CAP_MARKET:6",
     key: "CHOOSE:EAT:LOC_CAP_MARKET:6",
-    category: "meal",
+    category: "meal_consumed",
     accepted: false,
     outcome: { ok: false, reason: "insufficient_gold" },
   });
@@ -73,7 +73,7 @@ test("a payment rejection is reconsidered after the player's money changes", () 
     type: "CHOOSE",
     actionId: "EAT:LOC_CAP_MARKET:6",
     key: "CHOOSE:EAT:LOC_CAP_MARKET:6",
-    category: "meal",
+    category: "meal_consumed",
     accepted: false,
     outcome: { ok: false, reason: "insufficient_gold" },
   });
@@ -82,5 +82,41 @@ test("a payment rejection is reconsidered after the player's money changes", () 
   assert.equal(DAY100_POLICY_INTERNALS.mealAffordable(funded.choices[0], funded), true);
   const decision = selectDay100Decision({ save: funded, model, state });
   assert.equal(decision.actionId, "EAT:LOC_CAP_MARKET:6");
-  assert.equal(decision.category, "meal");
+  assert.equal(decision.category, "meal_consumed");
+});
+
+
+test("an unsuccessful meal-source visit is not repeated under the same resources", () => {
+  const state = createDay100CoverageState(model);
+  const current = save({ gold: 0 });
+  current.choices = [{ choiceId: "CHOICE-WAIT", actionId: "WAIT", label: "待つ", type: "wait" }];
+  current.movement = [{
+    moveId: "MOVE_LOCAL:LOC_CAP_INN",
+    destinationFacilityId: "LOC_CAP_INN",
+    destinationFacilityName: "安宿",
+    label: "安宿へ行く",
+    scope: "local",
+  }];
+  const first = selectDay100Decision({ save: current, model, state });
+  assert.equal(first.category, "meal_search_move");
+  const arrived = structuredClone(current);
+  arrived.scene.facilityId = "LOC_CAP_INN";
+  arrived.movement = [{
+    moveId: "MOVE_LOCAL:LOC_CAP_MARKET",
+    destinationFacilityId: "LOC_CAP_MARKET",
+    destinationFacilityName: "市場",
+    label: "市場へ行く",
+    scope: "local",
+  }];
+  observeDay100Coverage(state, arrived, { ...first, accepted: true, outcome: { ok: true } });
+  assert.equal(DAY100_POLICY_INTERNALS.mealSourceBlocked(state, "LOC_CAP_INN", arrived), true);
+  arrived.movement.push({
+    moveId: "MOVE_LOCAL:LOC_CAP_INN",
+    destinationFacilityId: "LOC_CAP_INN",
+    destinationFacilityName: "安宿",
+    label: "安宿へ戻る",
+    scope: "local",
+  });
+  const second = selectDay100Decision({ save: arrived, model, state });
+  assert.notEqual(second?.moveId, "MOVE_LOCAL:LOC_CAP_INN");
 });

@@ -16,7 +16,7 @@ const runner = new Day100GameRunner({
   playerName: process.env.TRPG_DAY100_PLAYER_NAME || "百日の旅人",
   seed: process.env.TRPG_DAY100_SEED || "trpg-day100-player-v1",
   maxActions: Number(process.env.TRPG_DAY100_MAX_ACTIONS || 4200),
-  liveSampleLimit: Number(process.env.TRPG_DAY100_LIVE_MAX || 48),
+  maxNarrativeCalls: Number(process.env.TRPG_DAY100_NARRATIVE_MAX || 600),
   auditFilePath: path.join(REPORTS, `day100-player-${stamp}-narrative-audit.jsonl`),
 });
 
