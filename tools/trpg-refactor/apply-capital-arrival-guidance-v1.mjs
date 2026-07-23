@@ -36,6 +36,17 @@ service = replaceOnce(
 );
 service = replaceOnce(
   service,
+  `  ensureWorkMarket(runtime);
+  advanceLivingWorld(runtime, playerState.absoluteMinute);
+`,
+  `  ensureWorkMarket(runtime);
+  recordCapitalArrivalGuidance(runtime);
+  advanceLivingWorld(runtime, playerState.absoluteMinute);
+`,
+  "initialize-capital-guidance",
+);
+service = replaceOnce(
+  service,
   `  ensureNarrativeMemory(runtime);
   ensureWorkMarket(runtime);
   syncAuthoritativePresentNpcIds(runtime, data);
