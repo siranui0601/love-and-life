@@ -1,0 +1,59 @@
+name: Apply TRPG Day100 experience audit v1
+
+on:
+  push:
+    branches:
+      - chatgpt/trpg-authored-content-refactor
+    paths:
+      - ".github/workflows/apply-day100-experience-audit-v1.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-authored-content-refactor
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply strict Day100 simulation contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/trpg-refactor/apply-day100-experience-audit-v1.mjs
+          git diff --check
+      - run: npm ci
+      - name: Run complete TRPG regression suite
+        shell: bash
+        run: |
+          set +e
+          npm run trpg:test > tools/trpg-day100-experience-regression.log 2>&1
+          status=$?
+          cat tools/trpg-day100-experience-regression.log
+          if [ "$status" -ne 0 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/trpg-day100-experience-regression.log
+            git commit -m "test(trpg): record Day100 experience-audit failure"
+            git push origin HEAD:chatgpt/trpg-authored-content-refactor
+            exit "$status"
+          fi
+      - name: Commit verified modular simulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f tools/trpg-day100-experience-regression.log
+          rm -f .github/workflows/apply-day100-experience-audit-v1.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(trpg): audit Day100 conversation skills and weapon breadth"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
