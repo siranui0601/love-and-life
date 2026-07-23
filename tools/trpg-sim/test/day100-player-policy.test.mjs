@@ -120,7 +120,14 @@ test("coverage distinguishes discovery, progress, engagement and terminal state"
     rumors: initial.rumors,
   });
   observeDay100Coverage(state, completed);
-  const terminal = finalizeDay100Coverage(state, { save: completed, runtime: null, model });
+  const runtime = {
+    playerState: {
+      troubles: { T02: { status: "resolved" } },
+      catalog: { special: [{ id: "MSN-T02", troubleId: "T02" }] },
+      missions: { "MSN-T02": { status: "completed" } },
+    },
+  };
+  const terminal = finalizeDay100Coverage(state, { save: completed, runtime, model });
   assert.equal(terminal.counts.terminal, 1);
   assert.equal(terminal.counts.resolved, 1);
 });
