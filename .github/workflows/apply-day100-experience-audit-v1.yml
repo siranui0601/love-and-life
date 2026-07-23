@@ -37,11 +37,18 @@ jobs:
           from pathlib import Path
           path = Path("tools/trpg-refactor/apply-day100-experience-audit-v1.mjs")
           source = path.read_text(encoding="utf-8")
-          old = '&& /battle|戦|討伐|護衛/u.test(`${mission.currentStep?.type ?? ""} ${mission.currentStep?.label ?? ""}`));'
-          new = '&& /battle|戦|討伐|護衛/u.test(String(mission.currentStep?.type ?? "") + " " + String(mission.currentStep?.label ?? "")));'
-          if source.count(old) != 1:
-              raise SystemExit(f"nested template anchor count: {source.count(old)}")
-          path.write_text(source.replace(old, new, 1), encoding="utf-8")
+          replacements = {
+              '&& /battle|戦|討伐|護衛/u.test(`${mission.currentStep?.type ?? ""} ${mission.currentStep?.label ?? ""}`));':
+                  '&& /battle|戦|討伐|護衛/u.test(String(mission.currentStep?.type ?? "") + " " + String(mission.currentStep?.label ?? "")));',
+              r'key: \`${type}:\${identity}\`,': 'key: String(type) + ":" + String(identity),',
+              r'actionId: \`${type}:\${identity}\`,': 'actionId: String(type) + ":" + String(identity),',
+          }
+          for old, new in replacements.items():
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f"normalization anchor count {count}: {old}")
+              source = source.replace(old, new, 1)
+          path.write_text(source, encoding="utf-8")
           PY
           node tools/trpg-refactor/apply-day100-experience-audit-v1.mjs > tools/trpg-day100-experience-integration.log 2>&1
           status=$?
