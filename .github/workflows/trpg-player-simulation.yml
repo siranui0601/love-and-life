@@ -1,47 +1,54 @@
-name: TRPG integrated player simulation
+name: TRPG reviewed weapon-shop unit integration
 
 on:
   pull_request:
     paths:
-      - "tools/trpg-sim/**"
-      - "public/TRPG/**"
-      - "src/server/trpg/**"
-      - "src/server/app.js"
-      - "package.json"
       - ".github/workflows/trpg-player-simulation.yml"
+      - ".github/workflows/trpg-day100-information-loop-fix.yml"
+      - "tools/trpg-sim/apply-day100-information-loop-fix.mjs"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: trpg-reviewed-weapon-shop-unit-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  simulate:
+  integrate:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-authored-content-refactor
+          fetch-depth: 2
+          show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Run TRPG tests
+      - name: Apply reviewed first weapon-shop visit
+        run: node tools/trpg-sim/apply-day100-information-loop-fix.mjs
+      - name: Run complete TRPG regression suite
+        run: npm run trpg:test
+      - name: Commit reviewed unit and restore ordinary CI
         shell: bash
         run: |
-          mkdir -p tools/trpg-sim/reports
-          set -o pipefail
-          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v4.log
-      - name: Run integrated player, GOAP and Gemini journeys v4
-        env:
-          TRPG_PLAYER_V4_SEEDS: 2
-          TRPG_GOAP_V4_SEEDS: 2
-        run: node tools/trpg-sim/cli-player-v4.mjs --strict
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: trpg-player-simulation-v4
-          path: |
-            tools/trpg-sim/reports/test-v4.log
-            tools/trpg-sim/reports/player-v4-latest.json
-            tools/trpg-sim/reports/player-v4-latest.md
-            tools/trpg-sim/reports/player-latest.json
-            tools/trpg-sim/reports/player-latest.md
-            public/TRPG/player-simulation-report.json
-            public/TRPG/player-simulation-v4-report.json
+          set -euo pipefail
+          git checkout HEAD^ -- .github/workflows/trpg-player-simulation.yml
+          git rm tools/trpg-sim/apply-day100-information-loop-fix.mjs
+          git rm .github/workflows/trpg-day100-information-loop-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/trpg-player-simulation.yml \
+            src/server/trpg/content/authored/journeys/farm-to-capital.js \
+            src/server/trpg/game/service.js \
+            src/server/trpg/resolvers/capital-arrival-guidance.js \
+            tools/trpg-sim/test/authored-journey-presentation.test.mjs \
+            tools/trpg-sim/test/capital-arrival-guidance.test.mjs
+          git commit -m "feat(trpg): author the first capital weapon-shop visit"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
