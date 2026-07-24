@@ -1,4 +1,4 @@
-name: TRPG T17 integration diagnostics
+name: TRPG T17 authored branch integration
 
 on:
   pull_request:
@@ -7,24 +7,28 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: trpg-t17-authored-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  diagnose:
+  integrate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/trpg-authored-content-refactor
-          fetch-depth: 16
+          fetch-depth: 18
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Reapply service and invariant patches
+      - name: Apply reviewed T17 integration
         shell: bash
         run: |
           python - <<'PY'
@@ -63,27 +67,33 @@ jobs:
           source = source.replace(expected_before, expected_after, 1)
           path.write_text(source, encoding="utf-8")
           PY
+          node --check src/server/trpg/game/service.js
+          node --check src/server/trpg/content/authored/missions/t17-second-summoning.js
+          node --check tools/trpg-sim/test/t17-second-summoning.test.mjs
+          node --check tools/trpg-sim/test/game-service.test.mjs
           git diff --check
-      - name: Capture focused regression output
-        shell: bash
+      - name: Run focused T17 and service regressions
         run: |
-          set +e
           node --test \
             tools/trpg-sim/test/t17-second-summoning.test.mjs \
             tools/trpg-sim/test/authored-journey-presentation.test.mjs \
-            tools/trpg-sim/test/game-service.test.mjs \
-            > /tmp/t17-integration.log 2>&1
-          status=$?
-          echo "$status" > /tmp/t17-integration.status
-          tail -n 260 /tmp/t17-integration.log
-          exit 0
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: trpg-t17-integration-diagnostics
-          path: |
-            /tmp/t17-integration.log
-            /tmp/t17-integration.status
-      - name: Enforce result
+            tools/trpg-sim/test/game-service.test.mjs
+      - name: Run complete TRPG regression suite
+        run: npm run trpg:test
+      - name: Commit reviewed T17 slice and restore ordinary CI
         shell: bash
-        run: exit "$(cat /tmp/t17-integration.status)"
+        run: |
+          set -euo pipefail
+          git checkout a1cfdbe5669aea235dcfd1ccf4d051dfb53b08a7 -- .github/workflows/trpg-player-simulation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/trpg-player-simulation.yml \
+            src/server/trpg/content/authored-scene-registry.js \
+            src/server/trpg/content/authored/missions/t17-second-summoning.js \
+            src/server/trpg/game/service.js \
+            tools/trpg-sim/test/t17-second-summoning.test.mjs \
+            tools/trpg-sim/test/game-service.test.mjs
+          git diff --cached --check
+          git commit -m "feat(trpg): author the first T17 investigation branches"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
