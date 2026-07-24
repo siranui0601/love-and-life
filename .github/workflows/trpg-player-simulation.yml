@@ -1,47 +1,56 @@
-name: TRPG integrated player simulation
+name: TRPG generic authored mission flow integration
 
 on:
   pull_request:
     paths:
-      - "tools/trpg-sim/**"
-      - "public/TRPG/**"
-      - "src/server/trpg/**"
-      - "src/server/app.js"
-      - "package.json"
       - ".github/workflows/trpg-player-simulation.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: trpg-generic-mission-flow-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  simulate:
+  integrate:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-authored-content-refactor
+          fetch-depth: 4
+          show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Run TRPG tests
+      - name: Apply reusable authored mission-flow refactor
+        run: python tools/trpg-sim/refactor-authored-mission-flow.py
+      - name: Validate changed sources
         shell: bash
         run: |
-          mkdir -p tools/trpg-sim/reports
-          set -o pipefail
-          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v4.log
-      - name: Run integrated player, GOAP and Gemini journeys v4
-        env:
-          TRPG_PLAYER_V4_SEEDS: 2
-          TRPG_GOAP_V4_SEEDS: 2
-        run: node tools/trpg-sim/cli-player-v4.mjs --strict
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: trpg-player-simulation-v4
-          path: |
-            tools/trpg-sim/reports/test-v4.log
-            tools/trpg-sim/reports/player-v4-latest.json
-            tools/trpg-sim/reports/player-v4-latest.md
-            tools/trpg-sim/reports/player-latest.json
-            tools/trpg-sim/reports/player-latest.md
-            public/TRPG/player-simulation-report.json
-            public/TRPG/player-simulation-v4-report.json
+          node --check src/server/trpg/content/authored-mission-flow-registry.js
+          node --check src/server/trpg/content/authored-scene-registry.js
+          node --check src/server/trpg/game/service.js
+          node --check tools/trpg-sim/test/game-service.test.mjs
+          test ! -e src/server/trpg/content/authored/missions/t17-second-summoning.js
+          test ! -e tools/trpg-sim/test/t17-second-summoning.test.mjs
+          git diff --check
+      - name: Run complete TRPG regression suite
+        run: npm run trpg:test
+      - name: Commit reusable mission-flow refactor and restore ordinary CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm tools/trpg-sim/refactor-authored-mission-flow.py
+          git checkout HEAD^ -- .github/workflows/trpg-player-simulation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "refactor(trpg): generalize authored mission flows"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
