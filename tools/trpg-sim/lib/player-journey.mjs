@@ -168,17 +168,25 @@ function updateTroubles(state, model) {
     }
   }
 }
-function routeAllowed(state, route, from, to) {
+function routeAllowed(state, route, from, to, traveler = null) {
+  const travelerHome = traveler?.home || traveler?.initialLocation || null;
   if (route.gate === "elf-access") {
-    return from === "エルフの隠れ里" || to !== "エルフの隠れ里" || state.worldFlags.worldTreeFallen || state.worldFlags.elfApproval;
+    return from === "エルフの隠れ里"
+      || to !== "エルフの隠れ里"
+      || state.worldFlags.worldTreeFallen
+      || state.worldFlags.elfApproval
+      || travelerHome === "エルフの隠れ里";
   }
   if (route.gate === "blackridge-forest-access") {
-    return state.worldFlags.worldTreeFallen || state.worldFlags.blackridgePermit || from === "黒嶺連合領";
+    return state.worldFlags.worldTreeFallen
+      || state.worldFlags.blackridgePermit
+      || from === "黒嶺連合領"
+      || ["黒嶺連合領", "エルフの隠れ里"].includes(travelerHome);
   }
   return true;
 }
 
-export function shortestTravelPlan(model, state, from, destination) {
+export function shortestTravelPlan(model, state, from, destination, traveler = null) {
   if (from === destination) return { destination, hours: 0, routeIds: [], hubs: [from] };
   const queue = [{ hub: from, cost: 0, routeIds: [], hubs: [from] }];
   const best = new Map([[from, 0]]);
@@ -189,7 +197,7 @@ export function shortestTravelPlan(model, state, from, destination) {
     if (current.cost > best.get(current.hub)) continue;
     for (const edge of model.adjacency[current.hub] ?? []) {
       const route = model.routeById[edge.routeId];
-      if (!route || !routeAllowed(state, route, edge.from, edge.to)) continue;
+      if (!route || !routeAllowed(state, route, edge.from, edge.to, traveler)) continue;
       const cost = current.cost + edge.hours;
       if (cost >= (best.get(edge.to) ?? Infinity)) continue;
       best.set(edge.to, cost);
@@ -274,10 +282,12 @@ function npcFacility(npc, day) {
   return day <= 1 ? npc.initialFacilityId : npc.mainFacilityId || npc.initialFacilityId;
 }
 
-function routeHours(state, model, from, to) {
-  const key = `${from}->${to}`;
+function routeHours(state, model, from, to, traveler = null) {
+  const key = traveler
+    ? `npc:${traveler.id}:${from}->${to}`
+    : `player:${from}->${to}`;
   if (state.routeCache[key] !== undefined) return state.routeCache[key];
-  state.routeCache[key] = shortestTravelPlan(model, state, from, to)?.hours ?? Infinity;
+  state.routeCache[key] = shortestTravelPlan(model, state, from, to, traveler)?.hours ?? Infinity;
   return state.routeCache[key];
 }
 
@@ -286,7 +296,7 @@ function propagateRumors(state, model) {
     for (const npc of model.npcs) {
       if (rumor.recipients[npc.id]) continue;
       const hub = npcHub(npc, state.day);
-      const hours = routeHours(state, model, rumor.origin, hub);
+      const hours = routeHours(state, model, rumor.origin, hub, npc);
       if (state.absoluteMinute < rumor.originMinute + Math.ceil(hours * 60) + 30) continue;
       if (!(rumor.importance >= 0.8 || npc.relatedTroubleIds.includes(rumor.troubleId) || npc.initialKnowledge?.interests?.some((interest) => rumor.text.includes(interest)))) continue;
       rumor.recipients[npc.id] = { minute: state.absoluteMinute, hub };
@@ -1121,8 +1131,16 @@ export function generateChoiceActions(state, model, data, catalog, profile = PRO
     candidates.push({ id: "SEEK_BATTLE", type: "seekBattle", minutes: 90, label: `${state.player.location}周辺で魔物を探す` });
   }
   const needs = publicPlayerNeeds(state.player);
-  if (needs.hunger >= 38) {
-    candidates.push({ id: "EAT", type: "eat", minutes: 30, label: needs.hunger >= 72 ? "食事を取って空腹を満たす" : "軽く食事を取る" });
+  const mealPrice = Math.max(0, Number(state.tuning.mealPrice ?? 4));
+  const mealAvailable = Number(state.player.freeMeals ?? 0) > 0 || Number(state.player.gold ?? 0) >= mealPrice;
+  if (needs.hunger >= 38 && mealAvailable) {
+    candidates.push({
+      id: "EAT",
+      type: "eat",
+      minutes: 30,
+      price: mealPrice,
+      label: needs.hunger >= 72 ? "食事を取って空腹を満たす" : "軽く食事を取る",
+    });
   }
   if (state.player.hpRatio < 0.82 || state.player.mpRatio < 0.55 || needs.fatigue >= 55 || state.hour >= 21) {
     candidates.push({

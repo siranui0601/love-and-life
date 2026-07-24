@@ -95,6 +95,59 @@ test("three choices are separate from a complete reachable travel menu", () => {
   }
 });
 
+test("an unaffordable meal is not offered while work remains executable", () => {
+  const state = fresh("balanced");
+  state.player.needs.hunger = 100;
+  state.player.gold = 0;
+  state.player.freeMeals = 0;
+
+  const unaffordable = generateChoiceActions(
+    state,
+    model,
+    battleData,
+    state.catalog,
+    undefined,
+    { limit: 12 },
+  );
+  assert.equal(unaffordable.some((choice) => choice.type === "eat"), false);
+  assert.equal(unaffordable.some((choice) => choice.type === "work"), true);
+
+  state.player.freeMeals = 1;
+  const freeMeal = generateChoiceActions(
+    state,
+    model,
+    battleData,
+    state.catalog,
+    undefined,
+    { limit: 12 },
+  );
+  assert.equal(freeMeal.some((choice) => choice.type === "eat"), true);
+
+  state.player.freeMeals = 0;
+  state.player.gold = Number(state.tuning.mealPrice ?? 4);
+  const affordable = generateChoiceActions(
+    state,
+    model,
+    battleData,
+    state.catalog,
+    undefined,
+    { limit: 12 },
+  );
+  assert.equal(affordable.some((choice) => choice.type === "eat"), true);
+});
+
+test("NPC rumor travel honors the NPC's own regional access", () => {
+  const state = fresh("story");
+  const serie = model.npcs.find((npc) => npc.id === "NPC029");
+  assert.ok(serie);
+  assert.equal(serie.home, "エルフの隠れ里");
+  assert.equal(shortestTravelPlan(model, state, "森", "エルフの隠れ里"), null);
+
+  const npcPlan = shortestTravelPlan(model, state, "森", "エルフの隠れ里", serie);
+  assert.ok(npcPlan);
+  assert.ok(Number.isFinite(npcPlan.hours));
+});
+
 test("ordinary shop purchase advances no time", () => {
   const state = fresh();
   state.player.facilityId = "LOC_FARM_SQUARE";
