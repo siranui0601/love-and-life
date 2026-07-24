@@ -1,4 +1,4 @@
-name: TRPG public route final focused diagnostics
+name: TRPG public route freedom integration
 
 on:
   pull_request:
@@ -6,29 +6,36 @@ on:
       - ".github/workflows/trpg-player-simulation.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: trpg-public-route-freedom-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  diagnose:
+  integrate:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/trpg-authored-content-refactor
-          fetch-depth: 12
+          fetch-depth: 14
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply final candidate patch
+      - name: Apply reviewed public-route patch
         shell: bash
         run: |
           python - <<'PY'
           import subprocess
           from pathlib import Path
           workflow = subprocess.check_output(
-              ["git", "show", "HEAD^^^^^:.github/workflows/trpg-player-simulation.yml"],
+              ["git", "show", "HEAD^^^^^^:.github/workflows/trpg-player-simulation.yml"],
               text=True,
           )
           marker = "          node --input-type=module <<'NODE'\n"
@@ -39,40 +46,46 @@ jobs:
           Path("/tmp/public-route-patch.mjs").write_text(body + "\n", encoding="utf-8")
           PY
           node /tmp/public-route-patch.mjs
+      - name: Preserve dialogue while showing both capital options
+        shell: bash
+        run: |
           node --input-type=module <<'NODE'
           import fs from "node:fs";
           const path = "src/server/trpg/game/service.js";
           let source = fs.readFileSync(path, "utf8");
-          source = source.replace(
-            `  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;\n  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;`,
-            `  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;\n  if (runtime.dialogueSession) return current;\n  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;`,
-          );
-          source = source.replace(
-            `    .find(({ action }) => !action.missionId\n      && action.capitalArrivalGuidance !== true\n      && !["eat", "rest"].includes(action.type)\n      && action.workOffer !== true)?.index;`,
-            `    .find(({ action }) => !action.missionId\n      && action.capitalArrivalGuidance !== true\n      && (["wait", "plan", "observe"].includes(action.type) || action.movementScope === "local"))?.index;`,
-          );
+
+          const dialogueBefore = `  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;\n  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;`;
+          const dialogueAfter = `  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;\n  if (runtime.dialogueSession) return current;\n  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;`;
+          if (!source.includes(dialogueBefore)) throw new Error("dialogue guard anchor missing");
+          source = source.replace(dialogueBefore, dialogueAfter);
+
+          const replaceBefore = `  const replaceIndex = [...current].map((action, index) => ({ action, index })).reverse()\n    .find(({ action }) => !action.missionId\n      && action.capitalArrivalGuidance !== true\n      && !["eat", "rest"].includes(action.type)\n      && action.workOffer !== true)?.index;\n  if (replaceIndex == null) return current;`;
+          const replaceAfter = `  const indexed = [...current].map((action, index) => ({ action, index })).reverse();\n  const routineIndex = indexed.find(({ action }) => !action.missionId\n    && action.capitalArrivalGuidance !== true\n    && (["wait", "plan", "observe"].includes(action.type) || action.movementScope === "local"))?.index;\n  const capitalGuideVisible = current.some((action) => action.capitalArrivalGuidance === true);\n  const capitalFallbackIndex = capitalGuideVisible\n    ? indexed.find(({ action }) => !action.missionId\n      && action.capitalArrivalGuidance !== true\n      && !["eat", "rest"].includes(action.type))?.index\n    : null;\n  const replaceIndex = routineIndex ?? capitalFallbackIndex;\n  if (replaceIndex == null) return current;`;
+          if (!source.includes(replaceBefore)) throw new Error("regional choice replacement anchor missing");
+          source = source.replace(replaceBefore, replaceAfter);
           fs.writeFileSync(path, source, "utf8");
           NODE
-      - name: Run focused suite with diagnostics
-        shell: bash
+      - name: Run focused freedom and dialogue tests
         run: |
-          mkdir -p tools/trpg-sim/reports
-          set +e
           node --test \
             tools/trpg-sim/test/capital-arrival-guidance.test.mjs \
             tools/trpg-sim/test/authored-journey-presentation.test.mjs \
-            tools/trpg-sim/test/game-service.test.mjs \
-            > tools/trpg-sim/reports/public-route-final-focused.log 2>&1
-          status=$?
-          cat tools/trpg-sim/reports/public-route-final-focused.log
-          echo "$status" > tools/trpg-sim/reports/public-route-final-focused.status
-          exit 0
-      - name: Upload focused diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: trpg-public-route-final-focused
-          path: tools/trpg-sim/reports/public-route-final-focused.*
-          retention-days: 7
-      - name: Enforce focused suite
-        run: test "$(cat tools/trpg-sim/reports/public-route-final-focused.status)" = "0"
+            tools/trpg-sim/test/game-service.test.mjs
+      - name: Run complete TRPG regression suite
+        run: npm run trpg:test
+      - name: Commit reviewed route freedom and restore ordinary CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout d43ce68877c9fd6c7e81d1488b9a766313ae1e42 -- .github/workflows/trpg-player-simulation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/trpg-player-simulation.yml \
+            src/server/trpg/resolvers/capital-arrival-guidance.js \
+            src/server/trpg/game/service.js \
+            src/server/trpg/content/authored/journeys/farm-to-capital.js \
+            tools/trpg-sim/test/capital-arrival-guidance.test.mjs \
+            tools/trpg-sim/test/authored-journey-presentation.test.mjs
+          git commit -m "feat(trpg): open public routes after reaching the capital"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
