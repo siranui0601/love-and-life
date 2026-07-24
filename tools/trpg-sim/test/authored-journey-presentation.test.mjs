@@ -52,7 +52,17 @@ test("authoritative regional travel to the capital selects the reviewed lower-in
   assert.match(presentation.narrative, /安宿/u);
   assert.match(presentation.narrative, /王都武器屋/u);
   assert.match(presentation.narrative, /剣.*槍.*弓.*杖/u);
+  assert.match(presentation.narrative, /路線図/u);
   const capitalActions = availableGameRuntimeActions(runtime, game.data);
+  const publicRegionalDestinations = new Set(capitalActions.movement
+    .filter((entry) => entry.movementScope === "regional")
+    .map((entry) => entry.destinationHub));
+  assert.equal(publicRegionalDestinations.has("交易都市"), true);
+  assert.equal(publicRegionalDestinations.has("北陵要塞"), true);
+  assert.equal(publicRegionalDestinations.has("エルフの隠れ里"), false);
+  assert.equal(publicRegionalDestinations.has("黒嶺連合領"), false);
+  assert.ok(capitalActions.choices.some((entry) => entry.movementScope === "regional"),
+    "first capital arrival must keep a visible choice to leave for another town");
   const weaponShopChoice = capitalActions.choices.find((entry) => entry.destinationFacilityId === "LOC_CAP_WEAPON_SHOP");
   assert.ok(weaponShopChoice, "first capital arrival must expose the weapon shop in the visible choices");
   assert.equal(weaponShopChoice.capitalArrivalGuidance, true);
@@ -144,8 +154,11 @@ test("the first guided weapon-shop visit uses reviewed prose and a one-use choic
   assert.equal(consultation?.sceneId, "journey.capital_weapon_shop.first.ask_style");
   assert.match(consultation.speeches[0]?.text ?? "", /剣か槍.*弓.*杖/u);
 
-  const laterChoiceIds = availableGameRuntimeActions(runtime, game.data).choices.map((choice) => choice.id);
+  const laterActions = availableGameRuntimeActions(runtime, game.data);
+  const laterChoiceIds = laterActions.choices.map((choice) => choice.id);
   assert.equal(laterChoiceIds.some((id) => id.startsWith("CAPITAL_WEAPON_SHOP:FIRST:")), false);
+  assert.ok(laterActions.movement.some((action) => action.movementScope === "regional"),
+    "regional travel remains available after the first weapon-shop exchange");
   assert.equal(runtime.dialogueSession, null, "the authored consultation is one complete exchange, not a generic dialogue loop");
 });
 

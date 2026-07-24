@@ -45,6 +45,7 @@ import {
   capitalWeaponShopFirstChoices,
   capitalWeaponShopFirstInteractionActive,
   completeCapitalWeaponShopFirstInteraction,
+  discoverCapitalPublicRoutes,
   ensureCapitalWeaponShopChoice,
   prioritizeCapitalWeaponShopMovement,
   recordCapitalArrivalGuidance,
@@ -447,6 +448,20 @@ function discoverFacility(runtime, facilityId) {
   if (facilityId) ensurePlayerKnowledge(runtime).knownFacilityIds.add(facilityId);
 }
 
+function refreshCapitalPublicRoutes(runtime, data) {
+  const visitedHubs = runtime.playerState.progress?.travel?.visitedHubs instanceof Set
+    ? runtime.playerState.progress.travel.visitedHubs
+    : new Set(runtime.playerState.progress?.travel?.visitedHubs ?? []);
+  if (runtime.playerState.player.location !== "王都" && !visitedHubs.has("王都")) return [];
+  const reachableHubIds = journey.availableTravelActions(runtime.playerState, data.model)
+    .map((action) => action.destinationHub)
+    .filter(Boolean);
+  return discoverCapitalPublicRoutes(runtime, {
+    reachableHubIds,
+    absoluteMinute: runtime.playerState.absoluteMinute,
+  });
+}
+
 function discoverArrival(runtime, data) {
   const knowledge = ensurePlayerKnowledge(runtime);
   const hubId = runtime.playerState.player.location;
@@ -458,6 +473,7 @@ function discoverArrival(runtime, data) {
   });
   if (hubId) knowledge.knownHubIds.add(hubId);
   if (facilityId) knowledge.knownFacilityIds.add(facilityId);
+  if (hubId === "王都") refreshCapitalPublicRoutes(runtime, data);
   if (facilityId === "LOC_FARM_SQUARE") {
     FARM_SQUARE_DISCOVERIES.forEach((id) => knowledge.knownFacilityIds.add(id));
     return;
@@ -1053,6 +1069,7 @@ function hydrateRuntime(record, data) {
   ensureNarrativeMemory(runtime);
   ensureWorkMarket(runtime);
   recordCapitalArrivalGuidance(runtime);
+  refreshCapitalPublicRoutes(runtime, data);
   syncAuthoritativePresentNpcIds(runtime, data);
   return runtime;
 }
@@ -1551,14 +1568,19 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     .map((action, index) => ({ action, index }))
     .sort((left, right) => actionPriority(left.action) - actionPriority(right.action) || left.index - right.index)
     .map((entry) => entry.action);
-  const movementCandidates = (!runtime.tutorial || runtime.tutorial.stage === "free")
-    ? movementActions(runtime, data).slice(0, 6).map((action) => ({
-      ...action,
-      label: action.movementScope === "regional"
-        ? `${action.destinationHub}へ向かう`
-        : `${data.model.facilityById[action.destinationFacilityId]?.name ?? action.destinationFacilityId}へ向かう`,
-    }))
+  const movementPool = (!runtime.tutorial || runtime.tutorial.stage === "free")
+    ? movementActions(runtime, data)
     : [];
+  const movementCandidates = [
+    ...movementPool.filter((action) => action.capitalArrivalGuidance === true),
+    ...movementPool.filter((action) => action.movementScope === "regional"),
+    ...movementPool.filter((action) => action.movementScope === "local" && action.capitalArrivalGuidance !== true),
+  ].slice(0, 12).map((action) => ({
+    ...action,
+    label: action.movementScope === "regional"
+      ? `${action.destinationHub}へ旅立つ`
+      : `${data.model.facilityById[action.destinationFacilityId]?.name ?? action.destinationFacilityId}へ向かう`,
+  }));
   const hasWorkCandidate = prioritized.some((action) => action.workOffer === true || action.type === "work");
   const localWorkCandidate = hasWorkCandidate
     ? null
@@ -1579,11 +1601,20 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     : unique.filter((action) => !["seekBattle", "missionBattle", "investigate"].includes(action.type));
   const cap = Math.max(3, Math.min(12, Number(limit) || 9));
   const selected = eligible.slice(0, cap);
-  if (cap > 3 && movementCandidates.length && !selected.some((action) => action.type === "move")) {
-    const movement = movementCandidates.find((action) => !selected.some((entry) => entry.id === action.id));
-    if (movement) {
-      if (selected.length >= cap) selected[selected.length - 1] = movement;
-      else selected.push(movement);
+  if (cap > 3 && movementCandidates.length) {
+    const requiredMovements = [
+      movementCandidates.find((action) => action.capitalArrivalGuidance === true),
+      movementCandidates.find((action) => action.movementScope === "regional"),
+      movementCandidates[0],
+    ].filter(Boolean).filter((action, index, entries) => entries.findIndex((entry) => entry.id === action.id) === index);
+    for (const movement of requiredMovements) {
+      if (selected.some((entry) => entry.id === movement.id)) continue;
+      if (selected.length < cap) selected.push(movement);
+      else {
+        const replaceIndex = [...selected].map((action, index) => ({ action, index })).reverse()
+          .find(({ action }) => !action.missionId && action.capitalArrivalGuidance !== true)?.index;
+        if (replaceIndex != null) selected[replaceIndex] = movement;
+      }
     }
   }
   return selected;
@@ -1649,6 +1680,39 @@ function generatedChoiceDetail(action, runtime, selection, data) {
   return resolved;
 }
 
+function ensureRegionalTravelChoice(selected, candidates, runtime) {
+  const current = Array.isArray(selected) ? [...selected] : [];
+  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;
+  if (runtime.dialogueSession) return current;
+  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;
+  if (current.some((action) => action.movementScope === "regional")) return current;
+  const visitedHubs = runtime.playerState.progress?.travel?.visitedHubs instanceof Set
+    ? runtime.playerState.progress.travel.visitedHubs
+    : new Set(runtime.playerState.progress?.travel?.visitedHubs ?? []);
+  const regional = (Array.isArray(candidates) ? candidates : [])
+    .filter((action) => action?.movementScope === "regional")
+    .sort((left, right) => Number(visitedHubs.has(left.destinationHub)) - Number(visitedHubs.has(right.destinationHub))
+      || Number(left.minutes ?? Infinity) - Number(right.minutes ?? Infinity)
+      || String(left.destinationHub ?? "").localeCompare(String(right.destinationHub ?? ""), "ja"))[0];
+  if (!regional) return current;
+  const travel = { ...regional, regionalTravelFreedom: true };
+  if (current.length < 3) return [...current, travel];
+  const indexed = [...current].map((action, index) => ({ action, index })).reverse();
+  const routineIndex = indexed.find(({ action }) => !action.missionId
+    && action.capitalArrivalGuidance !== true
+    && (["wait", "plan", "observe"].includes(action.type) || action.movementScope === "local"))?.index;
+  const capitalGuideVisible = current.some((action) => action.capitalArrivalGuidance === true);
+  const capitalFallbackIndex = capitalGuideVisible
+    ? indexed.find(({ action }) => !action.missionId
+      && action.capitalArrivalGuidance !== true
+      && !["eat", "rest"].includes(action.type))?.index
+    : null;
+  const replaceIndex = routineIndex ?? capitalFallbackIndex;
+  if (replaceIndex == null) return current;
+  current[replaceIndex] = travel;
+  return current;
+}
+
 function selectedChoiceActions(runtime, actions, data) {
   if (!actions.length) return [];
   const key = narrativeChoicePoolKey(runtime, actions);
@@ -1674,7 +1738,8 @@ function selectedChoiceActions(runtime, actions, data) {
       ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),
     ], { expectedCount: Math.min(3, actions.length) });
   const guided = ensureCapitalWeaponShopChoice(selected, actions, runtime);
-  return withChoiceIds(guided.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
+  const withTravel = ensureRegionalTravelChoice(guided, actions, runtime);
+  return withChoiceIds(withTravel.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
 }
 
 function choiceActions(runtime, data) {
@@ -1684,6 +1749,7 @@ function choiceActions(runtime, data) {
 function movementActions(runtime, data) {
   if (runtime.pendingBattle?.session?.status === "active") return [];
   if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
+  refreshCapitalPublicRoutes(runtime, data);
   const knowledge = ensurePlayerKnowledge(runtime);
   for (const rumor of runtime.playerState.rumors ?? []) {
     if (runtime.playerState.player.knownRumorIds.has(rumor.id) && rumor.origin) knowledge.knownHubIds.add(rumor.origin);
@@ -4153,6 +4219,10 @@ function presentationChoices(record, choices) {
     targetNpcId: action.targetNpcId ?? null,
     missionId: action.missionId ?? null,
     stepId: action.stepId ?? null,
+    movementScope: action.movementScope ?? null,
+    destination: action.destinationHub ?? null,
+    destinationFacilityId: action.destinationFacilityId ?? null,
+    regionalTravelFreedom: action.regionalTravelFreedom === true,
     danger: ["missionBattle", "seekBattle"].includes(action.type),
   }));
 }

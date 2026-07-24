@@ -1,7 +1,17 @@
-export const CAPITAL_ARRIVAL_GUIDANCE_VERSION = "capital-arrival-guidance-v2";
+export const CAPITAL_ARRIVAL_GUIDANCE_VERSION = "capital-arrival-guidance-v3";
 export const CAPITAL_WEAPON_SHOP_ID = "LOC_CAP_WEAPON_SHOP";
 export const CAPITAL_LOWER_INN_ID = "LOC_CAP_LOWER_INN";
 export const CAPITAL_WEAPON_SHOP_GUIDANCE_WINDOW_MINUTES = 720;
+export const CAPITAL_PUBLIC_ROUTE_DESTINATIONS = Object.freeze([
+  "田園の村",
+  "交易都市",
+  "犯罪都市",
+  "辺境の村",
+  "北陵要塞",
+  "ドワーフ洞窟",
+  "古代神殿",
+  "森",
+]);
 
 function number(value, fallback = 0) {
   const parsed = Number(value);
@@ -15,12 +25,18 @@ export function ensureCapitalArrivalGuidance(runtime) {
     visitedAtMinute: null,
     firstInteractionCompletedAtMinute: null,
     firstInteractionChoiceId: null,
+    routeBoardDiscoveredAtMinute: null,
+    routeBoardDestinationIds: [],
   };
   runtime.capitalArrivalGuidance.version = CAPITAL_ARRIVAL_GUIDANCE_VERSION;
   runtime.capitalArrivalGuidance.suggestedAtMinute ??= null;
   runtime.capitalArrivalGuidance.visitedAtMinute ??= null;
   runtime.capitalArrivalGuidance.firstInteractionCompletedAtMinute ??= null;
   runtime.capitalArrivalGuidance.firstInteractionChoiceId ??= null;
+  runtime.capitalArrivalGuidance.routeBoardDiscoveredAtMinute ??= null;
+  runtime.capitalArrivalGuidance.routeBoardDestinationIds = Array.isArray(runtime.capitalArrivalGuidance.routeBoardDestinationIds)
+    ? runtime.capitalArrivalGuidance.routeBoardDestinationIds
+    : [];
   return runtime.capitalArrivalGuidance;
 }
 
@@ -106,6 +122,33 @@ export function completeCapitalWeaponShopFirstInteraction(runtime, {
     guidance.firstInteractionChoiceId = choiceId ? String(choiceId) : null;
   }
   return guidance;
+}
+
+export function discoverCapitalPublicRoutes(runtime, {
+  reachableHubIds = [],
+  absoluteMinute = runtime?.playerState?.absoluteMinute,
+} = {}) {
+  const guidance = ensureCapitalArrivalGuidance(runtime);
+  runtime.playerKnowledge ??= {};
+  const knownHubIds = runtime.playerKnowledge.knownHubIds instanceof Set
+    ? runtime.playerKnowledge.knownHubIds
+    : new Set(runtime.playerKnowledge.knownHubIds ?? []);
+  runtime.playerKnowledge.knownHubIds = knownHubIds;
+  const reachable = reachableHubIds instanceof Set ? reachableHubIds : new Set(reachableHubIds ?? []);
+  const discovered = CAPITAL_PUBLIC_ROUTE_DESTINATIONS.filter((hubId) => reachable.has(hubId));
+  for (const hubId of discovered) knownHubIds.add(hubId);
+  guidance.routeBoardDestinationIds = [...discovered];
+  if (discovered.length && guidance.routeBoardDiscoveredAtMinute == null) {
+    guidance.routeBoardDiscoveredAtMinute = number(absoluteMinute);
+    if (Array.isArray(runtime?.playerState?.history)) {
+      runtime.playerState.history.push({
+        type: "CAPITAL_ROUTE_BOARD_DISCOVERED",
+        minute: guidance.routeBoardDiscoveredAtMinute,
+        destinationHubIds: [...discovered],
+      });
+    }
+  }
+  return discovered;
 }
 
 export function prioritizeCapitalWeaponShopMovement(actions, runtime) {

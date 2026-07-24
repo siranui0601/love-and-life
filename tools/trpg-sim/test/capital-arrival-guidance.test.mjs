@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  CAPITAL_PUBLIC_ROUTE_DESTINATIONS,
   CAPITAL_WEAPON_SHOP_ID,
   capitalWeaponShopFirstChoices,
   capitalWeaponShopFirstInteractionActive,
   capitalWeaponShopGuidanceActive,
   completeCapitalWeaponShopFirstInteraction,
+  discoverCapitalPublicRoutes,
   ensureCapitalWeaponShopChoice,
   prioritizeCapitalWeaponShopMovement,
   recordCapitalArrivalGuidance,
@@ -80,4 +82,24 @@ test("the first weapon-shop visit offers one reviewed first-interaction set", ()
   assert.equal(capitalWeaponShopFirstInteractionActive(runtime), false);
   assert.equal(capitalWeaponShopFirstChoices(runtime, { shopkeeper: { id: "NPC065" } }), null);
   assert.equal(runtime.capitalArrivalGuidance.firstInteractionChoiceId, choices[1].id);
+});
+
+
+test("capital route board reveals public reachable towns but keeps restricted lands hidden", () => {
+  const runtime = runtimeAt("LOC_CAP_LOWER_INN");
+  runtime.playerKnowledge = { knownHubIds: new Set(["王都"]) };
+  runtime.playerState.history = [];
+  const reachable = new Set([
+    ...CAPITAL_PUBLIC_ROUTE_DESTINATIONS,
+    "エルフの隠れ里",
+    "黒嶺連合領",
+  ]);
+  const discovered = discoverCapitalPublicRoutes(runtime, { reachableHubIds: reachable });
+  assert.deepEqual(discovered, CAPITAL_PUBLIC_ROUTE_DESTINATIONS);
+  for (const hubId of CAPITAL_PUBLIC_ROUTE_DESTINATIONS) assert.equal(runtime.playerKnowledge.knownHubIds.has(hubId), true, hubId);
+  assert.equal(runtime.playerKnowledge.knownHubIds.has("エルフの隠れ里"), false);
+  assert.equal(runtime.playerKnowledge.knownHubIds.has("黒嶺連合領"), false);
+  assert.equal(runtime.playerState.history.filter((entry) => entry.type === "CAPITAL_ROUTE_BOARD_DISCOVERED").length, 1);
+  discoverCapitalPublicRoutes(runtime, { reachableHubIds: reachable });
+  assert.equal(runtime.playerState.history.filter((entry) => entry.type === "CAPITAL_ROUTE_BOARD_DISCOVERED").length, 1);
 });
