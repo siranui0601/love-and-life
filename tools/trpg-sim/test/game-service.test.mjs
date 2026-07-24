@@ -1198,8 +1198,9 @@ test("mission clue choices require a co-present NPC with an authoritative public
     .some((action) => action.id === "ACTION:MSN-T02:hear"), false);
 });
 
-test("all nineteen special-mission hearings are bound to a present authoritative NPC", () => {
+test("all generic special-mission hearings are bound to a present authoritative NPC", () => {
   const { game } = service();
+  const authoredHearingMissionIds = new Set(["MSN-T17"]);
   const covered = [];
   for (const definitionTemplate of createGameRuntime(game.data, {
     seed: "mission-hearing-catalog",
@@ -1207,6 +1208,9 @@ test("all nineteen special-mission hearings are bound to a present authoritative
     playerName: "聞き手",
     tutorial: false,
   }).playerState.catalog.special) {
+    // T17 uses its own reviewed Layla conversation triad; the dedicated T17
+    // test owns that stricter presence and disclosure contract.
+    if (authoredHearingMissionIds.has(definitionTemplate.id)) continue;
     const runtime = createGameRuntime(game.data, {
       seed: `mission-hearing-${definitionTemplate.troubleId}`,
       profileId: "balanced",
@@ -1273,7 +1277,7 @@ test("all nineteen special-mission hearings are bound to a present authoritative
     assert.equal(state.missions[definition.id].progress[hearing.id], 1);
     covered.push(definition.troubleId);
   }
-  assert.deepEqual(covered, Array.from({ length: 19 }, (_, index) => `T${String(index + 1).padStart(2, "0")}`));
+  assert.deepEqual(covered, Array.from({ length: 19 }, (_, index) => `T${String(index + 1).padStart(2, "0")}`).filter((troubleId) => troubleId !== "T17"));
 });
 
 test("mission clue progress commits only after the assigned NPC actually discloses the fact", () => {

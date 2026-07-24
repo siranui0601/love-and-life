@@ -52,6 +52,13 @@ import {
 } from "../resolvers/capital-arrival-guidance.js";
 import { resolveAuthoredScene } from "../content/authored-scene-registry.js";
 import {
+  applyT17SecondSummoningAction,
+  suppressGenericT17MissionAction,
+  t17SecondSummoningEvidenceAction,
+  t17SecondSummoningExclusiveActions,
+  t17SecondSummoningGuidance,
+} from "../content/authored/missions/t17-second-summoning.js";
+import {
   WORK_MARKET_VERSION,
   deterministicWorkWage,
   ensureWorkMarket,
@@ -298,24 +305,32 @@ function gameplayTuning() {
 
 export function applyGameplayCatalogOverrides(catalog) {
   const t01 = catalog.special.find((mission) => mission.id === "MSN-T01");
-  if (!t01) return catalog;
-  if (!t01.steps.some((step) => step.id === "escort")) {
-    const decideIndex = t01.steps.findIndex((step) => step.id === "decide");
-    const escortStep = {
-      id: "escort",
-      type: "conversation",
-      targetLocation: "田園の村",
-      targetFacilityId: "LOC_FARM_EDGE",
-      required: 1,
-      label: "負傷したフィンに声をかけ、村の広場まで同行する",
-    };
-    if (decideIndex >= 0) t01.steps.splice(decideIndex, 0, escortStep);
-    else t01.steps.push(escortStep);
+  if (t01) {
+    if (!t01.steps.some((step) => step.id === "escort")) {
+      const decideIndex = t01.steps.findIndex((step) => step.id === "decide");
+      const escortStep = {
+        id: "escort",
+        type: "conversation",
+        targetLocation: "田園の村",
+        targetFacilityId: "LOC_FARM_EDGE",
+        required: 1,
+        label: "負傷したフィンに声をかけ、村の広場まで同行する",
+      };
+      if (decideIndex >= 0) t01.steps.splice(decideIndex, 0, escortStep);
+      else t01.steps.push(escortStep);
+    }
+    for (const step of t01.steps) {
+      if (step.id === "hear") step.targetFacilityId = "LOC_FARM_SQUARE";
+      if (["search", "rescue", "escort"].includes(step.id)) step.targetFacilityId = "LOC_FARM_EDGE";
+      if (step.id === "decide") step.targetFacilityId = "LOC_FARM_SQUARE";
+    }
   }
-  for (const step of t01.steps) {
-    if (step.id === "hear") step.targetFacilityId = "LOC_FARM_SQUARE";
-    if (["search", "rescue", "escort"].includes(step.id)) step.targetFacilityId = "LOC_FARM_EDGE";
-    if (step.id === "decide") step.targetFacilityId = "LOC_FARM_SQUARE";
+  const t17 = catalog.special.find((mission) => mission.id === "MSN-T17");
+  const t17Hear = t17?.steps.find((step) => step.id === "hear");
+  if (t17Hear) {
+    t17Hear.targetLocation = "王都";
+    t17Hear.targetFacilityId = "LOC_CAP_LOWER_INN";
+    t17Hear.label = "王都下層で、第二召喚を止めようとする人物と接触する";
   }
   return catalog;
 }
@@ -1520,6 +1535,11 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   if (runtime.tutorial && ["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) return [];
   const followup = dialogueFollowupActions(runtime);
   if (followup) return followup;
+  const t17Exclusive = t17SecondSummoningExclusiveActions(runtime, {
+    presentNpcs: presentNpcsAt(runtime, data),
+    movementActions: movementActions(runtime, data),
+  });
+  if (t17Exclusive) return t17Exclusive;
   const authorizedMissionActions = new Map();
   const generated = journey.generateChoiceActions(
     runtime.playerState,
@@ -1547,7 +1567,8 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   )).filter(Boolean).filter((action) => !(action.missionId === "MSN-T01"
     && action.stepId === "decide"
     && !ensureT01EscortState(runtime).arrivedSquare))
-    .filter((action) => t01FocusedChoiceAllowed(action, runtime));
+    .filter((action) => t01FocusedChoiceAllowed(action, runtime))
+    .filter((action) => !suppressGenericT17MissionAction(runtime, action));
   const missionConversationTargets = new Set(generated
     .filter((action) => action.missionId && action.type === "conversation" && action.targetNpcId)
     .map((action) => action.targetNpcId));
@@ -1564,7 +1585,11 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     if (action.type === "seekBattle") return hasLearnedSkill ? 3 : 4;
     return 5;
   };
-  const prioritized = deduplicated
+  const t17Evidence = t17SecondSummoningEvidenceAction(runtime);
+  const prioritized = [
+    ...(t17Evidence ? [t17Evidence] : []),
+    ...deduplicated,
+  ]
     .map((action, index) => ({ action, index }))
     .sort((left, right) => actionPriority(left.action) - actionPriority(right.action) || left.index - right.index)
     .map((entry) => entry.action);
@@ -1737,6 +1762,9 @@ function selectedChoiceActions(runtime, actions, data) {
       ...preferred,
       ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),
     ], { expectedCount: Math.min(3, actions.length) });
+  if (selected.some((action) => action.t17ExclusiveChoice === true)) {
+    return withChoiceIds(selected.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
+  }
   const guided = ensureCapitalWeaponShopChoice(selected, actions, runtime);
   const withTravel = ensureRegionalTravelChoice(guided, actions, runtime);
   return withChoiceIds(withTravel.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
@@ -3147,6 +3175,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     result.learnedRumorIds = learnedRumorIds;
     runtime.playerState.metrics.actions += 1;
   }
+  if (result.ok) applyT17SecondSummoningAction(runtime, resolvedPlayerAction, result);
   const equipmentAccessChanges = reconcileEquipmentAccessAfterCommand(runtime, data, completedMissionIdsBefore);
   if (equipmentAccessChanges.rewards.length) {
     result.equipmentRewardOffers = equipmentAccessChanges.rewards.map((reward) => ({
@@ -3721,6 +3750,16 @@ function guidanceView(runtime, data, missions) {
     deadlineLabel: "捜索失敗",
     actionPanel: null,
   };
+  const t17Guidance = t17SecondSummoningGuidance(runtime);
+  if (t17Guidance) {
+    const mission = missions.find((entry) => entry.id === "MSN-T17");
+    const targetName = t17Guidance.targetFacilityId ? facilityName(t17Guidance.targetFacilityId) : null;
+    return {
+      ...t17Guidance,
+      targetFacilityName: targetName,
+      deadlineLabel: mission?.deadlineLabel ?? null,
+    };
+  }
   const mission = missions.find((entry) => entry.kind === "special" && ["active", "available", "in_progress"].includes(entry.status));
   if (mission) {
     const step = mission.currentStep;
@@ -3797,6 +3836,9 @@ function playerUtterance(action) {
     local_rumor: "今聞いた話は、いつ、どこで知ったものですか？",
     work_offer: "私にも手伝える仕事はありますか？　内容と賃金を先に教えてください。",
     t01_escort: "フィン、聞こえる？　歩けそう？　村まで一緒に戻ろう。",
+    t17_when_where: "二度目の召喚は、いつ、どこで行われるんですか？",
+    t17_why_player: "なぜ私にその話を？　私と召喚に、どんな関係があるんですか？",
+    t17_demand_proof: "あなたたちの話だけでは動けません。私自身が確かめられる証拠を示してください。",
     end_conversation: "ありがとう。教えてもらったことを確かめてきます。",
   }[action.dialogueTopic];
   if (topicLine) return topicLine;
