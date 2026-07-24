@@ -32,6 +32,29 @@ jobs:
       - run: npm ci
       - name: Apply reviewed first weapon-shop visit
         run: node tools/trpg-sim/apply-day100-information-loop-fix.mjs
+      - name: Run focused reviewed-content tests
+        shell: bash
+        run: |
+          mkdir -p tools/trpg-sim/reports
+          set +e
+          node --test \
+            tools/trpg-sim/test/capital-arrival-guidance.test.mjs \
+            tools/trpg-sim/test/authored-journey-presentation.test.mjs \
+            > tools/trpg-sim/reports/weapon-shop-focused.log 2>&1
+          status=$?
+          cat tools/trpg-sim/reports/weapon-shop-focused.log
+          echo "$status" > tools/trpg-sim/reports/weapon-shop-focused.status
+          exit 0
+      - name: Upload focused diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trpg-reviewed-weapon-shop-focused
+          path: tools/trpg-sim/reports/weapon-shop-focused.*
+          if-no-files-found: error
+          retention-days: 7
+      - name: Enforce focused tests
+        run: test "$(cat tools/trpg-sim/reports/weapon-shop-focused.status)" = "0"
       - name: Run complete TRPG regression suite
         run: npm run trpg:test
       - name: Commit reviewed unit and restore ordinary CI
