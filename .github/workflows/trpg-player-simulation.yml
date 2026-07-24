@@ -1,4 +1,4 @@
-name: TRPG T17 authored branch integration
+name: TRPG T17 focused diagnostics
 
 on:
   pull_request:
@@ -7,16 +7,12 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-
-concurrency:
-  group: trpg-t17-authored-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  contents: read
 
 jobs:
-  integrate:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,216 +24,40 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Connect T17 authored content to the authoritative game service
+      - name: Reapply the candidate service patch
         shell: bash
         run: |
-          cat > /tmp/patch-t17-service.py <<'PY'
+          python - <<'PY'
+          import subprocess
           from pathlib import Path
-
-          def replace_once(source, before, after, label):
-              if before not in source:
-                  raise RuntimeError(f"missing patch anchor: {label}")
-              return source.replace(before, after, 1)
-
-          path = Path("src/server/trpg/game/service.js")
-          service = path.read_text(encoding="utf-8")
-
-          service = replace_once(
-              service,
-              'import { resolveAuthoredScene } from "../content/authored-scene-registry.js";\n',
-              'import { resolveAuthoredScene } from "../content/authored-scene-registry.js";\n'
-              'import {\n'
-              '  applyT17SecondSummoningAction,\n'
-              '  suppressGenericT17MissionAction,\n'
-              '  t17SecondSummoningEvidenceAction,\n'
-              '  t17SecondSummoningExclusiveActions,\n'
-              '  t17SecondSummoningGuidance,\n'
-              '} from "../content/authored/missions/t17-second-summoning.js";\n',
-              "service t17 import",
+          workflow = subprocess.check_output(
+              ["git", "show", "HEAD^:.github/workflows/trpg-player-simulation.yml"],
+              text=True,
           )
-
-          catalog_before = '''export function applyGameplayCatalogOverrides(catalog) {
-            const t01 = catalog.special.find((mission) => mission.id === "MSN-T01");
-            if (!t01) return catalog;
-            if (!t01.steps.some((step) => step.id === "escort")) {
-              const decideIndex = t01.steps.findIndex((step) => step.id === "decide");
-              const escortStep = {
-                id: "escort",
-                type: "conversation",
-                targetLocation: "田園の村",
-                targetFacilityId: "LOC_FARM_EDGE",
-                required: 1,
-                label: "負傷したフィンに声をかけ、村の広場まで同行する",
-              };
-              if (decideIndex >= 0) t01.steps.splice(decideIndex, 0, escortStep);
-              else t01.steps.push(escortStep);
-            }
-            for (const step of t01.steps) {
-              if (step.id === "hear") step.targetFacilityId = "LOC_FARM_SQUARE";
-              if (["search", "rescue", "escort"].includes(step.id)) step.targetFacilityId = "LOC_FARM_EDGE";
-              if (step.id === "decide") step.targetFacilityId = "LOC_FARM_SQUARE";
-            }
-            return catalog;
-          }'''
-          catalog_after = '''export function applyGameplayCatalogOverrides(catalog) {
-            const t01 = catalog.special.find((mission) => mission.id === "MSN-T01");
-            if (t01) {
-              if (!t01.steps.some((step) => step.id === "escort")) {
-                const decideIndex = t01.steps.findIndex((step) => step.id === "decide");
-                const escortStep = {
-                  id: "escort",
-                  type: "conversation",
-                  targetLocation: "田園の村",
-                  targetFacilityId: "LOC_FARM_EDGE",
-                  required: 1,
-                  label: "負傷したフィンに声をかけ、村の広場まで同行する",
-                };
-                if (decideIndex >= 0) t01.steps.splice(decideIndex, 0, escortStep);
-                else t01.steps.push(escortStep);
-              }
-              for (const step of t01.steps) {
-                if (step.id === "hear") step.targetFacilityId = "LOC_FARM_SQUARE";
-                if (["search", "rescue", "escort"].includes(step.id)) step.targetFacilityId = "LOC_FARM_EDGE";
-                if (step.id === "decide") step.targetFacilityId = "LOC_FARM_SQUARE";
-              }
-            }
-            const t17 = catalog.special.find((mission) => mission.id === "MSN-T17");
-            const t17Hear = t17?.steps.find((step) => step.id === "hear");
-            if (t17Hear) {
-              t17Hear.targetLocation = "王都";
-              t17Hear.targetFacilityId = "LOC_CAP_LOWER_INN";
-              t17Hear.label = "王都下層で、第二召喚を止めようとする人物と接触する";
-            }
-            return catalog;
-          }'''
-          service = replace_once(service, catalog_before, catalog_after, "catalog overrides")
-
-          service = replace_once(
-              service,
-              '''  const followup = dialogueFollowupActions(runtime);
-            if (followup) return followup;
-            const authorizedMissionActions = new Map();''',
-              '''  const followup = dialogueFollowupActions(runtime);
-            if (followup) return followup;
-            const t17Exclusive = t17SecondSummoningExclusiveActions(runtime, {
-              presentNpcs: presentNpcsAt(runtime, data),
-              movementActions: movementActions(runtime, data),
-            });
-            if (t17Exclusive) return t17Exclusive;
-            const authorizedMissionActions = new Map();''',
-              "t17 exclusive choice insertion",
-          )
-
-          service = replace_once(
-              service,
-              '''    && action.stepId === "decide"
-              && !ensureT01EscortState(runtime).arrivedSquare))
-              .filter((action) => t01FocusedChoiceAllowed(action, runtime));''',
-              '''    && action.stepId === "decide"
-              && !ensureT01EscortState(runtime).arrivedSquare))
-              .filter((action) => t01FocusedChoiceAllowed(action, runtime))
-              .filter((action) => !suppressGenericT17MissionAction(runtime, action));''',
-              "suppress generic t17 actions",
-          )
-
-          service = replace_once(
-              service,
-              '''  const prioritized = deduplicated
-              .map((action, index) => ({ action, index }))''',
-              '''  const t17Evidence = t17SecondSummoningEvidenceAction(runtime);
-            const prioritized = [
-              ...(t17Evidence ? [t17Evidence] : []),
-              ...deduplicated,
-            ]
-              .map((action, index) => ({ action, index }))''',
-              "inject t17 evidence",
-          )
-
-          service = replace_once(
-              service,
-              '''  const guided = ensureCapitalWeaponShopChoice(selected, actions, runtime);
-            const withTravel = ensureRegionalTravelChoice(guided, actions, runtime);
-            return withChoiceIds(withTravel.map((action) => generatedChoiceDetail(action, runtime, selection, data)));''',
-              '''  if (selected.some((action) => action.t17ExclusiveChoice === true)) {
-              return withChoiceIds(selected.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
-            }
-            const guided = ensureCapitalWeaponShopChoice(selected, actions, runtime);
-            const withTravel = ensureRegionalTravelChoice(guided, actions, runtime);
-            return withChoiceIds(withTravel.map((action) => generatedChoiceDetail(action, runtime, selection, data)));''',
-              "preserve t17 exclusive triad",
-          )
-
-          service = replace_once(
-              service,
-              '''    result.learnedRumorIds = learnedRumorIds;
-              runtime.playerState.metrics.actions += 1;
-            }
-            const equipmentAccessChanges = reconcileEquipmentAccessAfterCommand(runtime, data, completedMissionIdsBefore);''',
-              '''    result.learnedRumorIds = learnedRumorIds;
-              runtime.playerState.metrics.actions += 1;
-            }
-            if (result.ok) applyT17SecondSummoningAction(runtime, resolvedPlayerAction, result);
-            const equipmentAccessChanges = reconcileEquipmentAccessAfterCommand(runtime, data, completedMissionIdsBefore);''',
-              "apply t17 state after authoritative resolution",
-          )
-
-          service = replace_once(
-              service,
-              '''  const mission = missions.find((entry) => entry.kind === "special" && ["active", "available", "in_progress"].includes(entry.status));''',
-              '''  const t17Guidance = t17SecondSummoningGuidance(runtime);
-            if (t17Guidance) {
-              const mission = missions.find((entry) => entry.id === "MSN-T17");
-              const targetName = t17Guidance.targetFacilityId ? facilityName(t17Guidance.targetFacilityId) : null;
-              return {
-                ...t17Guidance,
-                targetFacilityName: targetName,
-                deadlineLabel: mission?.deadlineLabel ?? null,
-              };
-            }
-            const mission = missions.find((entry) => entry.kind === "special" && ["active", "available", "in_progress"].includes(entry.status));''',
-              "t17 guidance before generic mission guidance",
-          )
-
-          service = replace_once(
-              service,
-              '''    t01_escort: "フィン、聞こえる？　歩けそう？　村まで一緒に戻ろう。",
-              end_conversation: "ありがとう。教えてもらったことを確かめてきます。",''',
-              '''    t01_escort: "フィン、聞こえる？　歩けそう？　村まで一緒に戻ろう。",
-              t17_when_where: "二度目の召喚は、いつ、どこで行われるんですか？",
-              t17_why_player: "なぜ私にその話を？　私と召喚に、どんな関係があるんですか？",
-              t17_demand_proof: "あなたたちの話だけでは動けません。私自身が確かめられる証拠を示してください。",
-              end_conversation: "ありがとう。教えてもらったことを確かめてきます。",''',
-              "t17 player utterances",
-          )
-
-          path.write_text(service, encoding="utf-8")
+          marker = "          cat > /tmp/patch-t17-service.py <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY", start)
+          body = "\n".join(line[10:] if line.startswith("          ") else line for line in workflow[start:end].splitlines())
+          Path("/tmp/patch-t17-service.py").write_text(body + "\n", encoding="utf-8")
           PY
           python /tmp/patch-t17-service.py
-          node --check src/server/trpg/game/service.js
-          node --check src/server/trpg/content/authored/missions/t17-second-summoning.js
-          node --check tools/trpg-sim/test/t17-second-summoning.test.mjs
-          git diff --check
-      - name: Run focused T17 and authored-scene tests
-        run: |
-          node --test \
-            tools/trpg-sim/test/t17-second-summoning.test.mjs \
-            tools/trpg-sim/test/authored-journey-presentation.test.mjs \
-            tools/trpg-sim/test/game-service.test.mjs
-      - name: Run complete TRPG regression suite
-        run: npm run trpg:test
-      - name: Commit reviewed T17 integration and restore ordinary CI
+      - name: Run focused T17 test with captured output
+        id: focused
         shell: bash
         run: |
-          set -euo pipefail
-          git checkout HEAD^ -- .github/workflows/trpg-player-simulation.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            .github/workflows/trpg-player-simulation.yml \
-            src/server/trpg/content/authored-scene-registry.js \
-            src/server/trpg/content/authored/missions/t17-second-summoning.js \
-            src/server/trpg/game/service.js \
-            tools/trpg-sim/test/t17-second-summoning.test.mjs
-          git diff --cached --check
-          git commit -m "feat(trpg): author the first T17 investigation branches"
-          git push origin HEAD:chatgpt/trpg-authored-content-refactor
+          set +e
+          node --test tools/trpg-sim/test/t17-second-summoning.test.mjs > /tmp/t17-focused.log 2>&1
+          status=$?
+          echo "$status" > /tmp/t17-focused.status
+          cat /tmp/t17-focused.log
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trpg-t17-focused-diagnostics
+          path: |
+            /tmp/t17-focused.log
+            /tmp/t17-focused.status
+      - name: Enforce focused result
+        shell: bash
+        run: exit "$(cat /tmp/t17-focused.status)"
