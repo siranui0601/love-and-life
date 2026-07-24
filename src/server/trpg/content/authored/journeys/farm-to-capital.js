@@ -41,7 +41,7 @@ export const FARM_TO_CAPITAL_SCENES = Object.freeze([
         Object.freeze({ path: "story.capitalWeaponShopkeeperPresent", op: "eq", value: false }),
       ]),
     }),
-    narrative: "坂の上の武器屋へ着いたが、扉の掛け札は裏返され、店内に人の気配はない。窓越しには剣と槍、奥には弓と杖が用途ごとに並び、中央には試し振りのためらしい空間が見える。店主がいないのに、誰かが応対していることにはしない。",
+    narrative: "坂の上の武器屋へ着いたが、扉の掛け札は裏返され、店内に人の気配はない。窓越しには剣と槍、奥には弓と杖が用途ごとに並び、中央には試し振りのためらしい空間が見える。戸口脇の札には『戻り次第、試し持ち可』とだけあり、今は店主が戻る頃に改めるほかなさそうだ。",
     beats: Object.freeze([]),
     choices: Object.freeze([]),
   }),
