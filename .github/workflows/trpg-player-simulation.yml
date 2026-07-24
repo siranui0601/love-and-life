@@ -1,4 +1,4 @@
-name: TRPG route dialogue choice diagnostics
+name: TRPG public route final focused diagnostics
 
 on:
   pull_request:
@@ -9,26 +9,26 @@ on:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/trpg-authored-content-refactor
-          fetch-depth: 10
+          fetch-depth: 12
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply candidate patch and print dialogue choices
+      - name: Apply final candidate patch
         shell: bash
         run: |
           python - <<'PY'
           import subprocess
           from pathlib import Path
           workflow = subprocess.check_output(
-              ["git", "show", "HEAD^^^^:.github/workflows/trpg-player-simulation.yml"],
+              ["git", "show", "HEAD^^^^^:.github/workflows/trpg-player-simulation.yml"],
               text=True,
           )
           marker = "          node --input-type=module <<'NODE'\n"
@@ -41,23 +41,38 @@ jobs:
           node /tmp/public-route-patch.mjs
           node --input-type=module <<'NODE'
           import fs from "node:fs";
-          const servicePath = "src/server/trpg/game/service.js";
-          let service = fs.readFileSync(servicePath, "utf8");
-          service = service.replace(
+          const path = "src/server/trpg/game/service.js";
+          let source = fs.readFileSync(path, "utf8");
+          source = source.replace(
             `  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;\n  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;`,
             `  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;\n  if (runtime.dialogueSession) return current;\n  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;`,
           );
-          service = service.replace(
+          source = source.replace(
             `    .find(({ action }) => !action.missionId\n      && action.capitalArrivalGuidance !== true\n      && !["eat", "rest"].includes(action.type)\n      && action.workOffer !== true)?.index;`,
             `    .find(({ action }) => !action.missionId\n      && action.capitalArrivalGuidance !== true\n      && (["wait", "plan", "observe"].includes(action.type) || action.movementScope === "local"))?.index;`,
           );
-          fs.writeFileSync(servicePath, service, "utf8");
-
-          const testPath = "tools/trpg-sim/test/game-service.test.mjs";
-          let tests = fs.readFileSync(testPath, "utf8");
-          const anchor = `  assert.equal(runner.save.choices.length, 3);\n  assert.ok(runner.save.choices.every((choice) => choice.actionId.startsWith(\`DIALOGUE:${'${talk.targetNpcId}'}:\`)));`;
-          const replacement = `  assert.equal(runner.save.choices.length, 3);\n  console.log("DIALOGUE_CHOICES", JSON.stringify({ talk, choices: runner.save.choices }, null, 2));\n  assert.ok(runner.save.choices.every((choice) => choice.actionId.startsWith(\`DIALOGUE:${'${talk.targetNpcId}'}:\`)));`;
-          if (!tests.includes(anchor)) throw new Error("dialogue assertion anchor missing");
-          fs.writeFileSync(testPath, tests.replace(anchor, replacement), "utf8");
+          fs.writeFileSync(path, source, "utf8");
           NODE
-          node --test --test-name-pattern="ordinary NPC conversation supports" tools/trpg-sim/test/game-service.test.mjs
+      - name: Run focused suite with diagnostics
+        shell: bash
+        run: |
+          mkdir -p tools/trpg-sim/reports
+          set +e
+          node --test \
+            tools/trpg-sim/test/capital-arrival-guidance.test.mjs \
+            tools/trpg-sim/test/authored-journey-presentation.test.mjs \
+            tools/trpg-sim/test/game-service.test.mjs \
+            > tools/trpg-sim/reports/public-route-final-focused.log 2>&1
+          status=$?
+          cat tools/trpg-sim/reports/public-route-final-focused.log
+          echo "$status" > tools/trpg-sim/reports/public-route-final-focused.status
+          exit 0
+      - name: Upload focused diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trpg-public-route-final-focused
+          path: tools/trpg-sim/reports/public-route-final-focused.*
+          retention-days: 7
+      - name: Enforce focused suite
+        run: test "$(cat tools/trpg-sim/reports/public-route-final-focused.status)" = "0"
