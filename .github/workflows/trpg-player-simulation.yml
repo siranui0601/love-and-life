@@ -1,47 +1,58 @@
-name: TRPG integrated player simulation
+name: TRPG refine unattended weapon-shop prose
 
 on:
   pull_request:
     paths:
-      - "tools/trpg-sim/**"
-      - "public/TRPG/**"
-      - "src/server/trpg/**"
-      - "src/server/app.js"
-      - "package.json"
       - ".github/workflows/trpg-player-simulation.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: trpg-refine-unattended-weapon-shop-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  simulate:
+  refine:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-authored-content-refactor
+          fetch-depth: 2
+          show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Run TRPG tests
+      - name: Replace meta commentary with in-world prose
         shell: bash
         run: |
-          mkdir -p tools/trpg-sim/reports
-          set -o pipefail
-          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v4.log
-      - name: Run integrated player, GOAP and Gemini journeys v4
-        env:
-          TRPG_PLAYER_V4_SEEDS: 2
-          TRPG_GOAP_V4_SEEDS: 2
-        run: node tools/trpg-sim/cli-player-v4.mjs --strict
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: trpg-player-simulation-v4
-          path: |
-            tools/trpg-sim/reports/test-v4.log
-            tools/trpg-sim/reports/player-v4-latest.json
-            tools/trpg-sim/reports/player-v4-latest.md
-            tools/trpg-sim/reports/player-latest.json
-            tools/trpg-sim/reports/player-latest.md
-            public/TRPG/player-simulation-report.json
-            public/TRPG/player-simulation-v4-report.json
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const filePath = "src/server/trpg/content/authored/journeys/farm-to-capital.js";
+          const before = "坂の上の武器屋へ着いたが、扉の掛け札は裏返され、店内に人の気配はない。窓越しには剣と槍、奥には弓と杖が用途ごとに並び、中央には試し振りのためらしい空間が見える。店主がいないのに、誰かが応対していることにはしない。";
+          const after = "坂の上の武器屋へ着いたが、扉の掛け札は裏返され、店内に人の気配はない。窓越しには剣と槍、奥には弓と杖が用途ごとに並び、中央には試し振りのためらしい空間が見える。戸口脇の札には『戻り次第、試し持ち可』とだけあり、今は店主が戻る頃に改めるほかなさそうだ。";
+          const source = fs.readFileSync(filePath, "utf8");
+          if (!source.includes(before)) throw new Error("unattended prose anchor missing");
+          fs.writeFileSync(filePath, source.replace(before, after), "utf8");
+          NODE
+      - name: Run authored journey tests
+        run: node --test tools/trpg-sim/test/authored-journey-presentation.test.mjs
+      - name: Run complete TRPG regression suite
+        run: npm run trpg:test
+      - name: Commit reviewed prose and restore ordinary CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout HEAD^ -- .github/workflows/trpg-player-simulation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/trpg-player-simulation.yml \
+            src/server/trpg/content/authored/journeys/farm-to-capital.js
+          git commit -m "refactor(trpg): keep unattended shop prose in-world"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
