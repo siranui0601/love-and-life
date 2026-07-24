@@ -1,4 +1,4 @@
-name: TRPG public route freedom integration
+name: TRPG public route focused diagnostics
 
 on:
   pull_request:
@@ -14,29 +14,28 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  integrate:
+  diagnose:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/trpg-authored-content-refactor
-          fetch-depth: 5
+          fetch-depth: 6
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Reuse the reviewed route patch
+      - name: Apply reviewed route patch and dialogue guard
         shell: bash
         run: |
           python - <<'PY'
           import subprocess
           from pathlib import Path
-
           workflow = subprocess.check_output(
-              ["git", "show", "HEAD^:.github/workflows/trpg-player-simulation.yml"],
+              ["git", "show", "HEAD^^:.github/workflows/trpg-player-simulation.yml"],
               text=True,
           )
           marker = "          node --input-type=module <<'NODE'\n"
@@ -47,9 +46,6 @@ jobs:
           Path("/tmp/public-route-patch.mjs").write_text(body + "\n", encoding="utf-8")
           PY
           node /tmp/public-route-patch.mjs
-      - name: Keep an active conversation uninterrupted
-        shell: bash
-        run: |
           node --input-type=module <<'NODE'
           import fs from "node:fs";
           const path = "src/server/trpg/game/service.js";
@@ -59,27 +55,26 @@ jobs:
           if (!source.includes(before)) throw new Error("dialogue guard anchor missing");
           fs.writeFileSync(path, source.replace(before, after), "utf8");
           NODE
-      - name: Run focused freedom and dialogue tests
+      - name: Run focused tests with diagnostics
+        shell: bash
         run: |
+          mkdir -p tools/trpg-sim/reports
+          set +e
           node --test \
             tools/trpg-sim/test/capital-arrival-guidance.test.mjs \
             tools/trpg-sim/test/authored-journey-presentation.test.mjs \
-            tools/trpg-sim/test/game-service.test.mjs
-      - name: Run complete TRPG regression suite
-        run: npm run trpg:test
-      - name: Commit reviewed route freedom and restore ordinary CI
-        shell: bash
-        run: |
-          set -euo pipefail
-          git checkout d43ce68877c9fd6c7e81d1488b9a766313ae1e42 -- .github/workflows/trpg-player-simulation.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            .github/workflows/trpg-player-simulation.yml \
-            src/server/trpg/resolvers/capital-arrival-guidance.js \
-            src/server/trpg/game/service.js \
-            src/server/trpg/content/authored/journeys/farm-to-capital.js \
-            tools/trpg-sim/test/capital-arrival-guidance.test.mjs \
-            tools/trpg-sim/test/authored-journey-presentation.test.mjs
-          git commit -m "feat(trpg): open public routes after reaching the capital"
-          git push origin HEAD:chatgpt/trpg-authored-content-refactor
+            tools/trpg-sim/test/game-service.test.mjs \
+            > tools/trpg-sim/reports/public-route-focused.log 2>&1
+          status=$?
+          cat tools/trpg-sim/reports/public-route-focused.log
+          echo "$status" > tools/trpg-sim/reports/public-route-focused.status
+          exit 0
+      - name: Upload focused diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trpg-public-route-focused
+          path: tools/trpg-sim/reports/public-route-focused.*
+          retention-days: 7
+      - name: Enforce focused tests
+        run: test "$(cat tools/trpg-sim/reports/public-route-focused.status)" = "0"
