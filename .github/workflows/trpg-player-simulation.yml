@@ -1,173 +1,47 @@
-name: TRPG generic mission branch refactor
+name: TRPG integrated player simulation
 
 on:
   pull_request:
     paths:
+      - "tools/trpg-sim/**"
+      - "public/TRPG/**"
+      - "src/server/trpg/**"
+      - "src/server/app.js"
+      - "package.json"
       - ".github/workflows/trpg-player-simulation.yml"
   workflow_dispatch:
 
-permissions:
-  contents: write
-
-concurrency:
-  group: trpg-generic-mission-branch-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  integrate:
+  simulate:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: chatgpt/trpg-authored-content-refactor
-          fetch-depth: 8
-          show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Replace mission-specific wiring with generic branch pack
+      - name: Run TRPG tests
         shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          def replace_once(source, before, after, label):
-              if before not in source:
-                  raise RuntimeError(f"missing patch anchor: {label}")
-              return source.replace(before, after, 1)
-
-          service_path = Path("src/server/trpg/game/service.js")
-          service = service_path.read_text(encoding="utf-8")
-          service = replace_once(service, '''import {
-            applyT17SecondSummoningAction,
-            suppressGenericT17MissionAction,
-            t17SecondSummoningEvidenceAction,
-            t17SecondSummoningExclusiveActions,
-            t17SecondSummoningGuidance,
-          } from "../content/authored/missions/t17-second-summoning.js";''', '''import {
-            applyAuthoredMissionBranchAction,
-            applyAuthoredMissionCatalogOverrides,
-            authoredMissionBranchEvidenceAction,
-            authoredMissionBranchExclusiveActions,
-            authoredMissionBranchGuidance,
-            suppressGenericAuthoredMissionAction,
-          } from "../content/authored/mission-branch-pack.js";''', "generic branch import")
-          service = replace_once(service, '''  const t17 = catalog.special.find((mission) => mission.id === "MSN-T17");
-            const t17Hear = t17?.steps.find((step) => step.id === "hear");
-            if (t17Hear) {
-              t17Hear.targetLocation = "王都";
-              t17Hear.targetFacilityId = "LOC_CAP_LOWER_INN";
-              t17Hear.label = "王都下層で、第二召喚を止めようとする人物と接触する";
-            }
-            return catalog;''', '''  applyAuthoredMissionCatalogOverrides(catalog);
-            return catalog;''', "catalog override")
-          service = replace_once(service, '''  const t17Exclusive = t17SecondSummoningExclusiveActions(runtime, {
-              presentNpcs: presentNpcsAt(runtime, data),
-              movementActions: movementActions(runtime, data),
-            });
-            if (t17Exclusive) return t17Exclusive;''', '''  const authoredBranchExclusive = authoredMissionBranchExclusiveActions(runtime, {
-              presentNpcs: presentNpcsAt(runtime, data),
-              movementActions: movementActions(runtime, data),
-            });
-            if (authoredBranchExclusive) return authoredBranchExclusive;''', "exclusive actions")
-          service = replace_once(service, '''    .filter((action) => t01FocusedChoiceAllowed(action, runtime))
-              .filter((action) => !suppressGenericT17MissionAction(runtime, action));''', '''    .filter((action) => t01FocusedChoiceAllowed(action, runtime))
-              .filter((action) => !suppressGenericAuthoredMissionAction(runtime, action));''', "generic suppression")
-          service = replace_once(service, '''  const t17Evidence = t17SecondSummoningEvidenceAction(runtime);
-            const prioritized = [
-              ...(t17Evidence ? [t17Evidence] : []),''', '''  const authoredBranchEvidence = authoredMissionBranchEvidenceAction(runtime);
-            const prioritized = [
-              ...(authoredBranchEvidence ? [authoredBranchEvidence] : []),''', "evidence action")
-          service = replace_once(service, '''  if (selected.some((action) => action.t17ExclusiveChoice === true)) {''', '''  if (selected.some((action) => action.authoredBranchExclusiveChoice === true)) {''', "exclusive selection flag")
-          service = replace_once(service, '''  if (result.ok) applyT17SecondSummoningAction(runtime, resolvedPlayerAction, result);''', '''  if (result.ok) applyAuthoredMissionBranchAction(runtime, resolvedPlayerAction, result);''', "branch result application")
-          service = replace_once(service, '''  const t17Guidance = t17SecondSummoningGuidance(runtime);
-            if (t17Guidance) {
-              const mission = missions.find((entry) => entry.id === "MSN-T17");
-              const targetName = t17Guidance.targetFacilityId ? facilityName(t17Guidance.targetFacilityId) : null;
-              return {
-                ...t17Guidance,
-                targetFacilityName: targetName,
-                deadlineLabel: mission?.deadlineLabel ?? null,
-              };
-            }''', '''  const authoredBranchGuidance = authoredMissionBranchGuidance(runtime);
-            if (authoredBranchGuidance) {
-              const mission = missions.find((entry) => entry.id === authoredBranchGuidance.missionId);
-              const targetName = authoredBranchGuidance.targetFacilityId
-                ? facilityName(authoredBranchGuidance.targetFacilityId)
-                : null;
-              return {
-                ...authoredBranchGuidance,
-                targetFacilityName: targetName,
-                deadlineLabel: mission?.deadlineLabel ?? null,
-              };
-            }''', "generic guidance")
-          service = replace_once(service, '''function playerUtterance(action) {
-            if (!action || action.type !== "conversation") return null;
-            const authored = {''', '''function playerUtterance(action) {
-            if (!action || action.type !== "conversation") return null;
-            if (action.playerUtterance) return cleanText(action.playerUtterance, 240);
-            const authored = {''', "data-driven player utterance")
-          service = service.replace('''    t17_when_where: "二度目の召喚は、いつ、どこで行われるんですか？",
-              t17_why_player: "なぜ私にその話を？　私と召喚に、どんな関係があるんですか？",
-              t17_demand_proof: "あなたたちの話だけでは動けません。私自身が確かめられる証拠を示してください。",
-''', "", 1)
-          service_path.write_text(service, encoding="utf-8")
-
-          registry_path = Path("src/server/trpg/content/authored-scene-registry.js")
-          registry = registry_path.read_text(encoding="utf-8")
-          registry = replace_once(registry,
-              'import { T17_SECOND_SUMMONING_SCENES } from "./authored/missions/t17-second-summoning.js";',
-              'import { AUTHORED_MISSION_BRANCH_SCENES } from "./authored/mission-branch-pack.js";',
-              "registry import")
-          registry = replace_once(registry,
-              '  ...T17_SECOND_SUMMONING_SCENES,',
-              '  ...AUTHORED_MISSION_BRANCH_SCENES,',
-              "registry scenes")
-          registry_path.write_text(registry, encoding="utf-8")
-
-          test_path = Path("tools/trpg-sim/test/game-service.test.mjs")
-          test_source = test_path.read_text(encoding="utf-8")
-          test_source = replace_once(test_source,
-              'import test from "node:test";',
-              'import test from "node:test";\nimport { AUTHORED_BRANCH_HEARING_MISSION_IDS } from "../../../src/server/trpg/content/authored/mission-branch-pack.js";',
-              "generic test import")
-          test_source = replace_once(test_source,
-              '  const authoredHearingMissionIds = new Set(["MSN-T17"]);',
-              '  const authoredHearingMissionIds = new Set(AUTHORED_BRANCH_HEARING_MISSION_IDS);',
-              "generic authored mission ids")
-          test_source = test_source.replace(
-              '// T17 uses its own reviewed Layla conversation triad; the dedicated T17\n    // test owns that stricter presence and disclosure contract.',
-              '// Missions registered in the generic authored branch pack own their\n    // conversation contract outside the one-NPC generic hearing path.',
-              1,
-          )
-          test_path.write_text(test_source, encoding="utf-8")
-          PY
-          git rm src/server/trpg/content/authored/missions/t17-second-summoning.js
-          git rm tools/trpg-sim/test/t17-second-summoning.test.mjs
-          node --check src/server/trpg/content/authored/mission-branch-pack.js
-          node --check src/server/trpg/content/authored-scene-registry.js
-          node --check src/server/trpg/game/service.js
-          node --check tools/trpg-sim/test/game-service.test.mjs
-          git diff --check
-      - name: Run complete TRPG regression suite
-        run: npm run trpg:test
-      - name: Commit generic mission branch refactor and restore normal workflow
-        shell: bash
-        run: |
-          set -euo pipefail
-          git checkout 717dab0ff476346c8520b7ca1b624a7e3579467e -- .github/workflows/trpg-player-simulation.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            .github/workflows/trpg-player-simulation.yml \
-            src/server/trpg/content/authored-scene-registry.js \
-            src/server/trpg/content/authored/mission-branch-pack.js \
-            src/server/trpg/game/service.js \
-            tools/trpg-sim/test/game-service.test.mjs
-          git add -u
-          git diff --cached --check
-          git commit -m "refactor(trpg): generalize authored mission branches"
-          git push origin HEAD:chatgpt/trpg-authored-content-refactor
+          mkdir -p tools/trpg-sim/reports
+          set -o pipefail
+          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v4.log
+      - name: Run integrated player, GOAP and Gemini journeys v4
+        env:
+          TRPG_PLAYER_V4_SEEDS: 2
+          TRPG_GOAP_V4_SEEDS: 2
+        run: node tools/trpg-sim/cli-player-v4.mjs --strict
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trpg-player-simulation-v4
+          path: |
+            tools/trpg-sim/reports/test-v4.log
+            tools/trpg-sim/reports/player-v4-latest.json
+            tools/trpg-sim/reports/player-v4-latest.md
+            tools/trpg-sim/reports/player-latest.json
+            tools/trpg-sim/reports/player-latest.md
+            public/TRPG/player-simulation-report.json
+            public/TRPG/player-simulation-v4-report.json
