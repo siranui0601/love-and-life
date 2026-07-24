@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CAPITAL_WEAPON_SHOP_ID,
+  capitalWeaponShopFirstChoices,
+  capitalWeaponShopFirstInteractionActive,
   capitalWeaponShopGuidanceActive,
+  completeCapitalWeaponShopFirstInteraction,
   ensureCapitalWeaponShopChoice,
   prioritizeCapitalWeaponShopMovement,
   recordCapitalArrivalGuidance,
@@ -52,4 +55,29 @@ test("visiting the weapon shop permanently completes the first-arrival guide", (
   runtime.playerState.absoluteMinute += 20;
   recordCapitalArrivalGuidance(runtime);
   assert.equal(capitalWeaponShopGuidanceActive(runtime), false);
+});
+
+
+test("the first weapon-shop visit offers one reviewed first-interaction set", () => {
+  const runtime = runtimeAt("LOC_CAP_LOWER_INN");
+  recordCapitalArrivalGuidance(runtime);
+  runtime.playerState.player.facilityId = CAPITAL_WEAPON_SHOP_ID;
+  runtime.playerState.absoluteMinute += 20;
+  recordCapitalArrivalGuidance(runtime);
+
+  assert.equal(capitalWeaponShopFirstInteractionActive(runtime), true);
+  const choices = capitalWeaponShopFirstChoices(runtime, {
+    shopkeeper: { id: "NPC065", name: "武器屋の店主" },
+  });
+  assert.deepEqual(choices.map((choice) => choice.id), [
+    "CAPITAL_WEAPON_SHOP:FIRST:ASK_STYLE",
+    "CAPITAL_WEAPON_SHOP:FIRST:COMPARE_HANDLING",
+    "CAPITAL_WEAPON_SHOP:FIRST:SET_BUDGET",
+  ]);
+  assert.deepEqual(choices.map((choice) => choice.family), ["talk", "investigate", "prepare"]);
+
+  completeCapitalWeaponShopFirstInteraction(runtime, { choiceId: choices[1].id });
+  assert.equal(capitalWeaponShopFirstInteractionActive(runtime), false);
+  assert.equal(capitalWeaponShopFirstChoices(runtime, { shopkeeper: { id: "NPC065" } }), null);
+  assert.equal(runtime.capitalArrivalGuidance.firstInteractionChoiceId, choices[1].id);
 });

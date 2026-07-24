@@ -1,4 +1,4 @@
-export const CAPITAL_ARRIVAL_GUIDANCE_VERSION = "capital-arrival-guidance-v1";
+export const CAPITAL_ARRIVAL_GUIDANCE_VERSION = "capital-arrival-guidance-v2";
 export const CAPITAL_WEAPON_SHOP_ID = "LOC_CAP_WEAPON_SHOP";
 export const CAPITAL_LOWER_INN_ID = "LOC_CAP_LOWER_INN";
 export const CAPITAL_WEAPON_SHOP_GUIDANCE_WINDOW_MINUTES = 720;
@@ -13,10 +13,14 @@ export function ensureCapitalArrivalGuidance(runtime) {
     version: CAPITAL_ARRIVAL_GUIDANCE_VERSION,
     suggestedAtMinute: null,
     visitedAtMinute: null,
+    firstInteractionCompletedAtMinute: null,
+    firstInteractionChoiceId: null,
   };
   runtime.capitalArrivalGuidance.version = CAPITAL_ARRIVAL_GUIDANCE_VERSION;
   runtime.capitalArrivalGuidance.suggestedAtMinute ??= null;
   runtime.capitalArrivalGuidance.visitedAtMinute ??= null;
+  runtime.capitalArrivalGuidance.firstInteractionCompletedAtMinute ??= null;
+  runtime.capitalArrivalGuidance.firstInteractionChoiceId ??= null;
   return runtime.capitalArrivalGuidance;
 }
 
@@ -45,6 +49,63 @@ export function capitalWeaponShopGuidanceActive(runtime, {
   const guidance = ensureCapitalArrivalGuidance(runtime);
   if (guidance.suggestedAtMinute == null || guidance.visitedAtMinute != null) return false;
   return number(absoluteMinute) - number(guidance.suggestedAtMinute) <= CAPITAL_WEAPON_SHOP_GUIDANCE_WINDOW_MINUTES;
+}
+
+export function capitalWeaponShopFirstInteractionActive(runtime) {
+  const guidance = ensureCapitalArrivalGuidance(runtime);
+  return guidance.visitedAtMinute != null
+    && guidance.firstInteractionCompletedAtMinute == null
+    && runtime?.playerState?.player?.facilityId === CAPITAL_WEAPON_SHOP_ID;
+}
+
+export function capitalWeaponShopFirstChoices(runtime, { shopkeeper = null } = {}) {
+  if (!capitalWeaponShopFirstInteractionActive(runtime) || !shopkeeper?.id) return null;
+  return [
+    {
+      id: "CAPITAL_WEAPON_SHOP:FIRST:ASK_STYLE",
+      family: "talk",
+      type: "conversation",
+      singleTurnConversation: true,
+      capitalWeaponShopFirstChoice: true,
+      targetNpcId: shopkeeper.id,
+      targetNpcName: shopkeeper.name ?? "店主",
+      dialogueTopic: "weapon_shop_first_style",
+      minutes: 7,
+      label: "どんな戦い方ができるか分からないと正直に話し、店主へ相談する",
+      expectedChanges: ["capitalArrivalGuidance.firstInteractionCompletedAtMinute"],
+    },
+    {
+      id: "CAPITAL_WEAPON_SHOP:FIRST:COMPARE_HANDLING",
+      family: "investigate",
+      type: "localInvestigate",
+      capitalWeaponShopFirstChoice: true,
+      localVariant: "weapon_handling_comparison",
+      minutes: 18,
+      label: "剣・槍・弓・杖を順に持ち、重さと間合いの違いを確かめる",
+      expectedChanges: ["capitalArrivalGuidance.firstInteractionCompletedAtMinute"],
+    },
+    {
+      id: "CAPITAL_WEAPON_SHOP:FIRST:SET_BUDGET",
+      family: "prepare",
+      type: "plan",
+      capitalWeaponShopFirstChoice: true,
+      minutes: 9,
+      label: "手持ちの装備と所持金を見せ、無理なく選べる候補だけに絞る",
+      expectedChanges: ["capitalArrivalGuidance.firstInteractionCompletedAtMinute"],
+    },
+  ];
+}
+
+export function completeCapitalWeaponShopFirstInteraction(runtime, {
+  choiceId = null,
+  absoluteMinute = runtime?.playerState?.absoluteMinute,
+} = {}) {
+  const guidance = ensureCapitalArrivalGuidance(runtime);
+  if (guidance.firstInteractionCompletedAtMinute == null) {
+    guidance.firstInteractionCompletedAtMinute = number(absoluteMinute);
+    guidance.firstInteractionChoiceId = choiceId ? String(choiceId) : null;
+  }
+  return guidance;
 }
 
 export function prioritizeCapitalWeaponShopMovement(actions, runtime) {

@@ -42,6 +42,9 @@ import { resolveCanonicalWeather, WEATHER_RULESET_VERSION } from "../resolvers/w
 import { selectDiverseChoices } from "../content/choice-contract.js";
 import {
   CAPITAL_ARRIVAL_GUIDANCE_VERSION,
+  capitalWeaponShopFirstChoices,
+  capitalWeaponShopFirstInteractionActive,
+  completeCapitalWeaponShopFirstInteraction,
   ensureCapitalWeaponShopChoice,
   prioritizeCapitalWeaponShopMovement,
   recordCapitalArrivalGuidance,
@@ -593,6 +596,13 @@ function openingChoiceActions(runtime) {
     ]);
   }
   return null;
+}
+
+function capitalWeaponShopFirstChoiceActions(runtime, data) {
+  if (!capitalWeaponShopFirstInteractionActive(runtime)) return null;
+  const shopkeeper = presentNpcsAt(runtime, data).find((npc) => npc.id === "NPC065") ?? null;
+  const choices = capitalWeaponShopFirstChoices(runtime, { shopkeeper });
+  return choices ? withChoiceIds(choices) : null;
 }
 
 function dialogueFollowupActions(runtime) {
@@ -1486,6 +1496,8 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   syncAuthoritativePresentNpcIds(runtime, data);
   const authored = openingChoiceActions(runtime);
   if (authored) return authored.map((action) => decorateWorkOfferAction(action, runtime, data, action.targetNpcId)).filter(Boolean);
+  const weaponShopFirstChoices = capitalWeaponShopFirstChoiceActions(runtime, data);
+  if (weaponShopFirstChoices) return weaponShopFirstChoices;
   const workOfferChoices = pendingWorkOfferActions(runtime, data);
   if (workOfferChoices) return workOfferChoices;
   if (runtime.tutorial && ["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) return [];
@@ -2124,6 +2136,7 @@ function updateDialogueSession(runtime, action) {
   if (action.type === "conversation"
     && action.targetNpcId
     && (!action.missionId || Boolean(action.requiredDisclosure))
+    && action.singleTurnConversation !== true
     && !action.tutorialBeat) {
     action.conversationTurn = 1;
     action.previouslyAskedTopics = [];
@@ -2922,6 +2935,12 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     }
   }
   if (!result?.ok && result?.committed !== true) throw errorFromResult(result);
+  if ((result?.ok || result?.committed === true) && resolvedPlayerAction?.capitalWeaponShopFirstChoice) {
+    completeCapitalWeaponShopFirstInteraction(runtime, {
+      choiceId: resolvedPlayerAction.id,
+      absoluteMinute: runtime.playerState.absoluteMinute,
+    });
+  }
   if ((result?.ok || result?.committed === true)
     && pendingIntroductionAtStart
     && !["ACK_NPC_INTRODUCTION", "TUTORIAL_ACK"].includes(command.type)
@@ -4722,6 +4741,11 @@ function authoredSceneContext(runtime, action, outcome) {
     story: {
       t01ReunionNow: state.player.facilityId === "LOC_FARM_SQUARE"
         && t01Escort.reunionBeatAtMinute === state.absoluteMinute,
+      capitalWeaponShopFirstVisitNow: state.player.facilityId === "LOC_CAP_WEAPON_SHOP"
+        && runtime.capitalArrivalGuidance?.visitedAtMinute === state.absoluteMinute,
+      capitalWeaponShopkeeperPresent: (state.authoritativePresentNpcIds instanceof Set
+        ? state.authoritativePresentNpcIds
+        : new Set(state.authoritativePresentNpcIds ?? [])).has("NPC065"),
     },
     weather: canonicalWeatherForState(state),
     player: {
