@@ -1,4 +1,4 @@
-name: TRPG T17 focused diagnostics
+name: TRPG T17 combined regression diagnostics
 
 on:
   pull_request:
@@ -12,12 +12,12 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/trpg-authored-content-refactor
-          fetch-depth: 4
+          fetch-depth: 8
           show-progress: false
       - uses: actions/setup-node@v4
         with:
@@ -31,7 +31,7 @@ jobs:
           import subprocess
           from pathlib import Path
           workflow = subprocess.check_output(
-              ["git", "show", "HEAD^:.github/workflows/trpg-player-simulation.yml"],
+              ["git", "show", "05ed81eed0460715ffa63d44dc474757132fec3a:.github/workflows/trpg-player-simulation.yml"],
               text=True,
           )
           marker = "          cat > /tmp/patch-t17-service.py <<'PY'\n"
@@ -41,23 +41,26 @@ jobs:
           Path("/tmp/patch-t17-service.py").write_text(body + "\n", encoding="utf-8")
           PY
           python /tmp/patch-t17-service.py
-      - name: Run focused T17 test with captured output
-        id: focused
+      - name: Run combined focused regression with captured output
         shell: bash
         run: |
           set +e
-          node --test tools/trpg-sim/test/t17-second-summoning.test.mjs > /tmp/t17-focused.log 2>&1
+          node --test \
+            tools/trpg-sim/test/t17-second-summoning.test.mjs \
+            tools/trpg-sim/test/authored-journey-presentation.test.mjs \
+            tools/trpg-sim/test/game-service.test.mjs \
+            > /tmp/t17-combined.log 2>&1
           status=$?
-          echo "$status" > /tmp/t17-focused.status
-          cat /tmp/t17-focused.log
+          echo "$status" > /tmp/t17-combined.status
+          tail -n 240 /tmp/t17-combined.log
           exit 0
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trpg-t17-focused-diagnostics
+          name: trpg-t17-combined-diagnostics
           path: |
-            /tmp/t17-focused.log
-            /tmp/t17-focused.status
-      - name: Enforce focused result
+            /tmp/t17-combined.log
+            /tmp/t17-combined.status
+      - name: Enforce combined result
         shell: bash
-        run: exit "$(cat /tmp/t17-focused.status)"
+        run: exit "$(cat /tmp/t17-combined.status)"
