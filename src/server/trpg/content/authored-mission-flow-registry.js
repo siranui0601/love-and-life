@@ -5,6 +5,268 @@ const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 
 export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
   Object.freeze({
+    id: "red-fang-migration",
+    missionId: "MSN-T03",
+    troubleId: "T03",
+    title: "赤牙狼の群れの南下",
+    catalogOverride: Object.freeze({
+      hearing: Object.freeze({
+        targetLocation: "田園の村",
+        targetFacilityId: "LOC_FARM_CHIEF",
+        label: "村長宅で、赤牙狼の被害が広がった経緯を聞く",
+      }),
+      investigation: Object.freeze({
+        required: 2,
+      }),
+      battle: Object.freeze({
+        targetLocation: "田園の村",
+        targetFacilityId: "LOC_FARM_EDGE",
+        encounterId: "ENC-0005",
+        encounterIdByTroubleStatus: Object.freeze({
+          active: "ENC-0005",
+          critical: "ENC-0006",
+        }),
+        labelByTroubleStatus: Object.freeze({
+          active: "村外れへ先行した赤牙狼を街道から退ける",
+          critical: "村外れを襲う群れ親と成狼を食い止める",
+        }),
+        label: "村外れへ南下した赤牙狼を街道から退ける",
+      }),
+      resolution: Object.freeze({
+        targetLocation: "森",
+        targetFacilityId: "LOC_FOREST_CAMP",
+        label: "狩人の野営地で、群れの退路と大型魔獣の監視方法を決める",
+      }),
+    }),
+    hearing: Object.freeze({
+      stepId: "hear",
+      targetLocation: "田園の村",
+      targetFacilityId: "LOC_FARM_CHIEF",
+      npcId: "NPC003",
+      npcName: "ガロ村長",
+      guidance: Object.freeze({
+        kicker: "近づいてくる赤い牙",
+        title: "村長宅で、家畜被害の何から確かめるかを伝える",
+        detail: "被害の順序、傷の残り方、追い払いに失敗した方向では、次に会う相手も向かう場所も変わる。",
+      }),
+      choices: Object.freeze([
+        Object.freeze({
+          id: "attack_order",
+          dialogueTopic: "mission_flow_t03_attack_order",
+          label: "最初に襲われた家畜と、その後の被害の順序を聞く",
+          playerUtterance: "最初に襲われたのは、どこの家畜ですか。被害が起きた順に教えてください。",
+          requiredDisclosure: "被害は森寄りの放牧地から馬小屋へ移り、夜ごとに村の家並みへ近づいている",
+          factId: "T03-FACT-ATTACKS-MOVING-INWARD",
+          unlockedLeadIds: Object.freeze(["livestock_timeline", "wound_pattern"]),
+          minutes: 12,
+          narrative: "村長は机の上へ村の略図を広げ、被害のあった夜ごとに小石を置いた。点はばらばらではなく、森寄りの放牧地から村の中心へ一本の線を作っていく。",
+          speeches: Object.freeze([
+            Object.freeze({
+              actorId: "NPC003",
+              text: "最初は森寄りの放牧地だ。次が外柵、その次が馬小屋。夜ごとに家並みへ寄ってきている。牧場主が被害の時刻を全部控えているはずだ。",
+              emotion: "警戒",
+            }),
+          ]),
+        }),
+        Object.freeze({
+          id: "feeding_pattern",
+          dialogueTopic: "mission_flow_t03_feeding_pattern",
+          label: "狼は家畜を食べたのか、傷つけただけなのかを聞く",
+          playerUtterance: "襲われた家畜は食べられていましたか。それとも、噛まれただけですか。",
+          requiredDisclosure: "多くの家畜は食べられず、縄と柵だけが噛み切られ、狼も何かから逃げるように荒れていた",
+          factId: "T03-FACT-PANICKED-NOT-HUNTING",
+          unlockedLeadIds: Object.freeze(["wound_pattern", "forest_displacement"]),
+          minutes: 11,
+          narrative: "村長は、負傷した家畜を診た薬草婆の報告書を机へ広げた。食われた跡は少なく、浅い噛み傷と切れた縄の記録ばかりが並んでいる。",
+          speeches: Object.freeze([
+            Object.freeze({
+              actorId: "NPC003",
+              text: "ほとんど食われていない。縄や柵を噛み切り、家畜を散らしただけだ。薬草婆も『獲物を仕留める噛み方ではない』と言っていた。",
+              emotion: "困惑",
+            }),
+          ]),
+        }),
+        Object.freeze({
+          id: "failed_drive",
+          dialogueTopic: "mission_flow_t03_failed_drive",
+          label: "村人が追い払った時、群れがどちらへ逃げたかを聞く",
+          playerUtterance: "追い払おうとした時、群れは森へ戻りましたか。逃げた方向を知りたいです。",
+          requiredDisclosure: "群れは森の奥へ戻らず街道沿いを南へ逃げ、森の猟師は狼より大きな足跡を見つけている",
+          factId: "T03-FACT-PACK-DRIVEN-SOUTH",
+          unlockedLeadIds: Object.freeze(["forest_displacement", "livestock_timeline"]),
+          minutes: 13,
+          narrative: "追い払いに出た村人の配置を指でたどると、狼は安全な森奥ではなく、人の匂いが残る街道へ逃げていた。村長は森の猟師から届いた短い伝言を添える。",
+          speeches: Object.freeze([
+            Object.freeze({
+              actorId: "NPC003",
+              text: "森へ押し返したつもりが、群れは街道沿いを南へ走った。猟師の伝言には『狼を追う、もっと大きな跡がある』とだけ書かれている。",
+              emotion: "焦り",
+            }),
+          ]),
+        }),
+      ]),
+    }),
+    investigation: Object.freeze({
+      stepId: "investigate",
+      requiredEvidenceCount: 2,
+      requiredEvidenceIds: Object.freeze(["T03-EVIDENCE-APEX-PREDATOR-TRACKS"]),
+      initialGuidance: Object.freeze({
+        kicker: "群れが南下した理由",
+        title: "聞いた話から、最初に確かめる現場を選ぶ",
+        detail: "馬小屋の被害記録、井戸端に運ばれた傷、森の猟師が見た足跡は、それぞれ別の事実を示す。",
+      }),
+      continuedGuidance: Object.freeze({
+        kicker: "一つの事実だけでは足りない",
+        title: "村の痕跡と森の足跡を結び、狩りと逃走を見分ける",
+        detail: "村で被害の形を一つ確かめたうえで、森の足跡まで追えば、群れが人里へ来た理由を判断できる。",
+      }),
+      selectedLeadGuidance: Object.freeze({
+        kicker: "選んだ調査先",
+        detail: "現場へ移動し、聞いた話と実際に残った痕跡が一致するかを自分の目で確かめる。",
+      }),
+      defer: Object.freeze({
+        id: "defer",
+        label: "赤牙狼の調査はいったん保留し、別の目的を優先する",
+        minutes: 5,
+        deferMinutes: 180,
+        summary: "赤牙狼の調査をいったん保留した。群れの南下と家畜被害は、その間も進み続ける。",
+        narrative: "確認したい場所を地図へ記し、今は別の目的を優先することにした。群れが止まったわけではない。戻る時には、被害の場所が変わっているかもしれない。",
+      }),
+      leads: Object.freeze([
+        Object.freeze({
+          id: "livestock_timeline",
+          facilityId: "LOC_FARM_STABLE",
+          destinationName: "村馬小屋",
+          label: "牧場主の記録と柵の傷から、襲撃の順序を組み直す",
+          approachId: "t03-livestock-timeline",
+          discoveryId: "T03-EVIDENCE-ATTACKS-MOVING-INWARD",
+          discoveryText: "牧場主の記録と柵に残る新旧の爪痕を重ねると、被害は森寄りの放牧地から外柵、馬小屋へと移っていた。群れの進路は毎夜、村の内側へ寄っている。",
+          unlocksLeadIds: Object.freeze(["forest_displacement"]),
+          minutes: 32,
+          leadNarrative: "馬小屋では、補修した柵の色と牧場主の走り書きが夜ごとの被害を残していた。古い傷から新しい傷へたどれば、群れの進む向きが読めそうだ。",
+        }),
+        Object.freeze({
+          id: "wound_pattern",
+          facilityId: "LOC_FARM_WELL",
+          destinationName: "村の井戸",
+          label: "薬草婆が洗った噛み傷と、普通の狩り傷を見比べる",
+          approachId: "t03-wound-pattern",
+          discoveryId: "T03-EVIDENCE-PANICKED-BITES",
+          discoveryText: "傷は急所へ集中せず、浅い噛み跡が左右から重なっていた。切れた縄には内側から強く引いた跡があり、外柵の木片まで家畜の蹄に食い込んでいる。",
+          unlocksLeadIds: Object.freeze(["forest_displacement"]),
+          minutes: 29,
+          leadNarrative: "井戸端には、薬草婆が洗った血の付いた縄と薬布が干されている。家畜を仕留めるための傷か、逃げ場を失った獣の傷かは、噛み跡の重なり方で見分けられる。",
+        }),
+        Object.freeze({
+          id: "forest_displacement",
+          facilityId: "LOC_FOREST_HUNTER_HUT",
+          targetLocation: "森",
+          destinationName: "狩人小屋",
+          label: "猟師の罠場で、狼の足跡を押し返した巨大な痕跡を追う",
+          approachId: "t03-apex-tracks",
+          discoveryId: "T03-EVIDENCE-APEX-PREDATOR-TRACKS",
+          discoveryText: "狼の親子が通った跡を、さらに大きな四足の足跡が森奥から横切っていた。その交差点から狼の足跡だけが人里側へ折れ、罠木には赤牙狼では届かない高さの爪痕が残っている。",
+          unlocksLeadIds: Object.freeze(["livestock_timeline", "wound_pattern"]),
+          minutes: 41,
+          regionalNarrative: "街道から森の入口へ入った。狩人小屋はここからさらに奥だ。踏み跡と折れた枝を頼りに、猟師の罠場へ向かう。",
+          leadNarrative: "狩人小屋の裏から、踏み荒らされた罠場へ入る。狼の足跡だけを追うのではなく、その列が急に向きを変えた場所を探す。",
+        }),
+      ]),
+      prematureResolution: Object.freeze({
+        id: "drive-first-wolf",
+        label: "今見つけた狼だけを倒し、群れの南下は止まったと村へ報告する",
+        minutes: 22,
+        summary: "目の前の一頭を退けても、別の足跡が南へ続いていた。確かめた手掛かりは残るが、群れを押し出した原因までは止まっていない。",
+        narrative: "村へ戻ろうとしたところで、離れた藪から別の遠吠えが返った。一頭を倒しても群れは消えず、森奥から押し出される流れも変わっていない。見つけた事実を捨てず、もう一つの現場を確かめる必要がある。",
+      }),
+    }),
+    postInvestigationGuidance: Object.freeze({
+      kicker: "狩る側ではなく、追われる群れ",
+      title: "赤牙狼が人里へ押し出された可能性が高い",
+      detail: "まず村外れへ南下した群れを退ける。その後、森の痕跡と被害記録を合わせ、再発を防ぐ方法を選ぶ。",
+    }),
+    stepGuidance: Object.freeze({
+      battle: Object.freeze({
+        kicker: "村外れを塞ぐ赤い牙",
+        title: "群れの進路を読み、村へ入る前に街道から退ける",
+        detail: "調べた痕跡から接近方向は絞れている。危険なら退いて装備を整え、危機が深まる前に戻ることもできる。",
+      }),
+      resolve: Object.freeze({
+        kicker: "追い払った後に残る原因",
+        title: "狩人の野営地で、再発を防ぐ方法を一つ選ぶ",
+        detail: "赤牙狼を倒すだけでは再び押し出される。群れ親、古い巣穴、大型魔獣の足跡のどこへ働きかけるかを決める。",
+      }),
+    }),
+    resolution: Object.freeze({
+      stepId: "resolve",
+      choices: Object.freeze([
+        Object.freeze({
+          id: "drive_parent",
+          label: "群れ親の匂い跡を追い、人里へ戻れない境界まで押し返す",
+          labelByTroubleStatus: Object.freeze({
+            critical: "退けた群れ親の匂い跡を消し、残る成狼を森奥へ散らす",
+          }),
+          minutes: 58,
+          summary: "群れ親の通り道を人里から切り離し、残った赤牙狼を森奥へ押し返した。",
+          summaryByTroubleStatus: Object.freeze({
+            critical: "退けた群れ親の匂い跡を人里から断ち、残った成狼を森奥へ散らした。",
+          }),
+          narrative: "群れ親の新しい足跡を追い、人里側の風下から灰と苦い薬草を焚いた。森奥への退路だけを開けて追い立てると、親は成狼を連れ、境界の向こうへ退いた。",
+          narrativeByTroubleStatus: Object.freeze({
+            critical: "戦いの跡から群れ親の匂いを拾い、人里へ続く獣道を灰と苦い薬草で塞いだ。親を失った成狼は古い匂いを追えず、開けておいた森奥の退路へ散っていった。",
+          }),
+          worldEffect: Object.freeze({
+            flagKey: "t03ResolutionRoute",
+            factId: "player:T03:parent-driven-back",
+            text: "赤牙狼の群れ親は森奥へ退けられ、人里へ続く通り道が塞がれた",
+            factIdByTroubleStatus: Object.freeze({
+              critical: "player:T03:parent-defeated-pack-scattered",
+            }),
+            textByTroubleStatus: Object.freeze({
+              critical: "群れ親との戦いの後、残った赤牙狼は森奥へ散り、人里へ続く通り道が塞がれた",
+            }),
+            facilityId: "LOC_FOREST_CAMP",
+            propagationDelayHours: 2,
+          }),
+        }),
+        Object.freeze({
+          id: "relocate_den",
+          label: "人里から離れた古い巣穴へ、群れが抜けられる退路をつなぐ",
+          minutes: 74,
+          summary: "赤牙狼が人里を横切らずに逃げ込める古い巣穴まで、退路をつないだ。",
+          narrative: "倒木と罠縄を組み替え、人里へ向いていた獣道を古い巣穴へ曲げた。夜明け前、子狼の小さな足跡が新しい道へ続き、村へ戻る跡は残らなかった。",
+          worldEffect: Object.freeze({
+            flagKey: "t03ResolutionRoute",
+            factId: "player:T03:den-relocated",
+            text: "赤牙狼の親子は人里から離れた古い巣穴へ移り、村へ戻る足跡が途絶えた",
+            factIdByTroubleStatus: Object.freeze({
+              critical: "player:T03:surviving-pack-relocated",
+            }),
+            textByTroubleStatus: Object.freeze({
+              critical: "群れ親との戦いを生き残った成狼と子狼は、人里から離れた古い巣穴へ移った",
+            }),
+            facilityId: "LOC_FOREST_CAMP",
+            propagationDelayHours: 2,
+          }),
+        }),
+        Object.freeze({
+          id: "watch_apex",
+          label: "大型魔獣の行動域を記録し、村へ早く知らせる監視線を作る",
+          minutes: 66,
+          summary: "大型魔獣の接近を先に捉え、赤牙狼が押し出される前に村へ知らせる監視線を整えた。",
+          narrative: "高い爪痕と折れた罠木を地図へ写し、森際の三か所へ警報縄を張った。大型の足跡が村側へ向けば、赤牙狼より先に野営地と村へ合図が届く。",
+          worldEffect: Object.freeze({
+            flagKey: "t03ResolutionRoute",
+            factId: "player:T03:apex-watchline",
+            text: "大型魔獣の行動域に警報線が設けられ、赤牙狼が押し出される前に村へ知らせる体制ができた",
+            facilityId: "LOC_FOREST_CAMP",
+            propagationDelayHours: 2,
+          }),
+        }),
+      ]),
+    }),
+  }),
+  Object.freeze({
     id: "granary-arson",
     missionId: "MSN-T02",
     troubleId: "T02",
@@ -412,6 +674,38 @@ function freshState(pack) {
   };
 }
 
+function investigationRequirementsMet(pack, flow) {
+  const evidenceIds = new Set(flow?.evidenceIds ?? []);
+  if (evidenceIds.size < Number(pack.investigation.requiredEvidenceCount ?? 0)) return false;
+  return (pack.investigation.requiredEvidenceIds ?? [])
+    .every((evidenceId) => evidenceIds.has(evidenceId));
+}
+
+function syncInvestigationProgress(runtime, pack, flow) {
+  const definition = missionDefinition(runtime, pack);
+  const step = definition?.steps?.find((entry) => entry.id === pack.investigation.stepId);
+  const progress = missionRuntime(runtime, pack)?.progress;
+  if (!step || !progress) return;
+  const required = Math.max(1, Number(step.required ?? 1));
+  const mandatoryIds = new Set(pack.investigation.requiredEvidenceIds ?? []);
+  if (mandatoryIds.size === 0) return;
+  if (investigationRequirementsMet(pack, flow)) {
+    progress[step.id] = required;
+    return;
+  }
+  const evidenceIds = new Set(flow?.evidenceIds ?? []);
+  const mandatoryFound = [...mandatoryIds].filter((id) => evidenceIds.has(id)).length;
+  const nonMandatoryNeeded = Math.max(
+    0,
+    Number(pack.investigation.requiredEvidenceCount ?? required) - mandatoryIds.size,
+  );
+  const nonMandatoryFound = [...evidenceIds].filter((id) => !mandatoryIds.has(id)).length;
+  progress[step.id] = Math.min(
+    required - 1,
+    mandatoryFound + Math.min(nonMandatoryNeeded, nonMandatoryFound),
+  );
+}
+
 export function ensureAuthoredMissionFlowState(runtime, packOrId) {
   const pack = typeof packOrId === "string" ? PACK_BY_ID.get(packOrId) : packOrId;
   if (!pack) return null;
@@ -501,6 +795,7 @@ export function ensureAuthoredMissionFlowState(runtime, packOrId) {
     ? Number(deferredUntilMinute)
     : null;
   state.selectedResolutionRouteId ??= null;
+  syncInvestigationProgress(runtime, pack, state);
   return state;
 }
 
@@ -508,12 +803,16 @@ export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
   for (const pack of AUTHORED_MISSION_FLOW_PACKS) {
     const mission = catalog.special.find((entry) => entry.id === pack.missionId);
     if (!mission) continue;
-    for (const [section, definition] of [
-      ["hearing", pack.hearing],
-      ["investigation", pack.investigation],
-    ]) {
-      const step = mission.steps.find((entry) => entry.id === definition?.stepId);
-      if (step) Object.assign(step, pack.catalogOverride?.[section] ?? {});
+    const defaultStepIds = {
+      hearing: "hear",
+      investigation: "investigate",
+      battle: "battle",
+      resolution: "resolve",
+    };
+    for (const [section, override] of Object.entries(pack.catalogOverride ?? {})) {
+      const stepId = pack[section]?.stepId ?? defaultStepIds[section];
+      const step = mission.steps.find((entry) => entry.id === stepId);
+      if (step) Object.assign(step, override);
     }
   }
   return catalog;
@@ -553,6 +852,30 @@ function openingActions(runtime, pack, presentNpcs) {
   }));
 }
 
+function resolutionActions(runtime, pack, step) {
+  const choices = pack.resolution?.choices ?? [];
+  if (choices.length !== 3) return null;
+  if (step?.targetFacilityId
+    && runtime.playerState.player.facilityId !== step.targetFacilityId) return null;
+  const troubleStatus = runtime.playerState.troubles?.[pack.troubleId]?.status ?? "active";
+  return choices.map((choice) => ({
+    id: actionId(pack, "RESOLUTION", `${choice.id}:${troubleStatus}`),
+    family: "help",
+    type: "resolveMission",
+    missionId: pack.missionId,
+    stepId: pack.resolution.stepId,
+    missionTitle: pack.title,
+    missionTroubleId: pack.troubleId,
+    minutes: choice.minutes,
+    label: choice.labelByTroubleStatus?.[troubleStatus] ?? choice.label,
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: pack.id,
+    authoredMissionFlowKind: "resolution",
+    authoredMissionFlowResolutionRouteId: choice.id,
+    authoredMissionFlowTroubleStatus: troubleStatus,
+  }));
+}
+
 function movementTo(movementActions, facilityId) {
   return (movementActions ?? []).find((action) =>
     action?.movementScope === "local" && action.destinationFacilityId === facilityId) ?? null;
@@ -569,6 +892,8 @@ function leadAction(runtime, pack, movementActions, lead) {
       ?? null;
   if (!atTarget && !movement) return null;
   const actionKind = movement?.movementScope === "regional" ? "LEAD_HUB" : "LEAD";
+  const visitedHubs = runtime.playerState.progress?.travel?.visitedHubs;
+  const regionalVerb = visitedHubs?.has?.(targetLocation) ? "戻り" : "向かい";
   return {
     ...(movement ?? {}),
     id: actionId(pack, actionKind, lead.id),
@@ -576,7 +901,7 @@ function leadAction(runtime, pack, movementActions, lead) {
     family: movement ? "move" : "prepare",
     minutes: movement ? movement.minutes : 8,
     label: movement?.movementScope === "regional"
-      ? `${targetLocation}へ戻り、${lead.label}`
+      ? `${targetLocation}へ${regionalVerb}、${lead.label}`
       : atTarget
       ? `${lead.destinationName}で、${lead.label}`
       : `${lead.destinationName}へ向かい、${lead.label}`,
@@ -699,18 +1024,23 @@ export function authoredMissionFlowExclusiveActions(runtime, {
 } = {}) {
   const packs = availablePacks(runtime);
   for (const pack of packs) {
+    const flow = ensureAuthoredMissionFlowState(runtime, pack);
     const step = currentStep(runtime, pack);
     if (step?.id !== pack.investigation.stepId) continue;
-    const flow = ensureAuthoredMissionFlowState(runtime, pack);
     const lead = pack.investigation.leads.find((entry) => entry.id === flow.selectedLeadId);
     if (!lead || lead.facilityId !== runtime.playerState.player.facilityId) continue;
     const actions = selectedLeadActions(runtime, pack, movementActions, flow);
     if (actions?.length === 3) return actions;
   }
   for (const pack of packs) {
+    const flow = ensureAuthoredMissionFlowState(runtime, pack);
     const step = currentStep(runtime, pack);
     if (!step) continue;
-    const flow = ensureAuthoredMissionFlowState(runtime, pack);
+    if (step.id === pack.resolution?.stepId) {
+      const actions = resolutionActions(runtime, pack, step);
+      if (actions?.length === 3) return actions;
+      continue;
+    }
     if (step.id === pack.investigation.stepId && flow.selectedLeadId) {
       const actions = selectedLeadActions(runtime, pack, movementActions, flow);
       if (actions?.length === 3) return actions;
@@ -723,7 +1053,7 @@ export function authoredMissionFlowExclusiveActions(runtime, {
     }
     if (step.id !== pack.investigation.stepId || !flow.openingChoiceId || flow.selectedLeadId) continue;
     const evidenceIds = new Set(flow.evidenceIds);
-    if (evidenceIds.size >= pack.investigation.requiredEvidenceCount) continue;
+    if (investigationRequirementsMet(pack, flow)) continue;
     const actions = leadSelectionActions(runtime, pack, movementActions, flow, evidenceIds);
     if (actions?.length === 3) return actions;
   }
@@ -731,9 +1061,9 @@ export function authoredMissionFlowExclusiveActions(runtime, {
 }
 
 function evidenceActionForPack(runtime, pack) {
+  const flow = ensureAuthoredMissionFlowState(runtime, pack);
   const step = currentStep(runtime, pack);
   if (step?.id !== pack.investigation.stepId) return null;
-  const flow = ensureAuthoredMissionFlowState(runtime, pack);
   const lead = pack.investigation.leads.find((entry) => entry.id === flow.selectedLeadId);
   if (!lead || runtime.playerState.player.facilityId !== lead.facilityId) return null;
   const discoveries = missionRuntime(runtime, pack)?.discoveries ?? [];
@@ -775,6 +1105,7 @@ export function suppressGenericAuthoredMissionAction(runtime, action) {
   const pack = action?.missionId ? PACK_BY_MISSION_ID.get(action.missionId) : null;
   if (!pack || !packAvailable(runtime, pack) || flowDeferred(runtime, pack)) return false;
   if (action.authoredMissionFlowId === pack.id) return false;
+  const flow = ensureAuthoredMissionFlowState(runtime, pack);
   const step = currentStep(runtime, pack);
   if (step?.id === pack.hearing.stepId) {
     const present = runtime.playerState.authoritativePresentNpcIds;
@@ -783,7 +1114,6 @@ export function suppressGenericAuthoredMissionAction(runtime, action) {
       && present.has(pack.hearing.npcId);
   }
   if (step?.id !== pack.investigation.stepId) return false;
-  const flow = ensureAuthoredMissionFlowState(runtime, pack);
   return Boolean(flow.selectedLeadId || evidenceActionForPack(runtime, pack));
 }
 
@@ -795,9 +1125,99 @@ function revealLeadIds(runtime, pack, flow, leadIds) {
     const lead = pack.investigation.leads.find((entry) => entry.id === leadId);
     if (!lead?.facilityId) continue;
     runtime.playerKnowledge ??= {};
+    runtime.playerKnowledge.knownHubIds ??= new Set();
     runtime.playerKnowledge.knownFacilityIds ??= new Set();
+    runtime.playerKnowledge.knownHubIds.add(lead.targetLocation ?? pack.hearing.targetLocation);
     runtime.playerKnowledge.knownFacilityIds.add(lead.facilityId);
   }
+}
+
+function applyResolutionWorldEffect(runtime, pack, route, minute, troubleStatus) {
+  const effect = route.worldEffect;
+  const factId = effect?.factIdByTroubleStatus?.[troubleStatus] ?? effect?.factId;
+  const effectText = effect?.textByTroubleStatus?.[troubleStatus] ?? effect?.text;
+  if (!factId || !effectText) return null;
+  const state = runtime.playerState;
+  state.worldFlags ??= {};
+  if (effect.flagKey) state.worldFlags[effect.flagKey] = route.id;
+  state.routeCache = {};
+
+  runtime.narrativeMemory ??= {};
+  runtime.narrativeMemory.semanticFlags ??= {};
+  runtime.narrativeMemory.localFacts ??= [];
+  runtime.narrativeMemory.semanticFlags[`trouble.${pack.troubleId}.resolutionRoute`] = route.id;
+  runtime.narrativeMemory.semanticFlags[`trouble.${pack.troubleId}.resolutionStatus`] = troubleStatus;
+  if (!runtime.narrativeMemory.localFacts.some((entry) => entry.factId === factId)) {
+    runtime.narrativeMemory.localFacts.push({
+      type: "authored_resolution",
+      factId,
+      subjectId: pack.troubleId,
+      predicate: "resolution_route",
+      value: route.id,
+      summary: effectText,
+      troubleId: pack.troubleId,
+      locationId: state.player.location,
+      facilityId: effect.facilityId ?? state.player.facilityId,
+      recordedAtMinute: minute,
+    });
+  }
+
+  const world = runtime.livingWorld;
+  if (!world) return factId;
+  world.seededTroubleFacts ??= new Set();
+  if (world.seededTroubleFacts.has(factId)) return factId;
+  world.seededTroubleFacts.add(factId);
+  const learnedAt = minute / 60;
+  const propagationAt = learnedAt + Number(effect.propagationDelayHours ?? 2);
+  const facilityId = effect.facilityId ?? state.player.facilityId;
+  world.knowledgeEventSequence = Number(world.knowledgeEventSequence ?? world.knowledgeEvents?.length ?? 0) + 1;
+  const eventId = `K${String(world.knowledgeEventSequence).padStart(7, "0")}`;
+  const belief = {
+    factId,
+    kind: "trouble",
+    text: effectText,
+    troubleId: pack.troubleId,
+    troubleIds: [pack.troubleId],
+    troubleStatus: "resolved",
+    confidence: 1,
+    importance: 0.95,
+    secret: false,
+    learnedAt,
+    propagationAt,
+    sourceType: "player-intervention",
+    sourceNpcId: null,
+    provenanceEventId: eventId,
+    hopCount: 0,
+    path: [`facility:${facilityId}`],
+  };
+  world.knowledgeEvents ??= [];
+  world.knowledgeEvents.push({
+    id: eventId,
+    type: "rumor-source",
+    npcId: null,
+    factId,
+    troubleId: pack.troubleId,
+    troubleStatus: "resolved",
+    learnedAt,
+    propagationAt,
+    sourceType: "player-intervention",
+    importance: belief.importance,
+    confidence: 1,
+    hopCount: 0,
+    path: [...belief.path],
+    location: { hubId: state.player.location, facilityId },
+  });
+  world.facilityRumors ??= {};
+  world.facilityRumors[facilityId] ??= new Map();
+  world.facilityRumors[facilityId].set(factId, {
+    factId,
+    belief,
+    propagationAt,
+    sourceNpcId: null,
+    sourceEventId: eventId,
+    carrierType: "player-intervention",
+  });
+  return factId;
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
@@ -857,6 +1277,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
     flow.selectedLeadId = null;
     flow.selectedLeadAtMinute = null;
     flow.deferredUntilMinute = null;
+    syncInvestigationProgress(runtime, pack, flow);
     changed = true;
     runtime.playerState.history.push({
       type: "AUTHORED_MISSION_FLOW_EVIDENCE_VERIFIED",
@@ -866,6 +1287,33 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       evidenceId: action.authoredMissionFlowEvidenceId,
       leadId: action.authoredMissionFlowLeadId ?? null,
       unlockedLeadIds: [...flow.unlockedLeadIds],
+    });
+  }
+  if (action.authoredMissionFlowKind === "resolution") {
+    const route = pack.resolution?.choices?.find(
+      (entry) => entry.id === action.authoredMissionFlowResolutionRouteId,
+    );
+    if (!route) return changed;
+    const troubleStatus = action.authoredMissionFlowTroubleStatus ?? "active";
+    flow.selectedResolutionRouteId = route.id;
+    result.summary = route.summaryByTroubleStatus?.[troubleStatus] ?? route.summary;
+    const worldEffectFactId = applyResolutionWorldEffect(
+      runtime,
+      pack,
+      route,
+      minute,
+      troubleStatus,
+    );
+    changed = true;
+    runtime.playerState.history.push({
+      type: "AUTHORED_MISSION_FLOW_RESOLUTION_SELECTED",
+      minute,
+      flowId: pack.id,
+      missionId: pack.missionId,
+      troubleId: pack.troubleId,
+      routeId: route.id,
+      troubleStatus,
+      worldEffectFactId,
     });
   }
   if (action.authoredMissionFlowKind === "reconsider_lead") {
@@ -924,12 +1372,13 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 export function authoredMissionFlowGuidance(runtime) {
   const pack = availablePack(runtime);
   if (!pack) return null;
+  const flow = ensureAuthoredMissionFlowState(runtime, pack);
   const step = currentStep(runtime, pack);
   if (!step) return null;
-  const flow = ensureAuthoredMissionFlowState(runtime, pack);
   if (step.id === pack.hearing.stepId) return {
     missionId: pack.missionId,
     ...pack.hearing.guidance,
+    targetLocation: pack.hearing.targetLocation,
     targetFacilityId: pack.hearing.targetFacilityId,
     actionPanel: runtime.playerState.player.facilityId === pack.hearing.targetFacilityId ? null : "movement",
   };
@@ -939,27 +1388,36 @@ export function authoredMissionFlowGuidance(runtime) {
       missionId: pack.missionId,
       ...pack.investigation.selectedLeadGuidance,
       title: lead.label,
+      targetLocation: lead.targetLocation ?? pack.hearing.targetLocation,
       targetFacilityId: lead.facilityId,
       actionPanel: runtime.playerState.player.facilityId === lead.facilityId ? null : "movement",
     };
     if (flow.evidenceIds.length === 0) return {
       missionId: pack.missionId,
       ...pack.investigation.initialGuidance,
+      targetLocation: runtime.playerState.player.location,
       targetFacilityId: null,
       actionPanel: null,
     };
     return {
       missionId: pack.missionId,
       ...pack.investigation.continuedGuidance,
+      targetLocation: runtime.playerState.player.location,
       targetFacilityId: null,
       actionPanel: null,
     };
   }
+  const guidance = pack.stepGuidance?.[step.id] ?? pack.postInvestigationGuidance;
+  const targetFacilityId = step.targetFacilityId ?? null;
   return {
     missionId: pack.missionId,
-    ...pack.postInvestigationGuidance,
-    targetFacilityId: null,
-    actionPanel: null,
+    ...guidance,
+    targetLocation: step.targetLocation ?? pack.hearing.targetLocation,
+    targetFacilityId,
+    actionPanel: targetFacilityId
+      && runtime.playerState.player.facilityId !== targetFacilityId
+      ? "movement"
+      : null,
   };
 }
 
@@ -1001,6 +1459,17 @@ function scenesForPack(pack) {
       lead.leadNarrative,
     ));
     scenes.push(scene(
+      `mission-flow.${pack.id}.lead-hub.${lead.id}`,
+      970,
+      [
+        { path: "action.id", op: "eq", value: actionId(pack, "LEAD_HUB", lead.id) },
+        { path: "outcome.ok", op: "isTrue", value: true },
+        { path: "location.hub", op: "eq", value: lead.targetLocation },
+      ],
+      lead.regionalNarrative
+        ?? `街道を進み、${lead.targetLocation ?? "次の地域"}へ着いた。${lead.destinationName}はここからさらに先にある。`,
+    ));
+    scenes.push(scene(
       `mission-flow.${pack.id}.evidence.${lead.id}`,
       965,
       [
@@ -1015,6 +1484,23 @@ function scenesForPack(pack) {
       [{ path: "action.id", op: "eq", value: actionId(pack, "RECONSIDER", lead.id) }],
       `${lead.destinationName}へ向かう判断をいったん保留し、確認済みの情報から別の手掛かりを選び直すことにした。`,
     ));
+  }
+  for (const route of pack.resolution?.choices ?? []) {
+    for (const troubleStatus of ["active", "critical"]) {
+      scenes.push(scene(
+        `mission-flow.${pack.id}.resolution.${route.id}.${troubleStatus}`,
+        968,
+        [
+          {
+            path: "action.id",
+            op: "eq",
+            value: actionId(pack, "RESOLUTION", `${route.id}:${troubleStatus}`),
+          },
+          { path: "outcome.ok", op: "isTrue", value: true },
+        ],
+        route.narrativeByTroubleStatus?.[troubleStatus] ?? route.narrative,
+      ));
+    }
   }
   if (pack.investigation.prematureResolution) {
     const premature = pack.investigation.prematureResolution;

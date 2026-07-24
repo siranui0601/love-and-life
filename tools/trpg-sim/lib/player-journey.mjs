@@ -1058,11 +1058,20 @@ function missionActions(state, catalog) {
       result.push(...t01SearchActions(base, runtime, step));
       continue;
     }
+    const troubleStatus = missionDefinition.troubleId
+      ? state.troubles[missionDefinition.troubleId]?.status
+      : null;
+    const encounterId = troubleStatus
+      ? step.encounterIdByTroubleStatus?.[troubleStatus] ?? step.encounterId
+      : step.encounterId;
+    const label = troubleStatus
+      ? step.labelByTroubleStatus?.[troubleStatus] ?? step.label
+      : step.label;
     result.push({
       ...base,
       type: step.type === "battle" ? "missionBattle" : step.type === "resolve" ? "resolveMission" : step.type,
-      encounterId: step.encounterId,
-      label: step.label,
+      encounterId,
+      label,
     });
   }
   return result;

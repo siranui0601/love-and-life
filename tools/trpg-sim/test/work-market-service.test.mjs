@@ -96,9 +96,9 @@ function execute(runtime, data, action) {
   });
 }
 
-test("resolver v15 includes a serialized bounded work market", () => {
+test("resolver v16 includes a serialized bounded work market", () => {
   const { runtime } = setup("work-market-version");
-  assert.equal(TRPG_GAME_RESOLVER_VERSION, "trpg-player-world-v15");
+  assert.equal(TRPG_GAME_RESOLVER_VERSION, "trpg-player-world-v16");
   assert.equal(ensureWorkMarket(runtime).version, "work-market-v1");
 });
 

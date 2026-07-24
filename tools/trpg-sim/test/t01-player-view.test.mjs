@@ -58,8 +58,8 @@ function makeT01SearchActive(runtime) {
   return mission;
 }
 
-test("resolver v15 keeps the player-view and work-market fixes migratable", () => {
-  assert.equal(TRPG_GAME_RESOLVER_VERSION, "trpg-player-world-v15");
+test("resolver v16 keeps the player-view and work-market fixes migratable", () => {
+  assert.equal(TRPG_GAME_RESOLVER_VERSION, "trpg-player-world-v16");
 });
 
 test("an injured Finn and a child bystander cannot become work employers", () => {

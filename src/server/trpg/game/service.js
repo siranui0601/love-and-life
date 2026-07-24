@@ -71,8 +71,8 @@ import {
 } from "../resolvers/work-market-resolver.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v15";
-const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11", "trpg-player-world-v12", "trpg-player-world-v13", "trpg-player-world-v14"]);
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v16";
+const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11", "trpg-player-world-v12", "trpg-player-world-v13", "trpg-player-world-v14", "trpg-player-world-v15"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
 const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
@@ -4364,7 +4364,13 @@ export function buildGameView(record, runtime, data) {
     destination: action.destinationHub,
     destinationFacilityId: action.destinationFacilityId,
     destinationFacilityName: data.model.facilityById[action.destinationFacilityId]?.name ?? null,
-    recommended: Boolean(guidance?.targetFacilityId && action.destinationFacilityId === guidance.targetFacilityId),
+    recommended: Boolean(
+      (guidance?.targetFacilityId
+        && action.destinationFacilityId === guidance.targetFacilityId)
+      || (guidance?.targetLocation
+        && action.movementScope === "regional"
+        && action.destinationHub === guidance.targetLocation),
+    ),
   }));
   const equipmentAccessOffers = listEquipmentAccessOffers(state, data.battleData, state.shop, {
     location: state.player.location,
