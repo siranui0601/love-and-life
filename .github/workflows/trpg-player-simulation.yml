@@ -1,4 +1,4 @@
-name: TRPG T17 combined regression diagnostics
+name: TRPG T17 authored branch integration
 
 on:
   pull_request:
@@ -7,24 +7,28 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: trpg-t17-authored-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  diagnose:
+  integrate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/trpg-authored-content-refactor
-          fetch-depth: 8
+          fetch-depth: 12
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Reapply the candidate service patch
+      - name: Reapply reviewed T17 service integration
         shell: bash
         run: |
           python - <<'PY'
@@ -41,26 +45,79 @@ jobs:
           Path("/tmp/patch-t17-service.py").write_text(body + "\n", encoding="utf-8")
           PY
           python /tmp/patch-t17-service.py
-      - name: Run combined focused regression with captured output
+      - name: Split generic and authored hearing invariants
         shell: bash
         run: |
-          set +e
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("tools/trpg-sim/test/game-service.test.mjs")
+          source = path.read_text(encoding="utf-8")
+          before = '''test("all nineteen special-mission hearings are bound to a present authoritative NPC", () => {
+            const { game } = service();
+            const covered = [];
+            for (const definitionTemplate of createGameRuntime(game.data, {'''
+          after = '''test("all generic special-mission hearings are bound to a present authoritative NPC", () => {
+            const { game } = service();
+            const authoredHearingMissionIds = new Set(["MSN-T17"]);
+            const covered = [];
+            for (const definitionTemplate of createGameRuntime(game.data, {
+              seed: "mission-hearing-catalog",
+              profileId: "balanced",
+              playerName: "聞き手",
+              tutorial: false,
+            }).playerState.catalog.special) {
+              // T17 deliberately replaces the generic one-NPC hearing with three reviewed
+              // questions for Layla. Its presence, disclosure and progress contract is
+              // covered in t17-second-summoning.test.mjs.
+              if (authoredHearingMissionIds.has(definitionTemplate.id)) continue;
+              const runtime = createGameRuntime(game.data, {'''
+          original_continuation = '''      seed: "mission-hearing-catalog",
+              profileId: "balanced",
+              playerName: "聞き手",
+              tutorial: false,
+            }).playerState.catalog.special) {
+              const runtime = createGameRuntime(game.data, {'''
+          if before not in source:
+              raise RuntimeError("generic hearing test start anchor missing")
+          source = source.replace(before + original_continuation, after, 1)
+          expected_before = '''  assert.deepEqual(covered, Array.from({ length: 19 }, (_, index) => `T${String(index + 1).padStart(2, "0")}`));
+          });'''
+          expected_after = '''  assert.deepEqual(covered, Array.from({ length: 19 }, (_, index) => `T${String(index + 1).padStart(2, "0")}`)
+              .filter((troubleId) => troubleId !== "T17"));
+          });'''
+          if expected_before not in source:
+              raise RuntimeError("generic hearing expected-list anchor missing")
+          source = source.replace(expected_before, expected_after, 1)
+          path.write_text(source, encoding="utf-8")
+          PY
+          node --check src/server/trpg/game/service.js
+          node --check src/server/trpg/content/authored/missions/t17-second-summoning.js
+          node --check tools/trpg-sim/test/t17-second-summoning.test.mjs
+          node --check tools/trpg-sim/test/game-service.test.mjs
+          git diff --check
+      - name: Run focused T17 and service regressions
+        run: |
           node --test \
             tools/trpg-sim/test/t17-second-summoning.test.mjs \
             tools/trpg-sim/test/authored-journey-presentation.test.mjs \
-            tools/trpg-sim/test/game-service.test.mjs \
-            > /tmp/t17-combined.log 2>&1
-          status=$?
-          echo "$status" > /tmp/t17-combined.status
-          tail -n 240 /tmp/t17-combined.log
-          exit 0
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: trpg-t17-combined-diagnostics
-          path: |
-            /tmp/t17-combined.log
-            /tmp/t17-combined.status
-      - name: Enforce combined result
+            tools/trpg-sim/test/game-service.test.mjs
+      - name: Run complete TRPG regression suite
+        run: npm run trpg:test
+      - name: Commit reviewed T17 slice and restore ordinary CI
         shell: bash
-        run: exit "$(cat /tmp/t17-combined.status)"
+        run: |
+          set -euo pipefail
+          git checkout a1cfdbe5669aea235dcfd1ccf4d051dfb53b08a7 -- .github/workflows/trpg-player-simulation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/trpg-player-simulation.yml \
+            src/server/trpg/content/authored-scene-registry.js \
+            src/server/trpg/content/authored/missions/t17-second-summoning.js \
+            src/server/trpg/game/service.js \
+            tools/trpg-sim/test/t17-second-summoning.test.mjs \
+            tools/trpg-sim/test/game-service.test.mjs
+          git diff --cached --check
+          git commit -m "feat(trpg): author the first T17 investigation branches"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
