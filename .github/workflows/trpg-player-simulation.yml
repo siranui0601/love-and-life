@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/trpg-authored-content-refactor
-          fetch-depth: 2
+          fetch-depth: 10
           show-progress: false
       - uses: actions/setup-node@v4
         with:
@@ -32,6 +32,56 @@ jobs:
       - run: npm ci
       - name: Apply reviewed first weapon-shop visit
         run: node tools/trpg-sim/apply-day100-information-loop-fix.mjs
+      - name: Refine unattended-arrival handling
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+
+          function replaceOnce(source, before, after, label) {
+            if (!source.includes(before)) throw new Error(`missing refinement anchor: ${label}`);
+            return source.replace(before, after);
+          }
+
+          const authoredPath = "src/server/trpg/content/authored/journeys/farm-to-capital.js";
+          let authored = fs.readFileSync(authoredPath, "utf8");
+          authored = replaceOnce(
+            authored,
+            `        Object.freeze({ path: "story.capitalWeaponShopFirstVisitNow", op: "isTrue", value: true }),\n      ]),\n    }),\n    narrative: "坂を上がるにつれ、露店の声に混じって槌の音が近づく。`,
+            `        Object.freeze({ path: "story.capitalWeaponShopFirstVisitNow", op: "isTrue", value: true }),\n        Object.freeze({ path: "story.capitalWeaponShopkeeperPresent", op: "isTrue", value: true }),\n      ]),\n    }),\n    narrative: "坂を上がるにつれ、露店の声に混じって槌の音が近づく。`,
+            "open arrival requires the shopkeeper",
+          );
+          authored = replaceOnce(
+            authored,
+            `  Object.freeze({\n    sceneId: "journey.capital_weapon_shop.first_guided_arrival",`,
+            `  Object.freeze({\n    sceneId: "journey.capital_weapon_shop.first_guided_arrival_unattended",\n    priority: 891,\n    presentationOnly: true,\n    when: Object.freeze({\n      all: Object.freeze([\n        Object.freeze({ path: "action.type", op: "eq", value: "move" }),\n        Object.freeze({ path: "action.destinationFacilityId", op: "eq", value: "LOC_CAP_WEAPON_SHOP" }),\n        Object.freeze({ path: "outcome.ok", op: "isTrue", value: true }),\n        Object.freeze({ path: "location.facilityId", op: "eq", value: "LOC_CAP_WEAPON_SHOP" }),\n        Object.freeze({ path: "story.capitalWeaponShopFirstVisitNow", op: "isTrue", value: true }),\n        Object.freeze({ path: "story.capitalWeaponShopkeeperPresent", op: "eq", value: false }),\n      ]),\n    }),\n    narrative: "坂の上の武器屋へ着いたが、扉の掛け札は裏返され、店内に人の気配はない。窓越しには剣と槍、奥には弓と杖が用途ごとに並び、中央には試し振りのためらしい空間が見える。店主がいないのに、誰かが応対していることにはしない。",\n    beats: Object.freeze([]),\n    choices: Object.freeze([]),\n  }),\n  Object.freeze({\n    sceneId: "journey.capital_weapon_shop.first_guided_arrival",`,
+            "unattended arrival scene",
+          );
+          fs.writeFileSync(authoredPath, authored, "utf8");
+
+          const servicePath = "src/server/trpg/game/service.js";
+          let service = fs.readFileSync(servicePath, "utf8");
+          service = replaceOnce(
+            service,
+            `      capitalWeaponShopFirstVisitNow: state.player.facilityId === "LOC_CAP_WEAPON_SHOP"\n        && runtime.capitalArrivalGuidance?.visitedAtMinute === state.absoluteMinute,`,
+            `      capitalWeaponShopFirstVisitNow: state.player.facilityId === "LOC_CAP_WEAPON_SHOP"\n        && runtime.capitalArrivalGuidance?.visitedAtMinute === state.absoluteMinute,\n      capitalWeaponShopkeeperPresent: (state.authoritativePresentNpcIds instanceof Set\n        ? state.authoritativePresentNpcIds\n        : new Set(state.authoritativePresentNpcIds ?? [])).has("NPC065"),`,
+            "shopkeeper presence in authored context",
+          );
+          fs.writeFileSync(servicePath, service, "utf8");
+
+          const testPath = "tools/trpg-sim/test/authored-journey-presentation.test.mjs";
+          let tests = fs.readFileSync(testPath, "utf8");
+          tests = replaceOnce(
+            tests,
+            `  const arrival = resolveReviewedAuthoredPresentation(runtime, game.data, arrivalResult, arrivalResult.outcome);`,
+            `  const shopkeeperState = runtime.livingWorld.npcStates.NPC065;\n  assert.ok(shopkeeperState);\n  shopkeeperState.presence = "present";\n  shopkeeperState.lifeStatus = "alive";\n  shopkeeperState.location = "王都";\n  shopkeeperState.position = { hubId: "王都", facilityId: "LOC_CAP_WEAPON_SHOP" };\n  shopkeeperState.travel = null;\n  shopkeeperState.localTravel = null;\n  runtime.playerState.authoritativePresentNpcIds.add("NPC065");\n\n  const arrival = resolveReviewedAuthoredPresentation(runtime, game.data, arrivalResult, arrivalResult.outcome);`,
+            "controlled staffed shop test",
+          );
+          if (!tests.includes("an unattended guided arrival never invents shopkeeper speech")) {
+            tests += `\n\ntest("an unattended guided arrival never invents shopkeeper speech", () => {\n  const scene = resolveAuthoredScene({\n    action: { type: "move", destinationFacilityId: "LOC_CAP_WEAPON_SHOP" },\n    outcome: { ok: true },\n    location: { facilityId: "LOC_CAP_WEAPON_SHOP" },\n    story: {\n      capitalWeaponShopFirstVisitNow: true,\n      capitalWeaponShopkeeperPresent: false,\n    },\n  });\n  assert.equal(scene?.sceneId, "journey.capital_weapon_shop.first_guided_arrival_unattended");\n  assert.equal(scene.beats.length, 0);\n  assert.match(scene.narrative, /人の気配はない/u);\n});\n`;
+          }
+          fs.writeFileSync(testPath, tests, "utf8");
+          NODE
       - name: Run focused reviewed-content tests
         shell: bash
         run: |
@@ -61,7 +111,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git checkout HEAD^ -- .github/workflows/trpg-player-simulation.yml
+          git checkout 5ea5ebb43a3aae19b076fbdb36e089857c8b0ec6 -- .github/workflows/trpg-player-simulation.yml
           git rm tools/trpg-sim/apply-day100-information-loop-fix.mjs
           git rm .github/workflows/trpg-day100-information-loop-fix.yml
           git config user.name "github-actions[bot]"
