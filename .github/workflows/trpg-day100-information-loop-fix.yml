@@ -5,6 +5,7 @@ on:
     branches:
       - chatgpt/trpg-authored-content-refactor
     paths:
+      - ".github/workflows/trpg-day100-information-loop-fix.yml"
       - "tools/trpg-sim/apply-day100-information-loop-fix.mjs"
   workflow_dispatch:
 
@@ -13,7 +14,7 @@ permissions:
 
 concurrency:
   group: trpg-authored-weapon-shop-first-visit-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   integrate:
@@ -50,3 +51,4 @@ jobs:
             tools/trpg-sim/test/capital-arrival-guidance.test.mjs
           git commit -m "feat(trpg): author the first capital weapon-shop visit"
           git push origin HEAD:chatgpt/trpg-authored-content-refactor
+# trigger: reviewed weapon-shop unit 1
