@@ -42,3 +42,27 @@ test("Day100 narrator limits server templates to routine life processing", async
   assert.equal(narrator.stats.routineTemplates, 1);
   assert.equal(experienceAudit.narrative.meaningfulScenes, 0);
 });
+
+test("Day100 narrative budget exhaustion falls back once per scene without throwing or calling a provider", async () => {
+  const input = scenario();
+  input.sceneMode = "mission";
+  input.action = {
+    id: "ACTION:MSN-T02:investigate",
+    type: "investigate",
+    missionId: "MSN-T02",
+    label: "穀倉の焼け跡を調べる",
+  };
+  const narrator = createDay100Narrator({
+    maxNarrativeCalls: 1,
+    provider: false,
+  });
+
+  await narrator.generate(input);
+  const exhausted = await narrator.generate(input);
+  assert.equal(exhausted.meta.source, "narrative_budget_fallback");
+  assert.equal(exhausted.meta.providerCalls, 0);
+  assert.equal(exhausted.meta.usedFallback, true);
+  assert.equal(narrator.stats.liveCalls, 1);
+  assert.equal(narrator.stats.budgetFallbacks, 1);
+  assert.equal(narrator.stats.meaningfulFallbacks, 2);
+});

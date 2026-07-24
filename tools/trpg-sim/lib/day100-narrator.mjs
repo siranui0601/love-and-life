@@ -80,6 +80,22 @@ function routineServerNarrative(input, rules = {}) {
   return response;
 }
 
+function narrativeBudgetFallback(input, rules = {}) {
+  const { context } = buildLocalNarrativeContext(input);
+  const response = deterministicNarrativeFallback(context, "day100_narrative_budget_exhausted");
+  response.proposalResolution = resolveNarrativeProposals(response, context, rules);
+  response.meta = {
+    ...(response.meta ?? {}),
+    source: "narrative_budget_fallback",
+    providerCalls: 0,
+    repairCalls: 0,
+    validationErrors: [],
+    partialOutputUsed: false,
+    usedFallback: true,
+  };
+  return response;
+}
+
 export function createDay100Narrator({
   auditFilePath,
   maxNarrativeCalls = 600,
@@ -103,6 +119,7 @@ export function createDay100Narrator({
     offlineAuthoring,
     liveCalls: 0,
     routineTemplates: 0,
+    budgetFallbacks: 0,
     meaningfulFallbacks: 0,
     sourceCounts: {},
   };
@@ -115,10 +132,12 @@ export function createDay100Narrator({
         response = routineServerNarrative(input, rules);
       } else {
         if (stats.liveCalls >= stats.maxNarrativeCalls) {
-          throw new Error(`day100_narrative_call_budget_exhausted:${stats.maxNarrativeCalls}`);
+          stats.budgetFallbacks += 1;
+          response = narrativeBudgetFallback(input, rules);
+        } else {
+          stats.liveCalls += 1;
+          response = await live.generate(input, rules);
         }
-        stats.liveCalls += 1;
-        response = await live.generate(input, rules);
       }
       const source = response?.meta?.source ?? "unknown";
       stats.sourceCounts[source] = number(stats.sourceCounts[source]) + 1;

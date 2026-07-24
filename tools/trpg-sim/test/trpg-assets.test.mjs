@@ -11,6 +11,7 @@ import { buildBackgroundPrompt, buildMonsterPrompt, buildPortraitPrompt } from "
 import {
   mergeAssetManifests,
   resolveGeneratedAssetPath,
+  trpgGeminiAssetGenerationEnabled,
   TrpgRuntimeAssetManager,
   visibleAssetTargets,
 } from "../../../src/server/trpg/assets/runtime.js";
@@ -35,6 +36,45 @@ function keyedFixture(key) {
   }
   return encodePng(width, height, rgba);
 }
+
+test("TRPG runtime Gemini assets require a separate opt-in while explicit test keys still work", (t) => {
+  const previousKey = process.env.GEMINI_API_KEY;
+  const previousOptIn = process.env.TRPG_GEMINI_ASSET_GENERATION_ENABLED;
+  process.env.GEMINI_API_KEY = "configured-environment-key";
+  delete process.env.TRPG_GEMINI_ASSET_GENERATION_ENABLED;
+  t.after(() => {
+    if (previousKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = previousKey;
+    if (previousOptIn === undefined) delete process.env.TRPG_GEMINI_ASSET_GENERATION_ENABLED;
+    else process.env.TRPG_GEMINI_ASSET_GENERATION_ENABLED = previousOptIn;
+  });
+
+  assert.equal(trpgGeminiAssetGenerationEnabled(undefined), false);
+  assert.equal(trpgGeminiAssetGenerationEnabled("false"), false);
+  assert.equal(trpgGeminiAssetGenerationEnabled("yes"), true);
+  const data = {
+    model: { npcs: [], npcById: {}, facilities: [], facilityById: {} },
+    battleData: { monsters: [], monsterById: new Map() },
+  };
+  const disabled = new TrpgRuntimeAssetManager({ data });
+  assert.deepEqual(disabled.health(), {
+    enabled: false,
+    configured: true,
+    paidOptIn: false,
+    injected: false,
+    mode: "static_assets_only",
+    queueLength: 0,
+    running: false,
+    concurrency: 1,
+    manifestUrl: "/TRPG/assets/manifest.json",
+  });
+
+  const injected = new TrpgRuntimeAssetManager({ data, apiKey: "test-key" });
+  assert.equal(injected.health().enabled, true);
+  assert.equal(injected.health().paidOptIn, true);
+  assert.equal(injected.health().injected, true);
+  assert.equal(injected.health().mode, "gemini_on_first_encounter");
+});
 
 for (const [keyColor, rgb] of [["green", [0, 255, 0]], ["pink", [255, 0, 255]]]) {
   test(`${keyColor} chroma key removes only the edge-connected background`, () => {

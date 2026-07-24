@@ -55,6 +55,11 @@ GitHub上ではgzip済みカタログを、次の8個のbase64テキストへ分
 
 未確認の危機、噂、遠隔・失踪・死亡NPCは画面やGemini入力へ出さない。NPC由来の噂は発生源から生活圏へ広がった後、同じ施設で会話・観察したときだけプレイヤーが知る。同一content revision、seed、command列は同じstate hashへ到達し、Geminiの応答再利用の有無でゲーム結果を変えない。
 
+Geminiは課金を伴う任意機能であり、API keyだけでは起動しない。会話は
+`TRPG_GEMINI_NARRATIVE_ENABLED=true`、未生成画像は
+`TRPG_GEMINI_ASSET_GENERATION_ENABLED=true`を運営者が個別に設定した場合だけ生成する。
+両方が無効でも、レビュー済みコンテンツと決定論的resolverだけでゲーム進行を継続できる。
+
 Day 100 24:00で旅は完結し、それ以降の状態変更コマンドは受理しない。実プレイ用saveはNPCの現在状態、個別知識、累積因果ハッシュを保持し、詳細な判断・移動・知識イベントは直近分へ決定的に圧縮する。全110 NPC×100日分の完全トレースは`playable-world-audit.json`とシミュレーター出力側へ分離する。
 
 resolver v4以前の限定公開alpha saveは、導入・期限・NPC在席契約が異なるため互換性がない。新しいresolverの初回利用時に旧saveは一覧から除外・整理されるので、新規に旅を開始する。

@@ -27,6 +27,11 @@ import {
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CACHE_PATH = path.resolve(HERE, "../../../runtime-data/TRPG/narrative-cache.jsonl");
 const DEFAULT_APPROVED_REPLAY_PATH = path.resolve(HERE, "content/approved-narrative-replays.json");
+
+export function trpgGeminiNarrativeEnabled(value = process.env.TRPG_GEMINI_NARRATIVE_ENABLED) {
+  return /^(?:1|true|yes|on)$/iu.test(String(value ?? "").trim());
+}
+
 export function boundedNarrativeRequestTimeout(value, fallback = 18_000) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(3_000, Math.min(25_000, parsed)) : fallback;
@@ -204,8 +209,12 @@ export function geminiNarrativeGenerationConfig({ model = TRPG_NARRATIVE_MODEL, 
   };
 }
 
-export function createGoogleGeminiProvider({ apiKey = GEMINI_API_KEY, model = TRPG_NARRATIVE_MODEL } = {}) {
-  if (!apiKey) return null;
+export function createGoogleGeminiProvider({
+  apiKey = GEMINI_API_KEY,
+  model = TRPG_NARRATIVE_MODEL,
+  enabled = trpgGeminiNarrativeEnabled(),
+} = {}) {
+  if (!enabled || !apiKey) return null;
   const client = new GoogleGenerativeAI(apiKey);
   return {
     name: "google-gemini",
@@ -272,7 +281,30 @@ function componentRepairErrors(rawValidation, sanitizedValidation) {
 export function createTrpgNarrator(options = {}) {
   const model = options.model ?? TRPG_NARRATIVE_MODEL;
   const promptVersion = options.promptVersion ?? TRPG_NARRATIVE_PROMPT_VERSION;
-  const provider = options.provider === undefined ? createGoogleGeminiProvider({ model }) : options.provider;
+  const providerInjected = Object.hasOwn(options, "provider");
+  const configuredApiKey = options.apiKey ?? GEMINI_API_KEY;
+  const paidOptIn = options.paidOptIn === undefined
+    ? trpgGeminiNarrativeEnabled()
+    : Boolean(options.paidOptIn);
+  const provider = providerInjected
+    ? options.provider
+    : createGoogleGeminiProvider({
+      apiKey: configuredApiKey,
+      model,
+      enabled: paidOptIn,
+    });
+  const providerStatus = Object.freeze({
+    enabled: Boolean(provider),
+    configured: Boolean(configuredApiKey),
+    paidOptIn,
+    injected: providerInjected,
+    name: provider?.name ?? null,
+    mode: provider
+      ? providerInjected
+        ? "injected_provider_with_replay_cache"
+        : "gemini_with_replay_cache"
+      : "replay_cache_with_deterministic_fallback",
+  });
   const cache = options.cache ?? createNarrativeReplayCache({
     filePath: options.cacheFilePath ?? process.env.TRPG_NARRATIVE_CACHE_FILE ?? DEFAULT_CACHE_PATH,
     memoryOnly: options.memoryOnlyCache ?? false,
@@ -298,6 +330,7 @@ export function createTrpgNarrator(options = {}) {
     cache,
     approvedCache,
     auditLog,
+    providerStatus,
     async generate(input, resolverRules = {}) {
       const startedAt = Date.now();
       const { context, audit: contextAudit } = buildLocalNarrativeContext(input);

@@ -22,12 +22,19 @@ export const TRPG_RUNTIME_ASSET_METADATA_ROOT = path.join(REPO_ROOT, "runtime-da
 export const TRPG_RUNTIME_ASSET_OUTPUT_ROOT = path.join(TRPG_RUNTIME_ASSET_METADATA_ROOT, "outputs");
 export const TRPG_RUNTIME_ASSET_MANIFEST = path.join(TRPG_RUNTIME_ASSET_METADATA_ROOT, "runtime-manifest.json");
 
+const ENV_API_KEY = Symbol("environment-api-key");
 const TYPE_DIRECTORY = Object.freeze({
   portrait: "portraits",
   background: "backgrounds",
   monster: "monsters",
 });
 const SAFE_GENERATED_FILE = /^[A-Za-z0-9_-]{1,120}\.(?:png|webp|jpe?g)$/iu;
+
+export function trpgGeminiAssetGenerationEnabled(
+  value = process.env.TRPG_GEMINI_ASSET_GENERATION_ENABLED,
+) {
+  return /^(?:1|true|yes|on)$/iu.test(String(value ?? "").trim());
+}
 
 async function readJson(filePath, fallback = {}) {
   try {
@@ -153,7 +160,7 @@ function updateRuntimeManifest(manifest, target, outputUrl) {
 export class TrpgRuntimeAssetManager {
   constructor({
     data = loadTrpgGameData(),
-    apiKey = process.env.GEMINI_API_KEY,
+    apiKey = ENV_API_KEY,
     staticRoot = TRPG_STATIC_ASSET_ROOT,
     metadataRoot = TRPG_RUNTIME_ASSET_METADATA_ROOT,
     outputRoot = TRPG_RUNTIME_ASSET_OUTPUT_ROOT,
@@ -164,8 +171,18 @@ export class TrpgRuntimeAssetManager {
     maxQueue = 256,
     logger = console,
   } = {}) {
+    const apiKeyInjected = apiKey !== ENV_API_KEY;
+    const configuredApiKey = apiKeyInjected ? apiKey : process.env.GEMINI_API_KEY;
+    const paidOptIn = apiKeyInjected || trpgGeminiAssetGenerationEnabled();
     this.data = data;
-    this.apiKey = apiKey;
+    this.apiKey = paidOptIn ? configuredApiKey : null;
+    this.providerStatus = Object.freeze({
+      enabled: Boolean(this.apiKey),
+      configured: Boolean(configuredApiKey),
+      paidOptIn,
+      injected: apiKeyInjected,
+      mode: this.apiKey ? "gemini_on_first_encounter" : "static_assets_only",
+    });
     this.staticRoot = path.resolve(staticRoot);
     this.metadataRoot = path.resolve(metadataRoot);
     this.outputRoot = path.resolve(outputRoot);
@@ -193,7 +210,7 @@ export class TrpgRuntimeAssetManager {
 
   health() {
     return {
-      enabled: Boolean(this.apiKey),
+      ...this.providerStatus,
       queueLength: this.queue.length,
       running: this.running,
       concurrency: 1,
@@ -316,7 +333,10 @@ export class TrpgRuntimeAssetManager {
     if (!this.apiKey) {
       if (!this.warnedMissingKey) {
         this.warnedMissingKey = true;
-        this.logger?.warn?.("[TRPG assets] GEMINI_API_KEY is absent; first-encounter images stay on fallback art");
+        const reason = this.providerStatus.configured
+          ? "TRPG_GEMINI_ASSET_GENERATION_ENABLED is not opted in"
+          : "GEMINI_API_KEY is absent";
+        this.logger?.warn?.(`[TRPG assets] ${reason}; first-encounter images stay on fallback art`);
       }
       return { status: "disabled" };
     }

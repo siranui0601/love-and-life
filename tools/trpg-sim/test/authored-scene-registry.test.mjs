@@ -4,6 +4,10 @@ import {
   resolveAuthoredScene,
   validateAuthoredScene,
 } from "../../../src/server/trpg/content/authored-scene-registry.js";
+import {
+  AUTHORED_MISSION_FLOW_PACKS,
+  AUTHORED_MISSION_FLOW_SCENES,
+} from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 
 function resolveT01({ stepId, outcome = {}, action = {}, facilityId = "LOC_FARM_EDGE", story = {} }) {
   return resolveAuthoredScene({
@@ -103,4 +107,38 @@ test("the authored rescue scene does not resolve before the battle is won", () =
     outcome: { battle: { won: false } },
   });
   assert.equal(scene, null);
+});
+
+test("data-driven mission-flow packs keep authored facts, routes, and scenes structurally distinct", () => {
+  assert.ok(AUTHORED_MISSION_FLOW_PACKS.length >= 2,
+    "the mission-flow engine must be exercised by more than one trouble");
+  const packIds = new Set();
+  const missionIds = new Set();
+  for (const pack of AUTHORED_MISSION_FLOW_PACKS) {
+    assert.equal(packIds.has(pack.id), false);
+    assert.equal(missionIds.has(pack.missionId), false);
+    packIds.add(pack.id);
+    missionIds.add(pack.missionId);
+
+    assert.equal(pack.hearing.choices.length, 3);
+    assert.equal(new Set(pack.hearing.choices.map((choice) => choice.id)).size, 3);
+    assert.equal(new Set(pack.hearing.choices.map((choice) => choice.label)).size, 3);
+    assert.equal(new Set(pack.hearing.choices.map((choice) => choice.factId)).size, 3);
+    assert.ok(pack.hearing.choices.every((choice) =>
+      choice.playerUtterance && choice.requiredDisclosure && choice.unlockedLeadIds.length >= 2));
+
+    assert.ok(pack.investigation.requiredEvidenceCount > 1);
+    assert.ok(pack.investigation.requiredEvidenceCount <= pack.investigation.leads.length);
+    assert.equal(new Set(pack.investigation.leads.map((lead) => lead.id)).size,
+      pack.investigation.leads.length);
+    assert.equal(new Set(pack.investigation.leads.map((lead) => lead.discoveryId)).size,
+      pack.investigation.leads.length);
+  }
+
+  assert.equal(new Set(AUTHORED_MISSION_FLOW_SCENES.map((scene) => scene.sceneId)).size,
+    AUTHORED_MISSION_FLOW_SCENES.length);
+  for (const scene of AUTHORED_MISSION_FLOW_SCENES) {
+    const validation = validateAuthoredScene(scene);
+    assert.equal(validation.valid, true, `${scene.sceneId}: ${validation.errors.join(", ")}`);
+  }
 });

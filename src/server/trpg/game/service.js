@@ -76,6 +76,7 @@ const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-play
 
 const PLAYABLE_PROFILE_ID = "balanced";
 const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
+const MAX_DIALOGUE_TURNS = 4;
 
 const PUBLIC_FACILITY_COPY = Object.freeze({
   LOC_FARM_FIELD: { type: "農地", description: "風に揺れる麦畑。畑仕事の様子と、村へ続く道を確かめられる。" },
@@ -630,7 +631,7 @@ function capitalWeaponShopFirstChoiceActions(runtime, data) {
   return choices ? withChoiceIds(choices) : null;
 }
 
-function dialogueFollowupActions(runtime) {
+function dialogueFollowupActions(runtime, data) {
   const session = runtime.dialogueSession;
   if (!session || runtime.tutorial?.stage && runtime.tutorial.stage !== "free") return null;
   if (runtime.playerState.absoluteMinute
@@ -683,10 +684,11 @@ function dialogueFollowupActions(runtime) {
       minutes: 6,
     } : null,
   ].filter(Boolean).filter((topic) => !asked.has(topic.id));
-  const offset = Number(session.turnCount ?? 0) % Math.max(1, topics.length);
+  const turnCount = Number(session.turnCount ?? 1);
+  const offset = turnCount % Math.max(1, topics.length);
   const rotated = topics.length ? [...topics.slice(offset), ...topics.slice(0, offset)] : [];
-  const questions = rotated.slice(0, 2).map((topic) => ({
-    id: `DIALOGUE:${session.npcId}:${Number(session.turnCount ?? 0) + 1}:${topic.id}`,
+  const questions = (turnCount < MAX_DIALOGUE_TURNS ? rotated.slice(0, 1) : []).map((topic) => ({
+    id: `DIALOGUE:${session.npcId}:${turnCount + 1}:${topic.id}`,
     type: "conversation",
     dialogueFollowup: true,
     dialogueTopic: topic.id,
@@ -695,21 +697,33 @@ function dialogueFollowupActions(runtime) {
     minutes: topic.minutes,
     label: topic.label,
   }));
-  while (questions.length < 2) {
-    const id = `clarify_${questions.length + 1}`;
-    questions.push({
-      id: `DIALOGUE:${session.npcId}:${Number(session.turnCount ?? 0) + 1}:${id}`,
-      type: "conversation",
-      dialogueFollowup: true,
-      dialogueTopic: id,
-      targetNpcId: session.npcId,
-      targetNpcName: session.npcName,
-      minutes: 6,
-      label: questions.length ? "今の話で、まだ曖昧な点を一つ確かめる" : "その話を、最初から順に説明してもらう",
-    });
-  }
-  return withChoiceIds([...questions, {
-    id: `DIALOGUE:${session.npcId}:${Number(session.turnCount ?? 0) + 1}:END`,
+
+  const sceneInvestigation = contextualLocalAction({
+    id: `DIALOGUE:${session.npcId}:${turnCount + 1}:CHECK_SCENE`,
+    type: "observe",
+    dialogueExit: true,
+    minutes: 12,
+    label: `${session.npcName}との話を切り上げ、周囲に残る手掛かりを確かめる`,
+  }, runtime, data);
+  const availableMovements = movementActions(runtime, data);
+  const movement = availableMovements
+    .find((action) => action.movementScope === "local")
+    ?? availableMovements.find((action) => action.movementScope === "regional")
+    ?? null;
+  const leaveByMovement = movement ? {
+    ...movement,
+    dialogueExit: true,
+    label: `話を終え、${movement.label}`,
+  } : null;
+  const reviewAndLeave = {
+    id: `DIALOGUE:${session.npcId}:${turnCount + 1}:REVIEW_AND_LEAVE`,
+    type: "plan",
+    dialogueExit: true,
+    minutes: 4,
+    label: "聞いたことを整理し、別の行動へ移る",
+  };
+  const endConversation = {
+    id: `DIALOGUE:${session.npcId}:${turnCount + 1}:END`,
     type: "conversation",
     dialogueFollowup: true,
     dialogueTopic: "end_conversation",
@@ -717,7 +731,11 @@ function dialogueFollowupActions(runtime) {
     targetNpcName: session.npcName,
     minutes: 2,
     label: `${session.npcName}に礼を言い、次の行動へ移る`,
-  }]);
+  };
+  const choices = questions.length
+    ? [questions[0], leaveByMovement ?? sceneInvestigation ?? reviewAndLeave, endConversation]
+    : [sceneInvestigation ?? reviewAndLeave, leaveByMovement ?? reviewAndLeave, endConversation];
+  return withChoiceIds([...new Map(choices.map((action) => [action.id, action])).values()].slice(0, 3));
 }
 
 function worldTicksThrough(targetMinute) {
@@ -1516,6 +1534,49 @@ function t01FocusedChoiceAllowed(action, runtime) {
   return action.missionId === "MSN-T01" || action.targetNpcId === "NPC001";
 }
 
+function stateNeutralActionFamily(actionOrId) {
+  const id = String(typeof actionOrId === "string" ? actionOrId : actionOrId?.id ?? "");
+  if (id.startsWith("INSPECT:")) return "inspect";
+  if (id.startsWith("WAIT:")) return "wait";
+  if (id === "TUTORIAL:PAUSE:PLAN") return "plan";
+  return null;
+}
+
+function recentStateNeutralActionFamilies(runtime, limit = 3) {
+  const families = new Set();
+  const resolved = runtime.playerState.history
+    .filter((entry) => entry.type === "PLAYER_ACTION_RESOLVED")
+    .slice(-Math.max(1, Number(limit) || 3))
+    .reverse();
+  for (const entry of resolved) {
+    const family = stateNeutralActionFamily(String(entry.actionId ?? ""));
+    if (!family) break;
+    families.add(family);
+  }
+  return families;
+}
+
+function suppressRecentStateNeutralActions(actions, runtime) {
+  const blockedFamilies = recentStateNeutralActionFamilies(runtime);
+  if (!blockedFamilies.size) return actions;
+  const cooled = actions.filter((action) => !blockedFamilies.has(stateNeutralActionFamily(action)));
+  if (cooled.length >= 3) return cooled;
+  const orderedFamilies = [...blockedFamilies];
+  const refill = (family) => {
+    for (const action of actions) {
+      if (stateNeutralActionFamily(action) !== family || cooled.some((entry) => entry.id === action.id)) continue;
+      cooled.push(action);
+      if (cooled.length >= 3) return true;
+    }
+    return false;
+  };
+  for (const family of orderedFamilies.slice(1).reverse()) {
+    if (refill(family)) return cooled;
+  }
+  if (orderedFamilies[0]) refill(orderedFamilies[0]);
+  return cooled;
+}
+
 function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   if (runtime.pendingBattle?.session?.status === "active") return [];
   if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
@@ -1527,7 +1588,7 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   const workOfferChoices = pendingWorkOfferActions(runtime, data);
   if (workOfferChoices) return workOfferChoices;
   if (runtime.tutorial && ["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) return [];
-  const followup = dialogueFollowupActions(runtime);
+  const followup = dialogueFollowupActions(runtime, data);
   if (followup) return followup;
   const authoredFlowExclusive = authoredMissionFlowExclusiveActions(runtime, {
     presentNpcs: presentNpcsAt(runtime, data),
@@ -1610,7 +1671,7 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     { id: "TUTORIAL:PAUSE:WAIT", type: "wait", minutes: 30, label: "物音と人の動きが変わるまで、少し待つ" },
     { id: "TUTORIAL:PAUSE:PLAN", type: "plan", minutes: 30, label: "知っている噂と目的を照らし合わせ、次の一手を決める" },
   ].map((action) => contextualLocalAction(action, runtime, data)).filter(Boolean);
-  const combined = [...prioritized, ...fillers]
+  const combined = [...prioritized, ...fillers, ...movementCandidates]
     .map((action, index) => ({ action, index }))
     .sort((left, right) => actionPriority(left.action) - actionPriority(right.action) || left.index - right.index)
     .map((entry) => entry.action);
@@ -1618,8 +1679,9 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   const eligible = !runtime.tutorial || runtime.tutorial.stage === "free"
     ? unique
     : unique.filter((action) => !["seekBattle", "missionBattle", "investigate"].includes(action.type));
+  const cooled = suppressRecentStateNeutralActions(eligible, runtime);
   const cap = Math.max(3, Math.min(12, Number(limit) || 9));
-  const selected = eligible.slice(0, cap);
+  const selected = cooled.slice(0, cap);
   if (cap > 3 && movementCandidates.length) {
     const requiredMovements = [
       movementCandidates.find((action) => action.capitalArrivalGuidance === true),
@@ -1745,17 +1807,30 @@ function selectedChoiceActions(runtime, actions, data) {
     if (action && !preferred.some((entry) => entry.id === id)) preferred.push(action);
     if (preferred.length >= 3) break;
   }
-  const legacy = [
+  const ordered = [
     ...preferred,
     ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),
-  ].slice(0, 3);
-  const preserveReviewedOrder = !selection || (runtime.tutorial && runtime.tutorial.stage !== "free");
-  const selected = preserveReviewedOrder
-    ? legacy
-    : selectDiverseChoices([
-      ...preferred,
-      ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),
-    ], { expectedCount: Math.min(3, actions.length) });
+  ];
+  const expectedCount = Math.min(3, actions.length);
+  const reviewedOrder = actions.slice(0, expectedCount);
+  const leadingMissionBranch = reviewedOrder;
+  const preservesReviewedMissionBranch = expectedCount === 3
+    && leadingMissionBranch.every((action) => action.missionId
+      && action.missionId === leadingMissionBranch[0].missionId
+      && action.stepId
+      && action.stepId === leadingMissionBranch[0].stepId);
+  const preserveReviewedOrder = (runtime.tutorial && runtime.tutorial.stage !== "free")
+    || actions.some((action) => action.authoredMissionFlowExclusiveChoice === true)
+    || actions.every((action) => action.capitalWeaponShopFirstChoice === true)
+    || preservesReviewedMissionBranch
+    || actions.some((action) => /^WORK_(?:CONFIRM|CLARIFY|DECLINE):/u.test(String(action.id ?? "")));
+  const diverse = preserveReviewedOrder
+    ? reviewedOrder
+    : selectDiverseChoices(ordered, { expectedCount });
+  const selected = [
+    ...diverse,
+    ...ordered.filter((action) => !diverse.some((entry) => entry.id === action.id)),
+  ].slice(0, expectedCount);
   if (selected.some((action) => action.authoredMissionFlowExclusiveChoice === true)) {
     return withChoiceIds(selected.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
   }
@@ -2198,6 +2273,10 @@ function stabilizeOpeningTutorialCast(runtime) {
 
 function updateDialogueSession(runtime, action) {
   if (!action) return;
+  if (action.dialogueExit === true) {
+    runtime.dialogueSession = null;
+    return;
+  }
   if (action.dialogueFollowup) {
     const session = runtime.dialogueSession;
     if (!session || session.npcId !== action.targetNpcId) {
@@ -3746,7 +3825,7 @@ function guidanceView(runtime, data, missions) {
   };
   const authoredFlowGuidance = authoredMissionFlowGuidance(runtime);
   if (authoredFlowGuidance) {
-    const mission = missions.find((entry) => entry.id === "MSN-T17");
+    const mission = missions.find((entry) => entry.id === authoredFlowGuidance.missionId);
     const targetName = authoredFlowGuidance.targetFacilityId ? facilityName(authoredFlowGuidance.targetFacilityId) : null;
     return {
       ...authoredFlowGuidance,
@@ -5048,7 +5127,11 @@ export class TrpgGameService {
       contentRevision: this.data.contentRevision,
       counts: this.data.counts,
       persistence: this.store.constructor.name,
-      narrative: this.narrator ? "gemini_or_replay_cache_with_fallback" : "deterministic_fallback",
+      narrative: this.narrator?.providerStatus?.enabled
+        ? "gemini_or_replay_cache_with_fallback"
+        : this.narrator
+          ? "replay_cache_with_deterministic_fallback"
+          : "deterministic_fallback",
       authority: "server-command-resolver",
       tutorialVersion: TUTORIAL_VERSION,
       playableProfilePolicy: "neutral-fixed-player-directed-growth",

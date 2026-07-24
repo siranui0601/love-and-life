@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createTrpgNarrator } from "../../src/server/trpg/gemini-narrator.js";
+import {
+  createTrpgNarrator,
+  trpgGeminiNarrativeEnabled,
+} from "../../src/server/trpg/gemini-narrator.js";
 import { syncNarrativeAuditToSheet } from "../../src/server/trpg/narrative-audit.js";
 import { MemoryTrpgSaveStore } from "../../src/server/trpg/game/save-store.js";
 import { TrpgGameService } from "../../src/server/trpg/game/service.js";
@@ -513,10 +516,15 @@ try {
 } catch (error) {
   sheetSync = { ok: false, error: String(error?.stack ?? error) };
 }
-const environment = { geminiConfigured: Boolean(process.env.GEMINI_API_KEY), sheetsConfigured: Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_KEY) };
+const environment = {
+  geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
+  geminiOptedIn: trpgGeminiNarrativeEnabled(),
+  geminiEnabled: narrator.providerStatus?.enabled === true,
+  sheetsConfigured: Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_KEY),
+};
 const qualityChecks = {
   allJourneysPass: journeys.every((journey) => journey.passed),
-  geminiWasActuallyCalled: environment.geminiConfigured && audit.providerCalls > 0,
+  geminiWasActuallyCalled: environment.geminiEnabled && audit.providerCalls > 0,
   noProviderErrors: audit.providerErrors === 0,
   noPartialOrFallbackOutput: Number(audit.sources.gemini_partial ?? 0) === 0 && Number(audit.sources.deterministic_fallback ?? 0) === 0,
   repairRateIsControlled: audit.repairRate <= 0.12,

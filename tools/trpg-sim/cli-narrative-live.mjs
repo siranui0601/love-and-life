@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createTrpgNarrator } from "../../src/server/trpg/gemini-narrator.js";
+import {
+  createTrpgNarrator,
+  trpgGeminiNarrativeEnabled,
+} from "../../src/server/trpg/gemini-narrator.js";
 import { syncNarrativeAuditToSheet } from "../../src/server/trpg/narrative-audit.js";
 import { loadWorldModel } from "./lib/world-model.mjs";
 
@@ -274,8 +277,8 @@ function renderMarkdown(report) {
   return `# TRPG Gemini実応答監査 v5\n\n- 実行ID: ${report.runId}\n- モデル: ${report.model}\n- シナリオ: ${report.total}\n- Gemini生成: ${report.summary.gemini}\n- 承認済み再生: ${report.summary.approvedReplay}\n- 再生キャッシュ: ${report.summary.replayCache}\n- フォールバック: ${report.summary.fallback}\n- 修正再生成: ${report.summary.repaired}\n- エラー: ${report.summary.errors}\n- 平均応答時間: ${report.summary.averageElapsedMs.toFixed(1)}ms\n- Sheets同期: ${report.sheetSync.ok ? `${report.sheetSync.synced ?? 0}件` : `失敗: ${report.sheetSync.error}`}\n\n| scenario | source | repair | fallback | ms | choices |\n|---|---:|---:|---:|---:|---:|\n${rows}\n`;
 }
 
-if (!process.env.GEMINI_API_KEY) {
-  console.error("GEMINI_API_KEY が設定されていないため、実Gemini監査を開始できません。");
+if (!process.env.GEMINI_API_KEY || !trpgGeminiNarrativeEnabled()) {
+  console.error("実Gemini監査には GEMINI_API_KEY と TRPG_GEMINI_NARRATIVE_ENABLED=true の両方が必要です。");
   process.exit(1);
 }
 
