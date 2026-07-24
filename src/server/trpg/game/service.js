@@ -52,12 +52,13 @@ import {
 } from "../resolvers/capital-arrival-guidance.js";
 import { resolveAuthoredScene } from "../content/authored-scene-registry.js";
 import {
-  applyT17SecondSummoningAction,
-  suppressGenericT17MissionAction,
-  t17SecondSummoningEvidenceAction,
-  t17SecondSummoningExclusiveActions,
-  t17SecondSummoningGuidance,
-} from "../content/authored/missions/t17-second-summoning.js";
+  applyAuthoredMissionFlowAction,
+  applyAuthoredMissionFlowCatalogOverrides,
+  authoredMissionFlowEvidenceAction,
+  authoredMissionFlowExclusiveActions,
+  authoredMissionFlowGuidance,
+  suppressGenericAuthoredMissionAction,
+} from "../content/authored-mission-flow-registry.js";
 import {
   WORK_MARKET_VERSION,
   deterministicWorkWage,
@@ -325,14 +326,7 @@ export function applyGameplayCatalogOverrides(catalog) {
       if (step.id === "decide") step.targetFacilityId = "LOC_FARM_SQUARE";
     }
   }
-  const t17 = catalog.special.find((mission) => mission.id === "MSN-T17");
-  const t17Hear = t17?.steps.find((step) => step.id === "hear");
-  if (t17Hear) {
-    t17Hear.targetLocation = "王都";
-    t17Hear.targetFacilityId = "LOC_CAP_LOWER_INN";
-    t17Hear.label = "王都下層で、第二召喚を止めようとする人物と接触する";
-  }
-  return catalog;
+  return applyAuthoredMissionFlowCatalogOverrides(catalog);
 }
 
 function initialNpcState(npc) {
@@ -1535,11 +1529,11 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   if (runtime.tutorial && ["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) return [];
   const followup = dialogueFollowupActions(runtime);
   if (followup) return followup;
-  const t17Exclusive = t17SecondSummoningExclusiveActions(runtime, {
+  const authoredFlowExclusive = authoredMissionFlowExclusiveActions(runtime, {
     presentNpcs: presentNpcsAt(runtime, data),
     movementActions: movementActions(runtime, data),
   });
-  if (t17Exclusive) return t17Exclusive;
+  if (authoredFlowExclusive) return authoredFlowExclusive;
   const authorizedMissionActions = new Map();
   const generated = journey.generateChoiceActions(
     runtime.playerState,
@@ -1568,7 +1562,7 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     && action.stepId === "decide"
     && !ensureT01EscortState(runtime).arrivedSquare))
     .filter((action) => t01FocusedChoiceAllowed(action, runtime))
-    .filter((action) => !suppressGenericT17MissionAction(runtime, action));
+    .filter((action) => !suppressGenericAuthoredMissionAction(runtime, action));
   const missionConversationTargets = new Set(generated
     .filter((action) => action.missionId && action.type === "conversation" && action.targetNpcId)
     .map((action) => action.targetNpcId));
@@ -1585,9 +1579,9 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     if (action.type === "seekBattle") return hasLearnedSkill ? 3 : 4;
     return 5;
   };
-  const t17Evidence = t17SecondSummoningEvidenceAction(runtime);
+  const authoredFlowEvidence = authoredMissionFlowEvidenceAction(runtime);
   const prioritized = [
-    ...(t17Evidence ? [t17Evidence] : []),
+    ...(authoredFlowEvidence ? [authoredFlowEvidence] : []),
     ...deduplicated,
   ]
     .map((action, index) => ({ action, index }))
@@ -1762,7 +1756,7 @@ function selectedChoiceActions(runtime, actions, data) {
       ...preferred,
       ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),
     ], { expectedCount: Math.min(3, actions.length) });
-  if (selected.some((action) => action.t17ExclusiveChoice === true)) {
+  if (selected.some((action) => action.authoredMissionFlowExclusiveChoice === true)) {
     return withChoiceIds(selected.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
   }
   const guided = ensureCapitalWeaponShopChoice(selected, actions, runtime);
@@ -3175,7 +3169,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     result.learnedRumorIds = learnedRumorIds;
     runtime.playerState.metrics.actions += 1;
   }
-  if (result.ok) applyT17SecondSummoningAction(runtime, resolvedPlayerAction, result);
+  if (result.ok) applyAuthoredMissionFlowAction(runtime, resolvedPlayerAction, result);
   const equipmentAccessChanges = reconcileEquipmentAccessAfterCommand(runtime, data, completedMissionIdsBefore);
   if (equipmentAccessChanges.rewards.length) {
     result.equipmentRewardOffers = equipmentAccessChanges.rewards.map((reward) => ({
@@ -3750,12 +3744,12 @@ function guidanceView(runtime, data, missions) {
     deadlineLabel: "捜索失敗",
     actionPanel: null,
   };
-  const t17Guidance = t17SecondSummoningGuidance(runtime);
-  if (t17Guidance) {
+  const authoredFlowGuidance = authoredMissionFlowGuidance(runtime);
+  if (authoredFlowGuidance) {
     const mission = missions.find((entry) => entry.id === "MSN-T17");
-    const targetName = t17Guidance.targetFacilityId ? facilityName(t17Guidance.targetFacilityId) : null;
+    const targetName = authoredFlowGuidance.targetFacilityId ? facilityName(authoredFlowGuidance.targetFacilityId) : null;
     return {
-      ...t17Guidance,
+      ...authoredFlowGuidance,
       targetFacilityName: targetName,
       deadlineLabel: mission?.deadlineLabel ?? null,
     };
@@ -3814,6 +3808,7 @@ function fallbackNarrative(runtime, action = null, outcome = null) {
 
 function playerUtterance(action) {
   if (!action || action.type !== "conversation") return null;
+  if (action.playerUtterance) return cleanText(action.playerUtterance, 240);
   const authored = {
     "contact:where": "ここは、どこですか？",
     "contact:memory": "ここは、私の知っている世界ではありません。",
@@ -3836,9 +3831,6 @@ function playerUtterance(action) {
     local_rumor: "今聞いた話は、いつ、どこで知ったものですか？",
     work_offer: "私にも手伝える仕事はありますか？　内容と賃金を先に教えてください。",
     t01_escort: "フィン、聞こえる？　歩けそう？　村まで一緒に戻ろう。",
-    t17_when_where: "二度目の召喚は、いつ、どこで行われるんですか？",
-    t17_why_player: "なぜ私にその話を？　私と召喚に、どんな関係があるんですか？",
-    t17_demand_proof: "あなたたちの話だけでは動けません。私自身が確かめられる証拠を示してください。",
     end_conversation: "ありがとう。教えてもらったことを確かめてきます。",
   }[action.dialogueTopic];
   if (topicLine) return topicLine;

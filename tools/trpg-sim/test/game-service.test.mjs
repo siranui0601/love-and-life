@@ -11,6 +11,7 @@ import {
   TRPG_GAME_RESOLVER_VERSION,
   TrpgGameService,
 } from "../../../src/server/trpg/game/service.js";
+import { AUTHORED_MISSION_FLOW_PACKS } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
 import { deserializeRuntime, serializeRuntime } from "../../../src/server/trpg/game/serializer.js";
 import { publicNpc } from "../../../src/server/trpg/game/presence.js";
@@ -1200,7 +1201,8 @@ test("mission clue choices require a co-present NPC with an authoritative public
 
 test("all generic special-mission hearings are bound to a present authoritative NPC", () => {
   const { game } = service();
-  const authoredHearingMissionIds = new Set(["MSN-T17"]);
+  const authoredHearingMissionIds = new Set(AUTHORED_MISSION_FLOW_PACKS.map((pack) => pack.missionId));
+  const authoredTroubleIds = new Set(AUTHORED_MISSION_FLOW_PACKS.map((pack) => pack.troubleId));
   const covered = [];
   for (const definitionTemplate of createGameRuntime(game.data, {
     seed: "mission-hearing-catalog",
@@ -1208,8 +1210,7 @@ test("all generic special-mission hearings are bound to a present authoritative 
     playerName: "聞き手",
     tutorial: false,
   }).playerState.catalog.special) {
-    // T17 uses its own reviewed Layla conversation triad; the dedicated T17
-    // test owns that stricter presence and disclosure contract.
+    // Data-driven authored mission flows own their own conversation contract.
     if (authoredHearingMissionIds.has(definitionTemplate.id)) continue;
     const runtime = createGameRuntime(game.data, {
       seed: `mission-hearing-${definitionTemplate.troubleId}`,
@@ -1277,7 +1278,11 @@ test("all generic special-mission hearings are bound to a present authoritative 
     assert.equal(state.missions[definition.id].progress[hearing.id], 1);
     covered.push(definition.troubleId);
   }
-  assert.deepEqual(covered, Array.from({ length: 19 }, (_, index) => `T${String(index + 1).padStart(2, "0")}`).filter((troubleId) => troubleId !== "T17"));
+  assert.deepEqual(
+    covered,
+    Array.from({ length: 19 }, (_, index) => `T${String(index + 1).padStart(2, "0")}`)
+      .filter((troubleId) => !authoredTroubleIds.has(troubleId)),
+  );
 });
 
 test("mission clue progress commits only after the assigned NPC actually discloses the fact", () => {
