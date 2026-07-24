@@ -1,4 +1,4 @@
-name: TRPG public route freedom diagnostics
+name: TRPG public route freedom integration
 
 on:
   pull_request:
@@ -21,154 +21,65 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/trpg-authored-content-refactor
-          fetch-depth: 2
+          fetch-depth: 5
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply reviewed public-route freedom patch
+      - name: Reuse the reviewed route patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          import subprocess
+          from pathlib import Path
+
+          workflow = subprocess.check_output(
+              ["git", "show", "HEAD^:.github/workflows/trpg-player-simulation.yml"],
+              text=True,
+          )
+          marker = "          node --input-type=module <<'NODE'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          NODE", start)
+          body = workflow[start:end]
+          body = "\n".join(line[10:] if line.startswith("          ") else line for line in body.splitlines())
+          Path("/tmp/public-route-patch.mjs").write_text(body + "\n", encoding="utf-8")
+          PY
+          node /tmp/public-route-patch.mjs
+      - name: Keep an active conversation uninterrupted
         shell: bash
         run: |
           node --input-type=module <<'NODE'
           import fs from "node:fs";
-
-          function replaceOnce(source, before, after, label) {
-            if (!source.includes(before)) throw new Error(`missing patch anchor: ${label}`);
-            return source.replace(before, after);
-          }
-
-          const resolverPath = "src/server/trpg/resolvers/capital-arrival-guidance.js";
-          let resolver = fs.readFileSync(resolverPath, "utf8");
-          resolver = replaceOnce(resolver,
-            'export const CAPITAL_ARRIVAL_GUIDANCE_VERSION = "capital-arrival-guidance-v2";\n',
-            'export const CAPITAL_ARRIVAL_GUIDANCE_VERSION = "capital-arrival-guidance-v3";\n',
-            "capital guidance version");
-          resolver = replaceOnce(resolver,
-            'export const CAPITAL_WEAPON_SHOP_GUIDANCE_WINDOW_MINUTES = 720;\n',
-            `export const CAPITAL_WEAPON_SHOP_GUIDANCE_WINDOW_MINUTES = 720;\nexport const CAPITAL_PUBLIC_ROUTE_DESTINATIONS = Object.freeze([\n  "田園の村",\n  "交易都市",\n  "犯罪都市",\n  "辺境の村",\n  "北陵要塞",\n  "ドワーフ洞窟",\n  "古代神殿",\n  "森",\n]);\n`,
-            "public route destinations");
-          resolver = replaceOnce(resolver,
-            `    firstInteractionCompletedAtMinute: null,\n    firstInteractionChoiceId: null,\n`,
-            `    firstInteractionCompletedAtMinute: null,\n    firstInteractionChoiceId: null,\n    routeBoardDiscoveredAtMinute: null,\n    routeBoardDestinationIds: [],\n`,
-            "route board state");
-          resolver = replaceOnce(resolver,
-            `  runtime.capitalArrivalGuidance.firstInteractionCompletedAtMinute ??= null;\n  runtime.capitalArrivalGuidance.firstInteractionChoiceId ??= null;\n`,
-            `  runtime.capitalArrivalGuidance.firstInteractionCompletedAtMinute ??= null;\n  runtime.capitalArrivalGuidance.firstInteractionChoiceId ??= null;\n  runtime.capitalArrivalGuidance.routeBoardDiscoveredAtMinute ??= null;\n  runtime.capitalArrivalGuidance.routeBoardDestinationIds = Array.isArray(runtime.capitalArrivalGuidance.routeBoardDestinationIds)\n    ? runtime.capitalArrivalGuidance.routeBoardDestinationIds\n    : [];\n`,
-            "route board migration");
-          resolver = replaceOnce(resolver,
-            `export function prioritizeCapitalWeaponShopMovement(actions, runtime) {`,
-            `export function discoverCapitalPublicRoutes(runtime, {\n  reachableHubIds = [],\n  absoluteMinute = runtime?.playerState?.absoluteMinute,\n} = {}) {\n  const guidance = ensureCapitalArrivalGuidance(runtime);\n  runtime.playerKnowledge ??= {};\n  const knownHubIds = runtime.playerKnowledge.knownHubIds instanceof Set\n    ? runtime.playerKnowledge.knownHubIds\n    : new Set(runtime.playerKnowledge.knownHubIds ?? []);\n  runtime.playerKnowledge.knownHubIds = knownHubIds;\n  const reachable = reachableHubIds instanceof Set ? reachableHubIds : new Set(reachableHubIds ?? []);\n  const discovered = CAPITAL_PUBLIC_ROUTE_DESTINATIONS.filter((hubId) => reachable.has(hubId));\n  for (const hubId of discovered) knownHubIds.add(hubId);\n  guidance.routeBoardDestinationIds = [...discovered];\n  if (discovered.length && guidance.routeBoardDiscoveredAtMinute == null) {\n    guidance.routeBoardDiscoveredAtMinute = number(absoluteMinute);\n    if (Array.isArray(runtime?.playerState?.history)) {\n      runtime.playerState.history.push({\n        type: "CAPITAL_ROUTE_BOARD_DISCOVERED",\n        minute: guidance.routeBoardDiscoveredAtMinute,\n        destinationHubIds: [...discovered],\n      });\n    }\n  }\n  return discovered;\n}\n\nexport function prioritizeCapitalWeaponShopMovement(actions, runtime) {`,
-            "route board discovery resolver");
-          fs.writeFileSync(resolverPath, resolver, "utf8");
-
-          const servicePath = "src/server/trpg/game/service.js";
-          let service = fs.readFileSync(servicePath, "utf8");
-          service = replaceOnce(service,
-            `  completeCapitalWeaponShopFirstInteraction,\n  ensureCapitalWeaponShopChoice,`,
-            `  completeCapitalWeaponShopFirstInteraction,\n  discoverCapitalPublicRoutes,\n  ensureCapitalWeaponShopChoice,`,
-            "service resolver import");
-          service = replaceOnce(service,
-            `function discoverArrival(runtime, data) {`,
-            `function refreshCapitalPublicRoutes(runtime, data) {\n  const visitedHubs = runtime.playerState.progress?.travel?.visitedHubs instanceof Set\n    ? runtime.playerState.progress.travel.visitedHubs\n    : new Set(runtime.playerState.progress?.travel?.visitedHubs ?? []);\n  if (runtime.playerState.player.location !== "王都" && !visitedHubs.has("王都")) return [];\n  const reachableHubIds = journey.availableTravelActions(runtime.playerState, data.model)\n    .map((action) => action.destinationHub)\n    .filter(Boolean);\n  return discoverCapitalPublicRoutes(runtime, {\n    reachableHubIds,\n    absoluteMinute: runtime.playerState.absoluteMinute,\n  });\n}\n\nfunction discoverArrival(runtime, data) {`,
-            "capital route refresh helper");
-          service = replaceOnce(service,
-            `  if (hubId) knowledge.knownHubIds.add(hubId);\n  if (facilityId) knowledge.knownFacilityIds.add(facilityId);\n  if (facilityId === "LOC_FARM_SQUARE") {`,
-            `  if (hubId) knowledge.knownHubIds.add(hubId);\n  if (facilityId) knowledge.knownFacilityIds.add(facilityId);\n  if (hubId === "王都") refreshCapitalPublicRoutes(runtime, data);\n  if (facilityId === "LOC_FARM_SQUARE") {`,
-            "refresh routes on capital arrival");
-          service = replaceOnce(service,
-            `  recordCapitalArrivalGuidance(runtime);\n  syncAuthoritativePresentNpcIds(runtime, data);\n  return runtime;\n}`,
-            `  recordCapitalArrivalGuidance(runtime);\n  refreshCapitalPublicRoutes(runtime, data);\n  syncAuthoritativePresentNpcIds(runtime, data);\n  return runtime;\n}`,
-            "hydrate route board");
-          service = replaceOnce(service,
-            `function movementActions(runtime, data) {\n  if (runtime.pendingBattle?.session?.status === "active") return [];\n  if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];\n  const knowledge = ensurePlayerKnowledge(runtime);`,
-            `function movementActions(runtime, data) {\n  if (runtime.pendingBattle?.session?.status === "active") return [];\n  if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];\n  refreshCapitalPublicRoutes(runtime, data);\n  const knowledge = ensurePlayerKnowledge(runtime);`,
-            "refresh routes before movement filtering");
-          service = replaceOnce(service,
-            `  const movementCandidates = (!runtime.tutorial || runtime.tutorial.stage === "free")\n    ? movementActions(runtime, data).slice(0, 6).map((action) => ({\n      ...action,\n      label: action.movementScope === "regional"\n        ? \`${'${action.destinationHub}'}へ向かう\`\n        : \`${'${data.model.facilityById[action.destinationFacilityId]?.name ?? action.destinationFacilityId}'}へ向かう\`,\n    }))\n    : [];`,
-            `  const movementPool = (!runtime.tutorial || runtime.tutorial.stage === "free")\n    ? movementActions(runtime, data)\n    : [];\n  const movementCandidates = [\n    ...movementPool.filter((action) => action.capitalArrivalGuidance === true),\n    ...movementPool.filter((action) => action.movementScope === "regional"),\n    ...movementPool.filter((action) => action.movementScope === "local" && action.capitalArrivalGuidance !== true),\n  ].slice(0, 12).map((action) => ({\n    ...action,\n    label: action.movementScope === "regional"\n      ? \`${'${action.destinationHub}'}へ旅立つ\`\n      : \`${'${data.model.facilityById[action.destinationFacilityId]?.name ?? action.destinationFacilityId}'}へ向かう\`,\n  }));`,
-            "regional movement candidate breadth");
-          service = replaceOnce(service,
-            `  if (cap > 3 && movementCandidates.length && !selected.some((action) => action.type === "move")) {\n    const movement = movementCandidates.find((action) => !selected.some((entry) => entry.id === action.id));\n    if (movement) {\n      if (selected.length >= cap) selected[selected.length - 1] = movement;\n      else selected.push(movement);\n    }\n  }\n  return selected;`,
-            `  if (cap > 3 && movementCandidates.length) {\n    const requiredMovements = [\n      movementCandidates.find((action) => action.capitalArrivalGuidance === true),\n      movementCandidates.find((action) => action.movementScope === "regional"),\n      movementCandidates[0],\n    ].filter(Boolean).filter((action, index, entries) => entries.findIndex((entry) => entry.id === action.id) === index);\n    for (const movement of requiredMovements) {\n      if (selected.some((entry) => entry.id === movement.id)) continue;\n      if (selected.length < cap) selected.push(movement);\n      else {\n        const replaceIndex = [...selected].map((action, index) => ({ action, index })).reverse()\n          .find(({ action }) => !action.missionId && action.capitalArrivalGuidance !== true)?.index;\n        if (replaceIndex != null) selected[replaceIndex] = movement;\n      }\n    }\n  }\n  return selected;`,
-            "retain guided and regional movement candidates");
-          service = replaceOnce(service,
-            `function selectedChoiceActions(runtime, actions, data) {`,
-            `function ensureRegionalTravelChoice(selected, candidates, runtime) {\n  const current = Array.isArray(selected) ? [...selected] : [];\n  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;\n  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;\n  if (current.some((action) => action.movementScope === "regional")) return current;\n  const visitedHubs = runtime.playerState.progress?.travel?.visitedHubs instanceof Set\n    ? runtime.playerState.progress.travel.visitedHubs\n    : new Set(runtime.playerState.progress?.travel?.visitedHubs ?? []);\n  const regional = (Array.isArray(candidates) ? candidates : [])\n    .filter((action) => action?.movementScope === "regional")\n    .sort((left, right) => Number(visitedHubs.has(left.destinationHub)) - Number(visitedHubs.has(right.destinationHub))\n      || Number(left.minutes ?? Infinity) - Number(right.minutes ?? Infinity)\n      || String(left.destinationHub ?? "").localeCompare(String(right.destinationHub ?? ""), "ja"))[0];\n  if (!regional) return current;\n  const travel = { ...regional, regionalTravelFreedom: true };\n  if (current.length < 3) return [...current, travel];\n  const replaceIndex = [...current].map((action, index) => ({ action, index })).reverse()\n    .find(({ action }) => !action.missionId\n      && action.capitalArrivalGuidance !== true\n      && !["eat", "rest"].includes(action.type)\n      && action.workOffer !== true)?.index;\n  if (replaceIndex == null) return current;\n  current[replaceIndex] = travel;\n  return current;\n}\n\nfunction selectedChoiceActions(runtime, actions, data) {`,
-            "regional travel choice guarantee");
-          service = replaceOnce(service,
-            `  const guided = ensureCapitalWeaponShopChoice(selected, actions, runtime);\n  return withChoiceIds(guided.map((action) => generatedChoiceDetail(action, runtime, selection, data)));`,
-            `  const guided = ensureCapitalWeaponShopChoice(selected, actions, runtime);\n  const withTravel = ensureRegionalTravelChoice(guided, actions, runtime);\n  return withChoiceIds(withTravel.map((action) => generatedChoiceDetail(action, runtime, selection, data)));`,
-            "apply regional travel guarantee");
-          service = replaceOnce(service,
-            `    stepId: action.stepId ?? null,\n    danger: ["missionBattle", "seekBattle"].includes(action.type),`,
-            `    stepId: action.stepId ?? null,\n    movementScope: action.movementScope ?? null,\n    destination: action.destinationHub ?? null,\n    destinationFacilityId: action.destinationFacilityId ?? null,\n    regionalTravelFreedom: action.regionalTravelFreedom === true,\n    danger: ["missionBattle", "seekBattle"].includes(action.type),`,
-            "choice movement metadata");
-          fs.writeFileSync(servicePath, service, "utf8");
-
-          const authoredPath = "src/server/trpg/content/authored/journeys/farm-to-capital.js";
-          let authored = fs.readFileSync(authoredPath, "utf8");
-          const routeBoard = " 帳場脇の路線図には、交易都市、犯罪都市、辺境の村、北陵要塞、ドワーフ洞窟、古代神殿、森へ続く道が記されている。武器屋へ寄るか、別の土地へ旅立つかは自分で決められる。";
-          const arrivalLines = [
-            "田園の村を出て一時間ほど。畑の切れ目から石造りの外壁がせり上がり、やがて王都の門をくぐる。広い道から外れて下層へ下るほど、石畳は継ぎはぎになり、荷車と呼び声が狭い路地へ重なっていく。辿り着いた下層の安宿は、豪華ではないが、旅装を解いて食事と寝床を確保できる場所だった。帳場の主人は旅装を見て、『装備を見るなら、坂を上がった王都武器屋だ。剣だけじゃない。槍も弓も杖もあるし、買えなくても試しに握らせてもらえる』と教えた。",
-            "田園の村を出る頃から続いた雨で、近郊道は浅い泥へ変わっていた。一時間ほど歩くと、雨幕の向こうに王都の外壁が現れる。門を抜け、濡れた荷車を避けながら下層へ下ると、軒先から落ちる雫の奥に安宿の灯りが見えた。帳場の主人は濡れた旅装を見て、『装備を乾かすついでに、坂の上の王都武器屋を覗くといい。剣も槍も弓も杖も、買う前に試せる』と教えた。",
-            "強い風に身体を傾けながら近郊道を進む。王都の外壁へ着くまでの一時間が、普段より長く感じられた。門内でも雨風は路地を吹き抜け、看板が軋んでいる。下層の安宿へ滑り込むと、閉めた戸の向こうでようやく風音が遠のいた。帳場の主人は『風が弱まったら坂の上の王都武器屋へ行くといい。剣だけでなく槍、弓、杖も扱っていて、試し持ちもできる』と道を示した。",
-            "近郊道の轍には白いものが残り、吐く息が王都へ近づくほど濃くなる。一時間ほどで外壁へ着き、門を抜けて下層へ入る。石段の端へ寄せられた雪を避けて進むと、安宿の煙突から細い煙が上がっていた。帳場の主人は火のそばを勧めながら、『装備を整えるなら坂の上の王都武器屋だ。剣、槍、弓、杖を試して、自分に合うものを探せる』と教えた。",
-            "田園の村を離れると、近郊道の先は薄い霧へ沈んだ。歩いて一時間ほど、輪郭だけだった王都の外壁が間近に現れる。門を越え、鐘と荷車の音を頼りに下層へ下ると、霧の中から安宿の看板が浮かんだ。帳場の主人は戻る道を説明したあと、『坂を上がれば王都武器屋がある。剣だけでなく槍や弓、杖も試せるから、目印にするといい』と付け加えた。",
-            "田園の村の畑を背に近郊道を進むと、一時間ほどで王都の外壁が見えてきた。門をくぐれば、広い道、荷車、露店の声が一度に押し寄せる。人波を避けて下層へ下り、継ぎはぎの石畳を辿ると、安宿の色褪せた看板へ着く。帳場の主人は王都での足場を説明し、『装備を見るなら坂の上の王都武器屋へ行くといい。剣、槍、弓、杖を扱っていて、買う前に試せる』と教えた。",
-          ];
-          for (const line of arrivalLines) {
-            if (!authored.includes(line)) throw new Error("capital arrival prose anchor missing");
-            authored = authored.replace(line, line + routeBoard);
-          }
-          fs.writeFileSync(authoredPath, authored, "utf8");
-
-          const guidanceTestPath = "tools/trpg-sim/test/capital-arrival-guidance.test.mjs";
-          let guidanceTests = fs.readFileSync(guidanceTestPath, "utf8");
-          guidanceTests = replaceOnce(guidanceTests,
-            `  CAPITAL_WEAPON_SHOP_ID,\n  capitalWeaponShopFirstChoices,`,
-            `  CAPITAL_PUBLIC_ROUTE_DESTINATIONS,\n  CAPITAL_WEAPON_SHOP_ID,\n  capitalWeaponShopFirstChoices,`,
-            "guidance test constant import");
-          guidanceTests = replaceOnce(guidanceTests,
-            `  completeCapitalWeaponShopFirstInteraction,\n  ensureCapitalWeaponShopChoice,`,
-            `  completeCapitalWeaponShopFirstInteraction,\n  discoverCapitalPublicRoutes,\n  ensureCapitalWeaponShopChoice,`,
-            "guidance test function import");
-          if (!guidanceTests.includes("capital route board reveals public reachable towns")) {
-            guidanceTests += `\n\ntest("capital route board reveals public reachable towns but keeps restricted lands hidden", () => {\n  const runtime = runtimeAt("LOC_CAP_LOWER_INN");\n  runtime.playerKnowledge = { knownHubIds: new Set(["王都"]) };\n  runtime.playerState.history = [];\n  const reachable = new Set([\n    ...CAPITAL_PUBLIC_ROUTE_DESTINATIONS,\n    "エルフの隠れ里",\n    "黒嶺連合領",\n  ]);\n  const discovered = discoverCapitalPublicRoutes(runtime, { reachableHubIds: reachable });\n  assert.deepEqual(discovered, CAPITAL_PUBLIC_ROUTE_DESTINATIONS);\n  for (const hubId of CAPITAL_PUBLIC_ROUTE_DESTINATIONS) assert.equal(runtime.playerKnowledge.knownHubIds.has(hubId), true, hubId);\n  assert.equal(runtime.playerKnowledge.knownHubIds.has("エルフの隠れ里"), false);\n  assert.equal(runtime.playerKnowledge.knownHubIds.has("黒嶺連合領"), false);\n  assert.equal(runtime.playerState.history.filter((entry) => entry.type === "CAPITAL_ROUTE_BOARD_DISCOVERED").length, 1);\n  discoverCapitalPublicRoutes(runtime, { reachableHubIds: reachable });\n  assert.equal(runtime.playerState.history.filter((entry) => entry.type === "CAPITAL_ROUTE_BOARD_DISCOVERED").length, 1);\n});\n`;
-          }
-          fs.writeFileSync(guidanceTestPath, guidanceTests, "utf8");
-
-          const authoredTestPath = "tools/trpg-sim/test/authored-journey-presentation.test.mjs";
-          let authoredTests = fs.readFileSync(authoredTestPath, "utf8");
-          authoredTests = replaceOnce(authoredTests,
-            `  assert.match(presentation.narrative, /王都武器屋/u);\n  assert.match(presentation.narrative, /剣.*槍.*弓.*杖/u);\n  const capitalActions = availableGameRuntimeActions(runtime, game.data);`,
-            `  assert.match(presentation.narrative, /王都武器屋/u);\n  assert.match(presentation.narrative, /剣.*槍.*弓.*杖/u);\n  assert.match(presentation.narrative, /路線図/u);\n  const capitalActions = availableGameRuntimeActions(runtime, game.data);\n  const publicRegionalDestinations = new Set(capitalActions.movement\n    .filter((entry) => entry.movementScope === "regional")\n    .map((entry) => entry.destinationHub));\n  assert.equal(publicRegionalDestinations.has("交易都市"), true);\n  assert.equal(publicRegionalDestinations.has("北陵要塞"), true);\n  assert.equal(publicRegionalDestinations.has("エルフの隠れ里"), false);\n  assert.equal(publicRegionalDestinations.has("黒嶺連合領"), false);\n  assert.ok(capitalActions.choices.some((entry) => entry.movementScope === "regional"),\n    "first capital arrival must keep a visible choice to leave for another town");`,
-            "capital route freedom integration assertions");
-          authoredTests = replaceOnce(authoredTests,
-            `  const laterChoiceIds = availableGameRuntimeActions(runtime, game.data).choices.map((choice) => choice.id);\n  assert.equal(laterChoiceIds.some((id) => id.startsWith("CAPITAL_WEAPON_SHOP:FIRST:")), false);\n  assert.equal(runtime.dialogueSession, null, "the authored consultation is one complete exchange, not a generic dialogue loop");`,
-            `  const laterActions = availableGameRuntimeActions(runtime, game.data);\n  const laterChoiceIds = laterActions.choices.map((choice) => choice.id);\n  assert.equal(laterChoiceIds.some((id) => id.startsWith("CAPITAL_WEAPON_SHOP:FIRST:")), false);\n  assert.ok(laterActions.movement.some((action) => action.movementScope === "regional"),\n    "regional travel remains available after the first weapon-shop exchange");\n  assert.equal(runtime.dialogueSession, null, "the authored consultation is one complete exchange, not a generic dialogue loop");`,
-            "travel remains available after weapon shop");
-          fs.writeFileSync(authoredTestPath, authoredTests, "utf8");
+          const path = "src/server/trpg/game/service.js";
+          const before = `  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;\n  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;`;
+          const after = `  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;\n  if (runtime.dialogueSession) return current;\n  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;`;
+          const source = fs.readFileSync(path, "utf8");
+          if (!source.includes(before)) throw new Error("dialogue guard anchor missing");
+          fs.writeFileSync(path, source.replace(before, after), "utf8");
           NODE
-      - name: Run focused freedom tests
-        run: node --test tools/trpg-sim/test/capital-arrival-guidance.test.mjs tools/trpg-sim/test/authored-journey-presentation.test.mjs
-      - name: Run complete TRPG regression suite with diagnostics
+      - name: Run focused freedom and dialogue tests
+        run: |
+          node --test \
+            tools/trpg-sim/test/capital-arrival-guidance.test.mjs \
+            tools/trpg-sim/test/authored-journey-presentation.test.mjs \
+            tools/trpg-sim/test/game-service.test.mjs
+      - name: Run complete TRPG regression suite
+        run: npm run trpg:test
+      - name: Commit reviewed route freedom and restore ordinary CI
         shell: bash
         run: |
-          mkdir -p tools/trpg-sim/reports
-          set +e
-          npm run trpg:test > tools/trpg-sim/reports/public-route-regression.log 2>&1
-          status=$?
-          cat tools/trpg-sim/reports/public-route-regression.log
-          echo "$status" > tools/trpg-sim/reports/public-route-regression.status
-          exit 0
-      - name: Upload regression diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: trpg-public-route-regression
-          path: tools/trpg-sim/reports/public-route-regression.*
-          retention-days: 7
-      - name: Enforce complete regression suite
-        run: test "$(cat tools/trpg-sim/reports/public-route-regression.status)" = "0"
+          set -euo pipefail
+          git checkout d43ce68877c9fd6c7e81d1488b9a766313ae1e42 -- .github/workflows/trpg-player-simulation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            .github/workflows/trpg-player-simulation.yml \
+            src/server/trpg/resolvers/capital-arrival-guidance.js \
+            src/server/trpg/game/service.js \
+            src/server/trpg/content/authored/journeys/farm-to-capital.js \
+            tools/trpg-sim/test/capital-arrival-guidance.test.mjs \
+            tools/trpg-sim/test/authored-journey-presentation.test.mjs
+          git commit -m "feat(trpg): open public routes after reaching the capital"
+          git push origin HEAD:chatgpt/trpg-authored-content-refactor
