@@ -1,0 +1,135 @@
+ summary: "5に「!」を3個付けるだけで10。多重階乗の意味を体験します。",
+    steps: ["5!は5×4×3×2×1ですが、5!!!は別の演算です。", "!が3個なら3ずつ減らし、5×2と掛けます。", "したがって5!!!は10です。!は連続9個まで使えます。"],
+    example: "5!!! ＝ 5 × 2 ＝ 10", allowedValues: ["!"], emphasizedValues: ["!"], keys: ["5", "!", "!", "!"]
+  },
+  {
+    id: "power", category: "特殊な記号", order: 8, icon: "xʸ", title: "累乗を使う", time: "約1分", problem: "321",
+    summary: "3の2乗で9を作り、残った1を足します。",
+    steps: ["xʸは、左の数を右の数の回数だけ掛ける記号です。", "3²、つまり3^2は9です。", "残った1を足すと10になります。"],
+    example: "3² ＋ 1 ＝ 10", allowedValues: ["^", "+"], emphasizedValues: ["^"], keys: ["xʸ", "＋", "3", "2", "1"]
+  },
+  {
+    id: "combination", category: "特殊な記号", order: 9, icon: "C", title: "組合せ C", time: "約2分", problem: "52",
+    summary: "5個から2個を選ぶ組合せの数は、ちょうど10です。",
+    steps: ["nCrは、n個から順番を区別せずr個を選ぶ方法の数です。", "5C2は、5個から2個を選ぶ方法の数です。", "計算結果は10なので、式は5C2だけで完成します。"],
+    example: "5 C 2 ＝ 10", allowedValues: ["C"], emphasizedValues: ["C"], keys: ["5", "C", "2"]
+  },
+  {
+    id: "permutation", category: "特殊な記号", order: 10, icon: "P", title: "順列 P", time: "約2分", problem: "522",
+    summary: "5P2＝20を作り、残った2で割って10にします。",
+    steps: ["nPrは、n個から順番を区別してr個を並べる方法の数です。", "5P2は5×4で20です。", "残った2で割ると10になります。"],
+    example: "5 P 2 ÷ 2 ＝ 10", allowedValues: ["P", "/"], emphasizedValues: ["P"], keys: ["5", "P", "2", "÷", "2"]
+  },
+];'''
+app = re.sub(r'const tutorialSteps = \[.*?\n\];', lesson_defs, app, flags=re.S)
+app = app.replace('let tutorialIndex = 0;', 'let activeTutorialId = null;\nlet tutorialExplanationManuallyToggled = false;')
+app = app.replace('  if (name === "tutorial") startTutorial(0);', '  if (name === "tutorial") showTutorialHub();')
+
+# Replace old tutorial functions with hub implementation.
+start = app.index('function startTutorial(')
+end = app.index('function prepareExternalGame()', start)
+new_tutorial_js = r'''function readTutorialCompletions() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(TUTORIAL_STORAGE_KEY) || "[]");
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch { return new Set(); }
+}
+
+function saveTutorialCompletion(id) {
+  const completed = readTutorialCompletions();
+  completed.add(id);
+  try { localStorage.setItem(TUTORIAL_STORAGE_KEY, JSON.stringify([...completed])); } catch {}
+  return completed;
+}
+
+function tutorialById(id) {
+  return tutorialLessons.find((lesson) => lesson.id === id) || null;
+}
+
+function renderTutorialHub() {
+  const completed = readTutorialCompletions();
+  refs.tutorialCompletedCount.textContent = `${completed.size} / ${tutorialLessons.length}`;
+  refs.tutorialLessonGroups.replaceChildren();
+  for (const category of ["はじめの一歩", "特殊な記号"]) {
+    const section = document.createElement("section");
+    section.className = "tutorial-category";
+    const lessons = tutorialLessons.filter((lesson) => lesson.category === category);
+    section.innerHTML = `<div class="tutorial-category-heading"><div><small>${category === "はじめの一歩" ? "BASICS" : "SPECIAL OPERATORS"}</small><h3>${category}</h3></div><span>${lessons.filter((lesson) => completed.has(lesson.id)).length} / ${lessons.length}</span></div><div class="tutorial-card-grid"></div>`;
+    const grid = section.querySelector(".tutorial-card-grid");
+    for (const lesson of lessons) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `tutorial-card${completed.has(lesson.id) ? " is-complete" : ""}`;
+      button.dataset.tutorialId = lesson.id;
+      button.innerHTML = `<span class="tutorial-card-icon">${escapeHtml(lesson.icon)}</span><span class="tutorial-card-copy"><small>LESSON ${String(lesson.order).padStart(2, "0")} ・ ${lesson.time}</small><strong>${escapeHtml(lesson.title)}</strong><span>${escapeHtml(lesson.summary)}</span></span><span class="tutorial-card-state">${completed.has(lesson.id) ? "✓" : "→"}</span>`;
+      grid.append(button);
+    }
+    refs.tutorialLessonGroups.append(section);
+  }
+  const firstIncomplete = tutorialLessons.find((lesson) => !completed.has(lesson.id)) || tutorialLessons[0];
+  refs.tutorialRecommendedButton.dataset.tutorialId = firstIncomplete.id;
+  refs.tutorialRecommendedButton.querySelector("span:first-child").textContent = completed.size === tutorialLessons.length ? "好きなレッスンを復習" : `おすすめ：${firstIncomplete.title}`;
+}
+
+function showTutorialHub() {
+  activeTutorialId = null;
+  tutorialCalculator?.destroy();
+  tutorialCalculator = null;
+  refs.tutorialHub.hidden = false;
+  refs.tutorialLesson.hidden = true;
+  renderTutorialHub();
+}
+
+function setTutorialExplanationExpanded(expanded, { manual = false } = {}) {
+  if (manual) tutorialExplanationManuallyToggled = true;
+  refs.tutorialExplanation.hidden = !expanded;
+  refs.tutorialDisclosureButton.setAttribute("aria-expanded", String(expanded));
+  refs.tutorialDisclosureButton.querySelector(".tutorial-disclosure-chevron").textContent = expanded ? "⌃" : "⌄";
+}
+
+function startTutorialLesson(id) {
+  const lesson = tutorialById(id);
+  if (!lesson) return;
+  activeTutorialId = id;
+  tutorialExplanationManuallyToggled = false;
+  refs.tutorialHub.hidden = true;
+  refs.tutorialLesson.hidden = false;
+  refs.tutorialLessonPosition.textContent = `LESSON ${String(lesson.order).padStart(2, "0")} / ${tutorialLessons.length} ・ ${lesson.time}`;
+  refs.tutorialLessonCategory.textContent = lesson.category;
+  refs.tutorialLessonTitle.textContent = lesson.title;
+  refs.tutorialLessonSummary.textContent = lesson.summary;
+  refs.tutorialSteps.replaceChildren(...lesson.steps.map((text) => {
+    const item = document.createElement("li"); item.textContent = text; return item;
+  }));
+  refs.tutorialExample.textContent = lesson.example;
+  refs.tutorialKeyChips.replaceChildren(...lesson.keys.map((key) => {
+    const chip = document.createElement("span"); chip.textContent = key; return chip;
+  }));
+  setTutorialExplanationExpanded(true);
+  tutorialCalculator?.destroy();
+  tutorialCalculator = new TenCalculator(refs.tutorialCalculatorMount, {
+    problem: lesson.problem,
+    allowedValues: lesson.allowedValues,
+    allowedActions: TUTORIAL_ACTIONS,
+    emphasizedValues: lesson.emphasizedValues,
+    onRetire: () => {},
+    onFirstInput: () => {
+      if (!tutorialExplanationManuallyToggled) setTutorialExplanationExpanded(false);
+    },
+    onSubmit: (expression, instance) => {
+      try {
+        const { value } = evaluateExpression(expression);
+        if (!isTen(value)) {
+          instance.setResult(`${formatResultValue(value)}　≠　10`, "error");
+          return;
+        }
+        instance.setResult("10 — LESSON CLEAR", "ten");
+        instance.setLocked(true);
+        const completed = saveTutorialCompletion(lesson.id);
+        const next = tutorialLessons.find((candidate) => candidate.order > lesson.order && !completed.has(candidate.id));
+        openModal(`
+          <div class="result-icon">✓</div>
+          <h2 id="modalTitle">「${escapeHtml(lesson.title)}」完了</h2>
+          <p class="result-lead">使い方を、実際の電卓操作で確認できました。必要になったら何度でも復習できます。</p>
+          <div class="modal-actions">
+   
