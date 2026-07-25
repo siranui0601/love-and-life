@@ -11,6 +11,9 @@ on:
       - ".github/workflows/trpg-player-simulation.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   simulate:
     runs-on: ubuntu-latest
@@ -45,3 +48,69 @@ jobs:
             tools/trpg-sim/reports/player-latest.md
             public/TRPG/player-simulation-report.json
             public/TRPG/player-simulation-v4-report.json
+
+  author-t04-once:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'agent/trpg-human-authored-choices'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/trpg-human-authored-choices
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Extract and execute reviewed T04 authoring blocks
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/trpg-author-t04-once.yml').read_text(encoding='utf-8').splitlines()
+          marker = "node --input-type=module <<'NODE'"
+          blocks = []
+          current = None
+          for line in source:
+              if line.strip() == marker:
+                  current = []
+                  continue
+              if current is not None and line.strip() == 'NODE':
+                  blocks.append('\n'.join(current) + '\n')
+                  current = None
+                  continue
+              if current is not None:
+                  current.append(line[10:] if line.startswith('          ') else line.lstrip())
+          if len(blocks) != 2:
+              raise SystemExit(f'expected 2 embedded Node blocks, found {len(blocks)}')
+          for index, block in enumerate(blocks, start=1):
+              Path(f'/tmp/trpg-t04-block-{index}.mjs').write_text(block, encoding='utf-8')
+          PY
+          node /tmp/trpg-t04-block-1.mjs
+          node /tmp/trpg-t04-block-2.mjs
+      - name: Run full TRPG regression suite
+        run: npm run trpg:test
+      - name: Publish tested T04 and remove temporary authoring files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git show "${PR_BASE_SHA}:.github/workflows/trpg-player-simulation.yml" > .github/workflows/trpg-player-simulation.yml
+          rm -f .github/workflows/trpg-author-t04-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/server/trpg/content/authored-mission-flow-registry.js \
+            .github/workflows/trpg-player-simulation.yml \
+            .github/workflows/trpg-author-t04-once.yml
+          git commit -m "feat(trpg): author T04 pilgrim disappearance flow"
+          git push origin HEAD:agent/trpg-human-authored-choices
