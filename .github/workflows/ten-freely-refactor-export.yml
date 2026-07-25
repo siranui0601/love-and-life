@@ -1,0 +1,32 @@
+name: Ten Freely refactor export
+
+on:
+  push:
+    branches:
+      - feature/ten-freely-foundation
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ten-freely-refactor-source
+          path: |
+            public/index.html
+            public/style.css
+            public/menu-auth.js
+            public/ten-freely-entry.css
+            public/ten-freely-entry.js
+            public/ten-freely
+            src/server/app.js
+            src/server/shared/index.js
+            src/server/auth/session.js
+            src/server/ten-freely
+            src/foundation/ten-freely-sheets.js
+          if-no-files-found: error
+          retention-days: 1
