@@ -4,13 +4,13 @@ import {
   ExpressionError,
   isTen,
   validateDigitUsage,
-} from "../../../public/ten-freely/expression-engine.js";
-import { readUserSessionFromCookieHeader } from "../auth/session.js";
+} from "../../public/10を自由に/expression-engine.js";
+import { readUserSessionFromCookieHeader } from "./storage.js";
 import {
   findActiveTenFreelyRoomByUser,
   findTenFreelyRoomById,
   upsertTenFreelyRoom,
-} from "../../foundation/ten-freely-sheets.js";
+} from "./storage.js";
 import {
   AVAILABLE_PROBLEM_COUNTS,
   createRandomProblem,

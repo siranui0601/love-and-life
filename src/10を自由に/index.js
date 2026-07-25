@@ -5,18 +5,18 @@ import {
   ExpressionError,
   isTen,
   validateDigitUsage,
-} from "../../../public/ten-freely/expression-engine.js";
-import { findUserByUsername } from "../../foundation/sheets.js";
+} from "../../public/10を自由に/expression-engine.js";
+import { findUserByUsername } from "../foundation/sheets.js";
 import {
   appendTenFreelySoloResult,
   getTenFreelyRanking,
-} from "../../foundation/ten-freely-sheets.js";
+} from "./storage.js";
 import {
   clearUserSessionCookie,
   readUserSession,
   requireUserSession,
   setUserSessionCookie,
-} from "../auth/session.js";
+} from "./storage.js";
 import {
   createOnlineRoom,
   getActiveOnlineRoom,
@@ -44,7 +44,7 @@ function solveProblemWithoutBlocking(problem, timeoutMs = 15000) {
   const key = [...String(problem)].sort().join("");
   if (solutionCache.has(key)) return Promise.resolve(solutionCache.get(key));
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL("./solution-worker.js", import.meta.url), { type: "module" });
+    const worker = new Worker(new URL("./solver.js", import.meta.url), { type: "module" });
     const timeout = setTimeout(() => {
       worker.terminate();
       reject(new Error("solution_timeout"));

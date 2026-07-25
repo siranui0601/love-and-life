@@ -1,9 +1,10 @@
+import { isMainThread, parentPort } from "node:worker_threads";
 import {
   evaluateAst,
   formatAst,
   isTen,
   multifactorial,
-} from "../../../public/ten-freely/expression-engine.js";
+} from "../../public/10を自由に/expression-engine.js";
 
 const BASIC_OPERATORS = new Set(["+", "-", "*", "/"]);
 const MAX_VALUE = 1e9;
@@ -485,4 +486,12 @@ export function solveTenProblem(problem) {
 
 export function clearSolutionCache() {
   solutionCache.clear();
+}
+
+
+if (!isMainThread && parentPort) {
+  parentPort.on("message", (problem) => {
+    try { parentPort.postMessage({ ok: true, solution: solveTenProblem(problem) }); }
+    catch (error) { parentPort.postMessage({ ok: false, error: error?.message || String(error) }); }
+  });
 }

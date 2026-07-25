@@ -62,6 +62,11 @@ export class TenCalculator {
     this.cursor = 0;
     this.enabled = options.enabled !== false;
     this.locked = false;
+    this.allowedValues = options.allowedValues ? new Set(options.allowedValues) : null;
+    this.allowedActions = options.allowedActions ? new Set(options.allowedActions) : null;
+    this.emphasizedValues = new Set(options.emphasizedValues || []);
+    this.hasInteracted = false;
+    this.onFirstInput = options.onFirstInput || (() => {});
     this.onSubmit = options.onSubmit || (() => {});
     this.onRetire = options.onRetire || (() => {});
     this.onActivity = options.onActivity || (() => {});
@@ -121,6 +126,7 @@ export class TenCalculator {
     button.dataset.value = key.value ?? "";
     button.dataset.action = key.action ?? "insert";
     if (key.digit !== undefined) button.dataset.digit = String(key.digit);
+    if (key.value !== undefined && this.emphasizedValues.has(key.value)) button.classList.add("is-emphasized");
     button.setAttribute("aria-label", key.aria || key.label);
     const label = document.createElement("span");
     label.textContent = key.label;
@@ -162,6 +168,7 @@ export class TenCalculator {
     this.problem = String(problem);
     this.problemCounts = countDigits(this.problem);
     this.locked = false;
+    this.hasInteracted = false;
     if (!preserveExpression) {
       this.tokens = [];
       this.cursor = 0;
@@ -181,6 +188,25 @@ export class TenCalculator {
     this.renderKeys();
   }
 
+  setKeyPolicy({ allowedValues = null, allowedActions = null, emphasizedValues = [] } = {}) {
+    this.allowedValues = allowedValues ? new Set(allowedValues) : null;
+    this.allowedActions = allowedActions ? new Set(allowedActions) : null;
+    this.emphasizedValues = new Set(emphasizedValues);
+    for (const button of this.refs.calculator.querySelectorAll(".calc-key")) {
+      button.classList.toggle("is-emphasized", this.emphasizedValues.has(button.dataset.value));
+    }
+    this.renderKeys();
+  }
+
+  isValueAllowed(value) {
+    if (isDigitToken(value)) return true;
+    return !this.allowedValues || this.allowedValues.has(value);
+  }
+
+  isActionAllowed(action) {
+    return !this.allowedActions || this.allowedActions.has(action);
+  }
+
   getExpression() {
     return this.tokens.join("");
   }
@@ -192,6 +218,10 @@ export class TenCalculator {
   }
 
   insert(token) {
+    if (!this.isValueAllowed(token)) {
+      this.setStatus("このレッスンでは、まだ使わない記号です。", "warning");
+      return;
+    }
     if (isDigitToken(token)) {
       const digit = Number(token);
       const used = this.getUsedCounts()[digit];
@@ -216,8 +246,13 @@ export class TenCalculator {
       }
     }
 
+    const wasEmpty = this.tokens.length === 0;
     this.tokens.splice(this.cursor, 0, token);
     this.cursor += 1;
+    if (wasEmpty && !this.hasInteracted) {
+      this.hasInteracted = true;
+      this.onFirstInput(this);
+    }
     this.result = null;
     this.resultKind = "";
     this.render();
@@ -334,7 +369,14 @@ export class TenCalculator {
     const inspection = inspectExpression(this.getExpression(), this.problem);
     for (const button of this.refs.calculator.querySelectorAll(".calc-key")) {
       const digitRaw = button.dataset.digit;
+      const action = button.dataset.action;
+      const value = button.dataset.value;
       let disabled = !this.enabled || this.locked;
+      let policyDisabled = false;
+      if (action === "insert" && digitRaw === undefined && !this.isValueAllowed(value)) policyDisabled = true;
+      if (action !== "insert" && !this.isActionAllowed(action)) policyDisabled = true;
+      disabled ||= policyDisabled;
+      button.classList.toggle("is-policy-disabled", policyDisabled);
       if (digitRaw !== undefined) {
         const digit = Number(digitRaw);
         const remaining = Math.max(0, this.problemCounts[digit] - used[digit]);
@@ -359,21 +401,21 @@ export class TenCalculator {
     if (!this.enabled || this.locked || !this.mount.closest(".screen.is-active")) return;
     const key = event.key;
     const direct = /^[0-9()+\-*/^!|]$/u.test(key) ? key : null;
-    if (direct) {
+    if (direct && this.isValueAllowed(direct)) {
       event.preventDefault();
       this.onActivity();
       this.insert(direct);
       return;
     }
-    if (key === "Enter" || key === "=") {
+    if ((key === "Enter" || key === "=") && this.isActionAllowed("submit")) {
       event.preventDefault(); this.submit();
-    } else if (key === "Backspace") {
+    } else if (key === "Backspace" && this.isActionAllowed("delete")) {
       event.preventDefault(); this.deleteBeforeCursor();
-    } else if (key === "ArrowLeft") {
+    } else if (key === "ArrowLeft" && this.isActionAllowed("left")) {
       event.preventDefault(); this.moveCursor(-1);
-    } else if (key === "ArrowRight") {
+    } else if (key === "ArrowRight" && this.isActionAllowed("right")) {
       event.preventDefault(); this.moveCursor(1);
-    } else if (key === "Escape") {
+    } else if (key === "Escape" && this.isActionAllowed("clear")) {
       event.preventDefault(); this.clear();
     }
   }

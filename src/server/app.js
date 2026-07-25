@@ -177,7 +177,7 @@ export function createApp() {
 
   const tenFreelyPath = "/10を自由に";
   const tenFreelyEncodedPath = encodeURI(tenFreelyPath);
-  const tenFreelyAssets = express.static(path.join(publicDirectory, "ten-freely"));
+  const tenFreelyAssets = express.static(path.join(publicDirectory, "10を自由に"));
   app.use("/ten-freely", tenFreelyAssets);
   app.use(tenFreelyPath, tenFreelyAssets);
   app.use(tenFreelyEncodedPath, tenFreelyAssets);
