@@ -47,7 +47,6 @@ function createTrpgSkillCatalogLoader() {
     const encodedCatalog = partPaths
       .map((partPath) => fs.readFileSync(partPath, "utf8").trim())
       .join("");
-
     const gzipCatalog = Buffer.from(encodedCatalog, "base64");
     const actualSha256 = crypto
       .createHash("sha256")
@@ -79,7 +78,6 @@ function createTrpgSkillCatalogLoader() {
       sourceParts: TRPG_SKILL_CATALOG_PART_COUNT,
       checksum: actualSha256,
     };
-
     return { jsonBuffer: cachedJsonBuffer, summary: cachedSummary };
   }
 
@@ -176,6 +174,13 @@ export function createApp() {
   app.use("/100ore", hundredOreAssets);
   app.use(hundredOrePath, hundredOreAssets);
   app.use(hundredOreEncodedPath, hundredOreAssets);
+
+  const tenFreelyPath = "/10を自由に";
+  const tenFreelyEncodedPath = encodeURI(tenFreelyPath);
+  const tenFreelyAssets = express.static(path.join(publicDirectory, "ten-freely"));
+  app.use("/ten-freely", tenFreelyAssets);
+  app.use(tenFreelyPath, tenFreelyAssets);
+  app.use(tenFreelyEncodedPath, tenFreelyAssets);
 
   return app;
 }
