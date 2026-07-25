@@ -25,6 +25,7 @@ const refs = {
   lives: document.getElementById("gameLives"),
   timer: document.getElementById("gameTimer"),
   inactivity: document.getElementById("inactivityNotice"),
+  topBarBack: document.querySelector(".top-bar-back"),
 };
 
 let authenticatedUser = null;
@@ -34,6 +35,7 @@ let calculator = null;
 let timerFrame = null;
 let mountedProblem = "";
 let resolvingRoundNumber = null;
+let initializePromise = null;
 
 function storedUser() {
   try {
@@ -84,12 +86,8 @@ function setAuthenticatedUi(isAuthenticated) {
 }
 
 function switchTab(name) {
-  for (const button of document.querySelectorAll("[data-online-tab]")) {
-    button.classList.toggle("is-active", button.dataset.onlineTab === name);
-  }
-  for (const panel of document.querySelectorAll("[data-online-panel]")) {
-    panel.classList.toggle("is-active", panel.dataset.onlinePanel === name);
-  }
+  for (const button of document.querySelectorAll("[data-online-tab]")) button.classList.toggle("is-active", button.dataset.onlineTab === name);
+  for (const panel of document.querySelectorAll("[data-online-panel]")) panel.classList.toggle("is-active", panel.dataset.onlinePanel === name);
 }
 
 function selectedCreateSettings() {
@@ -106,6 +104,7 @@ function roomCodeFromInput() {
 
 function connectSocket() {
   if (socket?.connected) return socket;
+  if (socket) return socket;
   if (!window.io) throw new Error("Socket.IO is unavailable");
   socket = window.io({ withCredentials: true });
   socket.on("connect", () => { if (room) joinSocketRoom(room.roomId); });
@@ -131,7 +130,7 @@ function connectSocket() {
     refs.console.hidden = false;
     app.closeModal(true);
     app.showToast(reason === "player_left" ? "対戦ルームが解散されました。" : "ルームを終了しました。", "warning");
-    app.showScreen("online", { instant: true });
+    app.showScreen("online", { instant: true, force: true });
   });
   return socket;
 }
@@ -159,7 +158,7 @@ async function joinSocketRoom(roomId) {
   }
 }
 
-async function initializeOnline() {
+async function initializeOnlineNow() {
   const user = await ensureSession();
   setAuthenticatedUi(Boolean(user));
   if (!user) return;
@@ -178,6 +177,12 @@ async function initializeOnline() {
     console.error(error);
     app.showToast("参加中ルームを確認できませんでした。", "warning");
   }
+}
+
+function initializeOnline() {
+  if (initializePromise) return initializePromise;
+  initializePromise = initializeOnlineNow().finally(() => { initializePromise = null; });
+  return initializePromise;
 }
 
 function renderLobby() {
@@ -216,7 +221,7 @@ function handleRoomState(nextRoom) {
   room = nextRoom;
   if (room.status === "lobby") {
     cleanupOnlineGame();
-    app.showScreen("online", { instant: true });
+    app.showScreen("online", { instant: true, force: true });
     renderLobby();
     return;
   }
@@ -384,7 +389,7 @@ function showMatchResult(result) {
   document.querySelector("[data-match-home]").onclick = leaveRoom;
 }
 
-async function leaveRoom() {
+async function leaveRoom({ destination = "online" } = {}) {
   const currentRoomId = room?.roomId;
   if (currentRoomId) {
     try { await emitAck("ten:leave", { roomId: currentRoomId }); } catch {}
@@ -394,20 +399,22 @@ async function leaveRoom() {
   room = null;
   refs.lobby.hidden = true;
   refs.console.hidden = false;
-  app.showScreen("online", { instant: true });
+  if (destination === "playground") window.location.href = "/";
+  else app.showScreen("online", { instant: true, force: true });
 }
 
-function confirmLeaveDuringMatch(targetScreen) {
+function confirmLeaveDuringMatch(targetScreen, destination = "online") {
   if (!room || !["playing", "round_result"].includes(room.status)) {
     app.finishExternalGame();
-    app.showScreen(targetScreen, { force: true });
+    if (destination === "playground") window.location.href = "/";
+    else app.showScreen(targetScreen, { force: true });
     return;
   }
   app.openModal(`
     <div class="result-icon is-failure">×</div><h2 id="modalTitle">対戦ルームを離れますか？</h2>
     <p class="result-lead">ホームへ戻るとルームは解散され、対戦相手も退出します。</p>
     <div class="modal-actions"><button class="modal-primary" type="button" data-confirm-online-leave>ルームを解散</button><button class="modal-secondary" type="button" data-modal-close>対戦を続ける</button></div>`);
-  document.querySelector("[data-confirm-online-leave]").onclick = leaveRoom;
+  document.querySelector("[data-confirm-online-leave]").onclick = () => leaveRoom({ destination });
 }
 
 function cleanupOnlineGame() {
@@ -474,8 +481,12 @@ refs.startButton.addEventListener("click", async () => {
   try { await emitAck("ten:start", { roomId: room.roomId }); }
   catch (error) { refs.startButton.disabled = false; app.showToast(error.message === "room_not_ready" ? "対戦相手を待っています。" : "対戦を開始できませんでした。", "warning"); }
 });
-refs.leaveButton.addEventListener("click", leaveRoom);
-for (const opener of document.querySelectorAll('[data-open-screen="online"]')) opener.addEventListener("click", initializeOnline);
+refs.leaveButton.addEventListener("click", () => leaveRoom());
+refs.topBarBack?.addEventListener("click", (event) => {
+  if (!room || !["playing", "round_result"].includes(room.status)) return;
+  event.preventDefault();
+  confirmLeaveDuringMatch("home", "playground");
+});
 window.addEventListener("ten-freely:screen-changed", (event) => {
   if (event.detail?.screen === "online") initializeOnline();
 });
