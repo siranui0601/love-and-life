@@ -1,9 +1,9 @@
 name: Ten Freely refactor export
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature/ten-freely-foundation
+      - main
 
 permissions:
   contents: read
