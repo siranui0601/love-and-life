@@ -1,0 +1,96 @@
+>
+          </div>
+          <div class="tutorial-progress-ring" aria-label="チュートリアル完了数">
+            <strong id="tutorialCompletedCount">0 / 10</strong><span>完了</span>
+          </div>
+          <button class="primary-action compact tutorial-recommended" id="tutorialRecommendedButton" type="button"><span>おすすめから始める</span><span>→</span></button>
+        </div>
+        <div id="tutorialLessonGroups" class="tutorial-lesson-groups"></div>
+      </div>
+
+      <div class="tutorial-lesson" id="tutorialLesson" hidden>
+        <div class="tutorial-lesson-toolbar">
+          <button class="tutorial-list-back" id="tutorialLessonBack" type="button"><span>‹</span> レッスン一覧</button>
+          <span id="tutorialLessonPosition">LESSON</span>
+        </div>
+        <div class="tutorial-layout">
+          <aside class="tutorial-guide-card">
+            <div class="tutorial-lesson-heading">
+              <span id="tutorialLessonCategory"></span>
+              <h3 id="tutorialLessonTitle"></h3>
+              <p id="tutorialLessonSummary"></p>
+            </div>
+            <button class="tutorial-disclosure" id="tutorialDisclosureButton" type="button" aria-expanded="true" aria-controls="tutorialExplanation">
+              <span>説明と入力例</span><span class="tutorial-disclosure-chevron">⌃</span>
+            </button>
+            <div class="tutorial-explanation" id="tutorialExplanation">
+              <ol id="tutorialSteps"></ol>
+              <div class="tutorial-worked-example"><small>入力例</small><strong id="tutorialExample"></strong></div>
+              <div class="tutorial-key-chips" id="tutorialKeyChips" aria-label="このレッスンで使う記号"></div>
+            </div>
+            <p class="tutorial-auto-note">入力を始めると説明は自動で折り畳まれます。上のボタンでいつでも読み直せます。</p>
+            <button class="secondary-action tutorial-exit" id="tutorialExitButton" type="button">このレッスンを終了</button>
+          </aside>
+          <div class="tutorial-calculator-column">
+            <div id="tutorialCalculatorMount"></div>
+            <p class="tutorial-calculator-note">灰色のキーは、このレッスンでは使いません。本番ではすべて利用できます。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="online"'''
+html = html[:old_tutorial.start()] + new_tutorial + html[old_tutorial.end():]
+html = html.replace('/ten-freely/app.js', '/10を自由に/app.js')
+html = html.replace('/ten-freely/online.js', '/10を自由に/online.js')
+html = html.replace('  <script type="module" src="/ten-freely/ranking.js"></script>\n', '')
+(new_pub/'index.html').write_text(html)
+
+# ---------- Core app + tutorial hub + ranking ----------
+app = (old_pub/'app.js').read_text()
+# Replace refs block fields for tutorial.
+app = app.replace('''  tutorialCalculatorMount: document.getElementById("tutorialCalculatorMount"),\n  tutorialStepLabel: document.getElementById("tutorialStepLabel"),\n  tutorialProgressBar: document.getElementById("tutorialProgressBar"),\n  tutorialEyebrow: document.getElementById("tutorialEyebrow"),\n  tutorialHeading: document.getElementById("tutorialHeading"),\n  tutorialDescription: document.getElementById("tutorialDescription"),\n  tutorialTip: document.getElementById("tutorialTip"),\n  tutorialSkipButton: document.getElementById("tutorialSkipButton"),\n  tutorialNextButton: document.getElementById("tutorialNextButton"),''',
+'''  tutorialHub: document.getElementById("tutorialHub"),\n  tutorialCompletedCount: document.getElementById("tutorialCompletedCount"),\n  tutorialRecommendedButton: document.getElementById("tutorialRecommendedButton"),\n  tutorialLessonGroups: document.getElementById("tutorialLessonGroups"),\n  tutorialLesson: document.getElementById("tutorialLesson"),\n  tutorialLessonBack: document.getElementById("tutorialLessonBack"),\n  tutorialLessonPosition: document.getElementById("tutorialLessonPosition"),\n  tutorialLessonCategory: document.getElementById("tutorialLessonCategory"),\n  tutorialLessonTitle: document.getElementById("tutorialLessonTitle"),\n  tutorialLessonSummary: document.getElementById("tutorialLessonSummary"),\n  tutorialDisclosureButton: document.getElementById("tutorialDisclosureButton"),\n  tutorialExplanation: document.getElementById("tutorialExplanation"),\n  tutorialSteps: document.getElementById("tutorialSteps"),\n  tutorialExample: document.getElementById("tutorialExample"),\n  tutorialKeyChips: document.getElementById("tutorialKeyChips"),\n  tutorialExitButton: document.getElementById("tutorialExitButton"),\n  tutorialCalculatorMount: document.getElementById("tutorialCalculatorMount"),''')
+
+lesson_defs = '''const TUTORIAL_STORAGE_KEY = "tenFreelyTutorialLessonsV2";
+const TUTORIAL_ACTIONS = ["clear", "delete", "left", "right", "submit"];
+const tutorialLessons = [
+  {
+    id: "addition", category: "はじめの一歩", order: 1, icon: "+", title: "足し算で10", time: "約1分", problem: "46",
+    summary: "数字を一度ずつ使う、いちばん基本のルールを体験します。",
+    steps: ["4と6の数字ボタンは、それぞれ一度だけ使えます。", "4＋6の式を作ると、数字を使い切った時点で「=」が有効になります。", "「=」を押して10になれば完了です。"],
+    example: "4 ＋ 6 ＝ 10", allowedValues: ["+"], emphasizedValues: ["+"], keys: ["4", "＋", "6", "＝"]
+  },
+  {
+    id: "subtraction", category: "はじめの一歩", order: 2, icon: "−", title: "足して、引く", time: "約1分", problem: "831",
+    summary: "足し算と引き算を組み合わせ、左から式を組み立てます。",
+    steps: ["8と3を足すと11です。", "最後に1を引けば10になります。", "数字の並び順は、出題された順番と同じでなくても構いません。"],
+    example: "8 ＋ 3 − 1 ＝ 10", allowedValues: ["+", "-"], emphasizedValues: ["-"], keys: ["＋", "−", "8", "3", "1"]
+  },
+  {
+    id: "multiplication", category: "はじめの一歩", order: 3, icon: "×", title: "掛け算で一気に10", time: "約1分", problem: "25",
+    summary: "×の使い方と、数字を連結できないルールを確認します。",
+    steps: ["2と5を隣に置いて25にすることはできません。", "間に「×」を置くと、2×5になります。", "掛け算の結果は10です。"],
+    example: "2 × 5 ＝ 10", allowedValues: ["*"], emphasizedValues: ["*"], keys: ["2", "×", "5", "＝"]
+  },
+  {
+    id: "division", category: "はじめの一歩", order: 4, icon: "÷", title: "割り算を混ぜる", time: "約1分", problem: "821",
+    summary: "割り算を含む式でも、通常の計算順序で判定されます。",
+    steps: ["2÷1は2です。", "8に2を足すと10になります。", "0で割ると失敗になり、通常プレイでは残機が減ります。"],
+    example: "8 ＋ 2 ÷ 1 ＝ 10", allowedValues: ["+", "/"], emphasizedValues: ["/"], keys: ["＋", "÷", "8", "2", "1"]
+  },
+  {
+    id: "parentheses", category: "はじめの一歩", order: 5, icon: "( )", title: "括弧で順番を変える", time: "約2分", problem: "223",
+    summary: "2×3＋2では8。括弧を使って、先に3＋2を計算します。",
+    steps: ["括弧がない2×3＋2は、掛け算が先なので8です。", "(3＋2)を作ると、その部分を先に計算して5になります。", "外側の2を掛けると、2×5で10です。"],
+    example: "2 × ( 3 ＋ 2 ) ＝ 10", allowedValues: ["*", "+", "(", ")"], emphasizedValues: ["(", ")"], keys: ["×", "＋", "( )", "2", "2", "3"]
+  },
+  {
+    id: "square-root", category: "特殊な記号", order: 6, icon: "√", title: "平方根を使う", time: "約1分", problem: "48",
+    summary: "√4＝2を利用して、8に足す数を作ります。",
+    steps: ["√は、その数を2乗すると元に戻る正の数を表します。", "√4は2です。", "ゲームでは√2のような途中結果も使えます。たとえば√2×√2は2になります。"],
+    example: "√4 ＋ 8 ＝ 10", allowedValues: ["√", "+"], emphasizedValues: ["√"], keys: ["√", "＋", "4", "8"]
+  },
+  {
+    id: "multifactorial", category: "特殊な記号", order: 7, icon: "!!!", title: "多重階乗を知る", time: "約1分", problem: "5",
+    
