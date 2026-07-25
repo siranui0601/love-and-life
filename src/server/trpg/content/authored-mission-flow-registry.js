@@ -1,9 +1,257 @@
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v2";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v3";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 
 export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
+  Object.freeze({
+id: "pilgrim-transfer-disappearance",
+missionId: "MSN-T04",
+troubleId: "T04",
+title: "古代神殿の巡礼者失踪",
+catalogOverride: Object.freeze({
+hearing: Object.freeze({
+targetLocation: "古代神殿",
+targetFacilityId: "LOC_TEMPLE_ADMIN",
+label: "管理棟で、巡礼者失踪の記録を管理者ファルコから聞く",
+}),
+investigation: Object.freeze({
+required: 3,
+}),
+battle: Object.freeze({
+targetLocation: "古代神殿",
+targetFacilityId: "LOC_TEMPLE_CORRIDOR",
+encounterId: "ENC-0061",
+label: "白石回廊に残る転移残響を鎮め、地下への経路を開く",
+}),
+resolution: Object.freeze({
+targetLocation: "古代神殿",
+targetFacilityId: "LOC_TEMPLE_SEALED",
+label: "地下封印区画で、失踪者と転移装置への最終対応を決める",
+}),
+}),
+hearing: Object.freeze({
+stepId: "hear",
+targetLocation: "古代神殿",
+targetFacilityId: "LOC_TEMPLE_ADMIN",
+npcId: "NPC053",
+npcName: "ファルコ",
+guidance: Object.freeze({
+kicker: "消えた巡礼者と閉じた記録簿",
+title: "管理者ファルコへ、何を先に明らかにするかを伝える",
+detail: "消えた場所の共通点、伏せられた報告、Day1以降に起きた装置の変化では、追うべき証拠が異なる。",
+}),
+choices: Object.freeze([
+Object.freeze({
+id: "disappearance_pattern",
+dialogueTopic: "mission_flow_t04_disappearance_pattern",
+label: "失踪者が最後に確認された場所と、巡礼の列順を聞く",
+playerUtterance: "消えた人たちは、最後にどこで確認されましたか。歩いていた順番も教えてください。",
+requiredDisclosure: "失踪者は全員、白石回廊の同じ曲がり角で列から消え、先頭と最後尾の者は異変に気づかなかった",
+factId: "T04-FACT-SAME-CORRIDOR-GAP",
+unlockedLeadIds: Object.freeze(["pilgrim_route", "corridor_resonance"]),
+minutes: 12,
+narrative: "ファルコは巡礼団ごとの名簿を重ね、失踪者の名へ細い印を置いた。年齢も出身も違うのに、最後に記録された場所だけは同じだった。",
+speeches: Object.freeze([
+  Object.freeze({
+    actorId: "NPC053",
+    text: "全員、白石回廊の第三曲がりだ。列の中央にいた者だけが消え、前後を歩いた者は振り返るまで気づかなかった。偶然で片づけられる数ではない。",
+    emotion: "苦い警戒",
+  }),
+]),
+}),
+Object.freeze({
+id: "concealed_reports",
+dialogueTopic: "mission_flow_t04_concealed_reports",
+label: "失踪が続いているのに、なぜ神殿を閉じなかったのか問いただす",
+playerUtterance: "同じ場所で何人も消えたのに、なぜ回廊を閉じず、王都にも公表しなかったんですか。",
+requiredDisclosure: "ファルコは辺境の村の巡礼収入が絶えることを恐れ、失踪報告を管理棟の内部記録へ留めていた",
+factId: "T04-FACT-REPORTS-CONCEALED",
+unlockedLeadIds: Object.freeze(["concealed_records", "family_diary"]),
+minutes: 14,
+narrative: "問いを向けると、ファルコは机上の鍵束を握り込んだ。神殿の安全より村の暮らしを守ったと言いたいのだろうが、その判断で失踪者は増えている。",
+speeches: Object.freeze([
+  Object.freeze({
+    actorId: "NPC053",
+    text: "神殿を閉じれば、辺境の村は宿も店も立ち行かぬ。王都へ正式に出せば即日封鎖だ。だから内部記録へ留めた。守ったつもりだったが、結果はこの有様だ。",
+    emotion: "保身と後悔",
+  }),
+]),
+}),
+Object.freeze({
+id: "day1_anomaly",
+dialogueTopic: "mission_flow_t04_day1_anomaly",
+label: "Day1の召喚失敗後、神殿内で何が変わったのか聞く",
+playerUtterance: "王都の召喚が失敗した日から、回廊や地下装置に変化はありませんでしたか。",
+requiredDisclosure: "Day1の夜から白石回廊の古代文字が淡く光り、床下の機械音と短い冷気が記録され始めた",
+factId: "T04-FACT-ACTIVE-SINCE-DAY1",
+unlockedLeadIds: Object.freeze(["corridor_resonance", "concealed_records"]),
+minutes: 13,
+narrative: "ファルコは古い巡回記録を開き、ある日を境に増えた余白の書き込みを示した。光、機械音、冷気。どれもDay1以前の頁にはない。",
+speeches: Object.freeze([
+  Object.freeze({
+    actorId: "NPC053",
+    text: "Day1の夜からだ。白石回廊の文字が光り、床下で歯車のような音がした。巡回兵は冷気を感じたとも書いている。召喚との関係は認めたくなかった。",
+    emotion: "動揺",
+  }),
+]),
+}),
+]),
+}),
+investigation: Object.freeze({
+stepId: "investigate",
+requiredEvidenceCount: 3,
+requiredEvidenceIds: Object.freeze([
+"T04-EVIDENCE-CORRIDOR-TRANSFER-GLYPH",
+"T04-EVIDENCE-REPORTS-AFTER-DAY1",
+]),
+initialGuidance: Object.freeze({
+kicker: "人が消える一点",
+title: "証言を、巡礼者の足取り・回廊の痕跡・管理記録で確かめる",
+detail: "一人の思い込みではなく、現場の転移痕とDay1以降の記録を必ず含む三系統の証拠を揃える。",
+}),
+continuedGuidance: Object.freeze({
+kicker: "呪いではなく装置の作動を示す",
+title: "残る証拠から、失踪地点と起動時期を独立して裏づける",
+detail: "白石回廊の転移痕と、Day1以降に異常が始まった管理記録は、地下装置へ進むために欠かせない。",
+}),
+selectedLeadGuidance: Object.freeze({
+kicker: "選んだ確認先",
+detail: "証言だけで結論を出さず、現場・記録・失踪者側の残したものが一致するかを確かめる。",
+}),
+defer: Object.freeze({
+id: "defer",
+label: "失踪調査をいったん保留し、装備と協力者を整える",
+minutes: 5,
+deferMinutes: 240,
+summary: "古代神殿の失踪調査を保留した。その間も巡礼者の入場と転移異常は止まらない。",
+narrative: "確認先を記録し、今は神殿を離れることにした。回廊の異常は待ってくれず、新しい巡礼団が到着すれば被害が増える可能性がある。",
+}),
+leads: Object.freeze([
+Object.freeze({
+id: "pilgrim_route",
+facilityId: "LOC_TEMPLE_REST",
+destinationName: "巡礼者休憩所",
+label: "巡礼団の列順と帰還者の証言から、消えた瞬間を組み直す",
+approachId: "t04-pilgrim-route",
+discoveryId: "T04-EVIDENCE-SAME-PROCESSION-GAP",
+discoveryText: "三つの巡礼団の列順を重ねると、失踪者はいずれも白石回廊の第三曲がりで中央の一人だけが抜け落ちていた。前後の者は光も悲鳴も見ておらず、足音だけが一歩分途切れている。",
+unlocksLeadIds: Object.freeze(["corridor_resonance", "family_diary"]),
+minutes: 31,
+leadNarrative: "休憩所の宿帳と巡礼団長の控えを並べ、出発時と帰還時の列を一人ずつ照合する。人数が減った場所を地図へ落とすと、印は一か所へ重なった。",
+}),
+Object.freeze({
+id: "corridor_resonance",
+facilityId: "LOC_TEMPLE_CORRIDOR",
+destinationName: "白石回廊",
+label: "第三曲がりの古代文字と、途切れた足跡の内側を調べる",
+approachId: "t04-corridor-transfer-glyph",
+discoveryId: "T04-EVIDENCE-CORRIDOR-TRANSFER-GLYPH",
+discoveryText: "白い粉を払うと円環状の古代文字が淡く点灯し、その内側で足跡が途切れていた。床石の継ぎ目から冷気が吹き、地下へ向かう魔力の脈動が一定間隔で返ってくる。",
+unlocksLeadIds: Object.freeze(["concealed_records", "pilgrim_route"]),
+minutes: 38,
+leadNarrative: "第三曲がりを通行止めにし、失踪者の足跡が終わった床石を一枚ずつ確かめる。光る文字の輪は装飾ではなく、踏み込んだものを囲う配置になっていた。",
+}),
+Object.freeze({
+id: "concealed_records",
+facilityId: "LOC_TEMPLE_ADMIN",
+destinationName: "管理棟の記録庫",
+label: "封印された巡回簿を開き、異常の開始日と失踪記録を照合する",
+approachId: "t04-concealed-records",
+discoveryId: "T04-EVIDENCE-REPORTS-AFTER-DAY1",
+discoveryText: "封印箱の巡回簿には、Day1の夜を境に発光・機械音・冷気が記録され、その後の失踪者全員が白石回廊の同一区画へ結び付けられていた。正式報告欄だけが空白にされている。",
+unlocksLeadIds: Object.freeze(["corridor_resonance", "family_diary"]),
+minutes: 35,
+leadNarrative: "ファルコの鍵で記録庫の封印箱を開く。公開用の薄い日誌ではなく、警備兵と案内人が署名した巡回簿を日付順に追う。",
+}),
+Object.freeze({
+id: "family_diary",
+facilityId: "LOC_BORDER_SMALL_SHRINE",
+targetLocation: "辺境の村",
+destinationName: "小祠",
+label: "失踪者エイダの日記から、回廊で見た光と機械音を確かめる",
+approachId: "t04-eida-diary",
+discoveryId: "T04-EVIDENCE-EDA-DIARY-GLYPH",
+discoveryText: "エイダの日記には、白石回廊の文字が足元で輪になり、祈りの鐘とは違う機械音が床下から三度響いたとある。最後の頁には、同じ印を写した簡単な図が残されている。",
+unlocksLeadIds: Object.freeze(["corridor_resonance", "concealed_records"]),
+minutes: 44,
+regionalNarrative: "参道を下り、辺境の村へ着いた。失踪者の家族が祈る小祠は、宿場の喧騒から少し外れた場所にある。",
+leadNarrative: "小祠で待つ姉から、エイダが巡礼前夜まで書いていた日記を預かる。信仰の言葉と、本人が実際に見た現象を分けながら最後の頁を読む。",
+}),
+]),
+prematureResolution: Object.freeze({
+id: "curse-only",
+label: "共通する回廊だけを根拠に、神殿の呪いとして全面封鎖を求める",
+minutes: 24,
+summary: "場所の一致だけでは、管理棟も王都も呪いによる封鎖を受け入れなかった。集めた証拠は残るが、装置の作動と開始時期を示す必要がある。",
+narrative: "白石回廊を閉じるよう訴えたが、ファルコは『古い神殿では噂だけで人が遠のく』と退けた。失踪地点の共通性は重要だが、地下装置とDay1以降の異常を結びつけなければ決定打にならない。",
+}),
+}),
+postInvestigationGuidance: Object.freeze({
+kicker: "転移先は地下封印区画",
+title: "白石回廊の転移残響を鎮め、地下装置へ進む",
+detail: "現場の文字と管理記録は、巡礼者が消滅したのではなく地下へ転送された可能性を示す。残響を退けて経路を安定させる。",
+}),
+stepGuidance: Object.freeze({
+battle: Object.freeze({
+kicker: "白石回廊に残る転移の反射",
+title: "転移残響を鎮め、失踪者の座標へ続く脈動を確保する",
+detail: "残響は古代装置の防衛反応に近い。勝てない場合は撤退し、装備を整えて戻ることができる。",
+}),
+resolve: Object.freeze({
+kicker: "止めるだけか、救い出すか",
+title: "地下封印区画で、転移装置と失踪者への優先順位を決める",
+detail: "救出を先に行うほど時間と危険は増える。即時封鎖は新しい被害を止めるが、転移済みの人々を残す。記録公開は隠蔽を防ぐ代わりに神殿運営を揺らす。",
+}),
+}),
+resolution: Object.freeze({
+stepId: "resolve",
+choices: Object.freeze([
+Object.freeze({
+id: "recover_then_pause",
+label: "転移座標を封印区画へ固定し、生存者を救出してから装置を停止する",
+minutes: 92,
+summary: "転移先を地下封印区画へ固定し、生存していた巡礼者を引き戻してから装置を停止した。",
+narrative: "回廊と地下の文字列を同じ順に点灯させ、転移の出口を封印区画へ固定した。冷気の中から倒れた巡礼者たちを一人ずつ運び出し、最後に魔力供給を断つ。白石回廊の文字は静かに消えた。",
+worldEffect: Object.freeze({
+  flagKey: "t04ResolutionRoute",
+  factId: "player:T04:pilgrims-recovered-device-paused",
+  text: "古代神殿の転移先から生存巡礼者が救出され、白石回廊の転移装置は停止した",
+  facilityId: "LOC_TEMPLE_SEALED",
+  propagationDelayHours: 3,
+}),
+}),
+Object.freeze({
+id: "emergency_seal",
+label: "地下への魔力供給を直ちに断ち、新たな転移を止めて神殿を封鎖する",
+minutes: 48,
+summary: "転移装置への魔力供給を即座に断ち、新しい失踪を止めて神殿を封鎖した。",
+narrative: "失踪者の座標を追う前に、装置へ続く魔力導管を切り離した。回廊の光は消え、新しい転移は止まる。封印区画に残された人々の状態は確認できないまま、正門には閉鎖の札が掛けられた。",
+worldEffect: Object.freeze({
+  flagKey: "t04ResolutionRoute",
+  factId: "player:T04:emergency-seal-before-recovery",
+  text: "古代神殿は緊急封鎖され、新しい失踪は止まったが、転移済み巡礼者の安否確認は後回しになった",
+  facilityId: "LOC_TEMPLE_GATE",
+  propagationDelayHours: 2,
+}),
+}),
+Object.freeze({
+id: "open_records_and_oversee",
+label: "装置を安全停止し、隠されていた記録を公開して外部監査へ引き渡す",
+minutes: 76,
+summary: "転移装置を安全停止し、失踪記録とDay1以降の異常記録を公開して外部監査へ渡した。",
+narrative: "装置を最低出力まで落として停止させ、巡回簿と転移文字の写しを複数の証人へ渡した。管理棟だけでは記録を消せない。神殿は調査のため休止となり、失踪とDay1の召喚余波を結ぶ証拠が公に残った。",
+worldEffect: Object.freeze({
+  flagKey: "t04ResolutionRoute",
+  factId: "player:T04:records-open-independent-oversight",
+  text: "古代神殿の転移装置は安全停止し、隠されていた失踪記録は公開されて外部監査の対象になった",
+  facilityId: "LOC_TEMPLE_ADMIN",
+  propagationDelayHours: 4,
+}),
+}),
+]),
+}),
+}),
   Object.freeze({
     id: "red-fang-migration",
     missionId: "MSN-T03",
