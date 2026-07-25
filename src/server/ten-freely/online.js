@@ -48,10 +48,12 @@ function normalizeSettings(raw = {}) {
   return { digitLengths, lives, winsToFinish };
 }
 
-function makeRoomId() {
+async function makeRoomId() {
   for (let attempt = 0; attempt < 50; attempt += 1) {
     const id = String(crypto.randomInt(100000, 1000000));
-    if (!rooms.has(id)) return id;
+    if (rooms.has(id)) continue;
+    const stored = await findTenFreelyRoomById(id).catch(() => null);
+    if (!stored || stored.status === "closed" || Number(stored.expiresAt || 0) <= Date.now()) return id;
   }
   throw new Error("room_create_failed");
 }
@@ -81,13 +83,24 @@ function touchMember(room, member) {
   touchRoom(room);
 }
 
+function publicRoundResult(result) {
+  if (!result) return null;
+  const { winnerId, ...safe } = result;
+  return safe;
+}
+
+function publicMatchResult(result) {
+  if (!result) return null;
+  const { winnerId, ...safe } = result;
+  return safe;
+}
+
 function publicRoom(room, viewerId = "") {
   return {
     roomId: room.id,
     status: room.status,
     settings: room.settings,
     hostIsSelf: room.hostId === viewerId,
-    selfId: viewerId,
     members: room.members.map((member) => ({
       username: member.username,
       role: member.role,
@@ -100,8 +113,8 @@ function publicRoom(room, viewerId = "") {
     currentProblem: room.currentProblem,
     roundNumber: room.roundNumber,
     roundStartedAt: room.roundStartedAt,
-    roundResult: room.roundResult,
-    matchResult: room.matchResult,
+    roundResult: publicRoundResult(room.roundResult),
+    matchResult: publicMatchResult(room.matchResult),
     expiresAt: room.expiresAt,
     ruleVersion: RULE_VERSION,
   };
@@ -143,7 +156,7 @@ export async function createOnlineRoom({ session, settings }) {
   const normalized = normalizeSettings(settings);
   const now = Date.now();
   const room = {
-    id: makeRoomId(),
+    id: await makeRoomId(),
     hostId: session.userTrackingId,
     status: "lobby",
     settings: normalized,
@@ -227,12 +240,13 @@ function beginRound(room) {
 
 function buildMatchResult(room, reason = "win_target_reached") {
   const ordered = [...room.members].sort((a, b) => b.wins - a.wins);
+  const isTie = ordered.length < 2 || ordered[0]?.wins === ordered[1]?.wins;
   return {
     reason,
-    winnerName: ordered[0]?.wins === ordered[1]?.wins ? null : ordered[0]?.username || null,
-    winnerId: ordered[0]?.wins === ordered[1]?.wins ? null : ordered[0]?.id || null,
+    winnerName: isTie ? null : ordered[0]?.username || null,
+    winnerId: isTie ? null : ordered[0]?.id || null,
     scores: room.members.map((member) => ({ username: member.username, wins: member.wins })),
-    rounds: room.roundHistory,
+    rounds: room.roundHistory.map(publicRoundResult),
     finishedAt: Date.now(),
   };
 }
@@ -283,14 +297,14 @@ function emitRoundResult(io, room) {
   for (const member of room.members) {
     io.to(userSocketName(member.id)).emit("ten:round-result", {
       room: publicRoom(room, member.id),
-      result: room.roundResult,
+      result: publicRoundResult(room.roundResult),
     });
   }
   if (room.status === "finished") {
     for (const member of room.members) {
       io.to(userSocketName(member.id)).emit("ten:match-finished", {
         room: publicRoom(room, member.id),
-        result: room.matchResult,
+        result: publicMatchResult(room.matchResult),
       });
     }
   }
@@ -304,7 +318,7 @@ async function closeRoom(io, room, reason, requestedBy = "") {
   room.matchResult.requestedBy = requestedBy;
   touchRoom(room);
   await checkpointQuietly(room);
-  io.to(roomSocketName(room.id)).emit("ten:room-closed", { reason, requestedBy, result: room.matchResult });
+  io.to(roomSocketName(room.id)).emit("ten:room-closed", { reason, requestedBy, result: publicMatchResult(room.matchResult) });
   for (const member of room.members) io.in(userSocketName(member.id)).socketsLeave(roomSocketName(room.id));
 }
 
@@ -492,7 +506,7 @@ export function startTenFreelyOnlineMaintenance(io) {
         for (const member of room.members) {
           io.to(userSocketName(member.id)).emit("ten:match-finished", {
             room: publicRoom(room, member.id),
-            result: room.matchResult,
+            result: publicMatchResult(room.matchResult),
           });
         }
         continue;
