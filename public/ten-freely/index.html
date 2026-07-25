@@ -8,6 +8,7 @@
   <title>10を自由に｜不知火遊技場</title>
   <meta name="description" content="与えられた数字をすべて使い、自由な数式で10を作る計算パズル。" />
   <link rel="stylesheet" href="/ten-freely/styles.css" />
+  <link rel="stylesheet" href="/ten-freely/online-ranking.css" />
 </head>
 <body>
   <div class="ambient" aria-hidden="true">
@@ -18,16 +19,10 @@
 
   <main class="app-shell" id="appShell">
     <header class="top-bar">
-      <a class="top-bar-back" href="/" aria-label="不知火遊技場へ戻る">
-        <span aria-hidden="true">‹</span>
-        <span>遊技場</span>
-      </a>
+      <a class="top-bar-back" href="/" aria-label="不知火遊技場へ戻る"><span aria-hidden="true">‹</span><span>遊技場</span></a>
       <button class="brand-button" id="homeBrandButton" type="button" aria-label="10を自由にのホームへ戻る">
         <span class="brand-mark" aria-hidden="true">10</span>
-        <span class="brand-copy">
-          <strong>10を自由に</strong>
-          <small>MAKE TEN, YOUR WAY.</small>
-        </span>
+        <span class="brand-copy"><strong>10を自由に</strong><small>MAKE TEN, YOUR WAY.</small></span>
       </button>
       <div class="auth-pill" id="authPill" aria-live="polite">ゲスト</div>
     </header>
@@ -46,57 +41,27 @@
 
       <div class="mode-grid" aria-label="ゲームモード">
         <button class="mode-card mode-card-online" type="button" data-open-screen="online">
-          <span class="mode-card-shine" aria-hidden="true"></span>
-          <span class="mode-icon" aria-hidden="true">⇄</span>
-          <span class="mode-copy">
-            <small>REALTIME DUEL</small>
-            <strong>オンライン対戦</strong>
-            <span>同じ数字を見て、先に10を作った方の勝ち。</span>
-          </span>
+          <span class="mode-card-shine" aria-hidden="true"></span><span class="mode-icon" aria-hidden="true">⇄</span>
+          <span class="mode-copy"><small>REALTIME DUEL</small><strong>オンライン対戦</strong><span>同じ数字を見て、先に10を作った方の勝ち。</span></span>
           <span class="mode-arrow" aria-hidden="true">→</span>
         </button>
-
         <button class="mode-card mode-card-primary" type="button" data-open-screen="solo-settings">
-          <span class="mode-card-shine" aria-hidden="true"></span>
-          <span class="mode-icon" aria-hidden="true">∞</span>
-          <span class="mode-copy">
-            <small>SOLO CHALLENGE</small>
-            <strong>無限対戦</strong>
-            <span>桁数・残機・問題数を選んで、自分の限界へ。</span>
-          </span>
+          <span class="mode-card-shine" aria-hidden="true"></span><span class="mode-icon" aria-hidden="true">∞</span>
+          <span class="mode-copy"><small>SOLO CHALLENGE</small><strong>無限対戦</strong><span>桁数・残機・問題数を選んで、自分の限界へ。</span></span>
           <span class="mode-arrow" aria-hidden="true">→</span>
         </button>
-
         <button class="mode-card" type="button" data-open-screen="tutorial">
-          <span class="mode-icon" aria-hidden="true">?</span>
-          <span class="mode-copy">
-            <small>LEARN BY DOING</small>
-            <strong>チュートリアル</strong>
-            <span>読むだけではなく、実際に押して覚える5ステップ。</span>
-          </span>
-          <span class="mode-arrow" aria-hidden="true">→</span>
+          <span class="mode-icon" aria-hidden="true">?</span><span class="mode-copy"><small>LEARN BY DOING</small><strong>チュートリアル</strong><span>読むだけではなく、実際に押して覚える5ステップ。</span></span><span class="mode-arrow" aria-hidden="true">→</span>
         </button>
-
         <button class="mode-card" type="button" data-open-screen="ranking">
-          <span class="mode-icon" aria-hidden="true">⌁</span>
-          <span class="mode-copy">
-            <small>LEADERBOARD</small>
-            <strong>ランキング</strong>
-            <span>同じ条件のプレイヤーと、速さ・正解数を比較。</span>
-          </span>
-          <span class="mode-arrow" aria-hidden="true">→</span>
+          <span class="mode-icon" aria-hidden="true">⌁</span><span class="mode-copy"><small>LEADERBOARD</small><strong>ランキング</strong><span>同じ条件のプレイヤーと、速さ・正解数を比較。</span></span><span class="mode-arrow" aria-hidden="true">→</span>
         </button>
       </div>
-
       <p class="home-footnote">ログインなしでも遊べます。ログインすると記録がランキングへ反映されます。</p>
     </section>
 
     <section class="screen" data-screen="solo-settings" aria-labelledby="soloSettingsTitle">
-      <div class="section-heading">
-        <button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button>
-        <div><small>SOLO CHALLENGE</small><h2 id="soloSettingsTitle">挑戦条件を選ぶ</h2></div>
-      </div>
-
+      <div class="section-heading"><button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button><div><small>SOLO CHALLENGE</small><h2 id="soloSettingsTitle">挑戦条件を選ぶ</h2></div></div>
       <form class="settings-card" id="soloSettingsForm">
         <fieldset>
           <legend><span>01</span><strong>桁数</strong><small>1〜3個選択</small></legend>
@@ -106,25 +71,8 @@
             <label class="choice-tile"><input type="checkbox" name="digitLength" value="5" /><span><strong>5桁</strong><small>全100,000問</small></span></label>
           </div>
         </fieldset>
-
-        <fieldset>
-          <legend><span>02</span><strong>残機</strong><small>不正解で1つ減少</small></legend>
-          <div class="segmented-control" data-choice-group="lives">
-            <label><input type="radio" name="lives" value="1" /><span>1</span></label>
-            <label><input type="radio" name="lives" value="3" checked /><span>3</span></label>
-            <label><input type="radio" name="lives" value="5" /><span>5</span></label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend><span>03</span><strong>問題数</strong><small>∞は全問題制覇まで</small></legend>
-          <div class="segmented-control" data-choice-group="questionCount">
-            <label><input type="radio" name="questionCount" value="5" checked /><span>5問</span></label>
-            <label><input type="radio" name="questionCount" value="10" /><span>10問</span></label>
-            <label><input type="radio" name="questionCount" value="infinity" /><span>∞</span></label>
-          </div>
-        </fieldset>
-
+        <fieldset><legend><span>02</span><strong>残機</strong><small>不正解で1つ減少</small></legend><div class="segmented-control" data-choice-group="lives"><label><input type="radio" name="lives" value="1" /><span>1</span></label><label><input type="radio" name="lives" value="3" checked /><span>3</span></label><label><input type="radio" name="lives" value="5" /><span>5</span></label></div></fieldset>
+        <fieldset><legend><span>03</span><strong>問題数</strong><small>∞は全問題制覇まで</small></legend><div class="segmented-control" data-choice-group="questionCount"><label><input type="radio" name="questionCount" value="5" checked /><span>5問</span></label><label><input type="radio" name="questionCount" value="10" /><span>10問</span></label><label><input type="radio" name="questionCount" value="infinity" /><span>∞</span></label></div></fieldset>
         <div class="settings-summary" id="settingsSummary" aria-live="polite"></div>
         <button class="primary-action" id="startSoloButton" type="submit"><span>ゲームスタート</span><span aria-hidden="true">→</span></button>
       </form>
@@ -132,11 +80,9 @@
 
     <section class="screen" data-screen="game" aria-labelledby="gameScreenTitle">
       <h2 class="visually-hidden" id="gameScreenTitle">計算ゲーム</h2>
+      <div class="online-scoreboard" id="onlineScoreboard" hidden></div>
       <div class="game-topline">
-        <div class="game-progress">
-          <span id="gameModeLabel">無限対戦</span>
-          <strong id="gameProgressText">1 / 5</strong>
-        </div>
+        <div class="game-progress"><span id="gameModeLabel">無限対戦</span><strong id="gameProgressText">1 / 5</strong></div>
         <div class="game-lives" id="gameLives" aria-label="残機"></div>
         <div class="game-timer" id="gameTimer">00:00.0</div>
       </div>
@@ -145,72 +91,66 @@
     </section>
 
     <section class="screen" data-screen="tutorial" aria-labelledby="tutorialTitle">
-      <div class="section-heading">
-        <button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button>
-        <div><small>LEARN BY DOING</small><h2 id="tutorialTitle">5ステップで、10を作る</h2></div>
-      </div>
+      <div class="section-heading"><button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button><div><small>LEARN BY DOING</small><h2 id="tutorialTitle">5ステップで、10を作る</h2></div></div>
       <div class="tutorial-layout">
         <div class="tutorial-copy-card">
           <div class="tutorial-progress"><span id="tutorialStepLabel">STEP 1 / 5</span><div><i id="tutorialProgressBar"></i></div></div>
-          <p class="tutorial-eyebrow" id="tutorialEyebrow">まずは足し算</p>
-          <h3 id="tutorialHeading">数字を一度ずつ使おう</h3>
-          <p id="tutorialDescription"></p>
-          <div class="tutorial-tip" id="tutorialTip"></div>
-          <div class="tutorial-actions">
-            <button class="secondary-action" id="tutorialSkipButton" type="button">スキップ</button>
-            <button class="primary-action compact" id="tutorialNextButton" type="button" disabled><span>次へ</span><span>→</span></button>
-          </div>
+          <p class="tutorial-eyebrow" id="tutorialEyebrow">まずは足し算</p><h3 id="tutorialHeading">数字を一度ずつ使おう</h3><p id="tutorialDescription"></p><div class="tutorial-tip" id="tutorialTip"></div>
+          <div class="tutorial-actions"><button class="secondary-action" id="tutorialSkipButton" type="button">スキップ</button><button class="primary-action compact" id="tutorialNextButton" type="button" disabled><span>次へ</span><span>→</span></button></div>
         </div>
         <div id="tutorialCalculatorMount"></div>
       </div>
     </section>
 
     <section class="screen" data-screen="online" aria-labelledby="onlineTitle">
-      <div class="section-heading">
-        <button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button>
-        <div><small>REALTIME DUEL</small><h2 id="onlineTitle">オンライン対戦</h2></div>
+      <div class="section-heading"><button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button><div><small>REALTIME DUEL</small><h2 id="onlineTitle">オンライン対戦</h2></div></div>
+      <div class="online-auth-card" id="onlineAuthCard" hidden>
+        <span class="online-auth-lock" aria-hidden="true">⌁</span><div><h3>対戦にはログインが必要です</h3><p>対戦名・再接続先・勝敗を安全に紐づけるため、先にログインしてください。</p></div><button type="button" id="onlineLoginButton">ログインへ</button>
       </div>
-      <div class="online-panel">
-        <div class="online-radar" aria-hidden="true"><span></span><i></i><b>10</b></div>
-        <h3>対戦ルーム基盤を準備中</h3>
-        <p>オリジン魔法陣の「ルーム復帰」「再接続」「再戦待機」を引き継ぎ、数式の正解判定だけをサーバー主導にした対戦基盤を接続します。</p>
-        <div class="online-actions">
-          <button type="button" disabled>ルームを作成</button>
-          <button type="button" disabled>ルームに参加</button>
-        </div>
-        <span class="development-badge">FOUNDATION IN PROGRESS</span>
+      <div class="online-console" id="onlineConsole">
+        <div class="online-tabs" role="tablist" aria-label="ルーム操作"><button class="is-active" type="button" data-online-tab="create">ルーム作成</button><button type="button" data-online-tab="join">ルーム参加</button></div>
+        <form class="online-form is-active" id="onlineCreateForm" data-online-panel="create">
+          <div class="online-form-intro"><small>HOST SETTINGS</small><h3>同じ条件で、先に規定勝利数へ</h3><p>問題ごとに残機は回復します。正解または相手の残機切れで1勝です。</p></div>
+          <fieldset><legend>出題する桁数</legend><div class="mini-choice-grid"><label><input type="checkbox" name="onlineDigitLength" value="3" checked /><span>3桁</span></label><label><input type="checkbox" name="onlineDigitLength" value="4" /><span>4桁</span></label><label><input type="checkbox" name="onlineDigitLength" value="5" /><span>5桁</span></label></div></fieldset>
+          <fieldset><legend>1問ごとの残機</legend><div class="mini-segment"><label><input type="radio" name="onlineLives" value="1" /><span>1</span></label><label><input type="radio" name="onlineLives" value="3" checked /><span>3</span></label><label><input type="radio" name="onlineLives" value="5" /><span>5</span></label></div></fieldset>
+          <fieldset><legend>先取する勝利数</legend><div class="mini-segment"><label><input type="radio" name="onlineWins" value="3" checked /><span>3勝</span></label><label><input type="radio" name="onlineWins" value="5" /><span>5勝</span></label><label><input type="radio" name="onlineWins" value="10" /><span>10勝</span></label></div></fieldset>
+          <button class="primary-action" type="submit"><span>ルームを作成</span><span>→</span></button>
+        </form>
+        <form class="online-form" id="onlineJoinForm" data-online-panel="join">
+          <div class="online-form-intro"><small>JOIN ROOM</small><h3>6桁のルームコードを入力</h3><p>ホストから共有されたコードで、同じ対戦ルームへ入れます。</p></div>
+          <label class="room-code-input"><span>ROOM CODE</span><input id="onlineRoomCodeInput" name="roomCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" required /></label>
+          <button class="primary-action" type="submit"><span>ルームに参加</span><span>→</span></button>
+        </form>
+      </div>
+      <div class="room-lobby" id="onlineRoomLobby" hidden>
+        <div class="room-lobby-hero"><div><small>ROOM CODE</small><strong id="onlineRoomCode">------</strong></div><button type="button" id="onlineCopyCode">コピー</button></div>
+        <div class="room-member-list" id="onlineMemberList"></div>
+        <div class="room-rule-summary" id="onlineRuleSummary"></div>
+        <p class="room-waiting-text" id="onlineWaitingText" aria-live="polite">対戦相手を待っています…</p>
+        <div class="room-lobby-actions"><button class="primary-action compact" id="onlineStartButton" type="button" disabled><span>対戦スタート</span><span>→</span></button><button class="secondary-action" id="onlineLeaveButton" type="button">ホームに戻る</button></div>
       </div>
     </section>
 
     <section class="screen" data-screen="ranking" aria-labelledby="rankingTitle">
-      <div class="section-heading">
-        <button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button>
-        <div><small>LEADERBOARD</small><h2 id="rankingTitle">ランキング</h2></div>
-      </div>
+      <div class="section-heading"><button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button><div><small>LEADERBOARD</small><h2 id="rankingTitle">ランキング</h2></div></div>
       <div class="ranking-panel">
-        <div class="ranking-filter-preview" aria-label="ランキング条件のプレビュー">
-          <span class="is-active">3桁</span><span>5問</span><span>残機3</span>
-        </div>
-        <ol class="ranking-preview-list">
-          <li><b>1</b><span><strong>COMING SOON</strong><small>記録API接続後に表示</small></span><time>--:--.-</time></li>
-          <li><b>2</b><span><strong>YOUR RECORD</strong><small>ゲスト記録は端末に保存</small></span><time>--:--.-</time></li>
-          <li><b>3</b><span><strong>CHALLENGER</strong><small>条件完全一致で比較</small></span><time>--:--.-</time></li>
-        </ol>
-        <p>無限対戦のプレイ基盤が完成したため、次に署名済みログインセッションとスプレッドシート保存を接続します。</p>
+        <form class="ranking-filters" id="rankingFilters">
+          <fieldset><legend>桁数</legend><div class="mini-choice-grid"><label><input type="checkbox" name="rankingDigit" value="3" checked /><span>3桁</span></label><label><input type="checkbox" name="rankingDigit" value="4" /><span>4桁</span></label><label><input type="checkbox" name="rankingDigit" value="5" /><span>5桁</span></label></div></fieldset>
+          <fieldset><legend>問題数</legend><div class="mini-segment"><label><input type="radio" name="rankingQuestions" value="5" checked /><span>5問</span></label><label><input type="radio" name="rankingQuestions" value="10" /><span>10問</span></label><label><input type="radio" name="rankingQuestions" value="infinity" /><span>∞</span></label></div></fieldset>
+          <fieldset><legend>残機</legend><div class="mini-segment"><label><input type="radio" name="rankingLives" value="1" /><span>1</span></label><label><input type="radio" name="rankingLives" value="3" checked /><span>3</span></label><label><input type="radio" name="rankingLives" value="5" /><span>5</span></label></div></fieldset>
+        </form>
+        <div class="ranking-status" id="rankingStatus" aria-live="polite">条件を読み込んでいます…</div>
+        <ol class="ranking-list" id="rankingList"></ol>
       </div>
     </section>
   </main>
 
-  <div class="modal-layer" id="modalLayer" hidden>
-    <div class="modal-backdrop" data-modal-close></div>
-    <section class="result-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="sheet-handle" aria-hidden="true"></div>
-      <div id="modalContent"></div>
-    </section>
-  </div>
-
+  <div class="modal-layer" id="modalLayer" hidden><div class="modal-backdrop" data-modal-close></div><section class="result-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="sheet-handle" aria-hidden="true"></div><div id="modalContent"></div></section></div>
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="/ten-freely/app.js"></script>
+  <script type="module" src="/ten-freely/online.js"></script>
+  <script type="module" src="/ten-freely/ranking.js"></script>
 </body>
 </html>
