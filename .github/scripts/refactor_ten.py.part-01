@@ -1,0 +1,65 @@
+from pathlib import Path
+import re, shutil
+
+root = Path.cwd()
+old_pub = root/'public'/'ten-freely'
+new_pub = root/'public'/'10を自由に'
+new_src = root/'src'/'10を自由に'
+new_pub.mkdir(parents=True, exist_ok=True)
+new_src.mkdir(parents=True, exist_ok=True)
+
+# ---------- Public shared files ----------
+shutil.copy2(old_pub/'expression-engine.js', new_pub/'expression-engine.js')
+shutil.copy2(old_pub/'online.js', new_pub/'online.js')
+
+# Calculator: retain the production calculator, add tutorial key policy without forking the UI.
+calc = (old_pub/'calculator.js').read_text()
+calc = calc.replace(
+'''    this.enabled = options.enabled !== false;\n    this.locked = false;\n    this.onSubmit = options.onSubmit || (() => {});''',
+'''    this.enabled = options.enabled !== false;\n    this.locked = false;\n    this.allowedValues = options.allowedValues ? new Set(options.allowedValues) : null;\n    this.allowedActions = options.allowedActions ? new Set(options.allowedActions) : null;\n    this.emphasizedValues = new Set(options.emphasizedValues || []);\n    this.hasInteracted = false;\n    this.onFirstInput = options.onFirstInput || (() => {});\n    this.onSubmit = options.onSubmit || (() => {});''')
+calc = calc.replace(
+'''    if (key.digit !== undefined) button.dataset.digit = String(key.digit);\n    button.setAttribute("aria-label", key.aria || key.label);''',
+'''    if (key.digit !== undefined) button.dataset.digit = String(key.digit);\n    if (key.value !== undefined && this.emphasizedValues.has(key.value)) button.classList.add("is-emphasized");\n    button.setAttribute("aria-label", key.aria || key.label);''')
+calc = calc.replace(
+'''    this.problem = String(problem);\n    this.problemCounts = countDigits(this.problem);\n    this.locked = false;''',
+'''    this.problem = String(problem);\n    this.problemCounts = countDigits(this.problem);\n    this.locked = false;\n    this.hasInteracted = false;''')
+calc = calc.replace(
+'''  setLocked(locked) {\n    this.locked = Boolean(locked);\n    this.renderKeys();\n  }\n\n  getExpression()''',
+'''  setLocked(locked) {\n    this.locked = Boolean(locked);\n    this.renderKeys();\n  }\n\n  setKeyPolicy({ allowedValues = null, allowedActions = null, emphasizedValues = [] } = {}) {\n    this.allowedValues = allowedValues ? new Set(allowedValues) : null;\n    this.allowedActions = allowedActions ? new Set(allowedActions) : null;\n    this.emphasizedValues = new Set(emphasizedValues);\n    for (const button of this.refs.calculator.querySelectorAll(".calc-key")) {\n      button.classList.toggle("is-emphasized", this.emphasizedValues.has(button.dataset.value));\n    }\n    this.renderKeys();\n  }\n\n  isValueAllowed(value) {\n    if (isDigitToken(value)) return true;\n    return !this.allowedValues || this.allowedValues.has(value);\n  }\n\n  isActionAllowed(action) {\n    return !this.allowedActions || this.allowedActions.has(action);\n  }\n\n  getExpression()''')
+calc = calc.replace(
+'''  insert(token) {\n    if (isDigitToken(token)) {''',
+'''  insert(token) {\n    if (!this.isValueAllowed(token)) {\n      this.setStatus("このレッスンでは、まだ使わない記号です。", "warning");\n      return;\n    }\n    if (isDigitToken(token)) {''')
+calc = calc.replace(
+'''    this.tokens.splice(this.cursor, 0, token);\n    this.cursor += 1;''',
+'''    const wasEmpty = this.tokens.length === 0;\n    this.tokens.splice(this.cursor, 0, token);\n    this.cursor += 1;\n    if (wasEmpty && !this.hasInteracted) {\n      this.hasInteracted = true;\n      this.onFirstInput(this);\n    }''')
+calc = calc.replace(
+'''      const digitRaw = button.dataset.digit;\n      let disabled = !this.enabled || this.locked;''',
+'''      const digitRaw = button.dataset.digit;\n      const action = button.dataset.action;\n      const value = button.dataset.value;\n      let disabled = !this.enabled || this.locked;\n      let policyDisabled = false;\n      if (action === "insert" && digitRaw === undefined && !this.isValueAllowed(value)) policyDisabled = true;\n      if (action !== "insert" && !this.isActionAllowed(action)) policyDisabled = true;\n      disabled ||= policyDisabled;\n      button.classList.toggle("is-policy-disabled", policyDisabled);''')
+calc = calc.replace(
+'''    const key = event.key;\n    const direct = /^[0-9()+\\-*/^!|]$/u.test(key) ? key : null;\n    if (direct) {\n      event.preventDefault();\n      this.onActivity();\n      this.insert(direct);''',
+'''    const key = event.key;\n    const direct = /^[0-9()+\\-*/^!|]$/u.test(key) ? key : null;\n    if (direct && this.isValueAllowed(direct)) {\n      event.preventDefault();\n      this.onActivity();\n      this.insert(direct);''')
+calc = calc.replace(
+'''    if (key === "Enter" || key === "=") {\n      event.preventDefault(); this.submit();\n    } else if (key === "Backspace") {\n      event.preventDefault(); this.deleteBeforeCursor();\n    } else if (key === "ArrowLeft") {\n      event.preventDefault(); this.moveCursor(-1);\n    } else if (key === "ArrowRight") {\n      event.preventDefault(); this.moveCursor(1);\n    } else if (key === "Escape") {\n      event.preventDefault(); this.clear();\n    }''',
+'''    if ((key === "Enter" || key === "=") && this.isActionAllowed("submit")) {\n      event.preventDefault(); this.submit();\n    } else if (key === "Backspace" && this.isActionAllowed("delete")) {\n      event.preventDefault(); this.deleteBeforeCursor();\n    } else if (key === "ArrowLeft" && this.isActionAllowed("left")) {\n      event.preventDefault(); this.moveCursor(-1);\n    } else if (key === "ArrowRight" && this.isActionAllowed("right")) {\n      event.preventDefault(); this.moveCursor(1);\n    } else if (key === "Escape" && this.isActionAllowed("clear")) {\n      event.preventDefault(); this.clear();\n    }''')
+(new_pub/'calculator.js').write_text(calc)
+
+# ---------- Tutorial HTML ----------
+html = (old_pub/'index.html').read_text()
+html = html.replace('/ten-freely/styles.css', '/10を自由に/style.css')
+html = html.replace('  <link rel="stylesheet" href="/ten-freely/online-ranking.css" />\n', '')
+html = html.replace('読むだけではなく、実際に押して覚える5ステップ。', '知りたい記号だけ選び、実際の電卓を触って覚える。')
+old_tutorial = re.search(r'    <section class="screen" data-screen="tutorial".*?    </section>\n\n    <section class="screen" data-screen="online"', html, re.S)
+if not old_tutorial:
+    raise RuntimeError('tutorial section not found')
+new_tutorial = '''    <section class="screen" data-screen="tutorial" aria-labelledby="tutorialTitle">
+      <div class="section-heading">
+        <button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button>
+        <div><small>LEARN BY DOING</small><h2 id="tutorialTitle">知りたいところだけ、実際に試す</h2></div>
+      </div>
+
+      <div class="tutorial-hub" id="tutorialHub">
+        <div class="tutorial-hub-intro">
+          <div>
+            <span class="tutorial-hub-kicker">OPTIONAL MINI LESSONS</span>
+            <h3>順番は自由。1レッスン約1〜2分。</h3>
+            <p>本番と同じ電卓を使います。各レッスンでは、今使うキーだけが有効です。途中で一覧へ戻っても、いつでも再開できます。</p>
