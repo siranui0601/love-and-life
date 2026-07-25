@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#050505" />
+  <meta name="color-scheme" content="dark" />
+  <title>10を自由に｜不知火遊技場</title>
+  <meta name="description" content="与えられた数字をすべて使い、自由な数式で10を作る計算パズル。" />
+  <link rel="stylesheet" href="/ten-freely/styles.css" />
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <span class="ambient-orb ambient-orb-a"></span>
+    <span class="ambient-orb ambient-orb-b"></span>
+    <span class="ambient-grid"></span>
+  </div>
+
+  <main class="app-shell" id="appShell">
+    <header class="top-bar">
+      <a class="top-bar-back" href="/" aria-label="不知火遊技場へ戻る">
+        <span aria-hidden="true">‹</span>
+        <span>遊技場</span>
+      </a>
+      <button class="brand-button" id="homeBrandButton" type="button" aria-label="10を自由にのホームへ戻る">
+        <span class="brand-mark" aria-hidden="true">10</span>
+        <span class="brand-copy">
+          <strong>10を自由に</strong>
+          <small>MAKE TEN, YOUR WAY.</small>
+        </span>
+      </button>
+      <div class="auth-pill" id="authPill" aria-live="polite">ゲスト</div>
+    </header>
+
+    <section class="screen is-active" data-screen="home" aria-labelledby="homeTitle">
+      <div class="hero">
+        <div class="hero-kicker"><span></span> CALCULATION PLAYGROUND</div>
+        <h1 id="homeTitle"><span>答えは10。</span><br />そこまでの道は、自由。</h1>
+        <p>表示された数字をすべて一度ずつ使って、数式の結果を10にしよう。四則演算から、最大9重の多重階乗まで。</p>
+        <div class="hero-stats" aria-label="出題規模">
+          <div><strong>110,992</strong><span>出題可能な数列</span></div>
+          <div><strong>13</strong><span>使える記号</span></div>
+          <div><strong>∞</strong><span>考え方の数</span></div>
+        </div>
+      </div>
+
+      <div class="mode-grid" aria-label="ゲームモード">
+        <button class="mode-card mode-card-online" type="button" data-open-screen="online">
+          <span class="mode-card-shine" aria-hidden="true"></span>
+          <span class="mode-icon" aria-hidden="true">⇄</span>
+          <span class="mode-copy">
+            <small>REALTIME DUEL</small>
+            <strong>オンライン対戦</strong>
+            <span>同じ数字を見て、先に10を作った方の勝ち。</span>
+          </span>
+          <span class="mode-arrow" aria-hidden="true">→</span>
+        </button>
+
+        <button class="mode-card mode-card-primary" type="button" data-open-screen="solo-settings">
+          <span class="mode-card-shine" aria-hidden="true"></span>
+          <span class="mode-icon" aria-hidden="true">∞</span>
+          <span class="mode-copy">
+            <small>SOLO CHALLENGE</small>
+            <strong>無限対戦</strong>
+            <span>桁数・残機・問題数を選んで、自分の限界へ。</span>
+          </span>
+          <span class="mode-arrow" aria-hidden="true">→</span>
+        </button>
+
+        <button class="mode-card" type="button" data-open-screen="tutorial">
+          <span class="mode-icon" aria-hidden="true">?</span>
+          <span class="mode-copy">
+            <small>LEARN BY DOING</small>
+            <strong>チュートリアル</strong>
+            <span>読むだけではなく、実際に押して覚える5ステップ。</span>
+          </span>
+          <span class="mode-arrow" aria-hidden="true">→</span>
+        </button>
+
+        <button class="mode-card" type="button" data-open-screen="ranking">
+          <span class="mode-icon" aria-hidden="true">⌁</span>
+          <span class="mode-copy">
+            <small>LEADERBOARD</small>
+            <strong>ランキング</strong>
+            <span>同じ条件のプレイヤーと、速さ・正解数を比較。</span>
+          </span>
+          <span class="mode-arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+
+      <p class="home-footnote">ログインなしでも遊べます。ログインすると記録がランキングへ反映されます。</p>
+    </section>
+
+    <section class="screen" data-screen="solo-settings" aria-labelledby="soloSettingsTitle">
+      <div class="section-heading">
+        <button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button>
+        <div><small>SOLO CHALLENGE</small><h2 id="soloSettingsTitle">挑戦条件を選ぶ</h2></div>
+      </div>
+
+      <form class="settings-card" id="soloSettingsForm">
+        <fieldset>
+          <legend><span>01</span><strong>桁数</strong><small>1〜3個選択</small></legend>
+          <div class="choice-grid choice-grid-three" data-choice-group="digitLengths">
+            <label class="choice-tile"><input type="checkbox" name="digitLength" value="3" checked /><span><strong>3桁</strong><small>全992問</small></span></label>
+            <label class="choice-tile"><input type="checkbox" name="digitLength" value="4" /><span><strong>4桁</strong><small>全10,000問</small></span></label>
+            <label class="choice-tile"><input type="checkbox" name="digitLength" value="5" /><span><strong>5桁</strong><small>全100,000問</small></span></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span>02</span><strong>残機</strong><small>不正解で1つ減少</small></legend>
+          <div class="segmented-control" data-choice-group="lives">
+            <label><input type="radio" name="lives" value="1" /><span>1</span></label>
+            <label><input type="radio" name="lives" value="3" checked /><span>3</span></label>
+            <label><input type="radio" name="lives" value="5" /><span>5</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span>03</span><strong>問題数</strong><small>∞は全問題制覇まで</small></legend>
+          <div class="segmented-control" data-choice-group="questionCount">
+            <label><input type="radio" name="questionCount" value="5" checked /><span>5問</span></label>
+            <label><input type="radio" name="questionCount" value="10" /><span>10問</span></label>
+            <label><input type="radio" name="questionCount" value="infinity" /><span>∞</span></label>
+          </div>
+        </fieldset>
+
+        <div class="settings-summary" id="settingsSummary" aria-live="polite"></div>
+        <button class="primary-action" id="startSoloButton" type="submit"><span>ゲームスタート</span><span aria-hidden="true">→</span></button>
+      </form>
+    </section>
+
+    <section class="screen" data-screen="game" aria-labelledby="gameScreenTitle">
+      <h2 class="visually-hidden" id="gameScreenTitle">計算ゲーム</h2>
+      <div class="game-topline">
+        <div class="game-progress">
+          <span id="gameModeLabel">無限対戦</span>
+          <strong id="gameProgressText">1 / 5</strong>
+        </div>
+        <div class="game-lives" id="gameLives" aria-label="残機"></div>
+        <div class="game-timer" id="gameTimer">00:00.0</div>
+      </div>
+      <div id="inactivityNotice" class="inactivity-notice" role="status" aria-live="polite" hidden>⚠️ 無操作状態が続いています</div>
+      <div id="calculatorMount"></div>
+    </section>
+
+    <section class="screen" data-screen="tutorial" aria-labelledby="tutorialTitle">
+      <div class="section-heading">
+        <button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button>
+        <div><small>LEARN BY DOING</small><h2 id="tutorialTitle">5ステップで、10を作る</h2></div>
+      </div>
+      <div class="tutorial-layout">
+        <div class="tutorial-copy-card">
+          <div class="tutorial-progress"><span id="tutorialStepLabel">STEP 1 / 5</span><div><i id="tutorialProgressBar"></i></div></div>
+          <p class="tutorial-eyebrow" id="tutorialEyebrow">まずは足し算</p>
+          <h3 id="tutorialHeading">数字を一度ずつ使おう</h3>
+          <p id="tutorialDescription"></p>
+          <div class="tutorial-tip" id="tutorialTip"></div>
+          <div class="tutorial-actions">
+            <button class="secondary-action" id="tutorialSkipButton" type="button">スキップ</button>
+            <button class="primary-action compact" id="tutorialNextButton" type="button" disabled><span>次へ</span><span>→</span></button>
+          </div>
+        </div>
+        <div id="tutorialCalculatorMount"></div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="online" aria-labelledby="onlineTitle">
+      <div class="section-heading">
+        <button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button>
+        <div><small>REALTIME DUEL</small><h2 id="onlineTitle">オンライン対戦</h2></div>
+      </div>
+      <div class="online-panel">
+        <div class="online-radar" aria-hidden="true"><span></span><i></i><b>10</b></div>
+        <h3>対戦ルーム基盤を準備中</h3>
+        <p>オリジン魔法陣の「ルーム復帰」「再接続」「再戦待機」を引き継ぎ、数式の正解判定だけをサーバー主導にした対戦基盤を接続します。</p>
+        <div class="online-actions">
+          <button type="button" disabled>ルームを作成</button>
+          <button type="button" disabled>ルームに参加</button>
+        </div>
+        <span class="development-badge">FOUNDATION IN PROGRESS</span>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="ranking" aria-labelledby="rankingTitle">
+      <div class="section-heading">
+        <button class="round-back" type="button" data-open-screen="home" aria-label="ホームへ戻る">‹</button>
+        <div><small>LEADERBOARD</small><h2 id="rankingTitle">ランキング</h2></div>
+      </div>
+      <div class="ranking-panel">
+        <div class="ranking-filter-preview" aria-label="ランキング条件のプレビュー">
+          <span class="is-active">3桁</span><span>5問</span><span>残機3</span>
+        </div>
+        <ol class="ranking-preview-list">
+          <li><b>1</b><span><strong>COMING SOON</strong><small>記録API接続後に表示</small></span><time>--:--.-</time></li>
+          <li><b>2</b><span><strong>YOUR RECORD</strong><small>ゲスト記録は端末に保存</small></span><time>--:--.-</time></li>
+          <li><b>3</b><span><strong>CHALLENGER</strong><small>条件完全一致で比較</small></span><time>--:--.-</time></li>
+        </ol>
+        <p>無限対戦のプレイ基盤が完成したため、次に署名済みログインセッションとスプレッドシート保存を接続します。</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-layer" id="modalLayer" hidden>
+    <div class="modal-backdrop" data-modal-close></div>
+    <section class="result-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div id="modalContent"></div>
+    </section>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+
+  <script type="module" src="/ten-freely/app.js"></script>
+</body>
+</html>
