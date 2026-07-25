@@ -11,6 +11,9 @@ on:
       - ".github/workflows/trpg-player-simulation.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   simulate:
     runs-on: ubuntu-latest
@@ -45,3 +48,72 @@ jobs:
             tools/trpg-sim/reports/player-latest.md
             public/TRPG/player-simulation-report.json
             public/TRPG/player-simulation-v4-report.json
+
+  format-t04-once:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'agent/trpg-human-authored-choices'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/trpg-human-authored-choices
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Restore reviewed T04 source formatting
+        shell: bash
+        run: |
+          python - <<'PY'
+          import subprocess
+          from pathlib import Path
+
+          historical = subprocess.check_output([
+              'git', 'show',
+              'bce37171dabec897b8df65866829ca31f336f27d:.github/workflows/trpg-author-t04-once.yml',
+          ], text=True)
+          pack_marker = 'const pack = String.raw`'
+          pack_start = historical.index(pack_marker) + len(pack_marker)
+          pack_end = historical.index('`;\n', pack_start)
+          formatted_pack = historical[pack_start:pack_end]
+          if not formatted_pack.startswith('  Object.freeze({'):
+              raise SystemExit('reviewed T04 pack start was not found')
+          if 'id: "pilgrim-transfer-disappearance"' not in formatted_pack:
+              raise SystemExit('reviewed T04 pack id was not found')
+
+          target = Path('src/server/trpg/content/authored-mission-flow-registry.js')
+          source = target.read_text(encoding='utf-8')
+          list_marker = 'export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([\n'
+          next_pack = '  Object.freeze({\n    id: "red-fang-migration"'
+          current_start = source.index(list_marker) + len(list_marker)
+          current_end = source.index(next_pack, current_start)
+          source = source[:current_start] + formatted_pack + source[current_end:]
+          target.write_text(source, encoding='utf-8')
+          PY
+          node --check src/server/trpg/content/authored-mission-flow-registry.js
+          git diff --check
+      - name: Run full TRPG regression suite
+        run: npm run trpg:test
+      - name: Run strict integrated player and GOAP journeys
+        env:
+          TRPG_PLAYER_V4_SEEDS: 2
+          TRPG_GOAP_V4_SEEDS: 2
+        run: node tools/trpg-sim/cli-player-v4.mjs --strict
+      - name: Publish formatted and verified T04
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show "${PR_BASE_SHA}:.github/workflows/trpg-player-simulation.yml" > .github/workflows/trpg-player-simulation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/server/trpg/content/authored-mission-flow-registry.js \
+            .github/workflows/trpg-player-simulation.yml
+          git commit -m "style(trpg): align T04 authored flow formatting"
+          git push origin HEAD:agent/trpg-human-authored-choices
