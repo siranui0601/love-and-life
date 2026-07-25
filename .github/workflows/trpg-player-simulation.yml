@@ -59,7 +59,6 @@ jobs:
     env:
       GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
       PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
     steps:
       - uses: actions/checkout@v4
@@ -71,7 +70,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Extract and execute reviewed T04 authoring blocks
+      - name: Validate configured repository secrets
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          assert.ok(process.env.GEMINI_API_KEY, 'GEMINI_API_KEY must be configured');
+          const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY ?? '{}');
+          assert.ok(serviceAccount.client_email, 'service account client_email must be configured');
+          assert.ok(serviceAccount.private_key, 'service account private_key must be configured');
+          console.log('Repository secrets are configured; no secret values were printed.');
+          NODE
+      - name: Extract and execute reviewed T04 authoring block
         shell: bash
         run: |
           python - <<'PY'
@@ -93,11 +103,10 @@ jobs:
                   current.append(line[10:] if line.startswith('          ') else line.lstrip())
           if len(blocks) != 2:
               raise SystemExit(f'expected 2 embedded Node blocks, found {len(blocks)}')
-          for index, block in enumerate(blocks, start=1):
-              Path(f'/tmp/trpg-t04-block-{index}.mjs').write_text(block, encoding='utf-8')
+          Path('/tmp/trpg-t04-author.mjs').write_text(blocks[1], encoding='utf-8')
+          print(f'extracted reviewed T04 authoring block: {len(blocks[1])} characters')
           PY
-          node /tmp/trpg-t04-block-1.mjs
-          node /tmp/trpg-t04-block-2.mjs
+          node /tmp/trpg-t04-author.mjs
       - name: Run full TRPG regression suite
         run: npm run trpg:test
       - name: Publish tested T04 and remove temporary authoring files
