@@ -86,7 +86,6 @@ form.addEventListener("change", () => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(loadRanking, 180);
 });
-for (const opener of document.querySelectorAll('[data-open-screen="ranking"]')) opener.addEventListener("click", loadRanking);
 window.addEventListener("ten-freely:screen-changed", (event) => {
   if (event.detail?.screen === "ranking") loadRanking();
 });
