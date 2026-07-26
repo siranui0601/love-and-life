@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   applyAuthoredMissionFlowCatalogOverrides,
   AUTHORED_MISSION_FLOW_PACKS,
+  ensureAuthoredMissionFlowState,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 import { resolveAuthoredScene } from "../../../src/server/trpg/content/authored-scene-registry.js";
 import {
@@ -15,8 +16,8 @@ function pack(troubleId) {
   return AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.troubleId === troubleId);
 }
 
-test("T03 through T06 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
-  for (const troubleId of ["T03", "T04", "T05", "T06"]) {
+test("T03 through T07 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
+  for (const troubleId of ["T03", "T04", "T05", "T06", "T07"]) {
     const missionPack = pack(troubleId);
     assert.ok(missionPack);
     assert.equal(missionPack.resolution.choices.length, 3);
@@ -155,6 +156,93 @@ test("T06 preserves active smuggler interception and critical armed-worker escal
   });
   assert.match(battle.labelByTroubleStatus.active, /密輸運び屋/u);
   assert.match(battle.labelByTroubleStatus.critical, /一部労働者/u);
+});
+
+
+
+test("T07 preserves agency, deception, and trafficking-route evidence before three freedom-respecting outcomes", () => {
+  const missionPack = pack("T07");
+  assert.ok(missionPack);
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(new Set(missionPack.hearing.choices.map((choice) => choice.id)).size, 3);
+  assert.deepEqual(missionPack.investigation.requiredEvidenceGroups, [
+    [
+      "T07-EVIDENCE-TIA-LETTER-VOLUNTARY-DEPARTURE",
+      "T07-EVIDENCE-MAZE-DIARY-OUTSIDE-WISH",
+      "T07-EVIDENCE-BLACK-LAMP-LYSIA-STATEMENT",
+    ],
+    [
+      "T07-EVIDENCE-DAMIAN-FALSE-GUIDE-CONTRACT",
+      "T07-EVIDENCE-CAPITAL-INN-BINDING-ORDER",
+    ],
+    [
+      "T07-EVIDENCE-DAMIAN-BUYER-ROUTE",
+      "T07-EVIDENCE-CRIME-DOCK-MANIFEST",
+      "T07-EVIDENCE-CALVAN-MARKET-LEDGER",
+    ],
+  ]);
+  const rescue = missionPack.catalogOverride.battle;
+  assert.equal(rescue.encounterId, "ENC-0042");
+  assert.deepEqual(rescue.timelineVariants.map((variant) => [
+    variant.minDay,
+    variant.maxDay ?? null,
+    variant.targetLocation,
+    variant.targetFacilityId,
+    variant.actionType,
+    variant.encounterId ?? null,
+  ]), [
+    [18, 24, "森", "LOC_FOREST_EDGE", "investigate", null],
+    [25, 30, "森", "LOC_FOREST_EDGE", "investigate", null],
+    [31, 38, "王都", "LOC_CAP_LOWER_INN", "investigate", null],
+    [39, null, "犯罪都市", "LOC_CRIME_SLAVE_MARKET", "missionBattle", "ENC-0042"],
+  ]);
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "protected_independent_stay",
+    "voluntary_return_with_youth_charter",
+    "forest_liaison_waystation",
+  ]);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.worldEffect.aftermathPlans.length >= 2
+    && route.worldEffect.followups.length >= 2));
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.narrativeByTroubleStatus?.critical
+    && route.worldEffect.factIdByTroubleStatus?.critical
+    && route.worldEffect.textByTroubleStatus?.critical));
+});
+
+test("alternative evidence groups complete T07 with one valid proof from each class", () => {
+  const missionPack = pack("T07");
+  const mission = {
+    id: "MSN-T07",
+    steps: [
+      { id: "hear", type: "conversation", required: 1 },
+      { id: "investigate", type: "investigate", required: 3 },
+      { id: "battle", type: "battle", required: 1 },
+      { id: "resolve", type: "resolve", required: 1 },
+    ],
+  };
+  const catalog = { special: [mission], byId: new Map([[mission.id, mission]]) };
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+  const selectedEvidence = [
+    "T07-EVIDENCE-TIA-LETTER-VOLUNTARY-DEPARTURE",
+    "T07-EVIDENCE-CAPITAL-INN-BINDING-ORDER",
+    "T07-EVIDENCE-CRIME-DOCK-MANIFEST",
+  ];
+  const runtime = {
+    playerState: {
+      catalog,
+      missions: {
+        "MSN-T07": {
+          status: "active",
+          progress: { hear: 1, investigate: 0, battle: 0, resolve: 0 },
+          discoveries: selectedEvidence.map((id) => ({ id })),
+        },
+      },
+    },
+  };
+  const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+  assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
+  assert.equal(runtime.playerState.missions["MSN-T07"].progress.investigate, 3);
 });
 
 test("the generic NPC life engine travels, performs, and retires one authored aftermath plan", () => {

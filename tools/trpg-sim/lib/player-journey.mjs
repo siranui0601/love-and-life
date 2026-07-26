@@ -18,6 +18,7 @@ import {
   needsUtility,
   publicPlayerNeeds,
 } from "./player-needs.mjs";
+import { resolveMissionStepVariant } from "../../../src/server/trpg/content/mission-step-variant.js";
 
 export const GAME_END_MINUTE = 99 * 1440 + 14 * 60;
 export const PLAYER_PROFILES = Object.freeze([
@@ -1038,21 +1039,23 @@ function missionActions(state, catalog) {
     const runtime = state.missions[missionDefinition.id];
     if (runtime.status !== "active") continue;
     if (!playerKnowsSpecialMission(state, missionDefinition)) continue;
-    const step = currentStep(missionDefinition, runtime);
+    const rawStep = currentStep(missionDefinition, runtime);
+    const step = resolveMissionStepVariant(rawStep, state.day);
     if (!step) continue;
     const location = step.targetLocation ?? missionDefinition.targetLocations[0];
     if (location && location !== state.player.location) continue;
     if (step.targetFacilityId && step.targetFacilityId !== state.player.facilityId) continue;
+    const defaultMinutes = step.type === "conversation" ? 9 + missionDefinition.difficulty * 2
+      : step.type === "investigate" ? 22 + missionDefinition.difficulty * 5
+        : step.type === "battle" ? 25
+          : 18;
     const base = {
       missionId: missionDefinition.id,
       stepId: step.id,
       difficulty: missionDefinition.difficulty,
       finalDay: missionDefinition.finalDay,
       id: `ACTION:${missionDefinition.id}:${step.id}`,
-      minutes: step.type === "conversation" ? 9 + missionDefinition.difficulty * 2
-        : step.type === "investigate" ? 22 + missionDefinition.difficulty * 5
-          : step.type === "battle" ? 25
-            : 18,
+      minutes: Number(step.minutes ?? defaultMinutes),
     };
     if (missionDefinition.id === "MSN-T01" && step.id === "search" && step.type === "investigate") {
       result.push(...t01SearchActions(base, runtime, step));
@@ -1067,11 +1070,17 @@ function missionActions(state, catalog) {
     const label = troubleStatus
       ? step.labelByTroubleStatus?.[troubleStatus] ?? step.label
       : step.label;
+    const actionType = step.actionType
+      ?? (step.type === "battle" ? "missionBattle" : step.type === "resolve" ? "resolveMission" : step.type);
     result.push({
       ...base,
-      type: step.type === "battle" ? "missionBattle" : step.type === "resolve" ? "resolveMission" : step.type,
+      type: actionType,
       encounterId,
       label,
+      discoveryId: step.discoveryId ?? null,
+      discoveryText: step.discoveryText ?? null,
+      approachId: step.approachId ?? null,
+      suppressRandomEncounter: step.suppressRandomEncounter === true,
     });
   }
   return result;
@@ -1181,7 +1190,10 @@ function objectiveMovementAction(state, model, catalog, profile) {
   const active = catalog.special
     .map((missionDefinition) => ({ mission: missionDefinition, runtime: state.missions[missionDefinition.id] }))
     .filter((entry) => entry.runtime.status === "active" && playerKnowsSpecialMission(state, entry.mission))
-    .map((entry) => ({ ...entry, step: currentStep(entry.mission, entry.runtime) }))
+    .map((entry) => {
+      const rawStep = currentStep(entry.mission, entry.runtime);
+      return { ...entry, step: resolveMissionStepVariant(rawStep, state.day) };
+    })
     .filter((entry) => entry.step)
     .sort((left, right) => left.mission.finalDay - right.mission.finalDay || right.mission.difficulty - left.mission.difficulty);
   if (active.length && profile.story >= 0.55) {
@@ -1535,7 +1547,9 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
       inc(state.player.evidenceByTrouble, missionDefinition.troubleId);
       inc(state.progress, "investigation.total");
       const chance = 0.04 + missionDefinition.difficulty * 0.015;
-      if (!state.tuning.probeMode && unit(state.seed, action.id, state.metrics.actions) < chance) {
+      if (!action.suppressRandomEncounter
+        && !state.tuning.probeMode
+        && unit(state.seed, action.id, state.metrics.actions) < chance) {
         const encounter = selectEncounter(state, data, profile, `${state.seed}:investigate:${action.id}:${state.metrics.actions}`);
         if (encounter) output.battle = runBattle(state, model, data, skills, profile, encounter.id, `${state.seed}:investigate:${state.metrics.battles}:${encounter.id}`);
       }

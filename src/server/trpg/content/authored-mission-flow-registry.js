@@ -1,11 +1,14 @@
+import { resolveMissionStepVariant } from "./mission-step-variant.js";
+import { T07_RUNAWAY_ELF_TRAFFICKING_PACK } from "./authored/missions/t07-runaway-elf-trafficking.js";
 import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";
 
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v6";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v7";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 
 export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
+  T07_RUNAWAY_ELF_TRAFFICKING_PACK,
   T06_PORT_LABOR_UNREST_PACK,
   Object.freeze({
     id: "trade-lord-poisoning",
@@ -1625,11 +1628,18 @@ function freshState(pack) {
   };
 }
 
+function requiredEvidenceGroups(pack) {
+  return [
+    ...(pack.investigation.requiredEvidenceIds ?? []).map((evidenceId) => [evidenceId]),
+    ...(pack.investigation.requiredEvidenceGroups ?? []).map((group) => [...group]),
+  ].filter((group) => group.length > 0);
+}
+
 function investigationRequirementsMet(pack, flow) {
   const evidenceIds = new Set(flow?.evidenceIds ?? []);
   if (evidenceIds.size < Number(pack.investigation.requiredEvidenceCount ?? 0)) return false;
-  return (pack.investigation.requiredEvidenceIds ?? [])
-    .every((evidenceId) => evidenceIds.has(evidenceId));
+  return requiredEvidenceGroups(pack)
+    .every((group) => group.some((evidenceId) => evidenceIds.has(evidenceId)));
 }
 
 function syncInvestigationProgress(runtime, pack, flow) {
@@ -1638,19 +1648,21 @@ function syncInvestigationProgress(runtime, pack, flow) {
   const progress = missionRuntime(runtime, pack)?.progress;
   if (!step || !progress) return;
   const required = Math.max(1, Number(step.required ?? 1));
-  const mandatoryIds = new Set(pack.investigation.requiredEvidenceIds ?? []);
-  if (mandatoryIds.size === 0) return;
+  const mandatoryGroups = requiredEvidenceGroups(pack);
+  if (mandatoryGroups.length === 0) return;
   if (investigationRequirementsMet(pack, flow)) {
     progress[step.id] = required;
     return;
   }
   const evidenceIds = new Set(flow?.evidenceIds ?? []);
-  const mandatoryFound = [...mandatoryIds].filter((id) => evidenceIds.has(id)).length;
+  const mandatoryFound = mandatoryGroups
+    .filter((group) => group.some((id) => evidenceIds.has(id))).length;
+  const mandatoryUniverse = new Set(mandatoryGroups.flat());
   const nonMandatoryNeeded = Math.max(
     0,
-    Number(pack.investigation.requiredEvidenceCount ?? required) - mandatoryIds.size,
+    Number(pack.investigation.requiredEvidenceCount ?? required) - mandatoryGroups.length,
   );
-  const nonMandatoryFound = [...evidenceIds].filter((id) => !mandatoryIds.has(id)).length;
+  const nonMandatoryFound = [...evidenceIds].filter((id) => !mandatoryUniverse.has(id)).length;
   progress[step.id] = Math.min(
     required - 1,
     mandatoryFound + Math.min(nonMandatoryNeeded, nonMandatoryFound),
@@ -2415,7 +2427,7 @@ export function authoredMissionFlowGuidance(runtime) {
   const pack = availablePack(runtime);
   if (!pack) return null;
   const flow = ensureAuthoredMissionFlowState(runtime, pack);
-  const step = currentStep(runtime, pack);
+  const step = resolveMissionStepVariant(currentStep(runtime, pack), runtime.playerState.day);
   if (!step) return null;
   if (step.id === pack.hearing.stepId) return {
     missionId: pack.missionId,
@@ -2449,7 +2461,7 @@ export function authoredMissionFlowGuidance(runtime) {
       actionPanel: null,
     };
   }
-  const guidance = pack.stepGuidance?.[step.id] ?? pack.postInvestigationGuidance;
+  const guidance = step.guidance ?? pack.stepGuidance?.[step.id] ?? pack.postInvestigationGuidance;
   const targetFacilityId = step.targetFacilityId ?? null;
   return {
     missionId: pack.missionId,
