@@ -1,0 +1,33 @@
+name: Temporary T07 generated-report cleanup
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/trpg-t07-cleanup.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/trpg-human-authored-choices
+          fetch-depth: 0
+      - name: Remove generated reports and publish cleanup
+        shell: bash
+        run: |
+          git checkout 4ade0c8cc80c69927ce040b0b6b1ee3deb1e685e -- \
+            public/TRPG/player-simulation-report.json \
+            tools/trpg-sim/reports/player-latest.md
+          rm -f \
+            public/TRPG/player-simulation-v4-report.json \
+            tools/trpg-sim/reports/player-latest.json \
+            tools/trpg-sim/reports/player-v4-latest.json \
+            tools/trpg-sim/reports/player-v4-latest.md
+          rm -f .github/workflows/trpg-t07-cleanup.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: remove T07 generated simulation reports"
+          git push origin HEAD:agent/trpg-human-authored-choices
