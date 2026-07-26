@@ -1,3 +1,173 @@
+name: Temporary T06 integration and validation
+
+on:
+  pull_request:
+    paths:
+      - "src/server/trpg/**"
+      - "tools/trpg-sim/**"
+      - ".github/workflows/trpg-player-simulation.yml"
+      - ".github/workflows/t06-authoring.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/trpg-human-authored-choices
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Connect T06 pack and add contracts
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path(".")
+          module_path = root / "src/server/trpg/content/authored/missions/t06-port-labor-unrest.js"
+          if not module_path.exists():
+              raise SystemExit("T06 module is missing")
+
+          registry_path = root / "src/server/trpg/content/authored-mission-flow-registry.js"
+          registry = registry_path.read_text(encoding="utf-8")
+          if "T06_PORT_LABOR_UNREST_PACK" not in registry:
+              old = 'export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v5";'
+              new = 'import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";\n\nexport const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v6";'
+              if old not in registry:
+                  raise SystemExit("registry version marker not found")
+              registry = registry.replace(old, new, 1)
+              marker = "export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([\n"
+              if marker not in registry:
+                  raise SystemExit("pack array marker not found")
+              registry = registry.replace(marker, marker + "  T06_PORT_LABOR_UNREST_PACK,\n", 1)
+          registry_path.write_text(registry, encoding="utf-8")
+
+          scene_path = root / "src/server/trpg/content/authored-scene-registry.js"
+          scene = scene_path.read_text(encoding="utf-8")
+          old_scene = 'AUTHORED_CONTENT_VERSION = "authored-content-v8"'
+          if old_scene not in scene:
+              raise SystemExit("authored content version marker not found")
+          scene_path.write_text(
+              scene.replace(old_scene, 'AUTHORED_CONTENT_VERSION = "authored-content-v9"', 1),
+              encoding="utf-8",
+          )
+
+          aftermath_path = root / "tools/trpg-sim/test/authored-mission-aftermath.test.mjs"
+          aftermath = aftermath_path.read_text(encoding="utf-8")
+          aftermath = aftermath.replace(
+              'test("T03 through T05 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {',
+              'test("T03 through T06 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {',
+              1,
+          )
+          aftermath = aftermath.replace(
+              'for (const troubleId of ["T03", "T04", "T05"]) {',
+              'for (const troubleId of ["T03", "T04", "T05", "T06"]) {',
+              1,
+          )
+          t06_tests = r'''
+test("T06 separates labor harm, guild manipulation and criminal weapon supply before three port settlements", () => {
+  const missionPack = pack("T06");
+  assert.ok(missionPack);
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(new Set(missionPack.hearing.choices.map((choice) => choice.id)).size, 3);
+  assert.deepEqual(missionPack.investigation.requiredEvidenceIds, [
+    "T06-EVIDENCE-REAL-WAGE-AND-INJURY-LOSS",
+    "T06-EVIDENCE-GUILD-CONTRACT-MANIPULATION",
+    "T06-EVIDENCE-CRIME-WEAPON-SUPPLY",
+  ]);
+  assert.equal(missionPack.catalogOverride.battle.encounterId, "ENC-0033");
+  assert.deepEqual(missionPack.catalogOverride.battle.encounterIdByTroubleStatus, {
+    active: "ENC-0033",
+    critical: "ENC-0034",
+  });
+  assert.equal(missionPack.catalogOverride.battle.targetFacilityId, "LOC_TRADE_WAREHOUSE");
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "temporary_wage_truce",
+    "lord_backed_labor_compact",
+    "worker_cooperative_and_smuggling_watch",
+  ]);
+  assert.equal(new Set(missionPack.resolution.choices
+    .map((route) => route.worldEffect.factId)).size, 3);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.worldEffect.aftermathPlans.length >= 2
+    && route.worldEffect.followups.length >= 2));
+  assert.ok(missionPack.resolution.choices.slice(1).every((route) =>
+    route.narrativeByTroubleStatus?.critical
+    && route.worldEffect.factIdByTroubleStatus?.critical
+    && route.worldEffect.textByTroubleStatus?.critical));
+});
+
+test("T06 preserves active smuggler interception and critical armed-worker escalation in one authored battle step", () => {
+  const catalog = {
+    special: [{
+      id: "MSN-T06",
+      steps: [
+        { id: "hear", type: "conversation", targetLocation: "交易都市", targetFacilityId: "LOC_TRADE_PORT", required: 1 },
+        { id: "investigate", type: "investigate", targetLocation: "交易都市", targetFacilityId: "LOC_TRADE_PORT", required: 1 },
+        { id: "resolve", type: "resolve", targetLocation: "交易都市", targetFacilityId: "LOC_TRADE_GUILD", required: 1 },
+      ],
+    }],
+  };
+
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+
+  const battle = catalog.special[0].steps.find((step) => step.type === "battle");
+  assert.ok(battle);
+  assert.equal(battle.targetFacilityId, "LOC_TRADE_WAREHOUSE");
+  assert.equal(battle.encounterId, "ENC-0033");
+  assert.deepEqual(battle.encounterIdByTroubleStatus, {
+    active: "ENC-0033",
+    critical: "ENC-0034",
+  });
+  assert.match(battle.labelByTroubleStatus.active, /密輸運び屋/u);
+  assert.match(battle.labelByTroubleStatus.critical, /一部労働者/u);
+});
+
+'''
+          marker = 'test("the generic NPC life engine travels, performs, and retires one authored aftermath plan", () => {'
+          if 'test("T06 separates labor harm' not in aftermath:
+              if marker not in aftermath:
+                  raise SystemExit("aftermath insertion marker not found")
+              aftermath = aftermath.replace(marker, t06_tests + marker, 1)
+          aftermath_path.write_text(aftermath, encoding="utf-8")
+
+          isolation_path = root / "tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs"
+          isolation = isolation_path.read_text(encoding="utf-8")
+          isolation = isolation.replace(
+              'for (const troubleId of ["T03", "T04", "T05"]) {',
+              'for (const troubleId of ["T03", "T04", "T05", "T06"]) {',
+              1,
+          )
+          isolation_path.write_text(isolation, encoding="utf-8")
+          PY
+      - run: npm ci
+      - name: Focused authored mission checks
+        shell: bash
+        run: |
+          node --check src/server/trpg/content/authored/missions/t06-port-labor-unrest.js
+          node --check src/server/trpg/content/authored-mission-flow-registry.js
+          node --check src/server/trpg/content/authored-scene-registry.js
+          node --test tools/trpg-sim/test/authored-mission-aftermath.test.mjs
+          node --test tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs
+          git diff --check
+      - name: Full TRPG regression
+        run: npm run trpg:test
+      - name: Strict integrated player and GOAP journeys
+        env:
+          TRPG_PLAYER_V4_SEEDS: 2
+          TRPG_GOAP_V4_SEEDS: 2
+        run: node tools/trpg-sim/cli-player-v4.mjs --strict
+      - name: Restore workflow and publish clean implementation
+        shell: bash
+        run: |
+          cat > .github/workflows/trpg-player-simulation.yml <<'WORKFLOW'
 name: TRPG integrated player simulation
 
 on:
@@ -45,3 +215,16 @@ jobs:
             tools/trpg-sim/reports/player-latest.md
             public/TRPG/player-simulation-report.json
             public/TRPG/player-simulation-v4-report.json
+WORKFLOW
+          rm -f .github/workflows/t06-authoring.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/server/trpg/content/authored-mission-flow-registry.js
+          git add src/server/trpg/content/authored-scene-registry.js
+          git add tools/trpg-sim/test/authored-mission-aftermath.test.mjs
+          git add tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs
+          git add .github/workflows/trpg-player-simulation.yml
+          git add -u .github/workflows/t06-authoring.yml
+          git diff --cached --check
+          git commit -m "TRPG: T06港湾労働者暴動を統合"
+          git push origin HEAD:agent/trpg-human-authored-choices
