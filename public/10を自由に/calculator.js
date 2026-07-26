@@ -90,8 +90,8 @@ export class TenCalculator {
     this.mount.innerHTML = `
       <section class="calculator" aria-label="10を作る電卓">
         <div class="calculator-display" aria-live="polite">
-          <div class="problem-mini">今回の数字 <strong data-problem-mini></strong></div>
-          <div class="display-prompt" data-prompt>今回の数字は…<strong></strong></div>
+          <div class="problem-mini"><span>出題</span><strong data-problem-mini></strong></div>
+          <div class="display-prompt" data-prompt><span>すべての数字を1回ずつ使って、10を作ろう</span><strong></strong></div>
           <div class="expression-viewport" data-expression-viewport hidden>
             <div class="expression-line" data-expression></div>
           </div>
@@ -299,7 +299,7 @@ export class TenCalculator {
 
   render() {
     this.refs.problemMini.textContent = this.problem;
-    this.refs.promptProblem.textContent = `${this.problem}‼︎`;
+    this.refs.promptProblem.textContent = this.problem;
     this.refs.prompt.hidden = this.tokens.length > 0;
     this.refs.expressionViewport.hidden = this.tokens.length === 0;
     this.renderExpression();

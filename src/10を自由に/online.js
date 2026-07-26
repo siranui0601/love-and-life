@@ -69,6 +69,7 @@ function createMember(session, role) {
     connected: false,
     lastActivityAt: Date.now(),
     inactivityWarned: false,
+    stats: { submissions: 0, incorrect: 0, mathErrors: 0, solves: 0, totalSolveTimeMs: 0, fastestSolveMs: null, retires: 0 },
   };
 }
 
@@ -136,6 +137,7 @@ function normalizeRestoredRoom(room) {
     member.readyForNext = Boolean(member.readyForNext);
     member.inactivityWarned = false;
     member.lastActivityAt = Date.now();
+    member.stats = { submissions: 0, incorrect: 0, mathErrors: 0, solves: 0, totalSolveTimeMs: 0, fastestSolveMs: null, retires: 0, ...(member.stats || {}) };
   }
   room.roundHistory = Array.isArray(room.roundHistory) ? room.roundHistory : [];
   return room;
@@ -168,6 +170,7 @@ export async function createOnlineRoom({ session, settings }) {
     roundResult: null,
     roundHistory: [],
     matchResult: null,
+    matchStartedAt: null,
     createdAt: now,
     updatedAt: now,
     expiresAt: now + ROOM_TTL_MS,
@@ -225,6 +228,7 @@ function beginRound(room) {
     return;
   }
   room.status = "playing";
+  room.matchStartedAt ||= Date.now();
   room.currentProblem = problem;
   room.roundNumber += 1;
   room.roundStartedAt = Date.now();
@@ -241,13 +245,32 @@ function beginRound(room) {
 function buildMatchResult(room, reason = "win_target_reached") {
   const ordered = [...room.members].sort((a, b) => b.wins - a.wins);
   const isTie = ordered.length < 2 || ordered[0]?.wins === ordered[1]?.wins;
+  const finishedAt = Date.now();
   return {
     reason,
     winnerName: isTie ? null : ordered[0]?.username || null,
     winnerId: isTie ? null : ordered[0]?.id || null,
     scores: room.members.map((member) => ({ username: member.username, wins: member.wins })),
+    players: room.members.map((member) => {
+      const stats = member.stats || {};
+      return {
+        username: member.username,
+        wins: member.wins,
+        submissions: Number(stats.submissions || 0),
+        incorrect: Number(stats.incorrect || 0),
+        mathErrors: Number(stats.mathErrors || 0),
+        solves: Number(stats.solves || 0),
+        fastestSolveMs: Number.isFinite(stats.fastestSolveMs) ? stats.fastestSolveMs : null,
+        averageSolveMs: stats.solves ? Math.round(Number(stats.totalSolveTimeMs || 0) / stats.solves) : null,
+        accuracy: stats.submissions ? Number(stats.solves || 0) / stats.submissions : 0,
+        retires: Number(stats.retires || 0),
+      };
+    }),
     rounds: room.roundHistory.map(publicRoundResult),
-    finishedAt: Date.now(),
+    roundCount: room.roundHistory.length,
+    startedAt: room.matchStartedAt || room.createdAt,
+    finishedAt,
+    durationMs: Math.max(0, finishedAt - Number(room.matchStartedAt || room.createdAt || finishedAt)),
   };
 }
 
@@ -381,6 +404,7 @@ export function registerTenFreelyOnlineSockets(io) {
         const opponent = room.members.find((entry) => entry.id !== session.userTrackingId);
         if (!member || !opponent) throw new Error("forbidden");
         touchMember(room, member);
+        member.stats.submissions += 1;
         const expression = String(payload.expression || "").trim();
         let evaluated;
         try { evaluated = evaluateExpression(expression); }
@@ -388,6 +412,8 @@ export function registerTenFreelyOnlineSockets(io) {
           if (!mathematicalFailure(error)) {
             return ack?.({ ok: false, error: "invalid_expression", expressionError: { code: error.code, message: error.message } });
           }
+          member.stats.incorrect += 1;
+          member.stats.mathErrors += 1;
           member.lives -= 1;
           if (member.lives <= 0) {
             resolveRound(room, opponent, member, { reason: "lives_depleted" });
@@ -407,11 +433,15 @@ export function registerTenFreelyOnlineSockets(io) {
         if (!usage.valid) return ack?.({ ok: false, error: "digits_not_used_exactly" });
         const answerTimeMs = Math.max(0, Date.now() - room.roundStartedAt);
         if (isTen(evaluated.value)) {
+          member.stats.solves += 1;
+          member.stats.totalSolveTimeMs += answerTimeMs;
+          member.stats.fastestSolveMs = member.stats.fastestSolveMs == null ? answerTimeMs : Math.min(member.stats.fastestSolveMs, answerTimeMs);
           resolveRound(room, member, opponent, { reason: "made_ten", expression, answerTimeMs });
           emitRoundResult(io, room);
           return ack?.({ ok: true, correct: true, answerTimeMs, value: evaluated.value, room: publicRoom(room, member.id) });
         }
 
+        member.stats.incorrect += 1;
         member.lives -= 1;
         if (member.lives <= 0) {
           resolveRound(room, opponent, member, { reason: "lives_depleted", expression, answerTimeMs });
@@ -433,6 +463,7 @@ export function registerTenFreelyOnlineSockets(io) {
         const opponent = room.members.find((entry) => entry.id !== session.userTrackingId);
         if (!member || !opponent) throw new Error("forbidden");
         member.lives = 0;
+        member.stats.retires += 1;
         touchMember(room, member);
         resolveRound(room, opponent, member, { reason: "retired" });
         emitRoundResult(io, room);

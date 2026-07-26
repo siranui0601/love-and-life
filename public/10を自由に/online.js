@@ -63,20 +63,13 @@ async function request(path, options = {}) {
 }
 
 async function ensureSession() {
-  const user = storedUser();
-  if (!user) return null;
-  try {
-    const data = await request("/api/ten-freely/session", {
-      method: "POST",
-      body: JSON.stringify({ username: user.username, userTrackingId: user.userTrackingId }),
-    });
-    authenticatedUser = data.user;
-    return authenticatedUser;
-  } catch (error) {
-    console.warn("[ten-freely] session exchange failed", error);
-    authenticatedUser = null;
-    return null;
+  const knownUser = storedUser();
+  if (knownUser?.username) {
+    refs.authCard.hidden = true;
+    refs.console.hidden = Boolean(room);
   }
+  authenticatedUser = await app.ensureSignedSession({ force: true });
+  return authenticatedUser;
 }
 
 function setAuthenticatedUi(isAuthenticated) {
@@ -371,6 +364,36 @@ function showRoundResult(result) {
   document.querySelector("[data-online-home]").onclick = leaveRoom;
 }
 
+function percent(value) {
+  return `${Math.round(Math.max(0, Math.min(1, Number(value) || 0)) * 100)}%`;
+}
+
+function renderPerformanceCard(player, isSelf) {
+  return `<article class="match-performance-card${isSelf ? " is-self" : ""}">
+    <header><span>${escapeHtml(player.username)}${isSelf ? "・YOU" : ""}</span><strong>${player.wins}<small>勝</small></strong></header>
+    <div class="match-performance-stats">
+      <div><strong>${player.solves}</strong><span>10を作った回数</span></div>
+      <div><strong>${player.fastestSolveMs == null ? "--" : app.formatDuration(player.fastestSolveMs, true)}</strong><span>最速回答</span></div>
+      <div><strong>${player.averageSolveMs == null ? "--" : app.formatDuration(player.averageSolveMs, true)}</strong><span>平均回答</span></div>
+      <div><strong>${percent(player.accuracy)}</strong><span>正答率</span></div>
+      <div><strong>${player.incorrect}</strong><span>誤答</span></div>
+      <div><strong>${player.retires}</strong><span>リタイア</span></div>
+    </div>
+  </article>`;
+}
+
+function renderRoundHistory(rounds = []) {
+  if (!rounds.length) return "";
+  return `<details class="match-history">
+    <summary>全${rounds.length}ラウンドの記録を見る</summary>
+    <ol>${rounds.map((round) => `<li>
+      <span class="match-history-round">${round.roundNumber}</span>
+      <span><strong>${escapeHtml(round.problem)}</strong><small>${escapeHtml(round.winnerName)}・${escapeHtml(round.reasonLabel || roundReason(round))}</small></span>
+      <span class="match-history-answer">${round.expression ? `<b>${escapeHtml(round.expression)}</b>` : `<b>式なし</b>`}<small>${app.formatDuration(round.answerTimeMs, true)}</small></span>
+    </li>`).join("")}</ol>
+  </details>`;
+}
+
 function showMatchResult(result) {
   if (!result) return;
   stopTimer();
@@ -380,11 +403,21 @@ function showMatchResult(result) {
   const won = result.winnerName === self?.username;
   const title = escaped && won ? "対戦相手が逃げました" : won ? "MATCH WIN" : result.winnerName ? "MATCH LOSE" : "対戦終了";
   const scores = result.scores || room?.members?.map((member) => ({ username: member.username, wins: member.wins })) || [];
+  const players = result.players || scores.map((score) => ({ ...score, solves: score.wins, fastestSolveMs: null, averageSolveMs: null, accuracy: 0, incorrect: 0, retires: 0 }));
+  const fastestRound = (result.rounds || []).filter((round) => round.reason === "made_ten" && round.expression && Number.isFinite(round.answerTimeMs)).sort((a, b) => a.answerTimeMs - b.answerTimeMs)[0];
   app.openModal(`
     <div class="result-icon${won ? "" : " is-failure"}">${won ? "♛" : "×"}</div>
     <h2 id="modalTitle">${title}</h2>
     <p class="result-lead">${escaped ? `${escapeHtml(result.escapedName || "対戦相手")}の無操作が120秒続いたため、対戦を終了しました。` : `${escapeHtml(result.winnerName || "両者")}の最終結果です。`}</p>
     <div class="match-score-final">${scores.map((score) => `<div><span>${escapeHtml(score.username)}</span><strong>${score.wins}</strong><small>WIN</small></div>`).join('<b>—</b>')}</div>
+    <div class="match-overview">
+      <div><strong>${app.formatDuration(result.durationMs, true)}</strong><span>対戦時間</span></div>
+      <div><strong>${result.roundCount ?? result.rounds?.length ?? 0}</strong><span>ラウンド数</span></div>
+      <div><strong>${room?.settings?.winsToFinish ?? "--"}</strong><span>先取勝利数</span></div>
+    </div>
+    ${fastestRound ? `<div class="match-highlight"><small>FASTEST SOLVE</small><strong>${escapeHtml(fastestRound.winnerName)}・${app.formatDuration(fastestRound.answerTimeMs, true)}</strong><span>${escapeHtml(fastestRound.problem)} → ${escapeHtml(fastestRound.expression)}</span></div>` : ""}
+    <div class="match-performance-grid">${players.map((player) => renderPerformanceCard(player, player.username === self?.username)).join("")}</div>
+    ${renderRoundHistory(result.rounds || [])}
     <div class="modal-actions"><button class="modal-primary" type="button" data-match-home>ホームに戻る</button></div>`, { closeable: false });
   document.querySelector("[data-match-home]").onclick = leaveRoom;
 }
@@ -490,4 +523,6 @@ refs.topBarBack?.addEventListener("click", (event) => {
 window.addEventListener("ten-freely:screen-changed", (event) => {
   if (event.detail?.screen === "online") initializeOnline();
 });
+window.addEventListener("focus", () => { if (app.currentScreen === "online") initializeOnline(); });
+window.addEventListener("storage", () => { if (app.currentScreen === "online") initializeOnline(); });
 window.addEventListener("beforeunload", cleanupOnlineGame);
