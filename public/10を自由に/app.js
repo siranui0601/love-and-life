@@ -21,6 +21,8 @@ const refs = {
   tutorialLesson: document.getElementById("tutorialLesson"),
   tutorialLessonBack: document.getElementById("tutorialLessonBack"),
   tutorialLessonPosition: document.getElementById("tutorialLessonPosition"),
+  tutorialMission: document.getElementById("tutorialMission"),
+  tutorialMissionHelp: document.getElementById("tutorialMissionHelp"),
   tutorialLessonCategory: document.getElementById("tutorialLessonCategory"),
   tutorialLessonTitle: document.getElementById("tutorialLessonTitle"),
   tutorialLessonSummary: document.getElementById("tutorialLessonSummary"),
@@ -42,60 +44,70 @@ const tutorialLessons = [
   {
     id: "addition", category: "はじめの一歩", order: 1, icon: "+", title: "足し算で10", time: "約1分", problem: "46",
     summary: "数字を一度ずつ使う、いちばん基本のルールを体験します。",
+    mission: "4 ＋ 6 を入力して、最後に ＝ を押そう。",
     steps: ["4と6の数字ボタンは、それぞれ一度だけ使えます。", "4＋6の式を作ると、数字を使い切った時点で「=」が有効になります。", "「=」を押して10になれば完了です。"],
     example: "4 ＋ 6 ＝ 10", allowedValues: ["+"], emphasizedValues: ["+"], keys: ["4", "＋", "6", "＝"]
   },
   {
     id: "subtraction", category: "はじめの一歩", order: 2, icon: "−", title: "足して、引く", time: "約1分", problem: "831",
     summary: "足し算と引き算を組み合わせ、左から式を組み立てます。",
+    mission: "8 ＋ 3 − 1 を作って10にしよう。",
     steps: ["8と3を足すと11です。", "最後に1を引けば10になります。", "数字の並び順は、出題された順番と同じでなくても構いません。"],
     example: "8 ＋ 3 − 1 ＝ 10", allowedValues: ["+", "-"], emphasizedValues: ["-"], keys: ["＋", "−", "8", "3", "1"]
   },
   {
     id: "multiplication", category: "はじめの一歩", order: 3, icon: "×", title: "掛け算で一気に10", time: "約1分", problem: "25",
     summary: "×の使い方と、数字を連結できないルールを確認します。",
+    mission: "2と5の間に × を入れて10にしよう。",
     steps: ["2と5を隣に置いて25にすることはできません。", "間に「×」を置くと、2×5になります。", "掛け算の結果は10です。"],
     example: "2 × 5 ＝ 10", allowedValues: ["*"], emphasizedValues: ["*"], keys: ["2", "×", "5", "＝"]
   },
   {
     id: "division", category: "はじめの一歩", order: 4, icon: "÷", title: "割り算を混ぜる", time: "約1分", problem: "821",
     summary: "割り算を含む式でも、通常の計算順序で判定されます。",
+    mission: "8 ＋ 2 ÷ 1 を入力し、計算順序を確かめよう。",
     steps: ["2÷1は2です。", "8に2を足すと10になります。", "0で割ると失敗になり、通常プレイでは残機が減ります。"],
     example: "8 ＋ 2 ÷ 1 ＝ 10", allowedValues: ["+", "/"], emphasizedValues: ["/"], keys: ["＋", "÷", "8", "2", "1"]
   },
   {
     id: "parentheses", category: "はじめの一歩", order: 5, icon: "( )", title: "括弧で順番を変える", time: "約2分", problem: "223",
     summary: "2×3＋2では8。括弧を使って、先に3＋2を計算します。",
+    mission: "3 ＋ 2 を括弧で囲み、外側から2を掛けよう。",
     steps: ["括弧がない2×3＋2は、掛け算が先なので8です。", "(3＋2)を作ると、その部分を先に計算して5になります。", "外側の2を掛けると、2×5で10です。"],
     example: "2 × ( 3 ＋ 2 ) ＝ 10", allowedValues: ["*", "+", "(", ")"], emphasizedValues: ["(", ")"], keys: ["×", "＋", "( )", "2", "2", "3"]
   },
   {
     id: "square-root", category: "特殊な記号", order: 6, icon: "√", title: "平方根を使う", time: "約1分", problem: "48",
     summary: "√4＝2を利用して、8に足す数を作ります。",
+    mission: "4の前に √ を置き、√4 ＋ 8 を作ろう。",
     steps: ["√は、その数を2乗すると元に戻る正の数を表します。", "√4は2です。", "ゲームでは√2のような途中結果も使えます。たとえば√2×√2は2になります。"],
     example: "√4 ＋ 8 ＝ 10", allowedValues: ["√", "+"], emphasizedValues: ["√"], keys: ["√", "＋", "4", "8"]
   },
   {
     id: "multifactorial", category: "特殊な記号", order: 7, icon: "!!!", title: "多重階乗を知る", time: "約1分", problem: "5",
      summary: "5に「!」を3個付けるだけで10。多重階乗の意味を体験します。",
+    mission: "5の後ろへ ! を3回押し、5!!! を作ろう。",
     steps: ["5!は5×4×3×2×1ですが、5!!!は別の演算です。", "!が3個なら3ずつ減らし、5×2と掛けます。", "したがって5!!!は10です。!は連続9個まで使えます。"],
     example: "5!!! ＝ 5 × 2 ＝ 10", allowedValues: ["!"], emphasizedValues: ["!"], keys: ["5", "!", "!", "!"]
   },
   {
     id: "power", category: "特殊な記号", order: 8, icon: "xʸ", title: "累乗を使う", time: "約1分", problem: "321",
     summary: "3の2乗で9を作り、残った1を足します。",
+    mission: "3 xʸ 2 で9を作り、1を足そう。",
     steps: ["xʸは、左の数を右の数の回数だけ掛ける記号です。", "3²、つまり3^2は9です。", "残った1を足すと10になります。"],
     example: "3² ＋ 1 ＝ 10", allowedValues: ["^", "+"], emphasizedValues: ["^"], keys: ["xʸ", "＋", "3", "2", "1"]
   },
   {
     id: "combination", category: "特殊な記号", order: 9, icon: "C", title: "組合せ C", time: "約2分", problem: "52",
     summary: "5個から2個を選ぶ組合せの数は、ちょうど10です。",
+    mission: "5 C 2 を入力して、組合せの数を計算しよう。",
     steps: ["nCrは、n個から順番を区別せずr個を選ぶ方法の数です。", "5C2は、5個から2個を選ぶ方法の数です。", "計算結果は10なので、式は5C2だけで完成します。"],
     example: "5 C 2 ＝ 10", allowedValues: ["C"], emphasizedValues: ["C"], keys: ["5", "C", "2"]
   },
   {
     id: "permutation", category: "特殊な記号", order: 10, icon: "P", title: "順列 P", time: "約2分", problem: "522",
     summary: "5P2＝20を作り、残った2で割って10にします。",
+    mission: "5 P 2 で20を作り、もう1つの2で割ろう。",
     steps: ["nPrは、n個から順番を区別してr個を並べる方法の数です。", "5P2は5×4で20です。", "残った2で割ると10になります。"],
     example: "5 P 2 ÷ 2 ＝ 10", allowedValues: ["P", "/"], emphasizedValues: ["P"], keys: ["5", "P", "2", "÷", "2"]
   },
@@ -156,6 +168,8 @@ function showScreen(name, options = {}) {
     return false;
   }
   for (const [screenName, screen] of screens) screen.classList.toggle("is-active", screenName === name);
+  document.body.classList.toggle("is-game-screen", name === "game");
+  if (name !== "tutorial") document.body.classList.remove("is-tutorial-lesson");
   currentScreen = name;
   window.scrollTo({ top: 0, behavior: options.instant ? "auto" : "smooth" });
   if (name !== "game") stopTimer();
@@ -460,6 +474,7 @@ function renderTutorialHub() {
 }
 
 function showTutorialHub() {
+  document.body.classList.remove("is-tutorial-lesson");
   activeTutorialId = null;
   tutorialCalculator?.destroy();
   tutorialCalculator = null;
@@ -479,10 +494,12 @@ function startTutorialLesson(id) {
   const lesson = tutorialById(id);
   if (!lesson) return;
   activeTutorialId = id;
+  document.body.classList.add("is-tutorial-lesson");
   tutorialExplanationManuallyToggled = false;
   refs.tutorialHub.hidden = true;
   refs.tutorialLesson.hidden = false;
   refs.tutorialLessonPosition.textContent = `LESSON ${String(lesson.order).padStart(2, "0")} / ${tutorialLessons.length} ・ ${lesson.time}`;
+  refs.tutorialMission.textContent = lesson.mission;
   refs.tutorialLessonCategory.textContent = lesson.category;
   refs.tutorialLessonTitle.textContent = lesson.title;
   refs.tutorialLessonSummary.textContent = lesson.summary;
@@ -493,7 +510,8 @@ function startTutorialLesson(id) {
   refs.tutorialKeyChips.replaceChildren(...lesson.keys.map((key) => {
     const chip = document.createElement("span"); chip.textContent = key; return chip;
   }));
-  setTutorialExplanationExpanded(true);
+  const spaciousLayout = window.matchMedia("(min-width: 761px) and (min-height: 760px)").matches;
+  setTutorialExplanationExpanded(spaciousLayout);
   tutorialCalculator?.destroy();
   tutorialCalculator = new TenCalculator(refs.tutorialCalculatorMount, {
     problem: lesson.problem,
@@ -528,7 +546,7 @@ function startTutorialLesson(id) {
       } catch (error) { instance.setResult(error.message, "error"); }
     },
   });
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 function leaveTutorialLesson() {
@@ -665,6 +683,10 @@ refs.tutorialLessonBack.addEventListener("click", leaveTutorialLesson);
 refs.tutorialExitButton.addEventListener("click", leaveTutorialLesson);
 refs.tutorialDisclosureButton.addEventListener("click", () => {
   setTutorialExplanationExpanded(refs.tutorialDisclosureButton.getAttribute("aria-expanded") !== "true", { manual: true });
+});
+refs.tutorialMissionHelp.addEventListener("click", () => {
+  setTutorialExplanationExpanded(true, { manual: true });
+  refs.tutorialDisclosureButton.scrollIntoView({ behavior: "smooth", block: "center" });
 });
 refs.modalLayer.addEventListener("click", (event) => { if (event.target.matches("[data-modal-close]")) closeModal(); });
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !refs.modalLayer.hidden) closeModal(); });
