@@ -1,23 +1,53 @@
-name: Ten Freely UI export
+name: Apply Ten Freely UX refinement
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - fix/ten-freely-ux-polish
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export:
+  apply:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/upload-artifact@v4
         with:
-          name: ten-freely-ui-source
-          path: |
-            public/10を自由に
-            src/10を自由に/online.js
-          if-no-files-found: error
-          retention-days: 1
+          ref: fix/ten-freely-ux-polish
+          fetch-depth: 0
+      - name: Apply consolidated UX patch
+        run: |
+          cat .github/ten-freely-ux-patch/part* | base64 --decode > /tmp/ten-freely-ux.patch
+          git apply --check /tmp/ten-freely-ux.patch
+          git apply /tmp/ten-freely-ux.patch
+      - name: Verify JavaScript and markup
+        run: |
+          node --check 'public/10を自由に/app.js'
+          node --check 'public/10を自由に/calculator.js'
+          node --check 'public/10を自由に/online.js'
+          node --check 'src/10を自由に/online.js'
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Parser(HTMLParser):
+              pass
+          html = Path('public/10を自由に/index.html').read_text(encoding='utf-8')
+          Parser().feed(html)
+          assert 'tutorialMission' in html
+          assert 'tutorial-calculator-note' not in html
+          css = Path('public/10を自由に/style.css').read_text(encoding='utf-8')
+          assert css.count('{') == css.count('}')
+          calculator = Path('public/10を自由に/calculator.js').read_text(encoding='utf-8')
+          assert '‼' not in calculator
+          print('Ten Freely UX verification passed')
+          PY
+      - name: Remove staging helpers and commit
+        run: |
+          rm -rf .github/ten-freely-ux-patch
+          rm -f .github/workflows/ten-freely-ui-export.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(ten-freely): improve viewport UX and match results'
+          git push origin HEAD:fix/ten-freely-ux-polish
