@@ -131,7 +131,7 @@ export const T07_RUNAWAY_ELF_TRAFFICKING_PACK = Object.freeze({
         factId: "T07-FACT-DAMIAN-FALSE-GUIDE",
         unlockedLeadIds: Object.freeze(["damian_false_contract", "damian_buyer_route"]),
         minutes: 13,
-        narrative: "セリエは森外縁で拾った�4鋲と、焚き火跡の灰を並べた。旅慣れた冒険者の足跡は、迷う少女を案内する歩幅ではなく、荷車を待つ場所へ一直線に向かっている。",
+        narrative: "セリエは森外縁で拾った靴鋲と、焚き火跡の灰を並べた。旅慣れた冒険者の足跡は、迷う少女を案内する歩幅ではなく、荷車を待つ場所へ一直線に向かっている。",
         speeches: Object.freeze([
           Object.freeze({
             actorId: "NPC029",
@@ -237,7 +237,7 @@ export const T07_RUNAWAY_ELF_TRAFFICKING_PACK = Object.freeze({
         label: "ダミアンの野営跡から、案内契約に偽装した拘束命令と眠り薬を押さえる",
         approachId: "t07-damian-false-guide-contract",
         discoveryId: "T07-EVIDENCE-DAMIAN-FALSE-GUIDE-CONTRACT",
-        discoveryText: "王都までの案内契約に見える紙は、署名欄の裏へ『希少種族一名、抵抗時は薬剤佣用可』と複写されていた。水筒の眠り薬と細い拘束縄も同じ買い手印で封じられている。",
+        discoveryText: "王都までの案内契約に見える紙は、署名欄の裏へ『希少種族一名、抵抗時は薬剤使用可』と複写されていた。水筒の眠り薬と細い拘束縄も同じ買い手印で封じられている。",
         unlocksLeadIds: Object.freeze(["damian_buyer_route", "capital_inn_order", "tia_departure_letter"]),
         minutes: 34,
         leadNarrative: "表面の旅費と仕事紹介だけでなく、炭紙で裏へ写った文字を光へ透かす。自由な旅の契約は、人を荷として扱う命令書と一枚になっていた。",
@@ -315,7 +315,7 @@ export const T07_RUNAWAY_ELF_TRAFFICKING_PACK = Object.freeze({
       label: "家出を裏切りと決めつけ、本人の意思を聞かず拘束して隠れ里へ返す",
       minutes: 22,
       summary: "強制送還を先に決めると、リュシアは救出者も自分の選択を奪う側だと受け取り、協力を拒んだ。確認済み証拠を保ったまま、本人の意思と売買網を分けて考え直せる。",
-      narrative: "『安全のため里へ返す』とい桸は、長老側には受け入れやすかった。しかしリュシアの手紙には、戻るかどうかを自分で決めたいとある。人買いから取り戻しても、別の大人が行き先を決めれば、彼女にとって自由は一度も戻らない。",
+      narrative: "『安全のため里へ返す』という案は、長老側には受け入れやすかった。しかしリュシアの手紙には、戻るかどうかを自分で決めたいとある。人買いから取り戻しても、別の大人が行き先を決めれば、彼女にとって自由は一度も戻らない。",
     }),
   }),
   postInvestigationGuidance: Object.freeze({
@@ -416,7 +416,7 @@ export const T07_RUNAWAY_ELF_TRAFFICKING_PACK = Object.freeze({
         summary: "リュシアの自発的な帰郷と引き換えに、若者の外出権、評議会発言権、外部連絡を認める約定を成立させた。",
         narrative: "リュシアは『元どおりに戻るため』ではなく、里を変える当事者として帰ることを選んだ。アルウェン長老は、成人前の外出申請、若者代表の評議会参加、森外の連絡役を約定へ記す。閉鎖性は一度に消えないが、T08の封鎖交渉とT13の避難で若者が声を上げられる土台になる。",
         narrativeByTroubleStatus: Object.freeze({
-          critical: "人買市場から戻ったリュシアは、経験を隠して元の生活へ戻ることを拒んだ。里へ帰る条件として、若者の外出権、評議会発言権、外部連絡を約定へ明記させる。アルウェン長老は人間への警戒を残しつつ、閉じ込めるだけでは若者を守れないと認めた。",
+          critical: "売買市場から戻ったリュシアは、経験を隠して元の生活へ戻ることを拒んだ。里へ帰る条件として、若者の外出権、評議会発言権、外部連絡を約定へ明記させる。アルウェン長老は人間への警戒を残しつつ、閉じ込めるだけでは若者を守れないと認めた。",
         }),
         worldEffect: Object.freeze({
           flagKey: "t07ResolutionRoute",
@@ -471,7 +471,7 @@ export const T07_RUNAWAY_ELF_TRAFFICKING_PACK = Object.freeze({
               speeches: Object.freeze([
                 Object.freeze({
                   actorId: "NPC027",
-                  text: "外が全部優しいなんて၆思わない。でも全部危険だから閉じこもれっていうのも違う。知らないまま守られるんじゃなく、知って選べる里にしたい。",
+                  text: "外が全部優しいなんて、もう思わない。でも全部危険だから閉じこもれっていうのも違う。知らないまま守られるんじゃなく、知って選べる里にしたい。",
                   emotion: "真っ直ぐな覚悟",
                 }),
               ]),
@@ -496,7 +496,7 @@ export const T07_RUNAWAY_ELF_TRAFFICKING_PACK = Object.freeze({
         label: "森の入口に中立の連絡所を作り、リュシアを人間社会と隠れ里を結ぶ案内役にする",
         minutes: 126,
         summary: "森の入口へ中立の連絡所と避難案内網を作り、リュシアが人間社会と隠れ里を結ぶ案内役になった。",
-        narrative: "狩人の野営地と迷いの森の間に、エルフも人間も武器を預けて話す連絡所を設けた。リュシアは住む場所を一方へ固定せず、セリエとティアとともに旅人への警告、若者の外出相談、非常時の避難枝道を管理する。最も時間がかかるが、T08の封鎖を対話へ変え、T13の避難統率とT16の誤情報訂正へ早く動ける蜘蛛の系になる。",
+        narrative: "狩人の野営地と迷いの森の間に、エルフも人間も武器を預けて話す連絡所を設けた。リュシアは住む場所を一方へ固定せず、セリエとティアとともに旅人への警告、若者の外出相談、非常時の避難枝道を管理する。最も時間がかかるが、T08の封鎖を対話へ変え、T13の避難統率とT16の誤情報訂正へ早く動ける蜘蛛の糸になる。",
         narrativeByTroubleStatus: Object.freeze({
           critical: "人買い市場から戻ったリュシアは、森と人間の町のどちらか一方へ閉じ込められることを拒んだ。狩人の野営地と迷いの森の間に中立の連絡所を作り、売買の手口、旅人の危険、避難枝道を共有する。傷を隠さず警告へ変えることで、次の若者が同じ罠へ入る可能性を減らした。",
         }),
