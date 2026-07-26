@@ -1,9 +1,12 @@
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v5";
+import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";
+
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v6";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 
 export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
+  T06_PORT_LABOR_UNREST_PACK,
   Object.freeze({
     id: "trade-lord-poisoning",
     missionId: "MSN-T05",

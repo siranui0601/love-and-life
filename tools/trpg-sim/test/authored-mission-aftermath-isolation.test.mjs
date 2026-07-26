@@ -10,7 +10,7 @@ function pack(troubleId) {
 }
 
 test("authored aftermath dialogue stays isolated to the selected resolution route", () => {
-  for (const troubleId of ["T03", "T04", "T05"]) {
+  for (const troubleId of ["T03", "T04", "T05", "T06"]) {
     const missionPack = pack(troubleId);
     assert.ok(missionPack);
     const routes = missionPack.resolution.choices;

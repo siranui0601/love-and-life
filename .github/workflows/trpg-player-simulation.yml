@@ -1,128 +1,47 @@
-name: Temporary T06 integration and validation
+name: TRPG integrated player simulation
 
 on:
   pull_request:
     paths:
-      - "src/server/trpg/**"
       - "tools/trpg-sim/**"
+      - "public/TRPG/**"
+      - "src/server/trpg/**"
+      - "src/server/app.js"
+      - "package.json"
       - ".github/workflows/trpg-player-simulation.yml"
-      - ".github/workflows/t06-authoring.yml"
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
-  integrate:
+  simulate:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: agent/trpg-human-authored-choices
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - name: Connect T06 pack and add contracts
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import base64
-
-          root = Path(".")
-          module_path = root / "src/server/trpg/content/authored/missions/t06-port-labor-unrest.js"
-          if not module_path.exists():
-              raise SystemExit("T06 module is missing")
-
-          registry_path = root / "src/server/trpg/content/authored-mission-flow-registry.js"
-          registry = registry_path.read_text(encoding="utf-8")
-          if "T06_PORT_LABOR_UNREST_PACK" not in registry:
-              old = 'export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v5";'
-              new = 'import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";\n\nexport const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v6";'
-              if old not in registry:
-                  raise SystemExit("registry version marker not found")
-              registry = registry.replace(old, new, 1)
-              marker = "export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([\n"
-              if marker not in registry:
-                  raise SystemExit("pack array marker not found")
-              registry = registry.replace(marker, marker + "  T06_PORT_LABOR_UNREST_PACK,\n", 1)
-          registry_path.write_text(registry, encoding="utf-8")
-
-          scene_path = root / "src/server/trpg/content/authored-scene-registry.js"
-          scene = scene_path.read_text(encoding="utf-8")
-          old_scene = 'AUTHORED_CONTENT_VERSION = "authored-content-v8"'
-          if old_scene not in scene:
-              raise SystemExit("authored content version marker not found")
-          scene_path.write_text(
-              scene.replace(old_scene, 'AUTHORED_CONTENT_VERSION = "authored-content-v9"', 1),
-              encoding="utf-8",
-          )
-
-          aftermath_path = root / "tools/trpg-sim/test/authored-mission-aftermath.test.mjs"
-          aftermath = aftermath_path.read_text(encoding="utf-8")
-          aftermath = aftermath.replace(
-              'test("T03 through T05 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {',
-              'test("T03 through T06 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {',
-              1,
-          )
-          aftermath = aftermath.replace(
-              'for (const troubleId of ["T03", "T04", "T05"]) {',
-              'for (const troubleId of ["T03", "T04", "T05", "T06"]) {',
-              1,
-          )
-          if 'test("T06 separates labor harm' not in aftermath:
-              marker = 'test("the generic NPC life engine travels, performs, and retires one authored aftermath plan", () => {'
-              if marker not in aftermath:
-                  raise SystemExit("aftermath insertion marker not found")
-              tests = base64.b64decode("CnRlc3QoIlQwNiBzZXBhcmF0ZXMgbGFib3IgaGFybSwgZ3VpbGQgbWFuaXB1bGF0aW9uIGFuZCBjcmltaW5hbCB3ZWFwb24gc3VwcGx5IGJlZm9yZSB0aHJlZSBwb3J0IHNldHRsZW1lbnRzIiwgKCkgPT4gewogIGNvbnN0IG1pc3Npb25QYWNrID0gcGFjaygiVDA2Iik7CiAgYXNzZXJ0Lm9rKG1pc3Npb25QYWNrKTsKICBhc3NlcnQuZXF1YWwobWlzc2lvblBhY2suaGVhcmluZy5jaG9pY2VzLmxlbmd0aCwgMyk7CiAgYXNzZXJ0LmVxdWFsKG5ldyBTZXQobWlzc2lvblBhY2suaGVhcmluZy5jaG9pY2VzLm1hcCgoY2hvaWNlKSA9PiBjaG9pY2UuaWQpKS5zaXplLCAzKTsKICBhc3NlcnQuZGVlcEVxdWFsKG1pc3Npb25QYWNrLmludmVzdGlnYXRpb24ucmVxdWlyZWRFdmlkZW5jZUlkcywgWwogICAgIlQwNi1FVklERU5DRS1SRUFMLVdBR0UtQU5ELUlOSlVSWS1MT1NTIiwKICAgICJUMDYtRVZJREVOQ0UtR1VJTEQtQ09OVFJBQ1QtTUFOSVBVTEFUSU9OIiwKICAgICJUMDYtRVZJREVOQ0UtQ1JJTUUtV0VBUE9OLVNVUFBMWSIsCiAgXSk7CiAgYXNzZXJ0LmVxdWFsKG1pc3Npb25QYWNrLmNhdGFsb2dPdmVycmlkZS5iYXR0bGUuZW5jb3VudGVySWQsICJFTkMtMDAzMyIpOwogIGFzc2VydC5kZWVwRXF1YWwobWlzc2lvblBhY2suY2F0YWxvZ092ZXJyaWRlLmJhdHRsZS5lbmNvdW50ZXJJZEJ5VHJvdWJsZVN0YXR1cywgewogICAgYWN0aXZlOiAiRU5DLTAwMzMiLAogICAgY3JpdGljYWw6ICJFTkMtMDAzNCIsCiAgfSk7CiAgYXNzZXJ0LmVxdWFsKG1pc3Npb25QYWNrLmNhdGFsb2dPdmVycmlkZS5iYXR0bGUudGFyZ2V0RmFjaWxpdHlJZCwgIkxPQ19UUkFERV9XQVJFSE9VU0UiKTsKICBhc3NlcnQuZGVlcEVxdWFsKG1pc3Npb25QYWNrLnJlc29sdXRpb24uY2hvaWNlcy5tYXAoKHJvdXRlKSA9PiByb3V0ZS5pZCksIFsKICAgICJ0ZW1wb3Jhcnlfd2FnZV90cnVjZSIsCiAgICAibG9yZF9iYWNrZWRfbGFib3JfY29tcGFjdCIsCiAgICAid29ya2VyX2Nvb3BlcmF0aXZlX2FuZF9zbXVnZ2xpbmdfd2F0Y2giLAogIF0pOwogIGFzc2VydC5lcXVhbChuZXcgU2V0KG1pc3Npb25QYWNrLnJlc29sdXRpb24uY2hvaWNlcwogICAgLm1hcCgocm91dGUpID0+IHJvdXRlLndvcmxkRWZmZWN0LmZhY3RJZCkpLnNpemUsIDMpOwogIGFzc2VydC5vayhtaXNzaW9uUGFjay5yZXNvbHV0aW9uLmNob2ljZXMuZXZlcnkoKHJvdXRlKSA9PgogICAgcm91dGUud29ybGRFZmZlY3QuYWZ0ZXJtYXRoUGxhbnMubGVuZ3RoID49IDIKICAgICYmIHJvdXRlLndvcmxkRWZmZWN0LmZvbGxvd3Vwcy5sZW5ndGggPj0gMikpOwogIGFzc2VydC5vayhtaXNzaW9uUGFjay5yZXNvbHV0aW9uLmNob2ljZXMuc2xpY2UoMSkuZXZlcnkoKHJvdXRlKSA9PgogICAgcm91dGUubmFycmF0aXZlQnlUcm91YmxlU3RhdHVzPy5jcml0aWNhbAogICAgJiYgcm91dGUud29ybGRFZmZlY3QuZmFjdElkQnlUcm91YmxlU3RhdHVzPy5jcml0aWNhbAogICAgJiYgcm91dGUud29ybGRFZmZlY3QudGV4dEJ5VHJvdWJsZVN0YXR1cz8uY3JpdGljYWwpKTsKfSk7Cgp0ZXN0KCJUMDYgcHJlc2VydmVzIGFjdGl2ZSBzbXVnZ2xlciBpbnRlcmNlcHRpb24gYW5kIGNyaXRpY2FsIGFybWVkLXdvcmtlciBlc2NhbGF0aW9uIGluIG9uZSBhdXRob3JlZCBiYXR0bGUgc3RlcCIsICgpID0+IHsKICBjb25zdCBjYXRhbG9nID0gewogICAgc3BlY2lhbDogW3sKICAgICAgaWQ6ICJNU04tVDA2IiwKICAgICAgc3RlcHM6IFsKICAgICAgICB7IGlkOiAiaGVhciIsIHR5cGU6ICJjb252ZXJzYXRpb24iLCB0YXJnZXRMb2NhdGlvbjogIuS6pOaYk+mDveW4giIsIHRhcmdldEZhY2lsaXR5SWQ6ICJMT0NfVFJBREVfUE9SVCIsIHJlcXVpcmVkOiAxIH0sCiAgICAgICAgeyBpZDogImludmVzdGlnYXRlIiwgdHlwZTogImludmVzdGlnYXRlIiwgdGFyZ2V0TG9jYXRpb246ICLkuqTmmJPpg73luIIiLCB0YXJnZXRGYWNpbGl0eUlkOiAiTE9DX1RSQURFX1BPUlQiLCByZXF1aXJlZDogMSB9LAogICAgICAgIHsgaWQ6ICJyZXNvbHZlIiwgdHlwZTogInJlc29sdmUiLCB0YXJnZXRMb2NhdGlvbjogIuS6pOaYk+mDveW4giIsIHRhcmdldEZhY2lsaXR5SWQ6ICJMT0NfVFJBREVfR1VJTEQiLCByZXF1aXJlZDogMSB9LAogICAgICBdLAogICAgfV0sCiAgfTsKCiAgYXBwbHlBdXRob3JlZE1pc3Npb25GbG93Q2F0YWxvZ092ZXJyaWRlcyhjYXRhbG9nKTsKCiAgY29uc3QgYmF0dGxlID0gY2F0YWxvZy5zcGVjaWFsWzBdLnN0ZXBzLmZpbmQoKHN0ZXApID0+IHN0ZXAudHlwZSA9PT0gImJhdHRsZSIpOwogIGFzc2VydC5vayhiYXR0bGUpOwogIGFzc2VydC5lcXVhbChiYXR0bGUudGFyZ2V0RmFjaWxpdHlJZCwgIkxPQ19UUkFERV9XQVJFSE9VU0UiKTsKICBhc3NlcnQuZXF1YWwoYmF0dGxlLmVuY291bnRlcklkLCAiRU5DLTAwMzMiKTsKICBhc3NlcnQuZGVlcEVxdWFsKGJhdHRsZS5lbmNvdW50ZXJJZEJ5VHJvdWJsZVN0YXR1cywgewogICAgYWN0aXZlOiAiRU5DLTAwMzMiLAogICAgY3JpdGljYWw6ICJFTkMtMDAzNCIsCiAgfSk7CiAgYXNzZXJ0Lm1hdGNoKGJhdHRsZS5sYWJlbEJ5VHJvdWJsZVN0YXR1cy5hY3RpdmUsIC/lr4bovLjpgYvjgbPlsYsvdSk7CiAgYXNzZXJ0Lm1hdGNoKGJhdHRsZS5sYWJlbEJ5VHJvdWJsZVN0YXR1cy5jcml0aWNhbCwgL+S4gOmDqOWKtOWDjeiAhS91KTsKfSk7Cgo=").decode("utf-8")
-              aftermath = aftermath.replace(marker, tests + marker, 1)
-          aftermath_path.write_text(aftermath, encoding="utf-8")
-
-          isolation_path = root / "tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs"
-          isolation = isolation_path.read_text(encoding="utf-8")
-          isolation = isolation.replace(
-              'for (const troubleId of ["T03", "T04", "T05"]) {',
-              'for (const troubleId of ["T03", "T04", "T05", "T06"]) {',
-              1,
-          )
-          isolation_path.write_text(isolation, encoding="utf-8")
-          PY
       - run: npm ci
-      - name: Focused authored mission checks
+      - name: Run TRPG tests
         shell: bash
         run: |
-          node --check src/server/trpg/content/authored/missions/t06-port-labor-unrest.js
-          node --check src/server/trpg/content/authored-mission-flow-registry.js
-          node --check src/server/trpg/content/authored-scene-registry.js
-          node --test tools/trpg-sim/test/authored-mission-aftermath.test.mjs
-          node --test tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs
-          git diff --check
-      - name: Full TRPG regression
-        run: npm run trpg:test
-      - name: Strict integrated player and GOAP journeys
+          mkdir -p tools/trpg-sim/reports
+          set -o pipefail
+          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v4.log
+      - name: Run integrated player, GOAP and Gemini journeys v4
         env:
           TRPG_PLAYER_V4_SEEDS: 2
           TRPG_GOAP_V4_SEEDS: 2
         run: node tools/trpg-sim/cli-player-v4.mjs --strict
-      - name: Restore workflow and publish clean implementation
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import base64
-          Path(".github/workflows/trpg-player-simulation.yml").write_bytes(base64.b64decode("bmFtZTogVFJQRyBpbnRlZ3JhdGVkIHBsYXllciBzaW11bGF0aW9uCgpvbjoKICBwdWxsX3JlcXVlc3Q6CiAgICBwYXRoczoKICAgICAgLSAidG9vbHMvdHJwZy1zaW0vKioiCiAgICAgIC0gInB1YmxpYy9UUlBHLyoqIgogICAgICAtICJzcmMvc2VydmVyL3RycGcvKioiCiAgICAgIC0gInNyYy9zZXJ2ZXIvYXBwLmpzIgogICAgICAtICJwYWNrYWdlLmpzb24iCiAgICAgIC0gIi5naXRodWIvd29ya2Zsb3dzL3RycGctcGxheWVyLXNpbXVsYXRpb24ueW1sIgogIHdvcmtmbG93X2Rpc3BhdGNoOgoKam9iczoKICBzaW11bGF0ZToKICAgIHJ1bnMtb246IHVidW50dS1sYXRlc3QKICAgIHRpbWVvdXQtbWludXRlczogNjAKICAgIHN0ZXBzOgogICAgICAtIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQKICAgICAgLSB1c2VzOiBhY3Rpb25zL3NldHVwLW5vZGVAdjQKICAgICAgICB3aXRoOgogICAgICAgICAgbm9kZS12ZXJzaW9uOiAyMgogICAgICAgICAgY2FjaGU6IG5wbQogICAgICAtIHJ1bjogbnBtIGNpCiAgICAgIC0gbmFtZTogUnVuIFRSUEcgdGVzdHMKICAgICAgICBzaGVsbDogYmFzaAogICAgICAgIHJ1bjogfAogICAgICAgICAgbWtkaXIgLXAgdG9vbHMvdHJwZy1zaW0vcmVwb3J0cwogICAgICAgICAgc2V0IC1vIHBpcGVmYWlsCiAgICAgICAgICBucG0gcnVuIHRycGc6dGVzdCAyPiYxIHwgdGVlIHRvb2xzL3RycGctc2ltL3JlcG9ydHMvdGVzdC12NC5sb2cKICAgICAgLSBuYW1lOiBSdW4gaW50ZWdyYXRlZCBwbGF5ZXIsIEdPQVAgYW5kIEdlbWluaSBqb3VybmV5cyB2NAogICAgICAgIGVudjoKICAgICAgICAgIFRSUEdfUExBWUVSX1Y0X1NFRURTOiAyCiAgICAgICAgICBUUlBHX0dPQVBfVjRfU0VFRFM6IDIKICAgICAgICBydW46IG5vZGUgdG9vbHMvdHJwZy1zaW0vY2xpLXBsYXllci12NC5tanMgLS1zdHJpY3QKICAgICAgLSB1c2VzOiBhY3Rpb25zL3VwbG9hZC1hcnRpZmFjdEB2NAogICAgICAgIGlmOiBhbHdheXMoKQogICAgICAgIHdpdGg6CiAgICAgICAgICBuYW1lOiB0cnBnLXBsYXllci1zaW11bGF0aW9uLXY0CiAgICAgICAgICBwYXRoOiB8CiAgICAgICAgICAgIHRvb2xzL3RycGctc2ltL3JlcG9ydHMvdGVzdC12NC5sb2cKICAgICAgICAgICAgdG9vbHMvdHJwZy1zaW0vcmVwb3J0cy9wbGF5ZXItdjQtbGF0ZXN0Lmpzb24KICAgICAgICAgICAgdG9vbHMvdHJwZy1zaW0vcmVwb3J0cy9wbGF5ZXItdjQtbGF0ZXN0Lm1kCiAgICAgICAgICAgIHRvb2xzL3RycGctc2ltL3JlcG9ydHMvcGxheWVyLWxhdGVzdC5qc29uCiAgICAgICAgICAgIHRvb2xzL3RycGctc2ltL3JlcG9ydHMvcGxheWVyLWxhdGVzdC5tZAogICAgICAgICAgICBwdWJsaWMvVFJQRy9wbGF5ZXItc2ltdWxhdGlvbi1yZXBvcnQuanNvbgogICAgICAgICAgICBwdWJsaWMvVFJQRy9wbGF5ZXItc2ltdWxhdGlvbi12NC1yZXBvcnQuanNvbgo="))
-          PY
-          rm -f .github/workflows/t06-authoring.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/server/trpg/content/authored-mission-flow-registry.js
-          git add src/server/trpg/content/authored-scene-registry.js
-          git add tools/trpg-sim/test/authored-mission-aftermath.test.mjs
-          git add tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs
-          git add .github/workflows/trpg-player-simulation.yml
-          git add -u .github/workflows/t06-authoring.yml
-          git diff --cached --check
-          git commit -m "TRPG: T06港湾労働者暴動を統合"
-          git push origin HEAD:agent/trpg-human-authored-choices
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trpg-player-simulation-v4
+          path: |
+            tools/trpg-sim/reports/test-v4.log
+            tools/trpg-sim/reports/player-v4-latest.json
+            tools/trpg-sim/reports/player-v4-latest.md
+            tools/trpg-sim/reports/player-latest.json
+            tools/trpg-sim/reports/player-latest.md
+            public/TRPG/player-simulation-report.json
+            public/TRPG/player-simulation-v4-report.json

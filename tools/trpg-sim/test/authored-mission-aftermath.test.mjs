@@ -15,8 +15,8 @@ function pack(troubleId) {
   return AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.troubleId === troubleId);
 }
 
-test("T03 through T05 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
-  for (const troubleId of ["T03", "T04", "T05"]) {
+test("T03 through T06 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
+  for (const troubleId of ["T03", "T04", "T05", "T06"]) {
     const missionPack = pack(troubleId);
     assert.ok(missionPack);
     assert.equal(missionPack.resolution.choices.length, 3);
@@ -96,6 +96,65 @@ test("an authored political conflict injects its battle between investigation an
   assert.equal(battle.encounterId, "ENC-0033");
   assert.equal(battle.targetFacilityId, "LOC_TRADE_WAREHOUSE");
   assert.equal(battle.required, 1);
+});
+
+
+test("T06 separates labor harm, guild manipulation and criminal weapon supply before three port settlements", () => {
+  const missionPack = pack("T06");
+  assert.ok(missionPack);
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(new Set(missionPack.hearing.choices.map((choice) => choice.id)).size, 3);
+  assert.deepEqual(missionPack.investigation.requiredEvidenceIds, [
+    "T06-EVIDENCE-REAL-WAGE-AND-INJURY-LOSS",
+    "T06-EVIDENCE-GUILD-CONTRACT-MANIPULATION",
+    "T06-EVIDENCE-CRIME-WEAPON-SUPPLY",
+  ]);
+  assert.equal(missionPack.catalogOverride.battle.encounterId, "ENC-0033");
+  assert.deepEqual(missionPack.catalogOverride.battle.encounterIdByTroubleStatus, {
+    active: "ENC-0033",
+    critical: "ENC-0034",
+  });
+  assert.equal(missionPack.catalogOverride.battle.targetFacilityId, "LOC_TRADE_WAREHOUSE");
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "temporary_wage_truce",
+    "lord_backed_labor_compact",
+    "worker_cooperative_and_smuggling_watch",
+  ]);
+  assert.equal(new Set(missionPack.resolution.choices
+    .map((route) => route.worldEffect.factId)).size, 3);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.worldEffect.aftermathPlans.length >= 2
+    && route.worldEffect.followups.length >= 2));
+  assert.ok(missionPack.resolution.choices.slice(1).every((route) =>
+    route.narrativeByTroubleStatus?.critical
+    && route.worldEffect.factIdByTroubleStatus?.critical
+    && route.worldEffect.textByTroubleStatus?.critical));
+});
+
+test("T06 preserves active smuggler interception and critical armed-worker escalation in one authored battle step", () => {
+  const catalog = {
+    special: [{
+      id: "MSN-T06",
+      steps: [
+        { id: "hear", type: "conversation", targetLocation: "交易都市", targetFacilityId: "LOC_TRADE_PORT", required: 1 },
+        { id: "investigate", type: "investigate", targetLocation: "交易都市", targetFacilityId: "LOC_TRADE_PORT", required: 1 },
+        { id: "resolve", type: "resolve", targetLocation: "交易都市", targetFacilityId: "LOC_TRADE_GUILD", required: 1 },
+      ],
+    }],
+  };
+
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+
+  const battle = catalog.special[0].steps.find((step) => step.type === "battle");
+  assert.ok(battle);
+  assert.equal(battle.targetFacilityId, "LOC_TRADE_WAREHOUSE");
+  assert.equal(battle.encounterId, "ENC-0033");
+  assert.deepEqual(battle.encounterIdByTroubleStatus, {
+    active: "ENC-0033",
+    critical: "ENC-0034",
+  });
+  assert.match(battle.labelByTroubleStatus.active, /密輸運び屋/u);
+  assert.match(battle.labelByTroubleStatus.critical, /一部労働者/u);
 });
 
 test("the generic NPC life engine travels, performs, and retires one authored aftermath plan", () => {
