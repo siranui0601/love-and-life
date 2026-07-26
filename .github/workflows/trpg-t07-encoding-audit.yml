@@ -1,0 +1,30 @@
+name: Temporary T07 encoding audit
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/trpg-t07-encoding-audit.yml"
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/trpg-human-authored-choices
+      - name: Verify exact UTF-8 source
+        shell: bash
+        run: |
+          sha256sum src/server/trpg/content/authored/missions/t07-runaway-elf-trafficking.js
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/server/trpg/content/authored/missions/t07-runaway-elf-trafficking.js')
+          data = p.read_bytes()
+          text = data.decode('utf-8')
+          expected = '家出エルフの人身売買ルート'
+          print('byte_length=', len(data))
+          print('contains_expected=', expected in text)
+          print('contains_mojibake=', '螳ｶ蜃ｺ' in text)
+          print('title_line=', next(line for line in text.splitlines() if 'title:' in line))
+          assert expected in text
+          assert '螳ｶ蜃ｺ' not in text
+          PY
