@@ -168,54 +168,54 @@ test("T06 preserves active smuggler interception and critical armed-worker escal
         shell: bash
         run: |
           cat > .github/workflows/trpg-player-simulation.yml <<'WORKFLOW'
-name: TRPG integrated player simulation
+          name: TRPG integrated player simulation
 
-on:
-  pull_request:
-    paths:
-      - "tools/trpg-sim/**"
-      - "public/TRPG/**"
-      - "src/server/trpg/**"
-      - "src/server/app.js"
-      - "package.json"
-      - ".github/workflows/trpg-player-simulation.yml"
-  workflow_dispatch:
+          on:
+            pull_request:
+              paths:
+                - "tools/trpg-sim/**"
+                - "public/TRPG/**"
+                - "src/server/trpg/**"
+                - "src/server/app.js"
+                - "package.json"
+                - ".github/workflows/trpg-player-simulation.yml"
+            workflow_dispatch:
 
-jobs:
-  simulate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Run TRPG tests
-        shell: bash
-        run: |
-          mkdir -p tools/trpg-sim/reports
-          set -o pipefail
-          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v4.log
-      - name: Run integrated player, GOAP and Gemini journeys v4
-        env:
-          TRPG_PLAYER_V4_SEEDS: 2
-          TRPG_GOAP_V4_SEEDS: 2
-        run: node tools/trpg-sim/cli-player-v4.mjs --strict
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: trpg-player-simulation-v4
-          path: |
-            tools/trpg-sim/reports/test-v4.log
-            tools/trpg-sim/reports/player-v4-latest.json
-            tools/trpg-sim/reports/player-v4-latest.md
-            tools/trpg-sim/reports/player-latest.json
-            tools/trpg-sim/reports/player-latest.md
-            public/TRPG/player-simulation-report.json
-            public/TRPG/player-simulation-v4-report.json
-WORKFLOW
+          jobs:
+            simulate:
+              runs-on: ubuntu-latest
+              timeout-minutes: 60
+              steps:
+                - uses: actions/checkout@v4
+                - uses: actions/setup-node@v4
+                  with:
+                    node-version: 22
+                    cache: npm
+                - run: npm ci
+                - name: Run TRPG tests
+                  shell: bash
+                  run: |
+                    mkdir -p tools/trpg-sim/reports
+                    set -o pipefail
+                    npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v4.log
+                - name: Run integrated player, GOAP and Gemini journeys v4
+                  env:
+                    TRPG_PLAYER_V4_SEEDS: 2
+                    TRPG_GOAP_V4_SEEDS: 2
+                  run: node tools/trpg-sim/cli-player-v4.mjs --strict
+                - uses: actions/upload-artifact@v4
+                  if: always()
+                  with:
+                    name: trpg-player-simulation-v4
+                    path: |
+                      tools/trpg-sim/reports/test-v4.log
+                      tools/trpg-sim/reports/player-v4-latest.json
+                      tools/trpg-sim/reports/player-v4-latest.md
+                      tools/trpg-sim/reports/player-latest.json
+                      tools/trpg-sim/reports/player-latest.md
+                      public/TRPG/player-simulation-report.json
+                      public/TRPG/player-simulation-v4-report.json
+          WORKFLOW
           rm -f .github/workflows/t06-authoring.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
