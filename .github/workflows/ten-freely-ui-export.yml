@@ -1,9 +1,9 @@
 name: Ten Freely UI export
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature/ten-freely-foundation
+      - main
 
 permissions:
   contents: read
@@ -21,4 +21,3 @@ jobs:
             src/10を自由に/online.js
           if-no-files-found: error
           retention-days: 1
-      - run: echo "export ready"
