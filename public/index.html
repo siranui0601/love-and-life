@@ -72,6 +72,11 @@
       <p>1対1で魔法陣を描く新作バトル！</p>
     </div>
 
+    <div class="game-card" data-game="ten-freely" role="button" tabindex="0" aria-label="10を自由にを開く">
+      <div class="game-icon">10</div>
+      <h2>10を自由に</h2>
+      <p>数字をすべて使って、自由な数式で10を作れ！</p>
+    </div>
 
     <div class="game-card" data-game="hundred-ore">
       <div class="game-icon">📖</div>
@@ -84,8 +89,6 @@
 
 
 
-
-    
 
     <section id="judgementAI" style="display:none;">
   <h1 class="menu-title">断罪AI</h1>
@@ -324,6 +327,20 @@
         <button id="settingsLogoutBtn" class="logout-btn" type="button">ログアウト</button>
       </div>
       <button id="closeSettingsBtn" class="signup-close-btn" type="button">閉じる</button>
+    </div>
+  </div>
+
+  <div id="tenFreelyGuestModal" class="ten-entry-modal" aria-hidden="true">
+    <div class="ten-entry-modal-card" role="dialog" aria-modal="true" aria-labelledby="tenFreelyGuestTitle">
+      <button class="ten-entry-close" type="button" data-ten-close aria-label="閉じる">×</button>
+      <div class="ten-entry-modal-icon" aria-hidden="true">10</div>
+      <h2 id="tenFreelyGuestTitle">記録も残して挑戦する？</h2>
+      <p>ゲストのままでもすぐ遊べます。ログインすると、同じ条件のランキングに自己ベストを載せられます。</p>
+      <div class="ten-entry-benefit" aria-hidden="true"><span>自己ベスト</span><span>条件別ランキング</span><span>対戦名表示</span></div>
+      <div class="ten-entry-actions">
+        <button type="button" data-ten-login>ログインして挑戦</button>
+        <button type="button" data-ten-guest>ゲストで遊ぶ</button>
+      </div>
     </div>
   </div>
 
