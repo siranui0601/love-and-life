@@ -221,6 +221,7 @@ function initializeNpcState(engine, npc, state) {
   state.planRevision = 0;
   state.lastDecisionAt = null;
   state.lastCrisisActionAt = {};
+  state.completedAftermathPlanIds = [];
   state.lastLifeTransitionAt = null;
   state.activityTicks = 0;
   state.eligibleTicks = 0;
@@ -938,6 +939,65 @@ function routineTarget(engine, npc, state, time) {
   return target;
 }
 
+
+function npcMatchesAftermathPlan(npc, plan) {
+  const explicitIds = plan?.npcIds ?? [];
+  if (explicitIds.length && !explicitIds.includes(npc.id)) return false;
+  if (plan?.relatedTroubleId && !(npc.relatedTroubleIds ?? []).includes(plan.relatedTroubleId)) return false;
+  if (plan?.npcRolePattern) {
+    try {
+      if (!new RegExp(plan.npcRolePattern, "u").test(`${npc.occupation ?? ""} ${npc.primaryGoal ?? ""}`)) return false;
+    } catch {
+      return false;
+    }
+  }
+  return explicitIds.length > 0 || Boolean(plan?.relatedTroubleId) || Boolean(plan?.npcRolePattern);
+}
+
+function authoredAftermathDecision(engine, npc, state, time) {
+  state.completedAftermathPlanIds = Array.isArray(state.completedAftermathPlanIds)
+    ? [...new Set(state.completedAftermathPlanIds)]
+    : [];
+  const completed = new Set(state.completedAftermathPlanIds);
+  const candidates = [];
+  for (const belief of Object.values(state.beliefs ?? {})) {
+    if (belief?.kind !== "trouble" || belief.troubleStatus !== "resolved") continue;
+    if (Number(belief.learnedAt ?? Infinity) > time.absoluteHour) continue;
+    for (const plan of belief.aftermathPlans ?? []) {
+      if (!plan?.id || completed.has(plan.id) || !npcMatchesAftermathPlan(npc, plan)) continue;
+      const availableAt = Number(belief.learnedAt ?? 0) + Math.max(0, Number(plan.delayHours ?? 0));
+      const expiresAt = Number.isFinite(Number(plan.expiresAfterHours))
+        ? availableAt + Math.max(1, Number(plan.expiresAfterHours))
+        : Number.POSITIVE_INFINITY;
+      if (time.absoluteHour < availableAt || time.absoluteHour > expiresAt) continue;
+      candidates.push({ belief, plan, availableAt });
+    }
+  }
+  candidates.sort((left, right) => Number(right.belief.importance ?? 0) - Number(left.belief.importance ?? 0)
+    || left.availableAt - right.availableAt
+    || left.plan.id.localeCompare(right.plan.id, "en"));
+  const selected = candidates[0];
+  if (!selected) return null;
+  const { belief, plan } = selected;
+  const targetFacilityId = plan.targetFacilityId ?? null;
+  const targetHub = plan.targetHub ?? facilityHub(engine.model, targetFacilityId, null);
+  const base = {
+    goal: `aftermath:${plan.goal ?? plan.id}`,
+    troubleId: belief.troubleId ?? plan.relatedTroubleId ?? null,
+    usedFactIds: [belief.factId],
+    aftermathPlanId: plan.id,
+    statusText: plan.statusText ?? null,
+    reason: plan.reason ?? "authored-resolution-aftermath",
+  };
+  if (targetHub && state.position.hubId !== targetHub) {
+    return { ...base, action: "travel", targetHub };
+  }
+  if (targetFacilityId && state.position.facilityId !== targetFacilityId) {
+    return { ...base, action: "local-travel", targetFacilityId };
+  }
+  return { ...base, action: plan.action ?? "complete-aftermath-duty" };
+}
+
 function chooseDecision(engine, npc, state, time, troubleStates) {
   const known = latestKnownTroubles(state)
     .filter((belief) => ["active", "critical", "failed"].includes(belief.troubleStatus))
@@ -991,6 +1051,9 @@ function chooseDecision(engine, npc, state, time, troubleStates) {
       reason: "knowledge-driven-local-action",
     };
   }
+
+  const aftermath = authoredAftermathDecision(engine, npc, state, time);
+  if (aftermath) return aftermath;
 
   const targetFacilityId = routineTarget(engine, npc, state, time);
   if (targetFacilityId && targetFacilityId !== state.position.facilityId) {
@@ -1074,6 +1137,15 @@ function executeDecision(engine, npc, state, decision, time, worldFlags) {
       if (belief) publishRumor(engine, state.position.hubId, { ...belief, importance: Math.max(0.82, belief.importance ?? 0) }, time.absoluteHour + 4, npc.id, "warning-action");
     }
   }
+  if (decision.aftermathPlanId
+    && !["travel", "local-travel", "continue-travel", "wait-no-route"].includes(action)) {
+    state.completedAftermathPlanIds = Array.isArray(state.completedAftermathPlanIds)
+      ? [...new Set([...state.completedAftermathPlanIds, decision.aftermathPlanId])]
+      : [decision.aftermathPlanId];
+    state.needs.fatigue = clamp(state.needs.fatigue + 5);
+    state.needs.stress = clamp(state.needs.stress - 2);
+    if (decision.statusText) state.status = decision.statusText;
+  }
   return { action, crisisActions };
 }
 
@@ -1095,6 +1167,7 @@ function recordDecision(engine, npc, state, decision, actualAction, time, replan
     actionType: actualAction,
     reason: decision.reason,
     troubleId: decision.troubleId ?? null,
+    aftermathPlanId: decision.aftermathPlanId ?? null,
     usedFactIds: [...(decision.usedFactIds ?? [])],
     targetHub: decision.targetHub ?? null,
     targetFacilityId: decision.targetFacilityId ?? null,
@@ -1107,7 +1180,7 @@ function recordDecision(engine, npc, state, decision, actualAction, time, replan
     knowledgeRevision: state.knowledgeRevision,
   };
   engine.decisionEvents.push(event);
-  mixTraceFingerprint(engine, ["decision", event.npcId, event.day, event.phaseIndex, event.goal, event.action, event.reason, event.troubleId, event.targetHub, event.targetFacilityId, event.usedFactIds.join(","), event.replanned]);
+  mixTraceFingerprint(engine, ["decision", event.npcId, event.day, event.phaseIndex, event.goal, event.action, event.reason, event.troubleId, event.aftermathPlanId, event.targetHub, event.targetFacilityId, event.usedFactIds.join(","), event.replanned]);
   state.lastDecisionAt = time.absoluteHour;
   state.activityTicks += 1;
   return event;

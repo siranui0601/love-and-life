@@ -1,4 +1,4 @@
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v3";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v4";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
@@ -219,6 +219,56 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
             text: "古代神殿の転移先から生存巡礼者が救出され、白石回廊の転移装置は停止した",
             facilityId: "LOC_TEMPLE_SEALED",
             propagationDelayHours: 3,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t04-recover-falco-survivor-care",
+                npcIds: Object.freeze(["NPC053"]),
+                goal: "coordinate-survivor-care",
+                action: "coordinate-survivor-care",
+                targetHub: "古代神殿",
+                targetFacilityId: "LOC_TEMPLE_REST",
+                delayHours: 0,
+                statusText: "救出された巡礼者の受け入れを指揮している",
+                reason: "temple-administrator-cares-for-recovered-pilgrims",
+              }),
+              Object.freeze({
+                id: "t04-recover-eida-recovery",
+                npcIds: Object.freeze(["NPC055"]),
+                goal: "recover-after-transfer",
+                action: "recover-after-transfer",
+                targetHub: "古代神殿",
+                targetFacilityId: "LOC_TEMPLE_REST",
+                delayHours: 2,
+                statusText: "転移から戻った体を休め、家族へ経緯を残している",
+                reason: "rescued-pilgrim-recovers-and-records-testimony",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "falco-survivor-care",
+                npcId: "NPC053",
+                narrative: "休憩所には毛布と湯が運び込まれ、救出された巡礼者の名が一人ずつ確認されている。ファルコは管理者の机ではなく、負傷者のそばで記録を取っていた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC053",
+                    text: "戻れた者は全員、家族へ引き合わせる。戻れなかった者の記録も消さない。装置を止めたことより、止めるまで被害を隠した責任の方が重い。",
+                    emotion: "疲労と決意",
+                  }),
+                ]),
+              }),
+              Object.freeze({
+                id: "eida-testimony",
+                npcId: "NPC055",
+                narrative: "エイダは毛布を肩まで引き寄せ、震える指で日記の空白へ短い文を書き足している。回廊で途切れた本人の時間が、ようやく家族へ続き直した。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC055",
+                    text: "冷たい暗闇の中で、鐘の音だけを数えていました。日記を残していたから、あなたが私たちの場所を見つけられたんですね。今度は、戻れなかった人のことも書きます。",
+                    emotion: "安堵と震え",
+                  }),
+                ]),
+              }),
+            ]),
           }),
         }),
         Object.freeze({
@@ -233,6 +283,56 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
             text: "古代神殿は緊急封鎖され、新しい失踪は止まったが、転移済み巡礼者の安否確認は後回しになった",
             facilityId: "LOC_TEMPLE_GATE",
             propagationDelayHours: 2,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t04-seal-falco-gate-watch",
+                npcIds: Object.freeze(["NPC053"]),
+                goal: "maintain-emergency-seal",
+                action: "maintain-emergency-seal",
+                targetHub: "古代神殿",
+                targetFacilityId: "LOC_TEMPLE_GATE",
+                delayHours: 0,
+                statusText: "正門の封鎖と地下の魔力監視を続けている",
+                reason: "temple-administrator-maintains-emergency-seal",
+              }),
+              Object.freeze({
+                id: "t04-seal-sana-missing-ledger",
+                npcIds: Object.freeze(["NPC054"]),
+                goal: "register-unrecovered-pilgrims",
+                action: "register-unrecovered-pilgrims",
+                targetHub: "古代神殿",
+                targetFacilityId: "LOC_TEMPLE_ADMIN",
+                delayHours: 1,
+                statusText: "救出未了の巡礼者名簿を家族ごとに整理している",
+                reason: "temple-guide-keeps-unrecovered-pilgrims-visible",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "falco-emergency-seal",
+                npcId: "NPC053",
+                narrative: "正門の内側には二重の鎖が渡され、封鎖札の横へ失踪者名簿が掲げられている。ファルコは地下から伝わる振動を測る砂時計を、一度も視界から外さない。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC053",
+                    text: "新しい失踪は止まった。だが、地下へ残した者まで救えたことにはならない。封鎖を『解決』と呼んで名簿を片づける者が出ないよう、私がここに立つ。",
+                    emotion: "険しい自責",
+                  }),
+                ]),
+              }),
+              Object.freeze({
+                id: "sana-unrecovered-ledger",
+                npcId: "NPC054",
+                narrative: "管理棟では、戻った者と戻っていない者を別の紙へ分けず、一冊の名簿に並べている。サナは家族の連絡先と、最後に確認された列順を余白へ書き込んでいた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC054",
+                    text: "家族には、新しい転移が止まったことと、救出が終わっていないことを分けて伝えています。安心させるために、いない人を終わったことにはできません。",
+                    emotion: "静かな緊張",
+                  }),
+                ]),
+              }),
+            ]),
           }),
         }),
         Object.freeze({
@@ -247,6 +347,56 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
             text: "古代神殿の転移装置は安全停止し、隠されていた失踪記録は公開されて外部監査の対象になった",
             facilityId: "LOC_TEMPLE_ADMIN",
             propagationDelayHours: 4,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t04-open-falco-submit-records",
+                npcIds: Object.freeze(["NPC053"]),
+                goal: "submit-concealed-records",
+                action: "submit-concealed-records",
+                targetHub: "古代神殿",
+                targetFacilityId: "LOC_TEMPLE_ADMIN",
+                delayHours: 0,
+                statusText: "隠していた巡回簿を監査人へ引き渡している",
+                reason: "temple-administrator-submits-concealed-records",
+              }),
+              Object.freeze({
+                id: "t04-open-luca-crosscheck-day1",
+                npcIds: Object.freeze(["NPC056"]),
+                goal: "crosscheck-day1-records",
+                action: "crosscheck-day1-records",
+                targetHub: "古代神殿",
+                targetFacilityId: "LOC_TEMPLE_ADMIN",
+                delayHours: 3,
+                statusText: "公開記録とDay1の術式資料を照合している",
+                reason: "former-researcher-crosschecks-public-records",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "falco-records-open",
+                npcId: "NPC053",
+                narrative: "管理棟の扉は開かれ、写しを取る監査人と家族が同じ机を囲んでいる。ファルコの印章は机上の封筒へ納められ、本人は質問に一つずつ答えていた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC053",
+                    text: "私の判断も、巡回簿の空白も、全部読める形で残した。神殿を守るためという言葉で記録を閉じれば、次も同じことをする。管理者を続けられるかは、監査の後に決まればいい。",
+                    emotion: "覚悟",
+                  }),
+                ]),
+              }),
+              Object.freeze({
+                id: "luca-day1-crosscheck",
+                npcId: "NPC056",
+                narrative: "ルカは公開された巡回簿の発光時刻と、持ち出していたDay1の術式写しを交互に確認している。別々に隠されていた記録が、同じ異常の輪郭を作り始めた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC056",
+                    text: "召喚失敗の余波が神殿の転移系へ流れた時刻と、最初の発光記録が一致する。記録が公開されたから、ようやく仮説ではなく検証として残せる。",
+                    emotion: "集中",
+                  }),
+                ]),
+              }),
+            ]),
           }),
         }),
       ]),
@@ -475,6 +625,45 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
             }),
             facilityId: "LOC_FOREST_CAMP",
             propagationDelayHours: 2,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t03-drive-garo-boundary",
+                npcIds: Object.freeze(["NPC003"]),
+                goal: "secure-wolf-boundary",
+                action: "inspect-boundary",
+                targetHub: "田園の村",
+                targetFacilityId: "LOC_FARM_EDGE",
+                delayHours: 0,
+                statusText: "村外れの匂い道と柵を点検している",
+                reason: "village-chief-secures-cleared-boundary",
+              }),
+              Object.freeze({
+                id: "t03-drive-hunter-patrol",
+                npcRolePattern: "猟師|狩人",
+                relatedTroubleId: "T03",
+                goal: "patrol-cleared-wolf-trail",
+                action: "patrol-boundary",
+                targetHub: "森",
+                targetFacilityId: "LOC_FOREST_CAMP",
+                delayHours: 1,
+                statusText: "森奥へ退いた群れの戻り道を巡回している",
+                reason: "hunters-patrol-cleared-wolf-trail",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "garo-boundary-secured",
+                npcId: "NPC003",
+                narrative: "村外れでは新しい杭が打たれ、森へ続く獣道に灰と苦い薬草の匂いが残っている。ガロ村長は柵の外側まで歩き、戻る足跡がないか確かめていた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC003",
+                    text: "森へ押し返しただけで終わりにはせん。匂い道を消し、子どもが近づかぬよう境界の杭を打ち直している。戻る兆しがあれば、次は被害が出る前に動く。",
+                    emotion: "慎重な安堵",
+                  }),
+                ]),
+              }),
+            ]),
           }),
         }),
         Object.freeze({
@@ -495,6 +684,45 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
             }),
             facilityId: "LOC_FOREST_CAMP",
             propagationDelayHours: 2,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t03-relocate-garo-route-map",
+                npcIds: Object.freeze(["NPC003"]),
+                goal: "record-relocated-den-route",
+                action: "record-relocated-den-route",
+                targetHub: "田園の村",
+                targetFacilityId: "LOC_FARM_CHIEF",
+                delayHours: 1,
+                statusText: "新しい巣穴と村を結ばない退路を村の地図へ記している",
+                reason: "village-chief-records-relocated-den-route",
+              }),
+              Object.freeze({
+                id: "t03-relocate-hunter-den-watch",
+                npcRolePattern: "猟師|狩人",
+                relatedTroubleId: "T03",
+                goal: "monitor-relocated-den",
+                action: "monitor-relocated-den",
+                targetHub: "森",
+                targetFacilityId: "LOC_FOREST_CAMP",
+                delayHours: 1,
+                statusText: "移した巣穴へ人と狼の道が交わらないか見張っている",
+                reason: "hunters-monitor-relocated-den",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "garo-den-relocated",
+                npcId: "NPC003",
+                narrative: "村長宅の地図には、古い巣穴へ続く新しい獣道が赤ではなく灰色で引かれている。ガロ村長は家畜を放す範囲と、子どもが入ってはいけない森際を描き直していた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC003",
+                    text: "殺さずに済んだことを甘さとは思わん。戻らぬかを確かめ続ける責任まで含めて、お前の選択だ。村の者にも、森へ近づかない線を改めて伝える。",
+                    emotion: "重い納得",
+                  }),
+                ]),
+              }),
+            ]),
           }),
         }),
         Object.freeze({
@@ -509,6 +737,45 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
             text: "大型魔獣の行動域に警報線が設けられ、赤牙狼が押し出される前に村へ知らせる体制ができた",
             facilityId: "LOC_FOREST_CAMP",
             propagationDelayHours: 2,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t03-watch-garo-warning-roster",
+                npcIds: Object.freeze(["NPC003"]),
+                goal: "maintain-apex-warning-roster",
+                action: "maintain-apex-warning-roster",
+                targetHub: "田園の村",
+                targetFacilityId: "LOC_FARM_CHIEF",
+                delayHours: 0,
+                statusText: "警報縄の合図を受ける当番表を組んでいる",
+                reason: "village-chief-maintains-apex-warning-roster",
+              }),
+              Object.freeze({
+                id: "t03-watch-hunter-watchline",
+                npcRolePattern: "猟師|狩人",
+                relatedTroubleId: "T03",
+                goal: "inspect-apex-watchline",
+                action: "inspect-apex-watchline",
+                targetHub: "森",
+                targetFacilityId: "LOC_FOREST_CAMP",
+                delayHours: 0,
+                statusText: "大型魔獣の足跡と警報縄を定期点検している",
+                reason: "hunters-inspect-apex-watchline",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "garo-apex-watchline",
+                npcId: "NPC003",
+                narrative: "村長宅には警報縄の合図表が掲げられ、森際の三地点と村の鐘が一本の線で結ばれている。ガロ村長は当番の名前を書き換え、空白の時間帯をなくしていた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC003",
+                    text: "警報縄の合図を村の鐘へつないだ。これで狼を責める前に、森の奥で何が動いたかを知れる。見張りを絶やせば元へ戻る。仕組みは作って終わりではない。",
+                    emotion: "実務的な決意",
+                  }),
+                ]),
+              }),
+            ]),
           }),
         }),
       ]),
@@ -1380,6 +1647,79 @@ function revealLeadIds(runtime, pack, flow, leadIds) {
   }
 }
 
+
+function aftermathPlanMatchesNpc(npc, plan) {
+  if (!npc || !plan) return false;
+  const explicitIds = plan.npcIds ?? [];
+  if (explicitIds.length && !explicitIds.includes(npc.id)) return false;
+  if (plan.relatedTroubleId && !(npc.relatedTroubleIds ?? []).includes(plan.relatedTroubleId)) return false;
+  if (plan.npcRolePattern) {
+    try {
+      if (!new RegExp(plan.npcRolePattern, "u").test(`${npc.occupation ?? ""} ${npc.primaryGoal ?? ""}`)) return false;
+    } catch {
+      return false;
+    }
+  }
+  return explicitIds.length > 0 || Boolean(plan.relatedTroubleId) || Boolean(plan.npcRolePattern);
+}
+
+function seedResolutionNpcAftermath(world, belief, effect, sourceEventId, learnedAt) {
+  const plans = effect?.aftermathPlans ?? [];
+  if (!world || !plans.length) return [];
+  const targetNpcIds = new Set();
+  for (const plan of plans) {
+    for (const npc of world.model?.npcs ?? []) {
+      if (aftermathPlanMatchesNpc(npc, plan)) targetNpcIds.add(npc.id);
+    }
+  }
+  const seeded = [];
+  for (const npcId of [...targetNpcIds].sort()) {
+    const state = world.npcStates?.[npcId];
+    if (!state || state.lifeStatus === "dead" || ["dead", "departed", "not-yet-present"].includes(state.presence)) continue;
+    state.beliefs ??= {};
+    const existing = state.beliefs[belief.factId];
+    if (existing && Number(existing.learnedAt ?? Infinity) <= learnedAt) continue;
+    world.knowledgeEventSequence = Number(world.knowledgeEventSequence ?? world.knowledgeEvents?.length ?? 0) + 1;
+    const eventId = `K${String(world.knowledgeEventSequence).padStart(7, "0")}`;
+    const path = [...(belief.path ?? []), npcId];
+    state.beliefs[belief.factId] = {
+      ...belief,
+      learnedAt,
+      propagationAt: learnedAt + 4,
+      sourceType: "player-intervention",
+      sourceNpcId: null,
+      sourceEventId,
+      provenanceEventId: eventId,
+      hopCount: 1,
+      path,
+    };
+    state.knowledgeRevision = Number(state.knowledgeRevision ?? 0) + 1;
+    world.knowledgeEvents ??= [];
+    world.knowledgeEvents.push({
+      id: eventId,
+      eventId,
+      type: "authored-aftermath",
+      npcId,
+      factId: belief.factId,
+      troubleId: belief.troubleId,
+      troubleStatus: "resolved",
+      learnedAt,
+      propagationAt: learnedAt + 4,
+      sourceType: "player-intervention",
+      sourceNpcId: null,
+      sourceEventId,
+      sourceLearnedAt: learnedAt,
+      importance: belief.importance,
+      confidence: belief.confidence,
+      hopCount: 1,
+      path,
+      location: { ...state.position },
+    });
+    seeded.push(npcId);
+  }
+  return seeded;
+}
+
 function applyResolutionWorldEffect(runtime, pack, route, minute, troubleStatus) {
   const effect = route.worldEffect;
   const factId = effect?.factIdByTroubleStatus?.[troubleStatus] ?? effect?.factId;
@@ -1437,6 +1777,10 @@ function applyResolutionWorldEffect(runtime, pack, route, minute, troubleStatus)
     provenanceEventId: eventId,
     hopCount: 0,
     path: [`facility:${facilityId}`],
+    aftermathPlans: (effect.aftermathPlans ?? []).map((plan) => ({
+      ...plan,
+      npcIds: [...(plan.npcIds ?? [])],
+    })),
   };
   world.knowledgeEvents ??= [];
   world.knowledgeEvents.push({
@@ -1465,6 +1809,7 @@ function applyResolutionWorldEffect(runtime, pack, route, minute, troubleStatus)
     sourceEventId: eventId,
     carrierType: "player-intervention",
   });
+  seedResolutionNpcAftermath(world, belief, effect, eventId, learnedAt);
   return factId;
 }
 
@@ -1747,6 +2092,20 @@ function scenesForPack(pack) {
           { path: "outcome.ok", op: "isTrue", value: true },
         ],
         route.narrativeByTroubleStatus?.[troubleStatus] ?? route.narrative,
+      ));
+    }
+    for (const followup of route.worldEffect?.followups ?? []) {
+      scenes.push(scene(
+        `mission-flow.${pack.id}.followup.${route.id}.${followup.id}`,
+        975,
+        [
+          { path: "action.type", op: "eq", value: "conversation" },
+          { path: "action.targetNpcId", op: "eq", value: followup.npcId },
+          { path: "action.dialogueTopic", op: "eq", value: "direct_contact" },
+          { path: `world.flags.${route.worldEffect.flagKey}`, op: "eq", value: route.id },
+        ],
+        followup.narrative,
+        followup.speeches,
       ));
     }
   }

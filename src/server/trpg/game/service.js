@@ -4567,6 +4567,7 @@ function narrativePublicGoal(npc, npcState) {
   if (npc?.disposition === "escalate") return "自分に不利な話題を避け、相手の出方をうかがう";
   const goal = String(npcState?.currentGoal ?? "");
   if (/respond|assist|search|warn|evacuate|treat/u.test(goal)) return "身近で起きている問題を気にかけている";
+  if (/aftermath|boundary|survivor|audit|seal|watch|patrol|record|den-route/u.test(goal)) return "起きた出来事の後始末と再発防止に動いている";
   if (/rest|recover/u.test(goal)) return "疲れを癒やし、次の行動に備える";
   if (/work|routine/u.test(goal)) return "自分の仕事と日課を進める";
   return "周囲の様子を見ながら、自分の用事を進める";
@@ -4912,6 +4913,8 @@ function authoredSceneContext(runtime, action, outcome) {
       destinationFacilityId: resolved.destinationFacilityId ?? null,
       lodging: resolved.lodging === true,
       price: Number.isFinite(Number(resolved.price)) ? Number(resolved.price) : null,
+      targetNpcId: resolved.targetNpcId ?? null,
+      dialogueTopic: resolved.dialogueTopic ?? null,
     },
     outcome: outcome ?? {},
     mission: {
@@ -4926,6 +4929,9 @@ function authoredSceneContext(runtime, action, outcome) {
       fromHub: latestRegionalMove?.from ?? null,
       toHub: latestRegionalMove?.to ?? null,
       arrivalVisitCount,
+    },
+    world: {
+      flags: { ...(state.worldFlags ?? {}) },
     },
     story: {
       t01ReunionNow: state.player.facilityId === "LOC_FARM_SQUARE"
