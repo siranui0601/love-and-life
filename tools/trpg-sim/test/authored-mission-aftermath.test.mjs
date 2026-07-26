@@ -14,8 +14,8 @@ function pack(troubleId) {
   return AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.troubleId === troubleId);
 }
 
-test("T03 and T04 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
-  for (const troubleId of ["T03", "T04"]) {
+test("T03 through T05 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
+  for (const troubleId of ["T03", "T04", "T05"]) {
     const missionPack = pack(troubleId);
     assert.ok(missionPack);
     assert.equal(missionPack.resolution.choices.length, 3);
@@ -42,6 +42,31 @@ test("T03 and T04 routes hand-author distinct NPC aftermath plans and direct-tal
       assert.ok(scene.beats.some((beat) => beat.actorId === followup.npcId));
     }
   }
+});
+
+
+test("T05 requires antidote, poison route and patron order before its three political resolutions", () => {
+  const missionPack = pack("T05");
+  assert.ok(missionPack);
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(new Set(missionPack.hearing.choices.map((choice) => choice.id)).size, 3);
+  assert.deepEqual(missionPack.investigation.requiredEvidenceIds, [
+    "T05-EVIDENCE-ANTIDOTE-FORMULA",
+    "T05-EVIDENCE-CRIME-POISON-ROUTE",
+    "T05-EVIDENCE-CEDRIC-POISON-ORDER",
+  ]);
+  assert.equal(missionPack.catalogOverride.battle.encounterId, "ENC-0033");
+  assert.equal(missionPack.catalogOverride.battle.targetFacilityId, "LOC_TRADE_WAREHOUSE");
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "protect_nicolas_and_treat",
+    "buy_crime_ledger_antidote",
+    "royal_physician_public_indictment",
+  ]);
+  assert.equal(new Set(missionPack.resolution.choices
+    .map((route) => route.worldEffect.factId)).size, 3);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.worldEffect.aftermathPlans.length >= 2
+    && route.worldEffect.followups.length >= 2));
 });
 
 test("the generic NPC life engine travels, performs, and retires one authored aftermath plan", () => {

@@ -1,9 +1,442 @@
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v4";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v5";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 
 export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
+  Object.freeze({
+    id: "trade-lord-poisoning",
+    missionId: "MSN-T05",
+    troubleId: "T05",
+    title: "交易都市領主の毒殺計画",
+    catalogOverride: Object.freeze({
+      hearing: Object.freeze({
+        targetLocation: "交易都市",
+        targetFacilityId: "LOC_TRADE_LORD_MANOR",
+        label: "領主館の療養室で、領主付き医師マリエルから倒れる直前の状況を聞く",
+      }),
+      investigation: Object.freeze({
+        required: 3,
+      }),
+      battle: Object.freeze({
+        targetLocation: "交易都市",
+        targetFacilityId: "LOC_TRADE_WAREHOUSE",
+        encounterId: "ENC-0033",
+        label: "倉庫街で毒の帳簿を持ち去る密輸運び屋を止め、ニコラスを保護する",
+      }),
+      resolution: Object.freeze({
+        targetLocation: "交易都市",
+        targetFacilityId: "LOC_TRADE_LORD_MANOR",
+        label: "領主館の療養室で、解毒と毒殺計画の公表方法を決める",
+      }),
+    }),
+    hearing: Object.freeze({
+      stepId: "hear",
+      targetLocation: "交易都市",
+      targetFacilityId: "LOC_TRADE_LORD_MANOR",
+      npcId: "NPC011",
+      npcName: "マリエル医師",
+      guidance: Object.freeze({
+        kicker: "病に見せかけた毒",
+        title: "マリエル医師へ、倒れる直前の何から確かめるかを伝える",
+        detail: "症状の進み方、最後に口へしたもの、倒れた後に動き始めた後継派では、最初に追える証拠が変わる。",
+      }),
+      choices: Object.freeze([
+        Object.freeze({
+          id: "symptoms_and_clock",
+          dialogueTopic: "mission_flow_t05_symptoms_and_clock",
+          label: "領主が倒れてからの脈、呼吸、体温の変化を時系列で聞く",
+          playerUtterance: "病気か毒かを見分けたい。倒れてから、脈と呼吸と体温はどう変わりましたか。",
+          requiredDisclosure: "発熱がないまま脈と呼吸だけが弱まり、葡萄酒の残り香に港薬草商では扱わない苦い樹脂臭が混じっていた",
+          factId: "T05-FACT-NONNATURAL-POISON",
+          unlockedLeadIds: Object.freeze(["bedside_symptoms", "antidote_formula"]),
+          minutes: 12,
+          narrative: "マリエルは診療記録を分刻みで開き、病の経過では説明できない変化だけを指で追った。熱は上がらず、意識と呼吸だけが静かに奪われている。",
+          speeches: Object.freeze([
+            Object.freeze({
+              actorId: "NPC011",
+              text: "熱はない。脈と呼吸だけが落ち続け、瞳孔の反応も鈍い。最後の杯には、この港の薬草商が扱わない苦い樹脂臭が残っていた。自然病ではない。",
+              emotion: "冷静な焦り",
+            }),
+          ]),
+        }),
+        Object.freeze({
+          id: "last_cup_route",
+          dialogueTopic: "mission_flow_t05_last_cup_route",
+          label: "最後の杯を誰が運び、空いた酒瓶と布がどこへ消えたか聞く",
+          playerUtterance: "最後の杯に触れた人と、使った瓶や布の行方を順番に教えてください。",
+          requiredDisclosure: "杯を運んだ使用人ニコラスは直後に使用人区を離れ、洗浄布と予備瓶を持って倉庫街へ向かった",
+          factId: "T05-FACT-NICOLAS-LEFT-FOR-WAREHOUSE",
+          unlockedLeadIds: Object.freeze(["service_route", "warehouse_manifest"]),
+          minutes: 13,
+          narrative: "療養室の出入り記録と使用人の当番表を重ねると、一人だけ持ち場へ戻らなかった。マリエルは責める口調を避けながら、その名を告げる。",
+          speeches: Object.freeze([
+            Object.freeze({
+              actorId: "NPC011",
+              text: "最後の杯を運んだのはニコラスよ。直後、洗浄布と予備瓶を抱えて倉庫街へ向かった。怯えていたという証言もある。実行した可能性と、自分の意思だったかは分けて調べるべきね。",
+              emotion: "慎重",
+            }),
+          ]),
+        }),
+        Object.freeze({
+          id: "succession_pressure",
+          dialogueTopic: "mission_flow_t05_succession_pressure",
+          label: "領主が倒れた直後、誰が継承と港の契約を急がせたか聞く",
+          playerUtterance: "領主が倒れた直後に、継承や港の契約を急がせた人物はいますか。",
+          requiredDisclosure: "セドリックは診断確定前から緊急継承会議と外国船の寄港枠を求め、日付の早い契約草案を商人ギルドへ持ち込んでいた",
+          factId: "T05-FACT-CEDRIC-MOVED-BEFORE-DIAGNOSIS",
+          unlockedLeadIds: Object.freeze(["succession_draft", "port_meeting"]),
+          minutes: 14,
+          narrative: "マリエルは医療記録の余白に残した来訪者名を示した。まだ病名さえ決まらない時間に、後継と港の話だけが先へ進んでいる。",
+          speeches: Object.freeze([
+            Object.freeze({
+              actorId: "NPC011",
+              text: "セドリックは診断が出る前から継承会議を求め、外国船の寄港枠まで話していた。医師の私に死亡時刻の見込みを聞いたほどよ。準備が早すぎる。",
+              emotion: "抑えた疑念",
+            }),
+          ]),
+        }),
+      ]),
+    }),
+    investigation: Object.freeze({
+      stepId: "investigate",
+      requiredEvidenceCount: 3,
+      requiredEvidenceIds: Object.freeze([
+        "T05-EVIDENCE-ANTIDOTE-FORMULA",
+        "T05-EVIDENCE-CRIME-POISON-ROUTE",
+        "T05-EVIDENCE-CEDRIC-POISON-ORDER",
+      ]),
+      initialGuidance: Object.freeze({
+        kicker: "毒・運搬・依頼主",
+        title: "領主の症状、倉庫へ消えた品、早すぎる継承準備を別々に確かめる",
+        detail: "領主を救うには毒の種類と解毒法が必要だ。計画を止めるには犯罪都市からの運搬経路と、セドリックの依頼を示す記録も欠かせない。",
+      }),
+      continuedGuidance: Object.freeze({
+        kicker: "救命と告発を両立する",
+        title: "残る証拠から、解毒法・毒の出所・依頼主の空白を埋める",
+        detail: "実行した使用人だけを捕らえても毒は消えず、依頼主を残せば再び狙われる。三系統を揃えて初めて領主を救い、次期領主派を止められる。",
+      }),
+      selectedLeadGuidance: Object.freeze({
+        kicker: "選んだ確認先",
+        detail: "推測を結論にせず、診療記録、現物、物流記録、契約の写しとして後から照合できる証拠へ変える。",
+      }),
+      defer: Object.freeze({
+        id: "defer",
+        label: "毒殺調査をいったん保留し、治療道具と協力者を整える",
+        minutes: 5,
+        deferMinutes: 180,
+        summary: "交易都市領主の毒殺調査を保留した。領主の呼吸は弱まり、後継派の継承準備も進み続ける。",
+        narrative: "確認先を記録し、今は別の準備を優先することにした。毒は体内で進み、セドリック側は空いた時間を継承の既成事実へ変えていく。",
+      }),
+      leads: Object.freeze([
+        Object.freeze({
+          id: "bedside_symptoms",
+          facilityId: "LOC_TRADE_LORD_MANOR",
+          destinationName: "領主館の療養室",
+          label: "診療記録と杯の残留物から、自然病ではない症状を確定する",
+          approachId: "t05-bedside-symptoms",
+          discoveryId: "T05-EVIDENCE-POISONED-WINE-SYMPTOMS",
+          discoveryText: "発熱を伴わず呼吸と脈だけを落とす症状、杯の縁に残る苦い樹脂、舌の下の青黒い変色が一致した。領主は病ではなく、遅効性の植物毒を葡萄酒から摂取している。",
+          unlocksLeadIds: Object.freeze(["antidote_formula", "service_route"]),
+          minutes: 29,
+          leadNarrative: "マリエルの診療記録を症状ごとに並べ、杯の残留物を湯と銀片で分ける。病名を当てるのではなく、毒が体へ与えている変化を一つずつ固定する。",
+        }),
+        Object.freeze({
+          id: "antidote_formula",
+          facilityId: "LOC_TRADE_APOTHECARY",
+          destinationName: "港薬草商",
+          label: "杯の残留物をルーシーの薬草標本と照合し、解毒処方を組む",
+          approachId: "t05-antidote-formula",
+          discoveryId: "T05-EVIDENCE-ANTIDOTE-FORMULA",
+          discoveryText: "杯の樹脂は犯罪都市で鎮静毒として流通する灰眠樹の濃縮液だった。港薬草商の吸着炭、苦根、青潮苔を順番どおり投与すれば、呼吸停止までの進行を抑えられる。",
+          unlocksLeadIds: Object.freeze(["warehouse_manifest", "service_route"]),
+          minutes: 37,
+          leadNarrative: "ルーシーは港へ入る薬草の標本を棚から下ろし、杯の残留物を少量ずつ反応させる。似た苦味でも、灰眠樹だけが青潮苔に触れた瞬間に白く濁った。",
+        }),
+        Object.freeze({
+          id: "service_route",
+          facilityId: "LOC_TRADE_LORD_MANOR",
+          destinationName: "領主館の使用人区",
+          label: "ニコラスの当番表と消えた洗浄布から、毒を入れた時点を特定する",
+          approachId: "t05-service-route",
+          discoveryId: "T05-EVIDENCE-NICOLAS-HANDLED-CUP",
+          discoveryText: "ニコラスの当番表には本来ない『祝い酒の交換』が追記され、寝台下から灰眠樹の染みが付いた手袋が見つかった。本人の妹を示す似顔札には、犯罪都市の仲介印が押されている。",
+          unlocksLeadIds: Object.freeze(["warehouse_manifest", "antidote_formula"]),
+          minutes: 33,
+          leadNarrative: "使用人を一人ずつ責めるのではなく、当番表、配膳口、洗い場、私物箱の順で杯の経路を戻る。追記された一行と、隠された手袋だけが通常の流れから外れていた。",
+        }),
+        Object.freeze({
+          id: "warehouse_manifest",
+          facilityId: "LOC_TRADE_WAREHOUSE",
+          destinationName: "倉庫街",
+          label: "ニコラスが運んだ予備瓶と、犯罪都市から来た荷札を照合する",
+          approachId: "t05-warehouse-manifest",
+          discoveryId: "T05-EVIDENCE-CRIME-POISON-ROUTE",
+          discoveryText: "予備瓶の底から犯罪都市の黒灯亭を経由した荷札と、灰眠樹濃縮液の重量を偽って記した船荷台帳が見つかった。受取人欄はセドリック家の港倉庫番へつながっている。",
+          unlocksLeadIds: Object.freeze(["antidote_formula", "crime_ledger", "port_meeting"]),
+          minutes: 41,
+          leadNarrative: "酒瓶だけを探さず、同じ日に入った樹脂、染料、薬瓶の重量差を税関控えと比べる。空になったはずの木箱だけが、犯罪都市の船荷番号を残していた。",
+        }),
+        Object.freeze({
+          id: "succession_draft",
+          facilityId: "LOC_TRADE_GUILD",
+          destinationName: "商人ギルド会館",
+          label: "緊急継承案と外国船の寄港契約草案の日付を照合する",
+          approachId: "t05-succession-draft",
+          discoveryId: "T05-EVIDENCE-PREMATURE-SUCCESSION-DRAFT",
+          discoveryText: "セドリックが提出した緊急継承案と外国船の寄港契約草案は、領主が倒れる三日前に清書されていた。死亡時にだけ発効する港湾権の譲渡条項まで用意されている。",
+          unlocksLeadIds: Object.freeze(["port_meeting", "warehouse_manifest"]),
+          minutes: 35,
+          leadNarrative: "ベリルが保管する議事控えと契約草案を、署名ではなく紙の透かしと乾いた順で並べる。倒れた後に作った文書ならあり得ない日付が、下書き側に残っていた。",
+        }),
+        Object.freeze({
+          id: "port_meeting",
+          facilityId: "LOC_TRADE_PORT",
+          destinationName: "大港湾区",
+          label: "セドリック家の使者が犯罪都市便と接触した時刻を港の出入記録で追う",
+          approachId: "t05-port-meeting",
+          discoveryId: "T05-EVIDENCE-CEDRIC-CRIME-CONTACT",
+          discoveryText: "領主が倒れる五日前、セドリック家の使者が犯罪都市便の下船記録を買い取り、情報屋モズと同じ船宿へ入っていた。支払いにはセドリック家の軍費口座が使われている。",
+          unlocksLeadIds: Object.freeze(["warehouse_manifest", "crime_ledger"]),
+          minutes: 38,
+          leadNarrative: "船員の記憶だけに頼らず、係留札、荷役賃、船宿の部屋代を同じ時刻へ重ねる。偽名の使者が残した支払い口座だけは、家名を隠せなかった。",
+        }),
+        Object.freeze({
+          id: "crime_ledger",
+          facilityId: "LOC_TRADE_INN",
+          destinationName: "潮風宿",
+          label: "犯罪都市から来た情報屋モズと接触し、毒の依頼台帳と解毒符号を確保する",
+          approachId: "t05-crime-ledger",
+          discoveryId: "T05-EVIDENCE-CEDRIC-POISON-ORDER",
+          discoveryText: "モズが持ち込んだ依頼台帳の写しには、灰眠樹濃縮液、ニコラスの妹を押さえる費用、領主死亡後の追加報酬が同じ符号で記されていた。照合鍵はセドリック家の港倉庫印だった。",
+          unlocksLeadIds: Object.freeze(["warehouse_manifest", "antidote_formula"]),
+          minutes: 44,
+          leadNarrative: "潮風宿の個室で、モズは台帳そのものではなく三枚の写しを別々に置いた。毒の品名、脅迫の費用、成功報酬を結ぶ符号を解けば、依頼主まで一つの線になる。",
+        }),
+      ]),
+      prematureResolution: Object.freeze({
+        id: "blame_nicolas_only",
+        label: "ニコラスだけを捕らえ、使用人による単独犯として事件を終わらせる",
+        minutes: 23,
+        summary: "ニコラスを拘束しても、領主の毒は進み、犯罪都市の供給者と依頼主は残った。確認済みの証拠を保ったまま調査を続けられる。",
+        narrative: "手袋と当番表だけを示すと、セドリック側は『使用人一人の逆恨み』として処理しようとした。ニコラスは妹の名を口にして黙り込み、解毒法も依頼主も明らかにならない。実行した手と、脅した者と、毒を運んだ経路を分けて確かめる必要がある。",
+      }),
+    }),
+    postInvestigationGuidance: Object.freeze({
+      kicker: "解毒法・犯罪都市の荷・セドリックの依頼",
+      title: "領主を救い、毒殺計画を止める三系統の証拠が揃った",
+      detail: "倉庫街ではセドリック側の密輸運び屋が残る荷とニコラスを消そうとしている。証拠と証人を守った後、どの方法で解毒と告発を行うか決める。",
+    }),
+    stepGuidance: Object.freeze({
+      battle: Object.freeze({
+        kicker: "燃やされる船荷台帳",
+        title: "倉庫街の追手を退け、毒の現物とニコラスを守る",
+        detail: "密輸運び屋は帳簿を焼き、ニコラスを口封じしようとしている。危険なら装備を整えて戻ることもできるが、領主の容体と証拠は待ってくれない。",
+      }),
+      resolve: Object.freeze({
+        kicker: "救命の代償と告発の形",
+        title: "領主館で、解毒とセドリック失脚の方法を一つ選ぶ",
+        detail: "ニコラスの証言、犯罪都市の解毒薬、王都の医師は、いずれも領主を救える。ただし、誰を守り、誰へ借りを作り、交易都市の中立をどこまで残すかが変わる。",
+      }),
+    }),
+    resolution: Object.freeze({
+      stepId: "resolve",
+      choices: Object.freeze([
+        Object.freeze({
+          id: "protect_nicolas_and_treat",
+          label: "ニコラスと妹を保護し、正確な投与量を証言させてマリエルが解毒する",
+          minutes: 68,
+          summary: "ニコラスと妹の安全を確保し、本人の証言と現物から解毒処方を完成させ、領主を救命した。",
+          narrative: "ニコラスへ処罰の免除ではなく、妹を先に保護し、強要された経緯も含めて証言する機会を示した。彼は毒の濃度と投与時刻を話し、マリエルは吸着炭、苦根、青潮苔を順に投与する。夜明け前、領主の呼吸は自力へ戻り、セドリックの依頼書は封印された証拠として残った。",
+          worldEffect: Object.freeze({
+            flagKey: "t05ResolutionRoute",
+            factId: "player:T05:nicolas-protected-antidote-administered",
+            text: "ニコラスと妹は保護され、正確な毒の証言に基づく解毒で領主が生還し、セドリックの毒殺指示が立証された",
+            facilityId: "LOC_TRADE_LORD_MANOR",
+            propagationDelayHours: 2,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t05-protect-mariel-recovery-watch",
+                npcIds: Object.freeze(["NPC011"]),
+                goal: "monitor-lord-recovery",
+                action: "monitor-lord-recovery",
+                targetHub: "交易都市",
+                targetFacilityId: "LOC_TRADE_LORD_MANOR",
+                delayHours: 0,
+                statusText: "領主の呼吸と解毒後の臓器反応を見守っている",
+                reason: "physician-monitors-antidote-recovery",
+              }),
+              Object.freeze({
+                id: "t05-protect-nicolas-testimony",
+                npcIds: Object.freeze(["NPC012"]),
+                goal: "give-protected-poison-testimony",
+                action: "give-protected-poison-testimony",
+                targetHub: "交易都市",
+                targetFacilityId: "LOC_TRADE_LORD_MANOR",
+                delayHours: 1,
+                statusText: "妹の保護を確認し、毒の受け渡しと脅迫について証言している",
+                reason: "coerced-servant-gives-protected-testimony",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "mariel-stable-breath",
+                npcId: "NPC011",
+                narrative: "療養室では窓が細く開けられ、領主の呼吸に合わせて薬湯の湯気が揺れている。マリエルは脈を取りながら、投与時刻と反応を新しい頁へ記していた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC011",
+                    text: "自力呼吸へ戻った。まだ数日は油断できないけれど、毒の進行は止まっている。ニコラスの証言が濃度まで正確だったから、必要以上に強い薬を使わずに済んだ。",
+                    emotion: "疲労した安堵",
+                  }),
+                ]),
+              }),
+              Object.freeze({
+                id: "nicolas-protected-testimony",
+                npcId: "NPC012",
+                narrative: "使用人区の小部屋には護衛が立ち、ニコラスの前には毒瓶、荷札、証言書が別々に置かれている。彼は何度も妹の無事を確かめてから、署名欄へ手を伸ばした。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC012",
+                    text: "僕が杯へ入れました。妹を犯罪都市で押さえたと言われて……でも、領主様を殺しかけた事実は消えません。誰に渡され、どこへ瓶を捨てたか、全部話します。",
+                    emotion: "恐怖と覚悟",
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        }),
+        Object.freeze({
+          id: "buy_crime_ledger_antidote",
+          label: "モズから犯罪都市の解毒薬と原本台帳を買い取り、裏社会の経路ごとセドリックを崩す",
+          minutes: 54,
+          summary: "情報屋モズから解毒薬と依頼台帳の原本を買い取り、領主を救命してセドリックの毒殺契約を立証した。",
+          narrative: "モズは金貨と引き換えに、灰眠樹用の中和薬と、犯罪都市に残る依頼台帳の原本を渡した。マリエルが成分を確かめて投与すると、領主の呼吸は安定する。セドリックは原本の符号と港倉庫印から逃れられなくなったが、犯罪都市の情報網は高額な報酬と台帳の写しを手元へ残した。",
+          worldEffect: Object.freeze({
+            flagKey: "t05ResolutionRoute",
+            factId: "player:T05:crime-antidote-ledger-purchased",
+            text: "犯罪都市の解毒薬と依頼台帳が買い取られ、領主は生還してセドリックの契約が立証されたが、裏社会の情報網は報酬と写しを得た",
+            facilityId: "LOC_TRADE_INN",
+            propagationDelayHours: 3,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t05-buy-moz-ledger-brokerage",
+                npcIds: Object.freeze(["NPC049"]),
+                goal: "close-poison-ledger-brokerage",
+                action: "close-poison-ledger-brokerage",
+                targetHub: "交易都市",
+                targetFacilityId: "LOC_TRADE_INN",
+                delayHours: 0,
+                statusText: "毒の依頼台帳を売った後の口止めと情報価格を調整している",
+                reason: "informant-closes-poison-ledger-sale",
+              }),
+              Object.freeze({
+                id: "t05-buy-mariel-verify-antidote",
+                npcIds: Object.freeze(["NPC011"]),
+                goal: "verify-black-market-antidote",
+                action: "verify-black-market-antidote",
+                targetHub: "交易都市",
+                targetFacilityId: "LOC_TRADE_LORD_MANOR",
+                delayHours: 0,
+                statusText: "犯罪都市製の中和薬を検査し、領主の回復を監視している",
+                reason: "physician-verifies-black-market-antidote",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "moz-kept-a-copy",
+                npcId: "NPC049",
+                narrative: "潮風宿の窓際で、モズは空になった薬箱を指先で回している。原本を渡したはずの台帳について問うと、羽毛の間から薄い写しの角が一瞬だけ見えた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC049",
+                    text: "領主は助かった、依頼主も割れた、俺は正当な情報料を得た。皆うれしい結末だろ？　写しまで全部燃やせって契約じゃなかった。情報屋が無一文の善人になったら、次の情報が届かないからな。",
+                    emotion: "軽薄な満足",
+                  }),
+                ]),
+              }),
+              Object.freeze({
+                id: "mariel-tested-antidote",
+                npcId: "NPC011",
+                narrative: "マリエルの薬台には、買い取った中和薬を分けた小瓶と、港薬草商の標本が並んでいる。未知の薬をそのまま使わず、領主の血液反応を確かめた記録が残されていた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC011",
+                    text: "中和薬は本物だった。だからといって犯罪都市を信頼したわけではない。成分を割り出したから、次からは同じ毒に金貨で命を買い戻さずに済む。",
+                    emotion: "冷静な警戒",
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        }),
+        Object.freeze({
+          id: "royal_physician_public_indictment",
+          label: "証拠を王都へ送り、宮廷医師の治療と公開審問でセドリックを失脚させる",
+          minutes: 132,
+          summary: "王都へ証拠を送り宮廷医師の治療で領主を救命し、公開審問でセドリックを失脚させた。",
+          narrative: "毒の成分表、船荷台帳、依頼記録の写しを同時に王都へ送り、宮廷医師と監察官を迎えた。医師の強い解毒処置で領主は危機を越え、公開審問ではセドリックの港倉庫印と外国船契約が読み上げられる。毒殺計画は公に崩れた一方、王都の監察官は交易都市の政務と港湾帳簿へ長く留まる権限を得た。",
+          worldEffect: Object.freeze({
+            flagKey: "t05ResolutionRoute",
+            factId: "player:T05:royal-physician-public-indictment",
+            text: "宮廷医師が領主を救命し公開審問でセドリックは失脚したが、王都監察官が交易都市の政務と港湾監査へ関与するようになった",
+            facilityId: "LOC_TRADE_LORD_MANOR",
+            propagationDelayHours: 4,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t05-royal-orlven-limit-oversight",
+                npcIds: Object.freeze(["NPC009"]),
+                goal: "limit-royal-oversight",
+                action: "limit-royal-oversight",
+                targetHub: "交易都市",
+                targetFacilityId: "LOC_TRADE_LORD_MANOR",
+                delayHours: 2,
+                statusText: "療養しながら王都監察官の権限と期限を交渉している",
+                reason: "surviving-lord-defends-city-neutrality",
+              }),
+              Object.freeze({
+                id: "t05-royal-beryl-audit-contracts",
+                npcIds: Object.freeze(["NPC014"]),
+                goal: "audit-foreign-contracts",
+                action: "audit-foreign-contracts",
+                targetHub: "交易都市",
+                targetFacilityId: "LOC_TRADE_GUILD",
+                delayHours: 1,
+                statusText: "セドリック派が先に結んだ外国船契約を洗い直している",
+                reason: "guild-master-audits-poison-plot-contracts",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "orlven-neutrality-negotiation",
+                npcId: "NPC009",
+                narrative: "領主館の寝台脇には薬瓶と政務書類が同じ高さに積まれている。オルヴェン領主はまだ起き上がれないまま、王都監察官が提出した権限書へ修正線を引いていた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC009",
+                    text: "命を救われた恩は忘れない。だが、その恩を港の支配権へ替えさせるわけにもいかない。セドリックを退けた今こそ、交易都市が誰の属領でもないと示さねばならん。",
+                    emotion: "弱さの中の決意",
+                  }),
+                ]),
+              }),
+              Object.freeze({
+                id: "beryl-contract-audit",
+                npcId: "NPC014",
+                narrative: "商人ギルド会館では、外国船との契約束が発効日ごとに分けられ、セドリック派の印がある頁へ赤い糸が通されている。ベリルは損失額を計算しながら、破棄できる条項を選んでいた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC014",
+                    text: "感情で契約は消えません。毒殺計画に結び付いた条項だけを確実に無効化し、港を止めずに次期領主派の資金を切ります。王都の監察にも、数字で期限を示しましょう。",
+                    emotion: "冷徹な実務",
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        }),
+      ]),
+    }),
+  }),
   Object.freeze({
     id: "pilgrim-transfer-disappearance",
     missionId: "MSN-T04",
@@ -1326,7 +1759,20 @@ export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
     };
     for (const [section, override] of Object.entries(pack.catalogOverride ?? {})) {
       const stepId = pack[section]?.stepId ?? defaultStepIds[section];
-      const step = mission.steps.find((entry) => entry.id === stepId);
+      let step = mission.steps.find((entry) => entry.id === stepId);
+      if (!step && section === "battle") {
+        step = {
+          id: stepId,
+          type: "battle",
+          targetLocation: override.targetLocation ?? pack.hearing.targetLocation,
+          targetFacilityId: override.targetFacilityId ?? null,
+          encounterId: override.encounterId ?? null,
+          required: Number(override.required ?? 1),
+          label: override.label ?? `${pack.title}に関係する脅威を排除する`,
+        };
+        const resolveIndex = mission.steps.findIndex((entry) => entry.type === "resolve");
+        mission.steps.splice(resolveIndex >= 0 ? resolveIndex : mission.steps.length, 0, step);
+      }
       if (step) Object.assign(step, override);
     }
   }
