@@ -21,3 +21,4 @@ jobs:
             src/10を自由に/online.js
           if-no-files-found: error
           retention-days: 1
+      - run: echo "export ready"
