@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  applyAuthoredMissionFlowCatalogOverrides,
   AUTHORED_MISSION_FLOW_PACKS,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 import { resolveAuthoredScene } from "../../../src/server/trpg/content/authored-scene-registry.js";
@@ -67,6 +68,34 @@ test("T05 requires antidote, poison route and patron order before its three poli
   assert.ok(missionPack.resolution.choices.every((route) =>
     route.worldEffect.aftermathPlans.length >= 2
     && route.worldEffect.followups.length >= 2));
+});
+
+test("an authored political conflict injects its battle between investigation and resolution", () => {
+  const catalog = {
+    special: [{
+      id: "MSN-T05",
+      steps: [
+        { id: "hear", type: "conversation", targetLocation: "交易都市", targetFacilityId: "LOC_TRADE_LORD_MANOR", required: 1 },
+        { id: "investigate", type: "investigate", targetLocation: "交易都市", targetFacilityId: "LOC_TRADE_LORD_MANOR", required: 1 },
+        { id: "resolve", type: "resolve", targetLocation: "交易都市", targetFacilityId: "LOC_TRADE_LORD_MANOR", required: 1 },
+      ],
+    }],
+  };
+
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+
+  const steps = catalog.special[0].steps;
+  assert.deepEqual(steps.map((step) => step.type), [
+    "conversation",
+    "investigate",
+    "battle",
+    "resolve",
+  ]);
+  const battle = steps[2];
+  assert.equal(battle.id, "battle");
+  assert.equal(battle.encounterId, "ENC-0033");
+  assert.equal(battle.targetFacilityId, "LOC_TRADE_WAREHOUSE");
+  assert.equal(battle.required, 1);
 });
 
 test("the generic NPC life engine travels, performs, and retires one authored aftermath plan", () => {
