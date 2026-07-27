@@ -23,6 +23,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p src/server/trpg/content/authored/missions /tmp/trpg-t08
+          git show df1af91af8777a80efe4236d3ad57a66e3f11678:.github/t08-assets/patch.01.b64 > /tmp/trpg-t08/original-patch.b64
           python - <<'PY'
           from pathlib import Path
           import base64
@@ -39,9 +40,9 @@ jobs:
               ),
               (
                   'patch',
-                  [Path('.github/t08-assets/patch.01.b64')],
-                  '60eeba4a4e064ae8e94980d0dde527471baae38b75b13ba043429f9c7e424dcd',
-                  '1d69c7413f0b717c581b4c33ba4ee67b0232f5246a42c7d4e8d81c9e0212d718',
+                  [Path('/tmp/trpg-t08/original-patch.b64')],
+                  'cee0ff0631a147a2380589d8300ff285f7ded6d4d75b14a1043c6ba43151f881',
+                  '5027df903056199ef672359ad06a097c80e4da9948b4dfd7e803a0c520d194fc',
                   Path('/tmp/trpg-t08/patch_t08.py'),
               ),
           ]
@@ -58,6 +59,24 @@ jobs:
           assert 'catalogRemoveStepIds: Object.freeze(["battle"])' in text
           PY
           python /tmp/trpg-t08/patch_t08.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tools/trpg-sim/test/game-service.test.mjs')
+          text = path.read_text()
+          old = '''      const battleStep = missionDefinition.steps.find((step) => step.type === "battle");
+                const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);
+                missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
+                evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";'''
+          new = '''      const battleStep = missionDefinition.steps.find((step) => step.type === "battle");
+                const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);
+                if (battleStep) {
+                  missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
+                }
+                evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";'''
+          if text.count(old) != 1:
+              raise SystemExit(f'game-service battleless replacement count={text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
       - run: npm ci
       - name: Focused T08 contracts
         shell: bash
@@ -70,30 +89,7 @@ jobs:
           node --test --test-name-pattern="authored mission packs turn each opening answer" tools/trpg-sim/test/game-service.test.mjs
           git diff --check
       - name: Full TRPG regression
-        shell: bash
-        run: |
-          set +e
-          npm run trpg:test > /tmp/trpg-test.log 2>&1
-          status=$?
-          set -e
-          if [ "$status" -ne 0 ]; then
-            python - <<'PY'
-          from pathlib import Path
-          lines = Path('/tmp/trpg-test.log').read_text(errors='replace').splitlines()
-          hits = [i for i, line in enumerate(lines) if line.startswith('not ok ')]
-          out = []
-          for hit in hits:
-              out.extend(lines[max(0, hit - 12):min(len(lines), hit + 90)])
-          Path('.github/t08-assets/failure.log').write_text('\n'.join(out or lines[-220:]) + '\n')
-          PY
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add .github/t08-assets/failure.log
-            git commit -m "chore: record T08 regression failure"
-            git push origin HEAD:agent/trpg-human-authored-choices
-            cat .github/t08-assets/failure.log
-            exit "$status"
-          fi
+        run: npm run trpg:test
       - name: Strict integrated player and GOAP journeys
         env:
           TRPG_PLAYER_V4_SEEDS: 2
@@ -108,9 +104,7 @@ jobs:
             tools/trpg-sim/reports/player-latest.json \
             tools/trpg-sim/reports/player-v4-latest.json \
             tools/trpg-sim/reports/player-v4-latest.md
-          rm -rf .github/t08-assets \
-            .github/workflows/trpg-t08-integration.yml \
-            .github/workflows/trpg-t08-regression-debug.yml
+          rm -rf .github/t08-assets .github/workflows/trpg-t08-integration.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
