@@ -26,16 +26,25 @@ jobs:
           git show df1af91af8777a80efe4236d3ad57a66e3f11678:.github/t08-assets/patch.01.b64 > /tmp/trpg-t08/original-patch.b64
           python - <<'PY'
           from pathlib import Path
-          import base64, gzip, hashlib
+          import base64
+          import gzip
+          import hashlib
+
           specs = [
-              ('pack', [Path('.github/t08-assets/pack.01.b64'), Path('.github/t08-assets/pack.02.b64')],
-               '86ab4dc91f35500f4654b304d554c7e4d9f54d02ff649bf6b4c948b0c18df1e8',
-               '1fc3f1b3d14570e0c2b7c8500ed6089a3cca27a72507edecf5a5cb4e564dbdfe',
-               Path('src/server/trpg/content/authored/missions/t08-forest-sealing-order.js')),
-              ('patch', [Path('/tmp/trpg-t08/original-patch.b64')],
-               'cee0ff0631a147a2380589d8300ff285f7ded6d4d75b14a1043c6ba43151f881',
-               '5027df903056199ef672359ad06a097c80e4da9948b4dfd7e803a0c520d194fc',
-               Path('/tmp/trpg-t08/patch_t08.py')),
+              (
+                  'pack',
+                  [Path('.github/t08-assets/pack.01.b64'), Path('.github/t08-assets/pack.02.b64')],
+                  '86ab4dc91f35500f4654b304d554c7e4d9f54d02ff649bf6b4c948b0c18df1e8',
+                  '1fc3f1b3d14570e0c2b7c8500ed6089a3cca27a72507edecf5a5cb4e564dbdfe',
+                  Path('src/server/trpg/content/authored/missions/t08-forest-sealing-order.js'),
+              ),
+              (
+                  'patch',
+                  [Path('/tmp/trpg-t08/original-patch.b64')],
+                  'cee0ff0631a147a2380589d8300ff285f7ded6d4d75b14a1043c6ba43151f881',
+                  '5027df903056199ef672359ad06a097c80e4da9948b4dfd7e803a0c520d194fc',
+                  Path('/tmp/trpg-t08/patch_t08.py'),
+              ),
           ]
           for name, parts, encoded_sha, raw_sha, target in specs:
               encoded = ''.join(part.read_text() for part in parts)
@@ -51,18 +60,23 @@ jobs:
           python /tmp/trpg-t08/patch_t08.py
           python - <<'PY'
           from pathlib import Path
+
           path = Path('tools/trpg-sim/test/game-service.test.mjs')
           text = path.read_text()
-          old = '''      const battleStep = missionDefinition.steps.find((step) => step.type === "battle");
-      const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);
-      missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
-      evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";'''
-          new = '''      const battleStep = missionDefinition.steps.find((step) => step.type === "battle");
-      const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);
-      if (battleStep) {
-        missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
-      }
-      evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";'''
+          old = "\n".join([
+              '      const battleStep = missionDefinition.steps.find((step) => step.type === "battle");',
+              '      const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);',
+              '      missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);',
+              '      evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";',
+          ])
+          new = "\n".join([
+              '      const battleStep = missionDefinition.steps.find((step) => step.type === "battle");',
+              '      const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);',
+              '      if (battleStep) {',
+              '        missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);',
+              '      }',
+              '      evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";',
+          ])
           assert text.count(old) == 1, text.count(old)
           path.write_text(text.replace(old, new, 1))
           PY
