@@ -1,13 +1,15 @@
 import { resolveMissionStepVariant } from "./mission-step-variant.js";
+import { T08_FOREST_SEALING_ORDER_PACK } from "./authored/missions/t08-forest-sealing-order.js";
 import { T07_RUNAWAY_ELF_TRAFFICKING_PACK } from "./authored/missions/t07-runaway-elf-trafficking.js";
 import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";
 
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v7";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v8";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 
 export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
+  T08_FOREST_SEALING_ORDER_PACK,
   T07_RUNAWAY_ELF_TRAFFICKING_PACK,
   T06_PORT_LABOR_UNREST_PACK,
   Object.freeze({
@@ -1772,6 +1774,12 @@ export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
       battle: "battle",
       resolution: "resolve",
     };
+    const removedStepIds = new Set(pack.catalogRemoveStepIds ?? []);
+    if (removedStepIds.size > 0) {
+      for (let index = mission.steps.length - 1; index >= 0; index -= 1) {
+        if (removedStepIds.has(mission.steps[index].id)) mission.steps.splice(index, 1);
+      }
+    }
     for (const [section, override] of Object.entries(pack.catalogOverride ?? {})) {
       const stepId = pack[section]?.stepId ?? defaultStepIds[section];
       let step = mission.steps.find((entry) => entry.id === stepId);
@@ -1828,28 +1836,56 @@ function openingActions(runtime, pack, presentNpcs) {
   }));
 }
 
+function matchingResolutionContextVariant(runtime, choice, requestedContextId = null) {
+  const variants = choice?.contextVariants ?? [];
+  if (requestedContextId) {
+    return variants.find((variant) => variant.contextId === requestedContextId) ?? null;
+  }
+  const flags = runtime?.playerState?.worldFlags ?? {};
+  return variants.find((variant) =>
+    variant.flagKey && flags[variant.flagKey] === variant.flagValue) ?? null;
+}
+
+export function resolveAuthoredResolutionChoice(runtime, choice, requestedContextId = null) {
+  const variant = matchingResolutionContextVariant(runtime, choice, requestedContextId);
+  if (!variant) return choice;
+  return {
+    ...choice,
+    ...variant,
+    id: choice.id,
+    worldEffect: {
+      ...(choice.worldEffect ?? {}),
+      ...(variant.worldEffect ?? {}),
+    },
+  };
+}
+
 function resolutionActions(runtime, pack, step) {
   const choices = pack.resolution?.choices ?? [];
   if (choices.length !== 3) return null;
   if (step?.targetFacilityId
     && runtime.playerState.player.facilityId !== step.targetFacilityId) return null;
   const troubleStatus = runtime.playerState.troubles?.[pack.troubleId]?.status ?? "active";
-  return choices.map((choice) => ({
-    id: actionId(pack, "RESOLUTION", `${choice.id}:${troubleStatus}`),
-    family: "help",
-    type: "resolveMission",
-    missionId: pack.missionId,
-    stepId: pack.resolution.stepId,
-    missionTitle: pack.title,
-    missionTroubleId: pack.troubleId,
-    minutes: choice.minutes,
-    label: choice.labelByTroubleStatus?.[troubleStatus] ?? choice.label,
-    authoredMissionFlowExclusiveChoice: true,
-    authoredMissionFlowId: pack.id,
-    authoredMissionFlowKind: "resolution",
-    authoredMissionFlowResolutionRouteId: choice.id,
-    authoredMissionFlowTroubleStatus: troubleStatus,
-  }));
+  return choices.map((choice) => {
+    const resolvedChoice = resolveAuthoredResolutionChoice(runtime, choice);
+    return {
+      id: actionId(pack, "RESOLUTION", `${choice.id}:${troubleStatus}`),
+      family: "help",
+      type: "resolveMission",
+      missionId: pack.missionId,
+      stepId: pack.resolution.stepId,
+      missionTitle: pack.title,
+      missionTroubleId: pack.troubleId,
+      minutes: resolvedChoice.minutes,
+      label: resolvedChoice.labelByTroubleStatus?.[troubleStatus] ?? resolvedChoice.label,
+      authoredMissionFlowExclusiveChoice: true,
+      authoredMissionFlowId: pack.id,
+      authoredMissionFlowKind: "resolution",
+      authoredMissionFlowResolutionRouteId: choice.id,
+      authoredMissionFlowResolutionContextVariantId: resolvedChoice.contextId ?? null,
+      authoredMissionFlowTroubleStatus: troubleStatus,
+    };
+  });
 }
 
 function movementTo(movementActions, facilityId) {
@@ -2344,10 +2380,15 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
     });
   }
   if (action.authoredMissionFlowKind === "resolution") {
-    const route = pack.resolution?.choices?.find(
+    const baseRoute = pack.resolution?.choices?.find(
       (entry) => entry.id === action.authoredMissionFlowResolutionRouteId,
     );
-    if (!route) return changed;
+    if (!baseRoute) return changed;
+    const route = resolveAuthoredResolutionChoice(
+      runtime,
+      baseRoute,
+      action.authoredMissionFlowResolutionContextVariantId,
+    );
     const troubleStatus = action.authoredMissionFlowTroubleStatus ?? "active";
     flow.selectedResolutionRouteId = route.id;
     result.summary = route.summaryByTroubleStatus?.[troubleStatus] ?? route.summary;
@@ -2366,6 +2407,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       missionId: pack.missionId,
       troubleId: pack.troubleId,
       routeId: route.id,
+      contextVariantId: route.contextId ?? null,
       troubleStatus,
       worldEffectFactId,
     });

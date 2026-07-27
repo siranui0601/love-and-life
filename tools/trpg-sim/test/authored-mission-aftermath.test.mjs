@@ -4,6 +4,7 @@ import {
   applyAuthoredMissionFlowCatalogOverrides,
   AUTHORED_MISSION_FLOW_PACKS,
   ensureAuthoredMissionFlowState,
+  resolveAuthoredResolutionChoice,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 import { resolveAuthoredScene } from "../../../src/server/trpg/content/authored-scene-registry.js";
 import {
@@ -16,8 +17,8 @@ function pack(troubleId) {
   return AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.troubleId === troubleId);
 }
 
-test("T03 through T07 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
-  for (const troubleId of ["T03", "T04", "T05", "T06", "T07"]) {
+test("T03 through T08 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
+  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08"]) {
     const missionPack = pack(troubleId);
     assert.ok(missionPack);
     assert.equal(missionPack.resolution.choices.length, 3);
@@ -243,6 +244,131 @@ test("alternative evidence groups complete T07 with one valid proof from each cl
   const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
   assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
   assert.equal(runtime.playerState.missions["MSN-T07"].progress.investigate, 3);
+});
+
+
+test("T08 separates intrusion control, ecological explanation and accountable passage before three forest agreements", () => {
+  const missionPack = pack("T08");
+  assert.ok(missionPack);
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(new Set(missionPack.hearing.choices.map((choice) => choice.id)).size, 3);
+  assert.deepEqual(missionPack.catalogRemoveStepIds, ["battle"]);
+  assert.deepEqual(missionPack.investigation.requiredEvidenceGroups, [
+    [
+      "T08-EVIDENCE-INTRUDER-CAMP-CLEARED",
+      "T08-EVIDENCE-ROYAL-SURVEY-ORDER-REVOKED",
+      "T08-EVIDENCE-FEN-INTRUDER-TRACK-RECORD",
+    ],
+    [
+      "T08-EVIDENCE-RIVER-MAGIC-DRAIN",
+      "T08-EVIDENCE-SPIRIT-POOL-DECLINE",
+      "T08-EVIDENCE-BARRIER-OVERLOAD-NOT-ATTACK",
+    ],
+    [
+      "T08-EVIDENCE-ESCORT-ENTRY-LEDGER",
+      "T08-EVIDENCE-BORDER-WAYSTATION-PROTOCOL",
+    ],
+  ]);
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "limited_escort_passage",
+    "joint_border_accountability",
+    "joint_anomaly_expedition_corridor",
+  ]);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.contextVariants.length === 3
+    && route.contextVariants.every((variant) =>
+      variant.flagKey === "t07ResolutionRoute" && variant.minutes < route.minutes)));
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.worldEffect.aftermathPlans.length >= 2
+    && route.worldEffect.followups.length >= 2
+    && route.narrativeByTroubleStatus?.critical
+    && route.worldEffect.factIdByTroubleStatus?.critical
+    && route.worldEffect.textByTroubleStatus?.critical));
+});
+
+test("T08 deliberately removes the generic battle and keeps negotiation after investigation", () => {
+  const catalog = {
+    special: [{
+      id: "MSN-T08",
+      steps: [
+        { id: "hear", type: "conversation", targetLocation: "森", targetFacilityId: "LOC_FOREST_CAMP", required: 1 },
+        { id: "investigate", type: "investigate", targetLocation: "森", targetFacilityId: "LOC_FOREST_CAMP", required: 3 },
+        { id: "battle", type: "battle", targetLocation: "エルフの隠れ里", targetFacilityId: "LOC_ELF_BARRIER_STONE", encounterId: "ENC-0065", required: 1 },
+        { id: "resolve", type: "resolve", targetLocation: "森", targetFacilityId: "LOC_FOREST_CAMP", required: 1 },
+      ],
+    }],
+  };
+
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+
+  assert.deepEqual(catalog.special[0].steps.map((step) => step.type), [
+    "conversation",
+    "investigate",
+    "resolve",
+  ]);
+  assert.equal(catalog.special[0].steps.some((step) => step.encounterId === "ENC-0065"), false);
+});
+
+test("T07 outcomes materially shorten T08 agreements, with the liaison route preserving the narrowest all-troubles path", () => {
+  const missionPack = pack("T08");
+  const route = missionPack.resolution.choices.find(
+    (entry) => entry.id === "joint_anomaly_expedition_corridor",
+  );
+  assert.ok(route);
+
+  const base = resolveAuthoredResolutionChoice({ playerState: { worldFlags: {} } }, route);
+  const independent = resolveAuthoredResolutionChoice({
+    playerState: { worldFlags: { t07ResolutionRoute: "protected_independent_stay" } },
+  }, route);
+  const charter = resolveAuthoredResolutionChoice({
+    playerState: { worldFlags: { t07ResolutionRoute: "voluntary_return_with_youth_charter" } },
+  }, route);
+  const liaison = resolveAuthoredResolutionChoice({
+    playerState: { worldFlags: { t07ResolutionRoute: "forest_liaison_waystation" } },
+  }, route);
+
+  assert.deepEqual(
+    [base.minutes, independent.minutes, charter.minutes, liaison.minutes],
+    [132, 116, 101, 82],
+  );
+  assert.equal(liaison.id, route.id);
+  assert.equal(liaison.contextId, "t07-forest-liaison");
+  assert.match(liaison.label, /中立連絡所/u);
+});
+
+test("alternative evidence groups complete T08 with one valid proof from each class", () => {
+  const missionPack = pack("T08");
+  const mission = {
+    id: "MSN-T08",
+    steps: [
+      { id: "hear", type: "conversation", required: 1 },
+      { id: "investigate", type: "investigate", required: 3 },
+      { id: "battle", type: "battle", required: 1 },
+      { id: "resolve", type: "resolve", required: 1 },
+    ],
+  };
+  const catalog = { special: [mission], byId: new Map([[mission.id, mission]]) };
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+  const selectedEvidence = [
+    "T08-EVIDENCE-ROYAL-SURVEY-ORDER-REVOKED",
+    "T08-EVIDENCE-BARRIER-OVERLOAD-NOT-ATTACK",
+    "T08-EVIDENCE-BORDER-WAYSTATION-PROTOCOL",
+  ];
+  const runtime = {
+    playerState: {
+      catalog,
+      missions: {
+        "MSN-T08": {
+          status: "active",
+          progress: { hear: 1, investigate: 0, resolve: 0 },
+          discoveries: selectedEvidence.map((id) => ({ id })),
+        },
+      },
+    },
+  };
+  const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+  assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
+  assert.equal(runtime.playerState.missions["MSN-T08"].progress.investigate, 3);
 });
 
 test("the generic NPC life engine travels, performs, and retires one authored aftermath plan", () => {

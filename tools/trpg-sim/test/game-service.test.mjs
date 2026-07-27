@@ -1538,7 +1538,9 @@ test("authored mission packs turn each opening answer into distinct, stateful in
     if (pack.resolution?.choices?.length) {
       const battleStep = missionDefinition.steps.find((step) => step.type === "battle");
       const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);
-      missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
+      if (battleStep) {
+        missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
+      }
       evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";
       evidenceRuntime.playerState.player.location = resolveStep.targetLocation;
       evidenceRuntime.playerState.player.facilityId = resolveStep.targetFacilityId;
