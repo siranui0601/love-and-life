@@ -60,7 +60,7 @@ jobs:
         run: |
           test "$(sha256sum src/server/trpg/content/authored/missions/t10-capital-orphanage-eviction.js | cut -d' ' -f1)" = "699e1db524dd89302adae265e13313296d7b702c8487252ef12dfd3fdc34da72"
           grep -F 'title: "王都孤児院の立ち退き"' src/server/trpg/content/authored/missions/t10-capital-orphanage-eviction.js
-          grep -F '失敗すると、安い装備と薬を売る大型店がDay70に開業する。' src/server/trpg/content/authored/missions/t10-capital-orphanage-eviction.js
+          grep -F 'id: "whole_household_relocation_covenant"' src/server/trpg/content/authored/missions/t10-capital-orphanage-eviction.js
           node --check src/server/trpg/content/authored/missions/t10-capital-orphanage-eviction.js
           node --check src/server/trpg/content/authored-mission-flow-registry.js
           node --check src/server/trpg/content/authored-scene-registry.js
