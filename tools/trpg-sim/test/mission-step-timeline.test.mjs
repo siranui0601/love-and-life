@@ -70,3 +70,33 @@ test("T09-style timeline variants preserve prevention, two battle stages and pos
     ],
   );
 });
+
+
+
+test("T10-style timeline variants preserve injunction, execution stay and post-eviction household reassembly", () => {
+  const step = {
+    id: "battle",
+    type: "battle",
+    targetLocation: "王都",
+    targetFacilityId: "LOC_CAP_OFFICE",
+    encounterId: null,
+    actionType: "investigate",
+    timelineVariants: [
+      { minDay: 26, maxDay: 43, targetFacilityId: "LOC_CAP_OFFICE", actionType: "investigate", encounterId: null, label: "injunction" },
+      { minDay: 44, maxDay: 56, targetFacilityId: "LOC_CAP_ORPHANAGE", actionType: "investigate", encounterId: null, label: "execution stay" },
+      { minDay: 57, maxDay: 69, targetFacilityId: "LOC_CAP_LOWER_INN", actionType: "investigate", encounterId: null, label: "reassemble" },
+    ],
+  };
+
+  assert.deepEqual(
+    [30, 50, 60].map((day) => {
+      const resolved = resolveMissionStepVariant(step, day);
+      return [resolved.targetFacilityId, resolved.actionType, resolved.encounterId, resolved.label];
+    }),
+    [
+      ["LOC_CAP_OFFICE", "investigate", null, "injunction"],
+      ["LOC_CAP_ORPHANAGE", "investigate", null, "execution stay"],
+      ["LOC_CAP_LOWER_INN", "investigate", null, "reassemble"],
+    ],
+  );
+});

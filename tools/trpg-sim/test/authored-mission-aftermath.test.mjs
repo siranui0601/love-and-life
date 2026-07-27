@@ -17,8 +17,8 @@ function pack(troubleId) {
   return AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.troubleId === troubleId);
 }
 
-test("T03 through T09 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
-  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08", "T09"]) {
+test("T03 through T10 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
+  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10"]) {
     const missionPack = pack(troubleId);
     assert.ok(missionPack);
     assert.equal(missionPack.resolution.choices.length, 3);
@@ -501,6 +501,170 @@ test("alternative evidence groups complete T09 with one valid proof from danger,
   const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
   assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
   assert.equal(runtime.playerState.missions["MSN-T09"].progress.investigate, 3);
+});
+
+
+
+test("T10 separates protected tenure, manufactured default and coercive pressure before three orphanage outcomes", () => {
+  const missionPack = pack("T10");
+  assert.ok(missionPack);
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(new Set(missionPack.hearing.choices.map((choice) => choice.id)).size, 3);
+  assert.deepEqual(missionPack.investigation.requiredEvidenceGroups, [
+    [
+      "T10-EVIDENCE-ORPHANAGE-FOUNDATION-COPY",
+      "T10-EVIDENCE-DONATION-DEED-ORIGINAL",
+      "T10-EVIDENCE-CONTINUOUS-USE-LAND-LEDGER",
+    ],
+    [
+      "T10-EVIDENCE-INFLATED-REPAIR-INVOICES",
+      "T10-EVIDENCE-DEBT-ASSIGNMENT-TO-ISAAC",
+      "T10-EVIDENCE-BACKDATED-EVICTION-NOTICE",
+    ],
+    [
+      "T10-EVIDENCE-LEONARDO-ISAAC-SIDE-DEAL",
+      "T10-EVIDENCE-DISTORTED-GUARD-ORDER",
+      "T10-EVIDENCE-WHOLE-HOUSEHOLD-RELOCATION-PLAN",
+    ],
+  ]);
+  const intervention = missionPack.catalogOverride.battle;
+  assert.equal(intervention.encounterId, null);
+  assert.equal(intervention.actionType, "investigate");
+  assert.deepEqual(intervention.timelineVariants.map((variant) => [
+    variant.minDay,
+    variant.maxDay ?? null,
+    variant.targetFacilityId,
+    variant.actionType,
+    variant.encounterId ?? null,
+  ]), [
+    [26, 43, "LOC_CAP_OFFICE", "investigate", null],
+    [44, 56, "LOC_CAP_ORPHANAGE", "investigate", null],
+    [57, 69, "LOC_CAP_LOWER_INN", "investigate", null],
+  ]);
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "restore_donation_title_and_stay",
+    "public_charitable_trust_and_audit",
+    "whole_household_relocation_covenant",
+  ]);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.worldEffect.aftermathPlans.length >= 3
+    && route.worldEffect.followups.length >= 3
+    && route.summaryByTroubleStatus?.critical
+    && route.narrativeByTroubleStatus?.critical
+    && route.worldEffect.factIdByTroubleStatus?.critical
+    && route.worldEffect.textByTroubleStatus?.critical));
+});
+
+
+test("T10 inserts a noncombat intervention that changes from injunction to execution stay and household reassembly", () => {
+  const catalog = {
+    special: [{
+      id: "MSN-T10",
+      steps: [
+        { id: "hear", type: "conversation", targetLocation: "王都", targetFacilityId: "LOC_CAP_ORPHANAGE", required: 1 },
+        { id: "investigate", type: "investigate", targetLocation: "王都", targetFacilityId: "LOC_CAP_ORPHANAGE", required: 3 },
+        { id: "resolve", type: "resolve", targetLocation: "王都", targetFacilityId: "LOC_CAP_OFFICE", required: 1 },
+      ],
+    }],
+  };
+
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+
+  const intervention = catalog.special[0].steps.find((step) => step.id === "battle");
+  assert.ok(intervention);
+  assert.equal(intervention.type, "battle");
+  assert.equal(intervention.actionType, "investigate");
+  assert.equal(intervention.encounterId, null);
+  assert.ok(intervention.timelineVariants.every((variant) =>
+    variant.actionType === "investigate" && variant.encounterId === null));
+  assert.deepEqual(catalog.special[0].steps.map((step) => step.id), [
+    "hear",
+    "investigate",
+    "battle",
+    "resolve",
+  ]);
+});
+
+
+test("T02 resolution shortens T10 public trust formation through stable food support", () => {
+  const missionPack = pack("T10");
+  const route = missionPack.resolution.choices.find(
+    (entry) => entry.id === "public_charitable_trust_and_audit",
+  );
+  assert.ok(route);
+
+  const base = resolveAuthoredResolutionChoice({
+    playerState: { worldFlags: {}, troubles: {} },
+  }, route);
+  const foodProtected = resolveAuthoredResolutionChoice({
+    playerState: {
+      worldFlags: {},
+      troubles: { T02: { status: "resolved" } },
+    },
+  }, route);
+
+  assert.deepEqual([base.minutes, foodProtected.minutes], [118, 94]);
+  assert.equal(foodProtected.contextId, "t02-food-cost-stabilized");
+  assert.match(foodProtected.label, /田園の村/u);
+});
+
+
+test("T07 capital protection network shortens T10 whole-household relocation", () => {
+  const missionPack = pack("T10");
+  const route = missionPack.resolution.choices.find(
+    (entry) => entry.id === "whole_household_relocation_covenant",
+  );
+  assert.ok(route);
+
+  const base = resolveAuthoredResolutionChoice({
+    playerState: { worldFlags: {}, troubles: {} },
+  }, route);
+  const protectedNetwork = resolveAuthoredResolutionChoice({
+    playerState: {
+      worldFlags: { t07ResolutionRoute: "protected_independent_stay" },
+      troubles: {},
+    },
+  }, route);
+
+  assert.deepEqual([base.minutes, protectedNetwork.minutes], [106, 82]);
+  assert.equal(protectedNetwork.contextId, "t07-capital-protection-network");
+  assert.match(protectedNetwork.label, /リュシア/u);
+});
+
+
+test("alternative evidence groups complete T10 with one proof from tenure, manufactured debt and coercion", () => {
+  const missionPack = pack("T10");
+  const mission = {
+    id: "MSN-T10",
+    steps: [
+      { id: "hear", type: "conversation", required: 1 },
+      { id: "investigate", type: "investigate", required: 3 },
+      { id: "battle", type: "battle", required: 1 },
+      { id: "resolve", type: "resolve", required: 1 },
+    ],
+  };
+  const catalog = { special: [mission], byId: new Map([[mission.id, mission]]) };
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+  const selectedEvidence = [
+    "T10-EVIDENCE-DONATION-DEED-ORIGINAL",
+    "T10-EVIDENCE-DEBT-ASSIGNMENT-TO-ISAAC",
+    "T10-EVIDENCE-DISTORTED-GUARD-ORDER",
+  ];
+  const runtime = {
+    playerState: {
+      catalog,
+      missions: {
+        "MSN-T10": {
+          status: "active",
+          progress: { hear: 1, investigate: 0, battle: 0, resolve: 0 },
+          discoveries: selectedEvidence.map((id) => ({ id })),
+        },
+      },
+    },
+  };
+  const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+  assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
+  assert.equal(runtime.playerState.missions["MSN-T10"].progress.investigate, 3);
 });
 
 test("the generic NPC life engine travels, performs, and retires one authored aftermath plan", () => {
