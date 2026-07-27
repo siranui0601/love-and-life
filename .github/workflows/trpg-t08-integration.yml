@@ -64,15 +64,15 @@ jobs:
           path = Path('tools/trpg-sim/test/game-service.test.mjs')
           text = path.read_text()
           old = '''      const battleStep = missionDefinition.steps.find((step) => step.type === "battle");
-                const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);
-                missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
-                evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";'''
+      const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);
+      missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
+      evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";'''
           new = '''      const battleStep = missionDefinition.steps.find((step) => step.type === "battle");
-                const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);
-                if (battleStep) {
-                  missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
-                }
-                evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";'''
+      const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);
+      if (battleStep) {
+        missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
+      }
+      evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";'''
           if text.count(old) != 1:
               raise SystemExit(f'game-service battleless replacement count={text.count(old)}')
           path.write_text(text.replace(old, new, 1))
