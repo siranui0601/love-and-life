@@ -1,0 +1,93 @@
+name: Temporary T08 integration and validation
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/trpg-t08-integration.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/trpg-human-authored-choices
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Reconstruct and verify T08 sources
+        shell: bash
+        run: |
+          mkdir -p src/server/trpg/content/authored/missions /tmp/trpg-t08
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import gzip
+          import hashlib
+
+          specs = [
+              (
+                  'pack',
+                  [Path('.github/t08-assets/pack.01.b64'), Path('.github/t08-assets/pack.02.b64')],
+                  '86ab4dc91f35500f4654b304d554c7e4d9f54d02ff649bf6b4c948b0c18df1e8',
+                  '1fc3f1b3d14570e0c2b7c8500ed6089a3cca27a72507edecf5a5cb4e564dbdfe',
+                  Path('src/server/trpg/content/authored/missions/t08-forest-sealing-order.js'),
+              ),
+              (
+                  'patch',
+                  [Path('.github/t08-assets/patch.01.b64')],
+                  'cee0ff0631a147a2380589d8300ff285f7ded6d4d75b14a1043c6ba43151f881',
+                  '5027df903056199ef672359ad06a097c80e4da9948b4dfd7e803a0c520d194fc',
+                  Path('/tmp/trpg-t08/patch_t08.py'),
+              ),
+          ]
+          for name, parts, encoded_sha, raw_sha, target in specs:
+              encoded = ''.join(part.read_text() for part in parts)
+              assert hashlib.sha256(encoded.encode('ascii')).hexdigest() == encoded_sha, name
+              raw = gzip.decompress(base64.b64decode(encoded, validate=True))
+              assert hashlib.sha256(raw).hexdigest() == raw_sha, name
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_bytes(raw)
+              print(name, target, len(raw), raw_sha)
+          text = Path('src/server/trpg/content/authored/missions/t08-forest-sealing-order.js').read_text()
+          assert 'title: "森の封鎖令"' in text
+          assert 'catalogRemoveStepIds: Object.freeze(["battle"])' in text
+          PY
+          python /tmp/trpg-t08/patch_t08.py
+      - run: npm ci
+      - name: Focused T08 contracts
+        shell: bash
+        run: |
+          node --check src/server/trpg/content/authored/missions/t08-forest-sealing-order.js
+          node --check src/server/trpg/content/authored-mission-flow-registry.js
+          node --check src/server/trpg/content/authored-scene-registry.js
+          node --test tools/trpg-sim/test/authored-mission-aftermath.test.mjs
+          node --test tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs
+          git diff --check
+      - name: Full TRPG regression
+        run: npm run trpg:test
+      - name: Strict integrated player and GOAP journeys
+        env:
+          TRPG_PLAYER_V4_SEEDS: 2
+          TRPG_GOAP_V4_SEEDS: 2
+        run: node tools/trpg-sim/cli-player-v4.mjs --strict
+      - name: Publish clean T08 implementation
+        shell: bash
+        run: |
+          test "$(sha256sum src/server/trpg/content/authored/missions/t08-forest-sealing-order.js | cut -d' ' -f1)" = "1fc3f1b3d14570e0c2b7c8500ed6089a3cca27a72507edecf5a5cb4e564dbdfe"
+          git checkout HEAD -- public/TRPG/player-simulation-report.json tools/trpg-sim/reports/player-latest.md || true
+          rm -f public/TRPG/player-simulation-v4-report.json \
+            tools/trpg-sim/reports/player-latest.json \
+            tools/trpg-sim/reports/player-v4-latest.json \
+            tools/trpg-sim/reports/player-v4-latest.md
+          rm -rf .github/t08-assets .github/workflows/trpg-t08-integration.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "TRPG: T08森の封鎖令を実装"
+          test "$(git show HEAD:src/server/trpg/content/authored/missions/t08-forest-sealing-order.js | sha256sum | cut -d' ' -f1)" = "1fc3f1b3d14570e0c2b7c8500ed6089a3cca27a72507edecf5a5cb4e564dbdfe"
+          git push origin HEAD:agent/trpg-human-authored-choices
