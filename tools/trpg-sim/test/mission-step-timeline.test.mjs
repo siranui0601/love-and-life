@@ -40,3 +40,33 @@ test("mission step timeline variants return the original step when no day or win
   assert.equal(resolveMissionStepVariant(step, {}), step);
   assert.equal(resolveMissionStepVariant(step, 5), step);
 });
+
+
+test("T09-style timeline variants preserve prevention, two battle stages and post-deadline recovery", () => {
+  const step = {
+    id: "battle",
+    type: "battle",
+    targetLocation: "ドワーフ洞窟",
+    targetFacilityId: "LOC_DWARF_MINE",
+    encounterId: "ENC-0050",
+    timelineVariants: [
+      { minDay: 27, maxDay: 27, actionType: "investigate", encounterId: null, label: "prevent" },
+      { minDay: 28, maxDay: 29, targetFacilityId: "LOC_DWARF_ENGINEER", actionType: "missionBattle", encounterId: "ENC-0049", label: "machine" },
+      { minDay: 30, maxDay: 32, actionType: "missionBattle", encounterId: "ENC-0050", label: "collapse" },
+      { minDay: 33, actionType: "investigate", encounterId: null, label: "recover records" },
+    ],
+  };
+
+  assert.deepEqual(
+    [27, 28, 31, 33].map((day) => {
+      const resolved = resolveMissionStepVariant(step, day);
+      return [resolved.targetFacilityId, resolved.actionType, resolved.encounterId, resolved.label];
+    }),
+    [
+      ["LOC_DWARF_MINE", "investigate", null, "prevent"],
+      ["LOC_DWARF_ENGINEER", "missionBattle", "ENC-0049", "machine"],
+      ["LOC_DWARF_MINE", "missionBattle", "ENC-0050", "collapse"],
+      ["LOC_DWARF_MINE", "investigate", null, "recover records"],
+    ],
+  );
+});

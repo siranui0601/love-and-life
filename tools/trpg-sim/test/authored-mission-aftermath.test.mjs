@@ -17,8 +17,8 @@ function pack(troubleId) {
   return AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.troubleId === troubleId);
 }
 
-test("T03 through T08 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
-  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08"]) {
+test("T03 through T09 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
+  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08", "T09"]) {
     const missionPack = pack(troubleId);
     assert.ok(missionPack);
     assert.equal(missionPack.resolution.choices.length, 3);
@@ -369,6 +369,138 @@ test("alternative evidence groups complete T08 with one valid proof from each cl
   const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
   assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
   assert.equal(runtime.playerState.missions["MSN-T08"].progress.investigate, 3);
+});
+
+
+test("T09 separates predicted structural danger, forced production and a viable rescue route before three mine settlements", () => {
+  const missionPack = pack("T09");
+  assert.ok(missionPack);
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(new Set(missionPack.hearing.choices.map((choice) => choice.id)).size, 3);
+  assert.deepEqual(missionPack.investigation.requiredEvidenceGroups, [
+    [
+      "T09-EVIDENCE-MINA-SUPPORT-STRESS-CALCULATION",
+      "T09-EVIDENCE-BROLN-INSPECTION-WARNING",
+      "T09-EVIDENCE-RIKKA-CREAK-TESTIMONY",
+    ],
+    [
+      "T09-EVIDENCE-GRAD-OVERRIDE-ORDER",
+      "T09-EVIDENCE-NOTICE-WARNING-REMOVED",
+      "T09-EVIDENCE-DEEP-ORE-PREMIUM-CONTRACT",
+    ],
+    [
+      "T09-EVIDENCE-VENTILATION-SHAFT-ROUTE",
+      "T09-EVIDENCE-RESCUE-JACK-ASSEMBLY",
+      "T09-EVIDENCE-LOAD-BEAST-HAUL-PLAN",
+    ],
+  ]);
+  const rescue = missionPack.catalogOverride.battle;
+  assert.equal(rescue.encounterId, "ENC-0050");
+  assert.deepEqual(rescue.timelineVariants.map((variant) => [
+    variant.minDay,
+    variant.maxDay ?? null,
+    variant.targetFacilityId,
+    variant.actionType,
+    variant.encounterId ?? null,
+  ]), [
+    [27, 27, "LOC_DWARF_MINE", "investigate", null],
+    [28, 29, "LOC_DWARF_ENGINEER", "missionBattle", "ENC-0049"],
+    [30, 32, "LOC_DWARF_MINE", "missionBattle", "ENC-0050"],
+    [33, null, "LOC_DWARF_MINE", "investigate", null],
+  ]);
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "emergency_moratorium_and_reinspection",
+    "public_accountability_and_safety_council",
+    "rebuild_deep_mine_and_rescue_corps",
+  ]);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.worldEffect.aftermathPlans.length >= 2
+    && route.worldEffect.followups.length >= 2
+    && route.summaryByTroubleStatus?.critical
+    && route.narrativeByTroubleStatus?.critical
+    && route.worldEffect.factIdByTroubleStatus?.critical
+    && route.worldEffect.textByTroubleStatus?.critical));
+});
+
+test("T09 changes rescue from prevention to machinery and collapse battles, then preserves a post-deadline accountability path", () => {
+  const catalog = {
+    special: [{
+      id: "MSN-T09",
+      steps: [
+        { id: "hear", type: "conversation", targetLocation: "ドワーフ洞窟", targetFacilityId: "LOC_DWARF_ENGINEER", required: 1 },
+        { id: "investigate", type: "investigate", targetLocation: "ドワーフ洞窟", targetFacilityId: "LOC_DWARF_ENGINEER", required: 3 },
+        { id: "resolve", type: "resolve", targetLocation: "ドワーフ洞窟", targetFacilityId: "LOC_DWARF_NOTICE", required: 1 },
+      ],
+    }],
+  };
+
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+
+  const rescue = catalog.special[0].steps.find((step) => step.type === "battle");
+  assert.ok(rescue);
+  assert.equal(rescue.targetFacilityId, "LOC_DWARF_MINE");
+  assert.equal(rescue.encounterId, "ENC-0050");
+  assert.deepEqual(rescue.timelineVariants.map((variant) => variant.actionType), [
+    "investigate",
+    "missionBattle",
+    "missionBattle",
+    "investigate",
+  ]);
+});
+
+test("T04 records and survivor knowledge shorten the T09 deep-mine reconstruction spider route", () => {
+  const missionPack = pack("T09");
+  const route = missionPack.resolution.choices.find(
+    (entry) => entry.id === "rebuild_deep_mine_and_rescue_corps",
+  );
+  assert.ok(route);
+
+  const base = resolveAuthoredResolutionChoice({ playerState: { worldFlags: {} } }, route);
+  const openRecords = resolveAuthoredResolutionChoice({
+    playerState: { worldFlags: { t04ResolutionRoute: "open_records_and_oversee" } },
+  }, route);
+  const rescuedWitnesses = resolveAuthoredResolutionChoice({
+    playerState: { worldFlags: { t04ResolutionRoute: "recover_then_pause" } },
+  }, route);
+
+  assert.deepEqual([base.minutes, openRecords.minutes, rescuedWitnesses.minutes], [124, 84, 102]);
+  assert.equal(openRecords.contextId, "t04-open-records-engineering");
+  assert.match(openRecords.label, /古代神殿/u);
+});
+
+test("alternative evidence groups complete T09 with one valid proof from danger, responsibility and rescue access", () => {
+  const missionPack = pack("T09");
+  const mission = {
+    id: "MSN-T09",
+    steps: [
+      { id: "hear", type: "conversation", required: 1 },
+      { id: "investigate", type: "investigate", required: 3 },
+      { id: "battle", type: "battle", required: 1 },
+      { id: "resolve", type: "resolve", required: 1 },
+    ],
+  };
+  const catalog = { special: [mission], byId: new Map([[mission.id, mission]]) };
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+  const selectedEvidence = [
+    "T09-EVIDENCE-BROLN-INSPECTION-WARNING",
+    "T09-EVIDENCE-NOTICE-WARNING-REMOVED",
+    "T09-EVIDENCE-RESCUE-JACK-ASSEMBLY",
+  ];
+  const runtime = {
+    playerState: {
+      catalog,
+      missions: {
+        "MSN-T09": {
+          status: "active",
+          progress: { hear: 1, investigate: 0, battle: 0, resolve: 0 },
+          discoveries: selectedEvidence.map((id) => ({ id })),
+        },
+      },
+    },
+  };
+  const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+  assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
+  assert.equal(runtime.playerState.missions["MSN-T09"].progress.investigate, 3);
 });
 
 test("the generic NPC life engine travels, performs, and retires one authored aftermath plan", () => {
