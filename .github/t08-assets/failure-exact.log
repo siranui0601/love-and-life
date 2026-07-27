@@ -1,0 +1,103 @@
+758: # Subtest: mission clue choices require a co-present NPC with an authoritative public belief
+759: ok 126 - mission clue choices require a co-present NPC with an authoritative public belief
+760:   ---
+761:   duration_ms: 16.34935
+762:   type: 'test'
+763:   ...
+764: # Subtest: all generic special-mission hearings are bound to a present authoritative NPC
+765: ok 127 - all generic special-mission hearings are bound to a present authoritative NPC
+766:   ---
+767:   duration_ms: 155.773848
+768:   type: 'test'
+769:   ...
+770: # Subtest: authored mission packs turn each opening answer into distinct, stateful investigation routes
+771: not ok 128 - authored mission packs turn each opening answer into distinct, stateful investigation routes
+772:   ---
+773:   duration_ms: 126.571687
+774:   type: 'test'
+775:   location: '/home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/game-service.test.mjs:1389:1'
+776:   failureType: 'testCodeFailure'
+777:   error: "Cannot read properties of undefined (reading 'id')"
+778:   code: 'ERR_TEST_FAILURE'
+779:   name: 'TypeError'
+780:   stack: |-
+781:     TestContext.<anonymous> (file:///home/runner/work/love-and-life/love-and-life/tools/trpg-sim/test/game-service.test.mjs:1541:40)
+782:     Test.runInAsyncScope (node:async_hooks:214:14)
+783:     Test.run (node:internal/test_runner/test:1047:25)
+784:     Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+785:     Test.postRun (node:internal/test_runner/test:1173:19)
+786:     Test.run (node:internal/test_runner/test:1101:12)
+787:     async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+788:   ...
+789: # Subtest: mission clue progress commits only after the assigned NPC actually discloses the fact
+790: ok 129 - mission clue progress commits only after the assigned NPC actually discloses the fact
+791:   ---
+792:   duration_ms: 46.448881
+793:   type: 'test'
+794:   ...
+795: # Subtest: dialogue topics select a relevant fact, preserve its provenance, and never learn on farewell
+796: ok 130 - dialogue topics select a relevant fact, preserve its provenance, and never learn on farewell
+797:   ---
+798:   duration_ms: 17.976969
+799:   type: 'test'
+800:   ...
+801: # Subtest: an NPC with a hidden hostile role cannot disclose even a non-secret belief
+802: ok 131 - an NPC with a hidden hostile role cannot disclose even a non-secret belief
+803:   ---
+804:   duration_ms: 12.090342
+805:   type: 'test'
+806:   ...
+807: # Subtest: a conversation grants no fact when its NPC leaves before the reply is presented
+808: ok 132 - a conversation grants no fact when its NPC leaves before the reply is presented
+809:   ---
+810:   duration_ms: 23.153804
+811:   type: 'test'
+812:   ...
+813: # Subtest: local observation cannot reveal a facility rumor before its propagation time
+814: ok 133 - local observation cannot reveal a facility rumor before its propagation time
+815:   ---
+816:   duration_ms: 11.248246
+817:   type: 'test'
+818:   ...
+819: # Subtest: manual skill acquisition spends SP once and survives deterministic replay
+820: ok 134 - manual skill acquisition spends SP once and survives deterministic replay
+821:   ---
+822:   duration_ms: 650.306697
+823:   type: 'test'
+824:   ...
+825: # Subtest: the skill primer explains the risk but never blocks an underprepared player
+826: ok 135 - the skill primer explains the risk but never blocks an underprepared player
+827:   ---
+828:   duration_ms: 991.004518
+829:   type: 'test'
+830:   ...
+831: # Subtest: T01 exploration binds the displayed action and replaces all three choices after a concrete discovery
+832: ok 136 - T01 exploration binds the displayed action and replaces all three choices after a concrete discovery
+833:   ---
+834:   duration_ms: 525.172864
+835:   type: 'test'
+836:   ...
+837: # Subtest: T01 speaks through discovery, rescue, escort and reunion before completion
+838: ok 137 - T01 speaks through discovery, rescue, escort and reunion before completion
+839:   ---
+840:   duration_ms: 2611.798667
+841:   type: 'test'
+842:   ...
+843: # Subtest: playable profile input is ignored and tutorial acknowledgement is journaled without time passing
+844: ok 138 - playable profile input is ignored and tutorial acknowledgement is journaled without time passing
+845:   ---
+846:   duration_ms: 641.123267
+847:   type: 'test'
+848:   ...
+849: # Subtest: ordinary NPC conversation supports distinct multi-turn follow-ups until the player ends it
+850: ok 139 - ordinary NPC conversation supports distinct multi-turn follow-ups until the player ends it
+851:   ---
+852:   duration_ms: 874.344667
+853:   type: 'test'
+854:   ...
+855: # Subtest: dialogue follow-ups are finite, ledger-backed, and always leave an actionable exit
+856: ok 140 - dialogue follow-ups are finite, ledger-backed, and always leave an actionable exit
+857:   ---
+858:   duration_ms: 30.537382
+859:   type: 'test'
+860:   ...
