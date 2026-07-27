@@ -40,8 +40,8 @@ jobs:
               (
                   'patch',
                   [Path('.github/t08-assets/patch.01.b64')],
-                  'cee0ff0631a147a2380589d8300ff285f7ded6d4d75b14a1043c6ba43151f881',
-                  '5027df903056199ef672359ad06a097c80e4da9948b4dfd7e803a0c520d194fc',
+                  '60eeba4a4e064ae8e94980d0dde527471baae38b75b13ba043429f9c7e424dcd',
+                  '1d69c7413f0b717c581b4c33ba4ee67b0232f5246a42c7d4e8d81c9e0212d718',
                   Path('/tmp/trpg-t08/patch_t08.py'),
               ),
           ]
@@ -67,6 +67,7 @@ jobs:
           node --check src/server/trpg/content/authored-scene-registry.js
           node --test tools/trpg-sim/test/authored-mission-aftermath.test.mjs
           node --test tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs
+          node --test --test-name-pattern="authored mission packs turn each opening answer" tools/trpg-sim/test/game-service.test.mjs
           git diff --check
       - name: Full TRPG regression
         shell: bash
@@ -79,8 +80,11 @@ jobs:
             python - <<'PY'
           from pathlib import Path
           lines = Path('/tmp/trpg-test.log').read_text(errors='replace').splitlines()
-          start = max(0, len(lines) - 220)
-          Path('.github/t08-assets/failure.log').write_text('\n'.join(lines[start:]) + '\n')
+          hits = [i for i, line in enumerate(lines) if line.startswith('not ok ')]
+          out = []
+          for hit in hits:
+              out.extend(lines[max(0, hit - 12):min(len(lines), hit + 90)])
+          Path('.github/t08-assets/failure.log').write_text('\n'.join(out or lines[-220:]) + '\n')
           PY
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -104,7 +108,9 @@ jobs:
             tools/trpg-sim/reports/player-latest.json \
             tools/trpg-sim/reports/player-v4-latest.json \
             tools/trpg-sim/reports/player-v4-latest.md
-          rm -rf .github/t08-assets .github/workflows/trpg-t08-integration.yml
+          rm -rf .github/t08-assets \
+            .github/workflows/trpg-t08-integration.yml \
+            .github/workflows/trpg-t08-regression-debug.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
