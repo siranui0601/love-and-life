@@ -1,0 +1,220 @@
+  ...
+# Subtest: game views expose the same canonical weather across different save seeds
+ok 273 - game views expose the same canonical weather across different save seeds
+  ---
+  duration_ms: 166.926971
+  type: 'test'
+  ...
+# Subtest: canonical weather is shared by every player and playthrough
+ok 274 - canonical weather is shared by every player and playthrough
+  ---
+  duration_ms: 2.698599
+  type: 'test'
+  ...
+# Subtest: all Day 1-100 schedules resolve to known weather
+ok 275 - all Day 1-100 schedules resolve to known weather
+  ---
+  duration_ms: 11.8751
+  type: 'test'
+  ...
+# Subtest: daypart aliases resolve to the same canonical slot
+ok 276 - daypart aliases resolve to the same canonical slot
+  ---
+  duration_ms: 0.496948
+  type: 'test'
+  ...
+# Subtest: canonicalWeatherDay returns the four shared phase forecasts
+ok 277 - canonicalWeatherDay returns the four shared phase forecasts
+  ---
+  duration_ms: 0.4182
+  type: 'test'
+  ...
+# Subtest: invalid days and dayparts are rejected
+ok 278 - invalid days and dayparts are rejected
+  ---
+  duration_ms: 0.807497
+  type: 'test'
+  ...
+# Subtest: work schedules close ordinary facilities before night and keep inns open later
+ok 279 - work schedules close ordinary facilities before night and keep inns open later
+  ---
+  duration_ms: 2.103298
+  type: 'test'
+  ...
+# Subtest: work availability requires the job to finish before closing
+ok 280 - work availability requires the job to finish before closing
+  ---
+  duration_ms: 0.955183
+  type: 'test'
+  ...
+# Subtest: exhaustion and dangerous hunger prevent taking a job
+ok 281 - exhaustion and dangerous hunger prevent taking a job
+  ---
+  duration_ms: 0.309488
+  type: 'test'
+  ...
+# Subtest: ordinary wages are deterministic and proportionate to meals and lodging
+ok 282 - ordinary wages are deterministic and proportionate to meals and lodging
+  ---
+  duration_ms: 1.052745
+  type: 'test'
+  ...
+# Subtest: an employer can offer one job per day, a facility two, and the player three
+ok 283 - an employer can offer one job per day, a facility two, and the player three
+  ---
+  duration_ms: 1.538202
+  type: 'test'
+  ...
+# Subtest: pending work offers expire and keep a deterministic offer id
+ok 284 - pending work offers expire and keep a deterministic offer id
+  ---
+  duration_ms: 0.507167
+  type: 'test'
+  ...
+# Subtest: work-market state remains plain serializable data
+ok 285 - work-market state remains plain serializable data
+  ---
+  duration_ms: 0.402823
+  type: 'test'
+  ...
+# Subtest: resolver v16 includes a serialized bounded work market
+ok 286 - resolver v16 includes a serialized bounded work market
+  ---
+  duration_ms: 128.587381
+  type: 'test'
+  ...
+# Subtest: the broad candidate pool contains an authoritative bounded work offer
+ok 287 - the broad candidate pool contains an authoritative bounded work offer
+  ---
+  duration_ms: 21.614248
+  type: 'test'
+  ...
+# Subtest: a staged authoritative offer becomes confirmable and completes without granting levels
+ok 288 - a staged authoritative offer becomes confirmable and completes without granting levels
+  ---
+  duration_ms: 58.528612
+  type: 'test'
+  ...
+# Subtest: the same employer does not generate another offer until the next day
+ok 289 - the same employer does not generate another offer until the next day
+  ---
+  duration_ms: 45.336614
+  type: 'test'
+  ...
+# Subtest: jobs that cannot finish during business hours are absent from the broad pool
+ok 290 - jobs that cannot finish during business hours are absent from the broad pool
+  ---
+  duration_ms: 12.05038
+  type: 'test'
+  ...
+# Subtest: a stale pending offer is cleared instead of exposing a confirm action
+ok 291 - a stale pending offer is cleared instead of exposing a confirm action
+  ---
+  duration_ms: 14.638123
+  type: 'test'
+  ...
+# Subtest: all source facilities retain their canonical hub ownership
+ok 292 - all source facilities retain their canonical hub ownership
+  ---
+  duration_ms: 2.293663
+  type: 'test'
+  ...
+# Subtest: every NPC has a non-collapsed initial facility and valid movement scope
+ok 293 - every NPC has a non-collapsed initial facility and valid movement scope
+  ---
+  duration_ms: 0.766411
+  type: 'test'
+  ...
+# Subtest: only the two known stale facility references receive audited fallbacks
+ok 294 - only the two known stale facility references receive audited fallbacks
+  ---
+  duration_ms: 0.389096
+  type: 'test'
+  ...
+# Subtest: knowledge fields split into facts, interests, misconceptions and secrets without loss
+ok 295 - knowledge fields split into facts, interests, misconceptions and secrets without loss
+  ---
+  duration_ms: 0.463535
+  type: 'test'
+  ...
+# Subtest: fate hints retain narrative provenance and deterministic anchors
+ok 296 - fate hints retain narrative provenance and deterministic anchors
+  ---
+  duration_ms: 0.259735
+  type: 'test'
+  ...
+# Subtest: generic GOAP uses the cheapest deterministic Dijkstra/A* plan
+ok 297 - generic GOAP uses the cheapest deterministic Dijkstra/A* plan
+  ---
+  duration_ms: 4.082686
+  type: 'test'
+  ...
+# Subtest: GOAP reports an exhausted state space without fabricating an action
+ok 298 - GOAP reports an exhausted state space without fabricating an action
+  ---
+  duration_ms: 0.443119
+  type: 'test'
+  ...
+# Subtest: world snapshot normalizes every required entity and safe assumption
+ok 299 - world snapshot normalizes every required entity and safe assumption
+  ---
+  duration_ms: 0.750123
+  type: 'test'
+  ...
+# Subtest: all route costs are honored and conditional forest gates are explicit
+ok 300 - all route costs are honored and conditional forest gates are explicit
+  ---
+  duration_ms: 2.121026
+  type: 'test'
+  ...
+# Subtest: T15/T18/T19 hard gates distinguish active, critical and resolved prerequisites
+ok 301 - T15/T18/T19 hard gates distinguish active, critical and resolved prerequisites
+  ---
+  duration_ms: 0.383368
+  type: 'test'
+  ...
+# Subtest: Day1 through Day100 no-player run reaches a strict failed world with complete NPC traces
+ok 302 - Day1 through Day100 no-player run reaches a strict failed world with complete NPC traces
+  ---
+  duration_ms: 2.227085
+  type: 'test'
+  ...
+# Subtest: report compaction preserves all NPC ticks, movement coverage, replay metadata and T01 casualties
+ok 303 - report compaction preserves all NPC ticks, movement coverage, replay metadata and T01 casualties
+  ---
+  duration_ms: 337.368441
+  type: 'test'
+  ...
+# Subtest: event gates, chains and same-day timeline order are retained in the run
+ok 304 - event gates, chains and same-day timeline order are retained in the run
+  ---
+  duration_ms: 0.634616
+  type: 'test'
+  ...
+# Subtest: a formerly successful seed still follows the no-player T13 failure route
+ok 305 - a formerly successful seed still follows the no-player T13 failure route
+  ---
+  duration_ms: 1846.946877
+  type: 'test'
+  ...
+# Subtest: a seed reproduces the exact simulation and another seed changes the trace
+ok 306 - a seed reproduces the exact simulation and another seed changes the trace
+  ---
+  duration_ms: 2375.159749
+  type: 'test'
+  ...
+# Subtest: strict audit detects route-time corruption and terminal leakage
+ok 307 - strict audit detects route-time corruption and terminal leakage
+  ---
+  duration_ms: 481.078446
+  type: 'test'
+  ...
+1..307
+# tests 307
+# suites 0
+# pass 306
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 30921.227671
