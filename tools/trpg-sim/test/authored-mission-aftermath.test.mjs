@@ -18,8 +18,8 @@ function pack(troubleId) {
   return AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.troubleId === troubleId);
 }
 
-test("T03 through T10 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
-  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10"]) {
+test("T03 through T12 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
+  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10", "T11", "T12"]) {
     const missionPack = pack(troubleId);
     assert.ok(missionPack);
     assert.equal(missionPack.resolution.choices.length, 3);
@@ -1035,4 +1035,281 @@ test("the generic NPC life engine travels, performs, and retires one authored af
     worldFlags: {},
   });
   assert.notEqual(engine.decisionEvents.at(-1).aftermathPlanId, "test-secure-boundary");
+});
+
+test("T12 offers 262,440 deterministic route shapes across arsenal, disguise, command, absence and war preparation", () => {
+  const missionPack = pack("T12");
+  assert.ok(missionPack);
+  assert.equal(missionPack.persistResolutionBranch, true);
+  assert.deepEqual(missionPack.branching, {
+    openingChoices: 3,
+    evidenceDimensions: 5,
+    alternativesPerDimension: 3,
+    evidenceProfiles: 243,
+    orderingPermutationsPerProfile: 120,
+    topLevelResolutions: 3,
+    minimumRouteShapesAfterOpening: 87480,
+    minimumRouteShapesBeforePriorState: 262440,
+    evidenceOrderChangesContext: true,
+    persistentBranchSignature: true,
+    note: "三つの導入、五分類それぞれ三つの代替証拠、取得順、介入日、T09/T11/T13/T14、三解決を組み合わせる。",
+  });
+  assert.equal(
+    missionPack.branching.openingChoices
+      * missionPack.branching.evidenceProfiles
+      * missionPack.branching.orderingPermutationsPerProfile
+      * missionPack.branching.topLevelResolutions,
+    missionPack.branching.minimumRouteShapesBeforePriorState,
+  );
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(missionPack.investigation.requiredEvidenceGroups.length, 5);
+  assert.equal(missionPack.investigation.leads.length, 15);
+  assert.deepEqual(missionPack.catalogOverride.battle.timelineVariants.map((variant) => [
+    variant.minDay,
+    variant.maxDay ?? null,
+    variant.troubleId ?? null,
+    variant.troubleStatuses ?? null,
+    variant.targetFacilityId,
+    variant.actionType,
+    variant.encounterId ?? null,
+  ]), [
+    [30, 38, null, null, "LOC_FORT_SUPPLY", "investigate", null],
+    [39, 45, null, null, "LOC_FORT_WALL", "missionBattle", "ENC-0055"],
+    [46, 55, null, null, "LOC_FORT_GATE", "missionBattle", "ENC-0055"],
+    [56, 67, "T14", ["critical", "failed"], "LOC_FORT_WALL", "missionBattle", "ENC-0056"],
+    [56, 67, null, null, "LOC_FORT_COMMAND", "investigate", null],
+  ]);
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "internal_court_martial_and_command_reform",
+    "joint_border_inquiry_and_nonaggression_line",
+    "reverse_false_flag_and_capture_smuggling_network",
+  ]);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.contextVariants.length >= 6
+    && route.worldEffect.aftermathPlans.length >= 3
+    && route.worldEffect.followups.length >= 3
+    && route.summaryByTroubleStatus?.critical
+    && route.narrativeByTroubleStatus?.critical
+    && route.worldEffect.factIdByTroubleStatus?.critical
+    && route.worldEffect.textByTroubleStatus?.critical));
+});
+
+test("all 243 T12 evidence profiles satisfy the five independent false-flag truth classes", () => {
+  const missionPack = pack("T12");
+  const groups = missionPack.investigation.requiredEvidenceGroups;
+  const profiles = groups.reduce(
+    (rows, group) => rows.flatMap((row) => group.map((evidenceId) => [...row, evidenceId])),
+    [[]],
+  );
+  assert.equal(profiles.length, 243);
+  assert.equal(new Set(profiles.map((profile) => profile.join("|"))).size, 243);
+
+  for (const selectedEvidence of profiles) {
+    const mission = {
+      id: "MSN-T12",
+      steps: [
+        { id: "hear", type: "conversation", required: 1 },
+        { id: "investigate", type: "investigate", required: 5 },
+        { id: "battle", type: "battle", required: 1 },
+        { id: "resolve", type: "resolve", required: 1 },
+      ],
+    };
+    const catalog = { special: [mission], byId: new Map([[mission.id, mission]]) };
+    applyAuthoredMissionFlowCatalogOverrides(catalog);
+    const runtime = {
+      playerState: {
+        catalog,
+        missions: {
+          "MSN-T12": {
+            status: "active",
+            progress: { hear: 1, investigate: 0, battle: 0, resolve: 0 },
+            discoveries: selectedEvidence.map((id) => ({ id })),
+          },
+        },
+      },
+    };
+    const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+    assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
+    assert.equal(runtime.playerState.missions["MSN-T12"].progress.investigate, 5);
+  }
+});
+
+test("T12 resolution contexts react to prior troubles, prior routes, exact evidence and acquisition order", () => {
+  const missionPack = pack("T12");
+  const [internal, joint, reverse] = missionPack.resolution.choices;
+  const runtimeFor = ({ openingChoiceId, evidenceIds, worldFlags = {}, troubles = {} }) => ({
+    authoredMissionFlows: {
+      [missionPack.id]: { openingChoiceId, evidenceIds },
+    },
+    playerState: {
+      worldFlags,
+      troubles,
+      missions: {
+        "MSN-T12": { discoveries: evidenceIds.map((id) => ({ id })) },
+      },
+    },
+  });
+
+  const rebuiltArsenal = runtimeFor({
+    openingChoiceId: "arsenal_and_supply_chain",
+    evidenceIds: [
+      "T12-EVIDENCE-DWARF-MAKER-MARK-MISMATCH",
+      "T12-EVIDENCE-HENRIK-SUPPLY-LEDGER",
+      "T12-EVIDENCE-FALSE-BLACKRIDGE-WEAPON-KIT",
+      "T12-EVIDENCE-MAGNUS-SEALED-ORDER",
+      "T12-EVIDENCE-YURI-NO-CROSSING-TRACE",
+      "T12-EVIDENCE-ROSALIND-MOBILIZATION-DRAFT",
+    ],
+    worldFlags: { t09ResolutionRoute: "rebuild_deep_mine_and_rescue_corps" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(rebuiltArsenal, internal).contextId, "t09-rebuilt-maker-mark-audit");
+  assert.equal(resolveAuthoredResolutionChoice(rebuiltArsenal, internal).minutes, 68);
+
+  const secureCommand = runtimeFor({
+    openingChoiceId: "soldiers_orders_and_wounds",
+    evidenceIds: [
+      "T12-EVIDENCE-MAGNUS-SEALED-ORDER",
+      "T12-EVIDENCE-HENRIK-SUPPLY-LEDGER",
+      "T12-EVIDENCE-FALSE-BLACKRIDGE-WEAPON-KIT",
+      "T12-EVIDENCE-YURI-NO-CROSSING-TRACE",
+      "T12-EVIDENCE-ROSALIND-MOBILIZATION-DRAFT",
+    ],
+    worldFlags: { t11ResolutionRoute: "silent_counterplot_and_protect_king" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(secureCommand, internal).contextId, "t11-silent-secure-command-chain");
+  assert.equal(resolveAuthoredResolutionChoice(secureCommand, internal).minutes, 64);
+
+  const waterCleared = runtimeFor({
+    openingChoiceId: "border_absence_and_war_motive",
+    evidenceIds: [
+      "T12-EVIDENCE-YURI-NO-CROSSING-TRACE",
+      "T12-EVIDENCE-HENRIK-SUPPLY-LEDGER",
+      "T12-EVIDENCE-FORGED-BLACKRIDGE-PASS",
+      "T12-EVIDENCE-KAI-CONSCRIPT-TESTIMONY",
+      "T12-EVIDENCE-ROSALIND-MOBILIZATION-DRAFT",
+    ],
+    troubles: { T13: { status: "resolved" } },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(waterCleared, joint).contextId, "t13-water-misunderstanding-cleared");
+  assert.equal(resolveAuthoredResolutionChoice(waterCleared, joint).minutes, 70);
+
+  const publicCover = runtimeFor({
+    openingChoiceId: "border_absence_and_war_motive",
+    evidenceIds: [
+      "T12-EVIDENCE-ROSALIND-MOBILIZATION-DRAFT",
+      "T12-EVIDENCE-HENRIK-SUPPLY-LEDGER",
+      "T12-EVIDENCE-FORGED-BLACKRIDGE-PASS",
+      "T12-EVIDENCE-KAI-CONSCRIPT-TESTIMONY",
+      "T12-EVIDENCE-YURI-NO-CROSSING-TRACE",
+    ],
+    worldFlags: { t11ResolutionRoute: "public_conspiracy_inquiry_and_guard_reform" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(publicCover, joint).contextId, "t11-public-inquiry-diplomatic-cover");
+  assert.equal(resolveAuthoredResolutionChoice(publicCover, joint).minutes, 78);
+
+  const portWatch = runtimeFor({
+    openingChoiceId: "arsenal_and_supply_chain",
+    evidenceIds: [
+      "T12-EVIDENCE-MAGNUS-VARO-PURCHASE",
+      "T12-EVIDENCE-HENRIK-SUPPLY-LEDGER",
+      "T12-EVIDENCE-FALSE-BLACKRIDGE-WEAPON-KIT",
+      "T12-EVIDENCE-KAI-CONSCRIPT-TESTIMONY",
+      "T12-EVIDENCE-YURI-NO-CROSSING-TRACE",
+    ],
+    worldFlags: { t06ResolutionRoute: "worker_cooperative_and_smuggling_watch" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(portWatch, reverse).contextId, "t06-cooperative-smuggling-watch");
+  assert.equal(resolveAuthoredResolutionChoice(portWatch, reverse).minutes, 72);
+
+  const assassinMethod = runtimeFor({
+    openingChoiceId: "soldiers_orders_and_wounds",
+    evidenceIds: [
+      "T12-EVIDENCE-KAI-CONSCRIPT-TESTIMONY",
+      "T12-EVIDENCE-MAGNUS-VARO-PURCHASE",
+      "T12-EVIDENCE-HENRIK-SUPPLY-LEDGER",
+      "T12-EVIDENCE-FALSE-BLACKRIDGE-WEAPON-KIT",
+      "T12-EVIDENCE-YURI-NO-CROSSING-TRACE",
+    ],
+    worldFlags: { t11ResolutionRoute: "turn_assassin_and_trace_network" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(assassinMethod, reverse).contextId, "t11-assassin-network-method");
+  assert.equal(resolveAuthoredResolutionChoice(assassinMethod, reverse).minutes, 76);
+
+  const armed = runtimeFor({
+    openingChoiceId: "border_absence_and_war_motive",
+    evidenceIds: [
+      "T12-EVIDENCE-YURI-NO-CROSSING-TRACE",
+      "T12-EVIDENCE-HENRIK-SUPPLY-LEDGER",
+      "T12-EVIDENCE-FORGED-BLACKRIDGE-PASS",
+      "T12-EVIDENCE-KAI-CONSCRIPT-TESTIMONY",
+      "T12-EVIDENCE-ROSALIND-MOBILIZATION-DRAFT",
+    ],
+    troubles: { T14: { status: "failed" }, T13: { status: "resolved" } },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(armed, joint).contextId, "t14-armed-emergency-border-truce");
+  assert.equal(resolveAuthoredResolutionChoice(armed, joint).minutes, 154);
+});
+
+test("T12 persists a different branch signature when the same five truths are collected in a different order", () => {
+  const missionPack = pack("T12");
+  const mission = {
+    id: "MSN-T12",
+    steps: [
+      { id: "hear", type: "conversation", required: 1 },
+      { id: "investigate", type: "investigate", required: 5 },
+      { id: "battle", type: "battle", required: 1 },
+      { id: "resolve", type: "resolve", required: 1 },
+    ],
+  };
+  const ordered = [
+    "T12-EVIDENCE-KAI-CONSCRIPT-TESTIMONY",
+    "T12-EVIDENCE-HENRIK-SUPPLY-LEDGER",
+    "T12-EVIDENCE-FALSE-BLACKRIDGE-WEAPON-KIT",
+    "T12-EVIDENCE-YURI-NO-CROSSING-TRACE",
+    "T12-EVIDENCE-MAGNUS-VARO-PURCHASE",
+  ];
+  const execute = (evidenceIds) => {
+    const catalogMission = { ...mission, steps: mission.steps.map((step) => ({ ...step })) };
+    const catalog = { special: [catalogMission], byId: new Map([[catalogMission.id, catalogMission]]) };
+    applyAuthoredMissionFlowCatalogOverrides(catalog);
+    const runtime = {
+      playerState: {
+        absoluteMinute: 60 * 1440,
+        catalog,
+        worldFlags: {},
+        troubles: { T12: { status: "active" } },
+        player: { location: "北陵要塞", facilityId: "LOC_FORT_COMMAND" },
+        history: [],
+        missions: {
+          "MSN-T12": {
+            status: "active",
+            progress: { hear: 1, investigate: 5, battle: 1, resolve: 0 },
+            discoveries: evidenceIds.map((id) => ({ id })),
+          },
+        },
+      },
+    };
+    const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+    flow.openingChoiceId = "soldiers_orders_and_wounds";
+    flow.evidenceIds = [...evidenceIds];
+    const result = { ok: true };
+    assert.equal(applyAuthoredMissionFlowAction(runtime, {
+      authoredMissionFlowId: missionPack.id,
+      authoredMissionFlowKind: "resolution",
+      authoredMissionFlowResolutionRouteId: "reverse_false_flag_and_capture_smuggling_network",
+      authoredMissionFlowResolutionContextVariantId: "command-first-kai-reversal",
+      authoredMissionFlowTroubleStatus: "active",
+    }, result), true);
+    assert.equal(runtime.playerState.worldFlags.t12ResolutionRoute, "reverse_false_flag_and_capture_smuggling_network");
+    assert.equal(runtime.playerState.worldFlags.t12ResolutionContext, "command-first-kai-reversal");
+    assert.equal(flow.resolutionBranchId, runtime.playerState.worldFlags.t12ResolutionBranch);
+    assert.deepEqual(runtime.playerState.history.at(-1).evidenceOrder, evidenceIds);
+    return flow.resolutionBranchId;
+  };
+
+  const forward = execute(ordered);
+  const reversed = execute([...ordered].reverse());
+  assert.notEqual(forward, reversed);
+  assert.match(forward, /soldiers_orders_and_wounds/u);
+  assert.match(forward, /command-first-kai-reversal/u);
 });

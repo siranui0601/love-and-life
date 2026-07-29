@@ -124,3 +124,28 @@ test("T11-style timeline variants prefer an external-trouble escalation before t
   assert.equal(resolveMissionStepVariant(step, { day: 49, troubles: { T14: { status: "failed" } } }).label, "armed uprising");
   assert.equal(step.encounterId, "ENC-0025");
 });
+
+test("T12-style timeline variants keep T14 failure as the armed escalation before the same-day noncombat fallback", () => {
+  const step = {
+    id: "battle",
+    type: "battle",
+    targetLocation: "北陵要塞",
+    targetFacilityId: "LOC_FORT_GATE",
+    encounterId: "ENC-0055",
+    timelineVariants: [
+      { minDay: 30, maxDay: 38, targetFacilityId: "LOC_FORT_SUPPLY", actionType: "investigate", encounterId: null, label: "freeze staging" },
+      { minDay: 39, maxDay: 45, targetFacilityId: "LOC_FORT_WALL", actionType: "missionBattle", encounterId: "ENC-0055", label: "pre-operation" },
+      { minDay: 46, maxDay: 55, targetFacilityId: "LOC_FORT_GATE", actionType: "missionBattle", encounterId: "ENC-0055", label: "returning unit" },
+      { minDay: 56, maxDay: 67, troubleId: "T14", troubleStatuses: ["critical", "failed"], targetFacilityId: "LOC_FORT_WALL", actionType: "missionBattle", encounterId: "ENC-0056", label: "armed front" },
+      { minDay: 56, maxDay: 67, targetFacilityId: "LOC_FORT_COMMAND", actionType: "investigate", encounterId: null, label: "stay mobilization" },
+    ],
+  };
+
+  assert.equal(resolveMissionStepVariant(step, { day: 34, troubles: {} }).label, "freeze staging");
+  assert.equal(resolveMissionStepVariant(step, { day: 42, troubles: {} }).encounterId, "ENC-0055");
+  assert.equal(resolveMissionStepVariant(step, { day: 48, troubles: {} }).label, "returning unit");
+  assert.equal(resolveMissionStepVariant(step, { day: 60, troubles: { T14: { status: "active" } } }).label, "stay mobilization");
+  assert.equal(resolveMissionStepVariant(step, { day: 60, troubles: { T14: { status: "critical" } } }).encounterId, "ENC-0056");
+  assert.equal(resolveMissionStepVariant(step, { day: 60, troubles: { T14: { status: "failed" } } }).label, "armed front");
+  assert.equal(step.encounterId, "ENC-0055");
+});
