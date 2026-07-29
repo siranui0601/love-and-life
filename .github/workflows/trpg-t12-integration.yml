@@ -6,6 +6,11 @@ on:
       - agent/trpg-human-authored-choices
     paths:
       - ".github/workflows/trpg-t12-integration.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/trpg-t12-integration.yml"
 permissions:
   contents: write
 jobs:
@@ -83,6 +88,7 @@ jobs:
           TRPG_GOAP_V4_SEEDS: 2
         run: node tools/trpg-sim/cli-player-v4.mjs --strict
       - name: Publish clean implementation
+        if: github.event_name == 'push'
         shell: bash
         run: |
           test "$(sha256sum src/server/trpg/content/authored/missions/t12-northern-fortress-false-flag.js | cut -d' ' -f1)" = "463c4e950e3ad8890c7c445f9241ad3df6ef1e2141ee6ec4f4ad9115e0b39f8d"
