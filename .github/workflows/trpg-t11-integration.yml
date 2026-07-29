@@ -5,6 +5,9 @@ on:
       - agent/trpg-human-authored-choices
     paths:
       - ".github/workflows/trpg-t11-integration.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/trpg-t11-integration.yml"
 permissions:
   contents: write
 jobs:
