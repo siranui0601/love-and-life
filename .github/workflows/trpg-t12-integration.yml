@@ -1,4 +1,5 @@
 name: Temporary T12 integration and validation
+# Triggered after verified assets are present on the branch.
 on:
   push:
     branches:
