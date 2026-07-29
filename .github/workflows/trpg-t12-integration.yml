@@ -1,5 +1,4 @@
 name: Temporary T12 integration and validation
-# Triggered after verified assets are present on the branch.
 on:
   push:
     branches:
@@ -36,26 +35,48 @@ jobs:
           import gzip
           import hashlib
 
-          assets = [
-              (
-                  '.github/t12-assets/pack.b64',
-                  'cc21b2bf7a188df94e6700251c606c748545c11576aec76d0bc956bda8370633',
-                  '463c4e950e3ad8890c7c445f9241ad3df6ef1e2141ee6ec4f4ad9115e0b39f8d',
-                  'src/server/trpg/content/authored/missions/t12-northern-fortress-false-flag.js',
-              ),
-              (
-                  '.github/t12-assets/patch.b64',
-                  'f9952d4dd32a6768c252a41f20014b3c5a9dce356323ec218b555f3f8ed15164',
-                  '80865e9415259a50e3e401c7b49f5d34f7a4ab357128ea16d10500a2bf214a11',
-                  '/tmp/trpg-t12/patch_t12.py',
-              ),
-          ]
-          for source, encoded_sha, decoded_sha, target in assets:
-              encoded = Path(source).read_text().strip()
+          source_segments = {
+              'pack.00': 'eeb7ee888ad3701bc05cb8608e0eab25aed8de610771d7e6f9de0a9b95bed92f',
+              'pack.01': '1b77115e0e5dfb8dbf5e797cd8e27d7df4bb86d8d934fd2fae89b9e0b53266c2',
+              'pack.02': 'd97074bf3c44806e8abdf08d8f10272ef695f02a95edc88891b0f28fc498e770',
+              'pack.03': '7d2568658556b0cd5d481a7e5c36a40f93325c22b54ab694eaef22ddf04413e9',
+              'pack.04': '22e085d93d641a7470eb6ec4d27db361127743fd578e7c5f46338604eda56dfd',
+              'pack.05': '07ba33cfedced1e22878e05e3457071d1901e32b8709c9bf036b3772fc21307d',
+              'pack.06': 'b341b433d2c248f7986cb56d502f919169de4207f0351b55b2d56d437361cde2',
+              'pack.07': '7aec9531d993ec69d0e49173b828cb31f78ea658e37c1ed6d20ef4032cb9fbd9',
+              'pack.08': '54fad8b42aa9d10ff5234bd9873c54799c18616a6c855329cc520f8c89f17b5f',
+          }
+          patch_segments = {
+              'patch.00': 'b98b2995415426f7373c529f823623081b38e9d5d8024924241118019b837bb6',
+              'patch.01': '60f19258b0588d3e8585c7021cfec498b2b7dfebfa4567dd1a8a658d053c6fe1',
+              'patch.02': '73b4d245d7078960cb57455e0dfa9a4847f4c31e2a807ee54d0296b2dd7484be',
+          }
+
+          def rebuild(parts, encoded_sha, decoded_sha, target):
+              encoded_parts = []
+              for name, expected in parts.items():
+                  text = Path('.github/t12-assets', name).read_text().strip()
+                  actual = hashlib.sha256(text.encode('ascii')).hexdigest()
+                  assert actual == expected, (name, actual, expected)
+                  encoded_parts.append(text)
+              encoded = ''.join(encoded_parts)
               assert hashlib.sha256(encoded.encode('ascii')).hexdigest() == encoded_sha
               data = gzip.decompress(base64.b64decode(encoded, validate=True))
               assert hashlib.sha256(data).hexdigest() == decoded_sha
               Path(target).write_bytes(data)
+
+          rebuild(
+              source_segments,
+              'cc21b2bf7a188df94e6700251c606c748545c11576aec76d0bc956bda8370633',
+              '463c4e950e3ad8890c7c445f9241ad3df6ef1e2141ee6ec4f4ad9115e0b39f8d',
+              'src/server/trpg/content/authored/missions/t12-northern-fortress-false-flag.js',
+          )
+          rebuild(
+              patch_segments,
+              'f9952d4dd32a6768c252a41f20014b3c5a9dce356323ec218b555f3f8ed15164',
+              '80865e9415259a50e3e401c7b49f5d34f7a4ab357128ea16d10500a2bf214a11',
+              '/tmp/trpg-t12/patch_t12.py',
+          )
           pack = Path('src/server/trpg/content/authored/missions/t12-northern-fortress-false-flag.js').read_text('utf-8')
           assert 'title: "北陵要塞の偽装襲撃"' in pack
           assert 'minimumRouteShapesBeforePriorState: 262440' in pack
