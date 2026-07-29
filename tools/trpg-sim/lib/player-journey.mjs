@@ -1040,7 +1040,7 @@ function missionActions(state, catalog) {
     if (runtime.status !== "active") continue;
     if (!playerKnowsSpecialMission(state, missionDefinition)) continue;
     const rawStep = currentStep(missionDefinition, runtime);
-    const step = resolveMissionStepVariant(rawStep, state.day);
+    const step = resolveMissionStepVariant(rawStep, state);
     if (!step) continue;
     const location = step.targetLocation ?? missionDefinition.targetLocations[0];
     if (location && location !== state.player.location) continue;
@@ -1192,7 +1192,7 @@ function objectiveMovementAction(state, model, catalog, profile) {
     .filter((entry) => entry.runtime.status === "active" && playerKnowsSpecialMission(state, entry.mission))
     .map((entry) => {
       const rawStep = currentStep(entry.mission, entry.runtime);
-      return { ...entry, step: resolveMissionStepVariant(rawStep, state.day) };
+      return { ...entry, step: resolveMissionStepVariant(rawStep, state) };
     })
     .filter((entry) => entry.step)
     .sort((left, right) => left.mission.finalDay - right.mission.finalDay || right.mission.difficulty - left.mission.difficulty);

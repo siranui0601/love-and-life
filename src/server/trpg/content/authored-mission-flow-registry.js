@@ -1,16 +1,18 @@
 import { resolveMissionStepVariant } from "./mission-step-variant.js";
+import { T11_CAPITAL_ASSASSINATION_PLOT_PACK } from "./authored/missions/t11-capital-assassination-plot.js";
 import { T10_CAPITAL_ORPHANAGE_EVICTION_PACK } from "./authored/missions/t10-capital-orphanage-eviction.js";
 import { T09_DWARF_MINE_COLLAPSE_PACK } from "./authored/missions/t09-dwarf-mine-collapse.js";
 import { T08_FOREST_SEALING_ORDER_PACK } from "./authored/missions/t08-forest-sealing-order.js";
 import { T07_RUNAWAY_ELF_TRAFFICKING_PACK } from "./authored/missions/t07-runaway-elf-trafficking.js";
 import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";
 
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v10";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v11";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 
 export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
+  T11_CAPITAL_ASSASSINATION_PLOT_PACK,
   T10_CAPITAL_ORPHANAGE_EVICTION_PACK,
   T09_DWARF_MINE_COLLAPSE_PACK,
   T08_FOREST_SEALING_ORDER_PACK,
@@ -1631,6 +1633,8 @@ function freshState(pack) {
     prematureResolutionEvidenceCounts: [],
     deferredUntilMinute: null,
     selectedResolutionRouteId: null,
+    selectedResolutionContextId: null,
+    resolutionBranchId: null,
   };
 }
 
@@ -1764,6 +1768,8 @@ export function ensureAuthoredMissionFlowState(runtime, packOrId) {
     ? Number(deferredUntilMinute)
     : null;
   state.selectedResolutionRouteId ??= null;
+  state.selectedResolutionContextId ??= null;
+  state.resolutionBranchId ??= null;
   syncInvestigationProgress(runtime, pack, state);
   return state;
 }
@@ -1840,6 +1846,24 @@ function openingActions(runtime, pack, presentNpcs) {
   }));
 }
 
+function resolutionContextSnapshot(runtime, choice, variant) {
+  const missionId = variant?.contextEvidenceMissionId ?? choice?.contextEvidenceMissionId ?? null;
+  const missionPack = missionId ? PACK_BY_MISSION_ID.get(missionId) : null;
+  const flow = missionPack ? runtime?.authoredMissionFlows?.[missionPack.id] : null;
+  const discoveries = missionId
+    ? runtime?.playerState?.missions?.[missionId]?.discoveries ?? []
+    : [];
+  const discoveryOrder = discoveries.map((entry) => entry?.id).filter(Boolean);
+  const evidenceOrder = Array.isArray(flow?.evidenceIds) && flow.evidenceIds.length
+    ? [...flow.evidenceIds]
+    : discoveryOrder;
+  return {
+    evidenceOrder,
+    evidenceIds: new Set(evidenceOrder),
+    openingChoiceId: flow?.openingChoiceId ?? null,
+  };
+}
+
 function matchingResolutionContextVariant(runtime, choice, requestedContextId = null) {
   const variants = choice?.contextVariants ?? [];
   if (requestedContextId) {
@@ -1848,10 +1872,44 @@ function matchingResolutionContextVariant(runtime, choice, requestedContextId = 
   const flags = runtime?.playerState?.worldFlags ?? {};
   const troubles = runtime?.playerState?.troubles ?? {};
   return variants.find((variant) => {
-    const flagMatches = !variant.flagKey || flags[variant.flagKey] === variant.flagValue;
-    const troubleMatches = !variant.troubleId
-      || troubles[variant.troubleId]?.status === variant.troubleStatus;
-    return Boolean(variant.flagKey || variant.troubleId) && flagMatches && troubleMatches;
+    const snapshot = resolutionContextSnapshot(runtime, choice, variant);
+    const requiredEvidenceIds = variant.requiredEvidenceIds ?? [];
+    const anyEvidenceIds = variant.anyEvidenceIds ?? [];
+    const forbiddenEvidenceIds = variant.forbiddenEvidenceIds ?? [];
+    const openingChoiceIds = variant.openingChoiceIds ?? [];
+    const firstEvidenceIds = variant.firstEvidenceIds ?? [];
+    const lastEvidenceIds = variant.lastEvidenceIds ?? [];
+    const evidenceOrderPrefix = variant.evidenceOrderPrefix ?? [];
+    const troubleStatuses = variant.troubleStatuses
+      ?? (variant.troubleStatus ? [variant.troubleStatus] : []);
+    const hasCriteria = Boolean(
+      variant.flagKey
+      || variant.troubleId
+      || requiredEvidenceIds.length
+      || anyEvidenceIds.length
+      || forbiddenEvidenceIds.length
+      || openingChoiceIds.length
+      || firstEvidenceIds.length
+      || lastEvidenceIds.length
+      || evidenceOrderPrefix.length
+    );
+    if (!hasCriteria) return false;
+    if (variant.flagKey) {
+      const flagValue = flags[variant.flagKey];
+      if (variant.flagValue == null ? !flagValue : flagValue !== variant.flagValue) return false;
+    }
+    if (variant.troubleId) {
+      const status = troubles[variant.troubleId]?.status ?? troubles[variant.troubleId];
+      if (troubleStatuses.length ? !troubleStatuses.includes(status) : !status) return false;
+    }
+    if (requiredEvidenceIds.some((id) => !snapshot.evidenceIds.has(id))) return false;
+    if (anyEvidenceIds.length && !anyEvidenceIds.some((id) => snapshot.evidenceIds.has(id))) return false;
+    if (forbiddenEvidenceIds.some((id) => snapshot.evidenceIds.has(id))) return false;
+    if (openingChoiceIds.length && !openingChoiceIds.includes(snapshot.openingChoiceId)) return false;
+    if (firstEvidenceIds.length && !firstEvidenceIds.includes(snapshot.evidenceOrder[0])) return false;
+    if (lastEvidenceIds.length && !lastEvidenceIds.includes(snapshot.evidenceOrder.at(-1))) return false;
+    if (evidenceOrderPrefix.some((id, index) => snapshot.evidenceOrder[index] !== id)) return false;
+    return true;
   }) ?? null;
 }
 
@@ -1867,6 +1925,31 @@ export function resolveAuthoredResolutionChoice(runtime, choice, requestedContex
       ...(variant.worldEffect ?? {}),
     },
   };
+}
+
+function persistAuthoredResolutionBranch(runtime, pack, flow, route, troubleStatus) {
+  if (pack?.persistResolutionBranch !== true) return null;
+  const contextId = route.contextId ?? "base";
+  const evidenceOrder = [...(flow?.evidenceIds ?? [])];
+  const branchId = [
+    pack.troubleId,
+    flow?.openingChoiceId ?? "unknown-opening",
+    evidenceOrder.join(">") || "no-evidence-order",
+    route.id,
+    contextId,
+    troubleStatus,
+  ].join("|");
+  flow.selectedResolutionContextId = contextId;
+  flow.resolutionBranchId = branchId;
+  const flagPrefix = pack.troubleId.toLowerCase();
+  runtime.playerState.worldFlags ??= {};
+  runtime.playerState.worldFlags[`${flagPrefix}ResolutionContext`] = contextId;
+  runtime.playerState.worldFlags[`${flagPrefix}ResolutionBranch`] = branchId;
+  runtime.narrativeMemory ??= {};
+  runtime.narrativeMemory.semanticFlags ??= {};
+  runtime.narrativeMemory.semanticFlags[`trouble.${pack.troubleId}.resolutionContext`] = contextId;
+  runtime.narrativeMemory.semanticFlags[`trouble.${pack.troubleId}.resolutionBranch`] = branchId;
+  return branchId;
 }
 
 function resolutionActions(runtime, pack, step) {
@@ -2408,6 +2491,13 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       minute,
       troubleStatus,
     );
+    const resolutionBranchId = persistAuthoredResolutionBranch(
+      runtime,
+      pack,
+      flow,
+      route,
+      troubleStatus,
+    );
     changed = true;
     runtime.playerState.history.push({
       type: "AUTHORED_MISSION_FLOW_RESOLUTION_SELECTED",
@@ -2417,6 +2507,9 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       troubleId: pack.troubleId,
       routeId: route.id,
       contextVariantId: route.contextId ?? null,
+      resolutionBranchId,
+      evidenceOrder: [...flow.evidenceIds],
+      openingChoiceId: flow.openingChoiceId,
       troubleStatus,
       worldEffectFactId,
     });
@@ -2478,7 +2571,7 @@ export function authoredMissionFlowGuidance(runtime) {
   const pack = availablePack(runtime);
   if (!pack) return null;
   const flow = ensureAuthoredMissionFlowState(runtime, pack);
-  const step = resolveMissionStepVariant(currentStep(runtime, pack), runtime.playerState.day);
+  const step = resolveMissionStepVariant(currentStep(runtime, pack), runtime.playerState);
   if (!step) return null;
   if (step.id === pack.hearing.stepId) return {
     missionId: pack.missionId,

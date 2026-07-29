@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  applyAuthoredMissionFlowAction,
   applyAuthoredMissionFlowCatalogOverrides,
   AUTHORED_MISSION_FLOW_PACKS,
   ensureAuthoredMissionFlowState,
@@ -665,6 +666,258 @@ test("alternative evidence groups complete T10 with one proof from tenure, manuf
   const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
   assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
   assert.equal(runtime.playerState.missions["MSN-T10"].progress.investigate, 3);
+});
+
+
+
+test("T11 offers thousands of deterministic route shapes across witnesses, contracts, finance and prevention", () => {
+  const missionPack = pack("T11");
+  assert.ok(missionPack);
+  assert.equal(missionPack.persistResolutionBranch, true);
+  assert.deepEqual(missionPack.branching, {
+    evidenceDimensions: 4,
+    alternativesPerDimension: 3,
+    evidenceProfiles: 81,
+    orderingPermutationsPerProfile: 24,
+    topLevelResolutions: 3,
+    minimumRouteShapesBeforePriorState: 5832,
+    evidenceOrderChangesContext: true,
+    persistentBranchSignature: true,
+    note: "三つの導入、四分類それぞれ三つの代替証拠、取得順、介入日、過去事件、三解決を組み合わせる。",
+  });
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(missionPack.investigation.leads.length, 12);
+  assert.deepEqual(missionPack.investigation.requiredEvidenceGroups, [
+    [
+      "T11-EVIDENCE-NOAH-ALLEY-ROUTE-MAP",
+      "T11-EVIDENCE-MILAN-GUARD-SHIFT-OBSERVATION",
+      "T11-EVIDENCE-ROYAL-SCHEDULE-COPY",
+    ],
+    [
+      "T11-EVIDENCE-REN-CONTRACT-TOKEN",
+      "T11-EVIDENCE-CROW-INTERMEDIARY-LEDGER",
+      "T11-EVIDENCE-VERA-BLACK-LAMP-GUEST-REGISTER",
+    ],
+    [
+      "T11-EVIDENCE-KIRI-PAYMENT-CHAIN",
+      "T11-EVIDENCE-PETRA-PREPRINTED-COUP-PLATE",
+      "T11-EVIDENCE-LEONARDO-CODED-BILL-OF-EXCHANGE",
+    ],
+    [
+      "T11-EVIDENCE-VICTOR-COUNTER-ROUTE-PLAN",
+      "T11-EVIDENCE-CASTLE-DECOY-SCHEDULE",
+      "T11-EVIDENCE-JERICHO-ESCAPE-HORSE-TRACE",
+    ],
+  ]);
+  assert.deepEqual(missionPack.catalogOverride.battle.timelineVariants.map((variant) => [
+    variant.minDay,
+    variant.maxDay ?? null,
+    variant.troubleId ?? null,
+    variant.troubleStatuses ?? null,
+    variant.actionType,
+    variant.encounterId ?? null,
+  ]), [
+    [20, 34, null, null, "investigate", null],
+    [35, 48, null, null, "missionBattle", "ENC-0025"],
+    [49, 59, "T14", ["critical", "failed"], "missionBattle", "ENC-0043"],
+    [49, 59, null, null, "missionBattle", "ENC-0025"],
+  ]);
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "silent_counterplot_and_protect_king",
+    "public_conspiracy_inquiry_and_guard_reform",
+    "turn_assassin_and_trace_network",
+  ]);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.contextVariants.length >= 7
+    && route.worldEffect.aftermathPlans.length >= 3
+    && route.worldEffect.followups.length >= 3
+    && route.summaryByTroubleStatus?.critical
+    && route.narrativeByTroubleStatus?.critical));
+});
+
+test("all 81 T11 evidence profiles satisfy the four independent truth classes", () => {
+  const missionPack = pack("T11");
+  const groups = missionPack.investigation.requiredEvidenceGroups;
+  const profiles = groups.reduce(
+    (rows, group) => rows.flatMap((row) => group.map((evidenceId) => [...row, evidenceId])),
+    [[]],
+  );
+  assert.equal(profiles.length, 81);
+  assert.equal(new Set(profiles.map((profile) => profile.join("|"))).size, 81);
+
+  for (const selectedEvidence of profiles) {
+    const mission = {
+      id: "MSN-T11",
+      steps: [
+        { id: "hear", type: "conversation", required: 1 },
+        { id: "investigate", type: "investigate", required: 4 },
+        { id: "battle", type: "battle", required: 1 },
+        { id: "resolve", type: "resolve", required: 1 },
+      ],
+    };
+    const catalog = { special: [mission], byId: new Map([[mission.id, mission]]) };
+    applyAuthoredMissionFlowCatalogOverrides(catalog);
+    const runtime = {
+      playerState: {
+        catalog,
+        missions: {
+          "MSN-T11": {
+            status: "active",
+            progress: { hear: 1, investigate: 0, battle: 0, resolve: 0 },
+            discoveries: selectedEvidence.map((id) => ({ id })),
+          },
+        },
+      },
+    };
+    const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+    assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
+    assert.equal(runtime.playerState.missions["MSN-T11"].progress.investigate, 4);
+  }
+});
+
+test("T11 resolution contexts react to prior troubles, exact evidence and acquisition order", () => {
+  const missionPack = pack("T11");
+  const [silent, publicInquiry, turnAssassin] = missionPack.resolution.choices;
+  const runtimeFor = ({ openingChoiceId, evidenceIds, worldFlags = {}, troubles = {} }) => ({
+    authoredMissionFlows: {
+      [missionPack.id]: { openingChoiceId, evidenceIds },
+    },
+    playerState: {
+      worldFlags,
+      troubles,
+      missions: {
+        "MSN-T11": { discoveries: evidenceIds.map((id) => ({ id })) },
+      },
+    },
+  });
+
+  const witnessFirst = runtimeFor({
+    openingChoiceId: "street_witnesses_and_routes",
+    evidenceIds: [
+      "T11-EVIDENCE-NOAH-ALLEY-ROUTE-MAP",
+      "T11-EVIDENCE-REN-CONTRACT-TOKEN",
+      "T11-EVIDENCE-KIRI-PAYMENT-CHAIN",
+      "T11-EVIDENCE-VICTOR-COUNTER-ROUTE-PLAN",
+    ],
+  });
+  const witnessRoute = resolveAuthoredResolutionChoice(witnessFirst, silent);
+  assert.equal(witnessRoute.contextId, "witness-first-victor-lock");
+  assert.equal(witnessRoute.minutes, 68);
+
+  const t10Quiet = runtimeFor({
+    openingChoiceId: "street_witnesses_and_routes",
+    evidenceIds: [
+      "T11-EVIDENCE-NOAH-ALLEY-ROUTE-MAP",
+      "T11-EVIDENCE-REN-CONTRACT-TOKEN",
+      "T11-EVIDENCE-KIRI-PAYMENT-CHAIN",
+      "T11-EVIDENCE-VICTOR-COUNTER-ROUTE-PLAN",
+    ],
+    worldFlags: { t10ResolutionRoute: "restore_donation_title_and_stay" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(t10Quiet, silent).contextId, "t10-noah-victor-quiet-net");
+  assert.equal(resolveAuthoredResolutionChoice(t10Quiet, silent).minutes, 54);
+
+  const armed = runtimeFor({
+    openingChoiceId: "street_witnesses_and_routes",
+    evidenceIds: [
+      "T11-EVIDENCE-NOAH-ALLEY-ROUTE-MAP",
+      "T11-EVIDENCE-REN-CONTRACT-TOKEN",
+      "T11-EVIDENCE-KIRI-PAYMENT-CHAIN",
+      "T11-EVIDENCE-VICTOR-COUNTER-ROUTE-PLAN",
+    ],
+    worldFlags: { t10ResolutionRoute: "restore_donation_title_and_stay" },
+    troubles: { T14: { status: "failed" } },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(armed, silent).contextId, "armed-noah-victor-counterline");
+  assert.equal(resolveAuthoredResolutionChoice(armed, silent).minutes, 88);
+
+  const financeFirst = runtimeFor({
+    openingChoiceId: "noble_finance_and_royal_schedule",
+    evidenceIds: [
+      "T11-EVIDENCE-KIRI-PAYMENT-CHAIN",
+      "T11-EVIDENCE-CROW-INTERMEDIARY-LEDGER",
+      "T11-EVIDENCE-NOAH-ALLEY-ROUTE-MAP",
+      "T11-EVIDENCE-VICTOR-COUNTER-ROUTE-PLAN",
+    ],
+  });
+  assert.equal(resolveAuthoredResolutionChoice(financeFirst, publicInquiry).contextId, "finance-first-public-dossier");
+  assert.equal(resolveAuthoredResolutionChoice(financeFirst, publicInquiry).minutes, 101);
+
+  const contractFirst = runtimeFor({
+    openingChoiceId: "assassin_contract_chain",
+    evidenceIds: [
+      "T11-EVIDENCE-REN-CONTRACT-TOKEN",
+      "T11-EVIDENCE-NOAH-ALLEY-ROUTE-MAP",
+      "T11-EVIDENCE-KIRI-PAYMENT-CHAIN",
+      "T11-EVIDENCE-JERICHO-ESCAPE-HORSE-TRACE",
+    ],
+  });
+  assert.equal(resolveAuthoredResolutionChoice(contractFirst, turnAssassin).contextId, "contract-first-double-agent");
+  assert.equal(resolveAuthoredResolutionChoice(contractFirst, turnAssassin).minutes, 90);
+});
+
+test("T11 persists a different branch signature when the same evidence is collected in a different order", () => {
+  const missionPack = pack("T11");
+  const mission = {
+    id: "MSN-T11",
+    steps: [
+      { id: "hear", type: "conversation", required: 1 },
+      { id: "investigate", type: "investigate", required: 4 },
+      { id: "battle", type: "battle", required: 1 },
+      { id: "resolve", type: "resolve", required: 1 },
+    ],
+  };
+  const ordered = [
+    "T11-EVIDENCE-REN-CONTRACT-TOKEN",
+    "T11-EVIDENCE-NOAH-ALLEY-ROUTE-MAP",
+    "T11-EVIDENCE-KIRI-PAYMENT-CHAIN",
+    "T11-EVIDENCE-JERICHO-ESCAPE-HORSE-TRACE",
+  ];
+  const execute = (evidenceIds) => {
+    const catalogMission = { ...mission, steps: mission.steps.map((step) => ({ ...step })) };
+    const catalog = { special: [catalogMission], byId: new Map([[catalogMission.id, catalogMission]]) };
+    applyAuthoredMissionFlowCatalogOverrides(catalog);
+    const runtime = {
+      playerState: {
+        absoluteMinute: 49 * 1440,
+        catalog,
+        worldFlags: {},
+        troubles: { T11: { status: "active" } },
+        player: { location: "王都", facilityId: "LOC_CAP_CASTLE" },
+        history: [],
+        missions: {
+          "MSN-T11": {
+            status: "active",
+            progress: { hear: 1, investigate: 4, battle: 1, resolve: 0 },
+            discoveries: evidenceIds.map((id) => ({ id })),
+          },
+        },
+      },
+    };
+    const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+    flow.openingChoiceId = "assassin_contract_chain";
+    flow.evidenceIds = [...evidenceIds];
+    const result = { ok: true };
+    assert.equal(applyAuthoredMissionFlowAction(runtime, {
+      authoredMissionFlowId: missionPack.id,
+      authoredMissionFlowKind: "resolution",
+      authoredMissionFlowResolutionRouteId: "turn_assassin_and_trace_network",
+      authoredMissionFlowResolutionContextVariantId: "contract-first-double-agent",
+      authoredMissionFlowTroubleStatus: "active",
+    }, result), true);
+    assert.equal(runtime.playerState.worldFlags.t11ResolutionRoute, "turn_assassin_and_trace_network");
+    assert.equal(runtime.playerState.worldFlags.t11ResolutionContext, "contract-first-double-agent");
+    assert.equal(flow.selectedResolutionContextId, "contract-first-double-agent");
+    assert.equal(flow.resolutionBranchId, runtime.playerState.worldFlags.t11ResolutionBranch);
+    assert.deepEqual(runtime.playerState.history.at(-1).evidenceOrder, evidenceIds);
+    return flow.resolutionBranchId;
+  };
+
+  const forward = execute(ordered);
+  const reversed = execute([...ordered].reverse());
+  assert.notEqual(forward, reversed);
+  assert.match(forward, /assassin_contract_chain/u);
+  assert.match(forward, /contract-first-double-agent/u);
 });
 
 test("the generic NPC life engine travels, performs, and retires one authored aftermath plan", () => {

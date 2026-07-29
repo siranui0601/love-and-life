@@ -100,3 +100,27 @@ test("T10-style timeline variants preserve injunction, execution stay and post-e
     ],
   );
 });
+
+
+test("T11-style timeline variants prefer an external-trouble escalation before the same-day fallback", () => {
+  const step = {
+    id: "battle",
+    type: "battle",
+    targetLocation: "王都",
+    targetFacilityId: "LOC_CAP_CASTLE",
+    encounterId: "ENC-0025",
+    timelineVariants: [
+      { minDay: 20, maxDay: 34, actionType: "investigate", encounterId: null, label: "rehearsal" },
+      { minDay: 35, maxDay: 48, actionType: "missionBattle", encounterId: "ENC-0025", label: "attempt" },
+      { minDay: 49, maxDay: 59, troubleId: "T14", troubleStatuses: ["critical", "failed"], actionType: "missionBattle", encounterId: "ENC-0043", label: "armed uprising" },
+      { minDay: 49, maxDay: 59, actionType: "missionBattle", encounterId: "ENC-0025", label: "main assassination" },
+    ],
+  };
+
+  assert.equal(resolveMissionStepVariant(step, { day: 30, troubles: {} }).label, "rehearsal");
+  assert.equal(resolveMissionStepVariant(step, { day: 40, troubles: {} }).label, "attempt");
+  assert.equal(resolveMissionStepVariant(step, { day: 49, troubles: { T14: { status: "active" } } }).encounterId, "ENC-0025");
+  assert.equal(resolveMissionStepVariant(step, { day: 49, troubles: { T14: { status: "critical" } } }).encounterId, "ENC-0043");
+  assert.equal(resolveMissionStepVariant(step, { day: 49, troubles: { T14: { status: "failed" } } }).label, "armed uprising");
+  assert.equal(step.encounterId, "ENC-0025");
+});
