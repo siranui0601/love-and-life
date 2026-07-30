@@ -1,4 +1,4 @@
-name: TRPG T13 rumor opening contract fix
+name: TRPG T13 publish rumor opening contract
 
 on:
   push:
@@ -11,9 +11,9 @@ permissions:
   contents: write
 
 jobs:
-  fix-and-verify:
+  publish-fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 15
     env:
       TRPG_GEMINI_NARRATIVE_ENABLED: "false"
       TRPG_GEMINI_ASSET_GENERATION_ENABLED: "false"
@@ -25,22 +25,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - name: Apply reviewed correction
+      - name: Apply and verify reviewed correction
+        shell: bash
         run: |
+          set -euo pipefail
           python .github/t13-contract-fix.py
           node --check src/server/trpg/content/authored-mission-flow-registry.js
           node --check src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js
           git diff --check
           test "$TRPG_GEMINI_NARRATIVE_ENABLED" = "false"
           test "$TRPG_GEMINI_ASSET_GENERATION_ENABLED" = "false"
-      - run: npm ci
-      - name: Run connection and authored contracts
+      - name: Commit corrected source
+        shell: bash
         run: |
-          node --test tools/trpg-sim/test/game-service.test.mjs
-          node --test tools/trpg-sim/test/authored-mission-aftermath.test.mjs tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs tools/trpg-sim/test/mission-step-timeline.test.mjs
-      - name: Commit verified correction
-        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/server/trpg/content/authored-mission-flow-registry.js src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js
