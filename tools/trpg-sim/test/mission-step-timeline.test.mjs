@@ -150,7 +150,7 @@ test("T12-style timeline variants keep T14 failure as the armed escalation befor
   assert.equal(step.encounterId, "ENC-0055");
 });
 
-test("T13-style timeline variants escalate from small slime to world-tree eater without changing the original step", () => {
+test("T13-style timeline variants escalate from small slime through the world-tree collapse and its aftermath", () => {
   const step = {
     id: "battle",
     type: "battle",
@@ -163,11 +163,13 @@ test("T13-style timeline variants escalate from small slime to world-tree eater 
       { minDay: 32, maxDay: 44, targetFacilityId: "LOC_FOREST_RIVER", actionType: "missionBattle", encounterId: "ENC-0016", label: "rumor" },
       { minDay: 45, maxDay: 57, targetFacilityId: "LOC_FOREST_RIVER", actionType: "missionBattle", encounterId: "ENC-0017", label: "giant" },
       { minDay: 58, maxDay: 60, targetLocation: "エルフの隠れ里", targetFacilityId: "LOC_ELF_WORLD_TREE", actionType: "missionBattle", encounterId: "ENC-0018", label: "world-tree eater" },
+      { minDay: 61, maxDay: 74, targetLocation: "エルフの隠れ里", targetFacilityId: "LOC_ELF_WORLD_TREE", actionType: "missionBattle", encounterId: "ENC-0068", label: "ash spirits" },
+      { minDay: 75, maxDay: 89, targetLocation: "森", targetFacilityId: "LOC_FOREST_MAZE", actionType: "missionBattle", encounterId: "ENC-0020", label: "barrier eaters" },
     ],
   };
 
   assert.deepEqual(
-    [10, 20, 36, 50, 59].map((day) => {
+    [10, 20, 36, 50, 59, 65, 82].map((day) => {
       const resolved = resolveMissionStepVariant(step, { day, troubles: {} });
       return [resolved.targetLocation, resolved.targetFacilityId, resolved.encounterId, resolved.label];
     }),
@@ -177,6 +179,8 @@ test("T13-style timeline variants escalate from small slime to world-tree eater 
       ["森", "LOC_FOREST_RIVER", "ENC-0016", "rumor"],
       ["森", "LOC_FOREST_RIVER", "ENC-0017", "giant"],
       ["エルフの隠れ里", "LOC_ELF_WORLD_TREE", "ENC-0018", "world-tree eater"],
+      ["エルフの隠れ里", "LOC_ELF_WORLD_TREE", "ENC-0068", "ash spirits"],
+      ["森", "LOC_FOREST_MAZE", "ENC-0020", "barrier eaters"],
     ],
   );
   assert.equal(step.encounterId, "ENC-0016");

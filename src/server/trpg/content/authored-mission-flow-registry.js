@@ -8,7 +8,7 @@ import { T08_FOREST_SEALING_ORDER_PACK } from "./authored/missions/t08-forest-se
 import { T07_RUNAWAY_ELF_TRAFFICKING_PACK } from "./authored/missions/t07-runaway-elf-trafficking.js";
 import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";
 
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v13";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v14";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
@@ -1628,6 +1628,8 @@ function freshState(pack) {
     flowId: pack.id,
     openingChoiceId: null,
     openingChosenAtMinute: null,
+    navigatorFocusId: null,
+    navigatorGroupId: null,
     selectedLeadId: null,
     selectedLeadAtMinute: null,
     evidenceIds: [],
@@ -1683,6 +1685,62 @@ function syncInvestigationProgress(runtime, pack, flow) {
   );
 }
 
+function investigationNavigator(pack) {
+  const requiredGroups = pack.investigation.requiredEvidenceGroups ?? [];
+  const focuses = (pack.investigation.focuses ?? []).map((focus) => ({
+    ...focus,
+    groups: (focus.groups ?? []).map((group) => ({
+      ...group,
+      evidenceIds: [...(group.evidenceIds
+        ?? requiredGroups[Number(group.evidenceGroupIndex)]
+        ?? [])],
+    })),
+  }));
+  if (requiredGroups.length !== 6
+    || focuses.length !== 3
+    || focuses.some((focus) => focus.groups.length !== 2)) return null;
+  const leadEvidenceIds = pack.investigation.leads.map((lead) => lead.discoveryId);
+  const evidenceIds = new Set(leadEvidenceIds);
+  if (evidenceIds.size !== leadEvidenceIds.length) return null;
+  const focusIds = new Set();
+  const groupIds = new Set();
+  const navigatorGroupKeys = [];
+  for (const focus of focuses) {
+    if (!focus.id || !focus.label || focusIds.has(focus.id)) return null;
+    focusIds.add(focus.id);
+    for (const group of focus.groups) {
+      if (!group.id || !group.label || groupIds.has(group.id)) return null;
+      if (group.evidenceIds.length !== 3
+        || group.evidenceIds.some((evidenceId) => !evidenceIds.has(evidenceId))) return null;
+      groupIds.add(group.id);
+      navigatorGroupKeys.push([...group.evidenceIds].sort().join("|"));
+    }
+  }
+  const requiredGroupKeys = requiredGroups
+    .map((group) => [...group].sort().join("|"))
+    .sort();
+  if (new Set(navigatorGroupKeys).size !== requiredGroupKeys.length
+    || navigatorGroupKeys.sort().some((key, index) => key !== requiredGroupKeys[index])) return null;
+  if (pack.hearing.choices.some((choice) =>
+    choice.preferredFocusId && !focusIds.has(choice.preferredFocusId))) return null;
+  return { focuses };
+}
+
+function syncMissionRouteAccess(runtime, pack, flow) {
+  const gates = [...new Set(pack.missionRouteAccessGates ?? [])].filter(Boolean);
+  if (!flow?.openingChoiceId || gates.length === 0) return false;
+  const worldFlags = runtime?.playerState?.worldFlags;
+  if (!worldFlags) return false;
+  worldFlags.missionRouteAccess ??= {};
+  const current = worldFlags.missionRouteAccess[pack.missionId];
+  if (Array.isArray(current)
+    && current.length === gates.length
+    && current.every((gate, index) => gate === gates[index])) return false;
+  worldFlags.missionRouteAccess[pack.missionId] = gates;
+  runtime.playerState.routeCache = {};
+  return true;
+}
+
 export function ensureAuthoredMissionFlowState(runtime, packOrId) {
   const pack = typeof packOrId === "string" ? PACK_BY_ID.get(packOrId) : packOrId;
   if (!pack) return null;
@@ -1702,6 +1760,12 @@ export function ensureAuthoredMissionFlowState(runtime, packOrId) {
   state.flowId = pack.id;
   state.openingChoiceId ??= null;
   state.openingChosenAtMinute ??= null;
+  const navigator = investigationNavigator(pack);
+  const navigatorFocus = navigator?.focuses.find((focus) => focus.id === state.navigatorFocusId);
+  state.navigatorFocusId = navigatorFocus?.id ?? null;
+  state.navigatorGroupId = navigatorFocus?.groups.some((group) => group.id === state.navigatorGroupId)
+    ? state.navigatorGroupId
+    : null;
   state.selectedLeadId ??= null;
   state.selectedLeadAtMinute ??= null;
   const validLeadIds = new Set(pack.investigation.leads.map((lead) => lead.id));
@@ -1715,6 +1779,21 @@ export function ensureAuthoredMissionFlowState(runtime, packOrId) {
     if (leadByDiscoveryId.has(discovery?.id) && !state.evidenceIds.includes(discovery.id)) {
       state.evidenceIds.push(discovery.id);
     }
+  }
+  const hydratedEvidenceIds = new Set(state.evidenceIds);
+  const hydratedNavigatorFocus = navigator?.focuses.find(
+    (focus) => focus.id === state.navigatorFocusId,
+  );
+  const hydratedNavigatorGroup = hydratedNavigatorFocus?.groups.find(
+    (group) => group.id === state.navigatorGroupId,
+  );
+  if (hydratedNavigatorGroup?.evidenceIds.some((id) => hydratedEvidenceIds.has(id))) {
+    state.navigatorGroupId = null;
+  }
+  if (hydratedNavigatorFocus?.groups.every((group) =>
+    group.evidenceIds.some((id) => hydratedEvidenceIds.has(id)))) {
+    state.navigatorFocusId = null;
+    state.navigatorGroupId = null;
   }
   const definition = missionDefinition(runtime, pack);
   const hearingStep = definition?.steps?.find((step) => step.id === pack.hearing.stepId);
@@ -1775,7 +1854,13 @@ export function ensureAuthoredMissionFlowState(runtime, packOrId) {
   state.selectedResolutionContextId ??= null;
   state.resolutionBranchId ??= null;
   syncInvestigationProgress(runtime, pack, state);
+  syncMissionRouteAccess(runtime, pack, state);
   return state;
+}
+
+export function initializeAuthoredMissionFlowForMission(runtime, missionId) {
+  const pack = PACK_BY_MISSION_ID.get(missionId);
+  return pack ? ensureAuthoredMissionFlowState(runtime, pack) : null;
 }
 
 export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
@@ -1893,7 +1978,12 @@ function resolutionContextSnapshot(runtime, choice, variant) {
   };
 }
 
-function matchingResolutionContextVariant(runtime, choice, requestedContextId = null) {
+function matchingResolutionContextVariant(
+  runtime,
+  choice,
+  requestedContextId = null,
+  { troubleStatusById = null } = {},
+) {
   const variants = choice?.contextVariants ?? [];
   if (requestedContextId) {
     return variants.find((variant) => variant.contextId === requestedContextId) ?? null;
@@ -1928,7 +2018,9 @@ function matchingResolutionContextVariant(runtime, choice, requestedContextId = 
       if (variant.flagValue == null ? !flagValue : flagValue !== variant.flagValue) return false;
     }
     if (variant.troubleId) {
-      const status = troubles[variant.troubleId]?.status ?? troubles[variant.troubleId];
+      const status = troubleStatusById?.[variant.troubleId]
+        ?? troubles[variant.troubleId]?.status
+        ?? troubles[variant.troubleId];
       if (troubleStatuses.length ? !troubleStatuses.includes(status) : !status) return false;
     }
     if (requiredEvidenceIds.some((id) => !snapshot.evidenceIds.has(id))) return false;
@@ -1942,8 +2034,18 @@ function matchingResolutionContextVariant(runtime, choice, requestedContextId = 
   }) ?? null;
 }
 
-export function resolveAuthoredResolutionChoice(runtime, choice, requestedContextId = null) {
-  const variant = matchingResolutionContextVariant(runtime, choice, requestedContextId);
+export function resolveAuthoredResolutionChoice(
+  runtime,
+  choice,
+  requestedContextId = null,
+  options = {},
+) {
+  const variant = matchingResolutionContextVariant(
+    runtime,
+    choice,
+    requestedContextId,
+    options,
+  );
   if (!variant) return choice;
   return {
     ...choice,
@@ -2095,6 +2197,139 @@ function reconsiderLeadAction(pack, lead) {
   };
 }
 
+function prematureResolutionAction(pack, flow, evidenceCount) {
+  const premature = pack.investigation.prematureResolution;
+  if (!premature
+    || evidenceCount <= 0
+    || flow.prematureResolutionEvidenceCounts.includes(evidenceCount)) return null;
+  return {
+    id: actionId(pack, "PREMATURE", premature.id),
+    family: "help",
+    type: "plan",
+    effectKind: "premature_mission_resolution",
+    minutes: premature.minutes,
+    label: premature.label,
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: pack.id,
+    authoredMissionFlowKind: "premature_resolution",
+  };
+}
+
+function navigatorFocusActions(pack, navigator, flow, movementActions) {
+  const evidenceIds = new Set(flow.evidenceIds);
+  const preferredFocusId = pack.hearing.choices.find(
+    (choice) => choice.id === flow.openingChoiceId,
+  )?.preferredFocusId;
+  const focuses = navigator.focuses
+    .filter((focus) => focus.groups.some((group) =>
+      !group.evidenceIds.some((evidenceId) => evidenceIds.has(evidenceId))))
+    .sort((left, right) =>
+      Number(right.id === preferredFocusId) - Number(left.id === preferredFocusId));
+  const result = focuses.map((focus) => ({
+    id: actionId(pack, "NAVIGATOR_FOCUS", focus.id),
+    family: "prepare",
+    type: "plan",
+    effectKind: "select_authored_mission_investigation_focus",
+    minutes: Number(focus.minutes ?? 3),
+    label: focus.id === preferredFocusId
+      ? `${focus.label}（最初の聞き取りから優先）`
+      : focus.label,
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: pack.id,
+    authoredMissionFlowKind: "navigator_focus",
+    authoredMissionFlowNavigatorFocusId: focus.id,
+  }));
+  if (result.length < 3) {
+    const premature = prematureResolutionAction(pack, flow, evidenceIds.size);
+    if (premature) result.push(premature);
+  }
+  if (result.length < 3) {
+    const defer = deferAction(pack);
+    if (defer) result.push(defer);
+  }
+  if (result.length < 3) {
+    const movement = freeMovementAction(pack, movementActions, new Set());
+    if (movement) result.push(movement);
+  }
+  return result.length === 3 ? result : null;
+}
+
+function navigatorBackAction(pack, focus) {
+  return {
+    id: actionId(pack, "NAVIGATOR_BACK", focus.id),
+    family: "prepare",
+    type: "plan",
+    effectKind: "return_to_authored_mission_investigation_focuses",
+    minutes: 1,
+    label: "三つの調査方針へ戻り、別の焦点から考える",
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: pack.id,
+    authoredMissionFlowKind: "navigator_back",
+    authoredMissionFlowNavigatorFocusId: focus.id,
+  };
+}
+
+function navigatorGroupActions(pack, navigator, flow) {
+  const focus = navigator.focuses.find((entry) => entry.id === flow.navigatorFocusId);
+  if (!focus) return null;
+  const evidenceIds = new Set(flow.evidenceIds);
+  const groups = focus.groups
+    .filter((group) => !group.evidenceIds.some((evidenceId) => evidenceIds.has(evidenceId)))
+    .map((group) => ({
+      id: actionId(pack, "NAVIGATOR_GROUP", group.id),
+      family: "prepare",
+      type: "plan",
+      effectKind: "select_authored_mission_evidence_group",
+      minutes: Number(group.minutes ?? 2),
+      label: group.label,
+      authoredMissionFlowExclusiveChoice: true,
+      authoredMissionFlowId: pack.id,
+      authoredMissionFlowKind: "navigator_group",
+      authoredMissionFlowNavigatorFocusId: focus.id,
+      authoredMissionFlowNavigatorGroupId: group.id,
+    }));
+  const result = [...groups, navigatorBackAction(pack, focus)];
+  if (result.length < 3) {
+    const defer = deferAction(pack);
+    if (defer) result.push(defer);
+  }
+  return result.length === 3 ? result : null;
+}
+
+function navigatorRouteActions(pack, navigator, flow) {
+  const focus = navigator.focuses.find((entry) => entry.id === flow.navigatorFocusId);
+  const group = focus?.groups.find((entry) => entry.id === flow.navigatorGroupId);
+  if (!focus || !group) return null;
+  const leadsByEvidenceId = new Map(
+    pack.investigation.leads.map((lead) => [lead.discoveryId, lead]),
+  );
+  const leads = group.evidenceIds.map((evidenceId) => leadsByEvidenceId.get(evidenceId));
+  if (leads.some((lead) => !lead)) return null;
+  return leads.map((lead) => ({
+    id: actionId(pack, "NAVIGATOR_ROUTE", `${group.id}:${lead.id}`),
+    family: "prepare",
+    type: "plan",
+    effectKind: "select_authored_mission_investigation_route",
+    minutes: 3,
+    label: lead.label,
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: pack.id,
+    authoredMissionFlowKind: "navigator_route",
+    authoredMissionFlowNavigatorFocusId: focus.id,
+    authoredMissionFlowNavigatorGroupId: group.id,
+    authoredMissionFlowLeadId: lead.id,
+    authoredMissionFlowTargetFacilityId: lead.facilityId,
+  }));
+}
+
+function navigatorActions(pack, flow, movementActions) {
+  const navigator = investigationNavigator(pack);
+  if (!navigator) return null;
+  if (!flow.navigatorFocusId) return navigatorFocusActions(pack, navigator, flow, movementActions);
+  if (!flow.navigatorGroupId) return navigatorGroupActions(pack, navigator, flow);
+  return navigatorRouteActions(pack, navigator, flow);
+}
+
 function selectedLeadActions(runtime, pack, movementActions, flow) {
   const lead = pack.investigation.leads.find((entry) => entry.id === flow.selectedLeadId);
   if (!lead) return null;
@@ -2121,20 +2356,9 @@ function leadSelectionActions(runtime, pack, movementActions, flow, evidenceIds)
     unlocked.has(lead.id) && !evidenceIds.has(lead.discoveryId));
   const actions = remaining.map((lead) => leadAction(runtime, pack, movementActions, lead)).filter(Boolean);
   const result = actions.slice(0, 3);
-  const premature = investigation.prematureResolution;
-  const alreadyRejectedAtThisEvidenceCount = flow.prematureResolutionEvidenceCounts.includes(evidenceIds.size);
-  if (result.length < 3 && evidenceIds.size > 0 && premature && !alreadyRejectedAtThisEvidenceCount) {
-    result.push({
-      id: actionId(pack, "PREMATURE", premature.id),
-      family: "help",
-      type: "plan",
-      effectKind: "premature_mission_resolution",
-      minutes: premature.minutes,
-      label: premature.label,
-      authoredMissionFlowExclusiveChoice: true,
-      authoredMissionFlowId: pack.id,
-      authoredMissionFlowKind: "premature_resolution",
-    });
+  if (result.length < 3) {
+    const premature = prematureResolutionAction(pack, flow, evidenceIds.size);
+    if (premature) result.push(premature);
   }
   if (result.length < 3) {
     const defer = deferAction(pack);
@@ -2192,7 +2416,8 @@ export function authoredMissionFlowExclusiveActions(runtime, {
     if (step.id !== pack.investigation.stepId || !flow.openingChoiceId || flow.selectedLeadId) continue;
     const evidenceIds = new Set(flow.evidenceIds);
     if (investigationRequirementsMet(pack, flow)) continue;
-    const actions = leadSelectionActions(runtime, pack, movementActions, flow, evidenceIds);
+    const actions = navigatorActions(pack, flow, movementActions)
+      ?? leadSelectionActions(runtime, pack, movementActions, flow, evidenceIds);
     if (actions?.length === 3) return actions;
   }
   return null;
@@ -2448,6 +2673,8 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
     const choice = pack.hearing.choices.find((entry) => entry.id === action.authoredMissionFlowChoiceId);
     flow.openingChoiceId = action.authoredMissionFlowChoiceId;
     flow.openingChosenAtMinute ??= minute;
+    flow.navigatorFocusId = null;
+    flow.navigatorGroupId = null;
     flow.deferredUntilMinute = null;
     if (action.authoredMissionFlowFactId && !flow.knownFactIds.includes(action.authoredMissionFlowFactId)) {
       flow.knownFactIds.push(action.authoredMissionFlowFactId);
@@ -2460,6 +2687,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
         ? action.authoredMissionFlowUnlockedLeadIds
         : choice?.unlockedLeadIds,
     );
+    syncMissionRouteAccess(runtime, pack, flow);
     changed = true;
     runtime.playerState.history.push({
       type: "AUTHORED_MISSION_FLOW_OPENING_SELECTED",
@@ -2469,6 +2697,96 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       choiceId: action.authoredMissionFlowChoiceId,
       factId: action.authoredMissionFlowFactId ?? null,
       unlockedLeadIds: [...flow.unlockedLeadIds],
+    });
+  }
+  if (action.authoredMissionFlowKind === "navigator_focus") {
+    const navigator = investigationNavigator(pack);
+    const focus = navigator?.focuses.find(
+      (entry) => entry.id === action.authoredMissionFlowNavigatorFocusId,
+    );
+    if (!focus) return changed;
+    flow.navigatorFocusId = focus.id;
+    flow.navigatorGroupId = null;
+    flow.deferredUntilMinute = null;
+    result.summary = focus.narrative ?? `${focus.label}方針で、二つの論点を整理した。`;
+    changed = true;
+    runtime.playerState.history.push({
+      type: "AUTHORED_MISSION_FLOW_NAVIGATOR_FOCUS_SELECTED",
+      minute,
+      flowId: pack.id,
+      missionId: pack.missionId,
+      focusId: focus.id,
+    });
+  }
+  if (action.authoredMissionFlowKind === "navigator_group") {
+    const navigator = investigationNavigator(pack);
+    const focus = navigator?.focuses.find(
+      (entry) => entry.id === action.authoredMissionFlowNavigatorFocusId,
+    );
+    const group = focus?.groups.find(
+      (entry) => entry.id === action.authoredMissionFlowNavigatorGroupId,
+    );
+    if (!focus || !group || flow.navigatorFocusId !== focus.id) return changed;
+    flow.navigatorGroupId = group.id;
+    flow.deferredUntilMinute = null;
+    result.summary = group.narrative ?? `${group.label}ための三つの経路を比べることにした。`;
+    changed = true;
+    runtime.playerState.history.push({
+      type: "AUTHORED_MISSION_FLOW_NAVIGATOR_GROUP_SELECTED",
+      minute,
+      flowId: pack.id,
+      missionId: pack.missionId,
+      focusId: focus.id,
+      groupId: group.id,
+    });
+  }
+  if (action.authoredMissionFlowKind === "navigator_back") {
+    const previousFocusId = flow.navigatorFocusId;
+    flow.navigatorFocusId = null;
+    flow.navigatorGroupId = null;
+    flow.deferredUntilMinute = null;
+    result.summary ??= `${pack.title}で調べる焦点を選び直すことにした。`;
+    changed = true;
+    runtime.playerState.history.push({
+      type: "AUTHORED_MISSION_FLOW_NAVIGATOR_RETURNED_TO_FOCUSES",
+      minute,
+      flowId: pack.id,
+      missionId: pack.missionId,
+      previousFocusId,
+    });
+  }
+  if (action.authoredMissionFlowKind === "navigator_route") {
+    const navigator = investigationNavigator(pack);
+    const focus = navigator?.focuses.find(
+      (entry) => entry.id === action.authoredMissionFlowNavigatorFocusId,
+    );
+    const group = focus?.groups.find(
+      (entry) => entry.id === action.authoredMissionFlowNavigatorGroupId,
+    );
+    const lead = pack.investigation.leads.find(
+      (entry) => entry.id === action.authoredMissionFlowLeadId,
+    );
+    if (!focus
+      || !group
+      || !lead
+      || flow.navigatorFocusId !== focus.id
+      || flow.navigatorGroupId !== group.id
+      || !group.evidenceIds.includes(lead.discoveryId)) return changed;
+    revealLeadIds(runtime, pack, flow, [lead.id]);
+    flow.selectedLeadId = lead.id;
+    flow.selectedLeadAtMinute = minute;
+    flow.deferredUntilMinute = null;
+    result.summary = `${lead.destinationName}へ向かい、「${lead.label}」方針で確かめることにした。`;
+    changed = true;
+    runtime.playerState.history.push({
+      type: "AUTHORED_MISSION_FLOW_NAVIGATOR_ROUTE_SELECTED",
+      minute,
+      flowId: pack.id,
+      missionId: pack.missionId,
+      focusId: focus.id,
+      groupId: group.id,
+      leadId: lead.id,
+      facilityId: lead.facilityId,
     });
   }
   if (action.authoredMissionFlowKind === "lead") {
@@ -2493,6 +2811,8 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
     revealLeadIds(runtime, pack, flow, lead?.unlocksLeadIds);
     flow.selectedLeadId = null;
     flow.selectedLeadAtMinute = null;
+    flow.navigatorFocusId = null;
+    flow.navigatorGroupId = null;
     flow.deferredUntilMinute = null;
     syncInvestigationProgress(runtime, pack, flow);
     changed = true;
@@ -2511,12 +2831,23 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       (entry) => entry.id === action.authoredMissionFlowResolutionRouteId,
     );
     if (!baseRoute) return changed;
+    const troubleStatus = result?.troubleStatusAtResolution
+      ?? action.authoredMissionFlowTroubleStatus
+      ?? "active";
+    const statusChangedDuringAction = troubleStatus
+      !== action.authoredMissionFlowTroubleStatus;
     const route = resolveAuthoredResolutionChoice(
       runtime,
       baseRoute,
-      action.authoredMissionFlowResolutionContextVariantId,
+      statusChangedDuringAction
+        ? null
+        : action.authoredMissionFlowResolutionContextVariantId,
+      {
+        troubleStatusById: {
+          [pack.troubleId]: troubleStatus,
+        },
+      },
     );
-    const troubleStatus = action.authoredMissionFlowTroubleStatus ?? "active";
     flow.selectedResolutionRouteId = route.id;
     result.summary = route.summaryByTroubleStatus?.[troubleStatus] ?? route.summary;
     const worldEffectFactId = applyResolutionWorldEffect(
@@ -2553,6 +2884,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
     const previousLeadId = flow.selectedLeadId;
     flow.selectedLeadId = null;
     flow.selectedLeadAtMinute = null;
+    flow.navigatorGroupId = null;
     flow.deferredUntilMinute = null;
     result.summary ??= `${pack.title}で追う手掛かりを選び直すことにした。`;
     changed = true;
@@ -2684,6 +3016,40 @@ function scenesForPack(pack) {
       choice.speeches,
     ));
   }
+  const navigator = investigationNavigator(pack);
+  const leadByEvidenceId = new Map(
+    pack.investigation.leads.map((lead) => [lead.discoveryId, lead]),
+  );
+  for (const focus of navigator?.focuses ?? []) {
+    scenes.push(scene(
+      `mission-flow.${pack.id}.navigator-focus.${focus.id}`,
+      969,
+      [{ path: "action.id", op: "eq", value: actionId(pack, "NAVIGATOR_FOCUS", focus.id) }],
+      focus.narrative ?? `${focus.label}ため、二つの論点を分けて調べることにした。`,
+    ));
+    for (const group of focus.groups) {
+      scenes.push(scene(
+        `mission-flow.${pack.id}.navigator-group.${group.id}`,
+        968,
+        [{ path: "action.id", op: "eq", value: actionId(pack, "NAVIGATOR_GROUP", group.id) }],
+        group.narrative ?? `${group.label}ため、三つの経路を比較した。`,
+      ));
+      for (const evidenceId of group.evidenceIds) {
+        const lead = leadByEvidenceId.get(evidenceId);
+        if (!lead) continue;
+        scenes.push(scene(
+          `mission-flow.${pack.id}.navigator-route.${group.id}.${lead.id}`,
+          967,
+          [{
+            path: "action.id",
+            op: "eq",
+            value: actionId(pack, "NAVIGATOR_ROUTE", `${group.id}:${lead.id}`),
+          }],
+          `${lead.destinationName}へ向かい、${lead.label}方針を選んだ。証拠を得るには、まだ現地で確かめる必要がある。`,
+        ));
+      }
+    }
+  }
   for (const lead of pack.investigation.leads) {
     scenes.push(scene(
       `mission-flow.${pack.id}.lead.${lead.id}`,
@@ -2725,11 +3091,17 @@ function scenesForPack(pack) {
         968,
         [
           {
-            path: "action.id",
+            path: "action.authoredMissionFlowResolutionRouteId",
             op: "eq",
-            value: actionId(pack, "RESOLUTION", `${route.id}:${troubleStatus}`),
+            value: route.id,
           },
+          { path: "mission.id", op: "eq", value: pack.missionId },
           { path: "outcome.ok", op: "isTrue", value: true },
+          {
+            path: "outcome.troubleStatusAtResolution",
+            op: "eq",
+            value: troubleStatus,
+          },
         ],
         route.narrativeByTroubleStatus?.[troubleStatus] ?? route.narrative,
       ));

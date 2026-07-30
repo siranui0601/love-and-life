@@ -148,6 +148,36 @@ test("NPC rumor travel honors the NPC's own regional access", () => {
   assert.ok(Number.isFinite(npcPlan.hours));
 });
 
+test("an active mission route permit opens only its named gate and expires with the mission", () => {
+  const state = fresh("story");
+  state.player.location = "森";
+  state.player.facilityId = "LOC_FOREST_EDGE";
+  assert.equal(shortestTravelPlan(model, state, "森", "エルフの隠れ里"), null);
+  const blackridgePlanBeforePermit = shortestTravelPlan(model, state, "森", "黒嶺連合領");
+  assert.ok(blackridgePlanBeforePermit);
+  assert.equal(state.worldFlags.elfApproval, false);
+
+  state.worldFlags.missionRouteAccess = { "MSN-T13": ["elf-access"] };
+  state.missions["MSN-T13"].status = "active";
+  const emergencyPlan = shortestTravelPlan(model, state, "森", "エルフの隠れ里");
+  assert.ok(emergencyPlan);
+  assert.ok(Number.isFinite(emergencyPlan.hours));
+  assert.deepEqual(
+    shortestTravelPlan(model, state, "森", "黒嶺連合領").routeIds,
+    blackridgePlanBeforePermit.routeIds,
+  );
+  assert.equal(state.worldFlags.elfApproval, false);
+  const outsider = model.npcs.find((npc) => npc.home !== "エルフの隠れ里");
+  assert.ok(outsider);
+  assert.equal(
+    shortestTravelPlan(model, state, "森", "エルフの隠れ里", outsider),
+    null,
+  );
+
+  state.missions["MSN-T13"].status = "completed";
+  assert.equal(shortestTravelPlan(model, state, "森", "エルフの隠れ里"), null);
+});
+
 test("ordinary shop purchase advances no time", () => {
   const state = fresh();
   state.player.facilityId = "LOC_FARM_SQUARE";
@@ -269,6 +299,32 @@ test("T01 actions crossing the Day2 rescue deadline persist failure without prog
   assert.equal(runtime.progress.decide, 0);
   assert.equal(runtime.rewardClaimed, false);
   assert.equal(state.progress.missions.resolvedTroubleIds.has("T01"), false);
+});
+
+test("mission resolution records the post-advance trouble status when its duration crosses a deadline", () => {
+  const state = fresh("story");
+  const definition = state.catalog.byId.get("MSN-T13");
+  const runtime = state.missions[definition.id];
+  state.troubles.T13.status = "active";
+  runtime.status = "active";
+  for (const step of definition.steps) {
+    runtime.progress[step.id] = step.id === "resolve" ? 0 : Number(step.required ?? 1);
+  }
+  state.absoluteMinute = (60 - 1) * 1440 + (21 * 60 + 50 - 10 * 60);
+
+  const result = resolvePlayerAction(state, model, battleData, skills, state.catalog, "story", {
+    id: "ACTION:MSN-T13:resolve:deadline-crossing",
+    type: "resolveMission",
+    missionId: "MSN-T13",
+    stepId: "resolve",
+    minutes: 30,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.troubleStatusAtResolution, "critical");
+  assert.equal(state.worldFlags.worldTreeFallen, true);
+  assert.equal(state.troubles.T13.status, "resolved");
+  assert.equal(runtime.progress.resolve, 1);
 });
 
 test("T01 search offers three concrete, non-repeating approaches at each investigation stage", () => {

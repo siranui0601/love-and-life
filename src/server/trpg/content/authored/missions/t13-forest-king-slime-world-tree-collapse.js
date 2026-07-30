@@ -16,6 +16,7 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
   troubleId: "T13",
   title: "森のキングスライムと世界樹倒壊",
   persistResolutionBranch: true,
+  missionRouteAccessGates: S("elf-access"),
   branching: F({
     openingChoices: 3,
     evidenceDimensions: 6,
@@ -118,6 +119,36 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
             detail: "広範囲攻撃は世界樹と巨神兵封印を同時に壊す。根の脈動に合わせ、固定、排水、核封印を順に行う。",
           }),
         },
+        {
+          minDay: 61,
+          maxDay: 74,
+          targetLocation: "エルフの隠れ里",
+          targetFacilityId: "LOC_ELF_WORLD_TREE",
+          actionType: "missionBattle",
+          encounterId: "ENC-0068",
+          minutes: 112,
+          label: "倒壊跡に生まれた灰樹精を退け、瓦礫下の吸収核と残存根へ到達する道を開く",
+          guidance: F({
+            kicker: "世界樹倒壊後・灰に残った精霊",
+            title: "灰樹精を根から引き離し、残存核を処理できる作業路を取り戻す",
+            detail: "灰樹精は傷んだ根の魔力へ集まる。広範囲攻撃で焼かず、避難路側へ誘導してから瓦礫下の吸収核へ進む。",
+          }),
+        },
+        {
+          minDay: 75,
+          maxDay: 89,
+          targetLocation: "森",
+          targetFacilityId: "LOC_FOREST_MAZE",
+          actionType: "missionBattle",
+          encounterId: "ENC-0020",
+          minutes: 136,
+          label: "崩れた迷いの森で結界喰いと灰枝の亡霊を止め、残存根と地下封印へ続く最後の経路を確保する",
+          guidance: F({
+            kicker: "最終期限Day90・結界そのものが餌になる",
+            title: "失われた樹冠ではなく、まだ生きる根脈、避難枝道、地下封印を救う",
+            detail: "倒壊そのものは取り消せない。結界喰いが残る術式を食べ切る前に、灰枝の亡霊を分離し、封印へ通じる道を一本だけ保つ。",
+          }),
+        },
       ]),
     }),
     resolution: F({
@@ -145,6 +176,7 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
         playerUtterance: "まず川そのものを見ます。いつから減り、どこで吸われ、何を使えば核ごと流れから離せるのかを確かめます。",
         requiredDisclosure: "セリエは影の大きさの推移を記録し、ニーヴは水圧の逆流を感じ、ミーナは固定杭と排水装置なら川から浮かせられると見立てる",
         factId: "T13-FACT-RIVER-GROWTH-AND-SEPARATION",
+        preferredFocusId: "growth_and_separation",
         unlockedLeadIds: S("serie_shadow_chronology", "mina_anchor_pump_design", "nieve_flow_pulse_map"),
         minutes: 13,
         narrative: "セリエは川面へ引いた日ごとの線を示した。影は移動しているのではなく、同じ場所で流れを飲み込みながら大きくなっている。",
@@ -157,6 +189,7 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
         playerUtterance: "水量だけでなく、吸われた魔力が世界樹と封印へ何をしているかを確認します。まず粘液層、水圧の脈、核の再吸収条件から根への影響を絞ります。",
         requiredDisclosure: "ジルの粘液層は餌が水から精霊力へ移ったと示し、ニーヴの水圧図は世界樹根の周期との同期を示し、ミーナは核が再接触すれば吸収が再開すると見立てる",
         factId: "T13-FACT-WORLD-TREE-SEAL-COUPLING",
+        preferredFocusId: "world_tree_and_recovery",
         unlockedLeadIds: S("jill_slime_residue_layers", "nieve_flow_pulse_map", "mina_slime_core_containment"),
         minutes: 14,
         narrative: "セリエは弓を下ろし、世界樹側の枝鳴りへ耳を向けた。川の異変は水不足では終わらず、森を迷わせる力と地下の封印まで引いている。",
@@ -169,6 +202,7 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
         playerUtterance: "下流で誰が困り、誰が疑われているかを並べます。村の井戸、避難枝道、黒嶺の水路記録を同じ時刻で集めます。",
         requiredDisclosure: "リュシアは森入口で避難名簿を組み、ザイードは黒嶺の放水記録を公開でき、ユーリは上流に堰や軍事作業がないことを地形から示せる",
         factId: "T13-FACT-DOWNSTREAM-SURVIVAL-AND-BLACKRIDGE-TRUTH",
+        preferredFocusId: "border_truth_and_survival",
         unlockedLeadIds: S("lucia_refuge_roster", "zaid_water_release_record", "yuri_no_dam_trace"),
         minutes: 14,
         narrative: "セリエは森の地図へ、村の井戸、里の避難枝道、黒嶺水路区を一本の青線で結んだ。水が減るほど、互いを疑う声だけが増えている。",
@@ -210,6 +244,65 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
         "T13-EVIDENCE-MINA-SLIME-CORE-CONTAINMENT",
         "T13-EVIDENCE-NENE-RECOVERY-MARKERS",
       ),
+    ]),
+    focuses: L([
+      {
+        id: "growth_and_separation",
+        label: "キングスライムの成長源と、川・世界樹から切り離す手順を調べる",
+        narrative: "目の前の巨体だけを敵と決めず、何を吸って育ったのかと、川や根を傷つけずに核を離す順番を一枚の調査図へ分けた。",
+        groups: L([
+          {
+            id: "growth_source",
+            evidenceGroupIndex: 0,
+            label: "影、水圧、粘液層から、何を吸って成長しているか確かめる",
+            narrative: "成長を止めるには、まず餌を特定する必要がある。影の広がり、水圧の落ち込み、粘液層の変化という三つの観測経路を並べた。",
+          },
+          {
+            id: "safe_separation",
+            evidenceGroupIndex: 1,
+            label: "川の流れと根を守りながら、巨体と吸収核を切り離す方法を組む",
+            narrative: "力任せに裂けば、核も濁流も世界樹へ戻る。固定装置、旧河道、根の分流儀式という三つの切り離し方を比較する。",
+          },
+        ]),
+      },
+      {
+        id: "world_tree_and_recovery",
+        label: "世界樹・古代封印の連鎖と、討伐後の森の回復方法を調べる",
+        narrative: "世界樹が倒れた後までを一つの事件として捉え、結界と古代封印の連鎖、核を封じた後に森へ水を戻す順番を調査図へ分けた。",
+        groups: L([
+          {
+            id: "world_tree_seal_chain",
+            evidenceGroupIndex: 2,
+            label: "世界樹、迷いの結界、古代封印が同時に弱る仕組みを確かめる",
+            narrative: "枝の痛み、結界石の回路、長老の古記録。異なる三つの証言から、世界樹倒壊が何を同時に解き放つのかを確かめる。",
+          },
+          {
+            id: "core_and_ecosystem_recovery",
+            evidenceGroupIndex: 5,
+            label: "精霊域、吸収核、水質指標から、再発させない回復順を決める",
+            narrative: "討伐は終点ではない。精霊域へ戻す水、隔離する吸収核、回復を判定する水質札の三経路から、再発しない森の戻し方を選ぶ。",
+          },
+        ]),
+      },
+      {
+        id: "border_truth_and_survival",
+        label: "黒嶺水攻めという濡れ衣を解き、渇水の中で住民を生かす方法を調べる",
+        narrative: "水不足を戦争の口実にさせず、誰が水を失っているかという記録と、解決まで住民を生かす手立てを二つの調査線へ分けた。",
+        groups: L([
+          {
+            id: "blackridge_water_truth",
+            evidenceGroupIndex: 3,
+            label: "上流偵察と双方の水路記録から、黒嶺の水攻め説を検証する",
+            narrative: "敵を決めてから証拠を探すのをやめる。上流の作業痕、双方の流量柱、黒嶺の放水印という三つの記録を照合する。",
+          },
+          {
+            id: "downstream_survival",
+            evidenceGroupIndex: 4,
+            label: "避難、井戸の配水、給水輸送から、解決まで命をつなぐ計画を作る",
+            narrative: "討伐の成功を待つだけでは下流が先に倒れる。避難名簿、井戸の配水表、樽の輸送路という三つの生活線から猶予を作る。",
+          },
+        ]),
+      },
     ]),
     initialGuidance: F({
       kicker: "成長・分離・封印・濡れ衣・避難・回復",
@@ -485,8 +578,8 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
   stepGuidance: F({
     battle: F({
       kicker: "日付で変わる同じ魔物",
-      title: "小型、膨張、巨大、世界樹喰らいの段階に応じて分離手順を変える",
-      detail: "早期は核封印、後期は固定・排水・避難・封印保護を同時に行う。",
+      title: "小型、膨張、巨大、世界樹喰らい、倒壊後の灰樹精・結界喰いに応じて手順を変える",
+      detail: "早期は核封印、倒壊直前は固定・排水・避難・封印保護、倒壊後は二次災害を分離して残存核への経路確保を行う。",
     }),
     resolve: F({
       kicker: "倒した後に残る森と水系",
@@ -508,7 +601,7 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
             troubleId: "T13",
             troubleStatus: "critical",
             minutes: 168,
-            label: "世界樹根元で固定杭を根の間へ打ち、倒壊直前の核を切り離して封印を保つ",
+            label: "倒壊した世界樹の根群へ固定杭を通し、残存根から核を切り離して地下封印を保つ",
           },
           {
             contextId: "t09-rescue-corps-anchor-team",
@@ -558,18 +651,18 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
         ]),
         summary: "キングスライムの核を川と世界樹から切り離して耐魔籠へ封じ、下流と精霊域へ段階的に水を戻した。",
         summaryByTroubleStatus: F({
-          critical: "世界樹根元まで到達した王粘体の核を切り離し、倒壊直前で根と封印を保った。",
+          critical: "倒壊した世界樹から王粘体の核を切り離し、残った根脈と地下封印を保った。",
         }),
         narrative: "ミーナの固定杭が外膜を広げ、ニーヴの迂回流が吸水を止め、最後に核だけが耐魔籠へ落ちた。川は早く戻るが、核は危険物として長期監視が必要になる。世界樹と迷いは維持され、黒嶺への自由な近道は開かない。",
         narrativeByTroubleStatus: F({
-          critical: "世界樹の根へ杭を触れさせない狭い作業になった。エリナが脈の空白を告げ、救助隊が核を引き上げた瞬間、倒れかけた枝が止まった。里は残ったが、根の一部は長い治療を要する。",
+          critical: "世界樹は既に倒れ、折れた枝が里の道を塞いでいた。エリナがまだ生きる根脈を告げ、救助隊は死んだ根だけへ杭を通して核を引き上げた。樹冠は戻らないが、残存根と地下封印は長い治療へつなげられた。",
         }),
         worldEffect: F({
           flagKey: "t13ResolutionRoute",
           factId: "player:T13:core-severed-river-and-seal-restored",
-          factIdByTroubleStatus: F({ critical: "player:T13:critical-core-severed-world-tree-saved" }),
+          factIdByTroubleStatus: F({ critical: "player:T13:critical-core-severed-roots-and-seal-preserved" }),
           text: "キングスライムの吸収核が耐魔籠へ封じられ、川、世界樹、森の迷い、古代封印が維持された",
-          textByTroubleStatus: F({ critical: "世界樹倒壊直前に吸収核が切り離され、傷んだ根と封印が保全された" }),
+          textByTroubleStatus: F({ critical: "世界樹倒壊後に吸収核が切り離され、残存根と地下封印が保全された" }),
           facilityId: "LOC_FOREST_RIVER",
           propagationDelayHours: 3,
           aftermathPlans: F([
@@ -595,7 +688,7 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
             troubleId: "T13",
             troubleStatus: "critical",
             minutes: 184,
-            label: "倒壊直前の最後の根脈周期に合わせ、王粘体の核を分散して世界樹へ魔力を戻す",
+            label: "倒壊後も生きる最後の根脈周期に合わせ、王粘体の核を分散して森の再生核を残す",
           },
           {
             contextId: "t08-anomaly-corridor-spirit-team",
@@ -645,18 +738,18 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
         ]),
         summary: "キングスライムの核を無害な小型粘体へ分散し、奪われた魔力を世界樹、精霊泉、薬草園へ戻した。",
         summaryByTroubleStatus: F({
-          critical: "倒壊直前の世界樹へ最後の循環術を通し、王粘体の核を分散して根と封印をつなぎ止めた。",
+          critical: "倒壊後も生きる世界樹の根へ循環術を通し、王粘体の核を分散して再生根と封印をつなぎ止めた。",
         }),
         narrative: "エリナが世界樹の脈を開き、メルキアが封印へ流れる枝を閉じ、シルフィが精霊泉へ受け皿を作った。核は殺し切らず、吸収能力を失った小型粘体へ分かれる。森の循環は最もよく戻るが、術式はエルフの管理へ依存し、外部が自由に森奥へ入れるわけではない。",
         narrativeByTroubleStatus: F({
-          critical: "枝が裂ける音の間に、エリナは最後の根脈へ歌を通した。王粘体は光る小片へ分かれ、シルフィの泉へ落ちた。世界樹は立ったが、術者と薬草園には長い回復が必要になる。",
+          critical: "倒れた幹の下で、エリナはまだ脈打つ根へ歌を通した。王粘体は光る小片へ分かれ、シルフィの泉と再生苗床へ落ちた。失われた大樹は戻らないが、次代の芽と地下封印は残った。",
         }),
         worldEffect: F({
           flagKey: "t13ResolutionRoute",
           factId: "player:T13:spirit-cycle-restored-world-tree-reseeded",
-          factIdByTroubleStatus: F({ critical: "player:T13:critical-spirit-cycle-held-world-tree" }),
+          factIdByTroubleStatus: F({ critical: "player:T13:critical-spirit-cycle-seeded-successor-tree" }),
           text: "吸収核が無害な小型粘体へ分散され、世界樹、精霊泉、薬草園の魔力循環が回復した",
-          textByTroubleStatus: F({ critical: "倒壊直前の世界樹へ精霊循環が戻り、核の分散と封印維持に成功した" }),
+          textByTroubleStatus: F({ critical: "世界樹倒壊後、残存根と再生苗床へ精霊循環を戻し、地下封印を維持した" }),
           facilityId: "LOC_ELF_WORLD_TREE",
           propagationDelayHours: 2,
           aftermathPlans: F([
@@ -682,7 +775,7 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
             troubleId: "T13",
             troubleStatus: "critical",
             minutes: 198,
-            label: "世界樹襲撃下で四者の水路と避難を同時に切り替え、王粘体を緊急隔離水盆へ移す",
+            label: "世界樹倒壊後、四者の水路、瓦礫撤去、避難を同時に切り替え、王粘体を緊急隔離水盆へ移す",
           },
           {
             contextId: "t12-joint-border-watershed-line",
@@ -733,18 +826,18 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
         ]),
         summary: "王国、エルフ、黒嶺、ドワーフが共同流域協定を結び、キングスライムを隔離水盆へ移して監視する仕組みを作った。",
         summaryByTroubleStatus: F({
-          critical: "世界樹襲撃下で四者が緊急流域線を組み、王粘体を隔離水盆へ移して倒壊と戦争誤認を同時に止めた。",
+          critical: "世界樹倒壊後に四者が緊急流域線を組み、王粘体を隔離水盆へ移して封印崩壊と戦争誤認を止めた。",
         }),
         narrative: "ニーヴが旧河道へ水を導き、ミーナの固定装置が巨体を隔離水盆へ移した。ザイード、エダ、アルウェンの記録が同じ水位表へ結ばれ、減水を敵国の責任へすり替えにくくなる。最も時間と維持費がかかるが、T16とT19へ共同検証の強い土台を残す。",
         narrativeByTroubleStatus: F({
-          critical: "世界樹の枝が裂ける中、王国と黒嶺の伝令が同じ放水時刻を読み上げ、避難枝道と工事線が同時に動いた。王粘体は生きたまま隔離され、倒壊と報復動員の両方が止まった。",
+          critical: "倒れた世界樹の枝を越えて、王国と黒嶺の伝令が同じ放水時刻を読み上げた。瓦礫路、避難枝道、工事線が同時に動き、王粘体は生きたまま隔離された。大樹は失われたが、封印崩壊と報復動員は止まった。",
         }),
         worldEffect: F({
           flagKey: "t13ResolutionRoute",
           factId: "player:T13:joint-watershed-compact-living-containment",
-          factIdByTroubleStatus: F({ critical: "player:T13:critical-joint-watershed-emergency-containment" }),
+          factIdByTroubleStatus: F({ critical: "player:T13:critical-joint-watershed-post-collapse-containment" }),
           text: "王国、エルフ、黒嶺、ドワーフの共同流域管理と生体隔離水盆が成立し、減水の濡れ衣と再発を共同監視できるようになった",
-          textByTroubleStatus: F({ critical: "世界樹倒壊直前に四者の緊急流域線と隔離水盆が完成し、王粘体と戦争誤認が同時に止まった" }),
+          textByTroubleStatus: F({ critical: "世界樹倒壊後に四者の緊急流域線と隔離水盆が完成し、封印崩壊と戦争誤認が止まった" }),
           facilityId: "LOC_FOREST_RIVER",
           propagationDelayHours: 2,
           aftermathPlans: F([

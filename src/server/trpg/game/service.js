@@ -57,6 +57,7 @@ import {
   authoredMissionFlowEvidenceAction,
   authoredMissionFlowExclusiveActions,
   authoredMissionFlowGuidance,
+  initializeAuthoredMissionFlowForMission,
   suppressGenericAuthoredMissionAction,
 } from "../content/authored-mission-flow-registry.js";
 import {
@@ -71,8 +72,8 @@ import {
 } from "../resolvers/work-market-resolver.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v16";
-const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11", "trpg-player-world-v12", "trpg-player-world-v13", "trpg-player-world-v14", "trpg-player-world-v15"]);
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v17";
+const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11", "trpg-player-world-v12", "trpg-player-world-v13", "trpg-player-world-v14", "trpg-player-world-v15", "trpg-player-world-v16"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
 const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
@@ -2112,6 +2113,7 @@ function applyLocallyLearnedRumorsToMissionHearSteps(runtime, learnedRumorIds = 
     if (!mission || !hear || !["active", "available", "in_progress"].includes(mission.status)) continue;
     const required = Math.max(1, Number(hear.required ?? 1));
     if (Number(mission.progress?.hear ?? 0) >= required) continue;
+    initializeAuthoredMissionFlowForMission(runtime, definition.id);
     mission.progress.hear = required;
     state.history.push({
       type: "MISSION_HEAR_SATISFIED_BY_LOCAL_RUMOR",
@@ -2380,6 +2382,8 @@ function resolvedActionForPresentation(action) {
     approachId: cleanText(action.approachId, 80) || null,
     discoveryId: cleanText(action.discoveryId, 120) || null,
     discoveryText: cleanText(action.discoveryText, 500) || null,
+    authoredMissionFlowResolutionRouteId:
+      cleanText(action.authoredMissionFlowResolutionRouteId, 160) || null,
   };
 }
 
@@ -2591,6 +2595,9 @@ function interactiveBattleView(runtime, data) {
 
 function safeOutcome(result, data = null) {
   const output = { ok: result?.ok !== false, type: result?.type ?? null, reason: result?.reason ?? null };
+  if (result?.troubleStatusAtResolution) {
+    output.troubleStatusAtResolution = cleanText(result.troubleStatusAtResolution, 40);
+  }
   if (result?.requiredGold !== undefined) output.requiredGold = Number(result.requiredGold);
   if (result?.meal) output.meal = { ...result.meal };
   if (result?.rest) output.rest = { ...result.rest };
@@ -4915,6 +4922,8 @@ function authoredSceneContext(runtime, action, outcome) {
       price: Number.isFinite(Number(resolved.price)) ? Number(resolved.price) : null,
       targetNpcId: resolved.targetNpcId ?? null,
       dialogueTopic: resolved.dialogueTopic ?? null,
+      authoredMissionFlowResolutionRouteId:
+        resolved.authoredMissionFlowResolutionRouteId ?? null,
     },
     outcome: outcome ?? {},
     mission: {

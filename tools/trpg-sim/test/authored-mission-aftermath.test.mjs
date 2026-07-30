@@ -1353,6 +1353,8 @@ test("T13 offers 4,723,920 deterministic route shapes across growth, separation,
     [32, 44, "LOC_FOREST_RIVER", "missionBattle", "ENC-0016"],
     [45, 57, "LOC_FOREST_RIVER", "missionBattle", "ENC-0017"],
     [58, 60, "LOC_ELF_WORLD_TREE", "missionBattle", "ENC-0018"],
+    [61, 74, "LOC_ELF_WORLD_TREE", "missionBattle", "ENC-0068"],
+    [75, 89, "LOC_FOREST_MAZE", "missionBattle", "ENC-0020"],
   ]);
   assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
     "sever_core_restore_river_and_seal",

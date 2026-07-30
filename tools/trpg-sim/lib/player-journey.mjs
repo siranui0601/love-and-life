@@ -169,6 +169,15 @@ function updateTroubles(state, model) {
     }
   }
 }
+function hasActiveMissionRouteAccess(state, gate) {
+  return Object.entries(
+    state.worldFlags?.missionRouteAccess ?? {},
+  ).some(([missionId, gates]) =>
+    ["active", "available", "in_progress"].includes(state.missions?.[missionId]?.status)
+      && Array.isArray(gates)
+      && gates.includes(gate));
+}
+
 function routeAllowed(state, route, from, to, traveler = null) {
   const travelerHome = traveler?.home || traveler?.initialLocation || null;
   if (route.gate === "elf-access") {
@@ -176,11 +185,13 @@ function routeAllowed(state, route, from, to, traveler = null) {
       || to !== "エルフの隠れ里"
       || state.worldFlags.worldTreeFallen
       || state.worldFlags.elfApproval
+      || (!traveler && hasActiveMissionRouteAccess(state, route.gate))
       || travelerHome === "エルフの隠れ里";
   }
   if (route.gate === "blackridge-forest-access") {
     return state.worldFlags.worldTreeFallen
       || state.worldFlags.blackridgePermit
+      || (!traveler && hasActiveMissionRouteAccess(state, route.gate))
       || from === "黒嶺連合領"
       || ["黒嶺連合領", "エルフの隠れ里"].includes(travelerHome);
   }
@@ -1575,6 +1586,7 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     if (closedReason) output = { ok: false, committed: true, type: action.type, reason: closedReason };
     else if (incomplete) output = { ok: false, committed: true, type: action.type, reason: "incomplete" };
     else {
+      output.troubleStatusAtResolution = state.troubles[missionDefinition.troubleId]?.status ?? "active";
       finishStep(state, missionDefinition, runtime, step);
       transition(state, model, missionDefinition.troubleId, "resolved", "player-mission-resolution");
       claim(state, missionDefinition, runtime, data, skills, profile);
