@@ -108,6 +108,7 @@ export const T09_DWARF_MINE_COLLAPSE_PACK = Object.freeze({
         playerUtterance: "支柱が危険だと判断した根拠と、その報告を誰へ渡したかを順番に教えてください。",
         requiredDisclosure: "ミーナとブロルンは三日前から支柱のたわみと掘削振動の共振を記録し、グラドへ停止勧告を出したが、採掘量未達を理由に握り潰された",
         factId: "T09-FACT-WARNING-SUPPRESSED",
+        preferredFocusId: "forewarning",
         unlockedLeadIds: Object.freeze(["mina_stress_calculation", "broln_inspection_note", "removed_safety_notice"]),
         minutes: 12,
         narrative: "ミーナは石板へ刻んだ数値を、古い経験則ではなく実際の亀裂幅と振動周期へ結び直した。警告は事故後に作られたものではなく、掘削を止める時間が残っていた段階で提出されている。",
@@ -126,6 +127,7 @@ export const T09_DWARF_MINE_COLLAPSE_PACK = Object.freeze({
         playerUtterance: "誰がどの区画にいて、どの換気坑なら届くのか。空気が持つ時間も含めて教えてください。",
         requiredDisclosure: "ブロルンは若い坑夫を逃がすため深部第七码に残り、旧換気坑と荷駄用斜路の二方向から救助できるが、Day32までに送気と支柱固定が必要",
         factId: "T09-FACT-RESCUE-WINDOW",
+        preferredFocusId: "rescue_route",
         unlockedLeadIds: Object.freeze(["ventilation_shaft_map", "rescue_jack_assembly", "load_beast_haul_plan"]),
         minutes: 13,
         narrative: "坑道図の赤い線は崩落箇所ではなく、まだ空気が通る細い管を示していた。正面坑道が塞がれても、旧換気坑と荷駄斜路を組み合わせれば生存区画へ届く。",
@@ -144,6 +146,7 @@ export const T09_DWARF_MINE_COLLAPSE_PACK = Object.freeze({
         playerUtterance: "危険だと分かっていて、なぜ作業が続いたんですか。採掘量、契約、命令を書面で追える場所を教えてください。",
         requiredDisclosure: "グラドは希少深鉱の割増契約を達成するため安全掲示を外し、掘削機の停止連動を解除して若い坑夫へ作業継続を命じた",
         factId: "T09-FACT-PRODUCTION-PRESSURE",
+        preferredFocusId: "command_pressure",
         unlockedLeadIds: Object.freeze(["grad_override_order", "removed_safety_notice", "deep_ore_premium_contract"]),
         minutes: 14,
         narrative: "ミーナは技師区画の停止記録と鉱石市場の納期表を重ねた。事故の原因は鉱山全体の貧しさだけではなく、一件の割増契約を守るために安全装置と警告を順番に外した判断へ絞られていく。",
@@ -176,6 +179,47 @@ export const T09_DWARF_MINE_COLLAPSE_PACK = Object.freeze({
         "T09-EVIDENCE-RESCUE-JACK-ASSEMBLY",
         "T09-EVIDENCE-LOAD-BEAST-HAUL-PLAN",
       ]),
+    ]),
+    focuses: Object.freeze([
+      Object.freeze({
+        id: "forewarning",
+        label: "崩落を予見できた時刻と、握り潰された警告を確かめる",
+        narrative: "事故後の推測ではなく、支柱計算、名工の検査帳、坑夫が聞いた軋みという三つの経路から、止める時間が残っていたことを確かめる。",
+        groups: Object.freeze([
+          Object.freeze({
+            id: "collapse_forewarning",
+            evidenceGroupIndex: 0,
+            label: "計算、検査帳、坑夫の証言から、事故前の危険予見を一つ選んで立証する",
+            narrative: "数字、職人の記録、現場の耳は、それぞれ別の仕方で同じ支柱の限界を示す。どの証拠を公の記録へ残すか選ぶ。",
+          }),
+        ]),
+      }),
+      Object.freeze({
+        id: "command_pressure",
+        label: "安全装置を外し、採掘を続けさせた命令と利益を追う",
+        narrative: "個人の不注意で終わらせず、強行命令、外された警告、割増契約のどこから責任線を確定するかを決める。",
+        groups: Object.freeze([
+          Object.freeze({
+            id: "forced_production",
+            evidenceGroupIndex: 1,
+            label: "命令書、撤去掲示、割増契約から、危険な採掘を強いた根拠を一つ選ぶ",
+            narrative: "命令、隠蔽、利益は同じ判断の異なる痕跡だ。後から消されにくい経路を一つ選び、署名と時刻を保全する。",
+          }),
+        ]),
+      }),
+      Object.freeze({
+        id: "rescue_route",
+        label: "ブロルンと坑夫へ届く送気・固定・搬出の経路を組む",
+        narrative: "原因究明だけで時間を使い切らない。旧換気坑、救助ジャッキ、荷駄斜路のいずれを主軸に生存区画へ届くか決める。",
+        groups: Object.freeze([
+          Object.freeze({
+            id: "survivor_access",
+            evidenceGroupIndex: 2,
+            label: "換気坑、支柱固定、荷駄搬出から、救助を成立させる経路を一つ選ぶ",
+            narrative: "三経路は速さ、崩落危険、搬出人数が違う。現在の日付と用意できる人員を踏まえ、実行可能な一本を選ぶ。",
+          }),
+        ]),
+      }),
     ]),
     initialGuidance: Object.freeze({
       kicker: "危険の予見・強行責任・救助経路",

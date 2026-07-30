@@ -11,11 +11,13 @@ export const T12_NORTHERN_FORTRESS_FALSE_FLAG_PACK = Object.freeze({
     evidenceProfiles: 243,
     orderingPermutationsPerProfile: 120,
     topLevelResolutions: 3,
-    minimumRouteShapesAfterOpening: 87480,
-    minimumRouteShapesBeforePriorState: 262440,
-    evidenceOrderChangesContext: true,
+    deterministicSignatureCombinationsAfterOpening: 87480,
+    deterministicSignatureCombinationsBeforePriorState: 262440,
+    evidenceOrderPersisted: true,
+    evidenceOrderMayChangeContext: true,
     persistentBranchSignature: true,
-    note: "三つの導入、五分類それぞれ三つの代替証拠、取得順、介入日、T09/T11/T13/T14、三解決を組み合わせる。",
+    signatureCountIsNarrativeBranchCount: false,
+    note: "三導入、五分類×三代替証拠、取得順、三解決が決定論的署名を作る。署名組合せ数は、全てが別の文章になるという意味ではない。介入日とT09/T11/T13/T14が体験差を加える。",
   }),
   catalogOverride: Object.freeze({
     hearing: Object.freeze({
@@ -141,6 +143,7 @@ export const T12_NORTHERN_FORTRESS_FALSE_FLAG_PACK = Object.freeze({
         playerUtterance: "敵の印より先に、この要塞から何が出たかを見ます。補給台帳と武器の製造印を開いてください。",
         requiredDisclosure: "ヘンリクは通常補給と別番号の武器箱を記録し、ドワーフ製と黒嶺製の印が混在し、犯罪都市ヴァロの取引番号が残る",
         factId: "T12-FACT-ARSENAL-DIVERGENCE",
+        preferredFocusId: "weapons_and_disguise",
         unlockedLeadIds: Object.freeze(["henrik_supply_ledger", "false_blackridge_weapon_kit", "kai_conscript_testimony"]),
         minutes: 12,
         narrative: "ロザリンドは敵襲図より先に補給表を開いた。戦争の口実が外から来たなら、内側の倉庫に同じ時刻の空白があるはずはない。",
@@ -159,6 +162,7 @@ export const T12_NORTHERN_FORTRESS_FALSE_FLAG_PACK = Object.freeze({
         playerUtterance: "若兵を犯人として切り捨てません。誰が命じ、誰が見張り、どんな傷を作らせたかを分けて聞きます。",
         requiredDisclosure: "カイは黒嶺装備を渡され、ハイドは名簿外の夜間出発を見て、マルタは味方同士で作った不自然な傷を見抜ける",
         factId: "T12-FACT-COMMAND-AND-COERCION",
+        preferredFocusId: "command_and_mobilization",
         unlockedLeadIds: Object.freeze(["kai_conscript_testimony", "hyde_night_roster", "rosalind_mobilization_draft"]),
         minutes: 13,
         narrative: "ロザリンドは若兵の名簿へ手を置いた。命令違反だけを迫れば、家族を人質にされた兵は黙る。命令した者と従わされた者を分ける必要がある。",
@@ -177,6 +181,7 @@ export const T12_NORTHERN_FORTRESS_FALSE_FLAG_PACK = Object.freeze({
         playerUtterance: "黒嶺が何をしたかではなく、その時刻に何をしていなかったかを確かめます。国境記録と動員命令を並べてください。",
         requiredDisclosure: "ユーリは黒嶺側から来た足跡がないと見抜き、ケーツとザイードは黒嶺部隊の所在を示せ、要塞には襲撃前から報復動員案がある",
         factId: "T12-FACT-BORDER-ABSENCE-AND-MOTIVE",
+        preferredFocusId: "border_absence",
         unlockedLeadIds: Object.freeze(["yuri_no_crossing_trace", "kates_flight_log", "forged_blackridge_pass"]),
         minutes: 14,
         narrative: "ロザリンドは黒嶺方面の地図から、襲撃地点ではなく監視哨を指した。犯行時刻に国境を越えた者がいなければ、敵旗は証拠ではなく衣装になる。",
@@ -219,6 +224,59 @@ export const T12_NORTHERN_FORTRESS_FALSE_FLAG_PACK = Object.freeze({
         "T12-EVIDENCE-DINO-NIGHT-HORSE-DISPATCH",
         "T12-EVIDENCE-MAGNUS-VARO-PURCHASE",
       ]),
+    ]),
+    focuses: Object.freeze([
+      Object.freeze({
+        id: "weapons_and_disguise",
+        label: "要塞から出た武器と、黒嶺兵に見せる偽装を分けて調べる",
+        narrative: "敵の印だけを見て黒嶺犯行と決めず、武器の出所と偽装の作り方を二本の調査線へ分けた。",
+        groups: Object.freeze([
+          Object.freeze({
+            id: "weapon_supply_origin",
+            evidenceGroupIndex: 0,
+            label: "補給台帳、製造印、犯罪都市の荷札から、武器の供給元を一つ選んで確定する",
+            narrative: "出庫番号、鍛造痕、密輸番号は別の場所に残る。同じ武器箱へ届く三経路から、最も消されにくい一本を選ぶ。",
+          }),
+          Object.freeze({
+            id: "blackridge_disguise",
+            evidenceGroupIndex: 1,
+            label: "偽装装備、通行証、旗染料から、黒嶺へ罪を着せる工作を一つ選んで示す",
+            narrative: "衣装、書類、旗はそれぞれ本物らしさを作る部品だ。黒嶺の所持品ではなく要塞内で用意されたことを立証する。",
+          }),
+        ]),
+      }),
+      Object.freeze({
+        id: "command_and_mobilization",
+        label: "若兵へ届いた命令と、襲撃後の報復動員を追う",
+        narrative: "従わされた兵と命じた者を分け、偽装襲撃の前から戦争準備が進んでいたことまで一本の責任線にする。",
+        groups: Object.freeze([
+          Object.freeze({
+            id: "coercive_command",
+            evidenceGroupIndex: 2,
+            label: "徴集兵の証言、密命、夜間名簿から、命令系統を一つ選んで確定する",
+            narrative: "兵の証言だけへ責任を負わせず、命令原本か勤務記録でも追える経路を選ぶ。",
+          }),
+          Object.freeze({
+            id: "war_preparation",
+            evidenceGroupIndex: 4,
+            label: "動員草案、夜馬、武器購入から、襲撃後の利益と準備を一つ選んで示す",
+            narrative: "報復は襲撃後の怒りで生まれたのか、先に用意されていたのか。命令、伝令、購入の時刻から一本を選ぶ。",
+          }),
+        ]),
+      }),
+      Object.freeze({
+        id: "border_absence",
+        label: "犯行時刻に黒嶺部隊が国境へいなかったことを確かめる",
+        narrative: "偽の敵旗を否定するには、印象ではなく人の位置が要る。足跡、飛行記録、会議名簿という独立した不在証明を比べる。",
+        groups: Object.freeze([
+          Object.freeze({
+            id: "blackridge_nonpresence",
+            evidenceGroupIndex: 3,
+            label: "越境痕なし、飛行記録、評議会出席から、黒嶺の不在を一つ選んで立証する",
+            narrative: "現場、空路、黒嶺内部の三地点は互いに独立している。襲撃時刻を最も正確に固定できる一本を選ぶ。",
+          }),
+        ]),
+      }),
     ]),
     initialGuidance: Object.freeze({
       kicker: "兵站・偽装・命令・不在・戦争準備",

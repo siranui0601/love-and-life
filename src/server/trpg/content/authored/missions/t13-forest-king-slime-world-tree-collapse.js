@@ -24,11 +24,13 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
     evidenceProfiles: 729,
     orderingPermutationsPerProfile: 720,
     topLevelResolutions: 3,
-    minimumRouteShapesAfterOpening: 1574640,
-    minimumRouteShapesBeforePriorState: 4723920,
-    evidenceOrderChangesContext: true,
+    deterministicSignatureCombinationsAfterOpening: 1574640,
+    deterministicSignatureCombinationsBeforePriorState: 4723920,
+    evidenceOrderPersisted: true,
+    evidenceOrderMayChangeContext: true,
     persistentBranchSignature: true,
-    note: "三つの導入、六分類それぞれ三つの代替証拠、取得順、介入日、T07/T08/T09/T12、三解決を組み合わせる。",
+    signatureCountIsNarrativeBranchCount: false,
+    note: "三導入、六分類×三代替証拠、取得順、三解決が決定論的署名を作る。署名組合せ数は、全てが別の文章になるという意味ではない。介入日とT07/T08/T09/T12が体験差を加える。",
   }),
   catalogOverride: F({
     hearing: F({

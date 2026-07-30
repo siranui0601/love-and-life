@@ -365,19 +365,93 @@ function conditionAtom(text, state) {
   if (match) return match[2] === "!=" ? state.troubles[match[1]]?.status !== match[3] : state.troubles[match[1]]?.status === match[3];
   match = value.match(/(T\d{2})(?:進行中|\.active)/iu);
   if (match) return ["active", "critical"].includes(state.troubles[match[1]]?.status);
-  if (/stage</u.test(value)) return !/critical|failed/u.test(value);
+  match = value.match(/(T\d{2})\.investigation\s*=\s*(engaged|discovered)/iu);
+  if (match) {
+    const missionId = `MSN-${match[1]}`;
+    const definition = state.catalog?.byId?.get?.(missionId);
+    const mission = state.missions?.[missionId];
+    const step = definition?.steps?.find((entry) => entry.type === "investigate");
+    const progress = Number(mission?.progress?.[step?.id] ?? 0);
+    const discovered = Number(mission?.discoveries?.length ?? 0) > 0 || progress > 0;
+    if (match[2].toLowerCase() === "discovered") return discovered;
+    return discovered || state.progress?.missions?.attemptedTroubleIds?.has?.(match[1]) === true;
+  }
   if (/discovered|engaged|investigation|operation|boss|final|rescue|ambush|hostile|permit|entered|climax|reconnaissance|militarized|market hostility|illegal lab/u.test(value)) return false;
-  return true;
+  return false;
+}
+
+function trimEnclosingConditionParentheses(text) {
+  let value = String(text ?? "").trim();
+  while (value.startsWith("(") && value.endsWith(")")) {
+    let depth = 0;
+    let enclosesWholeExpression = true;
+    for (let index = 0; index < value.length; index += 1) {
+      if (value[index] === "(") depth += 1;
+      if (value[index] === ")") depth -= 1;
+      if (depth === 0 && index < value.length - 1) {
+        enclosesWholeExpression = false;
+        break;
+      }
+      if (depth < 0) {
+        enclosesWholeExpression = false;
+        break;
+      }
+    }
+    if (!enclosesWholeExpression || depth !== 0) break;
+    value = value.slice(1, -1).trim();
+  }
+  return value;
+}
+
+function splitTopLevelCondition(text, operator) {
+  const value = String(text ?? "");
+  const normalizedOperator = String(operator).toUpperCase();
+  const upper = value.toUpperCase();
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    if (value[index] === "(") {
+      depth += 1;
+      continue;
+    }
+    if (value[index] === ")") {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    if (depth !== 0 || !upper.startsWith(normalizedOperator, index)) continue;
+    const previous = index === 0 ? " " : value[index - 1];
+    const nextIndex = index + normalizedOperator.length;
+    const next = nextIndex >= value.length ? " " : value[nextIndex];
+    if (!/[\s)]/u.test(previous) || !/[\s(]/u.test(next)) continue;
+    parts.push(value.slice(start, index).trim());
+    start = nextIndex;
+    index = nextIndex - 1;
+  }
+  if (parts.length === 0) return [value.trim()];
+  parts.push(value.slice(start).trim());
+  return parts;
+}
+
+export function encounterConditionMatches(text, state) {
+  const value = trimEnclosingConditionParentheses(text);
+  if (!value) return true;
+  const alternatives = splitTopLevelCondition(value, "OR");
+  if (alternatives.length > 1) {
+    return alternatives.some((entry) => encounterConditionMatches(entry, state));
+  }
+  const requirements = splitTopLevelCondition(value, "AND");
+  if (requirements.length > 1) {
+    return requirements.every((entry) => encounterConditionMatches(entry, state));
+  }
+  return conditionAtom(value, state);
 }
 
 function encounterAllowed(encounter, state, forced = false) {
   if (state.day < encounter.startDay || state.day > encounter.endDay) return false;
   if (encounter.dayparts && encounter.dayparts !== "any" && !String(encounter.dayparts).split("|").includes(state.daypart)) return false;
   if (forced || !String(encounter.condition ?? "").trim()) return true;
-  const text = String(encounter.condition);
-  const alternatives = text.split(/\s+OR\s+/iu);
-  if (alternatives.length > 1) return alternatives.some((entry) => conditionAtom(entry, state));
-  return text.split(/\s+AND\s+/iu).every((entry) => conditionAtom(entry, state));
+  return encounterConditionMatches(encounter.condition, state);
 }
 
 function dangerLimit(state, profile) {

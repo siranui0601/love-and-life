@@ -1,4 +1,5 @@
 import { resolveMissionStepVariant } from "./mission-step-variant.js";
+import { T14_CRIME_CITY_ARMS_SMUGGLING_PACK } from "./authored/missions/t14-crime-city-arms-smuggling.js";
 import { T13_FOREST_KING_SLIME_WORLD_TREE_PACK } from "./authored/missions/t13-forest-king-slime-world-tree-collapse.js";
 import { T12_NORTHERN_FORTRESS_FALSE_FLAG_PACK } from "./authored/missions/t12-northern-fortress-false-flag.js";
 import { T11_CAPITAL_ASSASSINATION_PLOT_PACK } from "./authored/missions/t11-capital-assassination-plot.js";
@@ -8,12 +9,13 @@ import { T08_FOREST_SEALING_ORDER_PACK } from "./authored/missions/t08-forest-se
 import { T07_RUNAWAY_ELF_TRAFFICKING_PACK } from "./authored/missions/t07-runaway-elf-trafficking.js";
 import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";
 
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v14";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v15";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 
 export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
+  T14_CRIME_CITY_ARMS_SMUGGLING_PACK,
   T13_FOREST_KING_SLIME_WORLD_TREE_PACK,
   T12_NORTHERN_FORTRESS_FALSE_FLAG_PACK,
   T11_CAPITAL_ASSASSINATION_PLOT_PACK,
@@ -1237,6 +1239,7 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
     missionId: "MSN-T02",
     troubleId: "T02",
     title: "田園の村の共同穀倉放火",
+    persistResolutionBranch: true,
     catalogOverride: Object.freeze({
       hearing: Object.freeze({
         targetLocation: "田園の村",
@@ -1245,6 +1248,11 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
       }),
       investigation: Object.freeze({
         required: 3,
+      }),
+      resolution: Object.freeze({
+        targetLocation: "交易都市",
+        targetFacilityId: "LOC_TRADE_GUILD",
+        label: "商人ギルド会館で、放火の責任、村の借金、失われた食料をどう処理するか決める",
       }),
     }),
     hearing: Object.freeze({
@@ -1390,6 +1398,188 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
       kicker: "放火・実行犯・契約",
       title: "三つの証拠がつながった",
       detail: "交易都市の商人ギルドで、バーゼル本人へ契約と前金の説明を求められる。",
+    }),
+    stepGuidance: Object.freeze({
+      resolve: Object.freeze({
+        kicker: "犯人を挙げるだけでは村の冬を越せない",
+        title: "責任追及、食料の即時回復、再発防止のどこへ重心を置くか決める",
+        detail: "三つの証拠で放火と収穫権契約は結びついた。だが、刑事責任、焼けた穀物、村長の借金をどう処理するかで、村と交易都市に残る仕組みが変わる。",
+      }),
+    }),
+    resolution: Object.freeze({
+      stepId: "resolve",
+      choices: Object.freeze([
+        Object.freeze({
+          id: "public_prosecution_and_contract_void",
+          label: "三証拠を公開審理へ出し、ダルクを保護してバーゼルの契約を無効にする",
+          minutes: 86,
+          summary: "放火の実行、前金、収穫権契約を公開審理で結び、バーゼルの契約を無効化した。",
+          summaryByTroubleStatus: Object.freeze({
+            critical: "収穫権移転の直前に公開審理を開き、緊急差止めの上でバーゼルの契約を無効化した。",
+          }),
+          narrative: "油の撒かれ方、ダルクの逃走路に残った前金袋、火事前に日付だけ書かれた契約書を閲覧台へ並べた。ダルクには雇い主の支払記録を証言する代わりに身柄保護を付け、バーゼルには数字ではなく三つの独立した証拠への説明を求める。商人ギルドは収穫権契約を無効とし、放火と詐欺契約を公開審理へ送った。",
+          narrativeByTroubleStatus: Object.freeze({
+            critical: "バーゼルの代理人が収穫権移転の印を押す直前、油跡、前金袋、先書き契約を閲覧台へ並べた。緊急差止めで移転を止め、ダルクを証人として保護する。食料の一部は既に失われたが、村の畑と次の収穫まで奪われる事態は防いだ。",
+          }),
+          worldEffect: Object.freeze({
+            flagKey: "t02ResolutionRoute",
+            factId: "player:T02:public-prosecution-contract-void",
+            factIdByTroubleStatus: Object.freeze({
+              critical: "player:T02:critical-public-stay-contract-void",
+            }),
+            text: "共同穀倉放火の三証拠が公開審理で認められ、穀物商の収穫権契約は無効となった",
+            textByTroubleStatus: Object.freeze({
+              critical: "収穫権移転直前の緊急差止めと公開審理により、穀物商の契約は無効となったが、焼失した食料の不足は残った",
+            }),
+            facilityId: "LOC_TRADE_GUILD",
+            propagationDelayHours: 2,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t02-prosecution-toma-evidence-ledger",
+                npcIds: Object.freeze(["NPC005"]),
+                goal: "preserve-granary-arson-evidence",
+                action: "preserve-granary-arson-evidence",
+                targetHub: "田園の村",
+                targetFacilityId: "LOC_FARM_GRANARY",
+                delayHours: 0,
+                statusText: "焼け跡、入庫帳、鍵の記録を公開証拠台帳へ写している",
+                reason: "granary-keeper-preserves-public-evidence",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "toma-public-record",
+                npcId: "NPC005",
+                narrative: "焼けた穀倉の入口には、以前の入庫表と別に、火災証拠と審理結果を記した板が掛けられている。トーマは焦げた鍵と新しい鍵を見比べていた。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC005",
+                    text: "俺の管理不足だけで片づけられずに済んだ。だが、帳面を隠せばまた同じことになる。入れた物も、出した物も、鍵を触った者も、今度は皆が読める所へ残す。",
+                    emotion: "静かな再起",
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        }),
+        Object.freeze({
+          id: "restitution_grain_and_debt_compact",
+          label: "証拠を交渉材料に、代替穀物、再建費、借金減免を即時履行させる",
+          minutes: 64,
+          summary: "バーゼル側から代替穀物と再建費を取り戻し、村の借金を返済可能な水準まで減免した。",
+          summaryByTroubleStatus: Object.freeze({
+            critical: "食料枯渇と収穫権移転を止めるため、代替穀物の即日搬入、再建費、借金帳消しを先に履行させた。",
+          }),
+          narrative: "公開審理へ移る前に、三証拠の写しを別々の保管者へ預けた。その上でバーゼルへ、代替穀物の搬入、穀倉再建費、利息と不当な違約金の放棄を同時履行するなら、ダルクの証言を含む処分協議へ応じると迫る。村は冬を越す食料を取り戻したが、商人ギルド内部の処罰は公開審理より弱く残った。",
+          narrativeByTroubleStatus: Object.freeze({
+            critical: "村のパンが尽きる前に、港の穀物船から代替分を直接田園の村へ向けた。収穫権移転と引き換えにする余地を与えず、搬入確認、借金帳消し、再建費支払いを同じ場で履行させる。処分の全貌は後へ残ったが、食料と畑は先に守られた。",
+          }),
+          worldEffect: Object.freeze({
+            flagKey: "t02ResolutionRoute",
+            factId: "player:T02:restitution-grain-debt-compact",
+            factIdByTroubleStatus: Object.freeze({
+              critical: "player:T02:critical-emergency-grain-debt-release",
+            }),
+            text: "穀物商から代替穀物と再建費が支払われ、田園の村の借金と収穫権契約は解消された",
+            textByTroubleStatus: Object.freeze({
+              critical: "食料枯渇直前に代替穀物が搬入され、借金帳消しと収穫権移転停止により村の生活線が守られた",
+            }),
+            facilityId: "LOC_FARM_GRANARY",
+            propagationDelayHours: 1,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t02-restitution-garo-ration-rebuild",
+                npcIds: Object.freeze(["NPC003"]),
+                goal: "ration-restitution-grain",
+                action: "ration-restitution-grain",
+                targetHub: "田園の村",
+                targetFacilityId: "LOC_FARM_GRANARY",
+                delayHours: 0,
+                statusText: "搬入された代替穀物を配給し、穀倉再建の人員を割り振っている",
+                reason: "village-chief-rations-restitution-grain",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "garo-grain-arrival",
+                npcId: "NPC003",
+                narrative: "共同穀倉の脇には交易都市から届いた穀袋が雨避け布の下へ積まれ、ガロ村長が家ごとの配給札を確認している。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC003",
+                    text: "正義の話は腹が満ちてからでもできる。だが証拠を手放したわけではない。まず子どもと怪我人へ配り、次の種籾を分け、それから再建だ。",
+                    emotion: "現実的な安堵",
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        }),
+        Object.freeze({
+          id: "village_grain_cooperative_and_open_ledger",
+          label: "契約を破棄し、分散備蓄と公開帳簿を持つ村の穀物協同組合へ作り替える",
+          minutes: 112,
+          summary: "収穫権契約を破棄し、共同穀倉を分散備蓄と公開帳簿を持つ協同組合として再建した。",
+          summaryByTroubleStatus: Object.freeze({
+            critical: "不足分の緊急配給を行いながら収穫権移転を止め、村の穀物管理を分散備蓄型の協同組合へ改めた。",
+          }),
+          narrative: "バーゼルの契約を無効にするだけで、村長一人の借金と一棟の穀倉へ全てを戻さない。農家、パン屋、宿、穀倉管理人が収穫量と貸し借りを同じ帳面で確認し、種籾、日々の食料、交易分を別々の保管庫へ分ける協同組合を作った。再建には時間がかかるが、一つの火と一人の署名で村全体を奪えない仕組みが残る。",
+          narrativeByTroubleStatus: Object.freeze({
+            critical: "残った穀物を家ごとに抱え込ませず、子ども、病人、種籾を先に分けた。収穫権移転を止める証拠を交易都市へ送りつつ、パン屋、宿、農家へ備蓄を分散する。飢えの傷はすぐ消えないが、次の火災で村全体が同時に倒れる構造は改められた。",
+          }),
+          worldEffect: Object.freeze({
+            flagKey: "t02ResolutionRoute",
+            factId: "player:T02:village-grain-cooperative-open-ledger",
+            factIdByTroubleStatus: Object.freeze({
+              critical: "player:T02:critical-distributed-grain-cooperative",
+            }),
+            text: "田園の村は収穫権契約を退け、分散備蓄と公開帳簿を持つ穀物協同組合を設立した",
+            textByTroubleStatus: Object.freeze({
+              critical: "食料不足の中で緊急配給と分散備蓄が始まり、収穫権移転を防ぐ穀物協同組合が設立された",
+            }),
+            facilityId: "LOC_FARM_GRANARY",
+            propagationDelayHours: 2,
+            aftermathPlans: Object.freeze([
+              Object.freeze({
+                id: "t02-coop-toma-open-ledger",
+                npcIds: Object.freeze(["NPC005"]),
+                goal: "maintain-open-grain-ledger",
+                action: "maintain-open-grain-ledger",
+                targetHub: "田園の村",
+                targetFacilityId: "LOC_FARM_GRANARY",
+                delayHours: 0,
+                statusText: "農家、パン屋、宿と照合できる公開穀物帳を更新している",
+                reason: "granary-keeper-maintains-cooperative-ledger",
+              }),
+              Object.freeze({
+                id: "t02-coop-paolo-distributed-store",
+                npcIds: Object.freeze(["NPC059"]),
+                goal: "hold-distributed-grain-reserve",
+                action: "hold-distributed-grain-reserve",
+                targetHub: "田園の村",
+                targetFacilityId: "LOC_FARM_BAKERY",
+                delayHours: 1,
+                statusText: "パン屋の乾燥庫へ種籾と日々の粉を分け、共同台帳へ残している",
+                reason: "baker-holds-distributed-grain-reserve",
+              }),
+            ]),
+            followups: Object.freeze([
+              Object.freeze({
+                id: "toma-open-grain-ledger",
+                npcId: "NPC005",
+                narrative: "再建中の穀倉前には大きな公開帳が置かれ、トーマが農家の収穫札とパン屋の受取札を一枚ずつ照合している。",
+                speeches: Object.freeze([
+                  Object.freeze({
+                    actorId: "NPC005",
+                    text: "俺だけが鍵と数字を抱えたから、責任まで一人へ押しつけられた。これからは皆で見る。面倒でも、それが火より強い鍵になる。",
+                    emotion: "不器用な決意",
+                  }),
+                ]),
+              }),
+            ]),
+          }),
+        }),
+      ]),
     }),
   }),
   Object.freeze({
@@ -1638,6 +1828,7 @@ function freshState(pack) {
     prematureResolutionCount: 0,
     prematureResolutionEvidenceCounts: [],
     deferredUntilMinute: null,
+    resolutionPreparationRouteId: null,
     selectedResolutionRouteId: null,
     selectedResolutionContextId: null,
     resolutionBranchId: null,
@@ -1658,6 +1849,68 @@ function investigationRequirementsMet(pack, flow) {
     .every((group) => group.some((evidenceId) => evidenceIds.has(evidenceId)));
 }
 
+function resolutionReadinessState(pack, flow, choice) {
+  const readiness = choice?.readiness;
+  if (!readiness) {
+    return {
+      ready: true,
+      coreReady: true,
+      supportCount: 0,
+      minimumSupport: 0,
+      requiredCoreCount: 0,
+      satisfiedCoreCount: 0,
+      missingCoreGroups: [],
+      missingLeads: [],
+    };
+  }
+  const evidenceIds = new Set(flow?.evidenceIds ?? []);
+  const supportingEvidenceIds = [...new Set(readiness.supportingEvidenceIds ?? [])];
+  const evidenceSupport = supportingEvidenceIds
+    .filter((evidenceId) => evidenceIds.has(evidenceId)).length;
+  const openingSupport = (readiness.openingChoiceIds ?? [])
+    .includes(flow?.openingChoiceId)
+    ? Math.max(0, Number(readiness.openingSupport ?? 1))
+    : 0;
+  const supportCount = evidenceSupport + openingSupport;
+  const minimumSupport = Math.max(1, Number(readiness.minimumSupport ?? 1));
+  const requiredCoreGroups = [
+    ...(readiness.requiredEvidenceIds ?? []).map((evidenceId) => [evidenceId]),
+    ...(readiness.requiredEvidenceGroups ?? []).map((group) => [...group]),
+  ].filter((group) => group.length > 0);
+  const missingCoreGroups = requiredCoreGroups.filter((group) =>
+    !group.some((evidenceId) => evidenceIds.has(evidenceId)));
+  const coreReady = missingCoreGroups.length === 0;
+  const leadByEvidenceId = new Map(
+    pack.investigation.leads.map((lead) => [lead.discoveryId, lead]),
+  );
+  const prioritizedMissingEvidenceIds = [
+    ...missingCoreGroups.flat(),
+    ...supportingEvidenceIds.filter((evidenceId) => !evidenceIds.has(evidenceId)),
+  ];
+  const missingLeads = [...new Set(prioritizedMissingEvidenceIds)]
+    .map((evidenceId) => leadByEvidenceId.get(evidenceId))
+    .filter(Boolean);
+  return {
+    ready: coreReady && supportCount >= minimumSupport,
+    coreReady,
+    supportCount,
+    minimumSupport,
+    requiredCoreCount: requiredCoreGroups.length,
+    satisfiedCoreCount: requiredCoreGroups.length - missingCoreGroups.length,
+    missingCoreGroups,
+    missingLeads,
+  };
+}
+
+function investigationPhaseComplete(pack, flow) {
+  if (!investigationRequirementsMet(pack, flow)) return false;
+  if (!flow?.resolutionPreparationRouteId) return true;
+  const route = pack.resolution?.choices?.find(
+    (choice) => choice.id === flow.resolutionPreparationRouteId,
+  );
+  return Boolean(route && resolutionReadinessState(pack, flow, route).ready);
+}
+
 function syncInvestigationProgress(runtime, pack, flow) {
   const definition = missionDefinition(runtime, pack);
   const step = definition?.steps?.find((entry) => entry.id === pack.investigation.stepId);
@@ -1666,7 +1919,7 @@ function syncInvestigationProgress(runtime, pack, flow) {
   const required = Math.max(1, Number(step.required ?? 1));
   const mandatoryGroups = requiredEvidenceGroups(pack);
   if (mandatoryGroups.length === 0) return;
-  if (investigationRequirementsMet(pack, flow)) {
+  if (investigationPhaseComplete(pack, flow)) {
     progress[step.id] = required;
     return;
   }
@@ -1696,9 +1949,9 @@ function investigationNavigator(pack) {
         ?? [])],
     })),
   }));
-  if (requiredGroups.length !== 6
+  if (requiredGroups.length < 3
     || focuses.length !== 3
-    || focuses.some((focus) => focus.groups.length !== 2)) return null;
+    || focuses.some((focus) => focus.groups.length < 1 || focus.groups.length > 2)) return null;
   const leadEvidenceIds = pack.investigation.leads.map((lead) => lead.discoveryId);
   const evidenceIds = new Set(leadEvidenceIds);
   if (evidenceIds.size !== leadEvidenceIds.length) return null;
@@ -1787,11 +2040,11 @@ export function ensureAuthoredMissionFlowState(runtime, packOrId) {
   const hydratedNavigatorGroup = hydratedNavigatorFocus?.groups.find(
     (group) => group.id === state.navigatorGroupId,
   );
-  if (hydratedNavigatorGroup?.evidenceIds.some((id) => hydratedEvidenceIds.has(id))) {
+  if (hydratedNavigatorGroup?.evidenceIds.every((id) => hydratedEvidenceIds.has(id))) {
     state.navigatorGroupId = null;
   }
   if (hydratedNavigatorFocus?.groups.every((group) =>
-    group.evidenceIds.some((id) => hydratedEvidenceIds.has(id)))) {
+    group.evidenceIds.every((id) => hydratedEvidenceIds.has(id)))) {
     state.navigatorFocusId = null;
     state.navigatorGroupId = null;
   }
@@ -1849,6 +2102,11 @@ export function ensureAuthoredMissionFlowState(runtime, packOrId) {
   state.deferredUntilMinute = deferredUntilMinute != null
     && Number.isFinite(Number(deferredUntilMinute))
     ? Number(deferredUntilMinute)
+    : null;
+  state.resolutionPreparationRouteId = pack.resolution?.choices?.some(
+    (choice) => choice.id === state.resolutionPreparationRouteId && choice.readiness,
+  )
+    ? state.resolutionPreparationRouteId
     : null;
   state.selectedResolutionRouteId ??= null;
   state.selectedResolutionContextId ??= null;
@@ -1990,6 +2248,10 @@ function matchingResolutionContextVariant(
   }
   const flags = runtime?.playerState?.worldFlags ?? {};
   const troubles = runtime?.playerState?.troubles ?? {};
+  const statusForTrouble = (troubleId) =>
+    troubleStatusById?.[troubleId]
+      ?? troubles[troubleId]?.status
+      ?? troubles[troubleId];
   return variants.find((variant) => {
     const snapshot = resolutionContextSnapshot(runtime, choice, variant);
     const requiredEvidenceIds = variant.requiredEvidenceIds ?? [];
@@ -2001,9 +2263,11 @@ function matchingResolutionContextVariant(
     const evidenceOrderPrefix = variant.evidenceOrderPrefix ?? [];
     const troubleStatuses = variant.troubleStatuses
       ?? (variant.troubleStatus ? [variant.troubleStatus] : []);
+    const troubleConditions = variant.troubleConditions ?? [];
     const hasCriteria = Boolean(
       variant.flagKey
       || variant.troubleId
+      || troubleConditions.length
       || requiredEvidenceIds.length
       || anyEvidenceIds.length
       || forbiddenEvidenceIds.length
@@ -2018,11 +2282,15 @@ function matchingResolutionContextVariant(
       if (variant.flagValue == null ? !flagValue : flagValue !== variant.flagValue) return false;
     }
     if (variant.troubleId) {
-      const status = troubleStatusById?.[variant.troubleId]
-        ?? troubles[variant.troubleId]?.status
-        ?? troubles[variant.troubleId];
+      const status = statusForTrouble(variant.troubleId);
       if (troubleStatuses.length ? !troubleStatuses.includes(status) : !status) return false;
     }
+    if (troubleConditions.some((condition) => {
+      const acceptedStatuses = condition.troubleStatuses
+        ?? (condition.troubleStatus ? [condition.troubleStatus] : []);
+      const status = statusForTrouble(condition.troubleId);
+      return acceptedStatuses.length ? !acceptedStatuses.includes(status) : !status;
+    })) return false;
     if (requiredEvidenceIds.some((id) => !snapshot.evidenceIds.has(id))) return false;
     if (anyEvidenceIds.length && !anyEvidenceIds.some((id) => snapshot.evidenceIds.has(id))) return false;
     if (forbiddenEvidenceIds.some((id) => snapshot.evidenceIds.has(id))) return false;
@@ -2083,7 +2351,7 @@ function persistAuthoredResolutionBranch(runtime, pack, flow, route, troubleStat
   return branchId;
 }
 
-function resolutionActions(runtime, pack, step) {
+function resolutionActions(runtime, pack, step, flow) {
   const choices = pack.resolution?.choices ?? [];
   if (choices.length !== 3) return null;
   if (step?.targetFacilityId
@@ -2091,6 +2359,41 @@ function resolutionActions(runtime, pack, step) {
   const troubleStatus = runtime.playerState.troubles?.[pack.troubleId]?.status ?? "active";
   return choices.map((choice) => {
     const resolvedChoice = resolveAuthoredResolutionChoice(runtime, choice);
+    const readiness = resolutionReadinessState(pack, flow, choice);
+    if (!readiness.ready) {
+      const preparationLead = readiness.missingLeads[0] ?? null;
+      return {
+        id: actionId(
+          pack,
+          "RESOLUTION_PREPARATION",
+          `${choice.id}:${preparationLead?.id ?? "missing-evidence"}`,
+        ),
+        family: "prepare",
+        type: "plan",
+        effectKind: "prepare_authored_mission_resolution",
+        missionId: pack.missionId,
+        stepId: pack.investigation.stepId,
+        missionTitle: pack.title,
+        missionTroubleId: pack.troubleId,
+        minutes: Math.max(1, Number(choice.readiness?.preparationMinutes ?? 6)),
+        label: `${choice.readiness?.preparationLabel ?? `${choice.label}の裏付けを補う`}（成立根拠${readiness.supportCount}/${readiness.minimumSupport}${
+          readiness.requiredCoreCount
+            ? `・必須条件${readiness.satisfiedCoreCount}/${readiness.requiredCoreCount}`
+            : ""
+        }）`,
+        authoredMissionFlowExclusiveChoice: true,
+        authoredMissionFlowId: pack.id,
+        authoredMissionFlowKind: "resolution_preparation",
+        authoredMissionFlowResolutionRouteId: choice.id,
+        authoredMissionFlowLeadId: preparationLead?.id ?? null,
+        authoredMissionFlowTargetFacilityId: preparationLead?.facilityId ?? null,
+        authoredMissionFlowResolutionSupportCount: readiness.supportCount,
+        authoredMissionFlowResolutionMinimumSupport: readiness.minimumSupport,
+        authoredMissionFlowResolutionCoreReady: readiness.coreReady,
+        authoredMissionFlowResolutionRequiredCoreCount: readiness.requiredCoreCount,
+        authoredMissionFlowResolutionSatisfiedCoreCount: readiness.satisfiedCoreCount,
+      };
+    }
     return {
       id: actionId(pack, "RESOLUTION", `${choice.id}:${troubleStatus}`),
       family: "help",
@@ -2197,6 +2500,65 @@ function reconsiderLeadAction(pack, lead) {
   };
 }
 
+function resolutionPreparationCancelAction(pack, routeId) {
+  return {
+    id: actionId(pack, "RESOLUTION_PREPARATION_CANCEL", routeId),
+    family: "prepare",
+    type: "plan",
+    effectKind: "cancel_authored_mission_resolution_preparation",
+    minutes: 1,
+    label: "この追加裏付けを中止し、三つの最終方針へ戻る",
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: pack.id,
+    authoredMissionFlowKind: "resolution_preparation_cancel",
+    authoredMissionFlowResolutionRouteId: routeId,
+  };
+}
+
+function resolutionPreparationLeadAction(pack, route, lead, readiness) {
+  return {
+    id: actionId(pack, "RESOLUTION_PREPARATION_LEAD", `${route.id}:${lead.id}`),
+    family: "prepare",
+    type: "plan",
+    effectKind: "select_authored_mission_resolution_preparation_lead",
+    minutes: 2,
+    label: `追加裏付け：${lead.label}`,
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: pack.id,
+    authoredMissionFlowKind: "resolution_preparation_lead",
+    authoredMissionFlowResolutionRouteId: route.id,
+    authoredMissionFlowLeadId: lead.id,
+    authoredMissionFlowTargetFacilityId: lead.facilityId,
+    authoredMissionFlowResolutionSupportCount: readiness.supportCount,
+    authoredMissionFlowResolutionMinimumSupport: readiness.minimumSupport,
+    authoredMissionFlowResolutionCoreReady: readiness.coreReady,
+    authoredMissionFlowResolutionRequiredCoreCount: readiness.requiredCoreCount,
+    authoredMissionFlowResolutionSatisfiedCoreCount: readiness.satisfiedCoreCount,
+  };
+}
+
+function resolutionPreparationActions(pack, flow, movementActions) {
+  const route = pack.resolution?.choices?.find(
+    (choice) => choice.id === flow.resolutionPreparationRouteId,
+  );
+  if (!route?.readiness) return null;
+  const readiness = resolutionReadinessState(pack, flow, route);
+  if (readiness.ready) return null;
+  const result = readiness.missingLeads
+    .slice(0, 2)
+    .map((lead) => resolutionPreparationLeadAction(pack, route, lead, readiness));
+  result.push(resolutionPreparationCancelAction(pack, route.id));
+  if (result.length < 3) {
+    const defer = deferAction(pack);
+    if (defer) result.push(defer);
+  }
+  if (result.length < 3) {
+    const movement = freeMovementAction(pack, movementActions, new Set());
+    if (movement) result.push(movement);
+  }
+  return result.length === 3 ? result : null;
+}
+
 function prematureResolutionAction(pack, flow, evidenceCount) {
   const premature = pack.investigation.prematureResolution;
   if (!premature
@@ -2222,7 +2584,7 @@ function navigatorFocusActions(pack, navigator, flow, movementActions) {
   )?.preferredFocusId;
   const focuses = navigator.focuses
     .filter((focus) => focus.groups.some((group) =>
-      !group.evidenceIds.some((evidenceId) => evidenceIds.has(evidenceId))))
+      group.evidenceIds.some((evidenceId) => !evidenceIds.has(evidenceId))))
     .sort((left, right) =>
       Number(right.id === preferredFocusId) - Number(left.id === preferredFocusId));
   const result = focuses.map((focus) => ({
@@ -2231,9 +2593,12 @@ function navigatorFocusActions(pack, navigator, flow, movementActions) {
     type: "plan",
     effectKind: "select_authored_mission_investigation_focus",
     minutes: Number(focus.minutes ?? 3),
-    label: focus.id === preferredFocusId
-      ? `${focus.label}（最初の聞き取りから優先）`
-      : focus.label,
+    label: `${
+      focus.groups.every((group) =>
+        group.evidenceIds.some((evidenceId) => evidenceIds.has(evidenceId)))
+        ? "追加裏付け："
+        : ""
+    }${focus.label}${focus.id === preferredFocusId ? "（最初の聞き取りから優先）" : ""}`,
     authoredMissionFlowExclusiveChoice: true,
     authoredMissionFlowId: pack.id,
     authoredMissionFlowKind: "navigator_focus",
@@ -2274,14 +2639,18 @@ function navigatorGroupActions(pack, navigator, flow) {
   if (!focus) return null;
   const evidenceIds = new Set(flow.evidenceIds);
   const groups = focus.groups
-    .filter((group) => !group.evidenceIds.some((evidenceId) => evidenceIds.has(evidenceId)))
+    .filter((group) => group.evidenceIds.some((evidenceId) => !evidenceIds.has(evidenceId)))
     .map((group) => ({
       id: actionId(pack, "NAVIGATOR_GROUP", group.id),
       family: "prepare",
       type: "plan",
       effectKind: "select_authored_mission_evidence_group",
       minutes: Number(group.minutes ?? 2),
-      label: group.label,
+      label: `${
+        group.evidenceIds.some((evidenceId) => evidenceIds.has(evidenceId))
+          ? "追加裏付け："
+          : ""
+      }${group.label}`,
       authoredMissionFlowExclusiveChoice: true,
       authoredMissionFlowId: pack.id,
       authoredMissionFlowKind: "navigator_group",
@@ -2296,6 +2665,22 @@ function navigatorGroupActions(pack, navigator, flow) {
   return result.length === 3 ? result : null;
 }
 
+function navigatorRouteBackAction(pack, focus, group) {
+  return {
+    id: actionId(pack, "NAVIGATOR_ROUTE_BACK", group.id),
+    family: "prepare",
+    type: "plan",
+    effectKind: "return_to_authored_mission_evidence_groups",
+    minutes: 1,
+    label: "この三経路は保留し、同じ調査方針の別分類へ戻る",
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: pack.id,
+    authoredMissionFlowKind: "navigator_route_back",
+    authoredMissionFlowNavigatorFocusId: focus.id,
+    authoredMissionFlowNavigatorGroupId: group.id,
+  };
+}
+
 function navigatorRouteActions(pack, navigator, flow) {
   const focus = navigator.focuses.find((entry) => entry.id === flow.navigatorFocusId);
   const group = focus?.groups.find((entry) => entry.id === flow.navigatorGroupId);
@@ -2303,9 +2688,12 @@ function navigatorRouteActions(pack, navigator, flow) {
   const leadsByEvidenceId = new Map(
     pack.investigation.leads.map((lead) => [lead.discoveryId, lead]),
   );
-  const leads = group.evidenceIds.map((evidenceId) => leadsByEvidenceId.get(evidenceId));
+  const evidenceIds = new Set(flow.evidenceIds);
+  const leads = group.evidenceIds
+    .filter((evidenceId) => !evidenceIds.has(evidenceId))
+    .map((evidenceId) => leadsByEvidenceId.get(evidenceId));
   if (leads.some((lead) => !lead)) return null;
-  return leads.map((lead) => ({
+  const result = leads.map((lead) => ({
     id: actionId(pack, "NAVIGATOR_ROUTE", `${group.id}:${lead.id}`),
     family: "prepare",
     type: "plan",
@@ -2320,6 +2708,12 @@ function navigatorRouteActions(pack, navigator, flow) {
     authoredMissionFlowLeadId: lead.id,
     authoredMissionFlowTargetFacilityId: lead.facilityId,
   }));
+  if (result.length < 3) result.push(navigatorRouteBackAction(pack, focus, group));
+  if (result.length < 3) {
+    const defer = deferAction(pack);
+    if (defer) result.push(defer);
+  }
+  return result.length === 3 ? result : null;
 }
 
 function navigatorActions(pack, flow, movementActions) {
@@ -2339,7 +2733,9 @@ function selectedLeadActions(runtime, pack, movementActions, flow) {
     : leadAction(runtime, pack, movementActions, lead);
   const result = [
     primary,
-    reconsiderLeadAction(pack, lead),
+    flow.resolutionPreparationRouteId
+      ? resolutionPreparationCancelAction(pack, flow.resolutionPreparationRouteId)
+      : reconsiderLeadAction(pack, lead),
     deferAction(pack),
   ].filter(Boolean);
   if (result.length < 3) {
@@ -2394,9 +2790,15 @@ export function authoredMissionFlowExclusiveActions(runtime, {
     const step = currentStep(runtime, pack);
     if (!step) continue;
     if (step.id === pack.resolution?.stepId) {
-      const actions = resolutionActions(runtime, pack, step);
+      const actions = resolutionActions(runtime, pack, step, flow);
       if (actions?.length === 3) return actions;
       continue;
+    }
+    if (step.id === pack.investigation.stepId
+      && flow.resolutionPreparationRouteId
+      && !flow.selectedLeadId) {
+      const actions = resolutionPreparationActions(pack, flow, movementActions);
+      if (actions?.length === 3) return actions;
     }
     if (step.id === pack.investigation.stepId && !flow.openingChoiceId) {
       const actions = openingPlanActions(runtime, pack);
@@ -2415,7 +2817,7 @@ export function authoredMissionFlowExclusiveActions(runtime, {
     }
     if (step.id !== pack.investigation.stepId || !flow.openingChoiceId || flow.selectedLeadId) continue;
     const evidenceIds = new Set(flow.evidenceIds);
-    if (investigationRequirementsMet(pack, flow)) continue;
+    if (investigationPhaseComplete(pack, flow)) continue;
     const actions = navigatorActions(pack, flow, movementActions)
       ?? leadSelectionActions(runtime, pack, movementActions, flow, evidenceIds);
     if (actions?.length === 3) return actions;
@@ -2755,6 +3157,23 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       previousFocusId,
     });
   }
+  if (action.authoredMissionFlowKind === "navigator_route_back") {
+    const previousGroupId = flow.navigatorGroupId;
+    if (flow.navigatorFocusId !== action.authoredMissionFlowNavigatorFocusId
+      || previousGroupId !== action.authoredMissionFlowNavigatorGroupId) return changed;
+    flow.navigatorGroupId = null;
+    flow.deferredUntilMinute = null;
+    result.summary ??= "三つの確認経路を保留し、同じ調査方針の別分類へ戻ることにした。";
+    changed = true;
+    runtime.playerState.history.push({
+      type: "AUTHORED_MISSION_FLOW_NAVIGATOR_RETURNED_TO_GROUPS",
+      minute,
+      flowId: pack.id,
+      missionId: pack.missionId,
+      focusId: flow.navigatorFocusId,
+      previousGroupId,
+    });
+  }
   if (action.authoredMissionFlowKind === "navigator_route") {
     const navigator = investigationNavigator(pack);
     const focus = navigator?.focuses.find(
@@ -2814,6 +3233,12 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
     flow.navigatorFocusId = null;
     flow.navigatorGroupId = null;
     flow.deferredUntilMinute = null;
+    const preparationRoute = pack.resolution?.choices?.find(
+      (choice) => choice.id === flow.resolutionPreparationRouteId,
+    );
+    if (preparationRoute && resolutionReadinessState(pack, flow, preparationRoute).ready) {
+      flow.resolutionPreparationRouteId = null;
+    }
     syncInvestigationProgress(runtime, pack, flow);
     changed = true;
     runtime.playerState.history.push({
@@ -2824,6 +3249,112 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       evidenceId: action.authoredMissionFlowEvidenceId,
       leadId: action.authoredMissionFlowLeadId ?? null,
       unlockedLeadIds: [...flow.unlockedLeadIds],
+    });
+  }
+  if (action.authoredMissionFlowKind === "resolution_preparation_lead") {
+    const route = pack.resolution?.choices?.find(
+      (choice) => choice.id === action.authoredMissionFlowResolutionRouteId,
+    );
+    if (!route?.readiness || flow.resolutionPreparationRouteId !== route.id) return changed;
+    const readiness = resolutionReadinessState(pack, flow, route);
+    const lead = readiness.missingLeads.find(
+      (entry) => entry.id === action.authoredMissionFlowLeadId,
+    );
+    if (!lead) return changed;
+    flow.selectedLeadId = lead.id;
+    flow.selectedLeadAtMinute = minute;
+    flow.navigatorFocusId = null;
+    flow.navigatorGroupId = null;
+    flow.deferredUntilMinute = null;
+    revealLeadIds(runtime, pack, flow, [lead.id]);
+    syncInvestigationProgress(runtime, pack, flow);
+    result.summary = `「${route.label}」に必要な追加裏付けとして、${lead.destinationName}で${lead.label}ことにした。`;
+    changed = true;
+    runtime.playerState.history.push({
+      type: "AUTHORED_MISSION_FLOW_RESOLUTION_PREPARATION_LEAD_SELECTED",
+      minute,
+      flowId: pack.id,
+      missionId: pack.missionId,
+      routeId: route.id,
+      leadId: lead.id,
+      evidenceId: lead.discoveryId,
+      supportCount: readiness.supportCount,
+      minimumSupport: readiness.minimumSupport,
+      coreReady: readiness.coreReady,
+    });
+  }
+  if (action.authoredMissionFlowKind === "resolution_preparation") {
+    const route = pack.resolution?.choices?.find(
+      (choice) => choice.id === action.authoredMissionFlowResolutionRouteId,
+    );
+    if (!route?.readiness) return changed;
+    const readiness = resolutionReadinessState(pack, flow, route);
+    if (readiness.ready) {
+      flow.resolutionPreparationRouteId = null;
+      syncInvestigationProgress(runtime, pack, flow);
+      result.summary = `「${route.label}」を実行するための裏付けは既に揃っている。最終方針を選び直せる。`;
+      changed = true;
+      runtime.playerState.history.push({
+        type: "AUTHORED_MISSION_FLOW_RESOLUTION_PREPARATION_ALREADY_READY",
+        minute,
+        flowId: pack.id,
+        missionId: pack.missionId,
+        routeId: route.id,
+        supportCount: readiness.supportCount,
+        minimumSupport: readiness.minimumSupport,
+      });
+    } else {
+      const requestedLead = readiness.missingLeads.find(
+        (lead) => lead.id === action.authoredMissionFlowLeadId,
+      );
+      const lead = requestedLead ?? readiness.missingLeads[0] ?? null;
+      if (!lead) return changed;
+      flow.resolutionPreparationRouteId = route.id;
+      flow.selectedLeadId = lead.id;
+      flow.selectedLeadAtMinute = minute;
+      flow.navigatorFocusId = null;
+      flow.navigatorGroupId = null;
+      flow.deferredUntilMinute = null;
+      revealLeadIds(runtime, pack, flow, [lead.id]);
+      syncInvestigationProgress(runtime, pack, flow);
+      result.summary = route.readiness.preparationSummary
+        ?? `「${route.label}」を実行するための裏付けを補うことにした。`;
+      changed = true;
+      runtime.playerState.history.push({
+        type: "AUTHORED_MISSION_FLOW_RESOLUTION_PREPARATION_SELECTED",
+        minute,
+        flowId: pack.id,
+        missionId: pack.missionId,
+        routeId: route.id,
+        leadId: lead.id,
+        evidenceId: lead.discoveryId,
+        supportCount: readiness.supportCount,
+        minimumSupport: readiness.minimumSupport,
+      });
+    }
+  }
+  if (action.authoredMissionFlowKind === "resolution_preparation_cancel") {
+    const route = pack.resolution?.choices?.find(
+      (choice) => choice.id === action.authoredMissionFlowResolutionRouteId,
+    );
+    if (!route?.readiness || flow.resolutionPreparationRouteId !== route.id) return changed;
+    const previousLeadId = flow.selectedLeadId;
+    flow.resolutionPreparationRouteId = null;
+    flow.selectedLeadId = null;
+    flow.selectedLeadAtMinute = null;
+    flow.navigatorFocusId = null;
+    flow.navigatorGroupId = null;
+    flow.deferredUntilMinute = null;
+    syncInvestigationProgress(runtime, pack, flow);
+    result.summary = `「${route.label}」の追加裏付けを中止し、三つの最終方針を選び直すことにした。`;
+    changed = true;
+    runtime.playerState.history.push({
+      type: "AUTHORED_MISSION_FLOW_RESOLUTION_PREPARATION_CANCELLED",
+      minute,
+      flowId: pack.id,
+      missionId: pack.missionId,
+      routeId: route.id,
+      previousLeadId,
     });
   }
   if (action.authoredMissionFlowKind === "resolution") {
@@ -2957,6 +3488,25 @@ export function authoredMissionFlowGuidance(runtime) {
       targetFacilityId: lead.facilityId,
       actionPanel: runtime.playerState.player.facilityId === lead.facilityId ? null : "movement",
     };
+    const preparationRoute = pack.resolution?.choices?.find(
+      (choice) => choice.id === flow.resolutionPreparationRouteId,
+    );
+    if (preparationRoute?.readiness) {
+      const readiness = resolutionReadinessState(pack, flow, preparationRoute);
+      return {
+        missionId: pack.missionId,
+        kicker: "選んだ解決案を成立させる追加裏付け",
+        title: preparationRoute.readiness.preparationLabel,
+        detail: `${readiness.minimumSupport}点必要な成立根拠のうち、現在は${readiness.supportCount}点。${
+          readiness.requiredCoreCount
+            ? `必須条件は${readiness.satisfiedCoreCount}/${readiness.requiredCoreCount}件を満たしている。`
+            : ""
+        }関係の薄い証拠を数だけ増やしても、この案は成功しない。`,
+        targetLocation: runtime.playerState.player.location,
+        targetFacilityId: null,
+        actionPanel: null,
+      };
+    }
     if (flow.evidenceIds.length === 0) return {
       missionId: pack.missionId,
       ...pack.investigation.initialGuidance,
@@ -3034,6 +3584,16 @@ function scenesForPack(pack) {
         [{ path: "action.id", op: "eq", value: actionId(pack, "NAVIGATOR_GROUP", group.id) }],
         group.narrative ?? `${group.label}ため、三つの経路を比較した。`,
       ));
+      scenes.push(scene(
+        `mission-flow.${pack.id}.navigator-route-back.${group.id}`,
+        967,
+        [{
+          path: "action.id",
+          op: "eq",
+          value: actionId(pack, "NAVIGATOR_ROUTE_BACK", group.id),
+        }],
+        "この分類の三経路はいったん保留し、同じ調査方針にある別の論点へ戻ることにした。",
+      ));
       for (const evidenceId of group.evidenceIds) {
         const lead = leadByEvidenceId.get(evidenceId);
         if (!lead) continue;
@@ -3085,6 +3645,48 @@ function scenesForPack(pack) {
     ));
   }
   for (const route of pack.resolution?.choices ?? []) {
+    if (route.readiness) {
+      const readinessEvidenceIds = new Set([
+        ...(route.readiness.supportingEvidenceIds ?? []),
+        ...(route.readiness.requiredEvidenceIds ?? []),
+        ...(route.readiness.requiredEvidenceGroups ?? []).flat(),
+      ]);
+      for (const lead of pack.investigation.leads) {
+        if (!readinessEvidenceIds.has(lead.discoveryId)) continue;
+        scenes.push(scene(
+          `mission-flow.${pack.id}.resolution-preparation.${route.id}.${lead.id}`,
+          969,
+          [{
+            path: "action.id",
+            op: "eq",
+            value: actionId(pack, "RESOLUTION_PREPARATION", `${route.id}:${lead.id}`),
+          }],
+          route.readiness.preparationNarrative
+            ?? `「${route.label}」を実行するため、${lead.destinationName}で追加の裏付けを取ることにした。`,
+        ));
+        scenes.push(scene(
+          `mission-flow.${pack.id}.resolution-preparation-lead.${route.id}.${lead.id}`,
+          969,
+          [{
+            path: "action.id",
+            op: "eq",
+            value: actionId(pack, "RESOLUTION_PREPARATION_LEAD", `${route.id}:${lead.id}`),
+          }],
+          route.readiness.preparationNarrative
+            ?? `「${route.label}」を実行するため、${lead.destinationName}で追加の裏付けを取ることにした。`,
+        ));
+      }
+      scenes.push(scene(
+        `mission-flow.${pack.id}.resolution-preparation-cancel.${route.id}`,
+        969,
+        [{
+          path: "action.id",
+          op: "eq",
+          value: actionId(pack, "RESOLUTION_PREPARATION_CANCEL", route.id),
+        }],
+        `追加の裏付けを始める前に立ち止まり、「${route.label}」だけへ固執せず、三つの最終方針を選び直すことにした。`,
+      ));
+    }
     for (const troubleStatus of ["active", "critical"]) {
       scenes.push(scene(
         `mission-flow.${pack.id}.resolution.${route.id}.${troubleStatus}`,

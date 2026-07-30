@@ -6,6 +6,7 @@ import { experienceToNextLevel } from "../lib/mission-model.mjs";
 import {
   availableTravelActions,
   createInitialJourneyState,
+  encounterConditionMatches,
   generateChoiceActions,
   learnPlayerSkill,
   listLearnablePlayerSkills,
@@ -77,6 +78,69 @@ test("player starts at the wheat field on Day1 at 10:00", () => {
   assert.equal(state.minute, 0);
   assert.equal(state.player.location, "田園の村");
   assert.equal(state.player.facilityId, "LOC_FARM_FIELD");
+});
+
+test("post-collapse encounter conditions include T13 critical and preserve boolean precedence", () => {
+  const state = fresh();
+  const condition = "(T13.status=critical OR T13.status=failed) AND Day>=60";
+  for (const encounterId of ["ENC-0019", "ENC-0020", "ENC-0068"]) {
+    assert.equal(battleData.encounterById.get(encounterId)?.condition, condition, encounterId);
+  }
+
+  state.day = 60;
+  state.troubles.T13.status = "critical";
+  assert.equal(encounterConditionMatches(condition, state), true);
+
+  state.day = 59;
+  assert.equal(encounterConditionMatches(condition, state), false);
+
+  state.day = 60;
+  state.troubles.T13.status = "resolved";
+  assert.equal(encounterConditionMatches(condition, state), false);
+
+  state.troubles.T13.status = "failed";
+  assert.equal(encounterConditionMatches(condition, state), true);
+  assert.equal(
+    encounterConditionMatches("T13.status=critical OR T13.status=failed AND Day>=90", state),
+    false,
+  );
+});
+
+test("ambiguous encounter stages fail closed and authored trouble states gate their intended encounters", () => {
+  const state = fresh();
+  const riverCondition = "(T13.status=scheduled OR T13.status=active) AND Day<45";
+  const apexCondition = "T03.status=active AND T03.investigation=engaged";
+  const deserterCondition = "T11.status=failed OR T19.status=active OR T19.status=critical OR T19.status=failed";
+  assert.equal(battleData.encounterById.get("ENC-0013")?.condition, riverCondition);
+  assert.equal(battleData.encounterById.get("ENC-0014")?.condition, apexCondition);
+  assert.equal(battleData.encounterById.get("ENC-0024")?.condition, deserterCondition);
+
+  state.day = 44;
+  state.troubles.T13.status = "active";
+  assert.equal(encounterConditionMatches(riverCondition, state), true);
+  state.day = 45;
+  assert.equal(encounterConditionMatches(riverCondition, state), false);
+  state.day = 30;
+  state.troubles.T13.status = "resolved";
+  assert.equal(encounterConditionMatches(riverCondition, state), false);
+
+  state.troubles.T03.status = "active";
+  assert.equal(encounterConditionMatches(apexCondition, state), false);
+  state.progress.missions.attemptedTroubleIds.add("T03");
+  assert.equal(encounterConditionMatches(apexCondition, state), true);
+  state.troubles.T03.status = "resolved";
+  assert.equal(encounterConditionMatches(apexCondition, state), false);
+
+  state.troubles.T11.status = "active";
+  state.troubles.T19.status = "scheduled";
+  assert.equal(encounterConditionMatches(deserterCondition, state), false);
+  state.troubles.T11.status = "failed";
+  assert.equal(encounterConditionMatches(deserterCondition, state), true);
+  state.troubles.T11.status = "resolved";
+  state.troubles.T19.status = "active";
+  assert.equal(encounterConditionMatches(deserterCondition, state), true);
+  assert.equal(encounterConditionMatches("T19.stage>=approach", state), false);
+  assert.equal(encounterConditionMatches("未知の秘密条件", state), false);
 });
 
 test("three choices are separate from a complete reachable travel menu", () => {

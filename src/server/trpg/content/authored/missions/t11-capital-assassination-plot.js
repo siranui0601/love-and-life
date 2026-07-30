@@ -5,15 +5,19 @@ export const T11_CAPITAL_ASSASSINATION_PLOT_PACK = Object.freeze({
   title: "王都の暗殺計画",
   persistResolutionBranch: true,
   branching: Object.freeze({
+    openingChoices: 3,
     evidenceDimensions: 4,
     alternativesPerDimension: 3,
     evidenceProfiles: 81,
     orderingPermutationsPerProfile: 24,
     topLevelResolutions: 3,
-    minimumRouteShapesBeforePriorState: 5832,
-    evidenceOrderChangesContext: true,
+    deterministicSignatureCombinationsAfterOpening: 5832,
+    deterministicSignatureCombinationsBeforePriorState: 17496,
+    evidenceOrderPersisted: true,
+    evidenceOrderMayChangeContext: true,
     persistentBranchSignature: true,
-    note: "三つの導入、四分類それぞれ三つの代替証拠、取得順、介入日、過去事件、三解決を組み合わせる。",
+    signatureCountIsNarrativeBranchCount: false,
+    note: "三導入、四分類×三代替証拠、取得順、三解決が決定論的署名を作る。署名組合せ数は、全てが別の文章になるという意味ではない。介入日と過去事件が体験差を加える。",
   }),
   catalogOverride: Object.freeze({
     hearing: Object.freeze({
@@ -121,6 +125,7 @@ export const T11_CAPITAL_ASSASSINATION_PLOT_PACK = Object.freeze({
         playerUtterance: "まず、子どもや宿の人が実際に見たものを集めたい。使者が通った道と衛兵交代を、時刻順に教えて。",
         requiredDisclosure: "ノアは貴族派の使者と暗殺者の連絡役を見ており、ミランは同じ夜だけ変わった衛兵交代を覚え、ペトラは事前に用意された政変見出しの版木を持つ",
         factId: "T11-FACT-STREET-WITNESS-NETWORK",
+        preferredFocusId: "target_and_prevention",
         unlockedLeadIds: Object.freeze(["noah_alley_route_map", "milan_guard_shift_observation", "petra_preprinted_coup_plate"]),
         minutes: 12,
         narrative: "キリは卓上の酒滴を路地に見立て、孤児院、下層の安宿、王城外郭を指で結んだ。大人が見落とした使者を、子どもと宿主は別々の角から見ている。",
@@ -139,6 +144,7 @@ export const T11_CAPITAL_ASSASSINATION_PLOT_PACK = Object.freeze({
         playerUtterance: "実行役だけを捕まえて終わらせたくない。レンへ届いた契約が、誰を経由してどこで受け渡されたかを教えて。",
         requiredDisclosure: "レンは王個人への恨みで動く革命派ではなく報酬契約の刺客で、クロウが犯罪都市で依頼を分割し、黒灯亭の宿帳が王都使者との接触日を残す",
         factId: "T11-FACT-ASSASSIN-CONTRACT-CHAIN",
+        preferredFocusId: "contract_chain",
         unlockedLeadIds: Object.freeze(["ren_contract_token", "crow_intermediary_ledger", "vera_black_lamp_guest_register"]),
         minutes: 13,
         narrative: "キリは暗殺者の名前より、契約が三つに割られていることを重く見ていた。実行、仲介、支払いを分ければ、誰も全体を知らずに王を殺せる。",
@@ -157,6 +163,7 @@ export const T11_CAPITAL_ASSASSINATION_PLOT_PACK = Object.freeze({
         playerUtterance: "暗殺後に得をする側から追う。金の流れ、先に刷られた記事、王の予定を知れた人物を並べて。",
         requiredDisclosure: "レオナルド公の資金は交易都市の為替手形を経由し、ペトラへ暗殺後の見出し代が支払われ、王の非公開日程は王城内の協力者から漏れた",
         factId: "T11-FACT-NOBLE-COUP-PREPARATION",
+        preferredFocusId: "finance_and_coup",
         unlockedLeadIds: Object.freeze(["kiri_payment_chain", "royal_schedule_copy", "victor_counter_route_plan"]),
         minutes: 14,
         narrative: "キリは『誰が王を憎むか』ではなく、『王が死んだ翌朝に誰が命令書を出せるか』を問うた。為替、版木、日程表は、刃より早く政変を準備している。",
@@ -194,6 +201,53 @@ export const T11_CAPITAL_ASSASSINATION_PLOT_PACK = Object.freeze({
         "T11-EVIDENCE-CASTLE-DECOY-SCHEDULE",
         "T11-EVIDENCE-JERICHO-ESCAPE-HORSE-TRACE",
       ]),
+    ]),
+    focuses: Object.freeze([
+      Object.freeze({
+        id: "target_and_prevention",
+        label: "王が狙われる時刻と、暗殺班を止める防衛線を調べる",
+        narrative: "誰が王を狙うかだけでなく、どこを通り、どこへ逃げるかまで一つの防止計画にする。標的の特定と阻止経路を分けて確かめる。",
+        groups: Object.freeze([
+          Object.freeze({
+            id: "target_route_and_time",
+            evidenceGroupIndex: 0,
+            label: "路地図、衛兵交代、王の日程から、標的と実行時刻を一つ選んで確定する",
+            narrative: "三つの記録は見る者も保管場所も違う。暗殺者が計画変更しても残る時刻線を一つ選び、他の証拠と照合できる形にする。",
+          }),
+          Object.freeze({
+            id: "counter_route",
+            evidenceGroupIndex: 3,
+            label: "迎撃路、囮日程、逃走馬から、暗殺を実行前に崩す方法を一つ選ぶ",
+            narrative: "王だけを隠せば別の日に狙われる。突入路を閉じるか、偽日程で外へ出すか、逃走手段を断つかを選ぶ。",
+          }),
+        ]),
+      }),
+      Object.freeze({
+        id: "contract_chain",
+        label: "実行役から仲介人・受け渡し場所まで、暗殺契約を逆にたどる",
+        narrative: "レン一人を倒して黒幕を逃がさない。契約札、仲介帳簿、宿帳のどれを起点に、分割された依頼をつなぎ直すか決める。",
+        groups: Object.freeze([
+          Object.freeze({
+            id: "assassin_contract",
+            evidenceGroupIndex: 1,
+            label: "契約札、仲介帳簿、黒灯亭宿帳から、実行契約を一つ選んで立証する",
+            narrative: "実行、仲介、会合の三地点は互いに口を割らなくても記録が残る。最も守り切れる証拠経路を選ぶ。",
+          }),
+        ]),
+      }),
+      Object.freeze({
+        id: "finance_and_coup",
+        label: "暗殺後に政変を動かす資金と宣伝準備を追う",
+        narrative: "刃の依頼だけでなく、翌朝の命令と世論まで準備した者を追う。支払い、先刷り、為替のどこから利益を受ける側へ届くか決める。",
+        groups: Object.freeze([
+          Object.freeze({
+            id: "noble_finance",
+            evidenceGroupIndex: 2,
+            label: "支払線、政変版木、為替手形から、貴族派の準備を一つ選んで確定する",
+            narrative: "金、印刷、為替は別々の協力者が扱う。暗殺未遂だけで消えない政変計画を示せる一本を選ぶ。",
+          }),
+        ]),
+      }),
     ]),
     initialGuidance: Object.freeze({
       kicker: "標的・実行線・黒幕・防止策",

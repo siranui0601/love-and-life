@@ -18,7 +18,9 @@ import {
   AUTHORED_MISSION_FLOW_PACKS,
   AUTHORED_MISSION_FLOW_SCENES,
   authoredMissionFlowGuidance,
+  ensureAuthoredMissionFlowState,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
+import { resolveMissionStepVariant } from "../../../src/server/trpg/content/mission-step-variant.js";
 import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
 import { deserializeRuntime, serializeRuntime } from "../../../src/server/trpg/game/serializer.js";
 import { publicNpc } from "../../../src/server/trpg/game/presence.js";
@@ -1670,17 +1672,22 @@ test("authored mission packs turn each opening answer into distinct, stateful in
       evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";
       evidenceRuntime.playerState.player.location = resolveStep.targetLocation;
       evidenceRuntime.playerState.player.facilityId = resolveStep.targetFacilityId;
-      const routeActions = availableGameRuntimeActions(evidenceRuntime, game.data).choices
+      const allRouteActions = availableGameRuntimeActions(evidenceRuntime, game.data).choices
+        .filter((action) => ["resolution", "resolution_preparation"]
+          .includes(action.authoredMissionFlowKind));
+      const routeActions = allRouteActions
         .filter((action) => action.authoredMissionFlowKind === "resolution");
-      assert.equal(routeActions.length, 3);
-      assert.equal(new Set(routeActions.map((action) => action.label)).size, 3);
+      assert.equal(allRouteActions.length, 3);
+      assert.equal(new Set(allRouteActions.map((action) => action.label)).size, 3);
+      assert.ok(routeActions.length >= 1,
+        "a complete investigation must make at least one evidence-supported resolution viable");
       assert.ok(routeActions.every((action) => action.type === "resolveMission"));
       assert.equal(
         new Set(pack.resolution.choices.map((route) => route.worldEffect?.factId)).size,
         pack.resolution.choices.length,
       );
       for (const route of pack.resolution.choices) {
-        assert.ok(routeActions.some((action) =>
+        assert.ok(allRouteActions.some((action) =>
           action.authoredMissionFlowResolutionRouteId === route.id));
         if (route.narrativeByTroubleStatus?.critical) {
           assert.ok(route.worldEffect?.factIdByTroubleStatus?.critical);
@@ -1697,9 +1704,10 @@ test("authored mission packs turn each opening answer into distinct, stateful in
             condition.path === "outcome.ok" && condition.op === "isTrue"));
         }
       }
-      const selectedRoute = pack.resolution.choices[0];
-      const selectedAction = routeActions.find((action) =>
-        action.authoredMissionFlowResolutionRouteId === selectedRoute.id);
+      const selectedAction = routeActions[0];
+      const selectedRoute = pack.resolution.choices.find((route) =>
+        route.id === selectedAction.authoredMissionFlowResolutionRouteId);
+      assert.ok(selectedRoute);
       const resolution = executeGameRuntimeCommand(evidenceRuntime, game.data, {
         type: "CHOOSE",
         payload: { choiceId: selectedAction.choiceId },
@@ -1865,6 +1873,124 @@ test("authored mission packs turn each opening answer into distinct, stateful in
   assert.equal(afterCooldown.some((action) => action.authoredMissionFlowKind === "premature_resolution"), false,
     "the same weak accusation must not be offered repeatedly at the same evidence count");
   assert.equal(afterCooldown.filter((action) => action.authoredMissionFlowKind === "lead").length, 2);
+});
+
+test("T09, T11, T12 and T14 expose every authored evidence route from every opening and allow optional corroboration", () => {
+  const { game } = service();
+  const contracts = [
+    { missionId: "MSN-T09", expectedLeads: 9 },
+    { missionId: "MSN-T11", expectedLeads: 12 },
+    { missionId: "MSN-T12", expectedLeads: 15 },
+    { missionId: "MSN-T14", expectedLeads: 18 },
+  ];
+  const cloneRuntime = (runtime) => deserializeRuntime(serializeRuntime(runtime), game.data);
+
+  for (const contract of contracts) {
+    const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) =>
+      entry.missionId === contract.missionId);
+    assert.ok(pack);
+    const groups = authoredNavigatorGroups(pack);
+    const leadByEvidenceId = new Map(
+      pack.investigation.leads.map((lead) => [lead.discoveryId, lead]),
+    );
+    assert.equal(leadByEvidenceId.size, contract.expectedLeads);
+    assert.equal(groups.flatMap((group) => group.evidenceIds).length, contract.expectedLeads);
+
+    const openedRuntime = (opening) => {
+      const runtime = createGameRuntime(game.data, {
+        seed: `${pack.id}-all-routes-${opening.id}`,
+        profileId: "balanced",
+        playerName: "全経路監査役",
+        tutorial: false,
+      });
+      prepareAuthoredMission(runtime, pack);
+      const openingAction = availableGameRuntimeActions(runtime, game.data).choices
+        .find((choice) => choice.id.endsWith(`:${opening.id}`));
+      assert.ok(openingAction);
+      executeGameRuntimeCommand(runtime, game.data, {
+        type: "CHOOSE",
+        payload: { choiceId: openingAction.choiceId },
+      });
+      return runtime;
+    };
+
+    for (const opening of pack.hearing.choices) {
+      const base = openedRuntime(opening);
+      const reached = new Set();
+      for (const group of groups) {
+        for (const evidenceId of group.evidenceIds) {
+          const branch = cloneRuntime(base);
+          const lead = leadByEvidenceId.get(evidenceId);
+          assert.ok(lead);
+          chooseAuthoredNavigatorRoute(branch, game.data, pack, group, lead.id);
+          verifyAuthoredLead(branch, game.data, lead.id);
+          assert.deepEqual(branch.authoredMissionFlows[pack.id].evidenceIds, [evidenceId]);
+          reached.add(evidenceId);
+        }
+      }
+      assert.equal(reached.size, contract.expectedLeads,
+        `${pack.troubleId}:${opening.id} must reach every authored evidence route`);
+    }
+
+    const corroborationBase = openedRuntime(pack.hearing.choices[0]);
+    for (const group of groups) {
+      const branch = cloneRuntime(corroborationBase);
+      for (let index = 0; index < group.evidenceIds.length; index += 1) {
+        const evidenceId = group.evidenceIds[index];
+        const lead = leadByEvidenceId.get(evidenceId);
+        const focusAction = availableGameRuntimeActions(branch, game.data).choices
+          .find((choice) =>
+            choice.authoredMissionFlowKind === "navigator_focus"
+            && choice.authoredMissionFlowNavigatorFocusId === group.focusId);
+        assert.ok(focusAction);
+        executeGameRuntimeCommand(branch, game.data, {
+          type: "CHOOSE",
+          payload: { choiceId: focusAction.choiceId },
+        });
+        const groupAction = availableGameRuntimeActions(branch, game.data).choices
+          .find((choice) =>
+            choice.authoredMissionFlowKind === "navigator_group"
+            && choice.authoredMissionFlowNavigatorGroupId === group.id);
+        assert.ok(groupAction);
+        executeGameRuntimeCommand(branch, game.data, {
+          type: "CHOOSE",
+          payload: { choiceId: groupAction.choiceId },
+        });
+        const routeChoices = availableGameRuntimeActions(branch, game.data).choices;
+        assert.equal(routeChoices.length, 3);
+        assert.equal(routeChoices.filter((choice) =>
+          choice.authoredMissionFlowKind === "navigator_route").length, 3 - index);
+        if (index > 0) {
+          assert.ok(routeChoices.some((choice) =>
+            choice.authoredMissionFlowKind === "navigator_route_back"));
+        }
+        const routeAction = routeChoices.find((choice) =>
+          choice.authoredMissionFlowKind === "navigator_route"
+          && choice.authoredMissionFlowLeadId === lead.id);
+        assert.ok(routeAction);
+        executeGameRuntimeCommand(branch, game.data, {
+          type: "CHOOSE",
+          payload: { choiceId: routeAction.choiceId },
+        });
+        verifyAuthoredLead(branch, game.data, lead.id);
+        ensureAuthoredMissionFlowState(branch, pack);
+        assert.equal(
+          branch.playerState.missions[pack.missionId]
+            .progress[pack.investigation.stepId],
+          1,
+          `${pack.troubleId}:${group.id} corroboration must count as one truth class `
+            + `(evidence=${branch.authoredMissionFlows[pack.id].evidenceIds.join(",")}, `
+            + `required=${branch.playerState.catalog.byId.get(pack.missionId).steps
+              .find((step) => step.id === pack.investigation.stepId)?.required})`,
+        );
+      }
+      assert.deepEqual(
+        new Set(branch.authoredMissionFlows[pack.id].evidenceIds),
+        new Set(group.evidenceIds),
+        `${pack.troubleId}:${group.id} must preserve all three corroborating proofs`,
+      );
+    }
+  }
 });
 
 test("T13 navigator uses normal three-choice actions and proves the 729-profile by 720-order state space", () => {
@@ -2090,12 +2216,15 @@ test("T13 navigator uses normal three-choice actions and proves the 729-profile 
       continue;
     }
 
-    const expectedFocusIds = [...new Set(remainingGroups.map((group) => group.focusId))].sort();
+    const expectedFocusIds = [...new Set(groups
+      .filter((group) => group.evidenceIds.some((evidenceId) =>
+        !subsetFlow.evidenceIds.includes(evidenceId)))
+      .map((group) => group.focusId))].sort();
     const actualFocusIds = subsetChoices
       .filter((choice) => choice.authoredMissionFlowKind === "navigator_focus")
       .map((choice) => choice.authoredMissionFlowNavigatorFocusId)
       .sort();
-    assert.deepEqual(actualFocusIds, expectedFocusIds);
+    assert.deepEqual(actualFocusIds, expectedFocusIds, `subset ${mask} must expose only incomplete focuses`);
 
     for (const group of remainingGroups) {
       const branch = cloneRuntime(subsetRuntime);
@@ -2158,11 +2287,352 @@ test("T13 navigator uses normal three-choice actions and proves the 729-profile 
   resumedFlow.evidenceIds = [groups[0].evidenceIds[0]];
   const resumedChoices = availableGameRuntimeActions(resumedCompletedGroup, game.data).choices;
   assert.equal(resumedFlow.navigatorFocusId, groups[0].focusId);
-  assert.equal(resumedFlow.navigatorGroupId, null);
-  assert.equal(resumedChoices.some((choice) =>
+  assert.equal(resumedFlow.navigatorGroupId, groups[0].id);
+  assert.equal(resumedChoices.filter((choice) =>
     choice.authoredMissionFlowKind === "navigator_route"
-    && choice.authoredMissionFlowNavigatorGroupId === groups[0].id), false,
-  "hydration must never reopen three routes for an already-completed evidence class");
+    && choice.authoredMissionFlowNavigatorGroupId === groups[0].id).length, 2,
+  "a completed truth class may offer its two unused routes as optional corroboration");
+  assert.ok(resumedChoices.some((choice) =>
+    choice.authoredMissionFlowKind === "navigator_route_back"),
+  "optional corroboration must never trap the player inside a previously completed class");
+});
+
+test("T14 navigator exposes all 18 hand-authored routes without movement loops and preserves three-choice play", () => {
+  const { game } = service();
+  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === "MSN-T14");
+  assert.ok(pack);
+  const groups = authoredNavigatorGroups(pack)
+    .sort((left, right) => Number(left.evidenceGroupIndex) - Number(right.evidenceGroupIndex));
+  assert.equal(pack.investigation.focuses.length, 3);
+  assert.ok(pack.investigation.focuses.every((focus) => focus.groups.length === 2));
+  assert.equal(groups.length, 6);
+  assert.ok(groups.every((group) => group.evidenceIds.length === 3));
+  assert.deepEqual(
+    groups.map((group) => [...group.evidenceIds].sort()),
+    pack.investigation.requiredEvidenceGroups.map((group) => [...group].sort()),
+  );
+
+  const leadByEvidenceId = new Map(
+    pack.investigation.leads.map((lead) => [lead.discoveryId, lead]),
+  );
+  assert.equal(leadByEvidenceId.size, 18);
+  assert.equal(new Set(pack.investigation.leads.map((lead) => lead.id)).size, 18);
+  const cloneRuntime = (runtime) => deserializeRuntime(serializeRuntime(runtime), game.data);
+  const openedRuntime = (opening) => {
+    const runtime = createGameRuntime(game.data, {
+      seed: `t14-navigator-${opening.id}`,
+      profileId: "balanced",
+      playerName: "武器網調査役",
+      tutorial: false,
+    });
+    prepareAuthoredMission(runtime, pack);
+    const action = availableGameRuntimeActions(runtime, game.data).choices
+      .find((choice) => choice.id.endsWith(`:${opening.id}`));
+    assert.ok(action);
+    executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: action.choiceId },
+    });
+    return runtime;
+  };
+
+  for (const opening of pack.hearing.choices) {
+    const runtime = openedRuntime(opening);
+    const choices = availableGameRuntimeActions(runtime, game.data).choices;
+    assert.equal(choices.length, 3);
+    assert.ok(choices.every((choice) =>
+      choice.authoredMissionFlowKind === "navigator_focus"));
+    assert.equal(choices[0].authoredMissionFlowNavigatorFocusId, opening.preferredFocusId);
+  }
+
+  const base = openedRuntime(pack.hearing.choices[0]);
+  const reachedEvidence = new Set();
+  for (const group of groups) {
+    for (const evidenceId of group.evidenceIds) {
+      const branch = cloneRuntime(base);
+      const lead = leadByEvidenceId.get(evidenceId);
+      assert.ok(lead);
+      chooseAuthoredNavigatorRoute(branch, game.data, pack, group, lead.id);
+      verifyAuthoredLead(branch, game.data, lead.id);
+      assert.deepEqual(branch.authoredMissionFlows[pack.id].evidenceIds, [evidenceId]);
+      assert.equal(branch.authoredMissionFlows[pack.id].selectedLeadId, null);
+      reachedEvidence.add(evidenceId);
+    }
+  }
+  assert.equal(reachedEvidence.size, 18);
+
+  const profileCount = groups.reduce(
+    (count, group) => count * group.evidenceIds.length,
+    1,
+  );
+  assert.equal(profileCount, 729);
+  const permutations = (count) => count <= 1 ? 1 : count * permutations(count - 1);
+  assert.equal(permutations(groups.length), 720);
+});
+
+test("all three T14 final choices return an unsupported plan to targeted investigation and become viable after corroboration", () => {
+  const { game } = service();
+  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === "MSN-T14");
+  assert.ok(pack);
+  const groups = authoredNavigatorGroups(pack)
+    .sort((left, right) => Number(left.evidenceGroupIndex) - Number(right.evidenceGroupIndex));
+  const leadById = new Map(pack.investigation.leads.map((lead) => [lead.id, lead]));
+
+  for (const route of pack.resolution.choices) {
+    const runtime = createGameRuntime(game.data, {
+      seed: `t14-resolution-readiness-${route.id}`,
+      profileId: "balanced",
+      playerName: "武器網の作戦立案役",
+      tutorial: false,
+    });
+    prepareAuthoredMission(runtime, pack);
+    const opening = pack.hearing.choices.find((choice) =>
+      !route.readiness.openingChoiceIds.includes(choice.id));
+    assert.ok(opening, `${route.id} needs a non-supporting opening for this regression`);
+    const openingAction = availableGameRuntimeActions(runtime, game.data).choices
+      .find((choice) => choice.id.endsWith(`:${opening.id}`));
+    assert.ok(openingAction);
+    executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: openingAction.choiceId },
+    });
+
+    const supporting = new Set(route.readiness.supportingEvidenceIds);
+    const evidenceIds = groups.map((group, index) => {
+      const supportingEvidenceId = group.evidenceIds.find((id) => supporting.has(id));
+      assert.ok(supportingEvidenceId, `${route.id}:${group.id} needs its route-specific proof`);
+      if (index < 2) return supportingEvidenceId;
+      const alternativeEvidenceId = group.evidenceIds.find((id) => !supporting.has(id));
+      assert.ok(alternativeEvidenceId);
+      return alternativeEvidenceId;
+    });
+    assert.equal(evidenceIds.filter((id) => supporting.has(id)).length, 2);
+
+    const flow = runtime.authoredMissionFlows[pack.id];
+    flow.evidenceIds = [...evidenceIds];
+    const mission = runtime.playerState.missions[pack.missionId];
+    mission.discoveries = evidenceIds.map((id) => ({ id }));
+    mission.progress[pack.hearing.stepId] = 1;
+    mission.progress[pack.investigation.stepId] = 6;
+    mission.progress.battle = 1;
+    mission.progress[pack.resolution.stepId] = 0;
+    runtime.playerState.player.location = pack.catalogOverride.resolution.targetLocation;
+    runtime.playerState.player.facilityId = pack.catalogOverride.resolution.targetFacilityId;
+
+    const choices = availableGameRuntimeActions(runtime, game.data).choices;
+    assert.equal(choices.length, 3);
+    const unsupported = choices.find((choice) =>
+      choice.authoredMissionFlowResolutionRouteId === route.id);
+    assert.ok(unsupported);
+    assert.equal(unsupported.authoredMissionFlowKind, "resolution_preparation");
+    assert.equal(unsupported.type, "plan");
+    assert.equal(unsupported.authoredMissionFlowResolutionSupportCount, 2);
+    assert.equal(
+      unsupported.authoredMissionFlowResolutionMinimumSupport,
+      route.readiness.minimumSupport,
+    );
+    const preparationLead = leadById.get(unsupported.authoredMissionFlowLeadId);
+    assert.ok(preparationLead);
+    assert.equal(supporting.has(preparationLead.discoveryId), true);
+    assert.equal(flow.evidenceIds.includes(preparationLead.discoveryId), false);
+
+    const preparation = executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: unsupported.choiceId },
+    });
+    assert.ok(preparation.outcome?.summary);
+    assert.equal(runtime.playerState.troubles.T14.status, "active");
+    assert.equal(mission.progress[pack.resolution.stepId], 0);
+    assert.equal(flow.resolutionPreparationRouteId, route.id);
+    assert.equal(flow.selectedLeadId, preparationLead.id);
+    assert.equal(mission.progress[pack.investigation.stepId], 5);
+    assert.ok(runtime.playerState.history.some((entry) =>
+      entry.type === "AUTHORED_MISSION_FLOW_RESOLUTION_PREPARATION_SELECTED"
+      && entry.routeId === route.id
+      && entry.leadId === preparationLead.id));
+
+    const cancelBranch = deserializeRuntime(serializeRuntime(runtime), game.data);
+    const cancelChoices = availableGameRuntimeActions(cancelBranch, game.data).choices;
+    assert.equal(cancelChoices.length, 3);
+    const cancelActions = cancelChoices.filter((choice) =>
+      choice.authoredMissionFlowKind === "resolution_preparation_cancel");
+    assert.equal(cancelActions.length, 1);
+    executeGameRuntimeCommand(cancelBranch, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: cancelActions[0].choiceId },
+    });
+    const cancelFlow = cancelBranch.authoredMissionFlows[pack.id];
+    const cancelMission = cancelBranch.playerState.missions[pack.missionId];
+    assert.equal(cancelFlow.resolutionPreparationRouteId, null);
+    assert.equal(cancelFlow.selectedLeadId, null);
+    assert.equal(cancelMission.progress[pack.investigation.stepId], 6);
+    const returnedChoices = availableGameRuntimeActions(cancelBranch, game.data).choices;
+    assert.equal(returnedChoices.length, 3);
+    assert.deepEqual(
+      new Set(returnedChoices.map((choice) =>
+        choice.authoredMissionFlowResolutionRouteId)),
+      new Set(pack.resolution.choices.map((choice) => choice.id)),
+    );
+    assert.ok(returnedChoices.every((choice) =>
+      ["resolution", "resolution_preparation"].includes(choice.authoredMissionFlowKind)));
+
+    verifyAuthoredLead(runtime, game.data, preparationLead.id);
+    assert.equal(flow.evidenceIds.includes(preparationLead.discoveryId), true);
+    assert.equal(flow.resolutionPreparationRouteId, null);
+    assert.equal(mission.progress[pack.investigation.stepId], 6);
+    runtime.playerState.player.location = pack.catalogOverride.resolution.targetLocation;
+    runtime.playerState.player.facilityId = pack.catalogOverride.resolution.targetFacilityId;
+    const retried = availableGameRuntimeActions(runtime, game.data).choices;
+    const viable = retried.find((choice) =>
+      choice.authoredMissionFlowResolutionRouteId === route.id);
+    assert.ok(viable);
+    assert.equal(viable.authoredMissionFlowKind, "resolution");
+    assert.equal(viable.type, "resolveMission");
+  }
+});
+
+test("T14 resolver matches readiness for all 729 evidence profiles across all three openings", () => {
+  const { game } = service();
+  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === "MSN-T14");
+  assert.ok(pack);
+  const profiles = pack.investigation.requiredEvidenceGroups.reduce(
+    (rows, group) => rows.flatMap((row) =>
+      group.map((evidenceId) => [...row, evidenceId])),
+    [[]],
+  );
+  assert.equal(profiles.length, 729);
+
+  for (const opening of pack.hearing.choices) {
+    const runtime = createGameRuntime(game.data, {
+      seed: `t14-readiness-matrix-${opening.id}`,
+      profileId: "balanced",
+      playerName: "武器網の成立条件監査役",
+      tutorial: false,
+    });
+    prepareAuthoredMission(runtime, pack);
+    const openingAction = availableGameRuntimeActions(runtime, game.data).choices
+      .find((choice) => choice.id.endsWith(`:${opening.id}`));
+    assert.ok(openingAction);
+    executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: openingAction.choiceId },
+    });
+    const flow = runtime.authoredMissionFlows[pack.id];
+    const mission = runtime.playerState.missions[pack.missionId];
+
+    for (const evidenceIds of profiles) {
+      flow.evidenceIds = [...evidenceIds];
+      flow.selectedLeadId = null;
+      flow.selectedLeadAtMinute = null;
+      flow.navigatorFocusId = null;
+      flow.navigatorGroupId = null;
+      flow.deferredUntilMinute = null;
+      flow.resolutionPreparationRouteId = null;
+      mission.discoveries = evidenceIds.map((id) => ({ id }));
+      mission.progress[pack.hearing.stepId] = 1;
+      mission.progress[pack.investigation.stepId] = 6;
+      mission.progress.battle = 1;
+      mission.progress[pack.resolution.stepId] = 0;
+      runtime.playerState.player.location = pack.catalogOverride.resolution.targetLocation;
+      runtime.playerState.player.facilityId = pack.catalogOverride.resolution.targetFacilityId;
+
+      const choices = availableGameRuntimeActions(runtime, game.data).choices;
+      assert.equal(choices.length, 3);
+      for (const route of pack.resolution.choices) {
+        const evidenceSet = new Set(evidenceIds);
+        const evidenceSupport = route.readiness.supportingEvidenceIds
+          .filter((evidenceId) => evidenceIds.includes(evidenceId)).length;
+        const openingSupport = route.readiness.openingChoiceIds.includes(opening.id)
+          ? Number(route.readiness.openingSupport ?? 1)
+          : 0;
+        const supportCount = evidenceSupport + openingSupport;
+        const requiredEvidenceIds = route.readiness.requiredEvidenceIds ?? [];
+        const requiredEvidenceGroups = route.readiness.requiredEvidenceGroups ?? [];
+        const coreReady = requiredEvidenceIds.every((id) => evidenceSet.has(id))
+          && requiredEvidenceGroups.every((group) =>
+            group.some((id) => evidenceSet.has(id)));
+        const expectedKind = coreReady && supportCount >= route.readiness.minimumSupport
+          ? "resolution"
+          : "resolution_preparation";
+        const action = choices.find((choice) =>
+          choice.authoredMissionFlowResolutionRouteId === route.id);
+        assert.ok(action, `${opening.id}:${route.id}:${evidenceIds.join("|")}`);
+        assert.equal(
+          action.authoredMissionFlowKind,
+          expectedKind,
+          `${opening.id}:${route.id}:${evidenceIds.join("|")}`,
+        );
+        assert.equal(
+          action.type,
+          expectedKind === "resolution" ? "resolveMission" : "plan",
+        );
+        if (expectedKind === "resolution_preparation") {
+          assert.equal(action.authoredMissionFlowResolutionSupportCount, supportCount);
+          assert.equal(
+            action.authoredMissionFlowResolutionMinimumSupport,
+            route.readiness.minimumSupport,
+          );
+          assert.equal(action.authoredMissionFlowResolutionCoreReady, coreReady);
+          assert.ok(action.authoredMissionFlowLeadId);
+        }
+      }
+    }
+  }
+});
+
+test("T14 intervention switches from noncombat seizure to two battles and closes after irreversible Day75 failure", () => {
+  const { game } = service();
+  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === "MSN-T14");
+  assert.ok(pack);
+  const battle = pack.catalogOverride.battle;
+  const at = (day, troubles = {}) => resolveMissionStepVariant(battle, {
+    day,
+    troubles,
+    worldFlags: {},
+  });
+
+  assert.deepEqual(
+    [
+      at(15).targetFacilityId,
+      at(15).actionType,
+      at(15).encounterId,
+      at(15).discoveryId,
+    ],
+    ["LOC_TRADE_CUSTOMS", "investigate", null, "T14-INTERVENTION-FIRST-CARGO-HELD"],
+  );
+  assert.deepEqual(
+    [at(33).targetFacilityId, at(33).actionType, at(33).encounterId],
+    ["LOC_TRADE_WAREHOUSE", "missionBattle", "ENC-0033"],
+  );
+  assert.deepEqual(
+    [at(56).targetFacilityId, at(56).actionType, at(56).encounterId],
+    ["LOC_CRIME_WEAPON_MARKET", "missionBattle", "ENC-0039"],
+  );
+  assert.deepEqual(
+    [
+      at(56, { T11: { status: "critical" } }).targetFacilityId,
+      at(56, { T11: { status: "critical" } }).encounterId,
+    ],
+    ["LOC_CRIME_INFO_STREET", "ENC-0043"],
+  );
+
+  const runtime = createGameRuntime(game.data, {
+    seed: "t14-day75-irreversible",
+    profileId: "balanced",
+    playerName: "遅れて着いた調査役",
+    tutorial: false,
+  });
+  prepareAuthoredMission(runtime, pack);
+  runtime.playerState.absoluteMinute = (75 - 1) * 1440;
+  Object.assign(runtime.playerState, clockFromMinute(runtime.playerState.absoluteMinute));
+  runtime.lastWorldTickMinute = runtime.playerState.absoluteMinute;
+  runtime.playerState.troubles.T14.status = "failed";
+  runtime.playerState.missions["MSN-T14"].status = "failed";
+  const choices = availableGameRuntimeActions(runtime, game.data).choices;
+  assert.equal(choices.some((choice) =>
+    choice.authoredMissionFlowId === pack.id
+    || choice.missionId === pack.missionId), false);
+  assert.equal(authoredMissionFlowGuidance(runtime)?.missionId === pack.missionId, false);
 });
 
 test("T13 resolution crossing Day60 uses the irreversible post-collapse context everywhere", () => {

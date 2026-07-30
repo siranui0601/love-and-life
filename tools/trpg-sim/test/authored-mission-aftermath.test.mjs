@@ -18,8 +18,8 @@ function pack(troubleId) {
   return AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.troubleId === troubleId);
 }
 
-test("T03 through T13 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
-  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10", "T11", "T12", "T13"]) {
+test("T03 through T14 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
+  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10", "T11", "T12", "T13", "T14"]) {
     const missionPack = pack(troubleId);
     assert.ok(missionPack);
     assert.equal(missionPack.resolution.choices.length, 3);
@@ -587,7 +587,7 @@ test("T10 inserts a noncombat intervention that changes from injunction to execu
 });
 
 
-test("T02 resolution shortens T10 public trust formation through stable food support", () => {
+test("T02 food-restoration routes shorten T10 while prosecution alone never invents stable food", () => {
   const missionPack = pack("T10");
   const route = missionPack.resolution.choices.find(
     (entry) => entry.id === "public_charitable_trust_and_audit",
@@ -597,16 +597,34 @@ test("T02 resolution shortens T10 public trust formation through stable food sup
   const base = resolveAuthoredResolutionChoice({
     playerState: { worldFlags: {}, troubles: {} },
   }, route);
-  const foodProtected = resolveAuthoredResolutionChoice({
+  const restitution = resolveAuthoredResolutionChoice({
     playerState: {
-      worldFlags: {},
+      worldFlags: { t02ResolutionRoute: "restitution_grain_and_debt_compact" },
+      troubles: { T02: { status: "resolved" } },
+    },
+  }, route);
+  const cooperative = resolveAuthoredResolutionChoice({
+    playerState: {
+      worldFlags: { t02ResolutionRoute: "village_grain_cooperative_and_open_ledger" },
+      troubles: { T02: { status: "resolved" } },
+    },
+  }, route);
+  const prosecutionOnly = resolveAuthoredResolutionChoice({
+    playerState: {
+      worldFlags: { t02ResolutionRoute: "public_prosecution_and_contract_void" },
       troubles: { T02: { status: "resolved" } },
     },
   }, route);
 
-  assert.deepEqual([base.minutes, foodProtected.minutes], [118, 94]);
-  assert.equal(foodProtected.contextId, "t02-food-cost-stabilized");
-  assert.match(foodProtected.label, /田園の村/u);
+  assert.deepEqual(
+    [base.minutes, restitution.minutes, cooperative.minutes, prosecutionOnly.minutes],
+    [118, 94, 88, 118],
+  );
+  assert.equal(restitution.contextId, "t02-restitution-food-cost-stabilized");
+  assert.equal(cooperative.contextId, "t02-cooperative-open-food-budget");
+  assert.equal(prosecutionOnly.contextId, undefined);
+  assert.match(restitution.label, /代替穀物/u);
+  assert.match(cooperative.label, /公開穀物帳/u);
 });
 
 
@@ -670,20 +688,24 @@ test("alternative evidence groups complete T10 with one proof from tenure, manuf
 
 
 
-test("T11 offers thousands of deterministic route shapes across witnesses, contracts, finance and prevention", () => {
+test("T11 declares 17,496 deterministic signature combinations across witnesses, contracts, finance and prevention", () => {
   const missionPack = pack("T11");
   assert.ok(missionPack);
   assert.equal(missionPack.persistResolutionBranch, true);
   assert.deepEqual(missionPack.branching, {
+    openingChoices: 3,
     evidenceDimensions: 4,
     alternativesPerDimension: 3,
     evidenceProfiles: 81,
     orderingPermutationsPerProfile: 24,
     topLevelResolutions: 3,
-    minimumRouteShapesBeforePriorState: 5832,
-    evidenceOrderChangesContext: true,
+    deterministicSignatureCombinationsAfterOpening: 5832,
+    deterministicSignatureCombinationsBeforePriorState: 17496,
+    evidenceOrderPersisted: true,
+    evidenceOrderMayChangeContext: true,
     persistentBranchSignature: true,
-    note: "三つの導入、四分類それぞれ三つの代替証拠、取得順、介入日、過去事件、三解決を組み合わせる。",
+    signatureCountIsNarrativeBranchCount: false,
+    note: "三導入、四分類×三代替証拠、取得順、三解決が決定論的署名を作る。署名組合せ数は、全てが別の文章になるという意味ではない。介入日と過去事件が体験差を加える。",
   });
   assert.equal(missionPack.hearing.choices.length, 3);
   assert.equal(missionPack.investigation.leads.length, 12);
@@ -1037,7 +1059,7 @@ test("the generic NPC life engine travels, performs, and retires one authored af
   assert.notEqual(engine.decisionEvents.at(-1).aftermathPlanId, "test-secure-boundary");
 });
 
-test("T12 offers 262,440 deterministic route shapes across arsenal, disguise, command, absence and war preparation", () => {
+test("T12 declares 262,440 deterministic signature combinations across arsenal, disguise, command, absence and war preparation", () => {
   const missionPack = pack("T12");
   assert.ok(missionPack);
   assert.equal(missionPack.persistResolutionBranch, true);
@@ -1048,18 +1070,20 @@ test("T12 offers 262,440 deterministic route shapes across arsenal, disguise, co
     evidenceProfiles: 243,
     orderingPermutationsPerProfile: 120,
     topLevelResolutions: 3,
-    minimumRouteShapesAfterOpening: 87480,
-    minimumRouteShapesBeforePriorState: 262440,
-    evidenceOrderChangesContext: true,
+    deterministicSignatureCombinationsAfterOpening: 87480,
+    deterministicSignatureCombinationsBeforePriorState: 262440,
+    evidenceOrderPersisted: true,
+    evidenceOrderMayChangeContext: true,
     persistentBranchSignature: true,
-    note: "三つの導入、五分類それぞれ三つの代替証拠、取得順、介入日、T09/T11/T13/T14、三解決を組み合わせる。",
+    signatureCountIsNarrativeBranchCount: false,
+    note: "三導入、五分類×三代替証拠、取得順、三解決が決定論的署名を作る。署名組合せ数は、全てが別の文章になるという意味ではない。介入日とT09/T11/T13/T14が体験差を加える。",
   });
   assert.equal(
     missionPack.branching.openingChoices
       * missionPack.branching.evidenceProfiles
       * missionPack.branching.orderingPermutationsPerProfile
       * missionPack.branching.topLevelResolutions,
-    missionPack.branching.minimumRouteShapesBeforePriorState,
+    missionPack.branching.deterministicSignatureCombinationsBeforePriorState,
   );
   assert.equal(missionPack.hearing.choices.length, 3);
   assert.equal(missionPack.investigation.requiredEvidenceGroups.length, 5);
@@ -1314,7 +1338,7 @@ test("T12 persists a different branch signature when the same five truths are co
   assert.match(forward, /command-first-kai-reversal/u);
 });
 
-test("T13 offers 4,723,920 deterministic route shapes across growth, separation, seals, innocence, survival and restoration", () => {
+test("T13 declares 4,723,920 deterministic signature combinations across growth, separation, seals, innocence, survival and restoration", () => {
   const missionPack = pack("T13");
   assert.ok(missionPack);
   assert.equal(missionPack.persistResolutionBranch, true);
@@ -1325,18 +1349,20 @@ test("T13 offers 4,723,920 deterministic route shapes across growth, separation,
     evidenceProfiles: 729,
     orderingPermutationsPerProfile: 720,
     topLevelResolutions: 3,
-    minimumRouteShapesAfterOpening: 1574640,
-    minimumRouteShapesBeforePriorState: 4723920,
-    evidenceOrderChangesContext: true,
+    deterministicSignatureCombinationsAfterOpening: 1574640,
+    deterministicSignatureCombinationsBeforePriorState: 4723920,
+    evidenceOrderPersisted: true,
+    evidenceOrderMayChangeContext: true,
     persistentBranchSignature: true,
-    note: "三つの導入、六分類それぞれ三つの代替証拠、取得順、介入日、T07/T08/T09/T12、三解決を組み合わせる。",
+    signatureCountIsNarrativeBranchCount: false,
+    note: "三導入、六分類×三代替証拠、取得順、三解決が決定論的署名を作る。署名組合せ数は、全てが別の文章になるという意味ではない。介入日とT07/T08/T09/T12が体験差を加える。",
   });
   assert.equal(
     missionPack.branching.openingChoices
       * missionPack.branching.evidenceProfiles
       * missionPack.branching.orderingPermutationsPerProfile
       * missionPack.branching.topLevelResolutions,
-    missionPack.branching.minimumRouteShapesBeforePriorState,
+    missionPack.branching.deterministicSignatureCombinationsBeforePriorState,
   );
   assert.equal(missionPack.hearing.choices.length, 3);
   assert.equal(missionPack.investigation.requiredEvidenceGroups.length, 6);
@@ -1567,4 +1593,357 @@ test("T13 persists a different branch signature when the same six evidence class
   assert.notEqual(forward, reversed);
   assert.match(forward, /river_growth_and_separation/u);
   assert.match(forward, /dry-channel-core-catch/u);
+});
+
+test("T14 declares its deterministic signature space without presenting it as the number of narrative branches", () => {
+  const missionPack = pack("T14");
+  assert.ok(missionPack);
+  assert.equal(missionPack.persistResolutionBranch, true);
+  assert.deepEqual(missionPack.branching, {
+    openingChoices: 3,
+    evidenceDimensions: 6,
+    alternativesPerDimension: 3,
+    evidenceProfiles: 729,
+    orderingPermutationsPerProfile: 720,
+    topLevelResolutions: 3,
+    deterministicSignatureCombinationsAfterOpening: 1574640,
+    deterministicSignatureCombinationsBeforePriorState: 4723920,
+    evidenceOrderPersisted: true,
+    evidenceOrderMayChangeContext: true,
+    persistentBranchSignature: true,
+    signatureCountIsNarrativeBranchCount: false,
+    note: "三導入、六分類×三代替証拠、取得順、三解決が決定論的署名を作る。署名組合せ数は、全てが別の文章になるという意味ではない。T06/T09/T11/T12と介入日が体験差を加える。",
+  });
+  assert.equal(
+    missionPack.branching.openingChoices
+      * missionPack.branching.evidenceProfiles
+      * missionPack.branching.orderingPermutationsPerProfile
+      * missionPack.branching.topLevelResolutions,
+    missionPack.branching.deterministicSignatureCombinationsBeforePriorState,
+  );
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(new Set(missionPack.hearing.choices.map((choice) => choice.label)).size, 3);
+  assert.equal(missionPack.investigation.requiredEvidenceGroups.length, 6);
+  assert.ok(missionPack.investigation.requiredEvidenceGroups.every((group) => group.length === 3));
+  assert.equal(missionPack.investigation.leads.length, 18);
+  assert.deepEqual(missionPack.catalogOverride.battle.timelineVariants.map((variant) => [
+    variant.minDay,
+    variant.maxDay ?? null,
+    variant.targetFacilityId,
+    variant.actionType,
+    variant.encounterId ?? null,
+    variant.troubleId ?? null,
+  ]), [
+    [15, 32, "LOC_TRADE_CUSTOMS", "investigate", null, null],
+    [33, 55, "LOC_TRADE_WAREHOUSE", "missionBattle", "ENC-0033", null],
+    [56, 74, "LOC_CRIME_INFO_STREET", "missionBattle", "ENC-0043", "T11"],
+    [56, 74, "LOC_CRIME_WEAPON_MARKET", "missionBattle", "ENC-0039", null],
+  ]);
+  assert.equal(
+    missionPack.catalogOverride.battle.timelineVariants.some((variant) =>
+      Number(variant.maxDay ?? Infinity) >= 75),
+    false,
+    "the normal authored intervention must end before T14 becomes an irreversible Day75 failure",
+  );
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "coordinated_seizure_and_buyer_arrests",
+    "reverse_delivery_and_turn_carriers",
+    "public_supply_audit_and_legal_watch",
+  ]);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.contextVariants.length >= 7
+    && route.contextVariants.every((variant) => variant.troubleId !== "T13"
+      && variant.flagKey !== "t13ResolutionRoute")
+    && route.worldEffect.aftermathPlans.length >= 3
+    && route.worldEffect.followups.length >= 3
+    && route.summaryByTroubleStatus?.critical
+    && route.narrativeByTroubleStatus?.critical
+    && route.worldEffect.factIdByTroubleStatus?.critical
+    && route.worldEffect.textByTroubleStatus?.critical));
+});
+
+test("all 729 T14 evidence profiles satisfy source, ledger, shipping, port, capital and fortress truth classes", () => {
+  const missionPack = pack("T14");
+  const groups = missionPack.investigation.requiredEvidenceGroups;
+  const profiles = groups.reduce(
+    (rows, group) => rows.flatMap((row) => group.map((evidenceId) => [...row, evidenceId])),
+    [[]],
+  );
+  assert.equal(profiles.length, 729);
+  assert.equal(new Set(profiles.map((profile) => profile.join("|"))).size, 729);
+
+  for (const selectedEvidence of profiles) {
+    const mission = {
+      id: "MSN-T14",
+      steps: [
+        { id: "hear", type: "conversation", required: 1 },
+        { id: "investigate", type: "investigate", required: 6 },
+        { id: "battle", type: "battle", required: 1 },
+        { id: "resolve", type: "resolve", required: 1 },
+      ],
+    };
+    const catalog = { special: [mission], byId: new Map([[mission.id, mission]]) };
+    applyAuthoredMissionFlowCatalogOverrides(catalog);
+    const runtime = {
+      playerState: {
+        catalog,
+        missions: {
+          "MSN-T14": {
+            status: "active",
+            progress: { hear: 1, investigate: 0, battle: 0, resolve: 0 },
+            discoveries: selectedEvidence.map((id) => ({ id })),
+          },
+        },
+      },
+    };
+    const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+    assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
+    assert.equal(runtime.playerState.missions["MSN-T14"].progress.investigate, 6);
+  }
+});
+
+test("every T14 evidence profile maps each final plan to viable or corroboration-required", () => {
+  const missionPack = pack("T14");
+  const profiles = missionPack.investigation.requiredEvidenceGroups.reduce(
+    (rows, group) => rows.flatMap((row) => group.map((evidenceId) => [...row, evidenceId])),
+    [[]],
+  );
+  const readinessByRoute = missionPack.resolution.choices.map((route) => route.readiness);
+  assert.ok(readinessByRoute.every((readiness) =>
+    readiness?.minimumSupport === 3
+    && readiness.supportingEvidenceIds.length === 6
+    && readiness.openingChoiceIds.length === 1
+    && readiness.requiredEvidenceGroups.length === 2));
+
+  const evidenceOwner = new Map();
+  missionPack.resolution.choices.forEach((route) => {
+    for (const evidenceId of route.readiness.supportingEvidenceIds) {
+      assert.equal(evidenceOwner.has(evidenceId), false,
+        `${evidenceId} must support one final method, not make every method interchangeable`);
+      evidenceOwner.set(evidenceId, route.id);
+    }
+  });
+  assert.equal(evidenceOwner.size, 18);
+  for (const group of missionPack.investigation.requiredEvidenceGroups) {
+    assert.equal(new Set(group.map((evidenceId) => evidenceOwner.get(evidenceId))).size, 3,
+      "each truth class must offer one route-specific kind of proof");
+  }
+
+  let profilesWithNoImmediatelyViablePlan = 0;
+  let profilesWithOneViablePlan = 0;
+  let profilesWithAtLeastOneViablePlan = 0;
+  let unsupportedPlanChecks = 0;
+  for (const opening of missionPack.hearing.choices) {
+    for (const profile of profiles) {
+      const viable = missionPack.resolution.choices.filter((route) => {
+        const evidenceSet = new Set(profile);
+        const evidenceSupport = route.readiness.supportingEvidenceIds
+          .filter((evidenceId) => profile.includes(evidenceId)).length;
+        const openingSupport = route.readiness.openingChoiceIds.includes(opening.id) ? 1 : 0;
+        const coreReady = route.readiness.requiredEvidenceGroups.every((group) =>
+          group.some((evidenceId) => evidenceSet.has(evidenceId)));
+        return coreReady
+          && evidenceSupport + openingSupport >= route.readiness.minimumSupport;
+      });
+      if (viable.length === 0) profilesWithNoImmediatelyViablePlan += 1;
+      if (viable.length === 1) profilesWithOneViablePlan += 1;
+      if (viable.length > 0) profilesWithAtLeastOneViablePlan += 1;
+      unsupportedPlanChecks += missionPack.resolution.choices.length - viable.length;
+    }
+  }
+  assert.ok(profilesWithNoImmediatelyViablePlan > 0,
+    "some evidence profiles must require one deliberate corroboration before any final method succeeds");
+  assert.ok(profilesWithAtLeastOneViablePlan > 0,
+    "well-matched evidence profiles must still make a final method immediately viable");
+  assert.ok(profilesWithOneViablePlan > 0,
+    "some evidence profiles must force a genuinely supported final method");
+  assert.ok(unsupportedPlanChecks > 0,
+    "the final three choices must not all be unconditional success buttons");
+});
+
+test("T14 resolution contexts react to formal T06, T09, T11 and T12 outcomes plus exact evidence and acquisition order", () => {
+  const missionPack = pack("T14");
+  const [seizure, reverse, audit] = missionPack.resolution.choices;
+  const runtimeFor = ({ openingChoiceId, evidenceIds, worldFlags = {}, troubles = {} }) => ({
+    authoredMissionFlows: {
+      [missionPack.id]: { openingChoiceId, evidenceIds },
+    },
+    playerState: {
+      worldFlags,
+      troubles,
+      missions: {
+        "MSN-T14": { discoveries: evidenceIds.map((id) => ({ id })) },
+      },
+    },
+  });
+
+  const cooperativeSeizure = runtimeFor({
+    openingChoiceId: "shipping_handoffs_and_port",
+    evidenceIds: [
+      "T14-EVIDENCE-VARO-BATCH-SEAL",
+      "T14-EVIDENCE-VARO-ALL-BUYER-LEDGER",
+      "T14-EVIDENCE-RATIKA-DELIVERY-ROUTE",
+      "T14-EVIDENCE-GLENN-ARMED-YOUTHS",
+      "T14-EVIDENCE-SIMON-HIDDEN-CRATES",
+      "T14-EVIDENCE-REN-CONTRACT-TOKEN",
+      "T14-EVIDENCE-MAGNUS-VARO-PURCHASE",
+    ],
+    worldFlags: { t06ResolutionRoute: "worker_cooperative_and_smuggling_watch" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(cooperativeSeizure, seizure).contextId, "t06-cooperative-port-seizure");
+  assert.equal(resolveAuthoredResolutionChoice(cooperativeSeizure, seizure).minutes, 74);
+
+  const turnedNetwork = runtimeFor({
+    openingChoiceId: "buyers_and_armed_crises",
+    evidenceIds: [
+      "T14-EVIDENCE-CASSIA-MARK-COMPARISON",
+      "T14-EVIDENCE-MOZ-PAYMENT-MAP",
+      "T14-EVIDENCE-CERES-SHIP-LOG",
+      "T14-EVIDENCE-MAURA-SMUGGLER-ROSTER",
+      "T14-EVIDENCE-REN-CONTRACT-TOKEN",
+      "T14-EVIDENCE-CROW-ARMED-CONTRACT-CHAIN",
+      "T14-EVIDENCE-HENRIK-SUPPLY-BATCH",
+    ],
+    worldFlags: { t11ResolutionRoute: "turn_assassin_and_trace_network" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(turnedNetwork, reverse).contextId, "t11-turned-assassin-reverse-contract");
+  assert.equal(resolveAuthoredResolutionChoice(turnedNetwork, reverse).minutes, 79);
+
+  const jointAudit = runtimeFor({
+    openingChoiceId: "buyers_and_armed_crises",
+    evidenceIds: [
+      "T14-EVIDENCE-CASSIA-MARK-COMPARISON",
+      "T14-EVIDENCE-GORDO-DOUBLE-INVENTORY",
+      "T14-EVIDENCE-ERNESTO-CUSTOMS-NUMBERS",
+      "T14-EVIDENCE-SIMON-HIDDEN-CRATES",
+      "T14-EVIDENCE-VERA-BLACK-LAMP-REGISTER",
+      "T14-EVIDENCE-HENRIK-SUPPLY-BATCH",
+    ],
+    worldFlags: { t12ResolutionRoute: "joint_border_inquiry_and_nonaggression_line" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(jointAudit, audit).contextId, "t12-joint-border-neutral-verification");
+  assert.equal(resolveAuthoredResolutionChoice(jointAudit, audit).minutes, 102);
+
+  const mineFailure = runtimeFor({
+    openingChoiceId: "weapon_marks_and_inventory",
+    evidenceIds: [
+      "T14-EVIDENCE-VARO-BATCH-SEAL",
+      "T14-EVIDENCE-GORDO-DOUBLE-INVENTORY",
+      "T14-EVIDENCE-ERNESTO-CUSTOMS-NUMBERS",
+      "T14-EVIDENCE-GLENN-ARMED-YOUTHS",
+      "T14-EVIDENCE-VERA-BLACK-LAMP-REGISTER",
+      "T14-EVIDENCE-HENRIK-SUPPLY-BATCH",
+    ],
+    troubles: { T09: { status: "failed" } },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(mineFailure, seizure).contextId,
+    "t09-failed-crude-arms-overflow-seizure");
+  assert.equal(resolveAuthoredResolutionChoice(mineFailure, reverse).contextId,
+    "t09-failed-replacement-order-trap");
+  assert.equal(resolveAuthoredResolutionChoice(mineFailure, audit).contextId,
+    "t09-failed-legal-shortage-audit");
+
+  const late = runtimeFor({
+    openingChoiceId: "weapon_marks_and_inventory",
+    evidenceIds: [
+      "T14-EVIDENCE-WAREHOUSE-CRATE-LAYERS",
+      "T14-EVIDENCE-GORDO-DOUBLE-INVENTORY",
+      "T14-EVIDENCE-RATIKA-DELIVERY-ROUTE",
+      "T14-EVIDENCE-GLENN-ARMED-YOUTHS",
+      "T14-EVIDENCE-REN-CONTRACT-TOKEN",
+      "T14-EVIDENCE-KAI-FALSE-KIT-RECEIPT",
+    ],
+    troubles: { T14: { status: "critical" } },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(late, seizure).contextId, "critical-distributed-arms-emergency-raids");
+  assert.equal(resolveAuthoredResolutionChoice(late, reverse).contextId, "critical-last-delivery-reversal");
+  assert.equal(resolveAuthoredResolutionChoice(late, audit).contextId, "critical-emergency-public-disarmament");
+
+  const lateAfterMineFailure = runtimeFor({
+    openingChoiceId: "weapon_marks_and_inventory",
+    evidenceIds: [
+      "T14-EVIDENCE-VARO-BATCH-SEAL",
+      "T14-EVIDENCE-GORDO-DOUBLE-INVENTORY",
+      "T14-EVIDENCE-ERNESTO-CUSTOMS-NUMBERS",
+      "T14-EVIDENCE-GLENN-ARMED-YOUTHS",
+      "T14-EVIDENCE-VERA-BLACK-LAMP-REGISTER",
+      "T14-EVIDENCE-HENRIK-SUPPLY-BATCH",
+    ],
+    troubles: {
+      T09: { status: "failed" },
+      T14: { status: "critical" },
+    },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(lateAfterMineFailure, seizure).contextId,
+    "critical-t09-failed-crude-arms-emergency-seizure");
+  assert.equal(resolveAuthoredResolutionChoice(lateAfterMineFailure, reverse).contextId,
+    "critical-t09-failed-replacement-order-reversal");
+  assert.equal(resolveAuthoredResolutionChoice(lateAfterMineFailure, audit).contextId,
+    "critical-t09-failed-shortage-disarmament-audit");
+});
+
+test("T14 persists a different branch signature when the same six truth classes are collected in a different order", () => {
+  const missionPack = pack("T14");
+  const mission = {
+    id: "MSN-T14",
+    steps: [
+      { id: "hear", type: "conversation", required: 1 },
+      { id: "investigate", type: "investigate", required: 6 },
+      { id: "battle", type: "battle", required: 1 },
+      { id: "resolve", type: "resolve", required: 1 },
+    ],
+  };
+  const ordered = [
+    "T14-EVIDENCE-VARO-BATCH-SEAL",
+    "T14-EVIDENCE-VARO-ALL-BUYER-LEDGER",
+    "T14-EVIDENCE-RATIKA-DELIVERY-ROUTE",
+    "T14-EVIDENCE-GLENN-ARMED-YOUTHS",
+    "T14-EVIDENCE-REN-CONTRACT-TOKEN",
+    "T14-EVIDENCE-MAGNUS-VARO-PURCHASE",
+  ];
+  const execute = (evidenceIds) => {
+    const catalogMission = { ...mission, steps: mission.steps.map((step) => ({ ...step })) };
+    const catalog = { special: [catalogMission], byId: new Map([[catalogMission.id, catalogMission]]) };
+    applyAuthoredMissionFlowCatalogOverrides(catalog);
+    const runtime = {
+      playerState: {
+        absoluteMinute: 56 * 1440,
+        catalog,
+        worldFlags: {},
+        troubles: { T14: { status: "active" } },
+        player: { location: "犯罪都市", facilityId: "LOC_CRIME_INFO_STREET" },
+        history: [],
+        missions: {
+          "MSN-T14": {
+            status: "active",
+            progress: { hear: 1, investigate: 6, battle: 1, resolve: 0 },
+            discoveries: evidenceIds.map((id) => ({ id })),
+          },
+        },
+      },
+    };
+    const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+    flow.openingChoiceId = "weapon_marks_and_inventory";
+    flow.evidenceIds = [...evidenceIds];
+    const result = { ok: true };
+    assert.equal(applyAuthoredMissionFlowAction(runtime, {
+      authoredMissionFlowId: missionPack.id,
+      authoredMissionFlowKind: "resolution",
+      authoredMissionFlowResolutionRouteId: "coordinated_seizure_and_buyer_arrests",
+      authoredMissionFlowResolutionContextVariantId: "ledger-customs-synchronized-warrants",
+      authoredMissionFlowTroubleStatus: "active",
+    }, result), true);
+    assert.equal(runtime.playerState.worldFlags.t14ResolutionRoute, "coordinated_seizure_and_buyer_arrests");
+    assert.equal(runtime.playerState.worldFlags.t14ResolutionContext, "ledger-customs-synchronized-warrants");
+    assert.equal(flow.selectedResolutionContextId, "ledger-customs-synchronized-warrants");
+    assert.equal(flow.resolutionBranchId, runtime.playerState.worldFlags.t14ResolutionBranch);
+    assert.deepEqual(runtime.playerState.history.at(-1).evidenceOrder, evidenceIds);
+    return flow.resolutionBranchId;
+  };
+
+  const forward = execute(ordered);
+  const reversed = execute([...ordered].reverse());
+  assert.notEqual(forward, reversed);
+  assert.match(forward, /weapon_marks_and_inventory/u);
+  assert.match(forward, /ledger-customs-synchronized-warrants/u);
 });
