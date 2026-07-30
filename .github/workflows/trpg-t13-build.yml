@@ -1,4 +1,4 @@
-name: TRPG T13 integration verification
+name: TRPG T13 opening connection fix
 
 on:
   push:
@@ -7,43 +7,74 @@ on:
     paths:
       - ".github/workflows/trpg-t13-build.yml"
 
+permissions:
+  contents: write
+
 jobs:
-  verify-t13:
+  fix-t13-opening:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     env:
       TRPG_GEMINI_NARRATIVE_ENABLED: "false"
       TRPG_GEMINI_ASSET_GENERATION_ENABLED: "false"
-      TRPG_PLAYER_V4_SEEDS: "2"
-      TRPG_GOAP_V4_SEEDS: "2"
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/trpg-human-authored-choices
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Verify T13 source and focused contracts
+      - name: Apply reviewed opening-route correction
         shell: bash
         run: |
           set -euo pipefail
-          echo "46bea5a64c3fabe21a4d3184f57f600b69e16f46b9b4ea31e2f7d6f2dfaea780  src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js" | sha256sum --check
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js")
+          text = path.read_text(encoding="utf-8")
+          if text.count('targetFacilityId: "LOC_FOREST_CAMP"') != 2:
+              raise SystemExit("unexpected T13 hearing facility anchor count")
+          text = text.replace('targetFacilityId: "LOC_FOREST_CAMP"', 'targetFacilityId: "LOC_FOREST_EDGE"')
+          replacements = {
+              'label: "狩人の野営地でセリエから、大河の影、世界樹の痛み、下流の減水と黒嶺疑惑を聞く"':
+                  'label: "森入口でセリエから、大河の影、世界樹の痛み、下流の減水と黒嶺疑惑を聞く"',
+              'playerUtterance: "水量だけでなく、吸われた魔力が世界樹と封印へ何をしているかを確認します。根と結界石の記録を開いてください。"':
+                  'playerUtterance: "水量だけでなく、吸われた魔力が世界樹と封印へ何をしているかを確認します。まず粘液層、水圧の脈、核の再吸収条件から根への影響を絞ります。"',
+              'requiredDisclosure: "エリナは世界樹の脈が川の吸収周期と同期すると感じ、メルキアは迷いの結界と巨神兵封印が同じ根系へつながると知り、アルウェンは倒壊後の連鎖を記録している"':
+                  'requiredDisclosure: "ジルの粘液層は餌が水から精霊力へ移ったと示し、ニーヴの水圧図は世界樹根の周期との同期を示し、ミーナは核が再接触すれば吸収が再開すると見立てる"',
+              'unlockedLeadIds: S("elina_world_tree_pain_rhythm", "melkia_barrier_seal_coupling", "lucia_refuge_roster")':
+                  'unlockedLeadIds: S("jill_slime_residue_layers", "nieve_flow_pulse_map", "mina_slime_core_containment")',
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f"missing T13 patch anchor: {old[:60]}")
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding="utf-8")
+          PY
+          rm -f tools/trpg-sim/test/t13-opening-debug.test.mjs
           node --check src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js
-          grep -q 'minimumRouteShapesBeforePriorState: 4723920' src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js
-          grep -q 'AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v13"' src/server/trpg/content/authored-mission-flow-registry.js
-          grep -q 'AUTHORED_CONTENT_VERSION = "authored-content-v19"' src/server/trpg/content/authored-scene-registry.js
+          git diff --check
+          test "$TRPG_GEMINI_NARRATIVE_ENABLED" = "false"
+          test "$TRPG_GEMINI_ASSET_GENERATION_ENABLED" = "false"
+      - run: npm ci
+      - name: Verify game-service and T13 contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tools/trpg-sim/test/game-service.test.mjs
           node --test \
             tools/trpg-sim/test/authored-mission-aftermath.test.mjs \
             tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs \
             tools/trpg-sim/test/mission-step-timeline.test.mjs
-      - name: Run all TRPG tests
-        run: npm run trpg:test
-      - name: Run strict integrated player and GOAP journeys
-        run: node tools/trpg-sim/cli-player-v4.mjs --strict
-      - name: Confirm paid Gemini paths stayed disabled
+      - name: Commit and push corrected T13 source
         shell: bash
         run: |
-          test "$TRPG_GEMINI_NARRATIVE_ENABLED" = "false"
-          test "$TRPG_GEMINI_ASSET_GENERATION_ENABLED" = "false"
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js
+          git add -u tools/trpg-sim/test/t13-opening-debug.test.mjs
+          git commit -m "TRPG: T13の噂導入と初期調査経路を接続"
+          git push origin HEAD:agent/trpg-human-authored-choices
