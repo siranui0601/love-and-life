@@ -32,8 +32,8 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
   catalogOverride: F({
     hearing: F({
       targetLocation: "森",
-      targetFacilityId: "LOC_FOREST_CAMP",
-      label: "狩人の野営地でセリエから、大河の影、世界樹の痛み、下流の減水と黒嶺疑惑を聞く",
+      targetFacilityId: "LOC_FOREST_EDGE",
+      label: "森入口でセリエから、大河の影、世界樹の痛み、下流の減水と黒嶺疑惑を聞く",
     }),
     investigation: F({ required: 6 }),
     battle: F({
@@ -129,7 +129,7 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
   hearing: F({
     stepId: "hear",
     targetLocation: "森",
-    targetFacilityId: "LOC_FOREST_CAMP",
+    targetFacilityId: "LOC_FOREST_EDGE",
     npcId: "NPC029",
     npcName: "セリエ",
     guidance: F({
@@ -154,10 +154,10 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
         id: "world_tree_spirits_and_seal",
         dialogueTopic: "mission_flow_t13_world_tree_spirits_and_seal",
         label: "世界樹の痛み、結界石、古い封印記録から吸収の行き先を追う",
-        playerUtterance: "水量だけでなく、吸われた魔力が世界樹と封印へ何をしているかを確認します。根と結界石の記録を開いてください。",
-        requiredDisclosure: "エリナは世界樹の脈が川の吸収周期と同期すると感じ、メルキアは迷いの結界と巨神兵封印が同じ根系へつながると知り、アルウェンは倒壊後の連鎖を記録している",
+        playerUtterance: "水量だけでなく、吸われた魔力が世界樹と封印へ何をしているかを確認します。まず粘液層、水圧の脈、核の再吸収条件から根への影響を絞ります。",
+        requiredDisclosure: "ジルの粘液層は餌が水から精霊力へ移ったと示し、ニーヴの水圧図は世界樹根の周期との同期を示し、ミーナは核が再接触すれば吸収が再開すると見立てる",
         factId: "T13-FACT-WORLD-TREE-SEAL-COUPLING",
-        unlockedLeadIds: S("elina_world_tree_pain_rhythm", "melkia_barrier_seal_coupling", "lucia_refuge_roster"),
+        unlockedLeadIds: S("jill_slime_residue_layers", "nieve_flow_pulse_map", "mina_slime_core_containment"),
         minutes: 14,
         narrative: "セリエは弓を下ろし、世界樹側の枝鳴りへ耳を向けた。川の異変は水不足では終わらず、森を迷わせる力と地下の封印まで引いている。",
         speeches: F([speech("NPC029", "川を見ている間にも、世界樹の枝が乾いた音を立てる。あれが倒れれば道が開くだけじゃない。閉じていたものも起きる。", "抑えた焦り")]),
@@ -575,7 +575,7 @@ export const T13_FOREST_KING_SLIME_WORLD_TREE_PACK = F({
           aftermathPlans: F([
             plan({ id: "t13-core-mina-monitor-cage", npcIds: S("NPC037"), goal: "monitor-sealed-slime-core", action: "monitor-sealed-slime-core", targetHub: "ドワーフ洞窟", targetFacilityId: "LOC_DWARF_ENGINEER", delayHours: 0, statusText: "耐魔籠の圧力針と冷却を確認し、再吸収の兆候を記録している", reason: "sealed-core-needs-permanent-monitoring" }),
             plan({ id: "t13-core-nieve-restore-flow", npcIds: S("NPC045"), goal: "restore-river-flow-gradually", action: "restore-river-flow-gradually", targetHub: "森", targetFacilityId: "LOC_FOREST_RIVER", delayHours: 0, statusText: "旧河道と本流の水圧を調整し、下流へ急流を起こさず水を戻している", reason: "river-return-must-not-flood-downstream" }),
-            plan({ id: "t13-core-serie-watch-residue", npcIds: S("NPC029"), goal: "watch-for-slime-residue", action: "watch-for-slime-residue", targetHub: "森", targetFacilityId: "LOC_FOREST_CAMP", delayHours: 1, statusText: "水面線と粘液跡を巡回し、新しい吸収点がないか確認している", reason: "physical-removal-can-leave-fragments" }),
+            plan({ id: "t13-core-serie-watch-residue", npcIds: S("NPC029"), goal: "watch-for-slime-residue", action: "watch-for-slime-residue", targetHub: "森", targetFacilityId: "LOC_FOREST_EDGE", delayHours: 1, statusText: "水面線と粘液跡を巡回し、新しい吸収点がないか確認している", reason: "physical-removal-can-leave-fragments" }),
           ]),
           followups: F([
             followup("mina-cage-needle", "NPC037", "技師工房では、耐魔籠の三本の針が別々の素材への反応を示している。ミーナは核を戦利品として飾らず、危険物台帳へ登録した。", "倒したから安全、ではない。水、根、魔力鉱のどれかへ針が動けば、もう一度育つ。だから勝利の後も測る。", "理屈で抑えた警戒"),

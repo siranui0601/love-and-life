@@ -1,0 +1,5 @@
+pair1: old=3, already_new=0, final_new=3
+pair2: old=1, already_new=0, final_new=1
+pair3: old=1, already_new=0, final_new=1
+pair4: old=1, already_new=0, final_new=1
+pair5: old=1, already_new=0, final_new=1
