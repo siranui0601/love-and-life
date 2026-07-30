@@ -73,3 +73,7 @@ Player ID, save ID, world seed, and playthrough number are intentionally exclude
 - 承認済みmanifestには描写、三択、発言、提案だけを保存し、生応答、利用量、秘密情報は保存しない。
 - 本番は承認済み再生、通常実行キャッシュ、決定論的テンプレートの順で解決する。運営者が
   `TRPG_GEMINI_NARRATIVE_ENABLED=true`を明示したときだけ最後にGeminiを利用し、提案は現在のresolverで毎回再検証する。
+
+## T13 multi-layer ecosystem contract
+
+T13 treats the king slime as six linked but independently provable problems: growth source, safe separation, world-tree/seal coupling, Blackridge innocence, civilian water/evacuation, and post-intervention ecological recovery. Three opening lenses, 729 valid evidence profiles, 720 acquisition orders and three resolutions create 4,723,920 deterministic route shapes before date and prior-trouble modifiers. The encounter escalates through ENC-0015, ENC-0016, ENC-0017 and ENC-0018 by day, and the selected route/context/evidence order persists as the T13 branch signature for T16, T18 and T19.

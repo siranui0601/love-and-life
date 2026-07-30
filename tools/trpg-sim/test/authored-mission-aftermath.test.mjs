@@ -18,8 +18,8 @@ function pack(troubleId) {
   return AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.troubleId === troubleId);
 }
 
-test("T03 through T12 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
-  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10", "T11", "T12"]) {
+test("T03 through T13 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
+  for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10", "T11", "T12", "T13"]) {
     const missionPack = pack(troubleId);
     assert.ok(missionPack);
     assert.equal(missionPack.resolution.choices.length, 3);
@@ -1312,4 +1312,257 @@ test("T12 persists a different branch signature when the same five truths are co
   assert.notEqual(forward, reversed);
   assert.match(forward, /soldiers_orders_and_wounds/u);
   assert.match(forward, /command-first-kai-reversal/u);
+});
+
+test("T13 offers 4,723,920 deterministic route shapes across growth, separation, seals, innocence, survival and restoration", () => {
+  const missionPack = pack("T13");
+  assert.ok(missionPack);
+  assert.equal(missionPack.persistResolutionBranch, true);
+  assert.deepEqual(missionPack.branching, {
+    openingChoices: 3,
+    evidenceDimensions: 6,
+    alternativesPerDimension: 3,
+    evidenceProfiles: 729,
+    orderingPermutationsPerProfile: 720,
+    topLevelResolutions: 3,
+    minimumRouteShapesAfterOpening: 1574640,
+    minimumRouteShapesBeforePriorState: 4723920,
+    evidenceOrderChangesContext: true,
+    persistentBranchSignature: true,
+    note: "三つの導入、六分類それぞれ三つの代替証拠、取得順、介入日、T07/T08/T09/T12、三解決を組み合わせる。",
+  });
+  assert.equal(
+    missionPack.branching.openingChoices
+      * missionPack.branching.evidenceProfiles
+      * missionPack.branching.orderingPermutationsPerProfile
+      * missionPack.branching.topLevelResolutions,
+    missionPack.branching.minimumRouteShapesBeforePriorState,
+  );
+  assert.equal(missionPack.hearing.choices.length, 3);
+  assert.equal(missionPack.investigation.requiredEvidenceGroups.length, 6);
+  assert.equal(missionPack.investigation.leads.length, 18);
+  assert.deepEqual(missionPack.catalogOverride.battle.timelineVariants.map((variant) => [
+    variant.minDay,
+    variant.maxDay ?? null,
+    variant.targetFacilityId,
+    variant.actionType,
+    variant.encounterId ?? null,
+  ]), [
+    [1, 17, "LOC_FOREST_RIVER", "missionBattle", "ENC-0015"],
+    [18, 31, "LOC_FOREST_RIVER", "missionBattle", "ENC-0016"],
+    [32, 44, "LOC_FOREST_RIVER", "missionBattle", "ENC-0016"],
+    [45, 57, "LOC_FOREST_RIVER", "missionBattle", "ENC-0017"],
+    [58, 60, "LOC_ELF_WORLD_TREE", "missionBattle", "ENC-0018"],
+  ]);
+  assert.deepEqual(missionPack.resolution.choices.map((route) => route.id), [
+    "sever_core_restore_river_and_seal",
+    "spirit_bind_disperse_and_reseed_world_tree",
+    "joint_watershed_compact_and_living_containment",
+  ]);
+  assert.ok(missionPack.resolution.choices.every((route) =>
+    route.contextVariants.length >= 7
+    && route.worldEffect.aftermathPlans.length >= 3
+    && route.worldEffect.followups.length >= 3
+    && route.summaryByTroubleStatus?.critical
+    && route.narrativeByTroubleStatus?.critical
+    && route.worldEffect.factIdByTroubleStatus?.critical
+    && route.worldEffect.textByTroubleStatus?.critical));
+});
+
+test("all 729 T13 evidence profiles satisfy the six independent ecosystem and diplomacy truth classes", () => {
+  const missionPack = pack("T13");
+  const groups = missionPack.investigation.requiredEvidenceGroups;
+  const profiles = groups.reduce(
+    (rows, group) => rows.flatMap((row) => group.map((evidenceId) => [...row, evidenceId])),
+    [[]],
+  );
+  assert.equal(profiles.length, 729);
+  assert.equal(new Set(profiles.map((profile) => profile.join("|"))).size, 729);
+
+  for (const selectedEvidence of profiles) {
+    const mission = {
+      id: "MSN-T13",
+      steps: [
+        { id: "hear", type: "conversation", required: 1 },
+        { id: "investigate", type: "investigate", required: 6 },
+        { id: "battle", type: "battle", required: 1 },
+        { id: "resolve", type: "resolve", required: 1 },
+      ],
+    };
+    const catalog = { special: [mission], byId: new Map([[mission.id, mission]]) };
+    applyAuthoredMissionFlowCatalogOverrides(catalog);
+    const runtime = {
+      playerState: {
+        catalog,
+        missions: {
+          "MSN-T13": {
+            status: "active",
+            progress: { hear: 1, investigate: 0, battle: 0, resolve: 0 },
+            discoveries: selectedEvidence.map((id) => ({ id })),
+          },
+        },
+      },
+    };
+    const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+    assert.deepEqual(new Set(flow.evidenceIds), new Set(selectedEvidence));
+    assert.equal(runtime.playerState.missions["MSN-T13"].progress.investigate, 6);
+  }
+});
+
+test("T13 resolution contexts react to forest access, rescue engineering, border trust, exact evidence and acquisition order", () => {
+  const missionPack = pack("T13");
+  const [sever, spirit, watershed] = missionPack.resolution.choices;
+  const runtimeFor = ({ openingChoiceId, evidenceIds, worldFlags = {}, troubles = {} }) => ({
+    authoredMissionFlows: {
+      [missionPack.id]: { openingChoiceId, evidenceIds },
+    },
+    playerState: {
+      worldFlags,
+      troubles,
+      missions: {
+        "MSN-T13": { discoveries: evidenceIds.map((id) => ({ id })) },
+      },
+    },
+  });
+
+  const rescueTeam = runtimeFor({
+    openingChoiceId: "river_growth_and_separation",
+    evidenceIds: [
+      "T13-EVIDENCE-MINA-ANCHOR-PUMP-DESIGN",
+      "T13-EVIDENCE-SERIE-SHADOW-CHRONOLOGY",
+      "T13-EVIDENCE-MELKIA-BARRIER-SEAL-COUPLING",
+      "T13-EVIDENCE-YURI-NO-DAM-TRACE",
+      "T13-EVIDENCE-EDA-WELL-RATION-PLAN",
+      "T13-EVIDENCE-MINA-SLIME-CORE-CONTAINMENT",
+    ],
+    worldFlags: { t09ResolutionRoute: "rebuild_deep_mine_and_rescue_corps" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(rescueTeam, sever).contextId, "t09-rescue-corps-anchor-team");
+  assert.equal(resolveAuthoredResolutionChoice(rescueTeam, sever).minutes, 62);
+
+  const corridorRitual = runtimeFor({
+    openingChoiceId: "world_tree_spirits_and_seal",
+    evidenceIds: [
+      "T13-EVIDENCE-ELINA-WORLD-TREE-PAIN-RHYTHM",
+      "T13-EVIDENCE-ELINA-ROOT-DIVERSION-RITE",
+      "T13-EVIDENCE-MELKIA-BARRIER-SEAL-COUPLING",
+      "T13-EVIDENCE-NIEVE-BLACKRIDGE-FLOW-LOG",
+      "T13-EVIDENCE-LUCIA-REFUGE-ROSTER",
+      "T13-EVIDENCE-SYLFI-SPIRIT-POOL-RESTORATION",
+    ],
+    worldFlags: { t08ResolutionRoute: "joint_anomaly_expedition_corridor" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(corridorRitual, spirit).contextId, "t08-anomaly-corridor-spirit-team");
+  assert.equal(resolveAuthoredResolutionChoice(corridorRitual, spirit).minutes, 82);
+
+  const sharedWatershed = runtimeFor({
+    openingChoiceId: "downstream_survival_and_blackridge_truth",
+    evidenceIds: [
+      "T13-EVIDENCE-NIEVE-FLOW-PULSE-MAP",
+      "T13-EVIDENCE-NIEVE-DRY-CHANNEL-BYPASS",
+      "T13-EVIDENCE-ALWEN-ANCIENT-SEAL-RECORD",
+      "T13-EVIDENCE-NIEVE-BLACKRIDGE-FLOW-LOG",
+      "T13-EVIDENCE-RIONA-WATER-CONVOY-ROUTE",
+      "T13-EVIDENCE-NENE-RECOVERY-MARKERS",
+      "T13-EVIDENCE-ZAID-WATER-RELEASE-RECORD",
+    ],
+    worldFlags: { t12ResolutionRoute: "joint_border_inquiry_and_nonaggression_line" },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(sharedWatershed, watershed).contextId, "t12-joint-border-watershed-line");
+  assert.equal(resolveAuthoredResolutionChoice(sharedWatershed, watershed).minutes, 88);
+
+  const lateRoot = runtimeFor({
+    openingChoiceId: "river_growth_and_separation",
+    evidenceIds: [
+      "T13-EVIDENCE-SERIE-SHADOW-CHRONOLOGY",
+      "T13-EVIDENCE-MINA-ANCHOR-PUMP-DESIGN",
+      "T13-EVIDENCE-ELINA-WORLD-TREE-PAIN-RHYTHM",
+      "T13-EVIDENCE-YURI-NO-DAM-TRACE",
+      "T13-EVIDENCE-LUCIA-REFUGE-ROSTER",
+      "T13-EVIDENCE-MINA-SLIME-CORE-CONTAINMENT",
+    ],
+    troubles: { T13: { status: "critical" } },
+  });
+  assert.equal(resolveAuthoredResolutionChoice(lateRoot, sever).contextId, "critical-world-tree-root-operation");
+  assert.equal(resolveAuthoredResolutionChoice(lateRoot, sever).minutes, 168);
+
+  const sealFirst = runtimeFor({
+    openingChoiceId: "world_tree_spirits_and_seal",
+    evidenceIds: [
+      "T13-EVIDENCE-MELKIA-BARRIER-SEAL-COUPLING",
+      "T13-EVIDENCE-ELINA-ROOT-DIVERSION-RITE",
+      "T13-EVIDENCE-ALWEN-ANCIENT-SEAL-RECORD",
+      "T13-EVIDENCE-YURI-NO-DAM-TRACE",
+      "T13-EVIDENCE-LUCIA-REFUGE-ROSTER",
+      "T13-EVIDENCE-SYLFI-SPIRIT-POOL-RESTORATION",
+    ],
+  });
+  assert.equal(resolveAuthoredResolutionChoice(sealFirst, spirit).contextId, "world-tree-first-three-voices");
+  assert.equal(resolveAuthoredResolutionChoice(sealFirst, spirit).minutes, 96);
+});
+
+test("T13 persists a different branch signature when the same six evidence classes are collected in a different order", () => {
+  const missionPack = pack("T13");
+  const mission = {
+    id: "MSN-T13",
+    steps: [
+      { id: "hear", type: "conversation", required: 1 },
+      { id: "investigate", type: "investigate", required: 6 },
+      { id: "battle", type: "battle", required: 1 },
+      { id: "resolve", type: "resolve", required: 1 },
+    ],
+  };
+  const ordered = [
+    "T13-EVIDENCE-SERIE-SHADOW-CHRONOLOGY",
+    "T13-EVIDENCE-NIEVE-DRY-CHANNEL-BYPASS",
+    "T13-EVIDENCE-ELINA-WORLD-TREE-PAIN-RHYTHM",
+    "T13-EVIDENCE-YURI-NO-DAM-TRACE",
+    "T13-EVIDENCE-LUCIA-REFUGE-ROSTER",
+    "T13-EVIDENCE-MINA-SLIME-CORE-CONTAINMENT",
+  ];
+  const execute = (evidenceIds) => {
+    const catalogMission = { ...mission, steps: mission.steps.map((step) => ({ ...step })) };
+    const catalog = { special: [catalogMission], byId: new Map([[catalogMission.id, catalogMission]]) };
+    applyAuthoredMissionFlowCatalogOverrides(catalog);
+    const runtime = {
+      playerState: {
+        absoluteMinute: 45 * 1440,
+        catalog,
+        worldFlags: {},
+        troubles: { T13: { status: "active" } },
+        player: { location: "森", facilityId: "LOC_FOREST_RIVER" },
+        history: [],
+        missions: {
+          "MSN-T13": {
+            status: "active",
+            progress: { hear: 1, investigate: 6, battle: 1, resolve: 0 },
+            discoveries: evidenceIds.map((id) => ({ id })),
+          },
+        },
+      },
+    };
+    const flow = ensureAuthoredMissionFlowState(runtime, missionPack);
+    flow.openingChoiceId = "river_growth_and_separation";
+    flow.evidenceIds = [...evidenceIds];
+    const result = { ok: true };
+    assert.equal(applyAuthoredMissionFlowAction(runtime, {
+      authoredMissionFlowId: missionPack.id,
+      authoredMissionFlowKind: "resolution",
+      authoredMissionFlowResolutionRouteId: "sever_core_restore_river_and_seal",
+      authoredMissionFlowResolutionContextVariantId: "dry-channel-core-catch",
+      authoredMissionFlowTroubleStatus: "active",
+    }, result), true);
+    assert.equal(runtime.playerState.worldFlags.t13ResolutionRoute, "sever_core_restore_river_and_seal");
+    assert.equal(runtime.playerState.worldFlags.t13ResolutionContext, "dry-channel-core-catch");
+    assert.equal(flow.selectedResolutionContextId, "dry-channel-core-catch");
+    assert.equal(flow.resolutionBranchId, runtime.playerState.worldFlags.t13ResolutionBranch);
+    assert.deepEqual(runtime.playerState.history.at(-1).evidenceOrder, evidenceIds);
+    return flow.resolutionBranchId;
+  };
+
+  const forward = execute(ordered);
+  const reversed = execute([...ordered].reverse());
+  assert.notEqual(forward, reversed);
+  assert.match(forward, /river_growth_and_separation/u);
+  assert.match(forward, /dry-channel-core-catch/u);
 });

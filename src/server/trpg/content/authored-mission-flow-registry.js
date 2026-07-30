@@ -1,4 +1,5 @@
 import { resolveMissionStepVariant } from "./mission-step-variant.js";
+import { T13_FOREST_KING_SLIME_WORLD_TREE_PACK } from "./authored/missions/t13-forest-king-slime-world-tree-collapse.js";
 import { T12_NORTHERN_FORTRESS_FALSE_FLAG_PACK } from "./authored/missions/t12-northern-fortress-false-flag.js";
 import { T11_CAPITAL_ASSASSINATION_PLOT_PACK } from "./authored/missions/t11-capital-assassination-plot.js";
 import { T10_CAPITAL_ORPHANAGE_EVICTION_PACK } from "./authored/missions/t10-capital-orphanage-eviction.js";
@@ -7,12 +8,13 @@ import { T08_FOREST_SEALING_ORDER_PACK } from "./authored/missions/t08-forest-se
 import { T07_RUNAWAY_ELF_TRAFFICKING_PACK } from "./authored/missions/t07-runaway-elf-trafficking.js";
 import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";
 
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v12";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v13";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 
 export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
+  T13_FOREST_KING_SLIME_WORLD_TREE_PACK,
   T12_NORTHERN_FORTRESS_FALSE_FLAG_PACK,
   T11_CAPITAL_ASSASSINATION_PLOT_PACK,
   T10_CAPITAL_ORPHANAGE_EVICTION_PACK,

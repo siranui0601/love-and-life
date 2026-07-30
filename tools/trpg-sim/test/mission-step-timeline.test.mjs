@@ -149,3 +149,36 @@ test("T12-style timeline variants keep T14 failure as the armed escalation befor
   assert.equal(resolveMissionStepVariant(step, { day: 60, troubles: { T14: { status: "failed" } } }).label, "armed front");
   assert.equal(step.encounterId, "ENC-0055");
 });
+
+test("T13-style timeline variants escalate from small slime to world-tree eater without changing the original step", () => {
+  const step = {
+    id: "battle",
+    type: "battle",
+    targetLocation: "森",
+    targetFacilityId: "LOC_FOREST_RIVER",
+    encounterId: "ENC-0016",
+    timelineVariants: [
+      { minDay: 1, maxDay: 17, targetFacilityId: "LOC_FOREST_RIVER", actionType: "missionBattle", encounterId: "ENC-0015", label: "small" },
+      { minDay: 18, maxDay: 31, targetFacilityId: "LOC_FOREST_RIVER", actionType: "missionBattle", encounterId: "ENC-0016", label: "swollen" },
+      { minDay: 32, maxDay: 44, targetFacilityId: "LOC_FOREST_RIVER", actionType: "missionBattle", encounterId: "ENC-0016", label: "rumor" },
+      { minDay: 45, maxDay: 57, targetFacilityId: "LOC_FOREST_RIVER", actionType: "missionBattle", encounterId: "ENC-0017", label: "giant" },
+      { minDay: 58, maxDay: 60, targetLocation: "エルフの隠れ里", targetFacilityId: "LOC_ELF_WORLD_TREE", actionType: "missionBattle", encounterId: "ENC-0018", label: "world-tree eater" },
+    ],
+  };
+
+  assert.deepEqual(
+    [10, 20, 36, 50, 59].map((day) => {
+      const resolved = resolveMissionStepVariant(step, { day, troubles: {} });
+      return [resolved.targetLocation, resolved.targetFacilityId, resolved.encounterId, resolved.label];
+    }),
+    [
+      ["森", "LOC_FOREST_RIVER", "ENC-0015", "small"],
+      ["森", "LOC_FOREST_RIVER", "ENC-0016", "swollen"],
+      ["森", "LOC_FOREST_RIVER", "ENC-0016", "rumor"],
+      ["森", "LOC_FOREST_RIVER", "ENC-0017", "giant"],
+      ["エルフの隠れ里", "LOC_ELF_WORLD_TREE", "ENC-0018", "world-tree eater"],
+    ],
+  );
+  assert.equal(step.encounterId, "ENC-0016");
+  assert.equal(step.targetFacilityId, "LOC_FOREST_RIVER");
+});
