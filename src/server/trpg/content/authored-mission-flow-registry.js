@@ -1850,6 +1850,31 @@ function openingActions(runtime, pack, presentNpcs) {
   }));
 }
 
+function openingPlanActions(runtime, pack) {
+  const hearing = pack.hearing;
+  if (runtime.playerState.player.facilityId !== hearing.targetFacilityId) return null;
+  return hearing.choices.map((choice) => ({
+    id: actionId(pack, "OPENING", choice.id),
+    family: "prepare",
+    type: "plan",
+    effectKind: "select_authored_mission_opening_from_known_rumor",
+    missionId: pack.missionId,
+    stepId: pack.investigation.stepId,
+    missionTitle: pack.title,
+    missionTroubleId: pack.troubleId,
+    label: `聞いた噂から、${choice.label}`,
+    playerUtterance: choice.playerUtterance,
+    requiredDisclosure: choice.requiredDisclosure,
+    minutes: Math.max(4, Math.min(8, Number(choice.minutes ?? 8))),
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: pack.id,
+    authoredMissionFlowKind: "opening",
+    authoredMissionFlowChoiceId: choice.id,
+    authoredMissionFlowFactId: choice.factId ?? null,
+    authoredMissionFlowUnlockedLeadIds: [...(choice.unlockedLeadIds ?? [])],
+  }));
+}
+
 function resolutionContextSnapshot(runtime, choice, variant) {
   const missionId = variant?.contextEvidenceMissionId ?? choice?.contextEvidenceMissionId ?? null;
   const missionPack = missionId ? PACK_BY_MISSION_ID.get(missionId) : null;
@@ -2149,6 +2174,11 @@ export function authoredMissionFlowExclusiveActions(runtime, {
       if (actions?.length === 3) return actions;
       continue;
     }
+    if (step.id === pack.investigation.stepId && !flow.openingChoiceId) {
+      const actions = openingPlanActions(runtime, pack);
+      if (actions?.length === 3) return actions;
+      continue;
+    }
     if (step.id === pack.investigation.stepId && flow.selectedLeadId) {
       const actions = selectedLeadActions(runtime, pack, movementActions, flow);
       if (actions?.length === 3) return actions;
@@ -2222,6 +2252,7 @@ export function suppressGenericAuthoredMissionAction(runtime, action) {
       && present.has(pack.hearing.npcId);
   }
   if (step?.id !== pack.investigation.stepId) return false;
+  if (!flow.openingChoiceId) return true;
   return Boolean(flow.selectedLeadId || evidenceActionForPack(runtime, pack));
 }
 
