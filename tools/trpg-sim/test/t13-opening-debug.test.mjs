@@ -29,6 +29,18 @@ test("diagnose T13 opening lead metadata", () => {
   state.troubles[pack.troubleId].status = "active";
   const mission = state.missions[pack.missionId];
   for (const step of state.catalog.byId.get(pack.missionId).steps) mission.progress[step.id] = 0;
+  const knownRumor = {
+    id: "TEST-T13-AUTHORED-KNOWN",
+    troubleId: "T13",
+    text: `${pack.title}について現地で異変が起きているという噂`,
+    origin: pack.hearing.targetLocation,
+    originMinute: 0,
+    importance: 1,
+    recipients: {},
+  };
+  state.rumors.push(knownRumor);
+  state.rumorById[knownRumor.id] = knownRumor;
+  state.player.knownRumorIds.add(knownRumor.id);
   runtime.playerKnowledge.knownHubIds.add(pack.hearing.targetLocation);
   runtime.playerKnowledge.knownFacilityIds.add(pack.hearing.targetFacilityId);
   const speaker = runtime.livingWorld.npcStates[pack.hearing.npcId];
@@ -40,16 +52,18 @@ test("diagnose T13 opening lead metadata", () => {
   speaker.localTravel = null;
 
   const branch = pack.hearing.choices.find((entry) => entry.id === "world_tree_spirits_and_seal");
-  const selected = availableGameRuntimeActions(runtime, game.data).choices
-    .filter((action) => action.authoredMissionFlowKind === "opening")
-    .find((action) => action.id.endsWith(`:${branch.id}`));
+  const allChoices = availableGameRuntimeActions(runtime, game.data).choices;
+  const opening = allChoices.filter((action) => action.authoredMissionFlowKind === "opening");
+  const selected = opening.find((action) => action.id.endsWith(`:${branch.id}`));
+  console.log("T13_DEBUG_OPENINGS", JSON.stringify(opening.map((action) => ({
+    id: action.id,
+    actionId: action.actionId,
+    flowId: action.authoredMissionFlowId,
+    choiceId: action.authoredMissionFlowChoiceId,
+    leadIds: action.authoredMissionFlowUnlockedLeadIds,
+  }))));
   console.log("T13_DEBUG_BRANCH", JSON.stringify(branch.unlockedLeadIds));
-  console.log("T13_DEBUG_ACTION", JSON.stringify({
-    id: selected?.id,
-    flowId: selected?.authoredMissionFlowId,
-    choiceId: selected?.authoredMissionFlowChoiceId,
-    leadIds: selected?.authoredMissionFlowUnlockedLeadIds,
-  }));
+  console.log("T13_DEBUG_SELECTED", JSON.stringify(selected));
   executeGameRuntimeCommand(runtime, game.data, {
     type: "CHOOSE",
     payload: { choiceId: selected.choiceId },
