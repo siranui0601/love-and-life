@@ -1,4 +1,4 @@
-name: TRPG T13 publish verified source
+name: TRPG T13 integration verification
 
 on:
   push:
@@ -7,55 +7,43 @@ on:
     paths:
       - ".github/workflows/trpg-t13-build.yml"
 
-permissions:
-  contents: write
-
 jobs:
-  publish-t13:
+  verify-t13:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
     env:
       TRPG_GEMINI_NARRATIVE_ENABLED: "false"
       TRPG_GEMINI_ASSET_GENERATION_ENABLED: "false"
+      TRPG_PLAYER_V4_SEEDS: "2"
+      TRPG_GOAP_V4_SEEDS: "2"
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/trpg-human-authored-choices
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Reconstruct, verify and apply reviewed T13 patch
+          cache: npm
+      - run: npm ci
+      - name: Verify T13 source and focused contracts
         shell: bash
         run: |
           set -euo pipefail
-          cat .github/t13-patch/part-*.b64 | tr -d '\n' | base64 --decode | gzip --decompress > /tmp/t13_patch.py
-          echo "c29093c23d5c06e5e928af6fbe6b1bf37a535fc1f6605eccf4141440b2fbb941  /tmp/t13_patch.py" | sha256sum --check
-          python /tmp/t13_patch.py
           echo "46bea5a64c3fabe21a4d3184f57f600b69e16f46b9b4ea31e2f7d6f2dfaea780  src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js" | sha256sum --check
           node --check src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js
-          node --check src/server/trpg/content/authored-mission-flow-registry.js
-          node --check src/server/trpg/content/authored-scene-registry.js
-          git diff --check
-          test "$TRPG_GEMINI_NARRATIVE_ENABLED" = "false"
-          test "$TRPG_GEMINI_ASSET_GENERATION_ENABLED" = "false"
-      - name: Commit and push T13 implementation
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            src/server/trpg/content/README.md \
-            src/server/trpg/content/authored-mission-flow-registry.js \
-            src/server/trpg/content/authored-scene-registry.js \
-            src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js \
+          grep -q 'minimumRouteShapesBeforePriorState: 4723920' src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js
+          grep -q 'AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v13"' src/server/trpg/content/authored-mission-flow-registry.js
+          grep -q 'AUTHORED_CONTENT_VERSION = "authored-content-v19"' src/server/trpg/content/authored-scene-registry.js
+          node --test \
             tools/trpg-sim/test/authored-mission-aftermath.test.mjs \
             tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs \
             tools/trpg-sim/test/mission-step-timeline.test.mjs
-          if git diff --cached --quiet; then
-            echo "No T13 source changes to commit"
-            exit 0
-          fi
-          git commit -m "TRPG: T13世界樹倒壊事件を多層分岐で実装"
-          git push origin HEAD:agent/trpg-human-authored-choices
+      - name: Run all TRPG tests
+        run: npm run trpg:test
+      - name: Run strict integrated player and GOAP journeys
+        run: node tools/trpg-sim/cli-player-v4.mjs --strict
+      - name: Confirm paid Gemini paths stayed disabled
+        shell: bash
+        run: |
+          test "$TRPG_GEMINI_NARRATIVE_ENABLED" = "false"
+          test "$TRPG_GEMINI_ASSET_GENERATION_ENABLED" = "false"
