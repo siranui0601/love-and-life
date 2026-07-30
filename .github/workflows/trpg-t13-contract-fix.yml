@@ -1,0 +1,49 @@
+name: TRPG T13 rumor opening contract fix
+
+on:
+  push:
+    branches:
+      - agent/trpg-human-authored-choices
+    paths:
+      - ".github/workflows/trpg-t13-contract-fix.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      TRPG_GEMINI_NARRATIVE_ENABLED: "false"
+      TRPG_GEMINI_ASSET_GENERATION_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/trpg-human-authored-choices
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply reviewed correction
+        run: |
+          python .github/t13-contract-fix.py
+          node --check src/server/trpg/content/authored-mission-flow-registry.js
+          node --check src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js
+          git diff --check
+          test "$TRPG_GEMINI_NARRATIVE_ENABLED" = "false"
+          test "$TRPG_GEMINI_ASSET_GENERATION_ENABLED" = "false"
+      - run: npm ci
+      - name: Run connection and authored contracts
+        run: |
+          node --test tools/trpg-sim/test/game-service.test.mjs
+          node --test tools/trpg-sim/test/authored-mission-aftermath.test.mjs tools/trpg-sim/test/authored-mission-aftermath-isolation.test.mjs tools/trpg-sim/test/mission-step-timeline.test.mjs
+      - name: Commit verified correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/server/trpg/content/authored-mission-flow-registry.js src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js
+          git add -u tools/trpg-sim/test/zz-t13-rumor-debug.test.mjs
+          git commit -m "TRPG: 公開噂から手書き初動三択へ接続"
+          git push origin HEAD:agent/trpg-human-authored-choices
