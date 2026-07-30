@@ -9,14 +9,14 @@ import { deserializeRuntime, serializeRuntime } from "../../../src/server/trpg/g
 
 const owner = "t13-rumor-debug-owner";
 
-function commandRunner(game, initial) {
+function commandRunner(game, initial, prefix = "t13-debug") {
   let save = initial;
   let sequence = 0;
   return {
     get save() { return save; },
     async run(type, payload) {
       const response = await game.command(owner, save.id, {
-        commandId: `t13-debug-${++sequence}`,
+        commandId: `${prefix}-${++sequence}`,
         expectedRevision: save.revision,
         type,
         payload,
@@ -54,7 +54,7 @@ test("diagnose the forest-rumor T13 mission transition", async () => {
   const store = new MemoryTrpgSaveStore();
   const game = new TrpgGameService({ store, allowCustomSeed: true });
   const initial = await game.create(owner, { playerName: "聞き手", profileId: "story", seed: "forest-rumor" });
-  let runner = commandRunner(game, initial);
+  let runner = commandRunner(game, initial, "t13-debug-opening");
   await completeOpening(runner);
 
   let record = await store.get(runner.save.id);
@@ -65,7 +65,7 @@ test("diagnose the forest-rumor T13 mission transition", async () => {
   record.stateHash = gameStateHash(runtime, game.data);
   await store.put(record);
 
-  runner = commandRunner(game, await game.get(owner, runner.save.id));
+  runner = commandRunner(game, await game.get(owner, runner.save.id), "t13-debug-forest");
   const forest = runner.save.movement.find((move) => move.destinationFacilityId === "LOC_FOREST_EDGE");
   await runner.run("MOVE", { moveId: forest.moveId });
 
