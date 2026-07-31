@@ -51,16 +51,22 @@ function t16Pack() {
   return correctedT16Pack ?? originalT16Pack;
 }
 
-function prioritizeExactFacilityMovement(context = {}) {
+function prioritizeExactFacilityMovement(runtime, context = {}) {
   const movementActions = context.movementActions;
-  if (!Array.isArray(movementActions) || movementActions.length < 2) return context;
+  if (!Array.isArray(movementActions)) return context;
+  const currentHub = runtime?.playerState?.player?.location ?? null;
   return {
     ...context,
-    movementActions: [...movementActions].sort((left, right) => {
-      const leftLocal = left?.movementScope === "local" && left?.destinationFacilityId;
-      const rightLocal = right?.movementScope === "local" && right?.destinationFacilityId;
-      return Number(Boolean(rightLocal)) - Number(Boolean(leftLocal));
-    }),
+    movementActions: movementActions
+      .filter((action) => !(
+        action?.movementScope === "regional"
+          && action.destinationHub === currentHub
+      ))
+      .sort((left, right) => {
+        const leftLocal = left?.movementScope === "local" && left?.destinationFacilityId;
+        const rightLocal = right?.movementScope === "local" && right?.destinationFacilityId;
+        return Number(Boolean(rightLocal)) - Number(Boolean(leftLocal));
+      }),
   };
 }
 
@@ -68,10 +74,29 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   // T16 can have a regional action to the current hub and a local action to the
   // selected facility at the same time. Exact local movement must win, or the
   // player repeatedly selects the same regional leg and never reaches evidence.
-  return base.authoredMissionFlowExclusiveActions(
-    runtime,
-    prioritizeExactFacilityMovement(context),
-  );
+  const sortedContext = prioritizeExactFacilityMovement(runtime, context);
+  const actions = base.authoredMissionFlowExclusiveActions(runtime, sortedContext);
+  if (!Array.isArray(actions)) return actions;
+  const leadAction = actions.find((action) =>
+    action?.authoredMissionFlowId === T16_FLOW_ID
+      && action?.authoredMissionFlowKind === "lead"
+      && action?.authoredMissionFlowTargetFacilityId);
+  if (!leadAction) return actions;
+  const local = sortedContext.movementActions?.find((action) =>
+    action?.movementScope === "local"
+      && action.destinationFacilityId === leadAction.authoredMissionFlowTargetFacilityId);
+  if (!local) return actions;
+  return actions.map((action) => action === leadAction ? {
+    ...local,
+    id: leadAction.id,
+    label: leadAction.label,
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: leadAction.authoredMissionFlowId,
+    authoredMissionFlowKind: leadAction.authoredMissionFlowKind,
+    authoredMissionFlowLeadId: leadAction.authoredMissionFlowLeadId,
+    authoredMissionFlowTargetFacilityId: leadAction.authoredMissionFlowTargetFacilityId,
+    authoredMissionFlowEvidenceSourceId: leadAction.authoredMissionFlowEvidenceSourceId,
+  } : action);
 }
 
 function t16ResultSummary(action) {
