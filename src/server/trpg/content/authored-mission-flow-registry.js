@@ -38,3 +38,16 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
   if (result?.ok !== false && revealSelectedT15Lead(runtime, action)) changed = true;
   return changed;
 }
+
+export function authoredMissionFlowGuidance(runtime) {
+  const guidance = base.authoredMissionFlowGuidance(runtime);
+  if (guidance?.missionId !== T15.missionId) return guidance;
+  const targetFacilityId = guidance.targetFacilityId ?? null;
+  return {
+    ...guidance,
+    actionPanel: targetFacilityId
+      && runtime?.playerState?.player?.facilityId !== targetFacilityId
+      ? "movement"
+      : null,
+  };
+}
