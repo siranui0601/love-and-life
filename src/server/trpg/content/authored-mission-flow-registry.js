@@ -69,68 +69,95 @@ function seedT15ResolutionRumor(runtime, action, result) {
     ? existingRumors
     : new Map(Object.entries(existingRumors ?? {}));
   world.facilityRumors[facilityId] = rumorMap;
-  if (rumorMap.has(factId)) return false;
 
-  world.seededTroubleFacts ??= new Set();
-  world.seededTroubleFacts.add(factId);
   const minute = Number(runtime?.playerState?.absoluteMinute ?? 0);
-  const learnedAt = minute / 60;
-  const propagationAt = learnedAt + Number(route.worldEffect?.propagationDelayHours ?? 2);
-  world.knowledgeEventSequence = Number(
-    world.knowledgeEventSequence ?? world.knowledgeEvents?.length ?? 0,
-  ) + 1;
-  const eventId = `K${String(world.knowledgeEventSequence).padStart(7, "0")}`;
-  const belief = {
-    factId,
-    kind: "trouble",
-    text,
-    troubleId: T15.troubleId,
-    troubleIds: [T15.troubleId],
-    troubleStatus: "resolved",
-    confidence: 1,
-    importance: 0.95,
-    secret: false,
-    learnedAt,
-    propagationAt,
-    sourceType: "player-intervention",
-    sourceNpcId: null,
-    provenanceEventId: eventId,
-    hopCount: 0,
-    path: [`facility:${facilityId}`],
-    aftermathPlans: (route.worldEffect?.aftermathPlans ?? []).map((plan) => ({
-      ...plan,
-      npcIds: [...(plan.npcIds ?? [])],
-    })),
-  };
-  world.knowledgeEvents ??= [];
-  world.knowledgeEvents.push({
-    id: eventId,
-    type: "rumor-source",
-    npcId: null,
-    factId,
-    troubleId: T15.troubleId,
-    troubleStatus: "resolved",
-    learnedAt,
-    propagationAt,
-    sourceType: "player-intervention",
-    importance: belief.importance,
-    confidence: belief.confidence,
-    hopCount: 0,
-    path: [...belief.path],
-    location: {
-      hubId: runtime?.playerState?.player?.location ?? T15.hearing.targetLocation,
-      facilityId,
-    },
-  });
-  rumorMap.set(factId, {
-    factId,
-    belief,
-    propagationAt,
-    sourceNpcId: null,
-    sourceEventId: eventId,
-    carrierType: "player-intervention",
-  });
-  return true;
+  let changed = false;
+  if (!rumorMap.has(factId)) {
+    world.seededTroubleFacts ??= new Set();
+    world.seededTroubleFacts.add(factId);
+    const learnedAt = minute / 60;
+    const propagationAt = learnedAt + Number(route.worldEffect?.propagationDelayHours ?? 2);
+    world.knowledgeEventSequence = Number(
+      world.knowledgeEventSequence ?? world.knowledgeEvents?.length ?? 0,
+    ) + 1;
+    const eventId = `K${String(world.knowledgeEventSequence).padStart(7, "0")}`;
+    const belief = {
+      factId,
+      kind: "trouble",
+      text,
+      troubleId: T15.troubleId,
+      troubleIds: [T15.troubleId],
+      troubleStatus: "resolved",
+      confidence: 1,
+      importance: 0.95,
+      secret: false,
+      learnedAt,
+      propagationAt,
+      sourceType: "player-intervention",
+      sourceNpcId: null,
+      provenanceEventId: eventId,
+      hopCount: 0,
+      path: [`facility:${facilityId}`],
+      aftermathPlans: (route.worldEffect?.aftermathPlans ?? []).map((plan) => ({
+        ...plan,
+        npcIds: [...(plan.npcIds ?? [])],
+      })),
+    };
+    world.knowledgeEvents ??= [];
+    world.knowledgeEvents.push({
+      id: eventId,
+      type: "rumor-source",
+      npcId: null,
+      factId,
+      troubleId: T15.troubleId,
+      troubleStatus: "resolved",
+      learnedAt,
+      propagationAt,
+      sourceType: "player-intervention",
+      importance: belief.importance,
+      confidence: belief.confidence,
+      hopCount: 0,
+      path: [...belief.path],
+      location: {
+        hubId: runtime?.playerState?.player?.location ?? T15.hearing.targetLocation,
+        facilityId,
+      },
+    });
+    rumorMap.set(factId, {
+      factId,
+      belief,
+      propagationAt,
+      sourceNpcId: null,
+      sourceEventId: eventId,
+      carrierType: "player-intervention",
+    });
+    changed = true;
+  }
+
+  runtime.playerState.history ??= [];
+  const hasResolutionHistory = runtime.playerState.history.some((entry) =>
+    entry.type === "AUTHORED_MISSION_FLOW_RESOLUTION_SELECTED"
+      && entry.missionId === T15.missionId
+      && entry.routeId === route.id
+      && entry.worldEffectFactId === factId);
+  if (!hasResolutionHistory) {
+    runtime.playerState.history.push({
+      type: "AUTHORED_MISSION_FLOW_RESOLUTION_SELECTED",
+      minute,
+      flowId: T15.id,
+      missionId: T15.missionId,
+      troubleId: T15.troubleId,
+      routeId: route.id,
+      contextVariantId: route.contextId ?? flow?.selectedResolutionContextId ?? null,
+      resolutionBranchId: flow?.resolutionBranchId ?? null,
+      evidenceOrder: [...(flow?.evidenceIds ?? [])],
+      openingChoiceId: flow?.openingChoiceId ?? null,
+      troubleStatus,
+      worldEffectFactId: factId,
+    });
+    changed = true;
+  }
+  return changed;
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
