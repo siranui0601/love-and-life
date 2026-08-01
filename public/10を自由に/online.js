@@ -83,10 +83,19 @@ function switchTab(name) {
   for (const panel of document.querySelectorAll("[data-online-panel]")) panel.classList.toggle("is-active", panel.dataset.onlinePanel === name);
 }
 
+function parseLives(value, fallback = 3) {
+  const raw = value ?? fallback;
+  return raw === "infinity" ? "infinity" : Number(raw);
+}
+
+function formatLives(value) {
+  return value === "infinity" ? "∞" : String(value);
+}
+
 function selectedCreateSettings() {
   return {
     digitLengths: [...refs.createForm.querySelectorAll('input[name="onlineDigitLength"]:checked')].map((input) => Number(input.value)),
-    lives: Number(refs.createForm.querySelector('input[name="onlineLives"]:checked')?.value || 3),
+    lives: parseLives(refs.createForm.querySelector('input[name="onlineLives"]:checked')?.value),
     winsToFinish: Number(refs.createForm.querySelector('input[name="onlineWins"]:checked')?.value || 3),
   };
 }
@@ -197,7 +206,7 @@ function renderLobby() {
   }
   refs.ruleSummary.innerHTML = [
     `${room.settings.digitLengths.map((value) => `${value}桁`).join("・")}`,
-    `残機${room.settings.lives}`,
+    `残機${formatLives(room.settings.lives)}`,
     `${room.settings.winsToFinish}勝先取`,
   ].map((text) => `<span>${text}</span>`).join("");
   const ready = room.members.length === 2;
@@ -267,12 +276,19 @@ function updateOnlineGameHeader() {
     <span class="score-player"><span>${escapeHtml(member.username)}${member.isSelf ? "・YOU" : ""}</span><strong>${member.wins}</strong></span>`).join("");
   const self = room.members.find((member) => member.isSelf);
   refs.lives.replaceChildren();
-  for (let index = 0; index < room.settings.lives; index += 1) {
-    const dot = document.createElement("span");
-    dot.className = `life-dot${index >= Number(self?.lives || 0) ? " is-empty" : ""}`;
-    refs.lives.append(dot);
+  if (room.settings.lives === "infinity") {
+    const badge = document.createElement("span");
+    badge.className = "life-infinity";
+    badge.textContent = "∞";
+    refs.lives.append(badge);
+  } else {
+    for (let index = 0; index < room.settings.lives; index += 1) {
+      const dot = document.createElement("span");
+      dot.className = `life-dot${index >= Number(self?.lives || 0) ? " is-empty" : ""}`;
+      refs.lives.append(dot);
+    }
   }
-  refs.lives.setAttribute("aria-label", `残機${self?.lives || 0}`);
+  refs.lives.setAttribute("aria-label", `残機${formatLives(self?.lives ?? room.settings.lives)}`);
 }
 
 function startTimer() {
@@ -320,7 +336,7 @@ function confirmRetire() {
   if (!room || room.status !== "playing") return;
   app.openModal(`
     <div class="result-icon is-failure">🏳️</div><h2 id="modalTitle">この問題をリタイアしますか？</h2>
-    <p class="result-lead">残機が0になり、このラウンドは対戦相手の勝利になります。</p>
+    <p class="result-lead">このラウンドを終了し、対戦相手の1勝になります。</p>
     <div class="modal-actions"><button class="modal-primary" type="button" data-online-retire>リタイアする</button><button class="modal-secondary" type="button" data-modal-close>続ける</button></div>`);
   document.querySelector("[data-online-retire]").onclick = async () => {
     app.closeModal();

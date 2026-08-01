@@ -19,7 +19,7 @@ import {
 } from "./problems.js";
 
 const rooms = new Map();
-const VALID_LIVES = new Set([1, 3, 5]);
+const VALID_LIVES = new Set([1, 3, 5, "infinity"]);
 const VALID_WIN_TARGETS = new Set([3, 5, 10]);
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
 const INACTIVITY_WARNING_MS = 60 * 1000;
@@ -40,7 +40,7 @@ function normalizeSettings(raw = {}) {
     .map(Number)
     .filter((value) => VALID_DIGIT_LENGTHS.has(value)))]
     .sort((a, b) => a - b);
-  const lives = Number(raw.lives);
+  const lives = raw.lives === "infinity" ? "infinity" : Number(raw.lives);
   const winsToFinish = Number(raw.winsToFinish);
   if (!digitLengths.length) throw new Error("invalid_digit_lengths");
   if (!VALID_LIVES.has(lives)) throw new Error("invalid_lives");
@@ -298,6 +298,12 @@ function resolveRound(room, winner, loser, { reason, expression = "", answerTime
   return result;
 }
 
+function consumeMemberLife(room, member) {
+  if (room.settings.lives === "infinity") return false;
+  member.lives -= 1;
+  return member.lives <= 0;
+}
+
 function mathematicalFailure(error) {
   return error instanceof ExpressionError && [
     "division_by_zero",
@@ -414,8 +420,8 @@ export function registerTenFreelyOnlineSockets(io) {
           }
           member.stats.incorrect += 1;
           member.stats.mathErrors += 1;
-          member.lives -= 1;
-          if (member.lives <= 0) {
+          const depleted = consumeMemberLife(room, member);
+          if (depleted) {
             resolveRound(room, opponent, member, { reason: "lives_depleted" });
             emitRoundResult(io, room);
           } else {
@@ -442,8 +448,8 @@ export function registerTenFreelyOnlineSockets(io) {
         }
 
         member.stats.incorrect += 1;
-        member.lives -= 1;
-        if (member.lives <= 0) {
+        const depleted = consumeMemberLife(room, member);
+        if (depleted) {
           resolveRound(room, opponent, member, { reason: "lives_depleted", expression, answerTimeMs });
           emitRoundResult(io, room);
         } else {

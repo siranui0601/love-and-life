@@ -35,7 +35,7 @@ import {
 } from "./problems.js";
 
 const SOLO_SESSION_TTL_MS = 2 * 60 * 60 * 1000;
-const VALID_LIVES = new Set([1, 3, 5]);
+const VALID_LIVES = new Set([1, 3, 5, "infinity"]);
 const VALID_QUESTION_COUNTS = new Set([5, 10, "infinity"]);
 const soloRuns = new Map();
 const solutionCache = new Map();
@@ -71,7 +71,7 @@ function normalizeSettings(raw = {}) {
     .map(Number)
     .filter((value) => VALID_DIGIT_LENGTHS.has(value)))]
     .sort((a, b) => a - b);
-  const lives = Number(raw.lives);
+  const lives = raw.lives === "infinity" ? "infinity" : Number(raw.lives);
   const questionCount = raw.questionCount === "infinity" ? "infinity" : Number(raw.questionCount);
   if (!digitLengths.length) throw new Error("invalid_digit_lengths");
   if (!VALID_LIVES.has(lives)) throw new Error("invalid_lives");
@@ -166,6 +166,12 @@ function cleanupRuns() {
     const reference = run.updatedAt || run.finishedAt || run.createdAt;
     if (now - reference > SOLO_SESSION_TTL_MS) soloRuns.delete(runId);
   }
+}
+
+function consumeRunLife(run) {
+  if (run.settings.lives === "infinity") return false;
+  run.lives -= 1;
+  return run.lives <= 0;
 }
 
 function mathematicalFailure(error) {
@@ -292,7 +298,7 @@ export function mountTenFreelyRoutes(app, io) {
             expressionError: { code: error.code, message: error.message },
           });
         }
-        run.lives -= 1;
+        const depleted = consumeRunLife(run);
         run.updatedAt = Date.now();
         run.history.push({
           problem: run.currentProblem,
@@ -301,7 +307,7 @@ export function mountTenFreelyRoutes(app, io) {
           errorCode: error.code,
           at: run.updatedAt,
         });
-        if (run.lives <= 0) {
+        if (depleted) {
           return res.json({
             ok: true,
             correct: false,
@@ -336,8 +342,8 @@ export function mountTenFreelyRoutes(app, io) {
       });
 
       if (!correct) {
-        run.lives -= 1;
-        if (run.lives <= 0) {
+        const depleted = consumeRunLife(run);
+        if (depleted) {
           return res.json({
             ok: true,
             correct: false,
@@ -417,7 +423,7 @@ export function mountTenFreelyRoutes(app, io) {
   app.get("/api/ten-freely/ranking", async (req, res) => {
     try {
       const digitLengths = String(req.query.digits || "3").split(",").map(Number);
-      const lives = Number(req.query.lives || 3);
+      const lives = req.query.lives === "infinity" ? "infinity" : Number(req.query.lives || 3);
       const questionCount = req.query.questions === "infinity" ? "infinity" : Number(req.query.questions || 5);
       normalizeSettings({ digitLengths, lives, questionCount });
       const internalRanking = await getTenFreelyRanking({ digitLengths, lives, questionCount, limit: req.query.limit });

@@ -209,9 +209,13 @@ function normalizeDigitLengths(value) {
     .sort((a, b) => a - b);
 }
 
+function normalizeLives(value) {
+  return value === "infinity" || String(value) === "infinity" ? "infinity" : Number(value);
+}
+
 export function buildTenFreelyConditionKey({ digitLengths, questionCount, lives }) {
   const digits = normalizeDigitLengths(digitLengths).join(",");
-  return `digits=${digits}|questions=${questionCount}|lives=${Number(lives)}`;
+  return `digits=${digits}|questions=${questionCount}|lives=${normalizeLives(lives)}`;
 }
 
 export async function appendTenFreelySoloResult({ run, user, ruleVersion = 1 }) {
@@ -269,7 +273,7 @@ function rowToResult(row = []) {
     digitLengths: String(row[5] || "").split(",").map(Number).filter(Number.isFinite),
     conditionKey: String(row[6] || ""),
     questionCount: String(row[7] || ""),
-    initialLives: Number(row[8] || 0),
+    initialLives: String(row[8] || "") === "infinity" ? "infinity" : Number(row[8] || 0),
     solvedCount: Number(row[9] || 0),
     totalTimeMs: Number(row[10] || 0),
     averageTimeMs: row[11] === "" || row[11] == null ? null : Number(row[11]),
