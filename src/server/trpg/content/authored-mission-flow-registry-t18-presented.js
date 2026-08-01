@@ -5,10 +5,29 @@ export * from "./authored-mission-flow-registry-t18-final.js";
 
 const GENERIC_SUMMARY = /^行動の結果が世界へ反映された。?$/u;
 
+function grantLeadRouteAccess(runtime, action) {
+  if (action?.authoredMissionFlowId !== P.id || !action.authoredMissionFlowLeadId) return false;
+  const lead = P.investigation.leads.find((entry) =>
+    entry.id === action.authoredMissionFlowLeadId);
+  if (lead?.targetLocation !== "エルフの隠れ里") return false;
+  runtime.playerState.worldFlags ??= {};
+  runtime.playerState.worldFlags.missionRouteAccess ??= {};
+  const gates = runtime.playerState.worldFlags.missionRouteAccess[P.missionId] ??= [];
+  if (gates.includes("elf-access")) return false;
+  gates.push("elf-access");
+  runtime.playerState.routeCache = {};
+  return true;
+}
+
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
   const changed = core.applyAuthoredMissionFlowAction(runtime, action, result);
-  if (action?.authoredMissionFlowId !== P.id || result?.ok === false) return changed;
-  if (result?.summary && !GENERIC_SUMMARY.test(result.summary)) return changed;
+  const routeAccessChanged = grantLeadRouteAccess(runtime, action);
+  if (action?.authoredMissionFlowId !== P.id || result?.ok === false) {
+    return changed || routeAccessChanged;
+  }
+  if (result?.summary && !GENERIC_SUMMARY.test(result.summary)) {
+    return changed || routeAccessChanged;
+  }
 
   const kind = action.authoredMissionFlowKind;
   if (kind === "navigator_focus") {
@@ -40,5 +59,5 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
   } else if (kind === "reconsider_lead") {
     result.summary = "選んだ経路を保留し、未確認の証拠分類から別の手掛かりを選び直す。";
   }
-  return changed;
+  return changed || routeAccessChanged;
 }
