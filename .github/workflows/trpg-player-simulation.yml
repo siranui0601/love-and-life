@@ -45,3 +45,4 @@ jobs:
             tools/trpg-sim/reports/player-latest.md
             public/TRPG/player-simulation-report.json
             public/TRPG/player-simulation-v4-report.json
+            tools/trpg-sim/test/game-service.test.mjs
