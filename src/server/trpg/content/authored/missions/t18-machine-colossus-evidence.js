@@ -9,10 +9,14 @@ export function evaluateT18EvidenceProfile(openingChoiceId, selectedEvidenceIds)
     const groupReady = readiness.requiredEvidenceGroups.every((group) =>
       group.some((evidenceId) => selected.has(evidenceId)));
     const support = readiness.supportingEvidenceIds.filter((id) => selected.has(id)).length;
-    const openingSupport = readiness.openingChoiceIds.includes(openingChoiceId)
+    const openingMatches = readiness.openingChoiceIds.includes(openingChoiceId);
+    const openingSupport = openingMatches
       ? Number(readiness.openingSupport ?? 0)
       : 0;
-    return groupReady && support + openingSupport >= readiness.minimumSupport;
+    const openingReady = openingMatches || selected.size >= groups.length + 1;
+    return groupReady
+      && openingReady
+      && support + openingSupport >= readiness.minimumSupport;
   }).map((route) => route.id);
 }
 
