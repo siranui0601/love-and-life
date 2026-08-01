@@ -4,6 +4,11 @@ import { T18_MACHINE_COLOSSUS_PACK as P } from "./authored/missions/t18-machine-
 export * from "./authored-mission-flow-registry-t18-final.js";
 
 const GENERIC_SUMMARY = /^行動の結果が世界へ反映された。?$/u;
+const OPENING_PRIORITY = new Map([
+  ["recover_elf_root_seal", 0],
+  ["inspect_dwarf_machine_fragment", 1],
+  ["read_temple_activation_damage", 2],
+]);
 
 function grantLeadRouteAccess(runtime, action) {
   if (action?.authoredMissionFlowId !== P.id || !action.authoredMissionFlowLeadId) return false;
@@ -17,6 +22,17 @@ function grantLeadRouteAccess(runtime, action) {
   gates.push("elf-access");
   runtime.playerState.routeCache = {};
   return true;
+}
+
+export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
+  const actions = core.authoredMissionFlowExclusiveActions(runtime, context);
+  if (!Array.isArray(actions)
+    || !actions.every((action) =>
+      action.authoredMissionFlowId === P.id
+        && action.authoredMissionFlowKind === "opening")) return actions;
+  return [...actions].sort((left, right) =>
+    Number(OPENING_PRIORITY.get(left.authoredMissionFlowChoiceId) ?? 99)
+      - Number(OPENING_PRIORITY.get(right.authoredMissionFlowChoiceId) ?? 99));
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
