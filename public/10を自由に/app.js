@@ -29,6 +29,8 @@ const refs = {
   tutorialDisclosureButton: document.getElementById("tutorialDisclosureButton"),
   tutorialExplanation: document.getElementById("tutorialExplanation"),
   tutorialSteps: document.getElementById("tutorialSteps"),
+  tutorialFormula: document.getElementById("tutorialFormula"),
+  tutorialFormulaLines: document.getElementById("tutorialFormulaLines"),
   tutorialExample: document.getElementById("tutorialExample"),
   tutorialKeyChips: document.getElementById("tutorialKeyChips"),
   tutorialExitButton: document.getElementById("tutorialExitButton"),
@@ -84,32 +86,43 @@ const tutorialLessons = [
     example: "√4 ＋ 8 ＝ 10", allowedValues: ["√", "+"], emphasizedValues: ["√"], keys: ["√", "＋", "4", "8"]
   },
   {
-    id: "multifactorial", category: "特殊な記号", order: 7, icon: "!!!", title: "多重階乗を知る", time: "約1分", problem: "5",
-     summary: "5に「!」を3個付けるだけで10。多重階乗の意味を体験します。",
-    mission: "5の後ろへ ! を3回押し、5!!! を作ろう。",
-    steps: ["5!は5×4×3×2×1ですが、5!!!は別の演算です。", "!が3個なら3ずつ減らし、5×2と掛けます。", "したがって5!!!は10です。!は連続9個まで使えます。"],
-    example: "5!!! ＝ 5 × 2 ＝ 10", allowedValues: ["!"], emphasizedValues: ["!"], keys: ["5", "!", "!", "!"]
+    id: "factorial", category: "特殊な記号", order: 7, icon: "!", title: "階乗 ! の計算", time: "約2分", problem: "34",
+    summary: "!は、その数から1までを1ずつ減らしながら、すべて掛ける記号です。",
+    mission: "3の後ろに ! を付け、残った4を足して10にしよう。",
+    steps: ["!は数字の直後に置きます。3!なら、3から1までを順番に掛けます。", "3!＝3×2×1＝6です。なお、ゲームでは0!も1として扱います。", "出題された4を足して、3!＋4＝10にします。"],
+    calculation: ["3!", "＝ 3 × 2 × 1", "＝ 6", "6 ＋ 4 ＝ 10"],
+    example: "3! ＋ 4 ＝ 10", allowedValues: ["!", "+"], emphasizedValues: ["!"], keys: ["3", "!", "＋", "4", "＝"]
   },
   {
-    id: "power", category: "特殊な記号", order: 8, icon: "xʸ", title: "累乗を使う", time: "約1分", problem: "321",
+    id: "multifactorial", category: "特殊な記号", order: 8, icon: "!!!", title: "多重階乗 !!・!!!", time: "約2分", problem: "5",
+    summary: "!の個数が、次に掛ける数まで何ずつ減らすかを表します。",
+    mission: "5の後ろへ ! を3回押し、5!!! を作ろう。",
+    steps: ["!が1個の5!は、1ずつ減らして5×4×3×2×1です。", "!が2個の5!!は、2ずつ減らして5×3×1です。", "!が3個の5!!!は、3ずつ減らして5×2＝10です。!は連続9個まで使えます。"],
+    calculation: ["5! ＝ 5 × 4 × 3 × 2 × 1 ＝ 120", "5!! ＝ 5 × 3 × 1 ＝ 15", "5!!! ＝ 5 × 2 ＝ 10"],
+    example: "5!!! ＝ 10", allowedValues: ["!"], emphasizedValues: ["!"], keys: ["5", "!", "!", "!", "＝"]
+  },
+  {
+    id: "power", category: "特殊な記号", order: 9, icon: "xʸ", title: "累乗を使う", time: "約1分", problem: "321",
     summary: "3の2乗で9を作り、残った1を足します。",
     mission: "3 xʸ 2 で9を作り、1を足そう。",
     steps: ["xʸは、左の数を右の数の回数だけ掛ける記号です。", "3²、つまり3^2は9です。", "残った1を足すと10になります。"],
     example: "3² ＋ 1 ＝ 10", allowedValues: ["^", "+"], emphasizedValues: ["^"], keys: ["xʸ", "＋", "3", "2", "1"]
   },
   {
-    id: "combination", category: "特殊な記号", order: 9, icon: "C", title: "組合せ C", time: "約2分", problem: "52",
-    summary: "5個から2個を選ぶ組合せの数は、ちょうど10です。",
-    mission: "5 C 2 を入力して、組合せの数を計算しよう。",
-    steps: ["nCrは、n個から順番を区別せずr個を選ぶ方法の数です。", "5C2は、5個から2個を選ぶ方法の数です。", "計算結果は10なので、式は5C2だけで完成します。"],
-    example: "5 C 2 ＝ 10", allowedValues: ["C"], emphasizedValues: ["C"], keys: ["5", "C", "2"]
+    id: "combination", category: "特殊な記号", order: 10, icon: "C", title: "C の計算", time: "約2分", problem: "52",
+    summary: "nCrは、nからr個分を掛け、最後にr!で割って計算します。",
+    mission: "5 C 2 を入力し、計算結果が10になることを確かめよう。",
+    steps: ["5C2では、左の5から2個分を1ずつ減らして、5×4を作ります。", "次に、右の2の階乗である2!＝2×1で割ります。", "5C2＝(5×4)÷(2×1)＝20÷2＝10です。"],
+    calculation: ["5C2", "＝ (5 × 4) ÷ (2 × 1)", "＝ 20 ÷ 2", "＝ 10"],
+    example: "5 C 2 ＝ 10", allowedValues: ["C"], emphasizedValues: ["C"], keys: ["5", "C", "2", "＝"]
   },
   {
-    id: "permutation", category: "特殊な記号", order: 10, icon: "P", title: "順列 P", time: "約2分", problem: "522",
-    summary: "5P2＝20を作り、残った2で割って10にします。",
+    id: "permutation", category: "特殊な記号", order: 11, icon: "P", title: "P の計算", time: "約2分", problem: "522",
+    summary: "nPrは、nから始めて1ずつ減らし、r個分だけ掛けて計算します。",
     mission: "5 P 2 で20を作り、もう1つの2で割ろう。",
-    steps: ["nPrは、n個から順番を区別してr個を並べる方法の数です。", "5P2は5×4で20です。", "残った2で割ると10になります。"],
-    example: "5 P 2 ÷ 2 ＝ 10", allowedValues: ["P", "/"], emphasizedValues: ["P"], keys: ["5", "P", "2", "÷", "2"]
+    steps: ["5P2では、左の5から2個分だけ、5、4と並べます。", "その2個を掛けるので、5P2＝5×4＝20です。", "出題されたもう1つの2で割り、20÷2＝10にします。"],
+    calculation: ["5P2", "＝ 5 × 4", "＝ 20", "20 ÷ 2 ＝ 10"],
+    example: "5 P 2 ÷ 2 ＝ 10", allowedValues: ["P", "/"], emphasizedValues: ["P"], keys: ["5", "P", "2", "÷", "2", "＝"]
   },
 ];
 
@@ -225,9 +238,18 @@ function closeModal(force = false) {
   handler?.();
 }
 
+function parseLives(value, fallback = 3) {
+  const raw = value ?? fallback;
+  return raw === "infinity" ? "infinity" : Number(raw);
+}
+
+function formatLives(value) {
+  return value === "infinity" ? "∞" : String(value);
+}
+
 function selectedSettings() {
   const digitLengths = [...refs.settingsForm.querySelectorAll('input[name="digitLength"]:checked')].map((input) => Number(input.value));
-  const lives = Number(refs.settingsForm.querySelector('input[name="lives"]:checked')?.value || 3);
+  const lives = parseLives(refs.settingsForm.querySelector('input[name="lives"]:checked')?.value);
   const questionRaw = refs.settingsForm.querySelector('input[name="questionCount"]:checked')?.value || "5";
   return { digitLengths, lives, questionCount: questionRaw === "infinity" ? "infinity" : Number(questionRaw) };
 }
@@ -236,7 +258,7 @@ function updateSettingsSummary() {
   const settings = selectedSettings();
   const digitText = settings.digitLengths.length ? settings.digitLengths.map((value) => `${value}桁`).join("・") : "未選択";
   const questionText = settings.questionCount === "infinity" ? "全問題を使い切るまで" : `${settings.questionCount}問`;
-  refs.settingsSummary.textContent = `${digitText}から毎問ランダム出題 ／ 残機${settings.lives} ／ ${questionText}。同じ数列は一度の挑戦で重複しません。`;
+  refs.settingsSummary.textContent = `${digitText}から毎問ランダム出題 ／ 残機${formatLives(settings.lives)} ／ ${questionText}。同じ数列は一度の挑戦で重複しません。`;
   refs.startSoloButton.disabled = settings.digitLengths.length === 0;
 }
 
@@ -294,12 +316,19 @@ function updateGameHeader() {
   refs.gameModeLabel.textContent = "無限対戦";
   refs.gameProgressText.textContent = `${soloRun.questionIndex} / ${soloRun.targetQuestions}`;
   refs.gameLives.replaceChildren();
-  for (let index = 0; index < soloRun.settings.lives; index += 1) {
-    const dot = document.createElement("span");
-    dot.className = `life-dot${index >= soloRun.lives ? " is-empty" : ""}`;
-    refs.gameLives.append(dot);
+  if (soloRun.settings.lives === "infinity") {
+    const badge = document.createElement("span");
+    badge.className = "life-infinity";
+    badge.textContent = "∞";
+    refs.gameLives.append(badge);
+  } else {
+    for (let index = 0; index < soloRun.settings.lives; index += 1) {
+      const dot = document.createElement("span");
+      dot.className = `life-dot${index >= soloRun.lives ? " is-empty" : ""}`;
+      refs.gameLives.append(dot);
+    }
   }
-  refs.gameLives.setAttribute("aria-label", `残機${soloRun.lives}`);
+  refs.gameLives.setAttribute("aria-label", `残機${formatLives(soloRun.lives)}`);
 }
 
 function startTimer() {
@@ -350,7 +379,7 @@ async function submitSoloExpression(expression, instance) {
     soloRun = data.run;
     updateGameHeader();
     instance.setLocked(false);
-    showToast(`不正解。残機はあと${soloRun.lives}です。`, "warning");
+    showToast(soloRun.lives === "infinity" ? "不正解。残機∞のため減りません。" : `不正解。残機はあと${soloRun.lives}です。`, "warning");
   } catch (error) {
     console.error(error);
     instance.setResult(error.payload?.expressionError?.message || "式を送信できませんでした。", "error");
@@ -401,7 +430,7 @@ function showResultModal(result) {
   openModal(`
     <div class="result-icon${success ? "" : " is-failure"}">${success ? "✓" : "×"}</div>
     <h2 id="modalTitle">${success ? "チャレンジ完了" : "チャレンジ終了"}</h2><p class="result-lead">${resultReasonText(result.finishReason)}</p>
-    <div class="result-stats"><div><strong>${result.solvedCount}</strong><span>正解数</span></div><div><strong>${formatDuration(result.averageTimeMs, true)}</strong><span>平均回答</span></div><div><strong>${result.lives}</strong><span>残機</span></div></div>
+    <div class="result-stats"><div><strong>${result.solvedCount}</strong><span>正解数</span></div><div><strong>${formatDuration(result.averageTimeMs, true)}</strong><span>平均回答</span></div><div><strong>${formatLives(result.lives)}</strong><span>残機</span></div></div>
     ${result.unresolvedProblem ? `<div class="solution-card" data-solution-card><small>解法例・${result.unresolvedProblem}</small><div class="solution-loading">スマートな解法を計算中…</div></div>` : ""}
     <div class="modal-actions"><button class="modal-primary" type="button" data-retry>同じ条件でもう一度</button><button class="modal-secondary" type="button" data-result-home>ホームに戻る</button></div>`, { closeable: false });
   refs.modalContent.querySelector("[data-retry]").onclick = () => { closeModal(true); startSolo(lastSettings || result.settings); };
@@ -506,6 +535,14 @@ function startTutorialLesson(id) {
   refs.tutorialSteps.replaceChildren(...lesson.steps.map((text) => {
     const item = document.createElement("li"); item.textContent = text; return item;
   }));
+  const calculation = Array.isArray(lesson.calculation) ? lesson.calculation : [];
+  refs.tutorialFormula.hidden = calculation.length === 0;
+  refs.tutorialFormulaLines.replaceChildren(...calculation.map((text, index) => {
+    const line = document.createElement("div");
+    line.className = index === calculation.length - 1 ? "is-result" : "";
+    line.textContent = text;
+    return line;
+  }));
   refs.tutorialExample.textContent = lesson.example;
   refs.tutorialKeyChips.replaceChildren(...lesson.keys.map((key) => {
     const chip = document.createElement("span"); chip.textContent = key; return chip;
@@ -597,7 +634,7 @@ function selectedCondition() {
   return {
     digitLengths,
     questionCount: questionRaw === "infinity" ? "infinity" : Number(questionRaw),
-    lives: Number(form.querySelector('input[name="rankingLives"]:checked')?.value || 3),
+    lives: parseLives(form.querySelector('input[name="rankingLives"]:checked')?.value),
   };
 }
 

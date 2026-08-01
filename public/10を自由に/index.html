@@ -70,7 +70,7 @@
             <label class="choice-tile"><input type="checkbox" name="digitLength" value="5" /><span><strong>5桁</strong><small>全100,000問</small></span></label>
           </div>
         </fieldset>
-        <fieldset><legend><span>02</span><strong>残機</strong><small>不正解で1つ減少</small></legend><div class="segmented-control" data-choice-group="lives"><label><input type="radio" name="lives" value="1" /><span>1</span></label><label><input type="radio" name="lives" value="3" checked /><span>3</span></label><label><input type="radio" name="lives" value="5" /><span>5</span></label></div></fieldset>
+        <fieldset><legend><span>02</span><strong>残機</strong><small>∞は不正解でも減りません</small></legend><div class="segmented-control segmented-control-four" data-choice-group="lives"><label><input type="radio" name="lives" value="1" /><span>1</span></label><label><input type="radio" name="lives" value="3" checked /><span>3</span></label><label><input type="radio" name="lives" value="5" /><span>5</span></label><label><input type="radio" name="lives" value="infinity" /><span>∞</span></label></div></fieldset>
         <fieldset><legend><span>03</span><strong>問題数</strong><small>∞は全問題制覇まで</small></legend><div class="segmented-control" data-choice-group="questionCount"><label><input type="radio" name="questionCount" value="5" checked /><span>5問</span></label><label><input type="radio" name="questionCount" value="10" /><span>10問</span></label><label><input type="radio" name="questionCount" value="infinity" /><span>∞</span></label></div></fieldset>
         <div class="settings-summary" id="settingsSummary" aria-live="polite"></div>
         <button class="primary-action" id="startSoloButton" type="submit"><span>ゲームスタート</span><span aria-hidden="true">→</span></button>
@@ -103,7 +103,7 @@
             <p>本番と同じ電卓を使います。各レッスンでは、今使うキーだけが有効です。途中で一覧へ戻っても、いつでも再開できます。</p>
           </div>
           <div class="tutorial-progress-ring" aria-label="チュートリアル完了数">
-            <strong id="tutorialCompletedCount">0 / 10</strong><span>完了</span>
+            <strong id="tutorialCompletedCount">0 / 11</strong><span>完了</span>
           </div>
           <button class="primary-action compact tutorial-recommended" id="tutorialRecommendedButton" type="button"><span>おすすめから始める</span><span>→</span></button>
         </div>
@@ -131,6 +131,7 @@
             </button>
             <div class="tutorial-explanation" id="tutorialExplanation">
               <ol id="tutorialSteps"></ol>
+              <div class="tutorial-formula" id="tutorialFormula" hidden><small>計算のしかた</small><div id="tutorialFormulaLines"></div></div>
               <div class="tutorial-worked-example"><small>入力例</small><strong id="tutorialExample"></strong></div>
               <div class="tutorial-key-chips" id="tutorialKeyChips" aria-label="このレッスンで使う記号"></div>
             </div>
@@ -171,8 +172,8 @@
             </div>
           </fieldset>
           <fieldset>
-            <legend>1問ごとの残機</legend>
-            <div class="mini-segment">
+            <legend>1問ごとの残機 <small>∞は不正解でも減りません</small></legend>
+            <div class="mini-segment mini-segment-four">
               <label>
                 <input type="radio" name="onlineLives" value="1" />
                 <span>1</span>
@@ -184,6 +185,10 @@
               <label>
                 <input type="radio" name="onlineLives" value="5" />
                 <span>5</span>
+              </label>
+              <label>
+                <input type="radio" name="onlineLives" value="infinity" />
+                <span>∞</span>
               </label>
             </div>
           </fieldset>
@@ -214,7 +219,7 @@
         <form class="ranking-filters" id="rankingFilters">
           <fieldset><legend>桁数</legend><div class="mini-choice-grid"><label><input type="checkbox" name="rankingDigit" value="3" checked /><span>3桁</span></label><label><input type="checkbox" name="rankingDigit" value="4" /><span>4桁</span></label><label><input type="checkbox" name="rankingDigit" value="5" /><span>5桁</span></label></div></fieldset>
           <fieldset><legend>問題数</legend><div class="mini-segment"><label><input type="radio" name="rankingQuestions" value="5" checked /><span>5問</span></label><label><input type="radio" name="rankingQuestions" value="10" /><span>10問</span></label><label><input type="radio" name="rankingQuestions" value="infinity" /><span>∞</span></label></div></fieldset>
-          <fieldset><legend>残機</legend><div class="mini-segment"><label><input type="radio" name="rankingLives" value="1" /><span>1</span></label><label><input type="radio" name="rankingLives" value="3" checked /><span>3</span></label><label><input type="radio" name="rankingLives" value="5" /><span>5</span></label></div></fieldset>
+          <fieldset><legend>残機</legend><div class="mini-segment mini-segment-four"><label><input type="radio" name="rankingLives" value="1" /><span>1</span></label><label><input type="radio" name="rankingLives" value="3" checked /><span>3</span></label><label><input type="radio" name="rankingLives" value="5" /><span>5</span></label><label><input type="radio" name="rankingLives" value="infinity" /><span>∞</span></label></div></fieldset>
         </form>
         <div class="ranking-status" id="rankingStatus" aria-live="polite">条件を読み込んでいます…</div>
         <ol class="ranking-list" id="rankingList"></ol>

@@ -180,6 +180,7 @@ button:disabled { cursor: not-allowed; }
 .choice-tile input:checked + span small { color: #f0b65e; }
 .choice-tile input:focus-visible + span, .segmented-control input:focus-visible + span { outline: 3px solid #fff; outline-offset: 3px; }
 .segmented-control { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 18px; background: rgba(0,0,0,.22); }
+.segmented-control-four { grid-template-columns: repeat(4, 1fr); }
 .segmented-control label { cursor: pointer; }
 .segmented-control span { display: grid; place-items: center; min-height: 48px; border-radius: 14px; color: var(--muted); font-weight: 750; transition: all .2s; }
 .segmented-control input:checked + span { color: #0b0b0b; background: var(--text); box-shadow: 0 5px 18px rgba(0,0,0,.25); }
@@ -201,6 +202,7 @@ button:disabled { cursor: not-allowed; }
 .game-lives { display: flex; gap: 5px; min-width: 70px; justify-content: center; }
 .life-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--orange); box-shadow: 0 0 12px rgba(255,159,10,.48); }
 .life-dot.is-empty { background: #323234; box-shadow: none; }
+.life-infinity { display: grid; min-width: 31px; height: 24px; place-items: center; border: 1px solid rgba(255,159,10,.45); border-radius: 999px; background: rgba(255,159,10,.12); color: var(--orange-bright); font-size: 18px; font-weight: 850; line-height: 1; box-shadow: 0 0 18px rgba(255,159,10,.13); }
 .game-timer { justify-self: end; font-size: 14px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: .03em; }
 .inactivity-notice { width: min(500px, 100%); margin: 0 auto 10px; padding: 8px 12px; border-radius: 12px; background: rgba(255,69,58,.13); color: #ff8f88; font-size: 11px; text-align: center; }
 
@@ -428,6 +430,7 @@ button:disabled { cursor: not-allowed; }
 
 .mini-choice-grid,
 .mini-segment { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.mini-segment-four { grid-template-columns: repeat(4, 1fr); }
 .mini-choice-grid input,
 .mini-segment input { position: absolute; opacity: 0; pointer-events: none; }
 .mini-choice-grid span,
@@ -656,7 +659,13 @@ button:disabled { cursor: not-allowed; }
 .tutorial-explanation[hidden] { display: none; }
 .tutorial-explanation ol { display: grid; gap: 10px; margin: 0; padding-left: 21px; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .tutorial-explanation li::marker { color: var(--orange); font-weight: 800; }
-.tutorial-worked-example { display: flex; flex-direction: column; gap: 7px; margin-top: 17px; padding: 14px 15px; border-radius: 15px; background: rgba(255,159,10,.075); }
+.tutorial-formula { display: flex; flex-direction: column; gap: 8px; margin-top: 17px; padding: 14px 15px; border: 1px solid rgba(255,255,255,.07); border-radius: 15px; background: rgba(0,0,0,.2); }
+.tutorial-formula[hidden] { display: none; }
+.tutorial-formula > small { color: var(--orange-bright); font-size: 9px; font-weight: 850; letter-spacing: .08em; }
+.tutorial-formula > div { display: grid; gap: 3px; }
+.tutorial-formula > div > div { min-height: 25px; padding: 3px 0; color: var(--muted); font-size: 14px; font-weight: 650; line-height: 1.45; font-variant-numeric: tabular-nums; }
+.tutorial-formula > div > div.is-result { color: var(--text); font-size: 16px; font-weight: 850; }
+.tutorial-worked-example { display: flex; flex-direction: column; gap: 7px; margin-top: 12px; padding: 14px 15px; border-radius: 15px; background: rgba(255,159,10,.075); }
 .tutorial-worked-example small { color: var(--orange-bright); font-size: 9px; font-weight: 800; }
 .tutorial-worked-example strong { font-size: 15px; line-height: 1.55; }
 .tutorial-key-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 13px; }
@@ -787,4 +796,12 @@ body.is-tutorial-lesson [data-screen="tutorial"] > .section-heading { display: n
   .match-score-final { margin: 14px 0; }
   .match-history li { grid-template-columns: 26px minmax(0,1fr); }
   .match-history-answer { grid-column: 2; text-align: left; }
+}
+
+@media (max-width: 420px) {
+  .segmented-control-four, .mini-segment-four { gap: 3px; }
+  .segmented-control-four span, .mini-segment-four span { min-width: 0; padding-right: 4px; padding-left: 4px; }
+  .tutorial-formula { padding: 11px 12px; }
+  .tutorial-formula > div > div { font-size: 12px; }
+  .tutorial-formula > div > div.is-result { font-size: 14px; }
 }
