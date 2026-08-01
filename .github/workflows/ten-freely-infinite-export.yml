@@ -1,15 +1,16 @@
 name: Export Ten Freely infinite-lives sources
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature/ten-freely-infinite-lives
+      - main
 
 permissions:
   contents: read
 
 jobs:
   export:
+    if: github.event.pull_request.head.ref == 'feature/ten-freely-infinite-lives'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
