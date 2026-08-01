@@ -101,7 +101,7 @@ function prepareGenericMissionClueConversation(runtime, data) {
     "MSN-T01",
     ...AUTHORED_MISSION_FLOW_PACKS.map((pack) => pack.missionId),
   ]);
-  const definition = state.catalog.special.find((entry) => {
+  let definition = state.catalog.special.find((entry) => {
     if (authoredMissionIds.has(entry.id)) return false;
     const hearing = entry.steps.find((step) => step.type === "conversation");
     return hearing && data.model.npcs.some((npc) =>
@@ -109,7 +109,44 @@ function prepareGenericMissionClueConversation(runtime, data) {
       && npc.allowedHubs.includes(hearing.targetLocation)
       && npc.disposition !== "escalate");
   });
-  assert.ok(definition, "the generic clue contract needs at least one non-authored mission");
+
+  // T01-T19 are now all authored. Keep the generic conversation contract covered
+  // with a test-only catalog clone instead of leaving one production mission generic.
+  if (!definition) {
+    const template = state.catalog.special.find((entry) => {
+      const hearing = entry.steps.find((step) => step.type === "conversation");
+      return hearing && data.model.npcs.some((npc) =>
+        npc.relatedTroubleIds.includes(entry.troubleId)
+        && npc.allowedHubs.includes(hearing.targetLocation)
+        && npc.disposition !== "escalate");
+    });
+    assert.ok(template, "the generic clue fixture needs a conversation mission template");
+    const templateHearing = template.steps.find((step) => step.type === "conversation");
+    const fixtureId = `TEST-GENERIC-${template.id}`;
+    const steps = template.steps.map((step) => ({
+      ...step,
+      id: `test-generic-${step.id}`,
+    }));
+    definition = {
+      ...template,
+      id: fixtureId,
+      title: `汎用会話契約試験：${template.title}`,
+      steps,
+    };
+    state.catalog.special.push(definition);
+    state.catalog.byId.set(definition.id, definition);
+    const templateMission = state.missions[template.id];
+    state.missions[definition.id] = {
+      ...structuredClone(templateMission),
+      status: "locked",
+      progress: Object.fromEntries(steps.map((step) => [step.id, 0])),
+      discoveries: [],
+    };
+    assert.equal(
+      definition.steps.find((step) => step.type === "conversation").targetFacilityId,
+      templateHearing.targetFacilityId,
+    );
+  }
   const hearing = definition.steps.find((step) => step.type === "conversation");
   const npc = data.model.npcs.find((entry) =>
     entry.relatedTroubleIds.includes(definition.troubleId)
@@ -124,7 +161,10 @@ function prepareGenericMissionClueConversation(runtime, data) {
   state.player.location = hearing.targetLocation;
   state.player.facilityId = hearing.targetFacilityId;
   state.troubles[definition.troubleId].status = "active";
-  state.missions[definition.id].status = "active";
+  for (const missionDefinition of state.catalog.special) {
+    state.missions[missionDefinition.id].status =
+      missionDefinition.id === definition.id ? "active" : "locked";
+  }
   state.missions[definition.id].progress[hearing.id] = 0;
   const knownRumor = {
     id: rumorId,
