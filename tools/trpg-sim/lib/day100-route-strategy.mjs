@@ -61,34 +61,6 @@ function missionChoiceAllowed(entry, missionId, guidedMissionId, authoredForward
   return (!guidedMissionId || missionId === guidedMissionId) && authoredFlowChoice(entry);
 }
 
-function missionChoiceContext(save, mission, choice) {
-  return [
-    mission.id,
-    mission.status,
-    mission.currentStep?.id ?? "",
-    mission.currentStep?.progress ?? "",
-    mission.currentStep?.required ?? "",
-    save?.scene?.location ?? "",
-    save?.scene?.facilityId ?? "",
-    save?.guidance?.targetLocation ?? "",
-    save?.guidance?.targetFacilityId ?? "",
-    choice?.actionId ?? "",
-  ].join("|");
-}
-
-function choiceWouldStall(state, context) {
-  const memory = state.routeStrategyChoiceMemory;
-  return memory?.context === context && number(memory.count) >= 2;
-}
-
-function rememberRouteChoice(state, context) {
-  const memory = state.routeStrategyChoiceMemory;
-  state.routeStrategyChoiceMemory = {
-    context,
-    count: memory?.context === context ? number(memory.count) + 1 : 1,
-  };
-}
-
 function modeIndex(mode) {
   const index = DAY100_ROUTE_MODES.indexOf(mode);
   return index < 0 ? 0 : index;
@@ -199,22 +171,20 @@ function activeMissionDecision(save, model, state, mode) {
       ));
 
   for (const mission of missions) {
-    const choices = availableChoices(
-      save,
-      state,
-      (entry) => missionChoiceAllowed(
-        entry,
-        mission.id,
-        guidedMissionId,
-        authoredForwardVisible,
+    const choice = chooseVariant(
+      availableChoices(
+        save,
+        state,
+        (entry) => missionChoiceAllowed(
+          entry,
+          mission.id,
+          guidedMissionId,
+          authoredForwardVisible,
+        ),
       ),
-    ).filter((entry) => !choiceWouldStall(
-      state,
-      missionChoiceContext(save, mission, entry),
-    ));
-    const choice = chooseVariant(choices, mode);
+      mode,
+    );
     if (choice) {
-      rememberRouteChoice(state, missionChoiceContext(save, mission, choice));
       return choiceDecision(choice, `${mode}方針で「${mission.title}」を優先する`, {
         routeMode: mode,
         missionId: mission.id,
@@ -236,7 +206,6 @@ function activeMissionDecision(save, model, state, mode) {
       ?? null;
     const move = movementToward(save, model, state, { facilityId: targetFacilityId, hub: targetHub });
     if (move) {
-      state.routeStrategyChoiceMemory = null;
       return moveDecision(move, `${mode}方針で「${mission.title}」の次地点へ向かう`, {
         routeMode: mode,
         missionId: mission.id,
@@ -382,8 +351,6 @@ export const DAY100_ROUTE_STRATEGY_INTERNALS = Object.freeze({
   capitalWeaponShopFirstDecision,
   guidanceMissionId,
   missionChoiceAllowed,
-  missionChoiceContext,
-  choiceWouldStall,
   missionSortTuple,
   troubleCandidateTuple,
   shouldKeepBaseForSurvival,
