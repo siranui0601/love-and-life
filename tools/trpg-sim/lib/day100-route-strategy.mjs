@@ -12,6 +12,8 @@ const {
 
 const INFORMATION_PATTERN = /(?:CONCERN|CHANGE|RUMOR|CLUE|INQUIRY|TALK|DIALOGUE|INSPECT|OBSERVE|INVESTIGATE|調べ|尋ね|聞く|話しかけ|様子|噂|手掛かり)/iu;
 const SHOP_PATTERN = /(?:SHOP|WEAPON|EQUIP|武器屋|装備|試着|試す)/iu;
+const AUTHORED_FLOW_PATTERN = /^MISSION_FLOW:/u;
+const AUTHORED_FLOW_BACK_PATTERN = /:(?:NAVIGATOR_BACK|BACK|CANCEL|ABORT)(?::|$)/u;
 
 export const DAY100_ROUTE_MODES = Object.freeze([
   "deadline",
@@ -38,6 +40,11 @@ function number(value, fallback = 0) {
 
 function actionText(entry) {
   return `${entry?.actionId ?? entry?.moveId ?? ""} ${entry?.label ?? ""}`;
+}
+
+function authoredFlowChoice(entry) {
+  const actionId = String(entry?.actionId ?? "");
+  return AUTHORED_FLOW_PATTERN.test(actionId) && !AUTHORED_FLOW_BACK_PATTERN.test(actionId);
 }
 
 function modeIndex(mode) {
@@ -135,7 +142,7 @@ function activeMissionDecision(save, model, state, mode) {
 
   for (const mission of missions) {
     const choice = chooseVariant(
-      availableChoices(save, state, (entry) => entry.missionId === mission.id),
+      availableChoices(save, state, (entry) => entry.missionId === mission.id || authoredFlowChoice(entry)),
       mode,
     );
     if (choice) {
@@ -165,7 +172,7 @@ function activeMissionDecision(save, model, state, mode) {
 
     if (!targetHub || targetHub === save?.scene?.location) {
       const information = chooseVariant(
-        availableChoices(save, state, (entry) => INFORMATION_PATTERN.test(actionText(entry))
+        availableChoices(save, state, (entry) => (authoredFlowChoice(entry) || INFORMATION_PATTERN.test(actionText(entry)))
           && !SHOP_PATTERN.test(actionText(entry))
           && !/:END$/iu.test(String(entry.actionId))),
         mode,
@@ -231,7 +238,7 @@ function discoveryDecision(save, model, state, mode) {
   }
 
   const information = chooseVariant(
-    availableChoices(save, state, (entry) => INFORMATION_PATTERN.test(actionText(entry))
+    availableChoices(save, state, (entry) => (authoredFlowChoice(entry) || INFORMATION_PATTERN.test(actionText(entry)))
       && !SHOP_PATTERN.test(actionText(entry))
       && !/:END$/iu.test(String(entry.actionId))),
     mode,
@@ -293,6 +300,7 @@ export function selectDay100RouteDecision({
 
 export const DAY100_ROUTE_STRATEGY_INTERNALS = Object.freeze({
   ROUTE_ORDER,
+  authoredFlowChoice,
   missionSortTuple,
   troubleCandidateTuple,
   shouldKeepBaseForSurvival,
