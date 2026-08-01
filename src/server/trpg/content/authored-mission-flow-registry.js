@@ -1,1 +1,1 @@
-export * from "./authored-mission-flow-revisit-context.js";
+export * from "./authored-mission-flow-revisit-canonical.js";
