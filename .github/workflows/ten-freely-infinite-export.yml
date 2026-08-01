@@ -1,4 +1,4 @@
-name: Diagnose Ten Freely patch chunks
+name: Export mismatched Ten Freely patch chunk
 
 on:
   pull_request:
@@ -6,24 +6,18 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  diagnose:
+  export:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/ten-freely-infinite-lives'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: feature/ten-freely-infinite-lives
-          fetch-depth: 0
-      - name: Report patch chunk integrity
-        shell: bash
-        run: |
-          set -euo pipefail
-          wc -c .github/ten-freely-infinite-patch/part*
-          sha256sum .github/ten-freely-infinite-patch/part*
-          cat .github/ten-freely-infinite-patch/part* | tr -d '\r\n' | base64 --decode > /tmp/ten-freely-infinite.patch || true
-          wc -c /tmp/ten-freely-infinite.patch || true
-          sha256sum /tmp/ten-freely-infinite.patch || true
-          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ten-freely-part00-diagnostic
+          path: .github/ten-freely-infinite-patch/part00
+          retention-days: 1
