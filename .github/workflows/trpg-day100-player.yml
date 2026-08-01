@@ -1,29 +1,31 @@
-name: TRPG Day1 to Day100 offline authored journey
+name: TRPG Day1 to Day100 route trials
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "public/TRPG/**"
+      - "src/server/trpg/**"
+      - "tools/trpg-sim/**"
+      - "package.json"
+      - ".github/workflows/trpg-day100-player.yml"
   workflow_dispatch:
 
 concurrency:
-  group: trpg-day100-player-${{ github.ref_name }}
+  group: trpg-day100-routes-${{ github.ref_name }}
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  day100-player:
+  regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
-    env:
-      TRPG_DAY100_OFFLINE_AUTHORING: "1"
-      TRPG_DAY100_NARRATIVE_MAX: 600
-      TRPG_DAY100_MAX_ACTIONS: 4200
-      TRPG_DAY100_SEED: trpg-day100-player-v1
-      TRPG_DAY100_SOURCE_COMMIT: ${{ github.sha }}
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: chatgpt/trpg-authored-content-refactor
           fetch-depth: 1
           show-progress: false
       - uses: actions/setup-node@v4
@@ -33,49 +35,46 @@ jobs:
       - run: npm ci
       - name: Run complete TRPG regression suite
         run: npm run trpg:test
-      - name: Run one strict approved-content Day1 to Day100 journey
-        shell: bash
-        run: |
-          mkdir -p tools/trpg-sim/reports
-          set +e
-          TRPG_NARRATIVE_RUN_ID=day100-player-pr-v9-offline npm run trpg:day100-player -- --strict \
-            > tools/trpg-sim/reports/day100-player-console.log 2>&1
-          status=$?
-          cat tools/trpg-sim/reports/day100-player-console.log
-          echo "$status" > tools/trpg-sim/reports/day100-player.status
-          exit 0
-      - name: Upload full private diagnostic artifact
+
+  route-matrix:
+    needs: regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        mode:
+          - deadline
+          - chain
+          - prevention
+          - regional
+    env:
+      TRPG_DAY100_OFFLINE_AUTHORING: "1"
+      TRPG_DAY100_NARRATIVE_MAX: 600
+      TRPG_DAY100_MAX_ACTIONS: 4200
+      TRPG_DAY100_ROUTE_MODE: ${{ matrix.mode }}
+      TRPG_DAY100_SEED: trpg-day100-route-${{ matrix.mode }}-v1
+      TRPG_DAY100_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      TRPG_NARRATIVE_RUN_ID: day100-route-${{ matrix.mode }}-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run ${{ matrix.mode }} Day1 to Day100 trial
+        run: node tools/trpg-sim/cli-day100-route.mjs --strict-runtime
+      - name: Upload ${{ matrix.mode }} route diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: trpg-day100-player
+          name: trpg-day100-route-${{ matrix.mode }}
           path: |
-            tools/trpg-sim/reports/day100-player-*
+            tools/trpg-sim/reports/day100-route-${{ matrix.mode }}-*
           if-no-files-found: error
           retention-days: 14
-      - name: Commit secret-free summary and replay candidates
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f tools/trpg-sim/reports/day100-player-latest.json
-          test -f tools/trpg-sim/reports/day100-player-latest-replay-candidates.json
-          cp tools/trpg-sim/reports/day100-player-latest.json tools/trpg-sim/reports/day100-player-pr-summary.json
-          cp tools/trpg-sim/reports/day100-player-latest-replay-candidates.json tools/trpg-sim/reports/day100-player-pr-replay-candidates.json
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            tools/trpg-sim/reports/day100-player-pr-summary.json \
-            tools/trpg-sim/reports/day100-player-pr-replay-candidates.json
-          if git diff --cached --quiet; then
-            echo "Day100 summary and replay candidates are unchanged."
-          else
-            git commit -m "test(trpg): record offline authored Day100 coverage"
-            git push origin HEAD:chatgpt/trpg-authored-content-refactor
-          fi
-      - name: Enforce journey quality gate
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(cat tools/trpg-sim/reports/day100-player.status)" = "0"
