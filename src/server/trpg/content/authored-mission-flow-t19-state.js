@@ -59,7 +59,7 @@ const freshFlow = () => ({
   flowId: P.id,
   openingChoiceId: null,
   openingSourceId: null,
- navigatorFocusId: null,
+  navigatorFocusId: null,
   navigatorGroupId: null,
   selectedLeadId: null,
   evidenceIds: [],
@@ -279,66 +279,145 @@ function groupActions(flow) {
     family: "prepare",
     type: "plan",
     minutes: 1,
-    label: "ä¸‰ã¤ã®èª¿åŸºæ–¹é‡ã¸æˆ»ã‚‹‹ˆ]]Ü™YZ\ÜÚ[Û‘›İÑ^Û\Ú]™PÚÚXÙNˆYKˆ]]Ü™YZ\ÜÚ[Û‘›İÒYˆšYˆ]]Ü™YZ\ÜÚ[Û‘›İÒÚ[™ˆ›˜]šYØ]Ü—Ø˜XÚÈ‹ˆJNÂˆYˆ
-Xİ[ÛœË›[™İÊHXİ[ÛœËœ\Ú
-Y™\Xİ[ÛŠ
-JNÂˆ™]\›ˆXİ[ÛœËœÛXÙJÊNÂŸB‚™[˜İ[Ûˆ›İ]PXİ[ÛœÊ›İÊHÂˆÛÛœİ›Øİ\ÈH˜]šYØ]Ü‘›Øİ\Ù\Ê
-K™š[™
+    label: "ä¸‰ã¤ã®èª¿æŸ»æ–¹é‡ã¸æˆ»ã‚‹",
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: P.id,
+    authoredMissionFlowKind: "navigator_back",
+  });
+  if (actions.length < 3) actions.push(deferAction());
+  return actions.slice(0, 3);
+}
 
-[JHOˆ[KšYOOH›İË›˜]šYØ]Ü‘›Øİ\ÒY
-NÂˆÛÛœİÜ›İ\H›Øİ\ÏË™Ü›İ\Ë™š[™
+function routeActions(flow) {
+  const focus = navigatorFocuses().find((entry) => entry.id === flow.navigatorFocusId);
+  const group = focus?.groups.find((entry) => entry.id === flow.navigatorGroupId);
+  const acquired = new Set(flow.evidenceIds);
+  if (!group) return null;
+  const actions = group.evidenceIds
+    .filter((id) => !acquired.has(id))
+    .map((id) => P.investigation.leads.find((lead) => lead.discoveryId === id))
+    .filter(Boolean)
+    .map((lead) => ({
+      id: actionId("NAVIGATOR_ROUTE", lead.id),
+      family: "prepare",
+      type: "plan",
+      minutes: 3,
+      label: lead.label,
+      authoredMissionFlowExclusiveChoice: true,
+      authoredMissionFlowId: P.id,
+      authoredMissionFlowKind: "navigator_route",
+      authoredMissionFlowNavigatorFocusId: focus.id,
+      authoredMissionFlowNavigatorGroupId: group.id,
+      authoredMissionFlowLeadId: lead.id,
+      authoredMissionFlowTargetFacilityId: lead.facilityId,
+      authoredMissionFlowSceneTransition: `èª¿æŸ»ã®è¦–ç‚¹ãŒ${lead.destinationName}ã¸ç§»ã‚‹`,
+    }));
+  if (actions.length < 3) {
+    actions.push({
+      id: actionId("NAVIGATOR_ROUTE_BACK", group.id),
+      family: "prepare",
+      type: "plan",
+      minutes: 1,
+      label: "åŒã˜æ–¹é‡ã®åˆ¥åˆ†é¡ã¸æˆ»ã‚‹",
+      authoredMissionFlowExclusiveChoice: true,
+      authoredMissionFlowId: P.id,
+      authoredMissionFlowKind: "navigator_route_back",
+    });
+  }
+  if (actions.length < 3) actions.push(deferAction());
+  return actions.slice(0, 3);
+}
 
-[JHOˆ[KšYOOH›İË›˜]šYØ]Ü‘Ü›İ\Y
-NÂˆÛÛœİXÜ]Z\™YH™]ÈÙ]
-›İË™]šY[˜ÙRYÊNÂˆYˆ
-YÜ›İ\
-H™]\›ˆ[ÂˆÛÛœİXİ[ÛœÈHÜ›İ\™]šY[˜ÙRYÂˆ™š[\Š
-Y
-HOˆXXÜ]Z\™Yš\ÊY
-JBˆ›X\
+function evidenceAction(runtime, lead) {
+  const resolved = resolvedLead(runtime, lead);
+  const flow = ensure19(runtime);
+  if (runtime?.playerState?.player?.facilityId !== resolved.facilityId
+    || flow.evidenceIds.includes(lead.discoveryId)) return null;
+  return {
+    id: actionId(resolved.sourceKind === "fallback" ? "FALLBACK_EVIDENCE" : "EVIDENCE", lead.id),
+    family: "investigate",
+    type: "investigate",
+    missionId: P.missionId,
+    stepId: P.investigation.stepId,
+    missionTitle: P.title,
+    missionTroubleId: P.troubleId,
+    minutes: resolved.minutes,
+    label: resolved.label,
+    approachId: resolved.approachId,
+    discoveryId: lead.discoveryId,
+    discoveryText: resolved.discoveryText,
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: P.id,
+    authoredMissionFlowKind: "evidence",
+    authoredMissionFlowLeadId: lead.id,
+    authoredMissionFlowEvidenceId: lead.discoveryId,
+    authoredMissionFlowEvidenceSourceId: resolved.sourceId,
+  };
+}
 
-Y
-HOˆš[™\İYØ][Û‹›XYË™š[™
+function selectedLeadActions(runtime, flow, movementActions = []) {
+  const lead = leadById(flow.selectedLeadId);
+  if (!lead) return null;
+  const resolved = resolvedLead(runtime, lead);
+  const evidence = evidenceAction(runtime, lead);
+  const currentHub = runtime.playerState.player.location;
+  const exactLocal = movementActions.find((action) =>
+    action?.movementScope === "local"
+      && action.destinationFacilityId === resolved.facilityId);
+  const regional = resolved.targetLocation !== currentHub
+    ? movementActions.find((action) =>
+      action?.movementScope === "regional"
+        && action.destinationHub === resolved.targetLocation)
+    : null;
+  const movement = exactLocal ?? regional;
+  const primary = evidence ?? (movement ? {
+    ...movement,
+    id: actionId(regional === movement ? "LEAD_HUB" : "LEAD", lead.id),
+    label: `${resolved.targetLocation !== currentHub
+      ? `${resolved.targetLocation}ã¸å‘ã‹ã„ã€`
+      : `${resolved.destinationName}ã¸å‘ã‹ã„ã€`}${resolved.label}`,
+    authoredMissionFlowExclusiveChoice: true,
+    authoredMissionFlowId: P.id,
+    authoredMissionFlowKind: "lead",
+    authoredMissionFlowLeadId: lead.id,
+    authoredMissionFlowTargetFacilityId: resolved.facilityId,
+    authoredMissionFlowEvidenceSourceId: resolved.sourceId,
+  } : null);
+  const actions = [
+    primary,
+    {
+      id: actionId("RECONSIDER", lead.id),
+      family: "prepare",
+      type: "plan",
+      minutes: 4,
+      label: "ã“ã®çµŒè·¯ã‚’æˆ»ã—ã€åˆ¥ã®è¨¼æ‹ åˆ†é¡ã‚’é¸ã¶",
+      authoredMissionFlowExclusiveChoice: true,
+      authoredMissionFlowId: P.id,
+      authoredMissionFlowKind: "reconsider_lead",
+    },
+    deferAction(),
+  ].filter(Boolean);
+  return actions.length === 3 ? actions : null;
+}
 
-XY
-HOˆXY™\ØÛİ™\RYOOHY
-JBˆ™š[\Š›ÛÛX[ŠBˆ›X\
-
-XY
-HOˆ
-ÂˆYˆXİ[Û’Y
-“U’QĞUÔ—Ô“ÕUH‹XYšY
-Kˆ˜[Z[Nˆœ™\\™H‹ˆ\Nˆœ[ˆ‹ˆZ[]\ÎˆËˆX™[ˆXY›X™[ˆ]]Ü™YZ\ÜÚ[Û‘›İÑ^Û\Ú]™PÚÚXÙNˆYKˆ]]Ü™YZ\ÜÚ[Û‘›İÒYˆšYˆ]]Ü™YZ\ÜÚ[Û‘›İÒÚ[™ˆ›˜]šYØ]Ü—Ü›İ]H‹ˆ]]Ü™YZ\ÜÚ[Û‘›İÓ˜]šYØ]Ü‘›Øİ\ÒYˆ›Øİ\ËšYˆ]]Ü™YZ\ÜÚ[Û‘›İÓ˜]šYØ]Ü‘Ü›İ\YˆÜ›İ\šYˆ]]Ü™YZ\ÜÚ[Û‘›İÓXYYˆXYšYˆ]]Ü™YZ\ÜÚ[Û‘›İÕ\™Ù]˜XÚ[]RYˆXY™˜XÚ[]RYˆ]]Ü™YZ\ÜÚ[Û‘›İÔØÙ[™U˜[œÚ][Ûˆ:*¯ù§îøàkº)¥¹à®xàc	ÛXY™\İ[˜][Û“˜[Y_xàn9éîøà¢ØˆJJNÂˆYˆ
-Xİ[ÛœË›[™İÊHÂˆXİ[ÛœËœ\Ú
-ÂˆYˆXİ[Û’Y
-“U’QĞUÔ—Ô“ÕUWĞPÒÈ‹Ü›İ\šY
-Kˆ˜[Z[Nˆœ™\\™H‹ˆ\Nˆœ[ˆ‹ˆZ[]\ÎˆKˆX™[ˆ¹d#8àf9¥®zaçxàk¹b)yb!ºhg¸àn9¢.øà¢È‹ˆ]]Ü™YZ\ÜÚ[Û‘›İÑ^Û\Ú]™PÚÚXÙNˆYKˆ]]Ü™YZ\ÜÚ[Û‘›İÒYˆšYˆ]]Ü™YZ\ÜÚ[Û‘›İÒÚ[™ˆ›˜]šYØ]Ü—Ü›İ]WØ˜XÚÈ‹ˆJNÂˆBˆYˆ
-Xİ[ÛœË›[™İÊHXİ[ÛœËœ\Ú
-Y™\Xİ[ÛŠ
-JNÂˆ™]\›ˆXİ[ÛœËœÛXÙJÊNÂŸB‚™[˜İ[Ûˆ]šY[˜ÙPXİ[ÛŠ[[YKXY
-HÂˆÛÛœİ™\ÛÛ™YH™\ÛÛ™YXY
-[[YKXY
-NÂˆÛÛœİ›İÈH[œİ\™LNJ[[YJNÂˆYˆ
-[[YOËœ^Y\”İ]OËœ^Y\Ë™˜XÚ[]RYOOH™\ÛÛ™Y™˜XÚ[]RYˆ›İË™]šY[˜ÙRYËš[˜ÛY\ÊXY™\ØÛİ™\RY
-JH™]\›ˆ[Âˆ™]\›ˆÂˆYˆXİ[Û’Y
-™\ÛÛ™YœÛİ\˜ÙRÚ[™OOH™˜[˜XÚÈˆÈ‘SPÒ×ÑU’QSÑHˆˆ‘U’QSÑH‹XYšY
-Kˆ˜[Z[Nˆš[™\İYØ]H‹ˆ\Nˆš[™\İYØ]H‹ˆZ\ÜÚ[Û’Yˆ›Z\ÜÚ[Û’Yˆİ\Yˆš[™\İYØ][Û‹œİ\YˆZ\ÜÚ[Û•]Nˆ]KˆZ\ÜÚ[Û•›İX›RYˆ›İX›RYˆZ[]\Îˆ™\ÛÛ™Y›Z[]\ËˆX™[ˆ™\ÛÛ™Y›X™[ˆ\›ØXÚYˆ™\ÛÛ™Y˜\›ØXÚYˆ\ØÛİ™\RYˆXY™\ØÛİ™\RYˆ\ØÛİ™\U^ˆ™\ÛÛ™Y™\ØÛİ™\U^ˆ]]Ü™YZ\ÜÚ[Û‘›İÑ^Û\Ú]™PÚÚXÙNˆYKˆ]]Ü™YZ\ÜÚ[Û‘›İÒYˆšYˆ]]Ü™YZ\ÜÚ[Û‘›İÒÚ[™ˆ™]šY[˜ÙH‹ˆ]]Ü™YZ\ÜÚ[Û‘›İÓXYYˆXYšYˆ]]Ü™YZ\ÜÚ[Û‘›İÑ]šY[˜ÙRYˆXY™\ØÛİ™\RYˆ]]Ü™YZ\ÜÚ[Û‘›İÑ]šY[˜ÙTÛİ\˜ÙRYˆ™\ÛÛ™YœÛİ\˜ÙRYˆNÂŸB‚™[˜İ[ÛˆÙ[XİYXYXİ[ÛœÊ[[YK›İË[İ™[Y[Xİ[ÛœÈH×JHÂˆÛÛœİXYHXYRY
-›İËœÙ[XİYXYY
-NÂˆYˆ
-[XY
-H™]\›ˆ[ÂˆÛÛœİ™\ÛÛ™YH™\ÛÛ™YXY
-[[YKXY
-NÂˆÛÛœİ]šY[˜ÙHH]šY[˜ÙPXİ[ÛŠ[[YKXY
-NÂˆÛÛœİİ\œ™[XˆH[[YKœ^Y\”İ]Kœ^Y\‹›ØØ][ÛÂˆÛÛœİ^XİØØ[H[İ™[Y[Xİ[ÛœË™š[™
-
-Xİ[ÛŠHO‚ˆXİ[ÛË›[İ™[Y[ØÛÜHOOH›ØØ[‚ˆ	‰ˆXİ[Û‹™\İ[˜][Û‘˜XÚ[]RYOOH™\ÛÛ™Y™˜XÚ[]RY
-NÂˆÛÛœİ™YÚ[Û˜[H™\ÛÛ™Y\™Ù]ØØ][ÛˆOOHİ\œ™[X‚ˆÈ[İ™[Y[Xİ[ÛœË™š[™
-
-Xİ[ÛŠHO‚ˆXİ[ÛË›[İ™[Y[ØÛÜHOOHœ™YÚ[Û˜[‚ˆ	‰ˆXİ[Û‹™\İ[˜][Û’XˆOOH™\ÛÛ™Y\™Ù]ØØ][ÛŠBˆˆ[ÂˆÛÛœİ[İ™[Y[H^XİØØ[ÏÈ™YÚ[Û˜[ÂˆÛÛœİš[X\HH]šY[˜ÙHÏÈ
-[İ™[Y[ÈÂˆ‹‹›[İ™[Y[ˆYˆXİ[Û’Y
-™YÚ[Û˜[OOH[İ™[Y[È“PQÒPˆˆˆ“PQ‹XYšY
-KˆX™[ˆ	Ü™\ÛÛ™Y\™Ù]ØØ][ÛˆOOHİ\œ™[X‚ˆÈ	Ü™\ÛÛ™Y\™Ù]ØØ][ÛŸxàn9d$xàbøàa8à Xˆˆ	Ü™\ÛÛ™Y™\İ[˜][Û“˜[Y_xàn9d$xàbøàa8à XIÜ™\ÛÛ™Y›X™[Xˆ]]Ü™YZ\ÜÚ[Û‘›İÑ^Û\Ú]™PÚÚXÙNˆYKˆ]]Ü™YZ\ÜÚ[Û‘›İÒYˆšYˆ]]Ü™YZ\ÜÚ[Û‘›İÒÚ[™ˆ›XY‹ˆ]]Ü™YZ\ÜÚ[Û‘›İÓXYYˆXYšYˆ]]Ü™YZ\ÜÚ[Û‘›İÕ\™Ù]˜XÚ[]RYˆ™\ÛÛ™Y™˜XÚ[]RYˆ]]Ü™YZ\ÜÚ[Û‘›İÑ]šY[˜ÙTÛİ\˜ÙRYˆ™\ÛÛ™YœÛİ\˜ÙRYˆHˆ[
-NÂˆÛÛœİXİ[ÛœÈHÂˆš[X\KˆÂˆYˆXİ[Û’Y
-”‘PÓÓ”ÒQTˆ‹XYšY
-Kˆ˜[Z[Nˆœ™\\™H‹ˆ\Nˆœ[ˆ‹ˆZ[]\ÎˆˆX™[ˆ¸àdøàk¹íc:-ëøà¤¹¢.øàeøà yb)xàkº*/9¢è9b!ºhg¸à¤º`n8àmˆ‹ˆ]]Ü™YZ\ÜÚ[Û‘›İÑ^Û\Ú]™PÚÚXÙNˆYKˆ]]Ü™YZ\ÜÚ[Û‘›İÒYˆšYˆ]]Ü™YZ\ÜÚ[Û‘›İÒÚ[™ˆœ™XÛÛœÚY\—ÛXY‹ˆKˆY™\Xİ[ÛŠ
-KˆK™š[\Š›ÛÛX[ŠNÂˆ™]\›ˆXİ[ÛœË›[™İOOHÈÈXİ[ÛœÈˆ[ÂŸB‚‚™^ÜÛÛœİNWÔÕUWÒS•T“SÈHŠÂˆ]˜Z[X›Kˆİ\ˆÛİ\˜ÙP]ˆXYRYˆ™\ÛÛ™YXYˆ™]™X[XY\İ[˜][Û‹ˆZ\ÜÚ[Û‹ˆZ\ÜÚ[Û‘Y‹ˆ[œİ\™LNKˆ]šY[˜ÙQÜ›İ\ËˆXİ[Û’YˆÜ[š[™ĞXİ[ÛœËˆ˜]šYØ]Ü‘›Øİ\Ù\Ëˆ›Øİ\ĞXİ[ÛœËˆÜ›İ\Xİ[ÛœËˆ›İ]PXİ[ÛœËˆ]šY[˜ÙPXİ[Û‹ˆÙ[XİYXYXİ[ÛœËˆY™\Xİ[Û‹ŸJNÂ
+export const T19_STATE_INTERNALS = F({
+  available,
+  step,
+  sourceAt,
+  leadById,
+  resolvedLead,
+  revealLeadDestination,
+  mission,
+  missionDef,
+  ensure19,
+  evidenceGroups,
+  actionId,
+  openingActions,
+  navigatorFocuses,
+  focusActions,
+  groupActions,
+  routeActions,
+  evidenceAction,
+  selectedLeadActions,
+  deferAction,
+});
