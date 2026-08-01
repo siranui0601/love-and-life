@@ -1,0 +1,22 @@
+name: Export Ten Freely infinite-lives sources
+
+on:
+  push:
+    branches:
+      - feature/ten-freely-infinite-lives
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ten-freely-infinite-sources
+          path: |
+            public/10を自由に
+            src/10を自由に
+          retention-days: 1
