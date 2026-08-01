@@ -153,10 +153,45 @@
         <div class="online-tabs" role="tablist" aria-label="ルーム操作"><button class="is-active" type="button" data-online-tab="create">ルーム作成</button><button type="button" data-online-tab="join">ルーム参加</button></div>
         <form class="online-form is-active" id="onlineCreateForm" data-online-panel="create">
           <div class="online-form-intro"><small>HOST SETTINGS</small><h3>同じ条件で、先に規定勝利数へ</h3><p>問題ごとに残機は回復します。正解または相手の残機切れで1勝です。</p></div>
-          <fieldset><legend>出題する桁数</legend><div class="mini-choice-grid"><label><input type="checkbox" name="onlineDigitLength" value="3" checked /><span>3桁</span></label><label><input type="checkbox" name="onlineDigitLength" value="4" /><span>4桁</span></label><label><input type="checkbox" name="onlineDigitLength" value="5" /><span>5桁</span></label></div></fieldset>
-          <fieldset><legend>1問ごとの残機</legend><div class="mini-segment"><label><input type="radio" name="onlineLives" value="1" /><span>1</span></label><label><input type="radio" name="onlineLives" value="3" checked /><span>3</span></label><label><input type="radio" name="onlineLives" value="5" /><span>5</span></label></div></fieldset>
+          <fieldset>
+            <legend>出題する桁数</legend>
+            <div class="mini-choice-grid">
+              <label>
+                <input type="checkbox" name="onlineDigitLength" value="3" checked />
+                <span>3桁</span>
+              </label>
+              <label>
+                <input type="checkbox" name="onlineDigitLength" value="4" />
+                <span>4桁</span>
+              </label>
+              <label>
+                <input type="checkbox" name="onlineDigitLength" value="5" />
+                <span>5桁</span>
+              </label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>1問ごとの残機</legend>
+            <div class="mini-segment">
+              <label>
+                <input type="radio" name="onlineLives" value="1" />
+                <span>1</span>
+              </label>
+              <label>
+                <input type="radio" name="onlineLives" value="3" checked />
+                <span>3</span>
+              </label>
+              <label>
+                <input type="radio" name="onlineLives" value="5" />
+                <span>5</span>
+              </label>
+            </div>
+          </fieldset>
           <fieldset><legend>先取する勝利数</legend><div class="mini-segment"><label><input type="radio" name="onlineWins" value="3" checked /><span>3勝</span></label><label><input type="radio" name="onlineWins" value="5" /><span>5勝</span></label><label><input type="radio" name="onlineWins" value="10" /><span>10勝</span></label></div></fieldset>
-          <button class="primary-action" type="submit"><span>ルームを作成</span><span>→</span></button>
+          <button class="primary-action" type="submit">
+            <span>ルームを作成</span>
+            <span>→</span>
+          </button>
         </form>
         <form class="online-form" id="onlineJoinForm" data-online-panel="join">
           <div class="online-form-intro"><small>JOIN ROOM</small><h3>6桁のルームコードを入力</h3><p>ホストから共有されたコードで、同じ対戦ルームへ入れます。</p></div>
