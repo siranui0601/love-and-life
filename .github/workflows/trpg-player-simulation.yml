@@ -11,32 +11,12 @@ on:
       - ".github/workflows/trpg-player-simulation.yml"
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   simulate:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-      - name: Apply one-time generic clue fixture patch
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/trpg-human-authored-choices'
-        shell: bash
-        run: |
-          script=.github/scripts/apply-t19-generic-clue-fixture.py
-          if [ ! -f "$script" ]; then
-            echo "One-time patch already applied."
-            exit 0
-          fi
-          python "$script"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools/trpg-sim/test/game-service.test.mjs "$script"
-          git commit -m "TRPG: 全事件手書き化後も汎用会話契約を独立検証"
-          git push origin "HEAD:${{ github.head_ref }}"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
