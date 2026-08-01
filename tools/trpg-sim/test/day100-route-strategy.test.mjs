@@ -106,6 +106,61 @@ test("active mission choice outranks repeated weapon-shop guidance", () => {
   assert.equal(decision.actionId, "ACTION:MSN-T02:inspect-granary");
 });
 
+test("authored navigator group is selected before wandering to another facility", () => {
+  const save = baseSave({
+    choices: [
+      {
+        choiceId: "CHOICE-BACK",
+        actionId: "MISSION_FLOW:granary-fire:NAVIGATOR_BACK:origin",
+        label: "前の焦点へ戻る",
+      },
+      {
+        choiceId: "CHOICE-GROUP-A",
+        actionId: "MISSION_FLOW:granary-fire:NAVIGATOR_GROUP:fire_origin",
+        label: "火元と油の経路を追う",
+      },
+      {
+        choiceId: "CHOICE-GROUP-B",
+        actionId: "MISSION_FLOW:granary-fire:NAVIGATOR_GROUP:grain_diversion",
+        label: "消えた穀物の行き先を追う",
+      },
+    ],
+    movement: [
+      {
+        moveId: "MOVE_LOCAL:LOC_FARM_CHIEF",
+        scope: "local",
+        destination: "田園の村",
+        destinationFacilityId: "LOC_FARM_CHIEF",
+        label: "村長宅へ移動する",
+      },
+    ],
+    missions: [
+      {
+        id: "MSN-T02",
+        troubleId: "T02",
+        title: "共同穀倉放火",
+        kind: "special",
+        status: "active",
+        deadlineDay: 18,
+        finalDay: 35,
+        currentStep: {
+          id: "investigate",
+          targetLocation: "田園の村",
+          targetFacilityId: "LOC_FARM_SQUARE",
+        },
+      },
+    ],
+  });
+  const decision = selectDay100RouteDecision({
+    save,
+    model,
+    state: coverageState(),
+    routeMode: "deadline",
+  });
+  assert.equal(decision.type, "CHOOSE");
+  assert.equal(decision.actionId, "MISSION_FLOW:granary-fire:NAVIGATOR_GROUP:fire_origin");
+});
+
 test("undiscovered trouble location outranks unrelated shop guidance", () => {
   const save = baseSave({
     scene: { location: "王都", facilityId: "LOC_CAP_SQUARE", beats: [] },
