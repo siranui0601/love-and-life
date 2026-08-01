@@ -20,6 +20,9 @@ function coverageState() {
         firstRumorMinute: null,
         firstMissionMinute: null,
         finalTroubleStatus: null,
+        maximumProgressRatio: 0,
+        visitedPrimaryLocations: [],
+        stalledTurns: 0,
       },
     },
   };
