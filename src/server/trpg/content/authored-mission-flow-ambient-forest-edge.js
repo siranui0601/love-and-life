@@ -7,6 +7,7 @@ export const AUTHORED_MISSION_AMBIENT_FOREST_EDGE_VERSION = "authored-mission-am
 
 const FLOW_ID = T13.id;
 const MISSION_ID = T13.missionId;
+const FOREST_HUB = "森";
 const FOREST_EDGE = "LOC_FOREST_EDGE";
 
 const {
@@ -45,7 +46,7 @@ function ambientGuidance(flow) {
       kicker: "再訪・世界は先へ進んでいる",
       title: stage.title,
       detail: "同じ痕跡や同じ質問には戻れない。変化した証拠、NPCの先行行動、閉じた経路を背負って三つから選ぶ。",
-      targetLocation: player({ playerState: { player: { location: "森" } } }).location,
+      targetLocation: FOREST_HUB,
       targetFacilityId: FOREST_EDGE,
       actionPanel: null,
     };
@@ -55,7 +56,7 @@ function ambientGuidance(flow) {
     kicker: "森入口で得られる機会は尽きた",
     title: "完全解決を諦めるか、現地へ委ねるか、撤退するか決める",
     detail: "証拠と証言は既に移動・消失している。同じ調査を繰り返さず、不可逆な結果を選ぶ。",
-    targetLocation: "森",
+    targetLocation: FOREST_HUB,
     targetFacilityId: FOREST_EDGE,
     actionPanel: null,
   };
