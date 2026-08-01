@@ -4,6 +4,7 @@ import { DAY100_ROUTE_STRATEGY_INTERNALS } from "../lib/day100-route-strategy.mj
 
 const {
   authoredFlowChoice,
+  capitalWeaponShopFirstDecision,
   guidanceMissionId,
   missionChoiceAllowed,
   missionChoiceContext,
@@ -56,4 +57,29 @@ test("an unchanged route action is bounded after two accepted attempts", () => {
   assert.equal(choiceWouldStall({ routeStrategyChoiceMemory: { context, count: 1 } }, context), false);
   assert.equal(choiceWouldStall({ routeStrategyChoiceMemory: { context, count: 2 } }, context), true);
   assert.equal(authoredFlowChoice({ actionId: "MISSION_FLOW:t13:LEAD_HUB:lead" }), true);
+});
+
+test("weapon shop onboarding choice is completed before leaving the shop", () => {
+  const decision = capitalWeaponShopFirstDecision({
+    choices: [
+      {
+        choiceId: "SHOP-FIRST-ASK",
+        actionId: "CAPITAL_WEAPON_SHOP:FIRST:ASK_STYLE",
+        label: "店主へ相談する",
+      },
+      {
+        choiceId: "SHOP-FIRST-COMPARE",
+        actionId: "CAPITAL_WEAPON_SHOP:FIRST:COMPARE_HANDLING",
+        label: "武器の扱いを比べる",
+      },
+      {
+        choiceId: "UNRELATED",
+        actionId: "MOVE_LOCAL:LOC_CAP_APOTHECARY",
+        label: "薬屋へ移動する",
+      },
+    ],
+  }, { blockedDecisionKeys: {} }, "deadline");
+  assert.equal(decision.type, "CHOOSE");
+  assert.equal(decision.actionId, "CAPITAL_WEAPON_SHOP:FIRST:ASK_STYLE");
+  assert.equal(decision.category, "shop_onboarding");
 });
