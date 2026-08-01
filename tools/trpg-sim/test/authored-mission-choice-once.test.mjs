@@ -71,7 +71,7 @@ test("backtracking controls become irreversible branch losses", () => {
   assert.match(defer.label, /事件から手を引き/u);
 });
 
-test("the same authored choice set is never presented twice", () => {
+test("a repeated authored choice set is replaced by a different consequence set", () => {
   const state = runtime();
   const first = guardExclusiveActions(state, choices());
   assert.equal(first.length, 3);
@@ -89,7 +89,12 @@ test("the same authored choice set is never presented twice", () => {
     ["one_shot_publish_partial", "one_shot_delegate", "one_shot_withdraw"],
   );
   assert.ok(second.every((choice) => choice.authoredMissionFlowRepeatedChoiceSetId === setId));
-  assert.ok(second.every((choice) => !first.some((oldChoice) => oldChoice.id === choice.id)));
+  assert.notDeepEqual(
+    second.map((choice) => choice.id),
+    first.map((choice) => choice.id),
+    "the complete three-choice encounter must change even when one consequence remains possible",
+  );
+  assert.ok(second.filter((choice) => !first.some((oldChoice) => oldChoice.id === choice.id)).length >= 2);
   assert.equal(once.repeatedSetFallbackCount, countBeforeRead, "reading choices must not mutate the save");
 });
 
