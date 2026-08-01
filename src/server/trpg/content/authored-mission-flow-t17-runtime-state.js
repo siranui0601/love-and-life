@@ -12,7 +12,11 @@ const SELECTS_LEAD = new Set(["navigator_route", "lead", "resolution_preparation
 const VERSION = "authored-mission-flow-t17-v1";
 
 export const AUTHORED_MISSION_CONTINUITY_VERSION = "authored-mission-continuity-v4";
-export const AUTHORED_MISSION_FLOW_PACKS = F([...base.AUTHORED_MISSION_FLOW_PACKS, P]);
+export const AUTHORED_MISSION_FLOW_PACKS = F([
+  ...base.AUTHORED_MISSION_FLOW_PACKS.filter((pack) =>
+    pack.id !== P.id && pack.missionId !== P.missionId),
+  P,
+]);
 export const AUTHORED_MISSION_CONTINUITY_CONTRACTS = F({
   ...base.AUTHORED_MISSION_CONTINUITY_CONTRACTS,
   [P.id]: CONTRACT,
