@@ -25,10 +25,6 @@ function unique(values) {
   return [...new Set(array(values).map((value) => String(value ?? "").trim()).filter(Boolean))];
 }
 
-function packForFlow(flowId) {
-  return base.AUTHORED_MISSION_FLOW_PACKS.find((pack) => pack.id === flowId) ?? null;
-}
-
 function flowFor(runtime, flowId) {
   return runtime?.authoredMissionFlows?.[flowId] ?? null;
 }
@@ -185,15 +181,14 @@ function completeToThree(actions, flowId) {
   return result.slice(0, 3);
 }
 
-function repeatedSetConsequences(flowId, setId, once) {
-  once.repeatedSetFallbackCount += 1;
+function repeatedSetConsequences(flowId, setId) {
   return [
     partialReportAction(flowId),
     delegatedAction(flowId),
     withdrawAction(flowId),
   ].map((action) => ({
     ...action,
-    authoredMissionFlowChoiceSetId: `${setId}|REPEAT:${once.repeatedSetFallbackCount}`,
+    authoredMissionFlowChoiceSetId: `${setId}|REPEAT`,
     authoredMissionFlowRepeatedChoiceSetId: setId,
   }));
 }
@@ -212,7 +207,7 @@ function guardExclusiveActions(runtime, actions) {
   const completed = completeToThree(available, flowId);
   const setId = actionSetId(completed, flow);
   if (once.consumedChoiceSetIds.includes(setId)) {
-    return repeatedSetConsequences(flowId, setId, once);
+    return repeatedSetConsequences(flowId, setId);
   }
   return completed.map((action) => ({
     ...action,
@@ -247,6 +242,12 @@ function applyOneShotConsequence(runtime, action, result) {
   const once = ensureOnceState(flow);
   const minute = Number(runtime.playerState.absoluteMinute ?? 0);
   const kind = action.authoredMissionFlowKind;
+  if (action.authoredMissionFlowRepeatedChoiceSetId) {
+    once.repeatedSetFallbackCount += 1;
+    addHistory(runtime, action, "AUTHORED_MISSION_CHOICE_SET_REPEAT_BLOCKED", {
+      repeatedChoiceSetId: action.authoredMissionFlowRepeatedChoiceSetId,
+    });
+  }
   if (kind === "one_shot_abandon_focus") {
     const id = action.authoredMissionFlowNavigatorFocusId ?? flow.navigatorFocusId;
     if (id) once.abandonedFocusIds = unique([...once.abandonedFocusIds, id]);
@@ -333,9 +334,7 @@ export function authoredMissionFlowEvidenceAction(runtime) {
   const once = flow ? ensureOnceState(flow) : null;
   if (once && (once.withdrawnAtMinute != null || once.delegatedAtMinute != null)) return null;
   if (once?.abandonedLeadIds.includes(action.authoredMissionFlowLeadId)) return null;
-  const setId = actionSetId([action], flow);
-  if (once?.consumedChoiceSetIds.includes(setId)) return null;
-  return { ...action, authoredMissionFlowChoiceSetId: setId };
+  return action;
 }
 
 export function suppressGenericAuthoredMissionAction(runtime, action) {
@@ -384,6 +383,7 @@ export const AUTHORED_MISSION_CHOICE_ONCE_INTERNALS = Object.freeze({
   isAbandoned,
   transformedControl,
   completeToThree,
+  repeatedSetConsequences,
   guardExclusiveActions,
   recordConsumedSet,
   applyOneShotConsequence,
