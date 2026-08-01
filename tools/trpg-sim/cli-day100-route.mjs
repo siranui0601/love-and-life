@@ -6,6 +6,12 @@ import {
   writeDay100PlayerArtifacts,
 } from "./lib/day100-player-runner.mjs";
 import {
+  createChoiceSetAudit,
+  finalizeChoiceSetAudit,
+  inspectChoiceSetBeforeSelection,
+  recordChoiceSetSelection,
+} from "./lib/choice-set-audit.mjs";
+import {
   DAY100_ROUTE_MODES,
   selectDay100RouteDecision,
 } from "./lib/day100-route-strategy.mjs";
@@ -26,6 +32,7 @@ class Day100RouteRunner extends Day100GameRunner {
   constructor(options = {}) {
     super(options);
     this.routeMode = options.routeMode ?? "deadline";
+    this.choiceSetAudit = createChoiceSetAudit();
   }
 
   async step() {
@@ -43,15 +50,30 @@ class Day100RouteRunner extends Day100GameRunner {
       await this.finishBattle(decision);
       return true;
     }
-    await this.command(decision.type, decision.payload ?? {}, decision);
+    const choiceSet = decision.type === "CHOOSE"
+      ? inspectChoiceSetBeforeSelection(this.choiceSetAudit, this.save)
+      : { signature: null, duplicate: false };
+    const response = await this.command(decision.type, decision.payload ?? {}, {
+      ...decision,
+      repeatedChoiceSet: choiceSet.duplicate,
+      choiceSetSignature: choiceSet.signature,
+    });
+    if (decision.type === "CHOOSE") {
+      const outcome = response.save?.scene?.lastOutcome ?? null;
+      const accepted = outcome?.ok !== false
+        && outcome?.success !== false
+        && outcome?.accepted !== false;
+      recordChoiceSetSelection(this.choiceSetAudit, choiceSet.signature, accepted);
+    }
     return true;
   }
 
   async run() {
     const result = await super.run();
+    const choiceSets = finalizeChoiceSetAudit(this.choiceSetAudit);
     result.report.routeMode = this.routeMode;
     result.report.routeTrial = {
-      schemaVersion: "trpg-day100-route-trial-v1",
+      schemaVersion: "trpg-day100-route-trial-v2",
       discovered: result.report.counts.discovered,
       engaged: result.report.counts.engaged,
       progressed: result.report.counts.progressed,
@@ -61,7 +83,10 @@ class Day100RouteRunner extends Day100GameRunner {
         || result.report.counts.progressed > 1
         || result.report.counts.resolved > 1,
       allRescueCandidate: result.report.counts.resolved === result.report.counts.total,
+      choiceSets,
     };
+    result.report.quality.noRepeatedChoiceSet = choiceSets.passed;
+    result.report.quality.passed = Object.values(result.report.quality).every(Boolean);
     return result;
   }
 }
@@ -107,11 +132,13 @@ console.log(`\nTRPG_DAY100_ROUTE_MODE=${routeMode}`);
 console.log(`TRPG_DAY100_ROUTE_DISCOVERED=${result.report.counts.discovered}`);
 console.log(`TRPG_DAY100_ROUTE_PROGRESSED=${result.report.counts.progressed}`);
 console.log(`TRPG_DAY100_ROUTE_RESOLVED=${result.report.counts.resolved}`);
+console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CHOICE_SETS=${result.report.routeTrial.choiceSets.duplicateEncounterCount}`);
 console.log(`TRPG_DAY100_ROUTE_ALL_RESCUE=${result.report.routeTrial.allRescueCandidate ? "YES" : "NO"}`);
 
 if (process.argv.includes("--strict-runtime")) {
   const runtimePassed = result.report.reachedDay100
     && result.report.deadEnds === 0
-    && result.report.errors.length === 0;
+    && result.report.errors.length === 0
+    && result.report.routeTrial.choiceSets.passed;
   if (!runtimePassed) process.exitCode = 1;
 }
