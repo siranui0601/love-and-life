@@ -13,6 +13,7 @@ const {
 const INFORMATION_PATTERN = /(?:CONCERN|CHANGE|RUMOR|CLUE|INQUIRY|TALK|DIALOGUE|INSPECT|OBSERVE|INVESTIGATE|調べ|尋ね|聞く|話しかけ|様子|噂|手掛かり)/iu;
 const SHOP_PATTERN = /(?:SHOP|WEAPON|EQUIP|武器屋|装備|試着|試す)/iu;
 const AUTHORED_FLOW_PATTERN = /^MISSION_FLOW:/u;
+const CAPITAL_WEAPON_SHOP_FIRST_PATTERN = /^CAPITAL_WEAPON_SHOP:FIRST:/u;
 const AUTHORED_FLOW_CONTROL_PATTERN = /:(?:NAVIGATOR_BACK|BACK|CANCEL|ABORT|RECONSIDER|DEFER)(?::|$)/u;
 
 export const DAY100_ROUTE_MODES = Object.freeze([
@@ -131,6 +132,19 @@ function availableChoices(save, state, predicate) {
 function chooseVariant(entries, mode) {
   if (!entries.length) return null;
   return entries[modeIndex(mode) % entries.length];
+}
+
+function capitalWeaponShopFirstDecision(save, state, mode) {
+  const choice = chooseVariant(
+    availableChoices(save, state, (entry) =>
+      CAPITAL_WEAPON_SHOP_FIRST_PATTERN.test(String(entry.actionId ?? ""))),
+    mode,
+  );
+  return choice ? choiceDecision(
+    choice,
+    "王都武器屋の初回相談で、旅に持ち込む装備方針を決める",
+    { routeMode: mode, category: "shop_onboarding" },
+  ) : null;
 }
 
 function missionTrouble(model, mission) {
@@ -356,7 +370,8 @@ export function selectDay100RouteDecision({
   const base = selectDay100Decision({ save, model, state });
   if (isBaseOnlyPhase(save, base) || shouldKeepBaseForSurvival(save, base)) return base;
 
-  return activeMissionDecision(save, model, state, mode)
+  return capitalWeaponShopFirstDecision(save, state, mode)
+    ?? activeMissionDecision(save, model, state, mode)
     ?? discoveryDecision(save, model, state, mode)
     ?? base;
 }
@@ -364,6 +379,7 @@ export function selectDay100RouteDecision({
 export const DAY100_ROUTE_STRATEGY_INTERNALS = Object.freeze({
   ROUTE_ORDER,
   authoredFlowChoice,
+  capitalWeaponShopFirstDecision,
   guidanceMissionId,
   missionChoiceAllowed,
   missionChoiceContext,
