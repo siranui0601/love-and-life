@@ -13,7 +13,7 @@ const {
 const INFORMATION_PATTERN = /(?:CONCERN|CHANGE|RUMOR|CLUE|INQUIRY|TALK|DIALOGUE|INSPECT|OBSERVE|INVESTIGATE|調べ|尋ね|聞く|話しかけ|様子|噂|手掛かり)/iu;
 const SHOP_PATTERN = /(?:SHOP|WEAPON|EQUIP|武器屋|装備|試着|試す)/iu;
 const AUTHORED_FLOW_PATTERN = /^MISSION_FLOW:/u;
-const AUTHORED_FLOW_BACK_PATTERN = /:(?:NAVIGATOR_BACK|BACK|CANCEL|ABORT)(?::|$)/u;
+const AUTHORED_FLOW_CONTROL_PATTERN = /:(?:NAVIGATOR_BACK|BACK|CANCEL|ABORT|RECONSIDER|DEFER)(?::|$)/u;
 
 export const DAY100_ROUTE_MODES = Object.freeze([
   "deadline",
@@ -44,7 +44,7 @@ function actionText(entry) {
 
 function authoredFlowChoice(entry) {
   const actionId = String(entry?.actionId ?? "");
-  return AUTHORED_FLOW_PATTERN.test(actionId) && !AUTHORED_FLOW_BACK_PATTERN.test(actionId);
+  return AUTHORED_FLOW_PATTERN.test(actionId) && !AUTHORED_FLOW_CONTROL_PATTERN.test(actionId);
 }
 
 function modeIndex(mode) {
