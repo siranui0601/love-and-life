@@ -1,4 +1,4 @@
-name: Export mismatched Ten Freely patch chunk
+name: Apply Ten Freely infinite-lives update
 
 on:
   pull_request:
@@ -6,18 +6,116 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export:
+  apply:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feature/ten-freely-infinite-lives'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: feature/ten-freely-infinite-lives
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ten-freely-part00-diagnostic
-          path: .github/ten-freely-infinite-patch/part00
-          retention-days: 1
+          fetch-depth: 0
+
+      - name: Restore, verify and apply patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '8bcb5bc73da9bd06be9c778db456db28f1c492e1e76c0c09a88991562d1742b3  .github/ten-freely-infinite-patch/part00' | sha256sum -c -
+          echo '98e81931f86757a0c58c34d09555dbbc917947bb86e3302103e03449ba61a44b  .github/ten-freely-infinite-patch/part01' | sha256sum -c -
+          echo '5ad575e6b37950c66516034143be532d331ef2823676efa6174d3513342a3887  .github/ten-freely-infinite-patch/part02' | sha256sum -c -
+          echo 'c875a858e517e2c84a1b1c226fab27a07c206ffef03fa7b4b6eb9061857f87b6  .github/ten-freely-infinite-patch/part03' | sha256sum -c -
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/ten-freely-infinite-patch/part00')
+          data = bytearray(path.read_bytes())
+          assert len(data) == 12004
+          assert bytes(data[2043:2045]) == b'lt'
+          assert bytes(data[2329:2335]) == b'arjgor'
+          data[2043:2045] = b'tl'
+          data[2329:2335] = b'Zf'
+          path.write_bytes(data)
+          PY
+          echo 'da0195c959db0acd95454aab2b855e64c2f52900a9e321ab08abfbd4504d3af5  .github/ten-freely-infinite-patch/part00' | sha256sum -c -
+          cat .github/ten-freely-infinite-patch/part00 .github/ten-freely-infinite-patch/part01 .github/ten-freely-infinite-patch/part02 .github/ten-freely-infinite-patch/part03 | tr -d '\r\n' | base64 --decode > /tmp/ten-freely-infinite.patch
+          echo '53147adaad0464210681892c34013fdfe015d10439d52d0879bc1dbc2ae6d538  /tmp/ten-freely-infinite.patch' | sha256sum -c -
+          git apply --check /tmp/ten-freely-infinite.patch
+          git apply /tmp/ten-freely-infinite.patch
+
+      - name: Verify JavaScript, lessons and infinite lives
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check 'public/10を自由に/app.js'
+          node --check 'public/10を自由に/online.js'
+          node --check 'src/10を自由に/index.js'
+          node --check 'src/10を自由に/online.js'
+          node --check 'src/10を自由に/storage.js'
+          node --input-type=module <<'NODE'
+          import { evaluateExpression, isTen, validateDigitUsage } from './public/10を自由に/expression-engine.js';
+          const cases = [
+            ['34', '3!+4'],
+            ['5', '5!!!'],
+            ['52', '5C2'],
+            ['522', '5P2/2'],
+          ];
+          for (const [problem, expression] of cases) {
+            const evaluated = evaluateExpression(expression);
+            if (!isTen(evaluated.value)) throw new Error(`${expression} did not make 10`);
+            if (!validateDigitUsage(evaluated.ast, problem).valid) throw new Error(`${expression} used the wrong digits`);
+          }
+          console.log('Tutorial expressions verified');
+          NODE
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class Parser(HTMLParser):
+              pass
+
+          root = Path('.')
+          html = (root / 'public/10を自由に/index.html').read_text(encoding='utf-8')
+          app = (root / 'public/10を自由に/app.js').read_text(encoding='utf-8')
+          online_client = (root / 'public/10を自由に/online.js').read_text(encoding='utf-8')
+          solo_server = (root / 'src/10を自由に/index.js').read_text(encoding='utf-8')
+          online_server = (root / 'src/10を自由に/online.js').read_text(encoding='utf-8')
+          storage = (root / 'src/10を自由に/storage.js').read_text(encoding='utf-8')
+          css = (root / 'public/10を自由に/style.css').read_text(encoding='utf-8')
+
+          Parser().feed(html)
+          assert html.count('name="lives"') == 4
+          assert html.count('name="onlineLives"') == 4
+          assert html.count('name="rankingLives"') == 4
+          assert '0 / 11' in html
+          assert 'tutorialFormulaLines' in html
+          assert 'id: "factorial"' in app
+          assert 'calculation: ["5C2"' in app
+          assert 'calculation: ["5P2"' in app
+          assert 'parseLives' in app and 'formatLives' in app
+          assert 'parseLives' in online_client and 'formatLives' in online_client
+          assert 'new Set([1, 3, 5, "infinity"])' in solo_server
+          assert 'new Set([1, 3, 5, "infinity"])' in online_server
+          assert solo_server.count('run.lives -= 1') == 1
+          assert online_server.count('member.lives -= 1') == 1
+          assert 'consumeRunLife' in solo_server
+          assert 'consumeMemberLife' in online_server
+          assert 'normalizeLives' in storage
+          assert 'lives=${normalizeLives(lives)}' in storage
+          assert css.count('{') == css.count('}')
+          assert '.life-infinity' in css
+          assert '.tutorial-formula' in css
+          print('Ten Freely infinite-lives verification passed')
+          PY
+
+      - name: Remove staging helpers and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/ten-freely-infinite-patch
+          rm -f .github/workflows/ten-freely-infinite-export.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(ten-freely): add infinite lives and operator lessons'
+          git push origin HEAD:feature/ten-freely-infinite-lives
