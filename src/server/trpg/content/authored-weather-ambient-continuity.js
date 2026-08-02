@@ -134,6 +134,9 @@ function ensureWeatherAmbientState(runtime) {
   state.locationMemories = state.locationMemories && typeof state.locationMemories === "object" ? state.locationMemories : {};
   state.weatherCounts = state.weatherCounts && typeof state.weatherCounts === "object" ? state.weatherCounts : {};
   state.branchCounts = state.branchCounts && typeof state.branchCounts === "object" ? state.branchCounts : {};
+  state.pendingSceneKey = clean(state.pendingSceneKey) || null;
+  state.pendingFacilityId = clean(state.pendingFacilityId) || null;
+  state.promptedSceneKeys = array(state.promptedSceneKeys).map(String);
   return state;
 }
 
@@ -280,6 +283,57 @@ function observeAction(runtime, weather, profile) {
   };
 }
 
+function weatherAmbientPromptEligible(runtime) {
+  if (!weatherAmbientEligible(runtime)) return false;
+  if (Number(runtime?.playerState?.day ?? 1) < 2) return false;
+  if (runtime?.dialogueSession || runtime?.pendingWorkOffer) return false;
+  if (runtime?.capitalArrivalGuidance?.pending === true) return false;
+  const resolvedActions = array(runtime?.playerState?.history)
+    .filter((entry) => entry?.type === "PLAYER_ACTION_RESOLVED").length;
+  return resolvedActions >= 3;
+}
+
+function weatherAmbientPromptAction(runtime, context = {}) {
+  if (!weatherAmbientPromptEligible(runtime)) return null;
+  const weather = currentWeather(runtime);
+  const profile = WEATHER_SCENES[weather.id];
+  const place = currentPlace(runtime);
+  const state = ensureWeatherAmbientState(runtime);
+  const key = sceneKey(runtime);
+  if (state.pendingSceneKey === key && state.pendingFacilityId === place.facilityId) return null;
+  const npc = preferredNpc(runtime, context);
+  return {
+    id: `AMBIENT_WEATHER:${sceneToken(runtime, weather)}:NOTICE`,
+    type: "plan",
+    family: "weather",
+    minutes: 2,
+    weatherAmbientPrompt: true,
+    weatherAmbientSceneKey: key,
+    weatherAmbientWeatherId: weather.id,
+    weatherAmbientWeatherLabel: weather.label,
+    weatherAmbientLocation: place.location,
+    weatherAmbientFacilityId: place.facilityId,
+    weatherAmbientDay: place.day,
+    weatherAmbientDaypart: place.daypart,
+    weatherAmbientTitle: profile.title,
+    ...(npc ? { targetNpcId: npc.id, targetNpcName: npc.name } : {}),
+    label: `${profile.title}。今だけの変化に関わる`,
+  };
+}
+
+function openWeatherAmbientScene(runtime, action, result) {
+  if (!action?.weatherAmbientPrompt || result?.ok === false) return false;
+  const state = ensureWeatherAmbientState(runtime);
+  const key = clean(action.weatherAmbientSceneKey);
+  if (!state || !key || state.consumedSceneKeys.includes(key)) return false;
+  state.pendingSceneKey = key;
+  state.pendingFacilityId = clean(action.weatherAmbientFacilityId) || null;
+  if (!state.promptedSceneKeys.includes(key)) state.promptedSceneKeys.push(key);
+  result.summary = `${action.weatherAmbientTitle}。話を聞くか、手を貸すか、消える前の痕跡を確かめるかを選べる。`;
+  result.sceneTransition = `${action.weatherAmbientWeatherLabel}のため、普段とは違う一度きりの選択が生まれた`;
+  return true;
+}
+
 function weatherAmbientActions(runtime, context = {}) {
   if (!weatherAmbientEligible(runtime)) return null;
   const weather = currentWeather(runtime);
@@ -313,6 +367,8 @@ function applyWeatherAmbientAction(runtime, action, result) {
   const key = clean(action.weatherAmbientSceneKey);
   if (!state || !key || state.consumedSceneKeys.includes(key)) return false;
   const allIds = BRANCH_IDS.map((branchId) => action.id.replace(/:[A-Z]+$/u, `:${branchId.toUpperCase()}`));
+  state.pendingSceneKey = null;
+  state.pendingFacilityId = null;
   state.consumedSceneKeys.push(key);
   state.selectedBranchIds.push(action.id);
   state.closedBranchIds.push(...allIds.filter((id) => id !== action.id));
@@ -364,13 +420,23 @@ function applyWeatherAmbientAction(runtime, action, result) {
   return true;
 }
 
+export function authoredWeatherAmbientPromptAction(runtime, context = {}) {
+  return weatherAmbientPromptAction(runtime, context);
+}
+
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const authored = base.authoredMissionFlowExclusiveActions(runtime, context);
   if (authored) return authored;
+  const state = ensureWeatherAmbientState(runtime);
+  const place = currentPlace(runtime);
+  if (!state?.pendingSceneKey
+    || state.pendingSceneKey !== sceneKey(runtime)
+    || state.pendingFacilityId !== place.facilityId) return null;
   return weatherAmbientActions(runtime, context);
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
+  if (action?.weatherAmbientPrompt) return openWeatherAmbientScene(runtime, action, result);
   if (action?.weatherAmbientChoice) return applyWeatherAmbientAction(runtime, action, result);
   return base.applyAuthoredMissionFlowAction(runtime, action, result);
 }
@@ -386,6 +452,9 @@ export const AUTHORED_WEATHER_AMBIENT_INTERNALS = Object.freeze({
   sceneToken,
   tutorialAllowsAmbient,
   weatherAmbientEligible,
+  weatherAmbientPromptEligible,
+  weatherAmbientPromptAction,
+  openWeatherAmbientScene,
   preferredNpc,
   memoryLead,
   talkAction,

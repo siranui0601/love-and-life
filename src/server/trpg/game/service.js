@@ -57,6 +57,7 @@ import {
   authoredMissionFlowEvidenceAction,
   authoredMissionFlowExclusiveActions,
   authoredMissionFlowGuidance,
+  authoredWeatherAmbientPromptAction,
   initializeAuthoredMissionFlowForMission,
   suppressGenericAuthoredMissionAction,
 } from "../content/authored-mission-flow-registry.js";
@@ -1596,6 +1597,9 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     movementActions: movementActions(runtime, data),
   });
   if (authoredFlowExclusive) return authoredFlowExclusive;
+  const weatherAmbientPrompt = authoredWeatherAmbientPromptAction(runtime, {
+    presentNpcs: presentNpcsAt(runtime, data),
+  });
   const authorizedMissionActions = new Map();
   const generated = journey.generateChoiceActions(
     runtime.playerState,
@@ -1636,6 +1640,7 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     if (action.missionId) return 0;
     if (action.type === "localInvestigate") return 1;
     if (action.type === "conversation" && !action.workOffer) return 2;
+    if (action.weatherAmbientPrompt) return 2.5;
     const hasLearnedSkill = runtime.playerState.player.skills.size > 0;
     if (action.workOffer) return hasLearnedSkill ? 4 : 3;
     if (action.type === "seekBattle") return hasLearnedSkill ? 3 : 4;
@@ -1644,6 +1649,7 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   const authoredFlowEvidence = authoredMissionFlowEvidenceAction(runtime);
   const prioritized = [
     ...(authoredFlowEvidence ? [authoredFlowEvidence] : []),
+    ...(weatherAmbientPrompt ? [weatherAmbientPrompt] : []),
     ...deduplicated,
   ]
     .map((action, index) => ({ action, index }))

@@ -4,6 +4,9 @@ import test from "node:test";
 import {
   AUTHORED_WEATHER_AMBIENT_CONTINUITY_VERSION,
   AUTHORED_WEATHER_AMBIENT_INTERNALS,
+  authoredMissionFlowExclusiveActions,
+  authoredWeatherAmbientPromptAction,
+  applyAuthoredMissionFlowAction,
 } from "../../../src/server/trpg/content/authored-weather-ambient-continuity.js";
 
 function runtime({
@@ -112,4 +115,30 @@ test("tutorial and an already active battle keep priority over ambient weather",
   const battle = runtime();
   battle.pendingBattle = { session: { status: "active" } };
   assert.equal(AUTHORED_WEATHER_AMBIENT_INTERNALS.weatherAmbientActions(battle, context), null);
+});
+
+
+test("weather first joins ordinary life as one prompt and only then opens the focused three choices", () => {
+  const value = runtime({ day: 8, weatherId: "fog", weatherLabel: "霧" });
+  value.playerState.history.push(
+    { type: "PLAYER_ACTION_RESOLVED" },
+    { type: "PLAYER_ACTION_RESOLVED" },
+    { type: "PLAYER_ACTION_RESOLVED" },
+  );
+  assert.equal(authoredMissionFlowExclusiveActions(value, context), null);
+  const prompt = authoredWeatherAmbientPromptAction(value, context);
+  assert.equal(prompt.weatherAmbientPrompt, true);
+  assert.equal(prompt.family, "weather");
+  const opening = { ok: true };
+  assert.equal(applyAuthoredMissionFlowAction(value, prompt, opening), true);
+  const focused = authoredMissionFlowExclusiveActions(value, context);
+  assert.equal(focused.length, 3);
+  assert.deepEqual(focused.map((action) => action.weatherAmbientBranchId), ["talk", "help", "observe"]);
+});
+
+test("weather prompt waits until the introduction and several ordinary actions have passed", () => {
+  const earlyDay = runtime({ day: 1 });
+  assert.equal(authoredWeatherAmbientPromptAction(earlyDay, context), null);
+  const earlyActions = runtime({ day: 8 });
+  assert.equal(authoredWeatherAmbientPromptAction(earlyActions, context), null);
 });
