@@ -107,11 +107,12 @@ test("T03 hearing is a finite three-way authored scene even when no NPC is prese
   assert.equal(state.playerState.worldFlags["t03Opening:stable_bells"], true);
 });
 
-test("two distinct T03 evidence scenes advance both canonical investigation steps", () => {
+test("two distinct T03 evidence scenes advance the canonical required-count investigation", () => {
   const state = runtime();
   choose(state, authoredMissionFlowExclusiveActions(state, {})[0]);
   const canonicalInvestigations = investigationSteps(state);
-  assert.equal(canonicalInvestigations.length, 2);
+  assert.equal(canonicalInvestigations.length, 1);
+  assert.equal(Number(canonicalInvestigations[0].required ?? 1), 2);
   moveToCurrentInvestigation(state);
 
   const firstSet = authoredMissionFlowExclusiveActions(state, {});
@@ -177,7 +178,7 @@ test("T03 causal state survives serialization and does not restore consumed scen
 test("T03 irreversible exit closes only the player mission", () => {
   const state = runtime();
   choose(state, authoredMissionFlowExclusiveActions(state, {})[0]);
-  const investigation = moveToCurrentInvestigation(state);
+  moveToCurrentInvestigation(state);
   state.t03WolfContinuity = {
     version: "t03-wolf-continuity-v1",
     openingChoiceId: "loss_ledger",
@@ -187,8 +188,6 @@ test("T03 irreversible exit closes only the player mission", () => {
     selectedActionIds: [],
     sceneRevision: 4,
   };
-  state.playerState.missions[MISSION_ID].progress[investigation.id] = Number(investigation.required ?? 1);
-  moveToCurrentInvestigation(state);
 
   const terminal = authoredMissionFlowExclusiveActions(state, {}).find((action) => action.t03TerminalChoice);
   assert.ok(terminal);
