@@ -4,7 +4,7 @@ import * as genericBase from "./authored-mission-t02-granary-choice-order.js";
 export * from "./authored-mission-evidence-only-progress.js";
 
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_VERSION =
-  "authored-mission-t03-investigation-contract-v8";
+  "authored-mission-t03-investigation-contract-v9";
 
 const MISSION_ID = "MSN-T03";
 const FLOW_ID = "red-fang-migration";
@@ -193,7 +193,11 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   reconcileAuthoredMissionFlowState(runtime);
   const fallbackIsT03 = Array.isArray(fallback)
     && fallback.some((action) => action?.authoredT03WolfChoice === true);
-  const actions = fallbackIsT03 && onlyPassiveCanonicalChoices(canonical)
+  const step = currentMissionStep(runtime);
+  const dedicatedInvestigationActive = fallbackIsT03
+    && (step?.id === "investigate" || step?.type === "investigate")
+    && !investigationEvidenceSatisfied(runtime);
+  const actions = dedicatedInvestigationActive
     ? fallback
     : canonical ?? fallback;
 
