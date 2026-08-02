@@ -14,6 +14,9 @@ import {
   applyAuthoredMissionFlowAction,
   authoredMissionFlowExclusiveActions,
 } from "../../../src/server/trpg/content/authored-mission-t03-wolf-continuity.js";
+import {
+  applyAuthoredMissionFlowCatalogOverrides as applyRegistryCatalogOverrides,
+} from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 import { cloneSerializable } from "../../../src/server/trpg/game/serializer.js";
 
 const model = loadWorldModel();
@@ -31,6 +34,7 @@ function runtime() {
     tuning: config.tuned,
     seed: "test:t03-wolf-continuity",
   });
+  applyRegistryCatalogOverrides(state.catalog);
   const definition = state.catalog.byId.get(MISSION_ID);
   const mission = state.missions[MISSION_ID];
   const hear = definition.steps.find((step) => step.id === "hear" || step.type === "conversation");
