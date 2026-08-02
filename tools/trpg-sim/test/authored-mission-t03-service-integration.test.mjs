@@ -85,14 +85,18 @@ function investigationContract(runtime) {
   return { mission, step };
 }
 
+function liveInvestigationProgress(runtime) {
+  const { mission, step } = investigationContract(runtime);
+  return Number(mission.progress?.[step.id] ?? 0);
+}
+
 function ids(actions) {
   return (actions ?? []).map((action) => action.id);
 }
 
 test("T03 keeps two independent evidence classes after the full service world update", () => {
   const runtime = prepareRuntime();
-  const { mission, step } = investigationContract(runtime);
-  assert.equal(step.required, 2);
+  assert.equal(investigationContract(runtime).step.required, 2);
 
   const direct = authoredMissionFlowExclusiveActions(runtime, {
     presentNpcs: [],
@@ -116,7 +120,7 @@ test("T03 keeps two independent evidence classes after the full service world up
     `visible service choices hid T03 evidence: ${JSON.stringify(ids(firstChoices))}`,
   );
   assert.equal(choose(runtime, first).outcome.ok, true);
-  assert.equal(mission.progress[step.id], 1);
+  assert.equal(liveInvestigationProgress(runtime), 1);
 
   const secondChoices = choices(runtime);
   const second = secondChoices.find((action) =>
@@ -127,7 +131,7 @@ test("T03 keeps two independent evidence classes after the full service world up
   );
   assert.equal(choose(runtime, second).outcome.ok, true);
   assert.ok(runtime.playerState.absoluteMinute >= 8 * 1440 + 12 * 60);
-  assert.equal(mission.progress[step.id], 2);
+  assert.equal(liveInvestigationProgress(runtime), 2);
   assert.equal(new Set(runtime.t03WolfContinuity.evidenceClasses).size, 2);
   assert.equal(runtime.playerState.worldFlags[`t03Evidence:${first.t03EvidenceClass}`], true);
   assert.equal(runtime.playerState.worldFlags[`t03Evidence:${second.t03EvidenceClass}`], true);
