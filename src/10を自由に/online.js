@@ -24,7 +24,11 @@ const VALID_WIN_TARGETS = new Set([3, 5, 10]);
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
 const INACTIVITY_WARNING_MS = 60 * 1000;
 const INACTIVITY_ESCAPE_MS = 120 * 1000;
-const RULE_VERSION = 1;
+const MATCH_COUNTDOWN_MS = 5 * 1000;
+const NEXT_ROUND_COUNTDOWN_MS = 3 * 1000;
+const ROUND_RESULT_AUTO_ADVANCE_MS = 10 * 1000;
+const RULE_VERSION = 2;
+const roomTransitionTimers = new Map();
 let maintenanceTimer = null;
 
 function roomSocketName(roomId) {
@@ -114,6 +118,9 @@ function publicRoom(room, viewerId = "") {
     currentProblem: room.currentProblem,
     roundNumber: room.roundNumber,
     roundStartedAt: room.roundStartedAt,
+    countdownEndsAt: room.countdownEndsAt || null,
+    countdownKind: room.countdownKind || null,
+    nextRoundAt: room.nextRoundAt || null,
     roundResult: publicRoundResult(room.roundResult),
     matchResult: publicMatchResult(room.matchResult),
     expiresAt: room.expiresAt,
@@ -140,6 +147,12 @@ function normalizeRestoredRoom(room) {
     member.stats = { submissions: 0, incorrect: 0, mathErrors: 0, solves: 0, totalSolveTimeMs: 0, fastestSolveMs: null, retires: 0, ...(member.stats || {}) };
   }
   room.roundHistory = Array.isArray(room.roundHistory) ? room.roundHistory : [];
+  room.countdownEndsAt = Number(room.countdownEndsAt || 0) || null;
+  room.countdownKind = room.countdownKind || null;
+  room.nextRoundAt = Number(room.nextRoundAt || 0) || null;
+  if (room.status === "round_result" && !room.nextRoundAt) {
+    room.nextRoundAt = Date.now() + ROUND_RESULT_AUTO_ADVANCE_MS;
+  }
   return room;
 }
 
@@ -167,6 +180,9 @@ export async function createOnlineRoom({ session, settings }) {
     currentProblem: null,
     roundNumber: 0,
     roundStartedAt: null,
+    countdownEndsAt: null,
+    countdownKind: null,
+    nextRoundAt: null,
     roundResult: null,
     roundHistory: [],
     matchResult: null,
@@ -216,30 +232,71 @@ export async function getOnlineRoomForUser(roomId, session) {
   return publicRoom(room, session.userTrackingId);
 }
 
-function beginRound(room) {
+function clearRoomTransitionTimer(roomId) {
+  const timer = roomTransitionTimers.get(String(roomId || ""));
+  if (timer) clearTimeout(timer);
+  roomTransitionTimers.delete(String(roomId || ""));
+}
+
+function scheduleRoomTransition(room, at, callback) {
+  clearRoomTransitionTimer(room.id);
+  const delay = Math.max(0, Number(at || 0) - Date.now());
+  const timer = setTimeout(async () => {
+    roomTransitionTimers.delete(room.id);
+    try { await callback(); }
+    catch (error) { console.error("[ten-freely] scheduled room transition failed", room.id, error); }
+  }, delay);
+  timer.unref?.();
+  roomTransitionTimers.set(room.id, timer);
+}
+
+function prepareRoundCountdown(room, { countdownMs, kind }) {
   const problem = createRandomProblem({
     digitLengths: room.settings.digitLengths,
     usedProblemsByLength: room.usedProblemsByLength,
   });
   if (!problem) {
     room.status = "finished";
+    room.countdownEndsAt = null;
+    room.countdownKind = null;
+    room.nextRoundAt = null;
     room.matchResult = buildMatchResult(room, "all_problems_completed");
     touchRoom(room);
-    return;
+    return false;
   }
-  room.status = "playing";
-  room.matchStartedAt ||= Date.now();
+  const now = Date.now();
+  room.status = "countdown";
   room.currentProblem = problem;
   room.roundNumber += 1;
-  room.roundStartedAt = Date.now();
+  room.roundStartedAt = null;
   room.roundResult = null;
+  room.nextRoundAt = null;
+  room.countdownKind = kind;
+  room.countdownEndsAt = now + countdownMs;
   for (const member of room.members) {
     member.lives = room.settings.lives;
     member.readyForNext = false;
-    member.lastActivityAt = room.roundStartedAt;
+    member.lastActivityAt = now;
     member.inactivityWarned = false;
   }
   touchRoom(room);
+  return true;
+}
+
+function activatePreparedRound(room) {
+  if (room.status !== "countdown") return false;
+  const now = Date.now();
+  room.status = "playing";
+  room.matchStartedAt ||= now;
+  room.roundStartedAt = now;
+  room.countdownEndsAt = null;
+  room.countdownKind = null;
+  for (const member of room.members) {
+    member.lastActivityAt = now;
+    member.inactivityWarned = false;
+  }
+  touchRoom(room);
+  return true;
 }
 
 function buildMatchResult(room, reason = "win_target_reached") {
@@ -276,6 +333,7 @@ function buildMatchResult(room, reason = "win_target_reached") {
 
 function resolveRound(room, winner, loser, { reason, expression = "", answerTimeMs = null } = {}) {
   if (room.status !== "playing") return null;
+  clearRoomTransitionTimer(room.id);
   winner.wins += 1;
   const result = {
     roundNumber: room.roundNumber,
@@ -291,6 +349,10 @@ function resolveRound(room, winner, loser, { reason, expression = "", answerTime
   room.roundResult = result;
   room.roundHistory.push(result);
   room.status = winner.wins >= room.settings.winsToFinish ? "finished" : "round_result";
+  room.countdownEndsAt = null;
+  room.countdownKind = null;
+  room.nextRoundAt = room.status === "round_result" ? Date.now() + ROUND_RESULT_AUTO_ADVANCE_MS : null;
+  result.autoAdvanceAt = room.nextRoundAt;
   if (room.status === "finished") room.matchResult = buildMatchResult(room);
   for (const member of room.members) member.readyForNext = false;
   touchRoom(room);
@@ -322,13 +384,60 @@ function emitRoomState(io, room) {
   }
 }
 
-function emitRoundResult(io, room) {
-  for (const member of room.members) {
-    io.to(userSocketName(member.id)).emit("ten:round-result", {
-      room: publicRoom(room, member.id),
-      result: publicRoundResult(room.roundResult),
-    });
+async function activateCountdownWhenDue(io, room) {
+  if (room.status !== "countdown") return;
+  if (Number(room.countdownEndsAt || 0) > Date.now()) {
+    scheduleRoomTransition(room, room.countdownEndsAt, () => activateCountdownWhenDue(io, room));
+    return;
   }
+  if (!activatePreparedRound(room)) return;
+  await checkpointQuietly(room);
+  emitRoomState(io, room);
+}
+
+async function startRoundCountdown(io, room, { countdownMs, kind }) {
+  clearRoomTransitionTimer(room.id);
+  const prepared = prepareRoundCountdown(room, { countdownMs, kind });
+  await checkpointQuietly(room);
+  if (!prepared) {
+    emitRoomState(io, room);
+    for (const member of room.members) {
+      io.to(userSocketName(member.id)).emit("ten:match-finished", {
+        room: publicRoom(room, member.id),
+        result: publicMatchResult(room.matchResult),
+      });
+    }
+    return;
+  }
+  emitRoomState(io, room);
+  scheduleRoomTransition(room, room.countdownEndsAt, () => activateCountdownWhenDue(io, room));
+}
+
+async function advanceFromRoundResult(io, room) {
+  if (room.status !== "round_result") return;
+  await startRoundCountdown(io, room, { countdownMs: NEXT_ROUND_COUNTDOWN_MS, kind: "next" });
+}
+
+function scheduleRoundResultAutoAdvance(io, room) {
+  if (room.status !== "round_result") return;
+  const at = Number(room.nextRoundAt || 0);
+  if (!at || at <= Date.now()) {
+    void advanceFromRoundResult(io, room);
+    return;
+  }
+  scheduleRoomTransition(room, at, () => advanceFromRoundResult(io, room));
+}
+
+async function recoverRoomFlow(io, room) {
+  if (room.status === "countdown") {
+    await activateCountdownWhenDue(io, room);
+    return;
+  }
+  if (room.status === "round_result") scheduleRoundResultAutoAdvance(io, room);
+}
+
+function emitRoundResult(io, room) {
+  emitRoomState(io, room);
   if (room.status === "finished") {
     for (const member of room.members) {
       io.to(userSocketName(member.id)).emit("ten:match-finished", {
@@ -336,11 +445,20 @@ function emitRoundResult(io, room) {
         result: publicMatchResult(room.matchResult),
       });
     }
+    return;
   }
+  for (const member of room.members) {
+    io.to(userSocketName(member.id)).emit("ten:round-result", {
+      room: publicRoom(room, member.id),
+      result: publicRoundResult(room.roundResult),
+    });
+  }
+  scheduleRoundResultAutoAdvance(io, room);
 }
 
 async function closeRoom(io, room, reason, requestedBy = "") {
   if (!room || room.status === "closed") return;
+  clearRoomTransitionTimer(room.id);
   room.status = "closed";
   room.matchResult ||= buildMatchResult(room, reason);
   room.matchResult.reason = reason;
@@ -369,7 +487,8 @@ export function registerTenFreelyOnlineSockets(io) {
         member.connected = true;
         member.username = session.username;
         touchMember(room, member);
-        checkpointQuietly(room);
+        await checkpointQuietly(room);
+        await recoverRoomFlow(io, room);
         emitRoomState(io, room);
         ack?.({ ok: true, room: publicRoom(room, member.id) });
       } catch (error) {
@@ -395,9 +514,7 @@ export function registerTenFreelyOnlineSockets(io) {
         if (room.hostId !== session.userTrackingId) throw new Error("forbidden");
         if (room.status !== "lobby") throw new Error("room_not_lobby");
         if (room.members.length !== 2) throw new Error("room_not_ready");
-        beginRound(room);
-        await checkpointQuietly(room);
-        emitRoomState(io, room);
+        await startRoundCountdown(io, room, { countdownMs: MATCH_COUNTDOWN_MS, kind: "match" });
         ack?.({ ok: true, room: publicRoom(room, session.userTrackingId) });
       } catch (error) { ack?.({ ok: false, error: error.message || "server_error" }); }
     });
@@ -485,9 +602,12 @@ export function registerTenFreelyOnlineSockets(io) {
         if (!member) throw new Error("forbidden");
         member.readyForNext = true;
         touchMember(room, member);
-        if (room.members.every((entry) => entry.readyForNext)) beginRound(room);
-        await checkpointQuietly(room);
-        emitRoomState(io, room);
+        if (room.members.every((entry) => entry.readyForNext)) {
+          await advanceFromRoundResult(io, room);
+        } else {
+          await checkpointQuietly(room);
+          emitRoomState(io, room);
+        }
         ack?.({ ok: true, room: publicRoom(room, member.id) });
       } catch (error) { ack?.({ ok: false, error: error.message || "server_error" }); }
     });
@@ -523,7 +643,8 @@ export function startTenFreelyOnlineMaintenance(io) {
         await closeRoom(io, room, "expired");
         continue;
       }
-      if (!["playing", "round_result"].includes(room.status)) continue;
+      await recoverRoomFlow(io, room);
+      if (room.status !== "playing") continue;
 
       const inactive = room.members.filter((member) => now - Number(member.lastActivityAt || 0) >= INACTIVITY_ESCAPE_MS);
       if (inactive.length === room.members.length) {
@@ -558,7 +679,7 @@ export function startTenFreelyOnlineMaintenance(io) {
         }
       }
     }
-  }, 5000);
+  }, 1000);
   maintenanceTimer.unref?.();
 }
 
@@ -566,4 +687,7 @@ export const onlineConstants = {
   availableProblemCounts: AVAILABLE_PROBLEM_COUNTS,
   inactivityWarningMs: INACTIVITY_WARNING_MS,
   inactivityEscapeMs: INACTIVITY_ESCAPE_MS,
+  matchCountdownMs: MATCH_COUNTDOWN_MS,
+  nextRoundCountdownMs: NEXT_ROUND_COUNTDOWN_MS,
+  roundResultAutoAdvanceMs: ROUND_RESULT_AUTO_ADVANCE_MS,
 };

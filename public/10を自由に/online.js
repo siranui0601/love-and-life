@@ -25,6 +25,13 @@ const refs = {
   lives: document.getElementById("gameLives"),
   timer: document.getElementById("gameTimer"),
   inactivity: document.getElementById("inactivityNotice"),
+  countdownLayer: document.getElementById("onlineCountdownLayer"),
+  countdownKicker: document.getElementById("onlineCountdownKicker"),
+  countdownTitle: document.getElementById("onlineCountdownTitle"),
+  countdownProblem: document.getElementById("onlineCountdownProblem"),
+  countdownRules: document.getElementById("onlineCountdownRules"),
+  countdownNumber: document.getElementById("onlineCountdownNumber"),
+  countdownHint: document.getElementById("onlineCountdownHint"),
   topBarBack: document.querySelector(".top-bar-back"),
 };
 
@@ -33,6 +40,8 @@ let room = null;
 let socket = null;
 let calculator = null;
 let timerFrame = null;
+let countdownFrame = null;
+let autoAdvanceFrame = null;
 let mountedProblem = "";
 let resolvingRoundNumber = null;
 let initializePromise = null;
@@ -112,13 +121,12 @@ function connectSocket() {
   socket.on("connect", () => { if (room) joinSocketRoom(room.roomId); });
   socket.on("ten:room-state", handleRoomState);
   socket.on("ten:round-result", ({ room: nextRoom, result }) => {
-    room = nextRoom;
-    updateOnlineGameHeader();
-    showRoundResult(result);
+    if (room?.status === "round_result" && resolvingRoundNumber === result?.roundNumber) room = nextRoom;
+    else handleRoomState(nextRoom);
   });
-  socket.on("ten:match-finished", ({ room: nextRoom, result }) => {
-    room = nextRoom;
-    showMatchResult(result);
+  socket.on("ten:match-finished", ({ room: nextRoom }) => {
+    if (room?.status === "finished") room = nextRoom;
+    else handleRoomState(nextRoom);
   });
   socket.on("ten:inactivity-warning", ({ remainingMs }) => {
     refs.inactivity.hidden = false;
@@ -126,6 +134,7 @@ function connectSocket() {
   });
   socket.on("ten:inactivity-clear", () => { refs.inactivity.hidden = true; });
   socket.on("ten:room-closed", ({ reason }) => {
+    hideOnlineCountdown();
     cleanupOnlineGame();
     room = null;
     refs.lobby.hidden = true;
@@ -220,27 +229,84 @@ function renderLobby() {
 
 function handleRoomState(nextRoom) {
   if (!nextRoom) return;
+  const previousStatus = room?.status || null;
   room = nextRoom;
   if (room.status === "lobby") {
+    hideOnlineCountdown();
     cleanupOnlineGame();
     app.showScreen("online", { instant: true, force: true });
     renderLobby();
     return;
   }
+  if (room.status === "countdown") {
+    refs.inactivity.hidden = true;
+    mountOnlineGame({ locked: true });
+    app.closeModal(true);
+    showOnlineCountdown();
+    return;
+  }
   if (room.status === "playing") {
     refs.inactivity.hidden = true;
+    hideOnlineCountdown();
+    if (["countdown", "round_result"].includes(previousStatus)) app.closeModal(true);
     mountOnlineGame();
     return;
   }
   if (room.status === "round_result") {
+    hideOnlineCountdown();
     mountOnlineGame({ locked: true });
-    if (room.roundResult && resolvingRoundNumber !== room.roundResult.roundNumber) showRoundResult(room.roundResult);
+    if (room.roundResult) showRoundResult(room.roundResult);
     return;
   }
   if (room.status === "finished") {
+    hideOnlineCountdown();
     mountOnlineGame({ locked: true });
     if (room.matchResult) showMatchResult(room.matchResult);
   }
+}
+
+function stopCountdownFrame() {
+  if (countdownFrame) cancelAnimationFrame(countdownFrame);
+  countdownFrame = null;
+}
+
+function stopAutoAdvanceFrame() {
+  if (autoAdvanceFrame) cancelAnimationFrame(autoAdvanceFrame);
+  autoAdvanceFrame = null;
+}
+
+function hideOnlineCountdown() {
+  stopCountdownFrame();
+  refs.countdownLayer.hidden = true;
+}
+
+function showOnlineCountdown() {
+  if (!room || room.status !== "countdown") return;
+  stopCountdownFrame();
+  stopAutoAdvanceFrame();
+  const initial = room.countdownKind === "match";
+  refs.countdownLayer.hidden = false;
+  refs.countdownKicker.textContent = initial ? "MATCH START" : "NEXT ROUND";
+  refs.countdownTitle.textContent = initial ? "ルールを確認" : `第${room.roundNumber}問を始めます`;
+  refs.countdownProblem.textContent = room.currentProblem || "----";
+  refs.countdownRules.innerHTML = [
+    `${room.settings.digitLengths.map((value) => `${value}桁`).join("・")}`,
+    `残機 ${formatLives(room.settings.lives)}`,
+    `${room.settings.winsToFinish}勝先取`,
+  ].map((text) => `<span>${text}</span>`).join("");
+  refs.countdownHint.textContent = initial
+    ? "同じ数字が2人へ同時に表示されます。先に10を作った方が1勝です。"
+    : "今回の数字を確認して、カウントが0になったら同時スタート。";
+
+  const tick = () => {
+    if (!room || room.status !== "countdown" || refs.countdownLayer.hidden) return;
+    const remainingMs = Math.max(0, Number(room.countdownEndsAt || 0) - Date.now());
+    const seconds = Math.max(0, Math.ceil(remainingMs / 1000));
+    refs.countdownNumber.textContent = remainingMs <= 0 ? "GO" : String(seconds);
+    refs.countdownNumber.classList.toggle("is-go", remainingMs <= 0);
+    countdownFrame = requestAnimationFrame(tick);
+  };
+  countdownFrame = requestAnimationFrame(tick);
 }
 
 function mountOnlineGame({ locked = false } = {}) {
@@ -263,14 +329,16 @@ function mountOnlineGame({ locked = false } = {}) {
     mountedProblem = room.currentProblem;
     resolvingRoundNumber = null;
   }
-  calculator.setLocked(locked);
+  calculator.setLocked(locked || room.status !== "playing");
   updateOnlineGameHeader();
-  startTimer();
+  if (room.status === "playing") startTimer();
+  else stopTimer();
 }
 
 function updateOnlineGameHeader() {
   if (!room) return;
-  refs.progress.textContent = `第${room.roundNumber}問 ／ ${room.settings.winsToFinish}勝先取`;
+  const phaseText = room.status === "countdown" ? "開始準備" : room.status === "round_result" ? "結果確認" : `第${room.roundNumber}問`;
+  refs.progress.textContent = `${phaseText} ／ ${room.settings.winsToFinish}勝先取`;
   refs.scoreboard.innerHTML = room.members.map((member, index) => `
     ${index === 1 ? '<span class="score-divider">VS</span>' : ""}
     <span class="score-player"><span>${escapeHtml(member.username)}${member.isSelf ? "・YOU" : ""}</span><strong>${member.wins}</strong></span>`).join("");
@@ -353,31 +421,57 @@ function roundReason(result) {
   return `${result.winnerName}の勝利です。`;
 }
 
+function startRoundAutoAdvanceTimer() {
+  stopAutoAdvanceFrame();
+  const label = document.querySelector("[data-online-auto-next]");
+  if (!label || !room?.nextRoundAt) return;
+  const tick = () => {
+    if (!room || room.status !== "round_result" || !document.body.contains(label)) return;
+    const remainingMs = Math.max(0, Number(room.nextRoundAt) - Date.now());
+    label.textContent = remainingMs > 0
+      ? `あと ${(remainingMs / 1000).toFixed(1)}秒で自動的に次へ進みます`
+      : "次の問題を準備しています…";
+    autoAdvanceFrame = requestAnimationFrame(tick);
+  };
+  autoAdvanceFrame = requestAnimationFrame(tick);
+}
+
 function showRoundResult(result) {
-  if (!result || resolvingRoundNumber === result.roundNumber) return;
+  if (!result || room?.status !== "round_result") return;
   resolvingRoundNumber = result.roundNumber;
   stopTimer();
+  hideOnlineCountdown();
   calculator?.setLocked(true);
   const self = room?.members.find((member) => member.isSelf);
   const won = result.winnerName === self?.username;
+  const selfReady = Boolean(self?.readyForNext);
+  const readyCount = room.members.filter((member) => member.readyForNext).length;
   app.openModal(`
     <div class="result-icon${won ? "" : " is-failure"}">${won ? "✓" : "×"}</div>
     <h2 id="modalTitle">${escapeHtml(roundReason(result))}</h2>
-    <p class="result-lead">タイム ${app.formatDuration(result.answerTimeMs, true)}</p>
-    ${result.expression ? `<div class="solution-card"><small>入力された式</small><div class="solution-expression">${escapeHtml(result.expression)}</div></div>` : ""}
+    <p class="result-lead">${result.reason === "made_ten" ? `${escapeHtml(result.winnerName)}が先に完成させました。` : "このラウンドは終了しました。"}<br>タイム ${app.formatDuration(result.answerTimeMs, true)}</p>
+    ${result.expression ? `<div class="solution-card"><small>${escapeHtml(result.winnerName)}が完成させた式</small><div class="solution-expression">${escapeHtml(result.expression)}</div></div>` : ""}
     <div class="result-stats">${room.members.map((member) => `<div><strong>${member.wins}</strong><span>${escapeHtml(member.username)}</span></div>`).join("")}</div>
-    <div class="modal-actions"><button class="modal-primary" type="button" data-online-next>次の試合へ</button><button class="modal-secondary" type="button" data-online-home>ホームに戻る</button></div>`, { closeable: false });
+    <div class="round-ready-state">${room.members.map((member) => `<span class="${member.readyForNext ? "is-ready" : ""}"><b>${member.readyForNext ? "✓" : "…"}</b>${escapeHtml(member.username)}</span>`).join("")}</div>
+    <p class="round-auto-next" data-online-auto-next>${readyCount === 2 ? "次の問題を準備しています…" : "10秒後に自動で次へ進みます"}</p>
+    <div class="modal-actions"><button class="modal-primary" type="button" data-online-next ${selfReady ? "disabled" : ""}>${selfReady ? "準備完了・相手を待っています" : "次の試合へ進む"}</button><button class="modal-secondary" type="button" data-online-home>ホームに戻る</button></div>`, { closeable: false });
   const nextButton = document.querySelector("[data-online-next]");
   nextButton.onclick = async () => {
     nextButton.disabled = true;
-    nextButton.textContent = "対戦相手を待っています…";
+    nextButton.textContent = "準備完了・相手を待っています";
     try {
       const response = await emitAck("ten:ready-next", { roomId: room.roomId });
-      room = response.room || room;
-      if (room.status === "playing") app.closeModal(true);
-    } catch { nextButton.disabled = false; nextButton.textContent = "次の試合へ"; }
+      if (response.room) handleRoomState(response.room);
+    } catch (error) {
+      if (error.message !== "round_not_waiting") {
+        nextButton.disabled = false;
+        nextButton.textContent = "次の試合へ進む";
+        app.showToast("次の試合への準備を送信できませんでした。", "warning");
+      }
+    }
   };
   document.querySelector("[data-online-home]").onclick = leaveRoom;
+  startRoundAutoAdvanceTimer();
 }
 
 function percent(value) {
@@ -413,6 +507,8 @@ function renderRoundHistory(rounds = []) {
 function showMatchResult(result) {
   if (!result) return;
   stopTimer();
+  stopAutoAdvanceFrame();
+  hideOnlineCountdown();
   calculator?.setLocked(true);
   const self = room?.members.find((member) => member.isSelf);
   const escaped = result.reason === "opponent_escaped";
@@ -453,7 +549,7 @@ async function leaveRoom({ destination = "online" } = {}) {
 }
 
 function confirmLeaveDuringMatch(targetScreen, destination = "online") {
-  if (!room || !["playing", "round_result"].includes(room.status)) {
+  if (!room || !["countdown", "playing", "round_result"].includes(room.status)) {
     app.finishExternalGame();
     if (destination === "playground") window.location.href = "/";
     else app.showScreen(targetScreen, { force: true });
@@ -468,6 +564,9 @@ function confirmLeaveDuringMatch(targetScreen, destination = "online") {
 
 function cleanupOnlineGame() {
   stopTimer();
+  stopCountdownFrame();
+  stopAutoAdvanceFrame();
+  refs.countdownLayer.hidden = true;
   calculator?.destroy();
   calculator = null;
   mountedProblem = "";
@@ -527,18 +626,23 @@ refs.copyCode.addEventListener("click", async () => {
 });
 refs.startButton.addEventListener("click", async () => {
   refs.startButton.disabled = true;
-  try { await emitAck("ten:start", { roomId: room.roomId }); }
+  try {
+    const response = await emitAck("ten:start", { roomId: room.roomId });
+    if (response.room) handleRoomState(response.room);
+  }
   catch (error) { refs.startButton.disabled = false; app.showToast(error.message === "room_not_ready" ? "対戦相手を待っています。" : "対戦を開始できませんでした。", "warning"); }
 });
 refs.leaveButton.addEventListener("click", () => leaveRoom());
 refs.topBarBack?.addEventListener("click", (event) => {
-  if (!room || !["playing", "round_result"].includes(room.status)) return;
+  if (!room || !["countdown", "playing", "round_result"].includes(room.status)) return;
   event.preventDefault();
   confirmLeaveDuringMatch("home", "playground");
 });
 window.addEventListener("ten-freely:screen-changed", (event) => {
   if (event.detail?.screen === "online") initializeOnline();
 });
-window.addEventListener("focus", () => { if (app.currentScreen === "online") initializeOnline(); });
-window.addEventListener("storage", () => { if (app.currentScreen === "online") initializeOnline(); });
+window.addEventListener("focus", () => { if (room || ["online", "game"].includes(app.currentScreen)) initializeOnline(); });
+window.addEventListener("storage", () => { if (room || ["online", "game"].includes(app.currentScreen)) initializeOnline(); });
 window.addEventListener("beforeunload", cleanupOnlineGame);
+
+queueMicrotask(() => initializeOnline());
