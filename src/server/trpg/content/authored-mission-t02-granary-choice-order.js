@@ -14,6 +14,12 @@ const {
   terminalAction,
 } = base.AUTHORED_MISSION_T02_GRANARY_INTERNALS;
 
+const SIDE_TO_CHANGED_EVIDENCE = Object.freeze({
+  release_emergency_grain: "fire_origin",
+  freeze_village_debt: "merchant_contract",
+  post_night_watch: "hired_hand",
+});
+
 function withChoiceIds(actions) {
   return actions.slice(0, 3).map((action, index) => ({
     ...action,
@@ -21,14 +27,26 @@ function withChoiceIds(actions) {
   }));
 }
 
+function orderedEvidence(state) {
+  const missing = EVIDENCE_ORDER.filter((id) => !state.evidenceClasses.includes(id));
+  if (!missing.length) return [];
+  const mostRecentSide = [...state.sideChoices].reverse().find((id) => {
+    const changed = SIDE_TO_CHANGED_EVIDENCE[id];
+    return changed && missing.includes(changed);
+  });
+  const priority = SIDE_TO_CHANGED_EVIDENCE[mostRecentSide] ?? null;
+  const remaining = priority ? missing.filter((id) => id !== priority) : missing;
+  const offset = remaining.length ? state.sceneRevision % remaining.length : 0;
+  const rotated = remaining.length
+    ? [...remaining.slice(offset), ...remaining.slice(0, offset)]
+    : [];
+  return priority ? [priority, ...rotated] : rotated;
+}
+
 function orderedT02Choices(runtime) {
   const state = ensureState(runtime);
-  const missing = EVIDENCE_ORDER.filter((id) => !state.evidenceClasses.includes(id));
-  const offset = missing.length ? state.sceneRevision % missing.length : 0;
-  const rotated = missing.length
-    ? [...missing.slice(offset), ...missing.slice(0, offset)]
-    : [];
-  const actions = rotated.slice(0, Math.min(2, rotated.length)).map((id) => evidenceAction(runtime, id));
+  const evidence = orderedEvidence(state);
+  const actions = evidence.slice(0, Math.min(2, evidence.length)).map((id) => evidenceAction(runtime, id));
 
   for (const id of SIDE_ORDER) {
     if (actions.length >= 3) break;
@@ -50,5 +68,7 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 }
 
 export const AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_INTERNALS = Object.freeze({
+  SIDE_TO_CHANGED_EVIDENCE,
+  orderedEvidence,
   orderedT02Choices,
 });
