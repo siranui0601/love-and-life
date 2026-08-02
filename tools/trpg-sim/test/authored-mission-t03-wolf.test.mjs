@@ -11,11 +11,11 @@ import { loadWorldModel } from "../lib/world-model.mjs";
 import {
   AUTHORED_MISSION_T03_WOLF_INTERNALS,
   AUTHORED_MISSION_T03_WOLF_VERSION,
-  applyAuthoredMissionFlowAction,
-  authoredMissionFlowExclusiveActions,
 } from "../../../src/server/trpg/content/authored-mission-t03-wolf-continuity.js";
 import {
+  applyAuthoredMissionFlowAction as applyRegistryFlowAction,
   applyAuthoredMissionFlowCatalogOverrides as applyRegistryCatalogOverrides,
+  authoredMissionFlowExclusiveActions as registryExclusiveActions,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 import { cloneSerializable } from "../../../src/server/trpg/game/serializer.js";
 
@@ -58,6 +58,10 @@ function runtime() {
   };
 }
 
+function actions(runtimeState) {
+  return registryExclusiveActions(runtimeState, {});
+}
+
 function choose(runtimeState, action) {
   const result = resolvePlayerAction(
     runtimeState.playerState,
@@ -68,7 +72,7 @@ function choose(runtimeState, action) {
     "balanced",
     action,
   );
-  applyAuthoredMissionFlowAction(runtimeState, action, result);
+  applyRegistryFlowAction(runtimeState, action, result);
   return result;
 }
 
@@ -95,15 +99,15 @@ function moveToCurrentInvestigation(state) {
 test("T03 hearing is a finite three-way authored scene even when no NPC is present", () => {
   assert.equal(AUTHORED_MISSION_T03_WOLF_VERSION, "authored-mission-t03-wolf-v1");
   const state = runtime();
-  const actions = authoredMissionFlowExclusiveActions(state, {});
-  assert.equal(actions.length, 3);
-  assert.ok(actions.every((action) => action.authoredT03WolfChoice));
-  assert.ok(actions.every((action) => action.type === "conversation"));
-  assert.ok(actions.every((action) => action.missionId === MISSION_ID));
-  assert.ok(actions.every((action) => action.id.length <= 120));
-  assert.equal(new Set(actions.map((action) => action.id)).size, 3);
+  const opening = actions(state);
+  assert.equal(opening.length, 3);
+  assert.ok(opening.every((action) => action.authoredT03WolfChoice));
+  assert.ok(opening.every((action) => action.type === "conversation"));
+  assert.ok(opening.every((action) => action.missionId === MISSION_ID));
+  assert.ok(opening.every((action) => action.id.length <= 120));
+  assert.equal(new Set(opening.map((action) => action.id)).size, 3);
 
-  const result = choose(state, actions[1]);
+  const result = choose(state, opening[1]);
   assert.equal(result.ok, true);
   assert.match(result.summary, /南柵/u);
   assert.equal(state.playerState.missions[MISSION_ID].progress.hear, 1);
@@ -113,13 +117,13 @@ test("T03 hearing is a finite three-way authored scene even when no NPC is prese
 
 test("two distinct T03 evidence scenes advance the canonical required-count investigation", () => {
   const state = runtime();
-  choose(state, authoredMissionFlowExclusiveActions(state, {})[0]);
+  choose(state, actions(state)[0]);
   const canonicalInvestigations = investigationSteps(state);
   assert.equal(canonicalInvestigations.length, 1);
   assert.equal(Number(canonicalInvestigations[0].required ?? 1), 2);
   moveToCurrentInvestigation(state);
 
-  const firstSet = authoredMissionFlowExclusiveActions(state, {});
+  const firstSet = actions(state);
   assert.equal(firstSet.length, 3);
   assert.equal(firstSet.filter((action) => action.t03EvidenceClass).length, 2);
   assert.equal(firstSet.filter((action) => action.t03SideChoice).length, 1);
@@ -129,29 +133,31 @@ test("two distinct T03 evidence scenes advance the canonical required-count inve
   assert.equal(investigationProgress(state), 1);
 
   moveToCurrentInvestigation(state);
-  const secondSet = authoredMissionFlowExclusiveActions(state, {});
+  const secondSet = actions(state);
   assert.equal(secondSet.some((action) => action.id === firstEvidence.id), false);
   const secondEvidence = secondSet.find((action) => action.t03EvidenceClass);
   assert.ok(secondEvidence);
   assert.notEqual(secondEvidence.t03EvidenceClass, firstEvidence.t03EvidenceClass);
   assert.equal(choose(state, secondEvidence).ok, true);
   assert.equal(investigationProgress(state), 2);
-  assert.equal(authoredMissionFlowExclusiveActions(state, {}), null);
+  assert.ok(state.playerState.history.some((entry) =>
+    entry.type === "T03_EVIDENCE_PROGRESS_SYNCED" && entry.value === 2));
+  assert.equal(actions(state), null);
 });
 
 test("moving livestock changes the next pack evidence instead of renaming the old scene", () => {
   const state = runtime();
-  choose(state, authoredMissionFlowExclusiveActions(state, {})[2]);
+  choose(state, actions(state)[2]);
   moveToCurrentInvestigation(state);
 
-  const firstSet = authoredMissionFlowExclusiveActions(state, {});
+  const firstSet = actions(state);
   const evacuation = firstSet.find((action) => action.t03SideChoice === "evacuate_livestock");
   assert.ok(evacuation);
   assert.equal(choose(state, evacuation).ok, true);
   assert.equal(state.playerState.worldFlags.t03LivestockEvacuated, true);
   assert.equal(state.playerState.worldFlags.t03StableTracksTrampled, true);
 
-  const secondSet = authoredMissionFlowExclusiveActions(state, {});
+  const secondSet = actions(state);
   const pack = secondSet.find((action) => action.t03EvidenceClass === "pack_displacement");
   assert.ok(pack);
   assert.match(pack.id, /WOUND_MEASURE/u);
@@ -161,10 +167,10 @@ test("moving livestock changes the next pack evidence instead of renaming the ol
 
 test("T03 causal state survives serialization and does not restore consumed scenes", () => {
   const state = runtime();
-  const opening = authoredMissionFlowExclusiveActions(state, {})[0];
+  const opening = actions(state)[0];
   choose(state, opening);
   const investigation = moveToCurrentInvestigation(state);
-  const side = authoredMissionFlowExclusiveActions(state, {}).find((action) => action.t03SideChoice);
+  const side = actions(state).find((action) => action.t03SideChoice);
   choose(state, side);
 
   const restored = runtime();
@@ -174,14 +180,14 @@ test("T03 causal state survives serialization and does not restore consumed scen
   restored.t03WolfContinuity = cloneSerializable(state.t03WolfContinuity);
   restored.playerState.worldFlags = cloneSerializable(state.playerState.worldFlags);
 
-  const next = authoredMissionFlowExclusiveActions(restored, {});
+  const next = actions(restored);
   assert.equal(next.some((action) => action.id === opening.id), false);
   assert.equal(next.some((action) => action.id === side.id), false);
 });
 
 test("T03 irreversible exit closes only the player mission", () => {
   const state = runtime();
-  choose(state, authoredMissionFlowExclusiveActions(state, {})[0]);
+  choose(state, actions(state)[0]);
   moveToCurrentInvestigation(state);
   state.t03WolfContinuity = {
     version: "t03-wolf-continuity-v1",
@@ -193,12 +199,12 @@ test("T03 irreversible exit closes only the player mission", () => {
     sceneRevision: 4,
   };
 
-  const terminal = authoredMissionFlowExclusiveActions(state, {}).find((action) => action.t03TerminalChoice);
+  const terminal = actions(state).find((action) => action.t03TerminalChoice);
   assert.ok(terminal);
   choose(state, terminal);
   assert.equal(state.playerState.missions[MISSION_ID].status, "failed");
   assert.match(state.playerState.missions[MISSION_ID].failureReason, /^player_closed_t03_/u);
   assert.equal(state.playerState.worldFlags.t03PlayerMissionClosed, true);
   assert.equal(state.playerState.troubles.T03.status, "active");
-  assert.equal(authoredMissionFlowExclusiveActions(state, {}), null);
+  assert.equal(actions(state), null);
 });
