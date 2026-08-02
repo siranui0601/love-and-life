@@ -103,7 +103,7 @@ function ids(actions) {
   return (actions ?? []).map((action) => action.id);
 }
 
-test("T03 keeps two independent evidence classes across noon and save round trips", () => {
+test("T03 keeps two independent evidence classes across noon, public choices, and save round trips", () => {
   let runtime = prepareRuntime();
   assert.equal(runtime.playerState.hour, 10);
   assert.equal(runtime.playerState.minute, 50);
@@ -156,6 +156,10 @@ test("T03 keeps two independent evidence classes across noon and save round trip
   assert.equal(runtime.playerState.worldFlags[`t03Evidence:${second.t03EvidenceClass}`], true);
 
   const after = choices(runtime);
+  assert.equal(liveInvestigationProgress(runtime), 2);
   assert.equal(after.some((action) => action.authoredT03WolfChoice === true), false);
   assert.equal(after.some((action) => action.id === first.id || action.id === second.id), false);
+
+  runtime = roundTrip(runtime);
+  assert.equal(liveInvestigationProgress(runtime), 2);
 });
