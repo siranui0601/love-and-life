@@ -1,0 +1,263 @@
+name: TRPG weather ambient integration
+
+on:
+  push:
+    branches:
+      - agent/trpg-human-authored-choices
+    paths:
+      - ".github/workflows/trpg-weather-ambient-integration.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/trpg-human-authored-choices
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Patch weather ambient entry and focused scene
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          module_path = Path('src/server/trpg/content/authored-weather-ambient-continuity.js')
+          text = module_path.read_text()
+
+          text = text.replace(
+          '''    branchCounts: {},
+          };''',
+          '''    branchCounts: {},
+            pendingSceneKey: null,
+            pendingFacilityId: null,
+            promptedSceneKeys: [],
+          };''')
+
+          text = text.replace(
+          '''  state.branchCounts = state.branchCounts && typeof state.branchCounts === "object" ? state.branchCounts : {};
+            return state;''',
+          '''  state.branchCounts = state.branchCounts && typeof state.branchCounts === "object" ? state.branchCounts : {};
+            state.pendingSceneKey = clean(state.pendingSceneKey) || null;
+            state.pendingFacilityId = clean(state.pendingFacilityId) || null;
+            state.promptedSceneKeys = array(state.promptedSceneKeys).map(String);
+            return state;''')
+
+          marker = '''function weatherAmbientActions(runtime, context = {}) {
+            if (!weatherAmbientEligible(runtime)) return null;'''
+          replacement = '''function weatherAmbientPromptEligible(runtime) {
+            if (!weatherAmbientEligible(runtime)) return false;
+            if (Number(runtime?.playerState?.day ?? 1) < 2) return false;
+            if (runtime?.dialogueSession || runtime?.pendingWorkOffer) return false;
+            if (runtime?.capitalArrivalGuidance?.pending === true) return false;
+            const resolvedActions = array(runtime?.playerState?.history)
+              .filter((entry) => entry?.type === "PLAYER_ACTION_RESOLVED").length;
+            return resolvedActions >= 3;
+          }
+
+          function weatherAmbientPromptAction(runtime, context = {}) {
+            if (!weatherAmbientPromptEligible(runtime)) return null;
+            const weather = currentWeather(runtime);
+            const profile = WEATHER_SCENES[weather.id];
+            const place = currentPlace(runtime);
+            const state = ensureWeatherAmbientState(runtime);
+            const key = sceneKey(runtime);
+            if (state.pendingSceneKey === key && state.pendingFacilityId === place.facilityId) return null;
+            const npc = preferredNpc(runtime, context);
+            return {
+              id: `AMBIENT_WEATHER:${sceneToken(runtime, weather)}:NOTICE`,
+              type: "plan",
+              family: "weather",
+              minutes: 2,
+              weatherAmbientPrompt: true,
+              weatherAmbientSceneKey: key,
+              weatherAmbientWeatherId: weather.id,
+              weatherAmbientWeatherLabel: weather.label,
+              weatherAmbientLocation: place.location,
+              weatherAmbientFacilityId: place.facilityId,
+              weatherAmbientDay: place.day,
+              weatherAmbientDaypart: place.daypart,
+              weatherAmbientTitle: profile.title,
+              ...(npc ? { targetNpcId: npc.id, targetNpcName: npc.name } : {}),
+              label: `${profile.title}。今だけの変化に関わる`,
+            };
+          }
+
+          function openWeatherAmbientScene(runtime, action, result) {
+            if (!action?.weatherAmbientPrompt || result?.ok === false) return false;
+            const state = ensureWeatherAmbientState(runtime);
+            const key = clean(action.weatherAmbientSceneKey);
+            if (!state || !key || state.consumedSceneKeys.includes(key)) return false;
+            state.pendingSceneKey = key;
+            state.pendingFacilityId = clean(action.weatherAmbientFacilityId) || null;
+            if (!state.promptedSceneKeys.includes(key)) state.promptedSceneKeys.push(key);
+            result.summary = `${action.weatherAmbientTitle}。話を聞くか、手を貸すか、消える前の痕跡を確かめるかを選べる。`;
+            result.sceneTransition = `${action.weatherAmbientWeatherLabel}のため、普段とは違う一度きりの選択が生まれた`;
+            return true;
+          }
+
+          function weatherAmbientActions(runtime, context = {}) {
+            if (!weatherAmbientEligible(runtime)) return null;'''
+          if marker not in text:
+              raise SystemExit('weatherAmbientActions marker not found')
+          text = text.replace(marker, replacement)
+
+          text = text.replace(
+          '''  state.consumedSceneKeys.push(key);
+            state.selectedBranchIds.push(action.id);''',
+          '''  state.pendingSceneKey = null;
+            state.pendingFacilityId = null;
+            state.consumedSceneKeys.push(key);
+            state.selectedBranchIds.push(action.id);''')
+
+          old_bottom = '''export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
+            const authored = base.authoredMissionFlowExclusiveActions(runtime, context);
+            if (authored) return authored;
+            return weatherAmbientActions(runtime, context);
+          }
+
+          export function applyAuthoredMissionFlowAction(runtime, action, result) {
+            if (action?.weatherAmbientChoice) return applyWeatherAmbientAction(runtime, action, result);
+            return base.applyAuthoredMissionFlowAction(runtime, action, result);
+          }'''
+          new_bottom = '''export function authoredWeatherAmbientPromptAction(runtime, context = {}) {
+            return weatherAmbientPromptAction(runtime, context);
+          }
+
+          export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
+            const authored = base.authoredMissionFlowExclusiveActions(runtime, context);
+            if (authored) return authored;
+            const state = ensureWeatherAmbientState(runtime);
+            const place = currentPlace(runtime);
+            if (!state?.pendingSceneKey
+              || state.pendingSceneKey !== sceneKey(runtime)
+              || state.pendingFacilityId !== place.facilityId) return null;
+            return weatherAmbientActions(runtime, context);
+          }
+
+          export function applyAuthoredMissionFlowAction(runtime, action, result) {
+            if (action?.weatherAmbientPrompt) return openWeatherAmbientScene(runtime, action, result);
+            if (action?.weatherAmbientChoice) return applyWeatherAmbientAction(runtime, action, result);
+            return base.applyAuthoredMissionFlowAction(runtime, action, result);
+          }'''
+          if old_bottom not in text:
+              raise SystemExit('module bottom marker not found')
+          text = text.replace(old_bottom, new_bottom)
+
+          text = text.replace(
+          '''  weatherAmbientEligible,
+            preferredNpc,''',
+          '''  weatherAmbientEligible,
+            weatherAmbientPromptEligible,
+            weatherAmbientPromptAction,
+            openWeatherAmbientScene,
+            preferredNpc,''')
+          module_path.write_text(text)
+
+          service_path = Path('src/server/trpg/game/service.js')
+          service = service_path.read_text()
+          service = service.replace(
+          '''  authoredMissionFlowEvidenceAction,
+            authoredMissionFlowExclusiveActions,
+            authoredMissionFlowGuidance,''',
+          '''  authoredMissionFlowEvidenceAction,
+            authoredMissionFlowExclusiveActions,
+            authoredMissionFlowGuidance,
+            authoredWeatherAmbientPromptAction,''')
+
+          service = service.replace(
+          '''  if (authoredFlowExclusive) return authoredFlowExclusive;
+            const authorizedMissionActions = new Map();''',
+          '''  if (authoredFlowExclusive) return authoredFlowExclusive;
+            const weatherAmbientPrompt = authoredWeatherAmbientPromptAction(runtime, {
+              presentNpcs: presentNpcsAt(runtime, data),
+            });
+            const authorizedMissionActions = new Map();''')
+
+          service = service.replace(
+          '''  const actionPriority = (action) => {
+              if (action.missionId) return 0;
+              if (action.type === "localInvestigate") return 1;
+              if (action.type === "conversation" && !action.workOffer) return 2;''',
+          '''  const actionPriority = (action) => {
+              if (action.missionId) return 0;
+              if (action.type === "localInvestigate") return 1;
+              if (action.type === "conversation" && !action.workOffer) return 2;
+              if (action.weatherAmbientPrompt) return 2.5;''')
+
+          service = service.replace(
+          '''  const prioritized = [
+              ...(authoredFlowEvidence ? [authoredFlowEvidence] : []),
+              ...deduplicated,
+            ]''',
+          '''  const prioritized = [
+              ...(authoredFlowEvidence ? [authoredFlowEvidence] : []),
+              ...(weatherAmbientPrompt ? [weatherAmbientPrompt] : []),
+              ...deduplicated,
+            ]''')
+          service_path.write_text(service)
+
+          test_path = Path('tools/trpg-sim/test/authored-weather-ambient-continuity.test.mjs')
+          tests = test_path.read_text()
+          tests = tests.replace(
+          '''  AUTHORED_WEATHER_AMBIENT_CONTINUITY_VERSION,
+            AUTHORED_WEATHER_AMBIENT_INTERNALS,
+          }''',
+          '''  AUTHORED_WEATHER_AMBIENT_CONTINUITY_VERSION,
+            AUTHORED_WEATHER_AMBIENT_INTERNALS,
+            authoredMissionFlowExclusiveActions,
+            authoredWeatherAmbientPromptAction,
+            applyAuthoredMissionFlowAction,
+          }''')
+          tests += '''
+
+          test("weather first joins ordinary life as one prompt and only then opens the focused three choices", () => {
+            const value = runtime({ day: 8, weatherId: "fog", weatherLabel: "霧" });
+            value.playerState.history.push(
+              { type: "PLAYER_ACTION_RESOLVED" },
+              { type: "PLAYER_ACTION_RESOLVED" },
+              { type: "PLAYER_ACTION_RESOLVED" },
+            );
+            assert.equal(authoredMissionFlowExclusiveActions(value, context), null);
+            const prompt = authoredWeatherAmbientPromptAction(value, context);
+            assert.equal(prompt.weatherAmbientPrompt, true);
+            assert.equal(prompt.family, "weather");
+            const opening = { ok: true };
+            assert.equal(applyAuthoredMissionFlowAction(value, prompt, opening), true);
+            const focused = authoredMissionFlowExclusiveActions(value, context);
+            assert.equal(focused.length, 3);
+            assert.deepEqual(focused.map((action) => action.weatherAmbientBranchId), ["talk", "help", "observe"]);
+          });
+
+          test("weather prompt waits until the introduction and several ordinary actions have passed", () => {
+            const earlyDay = runtime({ day: 1 });
+            assert.equal(authoredWeatherAmbientPromptAction(earlyDay, context), null);
+            const earlyActions = runtime({ day: 8 });
+            assert.equal(authoredWeatherAmbientPromptAction(earlyActions, context), null);
+          });
+          '''
+          test_path.write_text(tests)
+          PY
+      - run: npm ci
+      - name: Run complete TRPG regression
+        run: npm run trpg:test
+      - name: Commit verified integration and retire workflow
+        shell: bash
+        run: |
+          rm .github/workflows/trpg-weather-ambient-integration.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/server/trpg/content/authored-weather-ambient-continuity.js \
+                  src/server/trpg/game/service.js \
+                  tools/trpg-sim/test/authored-weather-ambient-continuity.test.mjs \
+                  .github/workflows/trpg-weather-ambient-integration.yml
+          git commit -m "feat(trpg): integrate weather scenes without hiding daily actions"
+          git push origin HEAD:agent/trpg-human-authored-choices
