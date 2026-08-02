@@ -15,7 +15,9 @@ const {
 
 const FLOW_ID = "forest-king-slime-world-tree-collapse";
 const MISSION_ID = "MSN-T13";
+const HEARING_STEP_ID = "MSN-T13-HEAR";
 const INVESTIGATION_STEP_ID = "MSN-T13-INVESTIGATE";
+const BATTLE_STEP_ID = "MSN-T13-BATTLE";
 
 function runtime(location = "森", facilityId = "LOC_FOREST_EDGE") {
   return {
@@ -25,17 +27,33 @@ function runtime(location = "森", facilityId = "LOC_FOREST_EDGE") {
       catalog: {
         byId: new Map([[MISSION_ID, {
           id: MISSION_ID,
-          steps: [{
-            id: INVESTIGATION_STEP_ID,
-            type: "investigation",
-            required: 6,
-          }],
+          steps: [
+            {
+              id: HEARING_STEP_ID,
+              type: "conversation",
+              required: 1,
+            },
+            {
+              id: INVESTIGATION_STEP_ID,
+              type: "investigation",
+              required: 6,
+            },
+            {
+              id: BATTLE_STEP_ID,
+              type: "battle",
+              required: 1,
+            },
+          ],
         }]]),
       },
       missions: {
         [MISSION_ID]: {
           status: "active",
-          progress: { [INVESTIGATION_STEP_ID]: 4 },
+          progress: {
+            [HEARING_STEP_ID]: 1,
+            [INVESTIGATION_STEP_ID]: 4,
+            [BATTLE_STEP_ID]: 0,
+          },
         },
       },
       worldFlags: {},
@@ -113,22 +131,23 @@ test("the exported choice provider replaces the exact old forest loop", () => {
   assert.match(choices[1].label, /粘液標本/u);
 });
 
-test("completed or ended T13 investigation does not hijack ordinary forest choices", () => {
+test("hearing, battle, completion, or explicit ending never exposes forest revisit scenes", () => {
+  const hearing = runtime();
+  hearing.playerState.missions[MISSION_ID].progress[HEARING_STEP_ID] = 0;
+  hearing.playerState.missions[MISSION_ID].progress[INVESTIGATION_STEP_ID] = 0;
+  hearing.authoredMissionFlows[FLOW_ID].openingChoiceId = null;
+  assert.equal(t13InvestigationOpen(hearing), false);
+  assert.equal(forestAmbientEligible(hearing, hearing.authoredMissionFlows[FLOW_ID]), false);
+
+  const battle = runtime();
+  battle.playerState.missions[MISSION_ID].progress[INVESTIGATION_STEP_ID] = 6;
+  assert.equal(t13InvestigationOpen(battle), false);
+  assert.equal(forestAmbientEligible(battle, battle.authoredMissionFlows[FLOW_ID]), false);
+
   const completedMission = runtime();
   completedMission.playerState.missions[MISSION_ID].status = "completed";
   assert.equal(
     forestAmbientEligible(completedMission, completedMission.authoredMissionFlows[FLOW_ID]),
-    false,
-  );
-
-  const completedInvestigation = runtime();
-  completedInvestigation.playerState.missions[MISSION_ID].progress[INVESTIGATION_STEP_ID] = 6;
-  assert.equal(t13InvestigationOpen(completedInvestigation), false);
-  assert.equal(
-    forestAmbientEligible(
-      completedInvestigation,
-      completedInvestigation.authoredMissionFlows[FLOW_ID],
-    ),
     false,
   );
 
