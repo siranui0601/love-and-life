@@ -4,7 +4,7 @@ import * as genericBase from "./authored-mission-t02-granary-choice-order.js";
 export * from "./authored-mission-evidence-only-progress.js";
 
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_VERSION =
-  "authored-mission-t03-investigation-contract-v5";
+  "authored-mission-t03-investigation-contract-v6";
 
 const MISSION_ID = "MSN-T03";
 const FLOW_ID = "red-fang-migration";
@@ -89,6 +89,14 @@ function restoreInvestigationProgress(runtime, action, result) {
     value: desired,
   });
   return true;
+}
+
+export function reconcileAuthoredMissionFlowState(runtime) {
+  const baseChanged = typeof base.reconcileAuthoredMissionFlowState === "function"
+    ? base.reconcileAuthoredMissionFlowState(runtime)
+    : false;
+  const restored = restoreInvestigationProgress(runtime, null, { ok: true });
+  return restored || baseChanged;
 }
 
 export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
