@@ -19,6 +19,19 @@ function investigationStep(mission) {
     step.id === "investigate" || step.type === "investigate") ?? null;
 }
 
+function independentEvidenceCount(runtime) {
+  return new Set(runtime?.t03WolfContinuity?.evidenceClasses ?? []).size;
+}
+
+function investigationEvidenceSatisfied(runtime) {
+  const step = investigationStep(missionEntry(runtime?.playerState?.catalog));
+  const required = Math.max(
+    REQUIRED_EVIDENCE_COUNT,
+    Number(step?.required ?? REQUIRED_EVIDENCE_COUNT),
+  );
+  return independentEvidenceCount(runtime) >= required;
+}
+
 export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
   const updated = base.applyAuthoredMissionFlowCatalogOverrides(catalog);
   const mission = missionEntry(updated);
@@ -28,7 +41,11 @@ export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
-  return base.authoredMissionFlowExclusiveActions(runtime, context);
+  const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
+  if (Array.isArray(actions)
+    && actions.some((action) => action?.authoredT03WolfChoice === true)
+    && investigationEvidenceSatisfied(runtime)) return null;
+  return actions;
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
@@ -40,4 +57,6 @@ export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_INTERNALS = Object.free
   REQUIRED_EVIDENCE_COUNT,
   missionEntry,
   investigationStep,
+  independentEvidenceCount,
+  investigationEvidenceSatisfied,
 });
