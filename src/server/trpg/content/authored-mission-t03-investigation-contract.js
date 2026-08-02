@@ -7,6 +7,7 @@ export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_VERSION =
   "authored-mission-t03-investigation-contract-v3";
 
 const MISSION_ID = "MSN-T03";
+const FLOW_ID = "red-fang-migration";
 const REQUIRED_EVIDENCE_COUNT = 2;
 
 function missionEntry(catalog) {
@@ -39,6 +40,18 @@ function investigationEvidenceSatisfied(runtime) {
     Number(step?.required ?? REQUIRED_EVIDENCE_COUNT),
   );
   return independentEvidenceCount(runtime) >= required;
+}
+
+function canonicalT03Actions(runtime, context) {
+  const mission = runtime?.playerState?.missions?.[MISSION_ID];
+  if (mission?.status !== "active") return null;
+  const actions = genericBase.authoredMissionFlowExclusiveActions(runtime, context);
+  if (!Array.isArray(actions) || actions.length === 0) return null;
+  return actions.some((action) =>
+    action?.missionId === MISSION_ID
+      || action?.authoredMissionFlowId === FLOW_ID)
+    ? actions
+    : null;
 }
 
 function restoreInvestigationProgress(runtime, action, result) {
@@ -78,10 +91,8 @@ export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
-  const canonicalActions = genericBase.authoredMissionFlowExclusiveActions(runtime, context);
-  const actions = Array.isArray(canonicalActions) && canonicalActions.length > 0
-    ? canonicalActions
-    : base.authoredMissionFlowExclusiveActions(runtime, context);
+  const actions = canonicalT03Actions(runtime, context)
+    ?? base.authoredMissionFlowExclusiveActions(runtime, context);
 
   if (Array.isArray(actions)
     && actions.some((action) => action?.authoredT03WolfChoice === true)
@@ -97,11 +108,13 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_INTERNALS = Object.freeze({
   MISSION_ID,
+  FLOW_ID,
   REQUIRED_EVIDENCE_COUNT,
   missionEntry,
   investigationStep,
   currentMissionStep,
   independentEvidenceCount,
   investigationEvidenceSatisfied,
+  canonicalT03Actions,
   restoreInvestigationProgress,
 });
