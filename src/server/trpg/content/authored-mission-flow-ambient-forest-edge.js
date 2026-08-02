@@ -31,9 +31,36 @@ function atCanonicalForestEdge(runtime) {
   return player(runtime).facilityId === FOREST_EDGE;
 }
 
+function t13InvestigationOpen(runtime) {
+  const mission = runtime?.playerState?.missions?.[MISSION_ID];
+  if (!mission) return false;
+
+  const catalogById = runtime?.playerState?.catalog?.byId;
+  const definition = typeof catalogById?.get === "function"
+    ? catalogById.get(MISSION_ID)
+    : catalogById?.[MISSION_ID];
+  const step = definition?.steps?.find((entry) =>
+    entry?.id === T13.investigation.stepId
+      || /investig/u.test(String(entry?.type ?? "").toLowerCase())
+      || /investig/u.test(String(entry?.id ?? "").toLowerCase()));
+  const progressKey = step?.id
+    ?? Object.keys(mission.progress ?? {}).find((key) =>
+      key === T13.investigation.stepId
+        || /investig/u.test(String(key).toLowerCase()));
+  if (!progressKey) return false;
+
+  const required = Number(
+    step?.required
+      ?? T13.catalogOverride?.investigation?.required
+      ?? T13.investigation.requiredEvidenceCount
+      ?? 1,
+  );
+  return Number(mission.progress?.[progressKey] ?? 0) < required;
+}
+
 function forestAmbientEligible(runtime, flow) {
   if (!flow || !t13MissionActive(runtime) || !atCanonicalForestEdge(runtime)) return false;
-  if (directInvestigationEnded(flow)) return false;
+  if (!t13InvestigationOpen(runtime) || directInvestigationEnded(flow)) return false;
   return ensureAmbientState(flow)?.endedAtMinute == null;
 }
 
@@ -83,6 +110,7 @@ export const AUTHORED_MISSION_AMBIENT_FOREST_EDGE_INTERNALS = Object.freeze({
   flowFor,
   player,
   atCanonicalForestEdge,
+  t13InvestigationOpen,
   forestAmbientEligible,
   ambientGuidance,
 });
