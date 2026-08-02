@@ -4,7 +4,7 @@ import * as genericBase from "./authored-mission-t02-granary-choice-order.js";
 export * from "./authored-mission-evidence-only-progress.js";
 
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_VERSION =
-  "authored-mission-t03-investigation-contract-v4";
+  "authored-mission-t03-investigation-contract-v5";
 
 const MISSION_ID = "MSN-T03";
 const FLOW_ID = "red-fang-migration";
@@ -63,7 +63,7 @@ function onlyPassiveCanonicalChoices(actions) {
 }
 
 function restoreInvestigationProgress(runtime, action, result) {
-  if (result?.ok === false || action?.t03EvidenceClass == null) return false;
+  if (result?.ok === false) return false;
   const mission = runtime?.playerState?.missions?.[MISSION_ID];
   const step = investigationStep(missionEntry(runtime?.playerState?.catalog));
   if (!mission || !step || mission.status !== "active") return false;
@@ -84,7 +84,8 @@ function restoreInvestigationProgress(runtime, action, result) {
     minute: Number(runtime.playerState.absoluteMinute ?? 0),
     missionId: MISSION_ID,
     stepId: step.id,
-    evidenceClass: action.t03EvidenceClass,
+    evidenceClass: action?.t03EvidenceClass ?? null,
+    evidenceCount: desired,
     value: desired,
   });
   return true;
