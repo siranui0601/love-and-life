@@ -104,11 +104,14 @@ test("T02 causal scene state survives a serializable save round trip", () => {
   const release = first.find((action) => action.t02SideChoice === "release_emergency_grain");
   assert.ok(release);
   applyAuthoredMissionFlowAction(state, release, { ok: true });
-  const saved = cloneSerializable(state);
 
-  assert.deepEqual(saved.t02GranaryContinuity, state.t02GranaryContinuity);
-  assert.equal(saved.playerState.worldFlags.t02EmergencyGrainReleased, true);
-  const next = authoredMissionFlowExclusiveActions(saved, {});
+  const restored = runtime();
+  restored.t02GranaryContinuity = cloneSerializable(state.t02GranaryContinuity);
+  restored.playerState.worldFlags = cloneSerializable(state.playerState.worldFlags);
+
+  assert.deepEqual(restored.t02GranaryContinuity, state.t02GranaryContinuity);
+  assert.equal(restored.playerState.worldFlags.t02EmergencyGrainReleased, true);
+  const next = authoredMissionFlowExclusiveActions(restored, {});
   assert.equal(next.some((action) => action.id === release.id), false);
   assert.match(next.find((action) => action.t02EvidenceClass === "fire_origin")?.id ?? "", /SOOT_LAYER/u);
 });
