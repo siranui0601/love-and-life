@@ -96,18 +96,22 @@ function moveToCurrentInvestigation(state) {
   return step;
 }
 
-test("T03 hearing is a finite three-way authored scene even when no NPC is present", () => {
+test("T03 keeps a finite handwritten hearing fallback while the registry preserves the canonical pack opening", () => {
   assert.equal(AUTHORED_MISSION_T03_WOLF_VERSION, "authored-mission-t03-wolf-v1");
   const state = runtime();
-  const opening = actions(state);
-  assert.equal(opening.length, 3);
-  assert.ok(opening.every((action) => action.authoredT03WolfChoice));
-  assert.ok(opening.every((action) => action.type === "conversation"));
-  assert.ok(opening.every((action) => action.missionId === MISSION_ID));
-  assert.ok(opening.every((action) => action.id.length <= 120));
-  assert.equal(new Set(opening.map((action) => action.id)).size, 3);
+  const canonicalOpening = actions(state);
+  assert.equal(canonicalOpening.length, 3);
+  assert.ok(canonicalOpening.every((action) => action.authoredMissionFlowKind === "opening"));
 
-  const result = choose(state, opening[1]);
+  const fallback = AUTHORED_MISSION_T03_WOLF_INTERNALS.openingActions(state);
+  assert.equal(fallback.length, 3);
+  assert.ok(fallback.every((action) => action.authoredT03WolfChoice));
+  assert.ok(fallback.every((action) => action.type === "conversation"));
+  assert.ok(fallback.every((action) => action.missionId === MISSION_ID));
+  assert.ok(fallback.every((action) => action.id.length <= 120));
+  assert.equal(new Set(fallback.map((action) => action.id)).size, 3);
+
+  const result = choose(state, fallback[1]);
   assert.equal(result.ok, true);
   assert.match(result.summary, /南柵/u);
   assert.equal(state.playerState.missions[MISSION_ID].progress.hear, 1);
@@ -140,8 +144,7 @@ test("two distinct T03 evidence scenes advance the canonical required-count inve
   assert.notEqual(secondEvidence.t03EvidenceClass, firstEvidence.t03EvidenceClass);
   assert.equal(choose(state, secondEvidence).ok, true);
   assert.equal(investigationProgress(state), 2);
-  assert.ok(state.playerState.history.some((entry) =>
-    entry.type === "T03_EVIDENCE_PROGRESS_SYNCED" && entry.value === 2));
+  assert.equal(new Set(state.t03WolfContinuity.evidenceClasses).size, 2);
   assert.equal(actions(state), null);
 });
 
