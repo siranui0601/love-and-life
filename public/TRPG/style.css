@@ -558,7 +558,32 @@ body.is-playing .site-header { display: none; }
   transform-origin: center bottom;
   transition: opacity .22s ease, transform .22s ease, filter .22s ease;
   filter: saturate(.72) brightness(.72);
+  pointer-events: auto;
+  cursor: pointer;
 }
+.game-screen .npc-card:focus-visible { outline: 3px solid var(--gold); outline-offset: -3px; }
+.game-screen .npc-card::after {
+  position: absolute;
+  right: 50%;
+  bottom: 5%;
+  padding: 5px 11px;
+  border: 1px solid rgba(255,255,255,.36);
+  border-radius: 999px;
+  content: "話す";
+  color: #fff4d0;
+  background: rgba(8,13,9,.82);
+  font-size: .72rem;
+  font-weight: 800;
+  opacity: 0;
+  transform: translateX(50%);
+  transition: opacity .18s ease;
+}
+.game-screen .npc-card:hover::after,
+.game-screen .npc-card:focus-visible::after,
+.game-screen .npc-card.is-active::after { opacity: 1; }
+.npc-talk-hint { display: block; color: var(--gold); }
+.scene-status .need-status,
+.scene-status .weather-status { color: #c9dcc8; font-size: .66rem; }
 .game-screen .npc-card.is-active { z-index: 2; opacity: 1; transform: none; filter: none; }
 .game-screen .npc-card img,
 .game-screen .portrait-fallback {

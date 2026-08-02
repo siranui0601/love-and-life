@@ -100,8 +100,14 @@ export function evaluateNarrativeAuditRecord({ context, response }) {
   const genericSpeech = speeches.some((speech) => /^(?:[.．。…・⋯—―\-\s]+|(?:ふむ|そうだな|なるほど)[。…\s]*)$/u.test(String(speech.text ?? "").trim()));
   const isConversation = ["conversation", "talk"].includes(String(action.type ?? ""));
   const isWorkOffer = action.dialogueTopic === "work_offer";
+  const allSpeechText = speeches.map((speech) => String(speech.text ?? "")).join("\n");
+  const workOfferSpeech = targetReplies || allSpeechText;
+  const concreteWorkOffer = /(?:\d+分|半日|一日|数時間)/u.test(workOfferSpeech)
+    && /(?:\d+G|賃金|報酬)/u.test(workOfferSpeech)
+    && workOfferSpeech.length >= 18;
   const isEscort = ["t01_escort", "t01_rescue_aftermath"].includes(action.dialogueTopic);
   const candidateIds = new Set((context?.allowedActionCandidates ?? []).map((candidate) => candidate.id));
+  const generatedKinds = new Set(context?.actionAffordances?.allowedKinds ?? []);
   const progressAnchors = new Set(context?.progressContract?.anchorCandidateIds ?? []);
   const continuityCandidates = new Set(context?.continuityContract?.candidateIds ?? []);
   const requiredReactionActors = (context?.reactionContract?.requiredActorIds ?? []).filter((id) => localNpcIds.has(id));
@@ -111,7 +117,9 @@ export function evaluateNarrativeAuditRecord({ context, response }) {
     threeChoices: choices.length === 3,
     uniqueChoiceIds: new Set(choices.map((choice) => choice.id)).size === choices.length,
     choiceMeaningsDiffer: choiceSignatures.size === choices.length && choicesAreMeaningfullyDifferent(choices),
-    choicesAreExecutable: !candidateIds.size || choices.every((choice) => candidateIds.has(choice.id)),
+    choicesAreExecutable: choices.every((choice) => candidateIds.has(choice.id)
+      || (choice.generatedAction?.kind && generatedKinds.has(choice.generatedAction.kind))),
+    choicesUseDistinctActionFamilies: new Set(choices.map((choice) => choice.generatedAction?.kind ?? choice.intentType ?? "")).size >= 2,
     progressRouteOffered: context?.progressContract?.mode !== "must_offer_progress"
       || choices.some((choice) => progressAnchors.has(choice.id)),
     activeIntentContinuationOffered: context?.continuityContract?.mode !== "must_offer_continuation"
@@ -121,9 +129,9 @@ export function evaluateNarrativeAuditRecord({ context, response }) {
       && !/^(?:[.．。…・⋯—―\-\s]+)$/u.test(String(speech.text ?? "").trim()))),
     localNpcOnly: remoteSpeechActors.length === 0,
     authorityFiltered: rejected.every((entry) => entry && entry.reason),
-    conversationHasSubstance: !isConversation || targetReplies.length >= 12,
-    requiredDisclosurePresent: !requiredDisclosure || targetReplies.includes(requiredDisclosure),
-    workOfferIsConcrete: !isWorkOffer || (requiredDisclosure && /(?:G|賃金|報酬)/u.test(targetReplies)),
+    conversationHasSubstance: !isConversation || (isWorkOffer ? workOfferSpeech.length >= 12 : targetReplies.length >= 12),
+    requiredDisclosurePresent: !requiredDisclosure || targetReplies.includes(requiredDisclosure) || (isWorkOffer && concreteWorkOffer),
+    workOfferIsConcrete: !isWorkOffer || concreteWorkOffer,
     escortHasHumanRequest: !isEscort || /(?:歩け|足|戻|広場|一緒|置いて)/u.test(targetReplies),
     noEmptyReactionSpeech: !genericSpeech,
     noInternalIdsInVisibleText: !/(?:SKL-|NPC\d|LOC_[A-Z]|MSN-[A-Z]|ACTION:)/u.test(visibleText),

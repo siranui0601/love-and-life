@@ -77,6 +77,9 @@ async function writeAuditSafely(auditLog, payload) {
 
 function sceneSpecificRules(context) {
   const rules = [];
+  if (context.player?.needs?.satiety <= 45) rules.push("旅人は空腹を感じている。食事が可能なら、食べる道を現実的な一案として検討する");
+  if (context.player?.needs?.fatigue >= 55 || context.time?.daypart === "night") rules.push("旅人は疲れているか夜を迎えている。宿泊・仮眠・夜に動く選択の違いが分かるようにする");
+  if (context.weather?.label) rules.push(`現在の天候は「${context.weather.label}」。描写や移動・探索の方法へ自然に反映する`);
   if (context.sceneMode === "conversation") {
     rules.push("対象NPCはplayerUtteranceへ直接答え、プロフィール・知っている事実・現在の感情から自然に返す");
     rules.push("会話を同じ言い換えで停滞させず、新情報・感情の変化・次の具体的な糸口のどれかを一つ加える");
@@ -84,13 +87,27 @@ function sceneSpecificRules(context) {
   if (context.sceneMode === "exploration") {
     rules.push("authoritativeOutcomeや発見済み情報を具体的な感覚・痕跡として描き、同じ発見を繰り返さない");
   }
+  if (context.sceneMode === "battle_start") {
+    rules.push("戦闘は今から始まる。敵を倒した、逃げた、救助したなど、まだ確定していない結末を書かない");
+    rules.push("敵が姿を現した瞬間と切迫した状況だけを短く描き、戦闘結果は戦闘処理に任せる");
+  }
   if (context.sceneMode === "battle_aftermath") {
-    rules.push("戦闘結果を変更せず、その場にいる当事者の負傷・安堵・恐怖・次の目的への反応を描く");
+    rules.push("確定した戦闘結果だけを描き、その場にいる当事者の負傷・安堵・恐怖・次の目的への反応を描く");
   }
   if (context.sceneMode === "arrival") {
-    rules.push("到着先の公開情報と同席人物だけを使い、到着によって自然に起きる最初の反応を描く");
+    rules.push("到着先の公開情報と同席人物だけを使い、道中の天候・距離・疲れ・危険の有無を一文以上描いてから、到着によって自然に起きる最初の反応を描く");
+    if (context.authoritativeOutcome?.travelEvent?.description) {
+      rules.push(`道中で起きた出来事を省略しない: ${context.authoritativeOutcome.travelEvent.description}`);
+    }
+    if (context.actionAffordances?.movements?.length) {
+      rules.push("到着後に行き先を模索できるよう、三択のうち一つは現在到達可能な別施設または別地域への移動を具体的に提案する。destinationはactionAffordances.movementsから選ぶ");
+    }
+    if (context.actionAffordances?.needActions?.length) {
+      rules.push("宿・食堂など到着先の役割に合う場合、食事・睡眠・休息のいずれかを三択の一つとして自然に提案する");
+    }
   }
-  const hasWorkCandidate = (context.allowedActionCandidates ?? []).some((candidate) => candidate.workOffer === true);
+  const hasWorkCandidate = (context.allowedActionCandidates ?? []).some((candidate) => candidate.workOffer === true)
+    || context.actionAffordances?.allowedKinds?.includes("work");
   if (context.sceneMode === "work_generation" || hasWorkCandidate) {
     rules.push("workOffer=trueの候補を選ぶ場合はworkProposalを付け、現在地・時刻・人物・localDemandTagsに合う具体的な仕事を一件作る");
     rules.push("workProposalでは賃金額を決めない。title、durationClass、riskClassだけを返し、金額はサーバーに任せる");
@@ -128,20 +145,17 @@ export function buildNarrativePrompt(context, { repair = null, policy = {} } = {
   const modeRules = sceneSpecificRules(context);
   const allowedMissionTemplateIds = [...(policy.allowedMissionTemplateIds ?? [])];
   const allowedTroubleIds = [...(policy.allowedTroubleIds ?? [])];
-  const core = `あなたはTRPGの場面監督です。サーバーが示す現実の範囲内で、場面描写、会話、次の三つの行動、必要なら世界状態の提案を生成してください。
+  const core = `あなたはTRPGの場面監督です。サーバーが示す現実の中で、短い場面描写、必要な会話、次の三つの行動を生成してください。
 
 共通規則:
 1. authoritativeOutcome、現在地、時刻、人物の生死・所在、所持品、戦闘結果を変更しない。
-2. 発言・感情・行動を描ける人物はlocalNpcsだけ。知らない秘密や遠隔人物の現在を作らない。
-3. choicesはallowedActionCandidatesから異なる3件を選び、id・intentType・targetNpcIdを候補どおり使う。labelとapproachは場面に合わせて具体化してよい。
-4. progressContract.modeがmust_offer_progressならanchorCandidateIdsから一件、continuityContract.modeがmust_offer_continuationならcandidateIdsから一件を含める。同じ候補が両方を満たしてもよい。
-5. proposalsは任意の候補であり、確信がなければ空配列にする。重大な報酬、生死、事件解決、所持品変更を提案で決めない。
-6. local_fact_candidateはsubjectId・predicate・summary、npc_memory_candidateはsubjectId・predicate・summary、mission_lead_candidateはtroubleId・summaryを必ず含める。欠けるならその提案を出さない。
-7. narrativeとspeechesは世界内の表現だけにし、ゲーム、UI、選択肢、フラグ等の実装語やNPC/LOC/SKL等の内部IDを表示文へ書かない。
-8. オレゴンは旅人を指す固定別名である。別名の由来を説明せず、必要な場合だけ自然に呼ぶ。
-9. 「……」だけの発言は作らない。言葉がない人物はspeechesへ含めず、沈黙はnarrativeで描く。
-10. JSON以外を出力しない。
-
+2. 発言できるのはlocalNpcsだけ。NPCは自分の立場と知識から、短く具体的に答える。
+3. choicesは必ず3件。通常場面では三つとも行動の種類と結果を変え、同じ調査や同じ会話の言い換えを並べない。
+4. allowedActionCandidatesは進行保証などの権威的アンカーである。要求された時だけ最大1件を使い、残りはactionAffordancesからgeneratedActionとして作る。
+5. generatedActionの人物・移動先・食事・睡眠・仕事はactionAffordancesに存在するものだけを使う。
+6. proposalsは任意。重大な報酬、生死、事件解決、所持品変更を決めず、不確かなら[]にする。
+7. 世界内の言葉だけを使い、ゲーム・UI・選択肢・フラグ・内部IDを本文へ出さない。「……」だけの発言も作らない。オレゴンは旅人を指す固定別名で、由来は説明しない。
+8. JSONだけを返し、出力を長くしすぎない。
 今回の場面規則:
 ${modeRules.length ? modeRules.map((rule) => `- ${rule}`).join("\n") : "- 現在地で具体的に見聞きできる変化を一つ描く"}
 
@@ -251,14 +265,13 @@ async function callProvider(provider, payload, audit) {
   throw lastError;
 }
 
-function componentRepairErrors(rawValidation, sanitizedValidation) {
-  // Optional proposal mistakes are normalized or discarded locally. A second
-  // model call is reserved for player-visible or progression-critical parts.
-  const structuralPattern = /(?:json_parse|choices must contain|choice ids are duplicated|id is not in the executable candidate pool|workProposal|progress anchor|active player-intent continuation|conversation must include a reply|required reaction actor missing|narrative is empty)/iu;
-  return [...new Set([
-    ...(sanitizedValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),
-    ...(rawValidation?.errors ?? []).filter((error) => structuralPattern.test(error)),
-  ])];
+function componentRepairErrors(_rawValidation, sanitizedValidation) {
+  // The sanitizer already drops malformed proposals, compiles valid generated
+  // actions, fills missing choices, and the service injects authoritative
+  // progress/continuity anchors. Do not pay for a second model call when that
+  // local recovery succeeded. Repair only defects still visible after it.
+  const visibleFailurePattern = /(?:choices must contain|choice ids are duplicated|choice labels are semantically duplicated|distinct action families|conversation must include a reply|required reaction actor missing|narrative is empty)/iu;
+  return [...new Set((sanitizedValidation?.errors ?? []).filter((error) => visibleFailurePattern.test(error)))];
 }
 
 export function createTrpgNarrator(options = {}) {

@@ -40,8 +40,21 @@ function compact(save) {
     facilityId: save.scene.facilityId,
     facilityName: save.scene.facilityName,
     gold: Number(save.player?.gold ?? 0),
+    satiety: Number(save.player?.satiety ?? 0),
+    fatigue: Number(save.player?.fatigue ?? 0),
+    weather: save.clock?.weather ?? null,
     tutorialId: save.tutorial?.id ?? null,
-    choices: save.choices.map((choice) => ({ actionId: choice.actionId, label: choice.label })),
+    presentNpcs: (save.scene?.presentNpcs ?? []).map((npc) => ({ id: npc.id, name: npc.name, role: npc.role ?? null })),
+    choices: save.choices.map((choice) => ({
+      actionId: choice.actionId,
+      label: choice.label,
+      type: choice.type ?? null,
+      intentType: choice.intentType ?? null,
+      targetNpcId: choice.targetNpcId ?? null,
+      destinationFacilityId: choice.destinationFacilityId ?? null,
+      destinationHub: choice.destinationHub ?? null,
+      generated: choice.generated === true,
+    })),
     movement: save.movement.map((move) => ({ moveId: move.moveId, label: move.label, destinationFacilityId: move.destinationFacilityId ?? null, destinationHub: move.destination ?? null })),
     battle: save.battle ? {
       id: save.battle.id,
@@ -151,6 +164,12 @@ class Runner {
     return this.move((entry) => entry.destination === hub, hub);
   }
 
+  async talkNpc(npcId) {
+    const npc = (this.save.scene?.presentNpcs ?? []).find((entry) => entry.id === npcId);
+    if (!npc) throw new Error(`${this.name}: NPC is not present: ${npcId}`);
+    return this.command("TALK_NPC", { npcId }, { npcId, label: `${npc.name}に話しかける` });
+  }
+
   async acknowledgeIntroduction() {
     const beat = this.save.scene.beats.find((entry) => entry.introductionToken);
     if (!beat) return false;
@@ -226,14 +245,21 @@ async function rescueJourney() {
     await runner.choose(/ACTION:MSN-T01:rescue|赤牙狼/u, "rescue battle");
     const battleRounds = await runner.finishBattle();
     checks.battleFinishes = battleRounds > 0 && !runner.save.battle;
-    checks.finnSpeaksAfterBattle = sceneLines(runner.save).some((line) => /僕、フィン|置いていかない|村の広場/u.test(line));
+    const postBattleScene = sceneLines(runner.save).join("\n");
+    checks.finnSpeaksAfterBattle = /フィン/u.test(postBattleScene) && /足|歩け|動か|広場|村|助け/u.test(postBattleScene);
     checks.escortStepExists = t01(runner.save)?.currentStep?.id === "escort" && runner.save.choices.some((choice) => /escort/u.test(choice.actionId));
     await runner.choose(/ACTION:MSN-T01:escort|フィンに声|斜面の下/u, "escort conversation");
     checks.escortRequestIsHuman = sceneLines(runner.save).some((line) => /足|歩け|広場|一緒|置いて/u.test(line));
     await runner.acknowledgeIntroduction();
     await runner.moveFacility("LOC_FARM_SQUARE");
     const reunion = sceneLines(runner.save).join("\n");
-    checks.reunionBeforeChoice = /母さん.*ただいま/u.test(reunion) && /よかった.*ありがとう/u.test(reunion) && /村を預かる者/u.test(reunion) && runner.save.choices.some((choice) => /MSN-T01:decide/u.test(choice.actionId));
+    const reunionActors = new Set((runner.save.scene?.beats ?? []).map((beat) => beat.actorId).filter(Boolean));
+    checks.reunionBeforeChoice = reunionActors.has("NPC001")
+      && reunionActors.has("NPC002")
+      && reunionActors.has("NPC003")
+      && /帰|ただいま|助か|無事/u.test(reunion)
+      && /ありがとう|よかった|感謝/u.test(reunion)
+      && runner.save.choices.some((choice) => /MSN-T01:decide/u.test(choice.actionId));
     await runner.choose(/ACTION:MSN-T01:decide|少年を連れ帰る/u, "handoff");
     checks.completesAfterHandoff = ["completed", "resolved"].includes(t01(runner.save)?.status);
     return { id: "rescue", passed: Object.values(checks).every(Boolean), checks, battleRounds, disabledBattleCommands: runner.disabledBattleCommands, final: compact(runner.save), trace: runner.trace };
@@ -392,6 +418,93 @@ async function capitalJourney() {
   }
 }
 
+
+function choiceFamily(choice) {
+  if (choice?.type === "conversation" || choice?.intentType === "talk") return "talk";
+  if (choice?.type === "move" || choice?.intentType === "move") return "move";
+  if (["eat", "sleep", "rest"].includes(choice?.type) || ["eat", "sleep", "rest"].includes(choice?.intentType)) return "needs";
+  if (choice?.type === "work" || choice?.intentType === "work") return "work";
+  if (["investigate", "localInvestigate"].includes(choice?.type) || choice?.intentType === "investigate") return "investigate";
+  return choice?.intentType ?? choice?.type ?? "other";
+}
+
+async function worldSystemsJourney() {
+  const runner = new Runner("世界探索の旅人", "experiential-v7-world");
+  const twin = new Runner("天候比較の旅人", "experiential-v7-weather-twin");
+  const checks = {};
+  try {
+    await runner.start();
+    await twin.start();
+    checks.weatherIsDeterministic = JSON.stringify(runner.save.clock.weather) === JSON.stringify(twin.save.clock.weather);
+    checks.weatherIsVisible = Boolean(runner.save.clock.weather?.label && runner.save.clock.weather?.description);
+
+    await runner.chooseId("TUTORIAL:AWAKEN:LISTEN");
+    await runner.chooseId("TUTORIAL:CONTACT:WHERE");
+    await runner.acknowledgeIntroduction();
+    await runner.chooseId("TUTORIAL:ORIENT:VOICES");
+    await runner.moveFacility("LOC_FARM_SQUARE");
+    await runner.chooseId("TUTORIAL:INQUIRY:MIRA");
+    await runner.acknowledgeIntroduction();
+    await runner.acknowledgeTutorial();
+    await runner.moveFacility("LOC_FARM_EDGE");
+
+    const edgeFamilies = new Set(runner.save.choices.map(choiceFamily));
+    checks.edgeChoicesUseDistinctFamilies = edgeFamilies.size >= 2;
+    checks.edgeChoicesAreNotThreeSearchVariants = runner.save.choices.filter((choice) => choiceFamily(choice) === "investigate").length < 3;
+    checks.npcPortraitAlwaysHasDirectTalk = (runner.save.scene?.presentNpcs ?? []).length > 0;
+    if (checks.npcPortraitAlwaysHasDirectTalk) {
+      const npc = runner.save.scene.presentNpcs[0];
+      await runner.talkNpc(npc.id);
+      checks.directTalkProducesReply = (runner.save.scene?.beats ?? []).some((beat) => beat.actorId === npc.id && text(beat.text).length > 1);
+      await runner.acknowledgeIntroduction();
+    } else {
+      checks.directTalkProducesReply = false;
+    }
+
+    const capital = new Runner("生活検証の旅人", "experiential-v7-capital-needs");
+    await opening(capital);
+    await capital.chooseId("TUTORIAL:DEFER:LEAVE");
+    await capital.acknowledgeTutorial();
+    const capitalChoice = capital.save.choices.find((choice) => choice.type === "move" && choice.destinationHub === "王都");
+    checks.regionalMovementCanAppearAsChoice = Boolean(capitalChoice);
+    if (capitalChoice) {
+      await capital.command("CHOOSE", { choiceId: capitalChoice.choiceId }, { actionId: capitalChoice.actionId, label: capitalChoice.label });
+    } else {
+      await capital.moveHub("王都");
+    }
+    checks.capitalReached = capital.save.scene.location === "王都";
+    checks.travelHasNarratedJourney = sceneLines(capital.save).some((line) => /道中|街道|雨|風|雪|旅|門|荷車|巡礼|商隊|夜|朝|距離|着/u.test(line));
+
+    const capitalDestinations = capital.save.movement.map((move) => `${move.destinationFacilityName ?? ""} ${move.label}`);
+    checks.noOrphanageTimelineContradiction = capitalDestinations.some((entry) => /白鈴孤児院/u.test(entry))
+      && !capitalDestinations.some((entry) => /孤児院跡地大型店/u.test(entry));
+
+    const innMove = capital.save.movement.find((move) => /安宿|宿|旅籠/u.test(`${move.destinationFacilityName ?? ""} ${move.label}`));
+    if (innMove) await capital.command("MOVE", { moveId: innMove.moveId }, { moveId: innMove.moveId, label: innMove.label });
+    const needChoice = capital.save.choices.find((choice) => ["eat", "sleep", "rest"].includes(choice.type));
+    checks.innOffersFoodOrSleepAsChoice = Boolean(needChoice);
+    if (needChoice) {
+      const before = compact(capital.save);
+      await capital.command("CHOOSE", { choiceId: needChoice.choiceId }, { actionId: needChoice.actionId, label: needChoice.label });
+      checks.needActionChangesState = capital.save.clock.absoluteMinute > before.absoluteMinute
+        && (capital.save.player.satiety !== before.satiety || capital.save.player.fatigue !== before.fatigue);
+    } else {
+      checks.needActionChangesState = false;
+    }
+    checks.worldStillPlayable = capital.save.choices.length > 0 || capital.save.movement.length > 0;
+    return {
+      id: "generative-world-systems",
+      passed: Object.values(checks).every(Boolean),
+      checks,
+      edgeChoices: compact(runner.save).choices,
+      capitalFinal: compact(capital.save),
+      trace: [...runner.trace, ...capital.trace],
+    };
+  } catch (error) {
+    return { id: "generative-world-systems", passed: false, checks, error: String(error?.stack ?? error), final: runner.save ? compact(runner.save) : null, trace: runner.trace };
+  }
+}
+
 function readAuditRecords(filePath) {
   if (!fs.existsSync(filePath)) return [];
   return fs.readFileSync(filePath, "utf8")
@@ -420,6 +533,10 @@ function auditSummary(records) {
   let providerErrors = 0;
   let repairCalls = 0;
   let totalTokens = 0;
+  let generatedChoiceCount = 0;
+  let generatedChoiceRecords = 0;
+  let sameFamilyTriples = 0;
+  const tripleSignatures = new Map();
   const failed = [];
   const metaLeaks = [];
   const latencies = [];
@@ -431,6 +548,16 @@ function auditSummary(records) {
     totalTokens += Number(record.usage?.totalTokens ?? 0);
     latencies.push(Number(record.latencyMs ?? 0));
     for (const error of record.validationErrors ?? []) validationErrors[error] = (validationErrors[error] ?? 0) + 1;
+    const auditChoices = record.response?.choices ?? [];
+    const generatedInRecord = auditChoices.filter((choice) => choice.generatedAction?.kind).length;
+    generatedChoiceCount += generatedInRecord;
+    if (generatedInRecord) generatedChoiceRecords += 1;
+    const families = auditChoices.map((choice) => choice.generatedAction?.kind ?? choice.intentType ?? choice.id?.split(":")?.[0] ?? "other");
+    if (families.length === 3 && new Set(families).size === 1) sameFamilyTriples += 1;
+    const signature = auditChoices.map((choice) => text(choice.label).replace(/[「」『』\s]/gu, "").slice(0, 80)).join("|");
+    const transactionalWorkScene = record.action?.dialogueTopic === "work_offer"
+      || /^WORK_(?:OFFER|CONFIRM|CLARIFY|DECLINE)/u.test(String(record.action?.id ?? ""));
+    if (signature && !transactionalWorkScene) tripleSignatures.set(signature, (tripleSignatures.get(signature) ?? 0) + 1);
     if (!record.evaluation?.passed) failed.push({ scenarioId: record.scenarioId, actionId: record.action?.id, source: record.source, checks: record.evaluation?.checks, validationErrors: record.validationErrors });
     const visible = [record.response?.narrative, ...(record.response?.speeches ?? []).map((speech) => speech.text), ...(record.response?.choices ?? []).map((choice) => choice.label)].filter(Boolean).join("\n");
     if (META_PATTERN.test(visible)) metaLeaks.push({ scenarioId: record.scenarioId, actionId: record.action?.id, visible });
@@ -444,6 +571,10 @@ function auditSummary(records) {
     repairRate: records.length ? repairCalls / records.length : 0,
     totalTokens,
     meanTokens: records.length ? totalTokens / records.length : 0,
+    generatedChoiceCount,
+    generatedChoiceRecords,
+    sameFamilyTriples,
+    repeatedTripleCount: [...tripleSignatures.values()].filter((count) => count > 1).reduce((sum, count) => sum + count - 1, 0),
     latency: {
       meanMs: latencies.length ? latencies.reduce((sum, value) => sum + value, 0) / latencies.length : 0,
       p50Ms: percentile(latencies, 0.5),
@@ -474,7 +605,7 @@ function markdown(report) {
     for (const [key, value] of Object.entries(journey.checks ?? {})) lines.push(`- ${value ? "✅" : "❌"} ${key}`);
     if (journey.final) lines.push(`- 最終地点: ${journey.final.location} / ${journey.final.facilityName} / Day ${journey.final.day} ${journey.final.time}`);
   }
-  lines.push("", "## Gemini監査", `- 記録数: ${report.audit.total}`, `- provider呼出し: ${report.audit.providerCalls}`, `- providerエラー: ${report.audit.providerErrors}`, `- 修復呼出し: ${report.audit.repairCalls}（${(report.audit.repairRate * 100).toFixed(1)}%）`, `- 自動評価合格: ${report.audit.passed}/${report.audit.total}`, `- token合計: ${report.audit.totalTokens}`, `- 応答時間: p50 ${report.audit.latency.p50Ms}ms / p95 ${report.audit.latency.p95Ms}ms / max ${report.audit.latency.maxMs}ms`, `- ソース: \`${JSON.stringify(report.audit.sources)}\``);
+  lines.push("", "## Gemini監査", `- 記録数: ${report.audit.total}`, `- provider呼出し: ${report.audit.providerCalls}`, `- providerエラー: ${report.audit.providerErrors}`, `- 修復呼出し: ${report.audit.repairCalls}（${(report.audit.repairRate * 100).toFixed(1)}%）`, `- 自動評価合格: ${report.audit.passed}/${report.audit.total}`, `- token合計: ${report.audit.totalTokens}`, `- Gemini生成行動: ${report.audit.generatedChoiceCount}件 / ${report.audit.generatedChoiceRecords}場面`, `- 同一系統だけの三択: ${report.audit.sameFamilyTriples}場面`, `- 完全重複三択: ${report.audit.repeatedTripleCount}件`, `- 応答時間: p50 ${report.audit.latency.p50Ms}ms / p95 ${report.audit.latency.p95Ms}ms / max ${report.audit.latency.maxMs}ms`, `- ソース: \`${JSON.stringify(report.audit.sources)}\``);
   if (report.audit.failed.length) {
     lines.push("", "### 不合格応答");
     for (const failure of report.audit.failed.slice(0, 30)) lines.push(`- ${failure.scenarioId} / ${failure.actionId}: \`${JSON.stringify(failure.checks)}\``);
@@ -488,7 +619,7 @@ function markdown(report) {
 }
 
 const journeys = [];
-for (const journey of [rescueJourney, workJourney, capitalJourney]) journeys.push(await journey());
+for (const journey of [rescueJourney, workJourney, capitalJourney, worldSystemsJourney]) journeys.push(await journey());
 await narrator.auditLog?.flush?.();
 const audit = auditSummary(readAuditRecords(auditFilePath));
 let sheetSync;
@@ -506,6 +637,9 @@ const qualityChecks = {
   repairRateIsControlled: audit.repairRate <= 0.12,
   allNarrativeAuditsPass: audit.total > 0 && audit.failed.length === 0,
   noMetaLeaks: audit.metaLeaks.length === 0,
+  generatedActionsWereObserved: audit.generatedChoiceCount > 0,
+  noSameFamilyTriples: audit.sameFamilyTriples === 0,
+  repeatedTriplesAreControlled: audit.repeatedTripleCount <= 1,
   sheetRowsWereSynced: !environment.sheetsConfigured || (sheetSync.ok === true && Number(sheetSync.synced ?? 0) > 0),
 };
 const report = {

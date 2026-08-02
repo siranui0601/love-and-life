@@ -124,6 +124,13 @@ test("Gemini selects three executable actions from a broader pool and keeps a pr
     missionId: "MSN-T01",
     currentStep: "少年の行方を追う",
   };
+  input.authoritativeState.actionAffordances = {
+    allowedKinds: ["talk", "investigate", "observe"],
+    talkNpcIds: ["NPC-LOCAL"],
+    movements: [],
+    needActions: [],
+    workEmployerNpcIds: ["NPC-LOCAL"],
+  };
   const context = buildLocalNarrativeContext(input).context;
   assert.equal(context.allowedActionCandidates.length, 5);
   const valid = {
@@ -137,12 +144,21 @@ test("Gemini selects three executable actions from a broader pool and keeps a pr
     proposals: [],
   };
   assert.equal(validateNarrativeOutput(valid, context).ok, true);
+  const generated = validateNarrativeOutput({
+    ...valid,
+    choices: [
+      valid.choices[0],
+      { id: "GENERATED:1", label: "衛兵に路地の見張りについて聞く", intentType: "talk", targetNpcId: "NPC-LOCAL", generatedAction: { kind: "talk", targetNpcId: "NPC-LOCAL" } },
+      { id: "GENERATED:2", label: "井戸端から広場全体の人の流れを観察する", intentType: "observe", generatedAction: { kind: "observe", approach: "高い位置から人の流れを見る" } },
+    ],
+  }, context);
+  assert.equal(generated.ok, true);
   const invalid = validateNarrativeOutput({
     ...valid,
     choices: [valid.choices[1], valid.choices[2], { id: "MADE-UP", label: "存在しない行動", intentType: "prepare" }],
   }, context);
   assert.equal(invalid.ok, false);
-  assert.ok(invalid.errors.some((error) => /executable candidate pool/u.test(error)));
+  assert.ok(invalid.errors.some((error) => /executable candidate or provide generatedAction/u.test(error)));
   assert.ok(invalid.errors.includes("choices must include at least one progress anchor candidate"));
 
   const sanitized = sanitizeNarrativeOutput({
@@ -388,7 +404,7 @@ test("a learned fact must appear verbatim in the target reply and in determinist
   assert.equal(validateNarrativeOutput(included, context).ok, true);
 });
 
-test("invalid Gemini output is repaired and exact replay bypasses the provider", async () => {
+test("locally recoverable Gemini output is normalized once and exact replay bypasses the provider", async () => {
   const calls = [];
   const provider = {
     async generate(payload) {
@@ -429,9 +445,10 @@ test("invalid Gemini output is repaired and exact replay bypasses the provider",
   const first = await narrator.generate(scenario(), { allowedTroubleIds: ["T01"] });
   const second = await narrator.generate(scenario(), { allowedTroubleIds: ["T01"] });
   assert.equal(first.choices.length, 3);
-  assert.equal(first.speeches[0].actorId, "NPC-LOCAL");
-  assert.equal(first.meta.validAfterRepair, true);
-  assert.deepEqual(calls, ["primary", "repair"]);
+  assert.equal(first.speeches.length, 0);
+  assert.equal(first.meta.repairCalls, 0);
+  assert.equal(first.meta.source, "gemini");
+  assert.deepEqual(calls, ["primary"]);
   assert.equal(second.meta.source, "replay_cache");
   assert.equal(second.meta.providerCalls, 0);
   assert.equal(second.narrative, first.narrative);

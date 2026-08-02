@@ -12,6 +12,46 @@ import {
 import { autoShop, createShopRuntime } from "./shop-runtime.mjs";
 
 export const GAME_END_MINUTE = 99 * 1440 + 14 * 60;
+
+const WEATHER_BY_CLIMATE = Object.freeze({
+  temperate: ["晴れ", "薄曇り", "曇り", "小雨", "晴れ", "風が強い"],
+  forest: ["木漏れ日", "霧", "小雨", "曇り", "霧雨", "晴れ"],
+  mountain: ["晴れ", "強風", "曇り", "冷たい雨", "霧", "晴れ"],
+  snow: ["薄曇り", "雪", "吹雪", "晴れ", "粉雪", "強風"],
+  coast: ["晴れ", "海風", "曇り", "通り雨", "濃霧", "晴れ"],
+  arid: ["快晴", "乾いた風", "砂煙", "薄曇り", "快晴", "強風"],
+});
+
+function regionClimate(location) {
+  const value = String(location ?? "");
+  if (/雪|氷|北方|凍/u.test(value)) return "snow";
+  if (/森|樹海|エルフ/u.test(value)) return "forest";
+  if (/山|峠|黒嶺|鉱山/u.test(value)) return "mountain";
+  if (/港|海|島|沿岸/u.test(value)) return "coast";
+  if (/砂|荒野|乾/u.test(value)) return "arid";
+  return "temperate";
+}
+
+export function deterministicWeather(day, minuteOfDay, location) {
+  const climate = regionClimate(location);
+  const table = WEATHER_BY_CLIMATE[climate];
+  const slot = Math.max(0, Math.min(3, Math.floor(Number(minuteOfDay ?? 600) / 360)));
+  const regionalOffset = hash32(`${location}:weather`) % table.length;
+  const index = (Math.max(1, Number(day ?? 1)) * 3 + slot + regionalOffset) % table.length;
+  const label = table[index];
+  const adverse = /雨|雪|吹雪|霧|砂煙|強風/u.test(label);
+  return {
+    climate,
+    label,
+    description: `${location || "この地域"}は${label}。`,
+    travelMultiplier: adverse ? (/吹雪|砂煙/u.test(label) ? 1.28 : 1.12) : 1,
+    visibility: /濃霧|吹雪|砂煙/u.test(label) ? "poor" : /霧|雨|雪/u.test(label) ? "reduced" : "clear",
+  };
+}
+
+export function weatherForState(state) {
+  return deterministicWeather(state.day, state.minuteOfDay, state.player?.location);
+}
 export const PLAYER_PROFILES = Object.freeze([
   { id: "balanced", label: "均衡型", weaponTypes: ["oneHandedSword", "shield"], story: 0.78, combat: 0.55, explore: 0.55, trade: 0.35, caution: 0.55 },
   { id: "story", label: "事件調査型", weaponTypes: ["oneHandedSword", "shield"], story: 1, combat: 0.45, explore: 0.65, trade: 0.25, caution: 0.5 },
@@ -196,6 +236,40 @@ function preferredArrivalFacility(model, hub) {
   return facilities.find((facility) => /門|入口|広場|駅|港|船着|宿|詰所/u.test(`${facility.name} ${facility.type}`)) ?? facilities[0] ?? null;
 }
 
+function troubleStatus(state, id) {
+  return String(state.troubles?.[id]?.status ?? "scheduled");
+}
+
+function relatedTroubleDay(text, fallback = null) {
+  const match = String(text ?? "").match(/Day\s*(\d+)/iu);
+  return match ? Number(match[1]) : fallback;
+}
+
+export function facilityAvailableAt(state, model, facility) {
+  if (!facility) return false;
+  const text = `${facility.relatedTroubleText ?? ""} ${facility.productPriceText ?? ""} ${facility.notes ?? ""}`;
+  const troubleIds = facility.relatedTroubleIds ?? [];
+  for (const id of troubleIds) {
+    const status = troubleStatus(state, id);
+    const trouble = model.troubleById?.[id];
+    if (new RegExp(`${id}失敗時のみ|${id}失敗後`, "u").test(text)) {
+      if (status !== "failed") return false;
+      const openDay = relatedTroubleDay(text, Number(trouble?.finalDay ?? 1));
+      if (Number.isFinite(openDay) && state.day < openDay) return false;
+    }
+    if (new RegExp(`${id}成功時のみ|${id}解決時のみ`, "u").test(text) && status !== "resolved") return false;
+    if (new RegExp(`${id}失敗で閉鎖|${id}失敗時に閉鎖`, "u").test(text) && status === "failed") {
+      const closeDay = relatedTroubleDay(trouble?.failureEffects, Number(trouble?.deadlineDay ?? 1));
+      if (!Number.isFinite(closeDay) || state.day >= closeDay) return false;
+    }
+  }
+  return true;
+}
+
+function availableFacilities(state, model, hub) {
+  return (model.facilitiesByHub[hub] ?? []).filter((facility) => facilityAvailableAt(state, model, facility));
+}
+
 function localMoveMinutes(model, state, facility) {
   const facilities = model.facilitiesByHub[state.player.location] ?? [];
   const fromIndex = Math.max(0, facilities.findIndex((entry) => entry.id === state.player.facilityId));
@@ -206,7 +280,7 @@ function localMoveMinutes(model, state, facility) {
 }
 
 export function availableLocalMovementActions(state, model) {
-  return (model.facilitiesByHub[state.player.location] ?? [])
+  return availableFacilities(state, model, state.player.location)
     .filter((facility) => facility.id !== state.player.facilityId)
     .map((facility) => ({
       id: `MOVE_LOCAL:${facility.id}`,
@@ -227,7 +301,12 @@ export function availableTravelActions(state, model) {
     .map((location) => shortestTravelPlan(model, state, state.player.location, location))
     .filter(Boolean)
     .map((plan) => {
-      const arrival = preferredArrivalFacility(model, plan.destination);
+      const arrival = availableFacilities(state, model, plan.destination)
+        .find((facility) => /門|入口|広場|駅|港|船着|宿|詰所/u.test(`${facility.name} ${facility.type}`))
+        ?? availableFacilities(state, model, plan.destination)[0]
+        ?? null;
+      const baseMinutes = Math.max(10, Math.round(plan.hours * 60));
+      const weather = deterministicWeather(state.day, state.minuteOfDay, state.player.location);
       return {
         id: `MOVE_REGION:${plan.destination}`,
         type: "move",
@@ -235,7 +314,9 @@ export function availableTravelActions(state, model) {
         destination: plan.destination,
         destinationHub: plan.destination,
         destinationFacilityId: arrival?.id ?? null,
-        minutes: Math.max(10, Math.round(plan.hours * 60)),
+        minutes: Math.max(10, Math.round(baseMinutes * weather.travelMultiplier)),
+        baseMinutes,
+        weather,
         routeIds: plan.routeIds,
         hubs: plan.hubs,
         label: `${plan.destination}へ移動する（地域間・${plan.hours.toFixed(2)}時間）`,
@@ -296,12 +377,62 @@ function propagateRumors(state, model) {
 function advance(state, model, minutes, reason) {
   const value = Math.max(0, Math.round(Number(minutes) || 0));
   if (!value) return;
+  state.player.satiety = Number.isFinite(Number(state.player.satiety)) ? Number(state.player.satiety) : 82;
+  state.player.fatigue = Number.isFinite(Number(state.player.fatigue)) ? Number(state.player.fatigue) : 12;
   const before = state.absoluteMinute;
   state.absoluteMinute = Math.min(GAME_END_MINUTE, state.absoluteMinute + value);
+  state.player.satiety = Math.max(0, state.player.satiety - value / 36);
+  state.player.fatigue = Math.min(100, state.player.fatigue + value / 48);
+  if (state.player.satiety <= 0) state.player.hpRatio = Math.max(0.08, state.player.hpRatio - value / 14400);
   syncClock(state);
   updateTroubles(state, model);
   propagateRumors(state, model);
   state.history.push({ type: "TIME_ADVANCE", minute: before, minutes: value, reason, afterMinute: state.absoluteMinute });
+}
+
+export function ensurePlayerNeeds(state) {
+  state.player.satiety = Math.max(0, Math.min(100, Number.isFinite(Number(state.player.satiety)) ? Number(state.player.satiety) : 82));
+  state.player.fatigue = Math.max(0, Math.min(100, Number.isFinite(Number(state.player.fatigue)) ? Number(state.player.fatigue) : 12));
+  return { satiety: state.player.satiety, fatigue: state.player.fatigue };
+}
+
+export function playerNeedActions(state, model) {
+  const needs = ensurePlayerNeeds(state);
+  const facility = model.facilityById[state.player.facilityId];
+  const facilityText = `${facility?.name ?? ""} ${facility?.type ?? ""} ${facility?.function ?? ""}`;
+  const servesFood = /宿|飯|食堂|酒場|屋台|市場|店/u.test(facilityText);
+  const offersBed = /宿|旅籠|宿泊|寝台/u.test(facilityText);
+  const actions = [];
+  const hasPortableMeal = Number(state.player.freeMeals ?? 0) > 0;
+  if (servesFood || hasPortableMeal) {
+    const price = hasPortableMeal ? 0 : Math.max(2, Number(state.tuning.mealPrice ?? 6));
+    if (price <= Number(state.player.gold ?? 0)) actions.push({
+      id: `NEED:EAT:${state.player.facilityId ?? state.player.location}`,
+      type: "eat",
+      minutes: 30,
+      price,
+      portableMeal: hasPortableMeal,
+      label: price ? `${facility?.name ?? "この場所"}で食事を取る（${price}G）` : "携帯食を一つ食べる",
+    });
+  }
+  if (offersBed || needs.fatigue >= 55 || state.daypart === "night") {
+    const price = state.player.freeLodging > 0 ? 0 : Math.max(4, Number(state.tuning.lodgingPrice ?? 12));
+    const overnight = state.minuteOfDay >= 1080 || state.minuteOfDay < 360;
+    const untilMorning = overnight
+      ? ((24 * 60 - state.minuteOfDay + 420) % 1440 || 480)
+      : 480;
+    if (price <= Number(state.player.gold ?? 0)) actions.push({
+      id: `NEED:SLEEP:${state.player.facilityId ?? state.player.location}`,
+      type: "sleep",
+      minutes: untilMorning,
+      price,
+      safeLodging: offersBed,
+      label: offersBed
+        ? `${facility?.name ?? "宿"}で${overnight ? "朝まで" : "8時間"}眠る${price ? `（${price}G）` : ""}`
+        : "安全そうな場所を探して仮眠する",
+    });
+  }
+  return actions;
 }
 
 function conditionAtom(text, state) {
@@ -871,6 +1002,8 @@ function compact(state) {
       gold: state.player.gold,
       hp: Number(state.player.hpRatio.toFixed(4)),
       mp: Number(state.player.mpRatio.toFixed(4)),
+      satiety: Number(ensurePlayerNeeds(state).satiety.toFixed(2)),
+      fatigue: Number(ensurePlayerNeeds(state).fatigue.toFixed(2)),
       equipment: state.player.equipment,
       skills: [...state.player.skills].sort(),
       rumors: [...state.player.knownRumorIds].sort(),
@@ -1167,10 +1300,37 @@ function selectEncounter(state, data, profile, key) {
 
 function travelEncounter(state, model, data, skills, profile, action) {
   if (state.tuning.disableTravelEncounters) return null;
-  const chance = (state.tuning.travelEncounterBaseChance ?? 0.12) * Math.min(1.5, action.minutes / 180);
+  const weather = weatherForState(state);
+  const weatherRisk = /雷|嵐|豪雨|吹雪|強風|風が強|霧/u.test(`${weather.label} ${weather.description}`) ? 0.06 : 0;
+  const nightRisk = ["night", "dusk"].includes(state.daypart) ? 0.07 : 0;
+  const durationRisk = Math.min(0.18, Math.max(0, Number(action.minutes ?? 0)) / 900);
+  const chance = Math.min(0.45, Number(state.tuning.travelEncounterBaseChance ?? 0.16) + weatherRisk + nightRisk + durationRisk);
   if (unit(state.seed, "travel", state.metrics.regionalMoves, state.metrics.battles) >= chance) return null;
   const encounter = selectEncounter(state, data, profile, `${state.seed}:travel:${state.metrics.regionalMoves}`);
   return encounter ? runBattle(state, model, data, skills, profile, encounter.id, `${state.seed}:travel:${state.metrics.regionalMoves}:${encounter.id}:${state.metrics.battles}`) : null;
+}
+
+function travelSceneEvent(state, action, weather) {
+  const key = `${state.seed}:travel-scene:${state.day}:${state.minuteOfDay}:${state.player.location}:${action.destinationHub}`;
+  const roll = unit(key);
+  const weatherText = `${weather?.label ?? ""} ${weather?.description ?? ""}`;
+  if (/雨|豪雨|雷/u.test(weatherText)) {
+    return { kind: "weather", delayMinutes: 15, description: "雨でぬかるんだ街道を進み、荷車が立ち往生した場所を迂回した。" };
+  }
+  if (/雪|吹雪/u.test(weatherText)) {
+    return { kind: "weather", delayMinutes: 25, description: "雪で道標が見えにくくなり、風を避けられる岩陰をつないで進んだ。" };
+  }
+  if (/霧/u.test(weatherText)) {
+    return { kind: "weather", delayMinutes: 12, description: "霧の中で道を外さないよう、古い石標を一つずつ確かめながら進んだ。" };
+  }
+  const events = [
+    { kind: "traveler", delayMinutes: 10, description: "街道で反対方向から来た旅人とすれ違い、先の道の様子を短く聞いた。" },
+    { kind: "caravan", delayMinutes: 12, description: "商隊の荷車に追いつき、しばらく車輪の音を聞きながら同じ道を進んだ。" },
+    { kind: "roadside", delayMinutes: 8, description: "道端の古い祠で足を止め、水を飲んでから再び歩き出した。" },
+    { kind: "patrol", delayMinutes: 6, description: "巡回中の兵と行き違い、目的地までの街道が通れることを確かめた。" },
+    { kind: "wildlife", delayMinutes: 10, description: "藪の奥で獣の気配が動き、足音を殺して危険な区間を抜けた。" },
+  ];
+  return events[Math.min(events.length - 1, Math.floor(roll * events.length))];
 }
 
 export function resolveMovementAction(state, model, data, skills, profileInput, action) {
@@ -1178,9 +1338,10 @@ export function resolveMovementAction(state, model, data, skills, profileInput, 
   if (!action || action.type !== "move") return { ok: false, reason: "not_movement" };
   const fromHub = state.player.location;
   const fromFacilityId = state.player.facilityId;
+  const departureWeather = weatherForState(state);
   if (action.movementScope === "local") {
     const facility = model.facilityById[action.destinationFacilityId];
-    if (!facility || facility.hub !== state.player.location) return { ok: false, reason: "invalid_local_destination" };
+    if (!facility || facility.hub !== state.player.location || !facilityAvailableAt(state, model, facility)) return { ok: false, reason: "invalid_local_destination" };
     advance(state, model, action.minutes, `local-move:${fromFacilityId}->${facility.id}`);
     state.player.facilityId = facility.id;
     inc(state.progress, "travel.actions");
@@ -1191,15 +1352,26 @@ export function resolveMovementAction(state, model, data, skills, profileInput, 
     state.metrics.localMoves += 1;
     state.history.push({ type: "LOCAL_MOVE_COMPLETED", minute: state.absoluteMinute, hub: state.player.location, fromFacilityId, toFacilityId: facility.id });
     refreshMissions(state, model, state.catalog, data, skills, profile);
-    return { ok: true, type: "move", movementScope: "local" };
+    return {
+      ok: true,
+      type: "move",
+      movementScope: "local",
+      from: fromHub,
+      fromFacilityId,
+      to: state.player.location,
+      toFacilityId: facility.id,
+      minutes: action.minutes,
+      departureWeather,
+    };
   }
   if (action.movementScope !== "regional") return { ok: false, reason: "unknown_movement_scope" };
   const currentPlan = shortestTravelPlan(model, state, state.player.location, action.destinationHub);
   if (!currentPlan) return { ok: false, reason: "unreachable_destination" };
+  const travelEvent = travelSceneEvent(state, action, departureWeather);
   const battle = travelEncounter(state, model, data, skills, profile, action);
   if (battle && !battle.won && profile.caution > 0.5) {
     const setbackMinutes = Math.max(30, Number(action.minutes ?? 0));
-    advance(state, model, setbackMinutes, `regional-move-defeat:${fromHub}->${action.destinationHub}`);
+    advance(state, model, setbackMinutes + Number(travelEvent?.delayMinutes ?? 0), `regional-move-defeat:${fromHub}->${action.destinationHub}`);
     inc(state.progress, "travel.actions");
     inc(state.progress, "walkMinutes.total", setbackMinutes);
     state.history.push({
@@ -1211,11 +1383,18 @@ export function resolveMovementAction(state, model, data, skills, profileInput, 
       encounterId: battle.encounterId ?? battle.encounter?.id ?? null,
     });
     refreshMissions(state, model, state.catalog, data, skills, profile);
-    return { ok: false, committed: true, reason: "travel_defeat", type: "move", movementScope: "regional", battle };
+    return { ok: false, committed: true, reason: "travel_defeat", type: "move", movementScope: "regional", battle, travelEvent, from: fromHub, intendedDestination: action.destinationHub, departureWeather };
   }
-  advance(state, model, action.minutes, `regional-move:${fromHub}->${action.destinationHub}`);
+  const travelMinutes = Number(action.minutes ?? 0) + Number(travelEvent?.delayMinutes ?? 0);
+  advance(state, model, travelMinutes, `regional-move:${fromHub}->${action.destinationHub}`);
   state.player.location = action.destinationHub;
-  const arrival = action.destinationFacilityId ? model.facilityById[action.destinationFacilityId] : preferredArrivalFacility(model, action.destinationHub);
+  const requestedArrival = action.destinationFacilityId ? model.facilityById[action.destinationFacilityId] : null;
+  const arrival = requestedArrival && facilityAvailableAt(state, model, requestedArrival)
+    ? requestedArrival
+    : availableFacilities(state, model, action.destinationHub)
+      .find((facility) => /門|入口|広場|駅|港|船着|宿|詰所/u.test(`${facility.name} ${facility.type}`))
+      ?? availableFacilities(state, model, action.destinationHub)[0]
+      ?? preferredArrivalFacility(model, action.destinationHub);
   state.player.facilityId = arrival?.id ?? null;
   state.progress.travel.visitedHubs.add(action.destinationHub);
   if (state.player.facilityId) {
@@ -1229,7 +1408,21 @@ export function resolveMovementAction(state, model, data, skills, profileInput, 
   state.metrics.regionalMoves += 1;
   state.history.push({ type: "REGIONAL_MOVE_COMPLETED", minute: state.absoluteMinute, from: fromHub, to: action.destinationHub, facilityId: state.player.facilityId });
   refreshMissions(state, model, state.catalog, data, skills, profile);
-  return { ok: true, type: "move", movementScope: "regional", battle };
+  return {
+    ok: true,
+    type: "move",
+    movementScope: "regional",
+    battle,
+    from: fromHub,
+    to: action.destinationHub,
+    toFacilityId: state.player.facilityId,
+    minutes: travelMinutes,
+    plannedMinutes: Number(action.minutes ?? 0),
+    travelEvent,
+    routeIds: action.routeIds ?? currentPlan.routeIds,
+    departureWeather,
+    arrivalWeather: weatherForState(state),
+  };
 }
 
 /**
@@ -1516,6 +1709,36 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
       state.player.hpRatio = 1;
       state.player.mpRatio = 1;
     }
+  } else if (action.type === "eat") {
+    ensurePlayerNeeds(state);
+    const price = Math.max(0, Math.floor(Number(action.price ?? state.tuning.mealPrice ?? 6)));
+    if (price > state.player.gold && state.player.freeMeals <= 0) {
+      output = { ok: false, type: action.type, reason: "insufficient_gold" };
+    } else {
+      if (state.player.freeMeals > 0) state.player.freeMeals -= 1;
+      else state.player.gold -= price;
+      advance(state, model, action.minutes ?? 30, "meal");
+      state.player.satiety = Math.min(100, state.player.satiety + 62);
+      state.player.hpRatio = Math.min(1, state.player.hpRatio + 0.08);
+      output = { ok: true, type: action.type, price, summary: "食事を取り、空腹を満たした。" };
+    }
+  } else if (action.type === "sleep") {
+    ensurePlayerNeeds(state);
+    const price = Math.max(0, Math.floor(Number(action.price ?? state.tuning.lodgingPrice ?? 12)));
+    const hasFree = state.player.freeLodging > 0;
+    if (price > state.player.gold && !hasFree && action.safeLodging) {
+      output = { ok: false, type: action.type, reason: "insufficient_gold" };
+    } else {
+      if (action.safeLodging) {
+        if (hasFree) state.player.freeLodging -= 1;
+        else state.player.gold -= price;
+      }
+      advance(state, model, action.minutes ?? 480, action.safeLodging ? "lodging-sleep" : "outdoor-sleep");
+      state.player.fatigue = action.safeLodging ? 0 : Math.max(18, state.player.fatigue - 55);
+      state.player.hpRatio = action.safeLodging ? 1 : Math.min(1, state.player.hpRatio + 0.35);
+      state.player.mpRatio = action.safeLodging ? 1 : Math.min(1, state.player.mpRatio + 0.4);
+      output = { ok: true, type: action.type, price: action.safeLodging ? price : 0, summary: action.safeLodging ? "宿で朝まで休んだ。" : "人目の少ない場所で仮眠した。" };
+    }
   } else if (action.type === "work") {
     advance(state, model, action.minutes, "odd-job");
     const quotedWage = Number(action.wage);
@@ -1605,6 +1828,8 @@ export function createInitialJourneyState({ model, battleData, skills, profile, 
       gold: Number(tuning.startingGold ?? 0),
       hpRatio: 1,
       mpRatio: 1,
+      satiety: 82,
+      fatigue: 12,
       freeMeals: Number(tuning.freeStarterMeals ?? 1),
       freeLodging: Number(tuning.freeStarterLodging ?? 1),
       inventory: { items: {}, equipment: owned },
