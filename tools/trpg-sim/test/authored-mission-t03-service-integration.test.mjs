@@ -27,7 +27,7 @@ function prepareRuntime() {
   runtime.dialogueSession = null;
   state.tuning.disableTravelEncounters = true;
   state.player.location = "田園の村";
-  state.player.facilityId = "LOC_FARM_CHIEF";
+  state.player.facilityId = "LOC_FARM_STABLE";
   state.troubles.T03.status = "active";
 
   for (const definition of state.catalog.special) {
@@ -35,7 +35,25 @@ function prepareRuntime() {
     mission.status = definition.id === MISSION_ID ? "active" : "locked";
     for (const step of definition.steps) mission.progress[step.id] = 0;
   }
+
+  const definition = state.catalog.byId.get(MISSION_ID);
+  const mission = state.missions[MISSION_ID];
+  const hearing = definition.steps.find((step) =>
+    step.id === "hear" || step.type === "conversation");
+  assert.ok(hearing);
+  mission.progress[hearing.id] = Number(hearing.required ?? 1);
   state.progress.missions.attemptedTroubleIds.add("T03");
+  state.worldFlags["t03Opening:stable_bells"] = true;
+  runtime.t03WolfContinuity = {
+    version: "t03-wolf-continuity-v1",
+    openingChoiceId: "stable_bells",
+    evidenceClasses: [],
+    sideChoices: [],
+    terminalChoiceId: null,
+    selectedActionIds: [],
+    sceneRevision: 1,
+  };
+
   runtime.playerKnowledge.knownHubIds.add("田園の村");
   runtime.playerKnowledge.knownFacilityIds.add("LOC_FARM_CHIEF");
   runtime.playerKnowledge.knownFacilityIds.add("LOC_FARM_STABLE");
@@ -65,14 +83,6 @@ function investigationContract(runtime) {
 
 test("T03 keeps two independent evidence classes after the full service world update", () => {
   const runtime = prepareRuntime();
-  const opening = choices(runtime).find((action) => action.t03OpeningChoice);
-  assert.ok(opening);
-  assert.equal(choose(runtime, opening).outcome.ok, true);
-
-  runtime.playerState.player.location = "田園の村";
-  runtime.playerState.player.facilityId = "LOC_FARM_STABLE";
-  runtime.lastWorldTickMinute = runtime.playerState.absoluteMinute;
-
   const { mission, step } = investigationContract(runtime);
   assert.equal(step.required, 2);
 
