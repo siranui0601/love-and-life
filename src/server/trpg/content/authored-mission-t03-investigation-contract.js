@@ -4,7 +4,7 @@ import * as genericBase from "./authored-mission-t02-granary-choice-order.js";
 export * from "./authored-mission-evidence-only-progress.js";
 
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_VERSION =
-  "authored-mission-t03-investigation-contract-v2";
+  "authored-mission-t03-investigation-contract-v3";
 
 const MISSION_ID = "MSN-T03";
 const REQUIRED_EVIDENCE_COUNT = 2;
@@ -78,12 +78,11 @@ export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
-  const current = currentMissionStep(runtime);
-  if (current && (current.id === "hear" || current.type === "conversation")) {
-    return genericBase.authoredMissionFlowExclusiveActions(runtime, context);
-  }
+  const canonicalActions = genericBase.authoredMissionFlowExclusiveActions(runtime, context);
+  const actions = Array.isArray(canonicalActions) && canonicalActions.length > 0
+    ? canonicalActions
+    : base.authoredMissionFlowExclusiveActions(runtime, context);
 
-  const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   if (Array.isArray(actions)
     && actions.some((action) => action?.authoredT03WolfChoice === true)
     && investigationEvidenceSatisfied(runtime)) return null;
