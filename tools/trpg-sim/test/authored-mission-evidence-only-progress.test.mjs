@@ -43,7 +43,7 @@ function t02Runtime() {
 test("evidence-only progress wrapper removes step ids only from costly and terminal choices", () => {
   assert.equal(
     AUTHORED_MISSION_EVIDENCE_ONLY_PROGRESS_VERSION,
-    "authored-mission-evidence-only-progress-v1",
+    "authored-mission-evidence-only-progress-v2",
   );
 
   const costly = {
