@@ -1,12 +1,6 @@
-import * as base from "./authored-mission-t02-granary-continuity.js";
-import {
-  compactAuthoredMissionId,
-} from "./authored-mission-flow-id-contract.js";
-import {
-  closePlayerMissionWithoutResolvingTrouble,
-} from "./authored-mission-terminal-contract.js";
+import * as base from "./authored-mission-t02-granary-choice-order.js";
 
-export * from "./authored-mission-t02-granary-continuity.js";
+export * from "./authored-mission-t02-granary-choice-order.js";
 
 export const AUTHORED_MISSION_T03_WOLF_VERSION = "authored-mission-t03-wolf-v1";
 
@@ -14,26 +8,26 @@ const MISSION_ID = "MSN-T03";
 const TROUBLE_ID = "T03";
 const STATE_VERSION = "t03-wolf-continuity-v1";
 
-const OPENINGS = Object.freeze({
-  loss_ledger: Object.freeze({
-    label: "被害台帳を村長と読み直す",
-    summary: "家畜被害の順番を並べ、赤牙狼の群れが南の牧草地から押し上げられている可能性を確かめる。",
-    consequence: "襲撃順は無秩序ではなく、南から北へ移っていた。村長は討伐数だけでなく、群れを追い立てた原因も調べることを認めた。",
-    flags: ["t03LossSequenceMapped"],
-  }),
-  stable_bells: Object.freeze({
-    label: "馬小屋に残った鈴の音を確かめる",
-    summary: "柵に絡んだ鈴と泥を調べ、家畜が狼より先に何かへ怯えていた形跡を追う。",
-    consequence: "鈴は狼が柵を越える前に切れていた。家畜は森側ではなく南の斜面を避けており、別の大型魔獣の圧力が疑われる。",
-    flags: ["t03StableBellTimingKnown"],
-  }),
-  finn_map: Object.freeze({
-    label: "フィンの救出地図に襲撃地点を重ねる",
-    summary: "以前の捜索路と今回の足跡を比べ、子どもが見た森の変化を狼被害へ結びつける。",
-    consequence: "救出時の地図には、今の被害地点を避ける古い獣道が残っていた。狼は本来の巣を離れ、仮の通り道を使っている。",
-    flags: ["t03FinnMapCompared"],
-  }),
-});
+const OPENINGS = Object.freeze([
+  {
+    id: "loss_ledger",
+    label: "ガロの家畜被害台帳を開き、襲撃日時と月齢を一列に並べる",
+    minutes: 28,
+    consequence: "被害は満月や繁殖期ではなく、森の奥で大きな鳴き声がした翌朝に集中していた。赤牙狼が自発的に人里を狙ったとは考えにくい。",
+  },
+  {
+    id: "stable_bells",
+    label: "ハクトが書き残した夜ごとの鈴の鳴り方から、群れの通過順を読む",
+    minutes: 32,
+    consequence: "最初に鳴るのは森側の鈴ではなく、逃げ道に近い南柵の鈴だった。群れは獲物へ忍び寄るより、何かから押し出されて走っている。",
+  },
+  {
+    id: "finn_edge_map",
+    label: "フィン救出時の森外縁地図へ、新しい家畜被害の位置を重ねる",
+    minutes: 36,
+    consequence: "以前は赤牙狼が避けていた沢沿いまで足跡が南下している。縄張りの中心が動いたのではなく、奥から安全地帯を失っている配置だ。",
+  },
+]);
 
 const EVIDENCE_ORDER = Object.freeze([
   "pack_displacement",
@@ -49,289 +43,320 @@ const SIDE_ORDER = Object.freeze([
 
 const TERMINAL_ORDER = Object.freeze([
   "indiscriminate_cull",
-  "abandon_outer_farms",
-  "delegate_to_lord",
+  "abandon_outer_pasture",
+  "request_late_royal_hunt",
 ]);
 
 const SIDE_TO_CHANGED_EVIDENCE = Object.freeze({
   evacuate_livestock: "pack_displacement",
-  burn_brush_line: "temporary_den",
-  send_early_hunt: "apex_pressure",
+  burn_brush_line: "apex_pressure",
+  send_early_hunt: "temporary_den",
 });
 
-function playerState(runtime) {
-  return runtime?.playerState ?? runtime;
-}
-
 function missionRuntime(runtime) {
-  return playerState(runtime)?.missions?.[MISSION_ID] ?? null;
+  return runtime?.playerState?.missions?.[MISSION_ID] ?? null;
 }
 
 function missionDefinition(runtime) {
-  const byId = playerState(runtime)?.catalog?.byId;
+  const byId = runtime?.playerState?.catalog?.byId;
   return typeof byId?.get === "function" ? byId.get(MISSION_ID) : byId?.[MISSION_ID] ?? null;
 }
 
 function currentStep(runtime) {
   const mission = missionRuntime(runtime);
-  return missionDefinition(runtime)?.steps?.find((step) =>
-    Number(mission?.progress?.[step.id] ?? 0) < Number(step.required ?? 1)) ?? null;
+  const definition = missionDefinition(runtime);
+  if (!mission || !definition) return null;
+  return (definition.steps ?? []).find((step) =>
+    Number(mission.progress?.[step.id] ?? 0) < Number(step.required ?? 1)) ?? null;
 }
 
 function ensureState(runtime) {
-  const holder = runtime?.playerState ? runtime : playerState(runtime);
-  const current = holder.t03WolfContinuity;
-  if (current?.version === STATE_VERSION) return current;
-  return holder.t03WolfContinuity = {
+  const state = runtime.t03WolfContinuity ??= {
     version: STATE_VERSION,
-    openingChoiceId: current?.openingChoiceId ?? null,
-    evidenceClasses: [...new Set(current?.evidenceClasses ?? [])],
-    sideChoices: [...new Set(current?.sideChoices ?? [])],
-    terminalChoiceId: current?.terminalChoiceId ?? null,
-    selectedActionIds: [...new Set(current?.selectedActionIds ?? [])],
-    sceneRevision: Number(current?.sceneRevision ?? 0),
-    lastChangedAtMinute: current?.lastChangedAtMinute ?? null,
+    openingChoiceId: null,
+    evidenceClasses: [],
+    sideChoices: [],
+    terminalChoiceId: null,
+    selectedActionIds: [],
+    sceneRevision: 0,
+    startedAtMinute: Number(runtime?.playerState?.absoluteMinute ?? 0),
+    lastChangedAtMinute: null,
   };
+  state.version = STATE_VERSION;
+  state.evidenceClasses = [...new Set(state.evidenceClasses ?? [])];
+  state.sideChoices = [...new Set(state.sideChoices ?? [])];
+  state.selectedActionIds = [...new Set(state.selectedActionIds ?? [])];
+  state.sceneRevision = Math.max(0, Number(state.sceneRevision ?? 0));
+  return state;
 }
 
 function activeAtCurrentTarget(runtime, kind) {
-  const state = playerState(runtime);
   const mission = missionRuntime(runtime);
   const step = currentStep(runtime);
-  if (!state || !mission || mission.status !== "active" || !step) return false;
-  if (kind === "hear" && !(step.id === "hear" || step.type === "conversation")) return false;
-  if (kind === "investigate" && !(step.id === "investigate" || step.type === "investigate")) return false;
-  return state.player?.facilityId === step.targetFacilityId;
+  if (!mission || mission.status !== "active" || !step) return false;
+  const matchesKind = kind === "hear"
+    ? (step.id === "hear" || step.type === "conversation")
+    : (step.id === "investigate" || step.type === "investigate");
+  return matchesKind
+    && runtime?.playerState?.player?.facilityId === step.targetFacilityId;
 }
 
-function choiceId(...parts) {
-  return compactAuthoredMissionId(["T03_WOLF", ...parts]);
-}
-
-function openingActions(runtime) {
-  const mission = missionRuntime(runtime);
-  const step = currentStep(runtime);
-  return Object.entries(OPENINGS).map(([key, scene]) => ({
-    id: choiceId("OPENING", key),
-    type: "conversation",
-    label: scene.label,
-    summary: scene.summary,
-    missionId: MISSION_ID,
-    stepId: step?.id ?? "hear",
-    durationMinutes: 25,
-    targetLocation: playerState(runtime)?.player?.location,
-    targetFacilityId: playerState(runtime)?.player?.facilityId,
-    authoredMissionFlowExclusiveChoice: true,
-    authoredT03WolfChoice: true,
-    t03OpeningChoice: key,
-    t03Consequence: scene.consequence,
-    t03WorldFlags: scene.flags,
-    missionTitle: missionDefinition(runtime)?.title ?? "赤牙狼の異常移動",
+function withChoiceIds(actions) {
+  return actions.slice(0, 3).map((action, index) => ({
+    ...action,
+    choiceId: `CHOICE-${index + 1}`,
   }));
 }
 
-function evidenceScene(evidenceClass, changed) {
-  const normal = {
-    pack_displacement: {
-      code: "HOOF_TRACKS",
-      label: "蹄跡に重なる群れの退避跡を測る",
-      summary: "馬小屋裏の足跡を分け、赤牙狼が家畜を狙って集まったのではなく、南斜面から押し出された順序を立証する。",
-      consequence: "狼の足跡は獲物へ一直線ではなく、南斜面から逃げるように折れていた。群れの移動は捕食だけでは説明できない。",
-      flags: ["t03PackDisplacementProven"],
-    },
-    apex_pressure: {
-      code: "DEEP_CLAW_CAST",
-      label: "狼より深い爪痕の石膏型を取る",
-      summary: "梁と石壁に残った大型爪痕を保存し、群れを追い立てた上位魔獣の存在を立証する。",
-      consequence: "爪痕の幅は赤牙狼の倍近く、古い傷の上に新しい傷が重なっていた。森奥から大型魔獣が縄張りを広げている。",
-      flags: ["t03ApexPressureProven"],
-    },
-    temporary_den: {
-      code: "STRAW_FIBER_ROUTE",
-      label: "巣材に混じる馬小屋の藁を追う",
-      summary: "毛と藁の運ばれた方向を追跡し、群れが村近くへ仮巣を移した経路を立証する。",
-      consequence: "藁は食い荒らされたのではなく、何度も同じ方向へ運ばれていた。群れは本来の巣を失い、村外れに仮巣を作っている。",
-      flags: ["t03TemporaryDenProven"],
-    },
+function baseAction(id, label, minutes, extra = {}) {
+  return {
+    id: `T03_WOLF:${id}`,
+    authoredT03WolfChoice: true,
+    missionId: MISSION_ID,
+    troubleId: TROUBLE_ID,
+    minutes,
+    label,
+    ...extra,
   };
-  const altered = {
-    pack_displacement: {
-      code: "WOUND_MEASURE",
-      label: "避難先の負傷した牝馬を診る",
-      summary: "家畜移送で踏み荒らされた足跡の代わりに、牝馬の傷向きと逃走方向から群れの退避線を復元する。",
-      consequence: "傷は後方からではなく横腹に集中し、牝馬も狼も同じ南斜面を避けていた。踏み消された地面の代わりに、生体の傷が群れの退避を証明した。",
-      flags: ["t03PackDisplacementProven", "t03StableTracksTrampled"],
+}
+
+function openingActions(runtime) {
+  const step = currentStep(runtime);
+  return withChoiceIds(OPENINGS.map((opening) => baseAction(
+    `OPEN:${opening.id}`,
+    opening.label,
+    opening.minutes,
+    {
+      type: "conversation",
+      stepId: step?.id ?? "hear",
+      t03OpeningChoice: opening.id,
+      t03Consequence: opening.consequence,
     },
-    apex_pressure: {
-      code: "BROKEN_SPEAR_HEAD",
-      label: "先行狩猟隊の折れた穂先を調べる",
-      summary: "狩猟隊が狼を散らした後に残した折損痕から、彼らが遭遇したさらに大型の魔獣を立証する。",
-      consequence: "穂先は狼の骨では折れない高さで潰れていた。先行狩猟で狼の痕跡は薄れたが、上位魔獣の存在は武器の損傷に残った。",
-      flags: ["t03ApexPressureProven", "t03WolfPackScattered"],
-    },
-    temporary_den: {
-      code: "ASH_BURIED_BONE",
-      label: "焼け跡から埋められた幼獣骨を拾う",
-      summary: "火線で巣材が焼けた代わりに、浅く埋められた骨と毛から仮巣の使用時期と移設路を復元する。",
-      consequence: "焼け跡の下から、最近埋められた幼獣骨と村の藁が出た。巣は焼失したが、群れがここを仮巣にした事実は消えなかった。",
-      flags: ["t03TemporaryDenProven", "t03BrushLineBurned"],
-    },
-  };
-  return (changed ? altered : normal)[evidenceClass];
+  )));
 }
 
 function evidenceAction(runtime, evidenceClass) {
   const state = ensureState(runtime);
-  const changed = state.sideChoices.some((side) => SIDE_TO_CHANGED_EVIDENCE[side] === evidenceClass);
-  const scene = evidenceScene(evidenceClass, changed);
   const step = currentStep(runtime);
-  return {
-    id: choiceId("EVIDENCE", evidenceClass, scene.code),
-    type: "investigate",
-    label: scene.label,
-    summary: scene.summary,
-    missionId: MISSION_ID,
-    stepId: step?.id ?? "investigate",
-    durationMinutes: changed ? 55 : 45,
-    targetLocation: playerState(runtime)?.player?.location,
-    targetFacilityId: playerState(runtime)?.player?.facilityId,
-    authoredMissionFlowExclusiveChoice: true,
-    authoredT03WolfChoice: true,
-    t03EvidenceClass: evidenceClass,
-    t03Consequence: scene.consequence,
-    t03WorldFlags: scene.flags,
-  };
+  const livestockMoved = state.sideChoices.includes("evacuate_livestock");
+  const brushBurned = state.sideChoices.includes("burn_brush_line");
+  const huntSent = state.sideChoices.includes("send_early_hunt");
+
+  if (evidenceClass === "pack_displacement") {
+    return livestockMoved
+      ? baseAction(
+        "EVIDENCE:PACK:WOUND_MEASURE",
+        "移送で消えた蹄跡を諦め、負傷した牝馬の噛み傷と泥の高さを測る",
+        48,
+        {
+          type: "investigate",
+          stepId: step?.id ?? "investigate",
+          t03EvidenceClass: evidenceClass,
+          discoveryId: "T03-EV-PACK-WOUND-MEASURE",
+          discoveryText: "傷は仕留める噛み方ではなく、走路から退かせる浅い噛み傷だった。泥の高さからも親個体と幼獣が混じり、群れ全体が追われて南へ逃げている。",
+          t03Consequence: "家畜を先に逃がしたため足跡は失ったが、傷の向きと高さから、赤牙狼が狩りではなく退避中だと立証した。",
+          suppressRandomEncounter: true,
+        },
+      )
+      : baseAction(
+        "EVIDENCE:PACK:HOOF_TRACKS",
+        "馬房裏の蹄跡と狼の足跡を層ごとに写し、群れの進入順を復元する",
+        38,
+        {
+          type: "investigate",
+          stepId: step?.id ?? "investigate",
+          t03EvidenceClass: evidenceClass,
+          discoveryId: "T03-EV-PACK-HOOF-TRACKS",
+          discoveryText: "幼獣の小さな足跡が親個体より先に南柵へ走り、親は家畜を襲うより後方を守っていた。群れは人里を縄張りにしに来たのではなく、奥から押し出されている。",
+          t03Consequence: "踏み荒らされる前の足跡から、親個体が幼獣を守りながら退避している順序を復元した。",
+          suppressRandomEncounter: true,
+        },
+      );
+  }
+
+  if (evidenceClass === "apex_pressure") {
+    return brushBurned
+      ? baseAction(
+        "EVIDENCE:APEX:CHAR_HEIGHT",
+        "煙で消えた獣臭の代わりに、焼け残った樹皮の裂け目と黒い樹脂を採る",
+        56,
+        {
+          type: "investigate",
+          stepId: step?.id ?? "investigate",
+          t03EvidenceClass: evidenceClass,
+          discoveryId: "T03-EV-APEX-CHAR-HEIGHT",
+          discoveryText: "人の肩より高い位置で樹皮が内側から裂け、赤牙狼には付かない黒い樹脂と硬い毛が残っていた。森奥の大型魔獣が境界を南へ押している。",
+          t03Consequence: "火と煙で臭跡は失われたが、焼け残った傷の高さと樹脂から、赤牙狼よりはるかに大きい魔獣の圧力を突き止めた。",
+          suppressRandomEncounter: true,
+        },
+      )
+      : baseAction(
+        "EVIDENCE:APEX:SNAPPED_TREES",
+        "森側の柵に絡んだ黒い毛を採り、外縁で折れた若木の高さを比べる",
+        44,
+        {
+          type: "investigate",
+          stepId: step?.id ?? "investigate",
+          t03EvidenceClass: evidenceClass,
+          discoveryId: "T03-EV-APEX-SNAPPED-TREES",
+          discoveryText: "赤牙狼の背丈を超える高さで若木が連続して折れ、柵には別種の黒い剛毛と樹脂臭が残る。大型魔獣が森奥から縄張りを広げている。",
+          t03Consequence: "狼の痕跡と別種の剛毛・折木を分離し、群れを南下させた大型魔獣の存在を確認した。",
+          suppressRandomEncounter: true,
+        },
+      );
+  }
+
+  return huntSent
+    ? baseAction(
+      "EVIDENCE:DEN:DROPPED_WHISTLE",
+      "散った狩人を追わず、落ちた呼子笛と血の付いた曳き縄から群れの分岐を読む",
+      62,
+      {
+        type: "investigate",
+        stepId: step?.id ?? "investigate",
+        t03EvidenceClass: evidenceClass,
+        discoveryId: "T03-EV-DEN-DROPPED-WHISTLE",
+        discoveryText: "群れは狩人を追い詰めず、古い炭焼き窯を避けて二手に散っていた。幼獣を隠した仮巣と、傷つけず森へ戻せる迂回路が分かる。",
+        t03Consequence: "先走った狩人が群れを散らしたが、落とし物と血痕の分岐から仮巣と移送路を再構成した。",
+        suppressRandomEncounter: true,
+      },
+    )
+    : baseAction(
+      "EVIDENCE:DEN:HOWL_RESPONSE",
+      "夜明け前の遠吠えへ間を変えて応え、返答位置を三点から記録する",
+      52,
+      {
+        type: "investigate",
+        stepId: step?.id ?? "investigate",
+        t03EvidenceClass: evidenceClass,
+        discoveryId: "T03-EV-DEN-HOWL-RESPONSE",
+        discoveryText: "幼獣の返答は古い炭焼き窯から聞こえ、親個体は南の家畜道と巣の間を往復していた。群れを皆殺しにせず、巣ごと北の空き縄張りへ移せる。",
+        t03Consequence: "遠吠えの返答位置から仮巣と親個体の巡回路を割り出し、巣の移設という救済経路を確保した。",
+        suppressRandomEncounter: true,
+      },
+    );
 }
 
-function sideScene(sideChoice) {
-  return {
-    evacuate_livestock: {
-      code: "EVACUATE_LIVESTOCK",
-      label: "証拠が消える前に家畜を退避させる",
-      summary: "足跡を踏み荒らす代わりに、今夜の家畜被害を減らす。群れの移動は負傷した牝馬から復元することになる。",
-      consequence: "家畜は広場へ移されたが、馬小屋裏の足跡は荷車と蹄で崩れた。次は負傷した牝馬の傷から退避線を読み直す必要がある。",
-      flags: ["t03LivestockEvacuated", "t03StableTracksTrampled"],
+function sideAction(id) {
+  if (id === "evacuate_livestock") {
+    return baseAction(
+      "SIDE:EVACUATE_LIVESTOCK",
+      "ハクトの家畜を共同穀倉の石囲いへ移し、今夜の被害を先に止める",
+      34,
+      {
+        type: "plan",
+        stepId: "investigate",
+        t03SideChoice: id,
+        t03WorldFlags: ["t03LivestockEvacuated", "t03StableTracksTrampled"],
+        t03Consequence: "家畜は守られたが、移送の蹄で馬小屋裏の足跡が潰れた。以後は負傷した家畜の傷から群れの行動を復元する。",
+      },
+    );
+  }
+  if (id === "burn_brush_line") {
+    return baseAction(
+      "SIDE:BURN_BRUSH",
+      "森外縁の藪へ狭い火線を引き、赤牙狼を家畜道から遠ざける",
+      42,
+      {
+        type: "plan",
+        stepId: "investigate",
+        t03SideChoice: id,
+        t03WorldFlags: ["t03BrushLineBurned", "t03ApexScentLost"],
+        t03Consequence: "今夜の接近は止まったが、煙で森奥から続く獣臭が消え、群れは南の街道側へ押された。大型魔獣は樹皮の傷と残留物から追うことになる。",
+      },
+    );
+  }
+  return baseAction(
+    "SIDE:SEND_EARLY_HUNT",
+    "ハクトの騎手二人を先行させ、群れが次に現れる谷を塞がせる",
+    40,
+    {
+      type: "plan",
+      stepId: "investigate",
+      t03SideChoice: id,
+      t03WorldFlags: ["t03EarlyHuntSent", "t03PackScattered", "t03HunterHorseInjured"],
+      t03Consequence: "再襲撃は遅れたが、群れは散り、騎手の馬が一頭負傷した。仮巣の位置は狩人の落とし物と血痕から追い直す。",
     },
-    burn_brush_line: {
-      code: "BURN_BRUSH_LINE",
-      label: "仮巣へ続く茂みに防火線を焼く",
-      summary: "巣材の一部を失う代わりに、夜襲経路を一つ閉じる。仮巣の証拠は灰の下から探すことになる。",
-      consequence: "村人は茂みを焼き、夜襲路を狭めた。藁と毛の道筋は消えたが、焼け跡の下に埋設物が残っている。",
-      flags: ["t03BrushLineBurned", "t03DenTrailBurned"],
-    },
-    send_early_hunt: {
-      code: "SEND_EARLY_HUNT",
-      label: "被害拡大前に狩猟隊を先行させる",
-      summary: "群れを散らして村を守る代わりに、上位魔獣の痕跡を乱す。圧力の証拠は折れた装備から拾うことになる。",
-      consequence: "狩猟隊は狼を森へ散らしたが、血と爪痕の多くを踏み荒らした。代わりに、狼では壊せない折れ方をした槍が戻った。",
-      flags: ["t03EarlyHuntSent", "t03WolfPackScattered"],
-    },
-  }[sideChoice];
+  );
 }
 
-function sideAction(runtime, sideChoice) {
-  const scene = sideScene(sideChoice);
-  return {
-    id: choiceId("SIDE", scene.code),
-    type: "investigate",
-    label: scene.label,
-    summary: scene.summary,
-    missionId: MISSION_ID,
-    stepId: currentStep(runtime)?.id ?? "investigate",
-    durationMinutes: 60,
-    targetLocation: playerState(runtime)?.player?.location,
-    targetFacilityId: playerState(runtime)?.player?.facilityId,
-    authoredMissionFlowExclusiveChoice: true,
-    authoredT03WolfChoice: true,
-    t03SideChoice: sideChoice,
-    t03Consequence: scene.consequence,
-    t03WorldFlags: scene.flags,
-  };
+function terminalAction(id) {
+  if (id === "indiscriminate_cull") {
+    return baseAction(
+      "END:INDISCRIMINATE_CULL",
+      "原因調査を打ち切り、見つけた赤牙狼を幼獣も含めて駆除する",
+      75,
+      {
+        type: "plan",
+        t03TerminalChoice: id,
+        t03WorldFlags: ["t03IndiscriminateCull"],
+        t03Consequence: "家畜被害は一時止まったが、森奥の大型魔獣は残り、空いた縄張りへ別の魔物が流れ込む。群れを救う経路は永久に閉じた。",
+      },
+    );
+  }
+  if (id === "abandon_outer_pasture") {
+    return baseAction(
+      "END:ABANDON_PASTURE",
+      "村外れの牧草地を捨て、家畜を半数まで減らして内柵だけを守る",
+      48,
+      {
+        type: "plan",
+        t03TerminalChoice: id,
+        t03WorldFlags: ["t03OuterPastureAbandoned"],
+        t03Consequence: "人命は守られたが、乳・肉・農耕馬が減り、T02後の食料回復は大きく遅れた。狼群と森奥の原因は放置された。",
+      },
+    );
+  }
+  return baseAction(
+    "END:LATE_ROYAL_HUNT",
+    "王都の討伐隊へ全権を渡し、到着まで村人を外へ出さない",
+    30,
+    {
+      type: "plan",
+      t03TerminalChoice: id,
+      t03WorldFlags: ["t03LateRoyalHuntRequested"],
+      t03Consequence: "討伐隊が来る頃には群れは街道へ移り、家畜被害と旅人襲撃が広がった。大型魔獣の調査より狼の討伐実績が優先された。",
+    },
+  );
 }
 
-function terminalScene(terminalChoice) {
-  return {
-    indiscriminate_cull: {
-      code: "INDISCRIMINATE_CULL",
-      label: "原因を問わず群れを一掃する",
-      summary: "今夜の被害は止めるが、大型魔獣と空いた縄張りを放置し、森の均衡回復を諦める。",
-      consequence: "村は一時的に静まった。だが狼が消えた縄張りへ何が入るかは分からず、異常移動の原因も記録されないままになった。",
-      flags: ["t03IndiscriminateCull", "t03PlayerMissionClosed"],
-    },
-    abandon_outer_farms: {
-      code: "ABANDON_OUTER_FARMS",
-      label: "外縁農家を捨てて内柵だけ守る",
-      summary: "中心部の人数を守る代わりに、外縁の家畜と畑を不可逆に失う。",
-      consequence: "村人は内柵へ退いた。外縁の家と家畜は見捨てられ、赤牙狼の群れはさらに村近くへ定着した。",
-      flags: ["t03OuterFarmsAbandoned", "t03PlayerMissionClosed"],
-    },
-    delegate_to_lord: {
-      code: "DELEGATE_TO_LORD",
-      label: "調査を領主の討伐隊へ委ねる",
-      summary: "自分の依頼を閉じ、数日後の大規模討伐へ任せる。救済の主導権と報酬請求権は失う。",
-      consequence: "領主の印を押した要請書が送られた。討伐隊が来るまで被害は続き、以後この件を自分の解決として扱うことはできない。",
-      flags: ["t03DelegatedToLord", "t03PlayerMissionClosed"],
-    },
-  }[terminalChoice];
-}
-
-function terminalAction(runtime, terminalChoice) {
-  const scene = terminalScene(terminalChoice);
-  return {
-    id: choiceId("TERMINAL", scene.code),
-    type: "investigate",
-    label: scene.label,
-    summary: scene.summary,
-    missionId: MISSION_ID,
-    durationMinutes: terminalChoice === "delegate_to_lord" ? 35 : 90,
-    targetLocation: playerState(runtime)?.player?.location,
-    targetFacilityId: playerState(runtime)?.player?.facilityId,
-    authoredMissionFlowExclusiveChoice: true,
-    authoredT03WolfChoice: true,
-    t03TerminalChoice: terminalChoice,
-    t03Consequence: scene.consequence,
-    t03WorldFlags: scene.flags,
-  };
-}
-
-function orderedEvidence(runtime) {
-  const state = ensureState(runtime);
-  const remaining = EVIDENCE_ORDER.filter((evidenceClass) => !state.evidenceClasses.includes(evidenceClass));
-  const changed = SIDE_ORDER
-    .map((sideChoice) => SIDE_TO_CHANGED_EVIDENCE[sideChoice])
-    .filter((evidenceClass) => remaining.includes(evidenceClass));
-  return [...new Set([...changed, ...remaining])];
+function orderedEvidence(state) {
+  const missing = EVIDENCE_ORDER.filter((id) => !state.evidenceClasses.includes(id));
+  if (!missing.length) return [];
+  const recentSide = [...state.sideChoices].reverse().find((id) => {
+    const changed = SIDE_TO_CHANGED_EVIDENCE[id];
+    return changed && missing.includes(changed);
+  });
+  const priority = SIDE_TO_CHANGED_EVIDENCE[recentSide] ?? null;
+  const rest = priority ? missing.filter((id) => id !== priority) : missing;
+  const offset = rest.length ? state.sceneRevision % rest.length : 0;
+  const rotated = rest.length ? [...rest.slice(offset), ...rest.slice(0, offset)] : [];
+  return priority ? [priority, ...rotated] : rotated;
 }
 
 function investigationActions(runtime) {
   const state = ensureState(runtime);
-  const evidence = orderedEvidence(runtime);
-  if (evidence.length === 0 || state.sideChoices.length >= SIDE_ORDER.length) {
-    return TERMINAL_ORDER.map((terminalChoice) => terminalAction(runtime, terminalChoice));
+  const evidence = orderedEvidence(state);
+  const actions = evidence.slice(0, Math.min(2, evidence.length)).map((id) => evidenceAction(runtime, id));
+  for (const id of SIDE_ORDER) {
+    if (actions.length >= 3) break;
+    if (state.sideChoices.includes(id)) continue;
+    actions.push(sideAction(id));
   }
-  const visible = evidence.slice(0, 2).map((evidenceClass) => evidenceAction(runtime, evidenceClass));
-  const side = SIDE_ORDER.find((sideChoice) => !state.sideChoices.includes(sideChoice));
-  if (side) visible.push(sideAction(runtime, side));
-  while (visible.length < 3) {
-    const nextEvidence = evidence.find((evidenceClass) =>
-      !visible.some((action) => action.t03EvidenceClass === evidenceClass));
-    if (!nextEvidence) break;
-    visible.push(evidenceAction(runtime, nextEvidence));
+  for (const id of TERMINAL_ORDER) {
+    if (actions.length >= 3) break;
+    if (state.terminalChoiceId) break;
+    actions.push(terminalAction(id));
   }
-  return visible.slice(0, 3);
+  return withChoiceIds(actions);
 }
 
 function closeMission(runtime, action) {
   const mission = missionRuntime(runtime);
   if (!mission || mission.status === "completed") return false;
-  const minute = Number(playerState(runtime)?.absoluteMinute ?? 0);
-  closePlayerMissionWithoutResolvingTrouble(runtime, {
-    missionId: MISSION_ID,
-    troubleId: TROUBLE_ID,
-    reason: `player_closed_t03_${action.t03TerminalChoice}`,
-    kind: action.t03TerminalChoice,
-    historyType: "T03_PLAYER_MISSION_CLOSED",
-  });
+  const minute = Number(runtime?.playerState?.absoluteMinute ?? 0);
+  mission.status = "failed";
+  mission.failedAt ??= minute;
   mission.failureReason = `player_closed_t03_${action.t03TerminalChoice}`;
   mission.closedByPlayerAt ??= minute;
   mission.closedByPlayerKind ??= action.t03TerminalChoice;
