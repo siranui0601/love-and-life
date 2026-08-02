@@ -3,9 +3,13 @@ import assert from "node:assert/strict";
 import { loadTrpgGameData } from "../../../src/server/trpg/game/game-data.js";
 import {
   availableGameRuntimeActions,
+  availableGameRuntimeChoiceCandidates,
   createGameRuntime,
   executeGameRuntimeCommand,
 } from "../../../src/server/trpg/game/service.js";
+import {
+  authoredMissionFlowExclusiveActions,
+} from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 import { clockFromMinute } from "../lib/player-journey.mjs";
 
 const data = loadTrpgGameData();
@@ -81,19 +85,46 @@ function investigationContract(runtime) {
   return { mission, step };
 }
 
+function ids(actions) {
+  return (actions ?? []).map((action) => action.id);
+}
+
 test("T03 keeps two independent evidence classes after the full service world update", () => {
   const runtime = prepareRuntime();
   const { mission, step } = investigationContract(runtime);
   assert.equal(step.required, 2);
 
-  const first = choices(runtime).find((action) => action.t03EvidenceClass);
-  assert.ok(first);
+  const direct = authoredMissionFlowExclusiveActions(runtime, {
+    presentNpcs: [],
+    movementActions: [],
+  });
+  assert.ok(
+    direct?.some((action) => action.t03EvidenceClass),
+    `registry did not expose T03 evidence: ${JSON.stringify(ids(direct))}`,
+  );
+
+  const candidates = availableGameRuntimeChoiceCandidates(runtime, data);
+  assert.ok(
+    candidates.some((action) => action.t03EvidenceClass),
+    `service candidate pool hid T03 evidence: ${JSON.stringify(ids(candidates))}`,
+  );
+
+  const firstChoices = choices(runtime);
+  const first = firstChoices.find((action) => action.t03EvidenceClass);
+  assert.ok(
+    first,
+    `visible service choices hid T03 evidence: ${JSON.stringify(ids(firstChoices))}`,
+  );
   assert.equal(choose(runtime, first).outcome.ok, true);
   assert.equal(mission.progress[step.id], 1);
 
-  const second = choices(runtime).find((action) =>
+  const secondChoices = choices(runtime);
+  const second = secondChoices.find((action) =>
     action.t03EvidenceClass && action.t03EvidenceClass !== first.t03EvidenceClass);
-  assert.ok(second);
+  assert.ok(
+    second,
+    `second T03 evidence was unavailable: ${JSON.stringify(ids(secondChoices))}`,
+  );
   assert.equal(choose(runtime, second).outcome.ok, true);
   assert.equal(mission.progress[step.id], 2);
   assert.ok(runtime.playerState.history.some((entry) =>
