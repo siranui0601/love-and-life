@@ -68,6 +68,26 @@ function choose(runtimeState, action) {
   return result;
 }
 
+function investigationSteps(state) {
+  return state.playerState.catalog.byId.get(MISSION_ID).steps
+    .filter((step) => step.id === "investigate" || step.type === "investigate");
+}
+
+function investigationProgress(state) {
+  return investigationSteps(state)
+    .reduce((sum, step) => sum + Number(state.playerState.missions[MISSION_ID].progress[step.id] ?? 0), 0);
+}
+
+function moveToCurrentInvestigation(state) {
+  const mission = state.playerState.missions[MISSION_ID];
+  const step = investigationSteps(state)
+    .find((entry) => Number(mission.progress[entry.id] ?? 0) < Number(entry.required ?? 1));
+  assert.ok(step);
+  state.playerState.player.location = step.targetLocation;
+  state.playerState.player.facilityId = step.targetFacilityId;
+  return step;
+}
+
 test("T03 hearing is a finite three-way authored scene even when no NPC is present", () => {
   assert.equal(AUTHORED_MISSION_T03_WOLF_VERSION, "authored-mission-t03-wolf-v1");
   const state = runtime();
@@ -87,14 +107,12 @@ test("T03 hearing is a finite three-way authored scene even when no NPC is prese
   assert.equal(state.playerState.worldFlags["t03Opening:stable_bells"], true);
 });
 
-test("two distinct T03 evidence scenes advance the canonical investigation from zero to two", () => {
+test("two distinct T03 evidence scenes advance both canonical investigation steps", () => {
   const state = runtime();
   choose(state, authoredMissionFlowExclusiveActions(state, {})[0]);
-  const definition = state.playerState.catalog.byId.get(MISSION_ID);
-  const investigation = definition.steps.find((step) => step.id === "investigate" || step.type === "investigate");
-  assert.ok(investigation);
-  state.playerState.player.location = investigation.targetLocation;
-  state.playerState.player.facilityId = investigation.targetFacilityId;
+  const canonicalInvestigations = investigationSteps(state);
+  assert.equal(canonicalInvestigations.length, 2);
+  moveToCurrentInvestigation(state);
 
   const firstSet = authoredMissionFlowExclusiveActions(state, {});
   assert.equal(firstSet.length, 3);
@@ -103,25 +121,23 @@ test("two distinct T03 evidence scenes advance the canonical investigation from 
   const firstEvidence = firstSet.find((action) => action.t03EvidenceClass);
   assert.ok(firstEvidence);
   assert.equal(choose(state, firstEvidence).ok, true);
-  assert.equal(state.playerState.missions[MISSION_ID].progress[investigation.id], 1);
+  assert.equal(investigationProgress(state), 1);
 
+  moveToCurrentInvestigation(state);
   const secondSet = authoredMissionFlowExclusiveActions(state, {});
   assert.equal(secondSet.some((action) => action.id === firstEvidence.id), false);
   const secondEvidence = secondSet.find((action) => action.t03EvidenceClass);
   assert.ok(secondEvidence);
   assert.notEqual(secondEvidence.t03EvidenceClass, firstEvidence.t03EvidenceClass);
   assert.equal(choose(state, secondEvidence).ok, true);
-  assert.equal(state.playerState.missions[MISSION_ID].progress[investigation.id], 2);
+  assert.equal(investigationProgress(state), 2);
   assert.equal(authoredMissionFlowExclusiveActions(state, {}), null);
 });
 
 test("moving livestock changes the next pack evidence instead of renaming the old scene", () => {
   const state = runtime();
   choose(state, authoredMissionFlowExclusiveActions(state, {})[2]);
-  const definition = state.playerState.catalog.byId.get(MISSION_ID);
-  const investigation = definition.steps.find((step) => step.id === "investigate" || step.type === "investigate");
-  state.playerState.player.location = investigation.targetLocation;
-  state.playerState.player.facilityId = investigation.targetFacilityId;
+  moveToCurrentInvestigation(state);
 
   const firstSet = authoredMissionFlowExclusiveActions(state, {});
   const evacuation = firstSet.find((action) => action.t03SideChoice === "evacuate_livestock");
@@ -142,10 +158,7 @@ test("T03 causal state survives serialization and does not restore consumed scen
   const state = runtime();
   const opening = authoredMissionFlowExclusiveActions(state, {})[0];
   choose(state, opening);
-  const definition = state.playerState.catalog.byId.get(MISSION_ID);
-  const investigation = definition.steps.find((step) => step.id === "investigate" || step.type === "investigate");
-  state.playerState.player.location = investigation.targetLocation;
-  state.playerState.player.facilityId = investigation.targetFacilityId;
+  const investigation = moveToCurrentInvestigation(state);
   const side = authoredMissionFlowExclusiveActions(state, {}).find((action) => action.t03SideChoice);
   choose(state, side);
 
@@ -164,10 +177,7 @@ test("T03 causal state survives serialization and does not restore consumed scen
 test("T03 irreversible exit closes only the player mission", () => {
   const state = runtime();
   choose(state, authoredMissionFlowExclusiveActions(state, {})[0]);
-  const definition = state.playerState.catalog.byId.get(MISSION_ID);
-  const investigation = definition.steps.find((step) => step.id === "investigate" || step.type === "investigate");
-  state.playerState.player.location = investigation.targetLocation;
-  state.playerState.player.facilityId = investigation.targetFacilityId;
+  const investigation = moveToCurrentInvestigation(state);
   state.t03WolfContinuity = {
     version: "t03-wolf-continuity-v1",
     openingChoiceId: "loss_ledger",
@@ -177,7 +187,8 @@ test("T03 irreversible exit closes only the player mission", () => {
     selectedActionIds: [],
     sceneRevision: 4,
   };
-  state.playerState.missions[MISSION_ID].progress[investigation.id] = 1;
+  state.playerState.missions[MISSION_ID].progress[investigation.id] = Number(investigation.required ?? 1);
+  moveToCurrentInvestigation(state);
 
   const terminal = authoredMissionFlowExclusiveActions(state, {}).find((action) => action.t03TerminalChoice);
   assert.ok(terminal);
