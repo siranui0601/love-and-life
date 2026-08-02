@@ -7,6 +7,7 @@ import {
   applyAuthoredMissionFlowAction,
   authoredMissionFlowExclusiveActions,
 } from "../../../src/server/trpg/content/authored-mission-t02-granary-choice-order.js";
+import { cloneSerializable } from "../../../src/server/trpg/game/serializer.js";
 
 const MISSION_ID = "MSN-T02";
 
@@ -58,6 +59,7 @@ test("T02 granary opens with two evidence routes and one costly village choice",
   assert.equal(choices.filter((action) => action.type === "plan").length, 1);
   assert.ok(choices.every((action) => action.authoredT02GranaryChoice));
   assert.ok(choices.every((action) => action.missionId === MISSION_ID));
+  assert.ok(choices.every((action) => action.id.length <= 120));
   assert.equal(new Set(ids(choices)).size, 3);
   assert.equal(ids(choices).some((id) => id.startsWith("INSPECT:LOC_FARM_GRANARY")), false);
 });
@@ -94,6 +96,21 @@ test("recorded evidence never returns in the same causal state", () => {
   assert.equal(second.some((action) => action.id === fire.id), false);
   assert.deepEqual(state.t02GranaryContinuity.evidenceClasses, ["fire_origin"]);
   assert.equal(state.playerState.history.at(-1).type, "T02_GRANARY_SCENE_RESOLVED");
+});
+
+test("T02 causal scene state survives a serializable save round trip", () => {
+  const state = runtime();
+  const first = authoredMissionFlowExclusiveActions(state, {});
+  const release = first.find((action) => action.t02SideChoice === "release_emergency_grain");
+  assert.ok(release);
+  applyAuthoredMissionFlowAction(state, release, { ok: true });
+  const saved = cloneSerializable(state);
+
+  assert.deepEqual(saved.t02GranaryContinuity, state.t02GranaryContinuity);
+  assert.equal(saved.playerState.worldFlags.t02EmergencyGrainReleased, true);
+  const next = authoredMissionFlowExclusiveActions(saved, {});
+  assert.equal(next.some((action) => action.id === release.id), false);
+  assert.match(next.find((action) => action.t02EvidenceClass === "fire_origin")?.id ?? "", /SOOT_LAYER/u);
 });
 
 test("finishing three evidence classes yields to the canonical resolve step", () => {
