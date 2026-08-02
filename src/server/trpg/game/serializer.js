@@ -29,6 +29,7 @@ function reviver(key, value) {
 }
 
 export function serializeRuntime(runtime) {
+  reconcileAuthoredMissionFlowState(runtime);
   return JSON.stringify(runtime, replacer);
 }
 
