@@ -4,11 +4,12 @@ import * as genericBase from "./authored-mission-t02-granary-choice-order.js";
 export * from "./authored-mission-evidence-only-progress.js";
 
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_VERSION =
-  "authored-mission-t03-investigation-contract-v3";
+  "authored-mission-t03-investigation-contract-v4";
 
 const MISSION_ID = "MSN-T03";
 const FLOW_ID = "red-fang-migration";
 const REQUIRED_EVIDENCE_COUNT = 2;
+const PASSIVE_CANONICAL_KINDS = new Set(["lead", "defer", "free_move"]);
 
 function missionEntry(catalog) {
   return catalog?.special?.find((entry) => entry.id === MISSION_ID)
@@ -54,6 +55,13 @@ function canonicalT03Actions(runtime, context) {
     : null;
 }
 
+function onlyPassiveCanonicalChoices(actions) {
+  return Array.isArray(actions)
+    && actions.length > 0
+    && actions.every((action) =>
+      PASSIVE_CANONICAL_KINDS.has(action?.authoredMissionFlowKind));
+}
+
 function restoreInvestigationProgress(runtime, action, result) {
   if (result?.ok === false || action?.t03EvidenceClass == null) return false;
   const mission = runtime?.playerState?.missions?.[MISSION_ID];
@@ -91,8 +99,13 @@ export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
-  const actions = canonicalT03Actions(runtime, context)
-    ?? base.authoredMissionFlowExclusiveActions(runtime, context);
+  const canonical = canonicalT03Actions(runtime, context);
+  const fallback = base.authoredMissionFlowExclusiveActions(runtime, context);
+  const fallbackIsT03 = Array.isArray(fallback)
+    && fallback.some((action) => action?.authoredT03WolfChoice === true);
+  const actions = fallbackIsT03 && onlyPassiveCanonicalChoices(canonical)
+    ? fallback
+    : canonical ?? fallback;
 
   if (Array.isArray(actions)
     && actions.some((action) => action?.authoredT03WolfChoice === true)
@@ -110,11 +123,13 @@ export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_INTERNALS = Object.free
   MISSION_ID,
   FLOW_ID,
   REQUIRED_EVIDENCE_COUNT,
+  PASSIVE_CANONICAL_KINDS,
   missionEntry,
   investigationStep,
   currentMissionStep,
   independentEvidenceCount,
   investigationEvidenceSatisfied,
   canonicalT03Actions,
+  onlyPassiveCanonicalChoices,
   restoreInvestigationProgress,
 });
