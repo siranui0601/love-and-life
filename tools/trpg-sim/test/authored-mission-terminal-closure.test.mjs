@@ -1,12 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  AUTHORED_MISSION_REVISIT_RETIREMENT_INTERNALS,
   AUTHORED_MISSION_TERMINAL_CLOSURE_INTERNALS,
   AUTHORED_MISSION_TERMINAL_CLOSURE_VERSION,
   applyAuthoredMissionFlowAction,
   authoredMissionFlowGuidance,
 } from "../../../src/server/trpg/content/authored-mission-flow-terminal-closure.js";
+import {
+  AUTHORED_MISSION_REVISIT_RETIREMENT_INTERNALS,
+} from "../../../src/server/trpg/content/authored-mission-flow-revisit-retirement.js";
 
 const FLOW_ID = "forest-king-slime-world-tree-collapse";
 const MISSION_ID = "MSN-T13";
