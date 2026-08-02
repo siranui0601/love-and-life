@@ -1,4 +1,4 @@
-name: TRPG temporary source export
+name: TRPG temporary weather battle patch
 
 on:
   push:
@@ -6,29 +6,372 @@ on:
       - agent/trpg-human-authored-choices
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export-sources:
+  apply-weather-battle-patch:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Collect target sources
+        with:
+          ref: agent/trpg-human-authored-choices
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply precise battle-weather changes
+        shell: bash
         run: |
-          mkdir -p export
-          cp --parents \
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              file = Path(path)
+              text = file.read_text(encoding="utf-8")
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected one match, found {count}: {old[:80]!r}")
+              file.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+          replace_once(
+              "src/server/trpg/resolvers/weather-resolver.js",
+              'tags: Object.freeze(["rain", "storm", "lightning", "wind", "outdoor"]),',
+              'tags: Object.freeze(["rain", "storm", "lightning", "thunderstorm", "wind", "outdoor"]),',
+          )
+
+          replace_once(
+              "tools/trpg-sim/lib/battle-simulator.mjs",
+              """function canPayPlayerCost(actor, skill) {""",
+              """function matchingAdditionalSkillBonuses(skill, state, actor, target, diagnostics) {
+            const context = battleContext(state, actor, target);
+            return (skill.additionalEffectConditions ?? [])
+              .filter((entry) => entry?.when
+                && evaluateStructuredConditions([entry.when], context, diagnostics))
+              .map((entry) => entry.bonus ?? {});
+          }
+
+          function combinedAdditionalSkillBonus(skill, state, actor, target, diagnostics) {
+            const combined = {
+              damageMultiplier: 1,
+              accuracyMod: 0,
+              criticalMod: 0,
+              durationBonusTurns: 0,
+              matchedCount: 0,
+            };
+            for (const bonus of matchingAdditionalSkillBonuses(skill, state, actor, target, diagnostics)) {
+              combined.damageMultiplier *= Math.max(0, Number(bonus.damageMultiplier ?? 1));
+              combined.accuracyMod += Number(bonus.accuracyMod ?? 0);
+              combined.criticalMod += Number(bonus.criticalMod ?? 0);
+              combined.durationBonusTurns += Math.max(0, Number(bonus.durationBonusTurns ?? 0));
+              combined.matchedCount += 1;
+            }
+            return combined;
+          }
+
+          function additionalSkillBonusLabel(bonus) {
+            if (!bonus?.matchedCount) return '';
+            const parts = [];
+            if (bonus.damageMultiplier > 1.0001) parts.push(`環境補正で威力×${bonus.damageMultiplier.toFixed(2)}`);
+            if (bonus.accuracyMod) parts.push(`命中${bonus.accuracyMod > 0 ? '+' : ''}${bonus.accuracyMod}`);
+            if (bonus.criticalMod) parts.push(`会心${bonus.criticalMod > 0 ? '+' : ''}${bonus.criticalMod}`);
+            if (bonus.durationBonusTurns) parts.push(`効果+${bonus.durationBonusTurns}ターン`);
+            return parts.join('・');
+          }
+
+          function skillVarietyMultiplier(actor, skill) {
+            const uses = Number(actor.uses.get(skill.id) ?? 0);
+            let multiplier = uses === 0 ? 1.1 : Math.max(0.7, 1 - uses * 0.08);
+            if (actor.lastSkillId === skill.id) multiplier *= 0.84;
+            return multiplier;
+          }
+
+          function withDurationBonus(effect, durationBonusTurns) {
+            if (!(durationBonusTurns > 0) || effect?.durationTurns == null) return effect;
+            return { ...effect, durationTurns: Number(effect.durationTurns) + durationBonusTurns };
+          }
+
+          function canPayPlayerCost(actor, skill) {""",
+          )
+
+          replace_once(
+              "tools/trpg-sim/lib/battle-simulator.mjs",
+              """function inferPlayerUtility(skill, actor, enemies) {
+            const damage = Number(skill.damage?.totalMultiplier || 0);
+            const targetFactor = skill.target === 'all_enemies' ? Math.min(3, living(enemies).length) : 1;
+            let utility = damage * (inferPlayerDamageType(skill) === 'magic' ? actor.magicPower : actor.physicalPower) * targetFactor;
+            for (const state of skill.specialStates ?? []) {
+              if (state.type === 'healHp') utility += (1 - ratio(actor, 'hp')) * actor.maxHp * 1.6;
+              if (state.type === 'barrier' || state.type === 'damageReduction') utility += (1 - ratio(actor, 'hp')) * actor.maxHp * 0.6;
+            }
+            utility += (skill.buffs?.length ?? 0) * 8 + (skill.debuffs?.length ?? 0) * 10;
+            utility -= Number(skill.costs?.mp || 0) * 0.35;
+            return utility;
+          }""",
+              """function inferPlayerUtility(skill, actor, enemies, state, target, diagnostics) {
+            const damage = Number(skill.damage?.totalMultiplier || 0);
+            const targetFactor = skill.target === 'all_enemies' ? Math.min(3, living(enemies).length) : 1;
+            const environmental = combinedAdditionalSkillBonus(skill, state, actor, target, diagnostics);
+            let utility = damage
+              * (inferPlayerDamageType(skill) === 'magic' ? actor.magicPower : actor.physicalPower)
+              * targetFactor
+              * environmental.damageMultiplier;
+            for (const stateEffect of skill.specialStates ?? []) {
+              if (stateEffect.type === 'healHp') utility += (1 - ratio(actor, 'hp')) * actor.maxHp * 1.6;
+              if (stateEffect.type === 'barrier' || stateEffect.type === 'damageReduction') {
+                utility += (1 - ratio(actor, 'hp')) * actor.maxHp * 0.6;
+              }
+            }
+            utility += (skill.buffs?.length ?? 0) * 8 + (skill.debuffs?.length ?? 0) * 10;
+            utility += environmental.durationBonusTurns
+              * ((skill.buffs?.length ?? 0) + (skill.debuffs?.length ?? 0) + (skill.specialStates?.length ?? 0))
+              * 3;
+            utility -= Number(skill.costs?.mp || 0) * 0.35;
+            return utility * skillVarietyMultiplier(actor, skill);
+          }""",
+          )
+
+          replace_once(
+              "tools/trpg-sim/lib/battle-simulator.mjs",
+              """    .map((skill) => ({ skill, utility: inferPlayerUtility(skill, actor, state.enemies) }))""",
+              """    .map((skill) => ({
+              skill,
+              utility: inferPlayerUtility(skill, actor, state.enemies, state, target, diagnostics),
+            }))""",
+          )
+
+          replace_once(
+              "tools/trpg-sim/lib/battle-simulator.mjs",
+              """  const targets = targetSet(targetSpec, actor, opponents, allies, target, rng);
+            const totals = { damage: 0, hits: 0, criticals: 0, healing: 0 };
+            if (skill.damage?.formula !== 'none' && Number(skill.damage?.totalMultiplier || 0) > 0) {
+              let multiplier = Number(skill.damage.totalMultiplier);""",
+              """  const targets = targetSet(targetSpec, actor, opponents, allies, target, rng);
+            const additionalBonus = combinedAdditionalSkillBonus(skill, state, actor, target, diagnostics);
+            const totals = { damage: 0, hits: 0, criticals: 0, healing: 0 };
+            if (skill.damage?.formula !== 'none' && Number(skill.damage?.totalMultiplier || 0) > 0) {
+              let multiplier = Number(skill.damage.totalMultiplier) * additionalBonus.damageMultiplier;""",
+          )
+
+          replace_once(
+              "tools/trpg-sim/lib/battle-simulator.mjs",
+              """        fixed: 0, hits: Math.max(1, Number(skill.damage.hits || 1)), accuracy: Number(skill.damage.accuracyModifier || 0),
+              },
+              skill: { accuracy: 0 }, actor, targets, rng, criticalBonus: Number(skill.damage.criticalModifier || 0),""",
+              """        fixed: 0,
+                hits: Math.max(1, Number(skill.damage.hits || 1)),
+                accuracy: Number(skill.damage.accuracyModifier || 0) + additionalBonus.accuracyMod,
+              },
+              skill: { accuracy: 0 },
+              actor,
+              targets,
+              rng,
+              criticalBonus: Number(skill.damage.criticalModifier || 0) + additionalBonus.criticalMod,""",
+          )
+
+          replace_once(
+              "tools/trpg-sim/lib/battle-simulator.mjs",
+              """  for (const buff of skill.buffs ?? []) {
+              if (buff.type === 'statStage') applyModifier(actor, { modifier: buff.stat, stage: buff.stage, durationTurns: buff.durationTurns });
+              else diagnostics.add('unsupportedPlayerBuff', { skillId: skill.id, type: buff.type });
+            }
+            for (const debuff of skill.debuffs ?? []) {
+              for (const debuffTarget of targets) {
+                if (debuff.type === 'statStage') applyModifier(debuffTarget, { modifier: debuff.stat, stage: debuff.stage, durationTurns: debuff.durationTurns });
+                else applyDebuff(actor, debuffTarget, { ...debuff, debuffId: debuff.type, baseChance: debuff.chancePct ?? 100 }, rng);
+              }
+            }
+            for (const stateEffect of skill.specialStates ?? []) {""",
+              """  for (const rawBuff of skill.buffs ?? []) {
+              const buff = withDurationBonus(rawBuff, additionalBonus.durationBonusTurns);
+              if (buff.type === 'statStage') applyModifier(actor, { modifier: buff.stat, stage: buff.stage, durationTurns: buff.durationTurns });
+              else diagnostics.add('unsupportedPlayerBuff', { skillId: skill.id, type: buff.type });
+            }
+            for (const rawDebuff of skill.debuffs ?? []) {
+              const debuff = withDurationBonus(rawDebuff, additionalBonus.durationBonusTurns);
+              for (const debuffTarget of targets) {
+                if (debuff.type === 'statStage') applyModifier(debuffTarget, { modifier: debuff.stat, stage: debuff.stage, durationTurns: debuff.durationTurns });
+                else applyDebuff(actor, debuffTarget, { ...debuff, debuffId: debuff.type, baseChance: debuff.chancePct ?? 100 }, rng);
+              }
+            }
+            for (const rawStateEffect of skill.specialStates ?? []) {
+              const stateEffect = withDurationBonus(rawStateEffect, additionalBonus.durationBonusTurns);""",
+          )
+
+          replace_once(
+              "tools/trpg-sim/lib/battle-simulator.mjs",
+              """  if (/洞窟|坑道/.test(text)) tags.add('cave');
+            return tags;""",
+              """  if (/洞窟|坑道|地下|屋内|館内|城内|倉庫内/.test(text)) tags.add('cave');
+            else tags.add('outdoor');
+            return tags;""",
+          )
+
+          replace_once(
+              "tools/trpg-sim/lib/battle-simulator.mjs",
+              """    fieldTags: new Set(options.fieldTags ?? fieldTagsForEncounter(encounter)),
+              fieldEffects: new Map(),""",
+              """    fieldTags: new Set([
+                ...fieldTagsForEncounter(encounter),
+                ...(options.fieldTags ?? []),
+                ...(fieldTagsForEncounter(encounter).has('outdoor') ? options.weatherTags ?? [] : []),
+              ]),
+              fieldEffects: new Map(),""",
+          )
+
+          replace_once(
+              "tools/trpg-sim/lib/battle-simulator.mjs",
+              """    const availability = interactiveSkillAvailability(data, state, actor, skill, diagnostics);
+              const targetSpec = skill.target === 'contextual' ? 'single_enemy' : skill.target;
+              commands.push({""",
+              """    const availability = interactiveSkillAvailability(data, state, actor, skill, diagnostics);
+              const targetSpec = skill.target === 'contextual' ? 'single_enemy' : skill.target;
+              const activeBonuses = combinedAdditionalSkillBonus(skill, state, actor, living(state.enemies)[0], diagnostics);
+              commands.push({""",
+          )
+
+          replace_once(
+              "tools/trpg-sim/lib/battle-simulator.mjs",
+              """      description: skill.description ?? '',
+                mpCost: skill.costs?.mpMode === 'all_current' ? actor.mp : Number(skill.costs?.mp ?? 0),""",
+              """      description: skill.description ?? '',
+                activeBonuses,
+                activeBonusLabel: additionalSkillBonusLabel(activeBonuses),
+                mpCost: skill.costs?.mpMode === 'all_current' ? actor.mp : Number(skill.costs?.mp ?? 0),""",
+          )
+
+          replace_once(
+              "src/server/trpg/game/service.js",
+              """        const session = beginInteractiveBattle({
+                  data: data.battleData,
+                  encounterId: opening.continuation.encounterId,
+                  playerBuild: opening.continuation.prepared.scaledBuild,
+                  seed: opening.continuation.key,
+                  maxTurns: 100,
+                });""",
+              """        const weather = canonicalWeatherForState(runtime.playerState);
+                const session = beginInteractiveBattle({
+                  data: data.battleData,
+                  encounterId: opening.continuation.encounterId,
+                  playerBuild: opening.continuation.prepared.scaledBuild,
+                  seed: opening.continuation.key,
+                  maxTurns: 100,
+                  weatherTags: weather.tags.filter((tag) => tag !== "outdoor"),
+                  world: {
+                    day: runtime.playerState.day,
+                    daypart: runtime.playerState.daypart,
+                    weatherId: weather.id,
+                    weatherLabel: weather.label,
+                    weatherTags: [...weather.tags],
+                    regionId: weather.regionId,
+                  },
+                });""",
+          )
+
+          replace_once(
+              "src/server/trpg/game/service.js",
+              """    description: cleanText(command.description, 180),
+                mpCost: battleNumber(command.mpCost),""",
+              """    description: cleanText(command.description, 180),
+                activeBonusLabel: cleanText(command.activeBonusLabel, 120) || null,
+                activeBonuses: command.activeBonuses ?? null,
+                mpCost: battleNumber(command.mpCost),""",
+          )
+
+          replace_once(
+              "public/TRPG/app.js",
+              """        : [cost, escapeText(command.description, "")].filter(Boolean).join("・");""",
+              """        : [cost, escapeText(command.activeBonusLabel, ""), escapeText(command.description, "")]
+            .filter(Boolean)
+            .join("・");""",
+          )
+
+          battle_test = Path("tools/trpg-sim/test/battle.test.mjs")
+          test_text = battle_test.read_text(encoding="utf-8")
+          anchor = '''test("the same interactive command sequence produces the same complete state and round frames", () => {'''
+          if anchor not in test_text:
+              raise SystemExit("battle test insertion anchor missing")
+          weather_test = '''test("weather and daypart bonuses enter the authoritative battle context", () => {
+            const build = createPlayerBuild(data, {
+              id: "weather-caster",
+              name: "Weather caster",
+              level: 20,
+              equipmentIds: ["EQP-W-0073"],
+              skillIds: ["SKL-0688"],
+              baseStats: {
+                maxHp: 10_000,
+                maxMp: 200,
+                attack: 40,
+                defense: 100,
+                agility: 50,
+                luck: 0,
+                physicalPower: 1,
+                magicPower: 80,
+                magicResistance: 100,
+                accuracy: 100,
+                evasion: 0,
+                critical: 0,
+                debuffSuccess: 0,
+                debuffResistance: 100,
+              },
+            });
+            const start = (boosted) => beginInteractiveBattle({
+              data,
+              seed: "weather-battle-bonus",
+              encounterId: "ENC-0001",
+              playerBuild: build,
+              maxTurns: 20,
+              weatherTags: boosted ? ["rain", "storm", "lightning", "thunderstorm"] : ["clear"],
+              world: boosted
+                ? { daypart: "day", weatherId: "storm", weatherTags: ["rain", "storm", "lightning", "thunderstorm"] }
+                : { daypart: "night", weatherId: "clear", weatherTags: ["clear"] },
+            });
+            const boosted = start(true);
+            const plain = start(false);
+            assert.equal(boosted.state.fieldTags.has("outdoor"), true);
+            assert.equal(boosted.state.fieldTags.has("rain"), true);
+            assert.equal(boosted.state.world.weatherId, "storm");
+            const boostedCommands = listInteractiveBattleCommands({ data, session: boosted });
+            const plainCommands = listInteractiveBattleCommands({ data, session: plain });
+            const boostedSkill = boostedCommands.find((entry) => entry.actionId === "SKILL:SKL-0688");
+            const plainSkill = plainCommands.find((entry) => entry.actionId === "SKILL:SKL-0688");
+            assert.equal(boostedSkill.available, true);
+            assert.ok(boostedSkill.activeBonuses.damageMultiplier > plainSkill.activeBonuses.damageMultiplier);
+            assert.match(boostedSkill.activeBonusLabel, /環境補正で威力/u);
+
+            const use = (session, commands) => resolveInteractiveBattleRound({
+              data,
+              session,
+              command: {
+                actionId: "SKILL:SKL-0688",
+                targetInstanceId: firstTarget(commands, "SKILL:SKL-0688"),
+              },
+            });
+            const boostedRound = use(boosted, boostedCommands);
+            const plainRound = use(plain, plainCommands);
+            const dealt = (result) => result.round.frames
+              .filter((frame) => frame.actorSide === "player")
+              .reduce((sum, frame) => sum + Number(frame.damage || 0), 0);
+            assert.ok(dealt(boostedRound) > dealt(plainRound));
+          });
+
+          '''
+          battle_test.write_text(test_text.replace(anchor, weather_test + anchor, 1), encoding="utf-8")
+          PY
+      - name: Run complete TRPG regression
+        run: npm run trpg:test
+      - name: Commit verified implementation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/server/trpg/resolvers/weather-resolver.js \
             src/server/trpg/game/service.js \
             tools/trpg-sim/lib/battle-simulator.mjs \
-            tools/trpg-sim/lib/battle-model.mjs \
-            tools/trpg-sim/lib/player-journey.mjs \
-            tools/trpg-sim/test/game-service.test.mjs \
-            tools/trpg-sim/test/weather-game-view.test.mjs \
-            tools/trpg-sim/test/battle-simulator.test.mjs \
-            package.json \
-            export/ 2>/dev/null || true
-      - uses: actions/upload-artifact@v4
-        with:
-          name: trpg-target-sources
-          path: export
-          retention-days: 1
+            tools/trpg-sim/test/battle.test.mjs \
+            public/TRPG/app.js
+          git commit -m "feat(trpg): connect weather to battle skills" || exit 0
+          git push origin HEAD:agent/trpg-human-authored-choices
