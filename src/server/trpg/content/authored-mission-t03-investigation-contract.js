@@ -4,7 +4,7 @@ import * as genericBase from "./authored-mission-t02-granary-choice-order.js";
 export * from "./authored-mission-evidence-only-progress.js";
 
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_VERSION =
-  "authored-mission-t03-investigation-contract-v6";
+  "authored-mission-t03-investigation-contract-v7";
 
 const MISSION_ID = "MSN-T03";
 const FLOW_ID = "red-fang-migration";
@@ -62,7 +62,12 @@ function onlyPassiveCanonicalChoices(actions) {
       PASSIVE_CANONICAL_KINDS.has(action?.authoredMissionFlowKind));
 }
 
-function restoreInvestigationProgress(runtime, action, result) {
+function restoreInvestigationProgress(
+  runtime,
+  action,
+  result,
+  { recordHistory = true } = {},
+) {
   if (result?.ok === false) return false;
   const mission = runtime?.playerState?.missions?.[MISSION_ID];
   const step = investigationStep(missionEntry(runtime?.playerState?.catalog));
@@ -78,16 +83,18 @@ function restoreInvestigationProgress(runtime, action, result) {
 
   mission.progress ??= {};
   mission.progress[step.id] = desired;
-  runtime.playerState.history ??= [];
-  runtime.playerState.history.push({
-    type: "T03_INVESTIGATION_PROGRESS_RESTORED",
-    minute: Number(runtime.playerState.absoluteMinute ?? 0),
-    missionId: MISSION_ID,
-    stepId: step.id,
-    evidenceClass: action?.t03EvidenceClass ?? null,
-    evidenceCount: desired,
-    value: desired,
-  });
+  if (recordHistory) {
+    runtime.playerState.history ??= [];
+    runtime.playerState.history.push({
+      type: "T03_INVESTIGATION_PROGRESS_RESTORED",
+      minute: Number(runtime.playerState.absoluteMinute ?? 0),
+      missionId: MISSION_ID,
+      stepId: step.id,
+      evidenceClass: action?.t03EvidenceClass ?? null,
+      evidenceCount: desired,
+      value: desired,
+    });
+  }
   return true;
 }
 
@@ -95,7 +102,12 @@ export function reconcileAuthoredMissionFlowState(runtime) {
   const baseChanged = typeof base.reconcileAuthoredMissionFlowState === "function"
     ? base.reconcileAuthoredMissionFlowState(runtime)
     : false;
-  const restored = restoreInvestigationProgress(runtime, null, { ok: true });
+  const restored = restoreInvestigationProgress(
+    runtime,
+    null,
+    { ok: true },
+    { recordHistory: false },
+  );
   return restored || baseChanged;
 }
 
@@ -110,6 +122,7 @@ export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const canonical = canonicalT03Actions(runtime, context);
   const fallback = base.authoredMissionFlowExclusiveActions(runtime, context);
+  reconcileAuthoredMissionFlowState(runtime);
   const fallbackIsT03 = Array.isArray(fallback)
     && fallback.some((action) => action?.authoredT03WolfChoice === true);
   const actions = fallbackIsT03 && onlyPassiveCanonicalChoices(canonical)
