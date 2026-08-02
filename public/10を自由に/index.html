@@ -227,6 +227,17 @@
     </section>
   </main>
 
+  <div class="online-countdown-layer" id="onlineCountdownLayer" hidden aria-live="assertive">
+    <section class="online-countdown-card" role="dialog" aria-modal="true" aria-labelledby="onlineCountdownTitle">
+      <small id="onlineCountdownKicker">MATCH START</small>
+      <h2 id="onlineCountdownTitle">対戦開始まで</h2>
+      <div class="online-countdown-problem"><span>今回の数字</span><strong id="onlineCountdownProblem">----</strong></div>
+      <div class="online-countdown-rules" id="onlineCountdownRules"></div>
+      <strong class="online-countdown-number" id="onlineCountdownNumber">5</strong>
+      <p id="onlineCountdownHint">ルールを確認して、電卓に手を添えよう。</p>
+    </section>
+  </div>
+
   <div class="modal-layer" id="modalLayer" hidden><div class="modal-backdrop" data-modal-close></div><section class="result-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="sheet-handle" aria-hidden="true"></div><div id="modalContent"></div></section></div>
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 

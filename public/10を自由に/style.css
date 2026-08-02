@@ -805,3 +805,144 @@ body.is-tutorial-lesson [data-screen="tutorial"] > .section-heading { display: n
   .tutorial-formula > div > div { font-size: 12px; }
   .tutorial-formula > div > div.is-result { font-size: 14px; }
 }
+
+/* Authoritative online match countdown and round handoff */
+.online-countdown-layer {
+  position: fixed;
+  z-index: 115;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(18px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  background:
+    radial-gradient(circle at 50% 28%, rgba(255, 149, 0, .18), transparent 34%),
+    rgba(0, 0, 0, .78);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+  backdrop-filter: blur(24px) saturate(1.15);
+}
+.online-countdown-layer[hidden] { display: none; }
+.online-countdown-card {
+  width: min(100%, 440px);
+  padding: clamp(24px, 6vw, 38px);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 32px;
+  background: linear-gradient(155deg, rgba(28, 28, 30, .97), rgba(7, 7, 8, .98));
+  box-shadow: 0 32px 100px rgba(0, 0, 0, .58), inset 0 1px rgba(255, 255, 255, .07);
+  text-align: center;
+  animation: onlineCountdownIn .28s cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes onlineCountdownIn {
+  from { opacity: 0; transform: translateY(12px) scale(.975); }
+}
+.online-countdown-card > small {
+  color: #ff9f0a;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+.online-countdown-card h2 {
+  margin: 8px 0 18px;
+  font-size: clamp(24px, 7vw, 34px);
+}
+.online-countdown-problem {
+  display: grid;
+  gap: 7px;
+  padding: 17px 14px;
+  border: 1px solid rgba(255, 159, 10, .25);
+  border-radius: 22px;
+  background: rgba(255, 149, 0, .075);
+}
+.online-countdown-problem span {
+  color: rgba(255, 255, 255, .48);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+.online-countdown-problem strong {
+  font: 820 clamp(38px, 13vw, 62px)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .08em;
+}
+.online-countdown-rules {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
+  margin: 14px 0 5px;
+}
+.online-countdown-rules span {
+  padding: 8px 11px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, .74);
+  background: rgba(255, 255, 255, .065);
+  font-size: 12px;
+  font-weight: 760;
+}
+.online-countdown-number {
+  display: block;
+  min-height: 1em;
+  margin: 14px 0 4px;
+  color: #ff9f0a;
+  font: 900 clamp(66px, 22vw, 104px)/.95 ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 32px rgba(255, 149, 0, .25);
+}
+.online-countdown-number.is-go {
+  font-size: clamp(50px, 17vw, 78px);
+  letter-spacing: .04em;
+}
+.online-countdown-card p {
+  margin: 10px auto 0;
+  max-width: 340px;
+  color: rgba(255, 255, 255, .56);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.round-ready-state {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 15px 0 8px;
+}
+.round-ready-state span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, .48);
+  background: rgba(255, 255, 255, .035);
+  font-size: 12px;
+  font-weight: 740;
+}
+.round-ready-state span.is-ready {
+  border-color: rgba(48, 209, 88, .3);
+  color: #d8ffe2;
+  background: rgba(48, 209, 88, .09);
+}
+.round-ready-state b { color: #ff9f0a; }
+.round-ready-state .is-ready b { color: #30d158; }
+.round-auto-next {
+  margin: 8px 0 2px;
+  color: rgba(255, 255, 255, .52);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.modal-primary:disabled {
+  opacity: .58;
+  cursor: wait;
+}
+
+@media (max-height: 700px) {
+  .online-countdown-card { padding: 20px; border-radius: 26px; }
+  .online-countdown-card h2 { margin-bottom: 12px; }
+  .online-countdown-problem { padding: 12px; }
+  .online-countdown-number { margin-top: 9px; font-size: 62px; }
+  .online-countdown-card p { margin-top: 5px; line-height: 1.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .online-countdown-card { animation: none; }
+}
