@@ -10,6 +10,10 @@ import {
 import {
   authoredMissionFlowExclusiveActions,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
+import {
+  deserializeRuntime,
+  serializeRuntime,
+} from "../../../src/server/trpg/game/serializer.js";
 import { clockFromMinute } from "../lib/player-journey.mjs";
 
 const data = loadTrpgGameData();
@@ -76,6 +80,10 @@ function choose(runtime, action) {
   });
 }
 
+function roundTrip(runtime) {
+  return deserializeRuntime(serializeRuntime(runtime), data);
+}
+
 function investigationContract(runtime) {
   const definition = runtime.playerState.catalog.byId.get(MISSION_ID);
   const mission = runtime.playerState.missions[MISSION_ID];
@@ -94,8 +102,8 @@ function ids(actions) {
   return (actions ?? []).map((action) => action.id);
 }
 
-test("T03 keeps two independent evidence classes after the full service world update", () => {
-  const runtime = prepareRuntime();
+test("T03 keeps two independent evidence classes after service updates and save round trips", () => {
+  let runtime = prepareRuntime();
   assert.equal(investigationContract(runtime).step.required, 2);
 
   const direct = authoredMissionFlowExclusiveActions(runtime, {
@@ -122,6 +130,10 @@ test("T03 keeps two independent evidence classes after the full service world up
   assert.equal(choose(runtime, first).outcome.ok, true);
   assert.equal(liveInvestigationProgress(runtime), 1);
 
+  runtime = roundTrip(runtime);
+  assert.equal(liveInvestigationProgress(runtime), 1);
+  assert.equal(new Set(runtime.t03WolfContinuity.evidenceClasses).size, 1);
+
   const secondChoices = choices(runtime);
   const second = secondChoices.find((action) =>
     action.t03EvidenceClass && action.t03EvidenceClass !== first.t03EvidenceClass);
@@ -131,6 +143,9 @@ test("T03 keeps two independent evidence classes after the full service world up
   );
   assert.equal(choose(runtime, second).outcome.ok, true);
   assert.ok(runtime.playerState.absoluteMinute >= 7 * 1440 + 12 * 60);
+  assert.equal(liveInvestigationProgress(runtime), 2);
+
+  runtime = roundTrip(runtime);
   assert.equal(liveInvestigationProgress(runtime), 2);
   assert.equal(new Set(runtime.t03WolfContinuity.evidenceClasses).size, 2);
   assert.equal(runtime.playerState.worldFlags[`t03Evidence:${first.t03EvidenceClass}`], true);
