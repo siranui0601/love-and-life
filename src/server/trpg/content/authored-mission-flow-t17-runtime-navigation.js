@@ -58,17 +58,25 @@ function navigatorFocuses() {
   }));
 }
 
-function groupNeedsEvidence(group, acquired) {
-  return !group.evidenceIds.some((id) => acquired.has(id));
+function acceptedGroupIds(flow) {
+  return new Set(Array.isArray(flow?.acceptedEvidenceGroupIds)
+    ? flow.acceptedEvidenceGroupIds
+    : []);
+}
+
+function groupNeedsEvidence(group, acquired, accepted = new Set()) {
+  return !accepted.has(group.id)
+    && group.evidenceIds.some((id) => !acquired.has(id));
 }
 
 function focusActions(flow) {
   const acquired = new Set(flow.evidenceIds);
+  const accepted = acceptedGroupIds(flow);
   const preferred = P.hearing.choices.find((opening) =>
     opening.id === flow.openingChoiceId)?.preferredFocusId;
   const actions = navigatorFocuses()
     .filter((focus) => focus.groups.some((group) =>
-      groupNeedsEvidence(group, acquired)))
+      groupNeedsEvidence(group, acquired, accepted)))
     .map((focus) => ({
       id: actionId("NAVIGATOR_FOCUS", focus.id),
       family: "prepare",
@@ -91,9 +99,10 @@ function focusActions(flow) {
 function groupActions(flow) {
   const focus = navigatorFocuses().find((entry) => entry.id === flow.navigatorFocusId);
   const acquired = new Set(flow.evidenceIds);
+  const accepted = acceptedGroupIds(flow);
   if (!focus) return null;
   const actions = focus.groups
-    .filter((group) => groupNeedsEvidence(group, acquired))
+    .filter((group) => groupNeedsEvidence(group, acquired, accepted))
     .map((group) => ({
       id: actionId("NAVIGATOR_GROUP", group.id),
       family: "prepare",
@@ -124,7 +133,8 @@ function routeActions(flow) {
   const focus = navigatorFocuses().find((entry) => entry.id === flow.navigatorFocusId);
   const group = focus?.groups.find((entry) => entry.id === flow.navigatorGroupId);
   const acquired = new Set(flow.evidenceIds);
-  if (!group || !groupNeedsEvidence(group, acquired)) return null;
+  const accepted = acceptedGroupIds(flow);
+  if (!group || !groupNeedsEvidence(group, acquired, accepted)) return null;
   const actions = group.evidenceIds
     .filter((id) => !acquired.has(id))
     .map((id) => P.investigation.leads.find((lead) => lead.discoveryId === id))
@@ -144,19 +154,36 @@ function routeActions(flow) {
       authoredMissionFlowTargetFacilityId: lead.facilityId,
       authoredMissionFlowSceneTransition: `調査の視点が${lead.destinationName}へ移る`,
     }));
-  if (actions.length < 3) {
+  const hasExistingProof = group.evidenceIds.some((id) => acquired.has(id));
+  if (actions.length < 3 && hasExistingProof) {
     actions.push({
-      id: actionId("NAVIGATOR_ROUTE_BACK", group.id),
+      id: actionId("NAVIGATOR_ACCEPT", group.id),
       family: "prepare",
       type: "plan",
-      minutes: 1,
-      label: "同じ方針の別分類へ戻る",
+      minutes: 4,
+      label: "現在の証拠でこの因果線を確定し、別の分類へ進む",
       authoredMissionFlowExclusiveChoice: true,
       authoredMissionFlowId: P.id,
-      authoredMissionFlowKind: "navigator_route_back",
+      authoredMissionFlowKind: "navigator_accept_group",
+      authoredMissionFlowNavigatorFocusId: focus.id,
+      authoredMissionFlowNavigatorGroupId: group.id,
+      authoredMissionFlowSceneTransition: `${group.label}は現在の証拠で確定され、調査は別の因果線へ移る`,
     });
   }
-  if (actions.length < 3) actions.push(deferAction());
+  if (actions.length < 3) {
+    actions.push({
+      id: actionId("ABANDON_INVESTIGATION", group.id),
+      family: "leave",
+      type: "plan",
+      minutes: 5,
+      label: "この調査線を捨て、第二召喚の阻止から手を引く",
+      authoredMissionFlowExclusiveChoice: true,
+      authoredMissionFlowId: P.id,
+      authoredMissionFlowKind: "abandon_investigation",
+      authoredMissionFlowNavigatorFocusId: focus.id,
+      authoredMissionFlowNavigatorGroupId: group.id,
+    });
+  }
   return actions.slice(0, 3);
 }
 
@@ -235,6 +262,7 @@ function selectedLeadActions(runtime, flow, movementActions = []) {
 export const T17_RUNTIME_NAVIGATION_INTERNALS = Object.freeze({
   openingActions,
   navigatorFocuses,
+  acceptedGroupIds,
   groupNeedsEvidence,
   focusActions,
   groupActions,
