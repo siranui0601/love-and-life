@@ -1,0 +1,25 @@
+name: Export Ten Freely online sources
+
+on:
+  push:
+    branches:
+      - fix/ten-freely-online-flow
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ten-freely-online-sources
+          path: |
+            public/10を自由に/online.js
+            public/10を自由に/index.html
+            public/10を自由に/style.css
+            public/10を自由に/app.js
+            src/10を自由に/online.js
+          retention-days: 1
