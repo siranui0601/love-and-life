@@ -1,5 +1,8 @@
 import { createMissionCatalog } from "../../../../tools/trpg-sim/lib/mission-model.mjs";
-import { applyAuthoredMissionFlowCatalogOverrides } from "../content/authored-mission-flow-registry.js";
+import {
+  applyAuthoredMissionFlowCatalogOverrides,
+  reconcileAuthoredMissionFlowState,
+} from "../content/authored-mission-flow-registry.js";
 
 const TYPE_KEY = "__trpgType";
 
@@ -36,6 +39,7 @@ export function deserializeRuntime(serialized, data) {
     createMissionCatalog(data.model, data.battleData, runtime.playerState.tuning ?? {}),
   );
   runtime.livingWorld.model = data.model;
+  reconcileAuthoredMissionFlowState(runtime);
   return runtime;
 }
 
