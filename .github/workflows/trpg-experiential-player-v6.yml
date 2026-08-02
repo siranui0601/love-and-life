@@ -1,24 +1,24 @@
-name: TRPG experiential player simulation v6
+name: Diagnose and verify TRPG world actions round 2
 
 on:
   pull_request:
     branches:
       - main
     paths:
+      - ".github/workflows/trpg-experiential-player-v6.yml"
+      - "tools/world-actions-round2.patch.gz.b64"
       - "public/TRPG/**"
       - "src/server/trpg/**"
       - "tools/trpg-sim/**"
-      - "package.json"
-      - ".github/workflows/trpg-experiential-player-v6.yml"
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  experiential:
+  apply-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
@@ -26,111 +26,75 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: chatgpt/trpg-director-v52-refinement
-          fetch-depth: 1
+          ref: chatgpt/trpg-world-actions-survival-weather
+          fetch-depth: 0
           show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - name: Apply reviewed Director v5.2 round-two source
+      - name: Apply second live-run refinement
         shell: bash
         run: |
-          set -euo pipefail
-          if [ -f tools/trpg-director-v52-round2.patch.gz.b64 ]; then
-            echo '2a125a10205c29227dd599258dab0bb722cedbf2565a24430899e89349c4c844  tools/trpg-director-v52-round2.patch.gz.b64' | sha256sum -c -
-            base64 -d tools/trpg-director-v52-round2.patch.gz.b64 > /tmp/director-v52-round2.patch.gz
-            echo 'bdb603df7c58329105c7f33fe3689c03ebb2d8a32b319b13086011fe2df31466  /tmp/director-v52-round2.patch.gz' | sha256sum -c -
-            gzip -dc /tmp/director-v52-round2.patch.gz > /tmp/director-v52-round2.patch
-            echo '1204021536f5c013376685c0e48d80d498e0a9be85cda1f19bfa78dcb1d25062  /tmp/director-v52-round2.patch' | sha256sum -c -
-            git apply --check /tmp/director-v52-round2.patch
-            git apply /tmp/director-v52-round2.patch
-            rm -rf tools/director-v52
-            rm -f tools/trpg-director-v52.patch.gz.b64 tools/trpg-director-v52-round2.patch.gz.b64 .github/workflows/apply-director-v52.yml
-            cat > .github/workflows/trpg-experiential-player-v6.yml <<'YAML'
-          name: TRPG experiential player simulation v6
-
-          on:
-            pull_request:
-              branches:
-                - main
-              paths:
-                - "public/TRPG/**"
-                - "src/server/trpg/**"
-                - "tools/trpg-sim/**"
-                - "package.json"
-                - ".github/workflows/trpg-experiential-player-v6.yml"
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          jobs:
-            experiential:
-              runs-on: ubuntu-latest
-              timeout-minutes: 90
-              env:
-                GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-                GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
-                TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
-              steps:
-                - uses: actions/checkout@v4
-                  with:
-                    fetch-depth: 1
-                    show-progress: false
-                - uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                - run: npm ci
-                - name: Run TRPG regression tests
-                  shell: bash
-                  run: |
-                    mkdir -p tools/trpg-sim/reports
-                    set -o pipefail
-                    npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/experiential-regression.log
-                - name: Run rescue, work-first, and capital-first journeys
-                  run: npm run trpg:experiential:v6
-                - uses: actions/upload-artifact@v4
-                  if: always()
-                  with:
-                    name: trpg-experiential-player-v6
-                    path: |
-                      tools/trpg-sim/reports/experiential-regression.log
-                      tools/trpg-sim/reports/experiential-player-v6-latest.json
-                      tools/trpg-sim/reports/experiential-player-v6-latest.md
-                      tools/trpg-sim/reports/experiential-v6-*-narrative-audit.jsonl
-                    if-no-files-found: warn
-                    retention-days: 14
-          YAML
-          fi
+          mkdir -p tools/trpg-sim/reports
+          set +e
+          {
+            echo "== repository =="
+            git rev-parse HEAD
+            git status --short
+            echo "== encoded patch =="
+            ls -l tools/world-actions-round2.patch.gz.b64
+            sha256sum tools/world-actions-round2.patch.gz.b64
+            echo "expected 83f19042c65a81f14297f3cebaf07b13a103b511be04f9f1e57f9e0add6f5490"
+            base64 -d tools/world-actions-round2.patch.gz.b64 > /tmp/world-actions-round2.patch.gz
+            decode_status=$?
+            echo "base64 status=$decode_status"
+            sha256sum /tmp/world-actions-round2.patch.gz
+            echo "expected e1eac10d515c46e523dc4b9cca25f2a8bf7d5ed96d65f7ac756bb5bc429d4b4e"
+            gzip -dc /tmp/world-actions-round2.patch.gz > /tmp/world-actions-round2.patch
+            gzip_status=$?
+            echo "gzip status=$gzip_status"
+            sha256sum /tmp/world-actions-round2.patch
+            echo "expected fcb3b58fb54d655a8a767e79f2902dbe32d7d54d23eac9eacdd8c4d5f1531f97"
+            echo "== patch files =="
+            grep '^diff --git ' /tmp/world-actions-round2.patch || true
+            echo "== apply =="
+            git apply --3way --verbose /tmp/world-actions-round2.patch
+            apply_status=$?
+            echo "apply status=$apply_status"
+            git status --short
+            exit "$apply_status"
+          } 2>&1 | tee tools/trpg-sim/reports/world-actions-round2-apply.log
+          exit ${PIPESTATUS[0]}
       - run: npm ci
-      - name: Run TRPG regression tests
+      - name: Run all TRPG regression tests
         shell: bash
         run: |
           mkdir -p tools/trpg-sim/reports
           set -o pipefail
           npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/experiential-regression.log
-      - name: Commit finalized round-two source
+      - name: Commit second refinement source
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet && git diff --cached --quiet; then
-            echo "Source already finalized."
+          rm -f tools/world-actions-round2.patch.gz.b64
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- ':!.github/workflows/trpg-experiential-player-v6.yml'
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
           else
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "fix(trpg): reduce repairs and choose valid work employers"
-            git push origin HEAD:chatgpt/trpg-director-v52-refinement
+            git commit -m "fix(trpg): refine generated choices after live journeys"
+            git push origin HEAD:chatgpt/trpg-world-actions-survival-weather
           fi
-      - name: Run rescue, work-first, and capital-first journeys
+      - name: Run real Gemini player journeys
         run: npm run trpg:experiential:v6
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: trpg-experiential-player-v6
+          name: trpg-world-actions-round2
           path: |
+            tools/trpg-sim/reports/world-actions-round2-apply.log
             tools/trpg-sim/reports/experiential-regression.log
             tools/trpg-sim/reports/experiential-player-v6-latest.json
             tools/trpg-sim/reports/experiential-player-v6-latest.md

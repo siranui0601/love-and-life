@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.2-director";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.3-world-actions";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",
@@ -12,6 +12,19 @@ export const INTENT_TYPES = Object.freeze([
   "trade",
   "leave",
   "wait",
+  "prepare",
+]);
+
+export const ACTION_KINDS = Object.freeze([
+  "candidate",
+  "talk",
+  "investigate",
+  "move_local",
+  "move_region",
+  "wait",
+  "rest",
+  "eat",
+  "work",
   "prepare",
 ]);
 
@@ -85,12 +98,18 @@ export const GEMINI_NARRATIVE_RESPONSE_SCHEMA = Object.freeze({
       maxItems: 3,
       items: {
         type: "OBJECT",
-        required: ["id", "label", "intentType"],
+        required: ["id", "label", "intentType", "actionKind"],
         properties: {
           id: { type: "STRING" },
           label: { type: "STRING" },
           intentType: { type: "STRING", enum: [...INTENT_TYPES] },
+          actionKind: { type: "STRING", enum: [...ACTION_KINDS] },
+          candidateId: { type: "STRING", nullable: true },
           targetNpcId: { type: "STRING", nullable: true },
+          destinationFacilityId: { type: "STRING", nullable: true },
+          destinationHub: { type: "STRING", nullable: true },
+          minutes: { type: "INTEGER", nullable: true },
+          topic: { type: "STRING", nullable: true },
           approach: { type: "STRING", nullable: true },
           workProposal: {
             type: "OBJECT",
@@ -262,6 +281,41 @@ function normalizeRumor(rumor) {
   };
 }
 
+function normalizeWorldAffordances(value, localNpcIds) {
+  const source = plainObject(value) ? value : {};
+  const localFacilities = (Array.isArray(source.localFacilities) ? source.localFacilities : [])
+    .map((entry) => ({
+      id: boundedText(entry?.id, 100),
+      name: boundedText(entry?.name, 120),
+      minutes: Number.isFinite(Number(entry?.minutes)) ? Math.max(1, Math.min(720, Number(entry.minutes))) : null,
+    }))
+    .filter((entry) => entry.id && entry.name)
+    .slice(0, 20);
+  const regionalDestinations = (Array.isArray(source.regionalDestinations) ? source.regionalDestinations : [])
+    .map((entry) => ({
+      hub: boundedText(entry?.hub, 100),
+      minutes: Number.isFinite(Number(entry?.minutes)) ? Math.max(1, Math.min(4320, Number(entry.minutes))) : null,
+    }))
+    .filter((entry) => entry.hub)
+    .slice(0, 12);
+  return {
+    presentNpcIds: (Array.isArray(source.presentNpcIds) ? source.presentNpcIds : [])
+      .map(String).filter((id) => localNpcIds.has(id)).slice(0, 12),
+    localFacilities,
+    regionalDestinations,
+    canInvestigate: source.canInvestigate !== false,
+    canWait: source.canWait !== false,
+    canPrepare: source.canPrepare !== false,
+    canWork: source.canWork === true,
+    canEat: source.canEat === true,
+    canRest: source.canRest === true,
+    canLodge: source.canLodge === true,
+    hunger: Number.isFinite(Number(source.hunger)) ? Math.max(0, Math.min(100, Number(source.hunger))) : 0,
+    fatigue: Number.isFinite(Number(source.fatigue)) ? Math.max(0, Math.min(100, Number(source.fatigue))) : 0,
+    note: boundedText(source.note, 360) || null,
+  };
+}
+
 export function buildLocalNarrativeContext(input = {}) {
   const state = input.authoritativeState ?? input.state ?? {};
   const action = input.action ?? {};
@@ -309,7 +363,7 @@ export function buildLocalNarrativeContext(input = {}) {
     .filter(Boolean)
     .sort((left, right) => (left.progressRole === right.progressRole ? 0 : left.progressRole === "progress" ? -1 : 1)
       || left.id.localeCompare(right.id))
-    .slice(0, 9);
+    .slice(0, 12);
 
   const progressContract = plainObject(state.progressContract) ? {
     mode: state.progressContract.mode === "must_offer_progress" ? "must_offer_progress" : "free",
@@ -328,6 +382,11 @@ export function buildLocalNarrativeContext(input = {}) {
       : [],
     rationale: boundedText(state.continuityContract.rationale, 240) || null,
   } : { mode: "free", intent: null, candidateIds: [], rationale: null };
+  const choiceDiversityContract = plainObject(state.choiceDiversityContract) ? {
+    minimumGeneratedChoices: Math.max(0, Math.min(3, Number(state.choiceDiversityContract.minimumGeneratedChoices ?? 0))),
+    maximumCandidateChoices: Math.max(0, Math.min(3, Number(state.choiceDiversityContract.maximumCandidateChoices ?? 3))),
+    rationale: boundedText(state.choiceDiversityContract.rationale, 240) || null,
+  } : { minimumGeneratedChoices: 0, maximumCandidateChoices: 3, rationale: null };
   const reactionContract = plainObject(state.reactionContract) ? {
     requiredActorIds: Array.isArray(state.reactionContract.requiredActorIds)
       ? state.reactionContract.requiredActorIds.map((entry) => boundedText(entry, 80)).filter((id) => localNpcIds.has(id)).slice(0, 6)
@@ -351,6 +410,10 @@ export function buildLocalNarrativeContext(input = {}) {
     note: boundedText(state.workMarket.note, 240) || null,
   } : null;
 
+  const recentChoices = Array.isArray(state.recentChoices)
+    ? state.recentChoices.map((entry) => boundedText(entry, 180)).filter(Boolean).slice(-12)
+    : [];
+
   const context = {
     contractVersion: "trpg-local-context-v2",
     locale: boundedText(input.locale ?? "ja-JP", 20),
@@ -360,6 +423,13 @@ export function buildLocalNarrativeContext(input = {}) {
       hour: Math.max(0, Math.min(24, Number(state.hour ?? 10))),
       minute: Math.max(0, Math.min(59, Number(state.minute ?? 0))),
       daypart: boundedText(state.daypart ?? "day", 20),
+      weather: plainObject(state.weather) ? {
+        id: boundedText(state.weather.id, 40),
+        label: boundedText(state.weather.label, 60),
+        intensity: Number.isFinite(Number(state.weather.intensity)) ? Number(state.weather.intensity) : 0,
+        temperatureC: Number.isFinite(Number(state.weather.temperatureC)) ? Number(state.weather.temperatureC) : null,
+        description: boundedText(state.weather.description, 240) || null,
+      } : null,
     },
     place: {
       locationId: boundedText(state.locationId ?? state.location, 100),
@@ -371,6 +441,10 @@ export function buildLocalNarrativeContext(input = {}) {
     player: {
       displayName: boundedText(state.player?.displayName ?? input.playerName ?? "旅人", 80),
       visibleCondition: boundedText(state.player?.visibleCondition, 160),
+      needs: plainObject(state.player?.needs) ? {
+        hunger: Number.isFinite(Number(state.player.needs.hunger)) ? Math.max(0, Math.min(100, Number(state.player.needs.hunger))) : 0,
+        fatigue: Number.isFinite(Number(state.player.needs.fatigue)) ? Math.max(0, Math.min(100, Number(state.player.needs.fatigue))) : 0,
+      } : { hunger: 0, fatigue: 0 },
       knownFacts: Array.isArray(state.player?.knownFacts)
         ? state.player.knownFacts.slice(0, 12).map((entry) => boundedText(entry, 180))
         : [],
@@ -394,6 +468,14 @@ export function buildLocalNarrativeContext(input = {}) {
         ? action.previouslyAskedTopics.slice(0, 10).map((entry) => boundedText(entry, 100))
         : [],
       requiredDisclosure: boundedText(action.requiredDisclosure, 180) || null,
+      movementScope: boundedText(action.movementScope, 40) || null,
+      originLocation: boundedText(action.originLocation, 100) || null,
+      originFacilityId: boundedText(action.originFacilityId, 100) || null,
+      destinationHub: boundedText(action.destinationHub, 100) || null,
+      destinationFacilityId: boundedText(action.destinationFacilityId, 100) || null,
+      travelMinutes: Number.isFinite(Number(action.travelMinutes)) ? Math.max(0, Number(action.travelMinutes)) : 0,
+      departureWeather: plainObject(action.departureWeather) ? stableValue(action.departureWeather) : null,
+      arrivalWeather: plainObject(action.arrivalWeather) ? stableValue(action.arrivalWeather) : null,
     },
     authoritativeOutcome: stableValue(state.authoritativeOutcome ?? input.authoritativeOutcome ?? {}),
     localNpcs,
@@ -402,8 +484,11 @@ export function buildLocalNarrativeContext(input = {}) {
     allowedActionCandidates,
     progressContract,
     continuityContract,
+    choiceDiversityContract,
     reactionContract,
     workMarket,
+    recentChoices,
+    worldAffordances: normalizeWorldAffordances(state.worldAffordances, localNpcIds),
     visibleFlags: stableValue(state.visibleFlags ?? {}),
   };
 
@@ -468,6 +553,8 @@ function validateChoice(choice, index, localNpcIds, errors) {
   if (!boundedText(choice.id, 120)) errors.push(`choices[${index}].id is empty`);
   if (!boundedText(choice.label, 180)) errors.push(`choices[${index}].label is empty`);
   if (!INTENT_TYPES.includes(choice.intentType)) errors.push(`choices[${index}].intentType is invalid`);
+  const actionKind = ACTION_KINDS.includes(choice.actionKind) ? choice.actionKind : "candidate";
+  if (choice.actionKind && !ACTION_KINDS.includes(choice.actionKind)) errors.push(`choices[${index}].actionKind is invalid`);
   if (choice.targetNpcId && !localNpcIds.has(String(choice.targetNpcId))) {
     errors.push(`choices[${index}] targets an NPC who is not present`);
   }
@@ -528,36 +615,60 @@ export function validateNarrativeOutput(value, context) {
   const choiceLabels = choices.map((choice) => boundedText(choice?.label, 120).replace(/[\s、。！？!?・「」『』（）()]/gu, ""));
   if (new Set(choiceLabels).size !== choiceLabels.length) errors.push("choice labels are semantically duplicated");
   const allowedChoiceIds = new Set((context.allowedActionCandidates ?? []).map((candidate) => candidate.id));
-  if (allowedChoiceIds.size) {
-    const candidatesById = new Map((context.allowedActionCandidates ?? []).map((candidate) => [candidate.id, candidate]));
-    choices.forEach((choice, index) => {
-      const candidate = candidatesById.get(String(choice?.id ?? ""));
+  const candidatesById = new Map((context.allowedActionCandidates ?? []).map((candidate) => [candidate.id, candidate]));
+  const affordances = context.worldAffordances ?? {};
+  const localFacilityIds = new Set((affordances.localFacilities ?? []).map((entry) => entry.id));
+  const regionalHubs = new Set((affordances.regionalDestinations ?? []).map((entry) => entry.hub));
+  choices.forEach((choice, index) => {
+    const actionKind = ACTION_KINDS.includes(choice?.actionKind) ? choice.actionKind : (allowedChoiceIds.has(String(choice?.id ?? "")) ? "candidate" : null);
+    if (!actionKind) {
+      errors.push(`choices[${index}] does not declare an executable action kind`);
+      return;
+    }
+    if (actionKind === "candidate") {
+      const candidateId = String(choice?.candidateId ?? choice?.id ?? "");
+      const candidate = candidatesById.get(candidateId);
       if (!candidate) {
-        errors.push(`choices[${index}].id is not in the executable candidate pool`);
+        errors.push(`choices[${index}].candidateId is not in the executable candidate pool`);
         return;
       }
-      if (choice.intentType !== candidate.intentType) {
-        errors.push(`choices[${index}].intentType must match its authoritative action candidate`);
-      }
-      if ((choice.targetNpcId ?? null) !== (candidate.targetNpcId ?? null)) {
-        errors.push(`choices[${index}].targetNpcId must match its authoritative action candidate`);
-      }
-      if (choice.workProposal && !candidate.workOffer) {
-        errors.push(`choices[${index}].workProposal is only allowed for a work candidate`);
-      }
-    });
-  }
+      if (choice.intentType !== candidate.intentType) errors.push(`choices[${index}].intentType must match its authoritative action candidate`);
+      if ((choice.targetNpcId ?? candidate.targetNpcId ?? null) !== (candidate.targetNpcId ?? null)) errors.push(`choices[${index}].targetNpcId must match its authoritative action candidate`);
+      if (choice.workProposal && !candidate.workOffer) errors.push(`choices[${index}].workProposal is only allowed for a work candidate`);
+      return;
+    }
+    if (actionKind === "talk" && !localNpcIds.has(String(choice?.targetNpcId ?? ""))) errors.push(`choices[${index}] talk target is not present`);
+    if (actionKind === "move_local" && !localFacilityIds.has(String(choice?.destinationFacilityId ?? ""))) errors.push(`choices[${index}] local destination is not available`);
+    if (actionKind === "move_region" && !regionalHubs.has(String(choice?.destinationHub ?? ""))) errors.push(`choices[${index}] regional destination is not available`);
+    if (actionKind === "work" && affordances.canWork !== true) errors.push(`choices[${index}] work is not available here`);
+    if (actionKind === "eat" && affordances.canEat !== true) errors.push(`choices[${index}] eating is not available here`);
+    if (actionKind === "rest" && affordances.canRest !== true && affordances.canLodge !== true) errors.push(`choices[${index}] rest is not available here`);
+    if (actionKind === "investigate" && affordances.canInvestigate !== true) errors.push(`choices[${index}] investigation is not available here`);
+  });
   if (context.progressContract?.mode === "must_offer_progress") {
     const anchors = new Set(context.progressContract.anchorCandidateIds ?? []);
-    if (![...choiceIds].some((id) => anchors.has(id))) {
+    if (!choices.some((choice) => anchors.has(String(choice?.candidateId ?? choice?.id ?? "")))) {
       errors.push("choices must include at least one progress anchor candidate");
     }
   }
   if (context.continuityContract?.mode === "must_offer_continuation") {
     const continuations = new Set(context.continuityContract.candidateIds ?? []);
-    if (continuations.size && ![...choiceIds].some((id) => continuations.has(id))) {
+    if (continuations.size && !choices.some((choice) => continuations.has(String(choice?.candidateId ?? choice?.id ?? "")))) {
       errors.push("choices must include the active player-intent continuation candidate");
     }
+  }
+  const generatedChoiceCount = choices.filter((choice) => {
+    const kind = ACTION_KINDS.includes(choice?.actionKind)
+      ? choice.actionKind
+      : (allowedChoiceIds.has(String(choice?.id ?? "")) ? "candidate" : null);
+    return kind && kind !== "candidate";
+  }).length;
+  if (generatedChoiceCount < Number(context.choiceDiversityContract?.minimumGeneratedChoices ?? 0)) {
+    errors.push(`choices must include at least ${context.choiceDiversityContract.minimumGeneratedChoices} generated world actions`);
+  }
+  const candidateChoiceCount = choices.length - generatedChoiceCount;
+  if (candidateChoiceCount > Number(context.choiceDiversityContract?.maximumCandidateChoices ?? 3)) {
+    errors.push(`choices may include at most ${context.choiceDiversityContract.maximumCandidateChoices} server candidate actions`);
   }
   const speeches = Array.isArray(value.speeches) ? value.speeches : [];
   if (speeches.length > 6) errors.push("too many speeches");
@@ -644,6 +755,8 @@ function sanitizeDiegeticText(value, maximum = 1400) {
 function candidateChoice(candidate, overrides = {}) {
   return {
     id: candidate.id,
+    actionKind: "candidate",
+    candidateId: candidate.id,
     label: sanitizeDiegeticText(overrides.label ?? candidate.label, 180) || candidate.label,
     intentType: candidate.intentType,
     targetNpcId: candidate.targetNpcId ?? null,
@@ -658,14 +771,14 @@ function defaultChoices(context) {
     const targetNpcId = context.action.targetNpcId ?? context.localNpcs[0]?.id ?? null;
     return targetNpcId
       ? [
-        { id: "C1", label: "もう少し詳しく話を聞く", intentType: "ask", targetNpcId },
-        { id: "C2", label: "周囲の様子を確かめる", intentType: "observe", targetNpcId: null },
-        { id: "C3", label: "いったん会話を終える", intentType: "leave", targetNpcId: null },
+        { id: "C1", actionKind: "talk", label: "もう少し詳しく話を聞く", intentType: "ask", targetNpcId },
+        { id: "C2", actionKind: "investigate", label: "周囲の様子を確かめる", intentType: "observe", targetNpcId: null },
+        { id: "C3", actionKind: "prepare", label: "いったん会話を終え、次の行動を考える", intentType: "leave", targetNpcId: null },
       ]
       : [
-        { id: "C1", label: "周囲を観察する", intentType: "observe", targetNpcId: null },
-        { id: "C2", label: "手掛かりを調べる", intentType: "investigate", targetNpcId: null },
-        { id: "C3", label: "別の行動へ移る", intentType: "leave", targetNpcId: null },
+        { id: "C1", actionKind: "investigate", label: "周囲を観察する", intentType: "observe", targetNpcId: null },
+        { id: "C2", actionKind: "investigate", label: "手掛かりを調べる", intentType: "investigate", targetNpcId: null },
+        { id: "C3", actionKind: "prepare", label: "別の行動へ移る準備をする", intentType: "leave", targetNpcId: null },
       ];
   }
   const anchors = new Set(context.progressContract?.anchorCandidateIds ?? []);
@@ -784,25 +897,56 @@ function normalizedProposal(proposal, context, localNpcIds) {
 export function sanitizeNarrativeOutput(value, context) {
   const localNpcIds = new Set(context.localNpcs.map((npc) => npc.id));
   const candidatesById = new Map((context.allowedActionCandidates ?? []).map((candidate) => [candidate.id, candidate]));
+  const affordances = context.worldAffordances ?? {};
+  const localFacilityIds = new Set((affordances.localFacilities ?? []).map((entry) => entry.id));
+  const regionalHubs = new Set((affordances.regionalDestinations ?? []).map((entry) => entry.hub));
   const fallback = deterministicNarrativeFallback(context, "sanitized_output");
   const choices = [];
   const usedIds = new Set();
   for (const generated of Array.isArray(value?.choices) ? value.choices : []) {
     if (!plainObject(generated) || choices.length >= 3) continue;
-    const id = boundedText(generated.id, 120);
-    const candidate = candidatesById.get(id);
-    if (!candidate || usedIds.has(id)) continue;
-    const workProposal = candidate.workOffer ? normalizedWorkProposal(generated.workProposal) : null;
-    usedIds.add(id);
-    choices.push(candidateChoice(candidate, {
-      label: generated.label,
-      approach: generated.approach,
-      workProposal,
-    }));
+    const rawId = boundedText(generated.id, 120) || `GEN-${choices.length + 1}`;
+    const actionKind = ACTION_KINDS.includes(generated.actionKind)
+      ? generated.actionKind
+      : (candidatesById.has(boundedText(generated.candidateId ?? rawId, 120)) ? "candidate" : null);
+    if (!actionKind) continue;
+    if (actionKind === "candidate") {
+      const candidateId = boundedText(generated.candidateId ?? rawId, 120);
+      const candidate = candidatesById.get(candidateId);
+      if (!candidate || usedIds.has(candidateId)) continue;
+      const workProposal = candidate.workOffer ? normalizedWorkProposal(generated.workProposal) : null;
+      usedIds.add(candidateId);
+      choices.push(candidateChoice(candidate, { label: generated.label, approach: generated.approach, workProposal }));
+      continue;
+    }
+    if (actionKind === "talk" && !localNpcIds.has(String(generated.targetNpcId ?? ""))) continue;
+    if (actionKind === "move_local" && !localFacilityIds.has(String(generated.destinationFacilityId ?? ""))) continue;
+    if (actionKind === "move_region" && !regionalHubs.has(String(generated.destinationHub ?? ""))) continue;
+    if (actionKind === "work" && affordances.canWork !== true) continue;
+    if (actionKind === "eat" && affordances.canEat !== true) continue;
+    if (actionKind === "rest" && affordances.canRest !== true && affordances.canLodge !== true) continue;
+    if (actionKind === "investigate" && affordances.canInvestigate !== true) continue;
+    const uniqueId = rawId.startsWith("GEN-") ? rawId : `GEN-${choices.length + 1}-${rawId}`;
+    if (usedIds.has(uniqueId)) continue;
+    usedIds.add(uniqueId);
+    choices.push({
+      id: uniqueId,
+      actionKind,
+      candidateId: null,
+      label: sanitizeDiegeticText(generated.label, 180),
+      intentType: INTENT_TYPES.includes(generated.intentType) ? generated.intentType : "observe",
+      targetNpcId: localNpcIds.has(String(generated.targetNpcId ?? "")) ? String(generated.targetNpcId) : null,
+      destinationFacilityId: boundedText(generated.destinationFacilityId, 100) || null,
+      destinationHub: boundedText(generated.destinationHub, 100) || null,
+      minutes: Number.isFinite(Number(generated.minutes)) ? Math.max(1, Math.min(1440, Number(generated.minutes))) : null,
+      topic: sanitizeDiegeticText(generated.topic, 160) || null,
+      approach: sanitizeDiegeticText(generated.approach, 180) || null,
+      ...(actionKind === "work" ? { workProposal: normalizedWorkProposal(generated.workProposal) } : {}),
+    });
   }
 
   const anchors = new Set(context.progressContract?.anchorCandidateIds ?? []);
-  if (context.progressContract?.mode === "must_offer_progress" && !choices.some((choice) => anchors.has(choice.id))) {
+  if (context.progressContract?.mode === "must_offer_progress" && !choices.some((choice) => anchors.has(choice.candidateId ?? choice.id))) {
     const anchor = (context.allowedActionCandidates ?? []).find((candidate) => anchors.has(candidate.id));
     if (anchor) {
       if (choices.length >= 3) {
@@ -816,7 +960,7 @@ export function sanitizeNarrativeOutput(value, context) {
   const continuityIds = new Set(context.continuityContract?.candidateIds ?? []);
   if (context.continuityContract?.mode === "must_offer_continuation"
     && continuityIds.size
-    && !choices.some((choice) => continuityIds.has(choice.id))) {
+    && !choices.some((choice) => continuityIds.has(choice.candidateId ?? choice.id))) {
     const continuation = (context.allowedActionCandidates ?? []).find((candidate) => continuityIds.has(candidate.id));
     if (continuation) {
       if (choices.length >= 3) {

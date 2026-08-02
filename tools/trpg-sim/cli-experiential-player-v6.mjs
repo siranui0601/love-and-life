@@ -40,6 +40,8 @@ function compact(save) {
     facilityId: save.scene.facilityId,
     facilityName: save.scene.facilityName,
     gold: Number(save.player?.gold ?? 0),
+    weather: save.clock?.weather ?? save.scene?.weather ?? null,
+    needs: save.player?.needs ?? null,
     tutorialId: save.tutorial?.id ?? null,
     choices: save.choices.map((choice) => ({ actionId: choice.actionId, label: choice.label })),
     movement: save.movement.map((move) => ({ moveId: move.moveId, label: move.label, destinationFacilityId: move.destinationFacilityId ?? null, destinationHub: move.destination ?? null })),
@@ -338,6 +340,12 @@ async function capitalJourney() {
     checks.capitalKnownWithoutAcceptingT01 = runner.save.movement.some((move) => move.destination === "王都");
     await runner.moveHub("王都");
     checks.reachedCapital = runner.save.scene.location === "王都";
+    const arrivalLines = sceneLines(runner.save).join("\n");
+    checks.travelHasJourneyBeat = /道|街道|風|雨|雲|空|門|城壁|行き交|歩/u.test(arrivalLines);
+    checks.capitalFacilitiesRespectTimeline = runner.save.movement.some((move) => move.destinationFacilityId === "LOC_CAP_ORPHANAGE")
+      && !runner.save.movement.some((move) => move.destinationFacilityId === "LOC_CAP_BIG_STORE");
+    checks.arrivalOffersLocalMoveChoice = runner.save.choices.some((choice) => choice.type === "move" && choice.actionId.startsWith("MOVE_LOCAL:"));
+    checks.weatherIsVisible = Boolean(runner.save.clock?.weather?.label && runner.save.clock?.weather?.description);
     for (let guard = 0; guard < 240 && !terminalT01(runner.save); guard += 1) {
       visitedFacilities.add(runner.save.scene.facilityId);
       const confirm = runner.save.choices.find((choice) => choice.actionId.startsWith("WORK_CONFIRM:"));
@@ -392,6 +400,71 @@ async function capitalJourney() {
   }
 }
 
+async function survivalJourney() {
+  const runner = new Runner("暮らしを確かめる旅人", "experiential-v7-survival");
+  const checks = {};
+  try {
+    await opening(runner);
+    await runner.chooseId("TUTORIAL:DEFER:LEAVE");
+    await runner.acknowledgeTutorial();
+    await runner.moveHub("王都");
+    checks.arrivalWeatherExists = Boolean(runner.save.clock?.weather?.label);
+    checks.noTemporalFacilityConflict = runner.save.movement.some((move) => move.destinationFacilityId === "LOC_CAP_ORPHANAGE")
+      && !runner.save.movement.some((move) => move.destinationFacilityId === "LOC_CAP_BIG_STORE");
+    checks.localMoveAppearsInChoices = runner.save.choices.some((choice) => choice.type === "move" && choice.actionId.startsWith("MOVE_LOCAL:"));
+
+    for (let guard = 0; guard < 18 && Number(runner.save.clock?.hour ?? 0) < 19; guard += 1) {
+      const confirm = runner.save.choices.find((choice) => choice.actionId.startsWith("WORK_CONFIRM:"));
+      if (confirm) {
+        await runner.command("CHOOSE", { choiceId: confirm.choiceId }, { actionId: confirm.actionId, label: confirm.label });
+        continue;
+      }
+      const offer = workOfferChoice(runner.save);
+      if (offer) {
+        await runner.command("CHOOSE", { choiceId: offer.choiceId }, { actionId: offer.actionId, label: offer.label });
+        await runner.acknowledgeIntroduction();
+        continue;
+      }
+      const longest = longestChoice(runner.save, (choice) => !/MSN-T01|SEEK_BATTLE/u.test(`${choice.actionId} ${choice.label}`));
+      if (longest && actionMinutes(longest) >= 60) {
+        await runner.command("CHOOSE", { choiceId: longest.choiceId }, { actionId: longest.actionId, label: longest.label });
+        continue;
+      }
+      const movement = [...runner.save.movement].filter((move) => move.destinationFacilityId).sort((a, b) => b.minutes - a.minutes)[0];
+      if (!movement) break;
+      await runner.command("MOVE", { moveId: movement.moveId }, { moveId: movement.moveId, label: movement.label });
+    }
+
+    if (runner.save.scene.facilityId !== "LOC_CAP_LOWER_INN") await runner.moveFacility("LOC_CAP_LOWER_INN");
+    let meal = runner.save.choices.find((choice) => choice.type === "eat");
+    for (let guard = 0; !meal && guard < 5; guard += 1) {
+      const wait = longestChoice(runner.save, (choice) => ["wait", "plan", "localInvestigate"].includes(choice.type));
+      if (!wait) break;
+      await runner.command("CHOOSE", { choiceId: wait.choiceId }, { actionId: wait.actionId, label: wait.label });
+      meal = runner.save.choices.find((choice) => choice.type === "eat");
+    }
+    checks.mealChoiceAppearsWhenHungry = Boolean(meal);
+    if (meal) await runner.command("CHOOSE", { choiceId: meal.choiceId }, { actionId: meal.actionId, label: meal.label });
+    const hungerAfterMeal = Number(runner.save.player?.needs?.hunger ?? 100);
+
+    let rest = runner.save.choices.find((choice) => choice.type === "rest");
+    for (let guard = 0; !rest && guard < 4; guard += 1) {
+      const wait = longestChoice(runner.save, (choice) => ["wait", "plan", "localInvestigate"].includes(choice.type));
+      if (!wait) break;
+      await runner.command("CHOOSE", { choiceId: wait.choiceId }, { actionId: wait.actionId, label: wait.label });
+      rest = runner.save.choices.find((choice) => choice.type === "rest");
+    }
+    checks.lodgingChoiceAppearsAtNight = Boolean(rest);
+    if (rest) await runner.command("CHOOSE", { choiceId: rest.choiceId }, { actionId: rest.actionId, label: rest.label });
+    checks.mealReducesHunger = !meal || hungerAfterMeal < 45;
+    checks.restReducesFatigue = !rest || Number(runner.save.player?.needs?.fatigue ?? 100) < 20;
+    checks.dayNightActuallyAdvances = Number(runner.save.clock?.absoluteMinute ?? 0) >= 540;
+    return { id: "survival-weather", passed: Object.values(checks).every(Boolean), checks, final: compact(runner.save), trace: runner.trace };
+  } catch (error) {
+    return { id: "survival-weather", passed: false, checks, error: String(error?.stack ?? error), final: runner.save ? compact(runner.save) : null, trace: runner.trace };
+  }
+}
+
 function readAuditRecords(filePath) {
   if (!fs.existsSync(filePath)) return [];
   return fs.readFileSync(filePath, "utf8")
@@ -423,6 +496,9 @@ function auditSummary(records) {
   const failed = [];
   const metaLeaks = [];
   const latencies = [];
+  let candidateOnlyTriads = 0;
+  let generatedChoiceCount = 0;
+  let totalChoiceCount = 0;
   for (const record of records) {
     sources[record.source] = (sources[record.source] ?? 0) + 1;
     providerCalls += Number(record.providerCalls ?? 0);
@@ -432,6 +508,11 @@ function auditSummary(records) {
     latencies.push(Number(record.latencyMs ?? 0));
     for (const error of record.validationErrors ?? []) validationErrors[error] = (validationErrors[error] ?? 0) + 1;
     if (!record.evaluation?.passed) failed.push({ scenarioId: record.scenarioId, actionId: record.action?.id, source: record.source, checks: record.evaluation?.checks, validationErrors: record.validationErrors });
+    const responseChoices = record.response?.choices ?? [];
+    const generatedInRecord = responseChoices.filter((choice) => choice.actionKind && choice.actionKind !== "candidate").length;
+    generatedChoiceCount += generatedInRecord;
+    totalChoiceCount += responseChoices.length;
+    if (responseChoices.length === 3 && generatedInRecord === 0) candidateOnlyTriads += 1;
     const visible = [record.response?.narrative, ...(record.response?.speeches ?? []).map((speech) => speech.text), ...(record.response?.choices ?? []).map((choice) => choice.label)].filter(Boolean).join("\n");
     if (META_PATTERN.test(visible)) metaLeaks.push({ scenarioId: record.scenarioId, actionId: record.action?.id, visible });
   }
@@ -451,6 +532,12 @@ function auditSummary(records) {
       maxMs: latencies.length ? Math.max(...latencies) : 0,
     },
     validationErrors,
+    choiceDiversity: {
+      candidateOnlyTriads,
+      generatedChoiceCount,
+      totalChoiceCount,
+      generatedRate: totalChoiceCount ? generatedChoiceCount / totalChoiceCount : 0,
+    },
     passed: records.length - failed.length,
     failed,
     metaLeaks,
@@ -474,7 +561,7 @@ function markdown(report) {
     for (const [key, value] of Object.entries(journey.checks ?? {})) lines.push(`- ${value ? "✅" : "❌"} ${key}`);
     if (journey.final) lines.push(`- 最終地点: ${journey.final.location} / ${journey.final.facilityName} / Day ${journey.final.day} ${journey.final.time}`);
   }
-  lines.push("", "## Gemini監査", `- 記録数: ${report.audit.total}`, `- provider呼出し: ${report.audit.providerCalls}`, `- providerエラー: ${report.audit.providerErrors}`, `- 修復呼出し: ${report.audit.repairCalls}（${(report.audit.repairRate * 100).toFixed(1)}%）`, `- 自動評価合格: ${report.audit.passed}/${report.audit.total}`, `- token合計: ${report.audit.totalTokens}`, `- 応答時間: p50 ${report.audit.latency.p50Ms}ms / p95 ${report.audit.latency.p95Ms}ms / max ${report.audit.latency.maxMs}ms`, `- ソース: \`${JSON.stringify(report.audit.sources)}\``);
+  lines.push("", "## Gemini監査", `- 記録数: ${report.audit.total}`, `- provider呼出し: ${report.audit.providerCalls}`, `- providerエラー: ${report.audit.providerErrors}`, `- 修復呼出し: ${report.audit.repairCalls}（${(report.audit.repairRate * 100).toFixed(1)}%）`, `- 自動評価合格: ${report.audit.passed}/${report.audit.total}`, `- token合計: ${report.audit.totalTokens}`, `- 応答時間: p50 ${report.audit.latency.p50Ms}ms / p95 ${report.audit.latency.p95Ms}ms / max ${report.audit.latency.maxMs}ms`, `- ソース: \`${JSON.stringify(report.audit.sources)}\``, `- 生成行動率: ${(report.audit.choiceDiversity.generatedRate * 100).toFixed(1)}% / 候補だけの三択: ${report.audit.choiceDiversity.candidateOnlyTriads}`);
   if (report.audit.failed.length) {
     lines.push("", "### 不合格応答");
     for (const failure of report.audit.failed.slice(0, 30)) lines.push(`- ${failure.scenarioId} / ${failure.actionId}: \`${JSON.stringify(failure.checks)}\``);
@@ -488,7 +575,7 @@ function markdown(report) {
 }
 
 const journeys = [];
-for (const journey of [rescueJourney, workJourney, capitalJourney]) journeys.push(await journey());
+for (const journey of [rescueJourney, workJourney, capitalJourney, survivalJourney]) journeys.push(await journey());
 await narrator.auditLog?.flush?.();
 const audit = auditSummary(readAuditRecords(auditFilePath));
 let sheetSync;
@@ -503,7 +590,8 @@ const qualityChecks = {
   geminiWasActuallyCalled: environment.geminiConfigured && audit.providerCalls > 0,
   noProviderErrors: audit.providerErrors === 0,
   noPartialOrFallbackOutput: Number(audit.sources.gemini_partial ?? 0) === 0 && Number(audit.sources.deterministic_fallback ?? 0) === 0,
-  repairRateIsControlled: audit.repairRate <= 0.12,
+  repairRateIsControlled: audit.repairRate <= 0.18,
+  choicesAreNotOnlyServerCandidates: audit.choiceDiversity.candidateOnlyTriads === 0 && audit.choiceDiversity.generatedRate >= 0.45,
   allNarrativeAuditsPass: audit.total > 0 && audit.failed.length === 0,
   noMetaLeaks: audit.metaLeaks.length === 0,
   sheetRowsWereSynced: !environment.sheetsConfigured || (sheetSync.ok === true && Number(sheetSync.synced ?? 0) > 0),

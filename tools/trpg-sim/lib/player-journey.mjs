@@ -10,6 +10,7 @@ import {
   unlockNextPermanentMission,
 } from "./mission-model.mjs";
 import { autoShop, createShopRuntime } from "./shop-runtime.mjs";
+import { deterministicWeather } from "./world-weather.mjs";
 
 export const GAME_END_MINUTE = 99 * 1440 + 14 * 60;
 export const PLAYER_PROFILES = Object.freeze([
@@ -69,6 +70,7 @@ function syncClock(state) {
   Object.assign(state, clockFromMinute(state.absoluteMinute));
   state.phaseIndex = state.minuteOfDay >= 1320 || state.minuteOfDay < 600 ? 3 : state.minuteOfDay >= 1080 ? 2 : state.minuteOfDay >= 840 ? 1 : 0;
   state.daypart = state.minuteOfDay < 480 ? "dawn" : state.minuteOfDay < 1080 ? "day" : state.minuteOfDay < 1320 ? "dusk" : "night";
+  state.weather = deterministicWeather({ day: state.day, hour: state.hour, location: state.player?.location ?? "田園の村" });
 }
 
 const moment = (day, phase) => (day - 1) * 1440 + ([600, 840, 1080, 1320][phase] ?? 600) - 600;
@@ -297,8 +299,13 @@ function advance(state, model, minutes, reason) {
   const value = Math.max(0, Math.round(Number(minutes) || 0));
   if (!value) return;
   const before = state.absoluteMinute;
+  const needs = state.player.needs ??= { hunger: 15, fatigue: 8, lastMealMinute: 0, lastSleepMinute: 0 };
+  needs.hunger = Math.min(100, Number(needs.hunger ?? 0) + value / 60 * 4.5);
+  needs.fatigue = Math.min(100, Number(needs.fatigue ?? 0) + value / 60 * (state.daypart === "night" ? 7 : 3.5));
   state.absoluteMinute = Math.min(GAME_END_MINUTE, state.absoluteMinute + value);
   syncClock(state);
+  if (needs.hunger >= 92) state.player.hpRatio = Math.max(0.15, Number(state.player.hpRatio ?? 1) - value / 60 * 0.012);
+  if (needs.fatigue >= 92) state.player.mpRatio = Math.max(0.05, Number(state.player.mpRatio ?? 1) - value / 60 * 0.018);
   updateTroubles(state, model);
   propagateRumors(state, model);
   state.history.push({ type: "TIME_ADVANCE", minute: before, minutes: value, reason, afterMinute: state.absoluteMinute });
@@ -369,7 +376,7 @@ function skillContext(state, data) {
   return {
     player: { level: state.player.level, skills: new Set(state.player.skills) },
     progress: state.progress,
-    world: { ...state.worldFlags, troubles: troubleStatusContext(state) },
+    world: { ...state.worldFlags, troubles: troubleStatusContext(state), daypart: state.daypart, hour: state.hour, weather: state.weather?.id ?? null, weatherTags: new Set(state.weather?.tags ?? []), hunger: Number(state.player.needs?.hunger ?? 0), fatigue: Number(state.player.needs?.fatigue ?? 0) },
     inventory: { itemIds: new Set(Object.keys(state.player.inventory.items)), gold: state.player.gold },
     equipment: {
       activeWeaponTypes: new Set(equipmentIds.map((id) => data.equipmentById.get(id)?.weaponType).filter(Boolean)),
@@ -1070,10 +1077,11 @@ function utility(action, state, profile) {
   }
   if (action.type === "work") score += profile.trade * 7 + (state.player.gold < 20 ? 6 : 0);
   if (action.type === "rest") {
-    score += profile.caution * 8 + (1 - state.player.hpRatio) * 12 + (1 - state.player.mpRatio) * 4;
+    score += profile.caution * 8 + (1 - state.player.hpRatio) * 12 + (1 - state.player.mpRatio) * 4 + Number(state.player.needs?.fatigue ?? 0) * 0.25;
     if (state.player.hpRatio < 0.6) score += 32;
     if (state.player.mpRatio < 0.25) score += 10;
   }
+  if (action.type === "eat") score += Number(state.player.needs?.hunger ?? 0) * 0.22 + profile.caution * 3;
   if (action.type === "observe") score += profile.explore * 4;
   return score;
 }
@@ -1085,8 +1093,11 @@ export function generateChoiceActions(state, model, data, catalog, profile = PRO
   if (wildBattleAvailable(state, profile) && encounters(state, data, profile).length) {
     candidates.push({ id: "SEEK_BATTLE", type: "seekBattle", minutes: 90, label: `${state.player.location}周辺で魔物を探す` });
   }
-  if (state.player.hpRatio < 0.82 || state.player.mpRatio < 0.55 || state.hour >= 22) {
-    candidates.push({ id: "REST", type: "rest", minutes: state.hour >= 20 ? 480 : 120, label: "休息して回復する" });
+  const hunger = Number(state.player.needs?.hunger ?? 0);
+  const fatigue = Number(state.player.needs?.fatigue ?? 0);
+  if (hunger >= 38) candidates.push({ id: "EAT", type: "eat", minutes: 30, label: hunger >= 72 ? "食事を取って空腹を満たす" : "軽く食事を取る" });
+  if (state.player.hpRatio < 0.82 || state.player.mpRatio < 0.55 || fatigue >= 55 || state.hour >= 21) {
+    candidates.push({ id: "REST", type: "rest", minutes: state.hour >= 20 || fatigue >= 75 ? 480 : 120, label: state.hour >= 20 ? "今夜の寝床を確保して休む" : "休息して疲れを取る" });
   }
   if (state.player.gold < (state.tuning.workGoldThreshold ?? 30)) candidates.push({ id: "WORK", type: "work", minutes: 120, label: "仕事をして路銀を得る" });
   candidates.push({ id: "OBSERVE", type: "observe", minutes: 45, label: "周囲の噂と変化を確かめる" });
@@ -1504,17 +1515,34 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     const profileFactor = profile.id === "fighter" ? 0.7 : profile.id === "cautious" ? 1.2 : 1;
     state.encounterAvailability[state.player.location] = state.absoluteMinute + Math.round(baseCooldown * profileFactor);
   } else if (action.type === "rest") {
-    const price = state.player.freeLodging > 0 ? 0 : (state.tuning.restPrice ?? 4);
+    const lodging = action.lodging === true;
+    const price = lodging ? (state.player.freeLodging > 0 ? 0 : Number(action.price ?? state.tuning.restPrice ?? 4)) : 0;
+    if (lodging && price > state.player.gold) {
+      output = { ok: false, type: action.type, reason: "insufficient_gold_for_lodging", requiredGold: price };
+    } else {
+      if (lodging) {
+        if (price) state.player.gold -= price;
+        else state.player.freeLodging = Math.max(0, Number(state.player.freeLodging ?? 0) - 1);
+      }
+      advance(state, model, action.minutes, lodging ? "inn-rest" : "outdoor-rest");
+      state.player.hpRatio = lodging ? 1 : Math.min(1, state.player.hpRatio + 0.25);
+      state.player.mpRatio = lodging ? 1 : Math.min(1, state.player.mpRatio + 0.18);
+      const needs = state.player.needs ??= { hunger: 15, fatigue: 8, lastMealMinute: 0, lastSleepMinute: 0 };
+      needs.fatigue = lodging ? 0 : Math.max(0, Number(needs.fatigue ?? 0) - 35);
+      needs.lastSleepMinute = state.absoluteMinute;
+    }
+  } else if (action.type === "eat") {
+    const price = state.player.freeMeals > 0 ? 0 : Math.max(0, Number(action.price ?? state.tuning.mealPrice ?? 1));
     if (price > state.player.gold) {
-      advance(state, model, Math.min(action.minutes, 180), "outdoor-rest");
-      state.player.hpRatio = Math.min(1, state.player.hpRatio + 0.25);
-      state.player.mpRatio = Math.min(1, state.player.mpRatio + 0.18);
+      output = { ok: false, type: action.type, reason: "insufficient_gold_for_meal", requiredGold: price };
     } else {
       if (price) state.player.gold -= price;
-      else state.player.freeLodging -= 1;
-      advance(state, model, action.minutes, "inn-rest");
-      state.player.hpRatio = 1;
-      state.player.mpRatio = 1;
+      else state.player.freeMeals = Math.max(0, Number(state.player.freeMeals ?? 0) - 1);
+      advance(state, model, action.minutes ?? 30, "meal");
+      const needs = state.player.needs ??= { hunger: 15, fatigue: 8, lastMealMinute: 0, lastSleepMinute: 0 };
+      needs.hunger = Math.max(0, Number(needs.hunger ?? 0) - Number(action.nutrition ?? 58));
+      needs.lastMealMinute = state.absoluteMinute;
+      state.player.hpRatio = Math.min(1, state.player.hpRatio + 0.05);
     }
   } else if (action.type === "work") {
     advance(state, model, action.minutes, "odd-job");
@@ -1607,6 +1635,7 @@ export function createInitialJourneyState({ model, battleData, skills, profile, 
       mpRatio: 1,
       freeMeals: Number(tuning.freeStarterMeals ?? 1),
       freeLodging: Number(tuning.freeStarterLodging ?? 1),
+      needs: { hunger: 15, fatigue: 8, lastMealMinute: 0, lastSleepMinute: 0 },
       inventory: { items: {}, equipment: owned },
       equipment,
       skills: new Set(),

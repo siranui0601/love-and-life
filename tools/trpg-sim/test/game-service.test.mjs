@@ -1653,6 +1653,11 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
         if (required.has("NPC002")) speeches.push({ actorId: "NPC002", text: "よかった……帰ってきてくれて。連れ帰ってくださって、ありがとうございます。", emotion: "涙" });
         if (required.has("NPC003")) speeches.push({ actorId: "NPC003", text: "村を預かる者として、救助と帰路を支えてくれたことに礼を言う。", emotion: "感謝" });
       }
+      const candidates = input.authoritativeState?.availableActionCandidates ?? [];
+      const preferred = [
+        ...candidates.filter((candidate) => candidate.id.endsWith(":faint-voice")),
+        ...candidates.filter((candidate) => !candidate.id.endsWith(":faint-voice")),
+      ].slice(0, 3);
       return {
         narrative: input.authoritativeOutcome?.discovery?.text
           ?? (input.action?.dialogueTopic === "t01_rescue_aftermath"
@@ -1661,7 +1666,14 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
               ? "村の広場へ戻ると、待っていた家族と村人が二人を迎えた。"
               : "選んだ行動の結果が反映された。"),
         speeches,
-        choices: [],
+        choices: preferred.map((candidate) => ({
+          id: candidate.id,
+          actionKind: "candidate",
+          candidateId: candidate.id,
+          label: candidate.label,
+          intentType: candidate.intentType,
+          targetNpcId: candidate.targetNpcId ?? null,
+        })),
         proposals: [],
         meta: { source: "test" },
       };
