@@ -127,9 +127,9 @@ test("T03 keeps two independent evidence classes after the full service world up
   );
   assert.equal(choose(runtime, second).outcome.ok, true);
   assert.equal(mission.progress[step.id], 2);
-  assert.ok(runtime.playerState.history.some((entry) =>
-    entry.type === "T03_INVESTIGATION_PROGRESS_RESTORED"
-      && entry.value === 2));
+  assert.equal(new Set(runtime.t03WolfContinuity.evidenceClasses).size, 2);
+  assert.equal(runtime.playerState.worldFlags[`t03Evidence:${first.t03EvidenceClass}`], true);
+  assert.equal(runtime.playerState.worldFlags[`t03Evidence:${second.t03EvidenceClass}`], true);
 
   const after = choices(runtime);
   assert.equal(after.some((action) => action.authoredT03WolfChoice === true), false);
