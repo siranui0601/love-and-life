@@ -4,10 +4,11 @@ import * as genericBase from "./authored-mission-t02-granary-choice-order.js";
 export * from "./authored-mission-evidence-only-progress.js";
 
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_VERSION =
-  "authored-mission-t03-investigation-contract-v9";
+  "authored-mission-t03-investigation-contract-v10";
 
 const MISSION_ID = "MSN-T03";
 const FLOW_ID = "red-fang-migration";
+const LEGACY_OPENING_ID = "legacy-completed-hearing";
 const REQUIRED_EVIDENCE_COUNT = 2;
 const REQUIRED_EVIDENCE_CLASS = "apex_pressure";
 const PASSIVE_CANONICAL_KINDS = new Set(["lead", "defer", "free_move"]);
@@ -66,10 +67,19 @@ function canonicalEvidenceIds(runtime) {
     .filter(Boolean);
 }
 
+function canonicalFlow(runtime) {
+  return runtime?.authoredMissionFlows?.[FLOW_ID] ?? null;
+}
+
+function canonicalOpeningOwnsInvestigation(runtime) {
+  const openingChoiceId = canonicalFlow(runtime)?.openingChoiceId ?? null;
+  return openingChoiceId != null && openingChoiceId !== LEGACY_OPENING_ID;
+}
+
 function syncCanonicalFlowEvidence(runtime) {
   if (!runtime?.playerState) return false;
   runtime.authoredMissionFlows ??= {};
-  let flow = runtime.authoredMissionFlows[FLOW_ID] ?? null;
+  let flow = canonicalFlow(runtime);
   if (!flow && typeof genericBase.ensureAuthoredMissionFlowState === "function") {
     flow = genericBase.ensureAuthoredMissionFlowState(runtime, FLOW_ID);
   }
@@ -88,7 +98,7 @@ function syncCanonicalFlowEvidence(runtime) {
   }
 
   if (!flow.openingChoiceId && runtime.t03WolfContinuity?.openingChoiceId) {
-    flow.openingChoiceId = "legacy-completed-hearing";
+    flow.openingChoiceId = LEGACY_OPENING_ID;
     changed = true;
   }
 
@@ -196,7 +206,8 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const step = currentMissionStep(runtime);
   const dedicatedInvestigationActive = fallbackIsT03
     && (step?.id === "investigate" || step?.type === "investigate")
-    && !investigationEvidenceSatisfied(runtime);
+    && !investigationEvidenceSatisfied(runtime)
+    && !canonicalOpeningOwnsInvestigation(runtime);
   const actions = dedicatedInvestigationActive
     ? fallback
     : canonical ?? fallback;
@@ -217,6 +228,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_INTERNALS = Object.freeze({
   MISSION_ID,
   FLOW_ID,
+  LEGACY_OPENING_ID,
   REQUIRED_EVIDENCE_COUNT,
   REQUIRED_EVIDENCE_CLASS,
   PASSIVE_CANONICAL_KINDS,
@@ -229,6 +241,8 @@ export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_INTERNALS = Object.free
   investigationEvidenceProgress,
   investigationEvidenceSatisfied,
   canonicalEvidenceIds,
+  canonicalFlow,
+  canonicalOpeningOwnsInvestigation,
   syncCanonicalFlowEvidence,
   canonicalT03Actions,
   onlyPassiveCanonicalChoices,
