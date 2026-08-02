@@ -1,4 +1,5 @@
 import * as base from "./authored-mission-evidence-only-progress.js";
+import * as genericBase from "./authored-mission-t02-granary-choice-order.js";
 
 export * from "./authored-mission-evidence-only-progress.js";
 
@@ -17,6 +18,14 @@ function missionEntry(catalog) {
 function investigationStep(mission) {
   return mission?.steps?.find((step) =>
     step.id === "investigate" || step.type === "investigate") ?? null;
+}
+
+function currentMissionStep(runtime) {
+  const mission = runtime?.playerState?.missions?.[MISSION_ID];
+  const definition = missionEntry(runtime?.playerState?.catalog);
+  if (!mission || !definition) return null;
+  return definition.steps?.find((step) =>
+    Number(mission.progress?.[step.id] ?? 0) < Number(step.required ?? 1)) ?? null;
 }
 
 function independentEvidenceCount(runtime) {
@@ -69,6 +78,11 @@ export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
+  const current = currentMissionStep(runtime);
+  if (current && (current.id === "hear" || current.type === "conversation")) {
+    return genericBase.authoredMissionFlowExclusiveActions(runtime, context);
+  }
+
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   if (Array.isArray(actions)
     && actions.some((action) => action?.authoredT03WolfChoice === true)
@@ -87,6 +101,7 @@ export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_INTERNALS = Object.free
   REQUIRED_EVIDENCE_COUNT,
   missionEntry,
   investigationStep,
+  currentMissionStep,
   independentEvidenceCount,
   investigationEvidenceSatisfied,
   restoreInvestigationProgress,
