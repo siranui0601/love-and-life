@@ -3,9 +3,10 @@ import assert from "node:assert/strict";
 import {
   AUTHORED_MISSION_T02_GRANARY_INTERNALS,
   AUTHORED_MISSION_T02_GRANARY_VERSION,
+  AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_VERSION,
   applyAuthoredMissionFlowAction,
   authoredMissionFlowExclusiveActions,
-} from "../../../src/server/trpg/content/authored-mission-t02-granary-continuity.js";
+} from "../../../src/server/trpg/content/authored-mission-t02-granary-choice-order.js";
 
 const MISSION_ID = "MSN-T02";
 
@@ -49,6 +50,7 @@ function ids(actions) {
 
 test("T02 granary opens with two evidence routes and one costly village choice", () => {
   assert.equal(AUTHORED_MISSION_T02_GRANARY_VERSION, "authored-mission-t02-granary-v1");
+  assert.equal(AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_VERSION, "authored-mission-t02-granary-choice-order-v1");
   const state = runtime();
   const choices = authoredMissionFlowExclusiveActions(state, {});
   assert.equal(choices.length, 3);
