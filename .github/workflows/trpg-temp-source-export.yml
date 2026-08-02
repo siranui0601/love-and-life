@@ -1,0 +1,34 @@
+name: TRPG temporary source export
+
+on:
+  push:
+    branches:
+      - agent/trpg-human-authored-choices
+
+permissions:
+  contents: read
+
+jobs:
+  export-sources:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect target sources
+        run: |
+          mkdir -p export
+          cp --parents \
+            src/server/trpg/game/service.js \
+            tools/trpg-sim/lib/battle-simulator.mjs \
+            tools/trpg-sim/lib/battle-model.mjs \
+            tools/trpg-sim/lib/player-journey.mjs \
+            tools/trpg-sim/test/game-service.test.mjs \
+            tools/trpg-sim/test/weather-game-view.test.mjs \
+            tools/trpg-sim/test/battle-simulator.test.mjs \
+            package.json \
+            export/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trpg-target-sources
+          path: export
+          retention-days: 1
