@@ -1,15 +1,16 @@
 name: Export Ten Freely online sources
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/ten-freely-online-flow
+      - main
 
 permissions:
   contents: read
 
 jobs:
   export:
+    if: github.event.pull_request.head.ref == 'fix/ten-freely-online-flow'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
