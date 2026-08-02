@@ -18,6 +18,7 @@ import { clockFromMinute } from "../lib/player-journey.mjs";
 
 const data = loadTrpgGameData();
 const MISSION_ID = "MSN-T03";
+const GAME_START_MINUTE_OF_DAY = 10 * 60;
 
 function prepareRuntime() {
   const runtime = createGameRuntime(data, {
@@ -27,7 +28,7 @@ function prepareRuntime() {
     tutorial: false,
   });
   const state = runtime.playerState;
-  const absoluteMinute = 7 * 1440 + 10 * 60 + 50;
+  const absoluteMinute = 7 * 1440 + 10 * 60 + 50 - GAME_START_MINUTE_OF_DAY;
   Object.assign(state, clockFromMinute(absoluteMinute));
   state.absoluteMinute = absoluteMinute;
   runtime.lastWorldTickMinute = absoluteMinute;
@@ -102,8 +103,10 @@ function ids(actions) {
   return (actions ?? []).map((action) => action.id);
 }
 
-test("T03 keeps two independent evidence classes after service updates and save round trips", () => {
+test("T03 keeps two independent evidence classes across noon and save round trips", () => {
   let runtime = prepareRuntime();
+  assert.equal(runtime.playerState.hour, 10);
+  assert.equal(runtime.playerState.minute, 50);
   assert.equal(investigationContract(runtime).step.required, 2);
 
   const direct = authoredMissionFlowExclusiveActions(runtime, {
@@ -142,7 +145,8 @@ test("T03 keeps two independent evidence classes after service updates and save 
     `second T03 evidence was unavailable: ${JSON.stringify(ids(secondChoices))}`,
   );
   assert.equal(choose(runtime, second).outcome.ok, true);
-  assert.ok(runtime.playerState.absoluteMinute >= 7 * 1440 + 12 * 60);
+  assert.ok(runtime.playerState.absoluteMinute >= 7 * 1440 + 12 * 60 - GAME_START_MINUTE_OF_DAY);
+  assert.equal(runtime.playerState.hour, 12);
   assert.equal(liveInvestigationProgress(runtime), 2);
 
   runtime = roundTrip(runtime);
