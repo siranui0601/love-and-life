@@ -14,6 +14,7 @@ const {
   revealLeadDestination,
   readiness,
   ensure17,
+  mission,
   interventions: INTERVENTIONS,
 } = world.T17_RUNTIME_CORE_INTERNALS;
 const {
@@ -65,6 +66,36 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
   }
   if (kind === "navigator_route_back") {
     flow.navigatorGroupId = null;
+    changed = true;
+  }
+  if (kind === "navigator_accept_group") {
+    flow.acceptedEvidenceGroupIds = [...new Set([
+      ...(Array.isArray(flow.acceptedEvidenceGroupIds)
+        ? flow.acceptedEvidenceGroupIds
+        : []),
+      action.authoredMissionFlowNavigatorGroupId,
+    ].filter(Boolean))];
+    flow.navigatorFocusId = null;
+    flow.navigatorGroupId = null;
+    flow.selectedLeadId = null;
+    result.summary = "現在の証拠でこの因果線を確定し、残る分類へ調査を移した。";
+    result.sceneTransition = action.authoredMissionFlowSceneTransition;
+    changed = true;
+  }
+  if (kind === "abandon_investigation") {
+    const missionState = mission(runtime);
+    if (missionState?.status !== "completed") {
+      missionState.status = "failed";
+      missionState.failureReason = "player_abandoned_t17_investigation";
+      missionState.failedAtMinute = minute;
+    }
+    flow.navigatorFocusId = null;
+    flow.navigatorGroupId = null;
+    flow.selectedLeadId = null;
+    runtime.playerState.worldFlags ??= {};
+    runtime.playerState.worldFlags.t17PlayerMissionClosed = true;
+    result.summary = "第二召喚を追う調査から手を引いた。儀式を止める機会は失われた。";
+    result.sceneTransition = "調査記録は閉じられ、第二召喚の準備だけが世界の裏側で進み続ける";
     changed = true;
   }
   if (["navigator_route", "lead", "resolution_preparation_lead"].includes(kind)) {
@@ -252,7 +283,6 @@ export function authoredMissionFlowGuidance(runtime) {
       : null,
   };
 }
-
 
 export const T17_RUNTIME_INTERNALS = Object.freeze({
   ...world.T17_RUNTIME_CORE_INTERNALS,
