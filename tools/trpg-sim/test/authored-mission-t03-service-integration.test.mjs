@@ -23,7 +23,7 @@ function prepareRuntime() {
     tutorial: false,
   });
   const state = runtime.playerState;
-  const absoluteMinute = 7 * 1440 + 10 * 60;
+  const absoluteMinute = 7 * 1440 + 10 * 60 + 50;
   Object.assign(state, clockFromMinute(absoluteMinute));
   state.absoluteMinute = absoluteMinute;
   runtime.lastWorldTickMinute = absoluteMinute;
@@ -126,6 +126,7 @@ test("T03 keeps two independent evidence classes after the full service world up
     `second T03 evidence was unavailable: ${JSON.stringify(ids(secondChoices))}`,
   );
   assert.equal(choose(runtime, second).outcome.ok, true);
+  assert.ok(runtime.playerState.absoluteMinute >= 8 * 1440 + 12 * 60);
   assert.equal(mission.progress[step.id], 2);
   assert.equal(new Set(runtime.t03WolfContinuity.evidenceClasses).size, 2);
   assert.equal(runtime.playerState.worldFlags[`t03Evidence:${first.t03EvidenceClass}`], true);
