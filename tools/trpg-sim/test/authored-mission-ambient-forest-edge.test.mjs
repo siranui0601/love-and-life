@@ -8,22 +8,34 @@ import {
 
 const {
   atCanonicalForestEdge,
+  t13InvestigationOpen,
   forestAmbientEligible,
   ambientGuidance,
 } = AUTHORED_MISSION_AMBIENT_FOREST_EDGE_INTERNALS;
 
 const FLOW_ID = "forest-king-slime-world-tree-collapse";
 const MISSION_ID = "MSN-T13";
+const INVESTIGATION_STEP_ID = "MSN-T13-INVESTIGATE";
 
 function runtime(location = "森", facilityId = "LOC_FOREST_EDGE") {
   return {
     playerState: {
       absoluteMinute: 43098,
       player: { location, facilityId },
+      catalog: {
+        byId: new Map([[MISSION_ID, {
+          id: MISSION_ID,
+          steps: [{
+            id: INVESTIGATION_STEP_ID,
+            type: "investigation",
+            required: 6,
+          }],
+        }]]),
+      },
       missions: {
         [MISSION_ID]: {
           status: "active",
-          progress: { "MSN-T13-INVESTIGATE": 4 },
+          progress: { [INVESTIGATION_STEP_ID]: 4 },
         },
       },
       worldFlags: {},
@@ -81,6 +93,7 @@ test("forest edge identity follows facility id, not the hub display name", () =>
 test("the exact route-audit location now activates the handwritten continuation", () => {
   const state = runtime("森", "LOC_FOREST_EDGE");
   const flow = state.authoredMissionFlows[FLOW_ID];
+  assert.equal(t13InvestigationOpen(state), true);
   assert.equal(forestAmbientEligible(state, flow), true);
   const guidance = ambientGuidance(flow);
   assert.equal(guidance.targetFacilityId, "LOC_FOREST_EDGE");
@@ -101,10 +114,21 @@ test("the exported choice provider replaces the exact old forest loop", () => {
 });
 
 test("completed or ended T13 investigation does not hijack ordinary forest choices", () => {
-  const completed = runtime();
-  completed.playerState.missions[MISSION_ID].status = "completed";
+  const completedMission = runtime();
+  completedMission.playerState.missions[MISSION_ID].status = "completed";
   assert.equal(
-    forestAmbientEligible(completed, completed.authoredMissionFlows[FLOW_ID]),
+    forestAmbientEligible(completedMission, completedMission.authoredMissionFlows[FLOW_ID]),
+    false,
+  );
+
+  const completedInvestigation = runtime();
+  completedInvestigation.playerState.missions[MISSION_ID].progress[INVESTIGATION_STEP_ID] = 6;
+  assert.equal(t13InvestigationOpen(completedInvestigation), false);
+  assert.equal(
+    forestAmbientEligible(
+      completedInvestigation,
+      completedInvestigation.authoredMissionFlows[FLOW_ID],
+    ),
     false,
   );
 
