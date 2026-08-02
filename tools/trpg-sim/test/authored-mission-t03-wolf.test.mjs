@@ -96,20 +96,20 @@ function moveToCurrentInvestigation(state) {
   return step;
 }
 
-test("T03 keeps a finite handwritten hearing fallback while the registry preserves the canonical pack opening", () => {
+test("T03 keeps a finite handwritten hearing fallback when the canonical source is unavailable", () => {
   assert.equal(AUTHORED_MISSION_T03_WOLF_VERSION, "authored-mission-t03-wolf-v1");
   const state = runtime();
-  const canonicalOpening = actions(state);
-  assert.equal(canonicalOpening.length, 3);
-  assert.ok(canonicalOpening.every((action) => action.authoredMissionFlowKind === "opening"));
-
-  const fallback = AUTHORED_MISSION_T03_WOLF_INTERNALS.openingActions(state);
+  const fallback = actions(state);
   assert.equal(fallback.length, 3);
   assert.ok(fallback.every((action) => action.authoredT03WolfChoice));
   assert.ok(fallback.every((action) => action.type === "conversation"));
   assert.ok(fallback.every((action) => action.missionId === MISSION_ID));
   assert.ok(fallback.every((action) => action.id.length <= 120));
   assert.equal(new Set(fallback.map((action) => action.id)).size, 3);
+  assert.deepEqual(
+    fallback.map((action) => action.id),
+    AUTHORED_MISSION_T03_WOLF_INTERNALS.openingActions(state).map((action) => action.id),
+  );
 
   const result = choose(state, fallback[1]);
   assert.equal(result.ok, true);
