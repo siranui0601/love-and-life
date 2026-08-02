@@ -31,6 +31,12 @@ function atCanonicalForestEdge(runtime) {
   return player(runtime).facilityId === FOREST_EDGE;
 }
 
+function investigationStep(entry) {
+  return entry?.id === T13.investigation.stepId
+    || /investig/u.test(String(entry?.type ?? "").toLowerCase())
+    || /investig/u.test(String(entry?.id ?? "").toLowerCase());
+}
+
 function t13InvestigationOpen(runtime) {
   const mission = runtime?.playerState?.missions?.[MISSION_ID];
   if (!mission) return false;
@@ -39,19 +45,21 @@ function t13InvestigationOpen(runtime) {
   const definition = typeof catalogById?.get === "function"
     ? catalogById.get(MISSION_ID)
     : catalogById?.[MISSION_ID];
-  const step = definition?.steps?.find((entry) =>
-    entry?.id === T13.investigation.stepId
-      || /investig/u.test(String(entry?.type ?? "").toLowerCase())
-      || /investig/u.test(String(entry?.id ?? "").toLowerCase()));
-  const progressKey = step?.id
-    ?? Object.keys(mission.progress ?? {}).find((key) =>
-      key === T13.investigation.stepId
-        || /investig/u.test(String(key).toLowerCase()));
-  if (!progressKey) return false;
+  const steps = Array.isArray(definition?.steps) ? definition.steps : [];
+  if (steps.length) {
+    const current = steps.find((entry) =>
+      Number(mission.progress?.[entry.id] ?? 0) < Number(entry.required ?? 1));
+    return Boolean(current && investigationStep(current));
+  }
 
+  const flow = flowFor(runtime);
+  if (!flow?.openingChoiceId) return false;
+  const progressKey = Object.keys(mission.progress ?? {}).find((key) =>
+    key === T13.investigation.stepId
+      || /investig/u.test(String(key).toLowerCase()));
+  if (!progressKey) return false;
   const required = Number(
-    step?.required
-      ?? T13.catalogOverride?.investigation?.required
+    T13.catalogOverride?.investigation?.required
       ?? T13.investigation.requiredEvidenceCount
       ?? 1,
   );
@@ -110,6 +118,7 @@ export const AUTHORED_MISSION_AMBIENT_FOREST_EDGE_INTERNALS = Object.freeze({
   flowFor,
   player,
   atCanonicalForestEdge,
+  investigationStep,
   t13InvestigationOpen,
   forestAmbientEligible,
   ambientGuidance,
