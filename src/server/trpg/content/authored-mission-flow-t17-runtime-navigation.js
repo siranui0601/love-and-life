@@ -58,13 +58,17 @@ function navigatorFocuses() {
   }));
 }
 
+function groupNeedsEvidence(group, acquired) {
+  return !group.evidenceIds.some((id) => acquired.has(id));
+}
+
 function focusActions(flow) {
   const acquired = new Set(flow.evidenceIds);
   const preferred = P.hearing.choices.find((opening) =>
     opening.id === flow.openingChoiceId)?.preferredFocusId;
   const actions = navigatorFocuses()
     .filter((focus) => focus.groups.some((group) =>
-      group.evidenceIds.some((id) => !acquired.has(id))))
+      groupNeedsEvidence(group, acquired)))
     .map((focus) => ({
       id: actionId("NAVIGATOR_FOCUS", focus.id),
       family: "prepare",
@@ -89,7 +93,7 @@ function groupActions(flow) {
   const acquired = new Set(flow.evidenceIds);
   if (!focus) return null;
   const actions = focus.groups
-    .filter((group) => group.evidenceIds.some((id) => !acquired.has(id)))
+    .filter((group) => groupNeedsEvidence(group, acquired))
     .map((group) => ({
       id: actionId("NAVIGATOR_GROUP", group.id),
       family: "prepare",
@@ -120,7 +124,7 @@ function routeActions(flow) {
   const focus = navigatorFocuses().find((entry) => entry.id === flow.navigatorFocusId);
   const group = focus?.groups.find((entry) => entry.id === flow.navigatorGroupId);
   const acquired = new Set(flow.evidenceIds);
-  if (!group) return null;
+  if (!group || !groupNeedsEvidence(group, acquired)) return null;
   const actions = group.evidenceIds
     .filter((id) => !acquired.has(id))
     .map((id) => P.investigation.leads.find((lead) => lead.discoveryId === id))
@@ -231,6 +235,7 @@ function selectedLeadActions(runtime, flow, movementActions = []) {
 export const T17_RUNTIME_NAVIGATION_INTERNALS = Object.freeze({
   openingActions,
   navigatorFocuses,
+  groupNeedsEvidence,
   focusActions,
   groupActions,
   routeActions,
