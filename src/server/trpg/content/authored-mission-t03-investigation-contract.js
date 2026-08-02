@@ -27,6 +27,14 @@ export function applyAuthoredMissionFlowCatalogOverrides(catalog) {
   return updated;
 }
 
+export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
+  return base.authoredMissionFlowExclusiveActions(runtime, context);
+}
+
+export function applyAuthoredMissionFlowAction(runtime, action, result) {
+  return base.applyAuthoredMissionFlowAction(runtime, action, result);
+}
+
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_INTERNALS = Object.freeze({
   MISSION_ID,
   REQUIRED_EVIDENCE_COUNT,
