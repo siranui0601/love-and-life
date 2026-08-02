@@ -18,6 +18,8 @@ import { clockFromMinute } from "../lib/player-journey.mjs";
 
 const data = loadTrpgGameData();
 const MISSION_ID = "MSN-T03";
+const FLOW_ID = "red-fang-migration";
+const REQUIRED_CANONICAL_EVIDENCE_ID = "T03-EVIDENCE-APEX-PREDATOR-TRACKS";
 const GAME_START_MINUTE_OF_DAY = 10 * 60;
 
 function prepareRuntime() {
@@ -99,6 +101,10 @@ function liveInvestigationProgress(runtime) {
   return Number(mission.progress?.[step.id] ?? 0);
 }
 
+function canonicalEvidence(runtime) {
+  return [...new Set(runtime.authoredMissionFlows?.[FLOW_ID]?.evidenceIds ?? [])];
+}
+
 function ids(actions) {
   return (actions ?? []).map((action) => action.id);
 }
@@ -136,6 +142,7 @@ test("T03 keeps two independent evidence classes across noon, public choices, an
   runtime = roundTrip(runtime);
   assert.equal(liveInvestigationProgress(runtime), 1);
   assert.equal(new Set(runtime.t03WolfContinuity.evidenceClasses).size, 1);
+  assert.equal(canonicalEvidence(runtime).length, 1);
 
   const secondChoices = choices(runtime);
   const second = secondChoices.find((action) =>
@@ -152,14 +159,19 @@ test("T03 keeps two independent evidence classes across noon, public choices, an
   runtime = roundTrip(runtime);
   assert.equal(liveInvestigationProgress(runtime), 2);
   assert.equal(new Set(runtime.t03WolfContinuity.evidenceClasses).size, 2);
+  assert.equal(canonicalEvidence(runtime).length, 2);
+  assert.ok(canonicalEvidence(runtime).includes(REQUIRED_CANONICAL_EVIDENCE_ID));
   assert.equal(runtime.playerState.worldFlags[`t03Evidence:${first.t03EvidenceClass}`], true);
   assert.equal(runtime.playerState.worldFlags[`t03Evidence:${second.t03EvidenceClass}`], true);
 
   const after = choices(runtime);
   assert.equal(liveInvestigationProgress(runtime), 2);
+  assert.equal(canonicalEvidence(runtime).length, 2);
+  assert.ok(canonicalEvidence(runtime).includes(REQUIRED_CANONICAL_EVIDENCE_ID));
   assert.equal(after.some((action) => action.authoredT03WolfChoice === true), false);
   assert.equal(after.some((action) => action.id === first.id || action.id === second.id), false);
 
   runtime = roundTrip(runtime);
   assert.equal(liveInvestigationProgress(runtime), 2);
+  assert.equal(canonicalEvidence(runtime).length, 2);
 });
