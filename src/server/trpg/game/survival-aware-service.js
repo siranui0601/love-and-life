@@ -10,7 +10,7 @@ import {
 } from "./service.js";
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v3";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v4";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
@@ -81,6 +81,27 @@ function persistRuntime(record, runtime, data) {
     facilityId: normalizedRuntime.playerState.player.facilityId,
     level: normalizedRuntime.playerState.player.level,
   };
+}
+
+export function canonicalizePersistedRuntimeRecord(record, data) {
+  if (!record?.runtimeSnapshot || !data) return false;
+  const normalizedRuntime = deserializeRuntime(record.runtimeSnapshot, data);
+  const normalizedHash = gameStateHash(normalizedRuntime, data);
+  if (normalizedHash === record.stateHash) return false;
+
+  record.stateHash = normalizedHash;
+  const latestEntry = [...(record.commandLog ?? [])]
+    .reverse()
+    .find((entry) => entry.revisionAfter === record.revision);
+  if (latestEntry) latestEntry.stateAfterHash = normalizedHash;
+  record.replayBase = {
+    resolverVersion: record.resolverVersion,
+    revision: record.revision,
+    stateHash: normalizedHash,
+    runtimeSnapshot: record.runtimeSnapshot,
+  };
+  record.updatedAt = new Date().toISOString();
+  return true;
 }
 
 function commandPayload(input) {
@@ -303,7 +324,15 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
     if (life) {
       return this.runLocked(id, () => this.resolveUrgentLifeAction(ownerHash, id, input, life));
     }
-    return decorateCommandResult(await super.command(ownerHash, id, input), this.data);
+    const result = await super.command(ownerHash, id, input);
+    if (!result?.duplicate) {
+      const record = await this.recordForOwner(ownerHash, id);
+      if (canonicalizePersistedRuntimeRecord(record, this.data)) {
+        await this.store.put(record);
+        result.save = this.gameViewForRecord(record);
+      }
+    }
+    return decorateCommandResult(result, this.data);
   }
 
   health() {
