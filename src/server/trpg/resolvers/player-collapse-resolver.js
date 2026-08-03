@@ -59,7 +59,7 @@ function eligibleCandidate(candidate) {
   if (!candidate || typeof candidate !== "object") return false;
   if (!optionalId(candidate.id)) return false;
   if (candidate.alive === false || candidate.dead === true) return false;
-  if (candidate.detained === true || candidate.missing === true) return false;
+  if (candidate.detained === true || candidate.missing === true || candidate.departed === true) return false;
   if (candidate.present !== true && candidate.canReach !== true) return false;
   return candidate.canRescue !== false;
 }
@@ -218,7 +218,7 @@ export function applyCollapseRescueView(gameView, player, options = {}) {
       ...battle,
       commands: rescueView.uiLock.battleCommands,
     } : battle,
-    availableActions: [PLAYER_COLLAPSE_RESCUE_COMMAND],
+    availableActions: [],
   };
 }
 
