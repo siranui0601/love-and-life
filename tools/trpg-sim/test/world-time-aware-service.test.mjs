@@ -152,7 +152,10 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
   const player = runtime.playerState.player;
   ensurePlayerNeeds(player);
-  player.facilityId = "LOC_FARM_INN";
+  const facilityId = player.facilityId;
+  const facility = game.data.model.facilityById[facilityId];
+  assert.ok(facility, "開始施設が正本施設であること");
+  facility.name = `${facility.name}食堂`;
   player.freeMeals = 0;
   player.needs.hunger = 90;
   player.needs.fatigue = 40;
@@ -169,15 +172,16 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   };
   await store.put(record);
 
+  const actionId = `WORK_MEAL:${facilityId}`;
   const before = await game.get(owner, created.id);
-  assert.ok(before.choices.some((choice) => choice.actionId === "WORK_MEAL:LOC_FARM_INN"));
-  assert.ok(!before.choices.some((choice) => choice.actionId === "REST_OUTDOOR:LOC_FARM_INN"));
+  assert.ok(before.choices.some((choice) => choice.actionId === actionId));
+  assert.ok(!before.choices.some((choice) => choice.actionId === `REST_OUTDOOR:${facilityId}`));
 
   const result = await game.command(owner, created.id, {
     commandId: "work-meal-command-1",
     expectedRevision: before.revision,
     type: "CHOOSE",
-    payload: { choiceId: "WORK_MEAL:LOC_FARM_INN", actionId: "" },
+    payload: { choiceId: actionId, actionId: "" },
   });
   assert.equal(result.duplicate, false);
   assert.equal(result.save.revision, before.revision + 1);
@@ -187,7 +191,7 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   const stored = await store.get(created.id);
   const afterRuntime = deserializeRuntime(stored.runtimeSnapshot, game.data);
   assert.equal(afterRuntime.playerState.absoluteMinute, beforeAbsoluteMinute + 120);
-  assert.equal(stored.commandLog.at(-1).resolvedActionId, "WORK_MEAL:LOC_FARM_INN");
+  assert.equal(stored.commandLog.at(-1).resolvedActionId, actionId);
   assert.equal(stored.commandLog.at(-1).outcome.type, "work_meal");
   assert.equal(stored.commandLog.at(-1).stateAfterHash, stored.stateHash);
   assert.equal(stored.replayBase.revision, stored.revision);
