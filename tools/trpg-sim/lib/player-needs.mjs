@@ -1,5 +1,24 @@
-export const PLAYER_NEEDS_VERSION = "player-needs-v4";
+export const PLAYER_NEEDS_VERSION = "player-needs-v5";
 export const PLAYER_COLLAPSE_THRESHOLD = 100;
+
+export const PLAYER_COLLAPSE_BLOCKED_COMMAND_TYPES = Object.freeze([
+  "CHOOSE",
+  "TALK",
+  "MOVE",
+  "SHOP_BUY",
+  "SHOP_SELL",
+  "SHOP_TRY",
+  "SHOP_BUY_USED",
+  "SHOP_BORROW",
+  "SHOP_RETURN_LOAN",
+  "CLAIM_EQUIPMENT_REWARD",
+  "EQUIP",
+  "UNEQUIP",
+  "LEARN_SKILL",
+  "BATTLE_ACT",
+]);
+
+const PLAYER_COLLAPSE_BLOCKED_COMMAND_TYPE_SET = new Set(PLAYER_COLLAPSE_BLOCKED_COMMAND_TYPES);
 
 export const PLAYER_NEEDS_DEFAULTS = Object.freeze({
   hunger: 15,
@@ -176,6 +195,26 @@ export function openPlayerCollapseIncident(playerOrNeeds, {
 export function playerCanTakeNormalAction(playerOrNeeds) {
   const needs = ensurePlayerNeeds(playerOrNeeds);
   return needs.activeCollapse?.status !== "pending_rescue" && !playerCollapseState(needs).collapsed;
+}
+
+export function playerCollapseCommandBlock(playerOrNeeds, commandType) {
+  const type = String(commandType ?? "").trim().toUpperCase();
+  if (!PLAYER_COLLAPSE_BLOCKED_COMMAND_TYPE_SET.has(type)) {
+    return { blocked: false, code: null, commandType: type || null, incident: null };
+  }
+  const needs = ensurePlayerNeeds(playerOrNeeds);
+  const incident = needs.activeCollapse?.status === "pending_rescue" ? needs.activeCollapse : null;
+  const collapse = playerCollapseState(needs);
+  if (!incident && !collapse.collapsed) {
+    return { blocked: false, code: null, commandType: type, incident: null };
+  }
+  return {
+    blocked: true,
+    code: "player_collapse_pending_rescue",
+    commandType: type,
+    incident,
+    causes: incident?.causes ?? collapse.causes,
+  };
 }
 
 export function completePlayerCollapseRescue(playerOrNeeds, {
