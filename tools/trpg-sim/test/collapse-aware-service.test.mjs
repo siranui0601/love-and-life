@@ -67,7 +67,8 @@ async function forceUndiscoveredT05(game, store, saveId) {
   runtime.playerState.rumorById[rumor.id] = rumor;
   runtime.playerState.player.knownRumorIds.delete(rumor.id);
   record.runtimeSnapshot = serializeRuntime(runtime);
-  record.stateHash = gameStateHash(runtime, game.data);
+  const normalizedRuntime = deserializeRuntime(record.runtimeSnapshot, game.data);
+  record.stateHash = gameStateHash(normalizedRuntime, game.data);
   await store.put(record);
 }
 
