@@ -163,7 +163,7 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   record.resolverVersion = TRPG_GAME_RESOLVER_VERSION;
   compactPlayableRuntime(runtime);
   record.runtimeSnapshot = serializeRuntime(runtime);
-  record.stateHash = gameStateHash(runtime, game.data);
+  record.stateHash = gameStateHash(deserializeRuntime(record.runtimeSnapshot, game.data), game.data);
   record.replayBase = {
     resolverVersion: record.resolverVersion,
     revision: record.revision,
