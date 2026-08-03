@@ -48,6 +48,49 @@ test("空腹と疲労が限界へ近い時は取得可能スキルより公開�
   assert.equal(decision?.category, "meal_consumed");
 });
 
+test("所持金不足時は食事拠点へ移動せず、現在地に公開されたまかない労働を選ぶ", () => {
+  const current = save({
+    clock: { day: 38, hour: 9, time: "09:00", absoluteMinute: 53220 },
+    scene: { location: "王都", facilityId: "LOC_CAP_LOWER_INN", beats: [] },
+    player: {
+      gold: 0,
+      freeMeals: 0,
+      freeLodging: 0,
+      needs: { hunger: 95.4, fatigue: 90.69 },
+    },
+    choices: [
+      {
+        choiceId: "WORK_MEAL:LOC_CAP_LOWER_INN",
+        actionId: "WORK_MEAL:LOC_CAP_LOWER_INN",
+        type: "work",
+        label: "下層の安宿を手伝って、まかないを受け取る",
+      },
+      {
+        choiceId: "REST_OUTDOOR:LOC_CAP_LOWER_INN",
+        actionId: "REST_OUTDOOR:LOC_CAP_LOWER_INN",
+        type: "rest",
+        label: "現在地で安全を確かめ、短く休息する",
+      },
+    ],
+    movement: [
+      {
+        moveId: "MOVE_LOCAL:LOC_CAP_MARKET",
+        scope: "local",
+        destination: "王都",
+        destinationFacilityId: "LOC_CAP_MARKET",
+        destinationFacilityName: "中央市場",
+        label: "中央市場へ移動する",
+      },
+    ],
+  });
+
+  const decision = selectUrgentDay100SurvivalDecision({ save: current, model, state: state() });
+  assert.equal(decision?.type, "CHOOSE");
+  assert.equal(decision?.actionId, "WORK_MEAL:LOC_CAP_LOWER_INN");
+  assert.equal(decision?.payload?.choiceId, "WORK_MEAL:LOC_CAP_LOWER_INN");
+  assert.equal(decision?.category, "work");
+});
+
 test("夜間に疲労が高い時は事件移動前に公開休息actionを選ぶ", () => {
   const current = save({
     player: {
