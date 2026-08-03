@@ -18,7 +18,7 @@ import {
   gameStateHash,
 } from "./service.js";
 
-export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v6";
+export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v7";
 export const RESOLVE_COLLAPSE_COMMAND = "RESOLVE_COLLAPSE_RESCUE";
 export const RESOLVE_COLLAPSE_CHOICE_ID = "COLLAPSE_RESCUE:ACCEPT";
 export const DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX = "DISCOVER_LOCAL_TROUBLE:";
@@ -46,9 +46,6 @@ function collapseContext(runtime) {
   };
 }
 
-// Hydration must remain hash-pure. Presence synchronization can mutate runtime
-// state and therefore belongs inside committed transitions, never before a
-// saved-state hash comparison.
 function hydrateRecord(record, data) {
   const runtime = deserializeRuntime(record.runtimeSnapshot, data);
   ensurePlayerNeeds(runtime.playerState.player);
@@ -499,11 +496,14 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
     const hearing = requestedMissionHearing(input);
     const result = await super.command(ownerHash, id, input);
     const updatedRecord = await this.recordForOwner(ownerHash, id);
+    let authoredFlowPersisted = false;
     if (hearing && !result.duplicate) {
-      await this.persistAuthoredFlowAfterHearing(updatedRecord, input, hearing);
+      authoredFlowPersisted = await this.persistAuthoredFlowAfterHearing(updatedRecord, input, hearing);
     }
-    await this.ensurePersistedCollapse(updatedRecord);
-    result.save = this.gameViewForRecord(updatedRecord);
+    const collapsePersistence = await this.ensurePersistedCollapse(updatedRecord);
+    if (authoredFlowPersisted || collapsePersistence.changed) {
+      result.save = this.gameViewForRecord(updatedRecord);
+    }
     return result;
   }
 }
