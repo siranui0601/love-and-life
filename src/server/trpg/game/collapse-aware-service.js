@@ -1,5 +1,9 @@
 import * as journey from "../../../../tools/trpg-sim/lib/player-journey.mjs";
-import { ensurePlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
+import {
+  advancePlayerNeeds,
+  ensurePlayerNeeds,
+} from "../../../../tools/trpg-sim/lib/player-needs.mjs";
+import { initializeAuthoredMissionFlowForMission } from "../content/authored-mission-flow-registry.js";
 import {
   applyCollapseRescueView,
   buildCollapseRescueCandidates,
@@ -14,12 +18,23 @@ import {
   gameStateHash,
 } from "./service.js";
 
-export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v3";
+export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v4";
 export const RESOLVE_COLLAPSE_COMMAND = "RESOLVE_COLLAPSE_RESCUE";
 export const RESOLVE_COLLAPSE_CHOICE_ID = "COLLAPSE_RESCUE:ACCEPT";
+export const DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX = "DISCOVER_LOCAL_TROUBLE:";
+
+const LOCAL_TROUBLE_DISCOVERY_LABEL = Object.freeze({
+  T05: "領主が倒れた後の療養室の出入りと、急に進み始めた継承準備を確かめる",
+});
 
 function commandPayload(type, input) {
   if (type === RESOLVE_COLLAPSE_COMMAND) return {};
+  if (type === "CHOOSE") {
+    return {
+      choiceId: String(input?.choiceId ?? "").trim(),
+      actionId: String(input?.actionId ?? "").trim(),
+    };
+  }
   return input && typeof input === "object" && !Array.isArray(input) ? input : {};
 }
 
@@ -134,6 +149,84 @@ function isRescueRequest(input = {}) {
     && String(input.payload?.choiceId ?? "").trim() === RESOLVE_COLLAPSE_CHOICE_ID;
 }
 
+function knownRumorIds(runtime) {
+  const value = runtime.playerState.player.knownRumorIds;
+  if (value instanceof Set) return value;
+  const normalized = new Set(value ?? []);
+  runtime.playerState.player.knownRumorIds = normalized;
+  return normalized;
+}
+
+function missionDefinitionForTrouble(runtime, troubleId) {
+  return runtime.playerState.catalog?.special?.find((entry) => entry.troubleId === troubleId) ?? null;
+}
+
+function localUndiscoveredTrouble(runtime, data, requestedTroubleId = null) {
+  const state = runtime.playerState;
+  const location = state.player.location;
+  const known = knownRumorIds(runtime);
+  return Object.entries(state.troubles ?? {})
+    .map(([troubleId, troubleRuntime]) => ({
+      troubleId,
+      troubleRuntime,
+      definition: data.model?.troubleById?.[troubleId]
+        ?? data.model?.troubles?.find((entry) => entry.id === troubleId)
+        ?? null,
+      mission: missionDefinitionForTrouble(runtime, troubleId),
+      rumor: (state.rumors ?? []).find((entry) => entry.troubleId === troubleId && !known.has(entry.id)) ?? null,
+    }))
+    .filter((entry) => !requestedTroubleId || entry.troubleId === requestedTroubleId)
+    .filter((entry) => ["active", "critical"].includes(entry.troubleRuntime?.status))
+    .filter((entry) => entry.definition?.primaryLocations?.includes(location))
+    .filter((entry) => entry.mission && ["active", "available", "in_progress"].includes(state.missions?.[entry.mission.id]?.status))
+    .filter((entry) => entry.rumor)
+    .sort((left, right) => Number(left.definition?.deadlineDay ?? Infinity)
+      - Number(right.definition?.deadlineDay ?? Infinity)
+      || left.troubleId.localeCompare(right.troubleId, "en"))[0] ?? null;
+}
+
+function localTroubleActionId(troubleId) {
+  return `${DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX}${troubleId}`;
+}
+
+function localTroubleDiscoveryChoice(runtime, crisis, data) {
+  const facility = data.model?.facilityById?.[runtime.playerState.player.facilityId];
+  const actionId = localTroubleActionId(crisis.troubleId);
+  const label = LOCAL_TROUBLE_DISCOVERY_LABEL[crisis.troubleId]
+    ?? `「${crisis.definition.name}」について、${facility?.name ?? "この場所"}に集まる目撃と記録を確かめる`;
+  return {
+    choiceId: actionId,
+    id: actionId,
+    actionId,
+    label,
+    type: "investigate",
+    intentType: "investigate",
+    minutes: 8,
+    danger: false,
+    missionId: crisis.mission.id,
+    troubleId: crisis.troubleId,
+  };
+}
+
+function requestedLocalTroubleId(input = {}) {
+  if (String(input.type ?? "").trim().toUpperCase() !== "CHOOSE") return null;
+  const actionId = String(input.payload?.actionId ?? "").trim();
+  if (!actionId.startsWith(DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX)) return null;
+  const troubleId = actionId.slice(DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX.length).trim();
+  return troubleId || null;
+}
+
+function localTroubleOutcome(crisis) {
+  return {
+    ok: true,
+    type: "localTroubleDiscovered",
+    summary: `${crisis.definition.name}について、現地で照合できる噂と記録を確かめた。`,
+    troubleId: crisis.troubleId,
+    missionId: crisis.mission.id,
+    rumorId: crisis.rumor.id,
+  };
+}
+
 export class CollapseAwareTrpgGameService extends TrpgGameService {
   gameViewForRecord(record) {
     const runtime = hydrateRecord(record, this.data);
@@ -144,10 +237,21 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
     const view = applyCollapseRescueView(base, runtime.playerState.player, {
       facilityName: facility?.name ?? runtime.playerState.player.facilityId,
     });
-    if (!view?.collapseRescue?.active) return view;
+    if (view?.collapseRescue?.active) {
+      return {
+        ...view,
+        choices: [rescueChoice(view.collapseRescue)],
+      };
+    }
+    const crisis = localUndiscoveredTrouble(runtime, this.data);
+    if (!crisis) return view;
+    const discoveryChoice = localTroubleDiscoveryChoice(runtime, crisis, this.data);
     return {
       ...view,
-      choices: [rescueChoice(view.collapseRescue)],
+      choices: [
+        discoveryChoice,
+        ...(view.choices ?? []).filter((choice) => choice.actionId !== discoveryChoice.actionId).slice(0, 2),
+      ],
     };
   }
 
@@ -252,9 +356,94 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
     return { duplicate: false, save: this.gameViewForRecord(record) };
   }
 
+  async discoverLocalTrouble(ownerHash, id, input, troubleId) {
+    const commandId = String(input.commandId ?? "").trim().slice(0, 100);
+    if (!commandId) throw new TrpgGameError(400, "command_id_required");
+    const record = await this.recordForOwner(ownerHash, id);
+    const actionId = localTroubleActionId(troubleId);
+    const duplicate = record.commandLog.find((entry) => entry.commandId === commandId);
+    if (duplicate) {
+      if (duplicate.resolvedActionId !== actionId) {
+        throw new TrpgGameError(409, "command_id_conflict", "The command id was already used for a different command");
+      }
+      return { duplicate: true, originalRevision: duplicate.revisionAfter, save: this.gameViewForRecord(record) };
+    }
+    if (!Number.isInteger(input.expectedRevision) || input.expectedRevision !== record.revision) {
+      throw new TrpgGameError(409, "revision_conflict", "The save changed before this command was applied", {
+        currentRevision: record.revision,
+      });
+    }
+
+    const runtime = hydrateRecord(record, this.data);
+    const beforeHash = gameStateHash(runtime, this.data);
+    if (beforeHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
+    const crisis = localUndiscoveredTrouble(runtime, this.data, troubleId);
+    if (!crisis) throw new TrpgGameError(409, "local_trouble_discovery_not_available");
+
+    knownRumorIds(runtime).add(crisis.rumor.id);
+    initializeAuthoredMissionFlowForMission(runtime, crisis.mission.id);
+    const minutes = 8;
+    advancePlayerNeeds(runtime.playerState.player, {
+      minutes,
+      reason: "local-trouble-discovery",
+      daypart: runtime.playerState.daypart,
+      weatherTags: runtime.playerState.weather?.tags ?? [],
+      outdoors: false,
+    });
+    updateClock(runtime.playerState, runtime.playerState.absoluteMinute + minutes);
+    runtime.playerState.history.push({
+      type: "LOCAL_TROUBLE_RUMOR_CONFIRMED",
+      minute: runtime.playerState.absoluteMinute,
+      troubleId: crisis.troubleId,
+      missionId: crisis.mission.id,
+      rumorId: crisis.rumor.id,
+      location: runtime.playerState.player.location,
+      facilityId: runtime.playerState.player.facilityId,
+    });
+
+    const outcome = localTroubleOutcome(crisis);
+    const revisionBefore = record.revision;
+    record.revision += 1;
+    record.updatedAt = new Date().toISOString();
+    record.lastOutcome = outcome;
+    record.presentation = {
+      revision: record.revision,
+      source: "deterministic_local_trouble_discovery",
+      narrative: outcome.summary,
+      speeches: [],
+      beats: [{ kind: "narration", actorId: null, speakerLabel: null, text: outcome.summary }],
+      choiceLabels: {},
+    };
+    persistRuntime(record, runtime, this.data);
+    record.commandLog.push({
+      seq: record.commandLog.length + 1,
+      commandId,
+      revisionBefore,
+      revisionAfter: record.revision,
+      stateBeforeHash: beforeHash,
+      stateAfterHash: record.stateHash,
+      type: "CHOOSE",
+      payload: commandPayload("CHOOSE", input.payload),
+      resolvedActionId: actionId,
+      outcome,
+    });
+    record.replayBase = {
+      resolverVersion: record.resolverVersion,
+      revision: record.revision,
+      stateHash: record.stateHash,
+      runtimeSnapshot: record.runtimeSnapshot,
+    };
+    await this.store.put(record);
+    return { duplicate: false, save: this.gameViewForRecord(record) };
+  }
+
   async command(ownerHash, id, input = {}) {
     if (isRescueRequest(input)) {
       return this.runLocked(id, () => this.resolveCollapse(ownerHash, id, input));
+    }
+    const troubleId = requestedLocalTroubleId(input);
+    if (troubleId) {
+      return this.runLocked(id, () => this.discoverLocalTrouble(ownerHash, id, input, troubleId));
     }
 
     const record = await this.recordForOwner(ownerHash, id);
