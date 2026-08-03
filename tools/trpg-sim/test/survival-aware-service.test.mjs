@@ -129,3 +129,51 @@ test("保存境界で再構成された正規runtimeのhashへ追随し、次com
   assert.doesNotThrow(() => game.gameViewForRecord(record));
   assert.equal(canonicalizePersistedRuntimeRecord(record, game.data), false);
 });
+
+test("生活action直後にcollapseが開いた場合は同じrevisionのcommandLogとreplayBaseを救助待ち状態へ合わせる", async () => {
+  const store = new MemoryTrpgSaveStore();
+  const game = new SurvivalAwareTrpgGameService({ store, allowCustomSeed: true });
+  const created = await game.create("survival-collapse-owner", {
+    playerName: "生活後collapseテスト",
+    seed: "survival-collapse-test",
+  });
+  const record = await store.get(created.id);
+  record.revision = 1;
+  record.commandLog.push({
+    seq: 1,
+    commandId: "lodging-before-collapse",
+    revisionBefore: 0,
+    revisionAfter: 1,
+    stateBeforeHash: record.stateHash,
+    stateAfterHash: record.stateHash,
+    type: "CHOOSE",
+    payload: { choiceId: "LODGE:LOC_FARM_INN:0", actionId: "" },
+    resolvedActionId: "LODGE:LOC_FARM_INN:0",
+    outcome: { ok: true, type: "rest" },
+  });
+
+  game.ensurePersistedCollapse = async (target) => {
+    target.stateHash = "collapse-state-hash";
+    target.runtimeSnapshot = {
+      ...target.runtimeSnapshot,
+      playerState: {
+        ...target.runtimeSnapshot.playerState,
+        player: {
+          ...target.runtimeSnapshot.playerState.player,
+          collapseIncident: { id: "COLLAPSE:test", status: "pending_rescue" },
+        },
+      },
+    };
+    return { changed: true };
+  };
+
+  const result = await game.persistCollapseAfterLifeAction(record);
+  assert.equal(result.changed, true);
+  assert.equal(record.commandLog.at(-1).stateAfterHash, "collapse-state-hash");
+  assert.equal(record.replayBase.revision, 1);
+  assert.equal(record.replayBase.stateHash, "collapse-state-hash");
+  assert.equal(record.replayBase.runtimeSnapshot, record.runtimeSnapshot);
+  const stored = await store.get(created.id);
+  assert.equal(stored.stateHash, "collapse-state-hash");
+  assert.equal(stored.commandLog.at(-1).stateAfterHash, "collapse-state-hash");
+});
