@@ -4,7 +4,8 @@ import {
   playerCollapseCommandBlock,
 } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 
-export const PLAYER_COLLAPSE_RESCUE_VERSION = "player-collapse-rescue-v4";
+export const PLAYER_COLLAPSE_RESCUE_VERSION = "player-collapse-rescue-v5";
+export const PLAYER_COLLAPSE_RESCUE_COMMAND = "RESOLVE_COLLAPSE_RESCUE";
 
 const DEFAULT_WAKE_DELAY_MINUTES = 180;
 const COLLAPSE_CAUSE_LABELS = Object.freeze({
@@ -25,6 +26,7 @@ function finiteMinute(value, fallback = 0) {
 function normalizedKnowledge(value) {
   if (value instanceof Set) return value;
   if (Array.isArray(value)) return new Set(value.map(String));
+  if (value && typeof value === "object") return new Set(Object.keys(value));
   return new Set();
 }
 
@@ -47,7 +49,7 @@ function candidateScore(candidate, incident) {
   if (optionalId(candidate.location) === incident.location) score += 30;
   if (incident.facilityId && optionalId(candidate.facilityId) === incident.facilityId) score += 40;
   if (candidate.canRescue === true) score += 25;
-  if (knowledge.has("first_aid") || knowledge.has("healing")) score += 15;
+  if (knowledge.has("first_aid") || knowledge.has("healing") || knowledge.has("治療") || knowledge.has("応急処置")) score += 15;
   score += Math.max(-20, Math.min(20, Number(candidate.playerTrust) || 0));
   score -= Math.max(0, Number(candidate.rescueCost) || 0);
   return score;
@@ -79,23 +81,26 @@ export function buildCollapseRescueCandidates({
     .map((id) => {
       const state = sourceValue(npcStates, id) ?? {};
       const definition = sourceValue(npcDefinitions, id) ?? {};
-      const stateLocation = optionalId(state.location ?? state.currentLocation);
-      const stateFacilityId = optionalId(state.facilityId ?? state.currentFacilityId);
-      const knowledge = state.knowledge ?? state.knownFacts ?? definition.knowledge ?? [];
-      const status = String(state.status ?? "").toLowerCase();
+      const stateLocation = optionalId(state.position?.hubId ?? state.location ?? state.currentLocation);
+      const stateFacilityId = optionalId(state.position?.facilityId ?? state.facilityId ?? state.currentFacilityId);
+      const knowledge = state.knowledge ?? state.knownFacts ?? state.beliefs ?? definition.knowledge ?? [];
+      const status = String(state.lifeStatus ?? state.status ?? "").toLowerCase();
+      const presence = String(state.presence ?? "").toLowerCase();
       const dead = state.dead === true || state.alive === false || status === "dead" || status === "死亡";
-      const missing = state.missing === true || status === "missing" || status === "行方不明";
+      const missing = state.missing === true || status === "missing" || status === "行方不明" || presence === "missing";
       const detained = state.detained === true || state.restrained === true || ["detained", "拘束", "拘束中"].includes(status);
+      const departed = status === "departed" || presence === "departed";
       return {
         id,
         name: definition.name ?? state.name ?? id,
         present: present.has(id),
-        canReach: reachable.has(id),
+        canReach: reachable.has(id) && !departed,
         alive: !dead,
         dead,
         missing,
         detained,
-        canRescue: state.canRescue ?? definition.canRescue ?? true,
+        departed,
+        canRescue: state.canRescue ?? definition.canRescue ?? !departed,
         location: stateLocation ?? optionalId(location),
         facilityId: stateFacilityId ?? (present.has(id) ? optionalId(facilityId) : null),
         wakeLocation: optionalId(state.wakeLocation) ?? stateLocation ?? optionalId(location),
@@ -106,8 +111,8 @@ export function buildCollapseRescueCandidates({
         knowledge,
         playerTrust: Number(state.playerTrust ?? state.trustToPlayer ?? 0),
         rescueCost: Number(state.rescueCost ?? definition.rescueCost ?? 0),
-        goapGoalId: optionalId(state.currentGoalId ?? state.goalId),
-        goapPlanId: optionalId(state.currentPlanId ?? state.planId),
+        goapGoalId: optionalId(state.currentGoalId ?? state.goalId ?? state.currentGoal),
+        goapPlanId: optionalId(state.currentPlanId ?? state.planId ?? state.currentPlan?.id),
       };
     });
 }
@@ -161,6 +166,10 @@ export function collapseRescueView(player, {
     collapsedAtMinute: Number(incident.atMinute ?? 0),
     location: optionalId(incident.location),
     facilityId: optionalId(incident.facilityId),
+    command: {
+      type: PLAYER_COLLAPSE_RESCUE_COMMAND,
+      label: "救助を受け、目を覚ます",
+    },
     uiLock: {
       choices: [],
       movement: [],
@@ -194,6 +203,7 @@ export function applyCollapseRescueView(gameView, player, options = {}) {
     movement: rescueView.uiLock.movement,
     shop: {
       ...shop,
+      available: false,
       stock: rescueView.uiLock.stock,
       saleQuotes: rescueView.uiLock.saleQuotes,
       loans: rescueView.uiLock.loans,
@@ -208,7 +218,7 @@ export function applyCollapseRescueView(gameView, player, options = {}) {
       ...battle,
       commands: rescueView.uiLock.battleCommands,
     } : battle,
-    availableActions: [],
+    availableActions: [PLAYER_COLLAPSE_RESCUE_COMMAND],
   };
 }
 
