@@ -1,4 +1,4 @@
-export const PLAYER_NEEDS_VERSION = "player-needs-v3";
+export const PLAYER_NEEDS_VERSION = "player-needs-v4";
 export const PLAYER_COLLAPSE_THRESHOLD = 100;
 
 export const PLAYER_NEEDS_DEFAULTS = Object.freeze({
@@ -8,6 +8,8 @@ export const PLAYER_NEEDS_DEFAULTS = Object.freeze({
   lastSleepMinute: 0,
   lastSleepQuality: "none",
   outdoorSleepCount: 0,
+  activeCollapse: null,
+  lastCollapse: null,
 });
 
 const HUNGER_LABELS = Object.freeze([
@@ -47,6 +49,35 @@ function finiteMinute(value, fallback = 0) {
   return Number.isFinite(number) ? Math.max(0, Math.round(number)) : fallback;
 }
 
+function optionalId(value) {
+  const normalized = String(value ?? "").trim();
+  return normalized || null;
+}
+
+function normalizedCollapseIncident(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const causes = [...new Set((Array.isArray(value.causes) ? value.causes : [])
+    .map((cause) => String(cause))
+    .filter((cause) => cause === "hunger" || cause === "fatigue"))];
+  if (!causes.length) return null;
+  const atMinute = finiteMinute(value.atMinute, 0);
+  const location = optionalId(value.location);
+  const facilityId = optionalId(value.facilityId);
+  return {
+    id: optionalId(value.id) ?? `COLLAPSE:${atMinute}:${causes.join("+")}:${location ?? "unknown"}:${facilityId ?? "none"}`,
+    status: value.status === "rescued" ? "rescued" : "pending_rescue",
+    causes,
+    primaryCause: causes[0],
+    atMinute,
+    location,
+    facilityId,
+    rescuedAtMinute: value.status === "rescued" ? finiteMinute(value.rescuedAtMinute, atMinute) : null,
+    rescuerId: value.status === "rescued" ? optionalId(value.rescuerId) : null,
+    wakeLocation: value.status === "rescued" ? optionalId(value.wakeLocation) : null,
+    wakeFacilityId: value.status === "rescued" ? optionalId(value.wakeFacilityId) : null,
+  };
+}
+
 function labelFor(value, definitions) {
   return definitions.find((entry) => value <= entry.maximum) ?? definitions.at(-1);
 }
@@ -81,6 +112,8 @@ export function createPlayerNeeds(overrides = {}) {
     lastSleepMinute: finiteMinute(overrides.lastSleepMinute, PLAYER_NEEDS_DEFAULTS.lastSleepMinute),
     lastSleepQuality: String(overrides.lastSleepQuality ?? PLAYER_NEEDS_DEFAULTS.lastSleepQuality),
     outdoorSleepCount: Math.max(0, Math.round(Number(overrides.outdoorSleepCount ?? PLAYER_NEEDS_DEFAULTS.outdoorSleepCount) || 0)),
+    activeCollapse: normalizedCollapseIncident(overrides.activeCollapse),
+    lastCollapse: normalizedCollapseIncident(overrides.lastCollapse),
   };
 }
 
@@ -115,6 +148,64 @@ export function playerCollapseState(playerOrNeeds) {
   };
 }
 
+export function openPlayerCollapseIncident(playerOrNeeds, {
+  minute = 0,
+  location = null,
+  facilityId = null,
+} = {}) {
+  const needs = ensurePlayerNeeds(playerOrNeeds);
+  if (needs.activeCollapse?.status === "pending_rescue") {
+    return { opened: false, incident: needs.activeCollapse };
+  }
+  const collapse = playerCollapseState(needs);
+  if (!collapse.collapsed) return { opened: false, incident: null };
+  const atMinute = finiteMinute(minute, 0);
+  const normalizedLocation = optionalId(location);
+  const normalizedFacilityId = optionalId(facilityId);
+  needs.activeCollapse = normalizedCollapseIncident({
+    id: `COLLAPSE:${atMinute}:${collapse.causes.join("+")}:${normalizedLocation ?? "unknown"}:${normalizedFacilityId ?? "none"}`,
+    status: "pending_rescue",
+    causes: collapse.causes,
+    atMinute,
+    location: normalizedLocation,
+    facilityId: normalizedFacilityId,
+  });
+  return { opened: true, incident: needs.activeCollapse };
+}
+
+export function playerCanTakeNormalAction(playerOrNeeds) {
+  const needs = ensurePlayerNeeds(playerOrNeeds);
+  return needs.activeCollapse?.status !== "pending_rescue" && !playerCollapseState(needs).collapsed;
+}
+
+export function completePlayerCollapseRescue(playerOrNeeds, {
+  minute = 0,
+  rescuerId = null,
+  wakeLocation = null,
+  wakeFacilityId = null,
+  hungerAfter = 70,
+  fatigueAfter = 70,
+} = {}) {
+  const needs = ensurePlayerNeeds(playerOrNeeds);
+  const incident = needs.activeCollapse;
+  if (!incident || incident.status !== "pending_rescue") {
+    return { completed: false, incident: null };
+  }
+  const completed = normalizedCollapseIncident({
+    ...incident,
+    status: "rescued",
+    rescuedAtMinute: Math.max(incident.atMinute, finiteMinute(minute, incident.atMinute)),
+    rescuerId,
+    wakeLocation,
+    wakeFacilityId,
+  });
+  needs.hunger = bounded(hungerAfter, 0, PLAYER_COLLAPSE_THRESHOLD - 1);
+  needs.fatigue = bounded(fatigueAfter, 0, PLAYER_COLLAPSE_THRESHOLD - 1);
+  needs.activeCollapse = null;
+  needs.lastCollapse = completed;
+  return { completed: true, incident: completed };
+}
+
 export function publicPlayerNeeds(playerOrNeeds) {
   const needs = ensurePlayerNeeds(playerOrNeeds);
   const hunger = Number(needs.hunger.toFixed(2));
@@ -132,8 +223,10 @@ export function publicPlayerNeeds(playerOrNeeds) {
     fatigueLabel: fatigueState.label,
     urgent: hunger >= 80 || fatigue >= 80,
     critical: hunger >= 92 || fatigue >= 92,
-    collapsed: collapse.collapsed,
-    collapseCauses: collapse.causes,
+    collapsed: collapse.collapsed || needs.activeCollapse?.status === "pending_rescue",
+    collapseCauses: needs.activeCollapse?.causes ?? collapse.causes,
+    collapsePending: needs.activeCollapse?.status === "pending_rescue",
+    collapseIncidentId: needs.activeCollapse?.id ?? null,
     lastMealMinute: needs.lastMealMinute,
     lastSleepMinute: needs.lastSleepMinute,
     lastSleepQuality: needs.lastSleepQuality,
