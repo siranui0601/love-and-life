@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CollapseAwareTrpgGameService,
+  RESOLVE_COLLAPSE_CHOICE_ID,
   RESOLVE_COLLAPSE_COMMAND,
 } from "../../../src/server/trpg/game/collapse-aware-service.js";
 import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
@@ -30,7 +31,9 @@ test("collapse-aware service persists the incident, locks normal UI, rescues onc
   assert.equal(collapsed.player.needs.collapsePending, true);
   assert.equal(collapsed.collapseRescue.active, true);
   assert.equal(collapsed.collapseRescue.command.type, RESOLVE_COLLAPSE_COMMAND);
-  assert.deepEqual(collapsed.choices, []);
+  assert.equal(collapsed.choices.length, 1);
+  assert.equal(collapsed.choices[0].choiceId, RESOLVE_COLLAPSE_CHOICE_ID);
+  assert.equal(collapsed.choices[0].actionId, RESOLVE_COLLAPSE_COMMAND);
   assert.deepEqual(collapsed.movement, []);
   assert.equal(collapsed.shop.available, false);
   assert.deepEqual(collapsed.availableActions, []);
@@ -50,8 +53,11 @@ test("collapse-aware service persists the incident, locks normal UI, rescues onc
   const rescued = await game.command(owner, created.id, {
     commandId: "resolve-collapse",
     expectedRevision: collapsed.revision,
-    type: RESOLVE_COLLAPSE_COMMAND,
-    payload: {},
+    type: "CHOOSE",
+    payload: {
+      choiceId: RESOLVE_COLLAPSE_CHOICE_ID,
+      actionId: RESOLVE_COLLAPSE_COMMAND,
+    },
   });
   assert.equal(rescued.save.revision, collapsed.revision + 1);
   assert.equal(rescued.save.player.needs.collapsePending, false);
@@ -62,8 +68,11 @@ test("collapse-aware service persists the incident, locks normal UI, rescues onc
   const duplicate = await game.command(owner, created.id, {
     commandId: "resolve-collapse",
     expectedRevision: rescued.save.revision,
-    type: RESOLVE_COLLAPSE_COMMAND,
-    payload: {},
+    type: "CHOOSE",
+    payload: {
+      choiceId: RESOLVE_COLLAPSE_CHOICE_ID,
+      actionId: RESOLVE_COLLAPSE_COMMAND,
+    },
   });
   assert.equal(duplicate.duplicate, true);
   assert.equal(duplicate.save.revision, rescued.save.revision);
