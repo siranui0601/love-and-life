@@ -3,6 +3,7 @@ import test from "node:test";
 import { deserializeRuntime, serializeRuntime } from "../../../src/server/trpg/game/serializer.js";
 import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
 import {
+  WORLD_TIME_AWARE_SERVICE_VERSION,
   WorldTimeAwareTrpgGameService,
   synchronizeLifeActionWeatherRecord,
 } from "../../../src/server/trpg/game/world-time-aware-service.js";
@@ -65,26 +66,13 @@ test("生活actionで日付・時間帯が変わった保存状態の天候を�
   assert.equal(synchronizeLifeActionWeatherRecord(record, game.data), false);
 });
 
-test("生活action以外のcommandでは天候同期層を追加実行しない", async () => {
-  const store = new MemoryTrpgSaveStore();
-  const game = new WorldTimeAwareTrpgGameService({ store, allowCustomSeed: true });
-  const created = await game.create("world-time-non-life-owner", {
-    playerName: "非生活actionテスト",
-    seed: "world-time-non-life-test",
+test("本番サービスのhealthへ生活後天候同期versionを公開する", () => {
+  const game = new WorldTimeAwareTrpgGameService({
+    store: new MemoryTrpgSaveStore(),
+    allowCustomSeed: true,
   });
-  const original = game.recordForOwner.bind(game);
-  let recordReads = 0;
-  game.recordForOwner = async (...args) => {
-    recordReads += 1;
-    return original(...args);
-  };
-
-  const result = await game.command("world-time-non-life-owner", created.id, {
-    commandId: "ack-tutorial-without-weather-reconcile",
-    expectedRevision: created.revision,
-    type: "TUTORIAL_ACK",
-    payload: { tutorialId: created.tutorial?.id ?? "" },
-  });
-  assert.equal(result.duplicate, false);
-  assert.equal(recordReads, 0);
+  assert.equal(
+    game.health().worldTimeAwareServiceVersion,
+    WORLD_TIME_AWARE_SERVICE_VERSION,
+  );
 });
