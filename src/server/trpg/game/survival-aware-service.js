@@ -10,7 +10,7 @@ import {
 } from "./service.js";
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v5";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v6";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
@@ -19,11 +19,6 @@ const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR):([^:]+)(?::(\d+))?$/u;
 function number(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function authoredMissionScene(view) {
-  return (view?.choices ?? []).some((choice) =>
-    String(choice?.actionId ?? "").startsWith("MISSION_FLOW:"));
 }
 
 function urgentLifeState(view) {
@@ -126,7 +121,7 @@ function commandPayload(input) {
 }
 
 export function urgentLifeChoices(view, data) {
-  if (!authoredMissionScene(view) || !urgentLifeState(view)) return [];
+  if (!urgentLifeState(view)) return [];
   const facilityId = String(view?.scene?.facilityId ?? "").trim();
   if (!facilityId) return [];
   const facility = data?.model?.facilityById?.[facilityId] ?? null;
