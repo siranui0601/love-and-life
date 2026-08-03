@@ -1,6 +1,5 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { SurvivalAwareTrpgGameService } from "../../src/server/trpg/game/survival-aware-service.js";
 import {
   Day100GameRunner,
   renderDay100PlayerMarkdown,
@@ -12,6 +11,7 @@ import {
   inspectChoiceSetBeforeSelection,
   recordChoiceSetSelection,
 } from "./lib/choice-set-audit.mjs";
+import { createDay100RouteGameService } from "./lib/day100-route-game-service.mjs";
 import { DAY100_ROUTE_MODES } from "./lib/day100-route-strategy.mjs";
 import { selectDay100RouteDecisionWithSurvival } from "./lib/day100-route-survival-priority.mjs";
 import { writeDay100ReplayCandidateManifest } from "./lib/day100-replay-candidates.mjs";
@@ -30,7 +30,7 @@ process.env.TRPG_NARRATIVE_RUN_ID = runId;
 class Day100RouteRunner extends Day100GameRunner {
   constructor(options = {}) {
     super(options);
-    this.game = new SurvivalAwareTrpgGameService({
+    this.game = createDay100RouteGameService({
       store: this.store,
       narrator: this.narrator,
       allowCustomSeed: true,
