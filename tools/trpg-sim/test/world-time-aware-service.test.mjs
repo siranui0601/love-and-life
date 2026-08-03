@@ -153,6 +153,11 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   player.freeMeals = 0;
   player.needs.hunger = 90;
   player.needs.fatigue = 40;
+  runtime.playerState.weather = resolveCanonicalWeather({
+    day: runtime.playerState.day,
+    regionId: player.location,
+    daypart: runtime.playerState.daypart,
+  });
   const beforeAbsoluteMinute = runtime.playerState.absoluteMinute;
   record.runtimeSnapshot = serializeRuntime(runtime);
   record.stateHash = gameStateHash(deserializeRuntime(record.runtimeSnapshot, game.data), game.data);
