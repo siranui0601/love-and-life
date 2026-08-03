@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import * as journey from "../lib/player-journey.mjs";
 import {
   CollapseAwareTrpgGameService,
   DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX,
@@ -9,6 +10,7 @@ import {
 import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
 import { deserializeRuntime, serializeRuntime } from "../../../src/server/trpg/game/serializer.js";
 import { gameStateHash, TrpgGameError } from "../../../src/server/trpg/game/service.js";
+import { resolveCanonicalWeather } from "../../../src/server/trpg/resolvers/weather-resolver.js";
 
 const owner = "collapse-service-owner";
 
@@ -25,12 +27,21 @@ async function forceCollapse(game, store, saveId) {
 async function forceUndiscoveredT05(game, store, saveId) {
   const record = await store.get(saveId);
   const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
-  runtime.playerState.absoluteMinute = (37 * 1440) + (8 * 60);
-  runtime.playerState.day = 38;
-  runtime.playerState.hour = 8;
-  runtime.playerState.minute = 0;
+  const absoluteMinute = (37 * 1440) + (8 * 60);
+  const clock = journey.clockFromMinute(absoluteMinute);
+  runtime.playerState.absoluteMinute = absoluteMinute;
+  runtime.playerState.day = clock.day;
+  runtime.playerState.hour = clock.hour;
+  runtime.playerState.minute = clock.minute;
+  runtime.playerState.phaseIndex = clock.phaseIndex;
+  runtime.playerState.daypart = clock.daypart;
   runtime.playerState.player.location = "交易都市";
   runtime.playerState.player.facilityId = "LOC_TRADE_LORD_MANOR";
+  runtime.playerState.weather = resolveCanonicalWeather({
+    day: clock.day,
+    regionId: runtime.playerState.player.location,
+    daypart: clock.daypart,
+  });
   runtime.playerState.troubles.T05.status = "critical";
   runtime.playerState.missions["MSN-T05"].status = "active";
   const rumor = {
