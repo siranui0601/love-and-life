@@ -1,6 +1,6 @@
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v1";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v2";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
@@ -100,9 +100,29 @@ export function applyUrgentLifeChoices(view, data) {
   };
 }
 
+function decorateCommandResult(result, data) {
+  if (!result?.save) return result;
+  return {
+    ...result,
+    save: applyUrgentLifeChoices(result.save, data),
+  };
+}
+
 export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
   gameViewForRecord(record) {
     return applyUrgentLifeChoices(super.gameViewForRecord(record), this.data);
+  }
+
+  async create(...args) {
+    return applyUrgentLifeChoices(await super.create(...args), this.data);
+  }
+
+  async get(...args) {
+    return applyUrgentLifeChoices(await super.get(...args), this.data);
+  }
+
+  async command(...args) {
+    return decorateCommandResult(await super.command(...args), this.data);
   }
 
   health() {
