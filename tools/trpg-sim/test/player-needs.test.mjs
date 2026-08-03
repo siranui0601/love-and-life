@@ -4,10 +4,13 @@ import {
   PLAYER_COLLAPSE_THRESHOLD,
   PLAYER_NEEDS_VERSION,
   advancePlayerNeeds,
+  completePlayerCollapseRescue,
   completePlayerRest,
   consumeMeal,
   createPlayerNeeds,
   ensurePlayerNeeds,
+  openPlayerCollapseIncident,
+  playerCanTakeNormalAction,
   playerCollapseState,
   publicPlayerNeeds,
 } from "../lib/player-needs.mjs";
@@ -22,6 +25,8 @@ test("legacy hunger and fatigue state migrates without changing its visible valu
   assert.equal(needs.fatigue, 88);
   assert.equal(player.needs, needs);
   assert.equal(needs.lastSleepQuality, "none");
+  assert.equal(needs.activeCollapse, null);
+  assert.equal(needs.lastCollapse, null);
 });
 
 test("the same elapsed action produces the same deterministic needs result", () => {
@@ -123,4 +128,69 @@ test("public need state exposes collapse without treating critical as collapse",
   assert.deepEqual(critical.collapseCauses, []);
   assert.equal(collapsed.collapsed, true);
   assert.deepEqual(collapsed.collapseCauses, ["hunger", "fatigue"]);
+});
+
+test("collapse incident opens once and blocks normal actions until rescue", () => {
+  const needs = createPlayerNeeds({ hunger: 100, fatigue: 100 });
+  const first = openPlayerCollapseIncident(needs, {
+    minute: 57600,
+    location: "王都",
+    facilityId: "LOC_CAPITAL_LOWER_INN",
+  });
+  const second = openPlayerCollapseIncident(needs, {
+    minute: 57613,
+    location: "王都",
+    facilityId: "LOC_CAPITAL_ORPHANAGE",
+  });
+  assert.equal(first.opened, true);
+  assert.equal(second.opened, false);
+  assert.equal(second.incident.id, first.incident.id);
+  assert.equal(second.incident.atMinute, 57600);
+  assert.equal(second.incident.facilityId, "LOC_CAPITAL_LOWER_INN");
+  assert.deepEqual(second.incident.causes, ["hunger", "fatigue"]);
+  assert.equal(playerCanTakeNormalAction(needs), false);
+  const publicNeeds = publicPlayerNeeds(needs);
+  assert.equal(publicNeeds.collapsePending, true);
+  assert.equal(publicNeeds.collapseIncidentId, first.incident.id);
+});
+
+test("rescue completes the pending incident once and restores action eligibility", () => {
+  const needs = createPlayerNeeds({ hunger: 100, fatigue: 100 });
+  const opened = openPlayerCollapseIncident(needs, {
+    minute: 6000,
+    location: "田園の村",
+    facilityId: "LOC_FARM_EDGE",
+  });
+  const rescue = completePlayerCollapseRescue(needs, {
+    minute: 6360,
+    rescuerId: "NPC-MIRA",
+    wakeLocation: "田園の村",
+    wakeFacilityId: "LOC_FARM_INN",
+    hungerAfter: 64,
+    fatigueAfter: 52,
+  });
+  const duplicate = completePlayerCollapseRescue(needs, {
+    minute: 6420,
+    rescuerId: "NPC-GARO",
+  });
+  assert.equal(opened.opened, true);
+  assert.equal(rescue.completed, true);
+  assert.equal(duplicate.completed, false);
+  assert.equal(rescue.incident.status, "rescued");
+  assert.equal(rescue.incident.rescuerId, "NPC-MIRA");
+  assert.equal(rescue.incident.wakeFacilityId, "LOC_FARM_INN");
+  assert.equal(needs.activeCollapse, null);
+  assert.equal(needs.lastCollapse.id, opened.incident.id);
+  assert.equal(needs.hunger, 64);
+  assert.equal(needs.fatigue, 52);
+  assert.equal(playerCanTakeNormalAction(needs), true);
+});
+
+test("rescue clamps recovery below the collapse threshold", () => {
+  const needs = createPlayerNeeds({ hunger: 100, fatigue: 100 });
+  openPlayerCollapseIncident(needs, { minute: 10 });
+  completePlayerCollapseRescue(needs, { minute: 20, hungerAfter: 1000, fatigueAfter: 1000 });
+  assert.equal(needs.hunger, 99);
+  assert.equal(needs.fatigue, 99);
+  assert.equal(playerCanTakeNormalAction(needs), true);
 });
