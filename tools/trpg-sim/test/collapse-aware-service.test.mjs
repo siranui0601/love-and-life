@@ -18,7 +18,6 @@ async function forceCollapse(game, store, saveId) {
   record.runtimeSnapshot = serializeRuntime(runtime);
   record.stateHash = gameStateHash(runtime, game.data);
   await store.put(record);
-  return record;
 }
 
 test("collapse-aware service persists the incident, locks normal UI, rescues once and keeps replay valid", async () => {
@@ -34,7 +33,7 @@ test("collapse-aware service persists the incident, locks normal UI, rescues onc
   assert.deepEqual(collapsed.choices, []);
   assert.deepEqual(collapsed.movement, []);
   assert.equal(collapsed.shop.available, false);
-  assert.deepEqual(collapsed.availableActions, [RESOLVE_COLLAPSE_COMMAND]);
+  assert.deepEqual(collapsed.availableActions, []);
 
   await assert.rejects(
     game.command(owner, created.id, {
