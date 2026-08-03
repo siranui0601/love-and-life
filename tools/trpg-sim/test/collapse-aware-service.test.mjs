@@ -9,7 +9,14 @@ import {
 } from "../../../src/server/trpg/game/collapse-aware-service.js";
 import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
 import { deserializeRuntime, serializeRuntime } from "../../../src/server/trpg/game/serializer.js";
-import { gameStateHash, TrpgGameError } from "../../../src/server/trpg/game/service.js";
+import {
+  applyGameplayCatalogOverrides,
+  gameStateHash,
+  TrpgGameError,
+} from "../../../src/server/trpg/game/service.js";
+import { syncAuthoritativePresentNpcIds } from "../../../src/server/trpg/game/presence.js";
+import { recordCapitalArrivalGuidance } from "../../../src/server/trpg/resolvers/capital-arrival-guidance.js";
+import { ensureWorkMarket } from "../../../src/server/trpg/resolvers/work-market-resolver.js";
 import { resolveCanonicalWeather } from "../../../src/server/trpg/resolvers/weather-resolver.js";
 
 const owner = "collapse-service-owner";
@@ -19,6 +26,14 @@ function clockPhaseFromMinuteOfDay(minuteOfDay) {
     phaseIndex: minuteOfDay >= 1320 || minuteOfDay < 600 ? 3 : minuteOfDay >= 1080 ? 2 : minuteOfDay >= 840 ? 1 : 0,
     daypart: minuteOfDay < 480 ? "dawn" : minuteOfDay < 1080 ? "day" : minuteOfDay < 1320 ? "dusk" : "night",
   };
+}
+
+function hydrateForcedRuntime(runtime, data) {
+  applyGameplayCatalogOverrides(runtime.playerState.catalog);
+  ensureWorkMarket(runtime);
+  recordCapitalArrivalGuidance(runtime);
+  syncAuthoritativePresentNpcIds(runtime, data);
+  return runtime;
 }
 
 async function forceCollapse(game, store, saveId) {
@@ -66,6 +81,7 @@ async function forceUndiscoveredT05(game, store, saveId) {
   runtime.playerState.rumors.push(rumor);
   runtime.playerState.rumorById[rumor.id] = rumor;
   runtime.playerState.player.knownRumorIds.delete(rumor.id);
+  hydrateForcedRuntime(runtime, game.data);
   record.runtimeSnapshot = serializeRuntime(runtime);
   const normalizedRuntime = deserializeRuntime(record.runtimeSnapshot, game.data);
   record.stateHash = gameStateHash(normalizedRuntime, game.data);
