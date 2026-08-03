@@ -18,7 +18,7 @@ import {
   gameStateHash,
 } from "./service.js";
 
-export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v5";
+export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v6";
 export const RESOLVE_COLLAPSE_COMMAND = "RESOLVE_COLLAPSE_RESCUE";
 export const RESOLVE_COLLAPSE_CHOICE_ID = "COLLAPSE_RESCUE:ACCEPT";
 export const DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX = "DISCOVER_LOCAL_TROUBLE:";
@@ -214,6 +214,14 @@ function requestedLocalTroubleId(input = {}) {
   if (!actionId.startsWith(DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX)) return null;
   const troubleId = actionId.slice(DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX.length).trim();
   return troubleId || null;
+}
+
+function requestedMissionHearing(input = {}) {
+  if (String(input.type ?? "").trim().toUpperCase() !== "CHOOSE") return null;
+  const actionId = String(input.payload?.actionId ?? "").trim();
+  const match = /^ACTION:(MSN-T\d+):hear$/u.exec(actionId);
+  if (!match) return null;
+  return { actionId, missionId: match[1] };
 }
 
 function localTroubleOutcome(crisis) {
@@ -445,6 +453,29 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
     return { duplicate: false, save: this.gameViewForRecord(record) };
   }
 
+  async persistAuthoredFlowAfterHearing(record, input, hearing) {
+    const commandId = String(input.commandId ?? "").trim().slice(0, 100);
+    const journalEntry = [...record.commandLog].reverse().find((entry) => entry.commandId === commandId);
+    if (!journalEntry || journalEntry.resolvedActionId !== hearing.actionId) return false;
+
+    const runtime = hydrateRecord(record, this.data);
+    const actualHash = gameStateHash(runtime, this.data);
+    if (actualHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
+
+    initializeAuthoredMissionFlowForMission(runtime, hearing.missionId);
+    persistRuntime(record, runtime, this.data);
+    journalEntry.stateAfterHash = record.stateHash;
+    record.replayBase = {
+      resolverVersion: record.resolverVersion,
+      revision: record.revision,
+      stateHash: record.stateHash,
+      runtimeSnapshot: record.runtimeSnapshot,
+    };
+    record.updatedAt = new Date().toISOString();
+    await this.store.put(record);
+    return true;
+  }
+
   async command(ownerHash, id, input = {}) {
     if (isRescueRequest(input)) {
       return this.runLocked(id, () => this.resolveCollapse(ownerHash, id, input));
@@ -465,8 +496,12 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
       });
     }
 
+    const hearing = requestedMissionHearing(input);
     const result = await super.command(ownerHash, id, input);
     const updatedRecord = await this.recordForOwner(ownerHash, id);
+    if (hearing && !result.duplicate) {
+      await this.persistAuthoredFlowAfterHearing(updatedRecord, input, hearing);
+    }
     await this.ensurePersistedCollapse(updatedRecord);
     result.save = this.gameViewForRecord(updatedRecord);
     return result;
