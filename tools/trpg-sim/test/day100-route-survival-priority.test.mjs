@@ -1,0 +1,80 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { createDay100CoverageState } from "../lib/day100-player-policy.mjs";
+import {
+  DAY100_ROUTE_SURVIVAL_PRIORITY_INTERNALS,
+  selectUrgentDay100SurvivalDecision,
+} from "../lib/day100-route-survival-priority.mjs";
+
+const model = Object.freeze({ troubles: [], adjacency: {} });
+
+function state() {
+  return createDay100CoverageState(model);
+}
+
+function save(overrides = {}) {
+  return {
+    world: { ended: false },
+    clock: { day: 55, hour: 3, time: "03:38", absoluteMinute: 77858 },
+    scene: { location: "交易都市", facilityId: "LOC_TRADE_INN", beats: [] },
+    player: {
+      gold: 59,
+      freeMeals: 1,
+      freeLodging: 1,
+      needs: { hunger: 76.68, fatigue: 77.04 },
+    },
+    skills: {
+      learnable: [{ id: "SKL-0001", name: "スラッシュ", spCost: 1, recommended: true }],
+    },
+    shop: { available: false, stock: [], rewards: [], loans: [] },
+    choices: [
+      { choiceId: "EAT:LOC_TRADE_INN:0", actionId: "EAT:LOC_TRADE_INN:0", type: "eat", label: "宿で食事を取る" },
+      { choiceId: "LODGE:LOC_TRADE_INN:0", actionId: "LODGE:LOC_TRADE_INN:0", type: "rest", label: "潮風宿で休む" },
+    ],
+    movement: [],
+    missions: [],
+    rumors: [],
+    battle: null,
+    tutorial: null,
+    ...overrides,
+  };
+}
+
+test("空腹と疲労が限界へ近い時は取得可能スキルより公開食事actionを優先する", () => {
+  const decision = selectUrgentDay100SurvivalDecision({ save: save(), model, state: state() });
+  assert.equal(decision?.type, "CHOOSE");
+  assert.equal(decision?.actionId, "EAT:LOC_TRADE_INN:0");
+  assert.equal(decision?.payload?.choiceId, "EAT:LOC_TRADE_INN:0");
+  assert.equal(decision?.category, "meal_consumed");
+});
+
+test("夜間に疲労が高い時は事件移動前に公開休息actionを選ぶ", () => {
+  const current = save({
+    player: {
+      gold: 59,
+      freeMeals: 1,
+      freeLodging: 1,
+      needs: { hunger: 40, fatigue: 73.19 },
+    },
+    choices: [
+      { choiceId: "REST_OUTDOOR:LOC_TRADE_SHIPYARD", actionId: "REST_OUTDOOR:LOC_TRADE_SHIPYARD", type: "rest", label: "船大工通りで野営する" },
+    ],
+  });
+  const decision = selectUrgentDay100SurvivalDecision({ save: current, model, state: state() });
+  assert.equal(decision?.actionId, "REST_OUTDOOR:LOC_TRADE_SHIPYARD");
+  assert.equal(decision?.category, "rest");
+});
+
+test("健康な昼間は緊急生活判断を作らない", () => {
+  const current = save({
+    clock: { day: 20, hour: 14, time: "14:00", absoluteMinute: 28080 },
+    player: {
+      gold: 59,
+      freeMeals: 1,
+      freeLodging: 1,
+      needs: { hunger: 30, fatigue: 35 },
+    },
+  });
+  assert.equal(selectUrgentDay100SurvivalDecision({ save: current, model, state: state() }), null);
+  assert.equal(DAY100_ROUTE_SURVIVAL_PRIORITY_INTERNALS.urgentSurvivalRequired(current), false);
+});
