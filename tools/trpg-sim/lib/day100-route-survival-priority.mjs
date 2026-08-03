@@ -96,7 +96,9 @@ function localRecoveryChoice(save) {
     }
   }
 
-  if (fatigue >= 72 || hour >= 21) {
+  const fatigueRequiresImmediateRest = fatigue >= 72;
+  const nightRestIsSafe = hour >= 21 && hunger < 72;
+  if (fatigueRequiresImmediateRest || nightRestIsSafe) {
     const rest = choices.find((entry) =>
       entry.type === "rest" || REST_PATTERN.test(actionText(entry)));
     if (rest) {
