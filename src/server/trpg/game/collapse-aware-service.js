@@ -6,7 +6,7 @@ import {
   prepareCollapseCommand,
   resolveCollapseRescue,
 } from "../resolvers/player-collapse-resolver.js";
-import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
+import { syncAuthoritativePresentNpcIds } from "./presence.js";
 import { deserializeRuntime, serializeRuntime } from "./serializer.js";
 import {
   TrpgGameError,
@@ -14,8 +14,9 @@ import {
   gameStateHash,
 } from "./service.js";
 
-export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v1";
+export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v2";
 export const RESOLVE_COLLAPSE_COMMAND = "RESOLVE_COLLAPSE_RESCUE";
+export const RESOLVE_COLLAPSE_CHOICE_ID = "COLLAPSE_RESCUE:ACCEPT";
 
 function commandPayload(type, input) {
   if (type === RESOLVE_COLLAPSE_COMMAND) return {};
@@ -110,6 +111,27 @@ function rescueOutcome(rescue) {
   };
 }
 
+function rescueChoice(rescueView) {
+  return {
+    choiceId: RESOLVE_COLLAPSE_CHOICE_ID,
+    id: RESOLVE_COLLAPSE_CHOICE_ID,
+    actionId: RESOLVE_COLLAPSE_COMMAND,
+    label: rescueView?.command?.label ?? "救助を受け、目を覚ます",
+    type: "rest",
+    intentType: "rescue",
+    minutes: 180,
+    danger: false,
+  };
+}
+
+function isRescueRequest(input = {}) {
+  const type = String(input.type ?? "").trim().toUpperCase();
+  if (type === RESOLVE_COLLAPSE_COMMAND) return true;
+  if (type !== "CHOOSE") return false;
+  return String(input.payload?.actionId ?? "").trim().toUpperCase() === RESOLVE_COLLAPSE_COMMAND
+    && String(input.payload?.choiceId ?? "").trim() === RESOLVE_COLLAPSE_CHOICE_ID;
+}
+
 export class CollapseAwareTrpgGameService extends TrpgGameService {
   gameViewForRecord(record) {
     const runtime = hydrateRecord(record, this.data);
@@ -117,9 +139,14 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
     if (actualHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
     const base = super.gameViewForRecord(record);
     const facility = this.data.model.facilityById[runtime.playerState.player.facilityId];
-    return applyCollapseRescueView(base, runtime.playerState.player, {
+    const view = applyCollapseRescueView(base, runtime.playerState.player, {
       facilityName: facility?.name ?? runtime.playerState.player.facilityId,
     });
+    if (!view?.collapseRescue?.active) return view;
+    return {
+      ...view,
+      choices: [rescueChoice(view.collapseRescue)],
+    };
   }
 
   async ensurePersistedCollapse(record) {
@@ -209,9 +236,6 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
       resolvedActionId: RESOLVE_COLLAPSE_COMMAND,
       outcome,
     });
-    // Rescue is an authoritative world/system transition. Pin replay at the
-    // completed rescue snapshot so later player commands remain deterministic
-    // without pretending that rescue is an ordinary player action.
     record.replayBase = {
       resolverVersion: record.resolverVersion,
       revision: record.revision,
@@ -223,7 +247,7 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
   }
 
   async command(ownerHash, id, input = {}) {
-    if (String(input.type ?? "").trim().toUpperCase() === RESOLVE_COLLAPSE_COMMAND) {
+    if (isRescueRequest(input)) {
       return this.runLocked(id, () => this.resolveCollapse(ownerHash, id, input));
     }
 
