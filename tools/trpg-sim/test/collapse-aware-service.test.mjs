@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CollapseAwareTrpgGameService,
+  DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX,
   RESOLVE_COLLAPSE_CHOICE_ID,
   RESOLVE_COLLAPSE_COMMAND,
 } from "../../../src/server/trpg/game/collapse-aware-service.js";
@@ -16,6 +17,36 @@ async function forceCollapse(game, store, saveId) {
   const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
   runtime.playerState.player.needs.hunger = 100;
   runtime.playerState.player.needs.fatigue = 100;
+  record.runtimeSnapshot = serializeRuntime(runtime);
+  record.stateHash = gameStateHash(runtime, game.data);
+  await store.put(record);
+}
+
+async function forceUndiscoveredT05(game, store, saveId) {
+  const record = await store.get(saveId);
+  const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
+  runtime.playerState.absoluteMinute = (37 * 1440) + (8 * 60);
+  runtime.playerState.day = 38;
+  runtime.playerState.hour = 14;
+  runtime.playerState.minute = 0;
+  runtime.playerState.player.location = "交易都市";
+  runtime.playerState.player.facilityId = "LOC_TRADE_LORD_MANOR";
+  runtime.playerState.troubles.T05.status = "critical";
+  runtime.playerState.missions["MSN-T05"].status = "active";
+  const rumor = {
+    id: "RUM-T05-critical",
+    troubleId: "T05",
+    text: "交易都市領主の毒殺計画:critical",
+    origin: "交易都市",
+    originMinute: runtime.playerState.absoluteMinute - 60,
+    importance: 0.95,
+    playerOriginated: false,
+    recipients: {},
+  };
+  runtime.playerState.rumors = (runtime.playerState.rumors ?? []).filter((entry) => entry.troubleId !== "T05");
+  runtime.playerState.rumors.push(rumor);
+  runtime.playerState.rumorById[rumor.id] = rumor;
+  runtime.playerState.player.knownRumorIds.delete(rumor.id);
   record.runtimeSnapshot = serializeRuntime(runtime);
   record.stateHash = gameStateHash(runtime, game.data);
   await store.put(record);
@@ -90,6 +121,62 @@ test("collapse-aware service persists the incident, locks normal UI, rescues onc
   });
   assert.equal(continued.save.revision, rescued.save.revision + 1);
   assert.equal((await game.get(owner, created.id)).revision, continued.save.revision);
+
+  const verification = await game.verifyReplay(owner, created.id);
+  assert.equal(verification.ok, true);
+});
+
+test("an active local crisis can be discovered from normal choices and continues into the authored T05 opening", async () => {
+  const store = new MemoryTrpgSaveStore();
+  const game = new CollapseAwareTrpgGameService({ store, allowCustomSeed: true });
+  const created = await game.create(owner, { playerName: "現地危機テスト", seed: "local-trouble-discovery-test" });
+  await forceUndiscoveredT05(game, store, created.id);
+
+  const before = await game.get(owner, created.id);
+  const discovery = before.choices.find((choice) =>
+    choice.actionId === `${DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX}T05`);
+  assert.ok(discovery, "the current-region crisis must be visible without guessing a facility loop");
+  assert.match(discovery.label, /療養室|継承/u);
+
+  const discovered = await game.command(owner, created.id, {
+    commandId: "discover-local-t05",
+    expectedRevision: before.revision,
+    type: "CHOOSE",
+    payload: {
+      choiceId: discovery.choiceId,
+      actionId: discovery.actionId,
+    },
+  });
+  assert.equal(discovered.save.revision, before.revision + 1);
+  assert.equal(discovered.save.clock.absoluteMinute, before.clock.absoluteMinute + 8);
+  assert.equal(discovered.save.choices.length, 3);
+  assert.ok(discovered.save.choices.every((choice) =>
+    choice.actionId.startsWith("MISSION_FLOW:trade-lord-poisoning:OPENING:")));
+
+  const opening = discovered.save.choices[0];
+  const continued = await game.command(owner, created.id, {
+    commandId: "continue-authored-t05-opening",
+    expectedRevision: discovered.save.revision,
+    type: "CHOOSE",
+    payload: {
+      choiceId: opening.choiceId,
+      actionId: opening.actionId,
+    },
+  });
+  assert.equal(continued.save.revision, discovered.save.revision + 1);
+  assert.equal(continued.save.missions.find((mission) => mission.id === "MSN-T05")?.status, "active");
+  assert.ok(continued.save.guidance?.missionId === "MSN-T05" || continued.save.choices.some((choice) => choice.missionId === "MSN-T05"));
+
+  const duplicate = await game.command(owner, created.id, {
+    commandId: "discover-local-t05",
+    expectedRevision: continued.save.revision,
+    type: "CHOOSE",
+    payload: {
+      choiceId: discovery.choiceId,
+      actionId: discovery.actionId,
+    },
+  });
+  assert.equal(duplicate.duplicate, true);
 
   const verification = await game.verifyReplay(owner, created.id);
   assert.equal(verification.ok, true);
