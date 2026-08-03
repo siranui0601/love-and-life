@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  SurvivalAwareTrpgGameService,
   applyUrgentLifeChoices,
+  canonicalizePersistedRuntimeRecord,
   urgentLifeChoices,
 } from "../../../src/server/trpg/game/survival-aware-service.js";
+import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
 
 const data = Object.freeze({
   model: {
@@ -92,4 +95,37 @@ test("健康時または手書きミッション外では既存三択を変更�
     choices: [{ choiceId: "INSPECT:1", actionId: "INSPECT:1", type: "investigate", label: "調べる" }],
   });
   assert.strictEqual(applyUrgentLifeChoices(ordinary, data), ordinary);
+});
+
+test("保存境界で再構成された正規runtimeのhashへ追随し、次commandとreplayの基点を一致させる", async () => {
+  const store = new MemoryTrpgSaveStore();
+  const game = new SurvivalAwareTrpgGameService({ store, allowCustomSeed: true });
+  const created = await game.create("survival-canonical-owner", {
+    playerName: "保存境界テスト",
+    seed: "survival-canonical-test",
+  });
+  const record = await store.get(created.id);
+  record.revision = 1;
+  record.stateHash = "stale-pre-serialization-hash";
+  record.commandLog.push({
+    seq: 1,
+    commandId: "authored-action-before-canonicalization",
+    revisionBefore: 0,
+    revisionAfter: 1,
+    stateBeforeHash: "before",
+    stateAfterHash: "stale-pre-serialization-hash",
+    type: "CHOOSE",
+    payload: { choiceId: "MISSION_FLOW:test", actionId: "MISSION_FLOW:test" },
+    resolvedActionId: "MISSION_FLOW:test",
+    outcome: { ok: true },
+  });
+
+  assert.equal(canonicalizePersistedRuntimeRecord(record, game.data), true);
+  assert.notEqual(record.stateHash, "stale-pre-serialization-hash");
+  assert.equal(record.commandLog.at(-1).stateAfterHash, record.stateHash);
+  assert.equal(record.replayBase.revision, 1);
+  assert.equal(record.replayBase.stateHash, record.stateHash);
+  assert.equal(record.replayBase.runtimeSnapshot, record.runtimeSnapshot);
+  assert.doesNotThrow(() => game.gameViewForRecord(record));
+  assert.equal(canonicalizePersistedRuntimeRecord(record, game.data), false);
 });
