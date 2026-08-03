@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 import {
+  collapseRescueView,
   prepareCollapseCommand,
   resolveCollapseRescue,
   selectCollapseRescuer,
@@ -30,6 +31,51 @@ test("prepareCollapseCommand opens one incident and blocks normal commands", () 
   assert.equal(second.opened, false);
   assert.equal(second.incident.id, first.incident.id);
   assert.equal(second.incident.facilityId, "LOC_CAPITAL_ORPHANAGE");
+});
+
+test("collapseRescueView exposes one rescue scene and empties normal UI collections", () => {
+  const player = collapsedPlayer();
+  prepareCollapseCommand(player, "MOVE", {
+    minute: 1200,
+    location: "CAPITAL",
+    facilityId: "LOC_CAPITAL_ORPHANAGE",
+  });
+
+  const view = collapseRescueView(player, { facilityName: "白鈴孤児院" });
+
+  assert.equal(view.active, true);
+  assert.equal(view.status, "pending_rescue");
+  assert.equal(view.facilityId, "LOC_CAPITAL_ORPHANAGE");
+  assert.deepEqual(view.causes, ["空腹", "疲労"]);
+  assert.match(view.narrative, /白鈴孤児院/u);
+  assert.match(view.narrative, /空腹と疲労/u);
+  assert.deepEqual(view.uiLock, {
+    choices: [],
+    movement: [],
+    stock: [],
+    saleQuotes: [],
+    loans: [],
+    rewards: [],
+    learnableSkills: [],
+    battleCommands: [],
+  });
+});
+
+test("collapseRescueView is absent before collapse and after completed rescue", () => {
+  const healthy = { needs: createPlayerNeeds({ hunger: 40, fatigue: 40 }) };
+  assert.equal(collapseRescueView(healthy), null);
+
+  const player = collapsedPlayer();
+  const resolved = resolveCollapseRescue(player, {
+    minute: 300,
+    location: "FARM",
+    facilityId: "LOC_FARM_EDGE",
+    fallbackWakeFacilityId: "LOC_FARM_INN",
+    candidates: [],
+  });
+
+  assert.equal(resolved.completed, true);
+  assert.equal(collapseRescueView(player), null);
 });
 
 test("selectCollapseRescuer excludes impossible NPCs and prefers a present healer", () => {
