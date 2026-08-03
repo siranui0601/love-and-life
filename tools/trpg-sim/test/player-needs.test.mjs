@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  PLAYER_COLLAPSE_BLOCKED_COMMAND_TYPES,
   PLAYER_COLLAPSE_THRESHOLD,
   PLAYER_NEEDS_VERSION,
   advancePlayerNeeds,
@@ -11,6 +12,7 @@ import {
   ensurePlayerNeeds,
   openPlayerCollapseIncident,
   playerCanTakeNormalAction,
+  playerCollapseCommandBlock,
   playerCollapseState,
   publicPlayerNeeds,
 } from "../lib/player-needs.mjs";
@@ -154,6 +156,61 @@ test("collapse incident opens once and blocks normal actions until rescue", () =
   assert.equal(publicNeeds.collapseIncidentId, first.incident.id);
 });
 
+test("collapse command contract blocks gameplay commands but not acknowledgements", () => {
+  const needs = createPlayerNeeds({ hunger: 100, fatigue: 100 });
+  const gameplayCommands = [
+    "CHOOSE",
+    "TALK",
+    "MOVE",
+    "SHOP_BUY",
+    "SHOP_SELL",
+    "SHOP_TRY",
+    "SHOP_BUY_USED",
+    "SHOP_BORROW",
+    "SHOP_RETURN_LOAN",
+    "CLAIM_EQUIPMENT_REWARD",
+    "EQUIP",
+    "UNEQUIP",
+    "LEARN_SKILL",
+    "BATTLE_ACT",
+  ];
+  assert.deepEqual(PLAYER_COLLAPSE_BLOCKED_COMMAND_TYPES, gameplayCommands);
+  for (const commandType of gameplayCommands) {
+    const result = playerCollapseCommandBlock(needs, commandType);
+    assert.equal(result.blocked, true, commandType);
+    assert.equal(result.code, "player_collapse_pending_rescue", commandType);
+    assert.deepEqual(result.causes, ["hunger", "fatigue"], commandType);
+  }
+  assert.deepEqual(playerCollapseCommandBlock(needs, "TUTORIAL_ACK"), {
+    blocked: false,
+    code: null,
+    commandType: "TUTORIAL_ACK",
+    incident: null,
+  });
+  assert.deepEqual(playerCollapseCommandBlock(needs, "ACK_NPC_INTRODUCTION"), {
+    blocked: false,
+    code: null,
+    commandType: "ACK_NPC_INTRODUCTION",
+    incident: null,
+  });
+});
+
+test("pending rescue keeps gameplay commands blocked after raw needs are reduced", () => {
+  const needs = createPlayerNeeds({ hunger: 100, fatigue: 100 });
+  const opened = openPlayerCollapseIncident(needs, {
+    minute: 500,
+    location: "王都",
+    facilityId: "LOC_CAPITAL_LOWER_INN",
+  });
+  needs.hunger = 20;
+  needs.fatigue = 20;
+  const blocked = playerCollapseCommandBlock(needs, "MOVE");
+  assert.equal(opened.opened, true);
+  assert.equal(blocked.blocked, true);
+  assert.equal(blocked.incident.id, opened.incident.id);
+  assert.deepEqual(blocked.causes, ["hunger", "fatigue"]);
+});
+
 test("rescue completes the pending incident once and restores action eligibility", () => {
   const needs = createPlayerNeeds({ hunger: 100, fatigue: 100 });
   const opened = openPlayerCollapseIncident(needs, {
@@ -184,6 +241,7 @@ test("rescue completes the pending incident once and restores action eligibility
   assert.equal(needs.hunger, 64);
   assert.equal(needs.fatigue, 52);
   assert.equal(playerCanTakeNormalAction(needs), true);
+  assert.equal(playerCollapseCommandBlock(needs, "MOVE").blocked, false);
 });
 
 test("rescue clamps recovery below the collapse threshold", () => {
