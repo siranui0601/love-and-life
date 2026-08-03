@@ -10,7 +10,7 @@ import {
 } from "./service.js";
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v4";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v5";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
@@ -102,6 +102,20 @@ export function canonicalizePersistedRuntimeRecord(record, data) {
   };
   record.updatedAt = new Date().toISOString();
   return true;
+}
+
+function reconcileLatestCommandWithRecord(record) {
+  const latestEntry = [...(record.commandLog ?? [])]
+    .reverse()
+    .find((entry) => entry.revisionAfter === record.revision);
+  if (latestEntry) latestEntry.stateAfterHash = record.stateHash;
+  record.replayBase = {
+    resolverVersion: record.resolverVersion,
+    revision: record.revision,
+    stateHash: record.stateHash,
+    runtimeSnapshot: record.runtimeSnapshot,
+  };
+  record.updatedAt = new Date().toISOString();
 }
 
 function commandPayload(input) {
@@ -201,6 +215,14 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
 
   async get(...args) {
     return applyUrgentLifeChoices(await super.get(...args), this.data);
+  }
+
+  async persistCollapseAfterLifeAction(record) {
+    const collapse = await this.ensurePersistedCollapse(record);
+    if (!collapse.changed) return collapse;
+    reconcileLatestCommandWithRecord(record);
+    await this.store.put(record);
+    return collapse;
   }
 
   async resolveUrgentLifeAction(ownerHash, id, input, request) {
@@ -316,6 +338,7 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
       runtimeSnapshot: record.runtimeSnapshot,
     };
     await this.store.put(record);
+    await this.persistCollapseAfterLifeAction(record);
     return { duplicate: false, save: this.gameViewForRecord(record) };
   }
 
