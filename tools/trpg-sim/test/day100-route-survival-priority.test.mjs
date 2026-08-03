@@ -65,6 +65,50 @@ test("夜間に疲労が高い時は事件移動前に公開休息actionを選�
   assert.equal(decision?.category, "rest");
 });
 
+test("緊急食事探索で地域越境せず、同地域の野営拠点へ退避する", () => {
+  const coverage = state();
+  coverage.knownMealSources.LOC_CAP_LOWER_INN = {
+    facilityId: "LOC_CAP_LOWER_INN",
+    hub: "王都",
+    minimumPrice: 0,
+  };
+  const current = save({
+    clock: { day: 1, hour: 22, time: "22:17", absoluteMinute: 733 },
+    scene: { location: "森", facilityId: "LOC_FOREST_EDGE", beats: [] },
+    player: {
+      gold: 59,
+      freeMeals: 1,
+      freeLodging: 1,
+      needs: { hunger: 75.28, fatigue: 57.56 },
+    },
+    choices: [
+      { choiceId: "REST_OUTDOOR:LOC_FOREST_EDGE", actionId: "REST_OUTDOOR:LOC_FOREST_EDGE", type: "rest", label: "森の縁で野営する" },
+    ],
+    movement: [
+      {
+        moveId: "MOVE_LOCAL:LOC_FOREST_CAMP",
+        scope: "local",
+        destination: "森",
+        destinationFacilityId: "LOC_FOREST_CAMP",
+        destinationFacilityName: "森の野営地",
+        label: "森の野営地へ向かう",
+      },
+      {
+        moveId: "MOVE_REGION:王都",
+        scope: "regional",
+        destination: "王都",
+        destinationFacilityId: "LOC_CAP_LOWER_INN",
+        destinationFacilityName: "下層安宿",
+        label: "王都へ向かう",
+      },
+    ],
+  });
+  const decision = selectUrgentDay100SurvivalDecision({ save: current, model, state: coverage });
+  assert.equal(decision?.type, "MOVE");
+  assert.equal(decision?.moveId, "MOVE_LOCAL:LOC_FOREST_CAMP");
+  assert.equal(decision?.category, "meal_search_move");
+});
+
 test("健康な昼間は緊急生活判断を作らない", () => {
   const current = save({
     clock: { day: 20, hour: 14, time: "14:00", absoluteMinute: 28080 },
