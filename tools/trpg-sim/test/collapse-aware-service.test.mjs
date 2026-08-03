@@ -186,23 +186,36 @@ test("an active local crisis can be discovered from normal choices and continues
   });
   assert.equal(discovered.save.revision, before.revision + 1);
   assert.equal(discovered.save.clock.absoluteMinute, before.clock.absoluteMinute + 8);
-  assert.equal(discovered.save.choices.length, 3);
-  const discoveredActionIds = discovered.save.choices.map((choice) => choice.actionId);
-  assert.ok(discoveredActionIds.every((actionId) =>
-    actionId.startsWith("MISSION_FLOW:trade-lord-poisoning:OPENING:")),
-  `expected three authored T05 opening actions, received ${JSON.stringify(discoveredActionIds)}`);
 
-  const opening = discovered.save.choices[0];
+  const hearing = discovered.save.choices.find((choice) => choice.actionId === "ACTION:MSN-T05:hear");
+  assert.ok(hearing, "local discovery must expose the authoritative T05 hearing action");
+  const heard = await game.command(owner, created.id, {
+    commandId: "hear-local-t05",
+    expectedRevision: discovered.save.revision,
+    type: "CHOOSE",
+    payload: {
+      choiceId: hearing.choiceId,
+      actionId: hearing.actionId,
+    },
+  });
+  assert.equal(heard.save.revision, discovered.save.revision + 1);
+  assert.equal(heard.save.choices.length, 3);
+  const heardActionIds = heard.save.choices.map((choice) => choice.actionId);
+  assert.ok(heardActionIds.every((actionId) =>
+    actionId.startsWith("MISSION_FLOW:trade-lord-poisoning:OPENING:")),
+  `expected three authored T05 opening actions after the public hearing, received ${JSON.stringify(heardActionIds)}`);
+
+  const opening = heard.save.choices[0];
   const continued = await game.command(owner, created.id, {
     commandId: "continue-authored-t05-opening",
-    expectedRevision: discovered.save.revision,
+    expectedRevision: heard.save.revision,
     type: "CHOOSE",
     payload: {
       choiceId: opening.choiceId,
       actionId: opening.actionId,
     },
   });
-  assert.equal(continued.save.revision, discovered.save.revision + 1);
+  assert.equal(continued.save.revision, heard.save.revision + 1);
   assert.equal(continued.save.missions.find((mission) => mission.id === "MSN-T05")?.status, "active");
   assert.ok(continued.save.guidance?.missionId === "MSN-T05" || continued.save.choices.some((choice) => choice.missionId === "MSN-T05"));
 
