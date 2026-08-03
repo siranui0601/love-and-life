@@ -148,16 +148,10 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
   const player = runtime.playerState.player;
   ensurePlayerNeeds(player);
-  player.location = "王都";
-  player.facilityId = "LOC_CAP_MARKET";
+  player.facilityId = "LOC_FARM_INN";
   player.freeMeals = 0;
   player.needs.hunger = 90;
   player.needs.fatigue = 40;
-  runtime.playerState.weather = resolveCanonicalWeather({
-    day: runtime.playerState.day,
-    regionId: player.location,
-    daypart: runtime.playerState.daypart,
-  });
   const beforeAbsoluteMinute = runtime.playerState.absoluteMinute;
   record.runtimeSnapshot = serializeRuntime(runtime);
   record.stateHash = gameStateHash(deserializeRuntime(record.runtimeSnapshot, game.data), game.data);
@@ -170,14 +164,14 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   await store.put(record);
 
   const before = await game.get(owner, created.id);
-  assert.ok(before.choices.some((choice) => choice.actionId === "WORK_MEAL:LOC_CAP_MARKET"));
-  assert.ok(!before.choices.some((choice) => choice.actionId === "REST_OUTDOOR:LOC_CAP_MARKET"));
+  assert.ok(before.choices.some((choice) => choice.actionId === "WORK_MEAL:LOC_FARM_INN"));
+  assert.ok(!before.choices.some((choice) => choice.actionId === "REST_OUTDOOR:LOC_FARM_INN"));
 
   const result = await game.command(owner, created.id, {
     commandId: "work-meal-command-1",
     expectedRevision: before.revision,
     type: "CHOOSE",
-    payload: { choiceId: "WORK_MEAL:LOC_CAP_MARKET", actionId: "" },
+    payload: { choiceId: "WORK_MEAL:LOC_FARM_INN", actionId: "" },
   });
   assert.equal(result.duplicate, false);
   assert.equal(result.save.revision, before.revision + 1);
@@ -187,7 +181,7 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   const stored = await store.get(created.id);
   const afterRuntime = deserializeRuntime(stored.runtimeSnapshot, game.data);
   assert.equal(afterRuntime.playerState.absoluteMinute, beforeAbsoluteMinute + 120);
-  assert.equal(stored.commandLog.at(-1).resolvedActionId, "WORK_MEAL:LOC_CAP_MARKET");
+  assert.equal(stored.commandLog.at(-1).resolvedActionId, "WORK_MEAL:LOC_FARM_INN");
   assert.equal(stored.commandLog.at(-1).outcome.type, "work_meal");
   assert.equal(stored.commandLog.at(-1).stateAfterHash, stored.stateHash);
   assert.equal(stored.replayBase.revision, stored.revision);
