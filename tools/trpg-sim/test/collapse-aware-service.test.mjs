@@ -82,11 +82,18 @@ async function forceUndiscoveredT05(game, store, saveId) {
   runtime.playerState.rumors.push(rumor);
   runtime.playerState.rumorById[rumor.id] = rumor;
   runtime.playerState.player.knownRumorIds.delete(rumor.id);
+  const physician = runtime.livingWorld.npcStates.NPC011;
+  physician.presence = "present";
+  physician.lifeStatus = "alive";
+  physician.travel = null;
+  physician.localTravel = null;
+  physician.location = "交易都市";
+  physician.position = {
+    ...(physician.position ?? {}),
+    hubId: "交易都市",
+    facilityId: "LOC_TRADE_LORD_MANOR",
+  };
   hydrateForcedRuntime(runtime, game.data);
-  // This fixture represents the authored physician interview path, so the
-  // authoritative facility presence must include the physician. Separate
-  // absence-fallback coverage belongs to a dedicated physical-record route.
-  runtime.playerState.authoritativePresentNpcIds.add("NPC011");
   record.runtimeSnapshot = serializeRuntime(runtime);
   const normalizedRuntime = deserializeRuntime(record.runtimeSnapshot, game.data);
   record.stateHash = gameStateHash(normalizedRuntime, game.data);
