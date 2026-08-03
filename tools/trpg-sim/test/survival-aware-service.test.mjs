@@ -154,16 +154,7 @@ test("生活action直後にcollapseが開いた場合は同じrevisionのcommand
 
   game.ensurePersistedCollapse = async (target) => {
     target.stateHash = "collapse-state-hash";
-    target.runtimeSnapshot = {
-      ...target.runtimeSnapshot,
-      playerState: {
-        ...target.runtimeSnapshot.playerState,
-        player: {
-          ...target.runtimeSnapshot.playerState.player,
-          collapseIncident: { id: "COLLAPSE:test", status: "pending_rescue" },
-        },
-      },
-    };
+    target.runtimeSnapshot = structuredClone(target.runtimeSnapshot);
     return { changed: true };
   };
 
