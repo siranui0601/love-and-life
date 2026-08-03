@@ -14,7 +14,7 @@ import {
   gameStateHash,
 } from "./service.js";
 
-export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v2";
+export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v3";
 export const RESOLVE_COLLAPSE_COMMAND = "RESOLVE_COLLAPSE_RESCUE";
 export const RESOLVE_COLLAPSE_CHOICE_ID = "COLLAPSE_RESCUE:ACCEPT";
 
@@ -31,10 +31,12 @@ function collapseContext(runtime) {
   };
 }
 
+// Hydration must remain hash-pure. Presence synchronization can mutate runtime
+// state and therefore belongs inside committed transitions, never before a
+// saved-state hash comparison.
 function hydrateRecord(record, data) {
   const runtime = deserializeRuntime(record.runtimeSnapshot, data);
   ensurePlayerNeeds(runtime.playerState.player);
-  syncAuthoritativePresentNpcIds(runtime, data);
   return runtime;
 }
 
@@ -151,6 +153,8 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
 
   async ensurePersistedCollapse(record) {
     const runtime = hydrateRecord(record, this.data);
+    const actualHash = gameStateHash(runtime, this.data);
+    if (actualHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
     const opened = openCollapse(runtime);
     if (!opened.opened) return { runtime, opened, changed: false };
     persistRuntime(record, runtime, this.data);
@@ -186,8 +190,10 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
 
     const runtime = hydrateRecord(record, this.data);
     const beforeHash = gameStateHash(runtime, this.data);
+    if (beforeHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
     const opened = openCollapse(runtime, RESOLVE_COLLAPSE_COMMAND);
     if (!opened.incident) throw new TrpgGameError(409, "player_collapse_rescue_not_available");
+    syncAuthoritativePresentNpcIds(runtime, this.data);
     const candidates = rescueCandidates(runtime, this.data);
     const rescue = resolveCollapseRescue(runtime.playerState.player, {
       ...collapseContext(runtime),
