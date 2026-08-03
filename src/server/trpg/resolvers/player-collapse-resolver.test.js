@@ -3,6 +3,7 @@ import test from "node:test";
 import { createPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 import {
   applyCollapseRescueView,
+  buildCollapseRescueCandidates,
   collapseRescueView,
   prepareCollapseCommand,
   resolveCollapseRescue,
@@ -131,6 +132,75 @@ test("collapseRescueView is absent before collapse and after completed rescue", 
 
   assert.equal(resolved.completed, true);
   assert.equal(collapseRescueView(player), null);
+});
+
+test("buildCollapseRescueCandidates maps presence, GOAP state and canonical NPC data", () => {
+  const candidates = buildCollapseRescueCandidates({
+    presentNpcIds: ["NPC_HEALER", "NPC_DEAD"],
+    reachableNpcIds: ["NPC_GUARD"],
+    location: "CAPITAL",
+    facilityId: "LOC_CAPITAL_ORPHANAGE",
+    fallbackWakeFacilityId: "LOC_CAPITAL_CLINIC",
+    npcDefinitions: new Map([
+      ["NPC_HEALER", { name: "治療師", canRescue: true }],
+      ["NPC_GUARD", { name: "衛兵" }],
+      ["NPC_DEAD", { name: "故人" }],
+    ]),
+    npcStates: {
+      NPC_HEALER: {
+        status: "active",
+        currentLocation: "CAPITAL",
+        currentFacilityId: "LOC_CAPITAL_ORPHANAGE",
+        knownFacts: ["healing"],
+        trustToPlayer: 8,
+        currentGoalId: "GOAL_TREAT_PLAYER",
+        currentPlanId: "PLAN_RESCUE_PLAYER",
+      },
+      NPC_GUARD: {
+        status: "active",
+        currentLocation: "CAPITAL",
+        currentFacilityId: "LOC_CAPITAL_GATE",
+        knownFacts: ["first_aid"],
+        canRescue: true,
+      },
+      NPC_DEAD: {
+        status: "dead",
+        currentLocation: "CAPITAL",
+        currentFacilityId: "LOC_CAPITAL_ORPHANAGE",
+      },
+    },
+  });
+
+  assert.deepEqual(candidates.map((entry) => entry.id), ["NPC_DEAD", "NPC_GUARD", "NPC_HEALER"]);
+  const healer = candidates.find((entry) => entry.id === "NPC_HEALER");
+  assert.equal(healer.present, true);
+  assert.equal(healer.facilityId, "LOC_CAPITAL_ORPHANAGE");
+  assert.equal(healer.wakeFacilityId, "LOC_CAPITAL_ORPHANAGE");
+  assert.equal(healer.playerTrust, 8);
+  assert.equal(healer.goapGoalId, "GOAL_TREAT_PLAYER");
+  assert.equal(healer.goapPlanId, "PLAN_RESCUE_PLAYER");
+  assert.equal(candidates.find((entry) => entry.id === "NPC_GUARD").canReach, true);
+  assert.equal(candidates.find((entry) => entry.id === "NPC_DEAD").dead, true);
+});
+
+test("authoritative candidate mapping never revives dead or missing NPCs", () => {
+  const incident = {
+    status: "pending_rescue",
+    location: "CAPITAL",
+    facilityId: "LOC_CAPITAL_ORPHANAGE",
+  };
+  const candidates = buildCollapseRescueCandidates({
+    presentNpcIds: ["NPC_DEAD", "NPC_MISSING", "NPC_HEALER"],
+    location: "CAPITAL",
+    facilityId: "LOC_CAPITAL_ORPHANAGE",
+    npcStates: {
+      NPC_DEAD: { status: "死亡", knownFacts: ["healing"] },
+      NPC_MISSING: { status: "行方不明", knownFacts: ["healing"] },
+      NPC_HEALER: { status: "active", knownFacts: ["healing"], canRescue: true },
+    },
+  });
+
+  assert.equal(selectCollapseRescuer(incident, candidates).id, "NPC_HEALER");
 });
 
 test("selectCollapseRescuer excludes impossible NPCs and prefers a present healer", () => {
