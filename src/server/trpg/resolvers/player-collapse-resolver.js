@@ -4,7 +4,7 @@ import {
   playerCollapseCommandBlock,
 } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 
-export const PLAYER_COLLAPSE_RESCUE_VERSION = "player-collapse-rescue-v2";
+export const PLAYER_COLLAPSE_RESCUE_VERSION = "player-collapse-rescue-v3";
 
 const DEFAULT_WAKE_DELAY_MINUTES = 180;
 const COLLAPSE_CAUSE_LABELS = Object.freeze({
@@ -109,6 +109,44 @@ export function collapseRescueView(player, {
       learnableSkills: [],
       battleCommands: [],
     },
+  };
+}
+
+export function applyCollapseRescueView(gameView, player, options = {}) {
+  const rescueView = collapseRescueView(player, options);
+  if (!rescueView) return gameView;
+  const source = gameView && typeof gameView === "object" ? gameView : {};
+  const shop = source.shop && typeof source.shop === "object" ? source.shop : {};
+  const skills = source.skills && typeof source.skills === "object" ? source.skills : {};
+  const battle = source.battle && typeof source.battle === "object" ? source.battle : null;
+  return {
+    ...source,
+    scene: {
+      ...(source.scene && typeof source.scene === "object" ? source.scene : {}),
+      title: rescueView.title,
+      narrative: rescueView.narrative,
+      collapseRescue: rescueView,
+    },
+    collapseRescue: rescueView,
+    choices: rescueView.uiLock.choices,
+    movement: rescueView.uiLock.movement,
+    shop: {
+      ...shop,
+      stock: rescueView.uiLock.stock,
+      saleQuotes: rescueView.uiLock.saleQuotes,
+      loans: rescueView.uiLock.loans,
+      rewards: rescueView.uiLock.rewards,
+    },
+    skills: {
+      ...skills,
+      learnable: rescueView.uiLock.learnableSkills,
+      learnableSkills: rescueView.uiLock.learnableSkills,
+    },
+    battle: battle ? {
+      ...battle,
+      commands: rescueView.uiLock.battleCommands,
+    } : battle,
+    availableActions: [],
   };
 }
 
