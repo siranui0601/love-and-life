@@ -66,16 +66,18 @@ function updateClock(state, absoluteMinute) {
 }
 
 function persistRuntime(record, runtime, data) {
-  record.runtimeSnapshot = serializeRuntime(runtime);
-  record.stateHash = gameStateHash(runtime, data);
+  const runtimeSnapshot = serializeRuntime(runtime);
+  const normalizedRuntime = deserializeRuntime(runtimeSnapshot, data);
+  record.runtimeSnapshot = runtimeSnapshot;
+  record.stateHash = gameStateHash(normalizedRuntime, data);
   record.summary = {
     clock: {
-      day: runtime.playerState.day,
-      time: `${String(runtime.playerState.hour).padStart(2, "0")}:${String(runtime.playerState.minute).padStart(2, "0")}`,
+      day: normalizedRuntime.playerState.day,
+      time: `${String(normalizedRuntime.playerState.hour).padStart(2, "0")}:${String(normalizedRuntime.playerState.minute).padStart(2, "0")}`,
     },
-    location: runtime.playerState.player.location,
-    facilityId: runtime.playerState.player.facilityId,
-    level: runtime.playerState.player.level,
+    location: normalizedRuntime.playerState.player.location,
+    facilityId: normalizedRuntime.playerState.player.facilityId,
+    level: normalizedRuntime.playerState.player.level,
   };
 }
 
@@ -256,8 +258,6 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
         choices: [rescueChoice(view.collapseRescue)],
       };
     }
-    // A handwritten mission scene is a focused decision. Do not overwrite one
-    // of its three authoritative actions with a second crisis-discovery prompt.
     if (isAuthoredMissionScene(view)) return view;
     const crisis = localUndiscoveredTrouble(runtime, this.data);
     if (!crisis) return view;
