@@ -18,7 +18,7 @@ import {
   gameStateHash,
 } from "./service.js";
 
-export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v7";
+export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v8";
 export const RESOLVE_COLLAPSE_COMMAND = "RESOLVE_COLLAPSE_RESCUE";
 export const RESOLVE_COLLAPSE_CHOICE_ID = "COLLAPSE_RESCUE:ACCEPT";
 export const DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX = "DISCOVER_LOCAL_TROUBLE:";
@@ -207,17 +207,20 @@ function localTroubleDiscoveryChoice(runtime, crisis, data) {
   };
 }
 
+function requestedChoiceActionId(input = {}) {
+  if (String(input.type ?? "").trim().toUpperCase() !== "CHOOSE") return "";
+  return String(input.payload?.actionId ?? input.payload?.choiceId ?? "").trim();
+}
+
 function requestedLocalTroubleId(input = {}) {
-  if (String(input.type ?? "").trim().toUpperCase() !== "CHOOSE") return null;
-  const actionId = String(input.payload?.actionId ?? "").trim();
+  const actionId = requestedChoiceActionId(input);
   if (!actionId.startsWith(DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX)) return null;
   const troubleId = actionId.slice(DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX.length).trim();
   return troubleId || null;
 }
 
 function requestedMissionHearing(input = {}) {
-  if (String(input.type ?? "").trim().toUpperCase() !== "CHOOSE") return null;
-  const actionId = String(input.payload?.actionId ?? "").trim();
+  const actionId = requestedChoiceActionId(input);
   const match = /^ACTION:(MSN-T\d+):hear$/u.exec(actionId);
   if (!match) return null;
   return { actionId, missionId: match[1] };
