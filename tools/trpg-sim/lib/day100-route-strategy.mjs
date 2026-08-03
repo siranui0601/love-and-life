@@ -159,11 +159,48 @@ function compareTuple(left, right) {
   return 0;
 }
 
-function activeMissionDecision(save, model, state, mode) {
+function missionForTrouble(save, troubleId) {
+  return (save?.missions ?? []).find((mission) => mission.troubleId === troubleId) ?? null;
+}
+
+function troubleCandidateTuple(definition, save, state, mode) {
+  const ledger = state.trouble?.[definition.id] ?? {};
+  const known = ledger.firstRumorMinute != null || ledger.firstMissionMinute != null;
+  const currentHub = save?.scene?.location;
+  const localPenalty = definition.primaryLocations.includes(currentHub) ? 0 : 1;
+  const order = routeOrderIndex(mode, definition.id);
+  const deadline = number(definition.deadlineDay, 999);
+  const finalDay = number(definition.finalDay, 999);
+  const discoveryPenalty = known ? 1 : 0;
+  if (mode === "regional") return [localPenalty, discoveryPenalty, deadline, order, definition.id];
+  if (mode === "chain" || mode === "prevention") return [order, discoveryPenalty, deadline, localPenalty, definition.id];
+  return [deadline, discoveryPenalty, localPenalty, finalDay, definition.id];
+}
+
+function routeTroubleCandidates(save, model, state, mode) {
+  const day = number(save?.clock?.day, 1);
+  return model.troubles
+    .filter((definition) => definition.startDay <= day && day <= definition.finalDay)
+    .filter((definition) => {
+      const mission = missionForTrouble(save, definition.id);
+      if (mission && TERMINAL_MISSION_STATES.has(mission.status)) return false;
+      return !TERMINAL_TROUBLE_STATES.has(state.trouble?.[definition.id]?.finalTroubleStatus);
+    })
+    .sort((left, right) => compareTuple(
+      troubleCandidateTuple(left, save, state, mode),
+      troubleCandidateTuple(right, save, state, mode),
+    ));
+}
+
+function activeMissionDecision(save, model, state, mode, priorityTroubleId = null) {
   const guidedMissionId = guidanceMissionId(save);
   const authoredForwardVisible = (save?.choices ?? []).some(authoredFlowChoice);
+  const priorityOrder = routeOrderIndex(mode, priorityTroubleId);
   const missions = (save?.missions ?? [])
     .filter((mission) => mission.kind === "special" && !TERMINAL_MISSION_STATES.has(mission.status))
+    .filter((mission) => !priorityTroubleId
+      || !ROUTE_ORDER[mode]
+      || routeOrderIndex(mode, mission.troubleId) <= priorityOrder)
     .sort((left, right) => Number(right.id === guidedMissionId) - Number(left.id === guidedMissionId)
       || compareTuple(
         missionSortTuple(left, model, save, mode),
@@ -236,38 +273,9 @@ function activeMissionDecision(save, model, state, mode) {
   return null;
 }
 
-function missionForTrouble(save, troubleId) {
-  return (save?.missions ?? []).find((mission) => mission.troubleId === troubleId) ?? null;
-}
-
-function troubleCandidateTuple(definition, save, state, mode) {
-  const ledger = state.trouble?.[definition.id] ?? {};
-  const known = ledger.firstRumorMinute != null || ledger.firstMissionMinute != null;
-  const currentHub = save?.scene?.location;
-  const localPenalty = definition.primaryLocations.includes(currentHub) ? 0 : 1;
-  const order = routeOrderIndex(mode, definition.id);
-  const deadline = number(definition.deadlineDay, 999);
-  const finalDay = number(definition.finalDay, 999);
-  const discoveryPenalty = known ? 1 : 0;
-  if (mode === "regional") return [localPenalty, discoveryPenalty, deadline, order, definition.id];
-  if (mode === "chain" || mode === "prevention") return [order, discoveryPenalty, deadline, localPenalty, definition.id];
-  return [deadline, discoveryPenalty, localPenalty, finalDay, definition.id];
-}
-
-function discoveryDecision(save, model, state, mode) {
-  const day = number(save?.clock?.day, 1);
-  const candidates = model.troubles
-    .filter((definition) => definition.startDay <= day && day <= definition.finalDay)
-    .filter((definition) => {
-      const mission = missionForTrouble(save, definition.id);
-      if (mission && TERMINAL_MISSION_STATES.has(mission.status)) return false;
-      return !TERMINAL_TROUBLE_STATES.has(state.trouble?.[definition.id]?.finalTroubleStatus);
-    })
-    .sort((left, right) => compareTuple(
-      troubleCandidateTuple(left, save, state, mode),
-      troubleCandidateTuple(right, save, state, mode),
-    ));
-  const target = candidates[0];
+function discoveryDecision(save, model, state, mode, candidates = null) {
+  const orderedCandidates = candidates ?? routeTroubleCandidates(save, model, state, mode);
+  const target = orderedCandidates[0];
   if (!target) return null;
 
   const currentHub = save?.scene?.location;
@@ -339,9 +347,11 @@ export function selectDay100RouteDecision({
   const base = selectDay100Decision({ save, model, state });
   if (isBaseOnlyPhase(save, base) || shouldKeepBaseForSurvival(save, base)) return base;
 
+  const troubleCandidates = routeTroubleCandidates(save, model, state, mode);
+  const priorityTroubleId = troubleCandidates[0]?.id ?? null;
   return capitalWeaponShopFirstDecision(save, state, mode)
-    ?? activeMissionDecision(save, model, state, mode)
-    ?? discoveryDecision(save, model, state, mode)
+    ?? activeMissionDecision(save, model, state, mode, priorityTroubleId)
+    ?? discoveryDecision(save, model, state, mode, troubleCandidates)
     ?? base;
 }
 
@@ -353,5 +363,6 @@ export const DAY100_ROUTE_STRATEGY_INTERNALS = Object.freeze({
   missionChoiceAllowed,
   missionSortTuple,
   troubleCandidateTuple,
+  routeTroubleCandidates,
   shouldKeepBaseForSurvival,
 });
