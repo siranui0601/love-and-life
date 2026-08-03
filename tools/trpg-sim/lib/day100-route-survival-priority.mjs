@@ -7,10 +7,16 @@ const SURVIVAL_CATEGORIES = new Set([
   "rest",
   "work",
 ]);
+const LOCAL_SHELTER_PATTERN = /(?:宿|旅籠|食堂|酒場|茶屋|パン|市場|野営|キャンプ|小屋|INN|CAMP|HUT|MARKET)/iu;
+const REST_PATTERN = /(?:LODGE|SLEEP|CAMP|REST|宿泊|眠|休む|野営)/iu;
 
 function number(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function actionText(entry) {
+  return `${entry?.actionId ?? entry?.moveId ?? ""} ${entry?.label ?? ""} ${entry?.destinationFacilityName ?? ""}`;
 }
 
 function urgentSurvivalRequired(save) {
@@ -46,6 +52,41 @@ function survivalOnlySave(save) {
   };
 }
 
+function movementForDecision(save, decision) {
+  if (decision?.type !== "MOVE") return null;
+  return (save?.movement ?? []).find((entry) => entry.moveId === decision.moveId) ?? null;
+}
+
+function localEmergencyAlternative(save) {
+  const localShelter = (save?.movement ?? [])
+    .filter((entry) => entry.scope === "local")
+    .find((entry) => LOCAL_SHELTER_PATTERN.test(actionText(entry)));
+  if (localShelter) {
+    return {
+      type: "MOVE",
+      payload: { moveId: localShelter.moveId },
+      moveId: localShelter.moveId,
+      key: `MOVE:${localShelter.moveId}`,
+      label: localShelter.label,
+      reason: "行動不能になる前に、同じ地域の食事・休息拠点へ退避する",
+      category: "meal_search_move",
+    };
+  }
+
+  const rest = (save?.choices ?? []).find((entry) =>
+    entry.type === "rest" || REST_PATTERN.test(actionText(entry)));
+  if (!rest) return null;
+  return {
+    type: "CHOOSE",
+    payload: { choiceId: rest.choiceId },
+    actionId: rest.actionId,
+    key: `CHOOSE:${rest.actionId}`,
+    label: rest.label,
+    reason: "地域越境を避け、現在地で倒れる前に休息する",
+    category: "rest",
+  };
+}
+
 export function selectUrgentDay100SurvivalDecision({ save, model, state }) {
   if (!urgentSurvivalRequired(save)) return null;
   const decision = selectDay100Decision({
@@ -53,7 +94,13 @@ export function selectUrgentDay100SurvivalDecision({ save, model, state }) {
     model,
     state,
   });
-  return SURVIVAL_CATEGORIES.has(decision?.category) ? decision : null;
+  if (!SURVIVAL_CATEGORIES.has(decision?.category)) return null;
+
+  const movement = movementForDecision(save, decision);
+  if (movement?.scope === "regional") {
+    return localEmergencyAlternative(save) ?? decision;
+  }
+  return decision;
 }
 
 export function selectDay100RouteDecisionWithSurvival(args) {
@@ -62,7 +109,10 @@ export function selectDay100RouteDecisionWithSurvival(args) {
 }
 
 export const DAY100_ROUTE_SURVIVAL_PRIORITY_INTERNALS = Object.freeze({
+  LOCAL_SHELTER_PATTERN,
   SURVIVAL_CATEGORIES,
+  localEmergencyAlternative,
+  movementForDecision,
   survivalOnlySave,
   urgentSurvivalRequired,
 });
