@@ -14,6 +14,13 @@ import { resolveCanonicalWeather } from "../../../src/server/trpg/resolvers/weat
 
 const owner = "collapse-service-owner";
 
+function clockPhaseFromMinuteOfDay(minuteOfDay) {
+  return {
+    phaseIndex: minuteOfDay >= 1320 || minuteOfDay < 600 ? 3 : minuteOfDay >= 1080 ? 2 : minuteOfDay >= 840 ? 1 : 0,
+    daypart: minuteOfDay < 480 ? "dawn" : minuteOfDay < 1080 ? "day" : minuteOfDay < 1320 ? "dusk" : "night",
+  };
+}
+
 async function forceCollapse(game, store, saveId) {
   const record = await store.get(saveId);
   const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
@@ -29,18 +36,19 @@ async function forceUndiscoveredT05(game, store, saveId) {
   const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
   const absoluteMinute = (37 * 1440) + (8 * 60);
   const clock = journey.clockFromMinute(absoluteMinute);
+  const clockPhase = clockPhaseFromMinuteOfDay(clock.minuteOfDay);
   runtime.playerState.absoluteMinute = absoluteMinute;
   runtime.playerState.day = clock.day;
   runtime.playerState.hour = clock.hour;
   runtime.playerState.minute = clock.minute;
-  runtime.playerState.phaseIndex = clock.phaseIndex;
-  runtime.playerState.daypart = clock.daypart;
+  runtime.playerState.phaseIndex = clockPhase.phaseIndex;
+  runtime.playerState.daypart = clockPhase.daypart;
   runtime.playerState.player.location = "交易都市";
   runtime.playerState.player.facilityId = "LOC_TRADE_LORD_MANOR";
   runtime.playerState.weather = resolveCanonicalWeather({
     day: clock.day,
     regionId: runtime.playerState.player.location,
-    daypart: clock.daypart,
+    daypart: clockPhase.daypart,
   });
   runtime.playerState.troubles.T05.status = "critical";
   runtime.playerState.missions["MSN-T05"].status = "active";
