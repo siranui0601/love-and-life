@@ -13,7 +13,7 @@ import {
 } from "./survival-aware-service.js";
 import { resolveCanonicalWeather } from "../resolvers/weather-resolver.js";
 
-export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v4";
+export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v5";
 
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR|WORK_MEAL):/u;
 const WORK_MEAL_PATTERN = /^WORK_MEAL:([^:]+)$/u;
@@ -221,7 +221,7 @@ export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService 
     if (beforeHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
     const visibleView = this.gameViewForRecord(record);
     const visible = (visibleView.choices ?? []).find((choice) => choice.actionId === request.actionId);
-    if (!visible || String(visibleView.scene?.facilityId ?? "") !== request.facilityId) {
+    if (!visible || String(player.facilityId ?? "") !== request.facilityId) {
       throw new TrpgGameError(409, "choice_not_available");
     }
 
