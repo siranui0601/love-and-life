@@ -12,10 +12,8 @@ import {
   inspectChoiceSetBeforeSelection,
   recordChoiceSetSelection,
 } from "./lib/choice-set-audit.mjs";
-import {
-  DAY100_ROUTE_MODES,
-  selectDay100RouteDecision,
-} from "./lib/day100-route-strategy.mjs";
+import { DAY100_ROUTE_MODES } from "./lib/day100-route-strategy.mjs";
+import { selectDay100RouteDecisionWithSurvival } from "./lib/day100-route-survival-priority.mjs";
 import { writeDay100ReplayCandidateManifest } from "./lib/day100-replay-candidates.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -52,7 +50,7 @@ class Day100RouteRunner extends Day100GameRunner {
       });
       return true;
     }
-    const decision = selectDay100RouteDecision({
+    const decision = selectDay100RouteDecisionWithSurvival({
       save: this.save,
       model: this.model,
       state: this.coverage,
