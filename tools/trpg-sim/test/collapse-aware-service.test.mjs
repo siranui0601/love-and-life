@@ -49,6 +49,7 @@ async function forceCollapse(game, store, saveId) {
 async function forceUndiscoveredT05(game, store, saveId) {
   const record = await store.get(saveId);
   const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
+  runtime.tutorial = null;
   const absoluteMinute = (37 * 1440) + (8 * 60);
   const clock = journey.clockFromMinute(absoluteMinute);
   const clockPhase = clockPhaseFromMinuteOfDay(clock.minuteOfDay);
