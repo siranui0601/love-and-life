@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { CollapseAwareTrpgGameService } from "../../src/server/trpg/game/collapse-aware-service.js";
 import {
   Day100GameRunner,
   renderDay100PlayerMarkdown,
@@ -31,11 +32,26 @@ process.env.TRPG_NARRATIVE_RUN_ID = runId;
 class Day100RouteRunner extends Day100GameRunner {
   constructor(options = {}) {
     super(options);
+    this.game = new CollapseAwareTrpgGameService({
+      store: this.store,
+      narrator: this.narrator,
+      allowCustomSeed: true,
+      maxSavesPerOwner: 2,
+    });
     this.routeMode = options.routeMode ?? "deadline";
     this.choiceSetAudit = createChoiceSetAudit();
   }
 
   async step() {
+    const rescueCommand = this.save?.collapseRescue?.command;
+    if (rescueCommand?.type) {
+      await this.command(rescueCommand.type, {}, {
+        type: rescueCommand.type,
+        actionId: rescueCommand.type,
+        reason: "authoritative-collapse-rescue",
+      });
+      return true;
+    }
     const decision = selectDay100RouteDecision({
       save: this.save,
       model: this.model,
