@@ -13,7 +13,7 @@ import {
 } from "./survival-aware-service.js";
 import { resolveCanonicalWeather } from "../resolvers/weather-resolver.js";
 
-export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v3";
+export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v4";
 
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR|WORK_MEAL):/u;
 const WORK_MEAL_PATTERN = /^WORK_MEAL:([^:]+)$/u;
@@ -219,8 +219,9 @@ export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService 
     ensurePlayerNeeds(player);
     const beforeHash = gameStateHash(runtime, this.data);
     if (beforeHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
-    const visible = workMealChoice(super.gameViewForRecord(record), this.data);
-    if (!visible || visible.actionId !== request.actionId || request.facilityId !== player.facilityId) {
+    const visibleView = this.gameViewForRecord(record);
+    const visible = (visibleView.choices ?? []).find((choice) => choice.actionId === request.actionId);
+    if (!visible || String(visibleView.scene?.facilityId ?? "") !== request.facilityId) {
       throw new TrpgGameError(409, "choice_not_available");
     }
 
@@ -242,7 +243,7 @@ export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService 
       minute: runtime.playerState.absoluteMinute,
       actionId: request.actionId,
       actionType: "work_meal",
-      facilityId: player.facilityId,
+      facilityId: request.facilityId,
       location: player.location,
       minutes,
     });
@@ -251,7 +252,7 @@ export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService 
       type: "work_meal",
       summary,
       minutes,
-      facilityId: player.facilityId,
+      facilityId: request.facilityId,
     };
     const revisionBefore = record.revision;
     record.revision += 1;
