@@ -77,6 +77,20 @@ test("collapse-aware service persists the incident, locks normal UI, rescues onc
   assert.equal(duplicate.duplicate, true);
   assert.equal(duplicate.save.revision, rescued.save.revision);
 
+  const nextChoice = rescued.save.choices[0];
+  assert.ok(nextChoice, "normal story choices must return after rescue");
+  const continued = await game.command(owner, created.id, {
+    commandId: "post-rescue-story-action",
+    expectedRevision: rescued.save.revision,
+    type: "CHOOSE",
+    payload: {
+      choiceId: nextChoice.choiceId,
+      actionId: nextChoice.actionId,
+    },
+  });
+  assert.equal(continued.save.revision, rescued.save.revision + 1);
+  assert.equal((await game.get(owner, created.id)).revision, continued.save.revision);
+
   const verification = await game.verifyReplay(owner, created.id);
   assert.equal(verification.ok, true);
 });
