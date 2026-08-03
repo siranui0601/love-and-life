@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  PLAYER_COLLAPSE_THRESHOLD,
   PLAYER_NEEDS_VERSION,
   advancePlayerNeeds,
   completePlayerRest,
   consumeMeal,
   createPlayerNeeds,
   ensurePlayerNeeds,
+  playerCollapseState,
   publicPlayerNeeds,
 } from "../lib/player-needs.mjs";
 
@@ -89,4 +91,36 @@ test("public need state exposes stable labels and urgency thresholds", () => {
   assert.equal(critical.critical, true);
   assert.match(critical.hungerLabel, /危険/u);
   assert.match(critical.fatigueLabel, /危険/u);
+});
+
+test("collapse is deterministic and starts only at the hard limit", () => {
+  assert.equal(PLAYER_COLLAPSE_THRESHOLD, 100);
+  const justBelow = playerCollapseState(createPlayerNeeds({ hunger: 99.999, fatigue: 99.999 }));
+  assert.equal(justBelow.collapsed, false);
+  assert.deepEqual(justBelow.causes, []);
+  assert.equal(justBelow.primaryCause, null);
+  assert.deepEqual(playerCollapseState(createPlayerNeeds({ hunger: 100, fatigue: 40 })), {
+    collapsed: true,
+    causes: ["hunger"],
+    primaryCause: "hunger",
+    hunger: 100,
+    fatigue: 40,
+  });
+  assert.deepEqual(playerCollapseState(createPlayerNeeds({ hunger: 100, fatigue: 100 })), {
+    collapsed: true,
+    causes: ["hunger", "fatigue"],
+    primaryCause: "hunger",
+    hunger: 100,
+    fatigue: 100,
+  });
+});
+
+test("public need state exposes collapse without treating critical as collapse", () => {
+  const critical = publicPlayerNeeds(createPlayerNeeds({ hunger: 99, fatigue: 99 }));
+  const collapsed = publicPlayerNeeds(createPlayerNeeds({ hunger: 100, fatigue: 100 }));
+  assert.equal(critical.critical, true);
+  assert.equal(critical.collapsed, false);
+  assert.deepEqual(critical.collapseCauses, []);
+  assert.equal(collapsed.collapsed, true);
+  assert.deepEqual(collapsed.collapseCauses, ["hunger", "fatigue"]);
 });
