@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 import {
+  applyCollapseRescueView,
   collapseRescueView,
   prepareCollapseCommand,
   resolveCollapseRescue,
@@ -59,6 +60,60 @@ test("collapseRescueView exposes one rescue scene and empties normal UI collecti
     learnableSkills: [],
     battleCommands: [],
   });
+});
+
+test("applyCollapseRescueView replaces every normal game-view action surface", () => {
+  const player = collapsedPlayer();
+  prepareCollapseCommand(player, "MOVE", {
+    minute: 1200,
+    location: "CAPITAL",
+    facilityId: "LOC_CAPITAL_ORPHANAGE",
+  });
+  const source = {
+    scene: { title: "元の場面", narrative: "元の説明", keep: true },
+    choices: [{ choiceId: "CHOICE-1" }],
+    movement: [{ id: "MOVE-1" }],
+    shop: {
+      currency: 50,
+      stock: [{ id: "STOCK-1" }],
+      saleQuotes: [{ equipmentId: "EQ-1" }],
+      loans: [{ id: "LOAN-1" }],
+      rewards: [{ id: "REWARD-1" }],
+    },
+    skills: {
+      owned: [{ id: "SKL-1" }],
+      learnable: [{ id: "SKL-2" }],
+      learnableSkills: [{ id: "SKL-2" }],
+    },
+    battle: { id: "BATTLE-1", commands: [{ actionId: "ATTACK" }] },
+    availableActions: ["MOVE", "CHOOSE"],
+  };
+
+  const view = applyCollapseRescueView(source, player, { facilityName: "白鈴孤児院" });
+
+  assert.notEqual(view, source);
+  assert.equal(view.scene.keep, true);
+  assert.equal(view.scene.title, "力尽きて倒れた");
+  assert.equal(view.scene.collapseRescue.incidentId, view.collapseRescue.incidentId);
+  assert.deepEqual(view.choices, []);
+  assert.deepEqual(view.movement, []);
+  assert.equal(view.shop.currency, 50);
+  assert.deepEqual(view.shop.stock, []);
+  assert.deepEqual(view.shop.saleQuotes, []);
+  assert.deepEqual(view.shop.loans, []);
+  assert.deepEqual(view.shop.rewards, []);
+  assert.deepEqual(view.skills.owned, [{ id: "SKL-1" }]);
+  assert.deepEqual(view.skills.learnable, []);
+  assert.deepEqual(view.skills.learnableSkills, []);
+  assert.deepEqual(view.battle.commands, []);
+  assert.deepEqual(view.availableActions, []);
+  assert.deepEqual(source.choices, [{ choiceId: "CHOICE-1" }]);
+});
+
+test("applyCollapseRescueView returns the original view when no rescue is pending", () => {
+  const player = { needs: createPlayerNeeds({ hunger: 40, fatigue: 40 }) };
+  const source = { choices: [{ choiceId: "CHOICE-1" }] };
+  assert.equal(applyCollapseRescueView(source, player), source);
 });
 
 test("collapseRescueView is absent before collapse and after completed rescue", () => {
