@@ -186,8 +186,10 @@ test("an active local crisis can be discovered from normal choices and continues
   assert.equal(discovered.save.revision, before.revision + 1);
   assert.equal(discovered.save.clock.absoluteMinute, before.clock.absoluteMinute + 8);
   assert.equal(discovered.save.choices.length, 3);
-  assert.ok(discovered.save.choices.every((choice) =>
-    choice.actionId.startsWith("MISSION_FLOW:trade-lord-poisoning:OPENING:")));
+  const discoveredActionIds = discovered.save.choices.map((choice) => choice.actionId);
+  assert.ok(discoveredActionIds.every((actionId) =>
+    actionId.startsWith("MISSION_FLOW:trade-lord-poisoning:OPENING:")),
+  `expected three authored T05 opening actions, received ${JSON.stringify(discoveredActionIds)}`);
 
   const opening = discovered.save.choices[0];
   const continued = await game.command(owner, created.id, {
