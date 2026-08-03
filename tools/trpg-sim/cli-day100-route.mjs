@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CollapseAwareTrpgGameService } from "../../src/server/trpg/game/collapse-aware-service.js";
+import { SurvivalAwareTrpgGameService } from "../../src/server/trpg/game/survival-aware-service.js";
 import {
   Day100GameRunner,
   renderDay100PlayerMarkdown,
@@ -30,7 +30,7 @@ process.env.TRPG_NARRATIVE_RUN_ID = runId;
 class Day100RouteRunner extends Day100GameRunner {
   constructor(options = {}) {
     super(options);
-    this.game = new CollapseAwareTrpgGameService({
+    this.game = new SurvivalAwareTrpgGameService({
       store: this.store,
       narrator: this.narrator,
       allowCustomSeed: true,
