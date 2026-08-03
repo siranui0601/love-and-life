@@ -4,9 +4,13 @@ import {
   playerCollapseCommandBlock,
 } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 
-export const PLAYER_COLLAPSE_RESCUE_VERSION = "player-collapse-rescue-v1";
+export const PLAYER_COLLAPSE_RESCUE_VERSION = "player-collapse-rescue-v2";
 
 const DEFAULT_WAKE_DELAY_MINUTES = 180;
+const COLLAPSE_CAUSE_LABELS = Object.freeze({
+  hunger: "空腹",
+  fatigue: "疲労",
+});
 
 function optionalId(value) {
   const normalized = String(value ?? "").trim();
@@ -70,6 +74,41 @@ export function prepareCollapseCommand(player, commandType, context = {}) {
     code: block.code,
     commandType: block.commandType,
     causes: block.causes ?? [],
+  };
+}
+
+export function collapseRescueView(player, {
+  facilityName = null,
+  fallbackPlaceLabel = "その場",
+} = {}) {
+  const incident = player?.needs?.activeCollapse;
+  if (!incident || incident.status !== "pending_rescue") return null;
+  const causes = (Array.isArray(incident.causes) ? incident.causes : [])
+    .map((cause) => COLLAPSE_CAUSE_LABELS[cause] ?? String(cause))
+    .filter(Boolean);
+  const placeLabel = String(facilityName ?? "").trim() || fallbackPlaceLabel;
+  const causeLabel = causes.length ? causes.join("と") : "体調不良";
+  return {
+    version: PLAYER_COLLAPSE_RESCUE_VERSION,
+    active: true,
+    incidentId: incident.id,
+    status: incident.status,
+    title: "力尽きて倒れた",
+    narrative: `${placeLabel}で${causeLabel}のため動けなくなった。周囲の誰かが気づき、救助へ動いている。`,
+    causes,
+    collapsedAtMinute: Number(incident.atMinute ?? 0),
+    location: optionalId(incident.location),
+    facilityId: optionalId(incident.facilityId),
+    uiLock: {
+      choices: [],
+      movement: [],
+      stock: [],
+      saleQuotes: [],
+      loans: [],
+      rewards: [],
+      learnableSkills: [],
+      battleCommands: [],
+    },
   };
 }
 
