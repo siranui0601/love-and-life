@@ -27,7 +27,7 @@ async function forceUndiscoveredT05(game, store, saveId) {
   const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
   runtime.playerState.absoluteMinute = (37 * 1440) + (8 * 60);
   runtime.playerState.day = 38;
-  runtime.playerState.hour = 14;
+  runtime.playerState.hour = 8;
   runtime.playerState.minute = 0;
   runtime.playerState.player.location = "交易都市";
   runtime.playerState.player.facilityId = "LOC_TRADE_LORD_MANOR";
