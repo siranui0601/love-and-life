@@ -13,7 +13,7 @@ import {
 } from "./survival-aware-service.js";
 import { resolveCanonicalWeather } from "../resolvers/weather-resolver.js";
 
-export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v2";
+export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v3";
 
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR|WORK_MEAL):/u;
 const WORK_MEAL_PATTERN = /^WORK_MEAL:([^:]+)$/u;
@@ -140,8 +140,21 @@ function updateClock(state, absoluteMinute) {
   state.day = clock.day;
   state.hour = clock.hour;
   state.minute = clock.minute;
-  if (clock.phaseIndex != null) state.phaseIndex = clock.phaseIndex;
-  if (clock.daypart != null) state.daypart = clock.daypart;
+  state.minuteOfDay = clock.minuteOfDay;
+  state.phaseIndex = clock.minuteOfDay >= 1320 || clock.minuteOfDay < 600
+    ? 3
+    : clock.minuteOfDay >= 1080
+      ? 2
+      : clock.minuteOfDay >= 840
+        ? 1
+        : 0;
+  state.daypart = clock.minuteOfDay < 480
+    ? "dawn"
+    : clock.minuteOfDay < 1080
+      ? "day"
+      : clock.minuteOfDay < 1320
+        ? "dusk"
+        : "night";
 }
 
 function commandPayload(input) {
