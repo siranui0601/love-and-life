@@ -3,7 +3,7 @@ import test from "node:test";
 import { ensurePlayerNeeds } from "../lib/player-needs.mjs";
 import { deserializeRuntime, serializeRuntime } from "../../../src/server/trpg/game/serializer.js";
 import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
-import { gameStateHash, TRPG_GAME_RESOLVER_VERSION } from "../../../src/server/trpg/game/service.js";
+import { TRPG_GAME_RESOLVER_VERSION } from "../../../src/server/trpg/game/service.js";
 import { canonicalizePersistedRuntimeRecord } from "../../../src/server/trpg/game/survival-aware-service.js";
 import {
   WORLD_TIME_AWARE_SERVICE_VERSION,
@@ -156,14 +156,15 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   const beforeAbsoluteMinute = runtime.playerState.absoluteMinute;
   record.resolverVersion = TRPG_GAME_RESOLVER_VERSION;
   record.runtimeSnapshot = serializeRuntime(runtime);
-  record.stateHash = gameStateHash(deserializeRuntime(record.runtimeSnapshot, game.data), game.data);
+  record.stateHash = "stale-work-meal-fixture-hash";
   record.replayBase = {
     resolverVersion: record.resolverVersion,
     revision: record.revision,
     stateHash: record.stateHash,
     runtimeSnapshot: record.runtimeSnapshot,
   };
-  canonicalizePersistedRuntimeRecord(record, game.data);
+  assert.equal(canonicalizePersistedRuntimeRecord(record, game.data), true);
+  assert.notEqual(record.stateHash, "stale-work-meal-fixture-hash");
   await store.put(record);
 
   const before = await game.get(owner, created.id);
