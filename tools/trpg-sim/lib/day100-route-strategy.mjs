@@ -15,6 +15,7 @@ const SHOP_PATTERN = /(?:SHOP|WEAPON|EQUIP|武器屋|装備|試着|試す)/iu;
 const AUTHORED_FLOW_PATTERN = /^MISSION_FLOW:/u;
 const CAPITAL_WEAPON_SHOP_FIRST_PATTERN = /^CAPITAL_WEAPON_SHOP:FIRST:/u;
 const AUTHORED_FLOW_CONTROL_PATTERN = /:(?:NAVIGATOR_BACK|BACK|CANCEL|ABORT|RECONSIDER|DEFER)(?::|$)/u;
+const REGIONAL_TRAVEL_PREPARE_THRESHOLD = 65;
 
 export const DAY100_ROUTE_MODES = Object.freeze([
   "deadline",
@@ -317,6 +318,11 @@ function discoveryDecision(save, model, state, mode, candidates = null) {
   }) : null;
 }
 
+function isSurvivalDecision(base) {
+  return ["meal_consumed", "meal_search_move", "rest", "work"].includes(base?.category)
+    || /食|宿|休|仕事|路銀/u.test(String(base?.reason ?? ""));
+}
+
 function shouldKeepBaseForSurvival(save, base) {
   const hunger = number(save?.player?.needs?.hunger);
   const fatigue = number(save?.player?.needs?.fatigue);
@@ -324,9 +330,16 @@ function shouldKeepBaseForSurvival(save, base) {
   const gold = number(save?.player?.gold);
   const freeMeals = number(save?.player?.freeMeals);
   const urgent = hunger >= 72 || fatigue >= 72 || hour >= 21 || (gold < 12 && freeMeals <= 0 && hunger >= 45);
-  if (!urgent) return false;
-  return ["meal_consumed", "meal_search_move", "rest", "work"].includes(base?.category)
-    || /食|宿|休|仕事|路銀/u.test(String(base?.reason ?? ""));
+  return urgent && isSurvivalDecision(base);
+}
+
+function shouldPrepareBeforeRegionalMove(save, base, routeDecision) {
+  if (!routeDecision || routeDecision.type !== "MOVE" || !isSurvivalDecision(base)) return false;
+  const movement = (save?.movement ?? []).find((entry) => entry.moveId === routeDecision.moveId);
+  if (movement?.scope !== "regional") return false;
+  const hunger = number(save?.player?.needs?.hunger);
+  const fatigue = number(save?.player?.needs?.fatigue);
+  return hunger >= REGIONAL_TRAVEL_PREPARE_THRESHOLD || fatigue >= REGIONAL_TRAVEL_PREPARE_THRESHOLD;
 }
 
 function isBaseOnlyPhase(save, base) {
@@ -349,10 +362,11 @@ export function selectDay100RouteDecision({
 
   const troubleCandidates = routeTroubleCandidates(save, model, state, mode);
   const priorityTroubleId = troubleCandidates[0]?.id ?? null;
-  return capitalWeaponShopFirstDecision(save, state, mode)
+  const routeDecision = capitalWeaponShopFirstDecision(save, state, mode)
     ?? activeMissionDecision(save, model, state, mode, priorityTroubleId)
     ?? discoveryDecision(save, model, state, mode, troubleCandidates)
     ?? base;
+  return shouldPrepareBeforeRegionalMove(save, base, routeDecision) ? base : routeDecision;
 }
 
 export const DAY100_ROUTE_STRATEGY_INTERNALS = Object.freeze({
@@ -360,9 +374,11 @@ export const DAY100_ROUTE_STRATEGY_INTERNALS = Object.freeze({
   authoredFlowChoice,
   capitalWeaponShopFirstDecision,
   guidanceMissionId,
+  isSurvivalDecision,
   missionChoiceAllowed,
   missionSortTuple,
   troubleCandidateTuple,
   routeTroubleCandidates,
   shouldKeepBaseForSurvival,
+  shouldPrepareBeforeRegionalMove,
 });
