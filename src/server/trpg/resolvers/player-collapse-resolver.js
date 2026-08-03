@@ -4,7 +4,7 @@ import {
   playerCollapseCommandBlock,
 } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 
-export const PLAYER_COLLAPSE_RESCUE_VERSION = "player-collapse-rescue-v3";
+export const PLAYER_COLLAPSE_RESCUE_VERSION = "player-collapse-rescue-v4";
 
 const DEFAULT_WAKE_DELAY_MINUTES = 180;
 const COLLAPSE_CAUSE_LABELS = Object.freeze({
@@ -24,6 +24,18 @@ function finiteMinute(value, fallback = 0) {
 
 function normalizedKnowledge(value) {
   if (value instanceof Set) return value;
+  if (Array.isArray(value)) return new Set(value.map(String));
+  return new Set();
+}
+
+function sourceValue(source, id) {
+  if (!source) return null;
+  if (source instanceof Map) return source.get(id) ?? null;
+  return source[id] ?? null;
+}
+
+function normalizedIdSet(value) {
+  if (value instanceof Set) return new Set([...value].map(String));
   if (Array.isArray(value)) return new Set(value.map(String));
   return new Set();
 }
@@ -48,6 +60,56 @@ function eligibleCandidate(candidate) {
   if (candidate.detained === true || candidate.missing === true) return false;
   if (candidate.present !== true && candidate.canReach !== true) return false;
   return candidate.canRescue !== false;
+}
+
+export function buildCollapseRescueCandidates({
+  presentNpcIds = [],
+  npcStates = null,
+  npcDefinitions = null,
+  reachableNpcIds = [],
+  location = null,
+  facilityId = null,
+  fallbackWakeFacilityId = null,
+} = {}) {
+  const present = normalizedIdSet(presentNpcIds);
+  const reachable = normalizedIdSet(reachableNpcIds);
+  const candidateIds = new Set([...present, ...reachable]);
+  return [...candidateIds]
+    .sort((left, right) => left.localeCompare(right, "ja"))
+    .map((id) => {
+      const state = sourceValue(npcStates, id) ?? {};
+      const definition = sourceValue(npcDefinitions, id) ?? {};
+      const stateLocation = optionalId(state.location ?? state.currentLocation);
+      const stateFacilityId = optionalId(state.facilityId ?? state.currentFacilityId);
+      const knowledge = state.knowledge ?? state.knownFacts ?? definition.knowledge ?? [];
+      const status = String(state.status ?? "").toLowerCase();
+      const dead = state.dead === true || state.alive === false || status === "dead" || status === "死亡";
+      const missing = state.missing === true || status === "missing" || status === "行方不明";
+      const detained = state.detained === true || state.restrained === true || ["detained", "拘束", "拘束中"].includes(status);
+      return {
+        id,
+        name: definition.name ?? state.name ?? id,
+        present: present.has(id),
+        canReach: reachable.has(id),
+        alive: !dead,
+        dead,
+        missing,
+        detained,
+        canRescue: state.canRescue ?? definition.canRescue ?? true,
+        location: stateLocation ?? optionalId(location),
+        facilityId: stateFacilityId ?? (present.has(id) ? optionalId(facilityId) : null),
+        wakeLocation: optionalId(state.wakeLocation) ?? stateLocation ?? optionalId(location),
+        wakeFacilityId: optionalId(state.wakeFacilityId)
+          ?? stateFacilityId
+          ?? optionalId(fallbackWakeFacilityId)
+          ?? (present.has(id) ? optionalId(facilityId) : null),
+        knowledge,
+        playerTrust: Number(state.playerTrust ?? state.trustToPlayer ?? 0),
+        rescueCost: Number(state.rescueCost ?? definition.rescueCost ?? 0),
+        goapGoalId: optionalId(state.currentGoalId ?? state.goalId),
+        goapPlanId: optionalId(state.currentPlanId ?? state.planId),
+      };
+    });
 }
 
 export function selectCollapseRescuer(incident, candidates = []) {
