@@ -13,6 +13,7 @@ const data = Object.freeze({
     facilityById: {
       LOC_FARM_INN: { id: "LOC_FARM_INN", name: "麦穂亭" },
       LOC_FARM_FIELD: { id: "LOC_FARM_FIELD", name: "共同畑" },
+      LOC_CAP_LOWER_INN: { id: "LOC_CAP_LOWER_INN", name: "下層の安宿" },
     },
   },
 });
@@ -80,7 +81,30 @@ test("宿泊施設でない手書き場面では公開の短時間休息だけ�
   assert.equal(life[0].type, "rest");
 });
 
-test("健康時または手書きミッション外では既存三択を変更しない", () => {
+test("通常三択や三択空状態でも緊急時は現在地の休息actionを公開する", () => {
+  const ordinary = authoredView({
+    scene: { location: "王都", facilityId: "LOC_CAP_LOWER_INN" },
+    player: {
+      freeMeals: 0,
+      freeLodging: 0,
+      needs: { hunger: 82, fatigue: 78 },
+    },
+    choices: [{ choiceId: "INSPECT:1", actionId: "INSPECT:1", type: "investigate", label: "調べる" }],
+  });
+  const ordinaryLife = urgentLifeChoices(ordinary, data);
+  assert.deepEqual(ordinaryLife.map((choice) => choice.actionId), ["REST_OUTDOOR:LOC_CAP_LOWER_INN"]);
+  const ordinaryCombined = applyUrgentLifeChoices(ordinary, data);
+  assert.equal(ordinaryCombined.choices[0].actionId, "REST_OUTDOOR:LOC_CAP_LOWER_INN");
+  assert.equal(ordinaryCombined.choices[1].actionId, "INSPECT:1");
+
+  const empty = { ...ordinary, choices: [] };
+  const emptyCombined = applyUrgentLifeChoices(empty, data);
+  assert.deepEqual(emptyCombined.choices.map((choice) => choice.actionId), [
+    "REST_OUTDOOR:LOC_CAP_LOWER_INN",
+  ]);
+});
+
+test("健康時は既存三択を変更しない", () => {
   const healthy = authoredView({
     clock: { day: 5, hour: 14, time: "14:00" },
     player: {
@@ -90,11 +114,6 @@ test("健康時または手書きミッション外では既存三択を変更�
     },
   });
   assert.strictEqual(applyUrgentLifeChoices(healthy, data), healthy);
-
-  const ordinary = authoredView({
-    choices: [{ choiceId: "INSPECT:1", actionId: "INSPECT:1", type: "investigate", label: "調べる" }],
-  });
-  assert.strictEqual(applyUrgentLifeChoices(ordinary, data), ordinary);
 });
 
 test("保存境界で再構成された正規runtimeのhashへ追随し、次commandとreplayの基点を一致させる", async () => {
