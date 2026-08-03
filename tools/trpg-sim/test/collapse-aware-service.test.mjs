@@ -174,7 +174,7 @@ test("collapse-aware service persists the incident, locks normal UI, rescues onc
   assert.equal(verification.ok, true);
 });
 
-test("an active local crisis can be discovered from normal choices and continues into the authored T05 opening", async () => {
+test("an active local crisis accepts the displayed choiceId alone and continues into the authored T05 opening", async () => {
   const store = new MemoryTrpgSaveStore();
   const game = new CollapseAwareTrpgGameService({ store, allowCustomSeed: true });
   const created = await game.create(owner, { playerName: "現地危機テスト", seed: "local-trouble-discovery-test" });
@@ -192,7 +192,6 @@ test("an active local crisis can be discovered from normal choices and continues
     type: "CHOOSE",
     payload: {
       choiceId: discovery.choiceId,
-      actionId: discovery.actionId,
     },
   });
   assert.equal(discovered.save.revision, before.revision + 1);
@@ -223,7 +222,6 @@ test("an active local crisis can be discovered from normal choices and continues
     type: "CHOOSE",
     payload: {
       choiceId: discovery.choiceId,
-      actionId: discovery.actionId,
     },
   });
   assert.equal(duplicate.duplicate, true);
