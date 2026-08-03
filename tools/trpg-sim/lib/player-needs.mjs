@@ -1,4 +1,5 @@
-export const PLAYER_NEEDS_VERSION = "player-needs-v2";
+export const PLAYER_NEEDS_VERSION = "player-needs-v3";
+export const PLAYER_COLLAPSE_THRESHOLD = 100;
 
 export const PLAYER_NEEDS_DEFAULTS = Object.freeze({
   hunger: 15,
@@ -100,12 +101,27 @@ export function ensurePlayerNeeds(playerOrNeeds) {
   return migrated;
 }
 
+export function playerCollapseState(playerOrNeeds) {
+  const needs = ensurePlayerNeeds(playerOrNeeds);
+  const causes = [];
+  if (needs.hunger >= PLAYER_COLLAPSE_THRESHOLD) causes.push("hunger");
+  if (needs.fatigue >= PLAYER_COLLAPSE_THRESHOLD) causes.push("fatigue");
+  return {
+    collapsed: causes.length > 0,
+    causes,
+    primaryCause: causes[0] ?? null,
+    hunger: Number(needs.hunger.toFixed(2)),
+    fatigue: Number(needs.fatigue.toFixed(2)),
+  };
+}
+
 export function publicPlayerNeeds(playerOrNeeds) {
   const needs = ensurePlayerNeeds(playerOrNeeds);
   const hunger = Number(needs.hunger.toFixed(2));
   const fatigue = Number(needs.fatigue.toFixed(2));
   const hungerState = labelFor(hunger, HUNGER_LABELS);
   const fatigueState = labelFor(fatigue, FATIGUE_LABELS);
+  const collapse = playerCollapseState(needs);
   return {
     version: needs.version,
     hunger,
@@ -116,6 +132,8 @@ export function publicPlayerNeeds(playerOrNeeds) {
     fatigueLabel: fatigueState.label,
     urgent: hunger >= 80 || fatigue >= 80,
     critical: hunger >= 92 || fatigue >= 92,
+    collapsed: collapse.collapsed,
+    collapseCauses: collapse.causes,
     lastMealMinute: needs.lastMealMinute,
     lastSleepMinute: needs.lastSleepMinute,
     lastSleepQuality: needs.lastSleepQuality,
@@ -171,7 +189,7 @@ export function completePlayerRest(playerOrNeeds, {
   const duration = Math.max(0, Number(durationMinutes) || 0);
   const tags = weatherTags instanceof Set ? weatherTags : new Set(weatherTags ?? []);
   const before = needs.fatigue;
-  let quality = lodging ? "lodging" : duration >= 360 ? "camp" : "short_rest";
+  const quality = lodging ? "lodging" : duration >= 360 ? "camp" : "short_rest";
   let recovery;
   if (lodging) recovery = 100;
   else if (duration >= 360) recovery = 58;
