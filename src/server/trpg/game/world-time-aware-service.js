@@ -13,7 +13,7 @@ import {
 } from "./survival-aware-service.js";
 import { resolveCanonicalWeather } from "../resolvers/weather-resolver.js";
 
-export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v5";
+export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v6";
 
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR|WORK_MEAL):/u;
 const WORK_MEAL_PATTERN = /^WORK_MEAL:([^:]+)$/u;
@@ -26,7 +26,9 @@ function number(value, fallback = 0) {
 
 function requestedChoiceActionId(input) {
   if (String(input?.type ?? "").trim().toUpperCase() !== "CHOOSE") return "";
-  return String(input?.payload?.actionId ?? input?.payload?.choiceId ?? "").trim();
+  const actionId = String(input?.payload?.actionId ?? "").trim();
+  if (actionId) return actionId;
+  return String(input?.payload?.choiceId ?? "").trim();
 }
 
 function requestedWorkMealAction(input) {
