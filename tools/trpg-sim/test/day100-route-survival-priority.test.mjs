@@ -108,7 +108,7 @@ test("夜間に疲労が高い時は事件移動前に公開休息actionを選�
   assert.equal(decision?.category, "rest");
 });
 
-test("緊急食事探索で地域越境せず、同地域の野営拠点へ退避する", () => {
+test("深夜でも空腹が危険域なら効果のない現地休息より同地域の食事拠点へ退避する", () => {
   const coverage = state();
   coverage.knownMealSources.LOC_CAP_LOWER_INN = {
     facilityId: "LOC_CAP_LOWER_INN",
@@ -149,6 +149,7 @@ test("緊急食事探索で地域越境せず、同地域の野営拠点へ退�
   const decision = selectUrgentDay100SurvivalDecision({ save: current, model, state: coverage });
   assert.equal(decision?.type, "MOVE");
   assert.equal(decision?.moveId, "MOVE_LOCAL:LOC_FOREST_CAMP");
+  assert.notEqual(decision?.actionId, "REST_OUTDOOR:LOC_FOREST_EDGE");
   assert.equal(decision?.category, "meal_search_move");
 });
 
