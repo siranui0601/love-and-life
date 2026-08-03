@@ -18,7 +18,7 @@ import {
   gameStateHash,
 } from "./service.js";
 
-export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v4";
+export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v5";
 export const RESOLVE_COLLAPSE_COMMAND = "RESOLVE_COLLAPSE_RESCUE";
 export const RESOLVE_COLLAPSE_CHOICE_ID = "COLLAPSE_RESCUE:ACCEPT";
 export const DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX = "DISCOVER_LOCAL_TROUBLE:";
@@ -227,6 +227,11 @@ function localTroubleOutcome(crisis) {
   };
 }
 
+function isAuthoredMissionScene(view) {
+  return (view?.choices ?? []).some((choice) =>
+    String(choice?.actionId ?? "").startsWith("MISSION_FLOW:"));
+}
+
 export class CollapseAwareTrpgGameService extends TrpgGameService {
   gameViewForRecord(record) {
     const runtime = hydrateRecord(record, this.data);
@@ -243,6 +248,9 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
         choices: [rescueChoice(view.collapseRescue)],
       };
     }
+    // A handwritten mission scene is a focused decision. Do not overwrite one
+    // of its three authoritative actions with a second crisis-discovery prompt.
+    if (isAuthoredMissionScene(view)) return view;
     const crisis = localUndiscoveredTrouble(runtime, this.data);
     if (!crisis) return view;
     const discoveryChoice = localTroubleDiscoveryChoice(runtime, crisis, this.data);
