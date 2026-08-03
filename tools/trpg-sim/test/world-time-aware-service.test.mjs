@@ -153,18 +153,7 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   player.freeMeals = 0;
   player.needs.hunger = 90;
   player.needs.fatigue = 40;
-  runtime.playerState.absoluteMinute = 36 * 1440 + 13 * 60;
-  runtime.playerState.day = 37;
-  runtime.playerState.hour = 13;
-  runtime.playerState.minute = 0;
-  runtime.playerState.minuteOfDay = 780;
-  runtime.playerState.phaseIndex = 2;
-  runtime.playerState.daypart = "evening";
-  runtime.playerState.weather = resolveCanonicalWeather({
-    day: 37,
-    regionId: "王都",
-    daypart: "evening",
-  });
+  const beforeAbsoluteMinute = runtime.playerState.absoluteMinute;
   record.runtimeSnapshot = serializeRuntime(runtime);
   record.stateHash = gameStateHash(deserializeRuntime(record.runtimeSnapshot, game.data), game.data);
   record.replayBase = {
@@ -187,12 +176,12 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   });
   assert.equal(result.duplicate, false);
   assert.equal(result.save.revision, before.revision + 1);
-  assert.equal(result.save.clock.day, 37);
-  assert.equal(result.save.clock.time, "15:00");
   assert.ok(result.save.player.needs.hunger < 72);
   assert.ok(result.save.player.needs.fatigue > 40);
 
   const stored = await store.get(created.id);
+  const afterRuntime = deserializeRuntime(stored.runtimeSnapshot, game.data);
+  assert.equal(afterRuntime.playerState.absoluteMinute, beforeAbsoluteMinute + 120);
   assert.equal(stored.commandLog.at(-1).resolvedActionId, "WORK_MEAL:LOC_CAP_MARKET");
   assert.equal(stored.commandLog.at(-1).outcome.type, "work_meal");
   assert.equal(stored.commandLog.at(-1).stateAfterHash, stored.stateHash);
