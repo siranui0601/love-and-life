@@ -137,7 +137,7 @@ test("疲労または夜間の休息は維持し、健康時にはまかない�
   assert.strictEqual(applySustenanceChoices(healthy, data), healthy);
 });
 
-test("まかない労働を通常commandで実行し、時刻・空腹・疲労・保存hash・replay基点を更新する", async () => {
+test("まかない労働を通常commandで実行し、時間帯・天候・生活状態・保存hash・replay基点を更新する", async () => {
   const store = new MemoryTrpgSaveStore();
   const game = new WorldTimeAwareTrpgGameService({ store, allowCustomSeed: true });
   const owner = "world-time-work-meal-owner";
@@ -153,6 +153,18 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   player.freeMeals = 0;
   player.needs.hunger = 90;
   player.needs.fatigue = 40;
+  runtime.playerState.absoluteMinute = 3510;
+  runtime.playerState.day = 3;
+  runtime.playerState.hour = 20;
+  runtime.playerState.minute = 30;
+  runtime.playerState.minuteOfDay = 1230;
+  runtime.playerState.phaseIndex = 2;
+  runtime.playerState.daypart = "dusk";
+  runtime.playerState.weather = resolveCanonicalWeather({
+    day: 3,
+    regionId: player.location,
+    daypart: "dusk",
+  });
   const beforeAbsoluteMinute = runtime.playerState.absoluteMinute;
   record.resolverVersion = TRPG_GAME_RESOLVER_VERSION;
   record.runtimeSnapshot = serializeRuntime(runtime);
@@ -185,6 +197,19 @@ test("まかない労働を通常commandで実行し、時刻・空腹・疲労�
   const stored = await store.get(created.id);
   const afterRuntime = deserializeRuntime(stored.runtimeSnapshot, game.data);
   assert.equal(afterRuntime.playerState.absoluteMinute, beforeAbsoluteMinute + 120);
+  assert.equal(afterRuntime.playerState.day, 3);
+  assert.equal(afterRuntime.playerState.hour, 22);
+  assert.equal(afterRuntime.playerState.minute, 30);
+  assert.equal(afterRuntime.playerState.minuteOfDay, 1350);
+  assert.equal(afterRuntime.playerState.phaseIndex, 3);
+  assert.equal(afterRuntime.playerState.daypart, "night");
+  const expectedWeather = resolveCanonicalWeather({
+    day: 3,
+    regionId: player.location,
+    daypart: "night",
+  });
+  assert.equal(afterRuntime.playerState.weather.scheduleKey, expectedWeather.scheduleKey);
+  assert.equal(afterRuntime.playerState.weather.id, expectedWeather.id);
   assert.equal(stored.commandLog.at(-1).resolvedActionId, "WORK_MEAL:LOC_FARM_INN");
   assert.equal(stored.commandLog.at(-1).outcome.type, "work_meal");
   assert.equal(stored.commandLog.at(-1).stateAfterHash, stored.stateHash);
