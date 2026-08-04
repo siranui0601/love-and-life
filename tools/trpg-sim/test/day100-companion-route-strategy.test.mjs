@@ -166,3 +166,58 @@ test("行動不能が迫る場合は人助けより先に食事を選ぶ", () =>
   assert.equal(decision.actionId, "EAT:BREAD:8");
   assert.equal(decision.category, "meal_consumed");
 });
+
+test("T13では完全救済を失うRV_ENDより継続可能なRV_CANを選ぶ", () => {
+  const save = baseSave({
+    guidance: { missionId: "MSN-T03" },
+    choices: [
+      {
+        choiceId: "T13-CONTINUE",
+        actionId: "MISSION_FLOW:T13:RV_CAN:ask_survivors_to_search",
+        missionId: "MSN-T03",
+        family: "coordination",
+        label: "生存者と捜索を続ける",
+      },
+      {
+        choiceId: "T13-SALVAGE",
+        actionId: "MISSION_FLOW:T13:RV_END:salvage",
+        missionId: "MSN-T03",
+        family: "logistics",
+        label: "残った物資を回収する",
+      },
+    ],
+  });
+
+  const decision = selectDay100CompanionRouteDecision({
+    save,
+    model,
+    state: coverageState(),
+  });
+
+  assert.equal(decision.actionId, "MISSION_FLOW:T13:RV_CAN:ask_survivors_to_search");
+  assert.equal(decision.missionId, "MSN-T13");
+  assert.equal(decision.payload.choiceId, "T13-CONTINUE");
+});
+
+test("完全救済を失う手書き枝しか残っていない場合は自動選択せず停止原因として露出する", () => {
+  const save = baseSave({
+    guidance: { missionId: "MSN-T13" },
+    choices: [
+      {
+        choiceId: "T13-SALVAGE",
+        actionId: "MISSION_FLOW:T13:RV_END:salvage",
+        missionId: "MSN-T13",
+        family: "logistics",
+        label: "残った物資を回収する",
+      },
+    ],
+  });
+
+  const decision = selectDay100CompanionRouteDecision({
+    save,
+    model,
+    state: coverageState(),
+  });
+
+  assert.equal(decision, null);
+});
