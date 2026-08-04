@@ -17,7 +17,12 @@ function runtime() {
         location: "田園の村",
         facilityId: "LOC_FARM_SQUARE",
       },
-      missions: [{ id: "MSN-T01", troubleId: "T01", status: "completed" }],
+      missions: [{
+        id: "MSN-T01",
+        troubleId: "T01",
+        status: "completed",
+        completedAt: 780,
+      }],
       worldFlags: { t01Resolved: true, t01FinnReturned: true },
       history: [],
       evidence: {},
@@ -99,14 +104,29 @@ test("the supper branches produce different state and do not repeat", () => {
   assert.ok(!repeated?.some((action) => action.authoredDay1T01AftercareChoice));
 });
 
-test("the scene is absent before completion, before Finn returns, outside the square, or outside the Day1 aftermath window", () => {
+test("eligibility reads do not mutate the persisted runtime", () => {
+  const state = runtime();
+  assert.equal(state.playerState.day1T01Aftercare, undefined);
+
+  assert.equal(internals.aftercareEligible(state), true);
+  assert.equal(internals.supperEligible(state), false);
+  assert.equal(state.playerState.day1T01Aftercare, undefined);
+});
+
+test("the scene is absent before formal completion, before Finn returns, outside the square, or outside the Day1 aftermath window", () => {
   const before = runtime();
   before.playerState.missions[0].status = "active";
+  before.playerState.missions[0].completedAt = null;
   before.playerState.worldFlags.t01Resolved = false;
   assert.equal(internals.aftercareEligible(before), false);
 
+  const resolvedFlagOnly = runtime();
+  resolvedFlagOnly.playerState.missions[0].completedAt = null;
+  assert.equal(internals.aftercareEligible(resolvedFlagOnly), false);
+
   const returnedButUndecided = runtime();
   returnedButUndecided.playerState.missions[0].status = "active";
+  returnedButUndecided.playerState.missions[0].completedAt = null;
   returnedButUndecided.playerState.worldFlags.t01Resolved = false;
   assert.equal(internals.aftercareEligible(returnedButUndecided), false);
 
