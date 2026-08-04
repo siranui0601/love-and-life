@@ -10,7 +10,7 @@ import {
 } from "./service.js";
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v8";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v9";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
@@ -64,33 +64,48 @@ function updateClock(state, absoluteMinute) {
   if (clock.daypart != null) state.daypart = clock.daypart;
 }
 
+function stableRuntimeSnapshot(runtimeSnapshot, data) {
+  let snapshot = runtimeSnapshot;
+  let runtime = null;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    runtime = deserializeRuntime(snapshot, data);
+    ensurePlayerNeeds(runtime.playerState.player);
+    const nextSnapshot = serializeRuntime(runtime);
+    if (JSON.stringify(nextSnapshot) === JSON.stringify(snapshot)) {
+      return { runtime, snapshot: nextSnapshot };
+    }
+    snapshot = nextSnapshot;
+  }
+  runtime = deserializeRuntime(snapshot, data);
+  ensurePlayerNeeds(runtime.playerState.player);
+  return { runtime, snapshot: serializeRuntime(runtime) };
+}
+
 function persistRuntime(record, runtime, data) {
   ensurePlayerNeeds(runtime.playerState.player);
-  const runtimeSnapshot = serializeRuntime(runtime);
-  const normalizedRuntime = deserializeRuntime(runtimeSnapshot, data);
-  ensurePlayerNeeds(normalizedRuntime.playerState.player);
-  record.runtimeSnapshot = serializeRuntime(normalizedRuntime);
-  record.stateHash = gameStateHash(normalizedRuntime, data);
+  const stable = stableRuntimeSnapshot(serializeRuntime(runtime), data);
+  record.runtimeSnapshot = stable.snapshot;
+  record.stateHash = gameStateHash(stable.runtime, data);
   record.summary = {
     clock: {
-      day: normalizedRuntime.playerState.day,
-      time: `${String(normalizedRuntime.playerState.hour).padStart(2, "0")}:${String(normalizedRuntime.playerState.minute).padStart(2, "0")}`,
+      day: stable.runtime.playerState.day,
+      time: `${String(stable.runtime.playerState.hour).padStart(2, "0")}:${String(stable.runtime.playerState.minute).padStart(2, "0")}`,
     },
-    location: normalizedRuntime.playerState.player.location,
-    facilityId: normalizedRuntime.playerState.player.facilityId,
-    level: normalizedRuntime.playerState.player.level,
+    location: stable.runtime.playerState.player.location,
+    facilityId: stable.runtime.playerState.player.facilityId,
+    level: stable.runtime.playerState.player.level,
   };
 }
 
 export function canonicalizePersistedRuntimeRecord(record, data) {
   if (!record?.runtimeSnapshot || !data) return false;
-  const normalizedRuntime = deserializeRuntime(record.runtimeSnapshot, data);
-  ensurePlayerNeeds(normalizedRuntime.playerState.player);
-  const normalizedSnapshot = serializeRuntime(normalizedRuntime);
-  const normalizedHash = gameStateHash(normalizedRuntime, data);
-  if (normalizedHash === record.stateHash) return false;
+  const stable = stableRuntimeSnapshot(record.runtimeSnapshot, data);
+  const normalizedHash = gameStateHash(stable.runtime, data);
+  const changed = normalizedHash !== record.stateHash
+    || JSON.stringify(stable.snapshot) !== JSON.stringify(record.runtimeSnapshot);
+  if (!changed) return false;
 
-  record.runtimeSnapshot = normalizedSnapshot;
+  record.runtimeSnapshot = stable.snapshot;
   record.stateHash = normalizedHash;
   const latestEntry = [...(record.commandLog ?? [])]
     .reverse()
@@ -100,7 +115,7 @@ export function canonicalizePersistedRuntimeRecord(record, data) {
     resolverVersion: record.resolverVersion,
     revision: record.revision,
     stateHash: normalizedHash,
-    runtimeSnapshot: normalizedSnapshot,
+    runtimeSnapshot: stable.snapshot,
   };
   record.updatedAt = new Date().toISOString();
   return true;
@@ -213,6 +228,7 @@ function decorateCommandResult(result, data) {
 
 export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
   gameViewForRecord(record) {
+    canonicalizePersistedRuntimeRecord(record, this.data);
     return applyUrgentLifeChoices(super.gameViewForRecord(record), this.data);
   }
 
@@ -249,6 +265,7 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
       });
     }
 
+    canonicalizePersistedRuntimeRecord(record, this.data);
     const runtime = deserializeRuntime(record.runtimeSnapshot, this.data);
     ensurePlayerNeeds(runtime.playerState.player);
     const beforeHash = gameStateHash(runtime, this.data);
