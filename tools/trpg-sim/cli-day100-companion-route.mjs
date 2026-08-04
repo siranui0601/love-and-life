@@ -98,6 +98,7 @@ class Day100CompanionRouteRunner extends Day100GameRunner {
       choiceSets,
     };
     result.report.quality.noRepeatedChoiceSet = choiceSets.passed;
+    result.report.quality.companionRouteAllRescue = result.report.routeTrial.allRescueCandidate;
     result.report.quality.passed = Object.values(result.report.quality).every(Boolean);
     return result;
   }
@@ -150,6 +151,7 @@ if (process.argv.includes("--strict-runtime")) {
   const runtimePassed = result.report.reachedDay100
     && result.report.deadEnds === 0
     && result.report.errors.length === 0
-    && result.report.routeTrial.choiceSets.passed;
+    && result.report.routeTrial.choiceSets.passed
+    && result.report.routeTrial.allRescueCandidate;
   if (!runtimePassed) process.exitCode = 1;
 }
