@@ -173,10 +173,6 @@ test("有料食を正式commandで実行し、所持金・空腹・履歴を保�
   player.freeLodging = 0;
   player.needs.hunger = 82;
   player.needs.fatigue = 40;
-  runtime.playerState.day = 17;
-  runtime.playerState.hour = 17;
-  runtime.playerState.minute = 0;
-  runtime.playerState.absoluteMinute = 16 * 1440 + 11 * 60;
   record.runtimeSnapshot = serializeRuntime(runtime);
   record.stateHash = "stale-paid-meal-hash";
   canonicalizePersistedRuntimeRecord(record, game.data);
