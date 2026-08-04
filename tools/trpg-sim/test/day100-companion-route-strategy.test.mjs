@@ -50,6 +50,43 @@ function baseSave(overrides = {}) {
 
 const model = { troubles: [], adjacency: {} };
 
+test("T01救出直後は子ども遊びよりミラの手伝いを選び正式な縦経路へ入る", () => {
+  const save = baseSave({
+    choices: [
+      {
+        choiceId: "AFTERCARE-HELP",
+        actionId: "MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira",
+        missionId: "MSN-T01",
+        family: "help",
+        label: "ミラを手伝う",
+      },
+      {
+        choiceId: "AFTERCARE-RECORD",
+        actionId: "MISSION_FLOW:T01:SQUARE_AFTERCARE:give_record",
+        missionId: "MSN-T01",
+        family: "report",
+        label: "村長に記録を渡す",
+      },
+      {
+        choiceId: "AFTERCARE-PLAY",
+        actionId: "MISSION_FLOW:T01:SQUARE_AFTERCARE:play_children",
+        missionId: "MSN-T01",
+        family: "social",
+        label: "子どもと遊ぶ",
+      },
+    ],
+  });
+
+  const decision = selectDay100CompanionRouteDecision({
+    save,
+    model,
+    state: coverageState(),
+  });
+
+  assert.equal(decision.actionId, "MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira");
+  assert.equal(decision.payload.choiceId, "AFTERCARE-HELP");
+});
+
 test("Day2の共同見張りでは村人へ役割を渡す行動を優先する", () => {
   const save = baseSave({
     choices: [
