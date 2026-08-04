@@ -56,6 +56,15 @@ test("object形式missionでも帰還履歴があれば同じ救出後三択を�
   assert.equal(authoredMissionFlowExclusiveActions(state).length, 3);
 });
 
+test("legacy runtime直下のt01Resolvedも成功救出の移行状態として認識する", () => {
+  const state = runtime(new Map(), { finnReturned: false });
+  state.worldFlags = { t01Resolved: true };
+  assert.equal(entry.t01ResolvedFlag(state), true);
+  assert.equal(entry.canonicalT01Completed(state), true);
+  assert.equal(entry.canonicalFinnReturned(state), true);
+  assert.equal(authoredMissionFlowExclusiveActions(state).length, 3);
+});
+
 test("ミラを手伝った直後は更新された夕食三択へ進む", () => {
   const state = runtime(new Map([
     ["MSN-T01", { id: "MSN-T01", status: "completed" }],
