@@ -11,6 +11,7 @@ import {
 function runtime() {
   return {
     playerState: {
+      day: 1,
       absoluteMinute: 780,
       player: {
         location: "田園の村",
@@ -98,11 +99,16 @@ test("the supper branches produce different state and do not repeat", () => {
   assert.ok(!repeated?.some((action) => action.authoredDay1T01AftercareChoice));
 });
 
-test("the scene is absent before rescue completion, before Finn returns, or outside the village square", () => {
+test("the scene is absent before completion, before Finn returns, outside the square, or outside the Day1 aftermath window", () => {
   const before = runtime();
   before.playerState.missions[0].status = "active";
-  before.playerState.worldFlags = {};
+  before.playerState.worldFlags.t01Resolved = false;
   assert.equal(internals.aftercareEligible(before), false);
+
+  const returnedButUndecided = runtime();
+  returnedButUndecided.playerState.missions[0].status = "active";
+  returnedButUndecided.playerState.worldFlags.t01Resolved = false;
+  assert.equal(internals.aftercareEligible(returnedButUndecided), false);
 
   const notReturned = runtime();
   delete notReturned.playerState.worldFlags.t01FinnReturned;
@@ -111,4 +117,13 @@ test("the scene is absent before rescue completion, before Finn returns, or outs
   const away = runtime();
   away.playerState.player.facilityId = "LOC_FARM_INN";
   assert.equal(internals.aftercareEligible(away), false);
+
+  const morningFixture = runtime();
+  morningFixture.playerState.absoluteMinute = 480;
+  assert.equal(internals.aftercareEligible(morningFixture), false);
+
+  const day2 = runtime();
+  day2.playerState.day = 2;
+  day2.playerState.absoluteMinute = 1920;
+  assert.equal(internals.aftercareEligible(day2), false);
 });
