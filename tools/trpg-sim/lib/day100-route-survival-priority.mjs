@@ -109,13 +109,28 @@ function localRecoveryChoice(save) {
   return null;
 }
 
-function localEmergencyAlternative(save) {
+function knownLocalMealFacilityIds(save, state) {
+  const currentHub = save?.scene?.location;
+  return new Set(
+    Object.values(state?.knownMealSources ?? {})
+      .filter((entry) => entry?.facilityId && (!entry?.hub || entry.hub === currentHub))
+      .map((entry) => entry.facilityId),
+  );
+}
+
+function localEmergencyAlternative(save, state) {
   const recovery = localRecoveryChoice(save);
   if (recovery) return recovery;
 
+  const hunger = number(save?.player?.needs?.hunger);
+  const knownMealFacilityIds = knownLocalMealFacilityIds(save, state);
   const localShelter = (save?.movement ?? [])
     .filter((entry) => entry.scope === "local")
-    .find((entry) => LOCAL_SHELTER_PATTERN.test(actionText(entry)));
+    .find((entry) => {
+      if (!LOCAL_SHELTER_PATTERN.test(actionText(entry))) return false;
+      if (hunger < 72) return true;
+      return knownMealFacilityIds.has(entry.destinationFacilityId);
+    });
   if (!localShelter) return null;
   return {
     type: "MOVE",
@@ -143,7 +158,7 @@ export function selectUrgentDay100SurvivalDecision({ save, model, state }) {
 
   const movement = movementForDecision(save, decision);
   if (movement?.scope === "regional") {
-    return localEmergencyAlternative(save) ?? decision;
+    return localEmergencyAlternative(save, state) ?? decision;
   }
   return decision;
 }
@@ -159,6 +174,7 @@ export const DAY100_ROUTE_SURVIVAL_PRIORITY_INTERNALS = Object.freeze({
   REST_PATTERN,
   SURVIVAL_CATEGORIES,
   WORK_MEAL_PATTERN,
+  knownLocalMealFacilityIds,
   localEmergencyAlternative,
   localRecoveryChoice,
   movementForDecision,
