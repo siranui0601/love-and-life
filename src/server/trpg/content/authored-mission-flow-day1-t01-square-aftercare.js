@@ -3,7 +3,7 @@ import * as base from "./authored-mission-flow-t13-workshop-cargo-yard.js";
 export * from "./authored-mission-flow-t13-workshop-cargo-yard.js";
 
 export const AUTHORED_DAY1_T01_SQUARE_AFTERCARE_VERSION =
-  "authored-day1-t01-square-aftercare-v3";
+  "authored-day1-t01-square-aftercare-v4";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -132,8 +132,8 @@ function mission(runtime) {
 
 function isT01Completed(runtime) {
   const entry = mission(runtime);
-  if (entry?.status === "completed" || entry?.status === "resolved") return true;
-  return runtime?.playerState?.worldFlags?.t01Resolved === true;
+  const completed = entry?.status === "completed" || entry?.status === "resolved";
+  return completed && entry?.completedAt != null;
 }
 
 function hasFinnReturned(runtime) {
@@ -151,6 +151,12 @@ function withinDay1AftercareWindow(runtime) {
   return day === 1
     && minute >= DAY1_AFTERCARE_OPEN_MINUTE
     && minute < DAY1_AFTERCARE_CLOSE_MINUTE;
+}
+
+function readState(runtime) {
+  const state = runtime?.playerState?.day1T01Aftercare;
+  if (!state || typeof state !== "object") return null;
+  return state;
 }
 
 function ensureState(runtime) {
@@ -177,7 +183,7 @@ function aftercareEligible(runtime) {
     || !hasFinnReturned(runtime)
     || !atVillageSquare(runtime)
     || !withinDay1AftercareWindow(runtime)) return false;
-  return ensureState(runtime).aftercareCompletedAtMinute == null;
+  return readState(runtime)?.aftercareCompletedAtMinute == null;
 }
 
 function supperEligible(runtime) {
@@ -185,9 +191,9 @@ function supperEligible(runtime) {
     || !hasFinnReturned(runtime)
     || !atVillageSquare(runtime)
     || !withinDay1AftercareWindow(runtime)) return false;
-  const state = ensureState(runtime);
-  return state.aftercareSelectedActionId === HELP_ACTION_ID
-    && state.supperCompletedAtMinute == null;
+  const state = readState(runtime);
+  return state?.aftercareSelectedActionId === HELP_ACTION_ID
+    && state?.supperCompletedAtMinute == null;
 }
 
 function actionFor(sceneId, choice) {
@@ -315,6 +321,7 @@ export const AUTHORED_DAY1_T01_SQUARE_AFTERCARE_INTERNALS = Object.freeze({
   hasFinnReturned,
   atVillageSquare,
   withinDay1AftercareWindow,
+  readState,
   ensureState,
   aftercareEligible,
   supperEligible,
