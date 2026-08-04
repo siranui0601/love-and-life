@@ -8,7 +8,7 @@ import {
   AUTHORED_HUMAN_ROUTE_ENTRY_INTERNALS as entry,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 
-function runtime(missions) {
+function runtime(missions, { finnReturned = true } = {}) {
   return {
     playerState: {
       absoluteMinute: 222,
@@ -17,7 +17,7 @@ function runtime(missions) {
         facilityId: "LOC_FARM_SQUARE",
       },
       missions,
-      worldFlags: {},
+      worldFlags: finnReturned ? { t01FinnReturned: true } : {},
       history: [],
       evidence: {},
     },
@@ -33,12 +33,13 @@ function select(state, label) {
   return result;
 }
 
-test("正式runtimeのMap形式missionからT01救出後三択を表示する", () => {
+test("正式runtimeのMap形式missionと帰還履歴からT01救出後三択を表示する", () => {
   const state = runtime(new Map([
     ["MSN-T01", { id: "MSN-T01", status: "completed" }],
   ]));
 
   assert.equal(entry.canonicalT01Completed(state), true);
+  assert.equal(entry.canonicalFinnReturned(state), true);
   assert.equal(authoredMissionFlowGuidance(state).title, "救出の後に何をするか");
   assert.deepEqual(
     authoredMissionFlowExclusiveActions(state).map((action) => action.label),
@@ -46,11 +47,12 @@ test("正式runtimeのMap形式missionからT01救出後三択を表示する", 
   );
 });
 
-test("object形式missionでも同じ救出後三択を表示する", () => {
+test("object形式missionでも帰還履歴があれば同じ救出後三択を表示する", () => {
   const state = runtime({
     "MSN-T01": { id: "MSN-T01", status: "resolved" },
   });
   assert.equal(entry.canonicalT01Completed(state), true);
+  assert.equal(entry.canonicalFinnReturned(state), true);
   assert.equal(authoredMissionFlowExclusiveActions(state).length, 3);
 });
 
@@ -67,6 +69,15 @@ test("ミラを手伝った直後は更新された夕食三択へ進む", () =>
   );
   assert.equal(state.playerState.day1T01Aftercare.aftercareClosedActionIds.length, 2);
   assert.equal(state.playerState.history.at(-1).type, "T01_AFTERCARE_MIRA_HELPED");
+});
+
+test("完了扱いでもフィンが未帰還なら救出後三択を表示しない", () => {
+  const state = runtime(new Map([
+    ["MSN-T01", { id: "MSN-T01", status: "completed" }],
+  ]), { finnReturned: false });
+  assert.equal(entry.canonicalT01Completed(state), true);
+  assert.equal(entry.canonicalFinnReturned(state), false);
+  assert.equal(entry.ownActions(state), null);
 });
 
 test("未完了missionや別施設では救出後三択を割り込ませない", () => {
