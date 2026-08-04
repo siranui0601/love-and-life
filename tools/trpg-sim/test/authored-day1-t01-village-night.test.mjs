@@ -7,6 +7,7 @@ import {
   authoredMissionFlowGuidance,
   AUTHORED_DAY1_T01_SQUARE_AFTERCARE_INTERNALS as aftercare,
   AUTHORED_DAY1_T01_VILLAGE_NIGHT_INTERNALS as night,
+  AUTHORED_DAY1_T01_VILLAGE_NIGHT_CANONICAL_INTERNALS as canonical,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 
 function runtime() {
@@ -95,6 +96,8 @@ test("sleeping changes living state, closes branches, and reaches the Day2 merch
     "品物を見る",
     "朝粥を食べる",
   ]);
+  assert.ok(morning.every((action) => action.targetNpcId === canonical.MERCHANT_NPC_ID));
+  assert.ok(morning.every((action) => action.authoredDay1T01VillageNightSpeech.actorId === "NPC008"));
 });
 
 test("merchant choices create different logistics, shopping, and life results", () => {
@@ -104,7 +107,8 @@ test("merchant choices create different logistics, shopping, and life results", 
     .find((action) => action.id === night.SLEEP_ACTION_ID));
   const unload = authoredMissionFlowExclusiveActions(workState)
     .find((action) => action.label === "荷ほどきを手伝う");
-  choose(workState, unload);
+  const unloadResult = choose(workState, unload);
+  assert.equal(unloadResult.speeches[0].actorId, "NPC008");
   assert.equal(workState.playerState.worldFlags["day2Merchant:unloadingHelped"], true);
   assert.equal(workState.playerState.worldFlags["day2Merchant:access:trusted"], true);
   assert.equal(workState.playerState.day1T01VillageNight.merchantAccess, "trusted");
