@@ -101,6 +101,6 @@ test("payment scene requires the saved unloading history and cannot repeat", () 
   assert.equal(payment.eligible(state), false);
   state.playerState.history.push({ type: "DAY2_MERCHANT_UNLOADING_HELPED" });
   assert.equal(payment.eligible(state), true);
-  choose(state, authoredMissionFlowExclusiveActions(state)[0]);
+  choose(state, payment.actionFor(payment.CHOICES[0]));
   assert.equal(payment.eligible(state), false);
 });
