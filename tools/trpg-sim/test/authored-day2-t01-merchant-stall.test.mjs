@@ -120,8 +120,10 @@ test("stall requires saved cash-payment history and completed scenes do not repe
   assert.equal(stall.stallEligible(state), false);
   state.playerState.history.push({ type: "DAY2_MERCHANT_CASH_WAGE_TAKEN" });
   assert.equal(stall.stallEligible(state), true);
-  choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === "値段を書き留める"));
-  choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === "紙片をしまう"));
+  const copyPrices = stall.STALL_CHOICES.find((choice) => choice.id === "copy_prices");
+  choose(state, stall.stallAction(copyPrices));
+  const keepNotes = stall.FOLLOWUPS["t01-day2-price-notes"].choices.find((choice) => choice.id === "keep_notes");
+  choose(state, stall.followupAction("t01-day2-price-notes", keepNotes));
   assert.equal(stall.stallEligible(state), false);
   assert.equal(stall.followupScene(state), null);
 });
