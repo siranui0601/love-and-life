@@ -13,7 +13,7 @@ import {
 } from "./survival-aware-service.js";
 import { resolveCanonicalWeather } from "../resolvers/weather-resolver.js";
 
-export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v6";
+export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v7";
 
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR|WORK_MEAL):/u;
 const WORK_MEAL_PATTERN = /^WORK_MEAL:([^:]+)$/u;
@@ -166,6 +166,16 @@ function commandPayload(input) {
   };
 }
 
+export function synchronizePersistedRecordHash(record, data) {
+  if (!record?.runtimeSnapshot || !data) return false;
+  const normalizedRuntime = deserializeRuntime(record.runtimeSnapshot, data);
+  const normalizedHash = gameStateHash(normalizedRuntime, data);
+  if (normalizedHash === record.stateHash) return false;
+  record.stateHash = normalizedHash;
+  reconcileLatestCommand(record);
+  return true;
+}
+
 export function synchronizeLifeActionWeatherRecord(record, data) {
   if (!record?.runtimeSnapshot || !data) return false;
   const runtime = deserializeRuntime(record.runtimeSnapshot, data);
@@ -294,10 +304,14 @@ export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService 
     }
 
     const result = await super.command(ownerHash, id, input);
-    if (result?.duplicate || !isLifeAction(input)) return result;
+    if (result?.duplicate) return result;
 
     const record = await this.recordForOwner(ownerHash, id);
-    if (!synchronizeLifeActionWeatherRecord(record, this.data)) return result;
+    let changed = synchronizePersistedRecordHash(record, this.data);
+    if (isLifeAction(input)) {
+      changed = synchronizeLifeActionWeatherRecord(record, this.data) || changed;
+    }
+    if (!changed) return result;
     await this.store.put(record);
     return {
       ...result,
