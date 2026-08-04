@@ -69,3 +69,26 @@ test("不整合な既存保存をGET時に修復して永続化し、次command�
   assert.equal(stored.replayBase.stateHash, stored.stateHash);
   assert.deepEqual(stored.replayBase.runtimeSnapshot, stored.runtimeSnapshot);
 });
+
+test("王都訪問済み保存は公共ルート補完をhash計算前に適用する", async () => {
+  const store = new MemoryTrpgSaveStore();
+  const game = new WorldTimeAwareTrpgGameService({ store, allowCustomSeed: true });
+  const created = await game.create("capital-route-boundary-owner", {
+    playerName: "公共路境界テスト",
+    seed: "capital-route-boundary-test",
+  });
+  const record = await store.get(created.id);
+  const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
+  runtime.playerState.progress.travel.visitedHubs.add("王都");
+  runtime.capitalArrivalGuidance ??= {};
+  runtime.capitalArrivalGuidance.routeBoardDiscoveredAtMinute = null;
+  runtime.capitalArrivalGuidance.routeBoardDestinationIds = [];
+  record.runtimeSnapshot = serializeRuntime(runtime);
+  record.stateHash = gameStateHash(runtime, game.data);
+
+  assert.doesNotThrow(() => game.gameViewForRecord(record));
+  const normalized = deserializeRuntime(record.runtimeSnapshot, game.data);
+  assert.ok(normalized.capitalArrivalGuidance.routeBoardDestinationIds.length > 0);
+  assert.notEqual(normalized.capitalArrivalGuidance.routeBoardDiscoveredAtMinute, null);
+  assert.equal(record.stateHash, gameStateHash(normalized, game.data));
+});
