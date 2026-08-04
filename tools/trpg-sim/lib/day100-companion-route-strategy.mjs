@@ -7,6 +7,7 @@ const { isDecisionBlocked } = DAY100_POLICY_INTERNALS;
 const CONTROL_PATTERN = /:(?:NAVIGATOR_BACK|BACK|CANCEL|ABORT|RECONSIDER|DEFER)(?::|$)/u;
 const AUTHORED_PATTERN = /^MISSION_FLOW:/u;
 const COMPANION_TEXT_PATTERN = /(?:手伝|助け|救|守|運ぶ|見舞|仲間|一緒|伝え|話|遊|子ども|家畜|当番|共有|協力|預か|届け|見張|移す|食べる|任せる)/u;
+const HUMAN_ROUTE_BRIDGE_PATTERN = /(?:ミラを手伝う|パンをちぎる|ミラの家で眠る|荷ほどきを手伝う|三Gを受け取る|猟師の荷を預かる|狩人小屋へ向かう|罠を直す|村へ知らせる|家畜を移す|当番札を回す|子どもを家へ返す)/u;
 const RESCUE_CONTINUATION_PATTERN = /(?::RV_CAN:|完全救済|救出を続け|救助を続け|助けに向か|保護する|支える)/u;
 const RESCUE_LOSS_PATTERN = /(?::RV_END:|salvage|完全救済を失|救出を諦|救助を諦|見捨て|打ち切|部分救済で終)/iu;
 
@@ -47,9 +48,11 @@ function choiceScore(choice) {
   const text = actionText(choice);
   const textScore = COMPANION_TEXT_PATTERN.test(text) ? 40 : 0;
   const authoredScore = AUTHORED_PATTERN.test(String(choice?.actionId ?? "")) ? 15 : 0;
+  const humanBridgeScore = HUMAN_ROUTE_BRIDGE_PATTERN.test(text) ? 400 : 0;
   const explicitBridgeScore = /DAY2_VILLAGE_WATCH|DAY8_FIRST_HOWL/u.test(String(choice?.actionId ?? "")) ? 80 : 0;
   const rescueContinuationScore = RESCUE_CONTINUATION_PATTERN.test(text) ? 180 : 0;
-  return familyScore + textScore + authoredScore + explicitBridgeScore + rescueContinuationScore;
+  return familyScore + textScore + authoredScore + humanBridgeScore
+    + explicitBridgeScore + rescueContinuationScore;
 }
 
 function candidateChoices(save, state) {
@@ -117,6 +120,7 @@ export function selectDay100CompanionRouteDecision(args) {
 export const DAY100_COMPANION_ROUTE_INTERNALS = Object.freeze({
   AUTHORED_PATTERN,
   COMPANION_TEXT_PATTERN,
+  HUMAN_ROUTE_BRIDGE_PATTERN,
   RESCUE_CONTINUATION_PATTERN,
   RESCUE_LOSS_PATTERN,
   FAMILY_SCORE,
