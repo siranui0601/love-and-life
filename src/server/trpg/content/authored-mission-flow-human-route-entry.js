@@ -5,7 +5,7 @@ import {
 
 export * from "./authored-mission-flow-human-companion-causality.js";
 
-export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v2";
+export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v3";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -49,7 +49,9 @@ function canonicalT01Completed(runtime) {
 }
 
 function canonicalFinnReturned(runtime) {
-  return aftercare.hasFinnReturned(runtime);
+  const flags = runtime?.playerState?.worldFlags ?? runtime?.worldFlags ?? {};
+  return aftercare.hasFinnReturned(runtime)
+    || flags.t01Resolved === true;
 }
 
 function atVillageSquare(runtime) {
