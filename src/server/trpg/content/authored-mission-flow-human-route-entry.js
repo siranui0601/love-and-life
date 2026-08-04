@@ -5,7 +5,7 @@ import {
 
 export * from "./authored-mission-flow-human-companion-causality.js";
 
-export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v1";
+export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v2";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -45,8 +45,11 @@ function canonicalT01Completed(runtime) {
   if (["completed", "resolved", "suppressed", "prevented"].includes(String(troubleStatus ?? ""))) {
     return true;
   }
-  return runtime?.playerState?.worldFlags?.t01Resolved === true
-    || runtime?.playerState?.worldFlags?.t01FinnReturned === true;
+  return runtime?.playerState?.worldFlags?.t01Resolved === true;
+}
+
+function canonicalFinnReturned(runtime) {
+  return aftercare.hasFinnReturned(runtime);
 }
 
 function atVillageSquare(runtime) {
@@ -55,7 +58,9 @@ function atVillageSquare(runtime) {
 }
 
 function ownActions(runtime) {
-  if (!canonicalT01Completed(runtime) || !atVillageSquare(runtime)) return null;
+  if (!canonicalT01Completed(runtime)
+    || !canonicalFinnReturned(runtime)
+    || !atVillageSquare(runtime)) return null;
   const state = aftercare.ensureState(runtime);
   if (state.aftercareSelectedActionId === aftercare.HELP_ACTION_ID
     && state.supperCompletedAtMinute == null) {
@@ -114,6 +119,7 @@ export const AUTHORED_HUMAN_ROUTE_ENTRY_INTERNALS = Object.freeze({
   values,
   findMission,
   canonicalT01Completed,
+  canonicalFinnReturned,
   atVillageSquare,
   ownActions,
 });
