@@ -1,1 +1,1 @@
-export * from "./authored-mission-flow-day2-t01-hunter-lunch.js";
+export * from "./authored-mission-flow-day2-t01-village-warning-result.js";
