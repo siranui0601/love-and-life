@@ -4,13 +4,14 @@ import {
   ensurePlayerNeeds,
 } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 import { deserializeRuntime, serializeRuntime } from "./serializer.js";
+import { syncAuthoritativePresentNpcIds } from "./presence.js";
 import {
   TrpgGameError,
   gameStateHash,
 } from "./service.js";
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v10";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v11";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
@@ -65,30 +66,32 @@ function updateClock(state, absoluteMinute) {
   if (clock.daypart != null) state.daypart = clock.daypart;
 }
 
+function normalizeRuntime(runtime, data) {
+  ensurePlayerNeeds(runtime.playerState.player);
+  syncAuthoritativePresentNpcIds(runtime, data);
+  return runtime;
+}
+
 function stableRuntimeSnapshot(runtimeSnapshot, data) {
   let snapshot = runtimeSnapshot;
   for (let attempt = 0; attempt < MAX_RUNTIME_CANONICALIZATION_PASSES; attempt += 1) {
-    const runtime = deserializeRuntime(snapshot, data);
-    ensurePlayerNeeds(runtime.playerState.player);
+    const runtime = normalizeRuntime(deserializeRuntime(snapshot, data), data);
     const nextSnapshot = serializeRuntime(runtime);
     if (JSON.stringify(nextSnapshot) === JSON.stringify(snapshot)) {
-      const restored = deserializeRuntime(nextSnapshot, data);
-      ensurePlayerNeeds(restored.playerState.player);
+      const restored = normalizeRuntime(deserializeRuntime(nextSnapshot, data), data);
       return { runtime: restored, snapshot: serializeRuntime(restored) };
     }
     snapshot = nextSnapshot;
   }
 
-  const runtime = deserializeRuntime(snapshot, data);
-  ensurePlayerNeeds(runtime.playerState.player);
+  const runtime = normalizeRuntime(deserializeRuntime(snapshot, data), data);
   const finalSnapshot = serializeRuntime(runtime);
-  const restored = deserializeRuntime(finalSnapshot, data);
-  ensurePlayerNeeds(restored.playerState.player);
+  const restored = normalizeRuntime(deserializeRuntime(finalSnapshot, data), data);
   return { runtime: restored, snapshot: serializeRuntime(restored) };
 }
 
 function persistRuntime(record, runtime, data) {
-  ensurePlayerNeeds(runtime.playerState.player);
+  normalizeRuntime(runtime, data);
   const stable = stableRuntimeSnapshot(serializeRuntime(runtime), data);
   record.runtimeSnapshot = stable.snapshot;
   record.stateHash = gameStateHash(stable.runtime, data);
@@ -272,8 +275,7 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
     }
 
     canonicalizePersistedRuntimeRecord(record, this.data);
-    const runtime = deserializeRuntime(record.runtimeSnapshot, this.data);
-    ensurePlayerNeeds(runtime.playerState.player);
+    const runtime = normalizeRuntime(deserializeRuntime(record.runtimeSnapshot, this.data), this.data);
     const beforeHash = gameStateHash(runtime, this.data);
     if (beforeHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
     const visible = urgentLifeChoices(super.gameViewForRecord(record), this.data)
