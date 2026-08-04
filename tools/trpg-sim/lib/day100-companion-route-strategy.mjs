@@ -79,11 +79,11 @@ export function selectDay100CompanionRouteDecision(args) {
 
   const { save, model, state } = args;
   if (save?.world?.ended || save?.battle || save?.tutorial?.id) {
-    return selectDay100RouteDecision({ save, model, state, routeMode: "chain" });
+    return selectDay100RouteDecision({ save, model, state, routeMode: "deadline" });
   }
 
   return companionDecision(save, state)
-    ?? selectDay100RouteDecision({ save, model, state, routeMode: "chain" });
+    ?? selectDay100RouteDecision({ save, model, state, routeMode: "deadline" });
 }
 
 export const DAY100_COMPANION_ROUTE_INTERNALS = Object.freeze({
