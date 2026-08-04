@@ -10,11 +10,13 @@ import {
 } from "./service.js";
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v6";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v7";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR):([^:]+)(?::(\d+))?$/u;
+const DEFAULT_PAID_MEAL_PRICE = 4;
+const DEFAULT_MEAL_NUTRITION = 58;
 
 function number(value, fallback = 0) {
   const parsed = Number(value);
@@ -128,19 +130,24 @@ export function urgentLifeChoices(view, data) {
   const facilityText = `${facilityId} ${facility?.name ?? ""}`;
   const choices = [];
 
-  if (number(view?.player?.freeMeals) > 0 && MEAL_FACILITY_PATTERN.test(facilityText)) {
-    const actionId = `EAT:${facilityId}:0`;
-    if (!choiceExists(view, actionId)) {
+  if (MEAL_FACILITY_PATTERN.test(facilityText)) {
+    const freeMealAvailable = number(view?.player?.freeMeals) > 0;
+    const price = freeMealAvailable ? 0 : DEFAULT_PAID_MEAL_PRICE;
+    const mealAffordable = freeMealAvailable || number(view?.player?.gold) >= price;
+    const actionId = `EAT:${facilityId}:${price}`;
+    if (mealAffordable && !choiceExists(view, actionId)) {
       choices.push({
         choiceId: actionId,
         id: actionId,
         actionId,
-        label: `${facility?.name ?? "この場所"}で用意された食事を取る`,
+        label: freeMealAvailable
+          ? `${facility?.name ?? "この場所"}で用意された食事を取る`
+          : `${facility?.name ?? "この場所"}で食事を頼む（${price}G）`,
         type: "eat",
         intentType: "life",
         minutes: 30,
-        price: 0,
-        nutrition: 58,
+        price,
+        nutrition: DEFAULT_MEAL_NUTRITION,
         danger: false,
       });
     }
@@ -251,9 +258,16 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
     const minuteBefore = runtime.playerState.absoluteMinute;
     let minutes;
     let summary;
+    let goldCost = 0;
     if (request.kind === "eat") {
-      if (player.freeMeals <= 0) throw new TrpgGameError(409, "choice_not_available");
-      player.freeMeals -= 1;
+      if (request.price > 0) {
+        if (number(player.gold) < request.price) throw new TrpgGameError(409, "choice_not_available");
+        player.gold = number(player.gold) - request.price;
+        goldCost = request.price;
+      } else {
+        if (player.freeMeals <= 0) throw new TrpgGameError(409, "choice_not_available");
+        player.freeMeals -= 1;
+      }
       minutes = 30;
       advancePlayerNeeds(player, {
         minutes,
@@ -262,7 +276,7 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
         weatherTags: runtime.playerState.weather?.tags ?? [],
         outdoors: false,
       });
-      player.needs.hunger = Math.max(0, number(player.needs.hunger) - 58);
+      player.needs.hunger = Math.max(0, number(player.needs.hunger) - number(visible.nutrition, DEFAULT_MEAL_NUTRITION));
       summary = `${visible.label}。空腹が和らいだ。`;
     } else {
       const lodging = request.kind === "lodge";
@@ -292,6 +306,7 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
       facilityId: player.facilityId,
       location: player.location,
       minutes,
+      goldCost,
     });
 
     const outcome = {
@@ -300,6 +315,7 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
       summary,
       minutes,
       facilityId: player.facilityId,
+      goldCost,
     };
     const revisionBefore = record.revision;
     record.revision += 1;
