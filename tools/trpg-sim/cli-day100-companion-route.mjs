@@ -94,7 +94,8 @@ class Day100CompanionRouteRunner extends Day100GameRunner {
       improvementOverBaseline: result.report.counts.discovered > 6
         || result.report.counts.progressed > 1
         || result.report.counts.resolved > 1,
-      allRescueCandidate: result.report.counts.resolved === result.report.counts.total,
+      allRescueCandidate: result.report.counts.terminal === result.report.counts.total
+        && result.report.counts.failed === 0,
       choiceSets,
     };
     result.report.quality.noRepeatedChoiceSet = choiceSets.passed;
