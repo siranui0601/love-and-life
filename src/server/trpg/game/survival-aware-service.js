@@ -10,13 +10,14 @@ import {
 } from "./service.js";
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v9";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v10";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR):([^:]+)(?::(\d+))?$/u;
 const DEFAULT_PAID_MEAL_PRICE = 4;
 const DEFAULT_MEAL_NUTRITION = 58;
+const MAX_RUNTIME_CANONICALIZATION_PASSES = 32;
 
 function number(value, fallback = 0) {
   const parsed = Number(value);
@@ -66,19 +67,24 @@ function updateClock(state, absoluteMinute) {
 
 function stableRuntimeSnapshot(runtimeSnapshot, data) {
   let snapshot = runtimeSnapshot;
-  let runtime = null;
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    runtime = deserializeRuntime(snapshot, data);
+  for (let attempt = 0; attempt < MAX_RUNTIME_CANONICALIZATION_PASSES; attempt += 1) {
+    const runtime = deserializeRuntime(snapshot, data);
     ensurePlayerNeeds(runtime.playerState.player);
     const nextSnapshot = serializeRuntime(runtime);
     if (JSON.stringify(nextSnapshot) === JSON.stringify(snapshot)) {
-      return { runtime, snapshot: nextSnapshot };
+      const restored = deserializeRuntime(nextSnapshot, data);
+      ensurePlayerNeeds(restored.playerState.player);
+      return { runtime: restored, snapshot: serializeRuntime(restored) };
     }
     snapshot = nextSnapshot;
   }
-  runtime = deserializeRuntime(snapshot, data);
+
+  const runtime = deserializeRuntime(snapshot, data);
   ensurePlayerNeeds(runtime.playerState.player);
-  return { runtime, snapshot: serializeRuntime(runtime) };
+  const finalSnapshot = serializeRuntime(runtime);
+  const restored = deserializeRuntime(finalSnapshot, data);
+  ensurePlayerNeeds(restored.playerState.player);
+  return { runtime: restored, snapshot: serializeRuntime(restored) };
 }
 
 function persistRuntime(record, runtime, data) {
