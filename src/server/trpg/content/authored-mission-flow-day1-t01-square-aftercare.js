@@ -3,7 +3,7 @@ import * as base from "./authored-mission-flow-t13-workshop-cargo-yard.js";
 export * from "./authored-mission-flow-t13-workshop-cargo-yard.js";
 
 export const AUTHORED_DAY1_T01_SQUARE_AFTERCARE_VERSION =
-  "authored-day1-t01-square-aftercare-v2";
+  "authored-day1-t01-square-aftercare-v3";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -11,6 +11,8 @@ const FACILITY_ID = "LOC_FARM_SQUARE";
 const AFTERCARE_SCENE_ID = "t01-square-aftercare";
 const SUPPER_SCENE_ID = "t01-square-supper";
 const HELP_ACTION_ID = "MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira";
+const DAY1_AFTERCARE_OPEN_MINUTE = 12 * 60;
+const DAY1_AFTERCARE_CLOSE_MINUTE = 24 * 60;
 
 const AFTERCARE_CHOICES = Object.freeze([
   Object.freeze({
@@ -118,15 +120,20 @@ function player(runtime) {
 }
 
 function mission(runtime) {
-  return array(runtime?.playerState?.missions ?? runtime?.missions)
-    .find((entry) => entry?.id === MISSION_ID) ?? null;
+  const missions = runtime?.playerState?.missions ?? runtime?.missions;
+  if (Array.isArray(missions)) {
+    return missions.find((entry) => entry?.id === MISSION_ID) ?? null;
+  }
+  if (missions && typeof missions === "object") {
+    return missions[MISSION_ID] ?? null;
+  }
+  return null;
 }
 
 function isT01Completed(runtime) {
   const entry = mission(runtime);
   if (entry?.status === "completed" || entry?.status === "resolved") return true;
-  return runtime?.playerState?.worldFlags?.t01Resolved === true
-    || runtime?.playerState?.worldFlags?.t01FinnReturned === true;
+  return runtime?.playerState?.worldFlags?.t01Resolved === true;
 }
 
 function hasFinnReturned(runtime) {
@@ -136,6 +143,14 @@ function hasFinnReturned(runtime) {
 function atVillageSquare(runtime) {
   const current = player(runtime);
   return current.location === LOCATION && current.facilityId === FACILITY_ID;
+}
+
+function withinDay1AftercareWindow(runtime) {
+  const minute = Number(runtime?.playerState?.absoluteMinute ?? -1);
+  const day = Number(runtime?.playerState?.day ?? Math.floor(minute / 1440) + 1);
+  return day === 1
+    && minute >= DAY1_AFTERCARE_OPEN_MINUTE
+    && minute < DAY1_AFTERCARE_CLOSE_MINUTE;
 }
 
 function ensureState(runtime) {
@@ -158,12 +173,18 @@ function ensureState(runtime) {
 }
 
 function aftercareEligible(runtime) {
-  if (!isT01Completed(runtime) || !hasFinnReturned(runtime) || !atVillageSquare(runtime)) return false;
+  if (!isT01Completed(runtime)
+    || !hasFinnReturned(runtime)
+    || !atVillageSquare(runtime)
+    || !withinDay1AftercareWindow(runtime)) return false;
   return ensureState(runtime).aftercareCompletedAtMinute == null;
 }
 
 function supperEligible(runtime) {
-  if (!isT01Completed(runtime) || !hasFinnReturned(runtime) || !atVillageSquare(runtime)) return false;
+  if (!isT01Completed(runtime)
+    || !hasFinnReturned(runtime)
+    || !atVillageSquare(runtime)
+    || !withinDay1AftercareWindow(runtime)) return false;
   const state = ensureState(runtime);
   return state.aftercareSelectedActionId === HELP_ACTION_ID
     && state.supperCompletedAtMinute == null;
@@ -293,6 +314,7 @@ export const AUTHORED_DAY1_T01_SQUARE_AFTERCARE_INTERNALS = Object.freeze({
   isT01Completed,
   hasFinnReturned,
   atVillageSquare,
+  withinDay1AftercareWindow,
   ensureState,
   aftercareEligible,
   supperEligible,
@@ -304,4 +326,6 @@ export const AUTHORED_DAY1_T01_SQUARE_AFTERCARE_INTERNALS = Object.freeze({
   AFTERCARE_SCENE_ID,
   SUPPER_SCENE_ID,
   HELP_ACTION_ID,
+  DAY1_AFTERCARE_OPEN_MINUTE,
+  DAY1_AFTERCARE_CLOSE_MINUTE,
 });
