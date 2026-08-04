@@ -108,7 +108,7 @@ test("夜間に疲労が高い時は事件移動前に公開休息actionを選�
   assert.equal(decision?.category, "rest");
 });
 
-test("深夜でも空腹が危険域なら効果のない現地休息より同地域の食事拠点へ退避する", () => {
+test("深夜の危険空腹時は食事不能な現地休息や未確認の小屋を選ばず、既知の食事拠点へ向かう", () => {
   const coverage = state();
   coverage.knownMealSources.LOC_CAP_LOWER_INN = {
     facilityId: "LOC_CAP_LOWER_INN",
@@ -148,8 +148,57 @@ test("深夜でも空腹が危険域なら効果のない現地休息より同�
   });
   const decision = selectUrgentDay100SurvivalDecision({ save: current, model, state: coverage });
   assert.equal(decision?.type, "MOVE");
-  assert.equal(decision?.moveId, "MOVE_LOCAL:LOC_FOREST_CAMP");
+  assert.equal(decision?.moveId, "MOVE_REGION:王都");
   assert.notEqual(decision?.actionId, "REST_OUTDOOR:LOC_FOREST_EDGE");
+  assert.equal(decision?.category, "meal_search_move");
+});
+
+test("危険空腹時は食事提供を確認できない森キャンプと狩人小屋を交互に退避先へしない", () => {
+  const coverage = state();
+  const current = save({
+    clock: { day: 59, hour: 3, time: "03:10", absoluteMinute: 83110 },
+    scene: { location: "森", facilityId: "LOC_FOREST_CAMP", beats: [] },
+    player: {
+      gold: 20,
+      freeMeals: 0,
+      freeLodging: 0,
+      needs: { hunger: 86.89, fatigue: 48.4 },
+    },
+    choices: [
+      { choiceId: "REST_OUTDOOR:LOC_FOREST_CAMP", actionId: "REST_OUTDOOR:LOC_FOREST_CAMP", type: "rest", label: "森の野営地で休む" },
+    ],
+    movement: [
+      {
+        moveId: "MOVE_LOCAL:LOC_FOREST_HUNTER_HUT",
+        scope: "local",
+        destination: "森",
+        destinationFacilityId: "LOC_FOREST_HUNTER_HUT",
+        destinationFacilityName: "狩人小屋",
+        label: "狩人小屋へ移動する",
+      },
+      {
+        moveId: "MOVE_REGION:田園の村",
+        scope: "regional",
+        destination: "田園の村",
+        destinationFacilityId: "LOC_FARM_INN",
+        destinationFacilityName: "麦穂亭",
+        label: "田園の村へ向かう",
+      },
+    ],
+  });
+  coverage.knownMealSources.LOC_FARM_INN = {
+    facilityId: "LOC_FARM_INN",
+    hub: "田園の村",
+    minimumPrice: 0,
+  };
+
+  assert.equal(
+    DAY100_ROUTE_SURVIVAL_PRIORITY_INTERNALS.localEmergencyAlternative(current, coverage),
+    null,
+  );
+  const decision = selectUrgentDay100SurvivalDecision({ save: current, model, state: coverage });
+  assert.equal(decision?.type, "MOVE");
+  assert.equal(decision?.moveId, "MOVE_REGION:田園の村");
   assert.equal(decision?.category, "meal_search_move");
 });
 
