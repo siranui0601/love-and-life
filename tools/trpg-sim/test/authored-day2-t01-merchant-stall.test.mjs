@@ -71,12 +71,14 @@ test("buying canonical black bread spends one gold and opens a distinct bread sc
   assert.equal(state.playerState.day2T01MerchantStall.stall.closedActionIds.length, 2);
 });
 
-test("eating purchased bread changes hunger, consumes the item, and prevents repetition", () => {
+test("eating purchased bread applies its recovery after authoritative elapsed-time needs and prevents repetition", () => {
   const state = runtime();
   reachStall(state);
   choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === "黒パンを買う"));
+  const hungerBeforeMealAction = state.playerState.player.hunger;
   choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === "今ここで食べる"));
-  assert.equal(state.playerState.player.hunger, 18);
+  const elapsedTimeHunger = 7;
+  assert.equal(state.playerState.player.hunger, Math.max(0, hungerBeforeMealAction + elapsedTimeHunger - 16));
   assert.equal(state.playerState.inventory.ITM008, 0);
   assert.equal(state.playerState.worldFlags["day2Merchant:purchasedBreadEaten"], true);
   assert.equal(stall.followupScene(state), null);
