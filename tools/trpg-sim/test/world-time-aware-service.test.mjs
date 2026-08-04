@@ -13,6 +13,7 @@ import {
   WorldTimeAwareTrpgGameService,
   applySustenanceChoices,
   synchronizeLifeActionWeatherRecord,
+  synchronizePersistedRecordHash,
 } from "../../../src/server/trpg/game/world-time-aware-service.js";
 import { resolveCanonicalWeather } from "../../../src/server/trpg/resolvers/weather-resolver.js";
 
@@ -71,6 +72,46 @@ test("生活actionで日付・時間帯が変わった保存状態の天候を�
   assert.equal(record.replayBase.stateHash, record.stateHash);
   assert.deepEqual(record.replayBase.runtimeSnapshot, record.runtimeSnapshot);
   assert.equal(synchronizeLifeActionWeatherRecord(record, game.data), false);
+});
+
+test("通常command保存後のシリアライズ正規化差分を次command前にhashへ反映する", async () => {
+  const store = new MemoryTrpgSaveStore();
+  const game = new WorldTimeAwareTrpgGameService({ store, allowCustomSeed: true });
+  const created = await game.create("world-time-normalized-hash-owner", {
+    playerName: "保存境界テスト",
+    seed: "world-time-normalized-hash-test",
+  });
+  const record = await store.get(created.id);
+  const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
+
+  runtime.playerState.authoritativePresentNpcIds = new Set(["NPC032", "NPC001"]);
+  record.revision = 1;
+  record.runtimeSnapshot = serializeRuntime(runtime);
+  record.stateHash = "pre-serialization-runtime-hash";
+  record.commandLog.push({
+    seq: 1,
+    commandId: "authored-route-command",
+    revisionBefore: 0,
+    revisionAfter: 1,
+    stateBeforeHash: "before",
+    stateAfterHash: "pre-serialization-runtime-hash",
+    type: "CHOOSE",
+    payload: {
+      choiceId: "MISSION_FLOW:forest-king-slime-world-tree-collapse:NAVIGATOR_ROUTE:safe_separation:mina_anchor_pump_design",
+      actionId: "",
+    },
+    resolvedActionId: "MISSION_FLOW:forest-king-slime-world-tree-collapse:NAVIGATOR_ROUTE:safe_separation:mina_anchor_pump_design",
+    outcome: { ok: true, type: "plan" },
+  });
+
+  assert.equal(synchronizePersistedRecordHash(record, game.data), true);
+  const normalized = deserializeRuntime(record.runtimeSnapshot, game.data);
+  assert.equal(record.stateHash, gameStateHash(normalized, game.data));
+  assert.equal(record.commandLog.at(-1).stateAfterHash, record.stateHash);
+  assert.equal(record.replayBase.revision, record.revision);
+  assert.equal(record.replayBase.stateHash, record.stateHash);
+  assert.deepEqual(record.replayBase.runtimeSnapshot, record.runtimeSnapshot);
+  assert.equal(synchronizePersistedRecordHash(record, game.data), false);
 });
 
 test("空腹だけが危険域なら効果のない屋外休息を外し、食事代を働いて払う通常actionを公開する", () => {
