@@ -3,10 +3,16 @@ import {
   advancePlayerNeeds,
   ensurePlayerNeeds,
 } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
+import { ensureWorkMarket } from "../resolvers/work-market-resolver.js";
+import {
+  discoverCapitalPublicRoutes,
+  recordCapitalArrivalGuidance,
+} from "../resolvers/capital-arrival-guidance.js";
 import { deserializeRuntime, serializeRuntime } from "./serializer.js";
 import { syncAuthoritativePresentNpcIds } from "./presence.js";
 import {
   TrpgGameError,
+  applyGameplayCatalogOverrides,
   gameStateHash,
 } from "./service.js";
 import {
@@ -14,7 +20,7 @@ import {
 } from "./survival-aware-service.js";
 import { resolveCanonicalWeather } from "../resolvers/weather-resolver.js";
 
-export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v9";
+export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v10";
 
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR|WORK_MEAL):/u;
 const WORK_MEAL_PATTERN = /^WORK_MEAL:([^:]+)$/u;
@@ -121,7 +127,25 @@ function reconcileLatestCommand(record) {
   record.updatedAt = new Date().toISOString();
 }
 
+function refreshCapitalPublicRoutesForView(runtime, data) {
+  const visitedHubs = runtime.playerState.progress?.travel?.visitedHubs instanceof Set
+    ? runtime.playerState.progress.travel.visitedHubs
+    : new Set(runtime.playerState.progress?.travel?.visitedHubs ?? []);
+  if (runtime.playerState.player.location !== "王都" && !visitedHubs.has("王都")) return;
+  const reachableHubIds = journey.availableTravelActions(runtime.playerState, data.model)
+    .map((action) => action.destinationHub)
+    .filter(Boolean);
+  discoverCapitalPublicRoutes(runtime, {
+    reachableHubIds,
+    absoluteMinute: runtime.playerState.absoluteMinute,
+  });
+}
+
 function normalizeRuntimeForView(runtime, data) {
+  applyGameplayCatalogOverrides(runtime.playerState.catalog);
+  ensureWorkMarket(runtime);
+  recordCapitalArrivalGuidance(runtime);
+  refreshCapitalPublicRoutesForView(runtime, data);
   syncAuthoritativePresentNpcIds(runtime, data);
   const runtimeSnapshot = serializeRuntime(runtime);
   return {
