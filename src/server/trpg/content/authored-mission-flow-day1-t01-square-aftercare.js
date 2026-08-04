@@ -3,7 +3,7 @@ import * as base from "./authored-mission-flow-t13-workshop-cargo-yard.js";
 export * from "./authored-mission-flow-t13-workshop-cargo-yard.js";
 
 export const AUTHORED_DAY1_T01_SQUARE_AFTERCARE_VERSION =
-  "authored-day1-t01-square-aftercare-v1";
+  "authored-day1-t01-square-aftercare-v2";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -129,6 +129,10 @@ function isT01Completed(runtime) {
     || runtime?.playerState?.worldFlags?.t01FinnReturned === true;
 }
 
+function hasFinnReturned(runtime) {
+  return runtime?.playerState?.worldFlags?.t01FinnReturned === true;
+}
+
 function atVillageSquare(runtime) {
   const current = player(runtime);
   return current.location === LOCATION && current.facilityId === FACILITY_ID;
@@ -154,12 +158,12 @@ function ensureState(runtime) {
 }
 
 function aftercareEligible(runtime) {
-  if (!isT01Completed(runtime) || !atVillageSquare(runtime)) return false;
+  if (!isT01Completed(runtime) || !hasFinnReturned(runtime) || !atVillageSquare(runtime)) return false;
   return ensureState(runtime).aftercareCompletedAtMinute == null;
 }
 
 function supperEligible(runtime) {
-  if (!isT01Completed(runtime) || !atVillageSquare(runtime)) return false;
+  if (!isT01Completed(runtime) || !hasFinnReturned(runtime) || !atVillageSquare(runtime)) return false;
   const state = ensureState(runtime);
   return state.aftercareSelectedActionId === HELP_ACTION_ID
     && state.supperCompletedAtMinute == null;
@@ -287,6 +291,7 @@ export const AUTHORED_DAY1_T01_SQUARE_AFTERCARE_INTERNALS = Object.freeze({
   player,
   mission,
   isT01Completed,
+  hasFinnReturned,
   atVillageSquare,
   ensureState,
   aftercareEligible,
