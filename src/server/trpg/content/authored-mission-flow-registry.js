@@ -1,1 +1,1 @@
-export * from "./authored-mission-flow-day2-t01-village-warning-result.js";
+export * from "./authored-mission-flow-day2-day8-village-watch.js";
