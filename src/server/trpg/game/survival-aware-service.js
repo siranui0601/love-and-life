@@ -10,7 +10,7 @@ import {
 } from "./service.js";
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v7";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v8";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
@@ -65,9 +65,11 @@ function updateClock(state, absoluteMinute) {
 }
 
 function persistRuntime(record, runtime, data) {
+  ensurePlayerNeeds(runtime.playerState.player);
   const runtimeSnapshot = serializeRuntime(runtime);
   const normalizedRuntime = deserializeRuntime(runtimeSnapshot, data);
-  record.runtimeSnapshot = runtimeSnapshot;
+  ensurePlayerNeeds(normalizedRuntime.playerState.player);
+  record.runtimeSnapshot = serializeRuntime(normalizedRuntime);
   record.stateHash = gameStateHash(normalizedRuntime, data);
   record.summary = {
     clock: {
@@ -83,9 +85,12 @@ function persistRuntime(record, runtime, data) {
 export function canonicalizePersistedRuntimeRecord(record, data) {
   if (!record?.runtimeSnapshot || !data) return false;
   const normalizedRuntime = deserializeRuntime(record.runtimeSnapshot, data);
+  ensurePlayerNeeds(normalizedRuntime.playerState.player);
+  const normalizedSnapshot = serializeRuntime(normalizedRuntime);
   const normalizedHash = gameStateHash(normalizedRuntime, data);
   if (normalizedHash === record.stateHash) return false;
 
+  record.runtimeSnapshot = normalizedSnapshot;
   record.stateHash = normalizedHash;
   const latestEntry = [...(record.commandLog ?? [])]
     .reverse()
@@ -95,7 +100,7 @@ export function canonicalizePersistedRuntimeRecord(record, data) {
     resolverVersion: record.resolverVersion,
     revision: record.revision,
     stateHash: normalizedHash,
-    runtimeSnapshot: record.runtimeSnapshot,
+    runtimeSnapshot: normalizedSnapshot,
   };
   record.updatedAt = new Date().toISOString();
   return true;
