@@ -1,8 +1,8 @@
-import * as base from "./authored-mission-flow-day2-day8-village-watch.js";
+import * as base from "./authored-mission-flow-day8-t03-community-followthrough.js";
 
-export * from "./authored-mission-flow-day2-day8-village-watch.js";
+export * from "./authored-mission-flow-day8-t03-community-followthrough.js";
 
-export const AUTHORED_HUMAN_COMPANION_CAUSALITY_VERSION = "authored-human-companion-causality-v1";
+export const AUTHORED_HUMAN_COMPANION_CAUSALITY_VERSION = "authored-human-companion-causality-v2";
 
 const SOURCE_HISTORY = "DAY2_HUNTER_LIVESTOCK_MOVED";
 const APPLIED_HISTORY = "T03_EARLY_LIVESTOCK_EVACUATION_INHERITED";
