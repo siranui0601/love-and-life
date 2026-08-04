@@ -4,6 +4,7 @@ import {
   ensurePlayerNeeds,
 } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 import { deserializeRuntime, serializeRuntime } from "./serializer.js";
+import { syncAuthoritativePresentNpcIds } from "./presence.js";
 import {
   TrpgGameError,
   gameStateHash,
@@ -13,7 +14,7 @@ import {
 } from "./survival-aware-service.js";
 import { resolveCanonicalWeather } from "../resolvers/weather-resolver.js";
 
-export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v8";
+export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v9";
 
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR|WORK_MEAL):/u;
 const WORK_MEAL_PATTERN = /^WORK_MEAL:([^:]+)$/u;
@@ -120,19 +121,27 @@ function reconcileLatestCommand(record) {
   record.updatedAt = new Date().toISOString();
 }
 
-function persistRuntime(record, runtime, data) {
+function normalizeRuntimeForView(runtime, data) {
+  syncAuthoritativePresentNpcIds(runtime, data);
   const runtimeSnapshot = serializeRuntime(runtime);
-  const normalizedRuntime = deserializeRuntime(runtimeSnapshot, data);
-  record.runtimeSnapshot = runtimeSnapshot;
-  record.stateHash = gameStateHash(normalizedRuntime, data);
+  return {
+    runtimeSnapshot,
+    runtime: deserializeRuntime(runtimeSnapshot, data),
+  };
+}
+
+function persistRuntime(record, runtime, data) {
+  const normalized = normalizeRuntimeForView(runtime, data);
+  record.runtimeSnapshot = normalized.runtimeSnapshot;
+  record.stateHash = gameStateHash(normalized.runtime, data);
   record.summary = {
     clock: {
-      day: normalizedRuntime.playerState.day,
-      time: `${String(normalizedRuntime.playerState.hour).padStart(2, "0")}:${String(normalizedRuntime.playerState.minute).padStart(2, "0")}`,
+      day: normalized.runtime.playerState.day,
+      time: `${String(normalized.runtime.playerState.hour).padStart(2, "0")}:${String(normalized.runtime.playerState.minute).padStart(2, "0")}`,
     },
-    location: normalizedRuntime.playerState.player.location,
-    facilityId: normalizedRuntime.playerState.player.facilityId,
-    level: normalizedRuntime.playerState.player.level,
+    location: normalized.runtime.playerState.player.location,
+    facilityId: normalized.runtime.playerState.player.facilityId,
+    level: normalized.runtime.playerState.player.level,
   };
 }
 
@@ -168,9 +177,12 @@ function commandPayload(input) {
 
 export function synchronizePersistedRecordHash(record, data) {
   if (!record?.runtimeSnapshot || !data) return false;
-  const normalizedRuntime = deserializeRuntime(record.runtimeSnapshot, data);
-  const normalizedHash = gameStateHash(normalizedRuntime, data);
-  if (normalizedHash === record.stateHash) return false;
+  const hydratedRuntime = deserializeRuntime(record.runtimeSnapshot, data);
+  const normalized = normalizeRuntimeForView(hydratedRuntime, data);
+  const normalizedHash = gameStateHash(normalized.runtime, data);
+  const snapshotChanged = JSON.stringify(normalized.runtimeSnapshot) !== JSON.stringify(record.runtimeSnapshot);
+  if (!snapshotChanged && normalizedHash === record.stateHash) return false;
+  record.runtimeSnapshot = normalized.runtimeSnapshot;
   record.stateHash = normalizedHash;
   reconcileLatestCommand(record);
   return true;
@@ -188,19 +200,15 @@ export function synchronizeLifeActionWeatherRecord(record, data) {
   if (state.weather?.scheduleKey === expectedWeather.scheduleKey) return false;
 
   state.weather = expectedWeather;
-  const runtimeSnapshot = serializeRuntime(runtime);
-  const normalizedRuntime = deserializeRuntime(runtimeSnapshot, data);
-  record.runtimeSnapshot = runtimeSnapshot;
-  record.stateHash = gameStateHash(normalizedRuntime, data);
+  const normalized = normalizeRuntimeForView(runtime, data);
+  record.runtimeSnapshot = normalized.runtimeSnapshot;
+  record.stateHash = gameStateHash(normalized.runtime, data);
   reconcileLatestCommand(record);
   return true;
 }
 
 export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService {
   gameViewForRecord(record) {
-    // Core commands persist their snapshot before constructing the response view.
-    // Normalize here so serialization-only differences cannot make that response
-    // (or the immediately following GET) fail before command() can reconcile it.
     synchronizePersistedRecordHash(record, this.data);
     return applySustenanceChoices(super.gameViewForRecord(record), this.data);
   }
