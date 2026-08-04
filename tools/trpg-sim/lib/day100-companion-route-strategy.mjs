@@ -59,15 +59,29 @@ function candidateChoices(save, state) {
   const choices = Array.isArray(save?.choices) ? save.choices : [];
   const guided = guidedMissionId(save);
   const authoredVisible = choices.some((entry) => AUTHORED_PATTERN.test(String(entry?.actionId ?? "")));
-
-  return choices.filter((entry) => {
+  const candidates = choices.filter((entry) => {
     const actionId = String(entry?.actionId ?? "");
     if (!actionId || CONTROL_PATTERN.test(actionId)) return false;
     if (isDecisionBlocked(state, `CHOOSE:${actionId}`, save)) return false;
     if (authoredVisible && !AUTHORED_PATTERN.test(actionId)) return false;
+    return true;
+  });
+
+  if (authoredVisible) {
+    if (guided) {
+      const guidedCandidates = candidates.filter((entry) => (
+        missionIdFromActionId(entry.actionId) === guided
+      ));
+      if (guidedCandidates.length) return guidedCandidates;
+    }
+    return candidates;
+  }
+
+  return candidates.filter((entry) => {
+    const actionId = String(entry?.actionId ?? "");
     const inferredMissionId = missionIdFromActionId(actionId);
-    if (!authoredVisible && guided && entry?.missionId && entry.missionId !== guided) return false;
-    if (!authoredVisible && guided && inferredMissionId && inferredMissionId !== guided) return false;
+    if (guided && entry?.missionId && entry.missionId !== guided) return false;
+    if (guided && inferredMissionId && inferredMissionId !== guided) return false;
     return true;
   });
 }
