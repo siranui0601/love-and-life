@@ -13,7 +13,7 @@ import {
 } from "./survival-aware-service.js";
 import { resolveCanonicalWeather } from "../resolvers/weather-resolver.js";
 
-export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v7";
+export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v8";
 
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR|WORK_MEAL):/u;
 const WORK_MEAL_PATTERN = /^WORK_MEAL:([^:]+)$/u;
@@ -198,6 +198,10 @@ export function synchronizeLifeActionWeatherRecord(record, data) {
 
 export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService {
   gameViewForRecord(record) {
+    // Core commands persist their snapshot before constructing the response view.
+    // Normalize here so serialization-only differences cannot make that response
+    // (or the immediately following GET) fail before command() can reconcile it.
+    synchronizePersistedRecordHash(record, this.data);
     return applySustenanceChoices(super.gameViewForRecord(record), this.data);
   }
 
@@ -205,14 +209,17 @@ export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService 
     return applySustenanceChoices(await super.create(...args), this.data);
   }
 
-  async get(...args) {
-    return applySustenanceChoices(await super.get(...args), this.data);
+  async get(ownerHash, id, ...args) {
+    const record = await this.recordForOwner(ownerHash, id);
+    if (synchronizePersistedRecordHash(record, this.data)) await this.store.put(record);
+    return applySustenanceChoices(await super.get(ownerHash, id, ...args), this.data);
   }
 
   async resolveWorkMealAction(ownerHash, id, input, request) {
     const commandId = String(input?.commandId ?? "").trim().slice(0, 100);
     if (!commandId) throw new TrpgGameError(400, "command_id_required");
     const record = await this.recordForOwner(ownerHash, id);
+    if (synchronizePersistedRecordHash(record, this.data)) await this.store.put(record);
     const duplicate = record.commandLog.find((entry) => entry.commandId === commandId);
     if (duplicate) {
       if (duplicate.resolvedActionId !== request.actionId) {
@@ -298,6 +305,9 @@ export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService 
   }
 
   async command(ownerHash, id, input = {}) {
+    const recordBefore = await this.recordForOwner(ownerHash, id);
+    if (synchronizePersistedRecordHash(recordBefore, this.data)) await this.store.put(recordBefore);
+
     const workMeal = requestedWorkMealAction(input);
     if (workMeal) {
       return this.runLocked(id, () => this.resolveWorkMealAction(ownerHash, id, input, workMeal));
