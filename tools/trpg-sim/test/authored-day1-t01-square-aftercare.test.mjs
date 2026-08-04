@@ -17,7 +17,7 @@ function runtime() {
         facilityId: "LOC_FARM_SQUARE",
       },
       missions: [{ id: "MSN-T01", troubleId: "T01", status: "completed" }],
-      worldFlags: { t01Resolved: true },
+      worldFlags: { t01Resolved: true, t01FinnReturned: true },
       history: [],
       evidence: {},
     },
@@ -98,11 +98,15 @@ test("the supper branches produce different state and do not repeat", () => {
   assert.ok(!repeated?.some((action) => action.authoredDay1T01AftercareChoice));
 });
 
-test("the scene is absent before rescue completion or outside the village square", () => {
+test("the scene is absent before rescue completion, before Finn returns, or outside the village square", () => {
   const before = runtime();
   before.playerState.missions[0].status = "active";
   before.playerState.worldFlags = {};
   assert.equal(internals.aftercareEligible(before), false);
+
+  const notReturned = runtime();
+  delete notReturned.playerState.worldFlags.t01FinnReturned;
+  assert.equal(internals.aftercareEligible(notReturned), false);
 
   const away = runtime();
   away.playerState.player.facilityId = "LOC_FARM_INN";
