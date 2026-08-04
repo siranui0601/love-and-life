@@ -1,1 +1,1 @@
-export * from "./authored-mission-flow-day1-t01-village-night.js";
+export * from "./authored-mission-flow-day1-t01-village-night-canonical.js";
