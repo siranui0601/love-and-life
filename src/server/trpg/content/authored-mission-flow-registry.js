@@ -1,1 +1,1 @@
-export * from "./authored-mission-flow-t11-witness-network.js";
+export * from "./authored-mission-flow-t11-witness-network-entry.js";
