@@ -71,6 +71,38 @@ test("Day1救助後の生活履歴があればクロウ台帳から手書き縦s
   ]);
 });
 
+test("正式プレイの正史flowにだけ台帳があっても読取を汚さず縦sceneへ入り、選択時に所持証拠へ同期する", () => {
+  const state = runtime({
+    evidence: {},
+    day1T01Aftercare: {
+      version: "authored-day1-t01-square-aftercare-v4",
+      aftercareCompletedAtMinute: 840,
+      aftercareSelectedActionId: "MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira",
+      supperCompletedAtMinute: 884,
+    },
+  });
+  assert.equal(entry.canonicalEvidenceIds(state).includes(
+    "T11-EVIDENCE-CROW-INTERMEDIARY-LEDGER",
+  ), true);
+  const actions = authoredMissionFlowExclusiveActions(state, {});
+  assert.equal(actions.length, 3);
+  assert.deepEqual(state.playerState.evidence, {});
+
+  const action = actions.find((candidate) => (
+    candidate.authoredT11WitnessNetworkChoiceId === "escort_crow"
+  ));
+  assert.ok(action);
+  state.playerState.absoluteMinute += action.minutes;
+  const result = { ok: true };
+  assert.equal(applyAuthoredMissionFlowAction(state, action, result), true);
+  assert.equal(
+    state.playerState.evidence["T11-EVIDENCE-CROW-INTERMEDIARY-LEDGER"].id,
+    "T11-EVIDENCE-CROW-INTERMEDIARY-LEDGER",
+  );
+  assert.equal(state.playerState.t11WitnessNetworkFlow.stage, 1);
+  assert.equal(state.playerState.player.facilityId, "LOC_CRIME_BACK_INN");
+});
+
 test("証人保護縦scene開始後はDay1履歴が別表現でも保存stateから継続する", () => {
   const state = runtime({
     player: {
