@@ -12,7 +12,7 @@ import {
   recordChoiceSetSelection,
 } from "./lib/choice-set-audit.mjs";
 import { createDay100RouteGameService } from "./lib/day100-route-game-service.mjs";
-import { selectDay100CompanionRouteDecision } from "./lib/day100-companion-route-strategy.mjs";
+import { selectDay100CompanionWorldDecision } from "./lib/day100-companion-route-world-strategy.mjs";
 import { writeDay100ReplayCandidateManifest } from "./lib/day100-replay-candidates.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -48,7 +48,7 @@ class Day100CompanionRouteRunner extends Day100GameRunner {
       return true;
     }
 
-    const decision = selectDay100CompanionRouteDecision({
+    const decision = selectDay100CompanionWorldDecision({
       save: this.save,
       model: this.model,
       state: this.coverage,
