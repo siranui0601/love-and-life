@@ -258,3 +258,44 @@ test("完全救済を失う手書き枝しか残っていない場合は自動�
 
   assert.equal(decision, null);
 });
+
+test("証拠経路の選択画面ではNAVIGATOR_ROUTE_BACKへ戻らず具体的な経路を選ぶ", () => {
+  const save = baseSave({
+    clock: { day: 25, hour: 1, time: "01:08", absoluteMinute: 34028 },
+    scene: { location: "犯罪都市", facilityId: "LOC_CRIME_INFO_STREET", beats: [] },
+    guidance: { missionId: "MSN-T17" },
+    choices: [
+      {
+        choiceId: "ROUTE-TOKEN",
+        actionId: "MISSION_FLOW:capital-assassination-plot:NAVIGATOR_ROUTE:assassin_contract:ren_contract_token",
+        missionId: "MSN-T17",
+        family: "fieldwork",
+        label: "契約札を追う",
+      },
+      {
+        choiceId: "ROUTE-LEDGER",
+        actionId: "MISSION_FLOW:capital-assassination-plot:NAVIGATOR_ROUTE:assassin_contract:crow_intermediary_ledger",
+        missionId: "MSN-T17",
+        family: "coordination",
+        label: "仲介帳簿を辿る",
+      },
+      {
+        choiceId: "ROUTE-BACK",
+        actionId: "MISSION_FLOW:capital-assassination-plot:NAVIGATOR_ROUTE_BACK:assassin_contract",
+        missionId: "MSN-T17",
+        family: "coordination",
+        label: "分類へ戻る",
+      },
+    ],
+  });
+
+  const decision = selectDay100CompanionRouteDecision({
+    save,
+    model,
+    state: coverageState(),
+  });
+
+  assert.equal(decision.type, "CHOOSE");
+  assert.equal(decision.actionId, "MISSION_FLOW:capital-assassination-plot:NAVIGATOR_ROUTE:assassin_contract:crow_intermediary_ledger");
+  assert.equal(decision.payload.choiceId, "ROUTE-LEDGER");
+});
