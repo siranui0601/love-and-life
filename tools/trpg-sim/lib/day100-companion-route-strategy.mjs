@@ -152,7 +152,7 @@ function companionDecision(save, state) {
     type: "CHOOSE",
     payload: { choiceId: choice.choiceId ?? actionId },
     actionId,
-    missionId: missionIdFromActionId(actionId) ?? choice.missionId ?? guidedMissionId(save),
+    missionId: missionIdFromActionId(actionId) ?? guidedMissionId(save) ?? choice.missionId,
     stepId: choice.stepId ?? null,
     key: `CHOOSE:${actionId}`,
     label: choice.label,
