@@ -4,7 +4,7 @@ import { selectUrgentDay100SurvivalDecision } from "./day100-route-survival-prio
 
 const { isDecisionBlocked } = DAY100_POLICY_INTERNALS;
 
-const CONTROL_PATTERN = /:(?:NAVIGATOR_BACK|BACK|CANCEL|ABORT|RECONSIDER|DEFER)(?::|$)/u;
+const CONTROL_PATTERN = /:(?:NAVIGATOR_(?:ROUTE_)?BACK|BACK|CANCEL|ABORT|RECONSIDER|DEFER)(?::|$)/u;
 const AUTHORED_PATTERN = /^MISSION_FLOW:/u;
 const COMPANION_TEXT_PATTERN = /(?:手伝|助け|救|守|運ぶ|見舞|診る|仲間|一緒|伝え|話|遊|子ども|家畜|当番|共有|協力|預か|届け|見張|移す|食べる|任せる)/u;
 const HUMAN_ROUTE_BRIDGE_PATTERN = /(?:ミラを手伝う|パンをちぎる|ミラの家で眠る|荷ほどきを手伝う|三Gを受け取る|猟師の荷を預かる|狩人小屋へ向かう|罠を直す|村へ知らせる|家畜を移す|当番札を回す|子どもを家へ返す|牝馬を診る)/u;
