@@ -4,7 +4,9 @@ import * as previous from "./authored-mission-flow-human-route-warning-wait.js";
 export * from "./authored-mission-flow-t11-witness-network.js";
 
 export const AUTHORED_T11_WITNESS_NETWORK_ENTRY_VERSION =
-  "authored-t11-witness-network-entry-v2";
+  "authored-t11-witness-network-entry-v3";
+
+const FLOW_ID = "capital-assassination-plot";
 
 const PRIOR_HISTORY_PREFIXES = Object.freeze([
   "T01_AFTERCARE_",
@@ -81,6 +83,17 @@ function normalizeWitnessActionFamilies(actions) {
   });
 }
 
+function syncCanonicalFlowEvidence(runtime, result) {
+  const evidenceId = String(result?.evidenceId ?? "").trim();
+  if (!evidenceId) return false;
+  const flow = runtime?.authoredMissionFlows?.[FLOW_ID];
+  if (!flow || typeof flow !== "object") return false;
+  const next = new Set(array(flow.evidenceIds).map(String));
+  next.add(evidenceId);
+  flow.evidenceIds = [...next];
+  return true;
+}
+
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const candidate = witness.authoredMissionFlowExclusiveActions(runtime, context);
   if (containsWitnessNetworkActions(candidate) && !hasPriorCompanionCausality(runtime)) {
@@ -100,10 +113,15 @@ export function authoredMissionFlowGuidance(runtime) {
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
-  return witness.applyAuthoredMissionFlowAction(runtime, action, result);
+  const changed = witness.applyAuthoredMissionFlowAction(runtime, action, result);
+  if (changed && action?.authoredT11WitnessNetworkChoice) {
+    syncCanonicalFlowEvidence(runtime, result);
+  }
+  return changed;
 }
 
 export const AUTHORED_T11_WITNESS_NETWORK_ENTRY_INTERNALS = Object.freeze({
+  FLOW_ID,
   PRIOR_HISTORY_PREFIXES,
   STANDARD_FAMILY_BY_CHOICE,
   witnessStateStarted,
@@ -112,4 +130,5 @@ export const AUTHORED_T11_WITNESS_NETWORK_ENTRY_INTERNALS = Object.freeze({
   hasPriorCompanionCausality,
   containsWitnessNetworkActions,
   normalizeWitnessActionFamilies,
+  syncCanonicalFlowEvidence,
 });
