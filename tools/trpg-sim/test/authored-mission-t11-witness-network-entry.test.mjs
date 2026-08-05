@@ -58,6 +58,11 @@ test("Day1救助後の生活履歴があればクロウ台帳から手書き縦s
     "台帳を三部に写す",
     "裏口を見張る",
   ]);
+  assert.deepEqual(actions.map((action) => action.family), [
+    "rescue",
+    "observation",
+    "observation",
+  ]);
 });
 
 test("証人保護縦scene開始後はDay1履歴が別表現でも保存stateから継続する", () => {
@@ -82,4 +87,9 @@ test("証人保護縦scene開始後はDay1履歴が別表現でも保存stateか
   const actions = authoredMissionFlowExclusiveActions(state, {});
   assert.equal(actions.length, 3);
   assert.equal(actions[0].authoredT11WitnessNetworkSceneId, "t11-black-lamp-shelter");
+  assert.deepEqual(actions.map((action) => action.family), [
+    "rescue",
+    "coordination",
+    "logistics",
+  ]);
 });
