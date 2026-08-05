@@ -65,6 +65,8 @@ function saveWithGenericT11Choice() {
         status: "active",
         currentStep: {
           id: "investigate",
+          progress: 0,
+          required: 4,
           targetLocation: "王都",
           targetFacilityId: "LOC_CAP_LOWER_INN",
         },
@@ -77,6 +79,8 @@ function saveWithGenericT11Choice() {
         status: "active",
         currentStep: {
           id: "investigate",
+          progress: 0,
+          required: 6,
           targetLocation: "王都",
           targetFacilityId: "LOC_CAP_MAGE_TOWER",
         },
@@ -140,4 +144,40 @@ test("番号付き手書きactionは表示メタデータよりaction IDの事�
   const decision = selectDay100CompanionRouteDecision({ save, model, state });
   assert.equal(decision.missionId, "MSN-T11");
   assert.equal(state[companion.FOCUS_STATE_KEY], "MSN-T11");
+});
+
+test("長期事件は一つの証拠段階が進んだら焦点を解放して期限を再比較する", () => {
+  const save = saveWithGenericT11Choice();
+  const t17 = save.missions.find((mission) => mission.id === "MSN-T17");
+  t17.currentStep.progress = 1;
+  const state = coverageState();
+  state[companion.FOCUS_STATE_KEY] = "MSN-T17";
+  state[companion.FOCUS_SIGNATURE_STATE_KEY] = "active:investigate:0:6";
+
+  assert.equal(companion.focusedMissionId(save, state), null);
+  assert.equal(state[companion.FOCUS_STATE_KEY], undefined);
+  assert.equal(state[companion.FOCUS_SIGNATURE_STATE_KEY], undefined);
+});
+
+test("T11証人保護の連続sceneは証拠進捗が変わっても途中で焦点を外さない", () => {
+  const save = saveWithGenericT11Choice();
+  const t11 = save.missions.find((mission) => mission.id === "MSN-T11");
+  t11.currentStep.progress = 2;
+  save.choices = [
+    {
+      choiceId: "T11-VERA-ROOM",
+      actionId: "MISSION_FLOW:T11:WITNESS_NETWORK:t11-black-lamp-shelter:ask_vera_for_room",
+      missionId: "MSN-T11",
+      family: "rescue",
+      label: "ヴェラに部屋を借りる",
+    },
+  ];
+  const state = coverageState();
+  state[companion.FOCUS_SIGNATURE_STATE_KEY] = "active:investigate:1:4";
+
+  assert.equal(companion.focusedMissionId(save, state), "MSN-T11");
+  assert.equal(
+    state[companion.FOCUS_SIGNATURE_STATE_KEY],
+    companion.missionSignature(t11),
+  );
 });
