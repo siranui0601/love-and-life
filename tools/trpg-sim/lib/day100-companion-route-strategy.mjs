@@ -6,12 +6,14 @@ const { isDecisionBlocked } = DAY100_POLICY_INTERNALS;
 
 const CONTROL_PATTERN = /:(?:NAVIGATOR_(?:ROUTE_)?BACK|BACK|CANCEL|ABORT|RECONSIDER|DEFER)(?::|$)/u;
 const AUTHORED_PATTERN = /^MISSION_FLOW:/u;
+const WITNESS_NETWORK_PATTERN = /^MISSION_FLOW:T11:WITNESS_NETWORK:/u;
 const COMPANION_TEXT_PATTERN = /(?:手伝|助け|救|守|運ぶ|見舞|診る|仲間|一緒|伝え|話|遊|子ども|家畜|当番|共有|協力|預か|届け|見張|移す|食べる|任せる)/u;
 const HUMAN_ROUTE_BRIDGE_PATTERN = /(?:ミラを手伝う|パンをちぎる|ミラの家で眠る|荷ほどきを手伝う|三Gを受け取る|猟師の荷を預かる|狩人小屋へ向かう|罠を直す|村へ知らせる|家畜を移す|当番札を回す|子どもを家へ返す|牝馬を診る)/u;
 const RESCUE_CONTINUATION_PATTERN = /(?::RV_CAN:|完全救済|救出を続け|救助を続け|助けに向か|保護する|支える)/u;
 const RESCUE_LOSS_PATTERN = /(?::RV_END:|salvage|完全救済を失|救出を諦|救助を諦|見捨て|打ち切|部分救済で終)/iu;
 const TERMINAL_MISSION_STATES = new Set(["completed", "failed", "resolved", "terminal", "abandoned"]);
 const FOCUS_STATE_KEY = "companionRouteFocusMissionId";
+const FOCUS_SIGNATURE_STATE_KEY = "companionRouteFocusMissionSignature";
 
 const FAMILY_SCORE = Object.freeze({
   rescue: 120,
@@ -52,12 +54,47 @@ function activeMission(save, missionId) {
     : null;
 }
 
+function missionSignature(mission) {
+  const step = mission?.currentStep ?? {};
+  return [
+    String(mission?.status ?? ""),
+    String(step?.id ?? ""),
+    String(step?.progress ?? mission?.progress ?? ""),
+    String(step?.required ?? mission?.required ?? ""),
+  ].join(":");
+}
+
+function witnessNetworkVisible(save, missionId) {
+  return missionId === "MSN-T11" && (Array.isArray(save?.choices) ? save.choices : [])
+    .some((choice) => WITNESS_NETWORK_PATTERN.test(String(choice?.actionId ?? "")));
+}
+
+function clearMissionFocus(state) {
+  delete state[FOCUS_STATE_KEY];
+  delete state[FOCUS_SIGNATURE_STATE_KEY];
+}
+
 function focusedMissionId(save, state) {
   const missionId = String(state?.[FOCUS_STATE_KEY] ?? "").trim();
   if (!missionId) return null;
-  if (activeMission(save, missionId)) return missionId;
-  delete state[FOCUS_STATE_KEY];
-  return null;
+  const mission = activeMission(save, missionId);
+  if (!mission) {
+    clearMissionFocus(state);
+    return null;
+  }
+
+  const currentSignature = missionSignature(mission);
+  const previousSignature = String(state?.[FOCUS_SIGNATURE_STATE_KEY] ?? "");
+  if (previousSignature && previousSignature !== currentSignature) {
+    if (!witnessNetworkVisible(save, missionId)) {
+      clearMissionFocus(state);
+      return null;
+    }
+    state[FOCUS_SIGNATURE_STATE_KEY] = currentSignature;
+  } else if (!previousSignature) {
+    state[FOCUS_SIGNATURE_STATE_KEY] = currentSignature;
+  }
+  return missionId;
 }
 
 function saveFocusedOnMission(save, missionId) {
@@ -76,8 +113,14 @@ function rememberMissionFocus(save, state, decision) {
   const missionId = String(
     decision?.missionId ?? missionIdFromActionId(decision?.actionId),
   ).trim();
-  if (missionId && activeMission(save, missionId)) {
-    state[FOCUS_STATE_KEY] = missionId;
+  const mission = missionId ? activeMission(save, missionId) : null;
+  if (mission) {
+    if (state[FOCUS_STATE_KEY] !== missionId) {
+      state[FOCUS_STATE_KEY] = missionId;
+      state[FOCUS_SIGNATURE_STATE_KEY] = missionSignature(mission);
+    } else if (!state[FOCUS_SIGNATURE_STATE_KEY]) {
+      state[FOCUS_SIGNATURE_STATE_KEY] = missionSignature(mission);
+    }
   }
   return decision;
 }
@@ -187,18 +230,23 @@ export function selectDay100CompanionRouteDecision(args) {
 
 export const DAY100_COMPANION_ROUTE_INTERNALS = Object.freeze({
   AUTHORED_PATTERN,
+  WITNESS_NETWORK_PATTERN,
   COMPANION_TEXT_PATTERN,
   HUMAN_ROUTE_BRIDGE_PATTERN,
   RESCUE_CONTINUATION_PATTERN,
   RESCUE_LOSS_PATTERN,
   TERMINAL_MISSION_STATES,
   FOCUS_STATE_KEY,
+  FOCUS_SIGNATURE_STATE_KEY,
   FAMILY_SCORE,
   actionText,
   guidedMissionId,
   missionIdFromActionId,
   missionById,
   activeMission,
+  missionSignature,
+  witnessNetworkVisible,
+  clearMissionFocus,
   focusedMissionId,
   saveFocusedOnMission,
   rememberMissionFocus,
