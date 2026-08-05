@@ -4,9 +4,10 @@ import * as previous from "./authored-mission-flow-human-route-warning-wait.js";
 export * from "./authored-mission-flow-t11-witness-network.js";
 
 export const AUTHORED_T11_WITNESS_NETWORK_ENTRY_VERSION =
-  "authored-t11-witness-network-entry-v3";
+  "authored-t11-witness-network-entry-v4";
 
 const FLOW_ID = "capital-assassination-plot";
+const MISSION_ID = "MSN-T11";
 
 const PRIOR_HISTORY_PREFIXES = Object.freeze([
   "T01_AFTERCARE_",
@@ -83,6 +84,65 @@ function normalizeWitnessActionFamilies(actions) {
   });
 }
 
+function canonicalEvidenceIds(runtime) {
+  return [...new Set(array(
+    runtime?.authoredMissionFlows?.[FLOW_ID]?.evidenceIds,
+  ).map(String).filter(Boolean))];
+}
+
+function hasEvidenceRecord(collection, evidenceId) {
+  if (Array.isArray(collection)) {
+    return collection.some((entry) => entry === evidenceId || entry?.id === evidenceId);
+  }
+  return Boolean(collection && typeof collection === "object" && collection[evidenceId]);
+}
+
+function evidenceRecord(evidenceId) {
+  return {
+    id: evidenceId,
+    source: `AUTHORED_FLOW:${FLOW_ID}`,
+    acquiredAtMinute: null,
+    missionId: MISSION_ID,
+  };
+}
+
+function projectCanonicalEvidence(runtime) {
+  const ids = canonicalEvidenceIds(runtime);
+  if (ids.length === 0) return runtime;
+  const current = runtime?.playerState?.evidence;
+  const missing = ids.filter((id) => !hasEvidenceRecord(current, id));
+  if (missing.length === 0) return runtime;
+  const evidence = Array.isArray(current)
+    ? [...current, ...missing.map(evidenceRecord)]
+    : {
+      ...(current && typeof current === "object" ? current : {}),
+      ...Object.fromEntries(missing.map((id) => [id, evidenceRecord(id)])),
+    };
+  return {
+    ...runtime,
+    playerState: {
+      ...(runtime?.playerState ?? {}),
+      evidence,
+    },
+  };
+}
+
+function syncCanonicalEvidenceIntoPlayerState(runtime) {
+  const ids = canonicalEvidenceIds(runtime);
+  if (ids.length === 0) return false;
+  runtime.playerState ??= {};
+  const current = runtime.playerState.evidence;
+  const missing = ids.filter((id) => !hasEvidenceRecord(current, id));
+  if (missing.length === 0) return false;
+  if (Array.isArray(current)) {
+    current.push(...missing.map(evidenceRecord));
+  } else {
+    runtime.playerState.evidence = current && typeof current === "object" ? current : {};
+    for (const id of missing) runtime.playerState.evidence[id] = evidenceRecord(id);
+  }
+  return true;
+}
+
 function syncCanonicalFlowEvidence(runtime, result) {
   const evidenceId = String(result?.evidenceId ?? "").trim();
   if (!evidenceId) return false;
@@ -95,7 +155,8 @@ function syncCanonicalFlowEvidence(runtime, result) {
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
-  const candidate = witness.authoredMissionFlowExclusiveActions(runtime, context);
+  const projectedRuntime = projectCanonicalEvidence(runtime);
+  const candidate = witness.authoredMissionFlowExclusiveActions(projectedRuntime, context);
   if (containsWitnessNetworkActions(candidate) && !hasPriorCompanionCausality(runtime)) {
     return previous.authoredMissionFlowExclusiveActions(runtime, context);
   }
@@ -105,14 +166,18 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 }
 
 export function authoredMissionFlowGuidance(runtime) {
-  const candidateActions = witness.authoredMissionFlowExclusiveActions(runtime, {});
+  const projectedRuntime = projectCanonicalEvidence(runtime);
+  const candidateActions = witness.authoredMissionFlowExclusiveActions(projectedRuntime, {});
   if (containsWitnessNetworkActions(candidateActions) && !hasPriorCompanionCausality(runtime)) {
     return previous.authoredMissionFlowGuidance(runtime);
   }
-  return witness.authoredMissionFlowGuidance(runtime);
+  return witness.authoredMissionFlowGuidance(projectedRuntime);
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
+  if (action?.authoredT11WitnessNetworkChoice) {
+    syncCanonicalEvidenceIntoPlayerState(runtime);
+  }
   const changed = witness.applyAuthoredMissionFlowAction(runtime, action, result);
   if (changed && action?.authoredT11WitnessNetworkChoice) {
     syncCanonicalFlowEvidence(runtime, result);
@@ -122,6 +187,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 
 export const AUTHORED_T11_WITNESS_NETWORK_ENTRY_INTERNALS = Object.freeze({
   FLOW_ID,
+  MISSION_ID,
   PRIOR_HISTORY_PREFIXES,
   STANDARD_FAMILY_BY_CHOICE,
   witnessStateStarted,
@@ -130,5 +196,10 @@ export const AUTHORED_T11_WITNESS_NETWORK_ENTRY_INTERNALS = Object.freeze({
   hasPriorCompanionCausality,
   containsWitnessNetworkActions,
   normalizeWitnessActionFamilies,
+  canonicalEvidenceIds,
+  hasEvidenceRecord,
+  evidenceRecord,
+  projectCanonicalEvidence,
+  syncCanonicalEvidenceIntoPlayerState,
   syncCanonicalFlowEvidence,
 });
