@@ -141,9 +141,20 @@ function ownActions(runtime) {
   return null;
 }
 
-function record(runtime, scene, actionValue, choice, s) {
+function record(runtime, sceneId, closedKey, actionValue, choice, s) {
   collections(runtime);
-  runtime.playerState.history.push({ type: choice.history, minute: minute(runtime), missionId: MISSION_ID, troubleId: "T04", sceneId: scene, actionId: actionValue.id, closedActionIds: [...s.closed[scene]], location: player(runtime).location, facilityId: player(runtime).facilityId, weather: weather(runtime) });
+  runtime.playerState.history.push({
+    type: choice.history,
+    minute: minute(runtime),
+    missionId: MISSION_ID,
+    troubleId: "T04",
+    sceneId,
+    actionId: actionValue.id,
+    closedActionIds: arr(s.closed[closedKey]).map(String),
+    location: player(runtime).location,
+    facilityId: player(runtime).facilityId,
+    weather: weather(runtime),
+  });
 }
 
 function consumeOwn(runtime, actionValue, result) {
@@ -171,10 +182,13 @@ function consumeOwn(runtime, actionValue, result) {
     addGoap(runtime, `GOAP-T04-FALCO-${choice.id.toUpperCase()}`, NPC.falco, "prepare_internal_missing_records", "古代神殿", FAC.templeAdmin);
     addGoap(runtime, "GOAP-T04-JILL-HOLD-PILGRIMS", NPC.jill, "hold_new_pilgrims_outside_white_corridor", "古代神殿", FAC.templeEntrance);
   }
-  record(runtime, actionValue.relayScene === "village" ? "t03-t04-village-notice" : "t04-pilgrim-caravan-arrival", actionValue, choice, s);
+  const sceneId = actionValue.relayScene === "village"
+    ? "t03-t04-village-notice"
+    : "t04-pilgrim-caravan-arrival";
+  record(runtime, sceneId, actionValue.relayScene, actionValue, choice, s);
   result.summary = choice.summary;
   result.speeches = [{ actorId: choice.actor, text: choice.speech, emotion: "自分の役割へ戻りながら" }];
-  result.closedActionIds = [...s.closed[actionValue.relayScene]];
+  result.closedActionIds = arr(s.closed[actionValue.relayScene]).map(String);
   result.sceneTransition = choice.stage === 1 ? "t04-pilgrim-caravan-arrival" : choice.id === "carry_rolls" ? "t04-falco-first-hearing" : "t04-free-travel";
   return true;
 }
