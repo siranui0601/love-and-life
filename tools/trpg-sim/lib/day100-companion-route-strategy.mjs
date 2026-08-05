@@ -10,6 +10,8 @@ const COMPANION_TEXT_PATTERN = /(?:手伝|助け|救|守|運ぶ|見舞|診る|�
 const HUMAN_ROUTE_BRIDGE_PATTERN = /(?:ミラを手伝う|パンをちぎる|ミラの家で眠る|荷ほどきを手伝う|三Gを受け取る|猟師の荷を預かる|狩人小屋へ向かう|罠を直す|村へ知らせる|家畜を移す|当番札を回す|子どもを家へ返す|牝馬を診る)/u;
 const RESCUE_CONTINUATION_PATTERN = /(?::RV_CAN:|完全救済|救出を続け|救助を続け|助けに向か|保護する|支える)/u;
 const RESCUE_LOSS_PATTERN = /(?::RV_END:|salvage|完全救済を失|救出を諦|救助を諦|見捨て|打ち切|部分救済で終)/iu;
+const TERMINAL_MISSION_STATES = new Set(["completed", "failed", "resolved", "terminal", "abandoned"]);
+const FOCUS_STATE_KEY = "companionRouteFocusMissionId";
 
 const FAMILY_SCORE = Object.freeze({
   rescue: 120,
@@ -35,6 +37,49 @@ function guidedMissionId(save) {
 function missionIdFromActionId(actionId) {
   const match = /^MISSION_FLOW:(T\d{2})(?::|$)/u.exec(String(actionId ?? ""));
   return match ? `MSN-${match[1]}` : null;
+}
+
+function missionById(save, missionId) {
+  return (Array.isArray(save?.missions) ? save.missions : [])
+    .find((mission) => mission?.id === missionId) ?? null;
+}
+
+function activeMission(save, missionId) {
+  const mission = missionById(save, missionId);
+  return mission && mission.kind === "special"
+    && !TERMINAL_MISSION_STATES.has(String(mission.status ?? ""))
+    ? mission
+    : null;
+}
+
+function focusedMissionId(save, state) {
+  const missionId = String(state?.[FOCUS_STATE_KEY] ?? "").trim();
+  if (!missionId) return null;
+  if (activeMission(save, missionId)) return missionId;
+  delete state[FOCUS_STATE_KEY];
+  return null;
+}
+
+function saveFocusedOnMission(save, missionId) {
+  if (!missionId || !activeMission(save, missionId)) return save;
+  return {
+    ...save,
+    guidance: guidedMissionId(save) === missionId
+      ? save.guidance
+      : { missionId },
+    missions: (Array.isArray(save?.missions) ? save.missions : [])
+      .filter((mission) => mission?.id === missionId),
+  };
+}
+
+function rememberMissionFocus(save, state, decision) {
+  const missionId = String(
+    decision?.missionId ?? missionIdFromActionId(decision?.actionId),
+  ).trim();
+  if (missionId && activeMission(save, missionId)) {
+    state[FOCUS_STATE_KEY] = missionId;
+  }
+  return decision;
 }
 
 function isRescueLossChoice(choice) {
@@ -125,10 +170,19 @@ export function selectDay100CompanionRouteDecision(args) {
     return selectDay100RouteDecision({ save, model, state, routeMode: "deadline" });
   }
 
-  const companion = companionDecision(save, state);
-  if (companion) return companion;
-  if (authoredChoicesLoseFullRescue(save, state)) return null;
-  return selectDay100RouteDecision({ save, model, state, routeMode: "deadline" });
+  const focusMissionId = focusedMissionId(save, state);
+  const focusedSave = saveFocusedOnMission(save, focusMissionId);
+  const companion = companionDecision(focusedSave, state);
+  if (companion) return rememberMissionFocus(save, state, companion);
+  if (authoredChoicesLoseFullRescue(focusedSave, state)) return null;
+
+  const routeDecision = selectDay100RouteDecision({
+    save: focusedSave,
+    model,
+    state,
+    routeMode: "deadline",
+  });
+  return rememberMissionFocus(save, state, routeDecision);
 }
 
 export const DAY100_COMPANION_ROUTE_INTERNALS = Object.freeze({
@@ -137,10 +191,17 @@ export const DAY100_COMPANION_ROUTE_INTERNALS = Object.freeze({
   HUMAN_ROUTE_BRIDGE_PATTERN,
   RESCUE_CONTINUATION_PATTERN,
   RESCUE_LOSS_PATTERN,
+  TERMINAL_MISSION_STATES,
+  FOCUS_STATE_KEY,
   FAMILY_SCORE,
   actionText,
   guidedMissionId,
   missionIdFromActionId,
+  missionById,
+  activeMission,
+  focusedMissionId,
+  saveFocusedOnMission,
+  rememberMissionFocus,
   isRescueLossChoice,
   choiceScore,
   candidateChoices,
