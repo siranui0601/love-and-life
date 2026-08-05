@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   selectDay100CompanionRouteDecision,
+  DAY100_COMPANION_ROUTE_INTERNALS as companion,
 } from "../lib/day100-companion-route-strategy.mjs";
 
 function coverageState() {
@@ -298,4 +299,113 @@ test("証拠経路の選択画面ではNAVIGATOR_ROUTE_BACKへ戻らず具体的
   assert.equal(decision.type, "CHOOSE");
   assert.equal(decision.actionId, "MISSION_FLOW:capital-assassination-plot:NAVIGATOR_ROUTE:assassin_contract:crow_intermediary_ledger");
   assert.equal(decision.payload.choiceId, "ROUTE-LEDGER");
+});
+
+test("期限順が毎手番変わっても選んだ特別依頼を完了まで保持する", () => {
+  const state = coverageState();
+  state[companion.FOCUS_STATE_KEY] = "MSN-T10";
+  const routeModel = {
+    troubles: [
+      {
+        id: "T10",
+        name: "王都孤児院の立ち退き",
+        startDay: 30,
+        deadlineDay: 70,
+        finalDay: 90,
+        primaryLocations: ["王都"],
+      },
+      {
+        id: "T16",
+        name: "王都の亜人排斥暴動",
+        startDay: 50,
+        deadlineDay: 69,
+        finalDay: 90,
+        primaryLocations: ["王都"],
+      },
+    ],
+    adjacency: {},
+  };
+  const save = baseSave({
+    clock: { day: 68, hour: 21, time: "21:00", absoluteMinute: 97860 },
+    scene: { location: "王都", facilityId: "LOC_CAP_AJIN_QUARTER", beats: [] },
+    guidance: { missionId: "MSN-T16" },
+    player: {
+      gold: 40,
+      freeMeals: 1,
+      freeLodging: 1,
+      needs: { hunger: 20, fatigue: 20 },
+      inventory: { equipment: [] },
+      equipment: {},
+    },
+    missions: [
+      {
+        id: "MSN-T10",
+        troubleId: "T10",
+        title: "王都孤児院の立ち退き",
+        kind: "special",
+        status: "active",
+        deadlineDay: 70,
+        finalDay: 90,
+        currentStep: {
+          id: "investigate",
+          targetLocation: "王都",
+          targetFacilityId: "LOC_CAP_ORPHANAGE",
+        },
+      },
+      {
+        id: "MSN-T16",
+        troubleId: "T16",
+        title: "王都の亜人排斥暴動",
+        kind: "special",
+        status: "active",
+        deadlineDay: 69,
+        finalDay: 90,
+        currentStep: {
+          id: "investigate",
+          targetLocation: "王都",
+          targetFacilityId: "LOC_CAP_AJIN_QUARTER",
+        },
+      },
+    ],
+    movement: [
+      {
+        moveId: "MOVE_LOCAL:LOC_CAP_ORPHANAGE",
+        scope: "local",
+        destination: "王都",
+        destinationFacilityId: "LOC_CAP_ORPHANAGE",
+        label: "孤児院へ移動する",
+      },
+      {
+        moveId: "MOVE_LOCAL:LOC_CAP_AJIN_QUARTER",
+        scope: "local",
+        destination: "王都",
+        destinationFacilityId: "LOC_CAP_AJIN_QUARTER",
+        label: "亜人街へ移動する",
+      },
+    ],
+  });
+
+  const decision = selectDay100CompanionRouteDecision({ save, model: routeModel, state });
+  assert.equal(decision.type, "MOVE");
+  assert.equal(decision.moveId, "MOVE_LOCAL:LOC_CAP_ORPHANAGE");
+  assert.equal(decision.missionId, "MSN-T10");
+  assert.equal(state[companion.FOCUS_STATE_KEY], "MSN-T10");
+});
+
+test("保持中の依頼が終端になれば焦点を解放する", () => {
+  const state = coverageState();
+  state[companion.FOCUS_STATE_KEY] = "MSN-T10";
+  const save = baseSave({
+    missions: [
+      {
+        id: "MSN-T10",
+        troubleId: "T10",
+        title: "王都孤児院の立ち退き",
+        kind: "special",
+        status: "completed",
+      },
+    ],
+  });
+  assert.equal(companion.focusedMissionId(save, state), null);
+  assert.equal(state[companion.FOCUS_STATE_KEY], undefined);
 });
