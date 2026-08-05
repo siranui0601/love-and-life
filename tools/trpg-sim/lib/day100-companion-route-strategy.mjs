@@ -69,7 +69,45 @@ function witnessNetworkVisible(save, missionId) {
     .some((choice) => WITNESS_NETWORK_PATTERN.test(String(choice?.actionId ?? "")));
 }
 
+function choiceMissionId(save, choice) {
+  const actionId = String(choice?.actionId ?? "");
+  const inferred = missionIdFromActionId(actionId);
+  if (inferred) return inferred;
+  const guided = guidedMissionId(save);
+  if (guided && AUTHORED_PATTERN.test(actionId) && !CONTROL_PATTERN.test(actionId)) {
+    return guided;
+  }
+  const explicit = String(choice?.missionId ?? "").trim();
+  return explicit || null;
+}
+
+function missionHasImmediateChoice(save, missionId) {
+  return (Array.isArray(save?.choices) ? save.choices : []).some((choice) => {
+    const actionId = String(choice?.actionId ?? "");
+    if (!actionId || CONTROL_PATTERN.test(actionId)) return false;
+    return choiceMissionId(save, choice) === missionId;
+  });
+}
+
+function playerAtMissionTarget(save, missionId) {
+  const mission = activeMission(save, missionId);
+  if (!mission) return true;
+  const step = mission.currentStep ?? {};
+  const targetLocation = step.targetLocation ?? mission.targetLocation ?? null;
+  const targetFacilityId = step.targetFacilityId ?? mission.targetFacilityId ?? null;
+  if (targetLocation && save?.scene?.location !== targetLocation) return false;
+  if (targetFacilityId && save?.scene?.facilityId !== targetFacilityId) return false;
+  return true;
+}
+
+function focusHasImmediateWork(save, missionId) {
+  return witnessNetworkVisible(save, missionId)
+    || missionHasImmediateChoice(save, missionId)
+    || !playerAtMissionTarget(save, missionId);
+}
+
 function clearMissionFocus(state) {
+  if (!state || typeof state !== "object") return;
   delete state[FOCUS_STATE_KEY];
   delete state[FOCUS_SIGNATURE_STATE_KEY];
 }
@@ -93,6 +131,11 @@ function focusedMissionId(save, state) {
     state[FOCUS_SIGNATURE_STATE_KEY] = currentSignature;
   } else if (!previousSignature) {
     state[FOCUS_SIGNATURE_STATE_KEY] = currentSignature;
+  }
+
+  if (!focusHasImmediateWork(save, missionId)) {
+    clearMissionFocus(state);
+    return null;
   }
   return missionId;
 }
@@ -206,7 +249,10 @@ function companionDecision(save, state) {
 
 export function selectDay100CompanionRouteDecision(args) {
   const survival = selectUrgentDay100SurvivalDecision(args);
-  if (survival) return survival;
+  if (survival) {
+    clearMissionFocus(args?.state);
+    return survival;
+  }
 
   const { save, model, state } = args;
   if (save?.world?.ended || save?.battle || save?.tutorial?.id) {
@@ -246,6 +292,10 @@ export const DAY100_COMPANION_ROUTE_INTERNALS = Object.freeze({
   activeMission,
   missionSignature,
   witnessNetworkVisible,
+  choiceMissionId,
+  missionHasImmediateChoice,
+  playerAtMissionTarget,
+  focusHasImmediateWork,
   clearMissionFocus,
   focusedMissionId,
   saveFocusedOnMission,
