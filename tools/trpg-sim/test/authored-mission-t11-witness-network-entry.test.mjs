@@ -2,12 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  applyAuthoredMissionFlowAction,
   authoredMissionFlowExclusiveActions,
   AUTHORED_T11_WITNESS_NETWORK_ENTRY_INTERNALS as entry,
 } from "../../../src/server/trpg/content/authored-mission-flow-t11-witness-network-entry.js";
 
 function runtime(overrides = {}) {
   return {
+    authoredMissionFlows: {
+      "capital-assassination-plot": {
+        evidenceIds: ["T11-EVIDENCE-CROW-INTERMEDIARY-LEDGER"],
+      },
+    },
     playerState: {
       absoluteMinute: 41_000,
       player: {
@@ -92,4 +98,40 @@ test("証人保護縦scene開始後はDay1履歴が別表現でも保存stateか
     "coordination",
     "logistics",
   ]);
+});
+
+test("手書きsceneで得た正史証拠を既存T11進捗へ同期する", () => {
+  const state = runtime({
+    player: {
+      location: "犯罪都市",
+      facilityId: "LOC_CRIME_BACK_INN",
+    },
+    t11WitnessNetworkFlow: {
+      version: "authored-t11-witness-network-v1",
+      stage: 1,
+      selectedActionIds: [
+        "MISSION_FLOW:T11:WITNESS_NETWORK:t11-crow-ledger-aftermath:escort_crow",
+      ],
+      closedActionIdsByScene: {},
+      routePlanCompletedAtMinute: null,
+      preferredResolution: null,
+      aftermathCompletedAtMinute: null,
+    },
+  });
+  const action = authoredMissionFlowExclusiveActions(state, {})
+    .find((entryAction) => entryAction.authoredT11WitnessNetworkChoiceId === "ask_vera_for_room");
+  assert.ok(action);
+  state.playerState.absoluteMinute += action.minutes;
+  const result = { ok: true };
+  assert.equal(applyAuthoredMissionFlowAction(state, action, result), true);
+  assert.equal(result.evidenceId, "T11-EVIDENCE-VERA-BLACK-LAMP-GUEST-REGISTER");
+  assert.equal(
+    state.authoredMissionFlows["capital-assassination-plot"].evidenceIds.includes(
+      "T11-EVIDENCE-VERA-BLACK-LAMP-GUEST-REGISTER",
+    ),
+    true,
+  );
+  assert.equal(new Set(
+    state.authoredMissionFlows["capital-assassination-plot"].evidenceIds,
+  ).size, 2);
 });
