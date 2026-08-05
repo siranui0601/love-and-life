@@ -181,3 +181,116 @@ test("T11証人保護の連続sceneは証拠進捗が変わっても途中で焦
     companion.missionSignature(t11),
   );
 });
+
+test("T17の現地に着いて次の専用行動が無ければ王都滞在を強制しない", () => {
+  const save = saveWithGenericT11Choice();
+  save.clock = { day: 24, hour: 12, time: "12:00", absoluteMinute: 33840 };
+  save.scene = { location: "王都", facilityId: "LOC_CAP_MAGE_TOWER", beats: [] };
+  save.guidance = { missionId: "MSN-T17" };
+  save.choices = [];
+  save.missions.push({
+    id: "MSN-T04",
+    troubleId: "T04",
+    title: "古代神殿の巡礼者失踪",
+    kind: "special",
+    status: "active",
+    deadlineDay: 25,
+    finalDay: 45,
+    currentStep: {
+      id: "investigate",
+      progress: 0,
+      required: 3,
+      targetLocation: "古代神殿",
+      targetFacilityId: "LOC_TEMPLE_ENTRANCE",
+    },
+  });
+  save.movement = [
+    {
+      moveId: "MOVE_REGION:古代神殿",
+      scope: "regional",
+      destination: "古代神殿",
+      destinationFacilityId: "LOC_TEMPLE_ENTRANCE",
+      label: "古代神殿へ移動する",
+    },
+  ];
+  const routeModel = {
+    troubles: [
+      ...model.troubles,
+      {
+        id: "T04",
+        name: "古代神殿の巡礼者失踪",
+        startDay: 12,
+        deadlineDay: 25,
+        finalDay: 45,
+        primaryLocations: ["古代神殿"],
+      },
+    ],
+    adjacency: {
+      王都: [{ to: "古代神殿", hours: 3 }],
+      古代神殿: [{ to: "王都", hours: 3 }],
+    },
+  };
+  const state = coverageState();
+  state[companion.FOCUS_STATE_KEY] = "MSN-T17";
+  state[companion.FOCUS_SIGNATURE_STATE_KEY] = "active:investigate:0:6";
+
+  const decision = selectDay100CompanionRouteDecision({
+    save,
+    model: routeModel,
+    state,
+  });
+
+  assert.equal(decision.type, "MOVE");
+  assert.equal(decision.moveId, "MOVE_REGION:古代神殿");
+  assert.equal(decision.missionId, "MSN-T04");
+});
+
+test("T17の次地点へ移動中だけは直近の行動列を保持する", () => {
+  const save = saveWithGenericT11Choice();
+  save.guidance = { missionId: "MSN-T17" };
+  save.choices = [];
+  save.movement = [
+    {
+      moveId: "MOVE_LOCAL:LOC_CAP_MAGE_TOWER",
+      scope: "local",
+      destination: "王都",
+      destinationFacilityId: "LOC_CAP_MAGE_TOWER",
+      label: "魔術塔へ移動する",
+    },
+  ];
+  const state = coverageState();
+  state[companion.FOCUS_STATE_KEY] = "MSN-T17";
+  state[companion.FOCUS_SIGNATURE_STATE_KEY] = "active:investigate:0:6";
+
+  const decision = selectDay100CompanionRouteDecision({ save, model, state });
+  assert.equal(decision.type, "MOVE");
+  assert.equal(decision.moveId, "MOVE_LOCAL:LOC_CAP_MAGE_TOWER");
+  assert.equal(decision.missionId, "MSN-T17");
+});
+
+test("食事や宿泊を挟んだら長期事件の保持を解除して再評価する", () => {
+  const save = saveWithGenericT11Choice();
+  save.guidance = { missionId: "MSN-T17" };
+  save.player = {
+    ...save.player,
+    freeMeals: 0,
+    needs: { hunger: 92, fatigue: 20 },
+  };
+  save.choices = [
+    {
+      choiceId: "EAT-BREAD",
+      actionId: "EAT:BREAD:8",
+      type: "eat",
+      price: 8,
+      label: "パンを食べる（8G）",
+    },
+  ];
+  const state = coverageState();
+  state[companion.FOCUS_STATE_KEY] = "MSN-T17";
+  state[companion.FOCUS_SIGNATURE_STATE_KEY] = "active:investigate:0:6";
+
+  const decision = selectDay100CompanionRouteDecision({ save, model, state });
+  assert.equal(decision.actionId, "EAT:BREAD:8");
+  assert.equal(state[companion.FOCUS_STATE_KEY], undefined);
+  assert.equal(state[companion.FOCUS_SIGNATURE_STATE_KEY], undefined);
+});
