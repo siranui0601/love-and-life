@@ -166,7 +166,8 @@ function expectedFacility(phase) {
 }
 
 function relayEligible(runtime, phase = relayPhase(runtime)) {
-  if (!phase || dayIndex(runtime) !== 7 || terminalT03(runtime) || livestockAlreadyMoved(runtime)) return false;
+  if (!phase || dayIndex(runtime) !== 7 || terminalT03(runtime)) return false;
+  if (phase !== "move_livestock" && livestockAlreadyMoved(runtime)) return false;
   const current = player(runtime);
   if (current.location !== LOCATION || current.facilityId !== expectedFacility(phase)) return false;
   return ![FINN_ID, EDA_ID, GARO_ID, JILL_ID].some((npcId) => npcUnavailable(runtime, npcId));
@@ -352,7 +353,7 @@ function consumeHearEda(runtime, state, action, result) {
   runtime.playerState.worldFlags.t03FinnMapRelayStarted = true;
   runtime.playerState.evidence["T03-EVIDENCE-DAY8-OLD-IRRIGATION-RELAY"] = {
     id: "T03-EVIDENCE-DAY8-OLD-IRRIGATION-RELAY",
-    source: "NPC001:FINN_EDGE_MAP>NCP004:EDA_MEMORY>NPC003:GARO_WATCH_ORDER".replace("NCP004", "NPC004"),
+    source: "NPC001:FINN_EDGE_MAP>NPC004:EDA_MEMORY>NPC003:GARO_WATCH_ORDER",
     acquiredAtMinute: now,
   };
 
