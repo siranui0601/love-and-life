@@ -1,8 +1,11 @@
 name: TRPG handover sheet sync
 
 # 開発引き継ぎシートへ docs/trpg/handover-append-*.csv を反映する。
-# 追記のみで、既存行の書き換えと削除は行わない。同じ日時と項目の行は飛ばすので
-# 何度実行しても重複しない。手動実行のみ。
+# 追記のみで、既存行の書き換えと削除は行わない。行の同一性は日時と項目で判定するため、
+# 何度実行しても重複しない。
+#
+# workflow_dispatch は既定ブランチにこのファイルが入るまで使えないので、
+# 当面は追記CSVを push した時に走らせる。
 on:
   workflow_dispatch:
     inputs:
@@ -10,6 +13,15 @@ on:
         description: "書き込まずに追記候補だけを表示する"
         type: boolean
         default: false
+  push:
+    paths:
+      - "docs/trpg/handover-append-*.csv"
+      - "tools/trpg-sim/cli-handover-append.mjs"
+      - ".github/workflows/trpg-handover-sync.yml"
+
+env:
+  # 初回は書き込まずに候補だけ確認する。実反映へ切り替える時に false にする。
+  HANDOVER_DRY_RUN: "true"
 
 jobs:
   sync:
@@ -30,7 +42,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Append handover rows
         run: |
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
+          if [ "${{ inputs.dry_run }}" = "true" ] || [ "$HANDOVER_DRY_RUN" = "true" ]; then
             node tools/trpg-sim/cli-handover-append.mjs --dry-run
           else
             node tools/trpg-sim/cli-handover-append.mjs
