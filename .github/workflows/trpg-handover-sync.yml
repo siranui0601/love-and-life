@@ -18,6 +18,11 @@ on:
       - "docs/trpg/handover-append-*.csv"
       - "tools/trpg-sim/cli-handover-append.mjs"
       - ".github/workflows/trpg-handover-sync.yml"
+  pull_request:
+    paths:
+      - "docs/trpg/handover-append-*.csv"
+      - "tools/trpg-sim/cli-handover-append.mjs"
+      - ".github/workflows/trpg-handover-sync.yml"
 
 env:
   # 初回は書き込まずに候補だけ確認する。実反映へ切り替える時に false にする。
