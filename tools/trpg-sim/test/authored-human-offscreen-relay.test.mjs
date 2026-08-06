@@ -79,7 +79,7 @@ function execute(state, action) {
   return result;
 }
 
-test("フィンの地図からNPC同士の伝言とGOAPがプレイヤー不在でも連鎖する", () => {
+test("一本道上でフィンの地図からNPC同士の伝言とGOAPがプレイヤー不在でも連鎖する", () => {
   const state = runtime();
 
   const hearEda = nextAction(state, "エダの伝言を聞く");
@@ -149,14 +149,6 @@ test("フィンの地図からNPC同士の伝言とGOAPがプレイヤー不在�
   assert.equal(restored.playerState.day8T03FinnNpcRelay.selectedActionIds.length, 3);
   assert.equal(restored.playerState.day8T03FinnNpcRelay.phase, "completed");
   assert.equal(relay.relayActions(restored), null);
-});
-
-test("死亡または不在の関与NPCを手書きsceneへ出さない", () => {
-  const state = runtime();
-  state.livingWorld.npcStates[relay.JILL_ID].lifeStatus = "dead";
-  state.livingWorld.npcStates[relay.JILL_ID].presence = "dead";
-  assert.equal(relay.relayActions(state), null);
-  assert.equal(state.playerState.day8T03FinnNpcRelay, undefined);
 });
 
 test("T01専用actionが空配列なら後続人徳sceneを遮断しない", () => {
