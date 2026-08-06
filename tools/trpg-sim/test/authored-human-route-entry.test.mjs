@@ -49,6 +49,7 @@ function select(state, label) {
   const action = authoredMissionFlowExclusiveActions(state)
     .find((candidate) => candidate.label === label);
   assert.ok(action);
+  assert.equal(action.actionId, action.id);
   const result = { ok: true };
   assert.equal(applyAuthoredMissionFlowAction(state, action, result), true);
   return result;
@@ -62,10 +63,12 @@ test("正式runtimeのMap形式missionと帰還履歴からT01救出後三択を
   assert.equal(entry.canonicalT01Completed(state), true);
   assert.equal(entry.canonicalFinnReturned(state), true);
   assert.equal(authoredMissionFlowGuidance(state).title, "救出の後に何をするか");
+  const actions = authoredMissionFlowExclusiveActions(state);
   assert.deepEqual(
-    authoredMissionFlowExclusiveActions(state).map((action) => action.label),
+    actions.map((action) => action.label),
     ["ミラを手伝う", "村長に記録を渡す", "子どもと遊ぶ"],
   );
+  assert.equal(actions.every((action) => action.actionId === action.id), true);
 });
 
 test("object形式missionでも正式完了時刻と帰還履歴があれば同じ三択を表示する", () => {
@@ -74,7 +77,9 @@ test("object形式missionでも正式完了時刻と帰還履歴があれば同�
   });
   assert.equal(entry.canonicalT01Completed(state), true);
   assert.equal(entry.canonicalFinnReturned(state), true);
-  assert.equal(authoredMissionFlowExclusiveActions(state).length, 3);
+  const actions = authoredMissionFlowExclusiveActions(state);
+  assert.equal(actions.length, 3);
+  assert.equal(actions.every((action) => action.actionId === action.id), true);
 });
 
 test("旧t01Resolved flagだけでは正式完了・帰還とみなさない", () => {
@@ -111,10 +116,12 @@ test("ミラを手伝った直後は更新された夕食三択へ進む", () =>
   select(state, "ミラを手伝う");
 
   assert.equal(authoredMissionFlowGuidance(state).title, "救出後の夕食");
+  const actions = authoredMissionFlowExclusiveActions(state);
   assert.deepEqual(
-    authoredMissionFlowExclusiveActions(state).map((action) => action.label),
+    actions.map((action) => action.label),
     ["パンをちぎる", "フィンに道を聞く", "早めに休む"],
   );
+  assert.equal(actions.every((action) => action.actionId === action.id), true);
   assert.equal(state.playerState.day1T01Aftercare.aftercareClosedActionIds.length, 2);
   assert.equal(state.playerState.history.at(-1).type, "T01_AFTERCARE_MIRA_HELPED");
 });
@@ -168,6 +175,7 @@ test("護送を引き受けた直後は広場へ連れ帰る正式actionだけ�
   const actions = authoredMissionFlowExclusiveActions(state);
   assert.equal(actions.length, 1);
   assert.equal(actions[0].actionId, entry.ESCORT_ACTION_ID);
+  assert.equal(actions[0].actionId, actions[0].id);
   assert.equal(actions[0].label, "フィンを広場へ送る");
   assert.equal(actions[0].targetFacilityId, "LOC_FARM_SQUARE");
 });
