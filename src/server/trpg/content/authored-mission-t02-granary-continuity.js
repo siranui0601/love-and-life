@@ -92,13 +92,36 @@ function baseAction(id, label, minutes, extra = {}) {
   };
 }
 
+function dawnFlag(runtime, flag) {
+  return runtime?.playerState?.worldFlags?.[flag] === true;
+}
+
 function evidenceAction(runtime, evidenceClass) {
   const state = ensureState(runtime);
   const releasedGrain = state.sideChoices.includes("release_emergency_grain");
   const debtFrozen = state.sideChoices.includes("freeze_village_debt");
   const watchPosted = state.sideChoices.includes("post_night_watch");
+  // Day5夜明けに縄を張っていれば、配給の人出でも土間の油筋は残っている。
+  const floorProtected = dawnFlag(runtime, "t02FloorEvidenceProtected");
+  // 夜明けにパン屋の粉樽を数えていれば、第三者控えの片側が既に手元にある。
+  const bakerCountercopy = dawnFlag(runtime, "t02FlourTallyMismatch");
 
   if (evidenceClass === "fire_origin") {
+    if (releasedGrain && floorProtected) {
+      return baseAction(
+        "EVIDENCE:FIRE:CORDONED_OIL_TRACK",
+        "配給の人出を縄の外へ通し、守り抜いた土間から油筋と焦げた灯芯を回収する",
+        34,
+        {
+          type: "investigate",
+          t02EvidenceClass: evidenceClass,
+          discoveryId: "T02-EV-FIRE-CORDONED-OIL-TRACK",
+          discoveryText: "夜明けに張った縄の内側だけが踏まれずに残り、扉から穀袋へ伸びる油筋と太い替え芯をそのまま採取できた。配給を行いながら、火元の一次証拠を失わずに済んでいる。",
+          t02Consequence: "夜明けに現場を囲っておいたため、備蓄を配りながらでも火元の一次証拠を保全できた。鑑定に余分な時間はかからない。",
+          suppressRandomEncounter: true,
+        },
+      );
+    }
     return releasedGrain
       ? baseAction(
         "EVIDENCE:FIRE:SOOT_LAYER",
@@ -156,6 +179,22 @@ function evidenceAction(runtime, evidenceClass) {
           suppressRandomEncounter: true,
         },
       );
+  }
+
+  if (debtFrozen && bakerCountercopy) {
+    return baseAction(
+      "EVIDENCE:CONTRACT:COUNTERCOPY_MATCH",
+      "夜明けに数えたパオロの粉樽控えへ、交易都市の税印写しだけを取り寄せて重ねる",
+      42,
+      {
+        type: "investigate",
+        t02EvidenceClass: evidenceClass,
+        discoveryId: "T02-EV-CONTRACT-COUNTERCOPY-MATCH",
+        discoveryText: "夜明けに実物を数えたパン屋の控えが既にあるため、取り寄せるのは税印写しだけで足りた。二つの独立記録に同じ架空不足が並び、借金額が去年から水増しされていたことが一度で示せる。",
+        t02Consequence: "原簿を持ち去られた後でも、先に確かめておいた実在庫が第三者記録の片側として効き、契約操作の立証が早く済んだ。",
+        suppressRandomEncounter: true,
+      },
+    );
   }
 
   return debtFrozen
