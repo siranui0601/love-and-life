@@ -5,7 +5,7 @@ import {
 
 export * from "./authored-mission-flow-human-companion-causality.js";
 
-export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v7";
+export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v8";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -74,6 +74,14 @@ function aftercareRuntime(runtime) {
   };
 }
 
+function normalizeActionIds(actions) {
+  if (!Array.isArray(actions)) return actions;
+  return actions.map((action) => {
+    if (!action || typeof action !== "object" || action.actionId != null) return action;
+    return { ...action, actionId: action.id };
+  });
+}
+
 function activeEscort(runtime) {
   const mission = findMission(runtime);
   const escort = runtime?.t01Escort;
@@ -107,7 +115,7 @@ function escortAction() {
 
 function ownActions(runtime) {
   if (activeEscort(runtime)) return [escortAction()];
-  return aftercare.actions(aftercareRuntime(runtime));
+  return normalizeActionIds(aftercare.actions(aftercareRuntime(runtime)));
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
@@ -213,6 +221,7 @@ export const AUTHORED_HUMAN_ROUTE_ENTRY_INTERNALS = Object.freeze({
   atVillageSquare,
   mapToObject,
   aftercareRuntime,
+  normalizeActionIds,
   activeEscort,
   escortAction,
   ownActions,
