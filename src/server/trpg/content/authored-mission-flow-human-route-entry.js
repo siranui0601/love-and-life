@@ -5,7 +5,7 @@ import {
 
 export * from "./authored-mission-flow-human-companion-causality.js";
 
-export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v6";
+export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v7";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -43,7 +43,9 @@ function t01ResolvedFlag(runtime) {
 }
 
 function canonicalT01Completed(runtime) {
-  return aftercare.isT01Completed(runtime);
+  const mission = findMission(runtime);
+  const completed = mission?.status === "completed" || mission?.status === "resolved";
+  return completed && mission?.completedAt != null;
 }
 
 function canonicalFinnReturned(runtime) {
@@ -52,6 +54,24 @@ function canonicalFinnReturned(runtime) {
 
 function atVillageSquare(runtime) {
   return aftercare.atVillageSquare(runtime);
+}
+
+function mapToObject(value) {
+  return value instanceof Map ? Object.fromEntries(value.entries()) : value;
+}
+
+function aftercareRuntime(runtime) {
+  const playerMissions = runtime?.playerState?.missions;
+  const rootMissions = runtime?.missions;
+  if (!(playerMissions instanceof Map) && !(rootMissions instanceof Map)) return runtime;
+  return {
+    ...runtime,
+    missions: mapToObject(rootMissions),
+    playerState: {
+      ...runtime?.playerState,
+      missions: mapToObject(playerMissions),
+    },
+  };
 }
 
 function activeEscort(runtime) {
@@ -87,7 +107,7 @@ function escortAction() {
 
 function ownActions(runtime) {
   if (activeEscort(runtime)) return [escortAction()];
-  return aftercare.actions(runtime);
+  return aftercare.actions(aftercareRuntime(runtime));
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
@@ -191,6 +211,8 @@ export const AUTHORED_HUMAN_ROUTE_ENTRY_INTERNALS = Object.freeze({
   canonicalT01Completed,
   canonicalFinnReturned,
   atVillageSquare,
+  mapToObject,
+  aftercareRuntime,
   activeEscort,
   escortAction,
   ownActions,
