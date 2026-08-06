@@ -6,7 +6,7 @@ import {
 export * from "./authored-mission-flow-human-route-t04-falco-entry.js";
 
 export const AUTHORED_HUMAN_ROUTE_T04_FALCO_PROGRESS_SYNC_VERSION =
-  "authored-human-route-t04-falco-progress-sync-v2";
+  "authored-human-route-t04-falco-progress-sync-v3";
 
 const MISSION_ID = "MSN-T04";
 
@@ -18,7 +18,8 @@ function mission(runtime, id) {
 }
 
 function exactT01Actions(runtime) {
-  return t01Entry.ownActions(runtime);
+  const actions = t01Entry.ownActions(runtime);
+  return Array.isArray(actions) && actions.length > 0 ? actions : null;
 }
 
 function syncFalcoHearingProgress(runtime, action) {
@@ -36,7 +37,7 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 }
 
 export function authoredMissionFlowGuidance(runtime) {
-  if (exactT01Actions(runtime)) return t01Guidance(runtime);
+  if (exactT01Actions(runtime) != null) return t01Guidance(runtime);
   return previous.authoredMissionFlowGuidance(runtime);
 }
 
