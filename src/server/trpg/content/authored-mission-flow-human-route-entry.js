@@ -5,11 +5,13 @@ import {
 
 export * from "./authored-mission-flow-human-companion-causality.js";
 
-export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v4";
+export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v5";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_SQUARE";
+const EDGE_FACILITY_ID = "LOC_FARM_EDGE";
+const ESCORT_ACTION_ID = "MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE";
 
 function values(value) {
   if (Array.isArray(value)) return value;
@@ -63,7 +65,39 @@ function atVillageSquare(runtime) {
   return current.location === LOCATION && current.facilityId === FACILITY_ID;
 }
 
+function activeEscort(runtime) {
+  const mission = findMission(runtime);
+  const escort = runtime?.t01Escort;
+  const current = aftercare.player(runtime);
+  return mission?.status === "active"
+    && mission?.stepId === "decide"
+    && escort?.found === true
+    && escort?.active === true
+    && escort?.arrivedSquare !== true
+    && current.location === LOCATION
+    && current.facilityId === EDGE_FACILITY_ID;
+}
+
+function escortAction() {
+  return {
+    id: ESCORT_ACTION_ID,
+    actionId: ESCORT_ACTION_ID,
+    label: "フィンを広場へ送る",
+    type: "plan",
+    family: "rescue",
+    missionId: MISSION_ID,
+    troubleId: "T01",
+    stepId: "decide",
+    minutes: 20,
+    targetLocation: LOCATION,
+    targetFacilityId: FACILITY_ID,
+    targetNpcId: "NPC001",
+    authoredT01FinnReturnAction: true,
+  };
+}
+
 function ownActions(runtime) {
+  if (activeEscort(runtime)) return [escortAction()];
   if (!canonicalT01Completed(runtime)
     || !canonicalFinnReturned(runtime)
     || !atVillageSquare(runtime)) return null;
@@ -90,6 +124,17 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 }
 
 export function authoredMissionFlowGuidance(runtime) {
+  if (activeEscort(runtime)) {
+    return {
+      missionId: MISSION_ID,
+      kicker: "負傷したフィンが、あなたの肩へ体重を預けている",
+      title: "フィンを家族のもとへ連れ帰る",
+      detail: "村外れから広場まで付き添い、ミラとガロへ無事を知らせる。",
+      targetLocation: LOCATION,
+      targetFacilityId: FACILITY_ID,
+      actionPanel: null,
+    };
+  }
   const own = ownActions(runtime);
   if (own?.[0]?.authoredDay1T01AftercareSceneId === aftercare.SUPPER_SCENE_ID) {
     return {
@@ -116,17 +161,66 @@ export function authoredMissionFlowGuidance(runtime) {
   return base.authoredMissionFlowGuidance(runtime);
 }
 
+function consumeEscortReturn(runtime, action, result) {
+  if (result?.ok === false || action?.authoredT01FinnReturnAction !== true) return false;
+  const escort = runtime.t01Escort;
+  if (!escort?.active) return false;
+  const current = aftercare.player(runtime);
+  current.location = LOCATION;
+  current.facilityId = FACILITY_ID;
+  escort.active = false;
+  escort.arrivedSquare = true;
+  escort.reunited = true;
+  escort.reunionBeatAtMinute = Number(runtime?.playerState?.absoluteMinute ?? 0);
+  const companions = current.companionNpcIds;
+  if (companions instanceof Set) companions.delete("NPC001");
+  else if (Array.isArray(companions)) current.companionNpcIds = companions.filter((id) => id !== "NPC001");
+
+  const finn = runtime?.livingWorld?.npcStates?.NPC001;
+  if (finn) {
+    finn.location = LOCATION;
+    finn.position = { hubId: LOCATION, facilityId: FACILITY_ID };
+    finn.presence = "present";
+    finn.lifeStatus = finn.lifeStatus === "dead" ? "dead" : "injured";
+    finn.status = "負傷・広場へ帰還";
+    finn.currentGoal = "reunite-with-family";
+    finn.travel = null;
+    finn.localTravel = null;
+  }
+
+  runtime.playerState.worldFlags ??= {};
+  runtime.playerState.worldFlags.t01FinnReturned = true;
+  runtime.playerState.history ??= [];
+  runtime.playerState.history.push({
+    type: "T01_FINN_ESCORTED_TO_SQUARE",
+    minute: Number(runtime.playerState.absoluteMinute ?? 0),
+    missionId: MISSION_ID,
+    troubleId: "T01",
+    npcId: "NPC001",
+    actionId: ESCORT_ACTION_ID,
+    location: LOCATION,
+    facilityId: FACILITY_ID,
+  });
+  result.summary = "フィンの歩幅に合わせて村外れの道を戻った。広場でミラが駆け寄り、ガロは周囲を警戒しながら母子を家へ運ぶ手配を始めた。";
+  return true;
+}
+
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
+  if (consumeEscortReturn(runtime, action, result)) return true;
   const changed = base.applyAuthoredMissionFlowAction(runtime, action, result);
   return aftercare.consume(runtime, action, result) || changed;
 }
 
 export const AUTHORED_HUMAN_ROUTE_ENTRY_INTERNALS = Object.freeze({
+  ESCORT_ACTION_ID,
   values,
   findMission,
   t01ResolvedFlag,
   canonicalT01Completed,
   canonicalFinnReturned,
   atVillageSquare,
+  activeEscort,
+  escortAction,
   ownActions,
+  consumeEscortReturn,
 });
