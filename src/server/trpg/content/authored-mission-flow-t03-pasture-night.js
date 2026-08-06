@@ -375,6 +375,7 @@ function ensureState(runtime) {
     selectedActionIds: [],
     closedActionIds: {},
     currentSceneId: PASTURE_SCENE,
+    lastChoiceAtMinute: null,
   };
   const state = runtime.playerState[STATE_KEY];
   state.version = AUTHORED_T03_PASTURE_NIGHT_VERSION;
@@ -391,6 +392,16 @@ function ensureState(runtime) {
 
 // 既存のT03手書きモジュールが持ち場とする施設。ここでは割り込まない。
 const RESERVED_FACILITY_IDS = new Set(["LOC_FARM_NORTH_FENCE"]);
+
+// 夜が明ければ村は勝手に動き出す。続きの場面はその足でしか起きず、
+// 半日離れれば閉じる。他のトラブルへ出かける自由を場面が奪わないための時限。
+const FOLLOW_UP_WINDOW_MINUTES = 720;
+
+function followUpStillOpen(runtime, state) {
+  const since = Number(state?.lastChoiceAtMinute ?? NaN);
+  if (!Number.isFinite(since)) return true;
+  return absoluteMinute(runtime) - since <= FOLLOW_UP_WINDOW_MINUTES;
+}
 
 function missionDefinition(runtime) {
   const byId = runtime?.playerState?.catalog?.byId;
@@ -428,8 +439,9 @@ function activeSceneId(runtime) {
   if (sceneId === PASTURE_SCENE) {
     if (player(runtime).facilityId !== FAC.stable) return null;
     if (!beforeCanonicalHearing(runtime)) return null;
+    return sceneId;
   }
-  return sceneId;
+  return followUpStillOpen(runtime, state) ? sceneId : null;
 }
 
 function actionIdFor(sceneId, choice) {
@@ -489,6 +501,7 @@ function consume(runtime, action, result) {
   state.selectedActionIds = [...new Set([...state.selectedActionIds, action.id])];
   state.closedActionIds[sceneId] = closed;
   state.currentSceneId = action.authoredT03PastureNextSceneId ?? null;
+  state.lastChoiceAtMinute = minute;
 
   runtime.playerState.worldFlags ??= {};
   runtime.playerState.history ??= [];
@@ -578,6 +591,8 @@ export const AUTHORED_T03_PASTURE_NIGHT_INTERNALS = Object.freeze({
   readState,
   ensureState,
   activeSceneId,
+  followUpStillOpen,
+  FOLLOW_UP_WINDOW_MINUTES,
   beforeCanonicalHearing,
   missionDefinition,
   RESERVED_FACILITY_IDS,

@@ -377,6 +377,7 @@ function ensureState(runtime) {
     selectedActionIds: [],
     closedActionIds: {},
     currentSceneId: DAWN_SCENE,
+    lastChoiceAtMinute: null,
   };
   const state = runtime.playerState[STATE_KEY];
   state.version = AUTHORED_T02_GRANARY_DAWN_VERSION;
@@ -391,14 +392,32 @@ function ensureState(runtime) {
   return state;
 }
 
+// 火が出た現場とその正面。宿や畑まで焼け跡の場面が追いかけては来ない。
+const DAWN_FACILITY_IDS = new Set([FAC.granary, FAC.square]);
+
+// 続きの場面は「その足で」しか起きない。半日離れれば村は勝手に片づけを進め、
+// 機会は閉じる。別のトラブルへ出かける自由を、場面が奪わないための時限。
+const FOLLOW_UP_WINDOW_MINUTES = 720;
+
+function followUpStillOpen(runtime, state) {
+  const since = Number(state?.lastChoiceAtMinute ?? NaN);
+  if (!Number.isFinite(since)) return true;
+  return absoluteMinute(runtime) - since <= FOLLOW_UP_WINDOW_MINUTES;
+}
+
 function activeSceneId(runtime) {
   if (!t02Open(runtime) || !inVillage(runtime) || !withinDawnWindow(runtime)) return null;
   const state = readState(runtime);
-  if (!state) return DAWN_SCENE;
+  if (!state) {
+    return DAWN_FACILITY_IDS.has(String(player(runtime).facilityId ?? "")) ? DAWN_SCENE : null;
+  }
   const sceneId = typeof state.currentSceneId === "string" ? state.currentSceneId : DAWN_SCENE;
   if (!SCENES[sceneId]) return null;
   if (state.completedScenes?.[sceneId] != null) return null;
-  return sceneId;
+  if (sceneId === DAWN_SCENE) {
+    return DAWN_FACILITY_IDS.has(String(player(runtime).facilityId ?? "")) ? DAWN_SCENE : null;
+  }
+  return followUpStillOpen(runtime, state) ? sceneId : null;
 }
 
 function actionIdFor(sceneId, choice) {
@@ -457,6 +476,7 @@ function consume(runtime, action, result) {
   state.selectedActionIds = [...new Set([...state.selectedActionIds, action.id])];
   state.closedActionIds[sceneId] = closed;
   state.currentSceneId = action.authoredT02DawnNextSceneId ?? null;
+  state.lastChoiceAtMinute = minute;
 
   runtime.playerState.worldFlags ??= {};
   runtime.playerState.history ??= [];
@@ -545,6 +565,9 @@ export const AUTHORED_T02_GRANARY_DAWN_INTERNALS = Object.freeze({
   readState,
   ensureState,
   activeSceneId,
+  followUpStillOpen,
+  DAWN_FACILITY_IDS,
+  FOLLOW_UP_WINDOW_MINUTES,
   actionIdFor,
   actionFor,
   actions,
