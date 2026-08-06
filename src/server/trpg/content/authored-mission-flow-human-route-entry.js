@@ -5,7 +5,7 @@ import {
 
 export * from "./authored-mission-flow-human-companion-causality.js";
 
-export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v5";
+export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v6";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -43,26 +43,15 @@ function t01ResolvedFlag(runtime) {
 }
 
 function canonicalT01Completed(runtime) {
-  const mission = findMission(runtime);
-  if (["completed", "resolved"].includes(String(mission?.status ?? ""))) return true;
-  const troubleStatus = runtime?.playerState?.troubleStates?.T01?.status
-    ?? runtime?.troubleStates?.T01?.status
-    ?? runtime?.playerState?.troubles?.T01?.status
-    ?? runtime?.troubles?.T01?.status;
-  if (["completed", "resolved", "suppressed", "prevented"].includes(String(troubleStatus ?? ""))) {
-    return true;
-  }
-  return t01ResolvedFlag(runtime);
+  return aftercare.isT01Completed(runtime);
 }
 
 function canonicalFinnReturned(runtime) {
-  return aftercare.hasFinnReturned(runtime)
-    || t01ResolvedFlag(runtime);
+  return aftercare.hasFinnReturned(runtime);
 }
 
 function atVillageSquare(runtime) {
-  const current = aftercare.player(runtime);
-  return current.location === LOCATION && current.facilityId === FACILITY_ID;
+  return aftercare.atVillageSquare(runtime);
 }
 
 function activeEscort(runtime) {
@@ -98,24 +87,7 @@ function escortAction() {
 
 function ownActions(runtime) {
   if (activeEscort(runtime)) return [escortAction()];
-  if (!canonicalT01Completed(runtime)
-    || !canonicalFinnReturned(runtime)
-    || !atVillageSquare(runtime)) return null;
-  const state = aftercare.ensureState(runtime);
-  if (state.aftercareSelectedActionId === aftercare.HELP_ACTION_ID
-    && state.supperCompletedAtMinute == null) {
-    return aftercare.SUPPER_CHOICES.map((choice) => aftercare.actionFor(
-      aftercare.SUPPER_SCENE_ID,
-      choice,
-    ));
-  }
-  if (state.aftercareCompletedAtMinute == null) {
-    return aftercare.AFTERCARE_CHOICES.map((choice) => aftercare.actionFor(
-      aftercare.AFTERCARE_SCENE_ID,
-      choice,
-    ));
-  }
-  return null;
+  return aftercare.actions(runtime);
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
