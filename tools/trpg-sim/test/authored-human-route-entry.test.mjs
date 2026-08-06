@@ -15,11 +15,23 @@ function runtime(missions, { finnReturned = true } = {}) {
       player: {
         location: "田園の村",
         facilityId: "LOC_FARM_SQUARE",
+        companionNpcIds: new Set(),
       },
       missions,
       worldFlags: finnReturned ? { t01FinnReturned: true } : {},
       history: [],
       evidence: {},
+    },
+    livingWorld: {
+      npcStates: {
+        NPC001: {
+          id: "NPC001",
+          presence: "present",
+          lifeStatus: "injured",
+          location: "田園の村",
+          position: { hubId: "田園の村", facilityId: "LOC_FARM_EDGE" },
+        },
+      },
     },
   };
 }
@@ -101,4 +113,55 @@ test("未完了missionや別施設では救出後三択を割り込ませない"
   ]));
   away.playerState.player.facilityId = "LOC_FARM_EDGE";
   assert.equal(entry.ownActions(away), null);
+});
+
+test("護送を引き受けた直後は広場へ連れ帰る正式actionだけを表示する", () => {
+  const state = runtime(new Map([
+    ["MSN-T01", { id: "MSN-T01", status: "active", stepId: "decide" }],
+  ]), { finnReturned: false });
+  state.playerState.absoluteMinute = 290;
+  state.playerState.player.facilityId = "LOC_FARM_EDGE";
+  state.playerState.player.companionNpcIds.add("NPC001");
+  state.t01Escort = {
+    found: true,
+    active: true,
+    arrivedSquare: false,
+    reunited: false,
+  };
+
+  assert.equal(entry.activeEscort(state), true);
+  assert.equal(authoredMissionFlowGuidance(state).title, "フィンを家族のもとへ連れ帰る");
+  const actions = authoredMissionFlowExclusiveActions(state);
+  assert.equal(actions.length, 1);
+  assert.equal(actions[0].actionId, entry.ESCORT_ACTION_ID);
+  assert.equal(actions[0].label, "フィンを広場へ送る");
+  assert.equal(actions[0].targetFacilityId, "LOC_FARM_SQUARE");
+});
+
+test("フィン帰還actionは位置・同行・NPC状態・履歴を保存しT01完了操作へ戻す", () => {
+  const state = runtime(new Map([
+    ["MSN-T01", { id: "MSN-T01", status: "active", stepId: "decide" }],
+  ]), { finnReturned: false });
+  state.playerState.absoluteMinute = 310;
+  state.playerState.player.facilityId = "LOC_FARM_EDGE";
+  state.playerState.player.companionNpcIds.add("NPC001");
+  state.t01Escort = {
+    found: true,
+    active: true,
+    arrivedSquare: false,
+    reunited: false,
+  };
+
+  const result = select(state, "フィンを広場へ送る");
+  assert.equal(state.playerState.player.facilityId, "LOC_FARM_SQUARE");
+  assert.equal(state.playerState.player.companionNpcIds.has("NPC001"), false);
+  assert.equal(state.t01Escort.active, false);
+  assert.equal(state.t01Escort.arrivedSquare, true);
+  assert.equal(state.t01Escort.reunited, true);
+  assert.equal(state.playerState.worldFlags.t01FinnReturned, true);
+  assert.equal(state.livingWorld.npcStates.NPC001.position.facilityId, "LOC_FARM_SQUARE");
+  assert.equal(state.livingWorld.npcStates.NPC001.currentGoal, "reunite-with-family");
+  assert.equal(state.playerState.history.at(-1).type, "T01_FINN_ESCORTED_TO_SQUARE");
+  assert.match(result.summary, /ミラ/u);
+  assert.equal(entry.activeEscort(state), false);
 });
