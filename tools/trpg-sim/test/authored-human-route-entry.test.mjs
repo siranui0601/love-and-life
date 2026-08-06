@@ -11,7 +11,8 @@ import {
 function runtime(missions, { finnReturned = true } = {}) {
   return {
     playerState: {
-      absoluteMinute: 222,
+      absoluteMinute: 13 * 60,
+      day: 1,
       player: {
         location: "田園の村",
         facilityId: "LOC_FARM_SQUARE",
@@ -36,6 +37,14 @@ function runtime(missions, { finnReturned = true } = {}) {
   };
 }
 
+function completedMission(status = "completed") {
+  return {
+    id: "MSN-T01",
+    status,
+    completedAt: 12 * 60 + 40,
+  };
+}
+
 function select(state, label) {
   const action = authoredMissionFlowExclusiveActions(state)
     .find((candidate) => candidate.label === label);
@@ -47,7 +56,7 @@ function select(state, label) {
 
 test("正式runtimeのMap形式missionと帰還履歴からT01救出後三択を表示する", () => {
   const state = runtime(new Map([
-    ["MSN-T01", { id: "MSN-T01", status: "completed" }],
+    ["MSN-T01", completedMission()],
   ]));
 
   assert.equal(entry.canonicalT01Completed(state), true);
@@ -59,27 +68,45 @@ test("正式runtimeのMap形式missionと帰還履歴からT01救出後三択を
   );
 });
 
-test("object形式missionでも帰還履歴があれば同じ救出後三択を表示する", () => {
+test("object形式missionでも正式完了時刻と帰還履歴があれば同じ三択を表示する", () => {
   const state = runtime({
-    "MSN-T01": { id: "MSN-T01", status: "resolved" },
+    "MSN-T01": completedMission("resolved"),
   });
   assert.equal(entry.canonicalT01Completed(state), true);
   assert.equal(entry.canonicalFinnReturned(state), true);
   assert.equal(authoredMissionFlowExclusiveActions(state).length, 3);
 });
 
-test("legacy runtime直下のt01Resolvedも成功救出の移行状態として認識する", () => {
+test("旧t01Resolved flagだけでは正式完了・帰還とみなさない", () => {
   const state = runtime(new Map(), { finnReturned: false });
   state.worldFlags = { t01Resolved: true };
   assert.equal(entry.t01ResolvedFlag(state), true);
-  assert.equal(entry.canonicalT01Completed(state), true);
-  assert.equal(entry.canonicalFinnReturned(state), true);
-  assert.equal(authoredMissionFlowExclusiveActions(state).length, 3);
+  assert.equal(entry.canonicalT01Completed(state), false);
+  assert.equal(entry.canonicalFinnReturned(state), false);
+  assert.equal(entry.ownActions(state), null);
+});
+
+test("mission完了表示でもcompletedAtがなければ救出後三択を表示しない", () => {
+  const state = runtime(new Map([
+    ["MSN-T01", { id: "MSN-T01", status: "completed" }],
+  ]));
+  assert.equal(entry.canonicalT01Completed(state), false);
+  assert.equal(entry.ownActions(state), null);
+});
+
+test("救出後sceneの閲覧判定は保存状態を生成しない", () => {
+  const state = runtime(new Map([
+    ["MSN-T01", completedMission()],
+  ]));
+  assert.equal(state.playerState.day1T01Aftercare, undefined);
+  assert.equal(entry.ownActions(state).length, 3);
+  assert.equal(authoredMissionFlowGuidance(state).title, "救出の後に何をするか");
+  assert.equal(state.playerState.day1T01Aftercare, undefined);
 });
 
 test("ミラを手伝った直後は更新された夕食三択へ進む", () => {
   const state = runtime(new Map([
-    ["MSN-T01", { id: "MSN-T01", status: "completed" }],
+    ["MSN-T01", completedMission()],
   ]));
   select(state, "ミラを手伝う");
 
@@ -94,22 +121,29 @@ test("ミラを手伝った直後は更新された夕食三択へ進む", () =>
 
 test("完了扱いでもフィンが未帰還なら救出後三択を表示しない", () => {
   const state = runtime(new Map([
-    ["MSN-T01", { id: "MSN-T01", status: "completed" }],
+    ["MSN-T01", completedMission()],
   ]), { finnReturned: false });
   assert.equal(entry.canonicalT01Completed(state), true);
   assert.equal(entry.canonicalFinnReturned(state), false);
   assert.equal(entry.ownActions(state), null);
 });
 
-test("未完了missionや別施設では救出後三択を割り込ませない", () => {
-  const active = runtime(new Map([
-    ["MSN-T01", { id: "MSN-T01", status: "active" }],
+test("Day1時間窓外や別施設では救出後三択を割り込ませない", () => {
+  const early = runtime(new Map([
+    ["MSN-T01", completedMission()],
   ]));
-  assert.equal(entry.canonicalT01Completed(active), false);
-  assert.equal(entry.ownActions(active), null);
+  early.playerState.absoluteMinute = 8 * 60;
+  assert.equal(entry.ownActions(early), null);
+
+  const day2 = runtime(new Map([
+    ["MSN-T01", completedMission()],
+  ]));
+  day2.playerState.day = 2;
+  day2.playerState.absoluteMinute = 1440 + 8 * 60;
+  assert.equal(entry.ownActions(day2), null);
 
   const away = runtime(new Map([
-    ["MSN-T01", { id: "MSN-T01", status: "completed" }],
+    ["MSN-T01", completedMission()],
   ]));
   away.playerState.player.facilityId = "LOC_FARM_EDGE";
   assert.equal(entry.ownActions(away), null);
@@ -164,4 +198,5 @@ test("フィン帰還actionは位置・同行・NPC状態・履歴を保存しT0
   assert.equal(state.playerState.history.at(-1).type, "T01_FINN_ESCORTED_TO_SQUARE");
   assert.match(result.summary, /ミラ/u);
   assert.equal(entry.activeEscort(state), false);
+  assert.equal(entry.ownActions(state), null);
 });
