@@ -4,7 +4,10 @@ import {
   parseNarrativeJson,
   validateNarrativeOutput,
 } from "../../../src/server/trpg/narrative-contract.js";
-import { createTrpgNarrator } from "../../../src/server/trpg/gemini-narrator.js";
+import {
+  createTrpgNarrator,
+  trpgGeminiNarrativeEnabled,
+} from "../../../src/server/trpg/gemini-narrator.js";
 import { createNarrativeReplayCache } from "../../../src/server/trpg/narrative-cache.js";
 
 function hashUnit(...parts) {
@@ -333,10 +336,10 @@ export async function runGeminiNarrativeSimulationV4(runs, model, options = {}) 
 }
 
 export async function runOptionalLiveGeminiSmokeV4(scenarios, options = {}) {
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.GEMINI_API_KEY || !trpgGeminiNarrativeEnabled()) {
     return {
       attempted: false,
-      reason: "GEMINI_API_KEY is not available in the simulation environment",
+      reason: "live Gemini smoke requires GEMINI_API_KEY and TRPG_GEMINI_NARRATIVE_ENABLED=true",
       model: "gemini-2.5-flash-lite",
     };
   }

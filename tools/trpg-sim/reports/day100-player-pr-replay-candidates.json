@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "day100-narrative-replay-candidates-v1",
+  "generatedAt": "2026-07-23T15:36:47.163Z",
+  "runId": "day100-player-pr-v8",
+  "seed": "trpg-day100-player-v1",
+  "sourceCommit": "8b2c8ef613adc2cd94c363391d93bfee29073bf5",
+  "reviewStatus": "candidate_only",
+  "activationNote": "Entries are inert until a human review promotes them into approved-narrative-replays.json.",
+  "stats": {
+    "auditRecords": 600,
+    "reusableEntries": 0,
+    "rejectedRecords": 600,
+    "duplicateRecords": 0
+  },
+  "entries": []
+}

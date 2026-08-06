@@ -2,15 +2,25 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   availableGameRuntimeActions,
+  availableGameRuntimeChoiceCandidates,
   buildGameView,
   compactPlayableRuntime,
   createGameRuntime,
   executeGameRuntimeCommand,
   gameStateHash,
+  resolveReviewedAuthoredPresentation,
   safeBattlePlayback,
   TRPG_GAME_RESOLVER_VERSION,
   TrpgGameService,
 } from "../../../src/server/trpg/game/service.js";
+import {
+  AUTHORED_MISSION_FLOW_VERSION,
+  AUTHORED_MISSION_FLOW_PACKS,
+  AUTHORED_MISSION_FLOW_SCENES,
+  authoredMissionFlowGuidance,
+  ensureAuthoredMissionFlowState,
+} from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
+import { resolveMissionStepVariant } from "../../../src/server/trpg/content/mission-step-variant.js";
 import { MemoryTrpgSaveStore } from "../../../src/server/trpg/game/save-store.js";
 import { deserializeRuntime, serializeRuntime } from "../../../src/server/trpg/game/serializer.js";
 import { publicNpc } from "../../../src/server/trpg/game/presence.js";
@@ -85,20 +95,82 @@ function runtimeView(runtime, data) {
   }, runtime, data);
 }
 
-function prepareMissionClueConversation(runtime, npcId = "NPC003") {
+function prepareGenericMissionClueConversation(runtime, data) {
   const state = runtime.playerState;
+  const authoredMissionIds = new Set([
+    "MSN-T01",
+    ...AUTHORED_MISSION_FLOW_PACKS.map((pack) => pack.missionId),
+  ]);
+  let definition = state.catalog.special.find((entry) => {
+    if (authoredMissionIds.has(entry.id)) return false;
+    const hearing = entry.steps.find((step) => step.type === "conversation");
+    return hearing && data.model.npcs.some((npc) =>
+      npc.relatedTroubleIds.includes(entry.troubleId)
+      && npc.allowedHubs.includes(hearing.targetLocation)
+      && npc.disposition !== "escalate");
+  });
+
+  // T01-T19 are now all authored. Keep the generic conversation contract covered
+  // with a test-only catalog clone instead of leaving one production mission generic.
+  if (!definition) {
+    const template = state.catalog.special.find((entry) => {
+      const hearing = entry.steps.find((step) => step.type === "conversation");
+      return hearing && data.model.npcs.some((npc) =>
+        npc.relatedTroubleIds.includes(entry.troubleId)
+        && npc.allowedHubs.includes(hearing.targetLocation)
+        && npc.disposition !== "escalate");
+    });
+    assert.ok(template, "the generic clue fixture needs a conversation mission template");
+    const templateHearing = template.steps.find((step) => step.type === "conversation");
+    const fixtureId = `TEST-GENERIC-${template.id}`;
+    const steps = template.steps.map((step) => ({
+      ...step,
+      id: `test-generic-${step.id}`,
+    }));
+    definition = {
+      ...template,
+      id: fixtureId,
+      title: `汎用会話契約試験：${template.title}`,
+      steps,
+    };
+    state.catalog.special.push(definition);
+    state.catalog.byId.set(definition.id, definition);
+    const templateMission = state.missions[template.id];
+    state.missions[definition.id] = {
+      ...structuredClone(templateMission),
+      status: "locked",
+      progress: Object.fromEntries(steps.map((step) => [step.id, 0])),
+      discoveries: [],
+    };
+    assert.equal(
+      definition.steps.find((step) => step.type === "conversation").targetFacilityId,
+      templateHearing.targetFacilityId,
+    );
+  }
+  const hearing = definition.steps.find((step) => step.type === "conversation");
+  const npc = data.model.npcs.find((entry) =>
+    entry.relatedTroubleIds.includes(definition.troubleId)
+    && entry.allowedHubs.includes(hearing.targetLocation)
+    && entry.disposition !== "escalate");
+  assert.ok(npc);
+  const factId = `TEST-${definition.troubleId}-CLUE`;
+  const rumorId = `TEST-${definition.troubleId}-KNOWN`;
+
   runtime.tutorial = null;
   runtime.lastWorldTickMinute = 0;
-  state.player.location = "田園の村";
-  state.player.facilityId = "LOC_FARM_SQUARE";
-  state.troubles.T02.status = "active";
-  state.missions["MSN-T02"].status = "active";
-  state.missions["MSN-T02"].progress.hear = 0;
+  state.player.location = hearing.targetLocation;
+  state.player.facilityId = hearing.targetFacilityId;
+  state.troubles[definition.troubleId].status = "active";
+  for (const missionDefinition of state.catalog.special) {
+    state.missions[missionDefinition.id].status =
+      missionDefinition.id === definition.id ? "active" : "locked";
+  }
+  state.missions[definition.id].progress[hearing.id] = 0;
   const knownRumor = {
-    id: "TEST-T02-KNOWN",
-    troubleId: "T02",
-    text: "共同穀倉に火の気があるという噂",
-    origin: "田園の村",
+    id: rumorId,
+    troubleId: definition.troubleId,
+    text: `${definition.title}に関する異変の噂`,
+    origin: hearing.targetLocation,
     originMinute: 0,
     importance: 1,
     recipients: {},
@@ -107,34 +179,151 @@ function prepareMissionClueConversation(runtime, npcId = "NPC003") {
   state.rumorById[knownRumor.id] = knownRumor;
   state.player.knownRumorIds.add(knownRumor.id);
   for (const npcState of Object.values(runtime.livingWorld.npcStates)) {
-    for (const [factId, belief] of Object.entries(npcState.beliefs ?? {})) {
+    for (const [beliefFactId, belief] of Object.entries(npcState.beliefs ?? {})) {
       const troubleId = belief.troubleId ?? belief.troubleIds?.[0] ?? String(belief.text ?? "").match(/^(T\d{2})[_・\s-]/u)?.[1];
-      if (troubleId === "T02") delete npcState.beliefs[factId];
+      if (troubleId === definition.troubleId) delete npcState.beliefs[beliefFactId];
     }
   }
-  const npcState = runtime.livingWorld.npcStates[npcId];
+  const npcState = runtime.livingWorld.npcStates[npc.id];
   npcState.lifeStatus = "alive";
   npcState.presence = "present";
-  npcState.location = "田園の村";
-  npcState.position = { hubId: "田園の村", facilityId: "LOC_FARM_SQUARE" };
+  npcState.location = hearing.targetLocation;
+  npcState.position = { hubId: hearing.targetLocation, facilityId: hearing.targetFacilityId };
   npcState.travel = null;
   npcState.localTravel = null;
   npcState.beliefs = {
     ...npcState.beliefs,
-    "TEST-T02-CLUE": {
-      factId: "TEST-T02-CLUE",
+    [factId]: {
+      factId,
       kind: "fact",
-      text: "T02_穀倉放火",
-      troubleIds: ["T02"],
+      text: `${definition.troubleId}_${definition.title}について現地で異変が続いている`,
+      troubleIds: [definition.troubleId],
       importance: 1,
       learnedAt: 0,
       secret: false,
       sourceType: "sheet",
       hopCount: 0,
-      path: [npcId],
+      path: [npc.id],
     },
   };
-  return npcState;
+  return {
+    npcState,
+    npc,
+    definition,
+    hearing,
+    factId,
+    learnedRumorId: `RUM-LIVING-${factId}`,
+  };
+}
+
+function prepareAuthoredMission(runtime, pack) {
+  const state = runtime.playerState;
+  runtime.tutorial = null;
+  state.tuning.disableTravelEncounters = true;
+  runtime.dialogueSession = null;
+  runtime.lastWorldTickMinute = state.absoluteMinute;
+  state.player.location = pack.hearing.targetLocation;
+  state.player.facilityId = pack.hearing.targetFacilityId;
+  for (const definition of state.catalog.special) {
+    state.missions[definition.id].status = definition.id === pack.missionId ? "active" : "locked";
+  }
+  state.troubles[pack.troubleId].status = "active";
+  const mission = state.missions[pack.missionId];
+  for (const step of state.catalog.byId.get(pack.missionId).steps) mission.progress[step.id] = 0;
+  const knownRumor = {
+    id: `TEST-${pack.troubleId}-AUTHORED-KNOWN`,
+    troubleId: pack.troubleId,
+    text: `${pack.title}について現地で異変が起きているという噂`,
+    origin: pack.hearing.targetLocation,
+    originMinute: 0,
+    importance: 1,
+    recipients: {},
+  };
+  state.rumors.push(knownRumor);
+  state.rumorById[knownRumor.id] = knownRumor;
+  state.player.knownRumorIds.add(knownRumor.id);
+  runtime.playerKnowledge.knownHubIds.add(pack.hearing.targetLocation);
+  runtime.playerKnowledge.knownFacilityIds.add(pack.hearing.targetFacilityId);
+
+  const speaker = runtime.livingWorld.npcStates[pack.hearing.npcId];
+  speaker.lifeStatus = "alive";
+  speaker.presence = "present";
+  speaker.location = pack.hearing.targetLocation;
+  speaker.position = {
+    hubId: pack.hearing.targetLocation,
+    facilityId: pack.hearing.targetFacilityId,
+  };
+  speaker.travel = null;
+  speaker.localTravel = null;
+  return speaker;
+}
+
+function verifyAuthoredLead(runtime, data, leadId) {
+  let verified = false;
+  for (let guard = 0; guard < 4 && !verified; guard += 1) {
+    const choices = availableGameRuntimeActions(runtime, data).choices;
+    const action = choices.find((entry) =>
+      entry.authoredMissionFlowLeadId === leadId
+      && ["lead", "evidence"].includes(entry.authoredMissionFlowKind));
+    assert.ok(action, `authored lead ${leadId} must remain actionable until its evidence is verified`);
+    const kind = action.authoredMissionFlowKind;
+    executeGameRuntimeCommand(runtime, data, {
+      type: "CHOOSE",
+      payload: { choiceId: action.choiceId },
+    });
+    verified = kind === "evidence";
+  }
+  assert.equal(verified, true, `authored lead ${leadId} must reach evidence without a movement loop`);
+}
+
+function authoredNavigatorGroups(pack) {
+  return (pack.investigation.focuses ?? []).flatMap((focus) =>
+    (focus.groups ?? []).map((group) => ({
+      ...group,
+      focusId: focus.id,
+      evidenceIds: [...(group.evidenceIds
+        ?? pack.investigation.requiredEvidenceGroups?.[Number(group.evidenceGroupIndex)]
+        ?? [])],
+    })));
+}
+
+function chooseAuthoredNavigatorRoute(runtime, data, pack, group, leadId) {
+  const choose = (predicate, message) => {
+    const choices = availableGameRuntimeActions(runtime, data).choices;
+    assert.equal(choices.length, 3, "each authored navigator tier must remain a three-choice screen");
+    const action = choices.find(predicate);
+    assert.ok(action, message);
+    const result = executeGameRuntimeCommand(runtime, data, {
+      type: "CHOOSE",
+      payload: { choiceId: action.choiceId },
+    });
+    assert.ok(result.outcome?.summary);
+    assert.doesNotMatch(result.outcome.summary, /行動の結果が世界へ反映された/u);
+    return { action, result };
+  };
+  choose(
+    (action) =>
+      action.authoredMissionFlowKind === "navigator_focus"
+      && action.authoredMissionFlowNavigatorFocusId === group.focusId,
+    `${pack.id} must expose navigator focus ${group.focusId}`,
+  );
+  choose(
+    (action) =>
+      action.authoredMissionFlowKind === "navigator_group"
+      && action.authoredMissionFlowNavigatorGroupId === group.id,
+    `${pack.id} must expose navigator group ${group.id}`,
+  );
+  const routeChoices = availableGameRuntimeActions(runtime, data).choices;
+  assert.equal(routeChoices.length, 3);
+  assert.ok(routeChoices.every((action) =>
+    action.authoredMissionFlowKind === "navigator_route"
+    && action.authoredMissionFlowNavigatorGroupId === group.id));
+  choose(
+    (action) =>
+      action.authoredMissionFlowKind === "navigator_route"
+      && action.authoredMissionFlowLeadId === leadId,
+    `${pack.id} must expose ${leadId} as one of exactly three authored routes`,
+  );
 }
 
 function preferredBattleCommand(battle) {
@@ -1082,7 +1271,7 @@ test("a conversational job pays the quoted wage without granting player levels",
   await completeOpening(runner, { inquiry: "TUTORIAL:DEFER:WORK" });
   const offer = runner.save.choices.find((choice) => choice.actionId.startsWith("WORK_CONFIRM:"));
   assert.ok(offer);
-  const quotedWage = Number(offer.actionId.split(":").at(-1));
+  const quotedWage = Number(offer.label.match(/(\d+)G/u)?.[1]);
   const goldBefore = runner.save.player.gold;
   await runner.run("CHOOSE", { choiceId: offer.choiceId });
   assert.equal(runner.save.player.level, 1);
@@ -1115,9 +1304,37 @@ test("a public living-world rumor becomes a mission only after the player hears 
   const response = await runner.run("CHOOSE", { choiceId: hearLocal.choiceId });
   assert.equal(response.save.scene.lastOutcome.learnedRumorCount, 1);
   assert.equal(runner.save.missions.some((mission) => mission.id === "MSN-T13"), true);
-  const endConversation = runner.save.choices.find((choice) => choice.actionId.endsWith(":END"));
-  if (endConversation) await runner.run("CHOOSE", { choiceId: endConversation.choiceId });
-  assert.equal(runner.save.choices.some((choice) => choice.actionId.includes("MSN-T13")), true);
+  const t13Pack = AUTHORED_MISSION_FLOW_PACKS.find((pack) => pack.missionId === "MSN-T13");
+  assert.ok(t13Pack);
+  const openingChoices = runner.save.choices.filter((choice) => choice.missionId === "MSN-T13");
+  assert.equal(openingChoices.length, 3);
+  assert.equal(runner.save.choices.length, 3);
+  assert.equal(new Set(openingChoices.map((choice) => choice.actionId)).size, 3);
+  assert.ok(openingChoices.every((choice) =>
+    choice.stepId === t13Pack.investigation.stepId
+    && choice.actionId.includes(`MISSION_FLOW:${t13Pack.id}:OPENING:`)));
+
+  let flowRecord = await store.get(runner.save.id);
+  let flowRuntime = deserializeRuntime(flowRecord.runtimeSnapshot, game.data);
+  let flow = flowRuntime.authoredMissionFlows[t13Pack.id];
+  assert.equal(flow.openingChoiceId, null);
+  assert.deepEqual(flow.evidenceIds, []);
+
+  await runner.run("CHOOSE", { choiceId: openingChoices[0].choiceId });
+  flowRecord = await store.get(runner.save.id);
+  flowRuntime = deserializeRuntime(flowRecord.runtimeSnapshot, game.data);
+  flow = flowRuntime.authoredMissionFlows[t13Pack.id];
+  assert.notEqual(flow.openingChoiceId, null);
+  assert.equal(flow.evidenceIds.length, 0);
+  assert.equal(flow.unlockedLeadIds.length, 3);
+  assert.deepEqual(
+    flowRuntime.playerState.worldFlags.missionRouteAccess?.["MSN-T13"],
+    ["elf-access"],
+  );
+  assert.equal(flowRuntime.playerState.worldFlags.elfApproval, false);
+  assert.equal(runner.save.choices.length, 3);
+  assert.ok(runner.save.choices.every((choice) =>
+    choice.actionId.includes(`MISSION_FLOW:${t13Pack.id}:NAVIGATOR_FOCUS:`)));
 });
 
 test("conversation reveals only beliefs held by the NPC who is actually speaking", () => {
@@ -1159,6 +1376,12 @@ test("conversation reveals only beliefs held by the NPC who is actually speaking
     payload: { choiceId: talk.choiceId },
   });
   assert.equal(greeting.outcome.learnedRumorCount, undefined, "a greeting alone must not grant an unspoken rumor");
+  runtime.dialogueSession.turnCount = 0;
+  runtime.dialogueSession.askedTopics = new Set([
+    ...runtime.dialogueSession.askedTopics,
+    "active_mission",
+    "route_to_lead",
+  ]);
   const concern = availableGameRuntimeActions(runtime, game.data).choices
     .find((action) => action.dialogueTopic === "local_concern");
   assert.ok(concern);
@@ -1181,25 +1404,28 @@ test("mission clue choices require a co-present NPC with an authoritative public
     playerName: "聞き手",
     tutorial: false,
   });
-  const npcState = prepareMissionClueConversation(runtime);
+  const prepared = prepareGenericMissionClueConversation(runtime, game.data);
+  const { npcState, npc, definition, hearing } = prepared;
   const available = availableGameRuntimeActions(runtime, game.data).choices
-    .find((action) => action.id === "ACTION:MSN-T02:hear");
+    .find((action) => action.id === `ACTION:${definition.id}:${hearing.id}`);
   assert.ok(available);
-  assert.equal(available.targetNpcId, "NPC003");
+  assert.equal(available.targetNpcId, npc.id);
   assert.equal(available.dialogueTopic, "mission_clue");
-  assert.equal(available.missionBeliefFactId, "TEST-T02-CLUE");
+  assert.equal(available.missionBeliefFactId, prepared.factId);
 
   npcState.presence = "traveling";
   assert.equal(availableGameRuntimeActions(runtime, game.data).choices
-    .some((action) => action.id === "ACTION:MSN-T02:hear"), false);
+    .some((action) => action.id === `ACTION:${definition.id}:${hearing.id}`), false);
   npcState.presence = "present";
-  npcState.beliefs["TEST-T02-CLUE"].secret = true;
+  npcState.beliefs[prepared.factId].secret = true;
   assert.equal(availableGameRuntimeActions(runtime, game.data).choices
-    .some((action) => action.id === "ACTION:MSN-T02:hear"), false);
+    .some((action) => action.id === `ACTION:${definition.id}:${hearing.id}`), false);
 });
 
-test("all nineteen special-mission hearings are bound to a present authoritative NPC", () => {
+test("all generic special-mission hearings are bound to a present authoritative NPC", () => {
   const { game } = service();
+  const authoredHearingMissionIds = new Set(AUTHORED_MISSION_FLOW_PACKS.map((pack) => pack.missionId));
+  const authoredTroubleIds = new Set(AUTHORED_MISSION_FLOW_PACKS.map((pack) => pack.troubleId));
   const covered = [];
   for (const definitionTemplate of createGameRuntime(game.data, {
     seed: "mission-hearing-catalog",
@@ -1207,6 +1433,8 @@ test("all nineteen special-mission hearings are bound to a present authoritative
     playerName: "聞き手",
     tutorial: false,
   }).playerState.catalog.special) {
+    // Data-driven authored mission flows own their own conversation contract.
+    if (authoredHearingMissionIds.has(definitionTemplate.id)) continue;
     const runtime = createGameRuntime(game.data, {
       seed: `mission-hearing-${definitionTemplate.troubleId}`,
       profileId: "balanced",
@@ -1273,7 +1501,1264 @@ test("all nineteen special-mission hearings are bound to a present authoritative
     assert.equal(state.missions[definition.id].progress[hearing.id], 1);
     covered.push(definition.troubleId);
   }
-  assert.deepEqual(covered, Array.from({ length: 19 }, (_, index) => `T${String(index + 1).padStart(2, "0")}`));
+  assert.deepEqual(
+    covered,
+    Array.from({ length: 19 }, (_, index) => `T${String(index + 1).padStart(2, "0")}`)
+      .filter((troubleId) => !authoredTroubleIds.has(troubleId)),
+  );
+});
+
+test("authored mission packs turn each opening answer into distinct, stateful investigation routes", () => {
+  const { game } = service();
+  for (const pack of AUTHORED_MISSION_FLOW_PACKS) {
+    const openingLabels = new Set();
+    for (const branch of pack.hearing.choices) {
+      const expectedLeadIds = new Set(branch.unlockedLeadIds);
+      const runtime = createGameRuntime(game.data, {
+        seed: `authored-${pack.id}-${branch.id}`,
+        profileId: "balanced",
+        playerName: "調査役",
+        tutorial: false,
+      });
+      prepareAuthoredMission(runtime, pack);
+      const opening = availableGameRuntimeActions(runtime, game.data).choices
+        .filter((action) => action.authoredMissionFlowKind === "opening");
+      assert.equal(opening.length, 3);
+      assert.equal(new Set(opening.map((action) => action.label)).size, 3);
+      opening.forEach((action) => openingLabels.add(action.label));
+
+      const selected = opening.find((action) => action.id.endsWith(`:${branch.id}`));
+      assert.ok(selected);
+      const result = executeGameRuntimeCommand(runtime, game.data, {
+        type: "CHOOSE",
+        payload: { choiceId: selected.choiceId },
+      });
+      assert.ok(result.outcome);
+      assert.equal(runtime.playerState.missions[pack.missionId].progress[pack.hearing.stepId], 1);
+      assert.equal(runtime.authoredMissionFlows[pack.id].openingChoiceId, branch.id);
+      assert.deepEqual(
+        new Set(runtime.authoredMissionFlows[pack.id].unlockedLeadIds),
+        expectedLeadIds,
+      );
+
+      const nextChoices = availableGameRuntimeActions(runtime, game.data).choices;
+      const navigatorGroups = authoredNavigatorGroups(pack);
+      if (navigatorGroups.length) {
+        assert.equal(nextChoices.length, 3);
+        assert.ok(nextChoices.every((action) =>
+          action.authoredMissionFlowKind === "navigator_focus"));
+        assert.deepEqual(
+          new Set(nextChoices.map((action) => action.authoredMissionFlowNavigatorFocusId)),
+          new Set(pack.investigation.focuses.map((focus) => focus.id)),
+        );
+        assert.equal(
+          nextChoices[0].authoredMissionFlowNavigatorFocusId,
+          branch.preferredFocusId,
+          "the opening answer must recommend its matching investigation focus without locking the others",
+        );
+        continue;
+      }
+      const leadIds = new Set(nextChoices
+        .filter((action) => action.authoredMissionFlowKind === "lead")
+        .map((action) => action.authoredMissionFlowLeadId));
+      assert.deepEqual(leadIds, expectedLeadIds);
+      if (expectedLeadIds.size < 3) {
+        assert.ok(nextChoices.some((action) => action.authoredMissionFlowKind === "defer"),
+          "two-route openings must leave one choice for postponing the crisis");
+      }
+
+      const regionalLead = branch.unlockedLeadIds
+        .map((leadId) => pack.investigation.leads.find((lead) => lead.id === leadId))
+        .find((lead) => lead?.targetLocation && lead.targetLocation !== pack.hearing.targetLocation);
+      if (regionalLead) {
+        const regionalAction = nextChoices.find((action) =>
+          action.authoredMissionFlowLeadId === regionalLead.id);
+        assert.ok(regionalAction);
+        assert.match(regionalAction.label, new RegExp(`${regionalLead.targetLocation}へ向かい`, "u"));
+        assert.ok(regionalAction.id.includes(":LEAD_HUB:"));
+        const regionalScene = AUTHORED_MISSION_FLOW_SCENES.find((scene) =>
+          scene.sceneId === `mission-flow.${pack.id}.lead-hub.${regionalLead.id}`);
+        assert.ok(regionalScene);
+        assert.equal(
+          regionalScene.narrative,
+          regionalLead.regionalNarrative
+            ?? `街道を進み、${regionalLead.targetLocation ?? "次の地域"}へ着いた。${regionalLead.destinationName}はここからさらに先にある。`,
+        );
+        assert.notEqual(regionalScene.narrative, regionalLead.leadNarrative,
+          "regional travel must not narrate an investigation at a facility the player has not reached");
+        assert.ok(regionalScene.when.all.some((condition) =>
+          condition.path === "outcome.ok" && condition.op === "isTrue"));
+        assert.ok(regionalScene.when.all.some((condition) =>
+          condition.path === "location.hub"
+          && condition.op === "eq"
+          && condition.value === regionalLead.targetLocation));
+      }
+    }
+    assert.equal(openingLabels.size, 3);
+
+    const evidenceRuntime = createGameRuntime(game.data, {
+      seed: `authored-${pack.id}-evidence-progression`,
+      profileId: "balanced",
+      playerName: "調査役",
+      tutorial: false,
+    });
+    prepareAuthoredMission(evidenceRuntime, pack);
+    const firstOpening = availableGameRuntimeActions(evidenceRuntime, game.data).choices
+      .find((action) => action.authoredMissionFlowKind === "opening");
+    executeGameRuntimeCommand(evidenceRuntime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: firstOpening.choiceId },
+    });
+    for (let guard = 0; guard < pack.investigation.leads.length; guard += 1) {
+      const currentFlowBeforeLead = evidenceRuntime.authoredMissionFlows[pack.id];
+      const collectedEvidenceIds = new Set(currentFlowBeforeLead?.evidenceIds ?? []);
+      const navigatorGroups = authoredNavigatorGroups(pack);
+      let leadId;
+      if (navigatorGroups.length) {
+        const group = navigatorGroups.find((entry) =>
+          !entry.evidenceIds.some((evidenceId) => collectedEvidenceIds.has(evidenceId)));
+        assert.ok(group, `${pack.id} must retain an incomplete navigator group`);
+        const evidenceId = group.evidenceIds.find((id) => !collectedEvidenceIds.has(id));
+        leadId = pack.investigation.leads.find((entry) => entry.discoveryId === evidenceId)?.id;
+        assert.ok(leadId);
+        chooseAuthoredNavigatorRoute(evidenceRuntime, game.data, pack, group, leadId);
+      } else {
+        const choices = availableGameRuntimeActions(evidenceRuntime, game.data).choices;
+        const requiredEvidenceIds = new Set(pack.investigation.requiredEvidenceIds ?? []);
+        for (const group of pack.investigation.requiredEvidenceGroups ?? []) {
+          if (!group.some((evidenceId) => collectedEvidenceIds.has(evidenceId))) {
+            group.forEach((evidenceId) => requiredEvidenceIds.add(evidenceId));
+          }
+        }
+        const requiredLeadIds = new Set(pack.investigation.leads
+          .filter((lead) =>
+            requiredEvidenceIds.has(lead.discoveryId)
+            && !collectedEvidenceIds.has(lead.discoveryId))
+          .map((lead) => lead.id));
+        const lead = choices.find((action) =>
+          action.authoredMissionFlowKind === "lead"
+          && requiredLeadIds.has(action.authoredMissionFlowLeadId))
+          ?? choices.find((action) => action.authoredMissionFlowKind === "lead");
+        assert.ok(
+          lead,
+          `${pack.id} must expose another lead while its investigation step remains incomplete`
+            + ` (location=${evidenceRuntime.playerState.player.location}`
+            + `, facility=${evidenceRuntime.playerState.player.facilityId}`
+            + `, evidence=${evidenceRuntime.authoredMissionFlows[pack.id]?.evidenceIds?.join(",") ?? ""}`
+            + `, unlocked=${evidenceRuntime.authoredMissionFlows[pack.id]?.unlockedLeadIds?.join(",") ?? ""}`
+            + `, choices=${choices.map((choice) => choice.id).join(",")})`,
+        );
+        leadId = lead.authoredMissionFlowLeadId;
+      }
+      verifyAuthoredLead(evidenceRuntime, game.data, leadId);
+      const flow = evidenceRuntime.authoredMissionFlows[pack.id];
+      assert.equal(availableGameRuntimeActions(evidenceRuntime, game.data).choices
+        .some((action) => action.authoredMissionFlowKind === "evidence"
+          && action.authoredMissionFlowLeadId === leadId), false,
+      "verified evidence must not be offered again");
+      const definition = evidenceRuntime.playerState.catalog.byId.get(pack.missionId);
+      const state = evidenceRuntime.playerState.missions[pack.missionId];
+      const current = definition.steps.find((step) =>
+        Number(state.progress[step.id] ?? 0) < Number(step.required ?? 1));
+      if (current?.id !== pack.investigation.stepId) break;
+    }
+    const missionDefinition = evidenceRuntime.playerState.catalog.byId.get(pack.missionId);
+    const missionState = evidenceRuntime.playerState.missions[pack.missionId];
+    const nextStep = missionDefinition.steps.find((step) =>
+      Number(missionState.progress[step.id] ?? 0) < Number(step.required ?? 1));
+    assert.notEqual(nextStep?.id, pack.investigation.stepId);
+    const guidance = authoredMissionFlowGuidance(evidenceRuntime);
+    assert.equal(guidance?.targetFacilityId, nextStep?.targetFacilityId ?? null);
+    assert.equal(guidance?.targetLocation, nextStep?.targetLocation ?? pack.hearing.targetLocation);
+    if (nextStep?.targetFacilityId
+      && evidenceRuntime.playerState.player.facilityId !== nextStep.targetFacilityId) {
+      assert.equal(guidance?.actionPanel, "movement");
+      const view = runtimeView(evidenceRuntime, game.data);
+      assert.equal(view.movement.some((move) =>
+        move.recommended
+        && (move.destinationFacilityId === nextStep.targetFacilityId
+          || move.destination === nextStep.targetLocation)), true,
+      "cross-hub guidance must keep the regional leg visibly recommended");
+    }
+
+    const battleOverride = pack.catalogOverride?.battle;
+    if (battleOverride) {
+      const battleStep = missionDefinition.steps.find((step) => step.type === "battle");
+      for (const [key, value] of Object.entries(battleOverride)) {
+        assert.deepEqual(battleStep[key], value);
+      }
+      const encounterByStatus = battleOverride.encounterIdByTroubleStatus ?? {};
+      evidenceRuntime.playerState.player.location = battleStep.targetLocation;
+      evidenceRuntime.playerState.player.facilityId = battleStep.targetFacilityId;
+      for (const [status, encounterId] of Object.entries(encounterByStatus)) {
+        evidenceRuntime.playerState.troubles[pack.troubleId].status = status;
+        const battleAction = availableGameRuntimeActions(evidenceRuntime, game.data).choices
+          .find((action) => action.type === "missionBattle" && action.missionId === pack.missionId);
+        assert.ok(battleAction);
+        assert.equal(battleAction.encounterId, encounterId);
+        assert.equal(
+          battleAction.label,
+          battleOverride.labelByTroubleStatus?.[status] ?? battleOverride.label,
+        );
+      }
+    }
+
+    if (pack.resolution?.choices?.length) {
+      const battleStep = missionDefinition.steps.find((step) => step.type === "battle");
+      const resolveStep = missionDefinition.steps.find((step) => step.id === pack.resolution.stepId);
+      if (battleStep) {
+        missionState.progress[battleStep.id] = Number(battleStep.required ?? 1);
+      }
+      evidenceRuntime.playerState.troubles[pack.troubleId].status = "active";
+      evidenceRuntime.playerState.player.location = resolveStep.targetLocation;
+      evidenceRuntime.playerState.player.facilityId = resolveStep.targetFacilityId;
+      const allRouteActions = availableGameRuntimeActions(evidenceRuntime, game.data).choices
+        .filter((action) => ["resolution", "resolution_preparation"]
+          .includes(action.authoredMissionFlowKind));
+      const routeActions = allRouteActions
+        .filter((action) => action.authoredMissionFlowKind === "resolution");
+      assert.equal(allRouteActions.length, 3);
+      assert.equal(new Set(allRouteActions.map((action) => action.label)).size, 3);
+      assert.ok(routeActions.length >= 1,
+        "a complete investigation must make at least one evidence-supported resolution viable");
+      assert.ok(routeActions.every((action) => action.type === "resolveMission"));
+      assert.equal(
+        new Set(pack.resolution.choices.map((route) => route.worldEffect?.factId)).size,
+        pack.resolution.choices.length,
+      );
+      for (const route of pack.resolution.choices) {
+        assert.ok(allRouteActions.some((action) =>
+          action.authoredMissionFlowResolutionRouteId === route.id));
+        if (route.narrativeByTroubleStatus?.critical) {
+          assert.ok(route.worldEffect?.factIdByTroubleStatus?.critical);
+          assert.ok(route.worldEffect?.textByTroubleStatus?.critical);
+        }
+        for (const troubleStatus of ["active", "critical"]) {
+          const routeScene = AUTHORED_MISSION_FLOW_SCENES.find((scene) =>
+            scene.sceneId === `mission-flow.${pack.id}.resolution.${route.id}.${troubleStatus}`);
+          assert.equal(
+            routeScene?.narrative,
+            route.narrativeByTroubleStatus?.[troubleStatus] ?? route.narrative,
+          );
+          assert.ok(routeScene?.when.all.some((condition) =>
+            condition.path === "outcome.ok" && condition.op === "isTrue"));
+        }
+      }
+      const selectedAction = routeActions[0];
+      const selectedRoute = pack.resolution.choices.find((route) =>
+        route.id === selectedAction.authoredMissionFlowResolutionRouteId);
+      assert.ok(selectedRoute);
+      const resolution = executeGameRuntimeCommand(evidenceRuntime, game.data, {
+        type: "CHOOSE",
+        payload: { choiceId: selectedAction.choiceId },
+      });
+      assert.ok(resolution.outcome.summary.startsWith(selectedRoute.summary));
+      const reviewedResolution = resolveReviewedAuthoredPresentation(
+        evidenceRuntime,
+        game.data,
+        resolution,
+        resolution.outcome,
+      );
+      assert.equal(reviewedResolution?.narrative, selectedRoute.narrative);
+      assert.equal(resolveReviewedAuthoredPresentation(
+        evidenceRuntime,
+        game.data,
+        resolution,
+        { ...resolution.outcome, ok: false },
+      ), null, "a failed resolution must not display its success scene");
+      assert.equal(evidenceRuntime.authoredMissionFlows[pack.id].selectedResolutionRouteId, selectedRoute.id);
+      assert.equal(evidenceRuntime.playerState.troubles[pack.troubleId].status, "resolved");
+      assert.equal(
+        evidenceRuntime.playerState.worldFlags[selectedRoute.worldEffect.flagKey],
+        selectedRoute.id,
+      );
+      assert.equal(
+        evidenceRuntime.narrativeMemory.semanticFlags[`trouble.${pack.troubleId}.resolutionRoute`],
+        selectedRoute.id,
+      );
+      assert.ok(evidenceRuntime.narrativeMemory.localFacts.some((entry) =>
+        entry.factId === selectedRoute.worldEffect.factId
+        && entry.summary === selectedRoute.worldEffect.text));
+      assert.ok(evidenceRuntime.livingWorld.facilityRumors[selectedRoute.worldEffect.facilityId]
+        .has(selectedRoute.worldEffect.factId));
+      assert.ok(evidenceRuntime.playerState.history.some((entry) =>
+        entry.type === "AUTHORED_MISSION_FLOW_RESOLUTION_SELECTED"
+        && entry.routeId === selectedRoute.id
+        && entry.worldEffectFactId === selectedRoute.worldEffect.factId));
+    }
+
+    const mandatoryEvidenceIds = new Set(pack.investigation.requiredEvidenceIds ?? []);
+    const nonMandatoryOpening = mandatoryEvidenceIds.size > 0
+      ? pack.hearing.choices.find((choice) => choice.unlockedLeadIds.length
+        >= pack.investigation.requiredEvidenceCount
+        && choice.unlockedLeadIds.every((leadId) => {
+          const lead = pack.investigation.leads.find((entry) => entry.id === leadId);
+          return lead && !mandatoryEvidenceIds.has(lead.discoveryId);
+        }))
+      : null;
+    if (nonMandatoryOpening) {
+      const mandatoryRuntime = createGameRuntime(game.data, {
+        seed: `authored-${pack.id}-mandatory-evidence`,
+        profileId: "balanced",
+        playerName: "調査役",
+        tutorial: false,
+      });
+      prepareAuthoredMission(mandatoryRuntime, pack);
+      const opening = availableGameRuntimeActions(mandatoryRuntime, game.data).choices
+        .find((action) => action.id.endsWith(`:${nonMandatoryOpening.id}`));
+      executeGameRuntimeCommand(mandatoryRuntime, game.data, {
+        type: "CHOOSE",
+        payload: { choiceId: opening.choiceId },
+      });
+      for (const leadId of nonMandatoryOpening.unlockedLeadIds
+        .slice(0, pack.investigation.requiredEvidenceCount)) {
+        verifyAuthoredLead(mandatoryRuntime, game.data, leadId);
+      }
+      const state = mandatoryRuntime.playerState.missions[pack.missionId];
+      const definition = mandatoryRuntime.playerState.catalog.byId.get(pack.missionId);
+      const current = definition.steps.find((step) =>
+        Number(state.progress[step.id] ?? 0) < Number(step.required ?? 1));
+      assert.equal(current?.id, pack.investigation.stepId,
+        "evidence count alone must not bypass a mandatory source");
+      assert.equal(
+        state.progress[pack.investigation.stepId],
+        Number(current.required ?? 1) - 1,
+        "the public progress count must represent satisfied requirement classes, not duplicate local clues",
+      );
+      const offeredEvidenceIds = new Set(availableGameRuntimeActions(mandatoryRuntime, game.data).choices
+        .filter((action) => action.authoredMissionFlowKind === "lead")
+        .map((action) => pack.investigation.leads
+          .find((lead) => lead.id === action.authoredMissionFlowLeadId)?.discoveryId));
+      for (const evidenceId of mandatoryEvidenceIds) assert.equal(offeredEvidenceIds.has(evidenceId), true);
+
+      const migratedRuntime = createGameRuntime(game.data, {
+        seed: `authored-${pack.id}-legacy-progress-recheck`,
+        profileId: "balanced",
+        playerName: "調査役",
+        tutorial: false,
+      });
+      prepareAuthoredMission(migratedRuntime, pack);
+      migratedRuntime.authoredMissionFlows = {};
+      const migratedDefinition = migratedRuntime.playerState.catalog.byId.get(pack.missionId);
+      const migratedState = migratedRuntime.playerState.missions[pack.missionId];
+      for (const step of migratedDefinition.steps) {
+        migratedState.progress[step.id] = ["conversation", "investigate", "battle"].includes(step.type)
+          ? Number(step.required ?? 1)
+          : 0;
+      }
+      const migratedResolve = migratedDefinition.steps.find((step) => step.type === "resolve");
+      migratedRuntime.playerState.player.location = migratedResolve.targetLocation;
+      migratedRuntime.playerState.player.facilityId = migratedResolve.targetFacilityId;
+      const migratedChoices = availableGameRuntimeActions(migratedRuntime, game.data).choices;
+      assert.equal(migratedChoices.some((action) =>
+        action.authoredMissionFlowKind === "resolution"), false,
+      "legacy generic progress must be rechecked before authored resolution choices are built");
+      const migratedInvestigation = migratedDefinition.steps.find((step) =>
+        step.id === pack.investigation.stepId);
+      assert.ok(
+        Number(migratedState.progress[migratedInvestigation.id] ?? 0)
+          < Number(migratedInvestigation.required ?? 1),
+      );
+    }
+  }
+
+  const granaryPack = AUTHORED_MISSION_FLOW_PACKS.find((pack) => pack.id === "granary-arson");
+  const runtime = createGameRuntime(game.data, {
+    seed: "authored-t02-evidence-chain",
+    profileId: "balanced",
+    playerName: "調査役",
+    tutorial: false,
+  });
+  prepareAuthoredMission(runtime, granaryPack);
+  const records = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.id.endsWith(":records"));
+  executeGameRuntimeCommand(runtime, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: records.choiceId },
+  });
+  const oilRoute = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.authoredMissionFlowLeadId === "oil_trail");
+  assert.ok(oilRoute);
+  executeGameRuntimeCommand(runtime, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: oilRoute.choiceId },
+  });
+  const evidence = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.authoredMissionFlowKind === "evidence");
+  assert.ok(evidence);
+  executeGameRuntimeCommand(runtime, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: evidence.choiceId },
+  });
+  const flow = runtime.authoredMissionFlows["granary-arson"];
+  assert.deepEqual(flow.evidenceIds, ["T02-EVIDENCE-POURED-OIL"]);
+  assert.equal(flow.unlockedLeadIds.includes("stranger_tracks"), true,
+    "confirmed evidence must open a route that the chosen conversation did not reveal");
+
+  const postEvidence = availableGameRuntimeActions(runtime, game.data).choices;
+  assert.equal(postEvidence.length, 3);
+  assert.ok(postEvidence.some((action) => action.authoredMissionFlowKind === "premature_resolution"));
+  const accusation = postEvidence.find((action) => action.authoredMissionFlowKind === "premature_resolution");
+  const rejected = executeGameRuntimeCommand(runtime, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: accusation.choiceId },
+  });
+  assert.match(rejected.outcome.summary, /証拠|失火/u);
+  assert.deepEqual(flow.evidenceIds, ["T02-EVIDENCE-POURED-OIL"],
+    "a failed accusation must preserve evidence instead of resetting progress");
+
+  runtime.playerState.absoluteMinute = flow.deferredUntilMinute;
+  runtime.lastWorldTickMinute = flow.deferredUntilMinute;
+  const afterCooldown = availableGameRuntimeActions(runtime, game.data).choices;
+  assert.equal(afterCooldown.some((action) => action.authoredMissionFlowKind === "premature_resolution"), false,
+    "the same weak accusation must not be offered repeatedly at the same evidence count");
+  assert.equal(afterCooldown.filter((action) => action.authoredMissionFlowKind === "lead").length, 2);
+});
+
+test("T09, T11, T12 and T14 expose every authored evidence route from every opening and allow optional corroboration", () => {
+  const { game } = service();
+  const contracts = [
+    { missionId: "MSN-T09", expectedLeads: 9 },
+    { missionId: "MSN-T11", expectedLeads: 12 },
+    { missionId: "MSN-T12", expectedLeads: 15 },
+    { missionId: "MSN-T14", expectedLeads: 18 },
+  ];
+  const cloneRuntime = (runtime) => deserializeRuntime(serializeRuntime(runtime), game.data);
+
+  for (const contract of contracts) {
+    const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) =>
+      entry.missionId === contract.missionId);
+    assert.ok(pack);
+    const groups = authoredNavigatorGroups(pack);
+    const leadByEvidenceId = new Map(
+      pack.investigation.leads.map((lead) => [lead.discoveryId, lead]),
+    );
+    assert.equal(leadByEvidenceId.size, contract.expectedLeads);
+    assert.equal(groups.flatMap((group) => group.evidenceIds).length, contract.expectedLeads);
+
+    const openedRuntime = (opening) => {
+      const runtime = createGameRuntime(game.data, {
+        seed: `${pack.id}-all-routes-${opening.id}`,
+        profileId: "balanced",
+        playerName: "全経路監査役",
+        tutorial: false,
+      });
+      prepareAuthoredMission(runtime, pack);
+      const openingAction = availableGameRuntimeActions(runtime, game.data).choices
+        .find((choice) => choice.id.endsWith(`:${opening.id}`));
+      assert.ok(openingAction);
+      executeGameRuntimeCommand(runtime, game.data, {
+        type: "CHOOSE",
+        payload: { choiceId: openingAction.choiceId },
+      });
+      return runtime;
+    };
+
+    for (const opening of pack.hearing.choices) {
+      const base = openedRuntime(opening);
+      const reached = new Set();
+      for (const group of groups) {
+        for (const evidenceId of group.evidenceIds) {
+          const branch = cloneRuntime(base);
+          const lead = leadByEvidenceId.get(evidenceId);
+          assert.ok(lead);
+          chooseAuthoredNavigatorRoute(branch, game.data, pack, group, lead.id);
+          verifyAuthoredLead(branch, game.data, lead.id);
+          assert.deepEqual(branch.authoredMissionFlows[pack.id].evidenceIds, [evidenceId]);
+          reached.add(evidenceId);
+        }
+      }
+      assert.equal(reached.size, contract.expectedLeads,
+        `${pack.troubleId}:${opening.id} must reach every authored evidence route`);
+    }
+
+    const corroborationBase = openedRuntime(pack.hearing.choices[0]);
+    for (const group of groups) {
+      const branch = cloneRuntime(corroborationBase);
+      for (let index = 0; index < group.evidenceIds.length; index += 1) {
+        const evidenceId = group.evidenceIds[index];
+        const lead = leadByEvidenceId.get(evidenceId);
+        const focusAction = availableGameRuntimeActions(branch, game.data).choices
+          .find((choice) =>
+            choice.authoredMissionFlowKind === "navigator_focus"
+            && choice.authoredMissionFlowNavigatorFocusId === group.focusId);
+        assert.ok(focusAction);
+        executeGameRuntimeCommand(branch, game.data, {
+          type: "CHOOSE",
+          payload: { choiceId: focusAction.choiceId },
+        });
+        const groupAction = availableGameRuntimeActions(branch, game.data).choices
+          .find((choice) =>
+            choice.authoredMissionFlowKind === "navigator_group"
+            && choice.authoredMissionFlowNavigatorGroupId === group.id);
+        assert.ok(groupAction);
+        executeGameRuntimeCommand(branch, game.data, {
+          type: "CHOOSE",
+          payload: { choiceId: groupAction.choiceId },
+        });
+        const routeChoices = availableGameRuntimeActions(branch, game.data).choices;
+        assert.equal(routeChoices.length, 3);
+        assert.equal(routeChoices.filter((choice) =>
+          choice.authoredMissionFlowKind === "navigator_route").length, 3 - index);
+        if (index > 0) {
+          assert.ok(routeChoices.some((choice) =>
+            choice.authoredMissionFlowKind === "navigator_route_back"));
+        }
+        const routeAction = routeChoices.find((choice) =>
+          choice.authoredMissionFlowKind === "navigator_route"
+          && choice.authoredMissionFlowLeadId === lead.id);
+        assert.ok(routeAction);
+        executeGameRuntimeCommand(branch, game.data, {
+          type: "CHOOSE",
+          payload: { choiceId: routeAction.choiceId },
+        });
+        verifyAuthoredLead(branch, game.data, lead.id);
+        ensureAuthoredMissionFlowState(branch, pack);
+        assert.equal(
+          branch.playerState.missions[pack.missionId]
+            .progress[pack.investigation.stepId],
+          1,
+          `${pack.troubleId}:${group.id} corroboration must count as one truth class `
+            + `(evidence=${branch.authoredMissionFlows[pack.id].evidenceIds.join(",")}, `
+            + `required=${branch.playerState.catalog.byId.get(pack.missionId).steps
+              .find((step) => step.id === pack.investigation.stepId)?.required})`,
+        );
+      }
+      assert.deepEqual(
+        new Set(branch.authoredMissionFlows[pack.id].evidenceIds),
+        new Set(group.evidenceIds),
+        `${pack.troubleId}:${group.id} must preserve all three corroborating proofs`,
+      );
+    }
+  }
+});
+
+test("T13 navigator uses normal three-choice actions and proves the 729-profile by 720-order state space", () => {
+  const { game } = service();
+  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === "MSN-T13");
+  assert.ok(pack);
+  const groups = authoredNavigatorGroups(pack)
+    .sort((left, right) => Number(left.evidenceGroupIndex) - Number(right.evidenceGroupIndex));
+  assert.equal(pack.investigation.focuses.length, 3);
+  assert.ok(pack.investigation.focuses.every((focus) => focus.groups.length === 2));
+  assert.equal(groups.length, 6);
+  assert.ok(groups.every((group) => group.evidenceIds.length === 3));
+  assert.deepEqual(
+    groups.map((group) => [...group.evidenceIds].sort()),
+    pack.investigation.requiredEvidenceGroups.map((group) => [...group].sort()),
+    "the navigator must cover each required evidence class exactly once",
+  );
+  assert.equal(new Set(groups.flatMap((group) => group.evidenceIds)).size, 18);
+
+  const leadByEvidenceId = new Map(
+    pack.investigation.leads.map((lead) => [lead.discoveryId, lead]),
+  );
+  assert.equal(leadByEvidenceId.size, 18);
+  assert.ok(groups.flatMap((group) => group.evidenceIds)
+    .every((evidenceId) => leadByEvidenceId.has(evidenceId)));
+  for (const focus of pack.investigation.focuses) {
+    assert.ok(AUTHORED_MISSION_FLOW_SCENES.some((scene) =>
+      scene.sceneId === `mission-flow.${pack.id}.navigator-focus.${focus.id}`
+      && scene.narrative === focus.narrative));
+    for (const group of focus.groups) {
+      assert.ok(AUTHORED_MISSION_FLOW_SCENES.some((scene) =>
+        scene.sceneId === `mission-flow.${pack.id}.navigator-group.${group.id}`
+        && scene.narrative === group.narrative));
+    }
+  }
+  const cloneRuntime = (runtime) => deserializeRuntime(serializeRuntime(runtime), game.data);
+  const openedRuntime = (opening) => {
+    const runtime = createGameRuntime(game.data, {
+      seed: `t13-navigator-${opening.id}`,
+      profileId: "balanced",
+      playerName: "六分類調査役",
+      tutorial: false,
+    });
+    prepareAuthoredMission(runtime, pack);
+    const action = availableGameRuntimeActions(runtime, game.data).choices
+      .find((choice) => choice.id.endsWith(`:${opening.id}`));
+    assert.ok(action);
+    executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: action.choiceId },
+    });
+    return runtime;
+  };
+  const verifyOneGroup = (runtime, group, alternativeIndex) => {
+    const evidenceId = group.evidenceIds[alternativeIndex];
+    const lead = leadByEvidenceId.get(evidenceId);
+    assert.ok(lead);
+    chooseAuthoredNavigatorRoute(runtime, game.data, pack, group, lead.id);
+    assert.equal(runtime.authoredMissionFlows[pack.id].selectedLeadId, lead.id);
+    verifyAuthoredLead(runtime, game.data, lead.id);
+    assert.equal(runtime.authoredMissionFlows[pack.id].evidenceIds.at(-1), evidenceId);
+  };
+
+  for (const opening of pack.hearing.choices) {
+    const base = openedRuntime(opening);
+    const firstChoices = availableGameRuntimeActions(base, game.data).choices;
+    assert.equal(firstChoices.length, 3);
+    assert.ok(firstChoices.every((choice) =>
+      choice.authoredMissionFlowKind === "navigator_focus"));
+    assert.equal(firstChoices[0].authoredMissionFlowNavigatorFocusId, opening.preferredFocusId);
+
+    const backRuntime = cloneRuntime(base);
+    const focus = firstChoices[0];
+    executeGameRuntimeCommand(backRuntime, game.data, {
+      type: "CHOOSE",
+      payload: {
+        choiceId: availableGameRuntimeActions(backRuntime, game.data).choices
+          .find((choice) =>
+            choice.authoredMissionFlowNavigatorFocusId
+              === focus.authoredMissionFlowNavigatorFocusId).choiceId,
+      },
+    });
+    const groupChoices = availableGameRuntimeActions(backRuntime, game.data).choices;
+    assert.equal(groupChoices.filter((choice) =>
+      choice.authoredMissionFlowKind === "navigator_group").length, 2);
+    const back = groupChoices.find((choice) =>
+      choice.authoredMissionFlowKind === "navigator_back");
+    assert.ok(back);
+    executeGameRuntimeCommand(backRuntime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: back.choiceId },
+    });
+    assert.ok(availableGameRuntimeActions(backRuntime, game.data).choices.every((choice) =>
+      choice.authoredMissionFlowKind === "navigator_focus"));
+
+    const resumed = cloneRuntime(base);
+    const firstGroup = groups[0];
+    const firstFocus = availableGameRuntimeActions(resumed, game.data).choices.find((choice) =>
+      choice.authoredMissionFlowNavigatorFocusId === firstGroup.focusId);
+    executeGameRuntimeCommand(resumed, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: firstFocus.choiceId },
+    });
+    const firstGroupAction = availableGameRuntimeActions(resumed, game.data).choices.find((choice) =>
+      choice.authoredMissionFlowNavigatorGroupId === firstGroup.id);
+    executeGameRuntimeCommand(resumed, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: firstGroupAction.choiceId },
+    });
+    const serializedAtRouteMenu = serializeRuntime(resumed);
+    const restoredAtRouteMenu = deserializeRuntime(serializedAtRouteMenu, game.data);
+    assert.equal(restoredAtRouteMenu.authoredMissionFlows[pack.id].version, AUTHORED_MISSION_FLOW_VERSION);
+    assert.equal(restoredAtRouteMenu.authoredMissionFlows[pack.id].navigatorFocusId, firstGroup.focusId);
+    assert.equal(restoredAtRouteMenu.authoredMissionFlows[pack.id].navigatorGroupId, firstGroup.id);
+    assert.equal(availableGameRuntimeActions(restoredAtRouteMenu, game.data).choices
+      .filter((choice) => choice.authoredMissionFlowKind === "navigator_route").length, 3);
+
+    const reachableRoutes = new Set();
+    for (const group of groups) {
+      for (let alternativeIndex = 0; alternativeIndex < 3; alternativeIndex += 1) {
+        const branch = cloneRuntime(base);
+        verifyOneGroup(branch, group, alternativeIndex);
+        reachableRoutes.add(`${group.id}:${branch.authoredMissionFlows[pack.id].evidenceIds[0]}`);
+        assert.equal(branch.authoredMissionFlows[pack.id].navigatorFocusId, null);
+        assert.equal(branch.authoredMissionFlows[pack.id].navigatorGroupId, null);
+      }
+    }
+    assert.equal(reachableRoutes.size, 18);
+
+    const representativeOrders = [
+      [0, 1, 2, 3, 4, 5],
+      [5, 4, 3, 2, 1, 0],
+      [2, 0, 4, 1, 5, 3],
+    ];
+    const selectedOrder = representativeOrders[
+      pack.hearing.choices.indexOf(opening)
+    ];
+    const orderedRuntime = cloneRuntime(base);
+    const expectedOrder = [];
+    for (const groupIndex of selectedOrder) {
+      const alternativeIndex = groupIndex % 3;
+      expectedOrder.push(groups[groupIndex].evidenceIds[alternativeIndex]);
+      verifyOneGroup(orderedRuntime, groups[groupIndex], alternativeIndex);
+    }
+    assert.deepEqual(
+      orderedRuntime.authoredMissionFlows[pack.id].evidenceIds,
+      expectedOrder,
+    );
+  }
+
+  const forward = openedRuntime(pack.hearing.choices[0]);
+  verifyOneGroup(forward, groups[0], 0);
+  verifyOneGroup(forward, groups[1], 1);
+  const reverse = openedRuntime(pack.hearing.choices[0]);
+  verifyOneGroup(reverse, groups[1], 1);
+  verifyOneGroup(reverse, groups[0], 0);
+  assert.notDeepEqual(
+    forward.authoredMissionFlows[pack.id].evidenceIds,
+    reverse.authoredMissionFlows[pack.id].evidenceIds,
+  );
+  assert.deepEqual(
+    availableGameRuntimeActions(forward, game.data).choices.map((choice) => choice.id),
+    availableGameRuntimeActions(reverse, game.data).choices.map((choice) => choice.id),
+    "navigator candidates must depend on completed classes, not evidence acquisition order",
+  );
+
+  const declaredProfiles = new Set();
+  const enumerateProfiles = (groupIndex, evidenceIds) => {
+    if (groupIndex === groups.length) {
+      declaredProfiles.add(evidenceIds.join(">"));
+      return;
+    }
+    for (const evidenceId of groups[groupIndex].evidenceIds) {
+      enumerateProfiles(groupIndex + 1, [...evidenceIds, evidenceId]);
+    }
+  };
+  enumerateProfiles(0, []);
+  assert.equal(declaredProfiles.size, 729);
+
+  const declaredOrders = new Set();
+  const enumerateOrders = (remaining, order) => {
+    if (remaining.length === 0) {
+      declaredOrders.add(order.join(">"));
+      return;
+    }
+    for (const groupIndex of remaining) {
+      enumerateOrders(
+        remaining.filter((index) => index !== groupIndex),
+        [...order, groupIndex],
+      );
+    }
+  };
+  enumerateOrders(groups.map((_, index) => index), []);
+  assert.equal(declaredOrders.size, 720);
+  assert.equal(declaredProfiles.size * declaredOrders.size, 524880);
+
+  const coverageBase = openedRuntime(pack.hearing.choices[0]);
+  const coveredSubsetMasks = new Set();
+  for (let mask = 0; mask < (1 << groups.length); mask += 1) {
+    const subsetRuntime = cloneRuntime(coverageBase);
+    const subsetFlow = subsetRuntime.authoredMissionFlows[pack.id];
+    subsetFlow.navigatorFocusId = null;
+    subsetFlow.navigatorGroupId = null;
+    subsetFlow.selectedLeadId = null;
+    subsetFlow.evidenceIds = groups
+      .filter((_, groupIndex) => (mask & (1 << groupIndex)) !== 0)
+      .map((group) => group.evidenceIds[0]);
+    const subsetChoices = availableGameRuntimeActions(subsetRuntime, game.data).choices;
+    coveredSubsetMasks.add(mask);
+    const remainingGroups = groups.filter(
+      (_, groupIndex) => (mask & (1 << groupIndex)) === 0,
+    );
+    if (remainingGroups.length === 0) {
+      const investigationStep = subsetRuntime.playerState.catalog.byId
+        .get(pack.missionId).steps.find((step) => step.id === pack.investigation.stepId);
+      assert.equal(
+        subsetRuntime.playerState.missions[pack.missionId]
+          .progress[pack.investigation.stepId],
+        Number(investigationStep.required ?? 1),
+      );
+      assert.equal(subsetChoices.some((choice) =>
+        String(choice.authoredMissionFlowKind ?? "").startsWith("navigator_")), false);
+      continue;
+    }
+
+    const expectedFocusIds = [...new Set(groups
+      .filter((group) => group.evidenceIds.some((evidenceId) =>
+        !subsetFlow.evidenceIds.includes(evidenceId)))
+      .map((group) => group.focusId))].sort();
+    const actualFocusIds = subsetChoices
+      .filter((choice) => choice.authoredMissionFlowKind === "navigator_focus")
+      .map((choice) => choice.authoredMissionFlowNavigatorFocusId)
+      .sort();
+    assert.deepEqual(actualFocusIds, expectedFocusIds, `subset ${mask} must expose only incomplete focuses`);
+
+    for (const group of remainingGroups) {
+      const branch = cloneRuntime(subsetRuntime);
+      const focusAction = availableGameRuntimeActions(branch, game.data).choices
+        .find((choice) =>
+          choice.authoredMissionFlowKind === "navigator_focus"
+          && choice.authoredMissionFlowNavigatorFocusId === group.focusId);
+      assert.ok(focusAction, `subset ${mask} must retain focus ${group.focusId}`);
+      executeGameRuntimeCommand(branch, game.data, {
+        type: "CHOOSE",
+        payload: { choiceId: focusAction.choiceId },
+      });
+      const groupAction = availableGameRuntimeActions(branch, game.data).choices
+        .find((choice) =>
+          choice.authoredMissionFlowKind === "navigator_group"
+          && choice.authoredMissionFlowNavigatorGroupId === group.id);
+      assert.ok(groupAction, `subset ${mask} must retain evidence class ${group.id}`);
+      executeGameRuntimeCommand(branch, game.data, {
+        type: "CHOOSE",
+        payload: { choiceId: groupAction.choiceId },
+      });
+      const routeEvidenceIds = availableGameRuntimeActions(branch, game.data).choices
+        .filter((choice) => choice.authoredMissionFlowKind === "navigator_route")
+        .map((choice) => pack.investigation.leads.find((lead) =>
+          lead.id === choice.authoredMissionFlowLeadId)?.discoveryId)
+        .sort();
+      assert.deepEqual(routeEvidenceIds, [...group.evidenceIds].sort());
+    }
+  }
+  assert.equal(coveredSubsetMasks.size, 64);
+  for (const orderKey of declaredOrders) {
+    let mask = 0;
+    assert.equal(coveredSubsetMasks.has(mask), true);
+    for (const groupIndex of orderKey.split(">").map(Number)) {
+      mask |= 1 << groupIndex;
+      assert.equal(
+        coveredSubsetMasks.has(mask),
+        true,
+        `order ${orderKey} reaches an unverified completion subset`,
+      );
+    }
+  }
+
+  const migrated = openedRuntime(pack.hearing.choices[0]);
+  migrated.authoredMissionFlows[pack.id].version = "authored-mission-flow-v13";
+  delete migrated.authoredMissionFlows[pack.id].navigatorFocusId;
+  delete migrated.authoredMissionFlows[pack.id].navigatorGroupId;
+  const migratedChoices = availableGameRuntimeActions(migrated, game.data).choices;
+  assert.equal(migrated.authoredMissionFlows[pack.id].version, AUTHORED_MISSION_FLOW_VERSION);
+  assert.equal(migrated.authoredMissionFlows[pack.id].navigatorFocusId, null);
+  assert.equal(migrated.authoredMissionFlows[pack.id].navigatorGroupId, null);
+  assert.equal(migratedChoices.filter((choice) =>
+    choice.authoredMissionFlowKind === "navigator_focus").length, 3);
+
+  const resumedCompletedGroup = openedRuntime(pack.hearing.choices[0]);
+  const resumedFlow = resumedCompletedGroup.authoredMissionFlows[pack.id];
+  resumedFlow.version = "authored-mission-flow-v13";
+  resumedFlow.navigatorFocusId = groups[0].focusId;
+  resumedFlow.navigatorGroupId = groups[0].id;
+  resumedFlow.evidenceIds = [groups[0].evidenceIds[0]];
+  const resumedChoices = availableGameRuntimeActions(resumedCompletedGroup, game.data).choices;
+  assert.equal(resumedFlow.navigatorFocusId, groups[0].focusId);
+  assert.equal(resumedFlow.navigatorGroupId, groups[0].id);
+  assert.equal(resumedChoices.filter((choice) =>
+    choice.authoredMissionFlowKind === "navigator_route"
+    && choice.authoredMissionFlowNavigatorGroupId === groups[0].id).length, 2,
+  "a completed truth class may offer its two unused routes as optional corroboration");
+  assert.ok(resumedChoices.some((choice) =>
+    choice.authoredMissionFlowKind === "navigator_route_back"),
+  "optional corroboration must never trap the player inside a previously completed class");
+});
+
+test("T14 navigator exposes all 18 hand-authored routes without movement loops and preserves three-choice play", () => {
+  const { game } = service();
+  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === "MSN-T14");
+  assert.ok(pack);
+  const groups = authoredNavigatorGroups(pack)
+    .sort((left, right) => Number(left.evidenceGroupIndex) - Number(right.evidenceGroupIndex));
+  assert.equal(pack.investigation.focuses.length, 3);
+  assert.ok(pack.investigation.focuses.every((focus) => focus.groups.length === 2));
+  assert.equal(groups.length, 6);
+  assert.ok(groups.every((group) => group.evidenceIds.length === 3));
+  assert.deepEqual(
+    groups.map((group) => [...group.evidenceIds].sort()),
+    pack.investigation.requiredEvidenceGroups.map((group) => [...group].sort()),
+  );
+
+  const leadByEvidenceId = new Map(
+    pack.investigation.leads.map((lead) => [lead.discoveryId, lead]),
+  );
+  assert.equal(leadByEvidenceId.size, 18);
+  assert.equal(new Set(pack.investigation.leads.map((lead) => lead.id)).size, 18);
+  const cloneRuntime = (runtime) => deserializeRuntime(serializeRuntime(runtime), game.data);
+  const openedRuntime = (opening) => {
+    const runtime = createGameRuntime(game.data, {
+      seed: `t14-navigator-${opening.id}`,
+      profileId: "balanced",
+      playerName: "武器網調査役",
+      tutorial: false,
+    });
+    prepareAuthoredMission(runtime, pack);
+    const action = availableGameRuntimeActions(runtime, game.data).choices
+      .find((choice) => choice.id.endsWith(`:${opening.id}`));
+    assert.ok(action);
+    executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: action.choiceId },
+    });
+    return runtime;
+  };
+
+  for (const opening of pack.hearing.choices) {
+    const runtime = openedRuntime(opening);
+    const choices = availableGameRuntimeActions(runtime, game.data).choices;
+    assert.equal(choices.length, 3);
+    assert.ok(choices.every((choice) =>
+      choice.authoredMissionFlowKind === "navigator_focus"));
+    assert.equal(choices[0].authoredMissionFlowNavigatorFocusId, opening.preferredFocusId);
+  }
+
+  const base = openedRuntime(pack.hearing.choices[0]);
+  const reachedEvidence = new Set();
+  for (const group of groups) {
+    for (const evidenceId of group.evidenceIds) {
+      const branch = cloneRuntime(base);
+      const lead = leadByEvidenceId.get(evidenceId);
+      assert.ok(lead);
+      chooseAuthoredNavigatorRoute(branch, game.data, pack, group, lead.id);
+      verifyAuthoredLead(branch, game.data, lead.id);
+      assert.deepEqual(branch.authoredMissionFlows[pack.id].evidenceIds, [evidenceId]);
+      assert.equal(branch.authoredMissionFlows[pack.id].selectedLeadId, null);
+      reachedEvidence.add(evidenceId);
+    }
+  }
+  assert.equal(reachedEvidence.size, 18);
+
+  const profileCount = groups.reduce(
+    (count, group) => count * group.evidenceIds.length,
+    1,
+  );
+  assert.equal(profileCount, 729);
+  const permutations = (count) => count <= 1 ? 1 : count * permutations(count - 1);
+  assert.equal(permutations(groups.length), 720);
+});
+
+test("all three T14 final choices return an unsupported plan to targeted investigation and become viable after corroboration", () => {
+  const { game } = service();
+  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === "MSN-T14");
+  assert.ok(pack);
+  const groups = authoredNavigatorGroups(pack)
+    .sort((left, right) => Number(left.evidenceGroupIndex) - Number(right.evidenceGroupIndex));
+  const leadById = new Map(pack.investigation.leads.map((lead) => [lead.id, lead]));
+
+  for (const route of pack.resolution.choices) {
+    const runtime = createGameRuntime(game.data, {
+      seed: `t14-resolution-readiness-${route.id}`,
+      profileId: "balanced",
+      playerName: "武器網の作戦立案役",
+      tutorial: false,
+    });
+    prepareAuthoredMission(runtime, pack);
+    const opening = pack.hearing.choices.find((choice) =>
+      !route.readiness.openingChoiceIds.includes(choice.id));
+    assert.ok(opening, `${route.id} needs a non-supporting opening for this regression`);
+    const openingAction = availableGameRuntimeActions(runtime, game.data).choices
+      .find((choice) => choice.id.endsWith(`:${opening.id}`));
+    assert.ok(openingAction);
+    executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: openingAction.choiceId },
+    });
+
+    const supporting = new Set(route.readiness.supportingEvidenceIds);
+    const evidenceIds = groups.map((group, index) => {
+      const supportingEvidenceId = group.evidenceIds.find((id) => supporting.has(id));
+      assert.ok(supportingEvidenceId, `${route.id}:${group.id} needs its route-specific proof`);
+      if (index < 2) return supportingEvidenceId;
+      const alternativeEvidenceId = group.evidenceIds.find((id) => !supporting.has(id));
+      assert.ok(alternativeEvidenceId);
+      return alternativeEvidenceId;
+    });
+    assert.equal(evidenceIds.filter((id) => supporting.has(id)).length, 2);
+
+    const flow = runtime.authoredMissionFlows[pack.id];
+    flow.evidenceIds = [...evidenceIds];
+    const mission = runtime.playerState.missions[pack.missionId];
+    mission.discoveries = evidenceIds.map((id) => ({ id }));
+    mission.progress[pack.hearing.stepId] = 1;
+    mission.progress[pack.investigation.stepId] = 6;
+    mission.progress.battle = 1;
+    mission.progress[pack.resolution.stepId] = 0;
+    runtime.playerState.player.location = pack.catalogOverride.resolution.targetLocation;
+    runtime.playerState.player.facilityId = pack.catalogOverride.resolution.targetFacilityId;
+
+    const choices = availableGameRuntimeActions(runtime, game.data).choices;
+    assert.equal(choices.length, 3);
+    const unsupported = choices.find((choice) =>
+      choice.authoredMissionFlowResolutionRouteId === route.id);
+    assert.ok(unsupported);
+    assert.equal(unsupported.authoredMissionFlowKind, "resolution_preparation");
+    assert.equal(unsupported.type, "plan");
+    assert.equal(unsupported.authoredMissionFlowResolutionSupportCount, 2);
+    assert.equal(
+      unsupported.authoredMissionFlowResolutionMinimumSupport,
+      route.readiness.minimumSupport,
+    );
+    const preparationLead = leadById.get(unsupported.authoredMissionFlowLeadId);
+    assert.ok(preparationLead);
+    assert.equal(supporting.has(preparationLead.discoveryId), true);
+    assert.equal(flow.evidenceIds.includes(preparationLead.discoveryId), false);
+
+    const preparation = executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: unsupported.choiceId },
+    });
+    assert.ok(preparation.outcome?.summary);
+    assert.equal(runtime.playerState.troubles.T14.status, "active");
+    assert.equal(mission.progress[pack.resolution.stepId], 0);
+    assert.equal(flow.resolutionPreparationRouteId, route.id);
+    assert.equal(flow.selectedLeadId, preparationLead.id);
+    assert.equal(mission.progress[pack.investigation.stepId], 5);
+    assert.ok(runtime.playerState.history.some((entry) =>
+      entry.type === "AUTHORED_MISSION_FLOW_RESOLUTION_PREPARATION_SELECTED"
+      && entry.routeId === route.id
+      && entry.leadId === preparationLead.id));
+
+    const cancelBranch = deserializeRuntime(serializeRuntime(runtime), game.data);
+    const cancelChoices = availableGameRuntimeActions(cancelBranch, game.data).choices;
+    assert.equal(cancelChoices.length, 3);
+    const cancelActions = cancelChoices.filter((choice) =>
+      choice.authoredMissionFlowKind === "resolution_preparation_cancel");
+    assert.equal(cancelActions.length, 1);
+    executeGameRuntimeCommand(cancelBranch, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: cancelActions[0].choiceId },
+    });
+    const cancelFlow = cancelBranch.authoredMissionFlows[pack.id];
+    const cancelMission = cancelBranch.playerState.missions[pack.missionId];
+    assert.equal(cancelFlow.resolutionPreparationRouteId, null);
+    assert.equal(cancelFlow.selectedLeadId, null);
+    assert.equal(cancelMission.progress[pack.investigation.stepId], 6);
+    const returnedChoices = availableGameRuntimeActions(cancelBranch, game.data).choices;
+    assert.equal(returnedChoices.length, 3);
+    assert.deepEqual(
+      new Set(returnedChoices.map((choice) =>
+        choice.authoredMissionFlowResolutionRouteId)),
+      new Set(pack.resolution.choices.map((choice) => choice.id)),
+    );
+    assert.ok(returnedChoices.every((choice) =>
+      ["resolution", "resolution_preparation"].includes(choice.authoredMissionFlowKind)));
+
+    verifyAuthoredLead(runtime, game.data, preparationLead.id);
+    assert.equal(flow.evidenceIds.includes(preparationLead.discoveryId), true);
+    assert.equal(flow.resolutionPreparationRouteId, null);
+    assert.equal(mission.progress[pack.investigation.stepId], 6);
+    runtime.playerState.player.location = pack.catalogOverride.resolution.targetLocation;
+    runtime.playerState.player.facilityId = pack.catalogOverride.resolution.targetFacilityId;
+    const retried = availableGameRuntimeActions(runtime, game.data).choices;
+    const viable = retried.find((choice) =>
+      choice.authoredMissionFlowResolutionRouteId === route.id);
+    assert.ok(viable);
+    assert.equal(viable.authoredMissionFlowKind, "resolution");
+    assert.equal(viable.type, "resolveMission");
+  }
+});
+
+test("T14 resolver matches readiness for all 729 evidence profiles across all three openings", () => {
+  const { game } = service();
+  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === "MSN-T14");
+  assert.ok(pack);
+  const profiles = pack.investigation.requiredEvidenceGroups.reduce(
+    (rows, group) => rows.flatMap((row) =>
+      group.map((evidenceId) => [...row, evidenceId])),
+    [[]],
+  );
+  assert.equal(profiles.length, 729);
+
+  for (const opening of pack.hearing.choices) {
+    const runtime = createGameRuntime(game.data, {
+      seed: `t14-readiness-matrix-${opening.id}`,
+      profileId: "balanced",
+      playerName: "武器網の成立条件監査役",
+      tutorial: false,
+    });
+    prepareAuthoredMission(runtime, pack);
+    const openingAction = availableGameRuntimeActions(runtime, game.data).choices
+      .find((choice) => choice.id.endsWith(`:${opening.id}`));
+    assert.ok(openingAction);
+    executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: openingAction.choiceId },
+    });
+    const flow = runtime.authoredMissionFlows[pack.id];
+    const mission = runtime.playerState.missions[pack.missionId];
+
+    for (const evidenceIds of profiles) {
+      flow.evidenceIds = [...evidenceIds];
+      flow.selectedLeadId = null;
+      flow.selectedLeadAtMinute = null;
+      flow.navigatorFocusId = null;
+      flow.navigatorGroupId = null;
+      flow.deferredUntilMinute = null;
+      flow.resolutionPreparationRouteId = null;
+      mission.discoveries = evidenceIds.map((id) => ({ id }));
+      mission.progress[pack.hearing.stepId] = 1;
+      mission.progress[pack.investigation.stepId] = 6;
+      mission.progress.battle = 1;
+      mission.progress[pack.resolution.stepId] = 0;
+      runtime.playerState.player.location = pack.catalogOverride.resolution.targetLocation;
+      runtime.playerState.player.facilityId = pack.catalogOverride.resolution.targetFacilityId;
+
+      const choices = availableGameRuntimeActions(runtime, game.data).choices;
+      assert.equal(choices.length, 3);
+      for (const route of pack.resolution.choices) {
+        const evidenceSet = new Set(evidenceIds);
+        const evidenceSupport = route.readiness.supportingEvidenceIds
+          .filter((evidenceId) => evidenceIds.includes(evidenceId)).length;
+        const openingSupport = route.readiness.openingChoiceIds.includes(opening.id)
+          ? Number(route.readiness.openingSupport ?? 1)
+          : 0;
+        const supportCount = evidenceSupport + openingSupport;
+        const requiredEvidenceIds = route.readiness.requiredEvidenceIds ?? [];
+        const requiredEvidenceGroups = route.readiness.requiredEvidenceGroups ?? [];
+        const coreReady = requiredEvidenceIds.every((id) => evidenceSet.has(id))
+          && requiredEvidenceGroups.every((group) =>
+            group.some((id) => evidenceSet.has(id)));
+        const expectedKind = coreReady && supportCount >= route.readiness.minimumSupport
+          ? "resolution"
+          : "resolution_preparation";
+        const action = choices.find((choice) =>
+          choice.authoredMissionFlowResolutionRouteId === route.id);
+        assert.ok(action, `${opening.id}:${route.id}:${evidenceIds.join("|")}`);
+        assert.equal(
+          action.authoredMissionFlowKind,
+          expectedKind,
+          `${opening.id}:${route.id}:${evidenceIds.join("|")}`,
+        );
+        assert.equal(
+          action.type,
+          expectedKind === "resolution" ? "resolveMission" : "plan",
+        );
+        if (expectedKind === "resolution_preparation") {
+          assert.equal(action.authoredMissionFlowResolutionSupportCount, supportCount);
+          assert.equal(
+            action.authoredMissionFlowResolutionMinimumSupport,
+            route.readiness.minimumSupport,
+          );
+          assert.equal(action.authoredMissionFlowResolutionCoreReady, coreReady);
+          assert.ok(action.authoredMissionFlowLeadId);
+        }
+      }
+    }
+  }
+});
+
+test("T14 intervention switches from noncombat seizure to two battles and closes after irreversible Day75 failure", () => {
+  const { game } = service();
+  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === "MSN-T14");
+  assert.ok(pack);
+  const battle = pack.catalogOverride.battle;
+  const at = (day, troubles = {}) => resolveMissionStepVariant(battle, {
+    day,
+    troubles,
+    worldFlags: {},
+  });
+
+  assert.deepEqual(
+    [
+      at(15).targetFacilityId,
+      at(15).actionType,
+      at(15).encounterId,
+      at(15).discoveryId,
+    ],
+    ["LOC_TRADE_CUSTOMS", "investigate", null, "T14-INTERVENTION-FIRST-CARGO-HELD"],
+  );
+  assert.deepEqual(
+    [at(33).targetFacilityId, at(33).actionType, at(33).encounterId],
+    ["LOC_TRADE_WAREHOUSE", "missionBattle", "ENC-0033"],
+  );
+  assert.deepEqual(
+    [at(56).targetFacilityId, at(56).actionType, at(56).encounterId],
+    ["LOC_CRIME_WEAPON_MARKET", "missionBattle", "ENC-0039"],
+  );
+  assert.deepEqual(
+    [
+      at(56, { T11: { status: "critical" } }).targetFacilityId,
+      at(56, { T11: { status: "critical" } }).encounterId,
+    ],
+    ["LOC_CRIME_INFO_STREET", "ENC-0043"],
+  );
+
+  const runtime = createGameRuntime(game.data, {
+    seed: "t14-day75-irreversible",
+    profileId: "balanced",
+    playerName: "遅れて着いた調査役",
+    tutorial: false,
+  });
+  prepareAuthoredMission(runtime, pack);
+  runtime.playerState.absoluteMinute = (75 - 1) * 1440;
+  Object.assign(runtime.playerState, clockFromMinute(runtime.playerState.absoluteMinute));
+  runtime.lastWorldTickMinute = runtime.playerState.absoluteMinute;
+  runtime.playerState.troubles.T14.status = "failed";
+  runtime.playerState.missions["MSN-T14"].status = "failed";
+  const choices = availableGameRuntimeActions(runtime, game.data).choices;
+  assert.equal(choices.some((choice) =>
+    choice.authoredMissionFlowId === pack.id
+    || choice.missionId === pack.missionId), false);
+  assert.equal(authoredMissionFlowGuidance(runtime)?.missionId === pack.missionId, false);
+});
+
+test("T13 resolution crossing Day60 uses the irreversible post-collapse context everywhere", () => {
+  const { game } = service();
+  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === "MSN-T13");
+  assert.ok(pack);
+  const runtime = createGameRuntime(game.data, {
+    seed: "t13-resolution-crosses-day60",
+    profileId: "balanced",
+    playerName: "期限をまたぐ調査役",
+    tutorial: false,
+  });
+  prepareAuthoredMission(runtime, pack);
+
+  const opening = pack.hearing.choices[0];
+  const openingAction = availableGameRuntimeActions(runtime, game.data).choices
+    .find((choice) => choice.id.endsWith(`:${opening.id}`));
+  assert.ok(openingAction);
+  executeGameRuntimeCommand(runtime, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: openingAction.choiceId },
+  });
+
+  const groups = authoredNavigatorGroups(pack)
+    .sort((left, right) => Number(left.evidenceGroupIndex) - Number(right.evidenceGroupIndex));
+  const flow = runtime.authoredMissionFlows[pack.id];
+  flow.evidenceIds = groups.map((group) => group.evidenceIds[0]);
+  const definition = runtime.playerState.catalog.byId.get(pack.missionId);
+  const mission = runtime.playerState.missions[pack.missionId];
+  for (const step of definition.steps) {
+    mission.progress[step.id] = step.id === pack.resolution.stepId
+      ? 0
+      : Number(step.required ?? 1);
+  }
+  mission.status = "active";
+  runtime.playerState.troubles[pack.troubleId].status = "active";
+  runtime.playerState.worldFlags.worldTreeFallen = false;
+  runtime.playerState.player.location = pack.catalogOverride.resolution.targetLocation;
+  runtime.playerState.player.facilityId = pack.catalogOverride.resolution.targetFacilityId;
+  runtime.playerState.absoluteMinute = (60 - 1) * 1440 + (21 * 60 + 50 - 10 * 60);
+  Object.assign(runtime.playerState, clockFromMinute(runtime.playerState.absoluteMinute));
+  runtime.lastWorldTickMinute = runtime.playerState.absoluteMinute;
+
+  const selectedRoute = pack.resolution.choices[0];
+  const criticalVariant = selectedRoute.contextVariants.find((variant) =>
+    variant.troubleId === pack.troubleId && variant.troubleStatus === "critical");
+  assert.ok(criticalVariant);
+  const selectedAction = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) =>
+      action.authoredMissionFlowKind === "resolution"
+      && action.authoredMissionFlowResolutionRouteId === selectedRoute.id);
+  assert.ok(selectedAction);
+  assert.equal(selectedAction.authoredMissionFlowTroubleStatus, "active");
+  assert.notEqual(
+    selectedAction.authoredMissionFlowResolutionContextVariantId,
+    criticalVariant.contextId,
+  );
+
+  const resolution = executeGameRuntimeCommand(runtime, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: selectedAction.choiceId },
+  });
+  assert.equal(resolution.outcome.troubleStatusAtResolution, "critical");
+  assert.equal(runtime.playerState.worldFlags.worldTreeFallen, true);
+  assert.equal(runtime.playerState.troubles[pack.troubleId].status, "resolved");
+  assert.equal(flow.selectedResolutionContextId, criticalVariant.contextId);
+  assert.ok(flow.resolutionBranchId.endsWith(`|${criticalVariant.contextId}|critical`));
+  assert.ok(resolution.outcome.summary.startsWith(
+    selectedRoute.summaryByTroubleStatus.critical,
+  ));
+  assert.ok(runtime.narrativeMemory.localFacts.some((entry) =>
+    entry.factId === selectedRoute.worldEffect.factIdByTroubleStatus.critical
+    && entry.summary === selectedRoute.worldEffect.textByTroubleStatus.critical));
+  assert.ok(runtime.playerState.history.some((entry) =>
+    entry.type === "AUTHORED_MISSION_FLOW_RESOLUTION_SELECTED"
+    && entry.contextVariantId === criticalVariant.contextId
+    && entry.troubleStatus === "critical"));
+
+  const reviewed = resolveReviewedAuthoredPresentation(
+    runtime,
+    game.data,
+    resolution,
+    resolution.outcome,
+  );
+  assert.equal(reviewed?.narrative, selectedRoute.narrativeByTroubleStatus.critical);
+  assert.match(reviewed?.sceneId ?? "", /\.critical$/u);
 });
 
 test("mission clue progress commits only after the assigned NPC actually discloses the fact", () => {
@@ -1284,27 +2769,33 @@ test("mission clue progress commits only after the assigned NPC actually disclos
     playerName: "聞き手",
     tutorial: false,
   });
-  prepareMissionClueConversation(successful);
+  const prepared = prepareGenericMissionClueConversation(successful, game.data);
+  const { npc, definition, hearing } = prepared;
   const action = availableGameRuntimeActions(successful, game.data).choices
-    .find((entry) => entry.id === "ACTION:MSN-T02:hear");
+    .find((entry) => entry.id === `ACTION:${definition.id}:${hearing.id}`);
   const disclosed = executeGameRuntimeCommand(successful, game.data, {
     type: "CHOOSE",
     payload: { choiceId: action.choiceId },
   });
-  assert.equal(successful.playerState.missions["MSN-T02"].progress.hear, 1);
-  assert.match(disclosed.resolvedAction.requiredDisclosure, /穀倉|火/u);
-  assert.doesNotMatch(disclosed.outcome.summary, /ガロ/u,
+  assert.equal(successful.playerState.missions[definition.id].progress[hearing.id], 1);
+  assert.ok(disclosed.resolvedAction.requiredDisclosure?.length > 0);
+  assert.equal(disclosed.resolvedAction.missionBeliefFactId, prepared.factId);
+  assert.doesNotMatch(disclosed.outcome.summary, new RegExp(npc.name, "u"),
     "the result must not reveal an NPC name before the introduction is acknowledged");
   const anonymousRumor = runtimeView(successful, game.data).rumors
-    .find((rumor) => rumor.id === "RUM-LIVING-TEST-T02-CLUE");
-  assert.equal(anonymousRumor?.source, "年配の村人から聞いた");
-  successful.playerKnowledge.knownNpcIds.add("NPC003");
+    .find((rumor) => rumor.id === prepared.learnedRumorId);
+  assert.ok(anonymousRumor?.source.endsWith("から聞いた"));
+  assert.doesNotMatch(anonymousRumor?.source ?? "", new RegExp(npc.name, "u"));
+  successful.playerKnowledge.knownNpcIds.add(npc.id);
   const identifiedRumor = runtimeView(successful, game.data).rumors
-    .find((rumor) => rumor.id === "RUM-LIVING-TEST-T02-CLUE");
-  assert.match(identifiedRumor?.source ?? "", /^ガロ.*から聞いた$/u);
-  assert.equal(successful.dialogueSession?.npcId, "NPC003");
-  assert.ok(availableGameRuntimeActions(successful, game.data).choices
-    .every((entry) => entry.id.startsWith("DIALOGUE:NPC003:")));
+    .find((rumor) => rumor.id === prepared.learnedRumorId);
+  assert.equal(identifiedRumor?.source, `${npc.name}から聞いた`);
+  assert.equal(successful.dialogueSession?.npcId, npc.id);
+  const followups = availableGameRuntimeActions(successful, game.data).choices;
+  assert.ok(followups.some((entry) => entry.id.startsWith(`DIALOGUE:${npc.id}:`)
+    && entry.dialogueTopic === "end_conversation"));
+  assert.ok(followups.some((entry) => entry.type !== "conversation"),
+    "dialogue must offer a way to act on the scene instead of three more questions");
 
   const interrupted = createGameRuntime(game.data, {
     seed: "mission-clue-interrupted",
@@ -1312,22 +2803,30 @@ test("mission clue progress commits only after the assigned NPC actually disclos
     playerName: "聞き手",
     tutorial: false,
   });
-  const departingNpc = prepareMissionClueConversation(interrupted);
+  const interruptedPrepared = prepareGenericMissionClueConversation(interrupted, game.data);
+  const departingNpc = interruptedPrepared.npcState;
+  const departureDestination = game.data.model.facilitiesByHub[interruptedPrepared.hearing.targetLocation]
+    .find((facility) => facility.id !== interruptedPrepared.hearing.targetFacilityId);
+  assert.ok(departureDestination);
   departingNpc.localTravel = {
-    routeId: "TEST:SQUARE->WELL",
-    hubId: "田園の村",
-    fromFacilityId: "LOC_FARM_SQUARE",
-    toFacilityId: "LOC_FARM_WELL",
+    routeId: "TEST:HEARING->AWAY",
+    hubId: interruptedPrepared.hearing.targetLocation,
+    fromFacilityId: interruptedPrepared.hearing.targetFacilityId,
+    toFacilityId: departureDestination.id,
     departedAt: 0,
     arriveAt: 0.1,
   };
   const interruptedAction = availableGameRuntimeActions(interrupted, game.data).choices
-    .find((entry) => entry.id === "ACTION:MSN-T02:hear");
+    .find((entry) => entry.id === `ACTION:${interruptedPrepared.definition.id}:${interruptedPrepared.hearing.id}`);
   const noDisclosure = executeGameRuntimeCommand(interrupted, game.data, {
     type: "CHOOSE",
     payload: { choiceId: interruptedAction.choiceId },
   });
-  assert.equal(interrupted.playerState.missions["MSN-T02"].progress.hear, 0);
+  assert.equal(
+    interrupted.playerState.missions[interruptedPrepared.definition.id]
+      .progress[interruptedPrepared.hearing.id],
+    0,
+  );
   assert.equal(noDisclosure.resolvedAction.requiredDisclosure, null);
   assert.equal(interrupted.dialogueSession, null);
 });
@@ -1606,12 +3105,16 @@ test("T01 exploration binds the displayed action and replaces all three choices 
   assert.equal(runner.save.clock.absoluteMinute - minuteBefore, selected.minutes);
   assert.equal(runner.save.scene.lastOutcome.discovery.id, "T01-CLUE-WOLF-PURSUIT");
   assert.match(runner.save.scene.lastOutcome.discovery.text, /赤牙狼.*少年/u);
-  assert.equal(runner.save.scene.narrative, runner.save.scene.lastOutcome.discovery.text);
+  assert.match(runner.save.scene.narrative, /赤牙狼の爪痕/u);
+  assert.match(runner.save.scene.narrative, /少年/u);
+  assert.doesNotMatch(runner.save.scene.narrative, /見知らぬ人物|青年/u);
 
   const secondStage = searchChoices();
   assert.equal(secondStage.length, 3);
   assert.equal(secondStage.some((choice) => firstStage.some((previous) => previous.actionId === choice.actionId)), false);
   const record = await store.get(runner.save.id);
+  assert.equal(record.presentation.source, "authored_scene");
+  assert.equal(record.presentation.sceneId, "t01.search.wolf_pursuit");
   const journal = record.commandLog.at(-1);
   assert.equal(journal.payload.actionId, selected.actionId);
   assert.equal(journal.resolvedActionId, selected.actionId);
@@ -1681,12 +3184,14 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
     if (actionId !== "ACTION:MSN-T01:escort") assert.equal(choice.targetNpcId === "NPC001", false);
     return runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
   };
-  const chooseSearch = async (approachId) => {
-    const choice = runner.save.choices.find((entry) => entry.missionId === "MSN-T01"
-      && entry.stepId === "search"
-      && entry.actionId.endsWith(`:${approachId}`));
-    assert.ok(choice, `${approachId} must be one of the current T01 search approaches`);
-    return runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
+  const chooseSearch = async (preferredApproachId = null) => {
+    const available = runner.save.choices.filter((entry) => entry.missionId === "MSN-T01"
+      && entry.stepId === "search");
+    const choice = available.find((entry) => preferredApproachId && entry.actionId.endsWith(`:${preferredApproachId}`))
+      ?? available[0];
+    assert.ok(choice, "at least one T01 search approach must remain among the diverse decisions");
+    const response = await runner.run("CHOOSE", { choiceId: choice.choiceId, actionId: choice.actionId });
+    return { response, discoveryId: response.save.scene.lastOutcome.discovery.id };
   };
 
   await completeOpening(runner);
@@ -1694,17 +3199,18 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   await moveTo("LOC_FARM_EDGE");
   assert.equal(runner.save.tutorial.id, "skills");
   await runner.run("LEARN_SKILL", { skillId: runner.save.skills.learnable[0].id });
-  await chooseSearch("tracks");
-  await chooseSearch("faint-voice");
+  const firstSearch = await chooseSearch("tracks");
+  assert.match(firstSearch.response.save.scene.narrative, /小さな靴跡|赤牙狼の爪痕|青い糸/u);
+  assert.doesNotMatch(firstSearch.response.save.scene.narrative, /見知らぬ人物|青年/u);
+  const secondSearch = await chooseSearch("faint-voice");
+  assert.match(secondSearch.response.save.scene.narrative, /フィン|子ども/u);
+  assert.match(secondSearch.response.save.scene.narrative, /生きて|声|咳/u);
+  assert.match(secondSearch.response.save.scene.narrative, /狼|赤牙狼/u);
+  assert.doesNotMatch(secondSearch.response.save.scene.narrative, /見知らぬ人物|青年/u);
   const searchInputs = narrativeInputs.filter((input) => input.action?.stepId === "search");
-  assert.equal(searchInputs.length, 2);
-  assert.equal(searchInputs[0].authoritativeOutcome.discovery.id, "T01-CLUE-BOOT-TRACKS");
-  assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
-    ?.currentStep.progress, 1);
-  assert.equal(searchInputs[0].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
-    ?.currentStep.required, 2);
-  assert.deepEqual(searchInputs[1].authoritativeState.missions.find((mission) => mission.id === "MSN-T01")
-    ?.discoveries.map((discovery) => discovery.id), ["T01-CLUE-BOOT-TRACKS", "T01-CLUE-FAINT-VOICE"]);
+  assert.equal(searchInputs.length, 0, "reviewed T01 search discoveries bypass Gemini generation");
+  assert.deepEqual(runner.save.missions.find((mission) => mission.id === "MSN-T01")
+    ?.discoveries.map((discovery) => discovery.id), [firstSearch.discoveryId, secondSearch.discoveryId]);
   assert.equal(runner.save.guidance.title, "赤牙狼の兆候を退ける");
   assert.equal(runner.save.guidance.actionPanel, null, "an on-site objective points at the visible choices instead of opening an unrelated panel");
   const battleStart = await chooseAction("ACTION:MSN-T01:rescue");
@@ -1729,28 +3235,25 @@ test("T01 speaks through discovery, rescue, escort and reunion before completion
   const battleNarrativeInput = narrativeInputs.findLast((input) => input.authoritativeOutcome?.battle);
   assert.ok(battleRecord.lastOutcome?.battle?.playback, "latest presentation keeps playback");
   assert.equal(battleJournal.outcome.battle.playback, undefined, "replay journal stays compatible with v4 outcomes");
-  assert.ok(battleNarrativeInput, "the decisive result now receives a scene-specific Gemini aftermath request");
-  assert.equal(battleNarrativeInput.action.dialogueTopic, "t01_rescue_aftermath");
-  assert.equal(battleNarrativeInput.action.targetNpcId, "NPC001");
-  assert.equal(battleNarrativeInput.action.requiredDisclosure, null);
-  assert.deepEqual(battleNarrativeInput.authoritativeState.reactionContract.requiredActorIds, ["NPC001"]);
-  assert.ok(battleNarrativeInput.authoritativeState.reactionContract.goals.some((goal) => /一人では歩けない/u.test(goal)));
-  assert.equal(battleRecord.presentation.source, "test");
+  assert.equal(battleNarrativeInput, undefined, "a reviewed authored aftermath bypasses Gemini generation");
+  assert.equal(battleRecord.presentation.source, "authored_scene");
+  assert.equal(battleRecord.presentation.sceneId, "t01.rescue.after_battle");
   assert.match(battleRecord.presentation.narrative, /斜面の下.*少年/u);
+  assert.doesNotMatch(battleRecord.presentation.narrative, /青年/u);
   assert.ok(battleRecord.presentation.speeches.some((speech) => speech.actorId === "NPC001"
-    && /フィン.*足.*歩けない.*村の広場/u.test(speech.text)));
+    && /僕、フィン.*足が動かない.*置いていかないで.*村の広場/u.test(speech.text)));
   assert.equal(runner.save.tutorial?.complete, true, "the combat coach does not return after a battle was experienced");
   assert.equal(runner.save.missions.find((entry) => entry.id === "MSN-T01")?.currentStep?.id, "escort");
   assert.equal(runner.save.guidance.targetFacilityId, "LOC_FARM_EDGE");
   assert.equal(runner.save.guidance.actionPanel, null);
   await chooseAction("ACTION:MSN-T01:escort");
   const escortInput = narrativeInputs.findLast((input) => input.action?.dialogueTopic === "t01_escort");
-  assert.ok(escortInput);
-  assert.equal(escortInput.action.requiredDisclosure, null);
-  assert.deepEqual(escortInput.authoritativeState.reactionContract.requiredActorIds, ["NPC001"]);
-  assert.ok(escortInput.authoritativeState.reactionContract.goals.some((goal) => /同行/u.test(goal)));
+  assert.equal(escortInput, undefined, "the reviewed escort request bypasses Gemini generation");
+  const escortRecord = await store.get(runner.save.id);
+  assert.equal(escortRecord.presentation.source, "authored_scene");
+  assert.equal(escortRecord.presentation.sceneId, "t01.escort.request");
   assert.ok(runner.save.scene.beats.some((beat) => beat.actorId === "NPC001"
-    && /足を痛めて.*村の広場.*一緒に戻って/u.test(beat.text)));
+    && /足が動かない.*母さん.*肩を貸して.*置いていかないで/u.test(beat.text)));
   assert.equal(runner.save.guidance.title, "村の広場へ：少年を連れ帰る");
   assert.equal(runner.save.guidance.actionPanel, "movement");
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
@@ -1804,7 +3307,10 @@ test("ordinary NPC conversation supports distinct multi-turn follow-ups until th
   assert.ok(talk, "a local NPC conversation must be available after the opening");
   await runner.run("CHOOSE", { choiceId: talk.choiceId });
   assert.equal(runner.save.choices.length, 3);
-  assert.ok(runner.save.choices.every((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)));
+  assert.ok(runner.save.choices.some((choice) => choice.actionId.endsWith(":END")));
+  assert.ok(runner.save.choices.some((choice) => choice.type !== "conversation"));
+  assert.equal(runner.save.choices.filter((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)
+    && !choice.actionId.endsWith(":END")).length, 1);
   assert.equal(inputs.at(-1).action.id, talk.actionId);
   assert.equal(inputs.at(-1).action.targetNpcId, talk.targetNpcId);
   const narrativeState = inputs.at(-1).authoritativeState;
@@ -1814,15 +3320,18 @@ test("ordinary NPC conversation supports distinct multi-turn follow-ups until th
   assert.equal("facilityNotes" in narrativeState, false);
   assert.doesNotMatch(JSON.stringify(narrativeState), /T01捜索|T02後の村会合|情報ハブ|事件導線|開始地点/u);
   assert.ok(narrativeState.npcs.every((npc) => !("occupation" in npc)));
-  const firstFollowup = runner.save.choices.find((choice) => !choice.actionId.endsWith(":END"));
+  const firstFollowup = runner.save.choices.find((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)
+    && !choice.actionId.endsWith(":END"));
   assert.ok(firstFollowup);
   await runner.run("CHOOSE", { choiceId: firstFollowup.choiceId });
   const firstTopic = inputs.at(-1).action.dialogueTopic;
   assert.ok(firstTopic);
   assert.equal(inputs.at(-1).action.conversationTurn, 2);
-  assert.ok(runner.save.choices.every((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)));
+  assert.ok(runner.save.choices.some((choice) => choice.actionId.endsWith(":END")));
+  assert.ok(runner.save.choices.some((choice) => choice.type !== "conversation"));
 
-  const secondFollowup = runner.save.choices.find((choice) => !choice.actionId.endsWith(":END"));
+  const secondFollowup = runner.save.choices.find((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)
+    && !choice.actionId.endsWith(":END"));
   assert.ok(secondFollowup);
   await runner.run("CHOOSE", { choiceId: secondFollowup.choiceId });
   assert.notEqual(inputs.at(-1).action.dialogueTopic, firstTopic);
@@ -1836,6 +3345,90 @@ test("ordinary NPC conversation supports distinct multi-turn follow-ups until th
   assert.equal(runner.save.choices.some((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)), false);
   assert.equal(inputs.at(-1).action.dialogueTopic, "end_conversation");
   assert.equal((await game.verifyReplay(owner, runner.save.id)).ok, true);
+});
+
+test("dialogue follow-ups are finite, ledger-backed, and always leave an actionable exit", () => {
+  const { game } = service();
+  const runtime = createGameRuntime(game.data, {
+    seed: "bounded-dialogue-followups",
+    profileId: "balanced",
+    playerName: "聞き手",
+    tutorial: false,
+  });
+  const talk = availableGameRuntimeActions(runtime, game.data).choices
+    .find((action) => action.type === "conversation" && !action.missionId);
+  assert.ok(talk);
+  executeGameRuntimeCommand(runtime, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: talk.choiceId },
+  });
+
+  const askedTopics = [];
+  for (let guard = 0; guard < 8; guard += 1) {
+    const choices = availableGameRuntimeActions(runtime, game.data).choices;
+    assert.equal(choices.length, 3);
+    assert.ok(choices.some((choice) => choice.dialogueTopic === "end_conversation"));
+    assert.ok(choices.some((choice) => choice.type !== "conversation"));
+    assert.equal(choices.some((choice) => /clarify_/u.test(choice.id)), false);
+    const question = choices.find((choice) => choice.dialogueFollowup
+      && choice.dialogueTopic !== "end_conversation");
+    if (!question) break;
+    assert.equal(askedTopics.includes(question.dialogueTopic), false);
+    askedTopics.push(question.dialogueTopic);
+    executeGameRuntimeCommand(runtime, game.data, {
+      type: "CHOOSE",
+      payload: { choiceId: question.choiceId },
+    });
+  }
+
+  assert.ok(askedTopics.length > 0);
+  assert.ok(askedTopics.length <= 3, "the initial exchange plus three follow-ups is the hard cap");
+  const cappedChoices = availableGameRuntimeActions(runtime, game.data).choices;
+  assert.equal(cappedChoices.some((choice) => choice.dialogueFollowup
+    && choice.dialogueTopic !== "end_conversation"), false);
+  const end = cappedChoices.find((choice) => choice.dialogueTopic === "end_conversation");
+  assert.ok(end);
+  executeGameRuntimeCommand(runtime, game.data, {
+    type: "CHOOSE",
+    payload: { choiceId: end.choiceId },
+  });
+  assert.equal(runtime.dialogueSession, null);
+});
+
+test("recent state-neutral choices cool down until the player takes a substantive action", () => {
+  const { game } = service();
+  const runtime = createGameRuntime(game.data, {
+    seed: "neutral-choice-cooldown",
+    profileId: "balanced",
+    playerName: "歩く旅人",
+    tutorial: false,
+  });
+  const history = runtime.playerState.history;
+  const resolved = (actionId) => history.push({
+    type: "PLAYER_ACTION_RESOLVED",
+    minute: runtime.playerState.absoluteMinute,
+    actionId,
+  });
+  const candidates = () => availableGameRuntimeChoiceCandidates(runtime, game.data, { limit: 12 });
+  const initialChoices = availableGameRuntimeActions(runtime, game.data).choices;
+  assert.equal(initialChoices.filter((action) => action.type === "conversation").length, 1,
+    "diversity selection also runs when no narrator supplied a preferred order");
+  assert.ok(initialChoices.some((action) => action.type === "localInvestigate"));
+  assert.ok(initialChoices.some((action) => !["conversation", "localInvestigate"].includes(action.type)));
+
+  resolved(`INSPECT:${runtime.playerState.player.facilityId}:1`);
+  assert.equal(candidates().some((action) => action.id.startsWith("INSPECT:")), false);
+  resolved(`WAIT:${runtime.playerState.player.facilityId}:TUTORIAL:PAUSE:WAIT`);
+  assert.equal(candidates().some((action) => action.id.startsWith("INSPECT:")
+    || action.id.startsWith("WAIT:")), false);
+  resolved("TUTORIAL:PAUSE:PLAN");
+  assert.equal(candidates().some((action) => action.id.startsWith("INSPECT:")
+    || action.id.startsWith("WAIT:")
+    || action.id === "TUTORIAL:PAUSE:PLAN"), false);
+
+  resolved("DIRECT_TALK:NPC004");
+  assert.ok(candidates().some((action) => action.id.startsWith("INSPECT:")),
+    "a conversation breaks the neutral-action cooldown chain");
 });
 
 test("the service replaces a Gemini reply that omits the fact recorded as learned", async () => {
@@ -1914,7 +3507,8 @@ test("an unanswered dialogue follow-up expires instead of resurfacing hours late
   const talk = runner.save.choices.find((choice) => choice.type === "conversation" && !choice.missionId);
   assert.ok(talk);
   await runner.run("CHOOSE", { choiceId: talk.choiceId });
-  assert.ok(runner.save.choices.every((choice) => choice.actionId.startsWith(`DIALOGUE:${talk.targetNpcId}:`)));
+  assert.ok(runner.save.choices.some((choice) => choice.actionId.endsWith(":END")));
+  assert.ok(runner.save.choices.some((choice) => choice.type !== "conversation"));
 
   const record = await store.get(runner.save.id);
   const runtime = deserializeRuntime(record.runtimeSnapshot, game.data);
@@ -1979,11 +3573,18 @@ test("completed work preserves a server-valid work route and sends recent work t
 
   const completedWorkInput = inputs.findLast((input) => input.action?.type === "work");
   assert.ok(completedWorkInput);
-  assert.equal(completedWorkInput.authoritativeState.continuityContract.mode, "must_offer_continuation");
-  assert.ok(completedWorkInput.authoritativeState.continuityContract.candidateIds.some((id) => id.startsWith("WORK:")));
-  assert.ok(completedWorkInput.authoritativeState.availableActionCandidates.some((candidate) => candidate.workOffer === true));
+  assert.equal(completedWorkInput.authoritativeState.workMarket.completedToday, 1);
   assert.ok(completedWorkInput.authoritativeState.workMarket.recentWorkTitles.some((title) => /穀袋/u.test(title)));
-  assert.ok(runner.save.choices.some((choice) => choice.actionId.startsWith("WORK:") && /別の仕事/u.test(choice.label)));
+  const nextWorkCandidates = completedWorkInput.authoritativeState.availableActionCandidates
+    .filter((candidate) => candidate.workOffer === true);
+  if (nextWorkCandidates.length) {
+    assert.equal(completedWorkInput.authoritativeState.continuityContract.mode, "must_offer_continuation");
+    assert.ok(completedWorkInput.authoritativeState.continuityContract.candidateIds
+      .some((id) => nextWorkCandidates.some((candidate) => candidate.id === id)));
+    assert.ok(runner.save.choices.some((choice) => /別の仕事/u.test(choice.label)));
+  } else {
+    assert.equal(completedWorkInput.authoritativeState.continuityContract.mode, "free");
+  }
 });
 
 test("leaving for the capital removes the village T01 thread from later Gemini context", async () => {
@@ -2015,6 +3616,10 @@ test("leaving for the capital removes the village T01 thread from later Gemini c
   const capital = runner.save.movement.find((move) => move.destination === "王都");
   assert.ok(capital);
   await runner.run("MOVE", { moveId: capital.moveId });
+  const followup = runner.save.choices.find((choice) => !String(choice.actionId).startsWith("MOVE_REGION:"))
+    ?? runner.save.choices[0];
+  assert.ok(followup, "the reviewed capital arrival must still expose a next action");
+  await runner.run("CHOOSE", { choiceId: followup.choiceId, actionId: followup.actionId });
 
   const capitalInput = inputs.findLast((input) => input.authoritativeState?.location === "王都");
   assert.ok(capitalInput);

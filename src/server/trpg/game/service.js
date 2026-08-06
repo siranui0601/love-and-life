@@ -12,6 +12,22 @@ import {
   sellEquipment,
 } from "../../../../tools/trpg-sim/lib/shop-runtime.mjs";
 import { experienceToNextLevel } from "../../../../tools/trpg-sim/lib/mission-model.mjs";
+import { ensurePlayerNeeds, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
+import {
+  EQUIPMENT_ACCESS_VERSION,
+  activeEquipmentLoans,
+  borrowMissionEquipment,
+  buyUsedEquipment,
+  claimEquipmentReward,
+  createMissionEquipmentRewardOffer,
+  ensureEquipmentAccessState,
+  equipmentAvailableToPlayer,
+  listEquipmentAccessOffers,
+  pendingEquipmentRewards,
+  previewEquipmentTrial,
+  reconcileEquipmentLoans,
+  returnEquipmentLoan,
+} from "../../../../tools/trpg-sim/lib/equipment-access.mjs";
 import {
   completeNpcLifeTick,
   createNpcLifeEngine,
@@ -21,13 +37,48 @@ import { loadTrpgGameData } from "./game-data.js";
 import { deserializeRuntime, serializeRuntime } from "./serializer.js";
 import { FileTrpgSaveStore } from "./save-store.js";
 import { presentNpcsAt, syncAuthoritativePresentNpcIds } from "./presence.js";
+import { facilityVisibility } from "../resolvers/facility-visibility-resolver.js";
+import { resolveCanonicalWeather, WEATHER_RULESET_VERSION } from "../resolvers/weather-resolver.js";
+import { selectDiverseChoices } from "../content/choice-contract.js";
+import {
+  CAPITAL_ARRIVAL_GUIDANCE_VERSION,
+  capitalWeaponShopFirstChoices,
+  capitalWeaponShopFirstInteractionActive,
+  completeCapitalWeaponShopFirstInteraction,
+  discoverCapitalPublicRoutes,
+  ensureCapitalWeaponShopChoice,
+  prioritizeCapitalWeaponShopMovement,
+  recordCapitalArrivalGuidance,
+} from "../resolvers/capital-arrival-guidance.js";
+import { resolveAuthoredScene } from "../content/authored-scene-registry.js";
+import {
+  applyAuthoredMissionFlowAction,
+  applyAuthoredMissionFlowCatalogOverrides,
+  authoredMissionFlowEvidenceAction,
+  authoredMissionFlowExclusiveActions,
+  authoredMissionFlowGuidance,
+  authoredWeatherAmbientPromptAction,
+  initializeAuthoredMissionFlowForMission,
+  suppressGenericAuthoredMissionAction,
+} from "../content/authored-mission-flow-registry.js";
+import {
+  WORK_MARKET_VERSION,
+  deterministicWorkWage,
+  ensureWorkMarket,
+  pendingWorkOfferAvailability,
+  publicWorkMarket,
+  recordCompletedWork,
+  workAvailability,
+  workOfferId,
+} from "../resolvers/work-market-resolver.js";
 
 export const TRPG_GAME_SCHEMA_VERSION = "1.3.0-alpha";
-export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v11";
-const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10"]);
+export const TRPG_GAME_RESOLVER_VERSION = "trpg-player-world-v17";
+const MIGRATABLE_RESOLVER_VERSIONS = new Set(["trpg-player-world-v8", "trpg-player-world-v9", "trpg-player-world-v10", "trpg-player-world-v11", "trpg-player-world-v12", "trpg-player-world-v13", "trpg-player-world-v14", "trpg-player-world-v15", "trpg-player-world-v16"]);
 
 const PLAYABLE_PROFILE_ID = "balanced";
 const TUTORIAL_VERSION = "trpg-progressive-onboarding-v6";
+const MAX_DIALOGUE_TURNS = 4;
 
 const PUBLIC_FACILITY_COPY = Object.freeze({
   LOC_FARM_FIELD: { type: "農地", description: "風に揺れる麦畑。畑仕事の様子と、村へ続く道を確かめられる。" },
@@ -100,12 +151,18 @@ const OPENING_AFTERMATH_FACT = Object.freeze({
 });
 
 const PROFILE_BY_ID = new Map(journey.PLAYER_PROFILES.map((profile) => [profile.id, profile]));
-const COMMAND_TYPES = new Set(["CHOOSE", "MOVE", "SHOP_BUY", "SHOP_SELL", "EQUIP", "UNEQUIP", "LEARN_SKILL", "TUTORIAL_ACK", "ACK_NPC_INTRODUCTION", "BATTLE_ACT"]);
+const COMMAND_TYPES = new Set(["CHOOSE", "TALK", "MOVE", "SHOP_BUY", "SHOP_SELL", "SHOP_TRY", "SHOP_BUY_USED", "SHOP_BORROW", "SHOP_RETURN_LOAN", "CLAIM_EQUIPMENT_REWARD", "EQUIP", "UNEQUIP", "LEARN_SKILL", "TUTORIAL_ACK", "ACK_NPC_INTRODUCTION", "BATTLE_ACT"]);
 const COMMAND_PAYLOAD_KEY = Object.freeze({
   CHOOSE: "choiceId",
+  TALK: "npcId",
   MOVE: "moveId",
   SHOP_BUY: "stockId",
   SHOP_SELL: "equipmentId",
+  SHOP_TRY: "stockId",
+  SHOP_BUY_USED: "offerId",
+  SHOP_BORROW: "loanId",
+  SHOP_RETURN_LOAN: "loanId",
+  CLAIM_EQUIPMENT_REWARD: "rewardId",
   EQUIP: "equipmentId",
   UNEQUIP: "slot",
   LEARN_SKILL: "skillId",
@@ -245,32 +302,34 @@ function gameplayTuning() {
     maxWildBattlesPerDay: 2,
     wildEncounterCooldownMinutes: 480,
     workGoldThreshold: 24,
+    mealPrice: 4,
     restPrice: 4,
   };
 }
 
 export function applyGameplayCatalogOverrides(catalog) {
   const t01 = catalog.special.find((mission) => mission.id === "MSN-T01");
-  if (!t01) return catalog;
-  if (!t01.steps.some((step) => step.id === "escort")) {
-    const decideIndex = t01.steps.findIndex((step) => step.id === "decide");
-    const escortStep = {
-      id: "escort",
-      type: "conversation",
-      targetLocation: "田園の村",
-      targetFacilityId: "LOC_FARM_EDGE",
-      required: 1,
-      label: "負傷したフィンに声をかけ、村の広場まで同行する",
-    };
-    if (decideIndex >= 0) t01.steps.splice(decideIndex, 0, escortStep);
-    else t01.steps.push(escortStep);
+  if (t01) {
+    if (!t01.steps.some((step) => step.id === "escort")) {
+      const decideIndex = t01.steps.findIndex((step) => step.id === "decide");
+      const escortStep = {
+        id: "escort",
+        type: "conversation",
+        targetLocation: "田園の村",
+        targetFacilityId: "LOC_FARM_EDGE",
+        required: 1,
+        label: "負傷したフィンに声をかけ、村の広場まで同行する",
+      };
+      if (decideIndex >= 0) t01.steps.splice(decideIndex, 0, escortStep);
+      else t01.steps.push(escortStep);
+    }
+    for (const step of t01.steps) {
+      if (step.id === "hear") step.targetFacilityId = "LOC_FARM_SQUARE";
+      if (["search", "rescue", "escort"].includes(step.id)) step.targetFacilityId = "LOC_FARM_EDGE";
+      if (step.id === "decide") step.targetFacilityId = "LOC_FARM_SQUARE";
+    }
   }
-  for (const step of t01.steps) {
-    if (step.id === "hear") step.targetFacilityId = "LOC_FARM_SQUARE";
-    if (["search", "rescue", "escort"].includes(step.id)) step.targetFacilityId = "LOC_FARM_EDGE";
-    if (step.id === "decide") step.targetFacilityId = "LOC_FARM_SQUARE";
-  }
-  return catalog;
+  return applyAuthoredMissionFlowCatalogOverrides(catalog);
 }
 
 function initialNpcState(npc) {
@@ -401,12 +460,32 @@ function discoverFacility(runtime, facilityId) {
   if (facilityId) ensurePlayerKnowledge(runtime).knownFacilityIds.add(facilityId);
 }
 
+function refreshCapitalPublicRoutes(runtime, data) {
+  const visitedHubs = runtime.playerState.progress?.travel?.visitedHubs instanceof Set
+    ? runtime.playerState.progress.travel.visitedHubs
+    : new Set(runtime.playerState.progress?.travel?.visitedHubs ?? []);
+  if (runtime.playerState.player.location !== "王都" && !visitedHubs.has("王都")) return [];
+  const reachableHubIds = journey.availableTravelActions(runtime.playerState, data.model)
+    .map((action) => action.destinationHub)
+    .filter(Boolean);
+  return discoverCapitalPublicRoutes(runtime, {
+    reachableHubIds,
+    absoluteMinute: runtime.playerState.absoluteMinute,
+  });
+}
+
 function discoverArrival(runtime, data) {
   const knowledge = ensurePlayerKnowledge(runtime);
   const hubId = runtime.playerState.player.location;
   const facilityId = runtime.playerState.player.facilityId;
+  recordCapitalArrivalGuidance(runtime, {
+    hubId,
+    facilityId,
+    absoluteMinute: runtime.playerState.absoluteMinute,
+  });
   if (hubId) knowledge.knownHubIds.add(hubId);
   if (facilityId) knowledge.knownFacilityIds.add(facilityId);
+  if (hubId === "王都") refreshCapitalPublicRoutes(runtime, data);
   if (facilityId === "LOC_FARM_SQUARE") {
     FARM_SQUARE_DISCOVERIES.forEach((id) => knowledge.knownFacilityIds.add(id));
     return;
@@ -547,7 +626,14 @@ function openingChoiceActions(runtime) {
   return null;
 }
 
-function dialogueFollowupActions(runtime) {
+function capitalWeaponShopFirstChoiceActions(runtime, data) {
+  if (!capitalWeaponShopFirstInteractionActive(runtime)) return null;
+  const shopkeeper = presentNpcsAt(runtime, data).find((npc) => npc.id === "NPC065") ?? null;
+  const choices = capitalWeaponShopFirstChoices(runtime, { shopkeeper });
+  return choices ? withChoiceIds(choices) : null;
+}
+
+function dialogueFollowupActions(runtime, data) {
   const session = runtime.dialogueSession;
   if (!session || runtime.tutorial?.stage && runtime.tutorial.stage !== "free") return null;
   if (runtime.playerState.absoluteMinute
@@ -600,10 +686,11 @@ function dialogueFollowupActions(runtime) {
       minutes: 6,
     } : null,
   ].filter(Boolean).filter((topic) => !asked.has(topic.id));
-  const offset = Number(session.turnCount ?? 0) % Math.max(1, topics.length);
+  const turnCount = Number(session.turnCount ?? 1);
+  const offset = turnCount % Math.max(1, topics.length);
   const rotated = topics.length ? [...topics.slice(offset), ...topics.slice(0, offset)] : [];
-  const questions = rotated.slice(0, 2).map((topic) => ({
-    id: `DIALOGUE:${session.npcId}:${Number(session.turnCount ?? 0) + 1}:${topic.id}`,
+  const questions = (turnCount < MAX_DIALOGUE_TURNS ? rotated.slice(0, 1) : []).map((topic) => ({
+    id: `DIALOGUE:${session.npcId}:${turnCount + 1}:${topic.id}`,
     type: "conversation",
     dialogueFollowup: true,
     dialogueTopic: topic.id,
@@ -612,21 +699,33 @@ function dialogueFollowupActions(runtime) {
     minutes: topic.minutes,
     label: topic.label,
   }));
-  while (questions.length < 2) {
-    const id = `clarify_${questions.length + 1}`;
-    questions.push({
-      id: `DIALOGUE:${session.npcId}:${Number(session.turnCount ?? 0) + 1}:${id}`,
-      type: "conversation",
-      dialogueFollowup: true,
-      dialogueTopic: id,
-      targetNpcId: session.npcId,
-      targetNpcName: session.npcName,
-      minutes: 6,
-      label: questions.length ? "今の話で、まだ曖昧な点を一つ確かめる" : "その話を、最初から順に説明してもらう",
-    });
-  }
-  return withChoiceIds([...questions, {
-    id: `DIALOGUE:${session.npcId}:${Number(session.turnCount ?? 0) + 1}:END`,
+
+  const sceneInvestigation = contextualLocalAction({
+    id: `DIALOGUE:${session.npcId}:${turnCount + 1}:CHECK_SCENE`,
+    type: "observe",
+    dialogueExit: true,
+    minutes: 12,
+    label: `${session.npcName}との話を切り上げ、周囲に残る手掛かりを確かめる`,
+  }, runtime, data);
+  const availableMovements = movementActions(runtime, data);
+  const movement = availableMovements
+    .find((action) => action.movementScope === "local")
+    ?? availableMovements.find((action) => action.movementScope === "regional")
+    ?? null;
+  const leaveByMovement = movement ? {
+    ...movement,
+    dialogueExit: true,
+    label: `話を終え、${movement.label}`,
+  } : null;
+  const reviewAndLeave = {
+    id: `DIALOGUE:${session.npcId}:${turnCount + 1}:REVIEW_AND_LEAVE`,
+    type: "plan",
+    dialogueExit: true,
+    minutes: 4,
+    label: "聞いたことを整理し、別の行動へ移る",
+  };
+  const endConversation = {
+    id: `DIALOGUE:${session.npcId}:${turnCount + 1}:END`,
     type: "conversation",
     dialogueFollowup: true,
     dialogueTopic: "end_conversation",
@@ -634,7 +733,11 @@ function dialogueFollowupActions(runtime) {
     targetNpcName: session.npcName,
     minutes: 2,
     label: `${session.npcName}に礼を言い、次の行動へ移る`,
-  }]);
+  };
+  const choices = questions.length
+    ? [questions[0], leaveByMovement ?? sceneInvestigation ?? reviewAndLeave, endConversation]
+    : [sceneInvestigation ?? reviewAndLeave, leaveByMovement ?? reviewAndLeave, endConversation];
+  return withChoiceIds([...new Map(choices.map((action) => [action.id, action])).values()].slice(0, 3));
 }
 
 function worldTicksThrough(targetMinute) {
@@ -942,6 +1045,9 @@ export function createGameRuntime(data, { seed, profileId, playerName, tutorial 
   });
   playerState.player.displayName = playerName;
   playerState.player.name = playerName;
+  ensurePlayerNeeds(playerState.player);
+  ensureEquipmentAccessState(playerState);
+  playerState.weather = canonicalWeatherForState(playerState);
   Object.assign(playerState.worldFlags, {
     knightOrderCooperation: false,
     mageTowerPermit: false,
@@ -961,11 +1067,15 @@ export function createGameRuntime(data, { seed, profileId, playerName, tutorial 
     playerKnowledge: createPlayerKnowledge(),
     pendingBattle: null,
     pendingNpcIntroduction: null,
+    pendingWorkOffer: null,
+    workMarket: null,
     tutorial: tutorial ? createTutorialState() : null,
     dialogueSession: null,
     narrativeChoiceSelection: null,
     narrativeMemory: createNarrativeMemory(),
   };
+  ensureWorkMarket(runtime);
+  recordCapitalArrivalGuidance(runtime);
   advanceLivingWorld(runtime, playerState.absoluteMinute);
   if (tutorial) {
     prepareOpeningTutorial(livingWorld, playerState.absoluteMinute);
@@ -986,6 +1096,9 @@ function hydrateRuntime(record, data) {
   runtime.pendingNpcIntroduction ??= null;
   runtime.narrativeChoiceSelection ??= null;
   ensureNarrativeMemory(runtime);
+  ensureWorkMarket(runtime);
+  recordCapitalArrivalGuidance(runtime);
+  refreshCapitalPublicRoutes(runtime, data);
   syncAuthoritativePresentNpcIds(runtime, data);
   return runtime;
 }
@@ -996,6 +1109,7 @@ export function gameStateHash(runtime, data, resolverVersion = TRPG_GAME_RESOLVE
 
 function choiceIntent(action) {
   if (action.type === "conversation") return action.targetNpcId ? "talk" : "investigate";
+  if (action.type === "eat") return "prepare";
   if (action.type === "investigate") return "investigate";
   if (["missionBattle", "seekBattle"].includes(action.type)) return "prepare";
   if (action.type === "resolveMission") return "help";
@@ -1007,37 +1121,42 @@ function choiceIntent(action) {
   return "observe";
 }
 
-const REGION_BASE_HOURLY_WAGE = Object.freeze({
-  "田園の村": 24,
-  "王都": 38,
-  "交易都市": 34,
-  "犯罪都市": 42,
-  "辺境の村": 30,
-  "北陵要塞": 36,
-  "ドワーフ洞窟": 40,
-  "エルフの隠れ里": 32,
-  "古代神殿": 35,
-  "魔王領": 50,
+const REGION_MEAL_PRICE = Object.freeze({
+  "田園の村": 4,
+  "王都": 8,
+  "交易都市": 7,
+  "犯罪都市": 9,
+  "辺境の村": 6,
+  "北陵要塞": 7,
+  "ドワーフ洞窟": 8,
+  "エルフの隠れ里": 6,
+  "古代神殿": 8,
+  "魔王領": 12,
 });
 
-function deterministicWorkWage(runtime, facilityId, actorId, options = {}) {
-  const minutes = Math.max(30, Math.min(480, Number(options.minutes ?? 120) || 120));
-  const riskClass = ["low", "medium", "high"].includes(options.riskClass) ? options.riskClass : "low";
-  const location = runtime.playerState.player.location;
-  const hourly = Number(REGION_BASE_HOURLY_WAGE[location] ?? 30);
-  const facilityFactor = Number({
-    LOC_FARM_FIELD: 1.08,
-    LOC_FARM_SQUARE: 1.12,
-    LOC_FARM_INN: 0.95,
-    LOC_FARM_BAKERY: 1.02,
-    LOC_FARM_WELL: 1.1,
-  }[facilityId] ?? 1);
-  const riskFactor = Number({ low: 1, medium: 1.35, high: 1.8 }[riskClass]);
-  const nightFactor = ["night", "late_night"].includes(runtime.playerState.daypart) || runtime.playerState.hour >= 20 ? 1.25 : 1;
-  const digest = sha256([runtime.playerState.seed, runtime.playerState.day, location, facilityId, actorId, riskClass, minutes, "work-offer-v2"].join(":"));
-  const marketFactor = 0.92 + (Number.parseInt(digest.slice(0, 8), 16) % 29) / 100;
-  const raw = hourly * (minutes / 60) * facilityFactor * riskFactor * nightFactor * marketFactor;
-  return Math.max(15, Math.round(raw / 5) * 5);
+const REGION_LODGING_PRICE = Object.freeze({
+  "田園の村": 12,
+  "王都": 28,
+  "交易都市": 24,
+  "犯罪都市": 22,
+  "辺境の村": 16,
+  "北陵要塞": 18,
+  "ドワーフ洞窟": 20,
+  "エルフの隠れ里": 18,
+  "古代神殿": 20,
+  "魔王領": 35,
+});
+
+function facilityOffersMeals(facility) {
+  return /宿|飯|食堂|酒場|茶屋|パン|市場|料理|厨房/u.test(String(facility?.name ?? "") + " " + String(facility?.type ?? ""));
+}
+
+function facilityOffersLodging(facility) {
+  return /宿|旅籠|宿泊/u.test(String(facility?.name ?? "") + " " + String(facility?.type ?? ""));
+}
+
+function canonicalWeatherForState(state) {
+  return resolveCanonicalWeather({ day: state.day, regionId: state.player.location, daypart: state.daypart });
 }
 
 function workDescription(facilityId) {
@@ -1050,29 +1169,75 @@ function workDescription(facilityId) {
   }[facilityId] ?? "荷運びと片づけを手伝う";
 }
 
+const BLOCKED_WORK_GIVER_NPC_IDS = new Set(["NPC001", "NPC062"]);
+const PREFERRED_WORK_GIVER_BY_FACILITY = Object.freeze({
+  LOC_FARM_FIELD: "NPC004",
+  LOC_FARM_SQUARE: "NPC003",
+});
+
+function eligibleWorkGiver(runtime, npc) {
+  if (!npc || BLOCKED_WORK_GIVER_NPC_IDS.has(npc.id)) return false;
+  const state = runtime.livingWorld.npcStates?.[npc.id];
+  if (!state || state.presence !== "present") return false;
+  if (["injured", "missing", "dead"].includes(String(state.lifeStatus ?? ""))) return false;
+  return true;
+}
+
+function workGiverAt(runtime, data, facilityId, preferredNpcId = null, options = {}) {
+  const facility = data.model.facilityById[facilityId] ?? {};
+  const present = presentNpcsAt(runtime, data).filter((npc) => eligibleWorkGiver(runtime, npc));
+  const preferredIds = [preferredNpcId, PREFERRED_WORK_GIVER_BY_FACILITY[facilityId]].filter(Boolean);
+  const ordered = [
+    ...preferredIds.map((npcId) => present.find((npc) => npc.id === npcId)).filter(Boolean),
+    ...present.filter((npc) => !preferredIds.includes(npc.id)),
+  ];
+  return ordered.find((npc) => workAvailability(runtime, {
+    facility,
+    facilityId,
+    employerId: npc.id,
+    durationMinutes: Number(options.durationMinutes ?? 120),
+    startOffsetMinutes: Number(options.startOffsetMinutes ?? 0),
+  }).available) ?? null;
+}
+
 function decorateWorkOfferAction(action, runtime, data, preferredNpcId = null) {
   if (!action?.workOffer && action?.type !== "work") return action;
   const facilityId = runtime.playerState.player.facilityId;
-  const present = presentNpcsAt(runtime, data);
-  const actor = present.find((npc) => npc.id === preferredNpcId)
-    ?? present.find((npc) => npc.id === action.targetNpcId)
-    ?? present[0]
-    ?? null;
+  const facility = data.model.facilityById[facilityId] ?? {};
+  const durationMinutes = Math.max(30, Math.min(480, Number(action.workDurationMinutes ?? 120) || 120));
+  const riskClass = ["low", "medium", "high"].includes(action.workRiskClass) ? action.workRiskClass : "low";
+  const offerConversationMinutes = Math.min(10, Number(action.minutes ?? 6));
+  const actor = workGiverAt(runtime, data, facilityId, preferredNpcId ?? action.targetNpcId, {
+    durationMinutes,
+    startOffsetMinutes: offerConversationMinutes,
+  });
   if (!actor) return null;
-  const wage = deterministicWorkWage(runtime, facilityId, actor.id);
-  const job = workDescription(facilityId);
+  const job = cleanText(action.workDescription ?? workDescription(facilityId), 120);
+  const availability = workAvailability(runtime, {
+    facility,
+    facilityId,
+    employerId: actor.id,
+    durationMinutes,
+    startOffsetMinutes: offerConversationMinutes,
+  });
+  if (!availability.available) return null;
+  const specification = { facilityId, employerId: actor.id, title: job, durationMinutes, riskClass };
+  const wage = deterministicWorkWage(runtime, specification);
   return {
     ...action,
     id: action.id === "WORK" ? `WORK_OFFER:${facilityId}:${actor.id}` : action.id,
     type: "conversation",
     workOffer: true,
+    workOfferId: workOfferId(runtime, specification),
     quotedWage: wage,
     workDescription: job,
+    workDurationMinutes: durationMinutes,
+    workRiskClass: riskClass,
     targetNpcId: actor.id,
     targetNpcName: actor.name,
     dialogueTopic: "work_offer",
-    requiredDisclosure: `仕事は「${job}」、報酬は${wage}G`,
-    minutes: Math.min(10, Number(action.minutes ?? 6)),
+    requiredDisclosure: `仕事は「${job}」、所要時間は${durationMinutes}分、報酬は${wage}G`,
+    minutes: offerConversationMinutes,
   };
 }
 
@@ -1088,29 +1253,49 @@ function pendingWorkOfferActions(runtime, data) {
     runtime.pendingWorkOffer = null;
     return null;
   }
+  const facility = data.model.facilityById[offer.facilityId] ?? {};
+  offer.day ??= runtime.playerState.day;
+  offer.riskClass ??= "low";
+  offer.offerId ??= workOfferId(runtime, {
+    facilityId: offer.facilityId,
+    employerId: offer.actorNpcId,
+    title: offer.description,
+    durationMinutes: offer.minutes,
+    riskClass: offer.riskClass,
+  });
+  const availability = pendingWorkOfferAvailability(runtime, facility);
+  if (!availability.available) {
+    runtime.pendingWorkOffer = null;
+    return null;
+  }
   return withChoiceIds([
     {
-      id: `WORK_CONFIRM:${offer.facilityId}:${offer.actorNpcId}:${offer.wage}`,
+      id: `WORK_CONFIRM:${offer.offerId}`,
       type: "work",
       wage: offer.wage,
       minutes: offer.minutes,
       sceneActorNpcId: offer.actorNpcId,
+      workOfferId: offer.offerId,
+      workFacilityId: offer.facilityId,
+      workEmployerId: offer.actorNpcId,
       workDescription: offer.description,
+      workRiskClass: offer.riskClass,
+      workStartedAtMinute: runtime.playerState.absoluteMinute,
       label: `引き受ける：${offer.description}（${offer.minutes}分・${offer.wage}G）`,
     },
     {
-      id: `WORK_CLARIFY:${offer.facilityId}:${offer.actorNpcId}`,
+      id: `WORK_CLARIFY:${offer.offerId}`,
       type: "conversation",
       dialogueFollowup: true,
       dialogueTopic: "work_offer",
       targetNpcId: offer.actorNpcId,
       targetNpcName: offer.actorName,
-      requiredDisclosure: `仕事は「${offer.description}」、報酬は${offer.wage}G`,
+      requiredDisclosure: `仕事は「${offer.description}」、所要時間は${offer.minutes}分、報酬は${offer.wage}G`,
       minutes: 3,
       label: "作業の手順と、終わりの目安をもう一度確かめる",
     },
     {
-      id: `WORK_DECLINE:${offer.facilityId}:${offer.actorNpcId}`,
+      id: `WORK_DECLINE:${offer.offerId}`,
       type: "plan",
       workDecline: true,
       minutes: 1,
@@ -1123,6 +1308,7 @@ function contextualLocalAction(action, runtime, data) {
   const facility = data.model.facilityById[runtime.playerState.player.facilityId];
   const facilityId = facility?.id ?? "UNKNOWN";
   const publicNpc = presentNpcsAt(runtime, data)[0] ?? null;
+  const workGiver = workGiverAt(runtime, data, facilityId, null, { durationMinutes: 120, startOffsetMinutes: 6 });
   if (action.type === "conversation" && action.targetNpcId) {
     const target = presentNpcsAt(runtime, data).find((npc) => npc.id === action.targetNpcId);
     return target ? {
@@ -1132,7 +1318,7 @@ function contextualLocalAction(action, runtime, data) {
     } : action;
   }
   if (action.type === "work") {
-    if (facilityId === "LOC_FARM_EDGE" || !publicNpc) return null;
+    if (facilityId === "LOC_FARM_EDGE" || !workGiver) return null;
     const label = {
       LOC_FARM_FIELD: "エダに、畑仕事を手伝えるか尋ねる",
       LOC_FARM_SQUARE: "荷運びを頼める人に、仕事内容と賃金を聞く",
@@ -1140,7 +1326,55 @@ function contextualLocalAction(action, runtime, data) {
       LOC_FARM_BAKERY: "パン屋で、薪運びの仕事内容と賃金を聞く",
       LOC_FARM_WELL: "水桶運びの仕事内容と賃金を聞く",
     }[facilityId] ?? `${facility?.name ?? runtime.playerState.player.location}で、仕事の内容と賃金を尋ねる`;
-    return decorateWorkOfferAction({ ...action, id: `WORK:${facilityId}`, label, workOffer: true }, runtime, data, publicNpc?.id ?? null);
+    return decorateWorkOfferAction({ ...action, id: `WORK:${facilityId}`, label, workOffer: true }, runtime, data, workGiver.id);
+  }
+  if (action.type === "eat") {
+    if (!facilityOffersMeals(facility)) return null;
+    const price = runtime.playerState.player.freeMeals > 0
+      ? 0
+      : Number(REGION_MEAL_PRICE[runtime.playerState.player.location] ?? 6);
+    if (price > runtime.playerState.player.gold) return null;
+    return {
+      ...action,
+      id: "EAT:" + facilityId + ":" + price,
+      type: "eat",
+      minutes: Math.max(20, Number(action.minutes ?? 30)),
+      price,
+      nutrition: 58,
+      mealQuality: facilityId === "LOC_FARM_INN" ? "hearty" : "standard",
+      label: price > 0
+        ? String(facility?.name ?? "この場所") + "で食事を取る（" + price + "G）"
+        : String(facility?.name ?? "この場所") + "で用意された食事を取る",
+    };
+  }
+  if (action.type === "rest") {
+    const lodgingAvailable = facilityOffersLodging(facility);
+    const lodgingPrice = runtime.playerState.player.freeLodging > 0
+      ? 0
+      : Number(REGION_LODGING_PRICE[runtime.playerState.player.location] ?? 20);
+    const canAffordLodging = lodgingAvailable
+      && (runtime.playerState.player.freeLodging > 0 || lodgingPrice <= runtime.playerState.player.gold);
+    const needs = publicPlayerNeeds(runtime.playerState.player);
+    const lodging = canAffordLodging && (runtime.playerState.hour >= 18 || needs.fatigue >= 70 || Number(action.minutes ?? 0) >= 420);
+    const price = lodging ? lodgingPrice : 0;
+    const tags = new Set(runtime.playerState.weather?.tags ?? []);
+    const severeWeather = tags.has("storm") || tags.has("snow");
+    return {
+      ...action,
+      id: lodging ? "LODGE:" + facilityId + ":" + price : "REST_OUTDOOR:" + facilityId,
+      type: "rest",
+      lodging,
+      price,
+      safety: lodging ? "good" : severeWeather ? "poor" : "normal",
+      minutes: lodging ? Math.max(420, Number(action.minutes ?? 480)) : Math.min(180, Number(action.minutes ?? 120)),
+      label: lodging
+        ? price > 0
+          ? String(facility?.name ?? "宿") + "に泊まる（" + price + "G）"
+          : String(facility?.name ?? "宿") + "で今夜は休む"
+        : severeWeather
+          ? "風雨を避けられる場所を探し、短く休息する"
+          : "安全そうな場所を探し、短く休息する",
+    };
   }
   if (action.type === "wait" || (action.type === "observe" && String(action.id).startsWith("WAIT-"))) {
     const escort = facilityId === "LOC_FARM_EDGE" ? ensureT01EscortState(runtime) : null;
@@ -1275,17 +1509,97 @@ function authoritativeMissionConversationAction(action, runtime, data) {
   };
 }
 
+function directNpcConversationActions(runtime, data) {
+  if (runtime.pendingBattle?.session?.status === "active") return [];
+  if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
+  if (runtime.tutorial && runtime.tutorial.stage !== "free") return [];
+  syncAuthoritativePresentNpcIds(runtime, data);
+  return presentNpcsAt(runtime, data)
+    .sort((left, right) => left.id.localeCompare(right.id))
+    .map((npc) => ({
+      id: `DIRECT_TALK:${npc.id}`,
+      type: "conversation",
+      directTalk: true,
+      targetNpcId: npc.id,
+      targetNpcName: npc.name,
+      dialogueTopic: "direct_contact",
+      minutes: 5,
+      label: `${npc.name}に話しかける`,
+    }));
+}
+
+function t01FocusedChoiceAllowed(action, runtime) {
+  const mission = runtime.playerState.missions?.["MSN-T01"];
+  const focused = runtime.playerState.player.facilityId === "LOC_FARM_EDGE"
+    && ["active", "available", "in_progress"].includes(String(mission?.status ?? ""));
+  if (!focused || action.type !== "conversation") return true;
+  return action.missionId === "MSN-T01" || action.targetNpcId === "NPC001";
+}
+
+function stateNeutralActionFamily(actionOrId) {
+  const id = String(typeof actionOrId === "string" ? actionOrId : actionOrId?.id ?? "");
+  if (id.startsWith("INSPECT:")) return "inspect";
+  if (id.startsWith("WAIT:")) return "wait";
+  if (id === "TUTORIAL:PAUSE:PLAN") return "plan";
+  return null;
+}
+
+function recentStateNeutralActionFamilies(runtime, limit = 3) {
+  const families = new Set();
+  const resolved = runtime.playerState.history
+    .filter((entry) => entry.type === "PLAYER_ACTION_RESOLVED")
+    .slice(-Math.max(1, Number(limit) || 3))
+    .reverse();
+  for (const entry of resolved) {
+    const family = stateNeutralActionFamily(String(entry.actionId ?? ""));
+    if (!family) break;
+    families.add(family);
+  }
+  return families;
+}
+
+function suppressRecentStateNeutralActions(actions, runtime) {
+  const blockedFamilies = recentStateNeutralActionFamilies(runtime);
+  if (!blockedFamilies.size) return actions;
+  const cooled = actions.filter((action) => !blockedFamilies.has(stateNeutralActionFamily(action)));
+  if (cooled.length >= 3) return cooled;
+  const orderedFamilies = [...blockedFamilies];
+  const refill = (family) => {
+    for (const action of actions) {
+      if (stateNeutralActionFamily(action) !== family || cooled.some((entry) => entry.id === action.id)) continue;
+      cooled.push(action);
+      if (cooled.length >= 3) return true;
+    }
+    return false;
+  };
+  for (const family of orderedFamilies.slice(1).reverse()) {
+    if (refill(family)) return cooled;
+  }
+  if (orderedFamilies[0]) refill(orderedFamilies[0]);
+  return cooled;
+}
+
 function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   if (runtime.pendingBattle?.session?.status === "active") return [];
   if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
   syncAuthoritativePresentNpcIds(runtime, data);
   const authored = openingChoiceActions(runtime);
   if (authored) return authored.map((action) => decorateWorkOfferAction(action, runtime, data, action.targetNpcId)).filter(Boolean);
+  const weaponShopFirstChoices = capitalWeaponShopFirstChoiceActions(runtime, data);
+  if (weaponShopFirstChoices) return weaponShopFirstChoices;
   const workOfferChoices = pendingWorkOfferActions(runtime, data);
   if (workOfferChoices) return workOfferChoices;
   if (runtime.tutorial && ["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) return [];
-  const followup = dialogueFollowupActions(runtime);
+  const followup = dialogueFollowupActions(runtime, data);
   if (followup) return followup;
+  const authoredFlowExclusive = authoredMissionFlowExclusiveActions(runtime, {
+    presentNpcs: presentNpcsAt(runtime, data),
+    movementActions: movementActions(runtime, data),
+  });
+  if (authoredFlowExclusive) return authoredFlowExclusive;
+  const weatherAmbientPrompt = authoredWeatherAmbientPromptAction(runtime, {
+    presentNpcs: presentNpcsAt(runtime, data),
+  });
   const authorizedMissionActions = new Map();
   const generated = journey.generateChoiceActions(
     runtime.playerState,
@@ -1312,7 +1626,9 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     data,
   )).filter(Boolean).filter((action) => !(action.missionId === "MSN-T01"
     && action.stepId === "decide"
-    && !ensureT01EscortState(runtime).arrivedSquare));
+    && !ensureT01EscortState(runtime).arrivedSquare))
+    .filter((action) => t01FocusedChoiceAllowed(action, runtime))
+    .filter((action) => !suppressGenericAuthoredMissionAction(runtime, action));
   const missionConversationTargets = new Set(generated
     .filter((action) => action.missionId && action.type === "conversation" && action.targetNpcId)
     .map((action) => action.targetNpcId));
@@ -1324,15 +1640,34 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     if (action.missionId) return 0;
     if (action.type === "localInvestigate") return 1;
     if (action.type === "conversation" && !action.workOffer) return 2;
+    if (action.weatherAmbientPrompt) return 2.5;
     const hasLearnedSkill = runtime.playerState.player.skills.size > 0;
     if (action.workOffer) return hasLearnedSkill ? 4 : 3;
     if (action.type === "seekBattle") return hasLearnedSkill ? 3 : 4;
     return 5;
   };
-  const prioritized = deduplicated
+  const authoredFlowEvidence = authoredMissionFlowEvidenceAction(runtime);
+  const prioritized = [
+    ...(authoredFlowEvidence ? [authoredFlowEvidence] : []),
+    ...(weatherAmbientPrompt ? [weatherAmbientPrompt] : []),
+    ...deduplicated,
+  ]
     .map((action, index) => ({ action, index }))
     .sort((left, right) => actionPriority(left.action) - actionPriority(right.action) || left.index - right.index)
     .map((entry) => entry.action);
+  const movementPool = (!runtime.tutorial || runtime.tutorial.stage === "free")
+    ? movementActions(runtime, data)
+    : [];
+  const movementCandidates = [
+    ...movementPool.filter((action) => action.capitalArrivalGuidance === true),
+    ...movementPool.filter((action) => action.movementScope === "regional"),
+    ...movementPool.filter((action) => action.movementScope === "local" && action.capitalArrivalGuidance !== true),
+  ].slice(0, 12).map((action) => ({
+    ...action,
+    label: action.movementScope === "regional"
+      ? `${action.destinationHub}へ旅立つ`
+      : `${data.model.facilityById[action.destinationFacilityId]?.name ?? action.destinationFacilityId}へ向かう`,
+  }));
   const hasWorkCandidate = prioritized.some((action) => action.workOffer === true || action.type === "work");
   const localWorkCandidate = hasWorkCandidate
     ? null
@@ -1343,7 +1678,7 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
     { id: "TUTORIAL:PAUSE:WAIT", type: "wait", minutes: 30, label: "物音と人の動きが変わるまで、少し待つ" },
     { id: "TUTORIAL:PAUSE:PLAN", type: "plan", minutes: 30, label: "知っている噂と目的を照らし合わせ、次の一手を決める" },
   ].map((action) => contextualLocalAction(action, runtime, data)).filter(Boolean);
-  const combined = [...prioritized, ...fillers]
+  const combined = [...prioritized, ...fillers, ...movementCandidates]
     .map((action, index) => ({ action, index }))
     .sort((left, right) => actionPriority(left.action) - actionPriority(right.action) || left.index - right.index)
     .map((entry) => entry.action);
@@ -1351,7 +1686,30 @@ function choiceActionPool(runtime, data, { limit = 9 } = {}) {
   const eligible = !runtime.tutorial || runtime.tutorial.stage === "free"
     ? unique
     : unique.filter((action) => !["seekBattle", "missionBattle", "investigate"].includes(action.type));
-  return eligible.slice(0, Math.max(3, Math.min(12, Number(limit) || 9)));
+  const cooled = suppressRecentStateNeutralActions(eligible, runtime);
+  const cap = Math.max(3, Math.min(12, Number(limit) || 9));
+  const selected = cooled.slice(0, cap);
+  if (cap > 3 && movementCandidates.length) {
+    const requiredMovements = [
+      movementCandidates.find((action) => action.capitalArrivalGuidance === true),
+      movementCandidates.find((action) => action.movementScope === "regional"),
+      movementCandidates[0],
+    ].filter(Boolean).filter((action, index, entries) => entries.findIndex((entry) => entry.id === action.id) === index);
+    for (const movement of requiredMovements) {
+      if (selected.some((entry) => entry.id === movement.id)) continue;
+      if (selected.length < cap) selected.push(movement);
+      else {
+        const replaceIndex = [...selected].map((action, index) => ({ action, index })).reverse()
+          .find(({ action }) => !action.missionId && action.capitalArrivalGuidance !== true)?.index;
+        if (replaceIndex != null) selected[replaceIndex] = movement;
+      }
+    }
+  }
+  return selected;
+}
+
+export function availableGameRuntimeChoiceCandidates(runtime, data, options = {}) {
+  return choiceActionPool(runtime, data, options);
 }
 
 function narrativeChoicePoolKey(runtime, actions) {
@@ -1365,7 +1723,7 @@ function narrativeChoicePoolKey(runtime, actions) {
   })).slice(0, 24);
 }
 
-function generatedChoiceDetail(action, runtime, selection) {
+function generatedChoiceDetail(action, runtime, selection, data) {
   const detail = selection?.detailsById?.[action.id];
   if (!detail) return action;
   let resolved = {
@@ -1382,46 +1740,120 @@ function generatedChoiceDetail(action, runtime, selection) {
       : "low";
     const minutes = { short: 120, half_day: 240, full_day: 480 }[durationClass];
     const description = cleanText(detail.workProposal.title, 120);
-    const wage = deterministicWorkWage(runtime, runtime.playerState.player.facilityId, action.targetNpcId, { minutes, riskClass });
-    resolved = {
-      ...resolved,
-      quotedWage: wage,
-      workDescription: description,
-      workDurationMinutes: minutes,
-      workRiskClass: riskClass,
-      requiredDisclosure: `仕事は「${description}」、所要時間は${minutes}分、報酬は${wage}G`,
-    };
+    const facilityId = runtime.playerState.player.facilityId;
+    const facility = data.model.facilityById[facilityId] ?? {};
+    const availability = workAvailability(runtime, {
+      facility,
+      facilityId,
+      employerId: action.targetNpcId,
+      durationMinutes: minutes,
+      startOffsetMinutes: Number(action.minutes ?? 6),
+    });
+    if (availability.available) {
+      const specification = { facilityId, employerId: action.targetNpcId, title: description, durationMinutes: minutes, riskClass };
+      const wage = deterministicWorkWage(runtime, specification);
+      resolved = {
+        ...resolved,
+        workOfferId: workOfferId(runtime, specification),
+        quotedWage: wage,
+        workDescription: description,
+        workDurationMinutes: minutes,
+        workRiskClass: riskClass,
+        requiredDisclosure: `仕事は「${description}」、所要時間は${minutes}分、報酬は${wage}G`,
+      };
+    } else {
+      resolved = { ...action, label: action.label, generatedApproach: null };
+    }
   }
   return resolved;
 }
 
-function selectedChoiceActions(runtime, actions) {
+function ensureRegionalTravelChoice(selected, candidates, runtime) {
+  const current = Array.isArray(selected) ? [...selected] : [];
+  if (runtime.tutorial && runtime.tutorial.stage !== "free") return current;
+  if (runtime.dialogueSession) return current;
+  if (capitalWeaponShopFirstInteractionActive(runtime)) return current;
+  if (current.some((action) => action.movementScope === "regional")) return current;
+  const visitedHubs = runtime.playerState.progress?.travel?.visitedHubs instanceof Set
+    ? runtime.playerState.progress.travel.visitedHubs
+    : new Set(runtime.playerState.progress?.travel?.visitedHubs ?? []);
+  const regional = (Array.isArray(candidates) ? candidates : [])
+    .filter((action) => action?.movementScope === "regional")
+    .sort((left, right) => Number(visitedHubs.has(left.destinationHub)) - Number(visitedHubs.has(right.destinationHub))
+      || Number(left.minutes ?? Infinity) - Number(right.minutes ?? Infinity)
+      || String(left.destinationHub ?? "").localeCompare(String(right.destinationHub ?? ""), "ja"))[0];
+  if (!regional) return current;
+  const travel = { ...regional, regionalTravelFreedom: true };
+  if (current.length < 3) return [...current, travel];
+  const indexed = [...current].map((action, index) => ({ action, index })).reverse();
+  const routineIndex = indexed.find(({ action }) => !action.missionId
+    && action.capitalArrivalGuidance !== true
+    && (["wait", "plan", "observe"].includes(action.type) || action.movementScope === "local"))?.index;
+  const capitalGuideVisible = current.some((action) => action.capitalArrivalGuidance === true);
+  const capitalFallbackIndex = capitalGuideVisible
+    ? indexed.find(({ action }) => !action.missionId
+      && action.capitalArrivalGuidance !== true
+      && !["eat", "rest"].includes(action.type))?.index
+    : null;
+  const replaceIndex = routineIndex ?? capitalFallbackIndex;
+  if (replaceIndex == null) return current;
+  current[replaceIndex] = travel;
+  return current;
+}
+
+function selectedChoiceActions(runtime, actions, data) {
   if (!actions.length) return [];
   const key = narrativeChoicePoolKey(runtime, actions);
   const selection = runtime.narrativeChoiceSelection?.poolKey === key
     ? runtime.narrativeChoiceSelection
     : null;
   const byId = new Map(actions.map((action) => [action.id, action]));
-  const selected = [];
+  const preferred = [];
   for (const id of selection?.actionIds ?? []) {
     const action = byId.get(id);
-    if (action && !selected.some((entry) => entry.id === id)) selected.push(action);
-    if (selected.length >= 3) break;
+    if (action && !preferred.some((entry) => entry.id === id)) preferred.push(action);
+    if (preferred.length >= 3) break;
   }
-  for (const action of actions) {
-    if (selected.length >= 3) break;
-    if (!selected.some((entry) => entry.id === action.id)) selected.push(action);
+  const ordered = [
+    ...preferred,
+    ...actions.filter((action) => !preferred.some((entry) => entry.id === action.id)),
+  ];
+  const expectedCount = Math.min(3, actions.length);
+  const reviewedOrder = actions.slice(0, expectedCount);
+  const leadingMissionBranch = reviewedOrder;
+  const preservesReviewedMissionBranch = expectedCount === 3
+    && leadingMissionBranch.every((action) => action.missionId
+      && action.missionId === leadingMissionBranch[0].missionId
+      && action.stepId
+      && action.stepId === leadingMissionBranch[0].stepId);
+  const preserveReviewedOrder = (runtime.tutorial && runtime.tutorial.stage !== "free")
+    || actions.some((action) => action.authoredMissionFlowExclusiveChoice === true)
+    || actions.every((action) => action.capitalWeaponShopFirstChoice === true)
+    || preservesReviewedMissionBranch
+    || actions.some((action) => /^WORK_(?:CONFIRM|CLARIFY|DECLINE):/u.test(String(action.id ?? "")));
+  const diverse = preserveReviewedOrder
+    ? reviewedOrder
+    : selectDiverseChoices(ordered, { expectedCount });
+  const selected = [
+    ...diverse,
+    ...ordered.filter((action) => !diverse.some((entry) => entry.id === action.id)),
+  ].slice(0, expectedCount);
+  if (selected.some((action) => action.authoredMissionFlowExclusiveChoice === true)) {
+    return withChoiceIds(selected.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
   }
-  return withChoiceIds(selected.slice(0, 3).map((action) => generatedChoiceDetail(action, runtime, selection)));
+  const guided = ensureCapitalWeaponShopChoice(selected, actions, runtime);
+  const withTravel = ensureRegionalTravelChoice(guided, actions, runtime);
+  return withChoiceIds(withTravel.map((action) => generatedChoiceDetail(action, runtime, selection, data)));
 }
 
 function choiceActions(runtime, data) {
-  return selectedChoiceActions(runtime, choiceActionPool(runtime, data));
+  return selectedChoiceActions(runtime, choiceActionPool(runtime, data), data);
 }
 
 function movementActions(runtime, data) {
   if (runtime.pendingBattle?.session?.status === "active") return [];
   if (runtime.playerState.absoluteMinute >= journey.GAME_END_MINUTE) return [];
+  refreshCapitalPublicRoutes(runtime, data);
   const knowledge = ensurePlayerKnowledge(runtime);
   for (const rumor of runtime.playerState.rumors ?? []) {
     if (runtime.playerState.player.knownRumorIds.has(rumor.id) && rumor.origin) knowledge.knownHubIds.add(rumor.origin);
@@ -1438,11 +1870,16 @@ function movementActions(runtime, data) {
     if (step?.targetLocation) knowledge.knownHubIds.add(step.targetLocation);
     if (step?.targetFacilityId) knowledge.knownFacilityIds.add(step.targetFacilityId);
   }
+  const facilityWorldState = { day: runtime.playerState.day, troubles: runtime.playerState.troubles };
   const actions = journey.availableMovementActions(runtime.playerState, data.model)
+    .filter((action) => action.movementScope !== "local"
+      || facilityVisibility(action.destinationFacilityId, facilityWorldState).visible)
     .filter((action) => action.movementScope === "local"
       ? knowledge.knownFacilityIds.has(action.destinationFacilityId)
       : knowledge.knownHubIds.has(action.destinationHub));
-  if (!runtime.tutorial || runtime.tutorial.stage === "free") return actions;
+  if (!runtime.tutorial || runtime.tutorial.stage === "free") {
+    return prioritizeCapitalWeaponShopMovement(actions, runtime);
+  }
   if (!["movement", "mission_intro", "movement_aftermath", "aftermath_intro"].includes(runtime.tutorial.stage)) return [];
   if (["movement", "movement_aftermath"].includes(runtime.tutorial.stage)) {
     return actions
@@ -1682,6 +2119,7 @@ function applyLocallyLearnedRumorsToMissionHearSteps(runtime, learnedRumorIds = 
     if (!mission || !hear || !["active", "available", "in_progress"].includes(mission.status)) continue;
     const required = Math.max(1, Number(hear.required ?? 1));
     if (Number(mission.progress?.hear ?? 0) >= required) continue;
+    initializeAuthoredMissionFlowForMission(runtime, definition.id);
     mission.progress.hear = required;
     state.history.push({
       type: "MISSION_HEAR_SATISFIED_BY_LOCAL_RUMOR",
@@ -1843,6 +2281,10 @@ function stabilizeOpeningTutorialCast(runtime) {
 
 function updateDialogueSession(runtime, action) {
   if (!action) return;
+  if (action.dialogueExit === true) {
+    runtime.dialogueSession = null;
+    return;
+  }
   if (action.dialogueFollowup) {
     const session = runtime.dialogueSession;
     if (!session || session.npcId !== action.targetNpcId) {
@@ -1869,6 +2311,7 @@ function updateDialogueSession(runtime, action) {
   if (action.type === "conversation"
     && action.targetNpcId
     && (!action.missionId || Boolean(action.requiredDisclosure))
+    && action.singleTurnConversation !== true
     && !action.tutorialBeat) {
     action.conversationTurn = 1;
     action.previouslyAskedTopics = [];
@@ -1930,6 +2373,11 @@ function resolvedActionForPresentation(action) {
     workDecline: Boolean(action.workDecline),
     quotedWage: Number.isFinite(Number(action.quotedWage)) ? Number(action.quotedWage) : null,
     workDescription: cleanText(action.workDescription, 180) || null,
+    lodging: action.lodging === true,
+    price: Number.isFinite(Number(action.price)) ? Number(action.price) : null,
+    nutrition: Number.isFinite(Number(action.nutrition)) ? Number(action.nutrition) : null,
+    mealQuality: cleanText(action.mealQuality, 40) || null,
+    safety: cleanText(action.safety, 40) || null,
     localVariant: Number(action.localVariant ?? 0),
     destinationFacilityId: action.destinationFacilityId ?? null,
     destinationHub: action.destinationHub ?? null,
@@ -1940,6 +2388,8 @@ function resolvedActionForPresentation(action) {
     approachId: cleanText(action.approachId, 80) || null,
     discoveryId: cleanText(action.discoveryId, 120) || null,
     discoveryText: cleanText(action.discoveryText, 500) || null,
+    authoredMissionFlowResolutionRouteId:
+      cleanText(action.authoredMissionFlowResolutionRouteId, 160) || null,
   };
 }
 
@@ -2151,6 +2601,21 @@ function interactiveBattleView(runtime, data) {
 
 function safeOutcome(result, data = null) {
   const output = { ok: result?.ok !== false, type: result?.type ?? null, reason: result?.reason ?? null };
+  if (result?.troubleStatusAtResolution) {
+    output.troubleStatusAtResolution = cleanText(result.troubleStatusAtResolution, 40);
+  }
+  if (result?.requiredGold !== undefined) output.requiredGold = Number(result.requiredGold);
+  if (result?.meal) output.meal = { ...result.meal };
+  if (result?.rest) output.rest = { ...result.rest };
+  if (result?.comparison) output.comparison = JSON.parse(JSON.stringify(result.comparison));
+  if (result?.offerId) output.offerId = cleanText(result.offerId, 160);
+  if (result?.loanId) output.loanId = cleanText(result.loanId, 160);
+  if (result?.rewardId) output.rewardId = cleanText(result.rewardId, 160);
+  if (result?.conditionLabel) output.conditionLabel = cleanText(result.conditionLabel, 80);
+  if (result?.deposit !== undefined) output.deposit = Number(result.deposit);
+  if (result?.depositRefunded !== undefined) output.depositRefunded = Number(result.depositRefunded);
+  if (result?.equipmentRewardOffers?.length) output.equipmentRewardOffers = result.equipmentRewardOffers.map((entry) => ({ ...entry }));
+  if (result?.equipmentLoanReturns?.length) output.equipmentLoanReturns = result.equipmentLoanReturns.map((entry) => ({ ...entry }));
   if (result?.reasonDetail) output.reasonDetail = cleanText(result.reasonDetail, 240);
   if (result?.command && typeof result.command === "object") {
     output.command = {
@@ -2219,7 +2684,19 @@ function replayOutcome(outcome) {
 
 function errorFromResult(result) {
   const code = result?.reason ?? "command_rejected";
-  const status = ["insufficient_gold", "insufficient_sp"].includes(code) ? 409 : 400;
+  const status = [
+    "insufficient_gold",
+    "insufficient_sp",
+    "insufficient_gold_for_meal",
+    "insufficient_gold_for_lodging",
+    "used_offer_unavailable",
+    "used_offer_claimed",
+    "loan_unavailable",
+    "loan_already_active",
+    "loan_not_active",
+    "loan_return_wrong_facility",
+    "reward_unavailable",
+  ].includes(code) ? 409 : 400;
   return new TrpgGameError(status, code, code, safeOutcome(result));
 }
 
@@ -2227,7 +2704,7 @@ function equip(runtime, data, equipmentId) {
   const state = runtime.playerState;
   const equipment = data.battleData.equipmentById.get(equipmentId);
   if (!equipment) return { ok: false, reason: "unknown_equipment" };
-  if (Number(state.player.inventory.equipment[equipmentId] ?? 0) <= 0) return { ok: false, reason: "not_owned" };
+  if (!equipmentAvailableToPlayer(state, equipmentId)) return { ok: false, reason: "not_owned_or_borrowed" };
   if (equipment.slot === "mainHand" && ["twoHand", "twoHanded"].includes(equipment.grip) && state.player.equipment.offHand) {
     const removedEquipmentId = state.player.equipment.offHand;
     delete state.player.equipment.offHand;
@@ -2268,6 +2745,51 @@ function unequip(runtime, slot) {
   return { ok: true, type: "unequip", equipmentId, slot };
 }
 
+function equipmentComparisonSummary(comparison) {
+  const labels = {
+    physicalPower: "物理",
+    magicPower: "魔導",
+    defense: "防御",
+    magicResistance: "魔防",
+    agility: "敏捷",
+    luck: "幸運",
+    accuracy: "命中",
+    evasion: "回避",
+    critical: "会心",
+    maxHp: "HP",
+    maxMp: "MP",
+    performanceIndex: "総合",
+  };
+  const changes = Object.entries(comparison?.delta ?? {})
+    .filter(([, value]) => Number(value) !== 0)
+    .sort((left, right) => Math.abs(Number(right[1])) - Math.abs(Number(left[1])))
+    .slice(0, 4)
+    .map(([key, value]) => (labels[key] ?? key) + (Number(value) > 0 ? "+" : "") + Number(value));
+  return changes.length ? changes.join("、") : "主要性能に差はない";
+}
+
+export function reconcileEquipmentAccessAfterCommand(runtime, data, completedMissionIdsBefore = new Set()) {
+  const state = runtime.playerState;
+  ensureEquipmentAccessState(state);
+  const completed = state.progress?.missions?.completedIds instanceof Set
+    ? state.progress.missions.completedIds
+    : new Set(state.progress?.missions?.completedIds ?? []);
+  const definitions = [...(state.catalog?.special ?? []), ...(state.catalog?.permanent ?? [])];
+  const rewards = [];
+  for (const missionId of completed) {
+    if (completedMissionIdsBefore.has(missionId)) continue;
+    const definition = state.catalog?.byId?.get?.(missionId)
+      ?? definitions.find((entry) => entry.id === missionId);
+    if (!definition) continue;
+    const reward = createMissionEquipmentRewardOffer(state, data.battleData, definition, {
+      facilityId: state.player.facilityId,
+    });
+    if (reward) rewards.push(reward);
+  }
+  const returns = reconcileEquipmentLoans(state);
+  return { rewards, returns };
+}
+
 function withTemporaryTuning(state, key, value, operation) {
   const existed = Object.hasOwn(state.tuning, key);
   const previous = state.tuning[key];
@@ -2282,6 +2804,10 @@ function withTemporaryTuning(state, key, value, operation) {
 
 export function executeGameRuntimeCommand(runtime, data, command) {
   if (!COMMAND_TYPES.has(command.type)) throw new TrpgGameError(400, "unknown_command_type");
+  ensurePlayerNeeds(runtime.playerState.player);
+  ensureEquipmentAccessState(runtime.playerState);
+  ensureWorkMarket(runtime);
+  runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
   const activeBattle = runtime.pendingBattle?.session?.status === "active";
   if (activeBattle && command.type !== "BATTLE_ACT") {
     throw new TrpgGameError(409, "battle_command_required", "Finish or flee from the current battle first");
@@ -2297,6 +2823,11 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     MOVE: "movement",
     SHOP_BUY: "shop",
     SHOP_SELL: "shop",
+    SHOP_TRY: "shop",
+    SHOP_BUY_USED: "shop",
+    SHOP_BORROW: "shop",
+    SHOP_RETURN_LOAN: "shop",
+    CLAIM_EQUIPMENT_REWARD: "shop",
     LEARN_SKILL: "skills",
   }[command.type];
   if (runtime.tutorial && tutorialFeature && tutorialView(runtime, data)?.unlocked?.[tutorialFeature] !== true) {
@@ -2311,20 +2842,56 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   const levelBefore = Number(runtime.playerState.player.level ?? 1);
   const expBefore = Number(runtime.playerState.player.exp ?? 0);
   const previousTroubleStates = Object.fromEntries(Object.entries(runtime.playerState.troubles).map(([id, value]) => [id, value.status]));
+  const completedMissionIdsBefore = runtime.playerState.progress?.missions?.completedIds instanceof Set
+    ? new Set(runtime.playerState.progress.missions.completedIds)
+    : new Set(runtime.playerState.progress?.missions?.completedIds ?? []);
   let result;
   let resolvedActionId = null;
   let resolvedPlayerAction = null;
   let deferredMissionConversation = null;
-  if (command.type === "CHOOSE") {
-    const choices = choiceActions(runtime, data);
-    const action = choices.find((entry) => entry.choiceId === payload.choiceId);
-    if (!action) throw new TrpgGameError(400, "choice_not_available");
-    if (payload.actionId && payload.actionId !== action.id) {
+  if (["CHOOSE", "TALK"].includes(command.type)) {
+    const choices = command.type === "TALK"
+      ? directNpcConversationActions(runtime, data)
+      : choiceActions(runtime, data);
+    const action = command.type === "TALK"
+      ? choices.find((entry) => entry.targetNpcId === payload.npcId)
+      : choices.find((entry) => entry.choiceId === payload.choiceId);
+    if (!action) {
+      throw new TrpgGameError(400, command.type === "TALK" ? "npc_talk_not_available" : "choice_not_available");
+    }
+    if (command.type === "CHOOSE" && payload.actionId && payload.actionId !== action.id) {
       throw new TrpgGameError(409, "choice_action_mismatch", "The displayed choice no longer resolves to the same action", {
         choiceId: payload.choiceId,
         displayedActionId: payload.actionId,
         currentActionId: action.id,
       });
+    }
+    const currentFacility = data.model.facilityById[runtime.playerState.player.facilityId] ?? {};
+    if (action.workOffer) {
+      const availability = workAvailability(runtime, {
+        facility: currentFacility,
+        facilityId: runtime.playerState.player.facilityId,
+        employerId: action.targetNpcId,
+        durationMinutes: Number(action.workDurationMinutes ?? 120),
+        startOffsetMinutes: Number(action.minutes ?? 6),
+      });
+      if (!availability.available) {
+        throw new TrpgGameError(409, "work_offer_not_available", "The work offer is no longer available", { reason: availability.reason });
+      }
+    }
+    if (action.type === "work") {
+      const offer = runtime.pendingWorkOffer;
+      const matches = Boolean(offer
+        && action.workOfferId
+        && offer.offerId === action.workOfferId
+        && offer.facilityId === runtime.playerState.player.facilityId
+        && offer.actorNpcId === action.workEmployerId);
+      if (!matches) throw new TrpgGameError(409, "work_offer_stale", "The work offer no longer matches the current job");
+      const availability = pendingWorkOfferAvailability(runtime, currentFacility);
+      if (!availability.available) {
+        runtime.pendingWorkOffer = null;
+        throw new TrpgGameError(409, "work_offer_not_available", "The work offer is no longer available", { reason: availability.reason });
+      }
     }
     resolvedPlayerAction = action;
     resolvedActionId = action.id;
@@ -2363,6 +2930,19 @@ export function executeGameRuntimeCommand(runtime, data, command) {
           summary: "敵と遭遇した。次の行動を選ぶ。",
         };
       }
+    } else if (action.type === "move" && action.movementScope) {
+      const resolve = () => journey.resolveMovementAction(
+        runtime.playerState,
+        data.model,
+        data.battleData,
+        data.skills,
+        profileFor(runtime.playerState.profileId),
+        action,
+      );
+      const resolveWithPlayback = () => withTemporaryTuning(runtime.playerState, "captureBattleTimeline", true, resolve);
+      result = action.movementScope === "regional" && runtime.tutorial && runtime.playerState.player.skills.size === 0
+        ? withTemporaryTuning(runtime.playerState, "disableTravelEncounters", true, resolveWithPlayback)
+        : resolveWithPlayback();
     } else {
       const resolve = () => journey.resolvePlayerAction(
         runtime.playerState,
@@ -2387,7 +2967,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     const action = movementActions(runtime, data).find((entry) => entry.id === payload.moveId);
     if (!action) throw new TrpgGameError(400, "movement_not_available");
     resolvedPlayerAction = action;
-    resolvedActionId = action.id;
+    resolvedActionId = (action.id); // MOVE uses the same authoritative action object.
     const resolve = () => journey.resolveMovementAction(
       runtime.playerState,
       data.model,
@@ -2414,6 +2994,50 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   } else if (command.type === "SHOP_SELL") {
     resolvedActionId = payload.equipmentId;
     result = sellEquipment(runtime.playerState, data.battleData, runtime.playerState.shop, payload.equipmentId);
+  } else if (command.type === "SHOP_TRY") {
+    resolvedActionId = payload.stockId;
+    result = previewEquipmentTrial(runtime.playerState, data.battleData, runtime.playerState.shop, payload.stockId, {
+      location: runtime.playerState.player.location,
+      facilityId: runtime.playerState.player.facilityId,
+    });
+    if (result.ok) {
+      result.summary = result.comparison.candidateEquipmentName + "を試し、" + result.comparison.currentEquipmentName + "との差を確認した（" + equipmentComparisonSummary(result.comparison) + "）。";
+    }
+  } else if (command.type === "SHOP_BUY_USED") {
+    resolvedActionId = payload.offerId;
+    result = buyUsedEquipment(runtime.playerState, data.battleData, runtime.playerState.shop, payload.offerId, {
+      location: runtime.playerState.player.location,
+      facilityId: runtime.playerState.player.facilityId,
+    });
+    if (result.ok) {
+      result.equipment = data.battleData.equipmentById.get(result.equipmentId);
+      result.summary = result.equipment.name + "を中古品として" + result.price + "Gで購入した（" + result.conditionLabel + "）。";
+      runtime.playerState.metrics.purchases += 1;
+      runtime.playerState.metrics.zeroTimePurchases += 1;
+    }
+  } else if (command.type === "SHOP_BORROW") {
+    resolvedActionId = payload.loanId;
+    result = borrowMissionEquipment(runtime.playerState, data.battleData, runtime.playerState.shop, payload.loanId, {
+      location: runtime.playerState.player.location,
+      facilityId: runtime.playerState.player.facilityId,
+    });
+    if (result.ok) {
+      result.equipment = data.battleData.equipmentById.get(result.equipmentId);
+      result.summary = result.equipment.name + "を「" + result.missionTitle + "」の間だけ借りた。保証金は" + result.deposit + "G。";
+    }
+  } else if (command.type === "SHOP_RETURN_LOAN") {
+    resolvedActionId = payload.loanId;
+    result = returnEquipmentLoan(runtime.playerState, payload.loanId, {
+      facilityId: runtime.playerState.player.facilityId,
+    });
+    if (result.ok) {
+      result.equipment = data.battleData.equipmentById.get(result.equipmentId);
+      result.summary = result.equipment.name + "を返却し、保証金" + result.depositRefunded + "Gを受け取った。";
+    }
+  } else if (command.type === "CLAIM_EQUIPMENT_REWARD") {
+    resolvedActionId = payload.rewardId;
+    result = claimEquipmentReward(runtime.playerState, data.battleData, payload.rewardId);
+    if (result.ok) result.summary = "依頼報酬として" + result.equipment.name + "を受け取った。";
   } else if (command.type === "EQUIP") {
     resolvedActionId = payload.equipmentId;
     result = equip(runtime, data, payload.equipmentId);
@@ -2491,6 +3115,12 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     }
   }
   if (!result?.ok && result?.committed !== true) throw errorFromResult(result);
+  if ((result?.ok || result?.committed === true) && resolvedPlayerAction?.capitalWeaponShopFirstChoice) {
+    completeCapitalWeaponShopFirstInteraction(runtime, {
+      choiceId: resolvedPlayerAction.id,
+      absoluteMinute: runtime.playerState.absoluteMinute,
+    });
+  }
   if ((result?.ok || result?.committed === true)
     && pendingIntroductionAtStart
     && !["ACK_NPC_INTRODUCTION", "TUTORIAL_ACK"].includes(command.type)
@@ -2501,21 +3131,27 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     runtime.pendingNpcIntroduction = null;
   }
   if (result.ok && resolvedPlayerAction?.workOffer) {
+    const facilityId = runtime.playerState.player.facilityId;
+    const description = resolvedPlayerAction.workDescription ?? workDescription(facilityId);
+    const minutes = Number(resolvedPlayerAction.workDurationMinutes ?? 120);
+    const riskClass = resolvedPlayerAction.workRiskClass ?? "low";
+    const specification = {
+      facilityId,
+      employerId: resolvedPlayerAction.targetNpcId,
+      title: description,
+      durationMinutes: minutes,
+      riskClass,
+    };
     runtime.pendingWorkOffer = {
-      facilityId: runtime.playerState.player.facilityId,
+      offerId: resolvedPlayerAction.workOfferId ?? workOfferId(runtime, specification),
+      day: runtime.playerState.day,
+      facilityId,
       actorNpcId: resolvedPlayerAction.targetNpcId,
       actorName: resolvedPlayerAction.targetNpcName,
-      description: resolvedPlayerAction.workDescription ?? workDescription(runtime.playerState.player.facilityId),
-      wage: Number(resolvedPlayerAction.quotedWage ?? deterministicWorkWage(
-        runtime,
-        runtime.playerState.player.facilityId,
-        resolvedPlayerAction.targetNpcId,
-        {
-          minutes: Number(resolvedPlayerAction.workDurationMinutes ?? 120),
-          riskClass: resolvedPlayerAction.workRiskClass ?? "low",
-        },
-      )),
-      minutes: Number(resolvedPlayerAction.workDurationMinutes ?? 120),
+      description,
+      wage: Number(resolvedPlayerAction.quotedWage ?? deterministicWorkWage(runtime, specification)),
+      minutes,
+      riskClass,
       openedAtMinute: runtime.playerState.absoluteMinute,
     };
     result.summary = `${resolvedPlayerAction.targetNpcName ?? "相手"}から仕事内容と賃金を聞いた。引き受けるか選べる。`;
@@ -2543,6 +3179,19 @@ export function executeGameRuntimeCommand(runtime, data, command) {
       locationId: runtime.playerState.player.location,
       recordedAtMinute: runtime.playerState.absoluteMinute,
     };
+    const completedWork = recordCompletedWork(runtime, {
+      offerId: resolvedPlayerAction.workOfferId,
+      facilityId: resolvedPlayerAction.workFacilityId ?? runtime.playerState.player.facilityId,
+      employerId: resolvedPlayerAction.workEmployerId ?? resolvedPlayerAction.sceneActorNpcId,
+      title: completedWorkTitle,
+      riskClass: resolvedPlayerAction.workRiskClass ?? "low",
+      durationMinutes: Number(resolvedPlayerAction.minutes ?? 120),
+      startedAtMinute: Number(resolvedPlayerAction.workStartedAtMinute
+        ?? Math.max(0, runtime.playerState.absoluteMinute - Number(resolvedPlayerAction.minutes ?? 120))),
+      completedAtMinute: runtime.playerState.absoluteMinute,
+      wage: result.goldDelta,
+    });
+    result.workMarketEntry = completedWork;
     result.summary = `${completedWorkTitle}を終え、${result.goldDelta}Gの賃金を受け取った。`;
     runtime.pendingWorkOffer = null;
     runtime.dialogueSession = null;
@@ -2559,7 +3208,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     followFinnDuringMovement(runtime, resolvedPlayerAction, result);
   }
   clearFinnEscortOnFailure(runtime);
-  if (command.type === "MOVE" && result.ok && !result.summary) {
+  if (resolvedPlayerAction?.type === "move" && result.ok && !result.summary) {
     const destinationName = data.model.facilityById[resolvedPlayerAction?.destinationFacilityId]?.name
       ?? resolvedPlayerAction?.destinationHub
       ?? "目的地";
@@ -2580,7 +3229,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     }
   }
   if (result.ok && ["CHOOSE", "MOVE"].includes(command.type)) progressTutorial(runtime, resolvedPlayerAction, result);
-  if (result.ok && command.type === "MOVE") discoverArrival(runtime, data);
+  if (result.ok && resolvedPlayerAction?.type === "move") discoverArrival(runtime, data);
   applyPlayerWorldInterventions(runtime, previousTroubleStates);
   advanceLivingWorld(runtime, runtime.playerState.absoluteMinute);
   reconcileOpeningCrisis(runtime);
@@ -2612,6 +3261,28 @@ export function executeGameRuntimeCommand(runtime, data, command) {
     result.learnedRumorIds = learnedRumorIds;
     runtime.playerState.metrics.actions += 1;
   }
+  if (result.ok) applyAuthoredMissionFlowAction(runtime, resolvedPlayerAction, result);
+  const equipmentAccessChanges = reconcileEquipmentAccessAfterCommand(runtime, data, completedMissionIdsBefore);
+  if (equipmentAccessChanges.rewards.length) {
+    result.equipmentRewardOffers = equipmentAccessChanges.rewards.map((reward) => ({
+      rewardId: reward.rewardId,
+      missionId: reward.missionId,
+      missionTitle: reward.missionTitle,
+      equipmentId: reward.equipmentId,
+      equipmentName: reward.equipmentName,
+    }));
+    const names = equipmentAccessChanges.rewards.map((reward) => reward.equipmentName).join("、");
+    result.summary = (result.summary ? result.summary + " " : "") + "依頼報酬として受け取れる装備が用意された：" + names + "。";
+  }
+  if (equipmentAccessChanges.returns.length) {
+    result.equipmentLoanReturns = equipmentAccessChanges.returns.map((entry) => ({
+      loanId: entry.loanId,
+      equipmentId: entry.equipmentId,
+      depositRefunded: entry.depositRefunded,
+    }));
+    const refund = equipmentAccessChanges.returns.reduce((sum, entry) => sum + Number(entry.depositRefunded ?? 0), 0);
+    result.summary = (result.summary ? result.summary + " " : "") + "依頼用の借用品を返却し、保証金" + refund + "Gが戻った。";
+  }
   if (resolvedPlayerAction?.firstIntroduction && resolvedPlayerAction.targetNpcId) {
     const targetPresent = runtime.playerState.authoritativePresentNpcIds instanceof Set
       && runtime.playerState.authoritativePresentNpcIds.has(resolvedPlayerAction.targetNpcId);
@@ -2639,6 +3310,7 @@ export function executeGameRuntimeCommand(runtime, data, command) {
   }
   updateDialogueSession(runtime, resolvedPlayerAction);
   expireDialogueSession(runtime);
+  runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
   return {
     resolvedActionId,
     resolvedAction: resolvedActionForPresentation(resolvedPlayerAction),
@@ -3164,6 +3836,16 @@ function guidanceView(runtime, data, missions) {
     deadlineLabel: "捜索失敗",
     actionPanel: null,
   };
+  const authoredFlowGuidance = authoredMissionFlowGuidance(runtime);
+  if (authoredFlowGuidance) {
+    const mission = missions.find((entry) => entry.id === authoredFlowGuidance.missionId);
+    const targetName = authoredFlowGuidance.targetFacilityId ? facilityName(authoredFlowGuidance.targetFacilityId) : null;
+    return {
+      ...authoredFlowGuidance,
+      targetFacilityName: targetName,
+      deadlineLabel: mission?.deadlineLabel ?? null,
+    };
+  }
   const mission = missions.find((entry) => entry.kind === "special" && ["active", "available", "in_progress"].includes(entry.status));
   if (mission) {
     const step = mission.currentStep;
@@ -3207,12 +3889,18 @@ function fallbackNarrative(runtime, action = null, outcome = null) {
   if (actionType === "MOVE") return "移動を終えると、そこにいる人々と店の様子が入れ替わった。";
   if (actionType === "SHOP_BUY") return "品物を受け取り、代金と在庫が帳面に記された。";
   if (actionType === "SHOP_SELL") return "店主は品を確かめ、相応の代金を差し出した。";
+  if (actionType === "SHOP_TRY" || actionType === "SHOP_TRIAL") return "店主の見守る前で装備を構え、今の装備との重さや扱いやすさを比べた。所有権と代金は動いていない。";
+  if (actionType === "SHOP_BUY_USED") return "使い込まれた箇所と手入れの状態を確かめ、中古品として受け取った。";
+  if (actionType === "SHOP_BORROW") return "依頼中だけ使う約束と返却条件を確認し、装備を借り受けた。";
+  if (actionType === "SHOP_RETURN_LOAN") return "借りていた装備を返却し、預けていた保証金を受け取った。";
+  if (actionType === "CLAIM_EQUIPMENT_REWARD") return "依頼への働きが認められ、報酬の装備を受け取った。";
   if (actionType === "LEARN_SKILL") return "積み重ねた経験が、使える技として形になった。";
   return "ひと通り行動を終える頃には、人の流れと空の色が少し変わっていた。";
 }
 
 function playerUtterance(action) {
   if (!action || action.type !== "conversation") return null;
+  if (action.playerUtterance) return cleanText(action.playerUtterance, 240);
   const authored = {
     "contact:where": "ここは、どこですか？",
     "contact:memory": "ここは、私の知っている世界ではありません。",
@@ -3475,6 +4163,22 @@ function deterministicFallbackPresentation(runtime, data, action, outcome) {
     }[facilityId] ?? `${facilityName}へ着いた。人の流れと周囲の様子を確かめ、ここで次に何をするか選べる。`;
     return { narrative, speeches: [] };
   }
+  if (resolved?.type === "eat") {
+    return {
+      narrative: outcome?.meal?.hungerReduced
+        ? "温かい食事を取り、空腹が和らいだ。次に歩けるだけの力が戻るまで腰を落ち着けた。"
+        : "食事を取り、次の行動に備えた。",
+      speeches: [],
+    };
+  }
+  if (resolved?.type === "rest") {
+    return {
+      narrative: resolved.lodging
+        ? "戸を閉められる寝床を確保し、装備を手の届く所へ置いて横になる。目を覚ます頃には、身体の重さが抜けていた。"
+        : "風と人目を避けられる場所を選び、荷物を抱えたまま短く身体を休める。宿ほど深くは眠れないが、歩き続けるよりはましだ。",
+      speeches: [],
+    };
+  }
   if (["work", "localInvestigate", "wait", "plan"].includes(resolved?.type)) {
     const facilityId = runtime.playerState.player.facilityId;
     const present = presentNpcsAt(runtime, data);
@@ -3488,7 +4192,7 @@ function deterministicFallbackPresentation(runtime, data, action, outcome) {
         LOC_FARM_BAKERY: `粉袋を運び、窯へ入れる薪を長さごとに分ける。焼けた小麦の匂いの中で、店の忙しさが少しだけ和らいだ。`,
         LOC_FARM_WELL: `井戸と家々を何度も往復し、水桶を必要な場所へ届ける。縄の重さと、村で水がどれほど大切かを体で知った。`,
       }[facilityId] ?? `頼まれた荷運びと片づけを終える。土地のやり方を教わりながら働き、短い仕事の区切りをつけた。`;
-      const speeches = actor ? [{ actorId: actor.id, text: `助かったよ。これは今日の分、${wage}Gだ。無理をせず、必要ならまた声をかけな。`, emotion: "感謝" }] : [];
+      const speeches = actor ? [{ actorId: actor.id, text: `助かったよ。これは今日の分、${wage}Gだ。無理をせず、別の日にまた声をかけな。`, emotion: "感謝" }] : [];
       return { narrative, speeches };
     }
     if (resolved.type === "localInvestigate") {
@@ -3641,13 +4345,26 @@ function presentationChoices(record, choices) {
     targetNpcId: action.targetNpcId ?? null,
     missionId: action.missionId ?? null,
     stepId: action.stepId ?? null,
+    movementScope: action.movementScope ?? null,
+    destination: action.destinationHub ?? null,
+    destinationFacilityId: action.destinationFacilityId ?? null,
+    regionalTravelFreedom: action.regionalTravelFreedom === true,
     danger: ["missionBattle", "seekBattle"].includes(action.type),
   }));
 }
 
 export function buildGameView(record, runtime, data) {
   const state = runtime.playerState;
-  const presentNpcs = presentNpcsAt(runtime, data);
+  const weather = resolveCanonicalWeather({
+    day: state.day,
+    regionId: state.player.location,
+    daypart: state.daypart,
+  });
+  const directTalkNpcIds = new Set(directNpcConversationActions(runtime, data).map((action) => action.targetNpcId));
+  const presentNpcs = presentNpcsAt(runtime, data).map((npc) => ({
+    ...npc,
+    directTalkAvailable: directTalkNpcIds.has(npc.id),
+  }));
   const choices = presentationChoices(record, choiceActions(runtime, data));
   const missions = missionView(runtime, data);
   const tutorial = tutorialView(runtime, data);
@@ -3660,8 +4377,19 @@ export function buildGameView(record, runtime, data) {
     destination: action.destinationHub,
     destinationFacilityId: action.destinationFacilityId,
     destinationFacilityName: data.model.facilityById[action.destinationFacilityId]?.name ?? null,
-    recommended: Boolean(guidance?.targetFacilityId && action.destinationFacilityId === guidance.targetFacilityId),
+    recommended: Boolean(
+      (guidance?.targetFacilityId
+        && action.destinationFacilityId === guidance.targetFacilityId)
+      || (guidance?.targetLocation
+        && action.movementScope === "regional"
+        && action.destinationHub === guidance.targetLocation),
+    ),
   }));
+  const equipmentAccessOffers = listEquipmentAccessOffers(state, data.battleData, state.shop, {
+    location: state.player.location,
+    facilityId: state.player.facilityId,
+  });
+  const accessOfferByStockId = new Map(equipmentAccessOffers.map((entry) => [entry.stockId, entry]));
   const stock = availableStockAt(state, data.battleData, state.shop).map((entry) => ({
     stockId: entry.id,
     equipmentId: entry.equipmentId,
@@ -3685,13 +4413,25 @@ export function buildGameView(record, runtime, data) {
       } : null;
     })(),
     slot: data.battleData.equipmentById.get(entry.equipmentId)?.slot ?? null,
+    access: accessOfferByStockId.get(entry.id) ?? null,
   }));
   const equippedSlots = Object.entries(state.player.equipment).map(([slot, id]) => ({ slot, id }));
-  const inventoryEquipment = Object.entries(state.player.inventory.equipment)
+  const activeLoans = activeEquipmentLoans(state);
+  const activeLoanByEquipmentId = new Map(activeLoans.map((loan) => [loan.equipmentId, loan]));
+  const ownedInventoryEquipment = Object.entries(state.player.inventory.equipment)
     .filter(([, quantity]) => Number(quantity) > 0)
-    .map(([id, quantity]) => equipmentView(data, id, Number(quantity), equippedSlots))
+    .map(([id, quantity]) => equipmentView(data, id, Number(quantity), equippedSlots));
+  const loanInventoryEquipment = activeLoans.map((loan) => ({
+    ...equipmentView(data, loan.equipmentId, 0, equippedSlots),
+    borrowed: true,
+    loanId: loan.loanId,
+    missionId: loan.missionId,
+    missionTitle: loan.missionTitle,
+    returnFacilityId: loan.sellerFacilityId,
+  }));
+  const inventoryEquipment = [...ownedInventoryEquipment, ...loanInventoryEquipment]
     .sort((left, right) => left.name.localeCompare(right.name, "ja"));
-  const saleQuotes = inventoryEquipment.map((entry) => {
+  const saleQuotes = ownedInventoryEquipment.map((entry) => {
     const quote = quoteEquipmentSale(state, data.battleData, entry.id);
     return {
       equipmentId: entry.id,
@@ -3700,6 +4440,33 @@ export function buildGameView(record, runtime, data) {
       reason: quote.ok ? null : quote.reason,
     };
   });
+  const equipmentRewards = pendingEquipmentRewards(state).map((reward) => ({
+    ...reward,
+    equipment: (() => {
+      const equipment = data.battleData.equipmentById.get(reward.equipmentId);
+      return equipment ? {
+        slot: equipment.slot,
+        weaponType: equipment.weaponType,
+        physicalPower: equipment.physicalPower,
+        magicPower: equipment.magicPower,
+        defense: equipment.defense,
+        magicResistance: equipment.magicResistance,
+        performanceIndex: equipment.performanceIndex,
+      } : null;
+    })(),
+  }));
+  const publicLoans = activeLoans.map((loan) => ({
+    loanId: loan.loanId,
+    equipmentId: loan.equipmentId,
+    equipmentName: data.battleData.equipmentById.get(loan.equipmentId)?.name ?? loan.equipmentId,
+    missionId: loan.missionId,
+    missionTitle: loan.missionTitle,
+    deposit: Number(loan.deposit ?? 0),
+    sellerFacilityId: loan.sellerFacilityId,
+    sellerFacilityName: data.model.facilityById[loan.sellerFacilityId]?.name ?? loan.sellerFacilityId,
+    canReturnHere: loan.sellerFacilityId === state.player.facilityId,
+    equipped: Object.values(state.player.equipment).includes(loan.equipmentId),
+  }));
   const facility = data.model.facilityById[state.player.facilityId];
   const publicFacility = publicFacilityContext(facility);
   return {
@@ -3718,7 +4485,10 @@ export function buildGameView(record, runtime, data) {
       minute: state.minute,
       daypart: state.daypart,
       absoluteMinute: state.absoluteMinute,
+      weatherId: weather.id,
+      weatherLabel: weather.label,
     },
+    weather,
     scene: {
       location: state.player.location,
       facilityId: state.player.facilityId,
@@ -3738,12 +4508,14 @@ export function buildGameView(record, runtime, data) {
     guidance,
     battle: interactiveBattleView(runtime, data),
     shop: {
-      available: !runtime.pendingBattle?.session || runtime.pendingBattle.session.status !== "active"
-        ? data.battleData.inventory.some((entry) => entry.location === state.player.location && entry.sellerId === state.player.facilityId)
-        : false,
+      available: (!runtime.pendingBattle?.session || runtime.pendingBattle.session.status !== "active")
+        && (stock.length > 0 || publicLoans.some((loan) => loan.canReturnHere) || equipmentRewards.length > 0),
       facilityName: facility?.name ?? null,
       stock,
       saleQuotes,
+      loans: publicLoans,
+      rewards: equipmentRewards,
+      accessVersion: EQUIPMENT_ACCESS_VERSION,
     },
     player: {
       name: record.playerName,
@@ -3754,8 +4526,15 @@ export function buildGameView(record, runtime, data) {
       gold: state.player.gold,
       hpRatio: state.player.hpRatio,
       mpRatio: state.player.mpRatio,
+      needs: publicPlayerNeeds(state.player),
+      freeMeals: Number(state.player.freeMeals ?? 0),
+      freeLodging: Number(state.player.freeLodging ?? 0),
       stats: { ...state.player.stats },
-      equipment: Object.fromEntries(equippedSlots.map(({ slot, id }) => [slot, equipmentView(data, id, state.player.inventory.equipment[id] ?? 0, equippedSlots)])),
+      equipment: Object.fromEntries(equippedSlots.map(({ slot, id }) => [slot, {
+        ...equipmentView(data, id, state.player.inventory.equipment[id] ?? 0, equippedSlots),
+        borrowed: activeLoanByEquipmentId.has(id),
+        loanId: activeLoanByEquipmentId.get(id)?.loanId ?? null,
+      }])),
       inventory: {
         items: { ...state.player.inventory.items },
         equipment: inventoryEquipment,
@@ -3771,6 +4550,11 @@ export function buildGameView(record, runtime, data) {
       ended: state.absoluteMinute >= journey.GAME_END_MINUTE,
       endedAt: state.absoluteMinute >= journey.GAME_END_MINUTE ? "Day 100 24:00" : null,
       knownResolvedTroubleIds: [...state.progress.missions.resolvedTroubleIds].sort(),
+      weatherRulesetVersion: WEATHER_RULESET_VERSION,
+      equipmentAccessVersion: EQUIPMENT_ACCESS_VERSION,
+      workMarketVersion: WORK_MARKET_VERSION,
+      capitalArrivalGuidanceVersion: CAPITAL_ARRIVAL_GUIDANCE_VERSION,
+      workMarket: publicWorkMarket(runtime, facility),
     },
   };
 }
@@ -3796,6 +4580,7 @@ function narrativePublicGoal(npc, npcState) {
   if (npc?.disposition === "escalate") return "自分に不利な話題を避け、相手の出方をうかがう";
   const goal = String(npcState?.currentGoal ?? "");
   if (/respond|assist|search|warn|evacuate|treat/u.test(goal)) return "身近で起きている問題を気にかけている";
+  if (/aftermath|boundary|survivor|audit|seal|watch|patrol|record|den-route/u.test(goal)) return "起きた出来事の後始末と再発防止に動いている";
   if (/rest|recover/u.test(goal)) return "疲れを癒やし、次の行動に備える";
   if (/work|routine/u.test(goal)) return "自分の仕事と日課を進める";
   return "周囲の様子を見ながら、自分の用事を進める";
@@ -3894,12 +4679,21 @@ function narrativeProgressContract(runtime, missions, actions) {
   };
 }
 
-function narrativeWorkMarket(runtime) {
+function narrativeWorkMarket(runtime, data) {
   const location = runtime.playerState.player.location;
+  const facility = data.model.facilityById[runtime.playerState.player.facilityId] ?? {};
+  const market = publicWorkMarket(runtime, facility);
   return {
     region: location,
-    baseHourlyWage: Number(REGION_BASE_HOURLY_WAGE[location] ?? 30),
     daypart: runtime.playerState.daypart,
+    schedule: market.schedule,
+    completedToday: market.completedToday,
+    remainingToday: market.remainingToday,
+    limits: {
+      daily: market.dailyLimit,
+      facility: market.facilityDailyLimit,
+      employer: market.employerDailyLimit,
+    },
     localDemandTags: location === "田園の村"
       ? ["農作業", "収穫", "運搬", "家畜", "生活用水"]
       : location === "王都"
@@ -3907,8 +4701,8 @@ function narrativeWorkMarket(runtime) {
         : ["運搬", "修繕", "案内", "採集", "警備"],
     durationClasses: ["short", "half_day", "full_day"],
     riskClasses: ["low", "medium", "high"],
-    recentWorkTitles: ensureNarrativeMemory(runtime).recentWorkTitles.slice(-8),
-    note: "仕事内容は場所・時刻・人物に合わせて生成し、賃金はサーバーが地域相場・所要時間・危険度から確定する",
+    recentWorkTitles: market.recentWorkTitles,
+    note: "仕事内容は場所・時刻・人物に合わせて生成する。営業時間、日次在庫、雇用主ごとの回数、賃金はサーバーが確定する",
   };
 }
 
@@ -3986,7 +4780,12 @@ function narrativeInput(record, runtime, data, action, outcome) {
       npcs: narrativeNpcs,
       player: {
         displayName: "オレゴン",
-        visibleCondition: "行動可能",
+        visibleCondition: publicPlayerNeeds(runtime.playerState.player).critical
+          ? "空腹か疲労が限界に近い"
+          : publicPlayerNeeds(runtime.playerState.player).urgent
+            ? "空腹か疲労が強い"
+            : "行動可能",
+        needs: publicPlayerNeeds(runtime.playerState.player),
         knownFacts: [
           ...(t01NarrativeRelevant(runtime, resolvedAction, missions) ? openingKnownFactTexts(runtime) : []),
           ...rumors.map((rumor) => rumor.text),
@@ -4005,7 +4804,7 @@ function narrativeInput(record, runtime, data, action, outcome) {
       progressContract,
       continuityContract,
       reactionContract,
-      workMarket: narrativeWorkMarket(runtime),
+      workMarket: narrativeWorkMarket(runtime, data),
       visibleFlags: { ...ensureNarrativeMemory(runtime).semanticFlags },
       availableActionCandidates: choicePool.map((choice) => ({
         id: choice.id,
@@ -4111,6 +4910,92 @@ function applyNarrativeProposalCandidates(runtime, result, playerName) {
   }
 }
 
+function authoredSceneContext(runtime, action, outcome) {
+  const resolved = action?.resolvedAction ?? action ?? {};
+  const state = runtime.playerState;
+  const completedRegionalMoves = state.history.filter((entry) => entry.type === "REGIONAL_MOVE_COMPLETED");
+  const latestRegionalMove = completedRegionalMoves.at(-1) ?? null;
+  const arrivalVisitCount = completedRegionalMoves.filter((entry) => entry.to === state.player.location).length;
+  const t01Escort = ensureT01EscortState(runtime);
+  return {
+    action: {
+      id: resolved.id ?? null,
+      type: resolved.type ?? null,
+      movementScope: resolved.movementScope ?? null,
+      destinationHub: resolved.destinationHub ?? null,
+      destinationFacilityId: resolved.destinationFacilityId ?? null,
+      lodging: resolved.lodging === true,
+      price: Number.isFinite(Number(resolved.price)) ? Number(resolved.price) : null,
+      targetNpcId: resolved.targetNpcId ?? null,
+      dialogueTopic: resolved.dialogueTopic ?? null,
+      authoredMissionFlowResolutionRouteId:
+        resolved.authoredMissionFlowResolutionRouteId ?? null,
+    },
+    outcome: outcome ?? {},
+    mission: {
+      id: resolved.missionId ?? null,
+      stepId: resolved.stepId ?? null,
+    },
+    location: {
+      hub: state.player.location,
+      facilityId: state.player.facilityId,
+    },
+    journey: {
+      fromHub: latestRegionalMove?.from ?? null,
+      toHub: latestRegionalMove?.to ?? null,
+      arrivalVisitCount,
+    },
+    world: {
+      flags: { ...(state.worldFlags ?? {}) },
+    },
+    story: {
+      t01ReunionNow: state.player.facilityId === "LOC_FARM_SQUARE"
+        && t01Escort.reunionBeatAtMinute === state.absoluteMinute,
+      capitalWeaponShopFirstVisitNow: state.player.facilityId === "LOC_CAP_WEAPON_SHOP"
+        && runtime.capitalArrivalGuidance?.visitedAtMinute === state.absoluteMinute,
+      capitalWeaponShopkeeperPresent: (state.authoritativePresentNpcIds instanceof Set
+        ? state.authoritativePresentNpcIds
+        : new Set(state.authoritativePresentNpcIds ?? [])).has("NPC065"),
+    },
+    weather: canonicalWeatherForState(state),
+    player: {
+      needs: publicPlayerNeeds(state.player),
+    },
+  };
+}
+
+function authoredNarrativeForWeather(scene, weather) {
+  const byId = scene?.narrativeByWeatherId?.[weather?.id];
+  if (String(byId ?? "").trim()) return String(byId).trim();
+  const tags = new Set(weather?.tags ?? []);
+  const priority = ["storm", "snow", "rain", "fog", "wind", "dry", "clear"];
+  for (const tag of priority) {
+    const candidate = scene?.narrativeByWeatherTag?.[tag];
+    if (tags.has(tag) && String(candidate ?? "").trim()) return String(candidate).trim();
+  }
+  return String(scene?.narrative ?? "").trim();
+}
+
+export function resolveReviewedAuthoredPresentation(runtime, data, action = null, outcome = null) {
+  const context = authoredSceneContext(runtime, action, outcome);
+  const scene = resolveAuthoredScene(context);
+  if (!scene) return null;
+  const presentIds = new Set(presentNpcsAt(runtime, data).map((npc) => npc.id));
+  const speeches = (scene.beats ?? [])
+    .filter((beat) => beat?.kind === "npc" && beat.actorId && presentIds.has(beat.actorId))
+    .map((beat) => ({
+      actorId: beat.actorId,
+      text: cleanText(beat.text, 500),
+      emotion: cleanText(beat.emotion, 40) || null,
+    }));
+  return {
+    sceneId: scene.sceneId,
+    presentationOnly: scene.presentationOnly === true,
+    narrative: authoredNarrativeForWeather(scene, context.weather),
+    speeches,
+  };
+}
+
 async function updatePresentation(record, runtime, data, narrator, action = null, outcome = null) {
   const fallback = fallbackNarrative(runtime, action, outcome);
   if (["TUTORIAL_ACK", "ACK_NPC_INTRODUCTION"].includes(action?.type) && record.presentation) {
@@ -4125,6 +5010,20 @@ async function updatePresentation(record, runtime, data, narrator, action = null
       source: "authored_tutorial",
       narrative: authored.narrative,
       speeches: authored.speeches.filter((speech) => presentIds.has(speech.actorId)),
+      choiceLabels: {},
+    };
+    record.presentation = presentationWithOrderedBeats(runtime, data, action?.resolvedAction ?? action, base);
+    return;
+  }
+  const reviewed = resolveReviewedAuthoredPresentation(runtime, data, action, outcome);
+  if (reviewed) {
+    runtime.narrativeChoiceSelection = null;
+    const base = {
+      revision: record.revision,
+      source: "authored_scene",
+      sceneId: reviewed.sceneId,
+      narrative: reviewed.narrative,
+      speeches: reviewed.speeches,
       choiceLabels: {},
     };
     record.presentation = presentationWithOrderedBeats(runtime, data, action?.resolvedAction ?? action, base);
@@ -4255,7 +5154,11 @@ export class TrpgGameService {
       contentRevision: this.data.contentRevision,
       counts: this.data.counts,
       persistence: this.store.constructor.name,
-      narrative: this.narrator ? "gemini_or_replay_cache_with_fallback" : "deterministic_fallback",
+      narrative: this.narrator?.providerStatus?.enabled
+        ? "gemini_or_replay_cache_with_fallback"
+        : this.narrator
+          ? "replay_cache_with_deterministic_fallback"
+          : "deterministic_fallback",
       authority: "server-command-resolver",
       tutorialVersion: TUTORIAL_VERSION,
       playableProfilePolicy: "neutral-fixed-player-directed-growth",
@@ -4375,6 +5278,10 @@ export class TrpgGameService {
       const runtime = hydrateRuntime(record, this.data);
       const legacyHash = gameStateHash(runtime, this.data, record.resolverVersion);
       if (legacyHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
+      ensurePlayerNeeds(runtime.playerState.player);
+      ensureEquipmentAccessState(runtime.playerState);
+      ensureWorkMarket(runtime);
+      runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
       const normalizedSnapshot = serializeRuntime(runtime);
       record.replayBase = {
         resolverVersion: record.resolverVersion,
@@ -4511,6 +5418,10 @@ export class TrpgGameService {
         if (baseHash !== replayBase.stateHash) {
           return { ok: false, revision: replayBase.revision, stateHash: gameStateHash(runtime, this.data), checks: [], baseMatches: false };
         }
+        ensurePlayerNeeds(runtime.playerState.player);
+        ensureEquipmentAccessState(runtime.playerState);
+        ensureWorkMarket(runtime);
+        runtime.playerState.weather = canonicalWeatherForState(runtime.playerState);
         revision = replayBase.revision;
         entries = record.commandLog.filter((entry) => Number(entry.seq) > replayBase.revision);
       } else {

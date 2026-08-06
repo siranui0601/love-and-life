@@ -10,6 +10,15 @@ import {
   unlockNextPermanentMission,
 } from "./mission-model.mjs";
 import { autoShop, createShopRuntime } from "./shop-runtime.mjs";
+import {
+  advancePlayerNeeds,
+  completePlayerRest,
+  consumeMeal,
+  createPlayerNeeds,
+  needsUtility,
+  publicPlayerNeeds,
+} from "./player-needs.mjs";
+import { resolveMissionStepVariant } from "../../../src/server/trpg/content/mission-step-variant.js";
 
 export const GAME_END_MINUTE = 99 * 1440 + 14 * 60;
 export const PLAYER_PROFILES = Object.freeze([
@@ -160,17 +169,36 @@ function updateTroubles(state, model) {
     }
   }
 }
-function routeAllowed(state, route, from, to) {
+function hasActiveMissionRouteAccess(state, gate) {
+  return Object.entries(
+    state.worldFlags?.missionRouteAccess ?? {},
+  ).some(([missionId, gates]) =>
+    ["active", "available", "in_progress"].includes(state.missions?.[missionId]?.status)
+      && Array.isArray(gates)
+      && gates.includes(gate));
+}
+
+function routeAllowed(state, route, from, to, traveler = null) {
+  const travelerHome = traveler?.home || traveler?.initialLocation || null;
   if (route.gate === "elf-access") {
-    return from === "エルフの隠れ里" || to !== "エルフの隠れ里" || state.worldFlags.worldTreeFallen || state.worldFlags.elfApproval;
+    return from === "エルフの隠れ里"
+      || to !== "エルフの隠れ里"
+      || state.worldFlags.worldTreeFallen
+      || state.worldFlags.elfApproval
+      || (!traveler && hasActiveMissionRouteAccess(state, route.gate))
+      || travelerHome === "エルフの隠れ里";
   }
   if (route.gate === "blackridge-forest-access") {
-    return state.worldFlags.worldTreeFallen || state.worldFlags.blackridgePermit || from === "黒嶺連合領";
+    return state.worldFlags.worldTreeFallen
+      || state.worldFlags.blackridgePermit
+      || (!traveler && hasActiveMissionRouteAccess(state, route.gate))
+      || from === "黒嶺連合領"
+      || ["黒嶺連合領", "エルフの隠れ里"].includes(travelerHome);
   }
   return true;
 }
 
-export function shortestTravelPlan(model, state, from, destination) {
+export function shortestTravelPlan(model, state, from, destination, traveler = null) {
   if (from === destination) return { destination, hours: 0, routeIds: [], hubs: [from] };
   const queue = [{ hub: from, cost: 0, routeIds: [], hubs: [from] }];
   const best = new Map([[from, 0]]);
@@ -181,7 +209,7 @@ export function shortestTravelPlan(model, state, from, destination) {
     if (current.cost > best.get(current.hub)) continue;
     for (const edge of model.adjacency[current.hub] ?? []) {
       const route = model.routeById[edge.routeId];
-      if (!route || !routeAllowed(state, route, edge.from, edge.to)) continue;
+      if (!route || !routeAllowed(state, route, edge.from, edge.to, traveler)) continue;
       const cost = current.cost + edge.hours;
       if (cost >= (best.get(edge.to) ?? Infinity)) continue;
       best.set(edge.to, cost);
@@ -266,10 +294,12 @@ function npcFacility(npc, day) {
   return day <= 1 ? npc.initialFacilityId : npc.mainFacilityId || npc.initialFacilityId;
 }
 
-function routeHours(state, model, from, to) {
-  const key = `${from}->${to}`;
+function routeHours(state, model, from, to, traveler = null) {
+  const key = traveler
+    ? `npc:${traveler.id}:${from}->${to}`
+    : `player:${from}->${to}`;
   if (state.routeCache[key] !== undefined) return state.routeCache[key];
-  state.routeCache[key] = shortestTravelPlan(model, state, from, to)?.hours ?? Infinity;
+  state.routeCache[key] = shortestTravelPlan(model, state, from, to, traveler)?.hours ?? Infinity;
   return state.routeCache[key];
 }
 
@@ -278,7 +308,7 @@ function propagateRumors(state, model) {
     for (const npc of model.npcs) {
       if (rumor.recipients[npc.id]) continue;
       const hub = npcHub(npc, state.day);
-      const hours = routeHours(state, model, rumor.origin, hub);
+      const hours = routeHours(state, model, rumor.origin, hub, npc);
       if (state.absoluteMinute < rumor.originMinute + Math.ceil(hours * 60) + 30) continue;
       if (!(rumor.importance >= 0.8 || npc.relatedTroubleIds.includes(rumor.troubleId) || npc.initialKnowledge?.interests?.some((interest) => rumor.text.includes(interest)))) continue;
       rumor.recipients[npc.id] = { minute: state.absoluteMinute, hub };
@@ -297,6 +327,21 @@ function advance(state, model, minutes, reason) {
   const value = Math.max(0, Math.round(Number(minutes) || 0));
   if (!value) return;
   const before = state.absoluteMinute;
+  const normalizedReason = String(reason ?? "time");
+  const outdoors = normalizedReason.startsWith("regional-move:")
+    || normalizedReason.startsWith("local-move:")
+    || normalizedReason.startsWith("mission-battle:")
+    || normalizedReason.startsWith("local-investigate:")
+    || ["seek-battle", "outdoor-rest", "camp-sleep"].includes(normalizedReason);
+  const needChange = advancePlayerNeeds(state.player, {
+    minutes: value,
+    reason: normalizedReason,
+    daypart: state.daypart,
+    weatherTags: state.weather?.tags ?? [],
+    outdoors,
+  });
+  if (needChange.hpDrain > 0) state.player.hpRatio = Math.max(0.15, Number(state.player.hpRatio ?? 1) - needChange.hpDrain);
+  if (needChange.mpDrain > 0) state.player.mpRatio = Math.max(0.05, Number(state.player.mpRatio ?? 1) - needChange.mpDrain);
   state.absoluteMinute = Math.min(GAME_END_MINUTE, state.absoluteMinute + value);
   syncClock(state);
   updateTroubles(state, model);
@@ -320,19 +365,93 @@ function conditionAtom(text, state) {
   if (match) return match[2] === "!=" ? state.troubles[match[1]]?.status !== match[3] : state.troubles[match[1]]?.status === match[3];
   match = value.match(/(T\d{2})(?:進行中|\.active)/iu);
   if (match) return ["active", "critical"].includes(state.troubles[match[1]]?.status);
-  if (/stage</u.test(value)) return !/critical|failed/u.test(value);
+  match = value.match(/(T\d{2})\.investigation\s*=\s*(engaged|discovered)/iu);
+  if (match) {
+    const missionId = `MSN-${match[1]}`;
+    const definition = state.catalog?.byId?.get?.(missionId);
+    const mission = state.missions?.[missionId];
+    const step = definition?.steps?.find((entry) => entry.type === "investigate");
+    const progress = Number(mission?.progress?.[step?.id] ?? 0);
+    const discovered = Number(mission?.discoveries?.length ?? 0) > 0 || progress > 0;
+    if (match[2].toLowerCase() === "discovered") return discovered;
+    return discovered || state.progress?.missions?.attemptedTroubleIds?.has?.(match[1]) === true;
+  }
   if (/discovered|engaged|investigation|operation|boss|final|rescue|ambush|hostile|permit|entered|climax|reconnaissance|militarized|market hostility|illegal lab/u.test(value)) return false;
-  return true;
+  return false;
+}
+
+function trimEnclosingConditionParentheses(text) {
+  let value = String(text ?? "").trim();
+  while (value.startsWith("(") && value.endsWith(")")) {
+    let depth = 0;
+    let enclosesWholeExpression = true;
+    for (let index = 0; index < value.length; index += 1) {
+      if (value[index] === "(") depth += 1;
+      if (value[index] === ")") depth -= 1;
+      if (depth === 0 && index < value.length - 1) {
+        enclosesWholeExpression = false;
+        break;
+      }
+      if (depth < 0) {
+        enclosesWholeExpression = false;
+        break;
+      }
+    }
+    if (!enclosesWholeExpression || depth !== 0) break;
+    value = value.slice(1, -1).trim();
+  }
+  return value;
+}
+
+function splitTopLevelCondition(text, operator) {
+  const value = String(text ?? "");
+  const normalizedOperator = String(operator).toUpperCase();
+  const upper = value.toUpperCase();
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    if (value[index] === "(") {
+      depth += 1;
+      continue;
+    }
+    if (value[index] === ")") {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    if (depth !== 0 || !upper.startsWith(normalizedOperator, index)) continue;
+    const previous = index === 0 ? " " : value[index - 1];
+    const nextIndex = index + normalizedOperator.length;
+    const next = nextIndex >= value.length ? " " : value[nextIndex];
+    if (!/[\s)]/u.test(previous) || !/[\s(]/u.test(next)) continue;
+    parts.push(value.slice(start, index).trim());
+    start = nextIndex;
+    index = nextIndex - 1;
+  }
+  if (parts.length === 0) return [value.trim()];
+  parts.push(value.slice(start).trim());
+  return parts;
+}
+
+export function encounterConditionMatches(text, state) {
+  const value = trimEnclosingConditionParentheses(text);
+  if (!value) return true;
+  const alternatives = splitTopLevelCondition(value, "OR");
+  if (alternatives.length > 1) {
+    return alternatives.some((entry) => encounterConditionMatches(entry, state));
+  }
+  const requirements = splitTopLevelCondition(value, "AND");
+  if (requirements.length > 1) {
+    return requirements.every((entry) => encounterConditionMatches(entry, state));
+  }
+  return conditionAtom(value, state);
 }
 
 function encounterAllowed(encounter, state, forced = false) {
   if (state.day < encounter.startDay || state.day > encounter.endDay) return false;
   if (encounter.dayparts && encounter.dayparts !== "any" && !String(encounter.dayparts).split("|").includes(state.daypart)) return false;
   if (forced || !String(encounter.condition ?? "").trim()) return true;
-  const text = String(encounter.condition);
-  const alternatives = text.split(/\s+OR\s+/iu);
-  if (alternatives.length > 1) return alternatives.some((entry) => conditionAtom(entry, state));
-  return text.split(/\s+AND\s+/iu).every((entry) => conditionAtom(entry, state));
+  return encounterConditionMatches(encounter.condition, state);
 }
 
 function dangerLimit(state, profile) {
@@ -366,10 +485,20 @@ function troubleStatusContext(state) {
 function skillContext(state, data) {
   const equipmentIds = Object.values(state.player.equipment).filter(Boolean);
   const grantedSkillIds = equipmentIds.map((id) => data.equipmentById.get(id)?.grantedSkillId).filter(Boolean);
+  const needs = publicPlayerNeeds(state.player);
   return {
     player: { level: state.player.level, skills: new Set(state.player.skills) },
     progress: state.progress,
-    world: { ...state.worldFlags, troubles: troubleStatusContext(state) },
+    world: {
+      ...state.worldFlags,
+      troubles: troubleStatusContext(state),
+      daypart: state.daypart,
+      hour: state.hour,
+      weather: state.weather?.id ?? null,
+      weatherTags: new Set(state.weather?.tags ?? []),
+      hunger: needs.hunger,
+      fatigue: needs.fatigue,
+    },
     inventory: { itemIds: new Set(Object.keys(state.player.inventory.items)), gold: state.player.gold },
     equipment: {
       activeWeaponTypes: new Set(equipmentIds.map((id) => data.equipmentById.get(id)?.weaponType).filter(Boolean)),
@@ -995,31 +1124,48 @@ function missionActions(state, catalog) {
     const runtime = state.missions[missionDefinition.id];
     if (runtime.status !== "active") continue;
     if (!playerKnowsSpecialMission(state, missionDefinition)) continue;
-    const step = currentStep(missionDefinition, runtime);
+    const rawStep = currentStep(missionDefinition, runtime);
+    const step = resolveMissionStepVariant(rawStep, state);
     if (!step) continue;
     const location = step.targetLocation ?? missionDefinition.targetLocations[0];
     if (location && location !== state.player.location) continue;
     if (step.targetFacilityId && step.targetFacilityId !== state.player.facilityId) continue;
+    const defaultMinutes = step.type === "conversation" ? 9 + missionDefinition.difficulty * 2
+      : step.type === "investigate" ? 22 + missionDefinition.difficulty * 5
+        : step.type === "battle" ? 25
+          : 18;
     const base = {
       missionId: missionDefinition.id,
       stepId: step.id,
       difficulty: missionDefinition.difficulty,
       finalDay: missionDefinition.finalDay,
       id: `ACTION:${missionDefinition.id}:${step.id}`,
-      minutes: step.type === "conversation" ? 9 + missionDefinition.difficulty * 2
-        : step.type === "investigate" ? 22 + missionDefinition.difficulty * 5
-          : step.type === "battle" ? 25
-            : 18,
+      minutes: Number(step.minutes ?? defaultMinutes),
     };
     if (missionDefinition.id === "MSN-T01" && step.id === "search" && step.type === "investigate") {
       result.push(...t01SearchActions(base, runtime, step));
       continue;
     }
+    const troubleStatus = missionDefinition.troubleId
+      ? state.troubles[missionDefinition.troubleId]?.status
+      : null;
+    const encounterId = troubleStatus
+      ? step.encounterIdByTroubleStatus?.[troubleStatus] ?? step.encounterId
+      : step.encounterId;
+    const label = troubleStatus
+      ? step.labelByTroubleStatus?.[troubleStatus] ?? step.label
+      : step.label;
+    const actionType = step.actionType
+      ?? (step.type === "battle" ? "missionBattle" : step.type === "resolve" ? "resolveMission" : step.type);
     result.push({
       ...base,
-      type: step.type === "battle" ? "missionBattle" : step.type === "resolve" ? "resolveMission" : step.type,
-      encounterId: step.encounterId,
-      label: step.label,
+      type: actionType,
+      encounterId,
+      label,
+      discoveryId: step.discoveryId ?? null,
+      discoveryText: step.discoveryText ?? null,
+      approachId: step.approachId ?? null,
+      suppressRandomEncounter: step.suppressRandomEncounter === true,
     });
   }
   return result;
@@ -1059,6 +1205,7 @@ function wildBattleAvailable(state, profile) {
 
 function utility(action, state, profile) {
   let score = unit(state.seed, state.absoluteMinute, action.id) * 0.2;
+  const needScores = needsUtility(state.player);
   if (["conversation", "investigate", "missionBattle", "resolveMission"].includes(action.type)) {
     const urgency = action.finalDay ? Math.max(0, 12 - (action.finalDay - state.day)) : 0;
     score += profile.story * 12 + Number(action.difficulty ?? 1) + urgency;
@@ -1070,10 +1217,11 @@ function utility(action, state, profile) {
   }
   if (action.type === "work") score += profile.trade * 7 + (state.player.gold < 20 ? 6 : 0);
   if (action.type === "rest") {
-    score += profile.caution * 8 + (1 - state.player.hpRatio) * 12 + (1 - state.player.mpRatio) * 4;
+    score += profile.caution * 8 + (1 - state.player.hpRatio) * 12 + (1 - state.player.mpRatio) * 4 + needScores.rest;
     if (state.player.hpRatio < 0.6) score += 32;
     if (state.player.mpRatio < 0.25) score += 10;
   }
+  if (action.type === "eat") score += needScores.eat + profile.caution * 3;
   if (action.type === "observe") score += profile.explore * 4;
   return score;
 }
@@ -1085,8 +1233,25 @@ export function generateChoiceActions(state, model, data, catalog, profile = PRO
   if (wildBattleAvailable(state, profile) && encounters(state, data, profile).length) {
     candidates.push({ id: "SEEK_BATTLE", type: "seekBattle", minutes: 90, label: `${state.player.location}周辺で魔物を探す` });
   }
-  if (state.player.hpRatio < 0.82 || state.player.mpRatio < 0.55 || state.hour >= 22) {
-    candidates.push({ id: "REST", type: "rest", minutes: state.hour >= 20 ? 480 : 120, label: "休息して回復する" });
+  const needs = publicPlayerNeeds(state.player);
+  const mealPrice = Math.max(0, Number(state.tuning.mealPrice ?? 4));
+  const mealAvailable = Number(state.player.freeMeals ?? 0) > 0 || Number(state.player.gold ?? 0) >= mealPrice;
+  if (needs.hunger >= 38 && mealAvailable) {
+    candidates.push({
+      id: "EAT",
+      type: "eat",
+      minutes: 30,
+      price: mealPrice,
+      label: needs.hunger >= 72 ? "食事を取って空腹を満たす" : "軽く食事を取る",
+    });
+  }
+  if (state.player.hpRatio < 0.82 || state.player.mpRatio < 0.55 || needs.fatigue >= 55 || state.hour >= 21) {
+    candidates.push({
+      id: "REST",
+      type: "rest",
+      minutes: state.hour >= 20 || needs.fatigue >= 75 ? 480 : 120,
+      label: state.hour >= 20 || needs.fatigue >= 75 ? "今夜の寝床を確保して休む" : "短く休息して疲れを取る",
+    });
   }
   if (state.player.gold < (state.tuning.workGoldThreshold ?? 30)) candidates.push({ id: "WORK", type: "work", minutes: 120, label: "仕事をして路銀を得る" });
   candidates.push({ id: "OBSERVE", type: "observe", minutes: 45, label: "周囲の噂と変化を確かめる" });
@@ -1110,7 +1275,10 @@ function objectiveMovementAction(state, model, catalog, profile) {
   const active = catalog.special
     .map((missionDefinition) => ({ mission: missionDefinition, runtime: state.missions[missionDefinition.id] }))
     .filter((entry) => entry.runtime.status === "active" && playerKnowsSpecialMission(state, entry.mission))
-    .map((entry) => ({ ...entry, step: currentStep(entry.mission, entry.runtime) }))
+    .map((entry) => {
+      const rawStep = currentStep(entry.mission, entry.runtime);
+      return { ...entry, step: resolveMissionStepVariant(rawStep, state) };
+    })
     .filter((entry) => entry.step)
     .sort((left, right) => left.mission.finalDay - right.mission.finalDay || right.mission.difficulty - left.mission.difficulty);
   if (active.length && profile.story >= 0.55) {
@@ -1464,7 +1632,9 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
       inc(state.player.evidenceByTrouble, missionDefinition.troubleId);
       inc(state.progress, "investigation.total");
       const chance = 0.04 + missionDefinition.difficulty * 0.015;
-      if (!state.tuning.probeMode && unit(state.seed, action.id, state.metrics.actions) < chance) {
+      if (!action.suppressRandomEncounter
+        && !state.tuning.probeMode
+        && unit(state.seed, action.id, state.metrics.actions) < chance) {
         const encounter = selectEncounter(state, data, profile, `${state.seed}:investigate:${action.id}:${state.metrics.actions}`);
         if (encounter) output.battle = runBattle(state, model, data, skills, profile, encounter.id, `${state.seed}:investigate:${state.metrics.battles}:${encounter.id}`);
       }
@@ -1490,6 +1660,7 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     if (closedReason) output = { ok: false, committed: true, type: action.type, reason: closedReason };
     else if (incomplete) output = { ok: false, committed: true, type: action.type, reason: "incomplete" };
     else {
+      output.troubleStatusAtResolution = state.troubles[missionDefinition.troubleId]?.status ?? "active";
       finishStep(state, missionDefinition, runtime, step);
       transition(state, model, missionDefinition.troubleId, "resolved", "player-mission-resolution");
       claim(state, missionDefinition, runtime, data, skills, profile);
@@ -1504,17 +1675,52 @@ export function resolvePlayerAction(state, model, data, skills, catalog, profile
     const profileFactor = profile.id === "fighter" ? 0.7 : profile.id === "cautious" ? 1.2 : 1;
     state.encounterAvailability[state.player.location] = state.absoluteMinute + Math.round(baseCooldown * profileFactor);
   } else if (action.type === "rest") {
-    const price = state.player.freeLodging > 0 ? 0 : (state.tuning.restPrice ?? 4);
+    const lodging = action.lodging === true;
+    const price = lodging
+      ? (state.player.freeLodging > 0 ? 0 : Math.max(0, Number(action.price ?? state.tuning.restPrice ?? 4)))
+      : 0;
+    if (lodging && price > state.player.gold) {
+      output = { ok: false, type: action.type, reason: "insufficient_gold_for_lodging", requiredGold: price };
+    } else {
+      if (lodging) {
+        if (price) state.player.gold -= price;
+        else state.player.freeLodging = Math.max(0, Number(state.player.freeLodging ?? 0) - 1);
+      }
+      const duration = lodging ? Math.max(420, Number(action.minutes ?? 480)) : Math.min(180, Number(action.minutes ?? 120));
+      advance(state, model, duration, lodging ? "inn-rest" : "outdoor-rest");
+      const rest = completePlayerRest(state.player, {
+        minute: state.absoluteMinute,
+        durationMinutes: duration,
+        lodging,
+        safety: action.safety ?? "normal",
+        weatherTags: state.weather?.tags ?? [],
+      });
+      state.player.hpRatio = lodging ? 1 : Math.min(1, state.player.hpRatio + 0.25);
+      state.player.mpRatio = lodging ? 1 : Math.min(1, state.player.mpRatio + 0.18);
+      output.rest = { lodging, price, quality: rest.quality, fatigueReduced: rest.fatigueReduced };
+      output.summary = lodging
+        ? "宿で" + duration + "分休み、疲労を回復した。"
+        : duration + "分休息し、疲労を" + Math.round(rest.fatigueReduced) + "軽減した。";
+    }
+  } else if (action.type === "eat") {
+    const price = state.player.freeMeals > 0
+      ? 0
+      : Math.max(0, Number(action.price ?? state.tuning.mealPrice ?? 4));
     if (price > state.player.gold) {
-      advance(state, model, Math.min(action.minutes, 180), "outdoor-rest");
-      state.player.hpRatio = Math.min(1, state.player.hpRatio + 0.25);
-      state.player.mpRatio = Math.min(1, state.player.mpRatio + 0.18);
+      output = { ok: false, type: action.type, reason: "insufficient_gold_for_meal", requiredGold: price };
     } else {
       if (price) state.player.gold -= price;
-      else state.player.freeLodging -= 1;
-      advance(state, model, action.minutes, "inn-rest");
-      state.player.hpRatio = 1;
-      state.player.mpRatio = 1;
+      else state.player.freeMeals = Math.max(0, Number(state.player.freeMeals ?? 0) - 1);
+      const duration = Math.max(10, Number(action.minutes ?? 30));
+      advance(state, model, duration, "meal");
+      const meal = consumeMeal(state.player, {
+        minute: state.absoluteMinute,
+        nutrition: action.nutrition ?? 58,
+        quality: action.mealQuality ?? "standard",
+      });
+      state.player.hpRatio = Math.min(1, state.player.hpRatio + 0.05);
+      output.meal = { price, quality: meal.quality, hungerReduced: meal.hungerReduced };
+      output.summary = "食事を取り、空腹を" + Math.round(meal.hungerReduced) + "軽減した。";
     }
   } else if (action.type === "work") {
     advance(state, model, action.minutes, "odd-job");
@@ -1607,6 +1813,7 @@ export function createInitialJourneyState({ model, battleData, skills, profile, 
       mpRatio: 1,
       freeMeals: Number(tuning.freeStarterMeals ?? 1),
       freeLodging: Number(tuning.freeStarterLodging ?? 1),
+      needs: createPlayerNeeds(),
       inventory: { items: {}, equipment: owned },
       equipment,
       skills: new Set(),

@@ -25,7 +25,7 @@ test("T01 places escort between battle and village handoff", () => {
 });
 
 test("the revised prompt uses a new replay-cache namespace", () => {
-  assert.equal(TRPG_NARRATIVE_PROMPT_VERSION, "trpg-narrative-v5.2-director");
+  assert.equal(TRPG_NARRATIVE_PROMPT_VERSION, "trpg-narrative-v5.3-conversation-boundaries");
 });
 
 test("the live player CLI includes all three routes and sheet sync", () => {

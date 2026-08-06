@@ -7,6 +7,19 @@
     "retrievedAt": "2026-07-17",
     "valueRenderOption": "UNFORMATTED_VALUE"
   },
+  "sourceAmendments": [
+    {
+      "retrievedAt": "2026-07-30",
+      "tab": "地域別エンカウント",
+      "ranges": [
+        "K17:K18",
+        "K23:K24",
+        "K28",
+        "K72"
+      ],
+      "reason": "曖昧なstage/調査ルート条件とT13のDay60 critical移行後条件を実際の状態式へ置き換えた公式マスター修正"
+    }
+  ],
   "tabs": {
     "設計サマリー": [
       [
@@ -14675,7 +14688,7 @@
         "any",
         1,
         100,
-        "T13.stage<giant",
+        "(T13.status=scheduled OR T13.status=active) AND Day<45",
         "normal",
         "[{\"monsterId\":\"MON-0013\",\"monsterName\":\"川スライム\",\"countMin\":1,\"countMax\":3,\"includeChance\":1}]",
         null,
@@ -14692,7 +14705,7 @@
         "any",
         1,
         100,
-        "T03調査ルート",
+        "T03.status=active AND T03.investigation=engaged",
         "high",
         "[{\"monsterId\":\"MON-0014\",\"monsterName\":\"森の大型魔獣\",\"countMin\":1,\"countMax\":1,\"includeChance\":1}]",
         null,
@@ -14777,7 +14790,7 @@
         "any",
         60,
         100,
-        "T13.status=failed AND Day>=60",
+        "(T13.status=critical OR T13.status=failed) AND Day>=60",
         "normal",
         "[{\"monsterId\":\"MON-0019\",\"monsterName\":\"灰枝の亡霊\",\"countMin\":1,\"countMax\":3,\"includeChance\":1}]",
         null,
@@ -14794,7 +14807,7 @@
         "any",
         60,
         100,
-        "T13.status=failed AND Day>=60",
+        "(T13.status=critical OR T13.status=failed) AND Day>=60",
         "normal",
         "[{\"monsterId\":\"MON-0020\",\"monsterName\":\"結界喰い\",\"countMin\":1,\"countMax\":2,\"includeChance\":1},{\"monsterId\":\"MON-0019\",\"monsterName\":\"灰枝の亡霊\",\"countMin\":0,\"countMax\":2,\"includeChance\":0.45}]",
         null,
@@ -14862,7 +14875,7 @@
         "any",
         1,
         100,
-        "T11.status=failed OR T19.stage>=approach",
+        "T11.status=failed OR T19.status=active OR T19.status=critical OR T19.status=failed",
         "normal",
         "[{\"monsterId\":\"MON-0024\",\"monsterName\":\"脱走兵\",\"countMin\":1,\"countMax\":2,\"includeChance\":1}]",
         null,
@@ -15610,7 +15623,7 @@
         "any",
         60,
         100,
-        "T13.status=failed AND Day>=60",
+        "(T13.status=critical OR T13.status=failed) AND Day>=60",
         "normal",
         "[{\"monsterId\":\"MON-0068\",\"monsterName\":\"灰樹精\",\"countMin\":1,\"countMax\":3,\"includeChance\":1}]",
         null,
@@ -15755,4 +15768,3 @@
     ]
   }
 }
-

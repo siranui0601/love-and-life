@@ -6,6 +6,7 @@ import { experienceToNextLevel } from "../lib/mission-model.mjs";
 import {
   availableTravelActions,
   createInitialJourneyState,
+  encounterConditionMatches,
   generateChoiceActions,
   learnPlayerSkill,
   listLearnablePlayerSkills,
@@ -79,6 +80,69 @@ test("player starts at the wheat field on Day1 at 10:00", () => {
   assert.equal(state.player.facilityId, "LOC_FARM_FIELD");
 });
 
+test("post-collapse encounter conditions include T13 critical and preserve boolean precedence", () => {
+  const state = fresh();
+  const condition = "(T13.status=critical OR T13.status=failed) AND Day>=60";
+  for (const encounterId of ["ENC-0019", "ENC-0020", "ENC-0068"]) {
+    assert.equal(battleData.encounterById.get(encounterId)?.condition, condition, encounterId);
+  }
+
+  state.day = 60;
+  state.troubles.T13.status = "critical";
+  assert.equal(encounterConditionMatches(condition, state), true);
+
+  state.day = 59;
+  assert.equal(encounterConditionMatches(condition, state), false);
+
+  state.day = 60;
+  state.troubles.T13.status = "resolved";
+  assert.equal(encounterConditionMatches(condition, state), false);
+
+  state.troubles.T13.status = "failed";
+  assert.equal(encounterConditionMatches(condition, state), true);
+  assert.equal(
+    encounterConditionMatches("T13.status=critical OR T13.status=failed AND Day>=90", state),
+    false,
+  );
+});
+
+test("ambiguous encounter stages fail closed and authored trouble states gate their intended encounters", () => {
+  const state = fresh();
+  const riverCondition = "(T13.status=scheduled OR T13.status=active) AND Day<45";
+  const apexCondition = "T03.status=active AND T03.investigation=engaged";
+  const deserterCondition = "T11.status=failed OR T19.status=active OR T19.status=critical OR T19.status=failed";
+  assert.equal(battleData.encounterById.get("ENC-0013")?.condition, riverCondition);
+  assert.equal(battleData.encounterById.get("ENC-0014")?.condition, apexCondition);
+  assert.equal(battleData.encounterById.get("ENC-0024")?.condition, deserterCondition);
+
+  state.day = 44;
+  state.troubles.T13.status = "active";
+  assert.equal(encounterConditionMatches(riverCondition, state), true);
+  state.day = 45;
+  assert.equal(encounterConditionMatches(riverCondition, state), false);
+  state.day = 30;
+  state.troubles.T13.status = "resolved";
+  assert.equal(encounterConditionMatches(riverCondition, state), false);
+
+  state.troubles.T03.status = "active";
+  assert.equal(encounterConditionMatches(apexCondition, state), false);
+  state.progress.missions.attemptedTroubleIds.add("T03");
+  assert.equal(encounterConditionMatches(apexCondition, state), true);
+  state.troubles.T03.status = "resolved";
+  assert.equal(encounterConditionMatches(apexCondition, state), false);
+
+  state.troubles.T11.status = "active";
+  state.troubles.T19.status = "scheduled";
+  assert.equal(encounterConditionMatches(deserterCondition, state), false);
+  state.troubles.T11.status = "failed";
+  assert.equal(encounterConditionMatches(deserterCondition, state), true);
+  state.troubles.T11.status = "resolved";
+  state.troubles.T19.status = "active";
+  assert.equal(encounterConditionMatches(deserterCondition, state), true);
+  assert.equal(encounterConditionMatches("T19.stage>=approach", state), false);
+  assert.equal(encounterConditionMatches("未知の秘密条件", state), false);
+});
+
 test("three choices are separate from a complete reachable travel menu", () => {
   const state = fresh();
   const choices = generateChoiceActions(state, model, battleData, state.catalog);
@@ -93,6 +157,89 @@ test("three choices are separate from a complete reachable travel menu", () => {
     const route = shortestTravelPlan(model, state, state.player.location, destination);
     assert.equal(listed.has(destination), Boolean(route), destination);
   }
+});
+
+test("an unaffordable meal is not offered while work remains executable", () => {
+  const state = fresh("balanced");
+  state.player.needs.hunger = 100;
+  state.player.gold = 0;
+  state.player.freeMeals = 0;
+
+  const unaffordable = generateChoiceActions(
+    state,
+    model,
+    battleData,
+    state.catalog,
+    undefined,
+    { limit: 12 },
+  );
+  assert.equal(unaffordable.some((choice) => choice.type === "eat"), false);
+  assert.equal(unaffordable.some((choice) => choice.type === "work"), true);
+
+  state.player.freeMeals = 1;
+  const freeMeal = generateChoiceActions(
+    state,
+    model,
+    battleData,
+    state.catalog,
+    undefined,
+    { limit: 12 },
+  );
+  assert.equal(freeMeal.some((choice) => choice.type === "eat"), true);
+
+  state.player.freeMeals = 0;
+  state.player.gold = Number(state.tuning.mealPrice ?? 4);
+  const affordable = generateChoiceActions(
+    state,
+    model,
+    battleData,
+    state.catalog,
+    undefined,
+    { limit: 12 },
+  );
+  assert.equal(affordable.some((choice) => choice.type === "eat"), true);
+});
+
+test("NPC rumor travel honors the NPC's own regional access", () => {
+  const state = fresh("story");
+  const serie = model.npcs.find((npc) => npc.id === "NPC029");
+  assert.ok(serie);
+  assert.equal(serie.home, "エルフの隠れ里");
+  assert.equal(shortestTravelPlan(model, state, "森", "エルフの隠れ里"), null);
+
+  const npcPlan = shortestTravelPlan(model, state, "森", "エルフの隠れ里", serie);
+  assert.ok(npcPlan);
+  assert.ok(Number.isFinite(npcPlan.hours));
+});
+
+test("an active mission route permit opens only its named gate and expires with the mission", () => {
+  const state = fresh("story");
+  state.player.location = "森";
+  state.player.facilityId = "LOC_FOREST_EDGE";
+  assert.equal(shortestTravelPlan(model, state, "森", "エルフの隠れ里"), null);
+  const blackridgePlanBeforePermit = shortestTravelPlan(model, state, "森", "黒嶺連合領");
+  assert.ok(blackridgePlanBeforePermit);
+  assert.equal(state.worldFlags.elfApproval, false);
+
+  state.worldFlags.missionRouteAccess = { "MSN-T13": ["elf-access"] };
+  state.missions["MSN-T13"].status = "active";
+  const emergencyPlan = shortestTravelPlan(model, state, "森", "エルフの隠れ里");
+  assert.ok(emergencyPlan);
+  assert.ok(Number.isFinite(emergencyPlan.hours));
+  assert.deepEqual(
+    shortestTravelPlan(model, state, "森", "黒嶺連合領").routeIds,
+    blackridgePlanBeforePermit.routeIds,
+  );
+  assert.equal(state.worldFlags.elfApproval, false);
+  const outsider = model.npcs.find((npc) => npc.home !== "エルフの隠れ里");
+  assert.ok(outsider);
+  assert.equal(
+    shortestTravelPlan(model, state, "森", "エルフの隠れ里", outsider),
+    null,
+  );
+
+  state.missions["MSN-T13"].status = "completed";
+  assert.equal(shortestTravelPlan(model, state, "森", "エルフの隠れ里"), null);
 });
 
 test("ordinary shop purchase advances no time", () => {
@@ -216,6 +363,32 @@ test("T01 actions crossing the Day2 rescue deadline persist failure without prog
   assert.equal(runtime.progress.decide, 0);
   assert.equal(runtime.rewardClaimed, false);
   assert.equal(state.progress.missions.resolvedTroubleIds.has("T01"), false);
+});
+
+test("mission resolution records the post-advance trouble status when its duration crosses a deadline", () => {
+  const state = fresh("story");
+  const definition = state.catalog.byId.get("MSN-T13");
+  const runtime = state.missions[definition.id];
+  state.troubles.T13.status = "active";
+  runtime.status = "active";
+  for (const step of definition.steps) {
+    runtime.progress[step.id] = step.id === "resolve" ? 0 : Number(step.required ?? 1);
+  }
+  state.absoluteMinute = (60 - 1) * 1440 + (21 * 60 + 50 - 10 * 60);
+
+  const result = resolvePlayerAction(state, model, battleData, skills, state.catalog, "story", {
+    id: "ACTION:MSN-T13:resolve:deadline-crossing",
+    type: "resolveMission",
+    missionId: "MSN-T13",
+    stepId: "resolve",
+    minutes: 30,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.troubleStatusAtResolution, "critical");
+  assert.equal(state.worldFlags.worldTreeFallen, true);
+  assert.equal(state.troubles.T13.status, "resolved");
+  assert.equal(runtime.progress.resolve, 1);
 });
 
 test("T01 search offers three concrete, non-repeating approaches at each investigation stage", () => {

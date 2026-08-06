@@ -2,7 +2,8 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import net from "node:net";
 import { TrpgRuntimeAssetManager } from "../assets/runtime.js";
-import { TrpgGameError, TrpgGameService, hashResumeToken } from "./service.js";
+import { TrpgGameError, hashResumeToken } from "./service.js";
+import { createWorldTimeAwareTrpgGameService } from "./world-time-aware-service.js";
 
 const COOKIE_NAME = "trpg_resume";
 
@@ -40,9 +41,6 @@ export function trpgRequestAddress(req) {
   const direct = String(req.socket?.remoteAddress ?? "unknown");
   const loopback = direct === "127.0.0.1" || direct === "::1" || direct === "::ffff:127.0.0.1";
   if (loopback) {
-    // With one local reverse proxy, the right-most XFF address is the peer
-    // appended by `$proxy_add_x_forwarded_for`; left-most entries may have
-    // been supplied by the client and must not control rate-limit identity.
     const chain = String(req.get("x-forwarded-for") ?? "").split(",").map((value) => value.trim()).filter(Boolean);
     const forwarded = chain.at(-1);
     if (net.isIP(forwarded)) return forwarded;
@@ -79,9 +77,6 @@ function sameOrigin(req) {
   if (!origin) return true;
   try {
     const url = new URL(origin);
-    // The browser-controlled Host header is the authority here.  Trusting an
-    // arbitrary X-Forwarded-Host value would let a client manufacture the
-    // comparison unless the whole proxy chain were explicitly trusted.
     return url.host.toLowerCase() === String(req.get("host") ?? "").trim().toLowerCase();
   } catch {
     return false;
@@ -97,7 +92,7 @@ function sendError(res, error) {
 }
 
 export function mountTrpgGameRoutes(app, options = {}) {
-  const service = options.service ?? new TrpgGameService(options);
+  const service = options.service ?? createWorldTimeAwareTrpgGameService(options);
   const assetManager = options.assetManager ?? new TrpgRuntimeAssetManager({
     data: service.data,
     ...(options.assetOptions ?? {}),
@@ -112,16 +107,12 @@ export function mountTrpgGameRoutes(app, options = {}) {
 
   const enqueueVisibleAssets = (save) => {
     try {
-      // This only schedules authoritative ids found in the server-built view;
-      // generation is intentionally detached from response latency.
       assetManager.enqueueForSave(save);
     } catch (error) {
       console.warn("TRPG asset queue rejected a game view", String(error?.message ?? error).slice(0, 240));
     }
   };
 
-  // This route intentionally precedes express.static. The tracked manifest is
-  // immutable in production; runtime-generated mappings are merged at read time.
   app.get("/TRPG/assets/manifest.json", async (req, res) => {
     try {
       res.set("Cache-Control", "no-cache, max-age=0, must-revalidate");

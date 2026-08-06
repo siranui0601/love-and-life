@@ -1,0 +1,113 @@
+name: TRPG Day1 to Day100 route trials
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "public/TRPG/**"
+      - "src/server/trpg/**"
+      - "tools/trpg-sim/**"
+      - "package.json"
+      - ".github/workflows/trpg-day100-player.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: trpg-day100-routes-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run complete TRPG regression suite
+        run: npm run trpg:test
+
+  route-matrix:
+    needs: regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        mode:
+          - deadline
+          - chain
+          - prevention
+          - regional
+    env:
+      TRPG_DAY100_OFFLINE_AUTHORING: "1"
+      TRPG_DAY100_NARRATIVE_MAX: 600
+      TRPG_DAY100_MAX_ACTIONS: 4200
+      TRPG_DAY100_ROUTE_MODE: ${{ matrix.mode }}
+      TRPG_DAY100_SEED: trpg-day100-route-${{ matrix.mode }}-v1
+      TRPG_DAY100_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      TRPG_NARRATIVE_RUN_ID: day100-route-${{ matrix.mode }}-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run ${{ matrix.mode }} Day1 to Day100 trial
+        run: node tools/trpg-sim/cli-day100-route.mjs --strict-runtime
+      - name: Upload ${{ matrix.mode }} route diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trpg-day100-route-${{ matrix.mode }}
+          path: |
+            tools/trpg-sim/reports/day100-route-${{ matrix.mode }}-*
+          if-no-files-found: error
+          retention-days: 14
+
+  companion-route:
+    needs: regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      TRPG_DAY100_OFFLINE_AUTHORING: "1"
+      TRPG_DAY100_NARRATIVE_MAX: 600
+      TRPG_DAY100_MAX_ACTIONS: 4200
+      TRPG_DAY100_SEED: trpg-day100-route-companions-v1
+      TRPG_DAY100_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      TRPG_NARRATIVE_RUN_ID: day100-route-companions-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run companions Day1 to Day100 trial
+        run: node tools/trpg-sim/cli-day100-companion-route.mjs --strict-runtime
+      - name: Upload companion route diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trpg-day100-route-companions
+          path: |
+            tools/trpg-sim/reports/day100-route-companions-*
+          if-no-files-found: error
+          retention-days: 14

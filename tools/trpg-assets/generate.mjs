@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { loadTrpgGameData } from "../../src/server/trpg/game/game-data.js";
 import { chromaKeyPng } from "../../src/server/trpg/assets/chroma-key.js";
 import { generateGeminiImage, TRPG_IMAGE_MODELS } from "../../src/server/trpg/assets/gemini-image.js";
+import { trpgGeminiAssetGenerationEnabled } from "../../src/server/trpg/assets/runtime.js";
 import { normalizeToPng } from "../../src/server/trpg/assets/normalize.js";
 import { buildBackgroundPrompt, buildPortraitPrompt, TRPG_ASSET_PROMPT_VERSION } from "../../src/server/trpg/assets/prompt.js";
 import { assetHash, extensionForMime, TrpgAssetStore } from "../../src/server/trpg/assets/store.js";
@@ -193,8 +194,14 @@ async function main() {
     console.log(JSON.stringify({ ok: true, generated: 0, message: "no_missing_assets" }, null, 2));
     return;
   }
-  if (!dryRun && !process.env.GEMINI_API_KEY) {
-    console.log(JSON.stringify({ ok: true, generated: 0, skipped: targets.length, reason: "GEMINI_API_KEY is not configured", targets: targets.map(({ type, id }) => ({ type, id })) }, null, 2));
+  if (!dryRun && (!process.env.GEMINI_API_KEY || !trpgGeminiAssetGenerationEnabled())) {
+    console.log(JSON.stringify({
+      ok: true,
+      generated: 0,
+      skipped: targets.length,
+      reason: "paid asset generation requires GEMINI_API_KEY and TRPG_GEMINI_ASSET_GENERATION_ENABLED=true",
+      targets: targets.map(({ type, id }) => ({ type, id })),
+    }, null, 2));
     return;
   }
   const results = [];

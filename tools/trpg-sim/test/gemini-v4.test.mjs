@@ -1,11 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import http from "node:http";
+import express from "express";
 import {
   boundedNarrativeRequestTimeout,
   buildNarrativePrompt,
   createTrpgNarrator,
   geminiNarrativeGenerationConfig,
+  trpgGeminiNarrativeEnabled,
 } from "../../../src/server/trpg/gemini-narrator.js";
+import { mountTrpgNarrativeRoutes } from "../../../src/server/trpg/routes.js";
 import { createNarrativeReplayCache } from "../../../src/server/trpg/narrative-cache.js";
 import {
   buildLocalNarrativeContext,
@@ -92,6 +96,53 @@ test("Gemini 2.5 Flash reserves its output budget for complete narrative JSON", 
   assert.equal(boundedNarrativeRequestTimeout("not-a-number"), 18_000);
   assert.equal(boundedNarrativeRequestTimeout(1), 3_000);
   assert.equal(boundedNarrativeRequestTimeout(99_000), 25_000);
+});
+
+test("TRPG narrative Gemini is paid-opt-in and health reports the actual provider mode", async (t) => {
+  assert.equal(trpgGeminiNarrativeEnabled(undefined), false);
+  assert.equal(trpgGeminiNarrativeEnabled("false"), false);
+  assert.equal(trpgGeminiNarrativeEnabled("true"), true);
+  assert.equal(trpgGeminiNarrativeEnabled("ON"), true);
+
+  const narrator = createTrpgNarrator({
+    apiKey: "configured-but-not-opted-in",
+    paidOptIn: false,
+    memoryOnlyCache: true,
+    approvedCache: false,
+    auditLog: false,
+  });
+  assert.deepEqual(narrator.providerStatus, {
+    enabled: false,
+    configured: true,
+    paidOptIn: false,
+    injected: false,
+    name: null,
+    mode: "replay_cache_with_deterministic_fallback",
+  });
+
+  const injected = createTrpgNarrator({
+    apiKey: null,
+    paidOptIn: false,
+    provider: { name: "test-provider", async generate() { throw new Error("not called"); } },
+    memoryOnlyCache: true,
+    approvedCache: false,
+    auditLog: false,
+  });
+  assert.equal(injected.providerStatus.enabled, true);
+  assert.equal(injected.providerStatus.injected, true);
+  assert.equal(injected.providerStatus.mode, "injected_provider_with_replay_cache");
+
+  const app = express();
+  mountTrpgNarrativeRoutes(app, { narrator });
+  const server = http.createServer(app);
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address();
+  const response = await fetch(`http://127.0.0.1:${port}/TRPG/api/narrative/health`);
+  assert.equal(response.status, 200);
+  const health = await response.json();
+  assert.equal(health.mode, "replay_cache_with_deterministic_fallback");
+  assert.deepEqual(health.provider, narrator.providerStatus);
 });
 
 test("an action target cannot add an absent, missing, or remote NPC to local context", () => {

@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 export const TRPG_NARRATIVE_MODEL = "gemini-2.5-flash";
-export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.2-director";
+export const TRPG_NARRATIVE_PROMPT_VERSION = "trpg-narrative-v5.3-conversation-boundaries";
 
 export const INTENT_TYPES = Object.freeze([
   "talk",
@@ -69,6 +69,18 @@ function stripInternalVisibleIds(value) {
 
 function isEmptyReaction(value) {
   return EMPTY_REACTION_PATTERN.test(String(value ?? "").trim());
+}
+
+export function isConversationClosingAction(action = {}) {
+  const id = String(action?.id ?? "");
+  const topic = String(action?.dialogueTopic ?? "").toLowerCase();
+  return action?.conversationClosing === true
+    || /(?:^|:)END$/iu.test(id)
+    || ["end", "farewell", "goodbye", "conversation_end"].includes(topic);
+}
+
+export function minimumConversationReplyLength(action = {}) {
+  return isConversationClosingAction(action) ? 4 : 12;
 }
 
 export const GEMINI_NARRATIVE_RESPONSE_SCHEMA = Object.freeze({
@@ -578,7 +590,7 @@ export function validateNarrativeOutput(value, context) {
     const directReplies = speeches.filter((speech) => String(speech?.actorId) === context.action.targetNpcId);
     const replyLength = directReplies.reduce((sum, speech) => sum + boundedText(speech?.text, 500).length, 0);
     if (!directReplies.length) errors.push("conversation must include a reply from the target NPC");
-    if (directReplies.length && replyLength < 12) errors.push("conversation reply is too short to carry useful meaning");
+    if (directReplies.length && replyLength < minimumConversationReplyLength(context.action)) errors.push("conversation reply is too short to carry useful meaning");
     const firstReply = boundedText(directReplies[0]?.text, 500);
     if (/^(?:もっとも|そうだね|そうだな|なるほど|ふむ)[、。…\s]/u.test(firstReply)) {
       errors.push("conversation reply starts with an orphan acknowledgement instead of answering the player's actual words");
@@ -834,6 +846,16 @@ export function sanitizeNarrativeOutput(value, context) {
     choices.push({ ...candidate });
   }
 
+  let sanitizedNarrative = sanitizeDiegeticText(value?.narrative, 1400) || fallback.narrative;
+  const introductionName = context.action.firstIntroduction ? boundedText(context.action.introductionName, 80) : "";
+  if (introductionName) {
+    sanitizedNarrative = sanitizedNarrative.replaceAll(introductionName, "その人物");
+    for (const choice of choices) {
+      choice.label = String(choice.label ?? "").replaceAll(introductionName, "相手");
+      if (choice.approach) choice.approach = String(choice.approach).replaceAll(introductionName, "相手");
+    }
+  }
+
   const speeches = (Array.isArray(value?.speeches) ? value.speeches : [])
     .filter((speech) => plainObject(speech) && localNpcIds.has(String(speech.actorId)))
     .map((speech) => ({
@@ -865,7 +887,7 @@ export function sanitizeNarrativeOutput(value, context) {
     .slice(0, 5);
 
   return {
-    narrative: sanitizeDiegeticText(value?.narrative, 1400) || fallback.narrative,
+    narrative: sanitizedNarrative,
     choices: choices.slice(0, 3),
     speeches,
     proposals,

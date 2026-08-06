@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createTrpgNarrator } from "../../src/server/trpg/gemini-narrator.js";
+import {
+  createTrpgNarrator,
+  trpgGeminiNarrativeEnabled,
+} from "../../src/server/trpg/gemini-narrator.js";
 import { syncNarrativeAuditToSheet } from "../../src/server/trpg/narrative-audit.js";
 import { MemoryTrpgSaveStore } from "../../src/server/trpg/game/save-store.js";
 import { TrpgGameService } from "../../src/server/trpg/game/service.js";
@@ -40,6 +43,7 @@ function compact(save) {
     facilityId: save.scene.facilityId,
     facilityName: save.scene.facilityName,
     gold: Number(save.player?.gold ?? 0),
+    workMarket: save.world?.workMarket ?? null,
     tutorialId: save.tutorial?.id ?? null,
     choices: save.choices.map((choice) => ({ actionId: choice.actionId, label: choice.label })),
     movement: save.movement.map((move) => ({ moveId: move.moveId, label: move.label, destinationFacilityId: move.destinationFacilityId ?? null, destinationHub: move.destination ?? null })),
@@ -95,11 +99,14 @@ class Runner {
     });
     this.save = response.save;
     if (type === "CHOOSE" && selection?.actionId?.startsWith("WORK_CONFIRM:")) {
-      const quoted = Number(selection.actionId.split(":").at(-1));
+      const quoted = Number(String(selection.label ?? "").match(/(\d+)G/u)?.[1]);
       this.jobs.push({
         actionId: selection.actionId,
         quoted: Number.isFinite(quoted) ? quoted : null,
         actual: Number(this.save.player.gold ?? 0) - before.gold,
+        day: before.day,
+        startedAtMinute: before.absoluteMinute,
+        completedAtMinute: this.save.clock.absoluteMinute,
         lines: sceneLines(this.save),
       });
     }
@@ -317,6 +324,14 @@ async function workJourney() {
     checks.severalJobsCompleted = runner.jobs.length >= 2;
     checks.offersRemainConcrete = offers.length > 0 && offers.every((entry) => /\d+G/u.test(entry));
     checks.payMatchesQuote = runner.jobs.length > 0 && runner.jobs.every((job) => job.quoted === job.actual);
+    const workByDay = Object.groupBy(runner.jobs, (job) => String(job.day));
+    checks.dailyWorkLimitRespected = Object.values(workByDay).every((jobs) => jobs.length <= 3);
+    checks.workCountBounded = runner.jobs.length <= 6;
+    checks.boundedWorkIncome = runner.jobs.reduce((sum, job) => sum + Number(job.actual ?? 0), 0) <= 180;
+    checks.noOvernightJobs = runner.jobs.every((job) => Math.floor(job.startedAtMinute / 1440) === Math.floor(job.completedAtMinute / 1440)
+      && job.completedAtMinute % 1440 <= 1320);
+    checks.workMarketExposed = runner.save.world?.workMarket?.version === "work-market-v1"
+      && Number(runner.save.world.workMarket.completedToday ?? 0) <= 3;
     checks.timePasses = runner.save.clock.absoluteMinute >= 1_200 || terminalT01(runner.save);
     checks.finnCanBeLostWhileWorking = ["failed", "expired", "suppressed", "unavailable"].includes(t01(runner.save)?.status);
     checks.notSilentlyCompleted = !["completed", "resolved"].includes(t01(runner.save)?.status);
@@ -384,6 +399,10 @@ async function capitalJourney() {
     }
     checks.remainsOutsideVillage = runner.save.scene.location !== "田園の村";
     checks.capitalHasInteractions = conversations >= 2 || runner.jobs.length >= 1;
+    const capitalWorkByDay = Object.groupBy(runner.jobs, (job) => String(job.day));
+    checks.capitalDailyWorkLimitRespected = Object.values(capitalWorkByDay).every((jobs) => jobs.length <= 3);
+    checks.capitalWorkCountBounded = runner.jobs.length <= 6;
+    checks.capitalIncomeBounded = runner.jobs.reduce((sum, job) => sum + Number(job.actual ?? 0), 0) <= 240;
     checks.t01FailsWithoutPlayer = ["failed", "expired", "suppressed", "unavailable"].includes(t01(runner.save)?.status);
     checks.worldRemainsPlayable = runner.save.choices.length > 0 || runner.save.movement.length > 0;
     return { id: "capital-first", passed: Object.values(checks).every(Boolean), checks, conversations, jobs: runner.jobs, final: compact(runner.save), trace: runner.trace };
@@ -497,10 +516,15 @@ try {
 } catch (error) {
   sheetSync = { ok: false, error: String(error?.stack ?? error) };
 }
-const environment = { geminiConfigured: Boolean(process.env.GEMINI_API_KEY), sheetsConfigured: Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_KEY) };
+const environment = {
+  geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
+  geminiOptedIn: trpgGeminiNarrativeEnabled(),
+  geminiEnabled: narrator.providerStatus?.enabled === true,
+  sheetsConfigured: Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_KEY),
+};
 const qualityChecks = {
   allJourneysPass: journeys.every((journey) => journey.passed),
-  geminiWasActuallyCalled: environment.geminiConfigured && audit.providerCalls > 0,
+  geminiWasActuallyCalled: environment.geminiEnabled && audit.providerCalls > 0,
   noProviderErrors: audit.providerErrors === 0,
   noPartialOrFallbackOutput: Number(audit.sources.gemini_partial ?? 0) === 0 && Number(audit.sources.deterministic_fallback ?? 0) === 0,
   repairRateIsControlled: audit.repairRate <= 0.12,

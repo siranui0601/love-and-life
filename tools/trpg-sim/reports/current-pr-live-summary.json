@@ -1,0 +1,219 @@
+{
+  "schemaVersion": "trpg-current-pr-live-summary-v2",
+  "generatedAt": "2026-07-22T11:18:49.952Z",
+  "commitSha": "6d644fd8b359fb84352ad464772f7fd2f709f87e",
+  "statuses": {
+    "regression": 0,
+    "experiential": 1,
+    "liveFirst": 0,
+    "liveReplay": 0
+  },
+  "experiential": {
+    "qualityPassed": false,
+    "journeys": [
+      {
+        "id": "rescue",
+        "passed": true,
+        "checks": {
+          "openingHasHelpWorkAndLeave": true,
+          "skillTutorialIsStepwise": true,
+          "skillTutorialDoesNotLockChoices": true,
+          "searchProgressesWithoutExactApproach": true,
+          "voiceBeforeBattle": true,
+          "battleFinishes": true,
+          "finnSpeaksAfterBattle": true,
+          "escortStepExists": true,
+          "escortRequestIsHuman": true,
+          "reunionBeforeChoice": true,
+          "completesAfterHandoff": true
+        },
+        "battleRounds": 2,
+        "conversations": null,
+        "jobCount": null,
+        "totalWorkIncome": null,
+        "final": {
+          "day": 1,
+          "time": "13:21",
+          "location": "田園の村",
+          "facilityId": "LOC_FARM_SQUARE",
+          "gold": 42,
+          "t01Status": "completed",
+          "workMarket": {
+            "version": "work-market-v1",
+            "day": 1,
+            "completedToday": 0,
+            "remainingToday": 3,
+            "dailyLimit": 3,
+            "facilityDailyLimit": 2,
+            "employerDailyLimit": 1,
+            "schedule": {
+              "opensAtMinute": 480,
+              "closesAtMinute": 1080,
+              "label": "08:00〜18:00"
+            },
+            "recentWorkTitles": []
+          }
+        },
+        "error": null
+      },
+      {
+        "id": "work-first",
+        "passed": true,
+        "checks": {
+          "firstOfferHasJobAndWage": true,
+          "offerHasAcceptClarifyDecline": true,
+          "severalJobsCompleted": true,
+          "offersRemainConcrete": true,
+          "payMatchesQuote": true,
+          "dailyWorkLimitRespected": true,
+          "workCountBounded": true,
+          "boundedWorkIncome": true,
+          "noOvernightJobs": true,
+          "workMarketExposed": true,
+          "timePasses": true,
+          "finnCanBeLostWhileWorking": true,
+          "notSilentlyCompleted": true
+        },
+        "battleRounds": null,
+        "conversations": null,
+        "jobCount": 2,
+        "totalWorkIncome": 30,
+        "final": {
+          "day": 2,
+          "time": "22:28",
+          "location": "田園の村",
+          "facilityId": "LOC_FARM_SQUARE",
+          "gold": 30,
+          "t01Status": "failed",
+          "workMarket": {
+            "version": "work-market-v1",
+            "day": 2,
+            "completedToday": 0,
+            "remainingToday": 3,
+            "dailyLimit": 3,
+            "facilityDailyLimit": 2,
+            "employerDailyLimit": 1,
+            "schedule": {
+              "opensAtMinute": 480,
+              "closesAtMinute": 1080,
+              "label": "08:00〜18:00"
+            },
+            "recentWorkTitles": [
+              "届いた穀袋を共同倉庫の軒下まで運ぶ",
+              "孤児院の庭の手入れ"
+            ]
+          }
+        },
+        "error": null
+      },
+      {
+        "id": "capital-first",
+        "passed": true,
+        "checks": {
+          "capitalKnownWithoutAcceptingT01": true,
+          "reachedCapital": true,
+          "remainsOutsideVillage": true,
+          "capitalHasInteractions": true,
+          "capitalDailyWorkLimitRespected": true,
+          "capitalWorkCountBounded": true,
+          "capitalIncomeBounded": true,
+          "t01FailsWithoutPlayer": true,
+          "worldRemainsPlayable": true
+        },
+        "battleRounds": null,
+        "conversations": 6,
+        "jobCount": 4,
+        "totalWorkIncome": 71,
+        "final": {
+          "day": 2,
+          "time": "22:10",
+          "location": "王都",
+          "facilityId": "LOC_CAP_LOWER_INN",
+          "gold": 71,
+          "t01Status": "failed",
+          "workMarket": {
+            "version": "work-market-v1",
+            "day": 2,
+            "completedToday": 2,
+            "remainingToday": 1,
+            "dailyLimit": 3,
+            "facilityDailyLimit": 2,
+            "employerDailyLimit": 1,
+            "schedule": {
+              "opensAtMinute": 360,
+              "closesAtMinute": 1320,
+              "label": "06:00〜22:00"
+            },
+            "recentWorkTitles": [
+              "荷運びと片づけを手伝う",
+              "宿の備品を整理する",
+              "荷運びと片づけを手伝う",
+              "宿の備品を整理する手伝い"
+            ]
+          }
+        },
+        "error": null
+      }
+    ],
+    "audit": {
+      "total": 88,
+      "sources": {
+        "gemini": 83,
+        "gemini_repaired": 2,
+        "gemini_partial": 3
+      },
+      "providerCalls": 90,
+      "providerErrors": 0,
+      "repairCalls": 2,
+      "passed": 86,
+      "failedCount": 2,
+      "metaLeakCount": 0
+    },
+    "sheetSync": {
+      "ok": true,
+      "synced": 88
+    }
+  },
+  "freshGeneration": {
+    "total": 12,
+    "model": "gemini-2.5-flash",
+    "promptVersion": "trpg-narrative-v5.2-director",
+    "summary": {
+      "gemini": 12,
+      "approvedReplay": 0,
+      "replayCache": 0,
+      "fallback": 0,
+      "repaired": 0,
+      "errors": 0,
+      "averageElapsedMs": 2978.3333333333335
+    },
+    "sources": {
+      "gemini": 12
+    },
+    "providerCalls": 12,
+    "fallbackCount": 0,
+    "partialCount": 0,
+    "validationErrorCount": 0
+  },
+  "replayGeneration": {
+    "total": 12,
+    "model": "gemini-2.5-flash",
+    "promptVersion": "trpg-narrative-v5.2-director",
+    "summary": {
+      "gemini": 0,
+      "approvedReplay": 0,
+      "replayCache": 12,
+      "fallback": 0,
+      "repaired": 0,
+      "errors": 0,
+      "averageElapsedMs": 1
+    },
+    "sources": {
+      "replay_cache": 12
+    },
+    "providerCalls": 0,
+    "fallbackCount": 0,
+    "partialCount": 0,
+    "validationErrorCount": 0
+  }
+}

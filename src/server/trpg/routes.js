@@ -12,11 +12,20 @@ export function mountTrpgNarrativeRoutes(app, options = {}) {
   const narrator = options.narrator ?? createTrpgNarrator(options);
 
   app.get("/TRPG/api/narrative/health", (req, res) => {
+    const provider = narrator.providerStatus ?? {
+      enabled: false,
+      configured: false,
+      paidOptIn: false,
+      injected: false,
+      name: null,
+      mode: "replay_cache_with_deterministic_fallback",
+    };
     res.json({
       ok: true,
       model: narrator.model,
       promptVersion: narrator.promptVersion,
-      mode: process.env.GEMINI_API_KEY ? "gemini_with_replay_cache" : "deterministic_fallback_only",
+      mode: provider.mode,
+      provider,
       cache: narrator.cache.snapshot(),
       audit: narrator.auditLog?.snapshot?.() ?? { enabled: false },
       previewEnabled: process.env.TRPG_NARRATIVE_PREVIEW_ENABLED === "true",

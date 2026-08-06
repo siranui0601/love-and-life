@@ -8,6 +8,7 @@ import {
   TRPG_NARRATIVE_PROMPT_VERSION,
   buildLocalNarrativeContext,
   deterministicNarrativeFallback,
+  isConversationClosingAction,
   mergeNarrativeOutputs,
   narrativeReplayKey,
   parseNarrativeJson,
@@ -17,6 +18,7 @@ import {
   validateNarrativeOutput,
 } from "./narrative-contract.js";
 import { createNarrativeReplayCache } from "./narrative-cache.js";
+import { createApprovedNarrativeReplayCache } from "./approved-narrative-replays.js";
 import {
   createNarrativeAuditLog,
   createNarrativeAuditRecord,
@@ -24,6 +26,12 @@ import {
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CACHE_PATH = path.resolve(HERE, "../../../runtime-data/TRPG/narrative-cache.jsonl");
+const DEFAULT_APPROVED_REPLAY_PATH = path.resolve(HERE, "content/approved-narrative-replays.json");
+
+export function trpgGeminiNarrativeEnabled(value = process.env.TRPG_GEMINI_NARRATIVE_ENABLED) {
+  return /^(?:1|true|yes|on)$/iu.test(String(value ?? "").trim());
+}
+
 export function boundedNarrativeRequestTimeout(value, fallback = 18_000) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(3_000, Math.min(25_000, parsed)) : fallback;
@@ -78,8 +86,13 @@ async function writeAuditSafely(auditLog, payload) {
 function sceneSpecificRules(context) {
   const rules = [];
   if (context.sceneMode === "conversation") {
-    rules.push("対象NPCはplayerUtteranceへ直接答え、プロフィール・知っている事実・現在の感情から自然に返す");
-    rules.push("会話を同じ言い換えで停滞させず、新情報・感情の変化・次の具体的な糸口のどれかを一つ加える");
+    if (isConversationClosingAction(context.action)) {
+      rules.push("会話を終える場面では、対象NPCは自然な短い別れの言葉を返す");
+      rules.push("別れ際に新しい情報や新たな依頼を無理に追加しない");
+    } else {
+      rules.push("対象NPCはplayerUtteranceへ直接答え、プロフィール・知っている事実・現在の感情から自然に返す");
+      rules.push("会話を同じ言い換えで停滞させず、新情報・感情の変化・次の具体的な糸口のどれかを一つ加える");
+    }
   }
   if (context.sceneMode === "exploration") {
     rules.push("authoritativeOutcomeや発見済み情報を具体的な感覚・痕跡として描き、同じ発見を繰り返さない");
@@ -196,8 +209,12 @@ export function geminiNarrativeGenerationConfig({ model = TRPG_NARRATIVE_MODEL, 
   };
 }
 
-export function createGoogleGeminiProvider({ apiKey = GEMINI_API_KEY, model = TRPG_NARRATIVE_MODEL } = {}) {
-  if (!apiKey) return null;
+export function createGoogleGeminiProvider({
+  apiKey = GEMINI_API_KEY,
+  model = TRPG_NARRATIVE_MODEL,
+  enabled = trpgGeminiNarrativeEnabled(),
+} = {}) {
+  if (!enabled || !apiKey) return null;
   const client = new GoogleGenerativeAI(apiKey);
   return {
     name: "google-gemini",
@@ -264,11 +281,41 @@ function componentRepairErrors(rawValidation, sanitizedValidation) {
 export function createTrpgNarrator(options = {}) {
   const model = options.model ?? TRPG_NARRATIVE_MODEL;
   const promptVersion = options.promptVersion ?? TRPG_NARRATIVE_PROMPT_VERSION;
-  const provider = options.provider === undefined ? createGoogleGeminiProvider({ model }) : options.provider;
+  const providerInjected = Object.hasOwn(options, "provider");
+  const configuredApiKey = options.apiKey ?? GEMINI_API_KEY;
+  const paidOptIn = options.paidOptIn === undefined
+    ? trpgGeminiNarrativeEnabled()
+    : Boolean(options.paidOptIn);
+  const provider = providerInjected
+    ? options.provider
+    : createGoogleGeminiProvider({
+      apiKey: configuredApiKey,
+      model,
+      enabled: paidOptIn,
+    });
+  const providerStatus = Object.freeze({
+    enabled: Boolean(provider),
+    configured: Boolean(configuredApiKey),
+    paidOptIn,
+    injected: providerInjected,
+    name: provider?.name ?? null,
+    mode: provider
+      ? providerInjected
+        ? "injected_provider_with_replay_cache"
+        : "gemini_with_replay_cache"
+      : "replay_cache_with_deterministic_fallback",
+  });
   const cache = options.cache ?? createNarrativeReplayCache({
     filePath: options.cacheFilePath ?? process.env.TRPG_NARRATIVE_CACHE_FILE ?? DEFAULT_CACHE_PATH,
     memoryOnly: options.memoryOnlyCache ?? false,
   });
+  const approvedCache = options.approvedCache === false
+    ? null
+    : options.approvedCache ?? createApprovedNarrativeReplayCache({
+      filePath: options.approvedReplayFilePath
+        ?? process.env.TRPG_APPROVED_NARRATIVE_REPLAY_FILE
+        ?? DEFAULT_APPROVED_REPLAY_PATH,
+    });
   const auditLog = options.auditLog === false
     ? null
     : options.auditLog ?? createNarrativeAuditLog({
@@ -281,12 +328,48 @@ export function createTrpgNarrator(options = {}) {
     model,
     promptVersion,
     cache,
+    approvedCache,
     auditLog,
+    providerStatus,
     async generate(input, resolverRules = {}) {
       const startedAt = Date.now();
       const { context, audit: contextAudit } = buildLocalNarrativeContext(input);
       const policy = normalizeNarrativePolicy(resolverRules, context);
       const key = narrativeReplayKey(context, { model, promptVersion, policy });
+      const approved = approvedCache?.get(key);
+      if (approved) {
+        const response = {
+          ...approved.response,
+          proposalResolution: resolveNarrativeProposals(approved.response, context, resolverRules),
+          meta: {
+            ...(approved.response.meta ?? {}),
+            source: "approved_replay",
+            cacheKey: key,
+            model,
+            promptVersion,
+            providerCalls: 0,
+            repairCalls: 0,
+            providerErrors: [],
+            validationErrors: [],
+            usageMetadata: null,
+            contextAudit,
+            policy,
+            usedFallback: false,
+            partialOutputUsed: false,
+            cachePersisted: true,
+            approvedMetadata: approved.metadata ?? {},
+            approvedAt: approved.approvedAt ?? null,
+          },
+        };
+        await writeAuditSafely(auditLog, createNarrativeAuditRecord({
+          input,
+          context,
+          response,
+          startedAt,
+          finishedAt: Date.now(),
+        }));
+        return response;
+      }
       const cached = cache.get(key);
       if (cached) {
         const response = {
@@ -388,6 +471,9 @@ export function createTrpgNarrator(options = {}) {
             output = sanitizeNarrativeOutput(parsed, context);
             validation = validateNarrativeOutput(output, context);
             repairErrors = componentRepairErrors(rawValidation, validation);
+            if (!validation.ok && !repairErrors.length) {
+              audit.validationErrors.push(...validation.errors);
+            }
           } catch (error) {
             validation = { ok: false, errors: [`json_parse: ${String(error?.message ?? error)}`] };
             repairErrors = [...validation.errors];

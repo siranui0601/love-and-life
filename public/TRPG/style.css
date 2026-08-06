@@ -560,6 +560,9 @@ body.is-playing .site-header { display: none; }
   filter: saturate(.72) brightness(.72);
 }
 .game-screen .npc-card.is-active { z-index: 2; opacity: 1; transform: none; filter: none; }
+.game-screen .npc-card.is-talkable { pointer-events: auto; cursor: pointer; }
+.game-screen .npc-card.is-talkable:hover,
+.game-screen .npc-card.is-talkable:focus-visible { z-index: 3; opacity: 1; transform: translateY(-1.5%); filter: none; outline: 2px solid rgba(240, 202, 124, .9); outline-offset: -2px; }
 .game-screen .npc-card img,
 .game-screen .portrait-fallback {
   width: 100%;
@@ -1011,4 +1014,57 @@ body.is-playing .site-header { display: none; }
   .battle-command-panel { max-height: 94px; }
   .battle-command-prompt { display: none; }
   .battle-command-button { min-height: 44px; padding-block: 4px; }
+}
+
+
+.weather-label {
+  color: #c9d8c6;
+  font-size: .58rem;
+  white-space: nowrap;
+}
+.need-status {
+  padding: 1px 5px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  color: #dfe8dc;
+  background: rgba(255,255,255,.08);
+  font-size: .58rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.need-status[data-level="warning"] {
+  border-color: rgba(255,205,111,.28);
+  color: #ffe0a0;
+  background: rgba(160,104,20,.25);
+}
+.need-status[data-level="critical"] {
+  border-color: rgba(255,148,123,.34);
+  color: #ffd0c6;
+  background: rgba(150,45,30,.34);
+}
+@media (max-width: 420px) {
+  .weather-label { max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
+  .scene-status { gap: 4px; }
+  .need-status { padding-inline: 3px; }
+}
+
+
+.shop-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: min(42%, 280px);
+}
+.shop-actions .row-action {
+  min-width: 72px;
+}
+.equipment-access-section {
+  border-color: rgba(208, 181, 111, .26);
+  background: rgba(208, 181, 111, .05);
+}
+@media (max-width: 620px) {
+  .shop-row { align-items: stretch; }
+  .shop-actions { max-width: none; width: 100%; justify-content: flex-start; }
 }

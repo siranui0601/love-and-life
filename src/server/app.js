@@ -101,6 +101,8 @@ export function createApp() {
   app.use(express.json({ limit: "12mb" }));
   mountFloodNoHandSoccerVisualRoutes(app);
   const trpgNarrator = mountTrpgNarrativeRoutes(app);
+  // Keep approved/runtime replay reuse available even when paid generation is
+  // disabled. The narrator itself owns the explicit Gemini opt-in boundary.
   mountTrpgGameRoutes(app, { narrator: trpgNarrator });
   app.use("/TRPG/api/game", (error, req, res, next) => {
     if (error?.type === "entity.too.large") return res.status(413).json({ ok: false, error: "game_command_body_too_large" });

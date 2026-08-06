@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#111914" />
   <meta name="description" content="100日間進み続ける世界を旅する、一人用異世界TRPG。" />
   <title>TRPG（仮題） | 不知火遊技場</title>
-  <link rel="stylesheet" href="/TRPG/style.css?v=20260719-agency-v7" />
+  <link rel="stylesheet" href="/TRPG/style.css?v=20260722-needs-v2" />
   <link rel="stylesheet" href="/TRPG/p0-ux.css?v=20260720-onboarding-v2" />
 </head>
 <body>
@@ -72,7 +72,7 @@
           <button id="locationButton" class="location-button" type="button" data-open-panel="movement" aria-label="現在地と移動先を確認">
             <svg class="tool-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.3 6-11a6 6 0 1 0-12 0c0 5.7 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></svg>
             <span class="location-copy"><strong id="facilityName">—</strong><small id="locationName">—</small></span>
-            <span class="compact-clock"><span id="dayLabel">Day —</span><time id="timeLabel">--:--</time><span id="daypartLabel" class="sr-only">—</span></span>
+            <span class="compact-clock"><span id="dayLabel">Day —</span><time id="timeLabel">--:--</time><span id="weatherLabel" class="weather-label">天気—</span><span id="daypartLabel" class="sr-only">—</span></span>
           </button>
 
           <nav class="scene-tools" aria-label="旅の機能">
@@ -98,6 +98,8 @@
           <b id="playerLevel">Lv 1</b>
           <label>HP <progress id="hpBar" max="1" value="1"></progress><span id="hpText">100%</span></label>
           <label>MP <progress id="mpBar" max="1" value="1"></progress><span id="mpText">100%</span></label>
+          <span id="hungerStatus" class="need-status" data-level="normal" title="空腹度">食 15</span>
+          <span id="fatigueStatus" class="need-status" data-level="normal" title="疲労度">疲 8</span>
           <b id="playerGold">0 G</b>
         </div>
 
@@ -189,6 +191,6 @@
   </div>
 
   <script src="/TRPG/p0-ux.js?v=20260720-onboarding-v2"></script>
-  <script type="module" src="/TRPG/app.js?v=20260720-onboarding-v2"></script>
+  <script type="module" src="/TRPG/app.js?v=20260722-needs-v2"></script>
 </body>
 </html>

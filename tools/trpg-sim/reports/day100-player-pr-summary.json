@@ -1,0 +1,1220 @@
+{
+  "schemaVersion": "trpg-day100-player-report-v1",
+  "reachedDay100": true,
+  "finalClock": {
+    "day": 100,
+    "time": "24:00",
+    "hour": 24,
+    "minute": 0,
+    "daypart": "night",
+    "absoluteMinute": 143400,
+    "weatherId": "clear",
+    "weatherLabel": "晴れ"
+  },
+  "finalLocation": "王都",
+  "finalFacilityId": "LOC_CAP_WEAPON_SHOP",
+  "finalGold": 46,
+  "actions": 3213,
+  "acceptedActions": 3213,
+  "rejectedActions": 0,
+  "blockedDecisionCount": 0,
+  "deadEnds": 0,
+  "battles": 1,
+  "jobs": 0,
+  "meals": 0,
+  "mealSeekingMoves": 1,
+  "rests": 0,
+  "visitedHubCount": 3,
+  "visitedFacilityCount": 6,
+  "counts": {
+    "total": 19,
+    "discovered": 6,
+    "engaged": 2,
+    "progressed": 1,
+    "terminal": 19,
+    "resolved": 1,
+    "failed": 18,
+    "neverDiscovered": 13
+  },
+  "troubles": [
+    {
+      "id": "T01",
+      "name": "冒険家志望の少年失踪",
+      "startDay": 1,
+      "deadlineDay": 2,
+      "finalDay": 3,
+      "primaryLocations": [
+        "田園の村",
+        "森"
+      ],
+      "firstRumorMinute": 26,
+      "firstMissionMinute": 38,
+      "firstProgressMinute": 93,
+      "firstPlayerActionMinute": 38,
+      "maximumProgressRatio": 1,
+      "visitedPrimaryLocations": [
+        "田園の村",
+        "森"
+      ],
+      "missionStatusTimeline": [
+        {
+          "minute": 38,
+          "day": 1,
+          "status": "active",
+          "stepId": "search",
+          "progress": 0,
+          "required": 2,
+          "signature": "active:search:0"
+        },
+        {
+          "minute": 93,
+          "day": 1,
+          "status": "active",
+          "stepId": "search",
+          "progress": 1,
+          "required": 2,
+          "signature": "active:search:1"
+        },
+        {
+          "minute": 120,
+          "day": 1,
+          "status": "active",
+          "stepId": "rescue",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:rescue:0"
+        },
+        {
+          "minute": 145,
+          "day": 1,
+          "status": "active",
+          "stepId": "escort",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:escort:0"
+        },
+        {
+          "minute": 162,
+          "day": 1,
+          "status": "active",
+          "stepId": "decide",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:decide:0"
+        },
+        {
+          "minute": 201,
+          "day": 1,
+          "status": "completed",
+          "stepId": null,
+          "progress": null,
+          "required": null,
+          "signature": "completed:none:0"
+        }
+      ],
+      "actionIds": [
+        "TUTORIAL:INQUIRY:MIRA",
+        "MOVE_LOCAL:LOC_FARM_EDGE",
+        "ACTION:MSN-T01:search:claw-marks",
+        "ACTION:MSN-T01:search:dropped-map",
+        "ACTION:MSN-T01:rescue",
+        "ACTION:MSN-T01:escort",
+        "MOVE_LOCAL:LOC_FARM_SQUARE",
+        "ACTION:MSN-T01:decide"
+      ],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "resolved",
+      "finalMissionStatus": "completed",
+      "discovered": true,
+      "engaged": true,
+      "progressed": true,
+      "terminal": true,
+      "resolved": true
+    },
+    {
+      "id": "T02",
+      "name": "田園の村の共同穀倉放火",
+      "startDay": 5,
+      "deadlineDay": 18,
+      "finalDay": 35,
+      "primaryLocations": [
+        "田園の村",
+        "交易都市"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "田園の村"
+      ],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T03",
+      "name": "赤牙狼の群れの南下",
+      "startDay": 8,
+      "deadlineDay": 20,
+      "finalDay": 35,
+      "primaryLocations": [
+        "田園の村",
+        "森"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "田園の村",
+        "森"
+      ],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T04",
+      "name": "古代神殿の巡礼者失踪",
+      "startDay": 12,
+      "deadlineDay": 32,
+      "finalDay": 50,
+      "primaryLocations": [
+        "古代神殿",
+        "辺境の村",
+        "王都"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T05",
+      "name": "交易都市領主の毒殺計画",
+      "startDay": 16,
+      "deadlineDay": 38,
+      "finalDay": 55,
+      "primaryLocations": [
+        "交易都市",
+        "犯罪都市",
+        "黒嶺連合領"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T06",
+      "name": "港湾労働者の暴動",
+      "startDay": 24,
+      "deadlineDay": 45,
+      "finalDay": 56,
+      "primaryLocations": [
+        "交易都市"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T07",
+      "name": "家出エルフの人身売買ルート",
+      "startDay": 18,
+      "deadlineDay": 48,
+      "finalDay": 60,
+      "primaryLocations": [
+        "森",
+        "エルフの隠れ里",
+        "王都",
+        "犯罪都市"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "森",
+        "王都"
+      ],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T08",
+      "name": "森の封鎖令",
+      "startDay": 30,
+      "deadlineDay": 58,
+      "finalDay": 60,
+      "primaryLocations": [
+        "森",
+        "エルフの隠れ里",
+        "王都"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "森",
+        "王都"
+      ],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T09",
+      "name": "ドワーフ洞窟の崩落事故",
+      "startDay": 27,
+      "deadlineDay": 32,
+      "finalDay": 45,
+      "primaryLocations": [
+        "ドワーフ洞窟"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T10",
+      "name": "王都孤児院の立ち退き",
+      "startDay": 26,
+      "deadlineDay": 44,
+      "finalDay": 70,
+      "primaryLocations": [
+        "王都"
+      ],
+      "firstRumorMinute": 36037,
+      "firstMissionMinute": 36037,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
+      "missionStatusTimeline": [
+        {
+          "minute": 36037,
+          "day": 26,
+          "status": "active",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:hear:0"
+        },
+        {
+          "minute": 100117,
+          "day": 70,
+          "status": "failed",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "failed:hear:0"
+        }
+      ],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": true,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T11",
+      "name": "王都の暗殺計画",
+      "startDay": 20,
+      "deadlineDay": 49,
+      "finalDay": 60,
+      "primaryLocations": [
+        "王都",
+        "犯罪都市",
+        "交易都市"
+      ],
+      "firstRumorMinute": 27397,
+      "firstMissionMinute": 27397,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
+      "missionStatusTimeline": [
+        {
+          "minute": 27397,
+          "day": 20,
+          "status": "active",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:hear:0"
+        },
+        {
+          "minute": 85717,
+          "day": 60,
+          "status": "failed",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "failed:hear:0"
+        }
+      ],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": true,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T12",
+      "name": "北陵要塞の偽装襲撃",
+      "startDay": 30,
+      "deadlineDay": 46,
+      "finalDay": 68,
+      "primaryLocations": [
+        "北陵要塞",
+        "黒嶺連合領"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T13",
+      "name": "森のキングスライムと世界樹倒壊",
+      "startDay": 1,
+      "deadlineDay": 60,
+      "finalDay": 90,
+      "primaryLocations": [
+        "森",
+        "エルフの隠れ里",
+        "田園の村",
+        "王都",
+        "黒嶺連合領"
+      ],
+      "firstRumorMinute": 373,
+      "firstMissionMinute": 373,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": 793,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "田園の村",
+        "森",
+        "王都"
+      ],
+      "missionStatusTimeline": [
+        {
+          "minute": 373,
+          "day": 1,
+          "status": "active",
+          "stepId": "investigate",
+          "progress": 0,
+          "required": 2,
+          "signature": "active:investigate:0"
+        },
+        {
+          "minute": 128917,
+          "day": 90,
+          "status": "failed",
+          "stepId": "investigate",
+          "progress": 0,
+          "required": 2,
+          "signature": "failed:investigate:0"
+        }
+      ],
+      "actionIds": [
+        "MOVE_REGION:森"
+      ],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": true,
+      "engaged": true,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T14",
+      "name": "犯罪都市の武器密輸",
+      "startDay": 15,
+      "deadlineDay": 56,
+      "finalDay": 75,
+      "primaryLocations": [
+        "犯罪都市",
+        "交易都市",
+        "王都",
+        "北陵要塞"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T15",
+      "name": "外国船団の入港",
+      "startDay": 55,
+      "deadlineDay": 72,
+      "finalDay": 90,
+      "primaryLocations": [
+        "交易都市",
+        "王都"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T16",
+      "name": "王都の亜人排斥暴動",
+      "startDay": 62,
+      "deadlineDay": 80,
+      "finalDay": 90,
+      "primaryLocations": [
+        "王都",
+        "交易都市",
+        "黒嶺連合領"
+      ],
+      "firstRumorMinute": 87877,
+      "firstMissionMinute": 87877,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
+      "missionStatusTimeline": [
+        {
+          "minute": 87877,
+          "day": 62,
+          "status": "active",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:hear:0"
+        },
+        {
+          "minute": 128917,
+          "day": 90,
+          "status": "failed",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "failed:hear:0"
+        }
+      ],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": true,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T17",
+      "name": "王都の第二召喚儀式",
+      "startDay": 10,
+      "deadlineDay": 41,
+      "finalDay": 63,
+      "primaryLocations": [
+        "王都",
+        "古代神殿",
+        "黒嶺連合領"
+      ],
+      "firstRumorMinute": 12997,
+      "firstMissionMinute": 12997,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
+      "missionStatusTimeline": [
+        {
+          "minute": 12997,
+          "day": 10,
+          "status": "active",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "active:hear:0"
+        },
+        {
+          "minute": 90037,
+          "day": 63,
+          "status": "failed",
+          "stepId": "hear",
+          "progress": 0,
+          "required": 1,
+          "signature": "failed:hear:0"
+        }
+      ],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": true,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T18",
+      "name": "機械巨神兵の封印解除",
+      "startDay": 61,
+      "deadlineDay": 70,
+      "finalDay": 78,
+      "primaryLocations": [
+        "古代神殿",
+        "王都",
+        "辺境の村"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "王都"
+      ],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    },
+    {
+      "id": "T19",
+      "name": "黒嶺連合領の森突破侵攻",
+      "startDay": 63,
+      "deadlineDay": 82,
+      "finalDay": 90,
+      "primaryLocations": [
+        "黒嶺連合領",
+        "森",
+        "王都",
+        "北陵要塞"
+      ],
+      "firstRumorMinute": null,
+      "firstMissionMinute": null,
+      "firstProgressMinute": null,
+      "firstPlayerActionMinute": null,
+      "maximumProgressRatio": 0,
+      "visitedPrimaryLocations": [
+        "森",
+        "王都"
+      ],
+      "missionStatusTimeline": [],
+      "actionIds": [],
+      "stalledTurns": 0,
+      "finalTroubleStatus": "failed",
+      "finalMissionStatus": "failed",
+      "discovered": false,
+      "engaged": false,
+      "progressed": false,
+      "terminal": true,
+      "resolved": false
+    }
+  ],
+  "seed": "trpg-day100-player-v1",
+  "playerName": "百日の旅人",
+  "maxActions": 4200,
+  "stoppedByActionLimit": false,
+  "errors": [],
+  "narrative": {
+    "maxNarrativeCalls": 600,
+    "liveCalls": 600,
+    "routineTemplates": 0,
+    "meaningfulFallbacks": 600,
+    "sourceCounts": {
+      "deterministic_fallback": 600
+    }
+  },
+  "experience": {
+    "schemaVersion": "trpg-day100-experience-audit-v1",
+    "narrative": {
+      "totalScenes": 600,
+      "meaningfulScenes": 600,
+      "acceptedMeaningfulScenes": 0,
+      "fallbackMeaningfulScenes": 600,
+      "partialMeaningfulScenes": 0,
+      "sourceCounts": {
+        "deterministic_fallback": 600
+      },
+      "fallbackSamples": [
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:589",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:590",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:591",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:592",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:593",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:594",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:595",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:596",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:597",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:598",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:599",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:600",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:601",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:2:602",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:2",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:603",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:604",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:605",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:606",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:607",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:608",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:609",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:610",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:611",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:612",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:613",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:614",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:615",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:616",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:617",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        },
+        {
+          "scenarioId": "オレゴン:INSPECT:LOC_CAP_WEAPON_SHOP:3:618",
+          "sceneMode": "exploration",
+          "actionId": "INSPECT:LOC_CAP_WEAPON_SHOP:3",
+          "source": "deterministic_fallback",
+          "validationErrors": []
+        }
+      ],
+      "acceptedMeaningfulRatio": 0,
+      "passed": false
+    },
+    "conversation": {
+      "turns": 4,
+      "topicCounts": {
+        "unspecified": 1,
+        "local_change": 1,
+        "active_mission": 1,
+        "local_concern": 1
+      },
+      "speakers": [
+        "NPC058"
+      ],
+      "gainedInformationTurns": 1,
+      "missionProgressTurns": 0,
+      "shopGuidanceTurns": 1,
+      "repeatedLineCount": 0,
+      "lineFingerprints": {
+        "私はローナ森を流れる川の水量と魔力に異変がある": 1
+      },
+      "choiceIntentSignatures": {
+        "talk|talk|talk": 4
+      },
+      "consequenceSamples": [
+        {
+          "scenarioId": "オレゴン:DIALOGUE:NPC058:4:local_concern:42",
+          "topic": "local_concern",
+          "missionId": null,
+          "requiredDisclosure": "森を流れる川の水量と魔力に異変がある",
+          "choiceIntents": [
+            "talk",
+            "talk",
+            "talk"
+          ]
+        }
+      ],
+      "distinctSpeakerCount": 1,
+      "distinctTopicCount": 4,
+      "distinctChoiceIntentSignatureCount": 1
+    },
+    "skills": {
+      "acquiredIds": [
+        "SKL-0049",
+        "SKL-0001",
+        "SKL-0008",
+        "SKL-0387",
+        "SKL-0002",
+        "SKL-0010",
+        "SKL-0021",
+        "SKL-0022",
+        "SKL-0032",
+        "SKL-0873",
+        "SKL-0898",
+        "SKL-0901",
+        "SKL-0914"
+      ],
+      "firstAcquiredAt": {
+        "SKL-0049": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0049"
+        },
+        "SKL-0001": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0001"
+        },
+        "SKL-0008": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0008"
+        },
+        "SKL-0387": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "ACTION:MSN-T01:decide"
+        },
+        "SKL-0002": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0002"
+        },
+        "SKL-0010": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0010"
+        },
+        "SKL-0021": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0021"
+        },
+        "SKL-0022": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0022"
+        },
+        "SKL-0032": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0032"
+        },
+        "SKL-0873": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0873"
+        },
+        "SKL-0898": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0898"
+        },
+        "SKL-0901": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0901"
+        },
+        "SKL-0914": {
+          "day": null,
+          "minute": null,
+          "sourceActionId": "LEARN_SKILL:SKL-0914"
+        }
+      },
+      "usedIds": [
+        "SKILL:SKL-0001",
+        "SKILL:SKL-0049"
+      ],
+      "useCounts": {
+        "SKILL:SKL-0001": 2,
+        "SKILL:SKL-0049": 2
+      },
+      "availableInBattleIds": [
+        "SKILL:SKL-0001",
+        "SKILL:SKL-0049"
+      ],
+      "acquiredCount": 13,
+      "usedCount": 2
+    },
+    "equipment": {
+      "ownedIds": [
+        "EQP-W-0005",
+        "EQP-A-0001",
+        "EQP-W-0026",
+        "EQP-A-0009",
+        "EQP-W-0073",
+        "EQP-W-0011",
+        "EQP-A-0019",
+        "EQP-X-0003"
+      ],
+      "triedIds": [
+        "EQP-S-0001",
+        "EQP-W-0005"
+      ],
+      "boughtIds": [],
+      "borrowedIds": [],
+      "rewardedIds": [
+        "EQP-W-0026",
+        "EQP-A-0009",
+        "EQP-W-0073",
+        "EQP-W-0011",
+        "EQP-A-0019",
+        "EQP-X-0003"
+      ],
+      "equippedIds": [
+        "EQP-W-0005",
+        "EQP-A-0001",
+        "EQP-W-0026",
+        "EQP-W-0073",
+        "EQP-W-0011"
+      ],
+      "weaponTypesOwned": [
+        "axe",
+        "oneHandedSword",
+        "book"
+      ],
+      "weaponTypesEquipped": [
+        "axe",
+        "oneHandedSword",
+        "book"
+      ],
+      "battleRoundsByWeaponType": {
+        "axe": 12
+      },
+      "ownedCount": 8,
+      "weaponTypeOwnedCount": 3,
+      "weaponTypeEquippedCount": 3
+    },
+    "survival": {
+      "mealsConsumed": 0,
+      "mealSeekingMoves": 1,
+      "restsCompleted": 0,
+      "workCompleted": 0
+    }
+  },
+  "quality": {
+    "reachedDay100": true,
+    "noDeadEnd": true,
+    "allTroublesTerminal": true,
+    "laterTroubleDiscovered": true,
+    "laterTroubleProgressed": false,
+    "noRunnerError": true,
+    "noMeaningfulNarrativeFallback": false,
+    "conversationHasInformation": true,
+    "conversationHasChoiceVariety": false,
+    "conversationAvoidsHeavyRepetition": true,
+    "skillBreadthObserved": true,
+    "skillUsageObserved": false,
+    "weaponBreadthObserved": true,
+    "noMealSearchLoop": true,
+    "passed": false
+  },
+  "replayCandidates": {
+    "auditRecords": 600,
+    "reusableEntries": 0,
+    "rejectedRecords": 600,
+    "duplicateRecords": 0
+  }
+}
