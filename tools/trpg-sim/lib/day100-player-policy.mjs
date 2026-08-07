@@ -40,12 +40,16 @@ function decisionContextSignature(save) {
   ].join("|");
 }
 
+// 「この食事処では買えなかった」という事実は、腹が減っただけでは覆らない。
+// 覆るのは買う手段が増えた時、つまり所持金か無料枠が変わった時だけである。
+//
+// 以前は空腹度を10刻みで署名へ含めていたため、歩いて空腹が上がるたびに
+// 記録が無効化され、同じ食事処を延々と往復していた。Day72までの通し再生では
+// 全4200行動のうち1883回が食事処探索移動で、食事は11回しか成立していない。
 function resourceContextSignature(save) {
-  const hunger = Math.floor(number(save?.player?.needs?.hunger) / 10) * 10;
   return [
     Number(save?.player?.gold ?? 0),
     Number(save?.player?.freeMeals ?? 0),
-    hunger,
   ].join("|");
 }
 
