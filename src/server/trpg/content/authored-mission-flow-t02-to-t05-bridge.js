@@ -1,9 +1,11 @@
 import * as base from "./authored-mission-flow-t02-granary-dawn.js";
+import { ensureAuthoredMissionFlowState } from "./authored-mission-flow-core.js";
 
 export * from "./authored-mission-flow-t02-granary-dawn.js";
 
-export const AUTHORED_T02_TO_T05_BRIDGE_VERSION = "authored-t02-to-t05-bridge-v1";
+export const AUTHORED_T02_TO_T05_BRIDGE_VERSION = "authored-t02-to-t05-bridge-v2";
 
+const FLOW_ID = "trade-lord-poisoning";
 const MISSION_ID = "MSN-T05";
 const TROUBLE_ID = "T05";
 const LOCATION = "交易都市";
@@ -86,6 +88,11 @@ const BRIDGE_CHOICES = Object.freeze([
     }),
     worldFlags: ["t05PoisoningSuspectedByPhysician", "t05MarielContacted"],
     historyType: "T05_BRIDGE_PHYSICIAN_CONSULTED",
+    // 正史の聞き取り相手であるマリエルから、正史と同じ食後半刻の所見を直接得ている。
+    // この扉だけは聞き取り工程そのものが済んだものとして扱う。
+    completesHearing: true,
+    canonicalFactIds: ["T05-FACT-NONNATURAL-POISON"],
+    canonicalLeadIds: ["bedside_symptoms", "antidote_formula"],
     evidenceId: "T05-EVIDENCE-BRIDGE-POSTPRANDIAL-PATTERN",
     evidenceSourceId: "NPC011:MANOR_BEDSIDE_ACCOUNT",
   }),
@@ -105,6 +112,8 @@ const BRIDGE_CHOICES = Object.freeze([
     }),
     worldFlags: ["t05SeparateProcurementFound", "t05ServantChannelIndicated"],
     historyType: "T05_BRIDGE_SEPARATE_PROCUREMENT_FOUND",
+    // 倉庫街で見たのは納品側の記録そのもの。マリエルには会っていないので聞き取りは残る。
+    canonicalLeadIds: ["warehouse_manifest"],
     evidenceId: "T05-EVIDENCE-BRIDGE-SERVANT-ONLY-RECEIPTS",
     evidenceSourceId: "LOC_TRADE_WAREHOUSE:MANOR_INTAKE_LEDGER",
   }),
@@ -124,6 +133,8 @@ const BRIDGE_CHOICES = Object.freeze([
     }),
     worldFlags: ["t05AntidoteDemandSpike", "t05CrimeCityLinkIndicated"],
     historyType: "T05_BRIDGE_ANTIDOTE_DEMAND_FOUND",
+    // 解毒素材の売れ行きと犯罪都市訛りの買い手。処方と裏帳簿の二方向へ繋がる。
+    canonicalLeadIds: ["antidote_formula", "crime_ledger"],
     evidenceId: "T05-EVIDENCE-BRIDGE-ANTIDOTE-BUYERS",
     evidenceSourceId: "NPC077:APOTHECARY_SALES_MEMORY",
   }),
@@ -265,12 +276,41 @@ function actionFor(runtime, choice) {
     authoredT05BridgeHistoryType: choice.historyType,
     authoredT05BridgeEvidenceId: choice.evidenceId,
     authoredT05BridgeEvidenceSourceId: choice.evidenceSourceId,
+    authoredT05BridgeCompletesHearing: choice.completesHearing === true,
+    authoredT05BridgeCanonicalFactIds: choice.canonicalFactIds ?? [],
+    authoredT05BridgeCanonicalLeadIds: choice.canonicalLeadIds ?? [],
   };
 }
 
 function actions(runtime) {
   if (!eligible(runtime)) return null;
   return BRIDGE_CHOICES.map((choice) => actionFor(runtime, choice));
+}
+
+// 扉で実際に分かったことだけを、正史のT05調査へ渡す。
+// 手掛かりを増やすのではなく、既に見たものを正史側の名前で登録し直すだけ。
+function handOffToCanonicalFlow(runtime, action) {
+  const flow = ensureAuthoredMissionFlowState(runtime, FLOW_ID);
+  if (!flow) return false;
+
+  flow.unlockedLeadIds = [...new Set([
+    ...arr(flow.unlockedLeadIds).map(String),
+    ...arr(action.authoredT05BridgeCanonicalLeadIds).map(String),
+  ])];
+  flow.knownFactIds = [...new Set([
+    ...arr(flow.knownFactIds).map(String),
+    ...arr(action.authoredT05BridgeCanonicalFactIds).map(String),
+  ])];
+
+  // マリエル本人から正史と同じ所見を聞いた扉だけ、聞き取り工程を済ませる。
+  if (action.authoredT05BridgeCompletesHearing) {
+    const mission = findMission(runtime, MISSION_ID);
+    if (mission) {
+      mission.progress ??= {};
+      mission.progress.hear = Math.max(1, Number(mission.progress.hear ?? 0));
+    }
+  }
+  return true;
 }
 
 function consume(runtime, action, result) {
@@ -314,6 +354,8 @@ function consume(runtime, action, result) {
     location: LOCATION,
     facilityId: action.targetFacilityId,
   });
+
+  handOffToCanonicalFlow(runtime, action);
 
   const current = player(runtime);
   if (action.targetFacilityId) current.facilityId = action.targetFacilityId;
@@ -378,4 +420,6 @@ export const AUTHORED_T02_TO_T05_BRIDGE_INTERNALS = Object.freeze({
   actionFor,
   actions,
   consume,
+  handOffToCanonicalFlow,
+  FLOW_ID,
 });
