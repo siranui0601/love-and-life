@@ -5,3 +5,8 @@ token.json
 
 data/
 runtime-data/
+
+# Day1〜Day100 通し再生が実行ごとに書き出す診断ログ。
+# CI では artifact として上げるため、リポジトリでは追跡しない。
+# （tools/trpg-sim/reports/ 配下の他のファイルは従来どおり追跡対象。）
+tools/trpg-sim/reports/day100-route-*
