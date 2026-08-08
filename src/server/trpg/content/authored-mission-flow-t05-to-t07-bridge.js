@@ -40,8 +40,11 @@ const TERMINAL = new Set(["completed", "resolved", "terminal", "failed", "abando
 const SETTLED = new Set(["completed", "resolved", "terminal"]);
 
 // Day20〜Day38。捕縛（Day25）から王都下層（Day31）へ移される時期を跨ぐ。
+// この橋はT05が片づいていることを条件にする。正本のT05の生死判定はDay38なので、
+// Day39 00:00 で閉じると、判定当日に解決した回には数時間しか残らない。
+// 渡す先はT07で、その救出期限がDay48である。リュシアが手の届く間は開けておく。
 const BRIDGE_OPEN_MINUTE = 19 * 1440;
-const BRIDGE_CLOSE_MINUTE = 38 * 1440;
+const BRIDGE_CLOSE_MINUTE = 48 * 1440;
 
 // 毒殺事件をどう終わらせたかで、搬送線に気づく角度が変わる。
 const T05_CONTEXTS = Object.freeze({

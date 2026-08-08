@@ -140,7 +140,19 @@ test("the bridge steps aside once the forest camp hearing has begun", () => {
   assert.equal(bridge.eligible(withEvidence), false);
 });
 
-test("the bridge is absent outside the city, outside Day20-37, and once Lucia is beyond reach", () => {
+test("saving the lord on the canonical judgment day still leaves time to reach the docks", () => {
+  // 正本のT05の生死判定はDay38。その日に助けた回が翌朝には橋を失う、では狭すぎる。
+  // 渡す先のT07はDay48が救出期限なので、そこまでは開いている。
+  const settledOnJudgmentDay = runtime("protect_nicolas_and_treat");
+  settledOnJudgmentDay.playerState.absoluteMinute = 38 * 1440 + 9 * 60;
+  assert.equal(bridge.eligible(settledOnJudgmentDay), true, "Day39の朝に船長へ聞ける");
+
+  const rescueDeadline = runtime("protect_nicolas_and_treat");
+  rescueDeadline.playerState.absoluteMinute = 47 * 1440 + 20 * 60;
+  assert.equal(bridge.eligible(rescueDeadline), true, "Day48の夜まではまだ手が届く");
+});
+
+test("the bridge is absent outside the city, outside Day20-48, and once Lucia is beyond reach", () => {
   const away = runtime("buy_crime_ledger_antidote");
   away.playerState.player.location = "王都";
   assert.equal(bridge.eligible(away), false);
@@ -150,7 +162,7 @@ test("the bridge is absent outside the city, outside Day20-37, and once Lucia is
   assert.equal(bridge.eligible(early), false);
 
   const late = runtime("buy_crime_ledger_antidote");
-  late.playerState.absoluteMinute = 38 * 1440;
+  late.playerState.absoluteMinute = 48 * 1440;
   assert.equal(bridge.eligible(late), false);
 
   const sold = runtime("buy_crime_ledger_antidote");

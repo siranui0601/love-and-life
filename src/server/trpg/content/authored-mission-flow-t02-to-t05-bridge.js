@@ -31,8 +31,11 @@ const TERMINAL = new Set(["completed", "resolved", "terminal", "failed", "abando
 
 // T05は正本でDay16発生。穀倉事件の後始末で交易都市にいるプレイヤーが、
 // 領主の異変に最初に触れる窓をDay14〜Day24に置く。
+// この橋はT02が片づいていることを条件にする。正本のT02の最終期限はDay35なので、
+// Day25で閉じると、Day25〜Day35に解決した回は一度もここを通れない。
+// T05の生死判定がDay38なので、そこまで開けておく。
 const BRIDGE_OPEN_MINUTE = 13 * 1440;
-const BRIDGE_CLOSE_MINUTE = 24 * 1440;
+const BRIDGE_CLOSE_MINUTE = 38 * 1440;
 
 // 直前の穀倉事件をどう決着させたかで、交易都市がプレイヤーへ開ける扉が変わる。
 const T02_CONTEXTS = Object.freeze({

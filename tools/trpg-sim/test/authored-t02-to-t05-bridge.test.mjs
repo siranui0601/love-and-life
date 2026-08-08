@@ -115,6 +115,14 @@ test("the three doors record three different leads into the poisoning", () => {
   assert.equal(new Set(flat).size, 3, "each door must yield a distinct canonical lead");
 });
 
+test("settling the granary at its canonical last moment still reaches the bridge", () => {
+  // 正本のT02の最終期限はDay35。そこで解決した回もここを通れなければ、
+  // 期限いっぱいまで粘る遊び方が橋ごと消える。
+  const lastMoment = runtime("village_ledger_public_reading");
+  lastMoment.playerState.absoluteMinute = 34 * 1440 + 12 * 60;
+  assert.equal(bridge.eligible(lastMoment), true);
+});
+
 test("the bridge is absent outside the city, outside its window, and after the lord dies", () => {
   const away = runtime("public_prosecution_and_contract_void");
   away.playerState.player.location = "王都";
@@ -125,7 +133,7 @@ test("the bridge is absent outside the city, outside its window, and after the l
   assert.equal(bridge.eligible(early), false);
 
   const late = runtime("public_prosecution_and_contract_void");
-  late.playerState.absoluteMinute = 24 * 1440;
+  late.playerState.absoluteMinute = 38 * 1440;
   assert.equal(bridge.eligible(late), false);
 
   const dead = runtime("public_prosecution_and_contract_void");
