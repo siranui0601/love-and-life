@@ -1,8 +1,9 @@
-name: TRPG handover sheet sync
+name: TRPG sheet sync
 
-# 開発引き継ぎシートへ docs/trpg/handover-append-*.csv を反映する。
-# 追記のみで、既存行の書き換えと削除は行わない。行の同一性は日時と項目で判定するため、
-# 何度実行しても重複しない。
+# 正本（TRPGスプレッドシート）へ、リポジトリ内の追記CSVを反映する。
+#   docs/trpg/handover-append-*.csv        → 開発引き継ぎシート（同一性は日時と項目）
+#   docs/trpg/canon-facility-append-*.csv  → 各拠点タブの施設一覧（同一性は施設ID）
+# どちらも追記のみで、既存行の書き換えと削除は行わない。何度実行しても重複しない。
 #
 # workflow_dispatch は既定ブランチにこのファイルが入るまで使えないので、
 # 当面は追記CSVを push した時に走らせる。
@@ -16,12 +17,16 @@ on:
   push:
     paths:
       - "docs/trpg/handover-append-*.csv"
+      - "docs/trpg/canon-facility-append-*.csv"
       - "tools/trpg-sim/cli-handover-append.mjs"
+      - "tools/trpg-sim/cli-canon-facility-append.mjs"
       - ".github/workflows/trpg-handover-sync.yml"
   pull_request:
     paths:
       - "docs/trpg/handover-append-*.csv"
+      - "docs/trpg/canon-facility-append-*.csv"
       - "tools/trpg-sim/cli-handover-append.mjs"
+      - "tools/trpg-sim/cli-canon-facility-append.mjs"
       - ".github/workflows/trpg-handover-sync.yml"
 
 env:
@@ -52,4 +57,12 @@ jobs:
             node tools/trpg-sim/cli-handover-append.mjs --dry-run
           else
             node tools/trpg-sim/cli-handover-append.mjs
+          fi
+      # 実装が先行して使っている施設を、正本の拠点タブへ揃える。
+      - name: Append canonical facility rows
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ] || [ "$HANDOVER_DRY_RUN" = "true" ]; then
+            node tools/trpg-sim/cli-canon-facility-append.mjs --dry-run
+          else
+            node tools/trpg-sim/cli-canon-facility-append.mjs
           fi
