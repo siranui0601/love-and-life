@@ -427,37 +427,19 @@ function survivalDecision(save, model, state) {
     const meal = bestChoice(save, state, (choice) => (choice.type === "eat" || SURVIVAL_MEAL_PATTERN.test(actionText(choice)))
       && mealAffordable(choice, save), 170);
     if (meal) return choiceDecision(meal, "空腹が強まる前に、支払える食事を取る", { category: "meal_consumed" });
-    // 拠点を跨ぐ移動は徒歩1〜6時間かかる。腹が減った人間は、隣町の安い飯を思い出して
-    // 歩き出す前に、まず今いる場所で食える所と稼げる口を当たる。順番を逆にすると、
-    // 街道を往復するだけで一日が終わる。
-    const affordableSources = Object.values(state.knownMealSources ?? {})
+    const affordableSource = Object.values(state.knownMealSources ?? {})
       .filter((source) => Number(source.minimumPrice) <= Number(save.player?.gold ?? 0))
       .filter((source) => !mealSourceBlocked(state, source.facilityId, save))
-      .sort((left, right) => Number(left.minimumPrice) - Number(right.minimumPrice));
-    const hereNow = save.scene?.location;
-
-    const localSource = affordableSources.find((source) => source.hub === hereNow);
-    if (localSource) {
-      const localMealMove = movementToward(save, model, state, {
-        facilityId: localSource.facilityId,
-        hub: localSource.hub,
+      .sort((left, right) => Number(left.minimumPrice) - Number(right.minimumPrice))[0];
+    if (affordableSource) {
+      const knownMealMove = movementToward(save, model, state, {
+        facilityId: affordableSource.hub === save.scene?.location ? affordableSource.facilityId : null,
+        hub: affordableSource.hub,
       });
-      if (localMealMove) {
-        return moveDecision(localMealMove, "同じ土地の、支払える食事処へ戻る", { category: "meal_search_move" });
-      }
+      if (knownMealMove) return moveDecision(knownMealMove, "所持金で食べられる食事処へ戻る", { category: "meal_search_move" });
     }
-
     const work = bestChoice(save, state, (choice) => WORK_PATTERN.test(actionText(choice)), 160);
-    if (work) return choiceDecision(work, "食費を確保するため、いま居る場所で稼ぐ", { category: "work" });
-
-    const remoteSource = affordableSources.find((source) => source.hub !== hereNow);
-    if (remoteSource) {
-      const knownMealMove = movementToward(save, model, state, { facilityId: null, hub: remoteSource.hub });
-      if (knownMealMove) {
-        return moveDecision(knownMealMove, "この土地では稼げないので、食える土地へ移る", { category: "meal_search_move" });
-      }
-    }
-
+    if (work) return choiceDecision(work, "食費を確保するため、実行可能な仕事を探す", { category: "work" });
     const mealMove = (save.movement ?? [])
       .filter((move) => !isDecisionBlocked(state, `MOVE:${move.moveId}`, save))
       .filter((move) => !mealSourceBlocked(state, move.destinationFacilityId, save))
