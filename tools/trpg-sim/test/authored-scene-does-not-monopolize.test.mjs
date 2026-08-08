@@ -14,7 +14,7 @@ import {
 function t02Runtime(facilityId = "LOC_FARM_GRANARY") {
   return {
     playerState: {
-      absoluteMinute: 4 * 1440 + 6 * 60,
+      absoluteMinute: 5 * 1440 + 5 * 60,
       player: { location: "田園の村", facilityId },
       missions: [{ id: "MSN-T02", troubleId: "T02", status: "active" }],
       troubles: { T02: { status: "active" } },

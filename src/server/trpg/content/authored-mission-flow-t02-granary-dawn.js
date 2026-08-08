@@ -33,10 +33,12 @@ const HEADCOUNT_SCENE = "t02-dawn-thoma-search";
 const RECORD_SCENE = "t02-dawn-scene-record";
 const STOCK_SCENE = "t02-dawn-stock-count";
 
-const DAWN_OPEN_MINUTE = 4 * 1440;
+// 正本の放火はDay5「夜」。焼け跡はそれより前に存在しないので、
+// 窓はDay5 22:00に開き、Day7 00:00に閉じる。実際に立つのはDay6の夜明けである。
+const DAWN_OPEN_MINUTE = 4 * 1440 + 22 * 60;
 const DAWN_CLOSE_MINUTE = 6 * 1440;
 
-// Day5 夜明け。共同穀倉はまだ煙を上げている。
+// Day6 夜明け。共同穀倉はまだ煙を上げている。
 // ここで最初に何を守るかが、この事件の証拠経路と、村がプレイヤーをどう見るかを決める。
 const DAWN_CHOICES = Object.freeze([
   Object.freeze({
