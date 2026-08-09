@@ -1,1 +1,1 @@
-export * from "./authored-mission-flow-village-first-wages.js";
+export * from "./authored-facility-labour.js";
