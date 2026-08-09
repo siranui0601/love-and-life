@@ -337,6 +337,16 @@ function facilityLooksLike(move, pattern) {
   return pattern.test(`${move.destinationFacilityName ?? ""} ${move.label ?? ""}`);
 }
 
+// 正本で食料か食事を売っている施設は十八ある。名前で拾おうとすると、そのうち八つを
+// 取り落とす。「亭」が入っていなかったので麦穂亭・鉄樽亭・黒灯亭が見えず、
+// 「小屋」が無いので森の狩人小屋が見えず、休憩所・露店・大型店・補給倉庫も同様だった。
+//
+// 見落とされた施設の中に、出発の村で唯一まともに食える麦穂亭が入っている。
+// 拾えるのは王都と交易都市と辺境の村だけになるので、遠隔地で腹を空かせた
+// プレイヤーは食える町まで地方移動を繰り返すしかなくなる。
+// 通し再生の食事処探索移動1746回のうち、観測できた分はすべて地方間移動だった。
+const EATERY_PATTERN = /宿|食堂|酒場|茶屋|パン|市場|亭|小屋|休憩所|露店|大型店|補給倉庫|商店/u;
+
 function skillLearningDecision(save) {
   const learnable = [...(save?.skills?.learnable ?? [])]
     .sort((left, right) => Number(Boolean(right.recommended)) - Number(Boolean(left.recommended))
@@ -443,7 +453,7 @@ function survivalDecision(save, model, state) {
     const mealMove = (save.movement ?? [])
       .filter((move) => !isDecisionBlocked(state, `MOVE:${move.moveId}`, save))
       .filter((move) => !mealSourceBlocked(state, move.destinationFacilityId, save))
-      .find((move) => facilityLooksLike(move, /宿|食堂|酒場|茶屋|パン|市場/u));
+      .find((move) => facilityLooksLike(move, EATERY_PATTERN));
     if (mealMove) return moveDecision(mealMove, "別の食事処で価格や無料の食事を確かめる", { category: "meal_search_move" });
   }
 
@@ -691,3 +701,5 @@ export const DAY100_POLICY_INTERNALS = Object.freeze({
   isDecisionBlocked,
   mealAffordable,
 });
+
+export const DAY100_EATERY_PATTERN = EATERY_PATTERN;
