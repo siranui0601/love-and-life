@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -9,6 +10,24 @@ import {
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 
 const DAY20_MORNING = 19 * 1440 + 8 * 60;
+
+// 正本（スプレッドシート「TRPG」拠点一覧）の写しから施設IDを拾う。
+const WORLD_SNAPSHOT = JSON.parse(
+  readFileSync(new URL("../fixtures/world.snapshot.json", import.meta.url), "utf8"),
+);
+
+function collectFacilityIds(value, found = new Set()) {
+  if (Array.isArray(value)) {
+    for (const entry of value) collectFacilityIds(entry, found);
+  } else if (value && typeof value === "object") {
+    for (const entry of Object.values(value)) collectFacilityIds(entry, found);
+  } else if (typeof value === "string" && /^LOC_[A-Z0-9_]+$/u.test(value)) {
+    found.add(value);
+  }
+  return found;
+}
+
+const CANONICAL_FACILITY_IDS = collectFacilityIds(WORLD_SNAPSHOT.tabs);
 
 function runtime({
   facilityId = "LOC_TRADE_PORT",
@@ -203,15 +222,13 @@ test("every job the road relies on exists in the world", () => {
 
 test("every job sits at a facility the canonical sheet knows", () => {
   // 施設を増やす時は正本へ先に追記する。ここは実装が正本を追い越さないための錠である。
-  const canonical = new Set([
-    "LOC_FARM_INN", "LOC_FARM_GRANARY", "LOC_FARM_BAKERY", "LOC_FARM_FIELD",
-    "LOC_FARM_WELL", "LOC_FARM_STABLE",
-    "LOC_TRADE_PORT", "LOC_TRADE_FISH_MARKET", "LOC_TRADE_INN", "LOC_TRADE_WAREHOUSE",
-    "LOC_CAP_MARKET", "LOC_CAP_LOWER_INN", "LOC_CAP_STABLE", "LOC_CAP_NEWSPAPER",
-    "LOC_FOREST_HUNTER_HUT",
-  ]);
+  // 手で書き写した一覧は必ず正本から遅れるので、正本の写し
+  // （fixtures/world.snapshot.json、拠点一覧タブ由来）そのものを読む。
   for (const facilityId of Object.keys(labour.FACILITY_JOBS)) {
-    assert.ok(canonical.has(facilityId), `${facilityId} is not in the canonical facility list`);
+    assert.ok(
+      CANONICAL_FACILITY_IDS.has(facilityId),
+      `${facilityId} is not in the canonical facility list`,
+    );
   }
 });
 
@@ -239,4 +256,51 @@ test("saved progress survives a restore and keeps counting shifts", () => {
     .find((action) => action.authoredFacilityLabourJobId === "port_morning");
   assert.equal(next.authoredFacilityLabourVariant, labour.variantFor(entry, 1),
     "the second shift is the second variant, not the first again");
+});
+
+test("the day-labour queue does not speak over a named employer standing there", () => {
+  // 麦畑にはエダが、村の広場にはガロがいる。仕事はその人から受けるものであり、
+  // 正本側の労働市場が雇用関係・提示賃金・所要時間を持っている。上書きしてはいけない。
+  // 初任給の一度きりの場面が先に立たない状態（無一文ではない）で確かめる。
+  const square = runtime({ facilityId: "LOC_FARM_SQUARE", location: "田園の村", gold: 12 });
+  assert.ok(labour.openJobsFor(square), "the square does have day work");
+  assert.equal(
+    authoredMissionFlowExclusiveActions(square, { presentNpcs: [{ id: "NPC003" }] }),
+    null,
+    "with Garo standing there, the queue stands down",
+  );
+  assert.ok(
+    authoredMissionFlowExclusiveActions(square, { presentNpcs: [{ id: "NPC061" }] })
+      ?.every((action) => action.authoredFacilityLabourChoice),
+    "with somebody else there, the queue is what the square offers",
+  );
+
+  // 麦畑は手書きの日常場面も持っているので、null ではなくその場面が返る。
+  // 確かめたいのは「日雇いの列が混ざらないこと」である。
+  const field = runtime({ facilityId: "LOC_FARM_FIELD", location: "田園の村", gold: 12 });
+  field.playerState.authoritativePresentNpcIds = new Set(["NPC004"]);
+  assert.equal(labour.namedEmployerStandsHere(field, "LOC_FARM_FIELD", {}), true);
+  assert.equal(
+    (authoredMissionFlowExclusiveActions(field, {}) ?? [])
+      .some((action) => action.authoredFacilityLabourChoice),
+    false,
+    "Eda outranks the gleaning queue",
+  );
+});
+
+test("the named-employer map does not drift from the one the work market uses", () => {
+  // service.js の PREFERRED_WORK_GIVER_BY_FACILITY と同じでなければならない。
+  // 片方だけ増えると、日雇いの列が雇い主の上に被さって気付かれない。
+  const source = readFileSync(
+    new URL("../../../src/server/trpg/game/service.js", import.meta.url),
+    "utf8",
+  );
+  const block = source.match(
+    /const PREFERRED_WORK_GIVER_BY_FACILITY = Object\.freeze\(\{([\s\S]*?)\}\);/u,
+  );
+  assert.ok(block, "the canonical map must still be findable");
+  const canonical = Object.fromEntries(
+    [...block[1].matchAll(/(LOC_[A-Z0-9_]+):\s*"([^"]+)"/gu)].map((match) => [match[1], match[2]]),
+  );
+  assert.deepEqual(labour.NAMED_EMPLOYER_BY_FACILITY, canonical);
 });

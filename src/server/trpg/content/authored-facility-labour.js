@@ -86,6 +86,52 @@ const VARIANTS = Object.freeze({
     v("配り", "一人で王都中", "犬に追われた", "下層の噂"),
     v("紙を裁つ", "見習いの少年", null, null),
   ],
+  chief_paperwork: [
+    v("村会の議事", "村長のガロ", null, null),
+    v("去年の作付け表", "一人で土間", "墨をこぼした", "同じ名前が二度書かれている"),
+    v("使いの口上", "村長の女房", null, "隣村も同じ話を抱えている"),
+    v("嘆願の下書き", "ガロと二人", null, "村長が言い淀んだ箇所"),
+  ],
+  village_edge: [
+    v("折れた柵板", "村の若い衆", null, null),
+    v("見張り小屋道の草", "一人で半日", "鎌で指を切った", null),
+    v("罠の掛け直し", "ジルと二人", null, "南から降りてきた足跡"),
+  ],
+  village_square: [
+    v("行商の荷", "荷を引いてきた男", null, "街道の通行料が上がった"),
+    v("掲示板の古い紙", "一人で広場", null, null),
+    v("朝市の敷物", "顔だけ知っている女", "風で飛ばされた", "麦の値の話"),
+  ],
+  shipyard: [
+    v("麻縄", "耳の遠い船大工", null, null),
+    v("裂けた帆布", "女の帆縫い職人", "針で指を刺した", "沖の風向きが変わった"),
+    v("船底の貝", "潜り慣れた若い衆", null, "沈んだ舟の話"),
+  ],
+  trade_stable: [
+    v("王都行きの積荷", "組合の差配", null, "便が減っている"),
+    v("汗をかいた馬", "年嵩の馬方", null, null),
+    v("荷札", "帳場の女", "字を間違えて書き直した", "同じ宛先が続いている"),
+  ],
+  customs: [
+    v("通関の控え", "税吏の下役", null, "検めを飛ばされた荷がある"),
+    v("開けられた木箱", "税吏と二人", null, null),
+    v("印紙", "一人で窓口", "貼り間違えた", "手数料の話"),
+  ],
+  ajin_quarter: [
+    v("露店の品", "サミラ", null, "客足が減った理由"),
+    v("破れた日除け幕", "店主たち総出", "風で骨が折れた", null),
+    v("路地の荷", "名を名乗らない獣人", null, null),
+  ],
+  orphanage: [
+    v("子どもの相手", "院長のシスター", null, "立ち退きの日取り"),
+    v("薪割り", "年長の子ども二人", null, null),
+    v("繕い物", "一人で縫い場", "指ぬきを無くした", "どの子の服かの話"),
+  ],
+  forest_camp: [
+    v("焚き木", "野営の狩人たち", null, null),
+    v("張った皮", "無口な女猟師", null, "獣が里へ降りている"),
+    v("煮炊き", "野営の全員", "鍋を焦がした", "森の奥の水の話"),
+  ],
 });
 
 function job(id, label, family, variantKey, minutes, gold, hunger, fatigue, hours, extra = {}) {
@@ -175,6 +221,51 @@ const FACILITY_JOBS = Object.freeze({
     job("hunter_traps", "罠を見回る", "work", "hunter_traps", 360, 6, 24, 36, DAY),
     job("hunter_butcher", "獲物を解体する", "work", "hunter_traps", 180, 4, -10, 20, DAY),
     job("hunter_fletch", "矢羽根を付け替える", "work", "hunter_traps", 120, 2, 8, 8, DAY),
+  ],
+  LOC_FOREST_CAMP: [
+    job("camp_firewood", "薪を集める", "work", "forest_camp", 90, 1, 8, 12, DAY),
+    job("camp_hides", "皮を張る", "work", "forest_camp", 150, 2, 8, 14, DAY),
+    job("camp_cook", "煮炊きを手伝う", "help", "forest_camp", 120, 1, -20, 8, EVENING, { freeMeals: 1 }),
+  ],
+  LOC_FARM_CHIEF: [
+    job("chief_copy", "書き付けを清書する", "work", "chief_paperwork", 200, 3, 10, 12, DAY, { literacy: true }),
+    job("chief_bind", "帳面を綴じ直す", "work", "chief_paperwork", 120, 2, 6, 8, DAY),
+    job("chief_errand", "村長の使いに出る", "move", "chief_paperwork", 150, 2, 12, 16, DAY),
+  ],
+  LOC_FARM_EDGE: [
+    job("edge_fence", "柵を直す", "work", "village_edge", 180, 3, 12, 22, DAY),
+    job("edge_traps", "罠を見回る", "work", "village_edge", 240, 4, 16, 26, DAY),
+    job("edge_mow", "見張り小屋道の草を刈る", "work", "village_edge", 120, 1, 8, 14, DAY),
+  ],
+  LOC_FARM_SQUARE: [
+    job("square_unload", "荷降ろしを手伝う", "work", "village_square", 90, 2, 8, 12, DAY),
+    job("square_board", "掲示板の紙を貼り替える", "work", "village_square", 60, 1, 4, 5, DAY),
+    job("square_mats", "朝市の敷物を広げる", "work", "village_square", 90, 1, 6, 9, EARLY),
+  ],
+  LOC_TRADE_SHIPYARD: [
+    job("shipyard_rope", "綱をなう", "work", "shipyard", 180, 3, 10, 12, DAY),
+    job("shipyard_sail", "帆布を繕う", "work", "shipyard", 200, 4, 10, 14, DAY),
+    job("shipyard_hull", "船底の貝を落とす", "work", "shipyard", 240, 4, 18, 32, DAY),
+  ],
+  LOC_TRADE_STABLE: [
+    job("trade_stable_load", "荷を積む", "work", "trade_stable", 180, 5, 16, 26, DAY),
+    job("trade_stable_wash", "馬を洗う", "help", "trade_stable", 120, 2, 10, 16, DAY),
+    job("trade_stable_tags", "荷札を書き写す", "work", "trade_stable", 120, 3, 6, 8, DAY, { literacy: true }),
+  ],
+  LOC_TRADE_CUSTOMS: [
+    job("customs_copy", "書類を写す", "work", "customs", 200, 6, 10, 12, DAY, { literacy: true }),
+    job("customs_inspect", "荷検めに立ち会う", "investigate", "customs", 150, 4, 8, 12, DAY),
+    job("customs_stamps", "印紙を貼る", "work", "customs", 90, 2, 5, 6, DAY),
+  ],
+  LOC_CAP_AJIN_QUARTER: [
+    job("ajin_stall", "露店の店番をする", "talk", "ajin_quarter", 200, 3, 10, 12, DAY),
+    job("ajin_awning", "日除け幕を張り直す", "work", "ajin_quarter", 120, 2, 8, 14, DAY),
+    job("ajin_carry", "路地の荷を運ぶ", "work", "ajin_quarter", 150, 3, 12, 20, DAY),
+  ],
+  LOC_CAP_ORPHANAGE: [
+    job("orphanage_children", "子どもの世話をする", "help", "orphanage", 240, 0, -22, 18, DAY, { freeMeals: 1 }),
+    job("orphanage_firewood", "薪を割る", "work", "orphanage", 120, 1, 10, 18, DAY),
+    job("orphanage_mend", "繕い物をする", "help", "orphanage", 150, 1, 6, 8, DAY),
   ],
 });
 
@@ -296,6 +387,25 @@ export function missionWaitsHere(runtime, facilityId, location) {
   return false;
 }
 
+// 名指しの雇い主が立っている場所では、日雇いの列は黙る。
+// 麦畑にはエダが、村の広場にはガロがいて、仕事はその人から受けるものである。
+// 正本側の労働市場（service.js の PREFERRED_WORK_GIVER_BY_FACILITY）は
+// 雇用関係・提示賃金・所要時間の取り決めを持っており、こちらが上書きしてはいけない。
+// その人がその場にいない日は、ここの列が代わりに立つ。
+const NAMED_EMPLOYER_BY_FACILITY = Object.freeze({
+  LOC_FARM_FIELD: "NPC004",
+  LOC_FARM_SQUARE: "NPC003",
+});
+
+export function namedEmployerStandsHere(runtime, facilityId, context) {
+  const employerId = NAMED_EMPLOYER_BY_FACILITY[String(facilityId ?? "")];
+  if (!employerId) return false;
+  const present = arr(context?.presentNpcs).map((npc) => String(npc?.id ?? npc ?? ""));
+  if (present.includes(employerId)) return true;
+  const authoritative = runtime?.playerState?.authoritativePresentNpcIds;
+  return authoritative instanceof Set ? authoritative.has(employerId) : false;
+}
+
 export function openJobsFor(runtime) {
   const facilityId = String(player(runtime).facilityId ?? "");
   const entries = jobsAt(facilityId);
@@ -396,15 +506,20 @@ function actionFor(runtime, entry, waitMinutes = 0) {
   };
 }
 
+function standsDown(runtime, context) {
+  if (namedEmployerStandsHere(runtime, player(runtime).facilityId, context)) return true;
+  return baseOffers(runtime, context);
+}
+
 function actions(runtime, context) {
   const offered = offeredJobsFor(runtime);
-  if (!offered || baseOffers(runtime, context)) return null;
+  if (!offered || standsDown(runtime, context)) return null;
   return offered.map(({ entry, waitMinutes }) => actionFor(runtime, entry, waitMinutes));
 }
 
 function guidance(runtime, context) {
   const open = offeredJobsFor(runtime);
-  if (!open || baseOffers(runtime, context)) return null;
+  if (!open || standsDown(runtime, context)) return null;
   return {
     kicker: "手が足りていない。名前も身分も聞かれない類の仕事である",
     title: "今日の働き口",
@@ -483,6 +598,8 @@ export const AUTHORED_FACILITY_LABOUR_INTERNALS = Object.freeze({
   actionIdFor,
   jobsAt,
   missionWaitsHere,
+  namedEmployerStandsHere,
+  NAMED_EMPLOYER_BY_FACILITY,
   jobIsOpen,
   variantFor,
   needsTheWork,
