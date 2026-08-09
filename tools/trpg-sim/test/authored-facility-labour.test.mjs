@@ -48,6 +48,7 @@ test("a facility with work offers it, and the choices are jobs", () => {
   assert.deepEqual(actions.map((action) => action.label), [
     "朝の荷役に入る",
     "綱を取る",
+    "夕の荷役に入る——明朝の口に、今から名前を入れておく",
   ]);
   for (const action of actions) {
     assert.equal(action.actionId, action.id);
@@ -147,9 +148,41 @@ test("work keeps its hours, and places without work offer none", () => {
   const evening = runtime({ minute: 19 * 1440 + 18 * 60 });
   assert.deepEqual(
     authoredMissionFlowExclusiveActions(evening).map((action) => action.label),
-    ["夕の荷役に入る", "綱を取る"],
-    "the morning shift is over; the evening one is not",
+    [
+      "夕の荷役に入る",
+      "綱を取る",
+      "朝の荷役に入る——明朝の口に、今から名前を入れておく",
+    ],
+    "the morning shift is over; the evening one is not, and dawn can be booked now",
   );
+});
+
+test("a work screen is never fewer than three shifts", () => {
+  // 一口しか空いていない場所で一択の画面を出すのは、選ばせていないのと同じ。
+  // 空いていない口は待ち時間つきで並べ、三択を保つ。
+  const alone = runtime({ facilityId: "LOC_CAP_LOWER_INN", location: "王都", minute: 19 * 1440 + 14 * 60 });
+  const actions = authoredMissionFlowExclusiveActions(alone);
+  assert.equal(actions.length, 3, "the cheap inn has one open shift but still asks three questions");
+  assert.equal(actions.filter((action) => action.authoredFacilityLabourWaitMinutes === 0).length, 2);
+
+  const booked = actions.find((action) => action.authoredFacilityLabourWaitMinutes > 0);
+  assert.ok(booked, "the shift that is not open yet is offered as a wait");
+  const entry = labour.jobsAt("LOC_CAP_LOWER_INN").find((job) => job.id === booked.authoredFacilityLabourJobId);
+  assert.equal(booked.minutes, entry.minutes + booked.authoredFacilityLabourWaitMinutes, "waiting costs the clock");
+  assert.equal(booked.authoredFacilityLabourGold, entry.gold, "waiting does not change the wage");
+});
+
+test("every facility with work can fill a three-choice screen", () => {
+  for (const [facilityId, entries] of Object.entries(labour.FACILITY_JOBS)) {
+    assert.ok(entries.length >= 3, `${facilityId} needs three shifts to fill a screen, has ${entries.length}`);
+  }
+});
+
+test("the wait is measured to the shift, not guessed", () => {
+  const entry = labour.jobsAt("LOC_TRADE_PORT").find((job) => job.id === "port_morning");
+  assert.equal(labour.waitMinutesUntilOpen(entry, 5, 0), 0, "already open");
+  assert.equal(labour.waitMinutesUntilOpen(entry, 3, 30), 90, "opens at 5; it is 3:30");
+  assert.equal(labour.waitMinutesUntilOpen(entry, 21, 0), 8 * 60, "closed for today; dawn is eight hours off");
 });
 
 test("every job the road relies on exists in the world", () => {

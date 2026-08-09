@@ -114,6 +114,7 @@ const FACILITY_JOBS = Object.freeze({
   LOC_FARM_BAKERY: [
     job("bakery_oven", "窯に薪をくべる", "work", "bakery_oven", 120, 1, -18, 11, EARLY),
     job("bakery_sift", "粉を篩う", "work", "bakery_oven", 150, 2, 8, 14, DAY),
+    job("bakery_round", "焼き上がりを家々へ配る", "move", "bakery_oven", 90, 2, 10, 12, DAY),
   ],
   LOC_FARM_FIELD: [
     job("field_reap", "麦を刈る", "work", "granary_count", 400, 6, 26, 40, DAY),
@@ -123,10 +124,12 @@ const FACILITY_JOBS = Object.freeze({
   LOC_FARM_WELL: [
     job("well_water", "水を汲む", "work", "inn_dishes", 60, 1, 5, 7, DAY),
     job("well_herbs", "薬草を干す", "help", "inn_dishes", 150, 2, 8, 9, DAY),
+    job("well_rope", "擦り切れた井戸縄を綯い直す", "work", "inn_dishes", 120, 2, 7, 12, DAY),
   ],
   LOC_FARM_STABLE: [
     job("stable_muck", "馬房を掃除する", "work", "stable_muck", 180, 3, 12, 22, DAY),
     job("stable_feed", "飼葉をやる", "help", "stable_muck", 60, 1, 5, 6, DAY),
+    job("stable_harness", "馬具の革を繕う", "work", "stable_muck", 120, 2, 8, 10, DAY),
   ],
   LOC_TRADE_PORT: [
     job("port_morning", "朝の荷役に入る", "work", "port_haul", 210, 8, 22, 38, EARLY),
@@ -141,9 +144,12 @@ const FACILITY_JOBS = Object.freeze({
   LOC_TRADE_INN: [
     job("trade_inn_prep", "厨房の下ごしらえ", "work", "inn_dishes", 200, 4, -16, 18, DAY, { freeMeals: 1 }),
     job("trade_inn_casks", "酒樽を運ぶ", "work", "inn_dishes", 180, 4, 14, 24, EVENING),
+    job("trade_inn_floor", "客席を回る", "talk", "inn_dishes", 120, 3, 8, 12, EVENING),
   ],
   LOC_TRADE_WAREHOUSE: [
     job("warehouse_tally", "積荷の数を取る", "investigate", "port_haul", 200, 5, 12, 16, DAY),
+    job("warehouse_restack", "崩れた山を積み直す", "work", "port_haul", 210, 5, 16, 30, DAY),
+    job("warehouse_rats", "鼠の食害を見て回る", "investigate", "port_haul", 90, 2, 6, 8, DAY),
   ],
   LOC_CAP_MARKET: [
     job("market_porter", "荷を運ぶ", "work", "market_porter", 240, 6, 20, 34, DAY),
@@ -152,14 +158,18 @@ const FACILITY_JOBS = Object.freeze({
   ],
   LOC_CAP_LOWER_INN: [
     job("cap_inn_dishes", "皿を洗う", "work", "inn_dishes", 180, 2, 10, 16, DAY),
+    job("cap_inn_floor", "床を磨く", "work", "inn_dishes", 90, 1, 6, 9, DAY),
+    job("cap_inn_water", "水を汲んで運ぶ", "work", "inn_dishes", 120, 2, 9, 14, EARLY),
   ],
   LOC_CAP_STABLE: [
     job("cap_stable_muck", "馬房を掃除する", "work", "stable_muck", 200, 4, 14, 26, DAY),
     job("cap_stable_load", "荷を積む", "work", "market_porter", 180, 5, 14, 24, DAY),
+    job("cap_stable_water", "馬に水をやる", "help", "stable_muck", 60, 1, 5, 7, DAY),
   ],
   LOC_CAP_NEWSPAPER: [
     job("press_print", "刷りを手伝う", "work", "newspaper_press", 180, 3, 12, 16, DAY),
     job("press_deliver", "瓦版を配る", "move", "newspaper_press", 200, 3, 14, 22, DAY),
+    job("press_cut", "紙を裁つ", "work", "newspaper_press", 120, 2, 8, 10, DAY),
   ],
   LOC_FOREST_HUNTER_HUT: [
     job("hunter_traps", "罠を見回る", "work", "hunter_traps", 360, 6, 24, 36, DAY),
@@ -298,6 +308,36 @@ export function openJobsFor(runtime) {
   return open.length > 0 ? open : null;
 }
 
+// 今すぐ入れる口が三つに満たない場所がある。安宿の皿洗いは一口しかない。
+// そこで一択の画面を出すのは、選ばせていないのと同じである。
+// 空いていない口は「次の刻を待って入る」形で並べ、待ち時間を作業時間に足す。
+// 待つのも選択なので、賃金も消耗もその口のまま変わらない。
+export function waitMinutesUntilOpen(entry, hour, minuteOfHour) {
+  if (jobIsOpen(entry, hour)) return 0;
+  const hoursAhead = ((Number(entry.openHour) - hour) + 24) % 24;
+  return hoursAhead * 60 - minuteOfHour;
+}
+
+export function offeredJobsFor(runtime) {
+  const open = openJobsFor(runtime);
+  if (!open) return null;
+  if (open.length >= 3) return open.slice(0, 3).map((entry) => ({ entry, waitMinutes: 0 }));
+
+  const hour = hourOf(runtime);
+  const minuteOfHour = (((absoluteMinute(runtime) % 1440) + 1440) % 1440) % 60;
+  const offered = open.map((entry) => ({ entry, waitMinutes: 0 }));
+  const waiting = arr(jobsAt(String(player(runtime).facilityId ?? "")))
+    .filter((entry) => !open.includes(entry))
+    .map((entry) => ({ entry, waitMinutes: waitMinutesUntilOpen(entry, hour, minuteOfHour) }))
+    .sort((left, right) => left.waitMinutes - right.waitMinutes
+      || String(left.entry.id).localeCompare(String(right.entry.id), "en"));
+  for (const candidate of waiting) {
+    if (offered.length >= 3) break;
+    offered.push(candidate);
+  }
+  return offered.length >= 3 ? offered : null;
+}
+
 // 常設の働き口は、この鎖のいちばん下に敷く床である。
 // 事件にも、一度きりの手書き場面にも割り込まない。井戸端の日常三択も、
 // 初任給の三択も、その場所その日にしか無いものなので先に立つ。
@@ -323,7 +363,14 @@ function summaryFor(entry, variant) {
   return parts.join("");
 }
 
-function actionFor(runtime, entry) {
+function waitLabel(entry, waitMinutes) {
+  if (waitMinutes <= 0) return entry.label;
+  const hours = Math.round(waitMinutes / 60);
+  if (hours >= 6) return `${entry.label}——明朝の口に、今から名前を入れておく`;
+  return `${entry.label}——${hours}時間ほど待って、次の刻の口に入る`;
+}
+
+function actionFor(runtime, entry, waitMinutes = 0) {
   const id = actionIdFor(entry);
   const variant = variantFor(entry, shiftCountOf(readState(runtime), entry));
   return {
@@ -331,8 +378,9 @@ function actionFor(runtime, entry) {
     actionId: id,
     family: entry.family,
     type: "plan",
-    minutes: entry.minutes,
-    label: entry.label,
+    minutes: entry.minutes + Math.max(0, waitMinutes),
+    authoredFacilityLabourWaitMinutes: Math.max(0, waitMinutes),
+    label: waitLabel(entry, waitMinutes),
     targetLocation: player(runtime).location ?? null,
     targetFacilityId: player(runtime).facilityId ?? null,
     suppressRandomEncounter: true,
@@ -349,13 +397,13 @@ function actionFor(runtime, entry) {
 }
 
 function actions(runtime, context) {
-  const open = openJobsFor(runtime);
-  if (!open || baseOffers(runtime, context)) return null;
-  return open.map((entry) => actionFor(runtime, entry));
+  const offered = offeredJobsFor(runtime);
+  if (!offered || baseOffers(runtime, context)) return null;
+  return offered.map(({ entry, waitMinutes }) => actionFor(runtime, entry, waitMinutes));
 }
 
 function guidance(runtime, context) {
-  const open = openJobsFor(runtime);
+  const open = offeredJobsFor(runtime);
   if (!open || baseOffers(runtime, context)) return null;
   return {
     kicker: "手が足りていない。名前も身分も聞かれない類の仕事である",
@@ -438,7 +486,9 @@ export const AUTHORED_FACILITY_LABOUR_INTERNALS = Object.freeze({
   jobIsOpen,
   variantFor,
   needsTheWork,
+  offeredJobsFor,
   openJobsFor,
   ownEligible,
   readState,
+  waitMinutesUntilOpen,
 });
