@@ -372,14 +372,23 @@ function stepsOf(runtime, missionId, mission) {
 // 「引き受けた」が効いている。噂を聞いただけの事件は仕事を止めない。
 // 道の主人公がDay16からDay33まで港で荷を担げるのは、その間まだ交易都市の依頼を
 // 一つも引き受けていないからで、Day36にT05へ踏み込んだ後は港が仕事場でなくなる。
+//
+// 黙るのは手順が名指しした施設だけである。土地ごと黙らせてはいけない。
+// 初版は同じ土地の依頼すべてで黙っていたが、それだと村で依頼を一つ引き受けた
+// 時点で村じゅうの働き口が消える。道はそう書かれていない。Day12は片手で
+// 麦穂亭の洗い場に立ち、Day13は焼け跡を片づけていて、どちらもT02の最中である。
+// 手順が施設を名指ししていない（土地だけを指す）時に限り、その土地全体が現場になる。
 export function missionWaitsHere(runtime, facilityId, location) {
   for (const [missionId, mission] of missionEntries(runtime)) {
     if (TERMINAL.has(String(mission?.status ?? ""))) continue;
     if (String(mission?.status ?? "") !== "active") continue;
     for (const step of stepsOf(runtime, missionId, mission)) {
-      const sameFacility = String(step?.targetFacilityId ?? "") === facilityId;
-      const sameLocation = location != null && String(step?.targetLocation ?? "") === location;
-      if (!sameFacility && !sameLocation) continue;
+      const stepFacility = String(step?.targetFacilityId ?? "");
+      const sameFacility = stepFacility !== "" && stepFacility === facilityId;
+      const hubOnlyStep = stepFacility === ""
+        && location != null
+        && String(step?.targetLocation ?? "") === location;
+      if (!sameFacility && !hubOnlyStep) continue;
       const done = Number(mission?.progress?.[step?.id] ?? step?.progress ?? 0);
       if (done < Number(step?.required ?? 1)) return true;
     }
