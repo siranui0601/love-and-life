@@ -11,6 +11,7 @@ import {
   quoteEquipmentSale,
   sellEquipment,
 } from "../../../../tools/trpg-sim/lib/shop-runtime.mjs";
+import { BATTLE_ASSUMPTIONS } from "../../../../tools/trpg-sim/lib/battle-model.mjs";
 import { experienceToNextLevel } from "../../../../tools/trpg-sim/lib/mission-model.mjs";
 import { ensurePlayerNeeds, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 import {
@@ -2913,7 +2914,11 @@ export function executeGameRuntimeCommand(runtime, data, command) {
           encounterId: opening.continuation.encounterId,
           playerBuild: opening.continuation.prepared.scaledBuild,
           seed: opening.continuation.key,
-          maxTurns: 100,
+          // The turn ceiling is a world rule, not a per-caller knob: a fight
+          // that has not resolved by then is a stalemate the player walks away
+          // from.  Pinning 100 here let a free debuff win any fight by
+          // outlasting the other side.
+          maxTurns: BATTLE_ASSUMPTIONS.battleTurnLimit,
         });
         runtime.pendingBattle = {
           id: battleId,

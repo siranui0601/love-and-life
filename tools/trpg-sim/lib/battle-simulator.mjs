@@ -49,7 +49,10 @@ export function actorStat(actor, stat) {
   if (['accuracy', 'evasion', 'critical', 'debuff_success', 'debuff_resistance'].includes(canonical)) {
     return base + stage * BATTLE_ASSUMPTIONS.accuracyStagePoints;
   }
-  return Math.max(0, base * Math.max(0.1, 1 + stage * BATTLE_ASSUMPTIONS.modifierStageRatio));
+  return Math.max(0, base * Math.max(
+    BATTLE_ASSUMPTIONS.modifierStageFloor,
+    1 + stage * BATTLE_ASSUMPTIONS.modifierStageRatio,
+  ));
 }
 
 function ratio(actor, resource) {
@@ -283,6 +286,13 @@ function applyModifier(target, command) {
   });
 }
 
+/**
+ * Resolves a hostile debuff against the target's resistance.  Stat-stage
+ * debuffs come through here too: the sheet gives every monster a
+ * デバフ耐性 column and per-debuff overrides, and a stage drop is the most
+ * punishing debuff in the game, so it is the last thing that should land
+ * unconditionally.  Buffs and self-applied modifiers do not pass through here.
+ */
 function applyDebuff(source, target, command, rng) {
   const id = command.debuffId ?? command.type;
   const baseChance = Number(command.baseChance ?? command.chancePct ?? 100);
@@ -290,6 +300,10 @@ function applyDebuff(source, target, command, rng) {
   const chance = Math.max(0.05, Math.min(0.95,
     (baseChance + actorStat(source, 'debuffSuccess') - actorStat(target, 'debuffResistance') - individual) / 100));
   if (!rng.bool(chance)) return false;
+  if (command.type === 'statStage') {
+    applyModifier(target, { modifier: command.stat, stage: command.stage, durationTurns: command.durationTurns });
+    return true;
+  }
   target.debuffs.set(id, {
     duration: Number(command.durationTurns ?? 1),
     params: command.params ?? command,
@@ -483,8 +497,8 @@ function executePlayerSkill({ state, action, rng, diagnostics }) {
   }
   for (const debuff of skill.debuffs ?? []) {
     for (const debuffTarget of targets) {
-      if (debuff.type === 'statStage') applyModifier(debuffTarget, { modifier: debuff.stat, stage: debuff.stage, durationTurns: debuff.durationTurns });
-      else applyDebuff(actor, debuffTarget, { ...debuff, debuffId: debuff.type, baseChance: debuff.chancePct ?? 100 }, rng);
+      const debuffId = debuff.type === 'statStage' ? `${canonicalStat(debuff.stat)}_stage` : debuff.type;
+      applyDebuff(actor, debuffTarget, { ...debuff, debuffId, baseChance: debuff.chancePct ?? 100 }, rng);
     }
   }
   for (const stateEffect of skill.specialStates ?? []) {
@@ -756,7 +770,7 @@ export function beginInteractiveBattle(options) {
   const { data } = options;
   if (!data) throw new Error('beginInteractiveBattle requires data');
   const seed = options.seed ?? 'battle';
-  const requestedMaxTurns = Number(options.maxTurns ?? 100);
+  const requestedMaxTurns = Number(options.maxTurns ?? BATTLE_ASSUMPTIONS.battleTurnLimit);
   const maxTurns = Number.isFinite(requestedMaxTurns) ? Math.max(1, Math.floor(requestedMaxTurns)) : 100;
   const rng = createSeededRng(`${seed}:interactive:encounter`);
   const state = initializeState(data, options, rng);
@@ -1020,7 +1034,7 @@ export function simulateBattle(options) {
   const diagnostics = new DiagnosticBag();
   const state = initializeState(data, options, rng);
   const actionUsage = new Map();
-  const maxTurns = Number(options.maxTurns ?? 100);
+  const maxTurns = Number(options.maxTurns ?? BATTLE_ASSUMPTIONS.battleTurnLimit);
   let winner = 'draw';
   let fallbackAttacks = 0;
   let totalHits = 0;

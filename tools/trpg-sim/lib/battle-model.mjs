@@ -19,7 +19,17 @@ export const BATTLE_ASSUMPTIONS = Object.freeze({
   criticalDamageMultiplier: 1.5,
   defenseCoefficient: 0.6,
   modifierStageRatio: 0.15,
+  // A stat can be ground down, but never switched off.  Without a floor above
+  // zero, a free 0-cost debuff with a one turn cooldown wins any fight given
+  // enough turns: stack it to stage -6, the opponent deals a tenth of its
+  // damage, and the outcome stops depending on the build.  0.4 keeps a fully
+  // debuffed brute lethal, so debuffs buy time instead of buying the win.
+  modifierStageFloor: 0.4,
   accuracyStagePoints: 10,
+  // Fights are minutes long in the fiction.  A battle that has not resolved by
+  // this many rounds is a stalemate the player walks away from, not a victory
+  // earned by outlasting the other side.
+  battleTurnLimit: 20,
   cooldownTick: 'start_of_round',
   allyCountIncludesSelf: true,
   enemySelection: 'eligible actions are sampled by base weight; priority is retained for reporting only',
