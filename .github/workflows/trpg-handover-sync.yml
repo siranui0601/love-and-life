@@ -3,6 +3,9 @@ name: TRPG sheet sync
 # 正本（TRPGスプレッドシート）へ、リポジトリ内の追記CSVを反映する。
 #   docs/trpg/handover-append-*.csv        → 開発引き継ぎシート（同一性は日時と項目）
 #   docs/trpg/canon-facility-append-*.csv  → 各拠点タブの施設一覧（同一性は施設ID）
+#   docs/trpg/equipment-additions.csv      → 戦闘データマスター 装備性能マスター＋店舗装備在庫（同一性は装備ID）
+#   docs/trpg/material-buyback.csv         → 戦闘データマスター 素材買取価格（同一性は素材ID）
+#   docs/trpg/weather-almanac.csv          → TRPG 天候年鑑（同一性は Day＋地域）
 # どちらも追記のみで、既存行の書き換えと削除は行わない。何度実行しても重複しない。
 #
 # workflow_dispatch は既定ブランチにこのファイルが入るまで使えないので、
@@ -18,15 +21,23 @@ on:
     paths:
       - "docs/trpg/handover-append-*.csv"
       - "docs/trpg/canon-facility-append-*.csv"
+      - "docs/trpg/equipment-additions.csv"
+      - "docs/trpg/material-buyback.csv"
+      - "docs/trpg/weather-almanac.csv"
       - "tools/trpg-sim/cli-handover-append.mjs"
       - "tools/trpg-sim/cli-canon-facility-append.mjs"
+      - "tools/trpg-sim/cli-canon-battle-append.mjs"
       - ".github/workflows/trpg-handover-sync.yml"
   pull_request:
     paths:
       - "docs/trpg/handover-append-*.csv"
       - "docs/trpg/canon-facility-append-*.csv"
+      - "docs/trpg/equipment-additions.csv"
+      - "docs/trpg/material-buyback.csv"
+      - "docs/trpg/weather-almanac.csv"
       - "tools/trpg-sim/cli-handover-append.mjs"
       - "tools/trpg-sim/cli-canon-facility-append.mjs"
+      - "tools/trpg-sim/cli-canon-battle-append.mjs"
       - ".github/workflows/trpg-handover-sync.yml"
 
 env:
@@ -41,6 +52,7 @@ jobs:
     env:
       GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
       TRPG_SPREADSHEET_ID: 15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk
+      TRPG_BATTLE_SPREADSHEET_ID: 1-2mUA20d7h1lmv1G9fCH0EryFEYyFQ2nkamN51uCPqw
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,4 +77,13 @@ jobs:
             node tools/trpg-sim/cli-canon-facility-append.mjs --dry-run
           else
             node tools/trpg-sim/cli-canon-facility-append.mjs
+          fi
+      # 装備・素材買取・天候年鑑を正本へ揃える。装備は性能マスターと店舗在庫の
+      # 両方へ割り振り、在庫IDは既存の STK-#### の続きから採番する。
+      - name: Append equipment, material prices and the weather almanac
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ] || [ "$HANDOVER_DRY_RUN" = "true" ]; then
+            node tools/trpg-sim/cli-canon-battle-append.mjs --dry-run
+          else
+            node tools/trpg-sim/cli-canon-battle-append.mjs
           fi
