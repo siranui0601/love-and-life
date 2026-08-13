@@ -158,6 +158,27 @@ async function appendTo(sheets, spreadsheetId, tab, lastColumn, header, rows, ke
   return values.length;
 }
 
+/**
+ * 宛先ごとに独立して走らせる。片方のスプレッドシートに権限が無くても、
+ * 権限のあるほうは反映させたい。失敗は集めて最後にまとめて報告し、
+ * 一つでも落ちていれば異常終了する（黙って握り潰さない）。
+ */
+async function attempt(label, task, failures) {
+  try {
+    await task();
+    return true;
+  } catch (error) {
+    const message = String(error?.message ?? error);
+    console.error(`× ${label}: ${message}`);
+    if (/caller does not have permission|PERMISSION_DENIED|not found/i.test(message)) {
+      console.error(`  → サービスアカウントにこのスプレッドシートの編集権限が無い可能性が高い。`);
+      console.error(`     GOOGLE_SERVICE_ACCOUNT_KEY の client_email を、対象のシートに「編集者」で共有すること。`);
+    }
+    failures.push(label);
+    return false;
+  }
+}
+
 async function main() {
   const root = process.cwd();
   const equipmentRecords = await readRecords(path.join(root, "docs/trpg/equipment-additions.csv"));
@@ -174,14 +195,17 @@ async function main() {
   }
 
   const sheets = await sheetsClient();
+  const failures = [];
 
   // 1. 装備性能マスター
-  await appendTo(sheets, BATTLE_SPREADSHEET_ID, "装備性能マスター", "AD",
+  await attempt("戦闘データマスター/装備性能マスター", () => appendTo(
+    sheets, BATTLE_SPREADSHEET_ID, "装備性能マスター", "AD",
     null, split.map((entry) => entry.equipment),
-    KEY_BY_FIRST_COLUMN, (key) => /^EQP-[A-Z]-\d{4}$/.test(key));
+    KEY_BY_FIRST_COLUMN, (key) => /^EQP-[A-Z]-\d{4}$/.test(key),
+  ), failures);
 
   // 2. 店舗装備在庫（在庫IDを既存の続きから採番する）
-  {
+  await attempt("戦闘データマスター/店舗装備在庫", async () => {
     const range = "'店舗装備在庫'!A:O";
     const current = await sheets.spreadsheets.values.get({ spreadsheetId: BATTLE_SPREADSHEET_ID, range });
     const existing = current.data.values ?? [];
@@ -200,20 +224,28 @@ async function main() {
       });
       console.log(`タブ「店舗装備在庫」: ${fresh.length} 行を追記しました（${fresh[0][0]}〜${fresh.at(-1)[0]}）。`);
     }
-  }
+  }, failures);
 
   // 3. 素材買取価格（新設タブ）
-  await ensureTab(sheets, BATTLE_SPREADSHEET_ID, "素材買取価格");
-  await appendTo(sheets, BATTLE_SPREADSHEET_ID, "素材買取価格", "I",
-    materialRows[0], materialRows.slice(1),
-    KEY_BY_FIRST_COLUMN, (key) => /^MAT_[A-Z0-9_]+$/.test(key));
+  await attempt("戦闘データマスター/素材買取価格", async () => {
+    await ensureTab(sheets, BATTLE_SPREADSHEET_ID, "素材買取価格");
+    await appendTo(sheets, BATTLE_SPREADSHEET_ID, "素材買取価格", "I",
+      materialRows[0], materialRows.slice(1),
+      KEY_BY_FIRST_COLUMN, (key) => /^MAT_[A-Z0-9_]+$/.test(key));
+  }, failures);
 
   // 4. 天候年鑑（世界側のスプレッドシートへ新設）
-  await ensureTab(sheets, WORLD_SPREADSHEET_ID, "天候年鑑");
-  // Day だけでは十二地域ぶんが衝突するので、Day＋地域を鍵にする。
-  await appendTo(sheets, WORLD_SPREADSHEET_ID, "天候年鑑", "M",
-    weatherRows[0], weatherRows.slice(1),
-    KEY_BY_DAY_AND_REGION, (key) => /^\d{1,3}\|.+$/.test(key));
+  await attempt("TRPG/天候年鑑", async () => {
+    await ensureTab(sheets, WORLD_SPREADSHEET_ID, "天候年鑑");
+    // Day だけでは十二地域ぶんが衝突するので、Day＋地域を鍵にする。
+    await appendTo(sheets, WORLD_SPREADSHEET_ID, "天候年鑑", "M",
+      weatherRows[0], weatherRows.slice(1),
+      KEY_BY_DAY_AND_REGION, (key) => /^\d{1,3}\|.+$/.test(key));
+  }, failures);
+
+  if (failures.length) {
+    throw new Error(`${failures.length} 件の宛先へ反映できなかった: ${failures.join(" / ")}`);
+  }
 }
 
 const invokedDirectly = process.argv[1]
