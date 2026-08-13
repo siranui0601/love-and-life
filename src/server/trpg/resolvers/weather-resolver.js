@@ -1,12 +1,21 @@
 /**
- * Canonical TRPG weather schedule.
+ * Canonical TRPG weather.
  *
- * IMPORTANT: Weather is deliberately independent of save seed, player ID,
- * account, playthrough, and world instance. The same Day + region + daypart
- * always resolves to the same weather for every player and every loop.
+ * Weather is read out of `../content/weather-almanac.js` — a written table of all
+ * 100 days for all 12 regions.  It is not rolled, not weighted, and not derived
+ * from a seed: the sky over a region on a given day is the same for every
+ * player, every playthrough and every replay because somebody wrote it down.
+ *
+ * The almanac stores a whole day as ordered segments ("cloudy;15=rain"), so a
+ * day holds together — morning fog burns off into afternoon cloud, rain arrives
+ * at a stated hour and passes.  The four dayparts are sampled from that day
+ * rather than drawn independently, which is what previously allowed a clear
+ * morning to be followed by an afternoon storm and a clear evening.
  */
 
-export const WEATHER_RULESET_VERSION = "canonical-weather-v1";
+import { WEATHER_ALMANAC } from "../content/weather-almanac.js";
+
+export const WEATHER_RULESET_VERSION = "canonical-weather-almanac-v2";
 
 const DAYPART_ALIASES = Object.freeze({
   dawn: "morning",
@@ -103,63 +112,54 @@ export const WEATHER_DEFINITIONS = Object.freeze({
   }),
 });
 
-const GENERIC_PROFILE = Object.freeze({
-  clear: 34,
-  cloudy: 30,
-  light_rain: 16,
-  rain: 10,
-  fog: 5,
-  strong_wind: 4,
-  storm: 1,
+/** Fallback for a region with no almanac page (never true for canonical regions). */
+const FALLBACK_PATTERN = "cloudy";
+
+/** The hour each daypart is read at.  A daypart is a window; this is its centre. */
+export const DAYPART_SAMPLE_HOUR = Object.freeze({
+  morning: 7,
+  afternoon: 13,
+  evening: 19,
+  night: 23,
 });
 
-export const REGION_WEATHER_PROFILES = Object.freeze({
-  "田園の村": Object.freeze({ clear: 44, cloudy: 28, light_rain: 16, rain: 7, fog: 4, strong_wind: 1 }),
-  王都: Object.freeze({ clear: 34, cloudy: 34, light_rain: 15, rain: 10, fog: 4, strong_wind: 2, storm: 1 }),
-  森: Object.freeze({ clear: 10, cloudy: 28, light_rain: 22, rain: 16, fog: 20, strong_wind: 2, storm: 2 }),
-  交易都市: Object.freeze({ clear: 30, cloudy: 28, light_rain: 15, rain: 10, fog: 5, strong_wind: 10, storm: 2 }),
-  犯罪都市: Object.freeze({ clear: 30, cloudy: 34, light_rain: 15, rain: 11, fog: 7, strong_wind: 2, storm: 1 }),
-  ドワーフ洞窟: Object.freeze({ clear: 18, cloudy: 34, light_rain: 16, rain: 8, fog: 18, strong_wind: 5, storm: 1 }),
-  北陵要塞: Object.freeze({ clear: 12, cloudy: 24, snow: 34, strong_wind: 20, fog: 6, storm: 4 }),
-  辺境の村: Object.freeze({ clear: 40, cloudy: 20, light_rain: 8, rain: 4, strong_wind: 12, dry_wind: 15, storm: 1 }),
-  古代神殿: Object.freeze({ clear: 22, cloudy: 28, light_rain: 12, rain: 8, fog: 22, strong_wind: 6, storm: 2 }),
-  "エルフの隠れ里": Object.freeze({ clear: 14, cloudy: 28, light_rain: 20, rain: 13, fog: 21, strong_wind: 2, storm: 2 }),
-  黒嶺連合領: Object.freeze({ clear: 24, cloudy: 28, light_rain: 10, rain: 8, fog: 6, strong_wind: 13, dry_wind: 8, storm: 3 }),
-  魔王領: Object.freeze({ clear: 18, cloudy: 30, light_rain: 9, rain: 9, fog: 12, strong_wind: 10, dry_wind: 7, storm: 5 }),
-});
-
-const DAYPART_WEIGHT_BONUSES = Object.freeze({
-  morning: Object.freeze({ fog: 7, clear: -3 }),
-  afternoon: Object.freeze({ clear: 5, fog: -4 }),
-  evening: Object.freeze({ cloudy: 3, strong_wind: 2 }),
-  night: Object.freeze({ fog: 3, cloudy: 2, clear: -2 }),
-});
-
-function stableHash32(value) {
-  let hash = 0x811c9dc5;
-  for (const character of String(value)) {
-    hash ^= character.codePointAt(0);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
+function almanacPattern(regionId, day) {
+  const page = WEATHER_ALMANAC[regionId];
+  if (!page) return FALLBACK_PATTERN;
+  return page[day - 1] ?? FALLBACK_PATTERN;
 }
 
-function weightedEntries(profile, daypart) {
-  const bonuses = DAYPART_WEIGHT_BONUSES[daypart] ?? {};
-  return Object.entries(profile)
-    .map(([id, baseWeight]) => [id, Math.max(0, Number(baseWeight) + Number(bonuses[id] ?? 0))])
-    .filter(([id, weight]) => WEATHER_DEFINITIONS[id] && weight > 0);
+/**
+ * Splits "cloudy;15=rain" into [{ fromHour: 0, id: "cloudy" }, { fromHour: 15, id: "rain" }].
+ * Unknown ids are dropped rather than silently rendered, so a typo in the table
+ * surfaces as clear weather instead of an undefined read downstream.
+ */
+export function parseWeatherPattern(pattern) {
+  const segments = [];
+  String(pattern ?? "").split(";").forEach((part, index) => {
+    const trimmed = part.trim();
+    if (!trimmed) return;
+    if (index === 0) {
+      if (WEATHER_DEFINITIONS[trimmed]) segments.push({ fromHour: 0, id: trimmed });
+      return;
+    }
+    const [hour, id] = trimmed.split("=");
+    const parsedHour = Number(hour);
+    if (!WEATHER_DEFINITIONS[id] || !Number.isInteger(parsedHour)) return;
+    segments.push({ fromHour: Math.max(0, Math.min(23, parsedHour)), id });
+  });
+  if (!segments.length || segments[0].fromHour !== 0) segments.unshift({ fromHour: 0, id: "cloudy" });
+  return segments.sort((left, right) => left.fromHour - right.fromHour);
 }
 
-function weightedPick(entries, roll) {
-  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
-  if (!(total > 0)) return "clear";
-  let cursor = roll * total;
-  for (const [id, weight] of entries) {
-    cursor -= weight;
-    if (cursor < 0) return id;
+function weatherIdAtHour(regionId, day, hour) {
+  const segments = parseWeatherPattern(almanacPattern(regionId, day));
+  let current = segments[0].id;
+  for (const segment of segments) {
+    if (segment.fromHour <= hour) current = segment.id;
+    else break;
   }
-  return entries.at(-1)?.[0] ?? "clear";
+  return current;
 }
 
 export function normalizeWeatherDaypart(value) {
@@ -182,9 +182,8 @@ export function resolveCanonicalWeather({ day, regionId, daypart }) {
   const scheduleKey = canonicalWeatherScheduleKey({ day, regionId, daypart });
   const normalizedRegion = String(regionId ?? "").trim() || "UNKNOWN";
   const normalizedDaypart = normalizeWeatherDaypart(daypart);
-  const profile = REGION_WEATHER_PROFILES[normalizedRegion] ?? GENERIC_PROFILE;
-  const roll = stableHash32(scheduleKey) / 0x100000000;
-  const weatherId = weightedPick(weightedEntries(profile, normalizedDaypart), roll);
+  const hour = DAYPART_SAMPLE_HOUR[normalizedDaypart];
+  const weatherId = weatherIdAtHour(normalizedRegion, Number(day), hour);
   const weather = WEATHER_DEFINITIONS[weatherId] ?? WEATHER_DEFINITIONS.clear;
   return Object.freeze({
     ...weather,
@@ -192,9 +191,44 @@ export function resolveCanonicalWeather({ day, regionId, daypart }) {
     day: Number(day),
     regionId: normalizedRegion,
     daypart: normalizedDaypart,
+    hour,
     scheduleKey,
     rulesetVersion: WEATHER_RULESET_VERSION,
   });
+}
+
+/**
+ * Hour-precise read.  The almanac states when rain starts, so a scene at 15:00
+ * can ask directly instead of rounding to a daypart.
+ */
+export function resolveCanonicalWeatherAt({ day, regionId, hour }) {
+  const normalizedRegion = String(regionId ?? "").trim() || "UNKNOWN";
+  const normalizedHour = Math.max(0, Math.min(23, Math.floor(Number(hour) || 0)));
+  const normalizedDay = Number(day);
+  if (!Number.isInteger(normalizedDay) || normalizedDay < 1 || normalizedDay > 100) {
+    throw new RangeError(`Weather day must be an integer from 1 to 100: ${day}`);
+  }
+  const weather = WEATHER_DEFINITIONS[weatherIdAtHour(normalizedRegion, normalizedDay, normalizedHour)]
+    ?? WEATHER_DEFINITIONS.clear;
+  return Object.freeze({
+    ...weather,
+    tags: [...weather.tags],
+    day: normalizedDay,
+    regionId: normalizedRegion,
+    hour: normalizedHour,
+    rulesetVersion: WEATHER_RULESET_VERSION,
+  });
+}
+
+/** The written day for a region: its segments, in order, with labels. */
+export function canonicalWeatherSegments({ day, regionId }) {
+  const normalizedRegion = String(regionId ?? "").trim() || "UNKNOWN";
+  return parseWeatherPattern(almanacPattern(normalizedRegion, Number(day)))
+    .map(({ fromHour, id }) => Object.freeze({
+      fromHour,
+      id,
+      label: WEATHER_DEFINITIONS[id]?.label ?? id,
+    }));
 }
 
 export function canonicalWeatherDay({ day, regionId }) {
