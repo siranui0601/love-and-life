@@ -1828,6 +1828,7 @@ function freshState(pack) {
     prematureResolutionCount: 0,
     prematureResolutionEvidenceCounts: [],
     deferredUntilMinute: null,
+    deferCount: 0,
     resolutionPreparationRouteId: null,
     selectedResolutionRouteId: null,
     selectedResolutionContextId: null,
@@ -2103,6 +2104,9 @@ export function ensureAuthoredMissionFlowState(runtime, packOrId) {
     && Number.isFinite(Number(deferredUntilMinute))
     ? Number(deferredUntilMinute)
     : null;
+  state.deferCount = Number.isInteger(Number(state.deferCount)) && Number(state.deferCount) >= 0
+    ? Number(state.deferCount)
+    : 0;
   state.resolutionPreparationRouteId = pack.resolution?.choices?.some(
     (choice) => choice.id === state.resolutionPreparationRouteId && choice.readiness,
   )
@@ -2451,20 +2455,42 @@ function leadAction(runtime, pack, movementActions, lead) {
   };
 }
 
-function deferAction(pack) {
+// ## 先送りした場面が、そっくり同じ形で戻ってきていた（2026-08-14）
+//
+// 三択の重複を家族別に数えたら、最大の塊が
+// `MISSION_FLOW:…:DEFER + LEAD + RECONSIDER` で、**一本の道の中に41組**あった。
+// 先送りを選ぶたびに、**同じ三つがそのまま返ってきていた**のである。
+// 一期一会を掲げている以上、これは通せない。
+//
+// ただし「先送りしたものが後でまた来る」こと自体は正しい。直すべきは
+// **同じ顔で来ること**のほうなので、`deferCount` を持たせて、
+// **二度目以降は別の札にする。**言い回しだけでなく、**保留の長さも伸びる**——
+// 一度後回しにした件は、次はもっと長く放置されることになる。
+const DEFER_LABEL_SUFFIX = Object.freeze([
+  null,
+  "（一度後回しにした件を、もう一度後回しにする）",
+  "（三度目の先送り。手掛かりはそのぶん薄れる）",
+]);
+
+function deferAction(pack, flow = null) {
   const defer = pack.investigation.defer;
   if (!defer) return null;
+  const count = Math.max(0, Number(flow?.deferCount ?? 0));
+  const suffix = DEFER_LABEL_SUFFIX[Math.min(count, DEFER_LABEL_SUFFIX.length - 1)];
   return {
-    id: actionId(pack, "DEFER", defer.id),
+    id: count > 0 ? actionId(pack, "DEFER", `${defer.id}#${count + 1}`) : actionId(pack, "DEFER", defer.id),
     family: "leave",
     type: "plan",
     effectKind: "defer_authored_mission_flow",
     minutes: defer.minutes,
-    label: defer.label,
+    label: suffix ? `${defer.label}${suffix}` : defer.label,
     authoredMissionFlowExclusiveChoice: true,
     authoredMissionFlowId: pack.id,
     authoredMissionFlowKind: "defer",
-    authoredMissionFlowDeferMinutes: defer.deferMinutes,
+    // 二度目は1.5倍、三度目以降は2倍。放置は積み上がる。
+    authoredMissionFlowDeferMinutes: Math.round(
+      Number(defer.deferMinutes ?? 180) * (count === 0 ? 1 : count === 1 ? 1.5 : 2),
+    ),
   };
 }
 
@@ -2549,7 +2575,7 @@ function resolutionPreparationActions(pack, flow, movementActions) {
     .map((lead) => resolutionPreparationLeadAction(pack, route, lead, readiness));
   result.push(resolutionPreparationCancelAction(pack, route.id));
   if (result.length < 3) {
-    const defer = deferAction(pack);
+    const defer = deferAction(pack, flow);
     if (defer) result.push(defer);
   }
   if (result.length < 3) {
@@ -2609,7 +2635,7 @@ function navigatorFocusActions(pack, navigator, flow, movementActions) {
     if (premature) result.push(premature);
   }
   if (result.length < 3) {
-    const defer = deferAction(pack);
+    const defer = deferAction(pack, flow);
     if (defer) result.push(defer);
   }
   if (result.length < 3) {
@@ -2659,7 +2685,7 @@ function navigatorGroupActions(pack, navigator, flow) {
     }));
   const result = [...groups, navigatorBackAction(pack, focus)];
   if (result.length < 3) {
-    const defer = deferAction(pack);
+    const defer = deferAction(pack, flow);
     if (defer) result.push(defer);
   }
   return result.length === 3 ? result : null;
@@ -2710,7 +2736,7 @@ function navigatorRouteActions(pack, navigator, flow) {
   }));
   if (result.length < 3) result.push(navigatorRouteBackAction(pack, focus, group));
   if (result.length < 3) {
-    const defer = deferAction(pack);
+    const defer = deferAction(pack, flow);
     if (defer) result.push(defer);
   }
   return result.length === 3 ? result : null;
@@ -2736,7 +2762,7 @@ function selectedLeadActions(runtime, pack, movementActions, flow) {
     flow.resolutionPreparationRouteId
       ? resolutionPreparationCancelAction(pack, flow.resolutionPreparationRouteId)
       : reconsiderLeadAction(pack, lead),
-    deferAction(pack),
+    deferAction(pack, flow),
   ].filter(Boolean);
   if (result.length < 3) {
     const movement = freeMovementAction(pack, movementActions, new Set([lead.facilityId]));
@@ -2757,7 +2783,7 @@ function leadSelectionActions(runtime, pack, movementActions, flow, evidenceIds)
     if (premature) result.push(premature);
   }
   if (result.length < 3) {
-    const defer = deferAction(pack);
+    const defer = deferAction(pack, flow);
     if (defer) result.push(defer);
   }
   if (result.length < 3) {
@@ -3450,6 +3476,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       ? Math.max(30, requestedDeferMinutes)
       : 180;
     flow.deferredUntilMinute = minute + deferMinutes;
+    flow.deferCount = Math.max(0, Number(flow.deferCount ?? 0)) + 1;
     result.summary ??= pack.investigation.defer?.summary
       ?? `${pack.title}の調査をいったん保留した。`;
     changed = true;
@@ -3459,6 +3486,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       flowId: pack.id,
       missionId: pack.missionId,
       untilMinute: flow.deferredUntilMinute,
+      deferCount: flow.deferCount,
       movedTo: action.destinationHub ?? action.destinationFacilityId ?? null,
     });
   }
