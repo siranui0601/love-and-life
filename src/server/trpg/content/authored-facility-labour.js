@@ -328,10 +328,34 @@ export function jobIsOpen(entry, hour) {
 
 // 変奏は乱数で選ばない。その働き口を何度こなしたかで決まるので、
 // 同じ種の通し再生は同じ順序で同じ変奏を踏む。そして一巡するまで同じ回は出ない。
-export function variantFor(entry, shiftCount) {
+// 同じ変奏表を共有する働き口が、同じ画面に二つ並ぶことがある。
+// （大港湾区の「朝の荷役」と「綱を取る」は、どちらも port_haul である。）
+// 素の shiftCount だけで引くと、**どちらも未経験の初日に、二つとも「塩樽」になる。**
+// 働き口ごとに固定のずらし幅を足して、同じ画面に同じ物が並ばないようにする。
+// 施設の中での並び順をそのまま使う。**同じ画面に並ぶ口は、必ず違う番号になる。**
+// （文字コードの和で散らそうとして、`port_morning` と `port_rope` が同じ余りに落ちた。
+// 一つの施設に六口も無いので、並び順で足りる。）
+const JOB_OFFSETS = (() => {
+  const offsets = new Map();
+  for (const entries of Object.values(FACILITY_JOBS)) {
+    entries.forEach((entry, index) => offsets.set(entry.id, index));
+  }
+  return offsets;
+})();
+
+function jobOffset(entry) {
+  return JOB_OFFSETS.get(entry.id) ?? 0;
+}
+
+export function variantIndexFor(entry, shiftCount) {
   const pool = VARIANTS[entry.variantKey] ?? [];
-  if (pool.length === 0) return null;
-  return pool[Math.abs(Number(shiftCount) || 0) % pool.length];
+  if (pool.length === 0) return -1;
+  return (Math.abs(Number(shiftCount) || 0) + jobOffset(entry)) % pool.length;
+}
+
+export function variantFor(entry, shiftCount) {
+  const index = variantIndexFor(entry, shiftCount);
+  return index < 0 ? null : VARIANTS[entry.variantKey][index];
 }
 
 function shiftCountOf(state, entry) {
@@ -469,8 +493,14 @@ export function ownEligible(runtime) {
   return openJobsFor(runtime) != null;
 }
 
-export function actionIdFor(entry) {
-  return `WORK:FACILITY:${entry.id}`;
+// 同じ働き口でも、扱う物と組む相手が違えば別の口である。
+// **その差をIDと見出しの両方に出す。**
+// 出していなかった頃は、中央市場の画面が `market_night|market_porter|market_stall` の
+// 三つだけで、Day12の朝もDay13の夜も**一字も違わなかった。**
+// 変奏（何を運ぶか・誰と組むか）は前から作ってあったのに、**選ぶ時には見えていなかった。**
+export function actionIdFor(entry, variantIndex = -1) {
+  const base = `WORK:FACILITY:${entry.id}`;
+  return variantIndex < 0 ? base : `${base}:v${variantIndex}`;
 }
 
 function summaryFor(entry, variant) {
@@ -482,16 +512,25 @@ function summaryFor(entry, variant) {
   return parts.join("");
 }
 
-function waitLabel(entry, waitMinutes) {
-  if (waitMinutes <= 0) return entry.label;
+// 見出しに変奏を出す。「荷を運ぶ」ではなく「荷を運ぶ（野菜籠）」。
+// **選ぶ前に、今日それが何なのかが分かる。**
+function jobLabel(entry, variant) {
+  return variant?.handled ? `${entry.label}（${variant.handled}）` : entry.label;
+}
+
+function waitLabel(entry, variant, waitMinutes) {
+  const label = jobLabel(entry, variant);
+  if (waitMinutes <= 0) return label;
   const hours = Math.round(waitMinutes / 60);
-  if (hours >= 6) return `${entry.label}——明朝の口に、今から名前を入れておく`;
-  return `${entry.label}——${hours}時間ほど待って、次の刻の口に入る`;
+  if (hours >= 6) return `${label}——明朝の口に、今から名前を入れておく`;
+  return `${label}——${hours}時間ほど待って、次の刻の口に入る`;
 }
 
 function actionFor(runtime, entry, waitMinutes = 0) {
-  const id = actionIdFor(entry);
-  const variant = variantFor(entry, shiftCountOf(readState(runtime), entry));
+  const shiftCount = shiftCountOf(readState(runtime), entry);
+  const variantIndex = variantIndexFor(entry, shiftCount);
+  const variant = variantFor(entry, shiftCount);
+  const id = actionIdFor(entry, variantIndex);
   return {
     id,
     actionId: id,
@@ -499,7 +538,7 @@ function actionFor(runtime, entry, waitMinutes = 0) {
     type: "plan",
     minutes: entry.minutes + Math.max(0, waitMinutes),
     authoredFacilityLabourWaitMinutes: Math.max(0, waitMinutes),
-    label: waitLabel(entry, waitMinutes),
+    label: waitLabel(entry, variant, waitMinutes),
     targetLocation: player(runtime).location ?? null,
     targetFacilityId: player(runtime).facilityId ?? null,
     suppressRandomEncounter: true,
@@ -611,6 +650,7 @@ export const AUTHORED_FACILITY_LABOUR_INTERNALS = Object.freeze({
   NAMED_EMPLOYER_BY_FACILITY,
   jobIsOpen,
   variantFor,
+  variantIndexFor,
   needsTheWork,
   offeredJobsFor,
   openJobsFor,

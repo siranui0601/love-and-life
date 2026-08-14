@@ -64,11 +64,13 @@ test("a facility with work offers it, and the choices are jobs", () => {
   const state = runtime();
   const actions = authoredMissionFlowExclusiveActions(state);
 
+  // 見出しに今日の変奏が出る。**同じ画面に同じ物は並ばない。**
   assert.deepEqual(actions.map((action) => action.label), [
-    "朝の荷役に入る",
-    "綱を取る",
-    "夕の荷役に入る——明朝の口に、今から名前を入れておく",
+    "朝の荷役に入る（塩樽）",
+    "綱を取る（材木）",
+    "夕の荷役に入る（麻袋）——明朝の口に、今から名前を入れておく",
   ]);
+  assert.equal(new Set(actions.map((action) => action.actionId)).size, 3, "三つとも別のIDである");
   for (const action of actions) {
     assert.equal(action.actionId, action.id);
     assert.ok(action.authoredFacilityLabourGold >= 1, "work pays");
@@ -168,9 +170,9 @@ test("work keeps its hours, and places without work offer none", () => {
   assert.deepEqual(
     authoredMissionFlowExclusiveActions(evening).map((action) => action.label),
     [
-      "夕の荷役に入る",
-      "綱を取る",
-      "朝の荷役に入る——明朝の口に、今から名前を入れておく",
+      "夕の荷役に入る（麻袋）",
+      "綱を取る（材木）",
+      "朝の荷役に入る（塩樽）——明朝の口に、今から名前を入れておく",
     ],
     "the morning shift is over; the evening one is not, and dawn can be booked now",
   );
@@ -303,4 +305,28 @@ test("the named-employer map does not drift from the one the work market uses", 
     [...block[1].matchAll(/(LOC_[A-Z0-9_]+):\s*"([^"]+)"/gu)].map((match) => [match[1], match[2]]),
   );
   assert.deepEqual(labour.NAMED_EMPLOYER_BY_FACILITY, canonical);
+});
+
+/**
+ * 同じ働き口を続けて取っても、**画面が一字も違わない**ということが無いのを検算する。
+ *
+ * 世界の規則は「労働を繰り返すのは構わない。**同じ三択が現れるのはおかしい**」である。
+ * 変奏（何を運び、誰と組み、何が起きたか）は前から作ってあったが、
+ * **選ぶ時の見出しとIDに出ていなかった。**
+ * 出ていなかった頃、通し再生の中央市場は Day12の朝もDay13の夜も
+ * `market_night|market_porter|market_stall` の三つだけで、完全に同一だった。
+ */
+test("同じ働き口でも、回を重ねると画面が変わる", () => {
+  const entry = labour.jobsAt("LOC_CAP_MARKET").find((job) => job.id === "market_porter");
+  assert.ok(entry, "中央市場の荷運びが無い");
+
+  const seen = new Set();
+  const labels = new Set();
+  for (let shift = 0; shift < 5; shift += 1) {
+    const index = labour.variantIndexFor(entry, shift);
+    seen.add(labour.actionIdFor(entry, index));
+    labels.add(labour.variantFor(entry, shift).handled);
+  }
+  assert.equal(seen.size, 5, `五回働いてIDが ${seen.size} 種類しか出ていない`);
+  assert.equal(labels.size, 5, `五回働いて扱う物が ${labels.size} 種類しか出ていない`);
 });
