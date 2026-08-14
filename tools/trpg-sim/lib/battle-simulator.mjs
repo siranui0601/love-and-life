@@ -362,6 +362,70 @@ function executeDamageCommand({ command, skill, actor, targets, rng, criticalBon
   return { damage: totalDamage, hits: hitCount, criticals: criticalCount };
 }
 
+/**
+ * MSK-0090「空殻模倣」の中身。**直前に敵が使った再現可能スキルを、威力を落として撃ち返す。**
+ *
+ * 正本のMON-0028（空殻の勇者）の説明欄は「魂を伴わず召喚された戦闘の器。**直前の技を模倣する**」で、
+ * 行動表 MACT-00092 の条件が `history.playerLastSkillRepeatable==true` である。
+ * **同じ技を押し続ける戦い方を、正本のデータ側が咎める仕組みになっている。**
+ * ここが未実装だと、この相手は「強いだけの殴り合い」になり、模倣する意味が消える。
+ *
+ * 写すのは**ダメージだけ**である。バフ・デバフ・特殊状態は写さない。
+ * 器に写せるのは技の形であって、術者の状態ではない、という切り方をしている。
+ */
+const COPY_EXCLUDED_TAGS_DEFAULT = Object.freeze(['uncopyable', 'self_sacrifice']);
+
+/**
+ * 正本の `excludedTags` は `["uncopyable","self_sacrifice"]` だが、
+ * **プレイヤースキルの側に `tags` 列が無い。**自己犠牲は分類名とコストの形で表されている
+ * （例：SKL-0209 メガクラッシュ ＝ `originalCategory:"HP条件・自己犠牲"` / `costs.hpMode:"set_zero"`）。
+ * タグだけを見ると、自分の命を捨てる技まで器が写せることになってしまうので、
+ * **コストの形と分類名の両方から自己犠牲を判定する。**
+ */
+function isSelfSacrificeSkill(skill) {
+  if (skill.costs?.hpMode === 'set_zero') return true;
+  if (skill.costs?.hp === 'all_current') return true;
+  return /自己犠牲/.test(String(skill.originalCategory ?? '')) || /自己犠牲/.test(String(skill.category ?? ''));
+}
+
+export function copyableEnemySkill(command, opponents) {
+  const excluded = new Set(command.excludedTags ?? COPY_EXCLUDED_TAGS_DEFAULT);
+  for (const opponent of opponents) {
+    if (!opponent.lastSkillRepeatable) continue;
+    const skill = opponent.lastSkill;
+    if (!skill) continue;
+    if ((skill.tags ?? []).some((tag) => excluded.has(tag))) continue;
+    if (excluded.has('self_sacrifice') && isSelfSacrificeSkill(skill)) continue;
+    if (Number(skill.damage?.totalMultiplier || 0) <= 0) continue;
+    return skill;
+  }
+  return null;
+}
+
+function executeCopyLastEnemySkill({ command, actor, opponents, targets, rng, diagnostics }) {
+  const copied = copyableEnemySkill(command, opponents);
+  if (!copied) {
+    diagnostics.add('copyLastEnemySkillEmpty', { command: command.command });
+    return { damage: 0, hits: 0, criticals: 0 };
+  }
+  const hits = Math.max(1, Number(copied.damage.hits || 1));
+  const multiplier = Number(copied.damage.totalMultiplier) * Number(command.powerMultiplier ?? 1);
+  return executeDamageCommand({
+    command: {
+      damageType: inferPlayerDamageType(copied),
+      multiplier: multiplier / hits,
+      fixed: 0,
+      hits,
+      accuracy: Number(copied.damage.accuracyModifier || 0),
+    },
+    skill: { accuracy: 0 },
+    actor,
+    targets,
+    rng,
+    criticalBonus: Number(copied.damage.criticalModifier || 0),
+  });
+}
+
 function executeMonsterSkill({ state, action, data, rng, diagnostics }) {
   const { actor, target, skill } = action;
   actor.mp -= skill.mpCost;
@@ -395,6 +459,14 @@ function executeMonsterSkill({ state, action, data, rng, diagnostics }) {
               : Number(command.fixed ?? command.amount ?? 0);
           totals.healing += applyHealing(healTarget, amount, actor);
         }
+        break;
+      }
+      case 'COPY_LAST_ENEMY_SKILL': {
+        const result = executeCopyLastEnemySkill({ command, actor, opponents, targets, rng, diagnostics });
+        totals.damage += result.damage;
+        totals.hits += result.hits;
+        totals.criticals += result.criticals;
+        lastDamage = result.damage;
         break;
       }
       case 'APPLY_DEBUFF':
@@ -512,6 +584,8 @@ function executePlayerSkill({ state, action, rng, diagnostics }) {
   actor.lastActionTag = inferPlayerDamageType(skill) === 'magic' ? 'magic' : 'skill';
   actor.lastSkillId = skill.id;
   actor.lastSkillRepeatable = skill.id !== 'SKL-1139' && skill.kind === 'active';
+  // 空殻の勇者（MON-0028）が撃ち返すために、技そのものを覚えさせておく。
+  actor.lastSkill = skill;
   state.history.playerLastSkillRepeatable = actor.lastSkillRepeatable;
   return totals;
 }
@@ -526,6 +600,10 @@ function executeNormalAttack(action, state, rng) {
   actor.lastActionTag = 'physical';
   actor.lastSkillId = '__normal__';
   actor.lastSkillRepeatable = false;
+  // 通常攻撃は模倣されない。**旗と技の両方を降ろす**（片方だけ残すと、
+  // 空殻の勇者が模倣を撃とうとして空振りする条件が立つ）。
+  actor.lastSkill = null;
+  if (actor.side === 'player') state.history.playerLastSkillRepeatable = false;
   return { ...result, healing: 0 };
 }
 

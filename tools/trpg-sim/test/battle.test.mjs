@@ -20,6 +20,7 @@ import {
   resolveInteractiveBattleRound,
   runMonteCarlo,
   simulateBattle,
+  copyableEnemySkill,
 } from "../lib/battle-simulator.mjs";
 
 const data = await loadBattleData();
@@ -450,4 +451,71 @@ test("Monte Carlo reports win, turns, MP, usage and exhaustion per build", () =>
     assert.ok(Number.isFinite(report.playerResourceExhaustionEvents));
     assert.ok(Number.isFinite(report.fallbackAttacks));
   }
+});
+
+/**
+ * MON-0028 空殻の勇者の「空殻模倣」（MSK-0090）を検算する。
+ *
+ * 正本の行動表 MACT-00092 は `history.playerLastSkillRepeatable==true` を条件に、
+ * `COPY_LAST_ENEMY_SKILL`（威力75%）を重み30で撃つ。**同じ技を押し続ける戦い方への咎めである。**
+ * この命令はかつて `default:` に落ちて何もしていなかった。戻ると退行になる。
+ *
+ * **検算の形について。**当初これを「技を連打する build と通常攻撃だけの build の被ダメ比較」で
+ * 書いたが、二度続けて誤った理由で通った。
+ *   一度目：倍率でいちばん大きい技を選んだら SKL-0209 メガクラッシュ（`costs.hpMode:"set_zero"`）で、
+ *           押した本人が一ターン目に死んでいた。模倣とは無関係に被ダメが最大化していた。
+ *   二度目：次に選ばれた SKL-0789 古代砲撃 は分類が「防御」で、**被ダメが0になった。**
+ * **build 比較はスキルの副作用に汚染される。**写す側の判定そのものを直接検算する。
+ */
+test("空殻模倣は、写せる技と写せない技を正本どおりに選り分ける", () => {
+  const mimicSkill = data.monsterSkills.find((entry) => entry.id === "MSK-0090");
+  assert.ok(mimicSkill, "MSK-0090 空殻模倣が正本に無い");
+  const command = (mimicSkill.commands ?? []).find((entry) => entry.command === "COPY_LAST_ENEMY_SKILL");
+  assert.ok(command, "MSK-0090 に COPY_LAST_ENEMY_SKILL が無い");
+  assert.equal(Number(command.powerMultiplier), 0.75);
+  assert.deepEqual(command.excludedTags, ["uncopyable", "self_sacrifice"]);
+
+  const plain = data.playerSkillById.get("SKL-0001");
+  const sacrifice = data.playerSkillById.get("SKL-0209");
+  assert.ok(plain && sacrifice);
+  assert.equal(sacrifice.costs.hpMode, "set_zero", "SKL-0209 が自己犠牲でなくなったら、この検算は前提から見直す");
+
+  // 直前が再現可能な攻撃技なら写す。
+  assert.equal(
+    copyableEnemySkill(command, [{ lastSkillRepeatable: true, lastSkill: plain }])?.id,
+    "SKL-0001",
+  );
+  // 直前が通常攻撃なら写さない（旗が降りている）。
+  assert.equal(copyableEnemySkill(command, [{ lastSkillRepeatable: false, lastSkill: plain }]), null);
+  // 何も撃っていなければ写さない。
+  assert.equal(copyableEnemySkill(command, [{ lastSkillRepeatable: true, lastSkill: null }]), null);
+  // **自己犠牲は写さない。**正本の excludedTags はタグで書かれているが、
+  // プレイヤースキル側に tags 列が無いので、コストの形で判定している。
+  assert.equal(copyableEnemySkill(command, [{ lastSkillRepeatable: true, lastSkill: sacrifice }]), null);
+});
+
+test("空殻の勇者は、技を使った相手にだけ模倣を撃つ", () => {
+  const base = {
+    maxHp: 200_000, maxMp: 100_000, attack: 120, defense: 60, agility: 60, luck: 20,
+    physicalPower: 60, magicPower: 60, magicResistance: 50, accuracy: 40, evasion: 10,
+    critical: 5, debuffSuccess: 10, debuffResistance: 30,
+  };
+  const run = (skillIds) => {
+    let mimicUses = 0;
+    for (let index = 0; index < 12; index += 1) {
+      const result = simulateBattle({
+        data, seed: `hollow-mimic-${index}`, monsterIds: ["MON-0028"], maxTurns: 20,
+        playerBuild: createPlayerBuild(data, {
+          id: "p", name: "candidate", level: 22, equipmentIds: [], skillIds, baseStats: base,
+        }),
+      });
+      mimicUses += Number(result.actionUsage?.["MSK-0090"] || 0);
+    }
+    return mimicUses;
+  };
+
+  // SKL-0001 スラッシュ は MP0・クールダウン0・副作用なしで、毎ターン押せる。
+  assert.ok(run(["SKL-0001"]) > 0, "技を押し続けても模倣が一度も出ない");
+  // 通常攻撃しかしない相手には、条件 `playerLastSkillRepeatable` が立たない。
+  assert.equal(run([]), 0, "通常攻撃しかしていない相手に模倣が出ている");
 });
