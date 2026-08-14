@@ -138,8 +138,14 @@ test("道が主張する解決日は、正本の最終悪化を越えない", ()
   let checked = 0;
   for (const file of ROUTE_FILES) {
     const markdown = readFileSync(path.join(DOCS, file), "utf8");
-    // 巻末台帳の「T01 Day3／T02 Day35／…」という並びだけを見る。
-    for (const [, id, day] of markdown.matchAll(/\bT(\d\d)\s+Day(\d+)(?=\s*[／/|]|\s*。|\s*$)/gm)) {
+    // 台帳には二つの書き方がある。
+    //   並び：「T01 Day3／T02 Day35／…」
+    //   表　：「| **T01** | Day3 | …」
+    // **並びしか読んでいなかったので、表で書いた道は一件も検算していなかった。**
+    // （四本目を足した時に件数が36のまま動かず、気づいた。）
+    const inline = [...markdown.matchAll(/\bT(\d\d)\s+Day(\d+)(?=\s*[／/|]|\s*。|\s*$)/gm)];
+    const tabular = [...markdown.matchAll(/^\|\s*\*{0,2}T(\d\d)\*{0,2}\s*\|\s*\*{0,2}Day(\d+)\*{0,2}\s*\|/gm)];
+    for (const [, id, day] of [...inline, ...tabular]) {
       const deadlines = CANON_DEADLINES[`T${id}`];
       if (!deadlines) continue;
       checked += 1;
