@@ -37,6 +37,26 @@ export const BATTLE_ASSUMPTIONS = Object.freeze({
   // stalemate the player walked away from - it is a fight the rules would not
   // let them finish.  Applies when any enemy in the encounter is flagged ボス.
   bossBattleTurnLimit: 60,
+  // ## 戦闘が長すぎた問題（2026-08-14）
+  //
+  // 実測すると、**敵がプレイヤーを殺すのに何撃要るか**が壊れていた。
+  //
+  //   Lv 1  10.5撃 ／ Lv 4  12.6撃 ／ Lv 9  17.3撃
+  //   Lv13  14.2撃 ／ **Lv18  42.0撃** ／ Lv22   9.0撃
+  //
+  // 原因は二つ重なっている。
+  //   ・**敵のHPは Lv4→Lv18 で6倍**（99→585）**になるのに、物理威力は2倍**（20→41）しか伸びない
+  //   ・そこへ `防御 × 0.6` が固定で引かれる。プレイヤーの防御は装備で 13→110 まで伸びるので、
+  //     **伸びた防御が、伸びなかった敵の手を食い潰す**
+  //
+  // 結果、**敵が脅威でないから、プレイヤーは何ターンでもかけられる。**
+  // 時間をかけられること自体が、この設計の失敗だった。
+  //
+  // 直し方は二つの倍率で、どちらも正本の行そのものは書き換えない。
+  //   `monsterOffenceScale` … 敵の与ダメージ。**各レベル帯で5〜7撃で殺せる**ところへ寄せた
+  //   `monsterHpScale`      … 敵のHP。**倒すのに要るターンを3〜5**へ寄せた
+  monsterOffenceScale: 1.4,
+  monsterHpScale: 0.55,
   cooldownTick: 'start_of_round',
   allyCountIncludesSelf: true,
   enemySelection: 'eligible actions are sampled by base weight; priority is retained for reporting only',
@@ -428,8 +448,17 @@ export function createPlayerActor(build, serial = 1) {
 }
 
 export function createMonsterActor(monster, serial = 1) {
+  // 均衡の二倍率をここで一度だけ掛ける。**正本の行は書き換えない。**
+  // （倍率の根拠は BATTLE_ASSUMPTIONS の注記。）
+  const maxHp = Math.max(1, Math.round(Number(monster.maxHp || 0) * BATTLE_ASSUMPTIONS.monsterHpScale));
+  const physicalPower = Number(monster.physicalPower || 0) * BATTLE_ASSUMPTIONS.monsterOffenceScale;
+  const magicPower = Number(monster.magicPower || 0) * BATTLE_ASSUMPTIONS.monsterOffenceScale;
   return createActorState({
     ...monster,
+    maxHp,
+    hp: maxHp,
+    physicalPower,
+    magicPower,
     instanceId: `${monster.id}#${serial}`,
     side: 'enemy',
     accuracy: 0,

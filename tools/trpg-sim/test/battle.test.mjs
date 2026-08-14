@@ -536,24 +536,42 @@ test("ボスがいる戦闘だけ、打ち切り回数が延びる", () => {
   });
   assert.equal(stall.turns, BATTLE_ASSUMPTIONS.battleTurnLimit, "雑魚戦の打ち切りが動いている");
 
+  // ボスの側は、打ち切りに当たる前に観測者を殺すようになった。
+  // （2026-08-14の均衡調整で敵の与ダメージを1.4倍にしたため。以前は60回まで殴り合って引き分けだった。）
+  // **打ち切りが延びていること自体は、20を超えて続くことで確かめられる。**
   const boss = simulateBattle({
     data, seed: "turn-limit-boss", monsterIds: ["MON-0028"], playerBuild: observerBuild(),
   });
-  assert.equal(boss.turns, BATTLE_ASSUMPTIONS.bossBattleTurnLimit, "ボス戦の打ち切りが延びていない");
+  assert.ok(
+    boss.turns > BATTLE_ASSUMPTIONS.battleTurnLimit,
+    `ボス戦が通常の打ち切り(${BATTLE_ASSUMPTIONS.battleTurnLimit})で切れている：${boss.turns}回`,
+  );
+  assert.ok(boss.turns <= BATTLE_ASSUMPTIONS.bossBattleTurnLimit);
 });
 
 /**
  * 空殻の勇者が「四人がかりの相手」であることを、数字として固定しておく。
  * 一本道の Day63 以降をこの数字の上に書くので、静かに動くと道の方が嘘になる。
  */
-test("空殻の勇者は、Lv20の四人なら倒せて、三人では倒せない", () => {
-  const gear = ["EQP-W-0034", "EQP-A-0008", "EQP-S-0004"];
+/**
+ * 空殻の勇者は、**世界樹が倒れた世界にしか無い鎧**が要る、という設計を固定する。
+ *
+ * 溶炉板金鎧 EQP-A-0008（防御66）の解禁条件は「T09成功かつ **T18発生後**、巨神兵部品を納品」で、
+ * **T18は「T13失敗」でしか発生しない。**
+ * つまり**世界樹を守った道は、T17を落としても、このボスには手が届かない。**
+ * 正本の解禁条件表が、そう書いている。道の側の都合ではない。
+ *
+ * 数字は2026-08-14の均衡調整（敵の与ダメージ1.4倍・HP0.55倍）の後のもの。
+ */
+test("空殻の勇者は、T18でしか開かない鎧が無いと落とせない", () => {
+  const reachable = ["EQP-W-0066", "EQP-A-0007", "EQP-S-0004"]; // 罪切り鋸剣・ドワーフ鎖鎧41・要塞大盾
+  const t18Only = ["EQP-W-0034", "EQP-A-0008", "EQP-S-0004"];   // 鍛炉の大剣・溶炉板金鎧66・要塞大盾
   const skills = ["SKL-0049", "SKL-0001", "SKL-0011", "SKL-0008"];
-  const wins = (party, level) => {
+  const wins = (gear, party, level) => {
     let won = 0;
     for (let index = 0; index < 16; index += 1) {
       const result = simulateBattle({
-        data, seed: `hollow-party-${party}-${level}-${index}`, monsterIds: ["MON-0028"],
+        data, seed: `hollow-${gear[1]}-${party}-${level}-${index}`, monsterIds: ["MON-0028"],
         players: Array.from({ length: party }, (_, seat) => createPlayerBuild(data, {
           id: `p${seat}`, name: `p${seat}`, level, equipmentIds: gear, skillIds: skills,
         })),
@@ -562,6 +580,7 @@ test("空殻の勇者は、Lv20の四人なら倒せて、三人では倒せな�
     }
     return won;
   };
-  assert.equal(wins(4, 20), 16, "四人Lv20で落とせなくなった");
-  assert.ok(wins(3, 20) <= 4, "三人Lv20で落とせるようになった。難度が下がっている");
+  assert.equal(wins(reachable, 1, 22), 0, "単騎で落とせるようになった");
+  assert.equal(wins(reachable, 4, 20), 0, "T18の鎧なしで落とせるようになった。設計が崩れている");
+  assert.ok(wins(t18Only, 4, 20) >= 6, "T18の鎧を揃えても落とせない。厳しすぎる");
 });
