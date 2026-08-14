@@ -43,6 +43,10 @@ export function createChoiceSetAudit() {
     duplicateSameFacilityCount: 0,
     duplicateCrossFacilityCount: 0,
     duplicateCrossFacilityFamilies: new Map(),
+    // 施設またぎの重複が、**どの組み立てから出た札か**を数える。
+    // `MISSION_FLOW:granary-arson:LEAD:…` の第二節（＝どの調査の組み立てか）で束ねる。
+    // 家族（`MISSION_FLOW×3`）だけでは、`leadAction` を直しても21件残った理由が分からなかった。
+    duplicateCrossFacilityKinds: new Map(),
   };
 }
 
@@ -63,6 +67,13 @@ export function inspectChoiceSetBeforeSelection(audit, save) {
         family,
         (audit.duplicateCrossFacilityFamilies.get(family) ?? 0) + 1,
       );
+      for (const entry of String(signature).split("|")) {
+        const parts = entry.split(":");
+        if (parts[0] !== "MISSION_FLOW") continue;
+        // 第三節が組み立ての種類（LEAD / LEAD_HUB / RECONSIDER / DEFER / NAVIGATOR_* …）
+        const kind = `${parts[1] ?? "?"}:${parts[2] ?? "?"}`;
+        audit.duplicateCrossFacilityKinds.set(kind, (audit.duplicateCrossFacilityKinds.get(kind) ?? 0) + 1);
+      }
     } else {
       audit.duplicateSameFacilityCount += 1;
     }
@@ -110,6 +121,9 @@ export function finalizeChoiceSetAudit(audit) {
     duplicateCrossFacilityCount: audit.duplicateCrossFacilityCount,
     duplicateCrossFacilityFamilies: Object.fromEntries(
       [...audit.duplicateCrossFacilityFamilies.entries()].sort((left, right) => right[1] - left[1]),
+    ),
+    duplicateCrossFacilityKinds: Object.fromEntries(
+      [...audit.duplicateCrossFacilityKinds.entries()].sort((left, right) => right[1] - left[1]),
     ),
     passed: audit.duplicateEncounterCount === 0,
   };

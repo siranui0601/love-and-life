@@ -159,6 +159,9 @@ console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CROSS_FACILITY=${result.report.routeTri
 for (const [family, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateCrossFacilityFamilies ?? {})) {
   console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CROSS_FAMILY ${String(count).padStart(5)}  ${family}`);
 }
+for (const [kind, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateCrossFacilityKinds ?? {})) {
+  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CROSS_KIND ${String(count).padStart(5)}  ${kind}`);
+}
 console.log(`TRPG_DAY100_ROUTE_ALL_RESCUE=${result.report.routeTrial.allRescueCandidate ? "YES" : "NO"}`);
 
 if (process.argv.includes("--strict-runtime")) {
