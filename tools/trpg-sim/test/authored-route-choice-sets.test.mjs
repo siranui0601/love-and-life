@@ -117,3 +117,38 @@ test("ルートをまたいで同じ三択が出てこない", () => {
   }
   assert.deepEqual(offences, [], `\n${offences.join("\n\n")}\n`);
 });
+
+/**
+ * 一本道が主張する解決日が、正本の期限を越えていないことを検算する。
+ *
+ * **道の側が「解決した」と書けば解決になる、というのが一番危ない。**
+ * 実際、人徳ルートはT06を解決に数えながら、本文のどこにも閉じた日が無かった
+ * （2026-08-14に発見。Day39に節を足して直した）。
+ * 期限は正本の値であって、道が決めるものではない。ここで突き合わせる。
+ */
+const CANON_DEADLINES = Object.freeze({
+  T01: [2, 3], T02: [18, 35], T03: [20, 35], T04: [32, 50], T05: [38, 55],
+  T06: [45, 56], T07: [48, 60], T08: [58, 60], T09: [32, 45], T10: [44, 70],
+  T11: [49, 60], T12: [46, 68], T13: [60, 90], T14: [56, 75], T15: [72, 90],
+  T16: [80, 90], T17: [41, 63], T18: [70, 78], T19: [82, 90],
+});
+
+test("道が主張する解決日は、正本の最終悪化を越えない", () => {
+  const offences = [];
+  let checked = 0;
+  for (const file of ROUTE_FILES) {
+    const markdown = readFileSync(path.join(DOCS, file), "utf8");
+    // 巻末台帳の「T01 Day3／T02 Day35／…」という並びだけを見る。
+    for (const [, id, day] of markdown.matchAll(/\bT(\d\d)\s+Day(\d+)(?=\s*[／/|]|\s*。|\s*$)/gm)) {
+      const deadlines = CANON_DEADLINES[`T${id}`];
+      if (!deadlines) continue;
+      checked += 1;
+      if (Number(day) > deadlines[1]) {
+        offences.push(`${file}: T${id} を Day${day} に解決と書いているが、最終悪化は Day${deadlines[1]}`);
+      }
+    }
+  }
+  assert.ok(checked >= 15, `解決日を ${checked} 件しか拾えていない。抽出が壊れている可能性がある`);
+  assert.deepEqual(offences, [], `\n${offences.join("\n")}\n`);
+  console.log(`  解決日 ${checked} 件を正本の期限と突き合わせた`);
+});
