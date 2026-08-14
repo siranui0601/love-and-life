@@ -347,14 +347,35 @@ function jobOffset(entry) {
   return JOB_OFFSETS.get(entry.id) ?? 0;
 }
 
-export function variantIndexFor(entry, shiftCount) {
+// ## ⚠ 回数で引くと、周期ができるだけだった（2026-08-14）
+//
+// 三択の重複を数え直したところ、**同じ場所での繰り返し154件のうち145件（94%）で、
+// 一度目と二度目の間に日付が変わっていた。**盤面が動いているのに同じ札が返っていた。
+// Day12に麦穂亭で出た三択が、Day30に同じ麦穂亭で一字も変わらずに出る。
+//
+// 原因はここである。`shiftCount % pool.length` は**循環する。**
+// 変奏を出すようにした時、**直したつもりで周期を作っただけだった。**
+// 十八日経っても、同じ周回に入れば同じ札になる。
+//
+// **軸を「何回働いたか」から「いつ・どんな日に働くか」へ移す。**
+// 日と時間帯を混ぜるので、同じ口を同じ日の同じ刻に二度やらない限り、同じ変奏は返らない。
+//
+// **⚠ IDに日付をそのまま混ぜて逃げてはいけない。**
+// それをやると全部の三択が自動的に一意になり、**検査は通るが中身は何も変わらない。**
+// ここで変えているのは**選ばれる変奏そのもの**（何を運ぶか・誰と組むか）であって、
+// 見出しと ID はその結果として変わる。
+export function variantIndexFor(entry, shiftCount, context = null) {
   const pool = VARIANTS[entry.variantKey] ?? [];
   if (pool.length === 0) return -1;
-  return (Math.abs(Number(shiftCount) || 0) + jobOffset(entry)) % pool.length;
+  const day = Math.max(0, Number(context?.day ?? 0));
+  const daypartIndex = Math.max(0, Number(context?.daypartIndex ?? 0));
+  // 回数も残す。同じ日の同じ刻に別の口へ入った時、経験の差が出るのはそのままでよい。
+  const seed = day * 3 + daypartIndex + Math.abs(Number(shiftCount) || 0) + jobOffset(entry);
+  return seed % pool.length;
 }
 
-export function variantFor(entry, shiftCount) {
-  const index = variantIndexFor(entry, shiftCount);
+export function variantFor(entry, shiftCount, context = null) {
+  const index = variantIndexFor(entry, shiftCount, context);
   return index < 0 ? null : VARIANTS[entry.variantKey][index];
 }
 
@@ -526,10 +547,22 @@ function waitLabel(entry, variant, waitMinutes) {
   return `${label}——${hours}時間ほど待って、次の刻の口に入る`;
 }
 
+const DAYPART_ORDER = Object.freeze(["朝", "昼", "夕", "夜"]);
+
+function labourContextOf(runtime) {
+  const state = runtime?.playerState ?? {};
+  const daypartIndex = DAYPART_ORDER.indexOf(String(state.daypart ?? ""));
+  return {
+    day: Number(state.day ?? 0),
+    daypartIndex: daypartIndex < 0 ? 0 : daypartIndex,
+  };
+}
+
 function actionFor(runtime, entry, waitMinutes = 0) {
   const shiftCount = shiftCountOf(readState(runtime), entry);
-  const variantIndex = variantIndexFor(entry, shiftCount);
-  const variant = variantFor(entry, shiftCount);
+  const context = labourContextOf(runtime);
+  const variantIndex = variantIndexFor(entry, shiftCount, context);
+  const variant = variantFor(entry, shiftCount, context);
   const id = actionIdFor(entry, variantIndex);
   return {
     id,
