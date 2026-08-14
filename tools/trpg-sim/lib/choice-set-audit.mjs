@@ -55,6 +55,22 @@ export function createChoiceSetAudit() {
     // `MISSION_FLOW:granary-arson:LEAD:…` の第二節（＝どの調査の組み立てか）で束ねる。
     // 家族（`MISSION_FLOW×3`）だけでは、`leadAction` を直しても21件残った理由が分からなかった。
     duplicateMovedBetweenKinds: new Map(),
+    // ## 154件のほう（同じ場所での繰り返し）を、次に読むための欄（2026-08-14）
+    //
+    // 同じ場所で同じ三択が二度出た時、**一度目と二度目の間に盤面の何が変わったか**を数える。
+    //   何も変わっていない → その場面は同じ札を返して当然。**直すのは場面の側**
+    //   変わっているのに同じ札 → **変化が札に反映されていない。**直すのは札の側
+    // どちらなのかで直し方が変わるので、また先に数える。
+    lastContextBySignature: new Map(),
+    duplicateSamePlaceChangeCounts: new Map(),
+  };
+}
+
+function contextOf(save) {
+  return {
+    day: Number(save?.clock?.day ?? -1),
+    daypart: text(save?.clock?.daypart ?? save?.clock?.time ?? ""),
+    gold: Number(save?.player?.gold ?? save?.scene?.gold ?? -1),
   };
 }
 
@@ -85,7 +101,22 @@ export function inspectChoiceSetBeforeSelection(audit, save) {
       }
     } else {
       audit.duplicateRepeatedInPlaceCount += 1;
+      const now = contextOf(save);
+      const before = audit.lastContextBySignature.get(signature) ?? null;
+      if (before) {
+        const changed = [
+          before.day !== now.day ? "day" : null,
+          before.daypart !== now.daypart ? "daypart" : null,
+          before.gold !== now.gold ? "gold" : null,
+        ].filter(Boolean);
+        const key = changed.length ? changed.join("+") : "nothing";
+        audit.duplicateSamePlaceChangeCounts.set(
+          key,
+          (audit.duplicateSamePlaceChangeCounts.get(key) ?? 0) + 1,
+        );
+      }
     }
+    audit.lastContextBySignature.set(signature, contextOf(save));
     if (audit.duplicateExamples.length < 20) {
       audit.duplicateExamples.push({
         signature,
@@ -112,6 +143,7 @@ export function recordChoiceSetSelection(audit, signature, accepted = true, save
     audit.consumedCount += 1;
     const facilityId = text(save?.scene?.facilityId);
     if (facilityId) audit.lastFacilityBySignature.set(signature, facilityId);
+    audit.lastContextBySignature.set(signature, contextOf(save));
   }
   return !wasKnown;
 }
@@ -130,6 +162,9 @@ export function finalizeChoiceSetAudit(audit) {
     duplicateMovedBetweenCount: audit.duplicateMovedBetweenCount,
     duplicateMovedBetweenFamilies: Object.fromEntries(
       [...audit.duplicateMovedBetweenFamilies.entries()].sort((left, right) => right[1] - left[1]),
+    ),
+    duplicateSamePlaceChangeCounts: Object.fromEntries(
+      [...audit.duplicateSamePlaceChangeCounts.entries()].sort((left, right) => right[1] - left[1]),
     ),
     duplicateMovedBetweenKinds: Object.fromEntries(
       [...audit.duplicateMovedBetweenKinds.entries()].sort((left, right) => right[1] - left[1]),

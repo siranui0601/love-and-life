@@ -159,6 +159,9 @@ console.log(`TRPG_DAY100_ROUTE_DUPLICATE_MOVED_SINCE_LAST_TIME=${result.report.r
 for (const [family, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateMovedBetweenFamilies ?? {})) {
   console.log(`TRPG_DAY100_ROUTE_DUPLICATE_MOVED_FAMILY ${String(count).padStart(5)}  ${family}`);
 }
+for (const [key, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateSamePlaceChangeCounts ?? {})) {
+  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_SAME_PLACE_CHANGED ${String(count).padStart(5)}  ${key}`);
+}
 for (const [kind, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateMovedBetweenKinds ?? {})) {
   console.log(`TRPG_DAY100_ROUTE_DUPLICATE_MOVED_KIND ${String(count).padStart(5)}  ${kind}`);
 }
