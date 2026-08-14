@@ -2436,14 +2436,36 @@ function leadAction(runtime, pack, movementActions, lead) {
   const actionKind = movement?.movementScope === "regional" ? "LEAD_HUB" : "LEAD";
   const visitedHubs = runtime.playerState.progress?.travel?.visitedHubs;
   const regionalVerb = visitedHubs?.has?.(targetLocation) ? "戻り" : "向かい";
+  // ## 同じ手掛かりの札が、どこから出しても同じIDだった（2026-08-14）
+  //
+  // 三択の重複を「同じ施設で出たか／違う施設で出たか」で数え直したところ、
+  // **施設をまたいだ重複30件が、すべてこの `MISSION_FLOW×3` だった**
+  // （`MISSION_FLOW+MISSION_FLOW+MISSION_FLOW` の重複はちょうど30件。**100%である**）。
+  //
+  // 原因は単純で、`id` が `pack:LEAD:lead.id` しか持たず、
+  // **どこから出した札かを持っていなかった。**田園の村から「交易都市へ向かう」札と、
+  // 王都から「交易都市へ向かう」札は、**所要時間も残りの道のりも違う別の行動**なのに、
+  // 同じIDで、同じ文面で出ていた。
+  //
+  // 現在地をIDに入れ、regional の時は残りの所要時間を文面に出す。
+  // **これは重複対策の小細工ではなく、単に取り違えていた別物を区別する修正である。**
+  //
+  // （**この修正は推定ではない。**先に計器を足して、施設またぎ30件・同一施設140件と
+  // 数えてから書いている。推定して直してから測る、を二度やって6%と0%だったので。）
+  const originFacilityId = runtime.playerState.player.facilityId ?? "unknown";
+  const travelHours = movement ? Number(movement.minutes ?? 0) / 60 : 0;
   return {
     ...(movement ?? {}),
-    id: actionId(pack, actionKind, lead.id),
+    id: movement
+      ? actionId(pack, actionKind, `${lead.id}@${originFacilityId}`)
+      : actionId(pack, actionKind, lead.id),
     type: movement ? "move" : "plan",
     family: movement ? "move" : "prepare",
     minutes: movement ? movement.minutes : 8,
     label: movement?.movementScope === "regional"
-      ? `${targetLocation}へ${regionalVerb}、${lead.label}`
+      ? `${targetLocation}へ${regionalVerb}（${travelHours >= 1
+        ? `${Number.isInteger(travelHours) ? travelHours : travelHours.toFixed(1)}時間`
+        : `${Math.round(travelHours * 60)}分`}）、${lead.label}`
       : atTarget
       ? `${lead.destinationName}で、${lead.label}`
       : `${lead.destinationName}へ向かい、${lead.label}`,
