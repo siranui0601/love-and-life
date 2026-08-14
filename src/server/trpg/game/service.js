@@ -13,6 +13,7 @@ import {
 } from "../../../../tools/trpg-sim/lib/shop-runtime.mjs";
 import { BATTLE_ASSUMPTIONS } from "../../../../tools/trpg-sim/lib/battle-model.mjs";
 import { experienceToNextLevel } from "../../../../tools/trpg-sim/lib/mission-model.mjs";
+import { TIME_SLOTS } from "../../../../tools/trpg-sim/lib/world-model.mjs";
 import { ensurePlayerNeeds, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 import {
   EQUIPMENT_ACCESS_VERSION,
@@ -634,6 +635,107 @@ function capitalWeaponShopFirstChoiceActions(runtime, data) {
   return choices ? withChoiceIds(choices) : null;
 }
 
+// ## 会話の話題が枯れる問題（2026-08-14）
+//
+// 追随質問の話題が七つしかなく、同じ相手に二度話しかけると同じ三択が並んだ。
+// 「話題が尽きるなら手で書き足せばよい」という指示に従い、ここに手作業で
+// 書き起こす。生成規則ではなく一件ずつの原稿なので、質問文・NPC の答え・
+// 出す条件の三つが常に揃っている（`playerUtterance` と `coreLine` に対応する
+// 行がない話題は増やさない）。
+//
+// 条件はすべて既存の盤面データから引く。天候は正本の `resolveCanonicalWeather`、
+// 施設種別は拠点タブの「種別」列、空腹は `publicPlayerNeeds`。乱数で出し分けたり、
+// NPC の職業（正本では非公開列）を読んだりはしない。
+function authoredFollowupTopics(runtime, session, { facility, activeMission }) {
+  const state = runtime.playerState;
+  const facilityName = facility?.name ?? "この辺り";
+  const facilityType = String(facility?.type ?? "");
+  const hub = String(state.player.location ?? "この土地");
+  const weather = state.weather ?? null;
+  const needs = publicPlayerNeeds(state.player);
+  const daypart = String(state.daypart ?? "");
+  const evening = /夕|夜/u.test(daypart);
+  const trades = /市場|店|商|屋|倉庫|物流|港|鍛冶/u.test(facilityType);
+  const guards = /門|検問|警備|軍|防衛|監視|要塞/u.test(facilityType);
+  const lodges = /宿|飯|酒場|食堂|休憩|野営/u.test(facilityType);
+  const gathers = /広場|掲示|水場|噂|情報|娯楽|居住/u.test(facilityType);
+  const rules = /行政|政治|管理|記録|許可|検査|軍議/u.test(facilityType);
+  const heals = /医療|薬|治療|霊地/u.test(facilityType);
+  const knownRumorCount = state.player.knownRumorIds?.size ?? 0;
+  return [
+    trades ? {
+      id: "local_prices",
+      label: `${facilityName}で、この頃の値の動きを聞く`,
+      minutes: 7,
+    } : null,
+    trades ? {
+      id: "what_is_short",
+      label: `${facilityName}で、今いちばん足りていない品を聞く`,
+      minutes: 7,
+    } : null,
+    weather?.label ? {
+      id: "weather_ahead",
+      label: `この${weather.label}がいつまで続くか、道は使えるかを聞く`,
+      minutes: 6,
+    } : null,
+    guards || evening ? {
+      id: "night_caution",
+      label: `${evening ? "日が落ちてからの" : "夜の"}${hub}で気をつけることを聞く`,
+      minutes: 7,
+    } : null,
+    needs.hunger >= 55 ? {
+      id: "cheap_food",
+      label: "安く食べて休める場所を教えてもらう",
+      minutes: 5,
+    } : null,
+    activeMission || knownRumorCount > 0 ? {
+      id: "who_knows_best",
+      label: "この件をいちばんよく知っている人を教えてもらう",
+      minutes: 7,
+    } : null,
+    activeMission || knownRumorCount > 0 ? {
+      id: "past_similar",
+      label: "昔にも似たことが起きたことがあるか尋ねる",
+      minutes: 8,
+    } : null,
+    {
+      id: "who_left",
+      label: `${hub}を最近離れた人や、戻ってこない人がいないか尋ねる`,
+      minutes: 8,
+    },
+    {
+      id: "beast_sightings",
+      label: `${hub}の周りで、近ごろ見かけた獣や魔物の話を聞く`,
+      minutes: 8,
+    },
+    {
+      id: "how_long_here",
+      label: `${session.npcName}がいつからここにいるのかを尋ねる`,
+      minutes: 6,
+    },
+    rules || guards ? {
+      id: "who_decides",
+      label: `${hub}で揉め事が起きた時、誰が裁くのかを聞く`,
+      minutes: 7,
+    } : null,
+    gathers || lodges ? {
+      id: "outsiders",
+      label: `${facilityName}に最近来た余所者の話を聞く`,
+      minutes: 7,
+    } : null,
+    lodges ? {
+      id: "travellers_route",
+      label: "ここを通る旅人が、どの道をどう使っているかを聞く",
+      minutes: 7,
+    } : null,
+    heals ? {
+      id: "who_is_hurt",
+      label: `${facilityName}へ運ばれてきた怪我人や病人の話を聞く`,
+      minutes: 8,
+    } : null,
+  ];
+}
+
 function dialogueFollowupActions(runtime, data) {
   const session = runtime.dialogueSession;
   if (!session || runtime.tutorial?.stage && runtime.tutorial.stage !== "free") return null;
@@ -686,6 +788,7 @@ function dialogueFollowupActions(runtime, data) {
       label: `自分に手伝える仕事がないか、具体的に相談する`,
       minutes: 6,
     } : null,
+    ...authoredFollowupTopics(runtime, session, { facility, activeMission }),
   ].filter(Boolean).filter((topic) => !asked.has(topic.id));
   const turnCount = Number(session.turnCount ?? 1);
   const offset = turnCount % Math.max(1, topics.length);
@@ -2280,6 +2383,21 @@ function stabilizeOpeningTutorialCast(runtime) {
   }
 }
 
+// 一度尋ねた話題は、その相手には二度出さない。会話を閉じて開き直せば同じ三択が
+// 戻ってくる、という抜け道を塞ぐための帳面。相手ごとに持つので、別の人には同じ
+// ことを聞ける（聞き込みとして自然だし、答えも人によって違う）。
+function askedTopicsForNpc(runtime, npcId) {
+  if (!(runtime.askedTopicsByNpc instanceof Map)) {
+    runtime.askedTopicsByNpc = new Map(Object.entries(runtime.askedTopicsByNpc ?? {})
+      .map(([id, topics]) => [id, topics instanceof Set ? topics : new Set(topics ?? [])]));
+  }
+  const existing = runtime.askedTopicsByNpc.get(npcId);
+  if (existing instanceof Set) return existing;
+  const created = new Set(existing ?? []);
+  runtime.askedTopicsByNpc.set(npcId, created);
+  return created;
+}
+
 function updateDialogueSession(runtime, action) {
   if (!action) return;
   if (action.dialogueExit === true) {
@@ -2301,7 +2419,10 @@ function updateDialogueSession(runtime, action) {
       runtime.dialogueSession = null;
       return;
     }
-    if (action.dialogueTopic) askedTopics.add(action.dialogueTopic);
+    if (action.dialogueTopic) {
+      askedTopics.add(action.dialogueTopic);
+      askedTopicsForNpc(runtime, session.npcId).add(action.dialogueTopic);
+    }
     session.askedTopics = askedTopics;
     if (action.disclosedRumorId) session.lastDisclosedRumorId = action.disclosedRumorId;
     session.turnCount = action.conversationTurn;
@@ -2314,8 +2435,10 @@ function updateDialogueSession(runtime, action) {
     && (!action.missionId || Boolean(action.requiredDisclosure))
     && action.singleTurnConversation !== true
     && !action.tutorialBeat) {
+    const carried = askedTopicsForNpc(runtime, action.targetNpcId);
+    if (action.dialogueTopic) carried.add(action.dialogueTopic);
     action.conversationTurn = 1;
-    action.previouslyAskedTopics = [];
+    action.previouslyAskedTopics = [...carried];
     runtime.dialogueSession = {
       npcId: action.targetNpcId,
       npcName: action.targetNpcName ?? action.targetNpcId,
@@ -2323,7 +2446,7 @@ function updateDialogueSession(runtime, action) {
       lastInteractionAtMinute: runtime.playerState.absoluteMinute,
       location: runtime.playerState.player.location,
       facilityId: runtime.playerState.player.facilityId,
-      askedTopics: new Set(action.dialogueTopic ? [action.dialogueTopic] : []),
+      askedTopics: new Set(carried),
       lastDisclosedRumorId: action.disclosedRumorId ?? null,
       turnCount: 1,
       lastPlayerActionLabel: action.label ?? null,
@@ -3927,6 +4050,20 @@ function playerUtterance(action) {
     personal_stake: "あなたがこの問題を気にかけている理由を、聞いてもいいですか？",
     local_rumor: "今聞いた話は、いつ、どこで知ったものですか？",
     work_offer: "私にも手伝える仕事はありますか？　内容と賃金を先に教えてください。",
+    local_prices: "この頃、値が上がった物や下がった物はありますか？",
+    what_is_short: "今この店で、いちばん足りていない品は何ですか？",
+    weather_ahead: "この空はいつまで続きそうですか？　道は使えますか？",
+    night_caution: "日が落ちてから出歩くなら、何に気をつければいいですか？",
+    cheap_food: "安く食べて、横になれる場所を教えてもらえますか？",
+    who_knows_best: "この件をいちばんよく知っているのは、誰ですか？",
+    past_similar: "昔にも、同じようなことが起きたことはありますか？",
+    who_left: "最近ここを離れた人や、戻ってこない人はいますか？",
+    beast_sightings: "この辺りで近ごろ見かけた獣や魔物の話を、聞かせてください。",
+    how_long_here: "あなたは、いつからここにいるんですか？",
+    who_decides: "ここで揉め事が起きた時、最後に決めるのは誰ですか？",
+    outsiders: "最近ここに来た、見慣れない人の話はありますか？",
+    travellers_route: "ここを通る旅人は、どの道をどんな風に使っていますか？",
+    who_is_hurt: "最近ここへ運ばれてきた怪我人や病人は、いますか？",
     t01_escort: "フィン、聞こえる？　歩けそう？　村まで一緒に戻ろう。",
     end_conversation: "ありがとう。教えてもらったことを確かめてきます。",
   }[action.dialogueTopic];
@@ -4103,6 +4240,75 @@ function authoredOpeningPresentation(runtime) {
   return null;
 }
 
+// 手書きの追随話題（`authoredFollowupTopics`）に対する答え。話題ごとに一件ずつ
+// 書き、答えられる内容は必ず盤面の実データから引く——天候は正本の暦、値と品は
+// 施設タブの「取扱品・価格」列、離村者は生きている世界の NPC 状態。
+// 知らないことは知らないと言わせる（作り話で埋めない）。
+function authoredFollowupReply(runtime, data, resolved, { npc, facilityName }) {
+  const topic = String(resolved?.dialogueTopic ?? "");
+  if (!topic) return null;
+  const state = runtime.playerState;
+  const hub = String(state.player.location ?? "この土地");
+  const facility = data.model.facilityById[state.player.facilityId] ?? {};
+  const goods = cleanText(facility.productPriceText ?? "", 90);
+  const weather = state.weather ?? null;
+  const slotIndex = TIME_SLOTS.findIndex((slot) => slot.id === weather?.daypart || slot.label === state.daypart);
+  const nextSlot = TIME_SLOTS[(Math.max(0, slotIndex) + 1) % TIME_SLOTS.length];
+  const nextWeather = weather && nextSlot
+    ? resolveCanonicalWeather({
+      day: state.day + (nextSlot.index === 0 ? 1 : 0),
+      regionId: state.player.location,
+      daypart: nextSlot.id,
+    })
+    : null;
+  const rough = new Set(weather?.tags ?? []);
+  const departed = data.model.npcs
+    .filter((entry) => (entry.home ?? entry.initialLocation) === hub)
+    .filter((entry) => ["missing", "departed", "traveling", "dead"].includes(runtime.livingWorld.npcStates[entry.id]?.presence)
+      || ["missing", "dead"].includes(runtime.livingWorld.npcStates[entry.id]?.lifeStatus))
+    .slice(0, 2);
+  const troubleHere = data.model.troubles
+    .filter((trouble) => trouble.primaryLocations?.includes(state.player.location))
+    .find((trouble) => ["active", "critical"].includes(state.troubles?.[trouble.id]?.status));
+
+  return {
+    local_prices: goods
+      ? `${facilityName}の品書きは「${goods}」だ。値そのものは札の通りで、私が勝手に上げ下げはしない。動くとしたら入荷が滞った時だから、先に入りの具合を聞くといい。`
+      : `${facilityName}で値が動くのは、入る量が変わった時だけだ。今日は札の通りで、私が知る限り先週と変わらない。`,
+    what_is_short: goods
+      ? `扱っているのは「${goods}」の範囲だ。切らしているものがあるなら、それは運び手が来ていないということでしかない。急ぐなら、次にどの道から荷が来るかを確かめてくれ。`
+      : `ここで足りないものは、その日運ばれてきた量で決まる。棚を見て空いていたら、それが答えだ。`,
+    weather_ahead: weather
+      ? `今は${weather.label}だ。${nextWeather && nextWeather.id !== weather.id
+        ? `${nextSlot.label}には${nextWeather.label}に変わる見込みで、`
+        : `${nextSlot.label}までは変わらないだろうから、`}${rough.has("storm") || rough.has("snow")
+        ? "外の道は無理をしない方がいい。宿を取れるうちに取っておけ。"
+        : rough.has("rain")
+          ? "足元が緩む道は避けて、人の通る道を選べ。"
+          : "道そのものは使える。日のあるうちに着けるかだけ考えればいい。"}`
+      : "空のことは、外に出ている人の方が確かだ。門か広場で、今朝この道を通った人に聞いてくれ。",
+    night_caution: `${hub}で夜に困るのは、道が見えないことと、戻る場所を決めていないことだ。${rough.has("storm") || rough.has("snow")
+      ? "この空なら特に、屋根のある場所を先に押さえてから動け。"
+      : "灯りを持ち、帰る宿を決めてから出れば、たいていのことは避けられる。"}`,
+    cheap_food: `腹が減っているなら、宿より先に飯屋を探せ。${facilityName}で聞けば、その日いちばん安く出している所は誰でも知っている。無理に歩き続けるより、食べて休む方が結局早い。`,
+    who_knows_best: troubleHere
+      ? `その件なら、${troubleHere.primaryLocations?.[0] ?? hub}で最初に気づいた人に当たるのがいちばん早い。私が知っているのは人伝てで届いた分だけだ。`
+      : "いちばん詳しいのは、最初にそれを見た人だ。私まで届いた時点で、もう何人か経ている。名前まで辿れる人を探した方がいい。",
+    past_similar: `似たことは、この土地では初めてではないはずだ。ただ、私が覚えている範囲では前と今で規模が違う。古いことを覚えている年寄りに、いつ・どこまで広がったかを聞いてくれ。`,
+    who_left: departed.length
+      ? `${departed.map((entry) => entry.name).join("と")}を、この頃見ていない。行き先まで聞いた者がいるかどうかは分からない。`
+      : `今のところ、${hub}から急に消えた人の話は聞いていない。人が減れば、水汲みや畑の手が足りなくなるからすぐ分かる。`,
+    beast_sightings: `${hub}の周りで見かける獣は、季節と時間で決まっている。普段いない所に出たなら、それは獣ではなく獣を追い出した何かの話だ。どこで見たかを先に聞いてくれ。`,
+    how_long_here: `私は${npc.role ?? "ここの住人"}だ。長く見てきたから、変わったことがあれば違いには気づく。ただ、それを説明できるかは別の話だ。`,
+    who_decides: `${hub}で最後に決めるのは、その場を預かっている人だ。揉め事は、まず記録を残す所へ持ち込め。口約束のままにすると、後で誰も助けられない。`,
+    outsiders: `${facilityName}には人が入れ替わり立ち替わり来る。覚えているのは、荷や身なりが土地と合わなかった者だけだ。何を探していたかまでは聞いていない。`,
+    travellers_route: `旅人は、明るいうちに次の宿へ着ける道しか使わない。遠回りでも人の通る道を選ぶし、そうしない者がいたら、それは急ぐ理由がある者だ。`,
+    who_is_hurt: `運ばれてくる怪我は、その土地で何が起きているかをいちばん正直に映す。${troubleHere
+      ? "この頃は、同じような傷の者が続いている。"
+      : "この頃は、畑や道での普段どおりの怪我ばかりだ。"}詳しく知りたいなら、担いできた人に聞くのが早い。`,
+  }[topic] ?? null;
+}
+
 function deterministicFallbackPresentation(runtime, data, action, outcome) {
   const resolved = action?.resolvedAction ?? action;
   const fallback = fallbackNarrative(runtime, resolved, outcome);
@@ -4276,6 +4482,7 @@ function deterministicFallbackPresentation(runtime, data, action, outcome) {
     ?? rumorView(runtime).find((rumor) => rumor.sourceNpcId === npc.id)?.text;
   const facilityName = data.model.facilityById[runtime.playerState.player.facilityId]?.name ?? "この辺り";
   const subject = cleanText(resolved.label, 100) || "今の話";
+  const authoredLine = authoredFollowupReply(runtime, data, resolved, { npc, facilityName });
   const coreLine = {
     mission_clue: learnedFromNpc
       ? `${learnedFromNpc}。これは私が確かに知っていることだ。いつ、どこで見聞きしたかも、順に説明しよう。`
@@ -4301,7 +4508,9 @@ function deterministicFallbackPresentation(runtime, data, action, outcome) {
       : `${facilityName}で今すぐ手が要るのは、運搬や片づけのような短い仕事だ。先に仕事内容と賃金を確かめ、終わったら頼んだ本人へ報告してくれ。`,
     t01_escort: "足を痛めて一人では歩けない。村の広場まで一緒に戻ってほしい。母さんが待ってる。途中で休んでもいいから、置いていかないで。",
     end_conversation: "分かった。ここで聞いた話も、現場が変われば古くなる。行き先で何を見つけたか、また会えた時に聞かせてくれ。",
-  }[resolved.dialogueTopic] ?? `「${subject}」についてだね。私が確かに言えることと、まだ噂のことは分けて話す。まず現場を見て、それから関係する人の話を確かめるといい。`;
+  }[resolved.dialogueTopic]
+    ?? authoredLine
+    ?? `「${subject}」についてだね。私が確かに言えることと、まだ噂のことは分けて話す。まず現場を見て、それから関係する人の話を確かめるといい。`;
   const line = `${resolved.firstIntroduction ? `私は${resolved.introductionName ?? npc.name}。` : ""}${coreLine}`;
   return {
     narrative: resolved.dialogueTopic === "t01_escort"
