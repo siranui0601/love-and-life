@@ -147,6 +147,10 @@ console.log(`TRPG_DAY100_ROUTE_DISCOVERED=${result.report.counts.discovered}`);
 console.log(`TRPG_DAY100_ROUTE_PROGRESSED=${result.report.counts.progressed}`);
 console.log(`TRPG_DAY100_ROUTE_RESOLVED=${result.report.counts.resolved}`);
 console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CHOICE_SETS=${result.report.routeTrial.choiceSets.duplicateEncounterCount}`);
+// 内訳を全件から出す。**例は先頭20件しか残らないので、内訳の判断に使ってはいけない。**
+for (const [family, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateFamilies ?? {})) {
+  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_FAMILY ${String(count).padStart(5)}  ${family}`);
+}
 console.log(`TRPG_DAY100_ROUTE_ALL_RESCUE=${result.report.routeTrial.allRescueCandidate ? "YES" : "NO"}`);
 
 if (process.argv.includes("--strict-runtime")) {

@@ -10,6 +10,15 @@ export function choiceSetSignature(save) {
   return actionIds.length ? actionIds.join("|") : null;
 }
 
+/** 重複した画面を、並んでいた行動の種類で束ねる。`WORK+WORK+EAT` のような形になる。 */
+export function duplicateFamilyOf(signature) {
+  return String(signature ?? "")
+    .split("|")
+    .map((entry) => entry.split(":")[0])
+    .sort((left, right) => left.localeCompare(right, "en"))
+    .join("+");
+}
+
 export function createChoiceSetAudit() {
   return {
     schemaVersion: "trpg-choice-set-once-audit-v1",
@@ -18,6 +27,11 @@ export function createChoiceSetAudit() {
     duplicateEncounterCount: 0,
     duplicateSetIds: new Set(),
     duplicateExamples: [],
+    // 例は先頭20件しか残らない。**先頭20件は無作為標本ではない。**
+    // 走り始めの数十分は同じ場所にいるので、そこで多い種類が20件を占める。
+    // （実際、それを全体の内訳と読み違えて、6%しか減らない修正を「大半が消える」と報告した。）
+    // 内訳は全件から数える。
+    duplicateFamilies: new Map(),
   };
 }
 
@@ -28,6 +42,8 @@ export function inspectChoiceSetBeforeSelection(audit, save) {
   if (duplicate) {
     audit.duplicateEncounterCount += 1;
     audit.duplicateSetIds.add(signature);
+    const family = duplicateFamilyOf(signature);
+    audit.duplicateFamilies.set(family, (audit.duplicateFamilies.get(family) ?? 0) + 1);
     if (audit.duplicateExamples.length < 20) {
       audit.duplicateExamples.push({
         signature,
@@ -60,6 +76,9 @@ export function finalizeChoiceSetAudit(audit) {
     consumedCount: audit.consumedCount,
     duplicateEncounterCount: audit.duplicateEncounterCount,
     duplicateUniqueSetCount: audit.duplicateSetIds.size,
+    duplicateFamilies: Object.fromEntries(
+      [...audit.duplicateFamilies.entries()].sort((left, right) => right[1] - left[1]),
+    ),
     duplicateExamples: audit.duplicateExamples.map((entry) => ({ ...entry })),
     passed: audit.duplicateEncounterCount === 0,
   };
