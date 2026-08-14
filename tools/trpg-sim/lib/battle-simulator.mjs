@@ -848,10 +848,11 @@ export function beginInteractiveBattle(options) {
   const { data } = options;
   if (!data) throw new Error('beginInteractiveBattle requires data');
   const seed = options.seed ?? 'battle';
-  const requestedMaxTurns = Number(options.maxTurns ?? BATTLE_ASSUMPTIONS.battleTurnLimit);
-  const maxTurns = Number.isFinite(requestedMaxTurns) ? Math.max(1, Math.floor(requestedMaxTurns)) : 100;
   const rng = createSeededRng(`${seed}:interactive:encounter`);
   const state = initializeState(data, options, rng);
+  // 打ち切り回数は相手を見てから決める。ボスは長い（turnLimitFor を見る）。
+  const requestedMaxTurns = Number(options.maxTurns ?? turnLimitFor(state));
+  const maxTurns = Number.isFinite(requestedMaxTurns) ? Math.max(1, Math.floor(requestedMaxTurns)) : 100;
   if (state.players.length !== 1) throw new Error('interactive battle currently requires exactly one player');
   const serializableState = interactiveState(state);
   return {
@@ -1105,6 +1106,12 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
   };
 }
 
+/** ボスがいる戦闘だけ、打ち切りまでの回数を延ばす（BATTLE_ASSUMPTIONS の注記を見る）。 */
+function turnLimitFor(state) {
+  const hasBoss = state.enemies.some((enemy) => enemy.boss || enemy.monster?.boss);
+  return hasBoss ? BATTLE_ASSUMPTIONS.bossBattleTurnLimit : BATTLE_ASSUMPTIONS.battleTurnLimit;
+}
+
 export function simulateBattle(options) {
   const { data } = options;
   if (!data) throw new Error('simulateBattle requires data');
@@ -1112,7 +1119,7 @@ export function simulateBattle(options) {
   const diagnostics = new DiagnosticBag();
   const state = initializeState(data, options, rng);
   const actionUsage = new Map();
-  const maxTurns = Number(options.maxTurns ?? BATTLE_ASSUMPTIONS.battleTurnLimit);
+  const maxTurns = Number(options.maxTurns ?? turnLimitFor(state));
   let winner = 'draw';
   let fallbackAttacks = 0;
   let totalHits = 0;

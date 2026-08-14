@@ -30,6 +30,13 @@ export const BATTLE_ASSUMPTIONS = Object.freeze({
   // this many rounds is a stalemate the player walks away from, not a victory
   // earned by outlasting the other side.
   battleTurnLimit: 20,
+  // Bosses are built to outlast that.  MON-0028 空殻の勇者 carries 5913 HP behind
+  // 61 defence: measured, a party of four at Lv20 in tier-4 gear needs 27-39
+  // rounds to put it down, and three at Lv24 need about 35.  Holding bosses to
+  // the ordinary 20 makes every one of those runs a draw, which is not a
+  // stalemate the player walked away from - it is a fight the rules would not
+  // let them finish.  Applies when any enemy in the encounter is flagged ボス.
+  bossBattleTurnLimit: 60,
   cooldownTick: 'start_of_round',
   allyCountIncludesSelf: true,
   enemySelection: 'eligible actions are sampled by base weight; priority is retained for reporting only',

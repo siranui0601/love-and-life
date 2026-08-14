@@ -519,3 +519,49 @@ test("空殻の勇者は、技を使った相手にだけ模倣を撃つ", () =>
   // 通常攻撃しかしない相手には、条件 `playerLastSkillRepeatable` が立たない。
   assert.equal(run([]), 0, "通常攻撃しかしていない相手に模倣が出ている");
 });
+
+/**
+ * ボス戦だけ打ち切りが延びることを検算する。
+ *
+ * 通常戦闘の打ち切りは20回（デバフ無限ループ対策の名残）。
+ * **だがMON-0028はHP5913・防御61で、実測すると倒すのに27〜39回かかる。**
+ * 20で切ると、装備も人数も足りている回まで全部「引き分け」になる。
+ * 打ち切りが相手によって変わることと、雑魚は20のままであることの両方を見る。
+ */
+test("ボスがいる戦闘だけ、打ち切り回数が延びる", () => {
+  assert.ok(BATTLE_ASSUMPTIONS.bossBattleTurnLimit > BATTLE_ASSUMPTIONS.battleTurnLimit);
+
+  const stall = simulateBattle({
+    data, seed: "turn-limit-mob", monsterIds: ["MON-0010"], playerBuild: observerBuild(),
+  });
+  assert.equal(stall.turns, BATTLE_ASSUMPTIONS.battleTurnLimit, "雑魚戦の打ち切りが動いている");
+
+  const boss = simulateBattle({
+    data, seed: "turn-limit-boss", monsterIds: ["MON-0028"], playerBuild: observerBuild(),
+  });
+  assert.equal(boss.turns, BATTLE_ASSUMPTIONS.bossBattleTurnLimit, "ボス戦の打ち切りが延びていない");
+});
+
+/**
+ * 空殻の勇者が「四人がかりの相手」であることを、数字として固定しておく。
+ * 一本道の Day63 以降をこの数字の上に書くので、静かに動くと道の方が嘘になる。
+ */
+test("空殻の勇者は、Lv20の四人なら倒せて、三人では倒せない", () => {
+  const gear = ["EQP-W-0034", "EQP-A-0008", "EQP-S-0004"];
+  const skills = ["SKL-0049", "SKL-0001", "SKL-0011", "SKL-0008"];
+  const wins = (party, level) => {
+    let won = 0;
+    for (let index = 0; index < 16; index += 1) {
+      const result = simulateBattle({
+        data, seed: `hollow-party-${party}-${level}-${index}`, monsterIds: ["MON-0028"],
+        players: Array.from({ length: party }, (_, seat) => createPlayerBuild(data, {
+          id: `p${seat}`, name: `p${seat}`, level, equipmentIds: gear, skillIds: skills,
+        })),
+      });
+      if (result.winner === "players") won += 1;
+    }
+    return won;
+  };
+  assert.equal(wins(4, 20), 16, "四人Lv20で落とせなくなった");
+  assert.ok(wins(3, 20) <= 4, "三人Lv20で落とせるようになった。難度が下がっている");
+});
