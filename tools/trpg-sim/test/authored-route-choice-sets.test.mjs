@@ -89,3 +89,31 @@ test("検算そのものが空振りしていない", () => {
   assert.ok(total >= 60, `一本道から三択を ${total} 組しか拾えていない。抽出が壊れている可能性がある`);
   console.log(`  一本道 ${ROUTE_FILES.length} 本から三択 ${total} 組を検算した`);
 });
+
+/**
+ * **ルートをまたいで同じ三択が出ていないことを検算する。**
+ *
+ * 「全てのルートはユニークである必要がある」というのが世界の規則である。
+ * 一本の中で重複していないだけでは足りない。**別々の道が同じ画面を出したら、
+ * それは道が一本しかないのと同じである。**
+ *
+ * 分岐点で同じ部屋に立つこと自体は正しい。**だが、そこで見える三行まで同じにはしない。**
+ * 同じ正本の四手を見ても、**そこに立っている男の持ち物が違えば、重さが違う。**
+ */
+test("ルートをまたいで同じ三択が出てこない", () => {
+  const seen = new Map();
+  const offences = [];
+  for (const file of ROUTE_FILES) {
+    const markdown = readFileSync(path.join(DOCS, file), "utf8");
+    for (const set of extractChoiceSets(markdown)) {
+      const key = signature(set.options);
+      const previous = seen.get(key);
+      if (previous && previous.file !== file) {
+        offences.push(`${previous.file}:${previous.line} と ${file}:${set.line} が同じ三択\n    ${set.options.join("\n    ")}`);
+        continue;
+      }
+      if (!previous) seen.set(key, { file, line: set.line });
+    }
+  }
+  assert.deepEqual(offences, [], `\n${offences.join("\n\n")}\n`);
+});
