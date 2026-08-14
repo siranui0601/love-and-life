@@ -152,15 +152,15 @@ for (const [family, count] of Object.entries(result.report.routeTrial.choiceSets
   console.log(`TRPG_DAY100_ROUTE_DUPLICATE_FAMILY ${String(count).padStart(5)}  ${family}`);
 }
 // **どちらが多いかで直し方が正反対になるので、先にこれを出す。**
-//   同じ施設 → その場面の作り方が同じ札を返している
-//   違う施設 → 札のIDに現在地が入っていないだけ
-console.log(`TRPG_DAY100_ROUTE_DUPLICATE_SAME_FACILITY=${result.report.routeTrial.choiceSets.duplicateSameFacilityCount}`);
-console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CROSS_FACILITY=${result.report.routeTrial.choiceSets.duplicateCrossFacilityCount}`);
-for (const [family, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateCrossFacilityFamilies ?? {})) {
-  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CROSS_FAMILY ${String(count).padStart(5)}  ${family}`);
+//   前回と同じ施設 → その場面の作り方が、同じ場所で同じ札を返している
+//   前回と違う施設 → 札のIDに現在地が入っていないだけ
+console.log(`TRPG_DAY100_ROUTE_DUPLICATE_SAME_PLACE_AS_LAST_TIME=${result.report.routeTrial.choiceSets.duplicateRepeatedInPlaceCount}`);
+console.log(`TRPG_DAY100_ROUTE_DUPLICATE_MOVED_SINCE_LAST_TIME=${result.report.routeTrial.choiceSets.duplicateMovedBetweenCount}`);
+for (const [family, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateMovedBetweenFamilies ?? {})) {
+  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_MOVED_FAMILY ${String(count).padStart(5)}  ${family}`);
 }
-for (const [kind, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateCrossFacilityKinds ?? {})) {
-  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CROSS_KIND ${String(count).padStart(5)}  ${kind}`);
+for (const [kind, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateMovedBetweenKinds ?? {})) {
+  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_MOVED_KIND ${String(count).padStart(5)}  ${kind}`);
 }
 console.log(`TRPG_DAY100_ROUTE_ALL_RESCUE=${result.report.routeTrial.allRescueCandidate ? "YES" : "NO"}`);
 

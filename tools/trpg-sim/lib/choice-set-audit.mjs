@@ -39,14 +39,22 @@ export function createChoiceSetAudit() {
     //   **違う施設で二度出た**なら、札のIDに現在地が入っていないだけ
     // 直し方が正反対なので、**先にどちらが多いかを数える。**
     // （推定して直してから測る、を二度やって、6%と0%だった。）
-    firstFacilityBySignature: new Map(),
-    duplicateSameFacilityCount: 0,
-    duplicateCrossFacilityCount: 0,
-    duplicateCrossFacilityFamilies: new Map(),
+    //
+    // ## ⚠ 最初この比較を「**最初に消費した施設**」で書いていた（2026-08-14に訂正）
+    //
+    // それだと、施設Aで初めて消費した三択を施設Bで十七回繰り返した時、
+    // **十七回すべてが「施設またぎ」に数えられる。**実際は十六回が同じ場所の繰り返しである。
+    // **「またいでいる」ではなく「最初と違う場所にいる」を数えていた。**
+    // `leadAction` に現在地を入れても数字が減らなかったのは、これで説明がつく。
+    // **前回この三択を見た施設**と比べるように直した。
+    lastFacilityBySignature: new Map(),
+    duplicateRepeatedInPlaceCount: 0,
+    duplicateMovedBetweenCount: 0,
+    duplicateMovedBetweenFamilies: new Map(),
     // 施設またぎの重複が、**どの組み立てから出た札か**を数える。
     // `MISSION_FLOW:granary-arson:LEAD:…` の第二節（＝どの調査の組み立てか）で束ねる。
     // 家族（`MISSION_FLOW×3`）だけでは、`leadAction` を直しても21件残った理由が分からなかった。
-    duplicateCrossFacilityKinds: new Map(),
+    duplicateMovedBetweenKinds: new Map(),
   };
 }
 
@@ -60,22 +68,23 @@ export function inspectChoiceSetBeforeSelection(audit, save) {
     const family = duplicateFamilyOf(signature);
     audit.duplicateFamilies.set(family, (audit.duplicateFamilies.get(family) ?? 0) + 1);
     const facilityId = text(save?.scene?.facilityId) || null;
-    const firstFacilityId = audit.firstFacilityBySignature.get(signature) ?? null;
-    if (firstFacilityId !== null && facilityId !== null && firstFacilityId !== facilityId) {
-      audit.duplicateCrossFacilityCount += 1;
-      audit.duplicateCrossFacilityFamilies.set(
+    const previousFacilityId = audit.lastFacilityBySignature.get(signature) ?? null;
+    if (facilityId !== null) audit.lastFacilityBySignature.set(signature, facilityId);
+    if (previousFacilityId !== null && facilityId !== null && previousFacilityId !== facilityId) {
+      audit.duplicateMovedBetweenCount += 1;
+      audit.duplicateMovedBetweenFamilies.set(
         family,
-        (audit.duplicateCrossFacilityFamilies.get(family) ?? 0) + 1,
+        (audit.duplicateMovedBetweenFamilies.get(family) ?? 0) + 1,
       );
       for (const entry of String(signature).split("|")) {
         const parts = entry.split(":");
         if (parts[0] !== "MISSION_FLOW") continue;
         // 第三節が組み立ての種類（LEAD / LEAD_HUB / RECONSIDER / DEFER / NAVIGATOR_* …）
         const kind = `${parts[1] ?? "?"}:${parts[2] ?? "?"}`;
-        audit.duplicateCrossFacilityKinds.set(kind, (audit.duplicateCrossFacilityKinds.get(kind) ?? 0) + 1);
+        audit.duplicateMovedBetweenKinds.set(kind, (audit.duplicateMovedBetweenKinds.get(kind) ?? 0) + 1);
       }
     } else {
-      audit.duplicateSameFacilityCount += 1;
+      audit.duplicateRepeatedInPlaceCount += 1;
     }
     if (audit.duplicateExamples.length < 20) {
       audit.duplicateExamples.push({
@@ -102,7 +111,7 @@ export function recordChoiceSetSelection(audit, signature, accepted = true, save
   if (!wasKnown) {
     audit.consumedCount += 1;
     const facilityId = text(save?.scene?.facilityId);
-    if (facilityId) audit.firstFacilityBySignature.set(signature, facilityId);
+    if (facilityId) audit.lastFacilityBySignature.set(signature, facilityId);
   }
   return !wasKnown;
 }
@@ -117,13 +126,13 @@ export function finalizeChoiceSetAudit(audit) {
       [...audit.duplicateFamilies.entries()].sort((left, right) => right[1] - left[1]),
     ),
     duplicateExamples: audit.duplicateExamples.map((entry) => ({ ...entry })),
-    duplicateSameFacilityCount: audit.duplicateSameFacilityCount,
-    duplicateCrossFacilityCount: audit.duplicateCrossFacilityCount,
-    duplicateCrossFacilityFamilies: Object.fromEntries(
-      [...audit.duplicateCrossFacilityFamilies.entries()].sort((left, right) => right[1] - left[1]),
+    duplicateRepeatedInPlaceCount: audit.duplicateRepeatedInPlaceCount,
+    duplicateMovedBetweenCount: audit.duplicateMovedBetweenCount,
+    duplicateMovedBetweenFamilies: Object.fromEntries(
+      [...audit.duplicateMovedBetweenFamilies.entries()].sort((left, right) => right[1] - left[1]),
     ),
-    duplicateCrossFacilityKinds: Object.fromEntries(
-      [...audit.duplicateCrossFacilityKinds.entries()].sort((left, right) => right[1] - left[1]),
+    duplicateMovedBetweenKinds: Object.fromEntries(
+      [...audit.duplicateMovedBetweenKinds.entries()].sort((left, right) => right[1] - left[1]),
     ),
     passed: audit.duplicateEncounterCount === 0,
   };
