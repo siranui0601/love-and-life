@@ -369,8 +369,15 @@ export function variantIndexFor(entry, shiftCount, context = null) {
   if (pool.length === 0) return -1;
   const day = Math.max(0, Number(context?.day ?? 0));
   const daypartIndex = Math.max(0, Number(context?.daypartIndex ?? 0));
+  // ⚠ 最初 `day * 3 + daypartIndex` と書いた。**日が効かなくなる。**
+  //   変奏表は十八本のうち十一本が三件ちょうどなので、`day * 3 % 3` は常に 0 である。
+  //   （六件の `port_haul` でも 0 と 3 を往復するだけ。）
+  //   **時間帯の刻み幅を日に掛けたので、いちばん多い表の長さと約分されて消えた。**
+  //   通しで測ったら 161 → 160 で、**一件しか減らなかった**のでこれに気づいた。
+  //   日は刻み 1（翌日は必ず別の変奏になる）、時間帯は表の長さ 3・4・5・6 のどれとも
+  //   約分されない 7 を掛ける。
   // 回数も残す。同じ日の同じ刻に別の口へ入った時、経験の差が出るのはそのままでよい。
-  const seed = day * 3 + daypartIndex + Math.abs(Number(shiftCount) || 0) + jobOffset(entry);
+  const seed = day + daypartIndex * 7 + Math.abs(Number(shiftCount) || 0) + jobOffset(entry);
   return seed % pool.length;
 }
 
