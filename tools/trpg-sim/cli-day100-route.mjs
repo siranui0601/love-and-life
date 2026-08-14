@@ -77,7 +77,7 @@ class Day100RouteRunner extends Day100GameRunner {
       const accepted = outcome?.ok !== false
         && outcome?.success !== false
         && outcome?.accepted !== false;
-      recordChoiceSetSelection(this.choiceSetAudit, choiceSet.signature, accepted);
+      recordChoiceSetSelection(this.choiceSetAudit, choiceSet.signature, accepted, this.save);
     }
     return true;
   }
@@ -150,6 +150,14 @@ console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CHOICE_SETS=${result.report.routeTrial.
 // 内訳を全件から出す。**例は先頭20件しか残らないので、内訳の判断に使ってはいけない。**
 for (const [family, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateFamilies ?? {})) {
   console.log(`TRPG_DAY100_ROUTE_DUPLICATE_FAMILY ${String(count).padStart(5)}  ${family}`);
+}
+// **どちらが多いかで直し方が正反対になるので、先にこれを出す。**
+//   同じ施設 → その場面の作り方が同じ札を返している
+//   違う施設 → 札のIDに現在地が入っていないだけ
+console.log(`TRPG_DAY100_ROUTE_DUPLICATE_SAME_FACILITY=${result.report.routeTrial.choiceSets.duplicateSameFacilityCount}`);
+console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CROSS_FACILITY=${result.report.routeTrial.choiceSets.duplicateCrossFacilityCount}`);
+for (const [family, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateCrossFacilityFamilies ?? {})) {
+  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CROSS_FAMILY ${String(count).padStart(5)}  ${family}`);
 }
 console.log(`TRPG_DAY100_ROUTE_ALL_RESCUE=${result.report.routeTrial.allRescueCandidate ? "YES" : "NO"}`);
 
