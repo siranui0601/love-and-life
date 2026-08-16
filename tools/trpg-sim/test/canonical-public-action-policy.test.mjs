@@ -100,9 +100,9 @@ test("bulk provision choices are visible only when their full multiplied price i
     ["LIFE:BUY:ITM010:Q3", 12, 27],
   ]);
 
-  const onlySingle = CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS.filtered(choices, runtime({ gold: 7 }));
+  const onlySingle = CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS.filtered([base], runtime({ gold: 7 }));
   assert.deepEqual(onlySingle.map((entry) => entry.id), ["LIFE:BUY:ITM010"]);
 
-  const throughDouble = CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS.filtered(choices, runtime({ gold: 8 }));
+  const throughDouble = CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS.filtered([base], runtime({ gold: 8 }));
   assert.deepEqual(throughDouble.map((entry) => entry.id), ["LIFE:BUY:ITM010", "LIFE:BUY:ITM010:Q2"]);
 });
