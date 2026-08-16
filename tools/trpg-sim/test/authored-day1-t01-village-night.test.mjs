@@ -61,6 +61,7 @@ test("Day1 T01 route continues from supper into a different short night scene", 
   ]);
   assert.equal(new Set(actions.map((action) => action.id)).size, 3);
   assert.equal(new Set(actions.map((action) => action.family)).size, 3);
+  assert.equal(actions.find((action) => action.id === night.SLEEP_ACTION_ID).minutes, 480);
   for (const action of actions) {
     assert.ok(action.label.length >= 4 && action.label.length <= 20);
   }

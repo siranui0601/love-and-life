@@ -1,6 +1,6 @@
-import * as base from "./authored-facility-labour.js";
+import * as base from "./authored-public-life-network.js";
 
-export * from "./authored-facility-labour.js";
+export * from "./authored-public-life-network.js";
 
 export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v5";
 
@@ -167,7 +167,11 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 }
 
 export function authoredMissionFlowGuidance(runtime, context = {}) {
-  const live = jobs(runtime);
+  const authored = base.authoredMissionFlowExclusiveActions(runtime, context);
+  if (authored != null && !staleBaseLabour(authored)) {
+    return base.authoredMissionFlowGuidance(runtime, context);
+  }
+  const live = ownActions(runtime);
   if (live?.length) {
     return {
       kicker: "土地の暮らしを支える、いつもの働き口がある",

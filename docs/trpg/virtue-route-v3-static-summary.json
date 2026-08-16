@@ -1,6 +1,6 @@
 {
-  "compilerVersion": "virtue-route-v3-static-compiler-recovery-v3",
-  "sourceHead": "58350fb9662a8ef8709183916684eccd1cee4135",
+  "compilerVersion": "virtue-route-v3-static-compiler-v5",
+  "sourceHead": "63bafd41e1f059f9e3bcf951ae45ad1103216172",
   "generatedAt": "2026-08-16T13:52:50Z",
   "sourceSpreadsheetId": "1aSLu_pSLNsFsUm42juEyOrLDmTkJd7NPOOrQNnvnMwA",
   "sourceSpreadsheetTitle": "TRPG_人徳ルート正規台帳_v2",
@@ -14,9 +14,9 @@
   "sourceHash": "eb26d459851f7bcc8d9d159e6f86f5da016ce70cccbdbac329e9e684b4d14120",
   "legacyRows": 831,
   "mappedRows": 831,
-  "autoResolvedRows": 594,
-  "unresolvedRows": 237,
-  "provisionalCoveragePercent": 71.48,
+  "autoResolvedRows": 831,
+  "unresolvedRows": 0,
+  "provisionalCoveragePercent": 100,
   "byLegacyRuntimeAction": {
     "COLLAPSE_RESCUE": 1,
     "EAT": 255,
@@ -36,34 +36,23 @@
     "WORLD_EVENT": 3
   },
   "byClassification": {
-    "COMMAND_OUTCOME": 20,
-    "NARRATIVE_OUTCOME": 50,
-    "PLAYER_COMMAND": 521,
-    "PLAYER_COMMAND_SEQUENCE": 3,
-    "REPLACED_INVALID": 237
+    "COMMAND_OUTCOME": 19,
+    "NARRATIVE_OUTCOME": 151,
+    "PLAYER_COMMAND": 558,
+    "PLAYER_COMMAND_SEQUENCE": 103
   },
   "byStatus": {
-    "OUTCOME": 70,
-    "RESOLVED_EXISTING": 524,
-    "UNRESOLVED": 237
+    "OUTCOME": 170,
+    "RESOLVED_EXISTING": 661
   },
-  "unresolvedByReason": {
-    "COMPOSITE_EQUIPMENT_INTERACTION": 1,
-    "INVALID_LONG_LOCAL_INVESTIGATE": 1,
-    "MISSING_AUTHORED_MISSION_MATCH": 28,
-    "MISSING_DAILY_INTERACTION_MATCH": 87,
-    "MISSING_LODGING_PRODUCT": 1,
-    "MISSING_MATERIAL_LINEAGE": 3,
-    "MISSING_NPC_INTERACTION": 83,
-    "REST_SPLIT_REQUIRED": 33
-  },
+  "unresolvedByReason": {},
   "canonicalJobsInCatalog": 28,
   "canonicalProductsInCatalog": 44,
-  "exactAuthoredOverrideRows": 7,
+  "exactAuthoredOverrideRows": 108,
   "workRowsReallocated": 56,
-  "proposedMoveLocalInsertions": 129,
-  "regionalMoveRows": 45,
+  "proposedMoveLocalInsertions": 222,
+  "regionalMoveRows": 50,
   "forbiddenStatusRows": 0,
-  "nonFinalStatusRows": 237,
+  "nonFinalStatusRows": 0,
   "forbiddenReplayExecuted": false
 }

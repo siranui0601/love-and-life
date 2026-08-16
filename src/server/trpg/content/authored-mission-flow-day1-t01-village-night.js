@@ -19,7 +19,7 @@ const NIGHT_CHOICES = Object.freeze([
     id: "sleep_at_miras",
     label: "ミラの家で眠る",
     family: "rest",
-    minutes: 540,
+    minutes: 480,
     hungerDelta: -12,
     fatigueDelta: -45,
     destinationFacilityId: INN_ID,

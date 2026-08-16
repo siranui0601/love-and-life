@@ -990,22 +990,32 @@
   "equipmentSalesByDay": {
     "23": {
       "equipmentId": "EQP-W-0201",
+      "facilityId": "LOC_TRADE_FISH_MARKET",
+      "slot": "mainHand",
       "expectedPrice": 4
     },
     "38": {
       "equipmentId": "EQP-A-0201",
+      "facilityId": "LOC_TRADE_STABLE",
+      "slot": "body",
       "expectedPrice": 2
     },
     "41": {
       "equipmentId": "EQP-S-0001",
+      "facilityId": "LOC_CAP_LOWER_INN",
+      "slot": "offHand",
       "expectedPrice": 3
     },
     "46": {
       "equipmentId": "EQP-W-0207",
+      "facilityId": "LOC_TRADE_SHIPYARD",
+      "slot": "mainHand",
       "expectedPrice": 13
     },
     "60": {
       "equipmentId": "EQP-W-0301",
+      "facilityId": "LOC_DWARF_FORGE",
+      "slot": "mainHand",
       "expectedPrice": 45
     }
   },
