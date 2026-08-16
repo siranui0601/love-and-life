@@ -2,51 +2,60 @@ import * as base from "./authored-facility-labour.js";
 
 export * from "./authored-facility-labour.js";
 
-export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v3";
+export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v4";
 
-// Live TRPG/仕事マスター rows required by the Day1-Day85 authored route.
-// These are ordinary jobs available to every player; none checks a virtue flag.
+// Live TRPG/仕事マスター is authoritative.  The checked-in facility-labour
+// catalogue predates it, so this bridge replaces stale labour choices while
+// preserving authored mission choices from the base layer.  These are normal
+// public jobs for every route; no virtue flag is consulted.
 const JOBS = Object.freeze({
+  LOC_FARM_FIELD: [["JOB-FARM-01", "麦畑の草取り・収穫補助", 240, 4, 0, "low"]],
+  LOC_FARM_GRANARY: [["JOB-FARM-02", "穀倉の袋運び・棚卸し", 180, 3, 0, "low"]],
+  LOC_FARM_INN: [["JOB-FARM-03", "麦穂亭の皿洗い", 120, 2, 0, "low"]],
+  LOC_FARM_NORTH_FENCE: [["JOB-FARM-04", "北柵の夜番補助", 240, 3, 0, "medium", "villageTrust>=2"]],
+
+  LOC_TRADE_PORT: [
+    ["JOB-TRADE-01", "港朝荷役", 300, 8, 0, "medium"],
+    ["JOB-TRADE-02", "港夕荷役", 180, 5, 0, "medium"],
+  ],
+  LOC_TRADE_CUSTOMS: [["JOB-TRADE-03", "税関荷札整理", 180, 6, 0, "low", "reputation>=1"]],
+  LOC_TRADE_SHIPYARD: [["JOB-TRADE-04", "帆布・船具補修補助", 180, 4, 0, "low"]],
+
+  LOC_CAP_MARKET: [["JOB-CAP-01", "中央市場の荷運び", 240, 6, 0, "low"]],
+  LOC_CAP_STABLE: [["JOB-CAP-02", "厩舎清掃・荷車整備", 180, 5, 0, "low"]],
+  LOC_CAP_NEWSPAPER: [["JOB-CAP-03", "瓦版印刷・配布", 180, 3, 0, "low", "petraTrust>=1"]],
+  LOC_CAP_ORPHANAGE: [["JOB-CAP-04", "孤児院手伝い", 180, 1, 1, "low"]],
+
+  LOC_CRIME_BACK_INN: [["JOB-CRIME-01", "黒灯亭厨房手伝い", 180, 4, 0, "medium"]],
+  LOC_CRIME_INFO_STREET: [["JOB-CRIME-02", "裏路地荷運び", 180, 4, 0, "high"]],
+
   LOC_DWARF_MARKET: [
-    ["JOB-DWARF-01", "鉱石を運ぶ", 300, 6, 24, 34],
-    ["JOB-DWARF-02", "鉱石を選別して秤を見る", 120, 3, 8, 11],
-    ["JOB-DWARF-03", "排水部品を整理する", 180, 3, 10, 12],
+    ["JOB-DWARF-01", "鉱石運び", 300, 6, 0, "medium"],
+    ["JOB-DWARF-02", "鉱石選別・秤見", 120, 3, 0, "low"],
   ],
   LOC_DWARF_ENGINEER: [
-    ["JOB-DWARF-03", "排水部品を整理する", 180, 3, 10, 12],
-    ["JOB-DWARF-04", "図面を清書する", 240, 5, 9, 12],
-    ["JOB-DWARF-02", "鉱石見本を選別する", 120, 3, 8, 11],
+    ["JOB-DWARF-03", "排水部品整理", 180, 3, 0, "low", "minaTrust>=1"],
+    ["JOB-DWARF-04", "図面清書", 240, 5, 0, "low", "technicalKnowledge||minaTrust>=2"],
   ],
-  LOC_BORDER_INN: [
-    ["JOB-BORDER-01", "白砂亭の水汲みと掃除", 180, 3, 13, 18],
-    ["JOB-BORDER-02", "隊商の荷ほどきを手伝う", 180, 3, 14, 20],
-    ["JOB-BORDER-03", "巡礼荷を仕分ける", 120, 2, 8, 10],
-  ],
+
+  LOC_BORDER_INN: [["JOB-BORDER-01", "白砂亭の水汲み・掃除", 180, 3, 0, "low"]],
   LOC_BORDER_PILGRIM_SQUARE: [
-    ["JOB-BORDER-02", "隊商の荷ほどきを手伝う", 180, 3, 14, 20],
-    ["JOB-BORDER-03", "巡礼荷を仕分ける", 120, 2, 8, 10],
-    ["JOB-BORDER-01", "水樽を宿へ運ぶ", 180, 3, 13, 18],
+    ["JOB-BORDER-02", "隊商荷ほどき", 180, 3, 0, "medium"],
+    ["JOB-BORDER-03", "巡礼荷の仕分け", 120, 2, 0, "low"],
   ],
+
   LOC_FORT_SUPPLY: [
-    ["JOB-FORT-01", "補給倉庫の荷を下ろす", 240, 5, 16, 24],
-    ["JOB-FORT-03", "防寒布と縄を棚卸しする", 120, 3, 7, 10],
-    ["JOB-FORT-02", "炊事場へ薪を運ぶ", 180, 4, 12, 17, 1],
+    ["JOB-FORT-01", "補給倉庫荷下ろし", 240, 5, 0, "medium", "fortEntryPermit"],
+    ["JOB-FORT-03", "防寒布・縄の棚卸し", 120, 3, 0, "low", "fortEntryPermit"],
   ],
-  LOC_FORT_INN: [
-    ["JOB-FORT-02", "炊事と薪運びを手伝う", 180, 4, 8, 17, 1],
-    ["JOB-FORT-03", "防寒布を畳んで補給棚へ戻す", 120, 3, 7, 10],
-    ["JOB-FORT-01", "食料樽を補給庫へ運ぶ", 240, 5, 16, 24],
-  ],
+  LOC_FORT_INN: [["JOB-FORT-02", "炊事・薪運び補助", 180, 4, 1, "low", "fortEntryPermit"]],
+
   LOC_BLACKRIDGE_MARKET: [
-    ["JOB-BLACK-01", "水路荷を運ぶ", 240, 5, 17, 24],
-    ["JOB-BLACK-03", "多種族市場の荷札を仕分ける", 120, 3, 7, 9],
-    ["JOB-BLACK-02", "共同炊事の荷を運ぶ", 180, 3, 9, 14, 1],
+    ["JOB-BLACK-01", "水路荷運び", 240, 5, 0, "medium", "blackridgeEntryPermit"],
+    ["JOB-BLACK-03", "多種族市場の荷札仕分け", 120, 3, 0, "low", "blackridgeEntryPermit"],
   ],
-  LOC_BLACKRIDGE_EXILE: [
-    ["JOB-BLACK-02", "共同炊事を手伝う", 180, 3, 5, 14, 1],
-    ["JOB-BLACK-03", "避難物資の荷札を仕分ける", 120, 3, 7, 9],
-    ["JOB-BLACK-01", "水路から飲料水を運ぶ", 240, 5, 17, 24],
-  ],
+  LOC_BLACKRIDGE_EXILE: [["JOB-BLACK-02", "共同炊事補助", 180, 3, 1, "low"]],
+  LOC_FOREST_HUNTER_HUT: [["JOB-FOREST-01", "罠見回り補助", 240, 6, 0, "medium", "hunterApproval"]],
 });
 
 function current(runtime) {
@@ -63,19 +72,48 @@ function state(runtime) {
   return runtime.playerState.canonicalRegionalLabour;
 }
 
+function progress(runtime) {
+  return runtime?.playerState?.progress ?? runtime?.playerState?.player?.progress ?? {};
+}
+
+function trust(runtime, key) {
+  return Number(progress(runtime)?.[key] ?? runtime?.playerState?.[key] ?? 0);
+}
+
+function conditionMet(runtime, condition) {
+  if (!condition) return true;
+  if (condition === "villageTrust>=2") return trust(runtime, "villageTrust") >= 2;
+  if (condition === "reputation>=1") return trust(runtime, "reputation") >= 1;
+  if (condition === "petraTrust>=1") return trust(runtime, "petraTrust") >= 1;
+  if (condition === "minaTrust>=1") return trust(runtime, "minaTrust") >= 1;
+  if (condition === "technicalKnowledge||minaTrust>=2") return Boolean(progress(runtime)?.technicalKnowledge) || trust(runtime, "minaTrust") >= 2;
+  if (condition === "fortEntryPermit") return Boolean(progress(runtime)?.fortEntryPermit ?? progress(runtime)?.fort_entry_permit ?? true);
+  if (condition === "blackridgeEntryPermit") return Boolean(progress(runtime)?.blackridgeEntryPermit ?? progress(runtime)?.blackridge_entry_permit ?? true);
+  if (condition === "hunterApproval") return Boolean(progress(runtime)?.hunterApproval ?? progress(runtime)?.hunter_approval ?? true);
+  return false;
+}
+
 function jobs(runtime) {
   const facilityId = String(current(runtime).facilityId ?? "");
-  if (!JOBS[facilityId]) return null;
+  const rows = JOBS[facilityId];
+  if (!rows) return null;
   if (Number(state(runtime).lastDayByFacility[facilityId] ?? 0) === day(runtime)) return null;
-  // Ordinary work does not disappear because the player has money. Availability
-  // is governed by facility/time/world conditions; choosing to keep working is
-  // a valid public play style and is required for a deterministic authored route.
-  return JOBS[facilityId];
+  return rows.filter((entry) => conditionMet(runtime, entry[6]));
+}
+
+function needCost(minutes, danger) {
+  const hours = minutes / 60;
+  const dangerExtra = danger === "high" ? 7 : danger === "medium" ? 4 : 1;
+  return {
+    hunger: Math.max(2, Math.round(hours * 4)),
+    fatigue: Math.max(3, Math.round(hours * 5 + dangerExtra)),
+  };
 }
 
 function action(tuple, runtime) {
-  const [jobId, label, minutes, gold, hunger, fatigue, freeMeals = 0] = tuple;
+  const [jobId, label, minutes, gold, freeMeals = 0, danger = "low"] = tuple;
   const facilityId = String(current(runtime).facilityId ?? "");
+  const needs = needCost(minutes, danger);
   return {
     id: `WORK:FACILITY:${jobId}`,
     actionId: `WORK:FACILITY:${jobId}`,
@@ -90,8 +128,8 @@ function action(tuple, runtime) {
     canonicalRegionalLabourChoice: true,
     canonicalRegionalJobId: jobId,
     canonicalRegionalGold: gold,
-    canonicalRegionalHunger: hunger,
-    canonicalRegionalFatigue: fatigue,
+    canonicalRegionalHunger: needs.hunger,
+    canonicalRegionalFatigue: needs.fatigue,
     canonicalRegionalFreeMeals: freeMeals,
   };
 }
@@ -136,23 +174,30 @@ function consume(runtime, actionValue, result) {
   return true;
 }
 
+function staleBaseLabour(actions) {
+  return Array.isArray(actions) && actions.length > 0 && actions.every((entry) => entry?.authoredFacilityLabourChoice);
+}
+
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const authored = base.authoredMissionFlowExclusiveActions(runtime, context);
-  if (authored != null) return authored;
-  return ownActions(runtime);
+  if (authored != null && !staleBaseLabour(authored)) return authored;
+  const live = ownActions(runtime);
+  if (live?.length) return live;
+  return authored;
 }
 
 export function authoredMissionFlowGuidance(runtime, context = {}) {
-  const authored = base.authoredMissionFlowGuidance(runtime, context);
-  if (authored != null) return authored;
-  if (!jobs(runtime)) return null;
-  return {
-    kicker: "土地の暮らしを支える、いつもの働き口がある",
-    title: "今日の仕事を選ぶ",
-    detail: "事件がなくても人は働く。賃金は地域相場のままである。",
-    targetLocation: current(runtime).location ?? null,
-    targetFacilityId: current(runtime).facilityId ?? null,
-  };
+  const live = jobs(runtime);
+  if (live?.length) {
+    return {
+      kicker: "土地の暮らしを支える、いつもの働き口がある",
+      title: "正本の勤務条件から仕事を選ぶ",
+      detail: "勤務時間と賃金はTRPG/仕事マスターの現在値を使う。所持金が増えても仕事そのものは消えない。",
+      targetLocation: current(runtime).location ?? null,
+      targetFacilityId: current(runtime).facilityId ?? null,
+    };
+  }
+  return base.authoredMissionFlowGuidance(runtime, context);
 }
 
 export function applyAuthoredMissionFlowAction(runtime, actionValue, result) {
@@ -160,4 +205,4 @@ export function applyAuthoredMissionFlowAction(runtime, actionValue, result) {
   return base.applyAuthoredMissionFlowAction(runtime, actionValue, result);
 }
 
-export const CANONICAL_REGIONAL_LABOUR_INTERNALS = Object.freeze({ JOBS, jobs, ownActions });
+export const CANONICAL_REGIONAL_LABOUR_INTERNALS = Object.freeze({ JOBS, jobs, ownActions, conditionMet, staleBaseLabour });
