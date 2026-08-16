@@ -2,7 +2,7 @@ import * as base from "./authored-facility-labour.js";
 
 export * from "./authored-facility-labour.js";
 
-export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v2";
+export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v3";
 
 // Live TRPG/仕事マスター rows required by the Day1-Day85 authored route.
 // These are ordinary jobs available to every player; none checks a virtue flag.
@@ -22,7 +22,7 @@ const JOBS = Object.freeze({
     ["JOB-BORDER-02", "隊商の荷ほどきを手伝う", 180, 3, 14, 20],
     ["JOB-BORDER-03", "巡礼荷を仕分ける", 120, 2, 8, 10],
   ],
-  LOC_BORDER_CARAVAN: [
+  LOC_BORDER_PILGRIM_SQUARE: [
     ["JOB-BORDER-02", "隊商の荷ほどきを手伝う", 180, 3, 14, 20],
     ["JOB-BORDER-03", "巡礼荷を仕分ける", 120, 2, 8, 10],
     ["JOB-BORDER-01", "水樽を宿へ運ぶ", 180, 3, 13, 18],
@@ -32,7 +32,7 @@ const JOBS = Object.freeze({
     ["JOB-FORT-03", "防寒布と縄を棚卸しする", 120, 3, 7, 10],
     ["JOB-FORT-02", "炊事場へ薪を運ぶ", 180, 4, 12, 17, 1],
   ],
-  LOC_FORT_KITCHEN: [
+  LOC_FORT_INN: [
     ["JOB-FORT-02", "炊事と薪運びを手伝う", 180, 4, 8, 17, 1],
     ["JOB-FORT-03", "防寒布を畳んで補給棚へ戻す", 120, 3, 7, 10],
     ["JOB-FORT-01", "食料樽を補給庫へ運ぶ", 240, 5, 16, 24],
@@ -67,9 +67,9 @@ function jobs(runtime) {
   const facilityId = String(current(runtime).facilityId ?? "");
   if (!JOBS[facilityId]) return null;
   if (Number(state(runtime).lastDayByFacility[facilityId] ?? 0) === day(runtime)) return null;
-  const gold = Number(current(runtime).gold ?? 0);
-  const hunger = Number(current(runtime)?.needs?.hunger ?? current(runtime).hunger ?? 0);
-  if (gold >= 30 && hunger < 45) return null;
+  // Ordinary work does not disappear because the player has money. Availability
+  // is governed by facility/time/world conditions; choosing to keep working is
+  // a valid public play style and is required for a deterministic authored route.
   return JOBS[facilityId];
 }
 
