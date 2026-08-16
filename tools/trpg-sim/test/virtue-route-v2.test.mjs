@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import { loadTrpgGameData, resetTrpgGameDataForTests } from "../../../src/server/trpg/game/game-data.js";
 import { CANONICAL_REGIONAL_LABOUR_INTERNALS } from "../../../src/server/trpg/content/canonical-regional-labour.js";
+import { createSpecialMission } from "../lib/mission-model.mjs";
 import { VIRTUE_ROUTE_V2, validateVirtueRouteV2Contract } from "../lib/virtue-route-v2-contract.mjs";
 
 test("virtue route v2 partitions exactly T01-T19 and ends naturally on Day85", () => {
@@ -18,6 +19,17 @@ test("live canonical sheet deltas are reachable through normal game data", () =>
   resetTrpgGameDataForTests();
   const gameData = loadTrpgGameData();
   assert.deepEqual(validateVirtueRouteV2Contract(gameData), []);
+});
+
+test("T13 special mission selects the Day58-60 final encounter, not an early stage slime", () => {
+  resetTrpgGameDataForTests();
+  const gameData = loadTrpgGameData();
+  const t13 = gameData.model.troubleById.T13;
+  const mission = createSpecialMission(t13, gameData.battleData, gameData.model);
+  const battleSteps = mission.steps.filter((step) => step.type === "battle");
+  assert.ok(battleSteps.length > 0);
+  assert.ok(battleSteps.every((step) => step.encounterId === "ENC-0018"));
+  assert.equal(gameData.battleData.encounterById.get("ENC-0018")?.composition?.[0]?.monsterId, "MON-0018");
 });
 
 test("regional jobs are ordinary facility work, not a virtue-only gate", () => {
