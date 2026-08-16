@@ -24,6 +24,9 @@ export function loadTrpgGameData() {
   const worldSnapshot = loadWorldSnapshot();
   const battleSnapshot = loadBattleSnapshot();
   const skills = loadSkills();
+  // Older skill fixtures expose `id`; the live v4 sheet and bridge use the
+  // explicit `skillId` name as well. Keep both until the next snapshot refresh.
+  for (const skill of skills) if (!skill.skillId) skill.skillId = skill.id;
   applyCanonicalRuntimeExtensions({ worldSnapshot, battleSnapshot, skills });
   const model = buildWorldModel(worldSnapshot);
   const battleData = buildBattleData(battleSnapshot, skills);
