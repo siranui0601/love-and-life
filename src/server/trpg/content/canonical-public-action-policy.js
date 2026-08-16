@@ -2,7 +2,7 @@ import * as base from "./canonical-world-life-actions.js";
 
 export * from "./canonical-world-life-actions.js";
 
-export const CANONICAL_PUBLIC_ACTION_POLICY_VERSION = "canonical-public-action-policy-v2";
+export const CANONICAL_PUBLIC_ACTION_POLICY_VERSION = "canonical-public-action-policy-v3";
 
 const PROVISION_PORTIONS = Object.freeze({
   ITM008: 1,
@@ -33,6 +33,19 @@ function currentDay(runtime) {
 function truthyProgress(runtime, ...keys) {
   const p = progress(runtime);
   return keys.some((key) => Boolean(p?.[key]));
+}
+
+function lifeState(runtime) {
+  const state = playerState(runtime);
+  state.canonicalWorldLife ??= {
+    provisions: {},
+    purchases: {},
+    meals: {},
+    sleeps: {},
+    services: {},
+    lastPortWorkDay: 0,
+  };
+  return state.canonicalWorldLife;
 }
 
 function permittedRegionalJob(runtime, action) {
@@ -81,8 +94,43 @@ function normalizeProvisionAction(action) {
   return { ...action, portions };
 }
 
+function nativeLifeAction(action) {
+  if (!action?.canonicalWorldLifeChoice) return action;
+  const kind = action.canonicalWorldLifeKind;
+  if (kind === "eat_meal") {
+    const hearty = Number(action.price ?? 0) >= 5;
+    return {
+      ...action,
+      type: "eat",
+      nutrition: hearty ? 66 : 58,
+      mealQuality: hearty ? "hearty" : "standard",
+      canonicalWorldLifeNativeHandled: true,
+    };
+  }
+  if (kind === "eat_provision") {
+    return {
+      ...action,
+      type: "eat",
+      price: 0,
+      nutrition: 58,
+      mealQuality: "standard",
+      canonicalWorldLifeNativeHandled: true,
+    };
+  }
+  if (kind === "sleep" && action.lodging === true) {
+    return {
+      ...action,
+      type: "rest",
+      lodging: true,
+      safety: "normal",
+      canonicalWorldLifeNativeHandled: true,
+    };
+  }
+  return action;
+}
+
 function bulkProvisionActions(action) {
-  const normalized = normalizeProvisionAction(action);
+  const normalized = nativeLifeAction(normalizeProvisionAction(action));
   if (!normalized?.canonicalWorldLifeChoice || normalized?.canonicalWorldLifeKind !== "buy_provision") return [normalized];
   const baseId = String(normalized.id ?? normalized.actionId ?? "");
   const price = Number(normalized.price ?? 0);
@@ -117,6 +165,31 @@ function filtered(actions, runtime) {
   return kept.length ? kept : null;
 }
 
+function recordNativeLifeOutcome(runtime, actionValue) {
+  if (!actionValue?.canonicalWorldLifeNativeHandled) return false;
+  const state = lifeState(runtime);
+  const kind = actionValue.canonicalWorldLifeKind;
+  const productId = String(actionValue.productId ?? "");
+  if (kind === "eat_provision") {
+    if (Number(state.provisions[productId] ?? 0) <= 0) return true;
+    state.provisions[productId] = Number(state.provisions[productId] ?? 0) - 1;
+    state.meals[productId] = Number(state.meals[productId] ?? 0) + 1;
+  } else if (kind === "eat_meal") {
+    state.meals[productId] = Number(state.meals[productId] ?? 0) + 1;
+  } else if (kind === "sleep") {
+    state.sleeps[productId] = Number(state.sleeps[productId] ?? 0) + 1;
+  }
+  playerState(runtime).history ??= [];
+  playerState(runtime).history.push({
+    type: "CANONICAL_WORLD_LIFE_NATIVE",
+    minute: Number(playerState(runtime).absoluteMinute ?? 0),
+    actionId: actionValue.id,
+    kind,
+    productId,
+  });
+  return true;
+}
+
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   return filtered(base.authoredMissionFlowExclusiveActions(runtime, context), runtime);
 }
@@ -134,6 +207,7 @@ export function applyAuthoredMissionFlowAction(runtime, actionValue, result) {
     result.summary = "この行動に必要な許可・当日勤務条件を満たしていない。";
     return true;
   }
+  if (recordNativeLifeOutcome(runtime, actionValue)) return true;
   return base.applyAuthoredMissionFlowAction(runtime, normalizeProvisionAction(actionValue), result);
 }
 
@@ -144,5 +218,7 @@ export const CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS = Object.freeze({
   permittedLifeAction,
   canonicalAllowed,
   normalizeProvisionAction,
+  nativeLifeAction,
   bulkProvisionActions,
+  recordNativeLifeOutcome,
 });
