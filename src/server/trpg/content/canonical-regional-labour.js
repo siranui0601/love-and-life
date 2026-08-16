@@ -2,12 +2,12 @@ import * as base from "./authored-facility-labour.js";
 
 export * from "./authored-facility-labour.js";
 
-export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v4";
+export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v5";
 
-// Live TRPG/仕事マスター is authoritative.  The checked-in facility-labour
-// catalogue predates it, so this bridge replaces stale labour choices while
-// preserving authored mission choices from the base layer.  These are normal
-// public jobs for every route; no virtue flag is consulted.
+// Live TRPG/仕事マスター is authoritative. These are normal public jobs for
+// every route. All time/gold/needs effects are resolved by the native work
+// engine; this layer only supplies canonical offers, gates and durable shift
+// bookkeeping.
 const JOBS = Object.freeze({
   LOC_FARM_FIELD: [["JOB-FARM-01", "麦畑の草取り・収穫補助", 240, 4, 0, "low"]],
   LOC_FARM_GRANARY: [["JOB-FARM-02", "穀倉の袋運び・棚卸し", 180, 3, 0, "low"]],
@@ -87,9 +87,9 @@ function conditionMet(runtime, condition) {
   if (condition === "petraTrust>=1") return trust(runtime, "petraTrust") >= 1;
   if (condition === "minaTrust>=1") return trust(runtime, "minaTrust") >= 1;
   if (condition === "technicalKnowledge||minaTrust>=2") return Boolean(progress(runtime)?.technicalKnowledge) || trust(runtime, "minaTrust") >= 2;
-  if (condition === "fortEntryPermit") return Boolean(progress(runtime)?.fortEntryPermit ?? progress(runtime)?.fort_entry_permit ?? true);
-  if (condition === "blackridgeEntryPermit") return Boolean(progress(runtime)?.blackridgeEntryPermit ?? progress(runtime)?.blackridge_entry_permit ?? true);
-  if (condition === "hunterApproval") return Boolean(progress(runtime)?.hunterApproval ?? progress(runtime)?.hunter_approval ?? true);
+  if (condition === "fortEntryPermit") return Boolean(progress(runtime)?.fortEntryPermit ?? progress(runtime)?.fort_entry_permit ?? false);
+  if (condition === "blackridgeEntryPermit") return Boolean(progress(runtime)?.blackridgeEntryPermit ?? progress(runtime)?.blackridge_entry_permit ?? false);
+  if (condition === "hunterApproval") return Boolean(progress(runtime)?.hunterApproval ?? progress(runtime)?.hunter_approval ?? false);
   return false;
 }
 
@@ -101,26 +101,17 @@ function jobs(runtime) {
   return rows.filter((entry) => conditionMet(runtime, entry[6]));
 }
 
-function needCost(minutes, danger) {
-  const hours = minutes / 60;
-  const dangerExtra = danger === "high" ? 7 : danger === "medium" ? 4 : 1;
-  return {
-    hunger: Math.max(2, Math.round(hours * 4)),
-    fatigue: Math.max(3, Math.round(hours * 5 + dangerExtra)),
-  };
-}
-
 function action(tuple, runtime) {
   const [jobId, label, minutes, gold, freeMeals = 0, danger = "low"] = tuple;
   const facilityId = String(current(runtime).facilityId ?? "");
-  const needs = needCost(minutes, danger);
   return {
     id: `WORK:FACILITY:${jobId}`,
     actionId: `WORK:FACILITY:${jobId}`,
     family: "work",
-    type: "plan",
+    type: "work",
     label,
     minutes,
+    wage: gold,
     targetLocation: current(runtime).location ?? null,
     targetFacilityId: facilityId,
     suppressRandomEncounter: true,
@@ -128,9 +119,10 @@ function action(tuple, runtime) {
     canonicalRegionalLabourChoice: true,
     canonicalRegionalJobId: jobId,
     canonicalRegionalGold: gold,
-    canonicalRegionalHunger: needs.hunger,
-    canonicalRegionalFatigue: needs.fatigue,
     canonicalRegionalFreeMeals: freeMeals,
+    workDescription: label,
+    workFacilityId: facilityId,
+    workRiskClass: danger,
   };
 }
 
@@ -139,25 +131,13 @@ function ownActions(runtime) {
   return available?.map((entry) => action(entry, runtime)) ?? null;
 }
 
-function applyNeed(target, key, delta) {
-  if (!target || !delta) return;
-  const before = Number(target[key]);
-  if (!Number.isFinite(before)) return;
-  target[key] = Math.max(0, Math.min(100, before + delta));
-}
-
 function consume(runtime, actionValue, result) {
   if (!actionValue?.canonicalRegionalLabourChoice || result?.ok === false) return false;
   const player = current(runtime);
   const facilityId = String(player.facilityId ?? "");
   const labour = state(runtime);
   const jobId = String(actionValue.canonicalRegionalJobId ?? "");
-  player.gold = Number(player.gold ?? 0) + Number(actionValue.canonicalRegionalGold ?? 0);
   player.freeMeals = Number(player.freeMeals ?? 0) + Number(actionValue.canonicalRegionalFreeMeals ?? 0);
-  for (const target of [runtime.playerState, player, player.needs]) {
-    applyNeed(target, "hunger", actionValue.canonicalRegionalHunger);
-    applyNeed(target, "fatigue", actionValue.canonicalRegionalFatigue);
-  }
   labour.lastDayByFacility[facilityId] = day(runtime);
   labour.shifts[jobId] = Number(labour.shifts[jobId] ?? 0) + 1;
   runtime.playerState.history ??= [];
