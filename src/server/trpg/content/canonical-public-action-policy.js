@@ -2,7 +2,7 @@ import * as base from "./canonical-world-life-actions.js";
 
 export * from "./canonical-world-life-actions.js";
 
-export const CANONICAL_PUBLIC_ACTION_POLICY_VERSION = "canonical-public-action-policy-v4";
+export const CANONICAL_PUBLIC_ACTION_POLICY_VERSION = "canonical-public-action-policy-v5";
 
 const PROVISION_PORTIONS = Object.freeze({
   ITM008: 1,
@@ -37,6 +37,11 @@ function currentDay(runtime) {
 function truthyProgress(runtime, ...keys) {
   const p = progress(runtime);
   return keys.some((key) => Boolean(p?.[key]));
+}
+
+function truthyWorldFlag(runtime, ...keys) {
+  const flags = playerState(runtime).worldFlags ?? runtime?.worldFlags ?? {};
+  return keys.some((key) => Boolean(flags?.[key]));
 }
 
 function lifeState(runtime) {
@@ -82,6 +87,7 @@ function actionRootId(action) {
 function permittedLifeAction(runtime, action) {
   const id = actionRootId(action);
   if (id === "LIFE:SLEEP:ITM222") return sameDayPortWork(runtime);
+  if (id === "LIFE:SLEEP:ITM195") return truthyWorldFlag(runtime, "elfApproval", "elf_approval");
   if (["LIFE:SLEEP:ITM159", "LIFE:EAT:ITM160", "LIFE:EAT:ITM161", "LIFE:BUY:ITM163", "SERVICE_BUY:ITM175"].includes(id)) {
     return truthyProgress(runtime, "fortEntryPermit", "fort_entry_permit");
   }
@@ -227,6 +233,7 @@ export const CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS = Object.freeze({
   PROVISION_PORTIONS,
   permittedRegionalJob,
   sameDayPortWork,
+  truthyWorldFlag,
   permittedLifeAction,
   affordableLifeAction,
   canonicalAllowed,

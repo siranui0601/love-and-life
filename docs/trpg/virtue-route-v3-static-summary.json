@@ -1,6 +1,6 @@
 {
-  "compilerVersion": "virtue-route-v3-static-compiler-recovery-v2",
-  "sourceHead": "32dcdbd5121b235e80c186e81426302c602473fe",
+  "compilerVersion": "virtue-route-v3-static-compiler-recovery-v3",
+  "sourceHead": "58350fb9662a8ef8709183916684eccd1cee4135",
   "generatedAt": "2026-08-16T13:52:50Z",
   "sourceSpreadsheetId": "1aSLu_pSLNsFsUm42juEyOrLDmTkJd7NPOOrQNnvnMwA",
   "sourceSpreadsheetTitle": "TRPG_人徳ルート正規台帳_v2",
@@ -14,9 +14,9 @@
   "sourceHash": "eb26d459851f7bcc8d9d159e6f86f5da016ce70cccbdbac329e9e684b4d14120",
   "legacyRows": 831,
   "mappedRows": 831,
-  "autoResolvedRows": 583,
-  "unresolvedRows": 248,
-  "provisionalCoveragePercent": 70.16,
+  "autoResolvedRows": 594,
+  "unresolvedRows": 237,
+  "provisionalCoveragePercent": 71.48,
   "byLegacyRuntimeAction": {
     "COLLAPSE_RESCUE": 1,
     "EAT": 255,
@@ -38,34 +38,32 @@
   "byClassification": {
     "COMMAND_OUTCOME": 20,
     "NARRATIVE_OUTCOME": 50,
-    "PLAYER_COMMAND": 513,
-    "REPLACED_INVALID": 248
+    "PLAYER_COMMAND": 521,
+    "PLAYER_COMMAND_SEQUENCE": 3,
+    "REPLACED_INVALID": 237
   },
   "byStatus": {
     "OUTCOME": 70,
-    "RESOLVED_EXISTING": 513,
-    "UNRESOLVED": 248
+    "RESOLVED_EXISTING": 524,
+    "UNRESOLVED": 237
   },
   "unresolvedByReason": {
     "COMPOSITE_EQUIPMENT_INTERACTION": 1,
-    "COMPOSITE_MISSION_ROW": 1,
     "INVALID_LONG_LOCAL_INVESTIGATE": 1,
     "MISSING_AUTHORED_MISSION_MATCH": 28,
-    "MISSING_CANONICAL_FOOD": 3,
     "MISSING_DAILY_INTERACTION_MATCH": 87,
-    "MISSING_DEBT_RUNTIME_ID": 1,
-    "MISSING_LODGING_PRODUCT": 2,
-    "MISSING_MATERIAL_LINEAGE": 5,
+    "MISSING_LODGING_PRODUCT": 1,
+    "MISSING_MATERIAL_LINEAGE": 3,
     "MISSING_NPC_INTERACTION": 83,
-    "MISSION_BATTLE_OR_AUTHORED_SPLIT": 3,
     "REST_SPLIT_REQUIRED": 33
   },
   "canonicalJobsInCatalog": 28,
-  "canonicalProductsInCatalog": 43,
+  "canonicalProductsInCatalog": 44,
+  "exactAuthoredOverrideRows": 7,
   "workRowsReallocated": 56,
-  "proposedMoveLocalInsertions": 123,
-  "regionalMoveRows": 44,
+  "proposedMoveLocalInsertions": 129,
+  "regionalMoveRows": 45,
   "forbiddenStatusRows": 0,
-  "nonFinalStatusRows": 248,
+  "nonFinalStatusRows": 237,
   "forbiddenReplayExecuted": false
 }

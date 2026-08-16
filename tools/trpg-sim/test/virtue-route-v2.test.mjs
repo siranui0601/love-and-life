@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import { loadTrpgGameData, resetTrpgGameDataForTests } from "../../../src/server/trpg/game/game-data.js";
 import { CANONICAL_REGIONAL_LABOUR_INTERNALS } from "../../../src/server/trpg/content/canonical-regional-labour.js";
+import { CANONICAL_JOB_TIME_POLICY_INTERNALS } from "../../../src/server/trpg/content/canonical-job-time-policy.js";
 import { createSpecialMission } from "../lib/mission-model.mjs";
 import { VIRTUE_ROUTE_V2, validateVirtueRouteV2Contract } from "../lib/virtue-route-v2-contract.mjs";
 
@@ -32,12 +34,70 @@ test("T13 special mission selects the Day58-60 final encounter, not an early sta
   assert.equal(gameData.battleData.encounterById.get("ENC-0018")?.composition?.[0]?.monsterId, "MON-0018");
 });
 
-test("regional jobs are ordinary facility work, not a virtue-only gate", () => {
+test("all 28 canonical jobs match the Sheet-backed runtime catalog and only appear in valid work windows", () => {
+  const expected = JSON.parse(readFileSync(
+    new URL("../lib/virtue-route-v3-runtime-catalog.json", import.meta.url),
+    "utf8",
+  )).jobs;
   const jobs = CANONICAL_REGIONAL_LABOUR_INTERNALS.JOBS;
-  for (const facilityId of ["LOC_DWARF_MARKET", "LOC_BORDER_INN", "LOC_FORT_SUPPLY", "LOC_BLACKRIDGE_MARKET"]) {
-    assert.ok(Array.isArray(jobs[facilityId]), `${facilityId} must expose jobs`);
-    assert.ok(jobs[facilityId].length >= 3, `${facilityId} must offer a real three-choice work set`);
-    for (const entry of jobs[facilityId]) assert.match(entry[0], /^JOB-/u);
+  const windows = CANONICAL_JOB_TIME_POLICY_INTERNALS.JOB_TIME_WINDOWS;
+  const actualIds = Object.values(jobs).flat().map((entry) => entry[0]).sort();
+
+  assert.equal(expected.length, 28);
+  assert.deepEqual(actualIds, expected.map((entry) => entry.jobId).sort());
+
+  for (const canonical of expected) {
+    const tuple = jobs[canonical.facilityId]?.find((entry) => entry[0] === canonical.jobId);
+    assert.ok(tuple, `${canonical.jobId} must exist at ${canonical.facilityId}`);
+    assert.deepEqual(tuple, [
+      canonical.jobId,
+      canonical.label,
+      canonical.minutes,
+      canonical.wage,
+      canonical.freeMeals,
+      canonical.risk,
+      ...(canonical.condition ? [canonical.condition] : []),
+    ]);
+    assert.deepEqual(windows[canonical.jobId], canonical.windows);
+
+    const [validStart] = canonical.windows[0];
+    const runtime = {
+      playerState: {
+        day: 1,
+        absoluteMinute: validStart,
+        progress: {
+          villageTrust: 3,
+          reputation: 2,
+          petraTrust: 2,
+          minaTrust: 3,
+          technicalKnowledge: true,
+          fortEntryPermit: true,
+          blackridgeEntryPermit: true,
+          hunterApproval: true,
+        },
+        canonicalRegionalLabour: { lastDayByFacility: {}, shifts: {} },
+        player: {
+          location: canonical.region,
+          facilityId: canonical.facilityId,
+          gold: 0,
+        },
+      },
+    };
+    const offered = CANONICAL_REGIONAL_LABOUR_INTERNALS.ownActions(runtime);
+    const action = offered?.find((entry) => entry.id === `WORK:FACILITY:${canonical.jobId}`);
+    assert.ok(action, `${canonical.jobId} must be an ordinary public facility action`);
+    assert.equal(action.targetFacilityId, canonical.facilityId);
+    assert.equal(action.minutes, canonical.minutes);
+    assert.equal(action.wage, canonical.wage);
+    assert.equal(CANONICAL_JOB_TIME_POLICY_INTERNALS.jobTimeAllowed(runtime, action), true);
+
+    runtime.playerState.absoluteMinute = validStart - 1;
+    assert.equal(CANONICAL_JOB_TIME_POLICY_INTERNALS.jobTimeAllowed(runtime, action), false);
+    assert.equal(
+      CANONICAL_JOB_TIME_POLICY_INTERNALS.filterActions(runtime, offered)
+        ?.some((entry) => entry.id === action.id) ?? false,
+      false,
+    );
   }
 });
 

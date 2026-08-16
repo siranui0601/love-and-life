@@ -3,7 +3,7 @@ import { consumeMeal, completePlayerRest, ensurePlayerNeeds } from "../../../../
 
 export * from "./canonical-regional-labour.js";
 
-export const CANONICAL_WORLD_LIFE_VERSION = "canonical-world-life-v1";
+export const CANONICAL_WORLD_LIFE_VERSION = "canonical-world-life-v2";
 
 // Canonical TRPG/商品・価格表 subset used by ordinary daily life. These are
 // public world products, not route rewards. The route may use them, but any
@@ -45,6 +45,7 @@ const PRODUCTS = Object.freeze({
   ITM178: ["辺境の村", "LOC_BORDER_INN", "食事", "巡礼膳", 4, "meal"],
   ITM179: ["辺境の村", "LOC_BORDER_INN", "食料", "神殿弁当", 3, "provision", 1],
   ITM192: ["古代神殿", "LOC_TEMPLE_GUIDE", "食料", "休憩所の保存食", 4, "provision", 1],
+  ITM195: ["エルフの隠れ里", "LOC_ELF_GUEST_BOUGH", "宿泊", "樹上客間", 0, "lodging", 1, "elfApproval"],
   ITM200: ["黒嶺連合領", "LOC_BLACKRIDGE_COMMON_INN", "宿泊", "共同宿の寝台", 6, "lodging"],
   ITM201: ["黒嶺連合領", "LOC_BLACKRIDGE_COMMON_INN", "宿泊", "亡命者相部屋", 3, "lodging"],
   ITM202: ["黒嶺連合領", "LOC_BLACKRIDGE_COMMON_INN", "食事", "異種族膳", 5, "meal"],
@@ -70,15 +71,14 @@ function day(runtime) {
 
 function economy(runtime) {
   runtime.playerState ??= {};
-  runtime.playerState.canonicalWorldLife ??= {
-    provisions: {},
-    purchases: {},
-    meals: {},
-    sleeps: {},
-    services: {},
-    lastPortWorkDay: 0,
-  };
-  return runtime.playerState.canonicalWorldLife;
+  const state = runtime.playerState.canonicalWorldLife ??= {};
+  state.provisions ??= {};
+  state.purchases ??= {};
+  state.meals ??= {};
+  state.sleeps ??= {};
+  state.services ??= {};
+  state.lastPortWorkDay ??= 0;
+  return state;
 }
 
 function gold(runtime) {
@@ -93,6 +93,10 @@ function permit(runtime, condition) {
   if (!condition) return true;
   const p = progress(runtime);
   if (condition === "fortEntryPermit") return Boolean(p.fortEntryPermit ?? p.fort_entry_permit ?? false);
+  if (condition === "elfApproval") {
+    const flags = runtime?.playerState?.worldFlags ?? runtime?.worldFlags ?? {};
+    return Boolean(flags.elfApproval ?? flags.elf_approval ?? false);
+  }
   if (condition === "sameDayPortWork") {
     const worked = Number(economy(runtime).lastPortWorkDay ?? 0) === day(runtime);
     const shifts = runtime?.playerState?.canonicalRegionalLabour?.shifts ?? {};

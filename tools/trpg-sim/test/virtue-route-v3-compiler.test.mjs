@@ -59,10 +59,52 @@ test("checkpoint compile is deterministic and does not execute replay", { skip: 
   const summary = JSON.parse(first[2]);
   assert.equal(summary.legacyRows, 831);
   assert.equal(summary.mappedRows, 831);
-  assert.equal(summary.autoResolvedRows, 583);
-  assert.equal(summary.unresolvedRows, 248);
+  assert.equal(summary.autoResolvedRows, 594);
+  assert.equal(summary.unresolvedRows, 237);
+  assert.equal(summary.provisionalCoveragePercent, 71.48);
+  assert.equal(summary.exactAuthoredOverrideRows, 7);
+  assert.equal(summary.canonicalJobsInCatalog, 28);
+  assert.equal(summary.canonicalProductsInCatalog, 44);
+  assert.equal(summary.unresolvedByReason.MISSING_MATERIAL_LINEAGE, 3);
+  assert.equal(summary.unresolvedByReason.MISSING_LODGING_PRODUCT, 1);
+  assert.equal(summary.unresolvedByReason.MISSING_CANONICAL_FOOD, undefined);
+  assert.equal(summary.unresolvedByReason.MISSION_BATTLE_OR_AUTHORED_SPLIT, undefined);
+  assert.equal(summary.unresolvedByReason.MISSING_DEBT_RUNTIME_ID, undefined);
   assert.equal(summary.sourceRowCount, 831);
   assert.equal(summary.sourceColumnCount, 32);
   assert.equal(summary.sourceHash, "eb26d459851f7bcc8d9d159e6f86f5da016ce70cccbdbac329e9e684b4d14120");
   assert.equal(summary.forbiddenReplayExecuted, false);
+
+  const matrix = parseCsv(first[0]);
+  const headers = matrix[0];
+  const rows = matrix.slice(1).map((cells) => Object.fromEntries(
+    headers.map((header, index) => [header, cells[index] ?? ""]),
+  ));
+  const byId = Object.fromEntries(rows.map((row) => [row.legacyRowId, row]));
+
+  assert.deepEqual(
+    JSON.parse(byId["VR2-D01-05"].replacementSteps).map((step) => step.actionId),
+    [
+      "ACTION:MSN-T01:search:tracks",
+      "ACTION:MSN-T01:search:wolf-blockade",
+      "ACTION:MSN-T01:rescue",
+      "ACTION:MSN-T01:escort",
+      "MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE",
+      "ACTION:MSN-T01:decide",
+    ],
+  );
+  assert.equal(byId["VR2-D20-02"].actionId, "ACTION:MSN-T03:battle");
+  assert.match(byId["VR2-D20-02"].resultingState, /ENC-0006/u);
+  assert.ok(JSON.parse(byId["VR2-D20-04"].replacementSteps)
+    .some((step) => step.actionId === "MISSION_FLOW:red-fang-migration:RESOLUTION:relocate_den:active"));
+  assert.ok(JSON.parse(byId["VR2-D32-05"].replacementSteps)
+    .some((step) => step.actionId === "MISSION_FLOW:pilgrim-transfer-disappearance:RESOLUTION:recover_then_pause:active"));
+  for (const id of ["VR2-D52-04", "VR2-D52-09", "VR2-D53-01"]) {
+    assert.equal(byId[id].actionId, "LIFE:EAT:ITM023");
+  }
+  assert.equal(byId["VR2-D52-11"].actionId, "LIFE:SLEEP:ITM195");
+  assert.equal(byId["VR2-D20-08"].actionId, "MATERIAL_SELL:MAT_RED_FANG_LARGE:Q1");
+  assert.match(byId["VR2-D20-08"].notes, /3G.*legacy \+9G/u);
+  assert.equal(byId["VR2-D58-08"].actionId, "MATERIAL_SELL:MAT_KING_GEL_CORE:Q1");
+  assert.equal(byId["VR2-D81-06"].actionId, "OBLIGATION:PAY:DEBT:EDA:ITM014:FULL");
 });

@@ -9,7 +9,7 @@ import { T08_FOREST_SEALING_ORDER_PACK } from "./authored/missions/t08-forest-se
 import { T07_RUNAWAY_ELF_TRAFFICKING_PACK } from "./authored/missions/t07-runaway-elf-trafficking.js";
 import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";
 
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v15";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v16";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
@@ -872,16 +872,16 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
       battle: Object.freeze({
         targetLocation: "田園の村",
         targetFacilityId: "LOC_FARM_EDGE",
-        encounterId: "ENC-0005",
+        encounterId: "ENC-0006",
         encounterIdByTroubleStatus: Object.freeze({
-          active: "ENC-0005",
+          active: "ENC-0006",
           critical: "ENC-0006",
         }),
         labelByTroubleStatus: Object.freeze({
-          active: "村外れへ先行した赤牙狼を街道から退ける",
+          active: "森寄りへ南下した群れ親と成狼を街道から退ける",
           critical: "村外れを襲う群れ親と成狼を食い止める",
         }),
-        label: "村外れへ南下した赤牙狼を街道から退ける",
+        label: "森寄りへ南下した群れ親と成狼を街道から退ける",
       }),
       resolution: Object.freeze({
         targetLocation: "森",

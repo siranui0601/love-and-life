@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import zlib from 'node:zlib';
+import { CANONICAL_WORLD_LIFE_INTERNALS } from '../../src/server/trpg/content/canonical-world-life-actions.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
@@ -13,6 +14,22 @@ const DEFAULT_INPUT_META = path.join(ROOT, 'docs/trpg/virtue-route-v2-source.met
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 const CATALOG_PATH = path.join(HERE, 'lib/virtue-route-v3-runtime-catalog.json');
 const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
+const runtimeProducts = [...catalog.products];
+for (const [productId, tuple] of Object.entries(CANONICAL_WORLD_LIFE_INTERNALS.PRODUCTS)) {
+  if (runtimeProducts.some((entry) => entry.productId === productId)) continue;
+  const [region, facilityId, , label, price, kind, portions = 1, condition = null] = tuple;
+  runtimeProducts.push({ productId, region, facilityId, label, price, kind, portions, condition });
+}
+runtimeProducts.sort((a, b) => a.productId.localeCompare(b.productId));
+const runtimeRestDurations = [...CANONICAL_WORLD_LIFE_INTERNALS.REST_DURATIONS];
+const defaultProvisionByRegion = Object.freeze({
+  ...catalog.defaultProvisionByRegion,
+  'エルフの隠れ里': 'ITM023',
+});
+const defaultLodgingByRegion = Object.freeze({
+  ...catalog.defaultLodgingByRegion,
+  'エルフの隠れ里': 'ITM195',
+});
 const FINAL_STATUSES = new Set([
   'RESOLVED_EXISTING', 'RESOLVED_NEW_GENERAL', 'RESOLVED_NEW_AUTHORED',
   'OUTCOME', 'BOOKKEEPING', 'REPLACED_INVALID',
@@ -102,7 +119,8 @@ function baseMapping(row, index) {
     legacyRowIndex: index + 1,
     legacyRowId: row['action ID'], legacyDay: Number(row.Day), legacyTime: `${row['開始']}→${row['終了']}`,
     legacyDescription: row['行動'], legacyRuntimeAction: row['runtime action'], legacyRegion: row['場所'],
-    classification: '', replacementRowIds: '', commandType: '', choiceId: '', actionId: '', payload: '',
+    classification: '', replacementRowIds: '', replacementSteps: '', resolutionMethod: 'RULE',
+    commandType: '', choiceId: '', actionId: '', payload: '',
     regionId: row['場所'], facilityId: '', npcIds: splitNpcNames(row.NPC).join('|'), troubleId: row['事件'] || '',
     jobId: '', productId: '', equipmentId: '', materialId: '', skillId: '',
     requiredState: '', resultingState: '', implementationSource: '', status: '', unresolvedReason: '',
@@ -115,6 +133,25 @@ function resolvedPlayer(m, actionId, commandType = 'CHOOSE', payload = null) {
   else m.payload = JSON.stringify(payload ?? {});
   m.status = 'RESOLVED_EXISTING'; return m;
 }
+function commandStep(actionId, commandType = 'CHOOSE', payload = null, extra = {}) {
+  const body = commandType === 'CHOOSE'
+    ? payload ?? { choiceId: actionId, actionId }
+    : payload ?? {};
+  return { actionId, commandType, payload: body, ...extra };
+}
+function resolvedSteps(m, steps, notes = '') {
+  if (!Array.isArray(steps) || steps.length < 2) throw new Error(`multi-step mapping requires at least two commands: ${m.legacyRowId}`);
+  m.classification = 'PLAYER_COMMAND_SEQUENCE';
+  m.commandType = 'SEQUENCE';
+  m.actionId = steps.at(-1).actionId;
+  m.payload = JSON.stringify({ steps });
+  m.replacementSteps = JSON.stringify(steps);
+  m.replacementRowIds = steps.map((_, index) => `${m.legacyRowId}:S${String(index + 1).padStart(2, '0')}`).join('|');
+  m.resolutionMethod = 'EXACT_AUTHORED';
+  m.status = 'RESOLVED_EXISTING';
+  m.notes = notes;
+  return m;
+}
 function outcome(m, source, notes = '') {
   m.classification = 'COMMAND_OUTCOME'; m.status = 'OUTCOME'; m.implementationSource = source; m.notes = notes; return m;
 }
@@ -124,14 +161,14 @@ function narrative(m, source, notes = '') {
 function unresolved(m, reason, classification = 'REPLACED_INVALID', notes = '') {
   m.classification = classification; m.status = 'UNRESOLVED'; m.unresolvedReason = reason; m.notes = notes; return m;
 }
-function productById(id) { return catalog.products.find((p) => p.productId === id); }
+function productById(id) { return runtimeProducts.find((p) => p.productId === id); }
 function inferFood(row) {
   const region = row['場所']; const cost = num(row['支出']); const desc = row['行動'];
-  const candidates = catalog.products.filter((p) => p.region === region && ['meal','provision'].includes(p.kind));
+  const candidates = runtimeProducts.filter((p) => p.region === region && ['meal','provision'].includes(p.kind));
   let chosen = candidates.find((p) => p.price === cost && (/携帯食|保存食/u.test(desc) ? p.kind === 'provision' : p.kind === 'meal'));
   if (!chosen && cost > 0) chosen = candidates.find((p) => p.price === cost);
-  if (!chosen && /携帯食|保存食/u.test(desc)) chosen = productById(catalog.defaultProvisionByRegion[region]);
-  if (!chosen) chosen = productById(catalog.defaultMealByRegion[region]) ?? productById(catalog.defaultProvisionByRegion[region]);
+  if (!chosen && /携帯食|保存食/u.test(desc)) chosen = productById(defaultProvisionByRegion[region]);
+  if (!chosen) chosen = productById(catalog.defaultMealByRegion[region]) ?? productById(defaultProvisionByRegion[region]);
   return chosen ?? null;
 }
 function jobAllowedStart(job, preferred) {
@@ -165,8 +202,95 @@ const arrivalFlavor = /到着後|旅装を整え|宿・情報屋|街の様子|�
 const battleFlavor = /主要戦闘|戦闘|撃破|退け|護衛を倒|衛兵像|魔物|狼|甲虫|スライム/u;
 const compositeFlavor = /救出.*(戦闘|撃破)|足跡を追い.*救出|調査.*戦闘|購入済み.*返す/u;
 
+function exactAuthoredOverride(m) {
+  if (m.legacyRowId === 'VR2-D01-05') {
+    m.regionId = '田園の村';
+    m.facilityId = 'LOC_FARM_SQUARE';
+    m.requiredState = 'MSN-T01 active; hearing complete; at LOC_FARM_EDGE; Finn alive';
+    m.resultingState = 'two search clues; MON-0005 defeated; Finn rescued, escorted and reunited; MSN-T01 resolved';
+    m.implementationSource = 'tools/trpg-sim/lib/player-journey.mjs + src/server/trpg/game/service.js + authored-mission-flow-human-route-entry.js';
+    return resolvedSteps(m, [
+      commandStep('ACTION:MSN-T01:search:tracks'),
+      commandStep('ACTION:MSN-T01:search:wolf-blockade'),
+      commandStep('ACTION:MSN-T01:rescue'),
+      commandStep('ACTION:MSN-T01:escort'),
+      commandStep('MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE'),
+      commandStep('ACTION:MSN-T01:decide'),
+    ], 'legacy composite split into six existing public mission commands');
+  }
+
+  if (m.legacyRowId === 'VR2-D20-02') {
+    m.facilityId = 'LOC_FARM_EDGE';
+    m.requiredState = 'MSN-T03 active; authored investigation complete; at LOC_FARM_EDGE';
+    m.resultingState = 'ENC-0006 won; MAT_RED_FANG_LARGE guaranteed; battle step complete';
+    m.implementationSource = 'src/server/trpg/content/authored-mission-flow-core.js + tools/trpg-sim/lib/player-journey.mjs';
+    m.resolutionMethod = 'EXACT_AUTHORED';
+    return resolvedPlayer(m, 'ACTION:MSN-T03:battle');
+  }
+
+  if (m.legacyRowId === 'VR2-D20-04') {
+    m.regionId = '田園の村';
+    m.facilityId = 'LOC_FARM_SQUARE';
+    m.requiredState = 'MSN-T03 active; battle complete; relocate_den evidence ready';
+    m.resultingState = 't03ResolutionRoute=relocate_den; T03 resolved; player returned to village';
+    m.implementationSource = 'src/server/trpg/content/authored-mission-flow-core.js + tools/trpg-sim/lib/player-journey.mjs';
+    return resolvedSteps(m, [
+      commandStep('MOVE_REGION:森', 'MOVE', { moveId: 'MOVE_REGION:森' }, { regionId: '森', facilityId: 'LOC_FOREST_EDGE' }),
+      commandStep('MOVE_LOCAL:LOC_FOREST_CAMP', 'MOVE', { moveId: 'MOVE_LOCAL:LOC_FOREST_CAMP' }, { regionId: '森', facilityId: 'LOC_FOREST_CAMP' }),
+      commandStep('MISSION_FLOW:red-fang-migration:RESOLUTION:relocate_den:active', 'CHOOSE', null, { regionId: '森', facilityId: 'LOC_FOREST_CAMP' }),
+      commandStep('MOVE_REGION:田園の村', 'MOVE', { moveId: 'MOVE_REGION:田園の村' }, { regionId: '田園の村', facilityId: 'LOC_FARM_SQUARE' }),
+    ], 'canonical resolution is in the forest; v3 expands travel and must reallocate legacy timing');
+  }
+
+  if (m.legacyRowId === 'VR2-D32-05') {
+    m.facilityId = 'LOC_TEMPLE_SEALED';
+    m.requiredState = 'MSN-T04 active; three authored evidence groups complete; at LOC_TEMPLE_CORRIDOR';
+    m.resultingState = 'ENC-0061 won; pilgrims recovered; transfer device paused; T04 resolved';
+    m.implementationSource = 'src/server/trpg/content/authored-mission-flow-core.js + tools/trpg-sim/lib/player-journey.mjs';
+    return resolvedSteps(m, [
+      commandStep('ACTION:MSN-T04:battle', 'CHOOSE', null, { regionId: '古代神殿', facilityId: 'LOC_TEMPLE_CORRIDOR' }),
+      commandStep('MOVE_LOCAL:LOC_TEMPLE_SEALED', 'MOVE', { moveId: 'MOVE_LOCAL:LOC_TEMPLE_SEALED' }, { regionId: '古代神殿', facilityId: 'LOC_TEMPLE_SEALED' }),
+      commandStep('MISSION_FLOW:pilgrim-transfer-disappearance:RESOLUTION:recover_then_pause:active', 'CHOOSE', null, { regionId: '古代神殿', facilityId: 'LOC_TEMPLE_SEALED' }),
+    ], 'legacy guard-statue composite replaced by canonical ENC-0061 battle and authored rescue resolution');
+  }
+
+  if (m.legacyRowId === 'VR2-D20-08') {
+    m.facilityId = 'LOC_FARM_REPAIR';
+    m.materialId = 'MAT_RED_FANG_LARGE';
+    m.requiredState = 'ENC-0006 won; MAT_RED_FANG_LARGE>=1; at LOC_FARM_REPAIR';
+    m.resultingState = 'MAT_RED_FANG_LARGE-=1; gold+=3';
+    m.implementationSource = 'src/server/trpg/content/canonical-material-economy.js';
+    m.resolutionMethod = 'EXACT_AUTHORED';
+    m.notes = 'canonical guaranteed sale is 3G, replacing unsupported legacy +9G; static ledger must rebalance the 6G delta';
+    return resolvedPlayer(m, 'MATERIAL_SELL:MAT_RED_FANG_LARGE:Q1');
+  }
+
+  if (m.legacyRowId === 'VR2-D58-08') {
+    m.facilityId = 'LOC_FOREST_HUNTER_HUT';
+    m.materialId = 'MAT_KING_GEL_CORE';
+    m.requiredState = 'ENC-0018 won; MAT_KING_GEL_CORE>=1; hunterApproval; at LOC_FOREST_HUNTER_HUT';
+    m.resultingState = 'MAT_KING_GEL_CORE-=1; gold+=3; MAT_WORLD_TREE_FRAGMENT retained';
+    m.implementationSource = 'src/server/trpg/content/canonical-material-economy.js';
+    m.resolutionMethod = 'EXACT_AUTHORED';
+    return resolvedPlayer(m, 'MATERIAL_SELL:MAT_KING_GEL_CORE:Q1');
+  }
+
+  if (m.legacyRowId === 'VR2-D81-06') {
+    m.facilityId = 'LOC_FARM_WELL';
+    m.requiredState = 'DEBT:EDA:ITM014.remainingG=6; NPC004 present; gold>=6';
+    m.resultingState = 'gold-=6; DEBT:EDA:ITM014.status=paid';
+    m.implementationSource = 'src/server/trpg/content/canonical-social-obligations.js';
+    m.resolutionMethod = 'EXACT_AUTHORED';
+    return resolvedPlayer(m, 'OBLIGATION:PAY:DEBT:EDA:ITM014:FULL');
+  }
+
+  return null;
+}
+
 function convertRow(row, index) {
   const m = baseMapping(row, index); const rt = row['runtime action']; const day = Number(row.Day); const trouble = row['事件'] || '';
+  const exact = exactAuthoredOverride(m);
+  if (exact) return exact;
   if (rt === 'LEARN_SKILL') {
     const id = /SKL-\d{4}/u.exec(row['行動'])?.[0];
     if (!id) return unresolved(m, 'MISSING_SKILL_ID');
@@ -194,13 +318,13 @@ function convertRow(row, index) {
   if (rt === 'REST') {
     const minutes = durationMinutes(row['開始'], row['終了']);
     if (/睡眠/u.test(row['行動'])) {
-      const pid = catalog.defaultLodgingByRegion[row['場所']]; const p = productById(pid);
+      const pid = defaultLodgingByRegion[row['場所']]; const p = productById(pid);
       if (!p) return unresolved(m, 'MISSING_LODGING_PRODUCT', 'REPLACED_INVALID', `sleep ${minutes ?? '?'}min requires REST/SLEEP split`);
       m.productId = p.productId; m.facilityId = p.facilityId; m.requiredState = p.condition ?? `at ${p.facilityId}; lodging payment/free lodging available`;
       m.resultingState = 'time+=480; fatigue/HP/MP recovery'; m.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js';
       return resolvedPlayer(m, `LIFE:SLEEP:${p.productId}`);
     }
-    if (minutes != null && catalog.restDurations.includes(minutes)) {
+    if (minutes != null && runtimeRestDurations.includes(minutes)) {
       m.resultingState = `time+=${minutes}; fatigue recovery`; m.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js';
       return resolvedPlayer(m, `LIFE:REST:${minutes}`);
     }
@@ -291,7 +415,7 @@ function main() {
   const unresolvedRows = mappings.filter((m) => m.status === 'UNRESOLVED');
   const counts = (key, rows = mappings) => Object.fromEntries([...new Set(rows.map((r) => r[key] || '(blank)'))].sort().map((v) => [v, rows.filter((r) => (r[key] || '(blank)') === v).length]));
   const summary = {
-    compilerVersion: 'virtue-route-v3-static-compiler-recovery-v2', sourceHead: process.env.GITHUB_SHA ?? catalog.sourceHead,
+    compilerVersion: 'virtue-route-v3-static-compiler-recovery-v3', sourceHead: process.env.GITHUB_SHA ?? catalog.sourceHead,
     generatedAt: source.fetchedAt ?? new Date().toISOString(),
     sourceSpreadsheetId: source.spreadsheetId, sourceSpreadsheetTitle: source.spreadsheetTitle ?? null,
     sourceSheetName: source.sheetName, sourceSheetId: source.sheetId ?? null,
@@ -301,7 +425,8 @@ function main() {
     legacyRows: sourceRows.length, mappedRows: mappings.length, autoResolvedRows: mappings.length - unresolvedRows.length, unresolvedRows: unresolvedRows.length,
     provisionalCoveragePercent: Number((((mappings.length - unresolvedRows.length) / mappings.length) * 100).toFixed(2)),
     byLegacyRuntimeAction: counts('legacyRuntimeAction'), byClassification: counts('classification'), byStatus: counts('status'),
-    unresolvedByReason: counts('unresolvedReason', unresolvedRows), canonicalJobsInCatalog: catalog.jobs.length, canonicalProductsInCatalog: catalog.products.length,
+    unresolvedByReason: counts('unresolvedReason', unresolvedRows), canonicalJobsInCatalog: catalog.jobs.length, canonicalProductsInCatalog: runtimeProducts.length,
+    exactAuthoredOverrideRows: mappings.filter((m) => m.resolutionMethod === 'EXACT_AUTHORED').length,
     workRowsReallocated: mappings.filter((m) => m.jobId && /reallocated/u.test(m.notes)).length,
     proposedMoveLocalInsertions: localMoves.length,
     regionalMoveRows: mappings.filter((m) => m.actionId.startsWith('MOVE_REGION:')).length,
@@ -310,7 +435,7 @@ function main() {
     forbiddenReplayExecuted: false,
   };
   fs.mkdirSync(outDir,{recursive:true});
-  const columns = ['legacyRowIndex','legacyRowId','legacyDay','legacyTime','legacyDescription','legacyRuntimeAction','legacyRegion','classification','replacementRowIds','commandType','choiceId','actionId','payload','regionId','facilityId','npcIds','troubleId','jobId','productId','equipmentId','materialId','skillId','requiredState','resultingState','implementationSource','status','unresolvedReason','plannedStart','plannedEnd','notes'];
+  const columns = ['legacyRowIndex','legacyRowId','legacyDay','legacyTime','legacyDescription','legacyRuntimeAction','legacyRegion','classification','replacementRowIds','replacementSteps','resolutionMethod','commandType','choiceId','actionId','payload','regionId','facilityId','npcIds','troubleId','jobId','productId','equipmentId','materialId','skillId','requiredState','resultingState','implementationSource','status','unresolvedReason','plannedStart','plannedEnd','notes'];
   fs.writeFileSync(path.join(outDir,'virtue-route-v3-mapping.csv'), toCsv(mappings, columns));
   fs.writeFileSync(path.join(outDir,'virtue-route-v3-unresolved.json'), JSON.stringify({ sourceHead: summary.sourceHead, sourceHash: source.sourceHash, count: unresolvedRows.length, rows: unresolvedRows }, null, 2) + '\n');
   fs.writeFileSync(path.join(outDir,'virtue-route-v3-static-summary.json'), JSON.stringify(summary,null,2) + '\n');

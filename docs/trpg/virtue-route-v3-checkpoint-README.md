@@ -1,6 +1,10 @@
 # 人徳ルート v3 静的コンパイル checkpoint
 
-開始Head: `5ef557144f05c73869d6a6785ed49d5f2834d379`
+初期compiler開始Head: `5ef557144f05c73869d6a6785ed49d5f2834d379`
+
+2026-08-16 再開開始Head: `32dcdbd5121b235e80c186e81426302c602473fe`
+
+再現可能source checkpoint Head: `58350fb9662a8ef8709183916684eccd1cee4135`
 
 Phase A-C で、旧 `正規台帳` 831行を deterministic compiler へ投入し、831/831件の暫定mappingを実際に生成した。
 
@@ -22,14 +26,40 @@ Head `32dcdbd` の圧縮payloadはGit blob自体が20,023 bytesで途切れて�
 復号できたprefixは差分資料として使ったが、そのままsourceへ上書きしていない。
 詳細は `virtue-route-v3-payload-recovery.md` を参照。
 
-- auto resolved: 583
-- unresolved: 248
-- provisional coverage: 70.16%
+- compiler version: `virtue-route-v3-static-compiler-recovery-v3`
+- auto resolved: 594
+- exact authored override rows: 7
+- unresolved: 237
+- provisional coverage: 71.48%
 - canonical jobs loaded: 28
+- canonical products loaded: 44
 - work rows reallocated: 56
-- proposed MOVE_LOCAL insertions: 123
-- legacy REGIONAL_MOVE rows: 44
+- proposed MOVE_LOCAL insertions: 129
+- REGIONAL_MOVE mapping rows: 45
 - replay / route simulation: 未実施
+
+最初のPhase D batchでは、実在する通常runtime actionだけを使って11行を解消した。
+
+- T01 composite: 既存のsearch×2 / rescue / escort / return / decideへ6分割
+- T03: ライブ戦闘正本のboss encounter `ENC-0006`、`relocate_den` resolutionへ接続
+- T04: `ENC-0061` と `recover_then_pause` resolutionへ分割
+- エルフの隠れ里: 正本 `ITM195` 樹上客間を `elfApproval` 条件で通常公開
+- エルフ里の食事3行: 所持済み `ITM023` を食べる通常actionへ接続
+- 素材: Day20は確定dropだけを3Gで売却し、旧+9Gとの差6Gを静的ledgerの再配分対象として明記。Day58は3Gを一致
+- 債務: `OBLIGATION:PAY:DEBT:EDA:ITM014:FULL` へ接続
+
+現時点のunresolved理由は8種だけである。
+
+| reason | count |
+|---|---:|
+| MISSING_DAILY_INTERACTION_MATCH | 87 |
+| MISSING_NPC_INTERACTION | 83 |
+| REST_SPLIT_REQUIRED | 33 |
+| MISSING_AUTHORED_MISSION_MATCH | 28 |
+| MISSING_MATERIAL_LINEAGE | 3 |
+| MISSING_LODGING_PRODUCT | 1 |
+| COMPOSITE_EQUIPMENT_INTERACTION | 1 |
+| INVALID_LONG_LOCAL_INVESTIGATE | 1 |
 
 ## files
 
@@ -42,7 +72,7 @@ Head `32dcdbd` の圧縮payloadはGit blob自体が20,023 bytesで途切れて�
 - `docs/trpg/virtue-route-v3-checkpoint-mapping-831.json.gz.b64.part-00`
 - `docs/trpg/virtue-route-v3-checkpoint-mapping-831.json.gz.b64.part-01`
 
-2つのmapping partを連結してbase64 decode→gzip decodeすると、全831行について次の13項目を持つcompact JSONを復元できる。
+2つのmapping partはPhase A-C時点の初期checkpointである。連結してbase64 decode→gzip decodeすると、全831行について次の13項目を持つcompact JSONを復元できる。
 
 `legacyRowIndex, legacyRowId, classification, status, commandType, actionId, facilityId, jobId, productId, equipmentId, skillId, unresolvedReason, replacementRowIds`
 
@@ -53,4 +83,4 @@ echo 'e1f54941124a3a1a6029f2e25daa62f28c3692772fcbe6386a6b1c60a6d882c6  /tmp/vir
 gzip -dc /tmp/virtue-route-v3-checkpoint-mapping-831.json.gz > /tmp/virtue-route-v3-checkpoint-mapping-831.json
 ```
 
-これは作業完了点ではない。Phase Dで理由別unresolved集合をまとめて解消し、最終成果物では `UNMAPPED/PARTIAL/TODO=0` と `STATIC_COMPILE_COVERAGE=100%` を要求する。replayは次工程まで禁止する。
+最新mappingは非公開Sheet由来の行本文を含むためrepositoryでは追跡せず、同じsource hashからcompilerで再生成する。これは作業完了点ではない。Phase Dで理由別unresolved集合をまとめて解消し、最終成果物では `UNMAPPED/PARTIAL/TODO=0` と `STATIC_COMPILE_COVERAGE=100%` を要求する。replayは次工程まで禁止する。

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS,
+  CANONICAL_WORLD_LIFE_INTERNALS,
 } from "../../../src/server/trpg/content/canonical-public-action-policy.js";
 
 function runtime({ day = 30, progress = {}, labour = {}, life = {}, gold = 20 } = {}) {
@@ -45,6 +46,43 @@ test("fort life services use the same permit gate", () => {
   assert.equal(CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS.permittedLifeAction(r, { id: "SERVICE_BUY:ITM175" }), false);
   r.playerState.progress.fort_entry_permit = true;
   assert.equal(CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS.permittedLifeAction(r, { id: "SERVICE_BUY:ITM175" }), true);
+});
+
+test("the canonical elf guest bough is public only after ordinary elf approval", () => {
+  const r = runtime();
+  r.playerState.player.location = "エルフの隠れ里";
+  r.playerState.player.facilityId = "LOC_ELF_GUEST_BOUGH";
+  r.playerState.worldFlags = {};
+
+  assert.deepEqual(CANONICAL_WORLD_LIFE_INTERNALS.PRODUCTS.ITM195, [
+    "エルフの隠れ里",
+    "LOC_ELF_GUEST_BOUGH",
+    "宿泊",
+    "樹上客間",
+    0,
+    "lodging",
+    1,
+    "elfApproval",
+  ]);
+  assert.equal(
+    CANONICAL_WORLD_LIFE_INTERNALS.productActions(r).some((entry) => entry.id === "LIFE:SLEEP:ITM195"),
+    false,
+  );
+  assert.equal(
+    CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS.permittedLifeAction(r, { id: "LIFE:SLEEP:ITM195" }),
+    false,
+  );
+
+  r.playerState.worldFlags.elfApproval = true;
+  const sleep = CANONICAL_WORLD_LIFE_INTERNALS.productActions(r)
+    .find((entry) => entry.id === "LIFE:SLEEP:ITM195");
+  assert.ok(sleep);
+  assert.equal(sleep.price, 0);
+  assert.equal(sleep.targetFacilityId, undefined);
+  assert.equal(
+    CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS.permittedLifeAction(r, sleep),
+    true,
+  );
 });
 
 test("canonical provision units normalize multi-day food to meal portions", () => {
