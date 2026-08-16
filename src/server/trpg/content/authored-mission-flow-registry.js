@@ -1,1 +1,1 @@
-export * from "./canonical-regional-labour.js";
+export * from "./canonical-world-life-actions.js";
