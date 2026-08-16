@@ -4,6 +4,24 @@
 
 Phase A-C で、旧 `正規台帳` 831行を deterministic compiler へ投入し、831/831件の暫定mappingを実際に生成した。
 
+2026-08-16 の recovery checkpoint では、ライブの
+`TRPG_人徳ルート正規台帳_v2` / `正規台帳` を再取得し、
+`docs/trpg/virtue-route-v2-source.meta.json` の provenance とhashに固定した。
+正本は非公開Sheet、repositoryは公開なので、行本文を含むCSV/mapping/unresolvedは追跡しない。
+クリーンcheckoutでは認証済み環境で
+`node tools/trpg-sim/export-virtue-route-v2-source.mjs` を実行してCSVを再生成し、
+`--check` でライブSheetとの差分を検査できる。
+
+- source spreadsheet: `1aSLu_pSLNsFsUm42juEyOrLDmTkJd7NPOOrQNnvnMwA`
+- source sheet: `正規台帳` (`sheetId=453964624`)
+- source range: `'正規台帳'!A1:AF832`
+- data rows / columns: `831 / 32`
+- source SHA-256: `eb26d459851f7bcc8d9d159e6f86f5da016ce70cccbdbac329e9e684b4d14120`
+
+Head `32dcdbd` の圧縮payloadはGit blob自体が20,023 bytesで途切れていた。
+復号できたprefixは差分資料として使ったが、そのままsourceへ上書きしていない。
+詳細は `virtue-route-v3-payload-recovery.md` を参照。
+
 - auto resolved: 583
 - unresolved: 248
 - provisional coverage: 70.16%
@@ -16,6 +34,9 @@ Phase A-C で、旧 `正規台帳` 831行を deterministic compiler へ投入し
 ## files
 
 - `tools/trpg-sim/compile-virtue-route-v3.mjs`: v2→v3 deterministic static compiler
+- `tools/trpg-sim/export-virtue-route-v2-source.mjs`: 正本Sheet→追跡可能CSV/provenance export
+- `docs/trpg/virtue-route-v2-source.csv`（gitignored）: 正本から再生成する831行のcompiler input
+- `docs/trpg/virtue-route-v2-source.meta.json`: source ID/範囲/取得時点/hash
 - `tools/trpg-sim/lib/virtue-route-v3-runtime-catalog.json`: current Head + current masters から固定したruntime辞書
 - `docs/trpg/virtue-route-v3-static-summary.json`: checkpoint集計
 - `docs/trpg/virtue-route-v3-checkpoint-mapping-831.json.gz.b64.part-00`

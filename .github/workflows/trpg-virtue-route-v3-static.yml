@@ -1,0 +1,33 @@
+name: trpg-virtue-route-v3-static
+
+on:
+  pull_request:
+    paths:
+      - "tools/trpg-sim/compile-virtue-route-v3.mjs"
+      - "tools/trpg-sim/export-virtue-route-v2-source.mjs"
+      - "tools/trpg-sim/test/virtue-route-v3-compiler.test.mjs"
+      - "tools/trpg-sim/lib/virtue-route-v3-runtime-catalog.json"
+      - "docs/trpg/virtue-route-v2-source.meta.json"
+      - "docs/trpg/virtue-route-v3-static-summary.json"
+      - ".github/workflows/trpg-virtue-route-v3-static.yml"
+  workflow_dispatch:
+
+jobs:
+  static-compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Export canonical v2 source from Google Sheets
+        run: node tools/trpg-sim/export-virtue-route-v2-source.mjs
+      - name: Deterministic static compile (no replay)
+        run: node tools/trpg-sim/compile-virtue-route-v3.mjs docs/trpg/virtue-route-v2-source.csv /tmp/virtue-route-v3
+      - name: Unit and deterministic regression
+        run: node --test tools/trpg-sim/test/virtue-route-v3-compiler.test.mjs

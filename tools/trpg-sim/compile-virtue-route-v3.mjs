@@ -2,13 +2,56 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import zlib from 'node:zlib';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_INPUT = path.join(ROOT, 'docs/trpg/virtue-route-v2-source.csv');
+const DEFAULT_INPUT_ARCHIVE = `${DEFAULT_INPUT}.gz.b64`;
+const DEFAULT_INPUT_META = path.join(ROOT, 'docs/trpg/virtue-route-v2-source.meta.json');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 const CATALOG_PATH = path.join(HERE, 'lib/virtue-route-v3-runtime-catalog.json');
 const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
+const FINAL_STATUSES = new Set([
+  'RESOLVED_EXISTING', 'RESOLVED_NEW_GENERAL', 'RESOLVED_NEW_AUTHORED',
+  'OUTCOME', 'BOOKKEEPING', 'REPLACED_INVALID',
+]);
+const FORBIDDEN_STATUS = /^(?:PARTIAL|NO|TODO|TBD|UNKNOWN|UNMAPPED)$/u;
+
+function sha256(text) {
+  return createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
+function readInputCsv(input) {
+  if (fs.existsSync(input)) return fs.readFileSync(input, 'utf8');
+  const archive = input === DEFAULT_INPUT ? DEFAULT_INPUT_ARCHIVE : `${input}.gz.b64`;
+  if (!fs.existsSync(archive)) throw new Error(`source CSV not found: ${input}`);
+  const encoded = fs.readFileSync(archive, 'utf8').replace(/\s/gu, '');
+  return zlib.gunzipSync(Buffer.from(encoded, 'base64')).toString('utf8');
+}
+
+function sourceMetadata(input, text) {
+  const sibling = input.replace(/\.csv$/u, '.meta.json');
+  const metadataPath = fs.existsSync(sibling) ? sibling : input === DEFAULT_INPUT ? DEFAULT_INPUT_META : null;
+  if (!metadataPath || !fs.existsSync(metadataPath)) {
+    return {
+      spreadsheetId: null,
+      sheetName: null,
+      dataRows: null,
+      columns: null,
+      fetchedAt: null,
+      sourceHash: sha256(text),
+      metadataPath: null,
+    };
+  }
+  const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+  const actualHash = sha256(text);
+  if (metadata.sourceHashAlgorithm !== 'sha256' || metadata.sourceHash !== actualHash) {
+    throw new Error(`source hash mismatch: ${actualHash} != ${metadata.sourceHash}`);
+  }
+  return { ...metadata, metadataPath: path.relative(ROOT, metadataPath) };
+}
 
 function parseCsv(text) {
   const rows = [];
@@ -238,14 +281,23 @@ function annotateLocalMoves(mappings) {
 
 function main() {
   const args = process.argv.slice(2); const input = args[0] ? path.resolve(args[0]) : DEFAULT_INPUT; const outDir = args[1] ? path.resolve(args[1]) : DEFAULT_OUT;
-  const matrix = parseCsv(fs.readFileSync(input,'utf8')); const headers = matrix[0];
+  const inputText = readInputCsv(input); const source = sourceMetadata(input, inputText);
+  const matrix = parseCsv(inputText); const headers = matrix[0];
   const sourceRows = matrix.slice(1).filter((r) => r.some((c) => c !== '')).map((cells) => Object.fromEntries(headers.map((h,i) => [h, cells[i] ?? ''])));
   if (sourceRows.length !== 831) throw new Error(`expected 831 legacy rows, got ${sourceRows.length}`);
+  if (source.dataRows != null && source.dataRows !== sourceRows.length) throw new Error(`metadata row count ${source.dataRows} != ${sourceRows.length}`);
+  if (source.columns != null && source.columns !== headers.length) throw new Error(`metadata column count ${source.columns} != ${headers.length}`);
   const mappings = sourceRows.map(convertRow); const localMoves = annotateLocalMoves(mappings);
   const unresolvedRows = mappings.filter((m) => m.status === 'UNRESOLVED');
   const counts = (key, rows = mappings) => Object.fromEntries([...new Set(rows.map((r) => r[key] || '(blank)'))].sort().map((v) => [v, rows.filter((r) => (r[key] || '(blank)') === v).length]));
   const summary = {
-    compilerVersion: 'virtue-route-v3-static-compiler-checkpoint-v1', sourceHead: catalog.sourceHead, generatedAt: new Date().toISOString(),
+    compilerVersion: 'virtue-route-v3-static-compiler-recovery-v2', sourceHead: process.env.GITHUB_SHA ?? catalog.sourceHead,
+    generatedAt: source.fetchedAt ?? new Date().toISOString(),
+    sourceSpreadsheetId: source.spreadsheetId, sourceSpreadsheetTitle: source.spreadsheetTitle ?? null,
+    sourceSheetName: source.sheetName, sourceSheetId: source.sheetId ?? null,
+    sourceRange: source.range ?? null, sourceRowCount: sourceRows.length,
+    sourceColumnCount: headers.length, sourceFetchedAt: source.fetchedAt,
+    sourceHashAlgorithm: 'sha256', sourceHash: source.sourceHash,
     legacyRows: sourceRows.length, mappedRows: mappings.length, autoResolvedRows: mappings.length - unresolvedRows.length, unresolvedRows: unresolvedRows.length,
     provisionalCoveragePercent: Number((((mappings.length - unresolvedRows.length) / mappings.length) * 100).toFixed(2)),
     byLegacyRuntimeAction: counts('legacyRuntimeAction'), byClassification: counts('classification'), byStatus: counts('status'),
@@ -253,14 +305,16 @@ function main() {
     workRowsReallocated: mappings.filter((m) => m.jobId && /reallocated/u.test(m.notes)).length,
     proposedMoveLocalInsertions: localMoves.length,
     regionalMoveRows: mappings.filter((m) => m.actionId.startsWith('MOVE_REGION:')).length,
+    forbiddenStatusRows: mappings.filter((m) => FORBIDDEN_STATUS.test(m.status)).length,
+    nonFinalStatusRows: mappings.filter((m) => !FINAL_STATUSES.has(m.status)).length,
     forbiddenReplayExecuted: false,
   };
   fs.mkdirSync(outDir,{recursive:true});
   const columns = ['legacyRowIndex','legacyRowId','legacyDay','legacyTime','legacyDescription','legacyRuntimeAction','legacyRegion','classification','replacementRowIds','commandType','choiceId','actionId','payload','regionId','facilityId','npcIds','troubleId','jobId','productId','equipmentId','materialId','skillId','requiredState','resultingState','implementationSource','status','unresolvedReason','plannedStart','plannedEnd','notes'];
   fs.writeFileSync(path.join(outDir,'virtue-route-v3-mapping.csv'), toCsv(mappings, columns));
-  fs.writeFileSync(path.join(outDir,'virtue-route-v3-unresolved.json'), JSON.stringify({ sourceHead: catalog.sourceHead, count: unresolvedRows.length, rows: unresolvedRows }, null, 2) + '\n');
+  fs.writeFileSync(path.join(outDir,'virtue-route-v3-unresolved.json'), JSON.stringify({ sourceHead: summary.sourceHead, sourceHash: source.sourceHash, count: unresolvedRows.length, rows: unresolvedRows }, null, 2) + '\n');
   fs.writeFileSync(path.join(outDir,'virtue-route-v3-static-summary.json'), JSON.stringify(summary,null,2) + '\n');
-  fs.writeFileSync(path.join(outDir,'virtue-route-v3-proposed-local-moves.json'), JSON.stringify({ sourceHead: catalog.sourceHead, count: localMoves.length, moves: localMoves },null,2) + '\n');
+  fs.writeFileSync(path.join(outDir,'virtue-route-v3-proposed-local-moves.json'), JSON.stringify({ sourceHead: summary.sourceHead, sourceHash: source.sourceHash, count: localMoves.length, moves: localMoves },null,2) + '\n');
   console.log(JSON.stringify(summary,null,2));
 }
 main();
