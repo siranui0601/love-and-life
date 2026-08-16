@@ -25,7 +25,7 @@ import {
 
 const data = await loadBattleData();
 
-function observerBuild() {
+function observerBuild(overrides = {}) {
   return createPlayerBuild(data, {
     id: "observer",
     name: "Candidate exhaustion observer",
@@ -47,6 +47,7 @@ function observerBuild() {
       critical: 0,
       debuffSuccess: 0,
       debuffResistance: 100,
+      ...overrides,
     },
   });
 }
@@ -65,7 +66,7 @@ test("battle fixture joins every combat table and all four skill shards", () => 
     inventory: 123,
     monsters: 77,
     monsterSkills: 96,
-    monsterActions: 285,
+    monsterActions: 286,
     encounters: 76,
     playerSkills: 1141,
   });
@@ -111,19 +112,18 @@ test("seeded RNG and encounter party expansion are reproducible", () => {
   assert.ok(partyOne.every((monsterId) => data.monsterById.has(monsterId)));
 });
 
-test("battle data audit preserves actionable state and command inconsistencies", () => {
-  assert.ok(data.audit.monstersWithoutUnconditionalAction.includes("MON-0076"));
-  assert.deepEqual(
-    [...new Set(data.audit.unresolvedStateReferences.map((entry) => entry.stateId))].sort(),
-    ["bound", "mana_absorb膜", "overheat"],
-  );
-  assert.ok(data.audit.unresolvedModifierReferences.some((entry) => (
-    entry.modifier === "physicalPower"
-      && entry.normalized === "physical_power"
-      && entry.normalizationResolves
-  )));
-  assert.ok(data.audit.unknownCommands.some((entry) => entry.command === "SUMMON_UNIT"));
-  assert.ok(data.audit.unknownCommands.some((entry) => entry.command === "COPY_LAST_ENEMY_SKILL"));
+test("canonical monster actions, commands and all nine bosses are runtime-ready", () => {
+  assert.deepEqual(data.audit.monstersWithoutUnconditionalAction, []);
+  assert.deepEqual(data.audit.unresolvedStateReferences, []);
+  assert.deepEqual(data.audit.unresolvedModifierReferences, []);
+  assert.deepEqual(data.audit.unknownCommands, []);
+  assert.deepEqual(data.audit.unknownSpecialStateSemantics, []);
+  assert.deepEqual(data.audit.unknownDebuffSemantics, []);
+  assert.deepEqual(data.audit.customHandlerSkills, []);
+  assert.deepEqual(data.audit.bossesMissingCombatCatalog, []);
+  assert.deepEqual(data.audit.unknownBossCatalogMonsterIds, []);
+  assert.deepEqual(data.audit.bossCatalogIssues, []);
+  assert.equal(data.bossCatalog.bosses.length, 9);
   assert.equal(data.audit.passiveSkillsWithDamage.length, 25);
   assert.equal(data.audit.provisionalRuleSkills.length, 98);
   assert.equal(data.audit.contextualActiveSkills.length, 345);
@@ -380,7 +380,7 @@ test("timeline includes deterministic end-of-round resource effects", () => {
     data,
     seed: "round-effect-4",
     monsterIds: ["MON-0010"],
-    playerBuild: observerBuild(),
+    playerBuild: observerBuild({ debuffResistance: -100 }),
     maxTurns: 5,
     captureTimeline: true,
   });
@@ -388,7 +388,7 @@ test("timeline includes deterministic end-of-round resource effects", () => {
     data,
     seed: "round-effect-4",
     monsterIds: ["MON-0010"],
-    playerBuild: observerBuild(),
+    playerBuild: observerBuild({ debuffResistance: -100 }),
     maxTurns: 5,
     captureTimeline: true,
   });
@@ -399,26 +399,32 @@ test("timeline includes deterministic end-of-round resource effects", () => {
   assert.ok(roundEffects.some((frame) => frame.effects.some((effect) => effect.hpAfter < effect.hpBefore)));
 });
 
-test("MON-0076 candidate exhaustion is diagnosed and falls back to normal attacks", () => {
+test("MON-0076 uses authored wing-blade combat instead of normal-attack fallback", () => {
   const result = simulateBattle({
     data,
     seed: "blackridge-wing-scout-regression",
     monsterIds: ["MON-0076"],
     playerBuild: observerBuild(),
     maxTurns: 5,
+    captureTimeline: true,
   });
 
   assert.equal(result.winner, "draw");
   assert.equal(result.turns, 5);
   assert.equal(result.actionUsage["MSK-0016"], 1, "the turn-one-only action must not repeat");
-  assert.equal(result.candidateExhaustion, 4);
-  assert.equal(result.fallbackAttacks, 4);
-  assert.equal(result.diagnostics.counts.candidateExhaustion, 4);
-  assert.ok(result.actionUsage.__normal__ >= result.fallbackAttacks);
-  assert.ok(result.players[0].alive, "fallback behavior must progress battle without crashing");
+  assert.equal(result.actionUsage["MSK-0012"], 4, "the authored zero-CT wing blade must cover later turns");
+  assert.equal(result.candidateExhaustion, 0);
+  assert.equal(result.fallbackAttacks, 0);
+  assert.equal(result.diagnostics.counts.candidateExhaustion, undefined);
+  assert.equal(result.timeline.frames.some((frame) => (
+    frame.actorSide === "enemy" && frame.action?.actionId === "__normal__"
+  )), false);
+  assert.ok(result.players[0].alive, "authored behavior must progress battle without crashing");
 });
 
-test("Monte Carlo reports win, turns, MP, usage and exhaustion per build", () => {
+const monteCarloTest = process.env.TRPG_RUN_MONTE_CARLO === "1" ? test : test.skip;
+
+monteCarloTest("Monte Carlo reports win, turns, MP, usage and exhaustion per build", () => {
   const builds = createDefaultBuilds(data).slice(0, 2);
   assert.equal(new Set(builds.map((build) => build.level)).size, 2);
   assert.ok(builds.every((build) => build.equipmentIds.length > 0));

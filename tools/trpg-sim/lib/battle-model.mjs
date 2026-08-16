@@ -59,8 +59,18 @@ export const BATTLE_ASSUMPTIONS = Object.freeze({
   monsterHpScale: 0.55,
   cooldownTick: 'start_of_round',
   allyCountIncludesSelf: true,
-  enemySelection: 'eligible actions are sampled by base weight; priority is retained for reporting only',
-  candidateExhaustion: 'record a diagnostic and execute a normal physical attack',
+  // Priority is an intent signal, not decorative metadata.  Keep choices in a
+  // narrow band so emergency/heal/telegraphed actions beat routine attacks,
+  // while similarly important skills still vary by their authored weight.
+  enemyPriorityBand: 20,
+  enemyPriorityWeightStep: 10,
+  enemySelection: 'filter to the highest 20-point priority band, then sample by base weight adjusted by priority',
+  cooldownRecovery: 'when authored skills are temporarily unavailable, use the universal basic attack without raising candidate exhaustion',
+  // Every active monster must own an unconditional authored skill action.
+  // This fallback remains only as a corrupt-data guard and is certified at
+  // zero occurrences for canonical content.
+  candidateExhaustion: 'invalid canonical data only: a monster owns no authored action rows',
+  maxEnemyCombatants: 8,
 });
 
 export const SUPPORTED_COMMANDS = new Set([
@@ -71,8 +81,23 @@ export const SUPPORTED_COMMANDS = new Set([
   'APPLY_SPECIAL_STATE',
   'MODIFY_CRITICAL',
   'MODIFY_RESOURCE',
+  'MODIFY_ESCAPE',
+  'MODIFY_FIELD',
   'REMOVE_DEBUFF',
   'REMOVE_MODIFIER',
+  'SUMMON_UNIT',
+  'INTERRUPT_CAST',
+  'COPY_LAST_ENEMY_SKILL',
+]);
+
+export const SUPPORTED_MONSTER_SPECIAL_STATES = new Set([
+  'barrier', 'casting', 'counter', 'guard', 'magic_absorb', 'reflect',
+  'regeneration', 'seal', 'survive_lethal', 'taunt',
+]);
+
+export const SUPPORTED_MONSTER_DEBUFFS = new Set([
+  'accuracy_down', 'agility_down', 'confusion', 'damage_taken_up', 'defense_down',
+  'healing_down', 'magic_power_down', 'paralysis', 'poison',
 ]);
 
 const STAT_ALIASES = Object.freeze({
@@ -252,6 +277,7 @@ function normalizeMonster(row, diagnostics) {
     exp: Number(row.EXP), goldMin: Number(row['所持G下限']), goldMax: Number(row['所持G上限']),
     drops: safeJson(row['ドロップ'], [], diagnostics, { monsterId: row['モンスターID'] }),
     appearanceCondition: row['出現条件'], aiProfile: row['AIプロファイル'], status: row['状態'], raw: row,
+    description: row['説明'],
   };
 }
 
@@ -299,7 +325,7 @@ function normalizeInventory(row) {
   };
 }
 
-export function buildBattleData(battleSnapshot, playerSkills = []) {
+export function buildBattleData(battleSnapshot, playerSkills = [], bossCatalog = { version: null, bosses: [] }) {
   const diagnostics = new DiagnosticBag();
   const tabs = battleSnapshot.tabs ?? {};
   const equipment = tableToRecords(tabs['装備性能マスター'] ?? []).map(normalizeEquipment);
@@ -313,11 +339,13 @@ export function buildBattleData(battleSnapshot, playerSkills = []) {
     assumptions: BATTLE_ASSUMPTIONS,
     source: battleSnapshot.source,
     equipment, inventory, monsters, monsterSkills, monsterActions, encounters, playerSkills,
+    bossCatalog,
     equipmentById: new Map(equipment.map((item) => [item.id, item])),
     monsterById: new Map(monsters.map((item) => [item.id, item])),
     monsterSkillById: new Map(monsterSkills.map((item) => [item.id, item])),
     encounterById: new Map(encounters.map((item) => [item.id, item])),
     playerSkillById: new Map(playerSkills.map((item) => [item.id, item])),
+    bossByMonsterId: new Map((bossCatalog.bosses ?? []).map((item) => [item.monsterId, item])),
     actionsByMonsterId: new Map(),
     loadDiagnostics: diagnostics.snapshot(),
   };
@@ -332,6 +360,7 @@ export function buildBattleData(battleSnapshot, playerSkills = []) {
 
 export async function loadBattleData(fixtureDir = DEFAULT_FIXTURE_DIR) {
   const battleSnapshot = JSON.parse(await fs.readFile(path.join(fixtureDir, 'battle.snapshot.json'), 'utf8'));
+  const bossCatalog = JSON.parse(await fs.readFile(path.join(fixtureDir, 'boss-combat-catalog.json'), 'utf8'));
   const shardNames = [
     'skills-0001-0300.snapshot.json',
     'skills-0301-0600.snapshot.json',
@@ -339,13 +368,15 @@ export async function loadBattleData(fixtureDir = DEFAULT_FIXTURE_DIR) {
     'skills-0901-1141.snapshot.json',
   ];
   const shards = await Promise.all(shardNames.map(async (name) => JSON.parse(await fs.readFile(path.join(fixtureDir, name), 'utf8'))));
-  return buildBattleData(battleSnapshot, shards.flatMap((shard) => shard.skills ?? []));
+  return buildBattleData(battleSnapshot, shards.flatMap((shard) => shard.skills ?? []), bossCatalog);
 }
 
 export function auditBattleData(data) {
   const knownStates = new Set();
   const knownModifiers = new Set();
   const unknownCommands = [];
+  const unknownSpecialStateSemantics = [];
+  const unknownDebuffSemantics = [];
   const customHandlerSkills = [];
   for (const skill of data.monsterSkills) {
     if (skill.implementationStatus !== 'runtime_ready') customHandlerSkills.push(skill.id);
@@ -353,6 +384,12 @@ export function auditBattleData(data) {
       if (command.stateId) knownStates.add(command.stateId);
       if (command.modifier) knownModifiers.add(command.modifier);
       if (!SUPPORTED_COMMANDS.has(command.command)) unknownCommands.push({ skillId: skill.id, command: command.command });
+      if (command.command === 'APPLY_SPECIAL_STATE' && !SUPPORTED_MONSTER_SPECIAL_STATES.has(command.stateId)) {
+        unknownSpecialStateSemantics.push({ skillId: skill.id, stateId: command.stateId });
+      }
+      if (command.command === 'APPLY_DEBUFF' && !SUPPORTED_MONSTER_DEBUFFS.has(command.debuffId)) {
+        unknownDebuffSemantics.push({ skillId: skill.id, debuffId: command.debuffId });
+      }
     }
   }
 
@@ -391,6 +428,27 @@ export function auditBattleData(data) {
   const contextualActiveSkills = data.playerSkills
     .filter((skill) => skill.kind === 'active' && skill.target === 'contextual' && skill.acquisitionCode !== 'non_skill')
     .map((skill) => skill.id);
+  const bossMonsterIds = data.monsters.filter((monster) => monster.boss).map((monster) => monster.id);
+  const bossesMissingCombatCatalog = bossMonsterIds.filter((id) => !data.bossByMonsterId.has(id));
+  const unknownBossCatalogMonsterIds = [...data.bossByMonsterId.keys()].filter((id) => !data.monsterById.has(id));
+  const bossCatalogIssues = [];
+  for (const boss of data.bossCatalog.bosses ?? []) {
+    const assignedSkillIds = new Set((data.actionsByMonsterId.get(boss.monsterId) ?? []).map((action) => action.skillId));
+    if (!Array.isArray(boss.coreGimmicks) || boss.coreGimmicks.length < 1 || boss.coreGimmicks.length > 3) {
+      bossCatalogIssues.push({ bossId: boss.bossId, issue: 'core_gimmicks_must_be_1_to_3' });
+    }
+    if (!Array.isArray(boss.phases) || boss.phases.length < 1) {
+      bossCatalogIssues.push({ bossId: boss.bossId, issue: 'missing_phases' });
+    }
+    if (!Array.isArray(boss.supportedBuilds) || boss.supportedBuilds.length < 2) {
+      bossCatalogIssues.push({ bossId: boss.bossId, issue: 'multiple_builds_required' });
+    }
+    for (const telegraph of boss.telegraphs ?? []) {
+      if (!assignedSkillIds.has(telegraph.skillId)) {
+        bossCatalogIssues.push({ bossId: boss.bossId, issue: 'telegraph_skill_not_assigned', skillId: telegraph.skillId });
+      }
+    }
+  }
 
   return {
     knownStates: [...knownStates].sort(),
@@ -401,9 +459,14 @@ export function auditBattleData(data) {
     unusedMonsterSkills,
     customHandlerSkills,
     unknownCommands,
+    unknownSpecialStateSemantics,
+    unknownDebuffSemantics,
     passiveSkillsWithDamage,
     provisionalRuleSkills,
     contextualActiveSkills,
+    bossesMissingCombatCatalog,
+    unknownBossCatalogMonsterIds,
+    bossCatalogIssues,
   };
 }
 
@@ -476,6 +539,7 @@ function createActorState(source) {
     hp: Number(source.maxHp), mp: Number(source.maxMp), alive: true,
     cooldowns: new Map(), uses: new Map(), modifiers: new Map(), debuffs: new Map(), specialStates: new Map(),
     lastActionTag: null, lastSkillId: null, lastSkillRepeatable: false,
+    escaped: false, pendingIntent: null, bossPhase: source.boss ? 0 : 1,
     damageDealt: 0, damageTaken: 0, healingDone: 0, mpSpent: 0,
   };
 }

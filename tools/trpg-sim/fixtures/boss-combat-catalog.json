@@ -1,0 +1,174 @@
+{
+  "version": "boss-combat-v1",
+  "sourceSpreadsheetId": "1-2mUA20d7h1lmv1G9fCH0EryFEYyFQ2nkamN51uCPqw",
+  "sourceSheets": ["モンスター一覧", "モンスタースキル", "モンスター行動", "地域別エンカウント"],
+  "bosses": [
+    {
+      "bossId": "BOSS-T03-RED-FANG-PARENT",
+      "monsterId": "MON-0007",
+      "incidentId": "T03",
+      "intendedRole": "召喚と隊列崩しを使う群れの指揮個体",
+      "phases": [
+        {"index": 1, "name": "群れの統率", "trigger": {"type": "battle_start"}, "log": "群れ親が低い唸りで赤牙狼を統率する。"},
+        {"index": 2, "name": "追い詰められた親", "trigger": {"type": "hp_ratio_lte", "value": 0.45}, "log": "群れ親が退路を捨て、前脚を沈めて突進の間合いへ入る。"}
+      ],
+      "coreGimmicks": ["群れが減ると赤牙狼を補充する", "初手の咆哮で群れ全体を強化する", "突進と連続噛みで単体へ圧力を集中する"],
+      "telegraphMethods": ["群れを呼ぶ行動名と遠吠え", "低HP時のphase transition log"],
+      "telegraphs": [],
+      "counterplayCandidates": ["全体攻撃や状態異常で取り巻きを先に減らす", "群れ親へ火力を集中して再召喚回数を抑える", "咆哮中は防御・回避・消耗品で強化時間をやり過ごす"],
+      "supportedBuilds": ["範囲火力", "単体burst", "防御・反撃", "状態異常・速度制御"],
+      "commonFailures": ["取り巻きを無視して集中攻撃を受け続ける", "強化中も同じ低威力行動を繰り返す"],
+      "victoryCondition": "敵部隊を全滅させる"
+    },
+    {
+      "bossId": "BOSS-T13-KING-SLIME-EARLY",
+      "monsterId": "MON-0015",
+      "incidentId": "T13",
+      "intendedRole": "早期対処なら短期決戦できる吸水・分裂型boss",
+      "phases": [
+        {"index": 1, "name": "未成体", "trigger": {"type": "battle_start"}, "log": "未成体の王粘体が周囲の水と魔力を取り込み始める。"}
+      ],
+      "coreGimmicks": ["初手に魔力吸収膜を張る", "傷つくと吸水で回復する", "単独になると分裂して手数を増やす"],
+      "telegraphMethods": ["吸水・分裂の行動名", "半透明の吸収膜を状態表示する"],
+      "telegraphs": [],
+      "counterplayCandidates": ["物理中心で吸収膜にMPを与えない", "回復阻害や高火力で吸水周期を越える", "分裂体を範囲攻撃・毒・足止めで処理する"],
+      "supportedBuilds": ["物理火力", "回復阻害・debuff", "範囲魔法＋MP管理", "消耗品burst"],
+      "commonFailures": ["低威力魔法を連打してMP循環を助ける", "分裂体を放置して行動回数差を広げる"],
+      "victoryCondition": "王粘体と分裂体を全滅させる"
+    },
+    {
+      "bossId": "BOSS-T13-KING-SLIME-SWOLLEN",
+      "monsterId": "MON-0016",
+      "incidentId": "T13",
+      "intendedRole": "地形資源を奪い、吸収膜と分裂で長期戦を有利にするtank",
+      "phases": [
+        {"index": 1, "name": "河川吸収", "trigger": {"type": "battle_start"}, "log": "膨張個体が河川へ触手を伸ばす。"},
+        {"index": 2, "name": "過膨張", "trigger": {"type": "hp_ratio_lte", "value": 0.5}, "log": "粘体が不安定に脈動し、分裂片が表面へ浮かぶ。"}
+      ],
+      "coreGimmicks": ["水量略奪でfieldを変化させながら回復する", "魔力吸収膜が魔法攻撃をMPへ変換する", "分裂と全体押し流しで対象選択を揺さぶる"],
+      "telegraphMethods": ["河川へ伸びる触手とfield log", "過膨張のphase transition log"],
+      "telegraphs": [],
+      "counterplayCandidates": ["物理・罠で吸収膜を迂回する", "回復阻害または高火力で水量略奪の回復を相殺する", "guard・速度buff・浄化で押し流し後の速度低下を管理する"],
+      "supportedBuilds": ["物理break", "回復阻害", "防御・浄化", "範囲火力"],
+      "commonFailures": ["水量略奪の回復を上回れないままMPを使い切る", "分裂体と本体へ火力を散らし続ける"],
+      "victoryCondition": "王粘体と分裂体を全滅させる"
+    },
+    {
+      "bossId": "BOSS-T13-KING-SLIME-GIANT",
+      "monsterId": "MON-0017",
+      "incidentId": "T13",
+      "intendedRole": "全体吸命・環境回復・分裂を循環する災害前段階tank",
+      "phases": [
+        {"index": 1, "name": "巨大化", "trigger": {"type": "battle_start"}, "log": "巨大王粘体が水面を覆い、生命力を探る。"},
+        {"index": 2, "name": "吸命循環", "trigger": {"type": "hp_ratio_lte", "value": 0.55}, "log": "世界樹へ向いた管が開き、周囲の生命力を吸い上げる。"}
+      ],
+      "coreGimmicks": ["予兆後の世界樹吸命で全体damageを回復へ変える", "水量略奪と大再生で長期戦を拒む", "分裂体を補充して単体火力だけを咎める"],
+      "telegraphMethods": ["世界樹へ伸びる管と次行動hint", "吸命循環のphase transition log"],
+      "telegraphs": [
+        {"skillId": "MSK-0069", "text": "王粘体の管が世界樹へ食い込み、全員の生命力を吸う脈動が始まる。", "counterplayHint": "次の行動は全体吸命。guard、回復阻害、interrupt、または本体へのburstで備えられる。"}
+      ],
+      "counterplayCandidates": ["予兆を見てguardやdamage reductionを合わせる", "回復阻害・毒・高火力で再生循環を断つ", "分裂体を範囲攻撃か状態異常で抑える"],
+      "supportedBuilds": ["防御・反撃", "回復阻害・持続damage", "範囲＋単体火力", "消耗品・仲間support"],
+      "commonFailures": ["吸命予兆を無視して全員が削れたまま攻撃する", "回復を上回れない一技能連打を続ける"],
+      "victoryCondition": "王粘体と分裂体を全滅させる"
+    },
+    {
+      "bossId": "BOSS-T13-WORLD-TREE-EATER",
+      "monsterId": "MON-0018",
+      "incidentId": "T13",
+      "intendedRole": "世界樹と河川を資源化し、全体吸命でparty resourceを奪う最終形",
+      "phases": [
+        {"index": 1, "name": "根元侵食", "trigger": {"type": "battle_start"}, "log": "王粘体が世界樹の根元へ食い込み、河川を逆流させる。"},
+        {"index": 2, "name": "水脈枯渇", "trigger": {"type": "field_effect_stacks_gte", "fieldEffect": "river_drain", "value": 1}, "log": "水位が落ち、王粘体の表面だけが濡れた光を保つ。"},
+        {"index": 3, "name": "飢餓再生", "trigger": {"type": "hp_ratio_lte", "value": 0.4}, "log": "王粘体が根を締め上げ、残った生命力を再生へ回す。"}
+      ],
+      "coreGimmicks": ["予兆つき世界樹吸命", "river_drain fieldの蓄積と自己回復", "低HP大再生と魔力吸収膜"],
+      "telegraphMethods": ["吸命前の根と管のanimation／battle log", "水位をfield stackとしてUI表示", "phase transition log"],
+      "telegraphs": [
+        {"skillId": "MSK-0069", "text": "根を締める脈動が全員の足元へ伝わる。", "counterplayHint": "次の行動は全体吸命。guard、回復阻害、状態異常、集中攻撃のいずれかで対処できる。"}
+      ],
+      "counterplayCandidates": ["予兆turnにguard・barrier・damage reductionを使う", "回復阻害・持続damageで吸命と大再生を弱める", "物理火力や罠で魔力吸収膜を迂回する", "消耗品と仲間回復で長期resourceを確保する"],
+      "supportedBuilds": ["物理burst", "防御・barrier", "debuff・回復阻害", "罠・消耗品・仲間support"],
+      "commonFailures": ["吸命の予兆turnにも最大火力だけを押す", "回復循環を止めずにMPを先に使い切る", "魔法だけを単調に連打する"],
+      "victoryCondition": "世界樹喰らいを撃破する"
+    },
+    {
+      "bossId": "BOSS-T17-HOLLOW-HERO",
+      "monsterId": "MON-0028",
+      "incidentId": "T17",
+      "intendedRole": "直前のplayer skillを模倣し、単調なskill連打を適応的に咎めるelite",
+      "phases": [
+        {"index": 1, "name": "空の器", "trigger": {"type": "battle_start"}, "log": "空殻の勇者がこちらの構えを鏡のようになぞる。"},
+        {"index": 2, "name": "障壁展開", "trigger": {"type": "hp_ratio_lte", "value": 0.6}, "log": "空殻の鎧へ魔力障壁が走り、模倣精度が上がる。"}
+      ],
+      "coreGimmicks": ["直前の再現可能skillを75%威力で模倣する", "HP60%以下で魔力障壁を使う", "HP30%以下の相手へ処刑斬りを狙う"],
+      "telegraphMethods": ["模倣したskill名をbattle logへ表示", "処刑斬り前の武器構えと対象marker"],
+      "telegraphs": [
+        {"skillId": "MSK-0020", "text": "空殻の勇者が弱った対象へ刃先を固定する。", "counterplayHint": "次は処刑斬り。guard、回復、target protection、状態異常で対処できる。"}
+      ],
+      "counterplayCandidates": ["通常攻撃・防御・複数skillを混ぜて模倣価値を下げる", "物理と魔法を切り替えて障壁や耐性へ対応する", "低HPを回復するかguardして処刑斬りを受ける"],
+      "supportedBuilds": ["複数skill火力", "通常攻撃＋counter", "防御・回復", "debuff・速度制御"],
+      "commonFailures": ["最大skillだけを連打して毎周期模倣される", "低HPのまま処刑斬り予兆を無視する"],
+      "victoryCondition": "空殻の勇者を撃破する"
+    },
+    {
+      "bossId": "BOSS-T18-SEALED-COLOSSUS",
+      "monsterId": "MON-0063",
+      "incidentId": "T18",
+      "intendedRole": "封印波・迎撃stance・古代砲を持つ停止可能な古代兵器",
+      "phases": [
+        {"index": 1, "name": "封印残存", "trigger": {"type": "battle_start"}, "log": "残った封印が巨神兵の動作を断続的に止めている。"},
+        {"index": 2, "name": "自己修復優先", "trigger": {"type": "hp_ratio_lte", "value": 0.3}, "log": "巨神兵が攻撃系統を絞り、自己修復へ動力を回す。"}
+      ],
+      "coreGimmicks": ["初手の封印波で魔法skillを一時封鎖する", "自動迎撃stanceが直接攻撃へcounterする", "古代砲を一turn予告して単体へ撃つ"],
+      "telegraphMethods": ["砲口の充填光と対象marker", "counter stance icon", "封印波の残りturn表示"],
+      "telegraphs": [
+        {"skillId": "MSK-0073", "text": "胸部砲口へ古代魔力が収束し、照準が一人へ固定される。", "counterplayHint": "次は古代砲。guard、barrier、target protection、命中低下、interruptで対処できる。"}
+      ],
+      "counterplayCandidates": ["古代砲予兆にguard・barrier・庇護を合わせる", "counter stance中は魔法・debuff・itemを使う", "封印中は物理・罠・消耗品へ切り替える", "低HP自己修復へ回復阻害かburstを合わせる"],
+      "supportedBuilds": ["物理break", "魔法＋封印対策", "防御・barrier", "debuff・罠"],
+      "commonFailures": ["counter stanceへ直接攻撃を連打する", "砲撃予兆を無視して瀕死対象を放置する"],
+      "victoryCondition": "巨神兵を撃破する（事件flowで封印装置停止を選んだ場合は戦闘外解決）"
+    },
+    {
+      "bossId": "BOSS-T18-AWAKENED-COLOSSUS",
+      "monsterId": "MON-0064",
+      "incidentId": "T18",
+      "intendedRole": "過熱で攻防を変え、掃射・古代砲・last standを段階投入する災害兵器",
+      "phases": [
+        {"index": 1, "name": "完全起動", "trigger": {"type": "battle_start"}, "log": "完全起動した巨神兵が複数の兵装を展開する。"},
+        {"index": 2, "name": "過熱運転", "trigger": {"type": "turn_gte", "value": 4}, "log": "装甲の継ぎ目が赤熱し、火力と引き換えに防御が落ちる。"},
+        {"index": 3, "name": "最終防衛", "trigger": {"type": "hp_ratio_lte", "value": 0.25}, "log": "最終防衛機構が起動し、致命打を一度だけ拒む。"}
+      ],
+      "coreGimmicks": ["予兆つき古代砲と複数対象の掃射", "過熱で火力上昇・防御低下の攻め時を作る", "低HPで一度だけ致死damageを耐える"],
+      "telegraphMethods": ["砲口の充填と対象marker", "赤熱装甲とphase transition", "最終防衛のcharge icon"],
+      "telegraphs": [
+        {"skillId": "MSK-0073", "text": "古代砲の照準輪が収束し、射線が床へ刻まれる。", "counterplayHint": "次は高威力単体魔法。guard、barrier、回避、命中低下、interruptが有効。"}
+      ],
+      "counterplayCandidates": ["砲撃予兆へguard・barrier・回避を合わせる", "過熱中の防御低下へ物理burstを集中する", "掃射には全体防御・回復・速度制御を使う", "last standを小技で剥がして大技を温存する"],
+      "supportedBuilds": ["物理burst", "防御・barrier", "命中／速度debuff", "魔法・消耗品・仲間support"],
+      "commonFailures": ["過熱前にresourceを使い切る", "last standへ最大skillを撃って一回耐えられる", "古代砲予兆を無視する"],
+      "victoryCondition": "完全起動巨神兵と整備子機を全滅させる"
+    },
+    {
+      "bossId": "BOSS-T19-BLACKRIDGE-CAPTAIN",
+      "monsterId": "MON-0077",
+      "incidentId": "T19",
+      "intendedRole": "号令・防御隊形・治療・突破命令で部隊全体を運用する指揮官",
+      "phases": [
+        {"index": 1, "name": "侵攻隊形", "trigger": {"type": "battle_start"}, "log": "隊長が号令を発し、前衛と翼斥候が隊形を組む。"},
+        {"index": 2, "name": "突破命令", "trigger": {"type": "turn_gte", "value": 5}, "log": "隊長が長期戦を打ち切り、王都突破の照準を定める。"},
+        {"index": 3, "name": "負傷指揮", "trigger": {"type": "hp_ratio_lte", "value": 0.4}, "log": "隊長は負傷しながら治療薬と残存兵を再配置する。"}
+      ],
+      "coreGimmicks": ["号令と防御隊形で複数roleを連携させる", "turn5以降に予兆つき王都突破を使う", "低HPで治療し戦線を維持する"],
+      "telegraphMethods": ["号令voiceと隊形icon", "突破対象markerと台詞", "負傷指揮のphase transition log"],
+      "telegraphs": [
+        {"skillId": "MSK-0095", "text": "隊長が一人を指し、前衛が一直線の突破路を空ける。", "counterplayHint": "次は王都突破。guard、庇護、回復、隊形崩し、状態異常で対処できる。"}
+      ],
+      "counterplayCandidates": ["前衛・翼斥候・隊長の順序をbuildに合わせて選ぶ", "buff解除・debuff・状態異常で防御隊形を崩す", "突破予兆へguard・回復・target protectionを合わせる", "治療前にburstするか回復阻害を入れる"],
+      "supportedBuilds": ["範囲火力", "単体暗殺・速度", "buff解除・debuff", "防御・仲間support"],
+      "commonFailures": ["役割を見ず全員へ均等にdamageを散らす", "突破予兆中も同じ攻撃を続ける", "治療を許してresource負けする"],
+      "victoryCondition": "侵攻部隊を戦闘不能にする（事件flowの交渉成立時は戦闘外解決）"
+    }
+  ]
+}

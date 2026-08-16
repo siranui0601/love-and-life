@@ -38,6 +38,12 @@ function living(actors) {
   return actors.filter((actor) => actor.alive && actor.hp > 0);
 }
 
+function singleTargetCandidates(actors) {
+  const live = living(actors);
+  const taunters = live.filter((actor) => actor.specialStates.has('taunt'));
+  return taunters.length ? taunters : live;
+}
+
 function modifierStage(actor, stat) {
   return Number(actor.modifiers.get(canonicalStat(stat))?.stage ?? 0);
 }
@@ -99,8 +105,17 @@ function damageReductionRatio(target) {
   return Math.min(0.8, reduction);
 }
 
-function applyDamage(target, rawDamage, damageType, source) {
-  let damage = Math.max(1, rawDamage * (1 - damageReductionRatio(target)));
+function applyDamage(target, rawDamage, damageType, source, { reactions = true } = {}) {
+  const vulnerable = target.debuffs.get('damage_taken_up');
+  const vulnerabilityRatio = Math.max(0, Number(vulnerable?.params?.ratio ?? 0));
+  let damage = Math.max(1, rawDamage * (1 + vulnerabilityRatio) * (1 - damageReductionRatio(target)));
+  const manaShield = target.specialStates.get('manaShield');
+  if (manaShield && target.mp > 0) {
+    const damageToMpRatio = Math.max(0.01, Number(manaShield.damageToMpRatio ?? manaShield.params?.damageToMpRatio ?? 1));
+    const absorbed = Math.min(damage, target.mp / damageToMpRatio);
+    target.mp -= absorbed * damageToMpRatio;
+    damage -= absorbed;
+  }
   const barrier = target.specialStates.get('barrier');
   if (barrier?.capacity > 0) {
     const absorbed = Math.min(barrier.capacity, damage);
@@ -117,12 +132,40 @@ function applyDamage(target, rawDamage, damageType, source) {
     if (absorb) target.mp = Math.min(target.maxMp, target.mp + damage * Number(absorb.params?.ratio ?? 0));
   }
   markDead(target);
+
+  // Counter/reflect are authored combat states, not decorative icons.  A
+  // reaction cannot itself trigger another reaction, which prevents two
+  // counter stances from recursing forever.
+  if (reactions && source !== target && source.alive && target.alive && damage > 0) {
+    const reflect = target.specialStates.get('reflect');
+    if (reflect?.charges > 0) {
+      reflect.charges -= 1;
+      applyDamage(source, damage * Number(reflect.powerPct ?? reflect.params?.powerPct ?? 80) / 100, 'fixed', target, { reactions: false });
+      if (reflect.charges <= 0) target.specialStates.delete('reflect');
+    } else {
+      const counter = target.specialStates.get('counter');
+      if (counter?.charges > 0) {
+        counter.charges -= 1;
+        const multiplier = Number(counter.powerMultiplier ?? counter.params?.powerMultiplier ?? 1);
+        const counterDamage = calculatePhysicalDamage({
+          weaponPower: actorStat(target, 'physicalPower'),
+          attack: actorStat(target, 'attack'),
+          multiplier,
+          defense: actorStat(source, 'defense'),
+        });
+        applyDamage(source, counterDamage, 'fixed', target, { reactions: false });
+        if (counter.charges <= 0) target.specialStates.delete('counter');
+      }
+    }
+  }
   return damage;
 }
 
 function applyHealing(target, amount, source) {
   if (!target.alive) return 0;
-  const healed = Math.max(0, Math.min(target.maxHp - target.hp, amount));
+  const healingDown = target.debuffs.get('healing_down');
+  const reduction = Math.max(0, Math.min(0.95, Number(healingDown?.params?.ratio ?? 0)));
+  const healed = Math.max(0, Math.min(target.maxHp - target.hp, amount * (1 - reduction)));
   target.hp += healed;
   source.healingDone += healed;
   return healed;
@@ -139,6 +182,7 @@ function isOnCooldown(actor, key) {
 
 function targetSet(targetSpec, actor, opponents, allies, preferred, rng) {
   const liveOpponents = living(opponents);
+  const singleOpponents = singleTargetCandidates(opponents);
   const liveAllies = living(allies);
   if (targetSpec === 'self') return [actor];
   if (targetSpec === 'all_enemies') return liveOpponents;
@@ -148,9 +192,10 @@ function targetSet(targetSpec, actor, opponents, allies, preferred, rng) {
     return [liveAllies.slice().sort((a, b) => ratio(a, 'hp') - ratio(b, 'hp'))[0]].filter(Boolean);
   }
   if (targetSpec === 'random_enemies') {
-    return liveOpponents.length ? [liveOpponents[rng.int(0, liveOpponents.length - 1)]] : [];
+    return singleOpponents.length ? [singleOpponents[rng.int(0, singleOpponents.length - 1)]] : [];
   }
-  return [preferred?.alive ? preferred : liveOpponents[0]].filter(Boolean);
+  const preferredAllowed = preferred?.alive && singleOpponents.some((target) => target.instanceId === preferred.instanceId);
+  return [preferredAllowed ? preferred : singleOpponents[0]].filter(Boolean);
 }
 
 function battleContext(state, actor, target) {
@@ -171,10 +216,46 @@ function battleContext(state, actor, target) {
   };
 }
 
+function bossPhaseTriggerMet(trigger, state, actor, diagnostics) {
+  switch (trigger?.type) {
+    case 'battle_start': return true;
+    case 'hp_ratio_lte': return ratio(actor, 'hp') <= Number(trigger.value);
+    case 'turn_gte': return state.turn >= Number(trigger.value);
+    case 'field_effect_stacks_gte':
+      return Number(state.fieldEffects.get(trigger.fieldEffect)?.stacks ?? 0) >= Number(trigger.value);
+    default:
+      diagnostics.add('unknownBossPhaseTrigger', { monsterId: actor.id, trigger });
+      return false;
+  }
+}
+
+function updateBossPhase(data, state, actor, diagnostics) {
+  const boss = data.bossByMonsterId?.get(actor.id);
+  if (!boss) return null;
+  const eligible = (boss.phases ?? []).filter((phase) => bossPhaseTriggerMet(phase.trigger, state, actor, diagnostics));
+  const next = eligible.sort((a, b) => Number(b.index) - Number(a.index))[0];
+  if (!next || Number(next.index) <= Number(actor.bossPhase ?? 0)) return null;
+  const previousPhase = Number(actor.bossPhase ?? 0);
+  actor.bossPhase = Number(next.index);
+  return {
+    type: 'phase_transition', bossId: boss.bossId, monsterId: actor.id,
+    actorInstanceId: actor.instanceId, previousPhase, phase: Number(next.index),
+    phaseName: next.name, text: next.log,
+  };
+}
+
 function canPayPlayerCost(actor, skill) {
   const costs = skill.costs ?? {};
   if (costs.mpMode === 'all_current') return actor.mp > 0;
   return actor.mp >= Number(costs.mp || 0);
+}
+
+function isPlayerSkillSealed(actor, skill) {
+  const seal = actor.specialStates.get('seal');
+  if (!seal) return false;
+  const blocked = new Set(seal.params?.blockedTags ?? seal.blockedTags ?? []);
+  if (blocked.has('magic') && inferPlayerDamageType(skill) === 'magic') return true;
+  return (skill.tags ?? []).some((tag) => blocked.has(tag));
 }
 
 function payPlayerCost(actor, skill, diagnostics) {
@@ -219,11 +300,12 @@ function inferPlayerUtility(skill, actor, enemies) {
 }
 
 export function selectPlayerAction({ data, state, actor, rng, diagnostics }) {
-  const opponents = living(state.enemies);
+  const opponents = singleTargetCandidates(state.enemies);
   const target = opponents[0];
   const skills = actor.skillIds.map((id) => data.playerSkillById.get(id)).filter(Boolean);
   const conditionEligible = skills.filter((skill) => {
     if (skill.kind !== 'active') return false;
+    if (isPlayerSkillSealed(actor, skill)) return false;
     if (isOnCooldown(actor, skill.id)) return false;
     if (skill.cooldown?.usesPerBattle !== null && skill.cooldown?.usesPerBattle !== undefined
       && (actor.uses.get(skill.id) ?? 0) >= Number(skill.cooldown.usesPerBattle)) return false;
@@ -255,6 +337,20 @@ export function selectEnemyAction({ data, state, actor, rng, diagnostics }) {
   const opponents = living(state.players);
   const target = opponents[0];
   const actions = data.actionsByMonsterId.get(actor.id) ?? [];
+  const phaseTransition = updateBossPhase(data, state, actor, diagnostics);
+  const selected = (action) => phaseTransition ? { ...action, phaseTransition } : action;
+  if (actor.pendingIntent) {
+    const pendingAction = actions.find((entry) => entry.id === actor.pendingIntent.actionId);
+    const pendingSkill = pendingAction && data.monsterSkillById.get(pendingAction.skillId);
+    if (pendingAction && pendingSkill && actor.mp >= pendingSkill.mpCost && !isOnCooldown(actor, pendingSkill.id)) {
+      return selected({
+        type: 'monsterSkill', actor, target, action: pendingAction, skill: pendingSkill,
+        fallback: false, intentResolve: true, telegraph: actor.pendingIntent.telegraph,
+      });
+    }
+    diagnostics.add('invalidPendingIntent', { monsterId: actor.id, pendingIntent: actor.pendingIntent });
+    actor.pendingIntent = null;
+  }
   const registries = { knownStates: new Set(data.audit.knownStates) };
   const candidates = actions.filter((action) => {
     const skill = data.monsterSkillById.get(action.skillId);
@@ -269,11 +365,30 @@ export function selectEnemyAction({ data, state, actor, rng, diagnostics }) {
     return evaluateStructuredConditions(skill.conditions, context, diagnostics);
   });
   if (!candidates.length) {
-    diagnostics.add('candidateExhaustion', { monsterId: actor.id, turn: state.turn });
-    return { type: 'normal', actor, target, fallback: true };
+    if (!actions.length) {
+      diagnostics.add('candidateExhaustion', { monsterId: actor.id, turn: state.turn });
+      return selected({ type: 'normal', actor, target, fallback: true });
+    }
+    diagnostics.add('basicRecoveryAttack', { monsterId: actor.id, turn: state.turn });
+    return selected({ type: 'normal', actor, target, fallback: false, cooldownRecovery: true });
   }
-  const action = weightedChoice(candidates, (candidate) => candidate.baseWeight, rng);
-  return { type: 'monsterSkill', actor, target, action, skill: data.monsterSkillById.get(action.skillId), fallback: false };
+  const maximumPriority = Math.max(...candidates.map((candidate) => candidate.priority));
+  const priorityBand = candidates.filter((candidate) => (
+    candidate.priority >= maximumPriority - BATTLE_ASSUMPTIONS.enemyPriorityBand
+  ));
+  const action = weightedChoice(priorityBand, (candidate) => (
+    candidate.baseWeight * (2 ** ((candidate.priority - maximumPriority) / BATTLE_ASSUMPTIONS.enemyPriorityWeightStep))
+  ), rng);
+  const skill = data.monsterSkillById.get(action.skillId);
+  const bossSpec = data.bossByMonsterId?.get(actor.id);
+  const telegraph = bossSpec?.telegraphs?.find((entry) => entry.skillId === skill.id);
+  if (telegraph) {
+    return selected({
+      type: 'monsterTelegraph', actor, target, action, skill, fallback: false,
+      telegraph: telegraph.text, counterplayHint: telegraph.counterplayHint ?? null,
+    });
+  }
+  return selected({ type: 'monsterSkill', actor, target, action, skill, fallback: false });
 }
 
 function applyModifier(target, command) {
@@ -325,6 +440,9 @@ function applySpecialState(target, command) {
   };
   if (stateId === 'barrier') entry.capacity = barrierCapacity(command, target);
   if (stateId === 'survive_lethal') entry.charges = Number(command.params?.charges ?? command.charges ?? 1);
+  if (stateId === 'counter' || stateId === 'reflect') {
+    entry.charges = Number(command.params?.charges ?? command.charges ?? 1);
+  }
   target.specialStates.set(stateId, entry);
 }
 
@@ -335,7 +453,7 @@ function executeDamageCommand({ command, skill, actor, targets, rng, criticalBon
   let hitCount = 0;
   let criticalCount = 0;
   for (const target of targets) {
-    for (let hit = 0; hit < hits && target.alive; hit += 1) {
+    for (let hit = 0; hit < hits && target.alive && actor.alive; hit += 1) {
       const accuracy = actorStat(actor, 'accuracy') + Number(skill?.accuracy ?? 0) + Number(command.accuracy ?? 0);
       if (!rng.bool(calculateHitChance({ accuracy, targetEvasion: actorStat(target, 'evasion') }))) continue;
       hitCount += 1;
@@ -406,11 +524,12 @@ function executeCopyLastEnemySkill({ command, actor, opponents, targets, rng, di
   const copied = copyableEnemySkill(command, opponents);
   if (!copied) {
     diagnostics.add('copyLastEnemySkillEmpty', { command: command.command });
-    return { damage: 0, hits: 0, criticals: 0 };
+    return { damage: 0, hits: 0, criticals: 0, copiedSkillId: null };
   }
   const hits = Math.max(1, Number(copied.damage.hits || 1));
   const multiplier = Number(copied.damage.totalMultiplier) * Number(command.powerMultiplier ?? 1);
-  return executeDamageCommand({
+  return {
+    ...executeDamageCommand({
     command: {
       damageType: inferPlayerDamageType(copied),
       multiplier: multiplier / hits,
@@ -423,11 +542,124 @@ function executeCopyLastEnemySkill({ command, actor, opponents, targets, rng, di
     targets,
     rng,
     criticalBonus: Number(copied.damage.criticalModifier || 0),
+    }),
+    copiedSkillId: copied.id,
+  };
+}
+
+function sharedTagCount(left, right) {
+  return [...left].filter((tag) => right.has(tag)).length;
+}
+
+function summonMonsterId(data, actor, unitPool) {
+  if (unitPool === 'rift_spawn') return data.monsterById.has('MON-0027') ? 'MON-0027' : null;
+  const candidates = data.monsters.filter((monster) => !monster.boss && monster.status !== 'disabled');
+  if (unitPool === 'slime_fragment') {
+    return candidates
+      .filter((monster) => monster.tags.has('slime') && monster.region === actor.region && monster.level <= actor.level)
+      .sort((a, b) => b.level - a.level || a.id.localeCompare(b.id))[0]?.id ?? null;
+  }
+  if (unitPool === 'same_family_minion') {
+    return candidates
+      .filter((monster) => monster.id !== actor.id && monster.region === actor.region && monster.level < actor.level)
+      .map((monster) => ({ monster, shared: sharedTagCount(actor.tags ?? new Set(), monster.tags) }))
+      .filter((entry) => entry.shared > 0)
+      .sort((a, b) => b.shared - a.shared || b.monster.level - a.monster.level || a.monster.id.localeCompare(b.monster.id))[0]?.monster.id ?? null;
+  }
+  if (unitPool === 'regional_minion') {
+    return candidates
+      .filter((monster) => monster.id !== actor.id && monster.region === actor.region && monster.level <= actor.level)
+      .sort((a, b) => b.level - a.level || a.id.localeCompare(b.id))[0]?.id ?? null;
+  }
+  return null;
+}
+
+function executeSummonCommand({ command, actor, state, data, diagnostics }) {
+  const summoned = [];
+  const requested = Math.max(0, Number(command.count ?? 1));
+  const monsterId = summonMonsterId(data, actor, command.unitPool);
+  if (!monsterId) {
+    diagnostics.add('unknownSummonPool', { monsterId: actor.id, unitPool: command.unitPool });
+    return { type: 'summon', unitPool: command.unitPool, requested, summoned, blocked: requested };
+  }
+  for (let index = 0; index < requested; index += 1) {
+    if (living(state.enemies).length >= BATTLE_ASSUMPTIONS.maxEnemyCombatants) break;
+    const monster = data.monsterById.get(monsterId);
+    const serial = (state.nextMonsterSerials.get(monsterId) ?? 0) + 1;
+    state.nextMonsterSerials.set(monsterId, serial);
+    const summonedActor = createMonsterActor(monster, serial);
+    summonedActor.summonedBy = actor.instanceId;
+    state.enemies.push(summonedActor);
+    state.monsterIds.push(monsterId);
+    summoned.push({ id: monsterId, instanceId: summonedActor.instanceId, name: summonedActor.name });
+  }
+  return {
+    type: 'summon', unitPool: command.unitPool, requested, summoned,
+    blocked: requested - summoned.length,
+  };
+}
+
+function executeFieldCommand({ command, actor, state }) {
+  const fieldEffect = String(command.fieldEffect);
+  const current = state.fieldEffects.get(fieldEffect) ?? { stacks: 0 };
+  const next = {
+    ...current,
+    stacks: Math.max(0, Number(current.stacks ?? 0) + Number(command.stacks ?? 0)),
+    sourceInstanceId: actor.instanceId,
+    updatedTurn: state.turn,
+  };
+  state.fieldEffects.set(fieldEffect, next);
+  return { type: 'field_change', fieldEffect, beforeStacks: Number(current.stacks ?? 0), afterStacks: next.stacks };
+}
+
+function executeEnemyEscape({ command, actor, state, rng }) {
+  const opponents = living(actor.side === 'enemy' ? state.players : state.enemies);
+  const averageAgility = opponents.length
+    ? opponents.reduce((sum, target) => sum + actorStat(target, 'agility'), 0) / opponents.length
+    : 0;
+  const chance = Math.max(0.1, Math.min(0.9,
+    0.35 + Number(command.bonus ?? 0) / 100 + (actorStat(actor, 'agility') - averageAgility) * 0.01));
+  const succeeded = command.mode === 'attempt' && rng.bool(chance);
+  if (succeeded) {
+    actor.escaped = true;
+    actor.alive = false;
+  }
+  return { type: 'escape', actorInstanceId: actor.instanceId, chance, succeeded };
+}
+
+function executeInterrupt({ command, targets, rng }) {
+  const results = targets.map((target) => {
+    const wasCasting = target.specialStates.has('casting');
+    const chance = Math.max(0, Math.min(1, Number(command.baseChance ?? 100) / 100));
+    const succeeded = wasCasting && rng.bool(chance);
+    if (succeeded) target.specialStates.delete('casting');
+    return { targetInstanceId: target.instanceId, wasCasting, chance, succeeded };
   });
+  return { type: 'interrupt', results };
+}
+
+function executeMonsterTelegraph(action) {
+  const { actor, skill } = action;
+  actor.pendingIntent = {
+    actionId: action.action.id,
+    skillId: skill.id,
+    telegraph: action.telegraph,
+    counterplayHint: action.counterplayHint,
+  };
+  actor.lastActionTag = 'telegraph';
+  actor.lastSkillId = `telegraph:${skill.id}`;
+  return {
+    damage: 0, hits: 0, criticals: 0, healing: 0,
+    events: [action.phaseTransition, {
+      type: 'telegraph', monsterId: actor.id, actorInstanceId: actor.instanceId,
+      skillId: skill.id, text: action.telegraph, counterplayHint: action.counterplayHint,
+    }].filter(Boolean),
+  };
 }
 
 function executeMonsterSkill({ state, action, data, rng, diagnostics }) {
   const { actor, target, skill } = action;
+  if (action.intentResolve) actor.pendingIntent = null;
   actor.mp -= skill.mpCost;
   actor.mpSpent += skill.mpCost;
   setCooldownAndUse(actor, skill.id, action.action.cooldownOverride ?? skill.cooldown, action.action.id);
@@ -437,7 +669,10 @@ function executeMonsterSkill({ state, action, data, rng, diagnostics }) {
     .filter((command) => command.command === 'MODIFY_CRITICAL')
     .reduce((sum, command) => sum + Number(command.criticalChance || 0), 0);
   let lastDamage = 0;
-  const totals = { damage: 0, hits: 0, criticals: 0, healing: 0 };
+  const totals = {
+    damage: 0, hits: 0, criticals: 0, healing: 0,
+    events: [action.phaseTransition].filter(Boolean),
+  };
   for (const command of skill.commands) {
     if (command.command === 'MODIFY_CRITICAL') continue;
     const targets = targetSet(command.target ?? skill.target, actor, opponents, allies, target, rng);
@@ -467,6 +702,7 @@ function executeMonsterSkill({ state, action, data, rng, diagnostics }) {
         totals.hits += result.hits;
         totals.criticals += result.criticals;
         lastDamage = result.damage;
+        totals.events.push({ type: 'copy_skill', copiedSkillId: result.copiedSkillId });
         break;
       }
       case 'APPLY_DEBUFF':
@@ -487,6 +723,18 @@ function executeMonsterSkill({ state, action, data, rng, diagnostics }) {
           if (resource === 'hp') markDead(resourceTarget);
         }
         break;
+      case 'SUMMON_UNIT':
+        totals.events.push(executeSummonCommand({ command, actor, state, data, diagnostics }));
+        break;
+      case 'MODIFY_FIELD':
+        totals.events.push(executeFieldCommand({ command, actor, state }));
+        break;
+      case 'MODIFY_ESCAPE':
+        totals.events.push(executeEnemyEscape({ command, actor, state, rng }));
+        break;
+      case 'INTERRUPT_CAST':
+        totals.events.push(executeInterrupt({ command, targets, rng }));
+        break;
       case 'REMOVE_DEBUFF':
         for (const removeTarget of targets) {
           const first = removeTarget.debuffs.keys().next().value;
@@ -494,7 +742,14 @@ function executeMonsterSkill({ state, action, data, rng, diagnostics }) {
         }
         break;
       case 'REMOVE_MODIFIER':
-        for (const removeTarget of targets) removeTarget.modifiers.delete(canonicalStat(command.modifier));
+        for (const removeTarget of targets) {
+          const key = canonicalStat(command.modifier);
+          const current = removeTarget.modifiers.get(key);
+          if (!current) continue;
+          if (command.direction === 'negative' && Number(current.stage) >= 0) continue;
+          if (command.direction === 'positive' && Number(current.stage) <= 0) continue;
+          removeTarget.modifiers.delete(key);
+        }
         break;
       default:
         diagnostics.add('unknownCommandFallback', { skillId: skill.id, command: command.command });
@@ -676,6 +931,7 @@ function initializeState(data, options, rng) {
     enemies,
     encounter,
     monsterIds,
+    nextMonsterSerials: serials,
     fieldTags: new Set(options.fieldTags ?? fieldTagsForEncounter(encounter)),
     fieldEffects: new Map(),
     world: options.world ?? {},
@@ -737,12 +993,33 @@ function playbackAction(action) {
   if (action.type === 'normal') {
     return { kind: 'attack', actionId: '__normal__', skillId: null, name: 'こうげき' };
   }
+  if (action.type === 'monsterTelegraph') {
+    return {
+      kind: 'telegraph', actionId: action.action?.id ?? `telegraph:${action.skill.id}`,
+      skillId: action.skill.id, name: action.skill.name ?? action.skill.id,
+      telegraph: action.telegraph, counterplayHint: action.counterplayHint ?? null,
+    };
+  }
   return {
     kind: 'skill',
     actionId: action.type === 'monsterSkill' ? action.action?.id ?? action.skill.id : action.skill.id,
     skillId: action.skill.id,
     name: action.skill.name ?? action.skill.id,
   };
+}
+
+function appendSummonedCombatants(combatants, state, events = []) {
+  const summonedIds = events
+    .filter((event) => event.type === 'summon')
+    .flatMap((event) => event.summoned ?? [])
+    .map((entry) => entry.instanceId);
+  if (!summonedIds.length) return;
+  const snapshots = new Map(playbackSnapshot(state).map((actor) => [actor.instanceId, actor]));
+  for (const instanceId of summonedIds) {
+    if (combatants.some((actor) => actor.instanceId === instanceId)) continue;
+    const snapshot = snapshots.get(instanceId);
+    if (snapshot) combatants.push(snapshot);
+  }
 }
 
 const INTERACTIVE_BATTLE_VERSION = 1;
@@ -788,6 +1065,7 @@ function interactiveResult(session) {
       hp: actor.hp,
       maxHp: actor.maxHp,
       alive: actor.alive,
+      escaped: actor.escaped,
     })),
     totalPlayerMpSpent: state.players.reduce((sum, actor) => sum + actor.mpSpent, 0),
     actionUsage: Object.fromEntries(Object.entries(session.actionUsage).sort(([a], [b]) => a.localeCompare(b))),
@@ -815,6 +1093,7 @@ function nextInteractiveState(session) {
 function interactiveSkillAvailability(data, state, actor, skill, diagnostics) {
   const target = living(state.enemies)[0];
   if (skill.kind !== 'active') return { available: false, reason: 'not_active' };
+  if (isPlayerSkillSealed(actor, skill)) return { available: false, reason: 'sealed' };
   if (isOnCooldown(actor, skill.id)) return { available: false, reason: 'cooldown' };
   if (skill.cooldown?.usesPerBattle !== null && skill.cooldown?.usesPerBattle !== undefined
     && (actor.uses.get(skill.id) ?? 0) >= Number(skill.cooldown.usesPerBattle)) {
@@ -828,7 +1107,7 @@ function interactiveSkillAvailability(data, state, actor, skill, diagnostics) {
 }
 
 function selectableTargets(state, targetSpec) {
-  const actors = targetSpec === 'single_ally' ? living(state.players) : living(state.enemies);
+  const actors = targetSpec === 'single_ally' ? living(state.players) : singleTargetCandidates(state.enemies);
   return actors.map((actor) => ({
     instanceId: actor.instanceId,
     actorId: actor.id,
@@ -937,7 +1216,7 @@ function commandTarget(state, commandDefinition, targetInstanceId) {
   if (!['single_enemy', 'single_ally'].includes(commandDefinition.target)) {
     return commandDefinition.target === 'self' ? living(state.players)[0] : living(state.enemies)[0];
   }
-  const candidates = commandDefinition.target === 'single_ally' ? living(state.players) : living(state.enemies);
+  const candidates = commandDefinition.target === 'single_ally' ? living(state.players) : singleTargetCandidates(state.enemies);
   return candidates.find((actor) => actor.instanceId === targetInstanceId) ?? null;
 }
 
@@ -1031,12 +1310,17 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
     if (actor.side === 'enemy') {
       action = selectEnemyAction({ data, state, actor, rng, diagnostics });
       if (action.fallback) next.fallbackAttacks += 1;
-      const usageId = action.type === 'normal' ? '__normal__' : action.skill.id;
+      const usageId = action.type === 'normal'
+        ? '__normal__'
+        : action.type === 'monsterTelegraph' ? `__telegraph__:${action.skill.id}` : action.skill.id;
       next.actionUsage[usageId] = Number(next.actionUsage[usageId] ?? 0) + 1;
       const beforeAction = playbackSnapshot(state);
       result = action.type === 'monsterSkill'
         ? executeMonsterSkill({ state, action, data, rng, diagnostics })
-        : executeNormalAttack(action, state, rng);
+        : action.type === 'monsterTelegraph'
+          ? executeMonsterTelegraph(action)
+          : executeNormalAttack(action, state, rng);
+      appendSummonedCombatants(next.initialCombatants, state, result.events);
       playback = playbackAction(action);
       next.totalHits += Number(result.hits || 0);
       next.totalCriticals += Number(result.criticals || 0);
@@ -1045,6 +1329,7 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
         action: playback, primaryTargetInstanceId: action.target?.instanceId ?? null,
         hits: Number(result.hits || 0), criticals: Number(result.criticals || 0),
         damage: Number(result.damage || 0), healing: Number(result.healing || 0),
+        events: result.events ?? [],
       }, beforeAction, true);
       continue;
     }
@@ -1081,6 +1366,7 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
       action: playback, primaryTargetInstanceId: target?.instanceId ?? null,
       hits: Number(result.hits || 0), criticals: Number(result.criticals || 0),
       damage: Number(result.damage || 0), healing: Number(result.healing || 0),
+      availablePlayerActionIds: definitions.filter((entry) => entry.available).map((entry) => entry.actionId),
       ...(definition.kind === 'flee' ? { escapeSucceeded: escaped } : {}),
     }, beforeAction, true);
   }
@@ -1170,14 +1456,19 @@ export function simulateBattle(options) {
         ? selectPlayerAction({ data, state, actor, rng, diagnostics })
         : selectEnemyAction({ data, state, actor, rng, diagnostics });
       if (action.fallback) fallbackAttacks += 1;
-      const usageId = action.type === 'normal' ? '__normal__' : action.skill.id;
+      const usageId = action.type === 'normal'
+        ? '__normal__'
+        : action.type === 'monsterTelegraph' ? `__telegraph__:${action.skill.id}` : action.skill.id;
       actionUsage.set(usageId, (actionUsage.get(usageId) ?? 0) + 1);
       const beforeAction = captureTimeline ? playbackSnapshot(state) : null;
       const result = action.type === 'monsterSkill'
         ? executeMonsterSkill({ state, action, data, rng, diagnostics })
+        : action.type === 'monsterTelegraph'
+          ? executeMonsterTelegraph(action)
         : action.type === 'playerSkill'
           ? executePlayerSkill({ state, action, rng, diagnostics })
           : executeNormalAttack(action, state, rng);
+      if (captureTimeline) appendSummonedCombatants(initialCombatants, state, result.events);
       totalHits += Number(result.hits || 0);
       totalCriticals += Number(result.criticals || 0);
       recordFrame({
@@ -1190,6 +1481,7 @@ export function simulateBattle(options) {
         criticals: Number(result.criticals || 0),
         damage: Number(result.damage || 0),
         healing: Number(result.healing || 0),
+        events: result.events ?? [],
       }, beforeAction, true);
     }
     const beforeRoundEnd = captureTimeline ? playbackSnapshot(state) : null;
@@ -1210,7 +1502,9 @@ export function simulateBattle(options) {
       id: actor.id, hp: actor.hp, maxHp: actor.maxHp, mp: actor.mp, maxMp: actor.maxMp,
       alive: actor.alive, mpSpent: actor.mpSpent, damageDealt: actor.damageDealt,
     })),
-    enemies: state.enemies.map((actor) => ({ id: actor.id, hp: actor.hp, maxHp: actor.maxHp, alive: actor.alive })),
+    enemies: state.enemies.map((actor) => ({
+      id: actor.id, hp: actor.hp, maxHp: actor.maxHp, alive: actor.alive, escaped: actor.escaped,
+    })),
     totalPlayerMpSpent: state.players.reduce((sum, actor) => sum + actor.mpSpent, 0),
     actionUsage: Object.fromEntries([...actionUsage].sort(([a], [b]) => a.localeCompare(b))),
     totalHits,

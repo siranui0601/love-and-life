@@ -251,15 +251,15 @@ export function runSourceAudit(fixtures = loadAllFixtures()) {
       );
     }
   }
-  const monstersWithoutFallbackAction = [...unconditionalByMonster.entries()]
+  const monstersWithoutUnconditionalAction = [...unconditionalByMonster.entries()]
     .filter(([, count]) => count === 0)
     .map(([id]) => id);
 
   const producedSpecialStates = new Set();
   for (const skill of monsterSkills) {
     for (const effect of parseJson(skill["効果命令"])) {
-      if (effect.command === "APPLY_SPECIAL_STATE" && effect.stateType) {
-        producedSpecialStates.add(effect.stateType);
+      if (effect.command === "APPLY_SPECIAL_STATE" && (effect.stateId || effect.stateType)) {
+        producedSpecialStates.add(effect.stateId || effect.stateType);
       }
     }
   }
@@ -338,7 +338,7 @@ export function runSourceAudit(fixtures = loadAllFixtures()) {
     stock: 123,
     monsters: 77,
     monsterSkills: 96,
-    monsterActions: 285,
+    monsterActions: 286,
     encounters: 76,
   };
   const countMismatches = Object.entries(expectedCounts)
@@ -393,7 +393,10 @@ export function runSourceAudit(fixtures = loadAllFixtures()) {
       },
     },
     battle: {
-      monstersWithoutFallbackAction,
+      monstersWithoutUnconditionalAction,
+      // Compatibility alias for older report consumers.  These are authored
+      // actions, not runtime fallback attacks.
+      monstersWithoutFallbackAction: monstersWithoutUnconditionalAction,
       specialStateContractMismatches,
     },
     economy: {
