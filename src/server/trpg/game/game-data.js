@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { loadBattleSnapshot, loadSkills, loadWorldSnapshot } from "../../../../tools/trpg-sim/lib/fixtures.mjs";
 import { buildBattleData } from "../../../../tools/trpg-sim/lib/battle-model.mjs";
 import { buildWorldModel } from "../../../../tools/trpg-sim/lib/world-model.mjs";
+import { applyCanonicalEncounterExtensions } from "../content/canonical-encounter-extensions.js";
 import { applyCanonicalRuntimeExtensions } from "../content/canonical-runtime-extensions.js";
 import { applyCanonicalWorldModelExtensions } from "../content/canonical-world-model-extensions.js";
 
@@ -31,6 +32,7 @@ export function loadTrpgGameData() {
   // Do not mutate the old world fixture until its own fixed-count audit passed.
   const model = buildWorldModel(worldSnapshot);
   applyCanonicalRuntimeExtensions({ worldSnapshot, battleSnapshot, skills });
+  applyCanonicalEncounterExtensions(battleSnapshot);
   applyCanonicalWorldModelExtensions(model);
   const battleData = buildBattleData(battleSnapshot, skills);
   const contentRevision = contentHash({ worldSnapshot, battleSnapshot, skills }).slice(0, 24);
