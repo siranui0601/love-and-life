@@ -1,1 +1,1 @@
-export * from "./canonical-public-action-policy.js";
+export * from "./canonical-material-economy.js";
