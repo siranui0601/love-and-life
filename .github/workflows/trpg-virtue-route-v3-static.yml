@@ -5,10 +5,16 @@ on:
     paths:
       - "tools/trpg-sim/compile-virtue-route-v3.mjs"
       - "tools/trpg-sim/export-virtue-route-v2-source.mjs"
+      - "tools/trpg-sim/export-virtue-route-v3-sheets.mjs"
+      - "tools/trpg-sim/validate-virtue-route-v3-static.mjs"
       - "tools/trpg-sim/test/virtue-route-v3-compiler.test.mjs"
+      - "tools/trpg-sim/test/virtue-route-v3-static-validator.test.mjs"
+      - "tools/trpg-sim/test/virtue-route-v3-sheet-export.test.mjs"
       - "tools/trpg-sim/lib/virtue-route-v3-runtime-catalog.json"
       - "docs/trpg/virtue-route-v2-source.meta.json"
       - "docs/trpg/virtue-route-v3-static-summary.json"
+      - "docs/trpg/virtue-route-v3-static-validation.json"
+      - "docs/trpg/virtue-route-v3-sheet-export-manifest.json"
       - ".github/workflows/trpg-virtue-route-v3-static.yml"
   workflow_dispatch:
 
@@ -28,6 +34,31 @@ jobs:
       - name: Export canonical v2 source from Google Sheets
         run: node tools/trpg-sim/export-virtue-route-v2-source.mjs
       - name: Deterministic static compile (no replay)
-        run: node tools/trpg-sim/compile-virtue-route-v3.mjs docs/trpg/virtue-route-v2-source.csv /tmp/virtue-route-v3
+        run: node tools/trpg-sim/compile-virtue-route-v3.mjs
+      - name: Deterministic resource ledger (no replay, no combat execution)
+        run: node tools/trpg-sim/validate-virtue-route-v3-static.mjs
+      - name: Build deterministic Google Sheets payloads
+        run: node tools/trpg-sim/export-virtue-route-v3-sheets.mjs
       - name: Unit and deterministic regression
-        run: node --test tools/trpg-sim/test/virtue-route-v3-compiler.test.mjs
+        run: >-
+          node --test
+          tools/trpg-sim/test/virtue-route-v3-compiler.test.mjs
+          tools/trpg-sim/test/virtue-route-v3-static-validator.test.mjs
+          tools/trpg-sim/test/virtue-route-v3-sheet-export.test.mjs
+      - name: Upload static compile artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: virtue-route-v3-static-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            docs/trpg/virtue-route-v2-source.meta.json
+            docs/trpg/virtue-route-v3-mapping.csv
+            docs/trpg/virtue-route-v3-unresolved.json
+            docs/trpg/virtue-route-v3-proposed-local-moves.json
+            docs/trpg/virtue-route-v3-static-summary.json
+            docs/trpg/virtue-route-v3-static-ledger.csv
+            docs/trpg/virtue-route-v3-static-validation.json
+            docs/trpg/virtue-route-v3-sheet-ledger.csv
+            docs/trpg/virtue-route-v3-sheet-v2-v3-map.csv
+            docs/trpg/virtue-route-v3-sheet-validation.csv
+            docs/trpg/virtue-route-v3-sheet-export-manifest.json

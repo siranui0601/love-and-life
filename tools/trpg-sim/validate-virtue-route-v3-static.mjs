@@ -10,6 +10,10 @@ import { CANONICAL_WORLD_LIFE_INTERNALS } from '../../src/server/trpg/content/ca
 import { CANONICAL_MATERIAL_ECONOMY_INTERNALS } from '../../src/server/trpg/content/canonical-material-economy.js';
 import { AUTHORED_PUBLIC_LIFE_NETWORK_INTERNALS } from '../../src/server/trpg/content/authored-public-life-network.js';
 import { AUTHORED_DAY2_T01_MERCHANT_PAYMENT_INTERNALS } from '../../src/server/trpg/content/authored-mission-flow-day2-t01-merchant-payment.js';
+import { loadTrpgGameData } from '../../src/server/trpg/game/game-data.js';
+import { applyGameplayCatalogOverrides } from '../../src/server/trpg/game/service.js';
+import { createMissionCatalog, experienceToNextLevel } from './lib/mission-model.mjs';
+import { createSeededRng, expandEncounter } from './lib/battle-model.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
@@ -17,6 +21,7 @@ const DEFAULT_MAPPING = path.join(ROOT, 'docs/trpg/virtue-route-v3-mapping.csv')
 const DEFAULT_SOURCE = path.join(ROOT, 'docs/trpg/virtue-route-v2-source.csv');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 const CATALOG_PATH = path.join(HERE, 'lib/virtue-route-v3-runtime-catalog.json');
+const STATIC_ROUTE_SEED = 'virtue-route-v3-static-20260816';
 
 const catalog = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
 const jobs = new Map(catalog.jobs.map((job) => [job.jobId, job]));
@@ -28,6 +33,9 @@ for (const [productId, tuple] of Object.entries(CANONICAL_WORLD_LIFE_INTERNALS.P
 }
 const stock = new Map(Object.values(catalog.stockByName).map((entry) => [entry.stockId, entry]));
 const materialPrices = CANONICAL_MATERIAL_ECONOMY_INTERNALS.MATERIAL_BUYBACK_G;
+const gameData = loadTrpgGameData();
+const missionCatalog = createMissionCatalog(gameData.model, gameData.battleData);
+applyGameplayCatalogOverrides(missionCatalog);
 
 const publicLifeChoices = new Map();
 for (const scene of AUTHORED_PUBLIC_LIFE_NETWORK_INTERNALS.SCENES) {
@@ -56,6 +64,14 @@ function objects(text) {
 
 function sha256(text) {
   return createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
+function mismatchAudit(rows) {
+  return {
+    sha256: sha256(JSON.stringify(rows)),
+    first: rows.slice(0, 5),
+    last: rows.slice(-5),
+  };
 }
 
 function number(value) {
@@ -107,6 +123,18 @@ function csv(rows, columns) {
   return `${columns.map(csvCell).join(',')}\n${rows.map((row) => columns.map((column) => csvCell(row[column] ?? '')).join(',')).join('\n')}\n`;
 }
 
+function missionAction(actionId, day) {
+  const match = /^ACTION:(MSN-T\d{2}):([^:]+)/u.exec(String(actionId ?? ''));
+  if (!match) return null;
+  const mission = missionCatalog.byId.get(match[1]);
+  const step = mission?.steps.find((entry) => entry.id === match[2]);
+  if (!mission || !step) return { mission, step, variant: null, missionId: match[1], stepId: match[2] };
+  const variant = step.timelineVariants?.find((entry) =>
+    Number(day) >= Number(entry.minDay ?? -Infinity)
+    && Number(day) <= Number(entry.maxDay ?? Infinity)) ?? step;
+  return { mission, step, variant, missionId: match[1], stepId: match[2] };
+}
+
 export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath = DEFAULT_SOURCE, outDir = DEFAULT_OUT } = {}) {
   const mappingText = readArchived(mappingPath);
   const sourceText = readArchived(sourcePath);
@@ -134,6 +162,15 @@ export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath 
     spTotal: 2,
     spUsed: 0,
     level: 1,
+    exp: 0,
+    totalExp: 0,
+    battleExp: 0,
+    missionExp: 0,
+    battleIndex: 0,
+    experienceTransitions: [],
+    missionRewardsGranted: new Set(),
+    legacyLevelMismatchRows: [],
+    legacySpMismatchRows: [],
     debt: 0,
     debtStatus: 'none',
     trust: {},
@@ -175,6 +212,32 @@ export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath 
     }
   }
 
+  function addExperience(amount, source, rowId, detail = {}) {
+    const gain = Math.max(0, Math.round(number(amount)));
+    if (!gain) return;
+    const levelBefore = state.level;
+    const expBefore = state.exp;
+    state.exp += gain;
+    state.totalExp += gain;
+    if (source === 'battle') state.battleExp += gain;
+    if (source === 'mission') state.missionExp += gain;
+    while (state.level < 24 && state.exp >= experienceToNextLevel(state.level)) {
+      state.exp -= experienceToNextLevel(state.level);
+      state.level += 1;
+      state.spTotal += 1;
+    }
+    state.experienceTransitions.push({
+      rowId,
+      source,
+      gain,
+      levelBefore,
+      levelAfter: state.level,
+      expBefore,
+      expAfter: state.exp,
+      ...detail,
+    });
+  }
+
   function creditPublicLife(actionId, rowId) {
     const found = publicLifeChoices.get(actionId);
     if (!found) return false;
@@ -198,6 +261,37 @@ export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath 
     const actionId = String(step.actionId ?? '');
     const rowId = mapping.legacyRowId;
     if (!actionId) return;
+
+    const mission = missionAction(actionId, mapping.legacyDay);
+    if (mission) {
+      if (!mission.mission || !mission.step) {
+        fail('MISSING_RUNTIME_MISSION_ACTION', rowId, actionId);
+        return;
+      }
+      const actionType = mission.variant?.actionType ?? mission.step.type;
+      const encounterId = mission.variant?.encounterId ?? mission.step.encounterId;
+      if (actionType === 'missionBattle' || (mission.step.type === 'battle' && actionType !== 'investigate')) {
+        if (!encounterId || !gameData.battleData.encounterById.has(encounterId)) {
+          fail('MISSING_RUNTIME_ENCOUNTER', rowId, `${actionId}:${encounterId ?? 'none'}`);
+          return;
+        }
+        const battleKey = `${STATIC_ROUTE_SEED}:mission:${mission.missionId}:${state.battleIndex}`;
+        const monsterIds = expandEncounter(
+          gameData.battleData,
+          encounterId,
+          createSeededRng(battleKey),
+        );
+        const reward = monsterIds.reduce((total, monsterId) =>
+          total + number(gameData.battleData.monsterById.get(monsterId)?.exp), 0);
+        addExperience(reward, 'battle', rowId, {
+          actionId,
+          encounterId,
+          battleIndex: state.battleIndex,
+          monsterIds,
+        });
+        state.battleIndex += 1;
+      }
+    }
 
     if (creditPublicLife(actionId, rowId)) return;
     const merchant = merchantChoices.get(actionId);
@@ -382,20 +476,35 @@ export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath 
     }
 
     const authoredSp = parseSp(source['SP(累計/使用/残)']);
-    if (authoredSp && authoredSp.total > state.spTotal) state.spTotal = authoredSp.total;
-    state.level = Math.max(state.level, number(source.Lv));
     for (const step of steps(mapping)) applyStep(step, mapping);
-
-    if (authoredSp && (authoredSp.used !== state.spUsed || authoredSp.remaining !== state.spTotal - state.spUsed)) {
-      fail('SP_LEDGER_MISMATCH', mapping.legacyRowId, `authored=${authoredSp.total}/${authoredSp.used}/${authoredSp.remaining}; static=${state.spTotal}/${state.spUsed}/${state.spTotal - state.spUsed}`);
-    }
 
     state.maximumHunger = Math.max(state.maximumHunger, lastNumber(source['空腹前'], 0), lastNumber(source['空腹後'], 0));
     state.maximumFatigue = Math.max(state.maximumFatigue, lastNumber(source['疲労前'], 0), lastNumber(source['疲労後'], 0));
     state.minimumHp = Math.min(state.minimumHp, lastNumber(source.HP, 100));
     state.minimumMp = Math.min(state.minimumMp, lastNumber(source.MP, 100));
     for (const match of String(source['事件状態'] ?? '').matchAll(/(T\d{2})=(resolved|suppressed|failed|active|critical)/gu)) {
+      if (match[2] === 'resolved' && state.incidentStates[match[1]] !== 'resolved') {
+        const mission = missionCatalog.byId.get(`MSN-${match[1]}`);
+        if (mission && !state.missionRewardsGranted.has(mission.id)) {
+          addExperience(mission.expReward, 'mission', mapping.legacyRowId, { missionId: mission.id });
+          state.missionRewardsGranted.add(mission.id);
+        }
+      }
       state.incidentStates[match[1]] = match[2];
+    }
+
+    const legacyLevel = number(source.Lv);
+    if (legacyLevel && legacyLevel !== state.level) {
+      state.legacyLevelMismatchRows.push({ rowId: mapping.legacyRowId, legacyLevel, v3Level: state.level });
+    }
+    if (authoredSp && (authoredSp.total !== state.spTotal
+      || authoredSp.used !== state.spUsed
+      || authoredSp.remaining !== state.spTotal - state.spUsed)) {
+      state.legacySpMismatchRows.push({
+        rowId: mapping.legacyRowId,
+        legacy: `${authoredSp.total}/${authoredSp.used}/${authoredSp.remaining}`,
+        v3: `${state.spTotal}/${state.spUsed}/${state.spTotal - state.spUsed}`,
+      });
     }
 
     const npcIds = String(mapping.npcIds ?? '').split('|').filter(Boolean);
@@ -418,6 +527,11 @@ export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath 
       equipment: JSON.stringify(state.equipped),
       debt: state.debt,
       level: state.level,
+      expIntoLevel: state.exp,
+      totalExp: state.totalExp,
+      expGain: state.experienceTransitions
+        .filter((entry) => entry.rowId === mapping.legacyRowId)
+        .reduce((total, entry) => total + entry.gain, 0),
       sp: `${state.spTotal}/${state.spUsed}/${state.spTotal - state.spUsed}`,
       skills: [...state.skills].sort().join('|'),
       incidentState: source['事件状態'] ?? '',
@@ -435,7 +549,7 @@ export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath 
 
   const finalSp = state.spTotal - state.spUsed;
   const summary = {
-    validatorVersion: 'virtue-route-v3-static-validator-v1',
+    validatorVersion: 'virtue-route-v3-static-validator-v2',
     compilerVersion: 'virtue-route-v3-static-compiler-v6',
     sourceSpreadsheetId: '1aSLu_pSLNsFsUm42juEyOrLDmTkJd7NPOOrQNnvnMwA',
     sourceSheetName: '正規台帳',
@@ -461,7 +575,10 @@ export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath 
       provisionUnderflows: errors.filter((entry) => entry.code === 'PROVISION_UNDERFLOW').length,
       insufficientGoldRows: errors.filter((entry) => entry.code === 'INSUFFICIENT_GOLD').length,
       workerLodgingViolations: errors.filter((entry) => entry.code === 'WORKER_LODGING_WITHOUT_PORT_WORK').length,
+      missingRuntimeMissionActions: errors.filter((entry) => entry.code === 'MISSING_RUNTIME_MISSION_ACTION').length,
+      missingRuntimeEncounters: errors.filter((entry) => entry.code === 'MISSING_RUNTIME_ENCOUNTER').length,
       replayExecuted: false,
+      combatExecuted: false,
     },
     economy: {
       startingGold: 0,
@@ -479,6 +596,12 @@ export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath 
       debtRemainingG: state.debt,
     },
     progression: {
+      staticRouteSeed: STATIC_ROUTE_SEED,
+      runtimeContentRevision: gameData.contentRevision,
+      totalExp: state.totalExp,
+      battleExp: state.battleExp,
+      missionExp: state.missionExp,
+      expIntoFinalLevel: state.exp,
       finalLevel: state.level,
       totalSp: state.spTotal,
       usedSp: state.spUsed,
@@ -486,6 +609,12 @@ export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath 
       learnedSkillCount: state.skills.size,
       learnedSkillIds: [...state.skills].sort(),
       skillTransitions: state.skillTransitions,
+      experienceTransitions: state.experienceTransitions,
+      legacyLevelMismatchRowCount: state.legacyLevelMismatchRows.length,
+      legacySpMismatchRowCount: state.legacySpMismatchRows.length,
+      legacyLevelMismatchAudit: mismatchAudit(state.legacyLevelMismatchRows),
+      legacySpMismatchAudit: mismatchAudit(state.legacySpMismatchRows),
+      experienceBasis: 'fixed mission rewards plus deterministic encounter composition expansion for the pinned static route seed; combat victory is the authored row outcome and combat itself is not executed here',
     },
     survival: {
       basis: 'authored numeric row boundaries; inserted economy commands are separately checked for canonical duration/window and followed by authored sleep boundaries',
@@ -510,12 +639,13 @@ export function validateStaticRoute({ mappingPath = DEFAULT_MAPPING, sourcePath 
     },
     ledgerRows: ledger.length,
     replayExecuted: false,
+    combatExecuted: false,
   };
 
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'virtue-route-v3-static-ledger.csv'), csv(ledger, [
     'legacyRowId', 'day', 'plannedTime', 'regionId', 'facilityId', 'actionIds', 'goldBefore', 'income', 'expense', 'goldAfter',
-    'freeMeals', 'freeLodging', 'provisions', 'equipment', 'debt', 'level', 'sp', 'skills', 'incidentState', 'worldState',
+    'freeMeals', 'freeLodging', 'provisions', 'equipment', 'debt', 'level', 'expIntoLevel', 'totalExp', 'expGain', 'sp', 'skills', 'incidentState', 'worldState',
   ]));
   fs.writeFileSync(path.join(outDir, 'virtue-route-v3-static-validation.json'), `${JSON.stringify(summary, null, 2)}\n`);
   return summary;

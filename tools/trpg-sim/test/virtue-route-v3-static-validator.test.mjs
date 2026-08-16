@@ -47,15 +47,25 @@ test('v3 static ledger proves canonical resources without replay', async (t) => 
   assert.equal(summary.checks.provisionUnderflows, 0);
   assert.equal(summary.checks.insufficientGoldRows, 0);
   assert.equal(summary.checks.workerLodgingViolations, 0);
+  assert.equal(summary.checks.missingRuntimeMissionActions, 0);
+  assert.equal(summary.checks.missingRuntimeEncounters, 0);
   assert.equal(summary.economy.minimumGold, 0);
   assert.equal(summary.economy.finalGold, 34);
   assert.equal(summary.economy.totalIncome, 981);
   assert.equal(summary.economy.totalExpense, 947);
   assert.deepEqual(summary.economy.finalProvisionInventory, {});
   assert.equal(summary.economy.debtStatus, 'paid');
-  assert.equal(summary.progression.finalLevel, 11);
-  assert.equal(summary.progression.finalSp, 1);
+  assert.equal(summary.progression.staticRouteSeed, 'virtue-route-v3-static-20260816');
+  assert.equal(summary.progression.totalExp, 39656);
+  assert.equal(summary.progression.battleExp, 37226);
+  assert.equal(summary.progression.missionExp, 2430);
+  assert.equal(summary.progression.expIntoFinalLevel, 4022);
+  assert.equal(summary.progression.finalLevel, 23);
+  assert.equal(summary.progression.totalSp, 24);
+  assert.equal(summary.progression.finalSp, 13);
   assert.equal(summary.progression.learnedSkillCount, 11);
+  assert.equal(summary.progression.experienceTransitions.length, 29);
+  assert.ok(summary.progression.legacyLevelMismatchRowCount > 0);
   assert.deepEqual(summary.equipment.finalEquipped, {
     body: 'EQP-A-0203',
     offHand: 'EQP-S-0201',
@@ -66,9 +76,11 @@ test('v3 static ledger proves canonical resources without replay', async (t) => 
   assert.equal(summary.world.incidentStates.T19, 'suppressed');
   assert.equal(summary.world.incidentStates.T20, undefined);
   assert.equal(summary.replayExecuted, false);
+  assert.equal(summary.combatExecuted, false);
 
   const ledger = parseCsv(await readFile(path.join(validationDir, 'virtue-route-v3-static-ledger.csv'), 'utf8'));
   assert.equal(ledger.length, 832);
   assert.equal(ledger[0][0], 'legacyRowId');
+  assert.ok(ledger[0].includes('totalExp'));
   assert.equal(ledger.at(-1)[0], 'VR2-D85-10');
 });

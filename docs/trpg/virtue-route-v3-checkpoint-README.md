@@ -6,7 +6,26 @@
 
 再現可能source checkpoint Head: `58350fb9662a8ef8709183916684eccd1cee4135`
 
-Phase A-C で、旧 `正規台帳` 831行を deterministic compiler へ投入し、831/831件の暫定mappingを実際に生成した。
+Phase A-C で、旧 `正規台帳` 831行を deterministic compiler へ投入し、831/831件の暫定mappingを実際に生成した。そのcheckpointを捨てずにPhase Dを原因別batchで完了し、現在は831/831行を通常runtime actionへ静的compileできる。
+
+## 現在の静的compile完了点（2026-08-16）
+
+- static validation checkpoint Head: `cf44e5cf2c5c8b365424bd8e43dae5f8e54e537f`
+- compiler: `virtue-route-v3-static-compiler-v6`
+- validator: `virtue-route-v3-static-validator-v2`
+- Sheet exporter: `virtue-route-v3-sheet-export-v1`
+- mapped / source rows: `831 / 831`
+- expanded v3 rows: `1526`
+- `UNMAPPED / UNKNOWN / TODO / PARTIAL`: `0 / 0 / 0 / 0`
+- static compile coverage: `100%`
+- exact authored override rows: `110`
+- MOVE_LOCAL / REGIONAL_MOVE: `336 / 50`
+- static resource validation: `PASS`（最終34G、総EXP 39656、Lv23、残SP13）
+- replay / combat execution: 未実施
+
+`node tools/trpg-sim/compile-virtue-route-v3.mjs` →
+`node tools/trpg-sim/validate-virtue-route-v3-static.mjs` →
+`node tools/trpg-sim/export-virtue-route-v3-sheets.mjs` の順で、source export後のクリーンcheckoutからmapping・資源台帳・Google Sheets書込用3 CSVを決定的に再生成できる。Sheet側の正式成果タブは `正規台帳_v3`、`v2_v3対応表`、`静的検証_v3` である。
 
 2026-08-16 の recovery checkpoint では、ライブの
 `TRPG_人徳ルート正規台帳_v2` / `正規台帳` を再取得し、
@@ -26,7 +45,7 @@ Head `32dcdbd` の圧縮payloadはGit blob自体が20,023 bytesで途切れて�
 復号できたprefixは差分資料として使ったが、そのままsourceへ上書きしていない。
 詳細は `virtue-route-v3-payload-recovery.md` を参照。
 
-- compiler version: `virtue-route-v3-static-compiler-recovery-v3`
+- compiler version: `virtue-route-v3-static-compiler-recovery-v3`（recovery checkpoint時点）
 - auto resolved: 594
 - exact authored override rows: 7
 - unresolved: 237
@@ -48,7 +67,7 @@ Head `32dcdbd` の圧縮payloadはGit blob自体が20,023 bytesで途切れて�
 - 素材: Day20は確定dropだけを3Gで売却し、旧+9Gとの差6Gを静的ledgerの再配分対象として明記。Day58は3Gを一致
 - 債務: `OBLIGATION:PAY:DEBT:EDA:ITM014:FULL` へ接続
 
-現時点のunresolved理由は8種だけである。
+recovery checkpoint時点のunresolved理由は8種だった。現在はcompiler v6で全件解消済みである。
 
 | reason | count |
 |---|---:|
@@ -69,6 +88,10 @@ Head `32dcdbd` の圧縮payloadはGit blob自体が20,023 bytesで途切れて�
 - `docs/trpg/virtue-route-v2-source.meta.json`: source ID/範囲/取得時点/hash
 - `tools/trpg-sim/lib/virtue-route-v3-runtime-catalog.json`: current Head + current masters から固定したruntime辞書
 - `docs/trpg/virtue-route-v3-static-summary.json`: checkpoint集計
+- `tools/trpg-sim/validate-virtue-route-v3-static.mjs`: runtime正本ID・経済・EXP/Lv/SP・装備・事件状態のdeterministic validator
+- `docs/trpg/virtue-route-v3-static-validation.json`: validator v2の追跡可能な検証結果
+- `tools/trpg-sim/export-virtue-route-v3-sheets.mjs`: v3台帳・対応表・静的検証の決定的Sheet payload生成
+- `docs/trpg/virtue-route-v3-sheet-export-manifest.json`: Sheet行列数とCSV SHA-256
 - `docs/trpg/virtue-route-v3-checkpoint-mapping-831.json.gz.b64.part-00`
 - `docs/trpg/virtue-route-v3-checkpoint-mapping-831.json.gz.b64.part-01`
 
@@ -83,4 +106,4 @@ echo 'e1f54941124a3a1a6029f2e25daa62f28c3692772fcbe6386a6b1c60a6d882c6  /tmp/vir
 gzip -dc /tmp/virtue-route-v3-checkpoint-mapping-831.json.gz > /tmp/virtue-route-v3-checkpoint-mapping-831.json
 ```
 
-最新mappingは非公開Sheet由来の行本文を含むためrepositoryでは追跡せず、同じsource hashからcompilerで再生成する。これは作業完了点ではない。Phase Dで理由別unresolved集合をまとめて解消し、最終成果物では `UNMAPPED/PARTIAL/TODO=0` と `STATIC_COMPILE_COVERAGE=100%` を要求する。replayは次工程まで禁止する。
+最新mappingとSheet投入用CSVは非公開Sheet由来の行本文を含むためrepositoryでは追跡せず、同じsource hashからcompiler・validator・Sheet exporterで再生成する。manifestとvalidator結果は追跡する。静的compile工程は `UNMAPPED/PARTIAL/TODO/UNKNOWN=0`、coverage 100%へ到達したが、戦闘勝利可能性の実行証明はreplay禁止中のため別工程として残る。
