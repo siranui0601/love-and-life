@@ -1,1 +1,1 @@
-export * from "./authored-facility-labour.js";
+export * from "./canonical-regional-labour.js";
