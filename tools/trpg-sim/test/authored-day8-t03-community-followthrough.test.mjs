@@ -33,6 +33,12 @@ function runtime() {
         howlClosedActionIds: [],
         howlCompletedAtMinute: 10260,
       },
+      day8T03NightVigil: {
+        version: "authored-day8-t03-night-vigil-v1",
+        selectedActionId: "MISSION_FLOW:T03:DAY8_NIGHT_VIGIL:keep_written_watch_until_dawn",
+        closedActionIds: [],
+        completedAtMinute: 10650,
+      },
       worldFlags: {
         t01Resolved: true,
         t01FinnReturned: true,

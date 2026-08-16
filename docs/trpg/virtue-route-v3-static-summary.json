@@ -1,6 +1,6 @@
 {
-  "compilerVersion": "virtue-route-v3-static-compiler-v5",
-  "sourceHead": "63bafd41e1f059f9e3bcf951ae45ad1103216172",
+  "compilerVersion": "virtue-route-v3-static-compiler-v6",
+  "sourceHead": "5ef557144f05c73869d6a6785ed49d5f2834d379",
   "generatedAt": "2026-08-16T13:52:50Z",
   "sourceSpreadsheetId": "1aSLu_pSLNsFsUm42juEyOrLDmTkJd7NPOOrQNnvnMwA",
   "sourceSpreadsheetTitle": "TRPG_人徳ルート正規台帳_v2",
@@ -37,22 +37,68 @@
   },
   "byClassification": {
     "COMMAND_OUTCOME": 19,
-    "NARRATIVE_OUTCOME": 151,
-    "PLAYER_COMMAND": 558,
-    "PLAYER_COMMAND_SEQUENCE": 103
+    "NARRATIVE_OUTCOME": 149,
+    "PLAYER_COMMAND": 428,
+    "PLAYER_COMMAND_SEQUENCE": 235
   },
   "byStatus": {
-    "OUTCOME": 170,
-    "RESOLVED_EXISTING": 661
+    "OUTCOME": 168,
+    "RESOLVED_EXISTING": 663
   },
   "unresolvedByReason": {},
   "canonicalJobsInCatalog": 28,
   "canonicalProductsInCatalog": 44,
-  "exactAuthoredOverrideRows": 108,
+  "exactAuthoredOverrideRows": 110,
+  "provisionPurchaseRows": 104,
+  "provisionPurchaseCommands": 109,
+  "remoteProvisionMealsCovered": 27,
+  "carriedProvisionSubstitutions": 24,
+  "finalProvisionInventory": {
+    "ITM008": 0,
+    "ITM082": 0,
+    "ITM072": 0,
+    "ITM163": 0,
+    "ITM179": 0,
+    "ITM192": 0,
+    "ITM023": 0,
+    "ITM205": 0
+  },
+  "workerLodgingRows": 15,
+  "workerLodgingTotalRows": 20,
+  "workerLodgingEligibleDays": [
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    18,
+    23,
+    24,
+    25,
+    26,
+    34,
+    36,
+    37,
+    38,
+    44,
+    55,
+    59,
+    66,
+    83
+  ],
+  "workerLodgingRejectedLegacyRows": [
+    "VR2-D48-10"
+  ],
+  "extraWorkRows": 37,
+  "extraWorkCommands": 40,
+  "extraWorkIncome": 132,
+  "extraWorkFreeMeals": 1,
   "workRowsReallocated": 56,
-  "proposedMoveLocalInsertions": 222,
+  "proposedMoveLocalInsertions": 336,
   "regionalMoveRows": 50,
   "forbiddenStatusRows": 0,
   "nonFinalStatusRows": 0,
+  "expandedV3Rows": 1526,
   "forbiddenReplayExecuted": false
 }

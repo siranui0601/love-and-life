@@ -38,6 +38,7 @@ function choice(id, label, summary, {
   hunger = 0,
   fatigue = 0,
   freeMeals = 0,
+  freeLodging = 0,
   speech = summary,
 } = {}) {
   return Object.freeze({
@@ -54,6 +55,7 @@ function choice(id, label, summary, {
     hunger,
     fatigue,
     freeMeals,
+    freeLodging,
     speech,
   });
 }
@@ -78,6 +80,7 @@ const SCENES = Object.freeze([
         goal: "include-player-in-ordinary-village-life",
         trust: { villageTrust: 1 },
         hunger: -4,
+        freeLodging: 1,
         speech: "泊まる場所も、働く場所も、困った時に声をかける場所もある。助けた人だからじゃない。今日ここにいる人だからです。",
       }),
       choice("ask_for_one_night_only", "今夜だけの寝床を頼む", "長い約束はせず、今夜休める場所だけを確かめた。", {
@@ -385,13 +388,14 @@ const SCENES = Object.freeze([
     kicker: "大きな避難所は見つけやすく、名簿も奪われやすい。",
     detail: "安全、家族の選択、治療の必要を分けて、複数施設へ避難先を割り振る。",
     choices: Object.freeze([
-      choice("distribute_shelters", "複数施設へ本人同意で分散", "孤児院、下層宿、亜人街の診療所へ避難先を分け、店の名簿と子どもの名前は別々に保管した。", {
+      choice("distribute_shelters", "複数施設へ本人同意で分散", "孤児院、下層宿、亜人街の診療所へ避難先を分け、店の名簿と子どもの名前は別々に保管した。配布を終えた連絡係には下層宿の交代寝台が一夜だけ用意された。", {
         actorId: NPC.matilda,
         npcIds: [NPC.matilda, NPC.samira, NPC.noah],
         flags: ["distributedShelterPlan", "shopRosterPreservedSeparately", "childrenKeptOffCourierDuty"],
         factId: "PUBLIC-LIFE-FACT-DISTRIBUTED-SHELTERS",
         factText: "避難先は複数施設へ分散し、本人同意、治療、家族再会の記録を別々に扱う",
         goal: "maintain-distributed-shelter-capacity",
+        freeLodging: 1,
         speech: "全員をここへ集めれば守りやすい。でも見つけられた時は全員を失う。本人に選んでもらって、記録も分けます。",
       }),
       choice("keep_families_together", "家族単位だけを優先する", "施設の分散より家族が離れないことを優先し、空き寝床を割り当てた。", {
@@ -760,7 +764,7 @@ const SCENES = Object.freeze([
     kicker: "遠くの便りは届いているが、席に座る者の食事は先に冷める。",
     detail: "手紙を読み上げる、静かに食べる、次の旅程を話す。物語の閉じ方を選ぶ。",
     choices: Object.freeze([
-      choice("share_letters_at_table", "手紙と近況を皆で読む", "エダ、フィン、ミラ、ガロ、リオナと食卓を囲み、遠方の仲間は手紙と噂で生存と仕事の続きだけを伝えた。", {
+      choice("share_letters_at_table", "手紙と近況を皆で読む", "エダ、フィン、ミラ、ガロ、リオナと食卓を囲み、遠方の仲間は手紙と噂で生存と仕事の続きだけを伝えた。麦穂亭はその夜の寝床も用意した。", {
         actorId: NPC.eda,
         npcIds: [NPC.eda, NPC.finn, NPC.mira, NPC.garo],
         flags: ["closingDinnerShared", "distantNpcLettersRead", "publicLifeNetworkContinuesOffscreen"],
@@ -768,6 +772,7 @@ const SCENES = Object.freeze([
         factText: "各地の人々は自分の仕事と連絡を続け、旅人が不在でも互いを助けられる",
         goal: "continue-mutual-aid-after-story",
         hunger: -16,
+        freeLodging: 1,
         speech: "手紙はあとで何度でも読める。今は食べな。あんたがいない間の話も、こっちには山ほどあるんだから。",
       }),
       choice("eat_quietly", "近況を聞かず静かに食べる", "遠方の手紙は開かず、同じ食卓で今日の食事だけを共にした。", {
@@ -909,7 +914,13 @@ function updateNeeds(runtime, entry) {
   runtime.playerState.hunger = after.hunger;
   runtime.playerState.fatigue = after.fatigue;
   if (entry.freeMeals) current.freeMeals = Number(current.freeMeals ?? 0) + entry.freeMeals;
-  return { before, after, freeMealsAdded: entry.freeMeals };
+  if (entry.freeLodging) current.freeLodging = Number(current.freeLodging ?? 0) + entry.freeLodging;
+  return {
+    before,
+    after,
+    freeMealsAdded: entry.freeMeals,
+    freeLodgingAdded: entry.freeLodging,
+  };
 }
 
 function consume(runtime, action, result) {

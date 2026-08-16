@@ -20,6 +20,7 @@ function runtime(day, location, facilityId) {
         fatigue: 24,
         needs: { hunger: 38, fatigue: 24 },
         freeMeals: 0,
+        freeLodging: 0,
       },
       hunger: 38,
       fatigue: 24,
@@ -84,6 +85,21 @@ test("closed alternatives remain closed after serialization", () => {
   assert.equal(saved.playerState.publicLifeNetwork.closedActionIds["capital-fair-supply"].length, 2);
   assert.equal(saved.playerState.worldFlags.publicMarketPriceBoard, true);
   assert.equal(network.ownActions(saved), null);
+});
+
+test("ordinary hospitality grants finite meal and lodging credits", () => {
+  const village = runtime(2, "田園の村", "LOC_FARM_SQUARE");
+  const villageResult = choose(village, "accept_ordinary_place").result;
+  assert.equal(village.playerState.player.freeLodging, 1);
+  assert.equal(villageResult.livingState.freeLodgingAdded, 1);
+
+  const shelters = runtime(62, "王都", "LOC_CAP_ORPHANAGE");
+  choose(shelters, "distribute_shelters");
+  assert.equal(shelters.playerState.player.freeLodging, 1);
+
+  const closing = runtime(85, "田園の村", "LOC_FARM_INN");
+  choose(closing, "share_letters_at_table");
+  assert.equal(closing.playerState.player.freeLodging, 1);
 });
 
 test("nonlethal preparation assigns distinct NPCs one shared public goal", () => {

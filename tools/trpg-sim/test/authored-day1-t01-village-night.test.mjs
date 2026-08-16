@@ -75,16 +75,16 @@ test("sleeping changes living state, closes branches, and reaches the Day2 merch
     .find((action) => action.id === night.SLEEP_ACTION_ID);
   const result = choose(state, sleep);
 
-  assert.equal(state.playerState.player.hunger, 22);
+  assert.equal(state.playerState.player.hunger, 0);
   assert.equal(state.playerState.player.fatigue, 13);
-  assert.equal(state.playerState.hunger, 22);
+  assert.equal(state.playerState.hunger, 0);
   assert.equal(state.playerState.fatigue, 13);
   assert.equal(state.playerState.player.facilityId, "LOC_FARM_INN");
   assert.equal(state.playerState.day1T01VillageNight.nightClosedActionIds.length, 2);
   assert.equal(result.sceneTransition, night.MORNING_SCENE_ID);
   assert.deepEqual(result.livingState, {
-    hungerBefore: 34,
-    hungerAfter: 22,
+    hungerBefore: 0,
+    hungerAfter: 0,
     fatigueBefore: 58,
     fatigueAfter: 13,
   });
@@ -121,7 +121,7 @@ test("merchant choices create different logistics, shopping, and life results", 
   const porridge = authoredMissionFlowExclusiveActions(foodState)
     .find((action) => action.label === "朝粥を食べる");
   choose(foodState, porridge);
-  assert.equal(foodState.playerState.player.hunger, 4);
+  assert.equal(foodState.playerState.player.hunger, 0);
   assert.equal(foodState.playerState.worldFlags["day2Merchant:morningPorridgeEaten"], true);
   assert.equal(foodState.playerState.worldFlags["day2Merchant:access:open"], true);
 

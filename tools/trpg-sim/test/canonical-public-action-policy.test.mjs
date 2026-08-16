@@ -5,14 +5,14 @@ import {
   CANONICAL_WORLD_LIFE_INTERNALS,
 } from "../../../src/server/trpg/content/canonical-public-action-policy.js";
 
-function runtime({ day = 30, progress = {}, labour = {}, life = {}, gold = 20 } = {}) {
+function runtime({ day = 30, progress = {}, labour = {}, life = {}, gold = 20, freeMeals = 0, freeLodging = 0 } = {}) {
   return {
     playerState: {
       day,
       progress,
       canonicalRegionalLabour: labour,
       canonicalWorldLife: life,
-      player: { location: "交易都市", facilityId: "LOC_TRADE_PORT", gold, needs: { hunger: 20, fatigue: 20 } },
+      player: { location: "交易都市", facilityId: "LOC_TRADE_PORT", gold, freeMeals, freeLodging, needs: { hunger: 20, fatigue: 20 } },
     },
   };
 }
@@ -119,6 +119,28 @@ test("facility meals and paid lodging are routed through native needs actions", 
   assert.equal(meal.mealQuality, "hearty");
   assert.equal(sleep.type, "rest");
   assert.equal(sleep.lodging, true);
+});
+
+test("structured meal and lodging credits expose and pay for ordinary products", () => {
+  const r = runtime({ gold: 0, freeMeals: 1, freeLodging: 1 });
+  r.playerState.player.facilityId = "LOC_TRADE_INN";
+  const actions = CANONICAL_WORLD_LIFE_INTERNALS.productActions(r);
+  assert.ok(actions.some((entry) => entry.id === "LIFE:EAT:ITM078"));
+  assert.ok(actions.some((entry) => entry.id === "LIFE:SLEEP:ITM076"));
+
+  assert.deepEqual(CANONICAL_WORLD_LIFE_INTERNALS.spendMeal(r, 7), {
+    ok: true,
+    goldSpent: 0,
+    creditUsed: true,
+  });
+  assert.deepEqual(CANONICAL_WORLD_LIFE_INTERNALS.spendLodging(r, 6), {
+    ok: true,
+    goldSpent: 0,
+    creditUsed: true,
+  });
+  assert.equal(r.playerState.player.freeMeals, 0);
+  assert.equal(r.playerState.player.freeLodging, 0);
+  assert.equal(r.playerState.player.gold, 0);
 });
 
 test("bulk provision choices are visible only when their full multiplied price is affordable", () => {

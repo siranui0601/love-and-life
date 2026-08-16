@@ -33,6 +33,9 @@ const STATUSLESS_AUTHORED_FLOWS = new Set([
 ]);
 const defaultProvisionByRegion = Object.freeze({
   ...catalog.defaultProvisionByRegion,
+  '犯罪都市': 'ITM082',
+  '王都': 'ITM072',
+  'ドワーフ洞窟': 'ITM082',
   'エルフの隠れ里': 'ITM023',
 });
 const defaultLodgingByRegion = Object.freeze({
@@ -310,9 +313,11 @@ function productById(id) { return runtimeProducts.find((p) => p.productId === id
 function inferFood(row) {
   const region = row['場所']; const cost = num(row['支出']); const desc = row['行動'];
   const candidates = runtimeProducts.filter((p) => p.region === region && ['meal','provision'].includes(p.kind));
-  let chosen = candidates.find((p) => p.price === cost && (/携帯食|保存食/u.test(desc) ? p.kind === 'provision' : p.kind === 'meal'));
+  const portable = /携帯食|保存食/u.test(desc);
+  let chosen = portable ? productById(defaultProvisionByRegion[region]) : null;
+  if (!chosen) chosen = candidates.find((p) => p.price === cost && (portable ? p.kind === 'provision' : p.kind === 'meal'));
   if (!chosen && cost > 0) chosen = candidates.find((p) => p.price === cost);
-  if (!chosen && /携帯食|保存食/u.test(desc)) chosen = productById(defaultProvisionByRegion[region]);
+  if (!chosen && portable) chosen = productById(defaultProvisionByRegion[region]);
   if (!chosen) chosen = productById(catalog.defaultMealByRegion[region]) ?? productById(defaultProvisionByRegion[region]);
   return chosen ?? null;
 }
@@ -368,7 +373,7 @@ const EXACT_PUBLIC_LIFE_COMMAND_ROWS = Object.freeze({
   'VR2-D02-06': Object.freeze({
     sceneId: 'village-belonging', choiceId: 'accept_ordinary_place',
     requiredState: 'T01 resolved; Finn alive; at the ordinary village square on Day2-3',
-    resultingState: 'villagePlaceOffered; villageTrust+=1; Mira/Finn/Eda knowledge and GOAP updated',
+    resultingState: 'villagePlaceOffered; villageTrust+=1; freeLodging+=1; Mira/Finn/Eda knowledge and GOAP updated',
   }),
   'VR2-D04-02': Object.freeze({
     sceneId: 'village-safety-practice', choiceId: 'practice_and_report',
@@ -413,7 +418,7 @@ const EXACT_PUBLIC_LIFE_COMMAND_ROWS = Object.freeze({
   'VR2-D62-06': Object.freeze({
     sceneId: 'capital-shelter-distribution', choiceId: 'distribute_shelters',
     requiredState: 'T16 active; food relay contact exists; Matilda/Samira/Noah alive; Day62-65',
-    resultingState: 'shelters distributed by consent; shop and child records separated; children kept off courier duty',
+    resultingState: 'shelters distributed by consent; freeLodging+=1 for one public lower-inn relief bunk; shop and child records separated',
   }),
   'VR2-D64-02': Object.freeze({
     sceneId: 'capital-fair-supply', choiceId: 'publish_normal_prices',
@@ -468,7 +473,7 @@ const EXACT_PUBLIC_LIFE_COMMAND_ROWS = Object.freeze({
   'VR2-D85-07': Object.freeze({
     sceneId: 'village-closing-table', choiceId: 'share_letters_at_table',
     requiredState: 'homecoming complete; Eda/Finn/Mira/Garo alive; at LOC_FARM_INN on Day85',
-    resultingState: 'closing meal shared; distant NPC letters read; mutual-aid work continues without the player',
+    resultingState: 'closing meal shared; freeLodging+=1 for the inn night; distant NPC letters read; mutual-aid work continues without the player',
   }),
 });
 
@@ -487,6 +492,77 @@ function exactPublicLifeOverride(m) {
   m.implementationSource = 'src/server/trpg/content/authored-public-life-network.js';
   m.resolutionMethod = 'EXACT_AUTHORED';
   return resolvedPlayer(m, id);
+}
+
+const EXACT_REGIONAL_ACCESS_ROWS = Object.freeze({
+  'VR2-D28-02': Object.freeze({
+    actionId: 'REGIONAL_ACCESS:DWARF:copy_rescue_drawing',
+    regionId: 'ドワーフ洞窟', facilityId: 'LOC_DWARF_ENGINEER',
+    requiredState: 'T09-EVIDENCE-MINA-SUPPORT-STRESS-CALCULATION acquired; at LOC_DWARF_ENGINEER',
+    resultingState: 'progress.technicalKnowledge=true; the public JOB-DWARF-04 condition path is now satisfied',
+  }),
+  'VR2-D30-03': Object.freeze({
+    actionId: 'REGIONAL_ACCESS:FORT:register_supply_pass',
+    regionId: '北陵要塞', facilityId: 'LOC_FORT_GATE',
+    requiredState: 'at LOC_FORT_GATE; fortEntryPermit not yet granted',
+    resultingState: 'progress.fortEntryPermit=true; ordinary fort jobs, food, lodging and treatment use the same path',
+  }),
+  'VR2-D51-04': Object.freeze({
+    actionId: 'REGIONAL_ACCESS:FOREST:accept_hunter_rules',
+    regionId: '森', facilityId: 'LOC_FOREST_HUNTER_HUT',
+    requiredState: 'at LOC_FOREST_HUNTER_HUT; hunterApproval not yet granted',
+    resultingState: 'progress.hunterApproval=true; ordinary hunter work and material buying use the same path',
+  }),
+  'VR2-D52-03': Object.freeze({
+    actionId: 'REGIONAL_ACCESS:ELF:accept_guest_bough_invitation',
+    regionId: 'エルフの隠れ里', facilityId: 'LOC_ELF_GUEST_BOUGH',
+    requiredState: 'T07 route voluntary_return_with_youth_charter selected; Lysia present; at LOC_ELF_GUEST_BOUGH',
+    resultingState: 'worldFlags.elfApproval=true; the ordinary zero-price guest-bough lodging is public',
+  }),
+  'VR2-D53-05': Object.freeze({
+    actionId: 'REGIONAL_ACCESS:BLACKRIDGE:register_waterway_stay',
+    regionId: '黒嶺連合領', facilityId: 'LOC_BLACKRIDGE_GATE',
+    requiredState: 'at LOC_BLACKRIDGE_GATE; blackridgeEntryPermit not yet granted',
+    resultingState: 'progress.blackridgeEntryPermit=true; ordinary market, work and material-buyer gates use the same path',
+  }),
+});
+
+function exactRegionalAccessOverride(m) {
+  const spec = EXACT_REGIONAL_ACCESS_ROWS[m.legacyRowId];
+  if (!spec) return null;
+  m.regionId = spec.regionId;
+  m.facilityId = spec.facilityId;
+  m.requiredState = spec.requiredState;
+  m.resultingState = spec.resultingState;
+  m.implementationSource = 'src/server/trpg/content/canonical-regional-access.js';
+  m.resolutionMethod = 'EXACT_CANONICAL';
+  m.notes = 'an ordinary public access action writes the exact state path consumed by canonical services; no route-only flag';
+  return resolvedPlayer(m, spec.actionId);
+}
+
+const EXACT_FREE_MEAL_ROWS = Object.freeze({
+  'VR2-D21-08': Object.freeze({ productId: 'ITM032', source: 'VR2-D21-07 orphanage lunch credit' }),
+  'VR2-D31-01': Object.freeze({ productId: 'ITM161', source: 'VR2-D30-09 fort kitchen shift credit' }),
+  'VR2-D42-07': Object.freeze({ productId: 'ITM032', source: 'VR2-D42-05 orphanage shift credit' }),
+  'VR2-D69-07': Object.freeze({ productId: 'ITM032', source: 'VR2-D69-04/05 care and orphanage shift credit' }),
+  'VR2-D70-01': Object.freeze({ productId: 'ITM032', source: 'the second finite Day69 meal credit' }),
+  'VR2-D77-06': Object.freeze({ productId: 'ITM032', source: 'VR2-D77-05 aftercare meal credit' }),
+});
+
+function exactFreeMealOverride(m) {
+  const spec = EXACT_FREE_MEAL_ROWS[m.legacyRowId];
+  if (!spec) return null;
+  const product = productById(spec.productId);
+  if (!product || product.kind !== 'meal') throw new Error(`canonical meal missing: ${spec.productId}`);
+  m.regionId = product.region;
+  m.facilityId = product.facilityId;
+  m.productId = product.productId;
+  m.requiredState = `freeMeals>=1 from ${spec.source}; at ${product.facilityId}`;
+  m.resultingState = `freeMeals-=1; canonical ${product.productId} meal consumed; gold unchanged; hunger recovery`;
+  m.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js spendMeal';
+  m.resolutionMethod = 'EXACT_CREDIT';
+  m.notes = 'a finite structured meal credit pays for an ordinary public product; no free provision is invented';
+  return resolvedPlayer(m, `LIFE:EAT:${product.productId}`);
 }
 
 function narrativeSpec(source, requiredState, resultingState, notes) {
@@ -1375,6 +1451,96 @@ function exactAuthoredInvestigationOverride(m) {
 }
 
 function exactAuthoredOverride(m) {
+  if (m.legacyRowId === 'VR2-D01-01') {
+    m.regionId = '田園の村';
+    m.facilityId = 'LOC_FARM_INN';
+    m.productId = 'ITM003';
+    m.requiredState = 'freeStarterMeals>=1; at LOC_FARM_INN after ordinary local movement';
+    m.resultingState = 'freeMeals-=1; hunger recovered by canonical ITM003 meal; gold unchanged';
+    m.implementationSource = 'src/server/trpg/game/service.js gameplayTuning.freeStarterMeals + canonical-world-life-actions.js';
+    m.resolutionMethod = 'EXACT_CANONICAL';
+    m.notes = 'the structured starter meal pays for the only pre-reward breakfast; it is a public meal action, not a hidden grant';
+    return resolvedPlayer(m, 'LIFE:EAT:ITM003');
+  }
+
+  if (m.legacyRowId === 'VR2-D01-04') {
+    m.requiredState = 'starter meal already used; gold=0; hunger below collapse threshold before T01 search';
+    m.resultingState = 'no meal consumed and no gold spent; hunger carries into the rescue as the explicit Day1 trade-off';
+    m.implementationSource = 'tools/trpg-sim/lib/player-needs.mjs hunger thresholds + adjacent T01 mission commands';
+    m.resolutionMethod = 'EXACT_CANONICAL';
+    m.notes = 'there is no canonical zero-cost second lunch before the T01 reward; v3 does not invent one';
+    return narrative(m, m.implementationSource, m.notes);
+  }
+
+  if (m.legacyRowId === 'VR2-D01-08') {
+    m.requiredState = 'VR2-D01-07 selected MISSION_FLOW:T01:SQUARE_SUPPER:share_bread';
+    m.resultingState = 'hunger recovery and the zero-gold supper were already applied by the preceding authored public choice';
+    m.implementationSource = 'src/server/trpg/content/authored-mission-flow-day1-t01-square-aftercare.js';
+    m.resolutionMethod = 'EXACT_AUTHORED';
+    m.notes = 'do not consume a second provision after the same supper';
+    return narrative(m, m.implementationSource, m.notes);
+  }
+
+  if (m.legacyRowId === 'VR2-D85-08') {
+    m.requiredState = 'VR2-D85-07 selected PUBLIC_LIFE:VILLAGE_CLOSING_TABLE:share_letters_at_table';
+    m.resultingState = 'the shared closing dinner already reduced hunger; no second provision or gold is consumed';
+    m.implementationSource = 'src/server/trpg/content/authored-public-life-network.js';
+    m.resolutionMethod = 'EXACT_AUTHORED';
+    m.notes = 'the source description already places the supper inside the preceding public table scene; v3 does not charge or eat twice';
+    return narrative(m, m.implementationSource, m.notes);
+  }
+
+  if (m.legacyRowId === 'VR2-D11-08') {
+    m.regionId = '交易都市';
+    m.facilityId = 'LOC_TRADE_PORT';
+    m.jobId = 'JOB-TRADE-02';
+    m.productId = 'ITM082';
+    m.plannedStart = '17:45';
+    m.plannedEnd = '21:30';
+    m.requiredState = 'PUBLIC_LIFE:PORT_WORKING_TRUST completed by 17:45; at LOC_TRADE_PORT; JOB-TRADE-02 not yet worked today; canonical ITM082 provision owned';
+    m.resultingState = 'gold+=5; sameDayPortWork=true; time+=180; provisions.ITM082-=1; hunger recovery';
+    m.implementationSource = 'src/server/trpg/content/canonical-regional-labour.js + canonical-world-life-actions.js';
+    return resolvedSteps(m, [
+      commandStep('WORK:FACILITY:JOB-TRADE-02', 'CHOOSE', null, {
+        regionId: '交易都市', facilityId: 'LOC_TRADE_PORT', scheduledStart: '18:00', scheduledEnd: '21:00',
+      }),
+      commandStep('LIFE:EAT:ITM082', 'CHOOSE', null, {
+        regionId: '交易都市', facilityId: 'LOC_TRADE_PORT', scheduledStart: '21:00', scheduledEnd: '21:30',
+      }),
+    ], 'the 45-minute public Glenn scene ends at 17:45; a distinct evening port shift funds the route and truthfully unlocks the worker bunk, while dinner moves to 21:00', 'EXACT_ECONOMY');
+  }
+
+  if (m.legacyRowId === 'VR2-D11-09') {
+    m.regionId = '交易都市';
+    m.facilityId = 'LOC_TRADE_PORT';
+    m.plannedStart = '21:30';
+    m.plannedEnd = '22:30';
+    m.requiredState = 'JOB-TRADE-02 and the delayed dinner completed by 21:30';
+    m.resultingState = 'time+=60; fatigue recovery before the worker bunk';
+    m.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js';
+    m.resolutionMethod = 'EXACT_ECONOMY';
+    m.notes = 'the second real shift replaces 150 minutes of free time; the remaining 60 minutes is a canonical rest command';
+    return resolvedPlayer(m, 'LIFE:REST:60');
+  }
+
+  if (m.legacyRowId === 'VR2-D19-08') {
+    m.regionId = '田園の村';
+    m.facilityId = 'LOC_FARM_INN';
+    m.productId = 'ITM003';
+    m.requiredState = 'at LOC_FARM_INN; gold>=1';
+    m.resultingState = 'gold-=1; canonical ITM003 meal consumed; hunger recovery';
+    m.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js spendMeal';
+    m.resolutionMethod = 'EXACT_ECONOMY';
+    m.notes = 'the 1G inn meal keeps the player at the real evening JOB-FARM-03 facility; no travel time or free food is invented';
+    return resolvedPlayer(m, 'LIFE:EAT:ITM003');
+  }
+
+  const regionalAccess = exactRegionalAccessOverride(m);
+  if (regionalAccess) return regionalAccess;
+
+  const freeMeal = exactFreeMealOverride(m);
+  if (freeMeal) return freeMeal;
+
   const publicLife = exactPublicLifeOverride(m);
   if (publicLife) return publicLife;
   const exactNarrative = exactNarrativeOverride(m);
@@ -1609,13 +1775,13 @@ function exactAuthoredOverride(m) {
   if (m.legacyRowId === 'VR2-D08-08') {
     m.regionId = '田園の村';
     m.facilityId = 'LOC_FARM_GRANARY';
-    m.resultingState = 'time+=120; fatigue recovery; remaining legacy block reallocated to the 18:00 north-fence job';
+    m.resultingState = 'time+=90; fatigue recovery; remaining legacy block reallocated to local movement and the 18:00 north-fence job';
     m.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js';
     m.resolutionMethod = 'DETERMINISTIC_SPLIT';
     m.plannedStart = '16:00';
-    m.plannedEnd = '18:00';
-    m.notes = 'legacy 390-minute free-time block shortened to 120 minutes so JOB-FARM-04 can start inside its canonical 18:00-24:00 window';
-    return resolvedPlayer(m, 'LIFE:REST:120');
+    m.plannedEnd = '17:30';
+    m.notes = 'legacy 390-minute free-time block shortened to 90 minutes so the conservative 24-minute local move finishes before the canonical 18:00 watch';
+    return resolvedPlayer(m, 'LIFE:REST:90');
   }
 
   if (m.legacyRowId === 'VR2-D08-09') {
@@ -1623,17 +1789,17 @@ function exactAuthoredOverride(m) {
     m.facilityId = 'LOC_FARM_NORTH_FENCE';
     m.jobId = 'JOB-FARM-04';
     m.requiredState = 'villageTrust>=2; Day2 shared-watch roster complete; Day8 howl due; at LOC_FARM_GRANARY before 18:00';
-    m.resultingState = 'gold+=3; four-hour paid north-fence watch complete; howl triangulated with Jill; 390m rest; breakfast served and watch/damage timing evidence recorded';
-    m.implementationSource = 'src/server/trpg/content/canonical-regional-labour.js + authored-mission-flow-day2-day8-village-watch.js + authored-mission-flow-day8-t03-community-followthrough.js';
-    m.plannedStart = '18:00';
+    m.resultingState = 'gold+=3; four-hour paid north-fence watch complete; howl triangulated with Jill; written vigil continues to dawn; fatigue reaches collapse threshold; breakfast and watch/damage timing recorded';
+    m.implementationSource = 'src/server/trpg/content/canonical-regional-labour.js + authored-mission-flow-day2-day8-village-watch.js + authored-mission-flow-day8-t03-night-vigil.js + authored-mission-flow-day8-t03-community-followthrough.js';
+    m.plannedStart = '17:30';
     m.plannedEnd = '05:38(+1)';
     return resolvedSteps(m, [
-      moveLocalStep('LOC_FARM_NORTH_FENCE', '田園の村'),
-      commandStep('WORK:FACILITY:JOB-FARM-04', 'CHOOSE', null, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE' }),
-      commandStep('MISSION_FLOW:T03:DAY8_FIRST_HOWL:call_jill_to_fence', 'CHOOSE', null, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE' }),
-      commandStep('LIFE:REST:390', 'CHOOSE', null, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE' }),
-      commandStep('MISSION_FLOW:T03:DAY8_COMMUNITY:serve_watch_breakfast', 'CHOOSE', null, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE' }),
-    ], 'the obsolete hidden eight-hour local investigation is replaced by the canonical paid watch, two existing authored T03 choices and public rest; 52 minutes remain scheduling slack before Day9 06:30');
+      commandStep('MOVE_LOCAL:LOC_FARM_NORTH_FENCE', 'MOVE', { moveId: 'MOVE_LOCAL:LOC_FARM_NORTH_FENCE' }, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE', scheduledStart: '17:30', scheduledEnd: '17:54', conservativeMoveBudgetMinutes: 24 }),
+      commandStep('WORK:FACILITY:JOB-FARM-04', 'CHOOSE', null, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE', scheduledStart: '18:00', scheduledEnd: '22:00' }),
+      commandStep('MISSION_FLOW:T03:DAY8_FIRST_HOWL:call_jill_to_fence', 'CHOOSE', null, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE', scheduledStart: '22:00', scheduledEnd: '22:40' }),
+      commandStep('MISSION_FLOW:T03:DAY8_NIGHT_VIGIL:keep_written_watch_until_dawn', 'CHOOSE', null, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE', scheduledStart: '22:40', scheduledEnd: '05:10(+1)' }),
+      commandStep('MISSION_FLOW:T03:DAY8_COMMUNITY:serve_watch_breakfast', 'CHOOSE', null, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE', scheduledStart: '05:10(+1)', scheduledEnd: '05:38(+1)' }),
+    ], 'the hidden eight-hour investigate is replaced by the canonical paid watch and three public authored choices; every real duration is explicit and 52 minutes remain before Day9 06:30');
   }
 
   if (m.legacyRowId === 'VR2-D10-04') {
@@ -1947,10 +2113,6 @@ function exactAuthoredOverride(m) {
     return resolvedPlayer(m, authoredResolutionId('T07', 'voluntary_return_with_youth_charter'));
   }
 
-  if (m.legacyRowId === 'VR2-D52-03') {
-    return narrative(m, 'src/server/trpg/content/authored/missions/t07-runaway-elf-trafficking.js voluntary-return aftermath', 'Lysia speaking to the elder is the consequence of her ordinary T07 route choice, not a second T08 resolution command');
-  }
-
   if (m.legacyRowId === 'VR2-D52-05') {
     const evidence = authoredInvestigationSequence('T08', {
       originRegion: 'エルフの隠れ里',
@@ -2157,10 +2319,14 @@ function convertRow(row, index) {
   if (rt === 'REST') {
     const minutes = durationMinutes(row['開始'], row['終了']);
     if (/睡眠/u.test(row['行動'])) {
-      const pid = defaultLodgingByRegion[row['場所']]; const p = productById(pid);
+      const paid = num(row['支出']);
+      const lodgingCandidates = runtimeProducts.filter((entry) => entry.region === row['場所']
+        && ['lodging', 'camp', 'worker_lodging'].includes(entry.kind));
+      const p = (paid > 0 ? lodgingCandidates.find((entry) => entry.price === paid) : null)
+        ?? productById(defaultLodgingByRegion[row['場所']]);
       if (!p) return unresolved(m, 'MISSING_LODGING_PRODUCT', 'REPLACED_INVALID', `sleep ${minutes ?? '?'}min requires REST/SLEEP split`);
       m.productId = p.productId; m.facilityId = p.facilityId; m.requiredState = p.condition ?? `at ${p.facilityId}; lodging payment/free lodging available`;
-      m.resultingState = 'time+=480; fatigue/HP/MP recovery'; m.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js';
+      m.resultingState = `time+=480; gold-=${p.price} or freeLodging-=1; fatigue/HP/MP recovery`; m.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js';
       return resolvedPlayer(m, `LIFE:SLEEP:${p.productId}`);
     }
     if (minutes != null && runtimeRestDurations.includes(minutes)) {
@@ -2269,6 +2435,354 @@ function annotateLocalMoves(mappings) {
   return moves;
 }
 
+function stepsForMapping(mapping) {
+  if (mapping.replacementSteps) return JSON.parse(mapping.replacementSteps);
+  if (!mapping.actionId) return [];
+  return [commandStep(
+    mapping.actionId,
+    mapping.commandType || 'CHOOSE',
+    mapping.payload ? JSON.parse(mapping.payload) : null,
+  )];
+}
+
+const EXTRA_ECONOMY_WORK_SCHEDULES = Object.freeze({
+  'VR2-D03-11': Object.freeze([Object.freeze(['JOB-FARM-03', 1030])]),
+  'VR2-D04-08': Object.freeze([Object.freeze(['JOB-FARM-04', 1080])]),
+  'VR2-D05-07': Object.freeze([Object.freeze(['JOB-FARM-03', 960]), Object.freeze(['JOB-FARM-04', 1110])]),
+  'VR2-D06-08': Object.freeze([Object.freeze(['JOB-FARM-04', 1080])]),
+  'VR2-D07-09': Object.freeze([Object.freeze(['JOB-FARM-04', 1080])]),
+  'VR2-D19-09': Object.freeze([Object.freeze(['JOB-FARM-03', 1140])]),
+  'VR2-D20-11': Object.freeze([Object.freeze(['JOB-FARM-03', 960]), Object.freeze(['JOB-FARM-04', 1110])]),
+  'VR2-D22-07': Object.freeze([Object.freeze(['JOB-CAP-03', 870])]),
+  'VR2-D25-08': Object.freeze([Object.freeze(['JOB-TRADE-02', 990])]),
+  'VR2-D26-08': Object.freeze([Object.freeze(['JOB-TRADE-02', 990])]),
+  'VR2-D29-08': Object.freeze([Object.freeze(['JOB-DWARF-02', 890]), Object.freeze(['JOB-DWARF-04', 1040])]),
+  'VR2-D30-09': Object.freeze([Object.freeze(['JOB-FORT-02', 1110])]),
+  'VR2-D36-08': Object.freeze([Object.freeze(['JOB-TRADE-02', 990])]),
+  'VR2-D37-08': Object.freeze([Object.freeze(['JOB-TRADE-02', 990])]),
+  'VR2-D38-11': Object.freeze([Object.freeze(['JOB-TRADE-02', 1040])]),
+  'VR2-D40-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D41-11': Object.freeze([Object.freeze(['JOB-CAP-03', 930])]),
+  'VR2-D42-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D43-09': Object.freeze([Object.freeze(['JOB-CAP-03', 900])]),
+  'VR2-D47-09': Object.freeze([Object.freeze(['JOB-CRIME-01', 1065])]),
+  'VR2-D49-10': Object.freeze([Object.freeze(['JOB-CAP-03', 1020])]),
+  'VR2-D50-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D55-09': Object.freeze([Object.freeze(['JOB-TRADE-02', 1070])]),
+  'VR2-D62-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D63-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D64-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D65-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D68-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D69-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D70-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D71-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D72-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D73-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D74-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D75-08': Object.freeze([Object.freeze(['JOB-CAP-03', 990])]),
+  'VR2-D76-07': Object.freeze([Object.freeze(['JOB-CAP-03', 870])]),
+  'VR2-D77-07': Object.freeze([Object.freeze(['JOB-CAP-03', 870])]),
+});
+
+function addScheduledRest(steps, minutes, start, regionId, facilityId) {
+  const parts = splitCanonicalRest(minutes);
+  if (!parts) return 0;
+  let cursor = start;
+  for (const duration of parts) {
+    steps.push(commandStep(`LIFE:REST:${duration}`, 'CHOOSE', null, {
+      regionId,
+      facilityId,
+      scheduledStart: hhmm(cursor),
+      scheduledEnd: hhmm(cursor + duration),
+    }));
+    cursor += duration;
+  }
+  return parts.reduce((total, duration) => total + duration, 0);
+}
+
+function endpointAfterMapping(mapping, current) {
+  let endpoint = { ...current };
+  if (mapping.actionId.startsWith('MOVE_REGION:')) {
+    const regionId = mapping.actionId.slice('MOVE_REGION:'.length);
+    endpoint = { regionId, facilityId: catalog.defaultArrivalFacility[regionId] ?? '' };
+  }
+  for (const step of stepsForMapping(mapping)) {
+    if (step.actionId?.startsWith('MOVE_REGION:')) {
+      const regionId = step.actionId.slice('MOVE_REGION:'.length);
+      endpoint = { regionId, facilityId: step.facilityId ?? catalog.defaultArrivalFacility[regionId] ?? '' };
+    } else if (step.regionId || step.facilityId) {
+      endpoint = {
+        regionId: step.regionId ?? endpoint.regionId,
+        facilityId: step.facilityId ?? endpoint.facilityId,
+      };
+    }
+  }
+  if (mapping.regionId) endpoint.regionId = mapping.regionId;
+  if (mapping.facilityId) endpoint.facilityId = mapping.facilityId;
+  return endpoint;
+}
+
+function applyExtraEconomyWork(mappings) {
+  let endpoint = { regionId: null, facilityId: null };
+  let rows = 0;
+  let commands = 0;
+  let income = 0;
+  let freeMeals = 0;
+  const localMoveBudget = 24;
+
+  for (const mapping of mappings) {
+    const schedule = EXTRA_ECONOMY_WORK_SCHEDULES[mapping.legacyRowId];
+    if (!schedule) {
+      endpoint = endpointAfterMapping(mapping, endpoint);
+      continue;
+    }
+    if (mapping.legacyRuntimeAction !== 'REST' || /睡眠/u.test(mapping.legacyDescription)) {
+      throw new Error(`extra work must replace a non-sleep REST row: ${mapping.legacyRowId}`);
+    }
+    const blockStart = timeMinute(mapping.plannedStart);
+    const blockMinutes = durationMinutes(mapping.plannedStart, mapping.plannedEnd);
+    if (blockStart == null || blockMinutes == null) throw new Error(`invalid extra work block: ${mapping.legacyRowId}`);
+    const blockEnd = blockStart + blockMinutes;
+    let cursor = blockStart;
+    let slack = 0;
+    const steps = [];
+    const jobs = [];
+
+    for (const [jobId, scheduledStart] of schedule) {
+      const job = catalog.jobs.find((entry) => entry.jobId === jobId);
+      if (!job) throw new Error(`extra work job missing: ${jobId}`);
+      if (job.region !== mapping.regionId) throw new Error(`extra work region mismatch: ${mapping.legacyRowId}/${jobId}`);
+      if (!job.windows.some(([from, to]) => scheduledStart >= from && scheduledStart + job.minutes <= to)) {
+        throw new Error(`extra work outside canonical window: ${mapping.legacyRowId}/${jobId}`);
+      }
+      if (endpoint.facilityId && endpoint.facilityId !== job.facilityId) {
+        if (cursor + localMoveBudget > scheduledStart) throw new Error(`extra work move does not fit: ${mapping.legacyRowId}/${jobId}`);
+        const moveId = `MOVE_LOCAL:${job.facilityId}`;
+        steps.push(commandStep(moveId, 'MOVE', { moveId }, {
+          regionId: job.region,
+          facilityId: job.facilityId,
+          scheduledStart: hhmm(cursor),
+          scheduledEnd: hhmm(cursor + localMoveBudget),
+          conservativeMoveBudgetMinutes: localMoveBudget,
+        }));
+        cursor += localMoveBudget;
+        endpoint = { regionId: job.region, facilityId: job.facilityId };
+      }
+      const gap = scheduledStart - cursor;
+      const rested = addScheduledRest(steps, gap, cursor, job.region, endpoint.facilityId || job.facilityId);
+      slack += gap - rested;
+      cursor = scheduledStart;
+      steps.push(commandStep(`WORK:FACILITY:${job.jobId}`, 'CHOOSE', null, {
+        regionId: job.region,
+        facilityId: job.facilityId,
+        scheduledStart: hhmm(cursor),
+        scheduledEnd: hhmm(cursor + job.minutes),
+      }));
+      cursor += job.minutes;
+      endpoint = { regionId: job.region, facilityId: job.facilityId };
+      jobs.push(job);
+    }
+
+    if (cursor > blockEnd) throw new Error(`extra work exceeds block: ${mapping.legacyRowId}`);
+    const remaining = blockEnd - cursor;
+    const rested = addScheduledRest(steps, remaining, cursor, mapping.regionId, endpoint.facilityId);
+    slack += remaining - rested;
+    if (steps.length < 2) throw new Error(`extra work sequence too short: ${mapping.legacyRowId}`);
+
+    const wage = jobs.reduce((total, job) => total + job.wage, 0);
+    const mealCredits = jobs.reduce((total, job) => total + Number(job.freeMeals ?? 0), 0);
+    mapping.jobId = jobs.map((job) => job.jobId).join('|');
+    mapping.facilityId = endpoint.facilityId;
+    mapping.requiredState = jobs.map((job) => `${job.jobId}:${job.condition ?? 'no condition'}@${hhmm(schedule.find(([id]) => id === job.jobId)[1])}`).join('; ');
+    mapping.resultingState = `gold+=${wage}; extraWorkShifts+=${jobs.length}${mealCredits ? `; freeMeals+=${mealCredits}` : ''}; remaining block uses canonical REST`;
+    mapping.implementationSource = 'src/server/trpg/content/canonical-regional-labour.js + canonical-job-time-policy.js + canonical-world-life-actions.js';
+    resolvedSteps(mapping, steps, `explicit paid shift trade-off replaces part of the legacy free-time block; ${rested} final rest minutes; ${slack} total scheduling slack`, 'EXACT_ECONOMY');
+    rows += 1;
+    commands += jobs.length;
+    income += wage;
+    freeMeals += mealCredits;
+  }
+  return { rows, commands, income, freeMeals };
+}
+
+function applySameDayPortWorkerLodging(mappings) {
+  const workerBed = productById('ITM222');
+  const ordinaryInn = productById('ITM076');
+  if (!workerBed) throw new Error('canonical worker lodging ITM222 missing');
+  if (!ordinaryInn) throw new Error('canonical trade-city lodging ITM076 missing');
+  const portWorkDays = new Set(mappings
+    .filter((mapping) => {
+      const ids = [mapping.jobId, ...stepsForMapping(mapping).map((step) => step.actionId)];
+      return ids.some((id) => ['JOB-TRADE-01', 'JOB-TRADE-02', 'WORK:FACILITY:JOB-TRADE-01', 'WORK:FACILITY:JOB-TRADE-02'].includes(id));
+    })
+    .map((mapping) => mapping.legacyDay));
+  let rows = 0;
+  const rejectedLegacyRows = [];
+  for (const mapping of mappings) {
+    if (mapping.actionId !== 'LIFE:SLEEP:ITM222' || portWorkDays.has(mapping.legacyDay)) continue;
+    mapping.productId = ordinaryInn.productId;
+    mapping.facilityId = ordinaryInn.facilityId;
+    mapping.actionId = `LIFE:SLEEP:${ordinaryInn.productId}`;
+    mapping.choiceId = mapping.actionId;
+    mapping.payload = JSON.stringify({ choiceId: mapping.actionId, actionId: mapping.actionId });
+    mapping.requiredState = `at ${ordinaryInn.facilityId}; gold/freeLodging sufficient; no same-day JOB-TRADE-01/02 credit`;
+    mapping.resultingState = `time+=480; gold-=${ordinaryInn.price} or freeLodging-=1; fatigue/HP/MP recovery`;
+    mapping.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js ordinary lodging fallback';
+    mapping.resolutionMethod = 'DETERMINISTIC_ECONOMY';
+    mapping.notes = 'the source claimed a worker bunk without qualifying same-day port labour; v3 pays for the ordinary public inn instead';
+    rejectedLegacyRows.push(mapping.legacyRowId);
+  }
+  for (const mapping of mappings) {
+    if (mapping.actionId !== 'LIFE:SLEEP:ITM076' || !portWorkDays.has(mapping.legacyDay)) continue;
+    mapping.productId = workerBed.productId;
+    mapping.facilityId = workerBed.facilityId;
+    mapping.actionId = `LIFE:SLEEP:${workerBed.productId}`;
+    mapping.choiceId = mapping.actionId;
+    mapping.payload = JSON.stringify({ choiceId: mapping.actionId, actionId: mapping.actionId });
+    mapping.requiredState = `same-day JOB-TRADE-01/02 recorded; at ${workerBed.facilityId}; gold/freeLodging sufficient`;
+    mapping.resultingState = `time+=480; gold-=${workerBed.price} or freeLodging-=1; fatigue/HP/MP recovery`;
+    mapping.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js sameDayPortWork worker_lodging';
+    mapping.resolutionMethod = 'DETERMINISTIC_ECONOMY';
+    mapping.notes = 'same-day canonical port labour unlocks the public 2G worker bunk; the 6G inn is not charged';
+    rows += 1;
+  }
+  const invalidRows = mappings.filter((mapping) => mapping.actionId === 'LIFE:SLEEP:ITM222'
+    && !portWorkDays.has(mapping.legacyDay));
+  if (invalidRows.length) throw new Error(`worker lodging without same-day port work: ${invalidRows.map((row) => row.legacyRowId).join(',')}`);
+  return {
+    rows,
+    totalRows: mappings.filter((mapping) => mapping.actionId === 'LIFE:SLEEP:ITM222').length,
+    days: [...portWorkDays].sort((a, b) => a - b),
+    rejectedLegacyRows,
+  };
+}
+
+function remoteProvisionDemand(mappings, index, product) {
+  if (mappings[index].regionId !== product.region) return 0;
+  let demand = 0;
+  for (let cursor = index + 1; cursor < mappings.length; cursor += 1) {
+    const candidate = mappings[cursor];
+    if (candidate.actionId !== `LIFE:EAT:${product.productId}`) continue;
+    if (candidate.regionId === product.region) break;
+    demand += 1;
+  }
+  return demand;
+}
+
+function carriedProvisionReserve(mappings, index, product) {
+  let demand = 0;
+  for (let cursor = index + 1; cursor < mappings.length; cursor += 1) {
+    const candidate = mappings[cursor];
+    if (candidate.regionId === product.region) break;
+    if (candidate.actionId === `LIFE:EAT:${product.productId}`) demand += 1;
+  }
+  return demand;
+}
+
+function replaceProvisionMeal(mapping, fromProductId, toProductId) {
+  const fromActionId = `LIFE:EAT:${fromProductId}`;
+  const toActionId = `LIFE:EAT:${toProductId}`;
+  const replacementSteps = stepsForMapping(mapping).map((step) => step.actionId === fromActionId
+    ? { ...step, actionId: toActionId, payload: { choiceId: toActionId, actionId: toActionId } }
+    : step);
+  mapping.productId = toProductId;
+  mapping.actionId = mapping.actionId === fromActionId ? toActionId : mapping.actionId;
+  mapping.choiceId = mapping.choiceId === fromActionId ? toActionId : mapping.choiceId;
+  if (mapping.replacementSteps) {
+    mapping.replacementSteps = JSON.stringify(replacementSteps);
+    mapping.payload = JSON.stringify({ steps: replacementSteps });
+  } else {
+    mapping.payload = JSON.stringify({ choiceId: toActionId, actionId: toActionId });
+  }
+  mapping.requiredState = `canonicalWorldLife.provisions.${toProductId}>0 (paid carried stock)`;
+  mapping.resultingState = `provisions.${toProductId}-=1; hunger recovery; no new purchase`;
+  mapping.resolutionMethod = 'DETERMINISTIC_RESOURCE_REUSE';
+  mapping.notes = `${mapping.notes ? `${mapping.notes}; ` : ''}consume paid carried ${toProductId} before buying ${fromProductId}; future remote reserve preserved`;
+}
+
+function planProvisionPurchases(mappings) {
+  const inventory = {};
+  let purchaseRows = 0;
+  let purchaseCommands = 0;
+  let remoteMealsCovered = 0;
+  let carriedProvisionSubstitutions = 0;
+
+  for (let index = 0; index < mappings.length; index += 1) {
+    const mapping = mappings[index];
+    const existingSteps = stepsForMapping(mapping);
+    let eatProduct = mapping.actionId.startsWith('LIFE:EAT:')
+      ? productById(mapping.productId || mapping.actionId.split(':').at(-1))
+      : null;
+
+    if (eatProduct?.kind === 'provision') {
+      let productId = eatProduct.productId;
+      const currentDesired = Number(inventory[productId] ?? 0);
+      if (currentDesired < 1) {
+        const carried = runtimeProducts
+          .filter((product) => product.kind === 'provision' && product.productId !== productId)
+          .map((product) => ({
+            product,
+            available: Number(inventory[product.productId] ?? 0),
+            reserve: carriedProvisionReserve(mappings, index, product),
+          }))
+          .filter((entry) => entry.available > entry.reserve)
+          .sort((a, b) => (b.available - b.reserve) - (a.available - a.reserve)
+            || a.product.productId.localeCompare(b.product.productId))[0];
+        if (carried) {
+          replaceProvisionMeal(mapping, productId, carried.product.productId);
+          eatProduct = carried.product;
+          productId = eatProduct.productId;
+          carriedProvisionSubstitutions += 1;
+        }
+      }
+      const current = Number(inventory[productId] ?? 0);
+      const remoteDemand = remoteProvisionDemand(mappings, index, eatProduct);
+      const requiredBeforeEating = 1 + remoteDemand;
+      const missing = Math.max(0, requiredBeforeEating - current);
+      const purchases = Math.ceil(missing / Math.max(1, Number(eatProduct.portions ?? 1)));
+
+      if (purchases > 0) {
+        if (mapping.regionId !== eatProduct.region) {
+          throw new Error(`provision ${productId} missing before remote meal ${mapping.legacyRowId}`);
+        }
+        const buyId = `LIFE:BUY:${productId}`;
+        const buySteps = Array.from({ length: purchases }, () => commandStep(buyId, 'CHOOSE', null, {
+          regionId: eatProduct.region,
+          facilityId: eatProduct.facilityId,
+        }));
+        mapping.facilityId = eatProduct.facilityId;
+        mapping.requiredState = `at ${eatProduct.facilityId}; gold>=${eatProduct.price * purchases}; canonical ${productId} stock available`;
+        mapping.resultingState = `gold-=${eatProduct.price * purchases}; provisions.${productId}+=${eatProduct.portions * purchases}; provisions.${productId}-=1; hunger recovery`;
+        mapping.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js buy_provision + eat_provision';
+        resolvedSteps(
+          mapping,
+          [...buySteps, ...existingSteps],
+          `${purchases} canonical purchase command(s) fund this meal${remoteDemand ? ` and ${remoteDemand} carried remote meal(s)` : ''}; no implicit inventory`,
+          'DETERMINISTIC_RESOURCE_SPLIT',
+        );
+        inventory[productId] = current + eatProduct.portions * purchases;
+        purchaseRows += 1;
+        purchaseCommands += purchases;
+        remoteMealsCovered += remoteDemand;
+      }
+
+      inventory[productId] = Number(inventory[productId] ?? current) - 1;
+      if (inventory[productId] < 0) throw new Error(`negative ${productId} after ${mapping.legacyRowId}`);
+      continue;
+    }
+
+    for (const step of existingSteps) {
+      if (!step.actionId?.startsWith('LIFE:BUY:')) continue;
+      const product = productById(step.actionId.split(':').at(-1));
+      if (product?.kind !== 'provision') continue;
+      inventory[product.productId] = Number(inventory[product.productId] ?? 0) + Number(product.portions ?? 1);
+    }
+  }
+
+  return { inventory, purchaseRows, purchaseCommands, remoteMealsCovered, carriedProvisionSubstitutions };
+}
+
 function main() {
   const args = process.argv.slice(2); const input = args[0] ? path.resolve(args[0]) : DEFAULT_INPUT; const outDir = args[1] ? path.resolve(args[1]) : DEFAULT_OUT;
   const inputText = readInputCsv(input); const source = sourceMetadata(input, inputText);
@@ -2277,11 +2791,15 @@ function main() {
   if (sourceRows.length !== 831) throw new Error(`expected 831 legacy rows, got ${sourceRows.length}`);
   if (source.dataRows != null && source.dataRows !== sourceRows.length) throw new Error(`metadata row count ${source.dataRows} != ${sourceRows.length}`);
   if (source.columns != null && source.columns !== headers.length) throw new Error(`metadata column count ${source.columns} != ${headers.length}`);
-  const mappings = sourceRows.map(convertRow); const localMoves = annotateLocalMoves(mappings);
+  const mappings = sourceRows.map(convertRow);
+  const provisionPlan = planProvisionPurchases(mappings);
+  const extraWork = applyExtraEconomyWork(mappings);
+  const workerLodging = applySameDayPortWorkerLodging(mappings);
+  const localMoves = annotateLocalMoves(mappings);
   const unresolvedRows = mappings.filter((m) => m.status === 'UNRESOLVED');
   const counts = (key, rows = mappings) => Object.fromEntries([...new Set(rows.map((r) => r[key] || '(blank)'))].sort().map((v) => [v, rows.filter((r) => (r[key] || '(blank)') === v).length]));
   const summary = {
-    compilerVersion: 'virtue-route-v3-static-compiler-v5', sourceHead: process.env.GITHUB_SHA ?? catalog.sourceHead,
+    compilerVersion: 'virtue-route-v3-static-compiler-v6', sourceHead: process.env.GITHUB_SHA ?? catalog.sourceHead,
     generatedAt: source.fetchedAt ?? new Date().toISOString(),
     sourceSpreadsheetId: source.spreadsheetId, sourceSpreadsheetTitle: source.spreadsheetTitle ?? null,
     sourceSheetName: source.sheetName, sourceSheetId: source.sheetId ?? null,
@@ -2293,11 +2811,25 @@ function main() {
     byLegacyRuntimeAction: counts('legacyRuntimeAction'), byClassification: counts('classification'), byStatus: counts('status'),
     unresolvedByReason: counts('unresolvedReason', unresolvedRows), canonicalJobsInCatalog: catalog.jobs.length, canonicalProductsInCatalog: runtimeProducts.length,
     exactAuthoredOverrideRows: mappings.filter((m) => m.resolutionMethod === 'EXACT_AUTHORED').length,
+    provisionPurchaseRows: provisionPlan.purchaseRows,
+    provisionPurchaseCommands: provisionPlan.purchaseCommands,
+    remoteProvisionMealsCovered: provisionPlan.remoteMealsCovered,
+    carriedProvisionSubstitutions: provisionPlan.carriedProvisionSubstitutions,
+    finalProvisionInventory: provisionPlan.inventory,
+    workerLodgingRows: workerLodging.rows,
+    workerLodgingTotalRows: workerLodging.totalRows,
+    workerLodgingEligibleDays: workerLodging.days,
+    workerLodgingRejectedLegacyRows: workerLodging.rejectedLegacyRows,
+    extraWorkRows: extraWork.rows,
+    extraWorkCommands: extraWork.commands,
+    extraWorkIncome: extraWork.income,
+    extraWorkFreeMeals: extraWork.freeMeals,
     workRowsReallocated: mappings.filter((m) => m.jobId && /reallocated/u.test(m.notes)).length,
     proposedMoveLocalInsertions: localMoves.length,
     regionalMoveRows: mappings.filter((m) => m.actionId.startsWith('MOVE_REGION:')).length,
     forbiddenStatusRows: mappings.filter((m) => FORBIDDEN_STATUS.test(m.status)).length,
     nonFinalStatusRows: mappings.filter((m) => !FINAL_STATUSES.has(m.status)).length,
+    expandedV3Rows: mappings.reduce((total, mapping) => total + Math.max(1, stepsForMapping(mapping).length), 0) + localMoves.length,
     forbiddenReplayExecuted: false,
   };
   fs.mkdirSync(outDir,{recursive:true});

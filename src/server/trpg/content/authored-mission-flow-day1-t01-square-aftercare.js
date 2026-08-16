@@ -1,4 +1,5 @@
 import * as base from "./authored-mission-flow-t13-workshop-cargo-yard.js";
+import { consumeMeal } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 
 export * from "./authored-mission-flow-t13-workshop-cargo-yard.js";
 
@@ -250,6 +251,19 @@ function consume(runtime, action, result) {
   runtime.playerState.history ??= [];
   runtime.playerState.evidence ??= {};
   runtime.playerState.worldFlags[action.authoredDay1T01AftercareWorldFlag] = true;
+  if (action.id === "MISSION_FLOW:T01:SQUARE_SUPPER:share_bread") {
+    const meal = consumeMeal(player(runtime), {
+      minute,
+      nutrition: 58,
+      quality: "standard",
+    });
+    result.meal = {
+      source: "Mira and Finn's shared bread",
+      price: 0,
+      quality: meal.quality,
+      hungerReduced: meal.hungerReduced,
+    };
+  }
   if (action.authoredDay1T01AftercareEvidenceId) {
     runtime.playerState.evidence[action.authoredDay1T01AftercareEvidenceId] = {
       id: action.authoredDay1T01AftercareEvidenceId,

@@ -85,6 +85,14 @@ function gold(runtime) {
   return Number(player(runtime)?.gold ?? 0);
 }
 
+function mealCredits(runtime) {
+  return Number(player(runtime)?.freeMeals ?? 0);
+}
+
+function lodgingCredits(runtime) {
+  return Number(player(runtime)?.freeLodging ?? 0);
+}
+
 function setGold(runtime, value) {
   player(runtime).gold = Math.max(0, Number(value) || 0);
 }
@@ -113,7 +121,8 @@ function availableAt(runtime, tuple) {
   return String(p.location ?? "") === location
     && String(p.facilityId ?? "") === facilityId
     && permit(runtime, condition)
-    && gold(runtime) >= Number(price ?? 0);
+    && (gold(runtime) >= Number(price ?? 0)
+      || (["lodging", "worker_lodging"].includes(tuple[5]) && lodgingCredits(runtime) > 0));
 }
 
 function actionBase(id, label, minutes, extra = {}) {
@@ -143,7 +152,7 @@ function productActions(runtime) {
           canonicalWorldLifeKind: "buy_provision", productId, price, portions,
         }));
       }
-      if (kind === "meal" && gold(runtime) >= Number(price)) {
+      if (kind === "meal" && (gold(runtime) >= Number(price) || mealCredits(runtime) > 0)) {
         out.push(actionBase(`LIFE:EAT:${productId}`, `${label}を食べる（${price}G）`, 30, {
           canonicalWorldLifeKind: "eat_meal", productId, price,
         }));
@@ -188,6 +197,28 @@ function spend(runtime, amount) {
   if (gold(runtime) < price) return false;
   setGold(runtime, gold(runtime) - price);
   return true;
+}
+
+function spendMeal(runtime, amount) {
+  const price = Math.max(0, Number(amount) || 0);
+  const current = player(runtime);
+  if (price > 0 && mealCredits(runtime) > 0) {
+    current.freeMeals = Math.max(0, mealCredits(runtime) - 1);
+    return { ok: true, goldSpent: 0, creditUsed: true };
+  }
+  if (!spend(runtime, price)) return { ok: false, goldSpent: 0, creditUsed: false };
+  return { ok: true, goldSpent: price, creditUsed: false };
+}
+
+function spendLodging(runtime, amount) {
+  const price = Math.max(0, Number(amount) || 0);
+  const current = player(runtime);
+  if (price > 0 && lodgingCredits(runtime) > 0) {
+    current.freeLodging = Math.max(0, lodgingCredits(runtime) - 1);
+    return { ok: true, goldSpent: 0, creditUsed: true };
+  }
+  if (!spend(runtime, price)) return { ok: false, goldSpent: 0, creditUsed: false };
+  return { ok: true, goldSpent: price, creditUsed: false };
 }
 
 function history(runtime, entry) {
@@ -237,7 +268,8 @@ function consume(runtime, actionValue, result) {
   }
 
   if (kind === "eat_meal") {
-    if (!spend(runtime, actionValue.price)) {
+    const payment = spendMeal(runtime, actionValue.price);
+    if (!payment.ok) {
       result.ok = false;
       result.code = "not_enough_gold";
       result.summary = "所持金が足りない。";
@@ -247,12 +279,19 @@ function consume(runtime, actionValue, result) {
     consumeMeal(p, { minute: runtime.playerState.absoluteMinute, nutrition: hearty ? 66 : 58, quality: hearty ? "hearty" : "standard" });
     state.meals[productId] = Number(state.meals[productId] ?? 0) + 1;
     result.summary = `${PRODUCTS[productId]?.[3] ?? productId}を食べた。`;
-    history(runtime, { actionId: actionValue.id, kind, productId, goldDelta: -Number(actionValue.price ?? 0) });
+    history(runtime, {
+      actionId: actionValue.id,
+      kind,
+      productId,
+      goldDelta: -payment.goldSpent,
+      freeMealUsed: payment.creditUsed,
+    });
     return true;
   }
 
   if (kind === "sleep") {
-    if (!spend(runtime, actionValue.price)) {
+    const payment = spendLodging(runtime, actionValue.price);
+    if (!payment.ok) {
       result.ok = false;
       result.code = "not_enough_gold";
       result.summary = "宿代が足りない。";
@@ -266,7 +305,13 @@ function consume(runtime, actionValue, result) {
     });
     state.sleeps[productId] = Number(state.sleeps[productId] ?? 0) + 1;
     result.summary = `${PRODUCTS[productId]?.[3] ?? productId}で休んだ。`;
-    history(runtime, { actionId: actionValue.id, kind, productId, goldDelta: -Number(actionValue.price ?? 0) });
+    history(runtime, {
+      actionId: actionValue.id,
+      kind,
+      productId,
+      goldDelta: -payment.goldSpent,
+      freeLodgingUsed: payment.creditUsed,
+    });
     return true;
   }
 
@@ -340,4 +385,13 @@ export function applyAuthoredMissionFlowAction(runtime, actionValue, result) {
   return handled;
 }
 
-export const CANONICAL_WORLD_LIFE_INTERNALS = Object.freeze({ PRODUCTS, REST_DURATIONS, productActions, restActions, ownActions, permit });
+export const CANONICAL_WORLD_LIFE_INTERNALS = Object.freeze({
+  PRODUCTS,
+  REST_DURATIONS,
+  productActions,
+  restActions,
+  ownActions,
+  permit,
+  spendMeal,
+  spendLodging,
+});

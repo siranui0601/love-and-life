@@ -1,0 +1,339 @@
+{
+  "validatorVersion": "virtue-route-v3-static-validator-v1",
+  "compilerVersion": "virtue-route-v3-static-compiler-v6",
+  "sourceSpreadsheetId": "1aSLu_pSLNsFsUm42juEyOrLDmTkJd7NPOOrQNnvnMwA",
+  "sourceSheetName": "正規台帳",
+  "sourceRows": 831,
+  "sourceColumns": 32,
+  "sourceHashAlgorithm": "sha256",
+  "sourceHash": "eb26d459851f7bcc8d9d159e6f86f5da016ce70cccbdbac329e9e684b4d14120",
+  "mappingRows": 831,
+  "mappingHashAlgorithm": "sha256",
+  "mappingHash": "2d97c7e55e7c73e54cdf255d76078f360a216e5218c43103cb4d4db853f21522",
+  "result": "PASS",
+  "errorCount": 0,
+  "errors": [],
+  "checks": {
+    "unmapped": 0,
+    "unknown": 0,
+    "todo": 0,
+    "partial": 0,
+    "workCommands": 101,
+    "workFacilityDayDuplicates": 0,
+    "workWindowViolations": 0,
+    "workConditionViolations": 0,
+    "provisionUnderflows": 0,
+    "insufficientGoldRows": 0,
+    "workerLodgingViolations": 0,
+    "replayExecuted": false
+  },
+  "economy": {
+    "startingGold": 0,
+    "totalIncome": 981,
+    "totalExpense": 947,
+    "minimumGold": 0,
+    "minimumGoldRow": "START",
+    "finalGold": 34,
+    "incomeBySource": {
+      "mission": 460,
+      "authoredLivelihood": 3,
+      "work": 445,
+      "materialSale": 6,
+      "equipmentSale": 67
+    },
+    "expenseBySource": {
+      "food": 360,
+      "equipmentBuy": 323,
+      "lodging": 255,
+      "debt": 6,
+      "service": 3
+    },
+    "finalFreeMeals": 0,
+    "finalFreeLodging": 0,
+    "finalProvisionInventory": {},
+    "debtStatus": "paid",
+    "debtRemainingG": 0
+  },
+  "progression": {
+    "finalLevel": 11,
+    "totalSp": 12,
+    "usedSp": 11,
+    "finalSp": 1,
+    "learnedSkillCount": 11,
+    "learnedSkillIds": [
+      "SKL-0049",
+      "SKL-0050",
+      "SKL-0051",
+      "SKL-0052",
+      "SKL-0054",
+      "SKL-0055",
+      "SKL-0140",
+      "SKL-0141",
+      "SKL-0142",
+      "SKL-0146",
+      "SKL-0149"
+    ],
+    "skillTransitions": [
+      {
+        "rowId": "VR2-D01-02",
+        "skillId": "SKL-0049",
+        "spAfter": 1
+      },
+      {
+        "rowId": "VR2-D03-02",
+        "skillId": "SKL-0140",
+        "spAfter": 1
+      },
+      {
+        "rowId": "VR2-D20-06",
+        "skillId": "SKL-0142",
+        "spAfter": 2
+      },
+      {
+        "rowId": "VR2-D20-07",
+        "skillId": "SKL-0141",
+        "spAfter": 1
+      },
+      {
+        "rowId": "VR2-D32-07",
+        "skillId": "SKL-0052",
+        "spAfter": 2
+      },
+      {
+        "rowId": "VR2-D32-08",
+        "skillId": "SKL-0055",
+        "spAfter": 1
+      },
+      {
+        "rowId": "VR2-D41-06",
+        "skillId": "SKL-0050",
+        "spAfter": 1
+      },
+      {
+        "rowId": "VR2-D43-06",
+        "skillId": "SKL-0149",
+        "spAfter": 0
+      },
+      {
+        "rowId": "VR2-D49-07",
+        "skillId": "SKL-0051",
+        "spAfter": 1
+      },
+      {
+        "rowId": "VR2-D52-07",
+        "skillId": "SKL-0146",
+        "spAfter": 0
+      },
+      {
+        "rowId": "VR2-D78-06",
+        "skillId": "SKL-0054",
+        "spAfter": 1
+      }
+    ]
+  },
+  "survival": {
+    "basis": "authored numeric row boundaries; inserted economy commands are separately checked for canonical duration/window and followed by authored sleep boundaries",
+    "maximumHunger": 63.7,
+    "maximumFatigue": 100,
+    "minimumHp": 31,
+    "minimumMp": 45,
+    "intendedCollapseRows": [
+      "VR2-D09-05"
+    ]
+  },
+  "equipment": {
+    "finalOwned": {
+      "EQP-A-0203": 1,
+      "EQP-S-0201": 1,
+      "EQP-W-0302": 1
+    },
+    "finalEquipped": {
+      "body": "EQP-A-0203",
+      "offHand": "EQP-S-0201",
+      "mainHand": "EQP-W-0302"
+    },
+    "transitions": [
+      {
+        "rowId": "VR2-D03-07",
+        "type": "buy",
+        "equipmentId": "EQP-W-0201",
+        "gold": -10
+      },
+      {
+        "rowId": "VR2-D03-08",
+        "type": "buy",
+        "equipmentId": "EQP-S-0001",
+        "gold": -8
+      },
+      {
+        "rowId": "VR2-D03-09",
+        "type": "equip",
+        "equipmentId": "EQP-W-0201",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D03-09",
+        "type": "equip",
+        "equipmentId": "EQP-S-0001",
+        "slot": "offHand"
+      },
+      {
+        "rowId": "VR2-D10-06",
+        "type": "buy",
+        "equipmentId": "EQP-A-0201",
+        "gold": -6
+      },
+      {
+        "rowId": "VR2-D10-06",
+        "type": "equip",
+        "equipmentId": "EQP-A-0201",
+        "slot": "body"
+      },
+      {
+        "rowId": "VR2-D23-07",
+        "type": "unequip",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D23-07",
+        "type": "sell",
+        "equipmentId": "EQP-W-0201",
+        "gold": 4
+      },
+      {
+        "rowId": "VR2-D23-08",
+        "type": "buy",
+        "equipmentId": "EQP-W-0207",
+        "gold": -29
+      },
+      {
+        "rowId": "VR2-D23-08",
+        "type": "equip",
+        "equipmentId": "EQP-W-0207",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D38-07",
+        "type": "unequip",
+        "slot": "body"
+      },
+      {
+        "rowId": "VR2-D38-07",
+        "type": "sell",
+        "equipmentId": "EQP-A-0201",
+        "gold": 2
+      },
+      {
+        "rowId": "VR2-D38-08",
+        "type": "buy",
+        "equipmentId": "EQP-A-0203",
+        "gold": -34
+      },
+      {
+        "rowId": "VR2-D38-08",
+        "type": "equip",
+        "equipmentId": "EQP-A-0203",
+        "slot": "body"
+      },
+      {
+        "rowId": "VR2-D41-07",
+        "type": "unequip",
+        "slot": "offHand"
+      },
+      {
+        "rowId": "VR2-D41-07",
+        "type": "sell",
+        "equipmentId": "EQP-S-0001",
+        "gold": 3
+      },
+      {
+        "rowId": "VR2-D41-08",
+        "type": "buy",
+        "equipmentId": "EQP-S-0201",
+        "gold": -13
+      },
+      {
+        "rowId": "VR2-D41-09",
+        "type": "equip",
+        "equipmentId": "EQP-S-0201",
+        "slot": "offHand"
+      },
+      {
+        "rowId": "VR2-D46-08",
+        "type": "unequip",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D46-08",
+        "type": "sell",
+        "equipmentId": "EQP-W-0207",
+        "gold": 13
+      },
+      {
+        "rowId": "VR2-D46-09",
+        "type": "buy",
+        "equipmentId": "EQP-W-0301",
+        "gold": -75
+      },
+      {
+        "rowId": "VR2-D46-10",
+        "type": "equip",
+        "equipmentId": "EQP-W-0301",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D60-07",
+        "type": "unequip",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D60-07",
+        "type": "sell",
+        "equipmentId": "EQP-W-0301",
+        "gold": 45
+      },
+      {
+        "rowId": "VR2-D60-08",
+        "type": "buy",
+        "equipmentId": "EQP-W-0302",
+        "gold": -148
+      },
+      {
+        "rowId": "VR2-D61-06",
+        "type": "equip",
+        "equipmentId": "EQP-W-0302",
+        "slot": "mainHand"
+      }
+    ]
+  },
+  "world": {
+    "incidentStates": {
+      "T01": "resolved",
+      "T02": "resolved",
+      "T03": "resolved",
+      "T04": "resolved",
+      "T05": "resolved",
+      "T06": "resolved",
+      "T07": "resolved",
+      "T08": "resolved",
+      "T09": "resolved",
+      "T10": "resolved",
+      "T11": "resolved",
+      "T12": "resolved",
+      "T13": "resolved",
+      "T14": "resolved",
+      "T15": "suppressed",
+      "T16": "resolved",
+      "T17": "resolved",
+      "T18": "suppressed",
+      "T19": "suppressed"
+    },
+    "npcResolvedIncidentCount": 3,
+    "publicNpcFactCount": 21,
+    "publicNpcGoalCount": 13,
+    "trackedNpcLocationCount": 46,
+    "worldFlagCount": 63
+  },
+  "ledgerRows": 831,
+  "replayExecuted": false
+}

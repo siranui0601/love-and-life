@@ -16,6 +16,7 @@ function runtime() {
       player: {
         location: "田園の村",
         facilityId: "LOC_FARM_SQUARE",
+        needs: { hunger: 60, fatigue: 10 },
       },
       missions: [{
         id: "MSN-T01",
@@ -102,6 +103,22 @@ test("the supper branches produce different state and do not repeat", () => {
 
   const repeated = authoredMissionFlowExclusiveActions(state);
   assert.ok(!repeated?.some((action) => action.authoredDay1T01AftercareChoice));
+});
+
+test("sharing bread is the actual zero-gold supper, not a second hidden provision", () => {
+  const state = runtime();
+  const help = authoredMissionFlowExclusiveActions(state)
+    .find((action) => action.id === internals.HELP_ACTION_ID);
+  choose(state, help);
+
+  const bread = authoredMissionFlowExclusiveActions(state)
+    .find((action) => action.id === "MISSION_FLOW:T01:SQUARE_SUPPER:share_bread");
+  const result = choose(state, bread);
+
+  assert.equal(state.playerState.player.needs.hunger, 2);
+  assert.equal(result.meal.price, 0);
+  assert.equal(result.meal.hungerReduced, 58);
+  assert.equal(result.meal.source, "Mira and Finn's shared bread");
 });
 
 test("eligibility reads do not mutate the persisted runtime", () => {

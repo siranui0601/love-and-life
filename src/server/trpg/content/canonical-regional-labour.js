@@ -1,6 +1,6 @@
-import * as base from "./authored-public-life-network.js";
+import * as base from "./canonical-regional-access.js";
 
-export * from "./authored-public-life-network.js";
+export * from "./canonical-regional-access.js";
 
 export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v5";
 

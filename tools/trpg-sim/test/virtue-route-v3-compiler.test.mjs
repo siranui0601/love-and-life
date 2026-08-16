@@ -63,7 +63,23 @@ test("checkpoint compile is deterministic and does not execute replay", { skip: 
   assert.equal(summary.autoResolvedRows, 831);
   assert.equal(summary.unresolvedRows, 0);
   assert.equal(summary.provisionalCoveragePercent, 100);
-  assert.equal(summary.exactAuthoredOverrideRows, 108);
+  assert.equal(summary.compilerVersion, "virtue-route-v3-static-compiler-v6");
+  assert.equal(summary.exactAuthoredOverrideRows, 110);
+  assert.equal(summary.provisionPurchaseRows, 104);
+  assert.equal(summary.provisionPurchaseCommands, 109);
+  assert.equal(summary.remoteProvisionMealsCovered, 27);
+  assert.equal(summary.carriedProvisionSubstitutions, 24);
+  assert.deepEqual(summary.finalProvisionInventory, {
+    ITM008: 0, ITM082: 0, ITM072: 0, ITM163: 0,
+    ITM179: 0, ITM192: 0, ITM023: 0, ITM205: 0,
+  });
+  assert.equal(summary.workerLodgingTotalRows, 20);
+  assert.deepEqual(summary.workerLodgingRejectedLegacyRows, ["VR2-D48-10"]);
+  assert.equal(summary.extraWorkRows, 37);
+  assert.equal(summary.extraWorkCommands, 40);
+  assert.equal(summary.extraWorkIncome, 132);
+  assert.equal(summary.proposedMoveLocalInsertions, 336);
+  assert.equal(summary.expandedV3Rows, 1526);
   assert.equal(summary.canonicalJobsInCatalog, 28);
   assert.equal(summary.canonicalProductsInCatalog, 44);
   assert.deepEqual(summary.unresolvedByReason, {});
@@ -88,6 +104,11 @@ test("checkpoint compile is deterministic and does not execute replay", { skip: 
   const byId = Object.fromEntries(rows.map((row) => [row.legacyRowId, row]));
   const stepIds = (rowId) => JSON.parse(byId[rowId].replacementSteps).map((step) => step.actionId);
 
+  assert.equal(byId["VR2-D01-01"].actionId, "LIFE:EAT:ITM003");
+  assert.equal(byId["VR2-D01-04"].classification, "NARRATIVE_OUTCOME");
+  assert.equal(byId["VR2-D01-08"].classification, "NARRATIVE_OUTCOME");
+  assert.match(byId["VR2-D01-04"].notes, /does not invent/u);
+
   for (const row of rows.filter((entry) => entry.status === "OUTCOME")) {
     assert.ok(row.implementationSource, `${row.legacyRowId} outcome needs an implementation source`);
     assert.ok(row.resultingState, `${row.legacyRowId} outcome needs a concrete resulting state`);
@@ -104,6 +125,35 @@ test("checkpoint compile is deterministic and does not execute replay", { skip: 
       if (step.commandType === "SHOP_SELL") assert.equal(step.actionId, step.payload.equipmentId);
       if (step.commandType === "EQUIP") assert.equal(step.actionId, step.payload.equipmentId);
       if (step.commandType === "UNEQUIP") assert.equal(step.actionId, step.payload.slot);
+    }
+  }
+
+  const runtimeCatalog = JSON.parse(await readFile(
+    path.join(ROOT, "tools/trpg-sim/lib/virtue-route-v3-runtime-catalog.json"),
+    "utf8",
+  ));
+  const products = new Map(runtimeCatalog.products.map((product) => [product.productId, product]));
+  const provisions = {};
+  for (const row of rows) {
+    const steps = row.replacementSteps
+      ? JSON.parse(row.replacementSteps)
+      : [{ actionId: row.actionId }];
+    for (const step of steps) {
+      if (step.actionId?.startsWith("LIFE:BUY:")) {
+        const productId = step.actionId.split(":").at(-1);
+        const product = products.get(productId);
+        if (product?.kind === "provision") {
+          provisions[productId] = Number(provisions[productId] ?? 0) + Number(product.portions ?? 1);
+        }
+      }
+      if (step.actionId?.startsWith("LIFE:EAT:")) {
+        const productId = step.actionId.split(":").at(-1);
+        const product = products.get(productId);
+        if (product?.kind === "provision") {
+          provisions[productId] = Number(provisions[productId] ?? 0) - 1;
+          assert.ok(provisions[productId] >= 0, `${row.legacyRowId} consumes unowned ${productId}`);
+        }
+      }
     }
   }
 
@@ -142,17 +192,27 @@ test("checkpoint compile is deterministic and does not execute replay", { skip: 
   ]);
   assert.match(byId["VR2-D03-09"].notes, /no canonical loanId/u);
   assert.equal(byId["VR2-D08-06"].classification, "NARRATIVE_OUTCOME");
-  assert.equal(byId["VR2-D08-08"].actionId, "LIFE:REST:120");
+  assert.equal(byId["VR2-D08-08"].actionId, "LIFE:REST:90");
   assert.deepEqual(stepIds("VR2-D08-09"), [
     "MOVE_LOCAL:LOC_FARM_NORTH_FENCE",
     "WORK:FACILITY:JOB-FARM-04",
     "MISSION_FLOW:T03:DAY8_FIRST_HOWL:call_jill_to_fence",
-    "LIFE:REST:390",
+    "MISSION_FLOW:T03:DAY8_NIGHT_VIGIL:keep_written_watch_until_dawn",
     "MISSION_FLOW:T03:DAY8_COMMUNITY:serve_watch_breakfast",
   ]);
   assert.equal(byId["VR2-D08-09"].jobId, "JOB-FARM-04");
-  assert.equal(byId["VR2-D08-09"].plannedStart, "18:00");
+  assert.equal(byId["VR2-D08-09"].plannedStart, "17:30");
   assert.equal(byId["VR2-D08-09"].plannedEnd, "05:38(+1)");
+  assert.deepEqual(JSON.parse(byId["VR2-D08-09"].replacementSteps).map((step) => [step.scheduledStart, step.scheduledEnd]), [
+    ["17:30", "17:54"], ["18:00", "22:00"], ["22:00", "22:40"],
+    ["22:40", "05:10(+1)"], ["05:10(+1)", "05:38(+1)"],
+  ]);
+  assert.deepEqual(stepIds("VR2-D11-08"), ["WORK:FACILITY:JOB-TRADE-02", "LIFE:EAT:ITM082"]);
+  assert.equal(byId["VR2-D11-09"].actionId, "LIFE:REST:60");
+  assert.equal(byId["VR2-D11-10"].actionId, "LIFE:SLEEP:ITM222");
+  assert.equal(byId["VR2-D48-10"].actionId, "LIFE:SLEEP:ITM076");
+  assert.equal(byId["VR2-D19-08"].actionId, "LIFE:EAT:ITM003");
+  assert.ok(stepIds("VR2-D19-09").includes("WORK:FACILITY:JOB-FARM-03"));
   assert.equal(byId["VR2-D20-02"].actionId, "ACTION:MSN-T03:battle");
   assert.match(byId["VR2-D20-02"].resultingState, /ENC-0006/u);
   assert.ok(JSON.parse(byId["VR2-D20-04"].replacementSteps)
@@ -221,4 +281,23 @@ test("checkpoint compile is deterministic and does not execute replay", { skip: 
     assert.match(byId[rowId].resultingState, new RegExp(`\\+${removedGold}G`));
   }
   assert.equal(byId["VR2-D81-06"].actionId, "OBLIGATION:PAY:DEBT:EDA:ITM014:FULL");
+
+  const jobs = new Map(runtimeCatalog.jobs.map((job) => [job.jobId, job]));
+  const workedFacilityDays = new Map();
+  const portWorkDays = new Set();
+  for (const row of rows) {
+    for (const step of (row.replacementSteps ? JSON.parse(row.replacementSteps) : [{ actionId: row.actionId }])) {
+      if (!step.actionId?.startsWith("WORK:FACILITY:")) continue;
+      const jobId = step.actionId.slice("WORK:FACILITY:".length);
+      const job = jobs.get(jobId);
+      assert.ok(job, `${row.legacyRowId} uses missing ${jobId}`);
+      const key = `${row.legacyDay}|${job.facilityId}`;
+      assert.equal(workedFacilityDays.has(key), false, `${row.legacyRowId} repeats work at ${key}`);
+      workedFacilityDays.set(key, row.legacyRowId);
+      if (["JOB-TRADE-01", "JOB-TRADE-02"].includes(jobId)) portWorkDays.add(row.legacyDay);
+    }
+  }
+  for (const row of rows.filter((entry) => entry.actionId === "LIFE:SLEEP:ITM222")) {
+    assert.ok(portWorkDays.has(row.legacyDay), `${row.legacyRowId} uses worker lodging without same-day port work`);
+  }
 });
