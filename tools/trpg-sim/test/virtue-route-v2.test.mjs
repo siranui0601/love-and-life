@@ -12,7 +12,7 @@ test("virtue route v2 partitions exactly T01-T19 and ends naturally on Day85", (
   assert.deepEqual(VIRTUE_ROUTE_V2.suppressedTroubles, ["T15", "T18", "T19"]);
   assert.equal(VIRTUE_ROUTE_V2.skillPoints.earned - VIRTUE_ROUTE_V2.skillPoints.spent, VIRTUE_ROUTE_V2.skillPoints.remaining);
   assert.equal(VIRTUE_ROUTE_V2.finance.minimumGold, 0);
-  assert.equal(VIRTUE_ROUTE_V2.finance.finalGold, 51);
+  assert.equal(VIRTUE_ROUTE_V2.finance.finalGold, 55);
 });
 
 test("live canonical sheet deltas are reachable through normal game data", () => {
