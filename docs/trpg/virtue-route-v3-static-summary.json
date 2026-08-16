@@ -1,0 +1,59 @@
+{
+  "compilerVersion": "virtue-route-v3-static-compiler-checkpoint-v1",
+  "sourceHead": "5ef557144f05c73869d6a6785ed49d5f2834d379",
+  "generatedAt": "2026-08-16T11:26:54.954Z",
+  "legacyRows": 831,
+  "mappedRows": 831,
+  "autoResolvedRows": 583,
+  "unresolvedRows": 248,
+  "provisionalCoveragePercent": 70.16,
+  "byLegacyRuntimeAction": {
+    "COLLAPSE_RESCUE": 1,
+    "EAT": 255,
+    "INTERACT": 85,
+    "LEARN_SKILL": 11,
+    "LOCAL_INVESTIGATE": 1,
+    "MATERIAL_SELL": 5,
+    "MISSION/INTERACT": 169,
+    "PAY_DEBT": 1,
+    "REGIONAL_MOVE": 44,
+    "RESOLVE_MISSION": 16,
+    "REST": 167,
+    "SERVICE_BUY": 1,
+    "SHOP_BUY": 8,
+    "SHOP_SELL": 5,
+    "WORK:FACILITY": 59,
+    "WORLD_EVENT": 3
+  },
+  "byClassification": {
+    "COMMAND_OUTCOME": 20,
+    "NARRATIVE_OUTCOME": 50,
+    "PLAYER_COMMAND": 513,
+    "REPLACED_INVALID": 248
+  },
+  "byStatus": {
+    "OUTCOME": 70,
+    "RESOLVED_EXISTING": 513,
+    "UNRESOLVED": 248
+  },
+  "unresolvedByReason": {
+    "COMPOSITE_EQUIPMENT_INTERACTION": 1,
+    "COMPOSITE_MISSION_ROW": 1,
+    "INVALID_LONG_LOCAL_INVESTIGATE": 1,
+    "MISSING_AUTHORED_MISSION_MATCH": 28,
+    "MISSING_CANONICAL_FOOD": 3,
+    "MISSING_DAILY_INTERACTION_MATCH": 87,
+    "MISSING_DEBT_RUNTIME_ID": 1,
+    "MISSING_LODGING_PRODUCT": 2,
+    "MISSING_MATERIAL_LINEAGE": 5,
+    "MISSING_NPC_INTERACTION": 83,
+    "MISSION_BATTLE_OR_AUTHORED_SPLIT": 3,
+    "REST_SPLIT_REQUIRED": 33
+  },
+  "canonicalJobsInCatalog": 28,
+  "canonicalProductsInCatalog": 43,
+  "workRowsReallocated": 56,
+  "proposedMoveLocalInsertions": 123,
+  "regionalMoveRows": 44,
+  "forbiddenReplayExecuted": false
+}
