@@ -1,1 +1,1 @@
-export * from "./canonical-material-economy.js";
+export * from "./canonical-social-obligations.js";
