@@ -1,1 +1,1 @@
-export * from "./canonical-world-life-actions.js";
+export * from "./canonical-public-action-policy.js";
