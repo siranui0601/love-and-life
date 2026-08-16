@@ -13,10 +13,10 @@ export const VIRTUE_ROUTE_V2 = Object.freeze({
   equipment: Object.freeze([
     Object.freeze({ day: 3, id: "EQP-W-0201", name: "麦刈り鎌", price: 10 }),
     Object.freeze({ day: 3, id: "EQP-S-0001", name: "木蓋の盾", price: 8 }),
-    Object.freeze({ day: 10, id: "EQP-A-0201", name: "麦藁胴当て", price: 6 }),
-    Object.freeze({ day: 23, id: "EQP-W-0205", name: "網舟の手鉤", price: 29 }),
-    Object.freeze({ day: 38, id: "EQP-A-0205", name: "荷役の詰め襟", price: 34 }),
-    Object.freeze({ day: 41, id: "EQP-S-0202", name: "樽蓋の盾", price: 13 }),
+    Object.freeze({ day: 10, id: "EQP-A-0201", name: "麦藁の胴当て", price: 6 }),
+    Object.freeze({ day: 23, id: "EQP-W-0207", name: "網舟の手鉤", price: 29 }),
+    Object.freeze({ day: 38, id: "EQP-A-0203", name: "荷役の詰め襟", price: 34 }),
+    Object.freeze({ day: 41, id: "EQP-S-0201", name: "樽蓋の盾", price: 13 }),
     Object.freeze({ day: 46, id: "EQP-W-0301", name: "港警の舷側斧", price: 75 }),
     Object.freeze({ day: 60, id: "EQP-W-0302", name: "ドワーフ鍛の護衛斧", price: 148 }),
   ]),
@@ -72,12 +72,12 @@ export function validateVirtueRouteV2Contract(gameData) {
     ["EQP-W-0302", "LOC_DWARF_FORGE", 148],
     ["EQP-W-0303", "LOC_BLACKRIDGE_FORGE", 230],
   ];
-  for (const [equipmentId, facilityId, price] of sellerChecks) {
+  for (const [equipmentId, sellerId, price] of sellerChecks) {
     const row = stock.find((entry) => entry.equipmentId === equipmentId);
     if (!row) errors.push(`missing stock for ${equipmentId}`);
     else {
-      if (row.facilityId !== facilityId) errors.push(`${equipmentId} seller mismatch: ${row.facilityId}`);
-      if (Number(row.basePrice ?? row.price) !== price) errors.push(`${equipmentId} price mismatch`);
+      if (row.sellerId !== sellerId) errors.push(`${equipmentId} seller mismatch: ${row.sellerId}`);
+      if (Number(row.basePrice) !== price) errors.push(`${equipmentId} price mismatch: ${row.basePrice}`);
     }
   }
 
