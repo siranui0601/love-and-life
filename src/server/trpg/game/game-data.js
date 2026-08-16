@@ -3,6 +3,7 @@ import { loadBattleSnapshot, loadSkills, loadWorldSnapshot } from "../../../../t
 import { buildBattleData } from "../../../../tools/trpg-sim/lib/battle-model.mjs";
 import { buildWorldModel } from "../../../../tools/trpg-sim/lib/world-model.mjs";
 import { applyCanonicalRuntimeExtensions } from "../content/canonical-runtime-extensions.js";
+import { applyCanonicalWorldModelExtensions } from "../content/canonical-world-model-extensions.js";
 
 let cached = null;
 
@@ -14,21 +15,23 @@ function contentHash(value) {
  * Loads the spreadsheet snapshots once. Saves are pinned to this revision so a
  * later sheet sync cannot silently reinterpret an existing command journal.
  *
- * The live masters can advance ahead of the checked-in fixtures while a design
- * PR is in flight. applyCanonicalRuntimeExtensions is an idempotent bridge for
- * rows already committed to the canonical Sheets; after fixture refresh those
- * upserts simply replace identical rows.
+ * The checked-in world fixture keeps its original structural audit (103
+ * facilities / 110 NPCs). Live canonical rows added on 2026-08-16 are bridged
+ * only after that audit passes, while battle/skill rows are patched before
+ * their models are built. Once snapshots are refreshed these bridges become
+ * no-ops and can be deleted.
  */
 export function loadTrpgGameData() {
   if (cached) return cached;
   const worldSnapshot = loadWorldSnapshot();
   const battleSnapshot = loadBattleSnapshot();
   const skills = loadSkills();
-  // Older skill fixtures expose `id`; the live v4 sheet and bridge use the
-  // explicit `skillId` name as well. Keep both until the next snapshot refresh.
   for (const skill of skills) if (!skill.skillId) skill.skillId = skill.id;
-  applyCanonicalRuntimeExtensions({ worldSnapshot, battleSnapshot, skills });
+
+  // Do not mutate the old world fixture until its own fixed-count audit passed.
   const model = buildWorldModel(worldSnapshot);
+  applyCanonicalRuntimeExtensions({ worldSnapshot, battleSnapshot, skills });
+  applyCanonicalWorldModelExtensions(model);
   const battleData = buildBattleData(battleSnapshot, skills);
   const contentRevision = contentHash({ worldSnapshot, battleSnapshot, skills }).slice(0, 24);
   cached = Object.freeze({
