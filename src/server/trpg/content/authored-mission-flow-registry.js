@@ -1,1 +1,1 @@
-export * from "./canonical-social-obligations.js";
+export * from "./canonical-job-time-policy.js";
