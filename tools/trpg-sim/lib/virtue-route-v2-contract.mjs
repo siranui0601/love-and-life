@@ -6,7 +6,7 @@ export const VIRTUE_ROUTE_V2 = Object.freeze({
   build: "one-hand-axe-shield-guardian-breaker",
   finalLevel: 11,
   skillPoints: Object.freeze({ earned: 12, spent: 11, remaining: 1 }),
-  finance: Object.freeze({ minimumGold: 0, finalGold: 51, battleDropGoldCounted: false }),
+  finance: Object.freeze({ minimumGold: 0, finalGold: 55, battleDropGoldCounted: false }),
   resolvedTroubles: Object.freeze(["T01","T02","T03","T04","T05","T06","T07","T08","T09","T10","T11","T12","T13","T14","T16","T17"]),
   suppressedTroubles: Object.freeze(["T15","T18","T19"]),
   collapseDays: Object.freeze([9, 29]),
