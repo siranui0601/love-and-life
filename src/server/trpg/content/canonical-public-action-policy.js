@@ -2,7 +2,7 @@ import * as base from "./canonical-world-life-actions.js";
 
 export * from "./canonical-world-life-actions.js";
 
-export const CANONICAL_PUBLIC_ACTION_POLICY_VERSION = "canonical-public-action-policy-v3";
+export const CANONICAL_PUBLIC_ACTION_POLICY_VERSION = "canonical-public-action-policy-v4";
 
 const PROVISION_PORTIONS = Object.freeze({
   ITM008: 1,
@@ -22,8 +22,12 @@ function playerState(runtime) {
   return runtime?.playerState ?? {};
 }
 
+function player(runtime) {
+  return playerState(runtime).player ?? playerState(runtime);
+}
+
 function progress(runtime) {
-  return playerState(runtime).progress ?? playerState(runtime).player?.progress ?? {};
+  return playerState(runtime).progress ?? player(runtime)?.progress ?? {};
 }
 
 function currentDay(runtime) {
@@ -84,8 +88,16 @@ function permittedLifeAction(runtime, action) {
   return true;
 }
 
+function affordableLifeAction(runtime, action) {
+  if (!action?.canonicalWorldLifeChoice) return true;
+  if (action.canonicalWorldLifeKind !== "buy_provision") return true;
+  return Number(player(runtime)?.gold ?? 0) >= Math.max(0, Number(action.price ?? 0));
+}
+
 function canonicalAllowed(runtime, action) {
-  return permittedRegionalJob(runtime, action) && permittedLifeAction(runtime, action);
+  return permittedRegionalJob(runtime, action)
+    && permittedLifeAction(runtime, action)
+    && affordableLifeAction(runtime, action);
 }
 
 function normalizeProvisionAction(action) {
@@ -204,7 +216,7 @@ export function applyAuthoredMissionFlowAction(runtime, actionValue, result) {
   if (!canonicalAllowed(runtime, actionValue)) {
     result.ok = false;
     result.code = "canonical_prerequisite_not_met";
-    result.summary = "この行動に必要な許可・当日勤務条件を満たしていない。";
+    result.summary = "この行動に必要な許可・当日勤務・所持金条件を満たしていない。";
     return true;
   }
   if (recordNativeLifeOutcome(runtime, actionValue)) return true;
@@ -216,9 +228,11 @@ export const CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS = Object.freeze({
   permittedRegionalJob,
   sameDayPortWork,
   permittedLifeAction,
+  affordableLifeAction,
   canonicalAllowed,
   normalizeProvisionAction,
   nativeLifeAction,
   bulkProvisionActions,
+  filtered,
   recordNativeLifeOutcome,
 });
