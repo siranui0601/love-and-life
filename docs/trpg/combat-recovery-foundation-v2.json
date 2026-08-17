@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "combat-recovery-foundation-v2",
+  "spreadsheetId": "1-2mUA20d7h1lmv1G9fCH0EryFEYyFQ2nkamN51uCPqw",
+  "revisionId": "20",
+  "revisionModifiedTime": "2026-08-17T04:30:47.260Z",
+  "legacyCorruptArtifact": {
+    "path": "docs/trpg/combat-sheet-revision20-snapshot.json.gz.b64",
+    "legacyExpectedDecodedSha256": "ffcfbabf9f97373666e9153c0a1988cd8177e70fee032c31033b4eaad98af854",
+    "failure": "legacy base64 decoded bytes did not contain a gzip header; CI raised Z_DATA_ERROR incorrect header check",
+    "recoveryDecision": "revision20 values were re-exported from the still-current canonical Sheet; the corrupt byte serialization is not treated as source truth"
+  },
+  "replacement": {
+    "primaryArtifact": "docs/trpg/combat-sheet-revision20-snapshot.json",
+    "transportArtifact": "docs/trpg/combat-sheet-revision20-snapshot.json.gz.b64",
+    "decodedSha256": "99c12101e27308ca88dc8171da72fc798142e3d153bda9fa660315b1e7fe34b2",
+    "aggregateTabSha256": "17c8e81259514d655a0e989544e7542e045c40728415692bc20775ca553cf393",
+    "plainBytes": 266516,
+    "gzipBytes": 56408,
+    "base64Bytes": 75213,
+    "gzipMtime": 0,
+    "tabCount": 11,
+    "counts": {
+      "equipment": 142,
+      "shopInventory": 149,
+      "monsters": 77,
+      "monsterSkills": 96,
+      "monsterActions": 286,
+      "encounters": 76,
+      "materialBuyback": 61
+    },
+    "deterministicRegeneration": true,
+    "decode": "PASS",
+    "gunzip": "PASS",
+    "jsonParse": "PASS"
+  },
+  "routeReplay": false
+}
