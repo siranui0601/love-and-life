@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadCanonicalBattleSnapshotSync } from "./canonical-battle-snapshot.mjs";
 
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 export const simulationRoot = path.resolve(moduleDirectory, "..");
@@ -14,8 +15,13 @@ export function loadWorldSnapshot() {
   return readJson("world.snapshot.json");
 }
 
+/**
+ * The production server, simulator and validators all enter battle content
+ * through the same checked-in canonical artifact.  The historical
+ * battle.snapshot.json is no longer an active Source of Truth.
+ */
 export function loadBattleSnapshot() {
-  return readJson("battle.snapshot.json");
+  return loadCanonicalBattleSnapshotSync();
 }
 
 export function loadSkillSupportSnapshot() {
