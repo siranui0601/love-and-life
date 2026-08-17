@@ -106,6 +106,7 @@ test('all 286 enemy actions receive a deterministic reachability classification 
   resetTrpgGameDataForTests();
   const { battleData } = loadTrpgGameData();
   const audit = auditEnemyActionReachability(battleData);
+  console.log(`ENEMY_ACTION_AUDIT ${JSON.stringify({ total: audit.total, unknown: audit.unknown, counts: audit.counts })}`);
   assert.equal(audit.total, 286);
   assert.equal(audit.unknown, 0);
   assert.equal(Object.values(audit.counts).reduce((sum, count) => sum + count, 0), 286);
@@ -114,8 +115,9 @@ test('all 286 enemy actions receive a deterministic reachability classification 
 test('production battle data has exactly the 14 authored enemy command families and no unresolved runtime family', () => {
   resetTrpgGameDataForTests();
   const { battleData } = loadTrpgGameData();
-  const commandFamilies = new Set(battleData.monsterSkills.flatMap((skill) => skill.commands.map((command) => command.command)));
-  assert.equal(commandFamilies.size, 14);
+  const commandFamilies = [...new Set(battleData.monsterSkills.flatMap((skill) => skill.commands.map((command) => command.command)))].sort();
+  console.log(`ENEMY_COMMAND_FAMILIES ${JSON.stringify(commandFamilies)}`);
+  assert.equal(commandFamilies.length, 14);
   assert.deepEqual(battleData.audit.unknownCommands, []);
   assert.deepEqual(battleData.audit.unknownSpecialStateSemantics, []);
   assert.deepEqual(battleData.audit.unknownDebuffSemantics, []);
@@ -124,16 +126,26 @@ test('production battle data has exactly the 14 authored enemy command families 
 test('all 9 canonical bosses execute authored enemy skills in production battle data without corrupt fallback', () => {
   resetTrpgGameDataForTests();
   const { battleData } = loadTrpgGameData();
-  for (const monsterId of EXPECTED_BOSSES) {
+  const records = EXPECTED_BOSSES.map((monsterId) => {
     const result = runBossSmoke(battleData, monsterId);
     const enemyFrames = result.timeline.frames.filter((frame) => frame.phase === 'action' && frame.actorSide === 'enemy');
     const authoredSkillUses = enemyFrames.filter((frame) => frame.action?.kind === 'skill');
     const gimmickEvents = enemyFrames.flatMap((frame) => frame.events ?? []).filter((event) => [
       'phase_transition', 'telegraph', 'summon', 'field_change', 'copy_skill', 'escape', 'interrupt',
     ].includes(event.type));
-    assert.ok(authoredSkillUses.length > 0, `${monsterId}: authored enemy skill use must be > 0`);
-    assert.equal(result.candidateExhaustion, 0, `${monsterId}: candidate exhaustion`);
-    assert.equal(result.fallbackAttacks, 0, `${monsterId}: corrupt fallback`);
-    assert.ok(gimmickEvents.length > 0, `${monsterId}: at least one boss gimmick must be observable`);
+    return {
+      monsterId,
+      enemySkillUses: authoredSkillUses.length,
+      gimmickInteractions: gimmickEvents.length,
+      candidateExhaustion: result.candidateExhaustion,
+      fallbackAttacks: result.fallbackAttacks,
+    };
+  });
+  console.log(`BOSS_RUNTIME_SMOKE ${JSON.stringify(records)}`);
+  for (const record of records) {
+    assert.ok(record.enemySkillUses > 0, `${record.monsterId}: authored enemy skill use must be > 0`);
+    assert.equal(record.candidateExhaustion, 0, `${record.monsterId}: candidate exhaustion`);
+    assert.equal(record.fallbackAttacks, 0, `${record.monsterId}: corrupt fallback`);
+    assert.ok(record.gimmickInteractions > 0, `${record.monsterId}: at least one boss gimmick must be observable`);
   }
 });
