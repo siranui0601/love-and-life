@@ -37,6 +37,9 @@ jobs:
         run: npm run trpg:test
 
   route-matrix:
+    # Full Day1->100 replay is an explicit late-stage certification. Draft PRs
+    # run the regression suite above but must not use full routes as a debugger.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     needs: regression
     runs-on: ubuntu-latest
     timeout-minutes: 180
@@ -80,6 +83,8 @@ jobs:
           retention-days: 14
 
   companion-route:
+    # Same rule as route-matrix: no full replay while the integration PR is Draft.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     needs: regression
     runs-on: ubuntu-latest
     timeout-minutes: 180
