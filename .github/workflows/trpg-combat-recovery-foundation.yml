@@ -1,0 +1,46 @@
+name: TRPG combat recovery materialize
+
+on:
+  push:
+    paths:
+      - "tools/trpg-sim/export-combat-canonical-recovery.mjs"
+      - "tools/trpg-sim/verify-combat-recovery-artifact.mjs"
+      - ".github/workflows/trpg-combat-recovery-foundation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Export fixed revision20 recovery values from canonical Sheet
+        run: node tools/trpg-sim/export-combat-canonical-recovery.mjs
+      - name: Verify base64, gzip, JSON, SHA and deterministic regeneration
+        run: node tools/trpg-sim/verify-combat-recovery-artifact.mjs
+      - name: Materialize deterministic recovery artifacts on this branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/trpg/combat-sheet-revision20-snapshot.json \
+                  docs/trpg/combat-sheet-revision20-snapshot.json.gz.b64 \
+                  docs/trpg/combat-recovery-foundation-v2.json
+          if git diff --cached --quiet; then
+            echo "Recovery artifacts already deterministic and current."
+            exit 0
+          fi
+          git commit -m "chore(trpg): materialize deterministic combat recovery"
+          git push origin HEAD:${{ github.ref_name }}
