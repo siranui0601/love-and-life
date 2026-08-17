@@ -24,6 +24,10 @@ export function loadBattleSnapshot() {
   return loadCanonicalBattleSnapshotSync();
 }
 
+export function loadBossCombatCatalog() {
+  return readJson("boss-combat-catalog.json");
+}
+
 export function loadSkillSupportSnapshot() {
   return readJson("skills-support.snapshot.json");
 }
@@ -51,6 +55,7 @@ export function loadAllFixtures() {
   return {
     world: loadWorldSnapshot(),
     battle: loadBattleSnapshot(),
+    bossCombat: loadBossCombatCatalog(),
     skillSupport: loadSkillSupportSnapshot(),
     skills: loadSkills(),
   };
