@@ -3,20 +3,24 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createPlayerBuild, loadBattleData } from './lib/battle-model.mjs';
+import { loadTrpgGameData, resetTrpgGameDataForTests } from '../../src/server/trpg/game/game-data.js';
+import { createPlayerBuild } from './lib/battle-model.mjs';
 import {
   beginInteractiveBattle,
   listInteractiveBattleCommands,
   resolveInteractiveBattleRound,
 } from './lib/battle-simulator.mjs';
 import { certifyBattleTimeline } from './lib/combat-certification.mjs';
+import { auditEnemyActionReachability } from './lib/enemy-action-audit.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, '..', '..');
 const outputPath = path.resolve(
   process.argv[2] ?? path.join(REPO_ROOT, 'docs', 'trpg', 'combat-certification-v1.json'),
 );
-const data = await loadBattleData();
+resetTrpgGameDataForTests();
+const { battleData: data, contentRevision } = loadTrpgGameData();
+const actionAudit = auditEnemyActionReachability(data);
 
 const policySkillIds = ['SKL-0009', 'SKL-0010', 'SKL-0001', 'SKL-0019', 'SKL-0228'];
 
@@ -104,13 +108,21 @@ for (const boss of data.bossCatalog.bosses) {
 
 const artifact = {
   schemaVersion: 'combat-certification-v1',
-  generatedAt: '2026-08-16',
+  generatedAt: '2026-08-18',
+  productionContentRevision: contentRevision,
+  dataPath: 'src/server/trpg/game/game-data.js -> canonical battle snapshot -> buildBattleData -> interactive battle engine',
   mode: 'one fixed deterministic 12-round-or-resolution interactive scenario per canonical boss',
   discoverySearch: false,
   randomSeedSearch: false,
   monteCarlo: false,
   routeReplay: false,
-  interpretation: 'Metrics are evidence for design review; no single repetition threshold is an automatic failure.',
+  interpretation: 'Metrics are runtime semantics evidence only; this artifact is not boss balance certification.',
+  enemyActionReachability: {
+    total: actionAudit.total,
+    unknown: actionAudit.unknown,
+    counts: actionAudit.counts,
+    rows: actionAudit.rows,
+  },
   policy: {
     skillIds: policySkillIds,
     telegraphResponse: 'DEFEND',
@@ -123,9 +135,19 @@ await fs.mkdir(path.dirname(outputPath), { recursive: true });
 await fs.writeFile(outputPath, `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
 console.log(JSON.stringify({
   outputPath,
+  productionContentRevision: contentRevision,
+  actionClassification: actionAudit.counts,
+  actionUnknown: actionAudit.unknown,
   bosses: certifications.length,
   fallbackAttacks: certifications.reduce((sum, item) => sum + item.fallbackAttacks, 0),
   candidateExhaustion: certifications.reduce((sum, item) => sum + item.candidateExhaustion, 0),
   enemySkillUses: certifications.reduce((sum, item) => sum + item.enemySkillUseCount, 0),
   gimmickInteractions: certifications.reduce((sum, item) => sum + item.gimmickInteractionCount, 0),
+  bossRuntime: certifications.map((item) => ({
+    monsterId: item.monsterId,
+    enemySkillUses: item.enemySkillUseCount,
+    gimmickInteractions: item.gimmickInteractionCount,
+    candidateExhaustion: item.candidateExhaustion,
+    fallbackAttacks: item.fallbackAttacks,
+  })),
 }, null, 2));
