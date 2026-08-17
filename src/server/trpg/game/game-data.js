@@ -3,7 +3,6 @@ import { loadBattleSnapshot, loadBossCombatCatalog, loadSkills, loadWorldSnapsho
 import { buildBattleData } from "../../../../tools/trpg-sim/lib/battle-model.mjs";
 import { buildWorldModel } from "../../../../tools/trpg-sim/lib/world-model.mjs";
 import { applyCanonicalSkillCompatibility } from "../content/canonical-skill-compatibility.js";
-import { applyCanonicalWorldCompatibility } from "../content/canonical-world-compatibility.js";
 import { applyCanonicalWorldModelExtensions } from "../content/canonical-world-model-extensions.js";
 
 let cached = null;
@@ -14,9 +13,9 @@ function contentHash(value) {
 
 /**
  * Production battle data is built directly from the checked-in canonical
- * battle artifact. Compatibility code is explicitly scoped to world or player
- * skills and has no battleSnapshot parameter, so the canonical battle object
- * cannot be upserted or patched on the production path.
+ * battle artifact. World compatibility is applied only after the base world
+ * fixture passes its structural audit; player-skill compatibility is scoped to
+ * the skill definitions and neither bridge can mutate battleSnapshot.
  */
 export function loadTrpgGameData() {
   if (cached) return cached;
@@ -26,7 +25,6 @@ export function loadTrpgGameData() {
   const skills = loadSkills();
   for (const skill of skills) if (!skill.skillId) skill.skillId = skill.id;
 
-  applyCanonicalWorldCompatibility(worldSnapshot);
   applyCanonicalSkillCompatibility(skills);
 
   const model = buildWorldModel(worldSnapshot);
