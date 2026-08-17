@@ -9,10 +9,18 @@
     "failure": "legacy base64 decoded bytes did not contain a gzip header; CI raised Z_DATA_ERROR incorrect header check",
     "recoveryDecision": "revision20 values were re-exported from the still-current canonical Sheet; the corrupt byte serialization is not treated as source truth"
   },
+  "invalidPriorReport": {
+    "decodedSha256": "4ef48c1bc3e83051411e05653158ad2ee634a08e074c1a117ded38ddfbf7d26",
+    "aggregateSha256": "e20be3d9eeebddac8c0bbe1eefdb1919dbc568d98e5213a82cdd2c5407c7643d",
+    "status": "NON_CANONICAL_SERIALIZATION_DIAGNOSTIC",
+    "reason": "not produced by the checked-in deterministic rev20 exporter and not byte-identical to the materialized artifact"
+  },
   "replacement": {
     "primaryArtifact": "docs/trpg/combat-sheet-revision20-snapshot.json",
     "transportArtifact": "docs/trpg/combat-sheet-revision20-snapshot.json.gz.b64",
     "decodedSha256": "99c12101e27308ca88dc8171da72fc798142e3d153bda9fa660315b1e7fe34b2",
+    "plainArtifactSha256": "99c12101e27308ca88dc8171da72fc798142e3d153bda9fa660315b1e7fe34b2",
+    "gzipTransportSha256": "58e0b8545ecb64253c1f0de59ff534916d43dfe22deeb0cd18bd9a15f1486d8c",
     "aggregateTabSha256": "17c8e81259514d655a0e989544e7542e045c40728415692bc20775ca553cf393",
     "plainBytes": 266516,
     "gzipBytes": 56408,
@@ -28,6 +36,8 @@
       "encounters": 76,
       "materialBuyback": 61
     },
+    "regenerationProcedure": "node tools/trpg-sim/export-combat-canonical-recovery.mjs && node tools/trpg-sim/verify-combat-recovery-artifact.mjs",
+    "transportEqualsPrimaryAfterGunzip": true,
     "deterministicRegeneration": true,
     "decode": "PASS",
     "gunzip": "PASS",
