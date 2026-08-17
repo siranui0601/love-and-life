@@ -6,8 +6,10 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_FIXTURE_DIR = path.resolve(HERE, '..', 'fixtures');
 
 /**
- * The sheet does not state the complete hit/critical formula.  These caps are
- * deliberately centralized so Monte Carlo reports can quote the assumption.
+ * The sheet does not state the complete hit/critical formula. These caps are
+ * deliberately centralized so deterministic reports can quote the assumption.
+ * Canonical monster HP/offence are already runtime values and are never
+ * rescaled after load.
  */
 export const BATTLE_ASSUMPTIONS = Object.freeze({
   baseHitChancePct: 90,
@@ -19,47 +21,18 @@ export const BATTLE_ASSUMPTIONS = Object.freeze({
   criticalDamageMultiplier: 1.5,
   defenseCoefficient: 0.6,
   modifierStageRatio: 0.15,
-  // A stat can be ground down, but never switched off.  Without a floor above
+  // A stat can be ground down, but never switched off. Without a floor above
   // zero, a free 0-cost debuff with a one turn cooldown wins any fight given
-  // enough turns: stack it to stage -6, the opponent deals a tenth of its
-  // damage, and the outcome stops depending on the build.  0.4 keeps a fully
-  // debuffed brute lethal, so debuffs buy time instead of buying the win.
+  // enough turns. The floor keeps debuffs tactical rather than absolute.
   modifierStageFloor: 0.4,
   accuracyStagePoints: 10,
-  // Fights are minutes long in the fiction.  A battle that has not resolved by
-  // this many rounds is a stalemate the player walks away from, not a victory
-  // earned by outlasting the other side.
+  // Safety caps only. They are not pacing targets; balance certification owns
+  // the expected meaningful-round ranges for weak/normal/elite/boss fights.
   battleTurnLimit: 20,
-  // Bosses are built to outlast that.  MON-0028 空殻の勇者 carries 5913 HP behind
-  // 61 defence: measured, a party of four at Lv20 in tier-4 gear needs 27-39
-  // rounds to put it down, and three at Lv24 need about 35.  Holding bosses to
-  // the ordinary 20 makes every one of those runs a draw, which is not a
-  // stalemate the player walked away from - it is a fight the rules would not
-  // let them finish.  Applies when any enemy in the encounter is flagged ボス.
   bossBattleTurnLimit: 60,
-  // ## 戦闘が長すぎた問題（2026-08-14）
-  //
-  // 実測すると、**敵がプレイヤーを殺すのに何撃要るか**が壊れていた。
-  //
-  //   Lv 1  10.5撃 ／ Lv 4  12.6撃 ／ Lv 9  17.3撃
-  //   Lv13  14.2撃 ／ **Lv18  42.0撃** ／ Lv22   9.0撃
-  //
-  // 原因は二つ重なっている。
-  //   ・**敵のHPは Lv4→Lv18 で6倍**（99→585）**になるのに、物理威力は2倍**（20→41）しか伸びない
-  //   ・そこへ `防御 × 0.6` が固定で引かれる。プレイヤーの防御は装備で 13→110 まで伸びるので、
-  //     **伸びた防御が、伸びなかった敵の手を食い潰す**
-  //
-  // 結果、**敵が脅威でないから、プレイヤーは何ターンでもかけられる。**
-  // 時間をかけられること自体が、この設計の失敗だった。
-  //
-  // 直し方は二つの倍率で、どちらも正本の行そのものは書き換えない。
-  //   `monsterOffenceScale` … 敵の与ダメージ。**各レベル帯で5〜7撃で殺せる**ところへ寄せた
-  //   `monsterHpScale`      … 敵のHP。**倒すのに要るターンを3〜5**へ寄せた
-  monsterOffenceScale: 1.4,
-  monsterHpScale: 0.55,
   cooldownTick: 'start_of_round',
   allyCountIncludesSelf: true,
-  // Priority is an intent signal, not decorative metadata.  Keep choices in a
+  // Priority is an intent signal, not decorative metadata. Keep choices in a
   // narrow band so emergency/heal/telegraphed actions beat routine attacks,
   // while similarly important skills still vary by their authored weight.
   enemyPriorityBand: 20,
@@ -510,29 +483,6 @@ export function createPlayerActor(build, serial = 1) {
   return createActorState({ ...build, instanceId: `${build.id}#${serial}`, side: 'player' });
 }
 
-export function createMonsterActor(monster, serial = 1) {
-  // 均衡の二倍率をここで一度だけ掛ける。**正本の行は書き換えない。**
-  // （倍率の根拠は BATTLE_ASSUMPTIONS の注記。）
-  const maxHp = Math.max(1, Math.round(Number(monster.maxHp || 0) * BATTLE_ASSUMPTIONS.monsterHpScale));
-  const physicalPower = Number(monster.physicalPower || 0) * BATTLE_ASSUMPTIONS.monsterOffenceScale;
-  const magicPower = Number(monster.magicPower || 0) * BATTLE_ASSUMPTIONS.monsterOffenceScale;
-  return createActorState({
-    ...monster,
-    maxHp,
-    hp: maxHp,
-    physicalPower,
-    magicPower,
-    instanceId: `${monster.id}#${serial}`,
-    side: 'enemy',
-    accuracy: 0,
-    evasion: 0,
-    critical: 0,
-    debuffSuccess: 0,
-    skillIds: [],
-    activeWeaponTypes: new Set(),
-  });
-}
-
 function createActorState(source) {
   return {
     ...source,
@@ -696,10 +646,4 @@ export function evaluateActionCondition(expression, context, diagnostics = null,
 
   diagnostics?.add('unknownActionCondition', text);
   return false;
-}
-
-export function inferPlayerDamageType(skill) {
-  if (/魔法|魔導書/.test(skill.category ?? '')) return 'magic';
-  if (/炎|氷|雷|風|光|闇|水|土|精神/.test(skill.category ?? '')) return 'magic';
-  return 'physical';
 }
