@@ -28,16 +28,6 @@ const expectedCounts = {
   materialBuyback: 61,
 };
 
-const samples = {
-  'MON-0001': { maxHp: 15, physicalPower: 16.8, magicPower: 9.8 },
-  'MON-0017': { maxHp: 2200, physicalPower: 89.6, magicPower: 63 },
-  'MON-0018': { maxHp: 2850, physicalPower: 100, magicPower: 72 },
-  'MON-0028': { maxHp: 2250, physicalPower: 92, magicPower: 82 },
-  'MON-0063': { maxHp: 2400, physicalPower: 88, magicPower: 62 },
-  'MON-0064': { maxHp: 2850, physicalPower: 100, magicPower: 72 },
-  'MON-0077': { maxHp: 2550, physicalPower: 108, magicPower: 96 },
-};
-
 test('production and validator build battle content from the same canonical artifact', async () => {
   resetTrpgGameDataForTests();
   const production = loadTrpgGameData().battleData;
@@ -54,14 +44,23 @@ test('production and validator build battle content from the same canonical arti
   assert.equal(validator.source.artifactPath, production.source.artifactPath);
   assert.equal(production.source.aggregateSha256, validator.source.aggregateSha256);
 
-  for (const [monsterId, expected] of Object.entries(samples)) {
-    const prod = production.monsterById.get(monsterId);
-    const val = validator.monsterById.get(monsterId);
-    assert.ok(prod, `production missing ${monsterId}`);
-    assert.ok(val, `validator missing ${monsterId}`);
-    for (const [field, value] of Object.entries(expected)) {
-      assert.equal(prod[field], value, `${monsterId}.${field} production`);
-      assert.equal(val[field], value, `${monsterId}.${field} validator`);
-    }
-  }
+  const monsterParity = production.monsters.map((prod) => {
+    const val = validator.monsterById.get(prod.id);
+    assert.ok(val, `validator missing ${prod.id}`);
+    const fields = {
+      id: prod.id,
+      maxHp: prod.maxHp,
+      physicalPower: prod.physicalPower,
+      magicPower: prod.magicPower,
+    };
+    assert.deepEqual(fields, {
+      id: val.id,
+      maxHp: val.maxHp,
+      physicalPower: val.physicalPower,
+      magicPower: val.magicPower,
+    }, `${prod.id}: canonical runtime stat mismatch`);
+    return fields;
+  });
+  assert.equal(monsterParity.length, 77);
+  console.log(`PRODUCTION_MONSTER_PARITY ${JSON.stringify({ count: monsterParity.length, mismatch: 0 })}`);
 });
