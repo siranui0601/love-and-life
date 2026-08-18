@@ -26,7 +26,10 @@ function activeFiles(root) {
 
 function importedBattleModelNames() {
   const requirements = new Map();
-  const importPattern = /import\s*\{([\s\S]*?)\}\s*from\s*['"]([^'"]*battle-model\.mjs)['"]/g;
+  // A named-import clause cannot contain another brace. Keeping this scanner
+  // brace-bounded prevents an unrelated earlier import from being consumed up
+  // to a later battle-model import in the same source file.
+  const importPattern = /import\s*\{([^{}]*)\}\s*from\s*['"]([^'"]*battle-model\.mjs)['"]/g;
   for (const root of ACTIVE_ROOTS) {
     for (const file of activeFiles(root)) {
       const source = fs.readFileSync(file, 'utf8');
