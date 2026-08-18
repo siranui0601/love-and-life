@@ -41,13 +41,19 @@ function mechanic(family, source, params = {}) {
   return Object.freeze({ family, source, ...params });
 }
 
+/**
+ * Provisional rules are design metadata, not executable semantics.  The text
+ * classifier below is deliberately kept as an audit aid so Checkpoint C can
+ * group rows by likely mechanic family, but the returned candidates MUST NOT
+ * be added to runtimeMechanics or used by the battle executor.
+ */
 function provisionalFamilies(skill, rule) {
   const text = String(rule?.description ?? skill.description ?? '');
   const rank = Math.max(1, Number(rule?.magnitudeRank ?? skill.rank ?? 1));
   const durationTurns = Math.max(1, Number(rule?.durationTurns ?? 1));
   const result = [];
   const add = (family, params = {}) => {
-    if (!result.some((entry) => entry.family === family)) result.push(mechanic(family, 'provisionalRule', { rank, durationTurns, ...params }));
+    if (!result.some((entry) => entry.family === family)) result.push(mechanic(family, 'provisionalRuleInference', { rank, durationTurns, ...params }));
   };
 
   if (/直前.*(スキル|技|攻撃).*再現|劣化コピー|鏡写し/u.test(text)) add('COPY_ACTION');
@@ -95,8 +101,8 @@ function structuralMechanics(skill) {
   for (const buff of skill.buffs ?? []) result.push(mechanic('APPLY_BUFF', 'buff', { type: buff.type, stat: buff.stat ?? null }));
   for (const debuff of skill.debuffs ?? []) result.push(mechanic('APPLY_DEBUFF', 'debuff', { type: debuff.type, stat: debuff.stat ?? null }));
   for (const state of skill.specialStates ?? []) {
-    if (state?.type === 'provisionalRule') result.push(...provisionalFamilies(skill, state));
-    else result.push(mechanic(SPECIAL_STATE_FAMILY[state?.type] ?? `SPECIAL_STATE:${state?.type ?? 'missing'}`, 'specialState', { type: state?.type ?? null }));
+    if (state?.type === 'provisionalRule') continue;
+    result.push(mechanic(SPECIAL_STATE_FAMILY[state?.type] ?? `SPECIAL_STATE:${state?.type ?? 'missing'}`, 'specialState', { type: state?.type ?? null }));
   }
   const mode = skill.damage?.formula;
   if (mode === 'repeatLastSkill') result.push(mechanic('REPEAT_LAST_SKILL', 'powerMode'));
@@ -124,12 +130,18 @@ export function compilePlayerSkill(skill) {
     ? { ...skill, ...patch, learnConditions: structuralLearnConditions(skill, patch) }
     : { ...skill };
   const runtimeMechanics = structuralMechanics(normalized);
-  const provisionalCount = (normalized.specialStates ?? []).filter((state) => state?.type === 'provisionalRule').length;
-  const provisionalFamiliesResolved = provisionalCount === 0 || runtimeMechanics.some((entry) => entry.source === 'provisionalRule');
+  const provisionalRules = (normalized.specialStates ?? []).filter((state) => state?.type === 'provisionalRule');
+  const inferredProvisionalMechanics = provisionalRules.flatMap((rule) => provisionalFamilies(normalized, rule));
   return {
     ...normalized,
     runtimeMechanics,
-    runtimeSemanticStatus: provisionalFamiliesResolved ? 'structured' : 'needs_semantics',
+    inferredProvisionalMechanics,
+    provisionalRuleCount: provisionalRules.length,
+    // Fail closed: prose/provisionalRule is never proof that runtime semantics
+    // exist. A family becomes structured only after its canonical data shape
+    // and executor are implemented, at which point the provisional rule can be
+    // retired or explicitly resolved by a later compiler overlay.
+    runtimeSemanticStatus: provisionalRules.length ? 'needs_semantics' : 'structured',
     canonicalGateOverlayApplied: Boolean(patch),
   };
 }
@@ -142,13 +154,20 @@ export function skillRuntimeCoverage(skills) {
   const compiled = compilePlayerSkills(skills);
   const unresolved = compiled.filter((skill) => skill.runtimeSemanticStatus !== 'structured').map((skill) => skill.id);
   const mechanicCounts = {};
-  for (const skill of compiled) for (const entry of skill.runtimeMechanics) mechanicCounts[entry.family] = (mechanicCounts[entry.family] ?? 0) + 1;
+  const inferredMechanicCounts = {};
+  for (const skill of compiled) {
+    for (const entry of skill.runtimeMechanics) mechanicCounts[entry.family] = (mechanicCounts[entry.family] ?? 0) + 1;
+    for (const entry of skill.inferredProvisionalMechanics ?? []) {
+      inferredMechanicCounts[entry.family] = (inferredMechanicCounts[entry.family] ?? 0) + 1;
+    }
+  }
   return {
     total: compiled.length,
     gateOverlays: compiled.filter((skill) => skill.canonicalGateOverlayApplied).map((skill) => skill.id),
-    provisionalRows: compiled.filter((skill) => (skill.specialStates ?? []).some((state) => state?.type === 'provisionalRule')).map((skill) => skill.id),
+    provisionalRows: compiled.filter((skill) => skill.provisionalRuleCount > 0).map((skill) => skill.id),
     unresolved,
     mechanicCounts: Object.fromEntries(Object.entries(mechanicCounts).sort(([a], [b]) => a.localeCompare(b))),
+    inferredProvisionalMechanicCounts: Object.fromEntries(Object.entries(inferredMechanicCounts).sort(([a], [b]) => a.localeCompare(b))),
   };
 }
 
