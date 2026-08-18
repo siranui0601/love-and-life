@@ -34,6 +34,13 @@ const SPECIAL_STATE_ALIASES = Object.freeze({
   surviveFatal: 'survive_lethal',
 });
 
+const REPEAT_WHILE_HIT = 'REPEAT_WHILE_HIT';
+const REPEAT_WHILE_HIT_SAFETY_CAP = 512;
+
+function hasPlayerRuntimeMechanic(skill, family) {
+  return (skill?.runtimeMechanics ?? []).some((entry) => entry?.family === family);
+}
+
 function living(actors) {
   return actors.filter((actor) => actor.alive && actor.hp > 0);
 }
@@ -449,13 +456,25 @@ function applySpecialState(target, command) {
 function executeDamageCommand({ command, skill, actor, targets, rng, criticalBonus = 0 }) {
   const damageType = command.damageType ?? 'physical';
   const hits = Math.max(1, Number(command.hits ?? 1));
+  const stopOnMiss = command.stopOnMiss === true;
   let totalDamage = 0;
   let hitCount = 0;
   let criticalCount = 0;
+  let attempts = 0;
+  let misses = 0;
+  let stoppedOnMiss = false;
   for (const target of targets) {
     for (let hit = 0; hit < hits && target.alive && actor.alive; hit += 1) {
+      attempts += 1;
       const accuracy = actorStat(actor, 'accuracy') + Number(skill?.accuracy ?? 0) + Number(command.accuracy ?? 0);
-      if (!rng.bool(calculateHitChance({ accuracy, targetEvasion: actorStat(target, 'evasion') }))) continue;
+      if (!rng.bool(calculateHitChance({ accuracy, targetEvasion: actorStat(target, 'evasion') }))) {
+        misses += 1;
+        if (stopOnMiss) {
+          stoppedOnMiss = true;
+          break;
+        }
+        continue;
+      }
       hitCount += 1;
       const critical = rng.bool(calculateCriticalChance({
         critical: actorStat(actor, 'critical') + criticalBonus,
@@ -477,7 +496,14 @@ function executeDamageCommand({ command, skill, actor, targets, rng, criticalBon
       totalDamage += applyDamage(target, damage, damageType, actor);
     }
   }
-  return { damage: totalDamage, hits: hitCount, criticals: criticalCount };
+  return {
+    damage: totalDamage,
+    hits: hitCount,
+    criticals: criticalCount,
+    attempts,
+    misses,
+    stoppedOnMiss,
+  };
 }
 
 /**
@@ -814,7 +840,7 @@ function executePlayerSkill({ state, action, rng, diagnostics }) {
   const targetSpec = skill.target === 'contextual' ? 'single_enemy' : skill.target;
   if (skill.target === 'contextual') diagnostics.add('contextualTargetFallback', { skillId: skill.id, fallback: targetSpec });
   const targets = targetSet(targetSpec, actor, opponents, allies, target, rng);
-  const totals = { damage: 0, hits: 0, criticals: 0, healing: 0 };
+  const totals = { damage: 0, hits: 0, criticals: 0, healing: 0, events: [] };
   if (skill.damage?.formula !== 'none' && Number(skill.damage?.totalMultiplier || 0) > 0) {
     let multiplier = Number(skill.damage.totalMultiplier);
     if (skill.damage.formula === 'currentHpScaling') multiplier *= 0.6 + ratio(actor, 'hp') * 0.8;
@@ -823,14 +849,33 @@ function executePlayerSkill({ state, action, rng, diagnostics }) {
     else if (!['fixedMultiplier', 'luckScaling'].includes(skill.damage.formula)) {
       diagnostics.add('unknownPlayerDamageFormulaFallback', { skillId: skill.id, formula: skill.damage.formula });
     }
+    const authoredHits = Math.max(1, Number(skill.damage.hits || 1));
+    const repeatWhileHit = hasPlayerRuntimeMechanic(skill, REPEAT_WHILE_HIT);
+    const attemptedHits = repeatWhileHit
+      ? Math.max(authoredHits, Number(skill.runtimeMechanics?.find((entry) => entry?.family === REPEAT_WHILE_HIT)?.maxHits ?? REPEAT_WHILE_HIT_SAFETY_CAP))
+      : authoredHits;
     const result = executeDamageCommand({
       command: {
-        damageType: inferPlayerDamageType(skill), multiplier: multiplier / Math.max(1, Number(skill.damage.hits || 1)),
-        fixed: 0, hits: Math.max(1, Number(skill.damage.hits || 1)), accuracy: Number(skill.damage.accuracyModifier || 0),
+        damageType: inferPlayerDamageType(skill), multiplier: multiplier / authoredHits,
+        fixed: 0, hits: attemptedHits, accuracy: Number(skill.damage.accuracyModifier || 0),
+        stopOnMiss: repeatWhileHit,
       },
       skill: { accuracy: 0 }, actor, targets, rng, criticalBonus: Number(skill.damage.criticalModifier || 0),
     });
     Object.assign(totals, result);
+    if (repeatWhileHit) {
+      totals.events = [{
+        type: 'player_runtime_mechanic',
+        family: REPEAT_WHILE_HIT,
+        skillId: skill.id,
+        attempts: result.attempts,
+        hits: result.hits,
+        misses: result.misses,
+        stoppedOnMiss: result.stoppedOnMiss,
+        stoppedOnTargetDefeat: !result.stoppedOnMiss && targets.some((entry) => !entry.alive),
+        safetyCapReached: !result.stoppedOnMiss && result.attempts >= attemptedHits && targets.every((entry) => entry.alive),
+      }];
+    }
   }
   for (const buff of skill.buffs ?? []) {
     if (buff.type === 'statStage') applyModifier(actor, { modifier: buff.stat, stage: buff.stage, durationTurns: buff.durationTurns });
@@ -1380,6 +1425,7 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
       action: playback, primaryTargetInstanceId: target?.instanceId ?? null,
       hits: Number(result.hits || 0), criticals: Number(result.criticals || 0),
       damage: Number(result.damage || 0), healing: Number(result.healing || 0),
+      events: result.events ?? [],
       availablePlayerActionIds: definitions.filter((entry) => entry.available).map((entry) => entry.actionId),
       ...(definition.kind === 'flee' ? { escapeSucceeded: escaped } : {}),
     }, beforeAction, true);
