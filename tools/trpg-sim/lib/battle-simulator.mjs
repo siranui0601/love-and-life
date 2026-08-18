@@ -630,10 +630,24 @@ function executeEnemyEscape({ command, actor, state, rng }) {
 function executeInterrupt({ command, targets, rng }) {
   const results = targets.map((target) => {
     const wasCasting = target.specialStates.has('casting');
+    const pendingIntent = target.pendingIntent ? { ...target.pendingIntent } : null;
+    const wasTelegraphPending = Boolean(pendingIntent);
     const chance = Math.max(0, Math.min(1, Number(command.baseChance ?? 100) / 100));
-    const succeeded = wasCasting && rng.bool(chance);
-    if (succeeded) target.specialStates.delete('casting');
-    return { targetInstanceId: target.instanceId, wasCasting, chance, succeeded };
+    const succeeded = (wasCasting || wasTelegraphPending) && rng.bool(chance);
+    if (succeeded) {
+      target.specialStates.delete('casting');
+      target.pendingIntent = null;
+    }
+    return {
+      targetInstanceId: target.instanceId,
+      wasCasting,
+      wasTelegraphPending,
+      pendingActionId: pendingIntent?.actionId ?? null,
+      pendingSkillId: pendingIntent?.skillId ?? null,
+      chance,
+      succeeded,
+      cancelledPendingIntent: succeeded && wasTelegraphPending,
+    };
   });
   return { type: 'interrupt', results };
 }
