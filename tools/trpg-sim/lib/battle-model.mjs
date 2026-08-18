@@ -76,8 +76,32 @@ function attachCanonicalEconomy(data, battleSnapshot) {
   return data;
 }
 
+/**
+ * Command target columns describe the command envelope, but COPY_LAST_ENEMY_SKILL
+ * is special: canonical MSK-0090 uses target=self because the monster itself is
+ * the copier. The damage produced by the copied hostile player skill must still
+ * resolve against the opposing side. Keep the source row/raw command untouched
+ * and make that runtime interpretation explicit here rather than silently
+ * rewriting the spreadsheet or deriving behavior from simulation results.
+ */
+function attachMonsterCommandSemantics(data) {
+  const monsterSkills = data.monsterSkills.map((skill) => {
+    let changed = false;
+    const commands = (skill.commands ?? []).map((command) => {
+      if (command?.command !== 'COPY_LAST_ENEMY_SKILL' || command.target !== 'self') return command;
+      changed = true;
+      return { ...command, target: 'single_enemy' };
+    });
+    return changed ? { ...skill, commands } : skill;
+  });
+  data.monsterSkills = monsterSkills;
+  data.monsterSkillById = new Map(monsterSkills.map((skill) => [skill.id, skill]));
+  return data;
+}
+
 export function buildBattleData(battleSnapshot, playerSkills = [], bossCatalog = { version: null, bosses: [] }) {
-  return attachCanonicalEconomy(core.buildBattleData(battleSnapshot, playerSkills, bossCatalog), battleSnapshot);
+  const data = core.buildBattleData(battleSnapshot, playerSkills, bossCatalog);
+  return attachCanonicalEconomy(attachMonsterCommandSemantics(data), battleSnapshot);
 }
 
 async function readPlayerSkillShards(fixtureDir) {
