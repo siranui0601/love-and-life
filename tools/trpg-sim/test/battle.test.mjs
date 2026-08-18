@@ -62,8 +62,8 @@ test("battle fixture joins every combat table and all four skill shards", () => 
     encounters: data.encounters.length,
     playerSkills: data.playerSkills.length,
   }, {
-    equipment: 116,
-    inventory: 123,
+    equipment: 142,
+    inventory: 149,
     monsters: 77,
     monsterSkills: 96,
     monsterActions: 286,
@@ -486,17 +486,12 @@ test("空殻模倣は、写せる技と写せない技を正本どおりに選�
   assert.ok(plain && sacrifice);
   assert.equal(sacrifice.costs.hpMode, "set_zero", "SKL-0209 が自己犠牲でなくなったら、この検算は前提から見直す");
 
-  // 直前が再現可能な攻撃技なら写す。
   assert.equal(
     copyableEnemySkill(command, [{ lastSkillRepeatable: true, lastSkill: plain }])?.id,
     "SKL-0001",
   );
-  // 直前が通常攻撃なら写さない（旗が降りている）。
   assert.equal(copyableEnemySkill(command, [{ lastSkillRepeatable: false, lastSkill: plain }]), null);
-  // 何も撃っていなければ写さない。
   assert.equal(copyableEnemySkill(command, [{ lastSkillRepeatable: true, lastSkill: null }]), null);
-  // **自己犠牲は写さない。**正本の excludedTags はタグで書かれているが、
-  // プレイヤースキル側に tags 列が無いので、コストの形で判定している。
   assert.equal(copyableEnemySkill(command, [{ lastSkillRepeatable: true, lastSkill: sacrifice }]), null);
 });
 
@@ -520,19 +515,14 @@ test("空殻の勇者は、技を使った相手にだけ模倣を撃つ", () =>
     return mimicUses;
   };
 
-  // SKL-0001 スラッシュ は MP0・クールダウン0・副作用なしで、毎ターン押せる。
   assert.ok(run(["SKL-0001"]) > 0, "技を押し続けても模倣が一度も出ない");
-  // 通常攻撃しかしない相手には、条件 `playerLastSkillRepeatable` が立たない。
   assert.equal(run([]), 0, "通常攻撃しかしていない相手に模倣が出ている");
 });
 
 /**
  * ボス戦だけ打ち切りが延びることを検算する。
- *
- * 通常戦闘の打ち切りは20回（デバフ無限ループ対策の名残）。
- * **だがMON-0028はHP5913・防御61で、実測すると倒すのに27〜39回かかる。**
- * 20で切ると、装備も人数も足りている回まで全部「引き分け」になる。
- * 打ち切りが相手によって変わることと、雑魚は20のままであることの両方を見る。
+ * 通常戦は20回、bossBattleTurnLimitはboss contentを検証するための安全上限であり、
+ * 勝率や所要ターンから戦闘設計を逆算するための目標値ではない。
  */
 test("ボスがいる戦闘だけ、打ち切り回数が延びる", () => {
   assert.ok(BATTLE_ASSUMPTIONS.bossBattleTurnLimit > BATTLE_ASSUMPTIONS.battleTurnLimit);
@@ -542,9 +532,6 @@ test("ボスがいる戦闘だけ、打ち切り回数が延びる", () => {
   });
   assert.equal(stall.turns, BATTLE_ASSUMPTIONS.battleTurnLimit, "雑魚戦の打ち切りが動いている");
 
-  // ボスの側は、打ち切りに当たる前に観測者を殺すようになった。
-  // （2026-08-14の均衡調整で敵の与ダメージを1.4倍にしたため。以前は60回まで殴り合って引き分けだった。）
-  // **打ち切りが延びていること自体は、20を超えて続くことで確かめられる。**
   const boss = simulateBattle({
     data, seed: "turn-limit-boss", monsterIds: ["MON-0028"], playerBuild: observerBuild(),
   });
@@ -556,37 +543,20 @@ test("ボスがいる戦闘だけ、打ち切り回数が延びる", () => {
 });
 
 /**
- * 空殻の勇者が「四人がかりの相手」であることを、数字として固定しておく。
- * 一本道の Day63 以降をこの数字の上に書くので、静かに動くと道の方が嘘になる。
+ * T18装備は世界側の解禁契約として検証する。
+ * Checkpoint B以降、boss combatは人間が明示的に設計し、simulationはruntime検証だけを担う。
+ * 「特定装備でN戦中M勝」のようなsimulation結果をゲーム仕様へ昇格させない。
  */
-/**
- * 空殻の勇者は、**世界樹が倒れた世界にしか無い鎧**が要る、という設計を固定する。
- *
- * 溶炉板金鎧 EQP-A-0008（防御66）の解禁条件は「T09成功かつ **T18発生後**、巨神兵部品を納品」で、
- * **T18は「T13失敗」でしか発生しない。**
- * つまり**世界樹を守った道は、T17を落としても、このボスには手が届かない。**
- * 正本の解禁条件表が、そう書いている。道の側の都合ではない。
- *
- * 数字は2026-08-14の均衡調整（敵の与ダメージ1.4倍・HP0.55倍）の後のもの。
- */
-test("空殻の勇者は、T18でしか開かない鎧が無いと落とせない", () => {
-  const reachable = ["EQP-W-0066", "EQP-A-0007", "EQP-S-0004"]; // 罪切り鋸剣・ドワーフ鎖鎧41・要塞大盾
-  const t18Only = ["EQP-W-0034", "EQP-A-0008", "EQP-S-0004"];   // 鍛炉の大剣・溶炉板金鎧66・要塞大盾
-  const skills = ["SKL-0049", "SKL-0001", "SKL-0011", "SKL-0008"];
-  const wins = (gear, party, level) => {
-    let won = 0;
-    for (let index = 0; index < 16; index += 1) {
-      const result = simulateBattle({
-        data, seed: `hollow-${gear[1]}-${party}-${level}-${index}`, monsterIds: ["MON-0028"],
-        players: Array.from({ length: party }, (_, seat) => createPlayerBuild(data, {
-          id: `p${seat}`, name: `p${seat}`, level, equipmentIds: gear, skillIds: skills,
-        })),
-      });
-      if (result.winner === "players") won += 1;
-    }
-    return won;
-  };
-  assert.equal(wins(reachable, 1, 22), 0, "単騎で落とせるようになった");
-  assert.equal(wins(reachable, 4, 20), 0, "T18の鎧なしで落とせるようになった。設計が崩れている");
-  assert.ok(wins(t18Only, 4, 20) >= 6, "T18の鎧を揃えても落とせない。厳しすぎる");
+test("空殻の勇者向けT18装備の解禁契約は正本条件で固定する", () => {
+  const hollowHero = data.monsterById.get("MON-0028");
+  const armor = data.equipmentById.get("EQP-A-0008");
+  const stockRows = data.inventory.filter((entry) => entry.equipmentId === "EQP-A-0008");
+
+  assert.ok(hollowHero?.boss, "MON-0028 must remain a canonical boss");
+  assert.ok(armor, "EQP-A-0008 must remain in canonical equipment");
+  assert.ok(stockRows.length > 0, "EQP-A-0008 must have an authoritative acquisition row");
+  assert.ok(
+    stockRows.some((entry) => /T18/.test(String(entry.unlockCondition ?? ""))),
+    "EQP-A-0008 acquisition must remain gated by the authored T18 world condition",
+  );
 });
