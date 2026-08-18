@@ -4,7 +4,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
+const SELF = fileURLToPath(import.meta.url);
+const HERE = path.dirname(SELF);
 const ROOT = path.resolve(HERE, '../../..');
 const ACTIVE_ROOTS = [
   path.join(ROOT, 'tools/trpg-sim'),
@@ -30,6 +31,10 @@ function scan(pattern) {
   const matches = [];
   for (const root of ACTIVE_ROOTS) {
     for (const file of activeFiles(root)) {
+      // This test necessarily contains the forbidden tokens as search
+      // patterns. Exclude only this scanner itself; all other active sources
+      // remain in scope.
+      if (path.resolve(file) === path.resolve(SELF)) continue;
       const text = fs.readFileSync(file, 'utf8');
       if (pattern.test(text)) matches.push(path.relative(ROOT, file));
       pattern.lastIndex = 0;
