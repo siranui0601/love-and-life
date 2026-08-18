@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { loadTrpgGameData, resetTrpgGameDataForTests } from '../../../src/server/trpg/game/game-data.js';
-import { createPlayerBuild } from '../lib/battle-model.mjs';
+import { createPlayerBuild, inferPlayerDamageType } from '../lib/battle-model.mjs';
 import {
   beginInteractiveBattle,
   listInteractiveBattleCommands,
@@ -73,6 +73,10 @@ function start(base, skillId, skillIds = [], maxTurns = 2) {
     maxTurns,
   });
   const enemy = session.state.enemies[0];
+  // Executor probes are not balance probes. Give the carrier enough HP to
+  // guarantee that a qualifying player hit cannot kill it before reactions.
+  enemy.maxHp = Math.max(enemy.maxHp, 100000);
+  enemy.hp = enemy.maxHp;
   enemy.maxMp = 1000;
   enemy.mp = 1000;
   enemy.agility = 10000;
@@ -131,12 +135,14 @@ test('MSK-0054 counter retaliates and MSK-0047 seal changes player command avail
     const { data, session } = start(battleData, 'MSK-0054');
     const hpBefore = session.state.players[0].hp;
     const result = attackRound(data, session);
+    const playerAttack = result.round.frames.find((frame) => frame.phase === 'action' && frame.actorSide === 'player');
+    assert.ok(Number(playerAttack?.damage ?? 0) > 0, 'counter probe must land a qualifying direct hit');
     assert.ok(result.session.state.players[0].hp < hpBefore, 'counter must damage the attacker after a qualifying direct hit');
   }
 
   {
     const magicSkill = [...battleData.playerSkills]
-      .find((skill) => skill.kind === 'active' && (skill.tags ?? []).includes('magic'));
+      .find((skill) => skill.kind === 'active' && inferPlayerDamageType(skill) === 'magic');
     assert.ok(magicSkill, 'fixture needs one canonical active magic player skill');
     const { data, session } = start(battleData, 'MSK-0047', [magicSkill.id]);
     const result = attackRound(data, session);
