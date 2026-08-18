@@ -15,7 +15,7 @@ function encoreBuild() {
     id: 'checkpoint-c-encore',
     name: 'Checkpoint C Encore witness',
     level: 50,
-    equipmentIds: [],
+    equipmentIds: ['EQP-W-0073'],
     skillIds: ['SKL-0001', 'SKL-1139'],
     baseStats: {
       maxHp: 100_000,
