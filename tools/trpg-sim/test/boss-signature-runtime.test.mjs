@@ -224,12 +224,13 @@ test('each hand-authored boss signature changes authoritative production battle 
     records.push({ monsterId: 'MON-0063', signature: 'seal_wave', skillId: action.skillId, passed: true });
   }
 
-  // MON-0064: awakened colossus' last stand is a real survive-lethal charge, not flavor text.
+  // MON-0064: awakened colossus' last stand is a real survive-lethal charge at its authored low-HP gate.
   {
     const action = actionWithCommand(battleData, 'MON-0064', (command) => (
       command.command === 'APPLY_SPECIAL_STATE' && ['surviveFatal', 'survive_lethal'].includes(command.stateId ?? command.type)
     ));
     const { data, session } = start(battleData, 'MON-0064', action);
+    session.state.enemies[0].hp = Math.max(1, Math.floor(session.state.enemies[0].maxHp * 0.2));
     const result = resolve(data, session);
     const state = result.session.state.enemies[0].specialStates.get('survive_lethal');
     assert.ok(Number(state?.charges ?? 0) >= 1);
