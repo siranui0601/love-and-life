@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { loadTrpgGameData, resetTrpgGameDataForTests } from '../../../src/server/trpg/game/game-data.js';
-import { createPlayerBuild } from '../lib/battle-model.mjs';
+import { createPlayerBuild, inferPlayerDamageType } from '../lib/battle-model.mjs';
 import {
   beginInteractiveBattle,
   listInteractiveBattleCommands,
@@ -43,7 +43,7 @@ function playerBuild(data) {
       physicalPower: 1,
       magicPower: 1,
       magicResistance: 0,
-      accuracy: 100,
+      accuracy: 10000,
       evasion: 0,
       critical: 0,
       debuffSuccess: 0,
@@ -58,9 +58,8 @@ function forcedData(base, monsterId, skillId, family) {
   assert.ok(sourceSkill.commands.some((command) => command.command === family), `${skillId}: missing ${family}`);
 
   // Keep the canonical command payload. Only probabilistic gates are raised in
-  // this executor fixture so a CI run proves the state transition rather than
-  // intermittently proving RNG. Actual canonical probabilities remain covered
-  // by the ordinary-enemy and boss production smokes.
+  // this executor fixture so CI proves the state transition rather than RNG.
+  // Canonical probabilities remain covered by ordinary-enemy and boss smokes.
   const skill = {
     ...sourceSkill,
     mpCost: 0,
@@ -118,11 +117,13 @@ function runFamily(base, family, skillId) {
     data,
     monsterIds: [monsterId],
     playerBuild: playerBuild(data),
-    seed: `checkpoint-b:command-runtime:${family}`,
+    seed: `checkpoint-b:command-runtime:${family}:${skillId}`,
     maxTurns: 1,
   });
   const player = session.state.players[0];
   const enemy = session.state.enemies[0];
+  enemy.maxHp = Math.max(enemy.maxHp, 100000);
+  enemy.hp = enemy.maxHp;
   enemy.maxMp = 1000;
   enemy.mp = 1000;
   enemy.agility = 10000;
@@ -211,7 +212,7 @@ test('all 14 canonical enemy command families execute through the production bat
         evidence = { fieldEffects: after.fieldEffects };
         break;
       case 'REMOVE_DEBUFF':
-        transitioned = after.enemySpecialStates.length >= 0 && resolved.session.state.enemies[0].debuffs.size < 1;
+        transitioned = resolved.session.state.enemies[0].debuffs.size < 1;
         evidence = { remainingDebuffs: [...resolved.session.state.enemies[0].debuffs.keys()] };
         break;
       case 'REMOVE_MODIFIER':
@@ -229,12 +230,20 @@ test('all 14 canonical enemy command families execute through the production bat
       case 'COPY_LAST_ENEMY_SKILL': {
         const copyEvent = (authored.events ?? []).find((event) => event.type === 'copy_skill');
         transitioned = copyEvent?.copiedSkillId === 'CHECKPOINT-B-PLAYER-LAST-SKILL' && after.playerHp < before.playerHp;
-        evidence = { copyEvent, playerHpBefore: before.playerHp, playerHpAfter: after.playerHp, enemyHpBefore: before.enemyHp, enemyHpAfter: after.enemyHp };
+        evidence = {
+          copyEvent,
+          playerHpBefore: before.playerHp,
+          playerHpAfter: after.playerHp,
+          enemyHpBefore: before.enemyHp,
+          enemyHpAfter: after.enemyHp,
+        };
         break;
       }
-      records.push({ family, skillId, runtimeExecuted: true, transitioned, evidence });
-      assert.equal(transitioned, true, `${family}: authoritative state/resolution transition`);
+      default:
+        assert.fail(`unhandled command family ${family}`);
     }
+    records.push({ family, skillId, runtimeExecuted: true, transitioned, evidence });
+    assert.equal(transitioned, true, `${family}: authoritative state/resolution transition`);
   }
 
   console.log(`ENEMY_COMMAND_RUNTIME ${JSON.stringify(records)}`);
@@ -246,8 +255,6 @@ test('canonical barrier, counter, regeneration and seal states have behavioral c
   resetTrpgGameDataForTests();
   const { battleData } = loadTrpgGameData();
 
-  // Barrier: set the canonical state through MSK-0052, then verify a direct hit
-  // consumes barrier capacity before HP.
   {
     const { resolved } = runFamily(battleData, 'APPLY_SPECIAL_STATE', 'MSK-0052');
     const enemy = resolved.session.state.enemies[0];
@@ -255,33 +262,49 @@ test('canonical barrier, counter, regeneration and seal states have behavioral c
     assert.ok(barrier?.capacity > 0, 'barrier must own runtime capacity');
   }
 
-  // Counter: canonical MSK-0054 is forced before the player attack in the same
-  // round, so the player must take reactive damage.
   {
-    const { before, after } = runFamily(battleData, 'APPLY_SPECIAL_STATE', 'MSK-0054');
+    const { before, after, resolved } = runFamily(battleData, 'APPLY_SPECIAL_STATE', 'MSK-0054');
+    const playerAttack = resolved.round.frames.find((frame) => frame.phase === 'action' && frame.actorSide === 'player');
+    assert.ok(Number(playerAttack?.damage ?? 0) > 0, 'counter probe must land a qualifying direct hit');
     assert.ok(after.playerHp < before.playerHp, 'counter must react to the player hit');
   }
 
-  // Regeneration is applied as a timed state and must survive into authoritative
-  // state; round-start ticking is covered by battle engine duration/tick tests.
   {
     const { resolved } = runFamily(battleData, 'APPLY_SPECIAL_STATE', 'MSK-0055');
     assert.ok(resolved.session.state.enemies[0].specialStates.has('regeneration'));
   }
 
-  // Seal must affect command availability, not just add an icon. Use a minimal
-  // magic-tagged player skill cloned into the command list.
   {
     const monsterId = 'MON-0005';
     const data = forcedData(battleData, monsterId, 'MSK-0047', 'APPLY_SPECIAL_STATE');
-    const magicSkill = [...data.playerSkills].find((skill) => skill.kind === 'active' && (skill.tags ?? []).includes('magic'));
-    assert.ok(magicSkill, 'fixture needs a canonical active magic player skill');
+    const magicSkill = [...data.playerSkills].find((skill) => skill.kind === 'active' && inferPlayerDamageType(skill) === 'magic');
+    assert.ok(magicSkill, 'fixture needs one canonical active magic player skill');
     const build = createPlayerBuild(data, {
-      ...playerBuild(data),
       id: 'seal-probe',
+      name: 'seal-probe',
+      level: 24,
+      equipmentIds: [],
       skillIds: [magicSkill.id],
+      baseStats: {
+        maxHp: 100000,
+        maxMp: 1000,
+        attack: 0,
+        defense: 0,
+        agility: 1,
+        luck: 0,
+        physicalPower: 1,
+        magicPower: 1,
+        magicResistance: 0,
+        accuracy: 10000,
+        evasion: 0,
+        critical: 0,
+        debuffSuccess: 0,
+        debuffResistance: -10000,
+      },
     });
     let session = beginInteractiveBattle({ data, monsterIds: [monsterId], playerBuild: build, seed: 'checkpoint-b:seal', maxTurns: 2 });
+    session.state.enemies[0].maxHp = Math.max(session.state.enemies[0].maxHp, 100000);
+    session.state.enemies[0].hp = session.state.enemies[0].maxHp;
     session.state.enemies[0].maxMp = 1000;
     session.state.enemies[0].mp = 1000;
     session.state.enemies[0].agility = 10000;
