@@ -4,6 +4,9 @@ export * from './battle-simulator-base.mjs';
 
 const PLAYER_RUNTIME_VERSION = 1;
 const REPEAT_LAST_SKILL = 'REPEAT_LAST_SKILL';
+const REPEAT_WHILE_HIT = 'REPEAT_WHILE_HIT';
+const REPEAT_WHILE_HIT_CHANCE_PCT = 30;
+const REPEAT_WHILE_HIT_MAX_HITS = 20;
 
 function mechanicRuntime(session, options = {}) {
   return session?.playerRuntimeMechanics ?? {
@@ -66,14 +69,53 @@ function repeatEnvelope(repeater, source) {
   };
 }
 
-function runtimeData(data, session) {
+function liveActorByInstanceId(session, instanceId) {
+  return [...(session?.state?.players ?? []), ...(session?.state?.enemies ?? [])]
+    .find((actor) => actor?.instanceId === instanceId && actor.alive && Number(actor.hp ?? 0) > 0) ?? null;
+}
+
+function repeatWhileHitEnvelope(skill, session, targetInstanceId = null) {
+  if (!mechanicFamily(skill, REPEAT_WHILE_HIT) || skill.damage?.formula !== 'repeatWhileHit') return skill;
+  const actor = (session?.state?.players ?? []).find((entry) => entry.alive && Number(entry.hp ?? 0) > 0) ?? null;
+  const target = liveActorByInstanceId(session, targetInstanceId)
+    ?? (session?.state?.enemies ?? []).find((entry) => entry.alive && Number(entry.hp ?? 0) > 0)
+    ?? null;
+  const actorAccuracy = actor ? base.actorStat(actor, 'accuracy') : 0;
+  const targetEvasion = target ? base.actorStat(target, 'evasion') : 0;
+  // Canonical repeatWhileHit means a fixed 30% hit roll, not “normal hit rate
+  // plus a modifier”.  The base damage executor receives an accuracy delta, so
+  // solve the shared hit formula backwards to preserve exactly 30% even when
+  // actor/target accuracy stages change during battle.
+  const accuracyModifier = REPEAT_WHILE_HIT_CHANCE_PCT
+    - Number(base.BATTLE_ASSUMPTIONS.baseHitChancePct ?? 90)
+    - actorAccuracy
+    + targetEvasion;
+  const perHitMultiplier = Number(skill.damage?.perHitMultiplier ?? 0);
+  return {
+    ...skill,
+    damage: {
+      ...skill.damage,
+      totalMultiplier: perHitMultiplier,
+      hits: 1,
+      accuracyModifier,
+    },
+    runtimeMechanics: (skill.runtimeMechanics ?? []).map((entry) => (
+      entry?.family === REPEAT_WHILE_HIT
+        ? { ...entry, hitChancePct: REPEAT_WHILE_HIT_CHANCE_PCT, maxHits: REPEAT_WHILE_HIT_MAX_HITS, perHitMultiplier }
+        : entry
+    )),
+  };
+}
+
+function runtimeData(data, session, { targetInstanceId = null } = {}) {
   const source = repeatSource(data, session);
-  if (!source) return { data, source: null };
   let playerSkillById = null;
-  for (const [id, skill] of data.playerSkillById) {
-    if (!mechanicFamily(skill, REPEAT_LAST_SKILL)) continue;
+  for (const [id, originalSkill] of data.playerSkillById) {
+    let skill = repeatWhileHitEnvelope(originalSkill, session, targetInstanceId);
+    if (source && mechanicFamily(skill, REPEAT_LAST_SKILL)) skill = repeatEnvelope(skill, source.skill);
+    if (skill === originalSkill) continue;
     playerSkillById ??= new Map(data.playerSkillById);
-    playerSkillById.set(id, repeatEnvelope(skill, source.skill));
+    playerSkillById.set(id, skill);
   }
   return { data: playerSkillById ? { ...data, playerSkillById } : data, source };
 }
@@ -131,7 +173,7 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
   const originalSkillId = originalActionId.startsWith('SKILL:') ? originalActionId.slice('SKILL:'.length) : null;
   const originalSkill = originalSkillId ? data.playerSkillById.get(originalSkillId) : null;
   const isRepeat = mechanicFamily(originalSkill, REPEAT_LAST_SKILL);
-  const transformed = runtimeData(data, runtimeSession);
+  const transformed = runtimeData(data, runtimeSession, { targetInstanceId: command?.targetInstanceId ?? null });
 
   if (isRepeat && !transformed.source) {
     return { ok: false, reason: 'no_repeatable_history', session };
