@@ -1,3 +1,5 @@
+import { PLAYER_PROVISIONAL_SEMANTICS } from './player-provisional-semantics.mjs';
+
 const CURRENT_GATE_OVERRIDES = Object.freeze({
   'SKL-0050': { revealConditions: [{ scope: 'progress', path: 'weapon.axe.skillUses', op: 'gte', value: 5 }], eventUnlockConditions: [{ scope: 'progress', path: 'weapon.axe.skillUses', op: 'gte', value: 12 }, { scope: 'progress', path: 'combat.physicalKills', op: 'gte', value: 5 }] },
   'SKL-0051': { revealConditions: [{ scope: 'progress', path: 'weapon.axe.skillUses', op: 'gte', value: 8 }], eventUnlockConditions: [{ scope: 'progress', path: 'weapon.axe.skillUses', op: 'gte', value: 16 }, { scope: 'progress', path: 'debuffs.stat.successfulApplications', op: 'gte', value: 3 }] },
@@ -35,75 +37,38 @@ const SPECIAL_STATE_FAMILY = Object.freeze({
   lastReceivedElementVulnerability: 'REACTION_TRIGGER', reduceBarrier: 'REDUCE_BARRIER',
 });
 
-const isMagicText = (skill) => /魔法|魔導|杖|本|炎|氷|雷|風|光|闇|水|土|精神/u.test(`${skill.category ?? ''} ${skill.originalCategory ?? ''} ${skill.description ?? ''}`);
-
-function mechanic(family, source, params = {}) {
-  return Object.freeze({ family, source, ...params });
-}
-
-/**
- * Provisional rules are design metadata, not executable semantics.  The text
- * classifier below is deliberately kept as an audit aid so Checkpoint C can
- * group rows by likely mechanic family, but the returned candidates MUST NOT
- * be added to runtimeMechanics or used by the battle executor.
- */
-function provisionalFamilies(skill, rule) {
-  const text = String(rule?.description ?? skill.description ?? '');
-  const rank = Math.max(1, Number(rule?.magnitudeRank ?? skill.rank ?? 1));
-  const durationTurns = Math.max(1, Number(rule?.durationTurns ?? 1));
-  const result = [];
-  const add = (family, params = {}) => {
-    if (!result.some((entry) => entry.family === family)) result.push(mechanic(family, 'provisionalRuleInference', { rank, durationTurns, ...params }));
-  };
-
-  if (/直前.*(スキル|技|攻撃).*再現|劣化コピー|鏡写し/u.test(text)) add('COPY_ACTION');
-  if (/ランダム|いずれか1判定を再判定|再判定/u.test(text)) add(/再判定/u.test(text) ? 'REROLL' : 'RANDOM_EFFECT_TABLE');
-  if (/次に特定条件.*自動|自動で選択魔法|攻撃を受けるたび|回避時|敵を倒した時|被弾|最初の行動だけ/u.test(text)) add('REACTION_TRIGGER');
-  if (/次の.*(攻撃|魔法|スキル)|次ターン.*(幸運|会心|魔法威力)|装填/u.test(text)) add('NEXT_ACTION_BONUS');
-  if (/1ターン待機|待機し|長期詠唱|詠唱時間|予約/u.test(text)) add('DELAYED_ACTION');
-  if (/影武者|単体攻撃を1回無効|分身/u.test(text)) add('SUBSTITUTE');
-  if (/風域|陣|場を|属性環境|乾燥化|濃霧|聖域/u.test(text)) add('MODIFY_FIELD');
-  if (/天候/u.test(text)) add('COMBAT_LOCAL_WEATHER');
-  if (/消費MP.*(下|上)|MP消費.*(下|上)|消費MP.*増/u.test(text)) add('MODIFY_SKILL_COST');
-  if (/戦闘CT.*短縮/u.test(text)) add('MODIFY_COOLDOWN');
-  if (/行動順.*(上|下|遅)|次の行動.*遅延|行動不能/u.test(text)) add('MODIFY_ACTION_ORDER');
-  if (/次の自分の回復効果を敵へのダメージ/u.test(text)) add('CONVERT_HEAL_TO_DAMAGE');
-  if (/HP0でも.*行動|効果終了時に戦闘不能/u.test(text)) add('DELAYED_DEFEAT');
-  if (/2回行動|追加行動/u.test(text)) add('MULTI_ACTION');
-  if (/幸運.*参照|高変動/u.test(text)) add('LUCK_SCALING');
-  if (/耐久|頁|ページ.*消費/u.test(text)) add('CONSUME_DURABILITY');
-  if (/武器を一時使用不能|武器を捨てる/u.test(text)) add('TEMP_DISABLE_EQUIPMENT');
-  if (/装備換装|武器・盾を切り替える|盾を一時外し/u.test(text)) add('EQUIPMENT_SWAP');
-  if (/同じ魔法を連続|連続使用|詠唱蓄積|使用回数|3ターンごと|偶数ターン|戦闘ターン数|最初の数ターン/u.test(text)) add('HISTORY_SCALING');
-  if (/強化状態を1つ解除|強化効果の持続を1ターン短縮|溜め・詠唱・命中・会心強化を1つ解除/u.test(text)) add('DISPEL_BUFF');
-  if (/デバフを.*解除|全浄化/u.test(text)) add('CLEANSE_DEBUFF');
-  if (/回復量|HPとMPを少量回復|MPを少量回復|超回復/u.test(text)) add('HEAL_OR_RESTORE');
-  if (/封じ|成功率を下げ|命中.*下げ|攻撃.*下げ|回避.*下げ|魔法威力.*下げ|詠唱成功率.*下げ/u.test(text)) add('APPLY_DEBUFF');
-  if (/命中.*上げ|会心.*上げ|威力.*上げ|全能力.*上昇|回避.*上昇|デバフ耐性.*上げ|魔法防御上昇|強化/u.test(text)) add('CONDITIONAL_BONUS');
-  if (/敵単体.*(ダメージ|高威力)|敵全体.*(ダメージ|高威力)|複数回の低威力投擲|大魔法/u.test(text)) add('DAMAGE');
-  if (/行動失敗/u.test(text)) add('STANCE_DRAWBACK');
-  if (/狙われにく/u.test(text)) add('TAUNT_MODIFIER');
-  if (/回復を受けられなく/u.test(text)) add('HEAL_RESTRICTION');
-  if (/反動ダメージ/u.test(text)) add('SELF_DAMAGE');
-  if (/使用効率/u.test(text)) add('ITEM_EFFICIENCY');
-  if (/魔法命中.*表示|行動履歴を表示/u.test(text)) add('ANALYZE_HISTORY');
-  if (/魔法系スキルの威力/u.test(text)) add('MAGIC_SUPPRESSION');
-  if (/同じ対象へもう一度発動|アンコール/u.test(text)) add('REPEAT_LAST_SKILL');
-
-  return result;
-}
+const isMagicSkill = (skill) => /魔法|魔導書|杖|本|炎|氷|雷|風|光|闇|水|土|精神/u.test(`${skill.category ?? ''} ${skill.originalCategory ?? ''}`);
+const mechanic = (family, source, params = {}) => Object.freeze({ family, source, ...params });
 
 function structuralMechanics(skill) {
   const result = [];
   if (Number(skill.damage?.totalMultiplier ?? 0) > 0) {
-    result.push(mechanic('DAMAGE', 'damage', { formula: skill.damage.formula, magic: isMagicText(skill) }));
+    result.push(mechanic('DAMAGE', 'damage', { formula: skill.damage.formula, magic: isMagicSkill(skill) }));
   }
   for (const buff of skill.buffs ?? []) result.push(mechanic('APPLY_BUFF', 'buff', { type: buff.type, stat: buff.stat ?? null }));
   for (const debuff of skill.debuffs ?? []) result.push(mechanic('APPLY_DEBUFF', 'debuff', { type: debuff.type, stat: debuff.stat ?? null }));
+
+  let provisional = false;
   for (const state of skill.specialStates ?? []) {
-    if (state?.type === 'provisionalRule') continue;
+    if (state?.type === 'provisionalRule') {
+      provisional = true;
+      continue;
+    }
     result.push(mechanic(SPECIAL_STATE_FAMILY[state?.type] ?? `SPECIAL_STATE:${state?.type ?? 'missing'}`, 'specialState', { type: state?.type ?? null }));
   }
+  if (provisional) {
+    const semantics = PLAYER_PROVISIONAL_SEMANTICS[skill.id];
+    if (semantics) {
+      for (const family of semantics.families) {
+        result.push(mechanic(family, 'structuredRegistry', {
+          rank: semantics.rank,
+          durationTurns: semantics.durationTurns,
+          semantics,
+        }));
+      }
+    }
+  }
+
   const mode = skill.damage?.formula;
   if (mode === 'repeatLastSkill') result.push(mechanic('REPEAT_LAST_SKILL', 'powerMode'));
   if (mode === 'repeatWhileHit') result.push(mechanic('REPEAT_WHILE_HIT', 'powerMode'));
@@ -126,22 +91,16 @@ function structuralLearnConditions(skill, patch) {
 
 export function compilePlayerSkill(skill) {
   const patch = CURRENT_GATE_OVERRIDES[skill?.skillId ?? skill?.id];
-  const normalized = patch
-    ? { ...skill, ...patch, learnConditions: structuralLearnConditions(skill, patch) }
-    : { ...skill };
+  const normalized = patch ? { ...skill, ...patch, learnConditions: structuralLearnConditions(skill, patch) } : { ...skill };
+  const provisionalRuleCount = (normalized.specialStates ?? []).filter((state) => state?.type === 'provisionalRule').length;
+  const semantics = provisionalRuleCount ? PLAYER_PROVISIONAL_SEMANTICS[normalized.id] : null;
   const runtimeMechanics = structuralMechanics(normalized);
-  const provisionalRules = (normalized.specialStates ?? []).filter((state) => state?.type === 'provisionalRule');
-  const inferredProvisionalMechanics = provisionalRules.flatMap((rule) => provisionalFamilies(normalized, rule));
   return {
     ...normalized,
     runtimeMechanics,
-    inferredProvisionalMechanics,
-    provisionalRuleCount: provisionalRules.length,
-    // Fail closed: prose/provisionalRule is never proof that runtime semantics
-    // exist. A family becomes structured only after its canonical data shape
-    // and executor are implemented, at which point the provisional rule can be
-    // retired or explicitly resolved by a later compiler overlay.
-    runtimeSemanticStatus: provisionalRules.length ? 'needs_semantics' : 'structured',
+    provisionalRuleCount,
+    provisionalSemanticId: semantics ? normalized.id : null,
+    runtimeSemanticStatus: provisionalRuleCount === 0 || semantics ? 'structured' : 'needs_semantics',
     canonicalGateOverlayApplied: Boolean(patch),
   };
 }
@@ -152,22 +111,17 @@ export function compilePlayerSkills(skills) {
 
 export function skillRuntimeCoverage(skills) {
   const compiled = compilePlayerSkills(skills);
+  const provisionalRows = compiled.filter((skill) => skill.provisionalRuleCount > 0).map((skill) => skill.id);
   const unresolved = compiled.filter((skill) => skill.runtimeSemanticStatus !== 'structured').map((skill) => skill.id);
   const mechanicCounts = {};
-  const inferredMechanicCounts = {};
-  for (const skill of compiled) {
-    for (const entry of skill.runtimeMechanics) mechanicCounts[entry.family] = (mechanicCounts[entry.family] ?? 0) + 1;
-    for (const entry of skill.inferredProvisionalMechanics ?? []) {
-      inferredMechanicCounts[entry.family] = (inferredMechanicCounts[entry.family] ?? 0) + 1;
-    }
-  }
+  for (const skill of compiled) for (const entry of skill.runtimeMechanics) mechanicCounts[entry.family] = (mechanicCounts[entry.family] ?? 0) + 1;
   return {
     total: compiled.length,
     gateOverlays: compiled.filter((skill) => skill.canonicalGateOverlayApplied).map((skill) => skill.id),
-    provisionalRows: compiled.filter((skill) => skill.provisionalRuleCount > 0).map((skill) => skill.id),
+    provisionalRows,
+    provisionalRegistryRows: Object.keys(PLAYER_PROVISIONAL_SEMANTICS).sort(),
     unresolved,
     mechanicCounts: Object.fromEntries(Object.entries(mechanicCounts).sort(([a], [b]) => a.localeCompare(b))),
-    inferredProvisionalMechanicCounts: Object.fromEntries(Object.entries(inferredMechanicCounts).sort(([a], [b]) => a.localeCompare(b))),
   };
 }
 
