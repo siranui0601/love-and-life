@@ -37,6 +37,18 @@ export const BATTLE_ASSUMPTIONS = Object.freeze({
   maxEnemyCombatants: core.BATTLE_ASSUMPTIONS.maxEnemyCombatants,
 });
 
+/**
+ * Infer which defensive channel a player skill uses. This is part of the
+ * active battle-model public API because battle-simulator consumes it when
+ * executing player-authored damage. It is intentionally independent of all
+ * legacy monster scaling/actor construction.
+ */
+export function inferPlayerDamageType(skill) {
+  if (/魔法|魔導書/.test(skill?.category ?? '')) return 'magic';
+  if (/炎|氷|雷|風|光|闇|水|土|精神/.test(skill?.category ?? '')) return 'magic';
+  return 'physical';
+}
+
 function normalizeMaterialBuyback(row) {
   const dropRateText = String(row['落ちる率'] ?? '').trim();
   return {
