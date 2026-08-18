@@ -266,13 +266,19 @@ function normalizeMonsterSkill(row, diagnostics) {
   };
 }
 
+function optionalNumber(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  return Number(value);
+}
+
 function normalizeMonsterAction(row) {
   return {
     id: row['行動ID'], monsterId: row['モンスターID'], monsterName: row['モンスター名'],
     skillId: row['スキルID'], skillName: row['スキル名'], baseWeight: Number(row['基礎重み'] || 0),
     condition: row['使用条件'], priority: Number(row['優先度'] || 0),
-    usesPerBattle: row['戦闘中上限'] === null ? null : Number(row['戦闘中上限']),
-    cooldownOverride: row['CT上書き'] === null ? null : Number(row['CT上書き']),
+    usesPerBattle: optionalNumber(row['戦闘中上限']),
+    cooldownOverride: optionalNumber(row['CT上書き']),
     targetPolicy: row['対象方針'], notes: row['備考'], raw: row,
   };
 }
