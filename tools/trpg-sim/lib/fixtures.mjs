@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCanonicalBattleSnapshotSync } from "./canonical-battle-snapshot.mjs";
+import { compilePlayerSkills } from "./player-skill-compiler.mjs";
 
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 export const simulationRoot = path.resolve(moduleDirectory, "..");
@@ -33,12 +34,13 @@ export function loadSkillSupportSnapshot() {
 }
 
 export function loadSkills() {
-  return [
+  const raw = [
     "skills-0001-0300.snapshot.json",
     "skills-0301-0600.snapshot.json",
     "skills-0601-0900.snapshot.json",
     "skills-0901-1141.snapshot.json",
   ].flatMap((fileName) => readJson(fileName).skills);
+  return compilePlayerSkills(raw);
 }
 
 export function tableFromTab(tab, headerRowIndex = 3, { idColumn = 0 } = {}) {
