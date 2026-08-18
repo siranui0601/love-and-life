@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import * as core from './battle-core.mjs';
 import { loadCanonicalBattleSnapshot } from './canonical-battle-snapshot.mjs';
+import { compilePlayerSkills } from './player-skill-compiler.mjs';
 
 export * from './battle-core.mjs';
 
@@ -100,7 +101,8 @@ function attachMonsterCommandSemantics(data) {
 }
 
 export function buildBattleData(battleSnapshot, playerSkills = [], bossCatalog = { version: null, bosses: [] }) {
-  const data = core.buildBattleData(battleSnapshot, playerSkills, bossCatalog);
+  const compiledPlayerSkills = compilePlayerSkills(playerSkills);
+  const data = core.buildBattleData(battleSnapshot, compiledPlayerSkills, bossCatalog);
   return attachCanonicalEconomy(attachMonsterCommandSemantics(data), battleSnapshot);
 }
 
@@ -114,7 +116,7 @@ async function readPlayerSkillShards(fixtureDir) {
   const shards = await Promise.all(shardNames.map(async (name) => (
     JSON.parse(await fs.readFile(path.join(fixtureDir, name), 'utf8'))
   )));
-  return shards.flatMap((shard) => shard.skills ?? []);
+  return compilePlayerSkills(shards.flatMap((shard) => shard.skills ?? []));
 }
 
 export async function loadBattleData(fixtureDir = core.DEFAULT_FIXTURE_DIR) {
