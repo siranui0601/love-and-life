@@ -102,11 +102,68 @@ test('production battle data is canonical rev20 content with boss runtime catalo
   assert.deepEqual(gameData.battleData.audit.bossCatalogIssues, []);
 });
 
+test('ordinary non-boss executes a canonical authored skill through the production interactive path', () => {
+  resetTrpgGameDataForTests();
+  const { battleData } = loadTrpgGameData();
+  const monsterId = 'MON-0005';
+  const actions = battleData.actionsByMonsterId.get(monsterId) ?? [];
+  assert.equal(actions.length, 2, `${monsterId}: canonical authored action rows must survive normalization`);
+  assert.ok(actions.every((action) => battleData.monsterSkillById.has(action.skillId)));
+
+  const playerBuild = mechanicsProbeBuild(battleData, monsterId);
+  const initialHp = playerBuild.maxHp;
+  const session = beginInteractiveBattle({
+    data: battleData,
+    monsterIds: [monsterId],
+    playerBuild,
+    seed: 'checkpoint-b:ordinary-nonboss:MON-0005',
+    maxTurns: 1,
+  });
+  const commands = listInteractiveBattleCommands({ data: battleData, session });
+  const attack = commands.find((command) => command.actionId === 'ATTACK' && command.available);
+  assert.ok(attack);
+  const resolved = resolveInteractiveBattleRound({
+    data: battleData,
+    session,
+    command: { actionId: 'ATTACK', targetInstanceId: attack.targets[0]?.instanceId },
+  });
+  assert.equal(resolved.ok, true);
+  assert.equal(resolved.session.status, 'finished');
+  assert.ok(resolved.result);
+
+  const enemyFrames = resolved.result.timeline.frames
+    .filter((frame) => frame.phase === 'action' && frame.actorSide === 'enemy');
+  const authoredFrames = enemyFrames.filter((frame) => frame.action?.kind === 'skill');
+  const enemySkillUseCount = authoredFrames.length;
+  const selectedSkillIds = authoredFrames.map((frame) => frame.action.skillId);
+  const authoritativePlayer = resolved.result.players[0];
+
+  console.log(`ORDINARY_ENEMY_RUNTIME ${JSON.stringify({
+    monsterId,
+    actionRows: actions.map((action) => action.id),
+    selectedSkillIds,
+    enemySkillUseCount,
+    playerHpBefore: initialHp,
+    playerHpAfter: authoritativePlayer.hp,
+    candidateExhaustion: resolved.result.candidateExhaustion,
+    fallbackAttacks: resolved.result.fallbackAttacks,
+    externalActionUsage: resolved.result.actionUsage,
+  })}`);
+
+  assert.ok(enemySkillUseCount > 0, 'public timeline must expose authored enemy skill use');
+  assert.ok(selectedSkillIds.every((skillId) => actions.some((action) => action.skillId === skillId)));
+  assert.ok(authoritativePlayer.hp < initialHp, 'authored DAMAGE command must change authoritative player HP');
+  assert.ok(selectedSkillIds.some((skillId) => Number(resolved.result.actionUsage[skillId] ?? 0) > 0),
+    'public actionUsage must expose the same authored enemy skill execution');
+  assert.equal(resolved.result.candidateExhaustion, 0);
+  assert.equal(resolved.result.fallbackAttacks, 0);
+});
+
 test('all 286 enemy actions receive a deterministic reachability classification with UNKNOWN=0', () => {
   resetTrpgGameDataForTests();
   const { battleData } = loadTrpgGameData();
   const audit = auditEnemyActionReachability(battleData);
-  console.log(`ENEMY_ACTION_AUDIT ${JSON.stringify({ total: audit.total, unknown: audit.unknown, counts: audit.counts })}`);
+  console.log(`ENEMY_ACTION_AUDIT ${JSON.stringify({ total: audit.total, unknown: audit.unknown, counts: audit.counts, abnormal: audit.abnormal ?? [] })}`);
   assert.equal(audit.total, 286);
   assert.equal(audit.unknown, 0);
   assert.equal(Object.values(audit.counts).reduce((sum, count) => sum + count, 0), 286);
