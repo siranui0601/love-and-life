@@ -10,13 +10,13 @@ import {
 
 const data = await loadBattleData();
 
-function encoreBuild() {
+function runtimeBuild(id, skillIds, overrides = {}) {
   return createPlayerBuild(data, {
-    id: 'checkpoint-c-encore',
-    name: 'Checkpoint C Encore witness',
+    id,
+    name: `Checkpoint C ${id}`,
     level: 50,
     equipmentIds: ['EQP-W-0073'],
-    skillIds: ['SKL-0001', 'SKL-1139'],
+    skillIds,
     baseStats: {
       maxHp: 100_000,
       maxMp: 500,
@@ -32,8 +32,13 @@ function encoreBuild() {
       critical: 0,
       debuffSuccess: 100,
       debuffResistance: 100,
+      ...overrides,
     },
   });
+}
+
+function encoreBuild() {
+  return runtimeBuild('checkpoint-c-encore', ['SKL-0001', 'SKL-1139']);
 }
 
 function command(session, skillId) {
@@ -116,4 +121,68 @@ test('Checkpoint C REPEAT_LAST_SKILL executes Encore in authoritative interactiv
   assert.equal(actor.uses.get('SKL-1139'), 1, 'Encore owns its own use/cooldown accounting');
   assert.equal(second.session.playerRuntimeMechanics.history.lastRepeatable.skillId, 'SKL-0001', 'Encore cannot recurse into itself');
   assert.ok(Number(encoreFrame.damage ?? 0) >= 0);
+});
+
+test('Checkpoint C REPEAT_WHILE_HIT executes SKL-1140 until the first miss in one authoritative action', () => {
+  const skill = data.playerSkillById.get('SKL-1140');
+  assert.ok(skill, 'SKL-1140 must exist in the canonical player registry');
+  assert.ok((skill.runtimeMechanics ?? []).some((entry) => entry.family === 'REPEAT_WHILE_HIT'));
+
+  // These are fixed deterministic combat fixtures, not route discovery.  We
+  // exercise several seeds so the test certifies both a successful repeat and
+  // the terminating miss without baking the engine's PRNG internals into it.
+  const seeds = [
+    'chain-00', 'chain-01', 'chain-02', 'chain-03', 'chain-04', 'chain-05', 'chain-06', 'chain-07',
+    'chain-08', 'chain-09', 'chain-10', 'chain-11', 'chain-12', 'chain-13', 'chain-14', 'chain-15',
+    'chain-16', 'chain-17', 'chain-18', 'chain-19', 'chain-20', 'chain-21', 'chain-22', 'chain-23',
+  ];
+  let witness = null;
+
+  for (const seed of seeds) {
+    const session = beginInteractiveBattle({
+      data,
+      seed: `checkpoint-c-repeat-while-hit:${seed}`,
+      monsterIds: ['MON-0077'],
+      playerBuild: runtimeBuild('checkpoint-c-repeat-while-hit', ['SKL-1140']),
+      maxTurns: 2,
+    });
+    const skillCommand = command(session, 'SKL-1140');
+    assert.ok(skillCommand?.available, `SKL-1140 must be executable for ${seed}`);
+    const output = resolveInteractiveBattleRound({
+      data,
+      session,
+      command: {
+        actionId: skillCommand.actionId,
+        targetInstanceId: skillCommand.targets[0]?.instanceId,
+      },
+    });
+    assert.equal(output.ok, true);
+    const frame = output.round.frames.find((entry) => (
+      entry.actorSide === 'player' && entry.action?.skillId === 'SKL-1140'
+    ));
+    assert.ok(frame, `SKL-1140 must appear in the battle timeline for ${seed}`);
+    const event = (frame.events ?? []).find((entry) => entry.family === 'REPEAT_WHILE_HIT');
+    assert.ok(event, `REPEAT_WHILE_HIT event must be visible for ${seed}`);
+    assert.equal(event.hits, frame.hits);
+    assert.equal(event.misses, event.stoppedOnMiss ? 1 : 0);
+    assert.equal(event.safetyCapReached, false, 'the semantic safety cap must not be normal termination');
+
+    if (event.stoppedOnMiss) {
+      assert.equal(event.attempts, event.hits + 1, 'no hit attempt may occur after the terminating miss');
+    }
+    if (event.stoppedOnMiss && event.hits >= 1) {
+      witness = { output, frame, event };
+      break;
+    }
+  }
+
+  assert.ok(witness, 'a deterministic fixture must demonstrate hit → repeat → miss → stop');
+  assert.ok(witness.event.hits >= 1);
+  assert.equal(witness.event.attempts, witness.event.hits + 1);
+  const targetEffect = witness.frame.effects.find((effect) => effect.targetInstanceId === witness.frame.primaryTargetInstanceId);
+  assert.ok(targetEffect, 'chain damage must mutate the authoritative target state');
+  assert.equal(targetEffect.hpBefore - targetEffect.hpAfter, witness.frame.damage);
+  const actor = witness.output.session.state.players[0];
+  assert.equal(actor.uses.get('SKL-1140'), 1, 'the whole chain is one skill activation');
+  assert.equal(actor.mpSpent, Number(skill.costs.mp ?? 0), 'the chain pays SKL-1140 cost once');
 });
