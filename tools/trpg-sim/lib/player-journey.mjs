@@ -1,4 +1,5 @@
 import * as base from './player-journey-base.mjs';
+import { grantEventSkillFromProducer as grantStructuredEventSkill } from './player-skill-acquisition-checkpoint-c.mjs';
 
 export * from './player-journey-base.mjs';
 
@@ -96,6 +97,14 @@ export function listPlayerSkillStates(state, data, skills) {
       };
     })
     .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+export function grantEventSkillFromProducer(state, data, skills, skillId, producerId) {
+  const result = grantStructuredEventSkill(state, skills, skillId, producerId);
+  if (!result.ok) return result;
+  if (!(state.player.visibleSkillIds instanceof Set)) state.player.visibleSkillIds = new Set(state.player.visibleSkillIds ?? []);
+  state.player.visibleSkillIds.add(skillId);
+  return result;
 }
 
 export function beginInteractiveBattleAction(state, model, data, skills, catalog, profileInput, action) {
