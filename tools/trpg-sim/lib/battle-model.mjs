@@ -50,6 +50,27 @@ export function inferPlayerDamageType(skill) {
   return 'physical';
 }
 
+/**
+ * A two-handed main-hand weapon occupies both hands. Rejecting an off-hand at
+ * build construction keeps UI/build witnesses and production battle state on
+ * the same legality rule instead of silently counting an impossible shield.
+ */
+export function createPlayerBuild(data, options = {}) {
+  const equipment = (options.equipmentIds ?? [])
+    .map((equipmentId) => data?.equipmentById?.get?.(equipmentId))
+    .filter(Boolean);
+  const mainHand = equipment.find((entry) => entry.slot === 'mainHand') ?? null;
+  const offHand = equipment.find((entry) => entry.slot === 'offHand') ?? null;
+  if (mainHand?.grip === 'twoHand' && offHand) {
+    const error = new Error(`illegal_equipment_combination:two_hand_with_off_hand:${mainHand.id}:${offHand.id}`);
+    error.code = 'TWO_HAND_WITH_OFF_HAND';
+    error.mainHandId = mainHand.id;
+    error.offHandId = offHand.id;
+    throw error;
+  }
+  return core.createPlayerBuild(data, options);
+}
+
 function normalizeMaterialBuyback(row) {
   const dropRateText = String(row['落ちる率'] ?? '').trim();
   return {
