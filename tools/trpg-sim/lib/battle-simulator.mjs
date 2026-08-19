@@ -21,7 +21,7 @@ function transformedData(data, session) {
   for (const [id, originalSkill] of data.playerSkillById) {
     const prepared = prepareExtendedSkill({ skill: originalSkill, session });
     metadataBySkillId.set(id, prepared.metadata ?? {});
-    if (prepared.blockedReason) blockedReasons.set(id, prepared.blockedReason);
+    if (['equipment_disabled', 'healing_restricted'].includes(prepared.blockedReason)) blockedReasons.set(id, prepared.blockedReason);
     if (prepared.skill === originalSkill) continue;
     playerSkillById ??= new Map(data.playerSkillById);
     playerSkillById.set(id, prepared.skill);
@@ -56,30 +56,12 @@ function attachBySequence(output, frame, event) {
 
 function syncFinishedResult(output) {
   if (!output?.session) return;
-  if (output.session.status === 'active') {
-    output.result = null;
-    return;
-  }
+  if (output.session.status === 'active') { output.result = null; return; }
   if (!output.result) return;
   const state = output.session.state;
   output.result.winner = output.session.winner ?? output.result.winner;
-  output.result.players = state.players.map((actor) => ({
-    id: actor.id,
-    hp: actor.hp,
-    maxHp: actor.maxHp,
-    mp: actor.mp,
-    maxMp: actor.maxMp,
-    alive: actor.alive,
-    mpSpent: actor.mpSpent,
-    damageDealt: actor.damageDealt,
-  }));
-  output.result.enemies = state.enemies.map((actor) => ({
-    id: actor.id,
-    hp: actor.hp,
-    maxHp: actor.maxHp,
-    alive: actor.alive,
-    escaped: actor.escaped,
-  }));
+  output.result.players = state.players.map((actor) => ({ id: actor.id, hp: actor.hp, maxHp: actor.maxHp, mp: actor.mp, maxMp: actor.maxMp, alive: actor.alive, mpSpent: actor.mpSpent, damageDealt: actor.damageDealt }));
+  output.result.enemies = state.enemies.map((actor) => ({ id: actor.id, hp: actor.hp, maxHp: actor.maxHp, alive: actor.alive, escaped: actor.escaped }));
   output.result.playerRuntimeMechanics = structuredClone(output.session.playerRuntimeMechanics);
   if (output.result.timeline) output.result.timeline.frames = output.session.frames;
 }
@@ -87,16 +69,7 @@ function syncFinishedResult(output) {
 function selfDisableCommands(session) {
   const runtime = ensureExtendedRuntime(session.playerRuntimeMechanics);
   if (Number(runtime.control.selfDisableNextAction ?? 0) <= 0) return null;
-  return [{
-    actionId: 'WAIT:SELF_DISABLED',
-    kind: 'wait',
-    name: '行動不能',
-    description: '前の行動の反動で、この行動は実行できない。',
-    target: 'none',
-    available: true,
-    disabledReason: null,
-    targets: [],
-  }];
+  return [{ actionId: 'WAIT:SELF_DISABLED', kind: 'wait', name: '行動不能', description: '前の行動の反動で、この行動は実行できない。', target: 'none', available: true, disabledReason: null, targets: [] }];
 }
 
 export function beginInteractiveBattle(options) {
@@ -116,17 +89,11 @@ export function listInteractiveBattleCommands({ data, session }) {
     if (!command.skillId) return command;
     const originalSkill = data.playerSkillById.get(command.skillId);
     const blockedReason = transformed.blockedReasons.get(command.skillId);
-    const disabledReason = blockedReason ?? extendedSpecificUnavailableReason({
-      skill: originalSkill,
-      session,
-      baseReason: command.disabledReason,
-    });
-    return {
-      ...command,
-      available: blockedReason ? false : command.available,
-      disabledReason,
-      ...(blockedReason ? { targets: [] } : {}),
-    };
+    const refinable = ['conditions_not_met', 'weapon_requirement', 'shield_required', 'uses_exhausted'].includes(command.disabledReason);
+    const disabledReason = blockedReason ?? (refinable
+      ? extendedSpecificUnavailableReason({ skill: originalSkill, session, baseReason: command.disabledReason })
+      : command.disabledReason);
+    return { ...command, available: blockedReason ? false : command.available, disabledReason, ...(blockedReason ? { targets: [] } : {}) };
   });
 }
 
@@ -157,6 +124,9 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
   const disabledOutput = resolveSelfDisabledRound({ data, session, command });
   if (disabledOutput) return disabledOutput;
 
+  const displayed = listInteractiveBattleCommands({ data, session }).find((entry) => entry.actionId === command?.actionId);
+  if (displayed && !displayed.available) return { ok: false, reason: displayed.disabledReason ?? 'action_unavailable', session };
+
   const transformed = transformedData(data, session);
   const skillId = skillIdFromActionId(command?.actionId);
   const blockedReason = skillId ? transformed.blockedReasons.get(skillId) : null;
@@ -165,20 +135,12 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
   const output = current.resolveInteractiveBattleRound({ data: transformed.data, session, command });
   if (!output?.ok || !output.session) return output;
   ensureExtendedRuntime(output.session.playerRuntimeMechanics);
-
   const originalSkill = skillId ? data.playerSkillById.get(skillId) : null;
   const frame = skillId ? frameFor(output.round, skillId) : null;
   if (originalSkill && frame) {
-    const events = applyExtendedSkillSuccess({
-      data,
-      originalSkill,
-      metadata: transformed.metadataBySkillId.get(skillId) ?? {},
-      session: output.session,
-      frame,
-    });
+    const events = applyExtendedSkillSuccess({ data, originalSkill, metadata: transformed.metadataBySkillId.get(skillId) ?? {}, session: output.session, frame });
     for (const event of events) attachBySequence(output, frame, event);
   }
-
   applyExtendedRoundRuntime({ data, session: output.session, round: output.round });
   if (output.session.status === 'active') output.commands = listInteractiveBattleCommands({ data, session: output.session });
   syncFinishedResult(output);
