@@ -96,13 +96,7 @@ function repeatWhileHitEnvelope(skill, session, targetInstanceId = null) {
   const perHitMultiplier = Number(mechanic.perHitMultiplier ?? skill.damage?.perHitMultiplier ?? 0);
   return {
     ...skill,
-    damage: {
-      ...skill.damage,
-      totalMultiplier: perHitMultiplier,
-      hits: 1,
-      maxHits,
-      accuracyModifier,
-    },
+    damage: { ...skill.damage, totalMultiplier: perHitMultiplier, hits: 1, maxHits, accuracyModifier },
   };
 }
 
@@ -227,6 +221,10 @@ function attachFrameEvent(output, frame, event) {
   for (const candidate of output.result?.timeline?.frames ?? []) decorate(candidate);
 }
 
+function attachRuntimeResult(output, runtime) {
+  if (output?.result) output.result.playerRuntimeMechanics = structuredClone(runtime);
+}
+
 function commandDefinition(data, session, actionId) {
   return base.listInteractiveBattleCommands({ data, session })
     .find((entry) => entry.actionId === actionId) ?? null;
@@ -237,9 +235,7 @@ function parseSkillAction(command) {
   const match = actionId.match(/^SKILL:(SKL-\d{4})(?::GOLD:(\d+))?$/u);
   if (!match) return { actionId, skillId: null, goldSpend: null };
   const explicitSpend = command?.goldSpend ?? match[2];
-  const goldSpend = explicitSpend === null || explicitSpend === undefined || explicitSpend === ''
-    ? null
-    : Number(explicitSpend);
+  const goldSpend = explicitSpend === null || explicitSpend === undefined || explicitSpend === '' ? null : Number(explicitSpend);
   return { actionId, skillId: match[1], goldSpend };
 }
 
@@ -253,7 +249,6 @@ function decorateCommand(command, data, session, transformed) {
   if (!command.skillId) return [command];
   const skill = data.playerSkillById.get(command.skillId);
   if (!skill) return [command];
-
   if (mechanicFamily(skill, REPEAT_LAST_SKILL) && !transformed.source) {
     return [{ ...command, available: false, disabledReason: 'no_repeatable_history', targets: [] }];
   }
@@ -299,33 +294,21 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
   const originalSkillId = parsed.skillId;
   const originalSkill = originalSkillId ? data.playerSkillById.get(originalSkillId) : null;
   const isRepeat = mechanicFamily(originalSkill, REPEAT_LAST_SKILL);
-  const ownedFields = activeOwnedFields(runtimeSession);
   const consumesField = mechanicFamily(originalSkill, CONSUME_OWNED_FIELD);
   const goldMechanic = mechanicEntry(originalSkill, GOLD_SPEND_SCALING);
 
-  if (isRepeat && !repeatSource(data, runtimeSession)) {
-    return { ok: false, reason: 'no_repeatable_history', session };
-  }
-  if (consumesField && ownedFields.length === 0) {
-    return { ok: false, reason: 'no_owned_field', session };
-  }
+  if (isRepeat && !repeatSource(data, runtimeSession)) return { ok: false, reason: 'no_repeatable_history', session };
+  if (consumesField && activeOwnedFields(runtimeSession).length === 0) return { ok: false, reason: 'no_owned_field', session };
   if (goldMechanic) {
-    if (!Number.isInteger(parsed.goldSpend) || parsed.goldSpend <= 0) {
-      return { ok: false, reason: 'gold_spend_required', session };
-    }
-    if (parsed.goldSpend > Number(mechanicRuntime(runtimeSession).gold ?? 0)) {
-      return { ok: false, reason: 'insufficient_gold', session };
-    }
+    if (!Number.isInteger(parsed.goldSpend) || parsed.goldSpend <= 0) return { ok: false, reason: 'gold_spend_required', session };
+    if (parsed.goldSpend > Number(mechanicRuntime(runtimeSession).gold ?? 0)) return { ok: false, reason: 'insufficient_gold', session };
   }
 
   const transformed = runtimeData(data, runtimeSession, {
     targetInstanceId: command?.targetInstanceId ?? null,
     goldSpend: parsed.goldSpend,
   });
-
-  let effectiveCommand = originalSkillId
-    ? { ...command, actionId: `SKILL:${originalSkillId}` }
-    : command;
+  let effectiveCommand = originalSkillId ? { ...command, actionId: `SKILL:${originalSkillId}` } : command;
   if (isRepeat) {
     const definition = commandDefinition(transformed.data, runtimeSession, effectiveCommand.actionId);
     if (definition && ['single_enemy', 'single_ally'].includes(definition.target)) {
@@ -339,15 +322,12 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
     }
   }
 
-  const output = base.resolveInteractiveBattleRound({
-    data: transformed.data,
-    session: runtimeSession,
-    command: effectiveCommand,
-  });
+  const output = base.resolveInteractiveBattleRound({ data: transformed.data, session: runtimeSession, command: effectiveCommand });
   if (!output?.ok || !output.session) return output;
 
   const runtime = mechanicRuntime(output.session);
   output.session.playerRuntimeMechanics = runtime;
+  attachRuntimeResult(output, runtime);
   const frame = originalSkillId ? playerSkillFrame(output.round, originalSkillId) : null;
   if (!frame) return output;
 
@@ -418,6 +398,7 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
     };
     runtime.events.push({ turn: output.session.state?.turn ?? null, ...event });
     attachFrameEvent(output, frame, event);
+    attachRuntimeResult(output, runtime);
     return output;
   }
 
@@ -428,5 +409,6 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
       turn: output.session.state?.turn ?? null,
     };
   }
+  attachRuntimeResult(output, runtime);
   return output;
 }
