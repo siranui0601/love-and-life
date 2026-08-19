@@ -57,6 +57,23 @@ export function prepareCheckpointCClosureSkill(skill) {
   return skill;
 }
 
+export function checkpointCResourceUnavailableReason({ skill, session }) {
+  const actor = session?.state?.players?.[0];
+  if (!skill || !actor) return null;
+  const hp = Number(skill.costs?.hp ?? 0);
+  if (!(hp > 0)) return null;
+
+  // Explicit suicide/set-to-one skills are authored exceptions.  Ordinary HP
+  // costs are payments and may not silently kill the payer because the engine
+  // happened to lack an availability check.
+  if (skill.costs?.hpMode === 'fixed' && Number(actor.hp ?? 0) <= hp) return 'insufficient_hp';
+  if (skill.costs?.hpMode === 'max_ratio') {
+    const required = Number(actor.maxHp ?? 0) * hp;
+    if (Number(actor.hp ?? 0) <= required) return 'insufficient_hp';
+  }
+  return null;
+}
+
 function addModifier(actor, stat, stage, duration) {
   if (!actor?.modifiers) return;
   const current = actor.modifiers.get(stat);
