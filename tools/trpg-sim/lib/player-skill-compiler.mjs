@@ -40,6 +40,28 @@ const SPECIAL_STATE_FAMILY = Object.freeze({
 const isMagicSkill = (skill) => /魔法|魔導書|杖|本|炎|氷|雷|風|光|闇|水|土|精神/u.test(`${skill.category ?? ''} ${skill.originalCategory ?? ''}`);
 const mechanic = (family, source, params = {}) => Object.freeze({ family, source, ...params });
 
+function fieldElement(skill) {
+  const text = `${skill.category ?? ''} ${skill.name ?? ''}`;
+  for (const [pattern, element] of [[/炎|火/u, 'fire'], [/氷/u, 'ice'], [/雷/u, 'thunder'], [/風/u, 'wind'], [/水/u, 'water'], [/土/u, 'earth'], [/光/u, 'light'], [/闇/u, 'dark']]) {
+    if (pattern.test(text)) return element;
+  }
+  return 'arcane';
+}
+
+function fieldDuration(skill) {
+  const authored = (skill.specialStates ?? [])
+    .filter((state) => state?.type === 'fieldModifier')
+    .map((state) => Number(state.durationTurns ?? 0))
+    .filter((value) => value > 0);
+  return authored.length ? Math.max(...authored) : Math.max(1, Number(skill.cooldown?.battleTurns ?? 3) || 3);
+}
+
+function consumesOwnedFields(skill) {
+  return (skill.activationConditions ?? []).some((condition) => (
+    condition?.scope === 'battle' && condition?.path === 'ownedFieldEffectCount'
+  )) && /自分が設置した魔法陣をすべて消/u.test(String(skill.description ?? ''));
+}
+
 function structuralMechanics(skill) {
   const result = [];
   if (Number(skill.damage?.totalMultiplier ?? 0) > 0) {
@@ -71,8 +93,17 @@ function structuralMechanics(skill) {
 
   const mode = skill.damage?.formula;
   if (mode === 'repeatLastSkill') result.push(mechanic('REPEAT_LAST_SKILL', 'powerMode'));
-  if (mode === 'repeatWhileHit') result.push(mechanic('REPEAT_WHILE_HIT', 'powerMode'));
-  if (mode === 'goldScaling') result.push(mechanic('GOLD_SPEND_SCALING', 'powerMode'));
+  if (mode === 'repeatWhileHit') result.push(mechanic('REPEAT_WHILE_HIT', 'powerMode', {
+    hitChancePct: 30,
+    maxHits: 20,
+    perHitMultiplier: Number(skill.damage?.perHitMultiplier ?? 0),
+  }));
+  if (mode === 'goldScaling') result.push(mechanic('GOLD_SPEND_SCALING', 'powerMode', {
+    baseMultiplier: 0.55,
+    logCoefficient: 0.32,
+    divisor: 25,
+    maxMultiplier: 2.8,
+  }));
   if (mode === 'luckScaling') result.push(mechanic('LUCK_SCALING', 'powerMode'));
   if (['currentHpScaling', 'missingHpScaling', 'currentMpScaling'].includes(mode)) result.push(mechanic('RESOURCE_SPEND_SCALING', 'powerMode', { mode }));
   if (skill.costs?.mpMode === 'all_current') result.push(mechanic('ALL_MP_COST', 'cost'));
@@ -80,6 +111,23 @@ function structuralMechanics(skill) {
   if (skill.costs?.money === 'variable' || Number(skill.costs?.money ?? 0) > 0) result.push(mechanic('GOLD_COST', 'cost'));
   if (skill.costs?.itemOrEquipment) result.push(mechanic('ITEM_OR_EQUIPMENT_COST', 'cost'));
   if (skill.target === 'field') result.push(mechanic('MODIFY_FIELD', 'target'));
+  if (/魔法陣・設置魔法/u.test(String(skill.originalCategory ?? ''))) {
+    result.push(mechanic('CREATE_OWNED_FIELD', 'category', {
+      owner: 'player',
+      fieldKind: 'magic_circle',
+      fieldType: fieldElement(skill),
+      durationTurns: fieldDuration(skill),
+    }));
+  }
+  if (consumesOwnedFields(skill)) {
+    result.push(mechanic('CONSUME_OWNED_FIELD', 'activation', {
+      owner: 'player',
+      fieldKind: 'magic_circle',
+      extraFieldScale: 0.25,
+      extraTypeScale: 0.1,
+      maxScale: 2.5,
+    }));
+  }
   return result;
 }
 
