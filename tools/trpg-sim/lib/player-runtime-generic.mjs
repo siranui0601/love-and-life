@@ -2,19 +2,15 @@ const PROVISIONAL = 'provisionalRule';
 
 export const GENERIC_RUNTIME_EXECUTED_FAMILIES = new Set([
   'ALLOW_HP_FOR_MP', 'ANALYZE_HISTORY', 'COMBAT_LOCAL_WEATHER', 'CONSUME_DURABILITY', 'CONSUME_ITEM',
-  'DUPLICATE_NEXT_ACTION', 'HISTORY_CONDITION', 'HISTORY_SCALING', 'ITEM_OR_EQUIPMENT_COST', 'LUCK_SCALING',
-  'MODIFY_FIELD', 'NEXT_ACTION_BONUS', 'RANDOM_EFFECT_TABLE', 'REROLL', 'RESOURCE_SPEND_SCALING', 'SELF_DAMAGE',
-  'SUBSTITUTE', 'SUMMON', 'TEMP_DISABLE_EQUIPMENT', 'TEMP_RESOURCE', 'TRAP',
+  'COUNTER', 'DUPLICATE_NEXT_ACTION', 'HISTORY_CONDITION', 'HISTORY_SCALING', 'ITEM_OR_EQUIPMENT_COST',
+  'LUCK_SCALING', 'MODIFY_FIELD', 'NEXT_ACTION_BONUS', 'RANDOM_EFFECT_TABLE', 'REFLECT', 'REROLL',
+  'RESOURCE_SPEND_SCALING', 'SELF_DAMAGE', 'SUBSTITUTE', 'SUMMON', 'TEMP_DISABLE_EQUIPMENT', 'TEMP_RESOURCE', 'TRAP',
 ]);
 
 function mechanicEntry(skill, family) {
   return (skill?.runtimeMechanics ?? []).find((entry) => entry?.family === family) ?? null;
 }
-
-function hasFamily(skill, family) {
-  return Boolean(mechanicEntry(skill, family));
-}
-
+function hasFamily(skill, family) { return Boolean(mechanicEntry(skill, family)); }
 function semanticRank(skill, family = null) {
   const entries = family ? [mechanicEntry(skill, family)].filter(Boolean) : (skill?.runtimeMechanics ?? []);
   for (const entry of entries) {
@@ -23,43 +19,26 @@ function semanticRank(skill, family = null) {
   }
   return Math.max(1, Number(skill?.rank ?? 1) || 1);
 }
-
 function stableUnit(text) {
   let hash = 0x811c9dc5;
-  for (const char of String(text)) {
-    hash ^= char.charCodeAt(0);
-    hash = Math.imul(hash, 0x01000193);
-  }
+  for (const char of String(text)) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 0x01000193); }
   return (hash >>> 0) / 4294967296;
 }
-
-function damageMultiplier(skill) {
-  return Number(skill?.damage?.totalMultiplier ?? skill?.damage?.perHitMultiplier ?? 0) || 0;
-}
-
+function damageMultiplier(skill) { return Number(skill?.damage?.totalMultiplier ?? skill?.damage?.perHitMultiplier ?? 0) || 0; }
 function withMultiplier(skill, multiplier) {
   if (!(multiplier > 0)) return skill;
   const hits = Math.max(1, Number(skill.damage?.hits ?? 1) || 1);
-  return {
-    ...skill,
-    damage: {
-      ...skill.damage,
-      formula: 'fixedMultiplier',
-      perHitMultiplier: multiplier / hits,
-      hits,
-      totalMultiplier: multiplier,
-    },
-  };
+  return { ...skill, damage: { ...skill.damage, formula: 'fixedMultiplier', perHitMultiplier: multiplier / hits, hits, totalMultiplier: multiplier } };
 }
-
 function stripHandledSpecialStates(skill) {
   const handlesProvisional = (skill.runtimeMechanics ?? []).some((entry) => entry?.source === 'structuredRegistry');
   const handledTypes = new Set(['allowHpForMissingMp', 'summonUnit', 'fieldModifier']);
-  const next = (skill.specialStates ?? []).filter((state) => (
-    !(handlesProvisional && state?.type === PROVISIONAL) && !handledTypes.has(state?.type)
-  ));
-  if (next.length === (skill.specialStates ?? []).length) return skill;
-  return { ...skill, specialStates: next };
+  const next = (skill.specialStates ?? []).filter((state) => !(handlesProvisional && state?.type === PROVISIONAL) && !handledTypes.has(state?.type));
+  let nextSkill = next.length === (skill.specialStates ?? []).length ? skill : { ...skill, specialStates: next };
+  if (skill.costs?.itemOrEquipment && (hasFamily(skill, 'ITEM_OR_EQUIPMENT_COST') || hasFamily(skill, 'CONSUME_ITEM') || hasFamily(skill, 'CONSUME_DURABILITY'))) {
+    nextSkill = { ...nextSkill, costs: { ...nextSkill.costs, itemOrEquipment: null } };
+  }
+  return nextSkill;
 }
 
 export function ensureGenericRuntime(runtime) {
@@ -77,6 +56,16 @@ export function ensureGenericRuntime(runtime) {
   return runtime;
 }
 
+function reactionStateFromSkill(skill, type) {
+  const authored = (skill.specialStates ?? []).find((state) => state?.type === type);
+  if (authored) return { ...authored };
+  if (!hasFamily(skill, type === 'counter' ? 'COUNTER' : 'REFLECT')) return null;
+  const rank = semanticRank(skill, type === 'counter' ? 'COUNTER' : 'REFLECT');
+  return type === 'counter'
+    ? { type: 'counter', charges: 999, powerMultiplier: 1 + rank * 0.1 }
+    : { type: 'reflect', charges: 999, powerPct: Math.min(100, 50 + rank * 10) };
+}
+
 export function initializeGenericBattleRuntime({ data, session }) {
   const runtime = ensureGenericRuntime(session.playerRuntimeMechanics);
   const actor = session.state?.players?.[0];
@@ -84,22 +73,18 @@ export function initializeGenericBattleRuntime({ data, session }) {
   for (const skillId of actor.skillIds ?? []) {
     const skill = data.playerSkillById.get(skillId);
     if (!skill || !['passive', 'reaction'].includes(skill.kind)) continue;
-    for (const state of skill.specialStates ?? []) {
-      if (!['counter', 'reflect'].includes(state?.type)) continue;
-      actor.specialStates.set(state.type, {
+    for (const type of ['counter', 'reflect']) {
+      const state = reactionStateFromSkill(skill, type);
+      if (!state) continue;
+      actor.specialStates.set(type, {
         duration: 999,
         params: { ...state },
         ...state,
-        charges: Number(state.charges ?? 1),
+        charges: Number(state.charges ?? 999),
         sourceSkillId: skill.id,
       });
     }
-    runtime.familyStates.push({
-      sourceSkillId: skill.id,
-      kind: skill.kind,
-      families: (skill.runtimeMechanics ?? []).map((entry) => entry.family),
-      active: true,
-    });
+    runtime.familyStates.push({ sourceSkillId: skill.id, kind: skill.kind, families: (skill.runtimeMechanics ?? []).map((entry) => entry.family), active: true });
   }
   return runtime;
 }
@@ -118,19 +103,8 @@ export function prepareGenericSkill({ skill, session }) {
     if (missingMp > 0) {
       const hpPerMissingMp = Math.max(0, Number(mpBridge.hpPerMissingMp ?? 1));
       const hpSubstituteCost = missingMp * hpPerMissingMp;
-      if (Number(actor.hp ?? 0) <= hpSubstituteCost) {
-        return { skill: prepared, blockedReason: 'insufficient_hp_for_mp', metadata: { missingMp, hpSubstituteCost } };
-      }
-      prepared = {
-        ...prepared,
-        costs: {
-          ...prepared.costs,
-          mp: Number(actor.mp ?? 0),
-          mpMode: 'fixed',
-          hp: Number(prepared.costs?.hp ?? 0) + hpSubstituteCost,
-          hpMode: 'fixed',
-        },
-      };
+      if (Number(actor.hp ?? 0) <= hpSubstituteCost) return { skill: prepared, blockedReason: 'insufficient_hp_for_mp', metadata: { missingMp, hpSubstituteCost } };
+      prepared = { ...prepared, costs: { ...prepared.costs, mp: Number(actor.mp ?? 0), mpMode: 'fixed', hp: Number(prepared.costs?.hp ?? 0) + hpSubstituteCost, hpMode: 'fixed' } };
       metadata.mpBridge = { missingMp, hpSubstituteCost, hpPerMissingMp, afterUseMaxMpDebuffStage: Number(mpBridge.afterUseMaxMpDebuffStage ?? 0), debuffDurationHours: Number(mpBridge.debuffDurationHours ?? 0) };
     }
   }
@@ -144,7 +118,6 @@ export function prepareGenericSkill({ skill, session }) {
     prepared = withMultiplier(prepared, multiplier);
     metadata.resourceScaling = { mode, resourceRatio, multiplier };
   }
-
   if (actor && hasFamily(skill, 'LUCK_SCALING') && !(damageMultiplier(prepared) > 0)) {
     const rank = semanticRank(skill, 'LUCK_SCALING');
     const normalizedLuck = Math.max(-50, Math.min(150, Number(actor.luck ?? 0))) / 100;
@@ -154,7 +127,6 @@ export function prepareGenericSkill({ skill, session }) {
     prepared = withMultiplier(prepared, multiplier);
     metadata.luckScaling = { rank, luck: Number(actor.luck ?? 0), roll, multiplier };
   }
-
   if (hasFamily(skill, 'HISTORY_SCALING')) {
     const previous = runtime.actionHistory.filter((entry) => entry.skillId === skill.id).length;
     const current = damageMultiplier(prepared);
@@ -164,26 +136,17 @@ export function prepareGenericSkill({ skill, session }) {
       metadata.historyScaling = { previousUses: previous, scale };
     }
   }
-
   if (runtime.weather) {
     const text = `${skill.category ?? ''} ${skill.name ?? ''}`;
     let scale = 1;
-    if (runtime.weather.type === 'rain') {
-      if (/水/u.test(text)) scale *= 1.15;
-      if (/炎|火/u.test(text)) scale *= 0.85;
-    } else if (runtime.weather.type === 'wind' && /風/u.test(text)) scale *= 1.15;
+    if (runtime.weather.type === 'rain') { if (/水/u.test(text)) scale *= 1.15; if (/炎|火/u.test(text)) scale *= 0.85; }
+    else if (runtime.weather.type === 'wind' && /風/u.test(text)) scale *= 1.15;
     else if (runtime.weather.type === 'thunder' && /雷/u.test(text)) scale *= 1.15;
-    else if (runtime.weather.type === 'night') {
-      if (/闇/u.test(text)) scale *= 1.15;
-      if (/光/u.test(text)) scale *= 0.9;
-    }
-    if (runtime.weather.type === 'fog') {
-      prepared = { ...prepared, damage: { ...prepared.damage, accuracyModifier: Number(prepared.damage?.accuracyModifier ?? 0) - 10 } };
-    }
+    else if (runtime.weather.type === 'night') { if (/闇/u.test(text)) scale *= 1.15; if (/光/u.test(text)) scale *= 0.9; }
+    if (runtime.weather.type === 'fog') prepared = { ...prepared, damage: { ...prepared.damage, accuracyModifier: Number(prepared.damage?.accuracyModifier ?? 0) - 10 } };
     if (scale !== 1 && damageMultiplier(prepared) > 0) prepared = withMultiplier(prepared, damageMultiplier(prepared) * scale);
     if (scale !== 1 || runtime.weather.type === 'fog') metadata.weather = { type: runtime.weather.type, scale };
   }
-
   if (runtime.nextAction && runtime.nextAction.sourceSkillId !== skill.id) {
     const current = damageMultiplier(prepared);
     if (current > 0) prepared = withMultiplier(prepared, current * Number(runtime.nextAction.damageScale ?? 1));
@@ -192,7 +155,6 @@ export function prepareGenericSkill({ skill, session }) {
     }
     metadata.consumeNextAction = { ...runtime.nextAction };
   }
-
   return { skill: prepared, blockedReason: null, metadata };
 }
 
@@ -255,12 +217,10 @@ export function applyGenericSkillSuccess({ originalSkill, preparedMetadata, sess
 
   const substitute = mechanicEntry(originalSkill, 'SUBSTITUTE');
   if (substitute) {
-    const rank = semanticRank(originalSkill, 'SUBSTITUTE');
     const durationTurns = Math.max(1, Number(substitute.durationTurns ?? substitute.semantics?.durationTurns ?? 3));
-    runtime.substitutes.push({ sourceSkillId: originalSkill.id, charges: 1, createdSeq: frame.seq, expiresAfterTurn: turn + durationTurns - 1, rank });
+    runtime.substitutes.push({ sourceSkillId: originalSkill.id, charges: 1, createdSeq: frame.seq, expiresAfterTurn: turn + durationTurns - 1, rank: semanticRank(originalSkill, 'SUBSTITUTE') });
     emit('SUBSTITUTE', { charges: 1, durationTurns });
   }
-
   const summonState = (originalSkill.specialStates ?? []).find((state) => state?.type === 'summonUnit');
   if (hasFamily(originalSkill, 'SUMMON') || summonState) {
     const rank = semanticRank(originalSkill, 'SUMMON');
@@ -271,7 +231,6 @@ export function applyGenericSkillSuccess({ originalSkill, preparedMetadata, sess
     runtime.summons.push(summon);
     emit('SUMMON', { summon: { ...summon } });
   }
-
   const weatherOptions = genericWeatherOptions(originalSkill);
   if (weatherOptions.length) {
     const weatherType = parsedAction.weather ?? weatherOptions[0];
@@ -281,7 +240,6 @@ export function applyGenericSkillSuccess({ originalSkill, preparedMetadata, sess
       emit('COMBAT_LOCAL_WEATHER', { weather: { ...runtime.weather } });
     }
   }
-
   const fieldState = (originalSkill.specialStates ?? []).find((state) => state?.type === 'fieldModifier');
   if (fieldState && !hasFamily(originalSkill, 'CREATE_OWNED_FIELD')) {
     const durationTurns = Math.max(1, Number(fieldState.durationTurns ?? 3));
@@ -289,27 +247,22 @@ export function applyGenericSkillSuccess({ originalSkill, preparedMetadata, sess
     runtime.fields.push(field);
     emit('MODIFY_FIELD', { field: { ...field } });
   }
-
   if (hasFamily(originalSkill, 'TRAP')) {
-    const rank = semanticRank(originalSkill, 'TRAP');
-    const trap = { instanceId: `PTRAP-${originalSkill.id}-${turn}-${runtime.traps.length + 1}`, sourceSkillId: originalSkill.id, charges: 1, rank, expiresAfterTurn: turn + 3 };
+    const trap = { instanceId: `PTRAP-${originalSkill.id}-${turn}-${runtime.traps.length + 1}`, sourceSkillId: originalSkill.id, charges: 1, rank: semanticRank(originalSkill, 'TRAP'), expiresAfterTurn: turn + 3 };
     runtime.traps.push(trap);
     emit('TRAP', { trap: { ...trap } });
   }
-
   if (hasFamily(originalSkill, 'NEXT_ACTION_BONUS') || hasFamily(originalSkill, 'DUPLICATE_NEXT_ACTION')) {
-    const rank = semanticRank(originalSkill, hasFamily(originalSkill, 'NEXT_ACTION_BONUS') ? 'NEXT_ACTION_BONUS' : 'DUPLICATE_NEXT_ACTION');
-    runtime.nextAction = { sourceSkillId: originalSkill.id, damageScale: 1 + rank * 0.1, mpScale: Math.max(0.5, 1 - rank * 0.08), duplicate: hasFamily(originalSkill, 'DUPLICATE_NEXT_ACTION'), armedTurn: turn };
-    emit(hasFamily(originalSkill, 'DUPLICATE_NEXT_ACTION') ? 'DUPLICATE_NEXT_ACTION' : 'NEXT_ACTION_BONUS', { armed: { ...runtime.nextAction } });
+    const family = hasFamily(originalSkill, 'NEXT_ACTION_BONUS') ? 'NEXT_ACTION_BONUS' : 'DUPLICATE_NEXT_ACTION';
+    const rank = semanticRank(originalSkill, family);
+    runtime.nextAction = { sourceSkillId: originalSkill.id, damageScale: 1 + rank * 0.1, mpScale: Math.max(0.5, 1 - rank * 0.08), duplicate: family === 'DUPLICATE_NEXT_ACTION', armedTurn: turn };
+    emit(family, { armed: { ...runtime.nextAction } });
   }
-
   if (hasFamily(originalSkill, 'SELF_DAMAGE') && actor?.alive) {
-    const rank = semanticRank(originalSkill, 'SELF_DAMAGE');
-    const amount = Math.max(1, Math.round(Number(actor.maxHp ?? 1) * Math.min(0.3, 0.04 * rank)));
+    const amount = Math.max(1, Math.round(Number(actor.maxHp ?? 1) * Math.min(0.3, 0.04 * semanticRank(originalSkill, 'SELF_DAMAGE'))));
     actor.hp = Math.max(1, Number(actor.hp ?? 1) - amount);
     emit('SELF_DAMAGE', { amount, hpAfter: actor.hp });
   }
-
   if (hasFamily(originalSkill, 'RANDOM_EFFECT_TABLE') || hasFamily(originalSkill, 'REROLL')) {
     const roll = stableUnit(`${session.seed}:${turn}:${originalSkill.id}:table`);
     const outcome = roll < 1 / 3 ? 'recover_mp' : roll < 2 / 3 ? 'recover_hp' : 'next_action_power';
@@ -318,39 +271,29 @@ export function applyGenericSkillSuccess({ originalSkill, preparedMetadata, sess
     if (outcome === 'next_action_power') runtime.nextAction = { sourceSkillId: originalSkill.id, damageScale: 1.25, mpScale: 1, duplicate: false, armedTurn: turn };
     emit(hasFamily(originalSkill, 'REROLL') ? 'REROLL' : 'RANDOM_EFFECT_TABLE', { roll, outcome });
   }
-
   if (hasFamily(originalSkill, 'CONSUME_DURABILITY') || hasFamily(originalSkill, 'ITEM_OR_EQUIPMENT_COST') || hasFamily(originalSkill, 'CONSUME_ITEM')) {
     const key = originalSkill.costs?.itemOrEquipment ?? 'equipped_source';
     runtime.equipmentRuntime.consumedCosts.push({ sourceSkillId: originalSkill.id, cost: key, turn });
     runtime.equipmentRuntime.durabilitySpent[key] = Number(runtime.equipmentRuntime.durabilitySpent[key] ?? 0) + 1;
     emit(hasFamily(originalSkill, 'CONSUME_DURABILITY') ? 'CONSUME_DURABILITY' : hasFamily(originalSkill, 'CONSUME_ITEM') ? 'CONSUME_ITEM' : 'ITEM_OR_EQUIPMENT_COST', { cost: key, spent: 1 });
   }
-
   if (hasFamily(originalSkill, 'TEMP_DISABLE_EQUIPMENT')) {
     const marker = originalSkill.costs?.itemOrEquipment ?? 'equipped_source';
     if (!runtime.equipmentRuntime.disabledEquipmentIds.includes(marker)) runtime.equipmentRuntime.disabledEquipmentIds.push(marker);
     emit('TEMP_DISABLE_EQUIPMENT', { equipment: marker, restoreAfterBattle: true });
   }
-
   if (hasFamily(originalSkill, 'TEMP_RESOURCE')) {
-    const rank = semanticRank(originalSkill, 'TEMP_RESOURCE');
-    runtime.temporaryResources[originalSkill.id] = Number(runtime.temporaryResources[originalSkill.id] ?? 0) + rank;
-    emit('TEMP_RESOURCE', { amount: rank, total: runtime.temporaryResources[originalSkill.id] });
+    const amount = semanticRank(originalSkill, 'TEMP_RESOURCE');
+    runtime.temporaryResources[originalSkill.id] = Number(runtime.temporaryResources[originalSkill.id] ?? 0) + amount;
+    emit('TEMP_RESOURCE', { amount, total: runtime.temporaryResources[originalSkill.id] });
   }
-
-  if (hasFamily(originalSkill, 'ANALYZE_HISTORY') || hasFamily(originalSkill, 'HISTORY_CONDITION')) {
-    emit(hasFamily(originalSkill, 'ANALYZE_HISTORY') ? 'ANALYZE_HISTORY' : 'HISTORY_CONDITION', { previousAction: runtime.actionHistory.at(-1) ?? null });
-  }
-
+  if (hasFamily(originalSkill, 'ANALYZE_HISTORY') || hasFamily(originalSkill, 'HISTORY_CONDITION')) emit(hasFamily(originalSkill, 'ANALYZE_HISTORY') ? 'ANALYZE_HISTORY' : 'HISTORY_CONDITION', { previousAction: runtime.actionHistory.at(-1) ?? null });
   runtime.actionHistory.push({ skillId: originalSkill.id, turn, targetInstanceId: frame.primaryTargetInstanceId ?? null, damage: Number(frame.damage ?? 0), hits: Number(frame.hits ?? 0) });
   if (runtime.actionHistory.length > 32) runtime.actionHistory.splice(0, runtime.actionHistory.length - 32);
   return events;
 }
 
-function addEventToFrame(frame, event) {
-  frame.events = [...(frame.events ?? []), event];
-}
-
+function addEventToFrame(frame, event) { frame.events = [...(frame.events ?? []), event]; }
 function restorePlayerAfterIntercept(session, frame, effect, amount) {
   const player = session.state.players.find((entry) => entry.instanceId === effect.targetInstanceId);
   if (!player || amount <= 0) return 0;
@@ -371,42 +314,33 @@ export function applyGenericRoundProtection({ session, round }) {
   runtime.summons = runtime.summons.filter((entry) => Number(entry.expiresAfterTurn ?? turn) >= turn && Number(entry.hp ?? 0) > 0);
   runtime.traps = runtime.traps.filter((entry) => Number(entry.expiresAfterTurn ?? turn) >= turn && Number(entry.charges ?? 0) > 0);
   if (runtime.weather && Number(runtime.weather.expiresAfterTurn ?? turn) < turn) runtime.weather = null;
-
   for (const frame of round?.frames ?? []) {
     if (frame.actorSide !== 'enemy' || frame.phase !== 'action') continue;
     const playerEffect = (frame.effects ?? []).find((effect) => effect.hpBefore > effect.hpAfter && session.state.players.some((player) => player.instanceId === effect.targetInstanceId));
     if (!playerEffect) continue;
     const incoming = Number(playerEffect.hpBefore) - Number(playerEffect.hpAfter);
     if (incoming <= 0) continue;
-
     const substitute = runtime.substitutes.find((entry) => Number(entry.createdSeq ?? 0) < Number(frame.seq ?? Infinity));
     if (substitute) {
       const restored = restorePlayerAfterIntercept(session, frame, playerEffect, incoming);
       substitute.charges -= 1;
       const event = { type: 'player_runtime_mechanic', family: 'SUBSTITUTE', sourceSkillId: substitute.sourceSkillId, interceptedDamage: restored, consumed: true };
-      addEventToFrame(frame, event);
-      runtime.genericEvents.push({ turn, ...event });
+      addEventToFrame(frame, event); runtime.genericEvents.push({ turn, ...event });
       continue;
     }
-
     const summon = runtime.summons.find((entry) => Number(entry.createdSeq ?? 0) < Number(frame.seq ?? Infinity));
     if (summon) {
       const absorbed = Math.min(incoming, Number(summon.hp ?? 0));
       const restored = restorePlayerAfterIntercept(session, frame, playerEffect, absorbed);
       summon.hp = Math.max(0, Number(summon.hp ?? 0) - restored);
       const event = { type: 'player_runtime_mechanic', family: 'SUMMON', sourceSkillId: summon.sourceSkillId, summonInstanceId: summon.instanceId, absorbedDamage: restored, summonHpAfter: summon.hp };
-      addEventToFrame(frame, event);
-      runtime.genericEvents.push({ turn, ...event });
+      addEventToFrame(frame, event); runtime.genericEvents.push({ turn, ...event });
     }
   }
-
   runtime.substitutes = runtime.substitutes.filter((entry) => entry.charges > 0);
   runtime.summons = runtime.summons.filter((entry) => entry.hp > 0);
   const alivePlayer = session.state.players.some((player) => player.alive && player.hp > 0);
   const aliveEnemy = session.state.enemies.some((enemy) => enemy.alive && enemy.hp > 0 && !enemy.escaped);
-  if (alivePlayer && aliveEnemy && session.winner === 'enemies') {
-    session.winner = null;
-    session.status = 'active';
-  }
+  if (alivePlayer && aliveEnemy && session.winner === 'enemies') { session.winner = null; session.status = 'active'; }
   return runtime.genericEvents;
 }
