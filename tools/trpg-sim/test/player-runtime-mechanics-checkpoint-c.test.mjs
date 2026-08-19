@@ -171,9 +171,7 @@ test('Checkpoint C REPEAT_WHILE_HIT executes SKL-1140 until the first miss in on
     assert.equal(event.misses, event.stoppedOnMiss ? 1 : 0);
     assert.equal(event.safetyCapReached, false, 'the semantic safety cap must not be normal termination');
 
-    if (event.stoppedOnMiss) {
-      assert.equal(event.attempts, event.hits + 1, 'no hit attempt may occur after the terminating miss');
-    }
+    if (event.stoppedOnMiss) assert.equal(event.attempts, event.hits + 1, 'no hit attempt may occur after the terminating miss');
     if (event.stoppedOnMiss && event.hits >= 1) {
       witness = { output, frame, event };
       break;
@@ -196,12 +194,7 @@ test('Checkpoint C PLAYER-owned magic circles feed and are consumed by SKL-1108 
     data,
     seed: 'checkpoint-c-owned-field-runtime',
     monsterIds: ['MON-0077'],
-    playerBuild: runtimeBuild(
-      'checkpoint-c-owned-field',
-      ['SKL-0639', 'SKL-0640', 'SKL-1108'],
-      {},
-      ['EQP-W-0009'],
-    ),
+    playerBuild: runtimeBuild('checkpoint-c-owned-field', ['SKL-0639', 'SKL-0640', 'SKL-1108'], {}, ['EQP-W-0009']),
     maxTurns: 8,
   });
 
@@ -216,10 +209,7 @@ test('Checkpoint C PLAYER-owned magic circles feed and are consumed by SKL-1108 
     const output = resolveInteractiveBattleRound({
       data,
       session,
-      command: {
-        actionId: fieldCommand.actionId,
-        targetInstanceId: fieldCommand.targets[0]?.instanceId,
-      },
+      command: { actionId: fieldCommand.actionId, targetInstanceId: fieldCommand.targets[0]?.instanceId },
     });
     assert.equal(output.ok, true);
     session = output.session;
@@ -231,18 +221,11 @@ test('Checkpoint C PLAYER-owned magic circles feed and are consumed by SKL-1108 
   }
 
   assert.equal(session.playerRuntimeMechanics.fields.length, 2);
-  assert.deepEqual(
-    [...new Set(session.playerRuntimeMechanics.fields.map((field) => field.type))].sort(),
-    ['thunder', 'wind'],
-  );
+  assert.deepEqual([...new Set(session.playerRuntimeMechanics.fields.map((field) => field.type))].sort(), ['thunder', 'wind']);
 
   const explosionCommand = command(session, 'SKL-1108');
   assert.ok(explosionCommand?.available, 'Formation Explosion becomes available only after an owned circle exists');
-  const explosion = resolveInteractiveBattleRound({
-    data,
-    session,
-    command: { actionId: explosionCommand.actionId },
-  });
+  const explosion = resolveInteractiveBattleRound({ data, session, command: { actionId: explosionCommand.actionId } });
   assert.equal(explosion.ok, true);
   const frame = explosion.round.frames.find((entry) => entry.actorSide === 'player' && entry.action?.skillId === 'SKL-1108');
   assert.ok(frame);
@@ -268,7 +251,7 @@ test('Checkpoint C PLAYER-owned magic circles feed and are consumed by SKL-1108 
 test('Checkpoint C SKL-1141 burns specified Gold, scales exactly, debuffs and rejects overspend', () => {
   let session = beginInteractiveBattle({
     data,
-    seed: 'checkpoint-c-gold-burn-runtime',
+    seed: 'checkpoint-c-gold-witness-2',
     monsterIds: ['MON-0077'],
     playerGold: 1000,
     playerBuild: runtimeBuild('checkpoint-c-gold-burn', ['SKL-1141'], { debuffSuccess: 10_000 }),
@@ -281,11 +264,7 @@ test('Checkpoint C SKL-1141 burns specified Gold, scales exactly, debuffs and re
   const expectedMultiplier = Math.min(2.8, 0.55 + 0.32 * Math.log(1 + 250 / 25));
   assert.ok(Math.abs(spend250.damageMultiplier - expectedMultiplier) < 1e-12);
 
-  const output = resolveInteractiveBattleRound({
-    data,
-    session,
-    command: { actionId: spend250.actionId },
-  });
+  const output = resolveInteractiveBattleRound({ data, session, command: { actionId: spend250.actionId } });
   assert.equal(output.ok, true);
   session = output.session;
   assert.equal(session.playerRuntimeMechanics.gold, 750);
@@ -301,11 +280,7 @@ test('Checkpoint C SKL-1141 burns specified Gold, scales exactly, debuffs and re
   assert.equal(Number(output.session.diagnostics?.counts?.unmodeledMoneyCost ?? 0), 0);
 
   const before = structuredClone(session.playerRuntimeMechanics);
-  const rejected = resolveInteractiveBattleRound({
-    data,
-    session,
-    command: { actionId: 'SKILL:SKL-1141:GOLD:751' },
-  });
+  const rejected = resolveInteractiveBattleRound({ data, session, command: { actionId: 'SKILL:SKL-1141:GOLD:751' } });
   assert.equal(rejected.ok, false);
   assert.equal(rejected.reason, 'insufficient_gold');
   assert.deepEqual(session.playerRuntimeMechanics, before, 'overspend rejection must not mutate battle Gold/history/fields');
