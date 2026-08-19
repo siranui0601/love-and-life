@@ -19,11 +19,7 @@ function prerequisitesOf(skill) {
 export function auditPrerequisites(skills) {
   const byId = new Map(skills.map((skill) => [skill.id, skill]));
   const missing = [];
-  for (const skill of skills) {
-    for (const prerequisiteId of prerequisitesOf(skill)) {
-      if (!byId.has(prerequisiteId)) missing.push({ skillId: skill.id, prerequisiteId });
-    }
-  }
+  for (const skill of skills) for (const prerequisiteId of prerequisitesOf(skill)) if (!byId.has(prerequisiteId)) missing.push({ skillId: skill.id, prerequisiteId });
   const visiting = new Set();
   const visited = new Set();
   const stack = [];
@@ -46,10 +42,9 @@ export function auditPrerequisites(skills) {
   return { missing, cycles };
 }
 
-export function eventGrantProducerTrace(skill) {
-  if (skill?.acquisitionCode !== 'event_granted') return [];
+function producerTrace(skill, resolver) {
   return flattenConditionLeaves(skill.grantConditions).map((leaf) => ({
-    resolver: 'player-journey-base.grantEventSkills',
+    resolver,
     source: leaf.scope,
     path: leaf.path,
     operator: leaf.op,
@@ -63,31 +58,35 @@ export function eventGrantProducerTrace(skill) {
   }));
 }
 
+export function eventGrantProducerTrace(skill) {
+  return skill?.acquisitionCode === 'event_granted'
+    ? producerTrace(skill, 'player-journey-base.grantEventSkills')
+    : [];
+}
+
+export function equipmentGrantProducerTrace(skill) {
+  return skill?.acquisitionCode === 'equipment_granted'
+    ? producerTrace(skill, 'player-journey.equippedGrantedSkillIds')
+    : [];
+}
+
 export function auditSkillAcquisitionCheckpointC(skills, battleData = null) {
   const counts = {};
   for (const skill of skills) counts[skill.acquisitionCode] = Number(counts[skill.acquisitionCode] ?? 0) + 1;
   const prerequisites = auditPrerequisites(skills);
-  const eventGranted = skills.filter((skill) => skill.acquisitionCode === 'event_granted');
-  const eventProducerTrace = eventGranted.map((skill) => ({
-    skillId: skill.id,
-    producers: eventGrantProducerTrace(skill),
-  }));
+  const eventProducerTrace = skills.filter((skill) => skill.acquisitionCode === 'event_granted').map((skill) => ({ skillId: skill.id, producers: eventGrantProducerTrace(skill) }));
+  const equipmentProducerTrace = skills.filter((skill) => skill.acquisitionCode === 'equipment_granted').map((skill) => ({ skillId: skill.id, producers: equipmentGrantProducerTrace(skill) }));
   const eventWithoutProducer = eventProducerTrace.filter((entry) => entry.producers.length === 0);
+  const equipmentWithoutProducer = equipmentProducerTrace.filter((entry) => entry.producers.length === 0);
 
-  const equipmentRows = battleData?.equipment ?? [];
   const equipmentReferences = new Map();
-  for (const equipment of equipmentRows) {
-    const ids = [equipment.grantedSkillId, ...(equipment.grantedSkillIds ?? [])].filter(Boolean);
-    for (const skillId of ids) {
+  for (const equipment of battleData?.equipment ?? []) {
+    for (const skillId of [equipment.grantedSkillId, ...(equipment.grantedSkillIds ?? [])].filter(Boolean)) {
       const owners = equipmentReferences.get(skillId) ?? [];
       owners.push(equipment.id);
       equipmentReferences.set(skillId, owners);
     }
   }
-  const equipmentGranted = skills.filter((skill) => skill.acquisitionCode === 'equipment_granted');
-  const unreferencedEquipmentGrants = battleData
-    ? equipmentGranted.filter((skill) => !equipmentReferences.has(skill.id)).map((skill) => skill.id)
-    : [];
 
   return {
     total: skills.length,
@@ -96,7 +95,9 @@ export function auditSkillAcquisitionCheckpointC(skills, battleData = null) {
     prerequisites,
     eventProducerTrace,
     eventWithoutProducer,
+    equipmentProducerTrace,
+    equipmentWithoutProducer,
     equipmentReferences,
-    unreferencedEquipmentGrants,
+    currentEquipmentReferenceCount: equipmentProducerTrace.filter((entry) => equipmentReferences.has(entry.skillId)).length,
   };
 }
