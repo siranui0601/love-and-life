@@ -12,7 +12,8 @@ function expectReason(session,id,reason){const command=skillCommand(session,id);
 function equipmentLeaves(skill){return (skill.activationConditions??[]).filter((condition)=>condition?.scope==='equipment'&&condition?.path==='activeWeaponTypes');}
 
 test('Checkpoint C battle API exposes concrete player unavailability reasons',()=>{
-  let session=begin(['SKL-1140'],['EQP-W-0073']);session.state.players[0].mp=0;expectReason(session,'SKL-1140','insufficient_mp');
+  const mpSkill=data.playerSkills.find((skill)=>skill.kind==='active'&&skill.costs?.mpMode==='fixed'&&Number(skill.costs?.mp)>0&&equipmentLeaves(skill).length===0&&(skill.activationConditions??[]).length===0);
+  assert.ok(mpSkill,'canonical fixed-MP active skill required');let session=begin([mpSkill.id]);session.state.players[0].mp=0;expectReason(session,mpSkill.id,'insufficient_mp');
 
   const hpSkill=data.playerSkills.find((skill)=>skill.kind==='active'&&skill.costs?.hpMode==='fixed'&&Number(skill.costs?.hp)>0&&equipmentLeaves(skill).length===0&&(skill.activationConditions??[]).length===0);
   assert.ok(hpSkill,'canonical fixed-HP active skill required');session=begin([hpSkill.id]);session.state.players[0].hp=Number(hpSkill.costs.hp);expectReason(session,hpSkill.id,'insufficient_hp');
@@ -29,7 +30,7 @@ test('Checkpoint C battle API exposes concrete player unavailability reasons',()
   session=begin(['SKL-0665'],['EQP-W-0009']);session.state.players[0].specialStates.set('seal',{duration:3,params:{blockedTags:['magic']}});expectReason(session,'SKL-0665','sealed');
 
   session=begin(['SKL-1108'],['EQP-W-0009']);expectReason(session,'SKL-1108','field_required');
-  session=begin(['SKL-1141'],['EQP-W-0001'],{playerGold:0});expectReason(session,'SKL-1141','insufficient_gold');
+  session=begin(['SKL-1141'],['EQP-W-0009'],{playerGold:0});expectReason(session,'SKL-1141','insufficient_gold');
   session=begin(['SKL-1139'],['EQP-W-0001']);expectReason(session,'SKL-1139','missing_history');
 
   session=begin(['SKL-0021'],['EQP-W-0001']);session.playerRuntimeMechanics.equipmentRuntime.disabledEquipmentIds=['EQP-W-0001'];expectReason(session,'SKL-0021','equipment_disabled');
