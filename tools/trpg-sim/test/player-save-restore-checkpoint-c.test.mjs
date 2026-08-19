@@ -26,8 +26,6 @@ test('Checkpoint C production serializer round-trips progression, grants and pen
   state.player.sp = 13;
   state.player.gold = 777;
   state.player.skills.add('SKL-0001');
-  state.player.visibleSkillIds.add('SKL-0002');
-  state.player.flagEligibleSkillIds.add('SKL-0002');
   state.progress.combat.physicalKills = 17;
   state.progress.weapon.axe.kills = 12;
 
@@ -53,12 +51,15 @@ test('Checkpoint C production serializer round-trips progression, grants and pen
   assert.equal(resolved.ok, true);
   battle = resolved.session;
   battle.playerRuntimeMechanics.gold = 733;
-  battle.playerRuntimeMechanics.weather = { type:'rain', sourceSkillId:'SKL-0797', battleLocal:true };
+  battle.playerRuntimeMechanics.weather = { type:'rain', sourceSkillId:'SKL-0797', battleLocalOnly:true, worldWeatherMutation:false };
   battle.playerRuntimeMechanics.fields.push({ instanceId:'FIELD-SAVE-1', owner:'player', kind:'magic_circle', type:'wind', createdBySkillId:'SKL-0640', expiresAfterTurn:9 });
   battle.playerRuntimeMechanics.history.lastRepeatable = { skillId:'SKL-0001', targetInstanceId:battle.state.enemies[0]?.instanceId ?? null };
   runtime.pendingBattle = { id:'BATTLE-C-SAVE', session:battle, continuation:{ prepared:{ scaledBuild:build }, encounterId:'ENC-SAVE' } };
 
   const learnedBefore = new Set(state.player.skills);
+  const visibleBefore = new Set(state.player.visibleSkillIds);
+  const eligibleBefore = new Set(state.player.flagEligibleSkillIds);
+  assert.ok(visibleBefore.size > 0, 'save witness must include revealed skills');
   const encoded = serializeRuntime(runtime);
   const restored = deserializeRuntime(encoded, data);
 
@@ -71,12 +72,13 @@ test('Checkpoint C production serializer round-trips progression, grants and pen
   assert.equal(listPlayerSkillStates(restored.playerState, data.battleData, skills).find((row) => row.id === equipmentSkillId)?.active, true);
   assert.equal(restored.playerState.progress.combat.physicalKills, 17);
   assert.equal(restored.playerState.progress.weapon.axe.kills, 12);
-  assert.equal(restored.playerState.player.visibleSkillIds.has('SKL-0002'), true);
-  assert.equal(restored.playerState.player.flagEligibleSkillIds.has('SKL-0002'), true);
+  assert.deepEqual(restored.playerState.player.visibleSkillIds, visibleBefore);
+  assert.deepEqual(restored.playerState.player.flagEligibleSkillIds, eligibleBefore);
 
   const restoredBattle = restored.pendingBattle.session;
   assert.equal(restoredBattle.playerRuntimeMechanics.gold, 733);
   assert.equal(restoredBattle.playerRuntimeMechanics.weather.type, 'rain');
+  assert.equal(restoredBattle.playerRuntimeMechanics.weather.battleLocalOnly, true);
   assert.equal(restoredBattle.playerRuntimeMechanics.fields.some((field) => field.instanceId === 'FIELD-SAVE-1'), true);
   assert.equal(restoredBattle.playerRuntimeMechanics.history.lastRepeatable.skillId, 'SKL-0001');
   assert.equal(restoredBattle.state.players[0].uses.get('SKL-0001'), battle.state.players[0].uses.get('SKL-0001'));
