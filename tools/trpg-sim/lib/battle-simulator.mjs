@@ -1,4 +1,5 @@
 import * as base from './battle-simulator-base.mjs';
+import { BATTLE_ASSUMPTIONS } from './battle-model.mjs';
 
 export * from './battle-simulator-base.mjs';
 
@@ -52,10 +53,6 @@ function repeatSource(data, session) {
 }
 
 function repeatEnvelope(repeater, source) {
-  // The repeater pays its own cost and owns its own cooldown/use count. Only
-  // the successfully-authored effect envelope is replayed. This prevents the
-  // source skill from paying twice or resetting its cooldown while still
-  // preserving damage channel, target policy, buffs/debuffs and state effects.
   return {
     ...repeater,
     category: source.category,
@@ -82,12 +79,8 @@ function repeatWhileHitEnvelope(skill, session, targetInstanceId = null) {
     ?? null;
   const actorAccuracy = actor ? base.actorStat(actor, 'accuracy') : 0;
   const targetEvasion = target ? base.actorStat(target, 'evasion') : 0;
-  // Canonical repeatWhileHit means a fixed 30% hit roll, not “normal hit rate
-  // plus a modifier”.  The base damage executor receives an accuracy delta, so
-  // solve the shared hit formula backwards to preserve exactly 30% even when
-  // actor/target accuracy stages change during battle.
   const accuracyModifier = REPEAT_WHILE_HIT_CHANCE_PCT
-    - Number(base.BATTLE_ASSUMPTIONS.baseHitChancePct ?? 90)
+    - Number(BATTLE_ASSUMPTIONS.baseHitChancePct ?? 90)
     - actorAccuracy
     + targetEvasion;
   const perHitMultiplier = Number(skill.damage?.perHitMultiplier ?? 0);
@@ -217,7 +210,6 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
     };
     runtime.events.push({ turn: output.session.state?.turn ?? null, ...event });
     attachFrameEvent(output, frame, event);
-    // Crucially, Encore does not replace the last repeatable source with itself.
     return output;
   }
 
