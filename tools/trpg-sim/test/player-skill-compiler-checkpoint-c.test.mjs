@@ -50,9 +50,61 @@ test('Checkpoint C source counts and all provisional semantics are explicit', ()
   const chainHit = skills.find((skill) => skill.id === 'SKL-1140');
   assert.ok(chainHit);
   assert.equal(chainHit.damage?.formula, 'repeatWhileHit');
-  assert.equal(chainHit.runtimeMechanics.some((entry) => entry.family === 'REPEAT_WHILE_HIT'), true);
+  assert.deepEqual(
+    chainHit.runtimeMechanics.find((entry) => entry.family === 'REPEAT_WHILE_HIT'),
+    {
+      family: 'REPEAT_WHILE_HIT',
+      source: 'powerMode',
+      hitChancePct: 30,
+      maxHits: 20,
+      perHitMultiplier: 2.8,
+    },
+  );
   assert.equal(chainHit.provisionalRuleCount, 0);
   assert.equal(chainHit.runtimeSemanticStatus, 'structured');
+
+  const thunderCircle = skills.find((skill) => skill.id === 'SKL-0639');
+  assert.deepEqual(
+    thunderCircle.runtimeMechanics.find((entry) => entry.family === 'CREATE_OWNED_FIELD'),
+    {
+      family: 'CREATE_OWNED_FIELD',
+      source: 'category',
+      owner: 'player',
+      fieldKind: 'magic_circle',
+      fieldType: 'thunder',
+      durationTurns: 3,
+    },
+  );
+
+  const formationExplosion = skills.find((skill) => skill.id === 'SKL-1108');
+  assert.ok(formationExplosion);
+  assert.deepEqual(
+    formationExplosion.runtimeMechanics.find((entry) => entry.family === 'CONSUME_OWNED_FIELD'),
+    {
+      family: 'CONSUME_OWNED_FIELD',
+      source: 'activation',
+      owner: 'player',
+      fieldKind: 'magic_circle',
+      extraFieldScale: 0.25,
+      extraTypeScale: 0.1,
+      maxScale: 2.5,
+    },
+  );
+
+  const goldBurn = skills.find((skill) => skill.id === 'SKL-1141');
+  assert.ok(goldBurn);
+  assert.equal(goldBurn.runtimeMechanics.some((entry) => entry.family === 'GOLD_COST'), true);
+  assert.deepEqual(
+    goldBurn.runtimeMechanics.find((entry) => entry.family === 'GOLD_SPEND_SCALING'),
+    {
+      family: 'GOLD_SPEND_SCALING',
+      source: 'powerMode',
+      baseMultiplier: 0.55,
+      logCoefficient: 0.32,
+      divisor: 25,
+      maxMultiplier: 2.8,
+    },
+  );
 
   const weather = ['SKL-0797', 'SKL-1020'].map((id) => PLAYER_PROVISIONAL_SEMANTICS[id]);
   assert.ok(weather.every((entry) => entry.battleLocalOnly === true && entry.worldWeatherMutation === false));
