@@ -38,9 +38,7 @@ export function classifyEquipmentTextRuntime(equipment, text) {
 function worldAccess(equipment, data) {
   const stockRows = (data.inventory ?? []).filter((stock) => stock.equipmentId === equipment.id);
   if (stockRows.length) return { reachable: true, routes: stockRows.map((stock) => ({ type: 'shop_stock', stockId: stock.id, sellerId: stock.sellerId, location: stock.location })) };
-  if (equipment.status !== 'disabled' && SLOT_SET.has(equipment.slot)) {
-    return { reachable: true, routes: [{ type: 'mission_reward_pool', rule: 'equipment-access.rewardCandidates' }] };
-  }
+  if (equipment.status !== 'disabled' && SLOT_SET.has(equipment.slot)) return { reachable: true, routes: [{ type: 'mission_reward_pool', rule: 'equipment-access.rewardCandidates' }] };
   return { reachable: false, routes: [] };
 }
 
@@ -50,9 +48,11 @@ export function auditEquipmentCheckpointC(data) {
     const drawback = classifyEquipmentTextRuntime(equipment, equipment.drawback);
     const access = worldAccess(equipment, data);
     const slotValid = SLOT_SET.has(equipment.slot);
-    const weaponTypeValid = equipment.slot === 'mainHand' || equipment.slot === 'offHand'
+    const weaponTypeValid = equipment.slot === 'mainHand'
       ? WEAPON_SLOT_TYPES.has(equipment.weaponType)
-      : true;
+      : equipment.slot === 'offHand'
+        ? !equipment.weaponType || WEAPON_SLOT_TYPES.has(equipment.weaponType)
+        : true;
     const handednessValid = equipment.slot !== 'mainHand' || ['oneHand', 'twoHand'].includes(equipment.grip);
     return {
       equipmentId: equipment.id,
