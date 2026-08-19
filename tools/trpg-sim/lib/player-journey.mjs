@@ -13,7 +13,9 @@ export const PLAYER_SKILL_UI_STATES = Object.freeze([
 
 function permanentUiState(candidate) {
   if (candidate?.reasons?.includes('already_learned')) return 'LEARNED';
-  if (candidate?.reasons?.includes('not_visible')) return 'HIDDEN';
+  if (candidate?.reasons?.includes('not_visible')) {
+    return candidate?.acquisitionCode === 'basic_level_up' ? 'REVEALED_LOCKED' : 'HIDDEN';
+  }
   if (candidate?.learnable) return 'LEARNABLE';
   return 'REVEALED_LOCKED';
 }
