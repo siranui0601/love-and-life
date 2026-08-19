@@ -5,15 +5,18 @@ import { loadSkills } from '../lib/fixtures.mjs';
 import { skillRuntimeCoverage } from '../lib/player-skill-compiler.mjs';
 import { auditPlayerRuntimeFamilies } from '../lib/player-runtime-family-status.mjs';
 
-test('Checkpoint C classifies every emitted player mechanic family', () => {
+test('Checkpoint C executes every emitted player mechanic family', () => {
   const coverage = skillRuntimeCoverage(loadSkills());
   const audit = auditPlayerRuntimeFamilies(coverage.mechanicCounts);
   assert.equal(audit.rows.length, Object.keys(coverage.mechanicCounts).length);
-  assert.equal(audit.rows.some((row) => row.status === 'UNMODELED'), false, 'every emitted family must have an explicit classification');
-  assert.equal(audit.rows.find((row) => row.family === 'REPEAT_LAST_SKILL')?.status, 'EXECUTED');
-  assert.equal(audit.rows.find((row) => row.family === 'REPEAT_WHILE_HIT')?.status, 'EXECUTED');
-  assert.equal(audit.rows.find((row) => row.family === 'CREATE_OWNED_FIELD')?.status, 'EXECUTED');
-  assert.equal(audit.rows.find((row) => row.family === 'CONSUME_OWNED_FIELD')?.status, 'EXECUTED');
-  assert.equal(audit.rows.find((row) => row.family === 'GOLD_SPEND_SCALING')?.status, 'EXECUTED');
-  console.log(`PLAYER_RUNTIME_FAMILY_STATUS ${JSON.stringify({ summary: audit.summary, unresolved: audit.unresolved.map((row) => row.family), partial: audit.partial.map((row) => row.family) })}`);
+  assert.deepEqual(audit.unresolved, [], 'no emitted family may remain compiled-only, partial or unmodeled');
+  assert.deepEqual(audit.partial, []);
+  assert.equal(audit.summary.EXECUTED, audit.rows.length);
+  assert.equal(audit.summary.COMPILED_ONLY, 0);
+  assert.equal(audit.summary.PARTIAL, 0);
+  assert.equal(audit.summary.UNMODELED, 0);
+  for (const family of ['REPEAT_LAST_SKILL','REPEAT_WHILE_HIT','CREATE_OWNED_FIELD','CONSUME_OWNED_FIELD','GOLD_SPEND_SCALING','DELAYED_ACTION','PASSIVE_AUTO_GUARD','MODIFY_SKILL_COST','COPY_ACTION','RESOURCE_DRAIN']) {
+    assert.equal(audit.rows.find((row) => row.family === family)?.status, 'EXECUTED', family);
+  }
+  console.log(`PLAYER_RUNTIME_FAMILY_STATUS ${JSON.stringify({ summary: audit.summary, unresolved: [], partial: [] })}`);
 });
