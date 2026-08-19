@@ -10,12 +10,12 @@ import {
 
 const data = await loadBattleData();
 
-function runtimeBuild(id, skillIds, overrides = {}) {
+function runtimeBuild(id, skillIds, overrides = {}, equipmentIds = ['EQP-W-0073']) {
   return createPlayerBuild(data, {
     id,
     name: `Checkpoint C ${id}`,
     level: 50,
-    equipmentIds: ['EQP-W-0073'],
+    equipmentIds,
     skillIds,
     baseStats: {
       maxHp: 100_000,
@@ -41,9 +41,13 @@ function encoreBuild() {
   return runtimeBuild('checkpoint-c-encore', ['SKL-0001', 'SKL-1139']);
 }
 
-function command(session, skillId) {
+function commands(session, skillId) {
   return listInteractiveBattleCommands({ data, session })
-    .find((entry) => entry.skillId === skillId);
+    .filter((entry) => entry.skillId === skillId);
+}
+
+function command(session, skillId) {
+  return commands(session, skillId)[0];
 }
 
 test('Checkpoint C REPEAT_LAST_SKILL executes Encore in authoritative interactive battle', () => {
@@ -80,8 +84,6 @@ test('Checkpoint C REPEAT_LAST_SKILL executes Encore in authoritative interactiv
   assert.ok(available?.available);
   assert.ok(available.targets.length > 0);
 
-  // A stored target can disappear between the source action and Encore. The
-  // runtime must reselect a current legal target instead of replaying a corpse.
   session.playerRuntimeMechanics.history.lastRepeatable.targetInstanceId = 'dead-target#999';
   const encore = data.playerSkillById.get('SKL-1139');
   const second = resolveInteractiveBattleRound({
@@ -126,11 +128,13 @@ test('Checkpoint C REPEAT_LAST_SKILL executes Encore in authoritative interactiv
 test('Checkpoint C REPEAT_WHILE_HIT executes SKL-1140 until the first miss in one authoritative action', () => {
   const skill = data.playerSkillById.get('SKL-1140');
   assert.ok(skill, 'SKL-1140 must exist in the canonical player registry');
-  assert.ok((skill.runtimeMechanics ?? []).some((entry) => entry.family === 'REPEAT_WHILE_HIT'));
+  const mechanic = (skill.runtimeMechanics ?? []).find((entry) => entry.family === 'REPEAT_WHILE_HIT');
+  assert.deepEqual({
+    hitChancePct: mechanic?.hitChancePct,
+    maxHits: mechanic?.maxHits,
+    perHitMultiplier: mechanic?.perHitMultiplier,
+  }, { hitChancePct: 30, maxHits: 20, perHitMultiplier: 2.8 });
 
-  // These are fixed deterministic combat fixtures, not route discovery.  We
-  // exercise several seeds so the test certifies both a successful repeat and
-  // the terminating miss without baking the engine's PRNG internals into it.
   const seeds = [
     'chain-00', 'chain-01', 'chain-02', 'chain-03', 'chain-04', 'chain-05', 'chain-06', 'chain-07',
     'chain-08', 'chain-09', 'chain-10', 'chain-11', 'chain-12', 'chain-13', 'chain-14', 'chain-15',
@@ -185,4 +189,124 @@ test('Checkpoint C REPEAT_WHILE_HIT executes SKL-1140 until the first miss in on
   const actor = witness.output.session.state.players[0];
   assert.equal(actor.uses.get('SKL-1140'), 1, 'the whole chain is one skill activation');
   assert.equal(actor.mpSpent, Number(skill.costs.mp ?? 0), 'the chain pays SKL-1140 cost once');
+});
+
+test('Checkpoint C PLAYER-owned magic circles feed and are consumed by SKL-1108 Formation Explosion', () => {
+  let session = beginInteractiveBattle({
+    data,
+    seed: 'checkpoint-c-owned-field-runtime',
+    monsterIds: ['MON-0077'],
+    playerBuild: runtimeBuild(
+      'checkpoint-c-owned-field',
+      ['SKL-0639', 'SKL-0640', 'SKL-1108'],
+      {},
+      ['EQP-W-0009'],
+    ),
+    maxTurns: 8,
+  });
+
+  const initiallyBlocked = command(session, 'SKL-1108');
+  assert.ok(initiallyBlocked);
+  assert.equal(initiallyBlocked.available, false);
+  assert.equal(initiallyBlocked.disabledReason, 'no_owned_field');
+
+  for (const skillId of ['SKL-0639', 'SKL-0640']) {
+    const fieldCommand = command(session, skillId);
+    assert.ok(fieldCommand?.available, `${skillId} must be legal with the canonical staff witness`);
+    const output = resolveInteractiveBattleRound({
+      data,
+      session,
+      command: {
+        actionId: fieldCommand.actionId,
+        targetInstanceId: fieldCommand.targets[0]?.instanceId,
+      },
+    });
+    assert.equal(output.ok, true);
+    session = output.session;
+    const frame = output.round.frames.find((entry) => entry.actorSide === 'player' && entry.action?.skillId === skillId);
+    const event = (frame?.events ?? []).find((entry) => entry.family === 'CREATE_OWNED_FIELD');
+    assert.ok(event, `${skillId} must create an authoritative PLAYER-owned field event`);
+    assert.equal(event.field.owner, 'player');
+    assert.equal(event.field.kind, 'magic_circle');
+  }
+
+  assert.equal(session.playerRuntimeMechanics.fields.length, 2);
+  assert.deepEqual(
+    [...new Set(session.playerRuntimeMechanics.fields.map((field) => field.type))].sort(),
+    ['thunder', 'wind'],
+  );
+
+  const explosionCommand = command(session, 'SKL-1108');
+  assert.ok(explosionCommand?.available, 'Formation Explosion becomes available only after an owned circle exists');
+  const explosion = resolveInteractiveBattleRound({
+    data,
+    session,
+    command: { actionId: explosionCommand.actionId },
+  });
+  assert.equal(explosion.ok, true);
+  const frame = explosion.round.frames.find((entry) => entry.actorSide === 'player' && entry.action?.skillId === 'SKL-1108');
+  assert.ok(frame);
+  const event = (frame.events ?? []).find((entry) => entry.family === 'CONSUME_OWNED_FIELD');
+  assert.deepEqual({
+    consumedCount: event?.consumedCount,
+    fieldTypes: event?.fieldTypes,
+    uniqueTypeCount: event?.uniqueTypeCount,
+    baseMultiplier: event?.baseMultiplier,
+    scale: event?.scale,
+  }, {
+    consumedCount: 2,
+    fieldTypes: ['thunder', 'wind'],
+    uniqueTypeCount: 2,
+    baseMultiplier: 1.53,
+    scale: 1.35,
+  });
+  assert.ok(Math.abs(event.damageMultiplier - 2.0655) < 1e-9);
+  assert.equal(explosion.session.playerRuntimeMechanics.fields.length, 0, 'only after the successful explosion are owned circles consumed');
+  assert.equal(explosion.session.state.players[0].uses.get('SKL-1108'), 1);
+});
+
+test('Checkpoint C SKL-1141 burns specified Gold, scales exactly, debuffs and rejects overspend', () => {
+  let session = beginInteractiveBattle({
+    data,
+    seed: 'checkpoint-c-gold-burn-runtime',
+    monsterIds: ['MON-0077'],
+    playerGold: 1000,
+    playerBuild: runtimeBuild('checkpoint-c-gold-burn', ['SKL-1141'], { debuffSuccess: 10_000 }),
+    maxTurns: 4,
+  });
+
+  const goldCommands = commands(session, 'SKL-1141');
+  assert.ok(goldCommands.some((entry) => entry.goldCost === 250 && entry.actionId === 'SKILL:SKL-1141:GOLD:250'));
+  const spend250 = goldCommands.find((entry) => entry.goldCost === 250);
+  const expectedMultiplier = Math.min(2.8, 0.55 + 0.32 * Math.log(1 + 250 / 25));
+  assert.ok(Math.abs(spend250.damageMultiplier - expectedMultiplier) < 1e-12);
+
+  const output = resolveInteractiveBattleRound({
+    data,
+    session,
+    command: { actionId: spend250.actionId },
+  });
+  assert.equal(output.ok, true);
+  session = output.session;
+  assert.equal(session.playerRuntimeMechanics.gold, 750);
+  const frame = output.round.frames.find((entry) => entry.actorSide === 'player' && entry.action?.skillId === 'SKL-1141');
+  assert.ok(frame);
+  const event = (frame.events ?? []).find((entry) => entry.family === 'GOLD_SPEND_SCALING');
+  assert.deepEqual({ spend: event?.spend, goldBefore: event?.goldBefore, goldAfter: event?.goldAfter }, {
+    spend: 250, goldBefore: 1000, goldAfter: 750,
+  });
+  assert.ok(Math.abs(event.damageMultiplier - expectedMultiplier) < 1e-12);
+  assert.equal(session.state.players[0].uses.get('SKL-1141'), 1);
+  assert.equal(session.state.enemies[0].modifiers.get('accuracy')?.stage, -1, 'canonical accuracy debuff must mutate target state');
+  assert.equal(Number(output.session.diagnostics?.counts?.unmodeledMoneyCost ?? 0), 0);
+
+  const before = structuredClone(session.playerRuntimeMechanics);
+  const rejected = resolveInteractiveBattleRound({
+    data,
+    session,
+    command: { actionId: 'SKILL:SKL-1141:GOLD:751' },
+  });
+  assert.equal(rejected.ok, false);
+  assert.equal(rejected.reason, 'insufficient_gold');
+  assert.deepEqual(session.playerRuntimeMechanics, before, 'overspend rejection must not mutate battle Gold/history/fields');
 });
