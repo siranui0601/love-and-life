@@ -68,31 +68,27 @@ export function createPlayerBuild(data, options = {}) {
     error.offHandId = offHand.id;
     throw error;
   }
-  const build = core.createPlayerBuild(data, options);
-  return {
-    ...build,
-    // Journey/resource layers may choose a current HP/MP value without ever
-    // redefining the actor's actual maximum.  Preserve the constructed maxima
-    // as explicit actor invariants before any journey-specific initialization.
-    resourceMaxHp: Number(build.maxHp ?? 0),
-    resourceMaxMp: Number(build.maxMp ?? 0),
-  };
+  return core.createPlayerBuild(data, options);
 }
 
 /**
  * Player actor construction accepts explicit current resources while keeping
- * maxHp/maxMp authoritative.  This is intentionally defined in battle-model
- * (the public production entry point) instead of mutating the archived core
- * actor factory used by historical validation code.
+ * maxHp/maxMp authoritative.  Callers opt into this by supplying
+ * resourceMaxHp/resourceMaxMp plus initialHp/initialMp. Ordinary battle builds
+ * retain the historical construction path unchanged.
  */
 export function createPlayerActor(build, serial = 1) {
   const actor = core.createPlayerActor(build, serial);
-  const maxHp = Math.max(1, Number(build?.resourceMaxHp ?? build?.maxHp ?? actor.maxHp ?? 1));
-  const maxMp = Math.max(0, Number(build?.resourceMaxMp ?? build?.maxMp ?? actor.maxMp ?? 0));
-  const implicitHp = Number(build?.maxHp ?? actor.hp ?? maxHp);
-  const implicitMp = Number(build?.maxMp ?? actor.mp ?? maxMp);
-  const requestedHp = Number.isFinite(Number(build?.initialHp)) ? Number(build.initialHp) : implicitHp;
-  const requestedMp = Number.isFinite(Number(build?.initialMp)) ? Number(build.initialMp) : implicitMp;
+  const explicitHp = Number.isFinite(Number(build?.initialHp));
+  const explicitMp = Number.isFinite(Number(build?.initialMp));
+  const maxHp = explicitHp
+    ? Math.max(1, Number(build?.resourceMaxHp ?? build?.maxHp ?? actor.maxHp ?? 1))
+    : Math.max(1, Number(build?.maxHp ?? actor.maxHp ?? 1));
+  const maxMp = explicitMp
+    ? Math.max(0, Number(build?.resourceMaxMp ?? build?.maxMp ?? actor.maxMp ?? 0))
+    : Math.max(0, Number(build?.maxMp ?? actor.maxMp ?? 0));
+  const requestedHp = explicitHp ? Number(build.initialHp) : Number(actor.hp ?? maxHp);
+  const requestedMp = explicitMp ? Number(build.initialMp) : Number(actor.mp ?? maxMp);
   actor.maxHp = maxHp;
   actor.maxMp = maxMp;
   actor.hp = Math.max(0, Math.min(maxHp, requestedHp));
