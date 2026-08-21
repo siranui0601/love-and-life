@@ -53,4 +53,4 @@ test('Checkpoint D keeps legacy internal reasons mapped to their public tactical
     playerFacingBattleDisabledDetail({ disabledReason: 'weapon_requirement' }),
     '必要な武器種を装備していない',
   );
-}
+});
