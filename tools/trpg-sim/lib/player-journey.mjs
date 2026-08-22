@@ -115,6 +115,12 @@ export function settleInteractiveBattleAction(state, model, data, skills, catalo
   if(Number.isFinite(runtimeGold)&&runtimeGold>=0){const goldBefore=Math.max(0,Number(state?.player?.gold??0));const goldAfterCost=Math.max(0,Math.floor(runtimeGold));const spent=Math.max(0,goldBefore-goldAfterCost);state.player.gold=goldAfterCost;if(spent>0){state.progress.economy.goldSpent=Number(state.progress.economy.goldSpent??0)+spent;state.history.push({type:'BATTLE_GOLD_SPENT',minute:state.absoluteMinute,amount:spent,goldBefore,goldAfter:goldAfterCost});}}
   if(Array.isArray(runtime?.postBattleEffects)&&runtime.postBattleEffects.length){state.player.timedEffects??=[];for(const effect of runtime.postBattleEffects){const durationMinutes=Math.max(0,Number(effect.durationHours??0)*60);const persisted={...effect,startedMinute:state.absoluteMinute,expiresMinute:state.absoluteMinute+durationMinutes};state.player.timedEffects.push(persisted);state.history.push({type:'BATTLE_POST_EFFECT',minute:state.absoluteMinute,effect:persisted});}}
   const goldBeforeSettlement=Math.max(0,Number(state.player.gold??0));
+  const defeatOrigin={
+    location:state.player.location,
+    facilityId:state.player.facilityId,
+    absoluteMinute:state.absoluteMinute,
+    historyLength:Array.isArray(state.history)?state.history.length:0,
+  };
   const oldDefeatRecoveryMinutes=state.tuning?.defeatRecoveryMinutes;
   if(state.tuning) state.tuning.defeatRecoveryMinutes=0;
   let output;
@@ -130,6 +136,13 @@ export function settleInteractiveBattleAction(state, model, data, skills, catalo
   else if(output?.battle&&!output.battle.won&&!output.battle.fled){
     const goldLoss=Math.max(0,goldBeforeSettlement-Math.max(0,Number(state.player.gold??0)));
     state.player.gold=goldBeforeSettlement;
+    state.player.location=defeatOrigin.location;
+    state.player.facilityId=defeatOrigin.facilityId;
+    state.absoluteMinute=defeatOrigin.absoluteMinute;
+    if(Array.isArray(state.history)){
+      const retained=state.history.slice(defeatOrigin.historyLength).filter((entry)=>!['BATTLE_DEFEAT_RETURN','BATTLE_DEFEAT_RECOVERY'].includes(entry?.type));
+      state.history.splice(defeatOrigin.historyLength,state.history.length-defeatOrigin.historyLength,...retained);
+    }
     state.player.hpRatio=0;
     state.player.mpRatio=actualResources?.mpRatio ?? 0;
     state.player.pendingDefeatSettlement={
@@ -141,7 +154,7 @@ export function settleInteractiveBattleAction(state, model, data, skills, catalo
       goldLoss,
       goldBeforeLoss:goldBeforeSettlement,
     };
-    state.history.push({type:'BATTLE_DEFEAT_INCAPACITATED',minute:state.absoluteMinute,hpRatio:0,mpRatio:state.player.mpRatio,gold:state.player.gold,pendingGoldLoss:goldLoss});
+    state.history.push({type:'BATTLE_DEFEAT_INCAPACITATED',minute:state.absoluteMinute,location:state.player.location,facilityId:state.player.facilityId,hpRatio:0,mpRatio:state.player.mpRatio,gold:state.player.gold,pendingGoldLoss:goldLoss});
   }
   if(output?.battle?.won)applyEquipmentBattleVictoryGold({state,data,goldBeforeSettlement});
   syncEquipmentWorldRuntime(state,data);return output;
