@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import net from "node:net";
 import { TrpgRuntimeAssetManager } from "../assets/runtime.js";
 import { TrpgGameError, hashResumeToken } from "./service.js";
-import { createWorldTimeAwareTrpgGameService } from "./world-time-aware-service.js";
+import { createRescueWorldAwareTrpgGameService } from "./rescue-world-aware-service.js";
 
 const COOKIE_NAME = "trpg_resume";
 
@@ -92,7 +92,7 @@ function sendError(res, error) {
 }
 
 export function mountTrpgGameRoutes(app, options = {}) {
-  const service = options.service ?? createWorldTimeAwareTrpgGameService(options);
+  const service = options.service ?? createRescueWorldAwareTrpgGameService(options);
   const assetManager = options.assetManager ?? new TrpgRuntimeAssetManager({
     data: service.data,
     ...(options.assetOptions ?? {}),
