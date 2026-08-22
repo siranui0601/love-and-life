@@ -10,6 +10,7 @@ import {
 
 const data = await loadBattleData();
 
+// This is the canonical legal Checkpoint C formation build: 雷陣＋風陣→陣爆破.
 const FIELD_A = 'SKL-0639';
 const FIELD_B = 'SKL-0640';
 const DETONATE = 'SKL-1108';
@@ -43,22 +44,24 @@ function makeSession(seed) {
     monsterIds: ['MON-0005'],
     playerBuild: build,
     seed: `checkpoint-d:field:${seed}`,
-    maxTurns: 8,
+    maxTurns: 16,
   });
-  // Keep one ordinary production enemy alive long enough to compare setup lines.
-  // Only HP is enlarged; command selection, defense, reactions and runtime semantics remain production code.
   const enemy = session.state.enemies[0];
   enemy.maxHp = Math.max(enemy.maxHp, 10_000_000);
   enemy.hp = enemy.maxHp;
   return session;
 }
 
-function commandFor(session, actionOrSkill) {
+function displayedCommand(session, actionOrSkill) {
   const commands = listInteractiveBattleCommands({ data, session });
-  const command = actionOrSkill.startsWith('SKL-')
-    ? commands.find((entry) => entry.skillId === actionOrSkill && entry.available !== false)
-    : commands.find((entry) => entry.actionId === actionOrSkill && entry.available !== false);
-  assert.ok(command, `${actionOrSkill} must be an available production command`);
+  return actionOrSkill.startsWith('SKL-')
+    ? commands.find((entry) => entry.skillId === actionOrSkill)
+    : commands.find((entry) => entry.actionId === actionOrSkill);
+}
+
+function commandFor(session, actionOrSkill) {
+  const command = displayedCommand(session, actionOrSkill);
+  assert.ok(command && command.available !== false, `${actionOrSkill} must be an available production command`);
   const target = command.targets?.find((entry) => entry.side === 'enemy') ?? command.targets?.[0];
   return {
     actionId: command.actionId,
@@ -73,10 +76,27 @@ function play(session, actionOrSkill) {
     command: commandFor(session, actionOrSkill),
   });
   assert.equal(output.ok, true, `${actionOrSkill}: ${output.reason ?? 'unknown failure'}`);
-  const frame = (output.round?.frames ?? []).find((entry) =>
-    entry.actorSide === 'player' && entry.phase === 'action');
+  const frame = (output.round?.frames ?? []).find((entry) => entry.actorSide === 'player' && entry.phase === 'action');
   assert.ok(frame, `${actionOrSkill}: production player frame missing`);
   return { session: output.session, frame, output };
+}
+
+function playWhenReady(session, actionOrSkill, frames) {
+  let waits = 0;
+  while (true) {
+    const displayed = displayedCommand(session, actionOrSkill);
+    if (displayed?.available !== false) break;
+    assert.equal(displayed?.disabledReason, 'cooldown',
+      `${actionOrSkill} may only require real cooldown waiting in this legal witness`);
+    assert.ok(waits < 8, `${actionOrSkill} cooldown did not clear within the bounded witness`);
+    const waited = play(session, 'DEFEND');
+    session = waited.session;
+    frames.push(waited.frame);
+    waits += 1;
+  }
+  const result = play(session, actionOrSkill);
+  frames.push(result.frame);
+  return result.session;
 }
 
 function consumeEvent(frame) {
@@ -87,19 +107,17 @@ function runLine(name, actions) {
   let session = makeSession(name);
   const initialMp = session.state.players[0].mp;
   const frames = [];
-  for (const action of actions) {
-    const result = play(session, action);
-    session = result.session;
-    frames.push(result.frame);
-  }
-  const damage = frames.reduce((sum, frame) => sum + Math.max(0, Number(frame.damage ?? 0)), 0);
-  const burst = Math.max(0, ...frames.map((frame) => Number(frame.damage ?? 0)));
+  for (const action of actions) session = playWhenReady(session, action, frames);
+  const actionFrames = frames.filter((frame) => frame.action?.kind !== 'defend');
+  const damage = actionFrames.reduce((sum, frame) => sum + Math.max(0, Number(frame.damage ?? 0)), 0);
+  const burst = Math.max(0, ...actionFrames.map((frame) => Number(frame.damage ?? 0)));
   const finalMp = session.state.players[0].mp;
-  const detonationFrame = frames.find((frame) => frame.action?.skillId === DETONATE) ?? null;
+  const detonationFrame = actionFrames.find((frame) => frame.action?.skillId === DETONATE) ?? null;
   return {
     name,
-    actions,
-    turns: actions.length,
+    requestedActions: actions,
+    elapsedTurns: frames.length,
+    waits: frames.length - actions.length,
     damage,
     burst,
     mpSpent: initialMp - finalMp,
@@ -108,7 +126,7 @@ function runLine(name, actions) {
   };
 }
 
-test('Checkpoint D field detonation has bounded setup/payoff choices rather than a decorative field state', () => {
+test('Checkpoint D field detonation has bounded one-field, same-type multi-field and mixed-type setup/payoff choices', () => {
   const normal3 = runLine('normal-3', ['ATTACK', 'ATTACK', 'ATTACK']);
   const one = runLine('one-field', [FIELD_A, DETONATE]);
   const sameTwo = runLine('same-two', [FIELD_A, FIELD_A, DETONATE]);
@@ -118,12 +136,12 @@ test('Checkpoint D field detonation has bounded setup/payoff choices rather than
   assert.equal(one.event?.uniqueTypeCount, 1);
   assert.equal(one.remainingFields, 0, 'detonation consumes the owned setup field');
 
-  assert.equal(sameTwo.event?.consumedCount, 2, 'recasting the same formation creates a second setup stack');
+  assert.equal(sameTwo.event?.consumedCount, 2, 'recasting the same formation after its real cooldown keeps two active same-type fields');
   assert.equal(sameTwo.event?.uniqueTypeCount, 1, 'same-type setup is distinguished from mixed setup');
   assert.equal(sameTwo.remainingFields, 0);
 
   assert.equal(mixedTwo.event?.consumedCount, 2);
-  assert.equal(mixedTwo.event?.uniqueTypeCount, 2, 'mixed formations must retain type identity until payoff');
+  assert.equal(mixedTwo.event?.uniqueTypeCount, 2, 'mixed formations retain type identity until payoff');
   assert.equal(mixedTwo.remainingFields, 0);
 
   assert.ok(Number(sameTwo.event?.scale) > Number(one.event?.scale), 'a second field increases detonation payoff');
@@ -131,14 +149,12 @@ test('Checkpoint D field detonation has bounded setup/payoff choices rather than
   assert.ok(sameTwo.burst > one.burst, 'same-type two-field setup produces a larger burst than one-field setup');
   assert.ok(mixedTwo.burst > sameTwo.burst, 'mixed two-field setup produces the largest two-field burst');
 
-  // The tactical cost is visible too: bigger payoff consumes an extra turn and MP before the burst.
-  assert.equal(one.turns, 2);
-  assert.equal(sameTwo.turns, 3);
-  assert.equal(mixedTwo.turns, 3);
+  assert.equal(one.elapsedTurns, 2);
+  assert.ok(sameTwo.elapsedTurns >= 3, 'same-type stacking exposes its real cooldown/setup opportunity cost');
+  assert.ok(mixedTwo.elapsedTurns >= 3);
   assert.ok(sameTwo.mpSpent > one.mpSpent);
   assert.ok(mixedTwo.mpSpent > one.mpSpent);
   assert.ok(normal3.damage > 0, 'plain attacks remain a real opportunity-cost baseline');
 
-  const report = { normal3, one, sameTwo, mixedTwo };
-  console.log(`CHECKPOINT_D_FIELD_DECISION ${JSON.stringify(report)}`);
+  console.log(`CHECKPOINT_D_FIELD_DECISION ${JSON.stringify({ normal3, one, sameTwo, mixedTwo })}`);
 });
