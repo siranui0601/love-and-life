@@ -156,13 +156,17 @@ test('victory and flee commit exact remaining HP/MP back to authoritative world 
   }
 });
 
-test('defeat uses canonical time/Gold/partial-recovery settlement and returns to a safe facility', () => {
+test('defeat defers Gold, partial recovery, time, and transport to the common rescue flow', () => {
   const state = fresh();
   state.player.gold = 1000;
   state.player.location = '田園の村';
   state.player.facilityId = 'LOC_FARM_FIELD';
   state.player.hpRatio = 0.73;
   state.player.mpRatio = 0.64;
+  const origin = {
+    location: state.player.location,
+    facilityId: state.player.facilityId,
+  };
   const continuation = beginSeekBattle(state);
   const beforeSettlementMinute = state.absoluteMinute;
   const settled = settleInteractiveBattleAction(
@@ -179,17 +183,18 @@ test('defeat uses canonical time/Gold/partial-recovery settlement and returns to
   assert.equal(settled.ok, true);
   assert.equal(settled.battle.won, false);
   assert.equal(settled.battle.fled, false);
-  assertClose(state.player.hpRatio, 0.35, 'canonical defeat HP recovery');
-  assertClose(state.player.mpRatio, 0.2, 'canonical defeat MP recovery');
-  assert.equal(state.player.gold, 900);
-  assert.equal(state.absoluteMinute - beforeSettlementMinute, Number(state.tuning.defeatRecoveryMinutes ?? 360));
-  assert.equal(state.player.location, continuation.defeatReturn.location);
-  assert.equal(state.player.facilityId, continuation.defeatReturn.facilityId);
-  const facility = model.facilityById[state.player.facilityId];
-  assert.ok(facility);
-  assert.match(`${facility.name ?? ''} ${facility.type ?? ''}`, /門|入口|広場|駅|港|船着|宿|詰所/u);
-  assert.ok(state.history.some((entry) => entry.type === 'BATTLE_DEFEAT_RETURN'));
-  assert.ok(state.history.some((entry) => entry.type === 'BATTLE_DEFEAT_RECOVERY'));
+  assertClose(state.player.hpRatio, 0, 'defeated player remains incapacitated until rescued');
+  assertClose(state.player.mpRatio, 0, 'battle-end MP residue is preserved until rescue settlement');
+  assert.equal(state.player.gold, 1000, 'defeat Gold loss is not charged before rescue completion');
+  assert.equal(state.absoluteMinute, beforeSettlementMinute, 'defeat itself does not fabricate recovery time');
+  assert.equal(state.player.location, origin.location, 'defeated player remains at the battle origin before rescue');
+  assert.equal(state.player.facilityId, origin.facilityId, 'defeated player is not teleported to a safe facility before rescue');
+  assert.equal(state.player.pendingDefeatSettlement?.recoveryHpRatio, 0.35);
+  assert.equal(state.player.pendingDefeatSettlement?.recoveryMpRatio, 0.2);
+  assert.equal(state.player.pendingDefeatSettlement?.goldLoss, 100);
+  assert.ok(state.history.some((entry) => entry.type === 'BATTLE_DEFEAT_INCAPACITATED'));
+  assert.equal(state.history.some((entry) => entry.type === 'BATTLE_DEFEAT_RETURN'), false);
+  assert.equal(state.history.some((entry) => entry.type === 'BATTLE_DEFEAT_RECOVERY'), false);
 });
 
 test('HP0 is only a fallback block, and low-HP conditions see current/max rather than a shrunken max', () => {
