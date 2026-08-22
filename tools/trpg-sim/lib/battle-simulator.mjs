@@ -30,6 +30,19 @@ const PUBLIC_REASON_DETAIL = Object.freeze({
   not_active: '戦闘中に使う技ではない',
 });
 
+const OBSERVABLE_STATE_LABEL = Object.freeze({
+  barrier: '障壁',
+  counter: '反撃態勢',
+  reflect: '反射態勢',
+  seal: '封印',
+  magic_absorb: '魔法吸収',
+  survive_lethal: '致死耐性',
+  guard: '防御態勢',
+  taunt: '挑発',
+  manaShield: '魔力障壁',
+  damageReduction: '被ダメージ軽減',
+});
+
 const publicReason = (reason) => PUBLIC_REASON[reason] ?? reason;
 
 export function playerFacingBattleDisabledDetail(command = {}, rawReason = null) {
@@ -77,6 +90,105 @@ function transformedData(data, session) {
 
 function skillIdFromActionId(actionId) {
   return String(actionId ?? '').match(/^SKILL:(SKL-\d{4})(?::|$)/u)?.[1] ?? null;
+}
+
+function infoCommand(actionId, name, description) {
+  return {
+    actionId,
+    kind: 'info',
+    skillId: null,
+    name,
+    description,
+    available: false,
+    disabledReason: 'battle_info',
+    disabledDetail: '観測情報（選択する行動ではない）',
+    targets: [],
+  };
+}
+
+function observableStateNames(actor) {
+  const names = [];
+  for (const [stateId] of actor?.specialStates ?? []) {
+    names.push(OBSERVABLE_STATE_LABEL[stateId] ?? String(stateId));
+  }
+  for (const [debuffId] of actor?.debuffs ?? []) names.push(`弱体:${debuffId}`);
+  for (const [statId, modifier] of actor?.modifiers ?? []) {
+    const stage = Number(modifier?.stage ?? 0);
+    if (stage !== 0) names.push(`${statId}${stage > 0 ? '+' : ''}${stage}`);
+  }
+  return [...new Set(names)].slice(0, 8);
+}
+
+export function battleObservationCommands({ data, session }) {
+  if (!session?.state || session.status !== 'active') return [];
+  const observations = [];
+  for (const enemy of session.state.enemies ?? []) {
+    if (!enemy?.alive || Number(enemy.hp ?? 0) <= 0) continue;
+    const enemyName = data.monsterById?.get(enemy.id)?.name ?? enemy.name ?? enemy.id ?? '敵';
+    if (enemy.pendingIntent?.skillId) {
+      const skillName = data.monsterSkillById?.get(enemy.pendingIntent.skillId)?.name ?? enemy.pendingIntent.skillId;
+      observations.push(infoCommand(
+        `INFO:INTENT:${enemy.instanceId}`,
+        `予兆：${enemyName} → ${skillName}`,
+        `${enemyName}が次の行動として「${skillName}」を構えている。`,
+      ));
+    }
+    const boss = data.bossByMonsterId?.get(enemy.id);
+    const phaseIndex = Number(enemy.bossPhase ?? 0);
+    if (boss && phaseIndex > 0) {
+      const phase = (boss.phases ?? []).find((entry) => Number(entry.index) === phaseIndex);
+      observations.push(infoCommand(
+        `INFO:PHASE:${enemy.instanceId}`,
+        `フェーズ ${phaseIndex}：${phase?.name ?? enemyName}`,
+        `${enemyName}は現在フェーズ${phaseIndex}${phase?.name ? `「${phase.name}」` : ''}。`,
+      ));
+    }
+    const states = observableStateNames(enemy);
+    if (states.length) {
+      observations.push(infoCommand(
+        `INFO:STATE:${enemy.instanceId}`,
+        `状態：${enemyName}`,
+        states.join(' / '),
+      ));
+    }
+  }
+
+  for (const player of session.state.players ?? []) {
+    if (!player?.alive || Number(player.hp ?? 0) <= 0) continue;
+    const states = observableStateNames(player);
+    if (states.length) {
+      observations.push(infoCommand(
+        `INFO:PLAYER_STATE:${player.instanceId}`,
+        '自分の戦闘状態',
+        states.join(' / '),
+      ));
+    }
+  }
+
+  const fieldEntries = [...(session.state.fieldEffects ?? new Map()).entries()]
+    .filter(([, effect]) => Number(effect?.stacks ?? 0) > 0)
+    .slice(0, 6);
+  if (fieldEntries.length) {
+    observations.push(infoCommand(
+      'INFO:FIELD',
+      '戦場効果',
+      fieldEntries.map(([id, effect]) => `${id} ×${Number(effect?.stacks ?? 0)}`).join(' / '),
+    ));
+  }
+
+  const weather = session.playerRuntimeMechanics?.weather;
+  if (weather) observations.push(infoCommand('INFO:WEATHER', '戦闘中の天候', String(weather)));
+
+  const initialEnemyCount = (session.initialCombatants ?? []).filter((actor) => actor?.side === 'enemy').length;
+  const currentEnemyCount = (session.state.enemies ?? []).filter((actor) => actor?.alive && Number(actor.hp ?? 0) > 0).length;
+  if (currentEnemyCount > initialEnemyCount) {
+    observations.push(infoCommand(
+      'INFO:REINFORCEMENTS',
+      '敵の増援',
+      `戦闘開始時より${currentEnemyCount - initialEnemyCount}体増えている。`,
+    ));
+  }
+  return observations;
 }
 
 function syncResult(output) {
@@ -147,8 +259,9 @@ export function listInteractiveBattleCommands({ data, session }) {
   const noTarget = staleNoTargetCommand(session);
   if (noTarget) return noTarget;
   const transformed = transformedData(data, session);
-  return current.listInteractiveBattleCommands({ data: transformed.data, session })
+  const commands = current.listInteractiveBattleCommands({ data: transformed.data, session })
     .map((command) => decorate(command, command.skillId ? transformed.blockedReasons.get(command.skillId) : null));
+  return [...commands, ...battleObservationCommands({ data, session })];
 }
 
 export function resolveInteractiveBattleRound({ data, session, command }) {
