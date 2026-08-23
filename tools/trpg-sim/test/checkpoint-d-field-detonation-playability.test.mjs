@@ -9,8 +9,14 @@ import {
 } from '../lib/battle-simulator.mjs';
 
 const data = await loadBattleData();
+const CERTIFICATION_LAYER = 'MECHANIC_WITNESS';
 
-// This is the canonical legal Checkpoint C formation build: 雷陣＋風陣→陣爆破.
+// D-0 classification:
+// - Direct skill injection and extreme stats intentionally isolate production runtime mechanics.
+// - This file is NOT GAMEPLAY_CERT: acquisition/grant and canonical enemy balance are not exercised.
+// - Same-type field stacking is DESIGN_UNDECIDED. Canonical v3/v4 say 陣爆破 consumes
+//   all player-owned formations and scales by count/type, but do not define whether recasting
+//   the same formation creates an additional concurrent same-type field.
 const FIELD_A = 'SKL-0639';
 const FIELD_B = 'SKL-0640';
 const DETONATE = 'SKL-1108';
@@ -18,7 +24,7 @@ const DETONATE = 'SKL-1108';
 function makeSession(seed) {
   const build = createPlayerBuild(data, {
     id: `checkpoint-d-field-${seed}`,
-    name: 'Checkpoint D field detonation witness',
+    name: 'Checkpoint D field detonation mechanic witness',
     level: 20,
     equipmentIds: ['EQP-W-0009'],
     skillIds: [FIELD_A, FIELD_B, DETONATE],
@@ -78,7 +84,7 @@ function play(session, actionOrSkill) {
   assert.equal(output.ok, true, `${actionOrSkill}: ${output.reason ?? 'unknown failure'}`);
   const frame = (output.round?.frames ?? []).find((entry) => entry.actorSide === 'player' && entry.phase === 'action');
   assert.ok(frame, `${actionOrSkill}: production player frame missing`);
-  return { session: output.session, frame, output };
+  return { session: output.session, frame };
 }
 
 function playWhenReady(session, actionOrSkill, frames) {
@@ -86,8 +92,7 @@ function playWhenReady(session, actionOrSkill, frames) {
   while (true) {
     const displayed = displayedCommand(session, actionOrSkill);
     if (displayed?.available !== false) break;
-    assert.equal(displayed?.disabledReason, 'cooldown',
-      `${actionOrSkill} may only require real cooldown waiting in this legal witness`);
+    assert.equal(displayed?.disabledReason, 'cooldown', `${actionOrSkill} may only require cooldown waiting in this witness`);
     assert.ok(waits < 8, `${actionOrSkill} cooldown did not clear within the bounded witness`);
     const waited = play(session, 'DEFEND');
     session = waited.session;
@@ -111,7 +116,6 @@ function runLine(name, actions) {
   const actionFrames = frames.filter((frame) => frame.action?.kind !== 'defend');
   const damage = actionFrames.reduce((sum, frame) => sum + Math.max(0, Number(frame.damage ?? 0)), 0);
   const burst = Math.max(0, ...actionFrames.map((frame) => Number(frame.damage ?? 0)));
-  const finalMp = session.state.players[0].mp;
   const detonationFrame = actionFrames.find((frame) => frame.action?.skillId === DETONATE) ?? null;
   return {
     name,
@@ -120,41 +124,46 @@ function runLine(name, actions) {
     waits: frames.length - actions.length,
     damage,
     burst,
-    mpSpent: initialMp - finalMp,
+    mpSpent: initialMp - session.state.players[0].mp,
     remainingFields: session.playerRuntimeMechanics.fields.length,
     event: detonationFrame ? consumeEvent(detonationFrame) : null,
   };
 }
 
-test('Checkpoint D field detonation has bounded one-field, same-type multi-field and mixed-type setup/payoff choices', () => {
+test('[MECHANIC_WITNESS] 陣爆破 executes one-field and mixed-type setup/payoff without inventing same-type stack rules', () => {
   const normal3 = runLine('normal-3', ['ATTACK', 'ATTACK', 'ATTACK']);
   const one = runLine('one-field', [FIELD_A, DETONATE]);
-  const sameTwo = runLine('same-two', [FIELD_A, FIELD_A, DETONATE]);
+  const sameTypeRecast = runLine('same-type-recast-observation', [FIELD_A, FIELD_A, DETONATE]);
   const mixedTwo = runLine('mixed-two', [FIELD_A, FIELD_B, DETONATE]);
 
   assert.equal(one.event?.consumedCount, 1);
   assert.equal(one.event?.uniqueTypeCount, 1);
   assert.equal(one.remainingFields, 0, 'detonation consumes the owned setup field');
 
-  assert.equal(sameTwo.event?.consumedCount, 2, 'recasting the same formation after its real cooldown keeps two active same-type fields');
-  assert.equal(sameTwo.event?.uniqueTypeCount, 1, 'same-type setup is distinguished from mixed setup');
-  assert.equal(sameTwo.remainingFields, 0);
+  assert.ok(sameTypeRecast.event, 'same-type recast still reaches the production detonation mechanic');
+  assert.equal(sameTypeRecast.remainingFields, 0);
+  // Intentionally no assertion that consumedCount must be 1 or 2. Canonical same-type
+  // stacking/replacement semantics are not defined, so this is an observation only.
 
   assert.equal(mixedTwo.event?.consumedCount, 2);
-  assert.equal(mixedTwo.event?.uniqueTypeCount, 2, 'mixed formations retain type identity until payoff');
+  assert.equal(mixedTwo.event?.uniqueTypeCount, 2, 'distinct formations retain type identity until payoff');
   assert.equal(mixedTwo.remainingFields, 0);
-
-  assert.ok(Number(sameTwo.event?.scale) > Number(one.event?.scale), 'a second field increases detonation payoff');
-  assert.ok(Number(mixedTwo.event?.scale) > Number(sameTwo.event?.scale), 'mixed field types add authored diversity payoff');
-  assert.ok(sameTwo.burst > one.burst, 'same-type two-field setup produces a larger burst than one-field setup');
-  assert.ok(mixedTwo.burst > sameTwo.burst, 'mixed two-field setup produces the largest two-field burst');
+  assert.ok(Number(mixedTwo.event?.scale) > Number(one.event?.scale), 'the runtime count/type scaling is mechanically connected');
+  assert.ok(mixedTwo.burst > one.burst, 'mixed two-field setup produces a larger mechanic-isolation burst than one field');
 
   assert.equal(one.elapsedTurns, 2);
-  assert.ok(sameTwo.elapsedTurns >= 3, 'same-type stacking exposes its real cooldown/setup opportunity cost');
+  assert.ok(sameTypeRecast.elapsedTurns >= 3, 'the recast observation includes its actual cooldown/setup time');
   assert.ok(mixedTwo.elapsedTurns >= 3);
-  assert.ok(sameTwo.mpSpent > one.mpSpent);
   assert.ok(mixedTwo.mpSpent > one.mpSpent);
-  assert.ok(normal3.damage > 0, 'plain attacks remain a real opportunity-cost baseline');
+  assert.ok(normal3.damage > 0, 'plain attacks remain a mechanic-isolation opportunity-cost baseline');
 
-  console.log(`CHECKPOINT_D_FIELD_DECISION ${JSON.stringify({ normal3, one, sameTwo, mixedTwo })}`);
+  console.log(`CHECKPOINT_D_FIELD_MECHANIC_WITNESS ${JSON.stringify({
+    certificationLayer: CERTIFICATION_LAYER,
+    canonicalAcquisitionExercised: false,
+    sameTypeStackDesignStatus: 'DESIGN_UNDECIDED',
+    normal3,
+    one,
+    sameTypeRecast,
+    mixedTwo,
+  })}`);
 });
