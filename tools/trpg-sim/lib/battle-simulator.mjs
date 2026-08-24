@@ -126,6 +126,14 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
   normalizeFormationRuntime(output.session, data);
   removeLegacyControlFields(output.session);
 
+  // Formation controls are action effects. Apply them before the common
+  // round-end duration decrement so 二重陣 can rescue a 1T formation and the
+  // same round still consumes one turn of the resulting duration.
+  if (control) {
+    const applied = applyFormationControlSuccess({ session: output.session, control });
+    if (!applied.ok) return { ok: false, reason: applied.reason, session };
+  }
+
   const expired = advanceFormationRoundEnd(output.session, previousFormationIds, data);
   if (expired.length) {
     output.session.playerRuntimeMechanics.events ??= [];
@@ -138,11 +146,6 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
         .filter((field) => field.pendingDelayedEffect?.status === 'pending')
         .map((field) => ({ ...field.pendingDelayedEffect, formationInstanceId: field.instanceId })),
     });
-  }
-
-  if (control) {
-    const applied = applyFormationControlSuccess({ session: output.session, control });
-    if (!applied.ok) return { ok: false, reason: applied.reason, session };
   }
 
   if (isDetonation) {
