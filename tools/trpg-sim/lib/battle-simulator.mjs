@@ -1,286 +1,160 @@
-import * as current from './battle-simulator-checkpoint-c-extended-base.mjs';
-import { applyEquipmentRoundRuntime, initializeEquipmentBattleRuntime, prepareEquipmentSkill } from './player-equipment-runtime.mjs';
-import { applyCheckpointCClosureSuccess, checkpointCResourceUnavailableReason, prepareCheckpointCClosureSkill } from './player-skill-runtime-checkpoint-c-closure.mjs';
+import * as current from './battle-simulator-checkpoint-d-preformation.mjs';
+import {
+  activeMagicFormations,
+  activeOwnedMagicFormations,
+  advanceFormationRoundEnd,
+  applyFormationControlSuccess,
+  clearFormationsOnBattleEnd,
+  decorateFormationCommands,
+  enrichDetonationEvent,
+  formationObservationCommands,
+  isMagicFormationCreatorSkillId,
+  normalizeFormationRuntime,
+  parseFormationControlAction,
+  prepareFormationSession,
+  removeLegacyControlFields,
+  restoreShieldedNonFormationFields,
+  sameSourceFormation,
+  shieldNonFormationFieldsForDetonation,
+  translateFormationControlCommand,
+  validateFormationControl,
+} from './player-formation-runtime.mjs';
 
-export * from './battle-simulator-checkpoint-c-extended-base.mjs';
-
-const PUBLIC_REASON = Object.freeze({
-  no_owned_field: 'field_required',
-  no_repeatable_history: 'missing_history',
-  uses_exhausted: 'use_limit',
-  weapon_requirement: 'wrong_weapon',
-});
-
-const PUBLIC_REASON_DETAIL = Object.freeze({
-  insufficient_mp: 'MPが足りない',
-  insufficient_hp: 'HPが足りない',
-  insufficient_resource: '消費するHP・MPが足りない',
-  wrong_weapon: '必要な武器種を装備していない',
-  shield_required: '盾を装備している必要がある',
-  cooldown: '再使用まで待つ必要がある',
-  use_limit: 'この戦闘での使用回数を使い切った',
-  sealed: '封印されているため使用できない',
-  field_required: '必要な陣・フィールドが設置されていない',
-  insufficient_gold: '支払うGoldが足りない',
-  missing_history: '再演できる直前のスキル履歴がない',
-  equipment_disabled: '必要な装備効果が現在無効になっている',
-  invalid_target: 'このスキルを向けられる対象ではない',
-  no_target: '効果を向けられる対象がいない',
-  conditions_not_met: '発動条件を満たしていない',
-  not_active: '戦闘中に使う技ではない',
-});
-
-const OBSERVABLE_STATE_LABEL = Object.freeze({
-  barrier: '障壁',
-  counter: '反撃態勢',
-  reflect: '反射態勢',
-  seal: '封印',
-  magic_absorb: '魔法吸収',
-  survive_lethal: '致死耐性',
-  guard: '防御態勢',
-  taunt: '挑発',
-  manaShield: '魔力障壁',
-  damageReduction: '被ダメージ軽減',
-});
-
-const publicReason = (reason) => PUBLIC_REASON[reason] ?? reason;
-
-export function playerFacingBattleDisabledDetail(command = {}, rawReason = null) {
-  const reason = publicReason(rawReason ?? command.disabledReason ?? command.reasonCode);
-  if (!reason) return null;
-  const base = PUBLIC_REASON_DETAIL[reason] ?? '今はこの行動を使えない';
-  if (reason === 'insufficient_mp' && Number(command.mpCost ?? 0) > 0) {
-    return `${base}（必要MP ${Number(command.mpCost)}／現在 ${Number(command.currentMp ?? 0)}）`;
-  }
-  if (reason === 'insufficient_hp' && Number(command.hpCost ?? 0) > 0) {
-    return `${base}（必要HP ${Number(command.hpCost) + 1}以上／現在 ${Number(command.currentHp ?? 0)}）`;
-  }
-  if (reason === 'cooldown' && Number(command.cooldownRemaining ?? 0) > 0) {
-    return `${base}（あと${Number(command.cooldownRemaining)}ラウンド）`;
-  }
-  if (reason === 'insufficient_gold' && Number(command.goldCost ?? 0) > 0) {
-    return `${base}（必要 ${Number(command.goldCost)}G）`;
-  }
-  return base;
-}
-
-function transformedData(data, session) {
-  let playerSkillById = null;
-  const blockedReasons = new Map();
-  for (const [id, skill] of data.playerSkillById) {
-    const closureSkill = prepareCheckpointCClosureSkill(skill);
-    const prepared = prepareEquipmentSkill({ skill: closureSkill, session });
-    const resourceReason = checkpointCResourceUnavailableReason({ skill: closureSkill, session });
-    if (prepared.blockedReason) blockedReasons.set(id, prepared.blockedReason);
-    else if (resourceReason) blockedReasons.set(id, resourceReason);
-    if (prepared.skill === skill) continue;
-    playerSkillById ??= new Map(data.playerSkillById);
-    playerSkillById.set(id, prepared.skill);
-  }
-  if (!playerSkillById) return { data, blockedReasons };
-  return {
-    data: {
-      ...data,
-      playerSkillById,
-      playerSkills: (data.playerSkills ?? []).map((skill) => playerSkillById.get(skill.id) ?? skill),
-    },
-    blockedReasons,
-  };
-}
+export * from './battle-simulator-checkpoint-d-preformation.mjs';
+export * from './player-formation-runtime.mjs';
 
 function skillIdFromActionId(actionId) {
   return String(actionId ?? '').match(/^SKILL:(SKL-\d{4})(?::|$)/u)?.[1] ?? null;
 }
 
-function infoCommand(actionId, name, description) {
+function canonicalControlData(data, skillId) {
+  if (!['SKL-0653', 'SKL-0654'].includes(skillId)) return data;
+  const original = data.playerSkillById?.get?.(skillId);
+  if (!original) return data;
+  const activationConditions = (original.activationConditions ?? []).filter((condition) => !(
+    condition?.scope === 'battle' && condition?.path === 'ownedFieldEffectCount'
+  ));
+  if (activationConditions.length === (original.activationConditions ?? []).length) return data;
+  const skill = { ...original, activationConditions };
+  const playerSkillById = new Map(data.playerSkillById);
+  playerSkillById.set(skillId, skill);
   return {
-    actionId,
-    kind: 'info',
-    skillId: null,
-    name,
-    description,
-    available: false,
-    disabledReason: 'battle_info',
-    disabledDetail: '観測情報（選択する行動ではない）',
-    targets: [],
+    ...data,
+    playerSkillById,
+    playerSkills: (data.playerSkills ?? []).map((entry) => entry.id === skillId ? skill : entry),
   };
 }
 
-function observableStateNames(actor) {
-  const names = [];
-  for (const [stateId] of actor?.specialStates ?? []) {
-    names.push(OBSERVABLE_STATE_LABEL[stateId] ?? String(stateId));
-  }
-  for (const [debuffId] of actor?.debuffs ?? []) names.push(`弱体:${debuffId}`);
-  for (const [statId, modifier] of actor?.modifiers ?? []) {
-    const stage = Number(modifier?.stage ?? 0);
-    if (stage !== 0) names.push(`${statId}${stage > 0 ? '+' : ''}${stage}`);
-  }
-  return [...new Set(names)].slice(0, 8);
-}
-
-export function battleObservationCommands({ data, session }) {
-  if (!session?.state || session.status !== 'active') return [];
-  const observations = [];
-  for (const enemy of session.state.enemies ?? []) {
-    if (!enemy?.alive || Number(enemy.hp ?? 0) <= 0) continue;
-    const enemyName = data.monsterById?.get(enemy.id)?.name ?? enemy.name ?? enemy.id ?? '敵';
-    if (enemy.pendingIntent?.skillId) {
-      const skillName = data.monsterSkillById?.get(enemy.pendingIntent.skillId)?.name ?? enemy.pendingIntent.skillId;
-      observations.push(infoCommand(
-        `INFO:INTENT:${enemy.instanceId}`,
-        `予兆：${enemyName} → ${skillName}`,
-        `${enemyName}が次の行動として「${skillName}」を構えている。`,
-      ));
-    }
-    const boss = data.bossByMonsterId?.get(enemy.id);
-    const phaseIndex = Number(enemy.bossPhase ?? 0);
-    if (boss && phaseIndex > 0) {
-      const phase = (boss.phases ?? []).find((entry) => Number(entry.index) === phaseIndex);
-      observations.push(infoCommand(
-        `INFO:PHASE:${enemy.instanceId}`,
-        `フェーズ ${phaseIndex}：${phase?.name ?? enemyName}`,
-        `${enemyName}は現在フェーズ${phaseIndex}${phase?.name ? `「${phase.name}」` : ''}。`,
-      ));
-    }
-    const states = observableStateNames(enemy);
-    if (states.length) {
-      observations.push(infoCommand(
-        `INFO:STATE:${enemy.instanceId}`,
-        `状態：${enemyName}`,
-        states.join(' / '),
-      ));
-    }
-  }
-
-  for (const player of session.state.players ?? []) {
-    if (!player?.alive || Number(player.hp ?? 0) <= 0) continue;
-    const states = observableStateNames(player);
-    if (states.length) {
-      observations.push(infoCommand(
-        `INFO:PLAYER_STATE:${player.instanceId}`,
-        '自分の戦闘状態',
-        states.join(' / '),
-      ));
-    }
-  }
-
-  const fieldEntries = [...(session.state.fieldEffects ?? new Map()).entries()]
-    .filter(([, effect]) => Number(effect?.stacks ?? 0) > 0)
-    .slice(0, 6);
-  if (fieldEntries.length) {
-    observations.push(infoCommand(
-      'INFO:FIELD',
-      '戦場効果',
-      fieldEntries.map(([id, effect]) => `${id} ×${Number(effect?.stacks ?? 0)}`).join(' / '),
-    ));
-  }
-
-  const weather = session.playerRuntimeMechanics?.weather;
-  if (weather) observations.push(infoCommand('INFO:WEATHER', '戦闘中の天候', String(weather)));
-
-  const initialEnemyCount = (session.initialCombatants ?? []).filter((actor) => actor?.side === 'enemy').length;
-  const currentEnemyCount = (session.state.enemies ?? []).filter((actor) => actor?.alive && Number(actor.hp ?? 0) > 0).length;
-  if (currentEnemyCount > initialEnemyCount) {
-    observations.push(infoCommand(
-      'INFO:REINFORCEMENTS',
-      '敵の増援',
-      `戦闘開始時より${currentEnemyCount - initialEnemyCount}体増えている。`,
-    ));
-  }
-  return observations;
-}
-
-function syncResult(output) {
-  if (!output?.session || !output.result) return;
-  const state = output.session.state;
-  output.result.players = state.players.map((actor) => ({
-    id: actor.id,
-    hp: actor.hp,
-    maxHp: actor.maxHp,
-    mp: actor.mp,
-    maxMp: actor.maxMp,
-    alive: actor.alive,
-    mpSpent: actor.mpSpent,
-    damageDealt: actor.damageDealt,
-  }));
-  output.result.enemies = state.enemies.map((actor) => ({
-    id: actor.id,
-    hp: actor.hp,
-    maxHp: actor.maxHp,
-    alive: actor.alive,
-    escaped: actor.escaped,
-  }));
-  output.result.playerRuntimeMechanics = structuredClone(output.session.playerRuntimeMechanics);
-  if (output.result.timeline) output.result.timeline.frames = output.session.frames;
-}
-
-function decorate(command, blockedReason = null) {
-  const raw = blockedReason ?? command.disabledReason;
-  const disabledReason = publicReason(raw);
-  const unavailable = Boolean(blockedReason) || command.available === false;
-  return {
-    ...command,
-    available: blockedReason ? false : command.available,
-    disabledReason,
-    disabledDetail: unavailable ? playerFacingBattleDisabledDetail(command, raw) : command.disabledDetail ?? null,
-    ...(blockedReason ? { targets: [] } : {}),
-    reasonCode: disabledReason,
-  };
-}
-
-function staleNoTargetCommand(session) {
-  const playerAlive = (session.state?.players ?? []).some((actor) => actor.alive && Number(actor.hp ?? 0) > 0);
-  const enemyAlive = (session.state?.enemies ?? []).some((actor) => actor.alive && Number(actor.hp ?? 0) > 0 && !actor.escaped);
-  if (session.status === 'active' && playerAlive && !enemyAlive) {
-    const command = {
-      actionId: 'ATTACK',
-      kind: 'attack',
-      name: 'こうげき',
-      target: 'single_enemy',
-      available: false,
-      disabledReason: 'no_target',
-      reasonCode: 'no_target',
-      targets: [],
-    };
-    return [{ ...command, disabledDetail: playerFacingBattleDisabledDetail(command) }];
-  }
-  return null;
+function mergeFormationObservations(commands, session) {
+  const observations = formationObservationCommands(session);
+  if (!observations.length) return commands;
+  const ids = new Set(commands.map((entry) => entry.actionId));
+  return [...commands, ...observations.filter((entry) => !ids.has(entry.actionId))];
 }
 
 export function beginInteractiveBattle(options) {
   const session = current.beginInteractiveBattle(options);
-  initializeEquipmentBattleRuntime({ data: options.data, session });
+  normalizeFormationRuntime(session, options.data);
   return session;
 }
 
 export function listInteractiveBattleCommands({ data, session }) {
   if (!session) return current.listInteractiveBattleCommands({ data, session });
-  const noTarget = staleNoTargetCommand(session);
-  if (noTarget) return noTarget;
-  const transformed = transformedData(data, session);
-  const commands = current.listInteractiveBattleCommands({ data: transformed.data, session })
-    .map((command) => decorate(command, command.skillId ? transformed.blockedReasons.get(command.skillId) : null));
-  return [...commands, ...battleObservationCommands({ data, session })];
+  const prepared = prepareFormationSession(session, data);
+  const base = current.listInteractiveBattleCommands({ data, session: prepared });
+  const decorated = decorateFormationCommands({ data, session: prepared, commands: base });
+  return mergeFormationObservations(decorated, prepared);
 }
 
 export function resolveInteractiveBattleRound({ data, session, command }) {
   if (!session) return current.resolveInteractiveBattleRound({ data, session, command });
-  const displayed = listInteractiveBattleCommands({ data, session }).find((entry) => entry.actionId === command?.actionId);
-  if (displayed && !displayed.available) return { ok: false, reason: displayed.disabledReason ?? 'action_unavailable', session };
-  const skillId = skillIdFromActionId(command?.actionId);
-  const transformed = transformedData(data, session);
-  const blockedReason = skillId ? transformed.blockedReasons.get(skillId) : null;
-  if (blockedReason) return { ok: false, reason: publicReason(blockedReason), session };
-  const output = current.resolveInteractiveBattleRound({ data: transformed.data, session, command });
-  if (!output?.ok) {
-    if (output?.reason) output.reason = publicReason(output.reason);
-    return output;
+  let prepared = prepareFormationSession(session, data);
+  const control = parseFormationControlAction(command?.actionId);
+  const submittedSkillId = skillIdFromActionId(command?.actionId);
+
+  if (['SKL-0653', 'SKL-0654'].includes(submittedSkillId) && !control) {
+    return { ok: false, reason: 'formation_control_selection_required', session };
   }
-  if (!output.session) return output;
-  if (skillId) applyCheckpointCClosureSuccess({ originalSkill: data.playerSkillById.get(skillId), session: output.session, round: output.round });
-  applyEquipmentRoundRuntime({ data, session: output.session, round: output.round });
-  if (output.session.status === 'active') output.commands = listInteractiveBattleCommands({ data, session: output.session });
-  syncResult(output);
+  if (submittedSkillId && isMagicFormationCreatorSkillId(submittedSkillId)) {
+    const existing = sameSourceFormation(prepared, submittedSkillId);
+    if (existing) return { ok: false, reason: 'formation_already_active', session };
+  }
+  if (control) {
+    const validation = validateFormationControl(prepared, control);
+    if (!validation.ok) return { ok: false, reason: validation.reason, session };
+  }
+
+  const effectiveSkillId = control?.skillId ?? submittedSkillId;
+  const effectiveData = canonicalControlData(data, effectiveSkillId);
+  const baseCommands = current.listInteractiveBattleCommands({ data: effectiveData, session: prepared });
+  let effectiveCommand = command;
+  if (control) {
+    effectiveCommand = translateFormationControlCommand({ baseCommands, control });
+    if (!effectiveCommand) return { ok: false, reason: 'formation_control_unavailable', session };
+  }
+
+  const isDetonation = effectiveSkillId === 'SKL-1108';
+  const previousFormationIds = new Set(activeMagicFormations(prepared).map((field) => field.instanceId));
+  const consumedBefore = isDetonation ? activeOwnedMagicFormations(prepared).map((field) => structuredClone(field)) : [];
+  if (isDetonation) prepared = shieldNonFormationFieldsForDetonation(prepared);
+
+  const output = current.resolveInteractiveBattleRound({ data: effectiveData, session: prepared, command: effectiveCommand });
+  if (!output?.ok || !output.session) return output;
+  restoreShieldedNonFormationFields(output.session);
+  normalizeFormationRuntime(output.session, data);
+  removeLegacyControlFields(output.session);
+
+  // Current lower layers finish an entire round before returning. Existing
+  // formations therefore tick once here; newly-created formations are migrated
+  // from expiresAfterTurn to the already post-round remaining count.
+  const expired = advanceFormationRoundEnd(output.session, previousFormationIds, data);
+  if (expired.length) {
+    output.session.playerRuntimeMechanics.events ??= [];
+    output.session.playerRuntimeMechanics.events.push({
+      turn: Number(output.session.state?.turn ?? 0),
+      type: 'formation_lifecycle',
+      family: 'FORMATION_EXPIRED',
+      formationInstanceIds: expired.map((field) => field.instanceId),
+      cancelledPendingEffects: expired
+        .filter((field) => field.pendingDelayedEffect?.status === 'pending')
+        .map((field) => ({ ...field.pendingDelayedEffect, formationInstanceId: field.instanceId })),
+    });
+  }
+
+  if (control) {
+    const applied = applyFormationControlSuccess({ session: output.session, control });
+    if (!applied.ok) return { ok: false, reason: applied.reason, session };
+  }
+
+  if (isDetonation) {
+    const canonical = enrichDetonationEvent({ session: output.session, consumedBefore });
+    if (canonical) {
+      const frame = (output.round?.frames ?? []).find((entry) => entry?.actorSide === 'player' && entry?.action?.skillId === 'SKL-1108');
+      if (frame) {
+        frame.events ??= [];
+        const event = [...(output.session.playerRuntimeMechanics.events ?? [])].reverse()
+          .find((entry) => entry?.family === 'CONSUME_OWNED_FIELD' && entry?.skillId === 'SKL-1108');
+        const target = frame.events.find((entry) => entry?.family === 'CONSUME_OWNED_FIELD') ?? event;
+        if (target) Object.assign(target, canonical);
+      }
+    }
+  }
+
+  const cleared = clearFormationsOnBattleEnd(output.session);
+  if (cleared.length) {
+    output.session.playerRuntimeMechanics.events ??= [];
+    output.session.playerRuntimeMechanics.events.push({
+      turn: Number(output.session.state?.turn ?? 0),
+      type: 'formation_lifecycle',
+      family: 'FORMATION_CLEARED_BATTLE_END',
+      reason: output.session.winner === 'fled' ? 'flee' : 'battle_end',
+      formationInstanceIds: cleared.map((field) => field.instanceId),
+    });
+  }
+
+  if (output.session.status === 'active') {
+    output.commands = listInteractiveBattleCommands({ data, session: output.session });
+  }
+  if (output.result) output.result.playerRuntimeMechanics = structuredClone(output.session.playerRuntimeMechanics);
   return output;
 }
