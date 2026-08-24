@@ -80,23 +80,49 @@ export function installBattleObservationView({ root = document, fetchImpl = fetc
 
   let scheduled = 0;
   let generation = 0;
+  let disposed = false;
   const clear = () => root.querySelector?.('#battleObservationPanel')?.remove();
+  const invalidate = () => {
+    generation += 1;
+    clear();
+  };
   const refresh = async () => {
     scheduled = 0;
+    if (disposed) return;
     if (!dialog.open) {
-      clear();
+      invalidate();
       return;
     }
     const current = ++generation;
     try {
       const save = await loadCurrentBattleSave(fetchImpl);
-      if (current !== generation) return;
+      if (current !== generation || disposed) return;
+      if (!dialog.open) {
+        invalidate();
+        return;
+      }
       renderBattleObservations(save, root);
     } catch {
-      // Observation UI is supplemental. A read failure must never block battle controls.
+      // Observation UI is supplemental. A read failure must never block battle controls,
+      // but the current generation must not keep stale facts visible as if they were fresh.
+      if (current !== generation || disposed) return;
+      if (!dialog.open) {
+        invalidate();
+        return;
+      }
+      clear();
     }
   };
   const schedule = () => {
+    if (disposed) return;
+    if (!dialog.open) {
+      if (scheduled) {
+        globalThis.clearTimeout(scheduled);
+        scheduled = 0;
+      }
+      invalidate();
+      return;
+    }
     if (scheduled) return;
     scheduled = globalThis.setTimeout(refresh, 0);
   };
@@ -109,7 +135,11 @@ export function installBattleObservationView({ root = document, fetchImpl = fetc
   schedule();
 
   return () => {
-    if (scheduled) globalThis.clearTimeout(scheduled);
+    disposed = true;
+    if (scheduled) {
+      globalThis.clearTimeout(scheduled);
+      scheduled = 0;
+    }
     generation += 1;
     dialogObserver.disconnect();
     battleObserver.disconnect();
