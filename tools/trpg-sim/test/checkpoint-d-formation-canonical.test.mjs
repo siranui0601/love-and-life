@@ -134,15 +134,20 @@ test('[MECHANIC_WITNESS] 二重陣 extends or amplifies one instance once withou
   assert.equal(secondDirect.ok, false);
   assert.equal(secondDirect.reason, 'formation_already_enhanced');
 
-  const earth = activeOwnedMagicFormations(session).find((field) => field.sourceSkillId === 'SKL-0641');
-  const amplifyAction = listInteractiveBattleCommands({ data, session })
+  // SKL-0653 itself has canonical battle CT=3. Verify AMPLIFY in a separate
+  // bounded session rather than pretending the same skill can be reused on
+  // another Formation immediately after EXTEND.
+  let amplifySession = begin(['SKL-0641', 'SKL-0653']);
+  amplifySession = resolve(amplifySession, 'SKL-0641');
+  const earth = activeOwnedMagicFormations(amplifySession).find((field) => field.sourceSkillId === 'SKL-0641');
+  const amplifyAction = listInteractiveBattleCommands({ data, session: amplifySession })
     .find((entry) => entry.actionId === `FORMATION:DOUBLE:${earth.instanceId}:AMPLIFY`);
   assert.ok(amplifyAction);
-  session = resolve(session, amplifyAction.actionId);
-  const earthAfter = activeOwnedMagicFormations(session).find((field) => field.instanceId === earth.instanceId);
+  amplifySession = resolve(amplifySession, amplifyAction.actionId);
+  const earthAfter = activeOwnedMagicFormations(amplifySession).find((field) => field.instanceId === earth.instanceId);
   assert.equal(earthAfter.enhancementLevel, 1);
   assert.equal(earthAfter.dualFormationApplied, true);
-  assert.equal(activeOwnedMagicFormations(session).length, 2);
+  assert.equal(activeOwnedMagicFormations(amplifySession).length, 1);
 });
 
 test('[MECHANIC_WITNESS] 陣崩し is a learned skill action and respects unbreakable enemy formations', () => {
