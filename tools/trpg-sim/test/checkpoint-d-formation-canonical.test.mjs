@@ -187,11 +187,12 @@ test('[MECHANIC_WITNESS] SKL-1108 consumes only owned magicFormation and reports
     { instanceId: 'ENEMY-FORMATION', owner: 'enemy', kind: 'magic_circle', fieldKind: 'magicFormation', sourceSkillId: 'SKL-0637', sourceSkillName: '敵炎陣', formationFamily: 'fire', remainingTurns: 3, breakable: true, active: true },
     { instanceId: 'NPC-FORMATION', owner: 'npc', kind: 'magic_circle', fieldKind: 'magicFormation', sourceSkillId: 'SKL-0638', sourceSkillName: 'NPC氷陣', formationFamily: 'ice', remainingTurns: 3, breakable: true, active: true },
   );
+  const lifecycleEnd = Number(session.state.turn ?? 0) + 3;
   session.playerRuntimeMechanics.traps ??= [];
-  session.playerRuntimeMechanics.traps.push({ instanceId: 'TRAP-1', sourceSkillId: 'TEST-TRAP' });
+  session.playerRuntimeMechanics.traps.push({ instanceId: 'TRAP-1', sourceSkillId: 'TEST-TRAP', charges: 1, rank: 1, expiresAfterTurn: lifecycleEnd });
   session.playerRuntimeMechanics.summons ??= [];
-  session.playerRuntimeMechanics.summons.push({ instanceId: 'SUMMON-1', sourceSkillId: 'TEST-SUMMON' });
-  session.playerRuntimeMechanics.weather = { type: 'rain' };
+  session.playerRuntimeMechanics.summons.push({ instanceId: 'SUMMON-1', sourceSkillId: 'TEST-SUMMON', maxHp: 10, hp: 10, powerScale: 1, expiresAfterTurn: lifecycleEnd });
+  session.playerRuntimeMechanics.weather = { type: 'rain', expiresAfterTurn: lifecycleEnd };
 
   session = resolve(session, 'SKL-1108');
   const ids = new Set((session.playerRuntimeMechanics.fields ?? []).map((field) => field.instanceId));
@@ -201,7 +202,7 @@ test('[MECHANIC_WITNESS] SKL-1108 consumes only owned magicFormation and reports
   assert.equal(ids.has('NPC-FORMATION'), true);
   assert.equal(session.playerRuntimeMechanics.traps.some((entry) => entry.instanceId === 'TRAP-1'), true);
   assert.equal(session.playerRuntimeMechanics.summons.some((entry) => entry.instanceId === 'SUMMON-1'), true);
-  assert.deepEqual(session.playerRuntimeMechanics.weather, { type: 'rain' });
+  assert.equal(session.playerRuntimeMechanics.weather.type, 'rain');
   const detonation = [...(session.playerRuntimeMechanics.events ?? [])].reverse()
     .find((entry) => entry.family === 'CONSUME_OWNED_FIELD' && entry.skillId === 'SKL-1108');
   assert.equal(detonation.instanceCount, 1);
