@@ -47,7 +47,9 @@ function witnessBuild(skillIds) {
 function begin(skillIds) {
   return beginInteractiveBattle({
     data,
-    monsterIds: ['MON-0063'],
+    // Use a durable non-sealing boss here. MON-0063's authored seal wave can
+    // suppress the second setup skill and contaminate Formation isolation.
+    monsterIds: ['MON-0018'],
     playerBuild: witnessBuild(skillIds),
     seed: 'checkpoint-d:formation:canonical',
     maxTurns: 20,
@@ -158,17 +160,20 @@ test('[MECHANIC_WITNESS] 陣崩し is a learned skill action and respects unbrea
   session = resolve(session, breakAction.actionId);
   assert.equal(activeOwnedMagicFormations(session).some((field) => field.instanceId === own.instanceId), false);
 
-  session.playerRuntimeMechanics.fields.push({
+  // Separate the unbreakable-target witness from SKL-0654's authored 3T
+  // cooldown after the successful own-formation break above.
+  let enemySession = begin(['SKL-0654']);
+  enemySession.playerRuntimeMechanics.fields.push({
     instanceId: 'ENEMY-UNBREAKABLE', owner: 'enemy', kind: 'magic_circle', fieldKind: 'magicFormation',
     sourceSkillId: 'SKL-0647', sourceSkillName: '敵の封印陣', formationFamily: 'seal', remainingTurns: 3,
     enhancementLevel: 0, dualFormationApplied: false, breakable: false, active: true,
   });
-  const enemyBreak = listInteractiveBattleCommands({ data, session })
+  const enemyBreak = listInteractiveBattleCommands({ data, session: enemySession })
     .find((entry) => entry.actionId === 'FORMATION:BREAK:ENEMY-UNBREAKABLE');
   assert.ok(enemyBreak);
   assert.equal(enemyBreak.available, false);
   assert.equal(enemyBreak.disabledReason, 'formation_unbreakable');
-  const rejected = resolveInteractiveBattleRound({ data, session, command: { actionId: enemyBreak.actionId } });
+  const rejected = resolveInteractiveBattleRound({ data, session: enemySession, command: { actionId: enemyBreak.actionId } });
   assert.equal(rejected.ok, false);
   assert.equal(rejected.reason, 'formation_unbreakable');
 });
