@@ -14,9 +14,8 @@ const CERTIFICATION_LAYER = 'MECHANIC_WITNESS';
 // D-0 classification:
 // - Direct skill injection and extreme stats intentionally isolate production runtime mechanics.
 // - This file is NOT GAMEPLAY_CERT: acquisition/grant and canonical enemy balance are not exercised.
-// - Same-type field stacking is DESIGN_UNDECIDED. Canonical v3/v4 say 陣爆破 consumes
-//   all player-owned formations and scales by count/type, but do not define whether recasting
-//   the same formation creates an additional concurrent same-type field.
+// - Canonical Checkpoint D forbids duplicate active instances from the same sourceSkillId.
+//   Different source skills may coexist, including skills in the same formation family.
 const FIELD_A = 'SKL-0639';
 const FIELD_B = 'SKL-0640';
 const DETONATE = 'SKL-1108';
@@ -130,20 +129,24 @@ function runLine(name, actions) {
   };
 }
 
-test('[MECHANIC_WITNESS] 陣爆破 executes one-field and mixed-type setup/payoff without inventing same-type stack rules', () => {
+test('[MECHANIC_WITNESS] 陣爆破 executes one-field and mixed-type setup/payoff under canonical no-duplicate-source rules', () => {
   const normal3 = runLine('normal-3', ['ATTACK', 'ATTACK', 'ATTACK']);
   const one = runLine('one-field', [FIELD_A, DETONATE]);
-  const sameTypeRecast = runLine('same-type-recast-observation', [FIELD_A, FIELD_A, DETONATE]);
   const mixedTwo = runLine('mixed-two', [FIELD_A, FIELD_B, DETONATE]);
 
   assert.equal(one.event?.consumedCount, 1);
   assert.equal(one.event?.uniqueTypeCount, 1);
   assert.equal(one.remainingFields, 0, 'detonation consumes the owned setup field');
 
-  assert.ok(sameTypeRecast.event, 'same-type recast still reaches the production detonation mechanic');
-  assert.equal(sameTypeRecast.remainingFields, 0);
-  // Intentionally no assertion that consumedCount must be 1 or 2. Canonical same-type
-  // stacking/replacement semantics are not defined, so this is an observation only.
+  const recastSession = makeSession('same-source-recast-rejected');
+  const placed = play(recastSession, FIELD_A).session;
+  const recast = displayedCommand(placed, FIELD_A);
+  assert.equal(recast?.available, false);
+  assert.equal(recast?.disabledReason, 'formation_already_active');
+  const rejected = resolveInteractiveBattleRound({ data, session: placed, command: { actionId: `SKILL:${FIELD_A}` } });
+  assert.equal(rejected.ok, false);
+  assert.equal(rejected.reason, 'formation_already_active');
+  assert.strictEqual(rejected.session, placed, 'rejected same-source recast does not replace or clone the live session');
 
   assert.equal(mixedTwo.event?.consumedCount, 2);
   assert.equal(mixedTwo.event?.uniqueTypeCount, 2, 'distinct formations retain type identity until payoff');
@@ -152,7 +155,6 @@ test('[MECHANIC_WITNESS] 陣爆破 executes one-field and mixed-type setup/payof
   assert.ok(mixedTwo.burst > one.burst, 'mixed two-field setup produces a larger mechanic-isolation burst than one field');
 
   assert.equal(one.elapsedTurns, 2);
-  assert.ok(sameTypeRecast.elapsedTurns >= 3, 'the recast observation includes its actual cooldown/setup time');
   assert.ok(mixedTwo.elapsedTurns >= 3);
   assert.ok(mixedTwo.mpSpent > one.mpSpent);
   assert.ok(normal3.damage > 0, 'plain attacks remain a mechanic-isolation opportunity-cost baseline');
@@ -160,10 +162,9 @@ test('[MECHANIC_WITNESS] 陣爆破 executes one-field and mixed-type setup/payof
   console.log(`CHECKPOINT_D_FIELD_MECHANIC_WITNESS ${JSON.stringify({
     certificationLayer: CERTIFICATION_LAYER,
     canonicalAcquisitionExercised: false,
-    sameTypeStackDesignStatus: 'DESIGN_UNDECIDED',
+    sameSourceDuplicateRule: 'FORBIDDEN_WHILE_ACTIVE',
     normal3,
     one,
-    sameTypeRecast,
     mixedTwo,
   })}`);
 });

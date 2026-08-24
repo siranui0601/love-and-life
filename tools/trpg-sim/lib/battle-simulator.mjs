@@ -27,21 +27,41 @@ function skillIdFromActionId(actionId) {
   return String(actionId ?? '').match(/^SKILL:(SKL-\d{4})(?::|$)/u)?.[1] ?? null;
 }
 
-function canonicalControlData(data, skillId) {
-  if (!['SKL-0653', 'SKL-0654'].includes(skillId)) return data;
-  const original = data.playerSkillById?.get?.(skillId);
-  if (!original) return data;
-  const activationConditions = (original.activationConditions ?? []).filter((condition) => !(
-    condition?.scope === 'battle' && condition?.path === 'ownedFieldEffectCount'
-  ));
-  if (activationConditions.length === (original.activationConditions ?? []).length) return data;
-  const skill = { ...original, activationConditions };
-  const playerSkillById = new Map(data.playerSkillById);
-  playerSkillById.set(skillId, skill);
+function formationCountConditionSatisfied(condition, count) {
+  const expected = Number(condition?.value);
+  if (!Number.isFinite(expected)) return false;
+  switch (condition?.op) {
+    case 'gte': return count >= expected;
+    case 'gt': return count > expected;
+    case 'lte': return count <= expected;
+    case 'lt': return count < expected;
+    case 'eq': return count === expected;
+    case 'neq': return count !== expected;
+    default: return false;
+  }
+}
+
+function formationAwareData(data, session) {
+  const ownedCount = activeOwnedMagicFormations(session).length;
+  let playerSkillById = null;
+  for (const [skillId, original] of data.playerSkillById ?? []) {
+    const conditions = original.activationConditions ?? [];
+    if (!conditions.some((condition) => condition?.scope === 'battle' && condition?.path === 'ownedFieldEffectCount')) continue;
+    const isControl = ['SKL-0653', 'SKL-0654'].includes(skillId);
+    const activationConditions = conditions.filter((condition) => {
+      if (!(condition?.scope === 'battle' && condition?.path === 'ownedFieldEffectCount')) return true;
+      if (isControl) return false;
+      return !formationCountConditionSatisfied(condition, ownedCount);
+    });
+    if (activationConditions.length === conditions.length) continue;
+    playerSkillById ??= new Map(data.playerSkillById);
+    playerSkillById.set(skillId, { ...original, activationConditions });
+  }
+  if (!playerSkillById) return data;
   return {
     ...data,
     playerSkillById,
-    playerSkills: (data.playerSkills ?? []).map((entry) => entry.id === skillId ? skill : entry),
+    playerSkills: (data.playerSkills ?? []).map((entry) => playerSkillById.get(entry.id) ?? entry),
   };
 }
 
@@ -61,8 +81,9 @@ export function beginInteractiveBattle(options) {
 export function listInteractiveBattleCommands({ data, session }) {
   if (!session) return current.listInteractiveBattleCommands({ data, session });
   const prepared = prepareFormationSession(session, data);
-  const base = current.listInteractiveBattleCommands({ data, session: prepared });
-  const decorated = decorateFormationCommands({ data, session: prepared, commands: base });
+  const effectiveData = formationAwareData(data, prepared);
+  const base = current.listInteractiveBattleCommands({ data: effectiveData, session: prepared });
+  const decorated = decorateFormationCommands({ data: effectiveData, session: prepared, commands: base });
   return mergeFormationObservations(decorated, prepared);
 }
 
@@ -85,7 +106,7 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
   }
 
   const effectiveSkillId = control?.skillId ?? submittedSkillId;
-  const effectiveData = canonicalControlData(data, effectiveSkillId);
+  const effectiveData = formationAwareData(data, prepared);
   const baseCommands = current.listInteractiveBattleCommands({ data: effectiveData, session: prepared });
   let effectiveCommand = command;
   if (control) {
@@ -99,14 +120,12 @@ export function resolveInteractiveBattleRound({ data, session, command }) {
   if (isDetonation) prepared = shieldNonFormationFieldsForDetonation(prepared);
 
   const output = current.resolveInteractiveBattleRound({ data: effectiveData, session: prepared, command: effectiveCommand });
-  if (!output?.ok || !output.session) return output;
+  if (!output?.ok) return output?.session ? { ...output, session } : output;
+  if (!output.session) return output;
   restoreShieldedNonFormationFields(output.session);
   normalizeFormationRuntime(output.session, data);
   removeLegacyControlFields(output.session);
 
-  // Current lower layers finish an entire round before returning. Existing
-  // formations therefore tick once here; newly-created formations are migrated
-  // from expiresAfterTurn to the already post-round remaining count.
   const expired = advanceFormationRoundEnd(output.session, previousFormationIds, data);
   if (expired.length) {
     output.session.playerRuntimeMechanics.events ??= [];
