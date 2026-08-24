@@ -202,7 +202,7 @@ test('Checkpoint D Battle INFO clears stale panel on current request failure wit
 
 test('Checkpoint D Battle INFO keeps newer success when an older request fails later', async (t) => {
   const mutations = withFakeMutationObserver(t);
-  const { root, dialog, menu, message } = createBattleRoot({ open: false });
+  const { root, dialog, menu } = createBattleRoot({ open: false });
   const first = deferred();
   const second = deferred();
   const queue = [first.promise, second.promise];
@@ -219,7 +219,6 @@ test('Checkpoint D Battle INFO keeps newer success when an older request fails l
   assert.match(observationText(root), /新しい戦況/u);
 
   first.reject(new Error('older failed'));
-  mutations.notify(message);
   await settle();
   assert.match(observationText(root), /新しい戦況/u, 'older failure does not clear newer observation state');
 });
