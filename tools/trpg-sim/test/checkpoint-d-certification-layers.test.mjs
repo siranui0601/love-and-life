@@ -5,6 +5,7 @@ import {
   CHECKPOINT_D_CERTIFICATION_LAYERS,
   GAMEPLAY_CERT_DISQUALIFIERS,
   GAMEPLAY_CERT_REQUIRED_DIMENSIONS,
+  LV1_AXE_STARTER_GAMEPLAY_CERT,
   assertGameplayCertDescriptor,
   checkpointDGameplayCertCount,
   evaluateGameplayCertDescriptor,
@@ -14,16 +15,19 @@ function completeDimensions() {
   return Object.fromEntries(GAMEPLAY_CERT_REQUIRED_DIMENSIONS.map((dimension) => [dimension, true]));
 }
 
-test('Checkpoint D-0 explicitly separates mechanic witnesses from gameplay certification', () => {
+test('Checkpoint D explicitly separates mechanic witnesses from the single production GAMEPLAY_CERT', () => {
   const layers = CHECKPOINT_D_CERTIFICATION_LAYERS;
   assert.equal(layers.fieldDetonationIsolation.layer, 'MECHANIC_WITNESS');
   assert.equal(layers.fivePolicyIsolation.layer, 'MECHANIC_WITNESS');
   assert.equal(layers.nineBossCounterplayIsolation.layer, 'MECHANIC_WITNESS');
   assert.equal(layers.enc0076CanonicalProbe.layer, 'CANONICAL_GAMEPLAY_PROBE');
-  assert.equal(Object.values(layers).some((entry) => entry.gameplayCert === true), false,
-    'D-0 must not silently promote synthetic witnesses/probes into GAMEPLAY_CERT');
-  assert.equal(checkpointDGameplayCertCount(layers), 0,
-    'registry contains no real GAMEPLAY_CERT until a legal production scenario proves every dimension');
+  assert.equal(layers.lv1AxeStarterGameplayCert, LV1_AXE_STARTER_GAMEPLAY_CERT);
+  assert.equal(layers.lv1AxeStarterGameplayCert.layer, 'GAMEPLAY_CERT');
+  assert.equal(Object.values(layers).filter((entry) => entry.gameplayCert === true).length, 1,
+    'only the production Lv1 starter scenario is promoted to GAMEPLAY_CERT');
+  assert.equal(checkpointDGameplayCertCount(layers), 1,
+    'registry contains exactly one guarded GAMEPLAY_CERT');
+  assert.doesNotThrow(() => assertGameplayCertDescriptor(layers.lv1AxeStarterGameplayCert));
   assert.doesNotMatch(layers.fieldDetonationIsolation.reason, /same-type field stacking remains DESIGN_UNDECIDED/u,
     'registry text must not preserve the pre-canonical same-type stacking uncertainty');
 });

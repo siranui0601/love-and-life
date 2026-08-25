@@ -26,6 +26,28 @@ export const GAMEPLAY_CERT_DISQUALIFIERS = Object.freeze([
   'noWorldTimeResourceSettlement',
 ]);
 
+export const LV1_AXE_STARTER_GAMEPLAY_CERT = Object.freeze({
+  layer: 'GAMEPLAY_CERT',
+  file: 'checkpoint-d-gameplay-cert-lv1.test.mjs',
+  gameplayCert: true,
+  scenario: 'current Day1 provisional Lv1 axe starter / SKL-0049 / canonical seekBattle',
+  scope: 'bounded certification of the current Day1 provisional starter build; not a universal initial-weapon canonical rule',
+  reason: 'production createGameRuntime provides Lv1/SP2 and current starter EQP-W-0005; learnPlayerSkill spends 1SP on canonical basic_level_up SKL-0049; generateChoiceActions/beginInteractiveBattleAction select a canonical encounter; shared battle command/runtime exposes the real player decision and observable command state; the real battle result is committed through settleInteractiveBattleAction with world clock/resources intact; the same fixed seed reproduces the same fingerprint',
+  dimensions: Object.freeze({
+    enemyCanonical: true,
+    playerBuildLegal: true,
+    acquisitionProven: true,
+    skillGrantProven: true,
+    equipmentLegal: true,
+    productionBattle: true,
+    playerVisibleUx: true,
+    productionSettlement: true,
+    worldStateIntegrated: true,
+    boundedDeterministic: true,
+  }),
+  disqualifiers: Object.freeze({}),
+});
+
 export const CHECKPOINT_D_CERTIFICATION_LAYERS = Object.freeze({
   fieldDetonationIsolation: Object.freeze({
     layer: 'MECHANIC_WITNESS',
@@ -51,6 +73,7 @@ export const CHECKPOINT_D_CERTIFICATION_LAYERS = Object.freeze({
     reason: 'forced canonical action selection, priority override and extreme stats intentionally isolate boss mechanics/counterplay',
     gameplayCert: false,
   }),
+  lv1AxeStarterGameplayCert: LV1_AXE_STARTER_GAMEPLAY_CERT,
 });
 
 function isActiveDisqualifier(value) {
