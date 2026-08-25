@@ -26,6 +26,16 @@ const EDA_ID = "NPC004";
 const EDA_NAME = "エダ";
 const EDA_UNKNOWN_LABEL = "見知らぬ女性";
 const TUTORIAL_LOAN_PREFIX = "EINTRO:LOADOUT:";
+const CHECKPOINT_E_CANONICAL_EQUIPMENT_IDS = Object.freeze({
+  oneHandedSword: "EQP-W-0001",
+  book: "EQP-W-0010",
+  twoHandedSword: "EQP-W-0013",
+  axe: "EQP-W-0006",
+  spear: "EQP-W-0007",
+  bow: "EQP-W-0008",
+  staff: "EQP-W-0009",
+  shield: "EQP-S-0001",
+});
 const EQUIPMENT_CATEGORY_DEFINITIONS = Object.freeze([
   Object.freeze({ key: "oneHandedSword", label: "片手剣", group: "rightHand", groupLabel: "右手装備", slot: "mainHand", weaponType: "oneHandedSword", twoHanded: false }),
   Object.freeze({ key: "book", label: "本", group: "rightHand", groupLabel: "右手装備", slot: "mainHand", weaponType: "book", twoHanded: false }),
@@ -93,21 +103,16 @@ function isTwoHanded(equipment) {
 }
 
 function canonicalEquipmentCandidate(data, definition) {
-  const candidates = (data.battleData.equipment ?? [])
-    .filter((equipment) => equipment?.id && equipment.status !== "disabled")
-    .filter((equipment) => equipment.slot === definition.slot)
-    .filter((equipment) => {
-      if (definition.key === "shield") {
-        return equipment.weaponType === "shield" || /盾/u.test(`${equipment.name ?? ""} ${equipment.category ?? ""}`);
-      }
-      if (equipment.weaponType !== definition.weaponType) return false;
-      return definition.twoHanded ? isTwoHanded(equipment) : !isTwoHanded(equipment);
-    })
-    .sort((left, right) => Number(left.recommendedLevelMin ?? 1) - Number(right.recommendedLevelMin ?? 1)
-      || Number(left.tier ?? 1) - Number(right.tier ?? 1)
-      || Number(left.performanceIndex ?? 0) - Number(right.performanceIndex ?? 0)
-      || left.id.localeCompare(right.id));
-  return candidates[0] ?? null;
+  const equipmentId = CHECKPOINT_E_CANONICAL_EQUIPMENT_IDS[definition.key];
+  const equipment = equipmentId ? data.battleData.equipmentById.get(equipmentId) : null;
+  if (!equipment || equipment.status === "disabled") return null;
+  if (equipment.slot !== definition.slot) return null;
+  const typeMatches = definition.key === "shield"
+    ? equipment.weaponType === "shield" || /盾/u.test(`${equipment.name ?? ""} ${equipment.category ?? ""}`)
+    : equipment.weaponType === definition.weaponType;
+  if (!typeMatches) return null;
+  if (definition.twoHanded !== isTwoHanded(equipment)) return null;
+  return equipment;
 }
 
 function assertLegalLoanOption(data, option) {
@@ -133,7 +138,7 @@ export function buildCheckpointELoanCatalog(data) {
   });
   const missing = categories.filter((entry) => !entry.equipmentId).map((entry) => entry.key);
   if (missing.length) {
-    throw new TrpgGameError(500, "checkpoint_e_canonical_equipment_missing", `Checkpoint E canonical equipment missing: ${missing.join(",")}`);
+    throw new TrpgGameError(500, "checkpoint_e_canonical_equipment_missing", `Checkpoint E canonical equipment missing or contract-mismatched: ${missing.join(",")}`);
   }
   const byKey = new Map(categories.map((entry) => [entry.key, entry]));
   const option = (id, label, keys, group) => assertLegalLoanOption(data, {
@@ -310,15 +315,17 @@ function resolveMoveToInn(runtime, data, choice) {
     .find((candidate) => candidate.destinationFacilityId === CHECKPOINT_E_LOAN_FACILITY_ID);
   if (!action) throw new TrpgGameError(409, "checkpoint_e_inn_unreachable", "麦穂亭へ移動できません");
   updateWeather(runtime);
-  const result = journey.resolvePlayerAction(
+  const result = journey.resolveMovementAction(
     runtime.playerState,
     data.model,
     data.battleData,
     data.skills,
-    runtime.playerState.catalog,
     profileFor(runtime.playerState.profileId),
     { ...action, id: choice.id, label: choice.label },
   );
+  if (!result?.ok || runtime.playerState.player.facilityId !== CHECKPOINT_E_LOAN_FACILITY_ID) {
+    throw new TrpgGameError(409, "checkpoint_e_inn_move_failed", "麦穂亭への移動を完了できませんでした");
+  }
   setEdaFacility(runtime, CHECKPOINT_E_LOAN_FACILITY_ID);
   return result;
 }
