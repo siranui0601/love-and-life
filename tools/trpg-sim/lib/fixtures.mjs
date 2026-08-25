@@ -12,8 +12,29 @@ function readJson(fileName) {
   return JSON.parse(fs.readFileSync(path.join(fixturesDirectory, fileName), "utf8"));
 }
 
+function applyWorldCanonicalOverlay(snapshot, overlay) {
+  if (!overlay?.tabs) return snapshot;
+  snapshot.source ??= {};
+  snapshot.source.canonicalOverlays ??= [];
+  snapshot.source.canonicalOverlays.push({ ...overlay.source, schemaVersion: overlay.schemaVersion ?? null });
+  for (const [tabName, patch] of Object.entries(overlay.tabs)) {
+    const tab = snapshot.tabs?.[tabName];
+    if (!Array.isArray(tab)) {
+      throw new Error(`Canonical world overlay refers to missing tab: ${tabName}`);
+    }
+    for (const row of patch?.appendRows ?? []) {
+      const id = String(row?.[0] ?? "").trim();
+      if (!id) throw new Error(`Canonical world overlay contains an empty row id in ${tabName}`);
+      if (tab.some((existing) => String(existing?.[0] ?? "").trim() === id)) continue;
+      tab.push([...row]);
+    }
+  }
+  return snapshot;
+}
+
 export function loadWorldSnapshot() {
-  return readJson("world.snapshot.json");
+  const snapshot = readJson("world.snapshot.json");
+  return applyWorldCanonicalOverlay(snapshot, readJson("world.canonical-overlay.json"));
 }
 
 /**
