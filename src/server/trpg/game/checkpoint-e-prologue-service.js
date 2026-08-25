@@ -434,13 +434,15 @@ function tutorialViewForPrologue(runtime, data) {
   if (!prologue || prologue.complete) return null;
   const stage = prologue.stage;
   const equipmentReady = stage === "equipment_ui" && equippedLoadoutReady(runtime, data);
-  const panel = stage === "inventory_ui" || stage === "equipment_ui"
-    ? "inventory"
-    : stage === "loan_catalog"
-      ? "shop"
-      : stage === "skills_ui" || equipmentReady
-        ? "skills"
-        : null;
+  const panel = stage === "equipment_ui" && equipmentReady
+    ? "skills"
+    : stage === "inventory_ui" || stage === "equipment_ui"
+      ? "inventory"
+      : stage === "loan_catalog"
+        ? "shop"
+        : stage === "skills_ui"
+          ? "skills"
+          : null;
   const id = stage === "inventory_ui"
     ? "checkpoint-e-inventory"
     : stage === "skills_ui" || equipmentReady
