@@ -82,6 +82,12 @@ function runtimeFromRecord(record) {
   return deserializeRuntime(record.runtimeSnapshot, data);
 }
 
+function publicInventoryItemQuantity(save, itemId) {
+  const items = save.player?.inventory?.items;
+  if (Array.isArray(items)) return Number(items.find((item) => item.id === itemId)?.quantity ?? 0);
+  return Number(items?.[itemId] ?? 0);
+}
+
 test('[CHECKPOINT_E_COMMON_PROLOGUE] canonical catalog exposes eight categories, ten legal loadouts and canonical representatives', () => {
   const catalog = buildCheckpointELoanCatalog(data);
   assert.equal(catalog.version, CHECKPOINT_E_PROLOGUE_VERSION);
@@ -194,12 +200,12 @@ test('[CHECKPOINT_E_COMMON_PROLOGUE] new game runs LOC_FARM_EDGE → bread → i
   save = await choose(svc, owner, save, 2);
   assert.equal(save.checkpointEPrologue.stage, 'bread_eat');
   assert.equal(save.checkpointEPrologue.bread.received, true);
-  assert.ok(save.player.inventory.items.some((item) => item.id === 'ITM008' && item.name === '黒パン'));
+  assert.equal(publicInventoryItemQuantity(save, 'ITM008'), 1);
 
   save = await choose(svc, owner, save, 0);
   assert.equal(save.checkpointEPrologue.stage, 'inventory_prompt');
   assert.equal(save.checkpointEPrologue.bread.eaten, true);
-  assert.equal(save.player.inventory.items.some((item) => item.id === 'ITM008'), false);
+  assert.equal(publicInventoryItemQuantity(save, 'ITM008'), 0);
   assert.ok(save.player.needs.hunger < startingHunger, 'production consumeMeal reduces hunger');
 
   save = await choose(svc, owner, save, 0);
@@ -218,7 +224,7 @@ test('[CHECKPOINT_E_COMMON_PROLOGUE] new game runs LOC_FARM_EDGE → bread → i
   assert.equal(save.shop.prologueLoanCatalog.categories.length, 8);
   assert.equal(save.shop.stock.length, 10);
 
-  const swordShield = save.shop.stock.find((entry) => entry.access?.loan?.loanId?.endsWith('sword-shield'));
+  const swordShield = save.shop.stock.find((entry) => entry.access?.loan?.loanId === 'EINTRO:LOADOUT:sword-shield');
   assert.ok(swordShield);
   save = await command(svc, owner, save, 'SHOP_BORROW', { loanId: swordShield.access.loan.loanId });
   assert.equal(save.checkpointEPrologue.stage, 'equipment_ui');
@@ -288,7 +294,7 @@ test('[CHECKPOINT_E_COMMON_PROLOGUE] all ten loadouts are actually borrowable, i
     const owner = `checkpoint-e-loadout-${option.id}`;
     let save = await svc.create(owner, { playerName: option.label, seed: `checkpoint-e-loadout-${option.id}` });
     save = await advanceToLoanCatalog(svc, owner, save);
-    const stock = save.shop.stock.find((entry) => entry.access?.loan?.loanId?.endsWith(option.id));
+    const stock = save.shop.stock.find((entry) => entry.access?.loan?.loanId === `EINTRO:LOADOUT:${option.id}`);
     assert.ok(stock, `${option.id} must be shown in the production loan UI`);
     save = await command(svc, owner, save, 'SHOP_BORROW', { loanId: stock.access.loan.loanId });
     assert.equal(save.checkpointEPrologue.loan.loadoutId, option.id);
