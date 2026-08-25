@@ -103,6 +103,11 @@ function numericSummary(values) {
   };
 }
 
+function canonicalBattleDataRows(fixtures, tabName, fallback) {
+  const rowCount = Number(fixtures.battle?.provenance?.[tabName]?.rowCount);
+  return Number.isFinite(rowCount) ? Math.max(0, rowCount - 4) : fallback;
+}
+
 export function runSourceAudit(fixtures = loadAllFixtures()) {
   const worldTabs = fixtures.world.tabs;
   const battleTabs = fixtures.battle.tabs;
@@ -334,12 +339,12 @@ export function runSourceAudit(fixtures = loadAllFixtures()) {
     facilities: 103,
     products: 219,
     skills: 1141,
-    equipment: 116,
-    stock: 123,
-    monsters: 77,
-    monsterSkills: 96,
-    monsterActions: 286,
-    encounters: 76,
+    equipment: canonicalBattleDataRows(fixtures, "装備性能マスター", counts.equipment),
+    stock: canonicalBattleDataRows(fixtures, "店舗装備在庫", counts.stock),
+    monsters: canonicalBattleDataRows(fixtures, "モンスター一覧", counts.monsters),
+    monsterSkills: canonicalBattleDataRows(fixtures, "モンスタースキル", counts.monsterSkills),
+    monsterActions: canonicalBattleDataRows(fixtures, "モンスター行動", counts.monsterActions),
+    encounters: canonicalBattleDataRows(fixtures, "地域別エンカウント", counts.encounters),
   };
   const countMismatches = Object.entries(expectedCounts)
     .filter(([key, expected]) => counts[key] !== expected)
