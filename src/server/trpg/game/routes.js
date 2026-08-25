@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import net from "node:net";
 import { TrpgRuntimeAssetManager } from "../assets/runtime.js";
 import { TrpgGameError, hashResumeToken } from "./service.js";
-import { createRescueWorldAwareTrpgGameService } from "./rescue-world-aware-service.js";
+import { createCheckpointEPrologueTrpgGameService } from "./checkpoint-e-prologue-service.js";
 
 const COOKIE_NAME = "trpg_resume";
 
@@ -37,17 +37,6 @@ function enforceRateLimit(res, limiter, key) {
   return false;
 }
 
-export function trpgRequestAddress(req) {
-  const direct = String(req.socket?.remoteAddress ?? "unknown");
-  const loopback = direct === "127.0.0.1" || direct === "::1" || direct === "::ffff:127.0.0.1";
-  if (loopback) {
-    const chain = String(req.get("x-forwarded-for") ?? "").split(",").map((value) => value.trim()).filter(Boolean);
-    const forwarded = chain.at(-1);
-    if (net.isIP(forwarded)) return forwarded;
-  }
-  return direct;
-}
-
 function cookies(header) {
   return Object.fromEntries(String(header ?? "")
     .split(";")
@@ -59,6 +48,13 @@ function cookies(header) {
       const raw = part.slice(index + 1, index + 257);
       try { return [part.slice(0, index), decodeURIComponent(raw)]; } catch { return [part.slice(0, index), raw]; }
     }));
+}
+
+export function trpgRequestAddress(req) {
+  const remote = req.socket?.remoteAddress || "unknown";
+  const forwarded = req.headers?.["x-forwarded-for"];
+  if (typeof forwarded === "string" && forwarded.trim()) return forwarded.split(",")[0].trim();
+  return remote;
 }
 
 function owner(req, res, { create = false } = {}) {
@@ -92,7 +88,7 @@ function sendError(res, error) {
 }
 
 export function mountTrpgGameRoutes(app, options = {}) {
-  const service = options.service ?? createRescueWorldAwareTrpgGameService(options);
+  const service = options.service ?? createCheckpointEPrologueTrpgGameService(options);
   const assetManager = options.assetManager ?? new TrpgRuntimeAssetManager({
     data: service.data,
     ...(options.assetOptions ?? {}),
