@@ -2,6 +2,7 @@ import * as journey from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 import {
   activeEquipmentLoans,
   ensureEquipmentAccessState,
+  returnEquipmentLoan,
 } from "../../../../tools/trpg-sim/lib/equipment-access.mjs";
 import {
   completePlayerRest,
@@ -22,6 +23,8 @@ export const CHECKPOINT_E_LOAN_FACILITY_ID = "LOC_FARM_INN";
 const START_LOCATION = "田園の村";
 const START_FACILITY_ID = "LOC_FARM_EDGE";
 const EDA_ID = "NPC004";
+const EDA_NAME = "エダ";
+const EDA_UNKNOWN_LABEL = "見知らぬ女性";
 const TUTORIAL_LOAN_PREFIX = "EINTRO:LOADOUT:";
 const EQUIPMENT_CATEGORY_DEFINITIONS = Object.freeze([
   Object.freeze({ key: "oneHandedSword", label: "片手剣", group: "rightHand", groupLabel: "右手装備", slot: "mainHand", weaponType: "oneHandedSword", twoHanded: false }),
@@ -37,47 +40,47 @@ const EQUIPMENT_CATEGORY_DEFINITIONS = Object.freeze([
 const STAGE_COPY = Object.freeze({
   edge_contact: {
     narrative: "村外れの畑道。家並みはまだ遠く、風が麦を揺らしている。気づけば、畑仕事の手を止めた女性がこちらを見ていた。",
-    speech: "エダ「大丈夫かい？　そんなところでぼうっとして。歩けるなら、まず村まで来な。」",
+    speech: "大丈夫かい？　そんなところでぼうっとして。歩けるなら、まず村まで来な。",
   },
   village_entry: {
     narrative: "エダは急かさず、村へ続く道を指した。ここから先は、人の暮らしの中へ入っていく。",
-    speech: "エダ「麦穂亭なら座れるし、水もあるよ。道すがらでも、聞きたいことがあれば聞きな。」",
+    speech: "麦穂亭なら座れるし、水もあるよ。道すがらでも、聞きたいことがあれば聞きな。",
   },
   hunger_offer: {
     narrative: "麦穂亭の椅子に腰を下ろすと、ようやく腹の具合に意識が向いた。エダは顔色を見て、包んでいた黒パンを差し出す。",
-    speech: "エダ「腹が減ってるかどうか、自分でも見ときな。これは村のパン屋の黒パン。まず食べられる時に食べときな。」",
+    speech: "腹が減ってるかどうか、自分でも見ときな。これは村のパン屋の黒パン。まず食べられる時に食べときな。",
   },
   bread_eat: {
     narrative: "手の中には、村のパン屋で売られている黒パンが一つある。空腹度は時間や行動でも増えていく。",
-    speech: "エダ「残すのも勝手だけど、今は身体を落ち着けた方がいいよ。」",
+    speech: "残すのも勝手だけど、今は身体を落ち着けた方がいいよ。",
   },
   inventory_prompt: {
     narrative: "腹が落ち着くと、次は自分が何を持っているのかが気になった。旅人らしい荷物は、ほとんど見当たらない。",
-    speech: "エダ「そういや、あんたが倒れてた時も、まともな道具は見なかったね。自分の持ち物を一度ちゃんと確かめな。」",
+    speech: "そういや、あんたが倒れてた時も、まともな道具は見なかったね。自分の持ち物を一度ちゃんと確かめな。",
   },
   inventory_ui: {
     narrative: "まずは持ち物画面で、所持品と装備欄を自分の目で確認する。",
-    speech: "エダ「武器になるものがないなら、村で貸してる道具を見せられるよ。」",
+    speech: "武器になるものがないなら、村で貸してる道具を見せられるよ。",
   },
   loan_offer: {
     narrative: "村には、旅人や捜索に出る者へ一時的に回す装備がある。専用の建物を新しく作るのではなく、麦穂亭で預かっている村の貸出分を見せてもらえる。",
-    speech: "エダ「借りるなら記録は残すよ。返すのも、買い取る相談をするのも後でいい。ただ、借りたままなら借りたままって話になる。」",
+    speech: "借りるなら記録は残すよ。返すのも、買い取る相談をするのも後でいい。ただ、借りたままなら借りたままって話になる。",
   },
   loan_catalog: {
     narrative: "貸出表には八つの系統が並ぶ。右手装備は左手装備と組み合わせられるが、両手装備を選んだ時は盾を同時には持てない。借りられるのは一つのloadoutだけだ。",
-    speech: "エダ「強そうなのを決め打ちしなくていい。持ってみたい形を一つ選びな。」",
+    speech: "強そうなのを決め打ちしなくていい。持ってみたい形を一つ選びな。",
   },
   equipment_ui: {
     narrative: "借用品は所持品に『借用品』として現れる。装備欄を開き、実際に身につけてみる。",
-    speech: "エダ「借りたものは、持ってるだけじゃ使えないよ。装備して、それから使える技を見な。」",
+    speech: "借りたものは、持ってるだけじゃ使えないよ。装備して、それから使える技を見な。",
   },
   fatigue_intro: {
     narrative: "装備とスキルを一通り見終える頃には、身体の重さにも気づく。疲労度は移動や仕事、夜更かしでも増えていく。",
-    speech: "エダ「腹だけじゃなくて疲れも見るんだよ。倒れてからじゃ遅い。今日は泊まれるよう話をつけてある。」",
+    speech: "腹だけじゃなくて疲れも見るんだよ。倒れてからじゃ遅い。今日は泊まれるよう話をつけてある。",
   },
   lodging_choice: {
     narrative: "麦穂亭で休むこともできるし、すぐ眠らずにもう少し話を聞くこともできる。宿泊は目的地リストではなく、今いる場面で選ぶ。",
-    speech: "エダ「どうする？　今夜ここで休むなら、そのまま休めるよ。」",
+    speech: "どうする？　今夜ここで休むなら、そのまま休めるよ。",
   },
 });
 
@@ -107,6 +110,16 @@ function canonicalEquipmentCandidate(data, definition) {
   return candidates[0] ?? null;
 }
 
+function assertLegalLoanOption(data, option) {
+  const equipment = option.equipmentIds.map((equipmentId) => data.battleData.equipmentById.get(equipmentId)).filter(Boolean);
+  const mainHand = equipment.find((entry) => entry.slot === "mainHand") ?? null;
+  const offHand = equipment.find((entry) => entry.slot === "offHand") ?? null;
+  if (mainHand && isTwoHanded(mainHand) && offHand) {
+    throw new TrpgGameError(500, "checkpoint_e_illegal_loadout", `Illegal Checkpoint E loadout: ${option.id}`);
+  }
+  return option;
+}
+
 export function buildCheckpointELoanCatalog(data) {
   const categories = EQUIPMENT_CATEGORY_DEFINITIONS.map((definition) => {
     const equipment = canonicalEquipmentCandidate(data, definition);
@@ -123,7 +136,7 @@ export function buildCheckpointELoanCatalog(data) {
     throw new TrpgGameError(500, "checkpoint_e_canonical_equipment_missing", `Checkpoint E canonical equipment missing: ${missing.join(",")}`);
   }
   const byKey = new Map(categories.map((entry) => [entry.key, entry]));
-  const option = (id, label, keys, group) => ({
+  const option = (id, label, keys, group) => assertLegalLoanOption(data, {
     id,
     label,
     group,
@@ -141,6 +154,7 @@ export function buildCheckpointELoanCatalog(data) {
     option("spear", "槍", ["spear"], "twoHand"),
     option("bow", "弓", ["bow"], "twoHand"),
     option("staff", "杖", ["staff"], "twoHand"),
+    option("shield", "盾", ["shield"], "leftHand"),
   ];
   return {
     version: CHECKPOINT_E_PROLOGUE_VERSION,
@@ -150,8 +164,8 @@ export function buildCheckpointELoanCatalog(data) {
       oneLoadoutOnly: true,
       rightPlusLeftAllowed: true,
       twoHandPlusLeftAllowed: false,
-      shieldOnlyOffered: false,
-      shieldExplanation: "盾は左手装備の防御・補助用。Checkpoint Eでは右手装備との組み合わせで貸し出す。",
+      shieldOnlyOffered: true,
+      shieldExplanation: "盾は左手装備。盾だけを借りる選択もでき、主武器を持たない不利もplayer choiceとして残る。",
     },
   };
 }
@@ -201,6 +215,30 @@ function trace(runtime, key, delta = 1, note = null) {
     delta,
     note,
   });
+}
+
+function edaKnown(runtime) {
+  return runtime.playerKnowledge?.knownNpcIds instanceof Set
+    && runtime.playerKnowledge.knownNpcIds.has(EDA_ID);
+}
+
+function ensureEdaIntroduction(runtime) {
+  if (edaKnown(runtime)) return null;
+  if (runtime.pendingNpcIntroduction?.npcId === EDA_ID) return runtime.pendingNpcIntroduction;
+  const pending = {
+    token: `CHECKPOINT-E-EDA:${runtime.playerState.absoluteMinute}`,
+    npcId: EDA_ID,
+    canonicalName: EDA_NAME,
+    anonymousLabel: EDA_UNKNOWN_LABEL,
+    sourceActionId: "CHECKPOINT_E_EDGE_CONTACT",
+  };
+  runtime.pendingNpcIntroduction = pending;
+  addHistory(runtime.playerState, {
+    type: "CHECKPOINT_E_NPC_INTRODUCTION_OFFERED",
+    npcId: EDA_ID,
+    token: pending.token,
+  });
+  return pending;
 }
 
 function setEdaFacility(runtime, facilityId) {
@@ -364,6 +402,19 @@ function selectedLoadout(runtime, data) {
   return id ? buildCheckpointELoanCatalog(data).options.find((entry) => entry.id === id) ?? null : null;
 }
 
+function reconcilePrologueLoanProjection(runtime) {
+  const prologue = runtime.checkpointEPrologue;
+  if (!prologue?.loan?.loadoutId) return prologue?.loan ?? null;
+  const access = ensureEquipmentAccessState(runtime.playerState);
+  const loans = prologue.loan.loanIds.map((loanId) => access.loans[loanId]).filter(Boolean);
+  if (!loans.length) return prologue.loan;
+  const activeCount = loans.filter((loan) => loan.status === "active").length;
+  if (activeCount === 0) prologue.loan.disposition = "returned";
+  else if (activeCount !== loans.length) prologue.loan.disposition = "loan_state_inconsistent";
+  else if ([null, "returned", "loan_state_inconsistent"].includes(prologue.loan.disposition)) prologue.loan.disposition = "borrowed";
+  return prologue.loan;
+}
+
 function equippedLoadoutReady(runtime, data) {
   const loadout = selectedLoadout(runtime, data);
   if (!loadout) return false;
@@ -429,12 +480,19 @@ function prologueShopView(runtime, data) {
   const catalog = buildCheckpointELoanCatalog(data);
   const stock = catalog.options.map((option) => {
     const primary = data.battleData.equipmentById.get(option.equipmentIds[0]);
+    const loadoutKind = option.group === "twoHand"
+      ? "両手装備"
+      : option.group === "leftHand"
+        ? "左手装備・盾単体"
+        : option.categoryKeys.includes("shield")
+          ? "右手+左手の1 loadout"
+          : "右手装備";
     return {
       stockId: `${TUTORIAL_LOAN_PREFIX}${option.id}`,
       id: `${TUTORIAL_LOAN_PREFIX}${option.id}`,
       equipmentId: primary.id,
       name: option.label,
-      description: `${option.equipmentNames.join(" + ")} / ${option.categoryKeys.includes("shield") ? "右手+左手の1 loadout" : option.group === "twoHand" ? "両手装備" : "右手装備"}`,
+      description: `${option.equipmentNames.join(" + ")} / ${loadoutKind}`,
       quantity: 1,
       price: 999999,
       equipment: {
@@ -475,6 +533,7 @@ function prologueShopView(runtime, data) {
 function publicPrologueState(runtime, data) {
   const prologue = runtime.checkpointEPrologue;
   if (!prologue) return null;
+  reconcilePrologueLoanProjection(runtime);
   return {
     version: prologue.version,
     stage: prologue.stage,
@@ -504,10 +563,20 @@ function decoratePrologueView(view, runtime, data) {
   decorateInventoryItems(view);
   if (prologue.complete) return view;
   const copy = STAGE_COPY[prologue.stage] ?? STAGE_COPY.edge_contact;
-  view.scene.narrative = copy.narrative;
-  view.scene.speeches = [{ actorId: EDA_ID, actorName: "エダ", text: copy.speech }];
-  view.scene.beats = [];
-  view.choices = choicesForStage(runtime).map((choice) => ({
+  const known = edaKnown(runtime);
+  const pendingIntroduction = runtime.pendingNpcIntroduction?.npcId === EDA_ID
+    ? runtime.pendingNpcIntroduction
+    : null;
+  view.scene.narrative = known ? copy.narrative : copy.narrative.replaceAll(EDA_NAME, "女性");
+  view.scene.speeches = [{ actorId: EDA_ID, actorName: known ? EDA_NAME : EDA_UNKNOWN_LABEL, text: copy.speech }];
+  view.scene.beats = pendingIntroduction ? [{
+    kind: "npc",
+    actorId: EDA_ID,
+    speakerLabel: EDA_UNKNOWN_LABEL,
+    text: "「私はエダ。村で畑仕事をしてる。歩けるなら、麦穂亭まで案内するよ」",
+    introductionToken: pendingIntroduction.token,
+  }] : [];
+  view.choices = pendingIntroduction ? [] : choicesForStage(runtime).map((choice) => ({
     choiceId: choice.choiceId,
     actionId: choice.actionId,
     id: choice.id,
@@ -525,6 +594,7 @@ function decoratePrologueView(view, runtime, data) {
 }
 
 function persistRecord(record, runtime, data) {
+  reconcilePrologueLoanProjection(runtime);
   runtime.playerState.weather = resolveCanonicalWeather({
     day: runtime.playerState.day,
     regionId: runtime.playerState.player.location,
@@ -568,6 +638,7 @@ function appendCustomJournal(record, input, beforeHash, afterHash) {
 
 function finishPrologue(runtime) {
   const prologue = runtime.checkpointEPrologue;
+  reconcilePrologueLoanProjection(runtime);
   prologue.stage = "free";
   prologue.complete = true;
   prologue.completedAtMinute = runtime.playerState.absoluteMinute;
@@ -584,7 +655,10 @@ function applyStoryChoice(runtime, data, choice) {
   else resolveTimedAction(runtime, data, { id: choice.id, type: choice.type === "conversation" ? "conversation" : "observe", minutes: choice.minutes, label: choice.label });
   trace(runtime, choice.trace, 1, choice.id);
   switch (prologue.stage) {
-    case "edge_contact": prologue.stage = "village_entry"; break;
+    case "edge_contact":
+      prologue.stage = "village_entry";
+      ensureEdaIntroduction(runtime);
+      break;
     case "village_entry": prologue.stage = "hunger_offer"; break;
     case "hunger_offer":
       receiveBread(runtime);
@@ -635,6 +709,7 @@ function borrowIntroLoadout(runtime, data, loanId) {
   const catalog = buildCheckpointELoanCatalog(data);
   const option = catalog.options.find((entry) => entry.id === optionId);
   if (!option) throw new TrpgGameError(404, "checkpoint_e_loadout_not_found");
+  assertLegalLoanOption(data, option);
   const access = ensureEquipmentAccessState(runtime.playerState);
   const existingIntro = activeEquipmentLoans(runtime.playerState).filter((loan) => loan.source === CHECKPOINT_E_PROLOGUE_VERSION);
   if (existingIntro.length) throw new TrpgGameError(409, "checkpoint_e_loadout_already_borrowed");
@@ -682,28 +757,43 @@ function borrowIntroLoadout(runtime, data, loanId) {
 function returnIntroLoadout(runtime, loanId) {
   const access = ensureEquipmentAccessState(runtime.playerState);
   const target = access.loans[loanId];
-  if (!target || target.source !== CHECKPOINT_E_PROLOGUE_VERSION || target.status !== "active") return false;
+  if (!target || target.source !== CHECKPOINT_E_PROLOGUE_VERSION || target.status !== "active") {
+    return { ok: false, reason: "loan_not_active" };
+  }
+  if (runtime.playerState.player.facilityId !== target.sellerFacilityId) {
+    return { ok: false, reason: "loan_return_wrong_facility", sellerFacilityId: target.sellerFacilityId };
+  }
   const groupId = target.introGroupId;
+  const groupLoans = Object.values(access.loans).filter((loan) =>
+    loan?.source === CHECKPOINT_E_PROLOGUE_VERSION
+      && loan.introGroupId === groupId
+      && loan.status === "active");
   const returnedIds = [];
-  for (const loan of Object.values(access.loans)) {
-    if (loan?.source !== CHECKPOINT_E_PROLOGUE_VERSION || loan.introGroupId !== groupId || loan.status !== "active") continue;
-    for (const [slot, equipmentId] of Object.entries(runtime.playerState.player.equipment ?? {})) {
-      if (equipmentId === loan.equipmentId) delete runtime.playerState.player.equipment[slot];
-    }
-    loan.status = "returned";
-    loan.returnedAtMinute = runtime.playerState.absoluteMinute;
-    loan.returnReason = "player_returned_loadout";
+  for (const loan of groupLoans) {
+    const result = returnEquipmentLoan(runtime.playerState, loan.loanId, {
+      facilityId: runtime.playerState.player.facilityId,
+      reason: "player_returned_loadout",
+    });
+    if (!result.ok) return result;
     returnedIds.push(loan.equipmentId);
   }
-  runtime.checkpointEPrologue.loan.disposition = "returned";
+  reconcilePrologueLoanProjection(runtime);
   addHistory(runtime.playerState, { type: "CHECKPOINT_E_LOADOUT_RETURNED", equipmentIds: returnedIds, introGroupId: groupId });
-  return true;
+  return { ok: true, equipmentIds: returnedIds, introGroupId: groupId };
+}
+
+function isCheckpointELoanReturn(runtime, input) {
+  if (input.type !== "SHOP_RETURN_LOAN") return false;
+  const loanId = String(input.payload?.loanId ?? "");
+  const loan = runtime.playerState.player.equipmentAccess?.loans?.[loanId];
+  return loan?.source === CHECKPOINT_E_PROLOGUE_VERSION;
 }
 
 function prologueCommandAllowed(runtime, input, data) {
   const stage = runtime.checkpointEPrologue?.stage;
   if (!stage || runtime.checkpointEPrologue.complete) return true;
-  if (input.type === "CHOOSE") return true;
+  if (input.type === "CHOOSE") return runtime.pendingNpcIntroduction?.npcId !== EDA_ID;
+  if (input.type === "ACK_NPC_INTRODUCTION") return runtime.pendingNpcIntroduction?.npcId === EDA_ID;
   if (input.type === "TUTORIAL_ACK") return ["inventory_ui", "equipment_ui", "skills_ui"].includes(stage);
   if (input.type === "SHOP_BORROW") return stage === "loan_catalog";
   if (["EQUIP", "UNEQUIP"].includes(input.type)) return stage === "equipment_ui";
@@ -737,13 +827,14 @@ export class CheckpointEPrologueTrpgGameService extends RescueWorldAwareTrpgGame
     if (!record || record.ownerHash !== ownerHash) return super.command(ownerHash, id, input);
     const snapshot = deserializeRuntime(record.runtimeSnapshot, this.data);
     const prologue = snapshot.checkpointEPrologue;
-    if (!prologue || prologue.complete) return super.command(ownerHash, id, input);
+    const checkpointELoanReturn = isCheckpointELoanReturn(snapshot, input);
+    if ((!prologue || prologue.complete) && !checkpointELoanReturn) return super.command(ownerHash, id, input);
 
     if (!prologueCommandAllowed(snapshot, input, this.data)) {
       throw new TrpgGameError(409, "tutorial_feature_locked", "共通プロローグ中は場面の三択と案内されたUIから進めてください");
     }
 
-    if (["EQUIP", "UNEQUIP"].includes(input.type)) {
+    if (["EQUIP", "UNEQUIP", "ACK_NPC_INTRODUCTION"].includes(input.type)) {
       const result = await super.command(ownerHash, id, input);
       const updatedRecord = await this.store.get(id);
       const runtime = deserializeRuntime(updatedRecord.runtimeSnapshot, this.data);
@@ -760,9 +851,11 @@ export class CheckpointEPrologueTrpgGameService extends RescueWorldAwareTrpgGame
       }
       validateRevision(current, input);
       const runtime = deserializeRuntime(current.runtimeSnapshot, this.data);
-      if (!runtime.checkpointEPrologue || runtime.checkpointEPrologue.complete) {
+      const groupReturn = isCheckpointELoanReturn(runtime, input);
+      if (!runtime.checkpointEPrologue || (runtime.checkpointEPrologue.complete && !groupReturn)) {
         throw new TrpgGameError(409, "checkpoint_e_prologue_not_active");
       }
+      const wasComplete = runtime.checkpointEPrologue.complete;
       const beforeHash = current.stateHash;
       const payload = input.payload ?? {};
 
@@ -789,7 +882,10 @@ export class CheckpointEPrologueTrpgGameService extends RescueWorldAwareTrpgGame
       } else if (input.type === "SHOP_BORROW") {
         borrowIntroLoadout(runtime, this.data, payload.loanId);
       } else if (input.type === "SHOP_RETURN_LOAN") {
-        if (!returnIntroLoadout(runtime, payload.loanId)) throw new TrpgGameError(409, "loan_not_active");
+        const returned = returnIntroLoadout(runtime, payload.loanId);
+        if (!returned.ok) {
+          throw new TrpgGameError(409, returned.reason ?? "loan_not_active", returned.reason ?? "loan_not_active", returned);
+        }
       } else {
         throw new TrpgGameError(400, "checkpoint_e_command_not_supported");
       }
@@ -798,7 +894,7 @@ export class CheckpointEPrologueTrpgGameService extends RescueWorldAwareTrpgGame
       current.updatedAt = new Date().toISOString();
       persistRecord(current, runtime, this.data);
       appendCustomJournal(current, input, beforeHash, current.stateHash);
-      if (runtime.checkpointEPrologue?.complete) {
+      if (runtime.checkpointEPrologue?.complete && !wasComplete) {
         current.replayBase = {
           resolverVersion: current.resolverVersion,
           revision: current.revision,
