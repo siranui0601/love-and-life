@@ -1,3 +1,5 @@
+import './checkpoint-e-loan-view.js';
+
 const API_BASE = '/TRPG/api/game';
 const LAST_SAVE_KEY = 'trpg:last-save-id';
 const OBSERVATION_LIMIT = 10;
