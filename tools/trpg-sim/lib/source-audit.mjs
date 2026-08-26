@@ -2,6 +2,7 @@ import {
   loadAllFixtures,
   tableFromTab,
 } from "./fixtures.mjs";
+import { buildWorldModel } from "./world-model.mjs";
 
 const LOCATION_TABS = [
   "北陵要塞",
@@ -110,6 +111,7 @@ function canonicalBattleDataRows(fixtures, tabName, fallback) {
 
 export function runSourceAudit(fixtures = loadAllFixtures()) {
   const worldTabs = fixtures.world.tabs;
+  const canonicalWorld = buildWorldModel(fixtures.world);
   const battleTabs = fixtures.battle.tabs;
   const troubles = tableFromTab(worldTabs["トラブル一覧"], 3);
   const chains = tableFromTab(worldTabs["トラブル連鎖"], 3);
@@ -252,7 +254,7 @@ export function runSourceAudit(fixtures = loadAllFixtures()) {
     if (!action["使用条件"]) {
       unconditionalByMonster.set(
         action["モンスターID"],
-        (unconditionalByMonster.get(action["モンスターID"]) ?? 0) + 1
+        (unconditionalByMonster.get(action["モンスターID"] ?? 0) + 1)
       );
     }
   }
@@ -336,7 +338,7 @@ export function runSourceAudit(fixtures = loadAllFixtures()) {
     troubles: 19,
     chains: 23,
     npcs: 110,
-    facilities: 103,
+    facilities: canonicalWorld.facilities.length,
     products: 219,
     skills: 1141,
     equipment: canonicalBattleDataRows(fixtures, "装備性能マスター", counts.equipment),
