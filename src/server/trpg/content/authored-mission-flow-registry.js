@@ -2,6 +2,8 @@ import * as base from "./canonical-job-time-policy.js";
 
 export * from "./canonical-job-time-policy.js";
 
+const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
+
 function onlyCanonicalWorldLife(actions) {
   return Array.isArray(actions)
     && actions.length > 0
@@ -10,6 +12,21 @@ function onlyCanonicalWorldLife(actions) {
 
 function continuingOrdinaryWork(runtime) {
   return runtime?.narrativeMemory?.activityFocus?.intent === "work";
+}
+
+function hasActiveMissionStep(runtime) {
+  const state = runtime?.playerState;
+  const definitions = [
+    ...(state?.catalog?.special ?? []),
+    ...(state?.catalog?.permanent ?? []),
+  ];
+  return definitions.some((definition) => {
+    const mission = state?.missions?.[definition.id];
+    if (!ACTIVE_MISSION_STATUSES.has(String(mission?.status ?? ""))) return false;
+    if (!Array.isArray(definition.steps) || definition.steps.length === 0) return false;
+    return definition.steps.some((step) =>
+      Number(mission.progress?.[step.id] ?? 0) < Number(step.required ?? 1));
+  });
 }
 
 // Ordinary life actions (meals, shopping, lodging and short rests) are public
@@ -35,18 +52,19 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   return exclusive.length ? exclusive : null;
 }
 
-// The same boundary applies to guidance. canonical-world-life supplies a
-// generic "その土地の生活を選ぶ" fallback when rest/meal actions exist. Once
-// those actions stopped being mission-exclusive, allowing that fallback to
-// remain here made the UI guidance disagree with the actual mission choices:
-// T01 rescue, cross-facility authored steps and even the legacy base opening
-// could all be pointed back at the current location. Return null only for the
-// confirmed life-only fallback so the service's normal mission guidance can
-// describe the active step. Genuine authored / regional guidance is preserved.
+// The same boundary applies to guidance while an actionable mission remains.
+// canonical-world-life supplies a generic "その土地の生活を選ぶ" fallback when
+// rest/meal actions exist. Once those actions stopped being mission-exclusive,
+// allowing that fallback to remain while a mission still has an incomplete step
+// made the UI guidance disagree with the actual mission choices. After the
+// mission is terminal, the ordinary-life guidance is valid again and remains
+// visible; this preserves the post-resolution public-life contract.
 export function authoredMissionFlowGuidance(runtime, context = {}) {
   const guidance = base.authoredMissionFlowGuidance(runtime, context);
   if (!guidance) return null;
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
-  if (guidance.title === "その土地の生活を選ぶ" && onlyCanonicalWorldLife(actions)) return null;
+  if (guidance.title === "その土地の生活を選ぶ"
+    && onlyCanonicalWorldLife(actions)
+    && hasActiveMissionStep(runtime)) return null;
   return guidance;
 }
