@@ -159,8 +159,18 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 export function authoredMissionFlowGuidance(runtime, context = {}) {
   const authored = base.authoredMissionFlowExclusiveActions(runtime, context);
   if (activeAuthoredScene(authored)) return base.authoredMissionFlowGuidance(runtime, context);
+
+  // Regional access is a normal public procedure, so it may fill an otherwise
+  // empty guidance slot but must never replace the next step of an active
+  // authored mission. This matters at facilities that are both evidence sites
+  // and public-service gates: after T07 verifies the buyer route at the hunter
+  // hut, its next rescue step remains the mission guidance even though the
+  // player can also ask for the ordinary hunter-access rules here.
+  const existingGuidance = base.authoredMissionFlowGuidance(runtime, context);
+  if (existingGuidance?.missionId) return existingGuidance;
+
   const action = ownActions(runtime)?.[0];
-  if (!action) return base.authoredMissionFlowGuidance(runtime, context);
+  if (!action) return existingGuidance;
   return {
     kicker: "土地の施設を使うための普通の手続きがある",
     title: action.label,
