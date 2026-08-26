@@ -1,9 +1,5 @@
 import * as base from "./canonical-job-time-policy.js";
-import {
-  AUTHORED_MISSION_FLOW_PACKS,
-  authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance,
-} from "./authored-mission-flow-core.js";
-import { resolveMissionStepVariant } from "./mission-step-variant.js";
+import { authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance } from "./authored-mission-flow-core.js";
 
 export * from "./canonical-job-time-policy.js";
 
@@ -21,64 +17,6 @@ function continuingOrdinaryWork(runtime) {
 
 function t01Active(runtime) {
   return ACTIVE_MISSION_STATUSES.has(String(runtime?.playerState?.missions?.["MSN-T01"]?.status ?? ""));
-}
-
-function diagnoseT07Guidance(runtime, coreGuidance) {
-  if (coreGuidance?.missionId !== "MSN-T07") return;
-  const pack = AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.missionId === coreGuidance.missionId);
-  const definition = runtime?.playerState?.catalog?.byId?.get?.(coreGuidance.missionId);
-  const mission = runtime?.playerState?.missions?.[coreGuidance.missionId];
-  if (!pack || !definition || !mission) return;
-  const rawNextStep = definition.steps.find((step) =>
-    Number(mission.progress?.[step.id] ?? 0) < Number(step.required ?? 1)) ?? null;
-  const resolvedNextStep = rawNextStep
-    ? resolveMissionStepVariant(rawNextStep, runtime.playerState)
-    : null;
-  const flow = runtime?.authoredMissionFlows?.[pack.id] ?? null;
-  console.error("[CHECKPOINT_E_FINAL_GUIDANCE_DIAGNOSTIC]", JSON.stringify({
-    packId: pack.id,
-    missionId: pack.missionId,
-    troubleId: pack.troubleId,
-    day: runtime.playerState.day,
-    absoluteMinute: runtime.playerState.absoluteMinute,
-    location: runtime.playerState.player?.location ?? null,
-    facilityId: runtime.playerState.player?.facilityId ?? null,
-    missionProgress: Object.fromEntries(definition.steps.map((step) => [step.id, {
-      progress: Number(mission.progress?.[step.id] ?? 0),
-      required: Number(step.required ?? 1),
-    }])),
-    rawNextStep: rawNextStep ? {
-      id: rawNextStep.id,
-      type: rawNextStep.type,
-      targetLocation: rawNextStep.targetLocation ?? null,
-      targetFacilityId: rawNextStep.targetFacilityId ?? null,
-      hasTimelineVariants: Array.isArray(rawNextStep.timelineVariants) && rawNextStep.timelineVariants.length > 0,
-    } : null,
-    resolvedNextStep: resolvedNextStep ? {
-      id: resolvedNextStep.id,
-      type: resolvedNextStep.type,
-      targetLocation: resolvedNextStep.targetLocation ?? null,
-      targetFacilityId: resolvedNextStep.targetFacilityId ?? null,
-      encounterId: resolvedNextStep.encounterId ?? null,
-      actionType: resolvedNextStep.actionType ?? null,
-      label: resolvedNextStep.label ?? null,
-    } : null,
-    productionGuidance: {
-      missionId: coreGuidance.missionId ?? null,
-      title: coreGuidance.title ?? null,
-      targetLocation: coreGuidance.targetLocation ?? null,
-      targetFacilityId: coreGuidance.targetFacilityId ?? null,
-      actionPanel: coreGuidance.actionPanel ?? null,
-    },
-    authoredFlowState: flow ? {
-      openingChoiceId: flow.openingChoiceId ?? null,
-      selectedLeadId: flow.selectedLeadId ?? null,
-      evidenceIds: flow.evidenceIds ?? [],
-      unlockedLeadIds: flow.unlockedLeadIds ?? [],
-      navigatorFocusId: flow.navigatorFocusId ?? null,
-      navigatorGroupId: flow.navigatorGroupId ?? null,
-    } : null,
-  }));
 }
 
 // Ordinary life actions (meals, shopping, lodging and short rests) are public
@@ -118,10 +56,7 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
   const lifeFallback = guidance?.title === "その土地の生活を選ぶ" && onlyCanonicalWorldLife(actions);
   if (!guidance || lifeFallback) {
     const coreGuidance = coreAuthoredMissionFlowGuidance(runtime);
-    if (coreGuidance) {
-      diagnoseT07Guidance(runtime, coreGuidance);
-      return coreGuidance;
-    }
+    if (coreGuidance) return coreGuidance;
     if (t01Active(runtime)) return null;
   }
   return guidance;
