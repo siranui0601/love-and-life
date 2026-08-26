@@ -71,13 +71,13 @@ test("experience curve matches the design formula", () => {
   assert.ok(experienceToNextLevel(10) > experienceToNextLevel(9));
 });
 
-test("player starts at the farm edge on Day1 at 10:00", () => {
+test("player starts at the wheat field on Day1 at 10:00", () => {
   const state = fresh();
   assert.equal(state.day, 1);
   assert.equal(state.hour, 10);
   assert.equal(state.minute, 0);
   assert.equal(state.player.location, "田園の村");
-  assert.equal(state.player.facilityId, "LOC_FARM_EDGE");
+  assert.equal(state.player.facilityId, "LOC_FARM_FIELD");
 });
 
 test("post-collapse encounter conditions include T13 critical and preserve boolean precedence", () => {
@@ -143,11 +143,12 @@ test("ambiguous encounter stages fail closed and authored trouble states gate th
   assert.equal(encounterConditionMatches("未知の秘密条件", state), false);
 });
 
-test("movement appears inside ordinary choices while regional travel preserves canonical reachability", () => {
+test("three choices are separate from a complete reachable travel menu", () => {
   const state = fresh();
-  state.player.facilityId = "LOC_FARM_SQUARE";
-  const choices = generateChoiceActions(state, model, battleData, state.catalog, undefined, { limit: 12, fillTo: 12 });
-  assert.ok(choices.some((choice) => choice.type === "move" && choice.movementScope === "local"));
+  const choices = generateChoiceActions(state, model, battleData, state.catalog);
+  assert.equal(choices.length, 3);
+  assert.equal(new Set(choices.map((choice) => choice.id)).size, 3);
+  assert.equal(choices.some((choice) => choice.type === "travel"), false);
 
   const travel = availableTravelActions(state, model);
   const listed = new Set(travel.map((entry) => entry.destination));
