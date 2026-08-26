@@ -254,7 +254,7 @@ export function runSourceAudit(fixtures = loadAllFixtures()) {
     if (!action["使用条件"]) {
       unconditionalByMonster.set(
         action["モンスターID"],
-        (unconditionalByMonster.get(action["モンスターID"] ?? 0) + 1)
+        (unconditionalByMonster.get(action["モンスターID"]) ?? 0) + 1
       );
     }
   }
