@@ -8,16 +8,30 @@ function onlyCanonicalWorldLife(actions) {
     && actions.every((action) => action?.canonicalWorldLifeChoice === true);
 }
 
+function continuingOrdinaryWork(runtime) {
+  return runtime?.narrativeMemory?.activityFocus?.intent === "work";
+}
+
 // Ordinary life actions (meals, shopping, lodging and short rests) are public
 // world actions, not an authored mission branch. Returning them through the
 // exclusive hook makes choiceActionPool stop before mission, conversation,
 // investigation and work candidates are generated. Keep genuinely authored
 // / regional-labour exclusive flows, but let ordinary life choices fall back
 // to the normal diverse-choice pool instead of monopolising it.
+//
+// The public-life network is normally allowed to keep its authored three-way
+// scene. The one exception is an already-established ordinary-work continuity:
+// after a player finishes a job, narrativeMemory.activityFocus intentionally
+// promises that a valid work route remains available. A Day2 public-life scene
+// must not erase that route before the bounded work market can re-evaluate the
+// new day's employer/facility limits. Once the player takes a different action,
+// service.js clears the work focus and the public-life scene is eligible again.
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   if (!Array.isArray(actions)) return actions;
-  const exclusive = actions.filter((action) => action?.canonicalWorldLifeChoice !== true);
+  const exclusive = actions.filter((action) =>
+    action?.canonicalWorldLifeChoice !== true
+      && !(continuingOrdinaryWork(runtime) && action?.authoredPublicLifeNetworkChoice === true));
   return exclusive.length ? exclusive : null;
 }
 
