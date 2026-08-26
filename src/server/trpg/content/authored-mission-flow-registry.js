@@ -1,4 +1,5 @@
 import * as base from "./canonical-job-time-policy.js";
+import { authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance } from "./authored-mission-flow-core.js";
 
 export * from "./canonical-job-time-policy.js";
 
@@ -14,39 +15,8 @@ function continuingOrdinaryWork(runtime) {
   return runtime?.narrativeMemory?.activityFocus?.intent === "work";
 }
 
-function activeSpecialMissionStep(runtime) {
-  const state = runtime?.playerState;
-  const candidates = (state?.catalog?.special ?? []).flatMap((definition) => {
-    const mission = state?.missions?.[definition.id];
-    if (!ACTIVE_MISSION_STATUSES.has(String(mission?.status ?? ""))) return [];
-    const step = (definition.steps ?? []).find((entry) =>
-      Number(mission.progress?.[entry.id] ?? 0) < Number(entry.required ?? 1));
-    return step ? [{ definition, mission, step }] : [];
-  });
-  return candidates.sort((left, right) =>
-    Number(left.definition.deadlineDay ?? left.definition.finalDay ?? 999)
-      - Number(right.definition.deadlineDay ?? right.definition.finalDay ?? 999)
-      || String(left.definition.id).localeCompare(String(right.definition.id)))[0] ?? null;
-}
-
-function missionStepGuidance(runtime) {
-  const active = activeSpecialMissionStep(runtime);
-  if (!active) return null;
-  const current = runtime.playerState.player ?? {};
-  const { definition, step } = active;
-  const targetLocation = step.targetLocation ?? definition.targetLocations?.[0] ?? current.location ?? null;
-  const targetFacilityId = step.targetFacilityId ?? null;
-  const requiresMovement = (targetLocation && targetLocation !== current.location)
-    || (targetFacilityId && targetFacilityId !== current.facilityId);
-  return {
-    missionId: definition.id,
-    kicker: "進行中の出来事",
-    title: step.label ?? definition.title,
-    detail: `「${definition.title}」の次の手掛かりへ進む。`,
-    targetLocation,
-    targetFacilityId,
-    actionPanel: requiresMovement ? "movement" : null,
-  };
+function t01Active(runtime) {
+  return ACTIVE_MISSION_STATUSES.has(String(runtime?.playerState?.missions?.["MSN-T01"]?.status ?? ""));
 }
 
 // Ordinary life actions (meals, shopping, lodging and short rests) are public
@@ -73,18 +43,21 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 }
 
 // canonical-world-life supplies a generic "その土地の生活を選ぶ" fallback when
-// rest/meal actions exist. That guidance is valid after mission closure, but it
-// must not replace an actionable special-mission step while the mission is still
-// active. In that one life-only fallback case, derive the same minimal current
-// step contract used by the public game view (mission, target, movement panel)
-// instead of pointing the player back at ordinary life. Genuine authored /
+// rest/meal actions exist. That fallback is valid ordinary-life guidance after
+// authored work is terminal, but it must not overwrite an active mission's own
+// resolver. T05-T14 already have the full authored guidance contract in the
+// core resolver, so reuse it rather than reconstructing labels/targets here.
+// T01 is intentionally service-owned; returning null lets service.js preserve
+// its rescue/escort/reunion-specific guidance. Genuine downstream authored /
 // regional guidance is preserved unchanged.
 export function authoredMissionFlowGuidance(runtime, context = {}) {
   const guidance = base.authoredMissionFlowGuidance(runtime, context);
-  if (!guidance) return missionStepGuidance(runtime);
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
-  if (guidance.title === "その土地の生活を選ぶ" && onlyCanonicalWorldLife(actions)) {
-    return missionStepGuidance(runtime) ?? guidance;
+  const lifeFallback = guidance?.title === "その土地の生活を選ぶ" && onlyCanonicalWorldLife(actions);
+  if (!guidance || lifeFallback) {
+    const coreGuidance = coreAuthoredMissionFlowGuidance(runtime);
+    if (coreGuidance) return coreGuidance;
+    if (t01Active(runtime)) return null;
   }
   return guidance;
 }
