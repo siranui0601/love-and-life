@@ -32,6 +32,18 @@ jobs:
           mkdir -p tools/trpg-sim/reports
           set -o pipefail
           npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/test-v4.log
+      - name: Reset current player simulation artifact surface
+        shell: bash
+        run: |
+          rm -f \
+            tools/trpg-sim/reports/player-v4-latest.json \
+            tools/trpg-sim/reports/player-v4-latest.md \
+            tools/trpg-sim/reports/player-latest.json \
+            tools/trpg-sim/reports/player-latest.md \
+            tools/trpg-sim/reports/player-v4-failure.json \
+            tools/trpg-sim/reports/player-v4-failure.md \
+            public/TRPG/player-simulation-report.json \
+            public/TRPG/player-simulation-v4-report.json
       - name: Run integrated player, GOAP and Gemini journeys v4
         env:
           TRPG_PLAYER_V4_SEEDS: 2
@@ -47,5 +59,7 @@ jobs:
             tools/trpg-sim/reports/player-v4-latest.md
             tools/trpg-sim/reports/player-latest.json
             tools/trpg-sim/reports/player-latest.md
+            tools/trpg-sim/reports/player-v4-failure.json
+            tools/trpg-sim/reports/player-v4-failure.md
             public/TRPG/player-simulation-report.json
             public/TRPG/player-simulation-v4-report.json
