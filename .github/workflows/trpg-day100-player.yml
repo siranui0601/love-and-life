@@ -23,6 +23,8 @@ jobs:
   regression:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,6 +35,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Export canonical v2 source from Google Sheets
+        run: node tools/trpg-sim/export-virtue-route-v2-source.mjs
       - name: Run complete TRPG regression suite
         shell: bash
         run: |

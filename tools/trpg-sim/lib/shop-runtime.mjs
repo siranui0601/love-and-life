@@ -223,6 +223,15 @@ function profileAccepts(profile, equipment) {
   return profile.weaponTypes.includes(equipment.weaponType);
 }
 
+function equipmentFitsCurrentHands(state, battleData, candidate) {
+  let mainHandId = state.player.equipment?.mainHand ?? null;
+  let offHandId = state.player.equipment?.offHand ?? null;
+  if (candidate.slot === "mainHand") mainHandId = candidate.id;
+  if (candidate.slot === "offHand") offHandId = candidate.id;
+  const mainHand = mainHandId ? battleData.equipmentById.get(mainHandId) : null;
+  return !(mainHand?.grip === "twoHand" && offHandId);
+}
+
 export function autoShop(state, battleData, shopRuntime, profile, tuning = {}) {
   const purchases = [];
   const stock = availableStockAt(state, battleData, shopRuntime, tuning.scope ?? {});
@@ -233,6 +242,7 @@ export function autoShop(state, battleData, shopRuntime, profile, tuning = {}) {
     const candidates = stock
       .map((entry) => ({ entry, equipment: battleData.equipmentById.get(entry.equipmentId) }))
       .filter(({ equipment, entry }) => equipment?.slot === slot && profileAccepts(profile, equipment) && entry.price <= state.player.gold)
+      .filter(({ equipment }) => equipmentFitsCurrentHands(state, battleData, equipment))
       .filter(({ equipment }) => Number(equipment.performanceIndex ?? 0) >= currentPerformance + Number(tuning.minimumUpgradeGain ?? 2))
       .sort((left, right) => {
         const leftValue = (left.equipment.performanceIndex - currentPerformance) / Math.max(1, left.entry.price);

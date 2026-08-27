@@ -23,9 +23,33 @@ for (const outputPath of [...currentReportPaths, failureJsonPath, failureMarkdow
   fs.rmSync(outputPath, { force: true });
 }
 
+function githubExecutionContext() {
+  let event = null;
+  let eventReadError = null;
+  const eventPath = process.env.GITHUB_EVENT_PATH;
+  if (eventPath) {
+    try {
+      event = JSON.parse(fs.readFileSync(eventPath, "utf8"));
+    } catch (error) {
+      eventReadError = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    }
+  }
+  const githubSha = process.env.GITHUB_SHA ?? null;
+  return {
+    headSha: event?.pull_request?.head?.sha
+      ?? event?.workflow_run?.head_sha
+      ?? event?.head_commit?.id
+      ?? githubSha,
+    githubSha,
+    headRef: process.env.GITHUB_HEAD_REF ?? null,
+    githubEventName: process.env.GITHUB_EVENT_NAME ?? null,
+    githubEventReadError: eventReadError,
+  };
+}
+
 const command = `node tools/trpg-sim/cli-player-v4.mjs ${process.argv.slice(2).join(" ")}`.trim();
 const ciContext = {
-  headSha: process.env.GITHUB_SHA ?? null,
+  ...githubExecutionContext(),
   githubRunId: process.env.GITHUB_RUN_ID ?? null,
   githubRunAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
   workflow: process.env.GITHUB_WORKFLOW ?? null,
@@ -57,7 +81,7 @@ function normalizeError(error) {
 }
 
 function renderFailureMarkdown(failure) {
-  return `# TRPG integrated player simulation v4 failure\n\n- generatedAt: ${failure.generatedAt}\n- headSha: ${failure.headSha ?? "unknown"}\n- githubRunId: ${failure.githubRunId ?? "unknown"}\n- githubRunAttempt: ${failure.githubRunAttempt ?? "unknown"}\n- workflow: ${failure.workflow ?? "unknown"}\n- job: ${failure.job ?? "unknown"}\n- command: ${failure.command}\n- profile: ${JSON.stringify(failure.profile)}\n- phase: ${failure.phase}\n- stage: ${failure.stage}\n- currentExecutionMarker: ${failure.currentExecutionMarker}\n- loadedProfileIds: ${failure.loadedProfileIds ? failure.loadedProfileIds.join(", ") : "not loaded"}\n- error.name: ${failure.error.name}\n- error.message: ${failure.error.message}\n\n## stack\n\n\`\`\`text\n${failure.error.stack ?? "(no stack available)"}\n\`\`\`\n`;
+  return `# TRPG integrated player simulation v4 failure\n\n- generatedAt: ${failure.generatedAt}\n- headSha: ${failure.headSha ?? "unknown"}\n- githubSha: ${failure.githubSha ?? "unknown"}\n- headRef: ${failure.headRef ?? "unknown"}\n- githubRunId: ${failure.githubRunId ?? "unknown"}\n- githubRunAttempt: ${failure.githubRunAttempt ?? "unknown"}\n- workflow: ${failure.workflow ?? "unknown"}\n- job: ${failure.job ?? "unknown"}\n- command: ${failure.command}\n- profile: ${JSON.stringify(failure.profile)}\n- phase: ${failure.phase}\n- stage: ${failure.stage}\n- currentExecutionMarker: ${failure.currentExecutionMarker}\n- loadedProfileIds: ${failure.loadedProfileIds ? failure.loadedProfileIds.join(", ") : "not loaded"}\n- error.name: ${failure.error.name}\n- error.message: ${failure.error.message}\n\n## stack\n\n\`\`\`text\n${failure.error.stack ?? "(no stack available)"}\n\`\`\`\n`;
 }
 
 try {
