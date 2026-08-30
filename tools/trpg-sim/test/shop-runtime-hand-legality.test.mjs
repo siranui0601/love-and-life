@@ -62,34 +62,184 @@ function battleData(equipmentList, inventory) {
   };
 }
 
-test("autoShop never equips an off-hand after buying a two-handed main-hand", () => {
-  const bow = equipment("EQP-TEST-BOW", "mainHand", { weaponType: "bow", grip: "twoHand", performanceIndex: 20 });
-  const shield = equipment("EQP-TEST-SHIELD", "offHand", { armorClass: "shield", grip: "oneHand", performanceIndex: 10 });
-  const data = battleData([bow, shield], [
-    stock("STOCK-BOW", bow.id, 10),
-    stock("STOCK-SHIELD", shield.id, 10),
-  ]);
-  const playerState = state();
+function runTransition({ current = [], equipped = {}, offered = [], weaponTypes = [] }) {
+  const allEquipment = [...current, ...offered.map((entry) => entry.equipment)];
+  const inventory = offered.map((entry, index) => stock(`STOCK-${index}`, entry.equipment.id, entry.price ?? 10));
+  const owned = Object.fromEntries(current.map((entry) => [entry.id, 1]));
+  const data = battleData(allEquipment, inventory);
+  const playerState = state({ equipment: equipped, owned });
   const runtime = createShopRuntime(data);
+  const purchases = autoShop(playerState, data, runtime, { weaponTypes });
+  return { playerState, purchases };
+}
 
-  const purchases = autoShop(playerState, data, runtime, { weaponTypes: ["bow"] });
-
-  assert.equal(playerState.player.equipment.mainHand, bow.id);
+test("autoShop supports empty -> oneHand", () => {
+  const sword = equipment("W-SWORD", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 20 });
+  const { playerState } = runTransition({ offered: [{ equipment: sword }], weaponTypes: ["sword"] });
+  assert.equal(playerState.player.equipment.mainHand, sword.id);
   assert.equal(playerState.player.equipment.offHand ?? null, null);
-  assert.deepEqual(purchases.map((entry) => entry.equipmentId), [bow.id]);
-  assert.equal(playerState.player.inventory.equipment[shield.id] ?? 0, 0);
 });
 
-test("autoShop still allows an off-hand beside a one-handed main-hand", () => {
-  const sword = equipment("EQP-TEST-SWORD", "mainHand", { weaponType: "oneHandedSword", grip: "oneHand", performanceIndex: 20 });
-  const shield = equipment("EQP-TEST-SHIELD", "offHand", { armorClass: "shield", grip: "oneHand", performanceIndex: 10 });
-  const data = battleData([sword, shield], [stock("STOCK-SHIELD", shield.id, 10)]);
-  const playerState = state({ equipment: { mainHand: sword.id }, owned: { [sword.id]: 1 } });
-  const runtime = createShopRuntime(data);
+test("autoShop supports empty -> twoHand", () => {
+  const bow = equipment("W-BOW", "mainHand", { weaponType: "bow", grip: "twoHand", performanceIndex: 20 });
+  const { playerState } = runTransition({ offered: [{ equipment: bow }], weaponTypes: ["bow"] });
+  assert.equal(playerState.player.equipment.mainHand, bow.id);
+  assert.equal(playerState.player.equipment.offHand ?? null, null);
+});
 
-  const purchases = autoShop(playerState, data, runtime, { weaponTypes: ["oneHandedSword"] });
+test("autoShop supports empty -> shield-only", () => {
+  const shield = equipment("S-SHIELD", "offHand", { armorClass: "shield", grip: "oneHand", performanceIndex: 10 });
+  const { playerState } = runTransition({ offered: [{ equipment: shield }] });
+  assert.equal(playerState.player.equipment.mainHand ?? null, null);
+  assert.equal(playerState.player.equipment.offHand, shield.id);
+});
 
+test("autoShop supports oneHand -> stronger oneHand", () => {
+  const oldSword = equipment("W-SWORD-OLD", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 10 });
+  const newSword = equipment("W-SWORD-NEW", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 20 });
+  const { playerState } = runTransition({
+    current: [oldSword],
+    equipped: { mainHand: oldSword.id },
+    offered: [{ equipment: newSword }],
+    weaponTypes: ["sword"],
+  });
+  assert.equal(playerState.player.equipment.mainHand, newSword.id);
+});
+
+test("autoShop supports oneHand -> twoHand", () => {
+  const sword = equipment("W-SWORD", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 10 });
+  const bow = equipment("W-BOW", "mainHand", { weaponType: "bow", grip: "twoHand", performanceIndex: 20 });
+  const { playerState } = runTransition({
+    current: [sword],
+    equipped: { mainHand: sword.id },
+    offered: [{ equipment: bow }],
+    weaponTypes: ["sword", "bow"],
+  });
+  assert.equal(playerState.player.equipment.mainHand, bow.id);
+  assert.equal(playerState.player.equipment.offHand ?? null, null);
+});
+
+test("autoShop supports oneHand -> oneHand+shield", () => {
+  const sword = equipment("W-SWORD", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 20 });
+  const shield = equipment("S-SHIELD", "offHand", { armorClass: "shield", grip: "oneHand", performanceIndex: 10 });
+  const { playerState } = runTransition({
+    current: [sword],
+    equipped: { mainHand: sword.id },
+    offered: [{ equipment: shield }],
+    weaponTypes: ["sword"],
+  });
   assert.equal(playerState.player.equipment.mainHand, sword.id);
   assert.equal(playerState.player.equipment.offHand, shield.id);
-  assert.deepEqual(purchases.map((entry) => entry.equipmentId), [shield.id]);
+});
+
+test("autoShop supports oneHand+shield -> stronger oneHand+shield", () => {
+  const oldSword = equipment("W-SWORD-OLD", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 10 });
+  const newSword = equipment("W-SWORD-NEW", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 20 });
+  const shield = equipment("S-SHIELD", "offHand", { armorClass: "shield", grip: "oneHand", performanceIndex: 10 });
+  const { playerState } = runTransition({
+    current: [oldSword, shield],
+    equipped: { mainHand: oldSword.id, offHand: shield.id },
+    offered: [{ equipment: newSword }],
+    weaponTypes: ["sword"],
+  });
+  assert.equal(playerState.player.equipment.mainHand, newSword.id);
+  assert.equal(playerState.player.equipment.offHand, shield.id);
+});
+
+test("autoShop supports oneHand+shield -> twoHand by unequipping the shield", () => {
+  const sword = equipment("W-SWORD", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 10 });
+  const shield = equipment("S-SHIELD", "offHand", { armorClass: "shield", grip: "oneHand", performanceIndex: 10 });
+  const bow = equipment("W-BOW", "mainHand", { weaponType: "bow", grip: "twoHand", performanceIndex: 20 });
+  const { playerState, purchases } = runTransition({
+    current: [sword, shield],
+    equipped: { mainHand: sword.id, offHand: shield.id },
+    offered: [{ equipment: bow }],
+    weaponTypes: ["sword", "bow"],
+  });
+  assert.equal(playerState.player.equipment.mainHand, bow.id);
+  assert.equal(playerState.player.equipment.offHand ?? null, null);
+  assert.equal(playerState.player.inventory.equipment[shield.id], 1);
+  assert.deepEqual(purchases.map((entry) => entry.equipmentId), [bow.id]);
+});
+
+test("autoShop supports twoHand -> stronger twoHand", () => {
+  const oldBow = equipment("W-BOW-OLD", "mainHand", { weaponType: "bow", grip: "twoHand", performanceIndex: 10 });
+  const newBow = equipment("W-BOW-NEW", "mainHand", { weaponType: "bow", grip: "twoHand", performanceIndex: 20 });
+  const { playerState } = runTransition({
+    current: [oldBow],
+    equipped: { mainHand: oldBow.id },
+    offered: [{ equipment: newBow }],
+    weaponTypes: ["bow"],
+  });
+  assert.equal(playerState.player.equipment.mainHand, newBow.id);
+  assert.equal(playerState.player.equipment.offHand ?? null, null);
+});
+
+test("autoShop supports twoHand -> oneHand", () => {
+  const bow = equipment("W-BOW", "mainHand", { weaponType: "bow", grip: "twoHand", performanceIndex: 10 });
+  const sword = equipment("W-SWORD", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 20 });
+  const { playerState } = runTransition({
+    current: [bow],
+    equipped: { mainHand: bow.id },
+    offered: [{ equipment: sword }],
+    weaponTypes: ["bow", "sword"],
+  });
+  assert.equal(playerState.player.equipment.mainHand, sword.id);
+  assert.equal(playerState.player.equipment.offHand ?? null, null);
+});
+
+test("autoShop supports twoHand -> oneHand+shield", () => {
+  const bow = equipment("W-BOW", "mainHand", { weaponType: "bow", grip: "twoHand", performanceIndex: 10 });
+  const sword = equipment("W-SWORD", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 20 });
+  const shield = equipment("S-SHIELD", "offHand", { armorClass: "shield", grip: "oneHand", performanceIndex: 10 });
+  const { playerState, purchases } = runTransition({
+    current: [bow],
+    equipped: { mainHand: bow.id },
+    offered: [{ equipment: sword }, { equipment: shield }],
+    weaponTypes: ["bow", "sword"],
+  });
+  assert.equal(playerState.player.equipment.mainHand, sword.id);
+  assert.equal(playerState.player.equipment.offHand, shield.id);
+  assert.deepEqual(purchases.map((entry) => entry.equipmentId), [sword.id, shield.id]);
+});
+
+test("autoShop supports shield-only -> oneHand+shield", () => {
+  const shield = equipment("S-SHIELD", "offHand", { armorClass: "shield", grip: "oneHand", performanceIndex: 10 });
+  const sword = equipment("W-SWORD", "mainHand", { weaponType: "sword", grip: "oneHand", performanceIndex: 20 });
+  const { playerState } = runTransition({
+    current: [shield],
+    equipped: { offHand: shield.id },
+    offered: [{ equipment: sword }],
+    weaponTypes: ["sword"],
+  });
+  assert.equal(playerState.player.equipment.mainHand, sword.id);
+  assert.equal(playerState.player.equipment.offHand, shield.id);
+});
+
+test("autoShop supports shield-only -> twoHand by unequipping the shield", () => {
+  const shield = equipment("S-SHIELD", "offHand", { armorClass: "shield", grip: "oneHand", performanceIndex: 10 });
+  const bow = equipment("W-BOW", "mainHand", { weaponType: "bow", grip: "twoHand", performanceIndex: 20 });
+  const { playerState } = runTransition({
+    current: [shield],
+    equipped: { offHand: shield.id },
+    offered: [{ equipment: bow }],
+    weaponTypes: ["bow"],
+  });
+  assert.equal(playerState.player.equipment.mainHand, bow.id);
+  assert.equal(playerState.player.equipment.offHand ?? null, null);
+  assert.equal(playerState.player.inventory.equipment[shield.id], 1);
+});
+
+test("autoShop never creates the forbidden twoHand+offHand state", () => {
+  const bow = equipment("W-BOW", "mainHand", { weaponType: "bow", grip: "twoHand", performanceIndex: 20 });
+  const shield = equipment("S-SHIELD", "offHand", { armorClass: "shield", grip: "oneHand", performanceIndex: 20 });
+  const { playerState, purchases } = runTransition({
+    current: [bow],
+    equipped: { mainHand: bow.id },
+    offered: [{ equipment: shield }],
+    weaponTypes: ["bow"],
+  });
+  assert.equal(playerState.player.equipment.mainHand, bow.id);
+  assert.equal(playerState.player.equipment.offHand ?? null, null);
+  assert.deepEqual(purchases, []);
 });
