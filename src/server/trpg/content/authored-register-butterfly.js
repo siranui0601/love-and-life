@@ -2,7 +2,7 @@ import * as base from "./canonical-job-time-policy.js";
 
 export * from "./canonical-job-time-policy.js";
 
-export const AUTHORED_REGISTER_BUTTERFLY_VERSION = "authored-register-butterfly-v2";
+export const AUTHORED_REGISTER_BUTTERFLY_VERSION = "authored-register-butterfly-v3";
 
 const LOCATION = "田園の村";
 const INN_FACILITY_ID = "LOC_FARM_INN";
@@ -15,12 +15,15 @@ const REGISTER_SOURCE_ACTION_ID = "E:LODGE:REGISTER";
 const REGISTER_HISTORY = "F_INN_REGISTER_RECORD_CREATED";
 const LINK_HISTORY = "F_T01_REGISTERED_RESCUER_IDENTIFIED";
 const PROPAGATION_HISTORY = "F_T01_RESCUER_RUMOR_RONA_TO_RIONA";
+const GOAP_EXECUTION_HISTORY = "F_RIONA_REPUTATION_GOAP_EXECUTED";
 const CALLBACK_HISTORY = "F_REGISTER_RUMOR_CALLBACK_HEARD";
 const RECORD_PREFIX = "WORLD-RECORD:FARM-INN-REGISTER:";
 const FACT_ID = "F-FACT-REGISTERED-FINN-RESCUER";
 const RUMOR_ID = "RUM-F-REGISTERED-FINN-RESCUER";
 const GOAP_ID = "GOAP-F-RIONA-VERIFY-REGISTERED-RESCUER";
 const CALLBACK_ACTION_ID = "MISSION_FLOW:F:REGISTER_CALLBACK:hear_riona";
+const GOAP_GOAL = "verify-village-rumor-before-repeating-on-trade-route";
+const GOAP_ACTION = "verify-reputation-rumor-for-trade-route";
 
 function array(value) {
   return Array.isArray(value) ? value : [];
@@ -40,8 +43,12 @@ function history(runtime) {
   return runtime.playerState.history;
 }
 
+function historyEntry(runtime, type) {
+  return array(runtime?.playerState?.history).find((entry) => entry?.type === type) ?? null;
+}
+
 function hasHistory(runtime, type) {
-  return array(runtime?.playerState?.history).some((entry) => entry?.type === type);
+  return Boolean(historyEntry(runtime, type));
 }
 
 function ensureWorldRecords(runtime) {
@@ -80,17 +87,19 @@ function createRegisterRecord(runtime) {
     location: LOCATION,
     facilityId: INN_FACILITY_ID,
     recordedAtMinute,
+    recordedDay: Math.floor(recordedAtMinute / 1440) + 1,
     sourceActionId: REGISTER_SOURCE_ACTION_ID,
     subject: {
       type: "player",
       id: currentPlayer.id ?? "PLAYER",
-      displayName: currentPlayer.name ?? null,
+      displayName: currentPlayer.name ?? currentPlayer.displayName ?? null,
     },
     provenance: {
       checkpoint: "E",
       lodgingChoice: "registered_stay",
       loanDisposition: "borrowed_registered",
       actionId: REGISTER_SOURCE_ACTION_ID,
+      facilityId: INN_FACILITY_ID,
     },
   };
   ensureWorldRecords(runtime)[id] = record;
@@ -158,12 +167,27 @@ function learn(state, factId, memory, belief) {
   return true;
 }
 
+function rionaAftermathPlan() {
+  return {
+    id: GOAP_ID,
+    npcIds: [RIONA_ID],
+    goal: GOAP_GOAL,
+    action: GOAP_ACTION,
+    targetHub: LOCATION,
+    targetFacilityId: SQUARE_FACILITY_ID,
+    delayHours: 0,
+    statusText: "次の街へ噂を持ち出す前に、田園の村で本人確認をしている",
+    reason: "merchant-rumor-credibility",
+  };
+}
+
 function linkRegisteredRescuer(runtime, record) {
   if (!record || !finnReturned(runtime)) return null;
   const rona = existingNpc(runtime, RONA_ID);
   if (npcUnavailable(rona)) return null;
-  const existingHistory = array(runtime.playerState.history).find((entry) => entry?.type === LINK_HISTORY);
-  const linkedAtMinute = Number(existingHistory?.minute ?? minute(runtime));
+  const existing = historyEntry(runtime, LINK_HISTORY);
+  const linkedAtMinute = Number(existing?.minute ?? minute(runtime));
+  const path = [`record:${record.id}`, "event:T01_FINN_ESCORTED_TO_SQUARE", RONA_ID];
   const memory = {
     factId: FACT_ID,
     kind: "memory",
@@ -172,7 +196,7 @@ function linkRegisteredRescuer(runtime, record) {
     sourceType: "inn-register-corroboration",
     sourceRecordId: record.id,
     sourceNpcId: RONA_ID,
-    path: [`record:${record.id}`, "event:T01_FINN_ESCORTED_TO_SQUARE", RONA_ID],
+    path,
   };
   const belief = {
     factId: FACT_ID,
@@ -189,13 +213,11 @@ function linkRegisteredRescuer(runtime, record) {
     sourceRecordId: record.id,
     sourceNpcId: RONA_ID,
     hopCount: 0,
-    path: [`record:${record.id}`, "event:T01_FINN_ESCORTED_TO_SQUARE", RONA_ID],
+    path,
   };
   learn(rona, FACT_ID, memory, belief);
-  rona.currentGoal = "keep-inn-ledger-and-village-rumors-consistent";
-  rona.goalSince = linkedAtMinute / 60;
 
-  if (!existingHistory) {
+  if (!existing) {
     history(runtime).push({
       type: LINK_HISTORY,
       minute: linkedAtMinute,
@@ -223,8 +245,10 @@ function propagateRonaToRiona(runtime, record) {
   ensureRumorCollections(runtime);
   ensureGoapCollections(runtime);
   const riona = existingNpc(runtime, RIONA_ID);
-  const existingHistory = array(runtime.playerState.history).find((entry) => entry?.type === PROPAGATION_HISTORY);
-  const heardAtMinute = Number(existingHistory?.minute ?? minute(runtime));
+  const existing = historyEntry(runtime, PROPAGATION_HISTORY);
+  const heardAtMinute = Number(existing?.minute ?? minute(runtime));
+  const path = [`record:${record.id}`, "event:T01_FINN_ESCORTED_TO_SQUARE", RONA_ID, RIONA_ID];
+  const plan = rionaAftermathPlan();
   const memory = {
     factId: FACT_ID,
     kind: "heard-rumor",
@@ -233,14 +257,18 @@ function propagateRonaToRiona(runtime, record) {
     sourceType: "npc-conversation",
     sourceRecordId: record.id,
     sourceNpcId: RONA_ID,
-    path: [`record:${record.id}`, "event:T01_FINN_ESCORTED_TO_SQUARE", RONA_ID, RIONA_ID],
+    path,
   };
+  // The NPC-life planner already consumes authored aftermathPlans on resolved
+  // beliefs. Reuse that generic authority instead of letting this butterfly
+  // module set currentGoal or move Riona itself.
   const belief = {
     factId: FACT_ID,
-    kind: "belief",
+    kind: "trouble",
     text: "麦穂亭に名を残した旅人がフィンを連れて戻ったらしい",
     troubleId: T01_TROUBLE_ID,
     troubleIds: [T01_TROUBLE_ID],
+    troubleStatus: "resolved",
     confidence: 0.9,
     importance: 0.65,
     secret: false,
@@ -250,11 +278,10 @@ function propagateRonaToRiona(runtime, record) {
     sourceRecordId: record.id,
     sourceNpcId: RONA_ID,
     hopCount: 1,
-    path: [`record:${record.id}`, "event:T01_FINN_ESCORTED_TO_SQUARE", RONA_ID, RIONA_ID],
+    path,
+    aftermathPlans: [plan],
   };
   learn(riona, FACT_ID, memory, belief);
-  riona.currentGoal = "verify-village-rumor-before-repeating-on-trade-route";
-  riona.goalSince = heardAtMinute / 60;
 
   const rumor = runtime.playerState.rumorById[RUMOR_ID] ?? {
     id: RUMOR_ID,
@@ -278,7 +305,8 @@ function propagateRonaToRiona(runtime, record) {
   runtime.playerState.goapRequests[GOAP_ID] ??= {
     id: GOAP_ID,
     actorNpcId: RIONA_ID,
-    goal: "verify-village-rumor-before-repeating-on-trade-route",
+    goal: GOAP_GOAL,
+    action: GOAP_ACTION,
     reason: "merchant-rumor-credibility",
     preconditions: {
       factId: FACT_ID,
@@ -288,6 +316,9 @@ function propagateRonaToRiona(runtime, record) {
     destination: LOCATION,
     destinationFacilityId: SQUARE_FACILITY_ID,
     status: "active",
+    executionAuthority: "npc-life-engine",
+    plannerContract: "resolved-belief-aftermath-plan",
+    aftermathPlanId: GOAP_ID,
     createdAtMinute: heardAtMinute,
     updatedAtMinute: heardAtMinute,
     factId: FACT_ID,
@@ -296,7 +327,7 @@ function propagateRonaToRiona(runtime, record) {
     sourceRecordId: record.id,
   };
 
-  if (!existingHistory) {
+  if (!existing) {
     history(runtime).push({
       type: PROPAGATION_HISTORY,
       minute: heardAtMinute,
@@ -313,19 +344,47 @@ function propagateRonaToRiona(runtime, record) {
   return { memory, belief, rumor, goap: runtime.playerState.goapRequests[GOAP_ID] };
 }
 
-function advanceRionaGoap(runtime) {
+function matchingDecisionEvents(runtime) {
+  return array(runtime?.livingWorld?.decisionEvents)
+    .filter((event) => event?.npcId === RIONA_ID && event?.aftermathPlanId === GOAP_ID);
+}
+
+function matchingMovementEvents(runtime) {
+  return array(runtime?.livingWorld?.localMovementEvents)
+    .filter((event) => event?.npcId === RIONA_ID && event?.toFacilityId === SQUARE_FACILITY_ID);
+}
+
+function observeRionaGoap(runtime) {
   const request = runtime?.playerState?.goapRequests?.[GOAP_ID];
   const riona = existingNpc(runtime, RIONA_ID);
-  if (!request || request.status !== "active" || npcUnavailable(riona)) return request ?? null;
-  // The butterfly layer never moves Riona. Her canonical merchant routine/GOAP must
-  // actually bring her to the square. We only observe that ordinary world-state
-  // transition and expose the conversation once its preconditions are satisfied.
-  if (npcFacility(riona) !== SQUARE_FACILITY_ID) return request;
+  if (!request || npcUnavailable(riona)) return request ?? null;
+  if (request.status !== "active") return request;
+  const completed = array(riona.completedAftermathPlanIds).includes(GOAP_ID);
+  if (!completed || npcFacility(riona) !== SQUARE_FACILITY_ID) return request;
+  const decisions = matchingDecisionEvents(runtime);
+  const movements = matchingMovementEvents(runtime);
+  const completionDecision = [...decisions].reverse().find((event) => event.action === GOAP_ACTION) ?? decisions.at(-1) ?? null;
   request.status = "ready";
   request.updatedAtMinute = minute(runtime);
-  request.readyReason = "canonical-route-arrived-at-village-square";
-  riona.currentGoal = "ask-rescuer-before-repeating-rumor-on-trade-route";
-  riona.goalSince = minute(runtime) / 60;
+  request.readyReason = "npc-life-engine-aftermath-plan-completed";
+  request.executionEvidence = {
+    planner: "npc-life-engine",
+    decisionEventId: completionDecision?.id ?? null,
+    movementRouteId: movements.at(-1)?.routeId ?? null,
+    movementArrivedAtHour: movements.at(-1)?.arrivedAt ?? null,
+  };
+  if (!hasHistory(runtime, GOAP_EXECUTION_HISTORY)) {
+    history(runtime).push({
+      type: GOAP_EXECUTION_HISTORY,
+      minute: minute(runtime),
+      npcId: RIONA_ID,
+      factId: FACT_ID,
+      goapRequestId: GOAP_ID,
+      decisionEventId: request.executionEvidence.decisionEventId,
+      movementRouteId: request.executionEvidence.movementRouteId,
+      executionAuthority: "npc-life-engine",
+    });
+  }
   return request;
 }
 
@@ -334,7 +393,7 @@ export function synchronizeRegisterButterfly(runtime) {
   const record = createRegisterRecord(runtime);
   const link = linkRegisteredRescuer(runtime, record);
   const propagation = propagateRonaToRiona(runtime, record);
-  const goap = advanceRionaGoap(runtime);
+  const goap = observeRionaGoap(runtime);
   return { record, link, propagation, goap };
 }
 
@@ -377,9 +436,9 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
   synchronizeRegisterButterfly(runtime);
   if (callbackEligible(runtime)) {
     return {
-      kicker: "広場を通りかかったリオナが、あなたの顔を見て足を止めた",
+      kicker: "広場で品を見ていたリオナが、あなたの顔を見て足を止めた",
       title: "旅商人が確かめたい噂",
-      detail: "次の街へ持っていく話を間違えないため、宿で聞いた話の本人を確かめたいらしい。",
+      detail: "次の街へ持っていく話を間違えないため、自分で確かめる価値があると判断したらしい。",
       targetLocation: LOCATION,
       targetFacilityId: SQUARE_FACILITY_ID,
       actionPanel: null,
@@ -393,12 +452,10 @@ function consumeCallback(runtime, action, result) {
   synchronizeRegisterButterfly(runtime);
   const request = runtime?.playerState?.goapRequests?.[GOAP_ID];
   if (!request || request.status !== "ready") return false;
-  request.status = "completed";
-  request.updatedAtMinute = minute(runtime);
   const riona = existingNpc(runtime, RIONA_ID);
   if (!riona || npcUnavailable(riona)) return false;
-  riona.currentGoal = "continue-rumor-route";
-  riona.goalSince = minute(runtime) / 60;
+  request.status = "completed";
+  request.updatedAtMinute = minute(runtime);
   ensureRumorCollections(runtime);
   runtime.playerState.player.knownRumorIds.add(RUMOR_ID);
   if (!hasHistory(runtime, CALLBACK_HISTORY)) {
@@ -433,10 +490,13 @@ export const AUTHORED_REGISTER_BUTTERFLY_INTERNALS = Object.freeze({
   REGISTER_HISTORY,
   LINK_HISTORY,
   PROPAGATION_HISTORY,
+  GOAP_EXECUTION_HISTORY,
   CALLBACK_HISTORY,
   FACT_ID,
   RUMOR_ID,
   GOAP_ID,
+  GOAP_GOAL,
+  GOAP_ACTION,
   CALLBACK_ACTION_ID,
   registeredPrologue,
   registerRecord,
@@ -444,10 +504,13 @@ export const AUTHORED_REGISTER_BUTTERFLY_INTERNALS = Object.freeze({
   finnReturned,
   existingNpc,
   npcFacility,
+  rionaAftermathPlan,
   linkRegisteredRescuer,
   rionaCanHearAtInn,
   propagateRonaToRiona,
-  advanceRionaGoap,
+  matchingDecisionEvents,
+  matchingMovementEvents,
+  observeRionaGoap,
   callbackEligible,
   callbackAction,
   consumeCallback,
