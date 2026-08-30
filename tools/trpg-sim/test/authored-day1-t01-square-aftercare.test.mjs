@@ -57,6 +57,17 @@ test("Day1 T01 rescue reaches a short three-choice aftercare scene", () => {
   assert.equal(new Set(actions.map((action) => action.id)).size, 3);
 });
 
+test("play_children uses canonical child NPC062 and never Eda NPC004 as the speaker", () => {
+  const state = runtime();
+  const playChildren = authoredMissionFlowExclusiveActions(state)
+    .find((action) => action.id === "MISSION_FLOW:T01:SQUARE_AFTERCARE:play_children");
+
+  assert.ok(playChildren);
+  assert.equal(playChildren.targetNpcId, "NPC062");
+  assert.equal(playChildren.authoredDay1T01AftercareSpeech.actorId, "NPC062");
+  assert.notEqual(playChildren.targetNpcId, "NPC004");
+});
+
 test("helping Mira closes the other branches and opens a different supper scene", () => {
   const state = runtime();
   const actions = authoredMissionFlowExclusiveActions(state);
