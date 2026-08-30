@@ -55,7 +55,7 @@ const AFTERCARE_CHOICES = Object.freeze([
     minutes: 22,
     summary: "広場に残っていた子どもたちと、石を狼に見立てた追いかけ遊びをした。笑い声の中で、見張り小屋へ続く別の細道を知っている子がいると分かった。",
     speech: Object.freeze({
-      actorId: "NPC004",
+      actorId: "NPC062",
       text: "フィンだけずるいよ、秘密の道を知ってたんだ。井戸の裏から行く方なら、ぼくらも途中まで行ったことある。……村長には内緒ね。",
       emotion: "興奮と少しの後ろめたさ",
     }),
