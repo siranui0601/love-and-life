@@ -6,10 +6,19 @@ import {
   synchronizeRegisterButterfly,
   AUTHORED_REGISTER_BUTTERFLY_INTERNALS as butterfly,
 } from "../../../src/server/trpg/content/authored-register-butterfly.js";
+import { loadTrpgGameData } from "../../../src/server/trpg/game/game-data.js";
 import { cloneSerializable } from "../../../src/server/trpg/game/serializer.js";
+import {
+  completeNpcLifeTick,
+  createNpcLifeEngine,
+  prepareNpcLifeTick,
+} from "../lib/npc-life-engine.mjs";
+
+const data = loadTrpgGameData();
 
 function npc(facilityId) {
   return {
+    id: "fixture",
     location: "田園の村",
     facilityId,
     lifeStatus: "alive",
@@ -20,6 +29,7 @@ function npc(facilityId) {
     knowledgeRevision: 0,
     currentGoal: "follow-routine",
     goalSince: 0,
+    completedAftermathPlanIds: [],
     localTravel: null,
   };
 }
@@ -33,8 +43,8 @@ function runtime({
   rionaFacilityId = "LOC_FARM_INN",
 } = {}) {
   const npcStates = {};
-  if (rona) npcStates.NPC058 = npc("LOC_FARM_INN");
-  if (riona) npcStates.NPC008 = npc(rionaFacilityId);
+  if (rona) npcStates.NPC058 = { ...npc("LOC_FARM_INN"), id: "NPC058" };
+  if (riona) npcStates.NPC008 = { ...npc(rionaFacilityId), id: "NPC008" };
   const state = {
     checkpointEPrologue: { complete: true, completedAtMinute: 700, loan: { disposition: lodging } },
     playerState: {
@@ -42,10 +52,52 @@ function runtime({
       player: { id: "PLAYER-TEST", name: "旅人", location: "田園の村", facilityId: "LOC_FARM_SQUARE", knownRumorIds: new Set() },
       history: [], worldFlags: finnReturned ? { t01FinnReturned: true } : {}, rumors: [], rumorById: {}, goapRequests: {},
     },
-    livingWorld: { npcStates },
+    livingWorld: { npcStates, decisionEvents: [], localMovementEvents: [] },
   };
   if (finnReturned) state.playerState.history.push({ type: "T01_FINN_ESCORTED_TO_SQUARE", minute: 820, missionId: "MSN-T01", troubleId: "T01", npcId: "NPC001" });
   return state;
+}
+
+function canonicalLifeRuntime({ minute = 830 } = {}) {
+  const npcStates = Object.fromEntries(data.model.npcs.map((entry) => [entry.id, { id: entry.id }]));
+  const livingWorld = createNpcLifeEngine({
+    model: data.model,
+    seed: "register-butterfly-production-life",
+    npcStates,
+  });
+  return {
+    checkpointEPrologue: { complete: true, completedAtMinute: 700, loan: { disposition: "borrowed_registered" } },
+    playerState: {
+      absoluteMinute: minute,
+      player: { id: "PLAYER-LIFE", name: "旅人", location: "田園の村", facilityId: "LOC_FARM_SQUARE", knownRumorIds: new Set() },
+      history: [{ type: "T01_FINN_ESCORTED_TO_SQUARE", minute: 820, missionId: "MSN-T01", troubleId: "T01", npcId: "NPC001" }],
+      worldFlags: { t01FinnReturned: true },
+      rumors: [],
+      rumorById: {},
+      goapRequests: {},
+    },
+    livingWorld,
+  };
+}
+
+function runLifeTick(state, tickIndex) {
+  const day = Math.floor(tickIndex / 4) + 1;
+  const phaseIndex = tickIndex % 4;
+  const absoluteHour = (day - 1) * 24 + phaseIndex * 6;
+  const time = { day, phaseIndex, absoluteHour };
+  state.playerState.absoluteMinute = absoluteHour * 60;
+  prepareNpcLifeTick(state.livingWorld, {
+    time,
+    troubleStates: { T01: { status: "resolved" } },
+    worldFlags: state.playerState.worldFlags,
+  });
+  synchronizeRegisterButterfly(state);
+  completeNpcLifeTick(state.livingWorld, {
+    time,
+    troubleStates: { T01: { status: "resolved" } },
+    worldFlags: state.playerState.worldFlags,
+  });
+  synchronizeRegisterButterfly(state);
 }
 
 test("REGISTER creates one persistent inn record with provenance while alternative lodging does not", () => {
@@ -56,6 +108,7 @@ test("REGISTER creates one persistent inn record with provenance while alternati
   assert.equal(output.record.facilityId, "LOC_FARM_INN");
   assert.equal(output.record.sourceActionId, "E:LODGE:REGISTER");
   assert.equal(output.record.recordedAtMinute, 655);
+  assert.equal(output.record.recordedDay, 1);
   assert.equal(output.record.provenance.lodgingChoice, "registered_stay");
   assert.equal(output.record.provenance.loanDisposition, "borrowed_registered");
   synchronizeRegisterButterfly(registered);
@@ -72,7 +125,7 @@ test("REGISTER creates one persistent inn record with provenance while alternati
   }
 });
 
-test("T01 return links the registered rescuer to Rona first, without fabricating absent NPCs", () => {
+test("REGISTER alone never predicts Finn rescue; actual return links the registered rescuer to Rona first", () => {
   const beforeRescue = runtime();
   synchronizeRegisterButterfly(beforeRescue);
   assert.equal(beforeRescue.livingWorld.npcStates.NPC058.beliefs[butterfly.FACT_ID], undefined);
@@ -92,74 +145,106 @@ test("T01 return links the registered rescuer to Rona first, without fabricating
   assert.equal(noRiona.playerState.history.some((entry) => entry.type === butterfly.PROPAGATION_HISTORY), false);
 });
 
-test("Rona tells Riona only when their ordinary routines meet at the inn", () => {
-  const state = runtime({ finnReturned: true, minute: 830, rionaFacilityId: "LOC_FARM_SQUARE" });
+test("Rona-to-Riona propagation carries provenance and a generic npc-life aftermath plan without scripting currentGoal", () => {
+  const state = runtime({ finnReturned: true, minute: 900 });
+  const riona = state.livingWorld.npcStates.NPC008;
+  const initialGoal = riona.currentGoal;
   synchronizeRegisterButterfly(state);
   const record = butterfly.registerRecord(state);
-  assert.equal(state.livingWorld.npcStates.NPC058.beliefs[butterfly.FACT_ID].sourceRecordId, record.id);
-  assert.equal(state.livingWorld.npcStates.NPC008.beliefs[butterfly.FACT_ID], undefined);
-  assert.equal(state.playerState.goapRequests[butterfly.GOAP_ID], undefined);
-
-  const riona = state.livingWorld.npcStates.NPC008;
-  riona.facilityId = "LOC_FARM_INN";
-  riona.position = { hubId: "田園の村", facilityId: "LOC_FARM_INN" };
-  state.playerState.absoluteMinute = 900;
-  synchronizeRegisterButterfly(state);
-
   const belief = riona.beliefs[butterfly.FACT_ID];
   assert.equal(belief.sourceNpcId, "NPC058");
   assert.equal(belief.sourceRecordId, record.id);
-  assert.deepEqual(belief.path.slice(-2), ["NPC058", "NPC008"]);
-  assert.equal(riona.memories[butterfly.FACT_ID].sourceNpcId, "NPC058");
-  assert.equal(riona.currentGoal, "verify-village-rumor-before-repeating-on-trade-route");
-  assert.equal(state.playerState.rumorById[butterfly.RUMOR_ID].sourceNpcId, "NPC058");
-  assert.equal(state.playerState.goapRequests[butterfly.GOAP_ID].preconditions.learnedFromNpcId, "NPC058");
-  assert.equal(state.playerState.goapRequests[butterfly.GOAP_ID].status, "active");
-  assert.equal(state.playerState.history.some((entry) => entry.type === butterfly.PROPAGATION_HISTORY), true);
-  assert.equal(state.playerState.player.knownRumorIds.has(butterfly.RUMOR_ID), false);
+  assert.deepEqual(belief.path, [`record:${record.id}`, "event:T01_FINN_ESCORTED_TO_SQUARE", "NPC058", "NPC008"]);
+  assert.equal(belief.hopCount, 1);
+  assert.equal(belief.kind, "trouble");
+  assert.equal(belief.troubleStatus, "resolved");
+  assert.equal(belief.aftermathPlans.length, 1);
+  assert.equal(belief.aftermathPlans[0].id, butterfly.GOAP_ID);
+  assert.equal(belief.aftermathPlans[0].reason, "merchant-rumor-credibility");
+  assert.equal(riona.currentGoal, initialGoal, "the butterfly layer must not select Riona's goal");
+  const request = state.playerState.goapRequests[butterfly.GOAP_ID];
+  assert.equal(request.executionAuthority, "npc-life-engine");
+  assert.equal(request.plannerContract, "resolved-belief-aftermath-plan");
+  assert.equal(request.status, "active");
 });
 
-test("REGISTER butterfly survives serialization with record, memory, belief, rumor and GOAP intact", () => {
-  const state = runtime({ finnReturned: true, minute: 900 });
-  synchronizeRegisterButterfly(state);
-  const record = butterfly.registerRecord(state);
-  const restored = cloneSerializable(state);
-  assert.equal(butterfly.registerRecord(restored).id, record.id);
-  assert.equal(restored.livingWorld.npcStates.NPC058.memories[butterfly.FACT_ID].sourceRecordId, record.id);
-  assert.equal(restored.livingWorld.npcStates.NPC008.beliefs[butterfly.FACT_ID].sourceNpcId, "NPC058");
-  assert.equal(restored.playerState.rumorById[butterfly.RUMOR_ID].sourceNpcId, "NPC058");
-  assert.equal(restored.playerState.goapRequests[butterfly.GOAP_ID].status, "active");
-  assert.equal(restored.playerState.player.knownRumorIds instanceof Set, true);
-});
-
-test("Riona callback requires her canonical route to bring her to the square; butterfly never teleports her", () => {
-  const state = runtime({ finnReturned: true, minute: 900 });
+test("npc-life planner, not the butterfly fixture, moves Riona and completes the merchant rumor GOAP", () => {
+  const state = canonicalLifeRuntime();
   synchronizeRegisterButterfly(state);
   const riona = state.livingWorld.npcStates.NPC008;
+  assert.equal(riona.completedAftermathPlanIds.includes(butterfly.GOAP_ID), false);
+
+  let ready = false;
+  for (let tick = 0; tick < 24 && !ready; tick += 1) {
+    runLifeTick(state, tick);
+    ready = state.playerState.goapRequests[butterfly.GOAP_ID]?.status === "ready";
+  }
+
   const request = state.playerState.goapRequests[butterfly.GOAP_ID];
-  assert.equal(request.status, "active");
-  assert.equal(butterfly.npcFacility(riona), "LOC_FARM_INN");
-  assert.deepEqual(authoredMissionFlowExclusiveActions(state).filter((action) => action.id === butterfly.CALLBACK_ACTION_ID), []);
-  assert.equal(butterfly.npcFacility(riona), "LOC_FARM_INN", "F synchronization must not move Riona");
+  assert.ok(request, "Riona must first meet Lorna at the inn and receive the fact during ordinary life ticks");
+  assert.equal(request.status, "ready");
+  assert.equal(request.readyReason, "npc-life-engine-aftermath-plan-completed");
+  assert.equal(riona.completedAftermathPlanIds.includes(butterfly.GOAP_ID), true);
+  assert.equal(butterfly.npcFacility(riona), "LOC_FARM_SQUARE");
 
-  // Simulate the ordinary living-world/schedule layer moving the merchant on her route.
-  riona.facilityId = "LOC_FARM_SQUARE";
-  riona.position = { hubId: "田園の村", facilityId: "LOC_FARM_SQUARE" };
-  state.playerState.absoluteMinute = 960;
-  const actions = authoredMissionFlowExclusiveActions(state);
-  const callback = actions.find((action) => action.id === butterfly.CALLBACK_ACTION_ID);
-  assert.ok(callback);
-  assert.equal(callback.targetNpcId, "NPC008");
-  assert.equal(state.playerState.goapRequests[butterfly.GOAP_ID].status, "ready");
-  assert.equal(state.playerState.goapRequests[butterfly.GOAP_ID].readyReason, "canonical-route-arrived-at-village-square");
+  const decisions = butterfly.matchingDecisionEvents(state);
+  assert.ok(decisions.some((event) =>
+    event.replanned === true
+    && event.reason === "merchant-rumor-credibility"
+    && event.goal === `aftermath:${butterfly.GOAP_GOAL}`
+    && event.action === "local-travel"
+    && event.targetFacilityId === "LOC_FARM_SQUARE"));
+  assert.ok(decisions.some((event) =>
+    event.reason === "merchant-rumor-credibility"
+    && event.action === butterfly.GOAP_ACTION));
 
+  const movement = butterfly.matchingMovementEvents(state).at(-1);
+  assert.ok(movement, "production npc-life local movement must record Riona's arrival");
+  assert.equal(movement.fromFacilityId, "LOC_FARM_INN");
+  assert.equal(movement.toFacilityId, "LOC_FARM_SQUARE");
+  assert.match(movement.routeId, /^LOCAL:田園の村:/u);
+  assert.equal(state.playerState.history.some((entry) =>
+    entry.type === butterfly.GOAP_EXECUTION_HISTORY
+    && entry.executionAuthority === "npc-life-engine"
+    && entry.movementRouteId === movement.routeId), true);
+
+  const callback = authoredMissionFlowExclusiveActions(state)
+    .find((action) => action.id === butterfly.CALLBACK_ACTION_ID);
+  assert.ok(callback, "callback becomes visible only after the production planner and movement authority finish");
   const result = { ok: true };
   assert.equal(applyAuthoredMissionFlowAction(state, callback, result), true);
   assert.equal(state.playerState.goapRequests[butterfly.GOAP_ID].status, "completed");
   assert.equal(state.playerState.player.knownRumorIds.has(butterfly.RUMOR_ID), true);
   assert.match(result.summary, /ローナさんから聞いた/);
   assert.match(result.summary, /本人へ確かめたかった/);
-  assert.equal(state.playerState.history.some((entry) => entry.type === butterfly.CALLBACK_HISTORY), true);
+});
+
+test("REGISTER butterfly survives serialization at record, correlation, propagation and GOAP boundaries", () => {
+  const recordOnly = runtime({ finnReturned: false, minute: 700 });
+  synchronizeRegisterButterfly(recordOnly);
+  const restoredRecord = cloneSerializable(recordOnly);
+  assert.equal(butterfly.registerRecord(restoredRecord).id, butterfly.registerRecord(recordOnly).id);
+  assert.equal(restoredRecord.livingWorld.npcStates.NPC058.beliefs[butterfly.FACT_ID], undefined);
+
+  const correlated = runtime({ finnReturned: true, minute: 830, riona: false });
+  synchronizeRegisterButterfly(correlated);
+  const restoredCorrelation = cloneSerializable(correlated);
+  assert.equal(restoredCorrelation.livingWorld.npcStates.NPC058.memories[butterfly.FACT_ID].sourceRecordId, butterfly.registerRecord(correlated).id);
+
+  const propagated = runtime({ finnReturned: true, minute: 900 });
+  synchronizeRegisterButterfly(propagated);
+  const restoredPropagation = cloneSerializable(propagated);
+  assert.equal(restoredPropagation.livingWorld.npcStates.NPC008.beliefs[butterfly.FACT_ID].sourceNpcId, "NPC058");
+  assert.equal(restoredPropagation.playerState.rumorById[butterfly.RUMOR_ID].sourceNpcId, "NPC058");
+  assert.equal(restoredPropagation.playerState.goapRequests[butterfly.GOAP_ID].status, "active");
+  assert.equal(restoredPropagation.playerState.player.knownRumorIds instanceof Set, true);
+
+  propagated.livingWorld.npcStates.NPC008.completedAftermathPlanIds = [butterfly.GOAP_ID];
+  propagated.livingWorld.npcStates.NPC008.position = { hubId: "田園の村", facilityId: "LOC_FARM_SQUARE" };
+  synchronizeRegisterButterfly(propagated);
+  const restoredReady = cloneSerializable(propagated);
+  assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].status, "ready");
+  assert.equal(restoredReady.livingWorld.npcStates.NPC008.completedAftermathPlanIds.includes(butterfly.GOAP_ID), true);
 });
 
 test("dead or not-yet-present information carriers do not receive butterfly state", () => {
