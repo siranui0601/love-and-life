@@ -1,0 +1,70 @@
+name: TRPG Checkpoint F register diagnostic
+
+on:
+  push:
+    branches:
+      - claude/trpg-virtue-route-main-143ar9
+    paths:
+      - .github/workflows/trpg-f-register-diagnostic.yml
+
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Trace canonical Lorna to Riona contact
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { loadTrpgGameData } from './src/server/trpg/game/game-data.js';
+          import { synchronizeRegisterButterfly, AUTHORED_REGISTER_BUTTERFLY_INTERNALS as butterfly } from './src/server/trpg/content/authored-register-butterfly.js';
+          import { createNpcLifeEngine, prepareNpcLifeTick, completeNpcLifeTick } from './tools/trpg-sim/lib/npc-life-engine.mjs';
+
+          const data = loadTrpgGameData();
+          const npcStates = Object.fromEntries(data.model.npcs.map((entry) => [entry.id, { id: entry.id }]));
+          const livingWorld = createNpcLifeEngine({ model: data.model, seed: 'register-butterfly-production-life', npcStates });
+          const state = {
+            checkpointEPrologue: { complete: true, completedAtMinute: 700, loan: { disposition: 'borrowed_registered' } },
+            playerState: {
+              absoluteMinute: 830,
+              player: { id: 'PLAYER-LIFE', name: '旅人', location: '田園の村', facilityId: 'LOC_FARM_SQUARE', knownRumorIds: new Set() },
+              history: [{ type: 'T01_FINN_ESCORTED_TO_SQUARE', minute: 820, missionId: 'MSN-T01', troubleId: 'T01', npcId: 'NPC001' }],
+              worldFlags: { t01FinnReturned: true }, rumors: [], rumorById: {}, goapRequests: {},
+            },
+            livingWorld,
+          };
+          synchronizeRegisterButterfly(state);
+          const lorna = livingWorld.npcStates.NPC058;
+          const riona = livingWorld.npcStates.NPC008;
+          console.log('LORNA_INIT', JSON.stringify({ position: lorna.position, facilityId: lorna.facilityId, presence: lorna.presence, goal: lorna.currentGoal, interestTroubleIds: lorna.interestTroubleIds, fact: lorna.beliefs?.[butterfly.FACT_ID] }));
+          console.log('RIONA_INIT', JSON.stringify({ position: riona.position, facilityId: riona.facilityId, presence: riona.presence, goal: riona.currentGoal, interestTroubleIds: riona.interestTroubleIds, interests: riona.interests }));
+
+          let previousEventCount = livingWorld.knowledgeEvents?.length ?? 0;
+          for (let tick = 0; tick < 48; tick += 1) {
+            const day = Math.floor(tick / 4) + 1;
+            const phaseIndex = tick % 4;
+            const absoluteHour = (day - 1) * 24 + phaseIndex * 6;
+            const time = { day, phaseIndex, absoluteHour };
+            state.playerState.absoluteMinute = absoluteHour * 60;
+            prepareNpcLifeTick(livingWorld, { time, troubleStates: { T01: { status: 'resolved' } }, worldFlags: state.playerState.worldFlags });
+            synchronizeRegisterButterfly(state);
+            completeNpcLifeTick(livingWorld, { time, troubleStates: { T01: { status: 'resolved' } }, worldFlags: state.playerState.worldFlags });
+            synchronizeRegisterButterfly(state);
+            const lf = butterfly.npcFacility(lorna);
+            const rf = butterfly.npcFacility(riona);
+            const newEvents = (livingWorld.knowledgeEvents ?? []).slice(previousEventCount)
+              .filter((event) => ['NPC058','NPC008'].includes(event.npcId) || ['NPC058','NPC008'].includes(event.sourceNpcId));
+            previousEventCount = livingWorld.knowledgeEvents?.length ?? 0;
+            if (lf === rf || newEvents.length || riona.beliefs?.[butterfly.FACT_ID] || tick % 4 === 0) {
+              console.log('TICK', JSON.stringify({ tick, day, phaseIndex, absoluteHour, lornaFacility: lf, lornaPresence: lorna.presence, rionaFacility: rf, rionaPresence: riona.presence, lornaGoal: lorna.currentGoal, rionaGoal: riona.currentGoal, rionaHasFact: Boolean(riona.beliefs?.[butterfly.FACT_ID]), request: state.playerState.goapRequests?.[butterfly.GOAP_ID]?.status ?? null, newEvents }));
+            }
+            if (state.playerState.goapRequests?.[butterfly.GOAP_ID]?.status === 'ready') break;
+          }
+          console.log('FINAL_SHARE_EVENTS', JSON.stringify((livingWorld.knowledgeEvents ?? []).filter((event) => event.factId === butterfly.FACT_ID), null, 2));
+          console.log('FINAL_REQUEST', JSON.stringify(state.playerState.goapRequests?.[butterfly.GOAP_ID] ?? null, null, 2));
+          NODE
