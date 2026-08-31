@@ -18,7 +18,7 @@ Scratch-like visual programming battle game for siranui.jp.
 
 The language is intended to stay reusable across game modes. A program must not receive a direct `MODE` value.
 
-Currently implemented language/runtime foundation:
+Runtime foundation:
 
 - physical actions: `進む`, `左に90°旋回`, `右に90°旋回`
 - front / left / right cell sensors
