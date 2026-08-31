@@ -95,13 +95,24 @@ Created tabs:
 
 `replay_id | match_id | mode | seed | settings_json | programs_json | spawn_json | result_json | created_at | rule_version | owner_tracking_ids_json | checksum`
 
-Replays store the deterministic inputs (seed, programs, spawn and rule version), rather than a cell-heavy snapshot for every tick.
+Replays store deterministic inputs (seed, programs, spawn and rule version), rather than a cell-heavy snapshot for every tick.
 
-## Current implementation boundary
+## First playable slice
 
-The first playable battle UI runs the signed-in player's saved program against deterministic CPU programs. The persistence/replay schema is already participant-oriented, but authoritative Socket.IO human-vs-human room execution is not implemented in this foundation yet.
+This PR now contains a complete local gameplay loop for the first ruleset:
 
-This boundary is intentional: the visual language, tick semantics, persistence and deterministic replay are fixed independently of network room orchestration so a network layer cannot silently define different rules.
+- authenticate
+- create and save a program
+- contextual first-program tutorial
+- test the program on a live grid
+- configure a deterministic territory match
+- observe a 2–4 piece match
+- save results and replay inputs
+- show results
+- rematch or jump back to editing
+- replay a saved deterministic match
+
+The signed-in player's piece currently competes against deterministic CPU programs. The persistence/replay structures are participant-oriented, but authoritative Socket.IO human-vs-human room execution is intentionally not claimed as complete in this foundation.
 
 ## Isolation from TRPG work
 
