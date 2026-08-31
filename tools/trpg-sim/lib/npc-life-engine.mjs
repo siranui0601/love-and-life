@@ -561,7 +561,7 @@ function beliefMatchesInterest(state, belief) {
 
 function publishRumor(engine, hubId, belief, availableAt, sourceNpcId, carrierType) {
   const pool = engine.hubRumors[hubId];
-  if (!pool || !belief || belief.kind === "interest" || belief.secret) return;
+  if (!pool || !belief || belief.kind === "interest" || belief.secret || belief.publicationMode === "conversation-only") return;
   const previous = pool.get(belief.factId);
   const candidate = {
     factId: belief.factId,
@@ -576,7 +576,7 @@ function publishRumor(engine, hubId, belief, availableAt, sourceNpcId, carrierTy
 
 function publishFacilityRumor(engine, facilityId, belief, availableAt, carrierType = "source-facility") {
   const pool = engine.facilityRumors[facilityId];
-  if (!pool || !belief || belief.kind === "interest" || belief.secret) return;
+  if (!pool || !belief || belief.kind === "interest" || belief.secret || belief.publicationMode === "conversation-only") return;
   const previous = pool.get(belief.factId);
   const candidate = {
     factId: belief.factId,
@@ -1023,7 +1023,7 @@ function applyConversationContext(engine, context, time) {
         ...sourceBelief,
         confidence: round(Number(sourceBelief.confidence ?? 1) * (context.contextType === 'passing-contact' ? 0.78 : 0.86)),
         learnedAt: Number(context.contactAt ?? time.absoluteHour),
-        propagationAt: Number(context.contactAt ?? time.absoluteHour) + 4,
+        propagationAt: Number(context.contactAt ?? time.absoluteHour) + Math.max(4, Number(sourceBelief.relayDelayHours ?? 4)),
         sourceType: 'npc',
         sourceNpcId: candidate.sourceId,
         interactionEventId: interaction.id,
@@ -1040,7 +1040,7 @@ function applyConversationContext(engine, context, time) {
         sourceLearnedAt: sourceBelief.learnedAt,
         troubleId: sourceBelief.troubleId ?? null,
         troubleStatus: sourceBelief.troubleStatus ?? null,
-        propagationAt: Number(context.contactAt ?? time.absoluteHour) + 4,
+        propagationAt: Number(context.contactAt ?? time.absoluteHour) + Math.max(4, Number(sourceBelief.relayDelayHours ?? 4)),
         location: context.location ?? { ...recipientState.position },
         routeSegment: context.routeSegment ?? null,
         interactionEventId: interaction.id,
@@ -1048,7 +1048,7 @@ function applyConversationContext(engine, context, time) {
         ...metadata,
       });
       if (added) {
-        publishRumor(engine, recipientState.position?.hubId, recipientState.beliefs[sourceBelief.factId], Number(context.contactAt ?? time.absoluteHour) + 4, recipientId, `${context.contextType}-conversation`);
+        publishRumor(engine, recipientState.position?.hubId, recipientState.beliefs[sourceBelief.factId], Number(context.contactAt ?? time.absoluteHour) + Math.max(4, Number(sourceBelief.relayDelayHours ?? 4)), recipientId, `${context.contextType}-conversation`);
       }
     }
   }
