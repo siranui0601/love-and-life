@@ -112,7 +112,11 @@ This PR now contains a complete local gameplay loop for the first ruleset:
 - rematch or jump back to editing
 - replay a saved deterministic match
 
-The signed-in player's piece currently competes against deterministic CPU programs. The persistence/replay structures are participant-oriented, but authoritative Socket.IO human-vs-human room execution is intentionally not claimed as complete in this foundation.
+The signed-in player's piece currently competes against deterministic CPU programs. The persistence/replay structures are participant-oriented, but authoritative Socket.IO human-vs-human room execution is not claimed as complete in this foundation.
+
+## Visual direction
+
+The implementation borrows interaction principles rather than source code from modern UI galleries: structured animated grids, clipped technical surfaces, pixel/scan reveal language, a moving active-navigation indicator, restrained focus glow and motion that communicates state. Decorative motion is concentrated around load, navigation, block insertion, capture, battle boot and result moments rather than making every surface pulse continuously.
 
 ## Isolation from TRPG work
 
