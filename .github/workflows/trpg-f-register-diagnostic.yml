@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  verify:
+  apply:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +23,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Apply narrow publication policy patch
+      - name: Apply publication policy
         shell: bash
         run: |
           python3 <<'PY'
@@ -31,155 +31,50 @@ jobs:
 
           engine_path = Path('tools/trpg-sim/lib/npc-life-engine.mjs')
           engine = engine_path.read_text()
+          old_guard = 'if (!pool || !belief || belief.kind === "interest" || belief.secret) return;'
+          new_guard = 'if (!pool || !belief || belief.kind === "interest" || belief.secret || belief.publicationMode === "conversation-only") return;'
+          if engine.count(old_guard) != 2:
+              raise SystemExit('publication guard mismatch')
+          engine = engine.replace(old_guard, new_guard)
 
-          old_publish = 'if (!pool || !belief || belief.kind === "interest" || belief.secret) return;'
-          new_publish = 'if (!pool || !belief || belief.kind === "interest" || belief.secret || belief.publicationMode === "conversation-only") return;'
-          count = engine.count(old_publish)
-          if count != 2:
-              raise SystemExit(f'publication guard occurrence mismatch: {count}')
-          engine = engine.replace(old_publish, new_publish)
+          old_learn = "learnedAt: Number(context.contactAt ?? time.absoluteHour),\n        propagationAt: Number(context.contactAt ?? time.absoluteHour) + 4,"
+          new_learn = "learnedAt: Number(context.contactAt ?? time.absoluteHour),\n        propagationAt: Number(context.contactAt ?? time.absoluteHour) + Math.max(4, Number(sourceBelief.relayDelayHours ?? 4)),"
+          if engine.count(old_learn) != 1:
+              raise SystemExit('recipient propagation mismatch')
+          engine = engine.replace(old_learn, new_learn, 1)
 
-          old_share_head = """      const recipientState = engine.npcStates[recipientId];
-      const metadata = propagationMetadata(sourceBelief, recipientId);
-      const added = addBelief(engine, recipientState, {
-        ...sourceBelief,
-        confidence: round(Number(sourceBelief.confidence ?? 1) * (context.contextType === 'passing-contact' ? 0.78 : 0.86)),
-        learnedAt: Number(context.contactAt ?? time.absoluteHour),
-        propagationAt: Number(context.contactAt ?? time.absoluteHour) + 4,
-"""
-          new_share_head = """      const recipientState = engine.npcStates[recipientId];
-      const metadata = propagationMetadata(sourceBelief, recipientId);
-      const contactAt = Number(context.contactAt ?? time.absoluteHour);
-      const relayDelayHours = Math.max(4, Number(sourceBelief.relayDelayHours ?? 4));
-      const recipientPropagationAt = contactAt + relayDelayHours;
-      const added = addBelief(engine, recipientState, {
-        ...sourceBelief,
-        confidence: round(Number(sourceBelief.confidence ?? 1) * (context.contextType === 'passing-contact' ? 0.78 : 0.86)),
-        learnedAt: contactAt,
-        propagationAt: recipientPropagationAt,
-"""
-          if engine.count(old_share_head) != 1:
-              raise SystemExit(f'share head occurrence mismatch: {engine.count(old_share_head)}')
-          engine = engine.replace(old_share_head, new_share_head, 1)
+          old_event = "propagationAt: Number(context.contactAt ?? time.absoluteHour) + 4,\n        location: context.location"
+          new_event = "propagationAt: Number(context.contactAt ?? time.absoluteHour) + Math.max(4, Number(sourceBelief.relayDelayHours ?? 4)),\n        location: context.location"
+          if engine.count(old_event) != 1:
+              raise SystemExit('event propagation mismatch')
+          engine = engine.replace(old_event, new_event, 1)
 
-          old_event_times = """        learnedAt: Number(context.contactAt ?? time.absoluteHour),
-        sourceType: 'npc',
-        sourceNpcId: candidate.sourceId,
-        sourceEventId: sourceBelief.provenanceEventId,
-        sourceLearnedAt: sourceBelief.learnedAt,
-        troubleId: sourceBelief.troubleId ?? null,
-        troubleStatus: sourceBelief.troubleStatus ?? null,
-        propagationAt: Number(context.contactAt ?? time.absoluteHour) + 4,
-"""
-          new_event_times = """        learnedAt: contactAt,
-        sourceType: 'npc',
-        sourceNpcId: candidate.sourceId,
-        sourceEventId: sourceBelief.provenanceEventId,
-        sourceLearnedAt: sourceBelief.learnedAt,
-        troubleId: sourceBelief.troubleId ?? null,
-        troubleStatus: sourceBelief.troubleStatus ?? null,
-        propagationAt: recipientPropagationAt,
-"""
-          if engine.count(old_event_times) != 1:
-              raise SystemExit(f'event time occurrence mismatch: {engine.count(old_event_times)}')
-          engine = engine.replace(old_event_times, new_event_times, 1)
-
-          old_publish_call = """      if (added) {
-        publishRumor(engine, recipientState.position?.hubId, recipientState.beliefs[sourceBelief.factId], Number(context.contactAt ?? time.absoluteHour) + 4, recipientId, `${context.contextType}-conversation`);
-      }
-"""
-          new_publish_call = """      if (added) {
-        publishRumor(engine, recipientState.position?.hubId, recipientState.beliefs[sourceBelief.factId], recipientPropagationAt, recipientId, `${context.contextType}-conversation`);
-      }
-"""
-          if engine.count(old_publish_call) != 1:
-              raise SystemExit(f'publish call occurrence mismatch: {engine.count(old_publish_call)}')
-          engine = engine.replace(old_publish_call, new_publish_call, 1)
+          old_call = "Number(context.contactAt ?? time.absoluteHour) + 4, recipientId,"
+          new_call = "Number(context.contactAt ?? time.absoluteHour) + Math.max(4, Number(sourceBelief.relayDelayHours ?? 4)), recipientId,"
+          if engine.count(old_call) != 1:
+              raise SystemExit('publish call mismatch')
+          engine = engine.replace(old_call, new_call, 1)
           engine_path.write_text(engine)
 
           authored_path = Path('src/server/trpg/content/authored-register-butterfly.js')
           authored = authored_path.read_text()
-          old_importance = 'importance: 0.72,'
-          if authored.count(old_importance) != 2:
-              raise SystemExit(f'importance occurrence mismatch: {authored.count(old_importance)}')
-          authored = authored.replace(old_importance, 'importance: 0.82,')
-
-          old_belief_tail = """    secret: false,
-    learnedAt,
-    propagationAt: learnedAt + (1 / 60),
-    sourceType: "inn-register-corroboration",
-"""
-          new_belief_tail = """    secret: false,
-    publicationMode: "conversation-only",
-    relayDelayHours: 48,
-    learnedAt,
-    propagationAt: learnedAt + (1 / 60),
-    sourceType: "inn-register-corroboration",
-"""
-          if authored.count(old_belief_tail) != 1:
-              raise SystemExit(f'authored belief occurrence mismatch: {authored.count(old_belief_tail)}')
-          authored = authored.replace(old_belief_tail, new_belief_tail, 1)
+          if authored.count('importance: 0.72,') != 2:
+              raise SystemExit('importance mismatch')
+          authored = authored.replace('importance: 0.72,', 'importance: 0.82,')
+          marker = '    secret: false,\n    learnedAt,\n    propagationAt: learnedAt + (1 / 60),\n    sourceType: "inn-register-corroboration",'
+          replacement = '    secret: false,\n    publicationMode: "conversation-only",\n    relayDelayHours: 48,\n    learnedAt,\n    propagationAt: learnedAt + (1 / 60),\n    sourceType: "inn-register-corroboration",'
+          if authored.count(marker) != 1:
+              raise SystemExit('authored publication marker mismatch')
+          authored = authored.replace(marker, replacement, 1)
           authored_path.write_text(authored)
           PY
       - name: Syntax check
         run: |
           node --check tools/trpg-sim/lib/npc-life-engine.mjs
           node --check src/server/trpg/content/authored-register-butterfly.js
-      - name: Verify direct Lorna to Riona share
-        shell: bash
-        run: |
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import { loadTrpgGameData } from './src/server/trpg/game/game-data.js';
-          import { synchronizeRegisterButterfly, AUTHORED_REGISTER_BUTTERFLY_INTERNALS as butterfly } from './src/server/trpg/content/authored-register-butterfly.js';
-          import { createNpcLifeEngine, prepareNpcLifeTick, completeNpcLifeTick } from './tools/trpg-sim/lib/npc-life-engine.mjs';
-
-          const data = loadTrpgGameData();
-          const npcStates = Object.fromEntries(data.model.npcs.map((entry) => [entry.id, { id: entry.id }]));
-          const livingWorld = createNpcLifeEngine({ model: data.model, seed: 'register-butterfly-production-life', npcStates });
-          const state = {
-            checkpointEPrologue: { complete: true, completedAtMinute: 700, loan: { disposition: 'borrowed_registered' } },
-            playerState: {
-              absoluteMinute: 830,
-              player: { id: 'PLAYER-LIFE', name: '旅人', location: '田園の村', facilityId: 'LOC_FARM_SQUARE', knownRumorIds: new Set() },
-              history: [{ type: 'T01_FINN_ESCORTED_TO_SQUARE', minute: 820, missionId: 'MSN-T01', troubleId: 'T01', npcId: 'NPC001' }],
-              worldFlags: { t01FinnReturned: true }, rumors: [], rumorById: {}, goapRequests: {},
-            },
-            livingWorld,
-          };
-          synchronizeRegisterButterfly(state);
-          for (let tick = 0; tick < 24; tick += 1) {
-            const day = Math.floor(tick / 4) + 1;
-            const phaseIndex = tick % 4;
-            const absoluteHour = (day - 1) * 24 + phaseIndex * 6;
-            const time = { day, phaseIndex, absoluteHour };
-            state.playerState.absoluteMinute = absoluteHour * 60;
-            prepareNpcLifeTick(livingWorld, { time, troubleStates: { T01: { status: 'resolved' } }, worldFlags: state.playerState.worldFlags });
-            synchronizeRegisterButterfly(state);
-            completeNpcLifeTick(livingWorld, { time, troubleStates: { T01: { status: 'resolved' } }, worldFlags: state.playerState.worldFlags });
-            synchronizeRegisterButterfly(state);
-            if (state.playerState.goapRequests?.[butterfly.GOAP_ID]?.status === 'ready') break;
-          }
-          const direct = livingWorld.knowledgeEvents.find((event) => event.type === 'share'
-            && event.factId === butterfly.FACT_ID
-            && event.sourceNpcId === 'NPC058'
-            && event.npcId === 'NPC008'
-            && event.location?.facilityId === 'LOC_FARM_INN');
-          assert.ok(direct, 'expected actual common Lorna -> Riona share at the inn');
-          const indirectBeforeDirect = livingWorld.knowledgeEvents.find((event) => event.factId === butterfly.FACT_ID
-            && event.npcId === 'NPC008'
-            && event.id !== direct.id
-            && Number(event.learnedAt) <= Number(direct.learnedAt));
-          assert.equal(indirectBeforeDirect, undefined, JSON.stringify(indirectBeforeDirect));
-          assert.equal(state.livingWorld.npcStates.NPC008.beliefs[butterfly.FACT_ID].sourceNpcId, 'NPC058');
-          assert.ok(state.playerState.goapRequests?.[butterfly.GOAP_ID]);
-          assert.equal(state.playerState.goapRequests[butterfly.GOAP_ID].executionAuthority, 'npc-life-engine');
-          console.log('DIRECT_SHARE', JSON.stringify(direct));
-          console.log('GOAP', JSON.stringify(state.playerState.goapRequests[butterfly.GOAP_ID]));
-          NODE
-      - name: Focused regression
-        run: node --test tools/trpg-sim/test/authored-register-butterfly.test.mjs tools/trpg-sim/test/living-world.test.mjs tools/trpg-sim/test/integration.test.mjs tools/trpg-sim/test/world.test.mjs
-      - name: Commit verified policy and remove diagnostic
+      - name: Focused tests
+        run: node --test tools/trpg-sim/test/checkpoint-f-register-direct-share.test.mjs tools/trpg-sim/test/living-world.test.mjs tools/trpg-sim/test/integration.test.mjs tools/trpg-sim/test/world.test.mjs
+      - name: Commit verified source patch
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -187,6 +82,5 @@ jobs:
           git rm .github/workflows/trpg-f-register-diagnostic.yml
           git add tools/trpg-sim/lib/npc-life-engine.mjs src/server/trpg/content/authored-register-butterfly.js
           git diff --cached --check
-          git diff --cached --stat
           git commit -m "fix(trpg): separate conversation from rumor publication"
           git push origin HEAD:claude/trpg-virtue-route-main-143ar9
