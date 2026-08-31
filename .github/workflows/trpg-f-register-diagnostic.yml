@@ -7,20 +7,129 @@ on:
     paths:
       - .github/workflows/trpg-f-register-diagnostic.yml
 
+permissions:
+  contents: write
+
 jobs:
-  trace:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: claude/trpg-virtue-route-main-143ar9
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Trace canonical Lorna to Riona contact
+      - name: Apply narrow publication policy patch
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          engine_path = Path('tools/trpg-sim/lib/npc-life-engine.mjs')
+          engine = engine_path.read_text()
+
+          old_publish = 'if (!pool || !belief || belief.kind === "interest" || belief.secret) return;'
+          new_publish = 'if (!pool || !belief || belief.kind === "interest" || belief.secret || belief.publicationMode === "conversation-only") return;'
+          count = engine.count(old_publish)
+          if count != 2:
+              raise SystemExit(f'publication guard occurrence mismatch: {count}')
+          engine = engine.replace(old_publish, new_publish)
+
+          old_share_head = """      const recipientState = engine.npcStates[recipientId];
+      const metadata = propagationMetadata(sourceBelief, recipientId);
+      const added = addBelief(engine, recipientState, {
+        ...sourceBelief,
+        confidence: round(Number(sourceBelief.confidence ?? 1) * (context.contextType === 'passing-contact' ? 0.78 : 0.86)),
+        learnedAt: Number(context.contactAt ?? time.absoluteHour),
+        propagationAt: Number(context.contactAt ?? time.absoluteHour) + 4,
+"""
+          new_share_head = """      const recipientState = engine.npcStates[recipientId];
+      const metadata = propagationMetadata(sourceBelief, recipientId);
+      const contactAt = Number(context.contactAt ?? time.absoluteHour);
+      const relayDelayHours = Math.max(4, Number(sourceBelief.relayDelayHours ?? 4));
+      const recipientPropagationAt = contactAt + relayDelayHours;
+      const added = addBelief(engine, recipientState, {
+        ...sourceBelief,
+        confidence: round(Number(sourceBelief.confidence ?? 1) * (context.contextType === 'passing-contact' ? 0.78 : 0.86)),
+        learnedAt: contactAt,
+        propagationAt: recipientPropagationAt,
+"""
+          if engine.count(old_share_head) != 1:
+              raise SystemExit(f'share head occurrence mismatch: {engine.count(old_share_head)}')
+          engine = engine.replace(old_share_head, new_share_head, 1)
+
+          old_event_times = """        learnedAt: Number(context.contactAt ?? time.absoluteHour),
+        sourceType: 'npc',
+        sourceNpcId: candidate.sourceId,
+        sourceEventId: sourceBelief.provenanceEventId,
+        sourceLearnedAt: sourceBelief.learnedAt,
+        troubleId: sourceBelief.troubleId ?? null,
+        troubleStatus: sourceBelief.troubleStatus ?? null,
+        propagationAt: Number(context.contactAt ?? time.absoluteHour) + 4,
+"""
+          new_event_times = """        learnedAt: contactAt,
+        sourceType: 'npc',
+        sourceNpcId: candidate.sourceId,
+        sourceEventId: sourceBelief.provenanceEventId,
+        sourceLearnedAt: sourceBelief.learnedAt,
+        troubleId: sourceBelief.troubleId ?? null,
+        troubleStatus: sourceBelief.troubleStatus ?? null,
+        propagationAt: recipientPropagationAt,
+"""
+          if engine.count(old_event_times) != 1:
+              raise SystemExit(f'event time occurrence mismatch: {engine.count(old_event_times)}')
+          engine = engine.replace(old_event_times, new_event_times, 1)
+
+          old_publish_call = """      if (added) {
+        publishRumor(engine, recipientState.position?.hubId, recipientState.beliefs[sourceBelief.factId], Number(context.contactAt ?? time.absoluteHour) + 4, recipientId, `${context.contextType}-conversation`);
+      }
+"""
+          new_publish_call = """      if (added) {
+        publishRumor(engine, recipientState.position?.hubId, recipientState.beliefs[sourceBelief.factId], recipientPropagationAt, recipientId, `${context.contextType}-conversation`);
+      }
+"""
+          if engine.count(old_publish_call) != 1:
+              raise SystemExit(f'publish call occurrence mismatch: {engine.count(old_publish_call)}')
+          engine = engine.replace(old_publish_call, new_publish_call, 1)
+          engine_path.write_text(engine)
+
+          authored_path = Path('src/server/trpg/content/authored-register-butterfly.js')
+          authored = authored_path.read_text()
+          old_importance = 'importance: 0.72,'
+          if authored.count(old_importance) != 2:
+              raise SystemExit(f'importance occurrence mismatch: {authored.count(old_importance)}')
+          authored = authored.replace(old_importance, 'importance: 0.82,')
+
+          old_belief_tail = """    secret: false,
+    learnedAt,
+    propagationAt: learnedAt + (1 / 60),
+    sourceType: "inn-register-corroboration",
+"""
+          new_belief_tail = """    secret: false,
+    publicationMode: "conversation-only",
+    relayDelayHours: 48,
+    learnedAt,
+    propagationAt: learnedAt + (1 / 60),
+    sourceType: "inn-register-corroboration",
+"""
+          if authored.count(old_belief_tail) != 1:
+              raise SystemExit(f'authored belief occurrence mismatch: {authored.count(old_belief_tail)}')
+          authored = authored.replace(old_belief_tail, new_belief_tail, 1)
+          authored_path.write_text(authored)
+          PY
+      - name: Syntax check
+        run: |
+          node --check tools/trpg-sim/lib/npc-life-engine.mjs
+          node --check src/server/trpg/content/authored-register-butterfly.js
+      - name: Verify direct Lorna to Riona share
         shell: bash
         run: |
           node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
           import { loadTrpgGameData } from './src/server/trpg/game/game-data.js';
           import { synchronizeRegisterButterfly, AUTHORED_REGISTER_BUTTERFLY_INTERNALS as butterfly } from './src/server/trpg/content/authored-register-butterfly.js';
           import { createNpcLifeEngine, prepareNpcLifeTick, completeNpcLifeTick } from './tools/trpg-sim/lib/npc-life-engine.mjs';
@@ -39,13 +148,7 @@ jobs:
             livingWorld,
           };
           synchronizeRegisterButterfly(state);
-          const lorna = livingWorld.npcStates.NPC058;
-          const riona = livingWorld.npcStates.NPC008;
-          console.log('LORNA_INIT', JSON.stringify({ position: lorna.position, facilityId: lorna.facilityId, presence: lorna.presence, goal: lorna.currentGoal, interestTroubleIds: lorna.interestTroubleIds, fact: lorna.beliefs?.[butterfly.FACT_ID] }));
-          console.log('RIONA_INIT', JSON.stringify({ position: riona.position, facilityId: riona.facilityId, presence: riona.presence, goal: riona.currentGoal, interestTroubleIds: riona.interestTroubleIds, interests: riona.interests }));
-
-          let previousEventCount = livingWorld.knowledgeEvents?.length ?? 0;
-          for (let tick = 0; tick < 48; tick += 1) {
+          for (let tick = 0; tick < 24; tick += 1) {
             const day = Math.floor(tick / 4) + 1;
             const phaseIndex = tick % 4;
             const absoluteHour = (day - 1) * 24 + phaseIndex * 6;
@@ -55,16 +158,35 @@ jobs:
             synchronizeRegisterButterfly(state);
             completeNpcLifeTick(livingWorld, { time, troubleStates: { T01: { status: 'resolved' } }, worldFlags: state.playerState.worldFlags });
             synchronizeRegisterButterfly(state);
-            const lf = butterfly.npcFacility(lorna);
-            const rf = butterfly.npcFacility(riona);
-            const newEvents = (livingWorld.knowledgeEvents ?? []).slice(previousEventCount)
-              .filter((event) => ['NPC058','NPC008'].includes(event.npcId) || ['NPC058','NPC008'].includes(event.sourceNpcId));
-            previousEventCount = livingWorld.knowledgeEvents?.length ?? 0;
-            if (lf === rf || newEvents.length || riona.beliefs?.[butterfly.FACT_ID] || tick % 4 === 0) {
-              console.log('TICK', JSON.stringify({ tick, day, phaseIndex, absoluteHour, lornaFacility: lf, lornaPresence: lorna.presence, rionaFacility: rf, rionaPresence: riona.presence, lornaGoal: lorna.currentGoal, rionaGoal: riona.currentGoal, rionaHasFact: Boolean(riona.beliefs?.[butterfly.FACT_ID]), request: state.playerState.goapRequests?.[butterfly.GOAP_ID]?.status ?? null, newEvents }));
-            }
             if (state.playerState.goapRequests?.[butterfly.GOAP_ID]?.status === 'ready') break;
           }
-          console.log('FINAL_SHARE_EVENTS', JSON.stringify((livingWorld.knowledgeEvents ?? []).filter((event) => event.factId === butterfly.FACT_ID), null, 2));
-          console.log('FINAL_REQUEST', JSON.stringify(state.playerState.goapRequests?.[butterfly.GOAP_ID] ?? null, null, 2));
+          const direct = livingWorld.knowledgeEvents.find((event) => event.type === 'share'
+            && event.factId === butterfly.FACT_ID
+            && event.sourceNpcId === 'NPC058'
+            && event.npcId === 'NPC008'
+            && event.location?.facilityId === 'LOC_FARM_INN');
+          assert.ok(direct, 'expected actual common Lorna -> Riona share at the inn');
+          const indirectBeforeDirect = livingWorld.knowledgeEvents.find((event) => event.factId === butterfly.FACT_ID
+            && event.npcId === 'NPC008'
+            && event.id !== direct.id
+            && Number(event.learnedAt) <= Number(direct.learnedAt));
+          assert.equal(indirectBeforeDirect, undefined, JSON.stringify(indirectBeforeDirect));
+          assert.equal(state.livingWorld.npcStates.NPC008.beliefs[butterfly.FACT_ID].sourceNpcId, 'NPC058');
+          assert.ok(state.playerState.goapRequests?.[butterfly.GOAP_ID]);
+          assert.equal(state.playerState.goapRequests[butterfly.GOAP_ID].executionAuthority, 'npc-life-engine');
+          console.log('DIRECT_SHARE', JSON.stringify(direct));
+          console.log('GOAP', JSON.stringify(state.playerState.goapRequests[butterfly.GOAP_ID]));
           NODE
+      - name: Focused regression
+        run: node --test tools/trpg-sim/test/authored-register-butterfly.test.mjs tools/trpg-sim/test/living-world.test.mjs tools/trpg-sim/test/integration.test.mjs tools/trpg-sim/test/world.test.mjs
+      - name: Commit verified policy and remove diagnostic
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/trpg-f-register-diagnostic.yml
+          git add tools/trpg-sim/lib/npc-life-engine.mjs src/server/trpg/content/authored-register-butterfly.js
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m "fix(trpg): separate conversation from rumor publication"
+          git push origin HEAD:claude/trpg-virtue-route-main-143ar9
