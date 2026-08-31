@@ -60,6 +60,9 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function array(value) {
+  return Array.isArray(value) ? value : [];
+}
 
 function ensureInteractionState(engine) {
   engine.interactionEvents ??= [];
@@ -503,7 +506,7 @@ function evaluateFate(engine, npc, state, time, troubleStates) {
       toLifeStatus: "injured",
       from: state.presence,
       to: "injured",
-      vitalState: "injured",
+      vitalState: state.lifeStatus,
       presence: state.presence,
       day: time.day,
       phaseIndex: time.phaseIndex,
@@ -551,7 +554,6 @@ function settleLocalTravel(engine, state, time) {
 }
 
 function beliefMatchesInterest(state, belief) {
-  if (Number(belief.importance ?? 0) >= RUMOR_IMPORTANCE_THRESHOLD) return true;
   if (belief.troubleId && state.interestTroubleIds.includes(belief.troubleId)) return true;
   const text = String(belief.text ?? "");
   return state.interests.some((interest) => String(interest).length >= 2 && text.includes(String(interest)));
@@ -876,10 +878,45 @@ function departureContactContexts(engine, time) {
   return contexts;
 }
 
+function secretDisclosureReason(sourceState, recipientId, recipientState, belief) {
+  const policy = belief?.disclosure ?? {};
+  const explicitReason = String(policy.reason ?? belief?.disclosureReason ?? '').trim();
+  const authorized = new Set(unique([
+    ...array(policy.authorizedListenerIds),
+    ...array(belief?.authorizedListenerIds),
+  ]));
+  if (authorized.has(recipientId)) return explicitReason || 'explicit-listener-authority';
+
+  const trusted = new Set(unique([
+    ...array(policy.trustedNpcIds),
+    ...array(belief?.trustedNpcIds),
+  ]));
+  if (trusted.has(recipientId)) return explicitReason || 'trusted-listener';
+
+  const workRelated = new Set(unique([
+    ...array(policy.workRelationshipNpcIds),
+    ...array(belief?.workRelationshipNpcIds),
+  ]));
+  if (workRelated.has(recipientId)) return explicitReason || 'work-relationship';
+
+  const sharedObjective = new Set(unique([
+    ...array(policy.sharedObjectiveNpcIds),
+    ...array(belief?.sharedObjectiveNpcIds),
+  ]));
+  if (sharedObjective.has(recipientId)) return explicitReason || 'shared-objective';
+
+  const troubleId = belief?.troubleId ?? null;
+  const sourceInterested = troubleId && array(sourceState?.interestTroubleIds).includes(troubleId);
+  const recipientInterested = troubleId && array(recipientState?.interestTroubleIds).includes(troubleId);
+  const sharedTroubleContext = Boolean(sourceInterested && recipientInterested);
+  const urgent = policy.urgency === true || belief?.urgency === true;
+  if (urgent && sharedTroubleContext) return explicitReason || 'urgent-shared-trouble';
+  if (explicitReason && sharedTroubleContext) return explicitReason;
+  return null;
+}
+
 function willingToSpeak(engine, sourceId, sourceState, belief, time, context) {
-  if (belief.secret) {
-    return npcRandom(engine.seed, sourceId, time.day, time.phaseIndex, `private-topic:${context.key}:${belief.factId}`) < 0.25;
-  }
+  if (belief.secret) return true;
   const importance = Number(belief.importance ?? 0);
   const recent = Number.isFinite(Number(belief.learnedAt)) && Number(time.absoluteHour) - Number(belief.learnedAt) <= 8;
   const authoredDuty = Array.isArray(belief.aftermathPlans) && belief.aftermathPlans.length > 0;
@@ -901,17 +938,16 @@ function utteranceCandidates(engine, context, time) {
       const possible = context.participants
         .filter((recipientId) => recipientId !== sourceId)
         .filter((recipientId) => {
-const recipient = engine.npcStates[recipientId];
-return isNpcLifeEligible(recipient)
-  && !recipient.beliefs?.[belief.factId]
-  && beliefMatchesInterest(recipient, belief);
+          const recipient = engine.npcStates[recipientId];
+          return isNpcLifeEligible(recipient)
+            && !recipient.beliefs?.[belief.factId]
+            && beliefMatchesInterest(recipient, belief)
+            && (!belief.secret || Boolean(secretDisclosureReason(sourceState, recipientId, recipient, belief)));
         });
       if (!possible.length || !willingToSpeak(engine, sourceId, sourceState, belief, time, context)) continue;
       let audible = context.participants.filter((recipientId) => recipientId !== sourceId);
       if (belief.secret) {
-        audible = possible.slice().sort((left, right) =>
-npcRandom(engine.seed, sourceId, time.day, time.phaseIndex, `secret-listener:${context.key}:${belief.factId}:${left}`)
-- npcRandom(engine.seed, sourceId, time.day, time.phaseIndex, `secret-listener:${context.key}:${belief.factId}:${right}`)).slice(0, 1);
+        audible = possible.slice().sort((left, right) => left.localeCompare(right, 'en')).slice(0, 1);
       }
       const accepted = audible.filter((recipientId) => possible.includes(recipientId));
       if (!accepted.length) continue;
@@ -1216,7 +1252,6 @@ function routineTarget(engine, npc, state, time) {
   if (target === state.position.facilityId && candidates.length > 1) target = candidates[(offset + time.phaseIndex + 1) % candidates.length];
   return target;
 }
-
 
 function npcMatchesAftermathPlan(npc, plan) {
   const explicitIds = plan?.npcIds ?? [];
