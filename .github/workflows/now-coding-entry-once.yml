@@ -19,44 +19,11 @@ jobs:
         with:
           ref: feat/now-coding-foundation
           fetch-depth: 0
-      - name: Insert Now Coding card without rewriting unrelated menu content
-        shell: python
-        run: |
-          from pathlib import Path
-          import re
-
-          path = Path("public/index.html")
-          source = path.read_text(encoding="utf-8")
-          if 'data-game="now-coding"' not in source:
-              pattern = re.compile(
-                  r'''(?P<trpg>[ \t]*<div class="game-card" data-game="trpg" onclick="window\.location\.href='/TRPG/'" role="link" tabindex="0" aria-label="TRPG\(仮題\)を開く">\s*<div class="game-icon">⚔️</div>\s*<h2>TRPG\(仮題\)</h2>\s*<p>時間が止まらない異世界ゲームブック</p>\s*</div>)'''
-              )
-              card = r'''
-
-    <div class="game-card" data-game="now-coding" role="button" tabindex="0" aria-label="Now Codingを開く"
-      onclick="event.stopPropagation();(()=>{let u=null;try{u=JSON.parse(localStorage.getItem('currentUser')||'null')}catch(e){}if(u&&u.userTrackingId){window.location.href='/now-coding/';return;}sessionStorage.setItem('afterAuthRedirect','/now-coding/');document.getElementById('openLoginBtn')?.click();})()">
-      <div class="game-icon" aria-hidden="true">
-        <svg viewBox="0 0 64 64" width="58" height="58" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:auto;">
-          <path d="M8 8H56V56H8V8Z" stroke="currentColor" stroke-width="2"/>
-          <path d="M24 8V56M40 8V56M8 24H56M8 40H56" stroke="currentColor" stroke-opacity=".35"/>
-          <path d="M19 33L27 25M19 33L27 41M45 23L35 43" stroke="currentColor" stroke-width="3" stroke-linecap="square"/>
-        </svg>
-      </div>
-      <h2>Now Coding</h2>
-      <p>コードを組んで、駒を戦わせろ。</p>
-    </div>'''
-              source, count = pattern.subn(lambda match: match.group("trpg") + card, source, count=1)
-              if count != 1:
-                  raise SystemExit("TRPG card signature not found exactly once; refusing broad rewrite")
-              path.write_text(source, encoding="utf-8")
-
-          # One-shot helper: remove itself from the product branch after the targeted patch.
-          Path(".github/workflows/now-coding-entry-once.yml").unlink(missing_ok=True)
-      - name: Commit only the targeted entry change
-        run: |
+      - run: node tools/now-coding/inject-menu-entry.mjs
+      - run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/index.html .github/workflows/now-coding-entry-once.yml
+          git add -A public/index.html .github/workflows/now-coding-entry-once.yml tools/now-coding/inject-menu-entry.mjs
           git diff --cached --check
           git commit -m "feat(now-coding): add authenticated top-page entry"
           git push origin HEAD:feat/now-coding-foundation
