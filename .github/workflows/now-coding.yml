@@ -3,6 +3,7 @@ name: now-coding
 on:
   pull_request:
     paths:
+      - "public/index.html"
       - "public/now-coding/**"
       - "src/server/now-coding/**"
       - "src/server/shared/index.js"
@@ -27,3 +28,11 @@ jobs:
           node --check src/server/shared/index.js
       - name: Territory engine tests
         run: node --test tools/now-coding/engine.test.mjs
+      - name: Entry and UX contract smoke checks
+        run: |
+          grep -q 'data-game="now-coding"' public/index.html
+          grep -q 'afterAuthRedirect.*now-coding' public/index.html
+          grep -q 'data-go="home"' public/now-coding/index.html
+          grep -q 'data-go="editor"' public/now-coding/index.html
+          grep -q 'data-go="battle"' public/now-coding/index.html
+          grep -q 'id="editAfterResultButton"' public/now-coding/index.html
