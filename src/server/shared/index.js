@@ -10,6 +10,7 @@ import { mountOriginMagicCircleRoutes } from "../origin-magic-circle/index.js";
 import { mountHundredOreRoutes } from "../100ore/index.js";
 import { mountCompactNoHandSoccerRoutes } from "../nohand-soccer/compact-generation.js";
 import { mountTenFreelyRoutes } from "../../10を自由に/index.js";
+import { mountNowCodingRoutes } from "../now-coding/index.js";
 
 export function createServerContext() {
   const app = createApp();
@@ -25,6 +26,7 @@ export function createServerContext() {
   mountHundredOreRoutes(app);
   mountCompactNoHandSoccerRoutes(app);
   mountTenFreelyRoutes(app, io);
+  mountNowCodingRoutes(app);
 
   return { app, httpServer, io };
 }
