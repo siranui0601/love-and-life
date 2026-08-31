@@ -897,7 +897,13 @@ function secretDisclosureReason(sourceState, recipientId, recipientState, belief
     ...array(policy.workRelationshipNpcIds),
     ...array(belief?.workRelationshipNpcIds),
   ]));
-  if (workRelated.has(recipientId)) return explicitReason || 'work-relationship';
+  const workContext = policy.workRelevant === true
+  || belief?.workRelevant === true
+  || policy.context === 'work'
+  || belief?.disclosureContext === 'work';
+if (workRelated.has(recipientId) && (explicitReason || workContext)) {
+  return explicitReason || 'shared-work-context';
+}
 
   const sharedObjective = new Set(unique([
     ...array(policy.sharedObjectiveNpcIds),
@@ -934,7 +940,8 @@ function utteranceCandidates(engine, context, time) {
     const sourceState = engine.npcStates[sourceId];
     if (!isNpcLifeEligible(sourceState)) continue;
     for (const belief of Object.values(sourceState.beliefs ?? {})) {
-      if (belief.kind === 'interest' || Number(belief.propagationAt ?? Infinity) > Number(time.absoluteHour)) continue;
+      const contactAt = Number(context.contactAt ?? time.absoluteHour);
+      if (belief.kind === 'interest' || Number(belief.propagationAt ?? Infinity) > contactAt) continue;
       const possible = context.participants
         .filter((recipientId) => recipientId !== sourceId)
         .filter((recipientId) => {
