@@ -1,4 +1,5 @@
 import * as base from "./canonical-job-time-policy.js";
+import { recordWorldInteractionEvent } from "../../../../tools/trpg-sim/lib/npc-life-engine.mjs";
 
 export * from "./canonical-job-time-policy.js";
 
@@ -20,6 +21,7 @@ const CALLBACK_HISTORY = "F_REGISTER_RUMOR_CALLBACK_HEARD";
 const CALLBACK_GREETING_HISTORY = "F_RIONA_AMBIENT_GREETING_OBSERVED";
 const RECORD_PREFIX = "WORLD-RECORD:FARM-INN-REGISTER:";
 const CALLBACK_RECORD_PREFIX = "WORLD-RECORD:F-RIONA-CALLBACK:";
+const CALLBACK_GREETING_ACTION_ID = "MISSION_FLOW:F:REGISTER_CALLBACK:greeting";
 const FACT_ID = "F-FACT-REGISTERED-FINN-RESCUER";
 const RUMOR_ID = "RUM-F-REGISTERED-FINN-RESCUER";
 const GOAP_ID = "GOAP-F-RIONA-VERIFY-REGISTERED-RESCUER";
@@ -460,9 +462,7 @@ export function synchronizeRegisterButterfly(runtime) {
   return { record, link, propagation, goap };
 }
 
-function callbackEligible(runtime) {
-  synchronizeRegisterButterfly(runtime);
-  if (hasHistory(runtime, CALLBACK_HISTORY)) return false;
+function callbackWorldConditions(runtime) {
   const request = runtime?.playerState?.goapRequests?.[GOAP_ID];
   const current = player(runtime);
   const riona = existingNpc(runtime, RIONA_ID);
@@ -471,6 +471,61 @@ function callbackEligible(runtime) {
     && npcFacility(riona) === SQUARE_FACILITY_ID
     && current.location === LOCATION
     && current.facilityId === SQUARE_FACILITY_ID;
+}
+
+function ensureCallbackGreeting(runtime) {
+  synchronizeRegisterButterfly(runtime);
+  if (hasHistory(runtime, CALLBACK_HISTORY)) return null;
+  const existing = historyEntry(runtime, CALLBACK_GREETING_HISTORY);
+  if (existing) return existing;
+  if (!callbackWorldConditions(runtime)) return null;
+  const witnesses = coPresentWitnessNpcIds(runtime);
+  const listenerIds = [...new Set(["PLAYER", ...witnesses.filter((npcId) => npcId !== RIONA_ID)])];
+  const interaction = recordWorldInteractionEvent(runtime.livingWorld, {
+    type: "conversation",
+    contextType: "facility",
+    speakerId: RIONA_ID,
+    speakerNpcId: RIONA_ID,
+    listenerIds,
+    audibleListenerIds: listenerIds,
+    acceptedListenerIds: listenerIds,
+    privacy: "public",
+    factId: "F-FACT-RIONA-GREETED-REGISTERED-TRAVELER",
+    topic: "あなた、麦穂亭に泊まった人でしょう？",
+    startedAt: minute(runtime) / 60,
+    location: { hubId: LOCATION, facilityId: SQUARE_FACILITY_ID },
+    provenance: { sourceType: "npc-initiated-callback", rumorId: RUMOR_ID, goapRequestId: GOAP_ID },
+    dedupeKey: `callback-greeting:${GOAP_ID}`,
+  });
+  const greetingRecordId = `${CALLBACK_RECORD_PREFIX}${minute(runtime)}:greeting`;
+  const greetingRecord = createObservableRecord(runtime, {
+    id: greetingRecordId,
+    factId: "F-FACT-RIONA-GREETED-REGISTERED-TRAVELER",
+    factText: "田園の村の広場で、リオナが旅人を見つけて麦穂亭に泊まった人物かと声をかけた",
+    actionId: CALLBACK_GREETING_ACTION_ID,
+    witnessNpcIds: witnesses,
+  });
+  const entry = {
+    type: CALLBACK_GREETING_HISTORY,
+    minute: minute(runtime),
+    npcId: RIONA_ID,
+    factId: greetingRecord.factId,
+    recordId: greetingRecord.id,
+    facilityId: SQUARE_FACILITY_ID,
+    witnessNpcIds: witnesses,
+    interactionEventId: interaction?.id ?? null,
+    status: "awaiting_response",
+  };
+  history(runtime).push(entry);
+  return entry;
+}
+
+function callbackEligible(runtime) {
+  synchronizeRegisterButterfly(runtime);
+  if (hasHistory(runtime, CALLBACK_HISTORY)) return false;
+  const pending = historyEntry(runtime, CALLBACK_GREETING_HISTORY);
+  if (pending?.status === "awaiting_response") return callbackWorldConditions(runtime);
+  return Boolean(ensureCallbackGreeting(runtime));
 }
 
 function callbackActions() {
@@ -674,13 +729,22 @@ function consumeCallback(runtime, action, result) {
   if (!npcAvailableForInteraction(riona)) return false;
   ensureRumorCollections(runtime);
   const witnesses = coPresentWitnessNpcIds(runtime);
-  const greetingRecordId = `${CALLBACK_RECORD_PREFIX}${minute(runtime)}:greeting`;
-  const greetingRecord = createObservableRecord(runtime, {
-    id: greetingRecordId,
-    factId: "F-FACT-RIONA-GREETED-REGISTERED-TRAVELER",
-    factText: "田園の村の広場で、リオナが旅人を見つけて麦穂亭に泊まった人物かと声をかけた",
-    actionId: action.id,
-    witnessNpcIds: witnesses,
+  const greetingHistory = ensureCallbackGreeting(runtime) ?? historyEntry(runtime, CALLBACK_GREETING_HISTORY);
+  if (!greetingHistory || greetingHistory.status !== "awaiting_response") return false;
+  const responseInteraction = recordWorldInteractionEvent(runtime.livingWorld, {
+    type: branch === "ask" ? "conversation-response" : "observable-response",
+    contextType: "facility",
+    speakerId: "PLAYER",
+    listenerIds: witnesses,
+    audibleListenerIds: witnesses,
+    acceptedListenerIds: witnesses,
+    privacy: "public",
+    factId: definition.factId,
+    topic: definition.factText,
+    startedAt: minute(runtime) / 60,
+    location: { hubId: LOCATION, facilityId: SQUARE_FACILITY_ID },
+    provenance: { sourceType: "player-choice", actionId: action.id, parentInteractionEventId: greetingHistory.interactionEventId ?? null },
+    dedupeKey: `callback-response:${GOAP_ID}:${branch}`,
   });
   const responseRecordId = `${CALLBACK_RECORD_PREFIX}${minute(runtime)}:${branch}`;
   const responseRecord = createObservableRecord(runtime, {
@@ -692,17 +756,9 @@ function consumeCallback(runtime, action, result) {
   });
   const interpretation = recordRionaInterpretation(runtime, definition, responseRecord);
   runtime.playerState.player.knownRumorIds.add(RUMOR_ID);
-  if (!hasHistory(runtime, CALLBACK_GREETING_HISTORY)) {
-    history(runtime).push({
-      type: CALLBACK_GREETING_HISTORY,
-      minute: minute(runtime),
-      npcId: RIONA_ID,
-      factId: greetingRecord.factId,
-      recordId: greetingRecord.id,
-      facilityId: SQUARE_FACILITY_ID,
-      witnessNpcIds: witnesses,
-    });
-  }
+  greetingHistory.status = "answered";
+  greetingHistory.respondedAtMinute = minute(runtime);
+  greetingHistory.responseInteractionEventId = responseInteraction?.id ?? null;
   if (!hasHistory(runtime, CALLBACK_HISTORY)) {
     history(runtime).push({
       type: CALLBACK_HISTORY,

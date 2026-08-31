@@ -60,6 +60,70 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+
+function ensureInteractionState(engine) {
+  engine.interactionEvents ??= [];
+  engine.interactionEventSequence = Number(engine.interactionEventSequence ?? engine.interactionEvents.length);
+  if (!(engine.interactionDedupeKeys instanceof Set)) {
+    engine.interactionDedupeKeys = new Set([
+      ...(engine.interactionDedupeKeys ?? []),
+      ...engine.interactionEvents.map((event) => event?.dedupeKey).filter(Boolean),
+    ]);
+  }
+  return engine;
+}
+
+export function recordWorldInteractionEvent(engine, event = {}) {
+  if (!engine) return null;
+  ensureInteractionState(engine);
+  const speakerId = String(event.speakerId ?? event.speakerNpcId ?? '').trim();
+  const listenerIds = unique(event.listenerIds ?? event.listenerNpcIds ?? []);
+  const audibleListenerIds = unique(event.audibleListenerIds ?? listenerIds);
+  const acceptedListenerIds = unique(event.acceptedListenerIds ?? []);
+  if (!speakerId || !audibleListenerIds.length) return null;
+  const startedAt = Number(event.startedAt ?? event.absoluteHour ?? 0);
+  const dedupeKey = event.dedupeKey ?? [
+    event.type ?? 'conversation',
+    event.contextType ?? 'facility',
+    speakerId,
+    audibleListenerIds.join(','),
+    event.factId ?? event.topic ?? '',
+    Number.isFinite(startedAt) ? startedAt.toFixed(6) : String(startedAt),
+    event.location?.facilityId ?? event.location?.hubId ?? event.routeSegment?.routeId ?? '',
+  ].join('|');
+  if (engine.interactionDedupeKeys.has(dedupeKey)) {
+    return engine.interactionEvents.find((entry) => entry?.dedupeKey === dedupeKey) ?? null;
+  }
+  engine.interactionEventSequence += 1;
+  const id = `I${String(engine.interactionEventSequence).padStart(7, '0')}`;
+  const stored = {
+    id,
+    eventId: id,
+    type: event.type ?? 'conversation',
+    contextType: event.contextType ?? 'facility',
+    speakerId,
+    speakerNpcId: event.speakerNpcId ?? (speakerId.startsWith('NPC') ? speakerId : null),
+    listenerIds,
+    listenerNpcIds: listenerIds.filter((id) => id.startsWith('NPC')),
+    audibleListenerIds,
+    acceptedListenerIds,
+    privacy: event.privacy ?? 'public',
+    factId: event.factId ?? null,
+    topic: event.topic ?? null,
+    startedAt,
+    endedAt: Number(event.endedAt ?? startedAt),
+    day: event.day ?? null,
+    phaseIndex: event.phaseIndex ?? null,
+    location: event.location ? { ...event.location } : null,
+    routeSegment: event.routeSegment ? { ...event.routeSegment } : null,
+    provenance: event.provenance ? { ...event.provenance } : null,
+    dedupeKey,
+  };
+  engine.interactionEvents.push(stored);
+  engine.interactionDedupeKeys.add(dedupeKey);
+  return stored;
+}
+
 function extractTroubleIds(value) {
   return unique(String(value ?? "").match(/T\d{2}/gu) ?? []);
 }
@@ -241,6 +305,10 @@ export function createNpcLifeEngine({ model, seed, npcStates, departures = [] } 
     knowledgeEvents: [],
     decisionEvents: [],
     localMovementEvents: [],
+    interactionEvents: [],
+    interactionEventSequence: 0,
+    interactionDedupeKeys: new Set(),
+    lastInteractionSweepAt: null,
     knowledgeEventSequence: 0,
     decisionEventSequence: 0,
     populationByTick: [],
@@ -693,63 +761,272 @@ function pickupHubRumors(engine, time) {
   }
 }
 
-function shareKnowledge(engine, time) {
+function conversationParticipantsAtFacility(engine) {
   const groups = new Map();
   for (const npc of sortedNpcs(engine.model)) {
     const state = engine.npcStates[npc.id];
-    if (state.presence !== "present" || state.lifeStatus === "dead") continue;
-    const key = `${state.position.hubId}\u0000${state.position.facilityId ?? "@hub"}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(npc);
+    if (!isNpcLifeEligible(state) || state.presence !== 'present' || state.travel || state.localTravel) continue;
+    const hubId = state.position?.hubId;
+    const facilityId = state.position?.facilityId;
+    if (!hubId || !facilityId) continue;
+    const key = `facility:${hubId}:${facilityId}`;
+    if (!groups.has(key)) groups.set(key, { key, contextType: 'facility', participants: [], location: { hubId, facilityId } });
+    groups.get(key).participants.push(npc.id);
   }
-  const pending = [];
-  for (const residents of groups.values()) {
-    residents.sort((left, right) => left.id.localeCompare(right.id, "en"));
-    if (residents.length < 2) continue;
-    for (let index = 0; index < residents.length; index += 1) {
-      const source = residents[index];
-      const recipient = residents[(index + 1) % residents.length];
-      const sourceState = engine.npcStates[source.id];
-      const recipientState = engine.npcStates[recipient.id];
-      const candidates = Object.values(sourceState.beliefs)
-        .filter((belief) => belief.propagationAt <= time.absoluteHour)
-        .filter((belief) => !recipientState.beliefs[belief.factId])
-        .filter((belief) => belief.kind !== "interest")
-        .filter((belief) => beliefMatchesInterest(recipientState, belief))
-        .filter((belief) => !belief.secret || npcRandom(engine.seed, source.id, time.day, time.phaseIndex, `share-secret:${recipient.id}:${belief.factId}`) < 0.08)
-        .sort((left, right) => right.learnedAt - left.learnedAt || left.factId.localeCompare(right.factId, "en"));
-      if (candidates[0]) pending.push({ source, recipient, belief: candidates[0] });
+  return [...groups.values()].filter((group) => group.participants.length >= 2);
+}
+
+function mobilityTravel(state) {
+  return state?.travel ?? state?.localTravel ?? null;
+}
+
+function activeSharedTravelContexts(engine, time) {
+  const states = sortedNpcs(engine.model)
+    .map((npc) => [npc.id, engine.npcStates[npc.id]])
+    .filter(([, state]) => isNpcLifeEligible(state) && mobilityTravel(state));
+  const contexts = [];
+  const groupedVehicles = new Map();
+  for (const [npcId, state] of states) {
+    const travel = mobilityTravel(state);
+    const sharedId = travel?.vehicleId ?? travel?.transportUnitId ?? travel?.contactGroupId ?? null;
+    if (!sharedId) continue;
+    const key = `vehicle:${sharedId}`;
+    if (!groupedVehicles.has(key)) groupedVehicles.set(key, {
+      key,
+      contextType: 'vehicle',
+      participants: [],
+      contactAt: time.absoluteHour,
+      routeSegment: { routeId: travel.routeId ?? null, vehicleId: sharedId },
+    });
+    groupedVehicles.get(key).participants.push(npcId);
+  }
+  contexts.push(...[...groupedVehicles.values()].filter((entry) => entry.participants.length >= 2));
+
+  for (let leftIndex = 0; leftIndex < states.length; leftIndex += 1) {
+    const [leftId, leftState] = states[leftIndex];
+    const left = mobilityTravel(leftState);
+    if (!left?.routeId) continue;
+    for (let rightIndex = leftIndex + 1; rightIndex < states.length; rightIndex += 1) {
+      const [rightId, rightState] = states[rightIndex];
+      const right = mobilityTravel(rightState);
+      if (!right?.routeId || left.routeId !== right.routeId) continue;
+      const sameDirection = (left.from ?? left.fromFacilityId) === (right.from ?? right.fromFacilityId)
+        && (left.to ?? left.toFacilityId) === (right.to ?? right.toFacilityId);
+      if (!sameDirection) continue;
+      if (Math.abs(Number(left.departedAt ?? 0) - Number(right.departedAt ?? 0)) > 0.1) continue;
+      if ([left.vehicleId, left.transportUnitId, left.contactGroupId].some(Boolean)
+        || [right.vehicleId, right.transportUnitId, right.contactGroupId].some(Boolean)) continue;
+      contexts.push({
+        key: `shared-travel:${left.routeId}:${[leftId, rightId].sort().join(':')}:${Math.max(Number(left.departedAt ?? 0), Number(right.departedAt ?? 0)).toFixed(4)}`,
+        contextType: left.hubId && right.hubId ? 'shared-walk' : 'shared-travel',
+        participants: [leftId, rightId],
+        contactAt: Math.max(Number(left.departedAt ?? 0), Number(right.departedAt ?? 0)),
+        routeSegment: { routeId: left.routeId, from: left.from ?? left.fromFacilityId ?? null, to: left.to ?? left.toFacilityId ?? null },
+      });
     }
   }
-  for (const transfer of pending) {
-    const recipientState = engine.npcStates[transfer.recipient.id];
-    const sourceBelief = transfer.belief;
-    const metadata = propagationMetadata(sourceBelief, transfer.recipient.id);
-    const added = addBelief(engine, recipientState, {
-      ...sourceBelief,
-      confidence: round(sourceBelief.confidence * 0.86),
-      learnedAt: time.absoluteHour,
-      propagationAt: time.absoluteHour + 4,
-      sourceType: "npc",
-      sourceNpcId: transfer.source.id,
-      ...metadata,
-    }, {
-      type: "share",
-      npcId: transfer.recipient.id,
-      factId: sourceBelief.factId,
-      learnedAt: time.absoluteHour,
-      sourceType: "npc",
-      sourceNpcId: transfer.source.id,
-      sourceEventId: sourceBelief.provenanceEventId,
-      sourceLearnedAt: sourceBelief.learnedAt,
-      troubleId: sourceBelief.troubleId ?? null,
-      troubleStatus: sourceBelief.troubleStatus ?? null,
-      propagationAt: time.absoluteHour + 4,
-      location: { ...recipientState.position },
-      ...metadata,
-    });
-    if (added) publishRumor(engine, recipientState.position.hubId, recipientState.beliefs[sourceBelief.factId], time.absoluteHour + 4, transfer.recipient.id, "facility-conversation");
+  return contexts;
+}
+
+function crossingHour(left, right) {
+  const leftDuration = Number(left.arriveAt) - Number(left.departedAt);
+  const rightDuration = Number(right.arriveAt) - Number(right.departedAt);
+  if (!(leftDuration > 0) || !(rightDuration > 0)) return null;
+  const value = (1 + Number(left.departedAt) / leftDuration + Number(right.departedAt) / rightDuration)
+    / (1 / leftDuration + 1 / rightDuration);
+  const overlapStart = Math.max(Number(left.departedAt), Number(right.departedAt));
+  const overlapEnd = Math.min(Number(left.arriveAt), Number(right.arriveAt));
+  if (value < overlapStart - 1e-9 || value > overlapEnd + 1e-9) return null;
+  return value;
+}
+
+function departureContactContexts(engine, time) {
+  const contexts = [];
+  const previousSweep = Number.isFinite(engine.lastInteractionSweepAt) ? engine.lastInteractionSweepAt : Number.NEGATIVE_INFINITY;
+  const departures = array(engine.departures)
+    .filter((entry) => entry?.npcId && entry?.routeId && Number.isFinite(Number(entry.departedAt)) && Number.isFinite(Number(entry.arriveAt)));
+  for (let leftIndex = 0; leftIndex < departures.length; leftIndex += 1) {
+    const left = departures[leftIndex];
+    for (let rightIndex = leftIndex + 1; rightIndex < departures.length; rightIndex += 1) {
+      const right = departures[rightIndex];
+      if (left.npcId === right.npcId || left.routeId !== right.routeId) continue;
+      let contactAt = null;
+      let contextType = null;
+      if (left.from === right.from && left.to === right.to && Math.abs(Number(left.departedAt) - Number(right.departedAt)) <= 0.1) {
+        contactAt = Math.max(Number(left.departedAt), Number(right.departedAt));
+        contextType = 'shared-travel';
+      } else if (left.from === right.to && left.to === right.from) {
+        contactAt = crossingHour(left, right);
+        contextType = 'passing-contact';
+      }
+      if (!Number.isFinite(contactAt)) continue;
+      if (contactAt < previousSweep - 1e-9 || contactAt > Number(time.absoluteHour) + 1e-9) continue;
+      const leftState = engine.npcStates[left.npcId];
+      const rightState = engine.npcStates[right.npcId];
+      if (!isNpcLifeEligible(leftState) || !isNpcLifeEligible(rightState)) continue;
+      contexts.push({
+        key: `${contextType}:${left.routeId}:${[left.npcId, right.npcId].sort().join(':')}:${contactAt.toFixed(6)}`,
+        contextType,
+        participants: [left.npcId, right.npcId],
+        contactAt,
+        routeSegment: { routeId: left.routeId, from: left.from, to: left.to, crossingAt: contextType === 'passing-contact' ? contactAt : null },
+      });
+    }
   }
+  return contexts;
+}
+
+function willingToSpeak(engine, sourceId, sourceState, belief, time, context) {
+  if (belief.secret) {
+    return npcRandom(engine.seed, sourceId, time.day, time.phaseIndex, `private-topic:${context.key}:${belief.factId}`) < 0.25;
+  }
+  const importance = Number(belief.importance ?? 0);
+  const recent = Number.isFinite(Number(belief.learnedAt)) && Number(time.absoluteHour) - Number(belief.learnedAt) <= 8;
+  const authoredDuty = Array.isArray(belief.aftermathPlans) && belief.aftermathPlans.length > 0;
+  if (importance >= RUMOR_IMPORTANCE_THRESHOLD || authoredDuty || (recent && importance >= 0.6)) return true;
+  const socialNeed = Number(sourceState.needs?.social ?? 0) / 100;
+  const goal = String(sourceState.currentGoal ?? '');
+  const goalBias = /social|work|aftermath|respond|assist|warn/u.test(goal) ? 0.18 : 0;
+  const threshold = Math.min(0.65, 0.08 + socialNeed * 0.28 + importance * 0.22 + goalBias);
+  return npcRandom(engine.seed, sourceId, time.day, time.phaseIndex, `speak:${context.key}:${belief.factId}`) < threshold;
+}
+
+function utteranceCandidates(engine, context, time) {
+  const candidates = [];
+  for (const sourceId of context.participants) {
+    const sourceState = engine.npcStates[sourceId];
+    if (!isNpcLifeEligible(sourceState)) continue;
+    for (const belief of Object.values(sourceState.beliefs ?? {})) {
+      if (belief.kind === 'interest' || Number(belief.propagationAt ?? Infinity) > Number(time.absoluteHour)) continue;
+      const possible = context.participants
+        .filter((recipientId) => recipientId !== sourceId)
+        .filter((recipientId) => {
+const recipient = engine.npcStates[recipientId];
+return isNpcLifeEligible(recipient)
+  && !recipient.beliefs?.[belief.factId]
+  && beliefMatchesInterest(recipient, belief);
+        });
+      if (!possible.length || !willingToSpeak(engine, sourceId, sourceState, belief, time, context)) continue;
+      let audible = context.participants.filter((recipientId) => recipientId !== sourceId);
+      if (belief.secret) {
+        audible = possible.slice().sort((left, right) =>
+npcRandom(engine.seed, sourceId, time.day, time.phaseIndex, `secret-listener:${context.key}:${belief.factId}:${left}`)
+- npcRandom(engine.seed, sourceId, time.day, time.phaseIndex, `secret-listener:${context.key}:${belief.factId}:${right}`)).slice(0, 1);
+      }
+      const accepted = audible.filter((recipientId) => possible.includes(recipientId));
+      if (!accepted.length) continue;
+      candidates.push({
+        sourceId,
+        sourceState,
+        belief,
+        audible,
+        accepted,
+        recent: Number.isFinite(Number(belief.learnedAt)) && Number(time.absoluteHour) - Number(belief.learnedAt) <= 8 ? 1 : 0,
+        authoredDuty: Array.isArray(belief.aftermathPlans) && belief.aftermathPlans.length ? 1 : 0,
+      });
+    }
+  }
+  candidates.sort((left, right) =>
+    right.authoredDuty - left.authoredDuty
+    || right.recent - left.recent
+    || Number(right.belief.importance ?? 0) - Number(left.belief.importance ?? 0)
+    || Number(right.belief.learnedAt ?? -Infinity) - Number(left.belief.learnedAt ?? -Infinity)
+    || npcRandom(engine.seed, left.sourceId, time.day, time.phaseIndex, `topic-order:${context.key}:${left.belief.factId}`)
+      - npcRandom(engine.seed, right.sourceId, time.day, time.phaseIndex, `topic-order:${context.key}:${right.belief.factId}`)
+    || left.sourceId.localeCompare(right.sourceId, 'en'));
+  return candidates;
+}
+
+function applyConversationContext(engine, context, time) {
+  const maxUtterances = ['facility', 'vehicle'].includes(context.contextType) ? 2 : 1;
+  const selected = [];
+  const usedSpeakers = new Set();
+  for (const candidate of utteranceCandidates(engine, context, time)) {
+    if (usedSpeakers.has(candidate.sourceId)) continue;
+    selected.push(candidate);
+    usedSpeakers.add(candidate.sourceId);
+    if (selected.length >= maxUtterances) break;
+  }
+  for (const candidate of selected) {
+    const sourceBelief = candidate.belief;
+    const interaction = recordWorldInteractionEvent(engine, {
+      type: 'conversation',
+      contextType: context.contextType,
+      speakerId: candidate.sourceId,
+      speakerNpcId: candidate.sourceId,
+      listenerIds: candidate.audible,
+      audibleListenerIds: candidate.audible,
+      acceptedListenerIds: candidate.accepted,
+      privacy: sourceBelief.secret ? 'private' : 'public',
+      factId: sourceBelief.factId,
+      topic: sourceBelief.text ?? null,
+      startedAt: Number(context.contactAt ?? time.absoluteHour),
+      day: time.day,
+      phaseIndex: time.phaseIndex,
+      location: context.location ?? null,
+      routeSegment: context.routeSegment ?? null,
+      provenance: {
+        sourceKnowledgeEventId: sourceBelief.provenanceEventId ?? null,
+        sourceLearnedAt: sourceBelief.learnedAt,
+        sourceType: sourceBelief.sourceType ?? null,
+      },
+      dedupeKey: `${context.key}|${candidate.sourceId}|${sourceBelief.factId}`,
+    });
+    if (!interaction) continue;
+    for (const recipientId of candidate.accepted) {
+      const recipientState = engine.npcStates[recipientId];
+      const metadata = propagationMetadata(sourceBelief, recipientId);
+      const added = addBelief(engine, recipientState, {
+        ...sourceBelief,
+        confidence: round(Number(sourceBelief.confidence ?? 1) * (context.contextType === 'passing-contact' ? 0.78 : 0.86)),
+        learnedAt: Number(context.contactAt ?? time.absoluteHour),
+        propagationAt: Number(context.contactAt ?? time.absoluteHour) + 4,
+        sourceType: 'npc',
+        sourceNpcId: candidate.sourceId,
+        interactionEventId: interaction.id,
+        interactionContextType: context.contextType,
+        ...metadata,
+      }, {
+        type: 'share',
+        npcId: recipientId,
+        factId: sourceBelief.factId,
+        learnedAt: Number(context.contactAt ?? time.absoluteHour),
+        sourceType: 'npc',
+        sourceNpcId: candidate.sourceId,
+        sourceEventId: sourceBelief.provenanceEventId,
+        sourceLearnedAt: sourceBelief.learnedAt,
+        troubleId: sourceBelief.troubleId ?? null,
+        troubleStatus: sourceBelief.troubleStatus ?? null,
+        propagationAt: Number(context.contactAt ?? time.absoluteHour) + 4,
+        location: context.location ?? { ...recipientState.position },
+        routeSegment: context.routeSegment ?? null,
+        interactionEventId: interaction.id,
+        interactionContextType: context.contextType,
+        ...metadata,
+      });
+      if (added) {
+        publishRumor(engine, recipientState.position?.hubId, recipientState.beliefs[sourceBelief.factId], Number(context.contactAt ?? time.absoluteHour) + 4, recipientId, `${context.contextType}-conversation`);
+      }
+    }
+  }
+}
+
+export function processNpcLifeInteractions(engine, time) {
+  ensureInteractionState(engine);
+  const contexts = [
+    ...conversationParticipantsAtFacility(engine),
+    ...activeSharedTravelContexts(engine, time),
+    ...departureContactContexts(engine, time),
+  ];
+  const uniqueContexts = [...new Map(contexts.map((context) => [context.key, context])).values()]
+    .sort((left, right) => left.key.localeCompare(right.key, 'en'));
+  for (const context of uniqueContexts) applyConversationContext(engine, context, time);
+  engine.lastInteractionSweepAt = Math.max(Number(engine.lastInteractionSweepAt ?? Number.NEGATIVE_INFINITY), Number(time.absoluteHour));
+  return engine.interactionEvents;
+}
+
+function shareKnowledge(engine, time) {
+  return processNpcLifeInteractions(engine, time);
 }
 
 function updateExposure(engine, npc, state, time, troubleStates) {
@@ -851,6 +1128,7 @@ function updateWorldRevision(engine, troubleStates) {
 }
 
 export function prepareNpcLifeTick(engine, { time, troubleStates, worldFlags } = {}) {
+  ensureInteractionState(engine);
   updateWorldRevision(engine, troubleStates);
   for (const npc of sortedNpcs(engine.model)) {
     const state = engine.npcStates[npc.id];
@@ -1332,6 +1610,7 @@ export function finalizeNpcLifeEngine(engine) {
     knowledgeEvents: engine.knowledgeEvents,
     decisionEvents: engine.decisionEvents,
     localMovementEvents: engine.localMovementEvents,
+    interactionEvents: engine.interactionEvents ?? [],
     populationByTick: engine.populationByTick,
     activityCoverage: {
       eligibleTicks,

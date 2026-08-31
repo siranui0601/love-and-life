@@ -181,6 +181,7 @@ const PLAYABLE_LOG_LIMITS = Object.freeze({
   decisionEvents: 128,
   knowledgeEvents: 256,
   localMovementEvents: 256,
+  interactionEvents: 256,
   populationByTick: 8,
   npcTracePerActor: 4,
   playerHistory: 256,
@@ -258,6 +259,7 @@ export function compactPlayableRuntime(runtime) {
     decisionEventsRemoved: 0,
     knowledgeEventsRemoved: 0,
     localMovementEventsRemoved: 0,
+    interactionEventsRemoved: 0,
     populationTicksRemoved: 0,
     npcTraceEntriesRemoved: 0,
     playerHistoryEntriesRemoved: 0,
@@ -266,6 +268,7 @@ export function compactPlayableRuntime(runtime) {
   totals.decisionEventsRemoved += trimOldest(world.decisionEvents, PLAYABLE_LOG_LIMITS.decisionEvents);
   totals.knowledgeEventsRemoved += trimOldest(world.knowledgeEvents, PLAYABLE_LOG_LIMITS.knowledgeEvents);
   totals.localMovementEventsRemoved += trimOldest(world.localMovementEvents, PLAYABLE_LOG_LIMITS.localMovementEvents);
+  totals.interactionEventsRemoved += trimOldest(world.interactionEvents, PLAYABLE_LOG_LIMITS.interactionEvents);
   totals.populationTicksRemoved += trimOldest(world.populationByTick, PLAYABLE_LOG_LIMITS.populationByTick);
   for (const traces of Object.values(world.npcTraces ?? {})) {
     totals.npcTraceEntriesRemoved += trimOldest(traces, PLAYABLE_LOG_LIMITS.npcTracePerActor);
