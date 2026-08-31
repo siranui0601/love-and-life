@@ -32,33 +32,20 @@ jobs:
           path = Path('tools/trpg-sim/lib/npc-life-engine.mjs')
           text = path.read_text()
 
-          old_contact = """    for (const belief of Object.values(sourceState.beliefs ?? {})) {
-              if (belief.kind === 'interest' || Number(belief.propagationAt ?? Infinity) > Number(time.absoluteHour)) continue;
-              const possible = context.participants
-          """
-          new_contact = """    for (const belief of Object.values(sourceState.beliefs ?? {})) {
-              const contactAt = Number(context.contactAt ?? time.absoluteHour);
-              if (belief.kind === 'interest' || Number(belief.propagationAt ?? Infinity) > contactAt) continue;
-              const possible = context.participants
-          """
-          if text.count(old_contact) != 1:
-              raise SystemExit(f'contact guard occurrence mismatch: {text.count(old_contact)}')
-          text = text.replace(old_contact, new_contact, 1)
+          old_guard = "if (belief.kind === 'interest' || Number(belief.propagationAt ?? Infinity) > Number(time.absoluteHour)) continue;"
+          new_guard = "const contactAt = Number(context.contactAt ?? time.absoluteHour);\n      if (belief.kind === 'interest' || Number(belief.propagationAt ?? Infinity) > contactAt) continue;"
+          if text.count(old_guard) != 1:
+              raise SystemExit(f'contact guard occurrence mismatch: {text.count(old_guard)}')
+          text = text.replace(old_guard, new_guard, 1)
 
-          old_work = """  if (workRelated.has(recipientId)) return explicitReason || 'work-relationship';
-
-            const sharedObjective = new Set(unique([
-          """
-          new_work = """  const workContext = policy.workRelevant === true
-              || belief?.workRelevant === true
-              || policy.context === 'work'
-              || belief?.disclosureContext === 'work';
-            if (workRelated.has(recipientId) && (explicitReason || workContext)) {
-              return explicitReason || 'shared-work-context';
-            }
-
-            const sharedObjective = new Set(unique([
-          """
+          old_work = "if (workRelated.has(recipientId)) return explicitReason || 'work-relationship';"
+          new_work = """const workContext = policy.workRelevant === true
+            || belief?.workRelevant === true
+            || policy.context === 'work'
+            || belief?.disclosureContext === 'work';
+          if (workRelated.has(recipientId) && (explicitReason || workContext)) {
+            return explicitReason || 'shared-work-context';
+          }"""
           if text.count(old_work) != 1:
               raise SystemExit(f'work disclosure occurrence mismatch: {text.count(old_work)}')
           text = text.replace(old_work, new_work, 1)
