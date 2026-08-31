@@ -30,7 +30,7 @@ Currently implemented language/runtime foundation:
 - logical processing costs 0 ticks; one physical action ends the current tick
 - per-tick instruction budget protects the runtime from non-terminating logic
 
-The first editor UI deliberately exposes a smaller subset of this AST while the underlying runtime already supports the wider expression set.
+The first editor UI exposes movement, three-direction cell conditions, seeded-random branches and basic variable assignment/change. The AST/runtime already supports the wider boolean, comparison and arithmetic expression set so those can be surfaced as composable visual sockets rather than redesigning the engine later.
 
 ## Game concepts
 
@@ -101,7 +101,7 @@ Replays store the deterministic inputs (seed, programs, spawn and rule version),
 
 The first playable battle UI runs the signed-in player's saved program against deterministic CPU programs. The persistence/replay schema is already participant-oriented, but authoritative Socket.IO human-vs-human room execution is not implemented in this foundation yet.
 
-This boundary is intentional: the visual language, tick semantics, persistence and deterministic replay are being fixed before network room orchestration is allowed to become another source of rules.
+This boundary is intentional: the visual language, tick semantics, persistence and deterministic replay are fixed independently of network room orchestration so a network layer cannot silently define different rules.
 
 ## Isolation from TRPG work
 
