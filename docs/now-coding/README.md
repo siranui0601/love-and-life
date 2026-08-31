@@ -99,7 +99,7 @@ Replays store deterministic inputs (seed, programs, spawn and rule version), rat
 
 ## First playable slice
 
-This PR now contains a complete local gameplay loop for the first ruleset:
+This draft PR currently contains a complete local gameplay loop for the first ruleset:
 
 - authenticate
 - create and save a program
