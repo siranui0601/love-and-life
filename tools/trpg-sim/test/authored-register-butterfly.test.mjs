@@ -100,6 +100,24 @@ function runLifeTick(state, tickIndex) {
   synchronizeRegisterButterfly(state);
 }
 
+function advanceUntil(state, predicate, { startTick = 0, maxTicks = 24 } = {}) {
+  for (let tick = startTick; tick < startTick + maxTicks; tick += 1) {
+    runLifeTick(state, tick);
+    if (predicate(state)) return tick + 1;
+  }
+  return startTick + maxTicks;
+}
+
+function directRionaShare(state) {
+  return state.livingWorld.knowledgeEvents?.find((event) =>
+    event.type === "share"
+    && event.npcId === "NPC008"
+    && event.sourceNpcId === "NPC058"
+    && event.factId === butterfly.FACT_ID
+    && event.location?.facilityId === "LOC_FARM_INN"
+  ) ?? null;
+}
+
 test("REGISTER creates one persistent inn record with provenance while alternative lodging does not", () => {
   const registered = runtime();
   const output = synchronizeRegisterButterfly(registered);
@@ -125,7 +143,7 @@ test("REGISTER creates one persistent inn record with provenance while alternati
   }
 });
 
-test("REGISTER alone never predicts Finn rescue; actual return links the registered rescuer to Rona first", () => {
+test("REGISTER alone never predicts Finn rescue; actual return links the registered rescuer to Lorna first", () => {
   const beforeRescue = runtime();
   synchronizeRegisterButterfly(beforeRescue);
   assert.equal(beforeRescue.livingWorld.npcStates.NPC058.beliefs[butterfly.FACT_ID], undefined);
@@ -134,10 +152,10 @@ test("REGISTER alone never predicts Finn rescue; actual return links the registe
   const noRiona = runtime({ finnReturned: true, minute: 830, riona: false });
   synchronizeRegisterButterfly(noRiona);
   const record = butterfly.registerRecord(noRiona);
-  const rona = noRiona.livingWorld.npcStates.NPC058;
-  assert.equal(rona.beliefs[butterfly.FACT_ID].sourceRecordId, record.id);
-  assert.equal(rona.beliefs[butterfly.FACT_ID].sourceNpcId, "NPC058");
-  assert.equal(rona.memories[butterfly.FACT_ID].sourceRecordId, record.id);
+  const lorna = noRiona.livingWorld.npcStates.NPC058;
+  assert.equal(lorna.beliefs[butterfly.FACT_ID].sourceRecordId, record.id);
+  assert.equal(lorna.beliefs[butterfly.FACT_ID].sourceNpcId, "NPC058");
+  assert.equal(lorna.memories[butterfly.FACT_ID].sourceRecordId, record.id);
   assert.equal(noRiona.livingWorld.npcStates.NPC008, undefined);
   assert.equal(noRiona.playerState.rumorById[butterfly.RUMOR_ID], undefined);
   assert.equal(noRiona.playerState.goapRequests[butterfly.GOAP_ID], undefined);
@@ -145,13 +163,16 @@ test("REGISTER alone never predicts Finn rescue; actual return links the registe
   assert.equal(noRiona.playerState.history.some((entry) => entry.type === butterfly.PROPAGATION_HISTORY), false);
 });
 
-test("Rona-to-Riona propagation carries provenance and a generic npc-life aftermath plan without scripting currentGoal", () => {
-  const state = runtime({ finnReturned: true, minute: 900 });
-  const riona = state.livingWorld.npcStates.NPC008;
-  const initialGoal = riona.currentGoal;
+test("Lorna-to-Riona propagation is an actual common-world share with direct provenance before GOAP activation", () => {
+  const state = canonicalLifeRuntime();
   synchronizeRegisterButterfly(state);
+  const nextTick = advanceUntil(state, (current) => Boolean(current.playerState.goapRequests[butterfly.GOAP_ID]));
+  assert.ok(nextTick <= 24);
+
   const record = butterfly.registerRecord(state);
-  const belief = riona.beliefs[butterfly.FACT_ID];
+  const share = directRionaShare(state);
+  assert.ok(share, "Riona must hear the correlation from Lorna through the common interaction engine");
+  const belief = state.livingWorld.npcStates.NPC008.beliefs[butterfly.FACT_ID];
   assert.equal(belief.sourceNpcId, "NPC058");
   assert.equal(belief.sourceRecordId, record.id);
   assert.deepEqual(belief.path, [`record:${record.id}`, "event:T01_FINN_ESCORTED_TO_SQUARE", "NPC058", "NPC008"]);
@@ -161,11 +182,12 @@ test("Rona-to-Riona propagation carries provenance and a generic npc-life afterm
   assert.equal(belief.aftermathPlans.length, 1);
   assert.equal(belief.aftermathPlans[0].id, butterfly.GOAP_ID);
   assert.equal(belief.aftermathPlans[0].reason, "merchant-rumor-credibility");
-  assert.equal(riona.currentGoal, initialGoal, "the butterfly layer must not select Riona's goal");
+
   const request = state.playerState.goapRequests[butterfly.GOAP_ID];
   assert.equal(request.executionAuthority, "npc-life-engine");
   assert.equal(request.plannerContract, "resolved-belief-aftermath-plan");
-  assert.equal(request.status, "active");
+  assert.equal(request.preconditions.learnedFromNpcId, "NPC058");
+  assert.equal(request.preconditions.sourceKnowledgeEventId, share.id);
 });
 
 test("npc-life planner, not the butterfly fixture, moves Riona and completes the merchant rumor GOAP", () => {
@@ -174,18 +196,15 @@ test("npc-life planner, not the butterfly fixture, moves Riona and completes the
   const riona = state.livingWorld.npcStates.NPC008;
   assert.equal(riona.completedAftermathPlanIds.includes(butterfly.GOAP_ID), false);
 
-  let ready = false;
-  for (let tick = 0; tick < 24 && !ready; tick += 1) {
-    runLifeTick(state, tick);
-    ready = state.playerState.goapRequests[butterfly.GOAP_ID]?.status === "ready";
-  }
+  advanceUntil(state, (current) => current.playerState.goapRequests[butterfly.GOAP_ID]?.status === "ready", { maxTicks: 24 });
 
   const request = state.playerState.goapRequests[butterfly.GOAP_ID];
-  assert.ok(request, "Riona must first meet Lorna at the inn and receive the fact during ordinary life ticks");
+  assert.ok(request, "Riona must first receive the fact during ordinary life ticks");
   assert.equal(request.status, "ready");
   assert.equal(request.readyReason, "npc-life-engine-aftermath-plan-completed");
   assert.equal(riona.completedAftermathPlanIds.includes(butterfly.GOAP_ID), true);
   assert.equal(butterfly.npcFacility(riona), "LOC_FARM_SQUARE");
+  assert.ok(directRionaShare(state), "GOAP activation must retain an actual direct Lorna-to-Riona share");
 
   const decisions = butterfly.matchingDecisionEvents(state);
   assert.ok(decisions.some((event) =>
@@ -200,7 +219,6 @@ test("npc-life planner, not the butterfly fixture, moves Riona and completes the
 
   const movement = butterfly.matchingMovementEvents(state).at(-1);
   assert.ok(movement, "production npc-life local movement must record Riona's arrival");
-  assert.equal(movement.fromFacilityId, "LOC_FARM_INN");
   assert.equal(movement.toFacilityId, "LOC_FARM_SQUARE");
   assert.match(movement.routeId, /^LOCAL:田園の村:/u);
   assert.equal(state.playerState.history.some((entry) =>
@@ -219,7 +237,7 @@ test("npc-life planner, not the butterfly fixture, moves Riona and completes the
   assert.match(result.summary, /本人へ確かめたかった/);
 });
 
-test("REGISTER butterfly survives serialization at record, correlation, propagation and GOAP boundaries", () => {
+test("REGISTER butterfly survives serialization while actual common interaction and planner progress continue", () => {
   const recordOnly = runtime({ finnReturned: false, minute: 700 });
   synchronizeRegisterButterfly(recordOnly);
   const restoredRecord = cloneSerializable(recordOnly);
@@ -231,20 +249,26 @@ test("REGISTER butterfly survives serialization at record, correlation, propagat
   const restoredCorrelation = cloneSerializable(correlated);
   assert.equal(restoredCorrelation.livingWorld.npcStates.NPC058.memories[butterfly.FACT_ID].sourceRecordId, butterfly.registerRecord(correlated).id);
 
-  const propagated = runtime({ finnReturned: true, minute: 900 });
+  const propagated = canonicalLifeRuntime();
   synchronizeRegisterButterfly(propagated);
+  const nextTick = advanceUntil(propagated, (current) => Boolean(current.playerState.goapRequests[butterfly.GOAP_ID]));
+  const share = directRionaShare(propagated);
+  assert.ok(share);
   const restoredPropagation = cloneSerializable(propagated);
   assert.equal(restoredPropagation.livingWorld.npcStates.NPC008.beliefs[butterfly.FACT_ID].sourceNpcId, "NPC058");
   assert.equal(restoredPropagation.playerState.rumorById[butterfly.RUMOR_ID].sourceNpcId, "NPC058");
   assert.equal(restoredPropagation.playerState.goapRequests[butterfly.GOAP_ID].status, "active");
   assert.equal(restoredPropagation.playerState.player.knownRumorIds instanceof Set, true);
 
-  propagated.livingWorld.npcStates.NPC008.completedAftermathPlanIds = [butterfly.GOAP_ID];
-  propagated.livingWorld.npcStates.NPC008.position = { hubId: "田園の村", facilityId: "LOC_FARM_SQUARE" };
-  synchronizeRegisterButterfly(propagated);
-  const restoredReady = cloneSerializable(propagated);
+  advanceUntil(restoredPropagation, (current) => current.playerState.goapRequests[butterfly.GOAP_ID]?.status === "ready", {
+    startTick: nextTick,
+    maxTicks: 24,
+  });
+  const restoredReady = cloneSerializable(restoredPropagation);
   assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].status, "ready");
   assert.equal(restoredReady.livingWorld.npcStates.NPC008.completedAftermathPlanIds.includes(butterfly.GOAP_ID), true);
+  assert.equal(butterfly.npcFacility(restoredReady.livingWorld.npcStates.NPC008), "LOC_FARM_SQUARE");
+  assert.ok(directRionaShare(restoredReady));
 });
 
 test("dead or not-yet-present information carriers do not receive butterfly state", () => {
