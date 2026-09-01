@@ -28,8 +28,8 @@
       <section id="view-home" class="view is-active" data-view="home">
         <div class="home-hero reveal-panel">
           <div class="eyebrow">プログラム対戦</div>
-          <h1>書いた通りに、駒は動く。</h1>
-          <p>試合前に駒の思考を組み、開始後は手を出さない。周囲を読み、判断し、より良いコードで盤面を攻略する対戦ゲームです。</p>
+          <h1>コードを組んで、1位を目指せ。</h1>
+          <p>自分で組んだコードが駒の頭脳になる。駒はその判断だけで自律して戦い、陣取り・生存戦・スプラなど、それぞれのルールで1位を競います。</p>
           <div class="hero-actions">
             <button id="homeBattleButton" class="primary-button edge-button" type="button" data-go="battle" data-locked-until-tutorial>対戦する</button>
             <button id="homeEditorButton" class="secondary-button edge-button" type="button" data-go="editor" data-locked-until-tutorial>駒を作る</button>
@@ -82,6 +82,22 @@
           <div class="coach-step" id="tutorialStepLabel">1 / 6</div>
           <div class="coach-copy">
             <strong id="tutorialTitle">Now Codingへようこそ</strong>
+            <div id="tutorialIntroDemo" class="tutorial-intro-demo" aria-hidden="true">
+              <div class="intro-phase intro-phase-code">
+                <span class="intro-number">1</span><b>CODE</b>
+                <i>もし 前が空き</i><i>進む</i><i>それ以外 → 右へ</i>
+              </div>
+              <span class="intro-flow">→</span>
+              <div class="intro-phase intro-phase-run">
+                <span class="intro-number">2</span><b>RUN</b>
+                <div class="intro-mini-board"><i class="intro-piece"></i></div>
+              </div>
+              <span class="intro-flow">→</span>
+              <div class="intro-phase intro-phase-win">
+                <span class="intro-number">3</span><b>GOAL</b>
+                <em>1位</em><small>より良いコードで勝つ</small>
+              </div>
+            </div>
             <p id="tutorialText"></p>
           </div>
           <button id="tutorialNextButton" class="primary-button compact tutorial-next" type="button">次へ</button>

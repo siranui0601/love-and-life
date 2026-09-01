@@ -319,3 +319,74 @@ body.is-touch-dragging { overflow: hidden; }
 @keyframes lessonTarget { from{box-shadow:0 0 0 1px rgba(88,230,246,.3),0 0 8px rgba(88,230,246,.08)} to{box-shadow:0 0 0 2px rgba(88,230,246,.75),0 0 26px rgba(88,230,246,.24)} }
 @media (min-width:900px){ .optional-tutorial-coach{bottom:22px;right:22px} }
 @media (prefers-reduced-motion:reduce){ .tail-piece,.tutorial-card-scan,.lesson-target,.optional-tutorial-coach{animation:none!important} }
+
+
+/* Tutorial concept intro — show the game loop before asking the player to read it. */
+.tutorial-intro-demo {
+  display: grid;
+  grid-template-columns: minmax(120px,1fr) auto minmax(110px,.8fr) auto minmax(120px,.9fr);
+  align-items: stretch;
+  gap: 9px;
+  margin: 12px 0 11px;
+}
+.intro-phase {
+  position: relative;
+  min-height: 92px;
+  padding: 25px 10px 10px;
+  overflow: hidden;
+  border: 1px solid rgba(88,230,246,.18);
+  background: linear-gradient(145deg, rgba(7,14,19,.9), rgba(12,22,28,.72));
+}
+.intro-phase > b { display: block; margin-bottom: 7px; color: var(--cyan); font: 800 .64rem ui-monospace, monospace; letter-spacing: .15em; }
+.intro-number { position: absolute; left: 9px; top: 7px; color: rgba(224,246,248,.42); font: 800 .58rem ui-monospace, monospace; }
+.intro-phase-code i {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: 3px 0;
+  padding: 3px 6px;
+  border-left: 2px solid rgba(88,230,246,.62);
+  background: rgba(88,230,246,.055);
+  color: #dbe9ec;
+  font: normal .61rem ui-monospace, monospace;
+  animation: introCodePulse 2.4s ease-in-out infinite;
+}
+.intro-phase-code i:nth-of-type(2) { animation-delay: .35s; }
+.intro-phase-code i:nth-of-type(3) { animation-delay: .7s; }
+.intro-flow { align-self: center; color: rgba(88,230,246,.72); font-size: 1.15rem; animation: introFlowPulse 1.4s ease-in-out infinite; }
+.intro-mini-board {
+  position: relative;
+  height: 56px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.075);
+  background-image: linear-gradient(rgba(88,230,246,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(88,230,246,.09) 1px, transparent 1px);
+  background-size: 25% 25%;
+}
+.intro-piece {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 8%;
+  top: 12%;
+  background: var(--cyan);
+  box-shadow: 0 0 16px rgba(88,230,246,.6);
+  animation: introPieceRun 3.2s cubic-bezier(.35,.05,.25,1) infinite;
+}
+.intro-phase-win { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.intro-phase-win > b { align-self: stretch; text-align: left; }
+.intro-phase-win em { color: #fff3af; font: 900 1.75rem/1 ui-monospace, monospace; font-style: normal; text-shadow: 0 0 22px rgba(255,212,92,.32); animation: introWinner 1.6s ease-in-out infinite alternate; }
+.intro-phase-win small { margin-top: 7px; color: #9fb0b8; font-size: .58rem; }
+@keyframes introCodePulse { 0%,100% { opacity:.55; transform:translateX(0); } 45%,65% { opacity:1; transform:translateX(4px); } }
+@keyframes introFlowPulse { 0%,100% { opacity:.28; transform:translateX(-2px); } 50% { opacity:1; transform:translateX(3px); } }
+@keyframes introPieceRun { 0%,12% { left:8%; top:12%; } 32%,45% { left:62%; top:12%; } 62%,75% { left:62%; top:62%; } 92%,100% { left:8%; top:62%; } }
+@keyframes introWinner { from { transform:scale(.96); opacity:.72; } to { transform:scale(1.05); opacity:1; } }
+@media (max-width: 700px) {
+  .tutorial-coach { grid-template-columns: auto minmax(0,1fr); }
+  .tutorial-next { grid-column: 1 / -1; width: 100%; }
+  .tutorial-intro-demo { grid-template-columns: 1fr; }
+  .intro-flow { justify-self: center; transform: rotate(90deg); }
+  .intro-phase { min-height: 78px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-phase-code i, .intro-flow, .intro-piece, .intro-phase-win em { animation: none !important; }
+}

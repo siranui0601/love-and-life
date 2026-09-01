@@ -332,9 +332,9 @@ function renderTutorialCoach() {
   const step = Number(appState.profile?.tutorialStep || 0);
   const content = [
     {
-      title: "このゲームで競うこと",
-      text: "Now Codingでは、対戦中に駒を直接操作しません。試合の前に『周囲をどう見て、どんな条件で、どちらへ動くか』をコードとして組みます。開始後、駒はそのコードだけで自律行動します。より良い判断を組めた駒ほど、盤面で有利になります。",
-      button: "実際に作ってみる",
+      title: "コードを組んで、1位を目指せ。",
+      text: "Now Codingは、自分でコードを組み、そのコードで自律して動く駒を戦わせ、1位を目指すゲームです。まずは『進む』『曲がる』『周囲を見る』を組み合わせて、最初の駒を作ります。",
+      button: "最初のコードを組む",
     },
     { title: "まず1マス進ませる", text: "「進む」を追加してください。進む命令は1tickを使い、駒が向いている前方へ1マス移動します。", button: "" },
     { title: "向きを変える", text: "「左に旋回」か「右に旋回」を追加してください。旋回も1tickです。後退したい場合も、旋回を組み合わせて自分で作ります。", button: "" },
@@ -343,6 +343,8 @@ function renderTutorialCoach() {
     { title: "最初の駒を保存する", text: "保存を押し、駒に名前を付けてください。保存できたらチュートリアルは完了し、対戦や他の画面が解放されます。", button: "" },
   ];
   const item = content[Math.min(step, content.length - 1)];
+  coach.classList.toggle("is-intro", step === 0);
+  $("#tutorialIntroDemo")?.classList.toggle("is-hidden", step !== 0);
   $("#tutorialStepLabel").textContent = `${Math.min(step + 1, 6)} / 6`;
   $("#tutorialTitle").textContent = item.title;
   $("#tutorialText").textContent = item.text;
