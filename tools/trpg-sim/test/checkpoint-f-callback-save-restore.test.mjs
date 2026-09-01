@@ -170,6 +170,7 @@ function safeTimeAdvanceChoices(save) {
       || entry.actionId?.startsWith('INSPECT:')
       || entry.actionId?.startsWith('WAIT:')
       || entry.actionId?.startsWith('OBSERVE:')
+      || entry.actionId?.startsWith('REST_OUTDOOR:')
       || entry.actionId === 'TUTORIAL:PAUSE:PLAN')
     .filter((entry) => Number(entry.minutes ?? 0) > 0);
 }
