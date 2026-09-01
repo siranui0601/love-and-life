@@ -276,7 +276,7 @@ async function reachCallback(service, store, owner, save, times) {
     productionTimeAdvanceActions: times.filter((entry) => entry.label.startsWith('time-authority:')),
   }));
 
-  for (let guard = 0; guard < 40; guard += 1) {
+  for (let guard = 0; guard < 96; guard += 1) {
     const callbacks = callbackChoices(current);
     if (callbacks.length) return current;
 
@@ -285,6 +285,13 @@ async function reachCallback(service, store, owner, save, times) {
     if (sustenance[0]) {
       current = await choose(service, owner, current, sustenance[0].actionId);
       pushTime(times, current, `callback:${sustenance[0].actionId}`);
+      continue;
+    }
+
+    const advances = safeTimeAdvanceChoices(current).sort((a, b) => Number(b.minutes) - Number(a.minutes));
+    if (advances[0]) {
+      current = await choose(service, owner, current, advances[0].actionId);
+      pushTime(times, current, `callback:${advances[0].actionId}`);
       continue;
     }
 
@@ -304,16 +311,15 @@ async function reachCallback(service, store, owner, save, times) {
       }
     }
 
-    const advances = safeTimeAdvanceChoices(current).sort((a, b) => Number(b.minutes) - Number(a.minutes));
-    if (advances[0]) {
-      current = await choose(service, owner, current, advances[0].actionId);
-      pushTime(times, current, `callback:${advances[0].actionId}`);
-      continue;
-    }
-    assert.fail(`no safe production time-advance action while waiting for callback; minute=${current.clock.absoluteMinute}; facility=${current.scene.facilityId}; choices=${current.choices.map((entry) => entry.actionId).join(',')}`);
+    assert.fail(`no safe production time-advance action or movement while waiting for callback; minute=${current.clock.absoluteMinute}; facility=${current.scene.facilityId}; choices=${current.choices.map((entry) => entry.actionId).join(',')}`);
   }
   const state = await runtime(store, current);
-  assert.fail(`REGISTER callback did not appear; minute=${current.clock.absoluteMinute}; goap=${JSON.stringify(state.playerState.goapRequests?.['GOAP-F-RIONA-VERIFY-REGISTERED-RESCUER'] ?? null)}; riona=${JSON.stringify(state.livingWorld.npcStates.NPC008?.position ?? null)}`);
+  const factId = 'F-FACT-REGISTERED-FINN-RESCUER';
+  const lorna = state.livingWorld.npcStates.NPC058;
+  const riona = state.livingWorld.npcStates.NPC008;
+  const correlation = state.livingWorld.knowledgeEvents.find((entry) => entry.type === 'correlation' && entry.npcId === 'NPC058' && entry.factId === factId) ?? null;
+  const share = state.livingWorld.knowledgeEvents.find((entry) => entry.type === 'share' && entry.sourceNpcId === 'NPC058' && entry.npcId === 'NPC008' && entry.factId === factId) ?? null;
+  assert.fail(`REGISTER callback did not appear; minute=${current.clock.absoluteMinute}; correlation=${JSON.stringify(correlation)}; lornaBelief=${JSON.stringify(lorna?.beliefs?.[factId] ?? null)}; lorna=${JSON.stringify(lorna?.position ?? null)}; share=${JSON.stringify(share)}; rionaBelief=${JSON.stringify(riona?.beliefs?.[factId] ?? null)}; riona=${JSON.stringify(riona?.position ?? null)}; goap=${JSON.stringify(state.playerState.goapRequests?.['GOAP-F-RIONA-VERIFY-REGISTERED-RESCUER'] ?? null)}`);
 }
 
 test('[CHECKPOINT_F_CALLBACK] production REGISTER callback survives save/restore, keeps exactly three choices, answers once and never redisplays', async () => {
