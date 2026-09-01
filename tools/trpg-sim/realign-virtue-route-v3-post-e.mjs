@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v1';
+export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v2';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -173,9 +173,20 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
   });
 
   const t01 = requireRow(byId, 'VR2-D01-05');
+  const t01Steps = JSON.parse(t01.replacementSteps || '[]').map((step) => {
+    const square = ['MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE', 'ACTION:MSN-T01:decide'].includes(step.actionId);
+    return {
+      ...step,
+      regionId: '田園の村',
+      facilityId: square ? 'LOC_FARM_SQUARE' : 'LOC_FARM_EDGE',
+    };
+  });
+  if (t01Steps.length !== 6) throw new Error(`expected six preserved T01 steps, got ${t01Steps.length}`);
+  t01.replacementSteps = JSON.stringify(t01Steps);
+  t01.payload = JSON.stringify({ steps: t01Steps });
   t01.requiredState = 'MSN-T01 active; hearing complete; at LOC_FARM_EDGE; Finn alive; any legal Checkpoint E loadout including shield-only; no required starter skill';
   t01.resultingState = 'two search clues; actual MON-0005 battle; Finn rescued, escorted and returned to LOC_FARM_SQUARE; MSN-T01 resolved';
-  t01.notes = 'existing public T01 search/rescue chain preserved after post-E bridge; weapon-independent and no SKL-0049 prerequisite';
+  t01.notes = 'existing public T01 search/rescue chain preserved after post-E bridge; weapon-independent and no SKL-0049 prerequisite; per-step facility matches production runtime';
 
   const aftercare = requireRow(byId, 'VR2-D01-07');
   aftercare.legacyDescription = '広場でミラへ引き渡し。Checkpoint Eで選んだ借用loadoutは返却条件を保持したまま継続';
