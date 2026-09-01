@@ -1,0 +1,114 @@
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+import { parseCsv } from '../export-virtue-route-v2-source.mjs';
+import { realignPostEArtifacts, POST_E_REALIGNMENT_VERSION } from '../realign-virtue-route-v3-post-e.mjs';
+import { validateStaticRoute } from '../validate-virtue-route-v3-static.mjs';
+import { buildSheetArtifacts, SHEET_EXPORT_FILES } from '../export-virtue-route-v3-sheets.mjs';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(HERE, '../../..');
+const COMPILER = path.join(ROOT, 'tools/trpg-sim/compile-virtue-route-v3.mjs');
+const SOURCE = path.join(ROOT, 'docs/trpg/virtue-route-v2-source.csv');
+
+function rowObjects(text) {
+  const [headers, ...matrix] = parseCsv(text);
+  return matrix.filter((row) => row.some((cell) => cell !== '')).map((cells) =>
+    Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ''])));
+}
+
+function actionIds(row) {
+  if (!row.replacementSteps) return row.actionId ? [row.actionId] : [];
+  return JSON.parse(row.replacementSteps).map((step) => step.actionId);
+}
+
+test('post-E Human Virtue realignment removes stale starter assumptions without shifting downstream v3 row IDs', async (t) => {
+  const compileDir = await mkdtemp(path.join(os.tmpdir(), 'virtue-v3-post-e-compile-'));
+  const validationDir = await mkdtemp(path.join(os.tmpdir(), 'virtue-v3-post-e-validation-'));
+  const sheetDir = await mkdtemp(path.join(os.tmpdir(), 'virtue-v3-post-e-sheet-'));
+  t.after(async () => Promise.all([
+    rm(compileDir, { recursive: true, force: true }),
+    rm(validationDir, { recursive: true, force: true }),
+    rm(sheetDir, { recursive: true, force: true }),
+  ]));
+
+  execFileSync(process.execPath, [COMPILER, SOURCE, compileDir], {
+    cwd: ROOT,
+    env: { ...process.env, GITHUB_SHA: 'POST-E-REALIGNMENT-TEST' },
+    stdio: 'pipe',
+  });
+  const realigned = realignPostEArtifacts({ outDir: compileDir });
+  assert.equal(realigned.version, POST_E_REALIGNMENT_VERSION);
+  assert.equal(realigned.mappedRows, 831);
+  assert.equal(realigned.expandedV3Rows, 1526);
+  assert.equal(realigned.proposedMoveLocalInsertions, 335);
+  assert.deepEqual(realigned.entryActionIds, [
+    'E:LODGE:REGISTER',
+    'DISCOVER_LOCAL_TROUBLE:T01',
+    'MOVE_LOCAL:LOC_FARM_SQUARE',
+    'ACTION:MSN-T01:hear',
+    'MOVE_LOCAL:LOC_FARM_EDGE',
+  ]);
+
+  const mappingText = await readFile(path.join(compileDir, 'virtue-route-v3-mapping.csv'), 'utf8');
+  const rows = rowObjects(mappingText);
+  const byId = new Map(rows.map((row) => [row.legacyRowId, row]));
+  assert.equal(byId.get('VR2-D01-01').classification, 'NARRATIVE_OUTCOME');
+  assert.equal(byId.get('VR2-D01-01').actionId, '');
+  assert.doesNotMatch(`${byId.get('VR2-D01-01').requiredState} ${byId.get('VR2-D01-01').resultingState}`, /freeStarterMeals>=|LIFE:EAT:ITM003/u);
+  assert.equal(byId.get('VR2-D01-02').classification, 'NARRATIVE_OUTCOME');
+  assert.equal(byId.get('VR2-D01-02').skillId, '');
+  assert.doesNotMatch(`${byId.get('VR2-D01-02').requiredState} ${byId.get('VR2-D01-02').resultingState}`, /SKL-0049/u);
+  assert.deepEqual(actionIds(byId.get('VR2-D01-03')), realigned.entryActionIds);
+  assert.match(byId.get('VR2-D01-03').requiredState, /Checkpoint E/u);
+  assert.match(byId.get('VR2-D01-05').requiredState, /shield-only/u);
+  assert.doesNotMatch(byId.get('VR2-D01-05').requiredState, /SKL-0049/u);
+  assert.match(byId.get('VR2-D01-07').resultingState, /no fixed starter equipment premise/u);
+
+  const moves = JSON.parse(await readFile(path.join(compileDir, 'virtue-route-v3-proposed-local-moves.json'), 'utf8'));
+  assert.equal(moves.count, 335);
+  assert.equal(moves.moves.some((move) => move.beforeLegacyRowId === 'VR2-D01-03'), false);
+
+  const validation = validateStaticRoute({
+    mappingPath: path.join(compileDir, 'virtue-route-v3-mapping.csv'),
+    sourcePath: SOURCE,
+    outDir: validationDir,
+  });
+  assert.equal(validation.result, 'PASS');
+  assert.equal(validation.errorCount, 0);
+  assert.equal(validation.checks.replayExecuted, false);
+  assert.equal(validation.checks.combatExecuted, false);
+
+  const sheet = buildSheetArtifacts({
+    mappingPath: path.join(compileDir, 'virtue-route-v3-mapping.csv'),
+    movesPath: path.join(compileDir, 'virtue-route-v3-proposed-local-moves.json'),
+    ledgerPath: path.join(validationDir, 'virtue-route-v3-static-ledger.csv'),
+    validationPath: path.join(validationDir, 'virtue-route-v3-static-validation.json'),
+    compilerSummaryPath: path.join(compileDir, 'virtue-route-v3-static-summary.json'),
+    outDir: sheetDir,
+  });
+  assert.equal(sheet.sheets['正規台帳_v3'].rows, 1526);
+  assert.equal(sheet.moveLocalRows, 335);
+
+  const ledgerText = await readFile(path.join(sheetDir, SHEET_EXPORT_FILES.ledger), 'utf8');
+  const ledgerRows = rowObjects(ledgerText);
+  assert.equal(ledgerRows[0].v3RowId, 'VR3-000001');
+  assert.equal(ledgerRows.at(-1).v3RowId, 'VR3-001526');
+  assert.deepEqual(ledgerRows.slice(0, 7).map((row) => row.actionId), [
+    '',
+    '',
+    'E:LODGE:REGISTER',
+    'DISCOVER_LOCAL_TROUBLE:T01',
+    'MOVE_LOCAL:LOC_FARM_SQUARE',
+    'ACTION:MSN-T01:hear',
+    'MOVE_LOCAL:LOC_FARM_EDGE',
+  ]);
+  assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId === 'LIFE:EAT:ITM003'), false);
+  assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId === 'SKL-0049'), false);
+  assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId?.startsWith('TUTORIAL:')), false);
+});
