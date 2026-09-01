@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
-import { PLAYER_COLORS, makeNpcProgram } from "../../../public/now-coding/engine.js";
+import { PLAYER_COLORS } from "../../../public/now-coding/engine.js";
+import { MODE_LABELS, makeModeNpcProgram } from "../../../public/now-coding/modes.js";
 import { resolveNowCodingUser } from "./store.js";
 
 const rooms = new Map();
@@ -8,6 +9,7 @@ const ROOM_ID_MIN = 100000;
 const ROOM_ID_MAX = 1000000;
 const VALID_SIZES = new Set([15, 21, 31]);
 const VALID_DIFFICULTIES = new Set(["weak", "medium", "strong"]);
+const VALID_MODES = new Set(Object.keys(MODE_LABELS));
 let cleanupTimer = null;
 
 function roomChannel(roomId) {
@@ -26,8 +28,9 @@ function normalizeSettings(raw = {}) {
   const playerCount = Math.max(2, Math.min(4, Number(raw.playerCount) || 2));
   const size = VALID_SIZES.has(Number(raw.size)) ? Number(raw.size) : 21;
   const npcDifficulty = VALID_DIFFICULTIES.has(raw.npcDifficulty) ? raw.npcDifficulty : "medium";
+  const mode = VALID_MODES.has(raw.mode) ? raw.mode : "territory";
   return {
-    mode: "territory",
+    mode,
     playerCount,
     size,
     seed: text(raw.seed, 128),
@@ -46,6 +49,12 @@ function makeRoomId() {
 
 function makeSeed() {
   return `${crypto.randomBytes(4).toString("hex")}-${crypto.randomBytes(4).toString("hex")}`;
+}
+
+function modeMaxTicks(mode, size) {
+  if (mode === "cobra" || mode === "fall") return Math.max(600, size * size * 2);
+  if (mode === "splat") return Math.max(500, size * size * 2);
+  return Math.max(420, size * size * 2);
 }
 
 function touch(room) {
@@ -85,6 +94,7 @@ function publicSummary(room) {
     roomId: room.id,
     hostName: room.members.find((member) => member.userTrackingId === room.hostId)?.username || "",
     mode: room.settings.mode,
+    modeLabel: MODE_LABELS[room.settings.mode] || "陣取り",
     size: room.settings.size,
     playerCount: room.settings.playerCount,
     currentPlayers: connected,
@@ -299,7 +309,7 @@ export function mountNowCodingSocketHandlers(io) {
             userTrackingId: "",
             name: `NPC・${room.settings.npcDifficulty === "weak" ? "弱" : room.settings.npcDifficulty === "strong" ? "強" : "中"} ${index}`,
             color: PLAYER_COLORS[index],
-            program: makeNpcProgram(room.settings.npcDifficulty, index),
+            program: makeModeNpcProgram(room.settings.mode, room.settings.npcDifficulty, index),
             npcDifficulty: room.settings.npcDifficulty,
           });
         }
@@ -308,11 +318,11 @@ export function mountNowCodingSocketHandlers(io) {
         room.startedAt = Date.now();
         touch(room);
         const config = {
-          mode: "territory",
+          mode: room.settings.mode,
           seed,
           size: room.settings.size,
           players,
-          maxTicks: Math.max(420, room.settings.size * room.settings.size * 2),
+          maxTicks: modeMaxTicks(room.settings.mode, room.settings.size),
           online: { roomId: room.id, saveOwnerId: room.hostId },
         };
         safeAck(ack, { ok: true });
