@@ -23,8 +23,8 @@ jobs:
           from pathlib import Path
           path = Path('src/server/trpg/game/survival-aware-service.js')
           text = path.read_text()
-          old = '''    const visible = urgentLifeChoices(super.gameViewForRecord(record), this.data)\n      .find((choice) => choice.actionId === request.actionId);'''
-          new = '''    const visible = (this.gameViewForRecord(record)?.choices ?? [])\n      .find((choice) => choice.actionId === request.actionId);'''
+          old = '''    const visible = urgentLifeChoices(super.gameViewForRecord(record), this.data)\n      .find((choice) => choice.actionId === request.actionId);\n    if (!visible || request.facilityId !== runtime.playerState.player.facilityId) {\n      throw new TrpgGameError(409, "choice_not_available");\n    }'''
+          new = '''    const authorityView = this.gameViewForRecord(record);\n    const visible = (authorityView?.choices ?? [])\n      .find((choice) => choice.actionId === request.actionId);\n    if (!visible || request.facilityId !== runtime.playerState.player.facilityId) {\n      console.log('[F_SURVIVAL_AUTHORITY_MISMATCH]', JSON.stringify({\n        actionId: request.actionId,\n        requestFacilityId: request.facilityId,\n        runtimeFacilityId: runtime.playerState.player.facilityId,\n        sceneFacilityId: authorityView?.scene?.facilityId ?? null,\n        visible: Boolean(visible),\n        choiceIds: (authorityView?.choices ?? []).map((choice) => choice.actionId),\n      }));\n      throw new TrpgGameError(409, "choice_not_available");\n    }'''
           if old not in text:
               raise SystemExit('survival visible-authority target missing')
           path.write_text(text.replace(old, new, 1))
