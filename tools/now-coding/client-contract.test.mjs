@@ -58,6 +58,17 @@ test("typed language exposes nested control and expected visual sockets", () => 
   assert.match(css, /\.socket-boolean/);
 });
 
+test("mobile tutorial acceptance contract is wired", () => {
+  assert.match(html, /style-v4\.css/);
+  assert.match(app, /a\.vm\?\.halted===true/);
+  assert.match(app, /tutorial-step-modal/);
+  assert.match(app, /scrollIntoView/);
+  assert.match(app, /setTimeout\(\(\)=>activate\(event\),120\)/);
+  assert.match(app, /dist>5/);
+  assert.match(css, /editor-layout-v3>\.block-palette\{[^}]*display:block!important/);
+  assert.match(css, /\.tutorial-disabled/);
+});
+
 test("multi-mode online client participates in the server round protocol", () => {
   assert.match(app, /now:round-finished/);
   assert.match(app, /now:set-round-program/);
