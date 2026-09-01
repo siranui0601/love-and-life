@@ -11,7 +11,7 @@ import {
 } from "./service.js";
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v11";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v12";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
@@ -278,7 +278,13 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
     const runtime = normalizeRuntime(deserializeRuntime(record.runtimeSnapshot, this.data), this.data);
     const beforeHash = gameStateHash(runtime, this.data);
     if (beforeHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
-    const visible = urgentLifeChoices(super.gameViewForRecord(record), this.data)
+    const runtimeAuthorityView = {
+      scene: { facilityId: runtime.playerState.player.facilityId },
+      player: runtime.playerState.player,
+      clock: { hour: runtime.playerState.hour },
+      choices: [],
+    };
+    const visible = urgentLifeChoices(runtimeAuthorityView, this.data)
       .find((choice) => choice.actionId === request.actionId);
     if (!visible || request.facilityId !== runtime.playerState.player.facilityId) {
       throw new TrpgGameError(409, "choice_not_available");
