@@ -47,3 +47,4 @@ jobs:
           git diff --cached --check
           git commit -m "feat(now-coding): complete modes and tutorial system"
           git push origin HEAD:feat/now-coding-foundation
+          # one-shot workflow removes itself after the verified commit
