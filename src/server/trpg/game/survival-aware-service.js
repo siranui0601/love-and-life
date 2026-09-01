@@ -11,7 +11,7 @@ import {
 } from "./service.js";
 import { CollapseAwareTrpgGameService } from "./collapse-aware-service.js";
 
-export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v12";
+export const SURVIVAL_AWARE_SERVICE_VERSION = "survival-aware-service-v13";
 
 const MEAL_FACILITY_PATTERN = /(?:INN|BAKERY|MARKET|TAVERN|食堂|宿|パン|市場|酒場)/iu;
 const LODGING_FACILITY_PATTERN = /(?:INN|LODGE|宿|旅籠)/iu;
@@ -218,6 +218,45 @@ export function urgentLifeChoices(view, data) {
   return choices;
 }
 
+function requestedLifeActionAuthority(request, runtime, data) {
+  const player = runtime?.playerState?.player;
+  const facilityId = String(player?.facilityId ?? "").trim();
+  if (!request || !facilityId || request.facilityId !== facilityId) return null;
+  const facility = data?.model?.facilityById?.[facilityId] ?? null;
+  const facilityText = `${facilityId} ${facility?.name ?? ""}`;
+
+  if (request.kind === "eat") {
+    if (!MEAL_FACILITY_PATTERN.test(facilityText)) return null;
+    const freeMealAvailable = number(player?.freeMeals) > 0;
+    const expectedPrice = freeMealAvailable ? 0 : DEFAULT_PAID_MEAL_PRICE;
+    if (request.price !== expectedPrice) return null;
+    if (!freeMealAvailable && number(player?.gold) < expectedPrice) return null;
+    return {
+      actionId: request.actionId,
+      label: freeMealAvailable
+        ? `${facility?.name ?? "この場所"}で用意された食事を取る`
+        : `${facility?.name ?? "この場所"}で食事を頼む（${expectedPrice}G）`,
+      nutrition: DEFAULT_MEAL_NUTRITION,
+    };
+  }
+
+  if (request.kind === "lodge") {
+    if (request.price !== 0 || !LODGING_FACILITY_PATTERN.test(facilityText) || number(player?.freeLodging) <= 0) return null;
+    return {
+      actionId: request.actionId,
+      label: `${facility?.name ?? "宿"}で今夜は休む`,
+    };
+  }
+
+  if (request.kind === "rest" && request.price === 0) {
+    return {
+      actionId: request.actionId,
+      label: "現在地で安全を確かめ、短く休息する",
+    };
+  }
+  return null;
+}
+
 export function applyUrgentLifeChoices(view, data) {
   const lifeChoices = urgentLifeChoices(view, data);
   if (!lifeChoices.length) return view;
@@ -278,17 +317,8 @@ export class SurvivalAwareTrpgGameService extends CollapseAwareTrpgGameService {
     const runtime = normalizeRuntime(deserializeRuntime(record.runtimeSnapshot, this.data), this.data);
     const beforeHash = gameStateHash(runtime, this.data);
     if (beforeHash !== record.stateHash) throw new TrpgGameError(409, "save_state_hash_mismatch");
-    const runtimeAuthorityView = {
-      scene: { facilityId: runtime.playerState.player.facilityId },
-      player: runtime.playerState.player,
-      clock: { hour: runtime.playerState.hour },
-      choices: [],
-    };
-    const visible = urgentLifeChoices(runtimeAuthorityView, this.data)
-      .find((choice) => choice.actionId === request.actionId);
-    if (!visible || request.facilityId !== runtime.playerState.player.facilityId) {
-      throw new TrpgGameError(409, "choice_not_available");
-    }
+    const visible = requestedLifeActionAuthority(request, runtime, this.data);
+    if (!visible) throw new TrpgGameError(409, "choice_not_available");
 
     const player = runtime.playerState.player;
     const minuteBefore = runtime.playerState.absoluteMinute;
