@@ -18,6 +18,7 @@ const CALLBACK_IDS = Object.freeze([
   `${CALLBACK_PREFIX}dance`,
 ]);
 const DAY1_AFTERCARE_OPEN_MINUTE = 12 * 60;
+const HUMAN_VIRTUE_BEDTIME_MINUTE = 22 * 60 + 30;
 
 function baseService(store) {
   return new TrpgGameService({ data, store, allowCustomSeed: true });
@@ -163,26 +164,52 @@ function callbackChoices(save) {
   return save.choices.filter((entry) => entry.actionId?.startsWith(CALLBACK_PREFIX));
 }
 
-async function advanceUntilVisible(service, owner, save, actionId, times) {
+function safeTimeAdvanceChoices(save) {
+  return save.choices
+    .filter((entry) => entry.actionId?.startsWith('LIFE:REST:') || entry.actionId?.startsWith('INSPECT:'))
+    .filter((entry) => Number(entry.minutes ?? 0) > 0);
+}
+
+async function advanceProductionTime(service, owner, save, times, {
+  untilActionId = null,
+  minimumMinute = null,
+  latestMinute = null,
+  label,
+}) {
   let current = save;
-  for (let guard = 0; guard < 12; guard += 1) {
-    if (current.choices.some((entry) => entry.actionId === actionId)) return current;
-    const rests = current.choices
-      .filter((entry) => entry.actionId?.startsWith('LIFE:REST:'))
-      .sort((a, b) => Number(b.minutes ?? 0) - Number(a.minutes ?? 0));
-    assert.ok(rests[0], `no visible production rest while waiting for ${actionId}; minute=${current.clock.absoluteMinute}; choices=${current.choices.map((entry) => entry.actionId).join(',')}`);
-    const before = Number(current.clock.absoluteMinute);
-    current = await choose(service, owner, current, rests[0].actionId);
-    pushTime(times, current, `time-authority:${rests[0].actionId}`);
-    assert.ok(Number(current.clock.absoluteMinute) > before, `production rest must advance time while waiting for ${actionId}: ${before} -> ${current.clock.absoluteMinute}`);
+  for (let guard = 0; guard < 32; guard += 1) {
+    const minute = Number(current.clock.absoluteMinute);
+    const actionVisible = !untilActionId || current.choices.some((entry) => entry.actionId === untilActionId);
+    const timeReached = minimumMinute == null || minute >= minimumMinute;
+    if (actionVisible && timeReached) return current;
+
+    const candidates = safeTimeAdvanceChoices(current);
+    assert.ok(candidates.length, `no ordinary production time action while waiting for ${label}; minute=${minute}; choices=${current.choices.map((entry) => entry.actionId).join(',')}`);
+    const remaining = minimumMinute == null ? Infinity : Math.max(0, minimumMinute - minute);
+    const withinRemaining = candidates
+      .filter((entry) => Number(entry.minutes) <= remaining)
+      .sort((a, b) => Number(b.minutes) - Number(a.minutes));
+    const selected = withinRemaining[0]
+      ?? [...candidates].sort((a, b) => Number(a.minutes) - Number(b.minutes))[0];
+    const before = minute;
+    current = await choose(service, owner, current, selected.actionId);
+    pushTime(times, current, `time-authority:${selected.actionId}`);
+    const after = Number(current.clock.absoluteMinute);
+    assert.ok(after > before, `production action must advance time while waiting for ${label}: ${before} -> ${after}`);
+    if (latestMinute != null) assert.ok(after <= latestMinute, `${label} time advancement must stay inside Day1 window: ${after} > ${latestMinute}`);
   }
-  assert.fail(`${actionId} did not become visible through bounded production time advancement; minute=${current.clock.absoluteMinute}`);
+  assert.fail(`${label} not reached through bounded production commands; minute=${current.clock.absoluteMinute}`);
 }
 
 async function reachCallback(service, store, owner, save, times) {
   let current = save;
   const t01CompletedAtMinute = Number(current.clock.absoluteMinute);
-  current = await advanceUntilVisible(service, owner, current, 'MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira', times);
+  current = await advanceProductionTime(service, owner, current, times, {
+    untilActionId: 'MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira',
+    minimumMinute: DAY1_AFTERCARE_OPEN_MINUTE,
+    latestMinute: 1439,
+    label: 'Day1 aftercare',
+  });
   const aftercareVisibleAtMinute = Number(current.clock.absoluteMinute);
   assert.ok(aftercareVisibleAtMinute >= DAY1_AFTERCARE_OPEN_MINUTE, `Day1 aftercare must obey the production noon gate; minute=${aftercareVisibleAtMinute}`);
   assert.ok(aftercareVisibleAtMinute >= t01CompletedAtMinute, 'waiting for aftercare must not rewind time');
@@ -190,6 +217,20 @@ async function reachCallback(service, store, owner, save, times) {
   for (const actionId of [
     'MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira',
     'MISSION_FLOW:T01:SQUARE_SUPPER:share_bread',
+  ]) {
+    current = await choose(service, owner, current, actionId);
+    pushTime(times, current, actionId);
+  }
+
+  current = await advanceProductionTime(service, owner, current, times, {
+    minimumMinute: HUMAN_VIRTUE_BEDTIME_MINUTE,
+    latestMinute: 1439,
+    label: 'Human Virtue 22:30 bedtime',
+  });
+  const sleepStartedAtMinute = Number(current.clock.absoluteMinute);
+  assert.ok(sleepStartedAtMinute >= HUMAN_VIRTUE_BEDTIME_MINUTE && sleepStartedAtMinute < 1440);
+
+  for (const actionId of [
     'MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras',
     'MISSION_FLOW:T01:DAY2_MERCHANT:help_unload',
     'MISSION_FLOW:T01:DAY2_MERCHANT_PAYMENT:take_three_gold',
@@ -205,6 +246,8 @@ async function reachCallback(service, store, owner, save, times) {
     t01CompletedAtMinute,
     aftercareOpenMinute: DAY1_AFTERCARE_OPEN_MINUTE,
     aftercareVisibleAtMinute,
+    humanVirtueBedtimeMinute: HUMAN_VIRTUE_BEDTIME_MINUTE,
+    sleepStartedAtMinute,
     day2Minute: current.clock.absoluteMinute,
     productionTimeAdvanceActions: times.filter((entry) => entry.label.startsWith('time-authority:')),
   }));
@@ -220,12 +263,10 @@ async function reachCallback(service, store, owner, save, times) {
         continue;
       }
     }
-    const rests = current.choices
-      .filter((entry) => entry.actionId?.startsWith('LIFE:REST:'))
-      .sort((a, b) => Number(b.minutes ?? 0) - Number(a.minutes ?? 0));
-    if (rests[0]) {
-      current = await choose(service, owner, current, rests[0].actionId);
-      pushTime(times, current, `callback:${rests[0].actionId}`);
+    const advances = safeTimeAdvanceChoices(current).sort((a, b) => Number(b.minutes) - Number(a.minutes));
+    if (advances[0]) {
+      current = await choose(service, owner, current, advances[0].actionId);
+      pushTime(times, current, `callback:${advances[0].actionId}`);
       continue;
     }
     assert.fail(`no safe production time-advance action while waiting for callback; minute=${current.clock.absoluteMinute}; facility=${current.scene.facilityId}; choices=${current.choices.map((entry) => entry.actionId).join(',')}`);
