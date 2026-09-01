@@ -1,0 +1,38 @@
+name: now-coding-mobile-ux-once
+
+on:
+  push:
+    branches:
+      - fix/now-coding-mobile-tutorial-ux
+    paths:
+      - "tools/now-coding/patch-mobile-tutorial-ux.mjs"
+      - ".github/workflows/now-coding-mobile-ux-once.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/now-coding-mobile-tutorial-ux
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply mobile UX patch
+        run: node tools/now-coding/patch-mobile-tutorial-ux.mjs
+      - name: Validate
+        run: |
+          node --check public/now-coding/app-v3.js
+          node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs
+      - name: Commit product changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/now-coding/app-v3.js public/now-coding/index.html public/now-coding/style-v4.css tools/now-coding/client-contract.test.mjs
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(now-coding): improve iPhone palette and tutorial flow"
+          git push origin HEAD:fix/now-coding-mobile-tutorial-ux
