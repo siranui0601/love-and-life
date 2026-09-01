@@ -365,7 +365,7 @@ function maybeAdvanceTutorialOnAdd(type) {
 }
 
 function clearOptionalTutorialFocus() {
-  $(".lesson-target").forEach((node) => node.classList.remove("lesson-target"));
+  document.querySelectorAll(".lesson-target").forEach((node) => node.classList.remove("lesson-target"));
 }
 
 function openTutorialLibrary() {
