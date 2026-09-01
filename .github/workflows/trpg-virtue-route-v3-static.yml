@@ -17,18 +17,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Patch callback workspace only
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs')
-          text = path.read_text()
-          needle = "      || entry.actionId?.startsWith('OBSERVE:')\n      || entry.actionId === 'TUTORIAL:PAUSE:PLAN')"
-          replacement = "      || entry.actionId?.startsWith('OBSERVE:')\n      || entry.actionId?.startsWith('REST_OUTDOOR:')\n      || entry.actionId === 'TUTORIAL:PAUSE:PLAN')"
-          if needle not in text:
-              raise SystemExit('callback REST_OUTDOOR patch target missing')
-          path.write_text(text.replace(needle, replacement, 1))
-          PY
       - name: Run focused F callback certificate
         run: |
           set -o pipefail
