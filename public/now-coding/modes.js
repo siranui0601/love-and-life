@@ -41,10 +41,10 @@ function normalizeProgram(program) {
   return Array.isArray(program) ? structuredClone(program.slice(0, 10000)) : [];
 }
 
-function makeAgents({ players, size, seed, spawns }) {
+function makeAgents({ players, size, seed, spawns, allowSolo = false }) {
   const random = createSeededRandom(seed);
   const safePlayers = (Array.isArray(players) ? players : []).slice(0, 4);
-  while (safePlayers.length < 2) {
+  while (safePlayers.length < (allowSolo ? 1 : 2)) {
     const index = safePlayers.length;
     safePlayers.push({ id: `npc-${index}`, name: `NPC ${index + 1}`, color: PLAYER_COLORS[index], program: makeNpcProgram("medium", index) });
   }
@@ -186,6 +186,7 @@ function collisionSet(intents) {
 
 function finishSurvival(state) {
   const alive = state.agents.filter((agent) => agent.alive);
+  if (state.allowSolo) { if (alive.length === 0) { state.finished = true; state.finishReason = "all_dead"; } else if (state.tick >= state.maxTicks) { state.finished = true; state.finishReason = "tick_limit"; } return; }
   if (alive.length <= 1) {
     state.finished = true;
     state.finishReason = alive.length === 1 ? "last_survivor" : "all_dead";
@@ -198,7 +199,7 @@ function finishSurvival(state) {
 function createCobraState(config = {}) {
   const size = clampSize(config.size);
   const seed = String(config.seed ?? "1");
-  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns });
+  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns, allowSolo: Boolean(config.allowSolo) });
   return {
     mode: "cobra",
     ruleVersion: MODE_RULE_VERSION.cobra,
@@ -214,6 +215,7 @@ function createCobraState(config = {}) {
     finished: false,
     finishReason: "",
     effects: [],
+    allowSolo: Boolean(config.allowSolo),
   };
 }
 
@@ -280,7 +282,7 @@ function stepCobra(state) {
 function createFallState(config = {}) {
   const size = clampSize(config.size);
   const seed = String(config.seed ?? "1");
-  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns });
+  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns, allowSolo: Boolean(config.allowSolo) });
   return {
     mode: "fall",
     ruleVersion: MODE_RULE_VERSION.fall,
@@ -296,6 +298,7 @@ function createFallState(config = {}) {
     finished: false,
     finishReason: "",
     effects: [],
+    allowSolo: Boolean(config.allowSolo),
   };
 }
 
@@ -361,7 +364,7 @@ function stepFall(state) {
 function createSplatState(config = {}) {
   const size = clampSize(config.size);
   const seed = String(config.seed ?? "1");
-  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns });
+  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns, allowSolo: Boolean(config.allowSolo) });
   const paint = board(size);
   made.agents.forEach((agent, index) => { paint[agent.y][agent.x] = index; });
   return {
@@ -597,3 +600,7 @@ export function makeModeNpcProgram(mode = "territory", difficulty = "medium", va
     { type: "if", condition: { type: "random", chance: 0.18 }, then: [action("attack", 2)], else: [action("move")] },
   ], [action("move")])])])]);
 }
+
+
+export const TEST_NPC_TYPES = ["straight","wall","explore","evade","chase","random","beginner","intermediate","advanced"];
+export function makeTestNpcProgram(mode="territory",type="straight",variant=0){const safe=VALID_MODES.has(mode)?mode:"territory",turn=variant%2?"turnLeft":"turnRight",other=turn==="turnLeft"?"turnRight":"turnLeft";if(type==="beginner")return makeModeNpcProgram(safe,"weak",variant);if(type==="intermediate")return makeModeNpcProgram(safe,"medium",variant);if(type==="advanced")return makeModeNpcProgram(safe,"strong",variant);if(type==="straight")return forever([action("move")]);if(type==="wall")return forever([cellIf("front","cliff",[action(turn)],[action("move")])]);if(type==="explore")return forever([cellIf("front","unclaimed",[action("move")],[cellIf("left","unclaimed",[action("turnLeft")],[cellIf("right","unclaimed",[action("turnRight")],[action(turn)])])])]);if(type==="evade")return forever([{type:"if",condition:{type:"binary",op:"<=",left:{type:"builtin",name:"enemyDistance"},right:{type:"literal",value:2}},then:[action(turn)],else:[cellIf("front","cliff",[action(other)],[action("move")])]}]);if(type==="chase")return forever([cellIf("front","player",[action("move")],[cellIf("left","player",[action("turnLeft")],[cellIf("right","player",[action("turnRight")],[cellIf("front","cliff",[action(turn)],[action("move")])])])])]);return forever([{type:"if",condition:{type:"random",chance:.72},then:[action("move")],else:[action(turn)]}]);}

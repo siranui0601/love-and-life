@@ -75,3 +75,21 @@ test("multi-mode online client participates in the server round protocol", () =>
   assert.match(app, /now:round-prepare/);
   assert.match(app, /now:series-finished/);
 });
+
+
+test("language palette exposes nested boolean and numeric reporters", () => {
+  for (const key of ["cell","compare","logic","not","enemyDistance","number","var","random","math"]) {
+    assert.ok(html.includes(`data-expression-preset="${key}"`));
+  }
+  assert.match(app, /最も近い敵との距離/);
+  assert.match(app, /literalLabel/);
+  assert.match(app, /application\/x-now-expression/);
+});
+
+test("test bench exposes modes optional NPC archetypes and fixed spawn", () => {
+  for (const mode of ["territory","fall","cobra","splat"]) assert.ok(html.includes(`data-test-mode="${mode}"`));
+  for (const type of ["straight","wall","explore","evade","chase","random","beginner","intermediate","advanced"]) assert.ok(html.includes(`value="${type}"`));
+  assert.match(app, /allowSolo/);
+  assert.match(app, /makeTestNpcProgram/);
+  assert.match(app, /testSpawnMode/);
+});
