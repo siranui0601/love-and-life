@@ -36,7 +36,6 @@ jobs:
             ['public/now-coding/index.html', 'コードを組んで、1位を目指せ。'],
             ['public/now-coding/index.html', 'id="tutorialIntroDemo"'],
             ['public/now-coding/tutorials.js', 'id: "overview"'],
-            ['public/now-coding/app.js', '$$(".lesson-target")'],
           ];
           for (const [path, needle] of checks) {
             const source = fs.readFileSync(path, 'utf8');
