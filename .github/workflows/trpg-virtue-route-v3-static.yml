@@ -22,7 +22,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Patch survival authority and callback survival in workspace
+      - name: Patch verified F survival behavior in workspace
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -38,9 +38,15 @@ jobs:
           callback = Path('tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs')
           text = callback.read_text()
           old = '''      || entry.actionId?.startsWith('REST_OUTDOOR:')\n      || entry.actionId === 'TUTORIAL:PAUSE:PLAN')'''
-          new = '''      || entry.actionId?.startsWith('REST_OUTDOOR:')\n      || entry.actionId?.startsWith('WORK_MEAL:')\n      || entry.actionId?.startsWith('EAT:')\n      || entry.actionId === 'TUTORIAL:PAUSE:PLAN')'''
+          new = '''      || entry.actionId?.startsWith('REST_OUTDOOR:')\n      || entry.actionId?.startsWith('WORK_MEAL:')\n      || entry.actionId === 'TUTORIAL:PAUSE:PLAN')'''
           if old not in text:
               raise SystemExit('callback survival-choice target missing')
+          text = text.replace(old, new, 1)
+
+          old = '''  for (let guard = 0; guard < 24; guard += 1) {\n    const callbacks = callbackChoices(current);\n    if (callbacks.length) return current;\n    if (current.scene.facilityId !== 'LOC_FARM_SQUARE') {\n      const toSquare = current.movement.find((entry) => entry.destinationFacilityId === 'LOC_FARM_SQUARE');\n      if (toSquare) {\n        current = await send(service, owner, current, 'MOVE', { moveId: toSquare.moveId });\n        pushTime(times, current, 'callback:move-square');\n        continue;\n      }\n    }\n    const advances = safeTimeAdvanceChoices(current).sort((a, b) => Number(b.minutes) - Number(a.minutes));'''
+          new = '''  for (let guard = 0; guard < 40; guard += 1) {\n    const callbacks = callbackChoices(current);\n    if (callbacks.length) return current;\n\n    const workMeal = current.choices.find((entry) => entry.actionId?.startsWith('WORK_MEAL:'));\n    if (workMeal) {\n      current = await choose(service, owner, current, workMeal.actionId);\n      pushTime(times, current, `callback:${workMeal.actionId}`);\n      continue;\n    }\n\n    const hunger = Number(current.player?.needs?.hunger ?? 0);\n    if (hunger >= 64 && current.scene.facilityId !== 'LOC_FARM_BAKERY') {\n      const toBakery = current.movement.find((entry) => entry.destinationFacilityId === 'LOC_FARM_BAKERY');\n      if (toBakery) {\n        current = await send(service, owner, current, 'MOVE', { moveId: toBakery.moveId });\n        pushTime(times, current, 'callback:move-bakery-for-work-meal');\n        continue;\n      }\n    }\n\n    if (hunger >= 64 && current.scene.facilityId === 'LOC_FARM_BAKERY') {\n      const primer = safeTimeAdvanceChoices(current)\n        .filter((entry) => !entry.actionId?.startsWith('REST_OUTDOOR:')\n          && !entry.actionId?.startsWith('LIFE:REST:'))\n        .sort((a, b) => Number(a.minutes) - Number(b.minutes))[0];\n      if (primer) {\n        current = await choose(service, owner, current, primer.actionId);\n        pushTime(times, current, `callback:meal-primer:${primer.actionId}`);\n        continue;\n      }\n    }\n\n    if (current.scene.facilityId !== 'LOC_FARM_SQUARE' && hunger < 64) {\n      const toSquare = current.movement.find((entry) => entry.destinationFacilityId === 'LOC_FARM_SQUARE');\n      if (toSquare) {\n        current = await send(service, owner, current, 'MOVE', { moveId: toSquare.moveId });\n        pushTime(times, current, 'callback:move-square');\n        continue;\n      }\n    }\n    const advances = safeTimeAdvanceChoices(current).sort((a, b) => Number(b.minutes) - Number(a.minutes));'''
+          if old not in text:
+              raise SystemExit('callback waiting-loop target missing')
           callback.write_text(text.replace(old, new, 1))
           PY
       - name: Run focused survival and F callback tests
