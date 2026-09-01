@@ -22,6 +22,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Preserve generated client template expressions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('tools/now-coding/patch-language-testbench.mjs')
+          s=p.read_text()
+          for token in [
+            '${c.npc?', '${c.spawnMode', '${MODE_LABELS[c.mode]}',
+            '${content[0]}', '${content[1]}', '${title}', '${text}',
+            '${testNpcLabel(c.npcType)}', '${reason}', '${game.tick}'
+          ]:
+            s=s.replace(token, '\\'+token)
+          p.write_text(s)
+          PY
       - name: Apply language and testbench patch
         run: node tools/now-coding/patch-language-testbench.mjs
       - name: Validate
