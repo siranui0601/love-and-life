@@ -46,6 +46,19 @@
       <h2>TRPG(仮題)</h2>
       <p>時間が止まらない異世界ゲームブック</p>
     </div>
+
+    <div class="game-card" data-game="now-coding" role="button" tabindex="0" aria-label="Now Codingを開く"
+      onclick="event.stopPropagation();(()=>{let u=null;try{u=JSON.parse(localStorage.getItem('currentUser')||'null')}catch(e){}if(u&&u.userTrackingId){window.location.href='/now-coding/';return;}sessionStorage.setItem('afterAuthRedirect','/now-coding/');document.getElementById('openLoginBtn')?.click();})()">
+      <div class="game-icon" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="58" height="58" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:auto;">
+          <path d="M8 8H56V56H8V8Z" stroke="currentColor" stroke-width="2"/>
+          <path d="M24 8V56M40 8V56M8 24H56M8 40H56" stroke="currentColor" stroke-opacity=".35"/>
+          <path d="M19 33L27 25M19 33L27 41M45 23L35 43" stroke="currentColor" stroke-width="3" stroke-linecap="square"/>
+        </svg>
+      </div>
+      <h2>Now Coding</h2>
+      <p>コードを組んで、駒を戦わせろ。</p>
+    </div>
     
     <!--div class="game-card" data-game="judgement-ai" id="cardJudgementAI">
       <div class="game-icon">⚖️</div>

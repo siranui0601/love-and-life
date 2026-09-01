@@ -1,0 +1,38 @@
+name: now-coding
+
+on:
+  pull_request:
+    paths:
+      - "public/index.html"
+      - "public/now-coding/**"
+      - "src/server/now-coding/**"
+      - "src/server/shared/index.js"
+      - "tools/now-coding/**"
+      - ".github/workflows/now-coding.yml"
+  workflow_dispatch:
+
+jobs:
+  focused-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Syntax check
+        run: |
+          node --check public/now-coding/engine.js
+          node --check public/now-coding/app.js
+          node --check src/server/now-coding/store.js
+          node --check src/server/now-coding/index.js
+          node --check src/server/shared/index.js
+      - name: Territory engine tests
+        run: node --test tools/now-coding/engine.test.mjs
+      - name: Entry and UX contract smoke checks
+        run: |
+          grep -q 'data-game="now-coding"' public/index.html
+          grep -q 'afterAuthRedirect.*now-coding' public/index.html
+          grep -q 'data-go="home"' public/now-coding/index.html
+          grep -q 'data-go="editor"' public/now-coding/index.html
+          grep -q 'data-go="battle"' public/now-coding/index.html
+          grep -q 'id="editAfterResultButton"' public/now-coding/index.html
