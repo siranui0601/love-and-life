@@ -1,0 +1,76 @@
+name: TRPG F register test repair
+
+on:
+  push:
+    branches:
+      - claude/trpg-virtue-route-main-143ar9
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/trpg-virtue-route-main-143ar9
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Patch REGISTER certificates to production contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tools/trpg-sim/test/authored-register-butterfly.test.mjs')
+          text = path.read_text()
+
+          replacements = [
+            (
+              'import { cloneSerializable } from "../../../src/server/trpg/game/serializer.js";',
+              'import { cloneSerializable, deserializeRuntime, serializeRuntime } from "../../../src/server/trpg/game/serializer.js";'
+            ),
+            (
+              'advanceUntil(state, (current) => current.playerState.goapRequests[butterfly.GOAP_ID]?.status === "ready", { maxTicks: 24 });',
+              'advanceUntil(state, (current) => current.playerState.goapRequests[butterfly.GOAP_ID]?.status === "completed", { maxTicks: 24 });'
+            ),
+            (
+              'assert.equal(request.status, "ready");\n  assert.equal(request.readyReason, "npc-life-engine-aftermath-plan-completed");',
+              'assert.equal(request.status, "completed");\n  assert.equal(request.completionReason, "npc-life-engine-aftermath-plan-completed");\n  assert.equal(request.executionEvidence?.planner, "npc-life-engine");'
+            ),
+            (
+              'const restoredPropagation = cloneSerializable(propagated);',
+              'const restoredPropagation = deserializeRuntime(serializeRuntime(propagated), data);'
+            ),
+            (
+              'advanceUntil(restoredPropagation, (current) => current.playerState.goapRequests[butterfly.GOAP_ID]?.status === "ready", {',
+              'advanceUntil(restoredPropagation, (current) => current.playerState.goapRequests[butterfly.GOAP_ID]?.status === "completed", {'
+            ),
+            (
+              'const restoredReady = cloneSerializable(restoredPropagation);\n  assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].status, "ready");',
+              'const restoredReady = deserializeRuntime(serializeRuntime(restoredPropagation), data);\n  assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].status, "completed");\n  assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].completionReason, "npc-life-engine-aftermath-plan-completed");'
+            ),
+          ]
+
+          for old, new in replacements:
+            count = text.count(old)
+            if count != 1:
+              raise SystemExit(f'expected exactly one match, got {count}: {old[:90]}')
+            text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+      - name: Run focused REGISTER tests
+        run: node --test tools/trpg-sim/test/authored-register-butterfly.test.mjs tools/trpg-sim/test/checkpoint-f-register-direct-share.test.mjs
+      - name: Commit verified repair and remove runner
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/trpg-f-register-test-repair.yml
+          git add tools/trpg-sim/test/authored-register-butterfly.test.mjs
+          git commit -m "test(trpg): align register certificates with runtime status"
+          git push origin HEAD:claude/trpg-virtue-route-main-143ar9
