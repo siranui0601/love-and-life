@@ -5,6 +5,7 @@ import fs from "node:fs";
 const app = fs.readFileSync("public/now-coding/app-v3.js", "utf8");
 const entry = fs.readFileSync("public/now-coding/app.js", "utf8");
 const html = fs.readFileSync("public/now-coding/index.html", "utf8");
+const css = ["public/now-coding/style-v3.css", "public/now-coding/style-v4.css"].map((p) => fs.readFileSync(p, "utf8")).join("\n");
 
 function htmlHasId(id) {
   return new RegExp(`id=["']${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`).test(html);
@@ -17,13 +18,13 @@ test("v3 controller is the active client entrypoint", () => {
 
 test("all fixed id selectors used by the controller exist in HTML", () => {
   const ids = new Set();
-  for (const match of app.matchAll(/\$\(["']#([A-Za-z0-9_-]+)["']\)/g)) ids.add(match[1]);
+  for (const match of app.matchAll(/(?<!\$)\$\(["']#([A-Za-z0-9_-]+)["']\)/g)) ids.add(match[1]);
   const missing = [...ids].filter((id) => !htmlHasId(id));
   assert.deepEqual(missing, [], `missing fixed DOM ids: ${missing.join(", ")}`);
 });
 
-test("single-element selector is never iterated with forEach", () => {
-  assert.doesNotMatch(app, /\$\([^\n;]+\)\.forEach\s*\(/, "querySelector result must not be used as a list");
+test("single-element selector helper is never iterated with forEach", () => {
+  assert.doesNotMatch(app, /(?<!\$)\$\([^\n;]+\)\.forEach\s*\(/, "querySelector result must not be used as a list");
 });
 
 test("stored login restoration happens during init before tutorial bootstrap", () => {
@@ -52,8 +53,9 @@ test("typed language exposes nested control and expected visual sockets", () => 
   }
   assert.match(app, /renderSequence\(block\.body/);
   assert.match(app, /renderSequence\(block\.else/);
-  assert.match(app, /socket-number/);
-  assert.match(app, /socket-boolean/);
+  assert.match(app, /socket-\$\{expected\}/);
+  assert.match(css, /\.socket-number/);
+  assert.match(css, /\.socket-boolean/);
 });
 
 test("multi-mode online client participates in the server round protocol", () => {
