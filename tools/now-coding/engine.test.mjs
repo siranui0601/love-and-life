@@ -163,3 +163,18 @@ test("splat winner is based on colored area", () => {
   assert.ok(results[0].colored >= results[1].colored);
   assert.match(results[0].metric, /マス/);
 });
+
+
+test("splat invalid attack neither spends ink nor grants recovery", () => {
+  const attack = { type: "action", action: "attack", range: { type: "literal", value: 4 } };
+  const state = createGameState({
+    mode: "splat", seed: "no-ink-attack", size: 15, maxTicks: 20,
+    players: [{ id: "a", program: [attack] }, { id: "b", program: [{ type: "action", action: "turnRight" }] }],
+    spawns: [{ x: 5, y: 5, dir: 0 }, { x: 12, y: 12, dir: 2 }],
+  });
+  assert.equal(state.agents[0].ink, 0);
+  stepGame(state);
+  assert.equal(state.agents[0].ink, 0);
+  assert.equal(state.agents[0].x, 5);
+  assert.equal(state.agents[0].y, 5);
+});

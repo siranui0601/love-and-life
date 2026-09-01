@@ -470,7 +470,7 @@ function stepSplat(state) {
   for (const agent of state.agents) {
     if (!agent.alive) continue;
     const action = actions.get(agent.id);
-    if (action === "turnLeft" || action === "turnRight" || action === "none") {
+    if (action === "turnLeft" || action === "turnRight") {
       const ownIndex = state.agents.indexOf(agent);
       if (startBoard[agent.y][agent.x] === ownIndex) agent.ink = Math.min(agent.maxInk, agent.ink + 1);
     }
