@@ -166,7 +166,11 @@ function callbackChoices(save) {
 
 function safeTimeAdvanceChoices(save) {
   return save.choices
-    .filter((entry) => entry.actionId?.startsWith('LIFE:REST:') || entry.actionId?.startsWith('INSPECT:'))
+    .filter((entry) => entry.actionId?.startsWith('LIFE:REST:')
+      || entry.actionId?.startsWith('INSPECT:')
+      || entry.actionId?.startsWith('WAIT:')
+      || entry.actionId?.startsWith('OBSERVE:')
+      || entry.actionId === 'TUTORIAL:PAUSE:PLAN')
     .filter((entry) => Number(entry.minutes ?? 0) > 0);
 }
 
@@ -177,7 +181,7 @@ async function advanceProductionTime(service, owner, save, times, {
   label,
 }) {
   let current = save;
-  for (let guard = 0; guard < 32; guard += 1) {
+  for (let guard = 0; guard < 48; guard += 1) {
     const minute = Number(current.clock.absoluteMinute);
     const actionVisible = !untilActionId || current.choices.some((entry) => entry.actionId === untilActionId);
     const timeReached = minimumMinute == null || minute >= minimumMinute;
