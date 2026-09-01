@@ -6,6 +6,7 @@ on:
       - feat/now-coding-vm-editor-v2
     paths:
       - tools/now-coding/patch-online-series-client.mjs
+      - .github/workflows/now-coding-patch-online-once.yml
   workflow_dispatch:
 
 permissions:
