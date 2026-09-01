@@ -167,7 +167,13 @@ function evaluateExpression(expr, context, budget) {
   if (typeof expr !== "object") return 0;
   if (expr.type === "literal") return expr.value;
   if (expr.type === "var") return context.agent.vars[String(expr.name || "")] ?? 0;
-  if (expr.type === "sensor") return senseCell(context.state, context.agent, expr.direction || "front").state;
+  if (expr.type === "builtin") {
+    if (expr.name === "ink") return Number(context.agent.ink || 0);
+    if (expr.name === "tailLength") return Array.isArray(context.agent.tail) ? context.agent.tail.length : 0;
+    if (expr.name === "noMoveTicks") return Number(context.agent.noMoveTicks || 0);
+    return 0;
+  }
+  if (expr.type === "sensor") return context.sense(context.state, context.agent, expr.direction || "front").state;
   if (expr.type === "random") {
     const min = Number(evaluateExpression(expr.min ?? 0, context, budget)) || 0;
     const max = Number(evaluateExpression(expr.max ?? 1, context, budget)) || 1;
@@ -235,7 +241,13 @@ function executeStatement(statement, context, budget, path = "root") {
   if (budget.count++ > budget.limit) throw new Error("instruction_budget_exceeded");
   if (!statement || typeof statement !== "object") return null;
 
-  if (statement.type === "action") return ["move", "turnLeft", "turnRight"].includes(statement.action) ? statement.action : "move";
+  if (statement.type === "action") {
+    if (statement.action === "attack") {
+      const range = Math.max(1, Math.min(20, Math.floor(Number(evaluateExpression(statement.range ?? 1, context, budget)) || 1)));
+      return { type: "attack", range };
+    }
+    return ["move", "turnLeft", "turnRight"].includes(statement.action) ? statement.action : "move";
+  }
 
   if (statement.type === "set") {
     const name = String(statement.name || "value").slice(0, 40);
@@ -290,12 +302,12 @@ function executeStatement(statement, context, budget, path = "root") {
   return null;
 }
 
-export function decideAction(state, agent, instructionBudget = 10000) {
+export function decideAction(state, agent, instructionBudget = 10000, options = {}) {
   if (!agent.alive) return "none";
   const program = agent.program;
   if (!program.length) return "none";
   const budget = { count: 0, limit: instructionBudget };
-  const context = { state, agent };
+  const context = { state, agent, sense: typeof options.sense === "function" ? options.sense : senseCell };
   for (let scanned = 0; scanned < program.length; scanned += 1) {
     const index = agent.pc % program.length;
     const statement = program[index];
@@ -344,7 +356,10 @@ export function stepTerritory(state) {
       left: senseCell(state, agent, "left").state,
       right: senseCell(state, agent, "right").state,
     };
-    const action = decideAction(state, agent);
+    let action = decideAction(state, agent);
+    for (let skipped = 0; skipped < 64 && typeof action === "object" && action?.type === "attack"; skipped += 1) {
+      action = decideAction(state, agent);
+    }
     actions.set(agent.id, action);
     agent.lastAction = action;
   }

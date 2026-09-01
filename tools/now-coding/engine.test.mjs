@@ -7,6 +7,7 @@ import {
   runTerritoryToEnd,
   stepTerritory,
 } from "../../public/now-coding/engine.js";
+import { createGameState, gameResults, stepGame } from "../../public/now-coding/modes.js";
 
 const move = { type: "action", action: "move" };
 const right = { type: "action", action: "turnRight" };
@@ -111,4 +112,54 @@ test("weak medium and strong NPC programs are all executable", () => {
     const action = decideAction(state, state.agents[0]);
     assert.ok(["move", "turnLeft", "turnRight", "none"].includes(action));
   }
+});
+
+test("cobra steering still advances one cell in the same tick", () => {
+  const state = createGameState({ mode: "cobra", seed: "cobra-turn", size: 15, players: [{ id:"a", program:[right] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
+  stepGame(state);
+  assert.equal(state.agents[0].dir, 1);
+  assert.equal(state.agents[0].x, 6);
+  assert.equal(state.agents[0].y, 5);
+});
+
+test("cobra allows entering the tail cell that disappears on this tick", () => {
+  const state = createGameState({ mode: "cobra", seed: "tail-gap", size: 15, players: [{ id:"a", program:[move] }, { id:"b", program:[right] }], spawns:[{x:5,y:5,dir:1},{x:12,y:12,dir:2}], growthEvery:5 });
+  state.agents[0].tail = [{x:6,y:5},{x:5,y:6}];
+  stepGame(state);
+  assert.equal(state.agents[0].alive, true);
+  assert.equal(state.agents[0].x, 6);
+  assert.equal(state.agents[0].y, 5);
+});
+
+test("floor mode eliminates a piece after two consecutive non-movement ticks", () => {
+  const state = createGameState({ mode: "fall", seed: "fall", size: 15, players: [{ id:"a", program:[right,right] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
+  stepGame(state);
+  assert.equal(state.agents[0].alive, true);
+  stepGame(state);
+  assert.equal(state.agents[0].alive, false);
+  assert.equal(state.agents[0].deathReason, "floor_collapse");
+  assert.equal(state.holes.has("5,5"), true);
+});
+
+test("splat starts at zero ink, recovers on existing own paint, and attack costs one plus range", () => {
+  const attack = { type:"action", action:"attack", range:{ type:"literal", value:2 } };
+  const state = createGameState({ mode:"splat", seed:"splat", size:15, players:[{id:"a",program:[right,attack]},{id:"b",program:[right]}], spawns:[{x:5,y:5,dir:0},{x:7,y:5,dir:2}], maxTicks:20 });
+  assert.equal(state.agents[0].ink, 0);
+  stepGame(state);
+  assert.equal(state.agents[0].ink, 1);
+  state.agents[0].ink = 5;
+  state.agents[0].pc = 1;
+  state.agents[0].dir = 1;
+  stepGame(state);
+  assert.equal(state.agents[0].ink, 2);
+  assert.equal(state.agents[1].alive, false);
+  assert.equal(state.agents[1].deathReason, "shot");
+});
+
+test("splat winner is based on colored area", () => {
+  const state = createGameState({ mode:"splat", seed:"paint", size:15, players:[{id:"a",program:[move]},{id:"b",program:[right]}], spawns:[{x:2,y:2,dir:1},{x:12,y:12,dir:2}], maxTicks:3 });
+  while (!state.finished) stepGame(state);
+  const results = gameResults(state);
+  assert.ok(results[0].colored >= results[1].colored);
+  assert.match(results[0].metric, /マス/);
 });

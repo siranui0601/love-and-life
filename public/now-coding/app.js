@@ -7,11 +7,14 @@ import {
   stepTerritory,
   territoryResults,
 } from "./engine.js";
+import { MODE_LABELS, MODE_RULE_VERSION, createGameState, gameResults, makeModeNpcProgram, stepGame } from "./modes.js";
+import { TUTORIALS, tutorialById } from "./tutorials.js";
 
 const GOOGLE_CLIENT_ID = "958867607494-2htl5kj0atpuriq65ssnq7hje66t1p6t.apps.googleusercontent.com";
 const ACTION_LABELS = { move: "進む", turnLeft: "左に旋回", turnRight: "右に旋回" };
 const SENSOR_LABELS = { front: "前", left: "左", right: "右" };
-const CELL_LABELS = { unclaimed: "未取得", own: "自分の色", enemy: "敵の色／壁", cliff: "崖", player: "駒" };
+const CELL_LABELS = { unclaimed: "未取得／空き", own: "自分の色", enemy: "敵の色", cliff: "崖", player: "駒", ownTail: "自分の尾", enemyTail: "敵の尾" };
+const BUILTIN_LABELS = { ink: "インク", tailLength: "尾の長さ" };
 const COMPARE_LABELS = { "==": "＝", "!=": "≠", "<": "＜", "<=": "≦", ">": "＞", ">=": "≧" };
 const MATH_LABELS = { "+": "＋", "-": "－", "*": "×", "/": "÷", "%": "余り" };
 const LOGIC_LABELS = { and: "かつ", or: "または" };
@@ -27,6 +30,8 @@ const appState = {
   currentView: "home",
   battleStep: 1,
   battleKind: "npc",
+  selectedMode: "territory",
+  optionalTutorial: null,
   testTimer: null,
   battleTimer: null,
   battleState: null,
@@ -212,6 +217,7 @@ async function bootstrapUserData() {
     renderBattleProgramList();
     updateTutorialGate();
     connectOnline();
+    if (isTutorialLocked()) requestAnimationFrame(() => startTutorial());
   } catch (error) {
     console.error(error);
     toast("保存データの読み込みに失敗しました");
@@ -246,7 +252,8 @@ function renderHome() {
       const mine = match.results?.find((result) => result.userTrackingId === appState.user.userTrackingId);
       const row = document.createElement("div");
       row.className = "list-row";
-      row.innerHTML = `<div><strong>${mine ? `${mine.rank}位 / ${mine.claimed}マス` : "陣取り"}</strong><br><small>${escapeHtml(formatDate(match.createdAt))} ・ Seed ${escapeHtml(match.seed)}</small></div><button class="text-button" type="button" ${isTutorialLocked() ? "disabled" : ""}>再生</button>`;
+      const metric = mine?.metric || (Number.isFinite(mine?.claimed) ? `${mine.claimed}マス` : Number.isFinite(mine?.colored) ? `${mine.colored}マス` : Number.isFinite(mine?.survivedTicks) ? `${mine.survivedTicks}tick 生存` : "記録あり");
+      row.innerHTML = `<div><strong>${mine ? `${mine.rank}位 / ${metric}` : (MODE_LABELS[match.mode] || "対戦")}</strong><br><small>${escapeHtml(formatDate(match.createdAt))} ・ ${escapeHtml(MODE_LABELS[match.mode] || "陣取り")} ・ Seed ${escapeHtml(match.seed)}</small></div><button class="text-button" type="button" ${isTutorialLocked() ? "disabled" : ""}>再生</button>`;
       row.querySelector("button").addEventListener("click", () => replayMatch(match.replayId));
       matches.appendChild(row);
     });
@@ -355,6 +362,77 @@ function maybeAdvanceTutorialOnAdd(type) {
   else if (step === 3 && type === "ifCell") setTutorialProgress(4);
 }
 
+function clearOptionalTutorialFocus() {
+  $(".lesson-target").forEach((node) => node.classList.remove("lesson-target"));
+}
+
+function openTutorialLibrary() {
+  if (isTutorialLocked()) return;
+  const grid = $("#tutorialLibraryGrid");
+  grid.innerHTML = "";
+  for (const tutorial of TUTORIALS) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tutorial-library-card";
+    button.innerHTML = `<span class="tutorial-card-scan" aria-hidden="true"></span><strong>${escapeHtml(tutorial.title)}</strong><small>${escapeHtml(tutorial.summary)}</small>`;
+    button.addEventListener("click", () => startOptionalTutorial(tutorial.id));
+    grid.appendChild(button);
+  }
+  setModal("#tutorialLibraryModal", true);
+}
+
+function startOptionalTutorial(id) {
+  const tutorial = tutorialById(id);
+  if (!tutorial) return;
+  setModal("#tutorialLibraryModal", false);
+  appState.optionalTutorial = { id, step: 0 };
+  if (tutorial.battleKind) setBattleKind(tutorial.battleKind);
+  if (tutorial.view) showView(tutorial.view, { force: true });
+  if (tutorial.mode) selectBattleMode(tutorial.mode);
+  renderOptionalTutorial();
+}
+
+function renderOptionalTutorial() {
+  clearOptionalTutorialFocus();
+  const coach = $("#optionalTutorialCoach");
+  const active = appState.optionalTutorial;
+  if (!coach || !active) { coach?.classList.add("is-hidden"); return; }
+  const tutorial = tutorialById(active.id);
+  if (!tutorial) { appState.optionalTutorial = null; coach.classList.add("is-hidden"); return; }
+  const step = Math.max(0, Math.min(tutorial.steps.length - 1, Number(active.step) || 0));
+  active.step = step;
+  const item = tutorial.steps[step];
+  $("#optionalTutorialProgress").textContent = `${step + 1} / ${tutorial.steps.length}`;
+  $("#optionalTutorialName").textContent = tutorial.title;
+  $("#optionalTutorialTitle").textContent = item.title;
+  $("#optionalTutorialText").textContent = item.text;
+  $("#optionalTutorialPrev").disabled = step === 0;
+  $("#optionalTutorialNext").textContent = step === tutorial.steps.length - 1 ? "完了" : "次へ";
+  coach.classList.remove("is-hidden");
+  if (item.focus) {
+    const target = $(item.focus);
+    target?.classList.add("lesson-target");
+    target?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+  }
+}
+
+function moveOptionalTutorial(delta) {
+  const active = appState.optionalTutorial;
+  if (!active) return;
+  const tutorial = tutorialById(active.id);
+  if (!tutorial) return closeOptionalTutorial();
+  const next = active.step + delta;
+  if (next >= tutorial.steps.length) return closeOptionalTutorial();
+  active.step = Math.max(0, next);
+  renderOptionalTutorial();
+}
+
+function closeOptionalTutorial() {
+  clearOptionalTutorialFocus();
+  appState.optionalTutorial = null;
+  $("#optionalTutorialCoach")?.classList.add("is-hidden");
+}
+
 function showView(name, { force = false } = {}) {
   if (!force && isTutorialLocked() && name !== "home") {
     toast("最初にチュートリアルを完了してください");
@@ -371,6 +449,7 @@ function showView(name, { force = false } = {}) {
   if (name === "editor") renderWorkspace();
   if (name === "battle") resetBattleView();
   renderTutorialCoach();
+  renderOptionalTutorial();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -408,6 +487,8 @@ function equalsCell(direction, value, negate = false) {
 
 function createBlock(type) {
   if (["move", "turnLeft", "turnRight"].includes(type)) return actionNode(type);
+  if (type === "attack") return { type: "action", action: "attack", uiKind: "attack", range: literal(3) };
+  if (type === "ifBuiltin") return { type: "if", uiKind: "builtinCompare", builtinName: "ink", compareOp: ">", compareValue: 0, condition: { type: "binary", op: ">", left: { type: "builtin", name: "ink" }, right: literal(0) }, then: [actionNode("move")], else: [actionNode("turnRight")] };
   if (type === "forever") return { type: "forever", uiKind: "forever", body: [actionNode("move")] };
   if (type === "repeat") return { type: "repeat", uiKind: "repeat", times: literal(4), body: [actionNode("move")] };
   if (type === "ifCell") return { type: "if", uiKind: "cell", condition: { type: "cell", direction: "front", value: "unclaimed" }, then: [actionNode("move")], else: [actionNode("turnRight")] };
@@ -461,6 +542,11 @@ function blockContent(block) {
   const content = document.createElement("div");
   content.className = "block-content";
   if (block.type === "action") {
+    if (block.action === "attack") {
+      block.uiKind = "attack";
+      content.append("前方へ 射程 ", numberInput(block.range?.value ?? 3, (v) => { block.range = literal(Math.max(1, v)); }, { min: 1, max: 20, width: "66px" }), " で攻撃");
+      return content;
+    }
     const strong = document.createElement("strong");
     strong.textContent = ACTION_LABELS[block.action] || "進む";
     content.appendChild(strong);
@@ -488,6 +574,13 @@ function blockContent(block) {
     content.append("もし Seed乱数が ");
     content.append(numberInput(Math.round((Number(block.condition.chance) || .5) * 100), (v) => { block.condition.chance = Math.max(0, Math.min(100, v)) / 100; }, { min: 0, max: 100, width: "68px" }), "% なら ");
     content.append(actionSelect(block.then?.[0]?.action || "turnLeft", (v) => { block.then = [actionNode(v)]; }), " ／ そうでなければ ", actionSelect(block.else?.[0]?.action || "turnRight", (v) => { block.else = [actionNode(v)]; }));
+    return content;
+  }
+  if (block.uiKind === "builtinCompare") {
+    const refresh = () => { block.condition = { type: "binary", op: block.compareOp, left: { type: "builtin", name: block.builtinName }, right: literal(block.compareValue) }; };
+    content.append("もし ", selectFrom(Object.entries(BUILTIN_LABELS), block.builtinName || "ink", (v) => { block.builtinName = v; refresh(); }), " が ");
+    content.append(selectFrom(Object.entries(COMPARE_LABELS), block.compareOp || ">", (v) => { block.compareOp = v; refresh(); }));
+    content.append(numberInput(block.compareValue ?? 0, (v) => { block.compareValue = v; refresh(); }), " なら ", actionSelect(block.then?.[0]?.action || "move", (v) => { block.then = [actionNode(v)]; }), " ／ そうでなければ ", actionSelect(block.else?.[0]?.action || "turnRight", (v) => { block.else = [actionNode(v)]; }));
     return content;
   }
   if (block.uiKind === "variableCompare") {
@@ -727,15 +820,24 @@ function renderBoard(element, state, previousBoard = null) {
   ensureBoardCells(element, state.size);
   const cells = element.children;
   const occupied = new Map(state.agents.filter((agent) => agent.alive).map((agent) => [`${agent.x},${agent.y}`, agent]));
+  const tails = new Map();
+  for (const agent of state.agents) for (const tail of (agent.tail || [])) tails.set(`${tail.x},${tail.y}`, agent.color);
+  const effects = new Map((state.effects || []).map((effect) => [`${effect.x},${effect.y}`, effect]));
   for (let y = 0; y < state.size; y += 1) {
     for (let x = 0; x < state.size; x += 1) {
       const index = y * state.size + x;
       const cell = cells[index];
-      const owner = state.board[y][x];
+      const owner = state.board?.[y]?.[x] ?? -1;
       const color = owner >= 0 ? state.agents[owner]?.color : "";
       cell.className = `board-cell${color ? ` claim-${color}` : ""}`;
+      if (state.holes?.has(`${x},${y}`)) cell.classList.add("is-hole");
+      const effect = effects.get(`${x},${y}`);
+      if (effect?.type === "shot") cell.classList.add("attack-flash", `attack-${effect.color}`);
+      if (effect?.type === "collapse") cell.classList.add("collapse-flash");
       if (previousBoard && previousBoard[y]?.[x] !== owner && owner >= 0) cell.classList.add("just-claimed");
       cell.innerHTML = "";
+      const tailColor = tails.get(`${x},${y}`);
+      if (tailColor) { const tail = document.createElement("span"); tail.className = `tail-piece ${tailColor}`; cell.appendChild(tail); }
       const agent = occupied.get(`${x},${y}`);
       if (agent) {
         const piece = document.createElement("span");
@@ -819,10 +921,18 @@ function renderBattleProgramList() {
   }
 }
 
+function selectBattleMode(mode) {
+  if (!MODE_LABELS[mode]) mode = "territory";
+  appState.selectedMode = mode;
+  $("[data-mode]").forEach((card) => card.classList.toggle("is-selected", card.dataset.mode === mode));
+  if ($("#onlineMode")) $("#onlineMode").value = mode;
+  if (appState.battleStep === 3) renderBattleSummary();
+}
+
 function makeBattlePlayers(program, count, difficulty) {
   const players = [{ id: appState.user.userTrackingId, userTrackingId: appState.user.userTrackingId, name: appState.user.username, color: PLAYER_COLORS[0], program: structuredClone(program.blocks) }];
   for (let i = 1; i < count; i += 1) {
-    players.push({ id: `npc-${difficulty}-${i}`, userTrackingId: "", name: `NPC・${NPC_LABELS[difficulty] || "中"} ${i}`, color: PLAYER_COLORS[i], program: makeNpcProgram(difficulty, i), npcDifficulty: difficulty });
+    players.push({ id: `npc-${appState.selectedMode}-${difficulty}-${i}`, userTrackingId: "", name: `NPC・${NPC_LABELS[difficulty] || "中"} ${i}`, color: PLAYER_COLORS[i], program: makeModeNpcProgram(appState.selectedMode, difficulty, i), npcDifficulty: difficulty });
   }
   return players;
 }
@@ -832,7 +942,7 @@ function renderBattleSummary() {
   const seed = $("#seedInput").value.trim() || "自動生成";
   const difficulty = $("#npcDifficulty").value;
   $("#battleSummary").innerHTML = [
-    ["対戦方法", "NPC対戦"], ["モード", "陣取り"], ["人数", `${$("#playerCount").value}人`], ["盤面", `${$("#boardSize").value} × ${$("#boardSize").value}`], ["NPC", NPC_LABELS[difficulty]], ["使用する駒", program?.name || "未選択"], ["Seed", seed],
+    ["対戦方法", "NPC対戦"], ["モード", MODE_LABELS[appState.selectedMode]], ["人数", `${$("#playerCount").value}人`], ["盤面", `${$("#boardSize").value} × ${$("#boardSize").value}`], ["NPC", NPC_LABELS[difficulty]], ["使用する駒", program?.name || "未選択"], ["Seed", seed],
   ].map(([label, value]) => `<div class="summary-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
 }
 
@@ -859,16 +969,17 @@ function startNpcBattle() {
   const difficulty = $("#npcDifficulty").value || "medium";
   const seed = $("#seedInput").value.trim() || freshSeed();
   const size = Number($("#boardSize").value || 21);
-  startBattle({ seed, size, players: makeBattlePlayers(program, count, difficulty), maxTicks: Math.max(420, size * size * 2) });
+  startBattle({ mode: appState.selectedMode, seed, size, players: makeBattlePlayers(program, count, difficulty), maxTicks: Math.max(500, size * size * 2) });
 }
 
 function startBattle(config, { replay = false, online = false } = {}) {
   stopBattle(false);
-  const state = createTerritoryState({ seed: config.seed || freshSeed(), size: Number(config.size || 21), players: config.players || [], spawns: config.spawns || null, maxTicks: config.maxTicks || Math.max(420, Number(config.size || 21) ** 2 * 2), stagnationTicks: 140 });
+  const state = createGameState({ mode: config.mode || "territory", seed: config.seed || freshSeed(), size: Number(config.size || 21), players: config.players || [], spawns: config.spawns || null, maxTicks: config.maxTicks || Math.max(500, Number(config.size || 21) ** 2 * 2), stagnationTicks: 140 });
+  appState.selectedMode = state.mode;
   appState.battleState = state;
   appState.replayMode = replay;
   appState.onlineMatch = online ? config.online || null : null;
-  appState.lastBattleConfig = replay || online ? null : { seed: state.seed, size: state.size, players: structuredClone(config.players), spawns: structuredClone(state.spawns), maxTicks: state.maxTicks };
+  appState.lastBattleConfig = replay || online ? null : { mode: state.mode, seed: state.seed, size: state.size, players: structuredClone(config.players), spawns: structuredClone(state.spawns), maxTicks: state.maxTicks };
   $("#battleSetup").classList.add("is-hidden");
   $("#onlineSetup").classList.add("is-hidden");
   $(".battle-kind-switch").classList.add("is-hidden");
@@ -879,7 +990,7 @@ function startBattle(config, { replay = false, online = false } = {}) {
   $("#liveProgramReadout").textContent = online ? "オンライン対戦中。全参加者が同じSeedとコードから同じ盤面を再現しています。" : "対戦中はコードを変更できません。";
   appState.battleTimer = setInterval(() => {
     const previous = cloneBoard(state.board);
-    stepTerritory(state);
+    stepGame(state);
     renderBoard($("#battleBoard"), state, previous);
     renderBattleHud(state);
     if (state.finished) finishBattle(state, { save: !replay && (!online || config.online?.saveOwnerId === appState.user?.userTrackingId), online });
@@ -888,8 +999,8 @@ function startBattle(config, { replay = false, online = false } = {}) {
 
 function renderBattleHud(state) {
   $("#battleTick").textContent = `${state.tick} tick`;
-  const results = territoryResults(state).sort((a, b) => a.rank - b.rank);
-  $("#scoreHud").innerHTML = results.map((result) => `<span class="score-chip" style="color:var(--${result.color === "blue" ? "blue-player" : result.color === "red" ? "red-player" : result.color === "yellow" ? "yellow-player" : "green-player"})"><i class="score-dot"></i>${escapeHtml(result.name)} ${result.claimed}</span>`).join("");
+  const results = gameResults(state).sort((a, b) => a.rank - b.rank);
+  $("#scoreHud").innerHTML = results.map((result) => `<span class="score-chip" style="color:var(--${result.color === "blue" ? "blue-player" : result.color === "red" ? "red-player" : result.color === "yellow" ? "yellow-player" : "green-player"})"><i class="score-dot"></i>${escapeHtml(result.name)} ${escapeHtml(result.metric || String(result.score ?? ""))}${Number.isFinite(result.ink) ? ` ・ Ink ${result.ink}` : ""}</span>`).join("");
 }
 
 function stopBattle(hide = true) {
@@ -900,7 +1011,7 @@ function stopBattle(hide = true) {
 
 async function finishBattle(state, { save = true, online = false } = {}) {
   stopBattle(false);
-  const results = territoryResults(state);
+  const results = gameResults(state);
   renderResult(results, state.finishReason);
   showViewWithoutReset("result");
   $(".battle-kind-switch").classList.remove("is-hidden");
@@ -913,9 +1024,9 @@ async function finishBattle(state, { save = true, online = false } = {}) {
   try {
     const data = await api("/api/now-coding/matches", {
       method: "POST",
-      body: JSON.stringify({ userTrackingId: appState.user.userTrackingId, mode: "territory", seed: state.seed, settings: { size: state.size, playerCount: state.agents.length, maxTicks: state.maxTicks, online }, participants, results, programs, spawn: state.spawns, durationTicks: state.tick, finishReason: state.finishReason, ruleVersion: NOW_CODING_RULE_VERSION }),
+      body: JSON.stringify({ userTrackingId: appState.user.userTrackingId, mode: state.mode, seed: state.seed, settings: { size: state.size, playerCount: state.agents.length, maxTicks: state.maxTicks, online }, participants, results, programs, spawn: state.spawns, durationTicks: state.tick, finishReason: state.finishReason, ruleVersion: MODE_RULE_VERSION[state.mode] || NOW_CODING_RULE_VERSION }),
     });
-    appState.matches.unshift({ matchId: data.matchId, replayId: data.replayId, seed: state.seed, mode: "territory", settings: { size: state.size }, participants, results, createdAt: data.createdAt });
+    appState.matches.unshift({ matchId: data.matchId, replayId: data.replayId, seed: state.seed, mode: state.mode, settings: { size: state.size }, participants, results, createdAt: data.createdAt });
     renderHome();
   } catch (error) {
     console.error(error);
@@ -927,7 +1038,7 @@ function renderResult(results, finishReason) {
   const mine = results.find((result) => result.userTrackingId === appState.user?.userTrackingId) || results[0];
   $("#resultRank").textContent = mine ? String(mine.rank).padStart(2, "0") : "--";
   $("#resultTitle").textContent = mine?.rank === 1 ? "勝利" : mine ? `${mine.rank}位` : "対戦終了";
-  $("#resultRows").innerHTML = results.map((result) => `<div class="result-row"><span class="place">${String(result.rank).padStart(2, "0")}</span><strong>${escapeHtml(result.name)}</strong><span>${result.claimed}マス${result.alive ? "" : "・停止"}</span></div>`).join("");
+  $("#resultRows").innerHTML = results.map((result) => `<div class="result-row"><span class="place">${String(result.rank).padStart(2, "0")}</span><strong>${escapeHtml(result.name)}</strong><span>${escapeHtml(result.metric || String(result.score ?? ""))}${result.alive ? "" : "・停止"}</span></div>`).join("");
   $("#resultTitle").dataset.reason = finishReason || "";
   $("#rematchButton").textContent = appState.onlineMatch ? "オンライン対戦へ戻る" : "同じ条件で再戦";
 }
@@ -941,7 +1052,7 @@ async function replayMatch(replayId) {
     const replay = data.replay;
     const players = (replay.programs || []).map((entry, index) => ({ id: entry.id || `p${index}`, userTrackingId: entry.userTrackingId || "", name: entry.name || `駒${index + 1}`, color: entry.color || PLAYER_COLORS[index], program: entry.program || makeDefaultProgram(index) }));
     showView("battle");
-    startBattle({ seed: replay.seed, size: Number(replay.settings?.size || 21), players, spawns: replay.spawn, maxTicks: Number(replay.settings?.maxTicks || 600) }, { replay: true });
+    startBattle({ mode: replay.mode || "territory", seed: replay.seed, size: Number(replay.settings?.size || 21), players, spawns: replay.spawn, maxTicks: Number(replay.settings?.maxTicks || 600) }, { replay: true });
   } catch (error) {
     console.error(error);
     toast("リプレイを読み込めませんでした");
@@ -1011,7 +1122,7 @@ function renderPublicRooms() {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "public-room-card";
-    card.innerHTML = `<span class="room-live-dot"></span><div><strong>${escapeHtml(room.hostName || "ルーム")}</strong><small>陣取り ・ ${room.size}×${room.size} ・ ${room.currentPlayers}/${room.playerCount}人${room.fillWithNpc ? ` ・ 空席NPC ${NPC_LABELS[room.npcDifficulty]}` : ""}</small></div><b>${escapeHtml(room.roomId)}</b>`;
+    card.innerHTML = `<span class="room-live-dot"></span><div><strong>${escapeHtml(room.hostName || "ルーム")}</strong><small>${escapeHtml(room.modeLabel || MODE_LABELS[room.mode] || "陣取り")} ・ ${room.size}×${room.size} ・ ${room.currentPlayers}/${room.playerCount}人${room.fillWithNpc ? ` ・ 空席NPC ${NPC_LABELS[room.npcDifficulty]}` : ""}</small></div><b>${escapeHtml(room.roomId)}</b>`;
     card.addEventListener("click", () => joinOnlineRoom(room.roomId));
     list.appendChild(card);
   }
@@ -1039,7 +1150,7 @@ function renderOnlineArea() {
   $("#lobbyRoomId").textContent = room.roomId;
   $("#lobbyPrivacy").textContent = room.privateRoom ? "プライベート" : "公開";
   $("#lobbyPrivacy").classList.toggle("is-private", room.privateRoom);
-  $("#lobbyRuleSummary").innerHTML = `<span>陣取り</span><span>${room.settings.size} × ${room.settings.size}</span><span>定員 ${room.settings.playerCount}人</span><span>${room.settings.fillWithNpc ? `空席NPC：${NPC_LABELS[room.settings.npcDifficulty]}` : "NPC補充なし"}</span>`;
+  $("#lobbyRuleSummary").innerHTML = `<span>${escapeHtml(MODE_LABELS[room.settings.mode] || "陣取り")}</span><span>${room.settings.size} × ${room.settings.size}</span><span>定員 ${room.settings.playerCount}人</span><span>${room.settings.fillWithNpc ? `空席NPC：${NPC_LABELS[room.settings.npcDifficulty]}` : "NPC補充なし"}</span>`;
   const members = $("#lobbyMembers");
   members.innerHTML = "";
   for (let i = 0; i < room.settings.playerCount; i += 1) {
@@ -1074,7 +1185,7 @@ async function createOnlineRoom() {
     const response = await emitSocket("now:create-room", {
       privateRoom: $("#privateRoom").checked,
       settings: {
-        mode: "territory",
+        mode: $("#onlineMode").value || "territory",
         playerCount: Number($("#onlinePlayerCount").value),
         size: Number($("#onlineBoardSize").value),
         seed: $("#onlineSeed").value.trim(),
@@ -1190,6 +1301,7 @@ function bindEvents() {
   });
   $("#editAfterResultButton").addEventListener("click", () => { const program = appState.programs.find((entry) => entry.programId === appState.selectedProgramId); if (program) openProgram(program.programId); else showView("editor"); });
   $$('[data-battle-kind]').forEach((button) => button.addEventListener("click", () => setBattleKind(button.dataset.battleKind)));
+  $("[data-mode]").forEach((button) => button.addEventListener("click", () => selectBattleMode(button.dataset.mode)));
   $("#openCreateRoomButton").addEventListener("click", () => openOnlinePanel("create"));
   $("#openJoinRoomButton").addEventListener("click", () => openOnlinePanel("join"));
   $$('[data-online-back]').forEach((button) => button.addEventListener("click", () => renderOnlineArea()));
@@ -1205,10 +1317,15 @@ function bindEvents() {
     const action = button.dataset.menuAction;
     setMenu(false);
     if (action === "history") { showView("home"); toast("最近の対戦からリプレイを開けます"); }
+    if (action === "tutorials") openTutorialLibrary();
     if (action === "rules") toast("陣取り：敵の色は壁。崖へ進むとゲームオーバー。進む・旋回はいずれも1tickです。");
     if (action === "help") toast("命令はタップでもドラッグでも配置できます。上下ボタンやドラッグで順序を変更できます。");
     if (action === "settings") toast("設定項目は今後追加します");
   }));
+  $("#closeTutorialLibrary").addEventListener("click", () => setModal("#tutorialLibraryModal", false));
+  $("#optionalTutorialPrev").addEventListener("click", () => moveOptionalTutorial(-1));
+  $("#optionalTutorialNext").addEventListener("click", () => moveOptionalTutorial(1));
+  $("#optionalTutorialClose").addEventListener("click", closeOptionalTutorial);
   bindDragAndDrop();
 }
 

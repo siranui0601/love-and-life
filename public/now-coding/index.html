@@ -96,6 +96,7 @@
                 <button class="palette-block action-move" type="button" draggable="true" data-add-block="move">進む</button>
                 <button class="palette-block action-turn" type="button" draggable="true" data-add-block="turnLeft">左に旋回</button>
                 <button class="palette-block action-turn" type="button" draggable="true" data-add-block="turnRight">右に旋回</button>
+                <button class="palette-block attack-block" type="button" draggable="true" data-add-block="attack">前方へ攻撃</button>
               </div>
               <div class="palette-group">
                 <h3>制御</h3>
@@ -106,6 +107,7 @@
                 <h3>判定</h3>
                 <button class="palette-block logic-block" type="button" draggable="true" data-add-block="ifCell">もし 周囲のマスが…</button>
                 <button class="palette-block logic-block" type="button" draggable="true" data-add-block="ifVariable">もし 変数が…</button>
+                <button class="palette-block logic-block" type="button" draggable="true" data-add-block="ifBuiltin">もし インク／尾の長さが…</button>
                 <button class="palette-block logic-block" type="button" draggable="true" data-add-block="ifLogic">もし 条件A かつ 条件B…</button>
                 <button class="palette-block logic-block" type="button" draggable="true" data-add-block="ifRandom">もし Seed乱数が…</button>
               </div>
@@ -159,9 +161,9 @@
             <div class="setup-heading"><p class="eyebrow">NPC対戦</p><h1>ゲームモードを選ぶ</h1></div>
             <div class="mode-grid">
               <button class="mode-card is-selected" type="button" data-mode="territory"><span class="mode-preview territory-preview" aria-hidden="true"></span><strong>陣取り</strong><small>一度塗ったマスは敵にとって壁になる。</small></button>
-              <button class="mode-card is-locked" type="button" disabled><span class="mode-preview cobra-preview" aria-hidden="true"></span><strong>コブラ</strong><small>常に進み続け、伸びる尾を避ける。</small><em>準備中</em></button>
-              <button class="mode-card is-locked" type="button" disabled><span class="mode-preview fall-preview" aria-hidden="true"></span><strong>床抜け</strong><small>止まりすぎると足元が崩れる。</small><em>準備中</em></button>
-              <button class="mode-card is-locked" type="button" disabled><span class="mode-preview splat-preview" aria-hidden="true"></span><strong>スプラ</strong><small>塗り替えと攻撃を両立する。</small><em>準備中</em></button>
+              <button class="mode-card" type="button" data-mode="cobra"><span class="mode-preview cobra-preview" aria-hidden="true"></span><strong>コブラ</strong><small>毎tick必ず進み、伸びる尾を避けて生き残る。</small></button>
+              <button class="mode-card" type="button" data-mode="fall"><span class="mode-preview fall-preview" aria-hidden="true"></span><strong>床抜け</strong><small>2tick連続で移動しないと足元が崩れる。</small></button>
+              <button class="mode-card" type="button" data-mode="splat"><span class="mode-preview splat-preview" aria-hidden="true"></span><strong>スプラ</strong><small>色を上書きし、インクを使って前方へ攻撃する。</small></button>
             </div>
             <div class="settings-strip">
               <label>人数<select id="playerCount"><option value="2">2人</option><option value="3">3人</option><option value="4">4人</option></select></label>
@@ -197,7 +199,7 @@
           <section id="createRoomPanel" class="online-panel is-hidden">
             <div class="setup-heading"><p class="eyebrow">ルーム作成</p><h1>先に対戦ルールを決める</h1></div>
             <div class="settings-strip online-settings">
-              <label>モード<select id="onlineMode"><option value="territory">陣取り</option></select></label>
+              <label>モード<select id="onlineMode"><option value="territory">陣取り</option><option value="cobra">コブラ</option><option value="fall">床抜け</option><option value="splat">スプラ</option></select></label>
               <label>定員<select id="onlinePlayerCount"><option value="2">2人</option><option value="3">3人</option><option value="4">4人</option></select></label>
               <label>盤面<select id="onlineBoardSize"><option value="15">15 × 15</option><option value="21" selected>21 × 21</option><option value="31">31 × 31</option></select></label>
               <label>Seed<input id="onlineSeed" placeholder="自動生成" /></label>
@@ -269,7 +271,7 @@
   <div id="menuBackdrop" class="menu-backdrop" hidden></div>
   <aside id="sideMenu" class="side-menu" aria-hidden="true">
     <div class="drawer-grip" aria-hidden="true"></div><h2>メニュー</h2>
-    <button type="button" data-menu-action="history">戦績・リプレイ</button><button type="button" data-menu-action="rules">ゲームルール</button><button type="button" data-menu-action="help">ヘルプ</button><button type="button" data-menu-action="settings">設定</button>
+    <button type="button" data-menu-action="history">戦績・リプレイ</button><button type="button" data-menu-action="tutorials">チュートリアル</button><button type="button" data-menu-action="rules">ゲームルール</button><button type="button" data-menu-action="help">ヘルプ</button><button type="button" data-menu-action="settings">設定</button>
     <div class="drawer-divider"></div><a href="/">不知火遊技場へ戻る</a><button id="logoutButton" type="button">ログアウト</button>
   </aside>
 
@@ -277,6 +279,19 @@
   <div id="usernameModal" class="modal-layer" aria-hidden="true"><div class="modal-card small-modal" role="dialog" aria-modal="true" aria-labelledby="usernameTitle"><p class="eyebrow">初回設定</p><h2 id="usernameTitle">表示する名前を決める</h2><input id="googleUsernameInput" maxlength="20" placeholder="ユーザーネーム" /><p id="usernameError" class="form-error" aria-live="polite"></p><button id="saveGoogleUsername" class="primary-button" type="button">決定</button></div></div>
   <div id="saveProgramModal" class="modal-layer" aria-hidden="true"><div class="modal-card small-modal save-program-modal" role="dialog" aria-modal="true" aria-labelledby="saveProgramTitle"><p class="eyebrow">駒を保存</p><h2 id="saveProgramTitle">この駒に名前を付ける</h2><p>あとから編集するときや、対戦前に選ぶときに分かりやすい名前がおすすめです。</p><input id="saveProgramName" maxlength="60" placeholder="例：右壁探索型" /><p id="saveProgramError" class="form-error" aria-live="polite"></p><div class="modal-actions"><button id="cancelSaveProgram" class="secondary-button" type="button">戻る</button><button id="confirmSaveProgram" class="primary-button" type="button">この名前で保存</button></div></div></div>
 
+  <div id="tutorialLibraryModal" class="modal-layer" aria-hidden="true">
+    <div class="modal-card tutorial-library-modal" role="dialog" aria-modal="true" aria-labelledby="tutorialLibraryTitle">
+      <p class="eyebrow">チュートリアル</p><h2 id="tutorialLibraryTitle">知りたいところだけ試す</h2>
+      <p>初回チュートリアルをやり直す必要はありません。確認したい内容を選んで、その機能がある画面で学べます。</p>
+      <div id="tutorialLibraryGrid" class="tutorial-library-grid"></div>
+      <button id="closeTutorialLibrary" class="secondary-button" type="button">閉じる</button>
+    </div>
+  </div>
+  <aside id="optionalTutorialCoach" class="optional-tutorial-coach is-hidden" aria-live="polite">
+    <div class="optional-tutorial-meta"><span id="optionalTutorialProgress">1 / 1</span><b id="optionalTutorialName"></b></div>
+    <strong id="optionalTutorialTitle"></strong><p id="optionalTutorialText"></p>
+    <div class="optional-tutorial-actions"><button id="optionalTutorialPrev" class="text-button" type="button">戻る</button><button id="optionalTutorialClose" class="text-button" type="button">終了</button><button id="optionalTutorialNext" class="primary-button compact" type="button">次へ</button></div>
+  </aside>
   <div id="toastRegion" class="toast-region" aria-live="polite"></div>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="/socket.io/socket.io.js"></script>

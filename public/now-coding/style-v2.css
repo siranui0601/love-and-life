@@ -289,3 +289,33 @@ body.is-touch-dragging { overflow: hidden; }
   .tutorial-entry::before, .tutorial-target, .entry-signal, .entry-signal::after, .room-live-dot, .lobby-member-slot::after { animation:none !important; }
   .battle-kind-indicator, .switch-ui::after { transition:none !important; }
 }
+
+/* iteration3-mode-and-tutorial-surfaces */
+.attack-block { background: linear-gradient(90deg, #5b2030, #351923); border-color: rgba(255,82,109,.28); }
+.code-block:has(.block-content:first-child) { isolation: isolate; }
+.tail-piece { position:absolute; inset:22%; border:1px solid currentColor; background:currentColor; opacity:.72; box-shadow:0 0 10px currentColor; animation:tailPulse .8s ease-in-out infinite alternate; }
+.tail-piece.blue { color:var(--blue-player); }.tail-piece.red { color:var(--red-player); }.tail-piece.yellow { color:var(--yellow-player); }.tail-piece.green { color:var(--green-player); }
+.board-cell.is-hole { background:#030507 !important; box-shadow:inset 0 0 0 1px rgba(255,82,109,.22), inset 0 0 18px #000; }
+.board-cell.is-hole::before,.board-cell.is-hole::after { content:""; position:absolute; left:18%; right:18%; top:49%; height:1px; background:rgba(255,120,130,.35); transform:rotate(31deg); }
+.board-cell.is-hole::after { transform:rotate(-39deg); }
+.board-cell.attack-flash { animation:attackCell .2s ease-out; z-index:2; }
+.board-cell.attack-blue { --attack-color:var(--blue-player); }.board-cell.attack-red { --attack-color:var(--red-player); }.board-cell.attack-yellow { --attack-color:var(--yellow-player); }.board-cell.attack-green { --attack-color:var(--green-player); }
+.board-cell.collapse-flash { animation:collapseCell .42s ease-out; }
+.tutorial-library-modal { width:min(920px,96vw); max-height:min(88dvh,820px); overflow:auto; }
+.tutorial-library-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px; margin:20px 0; }
+.tutorial-library-card { position:relative; overflow:hidden; min-height:128px; padding:18px; display:flex; flex-direction:column; justify-content:flex-end; gap:7px; text-align:left; color:var(--text); border:1px solid var(--line); background:linear-gradient(145deg,rgba(19,27,37,.96),rgba(8,12,17,.96)); cursor:pointer; clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px)); transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease; }
+.tutorial-library-card:hover { transform:translateY(-3px); border-color:rgba(88,230,246,.5); box-shadow:0 14px 36px rgba(0,0,0,.26),inset 0 0 30px rgba(88,230,246,.035); }
+.tutorial-library-card strong,.tutorial-library-card small { position:relative; z-index:2; }.tutorial-library-card small { color:var(--muted); line-height:1.55; }
+.tutorial-card-scan { position:absolute; inset:-30% 0; background:linear-gradient(100deg,transparent 42%,rgba(88,230,246,.08),transparent 58%); transform:translateX(-100%); animation:tutorialScan 5.5s ease-in-out infinite; }
+.optional-tutorial-coach { position:fixed; z-index:170; right:14px; bottom:calc(var(--nav-height) + var(--safe-bottom) + 18px); width:min(430px,calc(100vw - 28px)); padding:16px; border:1px solid rgba(88,230,246,.38); background:rgba(8,13,19,.96); backdrop-filter:blur(18px); box-shadow:0 20px 70px rgba(0,0,0,.5),0 0 36px rgba(88,230,246,.07); clip-path:polygon(0 0,calc(100% - 13px) 0,100% 13px,100% 100%,13px 100%,0 calc(100% - 13px)); animation:lessonDock .36s cubic-bezier(.18,.86,.2,1) both; }
+.optional-tutorial-coach::before { content:""; position:absolute; left:0; top:0; bottom:0; width:2px; background:var(--cyan); box-shadow:0 0 16px var(--cyan); }
+.optional-tutorial-meta { display:flex; justify-content:space-between; gap:10px; color:var(--cyan); font-size:.68rem; margin-bottom:8px; }.optional-tutorial-coach>strong { display:block; font-size:1.05rem; }.optional-tutorial-coach p { color:#a9b6be; line-height:1.7; margin:8px 0 12px; }.optional-tutorial-actions { display:grid; grid-template-columns:auto auto 1fr; gap:10px; align-items:center; }.optional-tutorial-actions .primary-button { justify-self:end; }
+.lesson-target { position:relative; z-index:4; animation:lessonTarget 1.15s ease-in-out infinite alternate !important; }
+@keyframes attackCell { 0%{box-shadow:inset 0 0 0 0 var(--attack-color),0 0 0 var(--attack-color)} 45%{box-shadow:inset 0 0 18px 4px var(--attack-color),0 0 18px var(--attack-color)} 100%{box-shadow:none} }
+@keyframes collapseCell { 0%{transform:scale(1);filter:brightness(2)} 55%{transform:scale(.82) rotate(2deg);filter:brightness(.35)} 100%{transform:scale(1)} }
+@keyframes tailPulse { from{transform:scale(.88);opacity:.58} to{transform:scale(1);opacity:.9} }
+@keyframes tutorialScan { 0%,62%{transform:translateX(-120%)} 82%,100%{transform:translateX(120%)} }
+@keyframes lessonDock { from{opacity:0;transform:translateY(24px) scale(.97)} to{opacity:1;transform:none} }
+@keyframes lessonTarget { from{box-shadow:0 0 0 1px rgba(88,230,246,.3),0 0 8px rgba(88,230,246,.08)} to{box-shadow:0 0 0 2px rgba(88,230,246,.75),0 0 26px rgba(88,230,246,.24)} }
+@media (min-width:900px){ .optional-tutorial-coach{bottom:22px;right:22px} }
+@media (prefers-reduced-motion:reduce){ .tail-piece,.tutorial-card-scan,.lesson-target,.optional-tutorial-coach{animation:none!important} }
