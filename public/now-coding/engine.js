@@ -183,6 +183,24 @@ function allCellsClaimed(state) {
   return state.board.every((row) => !row.includes(-1));
 }
 
+function hasLegalTerritoryMove(state, agent) {
+  if (!agent.alive) return false;
+  const ownIndex = state.agents.indexOf(agent);
+  return DIRECTIONS.some((vector) => {
+    const x = agent.x + vector.x;
+    const y = agent.y + vector.y;
+    if (x < 0 || y < 0 || x >= state.size || y >= state.size) return false;
+    if (headAt(state, x, y, agent.id)) return false;
+    const owner = state.board[y][x];
+    return owner < 0 || owner === ownIndex;
+  });
+}
+
+function noAliveAgentCanMove(state) {
+  const alive = state.agents.filter((agent) => agent.alive);
+  return alive.length > 0 && alive.every((agent) => !hasLegalTerritoryMove(state, agent));
+}
+
 export function stepTerritory(state) {
   if (state.finished) return state;
   state.tick += 1;
@@ -276,6 +294,9 @@ export function stepTerritory(state) {
   } else if (!state.agents.some((agent) => agent.alive)) {
     state.finished = true;
     state.finishReason = "all_dead";
+  } else if (noAliveAgentCanMove(state)) {
+    state.finished = true;
+    state.finishReason = "no_moves";
   } else if (state.ticksSinceCapture >= state.stagnationTicks) {
     state.finished = true;
     state.finishReason = "stagnation";
