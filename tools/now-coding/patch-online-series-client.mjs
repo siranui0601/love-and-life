@@ -1,3 +1,4 @@
+// trigger one-time online series client patch
 import fs from "node:fs";
 const file = "public/now-coding/app-v3.js";
 let src = fs.readFileSync(file, "utf8");
