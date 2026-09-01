@@ -7,12 +7,12 @@ const badQuotedEvent = `  s = replaceOne(s,
     '  $$('[ + "'" + 'data-battle-kind' + "'" + ']').forEach((button) => button.addEventListener("click", () => setBattleKind(button.dataset.battleKind)));',
     '  $$('[ + "'" + 'data-battle-kind' + "'" + ']').forEach((button) => button.addEventListener("click", () => setBattleKind(button.dataset.battleKind)));\\n  $$("[data-mode]").forEach((button) => button.addEventListener("click", () => selectBattleMode(button.dataset.mode)));',
     "mode card events");`;
-const goodQuotedEvent = `  s = replaceOne(s,
-    \`  $$('[data-battle-kind]').forEach((button) => button.addEventListener("click", () => setBattleKind(button.dataset.battleKind)));\`,
-    \`  $$('[data-battle-kind]').forEach((button) => button.addEventListener("click", () => setBattleKind(button.dataset.battleKind)));\\n  $$("[data-mode]").forEach((button) => button.addEventListener("click", () => selectBattleMode(button.dataset.mode)));\`,
+const robustModeEvent = `  s = replaceOne(s,
+    '  $("#openCreateRoomButton").addEventListener("click", () => openOnlinePanel("create"));',
+    '  $$("[data-mode]").forEach((button) => button.addEventListener("click", () => selectBattleMode(button.dataset.mode)));\\n  $("#openCreateRoomButton").addEventListener("click", () => openOnlinePanel("create"));',
     "mode card events");`;
 if (!source.includes(badQuotedEvent)) throw new Error("quoted event anchor not found");
-source = source.replace(badQuotedEvent, goodQuotedEvent);
+source = source.replace(badQuotedEvent, robustModeEvent);
 
 const ambiguousStep = `  s = replaceOne(s,
     '    stepTerritory(state);',
@@ -26,4 +26,4 @@ if (!source.includes(ambiguousStep)) throw new Error("ambiguous battle step anch
 source = source.replace(ambiguousStep, preciseStep);
 
 fs.writeFileSync(path, source, "utf8");
-console.log("Fixed iteration 3 script quoting and battle-step anchor.");
+console.log("Fixed iteration 3 script anchors.");
