@@ -164,6 +164,12 @@ function callbackChoices(save) {
   return save.choices.filter((entry) => entry.actionId?.startsWith(CALLBACK_PREFIX));
 }
 
+function sustenanceChoices(save) {
+  return save.choices
+    .filter((entry) => entry.actionId?.startsWith('WORK_MEAL:') || entry.actionId?.startsWith('EAT:'))
+    .filter((entry) => Number(entry.minutes ?? 0) > 0);
+}
+
 function safeTimeAdvanceChoices(save) {
   return save.choices
     .filter((entry) => entry.actionId?.startsWith('LIFE:REST:')
@@ -270,10 +276,26 @@ async function reachCallback(service, store, owner, save, times) {
     productionTimeAdvanceActions: times.filter((entry) => entry.label.startsWith('time-authority:')),
   }));
 
-  for (let guard = 0; guard < 24; guard += 1) {
+  for (let guard = 0; guard < 40; guard += 1) {
     const callbacks = callbackChoices(current);
     if (callbacks.length) return current;
-    if (current.scene.facilityId !== 'LOC_FARM_SQUARE') {
+
+    const sustenance = sustenanceChoices(current)
+      .sort((a, b) => String(a.actionId).localeCompare(String(b.actionId), 'en'));
+    if (sustenance[0]) {
+      current = await choose(service, owner, current, sustenance[0].actionId);
+      pushTime(times, current, `callback:${sustenance[0].actionId}`);
+      continue;
+    }
+
+    if (current.scene.facilityId === 'LOC_FARM_SQUARE') {
+      const toBakery = current.movement.find((entry) => entry.destinationFacilityId === 'LOC_FARM_BAKERY');
+      if (toBakery) {
+        current = await send(service, owner, current, 'MOVE', { moveId: toBakery.moveId });
+        pushTime(times, current, 'callback:move-bakery');
+        continue;
+      }
+    } else {
       const toSquare = current.movement.find((entry) => entry.destinationFacilityId === 'LOC_FARM_SQUARE');
       if (toSquare) {
         current = await send(service, owner, current, 'MOVE', { moveId: toSquare.moveId });
@@ -281,6 +303,7 @@ async function reachCallback(service, store, owner, save, times) {
         continue;
       }
     }
+
     const advances = safeTimeAdvanceChoices(current).sort((a, b) => Number(b.minutes) - Number(a.minutes));
     if (advances[0]) {
       current = await choose(service, owner, current, advances[0].actionId);
