@@ -24,6 +24,7 @@ jobs:
           node --check public/now-coding/engine.js
           node --check public/now-coding/app.js
           node --check src/server/now-coding/store.js
+          node --check src/server/now-coding/online.js
           node --check src/server/now-coding/index.js
           node --check src/server/shared/index.js
       - name: Territory engine tests
@@ -36,3 +37,17 @@ jobs:
           grep -q 'data-go="editor"' public/now-coding/index.html
           grep -q 'data-go="battle"' public/now-coding/index.html
           grep -q 'id="editAfterResultButton"' public/now-coding/index.html
+          grep -q '左に旋回' public/now-coding/index.html
+          grep -q '右に旋回' public/now-coding/index.html
+          ! grep -q '90°旋回' public/now-coding/index.html
+          grep -q 'data-add-block="forever"' public/now-coding/index.html
+          grep -q 'data-add-block="ifLogic"' public/now-coding/index.html
+          grep -q 'id="saveProgramModal"' public/now-coding/index.html
+          grep -q 'id="onlineSetup"' public/now-coding/index.html
+          grep -q 'id="privateRoom"' public/now-coding/index.html
+          grep -q 'id="fillWithNpc"' public/now-coding/index.html
+          grep -q '/socket.io/socket.io.js' public/now-coding/index.html
+          grep -q 'style-v2.css' public/now-coding/index.html
+          grep -q 'now:create-room' src/server/now-coding/online.js
+          grep -q 'now:join-room' src/server/now-coding/online.js
+          grep -q 'makeNpcProgram' public/now-coding/app.js

@@ -26,7 +26,7 @@ export function createServerContext() {
   mountHundredOreRoutes(app);
   mountCompactNoHandSoccerRoutes(app);
   mountTenFreelyRoutes(app, io);
-  mountNowCodingRoutes(app);
+  mountNowCodingRoutes(app, io);
 
   return { app, httpServer, io };
 }

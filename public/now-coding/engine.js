@@ -1,5 +1,6 @@
-export const NOW_CODING_RULE_VERSION = "territory-v1";
+export const NOW_CODING_RULE_VERSION = "territory-v2";
 export const PLAYER_COLORS = ["blue", "red", "yellow", "green"];
+export const NPC_LEVELS = ["weak", "medium", "strong"];
 export const DIRECTIONS = [
   { x: 0, y: -1, name: "north" },
   { x: 1, y: 0, name: "east" },
@@ -62,13 +63,9 @@ export function createBalancedSpawns(sizeInput, playerCountInput, random) {
   ];
 
   let selected;
-  if (playerCount === 2) {
-    selected = random() < 0.5 ? [corners[0], corners[2]] : [corners[1], corners[3]];
-  } else if (playerCount === 3) {
-    selected = shuffled(corners, random).slice(0, 3);
-  } else {
-    selected = [...corners];
-  }
+  if (playerCount === 2) selected = random() < 0.5 ? [corners[0], corners[2]] : [corners[1], corners[3]];
+  else if (playerCount === 3) selected = shuffled(corners, random).slice(0, 3);
+  else selected = [...corners];
 
   return shuffled(selected, random).map((spawn) => ({
     ...spawn,
@@ -81,26 +78,17 @@ function makeBoard(size) {
 }
 
 function normalizeProgram(program) {
-  if (!Array.isArray(program) || program.length === 0) {
-    return [{ type: "action", action: "move" }];
-  }
+  if (!Array.isArray(program) || program.length === 0) return [{ type: "action", action: "move" }];
   return program.slice(0, 10000);
 }
 
-export function createTerritoryState({
-  seed = "1",
-  size = 21,
-  players = [],
-  maxTicks = 600,
-  stagnationTicks = 120,
-  spawns = null,
-} = {}) {
+export function createTerritoryState({ seed = "1", size = 21, players = [], maxTicks = 600, stagnationTicks = 120, spawns = null } = {}) {
   const boardSize = clampBoardSize(size);
   const random = createSeededRandom(seed);
   const safePlayers = players.slice(0, 4);
   while (safePlayers.length < 2) {
     const index = safePlayers.length;
-    safePlayers.push({ id: `cpu-${index}`, name: `CPU ${index + 1}`, color: PLAYER_COLORS[index] });
+    safePlayers.push({ id: `cpu-${index}`, name: `NPC ${index + 1}`, color: PLAYER_COLORS[index], program: makeNpcProgram("medium", index) });
   }
   const resolvedSpawns = Array.isArray(spawns) && spawns.length >= safePlayers.length
     ? spawns.slice(0, safePlayers.length)
@@ -123,6 +111,7 @@ export function createTerritoryState({
       program: normalizeProgram(player.program),
       pc: 0,
       vars: Object.create(null),
+      control: Object.create(null),
       claimed: 1,
       lastAction: "",
       lastSensor: null,
@@ -162,9 +151,7 @@ export function senseCell(state, agent, relative = "front") {
   const vector = DIRECTIONS[dir];
   const x = agent.x + vector.x;
   const y = agent.y + vector.y;
-  if (x < 0 || y < 0 || x >= state.size || y >= state.size) {
-    return { state: "cliff", x, y, owner: -1 };
-  }
+  if (x < 0 || y < 0 || x >= state.size || y >= state.size) return { state: "cliff", x, y, owner: -1 };
   const head = headAt(state, x, y, agent.id);
   if (head) return { state: "player", x, y, owner: state.agents.indexOf(head), playerId: head.id };
   const owner = state.board[y][x];
@@ -176,12 +163,17 @@ export function senseCell(state, agent, relative = "front") {
 function evaluateExpression(expr, context, budget) {
   if (budget.count++ > budget.limit) throw new Error("instruction_budget_exceeded");
   if (expr === null || expr === undefined) return 0;
-  if (typeof expr === "number" || typeof expr === "boolean" || typeof expr === "string") return expr;
+  if (["number", "boolean", "string"].includes(typeof expr)) return expr;
   if (typeof expr !== "object") return 0;
-
   if (expr.type === "literal") return expr.value;
   if (expr.type === "var") return context.agent.vars[String(expr.name || "")] ?? 0;
-  if (expr.type === "sensor") return senseCell(context.state, context.agent, expr.direction || "front").state;
+  if (expr.type === "builtin") {
+    if (expr.name === "ink") return Number(context.agent.ink || 0);
+    if (expr.name === "tailLength") return Array.isArray(context.agent.tail) ? context.agent.tail.length : 0;
+    if (expr.name === "noMoveTicks") return Number(context.agent.noMoveTicks || 0);
+    return 0;
+  }
+  if (expr.type === "sensor") return context.sense(context.state, context.agent, expr.direction || "front").state;
   if (expr.type === "random") {
     const min = Number(evaluateExpression(expr.min ?? 0, context, budget)) || 0;
     const max = Number(evaluateExpression(expr.max ?? 1, context, budget)) || 1;
@@ -190,7 +182,6 @@ function evaluateExpression(expr, context, budget) {
     return Math.floor(context.state.random() * (high - low + 1)) + low;
   }
   if (expr.type === "not") return !Boolean(evaluateExpression(expr.value, context, budget));
-
   if (expr.type === "binary") {
     const op = expr.op;
     if (op === "and") return Boolean(evaluateExpression(expr.left, context, budget)) && Boolean(evaluateExpression(expr.right, context, budget));
@@ -212,23 +203,20 @@ function evaluateExpression(expr, context, budget) {
       default: return 0;
     }
   }
-
   return 0;
 }
 
 function legacyConditionToExpression(block) {
   if (block?.condition?.type === "cell") {
     return {
-      type: "binary",
-      op: "==",
+      type: "binary", op: "==",
       left: { type: "sensor", direction: block.condition.direction || "front" },
       right: { type: "literal", value: block.condition.value || "unclaimed" },
     };
   }
   if (block?.condition?.type === "random") {
     return {
-      type: "binary",
-      op: "<",
+      type: "binary", op: "<",
       left: { type: "random", min: 0, max: 9999 },
       right: { type: "literal", value: Math.round(Math.max(0, Math.min(1, Number(block.condition.chance) || 0.5)) * 10000) },
     };
@@ -236,13 +224,29 @@ function legacyConditionToExpression(block) {
   return block?.condition || { type: "literal", value: false };
 }
 
-function executeStatement(statement, context, budget) {
+function executeSequence(statements, context, budget, path, startIndex = 0) {
+  const list = Array.isArray(statements) ? statements : statements ? [statements] : [];
+  if (!list.length) return { action: null, nextIndex: 0, wrapped: true };
+  let index = Math.max(0, Number(startIndex) || 0) % list.length;
+  for (let scanned = 0; scanned < list.length; scanned += 1) {
+    const current = index;
+    index = (index + 1) % list.length;
+    const action = executeStatement(list[current], context, budget, `${path}/${current}`);
+    if (action) return { action, nextIndex: index, wrapped: index === 0 };
+  }
+  return { action: null, nextIndex: index, wrapped: index === 0 };
+}
+
+function executeStatement(statement, context, budget, path = "root") {
   if (budget.count++ > budget.limit) throw new Error("instruction_budget_exceeded");
   if (!statement || typeof statement !== "object") return null;
 
   if (statement.type === "action") {
-    const action = ["move", "turnLeft", "turnRight"].includes(statement.action) ? statement.action : "move";
-    return action;
+    if (statement.action === "attack") {
+      const range = Math.max(1, Math.min(20, Math.floor(Number(evaluateExpression(statement.range ?? 1, context, budget)) || 1)));
+      return { type: "attack", range };
+    }
+    return ["move", "turnLeft", "turnRight"].includes(statement.action) ? statement.action : "move";
   }
 
   if (statement.type === "set") {
@@ -259,35 +263,63 @@ function executeStatement(statement, context, budget) {
   }
 
   if (statement.type === "if") {
-    const condition = legacyConditionToExpression(statement);
-    const passed = Boolean(evaluateExpression(condition, context, budget));
+    const passed = Boolean(evaluateExpression(legacyConditionToExpression(statement), context, budget));
     const branch = passed ? statement.then : statement.else;
     if (typeof branch === "string") return branch;
-    const statements = Array.isArray(branch) ? branch : branch ? [branch] : [];
-    for (const nested of statements) {
-      const action = executeStatement(nested, context, budget);
-      if (action) return action;
+    return executeSequence(branch, context, budget, `${path}/if`).action;
+  }
+
+  if (statement.type === "forever") {
+    const body = Array.isArray(statement.body) ? statement.body : [];
+    if (!body.length) return null;
+    const key = `forever:${path}`;
+    const state = context.agent.control[key] || { cursor: 0 };
+    const result = executeSequence(body, context, budget, `${path}/forever`, state.cursor);
+    state.cursor = result.nextIndex;
+    context.agent.control[key] = state;
+    return result.action;
+  }
+
+  if (statement.type === "repeat") {
+    const body = Array.isArray(statement.body) ? statement.body : [];
+    if (!body.length) return null;
+    const key = `repeat:${path}`;
+    const configured = Math.max(0, Math.min(10000, Math.floor(Number(evaluateExpression(statement.times ?? 1, context, budget)) || 0)));
+    let state = context.agent.control[key];
+    if (!state) state = { cursor: 0, remaining: configured };
+    if (state.remaining <= 0) {
+      delete context.agent.control[key];
+      return null;
     }
-    return null;
+    const result = executeSequence(body, context, budget, `${path}/repeat`, state.cursor);
+    state.cursor = result.nextIndex;
+    if (result.wrapped) state.remaining -= 1;
+    if (state.remaining <= 0) delete context.agent.control[key];
+    else context.agent.control[key] = state;
+    return result.action;
   }
 
   return null;
 }
 
-export function decideAction(state, agent, instructionBudget = 10000) {
+export function decideAction(state, agent, instructionBudget = 10000, options = {}) {
   if (!agent.alive) return "none";
   const program = agent.program;
   if (!program.length) return "none";
   const budget = { count: 0, limit: instructionBudget };
-  const context = { state, agent };
-
+  const context = { state, agent, sense: typeof options.sense === "function" ? options.sense : senseCell };
   for (let scanned = 0; scanned < program.length; scanned += 1) {
     const index = agent.pc % program.length;
     const statement = program[index];
     agent.pc = (index + 1) % program.length;
     try {
-      const action = executeStatement(statement, context, budget);
-      if (action) return action;
+      const action = executeStatement(statement, context, budget, `top:${index}`);
+      if (action) {
+        if (statement?.type === "forever") agent.pc = index;
+        if (statement?.type === "repeat" && agent.control[`repeat:top:${index}`]) agent.pc = index;
+        return action;
+      }
+      if (statement?.type === "forever") agent.pc = index;
     } catch (error) {
       if (error?.message === "instruction_budget_exceeded") return "none";
       throw error;
@@ -308,18 +340,15 @@ function markDead(agent, reason) {
 }
 
 function allCellsClaimed(state) {
-  for (const row of state.board) {
-    if (row.includes(-1)) return false;
-  }
-  return true;
+  return state.board.every((row) => !row.includes(-1));
 }
 
 export function stepTerritory(state) {
   if (state.finished) return state;
   state.tick += 1;
   let captures = 0;
-
   const actions = new Map();
+
   for (const agent of state.agents) {
     if (!agent.alive) continue;
     agent.lastSensor = {
@@ -327,7 +356,10 @@ export function stepTerritory(state) {
       left: senseCell(state, agent, "left").state,
       right: senseCell(state, agent, "right").state,
     };
-    const action = decideAction(state, agent);
+    let action = decideAction(state, agent);
+    for (let skipped = 0; skipped < 64 && typeof action === "object" && action?.type === "attack"; skipped += 1) {
+      action = decideAction(state, agent);
+    }
     actions.set(agent.id, action);
     agent.lastAction = action;
   }
@@ -377,7 +409,7 @@ export function stepTerritory(state) {
       markDead(agent, "collision");
       continue;
     }
-    const stationaryHead = state.agents.find((other) => other.alive && other.id !== agent.id && other.x === target.x && other.y === target.y && !intents.some((move) => move.agent.id === other.id));
+    const stationaryHead = state.agents.find((other) => other.alive && other.id !== agent.id && other.x === target.x && other.y === target.y && !intents.some((moveIntent) => moveIntent.agent.id === other.id));
     if (stationaryHead) {
       markDead(agent, "collision");
       markDead(stationaryHead, "collision");
@@ -438,14 +470,43 @@ export function runTerritoryToEnd(config) {
   return { state, results: territoryResults(state) };
 }
 
-export function makeDefaultProgram(variant = 0) {
-  const turn = variant % 2 === 0 ? "turnRight" : "turnLeft";
-  return [
-    {
+function cellIf(direction, value, thenBranch, elseBranch) {
+  return { type: "if", condition: { type: "cell", direction, value }, then: thenBranch, else: elseBranch };
+}
+
+export function makeNpcProgram(level = "medium", variant = 0) {
+  const safeLevel = NPC_LEVELS.includes(level) ? level : "medium";
+  const preferredTurn = variant % 2 === 0 ? "turnRight" : "turnLeft";
+  const otherTurn = preferredTurn === "turnRight" ? "turnLeft" : "turnRight";
+  const action = (name) => ({ type: "action", action: name });
+  if (safeLevel === "weak") {
+    return [{
       type: "if",
-      condition: { type: "cell", direction: "front", value: "unclaimed" },
-      then: [{ type: "action", action: "move" }],
-      else: [{ type: "action", action: turn }],
-    },
-  ];
+      condition: { type: "random", chance: 0.72 },
+      then: [action("move")],
+      else: [action(preferredTurn)],
+    }];
+  }
+  if (safeLevel === "medium") {
+    return [cellIf("front", "unclaimed", [action("move")], [
+      cellIf("front", "own", [action("move")], [action(preferredTurn)]),
+    ])];
+  }
+  return [cellIf("front", "unclaimed", [action("move")], [
+    cellIf("left", "unclaimed", [action("turnLeft")], [
+      cellIf("right", "unclaimed", [action("turnRight")], [
+        cellIf("front", "own", [action("move")], [
+          cellIf("left", "own", [action("turnLeft")], [
+            cellIf("right", "own", [action("turnRight")], [
+              { type: "if", condition: { type: "random", chance: 0.5 }, then: [action(preferredTurn)], else: [action(otherTurn)] },
+            ]),
+          ]),
+        ]),
+      ]),
+    ]),
+  ])];
+}
+
+export function makeDefaultProgram(variant = 0) {
+  return makeNpcProgram("medium", variant);
 }
