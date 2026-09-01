@@ -9,6 +9,7 @@ import {
   saveNowCodingProgram,
   upsertNowCodingProfile,
 } from "./store.js";
+import { mountNowCodingSocketHandlers } from "./online.js";
 
 function text(value, max = 200) {
   return String(value ?? "").trim().slice(0, max);
@@ -32,7 +33,9 @@ async function requireKnownUser(req, res) {
   return user;
 }
 
-export function mountNowCodingRoutes(app) {
+export function mountNowCodingRoutes(app, io = null) {
+  if (io) mountNowCodingSocketHandlers(io);
+
   app.get("/api/now-coding/profile", async (req, res) => {
     try {
       const user = await requireKnownUser(req, res);
@@ -98,10 +101,7 @@ export function mountNowCodingRoutes(app) {
     try {
       const user = await requireKnownUser(req, res);
       if (!user) return;
-      const archived = await archiveNowCodingProgram({
-        userTrackingId: user.userTrackingId,
-        programId: text(req.params.programId, 128),
-      });
+      const archived = await archiveNowCodingProgram({ userTrackingId: user.userTrackingId, programId: text(req.params.programId, 128) });
       if (!archived) return res.status(404).json({ ok: false, error: "program_not_found" });
       res.json({ ok: true });
     } catch (error) {
@@ -140,7 +140,7 @@ export function mountNowCodingRoutes(app) {
         spawn: Array.isArray(req.body?.spawn) ? req.body.spawn : [],
         durationTicks: Number(req.body?.durationTicks || 0),
         finishReason: text(req.body?.finishReason || "tick_limit", 80),
-        ruleVersion: text(req.body?.ruleVersion || "territory-v1", 80),
+        ruleVersion: text(req.body?.ruleVersion || "territory-v2", 80),
       });
       res.json({ ok: true, ...saved });
     } catch (error) {
@@ -153,10 +153,7 @@ export function mountNowCodingRoutes(app) {
     try {
       const user = await requireKnownUser(req, res);
       if (!user) return;
-      const replay = await getNowCodingReplay({
-        replayId: text(req.params.replayId, 128),
-        userTrackingId: user.userTrackingId,
-      });
+      const replay = await getNowCodingReplay({ replayId: text(req.params.replayId, 128), userTrackingId: user.userTrackingId });
       if (!replay) return res.status(404).json({ ok: false, error: "replay_not_found" });
       res.json({ ok: true, replay });
     } catch (error) {
