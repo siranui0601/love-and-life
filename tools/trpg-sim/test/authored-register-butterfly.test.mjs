@@ -7,7 +7,7 @@ import {
   AUTHORED_REGISTER_BUTTERFLY_INTERNALS as butterfly,
 } from "../../../src/server/trpg/content/authored-register-butterfly.js";
 import { loadTrpgGameData } from "../../../src/server/trpg/game/game-data.js";
-import { cloneSerializable } from "../../../src/server/trpg/game/serializer.js";
+import { cloneSerializable, deserializeRuntime, serializeRuntime } from "../../../src/server/trpg/game/serializer.js";
 import {
   completeNpcLifeTick,
   createNpcLifeEngine,
@@ -196,12 +196,13 @@ test("npc-life planner, not the butterfly fixture, moves Riona and completes the
   const riona = state.livingWorld.npcStates.NPC008;
   assert.equal(riona.completedAftermathPlanIds.includes(butterfly.GOAP_ID), false);
 
-  advanceUntil(state, (current) => current.playerState.goapRequests[butterfly.GOAP_ID]?.status === "ready", { maxTicks: 24 });
+  advanceUntil(state, (current) => current.playerState.goapRequests[butterfly.GOAP_ID]?.status === "completed", { maxTicks: 24 });
 
   const request = state.playerState.goapRequests[butterfly.GOAP_ID];
   assert.ok(request, "Riona must first receive the fact during ordinary life ticks");
-  assert.equal(request.status, "ready");
-  assert.equal(request.readyReason, "npc-life-engine-aftermath-plan-completed");
+  assert.equal(request.status, "completed");
+  assert.equal(request.completionReason, "npc-life-engine-aftermath-plan-completed");
+  assert.equal(request.executionEvidence?.planner, "npc-life-engine");
   assert.equal(riona.completedAftermathPlanIds.includes(butterfly.GOAP_ID), true);
   assert.equal(butterfly.npcFacility(riona), "LOC_FARM_SQUARE");
   assert.ok(directRionaShare(state), "GOAP activation must retain an actual direct Lorna-to-Riona share");
@@ -234,7 +235,8 @@ test("npc-life planner, not the butterfly fixture, moves Riona and completes the
   assert.equal(state.playerState.goapRequests[butterfly.GOAP_ID].status, "completed");
   assert.equal(state.playerState.player.knownRumorIds.has(butterfly.RUMOR_ID), true);
   assert.match(result.summary, /ローナさんから聞いた/);
-  assert.match(result.summary, /本人へ確かめたかった/);
+  assert.match(result.summary, /次の街へ持っていく前に/);
+  assert.match(result.summary, /裏を取ってた/);
 });
 
 test("REGISTER butterfly survives serialization while actual common interaction and planner progress continue", () => {
@@ -254,18 +256,19 @@ test("REGISTER butterfly survives serialization while actual common interaction 
   const nextTick = advanceUntil(propagated, (current) => Boolean(current.playerState.goapRequests[butterfly.GOAP_ID]));
   const share = directRionaShare(propagated);
   assert.ok(share);
-  const restoredPropagation = cloneSerializable(propagated);
+  const restoredPropagation = deserializeRuntime(serializeRuntime(propagated), data);
   assert.equal(restoredPropagation.livingWorld.npcStates.NPC008.beliefs[butterfly.FACT_ID].sourceNpcId, "NPC058");
   assert.equal(restoredPropagation.playerState.rumorById[butterfly.RUMOR_ID].sourceNpcId, "NPC058");
   assert.equal(restoredPropagation.playerState.goapRequests[butterfly.GOAP_ID].status, "active");
   assert.equal(restoredPropagation.playerState.player.knownRumorIds instanceof Set, true);
 
-  advanceUntil(restoredPropagation, (current) => current.playerState.goapRequests[butterfly.GOAP_ID]?.status === "ready", {
+  advanceUntil(restoredPropagation, (current) => current.playerState.goapRequests[butterfly.GOAP_ID]?.status === "completed", {
     startTick: nextTick,
     maxTicks: 24,
   });
-  const restoredReady = cloneSerializable(restoredPropagation);
-  assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].status, "ready");
+  const restoredReady = deserializeRuntime(serializeRuntime(restoredPropagation), data);
+  assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].status, "completed");
+  assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].completionReason, "npc-life-engine-aftermath-plan-completed");
   assert.equal(restoredReady.livingWorld.npcStates.NPC008.completedAftermathPlanIds.includes(butterfly.GOAP_ID), true);
   assert.equal(butterfly.npcFacility(restoredReady.livingWorld.npcStates.NPC008), "LOC_FARM_SQUARE");
   assert.ok(directRionaShare(restoredReady));
