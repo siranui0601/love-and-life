@@ -25,6 +25,8 @@ async function command(svc, owner, save, type, payload) {
   return result.save;
 }
 
+// Production authority lives in the rendered choice: the certificate always sends
+// back the exact choiceId/actionId pair that the service exposed to the player.
 async function chooseAction(svc, owner, save, actionId) {
   const choice = save.choices.find((entry) => entry.actionId === actionId);
   assert.ok(choice, `${actionId} must be a visible production choice; visible=${save.choices.map((entry) => entry.actionId).join(',')}`);
