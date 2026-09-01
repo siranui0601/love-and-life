@@ -141,4 +141,4 @@ replaceExact(
 );
 
 fs.writeFileSync(file, src);
-console.log("patched client polish");
+console.log("patched client polish v2");
