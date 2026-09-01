@@ -17,6 +17,7 @@ const CALLBACK_IDS = Object.freeze([
   `${CALLBACK_PREFIX}wagon`,
   `${CALLBACK_PREFIX}dance`,
 ]);
+const DAY1_AFTERCARE_OPEN_MINUTE = 12 * 60;
 
 function baseService(store) {
   return new TrpgGameService({ data, store, allowCustomSeed: true });
@@ -43,7 +44,7 @@ async function choose(service, owner, save, actionId) {
     choiceId: visible.choiceId,
     actionId: visible.actionId,
   });
-  assert.equal(visible.actionId, actionId);
+  assert.equal(visible.actionId, actionId, 'the visible actionId must be the executed actionId');
   return next;
 }
 
@@ -162,15 +163,30 @@ function callbackChoices(save) {
   return save.choices.filter((entry) => entry.actionId?.startsWith(CALLBACK_PREFIX));
 }
 
-async function chooseIfVisible(service, owner, save, actionId, times) {
-  if (!save.choices.some((entry) => entry.actionId === actionId)) return save;
-  const next = await choose(service, owner, save, actionId);
-  pushTime(times, next, actionId);
-  return next;
+async function advanceUntilVisible(service, owner, save, actionId, times) {
+  let current = save;
+  for (let guard = 0; guard < 12; guard += 1) {
+    if (current.choices.some((entry) => entry.actionId === actionId)) return current;
+    const rests = current.choices
+      .filter((entry) => entry.actionId?.startsWith('LIFE:REST:'))
+      .sort((a, b) => Number(b.minutes ?? 0) - Number(a.minutes ?? 0));
+    assert.ok(rests[0], `no visible production rest while waiting for ${actionId}; minute=${current.clock.absoluteMinute}; choices=${current.choices.map((entry) => entry.actionId).join(',')}`);
+    const before = Number(current.clock.absoluteMinute);
+    current = await choose(service, owner, current, rests[0].actionId);
+    pushTime(times, current, `time-authority:${rests[0].actionId}`);
+    assert.ok(Number(current.clock.absoluteMinute) > before, `production rest must advance time while waiting for ${actionId}: ${before} -> ${current.clock.absoluteMinute}`);
+  }
+  assert.fail(`${actionId} did not become visible through bounded production time advancement; minute=${current.clock.absoluteMinute}`);
 }
 
 async function reachCallback(service, store, owner, save, times) {
   let current = save;
+  const t01CompletedAtMinute = Number(current.clock.absoluteMinute);
+  current = await advanceUntilVisible(service, owner, current, 'MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira', times);
+  const aftercareVisibleAtMinute = Number(current.clock.absoluteMinute);
+  assert.ok(aftercareVisibleAtMinute >= DAY1_AFTERCARE_OPEN_MINUTE, `Day1 aftercare must obey the production noon gate; minute=${aftercareVisibleAtMinute}`);
+  assert.ok(aftercareVisibleAtMinute >= t01CompletedAtMinute, 'waiting for aftercare must not rewind time');
+
   for (const actionId of [
     'MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira',
     'MISSION_FLOW:T01:SQUARE_SUPPER:share_bread',
@@ -179,9 +195,20 @@ async function reachCallback(service, store, owner, save, times) {
     'MISSION_FLOW:T01:DAY2_MERCHANT_PAYMENT:take_three_gold',
     'MISSION_FLOW:T01:DAY2_MERCHANT_STALL:take_hunter_parcel',
     'MISSION_FLOW:T01:DAY2_MERCHANT_FOLLOWUP:t01-day2-hunter-parcel:leave_with_chief',
-  ]) current = await chooseIfVisible(service, owner, current, actionId, times);
+  ]) {
+    current = await choose(service, owner, current, actionId);
+    pushTime(times, current, actionId);
+  }
 
   assert.ok(current.clock.day >= 2, `callback route must pass into Day2; day=${current.clock.day}`);
+  console.log('[F_CALLBACK_AFTERCARE_TIME]', JSON.stringify({
+    t01CompletedAtMinute,
+    aftercareOpenMinute: DAY1_AFTERCARE_OPEN_MINUTE,
+    aftercareVisibleAtMinute,
+    day2Minute: current.clock.absoluteMinute,
+    productionTimeAdvanceActions: times.filter((entry) => entry.label.startsWith('time-authority:')),
+  }));
+
   for (let guard = 0; guard < 24; guard += 1) {
     const callbacks = callbackChoices(current);
     if (callbacks.length) return current;
@@ -234,7 +261,6 @@ test('[CHECKPOINT_F_CALLBACK] production REGISTER callback survives save/restore
   const interactionId = greetingBeforeRestore[0].interactionEventId;
   assert.ok(interactionId);
 
-  // Restore through the actual base TrpgGameService using the same production store.
   service = baseService(store);
   save = await service.get(owner, save.id);
   const restoredChoices = callbackChoices(save);
