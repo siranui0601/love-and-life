@@ -22,8 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Polish tutorial entry
-        run: node tools/now-coding/polish-tutorial-intro.mjs
+      - name: Fix optional tutorial focus cleanup
+        run: node tools/now-coding/fix-tutorial-focus-final.mjs
       - name: Verify tutorial and game files
         run: |
           node --check public/now-coding/app.js
@@ -32,22 +32,15 @@ jobs:
           node --test tools/now-coding/engine.test.mjs
           node - <<'NODE'
           const fs = require('node:fs');
-          const checks = [
-            ['public/now-coding/index.html', 'コードを組んで、1位を目指せ。'],
-            ['public/now-coding/index.html', 'id="tutorialIntroDemo"'],
-            ['public/now-coding/tutorials.js', 'id: "overview"'],
-          ];
-          for (const [path, needle] of checks) {
-            const source = fs.readFileSync(path, 'utf8');
-            if (!source.includes(needle)) throw new Error(`${path} missing ${needle}`);
-          }
-          console.log('tutorial smoke assertions passed');
+          const source = fs.readFileSync('public/now-coding/app.js', 'utf8');
+          if (!source.includes('document.querySelectorAll(".lesson-target")')) throw new Error('focus cleanup fix missing');
+          console.log('tutorial focus assertion passed');
           NODE
-      - name: Commit verified tutorial polish
+      - name: Commit verified tutorial fix
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/now-coding/app.js public/now-coding/index.html public/now-coding/style-v2.css public/now-coding/tutorials.js
+          git add public/now-coding/app.js
           git diff --cached --check
-          git commit -m "feat(now-coding): make tutorial goal visual and immediate"
+          git commit -m "fix(now-coding): clear optional tutorial highlights safely"
           git push origin HEAD:feat/now-coding-foundation
