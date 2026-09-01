@@ -55,7 +55,7 @@ function directionTowardCenter(x, y, size) {
 
 export function createBalancedSpawns(sizeInput, playerCountInput, random) {
   const size = clampBoardSize(sizeInput);
-  const playerCount = Math.max(2, Math.min(4, Number(playerCountInput) || 2));
+  const playerCount = Math.max(1, Math.min(4, Number(playerCountInput) || 2));
   const edge = Math.max(1, Math.round(size * 0.1));
   const corners = [
     { x: edge, y: edge },
@@ -65,7 +65,8 @@ export function createBalancedSpawns(sizeInput, playerCountInput, random) {
   ];
 
   let selected;
-  if (playerCount === 2) selected = random() < 0.5 ? [corners[0], corners[2]] : [corners[1], corners[3]];
+  if (playerCount === 1) selected = [corners[Math.floor(random() * corners.length)]];
+  else if (playerCount === 2) selected = random() < 0.5 ? [corners[0], corners[2]] : [corners[1], corners[3]];
   else if (playerCount === 3) selected = shuffled(corners, random).slice(0, 3);
   else selected = [...corners];
 
@@ -83,11 +84,11 @@ function normalizeProgram(program) {
   return Array.isArray(program) ? structuredClone(program.slice(0, 10000)) : [];
 }
 
-export function createTerritoryState({ seed = "1", size = 21, players = [], maxTicks = 600, stagnationTicks = 120, spawns = null } = {}) {
+export function createTerritoryState({ seed = "1", size = 21, players = [], maxTicks = 600, stagnationTicks = 120, spawns = null, allowSolo = false } = {}) {
   const boardSize = clampBoardSize(size);
   const random = createSeededRandom(seed);
   const safePlayers = players.slice(0, 4);
-  while (safePlayers.length < 2) {
+  while (safePlayers.length < (allowSolo ? 1 : 2)) {
     const index = safePlayers.length;
     safePlayers.push({ id: `cpu-${index}`, name: `NPC ${index + 1}`, color: PLAYER_COLORS[index], program: makeNpcProgram("medium", index) });
   }
@@ -180,6 +181,24 @@ function markDead(agent, reason) {
 
 function allCellsClaimed(state) {
   return state.board.every((row) => !row.includes(-1));
+}
+
+function hasLegalTerritoryMove(state, agent) {
+  if (!agent.alive) return false;
+  const ownIndex = state.agents.indexOf(agent);
+  return DIRECTIONS.some((vector) => {
+    const x = agent.x + vector.x;
+    const y = agent.y + vector.y;
+    if (x < 0 || y < 0 || x >= state.size || y >= state.size) return false;
+    if (headAt(state, x, y, agent.id)) return false;
+    const owner = state.board[y][x];
+    return owner < 0 || owner === ownIndex;
+  });
+}
+
+function noAliveAgentCanMove(state) {
+  const alive = state.agents.filter((agent) => agent.alive);
+  return alive.length > 0 && alive.every((agent) => !hasLegalTerritoryMove(state, agent));
 }
 
 export function stepTerritory(state) {
@@ -275,6 +294,9 @@ export function stepTerritory(state) {
   } else if (!state.agents.some((agent) => agent.alive)) {
     state.finished = true;
     state.finishReason = "all_dead";
+  } else if (noAliveAgentCanMove(state)) {
+    state.finished = true;
+    state.finishReason = "no_moves";
   } else if (state.ticksSinceCapture >= state.stagnationTicks) {
     state.finished = true;
     state.finishReason = "stagnation";
