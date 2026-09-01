@@ -1,0 +1,46 @@
+name: now-coding-iteration3-once
+
+on:
+  push:
+    branches:
+      - feat/now-coding-foundation
+    paths:
+      - ".github/workflows/now-coding-iteration3-once.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/now-coding-foundation
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check patch script
+        run: node --check tools/now-coding/apply-iteration3.mjs
+      - name: Apply integration
+        run: node tools/now-coding/apply-iteration3.mjs
+      - name: Verify syntax and engine
+        run: |
+          node --check public/now-coding/engine.js
+          node --check public/now-coding/modes.js
+          node --check public/now-coding/tutorials.js
+          node --check public/now-coding/app.js
+          node --check src/server/now-coding/online.js
+          node --test tools/now-coding/engine.test.mjs
+      - name: Remove one-shot tooling and commit
+        run: |
+          rm tools/now-coding/apply-iteration3.mjs
+          rm .github/workflows/now-coding-iteration3-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "4189826+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat(now-coding): complete modes and tutorial system"
+          git push origin HEAD:feat/now-coding-foundation
