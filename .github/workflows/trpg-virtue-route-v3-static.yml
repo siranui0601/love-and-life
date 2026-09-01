@@ -3,72 +3,62 @@ name: trpg-virtue-route-v3-static
 on:
   pull_request:
     paths:
+      - "tools/trpg-sim/compile-virtue-route-v3.mjs"
+      - "tools/trpg-sim/export-virtue-route-v2-source.mjs"
+      - "tools/trpg-sim/export-virtue-route-v3-sheets.mjs"
+      - "tools/trpg-sim/validate-virtue-route-v3-static.mjs"
+      - "tools/trpg-sim/test/virtue-route-v3-compiler.test.mjs"
+      - "tools/trpg-sim/test/virtue-route-v3-static-validator.test.mjs"
+      - "tools/trpg-sim/test/virtue-route-v3-sheet-export.test.mjs"
+      - "tools/trpg-sim/lib/virtue-route-v3-runtime-catalog.json"
+      - "docs/trpg/virtue-route-v2-source.meta.json"
+      - "docs/trpg/virtue-route-v3-static-summary.json"
+      - "docs/trpg/virtue-route-v3-static-validation.json"
+      - "docs/trpg/virtue-route-v3-sheet-export-manifest.json"
       - ".github/workflows/trpg-virtue-route-v3-static.yml"
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   static-compile:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: claude/trpg-virtue-route-main-143ar9
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Patch verified F survival behavior in workspace
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          service = Path('src/server/trpg/game/survival-aware-service.js')
-          text = service.read_text()
-          old = '''    const visible = urgentLifeChoices(super.gameViewForRecord(record), this.data)\n      .find((choice) => choice.actionId === request.actionId);'''
-          new = '''    const runtimeAuthorityView = {\n      scene: { facilityId: runtime.playerState.player.facilityId },\n      player: runtime.playerState.player,\n      clock: { hour: runtime.playerState.hour },\n      choices: [],\n    };\n    const visible = urgentLifeChoices(runtimeAuthorityView, this.data)\n      .find((choice) => choice.actionId === request.actionId);'''
-          if old not in text:
-              raise SystemExit('survival authority target missing')
-          service.write_text(text.replace(old, new, 1))
-
-          callback = Path('tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs')
-          text = callback.read_text()
-          old = '''      || entry.actionId?.startsWith('REST_OUTDOOR:')\n      || entry.actionId === 'TUTORIAL:PAUSE:PLAN')'''
-          new = '''      || entry.actionId?.startsWith('REST_OUTDOOR:')\n      || entry.actionId?.startsWith('WORK_MEAL:')\n      || entry.actionId === 'TUTORIAL:PAUSE:PLAN')'''
-          if old not in text:
-              raise SystemExit('callback survival-choice target missing')
-          text = text.replace(old, new, 1)
-
-          old = '''  for (let guard = 0; guard < 24; guard += 1) {\n    const callbacks = callbackChoices(current);\n    if (callbacks.length) return current;\n    if (current.scene.facilityId !== 'LOC_FARM_SQUARE') {\n      const toSquare = current.movement.find((entry) => entry.destinationFacilityId === 'LOC_FARM_SQUARE');\n      if (toSquare) {\n        current = await send(service, owner, current, 'MOVE', { moveId: toSquare.moveId });\n        pushTime(times, current, 'callback:move-square');\n        continue;\n      }\n    }\n    const advances = safeTimeAdvanceChoices(current).sort((a, b) => Number(b.minutes) - Number(a.minutes));'''
-          new = '''  for (let guard = 0; guard < 48; guard += 1) {\n    const callbacks = callbackChoices(current);\n    if (callbacks.length) return current;\n\n    const belonging = current.choices.find((entry) =>\n      entry.actionId === 'PUBLIC_LIFE:VILLAGE_BELONGING:accept_ordinary_place');\n    if (belonging) {\n      current = await choose(service, owner, current, belonging.actionId);\n      pushTime(times, current, `callback:${belonging.actionId}`);\n      continue;\n    }\n\n    const freeMeal = current.choices.find((entry) =>\n      entry.actionId?.startsWith('EAT:') && Number(entry.price ?? 0) === 0);\n    if (freeMeal) {\n      current = await choose(service, owner, current, freeMeal.actionId);\n      pushTime(times, current, `callback:${freeMeal.actionId}`);\n      continue;\n    }\n\n    const workMeal = current.choices.find((entry) => entry.actionId?.startsWith('WORK_MEAL:'));\n    if (workMeal) {\n      current = await choose(service, owner, current, workMeal.actionId);\n      pushTime(times, current, `callback:${workMeal.actionId}`);\n      continue;\n    }\n\n    const hunger = Number(current.player?.needs?.hunger ?? 0);\n    if (hunger >= 64 && current.scene.facilityId !== 'LOC_FARM_BAKERY') {\n      const toBakery = current.movement.find((entry) => entry.destinationFacilityId === 'LOC_FARM_BAKERY');\n      if (toBakery) {\n        current = await send(service, owner, current, 'MOVE', { moveId: toBakery.moveId });\n        pushTime(times, current, 'callback:move-bakery-for-meal');\n        continue;\n      }\n    }\n\n    if (hunger >= 64 && current.scene.facilityId === 'LOC_FARM_BAKERY') {\n      const primer = safeTimeAdvanceChoices(current)\n        .filter((entry) => !entry.actionId?.startsWith('REST_OUTDOOR:')\n          && !entry.actionId?.startsWith('LIFE:REST:'))\n        .sort((a, b) => Number(a.minutes) - Number(b.minutes))[0];\n      if (primer) {\n        current = await choose(service, owner, current, primer.actionId);\n        pushTime(times, current, `callback:meal-primer:${primer.actionId}`);\n        continue;\n      }\n    }\n\n    if (current.scene.facilityId !== 'LOC_FARM_SQUARE' && hunger < 64) {\n      const toSquare = current.movement.find((entry) => entry.destinationFacilityId === 'LOC_FARM_SQUARE');\n      if (toSquare) {\n        current = await send(service, owner, current, 'MOVE', { moveId: toSquare.moveId });\n        pushTime(times, current, 'callback:move-square');\n        continue;\n      }\n    }\n    const advances = safeTimeAdvanceChoices(current).sort((a, b) => Number(b.minutes) - Number(a.minutes));'''
-          if old not in text:
-              raise SystemExit('callback waiting-loop target missing')
-          callback.write_text(text.replace(old, new, 1))
-          PY
-      - name: Run focused survival and F callback tests
-        run: |
-          set -o pipefail
-          node --test \
-            tools/trpg-sim/test/survival-aware-service.test.mjs \
-            tools/trpg-sim/test/world-time-aware-service.test.mjs \
-            tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs \
-            2>&1 | tee f-survival-authority.log
-      - name: Persist verified production fix and restore canonical workflow
-        run: |
-          git show 9c1570e8cef38c1952c03415b8cfc77ffcd058d2:.github/workflows/trpg-virtue-route-v3-static.yml > .github/workflows/trpg-virtue-route-v3-static.yml
-          git config user.name "siranui0601"
-          git config user.email "41378727+siranui0601@users.noreply.github.com"
-          git add src/server/trpg/game/survival-aware-service.js tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs .github/workflows/trpg-virtue-route-v3-static.yml
-          git commit -m "fix(trpg): keep urgent life actions executable"
-          git push origin HEAD:claude/trpg-virtue-route-main-143ar9
-      - name: Upload focused authority log
-        if: always()
+      - name: Export canonical v2 source from Google Sheets
+        run: node tools/trpg-sim/export-virtue-route-v2-source.mjs
+      - name: Deterministic static compile (no replay)
+        run: node tools/trpg-sim/compile-virtue-route-v3.mjs
+      - name: Deterministic resource ledger (no replay, no combat execution)
+        run: node tools/trpg-sim/validate-virtue-route-v3-static.mjs
+      - name: Build deterministic Google Sheets payloads
+        run: node tools/trpg-sim/export-virtue-route-v3-sheets.mjs
+      - name: Unit and deterministic regression
+        run: >-
+          node --test
+          tools/trpg-sim/test/virtue-route-v3-compiler.test.mjs
+          tools/trpg-sim/test/virtue-route-v3-static-validator.test.mjs
+          tools/trpg-sim/test/virtue-route-v3-sheet-export.test.mjs
+      - name: Upload static compile artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: f-survival-authority-${{ github.sha }}
+          name: virtue-route-v3-static-${{ github.sha }}
           if-no-files-found: error
-          path: f-survival-authority.log
+          path: |
+            docs/trpg/virtue-route-v2-source.meta.json
+            docs/trpg/virtue-route-v3-mapping.csv
+            docs/trpg/virtue-route-v3-unresolved.json
+            docs/trpg/virtue-route-v3-proposed-local-moves.json
+            docs/trpg/virtue-route-v3-static-summary.json
+            docs/trpg/virtue-route-v3-static-ledger.csv
+            docs/trpg/virtue-route-v3-static-validation.json
+            docs/trpg/virtue-route-v3-sheet-ledger.csv
+            docs/trpg/virtue-route-v3-sheet-v2-v3-map.csv
+            docs/trpg/virtue-route-v3-sheet-validation.csv
+            docs/trpg/virtue-route-v3-sheet-export-manifest.json
