@@ -93,3 +93,13 @@ test("test bench exposes modes optional NPC archetypes and fixed spawn", () => {
   assert.match(app, /makeTestNpcProgram/);
   assert.match(app, /testSpawnMode/);
 });
+
+
+test("final language and testbench semantics stay visible", () => {
+  assert.match(app, /"%": "％"/);
+  assert.doesNotMatch(html, /モード固有/);
+  assert.match(html, /data-command-help="attack"/);
+  assert.match(app, /renderTestPreview/);
+  assert.match(app, /c\.mode==="territory"\|\|c\.mode==="splat"/);
+  assert.match(app, /if\(t\.battleKind\)setBattleKind/);
+});

@@ -7,7 +7,7 @@ import {
   runTerritoryToEnd,
   stepTerritory,
 } from "../../public/now-coding/engine.js";
-import { createGameState, gameResults, senseModeCell, stepGame } from "../../public/now-coding/modes.js";
+import { createGameState, gameResults, makeTestNpcProgram, senseModeCell, stepGame } from "../../public/now-coding/modes.js";
 
 const move = { type: "action", action: "move" };
 const right = { type: "action", action: "turnRight" };
@@ -293,4 +293,30 @@ test("invalid attack range is zero-tick and can fall through to a later physical
   stepGame(state);
   assert.equal(state.agents[0].dir, 1);
   assert.equal(state.agents[0].ink, 1);
+});
+
+
+function containsAction(program, actionName) {
+  const visit = (seq) => (seq || []).some((b) => (b?.type === "action" && b.action === actionName) || visit(b?.body) || visit(b?.then) || visit(b?.else));
+  return visit(program);
+}
+
+test("solo test states keep exactly one player when allowSolo is enabled", () => {
+  for (const mode of ["territory", "fall", "cobra", "splat"]) {
+    const state = createGameState({ mode, allowSolo: true, seed: "solo", size: 15, maxTicks: 20, players: [{ id: "me", name: "me", color: "blue", program: [move] }], spawns: [{ x: 7, y: 7, dir: 1 }] });
+    assert.equal(state.agents.length, 1, mode);
+    if (mode === "cobra") { stepGame(state); assert.equal(state.finished, false); }
+  }
+});
+
+test("test NPC catalog has generic archetypes and mode-specific difficulty programs", () => {
+  for (const type of ["straight","wall","explore","evade","chase","random","beginner","intermediate","advanced"]) {
+    const p = makeTestNpcProgram("territory", type, 0);
+    assert.equal(p[0]?.type, "forever", type);
+  }
+  assert.equal(containsAction(makeTestNpcProgram("cobra", "intermediate", 0), "attack"), false);
+  assert.equal(containsAction(makeTestNpcProgram("cobra", "advanced", 0), "attack"), false);
+  assert.equal(containsAction(makeTestNpcProgram("fall", "advanced", 0), "attack"), false);
+  assert.equal(containsAction(makeTestNpcProgram("splat", "intermediate", 0), "attack"), true);
+  assert.equal(containsAction(makeTestNpcProgram("splat", "advanced", 0), "attack"), true);
 });
