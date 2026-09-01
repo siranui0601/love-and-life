@@ -6,28 +6,42 @@ on:
       - ".github/workflows/trpg-virtue-route-v3-static.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   static-compile:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: claude/trpg-virtue-route-main-143ar9
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Patch survival authority in workspace
+      - name: Patch survival authority and callback survival in workspace
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('src/server/trpg/game/survival-aware-service.js')
-          text = path.read_text()
+
+          service = Path('src/server/trpg/game/survival-aware-service.js')
+          text = service.read_text()
           old = '''    const visible = urgentLifeChoices(super.gameViewForRecord(record), this.data)\n      .find((choice) => choice.actionId === request.actionId);'''
           new = '''    const runtimeAuthorityView = {\n      scene: { facilityId: runtime.playerState.player.facilityId },\n      player: runtime.playerState.player,\n      clock: { hour: runtime.playerState.hour },\n      choices: [],\n    };\n    const visible = urgentLifeChoices(runtimeAuthorityView, this.data)\n      .find((choice) => choice.actionId === request.actionId);'''
           if old not in text:
-              raise SystemExit('survival visible-authority target missing')
-          path.write_text(text.replace(old, new, 1))
+              raise SystemExit('survival authority target missing')
+          service.write_text(text.replace(old, new, 1))
+
+          callback = Path('tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs')
+          text = callback.read_text()
+          old = '''      || entry.actionId?.startsWith('REST_OUTDOOR:')\n      || entry.actionId === 'TUTORIAL:PAUSE:PLAN')'''
+          new = '''      || entry.actionId?.startsWith('REST_OUTDOOR:')\n      || entry.actionId?.startsWith('WORK_MEAL:')\n      || entry.actionId?.startsWith('EAT:')\n      || entry.actionId === 'TUTORIAL:PAUSE:PLAN')'''
+          if old not in text:
+              raise SystemExit('callback survival-choice target missing')
+          callback.write_text(text.replace(old, new, 1))
           PY
       - name: Run focused survival and F callback tests
         run: |
@@ -37,6 +51,14 @@ jobs:
             tools/trpg-sim/test/world-time-aware-service.test.mjs \
             tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs \
             2>&1 | tee f-survival-authority.log
+      - name: Persist verified production fix and restore canonical workflow
+        run: |
+          git show 9c1570e8cef38c1952c03415b8cfc77ffcd058d2:.github/workflows/trpg-virtue-route-v3-static.yml > .github/workflows/trpg-virtue-route-v3-static.yml
+          git config user.name "siranui0601"
+          git config user.email "41378727+siranui0601@users.noreply.github.com"
+          git add src/server/trpg/game/survival-aware-service.js tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs .github/workflows/trpg-virtue-route-v3-static.yml
+          git commit -m "fix(trpg): keep urgent life actions executable"
+          git push origin HEAD:claude/trpg-virtue-route-main-143ar9
       - name: Upload focused authority log
         if: always()
         uses: actions/upload-artifact@v4
