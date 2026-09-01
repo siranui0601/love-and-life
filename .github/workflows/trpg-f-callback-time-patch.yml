@@ -1,0 +1,52 @@
+name: TRPG F callback timing focused patch
+
+on:
+  push:
+    branches:
+      - claude/trpg-virtue-route-main-143ar9
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/trpg-virtue-route-main-143ar9
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Patch callback timing certificate
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs')
+          text = path.read_text()
+          needle = """async function reachCallback(service, store, owner, save, times) {\n  let current = save;\n  for (const actionId of [\n"""
+          replacement = """async function advanceUntilVisible(service, owner, save, actionId, times) {\n  let current = save;\n  for (let guard = 0; guard < 12; guard += 1) {\n    if (current.choices.some((entry) => entry.actionId === actionId)) return current;\n    const rests = current.choices\n      .filter((entry) => entry.actionId?.startsWith('LIFE:REST:'))\n      .sort((a, b) => Number(b.minutes ?? 0) - Number(a.minutes ?? 0));\n    assert.ok(rests[0], `no visible production rest while waiting for ${actionId}; minute=${current.clock.absoluteMinute}; choices=${current.choices.map((entry) => entry.actionId).join(',')}`);\n    const before = Number(current.clock.absoluteMinute);\n    current = await choose(service, owner, current, rests[0].actionId);\n    pushTime(times, current, `time-authority:${rests[0].actionId}`);\n    assert.ok(Number(current.clock.absoluteMinute) > before, `production rest must advance time while waiting for ${actionId}: ${before} -> ${current.clock.absoluteMinute}`);\n  }\n  assert.fail(`${actionId} did not become visible through bounded production time advancement; minute=${current.clock.absoluteMinute}`);\n}\n\nasync function reachCallback(service, store, owner, save, times) {\n  let current = save;\n  const t01CompletedAtMinute = Number(current.clock.absoluteMinute);\n  current = await advanceUntilVisible(service, owner, current, 'MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira', times);\n  const aftercareVisibleAtMinute = Number(current.clock.absoluteMinute);\n  assert.ok(aftercareVisibleAtMinute >= 12 * 60, `Day1 aftercare must obey the production noon gate; minute=${aftercareVisibleAtMinute}`);\n  assert.ok(aftercareVisibleAtMinute >= t01CompletedAtMinute, 'waiting for aftercare must not rewind time');\n  for (const actionId of [\n"""
+          if needle not in text:
+              raise SystemExit('target reachCallback block not found')
+          text = text.replace(needle, replacement, 1)
+          old_assert = """  assert.ok(current.clock.day >= 2, `callback route must pass into Day2; day=${current.clock.day}`);\n"""
+          new_assert = """  assert.ok(current.clock.day >= 2, `callback route must pass into Day2; day=${current.clock.day}`);\n  console.log('[F_CALLBACK_AFTERCARE_TIME]', JSON.stringify({\n    t01CompletedAtMinute,\n    aftercareOpenMinute: 12 * 60,\n    aftercareVisibleAtMinute,\n    day2Minute: current.clock.absoluteMinute,\n    productionTimeAdvanceActions: times.filter((entry) => entry.label.startsWith('time-authority:')),\n  }));\n"""
+          if old_assert not in text:
+              raise SystemExit('day2 assertion not found')
+          text = text.replace(old_assert, new_assert, 1)
+          path.write_text(text)
+          PY
+      - name: Run focused callback certificate
+        run: node --test tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs
+      - name: Commit verified patch and remove runner
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/trpg-f-callback-time-patch.yml
+          git add tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs
+          git commit -m "test(trpg): advance F callback through production time"
+          git push origin HEAD:claude/trpg-virtue-route-main-143ar9
