@@ -99,10 +99,31 @@ test('[CHECKPOINT_F_COMMON] secret disclosure requires a real reason; work relat
   assert.ok(authorized.npcStates.NPC008.beliefs['F-SECRET-AUTHORIZED']);
 });
 
-test('[CHECKPOINT_F_COMMON] departureContactContexts is safe with an absent departure list', () => {
-  const world = engine('f-departure-array-guard');
-  world.departures = undefined;
-  assert.doesNotThrow(() => sweep(world));
+test('[CHECKPOINT_F_COMMON] departureContactContexts accepts absent and real departure arrays without crashing', () => {
+  const absent = engine('f-departure-array-guard-absent');
+  absent.departures = undefined;
+  assert.doesNotThrow(() => sweep(absent));
+
+  const real = engine('f-departure-array-guard-real');
+  real.departures = [
+    {
+      npcId: 'NPC058',
+      routeId: 'ROUTE:FARM:TRADE',
+      departedAt: 10,
+      arriveAt: 16,
+      fromHubId: '田園の村',
+      toHubId: '交易都市',
+    },
+    {
+      npcId: 'NPC008',
+      routeId: 'ROUTE:FARM:TRADE',
+      departedAt: 11,
+      arriveAt: 15,
+      fromHubId: '田園の村',
+      toHubId: '交易都市',
+    },
+  ];
+  assert.doesNotThrow(() => sweep(real, 12));
 });
 
 test('[CHECKPOINT_F_COMMON] the player becomes a common interaction participant only after an actual conversation and the greeting dedupes', () => {
