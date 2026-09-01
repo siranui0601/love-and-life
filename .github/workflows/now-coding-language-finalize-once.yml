@@ -1,0 +1,41 @@
+name: now-coding-language-finalize-once
+
+on:
+  push:
+    branches:
+      - feat/now-coding-language-testbench-tutorials
+    paths:
+      - "tools/now-coding/patch-language-finalize.mjs"
+      - ".github/workflows/now-coding-language-finalize-once.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/now-coding-language-testbench-tutorials
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply final patch
+        run: node tools/now-coding/patch-language-finalize.mjs
+      - name: Validate
+        run: |
+          node --check public/now-coding/app-v3.js
+          node --check public/now-coding/engine.js
+          node --check public/now-coding/modes.js
+          node --check public/now-coding/tutorials.js
+          node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs
+      - name: Commit product changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/now-coding/app-v3.js tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(now-coding): finalize testbench and NPC semantics"
+          git push origin HEAD:feat/now-coding-language-testbench-tutorials
