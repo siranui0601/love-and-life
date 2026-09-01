@@ -38,6 +38,35 @@ jobs:
           PY
       - name: Apply language and testbench patch
         run: node tools/now-coding/patch-language-testbench.mjs
+      - name: Fix generated client contract blocks
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('tools/now-coding/client-contract.test.mjs')
+          s=p.read_text()
+          marker='\ntest("language palette exposes nested boolean and numeric reporters"'
+          s=s.split(marker)[0]
+          s += r'''
+
+test("language palette exposes nested boolean and numeric reporters", () => {
+  for (const key of ["cell","compare","logic","not","enemyDistance","number","var","random","math"]) {
+    assert.ok(html.includes(`data-expression-preset="${key}"`));
+  }
+  assert.match(app, /最も近い敵との距離/);
+  assert.match(app, /literalLabel/);
+  assert.match(app, /application\/x-now-expression/);
+});
+
+test("test bench exposes modes optional NPC archetypes and fixed spawn", () => {
+  for (const mode of ["territory","fall","cobra","splat"]) assert.ok(html.includes(`data-test-mode="${mode}"`));
+  for (const type of ["straight","wall","explore","evade","chase","random","beginner","intermediate","advanced"]) assert.ok(html.includes(`value="${type}"`));
+  assert.match(app, /allowSolo/);
+  assert.match(app, /makeTestNpcProgram/);
+  assert.match(app, /testSpawnMode/);
+});
+'''
+          p.write_text(s)
+          PY
       - name: Validate
         run: |
           node --check public/now-coding/app-v3.js
