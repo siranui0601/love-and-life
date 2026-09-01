@@ -22,9 +22,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Preserve generated client template expressions
+      - name: Make patch output literal-safe
         run: |
-          python -c "from pathlib import Path; p=Path('tools/now-coding/patch-language-testbench.mjs'); s=p.read_text(); tokens=['\u0024{c.npc?','\u0024{c.spawnMode','\u0024{MODE_LABELS[c.mode]}','\u0024{content[0]}','\u0024{content[1]}','\u0024{title}','\u0024{text}','\u0024{testNpcLabel(c.npcType)}','\u0024{reason}','\u0024{game.tick}']; [None for t in tokens if not (s:=s.replace(t,'\\\\'+t))]; p.write_text(s)"
+          python -c "from pathlib import Path; p=Path('tools/now-coding/patch-language-testbench.mjs'); s=p.read_text(); s=s.replace('return src.replace(a,b)','return src.replace(a,()=>b)').replace('const n=src.replace(re,b)','const n=src.replace(re,()=>b)'); tokens=['\u0024{c.npc?','\u0024{c.spawnMode','\u0024{MODE_LABELS[c.mode]}','\u0024{content[0]}','\u0024{content[1]}','\u0024{title}','\u0024{text}','\u0024{testNpcLabel(c.npcType)}','\u0024{reason}','\u0024{game.tick}']; [None for t in tokens if not (s:=s.replace(t,'\\\\'+t))]; p.write_text(s)"
       - name: Apply language and testbench patch
         run: node tools/now-coding/patch-language-testbench.mjs
       - name: Repair generated contract suffix
