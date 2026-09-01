@@ -54,6 +54,10 @@ jobs:
               'const restoredReady = cloneSerializable(restoredPropagation);\n  assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].status, "ready");',
               'const restoredReady = deserializeRuntime(serializeRuntime(restoredPropagation), data);\n  assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].status, "completed");\n  assert.equal(restoredReady.playerState.goapRequests[butterfly.GOAP_ID].completionReason, "npc-life-engine-aftermath-plan-completed");'
             ),
+            (
+              'assert.match(result.summary, /本人へ確かめたかった/);',
+              'assert.match(result.summary, /次の街へ持っていく前に/);\n  assert.match(result.summary, /裏を取ってた/);'
+            ),
           ]
 
           for old, new in replacements:
