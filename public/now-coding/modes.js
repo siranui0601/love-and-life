@@ -1,0 +1,588 @@
+import {
+  DIRECTIONS,
+  PLAYER_COLORS,
+  NOW_CODING_RULE_VERSION,
+  createBalancedSpawns,
+  createSeededRandom,
+  createTerritoryState,
+  decideAction,
+  makeNpcProgram,
+  stepTerritory,
+  territoryResults,
+} from "./engine.js";
+
+export const MODE_LABELS = {
+  territory: "陣取り",
+  cobra: "コブラ",
+  fall: "床抜け",
+  splat: "スプラ",
+};
+
+export const MODE_RULE_VERSION = {
+  territory: NOW_CODING_RULE_VERSION,
+  cobra: "cobra-v1",
+  fall: "fall-v1",
+  splat: "splat-v1",
+};
+
+const VALID_MODES = new Set(Object.keys(MODE_LABELS));
+const VALID_DIFFICULTIES = new Set(["weak", "medium", "strong"]);
+
+function clampSize(value) {
+  const raw = Math.max(9, Math.min(51, Number(value) || 21));
+  return raw % 2 === 0 ? raw + 1 : raw;
+}
+
+function board(size, fill = -1) {
+  return Array.from({ length: size }, () => Array(size).fill(fill));
+}
+
+function normalizeProgram(program) {
+  return Array.isArray(program) && program.length ? structuredClone(program.slice(0, 10000)) : [{ type: "action", action: "move" }];
+}
+
+function makeAgents({ players, size, seed, spawns }) {
+  const random = createSeededRandom(seed);
+  const safePlayers = (Array.isArray(players) ? players : []).slice(0, 4);
+  while (safePlayers.length < 2) {
+    const index = safePlayers.length;
+    safePlayers.push({ id: `npc-${index}`, name: `NPC ${index + 1}`, color: PLAYER_COLORS[index], program: makeNpcProgram("medium", index) });
+  }
+  const resolvedSpawns = Array.isArray(spawns) && spawns.length >= safePlayers.length
+    ? spawns.slice(0, safePlayers.length).map((spawn) => ({ ...spawn }))
+    : createBalancedSpawns(size, safePlayers.length, random);
+  const agents = safePlayers.map((player, index) => {
+    const spawn = resolvedSpawns[index];
+    return {
+      id: String(player.id ?? `p${index + 1}`),
+      userTrackingId: String(player.userTrackingId || ""),
+      name: String(player.name || `プレイヤー${index + 1}`),
+      color: player.color || PLAYER_COLORS[index],
+      programName: String(player.programName || ""),
+      program: normalizeProgram(player.program),
+      x: spawn.x,
+      y: spawn.y,
+      dir: Number.isInteger(spawn.dir) ? spawn.dir : 0,
+      alive: true,
+      deathReason: "",
+      deathTick: null,
+      pc: 0,
+      vars: Object.create(null),
+      control: Object.create(null),
+      lastAction: "",
+      lastSensor: null,
+      ink: 0,
+      maxInk: 10,
+      tail: [],
+      noMoveTicks: 0,
+    };
+  });
+  return { agents, spawns: resolvedSpawns, random };
+}
+
+function relativeDirection(dir, relative) {
+  if (relative === "left") return (dir + 3) % 4;
+  if (relative === "right") return (dir + 1) % 4;
+  return dir;
+}
+
+function targetAt(agent, relative = "front") {
+  const dir = relativeDirection(agent.dir, relative);
+  const vector = DIRECTIONS[dir];
+  return { x: agent.x + vector.x, y: agent.y + vector.y, dir };
+}
+
+function out(state, x, y) {
+  return x < 0 || y < 0 || x >= state.size || y >= state.size;
+}
+
+function headAt(state, x, y, ignoreId = "") {
+  return state.agents.find((agent) => agent.alive && agent.id !== ignoreId && agent.x === x && agent.y === y) || null;
+}
+
+function tailOwnerAt(state, x, y) {
+  for (let i = 0; i < state.agents.length; i += 1) {
+    if (state.agents[i].tail.some((cell) => cell.x === x && cell.y === y)) return i;
+  }
+  return -1;
+}
+
+export function senseModeCell(state, agent, relative = "front") {
+  if (state.mode === "territory") {
+    const dir = relativeDirection(agent.dir, relative);
+    const vector = DIRECTIONS[dir];
+    const x = agent.x + vector.x;
+    const y = agent.y + vector.y;
+    if (out(state, x, y)) return { state: "cliff", x, y, owner: -1 };
+    const head = headAt(state, x, y, agent.id);
+    if (head) return { state: "player", x, y, owner: state.agents.indexOf(head), playerId: head.id };
+    const owner = state.board[y][x];
+    if (owner < 0) return { state: "unclaimed", x, y, owner };
+    return { state: owner === state.agents.indexOf(agent) ? "own" : "enemy", x, y, owner };
+  }
+
+  const { x, y } = targetAt(agent, relative);
+  if (out(state, x, y)) return { state: "cliff", x, y, owner: -1 };
+  if (state.mode === "fall" && state.holes?.has(`${x},${y}`)) return { state: "cliff", x, y, owner: -1 };
+  const head = headAt(state, x, y, agent.id);
+  if (head) return { state: "player", x, y, owner: state.agents.indexOf(head), playerId: head.id };
+  if (state.mode === "cobra") {
+    const tailOwner = tailOwnerAt(state, x, y);
+    if (tailOwner >= 0) return { state: tailOwner === state.agents.indexOf(agent) ? "ownTail" : "enemyTail", x, y, owner: tailOwner };
+    return { state: "unclaimed", x, y, owner: -1 };
+  }
+  if (state.mode === "splat") {
+    const owner = state.board[y][x];
+    if (owner < 0) return { state: "unclaimed", x, y, owner };
+    return { state: owner === state.agents.indexOf(agent) ? "own" : "enemy", x, y, owner };
+  }
+  return { state: "unclaimed", x, y, owner: -1 };
+}
+
+function skipUnsupportedAction(state, agent, allowAttack) {
+  for (let attempt = 0; attempt < 64; attempt += 1) {
+    const action = decideAction(state, agent, 10000, { sense: senseModeCell });
+    if (action === "none") return "none";
+    if (typeof action === "object" && action?.type === "attack") {
+      if (!allowAttack) continue;
+      const range = Math.max(1, Math.min(20, Number(action.range) || 1));
+      if (agent.ink < range + 1) continue;
+      return { type: "attack", range };
+    }
+    return action;
+  }
+  return "none";
+}
+
+function markDead(state, agent, reason) {
+  if (!agent.alive) return;
+  agent.alive = false;
+  agent.deathReason = reason;
+  agent.deathTick = state.tick;
+  agent.lastAction = "dead";
+}
+
+function collisionSet(intents) {
+  const dead = new Set();
+  for (let i = 0; i < intents.length; i += 1) {
+    for (let j = i + 1; j < intents.length; j += 1) {
+      const a = intents[i];
+      const b = intents[j];
+      const sameTarget = a.target.x === b.target.x && a.target.y === b.target.y;
+      const swapped = a.target.x === b.from.x && a.target.y === b.from.y && b.target.x === a.from.x && b.target.y === a.from.y;
+      if (sameTarget || swapped) {
+        dead.add(a.agent.id);
+        dead.add(b.agent.id);
+      }
+    }
+  }
+  return dead;
+}
+
+function finishSurvival(state) {
+  const alive = state.agents.filter((agent) => agent.alive);
+  if (alive.length <= 1) {
+    state.finished = true;
+    state.finishReason = alive.length === 1 ? "last_survivor" : "all_dead";
+  } else if (state.tick >= state.maxTicks) {
+    state.finished = true;
+    state.finishReason = "tick_limit";
+  }
+}
+
+function createCobraState(config = {}) {
+  const size = clampSize(config.size);
+  const seed = String(config.seed ?? "1");
+  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns });
+  return {
+    mode: "cobra",
+    ruleVersion: MODE_RULE_VERSION.cobra,
+    seed,
+    size,
+    board: board(size),
+    agents: made.agents,
+    spawns: made.spawns,
+    random: made.random,
+    tick: 0,
+    maxTicks: Math.max(60, Number(config.maxTicks) || 900),
+    growthEvery: Math.max(2, Number(config.growthEvery) || 5),
+    finished: false,
+    finishReason: "",
+    effects: [],
+  };
+}
+
+function stepCobra(state) {
+  if (state.finished) return state;
+  state.tick += 1;
+  state.effects = [];
+  const growthTick = state.tick % state.growthEvery === 0;
+  const vacating = new Set();
+  if (!growthTick) {
+    for (const agent of state.agents) {
+      if (agent.alive && agent.tail[0]) vacating.add(`${agent.tail[0].x},${agent.tail[0].y}`);
+    }
+  }
+
+  const intents = [];
+  for (const agent of state.agents) {
+    if (!agent.alive) continue;
+    agent.lastSensor = {
+      front: senseModeCell(state, agent, "front").state,
+      left: senseModeCell(state, agent, "left").state,
+      right: senseModeCell(state, agent, "right").state,
+    };
+    let action = skipUnsupportedAction(state, agent, false);
+    if (action === "none") action = "move";
+    if (action === "turnLeft") agent.dir = (agent.dir + 3) % 4;
+    if (action === "turnRight") agent.dir = (agent.dir + 1) % 4;
+    agent.lastAction = action;
+    const target = targetAt(agent, "front");
+    if (out(state, target.x, target.y)) {
+      markDead(state, agent, "cliff");
+      continue;
+    }
+    intents.push({ agent, from: { x: agent.x, y: agent.y }, target });
+  }
+
+  const dead = collisionSet(intents);
+  for (const intent of intents) {
+    if (!intent.agent.alive || dead.has(intent.agent.id)) continue;
+    const tailOwner = tailOwnerAt(state, intent.target.x, intent.target.y);
+    if (tailOwner >= 0 && !vacating.has(`${intent.target.x},${intent.target.y}`)) dead.add(intent.agent.id);
+  }
+  for (const id of dead) {
+    const agent = state.agents.find((entry) => entry.id === id);
+    if (agent) markDead(state, agent, "collision");
+  }
+
+  for (const intent of intents) {
+    const agent = intent.agent;
+    if (!agent.alive) continue;
+    const oldHead = { x: agent.x, y: agent.y };
+    agent.x = intent.target.x;
+    agent.y = intent.target.y;
+    agent.tail.push(oldHead);
+    if (!growthTick && agent.tail.length) agent.tail.shift();
+  }
+  for (const agent of state.agents) if (!agent.alive) agent.tail = [];
+  finishSurvival(state);
+  return state;
+}
+
+function createFallState(config = {}) {
+  const size = clampSize(config.size);
+  const seed = String(config.seed ?? "1");
+  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns });
+  return {
+    mode: "fall",
+    ruleVersion: MODE_RULE_VERSION.fall,
+    seed,
+    size,
+    board: board(size),
+    agents: made.agents,
+    spawns: made.spawns,
+    random: made.random,
+    holes: new Set(),
+    tick: 0,
+    maxTicks: Math.max(60, Number(config.maxTicks) || 900),
+    finished: false,
+    finishReason: "",
+    effects: [],
+  };
+}
+
+function stepFall(state) {
+  if (state.finished) return state;
+  state.tick += 1;
+  state.effects = [];
+  const actions = new Map();
+  for (const agent of state.agents) {
+    if (!agent.alive) continue;
+    agent.lastSensor = {
+      front: senseModeCell(state, agent, "front").state,
+      left: senseModeCell(state, agent, "left").state,
+      right: senseModeCell(state, agent, "right").state,
+    };
+    const action = skipUnsupportedAction(state, agent, false);
+    actions.set(agent.id, action);
+    agent.lastAction = action;
+    if (action === "turnLeft") agent.dir = (agent.dir + 3) % 4;
+    if (action === "turnRight") agent.dir = (agent.dir + 1) % 4;
+    if (action !== "move") {
+      agent.noMoveTicks += 1;
+      if (agent.noMoveTicks >= 2) {
+        state.holes.add(`${agent.x},${agent.y}`);
+        state.effects.push({ type: "collapse", x: agent.x, y: agent.y });
+        markDead(state, agent, "floor_collapse");
+      }
+    }
+  }
+
+  const intents = [];
+  for (const agent of state.agents) {
+    if (!agent.alive || actions.get(agent.id) !== "move") continue;
+    const target = targetAt(agent, "front");
+    if (out(state, target.x, target.y) || state.holes.has(`${target.x},${target.y}`)) {
+      markDead(state, agent, "cliff");
+      continue;
+    }
+    intents.push({ agent, from: { x: agent.x, y: agent.y }, target });
+  }
+  const dead = collisionSet(intents);
+  for (const id of dead) {
+    const agent = state.agents.find((entry) => entry.id === id);
+    if (agent) markDead(state, agent, "collision");
+  }
+  for (const intent of intents) {
+    const agent = intent.agent;
+    if (!agent.alive) continue;
+    const stationary = state.agents.find((other) => other.alive && other.id !== agent.id && other.x === intent.target.x && other.y === intent.target.y && !intents.some((candidate) => candidate.agent.id === other.id));
+    if (stationary) {
+      markDead(state, agent, "collision");
+      markDead(state, stationary, "collision");
+      continue;
+    }
+    agent.x = intent.target.x;
+    agent.y = intent.target.y;
+    agent.noMoveTicks = 0;
+  }
+  finishSurvival(state);
+  return state;
+}
+
+function createSplatState(config = {}) {
+  const size = clampSize(config.size);
+  const seed = String(config.seed ?? "1");
+  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns });
+  const paint = board(size);
+  made.agents.forEach((agent, index) => { paint[agent.y][agent.x] = index; });
+  return {
+    mode: "splat",
+    ruleVersion: MODE_RULE_VERSION.splat,
+    seed,
+    size,
+    board: paint,
+    agents: made.agents,
+    spawns: made.spawns,
+    random: made.random,
+    tick: 0,
+    maxTicks: Math.max(60, Number(config.maxTicks) || Math.max(500, size * size * 2)),
+    finished: false,
+    finishReason: "",
+    effects: [],
+  };
+}
+
+function attackCells(state, agent, range) {
+  const vector = DIRECTIONS[agent.dir];
+  const cells = [];
+  for (let distance = 1; distance <= range; distance += 1) {
+    const x = agent.x + vector.x * distance;
+    const y = agent.y + vector.y * distance;
+    if (out(state, x, y)) break;
+    cells.push({ x, y });
+  }
+  return cells;
+}
+
+function stepSplat(state) {
+  if (state.finished) return state;
+  state.tick += 1;
+  state.effects = [];
+  const actions = new Map();
+  const startBoard = state.board.map((row) => [...row]);
+
+  for (const agent of state.agents) {
+    if (!agent.alive) continue;
+    agent.lastSensor = {
+      front: senseModeCell(state, agent, "front").state,
+      left: senseModeCell(state, agent, "left").state,
+      right: senseModeCell(state, agent, "right").state,
+    };
+    const action = skipUnsupportedAction(state, agent, true);
+    actions.set(agent.id, action);
+    agent.lastAction = typeof action === "object" ? `attack:${action.range}` : action;
+  }
+
+  const shotVictims = new Set();
+  for (const agent of state.agents) {
+    if (!agent.alive) continue;
+    const action = actions.get(agent.id);
+    if (typeof action !== "object" || action?.type !== "attack") continue;
+    const range = action.range;
+    agent.ink = Math.max(0, agent.ink - (range + 1));
+    const cells = attackCells(state, agent, range);
+    for (const cell of cells) {
+      state.effects.push({ type: "shot", x: cell.x, y: cell.y, color: agent.color });
+      const victim = headAt(state, cell.x, cell.y, agent.id);
+      if (victim) {
+        shotVictims.add(victim.id);
+        break;
+      }
+    }
+  }
+  for (const id of shotVictims) {
+    const victim = state.agents.find((agent) => agent.id === id);
+    if (victim) markDead(state, victim, "shot");
+  }
+
+  for (const agent of state.agents) {
+    if (!agent.alive) continue;
+    const action = actions.get(agent.id);
+    if (action === "turnLeft") agent.dir = (agent.dir + 3) % 4;
+    if (action === "turnRight") agent.dir = (agent.dir + 1) % 4;
+  }
+
+  const intents = [];
+  for (const agent of state.agents) {
+    if (!agent.alive || actions.get(agent.id) !== "move") continue;
+    const target = targetAt(agent, "front");
+    if (out(state, target.x, target.y)) {
+      markDead(state, agent, "cliff");
+      continue;
+    }
+    intents.push({ agent, from: { x: agent.x, y: agent.y }, target });
+  }
+  const dead = collisionSet(intents);
+  for (const id of dead) {
+    const agent = state.agents.find((entry) => entry.id === id);
+    if (agent) markDead(state, agent, "collision");
+  }
+
+  for (const intent of intents) {
+    const agent = intent.agent;
+    if (!agent.alive) continue;
+    const stationary = state.agents.find((other) => other.alive && other.id !== agent.id && other.x === intent.target.x && other.y === intent.target.y && !intents.some((candidate) => candidate.agent.id === other.id));
+    if (stationary) {
+      markDead(state, agent, "collision");
+      markDead(state, stationary, "collision");
+      continue;
+    }
+    const ownIndex = state.agents.indexOf(agent);
+    const wasOwn = startBoard[intent.target.y][intent.target.x] === ownIndex;
+    agent.x = intent.target.x;
+    agent.y = intent.target.y;
+    state.board[agent.y][agent.x] = ownIndex;
+    if (wasOwn) agent.ink = Math.min(agent.maxInk, agent.ink + 1);
+  }
+
+  for (const agent of state.agents) {
+    if (!agent.alive) continue;
+    const action = actions.get(agent.id);
+    if (action === "turnLeft" || action === "turnRight" || action === "none") {
+      const ownIndex = state.agents.indexOf(agent);
+      if (startBoard[agent.y][agent.x] === ownIndex) agent.ink = Math.min(agent.maxInk, agent.ink + 1);
+    }
+  }
+
+  if (!state.agents.some((agent) => agent.alive)) {
+    state.finished = true;
+    state.finishReason = "all_dead";
+  } else if (state.tick >= state.maxTicks) {
+    state.finished = true;
+    state.finishReason = "tick_limit";
+  }
+  return state;
+}
+
+function survivalResults(state) {
+  const sorted = state.agents.map((agent) => ({
+    id: agent.id,
+    userTrackingId: agent.userTrackingId,
+    name: agent.name,
+    color: agent.color,
+    alive: agent.alive,
+    deathReason: agent.deathReason,
+    survivedTicks: agent.alive ? state.tick : Number(agent.deathTick || 0),
+    tailLength: agent.tail?.length || 0,
+  })).sort((a, b) => Number(b.alive) - Number(a.alive) || b.survivedTicks - a.survivedTicks || a.name.localeCompare(b.name, "ja"));
+  let rank = 0;
+  let previous = null;
+  return sorted.map((result, index) => {
+    const key = `${Number(result.alive)}:${result.survivedTicks}`;
+    if (key !== previous) rank = index + 1;
+    previous = key;
+    return { ...result, rank, score: result.survivedTicks, metric: `${result.survivedTicks}tick 生存` };
+  });
+}
+
+function splatResults(state) {
+  const rows = state.agents.map((agent, index) => {
+    const colored = state.board.reduce((sum, row) => sum + row.filter((owner) => owner === index).length, 0);
+    return {
+      id: agent.id,
+      userTrackingId: agent.userTrackingId,
+      name: agent.name,
+      color: agent.color,
+      alive: agent.alive,
+      deathReason: agent.deathReason,
+      colored,
+      ink: agent.ink,
+      score: colored,
+      metric: `${colored}マス`,
+    };
+  }).sort((a, b) => b.colored - a.colored || Number(b.alive) - Number(a.alive) || a.name.localeCompare(b.name, "ja"));
+  let rank = 0;
+  let previous = null;
+  return rows.map((result, index) => {
+    if (result.colored !== previous) rank = index + 1;
+    previous = result.colored;
+    return { ...result, rank };
+  });
+}
+
+export function createGameState(config = {}) {
+  const mode = VALID_MODES.has(config.mode) ? config.mode : "territory";
+  if (mode === "territory") return createTerritoryState(config);
+  if (mode === "cobra") return createCobraState(config);
+  if (mode === "fall") return createFallState(config);
+  return createSplatState(config);
+}
+
+export function stepGame(state) {
+  if (state.mode === "territory") return stepTerritory(state);
+  if (state.mode === "cobra") return stepCobra(state);
+  if (state.mode === "fall") return stepFall(state);
+  return stepSplat(state);
+}
+
+export function gameResults(state) {
+  if (state.mode === "territory") return territoryResults(state).map((result) => ({ ...result, score: result.claimed, metric: `${result.claimed}マス` }));
+  if (state.mode === "splat") return splatResults(state);
+  return survivalResults(state);
+}
+
+function action(name, range = 1) {
+  return name === "attack" ? { type: "action", action: "attack", range: { type: "literal", value: range } } : { type: "action", action: name };
+}
+
+function cellIf(direction, value, thenBranch, elseBranch) {
+  return { type: "if", condition: { type: "cell", direction, value }, then: thenBranch, else: elseBranch };
+}
+
+export function makeModeNpcProgram(mode = "territory", difficulty = "medium", variant = 0) {
+  const safeMode = VALID_MODES.has(mode) ? mode : "territory";
+  const level = VALID_DIFFICULTIES.has(difficulty) ? difficulty : "medium";
+  if (safeMode === "territory") return makeNpcProgram(level, variant);
+  const turn = variant % 2 ? "turnLeft" : "turnRight";
+  const other = turn === "turnLeft" ? "turnRight" : "turnLeft";
+
+  if (safeMode === "cobra") {
+    if (level === "weak") return [{ type: "if", condition: { type: "random", chance: 0.7 }, then: [action("move")], else: [action(turn)] }];
+    if (level === "medium") return [cellIf("front", "cliff", [action(turn)], [cellIf("front", "enemyTail", [action(turn)], [cellIf("front", "ownTail", [action(other)], [action("move")])])])];
+    return [cellIf("front", "cliff", [cellIf("left", "cliff", [action("turnRight")], [action("turnLeft")])], [cellIf("front", "enemyTail", [cellIf("left", "unclaimed", [action("turnLeft")], [action("turnRight")])], [cellIf("front", "ownTail", [cellIf("right", "unclaimed", [action("turnRight")], [action("turnLeft")])], [action("move")])])])];
+  }
+
+  if (safeMode === "fall") {
+    if (level === "weak") return [{ type: "if", condition: { type: "random", chance: 0.76 }, then: [action("move")], else: [action(turn)] }];
+    if (level === "medium") return [cellIf("front", "cliff", [action(turn)], [action("move")])];
+    return [cellIf("front", "cliff", [cellIf("left", "cliff", [action("turnRight")], [action("turnLeft")])], [action("move")])];
+  }
+
+  if (level === "weak") return [{ type: "if", condition: { type: "random", chance: 0.15 }, then: [action("attack", 1)], else: [action("move")] }];
+  if (level === "medium") return [cellIf("front", "player", [action("attack", 2)], [cellIf("front", "cliff", [action(turn)], [action("move")])])];
+  return [cellIf("front", "player", [action("attack", 4)], [cellIf("front", "cliff", [cellIf("left", "cliff", [action("turnRight")], [action("turnLeft")])], [cellIf("front", "own", [
+    { type: "if", condition: { type: "random", chance: 0.18 }, then: [action("attack", 2)], else: [action("move")] },
+  ], [action("move")])])])];
+}
