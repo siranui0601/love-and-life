@@ -4,10 +4,12 @@ on:
   pull_request:
     paths:
       - "tools/trpg-sim/compile-virtue-route-v3.mjs"
+      - "tools/trpg-sim/realign-virtue-route-v3-post-e.mjs"
       - "tools/trpg-sim/export-virtue-route-v2-source.mjs"
       - "tools/trpg-sim/export-virtue-route-v3-sheets.mjs"
       - "tools/trpg-sim/validate-virtue-route-v3-static.mjs"
       - "tools/trpg-sim/test/virtue-route-v3-compiler.test.mjs"
+      - "tools/trpg-sim/test/virtue-route-v3-post-e-realignment.test.mjs"
       - "tools/trpg-sim/test/virtue-route-v3-static-validator.test.mjs"
       - "tools/trpg-sim/test/virtue-route-v3-sheet-export.test.mjs"
       - "tools/trpg-sim/lib/virtue-route-v3-runtime-catalog.json"
@@ -35,6 +37,8 @@ jobs:
         run: node tools/trpg-sim/export-virtue-route-v2-source.mjs
       - name: Deterministic static compile (no replay)
         run: node tools/trpg-sim/compile-virtue-route-v3.mjs
+      - name: Realign Checkpoint E affected Human Virtue entry
+        run: node tools/trpg-sim/realign-virtue-route-v3-post-e.mjs
       - name: Deterministic resource ledger (no replay, no combat execution)
         run: node tools/trpg-sim/validate-virtue-route-v3-static.mjs
       - name: Build deterministic Google Sheets payloads
@@ -43,6 +47,7 @@ jobs:
         run: >-
           node --test
           tools/trpg-sim/test/virtue-route-v3-compiler.test.mjs
+          tools/trpg-sim/test/virtue-route-v3-post-e-realignment.test.mjs
           tools/trpg-sim/test/virtue-route-v3-static-validator.test.mjs
           tools/trpg-sim/test/virtue-route-v3-sheet-export.test.mjs
       - name: Upload static compile artifacts
