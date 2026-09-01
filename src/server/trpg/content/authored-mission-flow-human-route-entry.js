@@ -5,7 +5,7 @@ import {
 
 export * from "./authored-mission-flow-human-companion-causality.js";
 
-export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v9";
+export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v10";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -100,8 +100,12 @@ function activeEscort(runtime) {
   const mission = findMission(runtime);
   const escort = runtime?.t01Escort;
   const current = aftercare.player(runtime);
+  // The ordinary production runtime represents mission progress in mission.progress
+  // and intentionally keeps the escort return in the common MOVE surface.  The
+  // legacy authored action remains available only to explicit authored-runtime
+  // states carrying stepId, so it cannot replace the production three-choice UX.
   return mission?.status === "active"
-    && currentMissionStepId(runtime, mission) === "decide"
+    && mission?.stepId === "decide"
     && escort?.found === true
     && escort?.active === true
     && escort?.arrivedSquare !== true
