@@ -20,9 +20,9 @@ export const MODE_LABELS = {
 
 export const MODE_RULE_VERSION = {
   territory: NOW_CODING_RULE_VERSION,
-  cobra: "cobra-v1",
-  fall: "fall-v1",
-  splat: "splat-v1",
+  cobra: "cobra-v2",
+  fall: "fall-v2",
+  splat: "splat-v2",
 };
 
 const VALID_MODES = new Set(Object.keys(MODE_LABELS));
@@ -38,7 +38,7 @@ function board(size, fill = -1) {
 }
 
 function normalizeProgram(program) {
-  return Array.isArray(program) && program.length ? structuredClone(program.slice(0, 10000)) : [{ type: "action", action: "move" }];
+  return Array.isArray(program) ? structuredClone(program.slice(0, 10000)) : [];
 }
 
 function makeAgents({ players, size, seed, spawns }) {
@@ -128,7 +128,7 @@ export function senseModeCell(state, agent, relative = "front") {
   if (head) return { state: "player", x, y, owner: state.agents.indexOf(head), playerId: head.id };
   if (state.mode === "cobra") {
     const tailOwner = tailOwnerAt(state, x, y);
-    if (tailOwner >= 0) return { state: tailOwner === state.agents.indexOf(agent) ? "ownTail" : "enemyTail", x, y, owner: tailOwner };
+    if (tailOwner >= 0) return { state: "tail", x, y, owner: tailOwner };
     return { state: "unclaimed", x, y, owner: -1 };
   }
   if (state.mode === "splat") {
@@ -140,12 +140,17 @@ export function senseModeCell(state, agent, relative = "front") {
 }
 
 function skipUnsupportedAction(state, agent, allowAttack) {
-  for (let attempt = 0; attempt < 64; attempt += 1) {
+  for (let attempt = 0; attempt < 128; attempt += 1) {
     const action = decideAction(state, agent, 10000, { sense: senseModeCell });
     if (action === "none") return "none";
     if (typeof action === "object" && action?.type === "attack") {
+      // Unsupported mode, invalid range, or insufficient ink are all zero-tick:
+      // continue interpreting the next instruction instead of manufacturing a
+      // stand-still action.
       if (!allowAttack) continue;
-      const range = Math.max(1, Math.min(20, Number(action.range) || 1));
+      const rawRange = Math.floor(Number(action.range));
+      if (!Number.isFinite(rawRange) || rawRange < 1) continue;
+      const range = Math.min(20, rawRange);
       if (agent.ink < range + 1) continue;
       return { type: "attack", range };
     }
@@ -233,6 +238,8 @@ function stepCobra(state) {
       right: senseModeCell(state, agent, "right").state,
     };
     let action = skipUnsupportedAction(state, agent, false);
+    // Cobra's body advances every simulation tick. A halted program simply
+    // stops steering and therefore continues straight.
     if (action === "none") action = "move";
     if (action === "turnLeft") agent.dir = (agent.dir + 3) % 4;
     if (action === "turnRight") agent.dir = (agent.dir + 1) % 4;
@@ -561,6 +568,10 @@ function cellIf(direction, value, thenBranch, elseBranch) {
   return { type: "if", condition: { type: "cell", direction, value }, then: thenBranch, else: elseBranch };
 }
 
+function forever(body) {
+  return [{ type: "forever", body }];
+}
+
 export function makeModeNpcProgram(mode = "territory", difficulty = "medium", variant = 0) {
   const safeMode = VALID_MODES.has(mode) ? mode : "territory";
   const level = VALID_DIFFICULTIES.has(difficulty) ? difficulty : "medium";
@@ -569,20 +580,20 @@ export function makeModeNpcProgram(mode = "territory", difficulty = "medium", va
   const other = turn === "turnLeft" ? "turnRight" : "turnLeft";
 
   if (safeMode === "cobra") {
-    if (level === "weak") return [{ type: "if", condition: { type: "random", chance: 0.7 }, then: [action("move")], else: [action(turn)] }];
-    if (level === "medium") return [cellIf("front", "cliff", [action(turn)], [cellIf("front", "enemyTail", [action(turn)], [cellIf("front", "ownTail", [action(other)], [action("move")])])])];
-    return [cellIf("front", "cliff", [cellIf("left", "cliff", [action("turnRight")], [action("turnLeft")])], [cellIf("front", "enemyTail", [cellIf("left", "unclaimed", [action("turnLeft")], [action("turnRight")])], [cellIf("front", "ownTail", [cellIf("right", "unclaimed", [action("turnRight")], [action("turnLeft")])], [action("move")])])])];
+    if (level === "weak") return forever([{ type: "if", condition: { type: "random", chance: 0.7 }, then: [action("move")], else: [action(turn)] }]);
+    if (level === "medium") return forever([cellIf("front", "cliff", [action(turn)], [cellIf("front", "tail", [action(other)], [action("move")])])]);
+    return forever([cellIf("front", "cliff", [cellIf("left", "cliff", [action("turnRight")], [action("turnLeft")])], [cellIf("front", "tail", [cellIf("left", "unclaimed", [action("turnLeft")], [action("turnRight")])], [action("move")])])]);
   }
 
   if (safeMode === "fall") {
-    if (level === "weak") return [{ type: "if", condition: { type: "random", chance: 0.76 }, then: [action("move")], else: [action(turn)] }];
-    if (level === "medium") return [cellIf("front", "cliff", [action(turn)], [action("move")])];
-    return [cellIf("front", "cliff", [cellIf("left", "cliff", [action("turnRight")], [action("turnLeft")])], [action("move")])];
+    if (level === "weak") return forever([{ type: "if", condition: { type: "random", chance: 0.76 }, then: [action("move")], else: [action(turn)] }]);
+    if (level === "medium") return forever([cellIf("front", "cliff", [action(turn)], [action("move")])]);
+    return forever([cellIf("front", "cliff", [cellIf("left", "cliff", [action("turnRight")], [action("turnLeft")])], [action("move")])]);
   }
 
-  if (level === "weak") return [{ type: "if", condition: { type: "random", chance: 0.15 }, then: [action("attack", 1)], else: [action("move")] }];
-  if (level === "medium") return [cellIf("front", "player", [action("attack", 2)], [cellIf("front", "cliff", [action(turn)], [action("move")])])];
-  return [cellIf("front", "player", [action("attack", 4)], [cellIf("front", "cliff", [cellIf("left", "cliff", [action("turnRight")], [action("turnLeft")])], [cellIf("front", "own", [
+  if (level === "weak") return forever([{ type: "if", condition: { type: "random", chance: 0.15 }, then: [action("attack", 1)], else: [action("move")] }]);
+  if (level === "medium") return forever([cellIf("front", "player", [action("attack", 2)], [cellIf("front", "cliff", [action(turn)], [action("move")])])]);
+  return forever([cellIf("front", "player", [action("attack", 4)], [cellIf("front", "cliff", [cellIf("left", "cliff", [action("turnRight")], [action("turnLeft")])], [cellIf("front", "own", [
     { type: "if", condition: { type: "random", chance: 0.18 }, then: [action("attack", 2)], else: [action("move")] },
-  ], [action("move")])])])];
+  ], [action("move")])])])]);
 }
