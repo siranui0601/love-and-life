@@ -1071,6 +1071,8 @@ function followFinnDuringMovement(runtime, action, result) {
     finn.currentGoal = "reunite-with-family";
     escort.reunited = true;
     escort.reunionBeatAtMinute = runtime.playerState.absoluteMinute;
+    runtime.playerState.worldFlags ??= {};
+    runtime.playerState.worldFlags.t01FinnReturned = true;
     runtime.playerState.history.push({
       type: "T01_FINN_ESCORTED_TO_SQUARE",
       minute: runtime.playerState.absoluteMinute,
