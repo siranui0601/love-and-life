@@ -5,8 +5,11 @@ import { loadTrpgGameData } from '../../../src/server/trpg/game/game-data.js';
 import {
   createNpcLifeEngine,
   processNpcLifeInteractions,
-  recordPlayerNpcConversation,
 } from '../lib/npc-life-engine.mjs';
+import {
+  recordPlayerNpcConversation,
+  recordPlayerTravelInteractions,
+} from '../lib/player-common-interaction.mjs';
 
 const data = loadTrpgGameData();
 
@@ -133,4 +136,80 @@ test('[CHECKPOINT_F_COMMON] the player becomes a common interaction participant 
   assert.equal(duplicate.learned, false);
   assert.equal(world.interactionEvents.length, interactionCount);
   assert.equal(world.knowledgeEvents.length, knowledgeCount);
+});
+
+test('[CHECKPOINT_F_COMMON] player travel contact requires route overlap and delays rumor publication away from the departure origin', () => {
+  const world = engine('f-player-travel');
+  const traveler = world.npcStates.NPC060;
+  traveler.lifeStatus = 'alive';
+  traveler.presence = 'present';
+  traveler.location = '田園の村';
+  traveler.position = { hubId: '田園の村', facilityId: 'LOC_FARM_INN' };
+  traveler.travel = null;
+  traveler.localTravel = {
+    routeId: 'LOCAL:田園の村:LOC_FARM_INN->LOC_FARM_SQUARE',
+    fromFacilityId: 'LOC_FARM_INN',
+    toFacilityId: 'LOC_FARM_SQUARE',
+    departedAt: 11.5,
+    arriveAt: 12.5,
+  };
+  traveler.beliefs['F-TRAVEL-RUMOR'] = belief({
+    factId: 'F-TRAVEL-RUMOR',
+    importance: 0.7,
+    sourceNpcId: 'NPC060',
+    path: ['NPC060'],
+  });
+
+  const staticOnly = recordPlayerTravelInteractions(world, {
+    playerId: 'PLAYER-F-TRAVEL',
+    before: { hubId: '田園の村', facilityId: 'LOC_FARM_INN' },
+    after: { hubId: '田園の村', facilityId: 'LOC_FARM_INN' },
+    absoluteHour: 12,
+    actionId: 'STAY',
+  });
+  assert.deepEqual(staticOnly, [], 'same facility alone is not travel contact');
+
+  const contacts = recordPlayerTravelInteractions(world, {
+    playerId: 'PLAYER-F-TRAVEL',
+    playerName: 'F証明旅人',
+    before: { hubId: '田園の村', facilityId: 'LOC_FARM_INN' },
+    after: { hubId: '田園の村', facilityId: 'LOC_FARM_SQUARE' },
+    absoluteHour: 12,
+    actionId: 'MOVE_LOCAL:LOC_FARM_SQUARE',
+  });
+  assert.equal(contacts.length, 1);
+  assert.equal(contacts[0].contextType, 'passing-contact');
+  assert.equal(contacts[0].heard.factId, 'F-TRAVEL-RUMOR');
+  assert.equal(contacts[0].publication.origin.facilityId, 'LOC_FARM_INN');
+  assert.equal(contacts[0].publication.destination.facilityId, 'LOC_FARM_SQUARE');
+  assert.ok(contacts[0].publication.propagationAt > contacts[0].publication.learnedAt, 'travel rumor must not backflow at the contact tick');
+  assert.ok(world.interactionEvents.some((event) => event.contextType === 'passing-contact' && event.speakerId === 'PLAYER-F-TRAVEL'));
+  assert.ok(world.knowledgeEvents.some((event) => event.type === 'travel-hear' && event.npcId === 'PLAYER-F-TRAVEL'));
+  assert.equal(world.playerTravelRumorPublications.some((entry) => entry.destination.facilityId === 'LOC_FARM_INN' && entry.propagationAt === 12), false);
+});
+
+test('[CHECKPOINT_F_COMMON] route-position co-travel uses shared-travel rather than facility co-location', () => {
+  const world = engine('f-player-shared-travel');
+  const traveler = world.npcStates.NPC008;
+  traveler.lifeStatus = 'alive';
+  traveler.presence = 'present';
+  traveler.position = { hubId: '田園の村', facilityId: null };
+  traveler.localTravel = null;
+  traveler.travel = {
+    routeId: 'ROUTE:FARM:TRADE',
+    fromHubId: '田園の村',
+    toHubId: '交易都市',
+    departedAt: 20,
+    arriveAt: 30,
+  };
+  const contacts = recordPlayerTravelInteractions(world, {
+    playerId: 'PLAYER-F-TRAVEL',
+    before: { hubId: '田園の村', facilityId: null },
+    after: { hubId: '交易都市', facilityId: null },
+    absoluteHour: 24,
+    actionId: 'TRAVEL:交易都市',
+  });
+  assert.equal(contacts.length, 1);
+  assert.equal(contacts[0].contextType, 'shared-travel');
+  assert.equal(contacts[0].interaction.routeSegment.routeId, 'ROUTE:FARM:TRADE');
 });
