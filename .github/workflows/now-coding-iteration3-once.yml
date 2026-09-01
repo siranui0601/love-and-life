@@ -22,13 +22,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Repair patch script
-        run: node tools/now-coding/fix-iteration3-script.mjs
-      - name: Check patch script
-        run: node --check tools/now-coding/apply-iteration3.mjs
-      - name: Apply integration
-        run: node tools/now-coding/apply-iteration3.mjs
-      - name: Verify syntax and engine
+      - name: Fix invalid attack semantics
+        run: node tools/now-coding/fix-splat-no-tick.mjs
+      - name: Verify all modes
         run: |
           node --check public/now-coding/engine.js
           node --check public/now-coding/modes.js
@@ -36,11 +32,11 @@ jobs:
           node --check public/now-coding/app.js
           node --check src/server/now-coding/online.js
           node --test tools/now-coding/engine.test.mjs
-      - name: Commit verified product files
+      - name: Commit verified product fix
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/now-coding/engine.js public/now-coding/app.js public/now-coding/index.html public/now-coding/style-v2.css tools/now-coding/engine.test.mjs
+          git add public/now-coding/modes.js tools/now-coding/engine.test.mjs
           git diff --cached --check
-          git commit -m "feat(now-coding): complete modes and tutorial system"
+          git commit -m "fix(now-coding): keep invalid splat attacks zero-tick"
           git push origin HEAD:feat/now-coding-foundation
