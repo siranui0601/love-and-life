@@ -3,3 +3,27 @@
 @media(max-width:900px){.editor-layout-v3{grid-template-columns:1fr}.palette-items{grid-template-columns:repeat(2,minmax(0,1fr))}.typed-block>.code-sequence{margin-left:8px}.typed-workspace{max-width:100%;overflow-x:hidden}}
 @media(max-width:560px){.main-content{overflow-x:hidden}.editor-layout-v3,.editor-layout-v3>*{width:100%;max-width:100%;min-width:0}.palette-items{grid-template-columns:1fr 1fr}.palette-block{min-width:0!important;width:100%!important;white-space:normal!important}.typed-workspace{padding-inline:4px}.typed-block>.block-head{font-size:.77rem;padding:8px}.typed-socket,.typed-select,.typed-input{font-size:.73rem;max-width:100%}.block-tools{padding-bottom:4px!important}.expression-overlay{padding:7px}.expression-card{padding:13px}}
 @media(prefers-reduced-motion:reduce){.round-reveal>div{transition:none}.tutorial-target{animation:none!important}}
+
+
+/* iPhone acceptance pass: use the full editor width and make each tutorial action explicit. */
+@media(max-width:900px){
+  .editor-layout-v3>.block-palette{position:static!important;display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:12px!important;overflow:visible!important}
+  .editor-layout-v3>.block-palette .panel-title{position:static!important;width:100%!important;margin-bottom:8px}
+  .editor-layout-v3>.block-palette .palette-accordion{display:grid!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;max-width:none!important;overflow:visible!important}
+  .editor-layout-v3>.block-palette .palette-section{width:100%!important;min-width:0!important;max-width:none!important}
+  .editor-layout-v3>.block-palette .palette-items{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important}
+}
+@media(max-width:560px){
+  .editor-layout-v3>.block-palette{padding:10px!important}
+  .palette-section>summary{min-height:40px;padding-inline:10px}
+  .palette-block{min-height:42px;padding:8px 10px!important}
+}
+.tutorial-disabled{opacity:.24!important;filter:grayscale(.55)!important;pointer-events:none!important}
+.tutorial-target{opacity:1!important;filter:none!important;pointer-events:auto!important;position:relative;z-index:5}
+.tutorial-step-modal{position:fixed;inset:0;z-index:18000;display:grid;place-items:center;padding:18px;background:rgba(2,6,10,.88);backdrop-filter:blur(16px)}
+.tutorial-step-card{width:min(520px,100%);padding:22px;background:linear-gradient(145deg,#0b141b,#081017);border:1px solid rgba(88,230,246,.35);box-shadow:0 28px 90px rgba(0,0,0,.62),inset 0 1px rgba(255,255,255,.04)}
+.tutorial-step-card small{display:block;margin-bottom:8px;color:var(--cyan);font-size:.68rem;letter-spacing:.14em}
+.tutorial-step-card h2{margin:0 0 10px;font-size:clamp(1.25rem,5vw,1.8rem)}
+.tutorial-step-card p{margin:0 0 18px;color:#b9c8ce;line-height:1.75}
+.tutorial-step-card .primary-button{width:100%}
+@media(prefers-reduced-motion:reduce){.tutorial-step-modal{backdrop-filter:none}}

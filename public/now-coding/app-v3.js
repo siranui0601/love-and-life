@@ -23,7 +23,7 @@ const state = {
   selectedProgramId: "", view: "home", testTimer: null, battleTimer: null, battleState: null,
   selectedModes: new Set(["territory"]), focusedMode: "territory", onlineModes: new Set(["territory"]), onlineFocusedMode: "territory",
   battleKind: "npc", battleStep: 1, series: null, onlineSeries: null, currentOnlineMeta: null, showNames: false, socket: null, onlineRoom: null, publicRooms: [],
-  drag: null, suppressClickUntil: 0, optionalTutorial: null, tutorialFinalPassed: false,
+  drag: null, suppressClickUntil: 0, optionalTutorial: null, tutorialFinalPassed: false, tutorialModalKey: "",
 };
 
 function esc(value) { return String(value ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
@@ -41,21 +41,52 @@ function initGoogle(){if(!window.google?.accounts?.id||!$("#googleSignInBtn"))re
 
 async function bootstrap(){if(!state.user?.userTrackingId)return;const id=encodeURIComponent(state.user.userTrackingId);try{const [p,pr,m]=await Promise.all([api(`/api/now-coding/profile?userTrackingId=${id}`),api(`/api/now-coding/programs?userTrackingId=${id}`),api(`/api/now-coding/matches?userTrackingId=${id}&limit=20`)]);state.profile=p.profile||{tutorialStep:0,tutorialDone:false,prefs:{}};state.programs=pr.programs||[];state.matches=m.matches||[];if(!state.selectedProgramId&&state.programs[0])state.selectedProgramId=state.programs[0].programId;renderHome();renderProgramChoices();applyTutorialGate();connectOnline();if(!state.profile.tutorialDone)requestAnimationFrame(startTutorial);}catch(e){console.error(e);toast("保存データの読み込みに失敗しました");}}
 function isTutorial(){return Boolean(state.profile&&!state.profile.tutorialDone);}
+const TUTORIAL_STEPS=[
+ ["コードを組んで、1位を目指せ。","自分で組んだコードが駒の頭脳になります。まずは『進む』だけの駒を作り、コードが最後まで来たら止まることを見てみましょう。","始める"],
+ ["まず『進む』を置く","今は『進む』だけを使います。ほかの命令は一時的に操作できません。『進む』を1つ追加してください。",""] ,
+ ["1マスだけ進むことを確認","次はテスト実行だけを使います。『進む』しかないので、駒は1マス進んだところで停止します。",""] ,
+ ["繰り返すには『ずっと』","『ずっと』を追加したら、いま置いた『進む』をその内側へドラッグしてください。",""] ,
+ ["今度は止まらない","テスト実行してください。『ずっと』の中に『進む』があるので、まっすぐ進み続けて崖から落ちます。",""] ,
+ ["崖を見て判断する","『もし』を追加します。チュートリアル中は『ずっと』の中の正しい位置へ自動で入ります。条件は『前 が 崖』です。",""] ,
+ ["崖なら旋回する","『旋回』を追加します。『もし』の『なら』側へ自動で入り、崖の手前で向きを変えます。",""] ,
+ ["完成","もう一度テストし、崖を判断しながら走り続けられることを確認します。",""]
+];
+function tutorialStructure(){
+  const foreverIndex=state.draft.blocks.findIndex(b=>b.type==="forever");
+  const forever=foreverIndex>=0?state.draft.blocks[foreverIndex]:null;
+  const body=forever?.body||[];
+  const moveIndex=body.findIndex(x=>x.type==="action"&&x.action==="move");
+  const ifIndex=body.findIndex(x=>x.type==="if"&&isFrontCliffCondition(x.condition));
+  return{foreverIndex,forever,body,moveIndex,ifIndex,ifBlock:ifIndex>=0?body[ifIndex]:null};
+}
+function tutorialFocusInfo(){
+  const s=Number(state.profile?.tutorialStep||0),base=TUTORIAL_STEPS[Math.min(s,TUTORIAL_STEPS.length-1)];
+  if(s===0)return{key:"0",title:base[0],text:base[1],selectors:["#tutorialNextButton"],scroll:"#tutorialCoach"};
+  if(s===7&&state.tutorialFinalPassed)return{key:"7:save",title:"テスト成功。最後に保存",text:"崖を判断して30tick以上走り続けられました。『保存』を押して最初の駒を完成させてください。",selectors:["#saveProgramButton"],scroll:"#saveProgramButton"};
+  if(s===3){
+    const t=tutorialStructure();
+    if(t.forever&&t.moveIndex<0)return{key:"3:nest",title:"『進む』を『ずっと』の中へ",text:"紫の『ずっと』を用意できました。コード欄の『進む』を押したまま、紫の内側の『ここに命令を入れる』へ移動してください。",selectors:['.typed-block[data-action="move"]',`.code-sequence[data-sequence="${t.foreverIndex}:body"]`],scroll:'.typed-block[data-action="move"]'};
+  }
+  const targets={1:'[data-add-block="move"]',2:'#runTestButton',3:'[data-add-block="forever"]',4:'#runTestButton',5:'[data-add-block="if"]',6:'[data-add-block="turn"]',7:'#runTestButton'};
+  const sel=targets[s];return{key:String(s),title:base[0],text:base[1],selectors:sel?[sel]:[],scroll:sel};
+}
 async function tutorialProgress(step,done=false){if(!state.user)return;try{const d=await api("/api/now-coding/profile",{method:"PUT",body:JSON.stringify({userTrackingId:state.user.userTrackingId,tutorialStep:Math.max(Number(state.profile?.tutorialStep||0),step),tutorialDone:Boolean(done),prefs:state.profile?.prefs||{}})});state.profile=d.profile;applyTutorialGate();renderTutorial();}catch(e){console.warn(e);}}
 function applyTutorialGate(){const locked=isTutorial();document.body.classList.toggle("tutorial-locked",locked);$$('[data-go="battle"], #onlineBattleTab').forEach(n=>{n.disabled=locked;n.setAttribute("aria-disabled",locked?"true":"false")});$("#firstProgramCard")?.classList.toggle("is-hidden",!locked);$("#homeEditorButton").disabled=false;$("#menuButton").disabled=false;}
 function startTutorial(){newDraft();showView("editor",true);if(!state.profile)state.profile={tutorialStep:0,tutorialDone:false,prefs:{}};renderTutorial();}
-function renderTutorial(){const c=$("#tutorialCoach");if(!c)return;if(!isTutorial()||state.view!=="editor"){c.classList.add("is-hidden");clearTutorialTargets();return;}const s=Number(state.profile?.tutorialStep||0);const steps=[
- ["コードを組んで、1位を目指せ。","自分で組んだコードが駒の頭脳になります。まずは『進む』だけの駒を作り、コードが最後まで来たら止まることを見てみましょう。","始める"],
- ["まず『進む』を置く","『進む』を1つだけ追加してください。",""] ,
- ["1マスだけ進むことを確認","テスト実行してください。『進む』しかないので、駒は1マス進んだところで停止します。",""] ,
- ["繰り返すには『ずっと』","『ずっと』を追加し、その内側へ『進む』をドラッグしてください。",""] ,
- ["今度は止まらない","テスト実行してください。まっすぐ進み続け、崖から落ちます。",""] ,
- ["崖を見て判断する","『もし』を『ずっと』の中へ入れ、条件を『前 が 崖』にしてください。",""] ,
- ["崖なら旋回する","『もし』の『なら』側へ『旋回』を入れ、右か左を選んでください。『進む』はifの後に置きます。",""] ,
- ["完成","もう一度テストし、崖の手前で旋回できたら保存してください。これで最初の駒は完成です。",""] ];
- const item=steps[Math.min(s,steps.length-1)];$("#tutorialStepLabel").textContent=`${Math.min(s+1,8)} / 8`;$("#tutorialTitle").textContent=item[0];$("#tutorialText").textContent=item[1];$("#tutorialIntroDemo")?.classList.toggle("is-hidden",s!==0);const next=$("#tutorialNextButton");next.textContent=item[2]||"次の操作をしてください";next.classList.toggle("is-hidden",s!==0);next.disabled=s!==0;c.classList.remove("is-hidden");updateTutorialTargets();}
-function clearTutorialTargets(){$$(".tutorial-target,.tutorial-muted").forEach(n=>n.classList.remove("tutorial-target","tutorial-muted"));}
-function updateTutorialTargets(){clearTutorialTargets();if(!isTutorial()||state.view!=="editor")return;const s=Number(state.profile?.tutorialStep||0);const targetMap={1:'[data-add-block="move"]',2:'#runTestButton',3:'[data-add-block="forever"]',4:'#runTestButton',5:'[data-add-block="if"]',6:'[data-add-block="turn"]',7:'#runTestButton'};const sel=targetMap[s];if(sel)$(sel)?.classList.add("tutorial-target");}
+function renderTutorial(){const c=$("#tutorialCoach");if(!c)return;if(!isTutorial()||state.view!=="editor"){c.classList.add("is-hidden");clearTutorialTargets();document.querySelectorAll(".tutorial-step-modal").forEach(n=>n.remove());return;}const s=Number(state.profile?.tutorialStep||0),info=tutorialFocusInfo(),item=TUTORIAL_STEPS[Math.min(s,TUTORIAL_STEPS.length-1)];$("#tutorialStepLabel").textContent=`${Math.min(s+1,8)} / 8`;$("#tutorialTitle").textContent=info.title||item[0];$("#tutorialText").textContent=info.text||item[1];$("#tutorialIntroDemo")?.classList.toggle("is-hidden",s!==0);const next=$("#tutorialNextButton");next.textContent=item[2]||"次の操作をしてください";next.classList.toggle("is-hidden",s!==0);next.disabled=s!==0;c.classList.remove("is-hidden");updateTutorialTargets();requestAnimationFrame(maybeShowTutorialStepModal);}
+function clearTutorialTargets(){$$(".tutorial-target,.tutorial-disabled").forEach(n=>n.classList.remove("tutorial-target","tutorial-disabled"));}
+function updateTutorialTargets(){clearTutorialTargets();if(!isTutorial()||state.view!=="editor")return;const info=tutorialFocusInfo();$$('#view-editor button, #view-editor select, #view-editor input').forEach(n=>n.classList.add("tutorial-disabled"));for(const sel of info.selectors||[])$$(sel).forEach(n=>{n.classList.remove("tutorial-disabled");n.classList.add("tutorial-target")});}
+function maybeShowTutorialStepModal(){
+  if(!isTutorial()||state.view!=="editor")return;const s=Number(state.profile?.tutorialStep||0);if(s===0)return;const info=tutorialFocusInfo();if(!info||state.tutorialModalKey===info.key||document.querySelector(".tutorial-step-modal"))return;state.tutorialModalKey=info.key;
+  const overlay=document.createElement("div");overlay.className="tutorial-step-modal";overlay.innerHTML=`<div class="tutorial-step-card" role="dialog" aria-modal="true" aria-labelledby="tutorialModalTitle"><small>STEP ${Math.min(s+1,8)} / 8</small><h2 id="tutorialModalTitle">${esc(info.title)}</h2><p>${esc(info.text)}</p><button class="primary-button" type="button">この操作をやってみる</button></div>`;
+  overlay.querySelector("button").onclick=()=>{overlay.remove();setTimeout(()=>{const target=info.scroll?$(info.scroll):null;target?.scrollIntoView({behavior:"smooth",block:"center",inline:"nearest"});},60)};document.body.append(overlay);
+}
+function tutorialRouteInsertion(path,index,block){
+  if(!isTutorial())return{path,index};const s=Number(state.profile?.tutorialStep||0),t=tutorialStructure();
+  if(s===5&&block.type==="if"&&t.foreverIndex>=0)return{path:[{index:t.foreverIndex,branch:"body"}],index:Math.max(0,t.moveIndex)};
+  if(s===6&&block.type==="action"&&["turnLeft","turnRight"].includes(block.action)&&t.foreverIndex>=0&&t.ifIndex>=0)return{path:[{index:t.foreverIndex,branch:"body"},{index:t.ifIndex,branch:"then"}],index:0};
+  return{path,index};
+}
 
 function newDraft(){state.draft={programId:"",name:"新しい駒",blocks:[]};renderWorkspace();}
 function openProgram(id){const p=state.programs.find(x=>x.programId===id);if(!p)return;state.draft={programId:p.programId,name:p.name,blocks:deepClone(p.blocks||[])};state.selectedProgramId=p.programId;showView("editor",true);}
@@ -100,7 +131,7 @@ function openExpressionEditor(expr,expected,onChange){const overlay=document.cre
 function renderWorkspace(){const host=$("#programWorkspace");if(!host)return;host.innerHTML="";$("#draftNamePreview").textContent=state.draft.name||"新しい駒";host.append(renderSequence(state.draft.blocks,[]));$("#blockCount").textContent=`${countBlocks(state.draft.blocks)} ブロック`;$("#workspaceHint").classList.toggle("is-hidden",state.draft.blocks.length>0);updateTutorialTargets();}
 function countBlocks(seq){return(seq||[]).reduce((n,b)=>n+1+countBlocks(b.body)+countBlocks(b.then)+countBlocks(b.else),0);}
 function renderSequence(seq,path){const zone=document.createElement("div");zone.className="code-sequence";zone.dataset.sequence=pathKey(path);zone.addEventListener("dragover",e=>{e.preventDefault();zone.classList.add("is-drop-target")});zone.addEventListener("dragleave",e=>{if(!zone.contains(e.relatedTarget))zone.classList.remove("is-drop-target")});zone.addEventListener("drop",e=>{e.preventDefault();e.stopPropagation();zone.classList.remove("is-drop-target");handleDrop(e,path,seq.length)});seq.forEach((b,i)=>zone.append(renderBlock(b,path,i)));const empty=document.createElement("div");empty.className="sequence-drop-hint";empty.textContent=seq.length?"ここへ追加":"ここに命令を入れる";zone.append(empty);return zone;}
-function renderBlock(block,path,index){const node=document.createElement("article");const kind=["forever","while","repeat"].includes(block.type)?"control":block.type==="if"?"logic":["set","change"].includes(block.type)?"value":"action";node.className=`code-block typed-block block-${kind}`;node.draggable=true;node.dataset.blockPath=JSON.stringify(path);node.dataset.blockIndex=String(index);node.addEventListener("dragstart",e=>{e.stopPropagation();e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("application/x-now-block",JSON.stringify({path,index}));node.classList.add("is-dragging")});node.addEventListener("dragend",()=>node.classList.remove("is-dragging"));
+function renderBlock(block,path,index){const node=document.createElement("article");const kind=["forever","while","repeat"].includes(block.type)?"control":block.type==="if"?"logic":["set","change"].includes(block.type)?"value":"action";node.className=`code-block typed-block block-${kind}`;node.draggable=true;node.dataset.blockPath=JSON.stringify(path);node.dataset.blockIndex=String(index);node.dataset.blockType=block.type;if(block.type==="action")node.dataset.action=block.action;node.addEventListener("dragstart",e=>{e.stopPropagation();e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("application/x-now-block",JSON.stringify({path,index}));node.classList.add("is-dragging")});node.addEventListener("dragend",()=>node.classList.remove("is-dragging"));
  const head=document.createElement("div");head.className="block-head";node.append(head);
  if(block.type==="action"&&block.action==="move")head.append(strong("進む"));
  else if(block.type==="action"&&(block.uiKind==="turn"||block.action==="turnLeft"||block.action==="turnRight")){head.append(strong("旋回"),select([["turnLeft","左"],["turnRight","右"]],block.action||"turnRight",v=>{block.action=v;block.uiKind="turn";},"typed-select socket-enum"));}
@@ -115,13 +146,14 @@ function renderBlock(block,path,index){const node=document.createElement("articl
  const tools=document.createElement("div");tools.className="block-tools";const up=tool("↑","上へ",()=>moveWithin(path,index,-1)),down=tool("↓","下へ",()=>moveWithin(path,index,1)),del=tool("削除","削除",()=>{seqByPath(path).splice(index,1);renderWorkspace()},"delete-block");up.disabled=index===0;down.disabled=index===seqByPath(path).length-1;tools.append(up,down,del);node.append(tools);return node;}
 function strong(t){const s=document.createElement("strong");s.textContent=t;return s;}function badge(t){const b=document.createElement("small");b.className="mode-badge";b.textContent=t;return b;}function branchWrap(label,seq,path){const f=document.createDocumentFragment();const l=document.createElement("div");l.className="branch-label";l.textContent=label;f.append(l,renderSequence(seq,path));return f;}function tool(text,title,fn,klass=""){const b=document.createElement("button");b.type="button";b.textContent=text;b.title=title;if(klass)b.className=klass;b.onclick=fn;return b;}function varInput(obj,key){const i=document.createElement("input");i.className="typed-input socket-variable";i.value=obj[key]||"value";i.maxLength=40;i.oninput=()=>obj[key]=i.value;return i;}
 function moveWithin(path,index,delta){const seq=seqByPath(path),next=index+delta;if(!seq||next<0||next>=seq.length)return;[seq[index],seq[next]]=[seq[next],seq[index]];renderWorkspace();}
-function handleDrop(event,targetPath,targetIndex){const palette=event.dataTransfer.getData("application/x-now-palette"),raw=event.dataTransfer.getData("application/x-now-block");if(palette){insertBlock(targetPath,targetIndex,createBlock(palette));return;}if(!raw)return;try{const src=JSON.parse(raw),from=seqByPath(src.path),to=seqByPath(targetPath);if(!from||!to)return;const [block]=from.splice(src.index,1);let at=targetIndex;if(pathKey(src.path)===pathKey(targetPath)&&src.index<at)at-=1;to.splice(Math.max(0,Math.min(at,to.length)),0,block);renderWorkspace();checkTutorialStructure();}catch{}}
-function insertBlock(path,index,block){const seq=seqByPath(path);if(!seq)return;seq.splice(Math.max(0,Math.min(index,seq.length)),0,block);renderWorkspace();onTutorialAdd(block);}
+function handleDrop(event,targetPath,targetIndex){const palette=event.dataTransfer.getData("application/x-now-palette"),raw=event.dataTransfer.getData("application/x-now-block");if(palette){insertBlock(targetPath,targetIndex,createBlock(palette));return;}if(!raw)return;try{const src=JSON.parse(raw),from=seqByPath(src.path);if(!from)return;const [block]=from.splice(src.index,1);let nextPath=targetPath,nextIndex=targetIndex;if(isTutorial()&&Number(state.profile?.tutorialStep||0)===3&&block?.type==="action"&&block.action==="move"){const foreverIndex=state.draft.blocks.findIndex(b=>b.type==="forever");if(foreverIndex>=0){nextPath=[{index:foreverIndex,branch:"body"}];nextIndex=seqByPath(nextPath)?.length||0;}}const to=seqByPath(nextPath);if(!to){from.splice(Math.min(src.index,from.length),0,block);renderWorkspace();return;}let at=nextIndex;if(pathKey(src.path)===pathKey(nextPath)&&src.index<at)at-=1;to.splice(Math.max(0,Math.min(at,to.length)),0,block);renderWorkspace();checkTutorialStructure();renderTutorial();}catch{}}
+function insertBlock(path,index,block){const routed=tutorialRouteInsertion(path,index,block),seq=seqByPath(routed.path);if(!seq)return;seq.splice(Math.max(0,Math.min(routed.index,seq.length)),0,block);renderWorkspace();onTutorialAdd(block);}
 function onTutorialAdd(block){
   if(!isTutorial())return;
   const s=Number(state.profile?.tutorialStep||0);
-  if(s===1&&block.type==="action"&&block.action==="move")tutorialProgress(2);
+  if(s===1&&block.type==="action"&&block.action==="move"){tutorialProgress(2);return;}
   checkTutorialStructure();
+  renderTutorial();
 }
 function isFrontCliffCondition(expr){return expr?.type==="binary"&&expr.op==="=="&&expr.left?.type==="sensor"&&expr.left.direction==="front"&&expr.right?.type==="literal"&&expr.right.value==="cliff";}
 function checkTutorialStructure(){
@@ -141,8 +173,15 @@ function checkTutorialStructure(){
   }
 }
 
-function bindPalette(){$$('[data-add-block]').forEach(button=>{button.draggable=true;button.addEventListener("click",()=>{if(Date.now()<state.suppressClickUntil)return;insertBlock([],state.draft.blocks.length,createBlock(button.dataset.addBlock))});button.addEventListener("dragstart",e=>{e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("application/x-now-palette",button.dataset.addBlock)});button.addEventListener("contextmenu",e=>e.preventDefault());button.addEventListener("pointerdown",startTouchPaletteDrag);});}
-function startTouchPaletteDrag(event){if(event.pointerType==="mouse"||event.button!==0)return;const button=event.currentTarget,start={x:event.clientX,y:event.clientY};let active=false,ghost=null;const move=e=>{const dist=Math.hypot(e.clientX-start.x,e.clientY-start.y);if(!active&&dist>9){active=true;state.suppressClickUntil=Date.now()+500;ghost=document.createElement("div");ghost.className="drag-ghost";ghost.textContent=button.textContent;document.body.append(ghost);}if(!active)return;e.preventDefault();ghost.style.transform=`translate(${e.clientX+10}px,${e.clientY+10}px)`;const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".code-sequence");$$('.code-sequence.is-drop-target').forEach(n=>n.classList.remove("is-drop-target"));el?.classList.add("is-drop-target");};const end=e=>{button.removeEventListener("pointermove",move);button.removeEventListener("pointerup",end);button.removeEventListener("pointercancel",end);ghost?.remove();$$('.code-sequence.is-drop-target').forEach(n=>n.classList.remove("is-drop-target"));if(active){const zone=document.elementFromPoint(e.clientX,e.clientY)?.closest(".code-sequence");if(zone){const path=parseSequenceKey(zone.dataset.sequence);insertBlock(path,seqByPath(path).length,createBlock(button.dataset.addBlock));}}};button.setPointerCapture?.(event.pointerId);button.addEventListener("pointermove",move);button.addEventListener("pointerup",end);button.addEventListener("pointercancel",end);}
+function bindPalette(){$$('[data-add-block]').forEach(button=>{button.draggable=true;button.addEventListener("click",()=>{if(Date.now()<state.suppressClickUntil||button.classList.contains("tutorial-disabled"))return;insertBlock([],state.draft.blocks.length,createBlock(button.dataset.addBlock))});button.addEventListener("dragstart",e=>{if(button.classList.contains("tutorial-disabled")){e.preventDefault();return;}e.dataTransfer.effectAllowed="copy";e.dataTransfer.setData("application/x-now-palette",button.dataset.addBlock)});button.addEventListener("contextmenu",e=>e.preventDefault());button.addEventListener("pointerdown",startTouchPaletteDrag);});}
+function startTouchPaletteDrag(event){
+  if(event.pointerType==="mouse"||event.button!==0)return;const button=event.currentTarget;if(button.classList.contains("tutorial-disabled"))return;const start={x:event.clientX,y:event.clientY};let active=false,ghost=null;
+  const activate=(point)=>{if(active)return;active=true;state.suppressClickUntil=Date.now()+550;button.classList.add("is-drag-source");ghost=document.createElement("div");ghost.className="drag-ghost";ghost.textContent=button.textContent;document.body.append(ghost);ghost.style.transform=`translate(${point.clientX+10}px,${point.clientY+10}px)`;};
+  const hold=setTimeout(()=>activate(event),120);
+  const move=e=>{const dist=Math.hypot(e.clientX-start.x,e.clientY-start.y);if(!active&&dist>5)activate(e);if(!active)return;e.preventDefault();ghost.style.transform=`translate(${e.clientX+10}px,${e.clientY+10}px)`;const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".code-sequence");$$('.code-sequence.is-drop-target').forEach(n=>n.classList.remove("is-drop-target"));el?.classList.add("is-drop-target");};
+  const end=e=>{clearTimeout(hold);button.removeEventListener("pointermove",move);button.removeEventListener("pointerup",end);button.removeEventListener("pointercancel",end);button.classList.remove("is-drag-source");ghost?.remove();$$('.code-sequence.is-drop-target').forEach(n=>n.classList.remove("is-drop-target"));if(active){const zone=document.elementFromPoint(e.clientX,e.clientY)?.closest(".code-sequence");if(zone){const path=parseSequenceKey(zone.dataset.sequence);insertBlock(path,seqByPath(path).length,createBlock(button.dataset.addBlock));}}};
+  button.setPointerCapture?.(event.pointerId);button.addEventListener("pointermove",move);button.addEventListener("pointerup",end);button.addEventListener("pointercancel",end);
+}
 function parseSequenceKey(key){if(!key||key==="root")return[];return key.split("/").map(part=>{const [index,branch]=part.split(":");return{index:Number(index),branch}});}
 
 function renderBoard(el,game,previous=null){if(!el)return;const size=game.size;if(Number(el.dataset.size)!==size||el.children.length!==size*size){el.innerHTML="";el.dataset.size=String(size);el.style.gridTemplateColumns=`repeat(${size},1fr)`;for(let i=0;i<size*size;i++){const c=document.createElement("div");c.className="board-cell";el.append(c);}}const occupied=new Map(game.agents.filter(a=>a.alive).map(a=>[`${a.x},${a.y}`,a])),tails=new Map();for(const a of game.agents)for(const t of(a.tail||[]))tails.set(`${t.x},${t.y}`,a.color);const effects=new Map((game.effects||[]).map(e=>[`${e.x},${e.y}`,e]));for(let y=0;y<size;y++)for(let x=0;x<size;x++){const i=y*size+x,c=el.children[i],owner=game.board?.[y]?.[x]??-1,color=owner>=0?game.agents[owner]?.color:"";c.className=`board-cell${color?` claim-${color}`:""}`;if(game.holes?.has(`${x},${y}`))c.classList.add("is-hole");if(previous&&previous[y]?.[x]!==owner&&owner>=0)c.classList.add("just-claimed");const ef=effects.get(`${x},${y}`);if(ef?.type==="shot")c.classList.add("attack-flash",`attack-${ef.color}`);c.innerHTML="";const tc=tails.get(`${x},${y}`);if(tc){const t=document.createElement("span");t.className=`tail-piece ${tc}`;c.append(t);}const a=occupied.get(`${x},${y}`);if(a){const p=document.createElement("span");p.className=`piece ${a.color} dir-${a.dir}`;c.append(p);if(state.showNames&&el.id==="battleBoard"){const label=document.createElement("span");label.className=`piece-name-label ${a.color}`;label.textContent=a.name;c.append(label);}}}}
@@ -156,10 +195,10 @@ function runTest(){
   let idle=0;
   state.testTimer=setInterval(()=>{
     const prev=game.board.map(r=>[...r]);stepTerritory(game);renderBoard($("#testBoard"),game,prev);
-    const a=game.agents[0];const stopped=a.alive&&a.pc>=a.program.length&&!a.vm?.frames?.length;
+    const a=game.agents[0];const stopped=a.alive&&a.vm?.halted===true;
     idle=stopped?idle+1:0;
     if(isTutorial()&&tutorialStepAtStart===7&&a.alive&&game.tick>=30){
-      stopTest();state.tutorialFinalPassed=true;$("#testStatus").textContent="成功：崖を判断して走り続けられました。駒を保存してください。";$("#saveProgramButton").classList.add("tutorial-target");return;
+      stopTest();state.tutorialFinalPassed=true;$("#testStatus").textContent="成功：崖を判断して走り続けられました。駒を保存してください。";renderTutorial();return;
     }
     if(!a.alive||game.finished||idle>=2){
       stopTest();
