@@ -1,4 +1,6 @@
-export const NOW_CODING_RULE_VERSION = "territory-v2";
+import { runProgramUntilAction } from "./vm.js";
+
+export const NOW_CODING_RULE_VERSION = "territory-v3";
 export const PLAYER_COLORS = ["blue", "red", "yellow", "green"];
 export const NPC_LEVELS = ["weak", "medium", "strong"];
 export const DIRECTIONS = [
@@ -78,8 +80,7 @@ function makeBoard(size) {
 }
 
 function normalizeProgram(program) {
-  if (!Array.isArray(program) || program.length === 0) return [{ type: "action", action: "move" }];
-  return program.slice(0, 10000);
+  return Array.isArray(program) ? structuredClone(program.slice(0, 10000)) : [];
 }
 
 export function createTerritoryState({ seed = "1", size = 21, players = [], maxTicks = 600, stagnationTicks = 120, spawns = null } = {}) {
@@ -160,172 +161,10 @@ export function senseCell(state, agent, relative = "front") {
   return { state: owner === ownIndex ? "own" : "enemy", x, y, owner };
 }
 
-function evaluateExpression(expr, context, budget) {
-  if (budget.count++ > budget.limit) throw new Error("instruction_budget_exceeded");
-  if (expr === null || expr === undefined) return 0;
-  if (["number", "boolean", "string"].includes(typeof expr)) return expr;
-  if (typeof expr !== "object") return 0;
-  if (expr.type === "literal") return expr.value;
-  if (expr.type === "var") return context.agent.vars[String(expr.name || "")] ?? 0;
-  if (expr.type === "builtin") {
-    if (expr.name === "ink") return Number(context.agent.ink || 0);
-    if (expr.name === "tailLength") return Array.isArray(context.agent.tail) ? context.agent.tail.length : 0;
-    if (expr.name === "noMoveTicks") return Number(context.agent.noMoveTicks || 0);
-    return 0;
-  }
-  if (expr.type === "sensor") return context.sense(context.state, context.agent, expr.direction || "front").state;
-  if (expr.type === "random") {
-    const min = Number(evaluateExpression(expr.min ?? 0, context, budget)) || 0;
-    const max = Number(evaluateExpression(expr.max ?? 1, context, budget)) || 1;
-    const low = Math.min(min, max);
-    const high = Math.max(min, max);
-    return Math.floor(context.state.random() * (high - low + 1)) + low;
-  }
-  if (expr.type === "not") return !Boolean(evaluateExpression(expr.value, context, budget));
-  if (expr.type === "binary") {
-    const op = expr.op;
-    if (op === "and") return Boolean(evaluateExpression(expr.left, context, budget)) && Boolean(evaluateExpression(expr.right, context, budget));
-    if (op === "or") return Boolean(evaluateExpression(expr.left, context, budget)) || Boolean(evaluateExpression(expr.right, context, budget));
-    const left = evaluateExpression(expr.left, context, budget);
-    const right = evaluateExpression(expr.right, context, budget);
-    switch (op) {
-      case "+": return Number(left) + Number(right);
-      case "-": return Number(left) - Number(right);
-      case "*": return Number(left) * Number(right);
-      case "/": return Number(right) === 0 ? 0 : Number(left) / Number(right);
-      case "%": return Number(right) === 0 ? 0 : Number(left) % Number(right);
-      case "==": return left === right;
-      case "!=": return left !== right;
-      case "<": return Number(left) < Number(right);
-      case "<=": return Number(left) <= Number(right);
-      case ">": return Number(left) > Number(right);
-      case ">=": return Number(left) >= Number(right);
-      default: return 0;
-    }
-  }
-  return 0;
-}
-
-function legacyConditionToExpression(block) {
-  if (block?.condition?.type === "cell") {
-    return {
-      type: "binary", op: "==",
-      left: { type: "sensor", direction: block.condition.direction || "front" },
-      right: { type: "literal", value: block.condition.value || "unclaimed" },
-    };
-  }
-  if (block?.condition?.type === "random") {
-    return {
-      type: "binary", op: "<",
-      left: { type: "random", min: 0, max: 9999 },
-      right: { type: "literal", value: Math.round(Math.max(0, Math.min(1, Number(block.condition.chance) || 0.5)) * 10000) },
-    };
-  }
-  return block?.condition || { type: "literal", value: false };
-}
-
-function executeSequence(statements, context, budget, path, startIndex = 0) {
-  const list = Array.isArray(statements) ? statements : statements ? [statements] : [];
-  if (!list.length) return { action: null, nextIndex: 0, wrapped: true };
-  let index = Math.max(0, Number(startIndex) || 0) % list.length;
-  for (let scanned = 0; scanned < list.length; scanned += 1) {
-    const current = index;
-    index = (index + 1) % list.length;
-    const action = executeStatement(list[current], context, budget, `${path}/${current}`);
-    if (action) return { action, nextIndex: index, wrapped: index === 0 };
-  }
-  return { action: null, nextIndex: index, wrapped: index === 0 };
-}
-
-function executeStatement(statement, context, budget, path = "root") {
-  if (budget.count++ > budget.limit) throw new Error("instruction_budget_exceeded");
-  if (!statement || typeof statement !== "object") return null;
-
-  if (statement.type === "action") {
-    if (statement.action === "attack") {
-      const range = Math.max(1, Math.min(20, Math.floor(Number(evaluateExpression(statement.range ?? 1, context, budget)) || 1)));
-      return { type: "attack", range };
-    }
-    return ["move", "turnLeft", "turnRight"].includes(statement.action) ? statement.action : "move";
-  }
-
-  if (statement.type === "set") {
-    const name = String(statement.name || "value").slice(0, 40);
-    context.agent.vars[name] = evaluateExpression(statement.value, context, budget);
-    return null;
-  }
-
-  if (statement.type === "change") {
-    const name = String(statement.name || "value").slice(0, 40);
-    const current = Number(context.agent.vars[name] || 0);
-    context.agent.vars[name] = current + Number(evaluateExpression(statement.value ?? 1, context, budget) || 0);
-    return null;
-  }
-
-  if (statement.type === "if") {
-    const passed = Boolean(evaluateExpression(legacyConditionToExpression(statement), context, budget));
-    const branch = passed ? statement.then : statement.else;
-    if (typeof branch === "string") return branch;
-    return executeSequence(branch, context, budget, `${path}/if`).action;
-  }
-
-  if (statement.type === "forever") {
-    const body = Array.isArray(statement.body) ? statement.body : [];
-    if (!body.length) return null;
-    const key = `forever:${path}`;
-    const state = context.agent.control[key] || { cursor: 0 };
-    const result = executeSequence(body, context, budget, `${path}/forever`, state.cursor);
-    state.cursor = result.nextIndex;
-    context.agent.control[key] = state;
-    return result.action;
-  }
-
-  if (statement.type === "repeat") {
-    const body = Array.isArray(statement.body) ? statement.body : [];
-    if (!body.length) return null;
-    const key = `repeat:${path}`;
-    const configured = Math.max(0, Math.min(10000, Math.floor(Number(evaluateExpression(statement.times ?? 1, context, budget)) || 0)));
-    let state = context.agent.control[key];
-    if (!state) state = { cursor: 0, remaining: configured };
-    if (state.remaining <= 0) {
-      delete context.agent.control[key];
-      return null;
-    }
-    const result = executeSequence(body, context, budget, `${path}/repeat`, state.cursor);
-    state.cursor = result.nextIndex;
-    if (result.wrapped) state.remaining -= 1;
-    if (state.remaining <= 0) delete context.agent.control[key];
-    else context.agent.control[key] = state;
-    return result.action;
-  }
-
-  return null;
-}
-
 export function decideAction(state, agent, instructionBudget = 10000, options = {}) {
-  if (!agent.alive) return "none";
-  const program = agent.program;
-  if (!program.length) return "none";
-  const budget = { count: 0, limit: instructionBudget };
-  const context = { state, agent, sense: typeof options.sense === "function" ? options.sense : senseCell };
-  for (let scanned = 0; scanned < program.length; scanned += 1) {
-    const index = agent.pc % program.length;
-    const statement = program[index];
-    agent.pc = (index + 1) % program.length;
-    try {
-      const action = executeStatement(statement, context, budget, `top:${index}`);
-      if (action) {
-        if (statement?.type === "forever") agent.pc = index;
-        if (statement?.type === "repeat" && agent.control[`repeat:top:${index}`]) agent.pc = index;
-        return action;
-      }
-      if (statement?.type === "forever") agent.pc = index;
-    } catch (error) {
-      if (error?.message === "instruction_budget_exceeded") return "none";
-      throw error;
-    }
-  }
-  return "none";
+  return runProgramUntilAction(state, agent, instructionBudget, {
+    sense: typeof options.sense === "function" ? options.sense : senseCell,
+  });
 }
 
 function nextPosition(agent) {
@@ -357,6 +196,9 @@ export function stepTerritory(state) {
       right: senseCell(state, agent, "right").state,
     };
     let action = decideAction(state, agent);
+    // Attack is a valid language instruction but unsupported in territory.
+    // It consumes zero ticks here, so continue interpreting until a supported
+    // physical action or the end of the program.
     for (let skipped = 0; skipped < 64 && typeof action === "object" && action?.type === "attack"; skipped += 1) {
       action = decideAction(state, agent);
     }
@@ -474,25 +316,29 @@ function cellIf(direction, value, thenBranch, elseBranch) {
   return { type: "if", condition: { type: "cell", direction, value }, then: thenBranch, else: elseBranch };
 }
 
+function forever(body) {
+  return [{ type: "forever", body }];
+}
+
 export function makeNpcProgram(level = "medium", variant = 0) {
   const safeLevel = NPC_LEVELS.includes(level) ? level : "medium";
   const preferredTurn = variant % 2 === 0 ? "turnRight" : "turnLeft";
   const otherTurn = preferredTurn === "turnRight" ? "turnLeft" : "turnRight";
   const action = (name) => ({ type: "action", action: name });
   if (safeLevel === "weak") {
-    return [{
+    return forever([{
       type: "if",
       condition: { type: "random", chance: 0.72 },
       then: [action("move")],
       else: [action(preferredTurn)],
-    }];
+    }]);
   }
   if (safeLevel === "medium") {
-    return [cellIf("front", "unclaimed", [action("move")], [
+    return forever([cellIf("front", "unclaimed", [action("move")], [
       cellIf("front", "own", [action("move")], [action(preferredTurn)]),
-    ])];
+    ])]);
   }
-  return [cellIf("front", "unclaimed", [action("move")], [
+  return forever([cellIf("front", "unclaimed", [action("move")], [
     cellIf("left", "unclaimed", [action("turnLeft")], [
       cellIf("right", "unclaimed", [action("turnRight")], [
         cellIf("front", "own", [action("move")], [
@@ -504,7 +350,7 @@ export function makeNpcProgram(level = "medium", variant = 0) {
         ]),
       ]),
     ]),
-  ])];
+  ])]);
 }
 
 export function makeDefaultProgram(variant = 0) {

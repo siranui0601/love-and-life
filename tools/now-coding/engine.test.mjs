@@ -7,11 +7,12 @@ import {
   runTerritoryToEnd,
   stepTerritory,
 } from "../../public/now-coding/engine.js";
-import { createGameState, gameResults, stepGame } from "../../public/now-coding/modes.js";
+import { createGameState, gameResults, senseModeCell, stepGame } from "../../public/now-coding/modes.js";
 
 const move = { type: "action", action: "move" };
 const right = { type: "action", action: "turnRight" };
 const left = { type: "action", action: "turnLeft" };
+const literal = (value) => ({ type: "literal", value });
 
 function stateWithPrograms(aProgram, bProgram = [right], spawns = [{ x: 2, y: 2, dir: 1 }, { x: 12, y: 12, dir: 3 }]) {
   return createTerritoryState({
@@ -32,8 +33,8 @@ test("same seed and programs produce the same territory result", () => {
     size: 15,
     maxTicks: 120,
     players: [
-      { id: "a", name: "A", color: "blue", program: [move, right] },
-      { id: "b", name: "B", color: "red", program: [move, left] },
+      { id: "a", name: "A", color: "blue", program: [{ type: "forever", body: [move, right] }] },
+      { id: "b", name: "B", color: "red", program: [{ type: "forever", body: [move, left] }] },
     ],
   };
   const first = runTerritoryToEnd(config);
@@ -51,6 +52,14 @@ test("turning consumes a tick without moving", () => {
   assert.equal(state.agents[0].x, before.x);
   assert.equal(state.agents[0].y, before.y);
   assert.equal(state.agents[0].dir, (before.dir + 1) % 4);
+});
+
+test("a top-level one-step program halts instead of wrapping forever", () => {
+  const state = stateWithPrograms([move]);
+  const agent = state.agents[0];
+  assert.equal(decideAction(state, agent), "move");
+  assert.equal(decideAction(state, agent), "none");
+  assert.equal(decideAction(state, agent), "none");
 });
 
 test("moving over the map edge is immediate game over", () => {
@@ -85,32 +94,108 @@ test("forever keeps execution inside its body across ticks", () => {
   ]);
   const agent = state.agents[0];
   assert.equal(decideAction(state, agent), "turnRight");
-  assert.equal(agent.pc, 0);
   assert.equal(decideAction(state, agent), "move");
-  assert.equal(agent.pc, 0);
   assert.equal(decideAction(state, agent), "turnRight");
 });
 
 test("repeat keeps state across ticks then continues to the next block", () => {
   const state = stateWithPrograms([
-    { type: "repeat", times: { type: "literal", value: 2 }, body: [move] },
+    { type: "repeat", times: literal(2), body: [move] },
     right,
   ]);
   const agent = state.agents[0];
   assert.equal(decideAction(state, agent), "move");
-  assert.equal(agent.pc, 0);
   assert.equal(decideAction(state, agent), "move");
-  assert.equal(agent.pc, 1);
+  assert.equal(decideAction(state, agent), "turnRight");
+  assert.equal(decideAction(state, agent), "none");
+});
+
+test("nested if branch resumes after a physical action", () => {
+  const state = stateWithPrograms([
+    { type: "if", condition: literal(true), then: [move, right], else: [] },
+    left,
+  ]);
+  const agent = state.agents[0];
+  assert.equal(decideAction(state, agent), "move");
+  assert.equal(decideAction(state, agent), "turnRight");
+  assert.equal(decideAction(state, agent), "turnLeft");
+  assert.equal(decideAction(state, agent), "none");
+});
+
+test("conditional forever (while) rechecks its expression between iterations", () => {
+  const state = stateWithPrograms([
+    { type: "set", name: "count", value: literal(0) },
+    {
+      type: "while",
+      condition: { type: "binary", op: "<", left: { type: "var", name: "count" }, right: literal(3) },
+      body: [
+        { type: "change", name: "count", value: literal(1) },
+        move,
+      ],
+    },
+    right,
+  ]);
+  const agent = state.agents[0];
+  assert.equal(decideAction(state, agent), "move");
+  assert.equal(agent.vars.count, 1);
+  assert.equal(decideAction(state, agent), "move");
+  assert.equal(agent.vars.count, 2);
+  assert.equal(decideAction(state, agent), "move");
+  assert.equal(agent.vars.count, 3);
   assert.equal(decideAction(state, agent), "turnRight");
 });
 
-test("weak medium and strong NPC programs are all executable", () => {
+test("break exits the nearest loop and continues after it", () => {
+  const state = stateWithPrograms([
+    { type: "forever", body: [move, { type: "break" }, left] },
+    right,
+  ]);
+  const agent = state.agents[0];
+  assert.equal(decideAction(state, agent), "move");
+  assert.equal(decideAction(state, agent), "turnRight");
+  assert.equal(decideAction(state, agent), "none");
+});
+
+test("nearest enemy distance is available as a numeric builtin and uses -1 when none survive", () => {
+  const state = stateWithPrograms([
+    {
+      type: "if",
+      condition: { type: "binary", op: "==", left: { type: "builtin", name: "enemyDistance" }, right: literal(10) },
+      then: [right],
+      else: [left],
+    },
+  ], [right], [{ x: 2, y: 2, dir: 1 }, { x: 12, y: 2, dir: 3 }]);
+  assert.equal(decideAction(state, state.agents[0]), "turnRight");
+
+  const solo = stateWithPrograms([
+    {
+      type: "if",
+      condition: { type: "binary", op: "==", left: { type: "builtin", name: "enemyDistance" }, right: literal(-1) },
+      then: [right],
+      else: [left],
+    },
+  ]);
+  solo.agents[1].alive = false;
+  assert.equal(decideAction(solo, solo.agents[0]), "turnRight");
+});
+
+test("unsupported attack is zero-tick and interpretation continues to the next physical action", () => {
+  const attack = { type: "action", action: "attack", range: literal(5) };
+  const state = stateWithPrograms([attack, move]);
+  const before = state.agents[0].x;
+  stepTerritory(state);
+  assert.equal(state.agents[0].x, before + 1);
+});
+
+test("weak medium and strong NPC programs are all executable and explicitly loop", () => {
   for (const level of ["weak", "medium", "strong"]) {
     const program = makeNpcProgram(level, 0);
-    assert.ok(Array.isArray(program) && program.length > 0);
+    assert.equal(program[0]?.type, "forever");
     const state = stateWithPrograms(program);
-    const action = decideAction(state, state.agents[0]);
-    assert.ok(["move", "turnLeft", "turnRight", "none"].includes(action));
+    const first = decideAction(state, state.agents[0]);
+    const second = decideAction(state, state.agents[0]);
+    assert.ok(["move", "turnLeft", "turnRight", "none"].includes(first));
+    assert.ok(["move", "turnLeft", "turnRight", "none"].includes(second));
   }
 });
 
@@ -120,6 +205,14 @@ test("cobra steering still advances one cell in the same tick", () => {
   assert.equal(state.agents[0].dir, 1);
   assert.equal(state.agents[0].x, 6);
   assert.equal(state.agents[0].y, 5);
+});
+
+test("cobra exposes all tails as the same sensor state while retaining owner metadata", () => {
+  const state = createGameState({ mode: "cobra", seed: "tail-sensor", size: 15, players: [{ id:"a", program:[move] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:1},{x:8,y:5,dir:3}] });
+  state.agents[1].tail = [{ x: 6, y: 5 }];
+  const sensed = senseModeCell(state, state.agents[0], "front");
+  assert.equal(sensed.state, "tail");
+  assert.equal(sensed.owner, 1);
 });
 
 test("cobra allows entering the tail cell that disappears on this tick", () => {
@@ -142,18 +235,30 @@ test("floor mode eliminates a piece after two consecutive non-movement ticks", (
 });
 
 test("splat starts at zero ink, recovers on existing own paint, and attack costs one plus range", () => {
-  const attack = { type:"action", action:"attack", range:{ type:"literal", value:2 } };
+  const attack = { type:"action", action:"attack", range:literal(2) };
   const state = createGameState({ mode:"splat", seed:"splat", size:15, players:[{id:"a",program:[right,attack]},{id:"b",program:[right]}], spawns:[{x:5,y:5,dir:0},{x:7,y:5,dir:2}], maxTicks:20 });
   assert.equal(state.agents[0].ink, 0);
   stepGame(state);
   assert.equal(state.agents[0].ink, 1);
   state.agents[0].ink = 5;
-  state.agents[0].pc = 1;
   state.agents[0].dir = 1;
   stepGame(state);
   assert.equal(state.agents[0].ink, 2);
   assert.equal(state.agents[1].alive, false);
   assert.equal(state.agents[1].deathReason, "shot");
+});
+
+test("attack range accepts numeric expressions, floors decimals, and costs one plus resolved range", () => {
+  const attack = {
+    type: "action",
+    action: "attack",
+    range: { type: "binary", op: "+", left: literal(1.9), right: literal(2) },
+  };
+  const state = createGameState({ mode:"splat", seed:"expr-range", size:15, players:[{id:"a",program:[attack]},{id:"b",program:[right]}], spawns:[{x:5,y:5,dir:1},{x:8,y:5,dir:2}], maxTicks:20 });
+  state.agents[0].ink = 6;
+  stepGame(state);
+  assert.equal(state.agents[0].ink, 2); // floor(3.9)=3, cost=4
+  assert.equal(state.agents[1].alive, false);
 });
 
 test("splat winner is based on colored area", () => {
@@ -164,12 +269,11 @@ test("splat winner is based on colored area", () => {
   assert.match(results[0].metric, /マス/);
 });
 
-
-test("splat invalid attack neither spends ink nor grants recovery", () => {
-  const attack = { type: "action", action: "attack", range: { type: "literal", value: 4 } };
+test("splat invalid attack neither spends ink nor grants recovery when no later physical action exists", () => {
+  const attack = { type: "action", action: "attack", range: literal(4) };
   const state = createGameState({
     mode: "splat", seed: "no-ink-attack", size: 15, maxTicks: 20,
-    players: [{ id: "a", program: [attack] }, { id: "b", program: [{ type: "action", action: "turnRight" }] }],
+    players: [{ id: "a", program: [attack] }, { id: "b", program: [right] }],
     spawns: [{ x: 5, y: 5, dir: 0 }, { x: 12, y: 12, dir: 2 }],
   });
   assert.equal(state.agents[0].ink, 0);
@@ -177,4 +281,16 @@ test("splat invalid attack neither spends ink nor grants recovery", () => {
   assert.equal(state.agents[0].ink, 0);
   assert.equal(state.agents[0].x, 5);
   assert.equal(state.agents[0].y, 5);
+});
+
+test("invalid attack range is zero-tick and can fall through to a later physical command", () => {
+  const attack = { type: "action", action: "attack", range: literal(-2) };
+  const state = createGameState({
+    mode: "splat", seed: "negative-range", size: 15, maxTicks: 20,
+    players: [{ id: "a", program: [attack, right] }, { id: "b", program: [right] }],
+    spawns: [{ x: 5, y: 5, dir: 0 }, { x: 12, y: 12, dir: 2 }],
+  });
+  stepGame(state);
+  assert.equal(state.agents[0].dir, 1);
+  assert.equal(state.agents[0].ink, 1);
 });

@@ -7,6 +7,7 @@
   <title>Now Coding | 不知火遊技場</title>
   <link rel="stylesheet" href="./style.css" />
   <link rel="stylesheet" href="./style-v2.css" />
+  <link rel="stylesheet" href="./style-v3.css" />
 </head>
 <body>
   <div class="ambient-grid" aria-hidden="true"></div>
@@ -15,10 +16,10 @@
 
   <div id="app" class="app-shell" aria-live="polite">
     <header class="utility-bar">
-      <div class="connection-pill" title="ログイン状態">
+      <button id="connectionPill" class="connection-pill" type="button" title="ログイン状態">
         <span class="connection-dot" aria-hidden="true"></span>
-        <span id="userLabel">未接続</span>
-      </div>
+        <span id="userLabel">接続確認中</span>
+      </button>
       <button id="menuButton" class="icon-button menu-button" type="button" aria-label="メニューを開く" aria-expanded="false" aria-controls="sideMenu">
         <span></span><span></span><span></span>
       </button>
@@ -29,10 +30,10 @@
         <div class="home-hero reveal-panel">
           <div class="eyebrow">プログラム対戦</div>
           <h1>コードを組んで、1位を目指せ。</h1>
-          <p>自分で組んだコードが駒の頭脳になる。駒はその判断だけで自律して戦い、陣取り・生存戦・スプラなど、それぞれのルールで1位を競います。</p>
+          <p>命令を組み合わせて駒の頭脳を作り、あとはコードに任せて戦わせる。より良い判断を組めた駒が、さまざまなルールの盤面で1位を目指します。</p>
           <div class="hero-actions">
-            <button id="homeBattleButton" class="primary-button edge-button" type="button" data-go="battle" data-locked-until-tutorial>対戦する</button>
-            <button id="homeEditorButton" class="secondary-button edge-button" type="button" data-go="editor" data-locked-until-tutorial>駒を作る</button>
+            <button id="homeBattleButton" class="primary-button edge-button" type="button" data-go="battle">対戦する</button>
+            <button id="homeEditorButton" class="secondary-button edge-button" type="button" data-go="editor">駒を作る</button>
           </div>
           <div class="signal-line" aria-hidden="true"><span></span></div>
         </div>
@@ -40,106 +41,107 @@
         <section id="firstProgramCard" class="feature-card tutorial-entry is-hidden">
           <div class="card-index">01</div>
           <div>
-            <p class="card-kicker">最初にここから</p>
-            <h2>このゲームを体験しながら覚える</h2>
-            <p>何を競うゲームなのかを知り、本物のエディタで最初の駒を完成させます。完了するまで他の機能はロックされます。</p>
+            <p class="card-kicker">最初の駒を作成中</p>
+            <h2>実際に動かしながら覚える</h2>
+            <p>「進む」だけの駒から始めて、繰り返しと周囲判断を追加していきます。</p>
           </div>
-          <button class="text-button tutorial-start-button" type="button" data-start-tutorial>チュートリアル開始</button>
+          <button class="text-button tutorial-start-button" type="button" data-start-tutorial>続きを開く</button>
         </section>
 
         <div class="dashboard-grid">
           <section class="dashboard-panel">
             <div class="section-heading">
               <div><span class="section-number">A</span><h2>最近の駒</h2></div>
-              <button class="text-button" type="button" data-go="editor" data-locked-until-tutorial>一覧を見る</button>
+              <button class="text-button" type="button" data-go="editor">新しく作る</button>
             </div>
-            <div id="homePrograms" class="stack-list empty-state">まだ保存された駒はありません。</div>
+            <div id="homePrograms" class="stack-list empty-state">読み込み中</div>
           </section>
           <section class="dashboard-panel">
             <div class="section-heading"><div><span class="section-number">B</span><h2>最近の対戦</h2></div></div>
-            <div id="homeMatches" class="stack-list empty-state">対戦記録はまだありません。</div>
+            <div id="homeMatches" class="stack-list empty-state">読み込み中</div>
           </section>
         </div>
       </section>
 
       <section id="view-editor" class="view" data-view="editor">
         <nav class="breadcrumbs" aria-label="現在位置">
-          <button type="button" data-go="home" data-locked-until-tutorial>ホーム</button><span>/</span><strong>駒を作る</strong>
+          <button type="button" data-go="home">ホーム</button><span>/</span><strong>駒を作る</strong>
         </nav>
+
         <div class="editor-heading reveal-panel">
           <div>
             <p class="eyebrow">駒の思考を組み立てる</p>
             <h1 id="draftNamePreview" class="program-title">新しい駒</h1>
-            <small class="program-name-hint">名前は保存するときに付けます。</small>
+            <small class="program-name-hint">形と色が同じソケットには、同じ種類の値を入れられます。</small>
           </div>
           <div class="editor-actions">
-            <button id="newProgramButton" class="secondary-button compact" type="button" data-locked-until-tutorial>新規</button>
+            <button id="newProgramButton" class="secondary-button compact" type="button">新規</button>
             <button id="saveProgramButton" class="primary-button compact" type="button">保存</button>
           </div>
         </div>
 
         <div id="tutorialCoach" class="tutorial-coach is-hidden" role="status">
-          <div class="coach-step" id="tutorialStepLabel">1 / 6</div>
+          <div class="coach-step" id="tutorialStepLabel">1 / 8</div>
           <div class="coach-copy">
-            <strong id="tutorialTitle">Now Codingへようこそ</strong>
+            <strong id="tutorialTitle">コードを組んで、1位を目指せ。</strong>
             <div id="tutorialIntroDemo" class="tutorial-intro-demo" aria-hidden="true">
-              <div class="intro-phase intro-phase-code">
-                <span class="intro-number">1</span><b>CODE</b>
-                <i>もし 前が空き</i><i>進む</i><i>それ以外 → 右へ</i>
-              </div>
+              <div class="intro-phase intro-phase-code"><span class="intro-number">1</span><b>組む</b><i>進む</i><i>もし 前 が 崖</i></div>
               <span class="intro-flow">→</span>
-              <div class="intro-phase intro-phase-run">
-                <span class="intro-number">2</span><b>RUN</b>
-                <div class="intro-mini-board"><i class="intro-piece"></i></div>
-              </div>
+              <div class="intro-phase intro-phase-run"><span class="intro-number">2</span><b>動く</b><div class="intro-mini-board"><i class="intro-piece"></i></div></div>
               <span class="intro-flow">→</span>
-              <div class="intro-phase intro-phase-win">
-                <span class="intro-number">3</span><b>GOAL</b>
-                <em>1位</em><small>より良いコードで勝つ</small>
-              </div>
+              <div class="intro-phase intro-phase-win"><span class="intro-number">3</span><b>競う</b><em>1位</em><small>コードの判断で勝つ</small></div>
             </div>
             <p id="tutorialText"></p>
           </div>
-          <button id="tutorialNextButton" class="primary-button compact tutorial-next" type="button">次へ</button>
+          <button id="tutorialNextButton" class="primary-button compact tutorial-next" type="button">始める</button>
         </div>
 
-        <div class="editor-layout">
-          <aside class="block-palette panel-surface">
-            <div class="panel-title"><span>命令</span><small>タップ / ドラッグで追加</small></div>
-            <div class="palette-scroll">
-              <div class="palette-group">
-                <h3>動き</h3>
-                <button class="palette-block action-move" type="button" draggable="true" data-add-block="move">進む</button>
-                <button class="palette-block action-turn" type="button" draggable="true" data-add-block="turnLeft">左に旋回</button>
-                <button class="palette-block action-turn" type="button" draggable="true" data-add-block="turnRight">右に旋回</button>
-                <button class="palette-block attack-block" type="button" draggable="true" data-add-block="attack">前方へ攻撃</button>
-              </div>
-              <div class="palette-group">
-                <h3>制御</h3>
-                <button class="palette-block control-block" type="button" draggable="true" data-add-block="forever">ずっと</button>
-                <button class="palette-block control-block" type="button" draggable="true" data-add-block="repeat">○回 繰り返す</button>
-              </div>
-              <div class="palette-group">
-                <h3>判定</h3>
-                <button class="palette-block logic-block" type="button" draggable="true" data-add-block="ifCell">もし 周囲のマスが…</button>
-                <button class="palette-block logic-block" type="button" draggable="true" data-add-block="ifVariable">もし 変数が…</button>
-                <button class="palette-block logic-block" type="button" draggable="true" data-add-block="ifBuiltin">もし インク／尾の長さが…</button>
-                <button class="palette-block logic-block" type="button" draggable="true" data-add-block="ifLogic">もし 条件A かつ 条件B…</button>
-                <button class="palette-block logic-block" type="button" draggable="true" data-add-block="ifRandom">もし Seed乱数が…</button>
-              </div>
-              <div class="palette-group">
-                <h3>記憶・計算</h3>
-                <button class="palette-block value-block" type="button" draggable="true" data-add-block="setVar">変数を設定</button>
-                <button class="palette-block value-block" type="button" draggable="true" data-add-block="changeVar">変数を増減</button>
-                <button class="palette-block value-block" type="button" draggable="true" data-add-block="mathVar">変数を計算</button>
-                <button class="palette-block value-block" type="button" draggable="true" data-add-block="randomVar">変数にSeed乱数</button>
-              </div>
+        <div class="editor-layout editor-layout-v3">
+          <aside class="block-palette panel-surface" aria-label="命令パレット">
+            <div class="panel-title"><span>命令</span><small>タップ / ドラッグ</small></div>
+            <div id="paletteScroll" class="palette-scroll palette-accordion">
+              <details class="palette-section" open>
+                <summary><span class="palette-dot action"></span>動き</summary>
+                <div class="palette-items">
+                  <button class="palette-block action-move" type="button" data-add-block="move">進む</button>
+                  <button class="palette-block action-turn" type="button" data-add-block="turn">旋回</button>
+                </div>
+              </details>
+              <details class="palette-section" open>
+                <summary><span class="palette-dot control"></span>制御</summary>
+                <div class="palette-items">
+                  <button class="palette-block control-block" type="button" data-add-block="forever">ずっと</button>
+                  <button class="palette-block control-block" type="button" data-add-block="while">○○ならずっと</button>
+                  <button class="palette-block control-block" type="button" data-add-block="repeat">○回 繰り返す</button>
+                  <button class="palette-block control-block break-block" type="button" data-add-block="break">ループを抜ける</button>
+                </div>
+              </details>
+              <details class="palette-section" open>
+                <summary><span class="palette-dot condition"></span>判断</summary>
+                <div class="palette-items">
+                  <button class="palette-block logic-block" type="button" data-add-block="if">もし ○○ なら</button>
+                </div>
+              </details>
+              <details class="palette-section">
+                <summary><span class="palette-dot variable"></span>変数</summary>
+                <div class="palette-items">
+                  <button class="palette-block value-block" type="button" data-add-block="setVar">変数を設定</button>
+                  <button class="palette-block value-block" type="button" data-add-block="changeVar">変数を増減</button>
+                </div>
+              </details>
+              <details class="palette-section">
+                <summary><span class="palette-dot mode"></span>モード固有</summary>
+                <div class="palette-items">
+                  <button class="palette-block attack-block" type="button" data-add-block="attack"><span>攻撃</span><small>スプラ</small></button>
+                </div>
+              </details>
             </div>
           </aside>
 
           <section class="workspace-panel panel-surface">
             <div class="panel-title"><span>コード</span><small id="blockCount">0 ブロック</small></div>
-            <div id="programWorkspace" class="program-workspace" aria-label="プログラムのブロック一覧"></div>
+            <p id="workspaceHint" class="workspace-hint">命令をタップするか、この領域へドラッグしてください。</p>
+            <div id="programWorkspace" class="program-workspace typed-workspace" aria-label="プログラムのブロック一覧"></div>
           </section>
 
           <aside class="test-panel panel-surface">
@@ -158,9 +160,8 @@
       </section>
 
       <section id="view-battle" class="view" data-view="battle">
-        <nav class="breadcrumbs" aria-label="現在位置">
-          <button type="button" data-go="home">ホーム</button><span>/</span><strong>対戦</strong>
-        </nav>
+        <nav class="breadcrumbs" aria-label="現在位置"><button type="button" data-go="home">ホーム</button><span>/</span><strong>対戦</strong></nav>
+
         <div class="battle-kind-switch" role="tablist" aria-label="対戦方法">
           <button id="npcBattleTab" class="battle-kind-button is-active" type="button" data-battle-kind="npc">NPC対戦</button>
           <button id="onlineBattleTab" class="battle-kind-button" type="button" data-battle-kind="online">オンライン対戦</button>
@@ -173,15 +174,19 @@
             <div class="step"><span>2</span><b>駒</b></div>
             <div class="step"><span>3</span><b>確認</b></div>
           </div>
+
           <section id="battleStep1" class="setup-step is-active">
-            <div class="setup-heading"><p class="eyebrow">NPC対戦</p><h1>ゲームモードを選ぶ</h1></div>
-            <div class="mode-grid">
-              <button class="mode-card is-selected" type="button" data-mode="territory"><span class="mode-preview territory-preview" aria-hidden="true"></span><strong>陣取り</strong><small>一度塗ったマスは敵にとって壁になる。</small></button>
-              <button class="mode-card" type="button" data-mode="cobra"><span class="mode-preview cobra-preview" aria-hidden="true"></span><strong>コブラ</strong><small>毎tick必ず進み、伸びる尾を避けて生き残る。</small></button>
-              <button class="mode-card" type="button" data-mode="fall"><span class="mode-preview fall-preview" aria-hidden="true"></span><strong>床抜け</strong><small>2tick連続で移動しないと足元が崩れる。</small></button>
-              <button class="mode-card" type="button" data-mode="splat"><span class="mode-preview splat-preview" aria-hidden="true"></span><strong>スプラ</strong><small>色を上書きし、インクを使って前方へ攻撃する。</small></button>
+            <div class="setup-heading"><p class="eyebrow">NPC対戦</p><h1>ゲームを選ぶ</h1></div>
+            <div id="modeRail" class="mode-rail" tabindex="0" aria-label="ゲームモード。複数選択できます">
+              <button class="mode-chip is-selected is-focused" type="button" data-mode="territory"><span class="mode-glyph territory-preview"></span><strong>陣取り</strong></button>
+              <button class="mode-chip" type="button" data-mode="fall"><span class="mode-glyph fall-preview"></span><strong>床抜け</strong></button>
+              <button class="mode-chip" type="button" data-mode="cobra"><span class="mode-glyph cobra-preview"></span><strong>コブラ</strong></button>
+              <button class="mode-chip" type="button" data-mode="splat"><span class="mode-glyph splat-preview"></span><strong>スプラ</strong></button>
             </div>
-            <div class="settings-strip">
+            <div id="modeDescription" class="mode-description"></div>
+            <div id="multiModeNotice" class="multi-mode-notice is-hidden"><strong>複数モード対戦</strong><span>選んだゲームをランダム順で1回ずつ戦います。</span></div>
+            <label id="roundProgramChangeRow" class="switch-row is-hidden"><input id="allowRoundProgramChange" type="checkbox" /><span class="switch-ui"></span><span><strong>ラウンドごとに駒を変更できる</strong><small>次のゲーム発表後、30秒以内に駒を選べます。同じ駒を選び続けても構いません。</small></span></label>
+            <div class="settings-strip settings-strip-v3">
               <label>人数<select id="playerCount"><option value="2">2人</option><option value="3">3人</option><option value="4">4人</option></select></label>
               <label>盤面<select id="boardSize"><option value="15">15 × 15</option><option value="21" selected>21 × 21</option><option value="31">31 × 31</option></select></label>
               <label>NPC<select id="npcDifficulty"><option value="weak">弱</option><option value="medium" selected>中</option><option value="strong">強</option></select></label>
@@ -189,12 +194,14 @@
             </div>
             <button class="primary-button setup-next" type="button" data-battle-next="2">次へ</button>
           </section>
+
           <section id="battleStep2" class="setup-step">
-            <div class="setup-heading"><p class="eyebrow">使用する駒</p><h1>コードを選ぶ</h1></div>
+            <div class="setup-heading"><p class="eyebrow">使用する駒</p><h1>最初のコードを選ぶ</h1></div>
             <div id="battleProgramList" class="program-select-list"></div>
             <button class="secondary-button" type="button" data-battle-back="1">戻る</button>
             <button class="primary-button setup-next" type="button" data-battle-next="3">次へ</button>
           </section>
+
           <section id="battleStep3" class="setup-step">
             <div class="setup-heading"><p class="eyebrow">最終確認</p><h1>この条件で対戦する</h1></div>
             <div id="battleSummary" class="battle-summary"></div>
@@ -207,21 +214,28 @@
         <div id="onlineSetup" class="online-setup is-hidden">
           <section id="onlineLanding" class="online-landing">
             <div class="online-entry-grid">
-              <button id="openCreateRoomButton" class="online-entry-card" type="button"><span class="entry-signal" aria-hidden="true"></span><strong>ルームを作る</strong><small>対戦ルールを決めて募集を開始します。</small></button>
-              <button id="openJoinRoomButton" class="online-entry-card" type="button"><span class="entry-signal join" aria-hidden="true"></span><strong>ルームに入る</strong><small>募集中の公開ルーム、またはルームIDから入室します。</small></button>
+              <button id="openCreateRoomButton" class="online-entry-card" type="button"><span class="entry-signal"></span><strong>ルームを作る</strong><small>ルールを決めて募集します。</small></button>
+              <button id="openJoinRoomButton" class="online-entry-card" type="button"><span class="entry-signal join"></span><strong>ルームに入る</strong><small>公開ルームまたはIDから参加します。</small></button>
             </div>
           </section>
 
           <section id="createRoomPanel" class="online-panel is-hidden">
-            <div class="setup-heading"><p class="eyebrow">ルーム作成</p><h1>先に対戦ルールを決める</h1></div>
+            <div class="setup-heading"><p class="eyebrow">ルーム作成</p><h1>対戦ルールを決める</h1></div>
+            <div id="onlineModeRail" class="mode-rail compact-mode-rail" tabindex="0" aria-label="オンライン対戦モード。複数選択できます">
+              <button class="mode-chip is-selected is-focused" type="button" data-online-mode="territory"><strong>陣取り</strong></button>
+              <button class="mode-chip" type="button" data-online-mode="fall"><strong>床抜け</strong></button>
+              <button class="mode-chip" type="button" data-online-mode="cobra"><strong>コブラ</strong></button>
+              <button class="mode-chip" type="button" data-online-mode="splat"><strong>スプラ</strong></button>
+            </div>
+            <div id="onlineModeDescription" class="mode-description compact-description"></div>
+            <label id="onlineRoundProgramChangeRow" class="switch-row is-hidden"><input id="onlineAllowRoundProgramChange" type="checkbox" /><span class="switch-ui"></span><span><strong>ラウンドごとに駒を変更できる</strong><small>各ラウンド前に30秒の選択時間を設けます。</small></span></label>
             <div class="settings-strip online-settings">
-              <label>モード<select id="onlineMode"><option value="territory">陣取り</option><option value="cobra">コブラ</option><option value="fall">床抜け</option><option value="splat">スプラ</option></select></label>
               <label>定員<select id="onlinePlayerCount"><option value="2">2人</option><option value="3">3人</option><option value="4">4人</option></select></label>
               <label>盤面<select id="onlineBoardSize"><option value="15">15 × 15</option><option value="21" selected>21 × 21</option><option value="31">31 × 31</option></select></label>
               <label>Seed<input id="onlineSeed" placeholder="自動生成" /></label>
             </div>
-            <label class="switch-row"><input id="privateRoom" type="checkbox" /><span class="switch-ui"></span><span><strong>プライベートルーム</strong><small>公開一覧に表示せず、ルームIDを知っている人だけ入室できます。</small></span></label>
-            <label class="switch-row"><input id="fillWithNpc" type="checkbox" checked /><span class="switch-ui"></span><span><strong>空席をNPCで埋める</strong><small>開始時に空いている席へNPCを参加させます。</small></span></label>
+            <label class="switch-row"><input id="privateRoom" type="checkbox" /><span class="switch-ui"></span><span><strong>プライベートルーム</strong><small>公開一覧には表示されず、ルームIDからのみ入室できます。</small></span></label>
+            <label class="switch-row"><input id="fillWithNpc" type="checkbox" checked /><span class="switch-ui"></span><span><strong>空席をNPCで埋める</strong><small>開始時の空席へNPCを参加させます。</small></span></label>
             <div id="onlineNpcLevelRow" class="inline-setting"><span>NPCの強さ</span><select id="onlineNpcDifficulty"><option value="weak">弱</option><option value="medium" selected>中</option><option value="strong">強</option></select></div>
             <div class="online-actions"><button class="secondary-button" type="button" data-online-back>戻る</button><button id="createRoomButton" class="primary-button" type="button">ルーム作成</button></div>
           </section>
@@ -235,20 +249,18 @@
           </section>
 
           <section id="onlineLobbyPanel" class="online-panel lobby-panel is-hidden">
-            <div class="lobby-header">
-              <div><p class="eyebrow">待機ルーム</p><h1>ルーム <span id="lobbyRoomId">------</span></h1></div>
-              <span id="lobbyPrivacy" class="privacy-chip"></span>
-            </div>
+            <div class="lobby-header"><div><p class="eyebrow">待機ルーム</p><h1>ルーム <span id="lobbyRoomId">------</span></h1></div><span id="lobbyPrivacy" class="privacy-chip"></span></div>
             <div id="lobbyRuleSummary" class="lobby-rule-summary"></div>
             <div id="lobbyMembers" class="lobby-members"></div>
-            <div class="lobby-program-panel">
-              <label>この対戦で使う駒<select id="onlineProgramSelect"></select></label>
-              <button id="onlineReadyButton" class="secondary-button" type="button">準備OK</button>
-            </div>
+            <div class="lobby-program-panel"><label>最初に使う駒<select id="onlineProgramSelect"></select></label><button id="onlineReadyButton" class="secondary-button" type="button">準備OK</button></div>
             <p id="lobbyStatus" class="status-copy"></p>
             <div class="online-actions"><button id="leaveRoomButton" class="secondary-button" type="button">退出</button><button id="hostStartButton" class="primary-button is-hidden" type="button">このメンバーで開始</button></div>
           </section>
         </div>
+
+        <section id="roundReveal" class="round-reveal is-hidden" aria-live="assertive">
+          <p>次のゲーム</p><strong id="roundRevealMode">陣取り</strong><span id="roundRevealCount">第1戦</span>
+        </section>
 
         <section id="battleLive" class="battle-live is-hidden">
           <div class="battle-hud">
@@ -256,7 +268,10 @@
             <div id="scoreHud" class="score-hud"></div>
             <button id="abortBattleButton" class="secondary-button compact" type="button">観戦を終了</button>
           </div>
-          <div class="battle-board-wrap"><div id="battleBoard" class="game-board battle-board" aria-label="対戦盤面"></div><div class="board-sheen" aria-hidden="true"></div></div>
+          <button id="battleBoardButton" class="battle-board-button" type="button" aria-label="盤面。タップで駒名表示を切り替えます">
+            <span id="nameToggleHint" class="name-toggle-hint">タップで名前表示</span>
+            <span class="battle-board-wrap"><span id="battleBoard" class="game-board battle-board" aria-label="対戦盤面"></span><span class="board-sheen" aria-hidden="true"></span></span>
+          </button>
           <div id="liveProgramReadout" class="live-readout">対戦中はコードを変更できません。</div>
         </section>
       </section>
@@ -267,6 +282,7 @@
           <div id="resultRank" class="result-rank">--</div>
           <h1 id="resultTitle">結果を集計中</h1>
           <div id="resultRows" class="result-rows"></div>
+          <div id="seriesResultRounds" class="series-result-rounds is-hidden"></div>
           <div class="result-actions">
             <button id="rematchButton" class="primary-button" type="button">同じ条件で再戦</button>
             <button id="editAfterResultButton" class="secondary-button" type="button">コードを修正</button>
@@ -277,9 +293,9 @@
     </main>
 
     <nav class="primary-nav" aria-label="主要メニュー">
-      <button class="nav-item is-active" type="button" data-go="home" data-locked-until-tutorial aria-label="ホーム"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/></svg><span>ホーム</span></button>
-      <button class="nav-item" type="button" data-go="editor" data-locked-until-tutorial aria-label="駒を作る"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M17 4l4 4-4 4M14 3l-4 18"/></svg><span>駒を作る</span></button>
-      <button class="nav-item" type="button" data-go="battle" data-locked-until-tutorial aria-label="対戦"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19M7 3l2 2-4 4-2-2zM17 3l-2 2 4 4 2-2z"/></svg><span>対戦</span></button>
+      <button class="nav-item is-active" type="button" data-go="home" aria-label="ホーム"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/></svg><span>ホーム</span></button>
+      <button class="nav-item" type="button" data-go="editor" aria-label="駒を作る"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3 8l4 4M17 4l4 4-4 4M14 3l-4 18"/></svg><span>駒を作る</span></button>
+      <button class="nav-item" type="button" data-go="battle" aria-label="対戦"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 5 14 14M19 5 5 19M7 3l2 2-4 4-2-2zM17 3l-2 2 4 4 2-2z"/></svg><span>対戦</span></button>
       <span class="nav-indicator" aria-hidden="true"></span>
     </nav>
   </div>
@@ -287,27 +303,38 @@
   <div id="menuBackdrop" class="menu-backdrop" hidden></div>
   <aside id="sideMenu" class="side-menu" aria-hidden="true">
     <div class="drawer-grip" aria-hidden="true"></div><h2>メニュー</h2>
-    <button type="button" data-menu-action="history">戦績・リプレイ</button><button type="button" data-menu-action="tutorials">チュートリアル</button><button type="button" data-menu-action="rules">ゲームルール</button><button type="button" data-menu-action="help">ヘルプ</button><button type="button" data-menu-action="settings">設定</button>
+    <button type="button" data-menu-action="history">戦績・リプレイ</button>
+    <button type="button" data-menu-action="tutorials">チュートリアル</button>
+    <button type="button" data-menu-action="rules">ゲームルール</button>
+    <button type="button" data-menu-action="help">ヘルプ</button>
+    <button type="button" data-menu-action="settings">設定</button>
     <div class="drawer-divider"></div><a href="/">不知火遊技場へ戻る</a><button id="logoutButton" type="button">ログアウト</button>
   </aside>
 
-  <div id="authModal" class="modal-layer" aria-hidden="true"><div class="auth-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle"><div class="modal-circuit" aria-hidden="true"></div><p class="eyebrow">アカウント接続</p><h2 id="authTitle">ログインが必要です</h2><p>作った駒やチュートリアルの進み具合、戦績を保存するため、不知火遊技場のアカウントでログインします。</p><div id="googleSignInBtn" class="google-signin"></div><div class="auth-divider"><span>または</span></div><label>ユーザーネーム<input id="loginUsername" autocomplete="username" /></label><label>パスワード<input id="loginPassword" type="password" autocomplete="current-password" /></label><p id="authError" class="form-error" aria-live="polite"></p><button id="loginButton" class="primary-button" type="button">ログイン</button><a class="text-link" href="/">新規登録は不知火遊技場から</a></div></div>
-  <div id="usernameModal" class="modal-layer" aria-hidden="true"><div class="modal-card small-modal" role="dialog" aria-modal="true" aria-labelledby="usernameTitle"><p class="eyebrow">初回設定</p><h2 id="usernameTitle">表示する名前を決める</h2><input id="googleUsernameInput" maxlength="20" placeholder="ユーザーネーム" /><p id="usernameError" class="form-error" aria-live="polite"></p><button id="saveGoogleUsername" class="primary-button" type="button">決定</button></div></div>
-  <div id="saveProgramModal" class="modal-layer" aria-hidden="true"><div class="modal-card small-modal save-program-modal" role="dialog" aria-modal="true" aria-labelledby="saveProgramTitle"><p class="eyebrow">駒を保存</p><h2 id="saveProgramTitle">この駒に名前を付ける</h2><p>あとから編集するときや、対戦前に選ぶときに分かりやすい名前がおすすめです。</p><input id="saveProgramName" maxlength="60" placeholder="例：右壁探索型" /><p id="saveProgramError" class="form-error" aria-live="polite"></p><div class="modal-actions"><button id="cancelSaveProgram" class="secondary-button" type="button">戻る</button><button id="confirmSaveProgram" class="primary-button" type="button">この名前で保存</button></div></div></div>
-
-  <div id="tutorialLibraryModal" class="modal-layer" aria-hidden="true">
-    <div class="modal-card tutorial-library-modal" role="dialog" aria-modal="true" aria-labelledby="tutorialLibraryTitle">
-      <p class="eyebrow">チュートリアル</p><h2 id="tutorialLibraryTitle">知りたいところだけ試す</h2>
-      <p>初回チュートリアルをやり直す必要はありません。確認したい内容を選んで、その機能がある画面で学べます。</p>
-      <div id="tutorialLibraryGrid" class="tutorial-library-grid"></div>
-      <button id="closeTutorialLibrary" class="secondary-button" type="button">閉じる</button>
+  <div id="authModal" class="modal-layer" aria-hidden="true">
+    <div class="auth-modal modal-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="modal-circuit" aria-hidden="true"></div><p class="eyebrow">アカウント接続</p><h2 id="authTitle">ログインが必要です</h2>
+      <p>作った駒、チュートリアル進行、戦績を不知火遊技場のアカウントへ保存します。</p>
+      <div id="googleSignInBtn" class="google-signin"></div><div class="auth-divider"><span>または</span></div>
+      <label>ユーザーネーム<input id="loginUsername" autocomplete="username" /></label><label>パスワード<input id="loginPassword" type="password" autocomplete="current-password" /></label>
+      <p id="authError" class="form-error" aria-live="polite"></p><button id="loginButton" class="primary-button" type="button">ログイン</button><a class="text-link" href="/">新規登録は不知火遊技場から</a>
     </div>
   </div>
-  <aside id="optionalTutorialCoach" class="optional-tutorial-coach is-hidden" aria-live="polite">
-    <div class="optional-tutorial-meta"><span id="optionalTutorialProgress">1 / 1</span><b id="optionalTutorialName"></b></div>
-    <strong id="optionalTutorialTitle"></strong><p id="optionalTutorialText"></p>
-    <div class="optional-tutorial-actions"><button id="optionalTutorialPrev" class="text-button" type="button">戻る</button><button id="optionalTutorialClose" class="text-button" type="button">終了</button><button id="optionalTutorialNext" class="primary-button compact" type="button">次へ</button></div>
-  </aside>
+
+  <div id="usernameModal" class="modal-layer" aria-hidden="true"><div class="modal-card small-modal" role="dialog" aria-modal="true"><p class="eyebrow">初回設定</p><h2>表示する名前を決める</h2><input id="googleUsernameInput" maxlength="20" placeholder="ユーザーネーム" /><p id="usernameError" class="form-error"></p><button id="saveGoogleUsername" class="primary-button" type="button">決定</button></div></div>
+
+  <div id="saveProgramModal" class="modal-layer" aria-hidden="true"><div class="modal-card small-modal save-program-modal" role="dialog" aria-modal="true"><p class="eyebrow">駒を保存</p><h2>この駒に名前を付ける</h2><input id="saveProgramName" maxlength="60" placeholder="例：右壁探索型" /><p id="saveProgramError" class="form-error"></p><div class="modal-actions"><button id="cancelSaveProgram" class="secondary-button" type="button">戻る</button><button id="confirmSaveProgram" class="primary-button" type="button">この名前で保存</button></div></div></div>
+
+  <div id="tutorialLibraryModal" class="modal-layer" aria-hidden="true"><div class="modal-card tutorial-library-modal" role="dialog" aria-modal="true"><p class="eyebrow">チュートリアル</p><h2>知りたいところだけ試す</h2><p>初回進行はそのまま。確認したい内容だけ選べます。</p><div id="tutorialLibraryGrid" class="tutorial-library-grid"></div><button id="closeTutorialLibrary" class="secondary-button" type="button">閉じる</button></div></div>
+
+  <aside id="optionalTutorialCoach" class="optional-tutorial-coach is-hidden" aria-live="polite"><div class="optional-tutorial-meta"><span id="optionalTutorialProgress">1 / 1</span><b id="optionalTutorialName"></b></div><strong id="optionalTutorialTitle"></strong><p id="optionalTutorialText"></p><div class="optional-tutorial-actions"><button id="optionalTutorialPrev" class="text-button" type="button">戻る</button><button id="optionalTutorialClose" class="text-button" type="button">終了</button><button id="optionalTutorialNext" class="primary-button compact" type="button">次へ</button></div></aside>
+
+  <div id="expressionModal" class="modal-layer" aria-hidden="true"><div class="modal-card expression-modal" role="dialog" aria-modal="true"><p id="expressionTypeLabel" class="eyebrow">数値</p><h2 id="expressionTitle">値を選ぶ</h2><div id="expressionEditor" class="expression-editor"></div><p id="expressionError" class="form-error"></p><div class="modal-actions"><button id="cancelExpression" class="secondary-button" type="button">戻る</button><button id="confirmExpression" class="primary-button" type="button">決定</button></div></div></div>
+
+  <div id="infoModal" class="modal-layer" aria-hidden="true"><div class="modal-card info-modal" role="dialog" aria-modal="true"><p id="infoKicker" class="eyebrow">ヘルプ</p><h2 id="infoTitle"></h2><div id="infoContent" class="info-content"></div><button id="closeInfoModal" class="secondary-button" type="button">閉じる</button></div></div>
+
+  <div id="roundProgramModal" class="modal-layer" aria-hidden="true"><div class="modal-card round-program-modal" role="dialog" aria-modal="true"><p class="eyebrow">次のゲーム</p><h2 id="roundProgramMode">コブラ</h2><p>次に使う駒を選んでください。選ばなければ直前の駒を使います。</p><div id="roundProgramList" class="program-select-list"></div><div class="round-countdown"><span>残り</span><strong id="roundProgramSeconds">30</strong><span>秒</span></div><button id="confirmRoundProgram" class="primary-button" type="button">この駒で準備OK</button></div></div>
+
   <div id="toastRegion" class="toast-region" aria-live="polite"></div>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="/socket.io/socket.io.js"></script>
