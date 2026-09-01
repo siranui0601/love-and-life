@@ -5,7 +5,7 @@ import {
 
 export * from "./authored-mission-flow-human-companion-causality.js";
 
-export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v8";
+export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v9";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -35,6 +35,20 @@ function findMission(runtime, missionId = MISSION_ID) {
     if (found) return found;
   }
   return null;
+}
+
+function findMissionDefinition(runtime, missionId = MISSION_ID) {
+  const catalog = runtime?.playerState?.catalog;
+  return [...values(catalog?.special), ...values(catalog?.permanent)]
+    .find((entry) => entry?.id === missionId) ?? null;
+}
+
+function currentMissionStepId(runtime, mission = findMission(runtime)) {
+  if (mission?.stepId) return mission.stepId;
+  const definition = findMissionDefinition(runtime, mission?.id ?? MISSION_ID);
+  if (!definition || !mission) return null;
+  return values(definition.steps).find((step) =>
+    Number(mission.progress?.[step.id] ?? 0) < Number(step.required ?? 1))?.id ?? null;
 }
 
 function t01ResolvedFlag(runtime) {
@@ -87,7 +101,7 @@ function activeEscort(runtime) {
   const escort = runtime?.t01Escort;
   const current = aftercare.player(runtime);
   return mission?.status === "active"
-    && mission?.stepId === "decide"
+    && currentMissionStepId(runtime, mission) === "decide"
     && escort?.found === true
     && escort?.active === true
     && escort?.arrivedSquare !== true
@@ -215,6 +229,8 @@ export const AUTHORED_HUMAN_ROUTE_ENTRY_INTERNALS = Object.freeze({
   ESCORT_ACTION_ID,
   values,
   findMission,
+  findMissionDefinition,
+  currentMissionStepId,
   t01ResolvedFlag,
   canonicalT01Completed,
   canonicalFinnReturned,
