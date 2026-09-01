@@ -21,7 +21,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Apply patch
+      - name: Repair known v3 summary typo
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'public/now-coding/app-v3.js';
+          let src = fs.readFileSync(file, 'utf8');
+          const bad = 'modes.length>1?`${modes.length}ゲーム総合戦":"単一ゲーム"';
+          const good = 'modes.length>1?`${modes.length}ゲーム総合戦`:"単一ゲーム"';
+          if (!src.includes(bad)) throw new Error('known summary typo anchor not found');
+          src = src.replace(bad, good);
+          fs.writeFileSync(file, src);
+          NODE
+      - name: Apply online series patch
         run: node tools/now-coding/patch-online-series-client.mjs
       - name: Validate syntax
         run: node --check public/now-coding/app-v3.js
