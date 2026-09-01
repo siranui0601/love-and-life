@@ -30,10 +30,20 @@ jobs:
           node --check public/now-coding/tutorials.js
           node --check public/now-coding/modes.js
           node --test tools/now-coding/engine.test.mjs
-          grep -Fq 'コードを組んで、1位を目指せ。' public/now-coding/index.html
-          grep -Fq 'id="tutorialIntroDemo"' public/now-coding/index.html
-          grep -Fq 'id: "overview"' public/now-coding/tutorials.js
-          grep -Fq '$$(".lesson-target")' public/now-coding/app.js
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const checks = [
+            ['public/now-coding/index.html', 'コードを組んで、1位を目指せ。'],
+            ['public/now-coding/index.html', 'id="tutorialIntroDemo"'],
+            ['public/now-coding/tutorials.js', 'id: "overview"'],
+            ['public/now-coding/app.js', '$$(".lesson-target")'],
+          ];
+          for (const [path, needle] of checks) {
+            const source = fs.readFileSync(path, 'utf8');
+            if (!source.includes(needle)) throw new Error(`${path} missing ${needle}`);
+          }
+          console.log('tutorial smoke assertions passed');
+          NODE
       - name: Commit verified tutorial polish
         run: |
           git config user.name "github-actions[bot]"
