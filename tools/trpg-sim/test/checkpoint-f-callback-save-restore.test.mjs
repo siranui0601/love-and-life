@@ -181,23 +181,35 @@ async function advanceProductionTime(service, owner, save, times, {
   label,
 }) {
   let current = save;
-  for (let guard = 0; guard < 48; guard += 1) {
+  for (let guard = 0; guard < 64; guard += 1) {
     const minute = Number(current.clock.absoluteMinute);
     const actionVisible = !untilActionId || current.choices.some((entry) => entry.actionId === untilActionId);
     const timeReached = minimumMinute == null || minute >= minimumMinute;
     if (actionVisible && timeReached) return current;
 
     const candidates = safeTimeAdvanceChoices(current);
-    assert.ok(candidates.length, `no ordinary production time action while waiting for ${label}; minute=${minute}; choices=${current.choices.map((entry) => entry.actionId).join(',')}`);
-    const remaining = minimumMinute == null ? Infinity : Math.max(0, minimumMinute - minute);
-    const withinRemaining = candidates
-      .filter((entry) => Number(entry.minutes) <= remaining)
-      .sort((a, b) => Number(b.minutes) - Number(a.minutes));
-    const selected = withinRemaining[0]
-      ?? [...candidates].sort((a, b) => Number(a.minutes) - Number(b.minutes))[0];
     const before = minute;
-    current = await choose(service, owner, current, selected.actionId);
-    pushTime(times, current, `time-authority:${selected.actionId}`);
+    if (candidates.length) {
+      const remaining = minimumMinute == null ? Infinity : Math.max(0, minimumMinute - minute);
+      const withinRemaining = candidates
+        .filter((entry) => Number(entry.minutes) <= remaining)
+        .sort((a, b) => Number(b.minutes) - Number(a.minutes));
+      const selected = withinRemaining[0]
+        ?? [...candidates].sort((a, b) => Number(a.minutes) - Number(b.minutes))[0];
+      current = await choose(service, owner, current, selected.actionId);
+      pushTime(times, current, `time-authority:${selected.actionId}`);
+    } else {
+      const movements = [...current.movement]
+        .filter((entry) => entry.moveId && entry.destinationFacilityId !== current.scene.facilityId)
+        .sort((a, b) => String(a.moveId).localeCompare(String(b.moveId), 'en'));
+      assert.ok(movements.length, `no ordinary production time action or movement while waiting for ${label}; minute=${minute}; choices=${current.choices.map((entry) => entry.actionId).join(',')}; movement=${current.movement.map((entry) => `${entry.moveId}:${entry.destinationFacilityId}`).join(',')}`);
+      const toSquare = movements.find((entry) => entry.destinationFacilityId === 'LOC_FARM_SQUARE');
+      const selectedMove = current.scene.facilityId !== 'LOC_FARM_SQUARE' && toSquare
+        ? toSquare
+        : movements[0];
+      current = await send(service, owner, current, 'MOVE', { moveId: selectedMove.moveId });
+      pushTime(times, current, `time-authority:${selectedMove.moveId}`);
+    }
     const after = Number(current.clock.absoluteMinute);
     assert.ok(after > before, `production action must advance time while waiting for ${label}: ${before} -> ${after}`);
     if (latestMinute != null) assert.ok(after <= latestMinute, `${label} time advancement must stay inside Day1 window: ${after} > ${latestMinute}`);
@@ -227,6 +239,7 @@ async function reachCallback(service, store, owner, save, times) {
   }
 
   current = await advanceProductionTime(service, owner, current, times, {
+    untilActionId: 'MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras',
     minimumMinute: HUMAN_VIRTUE_BEDTIME_MINUTE,
     latestMinute: 1439,
     label: 'Human Virtue 22:30 bedtime',
