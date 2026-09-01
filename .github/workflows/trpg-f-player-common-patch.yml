@@ -1,0 +1,162 @@
+name: TRPG F player common interaction patch
+
+on:
+  push:
+    branches:
+      - claude/trpg-virtue-route-main-143ar9
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/trpg-virtue-route-main-143ar9
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Patch common player interaction into production world service
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          engine_path = Path('tools/trpg-sim/lib/npc-life-engine.mjs')
+          engine = engine_path.read_text()
+          marker = 'export function recordPlayerNpcConversation('
+          if marker not in engine:
+              engine += r'''
+
+/**
+ * Register an explicit player-to-NPC conversation in the same common interaction
+ * ledger used by autonomous NPC conversations. Mere co-location never calls this
+ * function; callers invoke it only for an actually executed visible conversation.
+ */
+export function recordPlayerNpcConversation(engine, {
+  playerId = 'PLAYER',
+  playerName = '旅人',
+  npcId,
+  absoluteHour = 0,
+  location = null,
+  actionId = null,
+} = {}) {
+  if (!engine || !npcId) return { interaction: null, learned: false, factId: null, reason: 'invalid-participant' };
+  ensureInteractionState(engine);
+  const npcState = engine.npcStates?.[npcId];
+  if (!isNpcLifeEligible(npcState) || npcState.presence !== 'present' || npcState.travel || npcState.localTravel) {
+    return { interaction: null, learned: false, factId: null, reason: 'npc-not-present' };
+  }
+  const resolvedLocation = location ?? { ...npcState.position };
+  if (resolvedLocation?.hubId && resolvedLocation.hubId !== npcState.position?.hubId) {
+    return { interaction: null, learned: false, factId: null, reason: 'different-hub' };
+  }
+  if (resolvedLocation?.facilityId && resolvedLocation.facilityId !== npcState.position?.facilityId) {
+    return { interaction: null, learned: false, factId: null, reason: 'different-facility' };
+  }
+  const stablePlayerId = String(playerId || 'PLAYER');
+  const factId = `player-recognition:${stablePlayerId}`;
+  const dedupeKey = `player-recognition|${stablePlayerId}|${npcId}`;
+  const existingInteraction = engine.interactionEvents.find((event) => event?.dedupeKey === dedupeKey) ?? null;
+  if (npcState.beliefs?.[factId]) {
+    return { interaction: existingInteraction, learned: false, factId, reason: 'already-recognized' };
+  }
+  const interaction = recordWorldInteractionEvent(engine, {
+    type: 'conversation',
+    contextType: 'facility',
+    speakerId: stablePlayerId,
+    speakerNpcId: null,
+    listenerIds: [npcId],
+    audibleListenerIds: [npcId],
+    acceptedListenerIds: [npcId],
+    privacy: 'public',
+    factId,
+    topic: `${playerName}と会話した`,
+    startedAt: Number(absoluteHour),
+    endedAt: Number(absoluteHour),
+    location: resolvedLocation,
+    provenance: { actionId, sourceType: 'player-conversation' },
+    dedupeKey,
+  });
+  if (!interaction) return { interaction: null, learned: false, factId, reason: 'interaction-not-recorded' };
+  const learned = addBelief(engine, npcState, {
+    factId,
+    kind: 'fact',
+    text: `${playerName}本人と会話し、顔と名乗りを認識した`,
+    troubleIds: [],
+    confidence: 1,
+    importance: 0.35,
+    secret: false,
+    learnedAt: Number(absoluteHour),
+    propagationAt: Number(absoluteHour) + 4,
+    sourceType: 'player',
+    sourceNpcId: null,
+    sourcePlayerId: stablePlayerId,
+    publicationMode: 'conversation-only',
+    hopCount: 1,
+    path: [`player:${stablePlayerId}`, npcId],
+    interactionEventId: interaction.id,
+  }, {
+    type: 'player-conversation',
+    npcId,
+    factId,
+    learnedAt: Number(absoluteHour),
+    propagationAt: Number(absoluteHour) + 4,
+    sourceType: 'player',
+    sourceNpcId: null,
+    sourcePlayerId: stablePlayerId,
+    sourceEventId: interaction.id,
+    interactionEventId: interaction.id,
+    interactionContextType: 'facility',
+    location: resolvedLocation,
+    hopCount: 1,
+    path: [`player:${stablePlayerId}`, npcId],
+  });
+  npcState.memories ??= {};
+  if (learned) npcState.memories[factId] = {
+    type: 'player-recognition',
+    playerId: stablePlayerId,
+    playerName,
+    learnedAt: Number(absoluteHour),
+    interactionEventId: interaction.id,
+    actionId,
+  };
+  return { interaction, learned, factId, reason: learned ? 'recognized' : 'already-recognized' };
+}
+'''
+              engine_path.write_text(engine)
+
+          service_path = Path('src/server/trpg/game/world-time-aware-service.js')
+          service = service_path.read_text()
+          import_anchor = 'import * as journey from "../../../../tools/trpg-sim/lib/player-journey.mjs";\n'
+          import_line = 'import { recordPlayerNpcConversation } from "../../../../tools/trpg-sim/lib/npc-life-engine.mjs";\n'
+          if import_line not in service:
+              assert import_anchor in service
+              service = service.replace(import_anchor, import_anchor + import_line, 1)
+
+          old = '''    const result = await super.command(ownerHash, id, input);\n    if (result?.duplicate) return result;\n\n    const record = await this.recordForOwner(ownerHash, id);\n    let changed = synchronizePersistedRecordHash(record, this.data);\n'''
+          new = '''    const visibleBefore = this.gameViewForRecord(recordBefore);\n    const requestedChoiceId = String(input?.payload?.choiceId ?? '').trim();\n    const requestedActionId = String(input?.payload?.actionId ?? '').trim();\n    const visibleCandidates = [...(visibleBefore?.choices ?? []), ...(visibleBefore?.movement ?? [])];\n    const selectedBefore = visibleCandidates.find((entry) =>\n      (requestedActionId && entry.actionId === requestedActionId)\n      || (requestedChoiceId && (entry.choiceId === requestedChoiceId || entry.moveId === requestedChoiceId)));\n\n    const result = await super.command(ownerHash, id, input);\n    if (result?.duplicate) return result;\n\n    const record = await this.recordForOwner(ownerHash, id);\n    let changed = synchronizePersistedRecordHash(record, this.data);\n    if (selectedBefore?.targetNpcId\n      && (selectedBefore.type === 'conversation' || selectedBefore.intentType === 'conversation' || selectedBefore.dialogueTopic)) {\n      const runtime = deserializeRuntime(record.runtimeSnapshot, this.data);\n      const playerInteraction = recordPlayerNpcConversation(runtime.livingWorld, {\n        playerId: runtime.playerState.player.id ?? `PLAYER:${record.id}`,\n        playerName: runtime.playerState.player.displayName ?? runtime.playerState.player.name ?? record.playerName ?? '旅人',\n        npcId: selectedBefore.targetNpcId,\n        absoluteHour: runtime.playerState.absoluteMinute / 60,\n        location: {\n          hubId: runtime.playerState.player.location,\n          facilityId: runtime.playerState.player.facilityId,\n        },\n        actionId: selectedBefore.actionId ?? selectedBefore.id ?? null,\n      });\n      if (playerInteraction.learned) {\n        persistRuntime(record, runtime, this.data);\n        reconcileLatestCommand(record);\n        changed = true;\n      }\n    }\n'''
+          if 'const visibleBefore = this.gameViewForRecord(recordBefore);' not in service:
+              assert old in service, 'world-time command anchor changed'
+              service = service.replace(old, new, 1)
+              service_path.write_text(service)
+          PY
+      - name: Run focused interaction and production tests
+        run: |
+          node --test tools/trpg-sim/test/checkpoint-f-common-interaction-policy.test.mjs
+          node --test tools/trpg-sim/test/checkpoint-f-register-direct-share.test.mjs
+          node --test tools/trpg-sim/test/authored-register-butterfly.test.mjs
+          node --test tools/trpg-sim/test/checkpoint-f-production-certificate.test.mjs
+          node --test tools/trpg-sim/test/game-service.test.mjs
+      - name: Commit verified patch and remove runner
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/trpg-f-player-common-patch.yml
+          git add tools/trpg-sim/lib/npc-life-engine.mjs src/server/trpg/game/world-time-aware-service.js
+          git commit -m "feat(trpg): join player conversations to common world interactions"
+          git push origin HEAD:claude/trpg-virtue-route-main-143ar9
