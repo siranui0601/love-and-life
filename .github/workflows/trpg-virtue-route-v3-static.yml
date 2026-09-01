@@ -17,14 +17,30 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Run focused F callback certificate
+      - name: Patch survival authority in workspace
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/server/trpg/game/survival-aware-service.js')
+          text = path.read_text()
+          old = '''    const visible = urgentLifeChoices(super.gameViewForRecord(record), this.data)\n      .find((choice) => choice.actionId === request.actionId);'''
+          new = '''    const visible = (this.gameViewForRecord(record)?.choices ?? [])\n      .find((choice) => choice.actionId === request.actionId);'''
+          if old not in text:
+              raise SystemExit('survival visible-authority target missing')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Run focused survival and F callback tests
         run: |
           set -o pipefail
-          node --test tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs 2>&1 | tee f-callback-focused.log
-      - name: Upload focused callback log
+          node --test \
+            tools/trpg-sim/test/survival-aware-service.test.mjs \
+            tools/trpg-sim/test/world-time-aware-service.test.mjs \
+            tools/trpg-sim/test/checkpoint-f-callback-save-restore.test.mjs \
+            2>&1 | tee f-survival-authority.log
+      - name: Upload focused authority log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: f-callback-focused-${{ github.sha }}
+          name: f-survival-authority-${{ github.sha }}
           if-no-files-found: error
-          path: f-callback-focused.log
+          path: f-survival-authority.log
