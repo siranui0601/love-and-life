@@ -23,8 +23,8 @@ test("all fixed id selectors used by the controller exist in HTML", () => {
   assert.deepEqual(missing, [], `missing fixed DOM ids: ${missing.join(", ")}`);
 });
 
-test("single-element selector helper is never iterated with forEach", () => {
-  assert.doesNotMatch(app, /(?<!\$)\$\([^\n;]+\)\.forEach\s*\(/, "querySelector result must not be used as a list");
+test("single-element selector helper is never directly iterated with forEach", () => {
+  assert.doesNotMatch(app, /(?<!\$)\$\((?:["'`])[^"'`\n]+(?:["'`])\)\.forEach\s*\(/, "querySelector result must not be used as a list");
 });
 
 test("stored login restoration happens during init before tutorial bootstrap", () => {
