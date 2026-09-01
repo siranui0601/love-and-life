@@ -153,15 +153,6 @@ async function completeActualT01(run) {
       battleRounds += await finishActualBattle(run);
       continue;
     }
-    const returnFinn = run.save.choices.find((entry) => entry.actionId === 'MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE');
-    if (returnFinn) {
-      const before = run.save.clock.absoluteMinute;
-      run.save = await chooseAction(run.svc, run.owner, run.save, returnFinn.actionId);
-      executed.push(returnFinn.actionId);
-      run.times.push(run.save.clock.absoluteMinute);
-      assert.ok(run.save.clock.absoluteMinute >= before);
-      continue;
-    }
 
     const mission = activeT01(run.save);
     const stored = await run.store.get(run.save.id);
@@ -215,7 +206,7 @@ test('[CHECKPOINT_F_CERT] all three real lodging choices complete E and naturall
   }
 });
 
-test('[CHECKPOINT_F_CERT] shield-only goes from a real REGISTER new game through actual wolf battle, Finn rescue and return', async () => {
+test('[CHECKPOINT_F_CERT] shield-only goes from a real REGISTER new game through actual wolf battle, Finn rescue and common return movement', async () => {
   const run = await completeCheckpointE({ lodgingActionId: 'E:LODGE:REGISTER', loadoutId: 'shield' });
   assert.equal(run.runtime.checkpointEPrologue.loan.loadoutId, 'shield');
   assert.equal(run.runtime.playerState.player.equipment.mainHand ?? null, null, 'shield-only must not silently acquire a main-hand weapon');
@@ -230,7 +221,8 @@ test('[CHECKPOINT_F_CERT] shield-only goes from a real REGISTER new game through
   assert.equal(run.runtime.livingWorld.npcStates.NPC001.position.facilityId, 'LOC_FARM_SQUARE');
   assert.equal(run.runtime.livingWorld.npcStates.NPC001.lifeStatus === 'dead', false);
   assert.ok(certificate.executed.includes('ACTION:MSN-T01:rescue'), `actual rescue action missing: ${certificate.executed.join(' -> ')}`);
-  assert.ok(certificate.executed.includes('MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE'));
+  assert.ok(certificate.executed.includes('MOVE_LOCAL:LOC_FARM_SQUARE'), `Finn must return through common local movement: ${certificate.executed.join(' -> ')}`);
+  assert.equal(certificate.executed.includes('MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE'), false, 'production must not bypass the common movement surface with the legacy authored return action');
   for (let index = 1; index < run.times.length; index += 1) {
     assert.ok(run.times[index] >= run.times[index - 1], `full E→T01 production clock must be monotonic at ${index}: ${run.times[index - 1]} -> ${run.times[index]}`);
   }
