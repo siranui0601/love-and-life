@@ -78,16 +78,27 @@ async function completeCheckpointE({ lodgingActionId, loadoutId = 'sword' }) {
   return { store, svc, owner, save, runtime, times };
 }
 
-test('[CHECKPOINT_F_CERT] all three real lodging choices complete E and expose a natural post-E world', async () => {
+test('[CHECKPOINT_F_CERT] all three real lodging choices complete E and naturally enter actual T01', async () => {
   for (const lodgingActionId of ['E:LODGE:SLEEP', 'E:LODGE:REGISTER', 'E:LODGE:CONTINUE']) {
     const run = await completeCheckpointE({ lodgingActionId });
     assert.ok(run.save.choices.length > 0 || run.save.movement.length > 0, `${lodgingActionId} must return to ordinary production actions`);
     assert.equal(run.runtime.checkpointEPrologue.complete, true);
-    console.log('[F_CERT_POST_E]', JSON.stringify({
+    const discovery = run.save.choices.find((entry) => entry.actionId === 'DISCOVER_LOCAL_TROUBLE:T01');
+    assert.ok(discovery, `${lodgingActionId} must expose the real T01 discovery action after E`);
+    const beforeMinute = run.save.clock.absoluteMinute;
+    run.save = await chooseAction(run.svc, run.owner, run.save, discovery.actionId);
+    run.times.push(run.save.clock.absoluteMinute);
+    assert.ok(run.save.clock.absoluteMinute >= beforeMinute, `${lodgingActionId} T01 discovery must not rewind time`);
+    const stored = await run.store.get(run.save.id);
+    run.runtime = deserializeRuntime(stored.runtimeSnapshot, data);
+    assert.equal(run.runtime.playerState.player.knownRumorIds instanceof Set, true);
+    assert.ok([...run.runtime.playerState.player.knownRumorIds].some((rumorId) => run.runtime.playerState.rumorById?.[rumorId]?.troubleId === 'T01'));
+    assert.ok(run.runtime.authoredMissionFlows, 'T01 discovery must initialize the authored mission flow in production state');
+    console.log('[F_CERT_T01_DISCOVERED]', JSON.stringify({
       lodgingActionId,
       minute: run.save.clock.absoluteMinute,
       facilityId: run.save.scene.facilityId,
-      choices: run.save.choices.map((entry) => ({ actionId: entry.actionId, label: entry.label, type: entry.type })),
+      choices: run.save.choices.map((entry) => ({ actionId: entry.actionId, label: entry.label, type: entry.type, targetNpcId: entry.targetNpcId ?? null })),
       movement: run.save.movement.map((entry) => ({ moveId: entry.moveId, destinationFacilityId: entry.destinationFacilityId, destination: entry.destination })),
       missions: run.save.missions.map((entry) => ({ id: entry.id, status: entry.status, currentStep: entry.currentStep?.id ?? null })),
     }));
