@@ -30,10 +30,10 @@ jobs:
           node --check public/now-coding/tutorials.js
           node --check public/now-coding/modes.js
           node --test tools/now-coding/engine.test.mjs
-          grep -q 'コードを組んで、1位を目指せ。' public/now-coding/index.html
-          grep -q 'id="tutorialIntroDemo"' public/now-coding/index.html
-          grep -q 'id: "overview"' public/now-coding/tutorials.js
-          grep -q '\$\$(".lesson-target")' public/now-coding/app.js
+          grep -Fq 'コードを組んで、1位を目指せ。' public/now-coding/index.html
+          grep -Fq 'id="tutorialIntroDemo"' public/now-coding/index.html
+          grep -Fq 'id: "overview"' public/now-coding/tutorials.js
+          grep -Fq '$$(".lesson-target")' public/now-coding/app.js
       - name: Commit verified tutorial polish
         run: |
           git config user.name "github-actions[bot]"
