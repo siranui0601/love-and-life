@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v2';
+export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v3';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -134,10 +134,10 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
 
   outcome(requireRow(byId, 'VR2-D01-01'), {
     description: 'Checkpoint Eで黒パンITM008を食べた状態を引き継ぐ（追加のstarter mealなし）',
-    requiredState: 'Checkpoint E bread/eat sequence already resolved with canonical ITM008; no freeStarterMeals dependency',
+    requiredState: 'Checkpoint E bread/eat sequence already resolved with canonical ITM008; no legacy starter meal credit dependency',
     resultingState: 'no additional meal consumed; hunger and gold carry from the production Checkpoint E runtime',
     implementationSource: 'src/server/trpg/game/checkpoint-e-prologue-service.js CHECKPOINT_E_BREAD_ITEM_ID + eatBread',
-    notes: 'replaces the obsolete ITM003/freeStarterMeals opening assumption; Human Virtue starts from the Checkpoint E production state',
+    notes: 'replaces the obsolete pre-E starter-meal opening assumption; Human Virtue starts from the Checkpoint E production state',
   });
 
   outcome(requireRow(byId, 'VR2-D01-02'), {
@@ -145,7 +145,7 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
     requiredState: 'Checkpoint E equipment and skill panels inspected; one legal player-selected loadout may be borrowed',
     resultingState: 'no skill is forced; learnedSkills/SP and equipped loadout remain the player-selected production state',
     implementationSource: 'src/server/trpg/game/checkpoint-e-prologue-service.js buildCheckpointELoanCatalog + production skill UI',
-    notes: 'removes the obsolete fixed SKL-0049 starter dependency; shield-only and every other legal Checkpoint E loadout remain valid',
+    notes: 'removes the obsolete fixed starter-skill dependency; shield-only and every other legal Checkpoint E loadout remain valid',
   });
 
   const entrySteps = [
@@ -161,7 +161,7 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
     requiredState: 'Checkpoint E at lodging_choice in LOC_FARM_INN; Eda introduced; ITM008 eaten; legal player-selected loan loadout equipped/available',
     resultingState: 'Checkpoint E complete via REGISTER; Wheat Inn guestbook provenance exists; MSN-T01 discovered and heard through production actions; player at LOC_FARM_EDGE',
     implementationSource: 'src/server/trpg/game/checkpoint-e-prologue-service.js + src/server/trpg/game/service.js + tools/trpg-sim/lib/player-journey.mjs',
-    notes: 'replaces wheat-field awakening/old tutorial IDs with the actual post-E production bridge; visible actionId must equal executed actionId',
+    notes: 'replaces the wheat-field awakening and legacy tutorial actions with the actual post-E production bridge; visible actionId must equal executed actionId',
   });
 
   outcome(requireRow(byId, 'VR2-D01-04'), {
@@ -169,7 +169,7 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
     requiredState: 'Checkpoint E ITM008 meal already consumed; MSN-T01 heard; player at LOC_FARM_EDGE; no implicit second free meal',
     resultingState: 'no meal consumed and no gold spent; current production hunger state carries into the T01 search',
     implementationSource: 'src/server/trpg/game/checkpoint-e-prologue-service.js + tools/trpg-sim/lib/player-needs.mjs',
-    notes: 'keeps the explicit Day1 trade-off without relying on legacy freeStarterMeals',
+    notes: 'keeps the explicit Day1 trade-off without relying on the obsolete starter-meal credit',
   });
 
   const t01 = requireRow(byId, 'VR2-D01-05');
@@ -186,7 +186,7 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
   t01.payload = JSON.stringify({ steps: t01Steps });
   t01.requiredState = 'MSN-T01 active; hearing complete; at LOC_FARM_EDGE; Finn alive; any legal Checkpoint E loadout including shield-only; no required starter skill';
   t01.resultingState = 'two search clues; actual MON-0005 battle; Finn rescued, escorted and returned to LOC_FARM_SQUARE; MSN-T01 resolved';
-  t01.notes = 'existing public T01 search/rescue chain preserved after post-E bridge; weapon-independent and no SKL-0049 prerequisite; per-step facility matches production runtime';
+  t01.notes = 'existing public T01 search/rescue chain preserved after the post-E bridge; weapon-independent, no fixed starter-skill prerequisite, and per-step facility matches production runtime';
 
   const aftercare = requireRow(byId, 'VR2-D01-07');
   aftercare.legacyDescription = '広場でミラへ引き渡し。Checkpoint Eで選んだ借用loadoutは返却条件を保持したまま継続';
