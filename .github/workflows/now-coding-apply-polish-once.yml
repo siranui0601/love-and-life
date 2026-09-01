@@ -24,7 +24,7 @@ jobs:
           node-version: 20
       - name: Apply client polish
         run: node tools/now-coding/patch-client-polish.mjs
-      - name: Validate
+      - name: Validate final client
         run: |
           node --check public/now-coding/app-v3.js
           node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs
