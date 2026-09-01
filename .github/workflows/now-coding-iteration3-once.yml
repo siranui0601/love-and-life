@@ -22,21 +22,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Fix invalid attack semantics
-        run: node tools/now-coding/fix-splat-no-tick.mjs
-      - name: Verify all modes
+      - name: Polish tutorial entry
+        run: node tools/now-coding/polish-tutorial-intro.mjs
+      - name: Verify tutorial and game files
         run: |
-          node --check public/now-coding/engine.js
-          node --check public/now-coding/modes.js
-          node --check public/now-coding/tutorials.js
           node --check public/now-coding/app.js
-          node --check src/server/now-coding/online.js
+          node --check public/now-coding/tutorials.js
+          node --check public/now-coding/modes.js
           node --test tools/now-coding/engine.test.mjs
-      - name: Commit verified product fix
+          grep -q 'コードを組んで、1位を目指せ。' public/now-coding/index.html
+          grep -q 'id="tutorialIntroDemo"' public/now-coding/index.html
+          grep -q 'id: "overview"' public/now-coding/tutorials.js
+          grep -q '\$\$(".lesson-target")' public/now-coding/app.js
+      - name: Commit verified tutorial polish
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/now-coding/modes.js tools/now-coding/engine.test.mjs
+          git add public/now-coding/app.js public/now-coding/index.html public/now-coding/style-v2.css public/now-coding/tutorials.js
           git diff --cached --check
-          git commit -m "fix(now-coding): keep invalid splat attacks zero-tick"
+          git commit -m "feat(now-coding): make tutorial goal visual and immediate"
           git push origin HEAD:feat/now-coding-foundation
