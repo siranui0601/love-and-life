@@ -42,6 +42,19 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   return exclusive.length ? exclusive : null;
 }
 
+// Every successful production command crosses the persisted runtime boundary
+// after this hook. The REGISTER butterfly previously created Riona's greeting
+// only while building a read-only game view, so the three callback choices were
+// visible even though the greeting interaction/history was absent from the save
+// snapshot. Resolve that world observation here, while the command runtime is
+// still authoritative, so the same interaction is serialized exactly once and
+// survives restore before the player answers it.
+export function applyAuthoredMissionFlowAction(runtime, action, result) {
+  const changed = base.applyAuthoredMissionFlowAction(runtime, action, result);
+  base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
+  return changed;
+}
+
 // canonical-world-life supplies a generic "その土地の生活を選ぶ" fallback when
 // rest/meal actions exist. That fallback is valid ordinary-life guidance after
 // authored work is terminal, but it must not overwrite an active mission's own
