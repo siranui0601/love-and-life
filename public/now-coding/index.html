@@ -106,6 +106,10 @@
           <aside class="block-palette panel-surface" aria-label="命令パレット">
             <div class="panel-title"><span>命令</span><small>タップ / ドラッグ</small></div>
             <div id="paletteScroll" class="palette-scroll palette-accordion">
+              <details id="recentPaletteSection" class="palette-section recent-palette-section">
+                <summary><span class="palette-dot recent"></span>最近使った命令</summary>
+                <div id="recentPaletteItems" class="palette-items recent-palette-items"><small class="recent-palette-empty">まだ使った命令はありません。</small></div>
+              </details>
               <details class="palette-section" open>
                 <summary><span class="palette-dot action"></span>動き</summary>
                 <div class="palette-items">
@@ -340,6 +344,14 @@
         </div>
       </section>
     </main>
+
+  <button id="mobilePaletteButton" class="mobile-palette-fab" type="button" aria-expanded="false" aria-controls="mobilePaletteSheet" hidden>＋ 命令を追加</button>
+  <div id="mobilePaletteBackdrop" class="mobile-palette-backdrop" aria-hidden="true"></div>
+  <section id="mobilePaletteSheet" class="mobile-palette-sheet" aria-hidden="true" aria-label="命令を追加">
+    <div class="mobile-palette-handle" aria-hidden="true"></div>
+    <div class="mobile-palette-heading"><div><small>現在のコード位置を維持したまま</small><strong>命令を追加</strong></div><button id="mobilePaletteClose" class="icon-button" type="button" aria-label="命令パレットを閉じる">×</button></div>
+    <div id="mobilePaletteContent" class="mobile-palette-content"></div>
+  </section>
 
     <nav class="primary-nav" aria-label="主要メニュー">
       <button class="nav-item is-active" type="button" data-go="home" aria-label="ホーム"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z"/></svg><span>ホーム</span></button>

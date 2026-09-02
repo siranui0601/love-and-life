@@ -216,3 +216,31 @@ test("dirty code is guarded on internal navigation and browser unload", () => {
   assert.match(app, /requestUnsavedAction\(newDraft\)/);
 });
 
+test("long programs keep command access available on desktop and mobile", () => {
+  assert.match(css, /editor-layout-v3 \.block-palette\{position:sticky/);
+  assert.ok(htmlHasId("mobilePaletteButton"));
+  assert.ok(htmlHasId("mobilePaletteSheet"));
+  assert.ok(htmlHasId("mobilePaletteContent"));
+  assert.ok(html.includes("＋ 命令を追加"));
+  assert.match(app, /function setMobilePalette\(open\)/);
+  assert.match(app, /function proxyMobilePaletteClick/);
+});
+
+test("recent commands are a closed persistent palette category", () => {
+  assert.match(html, /<details id="recentPaletteSection" class="palette-section recent-palette-section">/);
+  assert.doesNotMatch(html, /<details id="recentPaletteSection"[^>]*\sopen(?:\s|>)/);
+  assert.ok(htmlHasId("recentPaletteItems"));
+  assert.ok(html.includes("最近使った命令"));
+  assert.match(app, /RECENT_COMMAND_STORAGE="nowCodingRecentCommandsV1"/);
+  assert.match(app, /RECENT_COMMAND_LIMIT=6/);
+  assert.match(app, /function recordRecentCommand/);
+  assert.match(app, /localStorage\.setItem\(RECENT_COMMAND_STORAGE/);
+});
+
+test("mobile palette proxies existing commands instead of creating a second language implementation", () => {
+  assert.match(app, /function originalPaletteCommand\(key\)/);
+  assert.match(app, /source\.click\(\)/);
+  assert.match(app, /source\.dispatchEvent\(new Event\("change",\{bubbles:true\}\)\)/);
+  assert.doesNotMatch(app, /mobileCommandFactory|createMobileBlock/);
+});
+
