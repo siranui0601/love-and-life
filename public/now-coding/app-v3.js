@@ -8,7 +8,7 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const deepClone = (value) => structuredClone(value);
 const MODES = ["territory", "fall", "cobra", "splat"];
 const MODE_DESCRIPTIONS = {
-  territory: ["陣取り", "無色のマスを自分の色にします。敵が取った色は壁になり、上書きできません。最後に最も多く取った駒が勝ちます。"],
+  territory: ["陣取り", "無色のマスを自分の色にします。一度色が付いたマスは、自分・敵を問わず壁になり通れません。最後に最も多く取った駒が勝ちます。"],
   fall: ["床抜け", "2tick連続で移動しないと足元が崩れます。旋回と前進を組み合わせ、最後まで生き残ります。"],
   cobra: ["コブラ", "毎tick必ず1マス進みます。尾や他の駒を避け、最後まで生き残った駒が勝ちます。"],
   splat: ["スプラ", "敵色を上書きできます。自陣でインクを回復し、前方攻撃も使いながら最も広く塗った駒が勝ちます。"],

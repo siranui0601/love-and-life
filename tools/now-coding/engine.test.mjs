@@ -79,6 +79,28 @@ test("enemy territory blocks movement and still consumes the tick", () => {
   assert.equal(state.agents[0].lastAction, "blocked");
 });
 
+
+test("territory treats every claimed cell as a wall, including its own trail", () => {
+  const state = stateWithPrograms([move, right, right, move], [right], [{ x: 5, y: 5, dir: 1 }, { x: 12, y: 12, dir: 2 }]);
+  const agent = state.agents[0];
+  assert.equal(state.ruleVersion, "territory-v4");
+
+  stepTerritory(state); // move to 6,5 and color it
+  assert.equal(agent.x, 6);
+  assert.equal(agent.y, 5);
+  assert.equal(agent.claimed, 2);
+
+  stepTerritory(state); // right
+  stepTerritory(state); // right again: now facing the spawn cell
+  assert.equal(agent.dir, 3);
+
+  stepTerritory(state); // own spawn cell is already colored, so it is a wall
+  assert.equal(agent.x, 6);
+  assert.equal(agent.y, 5);
+  assert.equal(agent.lastAction, "blocked");
+  assert.equal(agent.claimed, 2);
+});
+
 test("two heads entering the same unclaimed cell are both eliminated", () => {
   const state = stateWithPrograms([move], [move], [{ x: 4, y: 5, dir: 1 }, { x: 6, y: 5, dir: 3 }]);
   stepTerritory(state);

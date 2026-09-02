@@ -137,3 +137,13 @@ test("direct-composition tutorial and palette polish stay aligned", () => {
   assert.match(app, /if\(type==="turn"\)return\{type:"action",action:p\.turn\|\|"turnRight"/);
   for (const value of ["unclaimed","own","enemy","cliff","player","tail"]) assert.ok(html.includes(`value="${value}"`));
 });
+
+
+test("condition insertion and territory wall rules stay visually and textually aligned", () => {
+  assert.match(css, /reporter-boolean\.expression-preset-active/);
+  assert.match(css, /conditionNeonPulse/);
+  assert.match(css, /expression-target\[data-expected="boolean"\]\.socket-accepting/);
+  assert.match(css, /conditionTargetPulse/);
+  assert.match(app, /一度色が付いたマスは、自分・敵を問わず壁/);
+  assert.match(tutorials, /自分・敵を問わず一度色が付いたマスは壁/);
+});

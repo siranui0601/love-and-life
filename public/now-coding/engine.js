@@ -1,6 +1,6 @@
 import { runProgramUntilAction } from "./vm.js";
 
-export const NOW_CODING_RULE_VERSION = "territory-v3";
+export const NOW_CODING_RULE_VERSION = "territory-v4";
 export const PLAYER_COLORS = ["blue", "red", "yellow", "green"];
 export const NPC_LEVELS = ["weak", "medium", "strong"];
 export const DIRECTIONS = [
@@ -185,14 +185,13 @@ function allCellsClaimed(state) {
 
 function hasLegalTerritoryMove(state, agent) {
   if (!agent.alive) return false;
-  const ownIndex = state.agents.indexOf(agent);
   return DIRECTIONS.some((vector) => {
     const x = agent.x + vector.x;
     const y = agent.y + vector.y;
     if (x < 0 || y < 0 || x >= state.size || y >= state.size) return false;
     if (headAt(state, x, y, agent.id)) return false;
-    const owner = state.board[y][x];
-    return owner < 0 || owner === ownIndex;
+    // In territory mode every claimed cell is a wall, including your own trail.
+    return state.board[y][x] < 0;
   });
 }
 
@@ -241,8 +240,8 @@ export function stepTerritory(state) {
       continue;
     }
     const owner = state.board[target.y][target.x];
-    const ownIndex = state.agents.indexOf(agent);
-    if (owner >= 0 && owner !== ownIndex) {
+    // Once a cell is colored it becomes a wall for everyone, even its owner.
+    if (owner >= 0) {
       agent.lastAction = "blocked";
       continue;
     }
@@ -356,20 +355,12 @@ export function makeNpcProgram(level = "medium", variant = 0) {
     }]);
   }
   if (safeLevel === "medium") {
-    return forever([cellIf("front", "unclaimed", [action("move")], [
-      cellIf("front", "own", [action("move")], [action(preferredTurn)]),
-    ])]);
+    return forever([cellIf("front", "unclaimed", [action("move")], [action(preferredTurn)])]);
   }
   return forever([cellIf("front", "unclaimed", [action("move")], [
     cellIf("left", "unclaimed", [action("turnLeft")], [
       cellIf("right", "unclaimed", [action("turnRight")], [
-        cellIf("front", "own", [action("move")], [
-          cellIf("left", "own", [action("turnLeft")], [
-            cellIf("right", "own", [action("turnRight")], [
-              { type: "if", condition: { type: "random", chance: 0.5 }, then: [action(preferredTurn)], else: [action(otherTurn)] },
-            ]),
-          ]),
-        ]),
+        { type: "if", condition: { type: "random", chance: 0.5 }, then: [action(preferredTurn)], else: [action(otherTurn)] },
       ]),
     ]),
   ])]);
