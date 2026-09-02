@@ -1,7 +1,7 @@
-import * as base from "./authored-register-butterfly.js";
+import * as base from "./authored-village-bakery-evening.js";
 import { authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance } from "./authored-mission-flow-core.js";
 
-export * from "./authored-register-butterfly.js";
+export * from "./authored-village-bakery-evening.js";
 
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 
