@@ -8,6 +8,7 @@ import {
   stepTerritory,
 } from "../../public/now-coding/engine.js";
 import { createGameState, gameResults, makeTestNpcProgram, senseModeCell, stepGame } from "../../public/now-coding/modes.js";
+import { evaluateVmExpression } from "../../public/now-coding/vm.js";
 
 const move = { type: "action", action: "move" };
 const right = { type: "action", action: "turnRight" };
@@ -355,4 +356,22 @@ test("territory does not end for no-moves while another surviving piece still ha
   for (const [x, y] of [[2,1],[3,2],[2,3],[1,2]]) state.board[y][x] = 1;
   stepTerritory(state);
   assert.equal(state.finished, false);
+});
+
+
+test("nested arithmetic expressions preserve explicit parenthesis structure", () => {
+  const context = {
+    agent: { id: "me", vars: { A: 10, B: 6, C: 5, D: 2 } },
+    state: { agents: [], random: () => 0.5 },
+    sense: () => ({ state: "unclaimed", owner: -1 }),
+  };
+  const expr = {
+    type: "binary", op: "+", left: { type: "var", name: "A" }, right: {
+      type: "binary", op: "/", left: { type: "var", name: "B" }, right: {
+        type: "binary", op: "-", left: { type: "var", name: "C" }, right: { type: "var", name: "D" },
+      },
+    },
+  };
+  assert.equal(evaluateVmExpression(expr, context), 12);
+  assert.equal(evaluateVmExpression({ type: "binary", op: ">=", left: expr, right: literal(12) }, context), true);
 });

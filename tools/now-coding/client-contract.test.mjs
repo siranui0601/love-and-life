@@ -127,3 +127,13 @@ test("initial tutorial teaches comparison from empty sockets", () => {
   assert.match(app, /step===10&&a\.alive&&game\.tick>=30/);
   assert.match(app, /tutorialProgress\(TUTORIAL_STEPS\.length,true\)/);
 });
+
+
+test("direct-composition tutorial and palette polish stay aligned", () => {
+  assert.match(html, /tutorialStepLabel">1 \/ 11/);
+  assert.match(html, /もし &lt;（前）＝（崖）&gt;/);
+  assert.doesNotMatch(tutorials, /条件を組み立てる.*モーダル/);
+  assert.match(app, /e\.defaultPrevented\|\|state\.pendingExpressionPreset/);
+  assert.match(app, /if\(type==="turn"\)return\{type:"action",action:p\.turn\|\|"turnRight"/);
+  for (const value of ["unclaimed","own","enemy","cliff","player","tail"]) assert.ok(html.includes(`value="${value}"`));
+});
