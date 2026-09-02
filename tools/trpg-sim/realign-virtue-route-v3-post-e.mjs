@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v3';
+export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v4';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -174,19 +174,36 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
 
   const t01 = requireRow(byId, 'VR2-D01-05');
   const t01Steps = JSON.parse(t01.replacementSteps || '[]').map((step) => {
-    const square = ['MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE', 'ACTION:MSN-T01:decide'].includes(step.actionId);
+    if (step.actionId === 'MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE') {
+      return move('LOC_FARM_SQUARE', { regionId: '田園の村' });
+    }
+    const square = step.actionId === 'ACTION:MSN-T01:decide';
     return {
       ...step,
       regionId: '田園の村',
       facilityId: square ? 'LOC_FARM_SQUARE' : 'LOC_FARM_EDGE',
     };
   });
+  const expectedT01Actions = [
+    'ACTION:MSN-T01:search:tracks',
+    'ACTION:MSN-T01:search:wolf-blockade',
+    'ACTION:MSN-T01:rescue',
+    'ACTION:MSN-T01:escort',
+    'MOVE_LOCAL:LOC_FARM_SQUARE',
+    'ACTION:MSN-T01:decide',
+  ];
   if (t01Steps.length !== 6) throw new Error(`expected six preserved T01 steps, got ${t01Steps.length}`);
+  if (JSON.stringify(t01Steps.map((step) => step.actionId)) !== JSON.stringify(expectedT01Actions)) {
+    throw new Error(`unexpected post-E T01 action sequence: ${t01Steps.map((step) => step.actionId).join(' -> ')}`);
+  }
+  if (t01Steps[4].commandType !== 'MOVE' || t01Steps[4].payload?.moveId !== 'MOVE_LOCAL:LOC_FARM_SQUARE') {
+    throw new Error('Finn return must use ordinary production MOVE_LOCAL authority');
+  }
   t01.replacementSteps = JSON.stringify(t01Steps);
   t01.payload = JSON.stringify({ steps: t01Steps });
   t01.requiredState = 'MSN-T01 active; hearing complete; at LOC_FARM_EDGE; Finn alive; any legal Checkpoint E loadout including shield-only; no required starter skill';
-  t01.resultingState = 'two search clues; actual MON-0005 battle; Finn rescued, escorted and returned to LOC_FARM_SQUARE; MSN-T01 resolved';
-  t01.notes = 'existing public T01 search/rescue chain preserved after the post-E bridge; weapon-independent, no fixed starter-skill prerequisite, and per-step facility matches production runtime';
+  t01.resultingState = 'two search clues; actual MON-0005 battle; Finn rescued, escorted and returned through ordinary MOVE_LOCAL to LOC_FARM_SQUARE; MSN-T01 resolved';
+  t01.notes = 'existing public T01 search/rescue chain preserved after the post-E bridge; Finn return uses common production MOVE_LOCAL rather than the obsolete Human Virtue-only return action';
 
   const aftercare = requireRow(byId, 'VR2-D01-07');
   aftercare.legacyDescription = '広場でミラへ引き渡し。Checkpoint Eで選んだ借用loadoutは返却条件を保持したまま継続';
@@ -209,6 +226,7 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
   summary.postERealignedLegacyRows = ['VR2-D01-01', 'VR2-D01-02', 'VR2-D01-03', 'VR2-D01-04', 'VR2-D01-05', 'VR2-D01-07'];
   summary.postEStaleStarterDependencies = 0;
   summary.postECanonicalEntryActions = entrySteps.map((step) => step.actionId);
+  summary.postET01Actions = [...expectedT01Actions];
 
   if (summary.expandedV3Rows !== 1526) {
     throw new Error(`post-E realignment must preserve 1526 expanded rows, got ${summary.expandedV3Rows}`);
@@ -225,6 +243,7 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
     proposedMoveLocalInsertions: moves.length,
     realignedLegacyRows: [...summary.postERealignedLegacyRows],
     entryActionIds: [...summary.postECanonicalEntryActions],
+    t01ActionIds: [...summary.postET01Actions],
   };
 }
 
