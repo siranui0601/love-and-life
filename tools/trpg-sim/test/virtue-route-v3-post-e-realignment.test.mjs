@@ -29,6 +29,10 @@ const EXPECTED_DAY2_BREAKFAST_ACTIONS = [
   'LIFE:EAT:ITM008',
   'MOVE_LOCAL:LOC_FARM_INN',
 ];
+const EXPECTED_DAY2_BREAKFAST_LEDGER_ACTIONS = [
+  'MOVE_LOCAL:LOC_FARM_BAKERY',
+  ...EXPECTED_DAY2_BREAKFAST_ACTIONS,
+];
 
 function rowObjects(text) {
   const [headers, ...matrix] = parseCsv(text);
@@ -163,7 +167,9 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   const day1SleepRows = ledgerRows.filter((row) => row.sourceV2RowId === 'VR2-D01-10');
   assert.deepEqual(day1SleepRows.map((row) => row.actionId), ['MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras']);
   const day2BreakfastRows = ledgerRows.filter((row) => row.sourceV2RowId === 'VR2-D02-01');
-  assert.deepEqual(day2BreakfastRows.map((row) => row.actionId), EXPECTED_DAY2_BREAKFAST_ACTIONS);
+  assert.deepEqual(day2BreakfastRows.map((row) => row.actionId), EXPECTED_DAY2_BREAKFAST_LEDGER_ACTIONS);
+  assert.equal(day2BreakfastRows[0].commandType, 'MOVE');
+  assert.equal(day2BreakfastRows[0].facilityId, 'LOC_FARM_BAKERY');
   assert.equal(day2BreakfastRows.at(-1).commandType, 'MOVE');
   assert.equal(day2BreakfastRows.at(-1).facilityId, 'LOC_FARM_INN');
   const merchantRow = ledgerRows.find((row) => row.actionId === 'MISSION_FLOW:T01:DAY2_MERCHANT:help_unload');
