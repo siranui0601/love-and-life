@@ -15,6 +15,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../../..');
 const COMPILER = path.join(ROOT, 'tools/trpg-sim/compile-virtue-route-v3.mjs');
 const SOURCE = path.join(ROOT, 'docs/trpg/virtue-route-v2-source.csv');
+const EVENING_ACTION = 'MISSION_FLOW:T01:EVENING_FREE_TIME:maintain_and_rest';
 const EXPECTED_T01_ACTIONS = [
   'ACTION:MSN-T01:search:tracks',
   'ACTION:MSN-T01:search:wolf-blockade',
@@ -35,7 +36,7 @@ function actionIds(row) {
   return JSON.parse(row.replacementSteps).map((step) => step.actionId);
 }
 
-test('post-E Human Virtue realignment removes stale starter assumptions and uses common Finn movement without shifting downstream v3 row IDs', async (t) => {
+test('post-E Human Virtue realignment removes stale opening assumptions and uses visible production Day1 transitions', async (t) => {
   const compileDir = await mkdtemp(path.join(os.tmpdir(), 'virtue-v3-post-e-compile-'));
   const validationDir = await mkdtemp(path.join(os.tmpdir(), 'virtue-v3-post-e-validation-'));
   const sheetDir = await mkdtemp(path.join(os.tmpdir(), 'virtue-v3-post-e-sheet-'));
@@ -63,6 +64,7 @@ test('post-E Human Virtue realignment removes stale starter assumptions and uses
     'MOVE_LOCAL:LOC_FARM_EDGE',
   ]);
   assert.deepEqual(realigned.t01ActionIds, EXPECTED_T01_ACTIONS);
+  assert.equal(realigned.day1EveningActionId, EVENING_ACTION);
 
   const mappingText = await readFile(path.join(compileDir, 'virtue-route-v3-mapping.csv'), 'utf8');
   const rows = rowObjects(mappingText);
@@ -80,6 +82,9 @@ test('post-E Human Virtue realignment removes stale starter assumptions and uses
   assert.equal(t01Steps[4].facilityId, 'LOC_FARM_SQUARE');
   assert.deepEqual(t01Steps[4].payload, { moveId: 'MOVE_LOCAL:LOC_FARM_SQUARE' });
   assert.equal(t01Steps.some((step) => step.actionId === 'MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE'), false);
+  assert.deepEqual(actionIds(byId.get('VR2-D01-09')), [EVENING_ACTION]);
+  assert.match(byId.get('VR2-D01-09').resultingState, /22:30/u);
+  assert.doesNotMatch(`${byId.get('VR2-D01-09').actionId} ${byId.get('VR2-D01-09').replacementSteps}`, /LIFE:REST:270/u);
   assert.match(byId.get('VR2-D01-03').requiredState, /Checkpoint E/u);
   assert.match(byId.get('VR2-D01-05').requiredState, /shield-only/u);
   assert.doesNotMatch(byId.get('VR2-D01-05').requiredState, /SKL-0049/u);
@@ -127,6 +132,11 @@ test('post-E Human Virtue realignment removes stale starter assumptions and uses
   assert.equal(ledgerRows[12].v3RowId, 'VR3-000013');
   assert.equal(ledgerRows[12].commandType, 'MOVE');
   assert.equal(ledgerRows[12].facilityId, 'LOC_FARM_SQUARE');
+  const day1Evening = ledgerRows.find((row) => row.sourceV2RowId === 'VR2-D01-09');
+  assert.ok(day1Evening);
+  assert.equal(day1Evening.actionId, EVENING_ACTION);
+  assert.equal(day1Evening.commandType, 'CHOOSE');
+  assert.equal(ledgerRows.some((row) => row.actionId === 'LIFE:REST:270'), false);
   assert.equal(ledgerRows.some((row) => row.actionId === 'MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE'), false);
   assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId === 'LIFE:EAT:ITM003'), false);
   assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId === 'SKL-0049'), false);
