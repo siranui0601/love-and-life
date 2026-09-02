@@ -11,6 +11,11 @@ function onlyCanonicalWorldLife(actions) {
     && actions.every((action) => action?.canonicalWorldLifeChoice === true);
 }
 
+function hasDedicatedCanonicalWorldLife(actions) {
+  return onlyCanonicalWorldLife(actions)
+    && actions.some((action) => action?.canonicalWorldLifeKind !== "rest");
+}
+
 function continuingOrdinaryWork(runtime) {
   return runtime?.narrativeMemory?.activityFocus?.intent === "work";
 }
@@ -30,27 +35,28 @@ function authoredMissionOwnsChoicePool(runtime) {
   return t01Active(runtime) || Boolean(coreAuthoredMissionFlowGuidance(runtime));
 }
 
-// Canonical world-life has already applied the public product/price, permit,
-// quantity and affordability policy before its actions reach this registry.
-// Keep that completed public-action result when no authored mission owns the
-// current choice pool. While an authored mission is active, return null here so
-// service.js can render its authoritative mission choices instead of allowing
-// generic rest/meal actions to eclipse them. The priority is therefore:
-// authored mission > canonical public life > ordinary ambient fallback.
-// This is route-neutral and preserves the same public actions for every player
-// in the same state once the authored scene no longer owns the interaction.
+// Canonical meals, provisions, lodging and services are real public world
+// surfaces. They may own the choice panel when no authored mission owns the
+// current scene. Generic REST duration entries are different: exposing the
+// whole REST catalogue as an exclusive panel erases ordinary conversation,
+// investigation and work candidates. Keep REST in the ordinary candidate pool
+// and reserve exclusivity for an actual facility product/service surface.
+//
+// While an authored mission owns the scene, return null here so its choices are
+// rendered instead of being eclipsed by meals/rest. This is state-based and
+// route-neutral: players in the same world state see the same public surface.
 //
 // The public-life network is normally allowed to keep its authored three-way
 // scene. The one exception is an already-established ordinary-work continuity:
 // after a player finishes a job, narrativeMemory.activityFocus intentionally
-// promises that a valid work route remains available. A Day2 public-life scene
-// must not erase that route before the bounded work market can re-evaluate the
-// new day's employer/facility limits. Once the player takes a different action,
-// service.js clears the work focus and the public-life scene is eligible again.
+// promises that a valid work route remains available. Once the player takes a
+// different action, service.js clears the work focus and the public-life scene
+// is eligible again.
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   if (onlyCanonicalWorldLife(actions)) {
-    return authoredMissionOwnsChoicePool(runtime) ? null : actions;
+    if (authoredMissionOwnsChoicePool(runtime)) return null;
+    return hasDedicatedCanonicalWorldLife(actions) ? actions : null;
   }
   if (!Array.isArray(actions)) return actions;
   const exclusive = actions.filter((action) =>
@@ -71,11 +77,9 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
   return changed;
 }
 
-// canonical-world-life supplies a generic "その土地の生活を選ぶ" fallback when
-// rest/meal actions exist. That guidance is valid only when an authored mission
-// does not currently own the choice pool. T05-T14 reuse the core authored
-// resolver; T01 remains service-owned and therefore returns null here so its
-// rescue/escort/reunion guidance remains authoritative.
+// canonical-world-life supplies a generic "その土地の生活を選ぶ" fallback.
+// Keep that guidance for a real product/service surface, but never let a REST-
+// only catalogue override authored mission guidance or the ordinary mixed pool.
 export function authoredMissionFlowGuidance(runtime, context = {}) {
   const guidance = base.authoredMissionFlowGuidance(runtime, context);
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
@@ -83,7 +87,7 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
     const coreGuidance = coreAuthoredMissionFlowGuidance(runtime);
     if (coreGuidance) return coreGuidance;
     if (t01Active(runtime)) return null;
-    return guidance;
+    return hasDedicatedCanonicalWorldLife(actions) ? guidance : null;
   }
   if (!guidance) {
     const coreGuidance = coreAuthoredMissionFlowGuidance(runtime);
