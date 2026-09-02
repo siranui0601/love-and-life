@@ -22,7 +22,9 @@ jobs:
         with:
           node-version: 20
       - name: Apply editor placement UX
-        run: python tools/now-coding/patch-editor-placement-ux.py
+        run: |
+          python tools/now-coding/patch-editor-placement-ux.py
+          python tools/now-coding/patch-editor-placement-contracts.py
       - name: Syntax check
         run: node --check public/now-coding/app-v3.js
       - name: Focused tests
