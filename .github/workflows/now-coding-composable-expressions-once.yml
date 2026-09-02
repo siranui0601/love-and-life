@@ -24,6 +24,42 @@ jobs:
           node-version: 20
       - name: Apply composable expression patch
         run: python tools/now-coding/patch-composable-expressions.py
+      - name: Harden Safari drop and tutorial completion
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          app_path = Path('public/now-coding/app-v3.js')
+          app = app_path.read_text()
+
+          old_drag = 'e.dataTransfer.types.includes("application/x-now-expression")&&acceptsExpression(expected,presetKind(e.dataTransfer.getData("application/x-now-expression")||""))'
+          if old_drag not in app:
+              raise SystemExit('dragover compatibility anchor missing')
+          app = app.replace(old_drag, 'e.dataTransfer.types.includes("application/x-now-expression")', 1)
+
+          old_save = 'if(isTutorial())await tutorialProgress(8,true);'
+          if old_save not in app:
+              raise SystemExit('tutorial completion anchor missing')
+          app = app.replace(old_save, 'if(isTutorial())await tutorialProgress(TUTORIAL_STEPS.length,true);', 1)
+          app_path.write_text(app)
+
+          contract_path = Path('tools/now-coding/client-contract.test.mjs')
+          contract = contract_path.read_text()
+          pattern = r'test\("initial tutorial teaches comparison from empty sockets", \(\) => \{.*?\n\}\);'
+          replacement = '''test("initial tutorial teaches comparison from empty sockets", () => {
+            assert.match(app, /『もし ○○ なら』を追加します。○○はまだ空欄/);
+            assert.ok(app.includes('data-expression-preset="compare"'));
+            assert.ok(app.includes('data-expression-preset="sensor"'));
+            assert.ok(app.includes('data-expression-preset="cellState"'));
+            assert.match(app, /step===10&&a\\.alive&&game\\.tick>=30/);
+            assert.match(app, /tutorialProgress\\(TUTORIAL_STEPS\\.length,true\\)/);
+          });'''
+          contract, count = re.subn(pattern, replacement, contract, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('tutorial contract replacement failed')
+          contract_path.write_text(contract)
+          PY
       - name: Validate
         run: |
           node --check public/now-coding/app-v3.js
