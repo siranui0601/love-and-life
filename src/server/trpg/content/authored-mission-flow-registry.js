@@ -78,18 +78,17 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 }
 
 // canonical-world-life supplies a generic "その土地の生活を選ぶ" fallback.
-// Keep that guidance for a real product/service surface, but never let a REST-
-// only catalogue override authored mission guidance or the ordinary mixed pool.
+// REST-only actions must not monopolise the exclusive choice panel, but their
+// guidance is still valid ordinary-life guidance once no authored mission owns
+// the scene. Keep the old F contract here: authored/core guidance wins first,
+// T01 service-owned guidance remains service-owned, otherwise preserve the
+// ordinary-life guidance even when its actions will be mixed into the common
+// candidate pool by service.js.
 export function authoredMissionFlowGuidance(runtime, context = {}) {
   const guidance = base.authoredMissionFlowGuidance(runtime, context);
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
-  if (onlyCanonicalWorldLife(actions)) {
-    const coreGuidance = coreAuthoredMissionFlowGuidance(runtime);
-    if (coreGuidance) return coreGuidance;
-    if (t01Active(runtime)) return null;
-    return hasDedicatedCanonicalWorldLife(actions) ? guidance : null;
-  }
-  if (!guidance) {
+  const lifeFallback = guidance?.title === "その土地の生活を選ぶ" && onlyCanonicalWorldLife(actions);
+  if (!guidance || lifeFallback) {
     const coreGuidance = coreAuthoredMissionFlowGuidance(runtime);
     if (coreGuidance) return coreGuidance;
     if (t01Active(runtime)) return null;
