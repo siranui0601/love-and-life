@@ -24,6 +24,11 @@ const EXPECTED_T01_ACTIONS = [
   'MOVE_LOCAL:LOC_FARM_SQUARE',
   'ACTION:MSN-T01:decide',
 ];
+const EXPECTED_DAY2_BREAKFAST_ACTIONS = [
+  'LIFE:BUY:ITM008',
+  'LIFE:EAT:ITM008',
+  'MOVE_LOCAL:LOC_FARM_INN',
+];
 
 function rowObjects(text) {
   const [headers, ...matrix] = parseCsv(text);
@@ -36,7 +41,7 @@ function actionIds(row) {
   return JSON.parse(row.replacementSteps).map((step) => step.actionId);
 }
 
-test('post-E Human Virtue realignment removes stale opening assumptions and uses visible production Day1 transitions', async (t) => {
+test('post-E Human Virtue realignment removes stale opening assumptions and uses visible production Day1/Day2 transitions', async (t) => {
   const compileDir = await mkdtemp(path.join(os.tmpdir(), 'virtue-v3-post-e-compile-'));
   const validationDir = await mkdtemp(path.join(os.tmpdir(), 'virtue-v3-post-e-validation-'));
   const sheetDir = await mkdtemp(path.join(os.tmpdir(), 'virtue-v3-post-e-sheet-'));
@@ -55,7 +60,7 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   assert.equal(realigned.version, POST_E_REALIGNMENT_VERSION);
   assert.equal(realigned.mappedRows, 831);
   assert.equal(realigned.expandedV3Rows, 1526);
-  assert.equal(realigned.proposedMoveLocalInsertions, 335);
+  assert.equal(realigned.proposedMoveLocalInsertions, 334);
   assert.deepEqual(realigned.entryActionIds, [
     'E:LODGE:REGISTER',
     'DISCOVER_LOCAL_TROUBLE:T01',
@@ -65,6 +70,7 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   ]);
   assert.deepEqual(realigned.t01ActionIds, EXPECTED_T01_ACTIONS);
   assert.equal(realigned.day1EveningActionId, EVENING_ACTION);
+  assert.deepEqual(realigned.day2BreakfastActionIds, EXPECTED_DAY2_BREAKFAST_ACTIONS);
 
   const mappingText = await readFile(path.join(compileDir, 'virtue-route-v3-mapping.csv'), 'utf8');
   const rows = rowObjects(mappingText);
@@ -90,9 +96,20 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   assert.doesNotMatch(byId.get('VR2-D01-05').requiredState, /SKL-0049/u);
   assert.match(byId.get('VR2-D01-07').resultingState, /no fixed starter equipment premise/u);
 
+  const day2Breakfast = byId.get('VR2-D02-01');
+  assert.deepEqual(actionIds(day2Breakfast), EXPECTED_DAY2_BREAKFAST_ACTIONS);
+  const breakfastSteps = JSON.parse(day2Breakfast.replacementSteps);
+  assert.equal(breakfastSteps.at(-1).commandType, 'MOVE');
+  assert.equal(breakfastSteps.at(-1).facilityId, 'LOC_FARM_INN');
+  assert.deepEqual(breakfastSteps.at(-1).payload, { moveId: 'MOVE_LOCAL:LOC_FARM_INN' });
+  assert.equal(day2Breakfast.facilityId, 'LOC_FARM_INN');
+  assert.match(day2Breakfast.resultingState, /ordinary MOVE_LOCAL/u);
+
   const moves = JSON.parse(await readFile(path.join(compileDir, 'virtue-route-v3-proposed-local-moves.json'), 'utf8'));
-  assert.equal(moves.count, 335);
+  assert.equal(moves.count, 334);
   assert.equal(moves.moves.some((move) => move.beforeLegacyRowId === 'VR2-D01-03'), false);
+  assert.equal(moves.moves.some((move) => move.beforeLegacyRowId === 'VR2-D01-10'), false);
+  assert.equal(moves.moves.some((move) => move.beforeLegacyRowId === 'VR2-D02-01' && move.toFacilityId === 'LOC_FARM_BAKERY'), true);
 
   const validation = validateStaticRoute({
     mappingPath: path.join(compileDir, 'virtue-route-v3-mapping.csv'),
@@ -113,7 +130,7 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
     outDir: sheetDir,
   });
   assert.equal(sheet.sheets['正規台帳_v3'].rows, 1526);
-  assert.equal(sheet.moveLocalRows, 335);
+  assert.equal(sheet.moveLocalRows, 334);
 
   const ledgerText = await readFile(path.join(sheetDir, SHEET_EXPORT_FILES.ledger), 'utf8');
   const ledgerRows = rowObjects(ledgerText);
@@ -142,4 +159,14 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId === 'LIFE:EAT:ITM003'), false);
   assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId === 'SKL-0049'), false);
   assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId?.startsWith('TUTORIAL:')), false);
+
+  const day1SleepRows = ledgerRows.filter((row) => row.sourceV2RowId === 'VR2-D01-10');
+  assert.deepEqual(day1SleepRows.map((row) => row.actionId), ['MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras']);
+  const day2BreakfastRows = ledgerRows.filter((row) => row.sourceV2RowId === 'VR2-D02-01');
+  assert.deepEqual(day2BreakfastRows.map((row) => row.actionId), EXPECTED_DAY2_BREAKFAST_ACTIONS);
+  assert.equal(day2BreakfastRows.at(-1).commandType, 'MOVE');
+  assert.equal(day2BreakfastRows.at(-1).facilityId, 'LOC_FARM_INN');
+  const merchantRow = ledgerRows.find((row) => row.actionId === 'MISSION_FLOW:T01:DAY2_MERCHANT:help_unload');
+  assert.ok(merchantRow);
+  assert.equal(merchantRow.v3RowId, 'VR3-000025');
 });
