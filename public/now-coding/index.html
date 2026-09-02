@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./style-v3.css" />
   <link rel="stylesheet" href="./style-v4.css" />
   <link rel="stylesheet" href="./style-v5.css" />
+  <link rel="stylesheet" href="./style-v6.css" />
 </head>
 <body>
   <div class="ambient-grid" aria-hidden="true"></div>
@@ -106,7 +107,7 @@
                 <summary><span class="palette-dot action"></span>動き</summary>
                 <div class="palette-items">
                   <button class="palette-block action-move" type="button" data-add-block="move">進む</button>
-                  <button class="palette-block action-turn" type="button" data-add-block="turn">旋回</button>
+                  <div class="palette-block action-turn palette-configurable" data-add-block="turn" role="button" tabindex="0"><span>旋回</span><select data-palette-option="turn" aria-label="旋回方向"><option value="turnLeft">左</option><option value="turnRight" selected>右</option></select></div>
                   <div class="palette-command-with-help"><button class="palette-block attack-block" type="button" data-add-block="attack">攻撃</button><button class="command-help" type="button" data-command-help="attack" aria-label="攻撃の説明">?</button></div>
                 </div>
               </details>
@@ -123,20 +124,21 @@
                 <summary><span class="palette-dot condition"></span>判断</summary>
                 <div class="palette-items">
                   <button class="palette-block logic-block" type="button" data-add-block="if">もし ○○ なら</button>
-                  <button class="palette-block reporter-block reporter-boolean" type="button" data-expression-preset="cell">＜前 ＝ 崖＞</button>
-                  <button class="palette-block reporter-block reporter-boolean" type="button" data-expression-preset="compare">＜○○ ＝ ○○＞</button>
-                  <button class="palette-block reporter-block reporter-boolean" type="button" data-expression-preset="logic">＜○○ かつ ○○＞</button>
-                  <button class="palette-block reporter-block reporter-boolean" type="button" data-expression-preset="not">＜○○ ではない＞</button>
+                  <div class="palette-block reporter-block reporter-boolean palette-expression-template" data-expression-preset="compare" role="button" tabindex="0"><span>＜（ ）</span><select data-palette-option="compareOp" aria-label="比較演算子"><option value="==" selected>＝</option><option value="!=">≠</option><option value="<">＜</option><option value=">">＞</option><option value="<=">≦</option><option value=">=">≧</option></select><span>（ ）＞</span></div>
+                  <div class="palette-block reporter-block reporter-boolean palette-expression-template" data-expression-preset="logic" role="button" tabindex="0"><span>＜（条件）</span><select data-palette-option="logicOp" aria-label="論理演算子"><option value="and" selected>かつ</option><option value="or">または</option></select><span>（条件）＞</span></div>
+                  <div class="palette-block reporter-block reporter-boolean palette-expression-template" data-expression-preset="not" role="button" tabindex="0"><span>＜（条件）ではない＞</span></div>
                 </div>
               </details>
-              <details class="palette-section">
+              <details class="palette-section" open>
                 <summary><span class="palette-dot number"></span>値・計算</summary>
                 <div class="palette-items">
+                  <div class="palette-block reporter-block reporter-value palette-expression-template" data-expression-preset="sensor" role="button" tabindex="0"><span>（</span><select data-palette-option="sensorDirection" aria-label="見る方向"><option value="front" selected>前</option><option value="left">左</option><option value="right">右</option></select><span>）</span></div>
+                  <div class="palette-block reporter-block reporter-value palette-expression-template" data-expression-preset="cellState" role="button" tabindex="0"><span>（</span><select data-palette-option="cellState" aria-label="マスの状態"><option value="unclaimed">空白</option><option value="own">自分の色</option><option value="enemy">敵の色</option><option value="cliff" selected>崖</option><option value="player">駒</option><option value="tail">尾</option></select><span>）</span></div>
                   <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="enemyDistance">最も近い敵との距離</button>
                   <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="number">数字</button>
                   <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="var">変数の値</button>
-                  <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="random">乱数</button>
-                  <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="math">○○ ＋ ○○</button>
+                  <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="random">乱数（○○～○○）</button>
+                  <div class="palette-block reporter-block reporter-number palette-expression-template" data-expression-preset="math" role="button" tabindex="0"><span>（（ ）</span><select data-palette-option="mathOp" aria-label="算術演算子"><option value="+" selected>＋</option><option value="-">－</option><option value="*">×</option><option value="/">÷</option><option value="%">％</option></select><span>（ ））</span></div>
                 </div>
               </details>
               <details class="palette-section">
