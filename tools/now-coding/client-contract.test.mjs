@@ -5,7 +5,8 @@ import fs from "node:fs";
 const app = fs.readFileSync("public/now-coding/app-v3.js", "utf8");
 const entry = fs.readFileSync("public/now-coding/app.js", "utf8");
 const html = fs.readFileSync("public/now-coding/index.html", "utf8");
-const css = ["public/now-coding/style-v3.css", "public/now-coding/style-v4.css"].map((p) => fs.readFileSync(p, "utf8")).join("\n");
+const css = ["public/now-coding/style-v3.css", "public/now-coding/style-v4.css", "public/now-coding/style-v6.css"].map((p) => fs.readFileSync(p, "utf8")).join("\n");
+const tutorials = fs.readFileSync("public/now-coding/tutorials.js", "utf8");
 
 function htmlHasId(id) {
   return new RegExp(`id=["']${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`).test(html);
@@ -77,13 +78,16 @@ test("multi-mode online client participates in the server round protocol", () =>
 });
 
 
-test("language palette exposes nested boolean and numeric reporters", () => {
-  for (const key of ["cell","compare","logic","not","enemyDistance","number","var","random","math"]) {
+test("language palette exposes directly composable conditions and values", () => {
+  for (const key of ["compare","logic","not","sensor","cellState","enemyDistance","number","var","random","math"]) {
     assert.ok(html.includes(`data-expression-preset="${key}"`));
   }
-  assert.match(app, /最も近い敵との距離/);
-  assert.match(app, /literalLabel/);
+  for (const key of ["turn","sensorDirection","cellState","compareOp","logicOp","mathOp"]) assert.ok(html.includes(`data-palette-option="${key}"`));
+  assert.doesNotMatch(html, /data-expression-preset="cell"/);
+  assert.match(app, /expressionControl/);
   assert.match(app, /application\/x-now-expression/);
+  assert.match(app, /if\(type==="if"\)return\{type:"if",condition:null/);
+  assert.match(app, /if\(type==="while"\)return\{type:"while",condition:null/);
 });
 
 test("test bench exposes modes optional NPC archetypes and fixed spawn", () => {
@@ -102,4 +106,34 @@ test("final language and testbench semantics stay visible", () => {
   assert.match(app, /renderTestPreview/);
   assert.match(app, /c\.mode==="territory"\|\|c\.mode==="splat"/);
   assert.match(app, /if\(t\.battleKind\)setBattleKind/);
+});
+
+
+test("expression builder modals and helper builtins are removed from player UI", () => {
+  assert.doesNotMatch(app, /openExpressionEditor|inferExpressionEditorType|条件を組み立てる|数値を組み立てる|組み込み値/);
+  assert.doesNotMatch(html, /インク|尾の長さ|連続非移動tick|組み込み値/);
+  assert.doesNotMatch(tutorials, /組み込み値/);
+  assert.match(app, /if\(key==="compare"\)return binary\(p\.compareOp\|\|"==",null,null\)/);
+  assert.match(app, /if\(key==="math"\)return binary\(p\.mathOp\|\|"\+",null,null\)/);
+  assert.match(css, /\.expression-node\.expression-boolean/);
+  assert.match(html, /style-v6\.css/);
+});
+
+test("initial tutorial teaches comparison from empty sockets", () => {
+  assert.match(app, /『もし ○○ なら』を追加します。○○はまだ空欄/);
+  assert.ok(app.includes('data-expression-preset="compare"'));
+  assert.ok(app.includes('data-expression-preset="sensor"'));
+  assert.ok(app.includes('data-expression-preset="cellState"'));
+  assert.match(app, /step===10&&a\.alive&&game\.tick>=30/);
+  assert.match(app, /tutorialProgress\(TUTORIAL_STEPS\.length,true\)/);
+});
+
+
+test("direct-composition tutorial and palette polish stay aligned", () => {
+  assert.match(html, /tutorialStepLabel">1 \/ 11/);
+  assert.match(html, /もし &lt;（前）＝（崖）&gt;/);
+  assert.doesNotMatch(tutorials, /条件を組み立てる.*モーダル/);
+  assert.match(app, /e\.defaultPrevented\|\|state\.pendingExpressionPreset/);
+  assert.match(app, /if\(type==="turn"\)return\{type:"action",action:p\.turn\|\|"turnRight"/);
+  for (const value of ["unclaimed","own","enemy","cliff","player","tail"]) assert.ok(html.includes(`value="${value}"`));
 });
