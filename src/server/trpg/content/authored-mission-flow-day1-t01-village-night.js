@@ -1,10 +1,11 @@
 import * as base from "./authored-mission-flow-day1-t01-square-aftercare.js";
 import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
+import { completePlayerRest, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 
 export * from "./authored-mission-flow-day1-t01-square-aftercare.js";
 
 export const AUTHORED_DAY1_T01_VILLAGE_NIGHT_VERSION =
-  "authored-day1-t01-village-night-v2";
+  "authored-day1-t01-village-night-v3";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -24,8 +25,9 @@ const EVENING_CHOICES = Object.freeze([
     id: "maintain_and_rest",
     label: "装備を手入れし、身体を休める",
     family: "rest",
-    hungerDelta: 6,
-    fatigueDelta: -12,
+    hungerDelta: 0,
+    fatigueDelta: 0,
+    authoritativeRest: "short",
     summary: "救出で汚れた装備を拭き、留め具を確かめてから、広場の端で身体を休めた。何かを急いで始めるのではなく、今日の傷と疲れを整えながら夜を待った。",
     speech: Object.freeze({
       actorId: "NPC004",
@@ -73,8 +75,9 @@ const NIGHT_CHOICES = Object.freeze([
     label: "ミラの家で眠る",
     family: "rest",
     minutes: 480,
-    hungerDelta: -12,
-    fatigueDelta: -45,
+    hungerDelta: 0,
+    fatigueDelta: 0,
+    authoritativeRest: "lodging",
     destinationFacilityId: INN_ID,
     summary: "ミラが用意した客用の寝床へ横になった。遠慮していたフィンも、隣室から一度だけ礼を言い、そのまま眠りに落ちた。夜の村を見回れない代わりに、身体は朝まで休まった。",
     speech: Object.freeze({
@@ -286,6 +289,7 @@ function actionFor(sceneId, choice, runtime) {
     authoredDay1T01VillageNightFatigueDelta: choice.fatigueDelta ?? 0,
     authoredDay1T01VillageNightDestinationFacilityId: choice.destinationFacilityId ?? null,
     authoredDay1T01VillageNightMerchantAccess: choice.merchantAccess ?? null,
+    authoredDay1T01VillageNightAuthoritativeRest: choice.authoritativeRest ?? null,
   };
 }
 
@@ -302,10 +306,20 @@ function clamp(value, min, max) {
 
 function applyLivingDelta(runtime, action) {
   const current = player(runtime);
-  const hungerBefore = Number(current.hunger ?? runtime.playerState.hunger ?? 0);
-  const fatigueBefore = Number(current.fatigue ?? runtime.playerState.fatigue ?? 0);
-  const hungerAfter = clamp(hungerBefore + action.authoredDay1T01VillageNightHungerDelta, 0, 100);
-  const fatigueAfter = clamp(fatigueBefore + action.authoredDay1T01VillageNightFatigueDelta, 0, 100);
+  const needsBefore = publicPlayerNeeds(current);
+  if (action.authoredDay1T01VillageNightAuthoritativeRest) {
+    completePlayerRest(current, {
+      minute: Number(runtime?.playerState?.absoluteMinute ?? 0),
+      durationMinutes: Number(action.minutes ?? 0),
+      lodging: action.authoredDay1T01VillageNightAuthoritativeRest === "lodging",
+      safety: "normal",
+    });
+  }
+  const needsAfterRest = publicPlayerNeeds(current);
+  const hungerAfter = clamp(needsAfterRest.hunger + action.authoredDay1T01VillageNightHungerDelta, 0, 100);
+  const fatigueAfter = clamp(needsAfterRest.fatigue + action.authoredDay1T01VillageNightFatigueDelta, 0, 100);
+  current.needs.hunger = hungerAfter;
+  current.needs.fatigue = fatigueAfter;
   current.hunger = hungerAfter;
   current.fatigue = fatigueAfter;
   runtime.playerState.hunger = hungerAfter;
@@ -313,7 +327,14 @@ function applyLivingDelta(runtime, action) {
   if (action.authoredDay1T01VillageNightDestinationFacilityId) {
     current.facilityId = action.authoredDay1T01VillageNightDestinationFacilityId;
   }
-  return { hungerBefore, hungerAfter, fatigueBefore, fatigueAfter };
+  return {
+    hungerBefore: needsBefore.hunger,
+    hungerAfter,
+    fatigueBefore: needsBefore.fatigue,
+    fatigueAfter,
+    restQuality: current.needs.lastSleepQuality,
+    lastSleepMinute: current.needs.lastSleepMinute,
+  };
 }
 
 function consume(runtime, action, result) {
@@ -369,6 +390,8 @@ function consume(runtime, action, result) {
     hungerAfter: living.hungerAfter,
     fatigueBefore: living.fatigueBefore,
     fatigueAfter: living.fatigueAfter,
+    restQuality: living.restQuality,
+    lastSleepMinute: living.lastSleepMinute,
     evidenceId: action.authoredDay1T01VillageNightEvidenceId,
     evidenceSourceId: action.authoredDay1T01VillageNightEvidenceSourceId,
     merchantAccess: state.merchantAccess,
