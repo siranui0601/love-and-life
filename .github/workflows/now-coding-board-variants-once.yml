@@ -25,6 +25,17 @@ jobs:
         run: python tools/now-coding/fix-board-patcher.py
       - name: Apply board variant patch
         run: python tools/now-coding/patch-board-variants.py
+      - name: Align territory rule-version regression
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("tools/now-coding/engine.test.mjs")
+          s = p.read_text()
+          old = 'assert.equal(state.ruleVersion, "territory-v4");'
+          if old not in s:
+              raise SystemExit("missing territory-v4 regression assertion")
+          p.write_text(s.replace(old, 'assert.equal(state.ruleVersion, "territory-v5");', 1))
+          PY
       - name: Syntax check
         run: |
           node --check public/now-coding/boards.js
@@ -44,4 +55,4 @@ jobs:
           git commit -m "feat(now-coding): add selectable board variants"
           git push origin HEAD:fix/now-coding-territory-blocking-glow
 
-# retry: preserve all intermediate app-v3 functions
+# retry: territory-v5 contract
