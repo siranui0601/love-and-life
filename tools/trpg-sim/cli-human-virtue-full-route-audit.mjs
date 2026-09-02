@@ -357,7 +357,7 @@ async function executeLedgerRow(row) {
 }
 async function run() {
   const rows = ledgerRows();
-  if (rows.length !== 1525) throw new Error(`expected 1525 ledger rows after removing the stale Day2 bakery-to-inn move, got ${rows.length}`);
+  if (rows.length !== 1523) throw new Error(`expected 1523 ledger rows after replacing the stale Day2 hunter-hut bread sequence and removing its impossible local move, got ${rows.length}`);
   const entryIndex = rows.findIndex((row) => row.actionId === 'E:LODGE:REGISTER');
   if (entryIndex < 0) throw new Error('post-E REGISTER entry missing from ledger');
   await runCheckpointE(rows[entryIndex]);
