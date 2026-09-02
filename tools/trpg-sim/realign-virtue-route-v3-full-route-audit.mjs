@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v1';
+export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v2';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -64,6 +64,40 @@ function outcome(row, {
   });
 }
 
+function chooseAction(row, {
+  description,
+  actionId,
+  facilityId,
+  requiredState,
+  resultingState,
+  implementationSource,
+  notes,
+}) {
+  Object.assign(row, {
+    legacyDescription: description,
+    classification: 'PLAYER_COMMAND',
+    replacementRowIds: '',
+    replacementSteps: '',
+    resolutionMethod: 'FULL_ROUTE_AUDIT_REALIGNMENT',
+    commandType: 'CHOOSE',
+    choiceId: actionId,
+    actionId,
+    payload: JSON.stringify({ choiceId: actionId, actionId }),
+    facilityId,
+    jobId: '',
+    productId: '',
+    equipmentId: '',
+    materialId: '',
+    skillId: '',
+    requiredState,
+    resultingState,
+    implementationSource,
+    status: 'RESOLVED_EXISTING',
+    unresolvedReason: '',
+    notes,
+  });
+}
+
 export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
   const mappingPath = path.join(outDir, 'virtue-route-v3-mapping.csv');
   const movesPath = path.join(outDir, 'virtue-route-v3-proposed-local-moves.json');
@@ -86,6 +120,22 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     notes: 'stale route filler removed instead of inventing a midday inn shift, teleporting, or bypassing canonical work hours',
   });
 
+  const staleLongRest = byId.get('VR2-D02-08');
+  if (!staleLongRest) throw new Error('VR2-D02-08 missing from audit candidate');
+  if (staleLongRest.actionId !== 'LIFE:REST:390') {
+    throw new Error(`VR2-D02-08 expected LIFE:REST:390 before audit realignment, got ${staleLongRest.actionId}`);
+  }
+  const bakeryEveningAction = 'DAILY_LIFE:DAILY_BAKERY_EVENING:mend_gear_by_oven';
+  chooseAction(staleLongRest, {
+    description: 'Day2の午後、パン屋の竈脇で装備を手入れし、閉店までの普通の夕方を過ごす',
+    actionId: bakeryEveningAction,
+    facilityId: 'LOC_FARM_BAKERY',
+    requiredState: 'Day2 15:00-22:15; LOC_FARM_BAKERY; no higher-priority authored incident scene; hunger/fatigue below calm threshold; common bakery-evening scene unused',
+    resultingState: 'common-world bakery evening completed; gear maintained; ordinary conversation/closing-time life passes naturally until 22:15 without synthetic WAIT or long REST padding',
+    implementationSource: 'src/server/trpg/content/authored-village-bakery-evening.js',
+    notes: 'replaces legacy 390-minute generic REST with a route-neutral visible production choice available to every player in the same Day2 bakery world state; no teleport, route flag, wage, or hidden dispatch',
+  });
+
   const originalMoves = Array.isArray(movesArtifact.moves) ? movesArtifact.moves : [];
   const obsoleteBeforeRows = new Set(['VR2-D02-05', 'VR2-D02-06']);
   const removedMoves = originalMoves.filter((entry) => obsoleteBeforeRows.has(entry.beforeLegacyRowId));
@@ -102,11 +152,12 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
   summary.fullRouteAuditRealignedLegacyRows = [
     ...(Array.isArray(summary.fullRouteAuditRealignedLegacyRows) ? summary.fullRouteAuditRealignedLegacyRows : []),
     'VR2-D02-05',
+    'VR2-D02-08',
   ];
   summary.fullRouteAuditRemovedMoveBeforeRows = [...obsoleteBeforeRows];
 
   if (summary.expandedV3Rows !== 1521) {
-    throw new Error(`full-route audit Day2 work realignment must produce 1521 expanded rows, got ${summary.expandedV3Rows}`);
+    throw new Error(`full-route audit Day2 realignment must produce 1521 expanded rows, got ${summary.expandedV3Rows}`);
   }
 
   fs.writeFileSync(mappingPath, csv(rows, headers));
