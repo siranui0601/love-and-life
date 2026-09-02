@@ -135,23 +135,6 @@ export function playableCells(boardDef) {
   return cells;
 }
 
-function nearestPlayable(boardDef, nx, ny, used = new Set()) {
-  const targetX = nx * (boardDef.size - 1);
-  const targetY = ny * (boardDef.size - 1);
-  let best = null;
-  let bestDistance = Infinity;
-  for (const cell of playableCells(boardDef)) {
-    const key = `${cell.x},${cell.y}`;
-    if (used.has(key)) continue;
-    const distance = (cell.x - targetX) ** 2 + (cell.y - targetY) ** 2;
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = cell;
-    }
-  }
-  return best;
-}
-
 function directionTowardCenter(boardDef, cell) {
   const center = (boardDef.size - 1) / 2;
   const vectors = [
@@ -180,10 +163,24 @@ function directionForBattleAnchor(boardDef, cell, anchorIndex) {
   return directionTowardCenter(boardDef, cell);
 }
 
-function anchorTargets(shape) {
-  if (shape === "square") return [[0.12, 0.12], [0.88, 0.12], [0.88, 0.88], [0.12, 0.88]];
-  if (shape === "donut") return [[0.22, 0.22], [0.78, 0.22], [0.78, 0.78], [0.22, 0.78]];
-  return [[0.5, 0.04], [0.96, 0.5], [0.5, 0.96], [0.04, 0.5]];
+function battleAnchorCells(boardDef) {
+  const near = 1;
+  const far = boardDef.size - 2;
+  const center = (boardDef.size - 1) / 2;
+  if (boardDef.shape === "square" || boardDef.shape === "donut") {
+    return [
+      { x: near, y: near },
+      { x: far, y: near },
+      { x: far, y: far },
+      { x: near, y: far },
+    ];
+  }
+  return [
+    { x: center, y: near },
+    { x: far, y: center },
+    { x: center, y: far },
+    { x: near, y: center },
+  ];
 }
 
 function shuffled(values, random) {
@@ -198,13 +195,9 @@ function shuffled(values, random) {
 export function createBattleSpawns(boardDef, playerCountInput, seedOrRandom = "battle-spawns") {
   const random = asRandom(seedOrRandom);
   const count = Math.max(1, Math.min(4, Number(playerCountInput) || 2));
-  const used = new Set();
-  const anchors = anchorTargets(boardDef.shape).map(([nx, ny], anchorIndex) => {
-    const cell = nearestPlayable(boardDef, nx, ny, used);
-    if (!cell) return null;
-    used.add(`${cell.x},${cell.y}`);
-    return { ...cell, dir: directionForBattleAnchor(boardDef, cell, anchorIndex) };
-  }).filter(Boolean);
+  const anchors = battleAnchorCells(boardDef)
+    .filter((cell) => isPlayableCell(boardDef, cell.x, cell.y))
+    .map((cell, anchorIndex) => ({ ...cell, dir: directionForBattleAnchor(boardDef, cell, anchorIndex) }));
 
   let selected;
   if (count === 1) selected = [anchors[Math.floor(random() * anchors.length)]];
