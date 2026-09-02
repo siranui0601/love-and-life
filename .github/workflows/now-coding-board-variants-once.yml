@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Repair compact function separators
+      - name: Repair runTest patch boundary
         run: python tools/now-coding/fix-board-patcher.py
       - name: Apply board variant patch
         run: python tools/now-coding/patch-board-variants.py
@@ -43,3 +43,5 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "feat(now-coding): add selectable board variants"
           git push origin HEAD:fix/now-coding-territory-blocking-glow
+
+# retry: preserve all intermediate app-v3 functions
