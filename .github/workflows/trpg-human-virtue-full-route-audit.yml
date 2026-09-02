@@ -1,0 +1,55 @@
+name: TRPG Human Virtue full-route audit
+
+on:
+  pull_request:
+    paths:
+      - "tools/trpg-sim/cli-human-virtue-full-route-audit.mjs"
+      - "tools/trpg-sim/compile-virtue-route-v3.mjs"
+      - "tools/trpg-sim/realign-virtue-route-v3-post-e.mjs"
+      - "tools/trpg-sim/export-virtue-route-v2-source.mjs"
+      - "tools/trpg-sim/export-virtue-route-v3-sheets.mjs"
+      - "src/server/trpg/**"
+      - ".github/workflows/trpg-human-virtue-full-route-audit.yml"
+  workflow_dispatch:
+
+jobs:
+  full-route-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+      TRPG_HV_BASELINE_LOADOUT: sword-shield
+      TRPG_HV_AUDIT_SEED: human-virtue-full-route-audit-v1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Export Human Virtue canonical v2 from live Google Sheets
+        run: node tools/trpg-sim/export-virtue-route-v2-source.mjs
+      - name: Compile Human Virtue v3 deterministic mapping
+        run: node tools/trpg-sim/compile-virtue-route-v3.mjs
+      - name: Apply Checkpoint E/F post-E realignment
+        run: node tools/trpg-sim/realign-virtue-route-v3-post-e.mjs
+      - name: Validate deterministic route and build canonical Sheet ledger
+        run: |
+          node tools/trpg-sim/validate-virtue-route-v3-static.mjs
+          node tools/trpg-sim/export-virtue-route-v3-sheets.mjs
+      - name: Run strict New Game to Day85 production route audit
+        run: node tools/trpg-sim/cli-human-virtue-full-route-audit.mjs
+      - name: Upload full-route audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: human-virtue-full-route-audit-${{ github.sha }}
+          if-no-files-found: warn
+          path: |
+            tools/trpg-sim/reports/human-virtue-full-route-audit.json
+            tools/trpg-sim/reports/human-virtue-full-route-trace.jsonl
+            tools/trpg-sim/reports/human-virtue-full-route-battles.json
+            tools/trpg-sim/reports/human-virtue-full-route-days.json
+            tools/trpg-sim/reports/human-virtue-full-route-findings.json
+            docs/trpg/virtue-route-v3-sheet-ledger.csv
+            docs/trpg/virtue-route-v3-static-validation.json
