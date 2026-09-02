@@ -22,6 +22,7 @@ jobs:
       - name: Syntax check
         run: |
           node --check public/now-coding/vm.js
+          node --check public/now-coding/boards.js
           node --check public/now-coding/engine.js
           node --check public/now-coding/modes.js
           node --check public/now-coding/app.js
@@ -53,6 +54,7 @@ jobs:
           grep -q 'id="fillWithNpc"' public/now-coding/index.html
           grep -q '/socket.io/socket.io.js' public/now-coding/index.html
           grep -q 'style-v3.css' public/now-coding/index.html
+          grep -q 'style-v7.css' public/now-coding/index.html
           grep -q 'app-v3.js' public/now-coding/app.js
           grep -q 'enemyDistance' public/now-coding/vm.js
           grep -q 'now:round-finished' src/server/now-coding/online.js
