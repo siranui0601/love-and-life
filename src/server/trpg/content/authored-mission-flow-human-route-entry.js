@@ -5,13 +5,14 @@ import {
 
 export * from "./authored-mission-flow-human-companion-causality.js";
 
-export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v10";
+export const AUTHORED_HUMAN_ROUTE_ENTRY_VERSION = "authored-human-route-entry-v11";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_SQUARE";
 const EDGE_FACILITY_ID = "LOC_FARM_EDGE";
 const ESCORT_ACTION_ID = "MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE";
+const COMMON_RETURN_MOVE_ID = "MOVE_LOCAL:LOC_FARM_SQUARE";
 
 function values(value) {
   if (Array.isArray(value)) return value;
@@ -101,7 +102,7 @@ function activeEscort(runtime) {
   const escort = runtime?.t01Escort;
   const current = aftercare.player(runtime);
   // The ordinary production runtime represents mission progress in mission.progress
-  // and intentionally keeps the escort return in the common MOVE surface.  The
+  // and intentionally keeps the escort return in the common MOVE surface. The
   // legacy authored action remains available only to explicit authored-runtime
   // states carrying stepId, so it cannot replace the production three-choice UX.
   return mission?.status === "active"
@@ -179,13 +180,31 @@ export function authoredMissionFlowGuidance(runtime) {
   return base.authoredMissionFlowGuidance(runtime);
 }
 
+function isCommonFinnReturnMove(runtime, action) {
+  const actionId = action?.actionId ?? action?.id;
+  const current = aftercare.player(runtime);
+  const escort = runtime?.t01Escort;
+  return actionId === COMMON_RETURN_MOVE_ID
+    && escort?.found === true
+    && escort?.active === true
+    && escort?.arrivedSquare !== true
+    && current.location === LOCATION
+    && current.facilityId === FACILITY_ID;
+}
+
 function consumeEscortReturn(runtime, action, result) {
-  if (result?.ok === false || action?.authoredT01FinnReturnAction !== true) return false;
+  if (result?.ok === false) return false;
+  const legacyReturn = action?.authoredT01FinnReturnAction === true;
+  const commonReturn = isCommonFinnReturnMove(runtime, action);
+  if (!legacyReturn && !commonReturn) return false;
+
   const escort = runtime.t01Escort;
   if (!escort?.active) return false;
   const current = aftercare.player(runtime);
-  current.location = LOCATION;
-  current.facilityId = FACILITY_ID;
+  if (legacyReturn) {
+    current.location = LOCATION;
+    current.facilityId = FACILITY_ID;
+  }
   escort.active = false;
   escort.arrivedSquare = true;
   escort.reunited = true;
@@ -206,6 +225,7 @@ function consumeEscortReturn(runtime, action, result) {
     finn.localTravel = null;
   }
 
+  const actualActionId = action?.actionId ?? action?.id ?? ESCORT_ACTION_ID;
   runtime.playerState.worldFlags ??= {};
   runtime.playerState.worldFlags.t01FinnReturned = true;
   runtime.playerState.history ??= [];
@@ -215,7 +235,7 @@ function consumeEscortReturn(runtime, action, result) {
     missionId: MISSION_ID,
     troubleId: "T01",
     npcId: "NPC001",
-    actionId: ESCORT_ACTION_ID,
+    actionId: actualActionId,
     location: LOCATION,
     facilityId: FACILITY_ID,
   });
@@ -231,6 +251,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 
 export const AUTHORED_HUMAN_ROUTE_ENTRY_INTERNALS = Object.freeze({
   ESCORT_ACTION_ID,
+  COMMON_RETURN_MOVE_ID,
   values,
   findMission,
   findMissionDefinition,
@@ -245,5 +266,6 @@ export const AUTHORED_HUMAN_ROUTE_ENTRY_INTERNALS = Object.freeze({
   activeEscort,
   escortAction,
   ownActions,
+  isCommonFinnReturnMove,
   consumeEscortReturn,
 });
