@@ -116,6 +116,7 @@
                   <button class="palette-block action-move" type="button" data-add-block="move">進む</button>
                   <div class="palette-block action-turn palette-configurable" data-add-block="turn" role="button" tabindex="0"><span>旋回</span><select data-palette-option="turn" aria-label="旋回方向"><option value="turnLeft">左</option><option value="turnRight" selected>右</option></select></div>
                   <div class="palette-command-with-help"><button class="palette-block attack-block" type="button" data-add-block="attack">攻撃</button><button class="command-help" type="button" data-command-help="attack" aria-label="攻撃の説明">?</button></div>
+                  <button class="palette-block say-block" type="button" data-add-block="say">○○ と発言</button>
                 </div>
               </details>
               <details class="palette-section" open>
@@ -142,7 +143,9 @@
                   <div class="palette-block reporter-block reporter-value palette-expression-template" data-expression-preset="sensor" role="button" tabindex="0"><span>（</span><select data-palette-option="sensorDirection" aria-label="見る方向"><option value="front" selected>前</option><option value="left">左</option><option value="right">右</option></select><span>）</span></div>
                   <div class="palette-block reporter-block reporter-value palette-expression-template" data-expression-preset="cellState" role="button" tabindex="0"><span>（</span><select data-palette-option="cellState" aria-label="マスの状態"><option value="unclaimed">空白</option><option value="own">自分の色</option><option value="enemy">敵の色</option><option value="cliff" selected>崖</option><option value="player">駒</option><option value="tail">尾</option></select><span>）</span></div>
                   <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="enemyDistance">最も近い敵との距離</button>
+                  <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="timer">タイマー</button>
                   <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="number">数字</button>
+                  <button class="palette-block reporter-block reporter-text" type="button" data-expression-preset="text">文字</button>
                   <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="var">変数の値</button>
                   <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="random">乱数（○○～○○）</button>
                   <div class="palette-block reporter-block reporter-number palette-expression-template" data-expression-preset="math" role="button" tabindex="0"><span>（（ ）</span><select data-palette-option="mathOp" aria-label="算術演算子"><option value="+" selected>＋</option><option value="-">－</option><option value="*">×</option><option value="/">÷</option><option value="%">％</option></select><span>（ ））</span></div>
@@ -317,7 +320,7 @@
 
         <section id="battleLive" class="battle-live is-hidden">
           <div class="battle-hud">
-            <div><span class="hud-label">経過</span><strong id="battleTick">0 tick</strong></div>
+            <div><span class="hud-label">タイマー</span><strong id="battleTick">0</strong></div>
             <div id="scoreHud" class="score-hud"></div>
             <button id="abortBattleButton" class="secondary-button compact" type="button">観戦を終了</button>
           </div>

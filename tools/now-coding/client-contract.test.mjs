@@ -323,3 +323,39 @@ test("deep nesting keeps block tools left aligned and wrapping", () => {
   assert.match(css, /flex-wrap:wrap/);
   assert.match(app, /tool\(state\.moveSource===block\?"移動取消":"移動"/);
 });
+
+
+test("timer text and speech are exposed as composable language parts", () => {
+  for (const key of ["timer", "text"]) assert.ok(html.includes(`data-expression-preset="${key}"`));
+  assert.ok(html.includes('data-add-block="say"'));
+  assert.match(app, /if\(key==="timer"\)return builtin\("timer"\)/);
+  assert.match(app, /if\(key==="text"\)return lit\("文字"\)/);
+  assert.match(app, /block\.type==="say"/);
+  assert.match(app, /expressionControl\(block\.value\?\?null,"value"/);
+  assert.match(app, /block\.type==="set"[^\n]+expressionControl\(block\.value\?\?lit\(0\),"value"/);
+});
+
+test("value and arithmetic expressions can be structurally transformed", () => {
+  assert.match(app, /function openValueTransformMenu\(expr,onChange\)/);
+  assert.ok(app.includes("右に ＋ で広げる"));
+  assert.ok(app.includes("左に ＋ で広げる"));
+  assert.ok(app.includes("左だけ残す"));
+  assert.ok(app.includes("右だけ残す"));
+  assert.match(app, /mathOperandsAreNumeric/);
+  assert.match(app, /comparisonSupportsOrdering/);
+  assert.match(app, /expression-text-input/);
+});
+
+test("battle pieces show speech above and tapped names below", () => {
+  assert.match(app, /piece-speech-bubble/);
+  assert.match(app, /speech\.textContent=String\(a\.speech\)\.slice\(0,80\)/);
+  assert.match(css, /\.piece-speech-bubble\{[^}]*bottom:calc\(100% \+ 6px\)/);
+  assert.match(css, /\.piece-name-label\{[^}]*top:calc\(100% \+ 4px\)!important;bottom:auto!important/);
+});
+
+test("player-facing game clock terminology is timer rather than tick", () => {
+  assert.match(html, /<span class="hud-label">タイマー<\/span><strong id="battleTick">0<\/strong>/);
+  assert.match(app, /タイマーが1進むたびに必ず1マス進みます/);
+  assert.match(tutorials, /尾はタイマーが5進むごとに1マス伸びます/);
+  assert.match(tutorials, /『○○ と発言』はタイマーを消費せず/);
+});

@@ -530,3 +530,46 @@ test("single-player battle placement can select all four formal anchors across s
   assert.equal(seen.size, 4);
 });
 
+
+
+test("timer builtin exposes the shared game clock", () => {
+  const state = stateWithPrograms([move]);
+  state.tick = 17;
+  const value = evaluateVmExpression({ type: "builtin", name: "timer" }, {
+    state,
+    agent: state.agents[0],
+    sense: () => ({ state: "unclaimed", owner: -1 }),
+  });
+  assert.equal(value, 17);
+});
+
+test("plus concatenates when either operand is text and still adds numbers", () => {
+  const state = stateWithPrograms([move]);
+  const context = { state, agent: state.agents[0], sense: () => ({ state: "unclaimed", owner: -1 }) };
+  assert.equal(evaluateVmExpression({ type: "binary", op: "+", left: literal(2), right: literal(3) }, context), 5);
+  assert.equal(evaluateVmExpression({ type: "binary", op: "+", left: literal("現在の値は"), right: literal(3) }, context), "現在の値は3");
+  assert.equal(evaluateVmExpression({ type: "binary", op: "+", left: literal(3), right: literal("です") }, context), "3です");
+});
+
+test("text variables can be compared and used for branching", () => {
+  const state = stateWithPrograms([
+    { type: "set", name: "mode", value: literal("コブラ") },
+    { type: "if", condition: { type: "binary", op: "==", left: { type: "var", name: "mode" }, right: literal("コブラ") }, then: [move], else: [right] },
+  ]);
+  assert.equal(decideAction(state, state.agents[0]), "move");
+  assert.equal(state.agents[0].vars.mode, "コブラ");
+});
+
+test("speech is zero-time, can interpolate values with plus, and later speech overwrites it", () => {
+  const state = stateWithPrograms([
+    { type: "set", name: "x", value: literal(3) },
+    { type: "say", value: { type: "binary", op: "+", left: { type: "binary", op: "+", left: literal("現在の値は"), right: { type: "var", name: "x" } }, right: literal("です") } },
+    { type: "say", value: literal("実行中") },
+    move,
+  ]);
+  const beforeX = state.agents[0].x;
+  stepTerritory(state);
+  assert.equal(state.tick, 1);
+  assert.equal(state.agents[0].x, beforeX + 1);
+  assert.equal(state.agents[0].speech, "実行中");
+});

@@ -31,6 +31,7 @@ export function evaluateVmExpression(expr, context, budget = { count: 0, limit: 
     if (expr.name === "tailLength") return Array.isArray(context.agent.tail) ? context.agent.tail.length : 0;
     if (expr.name === "noMoveTicks") return Number(context.agent.noMoveTicks || 0);
     if (expr.name === "enemyDistance") return nearestEnemyDistance(context.state, context.agent);
+    if (expr.name === "timer") return Math.max(0, Number(context.state?.tick || 0));
     return 0;
   }
 
@@ -69,7 +70,7 @@ export function evaluateVmExpression(expr, context, budget = { count: 0, limit: 
     const left = evaluateVmExpression(expr.left, context, budget);
     const right = evaluateVmExpression(expr.right, context, budget);
     switch (op) {
-      case "+": return Number(left) + Number(right);
+      case "+": return typeof left === "string" || typeof right === "string" ? `${String(left ?? "")}${String(right ?? "")}` : Number(left) + Number(right);
       case "-": return Number(left) - Number(right);
       case "*": return Number(left) * Number(right);
       case "/": return Number(right) === 0 ? 0 : Number(left) / Number(right);
@@ -237,6 +238,12 @@ export function runProgramUntilAction(state, agent, instructionBudget = 10000, o
       if (statement.type === "action") {
         const action = emitAction(statement, context, budget);
         if (action) return action;
+        continue;
+      }
+
+      if (statement.type === "say") {
+        const spoken = evaluateVmExpression(statement.value, context, budget);
+        agent.speech = String(spoken ?? "").slice(0, 80);
         continue;
       }
 
