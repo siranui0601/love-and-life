@@ -4,3 +4,7 @@
 .test-settings-drawer .test-setting-group{grid-column:1/-1;border-top:1px solid rgba(255,255,255,.07);padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px}.test-settings-drawer .test-setting-group-title{grid-column:1/-1;font-size:.64rem;color:var(--cyan);letter-spacing:.08em}.test-spawn-actor-row{grid-column:1/-1}.test-spawn-hint.is-warning{color:var(--warning)}
 @media(max-width:700px){.board-config-grid{grid-template-columns:1fr 1fr 68px}.board-config-card{padding:9px}.board-config-head strong{font-size:.71rem}.test-settings-drawer .test-setting-group{grid-template-columns:1fr 1fr}}
 @media(max-width:430px){.board-config-grid{grid-template-columns:1fr 1fr}.board-mini-preview{grid-column:1/-1;width:72px;justify-self:end}.board-config-note{grid-column:1/-1}}
+/* Prevent iOS Safari from auto-zooming numeric / variable and other form inputs on focus. */
+@media (hover:none) and (pointer:coarse){
+  input,select,textarea{font-size:16px!important}
+}

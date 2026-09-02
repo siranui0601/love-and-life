@@ -182,3 +182,14 @@ test("test board fixed spawn supports both user and NPC including outer cells", 
   assert.match(app, /同じマスには配置できません/);
   assert.match(app, /Number\.MAX_SAFE_INTEGER/);
 });
+
+test("mobile inputs do not trigger iOS focus zoom", () => {
+  assert.match(css, /@media \(hover:none\) and \(pointer:coarse\)/);
+  assert.match(css, /input,select,textarea\{font-size:16px!important\}/);
+  assert.doesNotMatch(html, /maximum-scale=1|user-scalable=no/);
+});
+
+test("test battle placement rerolls its seed on every execution", () => {
+  assert.match(app, /c\.spawnMode==="random"\|\|c\.spawnMode==="battle"\|\|c\.boardShape==="random"/);
+});
+
