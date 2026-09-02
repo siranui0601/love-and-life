@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v6';
+export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v7';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -229,23 +229,32 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
   if (JSON.stringify(day2BreakfastSteps.map((step) => step.actionId)) !== JSON.stringify(expectedBreakfastPrefix)) {
     throw new Error(`unexpected Day2 breakfast sequence before post-E bridge: ${day2BreakfastSteps.map((step) => step.actionId).join(' -> ')}`);
   }
-  day2BreakfastSteps.push(move('LOC_FARM_INN', { regionId: '田園の村' }));
-  day2Breakfast.legacyDescription = 'Day2朝食としてパン屋で黒パンITM008を購入・摂取し、行商人のいる麦穂亭へ通常移動する';
+  const merchantHelpActionId = 'MISSION_FLOW:T01:DAY2_MERCHANT:help_unload';
+  day2BreakfastSteps.push(choose(merchantHelpActionId, { regionId: '田園の村', facilityId: 'LOC_FARM_BAKERY' }));
+  day2Breakfast.legacyDescription = 'Day2朝食としてパン屋で黒パンITM008を購入・摂取し、その場に実在する行商人リオナの荷ほどきを手伝う';
   day2Breakfast.classification = 'PLAYER_COMMAND_SEQUENCE';
   day2Breakfast.replacementRowIds = day2BreakfastSteps.map((_, index) => `${day2Breakfast.legacyRowId}:S${String(index + 1).padStart(2, '0')}`).join('|');
   day2Breakfast.replacementSteps = JSON.stringify(day2BreakfastSteps);
   day2Breakfast.resolutionMethod = 'POST_E_REALIGNMENT';
   day2Breakfast.commandType = 'SEQUENCE';
   day2Breakfast.choiceId = '';
-  day2Breakfast.actionId = 'MOVE_LOCAL:LOC_FARM_INN';
+  day2Breakfast.actionId = merchantHelpActionId;
   day2Breakfast.payload = JSON.stringify({ steps: day2BreakfastSteps });
-  day2Breakfast.facilityId = 'LOC_FARM_INN';
-  day2Breakfast.requiredState = 'Day2 after Mira shelter; at LOC_FARM_BAKERY; gold>=1; canonical ITM008 stock available';
-  day2Breakfast.resultingState = 'gold-=1; ITM008 purchased and consumed through canonical world-life authority; hunger recovered; player returns through ordinary MOVE_LOCAL to LOC_FARM_INN for the authored merchant livelihood chain';
-  day2Breakfast.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js + src/server/trpg/content/canonical-public-action-policy.js + tools/trpg-sim/lib/player-journey.mjs';
+  day2Breakfast.facilityId = 'LOC_FARM_BAKERY';
+  day2Breakfast.requiredState = 'Day2 after Mira shelter; at LOC_FARM_BAKERY; gold>=1; canonical ITM008 stock available; NPC008 physically present through ordinary world simulation';
+  day2Breakfast.resultingState = 'gold-=1; ITM008 purchased and consumed through canonical world-life authority; hunger recovered; merchant unloading helped locally while NPC008 is present; payment scene becomes available';
+  day2Breakfast.implementationSource = 'src/server/trpg/content/canonical-world-life-actions.js + src/server/trpg/content/authored-mission-flow-day1-t01-village-night-canonical.js + src/server/trpg/content/authored-mission-flow-day1-t01-village-night.js';
   day2Breakfast.status = 'RESOLVED_EXISTING';
   day2Breakfast.unresolvedReason = '';
-  day2Breakfast.notes = 'preserves the v2 breakfast-before-work order and reconnects to the existing Day2 merchant chain without teleporting or remote NPC interaction';
+  day2Breakfast.notes = 'preserves breakfast-before-work while following the live NPC008 bakery route; no teleport, remote NPC interaction, or fixture-direct position override';
+
+  outcome(requireRow(byId, 'VR2-D02-02'), {
+    description: 'Day2行商人の荷ほどきは、朝食直後にパン屋でNPC008が実在している間に完了済み',
+    requiredState: 'DAY2_MERCHANT_UNLOADING_HELPED history exists from the immediately preceding production command; NPC008 contact occurred at LOC_FARM_BAKERY',
+    resultingState: 'no duplicate command; merchant payment scene remains the next production interaction',
+    implementationSource: 'src/server/trpg/content/authored-mission-flow-day1-t01-village-night-canonical.js + src/server/trpg/content/authored-mission-flow-day1-t01-village-night.js',
+    notes: 'keeps one v3 trace row for the legacy source while preventing a second help_unload execution after leaving the live merchant location',
+  });
 
   const originalMoves = Array.isArray(movesArtifact.moves) ? movesArtifact.moves : [];
   const obsoleteBeforeRows = new Set(['VR2-D01-03', 'VR2-D01-10']);
@@ -263,7 +272,7 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
   summary.proposedMoveLocalInsertions = moves.length;
   summary.expandedV3Rows = rows.reduce((total, row) => total + Math.max(1, stepCount(row)), 0) + moves.length;
   summary.postERealignmentVersion = POST_E_REALIGNMENT_VERSION;
-  summary.postERealignedLegacyRows = ['VR2-D01-01', 'VR2-D01-02', 'VR2-D01-03', 'VR2-D01-04', 'VR2-D01-05', 'VR2-D01-07', 'VR2-D01-09', 'VR2-D02-01'];
+  summary.postERealignedLegacyRows = ['VR2-D01-01', 'VR2-D01-02', 'VR2-D01-03', 'VR2-D01-04', 'VR2-D01-05', 'VR2-D01-07', 'VR2-D01-09', 'VR2-D02-01', 'VR2-D02-02'];
   summary.postEStaleStarterDependencies = 0;
   summary.postECanonicalEntryActions = entrySteps.map((step) => step.actionId);
   summary.postET01Actions = [...expectedT01Actions];
