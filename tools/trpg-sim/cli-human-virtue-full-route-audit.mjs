@@ -15,6 +15,8 @@ const ROOT = path.resolve(HERE, '../..');
 const REPORTS = path.join(HERE, 'reports');
 const LEDGER = path.join(ROOT, 'docs/trpg/virtue-route-v3-sheet-ledger.csv');
 const FINAL_DAY = 85;
+const FINAL_ACTION_ID = 'LIFE:SLEEP:ITM001';
+const FINAL_STORY_ACTION_ID = 'PUBLIC_LIFE:VILLAGE_CLOSING_TABLE:share_letters_at_table';
 const BASELINE_LOADOUT = process.env.TRPG_HV_BASELINE_LOADOUT || 'sword-shield';
 const SEED = process.env.TRPG_HV_AUDIT_SEED || 'human-virtue-full-route-audit-v1';
 const OWNER = `human-virtue-audit:${SEED}`;
@@ -355,9 +357,23 @@ async function executeLedgerRow(row) {
   }
   if (save.battle) await finishBattle(row);
 }
+function validateLedgerShape(rows) {
+  if (rows.length < 1000) throw new Error(`audit ledger unexpectedly short: ${rows.length}`);
+  const ids = rows.map((row) => text(row.v3RowId));
+  if (ids.some((id) => !id)) throw new Error('audit ledger contains a row without v3RowId');
+  if (new Set(ids).size !== ids.length) throw new Error('audit ledger contains duplicate v3RowId values');
+  const last = rows.at(-1);
+  if (Number(last?.day) !== FINAL_DAY || text(last?.actionId) !== FINAL_ACTION_ID) {
+    throw new Error(`audit ledger terminal mismatch: expected Day${FINAL_DAY} ${FINAL_ACTION_ID}, got Day${last?.day} ${last?.actionId}`);
+  }
+  const closingIndex = rows.findIndex((row) => text(row.actionId) === FINAL_STORY_ACTION_ID);
+  if (closingIndex < 0 || closingIndex >= rows.length - 1) {
+    throw new Error(`audit ledger missing closing story action before final sleep: ${FINAL_STORY_ACTION_ID}`);
+  }
+}
 async function run() {
   const rows = ledgerRows();
-  if (rows.length !== 1523) throw new Error(`expected 1523 ledger rows after replacing the stale Day2 hunter-hut bread sequence and removing its impossible local move, got ${rows.length}`);
+  validateLedgerShape(rows);
   const entryIndex = rows.findIndex((row) => row.actionId === 'E:LODGE:REGISTER');
   if (entryIndex < 0) throw new Error('post-E REGISTER entry missing from ledger');
   await runCheckpointE(rows[entryIndex]);
