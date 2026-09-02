@@ -1,0 +1,39 @@
+name: now-coding-board-spawn-mobile-once
+
+on:
+  push:
+    branches:
+      - fix/now-coding-board-spawn-mobile-input
+    paths:
+      - ".github/workflows/now-coding-board-spawn-mobile-once.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/now-coding-board-spawn-mobile-input
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply fixes
+        run: python tools/now-coding/patch-board-spawn-mobile.py
+      - name: Syntax check
+        run: |
+          node --check public/now-coding/boards.js
+          node --check public/now-coding/app-v3.js
+      - name: Engine and client contract tests
+        run: node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs
+      - name: Commit product changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/now-coding/boards.js public/now-coding/app-v3.js public/now-coding/style-v7.css tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(now-coding): refine donut spawns and mobile inputs"
+          git push origin HEAD:fix/now-coding-board-spawn-mobile-input
