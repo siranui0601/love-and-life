@@ -413,7 +413,11 @@ function attackCells(state, agent, range) {
   for (let distance = 1; distance <= range; distance += 1) {
     const x = agent.x + vector.x * distance;
     const y = agent.y + vector.y * distance;
-    if (out(state, x, y)) break;
+    if (x < 0 || y < 0 || x >= state.size || y >= state.size) break;
+    if (!isPlayableCell(state, x, y)) {
+      if (state.boardShape === "donut") continue;
+      break;
+    }
     cells.push({ x, y });
   }
   return cells;

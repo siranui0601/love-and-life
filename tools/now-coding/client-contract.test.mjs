@@ -244,3 +244,28 @@ test("mobile palette proxies existing commands instead of creating a second lang
   assert.doesNotMatch(app, /mobileCommandFactory|createMobileBlock/);
 });
 
+test("draft mutation uses explicit dirty state and capture-phase navigation guards", () => {
+  assert.match(app, /draftDirty: false/);
+  assert.match(app, /function markDraftChanged\(\)/);
+  assert.match(app, /function isDraftDirty\(\)\{return Boolean\(state\.draftDirty\)/);
+  assert.match(app, /markDraftChanged\(\);renderWorkspace\(\);onTutorialAdd/);
+  assert.match(app, /e\.stopImmediatePropagation\(\);requestUnsavedAction/);
+  assert.match(app, /window\.location\.assign\(link\.href\)/);
+  assert.match(app, /\},true\);document\.addEventListener\("click"/);
+});
+
+test("inline expression typing preserves the focused input node", () => {
+  assert.match(app, /expr\.value=Number\(i\.value\)\|\|0;markDraftChanged\(\)/);
+  assert.match(app, /expr\.name=i\.value\.slice\(0,40\);markDraftChanged\(\)/);
+  assert.doesNotMatch(app, /expr\.value=Number\(i\.value\)\|\|0;change\(expr,false\)/);
+  assert.doesNotMatch(app, /expr\.name=i\.value\.slice\(0,40\);change\(expr,false\)/);
+});
+
+test("mobile command launcher is class-controlled and clears the bottom navigation", () => {
+  assert.match(html, /id="mobilePaletteButton" class="mobile-palette-fab is-hidden"/);
+  assert.doesNotMatch(html, /id="mobilePaletteButton"[^>]*\shidden(?:\s|>)/);
+  assert.match(app, /classList\.toggle\("is-hidden",state\.view!=="editor"\)/);
+  assert.match(css, /mobile-palette-fab:not\(\.is-hidden\)/);
+  assert.match(css, /bottom:calc\(86px \+ env\(safe-area-inset-bottom\)\)/);
+});
+
