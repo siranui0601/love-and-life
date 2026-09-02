@@ -5,7 +5,6 @@ on:
     branches:
       - fix/now-coding-composable-expressions
     paths:
-      - "tools/now-coding/patch-composable-expressions.py"
       - ".github/workflows/now-coding-composable-expressions-once.yml"
   workflow_dispatch:
 
@@ -22,43 +21,78 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Apply composable expression patch
-        run: python tools/now-coding/patch-composable-expressions.py
-      - name: Harden Safari drop and tutorial completion
+      - name: Polish direct expression UX
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
 
-          app_path = Path('public/now-coding/app-v3.js')
-          app = app_path.read_text()
+          def swap(path, old, new, label):
+              p = Path(path)
+              s = p.read_text()
+              if old not in s:
+                  raise SystemExit(f'missing {label}')
+              p.write_text(s.replace(old, new, 1))
 
-          old_drag = 'e.dataTransfer.types.includes("application/x-now-expression")&&acceptsExpression(expected,presetKind(e.dataTransfer.getData("application/x-now-expression")||""))'
-          if old_drag not in app:
-              raise SystemExit('dragover compatibility anchor missing')
-          app = app.replace(old_drag, 'e.dataTransfer.types.includes("application/x-now-expression")', 1)
+          swap(
+              'public/now-coding/index.html',
+              '<div class="coach-step" id="tutorialStepLabel">1 / 8</div>',
+              '<div class="coach-step" id="tutorialStepLabel">1 / 11</div>',
+              'tutorial static count',
+          )
+          swap(
+              'public/now-coding/index.html',
+              '<i>もし 前 が 崖</i>',
+              '<i>もし &lt;（前）＝（崖）&gt;</i>',
+              'tutorial intro example',
+          )
+          swap(
+              'public/now-coding/app-v3.js',
+              'b.addEventListener("click",e=>{if(state.pendingExpressionPreset)return;e.preventDefault();e.stopPropagation();toast("命令パレットから入れたい部品を選んでください")});',
+              'b.addEventListener("click",e=>{if(e.defaultPrevented||state.pendingExpressionPreset)return;e.preventDefault();e.stopPropagation();toast("命令パレットから入れたい部品を選んでください")});',
+              'empty socket toast guard',
+          )
+          swap(
+              'public/now-coding/tutorials.js',
+              '条件を部品として直接組み合わせるので、『条件を組み立てる』モーダルを開く必要はありません。',
+              '条件を部品として直接組み合わせ、画面を切り替えずその場で組み立てられます。',
+              'modal-free tutorial copy',
+          )
+          swap(
+              'public/now-coding/tutorials.js',
+              '『前が崖』『敵との距離が2以下』のような条件を使えます。',
+              '『＜（前）＝（崖）＞』『＜（最も近い敵との距離）≦（2）＞』のような条件を使えます。',
+              'overview condition syntax',
+          )
+          PY
+      - name: Add recursive expression regression
+        run: |
+          python - <<'PY'
+          from pathlib import Path
 
-          old_save = 'if(isTutorial())await tutorialProgress(8,true);'
-          if old_save not in app:
-              raise SystemExit('tutorial completion anchor missing')
-          app = app.replace(old_save, 'if(isTutorial())await tutorialProgress(TUTORIAL_STEPS.length,true);', 1)
-          app_path.write_text(app)
+          p = Path('tools/now-coding/engine.test.mjs')
+          s = p.read_text()
+          vm_import = 'import { evaluateVmExpression } from "../../public/now-coding/vm.js";\n'
+          if vm_import not in s:
+              anchor = 'import { createGameState, gameResults, makeTestNpcProgram, senseModeCell, stepGame } from "../../public/now-coding/modes.js";\n'
+              if anchor not in s:
+                  raise SystemExit('engine test import anchor missing')
+              s = s.replace(anchor, anchor + vm_import, 1)
 
-          contract_path = Path('tools/now-coding/client-contract.test.mjs')
-          contract = contract_path.read_text()
-          pattern = r'test\("initial tutorial teaches comparison from empty sockets", \(\) => \{.*?\n\}\);'
-          replacement = '''test("initial tutorial teaches comparison from empty sockets", () => {
-            assert.match(app, /『もし ○○ なら』を追加します。○○はまだ空欄/);
-            assert.ok(app.includes('data-expression-preset="compare"'));
-            assert.ok(app.includes('data-expression-preset="sensor"'));
-            assert.ok(app.includes('data-expression-preset="cellState"'));
-            assert.match(app, /step===10&&a\\.alive&&game\\.tick>=30/);
-            assert.match(app, /tutorialProgress\\(TUTORIAL_STEPS\\.length,true\\)/);
-          });'''
-          contract, count = re.subn(pattern, replacement, contract, count=1, flags=re.S)
-          if count != 1:
-              raise SystemExit('tutorial contract replacement failed')
-          contract_path.write_text(contract)
+          marker = 'test("nested arithmetic expressions preserve explicit parenthesis structure"'
+          if marker not in s:
+              s += '''\n\ntest("nested arithmetic expressions preserve explicit parenthesis structure", () => {\n  const context = {\n    agent: { id: "me", vars: { A: 10, B: 6, C: 5, D: 2 } },\n    state: { agents: [], random: () => 0.5 },\n    sense: () => ({ state: "unclaimed", owner: -1 }),\n  };\n  const expr = {\n    type: "binary", op: "+", left: { type: "var", name: "A" }, right: {\n      type: "binary", op: "/", left: { type: "var", name: "B" }, right: {\n        type: "binary", op: "-", left: { type: "var", name: "C" }, right: { type: "var", name: "D" },\n      },\n    },\n  };\n  assert.equal(evaluateVmExpression(expr, context), 12);\n  assert.equal(evaluateVmExpression({ type: "binary", op: ">=", left: expr, right: literal(12) }, context), true);\n});\n'''
+          p.write_text(s)
+          PY
+      - name: Extend client contracts
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tools/now-coding/client-contract.test.mjs')
+          s = p.read_text()
+          marker = 'test("direct-composition tutorial and palette polish stay aligned"'
+          if marker not in s:
+              s += '''\n\ntest("direct-composition tutorial and palette polish stay aligned", () => {\n  assert.match(html, /tutorialStepLabel">1 \\/ 11/);\n  assert.match(html, /もし &lt;（前）＝（崖）&gt;/);\n  assert.doesNotMatch(tutorials, /条件を組み立てる.*モーダル/);\n  assert.match(app, /e\\.defaultPrevented\\|\\|state\\.pendingExpressionPreset/);\n  assert.match(app, /if\\(type==="turn"\\)return\\{type:"action",action:p\\.turn\\|\\|"turnRight"/);\n  for (const value of ["unclaimed","own","enemy","cliff","player","tail"]) assert.ok(html.includes(`value="${value}"`));\n});\n'''
+          p.write_text(s)
           PY
       - name: Validate
         run: |
@@ -70,7 +104,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/now-coding/app-v3.js public/now-coding/index.html public/now-coding/tutorials.js public/now-coding/style-v6.css tools/now-coding/client-contract.test.mjs
+          git add public/now-coding/app-v3.js public/now-coding/index.html public/now-coding/tutorials.js tools/now-coding/client-contract.test.mjs tools/now-coding/engine.test.mjs
           git diff --cached --quiet && exit 0
-          git commit -m "fix(now-coding): compose expressions directly in the editor"
+          git commit -m "test(now-coding): harden recursive expression UX"
           git push origin HEAD:fix/now-coding-composable-expressions
