@@ -1,8 +1,9 @@
 import * as base from "./canonical-social-obligations.js";
+import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./canonical-social-obligations.js";
 
-export const CANONICAL_JOB_TIME_POLICY_VERSION = "canonical-job-time-policy-v1";
+export const CANONICAL_JOB_TIME_POLICY_VERSION = "canonical-job-time-policy-v2";
 
 const JOB_TIME_WINDOWS = Object.freeze({
   "JOB-FARM-01": [[360, 1020]],
@@ -37,7 +38,11 @@ const JOB_TIME_WINDOWS = Object.freeze({
 
 function minuteOfDay(runtime) {
   const absolute = Number(runtime?.playerState?.absoluteMinute);
-  if (Number.isFinite(absolute)) return ((absolute % 1440) + 1440) % 1440;
+  if (Number.isFinite(absolute)) {
+    // Production epoch is Day1 10:00 == absoluteMinute 0. Never interpret the
+    // elapsed-minute counter itself as a wall-clock minute-of-day.
+    return clockFromMinute(absolute).minuteOfDay;
+  }
   const hour = Math.max(0, Math.min(23, Number(runtime?.playerState?.hour ?? 0)));
   const minute = Math.max(0, Math.min(59, Number(runtime?.playerState?.minute ?? 0)));
   return hour * 60 + minute;
