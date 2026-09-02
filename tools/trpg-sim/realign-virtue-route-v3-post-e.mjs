@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v4';
+export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v5';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -208,8 +208,20 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
   const aftercare = requireRow(byId, 'VR2-D01-07');
   aftercare.legacyDescription = '広場でミラへ引き渡し。Checkpoint Eで選んだ借用loadoutは返却条件を保持したまま継続';
   aftercare.requiredState = 'MSN-T01 resolved; Finn returned alive; Day1 before midnight; at LOC_FARM_SQUARE; player-selected Checkpoint E loan state preserved';
-  aftercare.resultingState = 'Mira aftercare completed; bread shared with Finn; Day1 village-night scene available; no fixed starter equipment premise';
+  aftercare.resultingState = 'Mira aftercare completed; bread shared with Finn; Day1 evening free-time scene available; no fixed starter equipment premise';
   aftercare.notes = 'replaces the obsolete fixed farm-machete/padded-clothes premise while preserving the existing aftercare and supper actions';
+
+  const eveningActionId = 'MISSION_FLOW:T01:EVENING_FREE_TIME:maintain_and_rest';
+  sequence(requireRow(byId, 'VR2-D01-09'), [
+    choose(eveningActionId, { regionId: '田園の村', facilityId: 'LOC_FARM_SQUARE' }),
+  ], {
+    description: '救出後の自由時間。装備を手入れし、身体を休めながら22:30まで村の夕方を過ごす',
+    facilityId: 'LOC_FARM_SQUARE',
+    requiredState: 'T01 aftercare and shared-bread supper complete; Day1 in 田園の村 before 22:30; production evening free-time scene visible',
+    resultingState: 'production evening free-time branch consumed; equipment maintained and player rested; canonical wall clock advances naturally to 22:30 without filler WAIT loops',
+    implementationSource: 'src/server/trpg/content/authored-mission-flow-day1-t01-village-night.js authored-day1-t01-village-night-v2',
+    notes: 'replaces the obsolete synthetic LIFE:REST:270 row with the visible production evening scene that represents the same authored free-time/equipment-maintenance/rest block',
+  });
 
   const originalMoves = Array.isArray(movesArtifact.moves) ? movesArtifact.moves : [];
   const moves = originalMoves.filter((entry) => entry.beforeLegacyRowId !== 'VR2-D01-03');
@@ -223,10 +235,11 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
   summary.proposedMoveLocalInsertions = moves.length;
   summary.expandedV3Rows = rows.reduce((total, row) => total + Math.max(1, stepCount(row)), 0) + moves.length;
   summary.postERealignmentVersion = POST_E_REALIGNMENT_VERSION;
-  summary.postERealignedLegacyRows = ['VR2-D01-01', 'VR2-D01-02', 'VR2-D01-03', 'VR2-D01-04', 'VR2-D01-05', 'VR2-D01-07'];
+  summary.postERealignedLegacyRows = ['VR2-D01-01', 'VR2-D01-02', 'VR2-D01-03', 'VR2-D01-04', 'VR2-D01-05', 'VR2-D01-07', 'VR2-D01-09'];
   summary.postEStaleStarterDependencies = 0;
   summary.postECanonicalEntryActions = entrySteps.map((step) => step.actionId);
   summary.postET01Actions = [...expectedT01Actions];
+  summary.postEDay1EveningAction = eveningActionId;
 
   if (summary.expandedV3Rows !== 1526) {
     throw new Error(`post-E realignment must preserve 1526 expanded rows, got ${summary.expandedV3Rows}`);
@@ -244,6 +257,7 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
     realignedLegacyRows: [...summary.postERealignedLegacyRows],
     entryActionIds: [...summary.postECanonicalEntryActions],
     t01ActionIds: [...summary.postET01Actions],
+    day1EveningActionId: summary.postEDay1EveningAction,
   };
 }
 
