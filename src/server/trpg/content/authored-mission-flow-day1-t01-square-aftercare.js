@@ -1,10 +1,11 @@
 import * as base from "./authored-mission-flow-t13-workshop-cargo-yard.js";
 import { consumeMeal } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
+import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./authored-mission-flow-t13-workshop-cargo-yard.js";
 
 export const AUTHORED_DAY1_T01_SQUARE_AFTERCARE_VERSION =
-  "authored-day1-t01-square-aftercare-v4";
+  "authored-day1-t01-square-aftercare-v5";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -147,11 +148,12 @@ function atVillageSquare(runtime) {
 }
 
 function withinDay1AftercareWindow(runtime) {
-  const minute = Number(runtime?.playerState?.absoluteMinute ?? -1);
-  const day = Number(runtime?.playerState?.day ?? Math.floor(minute / 1440) + 1);
-  return day === 1
-    && minute >= DAY1_AFTERCARE_OPEN_MINUTE
-    && minute < DAY1_AFTERCARE_CLOSE_MINUTE;
+  const absoluteMinute = Number(runtime?.playerState?.absoluteMinute ?? -1);
+  if (!Number.isFinite(absoluteMinute) || absoluteMinute < 0) return false;
+  const clock = clockFromMinute(absoluteMinute);
+  return clock.day === 1
+    && clock.minuteOfDay >= DAY1_AFTERCARE_OPEN_MINUTE
+    && clock.minuteOfDay < DAY1_AFTERCARE_CLOSE_MINUTE;
 }
 
 function readState(runtime) {
