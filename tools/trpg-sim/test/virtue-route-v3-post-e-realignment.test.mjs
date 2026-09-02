@@ -17,6 +17,7 @@ const COMPILER = path.join(ROOT, 'tools/trpg-sim/compile-virtue-route-v3.mjs');
 const SOURCE = path.join(ROOT, 'docs/trpg/virtue-route-v2-source.csv');
 const EVENING_ACTION = 'MISSION_FLOW:T01:EVENING_FREE_TIME:maintain_and_rest';
 const MERCHANT_HELP_ACTION = 'MISSION_FLOW:T01:DAY2_MERCHANT:help_unload';
+const WARNING_WAIT_ACTION = 'MISSION_FLOW:T01:DAY2_WARNING_WAIT:wait_with_jill';
 const EXPECTED_T01_ACTIONS = [
   'ACTION:MSN-T01:search:tracks',
   'ACTION:MSN-T01:search:wolf-blockade',
@@ -37,6 +38,10 @@ const EXPECTED_DAY2_MERCHANT_ACTIONS = [
 const EXPECTED_DAY2_BREAKFAST_LEDGER_ACTIONS = [
   'MOVE_LOCAL:LOC_FARM_BAKERY',
   ...EXPECTED_DAY2_BREAKFAST_ACTIONS,
+];
+const EXPECTED_DAY2_WARNING_RESULT_ACTIONS = [
+  'MISSION_FLOW:T01:DAY2_VILLAGE_WARNING:inspect_warning_bells',
+  'MISSION_FLOW:T01:DAY2_VILLAGE_WATCH:circulate_watch_tags',
 ];
 
 function rowObjects(text) {
@@ -68,8 +73,8 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   const realigned = realignPostEArtifacts({ outDir: compileDir });
   assert.equal(realigned.version, POST_E_REALIGNMENT_VERSION);
   assert.equal(realigned.mappedRows, 831);
-  assert.equal(realigned.expandedV3Rows, 1525);
-  assert.equal(realigned.proposedMoveLocalInsertions, 334);
+  assert.equal(realigned.expandedV3Rows, 1523);
+  assert.equal(realigned.proposedMoveLocalInsertions, 333);
   assert.deepEqual(realigned.entryActionIds, [
     'E:LODGE:REGISTER',
     'DISCOVER_LOCAL_TROUBLE:T01',
@@ -81,6 +86,7 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   assert.equal(realigned.day1EveningActionId, EVENING_ACTION);
   assert.deepEqual(realigned.day2BreakfastActionIds, EXPECTED_DAY2_BREAKFAST_ACTIONS);
   assert.deepEqual(realigned.day2MerchantActionIds, EXPECTED_DAY2_MERCHANT_ACTIONS);
+  assert.equal(realigned.day2WarningWaitActionId, WARNING_WAIT_ACTION);
 
   const mappingText = await readFile(path.join(compileDir, 'virtue-route-v3-mapping.csv'), 'utf8');
   const rows = rowObjects(mappingText);
@@ -123,10 +129,18 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   assert.equal(merchantSteps[0].actionId, MERCHANT_HELP_ACTION);
   assert.match(merchantChain.requiredState, /NPC008 physically present/u);
 
+  const warningWait = byId.get('VR2-D02-03');
+  assert.equal(warningWait.classification, 'PLAYER_COMMAND_SEQUENCE');
+  assert.deepEqual(actionIds(warningWait), [WARNING_WAIT_ACTION]);
+  assert.equal(warningWait.facilityId, 'LOC_FOREST_HUNTER_HUT');
+  assert.doesNotMatch(`${warningWait.replacementSteps} ${warningWait.resultingState}`, /LIFE:(?:BUY|EAT):ITM008/u);
+  assert.match(warningWait.resultingState, /dueAtMinute/u);
+
   const moves = JSON.parse(await readFile(path.join(compileDir, 'virtue-route-v3-proposed-local-moves.json'), 'utf8'));
-  assert.equal(moves.count, 334);
+  assert.equal(moves.count, 333);
   assert.equal(moves.moves.some((move) => move.beforeLegacyRowId === 'VR2-D01-03'), false);
   assert.equal(moves.moves.some((move) => move.beforeLegacyRowId === 'VR2-D01-10'), false);
+  assert.equal(moves.moves.some((move) => move.beforeLegacyRowId === 'VR2-D02-04'), false);
   assert.equal(moves.moves.some((move) => move.beforeLegacyRowId === 'VR2-D02-01' && move.toFacilityId === 'LOC_FARM_BAKERY'), true);
 
   const validation = validateStaticRoute({
@@ -147,13 +161,13 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
     compilerSummaryPath: path.join(compileDir, 'virtue-route-v3-static-summary.json'),
     outDir: sheetDir,
   });
-  assert.equal(sheet.sheets['正規台帳_v3'].rows, 1525);
-  assert.equal(sheet.moveLocalRows, 334);
+  assert.equal(sheet.sheets['正規台帳_v3'].rows, 1523);
+  assert.equal(sheet.moveLocalRows, 333);
 
   const ledgerText = await readFile(path.join(sheetDir, SHEET_EXPORT_FILES.ledger), 'utf8');
   const ledgerRows = rowObjects(ledgerText);
   assert.equal(ledgerRows[0].v3RowId, 'VR3-000001');
-  assert.equal(ledgerRows.at(-1).v3RowId, 'VR3-001525');
+  assert.equal(ledgerRows.at(-1).v3RowId, 'VR3-001523');
   assert.deepEqual(ledgerRows.slice(0, 7).map((row) => row.actionId), [
     '',
     '',
@@ -186,4 +200,16 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   assert.equal(merchantRows[0].v3RowId, 'VR3-000024');
   assert.equal(merchantRows[0].facilityId, 'LOC_FARM_BAKERY');
   assert.equal(merchantRows[0].actionId, MERCHANT_HELP_ACTION);
+
+  const warningWaitRows = ledgerRows.filter((row) => row.sourceV2RowId === 'VR2-D02-03');
+  assert.equal(warningWaitRows.length, 1);
+  assert.equal(warningWaitRows[0].v3RowId, 'VR3-000030');
+  assert.equal(warningWaitRows[0].actionId, WARNING_WAIT_ACTION);
+  assert.equal(warningWaitRows[0].facilityId, 'LOC_FOREST_HUNTER_HUT');
+
+  const warningResultRows = ledgerRows.filter((row) => row.sourceV2RowId === 'VR2-D02-04');
+  assert.deepEqual(warningResultRows.map((row) => row.actionId), EXPECTED_DAY2_WARNING_RESULT_ACTIONS);
+  assert.equal(warningResultRows[0].v3RowId, 'VR3-000031');
+  assert.equal(warningResultRows[0].facilityId, 'LOC_FOREST_HUNTER_HUT');
+  assert.equal(warningResultRows.some((row) => row.actionId === 'MOVE_LOCAL:LOC_FARM_SQUARE'), false);
 });
