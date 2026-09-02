@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./style-v4.css" />
   <link rel="stylesheet" href="./style-v5.css" />
   <link rel="stylesheet" href="./style-v6.css" />
+  <link rel="stylesheet" href="./style-v7.css" />
 </head>
 <body>
   <div class="ambient-grid" aria-hidden="true"></div>
@@ -169,9 +170,16 @@
             <div id="testSettingsDrawer" class="test-settings-drawer is-hidden">
               <label class="test-toggle-row"><input id="testNpcEnabled" type="checkbox" /><span>動くNPCを出す</span></label>
               <label id="testNpcTypeRow" class="test-setting-field is-hidden"><span>NPCの動き方</span><select id="testNpcType"><option value="straight">直進型</option><option value="wall">壁沿い型</option><option value="explore">探索型</option><option value="evade">回避型</option><option value="chase">追跡型</option><option value="random">ランダム型</option><option value="beginner">初級</option><option value="intermediate" selected>中級</option><option value="advanced">上級</option></select></label>
-              <label class="test-setting-field"><span>スポーン位置</span><select id="testSpawnMode"><option value="random" selected>ランダム</option><option value="fixed">指定</option></select></label>
-              <label id="testDirectionRow" class="test-setting-field is-hidden"><span>開始時の向き</span><select id="testSpawnDirection"><option value="0">上</option><option value="1" selected>右</option><option value="2">下</option><option value="3">左</option></select></label>
-              <p id="testSpawnHint" class="test-spawn-hint is-hidden">指定したい開始マスを盤面上でタップしてください。</p>
+              <div class="test-setting-group"><span class="test-setting-group-title">盤面</span>
+                <label class="test-setting-field"><span>形</span><select id="testBoardShape"><option value="square" selected>正方形</option><option value="diamond">ひし形</option><option value="cross">十字</option><option value="donut">ドーナツ</option><option value="random">ランダム</option></select></label>
+                <label class="test-setting-field"><span>サイズ</span><select id="testBoardSizeKey"><option value="small" selected>小</option><option value="large">大</option><option value="random">ランダム</option></select></label>
+              </div>
+              <div class="test-setting-group"><span class="test-setting-group-title">スポーン</span>
+                <label class="test-setting-field"><span>配置方法</span><select id="testSpawnMode"><option value="random" selected>ランダム</option><option value="battle">対戦配置</option><option value="fixed">指定</option></select></label>
+                <label id="testSpawnActorRow" class="test-setting-field test-spawn-actor-row is-hidden"><span>設定する駒</span><select id="testSpawnActor"><option value="me">あなた</option><option value="npc">NPC</option></select></label>
+                <label id="testDirectionRow" class="test-setting-field is-hidden"><span>開始時の向き</span><select id="testSpawnDirection"><option value="0">上</option><option value="1" selected>右</option><option value="2">下</option><option value="3">左</option></select></label>
+                <p id="testSpawnHint" class="test-spawn-hint is-hidden">指定したい開始マスを盤面上でタップしてください。</p>
+              </div>
             </div>
             <div class="mini-board-frame"><div id="testBoard" class="game-board mini-board" aria-label="テスト用盤面"></div><div class="board-sheen" aria-hidden="true"></div></div>
             <div class="test-controls"><button id="runTestButton" class="primary-button" type="button">テスト実行</button><button id="stopTestButton" class="secondary-button" type="button">停止</button></div>
@@ -207,9 +215,18 @@
             <div id="modeDescription" class="mode-description"></div>
             <div id="multiModeNotice" class="multi-mode-notice is-hidden"><strong>複数モード対戦</strong><span>選んだゲームをランダム順で1回ずつ戦います。</span></div>
             <label id="roundProgramChangeRow" class="switch-row is-hidden"><input id="allowRoundProgramChange" type="checkbox" /><span class="switch-ui"></span><span><strong>ラウンドごとに駒を変更できる</strong><small>次のゲーム発表後、30秒以内に駒を選べます。同じ駒を選び続けても構いません。</small></span></label>
+            <div class="board-config-card">
+              <div class="board-config-head"><span>盤面</span><strong id="battleBoardChoiceSummary">正方形・大</strong></div>
+              <div class="board-config-grid">
+                <label>形<select id="boardShape"><option value="square" selected>正方形</option><option value="diamond">ひし形</option><option value="cross">十字</option><option value="donut">ドーナツ</option><option value="random">ランダム</option></select></label>
+                <label>サイズ<select id="boardSizeKey"><option value="small">小</option><option value="large" selected>大</option><option value="random">ランダム</option></select></label>
+                <div id="battleBoardPreview" class="board-mini-preview" aria-label="盤面プレビュー"></div>
+              </div>
+              <p class="board-config-note">形・サイズをランダムにした場合も、Seedから決定されます。</p>
+            </div>
+            <label id="roundBoardRerollRow" class="switch-row round-board-reroll-row is-hidden"><input id="rerollBoardEachRound" type="checkbox" /><span class="switch-ui"></span><span><strong>ラウンドごとに盤面を再抽選</strong><small>ランダムにした形・サイズだけを、各ラウンド開始時に引き直します。OFFならシリーズ開始時の盤面を全ラウンドで使います。</small></span></label>
             <div class="settings-strip settings-strip-v3">
               <label>人数<select id="playerCount"><option value="2">2人</option><option value="3">3人</option><option value="4">4人</option></select></label>
-              <label>盤面<select id="boardSize"><option value="15">15 × 15</option><option value="21" selected>21 × 21</option><option value="31">31 × 31</option></select></label>
               <label>NPC<select id="npcDifficulty"><option value="weak">弱</option><option value="medium" selected>中</option><option value="strong">強</option></select></label>
               <label>Seed<input id="seedInput" placeholder="自動生成" /></label>
             </div>
@@ -250,9 +267,18 @@
             </div>
             <div id="onlineModeDescription" class="mode-description compact-description"></div>
             <label id="onlineRoundProgramChangeRow" class="switch-row is-hidden"><input id="onlineAllowRoundProgramChange" type="checkbox" /><span class="switch-ui"></span><span><strong>ラウンドごとに駒を変更できる</strong><small>各ラウンド前に30秒の選択時間を設けます。</small></span></label>
+            <div class="board-config-card">
+              <div class="board-config-head"><span>盤面</span><strong id="onlineBoardChoiceSummary">正方形・大</strong></div>
+              <div class="board-config-grid">
+                <label>形<select id="onlineBoardShape"><option value="square" selected>正方形</option><option value="diamond">ひし形</option><option value="cross">十字</option><option value="donut">ドーナツ</option><option value="random">ランダム</option></select></label>
+                <label>サイズ<select id="onlineBoardSizeKey"><option value="small">小</option><option value="large" selected>大</option><option value="random">ランダム</option></select></label>
+                <div id="onlineBoardPreview" class="board-mini-preview" aria-label="盤面プレビュー"></div>
+              </div>
+              <p class="board-config-note">ランダム指定もルームSeedで全参加者に同じ盤面が確定します。</p>
+            </div>
+            <label id="onlineRoundBoardRerollRow" class="switch-row round-board-reroll-row is-hidden"><input id="onlineRerollBoardEachRound" type="checkbox" /><span class="switch-ui"></span><span><strong>ラウンドごとに盤面を再抽選</strong><small>ランダム指定した要素だけをラウンドごとに引き直します。</small></span></label>
             <div class="settings-strip online-settings">
               <label>定員<select id="onlinePlayerCount"><option value="2">2人</option><option value="3">3人</option><option value="4">4人</option></select></label>
-              <label>盤面<select id="onlineBoardSize"><option value="15">15 × 15</option><option value="21" selected>21 × 21</option><option value="31">31 × 31</option></select></label>
               <label>Seed<input id="onlineSeed" placeholder="自動生成" /></label>
             </div>
             <label class="switch-row"><input id="privateRoom" type="checkbox" /><span class="switch-ui"></span><span><strong>プライベートルーム</strong><small>公開一覧には表示されず、ルームIDからのみ入室できます。</small></span></label>

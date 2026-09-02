@@ -10,6 +10,7 @@ import {
   stepTerritory,
   territoryResults,
 } from "./engine.js";
+import { createBattleSpawns, createBoardDefinition, isPlayableCell, validateSpawnList } from "./boards.js";
 
 export const MODE_LABELS = {
   territory: "陣取り",
@@ -20,9 +21,9 @@ export const MODE_LABELS = {
 
 export const MODE_RULE_VERSION = {
   territory: NOW_CODING_RULE_VERSION,
-  cobra: "cobra-v2",
-  fall: "fall-v2",
-  splat: "splat-v2",
+  cobra: "cobra-v3",
+  fall: "fall-v3",
+  splat: "splat-v3",
 };
 
 const VALID_MODES = new Set(Object.keys(MODE_LABELS));
@@ -41,16 +42,22 @@ function normalizeProgram(program) {
   return Array.isArray(program) ? structuredClone(program.slice(0, 10000)) : [];
 }
 
-function makeAgents({ players, size, seed, spawns, allowSolo = false }) {
+function makeAgents({ players, size, seed, spawns, allowSolo = false, boardDef = null }) {
   const random = createSeededRandom(seed);
+  const definition = boardDef || createBoardDefinition({ size, seed });
   const safePlayers = (Array.isArray(players) ? players : []).slice(0, 4);
   while (safePlayers.length < (allowSolo ? 1 : 2)) {
     const index = safePlayers.length;
     safePlayers.push({ id: `npc-${index}`, name: `NPC ${index + 1}`, color: PLAYER_COLORS[index], program: makeNpcProgram("medium", index) });
   }
-  const resolvedSpawns = Array.isArray(spawns) && spawns.length >= safePlayers.length
-    ? spawns.slice(0, safePlayers.length).map((spawn) => ({ ...spawn }))
-    : createBalancedSpawns(size, safePlayers.length, random);
+  let resolvedSpawns;
+  if (Array.isArray(spawns) && spawns.length >= safePlayers.length) {
+    const proposed = spawns.slice(0, safePlayers.length).map((spawn) => ({ x: Number(spawn.x), y: Number(spawn.y), dir: Number(spawn.dir) }));
+    if (!validateSpawnList(definition, proposed, safePlayers.length)) throw new Error("invalid_spawn");
+    resolvedSpawns = proposed;
+  } else {
+    resolvedSpawns = createBattleSpawns(definition, safePlayers.length, random);
+  }
   const agents = safePlayers.map((player, index) => {
     const spawn = resolvedSpawns[index];
     return {
@@ -62,7 +69,7 @@ function makeAgents({ players, size, seed, spawns, allowSolo = false }) {
       program: normalizeProgram(player.program),
       x: spawn.x,
       y: spawn.y,
-      dir: Number.isInteger(spawn.dir) ? spawn.dir : 0,
+      dir: spawn.dir,
       alive: true,
       deathReason: "",
       deathTick: null,
@@ -93,7 +100,7 @@ function targetAt(agent, relative = "front") {
 }
 
 function out(state, x, y) {
-  return x < 0 || y < 0 || x >= state.size || y >= state.size;
+  return !isPlayableCell(state, x, y);
 }
 
 function headAt(state, x, y, ignoreId = "") {
@@ -197,20 +204,25 @@ function finishSurvival(state) {
 }
 
 function createCobraState(config = {}) {
-  const size = clampSize(config.size);
   const seed = String(config.seed ?? "1");
-  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns, allowSolo: Boolean(config.allowSolo) });
+  const boardDef = createBoardDefinition({ ...config, seed });
+  const size = boardDef.size;
+  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns, allowSolo: Boolean(config.allowSolo), boardDef });
   return {
     mode: "cobra",
     ruleVersion: MODE_RULE_VERSION.cobra,
     seed,
     size,
+    boardShape: boardDef.shape,
+    boardSizeKey: boardDef.sizeKey,
+    mask: boardDef.mask.map((row) => [...row]),
+    playableCount: boardDef.playableCount,
     board: board(size),
     agents: made.agents,
     spawns: made.spawns,
     random: made.random,
     tick: 0,
-    maxTicks: Math.max(60, Number(config.maxTicks) || 900),
+    maxTicks: Math.max(60, Number(config.maxTicks) || Math.max(600, boardDef.playableCount * 2)),
     growthEvery: Math.max(2, Number(config.growthEvery) || 5),
     finished: false,
     finishReason: "",
@@ -280,21 +292,26 @@ function stepCobra(state) {
 }
 
 function createFallState(config = {}) {
-  const size = clampSize(config.size);
   const seed = String(config.seed ?? "1");
-  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns, allowSolo: Boolean(config.allowSolo) });
+  const boardDef = createBoardDefinition({ ...config, seed });
+  const size = boardDef.size;
+  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns, allowSolo: Boolean(config.allowSolo), boardDef });
   return {
     mode: "fall",
     ruleVersion: MODE_RULE_VERSION.fall,
     seed,
     size,
+    boardShape: boardDef.shape,
+    boardSizeKey: boardDef.sizeKey,
+    mask: boardDef.mask.map((row) => [...row]),
+    playableCount: boardDef.playableCount,
     board: board(size),
     agents: made.agents,
     spawns: made.spawns,
     random: made.random,
     holes: new Set(),
     tick: 0,
-    maxTicks: Math.max(60, Number(config.maxTicks) || 900),
+    maxTicks: Math.max(60, Number(config.maxTicks) || Math.max(600, boardDef.playableCount * 2)),
     finished: false,
     finishReason: "",
     effects: [],
@@ -362,9 +379,10 @@ function stepFall(state) {
 }
 
 function createSplatState(config = {}) {
-  const size = clampSize(config.size);
   const seed = String(config.seed ?? "1");
-  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns, allowSolo: Boolean(config.allowSolo) });
+  const boardDef = createBoardDefinition({ ...config, seed });
+  const size = boardDef.size;
+  const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns, allowSolo: Boolean(config.allowSolo), boardDef });
   const paint = board(size);
   made.agents.forEach((agent, index) => { paint[agent.y][agent.x] = index; });
   return {
@@ -372,15 +390,20 @@ function createSplatState(config = {}) {
     ruleVersion: MODE_RULE_VERSION.splat,
     seed,
     size,
+    boardShape: boardDef.shape,
+    boardSizeKey: boardDef.sizeKey,
+    mask: boardDef.mask.map((row) => [...row]),
+    playableCount: boardDef.playableCount,
     board: paint,
     agents: made.agents,
     spawns: made.spawns,
     random: made.random,
     tick: 0,
-    maxTicks: Math.max(60, Number(config.maxTicks) || Math.max(500, size * size * 2)),
+    maxTicks: Math.max(60, Number(config.maxTicks) || Math.max(500, boardDef.playableCount * 2)),
     finished: false,
     finishReason: "",
     effects: [],
+    allowSolo: Boolean(config.allowSolo),
   };
 }
 

@@ -9,6 +9,7 @@ import {
 } from "../../public/now-coding/engine.js";
 import { createGameState, gameResults, makeTestNpcProgram, senseModeCell, stepGame } from "../../public/now-coding/modes.js";
 import { evaluateVmExpression } from "../../public/now-coding/vm.js";
+import { createBattleSpawns, createBoardDefinition, createRandomSpawns, isPlayableCell, resolveBoardChoice } from "../../public/now-coding/boards.js";
 
 const move = { type: "action", action: "move" };
 const right = { type: "action", action: "turnRight" };
@@ -83,7 +84,7 @@ test("enemy territory blocks movement and still consumes the tick", () => {
 test("territory treats every claimed cell as a wall, including its own trail", () => {
   const state = stateWithPrograms([move, right, right, move], [right], [{ x: 5, y: 5, dir: 1 }, { x: 12, y: 12, dir: 2 }]);
   const agent = state.agents[0];
-  assert.equal(state.ruleVersion, "territory-v4");
+  assert.equal(state.ruleVersion, "territory-v5");
 
   stepTerritory(state); // move to 6,5 and color it
   assert.equal(agent.x, 6);
@@ -396,4 +397,69 @@ test("nested arithmetic expressions preserve explicit parenthesis structure", ()
   };
   assert.equal(evaluateVmExpression(expr, context), 12);
   assert.equal(evaluateVmExpression({ type: "binary", op: ">=", left: expr, right: literal(12) }, context), true);
+});
+
+
+test("all eight board presets have a deterministic playable mask", () => {
+  const expected = {
+    "square:small": [15, 225], "square:large": [21, 441],
+    "diamond:small": [21, 221], "diamond:large": [29, 421],
+    "cross:small": [19, 217], "cross:large": [27, 405],
+    "donut:small": [19, 216], "donut:large": [27, 420],
+  };
+  for (const [key, [size, count]] of Object.entries(expected)) {
+    const [boardShape, boardSizeKey] = key.split(":");
+    const def = createBoardDefinition({ boardShape, boardSizeKey });
+    assert.equal(def.size, size, key);
+    assert.equal(def.playableCount, count, key);
+  }
+});
+
+test("random board choices are seed deterministic and only randomize requested dimensions", () => {
+  const a = resolveBoardChoice({ shape: "random", sizeKey: "large", seed: "same" });
+  const b = resolveBoardChoice({ shape: "random", sizeKey: "large", seed: "same" });
+  assert.deepEqual(a, b);
+  assert.equal(a.sizeKey, "large");
+  const c = resolveBoardChoice({ shape: "donut", sizeKey: "random", seed: "same" });
+  assert.equal(c.shape, "donut");
+  assert.ok(["small", "large"].includes(c.sizeKey));
+});
+
+test("battle and random spawns always land on distinct playable cells", () => {
+  for (const shape of ["square", "diamond", "cross", "donut"]) {
+    for (const sizeKey of ["small", "large"]) {
+      const def = createBoardDefinition({ boardShape: shape, boardSizeKey: sizeKey });
+      for (const factory of [createBattleSpawns, createRandomSpawns]) {
+        const spawns = factory(def, 4, `${shape}:${sizeKey}:${factory.name}`);
+        assert.equal(new Set(spawns.map((s) => `${s.x},${s.y}`)).size, 4);
+        for (const spawn of spawns) {
+          assert.equal(isPlayableCell(def, spawn.x, spawn.y), true);
+          assert.ok(spawn.dir >= 0 && spawn.dir <= 3);
+        }
+      }
+    }
+  }
+});
+
+test("diamond void is sensed as cliff and cannot be entered", () => {
+  const state = createGameState({ mode: "territory", seed: "diamond-edge", boardShape: "diamond", boardSizeKey: "small", allowSolo: true, players: [{ id: "a", program: [move] }], spawns: [{ x: 10, y: 0, dir: 3 }] });
+  assert.equal(senseModeCell(state, state.agents[0], "front").state, "cliff");
+  stepGame(state);
+  assert.equal(state.agents[0].alive, false);
+  assert.equal(state.agents[0].deathReason, "cliff");
+});
+
+test("fixed spawn may use the outer edge on a square board", () => {
+  const state = createGameState({ mode: "territory", seed: "edge-spawn", boardShape: "square", boardSizeKey: "small", allowSolo: true, players: [{ id: "a", program: [right] }], spawns: [{ x: 0, y: 14, dir: 0 }] });
+  assert.equal(state.agents[0].x, 0);
+  assert.equal(state.agents[0].y, 14);
+});
+
+test("splat shots stop at donut void instead of crossing the hole", () => {
+  const attack = { type: "action", action: "attack", range: literal(20) };
+  const state = createGameState({ mode: "splat", seed: "donut-shot", boardShape: "donut", boardSizeKey: "small", players: [{ id: "a", program: [attack] }, { id: "b", program: [right] }], spawns: [{ x: 9, y: 0, dir: 2 }, { x: 9, y: 18, dir: 0 }] });
+  state.agents[0].ink = 30;
+  stepGame(state);
+  assert.equal(state.agents[1].alive, true);
+  assert.ok(state.effects.filter((e) => e.type === "shot").length < 18);
 });
