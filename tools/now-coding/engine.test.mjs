@@ -180,6 +180,24 @@ test("break exits the nearest loop and continues after it", () => {
   assert.equal(decideAction(state, agent), "none");
 });
 
+test("enemy count reports only currently living opponents", () => {
+  const state = createTerritoryState({
+    seed: "enemy-count", size: 15, maxTicks: 40,
+    players: [
+      { id: "a", program: [right] },
+      { id: "b", program: [right] },
+      { id: "c", program: [right] },
+    ],
+    spawns: [{ x: 2, y: 2, dir: 1 }, { x: 12, y: 2, dir: 3 }, { x: 7, y: 12, dir: 0 }],
+  });
+  const context = { state, agent: state.agents[0], sense: () => ({ state: "unclaimed", owner: -1 }) };
+  assert.equal(evaluateVmExpression({ type: "builtin", name: "enemyCount" }, context), 2);
+  state.agents[2].alive = false;
+  assert.equal(evaluateVmExpression({ type: "builtin", name: "enemyCount" }, context), 1);
+  state.agents[1].alive = false;
+  assert.equal(evaluateVmExpression({ type: "builtin", name: "enemyCount" }, context), 0);
+});
+
 test("nearest enemy distance is available as a numeric builtin and uses -1 when none survive", () => {
   const state = stateWithPrograms([
     {

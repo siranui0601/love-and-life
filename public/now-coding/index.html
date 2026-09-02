@@ -143,6 +143,7 @@
                   <div class="palette-block reporter-block reporter-value palette-expression-template" data-expression-preset="sensor" role="button" tabindex="0"><span>（</span><select data-palette-option="sensorDirection" aria-label="見る方向"><option value="front" selected>前</option><option value="left">左</option><option value="right">右</option></select><span>）</span></div>
                   <div class="palette-block reporter-block reporter-value palette-expression-template" data-expression-preset="cellState" role="button" tabindex="0"><span>（</span><select data-palette-option="cellState" aria-label="マスの状態"><option value="unclaimed">空白</option><option value="own">自分の色</option><option value="enemy">敵の色</option><option value="cliff" selected>崖</option><option value="player">駒</option><option value="tail">尾</option></select><span>）</span></div>
                   <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="enemyDistance">最も近い敵との距離</button>
+                  <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="enemyCount">敵の数</button>
                   <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="timer">タイマー</button>
                   <button class="palette-block reporter-block reporter-number" type="button" data-expression-preset="number">数字</button>
                   <button class="palette-block reporter-block reporter-text" type="button" data-expression-preset="text">文字</button>
@@ -177,7 +178,7 @@
             </div>
             <button id="testSettingsButton" class="test-settings-summary" type="button" aria-expanded="false"><span id="testSettingsSummary">NPCなし ・ スポーン ランダム</span><b>設定</b></button>
             <div id="testSettingsDrawer" class="test-settings-drawer is-hidden">
-              <label class="test-toggle-row"><input id="testNpcEnabled" type="checkbox" /><span>動くNPCを出す</span></label>
+              <label class="test-setting-field"><span>NPCの数</span><select id="testNpcCount"><option value="0" selected>なし</option><option value="1">1体</option><option value="2">2体</option><option value="3">3体</option></select></label>
               <label id="testNpcTypeRow" class="test-setting-field is-hidden"><span>NPCの動き方</span><select id="testNpcType"><option value="straight">直進型</option><option value="wall">壁沿い型</option><option value="explore">探索型</option><option value="evade">回避型</option><option value="chase">追跡型</option><option value="random">ランダム型</option><option value="beginner">初級</option><option value="intermediate" selected>中級</option><option value="advanced">上級</option></select></label>
               <div class="test-setting-group"><span class="test-setting-group-title">盤面</span>
                 <label class="test-setting-field"><span>形</span><select id="testBoardShape"><option value="square" selected>正方形</option><option value="diamond">ひし形</option><option value="cross">十字</option><option value="donut">ドーナツ</option><option value="random">ランダム</option></select></label>
@@ -185,7 +186,7 @@
               </div>
               <div class="test-setting-group"><span class="test-setting-group-title">スポーン</span>
                 <label class="test-setting-field"><span>配置方法</span><select id="testSpawnMode"><option value="random" selected>ランダム</option><option value="battle">対戦配置</option><option value="fixed">指定</option></select></label>
-                <label id="testSpawnActorRow" class="test-setting-field test-spawn-actor-row is-hidden"><span>設定する駒</span><select id="testSpawnActor"><option value="me">あなた</option><option value="npc">NPC</option></select></label>
+                <label id="testSpawnActorRow" class="test-setting-field test-spawn-actor-row is-hidden"><span>設定する駒</span><select id="testSpawnActor"><option value="me">あなた</option></select></label>
                 <label id="testDirectionRow" class="test-setting-field is-hidden"><span>開始時の向き</span><select id="testSpawnDirection"><option value="0">上</option><option value="1" selected>右</option><option value="2">下</option><option value="3">左</option></select></label>
                 <p id="testSpawnHint" class="test-spawn-hint is-hidden">指定したい開始マスを盤面上でタップしてください。</p>
               </div>

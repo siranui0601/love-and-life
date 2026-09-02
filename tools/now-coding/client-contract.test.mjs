@@ -82,7 +82,7 @@ test("multi-mode online client participates in the server round protocol", () =>
 
 
 test("language palette exposes directly composable conditions and values", () => {
-  for (const key of ["compare","logic","not","sensor","cellState","enemyDistance","number","var","random","math"]) {
+  for (const key of ["compare","logic","not","sensor","cellState","enemyDistance","enemyCount","number","var","random","math"]) {
     assert.ok(html.includes(`data-expression-preset="${key}"`));
   }
   for (const key of ["turn","sensorDirection","cellState","compareOp","logicOp","mathOp"]) assert.ok(html.includes(`data-palette-option="${key}"`));
@@ -358,4 +358,16 @@ test("player-facing game clock terminology is timer rather than tick", () => {
   assert.match(app, /タイマーが1進むたびに必ず1マス進みます/);
   assert.match(tutorials, /尾はタイマーが5進むごとに1マス伸びます/);
   assert.match(tutorials, /『○○ と発言』はタイマーを消費せず/);
+});
+
+
+test("enemy count and multi-NPC test bench are exposed consistently", () => {
+  assert.ok(html.includes('data-expression-preset="enemyCount"'));
+  assert.ok(htmlHasId("testNpcCount"));
+  assert.doesNotMatch(html, /id="testNpcEnabled"/);
+  for (const count of ["0","1","2","3"]) assert.ok(html.includes(`<option value="${count}"`));
+  assert.match(app, /testNpcCount: 0/);
+  assert.match(app, /function testNpcKeys\(c\)/);
+  assert.match(app, /for\(let i=0;i<c\.npcCount;i\+\+\)players\.push/);
+  assert.match(app, /data-expression-preset=\"enemyCount\"|expr:enemyCount/);
 });

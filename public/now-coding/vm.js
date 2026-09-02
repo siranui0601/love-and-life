@@ -17,6 +17,10 @@ function nearestEnemyDistance(state, agent) {
   return Number.isFinite(best) ? best : -1;
 }
 
+function aliveEnemyCount(state, agent) {
+  return (state.agents || []).filter((other) => other?.alive && other.id !== agent.id).length;
+}
+
 export function evaluateVmExpression(expr, context, budget = { count: 0, limit: 10000 }) {
   consumeBudget(budget);
   if (expr === null || expr === undefined) return 0;
@@ -31,6 +35,7 @@ export function evaluateVmExpression(expr, context, budget = { count: 0, limit: 
     if (expr.name === "tailLength") return Array.isArray(context.agent.tail) ? context.agent.tail.length : 0;
     if (expr.name === "noMoveTicks") return Number(context.agent.noMoveTicks || 0);
     if (expr.name === "enemyDistance") return nearestEnemyDistance(context.state, context.agent);
+    if (expr.name === "enemyCount") return aliveEnemyCount(context.state, context.agent);
     if (expr.name === "timer") return Math.max(0, Number(context.state?.tick || 0));
     return 0;
   }
