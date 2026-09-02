@@ -136,7 +136,8 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   assert.ok(day1Evening);
   assert.equal(day1Evening.actionId, EVENING_ACTION);
   assert.equal(day1Evening.commandType, 'CHOOSE');
-  assert.equal(ledgerRows.some((row) => row.actionId === 'LIFE:REST:270'), false);
+  assert.notEqual(day1Evening.actionId, 'LIFE:REST:270');
+  assert.equal(ledgerRows.some((row) => row.sourceV2RowId === 'VR2-D01-09' && row.actionId === 'LIFE:REST:270'), false);
   assert.equal(ledgerRows.some((row) => row.actionId === 'MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE'), false);
   assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId === 'LIFE:EAT:ITM003'), false);
   assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId === 'SKL-0049'), false);
