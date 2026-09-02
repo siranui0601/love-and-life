@@ -405,7 +405,7 @@ test("all eight board presets have a deterministic playable mask", () => {
     "square:small": [15, 225], "square:large": [21, 441],
     "diamond:small": [21, 221], "diamond:large": [29, 421],
     "cross:small": [19, 217], "cross:large": [27, 405],
-    "donut:small": [19, 216], "donut:large": [27, 420],
+    "donut:small": [19, 336], "donut:large": [27, 680],
   };
   for (const [key, [size, count]] of Object.entries(expected)) {
     const [boardShape, boardSizeKey] = key.split(":");
@@ -463,3 +463,68 @@ test("splat shots stop at donut void instead of crossing the hole", () => {
   assert.equal(state.agents[1].alive, true);
   assert.ok(state.effects.filter((e) => e.type === "shot").length < 18);
 });
+
+test("donut is a square board with a centered square hole", () => {
+  for (const sizeKey of ["small", "large"]) {
+    const def = createBoardDefinition({ boardShape: "donut", boardSizeKey: sizeKey });
+    const center = (def.size - 1) / 2;
+    const half = sizeKey === "small" ? 2 : 3;
+    assert.equal(isPlayableCell(def, 0, 0), true, `${sizeKey}: outer corner stays playable`);
+    assert.equal(isPlayableCell(def, def.size - 1, def.size - 1), true, `${sizeKey}: opposite outer corner stays playable`);
+    assert.equal(isPlayableCell(def, center, center), false, `${sizeKey}: center is void`);
+    assert.equal(isPlayableCell(def, center + half, center + half), false, `${sizeKey}: square-hole corner is void`);
+    assert.equal(isPlayableCell(def, center + half + 1, center), true, `${sizeKey}: first cell outside square hole is playable`);
+  }
+});
+
+test("square battle anchors use the same clockwise starting directions", () => {
+  const def = createBoardDefinition({ boardShape: "square", boardSizeKey: "small" });
+  const spawns = createBattleSpawns(def, 4, "square-anchor-directions");
+  const center = (def.size - 1) / 2;
+  for (const spawn of spawns) {
+    let expected;
+    if (spawn.x < center && spawn.y < center) expected = 1;       // left-top -> right
+    else if (spawn.x > center && spawn.y < center) expected = 2;  // right-top -> down
+    else if (spawn.x > center && spawn.y > center) expected = 3;  // right-bottom -> left
+    else expected = 0;                                            // left-bottom -> up
+    assert.equal(spawn.dir, expected, `spawn ${spawn.x},${spawn.y}`);
+  }
+});
+
+test("all board shapes keep the preferred battle-anchor direction when that step is playable", () => {
+  const vectors = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
+  for (const shape of ["square", "diamond", "cross", "donut"]) {
+    for (const sizeKey of ["small", "large"]) {
+      const def = createBoardDefinition({ boardShape: shape, boardSizeKey: sizeKey });
+      const spawns = createBattleSpawns(def, 4, `${shape}:${sizeKey}:directions`);
+      const center = (def.size - 1) / 2;
+      for (const spawn of spawns) {
+        let expected;
+        if (shape === "square" || shape === "donut") {
+          if (spawn.x < center && spawn.y < center) expected = 1;
+          else if (spawn.x > center && spawn.y < center) expected = 2;
+          else if (spawn.x > center && spawn.y > center) expected = 3;
+          else expected = 0;
+        } else {
+          const dx = spawn.x - center, dy = spawn.y - center;
+          if (Math.abs(dy) >= Math.abs(dx)) expected = dy < 0 ? 1 : 3;
+          else expected = dx > 0 ? 2 : 0;
+        }
+        const v = vectors[expected];
+        assert.equal(isPlayableCell(def, spawn.x + v.x, spawn.y + v.y), true, `${shape}:${sizeKey} preferred step must be playable`);
+        assert.equal(spawn.dir, expected, `${shape}:${sizeKey} ${spawn.x},${spawn.y}`);
+      }
+    }
+  }
+});
+
+test("single-player battle placement can select all four formal anchors across seeds", () => {
+  const def = createBoardDefinition({ boardShape: "square", boardSizeKey: "small" });
+  const seen = new Set();
+  for (let i = 0; i < 96; i += 1) {
+    const [spawn] = createBattleSpawns(def, 1, `battle-reroll-${i}`);
+    seen.add(`${spawn.x},${spawn.y}`);
+  }
+  assert.equal(seen.size, 4);
+});
+

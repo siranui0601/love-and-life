@@ -66,7 +66,7 @@ function buildMask(shape, sizeKey, size) {
   const mask = Array.from({ length: size }, () => Array(size).fill(false));
   const crossWidth = sizeKey === "small" ? 7 : 9;
   const crossHalf = Math.floor(crossWidth / 2);
-  const donutInner = sizeKey === "small" ? 3.5 : 6;
+  const donutHoleHalf = sizeKey === "small" ? 2 : 3;
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       let playable = false;
@@ -74,8 +74,7 @@ function buildMask(shape, sizeKey, size) {
       else if (shape === "diamond") playable = Math.abs(x - center) + Math.abs(y - center) <= center;
       else if (shape === "cross") playable = Math.abs(x - center) <= crossHalf || Math.abs(y - center) <= crossHalf;
       else if (shape === "donut") {
-        const distance = Math.hypot(x - center, y - center);
-        playable = distance <= center + 1e-9 && distance >= donutInner;
+        playable = Math.abs(x - center) > donutHoleHalf || Math.abs(y - center) > donutHoleHalf;
       }
       mask[y][x] = playable;
     }
@@ -168,6 +167,19 @@ function directionTowardCenter(boardDef, cell) {
   return candidates[0]?.dir ?? 0;
 }
 
+const BATTLE_ANCHOR_DIRECTIONS = [1, 2, 3, 0]; // top-left/top -> right, top-right/right -> down, bottom-right/bottom -> left, bottom-left/left -> up
+function directionForBattleAnchor(boardDef, cell, anchorIndex) {
+  const preferred = BATTLE_ANCHOR_DIRECTIONS[anchorIndex % BATTLE_ANCHOR_DIRECTIONS.length];
+  const vector = [
+    { x: 0, y: -1 },
+    { x: 1, y: 0 },
+    { x: 0, y: 1 },
+    { x: -1, y: 0 },
+  ][preferred];
+  if (isPlayableCell(boardDef, cell.x + vector.x, cell.y + vector.y)) return preferred;
+  return directionTowardCenter(boardDef, cell);
+}
+
 function anchorTargets(shape) {
   if (shape === "square") return [[0.12, 0.12], [0.88, 0.12], [0.88, 0.88], [0.12, 0.88]];
   if (shape === "donut") return [[0.22, 0.22], [0.78, 0.22], [0.78, 0.78], [0.22, 0.78]];
@@ -187,11 +199,11 @@ export function createBattleSpawns(boardDef, playerCountInput, seedOrRandom = "b
   const random = asRandom(seedOrRandom);
   const count = Math.max(1, Math.min(4, Number(playerCountInput) || 2));
   const used = new Set();
-  const anchors = anchorTargets(boardDef.shape).map(([nx, ny]) => {
+  const anchors = anchorTargets(boardDef.shape).map(([nx, ny], anchorIndex) => {
     const cell = nearestPlayable(boardDef, nx, ny, used);
     if (!cell) return null;
     used.add(`${cell.x},${cell.y}`);
-    return { ...cell, dir: directionTowardCenter(boardDef, cell) };
+    return { ...cell, dir: directionForBattleAnchor(boardDef, cell, anchorIndex) };
   }).filter(Boolean);
 
   let selected;

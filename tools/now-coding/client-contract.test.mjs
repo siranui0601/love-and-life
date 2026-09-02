@@ -182,3 +182,65 @@ test("test board fixed spawn supports both user and NPC including outer cells", 
   assert.match(app, /同じマスには配置できません/);
   assert.match(app, /Number\.MAX_SAFE_INTEGER/);
 });
+
+test("mobile inputs do not trigger iOS focus zoom", () => {
+  assert.match(css, /@media \(hover:none\) and \(pointer:coarse\)/);
+  assert.match(css, /input,select,textarea\{font-size:16px!important\}/);
+  assert.doesNotMatch(html, /maximum-scale=1|user-scalable=no/);
+});
+
+test("test battle placement rerolls its seed on every execution", () => {
+  assert.match(app, /c\.spawnMode==="random"\|\|c\.spawnMode==="battle"\|\|c\.boardShape==="random"/);
+});
+
+test("existing programs expose overwrite and save-as-new without renaming overwrite", () => {
+  assert.ok(htmlHasId("overwriteProgramButton"));
+  assert.ok(htmlHasId("saveAsNewProgramButton"));
+  assert.match(html, /id="overwriteProgramButton"[^>]*>上書き保存<\/button>/);
+  assert.match(html, /id="saveAsNewProgramButton"[^>]*>新規保存<\/button>/);
+  assert.match(app, /function overwriteDraft\(afterSave=null\)/);
+  assert.match(app, /programId:state\.draft\.programId,name:state\.draft\.name/);
+  assert.match(app, /state\.saveModalMode==="copy"\?"":/);
+});
+
+test("dirty code is guarded on internal navigation and browser unload", () => {
+  assert.match(app, /function draftSignature/);
+  assert.match(app, /function isDraftDirty/);
+  assert.match(app, /function requestUnsavedAction/);
+  assert.ok(app.includes("コードの保存が出来ていません。"));
+  assert.ok(app.includes("このページから移動してもよろしいですか？"));
+  for (const label of ["保存して移動","保存せず移動","キャンセル"]) assert.ok(app.includes(label));
+  assert.match(app, /beforeunload/);
+  assert.match(app, /e\.returnValue=""/);
+  assert.match(app, /requestUnsavedAction\(\(\)=>showView\(target\)\)/);
+  assert.match(app, /requestUnsavedAction\(newDraft\)/);
+});
+
+test("long programs keep command access available on desktop and mobile", () => {
+  assert.match(css, /editor-layout-v3 \.block-palette\{position:sticky/);
+  assert.ok(htmlHasId("mobilePaletteButton"));
+  assert.ok(htmlHasId("mobilePaletteSheet"));
+  assert.ok(htmlHasId("mobilePaletteContent"));
+  assert.ok(html.includes("＋ 命令を追加"));
+  assert.match(app, /function setMobilePalette\(open\)/);
+  assert.match(app, /function proxyMobilePaletteClick/);
+});
+
+test("recent commands are a closed persistent palette category", () => {
+  assert.match(html, /<details id="recentPaletteSection" class="palette-section recent-palette-section">/);
+  assert.doesNotMatch(html, /<details id="recentPaletteSection"[^>]*\sopen(?:\s|>)/);
+  assert.ok(htmlHasId("recentPaletteItems"));
+  assert.ok(html.includes("最近使った命令"));
+  assert.match(app, /RECENT_COMMAND_STORAGE="nowCodingRecentCommandsV1"/);
+  assert.match(app, /RECENT_COMMAND_LIMIT=6/);
+  assert.match(app, /function recordRecentCommand/);
+  assert.match(app, /localStorage\.setItem\(RECENT_COMMAND_STORAGE/);
+});
+
+test("mobile palette proxies existing commands instead of creating a second language implementation", () => {
+  assert.match(app, /function originalPaletteCommand\(key\)/);
+  assert.match(app, /source\.click\(\)/);
+  assert.match(app, /source\.dispatchEvent\(new Event\("change",\{bubbles:true\}\)\)/);
+  assert.doesNotMatch(app, /mobileCommandFactory|createMobileBlock/);
+});
+
