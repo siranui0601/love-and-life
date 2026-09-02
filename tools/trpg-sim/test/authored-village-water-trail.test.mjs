@@ -9,7 +9,8 @@ import {
   AUTHORED_VILLAGE_DAILY_LIFE_INTERNALS as daily,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 
-const DAY6_MIDDAY = 5 * 1440 + 12 * 60;
+const absoluteMinuteFor = (day, wallMinute) => (day - 1) * 1440 + wallMinute - 600;
+const DAY6_MIDDAY = absoluteMinuteFor(6, 12 * 60);
 
 function runtime(worldFlags = {}, facilityId = "LOC_FARM_WELL") {
   return {
@@ -83,7 +84,7 @@ test("any two of the three signs work, in any combination", () => {
 test("the daily wellside scene really does hand two of those signs over", () => {
   const state = {
     playerState: {
-      absoluteMinute: 1 * 1440 + 12 * 60,
+      absoluteMinute: absoluteMinuteFor(2, 12 * 60),
       player: { location: "田園の村", facilityId: "LOC_FARM_WELL", hunger: 40, fatigue: 45 },
       hunger: 40,
       fatigue: 45,
@@ -94,11 +95,9 @@ test("the daily wellside scene really does hand two of those signs over", () => 
       evidence: {},
     },
   };
-  // 井戸端で水位跡を読む。日常の寄り道であって、事件の会話ではない。
   choose(state, daily.actionIdFor(daily.WELL_SCENE, daily.WELL_CHOICES[1]));
   assert.equal(state.playerState.worldFlags.t13EarlyWaterSignNoticed, true);
 
-  // 麦畑で穂を齧る。これも寄り道。
   state.playerState.player.facilityId = "LOC_FARM_FIELD";
   choose(state, daily.actionIdFor(daily.FIELD_SCENE, daily.FIELD_CHOICES[1]));
   assert.equal(state.playerState.worldFlags.t13IrrigationLevelLow, true);
