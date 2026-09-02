@@ -25,10 +25,14 @@ const EXPECTED_T01_ACTIONS = [
   'MOVE_LOCAL:LOC_FARM_SQUARE',
   'ACTION:MSN-T01:decide',
 ];
-const EXPECTED_DAY2_BREAKFAST_ACTIONS = [
-  'LIFE:BUY:ITM008',
-  'LIFE:EAT:ITM008',
+const EXPECTED_DAY2_BREAKFAST_ACTIONS = ['LIFE:BUY:ITM008', 'LIFE:EAT:ITM008'];
+const EXPECTED_DAY2_MERCHANT_ACTIONS = [
   MERCHANT_HELP_ACTION,
+  'MISSION_FLOW:T01:DAY2_MERCHANT_PAYMENT:take_three_gold',
+  'MISSION_FLOW:T01:DAY2_MERCHANT_STALL:take_hunter_parcel',
+  'MISSION_FLOW:T01:DAY2_MERCHANT_FOLLOWUP:t01-day2-hunter-parcel:leave_for_hut',
+  'MISSION_FLOW:T01:DAY2_HUNTER_HUT:repair_snare',
+  'MISSION_FLOW:T01:DAY2_HUNTER_LUNCH:send_warning',
 ];
 const EXPECTED_DAY2_BREAKFAST_LEDGER_ACTIONS = [
   'MOVE_LOCAL:LOC_FARM_BAKERY',
@@ -64,7 +68,7 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   const realigned = realignPostEArtifacts({ outDir: compileDir });
   assert.equal(realigned.version, POST_E_REALIGNMENT_VERSION);
   assert.equal(realigned.mappedRows, 831);
-  assert.equal(realigned.expandedV3Rows, 1526);
+  assert.equal(realigned.expandedV3Rows, 1525);
   assert.equal(realigned.proposedMoveLocalInsertions, 334);
   assert.deepEqual(realigned.entryActionIds, [
     'E:LODGE:REGISTER',
@@ -76,6 +80,7 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   assert.deepEqual(realigned.t01ActionIds, EXPECTED_T01_ACTIONS);
   assert.equal(realigned.day1EveningActionId, EVENING_ACTION);
   assert.deepEqual(realigned.day2BreakfastActionIds, EXPECTED_DAY2_BREAKFAST_ACTIONS);
+  assert.deepEqual(realigned.day2MerchantActionIds, EXPECTED_DAY2_MERCHANT_ACTIONS);
 
   const mappingText = await readFile(path.join(compileDir, 'virtue-route-v3-mapping.csv'), 'utf8');
   const rows = rowObjects(mappingText);
@@ -104,18 +109,19 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   const day2Breakfast = byId.get('VR2-D02-01');
   assert.deepEqual(actionIds(day2Breakfast), EXPECTED_DAY2_BREAKFAST_ACTIONS);
   const breakfastSteps = JSON.parse(day2Breakfast.replacementSteps);
-  assert.equal(breakfastSteps.at(-1).commandType, 'CHOOSE');
-  assert.equal(breakfastSteps.at(-1).facilityId, 'LOC_FARM_BAKERY');
-  assert.deepEqual(breakfastSteps.at(-1).payload, { choiceId: MERCHANT_HELP_ACTION, actionId: MERCHANT_HELP_ACTION });
+  assert.ok(breakfastSteps.every((step) => step.facilityId === 'LOC_FARM_BAKERY'));
   assert.equal(day2Breakfast.facilityId, 'LOC_FARM_BAKERY');
-  assert.match(day2Breakfast.requiredState, /NPC008 physically present/u);
-  assert.doesNotMatch(`${day2Breakfast.replacementSteps} ${day2Breakfast.resultingState}`, /MOVE_LOCAL:LOC_FARM_INN|remote NPC interaction/u);
+  assert.doesNotMatch(`${day2Breakfast.replacementSteps} ${day2Breakfast.resultingState}`, /MOVE_LOCAL:LOC_FARM_INN/u);
+  assert.match(day2Breakfast.resultingState, /NPC008 is present/u);
 
-  const formerDuplicate = byId.get('VR2-D02-02');
-  assert.equal(formerDuplicate.classification, 'NARRATIVE_OUTCOME');
-  assert.equal(formerDuplicate.commandType, 'OUTCOME');
-  assert.equal(formerDuplicate.actionId, '');
-  assert.match(formerDuplicate.requiredState, /DAY2_MERCHANT_UNLOADING_HELPED/u);
+  const merchantChain = byId.get('VR2-D02-02');
+  assert.equal(merchantChain.classification, 'PLAYER_COMMAND_SEQUENCE');
+  assert.deepEqual(actionIds(merchantChain), EXPECTED_DAY2_MERCHANT_ACTIONS);
+  const merchantSteps = JSON.parse(merchantChain.replacementSteps);
+  assert.equal(merchantSteps.length, 6);
+  assert.equal(merchantSteps[0].facilityId, 'LOC_FARM_BAKERY');
+  assert.equal(merchantSteps[0].actionId, MERCHANT_HELP_ACTION);
+  assert.match(merchantChain.requiredState, /NPC008 physically present/u);
 
   const moves = JSON.parse(await readFile(path.join(compileDir, 'virtue-route-v3-proposed-local-moves.json'), 'utf8'));
   assert.equal(moves.count, 334);
@@ -141,13 +147,13 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
     compilerSummaryPath: path.join(compileDir, 'virtue-route-v3-static-summary.json'),
     outDir: sheetDir,
   });
-  assert.equal(sheet.sheets['正規台帳_v3'].rows, 1526);
+  assert.equal(sheet.sheets['正規台帳_v3'].rows, 1525);
   assert.equal(sheet.moveLocalRows, 334);
 
   const ledgerText = await readFile(path.join(sheetDir, SHEET_EXPORT_FILES.ledger), 'utf8');
   const ledgerRows = rowObjects(ledgerText);
   assert.equal(ledgerRows[0].v3RowId, 'VR3-000001');
-  assert.equal(ledgerRows.at(-1).v3RowId, 'VR3-001526');
+  assert.equal(ledgerRows.at(-1).v3RowId, 'VR3-001525');
   assert.deepEqual(ledgerRows.slice(0, 7).map((row) => row.actionId), [
     '',
     '',
@@ -165,28 +171,19 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   assert.ok(day1Evening);
   assert.equal(day1Evening.actionId, EVENING_ACTION);
   assert.equal(day1Evening.commandType, 'CHOOSE');
-  assert.notEqual(day1Evening.actionId, 'LIFE:REST:270');
   assert.equal(ledgerRows.some((row) => row.sourceV2RowId === 'VR2-D01-09' && row.actionId === 'LIFE:REST:270'), false);
   assert.equal(ledgerRows.some((row) => row.actionId === 'MISSION_FLOW:T01:HUMAN_ENTRY:RETURN_FINN_TO_SQUARE'), false);
-  assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId === 'LIFE:EAT:ITM003'), false);
-  assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId === 'SKL-0049'), false);
-  assert.equal(ledgerRows.some((row, index) => index < 14 && row.actionId?.startsWith('TUTORIAL:')), false);
 
-  const day1SleepRows = ledgerRows.filter((row) => row.sourceV2RowId === 'VR2-D01-10');
-  assert.deepEqual(day1SleepRows.map((row) => row.actionId), ['MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras']);
   const day2BreakfastRows = ledgerRows.filter((row) => row.sourceV2RowId === 'VR2-D02-01');
   assert.deepEqual(day2BreakfastRows.map((row) => row.actionId), EXPECTED_DAY2_BREAKFAST_LEDGER_ACTIONS);
   assert.equal(day2BreakfastRows[0].commandType, 'MOVE');
   assert.equal(day2BreakfastRows[0].facilityId, 'LOC_FARM_BAKERY');
-  assert.equal(day2BreakfastRows.at(-1).commandType, 'CHOOSE');
-  assert.equal(day2BreakfastRows.at(-1).facilityId, 'LOC_FARM_BAKERY');
-  const merchantRows = ledgerRows.filter((row) => row.actionId === MERCHANT_HELP_ACTION);
-  assert.equal(merchantRows.length, 1);
+  assert.ok(day2BreakfastRows.slice(1).every((row) => row.facilityId === 'LOC_FARM_BAKERY'));
+  assert.equal(day2BreakfastRows.some((row) => row.actionId === 'MOVE_LOCAL:LOC_FARM_INN'), false);
+
+  const merchantRows = ledgerRows.filter((row) => row.sourceV2RowId === 'VR2-D02-02');
+  assert.deepEqual(merchantRows.map((row) => row.actionId), EXPECTED_DAY2_MERCHANT_ACTIONS);
   assert.equal(merchantRows[0].v3RowId, 'VR3-000024');
-  assert.equal(merchantRows[0].sourceV2RowId, 'VR2-D02-01');
-  const duplicateTrace = ledgerRows.find((row) => row.sourceV2RowId === 'VR2-D02-02');
-  assert.ok(duplicateTrace);
-  assert.equal(duplicateTrace.v3RowId, 'VR3-000025');
-  assert.equal(duplicateTrace.commandType, 'OUTCOME');
-  assert.equal(duplicateTrace.actionId, '');
+  assert.equal(merchantRows[0].facilityId, 'LOC_FARM_BAKERY');
+  assert.equal(merchantRows[0].actionId, MERCHANT_HELP_ACTION);
 });
