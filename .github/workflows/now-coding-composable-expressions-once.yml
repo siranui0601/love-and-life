@@ -1,0 +1,40 @@
+name: now-coding-composable-expressions-once
+
+on:
+  push:
+    branches:
+      - fix/now-coding-composable-expressions
+    paths:
+      - "tools/now-coding/patch-composable-expressions.py"
+      - ".github/workflows/now-coding-composable-expressions-once.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/now-coding-composable-expressions
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply composable expression patch
+        run: python tools/now-coding/patch-composable-expressions.py
+      - name: Validate
+        run: |
+          node --check public/now-coding/app-v3.js
+          node --check public/now-coding/tutorials.js
+          node --check public/now-coding/vm.js
+          node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs
+      - name: Commit product changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/now-coding/app-v3.js public/now-coding/index.html public/now-coding/tutorials.js public/now-coding/style-v6.css tools/now-coding/client-contract.test.mjs
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(now-coding): compose expressions directly in the editor"
+          git push origin HEAD:fix/now-coding-composable-expressions
