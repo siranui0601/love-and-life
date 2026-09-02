@@ -5,7 +5,9 @@ import fs from "node:fs";
 const app = fs.readFileSync("public/now-coding/app-v3.js", "utf8");
 const entry = fs.readFileSync("public/now-coding/app.js", "utf8");
 const html = fs.readFileSync("public/now-coding/index.html", "utf8");
-const css = ["public/now-coding/style-v3.css", "public/now-coding/style-v4.css", "public/now-coding/style-v6.css"].map((p) => fs.readFileSync(p, "utf8")).join("\n");
+const css = ["public/now-coding/style-v3.css", "public/now-coding/style-v4.css", "public/now-coding/style-v6.css", "public/now-coding/style-v7.css"].map((p) => fs.readFileSync(p, "utf8")).join("\n");
+const online = fs.readFileSync("src/server/now-coding/online.js", "utf8");
+const boards = fs.readFileSync("public/now-coding/boards.js", "utf8");
 const tutorials = fs.readFileSync("public/now-coding/tutorials.js", "utf8");
 
 function htmlHasId(id) {
@@ -136,4 +138,47 @@ test("direct-composition tutorial and palette polish stay aligned", () => {
   assert.match(app, /e\.defaultPrevented\|\|state\.pendingExpressionPreset/);
   assert.match(app, /if\(type==="turn"\)return\{type:"action",action:p\.turn\|\|"turnRight"/);
   for (const value of ["unclaimed","own","enemy","cliff","player","tail"]) assert.ok(html.includes(`value="${value}"`));
+});
+
+
+test("condition insertion and territory wall rules stay visually and textually aligned", () => {
+  assert.match(css, /reporter-boolean\.expression-preset-active/);
+  assert.match(css, /conditionNeonPulse/);
+  assert.match(css, /expression-target\[data-expected="boolean"\]\.socket-accepting/);
+  assert.match(css, /conditionTargetPulse/);
+  assert.match(app, /一度色が付いたマスは、自分・敵を問わず壁/);
+  assert.match(tutorials, /自分・敵を問わず一度色が付いたマスは壁/);
+});
+
+
+test("board variants and compact setup controls are exposed consistently", () => {
+  for (const id of ["testBoardShape","testBoardSizeKey","testSpawnMode","testSpawnActor","boardShape","boardSizeKey","rerollBoardEachRound","onlineBoardShape","onlineBoardSizeKey","onlineRerollBoardEachRound"]) assert.ok(htmlHasId(id), id);
+  for (const value of ["square","diamond","cross","donut","random"]) assert.ok(html.includes(`value="${value}"`));
+  assert.match(html, /<option value="battle">対戦配置<\/option>/);
+  assert.match(css, /\.board-cell\.is-void/);
+  assert.match(css, /\.board-config-card/);
+  assert.match(app, /ラウンドごとに盤面を再抽選|rerollBoardEachRound/);
+  assert.match(app, /createRandomSpawns/);
+  assert.match(app, /createBattleSpawns/);
+  assert.doesNotMatch(app, /Math\.max\(1,Math\.min\(13,Number\(c\.spawn/);
+});
+
+test("online server resolves board selection deterministically and sends resolved board", () => {
+  assert.match(online, /boardShape/);
+  assert.match(online, /boardSizeKey/);
+  assert.match(online, /rerollBoardEachRound/);
+  assert.match(online, /resolveBoardChoice/);
+  assert.match(online, /boardShape: boardDef\.shape/);
+  assert.match(online, /boardSizeKey: boardDef\.sizeKey/);
+  assert.match(boards, /diamond/);
+  assert.match(boards, /cross/);
+  assert.match(boards, /donut/);
+});
+
+test("test board fixed spawn supports both user and NPC including outer cells", () => {
+  assert.match(app, /testFixedSpawns/);
+  assert.match(app, /state\.testSpawnActor/);
+  assert.match(app, /isPlayableCell\(def,x,y\)/);
+  assert.match(app, /同じマスには配置できません/);
+  assert.match(app, /Number\.MAX_SAFE_INTEGER/);
 });

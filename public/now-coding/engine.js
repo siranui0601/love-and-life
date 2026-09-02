@@ -1,6 +1,7 @@
 import { runProgramUntilAction } from "./vm.js";
+import { createBattleSpawns, createBoardDefinition, isPlayableCell, validateSpawnList } from "./boards.js";
 
-export const NOW_CODING_RULE_VERSION = "territory-v3";
+export const NOW_CODING_RULE_VERSION = "territory-v5";
 export const PLAYER_COLORS = ["blue", "red", "yellow", "green"];
 export const NPC_LEVELS = ["weak", "medium", "strong"];
 export const DIRECTIONS = [
@@ -54,26 +55,8 @@ function directionTowardCenter(x, y, size) {
 }
 
 export function createBalancedSpawns(sizeInput, playerCountInput, random) {
-  const size = clampBoardSize(sizeInput);
-  const playerCount = Math.max(1, Math.min(4, Number(playerCountInput) || 2));
-  const edge = Math.max(1, Math.round(size * 0.1));
-  const corners = [
-    { x: edge, y: edge },
-    { x: size - 1 - edge, y: edge },
-    { x: size - 1 - edge, y: size - 1 - edge },
-    { x: edge, y: size - 1 - edge },
-  ];
-
-  let selected;
-  if (playerCount === 1) selected = [corners[Math.floor(random() * corners.length)]];
-  else if (playerCount === 2) selected = random() < 0.5 ? [corners[0], corners[2]] : [corners[1], corners[3]];
-  else if (playerCount === 3) selected = shuffled(corners, random).slice(0, 3);
-  else selected = [...corners];
-
-  return shuffled(selected, random).map((spawn) => ({
-    ...spawn,
-    dir: directionTowardCenter(spawn.x, spawn.y, size),
-  }));
+  const boardDef = createBoardDefinition({ size: sizeInput });
+  return createBattleSpawns(boardDef, playerCountInput, random);
 }
 
 function makeBoard(size) {
@@ -84,17 +67,23 @@ function normalizeProgram(program) {
   return Array.isArray(program) ? structuredClone(program.slice(0, 10000)) : [];
 }
 
-export function createTerritoryState({ seed = "1", size = 21, players = [], maxTicks = 600, stagnationTicks = 120, spawns = null, allowSolo = false } = {}) {
-  const boardSize = clampBoardSize(size);
+export function createTerritoryState({ seed = "1", size = 21, boardShape = null, boardSizeKey = null, players = [], maxTicks = 600, stagnationTicks = 120, spawns = null, allowSolo = false } = {}) {
+  const boardDef = createBoardDefinition({ seed, size, boardShape, boardSizeKey });
+  const boardSize = boardDef.size;
   const random = createSeededRandom(seed);
   const safePlayers = players.slice(0, 4);
   while (safePlayers.length < (allowSolo ? 1 : 2)) {
     const index = safePlayers.length;
     safePlayers.push({ id: `cpu-${index}`, name: `NPC ${index + 1}`, color: PLAYER_COLORS[index], program: makeNpcProgram("medium", index) });
   }
-  const resolvedSpawns = Array.isArray(spawns) && spawns.length >= safePlayers.length
-    ? spawns.slice(0, safePlayers.length)
-    : createBalancedSpawns(boardSize, safePlayers.length, random);
+  let resolvedSpawns;
+  if (Array.isArray(spawns) && spawns.length >= safePlayers.length) {
+    const proposed = spawns.slice(0, safePlayers.length).map((spawn) => ({ x: Number(spawn.x), y: Number(spawn.y), dir: Number(spawn.dir) }));
+    if (!validateSpawnList(boardDef, proposed, safePlayers.length)) throw new Error("invalid_spawn");
+    resolvedSpawns = proposed;
+  } else {
+    resolvedSpawns = createBattleSpawns(boardDef, safePlayers.length, random);
+  }
   const board = makeBoard(boardSize);
 
   const agents = safePlayers.map((player, index) => {
@@ -105,9 +94,10 @@ export function createTerritoryState({ seed = "1", size = 21, players = [], maxT
       userTrackingId: String(player.userTrackingId || ""),
       name: String(player.name || `プレイヤー${index + 1}`),
       color: player.color || PLAYER_COLORS[index],
+      programName: String(player.programName || ""),
       x: spawn.x,
       y: spawn.y,
-      dir: Number.isInteger(spawn.dir) ? spawn.dir : 0,
+      dir: spawn.dir,
       alive: true,
       deathReason: "",
       program: normalizeProgram(player.program),
@@ -125,10 +115,14 @@ export function createTerritoryState({ seed = "1", size = 21, players = [], maxT
     ruleVersion: NOW_CODING_RULE_VERSION,
     seed: String(seed),
     size: boardSize,
+    boardShape: boardDef.shape,
+    boardSizeKey: boardDef.sizeKey,
+    mask: boardDef.mask.map((row) => [...row]),
+    playableCount: boardDef.playableCount,
     board,
     agents,
     tick: 0,
-    maxTicks: Math.max(20, Number(maxTicks) || 600),
+    maxTicks: Math.max(20, Number(maxTicks) || Math.max(600, boardDef.playableCount * 2)),
     stagnationTicks: Math.max(20, Number(stagnationTicks) || 120),
     ticksSinceCapture: 0,
     random,
@@ -153,7 +147,7 @@ export function senseCell(state, agent, relative = "front") {
   const vector = DIRECTIONS[dir];
   const x = agent.x + vector.x;
   const y = agent.y + vector.y;
-  if (x < 0 || y < 0 || x >= state.size || y >= state.size) return { state: "cliff", x, y, owner: -1 };
+  if (!isPlayableCell(state, x, y)) return { state: "cliff", x, y, owner: -1 };
   const head = headAt(state, x, y, agent.id);
   if (head) return { state: "player", x, y, owner: state.agents.indexOf(head), playerId: head.id };
   const owner = state.board[y][x];
@@ -180,19 +174,23 @@ function markDead(agent, reason) {
 }
 
 function allCellsClaimed(state) {
-  return state.board.every((row) => !row.includes(-1));
+  for (let y = 0; y < state.size; y += 1) {
+    for (let x = 0; x < state.size; x += 1) {
+      if (isPlayableCell(state, x, y) && state.board[y][x] < 0) return false;
+    }
+  }
+  return true;
 }
 
 function hasLegalTerritoryMove(state, agent) {
   if (!agent.alive) return false;
-  const ownIndex = state.agents.indexOf(agent);
   return DIRECTIONS.some((vector) => {
     const x = agent.x + vector.x;
     const y = agent.y + vector.y;
-    if (x < 0 || y < 0 || x >= state.size || y >= state.size) return false;
+    if (!isPlayableCell(state, x, y)) return false;
     if (headAt(state, x, y, agent.id)) return false;
-    const owner = state.board[y][x];
-    return owner < 0 || owner === ownIndex;
+    // In territory mode every claimed cell is a wall, including your own trail.
+    return state.board[y][x] < 0;
   });
 }
 
@@ -236,13 +234,13 @@ export function stepTerritory(state) {
   for (const agent of state.agents) {
     if (!agent.alive || actions.get(agent.id) !== "move") continue;
     const target = nextPosition(agent);
-    if (target.x < 0 || target.y < 0 || target.x >= state.size || target.y >= state.size) {
+    if (!isPlayableCell(state, target.x, target.y)) {
       markDead(agent, "cliff");
       continue;
     }
     const owner = state.board[target.y][target.x];
-    const ownIndex = state.agents.indexOf(agent);
-    if (owner >= 0 && owner !== ownIndex) {
+    // Once a cell is colored it becomes a wall for everyone, even its owner.
+    if (owner >= 0) {
       agent.lastAction = "blocked";
       continue;
     }
@@ -356,20 +354,12 @@ export function makeNpcProgram(level = "medium", variant = 0) {
     }]);
   }
   if (safeLevel === "medium") {
-    return forever([cellIf("front", "unclaimed", [action("move")], [
-      cellIf("front", "own", [action("move")], [action(preferredTurn)]),
-    ])]);
+    return forever([cellIf("front", "unclaimed", [action("move")], [action(preferredTurn)])]);
   }
   return forever([cellIf("front", "unclaimed", [action("move")], [
     cellIf("left", "unclaimed", [action("turnLeft")], [
       cellIf("right", "unclaimed", [action("turnRight")], [
-        cellIf("front", "own", [action("move")], [
-          cellIf("left", "own", [action("turnLeft")], [
-            cellIf("right", "own", [action("turnRight")], [
-              { type: "if", condition: { type: "random", chance: 0.5 }, then: [action(preferredTurn)], else: [action(otherTurn)] },
-            ]),
-          ]),
-        ]),
+        { type: "if", condition: { type: "random", chance: 0.5 }, then: [action(preferredTurn)], else: [action(otherTurn)] },
       ]),
     ]),
   ])]);

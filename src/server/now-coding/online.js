@@ -1,12 +1,14 @@
 import crypto from "node:crypto";
 import { PLAYER_COLORS } from "../../../public/now-coding/engine.js";
 import { MODE_LABELS, makeModeNpcProgram } from "../../../public/now-coding/modes.js";
+import { BOARD_SHAPES, BOARD_SIZE_KEYS, createBoardDefinition, resolveBoardChoice } from "../../../public/now-coding/boards.js";
 import { resolveNowCodingUser } from "./store.js";
 
 const rooms = new Map();
 const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
 const ROUND_SELECT_MS = 30_000;
-const VALID_SIZES = new Set([15, 21, 31]);
+const VALID_BOARD_SHAPES = new Set([...BOARD_SHAPES, "random"]);
+const VALID_BOARD_SIZES = new Set([...BOARD_SIZE_KEYS, "random"]);
 const VALID_DIFFICULTIES = new Set(["weak", "medium", "strong"]);
 const VALID_MODES = new Set(Object.keys(MODE_LABELS));
 let cleanupTimer = null;
@@ -31,21 +33,27 @@ function normalizeModes(raw) {
 }
 function normalizeSettings(raw = {}) {
   const modes = normalizeModes(raw.modes || raw.mode);
+  const boardShape = VALID_BOARD_SHAPES.has(raw.boardShape) ? raw.boardShape : "square";
+  const boardSizeKey = VALID_BOARD_SIZES.has(raw.boardSizeKey) ? raw.boardSizeKey : "large";
+  const hasRandomBoard = boardShape === "random" || boardSizeKey === "random";
   return {
     modes,
     mode: modes[0],
     playerCount: Math.max(2, Math.min(4, Number(raw.playerCount) || 2)),
-    size: VALID_SIZES.has(Number(raw.size)) ? Number(raw.size) : 21,
+    boardShape,
+    boardSizeKey,
+    rerollBoardEachRound: modes.length > 1 && hasRandomBoard && Boolean(raw.rerollBoardEachRound),
     seed: text(raw.seed, 128),
     fillWithNpc: Boolean(raw.fillWithNpc),
     npcDifficulty: VALID_DIFFICULTIES.has(raw.npcDifficulty) ? raw.npcDifficulty : "medium",
     allowRoundProgramChange: modes.length > 1 && Boolean(raw.allowRoundProgramChange),
   };
 }
-function modeMaxTicks(mode, size) {
-  if (mode === "cobra" || mode === "fall") return Math.max(600, size * size * 2);
-  if (mode === "splat") return Math.max(500, size * size * 2);
-  return Math.max(420, size * size * 2);
+function modeMaxTicks(mode, boardDef) {
+  const cells = boardDef.playableCount;
+  if (mode === "cobra" || mode === "fall") return Math.max(600, cells * 2);
+  if (mode === "splat") return Math.max(500, cells * 2);
+  return Math.max(420, cells * 2);
 }
 function seededShuffle(values, seed) {
   let h = 2166136261 >>> 0;
@@ -78,7 +86,7 @@ function publicRoom(room, viewerId = "") {
 }
 function publicSummary(room) {
   const connected = room.members.filter((m) => m.socketIds.size > 0).length;
-  return { roomId: room.id, hostName: room.members.find((m) => m.userTrackingId === room.hostId)?.username || "", modes: [...room.settings.modes], mode: room.settings.modes[0], modeLabel: room.settings.modes.map((m) => MODE_LABELS[m]).join(" / "), size: room.settings.size, playerCount: room.settings.playerCount, currentPlayers: connected, fillWithNpc: room.settings.fillWithNpc, npcDifficulty: room.settings.npcDifficulty, createdAt: room.createdAt };
+  return { roomId: room.id, hostName: room.members.find((m) => m.userTrackingId === room.hostId)?.username || "", modes: [...room.settings.modes], mode: room.settings.modes[0], modeLabel: room.settings.modes.map((m) => MODE_LABELS[m]).join(" / "), boardShape: room.settings.boardShape, boardSizeKey: room.settings.boardSizeKey, rerollBoardEachRound: room.settings.rerollBoardEachRound, playerCount: room.settings.playerCount, currentPlayers: connected, fillWithNpc: room.settings.fillWithNpc, npcDifficulty: room.settings.npcDifficulty, createdAt: room.createdAt };
 }
 function listPublicRooms() {
   const now = Date.now();
@@ -117,9 +125,15 @@ function buildPlayers(room, mode) {
   }
   return players;
 }
+function resolvedRoomBoard(room) {
+  if (!room.settings.rerollBoardEachRound) return room.fixedBoard;
+  return resolveBoardChoice({ shape: room.settings.boardShape, sizeKey: room.settings.boardSizeKey, seed: `${room.masterSeed}:board:${room.currentRound}` });
+}
 function emitMatchStart(io, room) {
   const mode = room.roundOrder[room.currentRound];
   const players = buildPlayers(room, mode);
+  const boardChoice = resolvedRoomBoard(room);
+  const boardDef = createBoardDefinition({ boardShape: boardChoice.shape, boardSizeKey: boardChoice.sizeKey });
   room.status = "playing";
   room.roundFinished = new Set();
   room.roundDeadline = 0;
@@ -127,10 +141,12 @@ function emitMatchStart(io, room) {
   io.to(channel(room.id)).emit("now:match-start", {
     mode,
     seed: `${room.masterSeed}:round:${room.currentRound}`,
-    size: room.settings.size,
+    size: boardDef.size,
+    boardShape: boardDef.shape,
+    boardSizeKey: boardDef.sizeKey,
     players,
-    maxTicks: modeMaxTicks(mode, room.settings.size),
-    online: { roomId: room.id, saveOwnerId: room.hostId, series: true, roundIndex: room.currentRound, totalRounds: room.roundOrder.length, mode, colors: players.map((p) => p.color), allowRoundProgramChange: room.settings.allowRoundProgramChange },
+    maxTicks: modeMaxTicks(mode, boardDef),
+    online: { roomId: room.id, saveOwnerId: room.hostId, series: true, roundIndex: room.currentRound, totalRounds: room.roundOrder.length, mode, colors: players.map((p) => p.color), allowRoundProgramChange: room.settings.allowRoundProgramChange, boardShape: boardDef.shape, boardSizeKey: boardDef.sizeKey },
   });
   emitRoom(io, room);
 }
@@ -215,7 +231,7 @@ export function mountNowCodingSocketHandlers(io) {
         const user = await resolveSocketUser(socket); if (!user) throw new Error("login_required");
         const room = rooms.get(text(payload.roomId, 20)); if (!room || room.status !== "lobby") throw new Error("room_not_open"); if (room.hostId !== user.userTrackingId) throw new Error("host_only");
         const humans = connectedHumans(room); if (humans.some((m) => !m.program?.blocks?.length || !m.ready)) throw new Error("members_not_ready"); if (humans.length < 2 && !room.settings.fillWithNpc) throw new Error("need_two_players");
-        assignFixedColors(room); room.masterSeed = room.settings.seed || makeSeed(); room.roundOrder = seededShuffle(room.settings.modes, room.masterSeed); room.currentRound = 0; room.startedAt = Date.now(); ack(cb, { ok: true }); emitMatchStart(io, room); io.emit("now:rooms-changed");
+        assignFixedColors(room); room.masterSeed = room.settings.seed || makeSeed(); room.roundOrder = seededShuffle(room.settings.modes, room.masterSeed); room.fixedBoard = room.settings.rerollBoardEachRound ? null : resolveBoardChoice({ shape: room.settings.boardShape, sizeKey: room.settings.boardSizeKey, seed: `${room.masterSeed}:series-board` }); room.currentRound = 0; room.startedAt = Date.now(); ack(cb, { ok: true }); emitMatchStart(io, room); io.emit("now:rooms-changed");
       } catch (e) { ack(cb, { ok: false, error: e?.message || "room_start_failed" }); }
     });
 
