@@ -61,10 +61,13 @@ test("all 28 canonical jobs match the Sheet-backed runtime catalog and only appe
     assert.deepEqual(windows[canonical.jobId], canonical.windows);
 
     const [validStart] = canonical.windows[0];
+    // Production time is elapsed from Day1 10:00, so use Day2 to represent
+    // every wall-clock window (including 06:00) without negative elapsed time.
+    const absoluteMinuteForDay2WallClock = (wallMinute) => 1440 + wallMinute - 600;
     const runtime = {
       playerState: {
-        day: 1,
-        absoluteMinute: validStart,
+        day: 2,
+        absoluteMinute: absoluteMinuteForDay2WallClock(validStart),
         progress: {
           villageTrust: 3,
           reputation: 2,
@@ -89,9 +92,10 @@ test("all 28 canonical jobs match the Sheet-backed runtime catalog and only appe
     assert.equal(action.targetFacilityId, canonical.facilityId);
     assert.equal(action.minutes, canonical.minutes);
     assert.equal(action.wage, canonical.wage);
+    assert.equal(action.type, "plan");
     assert.equal(CANONICAL_JOB_TIME_POLICY_INTERNALS.jobTimeAllowed(runtime, action), true);
 
-    runtime.playerState.absoluteMinute = validStart - 1;
+    runtime.playerState.absoluteMinute = absoluteMinuteForDay2WallClock(validStart - 1);
     assert.equal(CANONICAL_JOB_TIME_POLICY_INTERNALS.jobTimeAllowed(runtime, action), false);
     assert.equal(
       CANONICAL_JOB_TIME_POLICY_INTERNALS.filterActions(runtime, offered)
