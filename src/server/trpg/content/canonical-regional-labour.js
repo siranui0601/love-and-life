@@ -1,61 +1,69 @@
 import * as base from "./canonical-regional-access.js";
+import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./canonical-regional-access.js";
 
-export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v5";
+export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v6";
 
 // Live TRPG/仕事マスター is authoritative. These are normal public jobs for
-// every route. All time/gold/needs effects are resolved by the native work
-// engine; this layer only supplies canonical offers, gates and durable shift
-// bookkeeping.
+// every route. Action IDs, duration, wage, meal credit, risk, conditions and
+// time bands come from that master; a route never invents a private wage or a
+// hidden replacement action.
 const JOBS = Object.freeze({
-  LOC_FARM_FIELD: [["JOB-FARM-01", "麦畑の草取り・収穫補助", 240, 4, 0, "low"]],
-  LOC_FARM_GRANARY: [["JOB-FARM-02", "穀倉の袋運び・棚卸し", 180, 3, 0, "low"]],
-  LOC_FARM_INN: [["JOB-FARM-03", "麦穂亭の皿洗い", 120, 2, 0, "low"]],
-  LOC_FARM_NORTH_FENCE: [["JOB-FARM-04", "北柵の夜番補助", 240, 3, 0, "medium", "villageTrust>=2"]],
+  LOC_FARM_FIELD: [["JOB-FARM-01", "麦畑の草取り・収穫補助", 240, 4, 0, "low", null, "朝/昼"]],
+  LOC_FARM_GRANARY: [["JOB-FARM-02", "穀倉の袋運び・棚卸し", 180, 3, 0, "low", null, "昼"]],
+  LOC_FARM_INN: [["JOB-FARM-03", "麦穂亭の皿洗い", 120, 2, 0, "low", null, "朝/夕"]],
+  LOC_FARM_NORTH_FENCE: [["JOB-FARM-04", "北柵の夜番補助", 240, 3, 0, "medium", "villageTrust>=2", "夜"]],
 
   LOC_TRADE_PORT: [
-    ["JOB-TRADE-01", "港朝荷役", 300, 8, 0, "medium"],
-    ["JOB-TRADE-02", "港夕荷役", 180, 5, 0, "medium"],
+    ["JOB-TRADE-01", "港朝荷役", 300, 8, 0, "medium", null, "朝"],
+    ["JOB-TRADE-02", "港夕荷役", 180, 5, 0, "medium", null, "夕"],
   ],
-  LOC_TRADE_CUSTOMS: [["JOB-TRADE-03", "税関荷札整理", 180, 6, 0, "low", "reputation>=1"]],
-  LOC_TRADE_SHIPYARD: [["JOB-TRADE-04", "帆布・船具補修補助", 180, 4, 0, "low"]],
+  LOC_TRADE_CUSTOMS: [["JOB-TRADE-03", "税関荷札整理", 180, 6, 0, "low", "reputation>=1", "昼"]],
+  LOC_TRADE_SHIPYARD: [["JOB-TRADE-04", "帆布・船具補修補助", 180, 4, 0, "low", null, "昼"]],
 
-  LOC_CAP_MARKET: [["JOB-CAP-01", "中央市場の荷運び", 240, 6, 0, "low"]],
-  LOC_CAP_STABLE: [["JOB-CAP-02", "厩舎清掃・荷車整備", 180, 5, 0, "low"]],
-  LOC_CAP_NEWSPAPER: [["JOB-CAP-03", "瓦版印刷・配布", 180, 3, 0, "low", "petraTrust>=1"]],
-  LOC_CAP_ORPHANAGE: [["JOB-CAP-04", "孤児院手伝い", 180, 1, 1, "low"]],
+  LOC_CAP_MARKET: [["JOB-CAP-01", "中央市場の荷運び", 240, 6, 0, "low", null, "朝/昼"]],
+  LOC_CAP_STABLE: [["JOB-CAP-02", "厩舎清掃・荷車整備", 180, 5, 0, "low", null, "朝"]],
+  LOC_CAP_NEWSPAPER: [["JOB-CAP-03", "瓦版印刷・配布", 180, 3, 0, "low", "petraTrust>=1", "昼/夕"]],
+  LOC_CAP_ORPHANAGE: [["JOB-CAP-04", "孤児院手伝い", 180, 1, 1, "low", null, "昼"]],
 
-  LOC_CRIME_BACK_INN: [["JOB-CRIME-01", "黒灯亭厨房手伝い", 180, 4, 0, "medium"]],
-  LOC_CRIME_INFO_STREET: [["JOB-CRIME-02", "裏路地荷運び", 180, 4, 0, "high"]],
+  LOC_CRIME_BACK_INN: [["JOB-CRIME-01", "黒灯亭厨房手伝い", 180, 4, 0, "medium", null, "夕"]],
+  LOC_CRIME_INFO_STREET: [["JOB-CRIME-02", "裏路地荷運び", 180, 4, 0, "high", null, "昼"]],
 
   LOC_DWARF_MARKET: [
-    ["JOB-DWARF-01", "鉱石運び", 300, 6, 0, "medium"],
-    ["JOB-DWARF-02", "鉱石選別・秤見", 120, 3, 0, "low"],
+    ["JOB-DWARF-01", "鉱石運び", 300, 6, 0, "medium", null, "朝/昼"],
+    ["JOB-DWARF-02", "鉱石選別・秤見", 120, 3, 0, "low", null, "昼"],
   ],
   LOC_DWARF_ENGINEER: [
-    ["JOB-DWARF-03", "排水部品整理", 180, 3, 0, "low", "minaTrust>=1"],
-    ["JOB-DWARF-04", "図面清書", 240, 5, 0, "low", "technicalKnowledge||minaTrust>=2"],
+    ["JOB-DWARF-03", "排水部品整理", 180, 3, 0, "low", "minaTrust>=1", "昼"],
+    ["JOB-DWARF-04", "図面清書", 240, 5, 0, "low", "technicalKnowledge||minaTrust>=2", "夕"],
   ],
 
-  LOC_BORDER_INN: [["JOB-BORDER-01", "白砂亭の水汲み・掃除", 180, 3, 0, "low"]],
+  LOC_BORDER_INN: [["JOB-BORDER-01", "白砂亭の水汲み・掃除", 180, 3, 0, "low", null, "朝"]],
   LOC_BORDER_PILGRIM_SQUARE: [
-    ["JOB-BORDER-02", "隊商荷ほどき", 180, 3, 0, "medium"],
-    ["JOB-BORDER-03", "巡礼荷の仕分け", 120, 2, 0, "low"],
+    ["JOB-BORDER-02", "隊商荷ほどき", 180, 3, 0, "medium", null, "昼"],
+    ["JOB-BORDER-03", "巡礼荷の仕分け", 120, 2, 0, "low", null, "朝/昼"],
   ],
 
   LOC_FORT_SUPPLY: [
-    ["JOB-FORT-01", "補給倉庫荷下ろし", 240, 5, 0, "medium", "fortEntryPermit"],
-    ["JOB-FORT-03", "防寒布・縄の棚卸し", 120, 3, 0, "low", "fortEntryPermit"],
+    ["JOB-FORT-01", "補給倉庫荷下ろし", 240, 5, 0, "medium", "fortEntryPermit", "昼"],
+    ["JOB-FORT-03", "防寒布・縄の棚卸し", 120, 3, 0, "low", "fortEntryPermit", "朝/昼"],
   ],
-  LOC_FORT_INN: [["JOB-FORT-02", "炊事・薪運び補助", 180, 4, 1, "low", "fortEntryPermit"]],
+  LOC_FORT_INN: [["JOB-FORT-02", "炊事・薪運び補助", 180, 4, 1, "low", "fortEntryPermit", "夕"]],
 
   LOC_BLACKRIDGE_MARKET: [
-    ["JOB-BLACK-01", "水路荷運び", 240, 5, 0, "medium", "blackridgeEntryPermit"],
-    ["JOB-BLACK-03", "多種族市場の荷札仕分け", 120, 3, 0, "low", "blackridgeEntryPermit"],
+    ["JOB-BLACK-01", "水路荷運び", 240, 5, 0, "medium", "blackridgeEntryPermit", "朝/昼"],
+    ["JOB-BLACK-03", "多種族市場の荷札仕分け", 120, 3, 0, "low", "blackridgeEntryPermit", "昼"],
   ],
-  LOC_BLACKRIDGE_EXILE: [["JOB-BLACK-02", "共同炊事補助", 180, 3, 1, "low"]],
-  LOC_FOREST_HUNTER_HUT: [["JOB-FOREST-01", "罠見回り補助", 240, 6, 0, "medium", "hunterApproval"]],
+  LOC_BLACKRIDGE_EXILE: [["JOB-BLACK-02", "共同炊事補助", 180, 3, 1, "low", null, "夕"]],
+  LOC_FOREST_HUNTER_HUT: [["JOB-FOREST-01", "罠見回り補助", 240, 6, 0, "medium", "hunterApproval", "朝"]],
+});
+
+const TIME_BANDS = Object.freeze({
+  "朝": [6 * 60, 12 * 60],
+  "昼": [10 * 60, 18 * 60],
+  "夕": [16 * 60, 22 * 60],
+  "夜": [18 * 60, 30 * 60],
 });
 
 function current(runtime) {
@@ -93,23 +101,42 @@ function conditionMet(runtime, condition) {
   return false;
 }
 
+function minuteOfDay(runtime) {
+  return clockFromMinute(Number(runtime?.playerState?.absoluteMinute ?? 0)).minuteOfDay;
+}
+
+function timeBandAllows(runtime, timeBand, durationMinutes) {
+  const labels = String(timeBand ?? "").split("/").map((entry) => entry.trim()).filter(Boolean);
+  if (!labels.length) return true;
+  const start = minuteOfDay(runtime);
+  const duration = Math.max(0, Number(durationMinutes ?? 0));
+  return labels.some((label) => {
+    const bounds = TIME_BANDS[label];
+    if (!bounds) return false;
+    const [open, close] = bounds;
+    if (close <= 24 * 60) return start >= open && start + duration <= close;
+    const normalizedStart = start < open ? start + 24 * 60 : start;
+    return normalizedStart >= open && normalizedStart + duration <= close;
+  });
+}
+
 function jobs(runtime) {
   const facilityId = String(current(runtime).facilityId ?? "");
   const rows = JOBS[facilityId];
   if (!rows) return null;
   if (Number(state(runtime).lastDayByFacility[facilityId] ?? 0) === day(runtime)) return null;
-  return rows.filter((entry) => conditionMet(runtime, entry[6]));
+  return rows.filter((entry) => conditionMet(runtime, entry[6]) && timeBandAllows(runtime, entry[7], entry[2]));
 }
 
 function action(tuple, runtime) {
-  const [jobId, label, minutes, gold, freeMeals = 0, danger = "low"] = tuple;
+  const [jobId, label, minutes, gold, freeMeals = 0, danger = "low", , timeBand = ""] = tuple;
   const facilityId = String(current(runtime).facilityId ?? "");
   return {
     id: `WORK:FACILITY:${jobId}`,
     actionId: `WORK:FACILITY:${jobId}`,
     family: "work",
-    type: "work",
-    label,
+    type: "plan",
+    label: `${label}（${minutes}分・${gold}G）`,
     minutes,
     wage: gold,
     targetLocation: current(runtime).location ?? null,
@@ -120,6 +147,7 @@ function action(tuple, runtime) {
     canonicalRegionalJobId: jobId,
     canonicalRegionalGold: gold,
     canonicalRegionalFreeMeals: freeMeals,
+    canonicalRegionalTimeBand: timeBand,
     workDescription: label,
     workFacilityId: facilityId,
     workRiskClass: danger,
@@ -137,6 +165,11 @@ function consume(runtime, actionValue, result) {
   const facilityId = String(player.facilityId ?? "");
   const labour = state(runtime);
   const jobId = String(actionValue.canonicalRegionalJobId ?? "");
+  const goldBefore = Number(player.gold ?? runtime.playerState.gold ?? 0);
+  const goldEarned = Number(actionValue.canonicalRegionalGold ?? 0);
+  const goldAfter = goldBefore + goldEarned;
+  player.gold = goldAfter;
+  runtime.playerState.gold = goldAfter;
   player.freeMeals = Number(player.freeMeals ?? 0) + Number(actionValue.canonicalRegionalFreeMeals ?? 0);
   labour.lastDayByFacility[facilityId] = day(runtime);
   labour.shifts[jobId] = Number(labour.shifts[jobId] ?? 0) + 1;
@@ -146,11 +179,16 @@ function consume(runtime, actionValue, result) {
     minute: Number(runtime.playerState.absoluteMinute ?? 0),
     actionId: actionValue.id,
     jobId,
-    goldEarned: Number(actionValue.canonicalRegionalGold ?? 0),
+    goldEarned,
+    goldBefore,
+    goldAfter,
+    durationMinutes: Number(actionValue.minutes ?? 0),
+    timeBand: actionValue.canonicalRegionalTimeBand ?? null,
     location: player.location ?? null,
     facilityId,
   });
-  result.summary = `${actionValue.label}。${actionValue.canonicalRegionalGold}Gを受け取った。`;
+  result.summary = `${actionValue.workDescription ?? actionValue.label}。${goldEarned}Gを受け取った。`;
+  result.gold = { before: goldBefore, after: goldAfter };
   return true;
 }
 
@@ -176,7 +214,7 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
     return {
       kicker: "土地の暮らしを支える、いつもの働き口がある",
       title: "正本の勤務条件から仕事を選ぶ",
-      detail: "勤務時間と賃金はTRPG/仕事マスターの現在値を使う。所持金が増えても仕事そのものは消えない。",
+      detail: "勤務時間・賃金・条件はTRPG/仕事マスターの現在値を使う。所持金が増えても仕事そのものは消えない。",
       targetLocation: current(runtime).location ?? null,
       targetFacilityId: current(runtime).facilityId ?? null,
     };
@@ -189,4 +227,13 @@ export function applyAuthoredMissionFlowAction(runtime, actionValue, result) {
   return base.applyAuthoredMissionFlowAction(runtime, actionValue, result);
 }
 
-export const CANONICAL_REGIONAL_LABOUR_INTERNALS = Object.freeze({ JOBS, jobs, ownActions, conditionMet, staleBaseLabour });
+export const CANONICAL_REGIONAL_LABOUR_INTERNALS = Object.freeze({
+  JOBS,
+  TIME_BANDS,
+  jobs,
+  ownActions,
+  conditionMet,
+  timeBandAllows,
+  minuteOfDay,
+  staleBaseLabour,
+});
