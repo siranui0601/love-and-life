@@ -4,10 +4,10 @@ import { publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.m
 export * from "./authored-mission-flow-day1-t01-village-night.js";
 
 export const AUTHORED_DAY1_T01_VILLAGE_NIGHT_CANONICAL_VERSION =
-  "authored-day1-t01-village-night-canonical-v2";
+  "authored-day1-t01-village-night-canonical-v3";
 
 const MERCHANT_NPC_ID = "NPC008";
-const MERCHANT_FACILITY_ID = "LOC_FARM_INN";
+const MERCHANT_FACILITY_ID = "LOC_FARM_BAKERY";
 const MORNING_SCENE_ID = "t01-day2-merchant-arrival";
 
 function player(runtime) {
@@ -60,6 +60,13 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 export function authoredMissionFlowGuidance(runtime) {
   const guidance = base.authoredMissionFlowGuidance(runtime);
   if (guidance?.title === "Day2の行商人" && !merchantMorningStateEligible(runtime)) return null;
+  if (guidance?.title === "Day2の行商人") {
+    return {
+      ...guidance,
+      targetFacilityId: MERCHANT_FACILITY_ID,
+      detail: "昨夜の約束どおり行商人が村へ着き、パン屋で朝の仕入れをしている。先に朝食を整えれば、その場で荷を手伝ったり商品を見たりできる。",
+    };
+  }
   return guidance;
 }
 
