@@ -15,12 +15,13 @@ const CATALOG = JSON.parse(readFileSync(
 )).jobs;
 
 const TEST_DAY = 99;
+const absoluteMinuteForWallClock = (day, minuteOfDay) => (day - 1) * 1440 + minuteOfDay - 600;
 
 function runtime(job, minuteOfDay) {
   return {
     playerState: {
       day: TEST_DAY,
-      absoluteMinute: (TEST_DAY - 1) * 1440 + minuteOfDay,
+      absoluteMinute: absoluteMinuteForWallClock(TEST_DAY, minuteOfDay),
       player: {
         location: job.region,
         facilityId: job.facilityId,
