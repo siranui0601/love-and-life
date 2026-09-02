@@ -141,6 +141,22 @@ test("eligibility reads do not mutate the persisted runtime", () => {
   assert.equal(state.playerState.day1T01Aftercare, undefined);
 });
 
+test("aftercare noon gate uses the canonical 10:00-based wall clock", () => {
+  const state = runtime();
+  state.playerState.absoluteMinute = 292;
+  state.playerState.missions[0].completedAt = 292;
+  assert.equal(internals.withinDay1AftercareWindow(state), true);
+  assert.equal(internals.aftercareEligible(state), true);
+
+  const beforeNoon = runtime();
+  beforeNoon.playerState.absoluteMinute = 119;
+  assert.equal(internals.withinDay1AftercareWindow(beforeNoon), false);
+
+  const noon = runtime();
+  noon.playerState.absoluteMinute = 120;
+  assert.equal(internals.withinDay1AftercareWindow(noon), true);
+});
+
 test("the scene is absent before formal completion, before Finn returns, outside the square, or outside the Day1 aftermath window", () => {
   const before = runtime();
   before.playerState.missions[0].status = "active";
@@ -167,7 +183,7 @@ test("the scene is absent before formal completion, before Finn returns, outside
   assert.equal(internals.aftercareEligible(away), false);
 
   const morningFixture = runtime();
-  morningFixture.playerState.absoluteMinute = 480;
+  morningFixture.playerState.absoluteMinute = 60;
   assert.equal(internals.aftercareEligible(morningFixture), false);
 
   const day2 = runtime();
