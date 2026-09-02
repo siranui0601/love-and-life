@@ -21,6 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Repair compact function separators
+        run: python tools/now-coding/fix-board-patcher.py
       - name: Apply board variant patch
         run: python tools/now-coding/patch-board-variants.py
       - name: Syntax check
