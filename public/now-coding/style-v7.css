@@ -8,3 +8,7 @@
 @media (hover:none) and (pointer:coarse){
   input,select,textarea{font-size:16px!important}
 }
+/* Existing-program save actions and unsaved-navigation confirmation. */
+.editor-actions{flex-wrap:wrap;justify-content:flex-end}
+.unsaved-code-card{max-width:440px}.unsaved-code-card p{line-height:1.7}.unsaved-code-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.unsaved-code-actions [data-cancel-move]{grid-column:1/-1;justify-self:center}
+@media(max-width:430px){.editor-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.editor-actions .compact{min-width:0}.unsaved-code-actions{grid-template-columns:1fr}.unsaved-code-actions [data-cancel-move]{grid-column:auto;justify-self:stretch}}

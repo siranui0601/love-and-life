@@ -193,3 +193,26 @@ test("test battle placement rerolls its seed on every execution", () => {
   assert.match(app, /c\.spawnMode==="random"\|\|c\.spawnMode==="battle"\|\|c\.boardShape==="random"/);
 });
 
+test("existing programs expose overwrite and save-as-new without renaming overwrite", () => {
+  assert.ok(htmlHasId("overwriteProgramButton"));
+  assert.ok(htmlHasId("saveAsNewProgramButton"));
+  assert.match(html, /id="overwriteProgramButton"[^>]*>上書き保存<\/button>/);
+  assert.match(html, /id="saveAsNewProgramButton"[^>]*>新規保存<\/button>/);
+  assert.match(app, /function overwriteDraft\(afterSave=null\)/);
+  assert.match(app, /programId:state\.draft\.programId,name:state\.draft\.name/);
+  assert.match(app, /state\.saveModalMode==="copy"\?"":/);
+});
+
+test("dirty code is guarded on internal navigation and browser unload", () => {
+  assert.match(app, /function draftSignature/);
+  assert.match(app, /function isDraftDirty/);
+  assert.match(app, /function requestUnsavedAction/);
+  assert.ok(app.includes("コードの保存が出来ていません。"));
+  assert.ok(app.includes("このページから移動してもよろしいですか？"));
+  for (const label of ["保存して移動","保存せず移動","キャンセル"]) assert.ok(app.includes(label));
+  assert.match(app, /beforeunload/);
+  assert.match(app, /e\.returnValue=""/);
+  assert.match(app, /requestUnsavedAction\(\(\)=>showView\(target\)\)/);
+  assert.match(app, /requestUnsavedAction\(newDraft\)/);
+});
+
