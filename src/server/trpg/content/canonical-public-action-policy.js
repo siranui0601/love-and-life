@@ -2,7 +2,7 @@ import * as base from "./canonical-world-life-actions.js";
 
 export * from "./canonical-world-life-actions.js";
 
-export const CANONICAL_PUBLIC_ACTION_POLICY_VERSION = "canonical-public-action-policy-v5";
+export const CANONICAL_PUBLIC_ACTION_POLICY_VERSION = "canonical-public-action-policy-v6";
 
 const PROVISION_PORTIONS = Object.freeze({
   ITM008: 1,
@@ -176,10 +176,19 @@ function bulkProvisionActions(action) {
   ];
 }
 
+function publicLifePriority(action) {
+  if (action?.canonicalWorldLifeKind === "eat_provision") return 0;
+  if (action?.canonicalWorldLifeKind === "eat_meal") return 1;
+  if (action?.canonicalWorldLifeKind === "buy_provision" && !action?.canonicalWorldLifeBulkQuantity) return 2;
+  if (action?.canonicalWorldLifeKind === "buy_provision") return 3;
+  return 2;
+}
+
 function filtered(actions, runtime) {
   if (!Array.isArray(actions)) return actions;
   const expanded = actions.flatMap((action) => bulkProvisionActions(action));
   const kept = expanded.filter((action) => canonicalAllowed(runtime, action));
+  kept.sort((left, right) => publicLifePriority(left) - publicLifePriority(right));
   return kept.length ? kept : null;
 }
 
@@ -240,6 +249,7 @@ export const CANONICAL_PUBLIC_ACTION_POLICY_INTERNALS = Object.freeze({
   normalizeProvisionAction,
   nativeLifeAction,
   bulkProvisionActions,
+  publicLifePriority,
   filtered,
   recordNativeLifeOutcome,
 });
