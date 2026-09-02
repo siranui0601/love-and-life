@@ -66,8 +66,9 @@ test("mobile tutorial acceptance contract is wired", () => {
   assert.match(app, /a\.vm\?\.halted===true/);
   assert.match(app, /tutorial-step-modal/);
   assert.match(app, /scrollIntoView/);
-  assert.match(app, /setTimeout\(\(\)=>activate\(event\),120\)/);
-  assert.match(app, /dist>5/);
+  assert.match(app, /function startTouchExistingBlockDrag\(event,block\)/);
+  assert.match(app, /const hold=setTimeout\(activate,190\)/);
+  assert.match(app, /completeBlockMove\(block,target\.seq,target\.index\)/);
   assert.match(css, /editor-layout-v3>\.block-palette\{[^}]*display:block!important/);
   assert.match(css, /\.tutorial-disabled/);
 });
@@ -248,7 +249,7 @@ test("draft mutation uses explicit dirty state and capture-phase navigation guar
   assert.match(app, /draftDirty: false/);
   assert.match(app, /function markDraftChanged\(\)/);
   assert.match(app, /function isDraftDirty\(\)\{return Boolean\(state\.draftDirty\)/);
-  assert.match(app, /markDraftChanged\(\);renderWorkspace\(\);onTutorialAdd/);
+  assert.match(app, /function insertBlock\([^\n]+markDraftChanged\(\)[^\n]+renderWorkspace\([^\n]+onTutorialAdd\(block\)/);
   assert.match(app, /e\.stopImmediatePropagation\(\);requestUnsavedAction/);
   assert.match(app, /window\.location\.assign\(link\.href\)/);
   assert.match(app, /\},true\);document\.addEventListener\("click"/);
@@ -269,3 +270,56 @@ test("mobile command launcher is class-controlled and clears the bottom navigati
   assert.match(css, /bottom:calc\(86px \+ env\(safe-area-inset-bottom\)\)/);
 });
 
+
+
+test("tap insertion remembers the current nested sequence", () => {
+  assert.match(app, /insertSequence: null, insertIndex: 0/);
+  assert.match(app, /function currentInsertionTarget\(\)/);
+  assert.match(app, /function setInsertionCursor\(sequence,index/);
+  assert.match(app, /function insertBlockAtCurrent\(type\)/);
+  assert.match(app, /insertBlockAtCurrent\(button\.dataset\.addBlock\)/);
+  assert.match(app, /nextの命令|次の命令はここに入ります/);
+});
+
+test("drag placement opens a real insertion gap and supports nested moves", () => {
+  assert.match(app, /function activateDragGap\(zone,index\)/);
+  assert.match(app, /function dropIndexForPoint\(zone,clientY\)/);
+  assert.match(app, /function completeBlockMove\(block,targetSequence,targetIndex\)/);
+  assert.match(app, /canMoveBlockTo\(block,targetSequence\)/);
+  assert.match(css, /\.insertion-slot\.is-drag-gap\{height:52px/);
+  assert.match(css, /ここで指を離すと、この隙間に入ります/);
+  assert.match(app, /scrollIntoView\(\{behavior:'smooth',block:'center'/);
+});
+
+test("container deletion asks whether nested commands survive", () => {
+  assert.match(app, /function requestDeleteBlock\(block\)/);
+  assert.match(app, /中身は残す/);
+  assert.match(app, /中身も削除/);
+  assert.match(app, /function preservedChildren\(block\)/);
+  assert.match(app, /block\.type==='if'/);
+});
+
+test("boolean expressions can be wrapped and collapsed without rebuilding", () => {
+  assert.match(app, /かつで広げる/);
+  assert.match(app, /またはで広げる/);
+  assert.match(app, /左だけ残す/);
+  assert.match(app, /右だけ残す/);
+  assert.match(app, /否定で包む/);
+  assert.match(app, /否定を外す/);
+  assert.match(app, /binary\('or',deepClone\(expr\),null\)/);
+});
+
+test("mobile command sheet supports long-press drag into code", () => {
+  assert.match(app, /mobilePaletteContent.*pointerdown.*startMobilePalettePointer/s);
+  assert.match(app, /function startTouchCommandDrag\(event,key,fromMobile=false\)/);
+  assert.match(app, /if\(fromMobile\)setMobilePalette\(false\)/);
+  assert.match(app, /blockDropTargetAt\(point\.x,point\.y\)/);
+  assert.match(app, /function startTouchExistingBlockDrag\(event,block\)/);
+});
+
+test("deep nesting keeps block tools left aligned and wrapping", () => {
+  assert.match(css, /\.block-tools\{position:static!important/);
+  assert.match(css, /justify-content:flex-start!important/);
+  assert.match(css, /flex-wrap:wrap/);
+  assert.match(app, /tool\(state\.moveSource===block\?"移動取消":"移動"/);
+});
