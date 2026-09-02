@@ -1,0 +1,37 @@
+name: now-coding-mobile-dirty-splat-once
+
+on:
+  push:
+    branches:
+      - fix/now-coding-mobile-dirty-splat
+    paths:
+      - ".github/workflows/now-coding-mobile-dirty-splat-once.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/now-coding-mobile-dirty-splat
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply regression fixes
+        run: python tools/now-coding/patch-mobile-dirty-splat.py
+      - name: Syntax check
+        run: node --check public/now-coding/app-v3.js && node --check public/now-coding/modes.js
+      - name: Focused tests
+        run: node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs
+      - name: Commit product changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/now-coding/app-v3.js public/now-coding/index.html public/now-coding/style-v7.css public/now-coding/modes.js tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs
+          git diff --cached --quiet && exit 0
+          git commit -m "fix(now-coding): harden dirty guard mobile input and donut shots"
+          git push origin HEAD:fix/now-coding-mobile-dirty-splat
