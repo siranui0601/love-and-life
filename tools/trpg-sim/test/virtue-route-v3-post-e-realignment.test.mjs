@@ -16,6 +16,7 @@ const ROOT = path.resolve(HERE, '../../..');
 const COMPILER = path.join(ROOT, 'tools/trpg-sim/compile-virtue-route-v3.mjs');
 const SOURCE = path.join(ROOT, 'docs/trpg/virtue-route-v2-source.csv');
 const EVENING_ACTION = 'MISSION_FLOW:T01:EVENING_FREE_TIME:maintain_and_rest';
+const MERCHANT_HELP_ACTION = 'MISSION_FLOW:T01:DAY2_MERCHANT:help_unload';
 const EXPECTED_T01_ACTIONS = [
   'ACTION:MSN-T01:search:tracks',
   'ACTION:MSN-T01:search:wolf-blockade',
@@ -27,7 +28,7 @@ const EXPECTED_T01_ACTIONS = [
 const EXPECTED_DAY2_BREAKFAST_ACTIONS = [
   'LIFE:BUY:ITM008',
   'LIFE:EAT:ITM008',
-  'MOVE_LOCAL:LOC_FARM_INN',
+  MERCHANT_HELP_ACTION,
 ];
 const EXPECTED_DAY2_BREAKFAST_LEDGER_ACTIONS = [
   'MOVE_LOCAL:LOC_FARM_BAKERY',
@@ -103,11 +104,18 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   const day2Breakfast = byId.get('VR2-D02-01');
   assert.deepEqual(actionIds(day2Breakfast), EXPECTED_DAY2_BREAKFAST_ACTIONS);
   const breakfastSteps = JSON.parse(day2Breakfast.replacementSteps);
-  assert.equal(breakfastSteps.at(-1).commandType, 'MOVE');
-  assert.equal(breakfastSteps.at(-1).facilityId, 'LOC_FARM_INN');
-  assert.deepEqual(breakfastSteps.at(-1).payload, { moveId: 'MOVE_LOCAL:LOC_FARM_INN' });
-  assert.equal(day2Breakfast.facilityId, 'LOC_FARM_INN');
-  assert.match(day2Breakfast.resultingState, /ordinary MOVE_LOCAL/u);
+  assert.equal(breakfastSteps.at(-1).commandType, 'CHOOSE');
+  assert.equal(breakfastSteps.at(-1).facilityId, 'LOC_FARM_BAKERY');
+  assert.deepEqual(breakfastSteps.at(-1).payload, { choiceId: MERCHANT_HELP_ACTION, actionId: MERCHANT_HELP_ACTION });
+  assert.equal(day2Breakfast.facilityId, 'LOC_FARM_BAKERY');
+  assert.match(day2Breakfast.requiredState, /NPC008 physically present/u);
+  assert.doesNotMatch(`${day2Breakfast.replacementSteps} ${day2Breakfast.resultingState}`, /MOVE_LOCAL:LOC_FARM_INN|remote NPC interaction/u);
+
+  const formerDuplicate = byId.get('VR2-D02-02');
+  assert.equal(formerDuplicate.classification, 'NARRATIVE_OUTCOME');
+  assert.equal(formerDuplicate.commandType, 'OUTCOME');
+  assert.equal(formerDuplicate.actionId, '');
+  assert.match(formerDuplicate.requiredState, /DAY2_MERCHANT_UNLOADING_HELPED/u);
 
   const moves = JSON.parse(await readFile(path.join(compileDir, 'virtue-route-v3-proposed-local-moves.json'), 'utf8'));
   assert.equal(moves.count, 334);
@@ -170,9 +178,15 @@ test('post-E Human Virtue realignment removes stale opening assumptions and uses
   assert.deepEqual(day2BreakfastRows.map((row) => row.actionId), EXPECTED_DAY2_BREAKFAST_LEDGER_ACTIONS);
   assert.equal(day2BreakfastRows[0].commandType, 'MOVE');
   assert.equal(day2BreakfastRows[0].facilityId, 'LOC_FARM_BAKERY');
-  assert.equal(day2BreakfastRows.at(-1).commandType, 'MOVE');
-  assert.equal(day2BreakfastRows.at(-1).facilityId, 'LOC_FARM_INN');
-  const merchantRow = ledgerRows.find((row) => row.actionId === 'MISSION_FLOW:T01:DAY2_MERCHANT:help_unload');
-  assert.ok(merchantRow);
-  assert.equal(merchantRow.v3RowId, 'VR3-000025');
+  assert.equal(day2BreakfastRows.at(-1).commandType, 'CHOOSE');
+  assert.equal(day2BreakfastRows.at(-1).facilityId, 'LOC_FARM_BAKERY');
+  const merchantRows = ledgerRows.filter((row) => row.actionId === MERCHANT_HELP_ACTION);
+  assert.equal(merchantRows.length, 1);
+  assert.equal(merchantRows[0].v3RowId, 'VR3-000024');
+  assert.equal(merchantRows[0].sourceV2RowId, 'VR2-D02-01');
+  const duplicateTrace = ledgerRows.find((row) => row.sourceV2RowId === 'VR2-D02-02');
+  assert.ok(duplicateTrace);
+  assert.equal(duplicateTrace.v3RowId, 'VR3-000025');
+  assert.equal(duplicateTrace.commandType, 'OUTCOME');
+  assert.equal(duplicateTrace.actionId, '');
 });
