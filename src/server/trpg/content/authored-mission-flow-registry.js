@@ -19,46 +19,15 @@ function t01Active(runtime) {
   return ACTIVE_MISSION_STATUSES.has(String(runtime?.playerState?.missions?.["MSN-T01"]?.status ?? ""));
 }
 
-function ambientFallbackAction(action) {
-  const id = String(action?.id ?? action?.actionId ?? "");
-  return id.startsWith("INSPECT:")
-    || id.startsWith("TALK:")
-    || id.startsWith("AMBIENT_WEATHER:");
-}
-
-function ambientFallbackOnly(actions) {
-  return Array.isArray(actions)
-    && actions.length > 0
-    && actions.every(ambientFallbackAction);
-}
-
-function ordinaryWorldLifeActions(runtime) {
-  const actions = base.CANONICAL_WORLD_LIFE_INTERNALS?.ownActions?.(runtime);
-  return Array.isArray(actions) && actions.length ? actions : null;
-}
-
-function lifeOverridesAmbient(runtime, actions) {
-  return ambientFallbackOnly(actions) && Boolean(ordinaryWorldLifeActions(runtime)?.length);
-}
-
-function ordinaryLifeGuidance(runtime) {
-  return {
-    kicker: "食べる・休む・泊まる・買うことも、この世界で生きる行動だ",
-    title: "その土地の生活を選ぶ",
-    detail: "商品・価格表の正式な食事、保存食、宿泊、修理を通常の公開行動として利用できる。",
-    targetLocation: runtime?.playerState?.player?.location ?? runtime?.playerState?.location ?? null,
-    targetFacilityId: runtime?.playerState?.player?.facilityId ?? runtime?.playerState?.facilityId ?? null,
-  };
-}
-
-// Ordinary life actions are public world actions rather than a story branch.
-// A prior filter removed them from this exclusive hook so the normal diverse
-// pool could render; however the normal pool never re-injected those actions.
-// That made a bakery show INSPECT/TALK/weather while hiding a purchasable loaf.
-// Preserve genuinely authored / regional-labour scenes, but when the inherited
-// result is only ambient fallback, let the existing canonical-world-life
-// authority win. This is route-neutral: every player at the same facility with
-// the same money, inventory and permits receives the same life actions.
+// Canonical world-life has already applied the public product/price, permit,
+// quantity and affordability policy before its actions reach this registry.
+// Do not discard that completed public-action result. The previous registry
+// filter returned null for a life-only set on the assumption that service.js
+// would re-inject those actions into its diverse ordinary pool; it does not.
+// The result was a route-neutral production bug where a player could stand in
+// a bakery with enough gold while only INSPECT/TALK/weather was actionable.
+// Preserve the canonical life set here, while genuinely authored scenes and
+// regional labour keep their existing exclusivity rules below.
 //
 // The public-life network is normally allowed to keep its authored three-way
 // scene. The one exception is an already-established ordinary-work continuity:
@@ -69,11 +38,10 @@ function ordinaryLifeGuidance(runtime) {
 // service.js clears the work focus and the public-life scene is eligible again.
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
-  if (lifeOverridesAmbient(runtime, actions)) return ordinaryWorldLifeActions(runtime);
+  if (onlyCanonicalWorldLife(actions)) return actions;
   if (!Array.isArray(actions)) return actions;
   const exclusive = actions.filter((action) =>
-    action?.canonicalWorldLifeChoice !== true
-      && !(continuingOrdinaryWork(runtime) && action?.authoredPublicLifeNetworkChoice === true));
+    !(continuingOrdinaryWork(runtime) && action?.authoredPublicLifeNetworkChoice === true));
   return exclusive.length ? exclusive : null;
 }
 
@@ -95,15 +63,13 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 // authored work is terminal, but it must not overwrite an active mission's own
 // resolver. T05-T14 already have the full authored guidance contract in the
 // core resolver, so reuse it rather than reconstructing labels/targets here.
-// T01 is intentionally service-owned; returning null lets service.js preserve
-// its rescue/escort/reunion-specific guidance. Genuine downstream authored /
-// regional guidance is preserved unchanged.
+// T01 is intentionally service-owned unless the currently visible production
+// actions are themselves canonical world-life choices.
 export function authoredMissionFlowGuidance(runtime, context = {}) {
-  const inheritedActions = base.authoredMissionFlowExclusiveActions(runtime, context);
-  if (lifeOverridesAmbient(runtime, inheritedActions)) return ordinaryLifeGuidance(runtime);
   const guidance = base.authoredMissionFlowGuidance(runtime, context);
-  const lifeFallback = guidance?.title === "その土地の生活を選ぶ" && onlyCanonicalWorldLife(inheritedActions);
-  if (!guidance || lifeFallback) {
+  const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
+  if (onlyCanonicalWorldLife(actions)) return guidance;
+  if (!guidance) {
     const coreGuidance = coreAuthoredMissionFlowGuidance(runtime);
     if (coreGuidance) return coreGuidance;
     if (t01Active(runtime)) return null;
