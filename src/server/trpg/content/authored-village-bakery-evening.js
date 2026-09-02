@@ -3,13 +3,14 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 
 export * from "./authored-register-butterfly.js";
 
-export const AUTHORED_VILLAGE_BAKERY_EVENING_VERSION = "authored-village-bakery-evening-v1";
+export const AUTHORED_VILLAGE_BAKERY_EVENING_VERSION = "authored-village-bakery-evening-v2";
 
 // Common-world Day2 evening bridge for the farm village. This is deliberately
 // not tied to Human Virtue state: any player who reaches the bakery with calm
 // needs in the same world/time state sees the same three ordinary-life choices.
-// Existing authored mission scenes always win; this layer only fills otherwise
-// empty late-afternoon free time without synthetic WAIT/REST padding.
+// Existing authored mission scenes always win. Generic canonical shop/rest
+// surfaces do not: this one-time authored life scene may temporarily own the
+// choice panel, after which the ordinary bakery products return.
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_BAKERY";
 const STATE_KEY = "villageBakeryEvening";
@@ -134,11 +135,20 @@ function ownEligible(runtime) {
     && readState(runtime)?.completedAtMinute == null;
 }
 
+function onlyCanonicalWorldLife(actions) {
+  return Array.isArray(actions)
+    && actions.length > 0
+    && actions.every((action) => action?.canonicalWorldLifeChoice === true);
+}
+
 function baseIsSpeaking(runtime, context = {}) {
-  const guidance = base.authoredMissionFlowGuidance(runtime, context);
-  if (guidance) return true;
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
-  return Array.isArray(actions) && actions.length > 0;
+  // Generic meals, shop products, lodging and REST are ordinary world surfaces,
+  // not a higher-priority authored scene. Let the one-time bakery evening scene
+  // own the panel while it is eligible; products return immediately afterward.
+  if (onlyCanonicalWorldLife(actions)) return false;
+  if (Array.isArray(actions) && actions.length > 0) return true;
+  return base.authoredMissionFlowGuidance(runtime, context) != null;
 }
 
 function eligible(runtime, context = {}) {
@@ -221,24 +231,24 @@ function consume(runtime, action, result) {
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
-  const fromBase = base.authoredMissionFlowExclusiveActions(runtime, context);
-  if (Array.isArray(fromBase) && fromBase.length > 0) return fromBase;
-  return actions(runtime, context) ?? fromBase;
+  const own = actions(runtime, context);
+  if (own?.length) return own;
+  return base.authoredMissionFlowExclusiveActions(runtime, context);
 }
 
 export function authoredMissionFlowGuidance(runtime, context = {}) {
-  const fromBase = base.authoredMissionFlowGuidance(runtime, context);
-  if (fromBase) return fromBase;
-  if (!eligible(runtime, context)) return null;
-  return {
-    missionId: null,
-    kicker: "午後の売り声が落ち着き、竈の火だけが店の奥で赤く残っている",
-    title: "パン屋で夕暮れを過ごす",
-    detail: "急ぐ事件がない夕方なら、装備を整えても、閉店を手伝っても、村の子と話しながら歩いてもよい。どれを選んでも、村が夜の静けさへ変わるまでを普通の暮らしとして過ごす。",
-    targetLocation: LOCATION,
-    targetFacilityId: FACILITY_ID,
-    actionPanel: null,
-  };
+  if (eligible(runtime, context)) {
+    return {
+      missionId: null,
+      kicker: "午後の売り声が落ち着き、竈の火だけが店の奥で赤く残っている",
+      title: "パン屋で夕暮れを過ごす",
+      detail: "急ぐ事件がない夕方なら、装備を整えても、閉店を手伝っても、村の子と話しながら歩いてもよい。どれを選んでも、村が夜の静けさへ変わるまでを普通の暮らしとして過ごす。",
+      targetLocation: LOCATION,
+      targetFacilityId: FACILITY_ID,
+      actionPanel: null,
+    };
+  }
+  return base.authoredMissionFlowGuidance(runtime, context);
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
@@ -264,6 +274,7 @@ export const AUTHORED_VILLAGE_BAKERY_EVENING_INTERNALS = Object.freeze({
   readState,
   ensureState,
   ownEligible,
+  onlyCanonicalWorldLife,
   baseIsSpeaking,
   eligible,
   remainingEveningMinutes,
