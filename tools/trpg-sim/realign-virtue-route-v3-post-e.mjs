@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v8';
+export const POST_E_REALIGNMENT_VERSION = 'virtue-route-v3-post-e-realignment-v9';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -274,14 +274,26 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
   merchantChain.resultingState = 'merchant unloading, payment, parcel handoff, hunter-hut delivery/repair and warning chain resolved through the existing production actions';
   merchantChain.notes = 'preserves all six authored Day2 merchant/hunter commands; only the initial NPC008 contact facility is realigned from stale inn placement to the live bakery route';
 
+  const warningWaitActionId = 'MISSION_FLOW:T01:DAY2_WARNING_WAIT:wait_with_jill';
+  sequence(requireRow(byId, 'VR2-D02-03'), [
+    choose(warningWaitActionId, { regionId: '森', facilityId: 'LOC_FOREST_HUNTER_HUT' }),
+  ], {
+    description: '村へ警告を託した後、狩人小屋でジルと返事を待つ',
+    facilityId: 'LOC_FOREST_HUNTER_HUT',
+    requiredState: 'DAY2_HUNTER_VILLAGE_WARNING_QUEUED; warning GOAP request queued; player at LOC_FOREST_HUNTER_HUT before dueAtMinute',
+    resultingState: 'time advances exactly to the queued warning dueAtMinute through the visible wait-with-Jill action; player remains at LOC_FOREST_HUNTER_HUT and the warning follow-up can become due',
+    implementationSource: 'src/server/trpg/content/authored-mission-flow-human-route-warning-wait.js',
+    notes: 'replaces the stale hunter-hut black-bread purchase/eat assumption; a later authored bakery meal remains in the route, so no inventory or economy dependency is lost',
+  });
+
   const originalMoves = Array.isArray(movesArtifact.moves) ? movesArtifact.moves : [];
-  const obsoleteBeforeRows = new Set(['VR2-D01-03', 'VR2-D01-10']);
+  const obsoleteBeforeRows = new Set(['VR2-D01-03', 'VR2-D01-10', 'VR2-D02-04']);
   const removedMoves = originalMoves.filter((entry) => obsoleteBeforeRows.has(entry.beforeLegacyRowId));
   const moves = originalMoves.filter((entry) => !obsoleteBeforeRows.has(entry.beforeLegacyRowId));
-  if (removedMoves.length !== 2
+  if (removedMoves.length !== 3
     || !obsoleteBeforeRows.size
     || ![...obsoleteBeforeRows].every((id) => removedMoves.some((entry) => entry.beforeLegacyRowId === id))) {
-    throw new Error(`expected obsolete pre-D01-03 and pre-D01-10 moves exactly once each; removed ${removedMoves.map((entry) => entry.beforeLegacyRowId).join(', ')}`);
+    throw new Error(`expected obsolete pre-D01-03, pre-D01-10 and pre-D02-04 moves exactly once each; removed ${removedMoves.map((entry) => entry.beforeLegacyRowId).join(', ')}`);
   }
   movesArtifact.moves = moves;
   movesArtifact.count = moves.length;
@@ -290,16 +302,17 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
   summary.proposedMoveLocalInsertions = moves.length;
   summary.expandedV3Rows = rows.reduce((total, row) => total + Math.max(1, stepCount(row)), 0) + moves.length;
   summary.postERealignmentVersion = POST_E_REALIGNMENT_VERSION;
-  summary.postERealignedLegacyRows = ['VR2-D01-01', 'VR2-D01-02', 'VR2-D01-03', 'VR2-D01-04', 'VR2-D01-05', 'VR2-D01-07', 'VR2-D01-09', 'VR2-D02-01', 'VR2-D02-02'];
+  summary.postERealignedLegacyRows = ['VR2-D01-01', 'VR2-D01-02', 'VR2-D01-03', 'VR2-D01-04', 'VR2-D01-05', 'VR2-D01-07', 'VR2-D01-09', 'VR2-D02-01', 'VR2-D02-02', 'VR2-D02-03'];
   summary.postEStaleStarterDependencies = 0;
   summary.postECanonicalEntryActions = entrySteps.map((step) => step.actionId);
   summary.postET01Actions = [...expectedT01Actions];
   summary.postEDay1EveningAction = eveningActionId;
   summary.postEDay2BreakfastActions = day2BreakfastSteps.map((step) => step.actionId);
   summary.postEDay2MerchantActions = merchantSteps.map((step) => step.actionId);
+  summary.postEDay2WarningWaitAction = warningWaitActionId;
 
-  if (summary.expandedV3Rows !== 1525) {
-    throw new Error(`post-E realignment must remove exactly one stale Day2 move and produce 1525 expanded rows, got ${summary.expandedV3Rows}`);
+  if (summary.expandedV3Rows !== 1523) {
+    throw new Error(`post-E realignment must remove the stale hunter-hut meal plus its impossible local move and produce 1523 expanded rows, got ${summary.expandedV3Rows}`);
   }
 
   fs.writeFileSync(mappingPath, csv(rows, headers));
@@ -317,6 +330,7 @@ export function realignPostEArtifacts({ outDir = DEFAULT_OUT } = {}) {
     day1EveningActionId: summary.postEDay1EveningAction,
     day2BreakfastActionIds: [...summary.postEDay2BreakfastActions],
     day2MerchantActionIds: [...summary.postEDay2MerchantActions],
+    day2WarningWaitActionId: summary.postEDay2WarningWaitAction,
   };
 }
 
