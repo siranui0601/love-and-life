@@ -455,13 +455,15 @@ test("fixed spawn may use the outer edge on a square board", () => {
   assert.equal(state.agents[0].y, 14);
 });
 
-test("splat shots stop at donut void instead of crossing the hole", () => {
+test("splat shots cross the donut center void while pieces still cannot enter it", () => {
   const attack = { type: "action", action: "attack", range: literal(20) };
-  const state = createGameState({ mode: "splat", seed: "donut-shot", boardShape: "donut", boardSizeKey: "small", players: [{ id: "a", program: [attack] }, { id: "b", program: [right] }], spawns: [{ x: 9, y: 0, dir: 2 }, { x: 9, y: 18, dir: 0 }] });
+  const state = createGameState({ mode: "splat", seed: "donut-shot", boardShape: "donut", boardSizeKey: "small", players: [{ id: "a", program: [attack] }, { id: "b", program: [{ type: "action", action: "turnRight" }] }], spawns: [{ x: 9, y: 0, dir: 2 }, { x: 9, y: 18, dir: 0 }] });
   state.agents[0].ink = 30;
   stepGame(state);
-  assert.equal(state.agents[1].alive, true);
-  assert.ok(state.effects.filter((e) => e.type === "shot").length < 18);
+  assert.equal(state.agents[1].alive, false);
+  const shots = state.effects.filter((e) => e.type === "shot");
+  assert.ok(shots.some((e) => e.y > 11), "shot resumes after the center void");
+  assert.ok(!shots.some((e) => e.x === 9 && e.y >= 7 && e.y <= 11), "void itself is not painted/effected");
 });
 
 test("donut is a square board with a centered square hole", () => {
