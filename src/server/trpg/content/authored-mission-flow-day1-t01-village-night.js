@@ -1,6 +1,6 @@
 import * as base from "./authored-mission-flow-day1-t01-square-aftercare.js";
 import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
-import { completePlayerRest, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
+import { completePlayerRest, ensurePlayerNeeds, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 
 export * from "./authored-mission-flow-day1-t01-square-aftercare.js";
 
@@ -306,20 +306,21 @@ function clamp(value, min, max) {
 
 function applyLivingDelta(runtime, action) {
   const current = player(runtime);
-  const needsBefore = publicPlayerNeeds(current);
+  const needs = ensurePlayerNeeds(current);
+  const needsBefore = publicPlayerNeeds(needs);
   if (action.authoredDay1T01VillageNightAuthoritativeRest) {
-    completePlayerRest(current, {
+    completePlayerRest(needs, {
       minute: Number(runtime?.playerState?.absoluteMinute ?? 0),
       durationMinutes: Number(action.minutes ?? 0),
       lodging: action.authoredDay1T01VillageNightAuthoritativeRest === "lodging",
       safety: "normal",
     });
   }
-  const needsAfterRest = publicPlayerNeeds(current);
+  const needsAfterRest = publicPlayerNeeds(needs);
   const hungerAfter = clamp(needsAfterRest.hunger + action.authoredDay1T01VillageNightHungerDelta, 0, 100);
   const fatigueAfter = clamp(needsAfterRest.fatigue + action.authoredDay1T01VillageNightFatigueDelta, 0, 100);
-  current.needs.hunger = hungerAfter;
-  current.needs.fatigue = fatigueAfter;
+  needs.hunger = hungerAfter;
+  needs.fatigue = fatigueAfter;
   current.hunger = hungerAfter;
   current.fatigue = fatigueAfter;
   runtime.playerState.hunger = hungerAfter;
@@ -332,8 +333,8 @@ function applyLivingDelta(runtime, action) {
     hungerAfter,
     fatigueBefore: needsBefore.fatigue,
     fatigueAfter,
-    restQuality: current.needs.lastSleepQuality,
-    lastSleepMinute: current.needs.lastSleepMinute,
+    restQuality: needs.lastSleepQuality,
+    lastSleepMinute: needs.lastSleepMinute,
   };
 }
 
