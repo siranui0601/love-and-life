@@ -1,3 +1,4 @@
+# one-shot patch runner; removed by the successful job
 name: apply-now-coding-tutorial-copy
 
 on:
