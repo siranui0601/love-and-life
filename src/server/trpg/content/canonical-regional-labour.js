@@ -2,7 +2,7 @@ import * as base from "./canonical-regional-access.js";
 
 export * from "./canonical-regional-access.js";
 
-export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v7";
+export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v8";
 
 // Live TRPG/仕事マスター is authoritative. These are normal public jobs for
 // every route. Stable action IDs, duration and wage come from that master. The
@@ -111,6 +111,9 @@ function action(tuple, runtime) {
     // Canonical jobs are already fully specified public actions. Keeping them
     // as plans prevents the generic dynamic-work proposal layer from replacing
     // the Sheet-backed ID/wage with WORK:<facility> and a generated wage.
+    // They are ordinary public candidates, not authored mission-exclusive
+    // branches: the final three-choice selector must be free to keep a job
+    // alongside daily-life and movement candidates.
     type: "plan",
     label: `${label}（${minutes}分・${gold}G）`,
     minutes,
@@ -118,7 +121,6 @@ function action(tuple, runtime) {
     targetLocation: current(runtime).location ?? null,
     targetFacilityId: facilityId,
     suppressRandomEncounter: true,
-    authoredMissionFlowExclusiveChoice: true,
     canonicalRegionalLabourChoice: true,
     canonicalRegionalJobId: jobId,
     canonicalRegionalGold: gold,
