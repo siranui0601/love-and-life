@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   applyAuthoredMissionFlowAction,
   authoredMissionFlowExclusiveActions,
+  CANONICAL_JOB_TIME_POLICY_INTERNALS as jobTime,
   CANONICAL_REGIONAL_ACCESS_INTERNALS as access,
   CANONICAL_REGIONAL_LABOUR_INTERNALS as labour,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
@@ -20,6 +21,10 @@ function runtime(location, facilityId) {
     },
     authoredMissionFlows: {},
   };
+}
+
+function absoluteMinuteFor(day, hour, minute = 0) {
+  return (day - 1) * 1440 + (hour * 60 + minute - 600);
 }
 
 function choose(state, id) {
@@ -89,7 +94,7 @@ test("canonical regional jobs stay ordinary public candidates, not mission-exclu
 test("Sheet-backed field work leads optional daily-life choices so the three-choice UI cannot hide it", () => {
   const state = runtime("田園の村", "LOC_FARM_FIELD");
   state.playerState.day = 4;
-  state.playerState.absoluteMinute = 9 * 60 + 31;
+  state.playerState.absoluteMinute = absoluteMinuteFor(4, 9, 31);
   state.playerState.player.hunger = 0;
   state.playerState.player.fatigue = 0;
 
@@ -99,4 +104,29 @@ test("Sheet-backed field work leads optional daily-life choices so the three-cho
   assert.equal(actions[0].canonicalRegionalLabourChoice, true);
   assert.ok(actions.slice(1).length >= 3);
   assert.ok(actions.slice(1).every((entry) => entry.authoredDailyLifeChoice === true));
+});
+
+test("canonical work is revalidated from its visible start after the generic plan advances the production clock", () => {
+  const state = runtime("田園の村", "LOC_FARM_FIELD");
+  state.playerState.day = 4;
+  state.playerState.absoluteMinute = absoluteMinuteFor(4, 9, 31);
+  state.playerState.player.hunger = 0;
+  state.playerState.player.fatigue = 0;
+
+  const action = authoredMissionFlowExclusiveActions(state)?.find((entry) => entry.id === "WORK:FACILITY:JOB-FARM-01");
+  assert.ok(action);
+  assert.equal(jobTime.jobTimeAllowed(state, action), true);
+
+  // This mirrors game/service.js: the generic plan advances the clock before
+  // the authored content chain consumes the same selected action.
+  state.playerState.absoluteMinute += action.minutes;
+  assert.equal(jobTime.jobTimeAllowed(state, action), false, "post-plan clock must not be mistaken for a second shift start");
+  assert.equal(jobTime.executionStartMinuteOfDay(state, action), 9 * 60 + 31);
+  assert.equal(jobTime.jobTimeAllowedAtExecutionStart(state, action), true);
+
+  const result = { ok: true, type: "plan" };
+  assert.equal(applyAuthoredMissionFlowAction(state, action, result), true);
+  assert.equal(result.ok, true);
+  assert.equal(state.playerState.player.gold, 24);
+  assert.equal(state.playerState.history.at(-1).jobId, "JOB-FARM-01");
 });
