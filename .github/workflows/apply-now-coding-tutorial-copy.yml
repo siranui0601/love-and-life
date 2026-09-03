@@ -1,0 +1,40 @@
+name: apply-now-coding-tutorial-copy
+
+on:
+  push:
+    branches:
+      - fix/now-coding-tutorial-recovery-copy
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/now-coding-tutorial-recovery-copy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply tutorial recovery and copy UX patch
+        run: |
+          node --check tools/now-coding/apply-tutorial-copy-fix.mjs
+          node tools/now-coding/apply-tutorial-copy-fix.mjs
+      - name: Validate patched Now Coding files
+        run: |
+          node --check public/now-coding/app-v3.js
+          node --check public/now-coding/tutorial-recovery.js
+          node --test tools/now-coding/tutorial-recovery.test.mjs tools/now-coding/client-contract.test.mjs tools/now-coding/engine.test.mjs tools/now-coding/board-spawn.test.mjs tools/now-coding/fall-timed-collapse.test.mjs
+      - name: Remove one-shot helpers
+        run: |
+          rm tools/now-coding/apply-tutorial-copy-fix.mjs
+          rm .github/workflows/apply-now-coding-tutorial-copy.yml
+      - name: Commit implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: recover Now Coding tutorial and add block copy UX"
+          git push origin HEAD:fix/now-coding-tutorial-recovery-copy
