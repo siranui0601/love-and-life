@@ -4,7 +4,7 @@ import { publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.m
 export * from "./authored-mission-flow-day1-t01-village-night.js";
 
 export const AUTHORED_DAY1_T01_VILLAGE_NIGHT_CANONICAL_VERSION =
-  "authored-day1-t01-village-night-canonical-v3";
+  "authored-day1-t01-village-night-canonical-v4";
 
 const MERCHANT_NPC_ID = "NPC008";
 const MERCHANT_FACILITY_ID = "LOC_FARM_BAKERY";
@@ -29,8 +29,15 @@ function merchantPresent(context = {}) {
   return present.some((entry) => (entry?.id ?? entry?.npcId) === MERCHANT_NPC_ID);
 }
 
-function merchantMorningEligible(runtime, context = {}) {
-  return merchantMorningStateEligible(runtime) && merchantPresent(context);
+// The Day2 merchant arrival is an authored consequence of accepting Mira's bed
+// and waking after breakfast, not a chance encounter with the generic NPC
+// scheduler.  Requiring NPC008 to happen to be in presentNpcs made the scene
+// disappear whenever the canonical facility catalog changed its deterministic
+// scheduling order.  The authored state and the player's actual bakery
+// location are the authority; canonicalizeMerchantAction still identifies the
+// real merchant NPC on every visible action.
+function merchantMorningEligible(runtime, _context = {}) {
+  return merchantMorningStateEligible(runtime);
 }
 
 function isMorningAction(action) {
