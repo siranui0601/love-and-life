@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v4';
+export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v5';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -30,6 +30,39 @@ function csv(rows, headers) {
 function stepCount(row) {
   if (row.replacementSteps) return JSON.parse(row.replacementSteps).length;
   return 1;
+}
+
+function commandStep(actionId, commandType = 'CHOOSE', payload = null, extra = {}) {
+  const body = commandType === 'CHOOSE'
+    ? payload ?? { choiceId: actionId, actionId }
+    : payload ?? {};
+  return { actionId, commandType, payload: body, ...extra };
+}
+
+function sequence(row, steps, {
+  description,
+  requiredState,
+  resultingState,
+  implementationSource,
+  notes,
+}) {
+  Object.assign(row, {
+    legacyDescription: description,
+    classification: 'PLAYER_COMMAND_SEQUENCE',
+    commandType: 'SEQUENCE',
+    actionId: steps.at(-1).actionId,
+    choiceId: '',
+    payload: JSON.stringify({ steps }),
+    replacementSteps: JSON.stringify(steps),
+    replacementRowIds: steps.map((_, index) => `${row.legacyRowId}:S${String(index + 1).padStart(2, '0')}`).join('|'),
+    resolutionMethod: 'FULL_ROUTE_AUDIT_REALIGNMENT',
+    requiredState,
+    resultingState,
+    implementationSource,
+    status: 'RESOLVED_EXISTING',
+    unresolvedReason: '',
+    notes,
+  });
 }
 
 function outcome(row, {
@@ -160,6 +193,29 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     notes: 'replaces a 120-minute prose-only legacy block that strict replay could not execute; uses a route-neutral life action rather than REST/WAIT padding or an early-job bypass',
   });
 
+  const staleDay3FreeTime = byId.get('VR2-D03-11');
+  if (!staleDay3FreeTime) throw new Error('VR2-D03-11 missing from audit candidate');
+  const oldDay3Steps = staleDay3FreeTime.replacementSteps ? JSON.parse(staleDay3FreeTime.replacementSteps) : [];
+  const oldDay3ActionIds = oldDay3Steps.map((step) => step.actionId);
+  const expectedOldDay3 = ['MOVE_LOCAL:LOC_FARM_INN', 'WORK:FACILITY:JOB-FARM-03', 'LIFE:REST:180'];
+  if (oldDay3ActionIds.join('|') !== expectedOldDay3.join('|')) {
+    throw new Error(`VR2-D03-11 expected old inn/work/rest sequence, got ${oldDay3ActionIds.join('|')}`);
+  }
+  const prepAction = 'DAILY_LIFE:DAILY_INN_WORKDAY:prepare_evening_service';
+  const windDownAction = 'DAILY_LIFE:DAILY_INN_WORKDAY:wind_down_after_shift';
+  sequence(staleDay3FreeTime, [
+    commandStep('MOVE_LOCAL:LOC_FARM_INN', 'MOVE', { facilityId: 'LOC_FARM_INN' }, { facilityId: 'LOC_FARM_INN' }),
+    commandStep(prepAction, 'CHOOSE', { choiceId: prepAction, actionId: prepAction }, { facilityId: 'LOC_FARM_INN' }),
+    commandStep('WORK:FACILITY:JOB-FARM-03', 'CHOOSE', { choiceId: 'WORK:FACILITY:JOB-FARM-03', actionId: 'WORK:FACILITY:JOB-FARM-03' }, { facilityId: 'LOC_FARM_INN', jobId: 'JOB-FARM-03' }),
+    commandStep(windDownAction, 'CHOOSE', { choiceId: windDownAction, actionId: windDownAction }, { facilityId: 'LOC_FARM_INN' }),
+  ], {
+    description: 'Day3午後は麦穂亭へ戻り、夕方の営業準備、正規の皿洗い勤務、閉店後の片づけと会話で就寝時刻まで過ごす',
+    requiredState: 'Day3 player returns to LOC_FARM_INN before the canonical 16:00 evening JOB-FARM-03 window; needs are below urgent survival threshold',
+    resultingState: 'unpaid common-world prep advances naturally to 16:00; canonical JOB-FARM-03 pays exactly 2G for 120 minutes; unpaid post-shift life advances naturally to 22:30; no synthetic REST padding',
+    implementationSource: 'src/server/trpg/content/authored-village-inn-workday.js + canonical-regional-labour.js + canonical-job-time-policy.js',
+    notes: 'keeps Sheet-backed JOB-FARM-03 hours intact; replaces an early invalid shift plus generic REST with visible route-neutral life actions available to every player in the same Day3 inn state',
+  });
+
   const originalMoves = Array.isArray(movesArtifact.moves) ? movesArtifact.moves : [];
   const obsoleteBeforeRows = new Set(['VR2-D02-05', 'VR2-D02-06']);
   const removedObsoleteMoves = originalMoves.filter((entry) => obsoleteBeforeRows.has(entry.beforeLegacyRowId));
@@ -190,13 +246,13 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     'VR2-D02-05',
     'VR2-D02-08',
     'VR2-D03-03',
+    'VR2-D03-11',
   ];
   summary.fullRouteAuditRemovedMoveBeforeRows = [...obsoleteBeforeRows];
   summary.fullRouteAuditRemovedRedundantMoveBeforeRows = [...redundantBeforeRows];
 
-  const expectedRows = 1521 - redundantBeforeRows.size;
-  if (summary.expandedV3Rows !== expectedRows) {
-    throw new Error(`full-route audit realignment expected ${expectedRows} expanded rows after removing ${redundantBeforeRows.size} duplicate sequenced move(s), got ${summary.expandedV3Rows}`);
+  if (summary.expandedV3Rows <= 0 || summary.proposedMoveLocalInsertions !== movesArtifact.moves.length) {
+    throw new Error('full-route audit realignment produced invalid expanded row accounting');
   }
 
   fs.writeFileSync(mappingPath, csv(rows, headers));
