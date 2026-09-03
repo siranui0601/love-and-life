@@ -266,51 +266,51 @@ test("cobra allows entering the tail cell that disappears on this tick", () => {
   assert.equal(state.agents[0].y, 5);
 });
 
-test("floor mode eliminates a piece after two consecutive stationary physical actions", () => {
+test("floor mode uses a first-step deadline instead of consecutive stationary actions", () => {
   const state = createGameState({ mode: "fall", seed: "fall", size: 15, players: [{ id:"a", program:[right,right] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
+  assert.equal(state.ruleVersion, "fall-v4");
+  assert.equal(state.fallCollapseAt.get("5,5"), 2);
   stepGame(state);
   assert.equal(state.agents[0].alive, true);
-  assert.equal(state.agents[0].noMoveTicks, 1);
   stepGame(state);
   assert.equal(state.agents[0].alive, false);
   assert.equal(state.agents[0].deathReason, "floor_collapse");
   assert.equal(state.holes.has("5,5"), true);
 });
 
-test("floor mode survives move then turn then move because movement resets the stationary count", () => {
-  const state = createGameState({ mode: "fall", seed: "fall-move-turn-move", size: 15, players: [{ id:"a", program:[move,right,move] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
+test("floor mode makes move1 floor a cliff at the start of move3 tick", () => {
+  const state = createGameState({ mode: "fall", seed: "fall-three-moves", size: 15, allowSolo: true, players: [{ id:"a", program:[{ type:"forever", body:[move] }] }], spawns:[{x:5,y:5,dir:1}] });
   const agent = state.agents[0];
-  stepGame(state);
-  assert.equal(agent.alive, true);
-  assert.equal(agent.noMoveTicks, 0);
-  stepGame(state);
-  assert.equal(agent.alive, true);
-  assert.equal(agent.noMoveTicks, 1);
-  stepGame(state);
-  assert.equal(agent.alive, true);
-  assert.equal(agent.noMoveTicks, 0);
+  stepGame(state); // tick 1: move1 -> 6,5
   assert.equal(agent.x, 6);
-  assert.equal(agent.y, 4);
+  assert.equal(state.fallCollapseAt.get("6,5"), 3);
+  stepGame(state); // tick 2: move2 -> 7,5
+  assert.equal(agent.alive, true);
+  assert.equal(state.holes.has("6,5"), false);
+  stepGame(state); // tick 3 start: move1 floor collapses, then move3
+  assert.equal(agent.alive, true);
+  assert.equal(agent.x, 8);
+  assert.equal(state.holes.has("6,5"), true);
 });
 
-test("floor mode collapses on move then two consecutive turns", () => {
-  const state = createGameState({ mode: "fall", seed: "fall-move-turn-turn", size: 15, players: [{ id:"a", program:[move,right,right] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
+test("floor mode collapses move1 floor at move2 tick after an intervening turn", () => {
+  const state = createGameState({ mode: "fall", seed: "fall-move-turn-move", size: 15, players: [{ id:"a", program:[move,right,move] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
   const agent = state.agents[0];
-  stepGame(state);
+  stepGame(state); // tick 1: move1 -> 5,4
   assert.equal(agent.alive, true);
-  stepGame(state);
+  assert.equal(state.fallCollapseAt.get("5,4"), 3);
+  stepGame(state); // tick 2: turn while still on 5,4
   assert.equal(agent.alive, true);
-  assert.equal(agent.noMoveTicks, 1);
-  stepGame(state);
+  assert.equal(state.holes.has("5,4"), false);
+  stepGame(state); // tick 3 start: 5,4 collapses before move2
   assert.equal(agent.alive, false);
   assert.equal(agent.deathReason, "floor_collapse");
   assert.equal(state.holes.has("5,4"), true);
 });
 
-test("floor mode treats if set and forever entry as zero-time before the next move", () => {
+test("floor mode keeps zero-time if set and forever entry inside the same game tick", () => {
   const program = [
     move,
-    right,
     {
       type: "if",
       condition: literal(true),
@@ -321,30 +321,19 @@ test("floor mode treats if set and forever entry as zero-time before the next mo
       else: [],
     },
   ];
-  const state = createGameState({ mode: "fall", seed: "fall-user-structure", size: 15, players: [{ id:"a", program }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
+  const state = createGameState({ mode: "fall", seed: "fall-user-structure", size: 15, allowSolo: true, players: [{ id:"a", program }], spawns:[{x:5,y:5,dir:1}] });
   const agent = state.agents[0];
-  stepGame(state);
-  stepGame(state);
+  stepGame(state); // tick 1: move -> 6,5, due tick 3
+  assert.equal(state.fallCollapseAt.get("6,5"), 3);
+  stepGame(state); // zero-time if/set/forever entry, then physical move -> 7,5
   assert.equal(agent.alive, true);
-  assert.equal(agent.noMoveTicks, 1);
-  stepGame(state);
-  assert.equal(agent.alive, true);
-  assert.equal(agent.noMoveTicks, 0);
   assert.equal(agent.vars["ゲームモード"], "床抜け");
-  assert.equal(agent.x, 6);
-  assert.equal(agent.y, 4);
-});
-
-test("floor mode does not count a zero-time-only VM tail as another stationary action", () => {
-  const state = createGameState({ mode: "fall", seed: "fall-zero-time-tail", size: 15, players: [{ id:"a", program:[move,right,{ type:"set", name:"mode", value:literal("床抜け") }] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
-  const agent = state.agents[0];
-  stepGame(state);
-  stepGame(state);
-  assert.equal(agent.noMoveTicks, 1);
-  stepGame(state);
+  assert.equal(agent.x, 7);
+  assert.equal(agent.y, 5);
+  assert.equal(state.tick, 2);
+  stepGame(state); // tick 3: 6,5 collapses behind the piece
   assert.equal(agent.alive, true);
-  assert.equal(agent.noMoveTicks, 1);
-  assert.equal(agent.vars.mode, "床抜け");
+  assert.equal(state.holes.has("6,5"), true);
 });
 
 test("splat starts at zero ink, recovers on existing own paint, and attack costs its range", () => {
