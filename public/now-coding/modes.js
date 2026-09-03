@@ -158,7 +158,7 @@ function skipUnsupportedAction(state, agent, allowAttack) {
       const rawRange = Math.floor(Number(action.range));
       if (!Number.isFinite(rawRange) || rawRange < 1) continue;
       const range = Math.min(20, rawRange);
-      if (agent.ink < range + 1) continue;
+      if (agent.ink < range) continue;
       return { type: "attack", range };
     }
     return action;
@@ -336,7 +336,10 @@ function stepFall(state) {
     agent.lastAction = action;
     if (action === "turnLeft") agent.dir = (agent.dir + 3) % 4;
     if (action === "turnRight") agent.dir = (agent.dir + 1) % 4;
-    if (action !== "move") {
+    // Floor-collapse progress is driven only by an emitted physical action.
+    // Zero-tick VM work (or a halted program returning "none") must not
+    // manufacture an extra stationary action.
+    if (action === "turnLeft" || action === "turnRight") {
       agent.noMoveTicks += 1;
       if (agent.noMoveTicks >= 2) {
         state.holes.add(`${agent.x},${agent.y}`);
@@ -448,7 +451,7 @@ function stepSplat(state) {
     const action = actions.get(agent.id);
     if (typeof action !== "object" || action?.type !== "attack") continue;
     const range = action.range;
-    agent.ink = Math.max(0, agent.ink - (range + 1));
+    agent.ink = Math.max(0, agent.ink - range);
     const cells = attackCells(state, agent, range);
     for (const cell of cells) {
       state.effects.push({ type: "shot", x: cell.x, y: cell.y, color: agent.color });

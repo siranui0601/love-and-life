@@ -266,17 +266,88 @@ test("cobra allows entering the tail cell that disappears on this tick", () => {
   assert.equal(state.agents[0].y, 5);
 });
 
-test("floor mode eliminates a piece after two consecutive non-movement ticks", () => {
+test("floor mode eliminates a piece after two consecutive stationary physical actions", () => {
   const state = createGameState({ mode: "fall", seed: "fall", size: 15, players: [{ id:"a", program:[right,right] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
   stepGame(state);
   assert.equal(state.agents[0].alive, true);
+  assert.equal(state.agents[0].noMoveTicks, 1);
   stepGame(state);
   assert.equal(state.agents[0].alive, false);
   assert.equal(state.agents[0].deathReason, "floor_collapse");
   assert.equal(state.holes.has("5,5"), true);
 });
 
-test("splat starts at zero ink, recovers on existing own paint, and attack costs one plus range", () => {
+test("floor mode survives move then turn then move because movement resets the stationary count", () => {
+  const state = createGameState({ mode: "fall", seed: "fall-move-turn-move", size: 15, players: [{ id:"a", program:[move,right,move] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
+  const agent = state.agents[0];
+  stepGame(state);
+  assert.equal(agent.alive, true);
+  assert.equal(agent.noMoveTicks, 0);
+  stepGame(state);
+  assert.equal(agent.alive, true);
+  assert.equal(agent.noMoveTicks, 1);
+  stepGame(state);
+  assert.equal(agent.alive, true);
+  assert.equal(agent.noMoveTicks, 0);
+  assert.equal(agent.x, 6);
+  assert.equal(agent.y, 4);
+});
+
+test("floor mode collapses on move then two consecutive turns", () => {
+  const state = createGameState({ mode: "fall", seed: "fall-move-turn-turn", size: 15, players: [{ id:"a", program:[move,right,right] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
+  const agent = state.agents[0];
+  stepGame(state);
+  assert.equal(agent.alive, true);
+  stepGame(state);
+  assert.equal(agent.alive, true);
+  assert.equal(agent.noMoveTicks, 1);
+  stepGame(state);
+  assert.equal(agent.alive, false);
+  assert.equal(agent.deathReason, "floor_collapse");
+  assert.equal(state.holes.has("5,4"), true);
+});
+
+test("floor mode treats if set and forever entry as zero-time before the next move", () => {
+  const program = [
+    move,
+    right,
+    {
+      type: "if",
+      condition: literal(true),
+      then: [
+        { type: "set", name: "ゲームモード", value: literal("床抜け") },
+        { type: "forever", body: [move] },
+      ],
+      else: [],
+    },
+  ];
+  const state = createGameState({ mode: "fall", seed: "fall-user-structure", size: 15, players: [{ id:"a", program }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
+  const agent = state.agents[0];
+  stepGame(state);
+  stepGame(state);
+  assert.equal(agent.alive, true);
+  assert.equal(agent.noMoveTicks, 1);
+  stepGame(state);
+  assert.equal(agent.alive, true);
+  assert.equal(agent.noMoveTicks, 0);
+  assert.equal(agent.vars["ゲームモード"], "床抜け");
+  assert.equal(agent.x, 6);
+  assert.equal(agent.y, 4);
+});
+
+test("floor mode does not count a zero-time-only VM tail as another stationary action", () => {
+  const state = createGameState({ mode: "fall", seed: "fall-zero-time-tail", size: 15, players: [{ id:"a", program:[move,right,{ type:"set", name:"mode", value:literal("床抜け") }] }, { id:"b", program:[move] }], spawns:[{x:5,y:5,dir:0},{x:12,y:12,dir:2}] });
+  const agent = state.agents[0];
+  stepGame(state);
+  stepGame(state);
+  assert.equal(agent.noMoveTicks, 1);
+  stepGame(state);
+  assert.equal(agent.alive, true);
+  assert.equal(agent.noMoveTicks, 1);
+  assert.equal(agent.vars.mode, "床抜け");
+});
+
+test("splat starts at zero ink, recovers on existing own paint, and attack costs its range", () => {
   const attack = { type:"action", action:"attack", range:literal(2) };
   const state = createGameState({ mode:"splat", seed:"splat", size:15, players:[{id:"a",program:[right,attack]},{id:"b",program:[right]}], spawns:[{x:5,y:5,dir:0},{x:7,y:5,dir:2}], maxTicks:20 });
   assert.equal(state.agents[0].ink, 0);
@@ -285,12 +356,12 @@ test("splat starts at zero ink, recovers on existing own paint, and attack costs
   state.agents[0].ink = 5;
   state.agents[0].dir = 1;
   stepGame(state);
-  assert.equal(state.agents[0].ink, 2);
+  assert.equal(state.agents[0].ink, 3);
   assert.equal(state.agents[1].alive, false);
   assert.equal(state.agents[1].deathReason, "shot");
 });
 
-test("attack range accepts numeric expressions, floors decimals, and costs one plus resolved range", () => {
+test("attack range accepts numeric expressions, floors decimals, and costs the resolved range", () => {
   const attack = {
     type: "action",
     action: "attack",
@@ -299,8 +370,37 @@ test("attack range accepts numeric expressions, floors decimals, and costs one p
   const state = createGameState({ mode:"splat", seed:"expr-range", size:15, players:[{id:"a",program:[attack]},{id:"b",program:[right]}], spawns:[{x:5,y:5,dir:1},{x:8,y:5,dir:2}], maxTicks:20 });
   state.agents[0].ink = 6;
   stepGame(state);
-  assert.equal(state.agents[0].ink, 2); // floor(3.9)=3, cost=4
+  assert.equal(state.agents[0].ink, 3); // floor(3.9)=3, cost=3
   assert.equal(state.agents[1].alive, false);
+});
+
+test("splat range 1 attack succeeds with exactly 1 ink", () => {
+  const attack = { type:"action", action:"attack", range:literal(1) };
+  const state = createGameState({ mode:"splat", seed:"range1-cost1", size:15, players:[{id:"a",program:[attack]},{id:"b",program:[right]}], spawns:[{x:5,y:5,dir:1},{x:12,y:12,dir:2}], maxTicks:20 });
+  state.agents[0].ink = 1;
+  stepGame(state);
+  assert.equal(state.agents[0].lastAction, "attack:1");
+  assert.equal(state.agents[0].ink, 0);
+});
+
+test("splat range 2 attack succeeds with exactly 2 ink", () => {
+  const attack = { type:"action", action:"attack", range:literal(2) };
+  const state = createGameState({ mode:"splat", seed:"range2-cost2", size:15, players:[{id:"a",program:[attack]},{id:"b",program:[right]}], spawns:[{x:5,y:5,dir:1},{x:12,y:12,dir:2}], maxTicks:20 });
+  state.agents[0].ink = 2;
+  stepGame(state);
+  assert.equal(state.agents[0].lastAction, "attack:2");
+  assert.equal(state.agents[0].ink, 0);
+});
+
+test("splat insufficient ink keeps attack zero-time and continues to the next physical action", () => {
+  const attack = { type:"action", action:"attack", range:literal(2) };
+  const state = createGameState({ mode:"splat", seed:"range2-insufficient", size:15, players:[{id:"a",program:[attack,move]},{id:"b",program:[right]}], spawns:[{x:5,y:5,dir:1},{x:12,y:12,dir:2}], maxTicks:20 });
+  state.agents[0].ink = 1;
+  stepGame(state);
+  assert.equal(state.agents[0].lastAction, "move");
+  assert.equal(state.agents[0].ink, 1);
+  assert.equal(state.agents[0].x, 6);
+  assert.equal(state.agents[0].y, 5);
 });
 
 test("splat winner is based on colored area", () => {
