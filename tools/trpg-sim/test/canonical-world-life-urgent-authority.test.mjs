@@ -35,6 +35,28 @@ function lateInnRuntime() {
   };
 }
 
+function lateT02InnRuntime() {
+  const state = lateInnRuntime();
+  state.playerState.absoluteMinute = absoluteMinuteFor(5, 22 * 60 + 23);
+  state.playerState.day = 5;
+  state.playerState.hour = 22;
+  state.playerState.minute = 23;
+  state.playerState.player.gold = 28;
+  state.playerState.player.freeLodging = 0;
+  state.playerState.player.needs = { hunger: 34.37, fatigue: 53.35 };
+  state.playerState.player.hunger = 34.37;
+  state.playerState.player.fatigue = 53.35;
+  state.playerState.missions = [
+    { id: "MSN-T01", troubleId: "T01", status: "completed", stepId: null },
+    { id: "MSN-T02", troubleId: "T02", status: "active", stepId: "hear", progress: 0, required: 1 },
+  ];
+  state.playerState.troubles = {
+    T01: { status: "resolved" },
+    T02: { status: "active" },
+  };
+  return state;
+}
+
 test("late-night inn survival exposes the canonical stable sleep id instead of trapping the player behind the vignette", () => {
   const state = lateInnRuntime();
   const actions = authoredMissionFlowExclusiveActions(state);
@@ -45,6 +67,16 @@ test("late-night inn survival exposes the canonical stable sleep id instead of t
     "late-night survival products own the authored panel once survival becomes urgent");
   assert.equal(actions.some((action) => action.authoredDailyLifeChoice === true), false,
     "the optional inn vignette must not eclipse survival after the late-night threshold");
+});
+
+test("an active T02 whose hearing scene is elsewhere does not hide stable inn lodging on Day5", () => {
+  const state = lateT02InnRuntime();
+  const actions = authoredMissionFlowExclusiveActions(state, { presentNpcs: [], movementActions: [] });
+  const ids = actions.map((action) => action.id);
+
+  assert.ok(ids.includes("LIFE:SLEEP:ITM001"), "Day5 inn must keep the exact canonical sleep id while T02 hearing is not actionable here");
+  assert.equal(actions.some((action) => String(action.id ?? "").startsWith("MISSION_FLOW:")), false,
+    "a remote T02 hearing must not manufacture a local mission-owned choice panel");
 });
 
 test("the stable sleep action consumes the existing lodging credit without inventing a dynamic LODGE id", () => {
