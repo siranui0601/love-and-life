@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v2';
+export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v3';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -136,6 +136,22 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     notes: 'replaces legacy 390-minute generic REST with a route-neutral visible production choice available to every player in the same Day2 bakery world state; no teleport, route flag, wage, or hidden dispatch',
   });
 
+  const staleDay3Morning = byId.get('VR2-D03-03');
+  if (!staleDay3Morning) throw new Error('VR2-D03-03 missing from audit candidate');
+  if (staleDay3Morning.classification !== 'NARRATIVE_OUTCOME' && staleDay3Morning.commandType !== 'OUTCOME') {
+    throw new Error(`VR2-D03-03 expected prose-only outcome before audit realignment, got ${staleDay3Morning.classification}/${staleDay3Morning.commandType}`);
+  }
+  const bakeryMorningAction = 'DAILY_LIFE:DAILY_BAKERY_MORNING:sort_flour_sacks';
+  chooseAction(staleDay3Morning, {
+    description: 'Day3の朝、パン屋で粉袋と空の麻袋を数えて仕分け、通常の仕事口が開くまで村の朝仕事を手伝う',
+    actionId: bakeryMorningAction,
+    facilityId: 'LOC_FARM_BAKERY',
+    requiredState: 'Day3 07:00-08:00 start; LOC_FARM_BAKERY; no higher-priority authored scene; hunger/fatigue below calm threshold; common bakery-morning scene unused',
+    resultingState: 'two hours of ordinary unpaid village life pass through a visible production action; no wage or route score; subsequent canonical JOB-FARM-02 remains governed by its 10:00-17:00 work window',
+    implementationSource: 'src/server/trpg/content/authored-village-bakery-morning.js',
+    notes: 'replaces a 120-minute prose-only legacy block that strict replay could not execute; keeps the 1521-row contract and uses a route-neutral life action rather than REST/WAIT padding or an early-job bypass',
+  });
+
   const originalMoves = Array.isArray(movesArtifact.moves) ? movesArtifact.moves : [];
   const obsoleteBeforeRows = new Set(['VR2-D02-05', 'VR2-D02-06']);
   const removedMoves = originalMoves.filter((entry) => obsoleteBeforeRows.has(entry.beforeLegacyRowId));
@@ -153,11 +169,12 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     ...(Array.isArray(summary.fullRouteAuditRealignedLegacyRows) ? summary.fullRouteAuditRealignedLegacyRows : []),
     'VR2-D02-05',
     'VR2-D02-08',
+    'VR2-D03-03',
   ];
   summary.fullRouteAuditRemovedMoveBeforeRows = [...obsoleteBeforeRows];
 
   if (summary.expandedV3Rows !== 1521) {
-    throw new Error(`full-route audit Day2 realignment must produce 1521 expanded rows, got ${summary.expandedV3Rows}`);
+    throw new Error(`full-route audit realignment must produce 1521 expanded rows, got ${summary.expandedV3Rows}`);
   }
 
   fs.writeFileSync(mappingPath, csv(rows, headers));
