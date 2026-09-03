@@ -123,6 +123,31 @@ test("canonical requirements gate the same public job action IDs", () => {
   }
 });
 
+test("ordinary authored daily life is the only authored scene class allowed to coexist with canonical labour", () => {
+  const fieldDailyLife = [
+    { id: "DAILY_LIFE:DAILY_WHEATFIELD:lie_in_the_furrow", authoredDailyLifeChoice: true },
+    { id: "DAILY_LIFE:DAILY_WHEATFIELD:chew_a_grain", authoredDailyLifeChoice: true },
+    { id: "DAILY_LIFE:DAILY_WHEATFIELD:fix_the_scarecrow", authoredDailyLifeChoice: true },
+  ];
+  const missionScene = [
+    { id: "ACTION:MSN-T02:investigate", authoredMissionFlowExclusiveChoice: true },
+  ];
+  const mixedScene = [...fieldDailyLife, missionScene[0]];
+
+  assert.equal(labour.coexistingDailyLife(fieldDailyLife), true);
+  assert.equal(labour.coexistingDailyLife(missionScene), false);
+  assert.equal(labour.coexistingDailyLife(mixedScene), false);
+
+  const farmJob = CATALOG.find((entry) => entry.jobId === "JOB-FARM-01");
+  const day4 = runtime(farmJob, 9 * 60 + 31);
+  day4.playerState.day = 4;
+  day4.playerState.absoluteMinute = absoluteMinuteForWallClock(4, 9 * 60 + 31);
+  const live = labour.ownActions(day4);
+  assert.equal(live?.length, 1);
+  assert.equal(live[0].id, "WORK:FACILITY:JOB-FARM-01");
+  assert.equal(timePolicy.jobTimeAllowed(day4, live[0]), true);
+});
+
 test("a completed shift records the canonical job and cannot repeat at that facility that day", () => {
   const canonical = CATALOG.find((entry) => entry.jobId === "JOB-TRADE-01");
   const state = runtime(canonical, canonical.windows[0][0]);
