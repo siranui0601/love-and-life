@@ -7,6 +7,7 @@ on:
       - "tools/trpg-sim/compile-virtue-route-v3.mjs"
       - "tools/trpg-sim/realign-virtue-route-v3-post-e.mjs"
       - "tools/trpg-sim/realign-virtue-route-v3-full-route-audit.mjs"
+      - "tools/trpg-sim/realign-virtue-route-v3-strict-playability.mjs"
       - "tools/trpg-sim/export-virtue-route-v2-source.mjs"
       - "tools/trpg-sim/export-virtue-route-v3-sheets.mjs"
       - "src/server/trpg/**"
@@ -36,6 +37,8 @@ jobs:
         run: node tools/trpg-sim/realign-virtue-route-v3-post-e.mjs
       - name: Apply full-route audit candidate realignment
         run: node tools/trpg-sim/realign-virtue-route-v3-full-route-audit.mjs
+      - name: Apply strict production playability realignment
+        run: node tools/trpg-sim/realign-virtue-route-v3-strict-playability.mjs
       - name: Validate deterministic route and build canonical Sheet ledger
         run: |
           node tools/trpg-sim/validate-virtue-route-v3-static.mjs
