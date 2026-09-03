@@ -1,5 +1,6 @@
 import * as base from "./authored-village-bakery-evening.js";
 import { authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance } from "./authored-mission-flow-core.js";
+import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./authored-village-bakery-evening.js";
 
@@ -14,6 +15,39 @@ function onlyCanonicalWorldLife(actions) {
 function hasDedicatedCanonicalWorldLife(actions) {
   return onlyCanonicalWorldLife(actions)
     && actions.some((action) => action?.canonicalWorldLifeKind !== "rest");
+}
+
+function onlyAuthoredDailyLife(actions) {
+  return Array.isArray(actions)
+    && actions.length > 0
+    && actions.every((action) => action?.authoredDailyLifeChoice === true);
+}
+
+function player(runtime) {
+  return runtime?.playerState?.player ?? runtime?.playerState ?? {};
+}
+
+function needValue(runtime, key) {
+  const current = player(runtime);
+  const candidates = [current?.needs?.[key], current?.[key], runtime?.playerState?.[key]];
+  for (const candidate of candidates) {
+    const value = Number(candidate);
+    if (Number.isFinite(value)) return value;
+  }
+  return 0;
+}
+
+function urgentLifeState(runtime) {
+  const clock = clockFromMinute(Number(runtime?.playerState?.absoluteMinute ?? 0));
+  return needValue(runtime, "hunger") >= 72
+    || needValue(runtime, "fatigue") >= 72
+    || clock.hour >= 21;
+}
+
+function urgentCanonicalProducts(runtime, actions) {
+  if (!onlyAuthoredDailyLife(actions) || !urgentLifeState(runtime)) return null;
+  const products = base.CANONICAL_WORLD_LIFE_INTERNALS?.productActions?.(runtime);
+  return Array.isArray(products) && products.length > 0 ? products : null;
 }
 
 function continuingOrdinaryWork(runtime) {
@@ -46,6 +80,12 @@ function authoredMissionOwnsChoicePool(runtime) {
 // rendered instead of being eclipsed by meals/rest. This is state-based and
 // route-neutral: players in the same world state see the same public surface.
 //
+// A daily-life vignette is deliberately lower priority than survival. Once the
+// clock reaches the survival layer's late-night threshold (or needs become
+// urgent), a facility's canonical meal/lodging products take the panel instead
+// of leaving the player trapped behind an optional one-off scene. This keeps
+// stable LIFE:* ids visible without granting a route-specific escape hatch.
+//
 // The public-life network is normally allowed to keep its authored three-way
 // scene. The one exception is an already-established ordinary-work continuity:
 // after a player finishes a job, narrativeMemory.activityFocus intentionally
@@ -54,6 +94,8 @@ function authoredMissionOwnsChoicePool(runtime) {
 // is eligible again.
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
+  const survivalProducts = urgentCanonicalProducts(runtime, actions);
+  if (survivalProducts) return survivalProducts;
   if (onlyCanonicalWorldLife(actions)) {
     if (authoredMissionOwnsChoicePool(runtime)) return null;
     return hasDedicatedCanonicalWorldLife(actions) ? actions : null;
