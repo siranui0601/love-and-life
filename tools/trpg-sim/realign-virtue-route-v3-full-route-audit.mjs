@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v5';
+export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v6';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -206,7 +206,12 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
   sequence(staleDay3FreeTime, [
     commandStep('MOVE_LOCAL:LOC_FARM_INN', 'MOVE', { facilityId: 'LOC_FARM_INN' }, { facilityId: 'LOC_FARM_INN' }),
     commandStep(prepAction, 'CHOOSE', { choiceId: prepAction, actionId: prepAction }, { facilityId: 'LOC_FARM_INN' }),
-    commandStep('WORK:FACILITY:JOB-FARM-03', 'CHOOSE', { choiceId: 'WORK:FACILITY:JOB-FARM-03', actionId: 'WORK:FACILITY:JOB-FARM-03' }, { facilityId: 'LOC_FARM_INN', jobId: 'JOB-FARM-03' }),
+    commandStep('WORK:FACILITY:JOB-FARM-03', 'CHOOSE', { choiceId: 'WORK:FACILITY:JOB-FARM-03', actionId: 'WORK:FACILITY:JOB-FARM-03' }, {
+      facilityId: 'LOC_FARM_INN',
+      jobId: 'JOB-FARM-03',
+      scheduledStart: '16:00',
+      scheduledEnd: '18:00',
+    }),
     commandStep(windDownAction, 'CHOOSE', { choiceId: windDownAction, actionId: windDownAction }, { facilityId: 'LOC_FARM_INN' }),
   ], {
     description: 'Day3午後は麦穂亭へ戻り、夕方の営業準備、正規の皿洗い勤務、閉店後の片づけと会話で就寝時刻まで過ごす',
