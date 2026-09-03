@@ -1,5 +1,8 @@
 import * as base from "./authored-village-day5-before-fire.js";
-import { authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance } from "./authored-mission-flow-core.js";
+import {
+  authoredMissionFlowExclusiveActions as coreAuthoredMissionFlowExclusiveActions,
+  authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance,
+} from "./authored-mission-flow-core.js";
 import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./authored-village-day5-before-fire.js";
@@ -66,8 +69,13 @@ function t01Active(runtime) {
   return ACTIVE_MISSION_STATUSES.has(String(missionById(runtime, "MSN-T01")?.status ?? ""));
 }
 
-function authoredMissionOwnsChoicePool(runtime) {
-  return t01Active(runtime) || Boolean(coreAuthoredMissionFlowGuidance(runtime));
+function coreMissionOwnsChoicePool(runtime, context = {}) {
+  const actions = coreAuthoredMissionFlowExclusiveActions(runtime, context);
+  return Array.isArray(actions) && actions.length > 0;
+}
+
+function authoredMissionOwnsChoicePool(runtime, context = {}) {
+  return t01Active(runtime) || coreMissionOwnsChoicePool(runtime, context);
 }
 
 // The village square is the ordinary public wayfinder for the farm hub. Older
@@ -99,9 +107,11 @@ function reconcileSignedFarmFacilities(runtime) {
 // investigation and work candidates. Keep REST in the ordinary candidate pool
 // and reserve exclusivity for an actual facility product/service surface.
 //
-// While an authored mission owns the scene, return null here so its choices are
-// rendered instead of being eclipsed by meals/rest. This is state-based and
-// route-neutral: players in the same world state see the same public surface.
+// Mission guidance can point to another facility. Guidance alone must not hide
+// public food/lodging at the player's current facility; only an authored mission
+// choice panel that is actually actionable here gets exclusive ownership. This
+// keeps mission scene exclusivity without making ordinary survival products
+// disappear while the player travels between investigation targets.
 //
 // A daily-life vignette is deliberately lower priority than survival. Once the
 // clock reaches the survival layer's late-night threshold (or needs become
@@ -120,7 +130,7 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
   if (onlyCanonicalWorldLife(actions)) {
-    if (authoredMissionOwnsChoicePool(runtime)) return null;
+    if (authoredMissionOwnsChoicePool(runtime, context)) return null;
     return hasDedicatedCanonicalWorldLife(actions) ? actions : null;
   }
   if (!Array.isArray(actions)) return actions;
@@ -165,4 +175,6 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
 export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   NON_PUBLIC_FACILITY_PATTERN,
   reconcileSignedFarmFacilities,
+  coreMissionOwnsChoicePool,
+  authoredMissionOwnsChoicePool,
 });
