@@ -371,3 +371,24 @@ test("enemy count and multi-NPC test bench are exposed consistently", () => {
   assert.match(app, /for\(let i=0;i<c\.npcCount;i\+\+\)players\.push/);
   assert.match(app, /data-expression-preset=\"enemyCount\"|expr:enemyCount/);
 });
+
+
+test("tutorial resume restores code and prevents the highlighted expression from entering the wrong side", () => {
+  assert.match(app, /TUTORIAL_DRAFT_STORAGE="nowCodingTutorialDraftV1"/);
+  assert.match(app, /function persistTutorialDraft/);
+  assert.match(app, /function loadTutorialDraft/);
+  assert.match(app, /repairTutorialBlocks\(cached\?\.blocks\|\|\[\],step\)/);
+  assert.match(app, /tutorialExpressionSlotAllowed/);
+  assert.match(app, /tutorialAllowsExpressionTarget\(key,n\)/);
+  assert.match(app, /チュートリアルでは光っている側の空欄に入れてください/);
+});
+
+test("block tools support nested copy placement and move mode follows its source immediately", () => {
+  assert.match(app, /copySource: null/);
+  assert.match(app, /copy=tool\("コピー","ネストごとコピー"/);
+  assert.match(app, /function completeBlockCopy\(targetSequence,targetIndex\)/);
+  assert.match(app, /deepClone\(state\.copySource\)/);
+  assert.match(app, /slot\.textContent='ここへコピー'/);
+  assert.match(app, /function startBlockMove\(block\).*follow:true/s);
+  assert.match(css, /\.insertion-slot\.is-move-target,\.insertion-slot\.is-copy-target/);
+});
