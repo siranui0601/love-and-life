@@ -1,0 +1,40 @@
+name: apply-now-coding-fall-fix
+
+on:
+  push:
+    branches:
+      - fix/now-coding-fall-timed-collapse
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/now-coding-fall-timed-collapse
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply corrected fall timing
+        run: node tools/now-coding/apply-fall-deadline-after-action.mjs
+      - name: Remove one-shot helpers
+        run: rm tools/now-coding/apply-fall-deadline-after-action.mjs .github/workflows/apply-now-coding-fall-fix.yml
+      - name: Validate patch shape
+        run: |
+          git diff --check
+          node --check public/now-coding/modes.js
+          node --check public/now-coding/app-v3.js
+          node --check public/now-coding/tutorials.js
+          node --test tools/now-coding/engine.test.mjs tools/now-coding/fall-timed-collapse.test.mjs
+      - name: Commit corrected implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/now-coding/modes.js public/now-coding/app-v3.js public/now-coding/tutorials.js tools/now-coding/engine.test.mjs tools/now-coding/fall-timed-collapse.test.mjs tools/now-coding/apply-fall-deadline-after-action.mjs .github/workflows/apply-now-coding-fall-fix.yml
+          git commit -m "fix: allow deadline action before fall tile collapse"
+          git push origin HEAD:fix/now-coding-fall-timed-collapse
