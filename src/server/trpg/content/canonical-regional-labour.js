@@ -2,7 +2,7 @@ import * as base from "./canonical-regional-access.js";
 
 export * from "./canonical-regional-access.js";
 
-export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v6";
+export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v7";
 
 // Live TRPG/仕事マスター is authoritative. These are normal public jobs for
 // every route. Stable action IDs, duration and wage come from that master. The
@@ -170,20 +170,36 @@ function staleBaseLabour(actions) {
   return Array.isArray(actions) && actions.length > 0 && actions.every((entry) => entry?.authoredFacilityLabourChoice);
 }
 
+// Village daily-life scenes are deliberately lowest-priority common-world
+// options. They must not make a Sheet-backed public job disappear merely
+// because the player is standing at the same facility. Genuine mission scenes
+// still remain exclusive and therefore continue to suppress normal labour.
+function coexistingDailyLife(actions) {
+  return Array.isArray(actions) && actions.length > 0 && actions.every((entry) => entry?.authoredDailyLifeChoice);
+}
+
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const authored = base.authoredMissionFlowExclusiveActions(runtime, context);
-  if (authored != null && !staleBaseLabour(authored)) return authored;
   const live = ownActions(runtime);
+
+  if (authored != null && !staleBaseLabour(authored)) {
+    if (live?.length && coexistingDailyLife(authored)) return [...authored, ...live];
+    return authored;
+  }
   if (live?.length) return live;
   return authored;
 }
 
 export function authoredMissionFlowGuidance(runtime, context = {}) {
   const authored = base.authoredMissionFlowExclusiveActions(runtime, context);
+  const live = ownActions(runtime);
+
   if (authored != null && !staleBaseLabour(authored)) {
+    // When ordinary daily life coexists with a public job, keep the authored
+    // scene's world-facing guidance while exposing the job in the same choice
+    // set. Mission guidance remains authoritative for genuine exclusive scenes.
     return base.authoredMissionFlowGuidance(runtime, context);
   }
-  const live = ownActions(runtime);
   if (live?.length) {
     return {
       kicker: "土地の暮らしを支える、いつもの働き口がある",
@@ -201,4 +217,11 @@ export function applyAuthoredMissionFlowAction(runtime, actionValue, result) {
   return base.applyAuthoredMissionFlowAction(runtime, actionValue, result);
 }
 
-export const CANONICAL_REGIONAL_LABOUR_INTERNALS = Object.freeze({ JOBS, jobs, ownActions, conditionMet, staleBaseLabour });
+export const CANONICAL_REGIONAL_LABOUR_INTERNALS = Object.freeze({
+  JOBS,
+  jobs,
+  ownActions,
+  conditionMet,
+  staleBaseLabour,
+  coexistingDailyLife,
+});
