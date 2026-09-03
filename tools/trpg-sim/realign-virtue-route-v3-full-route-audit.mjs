@@ -9,8 +9,9 @@ import { csvCell, parseCsv } from './export-virtue-route-v2-source.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
+const CANONICAL_EXPANDED_ROWS = 1521;
 
-export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v6';
+export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v7';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -139,6 +140,31 @@ function firstSequencedMove(row) {
   return first;
 }
 
+function markFirstSequencedMoveSatisfied(row, move) {
+  const steps = JSON.parse(row.replacementSteps || '[]');
+  const first = steps[0];
+  if (!first || first.commandType !== 'MOVE' || first.actionId !== move.actionId) {
+    throw new Error(`cannot mark non-matching sequenced move as satisfied for ${row.legacyRowId}`);
+  }
+  steps[0] = {
+    ...first,
+    actionId: '',
+    commandType: 'OUTCOME',
+    payload: {
+      satisfiedByInsertedMove: move.actionId,
+      fromFacilityId: move.fromFacilityId,
+      toFacilityId: move.toFacilityId,
+    },
+    facilityId: move.toFacilityId ?? first.facilityId ?? row.facilityId,
+  };
+  row.replacementSteps = JSON.stringify(steps);
+  row.payload = JSON.stringify({ steps });
+  row.notes = [
+    row.notes,
+    `先頭の重複MOVE ${move.actionId} は直前のcompiler挿入MOVEで達成済みのためOUTCOMEとして保持`,
+  ].filter(Boolean).join(' / ');
+}
+
 export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
   const mappingPath = path.join(outDir, 'virtue-route-v3-mapping.csv');
   const movesPath = path.join(outDir, 'virtue-route-v3-proposed-local-moves.json');
@@ -203,8 +229,10 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
   }
   const prepAction = 'DAILY_LIFE:DAILY_INN_WORKDAY:prepare_evening_service';
   const windDownAction = 'DAILY_LIFE:DAILY_INN_WORKDAY:wind_down_after_shift';
+  // The compiler already inserts the authoritative Bakery -> Inn MOVE before
+  // this source row. Keep this replacement at three meaningful actions so the
+  // canonical 1521-row contract is preserved without replaying a self-move.
   sequence(staleDay3FreeTime, [
-    commandStep('MOVE_LOCAL:LOC_FARM_INN', 'MOVE', { facilityId: 'LOC_FARM_INN' }, { facilityId: 'LOC_FARM_INN' }),
     commandStep(prepAction, 'CHOOSE', { choiceId: prepAction, actionId: prepAction }, { facilityId: 'LOC_FARM_INN' }),
     commandStep('WORK:FACILITY:JOB-FARM-03', 'CHOOSE', { choiceId: 'WORK:FACILITY:JOB-FARM-03', actionId: 'WORK:FACILITY:JOB-FARM-03' }, {
       facilityId: 'LOC_FARM_INN',
@@ -215,10 +243,10 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     commandStep(windDownAction, 'CHOOSE', { choiceId: windDownAction, actionId: windDownAction }, { facilityId: 'LOC_FARM_INN' }),
   ], {
     description: 'Day3午後は麦穂亭へ戻り、夕方の営業準備、正規の皿洗い勤務、閉店後の片づけと会話で就寝時刻まで過ごす',
-    requiredState: 'Day3 player returns to LOC_FARM_INN before the canonical 16:00 evening JOB-FARM-03 window; needs are below urgent survival threshold',
+    requiredState: 'Day3 compiler-inserted local movement returns player to LOC_FARM_INN before the canonical 16:00 evening JOB-FARM-03 window; needs are below urgent survival threshold',
     resultingState: 'unpaid common-world prep advances naturally to 16:00; canonical JOB-FARM-03 pays exactly 2G for 120 minutes; unpaid post-shift life advances naturally to 22:30; no synthetic REST padding',
     implementationSource: 'src/server/trpg/content/authored-village-inn-workday.js + canonical-regional-labour.js + canonical-job-time-policy.js',
-    notes: 'keeps Sheet-backed JOB-FARM-03 hours intact; replaces an early invalid shift plus generic REST with visible route-neutral life actions available to every player in the same Day3 inn state',
+    notes: 'compiler-inserted MOVE owns Bakery→Inn travel; the source-row sequence contains only visible route-neutral inn life and Sheet-backed work, avoiding a duplicate self-move',
   });
 
   const originalMoves = Array.isArray(movesArtifact.moves) ? movesArtifact.moves : [];
@@ -228,20 +256,27 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     throw new Error(`expected stale Day2 inn detour moves before D02-05/D02-06 exactly once each; got ${removedObsoleteMoves.map((entry) => entry.beforeLegacyRowId).join(', ')}`);
   }
 
+  // Some legacy replacement sequences already start with the same MOVE_LOCAL
+  // that the compiler inserts immediately before the source row. Deleting
+  // those inserted rows made strict replay pass the self-move, but silently
+  // shrank the reviewed 1521-row ledger. Keep the real compiler MOVE and retain
+  // the sequence row as a non-executable OUTCOME stating that movement was
+  // already satisfied. This preserves one ledger row per reviewed expansion
+  // without dispatching a hidden or duplicate movement command.
   const redundantSequencedMoves = originalMoves.filter((entry) => {
     if (obsoleteBeforeRows.has(entry.beforeLegacyRowId)) return false;
     const first = firstSequencedMove(byId.get(entry.beforeLegacyRowId));
     return Boolean(first && first.actionId === entry.actionId);
   });
-  const redundantBeforeRows = new Set(redundantSequencedMoves.map((entry) => entry.beforeLegacyRowId));
+  for (const move of redundantSequencedMoves) {
+    markFirstSequencedMoveSatisfied(byId.get(move.beforeLegacyRowId), move);
+  }
 
-  movesArtifact.moves = originalMoves.filter((entry) => (
-    !obsoleteBeforeRows.has(entry.beforeLegacyRowId)
-    && !redundantBeforeRows.has(entry.beforeLegacyRowId)
-  ));
+  movesArtifact.moves = originalMoves.filter((entry) => !obsoleteBeforeRows.has(entry.beforeLegacyRowId));
   movesArtifact.count = movesArtifact.moves.length;
   movesArtifact.fullRouteAuditRealignmentVersion = FULL_ROUTE_AUDIT_REALIGNMENT_VERSION;
-  movesArtifact.fullRouteAuditRemovedRedundantMoveBeforeRows = [...redundantBeforeRows];
+  movesArtifact.fullRouteAuditRemovedMoveBeforeRows = [...obsoleteBeforeRows];
+  movesArtifact.fullRouteAuditSatisfiedSequencedMoveBeforeRows = redundantSequencedMoves.map((entry) => entry.beforeLegacyRowId);
 
   summary.proposedMoveLocalInsertions = movesArtifact.moves.length;
   summary.expandedV3Rows = rows.reduce((total, row) => total + Math.max(1, stepCount(row)), 0) + movesArtifact.moves.length;
@@ -254,10 +289,13 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     'VR2-D03-11',
   ];
   summary.fullRouteAuditRemovedMoveBeforeRows = [...obsoleteBeforeRows];
-  summary.fullRouteAuditRemovedRedundantMoveBeforeRows = [...redundantBeforeRows];
+  summary.fullRouteAuditSatisfiedSequencedMoveBeforeRows = redundantSequencedMoves.map((entry) => entry.beforeLegacyRowId);
 
-  if (summary.expandedV3Rows <= 0 || summary.proposedMoveLocalInsertions !== movesArtifact.moves.length) {
-    throw new Error('full-route audit realignment produced invalid expanded row accounting');
+  if (summary.proposedMoveLocalInsertions !== movesArtifact.moves.length) {
+    throw new Error('full-route audit realignment produced invalid move accounting');
+  }
+  if (summary.expandedV3Rows !== CANONICAL_EXPANDED_ROWS) {
+    throw new Error(`full-route audit ledger contract changed: expected ${CANONICAL_EXPANDED_ROWS}, got ${summary.expandedV3Rows}`);
   }
 
   fs.writeFileSync(mappingPath, csv(rows, headers));
@@ -270,7 +308,7 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     proposedMoveLocalInsertions: summary.proposedMoveLocalInsertions,
     realignedLegacyRows: [...summary.fullRouteAuditRealignedLegacyRows],
     removedMoveBeforeRows: [...obsoleteBeforeRows],
-    removedRedundantMoveBeforeRows: [...redundantBeforeRows],
+    satisfiedSequencedMoveBeforeRows: redundantSequencedMoves.map((entry) => entry.beforeLegacyRowId),
   };
 }
 
