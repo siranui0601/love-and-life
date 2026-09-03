@@ -85,3 +85,18 @@ test("canonical regional jobs stay ordinary public candidates, not mission-exclu
   assert.notEqual(actions[0].authoredMissionFlowExclusiveChoice, true);
   assert.equal(actions[0].type, "plan");
 });
+
+test("Sheet-backed field work leads optional daily-life choices so the three-choice UI cannot hide it", () => {
+  const state = runtime("田園の村", "LOC_FARM_FIELD");
+  state.playerState.day = 4;
+  state.playerState.absoluteMinute = 9 * 60 + 31;
+  state.playerState.player.hunger = 0;
+  state.playerState.player.fatigue = 0;
+
+  const actions = authoredMissionFlowExclusiveActions(state);
+  assert.ok(Array.isArray(actions));
+  assert.equal(actions[0].id, "WORK:FACILITY:JOB-FARM-01");
+  assert.equal(actions[0].canonicalRegionalLabourChoice, true);
+  assert.ok(actions.slice(1).length >= 3);
+  assert.ok(actions.slice(1).every((entry) => entry.authoredDailyLifeChoice === true));
+});
