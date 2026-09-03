@@ -10,7 +10,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v3';
+export const FULL_ROUTE_AUDIT_REALIGNMENT_VERSION = 'virtue-route-v3-full-route-audit-v4';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -98,6 +98,14 @@ function chooseAction(row, {
   });
 }
 
+function firstSequencedMove(row) {
+  if (!row?.replacementSteps) return null;
+  const steps = JSON.parse(row.replacementSteps);
+  const first = steps[0];
+  if (!first || first.commandType !== 'MOVE' || !String(first.actionId ?? '').startsWith('MOVE_LOCAL:')) return null;
+  return first;
+}
+
 export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
   const mappingPath = path.join(outDir, 'virtue-route-v3-mapping.csv');
   const movesPath = path.join(outDir, 'virtue-route-v3-proposed-local-moves.json');
@@ -149,18 +157,30 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     requiredState: 'Day3 07:00-08:00 start; LOC_FARM_BAKERY; no higher-priority authored scene; hunger/fatigue below calm threshold; common bakery-morning scene unused',
     resultingState: 'two hours of ordinary unpaid village life pass through a visible production action; no wage or route score; subsequent canonical JOB-FARM-02 remains governed by its 10:00-17:00 work window',
     implementationSource: 'src/server/trpg/content/authored-village-bakery-morning.js',
-    notes: 'replaces a 120-minute prose-only legacy block that strict replay could not execute; keeps the 1521-row contract and uses a route-neutral life action rather than REST/WAIT padding or an early-job bypass',
+    notes: 'replaces a 120-minute prose-only legacy block that strict replay could not execute; uses a route-neutral life action rather than REST/WAIT padding or an early-job bypass',
   });
 
   const originalMoves = Array.isArray(movesArtifact.moves) ? movesArtifact.moves : [];
   const obsoleteBeforeRows = new Set(['VR2-D02-05', 'VR2-D02-06']);
-  const removedMoves = originalMoves.filter((entry) => obsoleteBeforeRows.has(entry.beforeLegacyRowId));
-  if (removedMoves.length !== 2 || ![...obsoleteBeforeRows].every((id) => removedMoves.some((entry) => entry.beforeLegacyRowId === id))) {
-    throw new Error(`expected stale Day2 inn detour moves before D02-05/D02-06 exactly once each; got ${removedMoves.map((entry) => entry.beforeLegacyRowId).join(', ')}`);
+  const removedObsoleteMoves = originalMoves.filter((entry) => obsoleteBeforeRows.has(entry.beforeLegacyRowId));
+  if (removedObsoleteMoves.length !== 2 || ![...obsoleteBeforeRows].every((id) => removedObsoleteMoves.some((entry) => entry.beforeLegacyRowId === id))) {
+    throw new Error(`expected stale Day2 inn detour moves before D02-05/D02-06 exactly once each; got ${removedObsoleteMoves.map((entry) => entry.beforeLegacyRowId).join(', ')}`);
   }
-  movesArtifact.moves = originalMoves.filter((entry) => !obsoleteBeforeRows.has(entry.beforeLegacyRowId));
+
+  const redundantSequencedMoves = originalMoves.filter((entry) => {
+    if (obsoleteBeforeRows.has(entry.beforeLegacyRowId)) return false;
+    const first = firstSequencedMove(byId.get(entry.beforeLegacyRowId));
+    return Boolean(first && first.actionId === entry.actionId);
+  });
+  const redundantBeforeRows = new Set(redundantSequencedMoves.map((entry) => entry.beforeLegacyRowId));
+
+  movesArtifact.moves = originalMoves.filter((entry) => (
+    !obsoleteBeforeRows.has(entry.beforeLegacyRowId)
+    && !redundantBeforeRows.has(entry.beforeLegacyRowId)
+  ));
   movesArtifact.count = movesArtifact.moves.length;
   movesArtifact.fullRouteAuditRealignmentVersion = FULL_ROUTE_AUDIT_REALIGNMENT_VERSION;
+  movesArtifact.fullRouteAuditRemovedRedundantMoveBeforeRows = [...redundantBeforeRows];
 
   summary.proposedMoveLocalInsertions = movesArtifact.moves.length;
   summary.expandedV3Rows = rows.reduce((total, row) => total + Math.max(1, stepCount(row)), 0) + movesArtifact.moves.length;
@@ -172,9 +192,11 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     'VR2-D03-03',
   ];
   summary.fullRouteAuditRemovedMoveBeforeRows = [...obsoleteBeforeRows];
+  summary.fullRouteAuditRemovedRedundantMoveBeforeRows = [...redundantBeforeRows];
 
-  if (summary.expandedV3Rows !== 1521) {
-    throw new Error(`full-route audit realignment must produce 1521 expanded rows, got ${summary.expandedV3Rows}`);
+  const expectedRows = 1521 - redundantBeforeRows.size;
+  if (summary.expandedV3Rows !== expectedRows) {
+    throw new Error(`full-route audit realignment expected ${expectedRows} expanded rows after removing ${redundantBeforeRows.size} duplicate sequenced move(s), got ${summary.expandedV3Rows}`);
   }
 
   fs.writeFileSync(mappingPath, csv(rows, headers));
@@ -187,6 +209,7 @@ export function applyFullRouteAuditRealignment({ outDir = DEFAULT_OUT } = {}) {
     proposedMoveLocalInsertions: summary.proposedMoveLocalInsertions,
     realignedLegacyRows: [...summary.fullRouteAuditRealignedLegacyRows],
     removedMoveBeforeRows: [...obsoleteBeforeRows],
+    removedRedundantMoveBeforeRows: [...redundantBeforeRows],
   };
 }
 
