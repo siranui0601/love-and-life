@@ -22,7 +22,7 @@ export const MODE_LABELS = {
 export const MODE_RULE_VERSION = {
   territory: NOW_CODING_RULE_VERSION,
   cobra: "cobra-v3",
-  fall: "fall-v3",
+  fall: "fall-v4",
   splat: "splat-v3",
 };
 
@@ -291,12 +291,38 @@ function stepCobra(state) {
   return state;
 }
 
+function fallCellKey(x, y) {
+  return `${x},${y}`;
+}
+
+function scheduleFallCollapse(state, x, y, steppedTick = state.tick) {
+  const key = fallCellKey(x, y);
+  if (state.holes.has(key) || state.fallCollapseAt.has(key)) return;
+  state.fallCollapseAt.set(key, steppedTick + 2);
+}
+
+function collapseDueFallCells(state) {
+  for (const [key, collapseTick] of state.fallCollapseAt) {
+    if (collapseTick > state.tick) continue;
+    state.fallCollapseAt.delete(key);
+    if (state.holes.has(key)) continue;
+    state.holes.add(key);
+    const [x, y] = key.split(",").map(Number);
+    state.effects.push({ type: "collapse", x, y });
+  }
+  for (const agent of state.agents) {
+    if (agent.alive && state.holes.has(fallCellKey(agent.x, agent.y))) {
+      markDead(state, agent, "floor_collapse");
+    }
+  }
+}
+
 function createFallState(config = {}) {
   const seed = String(config.seed ?? "1");
   const boardDef = createBoardDefinition({ ...config, seed });
   const size = boardDef.size;
   const made = makeAgents({ players: config.players, size, seed, spawns: config.spawns, allowSolo: Boolean(config.allowSolo), boardDef });
-  return {
+  const state = {
     mode: "fall",
     ruleVersion: MODE_RULE_VERSION.fall,
     seed,
@@ -310,6 +336,7 @@ function createFallState(config = {}) {
     spawns: made.spawns,
     random: made.random,
     holes: new Set(),
+    fallCollapseAt: new Map(),
     tick: 0,
     maxTicks: Math.max(60, Number(config.maxTicks) || Math.max(600, boardDef.playableCount * 2)),
     finished: false,
@@ -317,12 +344,15 @@ function createFallState(config = {}) {
     effects: [],
     allowSolo: Boolean(config.allowSolo),
   };
+  for (const agent of state.agents) scheduleFallCollapse(state, agent.x, agent.y, 0);
+  return state;
 }
 
 function stepFall(state) {
   if (state.finished) return state;
   state.tick += 1;
   state.effects = [];
+
   const actions = new Map();
   for (const agent of state.agents) {
     if (!agent.alive) continue;
@@ -336,24 +366,13 @@ function stepFall(state) {
     agent.lastAction = action;
     if (action === "turnLeft") agent.dir = (agent.dir + 3) % 4;
     if (action === "turnRight") agent.dir = (agent.dir + 1) % 4;
-    // Floor-collapse progress is driven only by an emitted physical action.
-    // Zero-tick VM work (or a halted program returning "none") must not
-    // manufacture an extra stationary action.
-    if (action === "turnLeft" || action === "turnRight") {
-      agent.noMoveTicks += 1;
-      if (agent.noMoveTicks >= 2) {
-        state.holes.add(`${agent.x},${agent.y}`);
-        state.effects.push({ type: "collapse", x: agent.x, y: agent.y });
-        markDead(state, agent, "floor_collapse");
-      }
-    }
   }
 
   const intents = [];
   for (const agent of state.agents) {
     if (!agent.alive || actions.get(agent.id) !== "move") continue;
     const target = targetAt(agent, "front");
-    if (out(state, target.x, target.y) || state.holes.has(`${target.x},${target.y}`)) {
+    if (out(state, target.x, target.y) || state.holes.has(fallCellKey(target.x, target.y))) {
       markDead(state, agent, "cliff");
       continue;
     }
@@ -376,7 +395,13 @@ function stepFall(state) {
     agent.x = intent.target.x;
     agent.y = intent.target.y;
     agent.noMoveTicks = 0;
+    scheduleFallCollapse(state, agent.x, agent.y);
   }
+
+  // The deadline tick is still playable. Sensors and the physical action run
+  // first, then every due tile becomes a cliff. A piece that escapes on this
+  // tick survives; a piece that remains on the tile is eliminated.
+  collapseDueFallCells(state);
   finishSurvival(state);
   return state;
 }
