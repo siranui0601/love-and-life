@@ -48,12 +48,6 @@ function urgentLifeState(runtime) {
     || clock.hour >= 21;
 }
 
-function urgentCanonicalProducts(runtime, actions) {
-  if (!onlyAuthoredDailyLife(actions) || !urgentLifeState(runtime)) return null;
-  const products = base.CANONICAL_WORLD_LIFE_INTERNALS?.productActions?.(runtime);
-  return Array.isArray(products) && products.length > 0 ? products : null;
-}
-
 function continuingOrdinaryWork(runtime) {
   return runtime?.narrativeMemory?.activityFocus?.intent === "work";
 }
@@ -67,6 +61,17 @@ function missionById(runtime, missionId) {
 
 function t01Active(runtime) {
   return ACTIVE_MISSION_STATUSES.has(String(missionById(runtime, "MSN-T01")?.status ?? ""));
+}
+
+function urgentCanonicalProducts(runtime, actions) {
+  if (!urgentLifeState(runtime) || t01Active(runtime)) return null;
+  const ordinaryOrEmpty = !Array.isArray(actions)
+    || actions.length === 0
+    || onlyAuthoredDailyLife(actions)
+    || onlyCanonicalWorldLife(actions);
+  if (!ordinaryOrEmpty) return null;
+  const products = base.CANONICAL_WORLD_LIFE_INTERNALS?.productActions?.(runtime);
+  return Array.isArray(products) && products.length > 0 ? products : null;
 }
 
 function coreMissionOwnsChoicePool(runtime, context = {}) {
@@ -115,11 +120,12 @@ function reconcileSignedFarmFacilities(runtime) {
 // and reserve exclusivity for an actual facility product/service surface.
 //
 // The complete base chain already gives higher-priority authored scenes first.
-// If it reaches canonical-world-life and returns canonical products, no core
-// mission panel survived at the current scene. Do not run the core again merely
-// as a guard: its state-initializing read can disagree with the already-resolved
-// base result. T01 remains the one explicit exception because its discovery
-// surface is owned by service.js rather than the common core chain.
+// At an urgent/late life boundary, an empty base result is also authoritative:
+// it means there is no authored panel at the current scene, so stable canonical
+// food/lodging products must be surfaced directly instead of falling through to
+// survival-aware-service's legacy dynamic EAT/LODGE/REST_OUTDOOR ids. A real
+// non-ordinary authored panel still wins. T01 remains the explicit exception
+// because its discovery surface is service-owned rather than the common chain.
 //
 // A daily-life vignette is deliberately lower priority than survival. Once the
 // clock reaches the survival layer's late-night threshold (or needs become
@@ -185,4 +191,5 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   reconcileSignedFarmFacilities,
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
+  urgentCanonicalProducts,
 });
