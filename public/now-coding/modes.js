@@ -353,11 +353,6 @@ function stepFall(state) {
   state.tick += 1;
   state.effects = [];
 
-  // A tile disappears at the start of the tick exactly two ticks after it was
-  // first stepped on. The first visit owns the deadline; revisiting the tile
-  // never extends its lifetime.
-  collapseDueFallCells(state);
-
   const actions = new Map();
   for (const agent of state.agents) {
     if (!agent.alive) continue;
@@ -402,6 +397,11 @@ function stepFall(state) {
     agent.noMoveTicks = 0;
     scheduleFallCollapse(state, agent.x, agent.y);
   }
+
+  // The deadline tick is still playable. Sensors and the physical action run
+  // first, then every due tile becomes a cliff. A piece that escapes on this
+  // tick survives; a piece that remains on the tile is eliminated.
+  collapseDueFallCells(state);
   finishSurvival(state);
   return state;
 }
