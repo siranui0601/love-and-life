@@ -1,0 +1,48 @@
+name: apply-now-coding-content-only
+
+on:
+  push:
+    branches:
+      - fix/now-coding-tutorial-recovery-copy
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/now-coding-tutorial-recovery-copy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply content patch with literal replacement text
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('tools/now-coding/apply-tutorial-copy-fix.mjs')
+          s=p.read_text()
+          old='const next = source.replace(before, after);'
+          new='const next = source.replace(before, () => after);'
+          if old not in s:
+              raise SystemExit('replace anchor not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+          node --check tools/now-coding/apply-tutorial-copy-fix.mjs
+          node tools/now-coding/apply-tutorial-copy-fix.mjs
+          git checkout -- .github/workflows/now-coding.yml tools/now-coding/apply-tutorial-copy-fix.mjs
+      - name: Validate content patch
+        run: |
+          node --check public/now-coding/app-v3.js
+          node --check public/now-coding/tutorial-recovery.js
+          node --test tools/now-coding/tutorial-recovery.test.mjs tools/now-coding/client-contract.test.mjs tools/now-coding/engine.test.mjs tools/now-coding/board-spawn.test.mjs tools/now-coding/fall-timed-collapse.test.mjs
+      - name: Commit content only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/now-coding/app-v3.js public/now-coding/style-v7.css tools/now-coding/client-contract.test.mjs
+          git diff --cached --exit-code && exit 1 || true
+          git commit -m "fix: recover Now Coding tutorial and add block copy UX"
+          git push origin HEAD:fix/now-coding-tutorial-recovery-copy
