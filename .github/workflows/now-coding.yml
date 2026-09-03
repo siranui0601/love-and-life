@@ -33,7 +33,7 @@ jobs:
           node --check src/server/now-coding/index.js
           node --check src/server/shared/index.js
       - name: Engine, VM and client contract tests
-        run: node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs tools/now-coding/board-spawn.test.mjs
+        run: node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs tools/now-coding/board-spawn.test.mjs tools/now-coding/fall-timed-collapse.test.mjs
       - name: Entry and UX contract smoke checks
         run: |
           grep -q 'data-game="now-coding"' public/index.html
