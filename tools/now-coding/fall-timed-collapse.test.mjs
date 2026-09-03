@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createGameState, senseModeCell, stepGame } from "../../public/now-coding/modes.js";
 
+// Canonical fall timing: the deadline action resolves before the stepped tile collapses.
 const move = { type: "action", action: "move" };
 const right = { type: "action", action: "turnRight" };
 const literal = (value) => ({ type: "literal", value });
