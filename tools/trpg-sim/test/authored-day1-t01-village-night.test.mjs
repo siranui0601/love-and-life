@@ -68,8 +68,9 @@ function sleepToDay2(state) {
 }
 
 function eatBreakfastAtBakery(state) {
-  // The live canonical merchant morning is at the bakery, not the inn. A meal
-  // after the completed night plus actual NPC008 presence unlocks the scene.
+  // The live canonical merchant morning is at the bakery, not the inn. The
+  // authored arrival is unlocked by the completed night plus an actual meal;
+  // generic NPC scheduler placement must not make that causal scene disappear.
   state.playerState.player.facilityId = "LOC_FARM_BAKERY";
   consumeMeal(state.playerState.player, {
     minute: state.playerState.absoluteMinute + 7,
@@ -122,7 +123,7 @@ test("evening free-time action advances exactly to 22:30 and only then opens nig
   assert.equal(actions.find((action) => action.id === night.SLEEP_ACTION_ID).minutes, 480);
 });
 
-test("lodging sleep crosses into Day2 with fatigue recovered, but merchant waits for breakfast and local contact", () => {
+test("lodging sleep crosses into Day2 with fatigue recovered, while authored merchant arrival is scheduler-independent", () => {
   const state = runtime();
   const { result } = sleepToDay2(state);
 
@@ -139,24 +140,27 @@ test("lodging sleep crosses into Day2 with fatigue recovered, but merchant waits
 
   eatBreakfastAtBakery(state);
   assert.equal(canonical.merchantMorningStateEligible(state), true);
-  assert.equal(canonical.merchantMorningEligible(state, { presentNpcs: [] }), false);
+  assert.equal(canonical.merchantMorningEligible(state, { presentNpcs: [] }), true);
   assert.equal(canonical.merchantMorningEligible(state, MERCHANT_CONTEXT), true);
 
-  const morning = authoredMissionFlowExclusiveActions(state, MERCHANT_CONTEXT);
-  assert.deepEqual(morning.map((action) => action.label), [
+  const withoutScheduledPresence = authoredMissionFlowExclusiveActions(state, { presentNpcs: [] });
+  assert.deepEqual(withoutScheduledPresence.map((action) => action.label), [
     "荷ほどきを手伝う",
     "品物を見る",
     "朝粥を食べる",
   ]);
-  assert.ok(morning.every((action) => action.targetNpcId === canonical.MERCHANT_NPC_ID));
-  assert.ok(morning.every((action) => action.authoredDay1T01VillageNightSpeech.actorId === "NPC008"));
+  assert.ok(withoutScheduledPresence.every((action) => action.targetNpcId === canonical.MERCHANT_NPC_ID));
+  assert.ok(withoutScheduledPresence.every((action) => action.authoredDay1T01VillageNightSpeech.actorId === "NPC008"));
+
+  const morning = authoredMissionFlowExclusiveActions(state, MERCHANT_CONTEXT);
+  assert.deepEqual(morning.map((action) => action.id), withoutScheduledPresence.map((action) => action.id));
 });
 
 test("merchant choices create different logistics and life results only after breakfast at the bakery", () => {
   const workState = runtime();
   sleepToDay2(workState);
   eatBreakfastAtBakery(workState);
-  const unload = authoredMissionFlowExclusiveActions(workState, MERCHANT_CONTEXT)
+  const unload = authoredMissionFlowExclusiveActions(workState, { presentNpcs: [] })
     .find((action) => action.label === "荷ほどきを手伝う");
   const unloadResult = choose(workState, unload);
   assert.equal(unloadResult.speeches[0].actorId, "NPC008");
@@ -166,7 +170,7 @@ test("merchant choices create different logistics and life results only after br
   const foodState = runtime();
   sleepToDay2(foodState);
   eatBreakfastAtBakery(foodState);
-  const porridge = authoredMissionFlowExclusiveActions(foodState, MERCHANT_CONTEXT)
+  const porridge = authoredMissionFlowExclusiveActions(foodState, { presentNpcs: [] })
     .find((action) => action.label === "朝粥を食べる");
   choose(foodState, porridge);
   assert.equal(foodState.playerState.worldFlags["day2Merchant:morningPorridgeEaten"], true);
