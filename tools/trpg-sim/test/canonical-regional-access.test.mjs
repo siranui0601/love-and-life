@@ -75,3 +75,13 @@ test("regional access history is finite and contains no virtue-route score", () 
   assert.equal(state.playerState.history.at(-1).type, "CANONICAL_REGIONAL_ACCESS_GRANTED");
   assert.doesNotMatch(JSON.stringify(access.ACCESS), /VIRTUE_ROUTE|virtueRoute|routeScore/u);
 });
+
+test("canonical regional jobs stay ordinary public candidates, not mission-exclusive branches", () => {
+  const state = runtime("田園の村", "LOC_FARM_FIELD");
+  const actions = labour.ownActions(state);
+  assert.equal(actions?.length, 1);
+  assert.equal(actions[0].id, "WORK:FACILITY:JOB-FARM-01");
+  assert.equal(actions[0].canonicalRegionalLabourChoice, true);
+  assert.notEqual(actions[0].authoredMissionFlowExclusiveChoice, true);
+  assert.equal(actions[0].type, "plan");
+});
