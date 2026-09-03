@@ -10,7 +10,6 @@ function patch(path, mutate) {
 function replaceOnce(source, before, after, label) {
   if (!source.includes(before)) throw new Error(`missing_anchor:${label}`);
   const next = source.replace(before, after);
-  if (next.includes(before)) throw new Error(`duplicate_anchor:${label}`);
   return next;
 }
 
