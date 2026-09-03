@@ -74,8 +74,15 @@ function coreMissionOwnsChoicePool(runtime, context = {}) {
   return Array.isArray(actions) && actions.length > 0;
 }
 
-function authoredMissionOwnsChoicePool(runtime, context = {}) {
-  return t01Active(runtime) || coreMissionOwnsChoicePool(runtime, context);
+// T01 discovery is still service-owned rather than supplied by the common core
+// pack chain, so it needs an explicit gate. For every core-authored mission, do
+// not call the core a second time after `base` has already resolved the complete
+// content chain: canonical-world-life only returns its own actions when its base
+// supplied no meaningful authored panel. Re-running the core here can initialize
+// flow state and manufacture a false-positive ownership result that hides public
+// food/lodging even though no mission choice is actually visible in production.
+function authoredMissionOwnsChoicePool(runtime) {
+  return t01Active(runtime);
 }
 
 // The village square is the ordinary public wayfinder for the farm hub. Older
@@ -107,11 +114,12 @@ function reconcileSignedFarmFacilities(runtime) {
 // investigation and work candidates. Keep REST in the ordinary candidate pool
 // and reserve exclusivity for an actual facility product/service surface.
 //
-// Mission guidance can point to another facility. Guidance alone must not hide
-// public food/lodging at the player's current facility; only an authored mission
-// choice panel that is actually actionable here gets exclusive ownership. This
-// keeps mission scene exclusivity without making ordinary survival products
-// disappear while the player travels between investigation targets.
+// The complete base chain already gives higher-priority authored scenes first.
+// If it reaches canonical-world-life and returns canonical products, no core
+// mission panel survived at the current scene. Do not run the core again merely
+// as a guard: its state-initializing read can disagree with the already-resolved
+// base result. T01 remains the one explicit exception because its discovery
+// surface is owned by service.js rather than the common core chain.
 //
 // A daily-life vignette is deliberately lower priority than survival. Once the
 // clock reaches the survival layer's late-night threshold (or needs become
@@ -130,7 +138,7 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
   if (onlyCanonicalWorldLife(actions)) {
-    if (authoredMissionOwnsChoicePool(runtime, context)) return null;
+    if (authoredMissionOwnsChoicePool(runtime)) return null;
     return hasDedicatedCanonicalWorldLife(actions) ? actions : null;
   }
   if (!Array.isArray(actions)) return actions;
