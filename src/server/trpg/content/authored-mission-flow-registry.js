@@ -5,6 +5,7 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 export * from "./authored-village-bakery-evening.js";
 
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
+const NON_PUBLIC_FACILITY_PATTERN = /隠|秘密|地下|処刑|牢|祭壇|封印|見張り小屋|裏路地/u;
 
 function onlyCanonicalWorldLife(actions) {
   return Array.isArray(actions)
@@ -69,6 +70,28 @@ function authoredMissionOwnsChoicePool(runtime) {
   return t01Active(runtime) || Boolean(coreAuthoredMissionFlowGuidance(runtime));
 }
 
+// The village square is the ordinary public wayfinder for the farm hub. Older
+// service code persisted only a five-entry hard-coded subset there, which left
+// canonical public facilities such as the shared granary undiscoverable even
+// though they exist in the same live world model and host ordinary Sheet-backed
+// jobs. Reconcile the persisted knowledge after successful commands once the
+// square is known. This mirrors the signed-public-facility rule already used on
+// arrival in other towns, while retaining secret/event-only locations behind
+// their existing discovery gates.
+function reconcileSignedFarmFacilities(runtime) {
+  const known = runtime?.playerKnowledge?.knownFacilityIds;
+  if (!(known instanceof Set) || !known.has("LOC_FARM_SQUARE")) return false;
+  const facilities = runtime?.livingWorld?.model?.facilitiesByHub?.["田園の村"] ?? [];
+  let changed = false;
+  for (const facility of facilities) {
+    if (!facility?.id || NON_PUBLIC_FACILITY_PATTERN.test(`${facility.name ?? ""} ${facility.type ?? ""}`)) continue;
+    if (known.has(facility.id)) continue;
+    known.add(facility.id);
+    changed = true;
+  }
+  return changed;
+}
+
 // Canonical meals, provisions, lodging and services are real public world
 // surfaces. They may own the choice panel when no authored mission owns the
 // current scene. Generic REST duration entries are different: exposing the
@@ -116,7 +139,8 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
   const changed = base.applyAuthoredMissionFlowAction(runtime, action, result);
   base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
-  return changed;
+  const publicFacilitiesChanged = result?.ok === false ? false : reconcileSignedFarmFacilities(runtime);
+  return publicFacilitiesChanged || changed;
 }
 
 // canonical-world-life supplies a generic "その土地の生活を選ぶ" fallback.
@@ -137,3 +161,8 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
   }
   return guidance;
 }
+
+export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
+  NON_PUBLIC_FACILITY_PATTERN,
+  reconcileSignedFarmFacilities,
+});
