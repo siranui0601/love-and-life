@@ -2,7 +2,7 @@ import * as base from "./canonical-regional-access.js";
 
 export * from "./canonical-regional-access.js";
 
-export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v8";
+export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v9";
 
 // Live TRPG/仕事マスター is authoritative. These are normal public jobs for
 // every route. Stable action IDs, duration and wage come from that master. The
@@ -185,7 +185,11 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const live = ownActions(runtime);
 
   if (authored != null && !staleBaseLabour(authored)) {
-    if (live?.length && coexistingDailyLife(authored)) return [...authored, ...live];
+    // A public Sheet-backed job leads the coexistence list so the three-choice
+    // authority cannot hide it behind three optional daily-life branches. The
+    // daily-life choices retain their authored ordering after the job, while
+    // genuine mission scenes still bypass this branch and remain exclusive.
+    if (live?.length && coexistingDailyLife(authored)) return [...live, ...authored];
     return authored;
   }
   if (live?.length) return live;
