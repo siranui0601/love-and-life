@@ -1,8 +1,8 @@
-import * as base from "./authored-village-north-fence-workday.js";
+import * as base from "./authored-village-day5-before-fire.js";
 import { authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance } from "./authored-mission-flow-core.js";
 import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
-export * from "./authored-village-north-fence-workday.js";
+export * from "./authored-village-day5-before-fire.js";
 
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 const NON_PUBLIC_FACILITY_PATTERN = /隠|秘密|地下|処刑|牢|祭壇|封印|見張り小屋|裏路地/u;
