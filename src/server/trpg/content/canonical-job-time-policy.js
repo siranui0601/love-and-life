@@ -3,7 +3,7 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 
 export * from "./canonical-social-obligations.js";
 
-export const CANONICAL_JOB_TIME_POLICY_VERSION = "canonical-job-time-policy-v2";
+export const CANONICAL_JOB_TIME_POLICY_VERSION = "canonical-job-time-policy-v3";
 
 const JOB_TIME_WINDOWS = Object.freeze({
   "JOB-FARM-01": [[360, 1020]],
@@ -48,15 +48,36 @@ function minuteOfDay(runtime) {
   return hour * 60 + minute;
 }
 
-function jobTimeAllowed(runtime, action) {
+function allowedFromStartMinute(start, action) {
   const jobId = String(action?.canonicalRegionalJobId ?? "");
   if (!jobId) return true;
   const windows = JOB_TIME_WINDOWS[jobId];
   if (!windows?.length) return false;
-  const start = minuteOfDay(runtime);
   const duration = Math.max(0, Number(action.minutes ?? 0));
   const finish = start + duration;
   return windows.some(([from, to]) => start >= from && finish <= to);
+}
+
+function jobTimeAllowed(runtime, action) {
+  return allowedFromStartMinute(minuteOfDay(runtime), action);
+}
+
+function executionStartMinuteOfDay(runtime, action) {
+  const absolute = Number(runtime?.playerState?.absoluteMinute);
+  const duration = Math.max(0, Number(action?.minutes ?? 0));
+  if (Number.isFinite(absolute)) {
+    // CHOOSE plans advance production time before the authored content chain is
+    // asked to consume the selected action. Reconstruct the exact visible
+    // choice start instead of accidentally validating a second duration from
+    // the already-advanced clock.
+    return clockFromMinute(absolute - duration).minuteOfDay;
+  }
+  const current = minuteOfDay(runtime);
+  return ((current - duration) % 1440 + 1440) % 1440;
+}
+
+function jobTimeAllowedAtExecutionStart(runtime, action) {
+  return allowedFromStartMinute(executionStartMinuteOfDay(runtime, action), action);
 }
 
 function filterActions(runtime, actions) {
@@ -76,7 +97,7 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
 }
 
 export function applyAuthoredMissionFlowAction(runtime, actionValue, result) {
-  if (actionValue?.canonicalRegionalLabourChoice && !jobTimeAllowed(runtime, actionValue)) {
+  if (actionValue?.canonicalRegionalLabourChoice && !jobTimeAllowedAtExecutionStart(runtime, actionValue)) {
     result.ok = false;
     result.code = "canonical_job_outside_time_window";
     result.summary = "この仕事の正本上の勤務時間帯ではない。";
@@ -88,6 +109,9 @@ export function applyAuthoredMissionFlowAction(runtime, actionValue, result) {
 export const CANONICAL_JOB_TIME_POLICY_INTERNALS = Object.freeze({
   JOB_TIME_WINDOWS,
   minuteOfDay,
+  allowedFromStartMinute,
   jobTimeAllowed,
+  executionStartMinuteOfDay,
+  jobTimeAllowedAtExecutionStart,
   filterActions,
 });
