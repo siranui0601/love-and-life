@@ -123,16 +123,49 @@ function isCoreT02InvestigationPanel(actions) {
     });
 }
 
-// Keep the common T02 core's hearing/opening contract intact for content-level
-// callers. Once that opening has advanced the live mission to its investigate
-// step at the shared granary, the v3 canonical ledger explicitly requires the
-// dedicated T02_GRANARY:EVIDENCE:* production actions. Resolve that arbitration
-// only at the persisted production registry boundary so lower modules retain
-// their independent contracts and the strict route sees the canonical surface.
+function canonicalT02DawnPlayed(runtime) {
+  const state = runtime?.playerState?.t02GranaryDawn;
+  if (!state || typeof state !== "object") return false;
+  return (Array.isArray(state.selectedActionIds) && state.selectedActionIds.length > 0)
+    || Object.keys(state.completedScenes ?? {}).length > 0;
+}
+
+// Keep the common T02 core's hearing/opening contract intact for ordinary
+// production callers. The v3 canonical continuity is a consequence of the
+// authored dawn intervention, so only a runtime that actually played that dawn
+// may switch from the common investigation surface to T02_GRANARY:EVIDENCE:*.
 function canonicalT02ContinuityActions(runtime, actions) {
+  if (!canonicalT02DawnPlayed(runtime)) return actions;
   if (!AUTHORED_MISSION_T02_GRANARY_INTERNALS.t02InvestigationActive(runtime)) return actions;
   if (!isCoreT02InvestigationPanel(actions)) return actions;
   return AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_INTERNALS.orderedT02Choices(runtime);
+}
+
+// After the dawn, the common T02 investigation panel explicitly contains a
+// DEFER choice and its leads may point to other facilities. It must therefore
+// not hide an executable real product at the player's current facility. This
+// is deliberately T02-only: it is not a generic authored/generic action mix.
+function localCanonicalProductsBeforeDeferredT02(runtime, actions) {
+  if (!canonicalT02DawnPlayed(runtime) || !isCoreT02InvestigationPanel(actions)) return actions;
+  const canDefer = actions.some((action) =>
+    String(action?.actionId ?? action?.id ?? "") === "MISSION_FLOW:granary-arson:DEFER:defer");
+  if (!canDefer) return actions;
+  const products = base.CANONICAL_WORLD_LIFE_INTERNALS?.productActions?.(runtime) ?? [];
+  return Array.isArray(products) && products.length > 0 ? products : actions;
+}
+
+function canonicalT02DawnAction(action) {
+  if (action?.authoredT02DawnChoice === true) return action;
+  const id = String(action?.actionId ?? action?.id ?? "");
+  if (!id.startsWith("MISSION_FLOW:T02:")) return null;
+  for (const [sceneId, choices] of Object.entries(AUTHORED_T02_GRANARY_DAWN_INTERNALS.SCENES ?? {})) {
+    for (const choice of choices ?? []) {
+      if (AUTHORED_T02_GRANARY_DAWN_INTERNALS.actionIdFor(sceneId, choice) === id) {
+        return AUTHORED_T02_GRANARY_DAWN_INTERNALS.actionFor(sceneId, choice);
+      }
+    }
+  }
+  return null;
 }
 
 function syncCanonicalT02GranaryOnset(runtime, action, result) {
@@ -207,6 +240,7 @@ function reconcileCanonicalT02GranaryKeeper(runtime, action, result) {
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   let actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   actions = canonicalT02ContinuityActions(runtime, actions);
+  actions = localCanonicalProductsBeforeDeferredT02(runtime, actions);
   actions = prependAvailableCanonicalLabour(runtime, actions);
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
@@ -221,13 +255,17 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
-  const dawnChanged = AUTHORED_T02_GRANARY_DAWN_INTERNALS.consume(runtime, action, result);
+  const dawnAction = canonicalT02DawnAction(action);
+  const dawnChanged = dawnAction
+    ? AUTHORED_T02_GRANARY_DAWN_INTERNALS.consume(runtime, dawnAction, result)
+    : false;
   const labourChanged = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.consume?.(runtime, action, result) ?? false;
   const changed = dawnChanged || labourChanged
     ? true
     : base.applyAuthoredMissionFlowAction(runtime, action, result);
-  const t02OnsetChanged = syncCanonicalT02GranaryOnset(runtime, action, result);
-  const t02KeeperChanged = reconcileCanonicalT02GranaryKeeper(runtime, action, result);
+  const canonicalAction = dawnAction ?? action;
+  const t02OnsetChanged = syncCanonicalT02GranaryOnset(runtime, canonicalAction, result);
+  const t02KeeperChanged = reconcileCanonicalT02GranaryKeeper(runtime, canonicalAction, result);
   base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
   const publicFacilitiesChanged = result?.ok === false ? false : reconcileSignedFarmFacilities(runtime);
   return publicFacilitiesChanged || t02KeeperChanged || t02OnsetChanged || changed;
@@ -253,7 +291,10 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   authoredMissionOwnsChoicePool,
   urgentCanonicalProducts,
   isCoreT02InvestigationPanel,
+  canonicalT02DawnPlayed,
   canonicalT02ContinuityActions,
+  localCanonicalProductsBeforeDeferredT02,
+  canonicalT02DawnAction,
   syncCanonicalT02GranaryOnset,
   reconcileCanonicalT02GranaryKeeper,
 });
