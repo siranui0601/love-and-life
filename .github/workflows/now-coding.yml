@@ -27,6 +27,7 @@ jobs:
           node --check public/now-coding/modes.js
           node --check public/now-coding/app.js
           node --check public/now-coding/app-v3.js
+          node --check public/now-coding/editor-scroll-stability.js
           node --check public/now-coding/tutorials.js
           node --check public/now-coding/tutorial-recovery.js
           node --check src/server/now-coding/store.js
@@ -34,7 +35,7 @@ jobs:
           node --check src/server/now-coding/index.js
           node --check src/server/shared/index.js
       - name: Engine, VM and client contract tests
-        run: node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs tools/now-coding/board-spawn.test.mjs tools/now-coding/fall-timed-collapse.test.mjs tools/now-coding/tutorial-recovery.test.mjs
+        run: node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs tools/now-coding/board-spawn.test.mjs tools/now-coding/fall-timed-collapse.test.mjs tools/now-coding/tutorial-recovery.test.mjs tools/now-coding/editor-scroll-stability.test.mjs
       - name: Entry and UX contract smoke checks
         run: |
           grep -q 'data-game="now-coding"' public/index.html
@@ -57,6 +58,7 @@ jobs:
           grep -q 'style-v3.css' public/now-coding/index.html
           grep -q 'style-v7.css' public/now-coding/index.html
           grep -q 'app-v3.js' public/now-coding/app.js
+          grep -q 'editor-scroll-stability.js' public/now-coding/app.js
           grep -q 'enemyDistance' public/now-coding/vm.js
           grep -q 'now:round-finished' src/server/now-coding/online.js
           grep -q 'now:set-round-program' src/server/now-coding/online.js
