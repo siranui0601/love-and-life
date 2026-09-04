@@ -268,13 +268,22 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 // still authoritative, so the same interaction is serialized exactly once and
 // survives restore before the player answers it.
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
+  // T02 dawn actions are also ordinary `plan` actions at the transport layer.
+  // A higher generic plan consumer can report success before the dedicated dawn
+  // wrapper is reached, leaving its follow-up scene/evidence state unpersisted.
+  // Dispatch only the explicitly tagged dawn action at this persisted boundary;
+  // this is the same narrow ownership rule used for canonical labour below.
+  const dawnChanged = base.AUTHORED_T02_GRANARY_DAWN_INTERNALS?.consume?.(runtime, action, result) ?? false;
+
   // Canonical jobs are ordinary `plan` actions. Higher wrapper layers can
   // successfully consume a generic plan before the canonical-labour layer is
   // reached, which advances time but loses the Sheet-backed wage/shift record.
   // Dispatch the explicitly tagged canonical job at this top persisted boundary
   // first; this changes no choice arbitration and cannot affect non-job plans.
   const labourChanged = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.consume?.(runtime, action, result) ?? false;
-  const changed = labourChanged ? true : base.applyAuthoredMissionFlowAction(runtime, action, result);
+  const changed = dawnChanged || labourChanged
+    ? true
+    : base.applyAuthoredMissionFlowAction(runtime, action, result);
   const t02OnsetChanged = syncCanonicalT02GranaryOnset(runtime, action, result);
   const t02KeeperChanged = reconcileCanonicalT02GranaryKeeper(runtime, action, result);
   base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
