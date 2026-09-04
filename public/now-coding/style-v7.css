@@ -51,8 +51,11 @@
 .insertion-slot.is-current-insert{height:24px;min-height:24px;margin:3px 0;border-style:dashed;border-color:rgba(88,230,246,.38);background:rgba(88,230,246,.045);color:var(--cyan);opacity:1}
 .insertion-slot.is-drag-gap{height:52px!important;min-height:52px!important;margin:7px 0!important;border:1px solid rgba(88,230,246,.72)!important;background:linear-gradient(90deg,rgba(88,230,246,.035),rgba(88,230,246,.13),rgba(88,230,246,.035))!important;color:var(--cyan)!important;opacity:1!important;box-shadow:inset 0 0 24px rgba(88,230,246,.05),0 0 18px rgba(88,230,246,.08)}
 .insertion-slot.is-drag-gap::after{content:"ここで指を離すと、この隙間に入ります"}
-.insertion-slot.is-move-target,.insertion-slot.is-copy-target{height:36px;min-height:36px;margin:4px 0;border:1px dashed rgba(88,230,246,.46);background:rgba(88,230,246,.055);color:var(--cyan);opacity:1;cursor:pointer}
-.insertion-slot.is-move-target:hover,.insertion-slot.is-copy-target:hover{height:44px;min-height:44px;background:rgba(88,230,246,.11);border-style:solid}
+/* Placement targets keep the same net document-flow height as a normal 7px slot.
+   The negative margins provide the existing large hit area without making a 100+ block
+   workspace grow by thousands of pixels when copy/move mode starts. */
+.insertion-slot.is-move-target,.insertion-slot.is-copy-target{position:relative;z-index:3;height:35px;min-height:35px;margin:-13px 0;border:1px dashed rgba(88,230,246,.46);background:rgba(8,18,25,.94);color:var(--cyan);opacity:1;cursor:pointer}
+.insertion-slot.is-move-target:hover,.insertion-slot.is-copy-target:hover{height:35px;min-height:35px;margin:-13px 0;background:rgba(88,230,246,.11);border-style:solid}
 .insertion-slot.is-invalid-move-target{display:none}
 .code-sequence.is-drop-target>.insertion-slot.is-drag-gap{animation:insertGapPulse .72s ease-in-out infinite alternate}
 .move-mode-bar{position:sticky;z-index:12;top:68px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 10px;padding:10px 12px;border:1px solid rgba(88,230,246,.42);background:rgba(7,14,20,.96);box-shadow:0 12px 28px rgba(0,0,0,.28);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#dcecf1}.move-mode-bar span{min-width:0}.move-mode-bar strong{color:var(--cyan)}
