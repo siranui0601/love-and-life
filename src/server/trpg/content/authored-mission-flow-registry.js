@@ -111,8 +111,14 @@ function availableCanonicalLabour(runtime) {
     base.CANONICAL_JOB_TIME_POLICY_INTERNALS?.jobTimeAllowed?.(runtime, action) !== false);
 }
 
-function prependAvailableCanonicalLabour(runtime, actions) {
-  if (!onlyAuthoredDailyLife(actions)) return actions;
+function productionAuthoredRuntime(runtime, context = {}) {
+  return runtime?.authoredMissionFlows != null
+    || runtime?.livingWorld != null
+    || base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.productionChoiceContext?.(context) === true;
+}
+
+function prependAvailableCanonicalLabour(runtime, actions, context = {}) {
+  if (!onlyAuthoredDailyLife(actions) || !productionAuthoredRuntime(runtime, context)) return actions;
   const allowed = availableCanonicalLabour(runtime);
   return allowed.length ? [...allowed, ...actions] : actions;
 }
@@ -175,6 +181,20 @@ function localCanonicalLabourBesideT02Continuity(runtime, actions) {
   return [...jobs.slice(0, 1), ...actions.slice(0, 2)];
 }
 
+// The same long-running T02 continuity must not make ordinary rest impossible.
+// Rest remains a public life action for every route; while T02 is open, reserve
+// one bounded rest slot and keep two investigation choices instead of turning
+// the case into a modal lock.
+function localCanonicalRestBesideT02Continuity(runtime, actions) {
+  if (!canonicalT02DawnPlayed(runtime) || !isCanonicalT02ContinuityPanel(actions)) return actions;
+  const rests = base.CANONICAL_WORLD_LIFE_INTERNALS?.restActions?.(runtime) ?? [];
+  if (!rests.length) return actions;
+  const fatigue = needValue(runtime, "fatigue");
+  const preferredMinutes = fatigue >= 24 ? 90 : fatigue >= 12 ? 60 : 30;
+  const rest = rests.find((action) => action.id === `LIFE:REST:${preferredMinutes}`) ?? rests[0];
+  return [rest, ...actions.slice(0, 2)];
+}
+
 function canonicalT02DawnAction(action) {
   const id = String(action?.actionId ?? action?.id ?? "");
   if (id.startsWith("MISSION_FLOW:T02:")) {
@@ -189,6 +209,14 @@ function canonicalT02DawnAction(action) {
     }
   }
   return action?.authoredT02DawnChoice === true ? action : null;
+}
+
+function reconcileCanonicalT02DawnFollowUp(runtime, action, changed) {
+  if (!changed || !action?.authoredT02DawnChoice || !action.authoredT02DawnNextSceneId) return false;
+  const state = AUTHORED_T02_GRANARY_DAWN_INTERNALS.ensureState(runtime);
+  if (state.currentSceneId === action.authoredT02DawnNextSceneId) return false;
+  state.currentSceneId = action.authoredT02DawnNextSceneId;
+  return true;
 }
 
 function syncCanonicalT02GranaryOnset(runtime, action, result) {
@@ -265,7 +293,8 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   actions = canonicalT02ContinuityActions(runtime, actions);
   actions = localCanonicalProductsBeforeDeferredT02(runtime, actions);
   actions = localCanonicalLabourBesideT02Continuity(runtime, actions);
-  actions = prependAvailableCanonicalLabour(runtime, actions);
+  actions = localCanonicalRestBesideT02Continuity(runtime, actions);
+  actions = prependAvailableCanonicalLabour(runtime, actions, context);
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
   if (onlyCanonicalWorldLife(actions)) {
@@ -283,8 +312,9 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
   const dawnChanged = dawnAction
     ? AUTHORED_T02_GRANARY_DAWN_INTERNALS.consume(runtime, dawnAction, result)
     : false;
+  const dawnFollowUpChanged = reconcileCanonicalT02DawnFollowUp(runtime, dawnAction, dawnChanged);
   const labourChanged = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.consume?.(runtime, action, result) ?? false;
-  const changed = dawnChanged || labourChanged
+  const changed = dawnChanged || dawnFollowUpChanged || labourChanged
     ? true
     : base.applyAuthoredMissionFlowAction(runtime, action, result);
   const canonicalAction = dawnAction ?? action;
@@ -311,6 +341,7 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   NON_PUBLIC_FACILITY_PATTERN,
   reconcileSignedFarmFacilities,
   availableCanonicalLabour,
+  productionAuthoredRuntime,
   prependAvailableCanonicalLabour,
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
@@ -321,7 +352,9 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   canonicalT02ContinuityActions,
   localCanonicalProductsBeforeDeferredT02,
   localCanonicalLabourBesideT02Continuity,
+  localCanonicalRestBesideT02Continuity,
   canonicalT02DawnAction,
+  reconcileCanonicalT02DawnFollowUp,
   syncCanonicalT02GranaryOnset,
   reconcileCanonicalT02GranaryKeeper,
 });
