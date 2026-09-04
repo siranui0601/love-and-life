@@ -2,12 +2,13 @@ import * as base from "./authored-mission-t02-granary-continuity.js";
 
 export * from "./authored-mission-t02-granary-continuity.js";
 
-export const AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_VERSION = "authored-mission-t02-granary-choice-order-v1";
+export const AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_VERSION = "authored-mission-t02-granary-choice-order-v2";
 
 const {
   EVIDENCE_ORDER,
   SIDE_ORDER,
   TERMINAL_ORDER,
+  t02InvestigationActive,
   ensureState,
   evidenceAction,
   sideAction,
@@ -62,6 +63,15 @@ function orderedT02Choices(runtime) {
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
+  // The common mission-flow core also owns MSN-T02 and can build a valid
+  // three-choice investigation panel. If it is asked first, however, the
+  // canonical granary-continuity actions below become permanently unreachable.
+  // The live v3 ledger explicitly names the T02_GRANARY:EVIDENCE:* actions, so
+  // once the hearing has completed and the investigation is physically at the
+  // shared granary, let the dedicated continuity layer own that scene before
+  // falling back to the common core for all other T02 phases and missions.
+  if (t02InvestigationActive(runtime)) return orderedT02Choices(runtime);
+
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   if (!actions?.length || !actions.every((action) => action.authoredT02GranaryChoice === true)) return actions;
   return orderedT02Choices(runtime);
