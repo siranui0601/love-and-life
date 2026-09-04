@@ -3,26 +3,21 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 
 export * from "./authored-mission-t02-village-resolution.js";
 
-export const AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_VERSION = "authored-village-day6-north-fence-workday-v1";
+export const AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_VERSION = "authored-village-day6-north-fence-workday-v2";
 
-// Day6 has the same ordinary north-fence rhythm as the already certified Day4
-// bridge: maintenance before the 18:00 canonical watch, the real Sheet-backed
-// JOB-FARM-04 shift from 18:00-22:00, then unpaid handover notes. This is
-// common-world village life, not a Human Virtue route flag or audit-only wait.
+// Day6 and Day7 both reach the north fence before its canonical 18:00 watch.
+// The ordinary work before/after the Sheet-backed shift is route-neutral village
+// life: no Human Virtue flag, no clock mutation, and no generic REST padding.
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_NORTH_FENCE";
-const DAY = 6;
-const STATE_KEY = "villageDay6NorthFenceWorkday";
+const SUPPORTED_DAYS = new Set([6, 7]);
 const AFTERNOON_OPEN_MINUTE = 14 * 60;
 const SHIFT_OPEN_MINUTE = 18 * 60;
 const SHIFT_CLOSE_MINUTE = 22 * 60;
 const TARGET_SLEEP_MINUTE = 22 * 60 + 30;
-const MAINTENANCE_MINUTES = 90;
 const NEEDS_CALM_THRESHOLD = 72;
 const JOB_ID = "JOB-FARM-04";
-const MAINTENANCE_ACTION_ID = "DAILY_LIFE:DAY6_NORTH_FENCE_WORKDAY:check_posts_and_lanterns";
-const WATCH_PREP_ACTION_ID = "DAILY_LIFE:DAY6_NORTH_FENCE_WORKDAY:prepare_watch_handover";
-const WINDDOWN_ACTION_ID = "DAILY_LIFE:DAY6_NORTH_FENCE_WORKDAY:finish_watch_notes";
+const MAINTENANCE_MINUTES_BY_DAY = Object.freeze({ 6: 90, 7: 30 });
 
 function player(runtime) {
   return runtime?.playerState?.player ?? runtime?.playerState ?? {};
@@ -30,6 +25,27 @@ function player(runtime) {
 
 function clock(runtime) {
   return clockFromMinute(Number(runtime?.playerState?.absoluteMinute ?? 0));
+}
+
+function currentDay(runtime) {
+  return clock(runtime).day;
+}
+
+function stateKey(runtime) {
+  return `villageDay${currentDay(runtime)}NorthFenceWorkday`;
+}
+
+function actionPrefix(runtime) {
+  return `DAILY_LIFE:DAY${currentDay(runtime)}_NORTH_FENCE_WORKDAY`;
+}
+
+function actionIds(runtime) {
+  const prefix = actionPrefix(runtime);
+  return {
+    maintenance: `${prefix}:check_posts_and_lanterns`,
+    watchPrep: `${prefix}:prepare_watch_handover`,
+    winddown: `${prefix}:finish_watch_notes`,
+  };
 }
 
 function needValue(runtime, key) {
@@ -50,35 +66,45 @@ function atFence(runtime) {
   const current = player(runtime);
   return current.location === LOCATION
     && current.facilityId === FACILITY_ID
-    && clock(runtime).day === DAY;
+    && SUPPORTED_DAYS.has(currentDay(runtime));
 }
 
 function readState(runtime) {
-  const value = runtime?.playerState?.[STATE_KEY];
+  const value = runtime?.playerState?.[stateKey(runtime)];
   return value && typeof value === "object" ? value : null;
 }
 
 function ensureState(runtime) {
   runtime.playerState ??= {};
-  runtime.playerState[STATE_KEY] ??= {
+  const key = stateKey(runtime);
+  runtime.playerState[key] ??= {
     version: AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_VERSION,
+    day: currentDay(runtime),
     maintenanceCompletedAtMinute: null,
     watchPrepCompletedAtMinute: null,
     windDownCompletedAtMinute: null,
   };
-  const state = runtime.playerState[STATE_KEY];
+  const state = runtime.playerState[key];
   state.version = AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_VERSION;
+  state.day = currentDay(runtime);
   return state;
 }
 
 function completedShiftToday(runtime) {
   const labour = runtime?.playerState?.canonicalRegionalLabour;
-  return Number(labour?.lastDayByFacility?.[FACILITY_ID] ?? 0) === DAY
+  return Number(labour?.lastDayByFacility?.[FACILITY_ID] ?? 0) === currentDay(runtime)
     && Number(labour?.shifts?.[JOB_ID] ?? 0) > 0;
 }
 
 function minutesUntil(runtime, targetMinute) {
   return Math.max(1, targetMinute - clock(runtime).minuteOfDay);
+}
+
+function maintenanceMinutes(runtime) {
+  return Math.min(
+    Number(MAINTENANCE_MINUTES_BY_DAY[currentDay(runtime)] ?? 30),
+    minutesUntil(runtime, SHIFT_OPEN_MINUTE),
+  );
 }
 
 function maintenanceEligible(runtime) {
@@ -127,37 +153,50 @@ function action(id, phase, family, minutes, label) {
     authoredMissionFlowExclusiveChoice: true,
     authoredVillageDay6NorthFenceWorkdayChoice: true,
     authoredVillageDay6NorthFenceWorkdayPhase: phase,
+    authoredVillageNorthFenceWorkdayDay: null,
   };
 }
 
 function maintenanceAction(runtime) {
-  return action(
-    MAINTENANCE_ACTION_ID,
-    "maintenance",
-    "help",
-    Math.min(MAINTENANCE_MINUTES, minutesUntil(runtime, SHIFT_OPEN_MINUTE)),
-    "夕方の見張り前に柵杭・綱・灯具を点検する",
-  );
+  const ids = actionIds(runtime);
+  return {
+    ...action(
+      ids.maintenance,
+      "maintenance",
+      "help",
+      maintenanceMinutes(runtime),
+      "夕方の見張り前に柵杭・綱・灯具を点検する",
+    ),
+    authoredVillageNorthFenceWorkdayDay: currentDay(runtime),
+  };
 }
 
 function watchPrepAction(runtime) {
-  return action(
-    WATCH_PREP_ACTION_ID,
-    "watch-prep",
-    "prepare",
-    minutesUntil(runtime, SHIFT_OPEN_MINUTE),
-    "夜警の交代に備えて灯具と引継ぎ記録を整える",
-  );
+  const ids = actionIds(runtime);
+  return {
+    ...action(
+      ids.watchPrep,
+      "watch-prep",
+      "prepare",
+      minutesUntil(runtime, SHIFT_OPEN_MINUTE),
+      "夜警の交代に備えて灯具と引継ぎ記録を整える",
+    ),
+    authoredVillageNorthFenceWorkdayDay: currentDay(runtime),
+  };
 }
 
 function windDownAction(runtime) {
-  return action(
-    WINDDOWN_ACTION_ID,
-    "winddown",
-    "prepare",
-    minutesUntil(runtime, TARGET_SLEEP_MINUTE),
-    "夜警の記録をまとめ、装備を拭いて交代を終える",
-  );
+  const ids = actionIds(runtime);
+  return {
+    ...action(
+      ids.winddown,
+      "winddown",
+      "prepare",
+      minutesUntil(runtime, TARGET_SLEEP_MINUTE),
+      "夜警の記録をまとめ、装備を拭いて交代を終える",
+    ),
+    authoredVillageNorthFenceWorkdayDay: currentDay(runtime),
+  };
 }
 
 function ownActions(runtime) {
@@ -178,6 +217,7 @@ function ordinaryBaseActions(actions) {
 
 function consume(runtime, selected, result) {
   if (!selected?.authoredVillageDay6NorthFenceWorkdayChoice || result?.ok === false) return false;
+  if (Number(selected.authoredVillageNorthFenceWorkdayDay) !== currentDay(runtime)) return false;
   const state = ensureState(runtime);
   const minute = Number(runtime?.playerState?.absoluteMinute ?? 0);
   const phase = selected.authoredVillageDay6NorthFenceWorkdayPhase;
@@ -194,7 +234,7 @@ function consume(runtime, selected, result) {
 
   runtime.playerState.history ??= [];
   runtime.playerState.history.push({
-    type: `DAY6_NORTH_FENCE_${phase.replace(/-/g, "_").toUpperCase()}_COMPLETED`,
+    type: `DAY${currentDay(runtime)}_NORTH_FENCE_${phase.replace(/-/g, "_").toUpperCase()}_COMPLETED`,
     minute,
     actionId: selected.id,
     location: LOCATION,
@@ -243,18 +283,23 @@ export function applyAuthoredMissionFlowAction(runtime, selected, result) {
 export const AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_INTERNALS = Object.freeze({
   LOCATION,
   FACILITY_ID,
-  DAY,
-  STATE_KEY,
+  DAY: 6,
+  SUPPORTED_DAYS,
   AFTERNOON_OPEN_MINUTE,
   SHIFT_OPEN_MINUTE,
   SHIFT_CLOSE_MINUTE,
   TARGET_SLEEP_MINUTE,
-  MAINTENANCE_MINUTES,
+  MAINTENANCE_MINUTES: 90,
+  MAINTENANCE_MINUTES_BY_DAY,
   JOB_ID,
-  MAINTENANCE_ACTION_ID,
-  WATCH_PREP_ACTION_ID,
-  WINDDOWN_ACTION_ID,
+  MAINTENANCE_ACTION_ID: "DAILY_LIFE:DAY6_NORTH_FENCE_WORKDAY:check_posts_and_lanterns",
+  WATCH_PREP_ACTION_ID: "DAILY_LIFE:DAY6_NORTH_FENCE_WORKDAY:prepare_watch_handover",
+  WINDDOWN_ACTION_ID: "DAILY_LIFE:DAY6_NORTH_FENCE_WORKDAY:finish_watch_notes",
   clock,
+  currentDay,
+  stateKey,
+  actionPrefix,
+  actionIds,
   needValue,
   needsAreCalm,
   atFence,
@@ -262,6 +307,7 @@ export const AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_INTERNALS = Object.freeze
   ensureState,
   completedShiftToday,
   minutesUntil,
+  maintenanceMinutes,
   maintenanceEligible,
   watchPrepEligible,
   windDownEligible,
