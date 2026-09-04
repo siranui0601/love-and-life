@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/apply-now-coding-test-debug-controls.yml
       - tools/now-coding/apply-test-debug-controls.mjs
+      - tools/now-coding/run-test-debug-controls-patch.mjs
 
 permissions:
   contents: write
@@ -23,7 +24,7 @@ jobs:
         with:
           node-version: 20
       - name: Apply implementation
-        run: node tools/now-coding/apply-test-debug-controls.mjs
+        run: node tools/now-coding/run-test-debug-controls-patch.mjs
       - name: Syntax check
         run: node --check public/now-coding/app-v3.js && node --check public/now-coding/vm.js
       - name: Focused Now Coding tests
