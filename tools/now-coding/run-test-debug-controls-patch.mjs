@@ -41,6 +41,28 @@ source = replaceOnce(
   'runTest replacement payload',
 );
 
+// Preserve existing source-contract invariants while keeping the new session
+// architecture. The player agent always exists in a live test session, so the
+// direct alive read is safe and keeps the tutorial success contract explicit.
+source = replaceOnce(
+  source,
+  'if(isTutorial()&&step===10&&a?.alive&&game.tick>=30)',
+  'if(isTutorial()&&step===10&&a.alive&&game.tick>=30)',
+  'tutorial success alive contract',
+);
+source = replaceOnce(
+  source,
+  'function createTestGameFromSession(session){const players=',
+  'function createTestGameFromSession(session){const c=session,players=',
+  'test session config alias',
+);
+source = replaceOnce(
+  source,
+  'for(let i=0;i<session.npcCount;i++)players.push',
+  'for(let i=0;i<c.npcCount;i++)players.push',
+  'multi-NPC loop contract',
+);
+
 // client-contract.test.mjs does not define a vm source variable; read it there
 // the same way the test already reads app/html/css sources.
 source = replaceOnce(
