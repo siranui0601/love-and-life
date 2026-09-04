@@ -11,7 +11,7 @@ const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 const CANONICAL_EXPANDED_ROWS = 1521;
 
-export const STRICT_PLAYABILITY_REALIGNMENT_VERSION = 'virtue-route-v3-strict-playability-v2';
+export const STRICT_PLAYABILITY_REALIGNMENT_VERSION = 'virtue-route-v3-strict-playability-v3';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -164,12 +164,14 @@ export function applyStrictPlayabilityRealignment({ outDir = DEFAULT_OUT } = {})
   const day5SeedWheatLegacy = byId.get('VR2-D05-05');
   const day5FreeTime = byId.get('VR2-D05-07');
   const day6Contract = byId.get('VR2-D06-02');
+  const day6FreeTime = byId.get('VR2-D06-08');
   for (const [id, row] of [
     ['VR2-D05-02', day5DawnLegacy],
     ['VR2-D05-04', day5FireEvidenceLegacy],
     ['VR2-D05-05', day5SeedWheatLegacy],
     ['VR2-D05-07', day5FreeTime],
     ['VR2-D06-02', day6Contract],
+    ['VR2-D06-08', day6FreeTime],
   ]) {
     if (!row) throw new Error(`${id} missing from strict playability candidate`);
   }
@@ -191,6 +193,15 @@ export function applyStrictPlayabilityRealignment({ outDir = DEFAULT_OUT } = {})
   ], 'VR2-D05-07');
   if (day6Contract.actionId !== 'T02_GRANARY:EVIDENCE:CONTRACT:LEDGER_GAP') {
     throw new Error(`VR2-D06-02 expected contract evidence action, got ${day6Contract.actionId}`);
+  }
+  assertActionIds(day6FreeTime, [
+    '',
+    'LIFE:REST:90',
+    'WORK:FACILITY:JOB-FARM-04',
+    'LIFE:REST:30',
+  ], 'VR2-D06-08');
+  if (parsedSteps(day6FreeTime)[0]?.commandType !== 'OUTCOME') {
+    throw new Error(`VR2-D06-08 first v8 step must be satisfied schedule outcome, got ${parsedSteps(day6FreeTime)[0]?.commandType}`);
   }
 
   const day5GranaryRoutine = 'DAILY_LIFE:DAY5_VILLAGE_ROUTINE:count_and_stack_granary_sacks';
@@ -277,6 +288,31 @@ export function applyStrictPlayabilityRealignment({ outDir = DEFAULT_OUT } = {})
     notes: 'moves the exact two dawn actions and two fire-opening/evidence actions out of impossible Day5 morning into the corrected Day6 dawn before the pre-existing contract-evidence command',
   });
 
+  const day6Maintenance = 'DAILY_LIFE:DAY6_NORTH_FENCE_WORKDAY:check_posts_and_lanterns';
+  const day6WatchPrep = 'DAILY_LIFE:DAY6_NORTH_FENCE_WORKDAY:prepare_watch_handover';
+  const day6WindDown = 'DAILY_LIFE:DAY6_NORTH_FENCE_WORKDAY:finish_watch_notes';
+  sequence(day6FreeTime, [
+    commandStep(day6Maintenance, { facilityId: 'LOC_FARM_NORTH_FENCE' }),
+    commandStep(day6WatchPrep, { facilityId: 'LOC_FARM_NORTH_FENCE', scheduledEnd: '18:00' }),
+    commandStep('WORK:FACILITY:JOB-FARM-04', {
+      facilityId: 'LOC_FARM_NORTH_FENCE',
+      jobId: 'JOB-FARM-04',
+      scheduledStart: '18:00',
+      scheduledEnd: '22:00',
+    }),
+    commandStep(day6WindDown, {
+      facilityId: 'LOC_FARM_NORTH_FENCE',
+      scheduledStart: '22:00',
+      scheduledEnd: '22:30',
+    }),
+  ], {
+    description: 'Day6午後は北柵の手入れと夜警準備を行い、18時から正規夜警、22時から勤務記録の整理をして22時30分まで過ごす',
+    requiredState: 'Day6 compiler-inserted Bakery→LOC_FARM_NORTH_FENCE move completed in mid-afternoon; needs below urgent survival threshold; T02 may remain active but is defer-capable; JOB-FARM-04 remains governed by its canonical 18:00-22:00 window',
+    resultingState: 'ordinary unpaid maintenance and handover preparation advance naturally to 18:00; canonical JOB-FARM-04 pays exactly 3G for 240 minutes; unpaid post-shift notes advance to 22:30; T02 remains unresolved; no WAIT or generic REST padding',
+    implementationSource: 'src/server/trpg/content/authored-village-day6-north-fence-workday.js + canonical-regional-labour.js + canonical-job-time-policy.js',
+    notes: 'Day6 had retained the same impossible OUTCOME + REST90 + JOB-FARM-04 + REST30 timing pattern already removed from Day4. Replace it with four visible common-world production actions without changing the reviewed 1521-row ledger.',
+  });
+
   const realigned = [
     'VR2-D04-08',
     'VR2-D05-02',
@@ -284,6 +320,7 @@ export function applyStrictPlayabilityRealignment({ outDir = DEFAULT_OUT } = {})
     'VR2-D05-05',
     'VR2-D05-07',
     'VR2-D06-02',
+    'VR2-D06-08',
   ];
   summary.strictPlayabilityRealignmentVersion = STRICT_PLAYABILITY_REALIGNMENT_VERSION;
   summary.strictPlayabilityRealignedLegacyRows = [
@@ -293,7 +330,7 @@ export function applyStrictPlayabilityRealignment({ outDir = DEFAULT_OUT } = {})
     ]),
   ];
   // D05-02: 2→1 (-1), D05-04: 2→1 (-1), D05-07: 5→3 (-2),
-  // D06-02: 1→5 (+4). Net zero; the reviewed 1521-row contract remains exact.
+  // D06-02: 1→5 (+4), D06-08: 4→4 (0). Net zero; 1521 rows remain exact.
   summary.expandedV3Rows = CANONICAL_EXPANDED_ROWS;
 
   fs.writeFileSync(mappingPath, csv(rows, headers));
