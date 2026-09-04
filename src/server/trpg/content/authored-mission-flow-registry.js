@@ -112,6 +112,21 @@ function reconcileSignedFarmFacilities(runtime) {
   return changed;
 }
 
+// The lower regional-labour layer deliberately keeps content-only daily-life
+// callers stable unless production context is present. The top registry is the
+// actual arbitration boundary, however, and some production-facing tests/calls
+// reach it without movement/presence context. Reintroduce only a currently
+// executable Sheet-backed job beside a pure daily-life panel, after applying the
+// same canonical work-window policy. Genuine mission/exclusive scenes are never
+// mixed here.
+function prependAvailableCanonicalLabour(runtime, actions) {
+  if (!onlyAuthoredDailyLife(actions)) return actions;
+  const jobs = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.ownActions?.(runtime) ?? [];
+  const allowed = jobs.filter((action) =>
+    base.CANONICAL_JOB_TIME_POLICY_INTERNALS?.jobTimeAllowed?.(runtime, action) !== false);
+  return allowed.length ? [...allowed, ...actions] : actions;
+}
+
 // T02 is canonically scheduled for Day5 at night. Its dawn scene is a custom
 // authored production action and therefore does not pass through the generic
 // journey action resolver that normally calls updateTroubles(). If the player
@@ -174,7 +189,8 @@ function syncCanonicalT02GranaryOnset(runtime, action, result) {
 // different action, service.js clears the work focus and the public-life scene
 // is eligible again.
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
-  const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
+  let actions = base.authoredMissionFlowExclusiveActions(runtime, context);
+  actions = prependAvailableCanonicalLabour(runtime, actions);
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
   if (onlyCanonicalWorldLife(actions)) {
@@ -230,6 +246,7 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
 export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   NON_PUBLIC_FACILITY_PATTERN,
   reconcileSignedFarmFacilities,
+  prependAvailableCanonicalLabour,
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
   urgentCanonicalProducts,
