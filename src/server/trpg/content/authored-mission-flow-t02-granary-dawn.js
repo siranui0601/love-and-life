@@ -2,7 +2,7 @@ import * as base from "./authored-mission-flow-human-route-t04-falco-progress-sy
 
 export * from "./authored-mission-flow-human-route-t04-falco-progress-sync.js";
 
-export const AUTHORED_T02_GRANARY_DAWN_VERSION = "authored-t02-granary-dawn-v1";
+export const AUTHORED_T02_GRANARY_DAWN_VERSION = "authored-t02-granary-dawn-v2";
 
 const MISSION_ID = "MSN-T02";
 const TROUBLE_ID = "T02";
@@ -345,6 +345,21 @@ function findMission(runtime) {
   return null;
 }
 
+function markT02MissionAttempt(runtime, minute) {
+  const mission = findMission(runtime);
+  if (mission && mission.attemptedAt == null) mission.attemptedAt = minute;
+
+  const missionProgress = runtime?.playerState?.progress?.missions;
+  if (!missionProgress) return;
+  const attempted = missionProgress.attemptedTroubleIds;
+  if (attempted instanceof Set) {
+    attempted.add(TROUBLE_ID);
+    return;
+  }
+  missionProgress.attemptedTroubleIds = new Set(Array.isArray(attempted) ? attempted : []);
+  missionProgress.attemptedTroubleIds.add(TROUBLE_ID);
+}
+
 function statusOf(value) {
   return String(value?.status ?? value ?? "");
 }
@@ -480,6 +495,7 @@ function consume(runtime, action, result) {
   state.closedActionIds[sceneId] = closed;
   state.currentSceneId = action.authoredT02DawnNextSceneId ?? null;
   state.lastChoiceAtMinute = minute;
+  markT02MissionAttempt(runtime, minute);
 
   runtime.playerState.worldFlags ??= {};
   runtime.playerState.history ??= [];
