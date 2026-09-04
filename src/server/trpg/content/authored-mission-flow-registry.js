@@ -3,6 +3,9 @@ import {
   authoredMissionFlowExclusiveActions as coreAuthoredMissionFlowExclusiveActions,
   authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance,
 } from "./authored-mission-flow-core.js";
+import { AUTHORED_MISSION_T02_GRANARY_INTERNALS } from "./authored-mission-t02-granary-continuity.js";
+import { AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_INTERNALS } from "./authored-mission-t02-granary-choice-order.js";
+import { AUTHORED_T02_GRANARY_DAWN_INTERNALS } from "./authored-mission-flow-t02-granary-dawn.js";
 import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./authored-village-day5-before-fire.js";
@@ -84,25 +87,10 @@ function coreMissionOwnsChoicePool(runtime, context = {}) {
   return Array.isArray(actions) && actions.length > 0;
 }
 
-// T01 discovery is still service-owned rather than supplied by the common core
-// pack chain, so it needs an explicit gate. For every core-authored mission, do
-// not call the core a second time after `base` has already resolved the complete
-// content chain: canonical-world-life only returns its own actions when its base
-// supplied no meaningful authored panel. Re-running the core here can initialize
-// flow state and manufacture a false-positive ownership result that hides public
-// food/lodging even though no mission choice is actually visible in production.
 function authoredMissionOwnsChoicePool(runtime) {
   return t01Active(runtime);
 }
 
-// The village square is the ordinary public wayfinder for the farm hub. Older
-// service code persisted only a five-entry hard-coded subset there, which left
-// canonical public facilities such as the shared granary undiscoverable even
-// though they exist in the same live world model and host ordinary Sheet-backed
-// jobs. Reconcile the persisted knowledge after successful commands once the
-// square is known. This mirrors the signed-public-facility rule already used on
-// arrival in other towns, while retaining secret/event-only locations behind
-// their existing discovery gates.
 function reconcileSignedFarmFacilities(runtime) {
   const known = runtime?.playerKnowledge?.knownFacilityIds;
   if (!(known instanceof Set) || !known.has("LOC_FARM_SQUARE")) return false;
@@ -117,13 +105,6 @@ function reconcileSignedFarmFacilities(runtime) {
   return changed;
 }
 
-// The lower regional-labour layer deliberately keeps content-only daily-life
-// callers stable unless production context is present. The top registry is the
-// actual arbitration boundary, however, and some production-facing tests/calls
-// reach it without movement/presence context. Reintroduce only a currently
-// executable Sheet-backed job beside a pure daily-life panel, after applying the
-// same canonical work-window policy. Genuine mission/exclusive scenes are never
-// mixed here.
 function prependAvailableCanonicalLabour(runtime, actions) {
   if (!onlyAuthoredDailyLife(actions)) return actions;
   const jobs = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.ownActions?.(runtime) ?? [];
@@ -132,14 +113,28 @@ function prependAvailableCanonicalLabour(runtime, actions) {
   return allowed.length ? [...allowed, ...actions] : actions;
 }
 
-// T02 is canonically scheduled for Day5 at night. Its dawn scene is a custom
-// authored production action and therefore does not pass through the generic
-// journey action resolver that normally calls updateTroubles(). If the player
-// legitimately executes that dawn scene after the canonical onset, keep the
-// persisted trouble lifecycle in sync before the core T02 investigation pack is
-// asked to build the next choice panel. This is production-state reconciliation,
-// not a replay/audit shortcut: the action itself is the player's observation of
-// the already-started fire, and T02 has no prerequisite gate or onset consequence.
+function isCoreT02InvestigationPanel(actions) {
+  return Array.isArray(actions)
+    && actions.length > 0
+    && actions.every((action) => {
+      const id = String(action?.actionId ?? action?.id ?? "");
+      return id.startsWith("MISSION_FLOW:granary-arson:LEAD:")
+        || id === "MISSION_FLOW:granary-arson:DEFER:defer";
+    });
+}
+
+// Keep the common T02 core's hearing/opening contract intact for content-level
+// callers. Once that opening has advanced the live mission to its investigate
+// step at the shared granary, the v3 canonical ledger explicitly requires the
+// dedicated T02_GRANARY:EVIDENCE:* production actions. Resolve that arbitration
+// only at the persisted production registry boundary so lower modules retain
+// their independent contracts and the strict route sees the canonical surface.
+function canonicalT02ContinuityActions(runtime, actions) {
+  if (!AUTHORED_MISSION_T02_GRANARY_INTERNALS.t02InvestigationActive(runtime)) return actions;
+  if (!isCoreT02InvestigationPanel(actions)) return actions;
+  return AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_INTERNALS.orderedT02Choices(runtime);
+}
+
 function syncCanonicalT02GranaryOnset(runtime, action, result) {
   if (!action?.authoredT02DawnChoice || result?.ok === false) return false;
   const state = runtime?.playerState;
@@ -166,15 +161,6 @@ function syncCanonicalT02GranaryOnset(runtime, action, result) {
   return true;
 }
 
-// NPC005/Toma is canonically the shared-granary keeper. The live NPC master says
-// morning = granary inspection, main facility = LOC_FARM_GRANARY, and explicitly
-// "T02中は穀倉前". The generic life engine currently fails to map the routine
-// text "穀倉点検" to the facility name "共同穀倉" and may leave him at a fallback
-// facility. Do not weaken the production presence gate. Once the cordoned-scene
-// branch has finished its immediate follow-up, reconcile this already-due local
-// duty so the next core hearing can only appear with the real NPC physically at
-// the scene. The headcount branch intentionally says Toma is missing and is not
-// touched here; inactive/dead/traveling NPCs are never revived or recalled.
 function reconcileCanonicalT02GranaryKeeper(runtime, action, result) {
   if (!action?.authoredT02DawnChoice || result?.ok === false) return false;
   if (action.authoredT02DawnSceneId === T02_DAWN_OPENING_SCENE) return false;
@@ -218,35 +204,9 @@ function reconcileCanonicalT02GranaryKeeper(runtime, action, result) {
   return true;
 }
 
-// Canonical meals, provisions, lodging and services are real public world
-// surfaces. They may own the choice panel when no authored mission owns the
-// current scene. Generic REST duration entries are different: exposing the
-// whole REST catalogue as an exclusive panel erases ordinary conversation,
-// investigation and work candidates. Keep REST in the ordinary candidate pool
-// and reserve exclusivity for an actual facility product/service surface.
-//
-// The complete base chain already gives higher-priority authored scenes first.
-// At an urgent/late life boundary, an empty base result is also authoritative:
-// it means there is no authored panel at the current scene, so stable canonical
-// food/lodging products must be surfaced directly instead of falling through to
-// survival-aware-service's legacy dynamic EAT/LODGE/REST_OUTDOOR ids. A real
-// non-ordinary authored panel still wins. T01 remains the explicit exception
-// because its discovery surface is service-owned rather than the common chain.
-//
-// A daily-life vignette is deliberately lower priority than survival. Once the
-// clock reaches the survival layer's late-night threshold (or needs become
-// urgent), a facility's canonical meal/lodging products take the panel instead
-// of leaving the player trapped behind an optional one-off scene. This keeps
-// stable LIFE:* ids visible without granting a route-specific escape hatch.
-//
-// The public-life network is normally allowed to keep its authored three-way
-// scene. The one exception is an already-established ordinary-work continuity:
-// after a player finishes a job, narrativeMemory.activityFocus intentionally
-// promises that a valid work route remains available. Once the player takes a
-// different action, service.js clears the work focus and the public-life scene
-// is eligible again.
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   let actions = base.authoredMissionFlowExclusiveActions(runtime, context);
+  actions = canonicalT02ContinuityActions(runtime, actions);
   actions = prependAvailableCanonicalLabour(runtime, actions);
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
@@ -260,26 +220,8 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   return exclusive.length ? exclusive : null;
 }
 
-// Every successful production command crosses the persisted runtime boundary
-// after this hook. The REGISTER butterfly previously created Riona's greeting
-// only while building a read-only game view, so the three callback choices were
-// visible even though the greeting interaction/history was absent from the save
-// snapshot. Resolve that world observation here, while the command runtime is
-// still authoritative, so the same interaction is serialized exactly once and
-// survives restore before the player answers it.
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
-  // T02 dawn actions are also ordinary `plan` actions at the transport layer.
-  // A higher generic plan consumer can report success before the dedicated dawn
-  // wrapper is reached, leaving its follow-up scene/evidence state unpersisted.
-  // Dispatch only the explicitly tagged dawn action at this persisted boundary;
-  // this is the same narrow ownership rule used for canonical labour below.
-  const dawnChanged = base.AUTHORED_T02_GRANARY_DAWN_INTERNALS?.consume?.(runtime, action, result) ?? false;
-
-  // Canonical jobs are ordinary `plan` actions. Higher wrapper layers can
-  // successfully consume a generic plan before the canonical-labour layer is
-  // reached, which advances time but loses the Sheet-backed wage/shift record.
-  // Dispatch the explicitly tagged canonical job at this top persisted boundary
-  // first; this changes no choice arbitration and cannot affect non-job plans.
+  const dawnChanged = AUTHORED_T02_GRANARY_DAWN_INTERNALS.consume(runtime, action, result);
   const labourChanged = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.consume?.(runtime, action, result) ?? false;
   const changed = dawnChanged || labourChanged
     ? true
@@ -291,13 +233,6 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
   return publicFacilitiesChanged || t02KeeperChanged || t02OnsetChanged || changed;
 }
 
-// canonical-world-life supplies a generic "その土地の生活を選ぶ" fallback.
-// REST-only actions must not monopolise the exclusive choice panel, but their
-// guidance is still valid ordinary-life guidance once no authored mission owns
-// the scene. Keep the old F contract here: authored/core guidance wins first,
-// T01 service-owned guidance remains service-owned, otherwise preserve the
-// ordinary-life guidance even when its actions will be mixed into the common
-// candidate pool by service.js.
 export function authoredMissionFlowGuidance(runtime, context = {}) {
   const guidance = base.authoredMissionFlowGuidance(runtime, context);
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
@@ -317,6 +252,8 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
   urgentCanonicalProducts,
+  isCoreT02InvestigationPanel,
+  canonicalT02ContinuityActions,
   syncCanonicalT02GranaryOnset,
   reconcileCanonicalT02GranaryKeeper,
 });
