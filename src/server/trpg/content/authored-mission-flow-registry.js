@@ -195,7 +195,13 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 // still authoritative, so the same interaction is serialized exactly once and
 // survives restore before the player answers it.
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
-  const changed = base.applyAuthoredMissionFlowAction(runtime, action, result);
+  // Canonical jobs are ordinary `plan` actions. Higher wrapper layers can
+  // successfully consume a generic plan before the canonical-labour layer is
+  // reached, which advances time but loses the Sheet-backed wage/shift record.
+  // Dispatch the explicitly tagged canonical job at this top persisted boundary
+  // first; this changes no choice arbitration and cannot affect non-job plans.
+  const labourChanged = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.consume?.(runtime, action, result) ?? false;
+  const changed = labourChanged ? true : base.applyAuthoredMissionFlowAction(runtime, action, result);
   const t02OnsetChanged = syncCanonicalT02GranaryOnset(runtime, action, result);
   base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
   const publicFacilitiesChanged = result?.ok === false ? false : reconcileSignedFarmFacilities(runtime);
