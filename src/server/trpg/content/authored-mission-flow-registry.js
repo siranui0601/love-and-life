@@ -105,11 +105,15 @@ function reconcileSignedFarmFacilities(runtime) {
   return changed;
 }
 
+function availableCanonicalLabour(runtime) {
+  const jobs = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.ownActions?.(runtime) ?? [];
+  return jobs.filter((action) =>
+    base.CANONICAL_JOB_TIME_POLICY_INTERNALS?.jobTimeAllowed?.(runtime, action) !== false);
+}
+
 function prependAvailableCanonicalLabour(runtime, actions) {
   if (!onlyAuthoredDailyLife(actions)) return actions;
-  const jobs = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.ownActions?.(runtime) ?? [];
-  const allowed = jobs.filter((action) =>
-    base.CANONICAL_JOB_TIME_POLICY_INTERNALS?.jobTimeAllowed?.(runtime, action) !== false);
+  const allowed = availableCanonicalLabour(runtime);
   return allowed.length ? [...allowed, ...actions] : actions;
 }
 
@@ -121,6 +125,12 @@ function isCoreT02InvestigationPanel(actions) {
       return id.startsWith("MISSION_FLOW:granary-arson:LEAD:")
         || id === "MISSION_FLOW:granary-arson:DEFER:defer";
     });
+}
+
+function isCanonicalT02ContinuityPanel(actions) {
+  return Array.isArray(actions)
+    && actions.length > 0
+    && actions.every((action) => String(action?.actionId ?? action?.id ?? "").startsWith("T02_GRANARY:"));
 }
 
 function canonicalT02DawnPlayed(runtime) {
@@ -154,18 +164,31 @@ function localCanonicalProductsBeforeDeferredT02(runtime, actions) {
   return Array.isArray(products) && products.length > 0 ? products : actions;
 }
 
+// T02 is a long-running investigation, not a modal lock. The canonical v3
+// ledger deliberately places the granary's real day-labour shift between the
+// second and third evidence classes. Preserve the three-choice UI by reserving
+// one slot for executable local labour and keeping two investigation choices.
+function localCanonicalLabourBesideT02Continuity(runtime, actions) {
+  if (!canonicalT02DawnPlayed(runtime) || !isCanonicalT02ContinuityPanel(actions)) return actions;
+  const jobs = availableCanonicalLabour(runtime);
+  if (!jobs.length) return actions;
+  return [...jobs.slice(0, 1), ...actions.slice(0, 2)];
+}
+
 function canonicalT02DawnAction(action) {
-  if (action?.authoredT02DawnChoice === true) return action;
   const id = String(action?.actionId ?? action?.id ?? "");
-  if (!id.startsWith("MISSION_FLOW:T02:")) return null;
-  for (const [sceneId, choices] of Object.entries(AUTHORED_T02_GRANARY_DAWN_INTERNALS.SCENES ?? {})) {
-    for (const choice of choices ?? []) {
-      if (AUTHORED_T02_GRANARY_DAWN_INTERNALS.actionIdFor(sceneId, choice) === id) {
-        return AUTHORED_T02_GRANARY_DAWN_INTERNALS.actionFor(sceneId, choice);
+  if (id.startsWith("MISSION_FLOW:T02:")) {
+    for (const [sceneId, choices] of Object.entries(AUTHORED_T02_GRANARY_DAWN_INTERNALS.SCENES ?? {})) {
+      for (const choice of choices ?? []) {
+        if (AUTHORED_T02_GRANARY_DAWN_INTERNALS.actionIdFor(sceneId, choice) === id) {
+          // Rehydrate from the authored table even when a wrapper preserved the
+          // marker but dropped nextScene/evidence metadata.
+          return AUTHORED_T02_GRANARY_DAWN_INTERNALS.actionFor(sceneId, choice);
+        }
       }
     }
   }
-  return null;
+  return action?.authoredT02DawnChoice === true ? action : null;
 }
 
 function syncCanonicalT02GranaryOnset(runtime, action, result) {
@@ -241,6 +264,7 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   let actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   actions = canonicalT02ContinuityActions(runtime, actions);
   actions = localCanonicalProductsBeforeDeferredT02(runtime, actions);
+  actions = localCanonicalLabourBesideT02Continuity(runtime, actions);
   actions = prependAvailableCanonicalLabour(runtime, actions);
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
@@ -286,14 +310,17 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
 export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   NON_PUBLIC_FACILITY_PATTERN,
   reconcileSignedFarmFacilities,
+  availableCanonicalLabour,
   prependAvailableCanonicalLabour,
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
   urgentCanonicalProducts,
   isCoreT02InvestigationPanel,
+  isCanonicalT02ContinuityPanel,
   canonicalT02DawnPlayed,
   canonicalT02ContinuityActions,
   localCanonicalProductsBeforeDeferredT02,
+  localCanonicalLabourBesideT02Continuity,
   canonicalT02DawnAction,
   syncCanonicalT02GranaryOnset,
   reconcileCanonicalT02GranaryKeeper,
