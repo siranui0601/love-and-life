@@ -112,6 +112,40 @@ function reconcileSignedFarmFacilities(runtime) {
   return changed;
 }
 
+// T02 is canonically scheduled for Day5 at night. Its dawn scene is a custom
+// authored production action and therefore does not pass through the generic
+// journey action resolver that normally calls updateTroubles(). If the player
+// legitimately executes that dawn scene after the canonical onset, keep the
+// persisted trouble lifecycle in sync before the core T02 investigation pack is
+// asked to build the next choice panel. This is production-state reconciliation,
+// not a replay/audit shortcut: the action itself is the player's observation of
+// the already-started fire, and T02 has no prerequisite gate or onset consequence.
+function syncCanonicalT02GranaryOnset(runtime, action, result) {
+  if (!action?.authoredT02DawnChoice || result?.ok === false) return false;
+  const state = runtime?.playerState;
+  const trouble = state?.troubles?.T02;
+  if (!state || !trouble || trouble.status !== "scheduled") return false;
+  const clock = clockFromMinute(Number(state.absoluteMinute ?? 0));
+  if (clock.day < 5 || (clock.day === 5 && clock.hour < 22)) return false;
+  const minute = Number(state.absoluteMinute ?? 0);
+  const from = trouble.status;
+  trouble.status = "active";
+  trouble.activatedAt ??= minute;
+  if (!Array.isArray(trouble.transitions)) trouble.transitions = [];
+  trouble.transitions.push({ from, to: "active", minute, reason: "canonical-t02-dawn-onset" });
+  if (Array.isArray(state.history)) {
+    state.history.push({
+      type: "TROUBLE_TRANSITION",
+      minute,
+      troubleId: "T02",
+      from,
+      to: "active",
+      reason: "canonical-t02-dawn-onset",
+    });
+  }
+  return true;
+}
+
 // Canonical meals, provisions, lodging and services are real public world
 // surfaces. They may own the choice panel when no authored mission owns the
 // current scene. Generic REST duration entries are different: exposing the
@@ -162,9 +196,10 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 // survives restore before the player answers it.
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
   const changed = base.applyAuthoredMissionFlowAction(runtime, action, result);
+  const t02OnsetChanged = syncCanonicalT02GranaryOnset(runtime, action, result);
   base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
   const publicFacilitiesChanged = result?.ok === false ? false : reconcileSignedFarmFacilities(runtime);
-  return publicFacilitiesChanged || changed;
+  return publicFacilitiesChanged || t02OnsetChanged || changed;
 }
 
 // canonical-world-life supplies a generic "その土地の生活を選ぶ" fallback.
@@ -192,4 +227,5 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
   urgentCanonicalProducts,
+  syncCanonicalT02GranaryOnset,
 });
