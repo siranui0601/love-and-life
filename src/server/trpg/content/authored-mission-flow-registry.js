@@ -3,8 +3,7 @@ import {
   authoredMissionFlowExclusiveActions as coreAuthoredMissionFlowExclusiveActions,
   authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance,
 } from "./authored-mission-flow-core.js";
-import * as journey from "../../../../tools/trpg-sim/lib/player-journey.mjs";
-import { loadTrpgGameData } from "../game/game-data.js";
+import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./authored-village-day5-before-fire.js";
 
@@ -43,7 +42,7 @@ function needValue(runtime, key) {
 }
 
 function urgentLifeState(runtime) {
-  const clock = journey.clockFromMinute(Number(runtime?.playerState?.absoluteMinute ?? 0));
+  const clock = clockFromMinute(Number(runtime?.playerState?.absoluteMinute ?? 0));
   return needValue(runtime, "hunger") >= 72
     || needValue(runtime, "fatigue") >= 72
     || clock.hour >= 21;
@@ -89,100 +88,6 @@ function coreMissionOwnsChoicePool(runtime, context = {}) {
 // food/lodging even though no mission choice is actually visible in production.
 function authoredMissionOwnsChoicePool(runtime) {
   return t01Active(runtime);
-}
-
-function productionChoiceContext(context) {
-  return Array.isArray(context?.movementActions) || Array.isArray(context?.presentNpcs);
-}
-
-function ordinaryCommonAuthoredActions(actions) {
-  return Array.isArray(actions)
-    && actions.length > 0
-    && actions.every((action) =>
-      action?.canonicalRegionalLabourChoice === true
-      || action?.authoredDailyLifeChoice === true);
-}
-
-function generatedSeekBattle(runtime) {
-  if (!runtime?.playerState?.catalog) return [];
-  const data = loadTrpgGameData();
-  const profile = journey.PLAYER_PROFILES.find((entry) => entry.id === runtime.playerState.profileId)
-    ?? journey.PLAYER_PROFILES[0];
-  return journey.generateChoiceActions(
-    runtime.playerState,
-    data.model,
-    data.battleData,
-    runtime.playerState.catalog,
-    profile,
-    {
-      limit: 12,
-      fillTo: 0,
-      candidateFilter: (action) => action?.id === "SEEK_BATTLE",
-    },
-  ).filter((action) => action?.id === "SEEK_BATTLE");
-}
-
-function directTalkCandidates(context) {
-  return (Array.isArray(context?.presentNpcs) ? context.presentNpcs : [])
-    .filter((npc) => npc?.id)
-    .sort((left, right) => String(left.id).localeCompare(String(right.id)))
-    .map((npc) => ({
-      id: `DIRECT_TALK:${npc.id}`,
-      type: "conversation",
-      directTalk: true,
-      targetNpcId: npc.id,
-      targetNpcName: npc.name,
-      dialogueTopic: "direct_contact",
-      minutes: 5,
-      label: `${npc.name}に話しかける`,
-    }));
-}
-
-function withoutAuthoredExclusivity(action) {
-  if (action?.authoredMissionFlowExclusiveChoice !== true) return action;
-  const ordinary = action?.canonicalRegionalLabourChoice === true || action?.authoredDailyLifeChoice === true;
-  return ordinary ? { ...action, authoredMissionFlowExclusiveChoice: false } : action;
-}
-
-// Canonical jobs and village daily-life vignettes are public world actions, not
-// a mission-owned modal panel. service.js deliberately asks the registry before
-// its generic pool, so returning only these authored rows used to erase battle,
-// direct conversation and movement. Build the common candidate panel from the
-// same production authorities that service uses: journey decides whether a real
-// SEEK_BATTLE exists, presentNpcs supplies only co-located speakers, and movement
-// comes from the authoritative movement resolver already passed in context.
-//
-// The first three are ordered so a Sheet-backed job survives alongside either
-// a legal battle or a real conversation and a regional/local route. At places
-// without a job, one daily-life action remains available instead. Remaining
-// authored and movement actions stay in the raw candidate pool for deterministic
-// review/cooldown without regaining mission exclusivity.
-function commonWorldChoiceCandidates(runtime, actions, context = {}) {
-  if (!productionChoiceContext(context) || !ordinaryCommonAuthoredActions(actions)) return null;
-
-  const labour = actions.filter((action) => action?.canonicalRegionalLabourChoice === true)
-    .map(withoutAuthoredExclusivity);
-  const daily = actions.filter((action) => action?.authoredDailyLifeChoice === true)
-    .map(withoutAuthoredExclusivity);
-  const battle = generatedSeekBattle(runtime);
-  const talk = directTalkCandidates(context);
-  const movements = (Array.isArray(context.movementActions) ? context.movementActions : []);
-  const regional = movements.filter((action) => action?.movementScope === "regional");
-  const local = movements.filter((action) => action?.movementScope !== "regional");
-
-  const routine = labour[0] ?? daily[0] ?? null;
-  const second = battle[0] ?? talk[0] ?? null;
-  const primaryMovement = regional[0] ?? local[0] ?? null;
-  const prioritized = [routine, second, primaryMovement].filter(Boolean);
-  const remainder = [
-    ...labour.slice(routine === labour[0] ? 1 : 0),
-    ...daily.slice(routine === daily[0] ? 1 : 0),
-    ...battle.slice(second === battle[0] ? 1 : 0),
-    ...talk.slice(second === talk[0] ? 1 : 0),
-    ...regional.slice(primaryMovement === regional[0] ? 1 : 0),
-    ...local.slice(primaryMovement === local[0] ? 1 : 0),
-  ];
-  return [...new Map([...prioritized, ...remainder].map((action) => [action.id, action])).values()];
 }
 
 // The village square is the ordinary public wayfinder for the farm hub. Older
@@ -242,8 +147,6 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
     if (authoredMissionOwnsChoicePool(runtime)) return null;
     return hasDedicatedCanonicalWorldLife(actions) ? actions : null;
   }
-  const commonWorld = commonWorldChoiceCandidates(runtime, actions, context);
-  if (commonWorld) return commonWorld;
   if (!Array.isArray(actions)) return actions;
   const exclusive = actions.filter((action) =>
     !(continuingOrdinaryWork(runtime) && action?.authoredPublicLifeNetworkChoice === true));
@@ -258,9 +161,7 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
 // still authoritative, so the same interaction is serialized exactly once and
 // survives restore before the player answers it.
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
-  const canonicalLabourChanged = action?.canonicalRegionalLabourChoice === true
-    && base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.consume?.(runtime, action, result) === true;
-  const changed = canonicalLabourChanged ? true : base.applyAuthoredMissionFlowAction(runtime, action, result);
+  const changed = base.applyAuthoredMissionFlowAction(runtime, action, result);
   base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
   const publicFacilitiesChanged = result?.ok === false ? false : reconcileSignedFarmFacilities(runtime);
   return publicFacilitiesChanged || changed;
@@ -291,9 +192,4 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
   urgentCanonicalProducts,
-  productionChoiceContext,
-  ordinaryCommonAuthoredActions,
-  generatedSeekBattle,
-  directTalkCandidates,
-  commonWorldChoiceCandidates,
 });
