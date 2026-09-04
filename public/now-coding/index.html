@@ -192,7 +192,7 @@
               </div>
             </div>
             <div class="mini-board-frame"><div id="testBoard" class="game-board mini-board" aria-label="テスト用盤面"></div><div class="board-sheen" aria-hidden="true"></div></div>
-            <div class="test-controls"><button id="runTestButton" class="primary-button" type="button">テスト実行</button><button id="stopTestButton" class="secondary-button" type="button">停止</button></div>
+            <div class="test-transport" aria-label="テスト再生操作"><div class="test-transport-main"><button id="testStepBackButton" class="test-frame-button" type="button" aria-label="1コマ戻す" title="1コマ戻す">◀│</button><button id="testPlayPauseButton" class="primary-button test-play-button" type="button" aria-label="再生"><span class="test-play-icon" aria-hidden="true">▶</span><span id="testPlayPauseLabel">再生</span></button><button id="testStepForwardButton" class="test-frame-button" type="button" aria-label="1コマ進める" title="1コマ進める">│▶</button><select id="testSpeedSelect" class="test-speed-select" aria-label="再生速度" title="再生速度"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></div><div class="test-transport-secondary"><button id="runTestButton" class="secondary-button test-restart-button" type="button">テスト実行</button><button id="testJumpCodeButton" class="text-button test-jump-code is-hidden" type="button">実行位置を見る</button></div></div>
             <p id="testStatus" class="status-copy">コードを組んだら、ここで実際の動きを確認できます。</p>
           </aside>
         </div>

@@ -424,3 +424,49 @@ test("copy action transitions to paste wording", () => {
   assert.match(app, /コピーしました。貼り付けたい場所の「ペースト」をタップしてください/);
   assert.doesNotMatch(app, /ここへコピー|コピー先を選んでください/);
 });
+
+
+test("test bench exposes compact playback debugger controls", () => {
+  for (const id of ["testStepBackButton","testPlayPauseButton","testStepForwardButton","testSpeedSelect","testJumpCodeButton","runTestButton"]) assert.ok(html.includes(`id="${id}"`), id);
+  assert.ok(html.includes('aria-label="1コマ戻す"'));
+  assert.ok(html.includes('aria-label="1コマ進める"'));
+  assert.ok(html.includes('>0.5×</option>'));
+  assert.ok(html.includes('>1×</option>'));
+  assert.ok(html.includes('>2×</option>'));
+  assert.ok(html.includes('>4×</option>'));
+  assert.ok(!html.includes('id="stopTestButton"'));
+});
+
+test("test playback can pause step rewind resume and jump only on demand", () => {
+  for (const fn of ["toggleTestPlayback","pauseTestPlayback","stepTestBackward","stepTestForward","restoreLiveTestAtCurrentFrame","jumpToTestCode"]) assert.ok(app.includes(`function ${fn}`), fn);
+  assert.ok(app.includes('TEST_BASE_DELAY_MS=120'));
+  assert.ok(app.includes('TEST_SPEED_VALUES=new Set([0.5,1,2,4])'));
+  const jumpStart=app.indexOf('function jumpToTestCode()');
+  const jumpEnd=app.indexOf('function resetTestSessionToCurrentDraft()',jumpStart);
+  assert.ok(jumpStart>=0&&jumpEnd>jumpStart);
+  assert.ok(app.slice(jumpStart,jumpEnd).includes('scrollIntoView'));
+  for (const fn of ["pauseTestPlayback","stepTestBackward","stepTestForward","markCurrentTestTerminal"]) {
+    const start=app.indexOf(`function ${fn}`);
+    const end=app.indexOf('\nfunction ',start+10);
+    assert.ok(start>=0);
+    assert.ok(!app.slice(start,end<0?app.length:end).includes('scrollIntoView'), fn);
+  }
+});
+
+test("editing code resets an active test to the same initial session without warning copy", () => {
+  assert.ok(app.includes('function scheduleTestResetAfterDraftChange()'));
+  assert.ok(app.includes('function resetTestSessionToCurrentDraft()'));
+  assert.ok(app.includes('markDraftChanged(){state.draftDirty=true;persistTutorialDraft();scheduleTestResetAfterDraftChange();}'));
+  assert.ok(app.includes('state.testSession.program=annotateTestProgram(deepClone(state.draft.blocks))'));
+  assert.ok(app.includes('state.testHistory=[captureTestFrame(game)]'));
+  assert.ok(!app.includes('コードが変更されました'));
+  assert.ok(!app.includes('変更前のコード'));
+});
+
+test("test program carries source refs for execution-position highlighting", () => {
+  assert.ok(app.includes('block.__debugRef={path:deepClone(path),index}'));
+  assert.ok(app.includes('agent?.vm?.lastDebugRef'));
+  assert.ok(fs.readFileSync("public/now-coding/vm.js","utf8").includes('if (statement.__debugRef) vm.lastDebugRef = statement.__debugRef'));
+  assert.ok(css.includes('.typed-block.is-test-debug-current'));
+  assert.ok(css.includes('.typed-block.is-test-debug-parent'));
+});

@@ -721,3 +721,11 @@ test("speech is zero-time, can interpolate values with plus, and later speech ov
   assert.equal(state.agents[0].x, beforeX + 1);
   assert.equal(state.agents[0].speech, "実行中");
 });
+
+
+test("VM preserves the source ref of the last interpreted statement", () => {
+  const debugRef = { path: [{ index: 0, branch: "body" }], index: 1 };
+  const state = stateWithPrograms([{ type: "forever", body: [{ type: "set", name: "x", value: literal(1) }, { ...move, __debugRef: debugRef }] }]);
+  stepTerritory(state);
+  assert.deepEqual(state.agents[0].vm.lastDebugRef, debugRef);
+});
