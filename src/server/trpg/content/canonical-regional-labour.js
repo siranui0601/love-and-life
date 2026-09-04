@@ -2,7 +2,7 @@ import * as base from "./canonical-regional-access.js";
 
 export * from "./canonical-regional-access.js";
 
-export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v9";
+export const CANONICAL_REGIONAL_LABOUR_VERSION = "canonical-regional-labour-v10";
 
 // Live TRPG/仕事マスター is authoritative. These are normal public jobs for
 // every route. Stable action IDs, duration and wage come from that master. The
@@ -180,16 +180,23 @@ function coexistingDailyLife(actions) {
   return Array.isArray(actions) && actions.length > 0 && actions.every((entry) => entry?.authoredDailyLifeChoice);
 }
 
+function productionChoiceContext(context) {
+  return Array.isArray(context?.movementActions) || Array.isArray(context?.presentNpcs);
+}
+
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const authored = base.authoredMissionFlowExclusiveActions(runtime, context);
   const live = ownActions(runtime);
 
   if (authored != null && !staleBaseLabour(authored)) {
-    // A public Sheet-backed job leads the coexistence list so the three-choice
-    // authority cannot hide it behind three optional daily-life branches. The
-    // daily-life choices retain their authored ordering after the job, while
-    // genuine mission scenes still bypass this branch and remain exclusive.
-    if (live?.length && coexistingDailyLife(authored)) return [...live, ...authored];
+    // Content-level callers ask what authored scene exists at this place. Keep
+    // that answer stable: an ordinary public job is a separate common-world
+    // candidate and must not rewrite the scene definition itself. Production
+    // passes movement/presence context and may combine both candidate classes;
+    // the top registry then arbitrates them together with battle/conversation.
+    if (live?.length && coexistingDailyLife(authored) && productionChoiceContext(context)) {
+      return [...live, ...authored];
+    }
     return authored;
   }
   if (live?.length) return live;
@@ -227,7 +234,9 @@ export const CANONICAL_REGIONAL_LABOUR_INTERNALS = Object.freeze({
   JOBS,
   jobs,
   ownActions,
+  consume,
   conditionMet,
   staleBaseLabour,
   coexistingDailyLife,
+  productionChoiceContext,
 });
