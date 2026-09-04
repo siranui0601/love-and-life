@@ -1,0 +1,76 @@
+/* Long-editor stability: destination hit areas stay large without inflating document height. */
+.insertion-slot.is-move-target,
+.insertion-slot.is-copy-target,
+.insertion-slot.is-move-target:hover,
+.insertion-slot.is-copy-target:hover {
+  position: relative;
+  z-index: 3;
+  height: 7px;
+  min-height: 7px;
+  margin: 1px 0;
+  padding: 0;
+  overflow: visible;
+  border-color: transparent;
+  background: transparent;
+  color: transparent;
+  opacity: 1;
+  font-size: 0;
+  touch-action: manipulation;
+}
+
+.insertion-slot.is-move-target::after,
+.insertion-slot.is-copy-target::after {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: 0;
+  right: 0;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border: 1px dashed rgba(88,230,246,.46);
+  border-radius: 7px;
+  background: rgba(8,18,25,.94);
+  color: var(--cyan);
+  box-shadow: 0 3px 10px rgba(0,0,0,.18);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: auto;
+  content: "";
+}
+
+.insertion-slot.is-move-target::after { content: "ここへ移動"; }
+.insertion-slot.is-copy-target::after { content: "ここへコピー"; }
+
+@media (hover:hover) {
+  .insertion-slot.is-move-target:hover::after,
+  .insertion-slot.is-copy-target:hover::after {
+    border-style: solid;
+    background: rgba(88,230,246,.12);
+  }
+}
+
+@media (max-width:760px) {
+  .insertion-slot.is-move-target,
+  .insertion-slot.is-copy-target,
+  .insertion-slot.is-move-target:hover,
+  .insertion-slot.is-copy-target:hover {
+    height: 7px;
+    min-height: 7px;
+    margin: 1px 0;
+  }
+
+  .insertion-slot.is-move-target::after,
+  .insertion-slot.is-copy-target::after {
+    min-height: 36px;
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .insertion-slot.is-move-target::after,
+  .insertion-slot.is-copy-target::after { transition: none; }
+}
