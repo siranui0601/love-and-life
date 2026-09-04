@@ -1,4 +1,4 @@
-import * as base from "./authored-village-day5-before-fire.js";
+import * as base from "./authored-village-day6-north-fence-workday.js";
 import {
   authoredMissionFlowExclusiveActions as coreAuthoredMissionFlowExclusiveActions,
   authoredMissionFlowGuidance as coreAuthoredMissionFlowGuidance,
@@ -8,7 +8,7 @@ import { AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_INTERNALS } from "./authored-
 import { AUTHORED_T02_GRANARY_DAWN_INTERNALS } from "./authored-mission-flow-t02-granary-dawn.js";
 import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
-export * from "./authored-village-day5-before-fire.js";
+export * from "./authored-village-day6-north-fence-workday.js";
 
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
@@ -117,8 +117,8 @@ function productionAuthoredRuntime(runtime, context = {}) {
     || base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.productionChoiceContext?.(context) === true;
 }
 
-function prependAvailableCanonicalLabour(runtime, actions, context = {}) {
-  if (!onlyAuthoredDailyLife(actions) || !productionAuthoredRuntime(runtime, context)) return actions;
+function prependAvailableCanonicalLabour(runtime, actions, context = {}, productionRuntime = productionAuthoredRuntime(runtime, context)) {
+  if (!onlyAuthoredDailyLife(actions) || !productionRuntime) return actions;
   const allowed = availableCanonicalLabour(runtime);
   return allowed.length ? [...allowed, ...actions] : actions;
 }
@@ -137,6 +137,10 @@ function isCanonicalT02ContinuityPanel(actions) {
   return Array.isArray(actions)
     && actions.length > 0
     && actions.every((action) => String(action?.actionId ?? action?.id ?? "").startsWith("T02_GRANARY:"));
+}
+
+function isT02InvestigationPanel(actions) {
+  return isCoreT02InvestigationPanel(actions) || isCanonicalT02ContinuityPanel(actions);
 }
 
 function canonicalT02DawnPlayed(runtime) {
@@ -170,23 +174,31 @@ function localCanonicalProductsBeforeDeferredT02(runtime, actions) {
   return Array.isArray(products) && products.length > 0 ? products : actions;
 }
 
-// T02 is a long-running investigation, not a modal lock. The canonical v3
-// ledger deliberately places the granary's real day-labour shift between the
-// second and third evidence classes. Preserve the three-choice UI by reserving
-// one slot for executable local labour and keeping two investigation choices.
+// Day6's afternoon north-fence block is ordinary village time around the real
+// 18:00-22:00 Sheet-backed watch. T02 remains open, but its DEFER-capable
+// investigation must not erase the route-neutral maintenance/handover actions
+// that make the canonical work window naturally reachable.
+function localDay6NorthFenceLifeBesideT02(runtime, actions) {
+  if (!canonicalT02DawnPlayed(runtime) || !isT02InvestigationPanel(actions)) return actions;
+  const own = base.AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_INTERNALS?.ownActions?.(runtime) ?? null;
+  return Array.isArray(own) && own.length > 0 ? own : actions;
+}
+
+// T02 is a long-running investigation, not a modal lock. Preserve the
+// three-choice UI by reserving one slot for executable local labour and keeping
+// two investigation choices. This applies to both the canonical continuity
+// layer and the common core panel after the dawn has genuinely been played.
 function localCanonicalLabourBesideT02Continuity(runtime, actions) {
-  if (!canonicalT02DawnPlayed(runtime) || !isCanonicalT02ContinuityPanel(actions)) return actions;
+  if (!canonicalT02DawnPlayed(runtime) || !isT02InvestigationPanel(actions)) return actions;
   const jobs = availableCanonicalLabour(runtime);
   if (!jobs.length) return actions;
   return [...jobs.slice(0, 1), ...actions.slice(0, 2)];
 }
 
-// The same long-running T02 continuity must not make ordinary rest impossible.
-// Rest remains a public life action for every route; while T02 is open, reserve
-// one bounded rest slot and keep two investigation choices instead of turning
-// the case into a modal lock.
+// Outside the dedicated Day6 north-fence bridge, a long-running T02 inquiry
+// still cannot make an otherwise available bounded public rest impossible.
 function localCanonicalRestBesideT02Continuity(runtime, actions) {
-  if (!canonicalT02DawnPlayed(runtime) || !isCanonicalT02ContinuityPanel(actions)) return actions;
+  if (!canonicalT02DawnPlayed(runtime) || !isT02InvestigationPanel(actions)) return actions;
   const rests = base.CANONICAL_WORLD_LIFE_INTERNALS?.restActions?.(runtime) ?? [];
   if (!rests.length) return actions;
   const fatigue = needValue(runtime, "fatigue");
@@ -201,8 +213,6 @@ function canonicalT02DawnAction(action) {
     for (const [sceneId, choices] of Object.entries(AUTHORED_T02_GRANARY_DAWN_INTERNALS.SCENES ?? {})) {
       for (const choice of choices ?? []) {
         if (AUTHORED_T02_GRANARY_DAWN_INTERNALS.actionIdFor(sceneId, choice) === id) {
-          // Rehydrate from the authored table even when a wrapper preserved the
-          // marker but dropped nextScene/evidence metadata.
           return AUTHORED_T02_GRANARY_DAWN_INTERNALS.actionFor(sceneId, choice);
         }
       }
@@ -289,12 +299,14 @@ function reconcileCanonicalT02GranaryKeeper(runtime, action, result) {
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
+  const productionRuntimeBeforeBase = productionAuthoredRuntime(runtime, context);
   let actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   actions = canonicalT02ContinuityActions(runtime, actions);
   actions = localCanonicalProductsBeforeDeferredT02(runtime, actions);
+  actions = localDay6NorthFenceLifeBesideT02(runtime, actions);
   actions = localCanonicalLabourBesideT02Continuity(runtime, actions);
   actions = localCanonicalRestBesideT02Continuity(runtime, actions);
-  actions = prependAvailableCanonicalLabour(runtime, actions, context);
+  actions = prependAvailableCanonicalLabour(runtime, actions, context, productionRuntimeBeforeBase);
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
   if (onlyCanonicalWorldLife(actions)) {
@@ -313,16 +325,18 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
     ? AUTHORED_T02_GRANARY_DAWN_INTERNALS.consume(runtime, dawnAction, result)
     : false;
   const dawnFollowUpChanged = reconcileCanonicalT02DawnFollowUp(runtime, dawnAction, dawnChanged);
+  const day6FenceChanged = base.AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_INTERNALS?.consume?.(runtime, action, result) ?? false;
   const labourChanged = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.consume?.(runtime, action, result) ?? false;
-  const changed = dawnChanged || dawnFollowUpChanged || labourChanged
+  const changed = dawnChanged || dawnFollowUpChanged || day6FenceChanged || labourChanged
     ? true
     : base.applyAuthoredMissionFlowAction(runtime, action, result);
   const canonicalAction = dawnAction ?? action;
   const t02OnsetChanged = syncCanonicalT02GranaryOnset(runtime, canonicalAction, result);
   const t02KeeperChanged = reconcileCanonicalT02GranaryKeeper(runtime, canonicalAction, result);
   base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
+  const finalDawnFollowUpChanged = reconcileCanonicalT02DawnFollowUp(runtime, dawnAction, dawnChanged);
   const publicFacilitiesChanged = result?.ok === false ? false : reconcileSignedFarmFacilities(runtime);
-  return publicFacilitiesChanged || t02KeeperChanged || t02OnsetChanged || changed;
+  return publicFacilitiesChanged || finalDawnFollowUpChanged || t02KeeperChanged || t02OnsetChanged || changed;
 }
 
 export function authoredMissionFlowGuidance(runtime, context = {}) {
@@ -348,9 +362,11 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   urgentCanonicalProducts,
   isCoreT02InvestigationPanel,
   isCanonicalT02ContinuityPanel,
+  isT02InvestigationPanel,
   canonicalT02DawnPlayed,
   canonicalT02ContinuityActions,
   localCanonicalProductsBeforeDeferredT02,
+  localDay6NorthFenceLifeBesideT02,
   localCanonicalLabourBesideT02Continuity,
   localCanonicalRestBesideT02Continuity,
   canonicalT02DawnAction,
