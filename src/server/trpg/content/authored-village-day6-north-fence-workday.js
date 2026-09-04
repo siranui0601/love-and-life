@@ -1,7 +1,7 @@
-import * as base from "./authored-village-day5-before-fire.js";
+import * as base from "./authored-mission-t02-village-resolution.js";
 import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
-export * from "./authored-village-day5-before-fire.js";
+export * from "./authored-mission-t02-village-resolution.js";
 
 export const AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_VERSION = "authored-village-day6-north-fence-workday-v1";
 
