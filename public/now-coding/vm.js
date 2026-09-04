@@ -238,6 +238,7 @@ export function runProgramUntilAction(state, agent, instructionBudget = 10000, o
       const statement = frame.statements[frame.index];
       frame.index += 1;
       if (!statement || typeof statement !== "object") continue;
+      if (statement.__debugRef) vm.lastDebugRef = statement.__debugRef;
       consumeBudget(budget);
 
       if (statement.type === "action") {
