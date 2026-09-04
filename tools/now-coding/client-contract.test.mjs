@@ -388,7 +388,7 @@ test("block tools support nested copy placement and move mode follows its source
   assert.match(app, /copy=tool\("コピー","ネストごとコピー"/);
   assert.match(app, /function completeBlockCopy\(targetSequence,targetIndex\)/);
   assert.match(app, /deepClone\(state\.copySource\)/);
-  assert.match(app, /slot\.textContent='ここへコピー'/);
+  assert.match(app, /slot\.textContent='ペースト'/);
   assert.match(app, /function startBlockMove\(block\).*follow:true/s);
   assert.match(css, /\.insertion-slot\.is-move-target,\.insertion-slot\.is-copy-target/);
 });
@@ -414,4 +414,13 @@ test("copy and move destination affordances do not inflate document height", () 
   assert.match(css, /\.insertion-slot\.is-move-target,\.insertion-slot\.is-copy-target\{[^}]*height:35px[^}]*margin:-13px 0/);
   assert.match(css, /\.insertion-slot\.is-move-target:hover,\.insertion-slot\.is-copy-target:hover\{[^}]*height:35px[^}]*margin:-13px 0/);
   assert.doesNotMatch(css, /\.insertion-slot\.is-move-target,\.insertion-slot\.is-copy-target\{height:36px;min-height:36px;margin:4px 0/);
+});
+
+
+test("copy action transitions to paste wording", () => {
+  assert.match(app, /copy=tool\("コピー"/);
+  assert.match(app, /slot\.textContent='ペースト'/);
+  assert.match(app, /ペースト先を選んでください/);
+  assert.match(app, /コピーしました。貼り付けたい場所の「ペースト」をタップしてください/);
+  assert.doesNotMatch(app, /ここへコピー|コピー先を選んでください/);
 });
