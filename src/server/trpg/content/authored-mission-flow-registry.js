@@ -8,7 +8,12 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 export * from "./authored-village-day5-before-fire.js";
 
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
+const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const NON_PUBLIC_FACILITY_PATTERN = /隠|秘密|地下|処刑|牢|祭壇|封印|見張り小屋|裏路地/u;
+const T02_KEEPER_ID = "NPC005";
+const T02_GRANARY_ID = "LOC_FARM_GRANARY";
+const T02_DAWN_OPENING_SCENE = "t02-granary-dawn";
+const INACTIVE_NPC_PRESENCE = new Set(["dead", "missing", "departed", "sealed", "not-yet-present", "traveling"]);
 
 function onlyCanonicalWorldLife(actions) {
   return Array.isArray(actions)
@@ -161,6 +166,58 @@ function syncCanonicalT02GranaryOnset(runtime, action, result) {
   return true;
 }
 
+// NPC005/Toma is canonically the shared-granary keeper. The live NPC master says
+// morning = granary inspection, main facility = LOC_FARM_GRANARY, and explicitly
+// "T02中は穀倉前". The generic life engine currently fails to map the routine
+// text "穀倉点検" to the facility name "共同穀倉" and may leave him at a fallback
+// facility. Do not weaken the production presence gate. Once the cordoned-scene
+// branch has finished its immediate follow-up, reconcile this already-due local
+// duty so the next core hearing can only appear with the real NPC physically at
+// the scene. The headcount branch intentionally says Toma is missing and is not
+// touched here; inactive/dead/traveling NPCs are never revived or recalled.
+function reconcileCanonicalT02GranaryKeeper(runtime, action, result) {
+  if (!action?.authoredT02DawnChoice || result?.ok === false) return false;
+  if (action.authoredT02DawnSceneId === T02_DAWN_OPENING_SCENE) return false;
+  if (runtime?.playerState?.worldFlags?.t02DawnSceneRoped !== true) return false;
+  if (!ACTIVE_MISSION_STATUSES.has(String(missionById(runtime, "MSN-T02")?.status ?? ""))) return false;
+  if (!ACTIVE_TROUBLE_STATUSES.has(String(runtime?.playerState?.troubles?.T02?.status ?? ""))) return false;
+  const keeper = runtime?.livingWorld?.npcStates?.[T02_KEEPER_ID];
+  if (!keeper || INACTIVE_NPC_PRESENCE.has(String(keeper.presence ?? ""))) return false;
+  if (["dead", "missing"].includes(String(keeper.lifeStatus ?? ""))) return false;
+  if (String(keeper.presence ?? "") !== "present") return false;
+  if ((keeper.position?.hubId ?? keeper.location) !== "田園の村") return false;
+  if (keeper.position?.facilityId === T02_GRANARY_ID) return false;
+
+  const minute = Number(runtime?.playerState?.absoluteMinute ?? 0);
+  const fromFacilityId = keeper.position?.facilityId ?? null;
+  keeper.location = "田園の村";
+  keeper.position = { hubId: "田園の村", facilityId: T02_GRANARY_ID };
+  keeper.localTravel = null;
+  runtime.livingWorld.localMovementEvents ??= [];
+  runtime.livingWorld.localMovementEvents.push({
+    npcId: T02_KEEPER_ID,
+    scope: "facility",
+    routeId: `CANONICAL_ROUTINE:${T02_KEEPER_ID}:T02_GRANARY`,
+    hubId: "田園の村",
+    fromFacilityId,
+    toFacilityId: T02_GRANARY_ID,
+    departedAt: minute / 60,
+    arrivedAt: minute / 60,
+    durationHours: 0,
+    settledBy: "canonical-t02-granary-duty",
+  });
+  runtime.playerState.history ??= [];
+  runtime.playerState.history.push({
+    type: "NPC_CANONICAL_ROUTINE_RECONCILED",
+    minute,
+    npcId: T02_KEEPER_ID,
+    fromFacilityId,
+    toFacilityId: T02_GRANARY_ID,
+    reason: "t02-active-granary-keeper-duty",
+  });
+  return true;
+}
+
 // Canonical meals, provisions, lodging and services are real public world
 // surfaces. They may own the choice panel when no authored mission owns the
 // current scene. Generic REST duration entries are different: exposing the
@@ -219,9 +276,10 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
   const labourChanged = base.CANONICAL_REGIONAL_LABOUR_INTERNALS?.consume?.(runtime, action, result) ?? false;
   const changed = labourChanged ? true : base.applyAuthoredMissionFlowAction(runtime, action, result);
   const t02OnsetChanged = syncCanonicalT02GranaryOnset(runtime, action, result);
+  const t02KeeperChanged = reconcileCanonicalT02GranaryKeeper(runtime, action, result);
   base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
   const publicFacilitiesChanged = result?.ok === false ? false : reconcileSignedFarmFacilities(runtime);
-  return publicFacilitiesChanged || t02OnsetChanged || changed;
+  return publicFacilitiesChanged || t02KeeperChanged || t02OnsetChanged || changed;
 }
 
 // canonical-world-life supplies a generic "その土地の生活を選ぶ" fallback.
@@ -251,4 +309,5 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   authoredMissionOwnsChoicePool,
   urgentCanonicalProducts,
   syncCanonicalT02GranaryOnset,
+  reconcileCanonicalT02GranaryKeeper,
 });
