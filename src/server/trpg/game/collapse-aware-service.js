@@ -18,7 +18,7 @@ import {
   gameStateHash,
 } from "./service.js";
 
-export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v8";
+export const COLLAPSE_AWARE_SERVICE_VERSION = "collapse-aware-service-v9";
 export const RESOLVE_COLLAPSE_COMMAND = "RESOLVE_COLLAPSE_RESCUE";
 export const RESOLVE_COLLAPSE_CHOICE_ID = "COLLAPSE_RESCUE:ACCEPT";
 export const DISCOVER_LOCAL_TROUBLE_ACTION_PREFIX = "DISCOVER_LOCAL_TROUBLE:";
@@ -499,14 +499,17 @@ export class CollapseAwareTrpgGameService extends TrpgGameService {
     const hearing = requestedMissionHearing(input);
     const result = await super.command(ownerHash, id, input);
     const updatedRecord = await this.recordForOwner(ownerHash, id);
-    let authoredFlowPersisted = false;
     if (hearing && !result.duplicate) {
-      authoredFlowPersisted = await this.persistAuthoredFlowAfterHearing(updatedRecord, input, hearing);
+      await this.persistAuthoredFlowAfterHearing(updatedRecord, input, hearing);
     }
-    const collapsePersistence = await this.ensurePersistedCollapse(updatedRecord);
-    if (authoredFlowPersisted || collapsePersistence.changed) {
-      result.save = this.gameViewForRecord(updatedRecord);
-    }
+    await this.ensurePersistedCollapse(updatedRecord);
+
+    // Base command resolution returns its immediate deterministic game view.
+    // Collapse/survival/world-time services add authoritative public layers on
+    // top of that view. Always re-render through the virtual service stack so
+    // the command response and a fresh GET expose the exact same three choices.
+    // This is a production API invariant, not a certificate-only refresh.
+    result.save = this.gameViewForRecord(updatedRecord);
     return result;
   }
 }
