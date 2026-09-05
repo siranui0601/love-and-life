@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/apply-now-coding-editor-test-mobile-ux.yml
       - tools/now-coding/apply-editor-test-mobile-ux.mjs
+      - tools/now-coding/run-editor-test-mobile-ux-patch.mjs
 
 permissions:
   contents: write
@@ -23,7 +24,7 @@ jobs:
         with:
           node-version: 20
       - name: Apply implementation
-        run: node tools/now-coding/apply-editor-test-mobile-ux.mjs
+        run: node tools/now-coding/run-editor-test-mobile-ux-patch.mjs
       - name: Syntax check
         run: |
           node --check public/now-coding/app-v3.js
