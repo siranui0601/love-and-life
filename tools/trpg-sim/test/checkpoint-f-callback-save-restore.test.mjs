@@ -185,6 +185,7 @@ async function advanceProductionTime(service, owner, save, times, {
   untilActionId = null,
   minimumMinute = null,
   latestMinute = null,
+  targetFacilityId = null,
   label,
 }) {
   let current = save;
@@ -194,28 +195,44 @@ async function advanceProductionTime(service, owner, save, times, {
     const timeReached = minimumMinute == null || minute >= minimumMinute;
     if (actionVisible && timeReached) return current;
 
-    const candidates = safeTimeAdvanceChoices(current);
     const before = minute;
-    if (candidates.length) {
-      const remaining = minimumMinute == null ? Infinity : Math.max(0, minimumMinute - minute);
-      const withinRemaining = candidates
-        .filter((entry) => Number(entry.minutes) <= remaining)
-        .sort((a, b) => Number(b.minutes) - Number(a.minutes));
-      const selected = withinRemaining[0]
-        ?? [...candidates].sort((a, b) => Number(a.minutes) - Number(b.minutes))[0];
-      current = await choose(service, owner, current, selected.actionId);
-      pushTime(times, current, `time-authority:${selected.actionId}`);
+    const targetMove = targetFacilityId
+      && current.scene.facilityId !== targetFacilityId
+      ? current.movement.find((entry) => entry.destinationFacilityId === targetFacilityId)
+      : null;
+
+    // Once the canonical opening time is reached, navigation back to the scene
+    // is part of the production path. Do not burn arbitrary REST/OBSERVE loops
+    // at another facility until collapse and then blame the callback for being
+    // invisible there.
+    if (timeReached && targetMove) {
+      current = await send(service, owner, current, 'MOVE', { moveId: targetMove.moveId });
+      pushTime(times, current, `time-authority:${targetMove.moveId}`);
     } else {
-      const movements = [...current.movement]
-        .filter((entry) => entry.moveId && entry.destinationFacilityId !== current.scene.facilityId)
-        .sort((a, b) => String(a.moveId).localeCompare(String(b.moveId), 'en'));
-      assert.ok(movements.length, `no ordinary production time action or movement while waiting for ${label}; minute=${minute}; choices=${current.choices.map((entry) => entry.actionId).join(',')}; movement=${current.movement.map((entry) => `${entry.moveId}:${entry.destinationFacilityId}`).join(',')}`);
-      const toSquare = movements.find((entry) => entry.destinationFacilityId === 'LOC_FARM_SQUARE');
-      const selectedMove = current.scene.facilityId !== 'LOC_FARM_SQUARE' && toSquare
-        ? toSquare
-        : movements[0];
-      current = await send(service, owner, current, 'MOVE', { moveId: selectedMove.moveId });
-      pushTime(times, current, `time-authority:${selectedMove.moveId}`);
+      const candidates = safeTimeAdvanceChoices(current);
+      if (candidates.length) {
+        const remaining = minimumMinute == null ? Infinity : Math.max(0, minimumMinute - minute);
+        const withinRemaining = candidates
+          .filter((entry) => Number(entry.minutes) <= remaining)
+          .sort((a, b) => Number(b.minutes) - Number(a.minutes));
+        const selected = withinRemaining[0]
+          ?? [...candidates].sort((a, b) => Number(a.minutes) - Number(b.minutes))[0];
+        current = await choose(service, owner, current, selected.actionId);
+        pushTime(times, current, `time-authority:${selected.actionId}`);
+      } else {
+        const movements = [...current.movement]
+          .filter((entry) => entry.moveId && entry.destinationFacilityId !== current.scene.facilityId)
+          .sort((a, b) => String(a.moveId).localeCompare(String(b.moveId), 'en'));
+        assert.ok(movements.length, `no ordinary production time action or movement while waiting for ${label}; minute=${minute}; choices=${current.choices.map((entry) => entry.actionId).join(',')}; movement=${current.movement.map((entry) => `${entry.moveId}:${entry.destinationFacilityId}`).join(',')}`);
+        const preferred = targetFacilityId
+          ? movements.find((entry) => entry.destinationFacilityId === targetFacilityId)
+          : null;
+        const toSquare = movements.find((entry) => entry.destinationFacilityId === 'LOC_FARM_SQUARE');
+        const selectedMove = preferred
+          ?? (current.scene.facilityId !== 'LOC_FARM_SQUARE' && toSquare ? toSquare : movements[0]);
+        current = await send(service, owner, current, 'MOVE', { moveId: selectedMove.moveId });
+        pushTime(times, current, `time-authority:${selectedMove.moveId}`);
+      }
     }
     const after = Number(current.clock.absoluteMinute);
     assert.ok(after > before, `production action must advance time while waiting for ${label}: ${before} -> ${after}`);
@@ -231,6 +248,7 @@ async function reachCallback(service, store, owner, save, times) {
     untilActionId: 'MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira',
     minimumMinute: DAY1_AFTERCARE_OPEN_MINUTE,
     latestMinute: 1439,
+    targetFacilityId: 'LOC_FARM_SQUARE',
     label: 'Day1 aftercare',
   });
   const aftercareVisibleAtMinute = Number(current.clock.absoluteMinute);
@@ -249,6 +267,7 @@ async function reachCallback(service, store, owner, save, times) {
     untilActionId: 'MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras',
     minimumMinute: HUMAN_VIRTUE_BEDTIME_MINUTE,
     latestMinute: 1439,
+    targetFacilityId: 'LOC_FARM_SQUARE',
     label: 'Human Virtue 22:30 bedtime',
   });
   const sleepStartedAtMinute = Number(current.clock.absoluteMinute);
