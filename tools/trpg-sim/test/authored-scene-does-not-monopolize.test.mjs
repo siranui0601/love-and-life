@@ -14,7 +14,10 @@ import {
 function t02Runtime(facilityId = "LOC_FARM_GRANARY") {
   return {
     playerState: {
-      absoluteMinute: 5 * 1440 + 5 * 60,
+      // The follow-up window and the global dawn window are independent
+      // authorities. Start just after the canonical dawn opens so the exact
+      // +FOLLOW_UP_WINDOW boundary remains inside the global scene window.
+      absoluteMinute: dawn.DAWN_OPEN_MINUTE + 1,
       player: { location: "田園の村", facilityId },
       missions: [{ id: "MSN-T02", troubleId: "T02", status: "active" }],
       troubles: { T02: { status: "active" } },
@@ -67,6 +70,8 @@ test("a granary follow-up lapses once the player spends half a day elsewhere", (
   stillWarm.playerState.t02GranaryDawn = structuredClone(state.playerState.t02GranaryDawn);
   stillWarm.playerState.absoluteMinute
     = state.playerState.t02GranaryDawn.lastChoiceAtMinute + dawn.FOLLOW_UP_WINDOW_MINUTES;
+  assert.ok(stillWarm.playerState.absoluteMinute < dawn.DAWN_CLOSE_MINUTE,
+    "the exact follow-up boundary must be tested before the global dawn close");
   assert.equal(dawn.activeSceneId(stillWarm), dawn.HEADCOUNT_SCENE);
 
   const gone = t02Runtime();
