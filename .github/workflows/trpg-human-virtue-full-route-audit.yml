@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "tools/trpg-sim/cli-human-virtue-full-route-audit.mjs"
+      - "tools/trpg-sim/cli-human-virtue-choice-branch-certificate-v2.mjs"
       - "tools/trpg-sim/compile-virtue-route-v3.mjs"
       - "tools/trpg-sim/realign-virtue-route-v3-post-e.mjs"
       - "tools/trpg-sim/realign-virtue-route-v3-full-route-audit.mjs"
@@ -23,7 +24,7 @@ jobs:
     env:
       GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
       TRPG_HV_BASELINE_LOADOUT: sword-shield
-      TRPG_HV_AUDIT_SEED: human-virtue-full-route-audit-v1
+      TRPG_HV_AUDIT_SEED: human-virtue-full-route-audit-v2
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,6 +50,8 @@ jobs:
         run: |
           node tools/trpg-sim/validate-virtue-route-v3-static.mjs
           node tools/trpg-sim/export-virtue-route-v3-sheets.mjs
+      - name: Run Day1 choice worldline branch certificate from New Game
+        run: node tools/trpg-sim/cli-human-virtue-choice-branch-certificate-v2.mjs
       - name: Run strict New Game to Day85 production route audit
         run: node tools/trpg-sim/cli-human-virtue-full-route-audit.mjs
       - name: Upload full-route audit evidence
@@ -58,6 +61,7 @@ jobs:
           name: human-virtue-full-route-audit-${{ github.sha }}
           if-no-files-found: warn
           path: |
+            tools/trpg-sim/reports/human-virtue-choice-branch-certificate-v2.json
             tools/trpg-sim/reports/human-virtue-full-route-audit.json
             tools/trpg-sim/reports/human-virtue-full-route-trace.jsonl
             tools/trpg-sim/reports/human-virtue-full-route-battles.json
