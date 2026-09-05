@@ -143,6 +143,7 @@ async function forkPersistedChoice({ owner, store, save }, actionId) {
   const restored = await forkService.get(owner, forkSave.id);
   const restoredRecord = await forkStore.get(restored.id);
   const restoredRuntime = deserializeRuntime(restoredRecord.runtimeSnapshot, data);
+  const restoredHistory = restoredRuntime.playerState.history.find((entry) => entry.actionId === actionId);
 
   return {
     actionId,
@@ -153,7 +154,9 @@ async function forkPersistedChoice({ owner, store, save }, actionId) {
     fatigue: restored.player.needs.fatigue,
     selectedActionId: restoredRuntime.playerState.day1T01VillageNight.eveningSelectedActionId,
     closedActionIds: [...restoredRuntime.playerState.day1T01VillageNight.eveningClosedActionIds].sort(),
-    historyType: restoredRuntime.playerState.history.find((entry) => entry.actionId === actionId)?.type ?? null,
+    historyType: restoredHistory?.type ?? null,
+    historyActionId: restoredHistory?.actionId ?? null,
+    historyMinute: Number(restoredHistory?.minute ?? -1),
     worldFlags: Object.keys(restoredRuntime.playerState.worldFlags ?? {}).filter((key) => key.startsWith('t01Evening:')).sort(),
     nextSceneId: branchState.nextSceneId,
   };
@@ -167,7 +170,10 @@ test('[HUMAN_VIRTUE_V2] Day1 evening is one long decision whose three branches p
   assert.ok(branches.every((entry) => entry.absoluteMinute === 750));
   assert.ok(branches.every((entry) => entry.time === '22:30'));
   assert.equal(new Set(branches.map((entry) => entry.selectedActionId)).size, 3);
-  assert.equal(new Set(branches.map((entry) => entry.historyType)).size, 3);
+  assert.ok(branches.every((entry) => entry.historyType != null), 'every branch must retain a persisted history event');
+  assert.equal(new Set(branches.map((entry) => entry.historyActionId)).size, 3, 'persisted history must identify the three different chosen actions');
+  assert.ok(branches.every((entry) => entry.historyActionId === entry.actionId), 'restored history must retain the exact selected action id');
+  assert.ok(branches.every((entry) => entry.historyMinute === 750), 'branch history must be stamped at the long action completion time');
   assert.equal(new Set(branches.map((entry) => JSON.stringify(entry.worldFlags))).size, 3);
   assert.equal(new Set(branches.map((entry) => `${entry.hunger}:${entry.fatigue}`)).size, 3);
   assert.equal(new Set(branches.map((entry) => entry.stateHash)).size, 3, 'production save hashes must remain divergent after one branch and restore');
