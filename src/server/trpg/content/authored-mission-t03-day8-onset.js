@@ -2,16 +2,13 @@ import * as base from "./authored-mission-t02-village-resolution.js";
 
 export * from "./authored-mission-t02-village-resolution.js";
 
-export const AUTHORED_MISSION_T03_DAY8_ONSET_VERSION = "authored-mission-t03-day8-onset-v2";
+export const AUTHORED_MISSION_T03_DAY8_ONSET_VERSION = "authored-mission-t03-day8-onset-v3";
 
 const TROUBLE_ID = "T03";
 const MISSION_ID = "MSN-T03";
 const LOCATION = "田園の村";
 const ONSET_MINUTE = 7 * 1440 + 5 * 60 - 10 * 60;
 const RUMOR_ID = "RUM-T03-active";
-const FLOW_ID = "red-fang-migration";
-const CANONICAL_OPENING_ID = "feeding_pattern";
-const CANONICAL_FIRST_LEAD_ID = "livestock_timeline";
 const TERMINAL_MISSION_STATUSES = new Set(["completed", "failed", "suppressed"]);
 
 function missionById(runtime, missionId) {
@@ -83,21 +80,6 @@ function syncCanonicalT03Day8Onset(runtime, result = { ok: true }) {
   return true;
 }
 
-function canonicalT03OpeningAction(selected) {
-  if (selected?.authoredMissionFlowId !== FLOW_ID
-    || selected?.authoredMissionFlowKind !== "opening"
-    || selected?.authoredMissionFlowChoiceId !== CANONICAL_OPENING_ID) return selected;
-
-  const unlocked = Array.isArray(selected.authoredMissionFlowUnlockedLeadIds)
-    ? selected.authoredMissionFlowUnlockedLeadIds
-    : [];
-  if (unlocked.includes(CANONICAL_FIRST_LEAD_ID)) return selected;
-  return {
-    ...selected,
-    authoredMissionFlowUnlockedLeadIds: [CANONICAL_FIRST_LEAD_ID, ...unlocked],
-  };
-}
-
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   return base.authoredMissionFlowExclusiveActions(runtime, context);
 }
@@ -107,7 +89,12 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
 }
 
 export function applyAuthoredMissionFlowAction(runtime, selected, result) {
-  const consumed = base.applyAuthoredMissionFlowAction(runtime, canonicalT03OpeningAction(selected), result);
+  // Day8 controls when T03 becomes real in the common world. It does not
+  // rewrite the authored hearing branch chosen by the player. In particular,
+  // feeding_pattern keeps the two leads defined by the T03 pack instead of
+  // silently receiving a third lead that the other opening branches did not
+  // choose and the canonical Human Virtue ledger never requires.
+  const consumed = base.applyAuthoredMissionFlowAction(runtime, selected, result);
   const activated = syncCanonicalT03Day8Onset(runtime, result);
   return consumed || activated;
 }
@@ -118,11 +105,7 @@ export const AUTHORED_MISSION_T03_DAY8_ONSET_INTERNALS = Object.freeze({
   LOCATION,
   ONSET_MINUTE,
   RUMOR_ID,
-  FLOW_ID,
-  CANONICAL_OPENING_ID,
-  CANONICAL_FIRST_LEAD_ID,
   missionById,
   ensureKnownRumor,
   syncCanonicalT03Day8Onset,
-  canonicalT03OpeningAction,
 });
