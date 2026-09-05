@@ -6,7 +6,11 @@ import {
 import { AUTHORED_MISSION_T02_GRANARY_INTERNALS } from "./authored-mission-t02-granary-continuity.js";
 import { AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_INTERNALS } from "./authored-mission-t02-granary-choice-order.js";
 import { AUTHORED_T02_GRANARY_DAWN_INTERNALS } from "./authored-mission-flow-t02-granary-dawn.js";
-import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
+import {
+  clockFromMinute,
+  generateChoiceActions,
+  PLAYER_PROFILES,
+} from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./authored-village-day6-north-fence-workday.js";
 
@@ -17,6 +21,7 @@ const T02_KEEPER_ID = "NPC005";
 const T02_GRANARY_ID = "LOC_FARM_GRANARY";
 const T02_DAWN_OPENING_SCENE = "t02-granary-dawn";
 const INACTIVE_NPC_PRESENCE = new Set(["dead", "missing", "departed", "sealed", "not-yet-present", "traveling"]);
+const PROFILE_BY_ID = new Map(PLAYER_PROFILES.map((profile) => [profile.id, profile]));
 
 function onlyCanonicalWorldLife(actions) {
   return Array.isArray(actions)
@@ -33,6 +38,11 @@ function onlyAuthoredDailyLife(actions) {
   return Array.isArray(actions)
     && actions.length > 0
     && actions.every((action) => action?.authoredDailyLifeChoice === true);
+}
+
+function containsAuthoredDailyLife(actions) {
+  return Array.isArray(actions)
+    && actions.some((action) => action?.authoredDailyLifeChoice === true);
 }
 
 function player(runtime) {
@@ -69,6 +79,59 @@ function missionById(runtime, missionId) {
 
 function t01Active(runtime) {
   return ACTIVE_MISSION_STATUSES.has(String(missionById(runtime, "MSN-T01")?.status ?? ""));
+}
+
+function dailyLifeCommonChoiceCandidates(runtime, actions, context = {}, productionRuntime = false) {
+  if (!productionRuntime || !containsAuthoredDailyLife(actions)) return actions;
+
+  // T01's hearing/search/rescue surface has stricter co-presence and disclosure
+  // rules in the common service. Daily life is deliberately the bottom layer,
+  // so it must yield rather than replace those authoritative mission choices.
+  if (t01Active(runtime)) return null;
+
+  const presentNpcs = Array.isArray(context.presentNpcs) ? context.presentNpcs : [];
+  const conversations = presentNpcs.slice(0, 2).map((npc) => ({
+    id: `DIRECT_TALK:${npc.id}`,
+    type: "conversation",
+    directTalk: true,
+    targetNpcId: npc.id,
+    targetNpcName: npc.name ?? npc.id,
+    dialogueTopic: "direct_contact",
+    minutes: 5,
+    label: `${npc.name ?? "近くの人"}に話しかける`,
+  }));
+
+  const movementPool = Array.isArray(context.movementActions) ? context.movementActions : [];
+  const regionalMove = movementPool.find((action) => action?.movementScope === "regional") ?? null;
+  const localMove = movementPool.find((action) => action?.movementScope === "local") ?? null;
+  const movements = [regionalMove, localMove]
+    .filter(Boolean)
+    .filter((action, index, entries) => entries.findIndex((entry) => entry.id === action.id) === index);
+
+  let seekBattle = null;
+  const state = runtime?.playerState;
+  const model = runtime?.livingWorld?.model;
+  const battleData = state?.battleData;
+  const catalog = state?.catalog;
+  const profile = PROFILE_BY_ID.get(state?.profileId) ?? PROFILE_BY_ID.get("balanced");
+  if (state && model && battleData && catalog && profile) {
+    seekBattle = generateChoiceActions(
+      state,
+      model,
+      battleData,
+      catalog,
+      profile,
+      { limit: 12, fillTo: 0 },
+    ).find((action) => action?.id === "SEEK_BATTLE") ?? null;
+  }
+
+  const combined = [
+    ...actions,
+    ...conversations,
+    ...(seekBattle ? [seekBattle] : []),
+    ...movements,
+  ];
+  return [...new Map(combined.map((action) => [action.id, action])).values()].slice(0, 9);
 }
 
 function urgentCanonicalProducts(runtime, actions) {
@@ -309,6 +372,8 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   actions = prependAvailableCanonicalLabour(runtime, actions, context, productionRuntimeBeforeBase);
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
+  actions = dailyLifeCommonChoiceCandidates(runtime, actions, context, productionRuntimeBeforeBase);
+  if (actions == null) return null;
   if (onlyCanonicalWorldLife(actions)) {
     if (authoredMissionOwnsChoicePool(runtime)) return null;
     return hasDedicatedCanonicalWorldLife(actions) ? actions : null;
@@ -357,6 +422,8 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   availableCanonicalLabour,
   productionAuthoredRuntime,
   prependAvailableCanonicalLabour,
+  containsAuthoredDailyLife,
+  dailyLifeCommonChoiceCandidates,
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
   urgentCanonicalProducts,
