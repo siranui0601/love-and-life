@@ -12,7 +12,6 @@ const data = loadTrpgGameData();
 const {
   ONSET_MINUTE,
   RUMOR_ID,
-  CANONICAL_FIRST_LEAD_ID,
   syncCanonicalT03Day8Onset,
 } = AUTHORED_MISSION_T03_DAY8_ONSET_INTERNALS;
 
@@ -63,19 +62,30 @@ test("canonical T03 activates once at Day8 dawn and becomes a known local missio
   assert.equal(runtime.playerState.rumors.filter((rumor) => rumor.id === RUMOR_ID).length, rumorCount);
 });
 
-test("canonical T03 feeding-pattern opening exposes the livestock timeline lead", () => {
+test("canonical T03 Day8 onset exposes the actual three continuity openings and records the chosen worldline", () => {
   const runtime = runtimeAt(ONSET_MINUTE + 180);
   assert.equal(syncCanonicalT03Day8Onset(runtime, { ok: true }), true);
-  const opening = authoredMissionFlowExclusiveActions(runtime, {})?.find((action) =>
-    action?.authoredMissionFlowId === "red-fang-migration"
-      && action?.authoredMissionFlowChoiceId === "feeding_pattern");
-  assert.ok(opening);
-  assert.equal(applyAuthoredMissionFlowAction(runtime, opening, { ok: true }), true);
 
-  const choices = authoredMissionFlowExclusiveActions(runtime, {}) ?? [];
-  assert.ok(choices.some((action) => action?.id?.startsWith(
-    `MISSION_FLOW:red-fang-migration:LEAD:${CANONICAL_FIRST_LEAD_ID}@`,
-  )));
+  const openings = (authoredMissionFlowExclusiveActions(runtime, {}) ?? [])
+    .filter((action) => action?.authoredT03WolfChoice === true && action?.t03OpeningChoice);
+  assert.deepEqual(openings.map((action) => action.id), [
+    "T03_WOLF:OPEN:loss_ledger",
+    "T03_WOLF:OPEN:stable_bells",
+    "T03_WOLF:OPEN:finn_edge_map",
+  ]);
+  assert.equal(new Set(openings.map((action) => action.t03OpeningChoice)).size, 3);
+
+  const selected = openings.find((action) => action.t03OpeningChoice === "stable_bells");
+  assert.ok(selected);
+  const result = { ok: true };
+  assert.equal(applyAuthoredMissionFlowAction(runtime, selected, result), true);
+  assert.equal(runtime.t03WolfContinuity.openingChoiceId, "stable_bells");
+  assert.equal(runtime.playerState.worldFlags["t03Opening:stable_bells"], true);
+  assert.ok(runtime.playerState.history.some((entry) =>
+    entry.type === "T03_WOLF_SCENE_RESOLVED"
+      && entry.actionId === selected.id
+      && entry.openingChoice === "stable_bells"));
+  assert.match(result.summary, /南柵|押し出され/u);
 });
 
 test("canonical T03 onset never revives a terminal mission", () => {
