@@ -125,8 +125,16 @@ function dailyLifeCommonChoiceCandidates(runtime, actions, context = {}, product
     ).find((action) => action?.id === "SEEK_BATTLE") ?? null;
   }
 
+  // Once village daily life is mixed with ordinary production options it is no
+  // longer an exclusive scene. Keep all action-specific consume metadata, but
+  // clear the selector-only exclusivity marker so conversation, battle and
+  // travel can genuinely compete for the public three-choice surface.
+  const commonLayerActions = actions.map((action) => ({
+    ...action,
+    authoredMissionFlowExclusiveChoice: false,
+  }));
   const combined = [
-    ...actions,
+    ...commonLayerActions,
     ...conversations,
     ...(seekBattle ? [seekBattle] : []),
     ...movements,
