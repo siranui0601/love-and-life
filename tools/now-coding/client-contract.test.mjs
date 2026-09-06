@@ -190,8 +190,13 @@ test("mobile inputs do not trigger iOS focus zoom", () => {
   assert.doesNotMatch(html, /maximum-scale=1|user-scalable=no/);
 });
 
-test("test battle placement rerolls its seed on every execution", () => {
-  assert.match(app, /c\.spawnMode==="random"\|\|c\.spawnMode==="battle"\|\|c\.boardShape==="random"/);
+test("test battle placement keeps the preview seed until an explicit reroll", () => {
+  assert.match(app, /function testHasRerollableSettings/);
+  assert.match(app, /function rerollTestScenario\(\).*state\.testRollSeed=freshSeed\(\)/s);
+  const start = app.indexOf("function prepareFreshTestSession");
+  const end = app.indexOf("\nfunction ", start + 10);
+  assert.ok(start >= 0);
+  assert.ok(!app.slice(start, end < 0 ? app.length : end).includes("freshSeed()"));
 });
 
 test("existing programs expose overwrite and save-as-new without renaming overwrite", () => {
@@ -265,7 +270,9 @@ test("inline expression typing preserves the focused input node", () => {
 test("mobile command launcher is class-controlled and clears the bottom navigation", () => {
   assert.match(html, /id="mobilePaletteButton" class="mobile-palette-fab is-hidden"/);
   assert.doesNotMatch(html, /id="mobilePaletteButton"[^>]*\shidden(?:\s|>)/);
-  assert.match(app, /classList\.toggle\("is-hidden",state\.view!=="editor"\)/);
+  assert.match(app, /function updateMobilePaletteAvailability\(\)\{const hidden=state\.view!=="editor"/);
+  assert.match(app, /b\.classList\.toggle\("is-hidden",hidden\)/);
+  assert.match(app, /dock\?\.classList\.toggle\("is-hidden",hidden\)/);
   assert.match(css, /mobile-palette-fab:not\(\.is-hidden\)/);
   assert.match(css, /bottom:calc\(86px \+ env\(safe-area-inset-bottom\)\)/);
 });
@@ -309,11 +316,13 @@ test("boolean expressions can be wrapped and collapsed without rebuilding", () =
   assert.match(app, /binary\('or',deepClone\(expr\),null\)/);
 });
 
-test("mobile command sheet supports long-press drag into code", () => {
+test("mobile command sheet uses an explicit drag handle with pointer capture", () => {
   assert.match(app, /mobilePaletteContent.*pointerdown.*startMobilePalettePointer/s);
-  assert.match(app, /function startTouchCommandDrag\(event,key,fromMobile=false\)/);
-  assert.match(app, /if\(fromMobile\)setMobilePalette\(false\)/);
-  assert.match(app, /blockDropTargetAt\(point\.x,point\.y\)/);
+  assert.match(app, /function startTouchCommandDrag\(event,key,fromMobile=false,immediate=false\)/);
+  assert.match(app, /block-drag-handle/);
+  assert.match(app, /setPointerCapture/);
+  assert.match(app, /releasePointerCapture/);
+  assert.match(app, /nearestBlockDropTargetAt\(point\.x,point\.y\)/);
   assert.match(app, /function startTouchExistingBlockDrag\(event,block\)/);
 });
 
@@ -456,7 +465,12 @@ test("test playback can pause step rewind resume and jump only on demand", () =>
 test("editing code resets an active test to the same initial session without warning copy", () => {
   assert.ok(app.includes('function scheduleTestResetAfterDraftChange()'));
   assert.ok(app.includes('function resetTestSessionToCurrentDraft()'));
-  assert.ok(app.includes('markDraftChanged(){state.draftDirty=true;persistTutorialDraft();scheduleTestResetAfterDraftChange();}'));
+  const markStart=app.indexOf('function markDraftChanged()');
+  const markEnd=app.indexOf('\nfunction ',markStart+10);
+  assert.ok(markStart>=0);
+  const markBody=app.slice(markStart,markEnd<0?app.length:markEnd);
+  assert.ok(markBody.includes('state.draftDirty=true'));
+  assert.ok(markBody.includes('scheduleTestResetAfterDraftChange()'));
   assert.ok(app.includes('state.testSession.program=annotateTestProgram(deepClone(state.draft.blocks))'));
   assert.ok(app.includes('state.testHistory=[captureTestFrame(game)]'));
   assert.ok(!app.includes('コードが変更されました'));
@@ -469,4 +483,45 @@ test("test program carries source refs for execution-position highlighting", () 
   assert.ok(fs.readFileSync("public/now-coding/vm.js","utf8").includes('if (statement.__debugRef) vm.lastDebugRef = statement.__debugRef'));
   assert.ok(css.includes('.typed-block.is-test-debug-current'));
   assert.ok(css.includes('.typed-block.is-test-debug-parent'));
+});
+
+
+test("editor mobile dock exposes undo redo and placement cancellation", () => {
+  for (const id of ["mobileEditorDock","undoEditButton","redoEditButton","blockEditCancelButton"]) assert.ok(html.includes(`id="${id}"`), id);
+  for (const fn of ["undoBlockEdit","redoBlockEdit","applyBlockEditSnapshot","restoreSelectionScrollPosition","updateEditorActionDock"]) assert.ok(app.includes(`function ${fn}`), fn);
+  assert.ok(app.includes('document.addEventListener("keydown",handleEditorHistoryShortcut)'));
+  assert.ok(app.includes('移動キャンセル'));
+  assert.ok(app.includes('コピーキャンセル'));
+  assert.ok(css.includes('.history-jump-highlight'));
+});
+
+test("test controls expose explicit return reroll and terminal replay", () => {
+  assert.ok(html.includes('id="runTestButton"'));
+  assert.ok(html.includes('id="testReturnStartButton"'));
+  assert.ok(html.includes('>↺ 先頭へ</button>'));
+  assert.ok(html.includes('id="testRerollButton"'));
+  assert.ok(html.includes('>再抽選</button>'));
+  assert.ok(app.includes('function rerollTestScenario'));
+  assert.ok(app.includes('function returnTestToStart'));
+  assert.ok(app.includes('terminal?"もう一度":"再生"'));
+  assert.ok(app.includes('state.testPlayback="paused";renderCurrentTestFrame()'));
+});
+
+test("test setting changes invalidate the old session without silently rerolling", () => {
+  assert.ok(app.includes('function invalidateTestEnvironmentForSettingsChange'));
+  assert.match(app,/testBoardShape=e\.target\.value;invalidateTestFixedSpawns\(\);invalidateTestEnvironmentForSettingsChange\(\)/);
+  assert.match(app,/testSpawnMode=e\.target\.value;invalidateTestEnvironmentForSettingsChange\(\)/);
+  const start=app.indexOf('function prepareFreshTestSession('),end=app.indexOf('\nfunction finishTestFromGame',start);
+  assert.ok(start>=0&&end>start);
+  assert.ok(!app.slice(start,end).includes('freshSeed()'));
+});
+
+test("mobile palette drag uses a handle pointer capture and magnetic destination", () => {
+  assert.ok(app.includes("event.target.closest?.('.block-drag-handle')"));
+  assert.ok(app.includes('setPointerCapture'));
+  assert.ok(app.includes('releasePointerCapture'));
+  assert.ok(app.includes('nearestBlockDropTargetAt'));
+  assert.ok(app.includes('lastBlockTarget'));
+  assert.ok(css.includes('.block-drag-handle'));
+  assert.ok(css.includes('touch-action:none'));
 });
