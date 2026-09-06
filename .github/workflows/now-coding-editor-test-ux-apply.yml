@@ -16,6 +16,34 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Harden one-shot patch for current tutorial layout
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('tools/now-coding/apply-editor-test-ux.mjs')
+          s=p.read_text()
+          old='''function replaceOnce(source,from,to,label){
+            const count=source.split(from).length-1;
+            assert.equal(count,1,`${label}: expected one match, got ${count}`);
+            return source.replace(from,to);
+          }'''
+          new='''function replaceOnce(source,from,to,label){
+            const count=source.split(from).length-1;
+            if(count===1)return source.replace(from,to);
+            if(label.startsWith("tutorial play")){
+              const start=source.indexOf("const targets={");
+              const end=start>=0?source.indexOf("\\n  };",start):-1;
+              assert.ok(start>=0&&end>start,`${label}: tutorial targets block missing`);
+              const block=source.slice(start,end);
+              if(!block.includes("#runTestButton"))return source;
+              return source.slice(0,start)+block.replaceAll("#runTestButton","#testPlayPauseButton")+source.slice(end);
+            }
+            assert.equal(count,1,`${label}: expected one match, got ${count}`);
+            return source.replace(from,to);
+          }'''
+          assert old in s, 'replaceOnce helper not found'
+          p.write_text(s.replace(old,new,1))
+          PY
       - name: Apply Now Coding editor/test UX changes
         run: node tools/now-coding/apply-editor-test-ux.mjs
       - name: Syntax check
