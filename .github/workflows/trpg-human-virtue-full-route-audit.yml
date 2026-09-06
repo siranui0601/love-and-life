@@ -11,6 +11,7 @@ on:
       - "tools/trpg-sim/realign-virtue-route-v3-strict-playability.mjs"
       - "tools/trpg-sim/realign-virtue-route-v3-day7-t02-village.mjs"
       - "tools/trpg-sim/realign-virtue-route-v3-day7-north-fence.mjs"
+      - "tools/trpg-sim/realign-virtue-route-v3-day8-t03.mjs"
       - "tools/trpg-sim/export-virtue-route-v2-source.mjs"
       - "tools/trpg-sim/export-virtue-route-v3-sheets.mjs"
       - "src/server/trpg/**"
@@ -46,6 +47,8 @@ jobs:
         run: node tools/trpg-sim/realign-virtue-route-v3-day7-t02-village.mjs
       - name: Apply canonical Day7 north-fence realignment
         run: node tools/trpg-sim/realign-virtue-route-v3-day7-north-fence.mjs
+      - name: Apply canonical Day8 T03 realignment
+        run: node tools/trpg-sim/realign-virtue-route-v3-day8-t03.mjs
       - name: Validate deterministic route and build canonical Sheet ledger
         run: |
           node tools/trpg-sim/validate-virtue-route-v3-static.mjs
