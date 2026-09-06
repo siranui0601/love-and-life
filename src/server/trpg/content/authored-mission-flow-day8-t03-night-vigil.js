@@ -1,12 +1,15 @@
 import * as base from "./authored-mission-flow-day2-day8-village-watch.js";
+import * as preHowlBase from "./authored-mission-flow-day2-t01-village-warning-result.js";
+import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./authored-mission-flow-day2-day8-village-watch.js";
 
-export const AUTHORED_DAY8_T03_NIGHT_VIGIL_VERSION = "authored-day8-t03-night-vigil-v1";
+export const AUTHORED_DAY8_T03_NIGHT_VIGIL_VERSION = "authored-day8-t03-night-vigil-v2";
 
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_NORTH_FENCE";
 const JILL_ID = "NPC060";
+const HOWL_OPEN_MINUTE = 22 * 60;
 
 const CHOICES = Object.freeze([
   Object.freeze({
@@ -57,6 +60,19 @@ function state(runtime) {
     completedAtMinute: null,
   };
   return runtime.playerState.day8T03NightVigil;
+}
+
+function clock(runtime) {
+  return clockFromMinute(Number(runtime?.playerState?.absoluteMinute ?? 0));
+}
+
+function earlyHowlPanel(runtime, actions) {
+  const current = clock(runtime);
+  return current.day === 8
+    && current.minuteOfDay < HOWL_OPEN_MINUTE
+    && Array.isArray(actions)
+    && actions.length > 0
+    && actions.every((action) => action?.authoredDay2Day8VillageWatchScene === "howl");
 }
 
 function eligible(runtime) {
@@ -155,18 +171,30 @@ function consume(runtime, action, result) {
 }
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
-  return actions(runtime) ?? base.authoredMissionFlowExclusiveActions(runtime, context);
+  const own = actions(runtime);
+  if (own?.length) return own;
+  const inherited = base.authoredMissionFlowExclusiveActions(runtime, context);
+  if (earlyHowlPanel(runtime, inherited)) {
+    return preHowlBase.authoredMissionFlowExclusiveActions(runtime, context);
+  }
+  return inherited;
 }
 
-export function authoredMissionFlowGuidance(runtime) {
-  if (!eligible(runtime)) return base.authoredMissionFlowGuidance(runtime);
-  return {
-    kicker: "遠吠えの向きは分かったが、夜明けまでの見張り方はまだ選べる",
-    title: "北柵の夜を誰が引き受けるか",
-    detail: "自分で記録を続ける、短い巡回へ分ける、ジルへ渡す。疲労と翌朝の役割が変わる。",
-    targetLocation: LOCATION,
-    targetFacilityId: FACILITY_ID,
-  };
+export function authoredMissionFlowGuidance(runtime, context = {}) {
+  if (eligible(runtime)) {
+    return {
+      kicker: "遠吠えの向きは分かったが、夜明けまでの見張り方はまだ選べる",
+      title: "北柵の夜を誰が引き受けるか",
+      detail: "自分で記録を続ける、短い巡回へ分ける、ジルへ渡す。疲労と翌朝の役割が変わる。",
+      targetLocation: LOCATION,
+      targetFacilityId: FACILITY_ID,
+    };
+  }
+  const inherited = base.authoredMissionFlowExclusiveActions(runtime, context);
+  if (earlyHowlPanel(runtime, inherited)) {
+    return preHowlBase.authoredMissionFlowGuidance(runtime, context);
+  }
+  return base.authoredMissionFlowGuidance(runtime, context);
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
@@ -176,7 +204,10 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 
 export const AUTHORED_DAY8_T03_NIGHT_VIGIL_INTERNALS = Object.freeze({
   CHOICES,
+  HOWL_OPEN_MINUTE,
   state,
+  clock,
+  earlyHowlPanel,
   eligible,
   actionId,
   actionFor,
