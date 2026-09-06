@@ -263,6 +263,15 @@ async function reachCallback(service, store, owner, save, times) {
     pushTime(times, current, actionId);
   }
 
+  // The canonical evening is itself a meaningful long three-way decision. Use
+  // that real production action to reach 22:30 instead of manufacturing the
+  // same elapsed time through short REST/OBSERVE loops.
+  const eveningActionId = 'MISSION_FLOW:T01:EVENING_FREE_TIME:maintain_and_rest';
+  assert.ok(current.choices.some((entry) => entry.actionId === eveningActionId),
+    `Human Virtue evening choice must be visible after supper; visible=${current.choices.map((entry) => entry.actionId).join(',')}`);
+  current = await choose(service, owner, current, eveningActionId);
+  pushTime(times, current, eveningActionId);
+
   current = await advanceProductionTime(service, owner, current, times, {
     untilActionId: 'MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras',
     minimumMinute: HUMAN_VIRTUE_BEDTIME_MINUTE,
