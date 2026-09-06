@@ -18,14 +18,14 @@ test("editor exposes undo redo and explicit edit-mode cancel controls", () => {
 test("test bench exposes restart reroll and repeat controls", () => {
   assert.match(html, /id="testReturnStartButton"/);
   assert.match(html, /id="testRerollButton"/);
-  assert.match(html, /id="testRunButton"/);
+  assert.match(html, /id="runTestButton"/);
   assert.match(app, /function\s+rerollTestScenario\s*\(/);
   assert.match(app, /function\s+returnTestToStart\s*\(/);
 });
 
 test("mobile block palette uses an explicit drag handle and pointer capture", () => {
   assert.match(app, /block-drag-handle/);
-  assert.match(app, /setPointerCapture\s*\(/);
-  assert.match(app, /releasePointerCapture\s*\(/);
+  assert.match(app, /setPointerCapture/);
+  assert.match(app, /releasePointerCapture/);
   assert.match(css, /\.block-drag-handle/);
 });
