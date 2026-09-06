@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/apply-now-coding-editor-test-mobile-ux-v2.yml
       - tools/now-coding/apply-editor-test-mobile-ux-v2.mjs
+      - tools/now-coding/patch-client-contract-v2.mjs
       - tools/now-coding/editor-test-mobile-ux.contract.test.mjs
 
 permissions:
@@ -25,6 +26,8 @@ jobs:
           node-version: 20
       - name: Apply implementation
         run: node tools/now-coding/apply-editor-test-mobile-ux-v2.mjs
+      - name: Align focused contracts
+        run: node tools/now-coding/patch-client-contract-v2.mjs
       - name: Syntax check
         run: |
           node --check public/now-coding/app-v3.js
