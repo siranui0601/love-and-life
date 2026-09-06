@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { resolveCanonicalWeather } from "../../../src/server/trpg/resolvers/weather-resolver.js";
 import {
   availableGameRuntimeActions,
   createGameRuntime,
@@ -86,7 +87,15 @@ test("weather-tagged reviewed prose takes precedence over the generic arrival pr
   });
   runtime.playerState.player.location = "王都";
   runtime.playerState.player.facilityId = "LOC_CAP_LOWER_INN";
-  runtime.playerState.weather = { id: "rain", label: "雨", tags: ["rain", "wet", "outdoor"] };
+  // The prose picker reads the canonical almanac, not playerState.weather, so the
+  // scene has to be placed on a day the almanac actually writes rain into.
+  // 王都 Day26 is rain from morning through night.
+  runtime.playerState.day = 26;
+  runtime.playerState.daypart = "afternoon";
+  assert.ok(
+    resolveCanonicalWeather({ day: 26, regionId: "王都", daypart: "afternoon" }).tags.includes("rain"),
+    "王都 Day26 afternoon must be rain in the almanac for this test to mean anything",
+  );
   runtime.playerState.history.push({ type: "REGIONAL_MOVE_COMPLETED", from: "田園の村", to: "王都", facilityId: "LOC_CAP_LOWER_INN" });
   const presentation = resolveReviewedAuthoredPresentation(runtime, game.data, {
     resolvedAction: { id: "MOVE_REGION:王都", type: "move", movementScope: "regional" },

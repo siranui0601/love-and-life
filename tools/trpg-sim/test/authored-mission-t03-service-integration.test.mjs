@@ -175,3 +175,45 @@ test("T03 keeps two independent evidence classes across noon, public choices, an
   assert.equal(liveInvestigationProgress(runtime), 2);
   assert.equal(canonicalEvidence(runtime).length, 2);
 });
+
+test("T03 dedicated investigation does not replace ordinary life choices while the player travels off-target", () => {
+  let runtime = prepareRuntime();
+  const first = choices(runtime).find((action) => action.t03EvidenceClass === "apex_pressure")
+    ?? choices(runtime).find((action) => action.t03EvidenceClass);
+  assert.ok(first, `first T03 evidence missing: ${JSON.stringify(ids(choices(runtime)))}`);
+  assert.equal(choose(runtime, first).outcome.ok, true);
+  assert.equal(liveInvestigationProgress(runtime), 1);
+
+  const movement = availableGameRuntimeActions(runtime, data).movement
+    .find((action) => action.id === "MOVE_LOCAL:LOC_FARM_BAKERY");
+  assert.ok(movement, `bakery movement missing: ${JSON.stringify(ids(availableGameRuntimeActions(runtime, data).movement))}`);
+  const moved = executeGameRuntimeCommand(runtime, data, {
+    type: "MOVE",
+    payload: { moveId: movement.id },
+  });
+  assert.equal(moved.outcome?.ok, true);
+  assert.equal(runtime.playerState.player.facilityId, "LOC_FARM_BAKERY");
+
+  runtime = roundTrip(runtime);
+  const exclusive = authoredMissionFlowExclusiveActions(runtime, {
+    presentNpcs: [],
+    movementActions: availableGameRuntimeActions(runtime, data).movement,
+  });
+  assert.equal(
+    exclusive?.some((action) => action?.authoredMissionFlowId === FLOW_ID) ?? false,
+    false,
+    `generic T03 flow stole the off-target action panel: ${JSON.stringify(ids(exclusive))}`,
+  );
+  assert.equal(
+    exclusive?.some((action) => action?.authoredT03WolfChoice === true) ?? false,
+    false,
+    `dedicated T03 evidence should resume only at its target: ${JSON.stringify(ids(exclusive))}`,
+  );
+
+  const candidates = availableGameRuntimeChoiceCandidates(runtime, data);
+  assert.ok(
+    candidates.some((action) => action.id === "LIFE:BUY:ITM008"),
+    `ordinary bakery provision is hidden during T03 travel: ${JSON.stringify(ids(candidates))}`,
+  );
+  assert.equal(liveInvestigationProgress(runtime), 1);
+});

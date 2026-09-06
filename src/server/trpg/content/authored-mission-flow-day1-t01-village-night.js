@@ -1,27 +1,83 @@
 import * as base from "./authored-mission-flow-day1-t01-square-aftercare.js";
+import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
+import { completePlayerRest, ensurePlayerNeeds, publicPlayerNeeds } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
 
 export * from "./authored-mission-flow-day1-t01-square-aftercare.js";
 
 export const AUTHORED_DAY1_T01_VILLAGE_NIGHT_VERSION =
-  "authored-day1-t01-village-night-v1";
+  "authored-day1-t01-village-night-v3";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
 const SQUARE_ID = "LOC_FARM_SQUARE";
 const INN_ID = "LOC_FARM_INN";
+const EVENING_SCENE_ID = "t01-village-evening-after-supper";
 const NIGHT_SCENE_ID = "t01-village-night-after-supper";
 const MORNING_SCENE_ID = "t01-day2-merchant-arrival";
 const SHARE_BREAD_ACTION_ID = "MISSION_FLOW:T01:SQUARE_SUPPER:share_bread";
+const EVENING_REST_ACTION_ID = "MISSION_FLOW:T01:EVENING_FREE_TIME:maintain_and_rest";
 const SLEEP_ACTION_ID = "MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras";
+const NIGHT_START_MINUTE_OF_DAY = 22 * 60 + 30;
+const MORNING_OPEN_MINUTE_OF_DAY = 6 * 60;
+
+const EVENING_CHOICES = Object.freeze([
+  Object.freeze({
+    id: "maintain_and_rest",
+    label: "装備を手入れし、身体を休める",
+    family: "rest",
+    hungerDelta: 0,
+    fatigueDelta: 0,
+    authoritativeRest: "short",
+    summary: "救出で汚れた装備を拭き、留め具を確かめてから、広場の端で身体を休めた。何かを急いで始めるのではなく、今日の傷と疲れを整えながら夜を待った。",
+    speech: Object.freeze({
+      actorId: "NPC004",
+      text: "今日はもう十分走ったでしょう。刃も身体も、壊れる前に手入れした方がいいよ。灯りが落ちる頃には寝床も整うから。",
+      emotion: "実務的な気遣い",
+    }),
+    worldFlag: "t01Evening:gearMaintainedAndRested",
+    historyType: "T01_EVENING_GEAR_MAINTAINED_AND_RESTED",
+  }),
+  Object.freeze({
+    id: "help_clear_square",
+    label: "広場の片づけを手伝う",
+    family: "work",
+    hungerDelta: 8,
+    fatigueDelta: 6,
+    summary: "救出騒ぎで散らかった桶や縄、濡れた布を片づけた。村人の出入りが落ち着くまで手を動かし、広場がいつもの夜へ戻っていくのを見届けた。",
+    speech: Object.freeze({
+      actorId: "NPC003",
+      text: "そこまでしてもらう義理はないが、助かる。日が落ちたら切り上げよう。明日の仕事まで今日へ詰め込む必要はない。",
+      emotion: "感謝と節度",
+    }),
+    worldFlag: "t01Evening:squareCleared",
+    historyType: "T01_EVENING_SQUARE_CLEARED",
+  }),
+  Object.freeze({
+    id: "sit_with_villagers",
+    label: "村人と火のそばで話す",
+    family: "social",
+    hungerDelta: 5,
+    fatigueDelta: 1,
+    summary: "広場の小さな火を囲み、フィンが戻ったことと、村外れの道が危険だったことを必要な範囲だけ話した。噂を煽らず、聞かれたことへ答えるうちに夜が深まった。",
+    speech: Object.freeze({
+      actorId: "NPC004",
+      text: "戻ってきた、それだけで今日は十分な話だよ。細かいことは明るくなってから確かめればいい。",
+      emotion: "落ち着いた安堵",
+    }),
+    worldFlag: "t01Evening:villagersSatTogether",
+    historyType: "T01_EVENING_VILLAGERS_SAT_TOGETHER",
+  }),
+]);
 
 const NIGHT_CHOICES = Object.freeze([
   Object.freeze({
     id: "sleep_at_miras",
     label: "ミラの家で眠る",
     family: "rest",
-    minutes: 540,
-    hungerDelta: -12,
-    fatigueDelta: -45,
+    minutes: 480,
+    hungerDelta: 0,
+    fatigueDelta: 0,
+    authoritativeRest: "lodging",
     destinationFacilityId: INN_ID,
     summary: "ミラが用意した客用の寝床へ横になった。遠慮していたフィンも、隣室から一度だけ礼を言い、そのまま眠りに落ちた。夜の村を見回れない代わりに、身体は朝まで休まった。",
     speech: Object.freeze({
@@ -135,10 +191,23 @@ function player(runtime) {
   return runtime?.playerState?.player ?? runtime?.playerState ?? {};
 }
 
+function currentClock(runtime) {
+  return clockFromMinute(Number(runtime?.playerState?.absoluteMinute ?? 0));
+}
+
+function minutesUntilNight(runtime) {
+  const clock = currentClock(runtime);
+  if (clock.day !== 1 || clock.minuteOfDay >= NIGHT_START_MINUTE_OF_DAY) return 0;
+  return NIGHT_START_MINUTE_OF_DAY - clock.minuteOfDay;
+}
+
 function ensureState(runtime) {
   runtime.playerState ??= {};
   runtime.playerState.day1T01VillageNight ??= {
     version: AUTHORED_DAY1_T01_VILLAGE_NIGHT_VERSION,
+    eveningCompletedAtMinute: null,
+    eveningSelectedActionId: null,
+    eveningClosedActionIds: [],
     nightCompletedAtMinute: null,
     nightSelectedActionId: null,
     nightClosedActionIds: [],
@@ -152,6 +221,9 @@ function ensureState(runtime) {
   };
   const state = runtime.playerState.day1T01VillageNight;
   state.version = AUTHORED_DAY1_T01_VILLAGE_NIGHT_VERSION;
+  state.eveningCompletedAtMinute ??= null;
+  state.eveningSelectedActionId ??= null;
+  state.eveningClosedActionIds = array(state.eveningClosedActionIds).map(String);
   state.nightClosedActionIds = array(state.nightClosedActionIds).map(String);
   state.morningClosedActionIds = array(state.morningClosedActionIds).map(String);
   return state;
@@ -165,25 +237,40 @@ function inVillage(runtime) {
   return player(runtime).location === LOCATION;
 }
 
+function eveningEligible(runtime) {
+  if (!inVillage(runtime) || !hasHistory(runtime, "T01_AFTERCARE_BREAD_SHARED")) return false;
+  const clock = currentClock(runtime);
+  if (clock.day !== 1 || clock.minuteOfDay >= NIGHT_START_MINUTE_OF_DAY) return false;
+  return ensureState(runtime).eveningCompletedAtMinute == null;
+}
+
 function nightEligible(runtime) {
   if (!inVillage(runtime) || !hasHistory(runtime, "T01_AFTERCARE_BREAD_SHARED")) return false;
+  const clock = currentClock(runtime);
+  if (clock.day !== 1 || clock.minuteOfDay < NIGHT_START_MINUTE_OF_DAY) return false;
   return ensureState(runtime).nightCompletedAtMinute == null;
 }
 
 function morningEligible(runtime) {
   if (!inVillage(runtime)) return false;
   const state = ensureState(runtime);
+  const clock = currentClock(runtime);
   return state.nightSelectedActionId === SLEEP_ACTION_ID
+    && clock.day >= 2
+    && clock.minuteOfDay >= MORNING_OPEN_MINUTE_OF_DAY
     && state.morningCompletedAtMinute == null;
 }
 
-function actionFor(sceneId, choice) {
-  const prefix = sceneId === NIGHT_SCENE_ID ? "VILLAGE_NIGHT" : "DAY2_MERCHANT";
+function actionFor(sceneId, choice, runtime) {
+  const prefix = sceneId === EVENING_SCENE_ID
+    ? "EVENING_FREE_TIME"
+    : sceneId === NIGHT_SCENE_ID ? "VILLAGE_NIGHT" : "DAY2_MERCHANT";
+  const minutes = sceneId === EVENING_SCENE_ID ? minutesUntilNight(runtime) : choice.minutes;
   return {
     id: `MISSION_FLOW:T01:${prefix}:${choice.id}`,
     family: choice.family,
     type: "plan",
-    minutes: choice.minutes,
+    minutes,
     label: choice.label,
     targetNpcId: choice.speech.actorId,
     dialogueTopic: `t01_${choice.id}`,
@@ -197,17 +284,19 @@ function actionFor(sceneId, choice) {
     authoredDay1T01VillageNightHistoryType: choice.historyType,
     authoredDay1T01VillageNightEvidenceId: choice.evidenceId ?? null,
     authoredDay1T01VillageNightEvidenceSourceId: choice.evidenceSourceId ?? null,
-    authoredDay1T01VillageNightNextSceneId: choice.nextSceneId ?? null,
+    authoredDay1T01VillageNightNextSceneId: choice.nextSceneId ?? (sceneId === EVENING_SCENE_ID ? NIGHT_SCENE_ID : null),
     authoredDay1T01VillageNightHungerDelta: choice.hungerDelta ?? 0,
     authoredDay1T01VillageNightFatigueDelta: choice.fatigueDelta ?? 0,
     authoredDay1T01VillageNightDestinationFacilityId: choice.destinationFacilityId ?? null,
     authoredDay1T01VillageNightMerchantAccess: choice.merchantAccess ?? null,
+    authoredDay1T01VillageNightAuthoritativeRest: choice.authoritativeRest ?? null,
   };
 }
 
 function actions(runtime) {
-  if (morningEligible(runtime)) return MORNING_CHOICES.map((choice) => actionFor(MORNING_SCENE_ID, choice));
-  if (nightEligible(runtime)) return NIGHT_CHOICES.map((choice) => actionFor(NIGHT_SCENE_ID, choice));
+  if (morningEligible(runtime)) return MORNING_CHOICES.map((choice) => actionFor(MORNING_SCENE_ID, choice, runtime));
+  if (eveningEligible(runtime)) return EVENING_CHOICES.map((choice) => actionFor(EVENING_SCENE_ID, choice, runtime));
+  if (nightEligible(runtime)) return NIGHT_CHOICES.map((choice) => actionFor(NIGHT_SCENE_ID, choice, runtime));
   return null;
 }
 
@@ -217,10 +306,21 @@ function clamp(value, min, max) {
 
 function applyLivingDelta(runtime, action) {
   const current = player(runtime);
-  const hungerBefore = Number(current.hunger ?? runtime.playerState.hunger ?? 0);
-  const fatigueBefore = Number(current.fatigue ?? runtime.playerState.fatigue ?? 0);
-  const hungerAfter = clamp(hungerBefore + action.authoredDay1T01VillageNightHungerDelta, 0, 100);
-  const fatigueAfter = clamp(fatigueBefore + action.authoredDay1T01VillageNightFatigueDelta, 0, 100);
+  const needs = ensurePlayerNeeds(current);
+  const needsBefore = publicPlayerNeeds(needs);
+  if (action.authoredDay1T01VillageNightAuthoritativeRest) {
+    completePlayerRest(needs, {
+      minute: Number(runtime?.playerState?.absoluteMinute ?? 0),
+      durationMinutes: Number(action.minutes ?? 0),
+      lodging: action.authoredDay1T01VillageNightAuthoritativeRest === "lodging",
+      safety: "normal",
+    });
+  }
+  const needsAfterRest = publicPlayerNeeds(needs);
+  const hungerAfter = clamp(needsAfterRest.hunger + action.authoredDay1T01VillageNightHungerDelta, 0, 100);
+  const fatigueAfter = clamp(needsAfterRest.fatigue + action.authoredDay1T01VillageNightFatigueDelta, 0, 100);
+  needs.hunger = hungerAfter;
+  needs.fatigue = fatigueAfter;
   current.hunger = hungerAfter;
   current.fatigue = fatigueAfter;
   runtime.playerState.hunger = hungerAfter;
@@ -228,7 +328,14 @@ function applyLivingDelta(runtime, action) {
   if (action.authoredDay1T01VillageNightDestinationFacilityId) {
     current.facilityId = action.authoredDay1T01VillageNightDestinationFacilityId;
   }
-  return { hungerBefore, hungerAfter, fatigueBefore, fatigueAfter };
+  return {
+    hungerBefore: needsBefore.hunger,
+    hungerAfter,
+    fatigueBefore: needsBefore.fatigue,
+    fatigueAfter,
+    restQuality: needs.lastSleepQuality,
+    lastSleepMinute: needs.lastSleepMinute,
+  };
 }
 
 function consume(runtime, action, result) {
@@ -236,11 +343,14 @@ function consume(runtime, action, result) {
   const state = ensureState(runtime);
   const minute = Number(runtime?.playerState?.absoluteMinute ?? 0);
   const sceneId = action.authoredDay1T01VillageNightSceneId;
-  const choices = sceneId === NIGHT_SCENE_ID ? NIGHT_CHOICES : MORNING_CHOICES;
-  const ids = choices.map((choice) => actionFor(sceneId, choice).id);
-  const selectedKey = sceneId === NIGHT_SCENE_ID ? "nightSelectedActionId" : "morningSelectedActionId";
-  const completedKey = sceneId === NIGHT_SCENE_ID ? "nightCompletedAtMinute" : "morningCompletedAtMinute";
-  const closedKey = sceneId === NIGHT_SCENE_ID ? "nightClosedActionIds" : "morningClosedActionIds";
+  const choices = sceneId === EVENING_SCENE_ID
+    ? EVENING_CHOICES
+    : sceneId === NIGHT_SCENE_ID ? NIGHT_CHOICES : MORNING_CHOICES;
+  const ids = choices.map((choice) => actionFor(sceneId, choice, runtime).id);
+  const phase = sceneId === EVENING_SCENE_ID ? "evening" : sceneId === NIGHT_SCENE_ID ? "night" : "morning";
+  const selectedKey = `${phase}SelectedActionId`;
+  const completedKey = `${phase}CompletedAtMinute`;
+  const closedKey = `${phase}ClosedActionIds`;
   if (state[completedKey] != null) return false;
 
   const living = applyLivingDelta(runtime, action);
@@ -281,6 +391,8 @@ function consume(runtime, action, result) {
     hungerAfter: living.hungerAfter,
     fatigueBefore: living.fatigueBefore,
     fatigueAfter: living.fatigueAfter,
+    restQuality: living.restQuality,
+    lastSleepMinute: living.lastSleepMinute,
     evidenceId: action.authoredDay1T01VillageNightEvidenceId,
     evidenceSourceId: action.authoredDay1T01VillageNightEvidenceSourceId,
     merchantAccess: state.merchantAccess,
@@ -313,10 +425,21 @@ export function authoredMissionFlowGuidance(runtime) {
       actionPanel: null,
     };
   }
+  if (eveningEligible(runtime)) {
+    return {
+      missionId: MISSION_ID,
+      kicker: "救出騒ぎが落ち着き、村には夕方の時間が戻ってきた",
+      title: "夜までどう過ごすか",
+      detail: "装備と身体を整える、広場を片づける、村人と話す。事件の続きを急がず、夜までの時間を普通の暮らしとして過ごせる。",
+      targetLocation: LOCATION,
+      targetFacilityId: SQUARE_ID,
+      actionPanel: null,
+    };
+  }
   if (nightEligible(runtime)) {
     return {
       missionId: MISSION_ID,
-      kicker: "夕食を終える頃、広場の灯りが一つずつ消えていった",
+      kicker: "夜も深まり、広場の灯りが一つずつ消えていった",
       title: "救出した夜の過ごし方",
       detail: "眠る、夜番をする、井戸端へ出る。事件の後の普通の夜にも、翌日の身体と村の動きを変える選択がある。",
       targetLocation: LOCATION,
@@ -335,9 +458,12 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 export const AUTHORED_DAY1_T01_VILLAGE_NIGHT_INTERNALS = Object.freeze({
   array,
   player,
+  currentClock,
+  minutesUntilNight,
   ensureState,
   hasHistory,
   inVillage,
+  eveningEligible,
   nightEligible,
   morningEligible,
   actionFor,
@@ -345,10 +471,15 @@ export const AUTHORED_DAY1_T01_VILLAGE_NIGHT_INTERNALS = Object.freeze({
   clamp,
   applyLivingDelta,
   consume,
+  EVENING_CHOICES,
   NIGHT_CHOICES,
   MORNING_CHOICES,
+  EVENING_SCENE_ID,
   NIGHT_SCENE_ID,
   MORNING_SCENE_ID,
   SHARE_BREAD_ACTION_ID,
+  EVENING_REST_ACTION_ID,
   SLEEP_ACTION_ID,
+  NIGHT_START_MINUTE_OF_DAY,
+  MORNING_OPEN_MINUTE_OF_DAY,
 });

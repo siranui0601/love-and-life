@@ -275,7 +275,7 @@ test("shop inventory and transactions are restricted to the current seller facil
   state.player.inventory.equipment["EQP-W-0006"] = 1;
   state.player.facilityId = "LOC_FARM_INN";
   assert.equal(sellEquipment(state, battleData, state.shop, "EQP-W-0006").reason, "no_compatible_seller");
-  state.player.facilityId = "LOC_FARM_SQUARE";
+  state.player.facilityId = "LOC_FARM_REPAIR";
   const quote = quoteEquipmentSale(state, battleData, "EQP-W-0006");
   assert.equal(quote.ok, true);
   const sale = sellEquipment(state, battleData, state.shop, "EQP-W-0006");
