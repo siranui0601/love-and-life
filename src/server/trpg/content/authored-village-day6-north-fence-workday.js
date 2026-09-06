@@ -3,21 +3,22 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 
 export * from "./authored-mission-t03-local-life.js";
 
-export const AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_VERSION = "authored-village-day6-north-fence-workday-v2";
+export const AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_VERSION = "authored-village-day6-north-fence-workday-v3";
 
-// Day6 and Day7 both reach the north fence before its canonical 18:00 watch.
-// The ordinary work before/after the Sheet-backed shift is route-neutral village
-// life: no Human Virtue flag, no clock mutation, and no generic REST padding.
+// Day6, Day7 and Day8 all reach the north fence before its canonical 18:00
+// watch. The ordinary work before/after the Sheet-backed shift is route-neutral
+// village life: no Human Virtue flag, no clock mutation, and no generic REST
+// padding. Day8 uses the same public work surface before the first wolf howl.
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_NORTH_FENCE";
-const SUPPORTED_DAYS = new Set([6, 7]);
+const SUPPORTED_DAYS = new Set([6, 7, 8]);
 const AFTERNOON_OPEN_MINUTE = 14 * 60;
 const SHIFT_OPEN_MINUTE = 18 * 60;
 const SHIFT_CLOSE_MINUTE = 22 * 60;
 const TARGET_SLEEP_MINUTE = 22 * 60 + 30;
 const NEEDS_CALM_THRESHOLD = 72;
 const JOB_ID = "JOB-FARM-04";
-const MAINTENANCE_MINUTES_BY_DAY = Object.freeze({ 6: 90, 7: 30 });
+const MAINTENANCE_MINUTES_BY_DAY = Object.freeze({ 6: 90, 7: 30, 8: 90 });
 
 function player(runtime) {
   return runtime?.playerState?.player ?? runtime?.playerState ?? {};
