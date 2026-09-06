@@ -92,6 +92,15 @@ const NPC = Object.freeze({
   disposition: "neutral",
 });
 
+// Live 「トラブルタイムライン」 is more precise than the older checked-in
+// fixture for T02: the shared granary arson happens on Day5 at 夜. The common
+// world clock uses phase hours [10, 14, 18, 22], therefore 夜 is phase 3.
+// Keeping the fixture's earlier phase would expose burned-granary investigation
+// before the fire has actually happened and suppress ordinary Day5 village life.
+const TROUBLE_TIMING_OVERRIDES = Object.freeze({
+  T02: Object.freeze({ startDay: 5, startPhase: 3, canonicalSlot: "夜" }),
+});
+
 function cloneFacility(source) {
   return {
     ...source,
@@ -138,14 +147,31 @@ export function applyCanonicalWorldModelExtensions(model) {
     addedNpcs.push(npc.id);
   }
 
+  const adjustedTroubles = [];
+  for (const [troubleId, override] of Object.entries(TROUBLE_TIMING_OVERRIDES)) {
+    const trouble = model.troubleById?.[troubleId]
+      ?? model.troubles?.find((entry) => entry?.id === troubleId)
+      ?? null;
+    if (!trouble) continue;
+    const before = { startDay: trouble.startDay, startPhase: trouble.startPhase };
+    trouble.startDay = override.startDay;
+    trouble.startPhase = override.startPhase;
+    adjustedTroubles.push({
+      troubleId,
+      before,
+      after: { startDay: trouble.startDay, startPhase: trouble.startPhase },
+      canonicalSlot: override.canonicalSlot,
+    });
+  }
+
   model.diagnostics.push({
     code: "LIVE_CANON_WORLD_EXTENSION",
     severity: "info",
-    message: "ライブ正本の追加施設・NPCをfixture監査後に適用した。",
-    details: { facilities: addedFacilities, npcs: addedNpcs },
+    message: "ライブ正本の追加施設・NPC・トラブル時刻をfixture監査後に適用した。",
+    details: { facilities: addedFacilities, npcs: addedNpcs, troubleTiming: adjustedTroubles },
   });
   return model;
 }
 
-export const CANONICAL_WORLD_MODEL_EXTENSION_VERSION = "virtue-route-v2-world-2026-09-03";
-export const CANONICAL_WORLD_MODEL_EXTENSION_INTERNALS = Object.freeze({ FACILITIES, NPC });
+export const CANONICAL_WORLD_MODEL_EXTENSION_VERSION = "virtue-route-v2-world-2026-09-06";
+export const CANONICAL_WORLD_MODEL_EXTENSION_INTERNALS = Object.freeze({ FACILITIES, NPC, TROUBLE_TIMING_OVERRIDES });
