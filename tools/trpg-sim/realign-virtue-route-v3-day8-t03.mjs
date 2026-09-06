@@ -9,7 +9,7 @@ const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 const CANONICAL_EXPANDED_ROWS = 1521;
 
-export const DAY8_T03_REALIGNMENT_VERSION = 'virtue-route-v3-day8-t03-v1';
+export const DAY8_T03_REALIGNMENT_VERSION = 'virtue-route-v3-day8-t03-v2';
 
 function parseCsv(text) {
   const rows = [];
@@ -173,24 +173,24 @@ export function applyDay8T03Realignment({ outDir = DEFAULT_OUT } = {}) {
     satisfiedMove('MOVE_LOCAL:LOC_FARM_CHIEF', { regionId: '田園の村', facilityId: 'LOC_FARM_CHIEF' }),
     choose('T03_WOLF:OPEN:stable_bells', { regionId: '田園の村', facilityId: 'LOC_FARM_CHIEF' }),
     move('LOC_FARM_STABLE', { regionId: '田園の村', facilityId: 'LOC_FARM_STABLE' }),
-    choose('T03_WOLF:EVIDENCE:PACK:HOOF_TRACKS', { regionId: '田園の村', facilityId: 'LOC_FARM_STABLE' }),
+    choose('T03_WOLF:EVIDENCE:APEX:SNAPPED_TREES', { regionId: '田園の村', facilityId: 'LOC_FARM_STABLE' }),
   ], {
     facilityId: 'LOC_FARM_STABLE',
-    requiredState: 'T03 active on Day8; compiler MOVE arrives at LOC_FARM_CHIEF; current production T03 wolf hearing visible; no prior livestock-evacuation side choice on the canonical Human Virtue branch',
-    resultingState: 'T03 opening=stable_bells; pack_displacement evidence acquired through the production wolf-continuity surface; canonical T03-EVIDENCE-ATTACKS-MOVING-INWARD recorded',
+    requiredState: 'T03 active on Day8; compiler MOVE arrives at LOC_FARM_CHIEF; current production T03 wolf hearing visible; sceneRevision starts at 0',
+    resultingState: 'T03 opening=stable_bells; first post-opening rotation selects apex_pressure; canonical T03-EVIDENCE-APEX-PREDATOR-TRACKS recorded',
     implementationSource: 'src/server/trpg/content/authored-mission-t03-wolf-continuity.js + authored-mission-t03-investigation-contract.js',
-    notes: 'replaces the retired red-fang-migration feeding_pattern/livestock_timeline surface with the current three-worldline T03 opening and evidence contract; inserted MOVE is retargeted instead of adding a Stable→Chief detour; 4->4 preserves the reviewed ledger',
+    notes: 'the production T03 evidence list rotates by sceneRevision: after one opening revision=1 exposes apex_pressure before pack_displacement. This follows the live three-worldline surface rather than forcing the retired feeding_pattern order; inserted MOVE is retargeted; 4->4 preserves the reviewed ledger',
   });
 
   setSequence(second, [
     satisfiedMove('MOVE_LOCAL:LOC_FARM_STABLE', { regionId: '田園の村', facilityId: 'LOC_FARM_STABLE' }),
-    choose('T03_WOLF:EVIDENCE:APEX:SNAPPED_TREES', { regionId: '田園の村', facilityId: 'LOC_FARM_STABLE' }),
+    choose('T03_WOLF:EVIDENCE:PACK:HOOF_TRACKS', { regionId: '田園の村', facilityId: 'LOC_FARM_STABLE' }),
   ], {
     facilityId: 'LOC_FARM_STABLE',
-    requiredState: 'T03 investigation active; pack_displacement already acquired; compiler MOVE returns from breakfast to LOC_FARM_STABLE; apex_pressure remains visible',
-    resultingState: 'second independent T03 evidence class apex_pressure acquired; canonical T03-EVIDENCE-APEX-PREDATOR-TRACKS recorded; required investigation count reaches 2',
+    requiredState: 'T03 investigation active; apex_pressure already acquired; sceneRevision=2; no prior livestock-evacuation side choice; compiler MOVE returns from breakfast to LOC_FARM_STABLE',
+    resultingState: 'second independent T03 evidence class pack_displacement acquired; canonical T03-EVIDENCE-ATTACKS-MOVING-INWARD recorded; required investigation count reaches 2',
     implementationSource: 'src/server/trpg/content/authored-mission-t03-wolf-continuity.js + authored-mission-t03-investigation-contract.js',
-    notes: 'replaces the retired wound_pattern lead/evidence pair with the production apex-pressure evidence required by the T03 investigation contract; inserted MOVE is retargeted from the stale well destination; 2->2 preserves the reviewed ledger',
+    notes: 'after apex_pressure, revision=2 rotates pack_displacement back into the visible production pair. The old wound_pattern pair is replaced without side-choice injection; inserted MOVE is retargeted from the stale well destination; 2->2 preserves the reviewed ledger',
   });
 
   movesArtifact.day8T03RealignmentVersion = DAY8_T03_REALIGNMENT_VERSION;
