@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/apply-now-coding-editor-test-mobile-ux-v2.yml
       - tools/now-coding/apply-editor-test-mobile-ux-v2.mjs
+      - tools/now-coding/editor-test-mobile-ux.contract.test.mjs
 
 permissions:
   contents: write
