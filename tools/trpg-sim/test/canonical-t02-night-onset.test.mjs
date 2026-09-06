@@ -12,6 +12,13 @@ import { clockFromMinute } from "../lib/player-journey.mjs";
 const DAY5_START = 4 * 1440;
 const DAY5_NIGHT = DAY5_START + 22 * 60;
 
+function daypartAtHour(hour) {
+  if (hour < 6 || hour >= 22) return "night";
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
+}
+
 function setClock(runtime, absoluteMinute) {
   const clock = clockFromMinute(absoluteMinute);
   runtime.playerState.absoluteMinute = absoluteMinute;
@@ -19,8 +26,8 @@ function setClock(runtime, absoluteMinute) {
   runtime.playerState.hour = clock.hour;
   runtime.playerState.minute = clock.minute;
   runtime.playerState.minuteOfDay = clock.minuteOfDay;
-  runtime.playerState.phaseIndex = clock.phaseIndex;
-  runtime.playerState.daypart = clock.daypart;
+  if (clock.phaseIndex != null) runtime.playerState.phaseIndex = clock.phaseIndex;
+  runtime.playerState.daypart = clock.daypart ?? daypartAtHour(clock.hour);
 }
 
 test("live canonical T02 starts on Day5 night, not during Day5 daytime", () => {
@@ -46,6 +53,7 @@ test("ordinary production movement crossing Day5 22:00 activates T02 only after 
   runtime.playerState.missions["MSN-T02"].status = "locked";
 
   assert.equal(runtime.playerState.troubles.T02.status, "scheduled");
+  assert.equal(runtime.playerState.daypart, "evening");
   const movement = availableGameRuntimeActions(runtime, data).movement
     .find((entry) => Number(entry.minutes ?? 0) > 0);
   assert.ok(movement, "a normal production movement must be available at the Day5 night boundary");
