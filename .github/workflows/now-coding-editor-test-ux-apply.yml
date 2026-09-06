@@ -1,0 +1,34 @@
+name: now-coding-editor-test-ux-apply
+on:
+  push:
+    branches:
+      - feat/now-coding-editor-test-ux
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply Now Coding editor/test UX changes
+        run: node tools/now-coding/apply-editor-test-ux.mjs
+      - name: Syntax check
+        run: node --check public/now-coding/app-v3.js
+      - name: Focused Now Coding tests
+        run: |
+          node --test tools/now-coding/engine.test.mjs
+          node --test tools/now-coding/client-contract.test.mjs
+      - name: Commit implementation and remove one-shot helpers
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm tools/now-coding/apply-editor-test-ux.mjs .github/workflows/now-coding-editor-test-ux-apply.yml
+          git add public/now-coding/app-v3.js public/now-coding/index.html public/now-coding/style-v7.css tools/now-coding/client-contract.test.mjs
+          git commit -m "feat: improve Now Coding editor and test UX"
+          git push origin HEAD:feat/now-coding-editor-test-ux
