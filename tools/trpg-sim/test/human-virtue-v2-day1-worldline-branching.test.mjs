@@ -104,8 +104,19 @@ async function reachDay1EveningBranchPoint() {
   save = await move(service, owner, save, 'MOVE_LOCAL:LOC_FARM_SQUARE');
   save = await choose(service, owner, save, 'ACTION:MSN-T01:hear');
   save = await move(service, owner, save, 'MOVE_LOCAL:LOC_FARM_EDGE');
-  save = await choose(service, owner, save, 'ACTION:MSN-T01:search:tracks');
-  save = await choose(service, owner, save, 'ACTION:MSN-T01:search:wolf-blockade');
+
+  // The authored search surface is intentionally evidence-driven and may gain
+  // new reviewed clue IDs. Follow only choices that are actually visible in the
+  // production panel until the rescue step opens instead of pinning an obsolete
+  // clue identifier such as search:tracks.
+  for (let guard = 0; guard < 6 && !save.choices.some((entry) => entry.actionId === 'ACTION:MSN-T01:rescue'); guard += 1) {
+    const search = save.choices
+      .filter((entry) => String(entry.actionId ?? '').startsWith('ACTION:MSN-T01:search:'))
+      .sort((left, right) => String(left.actionId).localeCompare(String(right.actionId), 'en'))[0];
+    assert.ok(search, `T01 must expose a production search clue before rescue; visible=${save.choices.map((entry) => entry.actionId).join(',')}`);
+    save = await choose(service, owner, save, search.actionId);
+  }
+
   save = await choose(service, owner, save, 'ACTION:MSN-T01:rescue');
   save = await finishBattle(service, owner, save);
   save = await choose(service, owner, save, 'ACTION:MSN-T01:escort');
