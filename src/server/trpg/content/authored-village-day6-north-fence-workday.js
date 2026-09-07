@@ -3,12 +3,15 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 
 export * from "./authored-mission-t03-local-life.js";
 
-export const AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_VERSION = "authored-village-day6-north-fence-workday-v3";
+export const AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_VERSION = "authored-village-day6-north-fence-workday-v4";
 
 // Day6, Day7 and Day8 all reach the north fence before its canonical 18:00
 // watch. The ordinary work before/after the Sheet-backed shift is route-neutral
 // village life: no Human Virtue flag, no clock mutation, and no generic REST
-// padding. Day8 uses the same public work surface before the first wolf howl.
+// padding. Day8 deliberately treats the whole pre-watch block as one meaningful
+// long action: once the player commits to preparing the fence for that night's
+// watch there is no separate decision between checking posts and writing the
+// handover. The world clock and NPC simulation still advance for the full span.
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_NORTH_FENCE";
 const SUPPORTED_DAYS = new Set([6, 7, 8]);
@@ -18,7 +21,7 @@ const SHIFT_CLOSE_MINUTE = 22 * 60;
 const TARGET_SLEEP_MINUTE = 22 * 60 + 30;
 const NEEDS_CALM_THRESHOLD = 72;
 const JOB_ID = "JOB-FARM-04";
-const MAINTENANCE_MINUTES_BY_DAY = Object.freeze({ 6: 90, 7: 30, 8: 90 });
+const MAINTENANCE_MINUTES_BY_DAY = Object.freeze({ 6: 90, 7: 30, 8: null });
 
 function player(runtime) {
   return runtime?.playerState?.player ?? runtime?.playerState ?? {};
@@ -102,6 +105,7 @@ function minutesUntil(runtime, targetMinute) {
 }
 
 function maintenanceMinutes(runtime) {
+  if (currentDay(runtime) === 8) return minutesUntil(runtime, SHIFT_OPEN_MINUTE);
   return Math.min(
     Number(MAINTENANCE_MINUTES_BY_DAY[currentDay(runtime)] ?? 30),
     minutesUntil(runtime, SHIFT_OPEN_MINUTE),
@@ -121,7 +125,8 @@ function maintenanceEligible(runtime) {
 function watchPrepEligible(runtime) {
   const current = clock(runtime);
   const state = readState(runtime);
-  return atFence(runtime)
+  return currentDay(runtime) !== 8
+    && atFence(runtime)
     && current.minuteOfDay < SHIFT_OPEN_MINUTE
     && !completedShiftToday(runtime)
     && state?.maintenanceCompletedAtMinute != null
@@ -160,15 +165,18 @@ function action(id, phase, family, minutes, label) {
 
 function maintenanceAction(runtime) {
   const ids = actionIds(runtime);
+  const day = currentDay(runtime);
   return {
     ...action(
       ids.maintenance,
       "maintenance",
       "help",
       maintenanceMinutes(runtime),
-      "夕方の見張り前に柵杭・綱・灯具を点検する",
+      day === 8
+        ? "今夜の北柵夜警に備え、柵・灯具・引継ぎ記録をまとめて整える"
+        : "夕方の見張り前に柵杭・綱・灯具を点検する",
     ),
-    authoredVillageNorthFenceWorkdayDay: currentDay(runtime),
+    authoredVillageNorthFenceWorkdayDay: day,
   };
 }
 
@@ -225,6 +233,7 @@ function consume(runtime, selected, result) {
   if (phase === "maintenance") {
     if (state.maintenanceCompletedAtMinute != null) return false;
     state.maintenanceCompletedAtMinute = minute;
+    if (currentDay(runtime) === 8) state.watchPrepCompletedAtMinute = minute;
   } else if (phase === "watch-prep") {
     if (state.watchPrepCompletedAtMinute != null) return false;
     state.watchPrepCompletedAtMinute = minute;
@@ -243,7 +252,9 @@ function consume(runtime, selected, result) {
     wage: 0,
   });
   result.summary = phase === "maintenance"
-    ? "北柵の綱と柵杭、夕方に使う灯具を点検した。正規の夜警勤務前の普段の手伝いなので賃金は発生しない。"
+    ? currentDay(runtime) === 8
+      ? "今夜の夜警を引き受ける前提で、北柵の綱と柵杭、灯具、引継ぎ記録を一続きの作業として整えた。途中に新しい判断はなく、18時の交代まで同じ仕事を続けた。"
+      : "北柵の綱と柵杭、夕方に使う灯具を点検した。正規の夜警勤務前の普段の手伝いなので賃金は発生しない。"
     : phase === "watch-prep"
       ? "灯具と引継ぎ記録を整え、18時の夜警交代まで北柵の仕事を手伝った。"
       : "22時までの夜警記録をまとめ、灯具を戻して装備を拭き、交代を終えた。";
@@ -267,7 +278,9 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
       missionId: null,
       kicker: "北柵では夜警の勤務時刻に合わせて、普段の手入れと交代準備が続いている",
       title: phase === "maintenance" ? "北柵を手入れする" : phase === "watch-prep" ? "夜警の交代を整える" : "夜警の記録を片づける",
-      detail: "18時から22時の正規夜警は仕事マスターの時間を守り、その前後は賃金のない通常の村仕事として過ごす。",
+      detail: currentDay(runtime) === 8 && phase === "maintenance"
+        ? "今夜の夜警を引き受けるなら、柵・灯具・引継ぎを途中で細切れにせず18時までまとめて整える。"
+        : "18時から22時の正規夜警は仕事マスターの時間を守り、その前後は賃金のない通常の村仕事として過ごす。",
       targetLocation: LOCATION,
       targetFacilityId: FACILITY_ID,
       actionPanel: null,
