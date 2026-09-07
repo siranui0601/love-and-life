@@ -1,7 +1,7 @@
-import * as base from "./authored-register-butterfly.js";
+import * as base from "./authored-register-butterfly-relay.js";
 import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
-export * from "./authored-register-butterfly.js";
+export * from "./authored-register-butterfly-relay.js";
 
 export const AUTHORED_VILLAGE_BAKERY_EVENING_VERSION = "authored-village-bakery-evening-v3";
 
