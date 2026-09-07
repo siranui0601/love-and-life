@@ -4,20 +4,23 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 
 export * from "./authored-mission-flow-day2-day8-village-watch.js";
 
-export const AUTHORED_DAY8_T03_NIGHT_VIGIL_VERSION = "authored-day8-t03-night-vigil-v3";
+export const AUTHORED_DAY8_T03_NIGHT_VIGIL_VERSION = "authored-day8-t03-night-vigil-v4";
 
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_NORTH_FENCE";
 const JILL_ID = "NPC060";
 const HOWL_OPEN_MINUTE = 22 * 60;
 
+// Long authored actions already advance hunger/fatigue through the production
+// clock. Do not add a second manual needs charge here. The choices remain
+// materially different through duration, facts, history and Jill's GOAP plan.
 const CHOICES = Object.freeze([
   Object.freeze({
     id: "keep_written_watch_until_dawn",
     label: "記録係として夜明けまで残り、交代の合間は腰を下ろす",
     minutes: 390,
-    hungerDelta: 14,
-    fatigueDelta: 18,
+    hungerDelta: 0,
+    fatigueDelta: 0,
     worldFlag: "day8WolfWatch:playerStayedUntilDawn",
     goal: "carry-written-watch-log-to-dawn-relief",
     summary: "遠吠えの時刻、柵の傷、交代者の名を一冊へつなげた。巡回そのものは交代班へ任せ、交代の合間には柵際で腰を下ろしたため、強い疲労は残ったが夜明け前に倒れず記録を引き継げた。",
@@ -27,19 +30,19 @@ const CHOICES = Object.freeze([
     id: "rotate_short_patrols",
     label: "記録ごと短い巡回へ分け、村人へ回す",
     minutes: 360,
-    hungerDelta: 10,
-    fatigueDelta: 10,
+    hungerDelta: 0,
+    fatigueDelta: 0,
     worldFlag: "day8WolfWatch:rotatingPatrolsUsed",
     goal: "rotate-night-watch-among-villagers",
     summary: "北柵、馬小屋、穀倉の巡回と記録を短く区切り、同じ者が夜通し責任を抱えない当番へ組み替えた。",
-    speech: "一人が倒れる見張りは長続きしない。木札と帳面を一緒に渡せ。次が来るまで座っていろ。",
+    speech: "一人が倒れる見張りは長続きしない。木札と帳面を一緒に渡せ。次が来るまでは座っていろ。",
   }),
   Object.freeze({
     id: "hand_watch_to_jill",
     label: "記録をジルへ渡して下がる",
     minutes: 60,
-    hungerDelta: 3,
-    fatigueDelta: 4,
+    hungerDelta: 0,
+    fatigueDelta: 0,
     worldFlag: "day8WolfWatch:jillTookDawnWatch",
     goal: "take-over-dawn-watch",
     summary: "遠吠えの記録をジルへ渡し、夜明け前の見張りは村の交代班へ任せた。",
@@ -185,7 +188,7 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
     return {
       kicker: "遠吠えの向きは分かったが、夜明けまでの見張り方はまだ選べる",
       title: "北柵の夜を誰が引き受けるか",
-      detail: "記録係として残る、記録ごと短い巡回へ分ける、ジルへ渡す。疲労と翌朝の役割が変わる。",
+      detail: "記録係として残る、記録ごと短い巡回へ分ける、ジルへ渡す。時間、疲労、残る記録が変わる。",
       targetLocation: LOCATION,
       targetFacilityId: FACILITY_ID,
     };
