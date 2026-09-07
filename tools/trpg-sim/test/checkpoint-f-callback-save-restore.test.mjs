@@ -168,7 +168,9 @@ function callbackChoices(save) {
 
 function sustenanceChoices(save) {
   return save.choices
-    .filter((entry) => entry.actionId?.startsWith('WORK_MEAL:') || entry.actionId?.startsWith('EAT:'))
+    .filter((entry) => entry.actionId?.startsWith('WORK_MEAL:')
+      || entry.actionId?.startsWith('EAT:')
+      || entry.actionId?.startsWith('LIFE:EAT:'))
     .filter((entry) => Number(entry.minutes ?? 0) > 0);
 }
 
@@ -284,8 +286,19 @@ async function reachCallback(service, store, owner, save, times) {
   const sleepStartedAtMinute = Number(current.clock.absoluteMinute);
   assert.ok(sleepStartedAtMinute >= HUMAN_VIRTUE_BEDTIME_MINUTE && sleepStartedAtMinute < DAY1_END_EXCLUSIVE_MINUTE);
 
+  current = await choose(service, owner, current, 'MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras');
+  pushTime(times, current, 'MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras');
+  assert.ok(current.clock.day >= 2, `sleep must pass into Day2; day=${current.clock.day}`);
+
+  // The merchant scene is physically at the bakery and its canonical contract
+  // requires waking after breakfast. Exercise those visible production actions
+  // instead of reviving the old remote-merchant shortcut.
+  current = await choose(service, owner, current, 'LIFE:EAT:ITM003');
+  pushTime(times, current, 'DAY2:BREAKFAST:LIFE:EAT:ITM003');
+  current = await move(service, owner, current, 'LOC_FARM_BAKERY');
+  pushTime(times, current, 'DAY2:MOVE:LOC_FARM_BAKERY');
+
   for (const actionId of [
-    'MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras',
     'MISSION_FLOW:T01:DAY2_MERCHANT:help_unload',
     'MISSION_FLOW:T01:DAY2_MERCHANT_PAYMENT:take_three_gold',
     'MISSION_FLOW:T01:DAY2_MERCHANT_STALL:take_hunter_parcel',
@@ -295,7 +308,7 @@ async function reachCallback(service, store, owner, save, times) {
     pushTime(times, current, actionId);
   }
 
-  assert.ok(current.clock.day >= 2, `callback route must pass into Day2; day=${current.clock.day}`);
+  assert.ok(current.clock.day >= 2, `callback route must remain in Day2 or later; day=${current.clock.day}`);
   console.log('[F_CALLBACK_AFTERCARE_TIME]', JSON.stringify({
     t01CompletedAtMinute,
     aftercareOpenMinute: DAY1_AFTERCARE_OPEN_MINUTE,
