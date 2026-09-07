@@ -81,6 +81,12 @@ function t01Active(runtime) {
   return ACTIVE_MISSION_STATUSES.has(String(missionById(runtime, "MSN-T01")?.status ?? ""));
 }
 
+function publicLifeProducts(runtime) {
+  const products = base.CANONICAL_WORLD_LIFE_INTERNALS?.productActions?.(runtime) ?? [];
+  if (!Array.isArray(products)) return [];
+  return products.filter((action) => action?.canonicalWorldLifeKind !== "eat_provision");
+}
+
 function dailyLifeCommonChoiceCandidates(runtime, actions, context = {}, productionRuntime = false) {
   if (!productionRuntime || !containsAuthoredDailyLife(actions)) return actions;
 
@@ -125,21 +131,27 @@ function dailyLifeCommonChoiceCandidates(runtime, actions, context = {}, product
     ).find((action) => action?.id === "SEEK_BATTLE") ?? null;
   }
 
-  // Once village daily life is mixed with ordinary production options it is no
-  // longer an exclusive scene. Keep all action-specific consume metadata, but
-  // clear the selector-only exclusivity marker so conversation, battle and
-  // travel can genuinely compete for the public three-choice surface.
+  // A normal inn/bakery/market remains a real public place while ordinary
+  // authored daily life is available. Put its Sheet-backed meal/purchase/sleep
+  // actions into the same non-modal pool. Carried provisions are deliberately
+  // absent from productActions in canonical-world-life-v3, so this cannot
+  // reintroduce arbitrary inventory eating.
+  const products = publicLifeProducts(runtime).map((action) => ({
+    ...action,
+    authoredMissionFlowExclusiveChoice: false,
+  }));
   const commonLayerActions = actions.map((action) => ({
     ...action,
     authoredMissionFlowExclusiveChoice: false,
   }));
   const combined = [
+    ...products,
     ...commonLayerActions,
     ...conversations,
     ...(seekBattle ? [seekBattle] : []),
     ...movements,
   ];
-  return [...new Map(combined.map((action) => [action.id, action])).values()].slice(0, 9);
+  return [...new Map(combined.map((action) => [action.id, action])).values()].slice(0, 12);
 }
 
 function urgentCanonicalProducts(runtime, actions) {
@@ -149,21 +161,18 @@ function urgentCanonicalProducts(runtime, actions) {
     || onlyAuthoredDailyLife(actions)
     || onlyCanonicalWorldLife(actions);
   if (!ordinaryOrEmpty) return null;
-  const products = base.CANONICAL_WORLD_LIFE_INTERNALS?.productActions?.(runtime);
-  return Array.isArray(products) && products.length > 0 ? products : null;
+  const products = publicLifeProducts(runtime);
+  return products.length > 0 ? products : null;
 }
 
 // A public bakery/inn/market must not stop selling ordinary Sheet-backed goods
 // merely because an unrelated mission is active elsewhere. Several overlay
 // layers intentionally return null off-target so generic play can resume; when
 // that happens, restore the canonical life layer before falling all the way
-// through to INSPECT/WAIT filler. Inventory provisions are deliberately filtered
-// here: Human Virtue keeps food consumption behind explicit meal/scene choices.
+// through to INSPECT/WAIT filler.
 function ordinaryCanonicalLifeFallback(runtime, actions) {
   if (actions != null || t01Active(runtime)) return actions;
-  const own = base.CANONICAL_WORLD_LIFE_INTERNALS?.ownActions?.(runtime) ?? null;
-  if (!Array.isArray(own) || own.length === 0) return actions;
-  const allowed = own.filter((action) => action?.canonicalWorldLifeKind !== "eat_provision");
+  const allowed = publicLifeProducts(runtime);
   return allowed.length ? allowed : actions;
 }
 
@@ -235,10 +244,6 @@ function canonicalT02DawnPlayed(runtime) {
     || Object.keys(state.completedScenes ?? {}).length > 0;
 }
 
-// Keep the common T02 core's hearing/opening contract intact for ordinary
-// production callers. The v3 canonical continuity is a consequence of the
-// authored dawn intervention, so only a runtime that actually played that dawn
-// may switch from the common investigation surface to T02_GRANARY:EVIDENCE:*.
 function canonicalT02ContinuityActions(runtime, actions) {
   if (!canonicalT02DawnPlayed(runtime)) return actions;
   if (!AUTHORED_MISSION_T02_GRANARY_INTERNALS.t02InvestigationActive(runtime)) return actions;
@@ -246,33 +251,21 @@ function canonicalT02ContinuityActions(runtime, actions) {
   return AUTHORED_MISSION_T02_GRANARY_CHOICE_ORDER_INTERNALS.orderedT02Choices(runtime);
 }
 
-// After the dawn, the common T02 investigation panel explicitly contains a
-// DEFER choice and its leads may point to other facilities. It must therefore
-// not hide an executable real product at the player's current facility. This
-// is deliberately T02-only: it is not a generic authored/generic action mix.
 function localCanonicalProductsBeforeDeferredT02(runtime, actions) {
   if (!canonicalT02DawnPlayed(runtime) || !isCoreT02InvestigationPanel(actions)) return actions;
   const canDefer = actions.some((action) =>
     String(action?.actionId ?? action?.id ?? "") === "MISSION_FLOW:granary-arson:DEFER:defer");
   if (!canDefer) return actions;
-  const products = base.CANONICAL_WORLD_LIFE_INTERNALS?.productActions?.(runtime) ?? [];
-  return Array.isArray(products) && products.length > 0 ? products : actions;
+  const products = publicLifeProducts(runtime);
+  return products.length > 0 ? products : actions;
 }
 
-// Day6's afternoon north-fence block is ordinary village time around the real
-// 18:00-22:00 Sheet-backed watch. T02 remains open, but its DEFER-capable
-// investigation must not erase the route-neutral maintenance/handover actions
-// that make the canonical work window naturally reachable.
 function localDay6NorthFenceLifeBesideT02(runtime, actions) {
   if (!canonicalT02DawnPlayed(runtime) || !isT02InvestigationPanel(actions)) return actions;
   const own = base.AUTHORED_VILLAGE_DAY6_NORTH_FENCE_WORKDAY_INTERNALS?.ownActions?.(runtime) ?? null;
   return Array.isArray(own) && own.length > 0 ? own : actions;
 }
 
-// T02 is a long-running investigation, not a modal lock. Preserve the
-// three-choice UI by reserving one slot for executable local labour and keeping
-// two investigation choices. This applies to both the canonical continuity
-// layer and the common core panel after the dawn has genuinely been played.
 function localCanonicalLabourBesideT02Continuity(runtime, actions) {
   if (!canonicalT02DawnPlayed(runtime) || !isT02InvestigationPanel(actions)) return actions;
   const jobs = availableCanonicalLabour(runtime);
@@ -280,8 +273,6 @@ function localCanonicalLabourBesideT02Continuity(runtime, actions) {
   return [...jobs.slice(0, 1), ...actions.slice(0, 2)];
 }
 
-// Outside the dedicated Day6 north-fence bridge, a long-running T02 inquiry
-// still cannot make an otherwise available bounded public rest impossible.
 function localCanonicalRestBesideT02Continuity(runtime, actions) {
   if (!canonicalT02DawnPlayed(runtime) || !isT02InvestigationPanel(actions)) return actions;
   const rests = base.CANONICAL_WORLD_LIFE_INTERNALS?.restActions?.(runtime) ?? [];
@@ -431,9 +422,6 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
   const guidance = base.authoredMissionFlowGuidance(runtime, context);
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   const coreGuidance = coreAuthoredMissionFlowGuidance(runtime);
-  // A current mission step that actually requires movement outranks unrelated
-  // daily-life guidance, but never steals authority from a different explicit
-  // mission scene layered above it.
   if (coreGuidance?.missionId
     && coreGuidance.actionPanel === "movement"
     && (!guidance?.missionId || guidance.missionId === coreGuidance.missionId)) {
@@ -454,6 +442,7 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   productionAuthoredRuntime,
   prependAvailableCanonicalLabour,
   containsAuthoredDailyLife,
+  publicLifeProducts,
   dailyLifeCommonChoiceCandidates,
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
