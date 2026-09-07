@@ -7,9 +7,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
-const CANONICAL_EXPANDED_ROWS = 1521;
 
-export const DAY8_T03_REALIGNMENT_VERSION = 'virtue-route-v3-day8-t03-v3';
+export const DAY8_T03_REALIGNMENT_VERSION = 'virtue-route-v3-day8-t03-v4';
 
 function parseCsv(text) {
   const rows = [];
@@ -77,17 +76,12 @@ function satisfiedMove(moveActionId, extra = {}) {
   };
 }
 
-function priorRowOutcome(legacyRowId, extra = {}) {
-  return {
-    actionId: '',
-    commandType: 'OUTCOME',
-    payload: { satisfiedByPriorSourceRow: legacyRowId },
-    ...extra,
-  };
-}
-
 function parsedSteps(row) {
   return row?.replacementSteps ? JSON.parse(row.replacementSteps) : [];
+}
+
+function expandedRowCount(rows, moves) {
+  return rows.reduce((total, row) => total + Math.max(1, parsedSteps(row).length), 0) + moves.length;
 }
 
 function setSequence(row, steps, {
@@ -143,9 +137,11 @@ export function applyDay8T03Realignment({ outDir = DEFAULT_OUT } = {}) {
   const movesArtifact = JSON.parse(fs.readFileSync(movesPath, 'utf8'));
   const summary = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
   const byId = new Map(rows.map((row) => [row.legacyRowId, row]));
+  const moves = Array.isArray(movesArtifact.moves) ? movesArtifact.moves : [];
 
-  if (Number(summary.expandedV3Rows) !== CANONICAL_EXPANDED_ROWS) {
-    throw new Error(`Day8 T03 realignment expected ${CANONICAL_EXPANDED_ROWS} rows before patch, got ${summary.expandedV3Rows}`);
+  const countedBefore = expandedRowCount(rows, moves);
+  if (Number(summary.expandedV3Rows) !== countedBefore) {
+    throw new Error(`Day8 T03 realignment input accounting mismatch: summary=${summary.expandedV3Rows}, counted=${countedBefore}`);
   }
 
   const first = byId.get('VR2-D08-02');
@@ -192,7 +188,6 @@ export function applyDay8T03Realignment({ outDir = DEFAULT_OUT } = {}) {
     throw new Error(`VR2-D08-09 expected satisfied compiler MOVE outcome, got ${oldWatch[0]?.commandType}`);
   }
 
-  const moves = Array.isArray(movesArtifact.moves) ? movesArtifact.moves : [];
   const firstMove = requireMove(moves, 'VR2-D08-02', 'MOVE_LOCAL:LOC_FARM_STABLE');
   const secondMove = requireMove(moves, 'VR2-D08-04', 'MOVE_LOCAL:LOC_FARM_WELL');
   const freeTimeMove = requireMove(moves, 'VR2-D08-08', 'MOVE_LOCAL:LOC_FARM_GRANARY');
@@ -214,7 +209,7 @@ export function applyDay8T03Realignment({ outDir = DEFAULT_OUT } = {}) {
     requiredState: 'T03 active on Day8; compiler MOVE arrives at LOC_FARM_CHIEF; current production T03 wolf hearing visible; sceneRevision starts at 0',
     resultingState: 'T03 opening=stable_bells; first post-opening rotation selects apex_pressure; canonical T03-EVIDENCE-APEX-PREDATOR-TRACKS recorded',
     implementationSource: 'src/server/trpg/content/authored-mission-t03-wolf-continuity.js + authored-mission-t03-investigation-contract.js',
-    notes: 'the production T03 evidence list rotates by sceneRevision: after one opening revision=1 exposes apex_pressure before pack_displacement. This follows the live three-worldline surface rather than forcing the retired feeding_pattern order; inserted MOVE is retargeted; 4->4 preserves the reviewed ledger',
+    notes: 'the production T03 evidence list rotates by sceneRevision: after one opening revision=1 exposes apex_pressure before pack_displacement. This follows the live three-worldline surface rather than forcing the retired feeding_pattern order; inserted MOVE is retargeted.',
   });
 
   setSequence(second, [
@@ -225,24 +220,26 @@ export function applyDay8T03Realignment({ outDir = DEFAULT_OUT } = {}) {
     requiredState: 'T03 investigation active; apex_pressure already acquired; sceneRevision=2; no prior livestock-evacuation side choice; compiler MOVE returns from breakfast to LOC_FARM_STABLE',
     resultingState: 'second independent T03 evidence class pack_displacement acquired; canonical T03-EVIDENCE-ATTACKS-MOVING-INWARD recorded; required investigation count reaches 2',
     implementationSource: 'src/server/trpg/content/authored-mission-t03-wolf-continuity.js + authored-mission-t03-investigation-contract.js',
-    notes: 'after apex_pressure, revision=2 rotates pack_displacement back into the visible production pair. The old wound_pattern pair is replaced without side-choice injection; inserted MOVE is retargeted from the stale well destination; 2->2 preserves the reviewed ledger',
+    notes: 'after apex_pressure, revision=2 rotates pack_displacement back into the visible production pair. The old wound_pattern pair is replaced without side-choice injection; inserted MOVE is retargeted from the stale well destination.',
   });
 
-  const maintenance = 'DAILY_LIFE:DAY8_NORTH_FENCE_WORKDAY:check_posts_and_lanterns';
-  const watchPrep = 'DAILY_LIFE:DAY8_NORTH_FENCE_WORKDAY:prepare_watch_handover';
+  const prepareWatch = 'DAILY_LIFE:DAY8_NORTH_FENCE_WORKDAY:check_posts_and_lanterns';
   setSequence(freeTime, [
-    choose(maintenance, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE', scheduledStart: '15:30', scheduledEnd: '17:00' }),
-    choose(watchPrep, { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE', scheduledStart: '17:00', scheduledEnd: '18:00' }),
+    choose(prepareWatch, {
+      regionId: '田園の村',
+      facilityId: 'LOC_FARM_NORTH_FENCE',
+      scheduledStart: '15:30',
+      scheduledEnd: '18:00',
+    }),
   ], {
     facilityId: 'LOC_FARM_NORTH_FENCE',
     requiredState: 'Day8 T03 investigation evidence complete; compiler MOVE reaches LOC_FARM_NORTH_FENCE around 15:30; villageTrust>=2; needs below urgent survival threshold; first howl remains closed before 22:00',
-    resultingState: 'ordinary unpaid fence maintenance and watch handover preparation advance naturally to the canonical 18:00 JOB-FARM-04 opening; no generic REST or WAIT padding',
-    implementationSource: 'src/server/trpg/content/authored-village-day6-north-fence-workday.js + authored-mission-flow-day8-t03-night-vigil.js',
-    notes: 'replaces stale granary LIFE:REST:90 with two visible route-neutral north-fence actions. The compiler MOVE is retargeted Bakery→North Fence; adding one source-row step balances removal of the now-redundant compiler MOVE before D08-09, preserving 1521 reviewed rows',
+    resultingState: 'one continuous route-neutral commitment prepares posts, lanterns and the handover record through 18:00; no generic REST/WAIT and no artificial intermediate player decision',
+    implementationSource: 'src/server/trpg/content/authored-village-day6-north-fence-workday.js',
+    notes: 'replaces stale granary LIFE:REST:90 with one meaningful 150-minute north-fence preparation action. The compiler MOVE is retargeted Bakery→North Fence. Row count is allowed to change when micro-actions are removed.',
   });
 
   setSequence(watch, [
-    priorRowOutcome('VR2-D08-08', { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE' }),
     choose('WORK:FACILITY:JOB-FARM-04', {
       regionId: '田園の村',
       facilityId: 'LOC_FARM_NORTH_FENCE',
@@ -255,10 +252,10 @@ export function applyDay8T03Realignment({ outDir = DEFAULT_OUT } = {}) {
     choose('MISSION_FLOW:T03:DAY8_COMMUNITY:serve_watch_breakfast', { regionId: '田園の村', facilityId: 'LOC_FARM_NORTH_FENCE' }),
   ], {
     facilityId: 'LOC_FARM_NORTH_FENCE',
-    requiredState: 'villageTrust>=2; Day2 shared-watch roster complete; Day8 howl due; D08-08 north-fence maintenance and handover preparation complete exactly at 18:00',
-    resultingState: 'gold+=3; four-hour paid north-fence watch complete; first howl opens after the shift and is triangulated with Jill; written vigil continues to dawn; breakfast and watch/damage timing recorded',
+    requiredState: 'villageTrust>=2; Day2 shared-watch roster complete; Day8 howl due; D08-08 continuous north-fence preparation completes exactly at 18:00',
+    resultingState: 'gold+=3; four-hour paid north-fence watch complete; first howl opens after the shift and is triangulated with Jill; written vigil remains responsible through dawn without premature collapse; breakfast and watch/damage timing recorded',
     implementationSource: 'src/server/trpg/content/canonical-regional-labour.js + authored-mission-flow-day2-day8-village-watch.js + authored-mission-flow-day8-t03-night-vigil.js + authored-mission-flow-day8-t03-community-followthrough.js',
-    notes: 'the separate compiler MOVE before D08-09 is removed because D08-08 already ends at North Fence. Its ledger slot is retained as a zero-time OUTCOME documenting the achieved pre-shift state; all remaining steps are visible production choices and the canonical paid watch still begins at 18:00',
+    notes: 'D08-08 already ends at North Fence, so the separate compiler MOVE before D08-09 and its zero-time placeholder outcome are both removed. Every remaining step is a visible production choice. No ledger-row preservation is attempted.',
   });
 
   movesArtifact.day8T03RealignmentVersion = DAY8_T03_REALIGNMENT_VERSION;
@@ -269,7 +266,9 @@ export function applyDay8T03Realignment({ outDir = DEFAULT_OUT } = {}) {
   summary.day8T03RealignmentVersion = DAY8_T03_REALIGNMENT_VERSION;
   summary.day8T03RealignedLegacyRows = ['VR2-D08-02', 'VR2-D08-04', 'VR2-D08-08', 'VR2-D08-09'];
   summary.proposedMoveLocalInsertions = moves.length;
-  summary.expandedV3Rows = CANONICAL_EXPANDED_ROWS;
+  summary.expandedV3Rows = expandedRowCount(rows, moves);
+  summary.day8T03ExpandedRowsBefore = countedBefore;
+  summary.day8T03ExpandedRowsAfter = summary.expandedV3Rows;
 
   fs.writeFileSync(mappingPath, csv(rows, headers));
   fs.writeFileSync(movesPath, `${JSON.stringify(movesArtifact, null, 2)}\n`);
@@ -278,6 +277,7 @@ export function applyDay8T03Realignment({ outDir = DEFAULT_OUT } = {}) {
   return {
     version: DAY8_T03_REALIGNMENT_VERSION,
     expandedV3Rows: summary.expandedV3Rows,
+    expandedRowsBefore: countedBefore,
     realignedLegacyRows: [...summary.day8T03RealignedLegacyRows],
   };
 }
