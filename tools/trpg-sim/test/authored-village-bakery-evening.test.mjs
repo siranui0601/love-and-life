@@ -30,20 +30,26 @@ function runtime({ wallMinute = 15 * 60 + 6, facilityId = "LOC_FARM_BAKERY", hun
   };
 }
 
-test("Day2 15:06 bakery exposes three common-world evening choices through 22:15", () => {
+test("Day2 15:06 bakery keeps public products beside all three common-world evening choices through 22:15", () => {
   const state = runtime();
   const actions = authoredMissionFlowExclusiveActions(state);
 
   assert.equal(authoredMissionFlowGuidance(state).title, "パン屋で夕暮れを過ごす");
   assert.deepEqual(actions.map((action) => action.id), [
+    "LIFE:BUY:ITM008",
+    "LIFE:BUY:ITM010",
     "DAILY_LIFE:DAILY_BAKERY_EVENING:mend_gear_by_oven",
     "DAILY_LIFE:DAILY_BAKERY_EVENING:help_close_the_bakery",
     "DAILY_LIFE:DAILY_BAKERY_EVENING:walk_and_talk_with_coby",
   ]);
-  assert.deepEqual(actions.map((action) => action.minutes), [429, 429, 429]);
-  assert.equal(new Set(actions.map((action) => action.family)).size, 3);
+  assert.deepEqual(actions.map((action) => action.minutes), [10, 10, 429, 429, 429]);
+  const daily = actions.filter((action) => action.authoredVillageBakeryEveningChoice === true);
+  assert.equal(daily.length, 3);
+  assert.equal(new Set(daily.map((action) => action.family)).size, 3);
   assert.ok(actions.every((action) => action.targetFacilityId === "LOC_FARM_BAKERY"));
-  assert.ok(actions.every((action) => action.authoredMissionFlowExclusiveChoice === true));
+  assert.ok(daily.every((action) => action.authoredMissionFlowExclusiveChoice === true));
+  assert.ok(actions.filter((action) => action.canonicalWorldLifeChoice === true)
+    .every((action) => action.canonicalWorldLifeKind === "buy_provision"));
 });
 
 test("gear-maintenance branch records ordinary life only and does not invent money or route state", () => {
