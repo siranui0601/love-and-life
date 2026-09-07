@@ -167,11 +167,12 @@ function urgentCanonicalProducts(runtime, actions) {
 
 // A public bakery/inn/market must not stop selling ordinary Sheet-backed goods
 // merely because an unrelated mission is active elsewhere. Several overlay
-// layers intentionally return null off-target so generic play can resume; when
-// that happens, restore the canonical life layer before falling all the way
-// through to INSPECT/WAIT filler.
+// layers may report the absence of an owned panel as null *or* an empty array;
+// both mean generic public life should resume. An empty array must not block the
+// canonical product layer merely because it is technically non-null.
 function ordinaryCanonicalLifeFallback(runtime, actions) {
-  if (actions != null || t01Active(runtime)) return actions;
+  const hasOwnedActions = Array.isArray(actions) ? actions.length > 0 : actions != null;
+  if (hasOwnedActions || t01Active(runtime)) return actions;
   const allowed = publicLifeProducts(runtime);
   return allowed.length ? allowed : actions;
 }
