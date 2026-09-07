@@ -51,21 +51,22 @@ test("the Day8 howl opens three public dawn-watch choices", () => {
   assert.ok(actions.every((entry) => entry.id === entry.actionId));
 });
 
-test("staying until dawn creates real collapse pressure and inspectable Jill work", () => {
+test("staying responsible for the written watch leaves strong fatigue without forcing collapse before dawn followthrough", () => {
   const state = runtime();
   const { result } = choose(state, "keep_written_watch_until_dawn");
   assert.equal(state.playerState.player.needs.hunger, 75);
-  assert.equal(state.playerState.player.needs.fatigue, 100);
+  assert.equal(state.playerState.player.needs.fatigue, 82);
+  assert.ok(state.playerState.player.needs.fatigue < 100);
   assert.equal(state.playerState.worldFlags["day8WolfWatch:playerStayedUntilDawn"], true);
   assert.equal(state.playerState.goapRequests["GOAP-DAY8-T03-DAWN-RELIEF"].actorNpcId, "NPC060");
   assert.equal(result.closedActionIds.length, 2);
   assert.equal(vigil.actions(state), null);
 });
 
-test("rotating or handing off preserves distinct non-collapse alternatives", () => {
+test("rotating the whole watch or handing it off preserves distinct lower-fatigue alternatives", () => {
   const rotated = runtime();
   choose(rotated, "rotate_short_patrols");
-  assert.equal(rotated.playerState.player.needs.fatigue, 86);
+  assert.equal(rotated.playerState.player.needs.fatigue, 74);
   assert.equal(rotated.playerState.worldFlags["day8WolfWatch:rotatingPatrolsUsed"], true);
 
   const handed = runtime();
