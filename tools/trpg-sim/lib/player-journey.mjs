@@ -126,6 +126,13 @@ function normalizeCrossedTroubleTransitionAnchors(state, model, beforeMinute, tr
   return changed;
 }
 
+function transitionCounts(state) {
+  return Object.fromEntries(Object.entries(state?.troubles ?? {}).map(([id, runtime]) => [
+    id,
+    Array.isArray(runtime?.transitions) ? runtime.transitions.length : 0,
+  ]));
+}
+
 export function createInitialJourneyState(options) {
   const state = base.createInitialJourneyState(options);
   syncEquipmentWorldRuntime(state, options.battleData);
@@ -228,13 +235,22 @@ export function settleInteractiveBattleAction(state, model, data, skills, catalo
   syncEquipmentWorldRuntime(state,data);return output;
 }
 
+export function resolveMovementAction(state, model, data, skills, profileInput, action) {
+  const minuteBefore=Number(state?.absoluteMinute??0);
+  const historyLengthBefore=Array.isArray(state?.history)?state.history.length:0;
+  const counts=transitionCounts(state);
+  const output=base.resolveMovementAction(state,model,data,skills,profileInput,action);
+  normalizeCrossedTroubleTransitionAnchors(state,model,minuteBefore,counts,historyLengthBefore);
+  return output;
+}
+
 export function resolvePlayerAction(state, model, data, skills, catalog, profileInput, action) {
   const fatigueBefore=Number(state?.player?.needs?.fatigue??0);
   const minuteBefore=Number(state?.absoluteMinute??0);
   const historyLengthBefore=Array.isArray(state?.history)?state.history.length:0;
-  const transitionCounts=Object.fromEntries(Object.entries(state?.troubles??{}).map(([id,runtime])=>[id,Array.isArray(runtime?.transitions)?runtime.transitions.length:0]));
+  const counts=transitionCounts(state);
   const output=base.resolvePlayerAction(state,model,data,skills,catalog,profileInput,action);
-  normalizeCrossedTroubleTransitionAnchors(state,model,minuteBefore,transitionCounts,historyLengthBefore);
+  normalizeCrossedTroubleTransitionAnchors(state,model,minuteBefore,counts,historyLengthBefore);
   applyEquipmentWorldActionEffects({state,data,action,fatigueBefore});
   syncEquipmentWorldRuntime(state,data);return output;
 }
@@ -243,4 +259,5 @@ export const PLAYER_JOURNEY_RUNTIME_INTERNALS = Object.freeze({
   canonicalMoment,
   transitionAnchor,
   normalizeCrossedTroubleTransitionAnchors,
+  transitionCounts,
 });
