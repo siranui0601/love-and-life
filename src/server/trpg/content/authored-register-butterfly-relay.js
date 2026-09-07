@@ -2,7 +2,7 @@ import * as base from "./authored-register-butterfly.js";
 
 export * from "./authored-register-butterfly.js";
 
-export const AUTHORED_REGISTER_BUTTERFLY_RELAY_VERSION = "authored-register-butterfly-relay-v1";
+export const AUTHORED_REGISTER_BUTTERFLY_RELAY_VERSION = "authored-register-butterfly-relay-v2";
 
 const {
   LOCATION,
@@ -82,10 +82,9 @@ function ensureRelayPlan(runtime) {
   if (existing) Object.assign(existing, relayPlan);
   else belief.aftermathPlans = [...plans, relayPlan];
 
-  // If Riona moved away before Lorna arrived, a completed rendezvous at the old
-  // facility must not become a magical long-distance disclosure. Re-open only
-  // this authored rendezvous so the common NPC planner can physically follow
-  // the merchant's new, observed village position on a later life tick.
+  // If Riona moved away before Lorna arrived, completing the old rendezvous
+  // must never become a long-distance disclosure. Re-open only the relay duty;
+  // the common NPC planner will physically follow the merchant on a later tick.
   if (arr(lorna.completedAftermathPlanIds).includes(RELAY_PLAN_ID)
     && (npcFacility(lorna) !== targetFacilityId || npcFacility(riona) !== targetFacilityId)) {
     lorna.completedAftermathPlanIds = arr(lorna.completedAftermathPlanIds)
@@ -148,10 +147,6 @@ function observeRelayShare(runtime) {
     runtime.playerState.rumors.push(rumor);
   }
 
-  // The belief itself came only from the common NPC conversation above. This
-  // request is bookkeeping for the second causal leg: now that Riona actually
-  // knows the fact, her existing authored aftermath plan may take her to the
-  // square to corroborate it before approaching the player.
   runtime.playerState.goapRequests[GOAP_ID] ??= {
     id: GOAP_ID,
     actorNpcId: RIONA_ID,
@@ -179,8 +174,6 @@ function observeRelayShare(runtime) {
     sourceKnowledgeEventId: share.id,
   };
 
-  // Common propagation copied Lorna's belief, including the Riona aftermath
-  // plan. Keep that plan authoritative even if an older save lacked it.
   const plans = arr(belief.aftermathPlans).filter((plan) => plan?.id !== RELAY_PLAN_ID);
   if (!plans.some((plan) => plan?.id === GOAP_ID)) {
     belief.aftermathPlans = [...plans, rionaAftermathPlan()];
@@ -211,8 +204,6 @@ export function synchronizeRegisterButterfly(runtime) {
   const baseState = base.synchronizeRegisterButterfly(runtime);
   const relayPlan = ensureRelayPlan(runtime);
   const propagation = observeRelayShare(runtime);
-  // Once the common share creates the request, let the original observer keep
-  // ownership of Riona's GOAP completion and callback eligibility.
   const settled = base.synchronizeRegisterButterfly(runtime);
   return {
     ...baseState,
@@ -238,9 +229,30 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
   return changed;
 }
 
+function relayAwareCallbackEligible(runtime) {
+  // The top-level registry already invokes this internal hook after every
+  // resolved production action. Exposing a relay-aware override here makes F
+  // synchronization independent of whether an intermediate Day3/4/5/6 daily
+  // scene owns the visible action panel. It still delegates callback ownership
+  // to the original implementation after the physical relay synchronization.
+  synchronizeRegisterButterfly(runtime);
+  return base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
+}
+
+// Explicit export intentionally shadows the same name re-exported by `export *`.
+// All upper decorator modules re-export this binding, so the registry's existing
+// `base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(...)` call now
+// reaches the physical Rona->Riona relay without a registry/service rewrite.
+export const AUTHORED_REGISTER_BUTTERFLY_INTERNALS = Object.freeze({
+  ...base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS,
+  callbackEligible: relayAwareCallbackEligible,
+  synchronizeRegisterButterfly,
+});
+
 export const AUTHORED_REGISTER_BUTTERFLY_RELAY_INTERNALS = Object.freeze({
   RELAY_PLAN_ID,
   relayShareEvent,
   ensureRelayPlan,
   observeRelayShare,
+  relayAwareCallbackEligible,
 });
