@@ -3,7 +3,7 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 
 export * from "./authored-register-butterfly-relay.js";
 
-export const AUTHORED_VILLAGE_BAKERY_EVENING_VERSION = "authored-village-bakery-evening-v3";
+export const AUTHORED_VILLAGE_BAKERY_EVENING_VERSION = "authored-village-bakery-evening-v4";
 
 // Common-world Day2 afternoon/evening bridge for the farm village. This is
 // deliberately not tied to Human Virtue state: any player who reaches the
@@ -11,7 +11,10 @@ export const AUTHORED_VILLAGE_BAKERY_EVENING_VERSION = "authored-village-bakery-
 // ordinary-life choices. The route now reaches the bakery naturally around
 // 14:20 after the Day2 warning/belonging sequence, so the scene opens at 14:00
 // rather than manufacturing a short WAIT/REST gap before a long meaningful
-// afternoon commitment. Existing authored incident scenes still win.
+// afternoon commitment. Existing authored incident scenes still win. The scene
+// is tagged as authored daily life so the registry can keep real public bakery
+// meals and purchases visible beside it instead of turning ordinary life into
+// an accidental modal shop lockout.
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_BAKERY";
 const STATE_KEY = "villageBakeryEvening";
@@ -146,7 +149,8 @@ function baseIsSpeaking(runtime, context = {}) {
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   // Generic meals, shop products, lodging and REST are ordinary world surfaces,
   // not a higher-priority authored scene. Let the one-time bakery afternoon
-  // scene own the panel while it is eligible; products return immediately after.
+  // scene own the authored portion of the panel while it is eligible; the top
+  // registry then composes these ordinary daily-life choices with real products.
   if (onlyCanonicalWorldLife(actions)) return false;
   if (Array.isArray(actions) && actions.length > 0) return true;
   return base.authoredMissionFlowGuidance(runtime, context) != null;
@@ -180,6 +184,7 @@ function actionFor(runtime, choice) {
     dialogueTopic: `daily_bakery_evening_${choice.id}`,
     dialogueExit: true,
     authoredMissionFlowExclusiveChoice: true,
+    authoredDailyLifeChoice: true,
     authoredVillageBakeryEveningChoice: true,
     authoredVillageBakeryEveningData: choice,
   };
