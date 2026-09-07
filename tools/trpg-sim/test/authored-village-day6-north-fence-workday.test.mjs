@@ -10,10 +10,10 @@ import {
 
 const absoluteMinuteFor = (day, wallMinute) => (day - 1) * 1440 + wallMinute - 600;
 
-function runtime(wallMinute = 15 * 60 + 8) {
+function runtime(wallMinute = 15 * 60 + 8, day = 6) {
   return {
     playerState: {
-      absoluteMinute: absoluteMinuteFor(6, wallMinute),
+      absoluteMinute: absoluteMinuteFor(day, wallMinute),
       player: {
         location: "田園の村",
         facilityId: "LOC_FARM_NORTH_FENCE",
@@ -54,6 +54,22 @@ test("Day6 north-fence life advances the real 15:08 arrival to the canonical 18:
   assert.equal(fence.consume(state, prep, { ok: true }), true);
 
   assert.equal(fence.clock(state).minuteOfDay, 18 * 60);
+  assert.equal(jobTime.jobTimeAllowed(state, canonicalFenceJob), true);
+});
+
+test("Day8 pre-watch commitment is one meaningful long action instead of maintenance plus handover micro-choices", () => {
+  const state = runtime(15 * 60 + 30, 8);
+  assert.equal(fence.maintenanceEligible(state), true);
+  const action = fence.ownActions(state)?.[0];
+  assert.equal(action?.id, "DAILY_LIFE:DAY8_NORTH_FENCE_WORKDAY:check_posts_and_lanterns");
+  assert.equal(action?.minutes, 150);
+  assert.match(action?.label ?? "", /まとめて整える/);
+
+  state.playerState.absoluteMinute += action.minutes;
+  assert.equal(fence.consume(state, action, { ok: true }), true);
+  assert.equal(fence.clock(state).minuteOfDay, 18 * 60);
+  assert.equal(fence.watchPrepEligible(state), false);
+  assert.equal(fence.readState(state)?.watchPrepCompletedAtMinute, state.playerState.absoluteMinute);
   assert.equal(jobTime.jobTimeAllowed(state, canonicalFenceJob), true);
 });
 
