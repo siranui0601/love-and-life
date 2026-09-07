@@ -195,7 +195,8 @@ function urgentCanonicalProducts(runtime, actions) {
   const ordinaryOrEmpty = !Array.isArray(actions)
     || actions.length === 0
     || onlyAuthoredDailyLife(actions)
-    || onlyCanonicalWorldLife(actions);
+    || onlyCanonicalWorldLife(actions)
+    || routinePublicLifeOnly(actions);
   if (!ordinaryOrEmpty) return null;
   const products = publicLifeProducts(runtime);
   return products.length > 0 ? products : null;
@@ -420,10 +421,10 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   actions = localCanonicalLabourBesideT02Continuity(runtime, actions);
   actions = localCanonicalRestBesideT02Continuity(runtime, actions);
   actions = prependAvailableCanonicalLabour(runtime, actions, context, productionRuntimeBeforeBase);
-  actions = mergePublicProductsBesideRoutineLife(runtime, actions);
-  actions = ordinaryCanonicalLifeFallback(runtime, actions);
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
+  actions = mergePublicProductsBesideRoutineLife(runtime, actions);
+  actions = ordinaryCanonicalLifeFallback(runtime, actions);
   actions = dailyLifeCommonChoiceCandidates(runtime, actions, context, productionRuntimeBeforeBase);
   if (actions == null) return null;
   if (onlyCanonicalWorldLife(actions)) {
