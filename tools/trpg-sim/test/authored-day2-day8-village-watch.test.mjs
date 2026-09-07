@@ -9,6 +9,7 @@ import {
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 
 const WARNING_COMPLETED_MINUTE = 1583; // Day2 12:23, before the selected warning action advances time.
+const DAY8_CANONICAL_WATCH_CLOSE_MINUTE = 7 * 1440 + 22 * 60 - 10 * 60; // production epoch: Day8 22:00
 
 function runtime() {
   return {
@@ -52,7 +53,11 @@ function chooseLabel(state, label) {
 
 function reachFirstHowl(state, rosterLabel = "当番札を回す") {
   chooseLabel(state, rosterLabel);
-  state.playerState.absoluteMinute = state.playerState.day2Day8VillageWatch.day8DueAtMinute;
+  // The shared-watch GOAP becomes due at dawn, but the player-facing howl choice
+  // is intentionally deferred until the canonical 18:00-22:00 north-fence job
+  // has actually ended. This prevents the dawn callback from pre-empting the
+  // player's Day8 investigation/work worldline.
+  state.playerState.absoluteMinute = DAY8_CANONICAL_WATCH_CLOSE_MINUTE;
   state.playerState.player.location = "田園の村";
   state.playerState.player.facilityId = "LOC_FARM_NORTH_FENCE";
 }
@@ -106,7 +111,7 @@ test("行商便に載せるとNPC008の配送契約が保存される", () => {
   );
 });
 
-test("Day8の夜明け前に更新された別三択が表示される", () => {
+test("Day8の正規夜警を終えると更新された遠吠え三択が表示される", () => {
   const state = runtime();
   reachFirstHowl(state);
   const actions = authoredMissionFlowExclusiveActions(state);
