@@ -9,7 +9,10 @@ import {
 import { loadTrpgGameData } from "../../../src/server/trpg/game/game-data.js";
 import { clockFromMinute } from "../lib/player-journey.mjs";
 
-const DAY5_START = 4 * 1440;
+// Production absoluteMinute=0 is Day1 10:00, not midnight. Keep boundary
+// fixtures in the same epoch as every authored scene and the live service.
+const GAME_START_MINUTE_OF_DAY = 10 * 60;
+const DAY5_START = 4 * 1440 - GAME_START_MINUTE_OF_DAY;
 const DAY5_NIGHT = DAY5_START + 22 * 60;
 
 function daypartAtHour(hour) {
