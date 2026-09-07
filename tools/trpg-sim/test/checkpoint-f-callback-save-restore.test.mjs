@@ -17,8 +17,10 @@ const CALLBACK_IDS = Object.freeze([
   `${CALLBACK_PREFIX}wagon`,
   `${CALLBACK_PREFIX}dance`,
 ]);
-const DAY1_AFTERCARE_OPEN_MINUTE = 12 * 60;
-const HUMAN_VIRTUE_BEDTIME_MINUTE = 22 * 60 + 30;
+const GAME_START_MINUTE_OF_DAY = 10 * 60;
+const DAY1_AFTERCARE_OPEN_MINUTE = 12 * 60 - GAME_START_MINUTE_OF_DAY;
+const HUMAN_VIRTUE_BEDTIME_MINUTE = 22 * 60 + 30 - GAME_START_MINUTE_OF_DAY;
+const DAY1_END_EXCLUSIVE_MINUTE = 24 * 60 - GAME_START_MINUTE_OF_DAY;
 
 function baseService(store) {
   return new TrpgGameService({ data, store, allowCustomSeed: true });
@@ -247,7 +249,7 @@ async function reachCallback(service, store, owner, save, times) {
   current = await advanceProductionTime(service, owner, current, times, {
     untilActionId: 'MISSION_FLOW:T01:SQUARE_AFTERCARE:help_mira',
     minimumMinute: DAY1_AFTERCARE_OPEN_MINUTE,
-    latestMinute: 1439,
+    latestMinute: DAY1_END_EXCLUSIVE_MINUTE - 1,
     targetFacilityId: 'LOC_FARM_SQUARE',
     label: 'Day1 aftercare',
   });
@@ -275,12 +277,12 @@ async function reachCallback(service, store, owner, save, times) {
   current = await advanceProductionTime(service, owner, current, times, {
     untilActionId: 'MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras',
     minimumMinute: HUMAN_VIRTUE_BEDTIME_MINUTE,
-    latestMinute: 1439,
+    latestMinute: DAY1_END_EXCLUSIVE_MINUTE - 1,
     targetFacilityId: 'LOC_FARM_SQUARE',
     label: 'Human Virtue 22:30 bedtime',
   });
   const sleepStartedAtMinute = Number(current.clock.absoluteMinute);
-  assert.ok(sleepStartedAtMinute >= HUMAN_VIRTUE_BEDTIME_MINUTE && sleepStartedAtMinute < 1440);
+  assert.ok(sleepStartedAtMinute >= HUMAN_VIRTUE_BEDTIME_MINUTE && sleepStartedAtMinute < DAY1_END_EXCLUSIVE_MINUTE);
 
   for (const actionId of [
     'MISSION_FLOW:T01:VILLAGE_NIGHT:sleep_at_miras',
