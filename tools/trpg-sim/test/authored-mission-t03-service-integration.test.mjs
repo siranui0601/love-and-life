@@ -39,6 +39,10 @@ function prepareRuntime() {
   state.tuning.disableTravelEncounters = true;
   state.player.location = "田園の村";
   state.player.facilityId = "LOC_FARM_STABLE";
+  // New Game correctly starts at 0G. This focused fixture explicitly verifies
+  // that a legal public bakery purchase remains available while T03 is active,
+  // so give it spending money rather than making production sell food for free.
+  state.player.gold = 8;
   state.troubles.T03.status = "active";
 
   for (const definition of state.catalog.special) {
