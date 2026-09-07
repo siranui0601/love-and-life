@@ -48,31 +48,37 @@ test("the Day8 howl opens three public dawn-watch choices", () => {
     "rotate_short_patrols",
     "hand_watch_to_jill",
   ]);
+  assert.deepEqual(actions.map((entry) => entry.minutes), [390, 360, 60]);
   assert.ok(actions.every((entry) => entry.id === entry.actionId));
 });
 
-test("staying responsible for the written watch leaves strong fatigue without forcing collapse before dawn followthrough", () => {
+test("long vigil choices do not add a second authored needs charge on top of production clock progression", () => {
   const state = runtime();
   const { result } = choose(state, "keep_written_watch_until_dawn");
-  assert.equal(state.playerState.player.needs.hunger, 75);
-  assert.equal(state.playerState.player.needs.fatigue, 82);
-  assert.ok(state.playerState.player.needs.fatigue < 100);
+  assert.equal(state.playerState.player.needs.hunger, 61);
+  assert.equal(state.playerState.player.needs.fatigue, 64);
+  assert.deepEqual(result.livingState, {
+    before: { hunger: 61, fatigue: 64 },
+    after: { hunger: 61, fatigue: 64 },
+  });
   assert.equal(state.playerState.worldFlags["day8WolfWatch:playerStayedUntilDawn"], true);
   assert.equal(state.playerState.goapRequests["GOAP-DAY8-T03-DAWN-RELIEF"].actorNpcId, "NPC060");
   assert.equal(result.closedActionIds.length, 2);
   assert.equal(vigil.actions(state), null);
 });
 
-test("rotating the whole watch or handing it off preserves distinct lower-fatigue alternatives", () => {
+test("rotating the whole watch or handing it off preserves distinct facts and durations without manual needs mutation", () => {
   const rotated = runtime();
-  choose(rotated, "rotate_short_patrols");
-  assert.equal(rotated.playerState.player.needs.fatigue, 74);
+  const rotatedResult = choose(rotated, "rotate_short_patrols");
+  assert.equal(rotated.playerState.player.needs.fatigue, 64);
   assert.equal(rotated.playerState.worldFlags["day8WolfWatch:rotatingPatrolsUsed"], true);
+  assert.equal(rotatedResult.action.minutes, 360);
 
   const handed = runtime();
-  choose(handed, "hand_watch_to_jill");
-  assert.equal(handed.playerState.player.needs.fatigue, 68);
+  const handedResult = choose(handed, "hand_watch_to_jill");
+  assert.equal(handed.playerState.player.needs.fatigue, 64);
   assert.equal(handed.playerState.worldFlags["day8WolfWatch:jillTookDawnWatch"], true);
+  assert.equal(handedResult.action.minutes, 60);
 });
 
 test("the vigil is unavailable before the howl or away from the fence", () => {
