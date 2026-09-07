@@ -68,6 +68,11 @@ function prepareRuntime() {
   runtime.playerKnowledge.knownHubIds.add("田園の村");
   runtime.playerKnowledge.knownFacilityIds.add("LOC_FARM_CHIEF");
   runtime.playerKnowledge.knownFacilityIds.add("LOC_FARM_STABLE");
+  // The off-target portion of this test explicitly exercises ordinary bakery
+  // life, so the player must know that public destination under the current
+  // authoritative movement-knowledge contract. Do not make production reveal
+  // an unknown facility just to satisfy the test.
+  runtime.playerKnowledge.knownFacilityIds.add("LOC_FARM_BAKERY");
   return runtime;
 }
 
