@@ -2,10 +2,11 @@ import * as base from "./authored-register-butterfly.js";
 
 export * from "./authored-register-butterfly.js";
 
-export const AUTHORED_REGISTER_BUTTERFLY_RELAY_VERSION = "authored-register-butterfly-relay-v2";
+export const AUTHORED_REGISTER_BUTTERFLY_RELAY_VERSION = "authored-register-butterfly-relay-v3";
 
 const {
   LOCATION,
+  INN_FACILITY_ID,
   RIONA_ID,
   RONA_ID,
   FACT_ID,
@@ -61,10 +62,14 @@ function ensureRelayPlan(runtime) {
   if (!belief || unavailable(lorna) || unavailable(riona)) return null;
   if (riona?.beliefs?.[FACT_ID] || relayShareEvent(runtime)) return null;
 
-  const targetHub = riona?.position?.hubId ?? riona?.location ?? null;
-  const targetFacilityId = npcFacility(riona);
-  if (!targetHub || !targetFacilityId || targetHub !== LOCATION) return null;
-
+  // Lorna is the inn-side source of this fact. Chasing a roaming merchant's
+  // current facility one tick late made the two NPCs perpetually miss each
+  // other. The causal rendezvous is therefore Wheat Inn itself: Lorna remains
+  // at the place where the guestbook evidence exists, and Riona's ordinary
+  // merchant route can bring her there. The common NPC conversation engine is
+  // still the only authority that creates the Rona -> Riona share.
+  const targetHub = LOCATION;
+  const targetFacilityId = INN_FACILITY_ID;
   const relayPlan = {
     id: RELAY_PLAN_ID,
     npcIds: [RONA_ID],
@@ -73,8 +78,8 @@ function ensureRelayPlan(runtime) {
     targetHub,
     targetFacilityId,
     delayHours: 0,
-    statusText: "宿帳とフィン救助を照合した内容を、行商人リオナへ直接伝えに向かっている",
-    reason: "registered-rescuer-rumor-needs-real-contact",
+    statusText: "宿帳とフィン救助を照合した内容を、麦穂亭へ立ち寄る行商人リオナへ直接伝えるため待っている",
+    reason: "registered-rescuer-rumor-needs-real-contact-at-source-record",
   };
 
   const plans = arr(belief.aftermathPlans);
@@ -82,9 +87,10 @@ function ensureRelayPlan(runtime) {
   if (existing) Object.assign(existing, relayPlan);
   else belief.aftermathPlans = [...plans, relayPlan];
 
-  // If Riona moved away before Lorna arrived, completing the old rendezvous
-  // must never become a long-distance disclosure. Re-open only the relay duty;
-  // the common NPC planner will physically follow the merchant on a later tick.
+  // Completing the authored duty while the listener is absent is not a real
+  // disclosure. Re-open it and keep Lorna at the inn until a later life tick
+  // places Riona there too; prepareNpcLifeTick will then create the common
+  // facility conversation before either NPC chooses a new routine action.
   if (arr(lorna.completedAftermathPlanIds).includes(RELAY_PLAN_ID)
     && (npcFacility(lorna) !== targetFacilityId || npcFacility(riona) !== targetFacilityId)) {
     lorna.completedAftermathPlanIds = arr(lorna.completedAftermathPlanIds)
@@ -230,19 +236,10 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 }
 
 function relayAwareCallbackEligible(runtime) {
-  // The top-level registry already invokes this internal hook after every
-  // resolved production action. Exposing a relay-aware override here makes F
-  // synchronization independent of whether an intermediate Day3/4/5/6 daily
-  // scene owns the visible action panel. It still delegates callback ownership
-  // to the original implementation after the physical relay synchronization.
   synchronizeRegisterButterfly(runtime);
   return base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(runtime);
 }
 
-// Explicit export intentionally shadows the same name re-exported by `export *`.
-// All upper decorator modules re-export this binding, so the registry's existing
-// `base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS.callbackEligible(...)` call now
-// reaches the physical Rona->Riona relay without a registry/service rewrite.
 export const AUTHORED_REGISTER_BUTTERFLY_INTERNALS = Object.freeze({
   ...base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS,
   callbackEligible: relayAwareCallbackEligible,
