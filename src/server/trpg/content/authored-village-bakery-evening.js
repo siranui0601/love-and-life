@@ -3,14 +3,15 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 
 export * from "./authored-register-butterfly.js";
 
-export const AUTHORED_VILLAGE_BAKERY_EVENING_VERSION = "authored-village-bakery-evening-v2";
+export const AUTHORED_VILLAGE_BAKERY_EVENING_VERSION = "authored-village-bakery-evening-v3";
 
-// Common-world Day2 evening bridge for the farm village. This is deliberately
-// not tied to Human Virtue state: any player who reaches the bakery with calm
-// needs in the same world/time state sees the same three ordinary-life choices.
-// Existing authored mission scenes always win. Generic canonical shop/rest
-// surfaces do not: this one-time authored life scene may temporarily own the
-// choice panel, after which the ordinary bakery products return.
+// Common-world Day2 afternoon/evening bridge for the farm village. This is
+// deliberately not tied to Human Virtue state: any player who reaches the
+// bakery with calm needs in the same world/time state sees the same three
+// ordinary-life choices. The route now reaches the bakery naturally around
+// 14:20 after the Day2 warning/belonging sequence, so the scene opens at 14:00
+// rather than manufacturing a short WAIT/REST gap before a long meaningful
+// afternoon commitment. Existing authored incident scenes still win.
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_BAKERY";
 const STATE_KEY = "villageBakeryEvening";
@@ -18,7 +19,7 @@ const SCENE_ID = "daily-bakery-evening";
 const PAOLO_ID = "NPC059";
 const COBY_ID = "NPC062";
 const DAY = 2;
-const OPEN_MINUTE = 15 * 60;
+const OPEN_MINUTE = 14 * 60;
 const TARGET_MINUTE = 22 * 60 + 15;
 const NEEDS_CALM_THRESHOLD = 70;
 
@@ -51,7 +52,7 @@ const CHOICES = Object.freeze([
       "売れ残りを籠へ移し、粉袋を奥へ運び、戸板を一枚ずつはめた。賃仕事ではなく、忙しい店先に手を貸しただけだった。暗くなる頃には近所の人の出入りも減り、最後はパオロと明日の仕込みや村の暮らしについて話しながら片づけを終えた。",
     speech: Object.freeze({
       actorId: PAOLO_ID,
-      text: "助かるよ。でもこれは雇い仕事じゃないからな。今度きちんと働くなら、仕事口は仕事口で頼んでくれ。今日は戸板と粉袋だけで十分だ。",
+      text: "助かるよ。でもこれは雇い仕事じゃないからな。今度きちんと働くなら、仕事口は仕事口で頼んでくれ。今日は戸板と粉袋だけで十分だよ。",
       emotion: "礼を言いつつ線引きは明確",
     }),
   }),
@@ -144,8 +145,8 @@ function onlyCanonicalWorldLife(actions) {
 function baseIsSpeaking(runtime, context = {}) {
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
   // Generic meals, shop products, lodging and REST are ordinary world surfaces,
-  // not a higher-priority authored scene. Let the one-time bakery evening scene
-  // own the panel while it is eligible; products return immediately afterward.
+  // not a higher-priority authored scene. Let the one-time bakery afternoon
+  // scene own the panel while it is eligible; products return immediately after.
   if (onlyCanonicalWorldLife(actions)) return false;
   if (Array.isArray(actions) && actions.length > 0) return true;
   return base.authoredMissionFlowGuidance(runtime, context) != null;
@@ -242,7 +243,7 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
       missionId: null,
       kicker: "午後の売り声が落ち着き、竈の火だけが店の奥で赤く残っている",
       title: "パン屋で夕暮れを過ごす",
-      detail: "急ぐ事件がない夕方なら、装備を整えても、閉店を手伝っても、村の子と話しながら歩いてもよい。どれを選んでも、村が夜の静けさへ変わるまでを普通の暮らしとして過ごす。",
+      detail: "急ぐ事件がない午後なら、装備を整えても、閉店を手伝っても、村の子と話しながら歩いてもよい。どれを選んでも、村が夜の静けさへ変わるまでを普通の暮らしとして過ごす。",
       targetLocation: LOCATION,
       targetFacilityId: FACILITY_ID,
       actionPanel: null,
