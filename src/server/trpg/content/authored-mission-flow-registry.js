@@ -81,10 +81,46 @@ function t01Active(runtime) {
   return ACTIVE_MISSION_STATUSES.has(String(missionById(runtime, "MSN-T01")?.status ?? ""));
 }
 
+function publicLifeProductPriority(runtime, action) {
+  const clock = clockFromMinute(Number(runtime?.playerState?.absoluteMinute ?? 0));
+  const hunger = needValue(runtime, "hunger");
+  const fatigue = needValue(runtime, "fatigue");
+  const kind = String(action?.canonicalWorldLifeKind ?? "");
+  const mealWindow = clock.hour < 10
+    || (clock.hour >= 11 && clock.hour < 14)
+    || (clock.hour >= 17 && clock.hour < 21);
+  if (kind === "eat_meal") return hunger >= 45 || mealWindow ? 0 : 2;
+  if (kind === "buy_provision") return 1;
+  if (kind === "treatment") return 1.5;
+  if (kind === "repair") return 1.75;
+  if (kind === "sleep") return fatigue >= 70 || clock.hour >= 21 ? 0.5 : 3;
+  return 4;
+}
+
 function publicLifeProducts(runtime) {
   const products = base.CANONICAL_WORLD_LIFE_INTERNALS?.productActions?.(runtime) ?? [];
   if (!Array.isArray(products)) return [];
-  return products.filter((action) => action?.canonicalWorldLifeKind !== "eat_provision");
+  return products
+    .filter((action) => action?.canonicalWorldLifeKind !== "eat_provision")
+    .sort((left, right) => publicLifeProductPriority(runtime, left) - publicLifeProductPriority(runtime, right)
+      || Number(left?.price ?? Infinity) - Number(right?.price ?? Infinity)
+      || String(left?.id ?? "").localeCompare(String(right?.id ?? ""), "en"));
+}
+
+function routinePublicLifeOnly(actions) {
+  return Array.isArray(actions)
+    && actions.length > 0
+    && actions.every((action) => action?.canonicalRegionalLabourChoice === true
+      || action?.canonicalWorldLifeChoice === true
+      || action?.authoredDailyLifeChoice === true);
+}
+
+function mergePublicProductsBesideRoutineLife(runtime, actions) {
+  if (!routinePublicLifeOnly(actions) || t01Active(runtime)) return actions;
+  const products = publicLifeProducts(runtime);
+  if (!products.length) return actions;
+  const combined = [...products, ...actions];
+  return [...new Map(combined.map((action) => [action.id, action])).values()];
 }
 
 function dailyLifeCommonChoiceCandidates(runtime, actions, context = {}, productionRuntime = false) {
@@ -384,6 +420,7 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   actions = localCanonicalLabourBesideT02Continuity(runtime, actions);
   actions = localCanonicalRestBesideT02Continuity(runtime, actions);
   actions = prependAvailableCanonicalLabour(runtime, actions, context, productionRuntimeBeforeBase);
+  actions = mergePublicProductsBesideRoutineLife(runtime, actions);
   actions = ordinaryCanonicalLifeFallback(runtime, actions);
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
@@ -443,7 +480,10 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   productionAuthoredRuntime,
   prependAvailableCanonicalLabour,
   containsAuthoredDailyLife,
+  publicLifeProductPriority,
   publicLifeProducts,
+  routinePublicLifeOnly,
+  mergePublicProductsBesideRoutineLife,
   dailyLifeCommonChoiceCandidates,
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
