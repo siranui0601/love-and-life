@@ -13,6 +13,7 @@ on:
       - "tools/trpg-sim/realign-virtue-route-v3-day7-north-fence.mjs"
       - "tools/trpg-sim/realign-virtue-route-v3-day8-t03.mjs"
       - "tools/trpg-sim/realign-virtue-route-v3-no-free-provision-eat.mjs"
+      - "tools/trpg-sim/realign-virtue-route-v3-day2-natural-breakfast.mjs"
       - "tools/trpg-sim/export-virtue-route-v2-source.mjs"
       - "tools/trpg-sim/export-virtue-route-v3-sheets.mjs"
       - "src/server/trpg/**"
@@ -52,6 +53,8 @@ jobs:
         run: node tools/trpg-sim/realign-virtue-route-v3-day8-t03.mjs
       - name: Retire generic carried-food consumption from the Human Virtue ledger
         run: node tools/trpg-sim/realign-virtue-route-v3-no-free-provision-eat.mjs
+      - name: Realign Day2 breakfast before the local merchant visit
+        run: node tools/trpg-sim/realign-virtue-route-v3-day2-natural-breakfast.mjs
       - name: Validate deterministic route and build canonical Sheet ledger
         run: |
           node tools/trpg-sim/validate-virtue-route-v3-static.mjs
