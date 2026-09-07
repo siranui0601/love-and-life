@@ -153,6 +153,20 @@ function urgentCanonicalProducts(runtime, actions) {
   return Array.isArray(products) && products.length > 0 ? products : null;
 }
 
+// A public bakery/inn/market must not stop selling ordinary Sheet-backed goods
+// merely because an unrelated mission is active elsewhere. Several overlay
+// layers intentionally return null off-target so generic play can resume; when
+// that happens, restore the canonical life layer before falling all the way
+// through to INSPECT/WAIT filler. Inventory provisions are deliberately filtered
+// here: Human Virtue keeps food consumption behind explicit meal/scene choices.
+function ordinaryCanonicalLifeFallback(runtime, actions) {
+  if (actions != null || t01Active(runtime)) return actions;
+  const own = base.CANONICAL_WORLD_LIFE_INTERNALS?.ownActions?.(runtime) ?? null;
+  if (!Array.isArray(own) || own.length === 0) return actions;
+  const allowed = own.filter((action) => action?.canonicalWorldLifeKind !== "eat_provision");
+  return allowed.length ? allowed : actions;
+}
+
 function coreMissionOwnsChoicePool(runtime, context = {}) {
   const actions = coreAuthoredMissionFlowExclusiveActions(runtime, context);
   return Array.isArray(actions) && actions.length > 0;
@@ -378,6 +392,7 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   actions = localCanonicalLabourBesideT02Continuity(runtime, actions);
   actions = localCanonicalRestBesideT02Continuity(runtime, actions);
   actions = prependAvailableCanonicalLabour(runtime, actions, context, productionRuntimeBeforeBase);
+  actions = ordinaryCanonicalLifeFallback(runtime, actions);
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
   actions = dailyLifeCommonChoiceCandidates(runtime, actions, context, productionRuntimeBeforeBase);
@@ -415,9 +430,17 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 export function authoredMissionFlowGuidance(runtime, context = {}) {
   const guidance = base.authoredMissionFlowGuidance(runtime, context);
   const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
+  const coreGuidance = coreAuthoredMissionFlowGuidance(runtime);
+  // A current mission step that actually requires movement outranks unrelated
+  // daily-life guidance, but never steals authority from a different explicit
+  // mission scene layered above it.
+  if (coreGuidance?.missionId
+    && coreGuidance.actionPanel === "movement"
+    && (!guidance?.missionId || guidance.missionId === coreGuidance.missionId)) {
+    return coreGuidance;
+  }
   const lifeFallback = guidance?.title === "その土地の生活を選ぶ" && onlyCanonicalWorldLife(actions);
   if (!guidance || lifeFallback) {
-    const coreGuidance = coreAuthoredMissionFlowGuidance(runtime);
     if (coreGuidance) return coreGuidance;
     if (t01Active(runtime)) return null;
   }
@@ -435,6 +458,7 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
   urgentCanonicalProducts,
+  ordinaryCanonicalLifeFallback,
   isCoreT02InvestigationPanel,
   isCanonicalT02ContinuityPanel,
   isT02InvestigationPanel,
