@@ -6,6 +6,9 @@ export * from './player-journey-base.mjs';
 
 export const PLAYER_SKILL_UI_STATES = Object.freeze(['HIDDEN','REVEALED_LOCKED','LEARNABLE','LEARNED','EQUIPMENT_ONLY','EVENT_ONLY']);
 
+const PHASE_MINUTE_OF_DAY = Object.freeze([600, 840, 1080, 1320]);
+const TERMINAL_TROUBLE_STATES = new Set(['resolved', 'failed', 'suppressed']);
+
 function permanentUiState(candidate) {
   if (candidate?.reasons?.includes('already_learned')) return 'LEARNED';
   if (candidate?.reasons?.includes('not_visible')) return candidate?.acquisitionCode === 'basic_level_up' ? 'REVEALED_LOCKED' : 'HIDDEN';
@@ -56,6 +59,71 @@ function postBattleResourceRatios(continuation, battleResult) {
     hpRatio: resourceRatio(actorHp / battleMaxHp, 0),
     mpRatio: battleMaxMp > 0 ? resourceRatio(actorMp / battleMaxMp, 0) : 0,
   };
+}
+
+function canonicalMoment(day, phase) {
+  const dayNumber = Math.max(1, Number(day) || 1);
+  const phaseIndex = Math.max(0, Math.min(3, Number(phase) || 0));
+  return Math.max(0, (dayNumber - 1) * 1440 + PHASE_MINUTE_OF_DAY[phaseIndex] - 600);
+}
+
+function transitionAnchor(trouble, transition) {
+  const reason = String(transition?.reason ?? '');
+  if (reason === 'scheduled-onset' || reason === 'gate-closed') {
+    return canonicalMoment(trouble.startDay, trouble.startPhase);
+  }
+  if (reason === 'rescue-window-missed' || reason === 'deadline-missed') {
+    return canonicalMoment(trouble.deadlineDay, trouble.deadlinePhase);
+  }
+  if (reason === 'final-deadline-missed') {
+    return canonicalMoment(trouble.finalDay, trouble.finalPhase);
+  }
+  return null;
+}
+
+// A player action may intentionally span several hours. The action itself still
+// resolves once, but canonical world transitions crossed inside that interval
+// happened at their own boundary, not at the action's ending timestamp. Keep the
+// state/result deterministic while restoring those exact transition timestamps.
+function normalizeCrossedTroubleTransitionAnchors(state, model, beforeMinute, transitionCounts, historyLengthBefore) {
+  const afterMinute = Number(state?.absoluteMinute ?? beforeMinute);
+  if (!(afterMinute > beforeMinute)) return 0;
+  let changed = 0;
+  const newHistory = Array.isArray(state?.history) ? state.history.slice(historyLengthBefore) : [];
+
+  for (const trouble of model?.troubles ?? []) {
+    const runtime = state?.troubles?.[trouble.id];
+    if (!runtime || !Array.isArray(runtime.transitions)) continue;
+    const start = Math.max(0, Number(transitionCounts?.[trouble.id] ?? 0));
+    for (const transition of runtime.transitions.slice(start)) {
+      const anchor = transitionAnchor(trouble, transition);
+      if (!Number.isFinite(anchor) || anchor <= beforeMinute || anchor > afterMinute) continue;
+      if (Number(transition.minute) !== afterMinute) continue;
+      transition.minute = anchor;
+      if (transition.to === 'active' && Number(runtime.activatedAt) === afterMinute) runtime.activatedAt = anchor;
+      if (TERMINAL_TROUBLE_STATES.has(transition.to) && Number(runtime.terminalAt) === afterMinute) runtime.terminalAt = anchor;
+
+      const transitionHistory = newHistory.find((entry) => entry?.type === 'TROUBLE_TRANSITION'
+        && entry.troubleId === trouble.id
+        && entry.from === transition.from
+        && entry.to === transition.to
+        && entry.reason === transition.reason
+        && Number(entry.minute) === afterMinute);
+      if (transitionHistory) transitionHistory.minute = anchor;
+
+      const rumorId = `RUM-${trouble.id}-${transition.to}`;
+      const rumor = state?.rumorById?.[rumorId]
+        ?? state?.rumors?.find?.((entry) => entry?.id === rumorId)
+        ?? null;
+      if (rumor && Number(rumor.originMinute) === afterMinute) rumor.originMinute = anchor;
+      const rumorHistory = newHistory.find((entry) => entry?.type === 'RUMOR_PUBLISHED'
+        && entry.rumorId === rumorId
+        && Number(entry.minute) === afterMinute);
+      if (rumorHistory) rumorHistory.minute = anchor;
+      changed += 1;
+    }
+  }
+  return changed;
 }
 
 export function createInitialJourneyState(options) {
@@ -162,7 +230,17 @@ export function settleInteractiveBattleAction(state, model, data, skills, catalo
 
 export function resolvePlayerAction(state, model, data, skills, catalog, profileInput, action) {
   const fatigueBefore=Number(state?.player?.needs?.fatigue??0);
+  const minuteBefore=Number(state?.absoluteMinute??0);
+  const historyLengthBefore=Array.isArray(state?.history)?state.history.length:0;
+  const transitionCounts=Object.fromEntries(Object.entries(state?.troubles??{}).map(([id,runtime])=>[id,Array.isArray(runtime?.transitions)?runtime.transitions.length:0]));
   const output=base.resolvePlayerAction(state,model,data,skills,catalog,profileInput,action);
+  normalizeCrossedTroubleTransitionAnchors(state,model,minuteBefore,transitionCounts,historyLengthBefore);
   applyEquipmentWorldActionEffects({state,data,action,fatigueBefore});
   syncEquipmentWorldRuntime(state,data);return output;
 }
+
+export const PLAYER_JOURNEY_RUNTIME_INTERNALS = Object.freeze({
+  canonicalMoment,
+  transitionAnchor,
+  normalizeCrossedTroubleTransitionAnchors,
+});
