@@ -4,7 +4,7 @@ import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.m
 
 export * from "./authored-mission-flow-day2-day8-village-watch.js";
 
-export const AUTHORED_DAY8_T03_NIGHT_VIGIL_VERSION = "authored-day8-t03-night-vigil-v2";
+export const AUTHORED_DAY8_T03_NIGHT_VIGIL_VERSION = "authored-day8-t03-night-vigil-v3";
 
 const LOCATION = "田園の村";
 const FACILITY_ID = "LOC_FARM_NORTH_FENCE";
@@ -14,25 +14,25 @@ const HOWL_OPEN_MINUTE = 22 * 60;
 const CHOICES = Object.freeze([
   Object.freeze({
     id: "keep_written_watch_until_dawn",
-    label: "交代記録を書きながら夜明けまで残る",
+    label: "記録係として夜明けまで残り、交代の合間は腰を下ろす",
     minutes: 390,
     hungerDelta: 14,
-    fatigueDelta: 42,
+    fatigueDelta: 18,
     worldFlag: "day8WolfWatch:playerStayedUntilDawn",
     goal: "carry-written-watch-log-to-dawn-relief",
-    summary: "遠吠えの時刻、柵の傷、交代者の名を夜明けまで書き続けた。記録は残ったが、本人の疲労は限界へ達した。",
-    speech: "記録は俺が引き取る。お前は夜明けの交代が来たら井戸へ寄れ。立ったまま眠る顔をしている。",
+    summary: "遠吠えの時刻、柵の傷、交代者の名を一冊へつなげた。巡回そのものは交代班へ任せ、交代の合間には柵際で腰を下ろしたため、強い疲労は残ったが夜明け前に倒れず記録を引き継げた。",
+    speech: "記録はお前がつないでくれ。巡回はこっちで回す。立ち続けるな、交代が戻るまでは座って書け。",
   }),
   Object.freeze({
     id: "rotate_short_patrols",
-    label: "短い巡回を村人へ回す",
+    label: "記録ごと短い巡回へ分け、村人へ回す",
     minutes: 360,
     hungerDelta: 10,
-    fatigueDelta: 22,
+    fatigueDelta: 10,
     worldFlag: "day8WolfWatch:rotatingPatrolsUsed",
     goal: "rotate-night-watch-among-villagers",
-    summary: "北柵、馬小屋、穀倉の巡回を短く区切り、同じ者が夜通し立たない当番へ組み替えた。",
-    speech: "一人が倒れる見張りは長続きしない。木札を渡したら、次の者が来るまで座っていろ。",
+    summary: "北柵、馬小屋、穀倉の巡回と記録を短く区切り、同じ者が夜通し責任を抱えない当番へ組み替えた。",
+    speech: "一人が倒れる見張りは長続きしない。木札と帳面を一緒に渡せ。次が来るまで座っていろ。",
   }),
   Object.freeze({
     id: "hand_watch_to_jill",
@@ -185,7 +185,7 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
     return {
       kicker: "遠吠えの向きは分かったが、夜明けまでの見張り方はまだ選べる",
       title: "北柵の夜を誰が引き受けるか",
-      detail: "自分で記録を続ける、短い巡回へ分ける、ジルへ渡す。疲労と翌朝の役割が変わる。",
+      detail: "記録係として残る、記録ごと短い巡回へ分ける、ジルへ渡す。疲労と翌朝の役割が変わる。",
       targetLocation: LOCATION,
       targetFacilityId: FACILITY_ID,
     };
