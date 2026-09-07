@@ -1,8 +1,8 @@
-import * as base from "./authored-mission-t02-village-resolution.js";
+import * as base from "./authored-mission-t02-village-resolution-core-first.js";
 
-export * from "./authored-mission-t02-village-resolution.js";
+export * from "./authored-mission-t02-village-resolution-core-first.js";
 
-export const AUTHORED_MISSION_T03_DAY8_ONSET_VERSION = "authored-mission-t03-day8-onset-v3";
+export const AUTHORED_MISSION_T03_DAY8_ONSET_VERSION = "authored-mission-t03-day8-onset-v4";
 
 const TROUBLE_ID = "T03";
 const MISSION_ID = "MSN-T03";
