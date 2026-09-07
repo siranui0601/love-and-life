@@ -3,7 +3,7 @@ import { consumeMeal, completePlayerRest, ensurePlayerNeeds } from "../../../../
 
 export * from "./canonical-regional-labour.js";
 
-export const CANONICAL_WORLD_LIFE_VERSION = "canonical-world-life-v2";
+export const CANONICAL_WORLD_LIFE_VERSION = "canonical-world-life-v3";
 
 // Canonical TRPG/商品・価格表 subset used by ordinary daily life. These are
 // public world products, not route rewards. The route may use them, but any
@@ -143,7 +143,6 @@ function actionBase(id, label, minutes, extra = {}) {
 function productActions(runtime) {
   const out = [];
   const p = player(runtime);
-  const inv = economy(runtime).provisions;
   for (const [productId, tuple] of Object.entries(PRODUCTS)) {
     const [location, facilityId, category, label, price, kind, portions = 1] = tuple;
     if (String(p.location ?? "") === location && String(p.facilityId ?? "") === facilityId && permit(runtime, tuple[7])) {
@@ -167,11 +166,6 @@ function productActions(runtime) {
           canonicalWorldLifeKind: kind, productId, price,
         }));
       }
-    }
-    if (kind === "provision" && Number(inv[productId] ?? 0) > 0) {
-      out.push(actionBase(`LIFE:EAT:${productId}`, `手持ちの${label}を食べる`, 30, {
-        canonicalWorldLifeKind: "eat_provision", productId, price: 0,
-      }));
     }
   }
   return out;
@@ -249,21 +243,6 @@ function consume(runtime, actionValue, result) {
     state.purchases[productId] = Number(state.purchases[productId] ?? 0) + 1;
     result.summary = `${PRODUCTS[productId]?.[3] ?? productId}を買い、${portions}食分を荷物へ入れた。`;
     history(runtime, { actionId: actionValue.id, kind, productId, portions, goldDelta: -Number(actionValue.price ?? 0) });
-    return true;
-  }
-
-  if (kind === "eat_provision") {
-    if (Number(state.provisions[productId] ?? 0) <= 0) {
-      result.ok = false;
-      result.code = "provision_missing";
-      result.summary = "その保存食はもう持っていない。";
-      return true;
-    }
-    state.provisions[productId] -= 1;
-    consumeMeal(p, { minute: runtime.playerState.absoluteMinute, nutrition: 58, quality: "standard" });
-    state.meals[productId] = Number(state.meals[productId] ?? 0) + 1;
-    result.summary = `手持ちの${PRODUCTS[productId]?.[3] ?? productId}を食べた。`;
-    history(runtime, { actionId: actionValue.id, kind, productId, portions: -1 });
     return true;
   }
 
@@ -365,7 +344,7 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
     return {
       kicker: "食べる・休む・泊まる・買うことも、この世界で生きる行動だ",
       title: "その土地の生活を選ぶ",
-      detail: "商品・価格表の正式な食事、保存食、宿泊、修理を通常の公開行動として利用できる。",
+      detail: "商品・価格表の正式な食事、保存食の購入、宿泊、修理を通常の公開行動として利用できる。携帯した保存食はこの汎用画面から自由消費せず、明示された食事・scene actionで扱う。",
       targetLocation: player(runtime).location ?? null,
       targetFacilityId: player(runtime).facilityId ?? null,
     };
