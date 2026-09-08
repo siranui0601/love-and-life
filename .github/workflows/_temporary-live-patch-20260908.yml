@@ -6,40 +6,19 @@ on:
     paths:
       - ".github/workflows/_temporary-live-patch-20260908.yml"
 permissions:
-  contents: write
+  contents: read
 jobs:
-  apply:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: claude/trpg-virtue-route-main-143ar9
-          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Apply Day3 labour and F relay production fixes
-        run: |
-          node tools/trpg-sim/_temporary_live_patch4_fix_20260908.mjs
-          node tools/trpg-sim/_temporary_live_patch4_fix2_20260908.mjs
-          node tools/trpg-sim/_temporary_live_patch4_20260908.mjs
-          node tools/trpg-sim/_temporary_live_patch5_20260908.mjs
-          node tools/trpg-sim/_temporary_live_patch6_20260908.mjs
-      - name: Diagnose Day3 labour surface
-        run: node tools/trpg-sim/_temporary_day3_labour_diag_20260908.mjs
-      - name: Run focused deterministic tests
+      - name: Verify landed Day3 labour and F relay regressions only
         run: |
           node --test tools/trpg-sim/test/authored-village-bakery-evening.test.mjs
           node --test tools/trpg-sim/test/virtue-route-v3-day3-natural-breakfast-realignment.test.mjs
           node --test tools/trpg-sim/test/authored-register-butterfly-relay-contact.test.mjs
-      - name: Commit patched code
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/server/trpg/content/authored-mission-flow-registry.js \
-            src/server/trpg/content/authored-register-butterfly-relay.js \
-            tools/trpg-sim/test/authored-village-bakery-evening.test.mjs \
-            tools/trpg-sim/test/authored-register-butterfly-relay-contact.test.mjs
-          git commit -m "fix(trpg): expose Day3 shift and drive F relay contact"
-          git push origin HEAD:claude/trpg-virtue-route-main-143ar9
-# rerun after correcting the focused Day3 invariant
