@@ -18,11 +18,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Repair and apply Day3 labour and F relay patch
+      - name: Apply Day3 labour and F relay production fixes
         run: |
           node tools/trpg-sim/_temporary_live_patch4_fix_20260908.mjs
           node tools/trpg-sim/_temporary_live_patch4_fix2_20260908.mjs
           node tools/trpg-sim/_temporary_live_patch4_20260908.mjs
+          node tools/trpg-sim/_temporary_live_patch5_20260908.mjs
       - name: Run focused deterministic tests
         run: |
           node --test tools/trpg-sim/test/authored-village-bakery-evening.test.mjs
