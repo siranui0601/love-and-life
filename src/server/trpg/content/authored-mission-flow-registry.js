@@ -130,7 +130,10 @@ function mergeLocalPublicProductsBesideAuthoredActions(runtime, actions) {
   // progress elsewhere in the world may not make a bakery, inn, market, or
   // service counter disappear while the player is physically standing there.
   const ownsWholePanel = actions.some((action) => action?.ownsWholeChoicePanel === true
-    || action?.exclusiveChoicePanel === true);
+    || action?.exclusiveChoicePanel === true
+    || (action?.authoredMissionFlowExclusiveChoice === true
+      && action?.canonicalWorldLifeChoice !== true
+      && action?.authoredDailyLifeChoice !== true));
   if (ownsWholePanel) return actions;
   const products = publicLifeProducts(runtime);
   if (!products.length) return actions;

@@ -87,3 +87,16 @@ test("bakery bridge is common-state gated: wrong day, place, late time, or urgen
   const tired = runtime({ fatigue: 75 });
   assert.equal(bakery.ownEligible(tired), false);
 });
+
+test("Day2 merchant-owned three-choice panel is not polluted by public bakery products", () => {
+  const state = runtime({ wallMinute: 7 * 60 + 47, facilityId: "LOC_FARM_BAKERY", hunger: 8, fatigue: 8 });
+  state.playerState.history.push({ type: "DAY2_MERCHANT_CASH_WAGE_TAKEN", minute: state.playerState.absoluteMinute - 1 });
+  const actions = authoredMissionFlowExclusiveActions(state);
+  assert.deepEqual(actions.map((action) => action.id), [
+    "MISSION_FLOW:T01:DAY2_MERCHANT_STALL:buy_black_bread",
+    "MISSION_FLOW:T01:DAY2_MERCHANT_STALL:copy_prices",
+    "MISSION_FLOW:T01:DAY2_MERCHANT_STALL:take_hunter_parcel",
+  ]);
+  assert.ok(actions.every((action) => action.authoredDay2T01MerchantStallChoice === true));
+  assert.ok(actions.every((action) => action.canonicalWorldLifeChoice !== true));
+});
