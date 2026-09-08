@@ -2,7 +2,7 @@ import * as base from "./authored-register-butterfly.js";
 
 export * from "./authored-register-butterfly.js";
 
-export const AUTHORED_REGISTER_BUTTERFLY_RELAY_VERSION = "authored-register-butterfly-relay-v3";
+export const AUTHORED_REGISTER_BUTTERFLY_RELAY_VERSION = "authored-register-butterfly-relay-v4";
 
 const {
   LOCATION,
@@ -208,9 +208,16 @@ function observeRelayShare(runtime) {
 
 export function synchronizeRegisterButterfly(runtime) {
   const baseState = base.synchronizeRegisterButterfly(runtime);
-  const relayPlan = ensureRelayPlan(runtime);
+  let relayPlan = ensureRelayPlan(runtime);
   const propagation = observeRelayShare(runtime);
   const settled = base.synchronizeRegisterButterfly(runtime);
+
+  // The base synchronizer reconstructs the source belief from the canonical
+  // inn-register fact. Until a real NPC conversation has propagated the fact,
+  // restore the pending physical relay duty after that reconstruction so the
+  // planner still sees it on the next world tick.
+  if (!propagation) relayPlan = ensureRelayPlan(runtime) ?? relayPlan;
+
   return {
     ...baseState,
     ...settled,
@@ -221,12 +228,16 @@ export function synchronizeRegisterButterfly(runtime) {
 
 export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   synchronizeRegisterButterfly(runtime);
-  return base.authoredMissionFlowExclusiveActions(runtime, context);
+  const actions = base.authoredMissionFlowExclusiveActions(runtime, context);
+  ensureRelayPlan(runtime);
+  return actions;
 }
 
 export function authoredMissionFlowGuidance(runtime, context = {}) {
   synchronizeRegisterButterfly(runtime);
-  return base.authoredMissionFlowGuidance(runtime, context);
+  const guidance = base.authoredMissionFlowGuidance(runtime, context);
+  ensureRelayPlan(runtime);
+  return guidance;
 }
 
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
