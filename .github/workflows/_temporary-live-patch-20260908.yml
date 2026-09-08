@@ -42,3 +42,4 @@ jobs:
             tools/trpg-sim/test/authored-register-butterfly-relay-contact.test.mjs
           git commit -m "fix(trpg): expose Day3 shift and drive F relay contact"
           git push origin HEAD:claude/trpg-virtue-route-main-143ar9
+# rerun after correcting the focused Day3 invariant
