@@ -37,7 +37,7 @@ function readRows(file) {
     .map((cells) => Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ''])));
 }
 
-test('Day2 realignment uses an inn breakfast, physical bakery move, and currently visible evening branch', () => {
+test('Day2 realignment uses facility meals, physical movement, and the currently visible evening branch', () => {
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hv-day2-natural-'));
   const buy = {
     actionId: 'LIFE:BUY:ITM008',
@@ -55,6 +55,13 @@ test('Day2 realignment uses an inn breakfast, physical bakery move, and currentl
     },
     regionId: '田園の村',
     facilityId: 'LOC_FARM_BAKERY',
+  };
+  const oldSleep = {
+    actionId: 'LIFE:SLEEP:ITM001',
+    commandType: 'CHOOSE',
+    payload: { choiceId: 'LIFE:SLEEP:ITM001', actionId: 'LIFE:SLEEP:ITM001' },
+    regionId: '田園の村',
+    facilityId: 'LOC_FARM_INN',
   };
   const mapping = [
     HEADERS.join(','),
@@ -80,6 +87,18 @@ test('Day2 realignment uses an inn breakfast, physical bakery move, and currentl
       replacementSteps: JSON.stringify([oldEvening]),
       status: 'RESOLVED_EXISTING',
     }),
+    row({
+      legacyRowIndex: '19',
+      legacyRowId: 'VR2-D02-09',
+      classification: 'PLAYER_COMMAND',
+      commandType: 'CHOOSE',
+      choiceId: oldSleep.actionId,
+      actionId: oldSleep.actionId,
+      payload: JSON.stringify(oldSleep.payload),
+      replacementRowIds: 'VR2-D02-09:PLAYER_COMMAND',
+      replacementSteps: JSON.stringify([oldSleep]),
+      status: 'RESOLVED_EXISTING',
+    }),
     '',
   ].join('\n');
 
@@ -93,25 +112,28 @@ test('Day2 realignment uses an inn breakfast, physical bakery move, and currentl
     count: 1,
   }));
   fs.writeFileSync(path.join(outDir, 'virtue-route-v3-static-summary.json'), JSON.stringify({
-    expandedV3Rows: 3,
+    expandedV3Rows: 4,
     noFreeProvisionEatRealignmentVersion: 'virtue-route-v3-no-free-provision-eat-v1',
   }));
 
   const result = applyDay2NaturalBreakfastRealignment({ outDir });
   assert.deepEqual(result, {
-    version: 'virtue-route-v3-day2-natural-breakfast-v2',
-    expandedV3Rows: 3,
+    version: 'virtue-route-v3-day2-natural-breakfast-v3',
+    expandedV3Rows: 5,
     moves: 0,
     actions: [
       'LIFE:EAT:ITM003',
       'MOVE_LOCAL:LOC_FARM_BAKERY',
       'DAILY_LIFE:DAILY_BAKERY_EVENING:help_close_the_bakery',
+      'LIFE:EAT:ITM003',
+      'LIFE:SLEEP:ITM001',
     ],
   });
 
   const rows = readRows(path.join(outDir, 'virtue-route-v3-mapping.csv'));
   const breakfast = rows.find((entry) => entry.legacyRowId === 'VR2-D02-01');
   const evening = rows.find((entry) => entry.legacyRowId === 'VR2-D02-08');
+  const overnight = rows.find((entry) => entry.legacyRowId === 'VR2-D02-09');
   assert.deepEqual(JSON.parse(breakfast.replacementSteps).map((step) => step.actionId), [
     'LIFE:EAT:ITM003',
     'MOVE_LOCAL:LOC_FARM_BAKERY',
@@ -120,13 +142,18 @@ test('Day2 realignment uses an inn breakfast, physical bakery move, and currentl
   assert.deepEqual(JSON.parse(evening.replacementSteps).map((step) => step.actionId), [
     'DAILY_LIFE:DAILY_BAKERY_EVENING:help_close_the_bakery',
   ]);
+  assert.deepEqual(JSON.parse(overnight.replacementSteps).map((step) => step.actionId), [
+    'LIFE:EAT:ITM003',
+    'LIFE:SLEEP:ITM001',
+  ]);
 
   const moves = JSON.parse(fs.readFileSync(path.join(outDir, 'virtue-route-v3-proposed-local-moves.json'), 'utf8'));
   assert.equal(moves.count, 0);
   assert.deepEqual(moves.moves, []);
 
   const summary = JSON.parse(fs.readFileSync(path.join(outDir, 'virtue-route-v3-static-summary.json'), 'utf8'));
-  assert.deepEqual(summary.day2NaturalBreakfastRealignedLegacyRows, ['VR2-D02-01', 'VR2-D02-08']);
+  assert.deepEqual(summary.day2NaturalBreakfastRealignedLegacyRows, ['VR2-D02-01', 'VR2-D02-08', 'VR2-D02-09']);
   assert.equal(summary.day2BakeryEveningAction, 'DAILY_LIFE:DAILY_BAKERY_EVENING:help_close_the_bakery');
-  assert.equal(summary.expandedV3Rows, 3);
+  assert.equal(summary.day2OvernightMealAction, 'LIFE:EAT:ITM003');
+  assert.equal(summary.expandedV3Rows, 5);
 });
