@@ -100,3 +100,14 @@ test("Day2 merchant-owned three-choice panel is not polluted by public bakery pr
   assert.ok(actions.every((action) => action.authoredDay2T01MerchantStallChoice === true));
   assert.ok(actions.every((action) => action.canonicalWorldLifeChoice !== true));
 });
+
+
+test("Day3 16:00 inn keeps the legal Sheet-backed dishwashing shift ahead of public meals", () => {
+  const state = runtime({ wallMinute: 16 * 60, facilityId: "LOC_FARM_INN", hunger: 43, fatigue: 32 });
+  state.playerState.absoluteMinute = absoluteMinuteFor(3, 16 * 60);
+  state.playerState.day = 3;
+  const actions = authoredMissionFlowExclusiveActions(state, { movementActions: [], presentNpcs: [] });
+  assert.equal(actions[0]?.id, "WORK:FACILITY:JOB-FARM-03");
+  assert.ok(actions.some((action) => action.id === "LIFE:EAT:ITM003"));
+  assert.ok(actions.some((action) => action.id === "LIFE:EAT:ITM004"));
+});

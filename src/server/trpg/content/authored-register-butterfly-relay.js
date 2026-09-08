@@ -2,7 +2,7 @@ import * as base from "./authored-register-butterfly.js";
 
 export * from "./authored-register-butterfly.js";
 
-export const AUTHORED_REGISTER_BUTTERFLY_RELAY_VERSION = "authored-register-butterfly-relay-v4";
+export const AUTHORED_REGISTER_BUTTERFLY_RELAY_VERSION = "authored-register-butterfly-relay-v5";
 
 const {
   LOCATION,
@@ -19,6 +19,8 @@ const {
 } = base.AUTHORED_REGISTER_BUTTERFLY_INTERNALS;
 
 const RELAY_PLAN_ID = "GOAP-F-RONA-RELAY-REGISTERED-RESCUER";
+const RELAY_TRAVEL_HISTORY = "F_RONA_RELAY_CONTACT_TRAVEL_STARTED";
+const LOCAL_RELAY_TRAVEL_HOURS = 0.5;
 
 function arr(value) {
   return Array.isArray(value) ? value : [];
@@ -62,14 +64,12 @@ function ensureRelayPlan(runtime) {
   if (!belief || unavailable(lorna) || unavailable(riona)) return null;
   if (riona?.beliefs?.[FACT_ID] || relayShareEvent(runtime)) return null;
 
-  // Lorna is the inn-side source of this fact. Chasing a roaming merchant's
-  // current facility one tick late made the two NPCs perpetually miss each
-  // other. The causal rendezvous is therefore Wheat Inn itself: Lorna remains
-  // at the place where the guestbook evidence exists, and Riona's ordinary
-  // merchant route can bring her there. The common NPC conversation engine is
-  // still the only authority that creates the Rona -> Riona share.
-  const targetHub = LOCATION;
-  const targetFacilityId = INN_FACILITY_ID;
+  // This fact is conversation-only, so the source must physically meet Riona.
+  // Keep the authored duty aimed at Riona's actual current village facility;
+  // the command-side driver below starts a real localTravel instead of copying
+  // knowledge, changing currentGoal, or teleporting either NPC.
+  const targetHub = riona?.position?.hubId ?? riona?.location ?? LOCATION;
+  const targetFacilityId = npcFacility(riona) ?? INN_FACILITY_ID;
   const relayPlan = {
     id: RELAY_PLAN_ID,
     npcIds: [RONA_ID],
@@ -78,8 +78,8 @@ function ensureRelayPlan(runtime) {
     targetHub,
     targetFacilityId,
     delayHours: 0,
-    statusText: "宿帳とフィン救助を照合した内容を、麦穂亭へ立ち寄る行商人リオナへ直接伝えるため待っている",
-    reason: "registered-rescuer-rumor-needs-real-contact-at-source-record",
+    statusText: "宿帳とフィン救助を照合した内容を、村内で行商人リオナへ直接伝えに向かっている",
+    reason: "registered-rescuer-rumor-needs-real-physical-contact",
   };
 
   const plans = arr(belief.aftermathPlans);
@@ -87,16 +87,58 @@ function ensureRelayPlan(runtime) {
   if (existing) Object.assign(existing, relayPlan);
   else belief.aftermathPlans = [...plans, relayPlan];
 
-  // Completing the authored duty while the listener is absent is not a real
-  // disclosure. Re-open it and keep Lorna at the inn until a later life tick
-  // places Riona there too; prepareNpcLifeTick will then create the common
-  // facility conversation before either NPC chooses a new routine action.
+  // Completing a travel duty without an actual share is not disclosure. Reopen
+  // it until the common physical conversation engine creates the share event.
   if (arr(lorna.completedAftermathPlanIds).includes(RELAY_PLAN_ID)
-    && (npcFacility(lorna) !== targetFacilityId || npcFacility(riona) !== targetFacilityId)) {
+    && !relayShareEvent(runtime)) {
     lorna.completedAftermathPlanIds = arr(lorna.completedAftermathPlanIds)
       .filter((id) => id !== RELAY_PLAN_ID);
   }
   return relayPlan;
+}
+
+function driveRelayContact(runtime) {
+  const relayPlan = ensureRelayPlan(runtime);
+  const lorna = state(runtime, RONA_ID);
+  const riona = state(runtime, RIONA_ID);
+  const belief = lorna?.beliefs?.[FACT_ID];
+  if (!relayPlan || !belief || unavailable(lorna) || unavailable(riona)) return null;
+  if (riona?.beliefs?.[FACT_ID] || relayShareEvent(runtime)) return null;
+  if (lorna.travel || riona.travel || riona.localTravel) return null;
+  if (lorna.localTravel) return lorna.localTravel;
+  if (String(lorna.presence ?? "present") !== "present"
+    || String(riona.presence ?? "present") !== "present") return null;
+
+  const lornaHub = lorna?.position?.hubId ?? lorna?.location ?? null;
+  const rionaHub = riona?.position?.hubId ?? riona?.location ?? null;
+  const fromFacilityId = npcFacility(lorna);
+  const toFacilityId = npcFacility(riona);
+  if (!lornaHub || lornaHub !== rionaHub || !toFacilityId || fromFacilityId === toFacilityId) return null;
+
+  const departedAt = minute(runtime) / 60;
+  const travel = {
+    routeId: "LOCAL:" + lornaHub + ":" + (fromFacilityId ?? "@hub") + "->" + toFacilityId,
+    hubId: lornaHub,
+    fromFacilityId,
+    toFacilityId,
+    departedAt,
+    arriveAt: departedAt + LOCAL_RELAY_TRAVEL_HOURS,
+  };
+  lorna.localTravel = travel;
+  lorna.presence = "traveling";
+  runtime.playerState.history ??= [];
+  runtime.playerState.history.push({
+    type: RELAY_TRAVEL_HISTORY,
+    minute: minute(runtime),
+    npcId: RONA_ID,
+    targetNpcId: RIONA_ID,
+    factId: FACT_ID,
+    relayPlanId: RELAY_PLAN_ID,
+    fromFacilityId,
+    toFacilityId,
+    durationMinutes: LOCAL_RELAY_TRAVEL_HOURS * 60,
+  });
+  return travel;
 }
 
 function ensureRumorCollections(runtime) {
@@ -243,6 +285,10 @@ export function authoredMissionFlowGuidance(runtime, context = {}) {
 export function applyAuthoredMissionFlowAction(runtime, action, result) {
   const changed = base.applyAuthoredMissionFlowAction(runtime, action, result);
   synchronizeRegisterButterfly(runtime);
+  // Movement is command-driven only. Pure views/synchronization never move an
+  // NPC, while the next normal world tick settles this 30-minute local travel
+  // and lets the generic co-presence conversation engine create the real share.
+  driveRelayContact(runtime);
   return changed;
 }
 
@@ -259,8 +305,11 @@ export const AUTHORED_REGISTER_BUTTERFLY_INTERNALS = Object.freeze({
 
 export const AUTHORED_REGISTER_BUTTERFLY_RELAY_INTERNALS = Object.freeze({
   RELAY_PLAN_ID,
+  RELAY_TRAVEL_HISTORY,
+  LOCAL_RELAY_TRAVEL_HOURS,
   relayShareEvent,
   ensureRelayPlan,
+  driveRelayContact,
   observeRelayShare,
   relayAwareCallbackEligible,
 });

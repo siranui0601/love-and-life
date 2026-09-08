@@ -117,15 +117,25 @@ function routinePublicLifeOnly(actions) {
 
 function mergePublicProductsBesideRoutineLife(runtime, actions) {
   if (!routinePublicLifeOnly(actions) || t01Active(runtime)) return actions;
+  const labour = availableCanonicalLabour(runtime);
   const products = publicLifeProducts(runtime);
-  if (!products.length) return actions;
-  const combined = [...products, ...actions];
+  if (!labour.length && !products.length) return actions;
+  // A legal Sheet-backed shift is time-window constrained while counter meals
+  // and goods remain broadly available. Preserve both ordinary-life surfaces,
+  // but order currently legal labour first so the final three-choice selector
+  // cannot make a valid shift impossible to choose.
+  const combined = [...labour, ...products, ...actions];
   return [...new Map(combined.map((action) => [action.id, action])).values()];
 }
 
 function mergeLocalPublicProductsBesideAuthoredActions(runtime, actions) {
   if (!Array.isArray(actions) || actions.length === 0 || t01Active(runtime)) return actions;
   if (onlyCanonicalWorldLife(actions)) return actions;
+  // Routine life has already been normalized by
+  // mergePublicProductsBesideRoutineLife(), including time-sensitive canonical
+  // labour before broad meal/shop products. Do not run a second product-first
+  // merge here and silently push a legal work shift behind the visible cap.
+  if (routinePublicLifeOnly(actions)) return actions;
   // A genuinely modal/owned panel may suppress ordinary life. Ordinary mission
   // progress elsewhere in the world may not make a bakery, inn, market, or
   // service counter disappear while the player is physically standing there.
@@ -198,9 +208,15 @@ function dailyLifeCommonChoiceCandidates(runtime, actions, context = {}, product
     ...action,
     authoredMissionFlowExclusiveChoice: false,
   }));
+  const canonicalLabour = commonLayerActions
+    .filter((action) => action?.canonicalRegionalLabourChoice === true);
+  const otherCommonLife = commonLayerActions
+    .filter((action) => action?.canonicalRegionalLabourChoice !== true
+      && action?.canonicalWorldLifeChoice !== true);
   const combined = [
+    ...canonicalLabour,
     ...products,
-    ...commonLayerActions,
+    ...otherCommonLife,
     ...conversations,
     ...(seekBattle ? [seekBattle] : []),
     ...movements,
