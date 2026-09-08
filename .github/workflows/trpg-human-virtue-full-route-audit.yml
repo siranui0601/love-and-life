@@ -1,5 +1,5 @@
 name: TRPG Human Virtue full-route audit
-# audit-trigger: owned-panel production fix 5852d0e00517c4185e461c7a3df2916616aee896
+# audit-trigger: F callback causal route realignment
 
 on:
   pull_request:
@@ -16,6 +16,7 @@ on:
       - "tools/trpg-sim/realign-virtue-route-v3-no-free-provision-eat.mjs"
       - "tools/trpg-sim/realign-virtue-route-v3-day2-natural-breakfast.mjs"
       - "tools/trpg-sim/realign-virtue-route-v3-day3-natural-breakfast.mjs"
+      - "tools/trpg-sim/realign-virtue-route-v3-f-register-callback.mjs"
       - "tools/trpg-sim/export-virtue-route-v2-source.mjs"
       - "tools/trpg-sim/export-virtue-route-v3-sheets.mjs"
       - "src/server/trpg/**"
@@ -59,6 +60,8 @@ jobs:
         run: node tools/trpg-sim/realign-virtue-route-v3-day2-natural-breakfast.mjs
       - name: Realign Day3 breakfast before bakery morning work
         run: node tools/trpg-sim/realign-virtue-route-v3-day3-natural-breakfast.mjs
+      - name: Realign Day2 through the live Checkpoint F register callback
+        run: node tools/trpg-sim/realign-virtue-route-v3-f-register-callback.mjs
       - name: Validate deterministic route and build canonical Sheet ledger
         run: |
           node tools/trpg-sim/validate-virtue-route-v3-static.mjs
