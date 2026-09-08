@@ -126,7 +126,7 @@ function availableAt(runtime, tuple) {
 }
 
 function actionBase(id, label, minutes, extra = {}) {
-  return {
+  const action = {
     id,
     actionId: id,
     family: "life",
@@ -138,6 +138,12 @@ function actionBase(id, label, minutes, extra = {}) {
     canonicalWorldLifeChoice: true,
     ...extra,
   };
+  // Canonical products are real facility-local actions. Expose that locality on
+  // the common action shape as well as the product scope so overlay registries
+  // can keep them beside unrelated authored choices without leaking a remote
+  // shop/meal into the current panel.
+  action.targetFacilityId ??= action.facilityId ?? action.scopeId ?? null;
+  return action;
 }
 
 function productActions(runtime) {
@@ -148,22 +154,22 @@ function productActions(runtime) {
     if (String(p.location ?? "") === location && String(p.facilityId ?? "") === facilityId && permit(runtime, tuple[7])) {
       if (kind === "provision" && gold(runtime) >= Number(price)) {
         out.push(actionBase(`LIFE:BUY:${productId}`, `${label}を買う（${price}G）`, 10, {
-          canonicalWorldLifeKind: "buy_provision", productId, price, portions,
+          canonicalWorldLifeKind: "buy_provision", productId, price, portions, targetFacilityId: facilityId,
         }));
       }
       if (kind === "meal" && (gold(runtime) >= Number(price) || mealCredits(runtime) > 0)) {
         out.push(actionBase(`LIFE:EAT:${productId}`, `${label}を食べる（${price}G）`, 30, {
-          canonicalWorldLifeKind: "eat_meal", productId, price,
+          canonicalWorldLifeKind: "eat_meal", productId, price, targetFacilityId: facilityId,
         }));
       }
       if (["lodging", "camp", "worker_lodging"].includes(kind) && availableAt(runtime, tuple)) {
         out.push(actionBase(`LIFE:SLEEP:${productId}`, `${label}で8時間休む（${price}G）`, 480, {
-          canonicalWorldLifeKind: "sleep", productId, price, lodging: kind !== "camp",
+          canonicalWorldLifeKind: "sleep", productId, price, lodging: kind !== "camp", targetFacilityId: facilityId,
         }));
       }
       if (["repair", "treatment"].includes(kind) && availableAt(runtime, tuple)) {
         out.push(actionBase(`SERVICE_BUY:${productId}`, `${label}を頼む（${price}G）`, 30, {
-          canonicalWorldLifeKind: kind, productId, price,
+          canonicalWorldLifeKind: kind, productId, price, targetFacilityId: facilityId,
         }));
       }
     }

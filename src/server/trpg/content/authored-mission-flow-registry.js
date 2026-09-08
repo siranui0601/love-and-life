@@ -123,6 +123,21 @@ function mergePublicProductsBesideRoutineLife(runtime, actions) {
   return [...new Map(combined.map((action) => [action.id, action])).values()];
 }
 
+function mergeLocalPublicProductsBesideAuthoredActions(runtime, actions) {
+  if (!Array.isArray(actions) || actions.length === 0 || t01Active(runtime)) return actions;
+  if (onlyCanonicalWorldLife(actions)) return actions;
+  // A genuinely modal/owned panel may suppress ordinary life. Ordinary mission
+  // progress elsewhere in the world may not make a bakery, inn, market, or
+  // service counter disappear while the player is physically standing there.
+  const ownsWholePanel = actions.some((action) => action?.ownsWholeChoicePanel === true
+    || action?.exclusiveChoicePanel === true);
+  if (ownsWholePanel) return actions;
+  const products = publicLifeProducts(runtime);
+  if (!products.length) return actions;
+  const combined = [...products, ...actions];
+  return [...new Map(combined.map((action) => [action.id, action])).values()];
+}
+
 function dailyLifeCommonChoiceCandidates(runtime, actions, context = {}, productionRuntime = false) {
   if (!productionRuntime || !containsAuthoredDailyLife(actions)) return actions;
 
@@ -424,6 +439,7 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const survivalProducts = urgentCanonicalProducts(runtime, actions);
   if (survivalProducts) return survivalProducts;
   actions = mergePublicProductsBesideRoutineLife(runtime, actions);
+  actions = mergeLocalPublicProductsBesideAuthoredActions(runtime, actions);
   actions = ordinaryCanonicalLifeFallback(runtime, actions);
   actions = dailyLifeCommonChoiceCandidates(runtime, actions, context, productionRuntimeBeforeBase);
   if (actions == null) return null;
@@ -485,6 +501,7 @@ export const AUTHORED_MISSION_FLOW_REGISTRY_INTERNALS = Object.freeze({
   publicLifeProducts,
   routinePublicLifeOnly,
   mergePublicProductsBesideRoutineLife,
+  mergeLocalPublicProductsBesideAuthoredActions,
   dailyLifeCommonChoiceCandidates,
   coreMissionOwnsChoicePool,
   authoredMissionOwnsChoicePool,
