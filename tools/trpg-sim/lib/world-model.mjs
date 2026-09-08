@@ -578,7 +578,11 @@ function structuralDiagnostics({ routes, troubles, timeline, chains, facilities,
     }
   }
 
-  const expected = { routes: 15, troubles: 19, timeline: 55, chains: 23, facilities: 103, npcs: 110 };
+  // The live TRPG canonical added LOC_FARM_REPAIR after the historical
+  // world snapshot. Keep structural drift detection strict while recognizing
+  // that explicit, provenance-tracked canonical delta as one additional row.
+  const canonicalFarmRepairDelta = Number(facilities.some((facility) => facility.id === "LOC_FARM_REPAIR"));
+  const expected = { routes: 15, troubles: 19, timeline: 55, chains: 23, facilities: 103 + canonicalFarmRepairDelta, npcs: 110 };
   const actual = {
     routes: routes.length,
     troubles: troubles.length,

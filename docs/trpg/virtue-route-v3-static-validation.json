@@ -1,0 +1,834 @@
+{
+  "validatorVersion": "virtue-route-v3-static-validator-v2",
+  "compilerVersion": "virtue-route-v3-static-compiler-v6",
+  "sourceSpreadsheetId": "1aSLu_pSLNsFsUm42juEyOrLDmTkJd7NPOOrQNnvnMwA",
+  "sourceSheetName": "正規台帳",
+  "sourceRows": 831,
+  "sourceColumns": 32,
+  "sourceHashAlgorithm": "sha256",
+  "sourceHash": "eb26d459851f7bcc8d9d159e6f86f5da016ce70cccbdbac329e9e684b4d14120",
+  "mappingRows": 831,
+  "mappingHashAlgorithm": "sha256",
+  "mappingHash": "2d97c7e55e7c73e54cdf255d76078f360a216e5218c43103cb4d4db853f21522",
+  "result": "PASS",
+  "errorCount": 0,
+  "errors": [],
+  "checks": {
+    "unmapped": 0,
+    "unknown": 0,
+    "todo": 0,
+    "partial": 0,
+    "workCommands": 101,
+    "workFacilityDayDuplicates": 0,
+    "workWindowViolations": 0,
+    "workConditionViolations": 0,
+    "provisionUnderflows": 0,
+    "insufficientGoldRows": 0,
+    "workerLodgingViolations": 0,
+    "missingRuntimeMissionActions": 0,
+    "missingRuntimeEncounters": 0,
+    "replayExecuted": false,
+    "combatExecuted": false
+  },
+  "economy": {
+    "startingGold": 0,
+    "totalIncome": 981,
+    "totalExpense": 947,
+    "minimumGold": 0,
+    "minimumGoldRow": "START",
+    "finalGold": 34,
+    "incomeBySource": {
+      "mission": 460,
+      "authoredLivelihood": 3,
+      "work": 445,
+      "materialSale": 6,
+      "equipmentSale": 67
+    },
+    "expenseBySource": {
+      "food": 360,
+      "equipmentBuy": 323,
+      "lodging": 255,
+      "debt": 6,
+      "service": 3
+    },
+    "finalFreeMeals": 0,
+    "finalFreeLodging": 0,
+    "finalProvisionInventory": {},
+    "debtStatus": "paid",
+    "debtRemainingG": 0
+  },
+  "progression": {
+    "staticRouteSeed": "virtue-route-v3-static-20260816",
+    "runtimeContentRevision": "cd58b0e4c225a176ceccdf4a",
+    "totalExp": 39656,
+    "battleExp": 37226,
+    "missionExp": 2430,
+    "expIntoFinalLevel": 4022,
+    "finalLevel": 23,
+    "totalSp": 24,
+    "usedSp": 11,
+    "finalSp": 13,
+    "learnedSkillCount": 11,
+    "learnedSkillIds": [
+      "SKL-0049",
+      "SKL-0050",
+      "SKL-0051",
+      "SKL-0052",
+      "SKL-0054",
+      "SKL-0055",
+      "SKL-0140",
+      "SKL-0141",
+      "SKL-0142",
+      "SKL-0146",
+      "SKL-0149"
+    ],
+    "skillTransitions": [
+      {
+        "rowId": "VR2-D01-02",
+        "skillId": "SKL-0049",
+        "spAfter": 1
+      },
+      {
+        "rowId": "VR2-D03-02",
+        "skillId": "SKL-0140",
+        "spAfter": 1
+      },
+      {
+        "rowId": "VR2-D20-06",
+        "skillId": "SKL-0142",
+        "spAfter": 6
+      },
+      {
+        "rowId": "VR2-D20-07",
+        "skillId": "SKL-0141",
+        "spAfter": 5
+      },
+      {
+        "rowId": "VR2-D32-07",
+        "skillId": "SKL-0052",
+        "spAfter": 6
+      },
+      {
+        "rowId": "VR2-D32-08",
+        "skillId": "SKL-0055",
+        "spAfter": 5
+      },
+      {
+        "rowId": "VR2-D41-06",
+        "skillId": "SKL-0050",
+        "spAfter": 12
+      },
+      {
+        "rowId": "VR2-D43-06",
+        "skillId": "SKL-0149",
+        "spAfter": 11
+      },
+      {
+        "rowId": "VR2-D49-07",
+        "skillId": "SKL-0051",
+        "spAfter": 12
+      },
+      {
+        "rowId": "VR2-D52-07",
+        "skillId": "SKL-0146",
+        "spAfter": 11
+      },
+      {
+        "rowId": "VR2-D78-06",
+        "skillId": "SKL-0054",
+        "spAfter": 13
+      }
+    ],
+    "experienceTransitions": [
+      {
+        "rowId": "VR2-D01-05",
+        "source": "battle",
+        "gain": 98,
+        "levelBefore": 1,
+        "levelAfter": 1,
+        "expBefore": 0,
+        "expAfter": 98,
+        "actionId": "ACTION:MSN-T01:rescue",
+        "encounterId": "ENC-0004",
+        "battleIndex": 0,
+        "monsterIds": [
+          "MON-0005",
+          "MON-0005"
+        ]
+      },
+      {
+        "rowId": "VR2-D01-06",
+        "source": "mission",
+        "gain": 90,
+        "levelBefore": 1,
+        "levelAfter": 2,
+        "expBefore": 98,
+        "expAfter": 88,
+        "missionId": "MSN-T01"
+      },
+      {
+        "rowId": "VR2-D07-06",
+        "source": "mission",
+        "gain": 100,
+        "levelBefore": 2,
+        "levelAfter": 3,
+        "expBefore": 88,
+        "expAfter": 66,
+        "missionId": "MSN-T02"
+      },
+      {
+        "rowId": "VR2-D20-02",
+        "source": "battle",
+        "gain": 1136,
+        "levelBefore": 3,
+        "levelAfter": 8,
+        "expBefore": 66,
+        "expAfter": 53,
+        "actionId": "ACTION:MSN-T03:battle",
+        "encounterId": "ENC-0006",
+        "battleIndex": 1,
+        "monsterIds": [
+          "MON-0007",
+          "MON-0006",
+          "MON-0006",
+          "MON-0006"
+        ]
+      },
+      {
+        "rowId": "VR2-D20-05",
+        "source": "mission",
+        "gain": 140,
+        "levelBefore": 8,
+        "levelAfter": 8,
+        "expBefore": 53,
+        "expAfter": 193,
+        "missionId": "MSN-T03"
+      },
+      {
+        "rowId": "VR2-D29-02",
+        "source": "battle",
+        "gain": 533,
+        "levelBefore": 8,
+        "levelAfter": 9,
+        "expBefore": 193,
+        "expAfter": 324,
+        "actionId": "ACTION:MSN-T09:battle",
+        "encounterId": "ENC-0049",
+        "battleIndex": 2,
+        "monsterIds": [
+          "MON-0049"
+        ]
+      },
+      {
+        "rowId": "VR2-D29-05",
+        "source": "mission",
+        "gain": 130,
+        "levelBefore": 9,
+        "levelAfter": 9,
+        "expBefore": 324,
+        "expAfter": 454,
+        "missionId": "MSN-T09"
+      },
+      {
+        "rowId": "VR2-D32-05",
+        "source": "battle",
+        "gain": 467,
+        "levelBefore": 9,
+        "levelAfter": 10,
+        "expBefore": 454,
+        "expAfter": 431,
+        "actionId": "ACTION:MSN-T04:battle",
+        "encounterId": "ENC-0061",
+        "battleIndex": 3,
+        "monsterIds": [
+          "MON-0061"
+        ]
+      },
+      {
+        "rowId": "VR2-D32-06",
+        "source": "mission",
+        "gain": 140,
+        "levelBefore": 10,
+        "levelAfter": 10,
+        "expBefore": 431,
+        "expAfter": 571,
+        "missionId": "MSN-T04"
+      },
+      {
+        "rowId": "VR2-D38-02",
+        "source": "battle",
+        "gain": 247,
+        "levelBefore": 10,
+        "levelAfter": 11,
+        "expBefore": 571,
+        "expAfter": 220,
+        "actionId": "ACTION:MSN-T05:battle",
+        "encounterId": "ENC-0033",
+        "battleIndex": 4,
+        "monsterIds": [
+          "MON-0033"
+        ]
+      },
+      {
+        "rowId": "VR2-D38-06",
+        "source": "mission",
+        "gain": 130,
+        "levelBefore": 11,
+        "levelAfter": 11,
+        "expBefore": 220,
+        "expAfter": 350,
+        "missionId": "MSN-T05"
+      },
+      {
+        "rowId": "VR2-D41-02",
+        "source": "battle",
+        "gain": 10800,
+        "levelBefore": 11,
+        "levelAfter": 18,
+        "expBefore": 350,
+        "expAfter": 1116,
+        "actionId": "ACTION:MSN-T17:battle",
+        "encounterId": "ENC-0028",
+        "battleIndex": 5,
+        "monsterIds": [
+          "MON-0028",
+          "MON-0027",
+          "MON-0027"
+        ]
+      },
+      {
+        "rowId": "VR2-D41-05",
+        "source": "mission",
+        "gain": 220,
+        "levelBefore": 18,
+        "levelAfter": 18,
+        "expBefore": 1116,
+        "expAfter": 1336,
+        "missionId": "MSN-T17"
+      },
+      {
+        "rowId": "VR2-D43-05",
+        "source": "mission",
+        "gain": 130,
+        "levelBefore": 18,
+        "levelAfter": 18,
+        "expBefore": 1336,
+        "expAfter": 1466,
+        "missionId": "MSN-T10"
+      },
+      {
+        "rowId": "VR2-D44-05",
+        "source": "battle",
+        "gain": 247,
+        "levelBefore": 18,
+        "levelAfter": 18,
+        "expBefore": 1466,
+        "expAfter": 1713,
+        "actionId": "ACTION:MSN-T06:battle",
+        "encounterId": "ENC-0033",
+        "battleIndex": 6,
+        "monsterIds": [
+          "MON-0033"
+        ]
+      },
+      {
+        "rowId": "VR2-D45-07",
+        "source": "mission",
+        "gain": 160,
+        "levelBefore": 18,
+        "levelAfter": 18,
+        "expBefore": 1713,
+        "expAfter": 1873,
+        "missionId": "MSN-T06"
+      },
+      {
+        "rowId": "VR2-D45-09",
+        "source": "battle",
+        "gain": 2712,
+        "levelBefore": 18,
+        "levelAfter": 19,
+        "expBefore": 1873,
+        "expAfter": 1647,
+        "actionId": "ACTION:MSN-T12:battle",
+        "encounterId": "ENC-0055",
+        "battleIndex": 7,
+        "monsterIds": [
+          "MON-0055",
+          "MON-0055",
+          "MON-0055",
+          "MON-0055"
+        ]
+      },
+      {
+        "rowId": "VR2-D46-07",
+        "source": "mission",
+        "gain": 140,
+        "levelBefore": 19,
+        "levelAfter": 19,
+        "expBefore": 1647,
+        "expAfter": 1787,
+        "missionId": "MSN-T12"
+      },
+      {
+        "rowId": "VR2-D48-03",
+        "source": "battle",
+        "gain": 934,
+        "levelBefore": 19,
+        "levelAfter": 19,
+        "expBefore": 1787,
+        "expAfter": 2721,
+        "actionId": "ACTION:MSN-T07:battle",
+        "encounterId": "ENC-0042",
+        "battleIndex": 8,
+        "monsterIds": [
+          "MON-0042",
+          "MON-0042"
+        ]
+      },
+      {
+        "rowId": "VR2-D48-06",
+        "source": "mission",
+        "gain": 160,
+        "levelBefore": 19,
+        "levelAfter": 19,
+        "expBefore": 2721,
+        "expAfter": 2881,
+        "missionId": "MSN-T07"
+      },
+      {
+        "rowId": "VR2-D49-05",
+        "source": "battle",
+        "gain": 2043,
+        "levelBefore": 19,
+        "levelAfter": 20,
+        "expBefore": 2881,
+        "expAfter": 1340,
+        "actionId": "ACTION:MSN-T11:battle",
+        "encounterId": "ENC-0043",
+        "battleIndex": 9,
+        "monsterIds": [
+          "MON-0043"
+        ]
+      },
+      {
+        "rowId": "VR2-D49-06",
+        "source": "mission",
+        "gain": 160,
+        "levelBefore": 20,
+        "levelAfter": 20,
+        "expBefore": 1340,
+        "expAfter": 1500,
+        "missionId": "MSN-T11"
+      },
+      {
+        "rowId": "VR2-D52-06",
+        "source": "mission",
+        "gain": 130,
+        "levelBefore": 20,
+        "levelAfter": 20,
+        "expBefore": 1500,
+        "expAfter": 1630,
+        "missionId": "MSN-T08"
+      },
+      {
+        "rowId": "VR2-D55-02",
+        "source": "battle",
+        "gain": 247,
+        "levelBefore": 20,
+        "levelAfter": 20,
+        "expBefore": 1630,
+        "expAfter": 1877,
+        "actionId": "ACTION:MSN-T14:battle",
+        "encounterId": "ENC-0033",
+        "battleIndex": 10,
+        "monsterIds": [
+          "MON-0033"
+        ]
+      },
+      {
+        "rowId": "VR2-D55-06",
+        "source": "mission",
+        "gain": 140,
+        "levelBefore": 20,
+        "levelAfter": 20,
+        "expBefore": 1877,
+        "expAfter": 2017,
+        "missionId": "MSN-T14"
+      },
+      {
+        "rowId": "VR2-D58-04",
+        "source": "battle",
+        "gain": 16406,
+        "levelBefore": 20,
+        "levelAfter": 23,
+        "expBefore": 2017,
+        "expAfter": 2206,
+        "actionId": "ACTION:MSN-T13:battle",
+        "encounterId": "ENC-0018",
+        "battleIndex": 11,
+        "monsterIds": [
+          "MON-0018"
+        ]
+      },
+      {
+        "rowId": "VR2-D58-05",
+        "source": "mission",
+        "gain": 220,
+        "levelBefore": 23,
+        "levelAfter": 23,
+        "expBefore": 2206,
+        "expAfter": 2426,
+        "missionId": "MSN-T13"
+      },
+      {
+        "rowId": "VR2-D76-02",
+        "source": "battle",
+        "gain": 1356,
+        "levelBefore": 23,
+        "levelAfter": 23,
+        "expBefore": 2426,
+        "expAfter": 3782,
+        "actionId": "ACTION:MSN-T16:battle",
+        "encounterId": "ENC-0026",
+        "battleIndex": 12,
+        "monsterIds": [
+          "MON-0026",
+          "MON-0026"
+        ]
+      },
+      {
+        "rowId": "VR2-D78-05",
+        "source": "mission",
+        "gain": 240,
+        "levelBefore": 23,
+        "levelAfter": 23,
+        "expBefore": 3782,
+        "expAfter": 4022,
+        "missionId": "MSN-T16"
+      }
+    ],
+    "legacyLevelMismatchRowCount": 769,
+    "legacySpMismatchRowCount": 769,
+    "legacyLevelMismatchAudit": {
+      "sha256": "21eab9ec78ef283d48036fcad1e95b43b3629ef5bbf1c7c0520e242c344e12c4",
+      "first": [
+        {
+          "rowId": "VR2-D07-06",
+          "legacyLevel": 2,
+          "v3Level": 3
+        },
+        {
+          "rowId": "VR2-D07-07",
+          "legacyLevel": 2,
+          "v3Level": 3
+        },
+        {
+          "rowId": "VR2-D07-08",
+          "legacyLevel": 2,
+          "v3Level": 3
+        },
+        {
+          "rowId": "VR2-D07-09",
+          "legacyLevel": 2,
+          "v3Level": 3
+        },
+        {
+          "rowId": "VR2-D07-10",
+          "legacyLevel": 2,
+          "v3Level": 3
+        }
+      ],
+      "last": [
+        {
+          "rowId": "VR2-D85-06",
+          "legacyLevel": 11,
+          "v3Level": 23
+        },
+        {
+          "rowId": "VR2-D85-07",
+          "legacyLevel": 11,
+          "v3Level": 23
+        },
+        {
+          "rowId": "VR2-D85-08",
+          "legacyLevel": 11,
+          "v3Level": 23
+        },
+        {
+          "rowId": "VR2-D85-09",
+          "legacyLevel": 11,
+          "v3Level": 23
+        },
+        {
+          "rowId": "VR2-D85-10",
+          "legacyLevel": 11,
+          "v3Level": 23
+        }
+      ]
+    },
+    "legacySpMismatchAudit": {
+      "sha256": "16085c88bb71c596bbf0957cfb17fc90332c26eb61d988b9c65ac68871f9047f",
+      "first": [
+        {
+          "rowId": "VR2-D07-06",
+          "legacy": "3/2/1",
+          "v3": "4/2/2"
+        },
+        {
+          "rowId": "VR2-D07-07",
+          "legacy": "3/2/1",
+          "v3": "4/2/2"
+        },
+        {
+          "rowId": "VR2-D07-08",
+          "legacy": "3/2/1",
+          "v3": "4/2/2"
+        },
+        {
+          "rowId": "VR2-D07-09",
+          "legacy": "3/2/1",
+          "v3": "4/2/2"
+        },
+        {
+          "rowId": "VR2-D07-10",
+          "legacy": "3/2/1",
+          "v3": "4/2/2"
+        }
+      ],
+      "last": [
+        {
+          "rowId": "VR2-D85-06",
+          "legacy": "12/11/1",
+          "v3": "24/11/13"
+        },
+        {
+          "rowId": "VR2-D85-07",
+          "legacy": "12/11/1",
+          "v3": "24/11/13"
+        },
+        {
+          "rowId": "VR2-D85-08",
+          "legacy": "12/11/1",
+          "v3": "24/11/13"
+        },
+        {
+          "rowId": "VR2-D85-09",
+          "legacy": "12/11/1",
+          "v3": "24/11/13"
+        },
+        {
+          "rowId": "VR2-D85-10",
+          "legacy": "12/11/1",
+          "v3": "24/11/13"
+        }
+      ]
+    },
+    "experienceBasis": "fixed mission rewards plus deterministic encounter composition expansion for the pinned static route seed; combat victory is the authored row outcome and combat itself is not executed here"
+  },
+  "survival": {
+    "basis": "authored numeric row boundaries; inserted economy commands are separately checked for canonical duration/window and followed by authored sleep boundaries",
+    "maximumHunger": 63.7,
+    "maximumFatigue": 100,
+    "minimumHp": 31,
+    "minimumMp": 45,
+    "intendedCollapseRows": [
+      "VR2-D09-05"
+    ]
+  },
+  "equipment": {
+    "finalOwned": {
+      "EQP-A-0203": 1,
+      "EQP-S-0201": 1,
+      "EQP-W-0302": 1
+    },
+    "finalEquipped": {
+      "body": "EQP-A-0203",
+      "offHand": "EQP-S-0201",
+      "mainHand": "EQP-W-0302"
+    },
+    "transitions": [
+      {
+        "rowId": "VR2-D03-07",
+        "type": "buy",
+        "equipmentId": "EQP-W-0201",
+        "gold": -10
+      },
+      {
+        "rowId": "VR2-D03-08",
+        "type": "buy",
+        "equipmentId": "EQP-S-0001",
+        "gold": -8
+      },
+      {
+        "rowId": "VR2-D03-09",
+        "type": "equip",
+        "equipmentId": "EQP-W-0201",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D03-09",
+        "type": "equip",
+        "equipmentId": "EQP-S-0001",
+        "slot": "offHand"
+      },
+      {
+        "rowId": "VR2-D10-06",
+        "type": "buy",
+        "equipmentId": "EQP-A-0201",
+        "gold": -6
+      },
+      {
+        "rowId": "VR2-D10-06",
+        "type": "equip",
+        "equipmentId": "EQP-A-0201",
+        "slot": "body"
+      },
+      {
+        "rowId": "VR2-D23-07",
+        "type": "unequip",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D23-07",
+        "type": "sell",
+        "equipmentId": "EQP-W-0201",
+        "gold": 4
+      },
+      {
+        "rowId": "VR2-D23-08",
+        "type": "buy",
+        "equipmentId": "EQP-W-0207",
+        "gold": -29
+      },
+      {
+        "rowId": "VR2-D23-08",
+        "type": "equip",
+        "equipmentId": "EQP-W-0207",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D38-07",
+        "type": "unequip",
+        "slot": "body"
+      },
+      {
+        "rowId": "VR2-D38-07",
+        "type": "sell",
+        "equipmentId": "EQP-A-0201",
+        "gold": 2
+      },
+      {
+        "rowId": "VR2-D38-08",
+        "type": "buy",
+        "equipmentId": "EQP-A-0203",
+        "gold": -34
+      },
+      {
+        "rowId": "VR2-D38-08",
+        "type": "equip",
+        "equipmentId": "EQP-A-0203",
+        "slot": "body"
+      },
+      {
+        "rowId": "VR2-D41-07",
+        "type": "unequip",
+        "slot": "offHand"
+      },
+      {
+        "rowId": "VR2-D41-07",
+        "type": "sell",
+        "equipmentId": "EQP-S-0001",
+        "gold": 3
+      },
+      {
+        "rowId": "VR2-D41-08",
+        "type": "buy",
+        "equipmentId": "EQP-S-0201",
+        "gold": -13
+      },
+      {
+        "rowId": "VR2-D41-09",
+        "type": "equip",
+        "equipmentId": "EQP-S-0201",
+        "slot": "offHand"
+      },
+      {
+        "rowId": "VR2-D46-08",
+        "type": "unequip",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D46-08",
+        "type": "sell",
+        "equipmentId": "EQP-W-0207",
+        "gold": 13
+      },
+      {
+        "rowId": "VR2-D46-09",
+        "type": "buy",
+        "equipmentId": "EQP-W-0301",
+        "gold": -75
+      },
+      {
+        "rowId": "VR2-D46-10",
+        "type": "equip",
+        "equipmentId": "EQP-W-0301",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D60-07",
+        "type": "unequip",
+        "slot": "mainHand"
+      },
+      {
+        "rowId": "VR2-D60-07",
+        "type": "sell",
+        "equipmentId": "EQP-W-0301",
+        "gold": 45
+      },
+      {
+        "rowId": "VR2-D60-08",
+        "type": "buy",
+        "equipmentId": "EQP-W-0302",
+        "gold": -148
+      },
+      {
+        "rowId": "VR2-D61-06",
+        "type": "equip",
+        "equipmentId": "EQP-W-0302",
+        "slot": "mainHand"
+      }
+    ]
+  },
+  "world": {
+    "incidentStates": {
+      "T01": "resolved",
+      "T02": "resolved",
+      "T03": "resolved",
+      "T04": "resolved",
+      "T05": "resolved",
+      "T06": "resolved",
+      "T07": "resolved",
+      "T08": "resolved",
+      "T09": "resolved",
+      "T10": "resolved",
+      "T11": "resolved",
+      "T12": "resolved",
+      "T13": "resolved",
+      "T14": "resolved",
+      "T15": "suppressed",
+      "T16": "resolved",
+      "T17": "resolved",
+      "T18": "suppressed",
+      "T19": "suppressed"
+    },
+    "npcResolvedIncidentCount": 3,
+    "publicNpcFactCount": 21,
+    "publicNpcGoalCount": 13,
+    "trackedNpcLocationCount": 46,
+    "worldFlagCount": 63
+  },
+  "ledgerRows": 831,
+  "replayExecuted": false,
+  "combatExecuted": false
+}

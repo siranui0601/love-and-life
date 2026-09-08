@@ -18,6 +18,21 @@
         "K72"
       ],
       "reason": "曖昧なstage/調査ルート条件とT13のDay60 critical移行後条件を実際の状態式へ置き換えた公式マスター修正"
+    },
+    {
+      "retrievedAt": "2026-08-16",
+      "tab": "モンスタースキル / モンスター行動",
+      "ranges": [
+        "モンスタースキル!M94",
+        "モンスター行動!G49",
+        "モンスター行動!G61",
+        "モンスター行動!G64",
+        "モンスター行動!G147",
+        "モンスター行動!G177",
+        "モンスター行動!G203",
+        "モンスター行動!A290:L290"
+      ],
+      "reason": "AI条件を実効果IDへ正規化し、空殻模倣をruntime_readyへ更新。MON-0076へ既存翼刃の無条件・CT0 authored actionを追加して通常攻撃fallbackを廃止。"
     }
   ],
   "tabs": {
@@ -80,7 +95,7 @@
       ],
       [
         "モンスター行動",
-        285,
+        286,
         "重み付きAI",
         "生成AIは戦闘判断へ介入しない。",
         null,
@@ -10263,7 +10278,7 @@
         "[{\"id\":\"copy\",\"command\":\"COPY_LAST_ENEMY_SKILL\",\"target\":\"self\",\"powerMultiplier\":0.75,\"excludedTags\":[\"uncopyable\",\"self_sacrifice\"]}]",
         "summon_anomaly,boss",
         "直前に敵が使った再現可能スキルを75%威力で模倣する。",
-        "custom_handler_required"
+        "runtime_ready"
       ],
       [
         "MSK-0091",
@@ -11036,7 +11051,7 @@
         "MSK-0067",
         "魔力吸収膜",
         20,
-        "self.specialStates.notContains('mana_absorb膜')",
+        "self.specialStates.notContains('magic_absorb')",
         145,
         null,
         null,
@@ -11204,7 +11219,7 @@
         "MSK-0067",
         "魔力吸収膜",
         15,
-        "self.specialStates.notContains('mana_absorb膜')",
+        "self.specialStates.notContains('magic_absorb')",
         150,
         null,
         null,
@@ -11246,7 +11261,7 @@
         "MSK-0046",
         "呪詛の声",
         30,
-        "target.modifiers.physicalPower>=0",
+        "target.modifiers.physical_power>=0",
         140,
         null,
         null,
@@ -12408,7 +12423,7 @@
         "MSK-0085",
         "捕縛網",
         35,
-        "target.specialStates.notContains('bound')",
+        "target.modifiers.agility>=0",
         160,
         null,
         null,
@@ -12828,7 +12843,7 @@
         "MSK-0076",
         "冷却",
         25,
-        "self.specialStates.contains('overheat')",
+        "self.modifiers.defense<0",
         170,
         null,
         null,
@@ -13192,7 +13207,7 @@
         "MSK-0085",
         "捕縛網",
         20,
-        "target.specialStates.notContains('bound')",
+        "target.modifiers.agility>=0",
         145,
         null,
         null,
@@ -14402,6 +14417,20 @@
         null,
         "resolver_default",
         null
+      ],
+      [
+        "MACT-00286",
+        "MON-0076",
+        "黒嶺翼斥候",
+        "MSK-0012",
+        "翼刃",
+        30,
+        null,
+        105,
+        null,
+        0,
+        "resolver_default",
+        "条件不成立時の通常戦技。通常攻撃fallbackへ落とさず、既存の翼刃を使う。"
       ]
     ],
     "地域別エンカウント": [

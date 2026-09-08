@@ -18,6 +18,35 @@ function pack(troubleId) {
   return AUTHORED_MISSION_FLOW_PACKS.find((entry) => entry.troubleId === troubleId);
 }
 
+test("T03 canonical mission battle uses the live boss encounter in active and critical phases", () => {
+  const missionPack = pack("T03");
+  assert.ok(missionPack);
+  assert.equal(missionPack.catalogOverride.battle.encounterId, "ENC-0006");
+  assert.deepEqual(missionPack.catalogOverride.battle.encounterIdByTroubleStatus, {
+    active: "ENC-0006",
+    critical: "ENC-0006",
+  });
+
+  const catalog = {
+    special: [{
+      id: "MSN-T03",
+      steps: [
+        { id: "hear", type: "conversation", required: 1 },
+        { id: "investigate", type: "investigate", required: 2 },
+        { id: "battle", type: "battle", encounterId: "ENC-0005", required: 1 },
+        { id: "resolve", type: "resolve", required: 1 },
+      ],
+    }],
+  };
+  applyAuthoredMissionFlowCatalogOverrides(catalog);
+  const battle = catalog.special[0].steps.find((step) => step.id === "battle");
+  assert.equal(battle.encounterId, "ENC-0006");
+  assert.deepEqual(battle.encounterIdByTroubleStatus, {
+    active: "ENC-0006",
+    critical: "ENC-0006",
+  });
+});
+
 test("T03 through T14 routes hand-author distinct NPC aftermath plans and direct-talk scenes", () => {
   for (const troubleId of ["T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10", "T11", "T12", "T13", "T14"]) {
     const missionPack = pack(troubleId);

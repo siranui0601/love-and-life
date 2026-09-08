@@ -112,7 +112,11 @@ function filterCanonicalActions(flow, actions) {
     if (kept.length >= 3) break;
     kept.push(terminal);
   }
-  return kept.slice(0, 3);
+  // 全部が消費済みで一つも残らなかった時に空配列を返してはいけない。
+  // 空配列は真値なので、この上に載る四十のモジュールも service.js も
+  // 「排他的な選択肢はこれで確定」と受け取り、選択肢がゼロの画面になる。
+  // ここで言うべきことが無いなら null を返し、通常の選択肢生成へ譲る。
+  return kept.length > 0 ? kept.slice(0, 3) : null;
 }
 
 function consumeCanonicalScene(flow, action) {

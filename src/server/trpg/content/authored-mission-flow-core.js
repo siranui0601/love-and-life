@@ -9,7 +9,7 @@ import { T08_FOREST_SEALING_ORDER_PACK } from "./authored/missions/t08-forest-se
 import { T07_RUNAWAY_ELF_TRAFFICKING_PACK } from "./authored/missions/t07-runaway-elf-trafficking.js";
 import { T06_PORT_LABOR_UNREST_PACK } from "./authored/missions/t06-port-labor-unrest.js";
 
-export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v15";
+export const AUTHORED_MISSION_FLOW_VERSION = "authored-mission-flow-v16";
 
 const ACTIVE_TROUBLE_STATUSES = new Set(["active", "critical"]);
 const ACTIVE_MISSION_STATUSES = new Set(["active", "available", "in_progress"]);
@@ -872,16 +872,16 @@ export const AUTHORED_MISSION_FLOW_PACKS = Object.freeze([
       battle: Object.freeze({
         targetLocation: "田園の村",
         targetFacilityId: "LOC_FARM_EDGE",
-        encounterId: "ENC-0005",
+        encounterId: "ENC-0006",
         encounterIdByTroubleStatus: Object.freeze({
-          active: "ENC-0005",
+          active: "ENC-0006",
           critical: "ENC-0006",
         }),
         labelByTroubleStatus: Object.freeze({
-          active: "村外れへ先行した赤牙狼を街道から退ける",
+          active: "森寄りへ南下した群れ親と成狼を街道から退ける",
           critical: "村外れを襲う群れ親と成狼を食い止める",
         }),
-        label: "村外れへ南下した赤牙狼を街道から退ける",
+        label: "森寄りへ南下した群れ親と成狼を街道から退ける",
       }),
       resolution: Object.freeze({
         targetLocation: "森",
@@ -1828,6 +1828,7 @@ function freshState(pack) {
     prematureResolutionCount: 0,
     prematureResolutionEvidenceCounts: [],
     deferredUntilMinute: null,
+    deferCount: 0,
     resolutionPreparationRouteId: null,
     selectedResolutionRouteId: null,
     selectedResolutionContextId: null,
@@ -2103,6 +2104,9 @@ export function ensureAuthoredMissionFlowState(runtime, packOrId) {
     && Number.isFinite(Number(deferredUntilMinute))
     ? Number(deferredUntilMinute)
     : null;
+  state.deferCount = Number.isInteger(Number(state.deferCount)) && Number(state.deferCount) >= 0
+    ? Number(state.deferCount)
+    : 0;
   state.resolutionPreparationRouteId = pack.resolution?.choices?.some(
     (choice) => choice.id === state.resolutionPreparationRouteId && choice.readiness,
   )
@@ -2432,14 +2436,36 @@ function leadAction(runtime, pack, movementActions, lead) {
   const actionKind = movement?.movementScope === "regional" ? "LEAD_HUB" : "LEAD";
   const visitedHubs = runtime.playerState.progress?.travel?.visitedHubs;
   const regionalVerb = visitedHubs?.has?.(targetLocation) ? "戻り" : "向かい";
+  // ## 同じ手掛かりの札が、どこから出しても同じIDだった（2026-08-14）
+  //
+  // 三択の重複を「同じ施設で出たか／違う施設で出たか」で数え直したところ、
+  // **施設をまたいだ重複30件が、すべてこの `MISSION_FLOW×3` だった**
+  // （`MISSION_FLOW+MISSION_FLOW+MISSION_FLOW` の重複はちょうど30件。**100%である**）。
+  //
+  // 原因は単純で、`id` が `pack:LEAD:lead.id` しか持たず、
+  // **どこから出した札かを持っていなかった。**田園の村から「交易都市へ向かう」札と、
+  // 王都から「交易都市へ向かう」札は、**所要時間も残りの道のりも違う別の行動**なのに、
+  // 同じIDで、同じ文面で出ていた。
+  //
+  // 現在地をIDに入れ、regional の時は残りの所要時間を文面に出す。
+  // **これは重複対策の小細工ではなく、単に取り違えていた別物を区別する修正である。**
+  //
+  // （**この修正は推定ではない。**先に計器を足して、施設またぎ30件・同一施設140件と
+  // 数えてから書いている。推定して直してから測る、を二度やって6%と0%だったので。）
+  const originFacilityId = runtime.playerState.player.facilityId ?? "unknown";
+  const travelHours = movement ? Number(movement.minutes ?? 0) / 60 : 0;
   return {
     ...(movement ?? {}),
-    id: actionId(pack, actionKind, lead.id),
+    id: movement
+      ? actionId(pack, actionKind, `${lead.id}@${originFacilityId}`)
+      : actionId(pack, actionKind, lead.id),
     type: movement ? "move" : "plan",
     family: movement ? "move" : "prepare",
     minutes: movement ? movement.minutes : 8,
     label: movement?.movementScope === "regional"
-      ? `${targetLocation}へ${regionalVerb}、${lead.label}`
+      ? `${targetLocation}へ${regionalVerb}（${travelHours >= 1
+        ? `${Number.isInteger(travelHours) ? travelHours : travelHours.toFixed(1)}時間`
+        : `${Math.round(travelHours * 60)}分`}）、${lead.label}`
       : atTarget
       ? `${lead.destinationName}で、${lead.label}`
       : `${lead.destinationName}へ向かい、${lead.label}`,
@@ -2451,20 +2477,42 @@ function leadAction(runtime, pack, movementActions, lead) {
   };
 }
 
-function deferAction(pack) {
+// ## 先送りした場面が、そっくり同じ形で戻ってきていた（2026-08-14）
+//
+// 三択の重複を家族別に数えたら、最大の塊が
+// `MISSION_FLOW:…:DEFER + LEAD + RECONSIDER` で、**一本の道の中に41組**あった。
+// 先送りを選ぶたびに、**同じ三つがそのまま返ってきていた**のである。
+// 一期一会を掲げている以上、これは通せない。
+//
+// ただし「先送りしたものが後でまた来る」こと自体は正しい。直すべきは
+// **同じ顔で来ること**のほうなので、`deferCount` を持たせて、
+// **二度目以降は別の札にする。**言い回しだけでなく、**保留の長さも伸びる**——
+// 一度後回しにした件は、次はもっと長く放置されることになる。
+const DEFER_LABEL_SUFFIX = Object.freeze([
+  null,
+  "（一度後回しにした件を、もう一度後回しにする）",
+  "（三度目の先送り。手掛かりはそのぶん薄れる）",
+]);
+
+function deferAction(pack, flow = null) {
   const defer = pack.investigation.defer;
   if (!defer) return null;
+  const count = Math.max(0, Number(flow?.deferCount ?? 0));
+  const suffix = DEFER_LABEL_SUFFIX[Math.min(count, DEFER_LABEL_SUFFIX.length - 1)];
   return {
-    id: actionId(pack, "DEFER", defer.id),
+    id: count > 0 ? actionId(pack, "DEFER", `${defer.id}#${count + 1}`) : actionId(pack, "DEFER", defer.id),
     family: "leave",
     type: "plan",
     effectKind: "defer_authored_mission_flow",
     minutes: defer.minutes,
-    label: defer.label,
+    label: suffix ? `${defer.label}${suffix}` : defer.label,
     authoredMissionFlowExclusiveChoice: true,
     authoredMissionFlowId: pack.id,
     authoredMissionFlowKind: "defer",
-    authoredMissionFlowDeferMinutes: defer.deferMinutes,
+    // 二度目は1.5倍、三度目以降は2倍。放置は積み上がる。
+    authoredMissionFlowDeferMinutes: Math.round(
+      Number(defer.deferMinutes ?? 180) * (count === 0 ? 1 : count === 1 ? 1.5 : 2),
+    ),
   };
 }
 
@@ -2549,7 +2597,7 @@ function resolutionPreparationActions(pack, flow, movementActions) {
     .map((lead) => resolutionPreparationLeadAction(pack, route, lead, readiness));
   result.push(resolutionPreparationCancelAction(pack, route.id));
   if (result.length < 3) {
-    const defer = deferAction(pack);
+    const defer = deferAction(pack, flow);
     if (defer) result.push(defer);
   }
   if (result.length < 3) {
@@ -2609,7 +2657,7 @@ function navigatorFocusActions(pack, navigator, flow, movementActions) {
     if (premature) result.push(premature);
   }
   if (result.length < 3) {
-    const defer = deferAction(pack);
+    const defer = deferAction(pack, flow);
     if (defer) result.push(defer);
   }
   if (result.length < 3) {
@@ -2659,7 +2707,7 @@ function navigatorGroupActions(pack, navigator, flow) {
     }));
   const result = [...groups, navigatorBackAction(pack, focus)];
   if (result.length < 3) {
-    const defer = deferAction(pack);
+    const defer = deferAction(pack, flow);
     if (defer) result.push(defer);
   }
   return result.length === 3 ? result : null;
@@ -2710,7 +2758,7 @@ function navigatorRouteActions(pack, navigator, flow) {
   }));
   if (result.length < 3) result.push(navigatorRouteBackAction(pack, focus, group));
   if (result.length < 3) {
-    const defer = deferAction(pack);
+    const defer = deferAction(pack, flow);
     if (defer) result.push(defer);
   }
   return result.length === 3 ? result : null;
@@ -2736,7 +2784,7 @@ function selectedLeadActions(runtime, pack, movementActions, flow) {
     flow.resolutionPreparationRouteId
       ? resolutionPreparationCancelAction(pack, flow.resolutionPreparationRouteId)
       : reconsiderLeadAction(pack, lead),
-    deferAction(pack),
+    deferAction(pack, flow),
   ].filter(Boolean);
   if (result.length < 3) {
     const movement = freeMovementAction(pack, movementActions, new Set([lead.facilityId]));
@@ -2757,7 +2805,7 @@ function leadSelectionActions(runtime, pack, movementActions, flow, evidenceIds)
     if (premature) result.push(premature);
   }
   if (result.length < 3) {
-    const defer = deferAction(pack);
+    const defer = deferAction(pack, flow);
     if (defer) result.push(defer);
   }
   if (result.length < 3) {
@@ -3450,6 +3498,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       ? Math.max(30, requestedDeferMinutes)
       : 180;
     flow.deferredUntilMinute = minute + deferMinutes;
+    flow.deferCount = Math.max(0, Number(flow.deferCount ?? 0)) + 1;
     result.summary ??= pack.investigation.defer?.summary
       ?? `${pack.title}の調査をいったん保留した。`;
     changed = true;
@@ -3459,6 +3508,7 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
       flowId: pack.id,
       missionId: pack.missionId,
       untilMinute: flow.deferredUntilMinute,
+      deferCount: flow.deferCount,
       movedTo: action.destinationHub ?? action.destinationFacilityId ?? null,
     });
   }

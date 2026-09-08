@@ -403,6 +403,12 @@ function buildRevisitActions(flow, actions, signature) {
     }
   }
 
+  // 前へ進む選択肢が一つも無く、差し替え先の焦点も残っていない時がある。
+  // ここで空配列を返してはいけない。空配列は真値なので、service.js は
+  // 「排他的な選択肢はこれで確定」と受け取り、選択肢がゼロの画面になる。
+  // 書き換える材料が無いなら、渡された元の三択をそのまま返す。
+  if (result.length === 0) return actions;
+
   return result.slice(0, 3).map((action) => ({
     ...action,
     authoredMissionRevisitStage: stage,

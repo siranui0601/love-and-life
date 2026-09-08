@@ -8,12 +8,12 @@ import {
   AUTHORED_T02_GRANARY_DAWN_INTERNALS as dawn,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 
-const DAY5_MORNING = 4 * 1440 + 6 * 60;
+const DAY6_DAWN = 5 * 1440 + 5 * 60;
 
 function runtime() {
   return {
     playerState: {
-      absoluteMinute: DAY5_MORNING,
+      absoluteMinute: DAY6_DAWN,
       player: { location: "田園の村", facilityId: "LOC_FARM_SQUARE" },
       missions: [{ id: "MSN-T02", troubleId: "T02", status: "active" }],
       troubles: { T02: { status: "active" } },
@@ -91,7 +91,7 @@ test("choosing one approach permanently closes the other two", () => {
   choose(state, chosen);
 
   const saved = state.playerState.t02GranaryDawn;
-  assert.equal(saved.completedScenes[dawn.DAWN_SCENE], DAY5_MORNING);
+  assert.equal(saved.completedScenes[dawn.DAWN_SCENE], DAY6_DAWN);
   assert.deepEqual(saved.closedActionIds[dawn.DAWN_SCENE], [
     dawn.actionIdFor(dawn.DAWN_SCENE, dawn.DAWN_CHOICES[0]),
     dawn.actionIdFor(dawn.DAWN_SCENE, dawn.DAWN_CHOICES[2]),
@@ -149,7 +149,18 @@ test("the scene never reopens once both of its steps are spent", () => {
   }
 });
 
-test("the dawn scene is absent outside the village, outside Day5-6, and after T02 closes", () => {
+test("there is no burnt granary to stand in before the fire on the night of Day5", () => {
+  const beforeTheFire = runtime();
+  beforeTheFire.playerState.absoluteMinute = 4 * 1440 + 6 * 60;
+  assert.equal(dawn.activeSceneId(beforeTheFire), null,
+    "正本の放火はDay5の夜。その日の朝に焼け跡は無い");
+
+  const afterTheFire = runtime();
+  afterTheFire.playerState.absoluteMinute = 4 * 1440 + 23 * 60;
+  assert.equal(dawn.activeSceneId(afterTheFire), dawn.DAWN_SCENE);
+});
+
+test("the dawn scene is absent outside the village, outside Day6, and after T02 closes", () => {
   const away = runtime();
   away.playerState.player.location = "王都";
   assert.equal(dawn.activeSceneId(away), null);

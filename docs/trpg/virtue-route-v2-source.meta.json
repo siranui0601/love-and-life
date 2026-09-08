@@ -1,0 +1,14 @@
+{
+  "exporterVersion": "virtue-route-v2-sheet-export-v1",
+  "spreadsheetId": "1aSLu_pSLNsFsUm42juEyOrLDmTkJd7NPOOrQNnvnMwA",
+  "spreadsheetTitle": "TRPG_人徳ルート正規台帳_v2",
+  "sheetName": "正規台帳",
+  "sheetId": 453964624,
+  "range": "'正規台帳'!A1:AF832",
+  "totalRows": 832,
+  "dataRows": 831,
+  "columns": 32,
+  "fetchedAt": "2026-08-16T13:52:50Z",
+  "sourceHashAlgorithm": "sha256",
+  "sourceHash": "eb26d459851f7bcc8d9d159e6f86f5da016ce70cccbdbac329e9e684b4d14120"
+}

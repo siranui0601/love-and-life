@@ -4,7 +4,7 @@ import * as genericBase from "./authored-mission-t02-granary-choice-order.js";
 export * from "./authored-mission-evidence-only-progress.js";
 
 export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_VERSION =
-  "authored-mission-t03-investigation-contract-v10";
+  "authored-mission-t03-investigation-contract-v11";
 
 const MISSION_ID = "MSN-T03";
 const FLOW_ID = "red-fang-migration";
@@ -74,6 +74,10 @@ function canonicalFlow(runtime) {
 function canonicalOpeningOwnsInvestigation(runtime) {
   const openingChoiceId = canonicalFlow(runtime)?.openingChoiceId ?? null;
   return openingChoiceId != null && openingChoiceId !== LEGACY_OPENING_ID;
+}
+
+function dedicatedWolfOpeningSelected(runtime) {
+  return Boolean(runtime?.t03WolfContinuity?.openingChoiceId);
 }
 
 function syncCanonicalFlowEvidence(runtime) {
@@ -204,13 +208,19 @@ export function authoredMissionFlowExclusiveActions(runtime, context = {}) {
   const fallbackIsT03 = Array.isArray(fallback)
     && fallback.some((action) => action?.authoredT03WolfChoice === true);
   const step = currentMissionStep(runtime);
-  const dedicatedInvestigationActive = fallbackIsT03
+  const dedicatedInvestigationActive = dedicatedWolfOpeningSelected(runtime)
     && (step?.id === "investigate" || step?.type === "investigate")
     && !investigationEvidenceSatisfied(runtime)
     && !canonicalOpeningOwnsInvestigation(runtime);
-  const actions = dedicatedInvestigationActive
-    ? fallback
-    : canonical ?? fallback;
+
+  let actions;
+  if (dedicatedInvestigationActive) {
+    if (fallbackIsT03) actions = fallback;
+    else if (canonical) actions = null;
+    else actions = fallback;
+  } else {
+    actions = canonical ?? fallback;
+  }
 
   if (Array.isArray(actions)
     && actions.some((action) => action?.authoredT03WolfChoice === true)
@@ -243,6 +253,7 @@ export const AUTHORED_MISSION_T03_INVESTIGATION_CONTRACT_INTERNALS = Object.free
   canonicalEvidenceIds,
   canonicalFlow,
   canonicalOpeningOwnsInvestigation,
+  dedicatedWolfOpeningSelected,
   syncCanonicalFlowEvidence,
   canonicalT03Actions,
   onlyPassiveCanonicalChoices,

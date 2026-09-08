@@ -327,5 +327,7 @@ test("a resolved T17 route persists Day1 identity, T18 cause separation, a uniqu
   assert.ok(Object.values(runtime.livingWorld.facilityRumors).some((entry) =>
     entry instanceof Map && entry.size > 0));
   assert.match(result.sceneTransition, /王城|魔術塔|下層|神殿|黒嶺/u);
-  assert.equal(authoredMissionFlowGuidance(runtime), null);
+  const afterResolutionGuidance = authoredMissionFlowGuidance(runtime);
+  assert.equal(afterResolutionGuidance?.title, "その土地の生活を選ぶ");
+  assert.doesNotMatch(JSON.stringify(afterResolutionGuidance), /第二召喚/u);
 });
