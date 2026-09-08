@@ -26,14 +26,13 @@ jobs:
         run: |
           node --test tools/trpg-sim/test/authored-village-bakery-evening.test.mjs
           node --test tools/trpg-sim/test/virtue-route-v3-day3-natural-breakfast-realignment.test.mjs
-      - name: Commit patched files
+      - name: Commit patched code
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/server/trpg/content/canonical-world-life-actions.js \
             src/server/trpg/content/authored-mission-flow-registry.js \
             tools/trpg-sim/realign-virtue-route-v3-day3-natural-breakfast.mjs \
-            tools/trpg-sim/test/virtue-route-v3-day3-natural-breakfast-realignment.test.mjs \
-            .github/workflows/trpg-human-virtue-full-route-audit.yml
+            tools/trpg-sim/test/virtue-route-v3-day3-natural-breakfast-realignment.test.mjs
           git commit -m "fix(trpg): restore local life and Day3 breakfast"
           git push origin HEAD:claude/trpg-virtue-route-main-143ar9
