@@ -24,6 +24,7 @@ jobs:
           node tools/trpg-sim/_temporary_live_patch4_fix2_20260908.mjs
           node tools/trpg-sim/_temporary_live_patch4_20260908.mjs
           node tools/trpg-sim/_temporary_live_patch5_20260908.mjs
+          node tools/trpg-sim/_temporary_live_patch6_20260908.mjs
       - name: Diagnose Day3 labour surface
         run: node tools/trpg-sim/_temporary_day3_labour_diag_20260908.mjs
       - name: Run focused deterministic tests
