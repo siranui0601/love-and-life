@@ -21,6 +21,7 @@ jobs:
       - name: Repair and apply Day3 labour and F relay patch
         run: |
           node tools/trpg-sim/_temporary_live_patch4_fix_20260908.mjs
+          node tools/trpg-sim/_temporary_live_patch4_fix2_20260908.mjs
           node tools/trpg-sim/_temporary_live_patch4_20260908.mjs
       - name: Run focused deterministic tests
         run: |
