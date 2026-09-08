@@ -10,7 +10,10 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const DAY2_NATURAL_BREAKFAST_REALIGNMENT_VERSION = 'virtue-route-v3-day2-natural-breakfast-v1';
+export const DAY2_NATURAL_BREAKFAST_REALIGNMENT_VERSION = 'virtue-route-v3-day2-natural-breakfast-v2';
+
+const DAY2_BAKERY_EVENING_OLD_ACTION = 'DAILY_LIFE:DAILY_BAKERY_EVENING:mend_gear_by_oven';
+const DAY2_BAKERY_EVENING_ACTION = 'DAILY_LIFE:DAILY_BAKERY_EVENING:help_close_the_bakery';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -54,6 +57,11 @@ function move(facilityId) {
     regionId: '田園の村',
     facilityId,
   };
+}
+
+function executableActionIds(row) {
+  const steps = parsedSteps(row);
+  return steps.length ? steps.map((step) => step.actionId) : [row.actionId].filter(Boolean);
 }
 
 export function applyDay2NaturalBreakfastRealignment({ outDir = DEFAULT_OUT } = {}) {
@@ -111,12 +119,40 @@ export function applyDay2NaturalBreakfastRealignment({ outDir = DEFAULT_OUT } = 
     notes: 'removes the compiler-forced pre-breakfast move and the obsolete buy-then-immediately-eat black-bread sequence. Breakfast happens at the inn; the player then physically walks to the bakery. Provision purchase is left to a later meaningful shopping decision.',
   });
 
+  const eveningRow = rows.find((entry) => entry.legacyRowId === 'VR2-D02-08');
+  if (!eveningRow) throw new Error('VR2-D02-08 missing');
+  const previousEvening = executableActionIds(eveningRow);
+  if (previousEvening.join('|') !== DAY2_BAKERY_EVENING_OLD_ACTION) {
+    throw new Error(`VR2-D02-08 expected old bakery-evening branch ${DAY2_BAKERY_EVENING_OLD_ACTION}, got ${previousEvening.join('|')}`);
+  }
+  const eveningAction = choose(DAY2_BAKERY_EVENING_ACTION, 'LOC_FARM_BAKERY');
+  Object.assign(eveningRow, {
+    legacyDescription: 'Day2の午後、パン屋の閉店準備を手伝いながら普通の夕方を過ごす',
+    classification: 'PLAYER_COMMAND',
+    commandType: 'CHOOSE',
+    actionId: DAY2_BAKERY_EVENING_ACTION,
+    choiceId: DAY2_BAKERY_EVENING_ACTION,
+    payload: JSON.stringify(eveningAction.payload),
+    replacementSteps: JSON.stringify([eveningAction]),
+    replacementRowIds: `${eveningRow.legacyRowId}:PLAYER_COMMAND`,
+    resolutionMethod: 'DAY2_NATURAL_BREAKFAST_REALIGNMENT',
+    regionId: '田園の村',
+    facilityId: 'LOC_FARM_BAKERY',
+    requiredState: 'Day2 afternoon at LOC_FARM_BAKERY; common bakery-evening scene is visible beside ordinary public products; no higher-priority incident owns the panel',
+    resultingState: 'the player helps close the bakery as an ordinary common-world activity and remains in the real village timeline through the evening without synthetic WAIT or long REST padding',
+    implementationSource: 'src/server/trpg/content/authored-village-bakery-evening.js + canonical public-life choice policy',
+    status: 'RESOLVED_EXISTING',
+    unresolvedReason: '',
+    notes: 'the reviewed old branch mended gear, but current production choice selection exposes the equally route-neutral closing-help branch. The clarification does not canonize the old exact choice, so strict replay follows the actually visible ordinary-life branch without hidden state or reconvergence.',
+  });
+
   movesArtifact.day2NaturalBreakfastRealignmentVersion = DAY2_NATURAL_BREAKFAST_REALIGNMENT_VERSION;
   movesArtifact.day2NaturalBreakfastRemovedMoveBeforeRows = ['VR2-D02-01'];
   movesArtifact.count = moves.length;
 
   summary.day2NaturalBreakfastRealignmentVersion = DAY2_NATURAL_BREAKFAST_REALIGNMENT_VERSION;
-  summary.day2NaturalBreakfastRealignedLegacyRows = ['VR2-D02-01'];
+  summary.day2NaturalBreakfastRealignedLegacyRows = ['VR2-D02-01', 'VR2-D02-08'];
+  summary.day2BakeryEveningAction = DAY2_BAKERY_EVENING_ACTION;
   summary.proposedMoveLocalInsertions = moves.length;
   summary.expandedV3Rows = expandedRowCount(rows, moves);
 
@@ -128,7 +164,7 @@ export function applyDay2NaturalBreakfastRealignment({ outDir = DEFAULT_OUT } = 
     version: DAY2_NATURAL_BREAKFAST_REALIGNMENT_VERSION,
     expandedV3Rows: summary.expandedV3Rows,
     moves: moves.length,
-    actions: steps.map((step) => step.actionId),
+    actions: [...steps.map((step) => step.actionId), DAY2_BAKERY_EVENING_ACTION],
   };
 }
 
