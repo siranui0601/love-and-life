@@ -17,61 +17,33 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Repair routine-life precedence and diagnose authored summary mismatch
+      - name: Patch routine-life precedence and authored diagnostic
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
           p = Path('src/server/trpg/content/authored-mission-flow-registry.js')
           s = p.read_text()
-          old = '''  const combined = [...labour, ...products, ...actions];
-          return [...new Map(combined.map((action) => [action.id, action])).values()];'''
-          new = '''  const priorityProducts = products.filter((action) => publicLifeProductPriority(runtime, action) < 1);
-          const remainingProducts = products.filter((action) => publicLifeProductPriority(runtime, action) >= 1);
-          const combined = [...priorityProducts, ...labour, ...remainingProducts, ...actions];
-          return [...new Map(combined.map((action) => [action.id, action])).values()];'''
-          assert old in s, 'routine merge target missing'
-          s = s.replace(old, new, 1)
-          old = '''  actions = mergePublicProductsBesideRoutineLife(runtime, actions);
-          actions = mergeLocalPublicProductsBesideAuthoredActions(runtime, actions);'''
-          new = '''  if (productionRuntimeBeforeBase) {
-            actions = mergePublicProductsBesideRoutineLife(runtime, actions);
-            actions = mergeLocalPublicProductsBesideAuthoredActions(runtime, actions);
-          }'''
-          assert old in s, 'production merge target missing'
-          p.write_text(s.replace(old, new, 1))
+          needle = '  const combined = [...labour, ...products, ...actions];\n  return [...new Map(combined.map((action) => [action.id, action])).values()];'
+          repl = '  const priorityProducts = products.filter((action) => publicLifeProductPriority(runtime, action) < 1);\n  const remainingProducts = products.filter((action) => publicLifeProductPriority(runtime, action) >= 1);\n  const combined = [...priorityProducts, ...labour, ...remainingProducts, ...actions];\n  return [...new Map(combined.map((action) => [action.id, action])).values()];'
+          assert needle in s, 'routine merge target missing'
+          s = s.replace(needle, repl, 1)
+          needle = '  actions = mergePublicProductsBesideRoutineLife(runtime, actions);\n  actions = mergeLocalPublicProductsBesideAuthoredActions(runtime, actions);'
+          repl = '  if (productionRuntimeBeforeBase) {\n    actions = mergePublicProductsBesideRoutineLife(runtime, actions);\n    actions = mergeLocalPublicProductsBesideAuthoredActions(runtime, actions);\n  }'
+          assert needle in s, 'production merge target missing'
+          p.write_text(s.replace(needle, repl, 1))
 
           p = Path('src/server/trpg/content/canonical-public-action-policy.js')
           s = p.read_text()
-          old = '''function stampCurrentLifeLocation(runtime, action) {
-            if (!action?.canonicalWorldLifeChoice) return action;
-            const current = player(runtime);
-            return {
-              ...action,
-              targetLocation: action.targetLocation ?? current.location ?? null,
-              targetFacilityId: action.targetFacilityId ?? current.facilityId ?? null,
-            };
-          }'''
-          new = '''function stampCurrentLifeLocation(runtime, action) {
-            if (!action?.canonicalWorldLifeChoice) return action;
-            // The elf guest bough is a permission-gated lodging product at the
-            // player's current facility, not a movement command. Keep its
-            // canonical action free of synthetic navigation targets.
-            if (actionRootId(action) === "LIFE:SLEEP:ITM195") return action;
-            const current = player(runtime);
-            return {
-              ...action,
-              targetLocation: action.targetLocation ?? current.location ?? null,
-              targetFacilityId: action.targetFacilityId ?? current.facilityId ?? null,
-            };
-          }'''
-          assert old in s, 'guest bough stamp target missing'
-          p.write_text(s.replace(old, new, 1))
+          needle = 'function stampCurrentLifeLocation(runtime, action) {\n  if (!action?.canonicalWorldLifeChoice) return action;\n  const current = player(runtime);'
+          repl = 'function stampCurrentLifeLocation(runtime, action) {\n  if (!action?.canonicalWorldLifeChoice) return action;\n  // Permission-gated guest lodging is already bound to the current facility;\n  // it must stay a life action rather than acquire synthetic movement targets.\n  if (actionRootId(action) === "LIFE:SLEEP:ITM195") return action;\n  const current = player(runtime);'
+          assert needle in s, 'guest bough stamp target missing'
+          p.write_text(s.replace(needle, repl, 1))
 
           p = Path('tools/trpg-sim/test/game-service.test.mjs')
           s = p.read_text()
-          old = '''      assert.ok(resolution.outcome.summary.startsWith(selectedRoute.summary));'''
-          new = '''      if (!resolution.outcome.summary.startsWith(selectedRoute.summary)) {
+          needle = '      assert.ok(resolution.outcome.summary.startsWith(selectedRoute.summary));'
+          repl = '''      if (!resolution.outcome.summary.startsWith(selectedRoute.summary)) {
                 console.error("[AUTHORED_SUMMARY_MISMATCH]", JSON.stringify({
                   packId: pack.id,
                   troubleId: pack.troubleId,
@@ -81,20 +53,21 @@ jobs:
                 }));
               }
               assert.ok(resolution.outcome.summary.startsWith(selectedRoute.summary));'''
-          assert old in s, 'summary assertion target missing'
-          p.write_text(s.replace(old, new, 1))
+          assert needle in s, 'summary assertion target missing'
+          p.write_text(s.replace(needle, repl, 1))
           PY
+      - name: Verify three concrete regression repairs
+        run: |
           node --test tools/trpg-sim/test/authored-village-daily-life.test.mjs
           node --test tools/trpg-sim/test/canonical-public-action-policy.test.mjs
           node --test tools/trpg-sim/test/canonical-world-life-routine-merge.test.mjs
-          node --test --test-name-pattern="authored mission packs turn each opening answer" tools/trpg-sim/test/game-service.test.mjs
-      - name: Commit production repairs and diagnostic
-        if: always()
+      - name: Commit verified repairs and diagnostic
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/server/trpg/content/authored-mission-flow-registry.js src/server/trpg/content/canonical-public-action-policy.js tools/trpg-sim/test/game-service.test.mjs
-          if ! git diff --cached --quiet; then
-            git commit -m "fix(trpg): restore routine-life precedence contracts"
-            git push origin HEAD:claude/trpg-virtue-route-main-143ar9
-          fi
+          git commit -m "fix(trpg): restore routine-life precedence contracts"
+          git push origin HEAD:claude/trpg-virtue-route-main-143ar9
+      - name: Identify remaining authored summary mismatch
+        run: |
+          node --test --test-name-pattern="authored mission packs turn each opening answer" tools/trpg-sim/test/game-service.test.mjs
