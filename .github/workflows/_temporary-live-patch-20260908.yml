@@ -1,0 +1,37 @@
+name: Temporary TRPG live audit patch
+on:
+  push:
+    branches:
+      - claude/trpg-virtue-route-main-143ar9
+    paths:
+      - ".github/workflows/_temporary-live-patch-20260908.yml"
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/trpg-virtue-route-main-143ar9
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply production and route patches
+        run: node tools/trpg-sim/_temporary_live_patch_20260908.mjs
+      - name: Run focused deterministic tests
+        run: |
+          node --test tools/trpg-sim/test/authored-village-bakery-evening.test.mjs
+          node --test tools/trpg-sim/test/virtue-route-v3-day3-natural-breakfast-realignment.test.mjs
+      - name: Commit patched files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/server/trpg/content/canonical-world-life-actions.js \
+            src/server/trpg/content/authored-mission-flow-registry.js \
+            tools/trpg-sim/realign-virtue-route-v3-day3-natural-breakfast.mjs \
+            tools/trpg-sim/test/virtue-route-v3-day3-natural-breakfast-realignment.test.mjs \
+            .github/workflows/trpg-human-virtue-full-route-audit.yml
+          git commit -m "fix(trpg): restore local life and Day3 breakfast"
+          git push origin HEAD:claude/trpg-virtue-route-main-143ar9
