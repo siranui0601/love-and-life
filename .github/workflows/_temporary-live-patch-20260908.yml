@@ -19,7 +19,9 @@ jobs:
         with:
           node-version: 22
       - name: Apply production and route patches
-        run: node tools/trpg-sim/_temporary_live_patch_20260908.mjs
+        run: |
+          node tools/trpg-sim/_temporary_live_patch_20260908.mjs
+          node tools/trpg-sim/_temporary_live_patch2_20260908.mjs
       - name: Run focused deterministic tests
         run: |
           node --test tools/trpg-sim/test/authored-village-bakery-evening.test.mjs
