@@ -10,10 +10,11 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
 const DEFAULT_OUT = path.join(ROOT, 'docs/trpg');
 
-export const DAY2_NATURAL_BREAKFAST_REALIGNMENT_VERSION = 'virtue-route-v3-day2-natural-breakfast-v2';
+export const DAY2_NATURAL_BREAKFAST_REALIGNMENT_VERSION = 'virtue-route-v3-day2-natural-breakfast-v3';
 
 const DAY2_BAKERY_EVENING_OLD_ACTION = 'DAILY_LIFE:DAILY_BAKERY_EVENING:mend_gear_by_oven';
 const DAY2_BAKERY_EVENING_ACTION = 'DAILY_LIFE:DAILY_BAKERY_EVENING:help_close_the_bakery';
+const DAY2_OVERNIGHT_SLEEP_ACTION = 'LIFE:SLEEP:ITM001';
 
 function objects(text) {
   const matrix = parseCsv(text);
@@ -146,13 +147,45 @@ export function applyDay2NaturalBreakfastRealignment({ outDir = DEFAULT_OUT } = 
     notes: 'the reviewed old branch mended gear, but current production choice selection exposes the equally route-neutral closing-help branch. The clarification does not canonize the old exact choice, so strict replay follows the actually visible ordinary-life branch without hidden state or reconvergence.',
   });
 
+  const overnightRow = rows.find((entry) => entry.legacyRowId === 'VR2-D02-09');
+  if (!overnightRow) throw new Error('VR2-D02-09 missing');
+  const previousOvernight = executableActionIds(overnightRow);
+  if (previousOvernight.join('|') !== DAY2_OVERNIGHT_SLEEP_ACTION) {
+    throw new Error(`VR2-D02-09 expected ${DAY2_OVERNIGHT_SLEEP_ACTION}, got ${previousOvernight.join('|')}`);
+  }
+  const overnightSteps = [
+    choose('LIFE:EAT:ITM003', 'LOC_FARM_INN'),
+    choose(DAY2_OVERNIGHT_SLEEP_ACTION, 'LOC_FARM_INN'),
+  ];
+  Object.assign(overnightRow, {
+    legacyDescription: 'Day2の閉店後、麦穂亭で温かい麦粥を食べてから素泊まりで眠る',
+    classification: 'PLAYER_COMMAND_SEQUENCE',
+    commandType: 'SEQUENCE',
+    actionId: DAY2_OVERNIGHT_SLEEP_ACTION,
+    choiceId: '',
+    payload: JSON.stringify({ steps: overnightSteps }),
+    replacementSteps: JSON.stringify(overnightSteps),
+    replacementRowIds: overnightSteps.map((_, index) => `${overnightRow.legacyRowId}:S${String(index + 1).padStart(2, '0')}`).join('|'),
+    resolutionMethod: 'DAY2_NATURAL_BREAKFAST_REALIGNMENT',
+    regionId: '田園の村',
+    facilityId: 'LOC_FARM_INN',
+    productId: 'ITM001',
+    requiredState: 'Day2 after the long bakery closing block; player has physically returned to LOC_FARM_INN with high hunger and enough gold for a facility meal before lodging',
+    resultingState: 'the explicit inn meal resolves urgent hunger through production meal authority; only then does the player take the normal eight-hour ITM001 lodging action',
+    implementationSource: 'src/server/trpg/content/canonical-world-life-actions.js + canonical public-life choice policy',
+    status: 'RESOLVED_EXISTING',
+    unresolvedReason: '',
+    notes: 'strict production correctly refuses to prioritize sleep while hunger is urgent. The route therefore eats a real facility meal before bed instead of bypassing needs, injecting recovery, or consuming the carried black bread generically.',
+  });
+
   movesArtifact.day2NaturalBreakfastRealignmentVersion = DAY2_NATURAL_BREAKFAST_REALIGNMENT_VERSION;
   movesArtifact.day2NaturalBreakfastRemovedMoveBeforeRows = ['VR2-D02-01'];
   movesArtifact.count = moves.length;
 
   summary.day2NaturalBreakfastRealignmentVersion = DAY2_NATURAL_BREAKFAST_REALIGNMENT_VERSION;
-  summary.day2NaturalBreakfastRealignedLegacyRows = ['VR2-D02-01', 'VR2-D02-08'];
+  summary.day2NaturalBreakfastRealignedLegacyRows = ['VR2-D02-01', 'VR2-D02-08', 'VR2-D02-09'];
   summary.day2BakeryEveningAction = DAY2_BAKERY_EVENING_ACTION;
+  summary.day2OvernightMealAction = 'LIFE:EAT:ITM003';
   summary.proposedMoveLocalInsertions = moves.length;
   summary.expandedV3Rows = expandedRowCount(rows, moves);
 
@@ -164,7 +197,11 @@ export function applyDay2NaturalBreakfastRealignment({ outDir = DEFAULT_OUT } = 
     version: DAY2_NATURAL_BREAKFAST_REALIGNMENT_VERSION,
     expandedV3Rows: summary.expandedV3Rows,
     moves: moves.length,
-    actions: [...steps.map((step) => step.actionId), DAY2_BAKERY_EVENING_ACTION],
+    actions: [
+      ...steps.map((step) => step.actionId),
+      DAY2_BAKERY_EVENING_ACTION,
+      ...overnightSteps.map((step) => step.actionId),
+    ],
   };
 }
 
