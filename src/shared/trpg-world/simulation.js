@@ -121,7 +121,7 @@ export function createWorld(content,{seed=1,name='旅人'}={}) {
   const first = index(content).regions.get('farm') || content.regions[0];
   const state = {schemaVersion:2,simulationTime:0,contentRevision:content.revision,random:(seed>>>0)||1,weatherSeed:(seed>>>0)||1,nextId:1,time:content.time?.startSeconds ?? 21600,
     player:{id:'player',name:String(name).slice(0,40),region:first.id,position:[...(first.spawn || [0,0,8])],heading:0,hp:100,maxHp:100,mp:40,maxMp:40,stamina:100,
-      hunger:20,fatigue:0,gold:90,xp:0,level:1,sp:3,skills:['combat','investigation'],inventory:{supplies:2,medicine:2,rope:1},equipment:{},mode:'foot',evidence:[],reputation:{},mastery:{},cooldowns:{},lastAttack:-10000},
+      hunger:20,fatigue:0,gold:90,xp:0,level:1,sp:3,skills:['combat','investigation'],inventory:{supplies:2,medicine:2,rope:1},equipment:{},mode:'foot',evidence:[],mastery:{},cooldowns:{},lastAttack:-10000},
     input:{x:0,z:0,sprint:false,ascend:0,heading:0},npcs:{},events:{},monsters:{},regions:{},knowledge:[],history:[],notifications:[],facts:{},resources:{},quests:[],rewards:{},visits:[first.id],nextSocial:0,weather:{},cycleComplete:false};
   for (const region of content.regions) state.regions[region.id] = {stock:1,threat:0};
   for (const npc of content.npcs || []) state.npcs[npc.id] = {id:npc.id,region:npc.region,position:[...(npc.home || [0,0,0])],hp:70,maxHp:70,
@@ -262,7 +262,7 @@ function socialTick(state,content) {
   for (let i=0;i<npcs.length;i++) for (let j=i+1;j<npcs.length;j++) {
     const a=npcs[i],b=npcs[j]; if(a.region!==b.region||distance(a.position,b.position)>7||!hasLineOfSight(index(content).regions.get(a.region),a.position,b.position)) continue;
     for (const [speaker,listener] of [[a,b],[b,a]]) {
-      const fact=speaker.knowledge.find(k=>k.kind!=='secret'&&k.disclosure?.visibility!=='private'&&!finite(k.disclosureTrust)&&!listener.knowledge.some(l=>l.id===k.id)); if(!fact) continue;
+      const fact=speaker.knowledge.find(k=>k.kind!=='secret'&&k.disclosure?.visibility!=='private'&&!listener.knowledge.some(l=>l.id===k.id)); if(!fact) continue;
       const transmission={from:speaker.id,to:listener.id,at:state.time,region:speaker.region,position:[...speaker.position]};
       listener.knowledge.push({...clone(fact),receivedAt:state.time,transmissions:[...(fact.transmissions||[]),transmission].slice(-16),confidence:Math.max(.35,fact.confidence*.85),source:{type:'heard',actorId:speaker.id,origin:fact.source?.origin||fact.source}});
       if(fact.belief&&!listener.beliefs.some(b=>b.id===fact.belief.id)){listener.beliefs.push({...clone(fact.belief),confidence:Math.max(.2,fact.belief.confidence*.85),source:{type:'heard',actorId:speaker.id,previous:clone(fact.belief.source)},receivedAt:state.time});listener.nextDecision=0;}
@@ -687,6 +687,7 @@ export function applyCommand(state,content,command) {
     if(p.dodgeUntil>state.simulationTime)fail('COOLDOWN','回避中です。',409);
     const x=finite(command.x,Math.sin(p.heading)),z=finite(command.z,Math.cos(p.heading)),length=Math.hypot(x,z);
     if(length<.01||length>1.5)fail('INVALID_INPUT','回避方向が不正です。');
+    if(p.actionInstance?.phase==='windup'){p.actionInstance.phase='cancelled';p.actionInstance.cancelReason='dodge';p.actionInstance.cancelledAt=state.simulationTime;p.lastActionInstance=p.actionInstance;delete p.actionInstance;}
     p.position=moveBody(idx.regions.get(p.region),p.position,[x/length*3,0,z/length*3]);p.stamina-=20;p.dodgeUntil=state.simulationTime+.4;
     return {message:null};
   }
@@ -746,6 +747,6 @@ export function projectWorld(state,content) {
   return {schemaVersion:2,simulationTime:state.simulationTime,time:state.time,day:Math.floor(state.time/DAY)+1,clock:`${String(Math.floor(hour(state))).padStart(2,'0')}:${String(Math.floor(state.time/60)%60).padStart(2,'0')}`,
     weather:clone(state.weather[p.region]),player:{...clone(p),force:forceOf(p,content),inventoryDetails:Object.entries(p.inventory).filter(([,quantity])=>quantity>0).map(([id,quantity])=>{const item=idx.items.get(id)||(content.materials||[]).find(i=>i.id===id)||idx.equipment.get(id);return {id,name:item?.name||'採集した素材',kind:item?.kind||(idx.equipment.has(id)?'equipment':'material'),quantity,equipped:Object.values(p.equipment).includes(id)};})},region:publicRegion,npcs:nearbyNpcs,
     monsters:values(state.monsters).filter(m=>m.region===p.region&&m.hp>0&&distance(m.position,p.position)<75).map(m=>{const t=idx.monsters.get(m.templateId);return {id:m.id,name:t?.name,position:clone(m.position),hp:m.hp,maxHp:m.maxHp,level:t?.level,role:t?.role,activity:m.activity,heading:m.heading,boss:t?.boss,intent:m.intent?{name:m.intent.name,position:clone(m.intent.position),resolvesAt:m.intent.resolvesAt}:undefined};}),
-    affordances:affordances(state,content),worldObjects:values(state.worldObjects).filter(o=>o.region===p.region&&o.quantity>0&&distance(o.position,p.position)<5).map(o=>({...clone(o),actions:affordances(state,content,o.id)})),conversation:state.conversation?.status==='active'?conversationResult(state,content).conversation:undefined,interactables,knownEvents,quests,journal:clone(state.history.slice(-60)),notifications:clone(state.notifications.slice(-5)),cycleComplete:state.cycleComplete,
+    affordances:affordances(state,content),worldObjects:values(state.worldObjects).filter(o=>!o.custodianId&&o.region===p.region&&o.quantity>0&&distance(o.position,p.position)<5).map(o=>({id:o.id,kind:o.kind,name:o.name,itemId:o.itemId,quantity:o.quantity,position:clone(o.position),actions:affordances(state,content,o.id)})),conversation:state.conversation?.status==='active'?conversationResult(state,content).conversation:undefined,interactables,knownEvents,quests,journal:clone(state.history.slice(-60)),notifications:clone(state.notifications.slice(-5)),cycleComplete:state.cycleComplete,
     outcomes:state.cycleComplete?{knownResolved:knownEvents.filter(e=>['prevented','resolved'].includes(e.status)).length,knownFailed:knownEvents.filter(e=>e.status==='failed').length}:undefined};
 }

@@ -17,7 +17,7 @@ export function affordances(state,content,targetId='self') {
  const npc=state.npcs[targetId];
  if(local(state,content,npc)&&possessions(state,npc.id).length>0&&npc.goal!=='defend')result.push({id:'world:pickpocket',type:'affordance',action:'pickpocket',targetId,label:'懐の持ち物を掏ろうとする'});
  const object=state.worldObjects?.[targetId];
- if(local(state,content,object)&&object.quantity>0)result.push({id:'world:take',type:'affordance',action:object.ownerId==='player'?'take':'steal',targetId,label:object.ownerId==='player'?'拾う':'盗む'});
+ if(local(state,content,object)&&!object.custodianId&&object.quantity>0)result.push({id:'world:take',type:'affordance',action:object.ownerId==='player'?'take':'steal',targetId,label:object.ownerId==='player'?'拾う':'盗む'});
  return result;
 }
 function executeAffordance(state,content,command) {
@@ -55,7 +55,7 @@ function executeAffordance(state,content,command) {
    const belief={id:`belief:${state.nextId++}`,factId:fact.id,claim:'property-interference',about:'player',victimId:victim.id,confidence:1,place:{region:p.region,position:[...p.position]},at:state.time,source:{type:'seen',observerId:id}};
    npc.beliefs.push(belief);npc.knowledge.push({id:belief.id,kind:'crime-observation',text:success?'旅人が他人の持ち物を抜き取るところを見た。':'旅人が他人の財布へ手を伸ばすところを見た。',belief:structuredClone(belief),region:p.region,observedAt:state.time,confidence:1,source:belief.source});
  }
- return {message:success?'硬貨を手に移した。':'相手が手の動きに気づいた。',factId:fact.id};
+ return {message:success?'持ち物を手に移した。':'相手が手の動きに気づいた。',outcome:success?'succeeded':'failed',factId:fact.id};
 }
 export function advancePropertyDiscovery(state,content) {
  for(const incident of state.propertyIncidents||[])if(incident.status==='undiscovered'&&state.time>=incident.discoverAfter) {

@@ -28,6 +28,5 @@ export function forceOf(player, content) {
 export function priceOf(state, item, regionId) {
   const region = state.regions[regionId] || {stock:1,threat:0};
   const scarcity = Math.max(.65,Math.min(2.8,1 / Math.max(.35,region.stock)));
-  const reputation = Math.max(.8,Math.min(1.3,1 - (state.player.reputation[regionId] || 0) * .008));
-  return Math.max(1,Math.round(item.price * scarcity * reputation));
+  return Math.max(1,Math.round(item.price * scarcity));
 }

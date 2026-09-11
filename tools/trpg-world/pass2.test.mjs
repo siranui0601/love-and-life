@@ -121,3 +121,19 @@ test('saving windup and restoring JSON continues the same action without offline
  const service=new PersistentWorldService({content:c,store,autoStart:false,now:()=>now});await service.session(h.owner);const restored=await store.get(h.owner);assert.equal(restored.state.time,before.time);assert.equal(restored.state.monsters[targetId].hp,35);assert.equal(restored.state.player.actionInstance.phase,'windup');
  now+=500;await service.state(h.owner);await service.close();const after=(await store.get(h.owner)).state;assert(after.monsters[targetId].hp<35);assert.equal(after.player.actionInstance.id,record.state.player.actionInstance.id);
 });
+
+test('a later nearby conversation carries a witnessed interpretation to a non-witness and changes their plan',async()=>{
+ const c=small();c.npcs[1].home=[25,0,0];c.npcs[1].work=[5,0,0];const h=await harness(c);await h.tick(.5);
+ await h.command({type:'affordance',action:'lie',targetId:'self'});const first=await h.read();const fact=first.socialFacts.find(f=>f.kind==='body-action');assert(!fact.witnesses.includes('guard'));assert.equal(first.npcs.guard.beliefs.length,0);
+ await h.tick(22);const s=await h.read(),belief=s.npcs.guard.beliefs.find(b=>b.factId===fact.id);assert(belief);assert.equal(belief.source.type,'heard');assert.equal(belief.source.actorId,'doctor');assert.equal(s.npcs.guard.goal,'investigate-observation');await h.service.close();
+});
+test('real service: dodge cancels windup without damage or bypassing the attack cooldown',async()=>{
+ const c=small();c.npcs=[];c.regions[0].size=160;c.regions[0].spawn=[-49,0,-45];c.monsters=[{id:'rat',name:'野鼠',region:'farm',level:1,hp:35,attack:1,defense:0,xp:20,gold:3,role:'minion',speed:0,range:2.8,drops:[]}];
+ const h=await harness(c),before=await h.read(),targetId=Object.keys(before.monsters)[0];await h.command({type:'attack',targetId});await h.command({type:'dodge',x:0,z:1});await h.tick(.5);
+ const s=await h.read();assert.equal(s.player.lastActionInstance.phase,'cancelled');assert.equal(s.player.lastActionInstance.cancelReason,'dodge');assert.equal(s.monsters[targetId].hp,35);assert.equal(s.player.cooldowns.attack,0);await h.service.close();
+});
+
+test('legacy regional reputation is archived and cannot discount current prices',async()=>{
+ const {migrateWorld}=await import('../../src/shared/trpg-world/activity.js');const {priceOf}=await import('../../src/shared/trpg-world/progression.js');const c=small(),s=createWorld(c);s.player.reputation={farm:1000};
+ const price=priceOf(s,c.items[0],'farm');migrateWorld(s,c);assert.equal(priceOf(s,c.items[0],'farm'),price);assert.equal(price,6);assert(!Object.hasOwn(s.player,'reputation'));assert.equal(s.legacySnapshot.playerReputation.farm,1000);
+});

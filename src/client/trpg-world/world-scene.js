@@ -122,7 +122,7 @@ export class WorldScene {
   const lines=Array.from({length:140},(_,i)=>{const x=this.position[0]+((i*17)%37)-18,z=this.position[2]+((i*23)%39)-19,y=12-((i*.79+this.rainTime*(snow?1.7:12))%12);return[new Vector3(x,y,z),new Vector3(x+(snow?.05:.12),y-(snow?.08:1),z)];});
   this.precipitation=MeshBuilder.CreateLineSystem('precipitation',{lines,updatable:true,instance:this.precipitation},this.scene);this.precipitation.color=new Color3(.78,.85,.9);this.precipitation.alpha=.38;this.precipitation.isPickable=false;
  }
- animateAttack(targetId,magic){const a=this.actors.get('player'),target=this.actors.get(targetId);if(a&&!a.pending){a.play('attack-melee-right');a.attackUntil=performance.now()+550;}if(!target||target.pending)return;
+ animateAttack(targetId,magic,{hit=false}={}){const a=this.actors.get('player'),target=this.actors.get(targetId);if(a&&!a.pending){a.play('attack-melee-right');a.attackUntil=performance.now()+550;}if(!hit||!target||target.pending)return;
   const beam=MeshBuilder.CreateLines('attack-trail',{points:[v(this.position).add(new Vector3(0,1.2,0)),target.root.position.add(new Vector3(0,.7,0))]},this.scene);beam.color=magic?new Color3(.7,.65,1):new Color3(1,.85,.5);beam.isPickable=false;setTimeout(()=>beam.dispose(),180);
  }
  forward(){const f=this.camera.target.subtract(this.camera.position);f.y=0;return f.normalize();}

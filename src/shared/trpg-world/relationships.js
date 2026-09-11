@@ -2,7 +2,9 @@ import {distance,hasLineOfSight} from './navigation.js';
 
 export function initializeRelationships(state) {
   state.socialFacts||=[];state.promises||=[];
+  if(Object.hasOwn(state.player,'reputation')){state.legacySnapshot||={};state.legacySnapshot.playerReputation=state.player.reputation;delete state.player.reputation;}
   for(const npc of Object.values(state.npcs||{})) {
+    for(const fact of npc.knowledge||[])if(Object.hasOwn(fact,'disclosureTrust')){fact.legacyDisclosureSnapshot=fact.disclosureTrust;fact.disclosure||={visibility:fact.disclosureTrust>0?'private':'public'};delete fact.disclosureTrust;}
     npc.memories||=[];npc.beliefs||=[];npc.possessions||={};npc.obligations||=[];
     if(Object.hasOwn(npc,'trust')) {npc.legacyTrustSnapshot=npc.trust;delete npc.trust;}
   }

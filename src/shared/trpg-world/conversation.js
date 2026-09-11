@@ -5,7 +5,7 @@ import {distance,hasLineOfSight} from './navigation.js';
 const reject=(code,message)=>{throw Object.assign(new Error(message),{code,status:409});};
 export function visibleTopics(state,npc) {
   // A secret needs a specific authored disclosure permission, never a score.
-  return npc.knowledge.filter(f=>f.kind!=='secret'&&f.disclosure?.visibility!=='private'&&!(f.disclosureTrust>0)||
+  return npc.knowledge.filter(f=>f.kind!=='secret'&&f.disclosure?.visibility!=='private'||
     f.disclosureFactIds?.some(id=>npc.memories.some(m=>m.factId===id)));
 }
 function choices(state,npc,session) {

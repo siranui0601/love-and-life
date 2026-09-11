@@ -7,7 +7,7 @@ export function beginWorldAction(state,candidate) {
  state.worldActionHistory||=[];state.worldActionHistory.push(action);if(state.worldActionHistory.length>100)state.worldActionHistory.shift();return action;
 }
 export function completeWorldAction(state,action,result) {
- action.status='completed';action.completedAt={world:state.time,simulation:state.simulationTime};action.createdFactIds=result.factId?[result.factId]:[];
+ action.status='completed';action.outcome=result.outcome||'performed';action.completedAt={world:state.time,simulation:state.simulationTime};action.createdFactIds=result.factId?[result.factId]:[];
  action.effects={factIds:action.createdFactIds,custodyIds:(state.propertyTransfers||[]).filter(t=>t.sourceFactId===result.factId).map(t=>t.id)};
  return {...result,worldActionId:action.id};
 }

@@ -34,7 +34,7 @@ export function auditWorldContent(content) {
     if(event.causalStatus==='unadapted')warnings.push(`${event.id}: causal migration pending; no generic resolution is available`);
   }
   // These fields must never be reintroduced into canonical runtime content.
-  const forbidden=new Set(['trust','disclosureTrust','pressure','pressurePerDay','pressureDependencies','mechanisms']);
+  const forbidden=new Set(['trust','reputation','disclosureTrust','pressure','pressurePerDay','pressureDependencies','mechanisms']);
   function inspect(value,path='content') {
     if(!value||typeof value!=='object')return;
     for(const [key,child] of Object.entries(value)) {

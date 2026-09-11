@@ -40,7 +40,7 @@ export function migrateWorld(state, content) {
   }
   for (const field of Object.values(state.fields||{})) field.expiresAt=toCombat(field.expiresAt);
   // Never infer a rescue or relationship from old numeric fields.
-  state.legacySnapshot={schemaVersion:1,injuredUntil:state.player.injuredUntil??null};
+  state.legacySnapshot={...state.legacySnapshot,schemaVersion:1,injuredUntil:state.player.injuredUntil??null};
   state.player.hunger??=20;state.player.fatigue??=0;delete state.player.travelling;delete state.player.injuredUntil;
   setActivity(state,'idle');state.schemaVersion=WORLD_SCHEMA_VERSION;
   return state;
