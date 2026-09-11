@@ -37,7 +37,8 @@ export function planForGoal(state,content,npc,template,chosen) {
  return {id:`plan:${state.nextId++}`,goal:chosen.goal,desired:goal,region:npc.region,status:steps?'active':'blocked',steps:steps||[],cursor:0,createdAt:state.time,
   requiredKnowledge:(npc.beliefs||[]).filter(b=>!b.checkedAt&&b.place?.region===npc.region).map(b=>b.factId),locations,chosen:structuredClone(chosen),failureCondition:'precondition/resource/location changes',reasons:(npc.memories||[]).filter(m=>m.kind==='promise-kept').map(m=>m.factId)};
 }
-export function advancePlan(state,content,npc,seconds) {
+export function advancePlan(state,content,npc,seconds,execution=null) {
+  if(execution)return advanceActionPlan(state,npc,seconds,execution);
  const plan=npc.plan;if(!plan)return false;
  const template=content.npcs.find(n=>n.id===npc.id);if(!template)return false;
  const invalidate=reason=>{plan.status='invalidated';plan.invalidatedAt=state.time;plan.failure=reason;npc.lastPlan=plan;npc.plan=planForGoal(state,content,npc,template,plan.chosen);npc.nextDecision=0;return false;};
@@ -66,4 +67,17 @@ export function advancePlan(state,content,npc,seconds) {
  if(step.action==='observe')for(const belief of npc.beliefs||[])if(!belief.checkedAt&&belief.place?.region===npc.region&&distance(npc.position,belief.place.position)<3){belief.checkedAt=state.time;rememberAction(state,content,belief.claim==='property-interference'?'crime-report':'site-inspection',{actorId:npc.id,payload:{reasonFactId:belief.factId,claim:belief.claim}});}
  plan.cursor++;if(plan.cursor>=plan.steps.length){npc.planHistory||=[];npc.planHistory.push({id:plan.id,goal:plan.goal,completedAt:state.time,actions:plan.steps.map(s=>s.action)});if(npc.planHistory.length>32)npc.planHistory.shift();npc.lastPlan={...plan,status:'completed',completedAt:state.time};npc.nextDecision=0;delete npc.plan;}
  return true;
+}
+
+// Shared executor for authored action domains (rescue, delivery, institutional work).
+// It consumes the same searched precondition/effect plan representation as daily life.
+export function advanceActionPlan(state,npc,seconds,{facts,handlers}) {
+ const plan=npc.plan,step=plan?.steps[plan.cursor];if(!plan||plan.status!=='active')return plan?.status;
+ if(!step){plan.status='completed';return plan.status;}
+ if(!satisfies(facts(),step.preconditions)){plan.status='invalidated';plan.failure=`preconditions:${step.action}`;npc.nextDecision=0;return plan.status;}
+ const handler=handlers[step.action];if(!handler)throw new Error(`Missing action executor: ${step.action}`);
+ step.elapsed=(step.elapsed||0)+seconds;const outcome=handler(step,seconds);
+ if(outcome?.failed){plan.status='invalidated';plan.failure=outcome.failed;npc.nextDecision=0;return plan.status;}
+ if(outcome?.complete){plan.cursor++;if(plan.cursor>=plan.steps.length){plan.status='completed';plan.completedAt=state.time;npc.lastPlan=structuredClone(plan);npc.planHistory||=[];npc.planHistory.push({id:plan.id,goal:plan.goal,completedAt:state.time,actions:plan.steps.map(s=>s.action)});if(npc.planHistory.length>32)npc.planHistory.shift();}}
+ return plan.status;
 }

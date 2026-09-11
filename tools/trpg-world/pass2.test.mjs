@@ -96,3 +96,28 @@ test('live narrative adapter requires explicit enable and never calls transport 
  const {LiveNarrativeProvider}=await import('../../src/server/trpg/world/narrative.js');let calls=0;
  assert.throws(()=>new LiveNarrativeProvider({transport:async()=>{calls++;}}),/explicit enable/);assert.equal(calls,0);
 });
+
+test('a collapsed-save service continuation lets a child seek a visible capable helper and complete actual rescue plans',async()=>{
+ const {collapse}=await import('../../src/shared/trpg-world/survival.js');const c=small();c.regions[0].size=160;
+ c.npcs=[{id:'child',name:'子供',role:'少女',region:'farm',home:[20,0,0],work:[20,0,0]},{id:'adult',name:'医師',role:'医師',region:'farm',home:[40,0,0],work:[40,0,0]}];
+ const store=new MemoryWorldStore(),owner=hashWorldToken('rescue-start');let service=new PersistentWorldService({content:c,store,autoStart:false,now:()=>1000});await service.session(owner,{create:true});await service.close();
+ // Initial casualty fixture only: no rescuer, plan, position, completion or outcome is injected.
+ const record=await store.get(owner);record.state.player.hp=0;collapse(record.state,c,'hp');await store.put(owner,record);
+ service=new PersistentWorldService({content:c,store,autoStart:false,now:()=>1000});await service.session(owner);await service.command(owner,{seq:1,command:{type:'recover'}});await service.close();
+ const s=(await store.get(owner)).state;assert.equal(s.player.collapse.status,'recovered');assert.equal(s.player.collapse.rescue.reasoning.reportedBy,'child');
+ assert(s.npcs.child.planHistory.some(p=>p.goal==='helper-informed'&&p.actions.join(',')==='move,report'));assert.equal(s.npcs.adult.lastPlan.goal,'casualty-treated');assert(s.socialFacts.some(f=>f.kind==='rescue-request'&&f.actorId==='child'&&f.targetId==='adult'));
+ assert(Math.hypot(s.player.position[0],s.player.position[2]-3)<2);
+});
+test('real service: moving out of the hit volume during windup causes a miss',async()=>{
+ const c=small();c.npcs=[];c.regions[0].size=160;c.regions[0].spawn=[-46.9,0,-45];
+ c.monsters=[{id:'rat',name:'野鼠',region:'farm',level:1,hp:35,attack:1,defense:0,xp:20,gold:3,role:'minion',speed:0,range:2.8,drops:[]}];
+ const h=await harness(c),before=await h.read(),targetId=Object.keys(before.monsters)[0];await h.command({type:'attack',targetId});await h.command({type:'input',x:1,z:0});await h.tick(.5);const s=await h.read();assert.equal(s.monsters[targetId].hp,35);assert.equal(s.player.actionInstance.result.miss,true);await h.service.close();
+});
+test('saving windup and restoring JSON continues the same action without offline damage',async()=>{
+ const c=small();c.npcs=[];c.regions[0].size=160;c.regions[0].spawn=[-49,0,-45];
+ c.monsters=[{id:'rat',name:'野鼠',region:'farm',level:1,hp:35,attack:1,defense:0,xp:20,gold:3,role:'minion',speed:0,range:2.8,drops:[]}];
+ const h=await harness(c),before=await h.read(),targetId=Object.keys(before.monsters)[0];await h.command({type:'attack',targetId});await h.service.close();
+ const record=JSON.parse(JSON.stringify(await h.store.get(h.owner))),store=new MemoryWorldStore();await store.put(h.owner,record);let now=999999999;
+ const service=new PersistentWorldService({content:c,store,autoStart:false,now:()=>now});await service.session(h.owner);const restored=await store.get(h.owner);assert.equal(restored.state.time,before.time);assert.equal(restored.state.monsters[targetId].hp,35);assert.equal(restored.state.player.actionInstance.phase,'windup');
+ now+=500;await service.state(h.owner);await service.close();const after=(await store.get(h.owner)).state;assert(after.monsters[targetId].hp<35);assert.equal(after.player.actionInstance.id,record.state.player.actionInstance.id);
+});
