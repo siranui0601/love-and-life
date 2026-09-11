@@ -1,22 +1,30 @@
 import {setActivity} from './activity.js';
-import {rememberAction,willingToCooperate,initializeRelationships} from './relationships.js';
+import {rememberAction,willingToCooperate,initializeRelationships,deliverSupplies} from './relationships.js';
 import {distance,hasLineOfSight} from './navigation.js';
 
 const reject=(code,message)=>{throw Object.assign(new Error(message),{code,status:409});};
 export function visibleTopics(state,npc) {
   // A secret needs a specific authored disclosure permission, never a score.
-  return npc.knowledge.filter(f=>f.kind!=='secret'&&!(f.disclosureTrust>0)||
+  return npc.knowledge.filter(f=>f.kind!=='secret'&&f.disclosure?.visibility!=='private'&&!(f.disclosureTrust>0)||
     f.disclosureFactIds?.some(id=>npc.memories.some(m=>m.factId===id)));
 }
 function choices(state,npc,session) {
   const facts=visibleTopics(state,npc).filter(f=>!session.factsLearned.includes(f.id));
-  const options=facts.slice(0,1).map(f=>({id:`ask:${f.id}`,family:'ask',factId:f.id,label:`「${f.kind==='event'?'その出来事':f.kind==='background'?'この土地での暮らし':'その話'}」について聞く`,preview:f.text}));
-  if(!session.history.some(h=>h.intentId==='daily-plan'))options.push({id:'daily-plan',family:'social',label:'今日は何をする予定か聞く'});
+  const options=facts.slice(0,1).map(f=>({id:`ask:${f.id}`,family:'ask',intent:'ASK_ABOUT',factId:f.id,label:`「${f.kind==='event'?'その出来事':f.kind==='background'?'この土地での暮らし':'その話'}」について聞く`,preview:f.text}));
+  if(!session.history.some(h=>h.intentId==='daily-plan'))options.push({id:'daily-plan',intent:'ASK_ABOUT',family:'social',label:'今日は何をする予定か聞く'});
   if(!session.history.some(h=>h.intentId==='promise-supplies')&&!state.promises.some(p=>p.to===npc.id&&p.status==='open'))
-    options.push({id:'promise-supplies',family:'promise',label:'日暮れまでに生活物資を一つ届けると約束する'});
+    options.push({id:'promise-supplies',intent:'MAKE_PROMISE',family:'promise',label:'日暮れまでに生活物資を一つ届けると約束する'});
   if(options.length<4&&!session.history.some(h=>h.intentId==='joke'))options.push({id:'joke',family:'play',label:'旅先で迷った話を冗談にする'});
-  if(npc.money>0&&!session.history.some(h=>h.intentId==='pickpocket'))options.splice(3,0,{id:'pickpocket',family:'theft',label:'話している隙に相手の財布を掏ろうとする'});
-  return [...options.slice(0,4),{id:'leave',family:'leave',label:'話を終えて立ち去る'}];
+
+  const share=state.knowledge.find(k=>!npc.knowledge.some(n=>n.id===k.id));
+  if(share)options.push({id:`share:${share.id}`,intent:share.kind==='event'?'WARN':'SHARE_INFORMATION',family:'share',factId:share.id,label:share.kind==='event'?'見聞きした危険を伝える':'知っている話を伝える'});
+  if(state.player.inventory.supplies>0&&npc.hunger>60)options.push({id:'offer-food',intent:'OFFER_HELP',family:'offer',label:'持っている食料を渡す'});
+  if(npc.possessions.supplies>0&&state.player.hunger>50)options.push({id:'request-food',intent:'REQUEST_HELP',family:'request',label:'食べ物を分けてもらえないか頼む'});
+  options.push({id:'lie-health',intent:'LIE',family:'claim',label:'本当の状態とは関係なく「病気だ」と言う'});
+  const limit=options.length>4?3:4,start=session.topicCursor||0;
+  const visible=options.slice(start,start+limit);
+  if(options.length>4)visible.push({id:'change-topic',intent:'CHANGE_TOPIC',family:'topic',label:'別の話題に移る'});
+  return [...visible,{id:'leave',intent:'LEAVE',family:'leave',label:'話を終えて立ち去る'}];
 }
 export function beginConversation(state,content,target) {
   initializeRelationships(state);
@@ -56,21 +64,24 @@ export function converse(state,content,command) {
     if(!old)state.knowledge.push(learned);else if(old.observedAt<known.observedAt)Object.assign(old,learned);
     session.disclosures.push({factId:known.id,from:npc.id,to:'player',at:state.time});
     session.utterance=known.text;
+  } else if(choice.family==='topic') {session.topicCursor=(session.topicCursor||0)+3;if(!choices(state,npc,session).some(c=>!['topic','leave'].includes(c.family)))session.topicCursor=0;session.utterance='ほかには？';}
+  else if(choice.family==='share') {
+    const known=state.knowledge.find(k=>k.id===choice.factId);
+    npc.knowledge.push({...structuredClone(known),receivedAt:state.time,source:{type:'heard',actorId:'player',previous:structuredClone(known.source)}});
+    session.disclosures.push({factId:known.id,from:'player',to:npc.id,at:state.time});npc.nextDecision=0;session.utterance='分かった。自分でも気をつけて確かめよう。';
+  } else if(choice.family==='offer') {state.player.inventory.supplies--;deliverSupplies(state,content,npc);session.utterance='今ちょうど食べ物が必要だった。受け取るよ。';}
+  else if(choice.family==='request') {
+    if(willingToCooperate(state,npc,{resourceCost:1,purpose:'food'})){npc.possessions.supplies--;state.player.inventory.supplies=(state.player.inventory.supplies||0)+1;rememberAction(state,content,'gift',{actorId:npc.id,targetId:'player',payload:{itemId:'supplies',quantity:1}});session.utterance='一つなら分けられる。';}
+    else session.utterance='今は自分の分を手放せない。';
+  } else if(choice.family==='claim') {
+    npc.beliefs.push({id:`belief:${state.nextId++}`,factId:fact.id,claim:'ill',about:'player',confidence:.35,place:structuredClone(session.place),at:state.time,source:{type:'claimed',actorId:'player',sessionId:session.id}});npc.nextDecision=0;
+    session.utterance='病気なのか？ 様子を見よう。';
   } else if(choice.id==='daily-plan')session.utterance=`今は${npc.activity}をしている。${willingToCooperate(state,npc)?'約束を守ってくれたことは覚えている。':''}`;
   else if(choice.id==='promise-supplies') {
     const promise={id:`promise:${state.nextId++}`,from:'player',to:npc.id,intent:'deliver-supplies',createdAt:state.time,
       deadline:Math.max(state.time+3600,Math.floor(state.time/86400)*86400+20*3600),status:'open',sourceFactId:fact.id};
     state.promises.push(promise);session.promisesMade.push(promise.id);npc.obligations.push(promise.id);
     session.utterance='それなら日暮れまで待っている。無理なら知らせてほしい。';
-  } else if(choice.id==='pickpocket') {
-    state.random=(Math.imul(state.random,1664525)+1013904223)>>>0;
-    const success=state.random/4294967296<(state.player.skills.includes('stealth')?.65:.15);
-    const observers=Object.values(state.npcs).filter(n=>n.id!==npc.id&&n.hp>0&&!n.travel&&n.region===npc.region&&distance(n.position,npc.position)<8&&hasLineOfSight(region,n.position,npc.position)).map(n=>n.id);
-    if(!success)observers.push(npc.id);
-    const amount=success?npc.money:0;if(success){state.player.gold+=amount;npc.money=0;}
-    rememberAction(state,content,success?'theft':'attempted-theft',{targetId:npc.id,payload:{owner:npc.id,amount,noticed:!success},observedBy:observers});
-    session.utterance=success?'財布の重みが手に移った。周囲に気づいた人がいるかもしれない。':'手首をつかまれた。「何をしている？」';
-    session.status='ended';setActivity(state,'idle');
   } else if(choice.id==='joke')session.utterance='見慣れない道なら、曲がり角ひとつでも冒険になるね。';
   else {session.status='ended';session.utterance='話を終えた。';setActivity(state,'idle');}
   session.semanticIntents=choices(state,npc,session).map(c=>c.id);

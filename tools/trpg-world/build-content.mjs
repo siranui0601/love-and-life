@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import {createHash} from 'node:crypto';
+import {DEFAULT_CAUSAL_SCENARIOS} from '../../src/shared/trpg-world/causal-events.js';
 import {createRegion,createPortal,placeNPC,finalizeRegions} from './region-layout.mjs';
 const base=new URL('../../',import.meta.url);
 const source=JSON.parse(await fs.readFile(new URL('sources/world.json',import.meta.url),'utf8'));
@@ -31,10 +32,10 @@ for(const region of regions){const links=routes.filter(r=>r.from===region.id||r.
  });}
 const npcs=rows('NPC一覧').filter(r=>/^NPC\d{3}$/.test(r[0]||'')).map((r,i)=>{
  const id=regionId(r[9])||regionId(r[8])||'capital',reg=byRegion[id];
- return {id:r[0],name:r[1],region:id,role:r[11],species:r[4],personality:r[13],...placeNPC(reg,r,i),knowledge:[{kind:'background',text:`${r[1]}は${r[11]}として、この土地で暮らしている。`,disclosureTrust:0},{kind:'secret',text:r[17]||'',disclosureTrust:15}],voice:r[20],sourceId:r[0],source:{sheet:'NPC一覧',row:rows('NPC一覧').indexOf(r)+1,url:source.sheets.find(s=>s.title==='NPC一覧').url,id:r[0]}};
+ return {id:r[0],name:r[1],region:id,role:r[11],species:r[4],personality:r[13],...placeNPC(reg,r,i),knowledge:[{kind:'background',text:`${r[1]}は${r[11]}として、この土地で暮らしている。`,disclosure:{visibility:'public'}},{kind:'secret',text:r[17]||'',disclosure:{visibility:'private',requiresKnownFacts:[]}}],voice:r[20],sourceId:r[0],source:{sheet:'NPC一覧',row:rows('NPC一覧').indexOf(r)+1,url:source.sheets.find(s=>s.title==='NPC一覧').url,id:r[0]}};
 });
 const jobs=rows('仕事マスター').filter(r=>/^JOB-/.test(r[0]||'')).map(r=>({id:r[0],name:r[3],region:regionId(r[1]),facilityId:r[2],minutes:Math.max(30,Number(r[5])*25),pay:Math.max(22,Number(r[6])*6),xp:32,description:r[11],source:{sheet:'仕事マスター',row:rows('仕事マスター').indexOf(r)+1}})).filter(j=>j.region);
-const items=[{id:'supplies',name:'食料と生活物資',kind:'food',price:10,heal:15},{id:'medicine',name:'傷薬',kind:'consumable',price:14,heal:45},{id:'food',name:'旅人の温かい弁当',kind:'food',price:6,heal:20},{id:'rope',name:'丈夫な縄',kind:'tool',price:8},{id:'timber',name:'補修用木材',kind:'material',price:12},{id:'antidote',name:'解毒薬',kind:'consumable',price:25},{id:'crystal',name:'調律結晶',kind:'material',price:28},{id:'horse',name:'街道馬',kind:'mount',price:140},{id:'broom',name:'飛行箒',kind:'mount',price:190}];
+const items=[{id:'supplies',name:'食料と生活物資',kind:'food',price:10,nutrition:40},{id:'medicine',name:'傷薬',kind:'consumable',price:14,heal:45},{id:'food',name:'旅人の温かい弁当',kind:'food',price:6,nutrition:40},{id:'rope',name:'丈夫な縄',kind:'tool',price:8},{id:'timber',name:'補修用木材',kind:'material',price:12},{id:'antidote',name:'解毒薬',kind:'consumable',price:25},{id:'crystal',name:'調律結晶',kind:'material',price:28},{id:'horse',name:'街道馬',kind:'mount',price:140},{id:'broom',name:'飛行箒',kind:'mount',price:190}];
 const craftingFacilityIds=['LOC_FARM_REPAIR','LOC_TRADE_SHIPYARD','LOC_CAP_APOTHECARY','LOC_TRADE_APOTHECARY','LOC_ELF_HERB_GARDEN','LOC_DWARF_FORGE','LOC_DWARF_ENGINEER','LOC_BLACKRIDGE_FORGE'];
 for(const region of regions)for(const object of region.objects||[])if(craftingFacilityIds.includes(object.id))object.crafting=true;
 const recipes=[
@@ -59,21 +60,15 @@ const events=eventSpecs.map((s,i)=>{
  const ally=npcs.find(n=>n.id===preferred&&n.region===region)||npcs.find(n=>n.region===region);
  const reg=byRegion[region],position=[i%2?32:-32,0,-5],proof=`${id}:proof`;
  reg.objects.push({id:`evidence:${id}`,kind:'evidence',name:`${name}の手がかり`,position:[position[0],0,position[2]+10],asset:'crate',eventId:id,evidenceId:proof,description:`${description} 調べた痕跡を手帳へ写した。`});
- const add=(mid,label,kind,requirements,effects)=>({id:mid,label,kind,requirements,effects:{pressure:-120,xp:145,...effects}});
- const material=id==='deep-mine'?{timber:3,rope:2}:id==='harbor'?{antidote:2,supplies:3}:id==='resonance'||id==='roots'?{crystal:2,timber:2}:{supplies:4};
- return {id,name,region,position,startsAt:at(sd,sh),deadline:at(dd,dh),severity:'major',pressure:45,pressurePerDay:6,description,cause,sourceIds,reward:90,
-  opposition:{monsterId:['MON-0005','MON-0033','MON-0034','MON-0015','MON-0049','MON-0025','MON-0062','MON-0055'][i],description:'事件の実行勢力。現場で退けた結果を、力による介入の根拠にできる。'},
-  mechanisms:[add('community',cooperate,'community',{trust:{[ally.id]:12},evidence:[proof]},{trust:3,setFacts:[`${id}:community-protected`],stock:{[region]:.1}}),
-   add('logistics',logistics,'logistics',{items:material,gold:i>4?25:10},{resources:{[`${region}:supplies`]:4},setFacts:[`${id}:supply-secured`],stock:{[region]:.3}}),
-   add('investigation','現場証拠と専門技能で、発生原因を除く','information',{skills:[skill],evidence:[proof],items:id==='resonance'?{crystal:1}:{}},{setFacts:[`${id}:cause-removed`]}),
-   add('coercion',force,'coercion',{force:20+i*3,evidence:[proof,`${id}:threat-reduced`]},{trust:-6,threat:{[region]:4},setFacts:[`${id}:coerced`]}),
-   add('misreading','誤解から生まれた警戒網へ物資を渡す','misunderstanding',{evidence:[`${id}:misread`],facts:[`${id}:public-warning`],items:{supplies:1}},{trust:1,setFacts:[`${id}:unexpected-aversion`],resources:{[`${region}:warnings`]:1}})],
-  pressureDependencies:({crown:[{eventId:'bread-fire',perDay:4},{eventId:'roots',perDay:3}],border:[{eventId:'harbor',perDay:5},{eventId:'crown',perDay:3}]}[id]||[]),
-  failureEffects:{stock:{[region]:-.55,...(['bread-fire','harbor','roots'].includes(id)?{capital:-.2}: {})},threat:{[region]:18},setFacts:[`${id}:aftermath`],deaths:id==='lost-road'?['NPC001']:[]},signals:[{kind:'local',text:description}],
+ return {id,name,region,position,startsAt:at(sd,sh),deadline:at(dd,dh),severity:'major',description,cause,sourceIds,reward:90,
+  causalSourceIds:DEFAULT_CAUSAL_SCENARIOS.find(s=>s.eventId===id)?.sourceIds||[],
+  causalStatus:DEFAULT_CAUSAL_SCENARIOS.some(s=>s.eventId===id)?'partial':'unadapted',
+  opposition:{monsterId:['MON-0005','MON-0033','MON-0034','MON-0015','MON-0049','MON-0025','MON-0062','MON-0055'][i],description:'現場に存在する脅威。排除だけでは事件全体の解決を意味しない。'},
+  failureEffects:{stock:{[region]:-.55,...(['bread-fire','harbor','roots'].includes(id)?{capital:-.2}: {})},threat:{[region]:18},setFacts:[`${id}:aftermath`],deaths:[]},signals:[{kind:'local',text:description}],
  };
 });
 finalizeRegions(regions,npcs,events);
-const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,skills,items,recipes,jobs,...combat,
+const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,skills,items,recipes,jobs,...combat,
  provenance:{sourceUrl:source.sourceUrl,retrievedAt:source.retrievedAt,policy:'Source material, not legacy rules. No Human Virtue ledger or replay used.',eventPolicy:'19 causes regrouped into 8 crises; deadlines and balance authored anew.',assets:'Kenney CC0 Fantasy Town Kit 2.0 and Blocky Characters 2.0.'}};
 content.revision='world-10d-'+createHash('sha256').update(JSON.stringify(content)).digest('hex').slice(0,12);
 const target=new URL('src/server/trpg/world/content/world-content.json',base);await fs.mkdir(new URL('.',target),{recursive:true});await fs.writeFile(target,JSON.stringify(content,null,2)+'\n');

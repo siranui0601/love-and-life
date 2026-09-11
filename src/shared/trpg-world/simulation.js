@@ -1,3 +1,5 @@
+import {lessonFor,recordLesson} from './training.js';
+import {affordances,performAffordance,advancePropertyDiscovery} from './affordances.js';
 import {planForGoal,advancePlan} from './npc-planner.js';
 import {initializeCausality, advanceCausality, failCausality, causalActions, applyCausalAction} from './causal-events.js';
 import {NEEDS, collapse, advanceNeeds, advanceRescue} from './survival.js';
@@ -117,13 +119,13 @@ function updateIncidentPopulation(state,content) {
 export function createWorld(content,{seed=1,name='旅人'}={}) {
   if (!Array.isArray(content.regions) || !content.regions.length) fail('CONTENT_INVALID','地域データがありません。',500);
   const first = index(content).regions.get('farm') || content.regions[0];
-  const state = {schemaVersion:2,localSimulationTime:0,combatTime:0,contentRevision:content.revision,random:(seed>>>0)||1,weatherSeed:(seed>>>0)||1,nextId:1,time:content.time?.startSeconds ?? 21600,
+  const state = {schemaVersion:2,simulationTime:0,contentRevision:content.revision,random:(seed>>>0)||1,weatherSeed:(seed>>>0)||1,nextId:1,time:content.time?.startSeconds ?? 21600,
     player:{id:'player',name:String(name).slice(0,40),region:first.id,position:[...(first.spawn || [0,0,8])],heading:0,hp:100,maxHp:100,mp:40,maxMp:40,stamina:100,
       hunger:20,fatigue:0,gold:90,xp:0,level:1,sp:3,skills:['combat','investigation'],inventory:{supplies:2,medicine:2,rope:1},equipment:{},mode:'foot',evidence:[],reputation:{},mastery:{},cooldowns:{},lastAttack:-10000},
     input:{x:0,z:0,sprint:false,ascend:0,heading:0},npcs:{},events:{},monsters:{},regions:{},knowledge:[],history:[],notifications:[],facts:{},resources:{},quests:[],rewards:{},visits:[first.id],nextSocial:0,weather:{},cycleComplete:false};
   for (const region of content.regions) state.regions[region.id] = {stock:1,threat:0};
   for (const npc of content.npcs || []) state.npcs[npc.id] = {id:npc.id,region:npc.region,position:[...(npc.home || [0,0,0])],hp:70,maxHp:70,
-    activity:'休息',goal:'sleep',knowledge:(npc.knowledge || []).map((fact,i)=>typeof fact==='string'?{id:`background:${npc.id}:${i}`,kind:'background',text:fact,region:npc.region,observedAt:state.time,confidence:1,disclosureTrust:10,source:{type:'past-experience',actorId:npc.id}}:{...clone(fact),id:fact.id||`background:${npc.id}:${i}`,observedAt:fact.observedAt??state.time,confidence:fact.confidence??1,disclosureTrust:fact.disclosureTrust??(fact.kind==='secret'?10:0),source:fact.source||{type:'past-experience',actorId:npc.id}}).filter(f=>typeof f.text==='string'),hunger:20,fatigue:0,lastHelpDay:-1,lastTradeDay:-1,travel:null,path:[],pathTarget:null,nextDecision:0};
+    activity:'休息',goal:'sleep',knowledge:(npc.knowledge || []).map((fact,i)=>typeof fact==='string'?{id:`background:${npc.id}:${i}`,kind:'background',text:fact,region:npc.region,observedAt:state.time,confidence:1,disclosure:{visibility:'private'},source:{type:'past-experience',actorId:npc.id}}:{...clone(fact),id:fact.id||`background:${npc.id}:${i}`,observedAt:fact.observedAt??state.time,confidence:fact.confidence??1,disclosure:fact.disclosure||{visibility:fact.kind==='secret'||fact.disclosureTrust>0?'private':'public'},source:fact.source||{type:'past-experience',actorId:npc.id}}).filter(f=>typeof f.text==='string'),hunger:20,fatigue:0,lastHelpDay:-1,lastTradeDay:-1,travel:null,path:[],pathTarget:null,nextDecision:0};
   for (const event of content.events || []) state.events[event.id] = {id:event.id,status:'latent',interventions:[],startedAt:null,resolvedAt:null};
   initializeRelationships(state);initializeCausality(state,content);setActivity(state,'idle');initializeMonsters(state,content); updateWeather(state,content); updateKnowledgeFromSight(state,content);
   log(state,'朝の街へ出よう。WASDで歩き、近づいてEで話す・調べる。','arrival');
@@ -194,6 +196,8 @@ function chooseGoal(state,content,npc,template) {
     {goal:'social',utility:h>=18&&h<22?55:20,target:region?.objects?.find(o=>o.kind==='inn')?.position || template.home,activity:'会話と休憩'},
   ];
   const chosen = utilities.sort((a,b)=>b.utility-a.utility)[0];
+  const belief=(npc.beliefs||[]).find(b=>!b.checkedAt&&b.place?.region===npc.region&&['ill','missing-property','property-interference'].includes(b.claim));
+  if(belief&&chosen.utility<75){chosen.goal='investigate-observation';chosen.activity='気になった場所を確かめる';chosen.target=belief.place.position;}
   const warning=npc.knowledge.find(k=>k.interpretation==='warning'&&k.relatedEventId&&k.region===npc.region&&!state.facts[`${k.relatedEventId}:warning-checked:${npc.id}`]);
   if(warning&&chosen.utility<75){const event=index(content).events.get(warning.relatedEventId);if(event){chosen.goal='inspect-warning';chosen.activity='噂の現場を確かめる';chosen.target=event.position;}}
   if(!npc.plan||npc.plan.goal!==chosen.goal||JSON.stringify(npc.goalTarget)!==JSON.stringify(chosen.target))npc.plan=planForGoal(state,content,npc,template,chosen);
@@ -206,11 +210,11 @@ function advanceNpcs(state,content,gameDelta) {
     if (npc.hp<=0) { npc.activity='倒れている'; continue; }
     npc.hunger=clamp(npc.hunger+gameDelta/DAY*75,0,100);npc.fatigue=clamp(npc.fatigue+gameDelta/DAY*60,0,100);
     if(npc.rescueAssignment||npc.causalAssignment)continue;
-    const original=idx.npcs.get(npc.id);if(!original)continue;const template=npc.displacedHome?{...original,home:npc.displacedHome,work:npc.displacedHome}:{...original};
+    const original=idx.npcs.get(npc.id);if(!original)continue;let template=npc.displacedHome?{...original,home:npc.displacedHome,work:npc.displacedHome}:{...original};
     if(npc.region!==template.region&&!npc.displacedHome){template.home=idx.regions.get(npc.region)?.spawn||[0,0,0];template.work=template.home;}
     if (npc.travel) {
       if (state.time>=npc.travel.arrivesAt) {
-        npc.region=npc.travel.to; npc.position=[...(idx.regions.get(npc.region)?.spawn || [0,0,0])]; npc.travel=null; npc.path=[];npc.nextDecision=0;
+        npc.region=npc.travel.to; npc.position=[...(idx.regions.get(npc.region)?.spawn || [0,0,0])]; npc.travel=null; npc.path=[];npc.nextDecision=0;delete npc.plan;template={...original,home:idx.regions.get(npc.region).spawn,work:idx.regions.get(npc.region).spawn};
       } else { npc.activity='街道を旅している'; continue; }
     }
     const region = idx.regions.get(npc.region); if (!region) continue;
@@ -227,7 +231,7 @@ function advanceNpcs(state,content,gameDelta) {
     }
     if (npc.goal==='defend' && npc.threatId) {
       const monster=state.monsters[npc.threatId]; if(monster?.hp>0 && distance(npc.position,monster.position)<3) {
-        monster.hp=Math.max(0,monster.hp-realDelta*6); npc.hp=Math.max(1,npc.hp-realDelta*2); monster.lastThreat=state.combatTime;
+        monster.hp=Math.max(0,monster.hp-realDelta*6); npc.hp=Math.max(1,npc.hp-realDelta*2); monster.lastThreat=state.simulationTime;
         if(monster.hp===0) monster.respawnAt=state.time+DAY;
       }
     }
@@ -258,9 +262,10 @@ function socialTick(state,content) {
   for (let i=0;i<npcs.length;i++) for (let j=i+1;j<npcs.length;j++) {
     const a=npcs[i],b=npcs[j]; if(a.region!==b.region||distance(a.position,b.position)>7||!hasLineOfSight(index(content).regions.get(a.region),a.position,b.position)) continue;
     for (const [speaker,listener] of [[a,b],[b,a]]) {
-      const fact=speaker.knowledge.find(k=>k.kind!=='secret'&&!finite(k.disclosureTrust)&&!listener.knowledge.some(l=>l.id===k.id)); if(!fact) continue;
+      const fact=speaker.knowledge.find(k=>k.kind!=='secret'&&k.disclosure?.visibility!=='private'&&!finite(k.disclosureTrust)&&!listener.knowledge.some(l=>l.id===k.id)); if(!fact) continue;
       const transmission={from:speaker.id,to:listener.id,at:state.time,region:speaker.region,position:[...speaker.position]};
       listener.knowledge.push({...clone(fact),receivedAt:state.time,transmissions:[...(fact.transmissions||[]),transmission].slice(-16),confidence:Math.max(.35,fact.confidence*.85),source:{type:'heard',actorId:speaker.id,origin:fact.source?.origin||fact.source}});
+      if(fact.belief&&!listener.beliefs.some(b=>b.id===fact.belief.id)){listener.beliefs.push({...clone(fact.belief),confidence:Math.max(.2,fact.belief.confidence*.85),source:{type:'heard',actorId:speaker.id,previous:clone(fact.belief.source)},receivedAt:state.time});listener.nextDecision=0;}
     }
   }
 }
@@ -289,14 +294,14 @@ function advancePlayer(state,content,gameDelta) {
     else p.stamina=Math.min(100,p.stamina+dt*5);
     if(p.mode==='broom') p.mp=Math.max(0,p.mp-dt*.3);
   } else p.stamina=Math.min(100,p.stamina+dt*10);
-  if(p.mode!=='broom'&&state.combatTime-p.lastAttack>10) p.mp=Math.min(p.maxMp,p.mp+dt*.18);
+  if(p.mode!=='broom'&&state.simulationTime-p.lastAttack>10) p.mp=Math.min(p.maxMp,p.mp+dt*.18);
 }
 function advanceMonsters(state,content,gameDelta) {
   const idx=index(content),p=state.player,dt=gameDelta/(content.time?.scale||60);
   tickCombatEffects(state,p,dt,1);
   for(const monster of values(state.monsters)) {
     const template=idx.monsters.get(monster.templateId),region=idx.regions.get(monster.region); if(!template||!region) continue;
-    if(monster.expiresAt&&state.combatTime>=monster.expiresAt){delete state.monsters[monster.id];continue;}
+    if(monster.expiresAt&&state.simulationTime>=monster.expiresAt){delete state.monsters[monster.id];continue;}
     if(monster.hp<=0) {
       if(monster.respawnAt && state.time>=monster.respawnAt && (p.region!==monster.region||distance(p.position,monster.home)>35)) {
         monster.hp=monster.maxHp;monster.position=[...monster.home];monster.respawnAt=0;monster.activity='roam';
@@ -306,10 +311,10 @@ function advanceMonsters(state,content,gameDelta) {
     tickCombatEffects(state,monster,dt,1);
     resolveEnemyAction(state,content,monster,template);
     if(p.hp<=0)collapse(state,content,'hp');
-    if(monster.fleeUntil>state.combatTime){monster.activity='flee';followPath(region,monster,region.portals?.[0]?.position||monster.home,dt*3);continue;}
+    if(monster.fleeUntil>state.simulationTime){monster.activity='flee';followPath(region,monster,region.portals?.[0]?.position||monster.home,dt*3);continue;}
     const near=playerIsLocal(state)&&p.region===monster.region?distance(p.position,monster.position):Infinity;
     const night=hour(state)<6||hour(state)>20,alert=night?16:12;
-    const engaged=(near<alert || state.combatTime-monster.lastThreat<6) && near<32 && p.position[1]<6 && hasLineOfSight(region,monster.position,p.position);
+    const engaged=(near<alert || state.simulationTime-monster.lastThreat<6) && near<32 && p.position[1]<6 && hasLineOfSight(region,monster.position,p.position);
     if(engaged) {
       monster.activity='attack';monster.heading=Math.atan2(p.position[0]-monster.position[0],p.position[2]-monster.position[2]);
       if(near>finite(template.range,2.8)) followPath(region,monster,[p.position[0],0,p.position[2]],dt*finite(template.speed,2));
@@ -319,11 +324,12 @@ function advanceMonsters(state,content,gameDelta) {
 }
 function combatNearby(state,content) {
   const p=state.player,region=index(content).regions.get(p.region);
+  if(p.actionInstance&&p.hp>0)return true;
   return playerIsLocal(state)&&p.hp>0&&values(state.monsters).some(m=>m.hp>0&&m.region===p.region&&
     distance(m.position,p.position)<(m.activity==='attack'||m.intent?32:12)&&p.position[1]<6&&hasLineOfSight(region,m.position,p.position));
 }
 function advanceCalendar(state,content,delta) {
-  state.time+=delta;expirePromises(state);advanceCausality(state,content,delta);advanceEvents(state,content,delta);updateIncidentPopulation(state,content);
+  state.time+=delta;expirePromises(state);advancePropertyDiscovery(state,content);advanceCausality(state,content,delta);advanceEvents(state,content,delta);updateIncidentPopulation(state,content);
   advanceNeeds(state,content,delta);advanceNpcs(state,content,delta);advanceRescue(state,content,delta);socialTick(state,content);updateWeather(state,content);
   if(!state.cycleComplete&&state.time>=finite(content.time?.days,10)*DAY) {
     state.cycleComplete=true;log(state,'十日が過ぎた。変化した世界で、あなたの暮らしは続いている。','chapter');
@@ -340,9 +346,9 @@ export function advanceWorld(state,content,realSeconds) {
     if(fighting&&canMove(state))setActivity(state,'combat');
     else if(!fighting&&state.player.activity.kind==='combat')setActivity(state,'idle');
     const dt=Math.min(remaining,fighting||Math.hypot(state.input.x,state.input.z)>0?.1:.5);
-    state.localSimulationTime+=dt;state.combatTime+=dt;
+    state.simulationTime+=dt;
     if(!fighting)advanceCalendar(state,content,dt*scale);
-    advancePlayer(state,content,dt*scale);advanceMonsters(state,content,dt*scale);
+    advancePlayer(state,content,dt*scale);advanceMonsters(state,content,dt*scale);advancePlayerAction(state,content);
     updateKnowledgeFromSight(state,content);remaining-=dt;
   }
   return state;
@@ -444,11 +450,46 @@ function itemsForShop(state,content,target) {
   return [...regular,...equipment].filter((item,i,list)=>list.findIndex(x=>x.id===item.id)===i);
 }
 function zeroInput(state) { state.input={x:0,z:0,sprint:false,ascend:0,heading:state.player.heading}; }
+function resolvePlayerHit(state,content,action) {
+  const p=state.player,idx=index(content),monster=state.monsters[action.targetId],magic=action.skillId==='magic';
+  const region=idx.regions.get(p.region);
+  if(p.hp<=0||p.staggerUntil>state.simulationTime||!monster||monster.hp<=0||monster.region!==action.region||p.region!==action.region)return {damage:0,miss:true};
+  if(distance(p.position,monster.position)>action.hitVolume.radius||!hasLineOfSight(region,p.position,monster.position))return {damage:0,miss:true};
+    const template=idx.monsters.get(monster.templateId),gear=idx.equipment.get(p.equipment.mainHand);
+    let damage=Math.max(2,(magic?19:12)+p.level*2+finite(magic?gear?.magic:gear?.attack)-finite(template.defense)-finite(monster.modifiers?.defense?.stage)*2);
+    const barrier=monster.specialStates?.barrier;if(barrier){const absorbed=Math.min(barrier.capacity||0,damage);damage-=absorbed;barrier.capacity-=absorbed;}
+    if(monster.specialStates?.survive_lethal&&damage>=monster.hp){damage=Math.max(0,monster.hp-1);delete monster.specialStates.survive_lethal;}
+    p.lastCombatDamage=damage;p.lastActionTag=magic?'magic':'physical';
+    monster.hp=Math.max(0,monster.hp-damage);monster.lastThreat=state.simulationTime;p.lastAttack=state.simulationTime;
+    p.mastery[magic?'magic':'combat']=finite(p.mastery[magic?'magic':'combat'])+1;recordWitnesses(state,content,`${p.name}が${template.name}から街道を守った。`,'combat');
+    if(monster.hp===0) {
+      monster.respawnAt=monster.eventId||monster.summoned?0:state.time+DAY;const earned=awardXp(state,monster.summoned?Math.min(5,template.xp):template.xp,`combat:${template.id}`);if(!monster.summoned)p.gold+=finite(template.gold,2);
+      if(monster.eventId) {
+        const current=state.events[monster.eventId];
+
+        state.facts[`defeated:${template.id}`]={at:state.time,eventId:monster.eventId};
+        learnEvidence(state,`${monster.eventId}:threat-reduced`,{type:'acted',targetId:monster.id},'襲撃の実行勢力を退け、現場の脅威を退けた。');
+      }
+      if(!monster.summoned)for(const drop of template.drops || [])if(random(state)<finite(drop.chance)){p.inventory[drop.itemId]=finite(p.inventory[drop.itemId])+1;}
+      log(state,`${template.name}を退けた。${earned}EXP。`,'combat');return {message:`${template.name}を退けた。`,damage,defeated:true,xp:earned};
+    }
+    return {message:`${damage}ダメージ。`,damage,defeated:false};
+}
+function advancePlayerAction(state,content) {
+ const p=state.player,a=p.actionInstance;if(!a)return;
+ const elapsed=state.simulationTime-a.startedAt;
+ if(p.hp<=0||p.staggerUntil>state.simulationTime){a.phase='cancelled';p.lastActionInstance=a;delete p.actionInstance;return;}
+ if(!a.resolved&&elapsed>=a.hitWindow.opensAt){a.phase='active';a.resolved=true;a.result=resolvePlayerHit(state,content,a);a.hitAt=state.simulationTime;}
+ if(elapsed>=a.hitWindow.closesAt)a.phase='recovery';
+ if(elapsed>=a.duration){a.phase='completed';p.lastActionInstance=a;delete p.actionInstance;}
+}
+
 export function applyCommand(state,content,command) {
   if(!command || typeof command.type!=='string') fail('INVALID_COMMAND','操作が不正です。');
   const p=state.player,idx=index(content);
   if(p.collapse?.status==='active'&&!['input','pause','resume','recover'].includes(command.type))fail('COLLAPSED','倒れています。救助を待ってください。',409);
   if(['attack','dodge','defend'].includes(command.type)&&p.activity?.worldTimePolicy==='paused')fail('ACTIVITY_PAUSED','画面を閉じて行動を再開してください。',409);
+  if(command.type==='affordance')return performAffordance(state,content,command);
   if(command.type==='causal') {const target=targetAt(state,content,command.targetId);const result=applyCausalAction(state,content,target,command.action);setActivity(state,'inspecting',{targetId:target.id});return result;}
   if(command.type==='converse')return converse(state,content,command);
   if(command.type==='resume') {if(p.collapse?.status==='active')return {message:null};if(state.conversation)state.conversation.status='ended';setActivity(state,'idle');return {message:null};}
@@ -458,6 +499,7 @@ export function applyCommand(state,content,command) {
   if(command.type==='input') {
     for(const key of ['x','z','ascend','heading']) if(command[key]!==undefined && (!Number.isFinite(command[key]) || Math.abs(command[key])>(key==='heading'?1e6:1))) fail('INVALID_INPUT','移動入力が不正です。');
     if(!canMove(state))return {message:null};
+    if(command.x||command.z)p.posture='stand';
     if(p.activity.kind!=='combat')setActivity(state,command.x||command.z?(command.sprint?'running':'walking'):'idle');
     state.input={x:command.x || 0,z:command.z || 0,sprint:command.sprint===true,ascend:command.ascend || 0,heading:command.heading ?? p.heading};
     return {message:null};
@@ -489,11 +531,12 @@ export function applyCommand(state,content,command) {
     if(target.kind!=='trainer') fail('NOT_TRAINER','訓練できる場所へ行ってください。',409);
     if(target.skills&&!target.skills.includes(skill.id)) fail('TRAINER_SPECIALTY','この師匠はその技能を教えていません。',409);
     if(p.skills.includes(skill.id)) fail('ALREADY_TRAINED','既に習得しています。',409);
-    const cost=finite(skill.cost??skill.spCost,1),gold=finite(skill.goldCost,12);
+    const lesson=lessonFor(skill),cost=finite(skill.cost??skill.spCost,1),gold=finite(skill.goldCost,12)/lesson.sessionsRequired;
     const missing=requirementsMissing(state,content,{skills:skill.requires || [],gold});
+    for(const item of lesson.equipment)if(!p.inventory[item])missing.push(item);
     if(p.sp<cost) missing.push(`${cost}SP`);
     if(missing.length) fail('TRAINING_REQUIREMENTS',`必要：${missing.join('、')}`,409);
-    p.sp-=cost;p.gold-=gold;if(!advanceMacro(state,content,'training',3600,{targetId:target.id,skillId:skill.id}))return {message:'訓練中に倒れた。'};p.skills.push(skill.id);awardXp(state,20,`training:${skill.id}`);zeroInput(state);
+    p.gold-=gold;const completed=advanceMacro(state,content,'training',lesson.seconds,{targetId:target.id,skillId:skill.id});const course=recordLesson(state,skill,target,completed);if(!completed)return {message:'訓練を中断した。練習記録は残っている。'};if(course.mastery<1)return {message:`練習を終えた。習得進度 ${Math.round(course.mastery*100)}%。`};p.sp-=cost;p.skills.push(skill.id);awardXp(state,20,`training:${skill.id}`);zeroInput(state);
     log(state,`${skill.name}を習得した。できることが増えた。`,'skill');return {message:`${skill.name}を習得した。`};
   }
   if(command.type==='craft') {
@@ -625,39 +668,26 @@ export function applyCommand(state,content,command) {
     const monster=state.monsters[command.targetId];if(!monster||monster.region!==p.region||monster.hp<=0)fail('ENEMY_MISSING','攻撃できる敵がいません。',404);
     const magic=command.skillId==='magic';if(command.skillId&&!['combat','magic'].includes(command.skillId))fail('SKILL_UNAVAILABLE','その能力はこの戦闘では使用できません。');
     if(magic&&!p.skills.includes('magic'))fail('NEED_SKILL','魔法を習得していません。',409);
-    if(p.staggerUntil>state.combatTime)fail('STAGGERED','体勢を立て直している。',409);
+    if(p.staggerUntil>state.simulationTime)fail('STAGGERED','体勢を立て直している。',409);
     const range=magic?13:3.2;if(distance(p.position,monster.position)>range)fail('ATTACK_RANGE','敵が射程外です。',409);
     if(!hasLineOfSight(idx.regions.get(p.region),p.position,monster.position))fail('OBSTRUCTED','射線が通りません。',409);
-    if(state.combatTime-finite(p.cooldowns.attack,-10000)<(magic?1.6:.7))fail('COOLDOWN','次の攻撃の準備中です。',409);
+    if(p.actionInstance)fail('COOLDOWN','攻撃動作の途中です。',409);
+    if(state.simulationTime-finite(p.cooldowns.attack,-10000)<(magic?1.6:.7))fail('COOLDOWN','次の攻撃の準備中です。',409);
     if(magic&&p.mp<6)fail('NO_MP','魔力が足りません。',409);
     if(magic)p.mp-=6;
-    const template=idx.monsters.get(monster.templateId),gear=idx.equipment.get(p.equipment.mainHand);
-    let damage=Math.max(2,(magic?19:12)+p.level*2+finite(magic?gear?.magic:gear?.attack)-finite(template.defense)-finite(monster.modifiers?.defense?.stage)*2);
-    const barrier=monster.specialStates?.barrier;if(barrier){const absorbed=Math.min(barrier.capacity||0,damage);damage-=absorbed;barrier.capacity-=absorbed;}
-    if(monster.specialStates?.survive_lethal&&damage>=monster.hp){damage=Math.max(0,monster.hp-1);delete monster.specialStates.survive_lethal;}
-    p.lastCombatDamage=damage;p.lastActionTag=magic?'magic':'physical';
-    monster.hp=Math.max(0,monster.hp-damage);monster.lastThreat=state.combatTime;p.lastAttack=state.combatTime;p.cooldowns.attack=state.combatTime;
-    p.mastery[magic?'magic':'combat']=finite(p.mastery[magic?'magic':'combat'])+1;recordWitnesses(state,content,`${p.name}が${template.name}から街道を守った。`,'combat');
-    if(monster.hp===0) {
-      monster.respawnAt=monster.eventId||monster.summoned?0:state.time+DAY;const earned=awardXp(state,monster.summoned?Math.min(5,template.xp):template.xp,`combat:${template.id}`);if(!monster.summoned)p.gold+=finite(template.gold,2);
-      if(monster.eventId) {
-        const current=state.events[monster.eventId];
-
-        state.facts[`defeated:${template.id}`]={at:state.time,eventId:monster.eventId};
-        learnEvidence(state,`${monster.eventId}:threat-reduced`,{type:'acted',targetId:monster.id},'襲撃の実行勢力を退け、危機の圧力を下げた。');
-      }
-      if(!monster.summoned)for(const drop of template.drops || [])if(random(state)<finite(drop.chance)){p.inventory[drop.itemId]=finite(p.inventory[drop.itemId])+1;}
-      log(state,`${template.name}を退けた。${earned}EXP。`,'combat');return {message:`${template.name}を退けた。`,damage,defeated:true,xp:earned};
-    }
-    return {message:`${damage}ダメージ。`,damage,defeated:false};
+    const action={id:`action:${state.nextId++}`,actorId:'player',targetId:monster.id,region:p.region,skillId:magic?'magic':'combat',
+      phase:'windup',startedAt:state.simulationTime,hitWindow:{opensAt:magic?.6:.22,closesAt:magic?.75:.34},
+      hitVolume:{shape:'sphere',anchor:'actor',radius:range},duration:magic?1.6:.7,resolved:false};
+    p.actionInstance=action;p.cooldowns.attack=state.simulationTime;p.lastAttack=state.simulationTime;setActivity(state,'combat');
+    return {message:magic?'詠唱を始めた。':'攻撃を構えた。',actionId:action.id,phase:action.phase};
   }
   if(command.type==='defend') {p.guarding=command.active===true;return {message:null};}
   if(command.type==='dodge') {
     if(p.stamina<20)fail('NO_STAMINA','回避する余力が足りません。',409);
-    if(p.dodgeUntil>state.combatTime)fail('COOLDOWN','回避中です。',409);
+    if(p.dodgeUntil>state.simulationTime)fail('COOLDOWN','回避中です。',409);
     const x=finite(command.x,Math.sin(p.heading)),z=finite(command.z,Math.cos(p.heading)),length=Math.hypot(x,z);
     if(length<.01||length>1.5)fail('INVALID_INPUT','回避方向が不正です。');
-    p.position=moveBody(idx.regions.get(p.region),p.position,[x/length*3,0,z/length*3]);p.stamina-=20;p.dodgeUntil=state.combatTime+.4;
+    p.position=moveBody(idx.regions.get(p.region),p.position,[x/length*3,0,z/length*3]);p.stamina-=20;p.dodgeUntil=state.simulationTime+.4;
     return {message:null};
   }
   fail('UNKNOWN_COMMAND','その操作は定義されていません。');
@@ -675,7 +705,7 @@ function actionsFor(state,content,target) {
     if(item)actions.push({id:`sell:${id}`,type:'sell',itemId:id,label:`売る：${item.name}（所持 ${count}）`});
   }
   if(target.kind==='trainer') for(const skill of content.skills || []) if(!p.skills.includes(skill.id)&&(!target.skills||target.skills.includes(skill.id)))
-    actions.push({id:`train:${skill.id}`,type:'train',skillId:skill.id,label:`${skill.name} · ${finite(skill.cost??skill.spCost,1)}SP / ${finite(skill.goldCost,12)}G`});
+    actions.push({id:`train:${skill.id}`,type:'train',skillId:skill.id,label:`${skill.name} · ${finite(skill.cost??skill.spCost,1)}SP / ${finite(skill.goldCost,12)/lessonFor(skill).sessionsRequired}G / ${lessonFor(skill).seconds/60}分`});
   if(target.crafting) for(const recipe of content.recipes || []) if(!recipe.facilityIds || recipe.facilityIds.includes(target.id)) {
     const missing=requirementsMissing(state,content,{...(recipe.requirements || {}),items:Object.fromEntries(Object.entries(recipe.requirements?.items || recipe.requirements?.inventory || {}).map(([id,amount])=>[id,finite(amount)]))});
     actions.push({id:`craft:${recipe.id}`,type:'craft',recipeId:recipe.id,label:`製作：${recipe.name} · ${finite(recipe.minutes,30)}分`,available:missing.length===0,missing});
@@ -686,6 +716,7 @@ function actionsFor(state,content,target) {
     const event=idx.events.get(known.eventId);if(event&&!state.quests.some(q=>q.eventId===event.id)&&['active','critical','latent'].includes(state.events[event.id].status))
       actions.push({id:`accept:${event.id}`,type:'accept',eventId:event.id,label:`依頼を受ける：${event.name}`});
   }
+  actions.push(...affordances(state,content,target.id));
   actions.push(...causalActions(state,content,target));
   return actions;
 }
@@ -712,9 +743,9 @@ export function projectWorld(state,content) {
     const event=idx.events.get(quest.eventId),worldStatus=state.knowledge.find(k=>k.eventId===quest.eventId)?.status,deadline=event?eventDeadline(event):null,remaining=deadline==null?null:Math.max(0,deadline-state.time);
     return {...clone(quest),name:event?.name||quest.name,worldStatus,deadline,remaining,urgent:['active','critical'].includes(worldStatus)&&remaining<=6*3600};
   });
-  return {schemaVersion:2,localSimulationTime:state.localSimulationTime,combatTime:state.combatTime,time:state.time,day:Math.floor(state.time/DAY)+1,clock:`${String(Math.floor(hour(state))).padStart(2,'0')}:${String(Math.floor(state.time/60)%60).padStart(2,'0')}`,
+  return {schemaVersion:2,simulationTime:state.simulationTime,time:state.time,day:Math.floor(state.time/DAY)+1,clock:`${String(Math.floor(hour(state))).padStart(2,'0')}:${String(Math.floor(state.time/60)%60).padStart(2,'0')}`,
     weather:clone(state.weather[p.region]),player:{...clone(p),force:forceOf(p,content),inventoryDetails:Object.entries(p.inventory).filter(([,quantity])=>quantity>0).map(([id,quantity])=>{const item=idx.items.get(id)||(content.materials||[]).find(i=>i.id===id)||idx.equipment.get(id);return {id,name:item?.name||'採集した素材',kind:item?.kind||(idx.equipment.has(id)?'equipment':'material'),quantity,equipped:Object.values(p.equipment).includes(id)};})},region:publicRegion,npcs:nearbyNpcs,
     monsters:values(state.monsters).filter(m=>m.region===p.region&&m.hp>0&&distance(m.position,p.position)<75).map(m=>{const t=idx.monsters.get(m.templateId);return {id:m.id,name:t?.name,position:clone(m.position),hp:m.hp,maxHp:m.maxHp,level:t?.level,role:t?.role,activity:m.activity,heading:m.heading,boss:t?.boss,intent:m.intent?{name:m.intent.name,position:clone(m.intent.position),resolvesAt:m.intent.resolvesAt}:undefined};}),
-    conversation:state.conversation?.status==='active'?conversationResult(state,content).conversation:undefined,interactables,knownEvents,quests,journal:clone(state.history.slice(-60)),notifications:clone(state.notifications.slice(-5)),cycleComplete:state.cycleComplete,
+    affordances:affordances(state,content),worldObjects:values(state.worldObjects).filter(o=>o.region===p.region&&o.quantity>0&&distance(o.position,p.position)<5).map(o=>({...clone(o),actions:affordances(state,content,o.id)})),conversation:state.conversation?.status==='active'?conversationResult(state,content).conversation:undefined,interactables,knownEvents,quests,journal:clone(state.history.slice(-60)),notifications:clone(state.notifications.slice(-5)),cycleComplete:state.cycleComplete,
     outcomes:state.cycleComplete?{knownResolved:knownEvents.filter(e=>['prevented','resolved'].includes(e.status)).length,knownFailed:knownEvents.filter(e=>e.status==='failed').length}:undefined};
 }

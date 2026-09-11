@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-0c89fc7ee769",
+  "revision": "world-10d-24de1ef85209",
   "time": {
     "days": 10,
     "scale": 60,
@@ -19294,12 +19294,17 @@
         {
           "kind": "background",
           "text": "フィンは冒険家志望の少年として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "大人は外の危険を大げさに言うと思う/王都冒険者から聞いた抜け道",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "少年らしく早口。冒険談に弱い。負傷時は痛みと不安を隠さず、救助者へ村の広場まで一緒に戻ってほしいと頼む",
@@ -19336,12 +19341,17 @@
         {
           "kind": "background",
           "text": "ミラはフィンの母として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "プレイヤーが来た日に事件が起きたため少し疑う/フィンの地図を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "震えた声。相手にすがるように話す",
@@ -19378,12 +19388,17 @@
         {
           "kind": "background",
           "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "交易都市商人は必要悪と思う/借金証文の一部を隠す",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "硬い口調。判断は慎重",
@@ -19420,12 +19435,17 @@
         {
           "kind": "background",
           "text": "エダはプレイヤーを拾う農婦として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王都の事情は遠い話と思う/召喚直後の様子を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "温かい田舎言葉。心配が先に出る",
@@ -19462,12 +19482,17 @@
         {
           "kind": "background",
           "text": "トーマは共同穀倉管理人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "自分の管理ミスかもしれない/前夜の見慣れない足跡",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "短文でぼそぼそ話す",
@@ -19504,12 +19529,17 @@
         {
           "kind": "background",
           "text": "ダルクは穀物商に雇われた放火犯として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "穀物商は自分を守ると思う/支払い場所を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "軽薄。追い詰められると早口",
@@ -19546,12 +19576,17 @@
         {
           "kind": "background",
           "text": "バーゼルは穀物商として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "貧村は商人が管理すべき/放火支払い帳簿を隠す",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "慇懃無礼。数字と契約を盾にする",
@@ -19588,12 +19623,17 @@
         {
           "kind": "background",
           "text": "リオナは行商人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "黒嶺の話は怖い噂として誇張/裏商人の名前を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "明るく軽快。商人口調",
@@ -19630,12 +19670,17 @@
         {
           "kind": "background",
           "text": "オルヴェン領主は交易都市の現領主として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王都に頼りすぎると都市が飲まれる/次期領主派を疑う",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "穏やかで含みのある話し方",
@@ -19672,12 +19717,17 @@
         {
           "kind": "background",
           "text": "セドリックは次期領主候補として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "民衆は強い統治を望む/毒殺指示と外国契約草案",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "自信家。命令形が混じる",
@@ -19714,12 +19764,17 @@
         {
           "kind": "background",
           "text": "マリエル医師は領主付き医師として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "魔王領産薬草は危険だが有効かも/自然病ではないと気づく",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "冷静で専門用語多め",
@@ -19756,12 +19811,17 @@
         {
           "kind": "background",
           "text": "ニコラスは毒を盛った使用人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "逆らえば妹が死ぬと思う/毒の経路を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "小声で途切れがち",
@@ -19798,12 +19858,17 @@
         {
           "kind": "background",
           "text": "グレンは港湾労働者代表として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "商人全員が敵だと思い込みがち/武器持込若手を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "荒い港言葉。筋を通す",
@@ -19840,12 +19905,17 @@
         {
           "kind": "background",
           "text": "ベリルは商人ギルド長として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "労働者不満は一時的と思う/外国契約にギルド一部関与",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "上品だが冷たい。数字で詰める",
@@ -19882,12 +19952,17 @@
         {
           "kind": "background",
           "text": "アルバレスは外国船団の使者として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国は内紛で割れると思う/本国の狙いは港湾権以上",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "大げさに礼儀正しい。冗談が多い",
@@ -19924,12 +19999,17 @@
         {
           "kind": "background",
           "text": "アルセリオ王は王国国王として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "召喚失敗が神殿異常の原因だと思う/召喚記録を持つ",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "威厳ある短文。命令と試す言葉が多い",
@@ -19966,12 +20046,17 @@
         {
           "kind": "background",
           "text": "セラフィムは宮廷魔術師長として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "巨神兵は召喚失敗の連鎖と考えがち/召喚体生存に気づきかける",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "理詰め。感情より仮説を優先",
@@ -20008,12 +20093,17 @@
         {
           "kind": "background",
           "text": "ライラは第二召喚阻止派の中心人物として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国は召喚を悪用すると思う/プレイヤーを召喚体と疑う",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "低い声で慎重。核心をぼかす",
@@ -20050,12 +20140,17 @@
         {
           "kind": "background",
           "text": "レオナルド公は王位を狙う貴族派首魁として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "民衆は強い貴族に従うべき/暗殺資金と裏契約",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "優雅で婉曲。見下しが滲む",
@@ -20092,12 +20187,17 @@
         {
           "kind": "background",
           "text": "レンは暗殺者として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王も貴族も同じだと思う/依頼主に違和感",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "短く乾いた口調",
@@ -20134,12 +20234,17 @@
         {
           "kind": "background",
           "text": "マティルダは孤児院長として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "貴族街は孤児を見ない/孤児が暗殺関係者を目撃",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "穏やかだが譲らない",
@@ -20176,12 +20281,17 @@
         {
           "kind": "background",
           "text": "ノアは孤児院の男の子として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "大人は約束を破ると思う/暗殺者の使いを見た",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "小声。短く答える",
@@ -20218,12 +20328,17 @@
         {
           "kind": "background",
           "text": "イザークは孤児院跡地を狙う商人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "孤児院は非効率な土地利用/レオナルド公と裏契約",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "営業口調。都合の悪い話を逸らす",
@@ -20260,12 +20375,17 @@
         {
           "kind": "background",
           "text": "ヴィクトルは王都衛兵隊長として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "下層の不満は危険だが理解/命令が貴族に歪められている",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "堅い軍人口調。迷いを隠す",
@@ -20302,12 +20422,17 @@
         {
           "kind": "background",
           "text": "キリはスラム情報屋として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "善人は長生きしない/貴族派と商人の繋がりを知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "軽薄な冗談交じり",
@@ -20344,12 +20469,17 @@
         {
           "kind": "background",
           "text": "サミラは亜人街代表として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国兵は守らないと思う/黒嶺への古い連絡路を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "落ち着いた姉御口調",
@@ -20386,12 +20516,17 @@
         {
           "kind": "background",
           "text": "リュシアは家出エルフとして、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "人間の町は自由で優しいと思う/隠れ里の抜け道を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "好奇心旺盛。感情が声に出る",
@@ -20428,12 +20563,17 @@
         {
           "kind": "background",
           "text": "アルウェン長老はエルフ長老として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "人間は世界樹を守らない/世界樹倒壊で巨神兵封印が解けると知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "静かで重い。遠回しな警告が多い",
@@ -20470,12 +20610,17 @@
         {
           "kind": "background",
           "text": "セリエはエルフ斥候として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "人間は足跡を読めない/川の巨大な影を見ている",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "短く鋭い。無駄話を嫌う",
@@ -20512,12 +20657,17 @@
         {
           "kind": "background",
           "text": "エリナは世界樹の巫女として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "人間の言葉では森の痛みが伝わらない/封印連動を感覚的に知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "静かで詩的。比喩が多い",
@@ -20554,12 +20704,17 @@
         {
           "kind": "background",
           "text": "ティアはリュシアの友人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "外の世界は怖いが少し羨ましい/リュシアの憧れを知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "小さな声。相手をうかがう",
@@ -20596,12 +20751,17 @@
         {
           "kind": "background",
           "text": "ダミアンは悪徳冒険者として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "エルフは世間知らずで商品価値が高い/受け渡し場所を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "軽い冗談。嘘が自然",
@@ -20638,12 +20798,17 @@
         {
           "kind": "background",
           "text": "カルヴァンは人身売買業者として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国混乱は商機/王都貴族に買い手がいる",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "丁寧すぎて不気味。人を物のように数える",
@@ -20680,12 +20845,17 @@
         {
           "kind": "background",
           "text": "キングスライムは森の魔力を吸う巨大魔物として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "誤解なし/魔力だまりに引き寄せられた理由は不明",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "会話不可。粘液音や魔力反応のみ",
@@ -20722,12 +20892,17 @@
         {
           "kind": "background",
           "text": "ブロルンはドワーフの名工として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "若い職人は功を焦りすぎる/神殿装置に似た部品を見た",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "低く短い。褒め言葉が不器用",
@@ -20764,12 +20939,17 @@
         {
           "kind": "background",
           "text": "グラドは採掘強行派の親方として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "安全重視派は腰抜け/支柱危険報告を握り潰した",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "荒い命令口調",
@@ -20806,12 +20986,17 @@
         {
           "kind": "background",
           "text": "ミーナは安全重視派の技師として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "年長者は経験則に頼りすぎる/古代機械片を解析済み",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "早口で理屈っぽい。たまに毒舌",
@@ -20848,12 +21033,17 @@
         {
           "kind": "background",
           "text": "ボルゴはドワーフ門番として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "地上人は騒ぎを持ち込む/黒嶺地下道の噂を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "頑固。決まり文句が多い",
@@ -20890,12 +21080,17 @@
         {
           "kind": "background",
           "text": "ロザリンド司令官は北陵要塞司令官として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "黒嶺は敵だが全事件の犯人とは限らない/マグナスを疑う",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "端的な軍人口調",
@@ -20932,12 +21127,17 @@
         {
           "kind": "background",
           "text": "マグナスは北陵要塞の強硬派将校として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "黒嶺との和平は弱さ/犯罪都市武器商との取引記録",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "威圧的。敵味方を単純化する",
@@ -20974,12 +21174,17 @@
         {
           "kind": "background",
           "text": "カイは偽装襲撃に使われる若兵として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "命令違反は家族に迷惑/偽装装備の出所を見た",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "若くぎこちない軍人口調",
@@ -21016,12 +21221,17 @@
         {
           "kind": "background",
           "text": "ユーリ斥候は国境斥候として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "上官は見たいものだけ見る/黒嶺側に水を止めた痕跡なし",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "無駄のない観察口調",
@@ -21058,12 +21268,17 @@
         {
           "kind": "background",
           "text": "ザイードは黒嶺連合領の穏健派代表として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国にも話せる者がいる/侵攻派の動きを把握",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "低く穏やか。言葉を選ぶ",
@@ -21100,12 +21315,17 @@
         {
           "kind": "background",
           "text": "ガルムは黒嶺侵攻派の指導者として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "和平は時間稼ぎだと思う/侵攻は先制防衛として計画",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "荒く直接的。力を尊ぶ",
@@ -21142,12 +21362,17 @@
         {
           "kind": "background",
           "text": "ニーヴは水棲種族の案内人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "地上の者は水を見ていない/黒嶺が水を止めていない証拠",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "ゆっくりした詩的な話し方",
@@ -21184,12 +21409,17 @@
         {
           "kind": "background",
           "text": "オルカ密使は黒嶺の密使として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王都に長くいれば正体が暴かれる/召喚阻止派を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "中性的で慎重。言葉を選びすぎる",
@@ -21226,12 +21456,17 @@
         {
           "kind": "background",
           "text": "エドガーは王国から逃げた亡命者として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国は変われないかもしれない/貴族が差別利用した記憶",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "疲れた優しい口調",
@@ -21268,12 +21503,17 @@
         {
           "kind": "background",
           "text": "ヴァロは犯罪都市の武器商人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "平和は在庫を腐らせる/全勢力への帳簿を持つ",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "重く低い商人口調",
@@ -21310,12 +21550,17 @@
         {
           "kind": "background",
           "text": "モズは情報屋として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "善意だけの奴は情報料を払わない/黒嶺密使の潜伏を知る可能性",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "軽口と皮肉。語尾が跳ねる",
@@ -21352,12 +21597,17 @@
         {
           "kind": "background",
           "text": "シギは偽造身分屋として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "役人は紙しか見ない/黒嶺通行証様式を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "ねちっこい職人口調",
@@ -21394,12 +21644,17 @@
         {
           "kind": "background",
           "text": "クロウは暗殺仲介人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "依頼主を売る仲介人は長生きしない/レオナルド公支払い経路",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "機械的で感情が薄い",
@@ -21436,12 +21691,17 @@
         {
           "kind": "background",
           "text": "セレス船長は荷運び船長として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "犯罪都市の荷は中身を知らない方が安全/危険な積荷に気づく",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "豪快な船乗り口調",
@@ -21478,12 +21738,17 @@
         {
           "kind": "background",
           "text": "ファルコは古代神殿管理者として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "騒ぎにすれば辺境の村が終わる/消失者の共通回廊を記録",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "古風で硬い。保身の言い訳が多い",
@@ -21520,12 +21785,17 @@
         {
           "kind": "background",
           "text": "サナは巡礼宿の女将として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "神殿の呪いかもと半信半疑/客が同じ夢を見たと聞く",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "明るいが苦労人。客商売の言葉",
@@ -21562,12 +21832,17 @@
         {
           "kind": "background",
           "text": "エイダ巡礼者は失踪する巡礼者として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "自分は神に試されている/封印区画の機械音と文字を見た",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "祈るような丁寧語",
@@ -21604,12 +21879,17 @@
         {
           "kind": "background",
           "text": "ルカ元研究員は古代神殿の元研究員として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国は研究を止めない/召喚失敗と巨神兵は別原因と推測",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "早口で不安定。専門用語が漏れる",
@@ -21646,12 +21926,17 @@
         {
           "kind": "background",
           "text": "機械巨神兵は古代兵器として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "召喚災害ではない/古代文明の記録を内蔵",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "会話不可。古代音声と警告文のみ",
@@ -21688,12 +21973,17 @@
         {
           "kind": "background",
           "text": "ローナは麦穂亭の女将として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "外の旅人は金払いで判断しがち/村人の本音が集まる",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "世話焼きで少し口うるさい",
@@ -21730,12 +22020,17 @@
         {
           "kind": "background",
           "text": "パオロはパン屋として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "穀倉火災は自分にも責任があると思い込む/値上げに罪悪感",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "気弱で丁寧",
@@ -21772,12 +22067,17 @@
         {
           "kind": "background",
           "text": "ジルは猟師として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王都兵は森を知らない/川辺の異様な粘液を見た",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "ぶっきらぼうで観察鋭い",
@@ -21814,12 +22114,17 @@
         {
           "kind": "background",
           "text": "ネネ婆は薬草婆さんとして、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "昔の言い伝えを迷信として扱われる/世界樹の古い民話を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "ゆっくりした昔語り",
@@ -21856,12 +22161,17 @@
         {
           "kind": "background",
           "text": "コビーはフィンの友達として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "怒られるのが怖くて黙る/フィンの行き先を聞いている",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "落ち着きがなく正直",
@@ -21898,12 +22208,17 @@
         {
           "kind": "background",
           "text": "ハクトは牧場主として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "冒険者に馬を貸すのは嫌う/森道に詳しい古馬がいる",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "頑固で実利的",
@@ -21940,12 +22255,17 @@
         {
           "kind": "background",
           "text": "ミランは安宿主人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "厄介事を避けたい/兵士と暗殺者の出入りを見た",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "小声で警戒深い",
@@ -21982,12 +22302,17 @@
         {
           "kind": "background",
           "text": "カッシアは武器屋として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "安い武器は危険と考える/犯罪都市製の刻印を見分ける",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "歯切れよく商売上手",
@@ -22024,12 +22349,17 @@
         {
           "kind": "background",
           "text": "ユノは薬屋として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "黒嶺薬草を恐れない/宮廷医師が買い占めた記録",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "淡々と説明する",
@@ -22066,12 +22396,17 @@
         {
           "kind": "background",
           "text": "ラシュは土地担当官として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "書類が正しければ結果も正しいと思う/孤児院寄付契約の原本の所在を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "事務的で融通が利かない",
@@ -22108,12 +22443,17 @@
         {
           "kind": "background",
           "text": "ペトラは瓦版屋として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "強い見出しが真実より先に売れる/貴族派から金を受けることがある",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "早口で煽り気味",
@@ -22150,12 +22490,17 @@
         {
           "kind": "background",
           "text": "バルトは馬商人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "戦争は馬の値段を上げると思う/軍が買い占める前触れを知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "商売っ気が強い",
@@ -22192,12 +22537,17 @@
         {
           "kind": "background",
           "text": "オリムは市場商人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "高い物には理由があると言う/仕入れ元の変化を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "人懐っこい商人口調",
@@ -22234,12 +22584,17 @@
         {
           "kind": "background",
           "text": "アベルは病弱な孤児として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "自分は足手まといだと思う/退去先では生きられない不安",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "か細く丁寧",
@@ -22276,12 +22631,17 @@
         {
           "kind": "background",
           "text": "ルミは亜人混血の孤児として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "自分の耳を隠せば普通になれると思う/亜人街に親族の噂",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "明るいが怯えやすい",
@@ -22318,12 +22678,17 @@
         {
           "kind": "background",
           "text": "マウラは港酒場女将として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "船員の大げさ話を半分信じる/密輸船の常連を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "豪快で面倒見がいい",
@@ -22360,12 +22725,17 @@
         {
           "kind": "background",
           "text": "トトは魚売りとして、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "内陸人は魚の価値を知らない/外国船が買い占めている",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "元気で声が大きい",
@@ -22402,12 +22772,17 @@
         {
           "kind": "background",
           "text": "エルネストは税関役人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "少額の賄賂は必要経費と思う/怪しい積荷番号を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "官僚的で固い",
@@ -22444,12 +22819,17 @@
         {
           "kind": "background",
           "text": "サイモンは倉庫番として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "中身を見ない方が長生きと思う/武器箱の隠し印を見た",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "無愛想で現実的",
@@ -22486,12 +22866,17 @@
         {
           "kind": "background",
           "text": "ルーシーは薬草商として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "黒嶺薬草への偏見に怒る/薬草の産地偽装を見抜く",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "明るいが芯が強い",
@@ -22528,12 +22913,17 @@
         {
           "kind": "background",
           "text": "ガスパルは馬市商として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王都の馬商を都会価格と笑う/港荷馬の相場を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "商売熱心で大声",
@@ -22570,12 +22960,17 @@
         {
           "kind": "background",
           "text": "オーリンは船大工として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "外国船の構造に興味がある/軍船向け改造を見抜く",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "職人気質で短い",
@@ -22612,12 +23007,17 @@
         {
           "kind": "background",
           "text": "ヴェラは裏酒場店主として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "善人はここで迷子になると思う/常連の裏名簿を持つ",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "艶っぽく皮肉屋",
@@ -22654,12 +23054,17 @@
         {
           "kind": "background",
           "text": "ラチカは運び屋として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "荷の中身を知らない方がいいと思う/人の声がする箱を運んだ",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "軽口で素早い",
@@ -22696,12 +23101,17 @@
         {
           "kind": "background",
           "text": "ゴードは密輸倉庫番として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "金を払う相手が正義/二重帳簿を隠す",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "低く無表情",
@@ -22738,12 +23148,17 @@
         {
           "kind": "background",
           "text": "ジェリコは裏馬商として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "盗まれた馬も乗れば同じと思う/王都軍馬の流出元を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "胡散臭く陽気",
@@ -22780,12 +23195,17 @@
         {
           "kind": "background",
           "text": "ベスは奴隷市場の見張りとして、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "商品と客を分けて考える/逃がしたい子を一人知っている",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "感情を抑えた短文",
@@ -22822,12 +23242,17 @@
         {
           "kind": "background",
           "text": "ガンツは洞窟酒場主人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "地上人の酒は薄いと思う/強行派と安全派の本音を聞く",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "豪快で酒臭い",
@@ -22864,12 +23289,17 @@
         {
           "kind": "background",
           "text": "リッカは若い坑夫として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "危険を恐れるのは恥と思う/支柱の軋みを聞いた",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "元気で負けず嫌い",
@@ -22906,12 +23336,17 @@
         {
           "kind": "background",
           "text": "オモは鉱石商として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "地上商人は値切りすぎる/深部鉱石の異常な輝きを知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "数字に厳しい",
@@ -22948,12 +23383,17 @@
         {
           "kind": "background",
           "text": "ドナは荷駄係として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "馬は洞窟で役に立たないと思う/黒嶺地下道に向く獣を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "明るい世話焼き",
@@ -22990,12 +23430,17 @@
         {
           "kind": "background",
           "text": "ペルナは救護係兼技術助手として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "坑夫は痛みを隠すと思う/名工の持病を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "優しいが現場では厳しい",
@@ -23032,12 +23477,17 @@
         {
           "kind": "background",
           "text": "ヘンリクは要塞補給係として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "戦争は倉庫から始まる/武器の出所差異を記録",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "几帳面で淡々",
@@ -23074,12 +23524,17 @@
         {
           "kind": "background",
           "text": "マルタは軍医として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "強硬論者ほど痛みに弱い/偽装襲撃の傷が不自然と分かる",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "冷静で辛辣",
@@ -23116,12 +23571,17 @@
         {
           "kind": "background",
           "text": "オスカーは門番として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "黒嶺から来る者は全員怪しいと思う/偽装通行証の特徴を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "無骨で定型句が多い",
@@ -23158,12 +23618,17 @@
         {
           "kind": "background",
           "text": "ディノは軍馬係として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "馬は人より嘘をつかない/マグナスの夜間出発を見た",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "素直で人懐こい",
@@ -23200,12 +23665,17 @@
         {
           "kind": "background",
           "text": "ハイドは古参兵として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "黒嶺にも家族がいるかもしれないと思う/過去の停戦理由を覚えている",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "枯れた声で短く話す",
@@ -23242,12 +23712,17 @@
         {
           "kind": "background",
           "text": "モニカは土産物屋として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "客が消えると村も消えると思う/失踪者が買った同じ護符を覚える",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "明るいが焦りやすい",
@@ -23284,12 +23759,17 @@
         {
           "kind": "background",
           "text": "イライアは神殿案内人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "古代装置を神の奇跡と呼ぶ/同じ回廊で人が消えると知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "柔らかい老紳士口調",
@@ -23326,12 +23806,17 @@
         {
           "kind": "background",
           "text": "ケイナは神殿警備兵として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "失踪は盗賊の仕業かもと思う/管理棟の隠蔽を薄々知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "真面目で融通が利かない",
@@ -23368,12 +23853,17 @@
         {
           "kind": "background",
           "text": "ラミルは巡礼団長として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "神殿は人を試す場所と思う/失踪者の最後の列順を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "よく通る声で説教じみる",
@@ -23410,12 +23900,17 @@
         {
           "kind": "background",
           "text": "ヨハンは馬屋番として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "馬は怯えた場所を覚える/失踪者の馬が回廊前で暴れた",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "素朴で動物優先",
@@ -23452,12 +23947,17 @@
         {
           "kind": "background",
           "text": "ダフネは失踪者の姉として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王都は庶民の失踪を隠すと思う/妹の日記を持つ",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "感情がこぼれる丁寧語",
@@ -23494,12 +23994,17 @@
         {
           "kind": "background",
           "text": "ナーウェはリュシアの親として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "外の世界は娘を壊すと思う/リュシアが外へ憧れた理由を知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "抑えた感情で話す",
@@ -23536,12 +24041,17 @@
         {
           "kind": "background",
           "text": "メルキアは結界管理者として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "人間に結界理論を教えるべきでない/森で迷う仕組みを知る",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "理知的で冷たい",
@@ -23578,12 +24088,17 @@
         {
           "kind": "background",
           "text": "シルフィはエルフ薬草師として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "人間は薬草を商品としか見ないと思う/世界樹の痛みを薬草で感じる",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "静かで優しい",
@@ -23620,12 +24135,17 @@
         {
           "kind": "background",
           "text": "フェンは里の弓兵として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "人間は音を立てすぎる/黒嶺側の足音も聞き分ける",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "短く刺すように話す",
@@ -23662,12 +24182,17 @@
         {
           "kind": "background",
           "text": "マルヴァは黒嶺共同宿の主として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "人間客は騒動を運ぶと思う/王都から逃げた者の証言を聞く",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "太く温かい声",
@@ -23704,12 +24229,17 @@
         {
           "kind": "background",
           "text": "ヤクサは黒嶺市場商人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国人は黒嶺品の価値を知らない/王都の差別で相場が上がる",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "よく喋る商人口調",
@@ -23746,12 +24276,17 @@
         {
           "kind": "background",
           "text": "イルグは入国審査役として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国書類は信用できない/本物の紹介印を見分ける",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "低く事務的",
@@ -23788,12 +24323,17 @@
         {
           "kind": "background",
           "text": "ケーツは翼人の伝令として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "地上の政治は遅すぎると思う/穏健派と侵攻派双方の命令を聞く",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "早口で視点が高い",
@@ -23830,12 +24370,17 @@
         {
           "kind": "background",
           "text": "ミトは角人の子どもとして、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国人を絵本の悪者だと思う/人間の飴が好き",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "無邪気で質問が多い",
@@ -23872,12 +24417,17 @@
         {
           "kind": "background",
           "text": "ラシャは獣人の母親として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王国兵は子どもも見逃さないと思う/王国に親戚がいる",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "警戒深いが優しい",
@@ -23914,12 +24464,17 @@
         {
           "kind": "background",
           "text": "オルグは農具修理職人として、この土地で暮らしている。",
-          "disclosureTrust": 0
+          "disclosure": {
+            "visibility": "public"
+          }
         },
         {
           "kind": "secret",
           "text": "王都製品は過剰品質と思う/古い農具を護身具へ転用する知恵がある",
-          "disclosureTrust": 15
+          "disclosure": {
+            "visibility": "private",
+            "requiresKnownFacts": []
+          }
         }
       ],
       "voice": "短く実務的。道具の傷み方から使い方を言い当てる",
@@ -23945,8 +24500,6 @@
       "startsAt": 32400,
       "deadline": 158400,
       "severity": "major",
-      "pressure": 45,
-      "pressurePerDay": 6,
       "description": "村外れで少年の足跡が途絶えた。森から押し出された赤牙狼が、街道へ降りている。",
       "cause": "大型魔獣による縄張り移動と少年の単独探検。",
       "sourceIds": [
@@ -23954,132 +24507,14 @@
         "T03"
       ],
       "reward": 90,
+      "causalSourceIds": [
+        "T01"
+      ],
+      "causalStatus": "partial",
       "opposition": {
         "monsterId": "MON-0005",
-        "description": "事件の実行勢力。現場で退けた結果を、力による介入の根拠にできる。"
+        "description": "現場に存在する脅威。排除だけでは事件全体の解決を意味しない。"
       },
-      "mechanisms": [
-        {
-          "id": "community",
-          "label": "捜索隊を組み、少年を家族へ届ける",
-          "kind": "community",
-          "requirements": {
-            "trust": {
-              "NPC002": 12
-            },
-            "evidence": [
-              "lost-road:proof"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 3,
-            "setFacts": [
-              "lost-road:community-protected"
-            ],
-            "stock": {
-              "farm": 0.1
-            }
-          }
-        },
-        {
-          "id": "logistics",
-          "label": "餌場と避難柵を整え、人と狼の動線を分ける",
-          "kind": "logistics",
-          "requirements": {
-            "items": {
-              "supplies": 4
-            },
-            "gold": 10
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "resources": {
-              "farm:supplies": 4
-            },
-            "setFacts": [
-              "lost-road:supply-secured"
-            ],
-            "stock": {
-              "farm": 0.3
-            }
-          }
-        },
-        {
-          "id": "investigation",
-          "label": "現場証拠と専門技能で、発生原因を除く",
-          "kind": "information",
-          "requirements": {
-            "skills": [
-              "tracking"
-            ],
-            "evidence": [
-              "lost-road:proof"
-            ],
-            "items": {}
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "setFacts": [
-              "lost-road:cause-removed"
-            ]
-          }
-        },
-        {
-          "id": "coercion",
-          "label": "狼の親個体を追い払い、少年を保護する",
-          "kind": "coercion",
-          "requirements": {
-            "force": 20,
-            "evidence": [
-              "lost-road:proof",
-              "lost-road:threat-reduced"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": -6,
-            "threat": {
-              "farm": 4
-            },
-            "setFacts": [
-              "lost-road:coerced"
-            ]
-          }
-        },
-        {
-          "id": "misreading",
-          "label": "誤解から生まれた警戒網へ物資を渡す",
-          "kind": "misunderstanding",
-          "requirements": {
-            "evidence": [
-              "lost-road:misread"
-            ],
-            "facts": [
-              "lost-road:public-warning"
-            ],
-            "items": {
-              "supplies": 1
-            }
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 1,
-            "setFacts": [
-              "lost-road:unexpected-aversion"
-            ],
-            "resources": {
-              "farm:warnings": 1
-            }
-          }
-        }
-      ],
-      "pressureDependencies": [],
       "failureEffects": {
         "stock": {
           "farm": -0.55
@@ -24090,9 +24525,7 @@
         "setFacts": [
           "lost-road:aftermath"
         ],
-        "deaths": [
-          "NPC001"
-        ]
+        "deaths": []
       },
       "signals": [
         {
@@ -24113,140 +24546,18 @@
       "startsAt": 151200,
       "deadline": 324000,
       "severity": "major",
-      "pressure": 45,
-      "pressurePerDay": 6,
       "description": "共同穀倉の裏で灯油の匂いがする。穀物の買付契約には、不自然な担保条項がある。",
       "cause": "穀物商による収穫権奪取と雇われた放火犯。",
       "sourceIds": [
         "T02"
       ],
       "reward": 90,
+      "causalSourceIds": [],
+      "causalStatus": "unadapted",
       "opposition": {
         "monsterId": "MON-0033",
-        "description": "事件の実行勢力。現場で退けた結果を、力による介入の根拠にできる。"
+        "description": "現場に存在する脅威。排除だけでは事件全体の解決を意味しない。"
       },
-      "mechanisms": [
-        {
-          "id": "community",
-          "label": "管理人と夜警をつなぎ、放火を止める",
-          "kind": "community",
-          "requirements": {
-            "trust": {
-              "NPC005": 12
-            },
-            "evidence": [
-              "bread-fire:proof"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 3,
-            "setFacts": [
-              "bread-fire:community-protected"
-            ],
-            "stock": {
-              "farm": 0.1
-            }
-          }
-        },
-        {
-          "id": "logistics",
-          "label": "代替穀物を買い付け、借金契約を不要にする",
-          "kind": "logistics",
-          "requirements": {
-            "items": {
-              "supplies": 4
-            },
-            "gold": 10
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "resources": {
-              "farm:supplies": 4
-            },
-            "setFacts": [
-              "bread-fire:supply-secured"
-            ],
-            "stock": {
-              "farm": 0.3
-            }
-          }
-        },
-        {
-          "id": "investigation",
-          "label": "現場証拠と専門技能で、発生原因を除く",
-          "kind": "information",
-          "requirements": {
-            "skills": [
-              "investigation"
-            ],
-            "evidence": [
-              "bread-fire:proof"
-            ],
-            "items": {}
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "setFacts": [
-              "bread-fire:cause-removed"
-            ]
-          }
-        },
-        {
-          "id": "coercion",
-          "label": "雇われた男を拘束し、穀倉を警護する",
-          "kind": "coercion",
-          "requirements": {
-            "force": 23,
-            "evidence": [
-              "bread-fire:proof",
-              "bread-fire:threat-reduced"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": -6,
-            "threat": {
-              "farm": 4
-            },
-            "setFacts": [
-              "bread-fire:coerced"
-            ]
-          }
-        },
-        {
-          "id": "misreading",
-          "label": "誤解から生まれた警戒網へ物資を渡す",
-          "kind": "misunderstanding",
-          "requirements": {
-            "evidence": [
-              "bread-fire:misread"
-            ],
-            "facts": [
-              "bread-fire:public-warning"
-            ],
-            "items": {
-              "supplies": 1
-            }
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 1,
-            "setFacts": [
-              "bread-fire:unexpected-aversion"
-            ],
-            "resources": {
-              "farm:warnings": 1
-            }
-          }
-        }
-      ],
-      "pressureDependencies": [],
       "failureEffects": {
         "stock": {
           "farm": -0.55,
@@ -24279,8 +24590,6 @@
       "startsAt": 198000,
       "deadline": 504000,
       "severity": "major",
-      "pressure": 45,
-      "pressurePerDay": 6,
       "description": "港の賃金が削られ、領主は床に伏せている。荷札の違う武器箱が夜の船へ運ばれる。",
       "cause": "毒殺計画、搾取、武器密輸が結びつき外国艦隊の足場となる。",
       "sourceIds": [
@@ -24290,133 +24599,12 @@
         "T15"
       ],
       "reward": 90,
+      "causalSourceIds": [],
+      "causalStatus": "unadapted",
       "opposition": {
         "monsterId": "MON-0034",
-        "description": "事件の実行勢力。現場で退けた結果を、力による介入の根拠にできる。"
+        "description": "現場に存在する脅威。排除だけでは事件全体の解決を意味しない。"
       },
-      "mechanisms": [
-        {
-          "id": "community",
-          "label": "領主の治療と労働協定を仲介する",
-          "kind": "community",
-          "requirements": {
-            "trust": {
-              "NPC009": 12
-            },
-            "evidence": [
-              "harbor:proof"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 3,
-            "setFacts": [
-              "harbor:community-protected"
-            ],
-            "stock": {
-              "trade": 0.1
-            }
-          }
-        },
-        {
-          "id": "logistics",
-          "label": "解毒薬と未払賃金を届け、港の契約を結び直す",
-          "kind": "logistics",
-          "requirements": {
-            "items": {
-              "antidote": 2,
-              "supplies": 3
-            },
-            "gold": 10
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "resources": {
-              "trade:supplies": 4
-            },
-            "setFacts": [
-              "harbor:supply-secured"
-            ],
-            "stock": {
-              "trade": 0.3
-            }
-          }
-        },
-        {
-          "id": "investigation",
-          "label": "現場証拠と専門技能で、発生原因を除く",
-          "kind": "information",
-          "requirements": {
-            "skills": [
-              "negotiation"
-            ],
-            "evidence": [
-              "harbor:proof"
-            ],
-            "items": {}
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "setFacts": [
-              "harbor:cause-removed"
-            ]
-          }
-        },
-        {
-          "id": "coercion",
-          "label": "武器倉庫を制圧し、毒殺派を排除する",
-          "kind": "coercion",
-          "requirements": {
-            "force": 26,
-            "evidence": [
-              "harbor:proof",
-              "harbor:threat-reduced"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": -6,
-            "threat": {
-              "trade": 4
-            },
-            "setFacts": [
-              "harbor:coerced"
-            ]
-          }
-        },
-        {
-          "id": "misreading",
-          "label": "誤解から生まれた警戒網へ物資を渡す",
-          "kind": "misunderstanding",
-          "requirements": {
-            "evidence": [
-              "harbor:misread"
-            ],
-            "facts": [
-              "harbor:public-warning"
-            ],
-            "items": {
-              "supplies": 1
-            }
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 1,
-            "setFacts": [
-              "harbor:unexpected-aversion"
-            ],
-            "resources": {
-              "trade:warnings": 1
-            }
-          }
-        }
-      ],
-      "pressureDependencies": [],
       "failureEffects": {
         "stock": {
           "trade": -0.55,
@@ -24449,8 +24637,6 @@
       "startsAt": 118800,
       "deadline": 583200,
       "severity": "major",
-      "pressure": 45,
-      "pressurePerDay": 6,
       "description": "大河の流れが弱い。旅立ったエルフの足跡と、川中の魔力だまりが気に掛かる。",
       "cause": "人身売買と結界の防衛反応、川に詰まったキングスライムは独立して悪化する。",
       "sourceIds": [
@@ -24459,133 +24645,14 @@
         "T13"
       ],
       "reward": 90,
+      "causalSourceIds": [
+        "T13"
+      ],
+      "causalStatus": "partial",
       "opposition": {
         "monsterId": "MON-0015",
-        "description": "事件の実行勢力。現場で退けた結果を、力による介入の根拠にできる。"
+        "description": "現場に存在する脅威。排除だけでは事件全体の解決を意味しない。"
       },
-      "mechanisms": [
-        {
-          "id": "community",
-          "label": "救出した若者と水路の共同調査を行う",
-          "kind": "community",
-          "requirements": {
-            "trust": {
-              "NPC029": 12
-            },
-            "evidence": [
-              "roots:proof"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 3,
-            "setFacts": [
-              "roots:community-protected"
-            ],
-            "stock": {
-              "forest": 0.1
-            }
-          }
-        },
-        {
-          "id": "logistics",
-          "label": "排水資材と結晶を届け、水流を取り戻す",
-          "kind": "logistics",
-          "requirements": {
-            "items": {
-              "crystal": 2,
-              "timber": 2
-            },
-            "gold": 10
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "resources": {
-              "forest:supplies": 4
-            },
-            "setFacts": [
-              "roots:supply-secured"
-            ],
-            "stock": {
-              "forest": 0.3
-            }
-          }
-        },
-        {
-          "id": "investigation",
-          "label": "現場証拠と専門技能で、発生原因を除く",
-          "kind": "information",
-          "requirements": {
-            "skills": [
-              "magic"
-            ],
-            "evidence": [
-              "roots:proof"
-            ],
-            "items": {}
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "setFacts": [
-              "roots:cause-removed"
-            ]
-          }
-        },
-        {
-          "id": "coercion",
-          "label": "人買いを退け、川を塞ぐ魔物を排除する",
-          "kind": "coercion",
-          "requirements": {
-            "force": 29,
-            "evidence": [
-              "roots:proof",
-              "roots:threat-reduced"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": -6,
-            "threat": {
-              "forest": 4
-            },
-            "setFacts": [
-              "roots:coerced"
-            ]
-          }
-        },
-        {
-          "id": "misreading",
-          "label": "誤解から生まれた警戒網へ物資を渡す",
-          "kind": "misunderstanding",
-          "requirements": {
-            "evidence": [
-              "roots:misread"
-            ],
-            "facts": [
-              "roots:public-warning"
-            ],
-            "items": {
-              "supplies": 1
-            }
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 1,
-            "setFacts": [
-              "roots:unexpected-aversion"
-            ],
-            "resources": {
-              "forest:warnings": 1
-            }
-          }
-        }
-      ],
-      "pressureDependencies": [],
       "failureEffects": {
         "stock": {
           "forest": -0.55,
@@ -24618,141 +24685,18 @@
       "startsAt": 208800,
       "deadline": 496800,
       "severity": "major",
-      "pressure": 45,
-      "pressurePerDay": 6,
       "description": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。",
       "cause": "過剰な採掘と地下水脈の破断。",
       "sourceIds": [
         "T09"
       ],
       "reward": 90,
+      "causalSourceIds": [],
+      "causalStatus": "unadapted",
       "opposition": {
         "monsterId": "MON-0049",
-        "description": "事件の実行勢力。現場で退けた結果を、力による介入の根拠にできる。"
+        "description": "現場に存在する脅威。排除だけでは事件全体の解決を意味しない。"
       },
-      "mechanisms": [
-        {
-          "id": "community",
-          "label": "技師と坑夫の作業中止・救助計画をまとめる",
-          "kind": "community",
-          "requirements": {
-            "trust": {
-              "NPC035": 12
-            },
-            "evidence": [
-              "deep-mine:proof"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 3,
-            "setFacts": [
-              "deep-mine:community-protected"
-            ],
-            "stock": {
-              "dwarf": 0.1
-            }
-          }
-        },
-        {
-          "id": "logistics",
-          "label": "支保材と排水部品を据え、坑道を安定させる",
-          "kind": "logistics",
-          "requirements": {
-            "items": {
-              "timber": 3,
-              "rope": 2
-            },
-            "gold": 10
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "resources": {
-              "dwarf:supplies": 4
-            },
-            "setFacts": [
-              "deep-mine:supply-secured"
-            ],
-            "stock": {
-              "dwarf": 0.3
-            }
-          }
-        },
-        {
-          "id": "investigation",
-          "label": "現場証拠と専門技能で、発生原因を除く",
-          "kind": "information",
-          "requirements": {
-            "skills": [
-              "crafting"
-            ],
-            "evidence": [
-              "deep-mine:proof"
-            ],
-            "items": {}
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "setFacts": [
-              "deep-mine:cause-removed"
-            ]
-          }
-        },
-        {
-          "id": "coercion",
-          "label": "採掘権者を退け、危険坑道を強制閉鎖する",
-          "kind": "coercion",
-          "requirements": {
-            "force": 32,
-            "evidence": [
-              "deep-mine:proof",
-              "deep-mine:threat-reduced"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": -6,
-            "threat": {
-              "dwarf": 4
-            },
-            "setFacts": [
-              "deep-mine:coerced"
-            ]
-          }
-        },
-        {
-          "id": "misreading",
-          "label": "誤解から生まれた警戒網へ物資を渡す",
-          "kind": "misunderstanding",
-          "requirements": {
-            "evidence": [
-              "deep-mine:misread"
-            ],
-            "facts": [
-              "deep-mine:public-warning"
-            ],
-            "items": {
-              "supplies": 1
-            }
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 1,
-            "setFacts": [
-              "deep-mine:unexpected-aversion"
-            ],
-            "resources": {
-              "dwarf:warnings": 1
-            }
-          }
-        }
-      ],
-      "pressureDependencies": [],
       "failureEffects": {
         "stock": {
           "dwarf": -0.55
@@ -24784,8 +24728,6 @@
       "startsAt": 288000,
       "deadline": 676800,
       "severity": "major",
-      "pressure": 45,
-      "pressurePerDay": 6,
       "description": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。",
       "cause": "土地利権、王族暗殺と差別的扇動。",
       "sourceIds": [
@@ -24794,141 +24736,14 @@
         "T16"
       ],
       "reward": 90,
+      "causalSourceIds": [
+        "T10"
+      ],
+      "causalStatus": "partial",
       "opposition": {
         "monsterId": "MON-0025",
-        "description": "事件の実行勢力。現場で退けた結果を、力による介入の根拠にできる。"
+        "description": "現場に存在する脅威。排除だけでは事件全体の解決を意味しない。"
       },
-      "mechanisms": [
-        {
-          "id": "community",
-          "label": "証言者を守り、議場へ立退きと暗殺の証拠を届ける",
-          "kind": "community",
-          "requirements": {
-            "trust": {
-              "NPC019": 12
-            },
-            "evidence": [
-              "crown:proof"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 3,
-            "setFacts": [
-              "crown:community-protected"
-            ],
-            "stock": {
-              "capital": 0.1
-            }
-          }
-        },
-        {
-          "id": "logistics",
-          "label": "孤児院の土地と配給を確保し、扇動の足場をなくす",
-          "kind": "logistics",
-          "requirements": {
-            "items": {
-              "supplies": 4
-            },
-            "gold": 25
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "resources": {
-              "capital:supplies": 4
-            },
-            "setFacts": [
-              "crown:supply-secured"
-            ],
-            "stock": {
-              "capital": 0.3
-            }
-          }
-        },
-        {
-          "id": "investigation",
-          "label": "現場証拠と専門技能で、発生原因を除く",
-          "kind": "information",
-          "requirements": {
-            "skills": [
-              "investigation"
-            ],
-            "evidence": [
-              "crown:proof"
-            ],
-            "items": {}
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "setFacts": [
-              "crown:cause-removed"
-            ]
-          }
-        },
-        {
-          "id": "coercion",
-          "label": "暗殺組織と扇動者を先制して拘束する",
-          "kind": "coercion",
-          "requirements": {
-            "force": 35,
-            "evidence": [
-              "crown:proof",
-              "crown:threat-reduced"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": -6,
-            "threat": {
-              "capital": 4
-            },
-            "setFacts": [
-              "crown:coerced"
-            ]
-          }
-        },
-        {
-          "id": "misreading",
-          "label": "誤解から生まれた警戒網へ物資を渡す",
-          "kind": "misunderstanding",
-          "requirements": {
-            "evidence": [
-              "crown:misread"
-            ],
-            "facts": [
-              "crown:public-warning"
-            ],
-            "items": {
-              "supplies": 1
-            }
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 1,
-            "setFacts": [
-              "crown:unexpected-aversion"
-            ],
-            "resources": {
-              "capital:warnings": 1
-            }
-          }
-        }
-      ],
-      "pressureDependencies": [
-        {
-          "eventId": "bread-fire",
-          "perDay": 4
-        },
-        {
-          "eventId": "roots",
-          "perDay": 3
-        }
-      ],
       "failureEffects": {
         "stock": {
           "capital": -0.55
@@ -24960,8 +24775,6 @@
       "startsAt": 129600,
       "deadline": 763200,
       "severity": "major",
-      "pressure": 45,
-      "pressurePerDay": 6,
       "description": "回廊の古代文字が明滅し、巡礼者が消えている。王都では次の召喚が準備される。",
       "cause": "不完全な転移装置と追加の召喚実験が、巨神兵へ流れる魔力を増幅する。",
       "sourceIds": [
@@ -24970,135 +24783,12 @@
         "T18"
       ],
       "reward": 90,
+      "causalSourceIds": [],
+      "causalStatus": "unadapted",
       "opposition": {
         "monsterId": "MON-0062",
-        "description": "事件の実行勢力。現場で退けた結果を、力による介入の根拠にできる。"
+        "description": "現場に存在する脅威。排除だけでは事件全体の解決を意味しない。"
       },
-      "mechanisms": [
-        {
-          "id": "community",
-          "label": "管理者と術者を集め、三つの装置を停止する",
-          "kind": "community",
-          "requirements": {
-            "trust": {
-              "NPC053": 12
-            },
-            "evidence": [
-              "resonance:proof"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 3,
-            "setFacts": [
-              "resonance:community-protected"
-            ],
-            "stock": {
-              "temple": 0.1
-            }
-          }
-        },
-        {
-          "id": "logistics",
-          "label": "調律結晶と部品を交換し、召喚系統を切り離す",
-          "kind": "logistics",
-          "requirements": {
-            "items": {
-              "crystal": 2,
-              "timber": 2
-            },
-            "gold": 25
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "resources": {
-              "temple:supplies": 4
-            },
-            "setFacts": [
-              "resonance:supply-secured"
-            ],
-            "stock": {
-              "temple": 0.3
-            }
-          }
-        },
-        {
-          "id": "investigation",
-          "label": "現場証拠と専門技能で、発生原因を除く",
-          "kind": "information",
-          "requirements": {
-            "skills": [
-              "magic"
-            ],
-            "evidence": [
-              "resonance:proof"
-            ],
-            "items": {
-              "crystal": 1
-            }
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "setFacts": [
-              "resonance:cause-removed"
-            ]
-          }
-        },
-        {
-          "id": "coercion",
-          "label": "軍の実験拠点と巨神兵の動力を破壊する",
-          "kind": "coercion",
-          "requirements": {
-            "force": 38,
-            "evidence": [
-              "resonance:proof",
-              "resonance:threat-reduced"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": -6,
-            "threat": {
-              "temple": 4
-            },
-            "setFacts": [
-              "resonance:coerced"
-            ]
-          }
-        },
-        {
-          "id": "misreading",
-          "label": "誤解から生まれた警戒網へ物資を渡す",
-          "kind": "misunderstanding",
-          "requirements": {
-            "evidence": [
-              "resonance:misread"
-            ],
-            "facts": [
-              "resonance:public-warning"
-            ],
-            "items": {
-              "supplies": 1
-            }
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 1,
-            "setFacts": [
-              "resonance:unexpected-aversion"
-            ],
-            "resources": {
-              "temple:warnings": 1
-            }
-          }
-        }
-      ],
-      "pressureDependencies": [],
       "failureEffects": {
         "stock": {
           "temple": -0.55
@@ -25130,8 +24820,6 @@
       "startsAt": 367200,
       "deadline": 849600,
       "severity": "major",
-      "pressure": 45,
-      "pressurePerDay": 6,
       "description": "北門の兵が増えた。越境の報告には食い違いがある。黒嶺側の村でも避難が始まった。",
       "cause": "偽旗作戦と黒嶺強硬派が、互いの恐怖を戦争の口実にする。",
       "sourceIds": [
@@ -25139,141 +24827,12 @@
         "T19"
       ],
       "reward": 90,
+      "causalSourceIds": [],
+      "causalStatus": "unadapted",
       "opposition": {
         "monsterId": "MON-0055",
-        "description": "事件の実行勢力。現場で退けた結果を、力による介入の根拠にできる。"
+        "description": "現場に存在する脅威。排除だけでは事件全体の解決を意味しない。"
       },
-      "mechanisms": [
-        {
-          "id": "community",
-          "label": "両国の使者に偽旗の証拠を渡し、停戦線を引く",
-          "kind": "community",
-          "requirements": {
-            "trust": {
-              "NPC039": 12
-            },
-            "evidence": [
-              "border:proof"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 3,
-            "setFacts": [
-              "border:community-protected"
-            ],
-            "stock": {
-              "fortress": 0.1
-            }
-          }
-        },
-        {
-          "id": "logistics",
-          "label": "両国へ補給を渡し、動員資金を交易へ切り替える",
-          "kind": "logistics",
-          "requirements": {
-            "items": {
-              "supplies": 4
-            },
-            "gold": 25
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "resources": {
-              "fortress:supplies": 4
-            },
-            "setFacts": [
-              "border:supply-secured"
-            ],
-            "stock": {
-              "fortress": 0.3
-            }
-          }
-        },
-        {
-          "id": "investigation",
-          "label": "現場証拠と専門技能で、発生原因を除く",
-          "kind": "information",
-          "requirements": {
-            "skills": [
-              "negotiation"
-            ],
-            "evidence": [
-              "border:proof"
-            ],
-            "items": {}
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "setFacts": [
-              "border:cause-removed"
-            ]
-          }
-        },
-        {
-          "id": "coercion",
-          "label": "両国の攻戦派を制圧し、軍の進路を封鎖する",
-          "kind": "coercion",
-          "requirements": {
-            "force": 41,
-            "evidence": [
-              "border:proof",
-              "border:threat-reduced"
-            ]
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": -6,
-            "threat": {
-              "fortress": 4
-            },
-            "setFacts": [
-              "border:coerced"
-            ]
-          }
-        },
-        {
-          "id": "misreading",
-          "label": "誤解から生まれた警戒網へ物資を渡す",
-          "kind": "misunderstanding",
-          "requirements": {
-            "evidence": [
-              "border:misread"
-            ],
-            "facts": [
-              "border:public-warning"
-            ],
-            "items": {
-              "supplies": 1
-            }
-          },
-          "effects": {
-            "pressure": -120,
-            "xp": 145,
-            "trust": 1,
-            "setFacts": [
-              "border:unexpected-aversion"
-            ],
-            "resources": {
-              "fortress:warnings": 1
-            }
-          }
-        }
-      ],
-      "pressureDependencies": [
-        {
-          "eventId": "harbor",
-          "perDay": 5
-        },
-        {
-          "eventId": "crown",
-          "perDay": 3
-        }
-      ],
       "failureEffects": {
         "stock": {
           "fortress": -0.55
@@ -25292,6 +24851,60 @@
           "text": "北門の兵が増えた。越境の報告には食い違いがある。黒嶺側の村でも避難が始まった。"
         }
       ]
+    }
+  ],
+  "causalScenarios": [
+    {
+      "eventId": "lost-road",
+      "sourceIds": [
+        "T01"
+      ],
+      "type": "return-person",
+      "personId": "NPC001",
+      "familyId": "NPC002"
+    },
+    {
+      "eventId": "crown",
+      "sourceIds": [
+        "T10"
+      ],
+      "type": "institution",
+      "facilityId": "LOC_CAP_ORPHANAGE",
+      "officeId": "LOC_CAP_OFFICE",
+      "replacementId": "LOC_CAP_LOWER_INN",
+      "documents": [
+        {
+          "id": "donation",
+          "targetId": "LOC_CAP_ORPHANAGE",
+          "title": "土地の寄付契約",
+          "text": "土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。"
+        },
+        {
+          "id": "registry",
+          "targetId": "LOC_CAP_OFFICE",
+          "title": "土地台帳の写し",
+          "text": "土地台帳には寄付契約が登記されている。立ち退き申請にその注記がない。"
+        },
+        {
+          "id": "debt",
+          "targetId": "LOC_CAP_MARKET",
+          "title": "納品と請求の控え",
+          "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+        }
+      ]
+    },
+    {
+      "eventId": "roots",
+      "sourceIds": [
+        "T13"
+      ],
+      "type": "ecosystem",
+      "deviceId": "LOC_FOREST_RIVER",
+      "dependentEvents": [
+        "resonance",
+        "border"
+      ],
+      "affectedRegion": "elf"
     }
   ],
   "skills": [
@@ -25384,7 +24997,7 @@
       "name": "食料と生活物資",
       "kind": "food",
       "price": 10,
-      "heal": 15
+      "nutrition": 40
     },
     {
       "id": "medicine",
@@ -25398,7 +25011,7 @@
       "name": "旅人の温かい弁当",
       "kind": "food",
       "price": 6,
-      "heal": 20
+      "nutrition": 40
     },
     {
       "id": "rope",

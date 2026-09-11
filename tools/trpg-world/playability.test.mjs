@@ -77,7 +77,7 @@ class Journey {
     const trainer = this.region.objects.find(object => object.kind === 'trainer' && (!object.skills || object.skills.includes(id)));
     assert(trainer, `No source trainer for ${id}`);
     this.approach(trainer.id);
-    this.command({type:'train', targetId:trainer.id, skillId:id});
+    for(let lesson=0;!this.player.skills.includes(id)&&lesson<10;lesson++)this.command({type:'train', targetId:trainer.id, skillId:id});
     assert(this.player.skills.includes(id));
   }
   travel(destination) {
@@ -159,7 +159,7 @@ test('ordinary work, timed training, meals and owned transport are playable with
  assert.throws(()=>journey.command({type:'mount',mode:'foot'}),{code:'LAND_FIRST'});
  journey.command({type:'input',x:0,z:0,ascend:-1});advanceWorld(journey.state,content,3);
  journey.command({type:'input',x:0,z:0});journey.command({type:'mount',mode:'foot'});
- assert(journey.state.activityHistory.some(a=>a.kind==='training'&&a.endedAt-a.startedAt===3600));
+ assert(journey.state.activityHistory.some(a=>a.kind==='training'&&a.endedAt-a.startedAt===1800));
  assert(journey.state.activityHistory.some(a=>a.kind==='eating'));assert(journey.player.fatigue<100);
  t.diagnostic(`Ordinary needs/transport path: ${journey.commands} commands, ${Math.round(journey.state.time/3600)} world hours.`);
 });
@@ -182,7 +182,7 @@ test('Finn is found in the world, accompanied on foot and returned to his living
   journey.earn(150); // Ordinary paid work while the boy independently leaves the village.
   const child=journey.state.npcs.NPC001;
   assert(child.causalAssignment,'Finn must have independently started his excursion');
-  journey.walk(child.position);
+  for(let chase=0;distance(journey.player.position,child.position)>3&&chase<12;chase++)journey.walk([...child.position]);
   if(child.injury&&!child.injury.treated)journey.command({type:'causal',targetId:child.id,action:'tend'});
   journey.command({type:'causal',targetId:child.id,action:'escort'});
   const home=content.npcs.find(n=>n.id==='NPC002').home;

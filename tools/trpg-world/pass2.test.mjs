@@ -1,0 +1,72 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import {PersistentWorldService,hashWorldToken} from '../../src/server/trpg/world/service.js';
+import {MemoryWorldStore} from '../../src/server/trpg/world/store.js';
+import {searchPlan,planForGoal,advancePlan} from '../../src/shared/trpg-world/npc-planner.js';
+import {createWorld} from '../../src/shared/trpg-world/simulation.js';
+import {auditWorldContent} from './audit-content.mjs';
+const content=JSON.parse(await fs.readFile(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url),'utf8'));
+const fixtureDir=new URL('./fixtures/v1/',import.meta.url);
+for(const item of JSON.parse(await fs.readFile(new URL('manifest.json',fixtureDir),'utf8')))test(`real v1 migration, save, reload, deterministic continuation: ${item.sourceRevision}`,async()=>{
+ const saved=JSON.parse(await fs.readFile(new URL(item.file,fixtureDir),'utf8')),store=new MemoryWorldStore();await store.put(saved.ownerKey,saved);
+ let time=Date.now();const service=new PersistentWorldService({content,store,autoStart:false,now:()=>time});
+ const restored=await service.session(saved.ownerKey);assert.equal(restored.view.time,saved.state.time);
+ const record=await store.get(saved.ownerKey);assert.equal(record.schemaVersion,2);assert.equal(record.state.schemaVersion,2);
+ assert(Object.values(record.state.npcs).every(n=>!Object.hasOwn(n,'trust')));assert(Object.values(record.state.events).every(e=>!Object.hasOwn(e,'pressure')));
+ await service.close();
+ const store2=new MemoryWorldStore();await store2.put(saved.ownerKey,record);
+ const a=new PersistentWorldService({content,store,autoStart:false,now:()=>time}),b=new PersistentWorldService({content,store:store2,autoStart:false,now:()=>time});
+ await a.session(saved.ownerKey);await b.session(saved.ownerKey);time+=500;
+ const av=await a.state(saved.ownerKey),bv=await b.state(saved.ownerKey);assert.deepEqual(av,bv);assert(Number.isFinite(av.view.simulationTime));
+ await a.close();await b.close();
+});
+function small(){return {revision:'behavior',time:{scale:60,startSeconds:25200},regions:[{id:'farm',name:'村',spawn:[0,0,0],size:100,obstacles:[],portals:[],objects:[{id:'shop',name:'店',kind:'shop',position:[0,0,2]},{id:'inn',name:'宿',kind:'inn',position:[0,0,3]}]}],routes:[],events:[],causalScenarios:[],npcs:[{id:'doctor',name:'医師',role:'医師',region:'farm',home:[1,0,0],work:[1,0,0]},{id:'guard',name:'衛兵',role:'衛兵',region:'farm',home:[-1,0,0],work:[-1,0,0]}],items:[{id:'supplies',name:'食料',kind:'food',price:6}],skills:[],equipment:[],monsters:[],jobs:[]};}
+async function harness(c){let now=1000,seq=0;const store=new MemoryWorldStore(),owner=hashWorldToken('behavior-test'),service=new PersistentWorldService({content:c,store,autoStart:false,now:()=>now});await service.session(owner,{create:true});return {service,owner,store,command:cmd=>service.command(owner,{seq:++seq,command:cmd}),tick:async(seconds)=>{for(let s=0;s<seconds;s+=.5){now+=500;await service.state(owner);}},read:async()=>{await service.session(owner);return (await store.get(owner)).state;}};}
+
+test('real service: posture creates witness interpretations without directly settling a crisis',async()=>{
+ const c=small(),h=await harness(c);await h.tick(.5);const before=await h.read();await h.command({type:'affordance',action:'lie',targetId:'self'});const s=await h.read();
+ assert.equal(s.socialFacts.at(-1).kind,'body-action');assert.equal(s.player.posture,'lie');assert.deepEqual(s.events,before.events);
+ assert.equal(s.npcs.doctor.beliefs.at(-1).claim,'ill');assert.equal(s.npcs.guard.beliefs.at(-1).claim,'intoxicated');
+ await h.tick(6);const later=await h.read();assert.equal(later.npcs.doctor.goal,'investigate-observation');await h.service.close();
+});
+
+test('real service: theft transfers money, unseen success does not reveal culprit; victim discovers loss later',async()=>{
+ const c=small();c.npcs=c.npcs.slice(0,1);const h=await harness(c);await h.tick(.5);let before=await h.read(),after,incident;
+ for(let tries=0;tries<64;tries++){before=await h.read();await h.command({type:'affordance',action:'pickpocket',targetId:'doctor'});after=await h.read();incident=after.propertyIncidents.at(-1);if(incident.amount>0)break;}
+ assert(incident.amount>0);assert.equal(after.player.gold-before.player.gold,incident.amount);assert.equal(before.npcs.doctor.money-after.npcs.doctor.money,incident.amount);
+ assert.deepEqual(after.socialFacts.find(f=>f.id===incident.factId).witnesses,[]);assert(!after.npcs.doctor.memories.some(m=>m.factId===incident.factId));
+ await h.tick(31);after=await h.read();assert.equal(after.propertyIncidents.find(i=>i.id===incident.id).status,'loss-discovered');assert(!after.npcs.doctor.memories.some(m=>m.factId===incident.factId));await h.service.close();
+});
+
+test('planner searches alternatives and invalidates when a required resource disappears',()=>{
+ const c=small(),s=createWorld(c),n=s.npcs.doctor;n.money=8;n.hunger=80;
+ const goal={goal:'eat',target:[1,0,0]};n.plan=planForGoal(s,c,n,c.npcs[0],goal);
+ assert(n.plan.steps.some(a=>a.action==='purchase-food'));assert(n.plan.steps.some(a=>a.action==='consume-food'));
+ for(let i=0;n.plan?.steps[n.plan.cursor]?.action==='move'&&i<100;i++)advancePlan(s,c,n,60);
+ s.regions.farm.stock=0;advancePlan(s,c,n,60);assert.equal(n.lastPlan.status,'invalidated');assert.equal(n.plan.status,'blocked');
+ assert.deepEqual(searchPlan({a:false},{a:true},[{action:'do',preconditions:{a:false},effects:{a:true},cost:1}]).map(x=>x.action),['do']);
+});
+
+test('compiler audit rejects resurrected numeric relationship and pressure authority',()=>{
+ assert(auditWorldContent(content).ok);const bad=structuredClone(content);bad.events[0].pressure=0;bad.npcs[0].trust=1;
+ const report=auditWorldContent(bad);assert(!report.ok);assert(report.errors.some(e=>e.includes('pressure')));assert(report.errors.some(e=>e.includes('trust')));
+});
+
+test('real service: attack acceptance has no damage; hit window resolves while calendar is paused',async()=>{
+ const c=small();c.npcs=[];c.regions[0].size=160;c.regions[0].spawn=[-49,0,-45];
+ c.monsters=[{id:'rat',name:'野鼠',region:'farm',level:1,hp:35,attack:1,defense:0,xp:20,gold:3,role:'minion',speed:2,range:2.8,drops:[]}];
+ const h=await harness(c),before=await h.read(),targetId=Object.keys(before.monsters)[0];
+ const result=await h.command({type:'attack',targetId});assert.equal(result.result.phase,'windup');
+ let s=await h.read();assert.equal(s.monsters[targetId].hp,before.monsters[targetId].hp);assert.equal(s.player.actionInstance.phase,'windup');
+ await h.tick(.5);s=await h.read();assert.equal(s.time,before.time);assert(s.simulationTime>before.simulationTime);assert(s.monsters[targetId].hp<before.monsters[targetId].hp);assert.equal(s.player.actionInstance.resolved,true);await h.service.close();
+});
+test('real service: conversation waiting freezes calendar and repeated greetings confer no social reward',async()=>{
+ const h=await harness(small());await h.tick(.5);const before=await h.read();
+ for(let i=0;i<3;i++){await h.command({type:'interact',targetId:'doctor',action:'talk'});await h.tick(3);await h.command({type:'resume'});}
+ const after=await h.read();assert.equal(after.time,before.time);assert.equal(after.player.xp,before.player.xp);assert.equal(after.promises.length,0);assert(!Object.hasOwn(after.npcs.doctor,'trust'));await h.service.close();
+});
+test('real service: NPC buys and eats using a persistent multi-step plan during a player macro activity',async()=>{
+ const h=await harness(small());await h.command({type:'rest',targetId:'inn',hours:6});const s=await h.read();
+ assert(Object.values(s.npcs).some(n=>n.planHistory?.some(p=>p.actions.includes('purchase-food')&&p.actions.includes('consume-food')&&p.actions.includes('move'))));await h.service.close();
+});

@@ -31,17 +31,26 @@ export function auditWorldContent(content) {
     if(!region)errors.push(`${event.id}: unknown region`);
     else if(!event.position||!canOccupy(region,event.position))errors.push(`${event.id}: blocked intervention point`);
     if(!Number.isFinite(event.startsAt)||!Number.isFinite(event.deadline)||event.deadline<=event.startsAt)errors.push(`${event.id}: invalid event timing`);
-    if((event.mechanisms||[]).length<2)errors.push(`${event.id}: fewer than two intervention mechanisms`);
-    for(const method of event.mechanisms||[]) {
-      const req=method.requirements||{};
-      for(const id of req.skills||[])if(!ids.skills.has(id)&&!['combat','investigation'].includes(id))errors.push(`${event.id}/${method.id}: unknown skill ${id}`);
-      for(const id of Object.keys(req.items||req.inventory||{}))if(!ids.items.has(id))errors.push(`${event.id}/${method.id}: unavailable item ${id}`);
-      for(const id of req.evidence||[])if(!evidence.has(id))errors.push(`${event.id}/${method.id}: unreachable evidence ${id}`);
-      for(const id of req.facts||[])if(!facts.has(id))errors.push(`${event.id}/${method.id}: unreachable fact ${id}`);
-      for(const id of typeof req.trust==='object'?Object.keys(req.trust):req.npcId?[req.npcId]:[])if(!ids.npcs.has(id))errors.push(`${event.id}/${method.id}: unknown relationship target ${id}`);
-      if(!Number.isFinite(method.effects?.pressure))warnings.push(`${event.id}/${method.id}: implicit pressure outcome`);
+    if(event.causalStatus==='unadapted')warnings.push(`${event.id}: causal migration pending; no generic resolution is available`);
+  }
+  // These fields must never be reintroduced into canonical runtime content.
+  const forbidden=new Set(['trust','disclosureTrust','pressure','pressurePerDay','pressureDependencies','mechanisms']);
+  function inspect(value,path='content') {
+    if(!value||typeof value!=='object')return;
+    for(const [key,child] of Object.entries(value)) {
+      if(forbidden.has(key))errors.push(`${path}.${key}: retired runtime authority`);
+      inspect(child,`${path}.${key}`);
     }
   }
+  inspect(content);
+  const objects=new Set((content.regions||[]).flatMap(r=>r.objects||[]).map(o=>o.id));
+  for(const scenario of content.causalScenarios||[]) {
+    if(!ids.events.has(scenario.eventId))errors.push(`${scenario.eventId}: dangling causal binding`);
+    for(const key of ['personId','familyId'])if(scenario[key]&&!ids.npcs.has(scenario[key]))errors.push(`${scenario.eventId}: unknown ${key}`);
+    for(const key of ['facilityId','officeId','replacementId','deviceId'])if(scenario[key]&&!objects.has(scenario[key]))errors.push(`${scenario.eventId}: unknown ${key}`);
+    for(const doc of scenario.documents||[])if(!objects.has(doc.targetId))errors.push(`${scenario.eventId}: inaccessible document ${doc.id}`);
+  }
+
   for(const recipe of content.recipes||[]) {
     if(!recipe.name||!Number.isFinite(recipe.minutes)||recipe.minutes<=0)errors.push(`${recipe.id}: invalid recipe metadata`);
     for(const id of recipe.requirements?.skills||[])if(!ids.skills.has(id))errors.push(`${recipe.id}: unknown skill ${id}`);

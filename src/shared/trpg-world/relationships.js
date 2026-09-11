@@ -25,11 +25,28 @@ export function rememberAction(state,content,kind,{actorId='player',targetId=nul
 export function relationshipReasons(state,npc,actorId='player') {
   return (npc.memories||[]).filter(m=>m.actorId===actorId).map(m=>state.socialFacts.find(f=>f.id===m.factId)).filter(Boolean);
 }
-export function willingToCooperate(state,npc) {
-  const history=relationshipReasons(state,npc);
-  if(history.some(f=>['theft','promise-broken'].includes(f.kind)&&f.targetId===npc.id))return false;
-  return history.some(f=>f.kind==='promise-kept'||f.kind==='rescue'||f.kind==='shared-work');
+// Ephemeral decision evidence; never persisted as a universal relationship meter.
+export function evaluateCooperation(state,npc,{risk=0,resourceCost=0,purpose='assistance',values={},actorId='player'}={}) {
+ const history=relationshipReasons(state,npc,actorId),evidence=[];let support=0;
+ for(const fact of history) {
+  const memory=npc.memories.find(m=>m.factId===fact.id),confidence=memory?.source?.type==='seen'?1:.5;
+  const directlyInvolved=fact.targetId===npc.id||fact.actorId===npc.id;
+  if(!directlyInvolved)continue;
+  let weight=0;
+  if(fact.kind==='promise-kept') {
+   const promise=state.promises.find(p=>p.id===fact.payload.promiseId);
+   if(promise?.to===npc.id&&promise.status==='kept')weight=3;
+  }
+  if(fact.kind==='rescue'&&fact.targetId===npc.id)weight=4;
+  if(fact.kind==='gift'&&fact.payload.neededAtReceipt)weight=1;
+  if(['theft','promise-broken'].includes(fact.kind)&&fact.targetId===npc.id)weight=-4;
+  if(weight){support+=weight*confidence;evidence.push({factId:fact.id,source:memory.source,reason:fact.kind,weight:weight*confidence});}
+ }
+ const burden=risk*3+resourceCost+(npc.hunger>80?2:0)+(npc.fatigue>80?2:0)+(npc.goal==='flee'?10:0);
+ const duty=values.duty===purpose?2:0;
+ return {willing:npc.hp>0&&support+duty>burden,evidence,context:{purpose,risk,resourceCost,currentGoal:npc.goal},utility:support+duty-burden};
 }
+export function willingToCooperate(state,npc,context) {return evaluateCooperation(state,npc,context).willing;}
 export function expirePromises(state) {
   for(const promise of state.promises||[])if(promise.status==='open'&&state.time>promise.deadline) {
     promise.status='broken';const npc=state.npcs[promise.to];if(!npc)continue;
@@ -40,7 +57,7 @@ export function expirePromises(state) {
 }
 export function deliverSupplies(state,content,npc) {
   npc.possessions||={};npc.possessions.supplies=(npc.possessions.supplies||0)+1;
-  const fact=rememberAction(state,content,'gift',{targetId:npc.id,payload:{itemId:'supplies',quantity:1}});
+  const fact=rememberAction(state,content,'gift',{targetId:npc.id,payload:{itemId:'supplies',quantity:1,neededAtReceipt:npc.hunger>60,requested:state.promises.some(p=>p.to===npc.id&&p.status==='open')}});
   for(const promise of state.promises||[])if(promise.status==='open'&&promise.to===npc.id&&promise.intent==='deliver-supplies'&&state.time<=promise.deadline) {
     promise.status='kept';promise.fulfilledBy=fact.id;
     rememberAction(state,content,'promise-kept',{targetId:npc.id,payload:{promiseId:promise.id,evidenceFactId:fact.id}});

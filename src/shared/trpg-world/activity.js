@@ -1,6 +1,7 @@
 import {initializeCausality} from './causal-events.js';
 import {initializeRelationships} from './relationships.js';
-// Calendar seconds, local seconds and combat seconds are distinct domains.
+// WORLD_TIME is calendar seconds. SIMULATION_TIME is active local realtime seconds.
+// Combat actions use SIMULATION_TIME; no misleading combat-only clock is stored.
 export const WORLD_SCHEMA_VERSION = 2;
 export const ACTIVITY_POLICY = Object.freeze({
   idle:'continuous', walking:'continuous', running:'continuous',
@@ -11,7 +12,7 @@ export const ACTIVITY_POLICY = Object.freeze({
 export function setActivity(state, kind, details={}) {
   if (!Object.hasOwn(ACTIVITY_POLICY,kind)) throw new Error('Unknown player activity');
   state.player.activity={kind,location:{region:state.player.region,position:[...state.player.position]},
-    startedAt:state.time,expectedEndAt:null,interruptibility:true,worldTimePolicy:ACTIVITY_POLICY[kind],...details};
+    startedAt:state.time,expectedEndAt:null,interruptibility:false,interruptions:ACTIVITY_POLICY[kind]==='macro'?['collapse']:[],worldTimePolicy:ACTIVITY_POLICY[kind],...details};
   if (!['idle','walking','running','combat'].includes(kind)) {
     state.input={x:0,z:0,ascend:0,sprint:false,heading:state.player.heading};
     state.player.guarding=false;
@@ -23,9 +24,12 @@ export function canMove(state) { return ['idle','walking','running','combat'].in
 export function migrateWorld(state, content) {
   if (![1,2].includes(state.schemaVersion)) throw new Error('Unsupported world schema');
   initializeRelationships(state);initializeCausality(state,content);
+  state.simulationTime??=state.combatTime??state.localSimulationTime??0;
+  delete state.combatTime;delete state.localSimulationTime;
+  if(state.player.activity){state.player.activity.interruptibility=false;state.player.activity.interruptions=ACTIVITY_POLICY[state.player.activity.kind]==='macro'?['collapse']:[];}
   if (state.schemaVersion===2) return state;
   const scale=content.time?.scale||60, toCombat=value=>Number.isFinite(value)?(value-state.time)/scale:value;
-  state.localSimulationTime=0;state.combatTime=0;
+  state.simulationTime=0;
   for (const unit of [state.player,...Object.values(state.monsters||{})]) {
     for (const key of ['lastAttack','lastThreat','dodgeUntil','staggerUntil','fleeUntil','expiresAt'])
       if (unit[key]!==undefined) unit[key]=toCombat(unit[key]);

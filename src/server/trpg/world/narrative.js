@@ -47,3 +47,22 @@ export class CachedNarrativeProvider {
     this.cache.set(key,structuredClone(response));return structuredClone(response);
   }
 }
+
+/** Inject a provider transport explicitly. Construction/default runtime never makes a request.
+ * The host owns credentials and network policy; the transport receives only allowlisted semantics.
+ */
+export class LiveNarrativeProvider {
+  constructor({transport,timeoutMs=600}={}) {
+    if(typeof transport!=='function')throw new TypeError('An explicit narrative transport is required');
+    this.transport=transport;this.timeoutMs=timeoutMs;
+  }
+  async generate(envelope) {
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),this.timeoutMs);
+    try {
+      const response=await this.transport({envelope:structuredClone(envelope),schema:structuredClone(NarrativeResponseSchema),signal:controller.signal});
+      if(!validateNarrative(response,envelope))throw new Error('Invalid live narrative response');
+      return structuredClone(response);
+    } finally {clearTimeout(timer);}
+  }
+}

@@ -65,7 +65,7 @@ test('interaction range, inventory prices, trainer prerequisites and time costs 
   assert.throws(()=>applyCommand(s,c,{type:'buy',targetId:'shop',itemId:'supplies',quantity:-1}),{code:'INVALID_QUANTITY'});
   const gold=s.player.gold;applyCommand(s,c,{type:'buy',targetId:'shop',itemId:'supplies',quantity:2});assert.equal(s.player.gold,gold-20);assert.equal(s.player.inventory.supplies,4);
   assert.throws(()=>applyCommand(s,c,{type:'train',targetId:'trainer',skillId:'broom'}),{code:'TRAINING_REQUIREMENTS'});
-  applyCommand(s,c,{type:'train',targetId:'trainer',skillId:'riding'});assert(s.player.skills.includes('riding'));
+  applyCommand(s,c,{type:'train',targetId:'trainer',skillId:'riding'});assert(!s.player.skills.includes('riding'));assert.equal(s.player.training.riding.mastery,.5);applyCommand(s,c,{type:'train',targetId:'trainer',skillId:'riding'});assert(s.player.skills.includes('riding'));
   assert.throws(()=>applyCommand(s,c,{type:'mount',mode:'horse'}),{code:'NEED_MOUNT'});
   const time=s.time;applyCommand(s,c,{type:'work',targetId:'work',jobId:'labor'});assert.equal(s.time,time+7200);
 });
@@ -135,7 +135,7 @@ test('combat enforces range and cooldown and grants rewards only once',()=>{
   const c=fixture(),s=createWorld(c),enemy=Object.values(s.monsters)[0];
   assert.throws(()=>applyCommand(s,c,{type:'attack',targetId:enemy.id}),{code:'ATTACK_RANGE'});s.player.position=[enemy.position[0]+1,0,enemy.position[2]];
   applyCommand(s,c,{type:'attack',targetId:enemy.id});assert.throws(()=>applyCommand(s,c,{type:'attack',targetId:enemy.id}),{code:'COOLDOWN'});
-  for(let i=0;i<8&&enemy.hp>0;i++){advanceWorld(s,c,1);applyCommand(s,c,{type:'attack',targetId:enemy.id});}
+  for(let i=0;i<8&&enemy.hp>0;i++){advanceWorld(s,c,1);if(enemy.hp>0)applyCommand(s,c,{type:'attack',targetId:enemy.id});}
   assert.equal(enemy.hp,0);const xp=s.player.xp;assert.throws(()=>applyCommand(s,c,{type:'attack',targetId:enemy.id}),{code:'ENEMY_MISSING'});assert.equal(s.player.xp,xp);
 });
 test('ordinary rewards give steady capability growth and repeated farming diminishes',()=>{
@@ -146,7 +146,7 @@ test('ordinary rewards give steady capability growth and repeated farming dimini
 test('enemy attacks have observable telegraphs and physical dodging or guarding changes the result',()=>{
   const c=fixture(),dodger=createWorld(c),guard=createWorld(c),standing=createWorld(c);
   for(const s of [dodger,guard,standing]){const enemy=Object.values(s.monsters)[0];s.player.position=[enemy.position[0]+1,0,enemy.position[2]];}
-  advanceWorld(dodger,c,.1);assert(projectWorld(dodger,c).monsters[0].intent?.resolvesAt>dodger.combatTime);
+  advanceWorld(dodger,c,.1);assert(projectWorld(dodger,c).monsters[0].intent?.resolvesAt>dodger.simulationTime);
   applyCommand(dodger,c,{type:'dodge',x:1,z:0});advanceWorld(dodger,c,1.2);assert.equal(dodger.player.hp,100);assert(dodger.player.stamina<100);
   applyCommand(guard,c,{type:'defend',active:true});advanceWorld(guard,c,1.5);advanceWorld(standing,c,1.5);
   assert(guard.player.hp>standing.player.hp);

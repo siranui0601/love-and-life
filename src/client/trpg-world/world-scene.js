@@ -100,7 +100,8 @@ export class WorldScene {
   for(const a of this.actors.values()){if(a.pending)continue;const e=a.entity;if(!e)continue;
    const pos=e.player?v(this.position).add(new Vector3(0,p.mode==='horse'?1.25:p.mode==='broom'?.5:0)):v(a.target);
    a.root.position=Vector3.Lerp(a.root.position,pos,Math.min(1,dt*12));a.root.rotation.y=e.player?(this.input.heading??p.heading):e.heading||0;
-   if(e.player&&(!a.attackUntil||performance.now()>a.attackUntil))a.play(p.mode!=='foot'?'sit':this.input.x||this.input.z?this.input.sprint?'sprint':'walk':'idle');
+   if(e.player)a.root.rotation.x=p.posture==='lie'?Math.PI/2:0;
+   if(e.player&&(!a.attackUntil||performance.now()>a.attackUntil))a.play(p.mode!=='foot'||p.posture==='sit'||p.posture==='crouch'?'sit':this.input.x||this.input.z?this.input.sprint?'sprint':'walk':'idle');
   }
   if(this.mount){this.mount.root.position=v(this.position).add(new Vector3(0,p.mode==='broom'?.85:0,0));this.mount.root.rotation.y=this.input.heading??p.heading;this.mount.play(this.input.x||this.input.z?'walk':'static');}
   this.camera.target=Vector3.Lerp(this.camera.target,v(this.position).add(new Vector3(0,1.5,0)),Math.min(1,dt*12));

@@ -1,0 +1,62 @@
+[
+  {
+    "file": "world-10d-3d92a17b3ca5.json",
+    "sourceSha256": "b63ec5eb75ed5bc2d2dd08215f4a5a04e443451b2d499f52c09185c2933ad074",
+    "sourceRevision": "world-10d-3d92a17b3ca5",
+    "sanitized": [
+      "ownerKey",
+      "id",
+      "player.name",
+      "receipts"
+    ],
+    "originalUntouched": true
+  },
+  {
+    "file": "world-10d-0c89fc7ee769.json",
+    "sourceSha256": "be6a8943acde365a16ba9c5b469732cd87e88aed00bce475c931aca336680314",
+    "sourceRevision": "world-10d-0c89fc7ee769",
+    "sanitized": [
+      "ownerKey",
+      "id",
+      "player.name",
+      "receipts"
+    ],
+    "originalUntouched": true
+  },
+  {
+    "file": "world-10d-33147c357b78.json",
+    "sourceSha256": "251c520305c3281ebf3abec99b168cbb9a6a00f3bc8477350aa313b951d402fa",
+    "sourceRevision": "world-10d-33147c357b78",
+    "sanitized": [
+      "ownerKey",
+      "id",
+      "player.name",
+      "receipts"
+    ],
+    "originalUntouched": true
+  },
+  {
+    "file": "world-10d-29a21ee5da06.json",
+    "sourceSha256": "3903515fc74f6aec01d54bb74c06b8b046486dbf416d9d606bb6e3d389fe52bd",
+    "sourceRevision": "world-10d-29a21ee5da06",
+    "sanitized": [
+      "ownerKey",
+      "id",
+      "player.name",
+      "receipts"
+    ],
+    "originalUntouched": true
+  },
+  {
+    "file": "world-10d-7d0caf2d3049.json",
+    "sourceSha256": "1f227b5c516a67153a4f043f8d4f0c6159398d588269585541de72ccd5c28d2a",
+    "sourceRevision": "world-10d-7d0caf2d3049",
+    "sanitized": [
+      "ownerKey",
+      "id",
+      "player.name",
+      "receipts"
+    ],
+    "originalUntouched": true
+  }
+]

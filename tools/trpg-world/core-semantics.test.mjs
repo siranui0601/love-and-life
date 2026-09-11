@@ -54,9 +54,9 @@ test('collapse preserves location; only a living present reachable NPC can carry
  collapse(s,c,'hp');assert.deepEqual(s.player.position,position);assert.equal(s.player.hp,0);
  s.npcs.n1.hp=0;s.npcs.clerk.travel={to:'away'};
  applyCommand(s,c,{type:'recover'});assert.equal(s.player.collapse.rescue,null);assert.deepEqual(s.player.position,position);
- s.npcs.clerk.travel=null;applyCommand(s,c,{type:'recover'});
+ c.npcs.find(n=>n.id==='clerk').role='医師';s.npcs.clerk.travel=null;applyCommand(s,c,{type:'recover'});
  assert.equal(s.player.collapse.status,'recovered');assert.equal(s.player.collapse.rescue.actorId,'clerk');assert(s.time>=start+7200);
- assert(s.player.hp>0);assert.equal(s.player.collapse.injury.treated,true);assert(s.player.medicalDebts.length);assert(s.npcs.remote.position[0]>0);
+ assert(s.player.hp>0);assert.equal(s.player.collapse.injury.treated,true);assert.equal(s.player.collapse.rescue.services.find(x=>x.kind==='bed').cost,8);assert(s.npcs.remote.position[0]>0);
 });
 test('generic pressure and retired outcome buttons cannot resolve events',()=>{
  const c=fixture(),s=createWorld(c);s.events.crisis.pressure=-10000;advanceWorld(s,c,1);

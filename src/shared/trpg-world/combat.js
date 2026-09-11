@@ -45,11 +45,11 @@ export function chooseEnemyAction(state,content,monster){
 export function startEnemyAction(state,content,monster,template){
   const skill=chooseEnemyAction(state,content,monster),scale=1;
   monster.mp=Math.max(0,(monster.mp||0)-(skill.mp||0));monster.actionsTaken=(monster.actionsTaken||0)+1;
-  monster.intent={skillId:skill.id,name:skill.name,position:[...state.player.position],resolvesAt:state.combatTime+(template.role==='fast'?.55:template.role==='artillery'?1.4:.9)*scale,effects:skill.effects};
+  monster.intent={skillId:skill.id,name:skill.name,position:[...state.player.position],resolvesAt:state.simulationTime+(template.role==='fast'?.55:template.role==='artillery'?1.4:.9)*scale,effects:skill.effects};
   monster.cooldown=Math.max(2.4,Math.min(8,skill.cooldownSeconds||2.4));
 }
 export function resolveEnemyAction(state,content,monster,template){
-  const intent=monster.intent;if(!intent||state.combatTime<intent.resolvesAt)return 0;
+  const intent=monster.intent;if(!intent||state.simulationTime<intent.resolvesAt)return 0;
   delete monster.intent;
   const p=state.player,scale=1;
   const region=content.regions.find(r=>r.id===monster.region);
@@ -67,24 +67,24 @@ export function resolveEnemyAction(state,content,monster,template){
       const armor=(content.equipment||[]).find(e=>e.id===p.equipment.body),guard=p.guarding&&p.stamina>8?.35:1;
       const defense=(armor?.defense||0)+Math.max(-5,p.modifiers?.defense?.stage||0);
       let damage=Math.max(1,Math.round(((template.attack||8)*Math.min(2.5,effect.multiplier||1)*Math.min(3,effect.hits||1)-defense)*guard*critical));
-      if(p.dodgeUntil>state.combatTime)continue;
+      if(p.dodgeUntil>state.simulationTime)continue;
       const barrier=p.specialStates?.barrier;
       if(barrier){const absorbed=Math.min(barrier.capacity||0,damage);damage-=absorbed;barrier.capacity-=absorbed;}
       if(p.guarding)p.stamina=Math.max(0,p.stamina-8);
-      p.hp-=damage;totalDamage+=damage;p.lastAttack=state.combatTime;
+      p.hp-=damage;totalDamage+=damage;p.lastAttack=state.simulationTime;
     } else if(effect.command==='HEAL')target.hp=Math.min(target.maxHp,target.hp+Math.round(target.maxHp*Math.min(.3,effect.ratio||.15)));
     else if(effect.command==='MODIFY_RESOURCE'){const resource=effect.resource;if(['hp','mp','stamina'].includes(resource)){const maximum=target[`max${resource[0].toUpperCase()+resource.slice(1)}`]||100;target[resource]=Math.max(0,Math.min(maximum,(target[resource]||0)+(effect.amount||0)+maximum*(effect.amountRatio||0)));}}
-    else if(effect.command==='APPLY_MODIFIER'){target.modifiers||={};target.modifiers[effect.modifier]={stage:Math.max(-3,Math.min(3,effect.stage||0)),expiresAt:state.combatTime+Math.max(2,effect.durationTurns||2)*2*scale};}
+    else if(effect.command==='APPLY_MODIFIER'){target.modifiers||={};target.modifiers[effect.modifier]={stage:Math.max(-3,Math.min(3,effect.stage||0)),expiresAt:state.simulationTime+Math.max(2,effect.durationTurns||2)*2*scale};}
     else if(effect.command==='APPLY_DEBUFF'){
       if(rng(state)*100>(effect.baseChance??100))continue;
-      target.debuffs||={};target.debuffs[effect.debuffId]={expiresAt:state.combatTime+Math.max(2,effect.durationTurns||2)*2*scale,params:effect.params||{}};
+      target.debuffs||={};target.debuffs[effect.debuffId]={expiresAt:state.simulationTime+Math.max(2,effect.durationTurns||2)*2*scale,params:effect.params||{}};
     } else if(effect.command==='REMOVE_DEBUFF')for(const id of Object.keys(target.debuffs||{}).slice(0,effect.count||1))delete target.debuffs[id];
-    else if(effect.command==='APPLY_SPECIAL_STATE'){target.specialStates||={};target.specialStates[effect.stateId]={expiresAt:state.combatTime+(effect.durationTurns?effect.durationTurns*2:10)*scale,params:effect.params||{},capacity:effect.stateId==='barrier'?Math.round(target.maxHp*.12):0};}
+    else if(effect.command==='APPLY_SPECIAL_STATE'){target.specialStates||={};target.specialStates[effect.stateId]={expiresAt:state.simulationTime+(effect.durationTurns?effect.durationTurns*2:10)*scale,params:effect.params||{},capacity:effect.stateId==='barrier'?Math.round(target.maxHp*.12):0};}
     else if(effect.command==='REMOVE_SPECIAL_STATE')delete target.specialStates?.[effect.stateId];
-    else if(effect.command==='INTERRUPT_CAST')p.staggerUntil=state.combatTime+scale;
-    else if(effect.command==='MODIFY_FIELD'){state.fields||={};state.fields[monster.region]={id:effect.fieldEffect,expiresAt:state.combatTime+15*scale};}
+    else if(effect.command==='INTERRUPT_CAST')p.staggerUntil=state.simulationTime+scale;
+    else if(effect.command==='MODIFY_FIELD'){state.fields||={};state.fields[monster.region]={id:effect.fieldEffect,expiresAt:state.simulationTime+15*scale};}
     else if(effect.command==='REMOVE_MODIFIER'){const entry=target.modifiers?.[effect.modifier];if(entry&&(effect.direction!=='negative'||entry.stage<0))delete target.modifiers[effect.modifier];}
-    else if(effect.command==='MODIFY_ESCAPE'){if(rng(state)*100<35+(effect.bonus||0)){monster.fleeUntil=state.combatTime+30*scale;monster.activity='flee';}}
+    else if(effect.command==='MODIFY_ESCAPE'){if(rng(state)*100<35+(effect.bonus||0)){monster.fleeUntil=state.simulationTime+30*scale;monster.activity='flee';}}
     else if(effect.command==='COPY_LAST_ENEMY_SKILL'&&targetStillThere&&p.lastCombatDamage){const damage=Math.max(1,Math.round(p.lastCombatDamage*(effect.powerMultiplier||.75)));p.hp-=damage;totalDamage+=damage;}
     else if(effect.command==='SUMMON_UNIT'){
       let candidates=(content.monsters||[]).filter(m=>m.region===monster.region&&!m.boss&&!m.sourceCondition);
@@ -95,7 +95,7 @@ export function resolveEnemyAction(state,content,monster,template){
       for(let i=0;i<Math.min(2,effect.count||1)&&allies.length+i<6;i++){
         const position=[monster.position[0]+(i?3:-3),0,monster.position[2]+2];if(!canOccupy(region,position))continue;
         const id=`summon:${monster.id}:${state.nextId++}`,hp=Math.min(100,Math.max(15,Math.round(minion.hp*.6)));
-        state.monsters[id]={id,templateId:minion.id,region:monster.region,position:[...position],home:[...position],hp,maxHp:hp,mp:15,maxMp:15,cooldown:1,respawnAt:0,lastThreat:state.combatTime,heading:0,activity:'attack',summoned:true,expiresAt:state.combatTime+60*scale};
+        state.monsters[id]={id,templateId:minion.id,region:monster.region,position:[...position],home:[...position],hp,maxHp:hp,mp:15,maxMp:15,cooldown:1,respawnAt:0,lastThreat:state.simulationTime,heading:0,activity:'attack',summoned:true,expiresAt:state.simulationTime+60*scale};
       }
     }
   }
@@ -103,7 +103,7 @@ export function resolveEnemyAction(state,content,monster,template){
 }
 export function tickCombatEffects(state,unit,gameDelta,scale){
   for(const collection of ['modifiers','debuffs','specialStates'])for(const [id,effect] of Object.entries(unit[collection]||{})){
-    if(effect.expiresAt<=state.combatTime){delete unit[collection][id];continue;}
+    if(effect.expiresAt<=state.simulationTime){delete unit[collection][id];continue;}
     if(collection==='debuffs'&&id==='poison')unit.hp=Math.max(1,unit.hp-gameDelta/scale*.6);
   }
   if(unit.id!=='player'&&unit.mp!==undefined)unit.mp=Math.min(unit.maxMp||100,unit.mp+gameDelta/scale*.15);

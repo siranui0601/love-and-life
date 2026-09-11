@@ -1,16 +1,17 @@
+import {conditionHolds,consumeResources,depositDocuments,recordMilestone} from './world-semantics.js';
 import {distance,followPath,hasLineOfSight} from './navigation.js';
 import {rememberAction} from './relationships.js';
 
 // Authored scenario bindings. Components below know roles and resources, not T numbers.
-const scenarios=[
-  {eventId:'lost-road',type:'return-person',personId:'NPC001',familyId:'NPC002'},
-  {eventId:'crown',type:'institution',facilityId:'LOC_CAP_ORPHANAGE',officeId:'LOC_CAP_OFFICE',replacementId:'LOC_CAP_LOWER_INN',
+export const DEFAULT_CAUSAL_SCENARIOS=[
+  {eventId:'lost-road',sourceIds:['T01'],type:'return-person',personId:'NPC001',familyId:'NPC002'},
+  {eventId:'crown',sourceIds:['T10'],type:'institution',facilityId:'LOC_CAP_ORPHANAGE',officeId:'LOC_CAP_OFFICE',replacementId:'LOC_CAP_LOWER_INN',
     documents:[{id:'donation',targetId:'LOC_CAP_ORPHANAGE',title:'土地の寄付契約',text:'土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。'},
       {id:'registry',targetId:'LOC_CAP_OFFICE',title:'土地台帳の写し',text:'土地台帳には寄付契約が登記されている。立ち退き申請にその注記がない。'},
       {id:'debt',targetId:'LOC_CAP_MARKET',title:'納品と請求の控え',text:'孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。'}]},
-  {eventId:'roots',type:'ecosystem',deviceId:'LOC_FOREST_RIVER',dependentEvents:['resonance','border'],affectedRegion:'elf'},
+  {eventId:'roots',sourceIds:['T13'],type:'ecosystem',deviceId:'LOC_FOREST_RIVER',dependentEvents:['resonance','border'],affectedRegion:'elf'},
 ];
-export function causalDefinitions(content) {return content.causalScenarios||scenarios.filter(s=>content.events.some(e=>e.id===s.eventId));}
+export function causalDefinitions(content) {return content.causalScenarios||DEFAULT_CAUSAL_SCENARIOS.filter(s=>content.events.some(e=>e.id===s.eventId));}
 export function initializeCausality(state,content) {
   state.facilities||={};state.causalObjects||={};
   for(const event of content.events||[]) {
@@ -30,7 +31,11 @@ export function initializeCausality(state,content) {
 }
 function settle(state,event,status,evidence) {
   const current=state.events[event.id];if(['resolved','prevented','failed'].includes(current.status))return;
-  current.status=status;current.resolvedAt=state.time;current.causal.milestones.push({kind:status,at:state.time,evidence});
+  if(['resolved','prevented'].includes(status)&&event.causalSourceIds?.length&&event.sourceIds?.some(id=>!event.causalSourceIds.includes(id))) {
+    current.causal.componentStatus=status;current.causal.completedSources=[...event.causalSourceIds];
+    recordMilestone(state,current.causal,'component-'+status,evidence);return;
+  }
+  current.status=status;current.resolvedAt=state.time;recordMilestone(state,current.causal,status,evidence);
   state.facts[`${status}:${event.id}`]={at:state.time,eventId:event.id,evidence};
   // No automatic remote knowledge or quest payout. The result must be witnessed.
 }
@@ -39,7 +44,7 @@ export function advanceCausality(state,content,seconds) {
   const byId=new Map(content.events.map(e=>[e.id,e]));
   for(const definition of causalDefinitions(content)) {
     const event=byId.get(definition.eventId),current=state.events[event.id],causal=current.causal;
-    if(causal.model==='legacy-settled')continue;
+    if(causal.model==='legacy-settled'||['resolved','prevented'].includes(causal.componentStatus))continue;
     const region=content.regions.find(r=>r.id===event.region);
     if(definition.type==='return-person') {
       const person=state.npcs[definition.personId],family=state.npcs[definition.familyId];if(!person||!family)continue;
@@ -58,7 +63,7 @@ export function advanceCausality(state,content,seconds) {
         const home=content.npcs.find(n=>n.id===family.id)?.home||region.spawn;
         if(family.hp>0&&!family.travel&&family.region===person.region&&distance(person.position,family.position)<18&&hasLineOfSight(region,person.position,family.position))family.causalAssignment=`reunion:${event.id}`;
         if(family.causalAssignment===`reunion:${event.id}`){family.activity='家族を家で迎える';followPath(region,family,home,seconds/(content.time?.scale||60)*1.55);}
-        if((!person.injury||person.injury.treated)&&family.hp>0&&!family.travel&&family.region===person.region&&distance(person.position,home)<6&&distance(person.position,family.position)<3&&hasLineOfSight(region,person.position,family.position)) {
+        if((!person.injury||person.injury.treated)&&distance(person.position,home)<6&&conditionHolds(state,content,{type:'co-located',actorId:person.id,targetId:family.id,range:3})) {
           const fact=rememberAction(state,content,'family-reunion',{actorId:person.id,targetId:family.id,payload:{escortId:'player'}});
           causal.phase='reunited';delete person.companionOf;delete person.causalAssignment;delete family.causalAssignment;
           settle(state,event,'resolved',fact.id);
@@ -69,7 +74,7 @@ export function advanceCausality(state,content,seconds) {
       // A real clerk at work reviews the documents deposited in that office.
       const clerk=office&&Object.values(state.npcs).find(n=>n.hp>0&&!n.travel&&n.region===event.region&&distance(n.position,office.position)<5&&
         content.npcs.some(t=>t.id===n.id&&(/役人|役所|文官|行政|官吏/.test(t.role||'')||t.workFacilityId===definition.officeId)));
-      if(clerk&&definition.documents.every(d=>causal.submitted.includes(d.id))) {
+      if(clerk&&conditionHolds(state,content,{type:'field',path:['events',event.id,'causal','submitted'],op:'contains-all',value:definition.documents.map(d=>d.id)})) {
         causal.reviewed=true;causal.tenure='protected';
         const fact=rememberAction(state,content,'document-review',{actorId:clerk.id,targetId:definition.facilityId,payload:{documents:[...causal.submitted]}});
         settle(state,event,'resolved',fact.id);
@@ -79,7 +84,7 @@ export function advanceCausality(state,content,seconds) {
       const absorbing=causal.coreInPool&&!causal.coreSealed;
       causal.waterFlow=absorbing?.35:1;
       if(state.time>=event.startsAt)causal.treeIntegrity=Math.max(0,causal.treeIntegrity-(absorbing?seconds/3600*2:0));
-      if(!causal.coreInPool&&(causal.coreSealed||absorber?.hp<=0))settle(state,event,state.time<event.startsAt?'prevented':'resolved','water-flow-restored-and-core-contained');
+      if(conditionHolds(state,content,{all:[{type:'field',path:['events',event.id,'causal','coreInPool'],value:false},{any:[{type:'field',path:['events',event.id,'causal','coreSealed'],value:true},{type:'field',path:['monsters',`opposition:${event.id}`,'hp'],op:'lte',value:0}]}]}))settle(state,event,state.time<event.startsAt?'prevented':'resolved','water-flow-restored-and-core-contained');
       if(causal.treeIntegrity<=0)failCausality(state,content,event);
     }
   }
@@ -88,6 +93,7 @@ export function failCausality(state,content,event) {
   const current=state.events[event.id];if(current.status==='failed')return;
   const definition=causalDefinitions(content).find(d=>d.eventId===event.id),causal=current.causal;
   settle(state,event,'failed','deadline-or-physical-failure');
+  if(['resolved','prevented'].includes(causal.componentStatus))return;
   if(definition?.type==='return-person') {
     const person=state.npcs[definition.personId];if(person&&causal.phase!=='reunited'){person.hp=0;delete person.companionOf;person.activity='倒れている';}
     causal.aftermath.push({kind:'missing-person-not-returned',at:state.time});
@@ -142,10 +148,10 @@ export function applyCausalAction(state,content,target,id) {
     if(verb==='submit') {
       const copies=definition.documents.filter(d=>state.knowledge.some(k=>k.id===`document:${eventId}:${d.id}`)).map(d=>d.id);
       if(!copies.length)reject('提出する書類がありません。');causal.submitted=[...new Set([...causal.submitted,...copies])];
-      rememberAction(state,content,'documents-submitted',{targetId:target.id,payload:{copies}});
+      const fact=rememberAction(state,content,'documents-submitted',{targetId:target.id,payload:{copies}});depositDocuments(state,{holderId:target.id,documents:copies.map(id=>`${eventId}:${id}`),sourceFactId:fact.id});
     }
-    if(verb==='divert') {if((p.inventory.timber||0)<2||!p.inventory.rope)reject('木材2つと縄1つが必要です。');p.inventory.timber-=2;p.inventory.rope--;causal.coreInPool=false;}
-    if(verb==='seal') {if(!p.inventory.crystal||!p.skills.includes('magic'))reject('結晶と基礎魔術が必要です。');p.inventory.crystal--;causal.coreSealed=true;}
+    if(verb==='divert') {if(!consumeResources(p.inventory,{timber:2,rope:1}))reject('木材2つと縄1つが必要です。');causal.coreInPool=false;}
+    if(verb==='seal') {if(!p.skills.includes('magic')||!consumeResources(p.inventory,{crystal:1}))reject('結晶と基礎魔術が必要です。');causal.coreSealed=true;}
     rememberAction(state,content,verb,{targetId:target.id,payload:{eventId}});
   }
   return {message:'その場で行動した。'};

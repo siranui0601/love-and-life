@@ -1,3 +1,4 @@
+import {canMigrateContent} from "./content-migration.js";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import * as simulationRuntime from "../../../shared/trpg-world/simulation.js";
@@ -113,10 +114,14 @@ export class PersistentWorldService {
       if (![1,2].includes(record.schemaVersion) || record.ownerKey !== ownerKey || !record.state || !Number.isFinite(record.advancedAtMs)) {
         throw new WorldServiceError(409, "save_version_mismatch", "この保存データの形式を読み込めません。");
       }
-      if (record.contentRevision !== this.content.revision || record.contentHash !== this.contentHash) {
+      if ((record.contentRevision !== this.content.revision || record.contentHash !== this.contentHash) && !canMigrateContent(record,this.content)) {
         throw new WorldServiceError(409, "content_version_mismatch", "保存データと世界データの版が異なります。対応する世界データが必要です。");
       }
       if (this.sim === simulationRuntime) migrateWorld(record.state, this.content);
+      if(record.contentRevision!==this.content.revision){
+        record.contentMigration={from:record.contentRevision,to:this.content.revision,previousHash:record.contentHash??null};
+        record.contentRevision=this.content.revision;record.contentHash=this.contentHash;record.state.contentRevision=this.content.revision;
+      }
       record.schemaVersion = 2;
       // Restore saved simulation exactly; wall time is telemetry only.
       this.neutralInput(record);
