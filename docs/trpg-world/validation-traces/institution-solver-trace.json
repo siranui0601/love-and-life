@@ -1,0 +1,1927 @@
+[
+  {
+    "index": 0,
+    "worldTime": 27477.147390856804,
+    "knowledge": [
+      {
+        "id": "event:crown",
+        "kind": "event",
+        "status": "latent",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+      },
+      {
+        "id": "evidence:crown:proof",
+        "kind": "evidence",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"evidence:crown\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"leadId\":\"lead:crown:debt\",\"type\":\"track\"}",
+    "reason": "explicit player command",
+    "result": {
+      "message": "中央市場で原本を読む。記載内容を比べれば、申請の食い違いを確かめられる。"
+    },
+    "createdFacts": [],
+    "changedDomains": [],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:crown",
+          "kind": "event",
+          "status": "latent",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+        },
+        {
+          "id": "evidence:crown:proof",
+          "kind": "evidence",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"evidence:crown\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 0,
+    "worldTime": 28024.7951317709,
+    "knowledge": [
+      {
+        "id": "event:crown",
+        "kind": "event",
+        "status": "latent",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+      },
+      {
+        "id": "evidence:crown:proof",
+        "kind": "evidence",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "解毒薬 · 25G"
+      },
+      {
+        "signature": "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "調律結晶 · 28G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-A-0002\",\"parameters\":{\"itemId\":\"EQP-A-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "革鎧 · 40G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-A-0003\",\"parameters\":{\"itemId\":\"EQP-A-0003\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "鎖帷子 · 94G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-A-0017\",\"parameters\":{\"itemId\":\"EQP-A-0017\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "絹布の法被 · 55G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-S-0002\",\"parameters\":{\"itemId\":\"EQP-S-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "円盾 · 23G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0001\",\"parameters\":{\"itemId\":\"EQP-W-0001\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "短剣 · 13G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0002\",\"parameters\":{\"itemId\":\"EQP-W-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "鉄剣 · 38G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0008\",\"parameters\":{\"itemId\":\"EQP-W-0008\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "狩猟弓 · 35G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0011\",\"parameters\":{\"itemId\":\"EQP-W-0011\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "衛兵剣 · 55G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0013\",\"parameters\":{\"itemId\":\"EQP-W-0013\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "王国両手剣 · 104G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0015\",\"parameters\":{\"itemId\":\"EQP-W-0015\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "兵用戦斧 · 63G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0016\",\"parameters\":{\"itemId\":\"EQP-W-0016\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "王都守備槍 · 80G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0017\",\"parameters\":{\"itemId\":\"EQP-W-0017\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "王立猟兵弓 · 104G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-X-0003\",\"parameters\":{\"itemId\":\"EQP-X-0003\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "商人の金環 · 89G"
+      },
+      {
+        "signature": "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "旅人の温かい弁当 · 6G"
+      },
+      {
+        "signature": "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "傷薬 · 14G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 8G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 10G"
+      },
+      {
+        "signature": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "補修用木材 · 12G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_MARKET\",\"verb\":\"property\"}",
+        "label": "私物の箱を開ける"
+      },
+      {
+        "signature": "{\"action\":\"read:crown:debt\",\"parameters\":{},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"causal\"}",
+        "label": "納品と請求の控えを読む"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：傷薬（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：丈夫な縄（所持 1）"
+      },
+      {
+        "signature": "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：食料と生活物資（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-CAP-01\",\"parameters\":{\"jobId\":\"JOB-CAP-01\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"work\"}",
+        "label": "中央市場の荷運び · 36G"
+      }
+    ],
+    "selected": "{\"action\":\"read:crown:debt\",\"parameters\":{},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"causal\"}",
+    "reason": "structural search: execute a projected legal information/physical action",
+    "result": {
+      "message": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "knowledge"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "documentId": "debt",
+          "id": "document:crown:debt",
+          "kind": "document",
+          "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+        },
+        {
+          "id": "event:crown",
+          "kind": "event",
+          "status": "latent",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+        },
+        {
+          "id": "evidence:crown:proof",
+          "kind": "evidence",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-A-0002\",\"parameters\":{\"itemId\":\"EQP-A-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-A-0003\",\"parameters\":{\"itemId\":\"EQP-A-0003\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-A-0017\",\"parameters\":{\"itemId\":\"EQP-A-0017\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-S-0002\",\"parameters\":{\"itemId\":\"EQP-S-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0001\",\"parameters\":{\"itemId\":\"EQP-W-0001\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0002\",\"parameters\":{\"itemId\":\"EQP-W-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0008\",\"parameters\":{\"itemId\":\"EQP-W-0008\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0011\",\"parameters\":{\"itemId\":\"EQP-W-0011\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0013\",\"parameters\":{\"itemId\":\"EQP-W-0013\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0015\",\"parameters\":{\"itemId\":\"EQP-W-0015\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0016\",\"parameters\":{\"itemId\":\"EQP-W-0016\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0017\",\"parameters\":{\"itemId\":\"EQP-W-0017\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-X-0003\",\"parameters\":{\"itemId\":\"EQP-X-0003\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_MARKET\",\"verb\":\"property\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"work:JOB-CAP-01\",\"parameters\":{\"jobId\":\"JOB-CAP-01\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 0,
+    "worldTime": 28054.7951317709,
+    "knowledge": [
+      {
+        "documentId": "debt",
+        "id": "document:crown:debt",
+        "kind": "document",
+        "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+      },
+      {
+        "id": "event:crown",
+        "kind": "event",
+        "status": "latent",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+      },
+      {
+        "id": "evidence:crown:proof",
+        "kind": "evidence",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "解毒薬 · 25G"
+      },
+      {
+        "signature": "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "調律結晶 · 28G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-A-0002\",\"parameters\":{\"itemId\":\"EQP-A-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "革鎧 · 40G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-A-0003\",\"parameters\":{\"itemId\":\"EQP-A-0003\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "鎖帷子 · 94G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-A-0017\",\"parameters\":{\"itemId\":\"EQP-A-0017\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "絹布の法被 · 55G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-S-0002\",\"parameters\":{\"itemId\":\"EQP-S-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "円盾 · 23G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0001\",\"parameters\":{\"itemId\":\"EQP-W-0001\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "短剣 · 13G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0002\",\"parameters\":{\"itemId\":\"EQP-W-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "鉄剣 · 38G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0008\",\"parameters\":{\"itemId\":\"EQP-W-0008\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "狩猟弓 · 35G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0011\",\"parameters\":{\"itemId\":\"EQP-W-0011\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "衛兵剣 · 55G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0013\",\"parameters\":{\"itemId\":\"EQP-W-0013\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "王国両手剣 · 104G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0015\",\"parameters\":{\"itemId\":\"EQP-W-0015\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "兵用戦斧 · 63G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0016\",\"parameters\":{\"itemId\":\"EQP-W-0016\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "王都守備槍 · 80G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0017\",\"parameters\":{\"itemId\":\"EQP-W-0017\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "王立猟兵弓 · 104G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-X-0003\",\"parameters\":{\"itemId\":\"EQP-X-0003\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "商人の金環 · 89G"
+      },
+      {
+        "signature": "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "旅人の温かい弁当 · 6G"
+      },
+      {
+        "signature": "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "傷薬 · 14G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 8G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 10G"
+      },
+      {
+        "signature": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "label": "補修用木材 · 12G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_MARKET\",\"verb\":\"property\"}",
+        "label": "私物の箱を開ける"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：傷薬（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：丈夫な縄（所持 1）"
+      },
+      {
+        "signature": "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：食料と生活物資（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-CAP-01\",\"parameters\":{\"jobId\":\"JOB-CAP-01\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"work\"}",
+        "label": "中央市場の荷運び · 36G"
+      }
+    ],
+    "selected": "{\"leadId\":\"lead:crown:donation\",\"type\":\"track\"}",
+    "reason": "explicit player command",
+    "result": {
+      "message": "白鈴孤児院で原本を読む。記載内容を比べれば、申請の食い違いを確かめられる。"
+    },
+    "createdFacts": [],
+    "changedDomains": [],
+    "next": {
+      "knowledge": [
+        {
+          "documentId": "debt",
+          "id": "document:crown:debt",
+          "kind": "document",
+          "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+        },
+        {
+          "id": "event:crown",
+          "kind": "event",
+          "status": "latent",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+        },
+        {
+          "id": "evidence:crown:proof",
+          "kind": "evidence",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-A-0002\",\"parameters\":{\"itemId\":\"EQP-A-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-A-0003\",\"parameters\":{\"itemId\":\"EQP-A-0003\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-A-0017\",\"parameters\":{\"itemId\":\"EQP-A-0017\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-S-0002\",\"parameters\":{\"itemId\":\"EQP-S-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0001\",\"parameters\":{\"itemId\":\"EQP-W-0001\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0002\",\"parameters\":{\"itemId\":\"EQP-W-0002\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0008\",\"parameters\":{\"itemId\":\"EQP-W-0008\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0011\",\"parameters\":{\"itemId\":\"EQP-W-0011\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0013\",\"parameters\":{\"itemId\":\"EQP-W-0013\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0015\",\"parameters\":{\"itemId\":\"EQP-W-0015\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0016\",\"parameters\":{\"itemId\":\"EQP-W-0016\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0017\",\"parameters\":{\"itemId\":\"EQP-W-0017\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-X-0003\",\"parameters\":{\"itemId\":\"EQP-X-0003\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_MARKET\",\"verb\":\"property\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"work:JOB-CAP-01\",\"parameters\":{\"jobId\":\"JOB-CAP-01\"},\"target\":\"LOC_CAP_MARKET\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 0,
+    "worldTime": 29279.682050926003,
+    "knowledge": [
+      {
+        "documentId": "debt",
+        "id": "document:crown:debt",
+        "kind": "document",
+        "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+      },
+      {
+        "id": "event:crown",
+        "kind": "event",
+        "status": "latent",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+      },
+      {
+        "id": "evidence:crown:proof",
+        "kind": "evidence",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC021\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC022\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC071\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC072\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_ORPHANAGE\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_ORPHANAGE\",\"verb\":\"property\"}",
+        "label": "私物の箱を開ける"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"read:crown:donation\",\"parameters\":{},\"target\":\"LOC_CAP_ORPHANAGE\",\"verb\":\"causal\"}",
+        "label": "土地の寄付契約を読む"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-CAP-04\",\"parameters\":{\"jobId\":\"JOB-CAP-04\"},\"target\":\"LOC_CAP_ORPHANAGE\",\"verb\":\"work\"}",
+        "label": "孤児院手伝い · 22G"
+      }
+    ],
+    "selected": "{\"action\":\"read:crown:donation\",\"parameters\":{},\"target\":\"LOC_CAP_ORPHANAGE\",\"verb\":\"causal\"}",
+    "reason": "structural search: execute a projected legal information/physical action",
+    "result": {
+      "message": "土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "knowledge"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "documentId": "debt",
+          "id": "document:crown:debt",
+          "kind": "document",
+          "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+        },
+        {
+          "documentId": "donation",
+          "id": "document:crown:donation",
+          "kind": "document",
+          "text": "土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。"
+        },
+        {
+          "id": "event:crown",
+          "kind": "event",
+          "status": "latent",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+        },
+        {
+          "id": "evidence:crown:proof",
+          "kind": "evidence",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC021\",\"verb\":\"accept\"}",
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC022\",\"verb\":\"accept\"}",
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC071\",\"verb\":\"accept\"}",
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC072\",\"verb\":\"accept\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"interact\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"interact\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"interact\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"interact\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_ORPHANAGE\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_ORPHANAGE\",\"verb\":\"property\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"affordance\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"affordance\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"affordance\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"interact\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"interact\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"interact\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"interact\"}",
+        "{\"action\":\"work:JOB-CAP-04\",\"parameters\":{\"jobId\":\"JOB-CAP-04\"},\"target\":\"LOC_CAP_ORPHANAGE\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 0,
+    "worldTime": 29309.682050926003,
+    "knowledge": [
+      {
+        "documentId": "debt",
+        "id": "document:crown:debt",
+        "kind": "document",
+        "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+      },
+      {
+        "documentId": "donation",
+        "id": "document:crown:donation",
+        "kind": "document",
+        "text": "土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。"
+      },
+      {
+        "id": "event:crown",
+        "kind": "event",
+        "status": "latent",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+      },
+      {
+        "id": "evidence:crown:proof",
+        "kind": "evidence",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC021\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC022\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC071\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC072\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_ORPHANAGE\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_ORPHANAGE\",\"verb\":\"property\"}",
+        "label": "私物の箱を開ける"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-CAP-04\",\"parameters\":{\"jobId\":\"JOB-CAP-04\"},\"target\":\"LOC_CAP_ORPHANAGE\",\"verb\":\"work\"}",
+        "label": "孤児院手伝い · 22G"
+      }
+    ],
+    "selected": "{\"leadId\":\"lead:crown:registry\",\"type\":\"track\"}",
+    "reason": "explicit player command",
+    "result": {
+      "message": "王都役所・土地課で原本を読む。記載内容を比べれば、申請の食い違いを確かめられる。"
+    },
+    "createdFacts": [],
+    "changedDomains": [],
+    "next": {
+      "knowledge": [
+        {
+          "documentId": "debt",
+          "id": "document:crown:debt",
+          "kind": "document",
+          "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+        },
+        {
+          "documentId": "donation",
+          "id": "document:crown:donation",
+          "kind": "document",
+          "text": "土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。"
+        },
+        {
+          "id": "event:crown",
+          "kind": "event",
+          "status": "latent",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+        },
+        {
+          "id": "evidence:crown:proof",
+          "kind": "evidence",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC021\",\"verb\":\"accept\"}",
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC022\",\"verb\":\"accept\"}",
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC071\",\"verb\":\"accept\"}",
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC072\",\"verb\":\"accept\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"interact\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"interact\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"interact\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"interact\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_ORPHANAGE\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_ORPHANAGE\",\"verb\":\"property\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"affordance\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"affordance\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"affordance\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC021\",\"verb\":\"interact\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC022\",\"verb\":\"interact\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC071\",\"verb\":\"interact\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC072\",\"verb\":\"interact\"}",
+        "{\"action\":\"work:JOB-CAP-04\",\"parameters\":{\"jobId\":\"JOB-CAP-04\"},\"target\":\"LOC_CAP_ORPHANAGE\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 0,
+    "worldTime": 30877.883117348516,
+    "knowledge": [
+      {
+        "documentId": "debt",
+        "id": "document:crown:debt",
+        "kind": "document",
+        "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+      },
+      {
+        "documentId": "donation",
+        "id": "document:crown:donation",
+        "kind": "document",
+        "text": "土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。"
+      },
+      {
+        "id": "event:crown",
+        "kind": "event",
+        "status": "latent",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+      },
+      {
+        "id": "evidence:crown:proof",
+        "kind": "evidence",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC015\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC067\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_OFFICE\",\"verb\":\"property\"}",
+        "label": "箱を開ける"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"read:crown:registry\",\"parameters\":{},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"causal\"}",
+        "label": "土地台帳の写しを読む"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"submit:crown\",\"parameters\":{},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"causal\"}",
+        "label": "まだ提出していない書類の写しを窓口へ渡す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"interact\"}",
+        "label": "話す"
+      }
+    ],
+    "selected": "{\"action\":\"read:crown:registry\",\"parameters\":{},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"causal\"}",
+    "reason": "structural search: execute a projected legal information/physical action",
+    "result": {
+      "message": "土地台帳には寄付契約が登記されている。立ち退き申請にその注記がない。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "knowledge"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "documentId": "debt",
+          "id": "document:crown:debt",
+          "kind": "document",
+          "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+        },
+        {
+          "documentId": "donation",
+          "id": "document:crown:donation",
+          "kind": "document",
+          "text": "土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。"
+        },
+        {
+          "documentId": "registry",
+          "id": "document:crown:registry",
+          "kind": "document",
+          "text": "土地台帳には寄付契約が登記されている。立ち退き申請にその注記がない。"
+        },
+        {
+          "id": "event:crown",
+          "kind": "event",
+          "status": "latent",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+        },
+        {
+          "id": "evidence:crown:proof",
+          "kind": "evidence",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"accept\"}",
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC015\",\"verb\":\"accept\"}",
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC067\",\"verb\":\"accept\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"interact\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"interact\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_OFFICE\",\"verb\":\"property\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"affordance\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"submit:crown\",\"parameters\":{},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"causal\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"interact\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"interact\"}"
+      ]
+    }
+  },
+  {
+    "index": 0,
+    "worldTime": 30907.883117348516,
+    "knowledge": [
+      {
+        "documentId": "debt",
+        "id": "document:crown:debt",
+        "kind": "document",
+        "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+      },
+      {
+        "documentId": "donation",
+        "id": "document:crown:donation",
+        "kind": "document",
+        "text": "土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。"
+      },
+      {
+        "documentId": "registry",
+        "id": "document:crown:registry",
+        "kind": "document",
+        "text": "土地台帳には寄付契約が登記されている。立ち退き申請にその注記がない。"
+      },
+      {
+        "id": "event:crown",
+        "kind": "event",
+        "status": "latent",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+      },
+      {
+        "id": "evidence:crown:proof",
+        "kind": "evidence",
+        "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC015\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC067\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：白い都の影"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_OFFICE\",\"verb\":\"property\"}",
+        "label": "箱を開ける"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"submit:crown\",\"parameters\":{},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"causal\"}",
+        "label": "まだ提出していない書類の写しを窓口へ渡す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"interact\"}",
+        "label": "話す"
+      }
+    ],
+    "selected": "{\"action\":\"submit:crown\",\"parameters\":{},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"causal\"}",
+    "reason": "structural search: execute a projected legal information/physical action",
+    "result": {
+      "message": "その場で行動した。"
+    },
+    "createdFacts": [
+      {
+        "id": "social:282",
+        "kind": "documents-submitted",
+        "actorId": "player",
+        "targetId": "LOC_CAP_OFFICE",
+        "payload": {
+          "copies": [
+            "donation",
+            "registry",
+            "debt"
+          ]
+        },
+        "at": 30907.883117348516,
+        "region": "capital",
+        "position": [
+          -31,
+          0,
+          -43.999999999999986
+        ],
+        "witnesses": [
+          "NPC015",
+          "NPC067"
+        ]
+      },
+      {
+        "id": "social:283",
+        "kind": "submit",
+        "actorId": "player",
+        "targetId": "LOC_CAP_OFFICE",
+        "payload": {
+          "eventId": "crown"
+        },
+        "at": 30907.883117348516,
+        "region": "capital",
+        "position": [
+          -31,
+          0,
+          -43.999999999999986
+        ],
+        "witnesses": [
+          "NPC015",
+          "NPC067"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "events",
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "documentId": "debt",
+          "id": "document:crown:debt",
+          "kind": "document",
+          "text": "孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。"
+        },
+        {
+          "documentId": "donation",
+          "id": "document:crown:donation",
+          "kind": "document",
+          "text": "土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。"
+        },
+        {
+          "documentId": "registry",
+          "id": "document:crown:registry",
+          "kind": "document",
+          "text": "土地台帳には寄付契約が登記されている。立ち退き申請にその注記がない。"
+        },
+        {
+          "id": "event:crown",
+          "kind": "event",
+          "status": "latent",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。"
+        },
+        {
+          "id": "evidence:crown:proof",
+          "kind": "evidence",
+          "text": "孤児院の立退き通知が出された。誰かが暗殺の噂を亜人街のせいにしている。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [
+              "donation",
+              "registry",
+              "debt"
+            ],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"accept\"}",
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC015\",\"verb\":\"accept\"}",
+        "{\"action\":\"accept:crown\",\"parameters\":{\"eventId\":\"crown\"},\"target\":\"NPC067\",\"verb\":\"accept\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"interact\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"interact\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_CAP_OFFICE\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"open\",\"parameters\":{},\"target\":\"archive:LOC_CAP_OFFICE\",\"verb\":\"property\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"affordance\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC015\",\"verb\":\"interact\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC067\",\"verb\":\"interact\"}"
+      ]
+    }
+  }
+]

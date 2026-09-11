@@ -1,0 +1,1708 @@
+[
+  {
+    "index": 1,
+    "selected": "physical-walk",
+    "reason": "まだ確かめていない旅人の掲示板へ歩く",
+    "knowledge": [],
+    "available": [
+      {
+        "handle": "LOC_FARM_SQUARE",
+        "name": "村の広場",
+        "kind": "board",
+        "position": [
+          0,
+          0,
+          -13
+        ]
+      },
+      {
+        "handle": "LOC_FARM_INN",
+        "name": "麦穂亭",
+        "kind": "inn",
+        "position": [
+          -18,
+          0,
+          28
+        ]
+      },
+      {
+        "handle": "LOC_FARM_BAKERY",
+        "name": "村のパン屋",
+        "kind": "shop",
+        "position": [
+          17,
+          0,
+          35
+        ]
+      },
+      {
+        "handle": "LOC_FARM_FIELD",
+        "name": "麦畑",
+        "kind": "job",
+        "position": [
+          -43,
+          0,
+          33
+        ]
+      },
+      {
+        "handle": "LOC_FARM_GRANARY",
+        "name": "共同穀倉",
+        "kind": "job",
+        "position": [
+          -37,
+          0,
+          -17
+        ]
+      },
+      {
+        "handle": "LOC_FARM_WELL",
+        "name": "村の井戸",
+        "kind": "job",
+        "position": [
+          10,
+          0,
+          -8
+        ]
+      },
+      {
+        "handle": "LOC_FARM_CHIEF",
+        "name": "村長宅",
+        "kind": "board",
+        "position": [
+          -17,
+          0,
+          -30
+        ]
+      },
+      {
+        "handle": "LOC_FARM_STABLE",
+        "name": "村馬小屋",
+        "kind": "stable",
+        "position": [
+          38,
+          0,
+          38
+        ]
+      },
+      {
+        "handle": "LOC_FARM_EDGE",
+        "name": "村外れ・見張り小屋道",
+        "kind": "job",
+        "position": [
+          43,
+          0,
+          -39
+        ]
+      },
+      {
+        "handle": "LOC_FARM_NORTH_FENCE",
+        "name": "村の北柵",
+        "kind": "job",
+        "position": [
+          6,
+          0,
+          -59
+        ]
+      },
+      {
+        "handle": "LOC_FARM_REPAIR",
+        "name": "農具修理屋「鋤刃」",
+        "kind": "shop",
+        "position": [
+          30,
+          0,
+          -19
+        ]
+      },
+      {
+        "handle": "farm:trainer",
+        "name": "旅支度の稽古場",
+        "kind": "trainer",
+        "position": [
+          8,
+          0,
+          17
+        ]
+      },
+      {
+        "handle": "farm:board",
+        "name": "旅人の掲示板",
+        "kind": "board",
+        "position": [
+          -7,
+          0,
+          8
+        ]
+      },
+      {
+        "handle": "evidence:lost-road",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          -32,
+          0,
+          5
+        ]
+      },
+      {
+        "handle": "evidence:bread-fire",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          32,
+          0,
+          5
+        ]
+      }
+    ],
+    "result": {
+      "arrived": true
+    },
+    "next": {
+      "region": "田園の村",
+      "arrival": null,
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"farm:board\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 13,
+    "worldTime": 25330,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"farm:board\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"farm:board\",\"verb\":\"interact\"}",
+    "reason": "目の前の場所を調べて、何があるか確かめる",
+    "result": {
+      "message": "この土地に届いた知らせと、地元の仕事が掲示されている。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "inspections"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"farm:board\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 14,
+    "selected": "physical-walk",
+    "reason": "まだ確かめていない旅支度の稽古場へ歩く",
+    "knowledge": [],
+    "available": [
+      {
+        "handle": "LOC_FARM_SQUARE",
+        "name": "村の広場",
+        "kind": "board",
+        "position": [
+          0,
+          0,
+          -13
+        ]
+      },
+      {
+        "handle": "LOC_FARM_INN",
+        "name": "麦穂亭",
+        "kind": "inn",
+        "position": [
+          -18,
+          0,
+          28
+        ]
+      },
+      {
+        "handle": "LOC_FARM_BAKERY",
+        "name": "村のパン屋",
+        "kind": "shop",
+        "position": [
+          17,
+          0,
+          35
+        ]
+      },
+      {
+        "handle": "LOC_FARM_FIELD",
+        "name": "麦畑",
+        "kind": "job",
+        "position": [
+          -43,
+          0,
+          33
+        ]
+      },
+      {
+        "handle": "LOC_FARM_GRANARY",
+        "name": "共同穀倉",
+        "kind": "job",
+        "position": [
+          -37,
+          0,
+          -17
+        ]
+      },
+      {
+        "handle": "LOC_FARM_WELL",
+        "name": "村の井戸",
+        "kind": "job",
+        "position": [
+          10,
+          0,
+          -8
+        ]
+      },
+      {
+        "handle": "LOC_FARM_CHIEF",
+        "name": "村長宅",
+        "kind": "board",
+        "position": [
+          -17,
+          0,
+          -30
+        ]
+      },
+      {
+        "handle": "LOC_FARM_STABLE",
+        "name": "村馬小屋",
+        "kind": "stable",
+        "position": [
+          38,
+          0,
+          38
+        ]
+      },
+      {
+        "handle": "LOC_FARM_EDGE",
+        "name": "村外れ・見張り小屋道",
+        "kind": "job",
+        "position": [
+          43,
+          0,
+          -39
+        ]
+      },
+      {
+        "handle": "LOC_FARM_NORTH_FENCE",
+        "name": "村の北柵",
+        "kind": "job",
+        "position": [
+          6,
+          0,
+          -59
+        ]
+      },
+      {
+        "handle": "LOC_FARM_REPAIR",
+        "name": "農具修理屋「鋤刃」",
+        "kind": "shop",
+        "position": [
+          30,
+          0,
+          -19
+        ]
+      },
+      {
+        "handle": "farm:trainer",
+        "name": "旅支度の稽古場",
+        "kind": "trainer",
+        "position": [
+          8,
+          0,
+          17
+        ]
+      },
+      {
+        "handle": "evidence:lost-road",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          -32,
+          0,
+          5
+        ]
+      },
+      {
+        "handle": "evidence:bread-fire",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          32,
+          0,
+          5
+        ]
+      }
+    ],
+    "result": {
+      "arrived": true
+    },
+    "next": {
+      "region": "田園の村",
+      "arrival": null,
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"farm:trainer\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"train:broom\",\"parameters\":{\"skillId\":\"broom\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:crafting\",\"parameters\":{\"skillId\":\"crafting\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:magic\",\"parameters\":{\"skillId\":\"magic\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:negotiation\",\"parameters\":{\"skillId\":\"negotiation\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:riding\",\"parameters\":{\"skillId\":\"riding\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:stealth\",\"parameters\":{\"skillId\":\"stealth\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:survival\",\"parameters\":{\"skillId\":\"survival\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:tracking\",\"parameters\":{\"skillId\":\"tracking\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}"
+      ]
+    }
+  },
+  {
+    "index": 38,
+    "worldTime": 25579.897938350514,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"farm:trainer\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"train:broom\",\"parameters\":{\"skillId\":\"broom\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "label": "箒飛行 · 2SP / 20G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:crafting\",\"parameters\":{\"skillId\":\"crafting\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "label": "工作 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:magic\",\"parameters\":{\"skillId\":\"magic\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "label": "基礎魔術 · 1SP / 11G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:negotiation\",\"parameters\":{\"skillId\":\"negotiation\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "label": "交渉 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:riding\",\"parameters\":{\"skillId\":\"riding\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "label": "乗馬 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:stealth\",\"parameters\":{\"skillId\":\"stealth\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "label": "潜入 · 1SP / 11G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:survival\",\"parameters\":{\"skillId\":\"survival\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "label": "野外生活 · 1SP / 8G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:tracking\",\"parameters\":{\"skillId\":\"tracking\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "label": "追跡 · 1SP / 8G / 30分"
+      }
+    ],
+    "selected": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"farm:trainer\",\"verb\":\"interact\"}",
+    "reason": "目の前の場所を調べて、何があるか確かめる",
+    "result": {
+      "message": "学んだ技能は、旅の手段と事件への関わり方を変える。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "inspections"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"farm:trainer\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"train:broom\",\"parameters\":{\"skillId\":\"broom\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:crafting\",\"parameters\":{\"skillId\":\"crafting\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:magic\",\"parameters\":{\"skillId\":\"magic\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:negotiation\",\"parameters\":{\"skillId\":\"negotiation\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:riding\",\"parameters\":{\"skillId\":\"riding\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:stealth\",\"parameters\":{\"skillId\":\"stealth\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:survival\",\"parameters\":{\"skillId\":\"survival\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}",
+        "{\"action\":\"train:tracking\",\"parameters\":{\"skillId\":\"tracking\"},\"target\":\"farm:trainer\",\"verb\":\"train\"}"
+      ]
+    }
+  },
+  {
+    "index": 39,
+    "selected": "physical-walk",
+    "reason": "まだ確かめていない村のパン屋へ歩く",
+    "knowledge": [],
+    "available": [
+      {
+        "handle": "LOC_FARM_SQUARE",
+        "name": "村の広場",
+        "kind": "board",
+        "position": [
+          0,
+          0,
+          -13
+        ]
+      },
+      {
+        "handle": "LOC_FARM_INN",
+        "name": "麦穂亭",
+        "kind": "inn",
+        "position": [
+          -18,
+          0,
+          28
+        ]
+      },
+      {
+        "handle": "LOC_FARM_BAKERY",
+        "name": "村のパン屋",
+        "kind": "shop",
+        "position": [
+          17,
+          0,
+          35
+        ]
+      },
+      {
+        "handle": "LOC_FARM_FIELD",
+        "name": "麦畑",
+        "kind": "job",
+        "position": [
+          -43,
+          0,
+          33
+        ]
+      },
+      {
+        "handle": "LOC_FARM_GRANARY",
+        "name": "共同穀倉",
+        "kind": "job",
+        "position": [
+          -37,
+          0,
+          -17
+        ]
+      },
+      {
+        "handle": "LOC_FARM_WELL",
+        "name": "村の井戸",
+        "kind": "job",
+        "position": [
+          10,
+          0,
+          -8
+        ]
+      },
+      {
+        "handle": "LOC_FARM_CHIEF",
+        "name": "村長宅",
+        "kind": "board",
+        "position": [
+          -17,
+          0,
+          -30
+        ]
+      },
+      {
+        "handle": "LOC_FARM_STABLE",
+        "name": "村馬小屋",
+        "kind": "stable",
+        "position": [
+          38,
+          0,
+          38
+        ]
+      },
+      {
+        "handle": "LOC_FARM_EDGE",
+        "name": "村外れ・見張り小屋道",
+        "kind": "job",
+        "position": [
+          43,
+          0,
+          -39
+        ]
+      },
+      {
+        "handle": "LOC_FARM_NORTH_FENCE",
+        "name": "村の北柵",
+        "kind": "job",
+        "position": [
+          6,
+          0,
+          -59
+        ]
+      },
+      {
+        "handle": "LOC_FARM_REPAIR",
+        "name": "農具修理屋「鋤刃」",
+        "kind": "shop",
+        "position": [
+          30,
+          0,
+          -19
+        ]
+      },
+      {
+        "handle": "evidence:lost-road",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          -32,
+          0,
+          5
+        ]
+      },
+      {
+        "handle": "evidence:bread-fire",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          32,
+          0,
+          5
+        ]
+      }
+    ],
+    "result": {
+      "arrived": true
+    },
+    "next": {
+      "region": "田園の村",
+      "arrival": null,
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-A-0001\",\"parameters\":{\"itemId\":\"EQP-A-0001\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-S-0001\",\"parameters\":{\"itemId\":\"EQP-S-0001\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0005\",\"parameters\":{\"itemId\":\"EQP-W-0005\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0006\",\"parameters\":{\"itemId\":\"EQP-W-0006\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0009\",\"parameters\":{\"itemId\":\"EQP-W-0009\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0072\",\"parameters\":{\"itemId\":\"EQP-W-0072\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 69,
+    "worldTime": 25904.78802620403,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "解毒薬 · 25G"
+      },
+      {
+        "signature": "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "調律結晶 · 28G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-A-0001\",\"parameters\":{\"itemId\":\"EQP-A-0001\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "綿入り上着 · 8G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-S-0001\",\"parameters\":{\"itemId\":\"EQP-S-0001\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "木蓋の盾 · 8G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0005\",\"parameters\":{\"itemId\":\"EQP-W-0005\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "農具鉈 · 9G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0006\",\"parameters\":{\"itemId\":\"EQP-W-0006\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "薪割り斧 · 16G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0009\",\"parameters\":{\"itemId\":\"EQP-W-0009\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "旅杖 · 8G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0072\",\"parameters\":{\"itemId\":\"EQP-W-0072\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "農事暦 · 14G"
+      },
+      {
+        "signature": "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "旅人の温かい弁当 · 6G"
+      },
+      {
+        "signature": "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "傷薬 · 14G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 8G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 10G"
+      },
+      {
+        "signature": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "label": "補修用木材 · 12G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"sell\"}",
+        "label": "売る：傷薬（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"sell\"}",
+        "label": "売る：丈夫な縄（所持 1）"
+      },
+      {
+        "signature": "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"sell\"}",
+        "label": "売る：食料と生活物資（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"interact\"}",
+    "reason": "目の前の場所を調べて、何があるか確かめる",
+    "result": {
+      "message": "パン、保存食、村人の噂"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "inspections"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-A-0001\",\"parameters\":{\"itemId\":\"EQP-A-0001\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-S-0001\",\"parameters\":{\"itemId\":\"EQP-S-0001\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0005\",\"parameters\":{\"itemId\":\"EQP-W-0005\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0006\",\"parameters\":{\"itemId\":\"EQP-W-0006\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0009\",\"parameters\":{\"itemId\":\"EQP-W-0009\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0072\",\"parameters\":{\"itemId\":\"EQP-W-0072\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_FARM_BAKERY\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 70,
+    "selected": "physical-walk",
+    "reason": "まだ確かめていない村馬小屋へ歩く",
+    "knowledge": [],
+    "available": [
+      {
+        "handle": "LOC_FARM_SQUARE",
+        "name": "村の広場",
+        "kind": "board",
+        "position": [
+          0,
+          0,
+          -13
+        ]
+      },
+      {
+        "handle": "LOC_FARM_INN",
+        "name": "麦穂亭",
+        "kind": "inn",
+        "position": [
+          -18,
+          0,
+          28
+        ]
+      },
+      {
+        "handle": "LOC_FARM_FIELD",
+        "name": "麦畑",
+        "kind": "job",
+        "position": [
+          -43,
+          0,
+          33
+        ]
+      },
+      {
+        "handle": "LOC_FARM_GRANARY",
+        "name": "共同穀倉",
+        "kind": "job",
+        "position": [
+          -37,
+          0,
+          -17
+        ]
+      },
+      {
+        "handle": "LOC_FARM_WELL",
+        "name": "村の井戸",
+        "kind": "job",
+        "position": [
+          10,
+          0,
+          -8
+        ]
+      },
+      {
+        "handle": "LOC_FARM_CHIEF",
+        "name": "村長宅",
+        "kind": "board",
+        "position": [
+          -17,
+          0,
+          -30
+        ]
+      },
+      {
+        "handle": "LOC_FARM_STABLE",
+        "name": "村馬小屋",
+        "kind": "stable",
+        "position": [
+          38,
+          0,
+          38
+        ]
+      },
+      {
+        "handle": "LOC_FARM_EDGE",
+        "name": "村外れ・見張り小屋道",
+        "kind": "job",
+        "position": [
+          43,
+          0,
+          -39
+        ]
+      },
+      {
+        "handle": "LOC_FARM_NORTH_FENCE",
+        "name": "村の北柵",
+        "kind": "job",
+        "position": [
+          6,
+          0,
+          -59
+        ]
+      },
+      {
+        "handle": "LOC_FARM_REPAIR",
+        "name": "農具修理屋「鋤刃」",
+        "kind": "shop",
+        "position": [
+          30,
+          0,
+          -19
+        ]
+      },
+      {
+        "handle": "evidence:lost-road",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          -32,
+          0,
+          5
+        ]
+      },
+      {
+        "handle": "evidence:bread-fire",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          32,
+          0,
+          5
+        ]
+      }
+    ],
+    "result": {
+      "arrived": true
+    },
+    "next": {
+      "region": "田園の村",
+      "arrival": null,
+      "options": [
+        "{\"action\":\"buy:broom\",\"parameters\":{\"itemId\":\"broom\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:horse\",\"parameters\":{\"itemId\":\"horse\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 98,
+    "worldTime": 26186.78802620403,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:broom\",\"parameters\":{\"itemId\":\"broom\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "label": "飛行箒 · 190G"
+      },
+      {
+        "signature": "{\"action\":\"buy:horse\",\"parameters\":{\"itemId\":\"horse\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "label": "街道馬 · 140G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 8G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 10G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"interact\"}",
+    "reason": "目の前の場所を調べて、何があるか確かめる",
+    "result": {
+      "message": "農耕馬の一時貸出、荷車"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "inspections"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:broom\",\"parameters\":{\"itemId\":\"broom\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:horse\",\"parameters\":{\"itemId\":\"horse\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_FARM_STABLE\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 99,
+    "selected": "physical-walk",
+    "reason": "まだ確かめていない気になる現場へ歩く",
+    "knowledge": [],
+    "available": [
+      {
+        "handle": "LOC_FARM_SQUARE",
+        "name": "村の広場",
+        "kind": "board",
+        "position": [
+          0,
+          0,
+          -13
+        ]
+      },
+      {
+        "handle": "LOC_FARM_INN",
+        "name": "麦穂亭",
+        "kind": "inn",
+        "position": [
+          -18,
+          0,
+          28
+        ]
+      },
+      {
+        "handle": "LOC_FARM_FIELD",
+        "name": "麦畑",
+        "kind": "job",
+        "position": [
+          -43,
+          0,
+          33
+        ]
+      },
+      {
+        "handle": "LOC_FARM_GRANARY",
+        "name": "共同穀倉",
+        "kind": "job",
+        "position": [
+          -37,
+          0,
+          -17
+        ]
+      },
+      {
+        "handle": "LOC_FARM_WELL",
+        "name": "村の井戸",
+        "kind": "job",
+        "position": [
+          10,
+          0,
+          -8
+        ]
+      },
+      {
+        "handle": "LOC_FARM_CHIEF",
+        "name": "村長宅",
+        "kind": "board",
+        "position": [
+          -17,
+          0,
+          -30
+        ]
+      },
+      {
+        "handle": "LOC_FARM_EDGE",
+        "name": "村外れ・見張り小屋道",
+        "kind": "job",
+        "position": [
+          43,
+          0,
+          -39
+        ]
+      },
+      {
+        "handle": "LOC_FARM_NORTH_FENCE",
+        "name": "村の北柵",
+        "kind": "job",
+        "position": [
+          6,
+          0,
+          -59
+        ]
+      },
+      {
+        "handle": "LOC_FARM_REPAIR",
+        "name": "農具修理屋「鋤刃」",
+        "kind": "shop",
+        "position": [
+          30,
+          0,
+          -19
+        ]
+      },
+      {
+        "handle": "evidence:lost-road",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          -32,
+          0,
+          5
+        ]
+      },
+      {
+        "handle": "evidence:bread-fire",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          32,
+          0,
+          5
+        ]
+      }
+    ],
+    "result": {
+      "arrived": true
+    },
+    "next": {
+      "region": "田園の村",
+      "arrival": null,
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"evidence:bread-fire\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 147,
+    "worldTime": 26593.645169061172,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"evidence:bread-fire\",\"verb\":\"interact\"}",
+        "label": "調べる"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"evidence:bread-fire\",\"verb\":\"interact\"}",
+    "reason": "目の前の場所を調べて、何があるか確かめる",
+    "result": {
+      "message": "共同穀倉の裏で灯油の匂いがする。穀物の買付契約には、不自然な担保条項がある。 調べた痕跡を手帳へ写した。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "inspections",
+      "knowledge"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:bread-fire",
+          "kind": "event",
+          "status": "latent",
+          "text": "共同穀倉の裏で灯油の匂いがする。穀物の買付契約には、不自然な担保条項がある。"
+        },
+        {
+          "id": "evidence:bread-fire:proof",
+          "kind": "evidence",
+          "text": "共同穀倉の裏で灯油の匂いがする。穀物の買付契約には、不自然な担保条項がある。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"evidence:bread-fire\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  }
+]

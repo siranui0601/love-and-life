@@ -15,7 +15,7 @@ export function visibleTopics(state,npc) {
 function choices(state,npc,session) {
   const legal=legalChoices(state,npc);
   const facts=visibleTopics(state,npc).filter(f=>!session.factsLearned.includes(f.id)&&!state.knowledge.some(k=>k.id===f.id&&stableString(knowledgeMeaning(k))===stableString(knowledgeMeaning(f)))).sort((a,b)=>a.id.localeCompare(b.id,'en'));
-  const options=facts.slice(0,1).map(f=>({id:`ask:${f.id}`,family:'ask',intent:'ASK_ABOUT',factId:f.id,label:`「${f.kind==='event'?'その出来事':f.kind==='background'?'この土地での暮らし':'その話'}」について聞く`,preview:f.text}));
+  const options=facts.slice(0,1).map(f=>({id:`ask:${f.id}`,family:'ask',intent:'ASK_ABOUT',factId:f.id,label:`「${f.topicLabel||f.title||f.text.slice(0,24)}${!f.topicLabel&&!f.title&&f.text.length>24?'…':''}」について聞く`,preview:f.text}));
   if(!session.history.some(h=>h.intentId==='daily-plan'))options.push({id:'daily-plan',intent:'ASK_ABOUT',family:'social',label:'今日は何をする予定か聞く'});
   if(!session.history.some(h=>h.intentId==='promise-supplies')&&!state.promises.some(p=>p.to===npc.id&&p.status==='open'))
     options.push({id:'promise-supplies',intent:'MAKE_PROMISE',family:'promise',label:'日暮れまでに生活物資を一つ届けると約束する'});

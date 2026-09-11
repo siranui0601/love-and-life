@@ -1,0 +1,2169 @@
+[
+  {
+    "index": 1,
+    "selected": "physical-walk",
+    "reason": "見えているフィンへ近づく",
+    "knowledge": [],
+    "available": [
+      {
+        "handle": "LOC_FARM_SQUARE",
+        "name": "村の広場",
+        "kind": "board",
+        "position": [
+          0,
+          0,
+          -13
+        ]
+      },
+      {
+        "handle": "LOC_FARM_INN",
+        "name": "麦穂亭",
+        "kind": "inn",
+        "position": [
+          -18,
+          0,
+          28
+        ]
+      },
+      {
+        "handle": "LOC_FARM_BAKERY",
+        "name": "村のパン屋",
+        "kind": "shop",
+        "position": [
+          17,
+          0,
+          35
+        ]
+      },
+      {
+        "handle": "LOC_FARM_FIELD",
+        "name": "麦畑",
+        "kind": "job",
+        "position": [
+          -43,
+          0,
+          33
+        ]
+      },
+      {
+        "handle": "LOC_FARM_GRANARY",
+        "name": "共同穀倉",
+        "kind": "job",
+        "position": [
+          -37,
+          0,
+          -17
+        ]
+      },
+      {
+        "handle": "LOC_FARM_WELL",
+        "name": "村の井戸",
+        "kind": "job",
+        "position": [
+          10,
+          0,
+          -8
+        ]
+      },
+      {
+        "handle": "LOC_FARM_CHIEF",
+        "name": "村長宅",
+        "kind": "board",
+        "position": [
+          -17,
+          0,
+          -30
+        ]
+      },
+      {
+        "handle": "LOC_FARM_STABLE",
+        "name": "村馬小屋",
+        "kind": "stable",
+        "position": [
+          38,
+          0,
+          38
+        ]
+      },
+      {
+        "handle": "LOC_FARM_EDGE",
+        "name": "村外れ・見張り小屋道",
+        "kind": "job",
+        "position": [
+          43,
+          0,
+          -39
+        ]
+      },
+      {
+        "handle": "LOC_FARM_NORTH_FENCE",
+        "name": "村の北柵",
+        "kind": "job",
+        "position": [
+          6,
+          0,
+          -59
+        ]
+      },
+      {
+        "handle": "LOC_FARM_REPAIR",
+        "name": "農具修理屋「鋤刃」",
+        "kind": "shop",
+        "position": [
+          30,
+          0,
+          -19
+        ]
+      },
+      {
+        "handle": "farm:trainer",
+        "name": "旅支度の稽古場",
+        "kind": "trainer",
+        "position": [
+          8,
+          0,
+          17
+        ]
+      },
+      {
+        "handle": "farm:board",
+        "name": "旅人の掲示板",
+        "kind": "board",
+        "position": [
+          -7,
+          0,
+          8
+        ]
+      },
+      {
+        "handle": "evidence:lost-road",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          -32,
+          0,
+          5
+        ]
+      },
+      {
+        "handle": "evidence:bread-fire",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          32,
+          0,
+          5
+        ]
+      }
+    ],
+    "result": {
+      "arrived": true
+    },
+    "next": {
+      "region": "田園の村",
+      "arrival": null,
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 39,
+    "selected": "physical-walk",
+    "reason": "見えているフィンへ近づく",
+    "knowledge": [],
+    "available": [
+      {
+        "handle": "LOC_FARM_SQUARE",
+        "name": "村の広場",
+        "kind": "board",
+        "position": [
+          0,
+          0,
+          -13
+        ]
+      },
+      {
+        "handle": "LOC_FARM_INN",
+        "name": "麦穂亭",
+        "kind": "inn",
+        "position": [
+          -18,
+          0,
+          28
+        ]
+      },
+      {
+        "handle": "LOC_FARM_BAKERY",
+        "name": "村のパン屋",
+        "kind": "shop",
+        "position": [
+          17,
+          0,
+          35
+        ]
+      },
+      {
+        "handle": "LOC_FARM_FIELD",
+        "name": "麦畑",
+        "kind": "job",
+        "position": [
+          -43,
+          0,
+          33
+        ]
+      },
+      {
+        "handle": "LOC_FARM_GRANARY",
+        "name": "共同穀倉",
+        "kind": "job",
+        "position": [
+          -37,
+          0,
+          -17
+        ]
+      },
+      {
+        "handle": "LOC_FARM_WELL",
+        "name": "村の井戸",
+        "kind": "job",
+        "position": [
+          10,
+          0,
+          -8
+        ]
+      },
+      {
+        "handle": "LOC_FARM_CHIEF",
+        "name": "村長宅",
+        "kind": "board",
+        "position": [
+          -17,
+          0,
+          -30
+        ]
+      },
+      {
+        "handle": "LOC_FARM_STABLE",
+        "name": "村馬小屋",
+        "kind": "stable",
+        "position": [
+          38,
+          0,
+          38
+        ]
+      },
+      {
+        "handle": "LOC_FARM_EDGE",
+        "name": "村外れ・見張り小屋道",
+        "kind": "job",
+        "position": [
+          43,
+          0,
+          -39
+        ]
+      },
+      {
+        "handle": "LOC_FARM_NORTH_FENCE",
+        "name": "村の北柵",
+        "kind": "job",
+        "position": [
+          6,
+          0,
+          -59
+        ]
+      },
+      {
+        "handle": "LOC_FARM_REPAIR",
+        "name": "農具修理屋「鋤刃」",
+        "kind": "shop",
+        "position": [
+          30,
+          0,
+          -19
+        ]
+      },
+      {
+        "handle": "farm:trainer",
+        "name": "旅支度の稽古場",
+        "kind": "trainer",
+        "position": [
+          8,
+          0,
+          17
+        ]
+      },
+      {
+        "handle": "farm:board",
+        "name": "旅人の掲示板",
+        "kind": "board",
+        "position": [
+          -7,
+          0,
+          8
+        ]
+      },
+      {
+        "handle": "evidence:lost-road",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          -32,
+          0,
+          5
+        ]
+      },
+      {
+        "handle": "evidence:bread-fire",
+        "name": "気になる現場",
+        "kind": "evidence",
+        "position": [
+          32,
+          0,
+          5
+        ]
+      }
+    ],
+    "result": {
+      "arrived": true
+    },
+    "next": {
+      "region": "田園の村",
+      "arrival": null,
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"interact\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC061\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"interact\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC061\",\"verb\":\"interact\"}"
+      ]
+    }
+  },
+  {
+    "index": 55,
+    "worldTime": 25812.24859821576,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC061\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC061\",\"verb\":\"interact\"}",
+        "label": "話す"
+      }
+    ],
+    "selected": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"interact\"}",
+    "reason": "まだ話していない住民から話を聞く",
+    "result": {
+      "message": "フィン「冒険家志望の少年の仕事のところだ。何か用かな。」",
+      "conversation": {
+        "id": "conversation:114",
+        "turn": 0,
+        "status": "active",
+        "speaker": "NPC001",
+        "utterance": "フィン「冒険家志望の少年の仕事のところだ。何か用かな。」",
+        "choices": [
+          {
+            "id": "ask:background:NPC001:0",
+            "family": "ask",
+            "intent": "ASK_ABOUT",
+            "factId": "background:NPC001:0",
+            "label": "「フィンは冒険家志望の少年として、この土地で暮らし…」について聞く"
+          },
+          {
+            "id": "daily-plan",
+            "intent": "ASK_ABOUT",
+            "family": "social",
+            "label": "今日は何をする予定か聞く"
+          },
+          {
+            "id": "promise-supplies",
+            "intent": "MAKE_PROMISE",
+            "family": "promise",
+            "label": "日暮れまでに生活物資を一つ届けると約束する"
+          },
+          {
+            "id": "change-topic",
+            "intent": "CHANGE_TOPIC",
+            "family": "topic",
+            "label": "別の話題に移る"
+          },
+          {
+            "id": "leave",
+            "intent": "LEAVE",
+            "family": "leave",
+            "label": "話を終えて立ち去る"
+          }
+        ]
+      }
+    },
+    "createdFacts": [
+      {
+        "id": "social:113",
+        "kind": "conversation-started",
+        "actorId": "player",
+        "targetId": "NPC001",
+        "payload": {},
+        "at": 25812.24859821576,
+        "region": "farm",
+        "position": [
+          -10.026352234315658,
+          0,
+          23.974073260233638
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC003",
+          "NPC059",
+          "NPC061",
+          "NPC063",
+          "NPC111"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"ask:background:NPC001:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}"
+      ]
+    }
+  },
+  {
+    "index": 56,
+    "worldTime": 25812.24859821576,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"ask:background:NPC001:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "「フィンは冒険家志望の少年として、この土地で暮らし…」について聞く"
+      },
+      {
+        "signature": "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "今日は何をする予定か聞く"
+      },
+      {
+        "signature": "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "label": "日暮れまでに生活物資を一つ届けると約束する"
+      },
+      {
+        "signature": "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "label": "別の話題に移る"
+      },
+      {
+        "signature": "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}",
+        "label": "話を終えて立ち去る"
+      }
+    ],
+    "selected": "{\"action\":\"ask:background:NPC001:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+    "reason": "相手が今話せる、まだ聞いていない情報を聞く",
+    "result": {
+      "message": "フィンは冒険家志望の少年として、この土地で暮らしている。",
+      "conversation": {
+        "id": "conversation:114",
+        "turn": 1,
+        "status": "active",
+        "speaker": "NPC001",
+        "utterance": "フィンは冒険家志望の少年として、この土地で暮らしている。",
+        "choices": [
+          {
+            "id": "ask:background:NPC003:0",
+            "family": "ask",
+            "intent": "ASK_ABOUT",
+            "factId": "background:NPC003:0",
+            "label": "「ガロ村長は田園の村の村長として、この土地で暮らし…」について聞く"
+          },
+          {
+            "id": "daily-plan",
+            "intent": "ASK_ABOUT",
+            "family": "social",
+            "label": "今日は何をする予定か聞く"
+          },
+          {
+            "id": "promise-supplies",
+            "intent": "MAKE_PROMISE",
+            "family": "promise",
+            "label": "日暮れまでに生活物資を一つ届けると約束する"
+          },
+          {
+            "id": "change-topic",
+            "intent": "CHANGE_TOPIC",
+            "family": "topic",
+            "label": "別の話題に移る"
+          },
+          {
+            "id": "leave",
+            "intent": "LEAVE",
+            "family": "leave",
+            "label": "話を終えて立ち去る"
+          }
+        ]
+      }
+    },
+    "createdFacts": [
+      {
+        "id": "social:115",
+        "kind": "utterance",
+        "actorId": "player",
+        "targetId": "NPC001",
+        "payload": {
+          "intentId": "ask:background:NPC001:0",
+          "semanticIntent": "ASK_ABOUT",
+          "sessionId": "conversation:114"
+        },
+        "at": 25812.24859821576,
+        "region": "farm",
+        "position": [
+          -10.026352234315658,
+          0,
+          23.974073260233638
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC003",
+          "NPC059",
+          "NPC061",
+          "NPC063",
+          "NPC111"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "knowledge",
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "background:NPC001:0",
+          "kind": "background",
+          "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"ask:background:NPC003:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}"
+      ]
+    }
+  },
+  {
+    "index": 57,
+    "worldTime": 25812.24859821576,
+    "knowledge": [
+      {
+        "id": "background:NPC001:0",
+        "kind": "background",
+        "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"ask:background:NPC003:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "「ガロ村長は田園の村の村長として、この土地で暮らし…」について聞く"
+      },
+      {
+        "signature": "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "今日は何をする予定か聞く"
+      },
+      {
+        "signature": "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "label": "日暮れまでに生活物資を一つ届けると約束する"
+      },
+      {
+        "signature": "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "label": "別の話題に移る"
+      },
+      {
+        "signature": "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}",
+        "label": "話を終えて立ち去る"
+      }
+    ],
+    "selected": "{\"action\":\"ask:background:NPC003:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+    "reason": "相手が今話せる、まだ聞いていない情報を聞く",
+    "result": {
+      "message": "ガロ村長は田園の村の村長として、この土地で暮らしている。",
+      "conversation": {
+        "id": "conversation:114",
+        "turn": 2,
+        "status": "active",
+        "speaker": "NPC001",
+        "utterance": "ガロ村長は田園の村の村長として、この土地で暮らしている。",
+        "choices": [
+          {
+            "id": "ask:background:NPC005:0",
+            "family": "ask",
+            "intent": "ASK_ABOUT",
+            "factId": "background:NPC005:0",
+            "label": "「トーマは共同穀倉管理人として、この土地で暮らして…」について聞く"
+          },
+          {
+            "id": "daily-plan",
+            "intent": "ASK_ABOUT",
+            "family": "social",
+            "label": "今日は何をする予定か聞く"
+          },
+          {
+            "id": "promise-supplies",
+            "intent": "MAKE_PROMISE",
+            "family": "promise",
+            "label": "日暮れまでに生活物資を一つ届けると約束する"
+          },
+          {
+            "id": "change-topic",
+            "intent": "CHANGE_TOPIC",
+            "family": "topic",
+            "label": "別の話題に移る"
+          },
+          {
+            "id": "leave",
+            "intent": "LEAVE",
+            "family": "leave",
+            "label": "話を終えて立ち去る"
+          }
+        ]
+      }
+    },
+    "createdFacts": [
+      {
+        "id": "social:116",
+        "kind": "utterance",
+        "actorId": "player",
+        "targetId": "NPC001",
+        "payload": {
+          "intentId": "ask:background:NPC003:0",
+          "semanticIntent": "ASK_ABOUT",
+          "sessionId": "conversation:114"
+        },
+        "at": 25812.24859821576,
+        "region": "farm",
+        "position": [
+          -10.026352234315658,
+          0,
+          23.974073260233638
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC003",
+          "NPC059",
+          "NPC061",
+          "NPC063",
+          "NPC111"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "knowledge",
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "background:NPC001:0",
+          "kind": "background",
+          "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC003:0",
+          "kind": "background",
+          "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"ask:background:NPC005:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}"
+      ]
+    }
+  },
+  {
+    "index": 58,
+    "worldTime": 25812.24859821576,
+    "knowledge": [
+      {
+        "id": "background:NPC001:0",
+        "kind": "background",
+        "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC003:0",
+        "kind": "background",
+        "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"ask:background:NPC005:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "「トーマは共同穀倉管理人として、この土地で暮らして…」について聞く"
+      },
+      {
+        "signature": "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "今日は何をする予定か聞く"
+      },
+      {
+        "signature": "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "label": "日暮れまでに生活物資を一つ届けると約束する"
+      },
+      {
+        "signature": "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "label": "別の話題に移る"
+      },
+      {
+        "signature": "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}",
+        "label": "話を終えて立ち去る"
+      }
+    ],
+    "selected": "{\"action\":\"ask:background:NPC005:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+    "reason": "相手が今話せる、まだ聞いていない情報を聞く",
+    "result": {
+      "message": "トーマは共同穀倉管理人として、この土地で暮らしている。",
+      "conversation": {
+        "id": "conversation:114",
+        "turn": 3,
+        "status": "active",
+        "speaker": "NPC001",
+        "utterance": "トーマは共同穀倉管理人として、この土地で暮らしている。",
+        "choices": [
+          {
+            "id": "ask:background:NPC059:0",
+            "family": "ask",
+            "intent": "ASK_ABOUT",
+            "factId": "background:NPC059:0",
+            "label": "「パオロはパン屋として、この土地で暮らしている。」について聞く"
+          },
+          {
+            "id": "daily-plan",
+            "intent": "ASK_ABOUT",
+            "family": "social",
+            "label": "今日は何をする予定か聞く"
+          },
+          {
+            "id": "promise-supplies",
+            "intent": "MAKE_PROMISE",
+            "family": "promise",
+            "label": "日暮れまでに生活物資を一つ届けると約束する"
+          },
+          {
+            "id": "change-topic",
+            "intent": "CHANGE_TOPIC",
+            "family": "topic",
+            "label": "別の話題に移る"
+          },
+          {
+            "id": "leave",
+            "intent": "LEAVE",
+            "family": "leave",
+            "label": "話を終えて立ち去る"
+          }
+        ]
+      }
+    },
+    "createdFacts": [
+      {
+        "id": "social:117",
+        "kind": "utterance",
+        "actorId": "player",
+        "targetId": "NPC001",
+        "payload": {
+          "intentId": "ask:background:NPC005:0",
+          "semanticIntent": "ASK_ABOUT",
+          "sessionId": "conversation:114"
+        },
+        "at": 25812.24859821576,
+        "region": "farm",
+        "position": [
+          -10.026352234315658,
+          0,
+          23.974073260233638
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC003",
+          "NPC059",
+          "NPC061",
+          "NPC063",
+          "NPC111"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "knowledge",
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "background:NPC001:0",
+          "kind": "background",
+          "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC003:0",
+          "kind": "background",
+          "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC005:0",
+          "kind": "background",
+          "text": "トーマは共同穀倉管理人として、この土地で暮らしている。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"ask:background:NPC059:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}"
+      ]
+    }
+  },
+  {
+    "index": 59,
+    "worldTime": 25812.24859821576,
+    "knowledge": [
+      {
+        "id": "background:NPC001:0",
+        "kind": "background",
+        "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC003:0",
+        "kind": "background",
+        "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC005:0",
+        "kind": "background",
+        "text": "トーマは共同穀倉管理人として、この土地で暮らしている。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"ask:background:NPC059:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "「パオロはパン屋として、この土地で暮らしている。」について聞く"
+      },
+      {
+        "signature": "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "今日は何をする予定か聞く"
+      },
+      {
+        "signature": "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "label": "日暮れまでに生活物資を一つ届けると約束する"
+      },
+      {
+        "signature": "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "label": "別の話題に移る"
+      },
+      {
+        "signature": "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}",
+        "label": "話を終えて立ち去る"
+      }
+    ],
+    "selected": "{\"action\":\"ask:background:NPC059:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+    "reason": "相手が今話せる、まだ聞いていない情報を聞く",
+    "result": {
+      "message": "パオロはパン屋として、この土地で暮らしている。",
+      "conversation": {
+        "id": "conversation:114",
+        "turn": 4,
+        "status": "active",
+        "speaker": "NPC001",
+        "utterance": "パオロはパン屋として、この土地で暮らしている。",
+        "choices": [
+          {
+            "id": "ask:background:NPC061:0",
+            "family": "ask",
+            "intent": "ASK_ABOUT",
+            "factId": "background:NPC061:0",
+            "label": "「ネネ婆は薬草婆さんとして、この土地で暮らしている…」について聞く"
+          },
+          {
+            "id": "daily-plan",
+            "intent": "ASK_ABOUT",
+            "family": "social",
+            "label": "今日は何をする予定か聞く"
+          },
+          {
+            "id": "promise-supplies",
+            "intent": "MAKE_PROMISE",
+            "family": "promise",
+            "label": "日暮れまでに生活物資を一つ届けると約束する"
+          },
+          {
+            "id": "change-topic",
+            "intent": "CHANGE_TOPIC",
+            "family": "topic",
+            "label": "別の話題に移る"
+          },
+          {
+            "id": "leave",
+            "intent": "LEAVE",
+            "family": "leave",
+            "label": "話を終えて立ち去る"
+          }
+        ]
+      }
+    },
+    "createdFacts": [
+      {
+        "id": "social:118",
+        "kind": "utterance",
+        "actorId": "player",
+        "targetId": "NPC001",
+        "payload": {
+          "intentId": "ask:background:NPC059:0",
+          "semanticIntent": "ASK_ABOUT",
+          "sessionId": "conversation:114"
+        },
+        "at": 25812.24859821576,
+        "region": "farm",
+        "position": [
+          -10.026352234315658,
+          0,
+          23.974073260233638
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC003",
+          "NPC059",
+          "NPC061",
+          "NPC063",
+          "NPC111"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "knowledge",
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "background:NPC001:0",
+          "kind": "background",
+          "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC003:0",
+          "kind": "background",
+          "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC005:0",
+          "kind": "background",
+          "text": "トーマは共同穀倉管理人として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC059:0",
+          "kind": "background",
+          "text": "パオロはパン屋として、この土地で暮らしている。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"ask:background:NPC061:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}"
+      ]
+    }
+  },
+  {
+    "index": 60,
+    "worldTime": 25812.24859821576,
+    "knowledge": [
+      {
+        "id": "background:NPC001:0",
+        "kind": "background",
+        "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC003:0",
+        "kind": "background",
+        "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC005:0",
+        "kind": "background",
+        "text": "トーマは共同穀倉管理人として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC059:0",
+        "kind": "background",
+        "text": "パオロはパン屋として、この土地で暮らしている。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"ask:background:NPC061:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "「ネネ婆は薬草婆さんとして、この土地で暮らしている…」について聞く"
+      },
+      {
+        "signature": "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "今日は何をする予定か聞く"
+      },
+      {
+        "signature": "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "label": "日暮れまでに生活物資を一つ届けると約束する"
+      },
+      {
+        "signature": "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "label": "別の話題に移る"
+      },
+      {
+        "signature": "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}",
+        "label": "話を終えて立ち去る"
+      }
+    ],
+    "selected": "{\"action\":\"ask:background:NPC061:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+    "reason": "相手が今話せる、まだ聞いていない情報を聞く",
+    "result": {
+      "message": "ネネ婆は薬草婆さんとして、この土地で暮らしている。",
+      "conversation": {
+        "id": "conversation:114",
+        "turn": 5,
+        "status": "active",
+        "speaker": "NPC001",
+        "utterance": "ネネ婆は薬草婆さんとして、この土地で暮らしている。",
+        "choices": [
+          {
+            "id": "ask:background:NPC063:0",
+            "family": "ask",
+            "intent": "ASK_ABOUT",
+            "factId": "background:NPC063:0",
+            "label": "「ハクトは牧場主として、この土地で暮らしている。」について聞く"
+          },
+          {
+            "id": "daily-plan",
+            "intent": "ASK_ABOUT",
+            "family": "social",
+            "label": "今日は何をする予定か聞く"
+          },
+          {
+            "id": "promise-supplies",
+            "intent": "MAKE_PROMISE",
+            "family": "promise",
+            "label": "日暮れまでに生活物資を一つ届けると約束する"
+          },
+          {
+            "id": "change-topic",
+            "intent": "CHANGE_TOPIC",
+            "family": "topic",
+            "label": "別の話題に移る"
+          },
+          {
+            "id": "leave",
+            "intent": "LEAVE",
+            "family": "leave",
+            "label": "話を終えて立ち去る"
+          }
+        ]
+      }
+    },
+    "createdFacts": [
+      {
+        "id": "social:119",
+        "kind": "utterance",
+        "actorId": "player",
+        "targetId": "NPC001",
+        "payload": {
+          "intentId": "ask:background:NPC061:0",
+          "semanticIntent": "ASK_ABOUT",
+          "sessionId": "conversation:114"
+        },
+        "at": 25812.24859821576,
+        "region": "farm",
+        "position": [
+          -10.026352234315658,
+          0,
+          23.974073260233638
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC003",
+          "NPC059",
+          "NPC061",
+          "NPC063",
+          "NPC111"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "knowledge",
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "background:NPC001:0",
+          "kind": "background",
+          "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC003:0",
+          "kind": "background",
+          "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC005:0",
+          "kind": "background",
+          "text": "トーマは共同穀倉管理人として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC059:0",
+          "kind": "background",
+          "text": "パオロはパン屋として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC061:0",
+          "kind": "background",
+          "text": "ネネ婆は薬草婆さんとして、この土地で暮らしている。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"ask:background:NPC063:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}"
+      ]
+    }
+  },
+  {
+    "index": 61,
+    "worldTime": 25812.24859821576,
+    "knowledge": [
+      {
+        "id": "background:NPC001:0",
+        "kind": "background",
+        "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC003:0",
+        "kind": "background",
+        "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC005:0",
+        "kind": "background",
+        "text": "トーマは共同穀倉管理人として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC059:0",
+        "kind": "background",
+        "text": "パオロはパン屋として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC061:0",
+        "kind": "background",
+        "text": "ネネ婆は薬草婆さんとして、この土地で暮らしている。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"ask:background:NPC063:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "「ハクトは牧場主として、この土地で暮らしている。」について聞く"
+      },
+      {
+        "signature": "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "今日は何をする予定か聞く"
+      },
+      {
+        "signature": "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "label": "日暮れまでに生活物資を一つ届けると約束する"
+      },
+      {
+        "signature": "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "label": "別の話題に移る"
+      },
+      {
+        "signature": "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}",
+        "label": "話を終えて立ち去る"
+      }
+    ],
+    "selected": "{\"action\":\"ask:background:NPC063:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+    "reason": "相手が今話せる、まだ聞いていない情報を聞く",
+    "result": {
+      "message": "ハクトは牧場主として、この土地で暮らしている。",
+      "conversation": {
+        "id": "conversation:114",
+        "turn": 6,
+        "status": "active",
+        "speaker": "NPC001",
+        "utterance": "ハクトは牧場主として、この土地で暮らしている。",
+        "choices": [
+          {
+            "id": "ask:background:NPC111:0",
+            "family": "ask",
+            "intent": "ASK_ABOUT",
+            "factId": "background:NPC111:0",
+            "label": "「オルグは農具修理職人として、この土地で暮らしてい…」について聞く"
+          },
+          {
+            "id": "daily-plan",
+            "intent": "ASK_ABOUT",
+            "family": "social",
+            "label": "今日は何をする予定か聞く"
+          },
+          {
+            "id": "promise-supplies",
+            "intent": "MAKE_PROMISE",
+            "family": "promise",
+            "label": "日暮れまでに生活物資を一つ届けると約束する"
+          },
+          {
+            "id": "change-topic",
+            "intent": "CHANGE_TOPIC",
+            "family": "topic",
+            "label": "別の話題に移る"
+          },
+          {
+            "id": "leave",
+            "intent": "LEAVE",
+            "family": "leave",
+            "label": "話を終えて立ち去る"
+          }
+        ]
+      }
+    },
+    "createdFacts": [
+      {
+        "id": "social:120",
+        "kind": "utterance",
+        "actorId": "player",
+        "targetId": "NPC001",
+        "payload": {
+          "intentId": "ask:background:NPC063:0",
+          "semanticIntent": "ASK_ABOUT",
+          "sessionId": "conversation:114"
+        },
+        "at": 25812.24859821576,
+        "region": "farm",
+        "position": [
+          -10.026352234315658,
+          0,
+          23.974073260233638
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC003",
+          "NPC059",
+          "NPC061",
+          "NPC063",
+          "NPC111"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "knowledge",
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "background:NPC001:0",
+          "kind": "background",
+          "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC003:0",
+          "kind": "background",
+          "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC005:0",
+          "kind": "background",
+          "text": "トーマは共同穀倉管理人として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC059:0",
+          "kind": "background",
+          "text": "パオロはパン屋として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC061:0",
+          "kind": "background",
+          "text": "ネネ婆は薬草婆さんとして、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC063:0",
+          "kind": "background",
+          "text": "ハクトは牧場主として、この土地で暮らしている。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"ask:background:NPC111:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}"
+      ]
+    }
+  },
+  {
+    "index": 62,
+    "worldTime": 25812.24859821576,
+    "knowledge": [
+      {
+        "id": "background:NPC001:0",
+        "kind": "background",
+        "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC003:0",
+        "kind": "background",
+        "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC005:0",
+        "kind": "background",
+        "text": "トーマは共同穀倉管理人として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC059:0",
+        "kind": "background",
+        "text": "パオロはパン屋として、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC061:0",
+        "kind": "background",
+        "text": "ネネ婆は薬草婆さんとして、この土地で暮らしている。"
+      },
+      {
+        "id": "background:NPC063:0",
+        "kind": "background",
+        "text": "ハクトは牧場主として、この土地で暮らしている。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"ask:background:NPC111:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "「オルグは農具修理職人として、この土地で暮らしてい…」について聞く"
+      },
+      {
+        "signature": "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "label": "今日は何をする予定か聞く"
+      },
+      {
+        "signature": "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "label": "日暮れまでに生活物資を一つ届けると約束する"
+      },
+      {
+        "signature": "{\"action\":\"change-topic\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"CHANGE_TOPIC\"}",
+        "label": "別の話題に移る"
+      },
+      {
+        "signature": "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}",
+        "label": "話を終えて立ち去る"
+      }
+    ],
+    "selected": "{\"action\":\"ask:background:NPC111:0\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+    "reason": "相手が今話せる、まだ聞いていない情報を聞く",
+    "result": {
+      "message": "オルグは農具修理職人として、この土地で暮らしている。",
+      "conversation": {
+        "id": "conversation:114",
+        "turn": 7,
+        "status": "active",
+        "speaker": "NPC001",
+        "utterance": "オルグは農具修理職人として、この土地で暮らしている。",
+        "choices": [
+          {
+            "id": "daily-plan",
+            "intent": "ASK_ABOUT",
+            "family": "social",
+            "label": "今日は何をする予定か聞く"
+          },
+          {
+            "id": "promise-supplies",
+            "intent": "MAKE_PROMISE",
+            "family": "promise",
+            "label": "日暮れまでに生活物資を一つ届けると約束する"
+          },
+          {
+            "id": "joke",
+            "family": "play",
+            "label": "旅先で迷った話を冗談にする"
+          },
+          {
+            "id": "lie-health",
+            "intent": "LIE",
+            "family": "claim",
+            "label": "本当の状態とは関係なく「病気だ」と言う"
+          },
+          {
+            "id": "leave",
+            "intent": "LEAVE",
+            "family": "leave",
+            "label": "話を終えて立ち去る"
+          }
+        ]
+      }
+    },
+    "createdFacts": [
+      {
+        "id": "social:121",
+        "kind": "utterance",
+        "actorId": "player",
+        "targetId": "NPC001",
+        "payload": {
+          "intentId": "ask:background:NPC111:0",
+          "semanticIntent": "ASK_ABOUT",
+          "sessionId": "conversation:114"
+        },
+        "at": 25812.24859821576,
+        "region": "farm",
+        "position": [
+          -10.026352234315658,
+          0,
+          23.974073260233638
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC003",
+          "NPC059",
+          "NPC061",
+          "NPC063",
+          "NPC111"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "knowledge",
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "background:NPC001:0",
+          "kind": "background",
+          "text": "フィンは冒険家志望の少年として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC003:0",
+          "kind": "background",
+          "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC005:0",
+          "kind": "background",
+          "text": "トーマは共同穀倉管理人として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC059:0",
+          "kind": "background",
+          "text": "パオロはパン屋として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC061:0",
+          "kind": "background",
+          "text": "ネネ婆は薬草婆さんとして、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC063:0",
+          "kind": "background",
+          "text": "ハクトは牧場主として、この土地で暮らしている。"
+        },
+        {
+          "id": "background:NPC111:0",
+          "kind": "background",
+          "text": "オルグは農具修理職人として、この土地で暮らしている。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"daily-plan\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"ASK_ABOUT\"}",
+        "{\"action\":\"promise-supplies\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"MAKE_PROMISE\"}",
+        "{\"action\":\"joke\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"converse\"}",
+        "{\"action\":\"lie-health\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LIE\"}",
+        "{\"action\":\"leave\",\"parameters\":{},\"target\":\"NPC001\",\"verb\":\"LEAVE\"}"
+      ]
+    }
+  }
+]

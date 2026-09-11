@@ -1,0 +1,233 @@
+{
+  "sourceRevision": "world-10d-24de1ef85209",
+  "summaries": [
+    {
+      "name": "blind-explorer",
+      "stopped": "decision-budget",
+      "decisions": 10,
+      "commands": 148,
+      "discovered": [
+        "麦と借金の火種"
+      ],
+      "defects": [],
+      "finalHash": "af5770bc58f0f92402956e768eab0dca1808d22150d25004bc07a4368e4c43a7",
+      "worldTime": 26593.645169061172
+    },
+    {
+      "name": "evidence-first",
+      "stopped": "decision-budget",
+      "decisions": 10,
+      "commands": 148,
+      "discovered": [
+        "麦と借金の火種"
+      ],
+      "defects": [],
+      "finalHash": "af5770bc58f0f92402956e768eab0dca1808d22150d25004bc07a4368e4c43a7",
+      "worldTime": 26593.645169061172
+    },
+    {
+      "name": "dialogue-first",
+      "stopped": "decision-budget",
+      "decisions": 10,
+      "commands": 63,
+      "discovered": [],
+      "defects": [],
+      "finalHash": "63b662520c02f70e35772a40192558ea44260accf9110ccfd6de4886e91b15b0",
+      "worldTime": 25812.24859821576
+    },
+    {
+      "name": "chaotic",
+      "stopped": "decision-budget",
+      "decisions": 10,
+      "commands": 11,
+      "discovered": [],
+      "defects": [],
+      "finalHash": "117dc2435909619830534b9bc1a66ba0c8c57de4f7b98d6fdc50af581a3ad6c4",
+      "worldTime": 25230
+    }
+  ],
+  "representatives": [
+    {
+      "type": "return-person",
+      "discovered": [
+        "北柵の遠吠え"
+      ],
+      "aware": [
+        {
+          "name": "evidence-first",
+          "stopped": "decision-budget",
+          "decisions": 13,
+          "commands": 150,
+          "discovered": [
+            "北柵の遠吠え"
+          ],
+          "defects": [],
+          "finalHash": "554822c802f5281dadc41a16aa0a8f00c32147e1231dcdacebf02eced76039c3",
+          "worldTime": 25647.147390856804
+        },
+        {
+          "name": "dialogue-first",
+          "stopped": "decision-budget",
+          "decisions": 12,
+          "commands": 140,
+          "discovered": [
+            "北柵の遠吠え"
+          ],
+          "defects": [],
+          "finalHash": "ea7f17bf8a8c3016d5d6b9dab01df01f52f091e71dae65b422bea99b4a496312",
+          "worldTime": 26950.268728959676
+        }
+      ],
+      "structural": {
+        "status": "NO_PATH_IN_SEARCH_DOMAIN",
+        "expanded": 2,
+        "rejected": [],
+        "scope": "projected local progress actions and known local leads; purchases/training/combat are not searched yet"
+      }
+    },
+    {
+      "type": "institution",
+      "discovered": [
+        "白い都の影"
+      ],
+      "aware": [
+        {
+          "name": "evidence-first",
+          "stopped": "decision-budget",
+          "decisions": 15,
+          "commands": 365,
+          "discovered": [
+            "白い都の影"
+          ],
+          "defects": [],
+          "finalHash": "95f36548a7b7a96de1067f3a267b3588c52ac9dbd33ef813b1a8538914014851",
+          "worldTime": 31520.296357302526
+        },
+        {
+          "name": "dialogue-first",
+          "stopped": "decision-budget",
+          "decisions": 12,
+          "commands": 125,
+          "discovered": [
+            "白い都の影"
+          ],
+          "defects": [],
+          "finalHash": "0d4c0cfb2953c99ff845cfe1e6392411d9e23146e3e8b48865cd1d616f949c4e",
+          "worldTime": 28788.237356231184
+        }
+      ],
+      "structural": {
+        "status": "FOUND",
+        "expanded": 8,
+        "rejected": []
+      }
+    },
+    {
+      "type": "ecosystem",
+      "discovered": [
+        "水音を失う森"
+      ],
+      "aware": [
+        {
+          "name": "evidence-first",
+          "stopped": "preparation-policy-not-implemented",
+          "decisions": 5,
+          "commands": 36,
+          "discovered": [
+            "水音を失う森"
+          ],
+          "defects": [],
+          "finalHash": "a154a2cb9e3109a4621c9c5d573c12195febbd1766b178819545934684cf8127",
+          "worldTime": 37724.50603677668
+        },
+        {
+          "name": "dialogue-first",
+          "stopped": "decision-budget",
+          "decisions": 12,
+          "commands": 208,
+          "discovered": [
+            "水音を失う森"
+          ],
+          "defects": [],
+          "finalHash": "1c6fac0f846782d73fee5dc896f8e621df367c64a756eee81df9ddb9b58c4dd4",
+          "worldTime": 39633.82714496947
+        }
+      ],
+      "structural": {
+        "status": "NO_PATH_IN_SEARCH_DOMAIN",
+        "expanded": 2,
+        "rejected": [],
+        "scope": "projected local progress actions and known local leads; purchases/training/combat are not searched yet"
+      }
+    }
+  ],
+  "allTroubleFeasibility": {
+    "status": "BLOCKED_BY_UNIMPLEMENTED_CONTENT",
+    "unimplemented": [
+      {
+        "id": "bread-fire",
+        "name": "麦と借金の火種",
+        "reason": "current-unimplemented-event"
+      },
+      {
+        "id": "harbor",
+        "name": "閉ざされる潮路",
+        "reason": "current-unimplemented-event"
+      },
+      {
+        "id": "deep-mine",
+        "name": "山の下の呼吸",
+        "reason": "current-unimplemented-event"
+      },
+      {
+        "id": "resonance",
+        "name": "重なる召喚の鐘",
+        "reason": "current-unimplemented-event"
+      },
+      {
+        "id": "border",
+        "name": "北境に積もる嘘",
+        "reason": "current-unimplemented-event"
+      }
+    ],
+    "partial": [
+      {
+        "id": "lost-road",
+        "name": "北柵の遠吠え",
+        "reason": "unimplemented-components",
+        "covered": [
+          "T01"
+        ],
+        "missing": [
+          "T03"
+        ]
+      },
+      {
+        "id": "roots",
+        "name": "水音を失う森",
+        "reason": "unimplemented-components",
+        "covered": [
+          "T13"
+        ],
+        "missing": [
+          "T07",
+          "T08"
+        ]
+      },
+      {
+        "id": "crown",
+        "name": "白い都の影",
+        "reason": "unimplemented-components",
+        "covered": [
+          "T10"
+        ],
+        "missing": [
+          "T11",
+          "T16"
+        ]
+      }
+    ],
+    "explanation": "No all-resolution certificate: runtime has no resolution transitions for these components. This is not evidence that the ten-day design is mathematically impossible."
+  },
+  "paidLLMCalls": 0
+}

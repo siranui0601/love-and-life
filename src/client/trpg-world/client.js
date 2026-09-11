@@ -33,6 +33,9 @@ function renderConversation(result){
    body.append(button(label,()=>command({type:'converse',sessionId:session.id,turn:session.turn,intentId:choice.id})));}
 }
 function journal(){dialogTarget=null;openPanel('旅の手帳');const body=$('panelBody');body.append(element('p','自分が見聞きしたことだけを記録しています。','muted'));
+ if(view.arrival)body.append(element('p',view.arrival.message,'history'));
+ if(view.leads?.length){body.append(element('h3','気になること'));for(const lead of view.leads)body.append(button(lead.label,()=>command({type:'track',leadId:lead.id}).then(journal)));}
+ if(view.notes?.length){body.append(element('h3','読んだ記録'));for(const note of view.notes)body.append(element('p',note.text,'history'));}
  const quests=view.quests||[];if(quests.length){body.append(element('h3','受けた依頼'));for(const quest of quests){const card=element('div',null,`journal-card${quest.urgent?' urgent':''}`),left=quest.remaining==null?'期限不明':quest.remaining<=0?'期限切れ':`残り 約${Math.ceil(quest.remaining/3600)}時間`;card.append(element('small',quest.urgent?'緊急依頼':quest.status==='completed'?'完了':quest.status==='failed'?'失敗':'進行中'),element('h3',quest.name),element('p',`${left} · 報酬 ${quest.reward||0}G`));body.append(card);}}
  for(const event of view.knownEvents){const card=element('div',null,'journal-card');card.append(element('small',statusNames[event.status]||event.status),element('h3',event.name),element('p',event.description));if(['active','critical','latent'].includes(event.status))card.append(element('small',`期限まで 約${Math.ceil(event.remaining/3600)}時間 · ${event.source?.type==='seen'?'目撃':'伝聞・調査'}`));body.append(card);}
  if(!view.knownEvents.length)body.append(element('p','まだ事件の話は聞いていない。村を歩き、住民と話してみよう。'));
@@ -86,7 +89,7 @@ function frame(dt){
  if(!open){const f=scene.forward(),right={x:f.z,z:-f.x},forward=Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown')),side=Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft'));x=f.x*forward+right.x*side;z=f.z*forward+right.z*side;const n=Math.hypot(x,z);if(n>1){x/=n;z/=n;}if(view.player.mode==='broom')ascend=Number(keys.has('Space'))-Number(keys.has('ShiftLeft'));}
  const input={x:Number(x.toFixed(3)),z:Number(z.toFixed(3)),ascend,sprint:!open&&view.player.mode!=='broom'&&keys.has('ShiftLeft'),heading:x||z?Math.atan2(x,z):view.player.heading};scene.input=input;
  const serialized=JSON.stringify(input),now=performance.now();if(!busy&&(serialized!==lastInput||((x||z||ascend)&&now-inputAt>220))&&now-inputAt>100){lastInput=serialized;inputAt=now;void command({type:'input',...input},{quiet:true});}
- if(Math.floor(now/150)!==frame.last){frame.last=Math.floor(now/150);miniMap();labels();$('fps').textContent=`${scene.fps} fps`;}
+ if(Math.floor(now/150)!==frame.last){frame.last=Math.floor(now/150);miniMap();labels();}
 }
 async function begin(data){
  $('launch').hidden=true;$('hud').hidden=false;$('loading').hidden=false;

@@ -14,7 +14,7 @@ export function meaningfulState(state) {
  // Exclude prose, receipt IDs, the raw clock and audit-only utterance records.
  // Keep actual ownership, knowledge, causal conditions, actor state and plans.
  return canonical({knowledge:state.knowledge.map(knowledgeMeaning).sort((a,b)=>a.id.localeCompare(b.id,'en')),inventory:state.player.inventory,gold:state.player.gold,
-  needs:{hunger:state.player.hunger,fatigue:state.player.fatigue},region:state.player.region,position:state.player.position,
+  needs:{hunger:state.player.hunger,fatigue:state.player.fatigue},posture:state.player.posture,inspections:state.player.inspections,region:state.player.region,position:state.player.position,
   events:Object.fromEntries(Object.entries(state.events).map(([id,e])=>[id,{status:e.status,causal:e.causal}])),
   npcs:Object.fromEntries(Object.entries(state.npcs).map(([id,n])=>[id,{region:n.region,position:n.position,hp:n.hp,goal:n.goal,knowledge:n.knowledge.map(knowledgeMeaning),memories:n.memories,plan:n.plan,travel:n.travel}])),
   properties:state.properties,facilities:state.facilities});

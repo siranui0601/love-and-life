@@ -1,0 +1,1632 @@
+[
+  {
+    "index": 1,
+    "worldTime": 25230,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+    "reason": "事件と関係なく、その場で姿勢を変える",
+    "result": {
+      "message": "横になる。",
+      "factId": "social:114",
+      "worldActionId": "world-action:113"
+    },
+    "createdFacts": [
+      {
+        "id": "social:114",
+        "kind": "body-action",
+        "actorId": "player",
+        "targetId": null,
+        "payload": {
+          "action": "lie"
+        },
+        "at": 25230,
+        "region": "farm",
+        "position": [
+          0,
+          0,
+          8
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "posture"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 2,
+    "worldTime": 25230,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "立つ"
+      }
+    ],
+    "selected": "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+    "reason": "事件と関係なく、その場で姿勢を変える",
+    "result": {
+      "message": "立つ。",
+      "factId": "social:116",
+      "worldActionId": "world-action:115"
+    },
+    "createdFacts": [
+      {
+        "id": "social:116",
+        "kind": "body-action",
+        "actorId": "player",
+        "targetId": null,
+        "payload": {
+          "action": "stand"
+        },
+        "at": 25230,
+        "region": "farm",
+        "position": [
+          0,
+          0,
+          8
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "posture"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 3,
+    "worldTime": 25230,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+    "reason": "事件と関係なく、その場で姿勢を変える",
+    "result": {
+      "message": "横になる。",
+      "factId": "social:118",
+      "worldActionId": "world-action:117"
+    },
+    "createdFacts": [
+      {
+        "id": "social:118",
+        "kind": "body-action",
+        "actorId": "player",
+        "targetId": null,
+        "payload": {
+          "action": "lie"
+        },
+        "at": 25230,
+        "region": "farm",
+        "position": [
+          0,
+          0,
+          8
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "posture"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 4,
+    "worldTime": 25230,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "立つ"
+      }
+    ],
+    "selected": "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+    "reason": "事件と関係なく、その場で姿勢を変える",
+    "result": {
+      "message": "立つ。",
+      "factId": "social:120",
+      "worldActionId": "world-action:119"
+    },
+    "createdFacts": [
+      {
+        "id": "social:120",
+        "kind": "body-action",
+        "actorId": "player",
+        "targetId": null,
+        "payload": {
+          "action": "stand"
+        },
+        "at": 25230,
+        "region": "farm",
+        "position": [
+          0,
+          0,
+          8
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "posture"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 5,
+    "worldTime": 25230,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+    "reason": "事件と関係なく、その場で姿勢を変える",
+    "result": {
+      "message": "横になる。",
+      "factId": "social:122",
+      "worldActionId": "world-action:121"
+    },
+    "createdFacts": [
+      {
+        "id": "social:122",
+        "kind": "body-action",
+        "actorId": "player",
+        "targetId": null,
+        "payload": {
+          "action": "lie"
+        },
+        "at": 25230,
+        "region": "farm",
+        "position": [
+          0,
+          0,
+          8
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "posture"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 6,
+    "worldTime": 25230,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "立つ"
+      }
+    ],
+    "selected": "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+    "reason": "事件と関係なく、その場で姿勢を変える",
+    "result": {
+      "message": "立つ。",
+      "factId": "social:124",
+      "worldActionId": "world-action:123"
+    },
+    "createdFacts": [
+      {
+        "id": "social:124",
+        "kind": "body-action",
+        "actorId": "player",
+        "targetId": null,
+        "payload": {
+          "action": "stand"
+        },
+        "at": 25230,
+        "region": "farm",
+        "position": [
+          0,
+          0,
+          8
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "posture"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 7,
+    "worldTime": 25230,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+    "reason": "事件と関係なく、その場で姿勢を変える",
+    "result": {
+      "message": "横になる。",
+      "factId": "social:126",
+      "worldActionId": "world-action:125"
+    },
+    "createdFacts": [
+      {
+        "id": "social:126",
+        "kind": "body-action",
+        "actorId": "player",
+        "targetId": null,
+        "payload": {
+          "action": "lie"
+        },
+        "at": 25230,
+        "region": "farm",
+        "position": [
+          0,
+          0,
+          8
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "posture"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 8,
+    "worldTime": 25230,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "立つ"
+      }
+    ],
+    "selected": "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+    "reason": "事件と関係なく、その場で姿勢を変える",
+    "result": {
+      "message": "立つ。",
+      "factId": "social:128",
+      "worldActionId": "world-action:127"
+    },
+    "createdFacts": [
+      {
+        "id": "social:128",
+        "kind": "body-action",
+        "actorId": "player",
+        "targetId": null,
+        "payload": {
+          "action": "stand"
+        },
+        "at": 25230,
+        "region": "farm",
+        "position": [
+          0,
+          0,
+          8
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "posture"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 9,
+    "worldTime": 25230,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+    "reason": "事件と関係なく、その場で姿勢を変える",
+    "result": {
+      "message": "横になる。",
+      "factId": "social:130",
+      "worldActionId": "world-action:129"
+    },
+    "createdFacts": [
+      {
+        "id": "social:130",
+        "kind": "body-action",
+        "actorId": "player",
+        "targetId": null,
+        "payload": {
+          "action": "lie"
+        },
+        "at": 25230,
+        "region": "farm",
+        "position": [
+          0,
+          0,
+          8
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "posture"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 10,
+    "worldTime": 25230,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "立つ"
+      }
+    ],
+    "selected": "{\"action\":\"stand\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+    "reason": "事件と関係なく、その場で姿勢を変える",
+    "result": {
+      "message": "立つ。",
+      "factId": "social:132",
+      "worldActionId": "world-action:131"
+    },
+    "createdFacts": [
+      {
+        "id": "social:132",
+        "kind": "body-action",
+        "actorId": "player",
+        "targetId": null,
+        "payload": {
+          "action": "stand"
+        },
+        "at": 25230,
+        "region": "farm",
+        "position": [
+          0,
+          0,
+          8
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "posture"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  }
+]

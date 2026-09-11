@@ -22,7 +22,7 @@ export function investigationLeads(state,content) {
   if(definition.type==='return-person') {
    const person=state.npcs[definition.personId],visible=person&&person.region===state.player.region&&distance(person.position,state.player.position)<18;
    if(visible)leads.push({id:`lead:${event.id}:person`,targetId:person.id,region:person.region,position:[...person.position],expectedAction:person.injury&&!person.injury.treated?'tend':'talk',label:'見つけた人の様子を確かめる',explanation:'近づいて話す。負傷しているなら手当てし、一緒に家へ戻る。',sourceKnowledgeId:known.id});
-   else leads.push({id:`lead:${event.id}:site`,targetId:`event:${event.id}`,region:region.id,position:[...event.position],expectedAction:'inspect',label:'人の行方が気になる場所を見に行く',explanation:'現場を歩いて探す。出会えなければ、見聞きしたことを人に尋ねられる。',sourceKnowledgeId:known.id});
+   else if(!state.player.inspections?.[`event:${event.id}`])leads.push({id:`lead:${event.id}:site`,targetId:`event:${event.id}`,region:region.id,position:[...event.position],expectedAction:'inspect',label:'人の行方が気になる場所を見に行く',explanation:'現場を歩いて探す。出会えなければ、見聞きしたことを人に尋ねられる。',sourceKnowledgeId:known.id});
   }
  }
  return leads.sort((a,b)=>a.id.localeCompare(b.id,'en'));
