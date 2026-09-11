@@ -1,3 +1,4 @@
+import {orderedValues} from './semantic.js';
 import {observeMemory} from './memory.js';
 import {distance,hasLineOfSight} from './navigation.js';
 
@@ -14,7 +15,7 @@ export function rememberAction(state,content,kind,{actorId='player',targetId=nul
   initializeRelationships(state);
   const actor=actorId==='player'?state.player:state.npcs[actorId];
   const region=content.regions.find(r=>r.id===actor.region);
-  const witnesses=Object.values(state.npcs).filter(n=>n.hp>0&&!n.travel&&n.goal!=='sleep'&&n.region===actor.region&&
+  const witnesses=orderedValues(state.npcs).filter(n=>n.hp>0&&!n.travel&&n.goal!=='sleep'&&n.region===actor.region&&
     distance(n.position,actor.position)<18&&hasLineOfSight(region,n.position,actor.position)&&(!observedBy||observedBy.includes(n.id))).map(n=>n.id);
   const fact={id:`social:${state.nextId++}`,kind,actorId,targetId,payload:structuredClone(payload),
     at:state.time,region:actor.region,position:[...actor.position],witnesses};

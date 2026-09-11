@@ -1,3 +1,4 @@
+import {orderedValues} from './semantic.js';
 import {searchPlan,advancePlan} from './npc-planner.js';
 import {setActivity} from './activity.js';
 import {distance,findPath,followPath,hasLineOfSight} from './navigation.js';
@@ -6,10 +7,10 @@ export const NEEDS=Object.freeze({limit:100,hungerPerDay:45,fatiguePerDay:48,sle
 export function collapse(state,content,cause) {
   if(state.player.collapse?.status==='active')return;
   const p=state.player,region=content.regions.find(r=>r.id===p.region);
-  const nearby=Object.values(state.npcs).filter(n=>n.hp>0&&!n.travel&&n.region===p.region&&distance(n.position,p.position)<25&&hasLineOfSight(region,n.position,p.position));
+  const nearby=orderedValues(state.npcs).filter(n=>n.hp>0&&!n.travel&&n.region===p.region&&distance(n.position,p.position)<25&&hasLineOfSight(region,n.position,p.position));
   p.collapse={status:'active',cause,at:state.time,location:{region:p.region,position:[...p.position]},
     nearbyEntities:nearby.map(n=>n.id),witnesses:nearby.map(n=>n.id),weather:structuredClone(state.weather[p.region]),
-    danger:Object.values(state.monsters).filter(m=>m.hp>0&&m.region===p.region&&distance(m.position,p.position)<15).map(m=>m.id),
+    danger:orderedValues(state.monsters).filter(m=>m.hp>0&&m.region===p.region&&distance(m.position,p.position)<15).map(m=>m.id),
     possessions:structuredClone(p.inventory),eventContext:Object.values(state.events).filter(e=>['active','critical'].includes(e.status)&&content.events.some(t=>t.id===e.id&&t.region===p.region)).map(e=>e.id),
     injury:{kind:cause==='hp'?'trauma':'exhaustion',treated:false},rescue:null};
   setActivity(state,'collapsed');rememberAction(state,content,'collapse',{payload:{cause}});
@@ -62,12 +63,12 @@ export function advanceRescue(state,content,seconds) {
   if(['completed','invalidated'].includes(status)){delete witness.rescueAssignment;delete witness.plan;c.helpRequest=null;}return;
  }
  if(!c.rescue){
-  const witnesses=Object.values(state.npcs).filter(n=>eligible(n)&&!n.rescueAssignment&&n.goal!=='sleep'&&distance(n.position,p.position)<25&&hasLineOfSight(region,n.position,p.position)&&findPath(region,n.position,p.position).length);
-  const adults=witnesses.map(n=>({n,reason:rescueAssessment(state,content,n)})).filter(x=>x.reason.capable&&x.reason.motivation>0&&!Object.values(state.monsters).some(m=>m.hp>0&&m.region===x.n.region&&distance(m.position,x.n.position)<10)).sort((a,b)=>b.reason.motivation-a.reason.motivation||a.n.id.localeCompare(b.n.id));
+  const witnesses=orderedValues(state.npcs).filter(n=>eligible(n)&&!n.rescueAssignment&&n.goal!=='sleep'&&distance(n.position,p.position)<25&&hasLineOfSight(region,n.position,p.position)&&findPath(region,n.position,p.position).length);
+  const adults=witnesses.map(n=>({n,reason:rescueAssessment(state,content,n)})).filter(x=>x.reason.capable&&x.reason.motivation>0&&!orderedValues(state.monsters).some(m=>m.hp>0&&m.region===x.n.region&&distance(m.position,x.n.position)<10)).sort((a,b)=>b.reason.motivation-a.reason.motivation||a.n.id.localeCompare(b.n.id));
   if(adults.length)assignRescue(state,adults[0].n,facility,adults[0].reason);
   else for(const witness of witnesses){const reason=rescueAssessment(state,content,witness);if(reason.capable||reason.motivation<=0)continue;
    // A witness can ask a person they can actually see. No omniscient helper lookup.
-   const helper=Object.values(state.npcs).find(n=>n.id!==witness.id&&eligible(n)&&!n.rescueAssignment&&distance(witness.position,n.position)<25&&hasLineOfSight(region,witness.position,n.position)&&findPath(region,witness.position,n.position).length&&rescueAssessment(state,content,n).capable&&rescueAssessment(state,content,n).motivation>0);
+   const helper=orderedValues(state.npcs).find(n=>n.id!==witness.id&&eligible(n)&&!n.rescueAssignment&&distance(witness.position,n.position)<25&&hasLineOfSight(region,witness.position,n.position)&&findPath(region,witness.position,n.position).length&&rescueAssessment(state,content,n).capable&&rescueAssessment(state,content,n).motivation>0);
    if(!helper)continue;
    const operators=[{action:'move',preconditions:{},effects:{atHelper:true},cost:1},{action:'report',preconditions:{atHelper:true},effects:{reported:true},cost:1}];
    witness.plan={id:`plan:${state.nextId++}`,domain:'rescue-request',goal:'helper-informed',steps:searchPlan({atHelper:false,reported:false},{reported:true},operators),cursor:0,status:'active',region:witness.region,createdAt:state.time};witness.rescueAssignment='seek-helper';witness.goal='seek-help';

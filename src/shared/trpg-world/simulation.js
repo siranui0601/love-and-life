@@ -1,4 +1,6 @@
 import {advanceMemories} from './memory.js';
+import {orderedValues} from './semantic.js';
+import {investigationLeads,trackLead,arrivalContract} from './investigation.js';
 import {initializeProperty,propertyView,performPropertyAction} from './private-property.js';
 import {advanceSocialPlan,advanceLaw,exchangeCrimeMemories} from './law.js';
 import {lessonFor,recordLesson} from './training.js';
@@ -20,7 +22,7 @@ const TRAVEL_RISK_LABEL = Object.freeze({safe:'安定',watch:'注意',danger:'�
 const clone = value => structuredClone(value);
 const finite = (v, fallback=0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
 const clamp = (v,min,max) => Math.max(min,Math.min(max,v));
-const values = object => Object.values(object || {});
+const values = orderedValues;
 function fail(code,message,status=400) { const error = new Error(message); error.code = code; error.status = status; throw error; }
 function index(content) {
   if (!indexes.has(content)) {
@@ -500,6 +502,7 @@ export function applyCommand(state,content,command) {
   if(command.type==='resume') {if(p.collapse?.status==='active')return {message:null};if(state.conversation)state.conversation.status='ended';setActivity(state,'idle');return {message:null};}
   if(command.type==='pause') {if(p.collapse?.status!=='active')setActivity(state,'menu');return {message:null};}
   if(command.type==='property')return performPropertyAction(state,content,command);
+  if(command.type==='track')return trackLead(state,content,command.leadId);
   if(command.type==='recover') {if(p.collapse?.status!=='active')fail('NOT_COLLAPSED','救助待ちではありません。');for(let i=0;i<72&&p.collapse.status==='active';i++)advanceCalendar(state,content,300);return {message:p.collapse.status==='active'?'まだ救助に至っていない。':'手当てを受けて目を覚ました。'};}
   if(p.collapse?.status==='active'&&command.type!=='input')fail('COLLAPSED','倒れています。救助を待ってください。',409);
   if(command.type==='input') {
@@ -521,6 +524,7 @@ export function applyCommand(state,content,command) {
       p.inventory.supplies--;deliverSupplies(state,content,npc);state.actionClaims[key]=true;
       recordWitnesses(state,content,`${p.name}が${target.name}へ物資を届けた。`,'aid');log(state,`${target.name}へ物資を届けた。`,'aid');return {message:'物資を手渡した。相手の持ち物に加わった。'};
     }
+    if(action==='review'){setActivity(state,'inspecting',{targetId:target.id});return {message:state.player.inspections?.[target.id]?.text||target.description||`${target.name}を眺めた。`};}
     if(action!=='inspect') fail('INVALID_ACTION','この操作は使えません。');
     setActivity(state,'inspecting',{targetId:target.id});
     if(target.eventId) learnEvent(state,content,target.eventId,{type:'read',region:p.region});
@@ -529,7 +533,8 @@ export function applyCommand(state,content,command) {
       // Notices are authored only for local events after their public signal.
       for(const event of content.events || []) if(event.region===p.region&&state.time>=eventStart(event)) learnEvent(state,content,event.id,{type:'read',targetId:target.id,region:p.region});
     }
-    return {message:target.description || `${target.name}を調べた。`};
+    p.inspections||={};p.inspections[target.id]={at:state.time,text:target.description||`${target.name}を調べた。`};
+    return {message:p.inspections[target.id].text};
   }
   if(command.type==='train') {
     const target=targetAt(state,content,command.targetId),skill=idx.skills.get(command.skillId);
@@ -703,7 +708,11 @@ export function applyCommand(state,content,command) {
 function actionsFor(state,content,target) {
   const actions=[],idx=index(content),p=state.player;
   if(target.kind==='npc') actions.push({id:'talk',label:'話す'},{id:'help',label:'生活物資を一つ手渡す',type:'interact'});
-  else actions.push({id:'inspect',label:target.kind==='evidence'?'調べる':'見る'});
+  else {
+    const freshBoard=target.kind==='board'&&(content.events||[]).some(e=>e.region===p.region&&state.time>=eventStart(e)&&!state.knowledge.some(k=>k.eventId===e.id&&k.status===state.events[e.id].status));
+    const checked=p.inspections?.[target.id]&&!freshBoard;
+    actions.push({id:checked?'review':'inspect',label:checked?'確かめた内容を読み返す':target.kind==='evidence'?'調べる':'見る'});
+  }
   if(['inn','camp','bench'].includes(target.kind))for(const item of content.items||[])if((item.kind==='food'||['food','supplies'].includes(item.id))&&p.inventory[item.id]>0)actions.push({id:`eat:${item.id}`,type:'eat',itemId:item.id,label:`${item.name}を食べる · 15分`});
   if(target.kind==='inn') actions.push({id:'rest',label:'6時間泊まる · 8G',type:'rest',hours:6});
   if(target.kind==='shop'||target.kind==='stable') for(const item of itemsForShop(state,content,target)) actions.push({id:`buy:${item.id}`,type:'buy',itemId:item.id,label:`${item.name} · ${priceOf(state,item,p.region)}G`,price:priceOf(state,item,p.region)});
@@ -756,6 +765,6 @@ export function projectWorld(state,content) {
   return {schemaVersion:2,simulationTime:state.simulationTime,time:state.time,day:Math.floor(state.time/DAY)+1,clock:`${String(Math.floor(hour(state))).padStart(2,'0')}:${String(Math.floor(state.time/60)%60).padStart(2,'0')}`,
     weather:clone(state.weather[p.region]),player:{...clone(p),force:forceOf(p,content),inventoryDetails:Object.entries(p.inventory).filter(([,quantity])=>quantity>0).map(([id,quantity])=>{const item=idx.items.get(id)||(content.materials||[]).find(i=>i.id===id)||idx.equipment.get(id);return {id,name:item?.name||'採集した素材',kind:item?.kind||(idx.equipment.has(id)?'equipment':'material'),quantity,equipped:Object.values(p.equipment).includes(id)};})},region:publicRegion,npcs:nearbyNpcs,
     monsters:values(state.monsters).filter(m=>m.region===p.region&&m.hp>0&&distance(m.position,p.position)<75).map(m=>{const t=idx.monsters.get(m.templateId);return {id:m.id,name:t?.name,position:clone(m.position),hp:m.hp,maxHp:m.maxHp,level:t?.level,role:t?.role,activity:m.activity,heading:m.heading,boss:t?.boss,intent:m.intent?{name:m.intent.name,position:clone(m.intent.position),resolvesAt:m.intent.resolvesAt}:undefined};}),
-    heldProperties:propertyView(state,content).filter(o=>o.held),affordances:affordances(state,content),worldObjects:values(state.worldObjects).filter(o=>!o.custodianId&&o.region===p.region&&o.quantity>0&&distance(o.position,p.position)<5).map(o=>({id:o.id,kind:o.kind,name:o.name,itemId:o.itemId,quantity:o.quantity,position:clone(o.position),actions:affordances(state,content,o.id)})),conversation:state.conversation?.status==='active'?conversationResult(state,content).conversation:undefined,interactables,knownEvents,quests,journal:clone(state.history.slice(-60)),notifications:clone(state.notifications.slice(-5)),cycleComplete:state.cycleComplete,
+    leads:investigationLeads(state,content),arrival:arrivalContract(state,content,interactables),notes:state.knowledge.filter(k=>['document','testimony'].includes(k.kind)).map(k=>({text:k.text,kind:k.kind})),heldProperties:propertyView(state,content).filter(o=>o.held),affordances:affordances(state,content),worldObjects:values(state.worldObjects).filter(o=>!o.custodianId&&o.region===p.region&&o.quantity>0&&distance(o.position,p.position)<5).map(o=>({id:o.id,kind:o.kind,name:o.name,itemId:o.itemId,quantity:o.quantity,position:clone(o.position),actions:affordances(state,content,o.id)})),conversation:state.conversation?.status==='active'?conversationResult(state,content).conversation:undefined,interactables,knownEvents,quests,journal:clone(state.history.slice(-60)),notifications:clone(state.notifications.slice(-5)),cycleComplete:state.cycleComplete,
     outcomes:state.cycleComplete?{knownResolved:knownEvents.filter(e=>['prevented','resolved'].includes(e.status)).length,knownFailed:knownEvents.filter(e=>e.status==='failed').length}:undefined};
 }

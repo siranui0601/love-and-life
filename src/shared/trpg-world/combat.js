@@ -1,3 +1,4 @@
+import {orderedValues} from './semantic.js';
 import {playerIsLocal} from './activity.js';
 // Fixed, allowlisted commands: imported spreadsheet expressions are never eval'd.
 import {distance,hasLineOfSight,canOccupy} from './navigation.js';
@@ -30,7 +31,7 @@ function unitContext(unit){
     agilityStage:unit.modifiers?.agility?.stage||0,debuffs:Object.keys(unit.debuffs||{}),specialStates:Object.keys(unit.specialStates||{}),lastActionTag:unit.lastActionTag||'physical'};
 }
 export function chooseEnemyAction(state,content,monster){
-  const data=catalog(content),allies=Object.values(state.monsters).filter(m=>m.region===monster.region&&m.hp>0&&distance(m.position,monster.position)<30),self=unitContext(monster),target=unitContext(state.player);
+  const data=catalog(content),allies=orderedValues(state.monsters).filter(m=>m.region===monster.region&&m.hp>0&&distance(m.position,monster.position)<30),self=unitContext(monster),target=unitContext(state.player);
   const context={self,target,ally:unitContext(allies.reduce((a,b)=>a.hp/a.maxHp<b.hp/b.maxHp?a:b,monster)),battle:{turn:(monster.actionsTaken||0)+1,enemyCount:1,allyCount:allies.length},history:{playerLastSkillRepeatable:true}};
   const candidates=data.actions.filter(a=>a.monsterId===monster.templateId&&matchesCombatCondition(a.condition,context)).filter(a=>{
     const s=data.skills.get(a.skillId);return s&&s.effects?.some(e=>supported.has(e.command))&&(s.mp||0)<=(monster.mp||0)&&(!a.limit||(monster.usedActions?.[a.id]||0)<a.limit);
@@ -60,7 +61,7 @@ export function resolveEnemyAction(state,content,monster,template){
   for(const effect of intent.effects||[]){
     if(!supported.has(effect.command))continue;
     const friendly=['self','single_ally','all_allies','field','self_action'].includes(effect.target);
-    const allies=Object.values(state.monsters).filter(m=>m.region===monster.region&&m.hp>0&&distance(m.position,monster.position)<25);
+    const allies=orderedValues(state.monsters).filter(m=>m.region===monster.region&&m.hp>0&&distance(m.position,monster.position)<25);
     const target=effect.target==='single_ally'?allies.reduce((a,b)=>a.hp/a.maxHp<b.hp/b.maxHp?a:b,monster):friendly?monster:p;
     if(!friendly&&!targetStillThere)continue;
     if(effect.command==='DAMAGE'){

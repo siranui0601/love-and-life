@@ -1,3 +1,4 @@
+import {orderedValues} from './semantic.js';
 // Objective history is never used to fill gaps in a recollection. The audit link
 // remains durable; only this observer's description can be spoken or reported.
 const DAY=86400;
@@ -25,7 +26,7 @@ export function observeMemory(state,npc,fact,{range=0,template={}}={}) {
 export function recalled(npc,factId) {const m=npc.memories?.find(m=>m.factId===factId);return m&&m.status!=='forgotten'?m:null;}
 export function advanceMemories(state,content) {
   if(state.time<(state.nextMemoryTick||0))return;state.nextMemoryTick=state.time+600;
-  for(const npc of Object.values(state.npcs)) {
+  for(const npc of orderedValues(state.npcs)) {
     const profile=memoryProfile(npc,content.npcs.find(n=>n.id===npc.id));
     const asleep=npc.goal==='sleep';const slept=npc.memoryWasSleeping&&!asleep;npc.memoryWasSleeping=asleep;
     for(const m of npc.memories||[]) {

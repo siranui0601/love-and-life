@@ -1,3 +1,5 @@
+import {orderedValues} from './semantic.js';
+import {assessEvidence} from './evidence-policy.js';
 import {societyDefinitions} from './society-content.js';
 import {recalled,testimony,hearTestimony} from './memory.js';
 import {rememberAction,evaluateCooperation} from './relationships.js';
@@ -23,14 +25,13 @@ export function reportCrime(state,content,reporter,officer,factId) {
  file.evidence.push({type:'testimony',reportId:report.id});
  const suspect=statement.description.actorId;
  if(suspect&&!file.suspects.includes(suspect))file.suspects.push(suspect);
- // A single remembered account starts an inquiry. Coercive action needs two
- // independent firsthand accounts, or an admission given to this authority.
+ // Institutional evidence is evaluated by provenance and corroboration.
  for(const id of file.suspects) {
   const reports=state.law.reports.filter(r=>r.authorityId===authority.id&&r.originFactId===factId&&r.statement.description.actorId===id);
-  const direct=new Set(reports.filter(r=>r.statement.basis==='seen').map(r=>r.reporterId));
+  const assessment=assessEvidence(file,reports,id,authority.policy);
   const old=state.law.warrants.find(w=>w.caseId===file.id&&w.knownSuspect===id&&w.status==='active');
   const warrant=old||{id:`warrant:${state.nextId++}`,issuingAuthority:authority.id,jurisdiction:authority.jurisdiction,caseId:file.id,allegedOffense:file.allegedOffense,knownSuspect:id,evidence:[],witnesses:[],issuedAt:state.time,status:'active'};
-  warrant.response=direct.size>=2?'apprehend':'question';warrant.evidence=reports.map(r=>r.id);warrant.witnesses=[...new Set(reports.map(r=>r.reporterId))];warrant.lastReportedPlace={region:statement.description.region,position:[...statement.description.position]};
+  warrant.response=assessment.response;warrant.assessment=assessment;warrant.evidence=reports.map(r=>r.id);warrant.witnesses=[...new Set(reports.map(r=>r.reporterId))];warrant.lastReportedPlace={region:statement.description.region,position:[...statement.description.position]};
   if(!old)state.law.warrants.push(warrant);officer.knownWarrantIds||=[];if(!officer.knownWarrantIds.includes(warrant.id))officer.knownWarrantIds.push(warrant.id);
  }
  return report;
@@ -75,7 +76,7 @@ export function advanceSocialPlan(state,content,npc,seconds) {
 }
 export function advanceLaw(state,content) {
  initializeLaw(state,content);
- for(const officer of Object.values(state.npcs))for(const id of officer.knownWarrantIds||[]) {
+ for(const officer of orderedValues(state.npcs))for(const id of officer.knownWarrantIds||[]) {
   const warrant=state.law.warrants.find(w=>w.id===id&&w.status==='active'&&w.jurisdiction===officer.region);
   if(!warrant)continue;
   const suspect=warrant.knownSuspect==='player'?state.player:state.npcs[warrant.knownSuspect];

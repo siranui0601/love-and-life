@@ -1,3 +1,4 @@
+import {orderedValues} from './semantic.js';
 import {beginWorldAction,completeWorldAction} from './world-actions.js';
 import {interpretObservation} from './interpretation.js';
 import {possessions,transferProperty} from './property.js';
@@ -44,7 +45,7 @@ function executeAffordance(state,content,command) {
  const victim=state.npcs[targetId],region=content.regions.find(r=>r.id===p.region);
  state.random=(Math.imul(state.random,1664525)+1013904223)>>>0;
  const success=state.random/4294967296<(p.skills.includes('stealth')?.7:victim.goal==='sleep'?.65:.35);
- const witnesses=Object.values(state.npcs).filter(n=>n.id!==victim.id&&n.hp>0&&!n.travel&&n.goal!=='sleep'&&n.region===p.region&&distance(n.position,p.position)<5&&hasLineOfSight(region,n.position,p.position)).map(n=>n.id);
+ const witnesses=orderedValues(state.npcs).filter(n=>n.id!==victim.id&&n.hp>0&&!n.travel&&n.goal!=='sleep'&&n.region===p.region&&distance(n.position,p.position)<5&&hasLineOfSight(region,n.position,p.position)).map(n=>n.id);
  if(!success)witnesses.push(victim.id);
  const available=possessions(state,victim.id),property=available[0];const amount=success?Math.min(property.quantity,property.kind==='currency'?8:1):0;
  const transfer=success?transferProperty(state,{from:victim.id,to:'player',kind:property.kind,assetId:property.assetId,quantity:amount,reason:'theft'}):null;

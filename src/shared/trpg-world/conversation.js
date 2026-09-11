@@ -3,6 +3,7 @@ import {recalled,testimony,hearTestimony} from './memory.js';
 import {setActivity} from './activity.js';
 import {rememberAction,willingToCooperate,initializeRelationships,deliverSupplies} from './relationships.js';
 import {distance,hasLineOfSight} from './navigation.js';
+import {knowledgeMeaning,stableString} from './semantic.js';
 
 const reject=(code,message)=>{throw Object.assign(new Error(message),{code,status:409});};
 export function visibleTopics(state,npc) {
@@ -13,14 +14,14 @@ export function visibleTopics(state,npc) {
 }
 function choices(state,npc,session) {
   const legal=legalChoices(state,npc);
-  const facts=visibleTopics(state,npc).filter(f=>!session.factsLearned.includes(f.id));
+  const facts=visibleTopics(state,npc).filter(f=>!session.factsLearned.includes(f.id)&&!state.knowledge.some(k=>k.id===f.id&&stableString(knowledgeMeaning(k))===stableString(knowledgeMeaning(f)))).sort((a,b)=>a.id.localeCompare(b.id,'en'));
   const options=facts.slice(0,1).map(f=>({id:`ask:${f.id}`,family:'ask',intent:'ASK_ABOUT',factId:f.id,label:`「${f.kind==='event'?'その出来事':f.kind==='background'?'この土地での暮らし':'その話'}」について聞く`,preview:f.text}));
   if(!session.history.some(h=>h.intentId==='daily-plan'))options.push({id:'daily-plan',intent:'ASK_ABOUT',family:'social',label:'今日は何をする予定か聞く'});
   if(!session.history.some(h=>h.intentId==='promise-supplies')&&!state.promises.some(p=>p.to===npc.id&&p.status==='open'))
     options.push({id:'promise-supplies',intent:'MAKE_PROMISE',family:'promise',label:'日暮れまでに生活物資を一つ届けると約束する'});
   if(options.length<4&&!session.history.some(h=>h.intentId==='joke'))options.push({id:'joke',family:'play',label:'旅先で迷った話を冗談にする'});
 
-  const share=state.knowledge.find(k=>!npc.knowledge.some(n=>n.id===k.id));
+  const share=[...state.knowledge].sort((a,b)=>a.id.localeCompare(b.id,'en')).find(k=>!npc.knowledge.some(n=>n.id===k.id));
   if(share)options.push({id:`share:${share.id}`,intent:share.kind==='event'?'WARN':'SHARE_INFORMATION',family:'share',factId:share.id,label:share.kind==='event'?'見聞きした危険を伝える':'知っている話を伝える'});
   if(state.player.inventory.supplies>0&&npc.hunger>60)options.push({id:'offer-food',intent:'OFFER_HELP',family:'offer',label:'持っている食料を渡す'});
   if(npc.possessions.supplies>0&&state.player.hunger>50)options.push({id:'request-food',intent:'REQUEST_HELP',family:'request',label:'食べ物を分けてもらえないか頼む'});
@@ -48,7 +49,7 @@ export function conversationResult(state,content) {
   const session=state.conversation;if(!session)return {};
   const npc=state.npcs[session.speaker];
   const options=session.status==='active'?choices(state,npc,session):[];
-  return {message:session.utterance,conversation:{id:session.id,turn:session.turn,status:session.status,
+  return {message:session.utterance,conversation:{id:session.id,turn:session.turn,status:session.status,speaker:npc.id,
     utterance:session.utterance,choices:options.map(({preview,...option})=>option)}};
 }
 export function converse(state,content,command) {

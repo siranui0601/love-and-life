@@ -1,14 +1,15 @@
 import {distance,followPath} from './navigation.js';
 import {willingToCooperate,rememberAction} from './relationships.js';
+import {stableString,orderedValues} from './semantic.js';
 const satisfies=(facts,conditions)=>Object.entries(conditions||{}).every(([k,v])=>facts[k]===v);
 // Bounded uniform-cost state search. Goal selection remains the utility layer's job.
 export function searchPlan(initial,goal,operators,{maxNodes=128,maxDepth=10}={}) {
  const open=[{facts:initial,steps:[],cost:0}],seen=new Map();let expanded=0;
- while(open.length&&expanded++<maxNodes){open.sort((a,b)=>a.cost-b.cost);const node=open.shift();
+ while(open.length&&expanded++<maxNodes){open.sort((a,b)=>a.cost-b.cost||stableString(a.steps).localeCompare(stableString(b.steps),'en'));const node=open.shift();
   if(satisfies(node.facts,goal))return node.steps;
-  const key=JSON.stringify(node.facts);if((seen.get(key)??Infinity)<=node.cost)continue;seen.set(key,node.cost);
+  const key=stableString(node.facts);if((seen.get(key)??Infinity)<=node.cost)continue;seen.set(key,node.cost);
   if(node.steps.length>=maxDepth)continue;
-  for(const op of operators)if(satisfies(node.facts,op.preconditions))open.push({facts:{...node.facts,...op.effects},steps:[...node.steps,structuredClone(op)],cost:node.cost+op.cost});
+  for(const op of [...operators].sort((a,b)=>stableString(a).localeCompare(stableString(b),'en')))if(satisfies(node.facts,op.preconditions))open.push({facts:{...node.facts,...op.effects},steps:[...node.steps,structuredClone(op)],cost:node.cost+op.cost});
  }
  return null;
 }
@@ -19,7 +20,7 @@ function context(state,content,npc,template,chosen) {
  const locations={home,work,goal:chosen.target||home,...(shop?{shop:shop.position}:{})};
  const facts={location:Object.keys(locations).find(k=>distance(npc.position,locations[k])<2)||'elsewhere',food:(npc.possessions?.supplies||0)>0,
   money:npc.money>=4,stock:state.regions[npc.region].stock>.15,shop:!!shop,sated:npc.hunger<25,done:false,
-  forage:/森|狩|農|野/.test(`${template.role||''} ${region.name||''}`),helper:Object.values(state.npcs).some(n=>n.id!==npc.id&&n.hp>0&&!n.travel&&n.region===npc.region&&distance(n.position,npc.position)<5&&(n.possessions?.supplies||0)>1&&willingToCooperate(state,n,{actorId:npc.id,resourceCost:1}))};
+  forage:/森|狩|農|野/.test(`${template.role||''} ${region.name||''}`),helper:orderedValues(state.npcs).some(n=>n.id!==npc.id&&n.hp>0&&!n.travel&&n.region===npc.region&&distance(n.position,npc.position)<5&&(n.possessions?.supplies||0)>1&&willingToCooperate(state,n,{actorId:npc.id,resourceCost:1}))};
  return {facts,locations,shop};
 }
 export function planForGoal(state,content,npc,template,chosen) {
@@ -60,7 +61,7 @@ export function advancePlan(state,content,npc,seconds,execution=null) {
  step.elapsed=(step.elapsed||0)+seconds;if(step.elapsed<step.expectedDuration)return true;
  if(step.action==='purchase-food'){npc.money-=4;npc.possessions.supplies=(npc.possessions.supplies||0)+1;state.regions[npc.region].stock-=.001;}
  if(step.action==='forage')npc.possessions.supplies=(npc.possessions.supplies||0)+1;
- if(step.action==='request-food'){const helper=Object.values(state.npcs).find(n=>n.id!==npc.id&&n.hp>0&&!n.travel&&n.region===npc.region&&distance(n.position,npc.position)<5&&n.possessions?.supplies>1);if(!helper)return invalidate('helper-left');helper.possessions.supplies--;npc.possessions.supplies=(npc.possessions.supplies||0)+1;}
+ if(step.action==='request-food'){const helper=orderedValues(state.npcs).find(n=>n.id!==npc.id&&n.hp>0&&!n.travel&&n.region===npc.region&&distance(n.position,npc.position)<5&&n.possessions?.supplies>1);if(!helper)return invalidate('helper-left');helper.possessions.supplies--;npc.possessions.supplies=(npc.possessions.supplies||0)+1;}
  if(step.action==='consume-food'){npc.possessions.supplies--;npc.hunger=Math.max(0,npc.hunger-55);}
  if(step.action==='rest')npc.fatigue=Math.max(0,npc.fatigue-12);
  if(step.action==='work'){npc.money+=step.pay||3;state.regions[npc.region].stock=Math.min(1.8,state.regions[npc.region].stock+.002);}

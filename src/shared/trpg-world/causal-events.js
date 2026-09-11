@@ -1,3 +1,4 @@
+import {orderedValues} from './semantic.js';
 import {conditionHolds,consumeResources,depositDocuments,recordMilestone} from './world-semantics.js';
 import {distance,followPath,hasLineOfSight} from './navigation.js';
 import {rememberAction} from './relationships.js';
@@ -51,7 +52,7 @@ export function advanceCausality(state,content,seconds) {
       if(causal.phase==='home'&&state.time>=event.startsAt&&person.hp>0) {causal.phase='excursion';person.causalAssignment=event.id;}
       if(causal.phase==='excursion') {
         person.activity='村の外を探検する';followPath(region,person,event.position,seconds/(content.time?.scale||60)*1.5);
-        const predator=Object.values(state.monsters).find(m=>m.hp>0&&m.region===person.region&&distance(m.position,person.position)<18);
+        const predator=orderedValues(state.monsters).find(m=>m.hp>0&&m.region===person.region&&distance(m.position,person.position)<18);
         if(predator&&distance(person.position,event.position)<4) {
           person.injury={kind:'leg',treated:false,causedBy:predator.id,at:state.time};person.hp=Math.min(person.hp,35);causal.phase='injured';
           rememberAction(state,content,'injury',{actorId:person.id,payload:{predatorId:predator.id}});
@@ -72,7 +73,7 @@ export function advanceCausality(state,content,seconds) {
     } else if(definition.type==='institution'&&!['resolved','prevented','failed'].includes(current.status)) {
       const office=region.objects.find(o=>o.id===definition.officeId);
       // A real clerk at work reviews the documents deposited in that office.
-      const clerk=office&&Object.values(state.npcs).find(n=>n.hp>0&&!n.travel&&n.region===event.region&&distance(n.position,office.position)<5&&
+      const clerk=office&&orderedValues(state.npcs).find(n=>n.hp>0&&!n.travel&&n.region===event.region&&distance(n.position,office.position)<5&&
         content.npcs.some(t=>t.id===n.id&&(/役人|役所|文官|行政|官吏/.test(t.role||'')||t.workFacilityId===definition.officeId)));
       if(clerk&&conditionHolds(state,content,{type:'field',path:['events',event.id,'causal','submitted'],op:'contains-all',value:definition.documents.map(d=>d.id)})) {
         causal.reviewed=true;causal.tenure='protected';
@@ -121,12 +122,13 @@ export function causalActions(state,content,target) {
   if(npc?.companionOf)actions.push({id:'release',type:'causal',label:'ここで待っていてもらう'});
   for(const definition of causalDefinitions(content)) {
     if(definition.type==='institution') {
-      for(const doc of definition.documents)if(doc.targetId===target.id)actions.push({id:`read:${definition.eventId}:${doc.id}`,type:'causal',label:`${doc.title}を読む`});
-      if(target.id===definition.officeId)actions.push({id:`submit:${definition.eventId}`,type:'causal',label:'手元の書類の写しを窓口へ提出する'});
+      for(const doc of definition.documents)if(doc.targetId===target.id&&!state.knowledge.some(k=>k.id===`document:${definition.eventId}:${doc.id}`))actions.push({id:`read:${definition.eventId}:${doc.id}`,type:'causal',label:`${doc.title}を読む`});
+      if(target.id===definition.officeId&&definition.documents.some(d=>state.knowledge.some(k=>k.id===`document:${definition.eventId}:${d.id}`)&&!state.events[definition.eventId].causal.submitted.includes(d.id)))actions.push({id:`submit:${definition.eventId}`,type:'causal',label:'まだ提出していない書類の写しを窓口へ渡す'});
     }
     if(definition.type==='ecosystem'&&target.id===definition.deviceId) {
-      actions.push({id:`divert:${definition.eventId}`,type:'causal',label:'木材と縄で脇水路を固定する · 木材2、縄1'},
-        {id:`seal:${definition.eventId}`,type:'causal',label:'調律結晶で吸収核を封じる · 結晶1、基礎魔術'});
+      const causal=state.events[definition.eventId].causal;
+      if(causal.coreInPool)actions.push({id:`divert:${definition.eventId}`,type:'causal',label:'木材と縄で脇水路を固定する · 木材2、縄1',available:(state.player.inventory.timber||0)>=2&&(state.player.inventory.rope||0)>=1,missing:['木材2つ、縄1つ']});
+      if(!causal.coreSealed)actions.push({id:`seal:${definition.eventId}`,type:'causal',label:'調律結晶で吸収核を封じる · 結晶1、基礎魔術',available:state.player.skills.includes('magic')&&(state.player.inventory.crystal||0)>=1,missing:['調律結晶1つ、基礎魔術']});
     }
   }
   return actions;
