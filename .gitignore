@@ -5,3 +5,7 @@ token.json
 
 data/
 runtime-data/
+
+# Local validation screenshots, reports and superseded hashed chunks.
+tools/trpg-world/reports/
+public/TRPG/world/dist/

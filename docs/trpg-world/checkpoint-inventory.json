@@ -1,0 +1,2381 @@
+{
+  "createdAt": "2026-09-11T00:08:21.314Z",
+  "head": "c456805ae426a44d3abcda3696347599a6613aa2",
+  "entries": [
+    {
+      "file": ".github/workflows/trpg-persistent-world.yml",
+      "category": "A production source and reconstruction tools",
+      "bytes": 938
+    },
+    {
+      "file": "docs/trpg-world/ARCHITECTURE.md",
+      "category": "A production source and reconstruction tools",
+      "bytes": 3872
+    },
+    {
+      "file": "docs/trpg-world/PRODUCTION.md",
+      "category": "A production source and reconstruction tools",
+      "bytes": 7051
+    },
+    {
+      "file": "public/TRPG/legacy.html",
+      "category": "A production source and reconstruction tools",
+      "bytes": 11726
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/LICENSE.txt",
+      "category": "D licensed runtime assets",
+      "bytes": 706
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-a.png",
+      "category": "D licensed runtime assets",
+      "bytes": 20171
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-b.png",
+      "category": "D licensed runtime assets",
+      "bytes": 15606
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-c.png",
+      "category": "D licensed runtime assets",
+      "bytes": 12829
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-d.png",
+      "category": "D licensed runtime assets",
+      "bytes": 13151
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-e.png",
+      "category": "D licensed runtime assets",
+      "bytes": 14509
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-f.png",
+      "category": "D licensed runtime assets",
+      "bytes": 15886
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-g.png",
+      "category": "D licensed runtime assets",
+      "bytes": 16069
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-h.png",
+      "category": "D licensed runtime assets",
+      "bytes": 16215
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-i.png",
+      "category": "D licensed runtime assets",
+      "bytes": 14496
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-j.png",
+      "category": "D licensed runtime assets",
+      "bytes": 17576
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-k.png",
+      "category": "D licensed runtime assets",
+      "bytes": 17437
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-l.png",
+      "category": "D licensed runtime assets",
+      "bytes": 22764
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-m.png",
+      "category": "D licensed runtime assets",
+      "bytes": 19343
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-n.png",
+      "category": "D licensed runtime assets",
+      "bytes": 16824
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-o.png",
+      "category": "D licensed runtime assets",
+      "bytes": 21064
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-p.png",
+      "category": "D licensed runtime assets",
+      "bytes": 18000
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-q.png",
+      "category": "D licensed runtime assets",
+      "bytes": 16102
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/Textures/texture-r.png",
+      "category": "D licensed runtime assets",
+      "bytes": 13909
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-a.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-b.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-c.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113580
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-d.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-e.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-f.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113592
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-g.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-h.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-i.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113532
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-j.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113584
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-k.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-l.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-m.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-n.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-o.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-p.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113584
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-q.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/characters/character-r.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 113596
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/LICENSE.txt",
+      "category": "D licensed runtime assets",
+      "bytes": 698
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/Textures/colormap.png",
+      "category": "D licensed runtime assets",
+      "bytes": 10915
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-beaver.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 149728
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-bee.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 164356
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-bunny.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 131568
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-cat.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 165164
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-caterpillar.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 130968
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-chick.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 125424
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-cow.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 128084
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-crab.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 150768
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-deer.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 150400
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-dog.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 119544
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-elephant.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 148892
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-fish.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 91584
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-fox.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 141880
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-giraffe.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 132676
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-hog.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 141596
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-koala.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 131008
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-lion.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 172936
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-monkey.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 174944
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-panda.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 133624
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-parrot.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 154124
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-penguin.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 130396
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-pig.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 127032
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-polar.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 98964
+    },
+    {
+      "file": "public/TRPG/world/assets/creatures/animal-tiger.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 172348
+    },
+    {
+      "file": "public/TRPG/world/assets/manifest.json",
+      "category": "D licensed runtime assets",
+      "bytes": 170563
+    },
+    {
+      "file": "public/TRPG/world/assets/prototype/LICENSE.txt",
+      "category": "D licensed runtime assets",
+      "bytes": 716
+    },
+    {
+      "file": "public/TRPG/world/assets/prototype/Textures/colormap.png",
+      "category": "D licensed runtime assets",
+      "bytes": 8706
+    },
+    {
+      "file": "public/TRPG/world/assets/prototype/animal-bison.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 45120
+    },
+    {
+      "file": "public/TRPG/world/assets/prototype/animal-dog.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 56760
+    },
+    {
+      "file": "public/TRPG/world/assets/prototype/animal-horse.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 55868
+    },
+    {
+      "file": "public/TRPG/world/assets/prototype/weapon-shield.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8156
+    },
+    {
+      "file": "public/TRPG/world/assets/prototype/weapon-sword.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6336
+    },
+    {
+      "file": "public/TRPG/world/assets/town/LICENSE.txt",
+      "category": "D licensed runtime assets",
+      "bytes": 705
+    },
+    {
+      "file": "public/TRPG/world/assets/town/Textures/colormap.png",
+      "category": "D licensed runtime assets",
+      "bytes": 11143
+    },
+    {
+      "file": "public/TRPG/world/assets/town/balcony-wall-fence.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 11236
+    },
+    {
+      "file": "public/TRPG/world/assets/town/balcony-wall.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 7424
+    },
+    {
+      "file": "public/TRPG/world/assets/town/banner-green.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 10200
+    },
+    {
+      "file": "public/TRPG/world/assets/town/banner-red.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 9988
+    },
+    {
+      "file": "public/TRPG/world/assets/town/blade.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 18792
+    },
+    {
+      "file": "public/TRPG/world/assets/town/cart-high.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 88560
+    },
+    {
+      "file": "public/TRPG/world/assets/town/cart.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 52920
+    },
+    {
+      "file": "public/TRPG/world/assets/town/chimney-base.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8408
+    },
+    {
+      "file": "public/TRPG/world/assets/town/chimney-top.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 7896
+    },
+    {
+      "file": "public/TRPG/world/assets/town/chimney.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4656
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fence-broken.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 11960
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fence-curved.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 25408
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fence-gate.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 46340
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fence.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 7672
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fountain-center.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 3280
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fountain-corner-inner-square.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6908
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fountain-corner-inner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 15000
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fountain-corner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8272
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fountain-curved.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 25048
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fountain-edge.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6024
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fountain-round-detail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 136888
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fountain-round.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 84848
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fountain-square-detail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 32092
+    },
+    {
+      "file": "public/TRPG/world/assets/town/fountain-square.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 27104
+    },
+    {
+      "file": "public/TRPG/world/assets/town/hedge-curved.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 26312
+    },
+    {
+      "file": "public/TRPG/world/assets/town/hedge-gate.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8432
+    },
+    {
+      "file": "public/TRPG/world/assets/town/hedge-large-curved.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 25024
+    },
+    {
+      "file": "public/TRPG/world/assets/town/hedge-large-gate.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 18072
+    },
+    {
+      "file": "public/TRPG/world/assets/town/hedge-large.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 9568
+    },
+    {
+      "file": "public/TRPG/world/assets/town/hedge.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6524
+    },
+    {
+      "file": "public/TRPG/world/assets/town/lantern.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 14984
+    },
+    {
+      "file": "public/TRPG/world/assets/town/overhang.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 7648
+    },
+    {
+      "file": "public/TRPG/world/assets/town/pillar-stone.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 11324
+    },
+    {
+      "file": "public/TRPG/world/assets/town/pillar-wood.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5312
+    },
+    {
+      "file": "public/TRPG/world/assets/town/planks-half.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 10164
+    },
+    {
+      "file": "public/TRPG/world/assets/town/planks-opening.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 16360
+    },
+    {
+      "file": "public/TRPG/world/assets/town/planks.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 11148
+    },
+    {
+      "file": "public/TRPG/world/assets/town/poles-horizontal.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5660
+    },
+    {
+      "file": "public/TRPG/world/assets/town/poles.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4212
+    },
+    {
+      "file": "public/TRPG/world/assets/town/road-bend.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 25044
+    },
+    {
+      "file": "public/TRPG/world/assets/town/road-corner-inner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 13552
+    },
+    {
+      "file": "public/TRPG/world/assets/town/road-corner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 13736
+    },
+    {
+      "file": "public/TRPG/world/assets/town/road-curb-end.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4828
+    },
+    {
+      "file": "public/TRPG/world/assets/town/road-curb.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 2804
+    },
+    {
+      "file": "public/TRPG/world/assets/town/road-edge-slope.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5724
+    },
+    {
+      "file": "public/TRPG/world/assets/town/road-edge.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4912
+    },
+    {
+      "file": "public/TRPG/world/assets/town/road-slope.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 2820
+    },
+    {
+      "file": "public/TRPG/world/assets/town/road.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 2788
+    },
+    {
+      "file": "public/TRPG/world/assets/town/rock-large.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 18876
+    },
+    {
+      "file": "public/TRPG/world/assets/town/rock-small.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12620
+    },
+    {
+      "file": "public/TRPG/world/assets/town/rock-wide.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 15172
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-corner-inner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4464
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-corner-round.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5836
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-corner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4996
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-flat.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 3448
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-gable-detail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12028
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-gable-end.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6056
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-gable-top.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6572
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-gable.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 7632
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-corner-round.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6056
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-corner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5008
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-cornerinner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4284
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-flat.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 3464
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-gable-detail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12840
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-gable-end.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6268
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-gable-top.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6568
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-gable.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 7456
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-left.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 11376
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-point.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6192
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-right.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 10996
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high-window.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 20732
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-high.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8088
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-left.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12904
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-point.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6180
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-right.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 13004
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof-window.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 15524
+    },
+    {
+      "file": "public/TRPG/world/assets/town/roof.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 9324
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-full-corner-inner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8304
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-full-corner-outer.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 9440
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-full.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 7064
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-stone-corner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12792
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-stone-handrail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 23428
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-stone-round.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 17840
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-stone.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12172
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-wide-stone-handrail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 23440
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-wide-stone.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12188
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-wide-wood-handrail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 43904
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-wide-wood.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 33060
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-wood-handrail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 44228
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stairs-wood.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 33384
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stall-bench.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 14168
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stall-green.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 27120
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stall-red.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 24304
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stall-stool.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 14172
+    },
+    {
+      "file": "public/TRPG/world/assets/town/stall.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 11500
+    },
+    {
+      "file": "public/TRPG/world/assets/town/tree-crooked.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 19252
+    },
+    {
+      "file": "public/TRPG/world/assets/town/tree-high-crooked.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 21744
+    },
+    {
+      "file": "public/TRPG/world/assets/town/tree-high-round.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 13176
+    },
+    {
+      "file": "public/TRPG/world/assets/town/tree-high.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 20700
+    },
+    {
+      "file": "public/TRPG/world/assets/town/tree.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 18188
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-arch-top-detail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 16076
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-arch-top.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12876
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-arch.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4840
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-block-half.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8564
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-block.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8532
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-broken.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 16904
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-corner-detail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 15748
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-corner-diagonal-half.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4788
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-corner-diagonal.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6032
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-corner-edge.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5416
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-corner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6788
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-curved.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 11432
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-detail-cross.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8464
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-detail-diagonal.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6672
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-detail-horizontal.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6240
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-diagonal.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5212
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-door.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 29276
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-doorway-base.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8028
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-doorway-round.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 13332
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-doorway-square-wide-curved.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 14316
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-doorway-square-wide.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5864
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-doorway-square.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 7844
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-half.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4808
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-rounded.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12616
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-side.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 3852
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-slope.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4812
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-window-glass.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 15708
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-window-round.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 22356
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-window-shutters.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 23892
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-window-small.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 9376
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-window-stone.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12484
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-arch-top-detail.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 16092
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-arch-top.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12892
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-arch.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4856
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-block-half.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8580
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-block.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8548
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-broken.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 16344
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-corner-diagonal-half.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4804
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-corner-diagonal.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6048
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-corner-edge.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5432
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-corner.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6804
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-curved.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 11444
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-detail-cross.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8480
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-detail-diagonal.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6684
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-detail-horizontal.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 6256
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-diagonal.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5228
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-door.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 30744
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-doorway-base.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8044
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-doorway-round.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 15068
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-doorway-square-wide-curved.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 14332
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-doorway-square-wide.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 5876
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-doorway-square.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8664
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-half.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4824
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-rounded.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 12632
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-side.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 3868
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-slope.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 8544
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-window-glass.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 11184
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-window-round.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 23636
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-window-shutters.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 10612
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-window-small.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 11808
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood-window-stone.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 16844
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall-wood.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4808
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wall.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 4792
+    },
+    {
+      "file": "public/TRPG/world/assets/town/watermill-wide.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 53872
+    },
+    {
+      "file": "public/TRPG/world/assets/town/watermill.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 53856
+    },
+    {
+      "file": "public/TRPG/world/assets/town/wheel.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 17184
+    },
+    {
+      "file": "public/TRPG/world/assets/town/windmill.glb",
+      "category": "D licensed runtime assets",
+      "bytes": 71160
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-2MA2RVWR.js",
+      "category": "F required deployment bundle",
+      "bytes": 14391
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-2QHXS6DU.js",
+      "category": "F required deployment bundle",
+      "bytes": 1035
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-36H5ZRLD.js",
+      "category": "F required deployment bundle",
+      "bytes": 11773
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-3AXT4WZP.js",
+      "category": "F required deployment bundle",
+      "bytes": 8115
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-3MTZMEPS.js",
+      "category": "F required deployment bundle",
+      "bytes": 360
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-3SZZWH2O.js",
+      "category": "F required deployment bundle",
+      "bytes": 126759
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-3WFFVQ3C.js",
+      "category": "F required deployment bundle",
+      "bytes": 8406
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-3WG2WLZ4.js",
+      "category": "F required deployment bundle",
+      "bytes": 81
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-42XEOR2V.js",
+      "category": "F required deployment bundle",
+      "bytes": 211554
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-445MNFOK.js",
+      "category": "F required deployment bundle",
+      "bytes": 11694
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-45FLNR3H.js",
+      "category": "F required deployment bundle",
+      "bytes": 870
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-4BR5YNDE.js",
+      "category": "F required deployment bundle",
+      "bytes": 694
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-4DRSF7KA.js",
+      "category": "F required deployment bundle",
+      "bytes": 313
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-4PO6GCLE.js",
+      "category": "F required deployment bundle",
+      "bytes": 58678
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-4TVC2JRA.js",
+      "category": "F required deployment bundle",
+      "bytes": 389
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-534UP3Y6.js",
+      "category": "F required deployment bundle",
+      "bytes": 2268
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-56AFRCY2.js",
+      "category": "F required deployment bundle",
+      "bytes": 2356
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-56EC5OIE.js",
+      "category": "F required deployment bundle",
+      "bytes": 15582
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-5A6E7V76.js",
+      "category": "F required deployment bundle",
+      "bytes": 1035
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-5A724MOT.js",
+      "category": "F required deployment bundle",
+      "bytes": 502
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-5DYI7P7I.js",
+      "category": "F required deployment bundle",
+      "bytes": 3787
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-5KYCNYSS.js",
+      "category": "F required deployment bundle",
+      "bytes": 3954
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-5MCOFQIJ.js",
+      "category": "F required deployment bundle",
+      "bytes": 8363
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-5V4AXZBF.js",
+      "category": "F required deployment bundle",
+      "bytes": 374
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-5VWYTSQG.js",
+      "category": "F required deployment bundle",
+      "bytes": 34408
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-6DCKYSZS.js",
+      "category": "F required deployment bundle",
+      "bytes": 2559
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-6HQA74Z7.js",
+      "category": "F required deployment bundle",
+      "bytes": 16549
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-72Y7VUSE.js",
+      "category": "F required deployment bundle",
+      "bytes": 8090
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-77VYRWXD.js",
+      "category": "F required deployment bundle",
+      "bytes": 1806
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-7FF3BR46.js",
+      "category": "F required deployment bundle",
+      "bytes": 10302
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-7QAJERQT.js",
+      "category": "F required deployment bundle",
+      "bytes": 3290
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-7URWEPEW.js",
+      "category": "F required deployment bundle",
+      "bytes": 1127
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-7WXHZZI3.js",
+      "category": "F required deployment bundle",
+      "bytes": 7410
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-A2LAXFZR.js",
+      "category": "F required deployment bundle",
+      "bytes": 762
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-AF5ZATFA.js",
+      "category": "F required deployment bundle",
+      "bytes": 3673
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-AG37KKDV.js",
+      "category": "F required deployment bundle",
+      "bytes": 233
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-AM6Y2IBT.js",
+      "category": "F required deployment bundle",
+      "bytes": 265
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-ANHPSZSB.js",
+      "category": "F required deployment bundle",
+      "bytes": 1360
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-AOKVGD45.js",
+      "category": "F required deployment bundle",
+      "bytes": 4386
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-ATAFXPUO.js",
+      "category": "F required deployment bundle",
+      "bytes": 46753
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-ATXQLUDH.js",
+      "category": "F required deployment bundle",
+      "bytes": 1173
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-AYSDEGET.js",
+      "category": "F required deployment bundle",
+      "bytes": 93717
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-B6H7NF26.js",
+      "category": "F required deployment bundle",
+      "bytes": 1537
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-BETYLJJ7.js",
+      "category": "F required deployment bundle",
+      "bytes": 14023
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-BGSEVRFI.js",
+      "category": "F required deployment bundle",
+      "bytes": 1354
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-BJS6HZQK.js",
+      "category": "F required deployment bundle",
+      "bytes": 2813
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-BKMGRR35.js",
+      "category": "F required deployment bundle",
+      "bytes": 512
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-BPRTWXEJ.js",
+      "category": "F required deployment bundle",
+      "bytes": 12567
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-BSBXLWUP.js",
+      "category": "F required deployment bundle",
+      "bytes": 5229
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-BXLBHBHI.js",
+      "category": "F required deployment bundle",
+      "bytes": 3849
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-C2UQKYEO.js",
+      "category": "F required deployment bundle",
+      "bytes": 14183
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-C5BS2JNY.js",
+      "category": "F required deployment bundle",
+      "bytes": 7728
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-CLFVYIWF.js",
+      "category": "F required deployment bundle",
+      "bytes": 1472
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-CSJLCOYR.js",
+      "category": "F required deployment bundle",
+      "bytes": 45
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-CTE7VK57.js",
+      "category": "F required deployment bundle",
+      "bytes": 3173
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-CWR5JOJM.js",
+      "category": "F required deployment bundle",
+      "bytes": 15832
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-DEEHSMPG.js",
+      "category": "F required deployment bundle",
+      "bytes": 9429
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-DH6UV2SR.js",
+      "category": "F required deployment bundle",
+      "bytes": 1848
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-DQG5TMNC.js",
+      "category": "F required deployment bundle",
+      "bytes": 359
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-DSPYZVNH.js",
+      "category": "F required deployment bundle",
+      "bytes": 529
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-EACWKJ3F.js",
+      "category": "F required deployment bundle",
+      "bytes": 1273
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-EEOIV4T6.js",
+      "category": "F required deployment bundle",
+      "bytes": 1416
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-EFTOQV4X.js",
+      "category": "F required deployment bundle",
+      "bytes": 8024
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-ELPL6VF5.js",
+      "category": "F required deployment bundle",
+      "bytes": 20432
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-EU4SD7WB.js",
+      "category": "F required deployment bundle",
+      "bytes": 96731
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-FKGVITRH.js",
+      "category": "F required deployment bundle",
+      "bytes": 1748
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-FORHPSF4.js",
+      "category": "F required deployment bundle",
+      "bytes": 31648
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-FWCRJPHL.js",
+      "category": "F required deployment bundle",
+      "bytes": 304
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-GBVEXUQ4.js",
+      "category": "F required deployment bundle",
+      "bytes": 1078
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-GGLLBZLR.js",
+      "category": "F required deployment bundle",
+      "bytes": 7727
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-GKSF3F2Q.js",
+      "category": "F required deployment bundle",
+      "bytes": 336
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-GLNMDOXH.js",
+      "category": "F required deployment bundle",
+      "bytes": 1527
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-GLPMTMU6.js",
+      "category": "F required deployment bundle",
+      "bytes": 447
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-GMETR6MV.js",
+      "category": "F required deployment bundle",
+      "bytes": 2311
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-GMWOYBMN.js",
+      "category": "F required deployment bundle",
+      "bytes": 3546
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-GXPWKJLI.js",
+      "category": "F required deployment bundle",
+      "bytes": 4666
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-H3HAU5NX.js",
+      "category": "F required deployment bundle",
+      "bytes": 2718
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-H3J74N5D.js",
+      "category": "F required deployment bundle",
+      "bytes": 558
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-H4PG5PSH.js",
+      "category": "F required deployment bundle",
+      "bytes": 17370
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-HKPGFHJD.js",
+      "category": "F required deployment bundle",
+      "bytes": 500
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-HTQHYVOW.js",
+      "category": "F required deployment bundle",
+      "bytes": 14402
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-HWBXOAKO.js",
+      "category": "F required deployment bundle",
+      "bytes": 4742
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-I2IOV5CD.js",
+      "category": "F required deployment bundle",
+      "bytes": 1213
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-I5KFKMFH.js",
+      "category": "F required deployment bundle",
+      "bytes": 3486
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-IBKJV77Q.js",
+      "category": "F required deployment bundle",
+      "bytes": 12756
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-IC3W25BO.js",
+      "category": "F required deployment bundle",
+      "bytes": 217
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-IEWRYBG6.js",
+      "category": "F required deployment bundle",
+      "bytes": 90539
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-IN4IBWRD.js",
+      "category": "F required deployment bundle",
+      "bytes": 21648
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-ITFEK2WE.js",
+      "category": "F required deployment bundle",
+      "bytes": 234
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-J2KWRWO3.js",
+      "category": "F required deployment bundle",
+      "bytes": 901
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-J3F3ST67.js",
+      "category": "F required deployment bundle",
+      "bytes": 17297
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-JFGBNEMJ.js",
+      "category": "F required deployment bundle",
+      "bytes": 1121
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-JJLD4FK2.js",
+      "category": "F required deployment bundle",
+      "bytes": 2472
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-JKDMTQIR.js",
+      "category": "F required deployment bundle",
+      "bytes": 224
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-JLGVFQ5N.js",
+      "category": "F required deployment bundle",
+      "bytes": 6985
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-JLSIK6S6.js",
+      "category": "F required deployment bundle",
+      "bytes": 468
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-JMCPFCIM.js",
+      "category": "F required deployment bundle",
+      "bytes": 207
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-K4MLIIJP.js",
+      "category": "F required deployment bundle",
+      "bytes": 14242
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-KAJZF6NJ.js",
+      "category": "F required deployment bundle",
+      "bytes": 13911
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-KCXI5NJA.js",
+      "category": "F required deployment bundle",
+      "bytes": 8513
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-KOFUGEHS.js",
+      "category": "F required deployment bundle",
+      "bytes": 1969
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-KW7SQOYV.js",
+      "category": "F required deployment bundle",
+      "bytes": 524
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-KWJ5FBPS.js",
+      "category": "F required deployment bundle",
+      "bytes": 928
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-L3JDDALL.js",
+      "category": "F required deployment bundle",
+      "bytes": 4373
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-L5WUWJUF.js",
+      "category": "F required deployment bundle",
+      "bytes": 470
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-LYFTOM27.js",
+      "category": "F required deployment bundle",
+      "bytes": 20570
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-MBAV7A2Q.js",
+      "category": "F required deployment bundle",
+      "bytes": 1174
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-MCBBJDWL.js",
+      "category": "F required deployment bundle",
+      "bytes": 371
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-MCXJJ7GM.js",
+      "category": "F required deployment bundle",
+      "bytes": 1646
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-MNXOWAC5.js",
+      "category": "F required deployment bundle",
+      "bytes": 579
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-MP4VS6QN.js",
+      "category": "F required deployment bundle",
+      "bytes": 6412
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-MQ7DXXF5.js",
+      "category": "F required deployment bundle",
+      "bytes": 276
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-MQ7GFD23.js",
+      "category": "F required deployment bundle",
+      "bytes": 620
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-MU64BJQ4.js",
+      "category": "F required deployment bundle",
+      "bytes": 510
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-N6N4C5NE.js",
+      "category": "F required deployment bundle",
+      "bytes": 708
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-NBGFQICB.js",
+      "category": "F required deployment bundle",
+      "bytes": 5134
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-NBNQFULT.js",
+      "category": "F required deployment bundle",
+      "bytes": 665
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-NDL2DF62.js",
+      "category": "F required deployment bundle",
+      "bytes": 2201
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-NMKL6ZX5.js",
+      "category": "F required deployment bundle",
+      "bytes": 5067
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-OO7BBGPJ.js",
+      "category": "F required deployment bundle",
+      "bytes": 132879
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-ORN4DVMX.js",
+      "category": "F required deployment bundle",
+      "bytes": 52643
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-OWKFGCY2.js",
+      "category": "F required deployment bundle",
+      "bytes": 23830
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-P3M6J7LE.js",
+      "category": "F required deployment bundle",
+      "bytes": 340
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-PFHCAADH.js",
+      "category": "F required deployment bundle",
+      "bytes": 1170
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-PIZHSNCN.js",
+      "category": "F required deployment bundle",
+      "bytes": 6829
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-PTJ4CXVK.js",
+      "category": "F required deployment bundle",
+      "bytes": 1882
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-PYCIVUEY.js",
+      "category": "F required deployment bundle",
+      "bytes": 429
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-Q337VPSK.js",
+      "category": "F required deployment bundle",
+      "bytes": 307
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-QGPUHBVI.js",
+      "category": "F required deployment bundle",
+      "bytes": 77339
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-QJOLTEFF.js",
+      "category": "F required deployment bundle",
+      "bytes": 9013
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-QSXQDWIG.js",
+      "category": "F required deployment bundle",
+      "bytes": 575
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-QXIZ562X.js",
+      "category": "F required deployment bundle",
+      "bytes": 134254
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-RACXQD5D.js",
+      "category": "F required deployment bundle",
+      "bytes": 1014
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-RKAJYJW4.js",
+      "category": "F required deployment bundle",
+      "bytes": 3850
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-RNGQGRFP.js",
+      "category": "F required deployment bundle",
+      "bytes": 274
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-ROCFSSDI.js",
+      "category": "F required deployment bundle",
+      "bytes": 431
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-RZPAKG2B.js",
+      "category": "F required deployment bundle",
+      "bytes": 3428
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-S3O3GBZ4.js",
+      "category": "F required deployment bundle",
+      "bytes": 18472
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-S4HTEUIO.js",
+      "category": "F required deployment bundle",
+      "bytes": 608
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-S5ENCVAU.js",
+      "category": "F required deployment bundle",
+      "bytes": 15190
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-S6J55ZZS.js",
+      "category": "F required deployment bundle",
+      "bytes": 6810
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-SESPGFXV.js",
+      "category": "F required deployment bundle",
+      "bytes": 325
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-SFKCAPAX.js",
+      "category": "F required deployment bundle",
+      "bytes": 7816
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-SIRFFNBU.js",
+      "category": "F required deployment bundle",
+      "bytes": 18144
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-SYLL4S44.js",
+      "category": "F required deployment bundle",
+      "bytes": 88060
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-TDXPF6WS.js",
+      "category": "F required deployment bundle",
+      "bytes": 79119
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-TSUVIJ6Y.js",
+      "category": "F required deployment bundle",
+      "bytes": 37842
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-U2R3O2VS.js",
+      "category": "F required deployment bundle",
+      "bytes": 939
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-U6YQM7JI.js",
+      "category": "F required deployment bundle",
+      "bytes": 4702
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-UQPW7UJU.js",
+      "category": "F required deployment bundle",
+      "bytes": 6876
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-UTQYL76B.js",
+      "category": "F required deployment bundle",
+      "bytes": 14631
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-UUHA7RAM.js",
+      "category": "F required deployment bundle",
+      "bytes": 557
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-UVN2PCDZ.js",
+      "category": "F required deployment bundle",
+      "bytes": 988
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-UXYWV3NN.js",
+      "category": "F required deployment bundle",
+      "bytes": 50612
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-VE3S2ISW.js",
+      "category": "F required deployment bundle",
+      "bytes": 648
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-VI5DZS6N.js",
+      "category": "F required deployment bundle",
+      "bytes": 6479
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-VQ5HPJDP.js",
+      "category": "F required deployment bundle",
+      "bytes": 504
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-VTMWGY7A.js",
+      "category": "F required deployment bundle",
+      "bytes": 818
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-WA22HLAU.js",
+      "category": "F required deployment bundle",
+      "bytes": 33035
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-WGI3TD3B.js",
+      "category": "F required deployment bundle",
+      "bytes": 5744
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-WHGMCF4T.js",
+      "category": "F required deployment bundle",
+      "bytes": 644
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-WR5MIA6Z.js",
+      "category": "F required deployment bundle",
+      "bytes": 22565
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-WSOEI6FG.js",
+      "category": "F required deployment bundle",
+      "bytes": 730
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-WTU5ZLEB.js",
+      "category": "F required deployment bundle",
+      "bytes": 1893
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-WXQYG3DF.js",
+      "category": "F required deployment bundle",
+      "bytes": 575
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-WYA232A5.js",
+      "category": "F required deployment bundle",
+      "bytes": 395
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-X55X5H5Z.js",
+      "category": "F required deployment bundle",
+      "bytes": 265
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-X5CW4RXG.js",
+      "category": "F required deployment bundle",
+      "bytes": 11926
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-X5OTH6BQ.js",
+      "category": "F required deployment bundle",
+      "bytes": 1713
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-XBSE4QVE.js",
+      "category": "F required deployment bundle",
+      "bytes": 7453
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-XBYMSRK7.js",
+      "category": "F required deployment bundle",
+      "bytes": 808
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-XEVPSZHM.js",
+      "category": "F required deployment bundle",
+      "bytes": 4847
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-XH5FJVUS.js",
+      "category": "F required deployment bundle",
+      "bytes": 16944
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-XMYNVWHN.js",
+      "category": "F required deployment bundle",
+      "bytes": 455
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-XRZUWNRC.js",
+      "category": "F required deployment bundle",
+      "bytes": 2521
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-XT4BFWHY.js",
+      "category": "F required deployment bundle",
+      "bytes": 660
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-XZ4B577H.js",
+      "category": "F required deployment bundle",
+      "bytes": 30950
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-XZXEGACR.js",
+      "category": "F required deployment bundle",
+      "bytes": 44975
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-Y2P3OXYU.js",
+      "category": "F required deployment bundle",
+      "bytes": 1411
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-Y7E6N5RE.js",
+      "category": "F required deployment bundle",
+      "bytes": 285
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-YBWCPYDF.js",
+      "category": "F required deployment bundle",
+      "bytes": 25557
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-YFNWSCXY.js",
+      "category": "F required deployment bundle",
+      "bytes": 160147
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-YGEDM7I4.js",
+      "category": "F required deployment bundle",
+      "bytes": 35829
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-YWHDLB2G.js",
+      "category": "F required deployment bundle",
+      "bytes": 11516
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-ZU7QYSXX.js",
+      "category": "F required deployment bundle",
+      "bytes": 8085
+    },
+    {
+      "file": "public/TRPG/world/dist/chunk-ZUHEGR2G.js",
+      "category": "F required deployment bundle",
+      "bytes": 761
+    },
+    {
+      "file": "public/TRPG/world/dist/client.js",
+      "category": "F required deployment bundle",
+      "bytes": 574800
+    },
+    {
+      "file": "public/TRPG/world/world.css",
+      "category": "A production source and reconstruction tools",
+      "bytes": 7849
+    },
+    {
+      "file": "src/client/trpg-world/assets.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 2564
+    },
+    {
+      "file": "src/client/trpg-world/client.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 19827
+    },
+    {
+      "file": "src/client/trpg-world/index.html",
+      "category": "A production source and reconstruction tools",
+      "bytes": 4037
+    },
+    {
+      "file": "src/client/trpg-world/world-scene.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 14181
+    },
+    {
+      "file": "src/server/trpg/world/content/world-content.json",
+      "category": "B canonical inputs and generated content",
+      "bytes": 1832585
+    },
+    {
+      "file": "src/server/trpg/world/narrative.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 3780
+    },
+    {
+      "file": "src/server/trpg/world/routes.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 6163
+    },
+    {
+      "file": "src/server/trpg/world/service.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 12735
+    },
+    {
+      "file": "src/server/trpg/world/shutdown.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 1265
+    },
+    {
+      "file": "src/server/trpg/world/store.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 2389
+    },
+    {
+      "file": "src/shared/trpg-world/activity.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 2871
+    },
+    {
+      "file": "src/shared/trpg-world/causal-events.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 12455
+    },
+    {
+      "file": "src/shared/trpg-world/combat.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 10796
+    },
+    {
+      "file": "src/shared/trpg-world/conversation.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 7022
+    },
+    {
+      "file": "src/shared/trpg-world/navigation.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 8652
+    },
+    {
+      "file": "src/shared/trpg-world/npc-planner.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 2681
+    },
+    {
+      "file": "src/shared/trpg-world/progression.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 1992
+    },
+    {
+      "file": "src/shared/trpg-world/relationships.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 3102
+    },
+    {
+      "file": "src/shared/trpg-world/simulation.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 65322
+    },
+    {
+      "file": "src/shared/trpg-world/survival.js",
+      "category": "A production source and reconstruction tools",
+      "bytes": 4547
+    },
+    {
+      "file": "tools/trpg-world/assets.test.mjs",
+      "category": "C tests",
+      "bytes": 2363
+    },
+    {
+      "file": "tools/trpg-world/audit-content.mjs",
+      "category": "A production source and reconstruction tools",
+      "bytes": 6292
+    },
+    {
+      "file": "tools/trpg-world/browser-smoke.mjs",
+      "category": "A production source and reconstruction tools",
+      "bytes": 3889
+    },
+    {
+      "file": "tools/trpg-world/build-client.mjs",
+      "category": "A production source and reconstruction tools",
+      "bytes": 3409
+    },
+    {
+      "file": "tools/trpg-world/build-content.mjs",
+      "category": "A production source and reconstruction tools",
+      "bytes": 14694
+    },
+    {
+      "file": "tools/trpg-world/core-semantics.test.mjs",
+      "category": "C tests",
+      "bytes": 9851
+    },
+    {
+      "file": "tools/trpg-world/dev-server.mjs",
+      "category": "A production source and reconstruction tools",
+      "bytes": 477
+    },
+    {
+      "file": "tools/trpg-world/import-assets.mjs",
+      "category": "A production source and reconstruction tools",
+      "bytes": 2363
+    },
+    {
+      "file": "tools/trpg-world/inspect-assets.mjs",
+      "category": "A production source and reconstruction tools",
+      "bytes": 6523
+    },
+    {
+      "file": "tools/trpg-world/playability.test.mjs",
+      "category": "C tests",
+      "bytes": 15402
+    },
+    {
+      "file": "tools/trpg-world/region-layout.mjs",
+      "category": "A production source and reconstruction tools",
+      "bytes": 12742
+    },
+    {
+      "file": "tools/trpg-world/reports/assets.json",
+      "category": "E temporary reports",
+      "bytes": 76
+    },
+    {
+      "file": "tools/trpg-world/reports/browser-failure.png",
+      "category": "E temporary reports",
+      "bytes": 126640
+    },
+    {
+      "file": "tools/trpg-world/reports/browser-smoke.json",
+      "category": "E temporary reports",
+      "bytes": 323
+    },
+    {
+      "file": "tools/trpg-world/reports/build.json",
+      "category": "E temporary reports",
+      "bytes": 39318
+    },
+    {
+      "file": "tools/trpg-world/reports/error.png",
+      "category": "E temporary reports",
+      "bytes": 61737
+    },
+    {
+      "file": "tools/trpg-world/reports/inventory.png",
+      "category": "E temporary reports",
+      "bytes": 211932
+    },
+    {
+      "file": "tools/trpg-world/reports/map.png",
+      "category": "E temporary reports",
+      "bytes": 230503
+    },
+    {
+      "file": "tools/trpg-world/reports/world-farm.png",
+      "category": "E temporary reports",
+      "bytes": 197839
+    },
+    {
+      "file": "tools/trpg-world/server.test.mjs",
+      "category": "C tests",
+      "bytes": 13425
+    },
+    {
+      "file": "tools/trpg-world/simulation.test.mjs",
+      "category": "C tests",
+      "bytes": 17689
+    },
+    {
+      "file": "tools/trpg-world/sources/combat.json",
+      "category": "B canonical inputs and generated content",
+      "bytes": 1196798
+    },
+    {
+      "file": "tools/trpg-world/sources/world.json",
+      "category": "B canonical inputs and generated content",
+      "bytes": 659592
+    }
+  ]
+}

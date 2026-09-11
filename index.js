@@ -5,8 +5,10 @@ import { mountJudgementRoutes, registerJudgementSocketHandlers } from "./src/ser
 import { registerLifeSocketHandlers } from "./src/server/life/index.js";
 import { PORT } from "./src/foundation/env.js";
 import { registerSecretToolSocketHandlers, startSecretToolTtlCleanup } from "./src/server/secret-tool/index.js";
+import { installWorldShutdown } from "./src/server/trpg/world/shutdown.js";
 
 const { app, httpServer, io } = createServerContext();
+installWorldShutdown({ httpServer, io, service: app.locals.worldService });
 
 app.get("/api/bungei/bgm/daily", (req, res) => {
   const bgmPath = process.env.BUNGEI_DAILY_BGM_PATH;

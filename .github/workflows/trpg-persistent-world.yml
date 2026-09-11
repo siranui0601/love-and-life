@@ -1,0 +1,38 @@
+name: TRPG Persistent World
+
+on:
+  pull_request:
+    paths:
+      - 'src/client/trpg-world/**'
+      - 'src/shared/trpg-world/**'
+      - 'src/server/trpg/world/**'
+      - 'public/TRPG/world/**'
+      - 'public/TRPG/index.html'
+      - 'tools/trpg-world/**'
+      - 'src/server/app.js'
+      - 'index.js'
+      - 'package*.json'
+      - '.github/workflows/trpg-persistent-world.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-world:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate content, provenance, authority and client build
+        run: npm run world:check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: persistent-world-validation
+          path: tools/trpg-world/reports/

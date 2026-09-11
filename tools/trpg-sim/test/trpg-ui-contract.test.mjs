@@ -5,7 +5,9 @@ import test from "node:test";
 import sharp from "sharp";
 
 const ROOT = path.resolve(import.meta.dirname, "../../..");
-const html = fs.readFileSync(path.join(ROOT, "public/TRPG/index.html"), "utf8");
+// This suite verifies the retained visual-novel surface. The public index is
+// intentionally the new persistent 3D world; legacy.html keeps this contract.
+const html = fs.readFileSync(path.join(ROOT, "public/TRPG/legacy.html"), "utf8");
 const css = fs.readFileSync(path.join(ROOT, "public/TRPG/style.css"), "utf8");
 const app = fs.readFileSync(path.join(ROOT, "public/TRPG/app.js"), "utf8");
 

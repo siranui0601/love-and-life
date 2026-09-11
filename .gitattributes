@@ -1,0 +1,3 @@
+# Preserve imported asset hashes and bundled upstream shader source byte-for-byte.
+public/TRPG/world/assets/** -text -whitespace
+public/TRPG/world/dist/** -text -whitespace

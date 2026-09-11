@@ -3,7 +3,9 @@ import fs from "node:fs";
 import test from "node:test";
 
 test("the playable UI renders canonical weather hunger and fatigue", () => {
-  const html = fs.readFileSync("public/TRPG/index.html", "utf8");
+  // The visual-novel contract belongs to the retained legacy experience;
+  // /TRPG/index.html is now the persistent 3D world entry point.
+  const html = fs.readFileSync("public/TRPG/legacy.html", "utf8");
   const app = fs.readFileSync("public/TRPG/app.js", "utf8");
   const css = fs.readFileSync("public/TRPG/style.css", "utf8");
   assert.ok(html.includes('id="weatherLabel"'));

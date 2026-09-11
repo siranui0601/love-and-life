@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { mountFloodNoHandSoccerVisualRoutes } from "./nohand-soccer/visual-cache-flood.js";
 import { mountTrpgNarrativeRoutes } from "./trpg/routes.js";
 import { mountTrpgGameRoutes } from "./trpg/game/routes.js";
+import { mountPersistentWorldRoutes } from "./trpg/world/routes.js";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(currentDirectory, "../..");
@@ -94,6 +95,9 @@ function createTrpgSkillCatalogLoader() {
 export function createApp() {
   const app = express();
   const trpgSkillCatalog = createTrpgSkillCatalogLoader();
+
+  // Spatial world owns its bounded parser, authority and private content projection.
+  mountPersistentWorldRoutes(app);
 
   // Game commands contain only short IDs. Parse them under a tight limit
   // before the wider legacy JSON parser so journal storage cannot be abused.

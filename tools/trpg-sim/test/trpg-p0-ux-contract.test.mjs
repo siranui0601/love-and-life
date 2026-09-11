@@ -8,7 +8,9 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../../..");
 const read = (relativePath) => fs.readFileSync(path.join(ROOT, relativePath), "utf8");
 
-const index = read("public/TRPG/index.html");
+// The P0 visual-novel observer is retained under legacy.html while the main
+// index serves the persistent 3D world.
+const index = read("public/TRPG/legacy.html");
 const uxScript = read("public/TRPG/p0-ux.js");
 const uxStyle = read("public/TRPG/p0-ux.css");
 

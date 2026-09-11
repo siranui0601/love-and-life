@@ -18,9 +18,19 @@
     "trpg:preview": "node tools/trpg-sim/static-server.mjs",
     "trpg:experiential:v6": "node tools/trpg-sim/cli-experiential-player-v6.mjs",
     "trpg:day100-player": "node tools/trpg-sim/cli-day100-player.mjs",
-    "trpg:narrative-approve": "node tools/trpg-sim/approve-narrative-replays.mjs"
+    "trpg:narrative-approve": "node tools/trpg-sim/approve-narrative-replays.mjs",
+    "world:content": "node tools/trpg-world/build-content.mjs",
+    "world:build": "node tools/trpg-world/build-client.mjs",
+    "world:audit": "node tools/trpg-world/audit-content.mjs",
+    "world:test": "node --test tools/trpg-world/*.test.mjs",
+    "world:serve": "node tools/trpg-world/dev-server.mjs",
+    "world:assets:import": "node tools/trpg-world/import-assets.mjs",
+    "world:assets:check": "node tools/trpg-world/inspect-assets.mjs",
+    "world:check": "npm run world:audit && npm run world:assets:check && npm run world:test && npm run world:build"
   },
   "dependencies": {
+    "@babylonjs/core": "9.25.0",
+    "@babylonjs/loaders": "9.25.0",
     "@google-cloud/local-auth": "^2.1.0",
     "@google/generative-ai": "*",
     "dotenv": "^17.2.1",
@@ -28,5 +38,9 @@
     "googleapis": "^105.0.0",
     "sharp": "^0.34.0",
     "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "esbuild": "0.28.2"
   }
 }
