@@ -70,3 +70,29 @@ test('real service: NPC buys and eats using a persistent multi-step plan during 
  const h=await harness(small());await h.command({type:'rest',targetId:'inn',hours:6});const s=await h.read();
  assert(Object.values(s.npcs).some(n=>n.planHistory?.some(p=>p.actions.includes('purchase-food')&&p.actions.includes('consume-food')&&p.actions.includes('move'))));await h.service.close();
 });
+
+test('real service: pickpocket transfers an actual medicine stack through the same property path',async()=>{
+ const c=small();c.npcs=c.npcs.slice(0,1);c.npcs[0].money=0;c.npcs[0].possessions={medicine:1};const h=await harness(c);await h.tick(.5);const before=await h.read();let s;
+ for(let tries=0;tries<64;tries++){await h.command({type:'affordance',action:'pickpocket',targetId:'doctor'});s=await h.read();if(s.propertyTransfers?.length)break;}
+ assert.equal(s.npcs.doctor.possessions.medicine,0);assert.equal(s.player.inventory.medicine,before.player.inventory.medicine+1);assert.equal(s.player.gold,before.player.gold);
+ assert.equal(s.propertyTransfers.at(-1).assetId,'medicine');assert.equal(s.worldActionHistory.at(-1).status,'completed');assert(s.worldActionHistory.at(-1).createdFactIds.length);await h.service.close();
+});
+test('interpretation follows knowledge and occupation, never NPC identity',async()=>{
+ const {interpretationCandidates}=await import('../../src/shared/trpg-world/interpretation.js');
+ const fact={id:'observed',actorId:'player',region:'farm',payload:{action:'lie',nearObjectId:'well'}};
+ const npc={id:'arbitrary',beliefs:[{id:'water-report',claim:'unsafe-water',place:{region:'farm',objectId:'well'}}]};
+ assert.equal(interpretationCandidates({},npc,{role:'農夫'},fact)[0].claim,'possible-water-hazard');
+ npc.beliefs=[];assert.equal(interpretationCandidates({},npc,{role:'医師'},fact)[0].claim,'ill');assert.equal(interpretationCandidates({},npc,{role:'衛兵'},fact)[0].claim,'intoxicated');
+});
+test('relationship decisions use known attribution, relevance and request risk',async()=>{
+ const {evaluateCooperation}=await import('../../src/shared/trpg-world/relationships.js');
+ const c=small(),s=createWorld(c),n=s.npcs.doctor;
+ const fact={id:'gift',kind:'gift',actorId:'player',targetId:n.id,payload:{neededAtReceipt:true,requested:true},at:s.time};s.socialFacts.push(fact);n.memories.push({factId:fact.id,actorId:'player',source:{type:'seen'}});
+ assert(evaluateCooperation(s,n).willing);assert(!evaluateCooperation(s,n,{risk:2}).willing);assert(!evaluateCooperation(s,s.npcs.guard).willing);
+ n.beliefs.push({id:'credit',claim:'credit',aboutFactId:'gift',attributedTo:'someone-else',confidence:.9,source:{type:'claimed'}});
+ assert(evaluateCooperation(s,n).willing);n.memories[0].source={type:'heard'};assert(!evaluateCooperation(s,n).willing);
+});
+test('live narrative adapter requires explicit enable and never calls transport while disabled',async()=>{
+ const {LiveNarrativeProvider}=await import('../../src/server/trpg/world/narrative.js');let calls=0;
+ assert.throws(()=>new LiveNarrativeProvider({transport:async()=>{calls++;}}),/explicit enable/);assert.equal(calls,0);
+});

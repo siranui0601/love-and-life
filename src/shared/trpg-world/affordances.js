@@ -1,3 +1,6 @@
+import {beginWorldAction,completeWorldAction} from './world-actions.js';
+import {interpretObservation} from './interpretation.js';
+import {possessions,transferProperty} from './property.js';
 import {distance,hasLineOfSight} from './navigation.js';
 import {rememberAction} from './relationships.js';
 import {setActivity} from './activity.js';
@@ -12,28 +15,20 @@ export function affordances(state,content,targetId='self') {
   for(const [itemId,quantity] of Object.entries(p.inventory||{}))if(quantity>0&&!Object.values(p.equipment).includes(itemId)&&!['horse','broom'].includes(itemId))result.push({id:`drop:${itemId}`,type:'affordance',action:'drop',itemId,targetId:'self',label:`置く：${content.items.find(i=>i.id===itemId)?.name||itemId}`});
  }
  const npc=state.npcs[targetId];
- if(local(state,content,npc)&&npc.money>0&&npc.goal!=='defend')result.push({id:'world:pickpocket',type:'affordance',action:'pickpocket',targetId,label:'財布を掏ろうとする'});
+ if(local(state,content,npc)&&possessions(state,npc.id).length>0&&npc.goal!=='defend')result.push({id:'world:pickpocket',type:'affordance',action:'pickpocket',targetId,label:'懐の持ち物を掏ろうとする'});
  const object=state.worldObjects?.[targetId];
  if(local(state,content,object)&&object.quantity>0)result.push({id:'world:take',type:'affordance',action:object.ownerId==='player'?'take':'steal',targetId,label:object.ownerId==='player'?'拾う':'盗む'});
  return result;
 }
-function interpret(state,content,fact) {
- for(const id of fact.witnesses) {
-  const npc=state.npcs[id],template=content.npcs.find(n=>n.id===id),values=`${template?.role||''} ${template?.personality||''}`;
-  const claim=['lie','roll'].includes(fact.payload.action)?(/医|薬|親切|世話/.test(values)?'ill':/衛|兵|厳|疑/.test(values)?'intoxicated':'resting'):'unusual-expression';
-  const belief={id:`belief:${state.nextId++}`,factId:fact.id,claim,confidence:claim==='resting'?.6:.4,about:'player',place:{region:fact.region,position:[...fact.position]},source:{type:'interpretation',observerId:id,evidenceFactId:fact.id},at:state.time};
-  npc.beliefs.push(belief);
-  npc.knowledge.push({id:belief.id,kind:'rumor',text:claim==='ill'?'旅人が倒れたように見えた。':claim==='intoxicated'?'旅人が酔っていたのかもしれない。':'旅人が地面で休んだり、身振りをしていた。',region:fact.region,observedAt:state.time,confidence:belief.confidence,belief:structuredClone(belief),source:belief.source});
- }
-}
-export function performAffordance(state,content,command) {
+function executeAffordance(state,content,command) {
  const targetId=command.targetId||'self';
  if(!affordances(state,content,targetId).some(a=>a.action===command.action&&a.itemId===command.itemId))reject();
  if(state.conversation)state.conversation.status='ended';setActivity(state,'idle');
  const p=state.player;state.worldObjects||={};state.propertyIncidents||=[];
  if(gestures[command.action]) {
   p.posture=['sit','lie','stand','crouch'].includes(command.action)?command.action:'stand';
-  const fact=rememberAction(state,content,'body-action',{payload:{action:command.action}});interpret(state,content,fact);
+  const nearby=content.regions.find(r=>r.id===p.region).objects.filter(o=>distance(o.position,p.position)<5).sort((a,b)=>distance(a.position,p.position)-distance(b.position,p.position))[0];
+  const fact=rememberAction(state,content,'body-action',{payload:{action:command.action,nearObjectId:nearby?.id}});interpretObservation(state,content,fact);
   return {message:`${gestures[command.action]}。`,factId:fact.id};
  }
  if(command.action==='drop') {
@@ -51,13 +46,14 @@ export function performAffordance(state,content,command) {
  const success=state.random/4294967296<(p.skills.includes('stealth')?.7:victim.goal==='sleep'?.65:.35);
  const witnesses=Object.values(state.npcs).filter(n=>n.id!==victim.id&&n.hp>0&&!n.travel&&n.goal!=='sleep'&&n.region===p.region&&distance(n.position,p.position)<5&&hasLineOfSight(region,n.position,p.position)).map(n=>n.id);
  if(!success)witnesses.push(victim.id);
- const amount=success?Math.min(victim.money,8):0;
- if(success){victim.money-=amount;p.gold+=amount;}
- const fact=rememberAction(state,content,success?'theft':'attempted-theft',{targetId:victim.id,payload:{ownerId:victim.id,asset:'money',amount},observedBy:witnesses});
- state.propertyIncidents.push({id:`property:${state.nextId++}`,factId:fact.id,victimId:victim.id,amount,at:state.time,discoverAfter:state.time+1800,status:success?'undiscovered':'noticed',witnessIds:witnesses});
+ const available=possessions(state,victim.id),property=available[0];const amount=success?Math.min(property.quantity,property.kind==='currency'?8:1):0;
+ const transfer=success?transferProperty(state,{from:victim.id,to:'player',kind:property.kind,assetId:property.assetId,quantity:amount,reason:'theft'}):null;
+ const fact=rememberAction(state,content,success?'theft':'attempted-theft',{targetId:victim.id,payload:{ownerId:victim.id,asset:property.assetId,propertyKind:property.kind,amount,custodyId:transfer?.id},observedBy:witnesses});
+ if(transfer)transfer.sourceFactId=fact.id;
+ state.propertyIncidents.push({id:`property:${state.nextId++}`,factId:fact.id,victimId:victim.id,assetId:property.assetId,propertyKind:property.kind,amount,at:state.time,discoverAfter:state.time+1800,status:success?'undiscovered':'noticed',witnessIds:witnesses});
  for(const id of witnesses){const npc=state.npcs[id];npc.nextDecision=0;
    const belief={id:`belief:${state.nextId++}`,factId:fact.id,claim:'property-interference',about:'player',victimId:victim.id,confidence:1,place:{region:p.region,position:[...p.position]},at:state.time,source:{type:'seen',observerId:id}};
-   npc.beliefs.push(belief);npc.knowledge.push({id:belief.id,kind:'crime-observation',text:success?'旅人が他人の硬貨を抜き取るところを見た。':'旅人が他人の財布へ手を伸ばすところを見た。',belief:structuredClone(belief),region:p.region,observedAt:state.time,confidence:1,source:belief.source});
+   npc.beliefs.push(belief);npc.knowledge.push({id:belief.id,kind:'crime-observation',text:success?'旅人が他人の持ち物を抜き取るところを見た。':'旅人が他人の財布へ手を伸ばすところを見た。',belief:structuredClone(belief),region:p.region,observedAt:state.time,confidence:1,source:belief.source});
  }
  return {message:success?'硬貨を手に移した。':'相手が手の動きに気づいた。',factId:fact.id};
 }
@@ -66,8 +62,14 @@ export function advancePropertyDiscovery(state,content) {
   const victim=state.npcs[incident.victimId];if(!victim||victim.hp<=0||victim.travel||victim.goal==='sleep')continue;
   incident.status='loss-discovered';incident.discoveredAt=state.time;
   // Discovering a shortage does not reveal who took it, or the original theft fact.
-  const fact=rememberAction(state,content,'property-loss-discovered',{actorId:victim.id,targetId:victim.id,payload:{asset:'money',amount:incident.amount},observedBy:[victim.id]});
-  victim.knowledge.push({id:fact.id,kind:'property-loss',text:'財布の硬貨が足りない。落としたのか、盗られたのか。',region:victim.region,observedAt:state.time,confidence:1,source:{type:'checked-possession',actorId:victim.id}});
+  const fact=rememberAction(state,content,'property-loss-discovered',{actorId:victim.id,targetId:victim.id,payload:{asset:incident.assetId||'gold',amount:incident.amount},observedBy:[victim.id]});
+  victim.knowledge.push({id:fact.id,kind:'property-loss',text:'持ち物が見当たらない。落としたのか、盗られたのか。',region:victim.region,observedAt:state.time,confidence:1,source:{type:'checked-possession',actorId:victim.id}});
   victim.beliefs.push({id:`belief:${state.nextId++}`,factId:fact.id,claim:'missing-property',place:{region:victim.region,position:[...victim.position]},at:state.time,source:{type:'checked-possession',actorId:victim.id}});victim.nextDecision=0;
  }
+}
+
+export function performAffordance(state,content,command) {
+ const candidate=affordances(state,content,command.targetId||'self').find(a=>a.action===command.action&&a.itemId===command.itemId);if(!candidate)reject();
+ const action=beginWorldAction(state,candidate);
+ const result=executeAffordance(state,content,command);return completeWorldAction(state,action,result);
 }

@@ -52,7 +52,8 @@ export class CachedNarrativeProvider {
  * The host owns credentials and network policy; the transport receives only allowlisted semantics.
  */
 export class LiveNarrativeProvider {
-  constructor({transport,timeoutMs=600}={}) {
+  constructor({transport,timeoutMs=600,enabled=false}={}) {
+    if(enabled!==true)throw new Error('Live narrative requires explicit enable');
     if(typeof transport!=='function')throw new TypeError('An explicit narrative transport is required');
     this.transport=transport;this.timeoutMs=timeoutMs;
   }

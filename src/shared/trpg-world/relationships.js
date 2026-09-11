@@ -27,9 +27,14 @@ export function relationshipReasons(state,npc,actorId='player') {
 }
 // Ephemeral decision evidence; never persisted as a universal relationship meter.
 export function evaluateCooperation(state,npc,{risk=0,resourceCost=0,purpose='assistance',values={},actorId='player'}={}) {
- const history=relationshipReasons(state,npc,actorId),evidence=[];let support=0;
- for(const fact of history) {
-  const memory=npc.memories.find(m=>m.factId===fact.id),confidence=memory?.source?.type==='seen'?1:.5;
+ const history=(npc.memories||[]).map(memory=>({memory,fact:state.socialFacts.find(f=>f.id===memory.factId)})).filter(x=>x.fact),evidence=[];let support=0;
+ const personality={...npc.values,...values},cautious=personality.caution??(/慎重|疑い|警戒/.test(npc.personality||'')?1:0);
+ for(const {fact,memory} of history) {
+  const firsthand=['seen','received','read'].includes(memory.source?.type),confidence=firsthand?1:.5;
+  let attributedTo=memory.perceivedActorId??fact.actorId,attributionSource=memory.source;
+  const claims=(npc.beliefs||[]).filter(b=>b.claim==='credit'&&b.aboutFactId===fact.id&&b.confidence>confidence).sort((a,b)=>b.confidence-a.confidence);
+  if(!firsthand&&claims.length){attributedTo=claims[0].attributedTo;attributionSource=claims[0].source;}
+  if(attributedTo!==actorId)continue;
   const directlyInvolved=fact.targetId===npc.id||fact.actorId===npc.id;
   if(!directlyInvolved)continue;
   let weight=0;
@@ -38,12 +43,14 @@ export function evaluateCooperation(state,npc,{risk=0,resourceCost=0,purpose='as
    if(promise?.to===npc.id&&promise.status==='kept')weight=3;
   }
   if(fact.kind==='rescue'&&fact.targetId===npc.id)weight=4;
-  if(fact.kind==='gift'&&fact.payload.neededAtReceipt)weight=1;
-  if(['theft','promise-broken'].includes(fact.kind)&&fact.targetId===npc.id)weight=-4;
-  if(weight){support+=weight*confidence;evidence.push({factId:fact.id,source:memory.source,reason:fact.kind,weight:weight*confidence});}
+  if(fact.kind==='gift'&&fact.payload.neededAtReceipt)weight=fact.payload.requested?2:1;
+  if(['theft','promise-broken','attempted-theft'].includes(fact.kind)&&fact.targetId===npc.id)weight=-4*(1+cautious);
+  if(weight){support+=weight*confidence;evidence.push({factId:fact.id,source:memory.source,attributedTo,attributionSource,reason:fact.kind,weight:weight*confidence});}
  }
- const burden=risk*3+resourceCost+(npc.hunger>80?2:0)+(npc.fatigue>80?2:0)+(npc.goal==='flee'?10:0);
- const duty=values.duty===purpose?2:0;
+ const obligations=(npc.obligations||[]).filter(o=>typeof o==='object'&&o.to===actorId&&o.status==='open'&&(!o.purpose||o.purpose===purpose));
+ for(const o of obligations){support+=2;evidence.push({obligationId:o.id,source:o.source,reason:'owed-service',weight:2});}
+ const burden=risk*(3+cautious*2)+resourceCost+(npc.hunger>80?2:0)+(npc.fatigue>80?2:0)+(npc.goal==='flee'?10:0);
+ const duty=personality.duty===purpose?2:0;
  return {willing:npc.hp>0&&support+duty>burden,evidence,context:{purpose,risk,resourceCost,currentGoal:npc.goal},utility:support+duty-burden};
 }
 export function willingToCooperate(state,npc,context) {return evaluateCooperation(state,npc,context).willing;}
