@@ -1,3 +1,6 @@
+import {advanceMemories} from './memory.js';
+import {initializeProperty,propertyView,performPropertyAction} from './private-property.js';
+import {advanceSocialPlan,advanceLaw,exchangeCrimeMemories} from './law.js';
 import {lessonFor,recordLesson} from './training.js';
 import {affordances,performAffordance,advancePropertyDiscovery} from './affordances.js';
 import {planForGoal,advancePlan} from './npc-planner.js';
@@ -210,6 +213,7 @@ function advanceNpcs(state,content,gameDelta) {
     if (npc.hp<=0) { npc.activity='倒れている'; continue; }
     npc.hunger=clamp(npc.hunger+gameDelta/DAY*75,0,100);npc.fatigue=clamp(npc.fatigue+gameDelta/DAY*60,0,100);
     if(npc.rescueAssignment||npc.causalAssignment)continue;
+    if(advanceSocialPlan(state,content,npc,gameDelta))continue;
     const original=idx.npcs.get(npc.id);if(!original)continue;let template=npc.displacedHome?{...original,home:npc.displacedHome,work:npc.displacedHome}:{...original};
     if(npc.region!==template.region&&!npc.displacedHome){template.home=idx.regions.get(npc.region)?.spawn||[0,0,0];template.work=template.home;}
     if (npc.travel) {
@@ -262,7 +266,8 @@ function socialTick(state,content) {
   for (let i=0;i<npcs.length;i++) for (let j=i+1;j<npcs.length;j++) {
     const a=npcs[i],b=npcs[j]; if(a.region!==b.region||distance(a.position,b.position)>7||!hasLineOfSight(index(content).regions.get(a.region),a.position,b.position)) continue;
     for (const [speaker,listener] of [[a,b],[b,a]]) {
-      const fact=speaker.knowledge.find(k=>k.kind!=='secret'&&k.disclosure?.visibility!=='private'&&!listener.knowledge.some(l=>l.id===k.id)); if(!fact) continue;
+      exchangeCrimeMemories(state,speaker,listener);
+      const fact=speaker.knowledge.find(k=>k.kind!=='secret'&&k.disclosure?.visibility!=='private'&&(!k.belief?.factId||!speaker.memories.some(m=>m.factId===k.belief.factId&&m.status==='forgotten'))&&!listener.knowledge.some(l=>l.id===k.id)); if(!fact) continue;
       const transmission={from:speaker.id,to:listener.id,at:state.time,region:speaker.region,position:[...speaker.position]};
       listener.knowledge.push({...clone(fact),receivedAt:state.time,transmissions:[...(fact.transmissions||[]),transmission].slice(-16),confidence:Math.max(.35,fact.confidence*.85),source:{type:'heard',actorId:speaker.id,origin:fact.source?.origin||fact.source}});
       if(fact.belief&&!listener.beliefs.some(b=>b.id===fact.belief.id)){listener.beliefs.push({...clone(fact.belief),confidence:Math.max(.2,fact.belief.confidence*.85),source:{type:'heard',actorId:speaker.id,previous:clone(fact.belief.source)},receivedAt:state.time});listener.nextDecision=0;}
@@ -330,7 +335,7 @@ function combatNearby(state,content) {
 }
 function advanceCalendar(state,content,delta) {
   state.time+=delta;expirePromises(state);advancePropertyDiscovery(state,content);advanceCausality(state,content,delta);advanceEvents(state,content,delta);updateIncidentPopulation(state,content);
-  advanceNeeds(state,content,delta);advanceNpcs(state,content,delta);advanceRescue(state,content,delta);socialTick(state,content);updateWeather(state,content);
+  advanceNeeds(state,content,delta);advanceNpcs(state,content,delta);advanceRescue(state,content,delta);advanceMemories(state,content);advanceLaw(state,content);socialTick(state,content);updateWeather(state,content);
   if(!state.cycleComplete&&state.time>=finite(content.time?.days,10)*DAY) {
     state.cycleComplete=true;log(state,'十日が過ぎた。変化した世界で、あなたの暮らしは続いている。','chapter');
   }
@@ -494,6 +499,7 @@ export function applyCommand(state,content,command) {
   if(command.type==='converse')return converse(state,content,command);
   if(command.type==='resume') {if(p.collapse?.status==='active')return {message:null};if(state.conversation)state.conversation.status='ended';setActivity(state,'idle');return {message:null};}
   if(command.type==='pause') {if(p.collapse?.status!=='active')setActivity(state,'menu');return {message:null};}
+  if(command.type==='property')return performPropertyAction(state,content,command);
   if(command.type==='recover') {if(p.collapse?.status!=='active')fail('NOT_COLLAPSED','救助待ちではありません。');for(let i=0;i<72&&p.collapse.status==='active';i++)advanceCalendar(state,content,300);return {message:p.collapse.status==='active'?'まだ救助に至っていない。':'手当てを受けて目を覚ました。'};}
   if(p.collapse?.status==='active'&&command.type!=='input')fail('COLLAPSED','倒れています。救助を待ってください。',409);
   if(command.type==='input') {
@@ -722,7 +728,9 @@ function actionsFor(state,content,target) {
   return actions;
 }
 export function projectWorld(state,content) {
+  initializeProperty(state,content);
   const p=state.player,idx=index(content),region=idx.regions.get(p.region);
+  p.discoveredRegions||=[p.region];if(!p.discoveredRegions.includes(p.region))p.discoveredRegions.push(p.region);
   const knownIds=new Set(state.knowledge.filter(k=>k.kind==='event').map(k=>k.eventId));
   const cleanObject=o=>({id:o.id,name:o.eventId&&!knownIds.has(o.eventId)?'気になる現場':o.name,kind:o.kind,position:clone(o.position),asset:o.asset,rotation:o.rotation || 0,scale:o.scale || 1,interior:o.interior,crafting:o.crafting,buildingPosition:o.buildingPosition,width:o.width,depth:o.depth,height:o.height});
   const publicRegion={id:region.id,name:region.name,biome:region.biome,color:region.color,size:region.size,spawn:clone(region.spawn),description:region.description,worldPosition:clone(region.worldPosition),
@@ -730,6 +738,7 @@ export function projectWorld(state,content) {
   const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&distance(n.position,p.position)<90).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.role,position:clone(n.position),activity:n.activity,hp:n.hp,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
   const candidates=[...(region.objects || []).map(o=>({...o,...state.facilities?.[o.id]})),...nearbyNpcs.filter(n=>n.hp>0).map(n=>({...n,kind:'npc'})),...(content.events || []).filter(e=>e.region===p.region&&knownIds.has(e.id)).map(e=>({id:`event:${e.id}`,kind:'event',eventId:e.id,name:e.name,position:e.position || [0,0,0]}))];
   const interactables=candidates.filter(t=>distance(t.position,p.position)<=INTERACTION&&hasLineOfSight(region,p.position,t.position)).map(t=>({...cleanObject(t),distance:distance(t.position,p.position),actions:actionsFor(state,content,t)}));
+  interactables.push(...propertyView(state,content).filter(o=>!o.held));
   for(const portal of region.portals || []) if(distance(portal.position,p.position)<=finite(portal.radius,3)+1) {
     const route=idx.routes.get(portal.routeId),destination=idx.regions.get(portal.to);
     interactables.push({id:portal.id,name:`${destination?.name || '隣の地域'}への街道`,kind:'portal',position:clone(portal.position),distance:distance(portal.position,p.position),actions:(route?.modes || ['foot']).map(mode=>{
@@ -747,6 +756,6 @@ export function projectWorld(state,content) {
   return {schemaVersion:2,simulationTime:state.simulationTime,time:state.time,day:Math.floor(state.time/DAY)+1,clock:`${String(Math.floor(hour(state))).padStart(2,'0')}:${String(Math.floor(state.time/60)%60).padStart(2,'0')}`,
     weather:clone(state.weather[p.region]),player:{...clone(p),force:forceOf(p,content),inventoryDetails:Object.entries(p.inventory).filter(([,quantity])=>quantity>0).map(([id,quantity])=>{const item=idx.items.get(id)||(content.materials||[]).find(i=>i.id===id)||idx.equipment.get(id);return {id,name:item?.name||'採集した素材',kind:item?.kind||(idx.equipment.has(id)?'equipment':'material'),quantity,equipped:Object.values(p.equipment).includes(id)};})},region:publicRegion,npcs:nearbyNpcs,
     monsters:values(state.monsters).filter(m=>m.region===p.region&&m.hp>0&&distance(m.position,p.position)<75).map(m=>{const t=idx.monsters.get(m.templateId);return {id:m.id,name:t?.name,position:clone(m.position),hp:m.hp,maxHp:m.maxHp,level:t?.level,role:t?.role,activity:m.activity,heading:m.heading,boss:t?.boss,intent:m.intent?{name:m.intent.name,position:clone(m.intent.position),resolvesAt:m.intent.resolvesAt}:undefined};}),
-    affordances:affordances(state,content),worldObjects:values(state.worldObjects).filter(o=>!o.custodianId&&o.region===p.region&&o.quantity>0&&distance(o.position,p.position)<5).map(o=>({id:o.id,kind:o.kind,name:o.name,itemId:o.itemId,quantity:o.quantity,position:clone(o.position),actions:affordances(state,content,o.id)})),conversation:state.conversation?.status==='active'?conversationResult(state,content).conversation:undefined,interactables,knownEvents,quests,journal:clone(state.history.slice(-60)),notifications:clone(state.notifications.slice(-5)),cycleComplete:state.cycleComplete,
+    heldProperties:propertyView(state,content).filter(o=>o.held),affordances:affordances(state,content),worldObjects:values(state.worldObjects).filter(o=>!o.custodianId&&o.region===p.region&&o.quantity>0&&distance(o.position,p.position)<5).map(o=>({id:o.id,kind:o.kind,name:o.name,itemId:o.itemId,quantity:o.quantity,position:clone(o.position),actions:affordances(state,content,o.id)})),conversation:state.conversation?.status==='active'?conversationResult(state,content).conversation:undefined,interactables,knownEvents,quests,journal:clone(state.history.slice(-60)),notifications:clone(state.notifications.slice(-5)),cycleComplete:state.cycleComplete,
     outcomes:state.cycleComplete?{knownResolved:knownEvents.filter(e=>['prevented','resolved'].includes(e.status)).length,knownFailed:knownEvents.filter(e=>e.status==='failed').length}:undefined};
 }

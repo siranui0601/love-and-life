@@ -60,6 +60,7 @@ function executeAffordance(state,content,command) {
 export function advancePropertyDiscovery(state,content) {
  for(const incident of state.propertyIncidents||[])if(incident.status==='undiscovered'&&state.time>=incident.discoverAfter) {
   const victim=state.npcs[incident.victimId];if(!victim||victim.hp<=0||victim.travel||victim.goal==='sleep')continue;
+  if(incident.location&&(victim.region!==incident.location.region||distance(victim.position,incident.location.position)>5))continue;
   incident.status='loss-discovered';incident.discoveredAt=state.time;
   // Discovering a shortage does not reveal who took it, or the original theft fact.
   const fact=rememberAction(state,content,'property-loss-discovered',{actorId:victim.id,targetId:victim.id,payload:{asset:incident.assetId||'gold',amount:incident.amount},observedBy:[victim.id]});

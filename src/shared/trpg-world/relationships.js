@@ -1,3 +1,4 @@
+import {observeMemory} from './memory.js';
 import {distance,hasLineOfSight} from './navigation.js';
 
 export function initializeRelationships(state) {
@@ -13,27 +14,27 @@ export function rememberAction(state,content,kind,{actorId='player',targetId=nul
   initializeRelationships(state);
   const actor=actorId==='player'?state.player:state.npcs[actorId];
   const region=content.regions.find(r=>r.id===actor.region);
-  const witnesses=Object.values(state.npcs).filter(n=>n.hp>0&&!n.travel&&n.region===actor.region&&
+  const witnesses=Object.values(state.npcs).filter(n=>n.hp>0&&!n.travel&&n.goal!=='sleep'&&n.region===actor.region&&
     distance(n.position,actor.position)<18&&hasLineOfSight(region,n.position,actor.position)&&(!observedBy||observedBy.includes(n.id))).map(n=>n.id);
   const fact={id:`social:${state.nextId++}`,kind,actorId,targetId,payload:structuredClone(payload),
     at:state.time,region:actor.region,position:[...actor.position],witnesses};
   state.socialFacts.push(fact);
   for(const id of witnesses) {
-    const npc=state.npcs[id];npc.memories.push({factId:fact.id,kind,actorId,targetId,learnedAt:state.time,source:{type:'seen',actorId}});
+    const npc=state.npcs[id];observeMemory(state,npc,fact,{range:distance(npc.position,actor.position),template:content.npcs.find(n=>n.id===id)});
     npc.nextDecision=0;
   }
   return fact;
 }
 export function relationshipReasons(state,npc,actorId='player') {
-  return (npc.memories||[]).filter(m=>m.actorId===actorId).map(m=>state.socialFacts.find(f=>f.id===m.factId)).filter(Boolean);
+  return (npc.memories||[]).filter(m=>m.status!=='forgotten'&&m.actorId===actorId).map(m=>state.socialFacts.find(f=>f.id===m.factId)).filter(Boolean);
 }
 // Ephemeral decision evidence; never persisted as a universal relationship meter.
 export function evaluateCooperation(state,npc,{risk=0,resourceCost=0,purpose='assistance',values={},actorId='player'}={}) {
- const history=(npc.memories||[]).map(memory=>({memory,fact:state.socialFacts.find(f=>f.id===memory.factId)})).filter(x=>x.fact),evidence=[];let support=0;
+ const history=(npc.memories||[]).filter(m=>m.status!=='forgotten').map(memory=>({memory,fact:state.socialFacts.find(f=>f.id===memory.factId)})).filter(x=>x.fact),evidence=[];let support=0;
  const personality={...npc.values,...values},cautious=personality.caution??(/慎重|疑い|警戒/.test(npc.personality||'')?1:0);
  for(const {fact,memory} of history) {
   const firsthand=['seen','received','read'].includes(memory.source?.type),confidence=firsthand?1:.5;
-  let attributedTo=memory.perceivedActorId??fact.actorId,attributionSource=memory.source;
+  let attributedTo=memory.recall?memory.recall.actorId:(memory.perceivedActorId??fact.actorId),attributionSource=memory.source;
   const claims=(npc.beliefs||[]).filter(b=>b.claim==='credit'&&b.aboutFactId===fact.id&&b.confidence>confidence).sort((a,b)=>b.confidence-a.confidence);
   if(!firsthand&&claims.length){attributedTo=claims[0].attributedTo;attributionSource=claims[0].source;}
   if(attributedTo!==actorId)continue;

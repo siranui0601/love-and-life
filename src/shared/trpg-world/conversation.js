@@ -1,3 +1,5 @@
+import {legalChoices,speakLegal,crimeMemories} from './law.js';
+import {recalled,testimony,hearTestimony} from './memory.js';
 import {setActivity} from './activity.js';
 import {rememberAction,willingToCooperate,initializeRelationships,deliverSupplies} from './relationships.js';
 import {distance,hasLineOfSight} from './navigation.js';
@@ -5,10 +7,12 @@ import {distance,hasLineOfSight} from './navigation.js';
 const reject=(code,message)=>{throw Object.assign(new Error(message),{code,status:409});};
 export function visibleTopics(state,npc) {
   // A secret needs a specific authored disclosure permission, never a score.
-  return npc.knowledge.filter(f=>f.kind!=='secret'&&f.disclosure?.visibility!=='private'||
-    f.disclosureFactIds?.some(id=>npc.memories.some(m=>m.factId===id)));
+  const accounts=crimeMemories(npc).map(m=>({id:`account:${m.factId}`,kind:'testimony',text:m.recall.actorId==='player'?'旅人が他人の持ち物に触れていた。事情を確かめたい。':m.recall.actorId?'見覚えのある人物が他人の持ち物に触れていた。':'旅装の人物が他人の持ち物に触れていた。顔は確かではない。',region:m.recall.region,observedAt:m.learnedAt,source:m.source,belief:{factId:m.factId}}));
+  return [...accounts,...npc.knowledge].filter(f=>(!f.belief?.factId||!npc.memories.some(m=>m.factId===f.belief.factId&&m.status==='forgotten'))&&(f.kind!=='secret'&&f.disclosure?.visibility!=='private'||
+    f.disclosureFactIds?.some(id=>npc.memories.some(m=>m.factId===id&&m.status!=='forgotten'))));
 }
 function choices(state,npc,session) {
+  const legal=legalChoices(state,npc);
   const facts=visibleTopics(state,npc).filter(f=>!session.factsLearned.includes(f.id));
   const options=facts.slice(0,1).map(f=>({id:`ask:${f.id}`,family:'ask',intent:'ASK_ABOUT',factId:f.id,label:`「${f.kind==='event'?'その出来事':f.kind==='background'?'この土地での暮らし':'その話'}」について聞く`,preview:f.text}));
   if(!session.history.some(h=>h.intentId==='daily-plan'))options.push({id:'daily-plan',intent:'ASK_ABOUT',family:'social',label:'今日は何をする予定か聞く'});
@@ -24,7 +28,7 @@ function choices(state,npc,session) {
   const limit=options.length>4?3:4,start=session.topicCursor||0;
   const visible=options.slice(start,start+limit);
   if(options.length>4)visible.push({id:'change-topic',intent:'CHANGE_TOPIC',family:'topic',label:'別の話題に移る'});
-  return [...visible,{id:'leave',intent:'LEAVE',family:'leave',label:'話を終えて立ち去る'}];
+  return [...legal,...(legal.length?[]:visible),{id:'leave',intent:'LEAVE',family:'leave',label:'話を終えて立ち去る'}];
 }
 export function beginConversation(state,content,target) {
   initializeRelationships(state);
@@ -54,12 +58,14 @@ export function converse(state,content,command) {
   if(!npc||npc.hp<=0||npc.travel||npc.region!==state.player.region||distance(npc.position,state.player.position)>5||!hasLineOfSight(region,npc.position,state.player.position))reject('NPC_ABSENT','相手がこの場所にいません。');
   const choice=choices(state,npc,session).find(c=>c.id===command.intentId);
   if(!choice)reject('INTENT_UNAVAILABLE','今はその話をできません。');
-  const fact=rememberAction(state,content,'utterance',{targetId:npc.id,payload:{intentId:choice.id,sessionId:session.id}});
+  const fact=rememberAction(state,content,'utterance',{targetId:npc.id,payload:{intentId:choice.id,semanticIntent:choice.intent,sessionId:session.id}});
   session.history.push({turn:session.turn,intentId:choice.id,factId:fact.id});session.turn++;
-  if(choice.family==='ask') {
+  if(choice.family==='law'){session.utterance=speakLegal(state,content,npc,choice,fact);}
+  else if(choice.family==='ask') {
     const known=visibleTopics(state,npc).find(f=>f.id===choice.factId);
     session.factsUsed.push(known.id);session.factsLearned.push(known.id);
     const learned={...structuredClone(known),receivedAt:state.time,source:{type:'heard',actorId:npc.id,sessionId:session.id,previous:structuredClone(known.source)}};
+    const memory=recalled(npc,known.belief?.factId||known.id);if(memory?.recall)learned.testimony=testimony(state,npc,memory);
     const old=state.knowledge.find(f=>f.id===known.id);
     if(!old)state.knowledge.push(learned);else if(old.observedAt<known.observedAt)Object.assign(old,learned);
     session.disclosures.push({factId:known.id,from:npc.id,to:'player',at:state.time});
@@ -68,6 +74,7 @@ export function converse(state,content,command) {
   else if(choice.family==='share') {
     const known=state.knowledge.find(k=>k.id===choice.factId);
     npc.knowledge.push({...structuredClone(known),receivedAt:state.time,source:{type:'heard',actorId:'player',previous:structuredClone(known.source)}});
+    if(known.testimony)hearTestimony(state,npc,{id:'player'},known.testimony);
     session.disclosures.push({factId:known.id,from:'player',to:npc.id,at:state.time});npc.nextDecision=0;session.utterance='分かった。自分でも気をつけて確かめよう。';
   } else if(choice.family==='offer') {state.player.inventory.supplies--;deliverSupplies(state,content,npc);session.utterance='今ちょうど食べ物が必要だった。受け取るよ。';}
   else if(choice.family==='request') {
