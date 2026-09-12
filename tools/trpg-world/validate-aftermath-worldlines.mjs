@@ -5,10 +5,12 @@ import {walk,travelTo} from './validation/journey.mjs';
 const content=JSON.parse(await fs.readFile(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url),'utf8'));
 const kind=process.argv[2]||'mine',out=new URL('./reports/aftermath-worldlines/',import.meta.url);await fs.mkdir(out,{recursive:true});
 const r=new WorldReplay(content,{seed:4}),must=result=>{if(result?.error)throw new Error(JSON.stringify(result));return result;};
+const natural=kind==='ordinary',dailyContacts=new Set(),routine=[];
 const visit=(target,type,params={},reason)=>must(performAt(r,target,type,params,reason));
 const object=id=>r.view().region.objects.find(o=>o.id===id);
 async function speakNearby() {
  for(const npc of r.view().npcs.filter(n=>n.hp>0).slice(0,3)) {
+  const contact=`${r.view().day}:${npc.id}`;if(natural&&dailyContacts.has(contact))continue;dailyContacts.add(contact);
   visit(npc,'interact',{action:'talk'},'近くにいる住民から話を聞く');
   const ask=r.options().find(o=>o.intent==='ASK_ABOUT'&&o.command.intentId.startsWith('ask:'));
   if(ask)must(r.select(ask,'相手が知っている話題について尋ねる'));
@@ -29,8 +31,10 @@ function liveCycle() {
  must(prepare(r,{items:{supplies:1},gold:8}));visit(inn,null,{},'仕事場から宿へ戻り、食事のできる場所へ移る');
  let food=r.options().find(o=>o.command.type==='eat'&&!o.command.targetId);
  if(!food&&r.view().monsters.some(m=>m.activity==='attack')){must(secureArea(r));food=r.options().find(o=>o.command.type==='eat'&&!o.command.targetId);}
- if(!food)throw new Error('FIRST_MISSING_AFFORDANCE: safe meal');must(r.select(food,'仕事を終え、食事を取る'));
- visit(inn,'rest',{},'宿で休み、次の日の暮らしに備える');
+ const needs=r.view().player;
+ if(!natural||needs.hunger>=40){if(!food)throw new Error('FIRST_MISSING_AFFORDANCE: safe meal');routine.push({action:'eat',at:r.view().time,hunger:needs.hunger,fatigue:needs.fatigue});must(r.select(food,'仕事を終え、空腹を満たす'));}
+ const now=r.view(),late=now.time%86400>=22*3600;
+ if(!natural||now.player.fatigue>=55||late){routine.push({action:'rest',at:now.time,hunger:now.player.hunger,fatigue:now.player.fatigue,reason:late?'night':'fatigue'});visit(inn,'rest',{},'疲れや夜の訪れに合わせ、宿で休む');}
 }
 let failure,split;
 try {
@@ -43,7 +47,7 @@ try {
   const option=r.options().find(o=>o.command.type==='maintain'&&o.command.action==='remove-fuel');if(!option)throw new Error('FIRST_MISSING_AFFORDANCE: fuel cleanup');must(r.select(option,'見つけた油を片付ける'));
  } else {
   let discovered=false;
-  for(let cycle=0;cycle<12&&!discovered;cycle++){liveCycle();discovered=await speakNearby();}
+  for(let cycle=0;cycle<(natural?48:12)&&!discovered;cycle++){liveCycle();discovered=await speakNearby();}
   if(!discovered)throw new Error('FIRST_MISSING_AFFORDANCE: spoken aftermath discovery');
   const lead=r.view().leads.find(l=>l.id.startsWith('lead:site:'));must(r.command({type:'track',leadId:lead.id}));visit(object(lead.targetId),'interact',{action:'inspect'},'聞いた話の現場を自分で調べる');
   // Plan only from the local server's available physical work. Conditions, not
@@ -61,7 +65,7 @@ try {
    split??={operation:r.operations.length,state:JSON.parse(JSON.stringify(r.state))};
    must(r.command({type:'track',leadId:home.id}));must(walk(r,home.position));for(let i=0;i<45&&r.view().arrival?.status==='waiting-companion';i++)r.advance(1);
   }
-  for(let cycle=0;cycle<8&&r.view().day<5;cycle++)liveCycle();
+  for(let cycle=0;cycle<(natural?48:8)&&r.view().day<5;cycle++)liveCycle();
  }
  if(r.view().player.collapse?.status==='active')throw new Error('PLAYER_COLLAPSED');
 }catch(error){failure=error.message;}
@@ -72,5 +76,5 @@ const restored=replay(content,record);let restartEqual=null;
 if(split){const suffix={...record,initialState:split.state,operations:record.operations.slice(split.operation)};restartEqual=digest(replay(content,suffix).state)===digest(r.state);}
 const rescueDemonstrated=Object.values(r.state.structures).some(s=>s.recoveries?.length);
 if(kind==='mine'&&!rescueDemonstrated)failure||='ACCEPTANCE_NOT_REACHED: no actual survivor recovery';
-const result={kind,layer:'structural travel prefix, public local life/discovery/response',firstMissing:failure||null,defects:r.defects,counts:decisionCounts(record),day:r.view().day,clock:r.view().clock,hp:r.view().player.hp,replayEqual:digest(restored.state)===digest(r.state),intermediateRestartEqual:restartEqual,rescueDemonstrated,structures:r.state.structures,events:Object.fromEntries(Object.entries(r.state.events).map(([id,e])=>[id,{status:e.status,componentStatus:e.causal.componentStatus}]))};
+const result={kind,lifePolicy:natural?'public hunger/fatigue/night, paid labor and at most one contact per person per day':'fixed macro stress itinerary; not a natural-life certificate',routine,layer:'structural travel prefix, public local life/discovery/response',firstMissing:failure||null,defects:r.defects,counts:decisionCounts(record),day:r.view().day,clock:r.view().clock,hp:r.view().player.hp,replayEqual:digest(restored.state)===digest(r.state),intermediateRestartEqual:restartEqual,rescueDemonstrated,structures:r.state.structures,events:Object.fromEntries(Object.entries(r.state.events).map(([id,e])=>[id,{status:e.status,componentStatus:e.causal.componentStatus}]))};
 await fs.writeFile(new URL(kind+'-summary.json',out),JSON.stringify(result,null,2));console.log(JSON.stringify(result));process.exitCode=failure||r.defects.length||!result.replayEqual||restartEqual===false?1:0;

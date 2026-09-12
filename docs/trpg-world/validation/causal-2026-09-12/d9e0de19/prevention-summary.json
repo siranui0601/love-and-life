@@ -1,0 +1,73 @@
+{
+  "kind": "prevention",
+  "layer": "structural travel prefix, public local life/discovery/response",
+  "firstMissing": null,
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 59,
+    "simulationAdvances": 28,
+    "movementInputs": 28,
+    "meaningfulPlayerDecisions": 3,
+    "travelSegments": 1,
+    "investigations": 1,
+    "conversationTurns": 0,
+    "preparationActions": 0,
+    "combatActions": 0,
+    "otherDecisions": 1
+  },
+  "day": 1,
+  "clock": "07:17",
+  "hp": 59,
+  "replayEqual": true,
+  "intermediateRestartEqual": null,
+  "rescueDemonstrated": false,
+  "structures": {
+    "deep-shaft": {
+      "integrity": 35,
+      "milestones": [],
+      "operating": true,
+      "water": 60
+    },
+    "grain-store": {
+      "fire": 0,
+      "fuel": false,
+      "integrity": 100,
+      "milestones": [
+        {
+          "id": "milestone:119",
+          "kind": "remove-fuel",
+          "at": 26256,
+          "evidence": "social:118"
+        }
+      ],
+      "operating": false,
+      "water": 0
+    }
+  },
+  "events": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "prevented"
+    },
+    "crown": {
+      "status": "latent"
+    },
+    "deep-mine": {
+      "status": "latent"
+    },
+    "harbor": {
+      "status": "latent"
+    },
+    "lost-road": {
+      "status": "latent"
+    },
+    "resonance": {
+      "status": "latent"
+    },
+    "roots": {
+      "status": "latent"
+    }
+  }
+}

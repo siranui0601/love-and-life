@@ -1,0 +1,107 @@
+{
+  "kind": "fire",
+  "layer": "structural travel prefix, public local life/discovery/response",
+  "firstMissing": null,
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 4298,
+    "simulationAdvances": 1996,
+    "movementInputs": 2091,
+    "meaningfulPlayerDecisions": 163,
+    "travelSegments": 66,
+    "investigations": 14,
+    "conversationTurns": 8,
+    "preparationActions": 46,
+    "combatActions": 15,
+    "otherDecisions": 14
+  },
+  "day": 5,
+  "clock": "03:31",
+  "hp": 124,
+  "replayEqual": true,
+  "intermediateRestartEqual": null,
+  "rescueDemonstrated": false,
+  "structures": {
+    "deep-shaft": {
+      "integrity": 0,
+      "milestones": [],
+      "operating": false,
+      "water": 60,
+      "blocked": true,
+      "damageAt": 224524.41339457277,
+      "casualties": [
+        "NPC036",
+        "NPC037",
+        "NPC086",
+        "NPC089"
+      ],
+      "recoveries": [],
+      "damageFactId": "physical:38143"
+    },
+    "grain-store": {
+      "fire": 0,
+      "fuel": false,
+      "integrity": 100,
+      "milestones": [
+        {
+          "id": "milestone:13787",
+          "kind": "extinguish",
+          "at": 215101.67532829262,
+          "evidence": "social:13786"
+        },
+        {
+          "id": "milestone:14735",
+          "kind": "clear-rubble",
+          "at": 217816.00173105992,
+          "evidence": "social:14734"
+        },
+        {
+          "id": "milestone:39019",
+          "kind": "shore",
+          "at": 233200.8290686453,
+          "evidence": "social:39018"
+        },
+        {
+          "id": "milestone:39078",
+          "kind": "reopen",
+          "at": 234100.8290686453,
+          "evidence": "social:39077"
+        }
+      ],
+      "operating": true,
+      "water": 0,
+      "blocked": false,
+      "damageAt": 151205.63394443705,
+      "casualties": [],
+      "recoveries": [],
+      "damageFactId": "physical:9063",
+      "recoveredAt": 233200.8290686453
+    }
+  },
+  "events": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "active"
+    },
+    "deep-mine": {
+      "status": "failed"
+    },
+    "harbor": {
+      "status": "active"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "failed"
+    }
+  }
+}

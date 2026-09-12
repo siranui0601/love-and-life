@@ -1,0 +1,180 @@
+
+> world:check
+> npm run world:audit && npm run world:assets:check && npm run world:test && npm run world:build
+
+
+> world:audit
+> node tools/trpg-world/audit-content.mjs
+
+{
+  "ok": true,
+  "counts": {
+    "regions": 11,
+    "routes": 15,
+    "npcs": 111,
+    "events": 8,
+    "skills": 10,
+    "items": 9,
+    "recipes": 3,
+    "jobs": 28,
+    "monsters": 77,
+    "equipment": 142
+  },
+  "errors": [],
+  "warnings": [
+    "harbor: causal migration pending; no generic resolution is available",
+    "resonance: causal migration pending; no generic resolution is available",
+    "border: causal migration pending; no generic resolution is available"
+  ],
+  "combat": {
+    "importedEnemySkills": 96,
+    "supportedCommands": [
+      "DAMAGE",
+      "HEAL",
+      "APPLY_MODIFIER",
+      "APPLY_DEBUFF",
+      "REMOVE_DEBUFF",
+      "MODIFY_RESOURCE",
+      "APPLY_SPECIAL_STATE",
+      "REMOVE_SPECIAL_STATE",
+      "INTERRUPT_CAST",
+      "MODIFY_FIELD",
+      "SUMMON_UNIT",
+      "COPY_LAST_ENEMY_SKILL",
+      "MODIFY_CRITICAL",
+      "MODIFY_ESCAPE",
+      "REMOVE_MODIFIER"
+    ],
+    "deferredCommands": []
+  }
+}
+
+> world:assets:check
+> node tools/trpg-world/inspect-assets.mjs
+
+World assets verified: {"files":239,"glb":214,"animated":45,"totalBytes":8417808}
+
+> world:test
+> node --test tools/trpg-world/*.test.mjs
+
+✔ physical collapse: sleeping elsewhere, remembered testimony, preparation, release, treatment and actual escort; failure stays historical (712.0269ms)
+✔ the same infrastructure handles fire, evacuation, extinguishing and repair without erasing failure (216.497ms)
+✔ a non-witness hears the shelter account and discloses its provenance, never hidden cause or deadline (27.9752ms)
+✔ giving real medicine lets a knowledgeable professional search, treat and escort through the shared planner (522.4814ms)
+✔ a repaired and cleared workplace can reopen and pay ordinary work without erasing the disaster (143.326ms)
+✔ an evacuated worker hears the actual reopening, then returns to work instead of learning repairs remotely (278.6692ms)
+✔ GLB dependency inspection resolves textures and rejects remote or escaping URIs (2.5109ms)
+✔ GLB inspection rejects truncated payloads and out of bounds buffer views (0.3206ms)
+✔ committed model inventory, animations, original hashes and every texture are complete (123.7103ms)
+✔ calendar pauses for reading and conversation; walking and explicit macros use their own policies (30.1219ms)
+✔ conversation selects facts semantically, cannot farm XP, and preserves choices across retries (2.6996ms)
+✔ a gift changes possessions; keeping an actual promise changes cooperation reasons (5.0086ms)
+✔ normal meals consume calendar time and hunger, not instant medicine HP (4.3605ms)
+✔ collapse preserves location; only a living present reachable NPC can carry and treat the player (11.7495ms)
+✔ generic pressure and retired outcome buttons cannot resolve events (3.531ms)
+✔ institution documents need actual reading, submission and a physically present reviewer (4.7176ms)
+✔ ecosystem containment has distinct physical conditions and failure opens a later causal precondition (108.4121ms)
+✔ migration isolates numeric history and converts combat deadlines without advancing calendar (0.761ms)
+✔ narrative validates IDs, times out safely, caches wording and cannot mutate state (15.217ms)
+✔ worldline: unseen theft, save/reload, owner returns and discovers loss without identifying a thief (63.8834ms)
+✔ worldline: witness reports through a searched plan, local inquiry, confession and actual restitution (60.0838ms)
+✔ a report cannot manufacture knowledge and a private reader does not reveal document contents to a witness (2.053ms)
+✔ memory loses details without erasing history; hearsay can associate a wrong suspect with known clothing (12.4463ms)
+✔ real v1 migration, save, reload, deterministic continuation: world-10d-3d92a17b3ca5 (137.2133ms)
+✔ real v1 migration, save, reload, deterministic continuation: world-10d-0c89fc7ee769 (100.3265ms)
+✔ real v1 migration, save, reload, deterministic continuation: world-10d-33147c357b78 (110.3269ms)
+✔ real v1 migration, save, reload, deterministic continuation: world-10d-29a21ee5da06 (51.5963ms)
+✔ real v1 migration, save, reload, deterministic continuation: world-10d-7d0caf2d3049 (52.9161ms)
+✔ real service: posture creates witness interpretations without directly settling a crisis (14.4461ms)
+✔ real service: theft transfers money, unseen success does not reveal culprit; victim discovers loss later (27.5216ms)
+✔ planner searches alternatives and invalidates when a required resource disappears (5.2648ms)
+✔ compiler audit rejects resurrected numeric relationship and pressure authority (28.9231ms)
+✔ real service: attack acceptance has no damage; hit window resolves while calendar is paused (2.7597ms)
+✔ real service: conversation waiting freezes calendar and repeated greetings confer no social reward (7.6799ms)
+✔ real service: NPC buys and eats using a persistent multi-step plan during a player macro activity (22.0981ms)
+✔ real service: pickpocket transfers an actual medicine stack through the same property path (3.8804ms)
+✔ interpretation follows knowledge and occupation, never NPC identity (0.6303ms)
+✔ relationship decisions use known attribution, relevance and request risk (0.4376ms)
+✔ live narrative adapter requires explicit enable and never calls transport while disabled (0.5858ms)
+✔ a collapsed-save service continuation lets a child seek a visible capable helper and complete actual rescue plans (10.2884ms)
+✔ real service: moving out of the hit volume during windup causes a miss (1.879ms)
+✔ saving windup and restoring JSON continues the same action without offline damage (2.2983ms)
+✔ a later nearby conversation carries a witnessed interpretation to a non-witness and changes their plan (11.4316ms)
+✔ real service: dodge cancels windup without damage or bypassing the attack cooldown (1.3624ms)
+✔ legacy regional reputation is archived and cannot discount current prices (1.0704ms)
+✔ all source facilities, NPC homes/workplaces, clues, incident sites and physical exits have executable collision-safe paths (1013.7114ms)
+✔ navigation rejects non-finite vectors and routes around walls thinner than the path grid (1.4512ms)
+✔ ordinary work, timed training, meals and owned transport are playable without outcome rewards (10014.6213ms)
+ℹ Ordinary needs/transport path: 174 commands, 32 world hours.
+✔ an actual road and ferry journey preserves all-region access without resolving events by menu (34706.576ms)
+ℹ Regional travel path: 687 commands, 26 world hours.
+✔ Finn is found in the world, accompanied on foot and returned to his living family (1608.1868ms)
+ℹ Physical rescue: 78 commands, no position or skill injection.
+✔ the real HTTP simulation rejects coordinate injection and remote actions without mutating an owned life (700.9983ms)
+✔ preparation discovers actual services, works for money, purchases and completes repeated lessons (142.5918ms)
+✔ personal portable meal and contextual rest use normal macro commands and preserve replay (10.2968ms)
+✔ unaffordable offers carry public requirements but cannot be selected as executable options (1.2562ms)
+✔ a failed incident changes shop prices; ordinary reinspection updates preparation without granting money (130.5336ms)
+✔ combat controller uses offered attack windows and normal healing, never a victory command (23.0859ms)
+✔ decision counts distinguish engine operations from destination and investigation choices (0.4369ms)
+✔ two renamed structures use the same physical work commands and survive intermediate reload (361.7284ms)
+✔ server catalog omits unexplored regions and routes, not just client map labels (2.3362ms)
+✔ recorded checkpoint v2 state migrates, saves, reloads and keeps calendar frozen (112.4869ms)
+✔ aware policy follows a discovered waterway need through ordinary preparation and intervention (57.6102ms)
+✔ a downed player leaves active combat and cannot accumulate negative HP from stale attacks (1.6037ms)
+✔ semantic identity ignores wording and object key order, distinguishes intent and target (0.9015ms)
+✔ 10/30/60 active seconds while reading have identical semantic choices without clock rounding (36.4717ms)
+✔ active exploration elapsed time does not randomly reroll conversation topics (16.3239ms)
+✔ real command stream replays twice and forks through JSON save without divergence (37.9201ms)
+✔ completed information acquisition and submission are not presented as progress again (6.3425ms)
+✔ reopening a conversation does not resurrect an already answered question (6.1366ms)
+✔ planner tied operators and state object ordering have deterministic outcomes (3.0589ms)
+✔ institution does not replace evidence quality with a witness count (0.4773ms)
+✔ a newly witnessed action changes a topic with a fact and interpretation trace (4.2496ms)
+✔ arrival contract offers a legal investigation, then completion after reading (4.6908ms)
+✔ bounded structural search returns a legal replay certificate for a representative institution (23.0278ms)
+✔ a miswired authored evidence object is reported as the first no-progress decision (2.779ms)
+✔ sessions project only approved public data and remain owner isolated (4.4492ms)
+✔ command retry is idempotent, strict sequences serialize, failed mutation rolls back (1.3869ms)
+✔ foreground heartbeats advance time without movement; request spam cannot accelerate it (2.115ms)
+✔ restart preserves saved world time and clears stale movement input (0.6557ms)
+✔ durable write failure cannot commit a purchase to live authority (0.5178ms)
+✔ content revisions never silently reinterpret a save and a new life is explicit (0.8134ms)
+✔ changing content under the same revision cannot reinterpret existing saves (0.4581ms)
+✔ shutdown drains admitted creation, rejects new commands and flushes once (5.9838ms)
+✔ an uncertain write outcome reloads durable receipts before command retry (0.6711ms)
+✔ shutdown save failure is reported while every world gets a flush attempt (0.6053ms)
+✔ file saves atomically replace and reject traversal keys (15.2447ms)
+✔ HTTP ownership, secure cookies, same-origin guard and bounded parser (72.6277ms)
+✔ authoritative movement normalizes diagonal input and cannot tunnel through collision (25.6937ms)
+✔ A* navigates around walls without corner cutting (1.4804ms)
+✔ whole world progresses without quests or the player learning hidden events (51.7232ms)
+✔ material and evidence do not authorize a generic outcome selection (1.6701ms)
+✔ interaction range, inventory prices, trainer prerequisites and time costs are enforced (9.322ms)
+✔ crafting turns hunted or purchased materials into crisis supplies at a physical workshop (3.3175ms)
+✔ transport requires a physical exit and owned capabilities and simulates elapsed world time (3.5994ms)
+✔ portal transport actions expose authoritative fare, duration and missing capability (1.2966ms)
+✔ urgency requires a read deadline claim and does not follow hidden schedule changes (4.5376ms)
+✔ dangerous routes create deterministic travel hazards and survival preparation avoids them (7.3899ms)
+✔ an NPC reports last observed knowledge without receiving remote omniscient updates (2.4844ms)
+✔ NPC movement, work and needs simulate outside the loaded region (8.3054ms)
+✔ sleep advances crises while blocking sleeping-player observations; reload is deterministic (27.9542ms)
+✔ combat enforces range and cooldown and grants rewards only once (2.6838ms)
+✔ ordinary rewards give steady capability growth and repeated farming diminishes (0.2746ms)
+✔ enemy attacks have observable telegraphs and physical dodging or guarding changes the result (1.2151ms)
+✔ imported combat expressions use a closed grammar and never execute arbitrary code (0.4957ms)
+✔ defeating the production wolf cannot stand in for Finn returning to his family (1421.9557ms)
+✔ production content has complete region topology and settles every crisis during explicit macro activities (103404.0735ms)
+ℹ tests 105
+ℹ suites 0
+ℹ pass 105
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 105172.8733
+
+> world:build
+> node tools/trpg-world/build-client.mjs
+
+World build: {"engine":"Babylon.js 9.25.0","files":187,"totalBytes":3120858,"initialFiles":36,"initialBytes":1570068,"initialGzipBytes":398195}

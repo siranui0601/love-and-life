@@ -1,0 +1,110 @@
+{
+  "kind": "mine",
+  "layer": "structural travel prefix, public local life/discovery/response",
+  "firstMissing": null,
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 2930,
+    "simulationAdvances": 1355,
+    "movementInputs": 1391,
+    "meaningfulPlayerDecisions": 152,
+    "travelSegments": 51,
+    "investigations": 3,
+    "conversationTurns": 18,
+    "preparationActions": 42,
+    "combatActions": 16,
+    "otherDecisions": 22
+  },
+  "day": 5,
+  "clock": "01:13",
+  "hp": 124,
+  "replayEqual": true,
+  "intermediateRestartEqual": true,
+  "rescueDemonstrated": true,
+  "structures": {
+    "deep-shaft": {
+      "integrity": 100,
+      "milestones": [
+        {
+          "id": "milestone:17293",
+          "kind": "drain",
+          "at": 239475.9529476939,
+          "evidence": "social:17292"
+        },
+        {
+          "id": "milestone:17943",
+          "kind": "shore",
+          "at": 247137.8303805457,
+          "evidence": "social:17942"
+        },
+        {
+          "id": "milestone:18263",
+          "kind": "clear-rubble",
+          "at": 250598.6612918987,
+          "evidence": "social:18262"
+        }
+      ],
+      "operating": false,
+      "water": 0,
+      "blocked": false,
+      "damageAt": 224557.5815133316,
+      "casualties": [
+        "NPC086",
+        "NPC089"
+      ],
+      "recoveries": [
+        {
+          "personId": "NPC086",
+          "factId": "social:18527",
+          "at": 252899.87886638028
+        },
+        {
+          "personId": "NPC089",
+          "factId": "social:18693",
+          "at": 256252.9784004779
+        }
+      ],
+      "damageFactId": "physical:15776",
+      "recoveredAt": 256252.9784004779
+    },
+    "grain-store": {
+      "fire": 100,
+      "fuel": true,
+      "integrity": 25,
+      "milestones": [],
+      "operating": false,
+      "water": 0,
+      "blocked": true,
+      "damageAt": 151200,
+      "casualties": [],
+      "recoveries": [],
+      "damageFactId": "physical:9142"
+    }
+  },
+  "events": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "active"
+    },
+    "deep-mine": {
+      "status": "failed"
+    },
+    "harbor": {
+      "status": "active"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "failed"
+    }
+  }
+}

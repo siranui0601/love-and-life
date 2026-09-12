@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "sourceOperation": 2228,
+  "sourceHash": "26ca85789b06f581e747311f195c3a0fbf1549ac6ee4401b860adb5fe3264d94",
+  "contentRevision": "world-10d-ec2c41296f3c",
+  "diskRoundTrips": 2,
+  "offlineCalendarAdvance": 0,
+  "suffixOperations": 702,
+  "finalHash": "b5d5daa088714bb8a0ee503442c9ce66ebd01ea803e5d7b97bf90f0922545777",
+  "sameFinalState": true,
+  "scope": "FileWorldStore + PersistentWorldService restore, followed by exact recorded shared-runtime continuation; not HTTP timing equivalence",
+  "executionNote": "Verified before the final physical-description correction; source record runtime 09679baf. See cross-runtime-difference.json for the later expected wording divergence."
+}

@@ -47,3 +47,25 @@ Reopening checkpoint `09679bafd4729c3ab62056e21c0558bbd34807f4` was safely pushe
 The fire rerun stopped honestly at a new first missing affordance: a higher timber price after the disaster. Actual shop offers already exposed the correct price, but the previously inspected service could only be reviewed; the preparation driver used its stale remembered requirements. Changed real service terms now expose ordinary reinspection. The driver travels there, selects that offered inspection, and recomputes actual work/purchase requirements. It never grants money, suppresses a price increase or changes a search limit. A behavioral test lets a remote shortage fail during an inn stay, reinspects the changed price, earns wages and buys the required timber.
 
 Damage also closes its facility in the same physical transition, before witnesses form their account. Repaired sites describe repair marks rather than indefinitely describing unremoved rubble. Focused aftermath/preparation: 17 PASS / 0 FAIL / 0 SKIP. Full world:check for these corrections: 105 PASS / 0 FAIL / 0 SKIP, audit/assets/build PASS, terminal exit 0. The new fire continuation is running; no current production fire pass is claimed until that rerun finishes.
+
+## Versioned results and natural-life correction
+
+Correction checkpoint `d9e0de1984278b51a440a91d96cbef39c55544ff` was safely pushed. [Pinned evidence and manifest](validation/causal-2026-09-12/README.md) now preserve the completed runs and the failed price trace.
+
+| Runtime / trace | Result | Operations | Decision units | Travel | Investigations | Conversation | Preparation | Combat | Other |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 09679baf / mine | Day5 01:13, two actual survivors recovered, failure retained | 2930 | 152 | 51 | 3 | 18 | 42 | 16 | 22 |
+| d9e0de19 / fire | Day5 03:31, extinguished, repaired, reopened, failure retained | 4298 | 163 | 66 | 14 | 8 | 46 | 15 | 14 |
+| d9e0de19 / prevention | Day1 07:17, fuel removed, prevention evaluated | 59 | 3 | 1 | 1 | 0 | 0 | 0 | 1 |
+
+All three exact recorded replays PASS. Mine intermediate JSON replay PASS; mine FileWorldStore/service round trips PASS before the final description correction. A diagnostic attempt to replay the old mine record under d9e0de19 FAILS at suffix operation 472: the isolated old runtime still matches, and the sole difference is a corrected NPC observation text describing repair marks. This is explicitly cross-code replay incompatibility, not evidence that the save lost people, plans, knowledge or calendar time.
+
+Reviewing bedtimes exposed a driver-quality defect: the fixed cycle rested six hours after every job, including early morning and afternoon. These Day5 runs are **causal stress traces, not natural-life acceptance**. The new `ordinary` mode eats for public hunger, rests for fatigue or night, and avoids repeatedly approaching the same NPC on one day. Its bounded work-cycle budget differs because a work cycle no longer advances six artificial sleep hours; no runtime failure is bypassed or hidden deadline consulted. This is one laborer's authored life, not an optimal player or a general autonomous solver. Its live result remains pending.
+
+Current remaining issues:
+
+- P0: none found in the executed 105-test regression; not an exhaustive safety claim.
+- P1: natural multi-day acceptance is pending; harbor/resonance/border and combined T03, T07/T08, T11/T16 remain incomplete. Fire ignition has no complete arsonist plan, propagation or player exposure model. Historical already-failed saves cannot reconstruct unknown old casualties. Fully knowledge-bounded distant discovery is not certified by a structural travel prefix.
+- P2: ordinary preparation still includes many return trips and single-unit purchases; reported decision units include travel and leaving conversation, and are not measured human decision density. Replay artifacts require their pinned code version. Current fire/smoke is state/interaction text, not completed visual presentation. Browser review is SKIP.
+
+Calendar/active-simulation policy, actual-v1 migrations, semantic stability, 10/30/60-second contracts and destination continuity remain in the passing full regression. No paid/live LLM calls. USER DECISION REQUIRED: none. This phase is not declared complete.

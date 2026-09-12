@@ -1,0 +1,175 @@
+{
+  "scope": "Production content; ordinary authoritative commands and exact recorded time subdivisions. Fixed work/meal/rest itineraries are causal stress evidence, not natural-life or optimal-human-play certificates.",
+  "artifactHashEncoding": "UTF-8 with CRLF normalized to LF",
+  "groups": [
+    {
+      "runtimeCommit": "09679bafd4729c3ab62056e21c0558bbd34807f4",
+      "worldlines": [
+        {
+          "name": "mine",
+          "status": "PASS",
+          "counts": {
+            "lowLevelOperations": 2930,
+            "simulationAdvances": 1355,
+            "movementInputs": 1391,
+            "meaningfulPlayerDecisions": 152,
+            "travelSegments": 51,
+            "investigations": 3,
+            "conversationTurns": 18,
+            "preparationActions": 42,
+            "combatActions": 16,
+            "otherDecisions": 22
+          },
+          "day": 5,
+          "clock": "01:13",
+          "replayEqual": true,
+          "intermediateRestartEqual": true,
+          "contentHash": "1634d7e868cda90a2fecd0204347f9fda86c81bba7ac4e19519e1504eb4bb2ba",
+          "finalHash": "b5d5daa088714bb8a0ee503442c9ce66ebd01ea803e5d7b97bf90f0922545777"
+        }
+      ],
+      "worldCheck": {
+        "pass": 104,
+        "fail": 0,
+        "skip": 0,
+        "audit": "PASS",
+        "assets": "PASS",
+        "build": "PASS"
+      }
+    },
+    {
+      "runtimeCommit": "d9e0de1984278b51a440a91d96cbef39c55544ff",
+      "worldlines": [
+        {
+          "name": "fire",
+          "status": "PASS",
+          "counts": {
+            "lowLevelOperations": 4298,
+            "simulationAdvances": 1996,
+            "movementInputs": 2091,
+            "meaningfulPlayerDecisions": 163,
+            "travelSegments": 66,
+            "investigations": 14,
+            "conversationTurns": 8,
+            "preparationActions": 46,
+            "combatActions": 15,
+            "otherDecisions": 14
+          },
+          "day": 5,
+          "clock": "03:31",
+          "replayEqual": true,
+          "intermediateRestartEqual": null,
+          "contentHash": "1634d7e868cda90a2fecd0204347f9fda86c81bba7ac4e19519e1504eb4bb2ba",
+          "finalHash": "1ec3020e5514f45f1d10296c88b31f2408e86a539a92be4e811df8144e4c8df1"
+        },
+        {
+          "name": "prevention",
+          "status": "PASS",
+          "counts": {
+            "lowLevelOperations": 59,
+            "simulationAdvances": 28,
+            "movementInputs": 28,
+            "meaningfulPlayerDecisions": 3,
+            "travelSegments": 1,
+            "investigations": 1,
+            "conversationTurns": 0,
+            "preparationActions": 0,
+            "combatActions": 0,
+            "otherDecisions": 1
+          },
+          "day": 1,
+          "clock": "07:17",
+          "replayEqual": true,
+          "intermediateRestartEqual": null,
+          "contentHash": "1634d7e868cda90a2fecd0204347f9fda86c81bba7ac4e19519e1504eb4bb2ba",
+          "finalHash": "dfcc7a0c6982dfb48374f2764a5dbd71abf6ac1dc3bc09880461dd98dd9211f7"
+        }
+      ],
+      "worldCheck": {
+        "pass": 105,
+        "fail": 0,
+        "skip": 0,
+        "audit": "PASS",
+        "assets": "PASS",
+        "build": "PASS"
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "09679baf/file-store-check.json",
+      "bytes": 707,
+      "sha256": "13d17157950729a7982a496d1fe856bddddbe77c6025c6b45ff957f86cdbc549"
+    },
+    {
+      "path": "09679baf/fire-first-price-failure.json",
+      "bytes": 4754,
+      "sha256": "7cbbe17e23ce8f9581d079d8395358f898c6bb8e85d80a8d0512a555fe8ba3cf"
+    },
+    {
+      "path": "09679baf/mine-intermediate.json",
+      "bytes": 3117548,
+      "sha256": "1e5906a19a7ebed5b85f57eff4ecb52aff326741e28d033a8d3e6d331a155fa6"
+    },
+    {
+      "path": "09679baf/mine-replay.json",
+      "bytes": 528457,
+      "sha256": "ae660074876fd2b435579c3274d8eb1441ff96471ed56207927016a94ae31fb6"
+    },
+    {
+      "path": "09679baf/mine-summary.json",
+      "bytes": 2389,
+      "sha256": "781a47ba4bfaceea9f8eadb2c5d4f8e27c48e0e68c21f76d0d1ad8744b0184a4"
+    },
+    {
+      "path": "09679baf/mine-trace.json",
+      "bytes": 1296517,
+      "sha256": "8c567e66afd6c39282816d60df20831b85cca0fef5b57bbabbfebf6bb2ebe7bd"
+    },
+    {
+      "path": "09679baf/world-check.log",
+      "bytes": 12387,
+      "sha256": "9e873ed4f38253db74fe896d1f8385204f377036f2563f98f7a1fb3c252102c3"
+    },
+    {
+      "path": "cross-runtime-difference.json",
+      "bytes": 513,
+      "sha256": "1d700e55d06d6a62171d856db2ea142f170410552df0a92e74040ef94b6d174c"
+    },
+    {
+      "path": "d9e0de19/fire-replay.json",
+      "bytes": 717872,
+      "sha256": "412250d3a951ed68dab9ef0c3d918bb4178600a4c4369747fce04db033632c07"
+    },
+    {
+      "path": "d9e0de19/fire-summary.json",
+      "bytes": 2347,
+      "sha256": "b74c91ff5bc3786a647017d3cead8d3c96a9e12c422bfb5510fdcf9655879b76"
+    },
+    {
+      "path": "d9e0de19/fire-trace.json",
+      "bytes": 1263770,
+      "sha256": "8b5b4e974f7461263dda2e026facb04c33a5f7128aceac1bf1fa288e9891438e"
+    },
+    {
+      "path": "d9e0de19/prevention-replay.json",
+      "bytes": 130713,
+      "sha256": "470e03a0662b2aa1b953ef69f78729188726c7c4ad3e09ebc95c59673d0d7f43"
+    },
+    {
+      "path": "d9e0de19/prevention-summary.json",
+      "bytes": 1437,
+      "sha256": "4d8343a2f4ffc604c13d88841ae06a26748e612b32cb555b2c4afd2ec3b42e58"
+    },
+    {
+      "path": "d9e0de19/prevention-trace.json",
+      "bytes": 15946,
+      "sha256": "88adf399f3137e4ddfe1cd106a02622fa8721d8019fe46f5302b4cc48c0bdaca"
+    },
+    {
+      "path": "d9e0de19/world-check.log",
+      "bytes": 12513,
+      "sha256": "2d01a5d19ed1878c25d95c696426ffed93b6387a8a17c61fc74b1077f317fd34"
+    }
+  ]
+}

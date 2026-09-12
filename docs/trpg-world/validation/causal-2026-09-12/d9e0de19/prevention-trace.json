@@ -1,0 +1,439 @@
+[
+  {
+    "index": 57,
+    "worldTime": 25356,
+    "knowledge": [
+      {
+        "id": "event:bread-fire",
+        "kind": "event",
+        "status": "latent",
+        "text": "床に灯油がこぼれている。作業は続いている。排水は通っている。支柱は補強されている。"
+      },
+      {
+        "id": "event:lost-road",
+        "kind": "event",
+        "status": "latent",
+        "text": "村外れに小さな足跡が続いている。北の道から獣の声がする。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"dodge\",\"parameters\":{\"x\":1,\"z\":6.123233995736766e-17},\"target\":\"self\",\"verb\":\"dodge\"}",
+        "label": "横へ回避する"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"guard\",\"parameters\":{\"active\":true},\"target\":\"self\",\"verb\":\"defend\"}",
+        "label": "身を守る"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"event:bread-fire\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"remove-fuel\",\"parameters\":{},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"maintain\"}",
+        "label": "漏れた灯油を拭き取り、火種を隔離する · 15分"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"use:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"use\"}",
+        "label": "傷薬を使う"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-FARM-02\",\"parameters\":{\"jobId\":\"JOB-FARM-02\"},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"work\"}",
+        "label": "穀倉の袋運び・棚卸し · 22G"
+      }
+    ],
+    "selected": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"interact\"}",
+    "reason": "穀倉で危険な油を確かめる",
+    "result": {
+      "message": "床に灯油がこぼれている。作業は続いている。排水は通っている。支柱は補強されている。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "inspections"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:bread-fire",
+          "kind": "event",
+          "status": "latent",
+          "text": "床に灯油がこぼれている。作業は続いている。排水は通っている。支柱は補強されている。"
+        },
+        {
+          "id": "event:lost-road",
+          "kind": "event",
+          "status": "latent",
+          "text": "村外れに小さな足跡が続いている。北の道から獣の声がする。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"event:bread-fire\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"remove-fuel\",\"parameters\":{},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"maintain\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"use:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"use\"}",
+        "{\"action\":\"work:JOB-FARM-02\",\"parameters\":{\"jobId\":\"JOB-FARM-02\"},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 58,
+    "worldTime": 26256,
+    "knowledge": [
+      {
+        "id": "event:bread-fire",
+        "kind": "event",
+        "status": "latent",
+        "text": "床に灯油がこぼれている。作業は続いている。排水は通っている。支柱は補強されている。"
+      },
+      {
+        "id": "event:lost-road",
+        "kind": "event",
+        "status": "latent",
+        "text": "村外れに小さな足跡が続いている。北の道から獣の声がする。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"event:bread-fire\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"remove-fuel\",\"parameters\":{},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"maintain\"}",
+        "label": "漏れた灯油を拭き取り、火種を隔離する · 15分"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"use:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"use\"}",
+        "label": "傷薬を使う"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-FARM-02\",\"parameters\":{\"jobId\":\"JOB-FARM-02\"},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"work\"}",
+        "label": "穀倉の袋運び・棚卸し · 22G"
+      }
+    ],
+    "selected": "{\"action\":\"remove-fuel\",\"parameters\":{},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"maintain\"}",
+    "reason": "見つけた油を片付ける",
+    "result": {
+      "message": "入口は閉じられ、作業は止まっている。排水は通っている。支柱は補強されている。"
+    },
+    "createdFacts": [
+      {
+        "id": "social:118",
+        "kind": "maintenance",
+        "actorId": "player",
+        "targetId": "LOC_FARM_GRANARY",
+        "payload": {
+          "action": "remove-fuel",
+          "physicalChanges": {
+            "fuel": false,
+            "operating": false
+          }
+        },
+        "at": 26256,
+        "region": "farm",
+        "position": [
+          -37.00000000000002,
+          0,
+          -17.000000000000007
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "events",
+      "facilities",
+      "inspections",
+      "inventory",
+      "knowledge",
+      "needs",
+      "npcs",
+      "structures"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:bread-fire",
+          "kind": "event",
+          "status": "latent",
+          "text": "床に灯油がこぼれている。作業は続いている。排水は通っている。支柱は補強されている。"
+        },
+        {
+          "id": "event:lost-road",
+          "kind": "event",
+          "status": "latent",
+          "text": "村外れに小さな足跡が続いている。北の道から獣の声がする。"
+        },
+        {
+          "id": "workplace:LOC_FARM_GRANARY:120",
+          "kind": "workplace-status",
+          "text": "共同穀倉の入口は閉鎖されている。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [
+              {
+                "at": 26256,
+                "evidence": [
+                  "social:118"
+                ],
+                "id": "milestone:121",
+                "kind": "prevented"
+              }
+            ],
+            "model": "infrastructure"
+          },
+          "status": "prevented"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"event:bread-fire\",\"verb\":\"interact\"}",
+        "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_FARM_GRANARY\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"use:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"use\"}"
+      ]
+    }
+  }
+]
