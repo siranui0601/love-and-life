@@ -489,12 +489,14 @@ function resolveGrowthStep(state, activeNails, { extra = false } = {}) {
   for (const id of tipBreakIds) {
     const nail = state.nails.find((item) => item.id === id);
     if (!nail?.alive) continue;
+    blocked.add(id);
     emitRemoval(events, "break", nail, breakTip(nail), "collision", collisionPointById.get(id));
   }
 
   for (const [id, index] of cutIndexById) {
     const nail = state.nails.find((item) => item.id === id);
     if (!nail?.alive) continue;
+    blocked.add(id);
     emitRemoval(events, "sever", nail, cutFrom(nail, index), "collision", collisionPointById.get(id));
   }
 
