@@ -5,11 +5,11 @@ const NS = "http://www.w3.org/2000/svg";
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
 const FINGER_VISUALS = Object.freeze([
-  { width: 92, depth: 102, nailW: 42, nailH: 42, bodyOffset: -17, shoulder: 34 },
-  { width: 62, depth: 122, nailW: 31, nailH: 48, bodyOffset: -4, shoulder: 27 },
-  { width: 66, depth: 142, nailW: 33, nailH: 51, bodyOffset: 0, shoulder: 28 },
-  { width: 60, depth: 124, nailW: 30, nailH: 47, bodyOffset: 4, shoulder: 26 },
-  { width: 50, depth: 94, nailW: 25, nailH: 39, bodyOffset: 10, shoulder: 22 },
+  { width: 86, depth: 88, nailW: 42, nailH: 42, taper: 9 },
+  { width: 58, depth: 108, nailW: 31, nailH: 47, taper: 7 },
+  { width: 62, depth: 124, nailW: 33, nailH: 50, taper: 7 },
+  { width: 57, depth: 111, nailW: 30, nailH: 46, taper: 7 },
+  { width: 47, depth: 86, nailW: 25, nailH: 38, taper: 6 },
 ]);
 
 export function boardPoint(cell, viewPlayer = 0) {
@@ -41,6 +41,18 @@ function worldDirectionToView(nail, viewPlayer) { return viewPlayer === 1 ? -nai
 function segmentMid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
 function defenseLabel(value) { return value >= 3 ? "かなりかたい" : value >= 2 ? "かたい" : "ふつう"; }
 
+function fingerBodyPath(visual, onBottom) {
+  const w = visual.width;
+  const half = w / 2;
+  const t = visual.taper;
+  if (onBottom) {
+    const tip = -visual.depth;
+    return `M ${-half} 28 L ${-half + t} ${tip + 30} C ${-half + t + 2} ${tip + 9} ${-w * .24} ${tip} 0 ${tip} C ${w * .24} ${tip} ${half - t - 2} ${tip + 9} ${half - t} ${tip + 30} L ${half} 28 Z`;
+  }
+  const tip = visual.depth;
+  return `M ${-half} -28 L ${-half + t} ${tip - 30} C ${-half + t + 2} ${tip - 9} ${-w * .24} ${tip} 0 ${tip} C ${w * .24} ${tip} ${half - t - 2} ${tip - 9} ${half - t} ${tip - 30} L ${half} -28 Z`;
+}
+
 function fingerMarkup(state, player, fingerIndex, options) {
   const { viewPlayer, selectedFinger, localPlayer, canEdit } = options;
   const captured = state.capturedFingers[player].includes(fingerIndex);
@@ -50,19 +62,20 @@ function fingerMarkup(state, player, fingerIndex, options) {
   const own = player === localPlayer;
   const selected = own && fingerIndex === selectedFinger && !captured;
   const direction = onBottom ? -1 : 1;
-  const bodyOffset = visual.bodyOffset * (onBottom ? 1 : -1);
-  const bodyY = onBottom ? -visual.depth + 38 : -38;
-  const nailY = onBottom ? -72 : 25;
-  const klass = `finger-group${own ? " is-own" : ""}${own && canEdit && !captured ? " is-interactive" : ""}`;
+  const nailY = onBottom ? -visual.depth + 17 : visual.depth - 17 - visual.nailH;
+  const nailCY = nailY + visual.nailH / 2;
+  const klass = `finger-group finger-${fingerIndex}${own ? " is-own" : ""}${own && canEdit && !captured ? " is-interactive" : ""}`;
   const data = own && canEdit && !captured ? ` data-finger="${fingerIndex}"` : "";
   if (captured) {
     const y = anchor.y + direction * 12;
-    return `<g class="finger-group"><path class="missing-finger" d="M ${anchor.x - visual.width * .38} ${y} Q ${anchor.x} ${y + direction * 24} ${anchor.x + visual.width * .38} ${y}"/></g>`;
+    return `<g class="finger-group"><path class="missing-finger" d="M ${anchor.x - visual.width * .36} ${y} Q ${anchor.x} ${y + direction * 22} ${anchor.x + visual.width * .36} ${y}"/></g>`;
   }
+  const body = fingerBodyPath(visual, onBottom);
+  const cuticleY = onBottom ? nailY + visual.nailH + 5 : nailY - 5;
   return `<g class="${klass}"${data} role="button" aria-label="${esc(FINGER_NAMES[fingerIndex])}を選ぶ" tabindex="${own && canEdit ? 0 : -1}" transform="translate(${anchor.x} ${anchor.y})">
-    ${selected ? `<ellipse class="finger-select-ring" cx="0" cy="${onBottom ? -43 : 43}" rx="${visual.nailW * .9}" ry="${visual.nailH * .9}"/>` : ""}
-    <rect class="finger-body p${player}" x="${-visual.width / 2 + bodyOffset}" y="${bodyY}" width="${visual.width}" height="${visual.depth}" rx="${visual.shoulder}"/>
-    <path class="finger-crease p${player}" d="M ${-visual.width*.27 + bodyOffset} ${onBottom ? -18 : 18} Q ${bodyOffset} ${onBottom ? -9 : 9} ${visual.width*.27 + bodyOffset} ${onBottom ? -18 : 18}"/>
+    ${selected ? `<ellipse class="finger-select-ring" cx="0" cy="${nailCY}" rx="${visual.nailW * .86}" ry="${visual.nailH * .82}"/>` : ""}
+    <path class="finger-body p${player}" d="${body}"/>
+    <path class="finger-cuticle p${player}" d="M ${-visual.nailW * .43} ${cuticleY} Q 0 ${cuticleY + (onBottom ? 6 : -6)} ${visual.nailW * .43} ${cuticleY}"/>
     <rect class="finger-nail-bed p${player}" x="${-visual.nailW / 2}" y="${nailY}" width="${visual.nailW}" height="${visual.nailH}" rx="${Math.round(visual.nailW * .44)}"/>
   </g>`;
 }
@@ -78,7 +91,7 @@ function materialMarkup(nail, points) {
     if (mat.kind === "hook" && i !== nail.path.length - 1) {
       const m = segmentMid(from, to);
       const angle = Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI;
-      out.push(`<g class="hook-seed" transform="translate(${m.x} ${m.y}) rotate(${angle})"><path d="M -12 -8 L 7 -8 C 16 -8 18 5 11 10 C 6 14 0 11 -2 7 L 4 3 C 6 6 9 6 10 3 C 11 0 8 -1 5 -1 L -12 -1 Z"/></g>`);
+      out.push(`<g class="hook-seed" transform="translate(${m.x} ${m.y}) rotate(${angle})"><rect class="hook-seed-collar" x="-17" y="-13" width="31" height="26" rx="9"/><path class="hook-seed-tooth" d="M 8 -10 C 25 -6 26 10 11 15 L 6 7 C 14 5 15 -2 8 -3 Z"/></g>`);
     }
   }
   return out.join("");
@@ -88,7 +101,7 @@ function hookTipMarkup(nail, points) {
   if (tipMaterial(nail).kind !== "hook" || points.length < 2) return "";
   const tip = points.at(-1), prev = points.at(-2);
   const angle = Math.atan2(tip.y - prev.y, tip.x - prev.x) * 180 / Math.PI;
-  return `<g class="hook-tip" transform="translate(${tip.x} ${tip.y}) rotate(${angle})"><path class="hook-tip-body" d="M -30 -16 L 4 -16 C 25 -16 37 -4 34 13 C 31 31 14 42 -5 34 L 2 19 C 11 23 18 18 19 11 C 20 3 13 0 3 0 L -30 0 Z"/><path class="hook-tip-ridge" d="M -22 -8 L 5 -8 C 19 -8 27 -1 26 10 C 25 18 18 25 10 27"/></g>`;
+  return `<g class="hook-tip" transform="translate(${tip.x} ${tip.y}) rotate(${angle})"><path class="hook-tip-shadow" d="M -34 -23 L 5 -23 C 34 -23 50 -6 47 17 C 44 43 18 57 -10 43 L -2 24 C 11 32 26 24 28 13 C 29 3 20 -2 5 -2 L -34 -2 Z"/><path class="hook-tip-body" d="M -31 -18 L 5 -18 C 28 -18 41 -5 39 14 C 37 35 17 47 -6 37 L 1 22 C 12 27 23 21 24 12 C 25 4 18 0 5 0 L -31 0 Z"/><path class="hook-tip-ridge" d="M -23 -9 L 6 -9 C 21 -9 30 -1 29 11 C 28 21 20 29 10 31"/><path class="hook-tip-barb" d="M 7 31 L 21 39 L 12 23 Z"/></g>`;
 }
 
 function sharpenMarkup(nail, points) {
@@ -123,16 +136,34 @@ function nailMarkup(nail, options) {
   return `<g class="nail-group${hidden ? " is-hidden" : ""}" data-nail="${nail.id}">${selected ? `<polyline class="nail-selection" points="${attr}"/>` : ""}<polyline class="nail-outline" points="${attr}"/><polyline class="nail-core p${nail.player}" points="${attr}"/>${materialMarkup(nail, points)}<polyline class="nail-highlight" points="${attr}"/>${hidden ? `<polyline class="hidden-veil" points="${attr}"/>` : ""}${hookTipMarkup(nail, points)}${sharpenMarkup(nail, points)}${own && options.canEdit ? `<polyline class="nail-hit" data-finger="${nail.fingerIndex}" points="${attr}" aria-label="${esc(FINGER_NAMES[nail.fingerIndex])}の爪"/>` : ""}${targetMarkup(nail, points, options)}</g>`;
 }
 
-function previewMarkup(state, options) {
+function arrowTriangle(from, to) {
+  const dx = to.x - from.x, dy = to.y - from.y, len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len, uy = dy / len, px = -uy, py = ux;
+  const apex = { x: to.x + ux * 7, y: to.y + uy * 7 };
+  const base = { x: to.x - ux * 12, y: to.y - uy * 12 };
+  return `${apex.x},${apex.y} ${base.x + px * 8},${base.y + py * 8} ${base.x - px * 8},${base.y - py * 8}`;
+}
+
+function previewForFinger(state, options, fingerIndex) {
   if (!options.canEdit) return "";
-  const info = previewMove(state, options.localPlayer, options.selectedFinger);
-  const nail = getNail(state, options.localPlayer, options.selectedFinger);
-  if (!nail?.alive || !info?.to) return "";
-  const tip = boardPoint(currentTip(nail), options.viewPlayer), next = boardPoint(info.to, options.viewPlayer);
-  let extra = "";
-  if (info.kind === "hook-cut") extra = `<g class="hook-cut-preview"><circle class="hook-cut-target" cx="${next.x}" cy="${next.y}" r="41"/><path class="hook-cut-slash" d="M ${next.x-25} ${next.y+25} L ${next.x+25} ${next.y-25}"/></g>`;
-  else if (["collision","own-block","capture"].includes(info.kind)) extra = `<circle class="move-target-ring kind-${info.kind}" cx="${next.x}" cy="${next.y}" r="34"/>`;
-  return `<g class="move-preview kind-${info.kind}"><line class="direction-ghost" x1="${tip.x}" y1="${tip.y}" x2="${next.x}" y2="${next.y}"/>${extra}</g>`;
+  const nail = getNail(state, options.localPlayer, fingerIndex);
+  if (!nail?.alive) return "";
+  const info = previewMove(state, options.localPlayer, fingerIndex);
+  if (!info?.to) return "";
+  const from = boardPoint(currentTip(nail), options.viewPlayer);
+  const to = boardPoint(info.to, options.viewPlayer);
+  const selected = fingerIndex === options.selectedFinger;
+  const arrow = arrowTriangle(from, to);
+  let endpoint = `<polygon class="direction-arrowhead" points="${arrow}"/>`;
+  if (["collision", "own-block", "edge"].includes(info.kind)) endpoint += `<circle class="preview-stop" cx="${to.x}" cy="${to.y}" r="18"/>`;
+  if (info.kind === "capture") endpoint += `<circle class="preview-capture" cx="${to.x}" cy="${to.y}" r="25"/>`;
+  if (info.kind === "hook-cut") endpoint += `<circle class="hook-cut-target" cx="${to.x}" cy="${to.y}" r="38"/><path class="hook-cut-slash" d="M ${to.x - 24} ${to.y + 24} L ${to.x + 24} ${to.y - 24}"/><text class="hook-cut-label" x="${to.x}" y="${to.y - 46}">鉤爪</text>`;
+  return `<g class="move-preview kind-${info.kind}${selected ? " is-selected" : " is-passive"}" data-preview-finger="${fingerIndex}"><line class="direction-ghost" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/>${endpoint}</g>`;
+}
+
+function previewsMarkup(state, options) {
+  if (!options.canEdit) return "";
+  return `<g class="move-previews">${[0,1,2,3,4].map((fingerIndex) => previewForFinger(state, options, fingerIndex)).join("")}</g>`;
 }
 
 export function renderBoard(svg, state, options = {}) {
@@ -143,18 +174,29 @@ export function renderBoard(svg, state, options = {}) {
   const fingers = [];
   for (let player = 0; player < 2; player += 1) for (let finger = 0; finger < 5; finger += 1) fingers.push(fingerMarkup(state, player, finger, opts));
   const nails = state.nails.map((nail) => nailMarkup(nail, opts));
-  const preview = opts.canEdit ? previewMove(state, opts.localPlayer, opts.selectedFinger) : null;
-  svg.dataset.movePreview = preview?.kind || "";
-  svg.dataset.movePreviewText = preview?.label || "";
-  svg.innerHTML = `<title>爪将棋の盤面</title><desc>形の違う5本の指と、根元から連続して伸びる爪を表示します。</desc>${grid.join("")}<g class="fingers">${fingers.join("")}</g><g class="nails">${nails.join("")}</g>${previewMarkup(state, opts)}`;
+  const selectedPreview = opts.canEdit ? previewMove(state, opts.localPlayer, opts.selectedFinger) : null;
+  svg.dataset.movePreview = selectedPreview?.kind || "";
+  svg.dataset.movePreviewText = selectedPreview?.label || "";
+  svg.innerHTML = `<title>爪将棋の盤面</title><desc>形の違う5本の指と、全ての自分の爪が次に伸びる方向を表示します。</desc>${grid.join("")}<g class="fingers">${fingers.join("")}</g><g class="nails">${nails.join("")}</g>${previewsMarkup(state, opts)}`;
 }
 
 export function fingerStateText(state, player, fingerIndex) {
   const nail = getNail(state, player, fingerIndex);
   if (!nail?.alive) return "退場";
   const tip = tipMaterial(nail), labels = [];
-  if (tip.kind === "hook") labels.push("鉤爪"); else if (tip.kind === "sculpt") labels.push("スカルプ"); else if (tip.sharpened) labels.push("研ぎ済み");
-  if (tip.gel) labels.push("ジェル"); if (nail.hiddenThisRound) labels.push("隠し中"); if (!labels.length) labels.push("ふつうの爪");
+  const hookIndex = nail.materials.findIndex((material) => material?.kind === "hook");
+  if (hookIndex >= 0) {
+    if (hookIndex === nail.materials.length - 1) {
+      const next = previewMove(state, player, fingerIndex);
+      labels.push(next.kind === "hook-cut" ? "鉤爪・切断可" : "鉤爪・先端");
+    } else {
+      labels.push("鉤爪・仕込み中");
+    }
+  } else if (tip.kind === "sculpt") labels.push("スカルプ");
+  else if (tip.sharpened) labels.push("研ぎ済み");
+  if (tip.gel) labels.push("ジェル");
+  if (nail.hiddenThisRound) labels.push("隠し中");
+  if (!labels.length) labels.push("ふつうの爪");
   return labels.join("・");
 }
 export function directionForView(nail, viewPlayer) { return worldDirectionToView(nail, viewPlayer); }
