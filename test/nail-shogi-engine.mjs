@@ -6,6 +6,7 @@ import {
   createInitialState,
   finishCommand,
   getNail,
+  previewMove,
   setDirection,
 } from "../public/nail-shogi/engine.js";
 
@@ -55,7 +56,7 @@ test("hide never lets friendly nails phase through one another", () => {
   assert.ok(result.events.some((event) => event.type === "own-block"));
 });
 
-test("clean body cut removes the complete distal tail", () => {
+test("hook cuts a nail only when it actually enters the body from the side", () => {
   const state = createInitialState();
   disableExcept(state, ["0:0", "1:0"]);
   const attacker = getNail(state, 0, 0);
@@ -65,11 +66,32 @@ test("clean body cut removes the complete distal tail", () => {
   defender.path = [{ x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }];
   defender.materials = Array.from({ length: 3 }, () => ({ kind: "bare", gel: false, sharpened: false }));
   setDirection(state, 0, 0, 1);
+  const preview = previewMove(state, 0, 0);
+  assert.equal(preview.kind, "hook-cut");
   const result = resolveRound(state);
   assert.equal(defender.path.length, 1);
+  assert.ok(result.events.some((event) => event.type === "segment-collision" && event.hookCut === true));
   const sever = result.events.find((event) => event.type === "sever" && event.nailId === defender.id);
   assert.ok(sever);
   assert.equal(sever.removed.length, 2);
+});
+
+test("hook does not get its special cut when approaching along the defender nail", () => {
+  const state = createInitialState();
+  disableExcept(state, ["0:0", "1:0"]);
+  const attacker = getNail(state, 0, 0);
+  const defender = getNail(state, 1, 0);
+  attacker.path = [{ x: 1, y: 3 }];
+  attacker.materials = [{ kind: "hook", gel: false, sharpened: false }];
+  defender.path = [{ x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 2 }];
+  defender.materials = Array.from({ length: 3 }, () => ({ kind: "bare", gel: false, sharpened: false }));
+  setDirection(state, 0, 0, 0);
+  const preview = previewMove(state, 0, 0);
+  assert.equal(preview.kind, "collision");
+  const result = resolveRound(state);
+  assert.equal(defender.path.length, 3);
+  assert.equal(attacker.path.length, 1);
+  assert.ok(result.events.some((event) => event.type === "segment-collision" && event.hookCut === false));
 });
 
 test("touching an enemy finger captures immediately even if its nail is long", () => {
