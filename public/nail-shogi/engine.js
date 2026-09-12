@@ -1,43 +1,41 @@
 export const BOARD = Object.freeze({ cols: 10, rows: 8, capturesToWin: 2, carePerTurn: 2 });
 export const FINGER_NAMES = Object.freeze(["親指", "人差し指", "中指", "薬指", "小指"]);
 export const DIRECTIONS = Object.freeze([-1, 0, 1]);
-
-const ROOT_COLS = {
-  0: [0, 2, 4, 6, 8],
-  1: [1, 3, 5, 7, 9],
-};
-
-const START_STOCK = Object.freeze({ gel: 4, hook: 2, sculpt: 2 });
+export const ROOT_COLS = Object.freeze({
+  0: Object.freeze([0, 2, 4, 6, 8]),
+  1: Object.freeze([1, 3, 5, 7, 9]),
+});
+export const START_STOCK = Object.freeze({ gel: 4, hook: 2, sculpt: 2 });
 
 const clone = (value) => structuredClone(value);
 const key = (x, y) => `${x},${y}`;
 const inBounds = (x, y) => x >= 0 && x < BOARD.cols && y >= 0 && y < BOARD.rows;
+const sameCell = (a, b) => a.x === b.x && a.y === b.y;
 
 function makeMaterial(kind = "bare") {
   return { kind, gel: false, sharpened: false };
 }
 
-function rootFor(player, fingerIndex) {
+export function rootFor(player, fingerIndex) {
   return {
     x: ROOT_COLS[player][fingerIndex],
     y: player === 0 ? BOARD.rows : -1,
   };
 }
 
-function firstCellFor(player, fingerIndex) {
+export function firstCellFor(player, fingerIndex) {
   const root = rootFor(player, fingerIndex);
   return { x: root.x, y: player === 0 ? BOARD.rows - 1 : 0 };
 }
 
 function makeNail(player, fingerIndex) {
-  const first = firstCellFor(player, fingerIndex);
   return {
     id: `${player}:${fingerIndex}`,
     player,
     fingerIndex,
     alive: true,
     direction: 0,
-    path: [first],
+    path: [firstCellFor(player, fingerIndex)],
     materials: [makeMaterial()],
     hiddenThisRound: false,
     hidLastRound: false,
@@ -46,13 +44,13 @@ function makeNail(player, fingerIndex) {
   };
 }
 
-export function createInitialState({ mode = "cpu" } = {}) {
+export function createInitialState({ mode = "online" } = {}) {
   const nails = [];
   for (let player = 0; player < 2; player += 1) {
     for (let finger = 0; finger < 5; finger += 1) nails.push(makeNail(player, finger));
   }
   return {
-    version: 1,
+    version: 2,
     mode,
     round: 1,
     phase: "command",
@@ -77,36 +75,31 @@ export function currentTip(nail) {
   return nail.path[nail.path.length - 1] || firstCellFor(nail.player, nail.fingerIndex);
 }
 
-function tipMaterial(nail) {
+export function tipMaterial(nail) {
   return nail.materials[nail.materials.length - 1] || makeMaterial();
 }
 
-function attackPower(nail, contactKind = "tip") {
+export function attackPower(nail, contactKind = "tip") {
   const material = tipMaterial(nail);
   if (contactKind === "body" && material.kind === "hook") return 3;
   return 1 + (material.sharpened ? 1 : 0);
 }
 
-function segmentDefense(nail, segmentIndex) {
+export function segmentDefense(nail, segmentIndex) {
   const material = nail.materials[segmentIndex] || makeMaterial();
   const isTip = segmentIndex === nail.path.length - 1;
   const base = isTip ? 1 : 2;
   return base + (material.gel ? 1 : 0);
 }
 
-function candidateFor(nail, extra = false) {
+function candidateFor(nail) {
   const tip = currentTip(nail);
   const dy = nail.player === 0 ? -1 : 1;
-  const dx = nail.direction;
-  return { x: tip.x + dx, y: tip.y + dy, extra };
+  return { x: tip.x + nail.direction, y: tip.y + dy };
 }
 
 function segmentIndexAt(nail, cell) {
-  for (let i = 0; i < nail.path.length; i += 1) {
-    const point = nail.path[i];
-    if (point.x === cell.x && point.y === cell.y) return i;
-  }
-  return -1;
+  return nail.path.findIndex((point) => sameCell(point, cell));
 }
 
 function enemyFingerAt(state, attacker, cell) {
@@ -119,28 +112,35 @@ function enemyFingerAt(state, attacker, cell) {
   return { player: enemy, fingerIndex };
 }
 
+function segmentSnapshot(nail, start = 0) {
+  return nail.path.slice(start).map((cell, offset) => ({
+    cell: { ...cell },
+    material: clone(nail.materials[start + offset] || makeMaterial()),
+  }));
+}
+
 function cutFrom(nail, index) {
-  if (index < 0 || index >= nail.path.length) return;
+  if (index < 0 || index >= nail.path.length) return [];
+  const removed = segmentSnapshot(nail, index);
   if (index === 0) {
     nail.path = [firstCellFor(nail.player, nail.fingerIndex)];
     nail.materials = [makeMaterial()];
-    return;
+    return removed;
   }
   nail.path = nail.path.slice(0, index);
   nail.materials = nail.materials.slice(0, index);
-  if (!nail.path.length) {
-    nail.path = [firstCellFor(nail.player, nail.fingerIndex)];
-    nail.materials = [makeMaterial()];
-  }
+  return removed;
 }
 
 function breakTip(nail) {
-  if (nail.path.length <= 1) {
-    nail.materials[0] = makeMaterial();
-    return;
+  if (!nail.path.length) return [];
+  if (nail.path.length === 1) {
+    const removed = segmentSnapshot(nail, 0);
+    nail.path = [firstCellFor(nail.player, nail.fingerIndex)];
+    nail.materials = [makeMaterial()];
+    return removed;
   }
-  nail.path.pop();
-  nail.materials.pop();
+  return cutFrom(nail, nail.path.length - 1);
 }
 
 function resetNail(nail) {
@@ -149,10 +149,6 @@ function resetNail(nail) {
   nail.direction = 0;
   nail.sculptPending = false;
   nail.hiddenThisRound = false;
-}
-
-function capturedFingerCell(player, fingerIndex) {
-  return firstCellFor(player, fingerIndex);
 }
 
 function cellsByOccupant(state) {
@@ -168,45 +164,124 @@ function cellsByOccupant(state) {
   return map;
 }
 
-function lineIntersection(a1, a2, b1, b2) {
-  const cross = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
-  const c1 = cross(a1, a2, b1);
-  const c2 = cross(a1, a2, b2);
-  const c3 = cross(b1, b2, a1);
-  const c4 = cross(b1, b2, a2);
+function orientation(a, b, c) {
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+}
+
+function segmentsCrossStrict(a1, a2, b1, b2) {
+  const c1 = orientation(a1, a2, b1);
+  const c2 = orientation(a1, a2, b2);
+  const c3 = orientation(b1, b2, a1);
+  const c4 = orientation(b1, b2, a2);
   return c1 * c2 < 0 && c3 * c4 < 0;
 }
 
-function applyHeadOn(a, b, breakIds, events) {
+function movementContact(a, aNext, b, bNext) {
+  const aPrev = currentTip(a);
+  const bPrev = currentTip(b);
+  if (sameCell(aNext, bNext)) return { kind: "same-cell", point: { ...aNext } };
+  if (sameCell(aNext, bPrev) && sameCell(bNext, aPrev)) {
+    return { kind: "swap", point: { x: (aPrev.x + bPrev.x) / 2, y: (aPrev.y + bPrev.y) / 2 } };
+  }
+  if (segmentsCrossStrict(aPrev, aNext, bPrev, bNext)) {
+    return {
+      kind: "cross",
+      point: {
+        x: (aPrev.x + aNext.x + bPrev.x + bNext.x) / 4,
+        y: (aPrev.y + aNext.y + bPrev.y + bNext.y) / 4,
+      },
+    };
+  }
+  return null;
+}
+
+function resolveTipPair(a, b, breakIds, events, point, source = "growth") {
   const pa = attackPower(a, "tip");
   const pb = attackPower(b, "tip");
   const da = segmentDefense(a, a.path.length - 1);
   const db = segmentDefense(b, b.path.length - 1);
   if (pb >= da) breakIds.add(a.id);
   if (pa >= db) breakIds.add(b.id);
-  events.push({ type: "tip-collision", nails: [a.id, b.id], powers: [pa, pb], defenses: [da, db] });
+  events.push({
+    type: "tip-collision",
+    source,
+    nails: [a.id, b.id],
+    point: { ...point },
+    powers: [pa, pb],
+    defenses: [da, db],
+  });
+}
+
+function emitRemoval(events, type, nail, removed, cause, point = null) {
+  if (!removed?.length) return;
+  events.push({
+    type,
+    nailId: nail.id,
+    player: nail.player,
+    fingerIndex: nail.fingerIndex,
+    removed,
+    cause,
+    point: point ? { ...point } : { ...removed[0].cell },
+  });
 }
 
 function resolveDeferred(state, events) {
   const pending = state.deferred;
   state.deferred = [];
+  const tipBreakIds = new Set();
+  const cutIndexById = new Map();
+
   for (const contact of pending) {
-    const attacker = state.nails.find((n) => n.id === contact.attackerId);
-    const defender = state.nails.find((n) => n.id === contact.defenderId);
+    if (contact.kind === "tip-pair") {
+      const a = state.nails.find((nail) => nail.id === contact.aId);
+      const b = state.nails.find((nail) => nail.id === contact.bId);
+      if (!a?.alive || !b?.alive) continue;
+      resolveTipPair(a, b, tipBreakIds, events, contact.point, "reveal");
+      continue;
+    }
+
+    const attacker = state.nails.find((nail) => nail.id === contact.attackerId);
+    const defender = state.nails.find((nail) => nail.id === contact.defenderId);
     if (!attacker?.alive || !defender?.alive) continue;
     const index = segmentIndexAt(defender, contact.cell);
     if (index < 0) continue;
-    const p = contact.attackPower;
+    const kind = index === defender.path.length - 1 ? "tip" : "body";
+    const p = attackPower(attacker, kind);
     const d = segmentDefense(defender, index);
-    if (p <= d) breakTip(attacker);
-    if (p >= d) cutFrom(defender, index);
-    events.push({ type: "reveal-collision", attackerId: attacker.id, defenderId: defender.id, cell: contact.cell, p, d });
+    events.push({
+      type: "segment-collision",
+      source: "reveal",
+      attackerId: attacker.id,
+      defenderId: defender.id,
+      point: { ...contact.cell },
+      p,
+      d,
+      contactKind: kind,
+    });
+    if (p <= d) tipBreakIds.add(attacker.id);
+    if (p >= d) {
+      const previous = cutIndexById.get(defender.id);
+      if (previous == null || index < previous) cutIndexById.set(defender.id, index);
+    }
+  }
+
+  for (const id of tipBreakIds) {
+    const nail = state.nails.find((item) => item.id === id);
+    if (!nail?.alive) continue;
+    emitRemoval(events, "break", nail, breakTip(nail), "reveal");
+  }
+  for (const [id, index] of cutIndexById) {
+    const nail = state.nails.find((item) => item.id === id);
+    if (!nail?.alive) continue;
+    emitRemoval(events, "sever", nail, cutFrom(nail, index), "reveal");
   }
 }
 
 function captureFinger(state, attacker, target, events) {
-  const pathSnapshot = attacker.path.map((cell) => ({ ...cell }));
+  const attackPath = segmentSnapshot(attacker, 0);
   const targetNail = getNail(state, target.player, target.fingerIndex);
+  const defenderPath = targetNail?.alive ? segmentSnapshot(targetNail, 0) : [];
+
   if (!state.capturedFingers[target.player].includes(target.fingerIndex)) {
     state.capturedFingers[target.player].push(target.fingerIndex);
     state.captures[attacker.player] += 1;
@@ -221,10 +296,13 @@ function captureFinger(state, attacker, target, events) {
     type: "capture",
     attackerPlayer: attacker.player,
     attackerFinger: attacker.fingerIndex,
+    attackerId: attacker.id,
     defenderPlayer: target.player,
     defenderFinger: target.fingerIndex,
-    cell: capturedFingerCell(target.player, target.fingerIndex),
-    attackPath: pathSnapshot,
+    defenderId: targetNail?.id || `${target.player}:${target.fingerIndex}`,
+    cell: firstCellFor(target.player, target.fingerIndex),
+    attackPath,
+    defenderPath,
   });
 }
 
@@ -233,41 +311,58 @@ function resolveGrowthStep(state, activeNails, { extra = false } = {}) {
   const occupancy = cellsByOccupant(state);
   const candidates = new Map();
   const blocked = new Set();
-  const breakTips = new Set();
-  const cuts = [];
+  const tipBreakIds = new Set();
+  const cutIndexById = new Map();
   const captures = [];
+  const collisionPointById = new Map();
 
   for (const nail of activeNails) {
     if (!nail.alive) continue;
-    const cell = candidateFor(nail, extra);
+    const cell = candidateFor(nail);
     candidates.set(nail.id, cell);
     if (!inBounds(cell.x, cell.y)) {
       blocked.add(nail.id);
-      events.push({ type: "edge-block", nailId: nail.id, cell });
+      events.push({ type: "edge-block", nailId: nail.id, player: nail.player, fingerIndex: nail.fingerIndex, point: cell });
     }
   }
 
-  const candidateEntries = [...candidates.entries()];
-  for (let i = 0; i < candidateEntries.length; i += 1) {
-    const [idA, cellA] = candidateEntries[i];
-    if (blocked.has(idA)) continue;
-    const nailA = state.nails.find((n) => n.id === idA);
-    for (let j = i + 1; j < candidateEntries.length; j += 1) {
-      const [idB, cellB] = candidateEntries[j];
-      if (blocked.has(idB)) continue;
-      const nailB = state.nails.find((n) => n.id === idB);
-      if (!nailA || !nailB || nailA.player === nailB.player) continue;
-      if (nailA.hiddenThisRound || nailB.hiddenThisRound) continue;
-      const sameCell = cellA.x === cellB.x && cellA.y === cellB.y;
-      const aPrev = currentTip(nailA);
-      const bPrev = currentTip(nailB);
-      const swap = cellA.x === bPrev.x && cellA.y === bPrev.y && cellB.x === aPrev.x && cellB.y === aPrev.y;
-      const cross = lineIntersection(aPrev, cellA, bPrev, cellB);
-      if (sameCell || swap || cross) {
-        applyHeadOn(nailA, nailB, breakTips, events);
-        blocked.add(idA);
-        blocked.add(idB);
+  const entries = [...candidates.entries()];
+  for (let i = 0; i < entries.length; i += 1) {
+    const [idA, nextA] = entries[i];
+    const a = state.nails.find((nail) => nail.id === idA);
+    if (!a?.alive || blocked.has(idA)) continue;
+
+    for (let j = i + 1; j < entries.length; j += 1) {
+      const [idB, nextB] = entries[j];
+      const b = state.nails.find((nail) => nail.id === idB);
+      if (!b?.alive || blocked.has(idB)) continue;
+      const contact = movementContact(a, nextA, b, nextB);
+      if (!contact) continue;
+
+      if (a.player === b.player) {
+        blocked.add(a.id);
+        blocked.add(b.id);
+        events.push({
+          type: "own-block",
+          nails: [a.id, b.id],
+          player: a.player,
+          point: contact.point,
+          reason: contact.kind,
+        });
+        continue;
       }
+
+      if (a.hiddenThisRound || b.hiddenThisRound) {
+        state.deferred.push({ kind: "tip-pair", aId: a.id, bId: b.id, point: contact.point });
+        events.push({ type: "phase-through", nails: [a.id, b.id], point: contact.point });
+        continue;
+      }
+
+      resolveTipPair(a, b, tipBreakIds, events, contact.point);
+      collisionPointById.set(a.id, contact.point);
+      collisionPointById.set(b.id, contact.point);
+      blocked.add(a.id);
+      blocked.add(b.id);
     }
   }
 
@@ -287,7 +382,13 @@ function resolveGrowthStep(state, activeNails, { extra = false } = {}) {
     const own = occupants.find((entry) => entry.nail.player === nail.player && entry.nail.id !== nail.id);
     if (own) {
       blocked.add(nail.id);
-      events.push({ type: "own-block", nailId: nail.id, cell });
+      events.push({
+        type: "own-block",
+        nails: [nail.id, own.nail.id],
+        player: nail.player,
+        point: { ...cell },
+        reason: "occupied",
+      });
       continue;
     }
 
@@ -297,12 +398,13 @@ function resolveGrowthStep(state, activeNails, { extra = false } = {}) {
     if (nail.hiddenThisRound || enemies.every((entry) => entry.nail.hiddenThisRound)) {
       for (const enemy of enemies) {
         state.deferred.push({
+          kind: "segment",
           attackerId: nail.id,
           defenderId: enemy.nail.id,
           cell: { ...cell },
-          attackPower: attackPower(nail, enemy.index === enemy.nail.path.length - 1 ? "tip" : "body"),
         });
       }
+      events.push({ type: "phase-through", nails: [nail.id, ...enemies.map((entry) => entry.nail.id)], point: { ...cell } });
       continue;
     }
 
@@ -311,44 +413,66 @@ function resolveGrowthStep(state, activeNails, { extra = false } = {}) {
       const contactKind = enemy.index === enemy.nail.path.length - 1 ? "tip" : "body";
       const p = attackPower(nail, contactKind);
       const d = segmentDefense(enemy.nail, enemy.index);
+      events.push({
+        type: "segment-collision",
+        source: "growth",
+        attackerId: nail.id,
+        defenderId: enemy.nail.id,
+        point: { ...cell },
+        p,
+        d,
+        contactKind,
+      });
+      collisionPointById.set(nail.id, cell);
+      collisionPointById.set(enemy.nail.id, cell);
       if (p <= d) survives = false;
-      if (p >= d) cuts.push({ nail: enemy.nail, index: enemy.index });
-      events.push({ type: "segment-collision", attackerId: nail.id, defenderId: enemy.nail.id, cell: { ...cell }, p, d, contactKind });
+      if (p >= d) {
+        const previous = cutIndexById.get(enemy.nail.id);
+        if (previous == null || enemy.index < previous) cutIndexById.set(enemy.nail.id, enemy.index);
+      }
     }
-    if (!survives) breakTips.add(nail.id);
+    if (!survives) tipBreakIds.add(nail.id);
     blocked.add(nail.id);
   }
 
-  for (const id of breakTips) {
-    const nail = state.nails.find((n) => n.id === id);
-    if (nail) breakTip(nail);
+  for (const id of tipBreakIds) {
+    const nail = state.nails.find((item) => item.id === id);
+    if (!nail?.alive) continue;
+    emitRemoval(events, "break", nail, breakTip(nail), "collision", collisionPointById.get(id));
   }
 
-  const earliestCut = new Map();
-  for (const cut of cuts) {
-    const prev = earliestCut.get(cut.nail.id);
-    if (prev == null || cut.index < prev) earliestCut.set(cut.nail.id, cut.index);
-  }
-  for (const [id, index] of earliestCut.entries()) {
-    const nail = state.nails.find((n) => n.id === id);
-    if (nail) cutFrom(nail, index);
+  for (const [id, index] of cutIndexById) {
+    const nail = state.nails.find((item) => item.id === id);
+    if (!nail?.alive) continue;
+    emitRemoval(events, "sever", nail, cutFrom(nail, index), "collision", collisionPointById.get(id));
   }
 
-  for (const { nail, target } of captures) captureFinger(state, nail, target, events);
+  for (const { nail, target } of captures) {
+    if (nail.alive) captureFinger(state, nail, target, events);
+  }
 
   for (const nail of activeNails) {
     if (!nail.alive || blocked.has(nail.id)) continue;
     const cell = candidates.get(nail.id);
     if (!cell) continue;
+    const from = { ...currentTip(nail) };
+    nail.path.push({ ...cell });
     if (extra) {
-      nail.path.push({ ...cell });
       nail.materials.push(makeMaterial("sculpt"));
     } else {
-      nail.path.push({ ...cell });
+      // Tokoroten: new bare material is born at the root; every existing
+      // material shifts one geometric segment toward the tip.
       nail.materials = [makeMaterial(), ...nail.materials];
       while (nail.materials.length > nail.path.length) nail.materials.pop();
     }
-    events.push({ type: extra ? "sculpt-grow" : "grow", nailId: nail.id, cell: { ...cell } });
+    events.push({
+      type: extra ? "sculpt-grow" : "grow",
+      nailId: nail.id,
+      player: nail.player,
+      fingerIndex: nail.fingerIndex,
+      from,
+      to: { ...cell },
+    });
   }
 
   return events;
@@ -363,7 +487,7 @@ function checkWinner(state) {
   return null;
 }
 
-function beginNextRound(state) {
+function beginNextRound(state, events) {
   state.round += 1;
   state.firstCommander = 1 - state.firstCommander;
   state.commander = state.firstCommander;
@@ -374,9 +498,7 @@ function beginNextRound(state) {
     nail.careUsedThisRound = false;
     nail.sculptPending = false;
   }
-  const revealEvents = [];
-  resolveDeferred(state, revealEvents);
-  state.lastEvents = revealEvents;
+  resolveDeferred(state, events);
   state.phase = "command";
 }
 
@@ -406,42 +528,49 @@ export function applyCare(state, player, fingerIndex, type, options = {}) {
   const nail = getNail(state, player, fingerIndex);
   if (!nail) return { ok: false, reason: "missing-nail" };
 
+  let effect = null;
   if (type === "sharpen") {
     tipMaterial(nail).sharpened = true;
+    effect = { type: "care-sharpen", player, fingerIndex, segmentIndex: nail.path.length - 1, cell: { ...currentTip(nail) } };
   } else if (type === "gel") {
     if (state.stock[player].gel <= 0) return { ok: false, reason: "out-of-stock" };
     const index = Number.isInteger(options.segmentIndex) ? options.segmentIndex : nail.materials.length - 1;
     if (index < 0 || index >= nail.materials.length) return { ok: false, reason: "bad-segment" };
     nail.materials[index].gel = true;
     state.stock[player].gel -= 1;
+    effect = { type: "care-gel", player, fingerIndex, segmentIndex: index, cell: { ...nail.path[index] } };
   } else if (type === "hook") {
     if (state.stock[player].hook <= 0) return { ok: false, reason: "out-of-stock" };
     nail.materials[0].kind = "hook";
     state.stock[player].hook -= 1;
+    effect = { type: "care-hook", player, fingerIndex, segmentIndex: 0, cell: { ...nail.path[0] }, turnsToTip: Math.max(0, nail.path.length - 1) };
   } else if (type === "sculpt") {
     if (state.stock[player].sculpt <= 0) return { ok: false, reason: "out-of-stock" };
     nail.sculptPending = true;
     state.stock[player].sculpt -= 1;
+    effect = { type: "care-sculpt", player, fingerIndex, cell: { ...currentTip(nail) } };
   } else if (type === "hide") {
     if (nail.hidLastRound) return { ok: false, reason: "hide-cooldown" };
     nail.hiddenThisRound = true;
+    effect = { type: "care-hide", player, fingerIndex, cell: { ...currentTip(nail) } };
   } else if (type === "cut") {
     if (nail.path.length <= 1) return { ok: false, reason: "nothing-to-cut" };
-    breakTip(nail);
+    const removed = breakTip(nail);
+    effect = { type: "care-cut", player, fingerIndex, removed, cell: removed[0]?.cell || { ...currentTip(nail) } };
   } else {
     return { ok: false, reason: "unknown-care" };
   }
 
   spendCare(state, nail);
-  return { ok: true };
+  return { ok: true, effect };
 }
 
 export function finishCommand(state, player) {
-  if (state.phase !== "command" || state.commander !== player) return { ok: false };
+  if (state.phase !== "command" || state.commander !== player) return { ok: false, reason: "not-your-turn" };
   const second = 1 - state.firstCommander;
   if (player === state.firstCommander) {
     state.commander = second;
-    return { ok: true, resolved: false };
+    return { ok: true, resolved: false, events: [], winner: null };
   }
 
   state.phase = "resolve";
@@ -453,11 +582,50 @@ export function finishCommand(state, player) {
   if (sculptNails.length) events.push(...resolveGrowthStep(state, sculptNails, { extra: true }));
 
   for (const nail of state.nails) nail.sculptPending = false;
-  state.lastEvents = events;
   state.winner = checkWinner(state);
-  if (state.winner == null) beginNextRound(state);
+  if (state.winner == null) beginNextRound(state, events);
   else state.phase = "over";
+  state.lastEvents = clone(events);
   return { ok: true, resolved: true, events: clone(events), winner: state.winner };
+}
+
+export function applyCommandBundle(state, player, bundle = {}) {
+  if (state.phase !== "command" || state.commander !== player) return { ok: false, reason: "not-your-turn" };
+  const next = clone(state);
+  const careEvents = [];
+
+  const directions = Array.isArray(bundle.directions) ? bundle.directions : [];
+  for (const item of directions) {
+    const fingerIndex = Number(item?.fingerIndex);
+    const direction = Number(item?.direction);
+    if (!Number.isInteger(fingerIndex) || fingerIndex < 0 || fingerIndex > 4 || !DIRECTIONS.includes(direction)) {
+      return { ok: false, reason: "bad-direction" };
+    }
+    if (!setDirection(next, player, fingerIndex, direction)) return { ok: false, reason: "bad-direction" };
+  }
+
+  const cares = Array.isArray(bundle.cares) ? bundle.cares : [];
+  if (cares.length > BOARD.carePerTurn) return { ok: false, reason: "too-many-cares" };
+  for (const item of cares) {
+    const fingerIndex = Number(item?.fingerIndex);
+    const type = String(item?.type || "");
+    const options = {};
+    if (Number.isInteger(item?.segmentIndex)) options.segmentIndex = item.segmentIndex;
+    const result = applyCare(next, player, fingerIndex, type, options);
+    if (!result.ok) return { ok: false, reason: result.reason || "bad-care" };
+    if (result.effect) careEvents.push(result.effect);
+  }
+
+  const finish = finishCommand(next, player);
+  if (!finish.ok) return { ok: false, reason: finish.reason || "finish-failed" };
+  return {
+    ok: true,
+    state: next,
+    result: {
+      ...finish,
+      events: [...careEvents, ...(finish.events || [])],
+    },
+  };
 }
 
 function distanceToEnemyFinger(nail) {
@@ -466,7 +634,7 @@ function distanceToEnemyFinger(nail) {
   return Math.abs(tip.y - targetY);
 }
 
-function directionScore(state, nail, direction) {
+function directionScore(state, nail, direction, reserved = new Set()) {
   const old = nail.direction;
   nail.direction = direction;
   const c = candidateFor(nail);
@@ -478,24 +646,28 @@ function directionScore(state, nail, direction) {
   if (enemyRoots.length) score -= Math.min(...enemyRoots.map((x) => Math.abs(c.x - x))) * 0.28;
   const occupancy = cellsByOccupant(state).get(key(c.x, c.y)) || [];
   for (const hit of occupancy) {
-    if (hit.nail.player === nail.player) score -= 4;
+    if (hit.nail.player === nail.player) score -= 8;
     else {
       const kind = hit.index === hit.nail.path.length - 1 ? "tip" : "body";
       score += attackPower(nail, kind) >= segmentDefense(hit.nail, hit.index) ? 2.2 : -1.7;
     }
   }
+  if (reserved.has(key(c.x, c.y))) score -= 7;
   if (enemyFingerAt(state, nail, c)) score += 20;
-  return score + Math.random() * 0.15;
+  return score + Math.random() * 0.12;
 }
 
 export function chooseCpuCommands(state, player) {
   if (state.phase !== "command" || state.commander !== player) return;
-  const nails = state.nails.filter((n) => n.player === player && n.alive);
+  const nails = state.nails.filter((nail) => nail.player === player && nail.alive);
+  const reserved = new Set();
   for (const nail of nails) {
     const best = DIRECTIONS
-      .map((direction) => ({ direction, score: directionScore(state, nail, direction) }))
+      .map((direction) => ({ direction, score: directionScore(state, nail, direction, reserved) }))
       .sort((a, b) => b.score - a.score)[0];
     nail.direction = best.direction;
+    const c = candidateFor(nail);
+    if (inBounds(c.x, c.y)) reserved.add(key(c.x, c.y));
   }
 
   const threats = nails
@@ -518,7 +690,9 @@ export function chooseCpuCommands(state, player) {
       applyCare(state, player, nail.fingerIndex, "hook");
       continue;
     }
-    if (state.stock[player].gel > 0) applyCare(state, player, nail.fingerIndex, "gel", { segmentIndex: nail.materials.length - 1 });
+    if (state.stock[player].gel > 0) {
+      applyCare(state, player, nail.fingerIndex, "gel", { segmentIndex: nail.materials.length - 1 });
+    }
   }
 }
 
