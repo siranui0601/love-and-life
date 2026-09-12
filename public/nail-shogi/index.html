@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#f6f0e6" />
-  <meta name="description" content="伸びる爪を操って、先に相手の指を2本詰める。siranui.jpの盤面ゲーム『爪将棋』。" />
+  <meta name="description" content="伸びる爪を操って、先に相手の指を2本詰める。siranui.jpのオンライン盤面ゲーム『爪将棋』。" />
   <title>爪将棋 | 不知火遊技場</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
@@ -12,10 +12,7 @@
   <div class="paper-noise" aria-hidden="true"></div>
   <header class="site-header">
     <a class="back-link" href="/" aria-label="不知火遊技場へ戻る">← 遊技場</a>
-    <div class="brand" aria-label="爪将棋">
-      <span class="brand-mark" aria-hidden="true"></span>
-      <span>爪将棋</span>
-    </div>
+    <div class="brand" aria-label="爪将棋"><span class="brand-mark" aria-hidden="true"></span><span>爪将棋</span></div>
     <button class="text-button" id="rulesBtn" type="button">遊び方</button>
   </header>
 
@@ -26,8 +23,8 @@
         <h1 id="gameTitle"><span>爪</span>将棋</h1>
         <p class="lead">伸ばす。かわす。磨く。<br />先に相手の指を2本、<strong>詰めろ。</strong></p>
         <div class="mode-actions" role="group" aria-label="対戦モード">
-          <button class="primary-button" data-mode="cpu" type="button">CPUと対戦</button>
-          <button class="secondary-button" data-mode="local" type="button">2人で対戦</button>
+          <button class="primary-button" id="onlineBtn" type="button">オンライン対戦</button>
+          <button class="secondary-button" id="cpuBtn" type="button">CPUで練習</button>
         </div>
         <p class="start-note">方向指定は毎ラウンド無料。ケアは2回まで。</p>
       </div>
@@ -41,16 +38,44 @@
       </div>
     </section>
 
+    <section class="lobby-screen" id="lobbyScreen" hidden aria-labelledby="lobbyTitle">
+      <div class="lobby-card">
+        <button class="lobby-back" id="lobbyBackBtn" type="button">← タイトル</button>
+        <p class="eyebrow">ONLINE MATCH</p>
+        <h1 id="lobbyTitle">対戦部屋</h1>
+        <p class="lobby-lead">4桁の部屋番号で、相手と合流します。</p>
+
+        <div class="lobby-entry" id="lobbyEntry">
+          <button class="primary-button lobby-create" id="createRoomBtn" type="button">部屋を作る</button>
+          <div class="lobby-or"><span>または</span></div>
+          <form class="join-form" id="joinForm">
+            <label for="roomIdInput">部屋番号</label>
+            <div><input id="roomIdInput" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="4" pattern="[0-9]{4}" placeholder="1234" /><button class="secondary-button" type="submit">入る</button></div>
+          </form>
+        </div>
+
+        <div class="waiting-room" id="waitingRoom" hidden>
+          <p class="waiting-label">ROOM</p>
+          <div class="room-code-row"><strong id="roomCode">----</strong><button id="copyRoomBtn" type="button">コピー</button></div>
+          <p class="waiting-note" id="waitingNote">相手を待っています…</p>
+          <div class="member-slots" id="memberSlots" aria-live="polite"></div>
+          <button class="primary-button" id="startOnlineBtn" type="button" disabled>この2人で開始</button>
+          <button class="text-button leave-button" id="leaveRoomBtn" type="button">部屋を出る</button>
+        </div>
+        <p class="lobby-message" id="lobbyMessage" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
     <section class="game-shell" id="gameShell" hidden>
       <div class="score-strip" aria-label="対戦状況">
-        <div class="player-card player-a" id="player0Card">
-          <div><small>YOU / P1</small><strong id="player0Name">あなた</strong></div>
-          <div class="capture-pips" id="capture0" aria-label="プレイヤー1の詰めた指"></div>
+        <div class="player-card" id="localCard">
+          <div><small id="localLabel">YOU</small><strong id="localName">あなた</strong></div>
+          <div class="capture-pips" id="localCapture" aria-label="あなたの詰めた指"></div>
         </div>
         <div class="round-chip"><small>ROUND</small><strong id="roundValue">1</strong></div>
-        <div class="player-card player-b" id="player1Card">
-          <div><small id="player1Label">CPU / P2</small><strong id="player1Name">CPU</strong></div>
-          <div class="capture-pips" id="capture1" aria-label="プレイヤー2の詰めた指"></div>
+        <div class="player-card" id="opponentCard">
+          <div><small id="opponentLabel">OPPONENT</small><strong id="opponentName">相手</strong></div>
+          <div class="capture-pips" id="opponentCapture" aria-label="相手の詰めた指"></div>
         </div>
       </div>
 
@@ -67,46 +92,65 @@
               <title id="boardTitle">爪将棋の盤面</title>
               <desc id="boardDesc">10列8段。上下に5本ずつの指があり、爪が中央へ伸びます。</desc>
             </svg>
+            <svg id="fxSvg" class="fx-svg" viewBox="0 0 1000 800" aria-hidden="true"></svg>
             <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
           </div>
-          <p class="board-hint" id="boardHint">指を選び、伸ばす方向を決めよう。</p>
+          <p class="board-hint" id="boardHint">自分の指を選び、伸ばす方向を決めよう。</p>
         </section>
 
-        <aside class="control-panel" aria-label="操作パネル">
+        <aside class="control-panel" id="controlPanel" aria-label="操作パネル">
           <div class="selected-block">
             <span class="panel-kicker">SELECTED</span>
             <strong id="selectedFingerName">親指</strong>
             <span id="selectedState">素爪</span>
           </div>
 
+          <div class="target-banner" id="targetBanner" hidden>
+            <strong id="targetTitle">ジェルを塗る位置を選択</strong>
+            <span id="targetText">光っている自分の爪だけ選べます。</span>
+            <button id="cancelTargetBtn" type="button">やめる</button>
+          </div>
+
           <div class="control-section">
             <div class="section-title"><span>伸ばす方向</span><small>無料</small></div>
             <div class="direction-pad" id="directionPad">
-              <button type="button" data-dir="-1" aria-label="左斜めへ伸ばす">↖</button>
-              <button type="button" data-dir="0" aria-label="まっすぐ伸ばす">↑</button>
-              <button type="button" data-dir="1" aria-label="右斜めへ伸ばす">↗</button>
+              <button type="button" data-view-dir="-1" aria-label="左斜め前へ伸ばす">↖</button>
+              <button type="button" data-view-dir="0" aria-label="まっすぐ前へ伸ばす">↑</button>
+              <button type="button" data-view-dir="1" aria-label="右斜め前へ伸ばす">↗</button>
             </div>
           </div>
 
           <div class="control-section">
             <div class="section-title"><span>ケア</span><small>同じ指は1回まで</small></div>
             <div class="care-grid" id="careGrid">
-              <button type="button" data-care="sharpen"><b>研ぐ</b><span>P +1</span></button>
-              <button type="button" data-care="gel"><b>ジェル</b><span>D +1 <i id="gelStock">×4</i></span></button>
-              <button type="button" data-care="hook"><b>鉤爪</b><span>側面 P3 <i id="hookStock">×2</i></span></button>
-              <button type="button" data-care="sculpt"><b>スカルプ</b><span>+1マス <i id="sculptStock">×2</i></span></button>
-              <button type="button" data-care="hide"><b>隠す</b><span>1Rすり抜け</span></button>
-              <button type="button" data-care="cut"><b>切る</b><span>先端 -1</span></button>
+              <button type="button" data-care="sharpen"><b>研ぐ</b><span>先端 P+1</span></button>
+              <button type="button" data-care="gel"><b>ジェル</b><span>選んだ節 D+1 <i id="gelStock">×4</i></span></button>
+              <button type="button" data-care="hook"><b>鉤爪</b><span>根元に仕込む <i id="hookStock">×2</i></span></button>
+              <button type="button" data-care="sculpt"><b>スカルプ</b><span>今R +1マス <i id="sculptStock">×2</i></span></button>
+              <button type="button" data-care="hide"><b>隠す</b><span>敵爪だけ1Rすり抜け</span></button>
+              <button type="button" data-care="cut"><b>切る</b><span>先端を1節落とす</span></button>
             </div>
           </div>
 
-          <button class="commit-button" id="commitBtn" type="button">
-            <span>この手で決定</span><small>全爪が一斉に伸びる</small>
-          </button>
+          <div class="command-actions">
+            <button class="reset-turn-button" id="resetTurnBtn" type="button">このターンをやり直す</button>
+            <button class="commit-button" id="commitBtn" type="button"><span>この手で決定</span><small>両者の操作後、全爪が一斉に伸びる</small></button>
+          </div>
         </aside>
       </div>
     </section>
   </main>
+
+  <dialog class="care-dialog" id="careDialog">
+    <form method="dialog" id="careDialogForm">
+      <button class="dialog-close" value="cancel" aria-label="閉じる">×</button>
+      <p class="eyebrow">CARE CONFIRM</p>
+      <h2 id="careDialogTitle">ジェルを塗る</h2>
+      <div class="care-preview" id="carePreview" aria-hidden="true"><span></span></div>
+      <p id="careDialogText"></p>
+      <div class="dialog-actions"><button class="secondary-button" value="cancel">やめる</button><button class="primary-button" id="careConfirmBtn" value="default">決定</button></div>
+    </form>
+  </dialog>
 
   <dialog class="rules-dialog" id="rulesDialog">
     <form method="dialog">
@@ -114,29 +158,18 @@
       <p class="eyebrow">HOW TO PLAY</p>
       <h2>爪将棋の遊び方</h2>
       <ol>
-        <li><strong>5本すべての爪</strong>は、毎ラウンド根元から1節ずつ自然に伸びます。</li>
-        <li>各指の進行方向を3択から決めます。方向指定はケア回数を使いません。</li>
+        <li><strong>5本すべての爪</strong>は、両者の操作が終わると根元から1節ずつ自然に伸びます。</li>
+        <li>各指の進行方向を「左斜め・前・右斜め」から決めます。方向指定は無料です。</li>
         <li>1ラウンドに<strong>2回まで</strong>ケアできます。同じ指には1回だけ。</li>
+        <li>自分の爪同士は重なりません。ぶつかる進路を選ぶと、そのラウンドはそこで止まります。</li>
         <li>攻撃力は爪先だけ。横から胴を折ると、その先の爪はまとめて落ちます。</li>
-        <li>爪先が敵の指へ届いたら<strong>「詰み」</strong>。その指は退場し、攻めた爪も根元までパキッと戻ります。</li>
+        <li>爪先が敵の指へ届いた瞬間に<strong>「詰み」</strong>。その指は退場し、攻めた爪も地爪まで戻ります。</li>
         <li>先に2本の指を詰めた方が勝ちです。</li>
       </ol>
-      <div class="rule-stats">
-        <span><b>素爪先端</b>P1 / D1</span>
-        <span><b>素爪側面</b>D2</span>
-        <span><b>鉤爪</b>側面攻撃 P3</span>
-      </div>
+      <div class="rule-stats"><span><b>素爪先端</b>P1 / D1</span><span><b>素爪側面</b>D2</span><span><b>鉤爪</b>側面攻撃 P3</span></div>
       <button class="primary-button dialog-ok" value="close">わかった</button>
     </form>
   </dialog>
-
-  <div class="handoff" id="handoff" hidden>
-    <div>
-      <span class="handoff-nail" aria-hidden="true"></span>
-      <p id="handoffText">端末を相手に渡してください</p>
-      <button class="primary-button" id="handoffBtn" type="button">準備OK</button>
-    </div>
-  </div>
 
   <div class="result-screen" id="resultScreen" hidden>
     <div class="result-card">
@@ -150,7 +183,9 @@
     </div>
   </div>
 
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
   <div class="sr-only" id="liveRegion" aria-live="assertive"></div>
+  <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="./app.js"></script>
 </body>
 </html>
