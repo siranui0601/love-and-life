@@ -129,8 +129,13 @@
   .hook-cut-slash{stroke:#d64f2f;stroke-width:10;stroke-linecap:round;filter:drop-shadow(0 2px 0 #fffaf2)}
   .move-target-ring{fill:none;stroke-width:6;stroke-dasharray:8 7}.move-target-ring.kind-collision,.move-target-ring.kind-own-block{stroke:#b84345}.move-target-ring.kind-capture{stroke:#d39e00}
 
-  .fx-hook-swipe{fill:none;stroke:#d64f2f;stroke-width:18;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 0 rgba(34,30,26,.22))}
+  .fx-growth-pulse{fill:none;stroke:var(--yellow);stroke-width:5}
+  .fx-hook-claw{fill:#fff0dc;stroke:#221e1a;stroke-width:5;stroke-linejoin:round;filter:drop-shadow(0 3px 0 rgba(34,30,26,.22))}
   .fx-hook-slash{stroke:#fff1a8;stroke-width:15;stroke-linecap:round;filter:drop-shadow(0 0 4px #d64f2f)}
+  .fx-hook-ring{fill:none;stroke:#d64f2f;stroke-width:7}
+  .fx-capture-bed{fill:#fff9ef;stroke:#221e1a;stroke-width:4}
+  .fx-capture-burst{fill:none;stroke:#f0cb55;stroke-width:10}
+  .fx-capture-piece{stroke:#221e1a;stroke-width:3}.fx-capture-piece.attacker{fill:#fff8ef}.fx-capture-piece.defender{fill:#eaf6f4}
 }
 
 @layer motion{
