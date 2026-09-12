@@ -11,6 +11,7 @@ import { mountHundredOreRoutes } from "../100ore/index.js";
 import { mountCompactNoHandSoccerRoutes } from "../nohand-soccer/compact-generation.js";
 import { mountTenFreelyRoutes } from "../../10を自由に/index.js";
 import { mountNowCodingRoutes } from "../now-coding/index.js";
+import { mountNailShogiRoutes } from "../nail-shogi/index.js";
 
 export function createServerContext() {
   const app = createApp();
@@ -27,6 +28,7 @@ export function createServerContext() {
   mountCompactNoHandSoccerRoutes(app);
   mountTenFreelyRoutes(app, io);
   mountNowCodingRoutes(app, io);
+  mountNailShogiRoutes(app, io);
 
   return { app, httpServer, io };
 }

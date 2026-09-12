@@ -1,0 +1,57 @@
+@layer ui,board,motion;
+
+@layer ui{
+  .turn-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .turn-steps span{display:grid;grid-template-columns:auto 1fr;gap:5px;align-items:center;font-size:.63rem;line-height:1.2;color:var(--muted)}
+  .turn-steps b{width:22px;height:22px;border:1px solid var(--ink);border-radius:50%;display:grid;place-items:center;background:white;color:var(--ink);font-size:.68rem}
+  .direction-pad button{display:grid;place-content:center;gap:1px}
+  .direction-pad button>span{font-size:1.75rem;line-height:1}
+  .direction-pad button>small{font-size:.58rem;font-weight:850;color:var(--muted)}
+  .direction-pad button.is-selected>small{color:var(--ink)}
+  .next-outcome{margin:10px auto 0;max-width:760px;min-height:56px;border:1px solid var(--line);background:var(--paper2);display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px;padding:9px 12px;text-align:left}
+  .next-outcome::before{content:"";width:13px;height:13px;border-radius:50%;background:var(--b)}
+  .next-outcome-label{grid-column:2;font-size:.6rem;font-weight:900;letter-spacing:.08em;color:var(--muted);margin-bottom:-7px}
+  .next-outcome strong{grid-column:2;font-size:.78rem;line-height:1.45}
+  .next-outcome[data-kind="hook-cut"]{border:2px solid #c8573c;background:#fff0e8}
+  .next-outcome[data-kind="hook-cut"]::before{background:#d64f2f;box-shadow:0 0 0 5px #ffd6c9}
+  .next-outcome[data-kind="capture"]{border:2px solid var(--yellow);background:#fff7d7}
+  .next-outcome[data-kind="capture"]::before{background:#d39e00}
+  .next-outcome[data-kind="collision"],.next-outcome[data-kind="own-block"],.next-outcome[data-kind="edge"]{border-color:#b97772;background:#fff6f2}
+  .next-outcome[data-kind="collision"]::before,.next-outcome[data-kind="own-block"]::before,.next-outcome[data-kind="edge"]::before{background:#b84345}
+  .next-outcome[data-kind="phase"]{border-color:#789bd6;background:#eef5ff}
+  .next-outcome[data-kind="phase"]::before{background:#4468c8}
+  .rules-dialog h3{margin:22px 0 8px;font-size:1rem}
+  .rule-flow{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+  .rule-flow>div,.plain-rules p{border:1px solid var(--line);background:white;padding:11px;display:grid;gap:4px}
+  .rule-flow b,.plain-rules strong{font-size:.84rem}
+  .rule-flow span,.plain-rules span{font-size:.74rem;line-height:1.55;color:var(--muted)}
+  .plain-rules{display:grid;gap:7px}
+  .plain-rules p{margin:0}
+  .plain-rules .hook-rule{border:2px solid #c8573c;background:#fff0e8}
+  @media(max-width:560px){
+    .turn-steps{grid-template-columns:repeat(2,1fr);gap:7px}
+    .rule-flow{grid-template-columns:1fr}
+    .next-outcome{margin-inline:4px}
+  }
+}
+
+@layer board{
+  .hook-seed{fill:#f2a25e;stroke:var(--ink);stroke-width:3}
+  .hook-seed-mark{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round}
+  .hook-tip path{fill:none;stroke:#d64f2f;stroke-width:12;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 0 rgba(34,30,26,.18))}
+  .hook-tip circle{fill:#d64f2f;stroke:var(--ink);stroke-width:3}
+  .move-preview .direction-ghost{stroke-dasharray:12 9;opacity:.8}
+  .hook-cut-target{fill:#ff6d3d22;stroke:#d64f2f;stroke-width:5;stroke-dasharray:9 6;animation:hook-target-pulse .75s ease-in-out infinite alternate}
+  .hook-cut-slash{stroke:#d64f2f;stroke-width:8;stroke-linecap:round;filter:drop-shadow(0 2px 0 #fff)}
+  .hook-cut-label{font-size:24px;font-weight:950;fill:#9d2f1e;paint-order:stroke;stroke:#fffaf2;stroke-width:8;stroke-linejoin:round}
+  .move-target-ring{fill:none;stroke-width:4;stroke-dasharray:8 6}
+  .move-target-ring.kind-collision,.move-target-ring.kind-own-block{stroke:#b84345}
+  .move-target-ring.kind-capture{stroke:#d39e00;stroke-width:6}
+  .fx-hook-swipe{fill:none;stroke:#d64f2f;stroke-width:15;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 0 rgba(34,30,26,.24))}
+  .fx-hook-slash{stroke:#fff7d5;stroke-width:13;stroke-linecap:round;filter:drop-shadow(0 0 0 #d64f2f)}
+}
+
+@layer motion{
+  @keyframes hook-target-pulse{from{opacity:.5;transform:scale(.94);transform-origin:center}to{opacity:1;transform:scale(1.04);transform-origin:center}}
+  @media(prefers-reduced-motion:reduce){.hook-cut-target{animation:none}}
+}
