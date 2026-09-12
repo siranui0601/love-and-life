@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-10c3365b9e26",
+  "revision": "world-10d-ec2c41296f3c",
   "time": {
     "days": 10,
     "scale": 60,
@@ -210,6 +210,14 @@
           "height": 4.2
         },
         {
+          "id": "tree:farm:foliage:7",
+          "x": 33,
+          "z": -1,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
           "id": "tree:farm:foliage:8",
           "x": -69,
           "z": 70,
@@ -309,6 +317,14 @@
           "id": "tree:farm:foliage:25",
           "x": -15,
           "z": -64,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:farm:foliage:26",
+          "x": 32,
+          "z": 7,
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
@@ -517,22 +533,6 @@
           "id": "tree:farm:foliage:67",
           "x": 22,
           "z": -62,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:farm:foliage:68",
-          "x": 69,
-          "z": 9,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:farm:foliage:69",
-          "x": -33,
-          "z": -69,
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
@@ -911,9 +911,9 @@
           "kind": "evidence",
           "name": "麦と借金の火種の手がかり",
           "position": [
-            32,
+            -37,
             0,
-            5
+            -7
           ],
           "asset": "crate",
           "eventId": "bread-fire",
@@ -1257,14 +1257,14 @@
           {
             "points": [
               [
-                30,
+                -37,
                 0,
-                -19
+                -17
               ],
               [
-                32,
+                -37,
                 0,
-                5
+                -7
               ]
             ],
             "width": 3.2,
@@ -1305,28 +1305,12 @@
           {
             "points": [
               [
-                -32,
+                -37,
                 0,
-                5
+                -7
               ],
               [
                 -32,
-                0,
-                -5
-              ]
-            ],
-            "width": 3.2,
-            "kind": "access"
-          },
-          {
-            "points": [
-              [
-                32,
-                0,
-                5
-              ],
-              [
-                32,
                 0,
                 -5
               ]
@@ -1404,6 +1388,15 @@
             "z": -72,
             "height": 8.6,
             "asset": "town/tree-high.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "farm:foliage:7",
+            "x": 33,
+            "z": -1,
+            "height": 9.9,
+            "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
           },
@@ -1520,6 +1513,15 @@
             "x": -15,
             "z": -64,
             "height": 7.3,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "farm:foliage:26",
+            "x": 32,
+            "z": 7,
+            "height": 8.6,
             "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
@@ -1755,24 +1757,6 @@
             "z": -62,
             "height": 9.9,
             "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "farm:foliage:68",
-            "x": 69,
-            "z": 9,
-            "height": 6,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "farm:foliage:69",
-            "x": -33,
-            "z": -69,
-            "height": 7.3,
-            "asset": "town/tree-high.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
           }
@@ -16801,9 +16785,9 @@
           "kind": "evidence",
           "name": "山の下の呼吸の手がかり",
           "position": [
-            -32,
+            -16,
             0,
-            5
+            -35
           ],
           "asset": "crate",
           "eventId": "deep-mine",
@@ -17136,14 +17120,14 @@
           {
             "points": [
               [
-                -29,
+                -16,
                 0,
-                -16
+                -45
               ],
               [
-                -32,
+                -16,
                 0,
-                5
+                -35
               ]
             ],
             "width": 3.2,
@@ -17196,22 +17180,6 @@
             ],
             "width": 4,
             "kind": "exit"
-          },
-          {
-            "points": [
-              [
-                -32,
-                0,
-                5
-              ],
-              [
-                -32,
-                0,
-                -5
-              ]
-            ],
-            "width": 3.2,
-            "kind": "access"
           }
         ],
         "water": [],
@@ -24539,9 +24507,9 @@
       "name": "麦と借金の火種",
       "region": "farm",
       "position": [
-        32,
+        -37,
         0,
-        -5
+        -17
       ],
       "startsAt": 151200,
       "deadline": 324000,
@@ -24552,8 +24520,10 @@
         "T02"
       ],
       "reward": 90,
-      "causalSourceIds": [],
-      "causalStatus": "unadapted",
+      "causalSourceIds": [
+        "T02"
+      ],
+      "causalStatus": "partial",
       "opposition": {
         "monsterId": "MON-0033",
         "description": "現場に存在する脅威。排除だけでは事件全体の解決を意味しない。"
@@ -24678,9 +24648,9 @@
       "name": "山の下の呼吸",
       "region": "dwarf",
       "position": [
-        -32,
+        -16,
         0,
-        -5
+        -45
       ],
       "startsAt": 208800,
       "deadline": 496800,
@@ -24917,6 +24887,16 @@
       "structures": [
         "deep-shaft"
       ]
+    },
+    {
+      "eventId": "bread-fire",
+      "sourceIds": [
+        "T02"
+      ],
+      "type": "infrastructure",
+      "structures": [
+        "grain-store"
+      ]
     }
   ],
   "structures": [
@@ -24934,6 +24914,17 @@
         "integrity": 80,
         "water": 5,
         "operating": false
+      },
+      "damagePerHour": 8,
+      "shelterId": "LOC_DWARF_INN",
+      "failure": {
+        "kind": "collapse",
+        "exposureRange": 10,
+        "effects": {
+          "integrity": 0,
+          "blocked": true,
+          "operating": false
+        }
       },
       "actions": [
         {
@@ -24967,6 +24958,129 @@
           "id": "shore",
           "label": "傷んだ支柱を補強する",
           "minutes": 30,
+          "requirements": {
+            "items": {
+              "timber": 3
+            },
+            "skills": [
+              "crafting"
+            ]
+          },
+          "effects": {
+            "integrity": 100
+          }
+        },
+        {
+          "id": "clear-rubble",
+          "label": "補強した入口の瓦礫を取り除く",
+          "minutes": 30,
+          "when": {
+            "blocked": true,
+            "water": 0,
+            "integrity": 100
+          },
+          "requirements": {
+            "items": {
+              "rope": 1
+            }
+          },
+          "effects": {
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "grain-store",
+      "targetId": "LOC_FARM_GRANARY",
+      "region": "farm",
+      "hazardEventId": "bread-fire",
+      "shelterId": "LOC_FARM_INN",
+      "initial": {
+        "integrity": 100,
+        "water": 0,
+        "operating": true,
+        "fuel": true,
+        "fire": 0
+      },
+      "safe": {
+        "integrity": 80,
+        "water": 5,
+        "operating": false,
+        "fuel": false,
+        "fire": 0
+      },
+      "failure": {
+        "kind": "fire",
+        "traps": false,
+        "exposureRange": 8,
+        "effects": {
+          "integrity": 25,
+          "blocked": true,
+          "operating": false,
+          "fire": 100
+        }
+      },
+      "actions": [
+        {
+          "id": "remove-fuel",
+          "label": "漏れた灯油を拭き取り、火種を隔離する",
+          "minutes": 15,
+          "when": {
+            "fire": 0,
+            "fuel": true
+          },
+          "requirements": {
+            "items": {
+              "supplies": 1
+            }
+          },
+          "effects": {
+            "fuel": false,
+            "operating": false
+          }
+        },
+        {
+          "id": "extinguish",
+          "label": "縄で井戸から水を汲み上げて消火する",
+          "minutes": 30,
+          "when": {
+            "fire": 100
+          },
+          "requirements": {
+            "items": {
+              "rope": 1
+            }
+          },
+          "effects": {
+            "fire": 0,
+            "fuel": false
+          }
+        },
+        {
+          "id": "clear-rubble",
+          "label": "火が消えた入口の焼け跡を片付ける",
+          "minutes": 30,
+          "when": {
+            "fire": 0,
+            "blocked": true
+          },
+          "requirements": {
+            "items": {
+              "timber": 1
+            }
+          },
+          "effects": {
+            "blocked": false
+          }
+        },
+        {
+          "id": "shore",
+          "label": "焼けた柱を補修する",
+          "minutes": 45,
+          "when": {
+            "fire": 0
+          },
           "requirements": {
             "items": {
               "timber": 3

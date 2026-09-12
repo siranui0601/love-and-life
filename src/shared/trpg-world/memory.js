@@ -60,6 +60,6 @@ export function hearTestimony(state,listener,speaker,statement) {
   if(profile.sourceHabit==='retells'&&description.at%3600){changes.push({at:state.time,field:'at',previous:description.at,value:Math.round(description.at/3600)*3600,reason:'retelling-rounds-time'});description.at=Math.round(description.at/3600)*3600;}
   const m={factId:statement.originFactId,kind:description.kind,actorId:description.actorId,targetId:description.targetId,learnedAt:state.time,
     source:{type:'heard',actorId:speaker.id},status:changes.length?'distorted':'clear',recall:description,changes,chain:structuredClone(statement.chain),repetitions:1,sleepCount:0,
-    salience:{personal:description.ownerId===listener.id,emotional:false,domain:'property'}};
+    salience:{personal:description.ownerId===listener.id,emotional:false,domain:['theft','document-read','property-loss-discovered'].includes(description.kind)?'property':description.kind}};
   listener.memories.push(m);listener.nextDecision=0;return m;
 }

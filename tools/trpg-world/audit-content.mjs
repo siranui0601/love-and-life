@@ -51,7 +51,7 @@ export function auditWorldContent(content) {
       if(!(action.minutes>0&&action.minutes<=240))errors.push(`${structure.id}/${action.id}: invalid work duration`);
       for(const id of Object.keys(action.requirements?.items||{}))if(!ids.items.has(id))errors.push(`${structure.id}: unavailable work resource ${id}`);
       for(const id of action.requirements?.skills||[])if(!ids.skills.has(id))errors.push(`${structure.id}: unknown work skill ${id}`);
-      for(const field of Object.keys(action.effects||{}))if(!['integrity','water','operating'].includes(field))errors.push(`${structure.id}: nonphysical effect ${field}`);
+      for(const field of Object.keys(action.effects||{}))if(!['integrity','water','operating','blocked','fire','fuel'].includes(field))errors.push(`${structure.id}: nonphysical effect ${field}`);
     }
   }
   for(const scenario of content.causalScenarios||[]) {

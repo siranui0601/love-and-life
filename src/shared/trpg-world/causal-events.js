@@ -1,5 +1,6 @@
 import {orderedValues} from './semantic.js';
 import {initializeStructures,advanceStructures,structureSafe} from './infrastructure.js';
+import {damageStructure,advanceAftermath} from './aftermath.js';
 import {conditionHolds,consumeResources,depositDocuments,recordMilestone} from './world-semantics.js';
 import {distance,followPath,hasLineOfSight} from './navigation.js';
 import {rememberAction} from './relationships.js';
@@ -13,6 +14,7 @@ export const DEFAULT_CAUSAL_SCENARIOS=[
       {id:'debt',targetId:'LOC_CAP_MARKET',title:'納品と請求の控え',text:'孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。'}]},
   {eventId:'roots',sourceIds:['T13'],type:'ecosystem',deviceId:'LOC_FOREST_RIVER',dependentEvents:['resonance','border'],affectedRegion:'elf'},
   {eventId:'deep-mine',sourceIds:['T09'],type:'infrastructure',structures:['deep-shaft']},
+  {eventId:'bread-fire',sourceIds:['T02'],type:'infrastructure',structures:['grain-store']},
 ];
 export function causalDefinitions(content) {return content.causalScenarios||DEFAULT_CAUSAL_SCENARIOS.filter(s=>content.events.some(e=>e.id===s.eventId));}
 export function initializeCausality(state,content) {
@@ -54,7 +56,7 @@ export function advanceCausality(state,content,seconds) {
     if(definition.type==='infrastructure'&&!['resolved','prevented','failed'].includes(current.status)) {
       const structures=(definition.structures||[]).map(id=>(content.structures||[]).find(s=>s.id===id));
       if(structures.length&&structures.every(s=>s&&structureSafe(state,s)))settle(state,event,state.time<event.startsAt?'prevented':'resolved',structures.flatMap(s=>state.structures[s.id].milestones.map(m=>m.evidence)));
-      else if(structures.some(s=>s&&state.structures[s.id].integrity<=0))failCausality(state,content,event);
+      else if(structures.some(s=>s&&(state.structures[s.id].integrity<=0||state.structures[s.id].fire>0)))failCausality(state,content,event);
     } else if(definition.type==='return-person') {
       const person=state.npcs[definition.personId],family=state.npcs[definition.familyId];if(!person||!family)continue;
       if(causal.phase==='home'&&state.time>=event.startsAt&&person.hp>0) {causal.phase='excursion';person.causalAssignment=event.id;}
@@ -97,12 +99,17 @@ export function advanceCausality(state,content,seconds) {
       if(causal.treeIntegrity<=0)failCausality(state,content,event);
     }
   }
+  advanceAftermath(state,content,seconds);
 }
 export function failCausality(state,content,event) {
   const current=state.events[event.id];if(current.status==='failed')return;
   const definition=causalDefinitions(content).find(d=>d.eventId===event.id),causal=current.causal;
   settle(state,event,'failed','deadline-or-physical-failure');
+  current.pendingFailureEffects=true;
   if(['resolved','prevented'].includes(causal.componentStatus))return;
+  if(definition?.type==='infrastructure')for(const id of definition.structures||[]) {
+    const spec=(content.structures||[]).find(s=>s.id===id);if(spec){damageStructure(state,content,spec);causal.aftermath.push({kind:'damaged-structure',structureId:id,at:state.time});}
+  }
   if(definition?.type==='return-person') {
     const person=state.npcs[definition.personId];if(person&&causal.phase!=='reunited'){person.hp=0;delete person.companionOf;person.activity='倒れている';}
     causal.aftermath.push({kind:'missing-person-not-returned',at:state.time});
@@ -125,7 +132,7 @@ export function failCausality(state,content,event) {
 export function causalActions(state,content,target) {
   const actions=[];
   const npc=state.npcs[target.id];
-  if(npc?.injury&&!npc.injury.treated)actions.push({id:'tend',type:'causal',label:'脚の傷を手当てする · 傷薬1つ',requirements:{items:{medicine:1}},available:(state.player.inventory.medicine||0)>0,missing:['傷薬1つ']});
+  if(npc?.injury&&!npc.injury.treated&&!npc.entrapment)actions.push({id:'tend',type:'causal',label:'傷を手当てする · 傷薬1つ',requirements:{items:{medicine:1}},available:(state.player.inventory.medicine||0)>0,missing:['傷薬1つ']});
   if((npc?.injury?.treated||npc?.causalAssignment&&!npc.injury)&&!npc.companionOf)actions.push({id:'escort',type:'causal',label:'身体を支えて、一緒に歩く'});
   if(npc?.companionOf)actions.push({id:'release',type:'causal',label:'ここで待っていてもらう'});
   for(const definition of causalDefinitions(content)) {
@@ -150,6 +157,8 @@ export function applyCausalAction(state,content,target,id) {
     npc.companionOf='player';
     const definition=causalDefinitions(content).find(d=>d.type==='return-person'&&d.personId===npc.id),family=content.npcs.find(n=>n.id===definition?.familyId);
     if(family&&!state.knowledge.some(k=>k.id===`escort:${npc.id}`))state.knowledge.push({id:`escort:${npc.id}`,kind:'testimony',text:'家まで一緒に来てほしい。家族に引き渡してほしい。',personId:npc.id,destination:{region:family.region,position:[...family.home]},source:{type:'told',actorId:npc.id},observedAt:state.time});
+    const shelter=content.regions.find(r=>r.id===npc.region)?.objects.find(o=>o.id===npc.care?.destination);
+    if(shelter&&!state.knowledge.some(k=>k.id===`escort:${npc.id}`))state.knowledge.push({id:`escort:${npc.id}`,kind:'testimony',text:`${shelter.name}まで付き添ってほしい。そこで休める。`,personId:npc.id,destination:{region:npc.region,position:[...shelter.position]},source:{type:'told',actorId:npc.id},observedAt:state.time});
   }
   else if(id==='release')delete npc.companionOf;
   else {

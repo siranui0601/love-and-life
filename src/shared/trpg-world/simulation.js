@@ -1,4 +1,4 @@
-import {advanceMemories} from './memory.js';
+import {advanceMemories,recalled,testimony,hearTestimony} from './memory.js';
 import {orderedValues} from './semantic.js';
 import {knownTiming,readNotices} from './public-knowledge.js';
 import {structureObservation,structureActions,startStructureWork,finishStructureWork} from './infrastructure.js';
@@ -161,6 +161,11 @@ function applyEffects(state,content,effects={},eventId,playerAction=true) {
 function advanceEvents(state,content,gameDelta) {
   for (const event of content.events || []) {
     const current = state.events[event.id];
+    if(current?.status==='failed'&&current.pendingFailureEffects) {
+      applyEffects(state,content,event.failureEffects||{},event.id,false);
+      const local=state.regions[event.region];if(local){local.stock=Math.max(.25,local.stock-.15);local.threat+=12;}
+      state.facts[`failure:${event.id}`]={at:state.time,eventId:event.id};delete current.pendingFailureEffects;
+    }
     if (!current || ['resolved','prevented','failed'].includes(current.status)) continue;
     const start = eventStart(event), deadline = eventDeadline(event);
     if (state.time >= start) {
@@ -170,6 +175,7 @@ function advanceEvents(state,content,gameDelta) {
     if (state.time >= deadline) {
       failCausality(state,content,event);
       applyEffects(state,content,event.failureEffects || {},event.id,false);
+      delete current.pendingFailureEffects;
       const local = state.regions[event.region]; if (local) { local.stock=Math.max(.25,local.stock-.15); local.threat+=12; }
       state.facts[`failure:${event.id}`] = {at:state.time,eventId:event.id};
       // Outcome is not pushed to the player until witnessed or reported.
@@ -216,7 +222,7 @@ function advanceNpcs(state,content,gameDelta) {
   for (const npc of values(state.npcs)) {
     if (npc.hp<=0) { npc.activity='倒れている'; continue; }
     npc.hunger=clamp(npc.hunger+gameDelta/DAY*75,0,100);npc.fatigue=clamp(npc.fatigue+gameDelta/DAY*60,0,100);
-    if(npc.rescueAssignment||npc.causalAssignment)continue;
+    if(npc.rescueAssignment||npc.causalAssignment||npc.entrapment||npc.aftermathAssignment||npc.care?.status==='injured'||npc.companionOf)continue;
     if(advanceSocialPlan(state,content,npc,gameDelta))continue;
     const original=idx.npcs.get(npc.id);if(!original)continue;let template=npc.displacedHome?{...original,home:npc.displacedHome,work:npc.displacedHome}:{...original};
     if(npc.region!==template.region&&!npc.displacedHome){template.home=idx.regions.get(npc.region)?.spawn||[0,0,0];template.work=template.home;}
@@ -277,6 +283,7 @@ function socialTick(state,content) {
       const fact=speaker.knowledge.find(k=>k.kind!=='secret'&&k.disclosure?.visibility!=='private'&&(!k.belief?.factId||!speaker.memories.some(m=>m.factId===k.belief.factId&&m.status==='forgotten'))&&!listener.knowledge.some(l=>l.id===k.id)); if(!fact) continue;
       const transmission={from:speaker.id,to:listener.id,at:state.time,region:speaker.region,position:[...speaker.position]};
       listener.knowledge.push({...clone(fact),receivedAt:state.time,transmissions:[...(fact.transmissions||[]),transmission].slice(-16),confidence:Math.max(.35,fact.confidence*.85),source:{type:'heard',actorId:speaker.id,origin:fact.source?.origin||fact.source}});
+      const memory=recalled(speaker,fact.belief?.factId||fact.id);if(memory)hearTestimony(state,listener,speaker,testimony(state,speaker,memory));
       if(fact.belief&&!listener.beliefs.some(b=>b.id===fact.belief.id)){listener.beliefs.push({...clone(fact.belief),confidence:Math.max(.2,fact.belief.confidence*.85),source:{type:'heard',actorId:speaker.id,previous:clone(fact.belief.source)},receivedAt:state.time});listener.nextDecision=0;}
     }
   }
@@ -387,7 +394,7 @@ function targetAt(state,content,id,range=INTERACTION) {
   const region=index(content).regions.get(state.player.region);
   let target=(region.objects || []).map(o=>({...o,...state.facilities?.[o.id]})).find(o=>o.id===id), hiddenEvent=false;
   const npc=state.npcs[id],template=index(content).npcs.get(id);
-  if(npc && template && npc.region===state.player.region&&!npc.travel) target={...template,...npc,kind:'npc'};
+    if(npc && template && npc.region===state.player.region&&!npc.travel&&!npc.entrapment) target={...template,...npc,kind:'npc'};
   if(String(id).startsWith('event:')) {
     const event=index(content).events.get(String(id).slice(6));
     if(event?.region===state.player.region) {
@@ -682,6 +689,7 @@ export function applyCommand(state,content,command) {
   }
   if(command.type==='work') {
     const target=targetAt(state,content,command.targetId),job=idx.jobs.get(command.jobId);
+    if(target.closed)fail('WORKPLACE_CLOSED','仕事場は閉鎖されている。',409);
     if(!job||(job.facilityId?target.id!==job.facilityId:!['job','npc','board'].includes(target.kind)))fail('JOB_MISSING','実際の仕事場に近づいてください。',409);
     if(job.region&&job.region!==p.region)fail('JOB_REGION','その仕事は別の地域です。',409);
     const missing=requirementsMissing(state,content,job.requirements || {});if(missing.length)fail('JOB_REQUIREMENTS',`必要：${missing.join('、')}`,409);
@@ -745,7 +753,7 @@ function actionsFor(state,content,target) {
     const missing=requirementsMissing(state,content,{...(recipe.requirements || {}),items:Object.fromEntries(Object.entries(recipe.requirements?.items || recipe.requirements?.inventory || {}).map(([id,amount])=>[id,finite(amount)]))});
     actions.push({id:`craft:${recipe.id}`,type:'craft',recipeId:recipe.id,label:`製作：${recipe.name} · ${finite(recipe.minutes,30)}分`,available:missing.length===0,missing});
   }
-  for(const job of content.jobs || []) if((job.facilityId?job.facilityId===target.id:['job','board','npc'].includes(target.kind))&&(!job.region||job.region===p.region)&&(!target.jobId||target.jobId===job.id))
+  for(const job of content.jobs || []) if(!target.closed&&(job.facilityId?job.facilityId===target.id:['job','board','npc'].includes(target.kind))&&(!job.region||job.region===p.region)&&(!target.jobId||target.jobId===job.id))
     {const requirements=job.requirements||{},missing=requirementsMissing(state,content,requirements);actions.push({id:`work:${job.id}`,type:'work',jobId:job.id,label:`${job.name} · ${finite(job.pay??job.reward??job.wage,30)}G`,requirements,available:missing.length===0,missing});}
   if(['board','npc'].includes(target.kind)) for(const known of state.knowledge.filter(k=>k.kind==='event'&&k.region===p.region)) {
     const event=idx.events.get(known.eventId);if(event&&!state.quests.some(q=>q.eventId===event.id)&&['active','critical','latent'].includes(state.events[event.id].status))
@@ -783,7 +791,7 @@ export function projectWorld(state,content) {
   const cleanObject=o=>({id:o.id,name:o.eventId&&!knownIds.has(o.eventId)?'気になる現場':o.name,kind:o.kind,position:clone(o.position),asset:o.asset,rotation:o.rotation || 0,scale:o.scale || 1,interior:o.interior,crafting:o.crafting,buildingPosition:o.buildingPosition,width:o.width,depth:o.depth,height:o.height});
   const publicRegion={id:region.id,name:region.name,biome:region.biome,color:region.color,size:region.size,spawn:clone(region.spawn),description:region.description,worldPosition:clone(region.worldPosition),
     obstacles:clone(region.obstacles || []),terrain:clone(region.terrain || {}),objects:(region.objects || []).map(o=>cleanObject({...o,...state.facilities?.[o.id]})),portals:clone(region.portals || [])};
-  const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&distance(n.position,p.position)<90&&hasLineOfSight(region,p.position,n.position)).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.role,position:clone(n.position),activity:n.activity,hp:n.hp,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
+  const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&!n.entrapment&&distance(n.position,p.position)<90&&hasLineOfSight(region,p.position,n.position)).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.role,position:clone(n.position),activity:n.activity,hp:n.hp,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
   const candidates=[...(region.objects || []).map(o=>({...o,...state.facilities?.[o.id]})),...nearbyNpcs.filter(n=>n.hp>0).map(n=>({...n,kind:'npc'})),...(content.events || []).filter(e=>e.region===p.region&&knownIds.has(e.id)).map(e=>({id:`event:${e.id}`,kind:'event',eventId:e.id,name:e.name,position:e.position || [0,0,0]}))];
   const interactables=candidates.filter(t=>distance(t.position,p.position)<=INTERACTION&&hasLineOfSight(region,p.position,t.position)).map(t=>({...cleanObject(t),distance:distance(t.position,p.position),actions:actionsFor(state,content,t)}));
   interactables.push(...propertyView(state,content).filter(o=>!o.held));

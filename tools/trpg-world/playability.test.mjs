@@ -167,7 +167,9 @@ test('ordinary work, timed training, meals and owned transport are playable with
 test('an actual road and ferry journey preserves all-region access without resolving events by menu',t=>{
  const journey=new Journey(7);
  for(const destination of ['capital','trade','crime','trade','fortress','dwarf','blackridge','elf','forest','farm','temple','frontier']) {
-   if(journey.player.hunger>45){journey.buy({supplies:3},20);journey.command({type:'eat',itemId:'supplies'});}
+   // Provision where a shop actually exists; hunger in the forest is not a shop.
+   if(journey.region.objects.some(o=>o.kind==='shop')&&(journey.player.inventory.supplies||0)<3)journey.buy({supplies:3},20);
+   if(journey.player.hunger>45)journey.command({type:'eat',itemId:'supplies'});
    if(journey.player.fatigue>50){const inn=journey.region.objects.find(o=>o.kind==='inn');if(inn){journey.approach(inn.id);journey.command({type:'rest',targetId:inn.id,hours:6});}}
    if(journey.player.gold<30)journey.earn(60);
    journey.travel(destination);

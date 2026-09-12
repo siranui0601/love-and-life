@@ -39,7 +39,7 @@ test('two renamed structures use the same physical work commands and survive int
  c.causalScenarios=[{eventId:'hazard',type:'infrastructure',structures:c.structures.map(s=>s.id)}];const r=new WorldReplay(c);
  assert(prepare(r,{items:{timber:10,rope:4},skills:['crafting']}).prepared);
  let intermediate;
- for(const structure of c.structures)for(const action of structure.actions){const t=r.view().region.objects.find(o=>o.id===structure.targetId);assert(!performAt(r,t,'maintain',{action:action.id}).error);if(!intermediate)intermediate=JSON.parse(JSON.stringify(r.export()));}
+ for(const structure of c.structures)for(const action of structure.actions.filter(a=>!a.when)){const t=r.view().region.objects.find(o=>o.id===structure.targetId);assert(!performAt(r,t,'maintain',{action:action.id}).error);if(!intermediate)intermediate=JSON.parse(JSON.stringify(r.export()));}
  assert.equal(r.state.events.hazard.status,'prevented');assert.equal(r.state.structures['shaft-a'].integrity,100);assert.equal(r.state.structures['shaft-b'].water,0);assert.deepEqual(r.defects,[]);
  assert.equal(digest(replay(c,r.export()).state),digest(r.state));assert.equal(replay(c,intermediate).state.structures['shaft-a'].operating,false);assert.equal(replay(c,intermediate).state.events.hazard.status,'latent');
 });

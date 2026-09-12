@@ -14,7 +14,7 @@ export function visibleTopics(state,npc) {
 }
 function choices(state,npc,session) {
   const legal=legalChoices(state,npc);
-  const facts=visibleTopics(state,npc).filter(f=>!session.factsLearned.includes(f.id)&&!state.knowledge.some(k=>k.id===f.id&&stableString(knowledgeMeaning(k))===stableString(knowledgeMeaning(f)))).sort((a,b)=>a.id.localeCompare(b.id,'en'));
+  const facts=visibleTopics(state,npc).filter(f=>!session.factsLearned.includes(f.id)&&!state.knowledge.some(k=>k.id===f.id&&stableString(knowledgeMeaning(k))===stableString(knowledgeMeaning(f)))).sort((a,b)=>Number(b.kind==='site-observation')-Number(a.kind==='site-observation')||a.id.localeCompare(b.id,'en'));
   const options=facts.slice(0,1).map(f=>({id:`ask:${f.id}`,family:'ask',intent:'ASK_ABOUT',factId:f.id,label:`「${f.topicLabel||f.title||f.text.slice(0,24)}${!f.topicLabel&&!f.title&&f.text.length>24?'…':''}」について聞く`,preview:f.text}));
   if(!session.history.some(h=>h.intentId==='daily-plan'))options.push({id:'daily-plan',intent:'ASK_ABOUT',family:'social',label:'今日は何をする予定か聞く'});
   if(!session.history.some(h=>h.intentId==='promise-supplies')&&!state.promises.some(p=>p.to===npc.id&&p.status==='open'))

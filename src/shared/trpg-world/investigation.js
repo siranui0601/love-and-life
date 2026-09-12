@@ -3,6 +3,10 @@ import {distance,hasLineOfSight} from './navigation.js';
 // These are leads, never a route or a promise that an absent person will spawn.
 export function investigationLeads(state,content) {
  const leads=[];
+ for(const fact of state.knowledge.filter(k=>k.kind==='site-observation'&&k.destination)) {
+  const target=fact.destination.targetId;
+  if(!state.player.inspections?.[target]||state.player.inspections[target].at<fact.observedAt)leads.push({id:`lead:${fact.id}`,targetId:target,region:fact.destination.region,position:[...fact.destination.position],expectedAction:'inspect',label:'聞いた異変の現場を確かめる',explanation:fact.text,sourceKnowledgeId:fact.id});
+ }
  for(const fact of state.knowledge.filter(k=>k.kind==='testimony'&&k.destination&&k.personId))if(state.npcs[fact.personId]?.companionOf==='player')leads.push({id:`lead:${fact.id}:home`,targetId:fact.personId,region:fact.destination.region,position:[...fact.destination.position],expectedAction:'escort-arrival',label:'同行者を家族のもとへ送る',explanation:fact.text,sourceKnowledgeId:fact.id});
  for(const definition of content.causalScenarios||[]) {
   const known=state.knowledge.find(k=>k.kind==='event'&&k.eventId===definition.eventId);if(!known)continue;

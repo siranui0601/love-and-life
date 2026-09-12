@@ -59,7 +59,7 @@ const eventSpecs=[
 const events=eventSpecs.map((s,i)=>{
  const [id,name,region,sd,sh,dd,dh,sourceIds,description,cause,preferred,skill,cooperate,logistics,force]=s;
  const ally=npcs.find(n=>n.id===preferred&&n.region===region)||npcs.find(n=>n.region===region);
- const reg=byRegion[region],position=[i%2?32:-32,0,-5],proof=`${id}:proof`;
+ const binding=DEFAULT_STRUCTURES.find(s=>s.hazardEventId===id),reg=byRegion[region],position=binding?[...reg.objects.find(o=>o.id===binding.targetId).position]:[i%2?32:-32,0,-5],proof=`${id}:proof`;
  reg.objects.push({id:`evidence:${id}`,kind:'evidence',name:`${name}の手がかり`,position:[position[0],0,position[2]+10],asset:'crate',eventId:id,evidenceId:proof,description:`${description} 調べた痕跡を手帳へ写した。`});
  return {id,name,region,position,startsAt:at(sd,sh),deadline:at(dd,dh),severity:'major',description,cause,sourceIds,reward:90,
   causalSourceIds:DEFAULT_CAUSAL_SCENARIOS.find(s=>s.eventId===id)?.sourceIds||[],
