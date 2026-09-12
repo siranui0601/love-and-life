@@ -116,8 +116,6 @@ function enemyFingerAt(state, attacker, cell) {
   const targetY = enemy === 0 ? BOARD.rows - 1 : 0;
   if (cell.y !== targetY) return null;
   if (state.capturedFingers[enemy].includes(fingerIndex)) return null;
-  const ownNail = getNail(state, enemy, fingerIndex);
-  if (ownNail?.path.length > 1) return null;
   return { player: enemy, fingerIndex };
 }
 
