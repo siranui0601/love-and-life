@@ -1,0 +1,174 @@
+
+> world:check
+> npm run world:audit && npm run world:assets:check && npm run world:test && npm run world:build
+
+
+> world:audit
+> node tools/trpg-world/audit-content.mjs
+
+{
+  "ok": true,
+  "counts": {
+    "regions": 11,
+    "routes": 15,
+    "npcs": 111,
+    "events": 8,
+    "skills": 10,
+    "items": 9,
+    "recipes": 3,
+    "jobs": 28,
+    "monsters": 77,
+    "equipment": 142
+  },
+  "errors": [],
+  "warnings": [
+    "bread-fire: causal migration pending; no generic resolution is available",
+    "harbor: causal migration pending; no generic resolution is available",
+    "resonance: causal migration pending; no generic resolution is available",
+    "border: causal migration pending; no generic resolution is available"
+  ],
+  "combat": {
+    "importedEnemySkills": 96,
+    "supportedCommands": [
+      "DAMAGE",
+      "HEAL",
+      "APPLY_MODIFIER",
+      "APPLY_DEBUFF",
+      "REMOVE_DEBUFF",
+      "MODIFY_RESOURCE",
+      "APPLY_SPECIAL_STATE",
+      "REMOVE_SPECIAL_STATE",
+      "INTERRUPT_CAST",
+      "MODIFY_FIELD",
+      "SUMMON_UNIT",
+      "COPY_LAST_ENEMY_SKILL",
+      "MODIFY_CRITICAL",
+      "MODIFY_ESCAPE",
+      "REMOVE_MODIFIER"
+    ],
+    "deferredCommands": []
+  }
+}
+
+> world:assets:check
+> node tools/trpg-world/inspect-assets.mjs
+
+World assets verified: {"files":239,"glb":214,"animated":45,"totalBytes":8417808}
+
+> world:test
+> node --test tools/trpg-world/*.test.mjs
+
+✔ GLB dependency inspection resolves textures and rejects remote or escaping URIs (2.54ms)
+✔ GLB inspection rejects truncated payloads and out of bounds buffer views (0.428ms)
+✔ committed model inventory, animations, original hashes and every texture are complete (107.749ms)
+✔ calendar pauses for reading and conversation; walking and explicit macros use their own policies (27.4782ms)
+✔ conversation selects facts semantically, cannot farm XP, and preserves choices across retries (2.2733ms)
+✔ a gift changes possessions; keeping an actual promise changes cooperation reasons (4.6053ms)
+✔ normal meals consume calendar time and hunger, not instant medicine HP (3.8201ms)
+✔ collapse preserves location; only a living present reachable NPC can carry and treat the player (8.7895ms)
+✔ generic pressure and retired outcome buttons cannot resolve events (2.8751ms)
+✔ institution documents need actual reading, submission and a physically present reviewer (3.378ms)
+✔ ecosystem containment has distinct physical conditions and failure opens a later causal precondition (91.678ms)
+✔ migration isolates numeric history and converts combat deadlines without advancing calendar (0.6835ms)
+✔ narrative validates IDs, times out safely, caches wording and cannot mutate state (12.8059ms)
+✔ worldline: unseen theft, save/reload, owner returns and discovers loss without identifying a thief (52.2848ms)
+✔ worldline: witness reports through a searched plan, local inquiry, confession and actual restitution (51.3581ms)
+✔ a report cannot manufacture knowledge and a private reader does not reveal document contents to a witness (2.3195ms)
+✔ memory loses details without erasing history; hearsay can associate a wrong suspect with known clothing (10.489ms)
+✔ real v1 migration, save, reload, deterministic continuation: world-10d-3d92a17b3ca5 (113.8306ms)
+✔ real v1 migration, save, reload, deterministic continuation: world-10d-0c89fc7ee769 (93.7344ms)
+✔ real v1 migration, save, reload, deterministic continuation: world-10d-33147c357b78 (89.4466ms)
+✔ real v1 migration, save, reload, deterministic continuation: world-10d-29a21ee5da06 (42.5365ms)
+✔ real v1 migration, save, reload, deterministic continuation: world-10d-7d0caf2d3049 (40.2185ms)
+✔ real service: posture creates witness interpretations without directly settling a crisis (10.2626ms)
+✔ real service: theft transfers money, unseen success does not reveal culprit; victim discovers loss later (16.9291ms)
+✔ planner searches alternatives and invalidates when a required resource disappears (6.0786ms)
+✔ compiler audit rejects resurrected numeric relationship and pressure authority (25.749ms)
+✔ real service: attack acceptance has no damage; hit window resolves while calendar is paused (2.0516ms)
+✔ real service: conversation waiting freezes calendar and repeated greetings confer no social reward (6.3288ms)
+✔ real service: NPC buys and eats using a persistent multi-step plan during a player macro activity (18.1189ms)
+✔ real service: pickpocket transfers an actual medicine stack through the same property path (3.4043ms)
+✔ interpretation follows knowledge and occupation, never NPC identity (0.6257ms)
+✔ relationship decisions use known attribution, relevance and request risk (0.4553ms)
+✔ live narrative adapter requires explicit enable and never calls transport while disabled (0.6442ms)
+✔ a collapsed-save service continuation lets a child seek a visible capable helper and complete actual rescue plans (6.6515ms)
+✔ real service: moving out of the hit volume during windup causes a miss (1.2391ms)
+✔ saving windup and restoring JSON continues the same action without offline damage (1.1327ms)
+✔ a later nearby conversation carries a witnessed interpretation to a non-witness and changes their plan (8.1849ms)
+✔ real service: dodge cancels windup without damage or bypassing the attack cooldown (1.1084ms)
+✔ legacy regional reputation is archived and cannot discount current prices (0.7313ms)
+✔ all source facilities, NPC homes/workplaces, clues, incident sites and physical exits have executable collision-safe paths (851.1529ms)
+✔ navigation rejects non-finite vectors and routes around walls thinner than the path grid (1.4609ms)
+✔ ordinary work, timed training, meals and owned transport are playable without outcome rewards (6969.6834ms)
+ℹ Ordinary needs/transport path: 174 commands, 32 world hours.
+✔ an actual road and ferry journey preserves all-region access without resolving events by menu (18854.699ms)
+ℹ Regional travel path: 647 commands, 26 world hours.
+✔ Finn is found in the world, accompanied on foot and returned to his living family (961.3319ms)
+ℹ Physical rescue: 78 commands, no position or skill injection.
+✔ the real HTTP simulation rejects coordinate injection and remote actions without mutating an owned life (476.1016ms)
+✔ preparation discovers actual services, works for money, purchases and completes repeated lessons (104.8699ms)
+✔ personal portable meal and contextual rest use normal macro commands and preserve replay (8.0626ms)
+✔ unaffordable offers carry public requirements but cannot be selected as executable options (0.6ms)
+✔ combat controller uses offered attack windows and normal healing, never a victory command (17.6817ms)
+✔ decision counts distinguish engine operations from destination and investigation choices (0.2519ms)
+✔ two renamed structures use the same physical work commands and survive intermediate reload (230.2565ms)
+✔ server catalog omits unexplored regions and routes, not just client map labels (1.7791ms)
+✔ recorded checkpoint v2 state migrates, saves, reloads and keeps calendar frozen (104.2425ms)
+✔ aware policy follows a discovered waterway need through ordinary preparation and intervention (46.2803ms)
+✔ a downed player leaves active combat and cannot accumulate negative HP from stale attacks (1.2379ms)
+✔ semantic identity ignores wording and object key order, distinguishes intent and target (1.0598ms)
+✔ 10/30/60 active seconds while reading have identical semantic choices without clock rounding (31.9103ms)
+✔ active exploration elapsed time does not randomly reroll conversation topics (17.0482ms)
+✔ real command stream replays twice and forks through JSON save without divergence (29.0395ms)
+✔ completed information acquisition and submission are not presented as progress again (6.3454ms)
+✔ reopening a conversation does not resurrect an already answered question (6.0421ms)
+✔ planner tied operators and state object ordering have deterministic outcomes (2.8831ms)
+✔ institution does not replace evidence quality with a witness count (0.3819ms)
+✔ a newly witnessed action changes a topic with a fact and interpretation trace (4.9248ms)
+✔ arrival contract offers a legal investigation, then completion after reading (4.3148ms)
+✔ bounded structural search returns a legal replay certificate for a representative institution (17.4333ms)
+✔ a miswired authored evidence object is reported as the first no-progress decision (2.7972ms)
+✔ sessions project only approved public data and remain owner isolated (3.8378ms)
+✔ command retry is idempotent, strict sequences serialize, failed mutation rolls back (1.5752ms)
+✔ foreground heartbeats advance time without movement; request spam cannot accelerate it (1.738ms)
+✔ restart preserves saved world time and clears stale movement input (0.5844ms)
+✔ durable write failure cannot commit a purchase to live authority (0.5025ms)
+✔ content revisions never silently reinterpret a save and a new life is explicit (0.6134ms)
+✔ changing content under the same revision cannot reinterpret existing saves (0.3958ms)
+✔ shutdown drains admitted creation, rejects new commands and flushes once (4.8296ms)
+✔ an uncertain write outcome reloads durable receipts before command retry (0.4644ms)
+✔ shutdown save failure is reported while every world gets a flush attempt (0.5259ms)
+✔ file saves atomically replace and reject traversal keys (11.2791ms)
+✔ HTTP ownership, secure cookies, same-origin guard and bounded parser (59.5153ms)
+✔ authoritative movement normalizes diagonal input and cannot tunnel through collision (21.9673ms)
+✔ A* navigates around walls without corner cutting (1.4808ms)
+✔ whole world progresses without quests or the player learning hidden events (39.5798ms)
+✔ material and evidence do not authorize a generic outcome selection (1.1732ms)
+✔ interaction range, inventory prices, trainer prerequisites and time costs are enforced (6.4515ms)
+✔ crafting turns hunted or purchased materials into crisis supplies at a physical workshop (2.2999ms)
+✔ transport requires a physical exit and owned capabilities and simulates elapsed world time (3.8166ms)
+✔ portal transport actions expose authoritative fare, duration and missing capability (1.163ms)
+✔ urgency requires a read deadline claim and does not follow hidden schedule changes (4.2324ms)
+✔ dangerous routes create deterministic travel hazards and survival preparation avoids them (6.3219ms)
+✔ an NPC reports last observed knowledge without receiving remote omniscient updates (1.7463ms)
+✔ NPC movement, work and needs simulate outside the loaded region (7.0131ms)
+✔ sleep advances crises while blocking sleeping-player observations; reload is deterministic (22.5338ms)
+✔ combat enforces range and cooldown and grants rewards only once (2.5922ms)
+✔ ordinary rewards give steady capability growth and repeated farming diminishes (0.2408ms)
+✔ enemy attacks have observable telegraphs and physical dodging or guarding changes the result (1.1234ms)
+✔ imported combat expressions use a closed grammar and never execute arbitrary code (0.4436ms)
+✔ defeating the production wolf cannot stand in for Finn returning to his family (1197.7731ms)
+✔ production content has complete region topology and settles every crisis during explicit macro activities (65751.9469ms)
+ℹ tests 98
+ℹ suites 0
+ℹ pass 98
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 67237.9189
+
+> world:build
+> node tools/trpg-world/build-client.mjs
+
+World build: {"engine":"Babylon.js 9.25.0","files":187,"totalBytes":3120858,"initialFiles":36,"initialBytes":1570068,"initialGzipBytes":398195}

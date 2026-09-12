@@ -1,0 +1,4033 @@
+[
+  {
+    "index": 85,
+    "worldTime": 30323.40905362437,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"dodge\",\"parameters\":{\"x\":1,\"z\":6.123233995736766e-17},\"target\":\"self\",\"verb\":\"dodge\"}",
+        "label": "横へ回避する"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"guard\",\"parameters\":{\"active\":true},\"target\":\"self\",\"verb\":\"defend\"}",
+        "label": "身を守る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"travel:carriage\",\"parameters\":{\"mode\":\"carriage\",\"portalId\":\"farm:R10\"},\"target\":\"farm:R10\",\"verb\":\"travel\"}",
+        "label": "馬車で向かう · 46.8分 · 12G · 安定"
+      },
+      {
+        "signature": "{\"action\":\"travel:foot\",\"parameters\":{\"mode\":\"foot\",\"portalId\":\"farm:R10\"},\"target\":\"farm:R10\",\"verb\":\"travel\"}",
+        "label": "徒歩で向かう · 72分 · 無料 · 安定"
+      },
+      {
+        "signature": "{\"action\":\"travel:wagon\",\"parameters\":{\"mode\":\"wagon\",\"portalId\":\"farm:R10\"},\"target\":\"farm:R10\",\"verb\":\"travel\"}",
+        "label": "荷馬車で向かう · 57.6分 · 8G · 安定"
+      }
+    ],
+    "selected": "{\"action\":\"travel:foot\",\"parameters\":{\"mode\":\"foot\",\"portalId\":\"farm:R10\"},\"target\":\"farm:R10\",\"verb\":\"travel\"}",
+    "reason": "街道の出口に着いたので、歩いて次の地域へ向かう",
+    "result": {
+      "message": "古代神殿へ到着。72分、0G。",
+      "minutes": 72,
+      "cost": 0,
+      "hazard": null
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "needs",
+      "npcs",
+      "position",
+      "region"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "home"
+          },
+          "status": "latent"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 182,
+    "worldTime": 38630.89747895661,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"travel:carriage\",\"parameters\":{\"mode\":\"carriage\",\"portalId\":\"temple:R07\"},\"target\":\"temple:R07\",\"verb\":\"travel\"}",
+        "label": "馬車で向かう · 78分 · 12G · 安定"
+      },
+      {
+        "signature": "{\"action\":\"travel:foot\",\"parameters\":{\"mode\":\"foot\",\"portalId\":\"temple:R07\"},\"target\":\"temple:R07\",\"verb\":\"travel\"}",
+        "label": "徒歩で向かう · 120分 · 無料 · 安定"
+      },
+      {
+        "signature": "{\"action\":\"travel:wagon\",\"parameters\":{\"mode\":\"wagon\",\"portalId\":\"temple:R07\"},\"target\":\"temple:R07\",\"verb\":\"travel\"}",
+        "label": "荷馬車で向かう · 96分 · 8G · 安定"
+      }
+    ],
+    "selected": "{\"action\":\"travel:foot\",\"parameters\":{\"mode\":\"foot\",\"portalId\":\"temple:R07\"},\"target\":\"temple:R07\",\"verb\":\"travel\"}",
+    "reason": "街道の出口に着いたので、歩いて次の地域へ向かう",
+    "result": {
+      "message": "交易都市へ到着。120分、0G。",
+      "minutes": 120,
+      "cost": 0,
+      "hazard": null
+    },
+    "createdFacts": [
+      {
+        "id": "social:489",
+        "kind": "injury",
+        "actorId": "NPC001",
+        "targetId": null,
+        "payload": {
+          "predatorId": "incident:lost-road:MON-0005"
+        },
+        "at": 35700,
+        "region": "farm",
+        "position": [
+          -31.99999999999997,
+          0,
+          -4.999999999999993
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC005",
+          "NPC006"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "events",
+      "needs",
+      "npcs",
+      "position",
+      "region"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 279,
+    "worldTime": 45507.47022350913,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"travel:carriage\",\"parameters\":{\"mode\":\"carriage\",\"portalId\":\"trade:R04\"},\"target\":\"trade:R04\",\"verb\":\"travel\"}",
+        "label": "馬車で向かう · 62.4分 · 12G · 安定"
+      },
+      {
+        "signature": "{\"action\":\"travel:foot\",\"parameters\":{\"mode\":\"foot\",\"portalId\":\"trade:R04\"},\"target\":\"trade:R04\",\"verb\":\"travel\"}",
+        "label": "徒歩で向かう · 96分 · 無料 · 安定"
+      },
+      {
+        "signature": "{\"action\":\"travel:wagon\",\"parameters\":{\"mode\":\"wagon\",\"portalId\":\"trade:R04\"},\"target\":\"trade:R04\",\"verb\":\"travel\"}",
+        "label": "荷馬車で向かう · 76.8分 · 8G · 安定"
+      }
+    ],
+    "selected": "{\"action\":\"travel:foot\",\"parameters\":{\"mode\":\"foot\",\"portalId\":\"trade:R04\"},\"target\":\"trade:R04\",\"verb\":\"travel\"}",
+    "reason": "街道の出口に着いたので、歩いて次の地域へ向かう",
+    "result": {
+      "message": "ドワーフ洞窟へ到着。96分、0G。",
+      "minutes": 96,
+      "cost": 0,
+      "hazard": null
+    },
+    "createdFacts": [
+      {
+        "id": "social:738",
+        "kind": "site-inspection",
+        "actorId": "NPC002",
+        "targetId": null,
+        "payload": {
+          "eventId": "lost-road"
+        },
+        "at": 40047.47022350913,
+        "region": "farm",
+        "position": [
+          -32.00000000000001,
+          0,
+          -4.999999999999998
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC002",
+          "NPC003",
+          "NPC004",
+          "NPC005",
+          "NPC006"
+        ]
+      },
+      {
+        "id": "social:739",
+        "kind": "site-inspection",
+        "actorId": "NPC003",
+        "targetId": null,
+        "payload": {
+          "eventId": "lost-road"
+        },
+        "at": 40047.47022350913,
+        "region": "farm",
+        "position": [
+          -31.999999999999993,
+          0,
+          -5
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC002",
+          "NPC003",
+          "NPC004",
+          "NPC005",
+          "NPC006"
+        ]
+      },
+      {
+        "id": "social:740",
+        "kind": "site-inspection",
+        "actorId": "NPC004",
+        "targetId": null,
+        "payload": {
+          "eventId": "lost-road"
+        },
+        "at": 40347.47022350913,
+        "region": "farm",
+        "position": [
+          -31.999999999999993,
+          0,
+          -4.999999999999999
+        ],
+        "witnesses": [
+          "NPC001",
+          "NPC002",
+          "NPC003",
+          "NPC004",
+          "NPC005",
+          "NPC006"
+        ]
+      }
+    ],
+    "changedDomains": [
+      "needs",
+      "npcs",
+      "position",
+      "region"
+    ],
+    "next": {
+      "knowledge": [],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 322,
+    "worldTime": 45966.61761436594,
+    "knowledge": [],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"evidence:deep-mine\",\"verb\":\"interact\"}",
+        "label": "調べる"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"evidence:deep-mine\",\"verb\":\"interact\"}",
+    "reason": "坑道から出てきた水と岩片を調べる",
+    "result": {
+      "message": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "knowledge",
+      "inspections"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"evidence:deep-mine\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 391,
+    "worldTime": 46657.783959498964,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"close-access\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"maintain\"}",
+        "label": "縄で立入を止め、坑道口を閉鎖する · 15分"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"interact\"}",
+    "reason": "採掘坑道の入口で支柱と水位を調べる",
+    "result": {
+      "message": "作業は続いている。水が溜まっている。支柱にはひびがある。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "inspections"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"close-access\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"maintain\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 396,
+    "worldTime": 47557.783959498964,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"close-access\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"maintain\"}",
+        "label": "縄で立入を止め、坑道口を閉鎖する · 15分"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"close-access\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"maintain\"}",
+    "reason": "縄で立入を止め、坑道口を閉鎖する · 15分",
+    "result": {
+      "message": "入口は閉じられ、作業は止まっている。水が溜まっている。支柱にはひびがある。"
+    },
+    "createdFacts": [
+      {
+        "id": "social:1495",
+        "kind": "maintenance",
+        "actorId": "player",
+        "targetId": "LOC_DWARF_MINE",
+        "payload": {
+          "action": "close-access",
+          "physicalChanges": {
+            "operating": false
+          }
+        },
+        "at": 47557.783959498964,
+        "region": "dwarf",
+        "position": [
+          -16.000000000000004,
+          0,
+          -45.00000000000001
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "facilities",
+      "inspections",
+      "inventory",
+      "needs",
+      "npcs",
+      "structures"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 505,
+    "worldTime": 48800.25395057093,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "解毒薬 · 23G"
+      },
+      {
+        "signature": "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "調律結晶 · 25G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-S-0003\",\"parameters\":{\"itemId\":\"EQP-S-0003\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ盾 · 54G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ短剣 · 36G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ鉄剣 · 50G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0302\",\"parameters\":{\"itemId\":\"EQP-W-0302\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ鍛の護衛斧 · 67G"
+      },
+      {
+        "signature": "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "旅人の温かい弁当 · 5G"
+      },
+      {
+        "signature": "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "傷薬 · 13G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 7G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 9G"
+      },
+      {
+        "signature": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "補修用木材 · 11G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：傷薬（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：食料と生活物資（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石運び · 36G"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石選別・秤見 · 22G"
+      }
+    ],
+    "selected": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+    "reason": "必要な品や仕事を探して、店頭や掲示を確かめる",
+    "result": {
+      "message": "鉱石、金属素材、工具、魔物素材の買取"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "inspections"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-S-0003\",\"parameters\":{\"itemId\":\"EQP-S-0003\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0302\",\"parameters\":{\"itemId\":\"EQP-W-0302\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 508,
+    "worldTime": 48800.25395057093,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "解毒薬 · 23G"
+      },
+      {
+        "signature": "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "調律結晶 · 25G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-S-0003\",\"parameters\":{\"itemId\":\"EQP-S-0003\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ盾 · 54G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ短剣 · 36G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ鉄剣 · 50G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0302\",\"parameters\":{\"itemId\":\"EQP-W-0302\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ鍛の護衛斧 · 67G"
+      },
+      {
+        "signature": "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "旅人の温かい弁当 · 5G"
+      },
+      {
+        "signature": "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "傷薬 · 13G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 7G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 9G"
+      },
+      {
+        "signature": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "補修用木材 · 11G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：傷薬（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：食料と生活物資（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石運び · 36G"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石選別・秤見 · 22G"
+      }
+    ],
+    "selected": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+    "reason": "調べて知った入手先で、旅支度を進める",
+    "result": {
+      "message": "補修用木材を購入した。",
+      "price": 11
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "gold",
+      "inventory"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-S-0003\",\"parameters\":{\"itemId\":\"EQP-S-0003\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0302\",\"parameters\":{\"itemId\":\"EQP-W-0302\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 511,
+    "worldTime": 48800.25395057093,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "解毒薬 · 23G"
+      },
+      {
+        "signature": "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "調律結晶 · 25G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-S-0003\",\"parameters\":{\"itemId\":\"EQP-S-0003\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ盾 · 54G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ短剣 · 36G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ鉄剣 · 50G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0302\",\"parameters\":{\"itemId\":\"EQP-W-0302\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ鍛の護衛斧 · 67G"
+      },
+      {
+        "signature": "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "旅人の温かい弁当 · 5G"
+      },
+      {
+        "signature": "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "傷薬 · 13G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 7G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 9G"
+      },
+      {
+        "signature": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "補修用木材 · 11G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：補修用木材"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：傷薬（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：食料と生活物資（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：補修用木材（所持 1）"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石運び · 36G"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石選別・秤見 · 22G"
+      }
+    ],
+    "selected": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+    "reason": "調べて知った入手先で、旅支度を進める",
+    "result": {
+      "message": "補修用木材を購入した。",
+      "price": 11
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "gold",
+      "inventory"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-S-0003\",\"parameters\":{\"itemId\":\"EQP-S-0003\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0302\",\"parameters\":{\"itemId\":\"EQP-W-0302\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 514,
+    "worldTime": 48800.25395057093,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "解毒薬 · 23G"
+      },
+      {
+        "signature": "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "調律結晶 · 25G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-S-0003\",\"parameters\":{\"itemId\":\"EQP-S-0003\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ盾 · 54G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ短剣 · 36G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ鉄剣 · 50G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0302\",\"parameters\":{\"itemId\":\"EQP-W-0302\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ鍛の護衛斧 · 67G"
+      },
+      {
+        "signature": "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "旅人の温かい弁当 · 5G"
+      },
+      {
+        "signature": "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "傷薬 · 13G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 7G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 9G"
+      },
+      {
+        "signature": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "補修用木材 · 11G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：補修用木材"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：傷薬（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：食料と生活物資（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：補修用木材（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石運び · 36G"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石選別・秤見 · 22G"
+      }
+    ],
+    "selected": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+    "reason": "調べて知った入手先で、旅支度を進める",
+    "result": {
+      "message": "丈夫な縄を購入した。",
+      "price": 7
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "gold",
+      "inventory"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-S-0003\",\"parameters\":{\"itemId\":\"EQP-S-0003\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 623,
+    "worldTime": 51842.209205474195,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drain\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"maintain\"}",
+        "label": "木材と縄で排水路を組む · 30分"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：丈夫な縄"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：補修用木材"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"drain\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"maintain\"}",
+    "reason": "木材と縄で排水路を組む · 30分",
+    "result": {
+      "message": "入口は閉じられ、作業は止まっている。排水は通っている。支柱にはひびがある。"
+    },
+    "createdFacts": [
+      {
+        "id": "social:1738",
+        "kind": "maintenance",
+        "actorId": "player",
+        "targetId": "LOC_DWARF_MINE",
+        "payload": {
+          "action": "drain",
+          "physicalChanges": {
+            "water": 0
+          }
+        },
+        "at": 51842.209205474195,
+        "region": "dwarf",
+        "position": [
+          -16,
+          0,
+          -45
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "inspections",
+      "inventory",
+      "needs",
+      "npcs",
+      "structures"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  },
+  {
+    "index": 732,
+    "worldTime": 53084.67919654616,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "解毒薬 · 22G"
+      },
+      {
+        "signature": "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "調律結晶 · 25G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-S-0003\",\"parameters\":{\"itemId\":\"EQP-S-0003\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ盾 · 53G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ短剣 · 35G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ鉄剣 · 49G"
+      },
+      {
+        "signature": "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "旅人の温かい弁当 · 5G"
+      },
+      {
+        "signature": "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "傷薬 · 12G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 7G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 9G"
+      },
+      {
+        "signature": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "補修用木材 · 11G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：傷薬（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：食料と生活物資（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石運び · 36G"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石選別・秤見 · 22G"
+      }
+    ],
+    "selected": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+    "reason": "調べて知った入手先で、旅支度を進める",
+    "result": {
+      "message": "補修用木材を購入した。",
+      "price": 11
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "gold",
+      "inventory"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 735,
+    "worldTime": 53084.67919654616,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "解毒薬 · 22G"
+      },
+      {
+        "signature": "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "調律結晶 · 25G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ短剣 · 35G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0032\",\"parameters\":{\"itemId\":\"EQP-W-0032\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ鉄剣 · 49G"
+      },
+      {
+        "signature": "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "旅人の温かい弁当 · 5G"
+      },
+      {
+        "signature": "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "傷薬 · 12G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 7G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 9G"
+      },
+      {
+        "signature": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "補修用木材 · 11G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：補修用木材"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：傷薬（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：食料と生活物資（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：補修用木材（所持 1）"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石運び · 36G"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石選別・秤見 · 22G"
+      }
+    ],
+    "selected": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+    "reason": "調べて知った入手先で、旅支度を進める",
+    "result": {
+      "message": "補修用木材を購入した。",
+      "price": 11
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "gold",
+      "inventory"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 738,
+    "worldTime": 53084.67919654616,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "解毒薬 · 22G"
+      },
+      {
+        "signature": "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "調律結晶 · 25G"
+      },
+      {
+        "signature": "{\"action\":\"buy:EQP-W-0031\",\"parameters\":{\"itemId\":\"EQP-W-0031\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "ドワーフ短剣 · 35G"
+      },
+      {
+        "signature": "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "旅人の温かい弁当 · 5G"
+      },
+      {
+        "signature": "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "傷薬 · 12G"
+      },
+      {
+        "signature": "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "丈夫な縄 · 7G"
+      },
+      {
+        "signature": "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "食料と生活物資 · 9G"
+      },
+      {
+        "signature": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "label": "補修用木材 · 11G"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：補修用木材"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：傷薬（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：食料と生活物資（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"sell:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "label": "売る：補修用木材（所持 2）"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石運び · 36G"
+      },
+      {
+        "signature": "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "label": "鉱石選別・秤見 · 22G"
+      }
+    ],
+    "selected": "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+    "reason": "調べて知った入手先で、旅支度を進める",
+    "result": {
+      "message": "補修用木材を購入した。",
+      "price": 11
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "gold",
+      "inventory"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"buy:antidote\",\"parameters\":{\"itemId\":\"antidote\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:crystal\",\"parameters\":{\"itemId\":\"crystal\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:food\",\"parameters\":{\"itemId\":\"food\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:rope\",\"parameters\":{\"itemId\":\"rope\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"buy:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"buy\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sell:medicine\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"sell:timber\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"sell\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"work:JOB-DWARF-01\",\"parameters\":{\"jobId\":\"JOB-DWARF-01\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}",
+        "{\"action\":\"work:JOB-DWARF-02\",\"parameters\":{\"jobId\":\"JOB-DWARF-02\"},\"target\":\"LOC_DWARF_MARKET\",\"verb\":\"work\"}"
+      ]
+    }
+  },
+  {
+    "index": 823,
+    "worldTime": 53924.65104445136,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"accept:deep-mine\",\"parameters\":{\"eventId\":\"deep-mine\"},\"target\":\"NPC035\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：山の下の呼吸"
+      },
+      {
+        "signature": "{\"action\":\"attack:combat:opposition:deep-mine\",\"parameters\":{\"skillId\":\"combat\"},\"target\":\"opposition:deep-mine\",\"verb\":\"attack\"}",
+        "label": "攻撃する"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"dodge\",\"parameters\":{\"x\":1,\"z\":6.123233995736766e-17},\"target\":\"self\",\"verb\":\"dodge\"}",
+        "label": "横へ回避する"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：補修用木材"
+      },
+      {
+        "signature": "{\"action\":\"guard\",\"parameters\":{\"active\":true},\"target\":\"self\",\"verb\":\"defend\"}",
+        "label": "身を守る"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC035\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"interact\"}",
+        "label": "見る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC035\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC035\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"train:crafting\",\"parameters\":{\"skillId\":\"crafting\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "工作 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:magic\",\"parameters\":{\"skillId\":\"magic\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "基礎魔術 · 1SP / 11G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:negotiation\",\"parameters\":{\"skillId\":\"negotiation\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "交渉 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:riding\",\"parameters\":{\"skillId\":\"riding\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "乗馬 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:stealth\",\"parameters\":{\"skillId\":\"stealth\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "潜入 · 1SP / 11G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:survival\",\"parameters\":{\"skillId\":\"survival\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "野外生活 · 1SP / 8G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:tracking\",\"parameters\":{\"skillId\":\"tracking\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "追跡 · 1SP / 8G / 30分"
+      }
+    ],
+    "selected": "{\"action\":\"inspect\",\"parameters\":{},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"interact\"}",
+    "reason": "必要な品や仕事を探して、店頭や掲示を確かめる",
+    "result": {
+      "message": "武器・防具・修理・制作系強化"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "inspections"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"accept:deep-mine\",\"parameters\":{\"eventId\":\"deep-mine\"},\"target\":\"NPC035\",\"verb\":\"accept\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC035\",\"verb\":\"interact\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC035\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC035\",\"verb\":\"interact\"}",
+        "{\"action\":\"train:crafting\",\"parameters\":{\"skillId\":\"crafting\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:magic\",\"parameters\":{\"skillId\":\"magic\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:negotiation\",\"parameters\":{\"skillId\":\"negotiation\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:riding\",\"parameters\":{\"skillId\":\"riding\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:stealth\",\"parameters\":{\"skillId\":\"stealth\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:survival\",\"parameters\":{\"skillId\":\"survival\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:tracking\",\"parameters\":{\"skillId\":\"tracking\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}"
+      ]
+    }
+  },
+  {
+    "index": 826,
+    "worldTime": 55724.65104445136,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"accept:deep-mine\",\"parameters\":{\"eventId\":\"deep-mine\"},\"target\":\"NPC035\",\"verb\":\"accept\"}",
+        "label": "依頼を受ける：山の下の呼吸"
+      },
+      {
+        "signature": "{\"action\":\"attack:combat:opposition:deep-mine\",\"parameters\":{\"skillId\":\"combat\"},\"target\":\"opposition:deep-mine\",\"verb\":\"attack\"}",
+        "label": "攻撃する"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"dodge\",\"parameters\":{\"x\":1,\"z\":6.123233995736766e-17},\"target\":\"self\",\"verb\":\"dodge\"}",
+        "label": "横へ回避する"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：補修用木材"
+      },
+      {
+        "signature": "{\"action\":\"guard\",\"parameters\":{\"active\":true},\"target\":\"self\",\"verb\":\"defend\"}",
+        "label": "身を守る"
+      },
+      {
+        "signature": "{\"action\":\"help\",\"parameters\":{},\"target\":\"NPC035\",\"verb\":\"interact\"}",
+        "label": "生活物資を一つ手渡す"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"pickpocket\",\"parameters\":{},\"target\":\"NPC035\",\"verb\":\"affordance\"}",
+        "label": "懐の持ち物を掏ろうとする"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"talk\",\"parameters\":{},\"target\":\"NPC035\",\"verb\":\"interact\"}",
+        "label": "話す"
+      },
+      {
+        "signature": "{\"action\":\"train:crafting\",\"parameters\":{\"skillId\":\"crafting\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "工作 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:magic\",\"parameters\":{\"skillId\":\"magic\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "基礎魔術 · 1SP / 11G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:negotiation\",\"parameters\":{\"skillId\":\"negotiation\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "交渉 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:riding\",\"parameters\":{\"skillId\":\"riding\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "乗馬 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:stealth\",\"parameters\":{\"skillId\":\"stealth\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "潜入 · 1SP / 11G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:survival\",\"parameters\":{\"skillId\":\"survival\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "野外生活 · 1SP / 8G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:tracking\",\"parameters\":{\"skillId\":\"tracking\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "追跡 · 1SP / 8G / 30分"
+      }
+    ],
+    "selected": "{\"action\":\"train:crafting\",\"parameters\":{\"skillId\":\"crafting\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+    "reason": "調べて知った入手先で、旅支度を進める",
+    "result": {
+      "message": "練習を終えた。習得進度 50%。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "gold",
+      "needs",
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"attack:combat:opposition:deep-mine\",\"parameters\":{\"skillId\":\"combat\"},\"target\":\"opposition:deep-mine\",\"verb\":\"attack\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dodge\",\"parameters\":{\"x\":1,\"z\":6.123233995736766e-17},\"target\":\"self\",\"verb\":\"dodge\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"guard\",\"parameters\":{\"active\":true},\"target\":\"self\",\"verb\":\"defend\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"train:crafting\",\"parameters\":{\"skillId\":\"crafting\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:magic\",\"parameters\":{\"skillId\":\"magic\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:negotiation\",\"parameters\":{\"skillId\":\"negotiation\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:riding\",\"parameters\":{\"skillId\":\"riding\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:stealth\",\"parameters\":{\"skillId\":\"stealth\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:survival\",\"parameters\":{\"skillId\":\"survival\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:tracking\",\"parameters\":{\"skillId\":\"tracking\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}"
+      ]
+    }
+  },
+  {
+    "index": 829,
+    "worldTime": 57524.65104445136,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"attack:combat:opposition:deep-mine\",\"parameters\":{\"skillId\":\"combat\"},\"target\":\"opposition:deep-mine\",\"verb\":\"attack\"}",
+        "label": "攻撃する"
+      },
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"dodge\",\"parameters\":{\"x\":1,\"z\":6.123233995736766e-17},\"target\":\"self\",\"verb\":\"dodge\"}",
+        "label": "横へ回避する"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：補修用木材"
+      },
+      {
+        "signature": "{\"action\":\"guard\",\"parameters\":{\"active\":true},\"target\":\"self\",\"verb\":\"defend\"}",
+        "label": "身を守る"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      },
+      {
+        "signature": "{\"action\":\"train:crafting\",\"parameters\":{\"skillId\":\"crafting\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "工作 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:magic\",\"parameters\":{\"skillId\":\"magic\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "基礎魔術 · 1SP / 11G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:negotiation\",\"parameters\":{\"skillId\":\"negotiation\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "交渉 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:riding\",\"parameters\":{\"skillId\":\"riding\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "乗馬 · 1SP / 9G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:stealth\",\"parameters\":{\"skillId\":\"stealth\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "潜入 · 1SP / 11G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:survival\",\"parameters\":{\"skillId\":\"survival\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "野外生活 · 1SP / 8G / 30分"
+      },
+      {
+        "signature": "{\"action\":\"train:tracking\",\"parameters\":{\"skillId\":\"tracking\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "label": "追跡 · 1SP / 8G / 30分"
+      }
+    ],
+    "selected": "{\"action\":\"train:crafting\",\"parameters\":{\"skillId\":\"crafting\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+    "reason": "調べて知った入手先で、旅支度を進める",
+    "result": {
+      "message": "工作を習得した。"
+    },
+    "createdFacts": [],
+    "changedDomains": [
+      "gold",
+      "needs",
+      "npcs"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "infrastructure"
+          },
+          "status": "latent"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"attack:combat:opposition:deep-mine\",\"parameters\":{\"skillId\":\"combat\"},\"target\":\"opposition:deep-mine\",\"verb\":\"attack\"}",
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dodge\",\"parameters\":{\"x\":1,\"z\":6.123233995736766e-17},\"target\":\"self\",\"verb\":\"dodge\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"guard\",\"parameters\":{\"active\":true},\"target\":\"self\",\"verb\":\"defend\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"train:negotiation\",\"parameters\":{\"skillId\":\"negotiation\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:riding\",\"parameters\":{\"skillId\":\"riding\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:survival\",\"parameters\":{\"skillId\":\"survival\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}",
+        "{\"action\":\"train:tracking\",\"parameters\":{\"skillId\":\"tracking\"},\"target\":\"LOC_DWARF_FORGE\",\"verb\":\"train\"}"
+      ]
+    }
+  },
+  {
+    "index": 880,
+    "worldTime": 59764.55027927944,
+    "knowledge": [
+      {
+        "id": "event:deep-mine",
+        "kind": "event",
+        "status": "latent",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+      },
+      {
+        "id": "evidence:deep-mine:proof",
+        "kind": "evidence",
+        "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+      }
+    ],
+    "available": [
+      {
+        "signature": "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "しゃがむ"
+      },
+      {
+        "signature": "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "踊る"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：傷薬"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：食料と生活物資"
+      },
+      {
+        "signature": "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"timber\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "置く：補修用木材"
+      },
+      {
+        "signature": "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "label": "食料と生活物資を食べる · 15分"
+      },
+      {
+        "signature": "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "横になる"
+      },
+      {
+        "signature": "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"interact\"}",
+        "label": "確かめた内容を読み返す"
+      },
+      {
+        "signature": "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "地面を転がる"
+      },
+      {
+        "signature": "{\"action\":\"shore\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"maintain\"}",
+        "label": "傷んだ支柱を補強する · 30分"
+      },
+      {
+        "signature": "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "声を上げる"
+      },
+      {
+        "signature": "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "label": "座る"
+      }
+    ],
+    "selected": "{\"action\":\"shore\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"maintain\"}",
+    "reason": "傷んだ支柱を補強する · 30分",
+    "result": {
+      "message": "入口は閉じられ、作業は止まっている。排水は通っている。支柱は補強されている。"
+    },
+    "createdFacts": [
+      {
+        "id": "social:2303",
+        "kind": "maintenance",
+        "actorId": "player",
+        "targetId": "LOC_DWARF_MINE",
+        "payload": {
+          "action": "shore",
+          "physicalChanges": {
+            "integrity": 100
+          }
+        },
+        "at": 59764.55027927944,
+        "region": "dwarf",
+        "position": [
+          -15.999999999999993,
+          0,
+          -44.8800000000001
+        ],
+        "witnesses": []
+      }
+    ],
+    "changedDomains": [
+      "events",
+      "inspections",
+      "inventory",
+      "needs",
+      "npcs",
+      "structures"
+    ],
+    "next": {
+      "knowledge": [
+        {
+          "id": "event:deep-mine",
+          "kind": "event",
+          "status": "latent",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。"
+        },
+        {
+          "id": "evidence:deep-mine:proof",
+          "kind": "evidence",
+          "text": "坑道から濁った水が流れ出ている。支柱のひびは、作業員の交代ごとに広がる。 調べた痕跡を手帳へ写した。"
+        }
+      ],
+      "events": {
+        "border": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "bread-fire": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "crown": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "institution",
+            "reviewed": false,
+            "submitted": [],
+            "tenure": "disputed"
+          },
+          "status": "latent"
+        },
+        "deep-mine": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [
+              {
+                "at": 59764.55027927944,
+                "evidence": [
+                  "social:1495",
+                  "social:1738",
+                  "social:2303"
+                ],
+                "id": "milestone:2305",
+                "kind": "prevented"
+              }
+            ],
+            "model": "infrastructure"
+          },
+          "status": "prevented"
+        },
+        "harbor": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "lost-road": {
+          "causal": {
+            "aftermath": [],
+            "familyId": "NPC002",
+            "milestones": [],
+            "model": "return-person",
+            "personId": "NPC001",
+            "phase": "injured"
+          },
+          "status": "active"
+        },
+        "resonance": {
+          "causal": {
+            "aftermath": [],
+            "milestones": [],
+            "model": "unadapted"
+          },
+          "status": "latent"
+        },
+        "roots": {
+          "causal": {
+            "aftermath": [],
+            "coreInPool": true,
+            "coreSealed": false,
+            "forestBarrier": true,
+            "milestones": [],
+            "model": "ecosystem",
+            "treeIntegrity": 100,
+            "waterFlow": 0.35
+          },
+          "status": "latent"
+        }
+      },
+      "options": [
+        "{\"action\":\"crouch\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"dance\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"medicine\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"drop\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"eat:supplies\",\"parameters\":{\"itemId\":\"supplies\"},\"target\":\"self\",\"verb\":\"eat\"}",
+        "{\"action\":\"lie\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"review\",\"parameters\":{},\"target\":\"LOC_DWARF_MINE\",\"verb\":\"interact\"}",
+        "{\"action\":\"roll\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"shout\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}",
+        "{\"action\":\"sit\",\"parameters\":{},\"target\":\"self\",\"verb\":\"affordance\"}"
+      ]
+    }
+  }
+]

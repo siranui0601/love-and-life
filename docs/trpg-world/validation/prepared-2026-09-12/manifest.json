@@ -1,0 +1,208 @@
+{
+  "runtimeCommit": "e549644472bd6a5c028fec0a0830fff9729c61e2",
+  "scope": "Production content, ordinary authoritative commands, exact recorded active-time subdivisions; no paid LLM calls.",
+  "worldlines": [
+    {
+      "name": "mine",
+      "counts": {
+        "lowLevelOperations": 881,
+        "simulationAdvances": 411,
+        "movementInputs": 431,
+        "meaningfulPlayerDecisions": 28,
+        "travelSegments": 13,
+        "investigations": 4,
+        "conversationTurns": 0,
+        "preparationActions": 8,
+        "combatActions": 0,
+        "otherDecisions": 3
+      },
+      "worldTime": 59764.55027927944,
+      "day": 1,
+      "health": 108,
+      "skills": [
+        "combat",
+        "investigation",
+        "crafting"
+      ],
+      "inventory": {
+        "medicine": 2,
+        "rope": 0,
+        "supplies": 2,
+        "timber": 0
+      },
+      "defects": [],
+      "firstMissing": null,
+      "replayEqual": true,
+      "causal": {
+        "border": {
+          "status": "latent",
+          "milestones": []
+        },
+        "bread-fire": {
+          "status": "latent",
+          "milestones": []
+        },
+        "crown": {
+          "status": "latent",
+          "milestones": []
+        },
+        "deep-mine": {
+          "status": "prevented",
+          "milestones": [
+            {
+              "id": "milestone:2305",
+              "kind": "prevented",
+              "at": 59764.55027927944,
+              "evidence": [
+                "social:1495",
+                "social:1738",
+                "social:2303"
+              ]
+            }
+          ]
+        },
+        "harbor": {
+          "status": "latent",
+          "milestones": []
+        },
+        "lost-road": {
+          "status": "active",
+          "phase": "injured",
+          "milestones": []
+        },
+        "resonance": {
+          "status": "latent",
+          "milestones": []
+        },
+        "roots": {
+          "status": "latent",
+          "milestones": []
+        }
+      },
+      "finalHash": "23409a2db2d4aa6209c7af29d2cdd87543d2745d99c650948bb23e619653cb06",
+      "contentHash": "46887edb8aad43336b1562b50d7427cce10eccb8b35d4c5e4bff36c5f2cd2448"
+    },
+    {
+      "name": "life",
+      "counts": {
+        "lowLevelOperations": 1548,
+        "simulationAdvances": 722,
+        "movementInputs": 741,
+        "meaningfulPlayerDecisions": 76,
+        "travelSegments": 29,
+        "investigations": 4,
+        "conversationTurns": 0,
+        "preparationActions": 34,
+        "combatActions": 7,
+        "otherDecisions": 2
+      },
+      "worldTime": 277379.7281936433,
+      "day": 4,
+      "health": 116,
+      "skills": [
+        "combat",
+        "investigation",
+        "magic"
+      ],
+      "inventory": {
+        "medicine": 2,
+        "rope": 1,
+        "supplies": 0,
+        "MAT_RED_FANG": 1
+      },
+      "defects": [],
+      "firstMissing": null,
+      "replayEqual": true,
+      "causal": {
+        "border": {
+          "status": "latent",
+          "milestones": []
+        },
+        "bread-fire": {
+          "status": "active",
+          "milestones": []
+        },
+        "crown": {
+          "status": "latent",
+          "milestones": []
+        },
+        "deep-mine": {
+          "status": "failed",
+          "milestones": [
+            {
+              "id": "milestone:37533",
+              "kind": "failed",
+              "at": 250703.72819364333,
+              "evidence": "deadline-or-physical-failure"
+            }
+          ]
+        },
+        "harbor": {
+          "status": "active",
+          "milestones": []
+        },
+        "lost-road": {
+          "status": "failed",
+          "componentStatus": "resolved",
+          "phase": "reunited",
+          "milestones": [
+            {
+              "id": "milestone:666",
+              "kind": "component-resolved",
+              "at": 38388.67241115331,
+              "evidence": "social:665"
+            },
+            {
+              "id": "milestone:9662",
+              "kind": "failed",
+              "at": 158400,
+              "evidence": "deadline-or-physical-failure"
+            }
+          ]
+        },
+        "resonance": {
+          "status": "active",
+          "milestones": []
+        },
+        "roots": {
+          "status": "active",
+          "milestones": []
+        }
+      },
+      "finalHash": "a458045b3ec57542e90d562d97142bb4fedece6c6ba57f85e14e610d697f036f",
+      "contentHash": "46887edb8aad43336b1562b50d7427cce10eccb8b35d4c5e4bff36c5f2cd2448"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "focused-tests.txt",
+      "bytes": 5645,
+      "sha256": "0089b2866a9e6b9eff8a91f73b5d7d824cc371f8cc06a6469932359760a6f715"
+    },
+    {
+      "file": "life-replay.json",
+      "bytes": 336904,
+      "sha256": "66d8ac7fc7eaf9b9baa8de1c5b7de07b6400085f3bc9e8a42d684aadaad96f82"
+    },
+    {
+      "file": "life-trace.json",
+      "bytes": 536773,
+      "sha256": "3dfd79d3768442c899af6a5a8c84f9d624e278d702fa1487823a6fcc541a6ab3"
+    },
+    {
+      "file": "mine-replay.json",
+      "bytes": 244394,
+      "sha256": "2ace95f883473d257f33387624ee12eb3ee8d6262425d2a73781b794e3b107ee"
+    },
+    {
+      "file": "mine-trace.json",
+      "bytes": 165027,
+      "sha256": "e118773397ee9c82052f2445759d1681b25bb425c77932cb8359918b8a8faa1e"
+    },
+    {
+      "file": "world-check.txt",
+      "bytes": 11883,
+      "sha256": "397a21e278cf0379e4e4c140fd5c883e571bbaff93aeb0a7d6a4bd145bbd9109"
+    }
+  ]
+}
