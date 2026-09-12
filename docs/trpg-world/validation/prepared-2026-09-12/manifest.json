@@ -176,8 +176,8 @@
   "artifacts": [
     {
       "file": "focused-tests.txt",
-      "bytes": 5645,
-      "sha256": "0089b2866a9e6b9eff8a91f73b5d7d824cc371f8cc06a6469932359760a6f715"
+      "bytes": 5583,
+      "sha256": "c765402aee33321020c2dd685769e837d24bcc5520c44f84c13f954183cf0d09"
     },
     {
       "file": "life-replay.json",
@@ -201,8 +201,9 @@
     },
     {
       "file": "world-check.txt",
-      "bytes": 11883,
-      "sha256": "397a21e278cf0379e4e4c140fd5c883e571bbaff93aeb0a7d6a4bd145bbd9109"
+      "bytes": 11709,
+      "sha256": "0c66a253f0c823b32a01b13f9d022b3cf14b66901b985da48372699922332e6d"
     }
-  ]
+  ],
+  "artifactHashEncoding": "UTF-8 with CRLF normalized to LF; bytes is the normalized byte length"
 }
