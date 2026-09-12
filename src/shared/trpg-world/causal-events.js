@@ -134,7 +134,7 @@ export function causalActions(state,content,target) {
   const npc=state.npcs[target.id];
   if(npc?.injury&&!npc.injury.treated&&!npc.entrapment)actions.push({id:'tend',type:'causal',label:'傷を手当てする · 傷薬1つ',requirements:{items:{medicine:1}},available:(state.player.inventory.medicine||0)>0,missing:['傷薬1つ']});
   if((npc?.injury?.treated||npc?.causalAssignment&&!npc.injury)&&!npc.companionOf)actions.push({id:'escort',type:'causal',label:'身体を支えて、一緒に歩く'});
-  if(npc?.companionOf)actions.push({id:'release',type:'causal',label:'ここで待っていてもらう'});
+  if(npc?.companionOf==='player')actions.push({id:'release',type:'causal',label:'ここで待っていてもらう'});
   for(const definition of causalDefinitions(content)) {
     if(definition.type==='institution') {
       for(const doc of definition.documents)if(doc.targetId===target.id&&!state.knowledge.some(k=>k.id===`document:${definition.eventId}:${doc.id}`))actions.push({id:`read:${definition.eventId}:${doc.id}`,type:'causal',label:`${doc.title}を読む`});

@@ -32,3 +32,22 @@ test('the same infrastructure handles fire, evacuation, extinguishing and repair
  const c=aftermathFixture('fire'),r=new WorldReplay(c);ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));assert.equal(r.state.structures.site.fire,100);assert(r.state.npcs.witness.planHistory.some(p=>p.goal==='evacuate'));assert(r.state.socialFacts.some(f=>f.kind==='structural-damage'));
  ok(prepare(r,{items:{rope:1,timber:4},skills:['crafting']}));for(const action of ['extinguish','clear-rubble','shore'])ok(performAt(r,r.view().region.objects.find(o=>o.id==='site'),'maintain',{action}));assert.equal(r.state.structures.site.fire,0);assert.equal(r.state.structures.site.blocked,false);assert.equal(r.state.events.hazard.status,'failed');assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });
+test('a non-witness hears the shelter account and discloses its provenance, never hidden cause or deadline',()=>{
+ const c=aftermathFixture();c.events[0].description='HIDDEN_CONSPIRACY';c.events[0].cause='PRIVATE_SOLUTION';
+ c.npcs.push({id:'listener',name:'宿の人',region:'village',home:[-38,0,0],work:[-38,0,0],role:'宿主',knowledge:[]});
+ const r=new WorldReplay(c);ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));
+ const account=r.state.npcs.listener.knowledge.find(k=>k.kind==='site-observation');assert(account,'a physical encounter must transmit the account');assert.equal(account.source.type,'heard');
+ assert.equal(r.state.npcs.listener.memories.find(m=>m.factId===account.belief.factId).source.type,'heard');
+ ok(performAt(r,r.view().npcs.find(n=>n.id==='listener'),'interact',{action:'talk'}));const ask=r.options().find(o=>o.command.intentId?.startsWith('ask:site:'));assert(ask);ok(r.select(ask));
+ assert(r.view().leads.some(l=>l.targetId==='site'));const publicData=JSON.stringify(r.view());assert(!publicData.includes('HIDDEN_CONSPIRACY'));assert(!publicData.includes('PRIVATE_SOLUTION'));assert(!r.view().knownEvents.some(e=>e.deadline!==undefined));assert(r.state.knowledge.find(k=>k.kind==='site-observation').testimony.chain.length>=2);
+});
+test('giving real medicine lets a knowledgeable professional search, treat and escort through the shared planner',()=>{
+ const c=aftermathFixture();c.npcs[1].role='救護係';const r=new WorldReplay(c);ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));
+ ok(prepare(r,{items:{timber:5,rope:2},skills:['crafting']}));for(const action of ['drain','shore','clear-rubble'])ok(performAt(r,r.view().region.objects.find(o=>o.id==='site'),'maintain',{action}));
+ assert(!r.state.npcs.witness.possessions.medicine);assert.equal(r.state.npcs.worker.care.status,'injured');
+ ok(performAt(r,{id:'witness',position:[-40,0,0]},'interact',{action:'talk'}));
+ let gift;for(let i=0;i<5&&!gift;i++){gift=r.options().find(o=>o.command.intentId==='offer-medicine');if(!gift){const next=r.options().find(o=>o.intent==='CHANGE_TOPIC');assert(next);ok(r.select(next));}}
+ assert(gift);ok(r.select(gift,'救護係へ実際の傷薬を渡す'));const record=r.export(),fork=replay(c,record);
+ for(const run of [r,fork]){ok(run.command({type:'resume'}));ok(performAt(run,run.view().region.objects.find(o=>o.id==='inn'),'rest'));assert.equal(run.state.npcs.worker.care.status,'recovered',JSON.stringify({helper:run.state.npcs.witness,patient:run.state.npcs.worker}));assert.equal(run.state.npcs.witness.possessions.medicine,0);assert(run.state.npcs.witness.planHistory.some(p=>p.goal==='aftermath-rescue'&&p.actions.includes('first-aid')));}
+ assert.equal(digest(fork.state),digest(r.state));assert.equal(r.state.events.hazard.status,'failed');
+});

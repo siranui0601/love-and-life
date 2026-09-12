@@ -41,8 +41,9 @@ function log(state,text,kind='action',eventId=null) {
   state.notifications.push(entry); if (state.notifications.length > 12) state.notifications.shift();
   return entry;
 }
-function factFor(event,current,state,source) {
-  return {id:`event:${event.id}`,kind:'event',eventId:event.id,text:event.description || event.name,region:event.region,
+function factFor(event,current,state,source,content) {
+  const structure=(content.structures||[]).find(s=>s.hazardEventId===event.id),physical=structure&&structureObservation(state,content,structure.targetId);
+  return {id:`event:${event.id}`,kind:'event',eventId:event.id,text:physical?.text||event.description || event.name,region:event.region,
     status:current.status,observedAt:state.time,source,confidence:source.type==='heard'?.7:1};
 }
 function learnEvent(state,content,eventId,source,actor=state.player) {
@@ -50,7 +51,7 @@ function learnEvent(state,content,eventId,source,actor=state.player) {
   if (!event || !current) return false;
   const knowledge = actor === state.player ? state.knowledge : actor.knowledge;
   const existing = knowledge.find(k=>k.eventId===eventId);
-  const fact = factFor(event,current,state,source);
+  const fact = factFor(event,current,state,source,content);
   if (!existing) {
     knowledge.push(fact);
     if (actor === state.player) { log(state,`知ったこと：${event.name}`,'knowledge',event.id); awardXp(state,12,`discover:${event.id}`); }
@@ -282,7 +283,7 @@ function socialTick(state,content) {
       exchangeCrimeMemories(state,speaker,listener);
       const fact=speaker.knowledge.find(k=>k.kind!=='secret'&&k.disclosure?.visibility!=='private'&&(!k.belief?.factId||!speaker.memories.some(m=>m.factId===k.belief.factId&&m.status==='forgotten'))&&!listener.knowledge.some(l=>l.id===k.id)); if(!fact) continue;
       const transmission={from:speaker.id,to:listener.id,at:state.time,region:speaker.region,position:[...speaker.position]};
-      listener.knowledge.push({...clone(fact),receivedAt:state.time,transmissions:[...(fact.transmissions||[]),transmission].slice(-16),confidence:Math.max(.35,fact.confidence*.85),source:{type:'heard',actorId:speaker.id,origin:fact.source?.origin||fact.source}});
+      listener.knowledge.push({...clone(fact),receivedAt:state.time,transmissions:[...(fact.transmissions||[]),transmission].slice(-16),confidence:Math.max(.35,(fact.confidence??1)*.85),source:{type:'heard',actorId:speaker.id,origin:fact.source?.origin||fact.source}});
       const memory=recalled(speaker,fact.belief?.factId||fact.id);if(memory)hearTestimony(state,listener,speaker,testimony(state,speaker,memory));
       if(fact.belief&&!listener.beliefs.some(b=>b.id===fact.belief.id)){listener.beliefs.push({...clone(fact.belief),confidence:Math.max(.2,fact.belief.confidence*.85),source:{type:'heard',actorId:speaker.id,previous:clone(fact.belief.source)},receivedAt:state.time});listener.nextDecision=0;}
     }
@@ -791,7 +792,7 @@ export function projectWorld(state,content) {
   const cleanObject=o=>({id:o.id,name:o.eventId&&!knownIds.has(o.eventId)?'気になる現場':o.name,kind:o.kind,position:clone(o.position),asset:o.asset,rotation:o.rotation || 0,scale:o.scale || 1,interior:o.interior,crafting:o.crafting,buildingPosition:o.buildingPosition,width:o.width,depth:o.depth,height:o.height});
   const publicRegion={id:region.id,name:region.name,biome:region.biome,color:region.color,size:region.size,spawn:clone(region.spawn),description:region.description,worldPosition:clone(region.worldPosition),
     obstacles:clone(region.obstacles || []),terrain:clone(region.terrain || {}),objects:(region.objects || []).map(o=>cleanObject({...o,...state.facilities?.[o.id]})),portals:clone(region.portals || [])};
-  const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&!n.entrapment&&distance(n.position,p.position)<90&&hasLineOfSight(region,p.position,n.position)).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.role,position:clone(n.position),activity:n.activity,hp:n.hp,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
+  const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&!n.entrapment&&distance(n.position,p.position)<90&&hasLineOfSight(region,p.position,n.position)).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.role,position:clone(n.position),activity:n.activity,hp:n.hp,condition:n.injury&&['leg','burn','crush'].includes(n.injury.kind)?{kind:n.injury.kind,treated:n.injury.treated}:undefined,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
   const candidates=[...(region.objects || []).map(o=>({...o,...state.facilities?.[o.id]})),...nearbyNpcs.filter(n=>n.hp>0).map(n=>({...n,kind:'npc'})),...(content.events || []).filter(e=>e.region===p.region&&knownIds.has(e.id)).map(e=>({id:`event:${e.id}`,kind:'event',eventId:e.id,name:e.name,position:e.position || [0,0,0]}))];
   const interactables=candidates.filter(t=>distance(t.position,p.position)<=INTERACTION&&hasLineOfSight(region,p.position,t.position)).map(t=>({...cleanObject(t),distance:distance(t.position,p.position),actions:actionsFor(state,content,t)}));
   interactables.push(...propertyView(state,content).filter(o=>!o.held));

@@ -24,6 +24,7 @@ function choices(state,npc,session) {
   const share=[...state.knowledge].sort((a,b)=>a.id.localeCompare(b.id,'en')).find(k=>!npc.knowledge.some(n=>n.id===k.id));
   if(share)options.push({id:`share:${share.id}`,intent:share.kind==='event'?'WARN':'SHARE_INFORMATION',family:'share',factId:share.id,label:share.kind==='event'?'見聞きした危険を伝える':'知っている話を伝える'});
   if(state.player.inventory.supplies>0&&npc.hunger>60)options.push({id:'offer-food',intent:'OFFER_HELP',family:'offer',label:'持っている食料を渡す'});
+  if(state.player.inventory.medicine>0&&visibleTopics(state,npc).some(k=>k.kind==='site-observation'))options.push({id:'offer-medicine',intent:'OFFER_HELP',family:'medical-supplies',label:'手当てに使える傷薬を一つ渡す'});
   if(npc.possessions.supplies>0&&state.player.hunger>50)options.push({id:'request-food',intent:'REQUEST_HELP',family:'request',label:'食べ物を分けてもらえないか頼む'});
   options.push({id:'lie-health',intent:'LIE',family:'claim',label:'本当の状態とは関係なく「病気だ」と言う'});
   const limit=options.length>4?3:4,start=session.topicCursor||0;
@@ -77,7 +78,8 @@ export function converse(state,content,command) {
     npc.knowledge.push({...structuredClone(known),receivedAt:state.time,source:{type:'heard',actorId:'player',previous:structuredClone(known.source)}});
     if(known.testimony)hearTestimony(state,npc,{id:'player'},known.testimony);
     session.disclosures.push({factId:known.id,from:'player',to:npc.id,at:state.time});npc.nextDecision=0;session.utterance='分かった。自分でも気をつけて確かめよう。';
-  } else if(choice.family==='offer') {state.player.inventory.supplies--;deliverSupplies(state,content,npc);session.utterance='今ちょうど食べ物が必要だった。受け取るよ。';}
+  } else if(choice.family==='medical-supplies') {state.player.inventory.medicine--;npc.possessions.medicine=(npc.possessions.medicine||0)+1;rememberAction(state,content,'gift',{targetId:npc.id,payload:{itemId:'medicine',quantity:1,purpose:'medical-response'}});npc.nextDecision=0;session.utterance='傷薬を受け取った。手当てが必要な人のために使おう。';}
+  else if(choice.family==='offer') {state.player.inventory.supplies--;deliverSupplies(state,content,npc);session.utterance='今ちょうど食べ物が必要だった。受け取るよ。';}
   else if(choice.family==='request') {
     if(willingToCooperate(state,npc,{resourceCost:1,purpose:'food'})){npc.possessions.supplies--;state.player.inventory.supplies=(state.player.inventory.supplies||0)+1;rememberAction(state,content,'gift',{actorId:npc.id,targetId:'player',payload:{itemId:'supplies',quantity:1}});session.utterance='一つなら分けられる。';}
     else session.utterance='今は自分の分を手放せない。';

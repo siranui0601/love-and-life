@@ -1,6 +1,7 @@
 import {consumeResources,recordMilestone} from './world-semantics.js';
 import {rememberAction} from './relationships.js';
 import {siteDescription} from './aftermath.js';
+import {distance} from './navigation.js';
 export const DEFAULT_STRUCTURES=[{id:'deep-shaft',targetId:'LOC_DWARF_MINE',region:'dwarf',hazardEventId:'deep-mine',
  initial:{integrity:35,water:60,operating:true},safe:{integrity:80,water:5,operating:false},damagePerHour:8,shelterId:'LOC_DWARF_INN',
  failure:{kind:'collapse',exposureRange:10,effects:{integrity:0,blocked:true,operating:false}},
@@ -33,7 +34,8 @@ export function advanceStructures(state,content,seconds) {
 }
 export function structureObservation(state,content,targetId) {
  const spec=(content.structures||[]).find(s=>s.targetId===targetId);if(!spec)return null;
- const s=state.structures[spec.id];return {text:`${siteDescription(s)}${s.operating?'作業は続いている。':'入口は閉じられ、作業は止まっている。'}${s.water>spec.safe.water?'水が溜まっている。':'排水は通っている。'}${s.integrity<spec.safe.integrity?'支柱にはひびがある。':'支柱は補強されている。'}`,work:structureActions(state,content,targetId)};
+ const s=state.structures[spec.id],site=content.regions.find(r=>r.id===spec.region)?.objects.find(o=>o.id===targetId),voices=site&&(s.casualties||[]).some(id=>state.npcs[id]?.hp>0&&distance(state.npcs[id].position,site.position)<12);
+ return {text:`${siteDescription(s,voices)}${s.operating?'作業は続いている。':'入口は閉じられ、作業は止まっている。'}${s.water>spec.safe.water?'水が溜まっている。':'排水は通っている。'}${s.integrity<spec.safe.integrity?'支柱にはひびがある。':'支柱は補強されている。'}`,work:structureActions(state,content,targetId)};
 }
 export function structureActions(state,content,targetId) {
  initializeStructures(state,content);const p=state.player,actions=[];
