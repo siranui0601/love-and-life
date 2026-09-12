@@ -2,7 +2,7 @@ import {findPath,distance} from '../../../src/shared/trpg-world/navigation.js';
 import {MOVEMENT} from '../../../src/shared/trpg-world/progression.js';
 import {observePlayer,choosePolicy} from './policies.mjs';
 import {digest,WorldReplay} from './replay.mjs';
-import {prepare} from './action-domain.mjs';
+import {prepare,engage} from './action-domain.mjs';
 export function walk(run,target) {
  run.command({type:'resume'});const region=run.view().region;
  const path=findPath(region,run.state.player.position,target);
@@ -21,7 +21,9 @@ export function runPolicy(content,name,{seed=1,decisions=12,initialState}={}) {
  for(let i=0;i<decisions;i++) {
   const view=run.view(),options=run.options(),observation=observePlayer(view,options),decision=choosePolicy(name,observation,experience);
   if(decision.stop){stopped=decision.stop;break;}
-  if(decision.action!==undefined)run.select(options[decision.action],decision.reason);
+  if(decision.prepare||decision.combat){const result=decision.prepare?prepare(run,decision.prepare):engage(run,decision.combat);if(result.error){stopped=result.error;run.trace.push({index:run.operations.length,reason:decision.reason,result});break;}}
+  else if(decision.observeSeconds)run.advance(decision.observeSeconds);
+  else if(decision.action!==undefined)run.select(options[decision.action],decision.reason);
   else if(decision.walk) {
    if(decision.lead!==undefined){const lead=(view.leads||[]).filter(l=>l.region===view.region.id)[decision.lead];run.command({type:'track',leadId:lead.id},{reason:decision.reason});}
    const start=run.operations.length,moved=walk(run,decision.walk);

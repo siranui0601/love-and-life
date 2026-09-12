@@ -1,4 +1,5 @@
 import {orderedValues} from './semantic.js';
+import {initializeStructures,advanceStructures,structureSafe} from './infrastructure.js';
 import {conditionHolds,consumeResources,depositDocuments,recordMilestone} from './world-semantics.js';
 import {distance,followPath,hasLineOfSight} from './navigation.js';
 import {rememberAction} from './relationships.js';
@@ -11,9 +12,11 @@ export const DEFAULT_CAUSAL_SCENARIOS=[
       {id:'registry',targetId:'LOC_CAP_OFFICE',title:'土地台帳の写し',text:'土地台帳には寄付契約が登記されている。立ち退き申請にその注記がない。'},
       {id:'debt',targetId:'LOC_CAP_MARKET',title:'納品と請求の控え',text:'孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。'}]},
   {eventId:'roots',sourceIds:['T13'],type:'ecosystem',deviceId:'LOC_FOREST_RIVER',dependentEvents:['resonance','border'],affectedRegion:'elf'},
+  {eventId:'deep-mine',sourceIds:['T09'],type:'infrastructure',structures:['deep-shaft']},
 ];
 export function causalDefinitions(content) {return content.causalScenarios||DEFAULT_CAUSAL_SCENARIOS.filter(s=>content.events.some(e=>e.id===s.eventId));}
 export function initializeCausality(state,content) {
+  initializeStructures(state,content);
   state.facilities||={};state.causalObjects||={};
   for(const event of content.events||[]) {
     const current=state.events[event.id];if(!current)continue;
@@ -42,12 +45,17 @@ function settle(state,event,status,evidence) {
 }
 export function advanceCausality(state,content,seconds) {
   initializeCausality(state,content);
+  advanceStructures(state,content,seconds);
   const byId=new Map(content.events.map(e=>[e.id,e]));
   for(const definition of causalDefinitions(content)) {
     const event=byId.get(definition.eventId),current=state.events[event.id],causal=current.causal;
     if(causal.model==='legacy-settled'||['resolved','prevented'].includes(causal.componentStatus))continue;
     const region=content.regions.find(r=>r.id===event.region);
-    if(definition.type==='return-person') {
+    if(definition.type==='infrastructure'&&!['resolved','prevented','failed'].includes(current.status)) {
+      const structures=(definition.structures||[]).map(id=>(content.structures||[]).find(s=>s.id===id));
+      if(structures.length&&structures.every(s=>s&&structureSafe(state,s)))settle(state,event,state.time<event.startsAt?'prevented':'resolved',structures.flatMap(s=>state.structures[s.id].milestones.map(m=>m.evidence)));
+      else if(structures.some(s=>s&&state.structures[s.id].integrity<=0))failCausality(state,content,event);
+    } else if(definition.type==='return-person') {
       const person=state.npcs[definition.personId],family=state.npcs[definition.familyId];if(!person||!family)continue;
       if(causal.phase==='home'&&state.time>=event.startsAt&&person.hp>0) {causal.phase='excursion';person.causalAssignment=event.id;}
       if(causal.phase==='excursion'&&!person.companionOf) {
@@ -72,10 +80,10 @@ export function advanceCausality(state,content,seconds) {
       }
     } else if(definition.type==='institution'&&!['resolved','prevented','failed'].includes(current.status)) {
       const office=region.objects.find(o=>o.id===definition.officeId);
-      // A real clerk at work reviews the documents deposited in that office.
+      // Zero-time physical reevaluation cannot perform a clerk's work during a paused decision.
       const clerk=office&&orderedValues(state.npcs).find(n=>n.hp>0&&!n.travel&&n.region===event.region&&distance(n.position,office.position)<5&&
         content.npcs.some(t=>t.id===n.id&&(/役人|役所|文官|行政|官吏/.test(t.role||'')||t.workFacilityId===definition.officeId)));
-      if(clerk&&conditionHolds(state,content,{type:'field',path:['events',event.id,'causal','submitted'],op:'contains-all',value:definition.documents.map(d=>d.id)})) {
+      if(seconds>0&&clerk&&conditionHolds(state,content,{type:'field',path:['events',event.id,'causal','submitted'],op:'contains-all',value:definition.documents.map(d=>d.id)})) {
         causal.reviewed=true;causal.tenure='protected';
         const fact=rememberAction(state,content,'document-review',{actorId:clerk.id,targetId:definition.facilityId,payload:{documents:[...causal.submitted]}});
         settle(state,event,'resolved',fact.id);

@@ -5,6 +5,7 @@ import {walk,travelTo} from './journey.mjs';
 // It never grants resources or queries the hidden event solution. Every leaf
 // rechecks the live public offer at the actual location before executing it.
 export function performAt(run,target,type,parameter={},reason='現地で提示された行動を行う') {
+ if(!target)return {error:'FIRST_MISSING_AFFORDANCE',reason:'対象は今見えていない',type,parameter};
  if(target.region&&target.region!==run.view().region.id){const travel=travelTo(run,target.region);if(travel.error)return travel;}
  const moved=walk(run,target.position);if(moved.error)return moved;
  // A person can walk while being approached. Follow their observed position;
@@ -59,6 +60,15 @@ export function engage(run,targetId,{maxSeconds=60}={}) {
   run.advance(.2);elapsed+=.2;
  }
  return {error:'COMBAT_SEARCH_LIMIT',seconds:elapsed};
+}
+export function secureArea(run,{maxOpponents=6}={}) {
+ run.command({type:'resume'});
+ for(let count=0;count<maxOpponents;count++) {
+  const view=run.view();if(view.player.collapse?.status==='active')return {error:'player-collapsed'};
+  const threat=view.monsters.find(m=>m.activity==='attack'||distance(m.position,view.player.position)<12);
+  if(!threat)return {safe:true};const result=engage(run,threat.id);if(result.error)return result;
+ }
+ return {error:'ENCOUNTER_SEARCH_LIMIT'};
 }
 
 export function decisionCounts(record) {

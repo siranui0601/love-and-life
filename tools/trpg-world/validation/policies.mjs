@@ -4,6 +4,8 @@ export function observePlayer(view,options) {
  return {location:view.region.name,position:view.player.position,health:view.player.hp,gold:view.player.gold,
   knowledge:[...view.knownEvents.map(e=>e.description),...(view.notes||[]).map(n=>n.text)],
   arrivalStatus:view.arrival?.status,arrivalMessage:view.arrival?.message,arrivalAction:view.arrival?.status==='available'?options.findIndex(o=>o.command.targetId===view.arrival.targetId&&o.command.action===view.arrival.expectedAction):-1,
+  preparation:view.arrival?.status==='requirements-missing'?view.interactables.find(t=>t.id===view.arrival.targetId)?.actions.find(a=>a.id===view.arrival.expectedAction)?.requirements:undefined,
+  threats:view.monsters.filter(m=>m.activity==='attack').map(m=>({handle:m.id,name:m.name})),
   conversation:!!view.conversation,actions:options.map((o,handle)=>({handle,label:o.label,target:o.targetName,kind:o.command.type,intent:o.intent,progress:o.progress})),
   leads:(view.leads||[]).filter(l=>l.region===view.region.id).map((l,handle)=>({handle,label:l.label,explanation:l.explanation,position:l.position})),
   places:view.region.objects.filter(o=>!view.player.inspections?.[o.id]).map(o=>({handle:o.id,name:o.name,kind:o.kind,position:o.position})),
@@ -24,7 +26,9 @@ export function choosePolicy(name,observation,experience={people:[]}) {
  }
  if(name!=='blind-explorer'&&name!=='chaotic') {
   if(o.arrivalAction>=0)return {action:o.arrivalAction,reason:'到着先に提示された、目的の調査を実行する'};
-  if(o.arrivalStatus==='requirements-missing')return {stop:'preparation-policy-not-implemented',reason:o.arrivalMessage};
+  if(o.threats?.length)return {combat:o.threats[0].handle,reason:'襲ってくる目の前の敵から身を守る'};
+  if(o.arrivalStatus==='requirements-missing')return o.preparation?{prepare:o.preparation,reason:o.arrivalMessage}:{stop:'FIRST_MISSING_AFFORDANCE',reason:'公開された必要条件を読み取れない'};
+  if(o.arrivalStatus==='waiting-companion')return {observeSeconds:1,reason:'同行者と家族の様子を見守る'};
   const useful=o.actions.find(a=>a.progress);if(useful)return {action:useful.handle,reason:'公開された調査行動で、今持っていない情報を得る'};
   const lead=o.leads[0];if(lead)return {lead:lead.handle,walk:lead.position,reason:lead.explanation};
  }

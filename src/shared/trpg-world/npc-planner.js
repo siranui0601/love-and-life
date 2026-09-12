@@ -19,7 +19,7 @@ function context(state,content,npc,template,chosen) {
  const work=template.region===npc.region?template.work:region.objects.find(o=>o.kind==='job')?.position||home;
  const locations={home,work,goal:chosen.target||home,...(shop?{shop:shop.position}:{})};
  const facts={location:Object.keys(locations).find(k=>distance(npc.position,locations[k])<2)||'elsewhere',food:(npc.possessions?.supplies||0)>0,
-  money:npc.money>=4,stock:state.regions[npc.region].stock>.15,shop:!!shop,sated:npc.hunger<25,done:false,
+  money:npc.money>=4,workOpen:!npc.knowledge.some(k=>k.kind==='workplace-closure'&&k.targetId===template.workFacilityId),stock:state.regions[npc.region].stock>.15,shop:!!shop,sated:npc.hunger<25,done:false,
   forage:/森|狩|農|野/.test(`${template.role||''} ${region.name||''}`),helper:orderedValues(state.npcs).some(n=>n.id!==npc.id&&n.hp>0&&!n.travel&&n.region===npc.region&&distance(n.position,npc.position)<5&&(n.possessions?.supplies||0)>1&&willingToCooperate(state,n,{actorId:npc.id,resourceCost:1}))};
  return {facts,locations,shop};
 }
@@ -28,12 +28,12 @@ export function planForGoal(state,content,npc,template,chosen) {
  const {facts,locations,shop}=context(state,content,npc,template,chosen),operators=[];
  for(const [place,position] of Object.entries(locations))operators.push({action:'move',place,position:[...position],region:npc.region,preconditions:{},effects:{location:place},cost:1+distance(npc.position,position)/20,expectedDuration:distance(npc.position,position)/1.55*(content.time?.scale||60)});
  if(chosen.goal==='eat')operators.push(
-  {action:'work',preconditions:{location:'work',money:false},effects:{money:true},pay:6,expectedDuration:3600,cost:6},
+  {action:'work',preconditions:{location:'work',money:false,workOpen:true},effects:{money:true},pay:6,expectedDuration:3600,cost:6},
   {action:'purchase-food',targetId:shop?.id,preconditions:{location:'shop',shop:true,stock:true,money:true},effects:{food:true,money:false},expectedDuration:300,cost:1},
   {action:'forage',preconditions:{location:'home',forage:true},effects:{food:true},expectedDuration:2700,cost:5},
   {action:'request-food',preconditions:{helper:true},effects:{food:true},expectedDuration:600,cost:2},
   {action:'consume-food',preconditions:{food:true,location:'home'},effects:{food:false,sated:true},expectedDuration:900,cost:1});
- else operators.push({action:chosen.goal==='sleep'?'rest':chosen.goal==='work'?'work':'observe',preconditions:{location:'goal'},effects:{done:true},expectedDuration:1800,cost:1,pay:3});
+ else operators.push({action:chosen.goal==='sleep'?'rest':chosen.goal==='work'?'work':'observe',preconditions:{location:'goal',...(chosen.goal==='work'?{workOpen:true}:{})},effects:{done:true},expectedDuration:1800,cost:1,pay:3});
  const goal=chosen.goal==='eat'?{sated:true}:{done:true};const steps=searchPlan(facts,goal,operators);
  return {id:`plan:${state.nextId++}`,goal:chosen.goal,desired:goal,region:npc.region,status:steps?'active':'blocked',steps:steps||[],cursor:0,createdAt:state.time,
   requiredKnowledge:(npc.beliefs||[]).filter(b=>!b.checkedAt&&b.place?.region===npc.region).map(b=>b.factId),locations,chosen:structuredClone(chosen),failureCondition:'precondition/resource/location changes',reasons:(npc.memories||[]).filter(m=>m.kind==='promise-kept').map(m=>m.factId)};

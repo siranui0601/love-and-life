@@ -54,7 +54,7 @@ export function resolveEnemyAction(state,content,monster,template){
   delete monster.intent;
   const p=state.player,scale=1;
   const region=content.regions.find(r=>r.id===monster.region);
-  const targetStillThere=p.region===monster.region&&playerIsLocal(state)&&distance(p.position,monster.position)<(template.range||2.8)+2&&distance(p.position,intent.position)<3&&hasLineOfSight(region,monster.position,p.position);
+  const targetStillThere=p.hp>0&&p.collapse?.status!=='active'&&p.region===monster.region&&playerIsLocal(state)&&distance(p.position,monster.position)<(template.range||2.8)+2&&distance(p.position,intent.position)<3&&hasLineOfSight(region,monster.position,p.position);
   let totalDamage=0;
   const criticalChance=intent.effects.find(e=>e.command==='MODIFY_CRITICAL')?.criticalChance||0;
   const critical=criticalChance&&rng(state)*100<criticalChance?1.5:1;
@@ -72,7 +72,7 @@ export function resolveEnemyAction(state,content,monster,template){
       const barrier=p.specialStates?.barrier;
       if(barrier){const absorbed=Math.min(barrier.capacity||0,damage);damage-=absorbed;barrier.capacity-=absorbed;}
       if(p.guarding)p.stamina=Math.max(0,p.stamina-8);
-      p.hp-=damage;totalDamage+=damage;p.lastAttack=state.simulationTime;
+      p.hp=Math.max(0,p.hp-damage);totalDamage+=damage;p.lastAttack=state.simulationTime;
     } else if(effect.command==='HEAL')target.hp=Math.min(target.maxHp,target.hp+Math.round(target.maxHp*Math.min(.3,effect.ratio||.15)));
     else if(effect.command==='MODIFY_RESOURCE'){const resource=effect.resource;if(['hp','mp','stamina'].includes(resource)){const maximum=target[`max${resource[0].toUpperCase()+resource.slice(1)}`]||100;target[resource]=Math.max(0,Math.min(maximum,(target[resource]||0)+(effect.amount||0)+maximum*(effect.amountRatio||0)));}}
     else if(effect.command==='APPLY_MODIFIER'){target.modifiers||={};target.modifiers[effect.modifier]={stage:Math.max(-3,Math.min(3,effect.stage||0)),expiresAt:state.simulationTime+Math.max(2,effect.durationTurns||2)*2*scale};}
@@ -86,7 +86,7 @@ export function resolveEnemyAction(state,content,monster,template){
     else if(effect.command==='MODIFY_FIELD'){state.fields||={};state.fields[monster.region]={id:effect.fieldEffect,expiresAt:state.simulationTime+15*scale};}
     else if(effect.command==='REMOVE_MODIFIER'){const entry=target.modifiers?.[effect.modifier];if(entry&&(effect.direction!=='negative'||entry.stage<0))delete target.modifiers[effect.modifier];}
     else if(effect.command==='MODIFY_ESCAPE'){if(rng(state)*100<35+(effect.bonus||0)){monster.fleeUntil=state.simulationTime+30*scale;monster.activity='flee';}}
-    else if(effect.command==='COPY_LAST_ENEMY_SKILL'&&targetStillThere&&p.lastCombatDamage){const damage=Math.max(1,Math.round(p.lastCombatDamage*(effect.powerMultiplier||.75)));p.hp-=damage;totalDamage+=damage;}
+    else if(effect.command==='COPY_LAST_ENEMY_SKILL'&&targetStillThere&&p.lastCombatDamage){const damage=Math.max(1,Math.round(p.lastCombatDamage*(effect.powerMultiplier||.75)));p.hp=Math.max(0,p.hp-damage);totalDamage+=damage;}
     else if(effect.command==='SUMMON_UNIT'){
       let candidates=(content.monsters||[]).filter(m=>m.region===monster.region&&!m.boss&&!m.sourceCondition);
       if(effect.unitPool==='slime_fragment')candidates=(content.monsters||[]).filter(m=>!m.boss&&/スライム/.test(m.name));

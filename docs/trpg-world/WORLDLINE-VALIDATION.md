@@ -1,5 +1,7 @@
 # Playability and worldline validation — implementation record
 
+Current continuation: [ordinary preparation, rescue/combat and infrastructure worldlines](PREPARED-WORLDLINES.md). The results below remain the historical checkpoint evidence, not the latest test counts.
+
 Starting SHA: `7b8d88dfbe671730734373ade4441f697983d489`, branch `feat/persistent-world-rpg`, clean and equal to origin at start.
 
 ## Source and scope

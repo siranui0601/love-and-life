@@ -25,4 +25,20 @@ Paid LLM calls: 0. USER DECISION REQUIRED: none.
 
 ## Continuation
 
-Next: a reusable physical infrastructure component for a distinct unadapted crisis, then regression and a longer ordinary-life continuation if the content supports it. Full all-Trouble feasibility, arbitrary transport timing partition invariance and browser visual review remain uncertified. No claim of whole-game completion.
+The next section supersedes this historical continuation point. Full all-Trouble feasibility, arbitrary transport timing partition invariance and browser visual review remain uncertified. No claim of whole-game completion.
+
+## Recovered architecture checkpoint
+
+First checkpoint: `16c47cda031581774a399d3f13580062a4be3834`, safely pushed to the dedicated branch. On resumption, that local and remote HEAD matched; 17 tracked modifications and one new infrastructure module were recovered without reverting them (including the subsequently strengthened regression assertion).
+
+The recovered implementation adds reusable structure integrity, water, operation state, resource-backed maintenance, physical milestones and nearby workplace-closure knowledge. T09 binds this infrastructure to the deep mine. Closing access, draining and reinforcing require actual resources, lessons and elapsed work; the maintenance command changes the structure, not the event outcome. The independent causal evaluator determines prevention. Post-collapse rescue of the trapped master is NOT migrated.
+
+Public responses now omit unknown region catalog entries/routes and actors hidden behind obstacles. Investigation work is based on the player's inspected snapshot, not remote live physical state. The misleading pre-excursion missing-boy description was corrected in the compiler and regenerated content. Ordinary preparation and visible combat are integrated into the aware policy, including explicit missing-affordance results. Escort discovery uses visible living actors and the acquired destination testimony.
+
+Two runtime defects were exposed by these paths: immediate physical completion previously waited for an unpause; downed players could continue receiving stale enemy damage below zero. Physical conditions now reevaluate at command completion, while a clerk's document review still requires a positive calendar step and physical presence. Collapse ends active combat, preserves HP at zero and permits subsequent rescue/world progression. The rescue validator checks additional visible threats and rejects a collapsed final player rather than calling an objective-only result healthy gameplay.
+
+Generated content is `world-10d-10c3365b9e26`. An explicit old-v2 content hash to this exact target hash migration preserves the checkpoint's time, knowledge, inventory, entities and outcomes and adds structure state. The representative recorded v2 state passes service load/save/reload; the five actual historical v1 fixtures remain intact and pass. This is not wildcard future compatibility.
+
+Verification before this checkpoint: focused preparation, PASS 2, service, semantic and core semantics tests **54 PASS / 0 FAIL / 0 SKIP**. Full `npm run world:check` completed with exit 0: **98 PASS / 0 FAIL / 0 SKIP**, content audit, assets and client build PASS. Its first recovery run failed one existing clerk-presence assertion; the premature zero-time review was fixed, the assertion strengthened, and both suites rerun. No remaining observed regression. Four full causal migrations remain flagged by audit: bread-fire, harbor, resonance, border; combined-event partial components also remain.
+
+The next operation is a safe checkpoint push, followed by production T09 and ordinary-life traces against that checkpoint. Browser visual review is not part of this recovery verification. Paid LLM calls: 0. USER DECISION REQUIRED: none.

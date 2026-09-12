@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-24de1ef85209",
+  "revision": "world-10d-10c3365b9e26",
   "time": {
     "days": 10,
     "scale": 60,
@@ -904,7 +904,7 @@
           "asset": "crate",
           "eventId": "lost-road",
           "evidenceId": "lost-road:proof",
-          "description": "村外れで少年の足跡が途絶えた。森から押し出された赤牙狼が、街道へ降りている。 調べた痕跡を手帳へ写した。"
+          "description": "村外れに小さな足跡が続いている。北の道から獣の声がする。 調べた痕跡を手帳へ写した。"
         },
         {
           "id": "evidence:bread-fire",
@@ -24500,7 +24500,7 @@
       "startsAt": 32400,
       "deadline": 158400,
       "severity": "major",
-      "description": "村外れで少年の足跡が途絶えた。森から押し出された赤牙狼が、街道へ降りている。",
+      "description": "村外れに小さな足跡が続いている。北の道から獣の声がする。",
       "cause": "大型魔獣による縄張り移動と少年の単独探検。",
       "sourceIds": [
         "T01",
@@ -24530,7 +24530,7 @@
       "signals": [
         {
           "kind": "local",
-          "text": "村外れで少年の足跡が途絶えた。森から押し出された赤牙狼が、街道へ降りている。"
+          "text": "村外れに小さな足跡が続いている。北の道から獣の声がする。"
         }
       ]
     },
@@ -24691,8 +24691,10 @@
         "T09"
       ],
       "reward": 90,
-      "causalSourceIds": [],
-      "causalStatus": "unadapted",
+      "causalSourceIds": [
+        "T09"
+      ],
+      "causalStatus": "partial",
       "opposition": {
         "monsterId": "MON-0049",
         "description": "現場に存在する脅威。排除だけでは事件全体の解決を意味しない。"
@@ -24905,6 +24907,79 @@
         "border"
       ],
       "affectedRegion": "elf"
+    },
+    {
+      "eventId": "deep-mine",
+      "sourceIds": [
+        "T09"
+      ],
+      "type": "infrastructure",
+      "structures": [
+        "deep-shaft"
+      ]
+    }
+  ],
+  "structures": [
+    {
+      "id": "deep-shaft",
+      "targetId": "LOC_DWARF_MINE",
+      "region": "dwarf",
+      "hazardEventId": "deep-mine",
+      "initial": {
+        "integrity": 35,
+        "water": 60,
+        "operating": true
+      },
+      "safe": {
+        "integrity": 80,
+        "water": 5,
+        "operating": false
+      },
+      "actions": [
+        {
+          "id": "close-access",
+          "label": "縄で立入を止め、坑道口を閉鎖する",
+          "minutes": 15,
+          "requirements": {
+            "items": {
+              "rope": 1
+            }
+          },
+          "effects": {
+            "operating": false
+          }
+        },
+        {
+          "id": "drain",
+          "label": "木材と縄で排水路を組む",
+          "minutes": 30,
+          "requirements": {
+            "items": {
+              "timber": 2,
+              "rope": 1
+            }
+          },
+          "effects": {
+            "water": 0
+          }
+        },
+        {
+          "id": "shore",
+          "label": "傷んだ支柱を補強する",
+          "minutes": 30,
+          "requirements": {
+            "items": {
+              "timber": 3
+            },
+            "skills": [
+              "crafting"
+            ]
+          },
+          "effects": {
+            "integrity": 100
+          }
+        }
+      ]
     }
   ],
   "skills": [

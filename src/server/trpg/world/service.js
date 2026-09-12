@@ -137,11 +137,12 @@ export class PersistentWorldService {
   }
 
   envelope(record) {
+    const view=this.view(record),known=new Set(view.player?.discoveredRegions||[view.player?.region]);
     return {
       ok: true,
       session: { id: record.id, revision: record.revision, lastSeq: record.lastSeq },
-      view: this.view(record),
-      content: this.catalog,
+      view,
+      content: {...this.catalog,regions:this.catalog.regions.filter(r=>known.has(r.id)),routes:this.catalog.routes.filter(r=>known.has(r.from)&&known.has(r.to))},
     };
   }
 

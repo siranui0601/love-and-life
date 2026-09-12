@@ -7,7 +7,7 @@ export function optionsFromView(view) {
  if(view.conversation?.status==='active')return view.conversation.choices.map(option=>({signature:semanticIdentity(option,view.conversation.speaker||'conversation',view.conversation),label:option.label,
   command:commandForOption(option,undefined,view.conversation),intent:option.intent,progress:option.family==='ask'||option.family==='share'}));
  return [...view.interactables.flatMap(target=>target.actions.filter(o=>o.available!==false).map(option=>({signature:semanticIdentity(option,target.id),label:option.label,targetName:target.name,requirements:option.requirements,
-  command:commandForOption(option,target.id),progress:option.type==='causal'&&!['escort','release'].includes(option.id)||option.id==='inspect'&&target.kind==='evidence'}))),
+  command:commandForOption(option,target.id),progress:option.type==='maintain'||option.type==='causal'&&!['escort','release'].includes(option.id)||option.id==='inspect'&&target.kind==='evidence'}))),
   ...(view.affordances||[]).map(option=>({signature:semanticIdentity(option,'self'),label:option.label,command:commandForOption(option,'self'),progress:false})),
   ...(view.personalActions||[]).map(option=>{const command=commandForOption(option,option.targetId);if(!option.targetId)delete command.targetId;return {signature:semanticIdentity(option,option.targetId||'self'),label:option.label,command,progress:false};})].sort((a,b)=>a.signature.localeCompare(b.signature,'en'));
 }
@@ -18,11 +18,11 @@ export function meaningfulState(state) {
   needs:{hunger:state.player.hunger,fatigue:state.player.fatigue},posture:state.player.posture,inspections:state.player.inspections,region:state.player.region,position:state.player.position,
   events:Object.fromEntries(Object.entries(state.events).map(([id,e])=>[id,{status:e.status,causal:e.causal}])),
   npcs:Object.fromEntries(Object.entries(state.npcs).map(([id,n])=>[id,{region:n.region,position:n.position,hp:n.hp,goal:n.goal,knowledge:n.knowledge.map(knowledgeMeaning),memories:n.memories,plan:n.plan,travel:n.travel}])),
-  properties:state.properties,facilities:state.facilities});
+  properties:state.properties,facilities:state.facilities,structures:state.structures});
 }
 function progressState(state) {
  return {knowledge:state.knowledge.map(knowledgeMeaning).sort((a,b)=>a.id.localeCompare(b.id,'en')),inventory:state.player.inventory,npcs:Object.fromEntries(Object.entries(state.npcs).map(([id,n])=>[id,{injury:n.injury,companionOf:n.companionOf}])),
-  properties:state.properties,events:Object.fromEntries(Object.entries(state.events).map(([id,e])=>[id,{status:e.status,causal:e.causal}]))};
+  properties:state.properties,structures:state.structures,events:Object.fromEntries(Object.entries(state.events).map(([id,e])=>[id,{status:e.status,causal:e.causal}]))};
 }
 export function changedDomains(before,after) {return [...new Set([...Object.keys(before),...Object.keys(after)])].filter(k=>stableString(before[k])!==stableString(after[k]));}
 

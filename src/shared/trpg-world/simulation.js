@@ -1,6 +1,7 @@
 import {advanceMemories} from './memory.js';
 import {orderedValues} from './semantic.js';
 import {knownTiming,readNotices} from './public-knowledge.js';
+import {structureObservation,structureActions,startStructureWork,finishStructureWork} from './infrastructure.js';
 import {investigationLeads,trackLead,arrivalContract} from './investigation.js';
 import {initializeProperty,propertyView,performPropertyAction} from './private-property.js';
 import {advanceSocialPlan,advanceLaw,exchangeCrimeMemories} from './law.js';
@@ -198,7 +199,7 @@ function chooseGoal(state,content,npc,template) {
     {goal:'sleep',utility:h<6||h>=22?90:npc.fatigue>85?75:0,target:template.home,activity:'睡眠'},
     {goal:'eat',utility:npc.hunger>65||h>=12&&h<13?80:0,target:template.home,activity:'食事'},
     {goal:'respond',utility:localProblem&&h>=7&&h<19?(willingToCooperate(state,npc)?62:54):0,target:localProblem?.position,activity:'事件への対処'},
-    {goal:'work',utility:h>=7&&h<18?50:0,target:template.work,activity:template.role ? `${template.role}の仕事`:'仕事'},
+    {goal:'work',utility:h>=7&&h<18&&!npc.knowledge.some(k=>k.kind==='workplace-closure'&&k.targetId===template.workFacilityId)?50:0,target:template.work,activity:template.role ? `${template.role}の仕事`:'仕事'},
     {goal:'social',utility:h>=18&&h<22?55:20,target:region?.objects?.find(o=>o.kind==='inn')?.position || template.home,activity:'会話と休憩'},
   ];
   const chosen = utilities.sort((a,b)=>b.utility-a.utility)[0];
@@ -225,6 +226,9 @@ function advanceNpcs(state,content,gameDelta) {
       } else { npc.activity='街道を旅している'; continue; }
     }
     const region = idx.regions.get(npc.region); if (!region) continue;
+    if(state.facilities?.[template.workFacilityId]?.closed&&distance(npc.position,template.work)<12&&hasLineOfSight(region,npc.position,template.work)&&!npc.knowledge.some(k=>k.kind==='workplace-closure'&&k.targetId===template.workFacilityId)) {
+      npc.knowledge.push({id:`closure:${template.workFacilityId}`,kind:'workplace-closure',targetId:template.workFacilityId,text:'仕事場の入口が閉鎖されている。',observedAt:state.time,source:{type:'seen',region:npc.region}});npc.nextDecision=0;
+    }
     if (state.time>=npc.nextDecision || !npc.goalTarget) { chooseGoal(state,content,npc,template); npc.nextDecision=state.time+300; }
     advancePlan(state,content,npc,gameDelta);
     const arrived = distance(npc.position,npc.goalTarget || npc.position)<2;
@@ -322,7 +326,7 @@ function advanceMonsters(state,content,gameDelta) {
     if(monster.fleeUntil>state.simulationTime){monster.activity='flee';followPath(region,monster,region.portals?.[0]?.position||monster.home,dt*3);continue;}
     const near=playerIsLocal(state)&&p.region===monster.region?distance(p.position,monster.position):Infinity;
     const night=hour(state)<6||hour(state)>20,alert=night?16:12;
-    const engaged=(near<alert || state.simulationTime-monster.lastThreat<6) && near<32 && p.position[1]<6 && hasLineOfSight(region,monster.position,p.position);
+    const engaged=p.hp>0&&p.collapse?.status!=='active'&&(near<alert || state.simulationTime-monster.lastThreat<6) && near<32 && p.position[1]<6 && hasLineOfSight(region,monster.position,p.position);
     if(engaged) {
       monster.activity='attack';monster.heading=Math.atan2(p.position[0]-monster.position[0],p.position[2]-monster.position[2]);
       if(near>finite(template.range,2.8)) followPath(region,monster,[p.position[0],0,p.position[2]],dt*finite(template.speed,2));
@@ -498,12 +502,19 @@ export function applyCommand(state,content,command) {
   if(p.collapse?.status==='active'&&!['input','pause','resume','recover'].includes(command.type))fail('COLLAPSED','倒れています。救助を待ってください。',409);
   if(['attack','dodge','defend'].includes(command.type)&&p.activity?.worldTimePolicy==='paused')fail('ACTIVITY_PAUSED','画面を閉じて行動を再開してください。',409);
   if(command.type==='affordance')return performAffordance(state,content,command);
-  if(command.type==='causal') {const target=targetAt(state,content,command.targetId);const result=applyCausalAction(state,content,target,command.action);setActivity(state,'inspecting',{targetId:target.id});return result;}
+  if(command.type==='causal') {const target=targetAt(state,content,command.targetId);const result=applyCausalAction(state,content,target,command.action);advanceCausality(state,content,0);if(target.kind!=='npc'){p.inspections||={};p.inspections[target.id]={...p.inspections[target.id],at:state.time,work:causalActions(state,content,target)};}setActivity(state,'inspecting',{targetId:target.id});return result;}
   if(command.type==='converse')return converse(state,content,command);
   if(command.type==='resume') {if(p.collapse?.status==='active')return {message:null};if(state.conversation)state.conversation.status='ended';setActivity(state,'idle');return {message:null};}
   if(command.type==='pause') {if(p.collapse?.status!=='active')setActivity(state,'menu');return {message:null};}
   if(command.type==='property')return performPropertyAction(state,content,command);
   if(command.type==='track')return trackLead(state,content,command.leadId);
+  if(command.type==='maintain') {
+    const target=targetAt(state,content,command.targetId),work=startStructureWork(state,content,target.id,command.action);
+    if(!advanceMacro(state,content,'crafting',work.action.minutes*60,{targetId:target.id,operation:work.action.id}))return {message:'作業を中断した。資材は現場で使った。'};
+    finishStructureWork(state,content,work);advanceCausality(state,content,0);setActivity(state,'inspecting',{targetId:target.id});
+    p.inspections||={};p.inspections[target.id]={at:state.time,...structureObservation(state,content,target.id)};
+    return {message:p.inspections[target.id].text};
+  }
   if(command.type==='recover') {if(p.collapse?.status!=='active')fail('NOT_COLLAPSED','救助待ちではありません。');for(let i=0;i<72&&p.collapse.status==='active';i++)advanceCalendar(state,content,300);return {message:p.collapse.status==='active'?'まだ救助に至っていない。':'手当てを受けて目を覚ました。'};}
   if(p.collapse?.status==='active'&&command.type!=='input')fail('COLLAPSED','倒れています。救助を待ってください。',409);
   if(command.type==='input') {
@@ -535,7 +546,7 @@ export function applyCommand(state,content,command) {
       // Notices are authored only for local events after their public signal.
       for(const event of content.events || []) if(event.region===p.region&&state.time>=eventStart(event)) learnEvent(state,content,event.id,{type:'read',targetId:target.id,region:p.region});
     }
-    p.inspections||={};p.inspections[target.id]={at:state.time,text:target.description||`${target.name}を調べた。`};
+    p.inspections||={};p.inspections[target.id]={at:state.time,text:target.description||`${target.name}を調べた。`,work:causalActions(state,content,target),...structureObservation(state,content,target.id)};
     if(['shop','stable','trainer','inn','board','job','workshop'].includes(target.kind)) {
       p.knownServices||={};p.knownServices[target.id]={id:target.id,name:target.name,region:p.region,position:clone(target.position),observedAt:state.time,source:{type:'examined',targetId:target.id},offers:actionsFor(state,content,target).filter(a=>['buy','work','train','rest','craft'].includes(a.type)).map(a=>clone(a))};
     }
@@ -742,6 +753,7 @@ function actionsFor(state,content,target) {
   }
   actions.push(...affordances(state,content,target.id));
   actions.push(...causalActions(state,content,target));
+  actions.push(...structureActions(state,content,target.id));
   return actions;
 }
 function personalActions(state,content) {
@@ -771,7 +783,7 @@ export function projectWorld(state,content) {
   const cleanObject=o=>({id:o.id,name:o.eventId&&!knownIds.has(o.eventId)?'気になる現場':o.name,kind:o.kind,position:clone(o.position),asset:o.asset,rotation:o.rotation || 0,scale:o.scale || 1,interior:o.interior,crafting:o.crafting,buildingPosition:o.buildingPosition,width:o.width,depth:o.depth,height:o.height});
   const publicRegion={id:region.id,name:region.name,biome:region.biome,color:region.color,size:region.size,spawn:clone(region.spawn),description:region.description,worldPosition:clone(region.worldPosition),
     obstacles:clone(region.obstacles || []),terrain:clone(region.terrain || {}),objects:(region.objects || []).map(o=>cleanObject({...o,...state.facilities?.[o.id]})),portals:clone(region.portals || [])};
-  const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&distance(n.position,p.position)<90).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.role,position:clone(n.position),activity:n.activity,hp:n.hp,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
+  const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&distance(n.position,p.position)<90&&hasLineOfSight(region,p.position,n.position)).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.role,position:clone(n.position),activity:n.activity,hp:n.hp,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
   const candidates=[...(region.objects || []).map(o=>({...o,...state.facilities?.[o.id]})),...nearbyNpcs.filter(n=>n.hp>0).map(n=>({...n,kind:'npc'})),...(content.events || []).filter(e=>e.region===p.region&&knownIds.has(e.id)).map(e=>({id:`event:${e.id}`,kind:'event',eventId:e.id,name:e.name,position:e.position || [0,0,0]}))];
   const interactables=candidates.filter(t=>distance(t.position,p.position)<=INTERACTION&&hasLineOfSight(region,p.position,t.position)).map(t=>({...cleanObject(t),distance:distance(t.position,p.position),actions:actionsFor(state,content,t)}));
   interactables.push(...propertyView(state,content).filter(o=>!o.held));
@@ -791,7 +803,7 @@ export function projectWorld(state,content) {
   });
   return {schemaVersion:2,simulationTime:state.simulationTime,time:state.time,day:Math.floor(state.time/DAY)+1,clock:`${String(Math.floor(hour(state))).padStart(2,'0')}:${String(Math.floor(state.time/60)%60).padStart(2,'0')}`,
     weather:clone(state.weather[p.region]),player:{...clone(p),force:forceOf(p,content),inventoryDetails:Object.entries(p.inventory).filter(([,quantity])=>quantity>0).map(([id,quantity])=>{const item=idx.items.get(id)||(content.materials||[]).find(i=>i.id===id)||idx.equipment.get(id);return {id,name:item?.name||'採集した素材',kind:item?.kind||(idx.equipment.has(id)?'equipment':'material'),quantity,equipped:Object.values(p.equipment).includes(id)};})},region:publicRegion,npcs:nearbyNpcs,
-    monsters:values(state.monsters).filter(m=>m.region===p.region&&m.hp>0&&distance(m.position,p.position)<75).map(m=>{const t=idx.monsters.get(m.templateId);return {id:m.id,name:t?.name,position:clone(m.position),hp:m.hp,maxHp:m.maxHp,level:t?.level,role:t?.role,activity:m.activity,heading:m.heading,boss:t?.boss,intent:m.intent?{name:m.intent.name,position:clone(m.intent.position),resolvesAt:m.intent.resolvesAt}:undefined};}),
+    monsters:values(state.monsters).filter(m=>m.region===p.region&&m.hp>0&&distance(m.position,p.position)<75&&hasLineOfSight(region,p.position,m.position)).map(m=>{const t=idx.monsters.get(m.templateId);return {id:m.id,name:t?.name,position:clone(m.position),hp:m.hp,maxHp:m.maxHp,level:t?.level,role:t?.role,activity:m.activity,heading:m.heading,boss:t?.boss,intent:m.intent?{name:m.intent.name,position:clone(m.intent.position),resolvesAt:m.intent.resolvesAt}:undefined};}),
     leads:investigationLeads(state,content),arrival:arrivalContract(state,content,interactables),notes:state.knowledge.filter(k=>['document','testimony'].includes(k.kind)).map(k=>({text:k.text,kind:k.kind})),heldProperties:propertyView(state,content).filter(o=>o.held),affordances:affordances(state,content),worldObjects:values(state.worldObjects).filter(o=>!o.custodianId&&o.region===p.region&&o.quantity>0&&distance(o.position,p.position)<5).map(o=>({id:o.id,kind:o.kind,name:o.name,itemId:o.itemId,quantity:o.quantity,position:clone(o.position),actions:affordances(state,content,o.id)})),conversation:state.conversation?.status==='active'?conversationResult(state,content).conversation:undefined,interactables,knownEvents,quests,journal:clone(state.history.slice(-60)),notifications:clone(state.notifications.slice(-5)),cycleComplete:state.cycleComplete,
     personalActions:personalActions(state,content),services:clone(Object.values(p.knownServices||{})),outcomes:state.cycleComplete?{knownResolved:knownEvents.filter(e=>['prevented','resolved'].includes(e.status)).length,knownFailed:knownEvents.filter(e=>e.status==='failed').length}:undefined};
 }

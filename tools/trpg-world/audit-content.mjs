@@ -44,8 +44,19 @@ export function auditWorldContent(content) {
   }
   inspect(content);
   const objects=new Set((content.regions||[]).flatMap(r=>r.objects||[]).map(o=>o.id));
+  const structures=new Set((content.structures||[]).map(s=>s.id));
+  for(const structure of content.structures||[]) {
+    if(!objects.has(structure.targetId)||!ids.regions.has(structure.region)||!ids.events.has(structure.hazardEventId))errors.push(`${structure.id}: dangling infrastructure binding`);
+    for(const action of structure.actions||[]) {
+      if(!(action.minutes>0&&action.minutes<=240))errors.push(`${structure.id}/${action.id}: invalid work duration`);
+      for(const id of Object.keys(action.requirements?.items||{}))if(!ids.items.has(id))errors.push(`${structure.id}: unavailable work resource ${id}`);
+      for(const id of action.requirements?.skills||[])if(!ids.skills.has(id))errors.push(`${structure.id}: unknown work skill ${id}`);
+      for(const field of Object.keys(action.effects||{}))if(!['integrity','water','operating'].includes(field))errors.push(`${structure.id}: nonphysical effect ${field}`);
+    }
+  }
   for(const scenario of content.causalScenarios||[]) {
     if(!ids.events.has(scenario.eventId))errors.push(`${scenario.eventId}: dangling causal binding`);
+    for(const id of scenario.structures||[])if(!structures.has(id))errors.push(`${scenario.eventId}: unknown structure ${id}`);
     for(const key of ['personId','familyId'])if(scenario[key]&&!ids.npcs.has(scenario[key]))errors.push(`${scenario.eventId}: unknown ${key}`);
     for(const key of ['facilityId','officeId','replacementId','deviceId'])if(scenario[key]&&!objects.has(scenario[key]))errors.push(`${scenario.eventId}: unknown ${key}`);
     for(const doc of scenario.documents||[])if(!objects.has(doc.targetId))errors.push(`${scenario.eventId}: inaccessible document ${doc.id}`);

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {DEFAULT_CAUSAL_SCENARIOS} from '../../src/shared/trpg-world/causal-events.js';
+import {DEFAULT_STRUCTURES} from '../../src/shared/trpg-world/infrastructure.js';
 import {createRegion,createPortal,placeNPC,finalizeRegions} from './region-layout.mjs';
 const base=new URL('../../',import.meta.url);
 const source=JSON.parse(await fs.readFile(new URL('sources/world.json',import.meta.url),'utf8'));
@@ -46,7 +47,7 @@ const recipes=[
 const skills=[['combat','武器の扱い',1,0,[],'間合いを取り、打撃と防御で身を守る。'],['investigation','調査',1,0,[],'痕跡を調べ、証拠をつなぐ。'],['riding','乗馬',1,18,[],'所有する馬に乗れる。街道で速く移動する。'],['magic','基礎魔術',1,22,[],'遠距離魔法と古代装置の調査。'],['broom','箒飛行',2,40,['magic'],'所有する箒で高度24mまで飛行。魔力と嵐に注意。'],['negotiation','交渉',1,18,[],'共同体や商人と、条件を整えて取引する。'],['crafting','工作',1,18,[],'鉱山の支保や機構を修理する。'],['tracking','追跡',1,16,[],'獣道や行方不明者の痕跡を読む。'],['stealth','潜入',1,22,[],'密輸や陰謀の証拠を持ち帰る。'],['survival','野外生活',1,16,[],'物資を使って土地の危機へ備える。']].map(([id,name,cost,goldCost,requires,description])=>({id,name,cost,goldCost,requires,description}));
 const D=86400,at=(day,h)=>(day-1)*D+h*3600;
 const eventSpecs=[
- ['lost-road','北柵の遠吠え','farm',1,9,2,20,['T01','T03'],'村外れで少年の足跡が途絶えた。森から押し出された赤牙狼が、街道へ降りている。','大型魔獣による縄張り移動と少年の単独探検。','NPC002','tracking','捜索隊を組み、少年を家族へ届ける','餌場と避難柵を整え、人と狼の動線を分ける','狼の親個体を追い払い、少年を保護する'],
+ ['lost-road','北柵の遠吠え','farm',1,9,2,20,['T01','T03'],'村外れに小さな足跡が続いている。北の道から獣の声がする。','大型魔獣による縄張り移動と少年の単独探検。','NPC002','tracking','捜索隊を組み、少年を家族へ届ける','餌場と避難柵を整え、人と狼の動線を分ける','狼の親個体を追い払い、少年を保護する'],
  ['bread-fire','麦と借金の火種','farm',2,18,4,18,['T02'],'共同穀倉の裏で灯油の匂いがする。穀物の買付契約には、不自然な担保条項がある。','穀物商による収穫権奪取と雇われた放火犯。','NPC005','investigation','管理人と夜警をつなぎ、放火を止める','代替穀物を買い付け、借金契約を不要にする','雇われた男を拘束し、穀倉を警護する'],
  ['harbor','閉ざされる潮路','trade',3,7,6,20,['T05','T06','T14','T15'],'港の賃金が削られ、領主は床に伏せている。荷札の違う武器箱が夜の船へ運ばれる。','毒殺計画、搾取、武器密輸が結びつき外国艦隊の足場となる。','NPC009','negotiation','領主の治療と労働協定を仲介する','解毒薬と未払賃金を届け、港の契約を結び直す','武器倉庫を制圧し、毒殺派を排除する'],
  ['roots','水音を失う森','forest',2,9,7,18,['T07','T08','T13'],'大河の流れが弱い。旅立ったエルフの足跡と、川中の魔力だまりが気に掛かる。','人身売買と結界の防衛反応、川に詰まったキングスライムは独立して悪化する。','NPC038','magic','救出した若者と水路の共同調査を行う','排水資材と結晶を届け、水流を取り戻す','人買いを退け、川を塞ぐ魔物を排除する'],
@@ -68,7 +69,7 @@ const events=eventSpecs.map((s,i)=>{
  };
 });
 finalizeRegions(regions,npcs,events);
-const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,skills,items,recipes,jobs,...combat,
+const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,structures:DEFAULT_STRUCTURES,skills,items,recipes,jobs,...combat,
  provenance:{sourceUrl:source.sourceUrl,retrievedAt:source.retrievedAt,policy:'Source material, not legacy rules. No Human Virtue ledger or replay used.',eventPolicy:'19 causes regrouped into 8 crises; deadlines and balance authored anew.',assets:'Kenney CC0 Fantasy Town Kit 2.0 and Blocky Characters 2.0.'}};
 content.revision='world-10d-'+createHash('sha256').update(JSON.stringify(content)).digest('hex').slice(0,12);
 const target=new URL('src/server/trpg/world/content/world-content.json',base);await fs.mkdir(new URL('.',target),{recursive:true});await fs.writeFile(target,JSON.stringify(content,null,2)+'\n');

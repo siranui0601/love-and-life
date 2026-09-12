@@ -69,6 +69,7 @@ test('institution documents need actual reading, submission and a physically pre
  assert.throws(()=>applyCommand(s,c,{type:'causal',targetId:'office',action:'submit:crisis'}),{code:'CAUSAL_REQUIREMENTS'});
  applyCommand(s,c,{type:'causal',targetId:'orphanage',action:'read:crisis:deed'});
  applyCommand(s,c,{type:'causal',targetId:'office',action:'submit:crisis'});
+ assert.equal(s.events.crisis.causal.reviewed,false); // Submission while reading is not a clerk's completed review.
  s.npcs.clerk.travel={to:'away'};applyCommand(s,c,{type:'resume'});advanceWorld(s,c,1);assert.equal(s.events.crisis.causal.reviewed,false);
  s.npcs.clerk.travel=null;s.npcs.clerk.position=[0,0,3];advanceWorld(s,c,1);assert.equal(s.events.crisis.status,'resolved');
  assert.equal(s.events.crisis.causal.tenure,'protected');
