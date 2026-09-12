@@ -5,8 +5,11 @@ on:
     paths:
       - "public/index.html"
       - "public/now-coding/**"
+      - "public/nail-shogi/**"
       - "src/server/now-coding/**"
+      - "src/server/nail-shogi/**"
       - "src/server/shared/index.js"
+      - "test/nail-shogi-engine.mjs"
       - "tools/now-coding/**"
       - ".github/workflows/now-coding.yml"
   workflow_dispatch:
@@ -32,9 +35,18 @@ jobs:
           node --check src/server/now-coding/store.js
           node --check src/server/now-coding/online.js
           node --check src/server/now-coding/index.js
+          node --check public/nail-shogi/engine.js
+          node --check public/nail-shogi/view.js
+          node --check public/nail-shogi/fx.js
+          node --check public/nail-shogi/app.js
+          node --check public/nail-shogi/ux-v2.js
+          node --check public/nail-shogi/online.js
+          node --check src/server/nail-shogi/index.js
           node --check src/server/shared/index.js
       - name: Engine, VM and client contract tests
-        run: node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs tools/now-coding/board-spawn.test.mjs tools/now-coding/fall-timed-collapse.test.mjs tools/now-coding/tutorial-recovery.test.mjs
+        run: |
+          node --test tools/now-coding/engine.test.mjs tools/now-coding/client-contract.test.mjs tools/now-coding/board-spawn.test.mjs tools/now-coding/fall-timed-collapse.test.mjs tools/now-coding/tutorial-recovery.test.mjs
+          node --test test/nail-shogi-engine.mjs
       - name: Entry and UX contract smoke checks
         run: |
           grep -q 'data-game="now-coding"' public/index.html
@@ -62,3 +74,12 @@ jobs:
           grep -q 'now:set-round-program' src/server/now-coding/online.js
           grep -q 'ROUND_SELECT_MS = 30_000' src/server/now-coding/online.js
           ! grep -q '90°旋回' public/now-coding/index.html
+          grep -q 'id="boardSvg"' public/nail-shogi/index.html
+          grep -q 'id="directionPad"' public/nail-shogi/index.html
+          grep -q 'id="careGrid"' public/nail-shogi/index.html
+          grep -q 'class="care-icon icon-hook"' public/nail-shogi/index.html
+          grep -q 'quick-care' public/nail-shogi/ux-v2.js
+          grep -q 'nail-group.is-hidden' public/nail-shogi/ux-v2.css
+          grep -q 'hook-tip-body' public/nail-shogi/view.js
+          grep -q 'fx-hook-claw' public/nail-shogi/fx.js
+          ! grep -Eq '>[^<]*(P[0-9]|D[0-9]|P\+|D\+)[^<]*<' public/nail-shogi/index.html
