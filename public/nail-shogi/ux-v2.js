@@ -35,21 +35,29 @@ if (careDialog) {
   syncCareDialog();
 }
 
-const hookIcon = document.querySelector('.care-icon.icon-hook');
-if (hookIcon) {
-  hookIcon.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><path class="hook-icon-shell" d="M3 9h12c8 0 13 4 13 11 0 6-5 10-11 10-4 0-7-1-10-4l5-6c1 2 3 3 5 3 3 0 5-2 5-5 0-2-2-4-6-4H3z"/><path class="hook-icon-ridge" d="M6 12h10c5 0 8 2 8 6 0 4-3 7-7 7"/></svg>';
-}
-
 function showHookActivation(claw) {
   if (!fxLayer || !claw || claw.dataset.labeled === '1') return;
   claw.dataset.labeled = '1';
   const layerBox = fxLayer.getBoundingClientRect();
   const clawBox = claw.getBoundingClientRect();
   const label = document.createElement('div');
-  label.className = 'hook-activation-label';
   label.textContent = '鉤爪';
-  label.style.left = `${clawBox.left + clawBox.width / 2 - layerBox.left}px`;
-  label.style.top = `${clawBox.top - layerBox.top - 8}px`;
+  Object.assign(label.style, {
+    position: 'absolute',
+    left: `${clawBox.left + clawBox.width / 2 - layerBox.left}px`,
+    top: `${clawBox.top - layerBox.top - 8}px`,
+    transform: 'translate(-50%,-50%)',
+    padding: '4px 9px',
+    border: '2px solid #221e1a',
+    borderRadius: '999px',
+    background: '#fff4e6',
+    color: '#c85835',
+    fontSize: '13px',
+    fontWeight: '950',
+    lineHeight: '1',
+    boxShadow: '0 2px 0 rgba(34,30,26,.18)',
+    pointerEvents: 'none',
+  });
   fxLayer.append(label);
   const animation = label.animate([
     { transform: 'translate(-50%,-50%) scale(.65) rotate(-5deg)', opacity: 0 },
