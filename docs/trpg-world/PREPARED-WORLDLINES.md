@@ -1,5 +1,7 @@
 # Ordinary action domain continuation
 
+Current continuation: [living world causal completion](LIVING-WORLD-CAUSAL-COMPLETION.md). The evidence below belongs to the preceding preparation checkpoint.
+
 Starting HEAD: `5defdf314a71eaf057449c4351e3cfa2cf4a5039`, `feat/persistent-world-rpg`, clean and matching origin. Continued WORLDLINE-VALIDATION; no law focus, route flags or LLM calls.
 
 ## First architecture checkpoint

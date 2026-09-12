@@ -27,6 +27,7 @@ test('combat controller uses offered attack windows and normal healing, never a 
  const target=r.view().monsters[0],first=r.options().find(o=>o.command.type==='attack');assert(first);r.select(first,'間合いから攻撃する');assert.equal(r.state.monsters[target.id].hp,35);
  const calendar=r.state.time;r.advance(.1);assert.equal(r.state.monsters[target.id].hp,35);assert.equal(r.state.time,calendar);
  const saved=r.export(),fork=replay(c,saved);const result=engage(r,target.id);assert(result.ended,JSON.stringify(result));assert.equal(r.state.monsters[target.id].hp,0);engage(fork,target.id);assert.equal(digest(fork.state),digest(r.state));assert.deepEqual(r.defects,[]);
+ assert(!r.state.player.actionInstance);assert(r.view().personalActions.some(a=>a.type==='eat'));
 });
 test('decision counts distinguish engine operations from destination and investigation choices',()=>{
  const operations=[{kind:'command',command:{type:'resume'}},{kind:'command',command:{type:'input',x:1,z:0}},{kind:'advance',seconds:1},{kind:'command',command:{type:'input',x:0,z:0}},{kind:'command',command:{type:'interact',action:'inspect'}}];const n=decisionCounts({operations});assert.equal(n.lowLevelOperations,5);assert.equal(n.meaningfulPlayerDecisions,2);assert.equal(n.travelSegments,1);assert.equal(n.investigations,1);

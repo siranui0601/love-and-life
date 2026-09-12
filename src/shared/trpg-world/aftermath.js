@@ -3,12 +3,13 @@ import {observeMemory,recalled} from './memory.js';
 import {orderedValues} from './semantic.js';
 import {searchPlan,advanceActionPlan} from './npc-planner.js';
 import {rememberAction} from './relationships.js';
+import {observeWorkplace} from './world-semantics.js';
 
 const siteOf=(content,spec)=>content.regions.find(r=>r.id===spec.region)?.objects.find(o=>o.id===spec.targetId);
 function recoverAtShelter(state,content,s,npc,shelter,helperId) {
  if(npc.care.status==='recovered')return;
  const fact=rememberAction(state,content,'rescue',{actorId:helperId,targetId:npc.id,payload:{shelterId:shelter.id,sourceFactId:s.damageFactId}});
- npc.care.status='recovered';npc.care.recoveryFactId=fact.id;npc.displacedHome=[...shelter.position];npc.hp=Math.max(npc.hp,50);delete npc.companionOf;delete npc.plan;
+ npc.care.status='recovered';npc.care.recoveryFactId=fact.id;npc.displacedHome=[...shelter.position];npc.displacementCause=s.damageFactId;npc.hp=Math.max(npc.hp,50);delete npc.companionOf;delete npc.plan;
  s.recoveries.push({personId:npc.id,factId:fact.id,at:state.time});
 }
 export function damageStructure(state,content,spec) {
@@ -31,6 +32,7 @@ function observeSite(state,content,spec,npc) {
  const id=`site:${spec.id}:${s.damageFactId}`,old=npc.knowledge.find(k=>k.id===id);
  if(old)return;
  const fact=state.socialFacts.find(f=>f.id===s.damageFactId);observeMemory(state,npc,fact,{range:distance(npc.position,site.position),template:content.npcs.find(n=>n.id===npc.id)});
+ observeWorkplace(state,npc,site,!!state.facilities?.[site.id]?.closed);
  fact.witnesses.push(npc.id);
  const voices=(s.casualties||[]).some(id=>state.npcs[id]?.hp>0&&distance(state.npcs[id].position,site.position)<12);
  npc.knowledge.push({id,kind:'site-observation',topicLabel:`${site.name}で見た異変`,text:`${site.name}で、${siteDescription(s,voices)}`,destination:{region:spec.region,position:[...site.position],targetId:site.id},observedAt:state.time,source:{type:'seen',observerId:npc.id},belief:{factId:fact.id}});
@@ -53,7 +55,7 @@ function evacuate(state,content,npc,spec,seconds) {
  npc.activity='見聞きした危険から離れ、避難所へ向かう';
  const status=advanceActionPlan(state,npc,seconds,{facts:()=>({arrived:distance(npc.position,shelter.position)<3}),handlers:{
   'move-shelter':(_step,dt)=>{followPath(region,npc,shelter.position,dt/(content.time?.scale||60)*1.55);return {complete:distance(npc.position,shelter.position)<3};},
-  'take-shelter':()=>{npc.evacuationHistory||=[];npc.evacuationHistory.push(s.damageFactId);npc.displacedHome=[...shelter.position];return {complete:true};}
+  'take-shelter':()=>{npc.evacuationHistory||=[];npc.evacuationHistory.push(s.damageFactId);npc.displacedHome=[...shelter.position];npc.displacementCause=s.damageFactId;return {complete:true};}
  }});
  if(['completed','invalidated'].includes(status)){delete npc.aftermathAssignment;delete npc.plan;}
 }
@@ -104,9 +106,10 @@ function medicalResponse(state,content,helper,spec,seconds) {
  return true;
 }
 export function advanceAftermath(state,content,seconds) {
+ const inhabitants=orderedValues(state.npcs);
  for(const spec of content.structures||[]) {
   const s=state.structures[spec.id];if(!s||s.damageAt===undefined)continue;
-  for(const npc of orderedValues(state.npcs)) {observeSite(state,content,spec,npc);if(seconds>0&&npc.hp>0&&!medicalResponse(state,content,npc,spec,seconds)&&!medicalSearch(state,content,npc,spec,seconds))evacuate(state,content,npc,spec,seconds);}
+  for(const npc of inhabitants)if(npc.region===spec.region) {observeSite(state,content,spec,npc);if(seconds>0&&npc.hp>0&&!medicalResponse(state,content,npc,spec,seconds)&&!medicalSearch(state,content,npc,spec,seconds))evacuate(state,content,npc,spec,seconds);}
   for(const id of s.casualties||[]) {
    const npc=state.npcs[id];if(!npc||npc.hp<=0||npc.care?.status==='recovered')continue;
    if(npc.entrapment&&!s.blocked&&!(s.fire>0)){delete npc.entrapment;npc.activity='出口が開いた。手当てと付き添いを待っている';}

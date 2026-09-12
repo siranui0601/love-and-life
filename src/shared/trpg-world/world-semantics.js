@@ -1,4 +1,18 @@
 import {distance,hasLineOfSight} from './navigation.js';
+// Beliefs about access are observations, not a remote read of facility truth.
+export function knownWorkplaceClosed(npc,targetId) {
+ const latest=(npc.knowledge||[]).filter(k=>k.targetId===targetId&&['workplace-closure','workplace-status'].includes(k.kind)).sort((a,b)=>(a.observedAt||0)-(b.observedAt||0)).at(-1);
+ return latest?.kind==='workplace-closure'||latest?.closed===true;
+}
+export function observeWorkplace(state,observer,target,closed) {
+ const knowledge=observer.knowledge;
+ const previous=[...knowledge].reverse().find(k=>k.kind==='workplace-status'&&k.targetId===target.id&&k.source?.type==='seen');
+ if(previous?.closed===closed&&knownWorkplaceClosed(observer,target.id)===closed)return;
+ knowledge.push({id:`workplace:${target.id}:${state.nextId++}`,kind:'workplace-status',targetId:target.id,closed,
+  text:`${target.name||'仕事場'}の入口は${closed?'閉鎖されている':'開いており、仕事が再開できる'}。`,observedAt:state.time,
+  source:{type:'seen',actorId:observer.id||'player',region:observer.region||state.player.region}});
+ observer.nextDecision=0;
+}
 // Authored server predicates operate on world entities. No route or quest acceptance input.
 export function conditionHolds(state,content,condition) {
  if(condition.all)return condition.all.every(c=>conditionHolds(state,content,c));

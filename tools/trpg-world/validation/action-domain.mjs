@@ -47,7 +47,12 @@ export function engage(run,targetId,{maxSeconds=60}={}) {
  run.command({type:'resume'});let elapsed=0;
  while(elapsed<maxSeconds) {
   const view=run.view(),target=view.monsters.find(m=>m.id===targetId);
-  if(!target)return {ended:true,reason:'target-no-longer-visible',seconds:elapsed};
+  if(!target){
+   // A lethal hit still has a visible recovery phase. Complete the accepted
+   // temporal action before claiming the actor can begin an ordinary activity.
+   if(view.player.actionInstance){run.advance(.1);elapsed+=.1;continue;}
+   return {ended:true,reason:'target-no-longer-visible',seconds:elapsed};
+  }
   if(view.player.collapse?.status==='active')return {error:'player-collapsed',seconds:elapsed};
   const options=run.options(),heal=options.find(o=>o.command.type==='use');
   if(view.player.hp<view.player.maxHp*.45&&heal){const result=run.select(heal,'傷が深いため、持っている傷薬を使う');if(result.error)return result;}

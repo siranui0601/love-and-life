@@ -1,4 +1,4 @@
-import {consumeResources,recordMilestone} from './world-semantics.js';
+import {consumeResources,recordMilestone,observeWorkplace} from './world-semantics.js';
 import {rememberAction} from './relationships.js';
 import {siteDescription} from './aftermath.js';
 import {distance} from './navigation.js';
@@ -23,6 +23,11 @@ export function initializeStructures(state,content) {
 export function structureSafe(state,spec) {
  const s=state.structures?.[spec.id];return !!s&&Object.entries(spec.safe).every(([key,value])=>key==='integrity'?s[key]>=value:key==='water'?s[key]<=value:s[key]===value);
 }
+function workDefinitions(state,spec) {
+ const s=state.structures[spec.id];
+ const reopening=s.damageAt!==undefined&&s.recoveredAt!==undefined&&!s.blocked&&structureSafe(state,spec)?[{id:'reopen',label:'補修箇所を点検し、立入規制を解除する',minutes:15,requirements:{},effects:{operating:true}}]:[];
+ return [...spec.actions,...reopening];
+}
 export function advanceStructures(state,content,seconds) {
  initializeStructures(state,content);
  for(const spec of content.structures||[]) {
@@ -39,7 +44,7 @@ export function structureObservation(state,content,targetId) {
 }
 export function structureActions(state,content,targetId) {
  initializeStructures(state,content);const p=state.player,actions=[];
- for(const spec of content.structures||[])if(spec.targetId===targetId)for(const action of spec.actions) {
+ for(const spec of content.structures||[])if(spec.targetId===targetId)for(const action of workDefinitions(state,spec)) {
   if(!Object.entries(action.when||{}).every(([key,value])=>state.structures[spec.id][key]===value))continue;
   if(Object.entries(action.effects).every(([key,value])=>state.structures[spec.id][key]===value))continue;
   const missing=[];for(const [id,n] of Object.entries(action.requirements.items||{}))if((p.inventory[id]||0)<n)missing.push(`${content.items.find(i=>i.id===id)?.name||id} ${n}個`);
@@ -51,7 +56,7 @@ export function structureActions(state,content,targetId) {
 // Resource reservation precedes elapsed work. Completion changes physical
 // fields only; the causal evaluator separately decides any incident outcome.
 export function startStructureWork(state,content,targetId,actionId) {
- const spec=(content.structures||[]).find(s=>s.targetId===targetId),action=spec?.actions.find(a=>a.id===actionId);
+ const spec=(content.structures||[]).find(s=>s.targetId===targetId),action=spec&&workDefinitions(state,spec).find(a=>a.id===actionId);
  if(!structureActions(state,content,targetId).some(a=>a.id===actionId&&a.available))throw Object.assign(new Error('この作業に必要な準備が整っていません。'),{code:'STRUCTURE_REQUIREMENTS',status:409});
  if(!consumeResources(state.player.inventory,action.requirements.items||{}))throw new Error('Structure resource reservation failed');
  return {spec,action};
@@ -60,4 +65,6 @@ export function finishStructureWork(state,content,{spec,action}) {
  const object=state.structures[spec.id];Object.assign(object,action.effects);
  const fact=rememberAction(state,content,'maintenance',{targetId:spec.targetId,payload:{action:action.id,physicalChanges:structuredClone(action.effects)}});
  recordMilestone(state,object,action.id,fact.id);advanceStructures(state,content,0);
+ const target=content.regions.find(r=>r.id===spec.region)?.objects.find(o=>o.id===spec.targetId);
+ if(target)observeWorkplace(state,{knowledge:state.knowledge,region:state.player.region},target,!!state.facilities[target.id].closed);
 }

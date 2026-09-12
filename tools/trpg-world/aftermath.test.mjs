@@ -4,6 +4,7 @@ import {WorldReplay,replay,digest} from './validation/replay.mjs';
 import {performAt,prepare} from './validation/action-domain.mjs';
 import {walk} from './validation/journey.mjs';
 import {DEFAULT_STRUCTURES} from '../../src/shared/trpg-world/infrastructure.js';
+import {knownWorkplaceClosed} from '../../src/shared/trpg-world/world-semantics.js';
 
 export function aftermathFixture(kind='collapse') {
  const structure=structuredClone(DEFAULT_STRUCTURES[kind==='fire'?1:0]);Object.assign(structure,{id:'site',targetId:'site',region:'village',hazardEventId:'hazard',shelterId:'inn'});
@@ -38,6 +39,7 @@ test('a non-witness hears the shelter account and discloses its provenance, neve
  const r=new WorldReplay(c);ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));
  const account=r.state.npcs.listener.knowledge.find(k=>k.kind==='site-observation');assert(account,'a physical encounter must transmit the account');assert.equal(account.source.type,'heard');
  assert.equal(r.state.npcs.listener.memories.find(m=>m.factId===account.belief.factId).source.type,'heard');
+ assert.equal(r.state.npcs.listener.memories.find(m=>m.factId===account.belief.factId).recall.appearance,null); // Ruins are not a person in imaginary travel clothes.
  ok(performAt(r,r.view().npcs.find(n=>n.id==='listener'),'interact',{action:'talk'}));const ask=r.options().find(o=>o.command.intentId?.startsWith('ask:site:'));assert(ask);ok(r.select(ask));
  assert(r.view().leads.some(l=>l.targetId==='site'));const publicData=JSON.stringify(r.view());assert(!publicData.includes('HIDDEN_CONSPIRACY'));assert(!publicData.includes('PRIVATE_SOLUTION'));assert(!r.view().knownEvents.some(e=>e.deadline!==undefined));assert(r.state.knowledge.find(k=>k.kind==='site-observation').testimony.chain.length>=2);
 });
@@ -50,4 +52,27 @@ test('giving real medicine lets a knowledgeable professional search, treat and e
  assert(gift);ok(r.select(gift,'救護係へ実際の傷薬を渡す'));const record=r.export(),fork=replay(c,record);
  for(const run of [r,fork]){ok(run.command({type:'resume'}));ok(performAt(run,run.view().region.objects.find(o=>o.id==='inn'),'rest'));assert.equal(run.state.npcs.worker.care.status,'recovered',JSON.stringify({helper:run.state.npcs.witness,patient:run.state.npcs.worker}));assert.equal(run.state.npcs.witness.possessions.medicine,0);assert(run.state.npcs.witness.planHistory.some(p=>p.goal==='aftermath-rescue'&&p.actions.includes('first-aid')));}
  assert.equal(digest(fork.state),digest(r.state));assert.equal(r.state.events.hazard.status,'failed');
+});
+test('a repaired and cleared workplace can reopen and pay ordinary work without erasing the disaster',()=>{
+ const c=aftermathFixture('fire');c.npcs=[];c.jobs=[{id:'sort',name:'片付けと仕分け',facilityId:'site',region:'village',pay:20,minutes:30}];const r=new WorldReplay(c),site=r.view().region.objects.find(o=>o.id==='site');
+ ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));ok(performAt(r,site,null));assert(!r.options().some(o=>o.command.type==='work'));assert(!r.options().some(o=>o.command.action==='reopen'));
+ ok(prepare(r,{items:{rope:1,timber:4},skills:['crafting']}));for(const action of ['extinguish','clear-rubble','shore','reopen'])ok(performAt(r,site,'maintain',{action}));
+ const wage=r.state.player.gold;const job=r.options().find(o=>o.command.type==='work');assert(job);ok(r.select(job,'復旧した仕事場で働く'));assert.equal(r.state.player.gold,wage+20);assert.equal(r.state.events.hazard.status,'failed');assert.equal(r.state.facilities.site.closed,false);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
+test('an evacuated worker hears the actual reopening, then returns to work instead of learning repairs remotely',()=>{
+ const c=aftermathFixture('fire');c.events[0].startsAt=25200;
+ c.npcs=[{id:'worker',name:'仕分け係',region:'village',home:[10,0,0],work:[10,0,0],workFacilityId:'site',role:'仕分け係',knowledge:[]}];
+ const r=new WorldReplay(c),site=r.view().region.objects.find(o=>o.id==='site');
+ ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));
+ assert(knownWorkplaceClosed(r.state.npcs.worker,'site'));assert(r.state.npcs.worker.displacedHome);
+ ok(prepare(r,{items:{rope:1,timber:4},skills:['crafting']}));
+ for(const action of ['extinguish','clear-rubble','shore','reopen'])ok(performAt(r,site,'maintain',{action}));
+ assert(knownWorkplaceClosed(r.state.npcs.worker,'site'),'remote repair must not update the evacuated worker');
+ ok(performAt(r,{id:'worker',position:[-40,0,0]},'interact',{action:'talk'}));
+ let share;for(let i=0;i<5&&!share;i++){share=r.options().find(o=>o.intent==='SHARE_INFORMATION'&&r.state.knowledge.find(k=>`share:${k.id}`===o.command.intentId&&k.kind==='workplace-status'&&!k.closed));if(!share){const next=r.options().find(o=>o.intent==='CHANGE_TOPIC');assert(next);ok(r.select(next));}}
+ assert(share);ok(r.select(share));assert(!knownWorkplaceClosed(r.state.npcs.worker,'site'));
+ const heard=r.state.npcs.worker.knowledge.find(k=>k.id===share.command.intentId.slice(6));assert.equal(heard.source.type,'heard');assert.equal(heard.source.actorId,'player');
+ ok(r.command({type:'resume'}));for(let i=0;i<50;i++)r.advance(1);
+ assert.equal(r.state.npcs.worker.goal,'work');assert(r.state.npcs.worker.position[0]>5);assert.equal(r.state.events.hazard.status,'failed');
+ assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });

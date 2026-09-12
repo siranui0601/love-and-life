@@ -18,7 +18,7 @@ export function observeMemory(state,npc,fact,{range=0,template={}}={}) {
   const m={factId:fact.id,kind:fact.kind,actorId:identified?fact.actorId:null,targetId:fact.targetId,learnedAt:state.time,
     source:{type:'seen',observerId:npc.id},status:'clear',repetitions:1,sleepCount:0,
     salience:{personal,emotional:['rescue','injury','threat','promise-kept'].includes(fact.kind),unusual:fact.kind==='body-action',domain:property?'property':fact.kind},
-    recall:{kind:fact.kind,actorId:identified?fact.actorId:null,appearance:actor?.appearance?.clothing||'旅装',targetId:fact.targetId,
+    recall:{kind:fact.kind,actorId:identified?fact.actorId:null,appearance:actor?.appearance?.clothing||(fact.actorId?'旅装':null),targetId:fact.targetId,
       private:fact.payload.private!==false,ownerId:fact.payload.ownerId||null,assetId:fact.payload.assetId||fact.payload.asset||null,region:fact.region,position:[...fact.position],at:fact.at},
     changes:[]};
   npc.memories.push(m);return m;

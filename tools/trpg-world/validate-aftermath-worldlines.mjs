@@ -26,7 +26,10 @@ function liveCycle() {
   visit(place,null,{},'生活費を稼げる仕事を現地で探す');job=r.options().find(o=>o.command.type==='work');if(job)break;
  }
  if(!job)throw new Error('FIRST_MISSING_AFFORDANCE: local paid work');must(r.select(job,'仕事で食費と宿代を稼ぐ'));
- must(prepare(r,{items:{supplies:1},gold:8}));visit(inn,null,{},'仕事場から宿へ戻り、食事のできる場所へ移る');const food=r.options().find(o=>o.command.type==='eat'&&!o.command.targetId);if(!food)throw new Error('FIRST_MISSING_AFFORDANCE: safe meal');must(r.select(food,'仕事を終え、食事を取る'));
+ must(prepare(r,{items:{supplies:1},gold:8}));visit(inn,null,{},'仕事場から宿へ戻り、食事のできる場所へ移る');
+ let food=r.options().find(o=>o.command.type==='eat'&&!o.command.targetId);
+ if(!food&&r.view().monsters.some(m=>m.activity==='attack')){must(secureArea(r));food=r.options().find(o=>o.command.type==='eat'&&!o.command.targetId);}
+ if(!food)throw new Error('FIRST_MISSING_AFFORDANCE: safe meal');must(r.select(food,'仕事を終え、食事を取る'));
  visit(inn,'rest',{},'宿で休み、次の日の暮らしに備える');
 }
 let failure,split;
@@ -63,6 +66,8 @@ try {
  if(r.view().player.collapse?.status==='active')throw new Error('PLAYER_COLLAPSED');
 }catch(error){failure=error.message;}
 const record=r.export();await fs.writeFile(new URL(kind+'-replay.json',out),JSON.stringify(record));await fs.writeFile(new URL(kind+'-trace.json',out),JSON.stringify(r.trace,null,2));
+await fs.writeFile(new URL(kind+'-final-state.json',out),JSON.stringify(r.state));if(split)await fs.writeFile(new URL(kind+'-intermediate.json',out),JSON.stringify(split));
+console.error(JSON.stringify({stage:'recorded',kind,operations:record.operations.length,day:r.view().day,firstMissing:failure||null}));
 const restored=replay(content,record);let restartEqual=null;
 if(split){const suffix={...record,initialState:split.state,operations:record.operations.slice(split.operation)};restartEqual=digest(replay(content,suffix).state)===digest(r.state);}
 const rescueDemonstrated=Object.values(r.state.structures).some(s=>s.recoveries?.length);

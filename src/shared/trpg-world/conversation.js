@@ -21,8 +21,8 @@ function choices(state,npc,session) {
     options.push({id:'promise-supplies',intent:'MAKE_PROMISE',family:'promise',label:'日暮れまでに生活物資を一つ届けると約束する'});
   if(options.length<4&&!session.history.some(h=>h.intentId==='joke'))options.push({id:'joke',family:'play',label:'旅先で迷った話を冗談にする'});
 
-  const share=[...state.knowledge].sort((a,b)=>a.id.localeCompare(b.id,'en')).find(k=>!npc.knowledge.some(n=>n.id===k.id));
-  if(share)options.push({id:`share:${share.id}`,intent:share.kind==='event'?'WARN':'SHARE_INFORMATION',family:'share',factId:share.id,label:share.kind==='event'?'見聞きした危険を伝える':'知っている話を伝える'});
+  const share=[...state.knowledge].sort((a,b)=>Number(b.kind==='workplace-status')-Number(a.kind==='workplace-status')||(a.kind==='workplace-status'&&b.kind==='workplace-status'?(b.observedAt||0)-(a.observedAt||0):0)||a.id.localeCompare(b.id,'en')).find(k=>!npc.knowledge.some(n=>n.id===k.id));
+  if(share)options.push({id:`share:${share.id}`,intent:share.kind==='event'?'WARN':'SHARE_INFORMATION',family:'share',factId:share.id,label:share.kind==='workplace-status'?`「${share.text}」と伝える`:share.kind==='event'?'見聞きした危険を伝える':'知っている話を伝える'});
   if(state.player.inventory.supplies>0&&npc.hunger>60)options.push({id:'offer-food',intent:'OFFER_HELP',family:'offer',label:'持っている食料を渡す'});
   if(state.player.inventory.medicine>0&&visibleTopics(state,npc).some(k=>k.kind==='site-observation'))options.push({id:'offer-medicine',intent:'OFFER_HELP',family:'medical-supplies',label:'手当てに使える傷薬を一つ渡す'});
   if(npc.possessions.supplies>0&&state.player.hunger>50)options.push({id:'request-food',intent:'REQUEST_HELP',family:'request',label:'食べ物を分けてもらえないか頼む'});

@@ -1,5 +1,6 @@
 import {advanceMemories,recalled,testimony,hearTestimony} from './memory.js';
 import {orderedValues} from './semantic.js';
+import {knownWorkplaceClosed,observeWorkplace} from './world-semantics.js';
 import {knownTiming,readNotices} from './public-knowledge.js';
 import {structureObservation,structureActions,startStructureWork,finishStructureWork} from './infrastructure.js';
 import {investigationLeads,trackLead,arrivalContract} from './investigation.js';
@@ -206,7 +207,7 @@ function chooseGoal(state,content,npc,template) {
     {goal:'sleep',utility:h<6||h>=22?90:npc.fatigue>85?75:0,target:template.home,activity:'睡眠'},
     {goal:'eat',utility:npc.hunger>65||h>=12&&h<13?80:0,target:template.home,activity:'食事'},
     {goal:'respond',utility:localProblem&&h>=7&&h<19?(willingToCooperate(state,npc)?62:54):0,target:localProblem?.position,activity:'事件への対処'},
-    {goal:'work',utility:h>=7&&h<18&&!npc.knowledge.some(k=>k.kind==='workplace-closure'&&k.targetId===template.workFacilityId)?50:0,target:template.work,activity:template.role ? `${template.role}の仕事`:'仕事'},
+    {goal:'work',utility:h>=7&&h<18&&!knownWorkplaceClosed(npc,template.workFacilityId)?50:0,target:template.work,activity:template.role ? `${template.role}の仕事`:'仕事'},
     {goal:'social',utility:h>=18&&h<22?55:20,target:region?.objects?.find(o=>o.kind==='inn')?.position || template.home,activity:'会話と休憩'},
   ];
   const chosen = utilities.sort((a,b)=>b.utility-a.utility)[0];
@@ -225,7 +226,7 @@ function advanceNpcs(state,content,gameDelta) {
     npc.hunger=clamp(npc.hunger+gameDelta/DAY*75,0,100);npc.fatigue=clamp(npc.fatigue+gameDelta/DAY*60,0,100);
     if(npc.rescueAssignment||npc.causalAssignment||npc.entrapment||npc.aftermathAssignment||npc.care?.status==='injured'||npc.companionOf)continue;
     if(advanceSocialPlan(state,content,npc,gameDelta))continue;
-    const original=idx.npcs.get(npc.id);if(!original)continue;let template=npc.displacedHome?{...original,home:npc.displacedHome,work:npc.displacedHome}:{...original};
+    const original=idx.npcs.get(npc.id);if(!original)continue;let template=npc.displacedHome?{...original,home:npc.displacedHome,work:npc.displacementCause?original.work:npc.displacedHome}:{...original};
     if(npc.region!==template.region&&!npc.displacedHome){template.home=idx.regions.get(npc.region)?.spawn||[0,0,0];template.work=template.home;}
     if (npc.travel) {
       if (state.time>=npc.travel.arrivesAt) {
@@ -233,9 +234,9 @@ function advanceNpcs(state,content,gameDelta) {
       } else { npc.activity='街道を旅している'; continue; }
     }
     const region = idx.regions.get(npc.region); if (!region) continue;
-    if(state.facilities?.[template.workFacilityId]?.closed&&distance(npc.position,template.work)<12&&hasLineOfSight(region,npc.position,template.work)&&!npc.knowledge.some(k=>k.kind==='workplace-closure'&&k.targetId===template.workFacilityId)) {
-      npc.knowledge.push({id:`closure:${template.workFacilityId}`,kind:'workplace-closure',targetId:template.workFacilityId,text:'仕事場の入口が閉鎖されている。',observedAt:state.time,source:{type:'seen',region:npc.region}});npc.nextDecision=0;
-    }
+    const workplace=region.objects.find(o=>o.id===template.workFacilityId);
+    if(workplace&&state.facilities?.[workplace.id]&&distance(npc.position,workplace.position)<12&&hasLineOfSight(region,npc.position,workplace.position))
+      observeWorkplace(state,npc,workplace,!!state.facilities[workplace.id].closed);
     if (state.time>=npc.nextDecision || !npc.goalTarget) { chooseGoal(state,content,npc,template); npc.nextDecision=state.time+300; }
     advancePlan(state,content,npc,gameDelta);
     const arrived = distance(npc.position,npc.goalTarget || npc.position)<2;
@@ -285,6 +286,7 @@ function socialTick(state,content) {
       const transmission={from:speaker.id,to:listener.id,at:state.time,region:speaker.region,position:[...speaker.position]};
       listener.knowledge.push({...clone(fact),receivedAt:state.time,transmissions:[...(fact.transmissions||[]),transmission].slice(-16),confidence:Math.max(.35,(fact.confidence??1)*.85),source:{type:'heard',actorId:speaker.id,origin:fact.source?.origin||fact.source}});
       const memory=recalled(speaker,fact.belief?.factId||fact.id);if(memory)hearTestimony(state,listener,speaker,testimony(state,speaker,memory));
+      if(fact.kind==='workplace-status')listener.nextDecision=0;
       if(fact.belief&&!listener.beliefs.some(b=>b.id===fact.belief.id)){listener.beliefs.push({...clone(fact.belief),confidence:Math.max(.2,fact.belief.confidence*.85),source:{type:'heard',actorId:speaker.id,previous:clone(fact.belief.source)},receivedAt:state.time});listener.nextDecision=0;}
     }
   }
