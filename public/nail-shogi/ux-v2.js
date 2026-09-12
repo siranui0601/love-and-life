@@ -1,14 +1,42 @@
-const board = document.getElementById('boardSvg');
-const outcome = document.getElementById('nextOutcome');
-const outcomeText = document.getElementById('nextOutcomeText');
 const careDialog = document.getElementById('careDialog');
+const careDialogTitle = document.getElementById('careDialogTitle');
+const careDialogText = document.getElementById('careDialogText');
+const carePreview = document.getElementById('carePreview');
 const careConfirm = document.getElementById('careConfirmBtn');
 const careGrid = document.getElementById('careGrid');
 const directionPad = document.getElementById('directionPad');
-const outcomeCopy = { grow:'伸びる', capture:'詰み', 'hook-cut':'横から切る', collision:'ぶつかる', 'own-block':'自分の爪で止まる', phase:'すり抜ける', edge:'端で止まる' };
-function syncOutcome(){ if(!board||!outcome||!outcomeText)return; const kind=board.dataset.movePreview||'grow'; outcome.dataset.kind=kind; outcomeText.textContent=outcomeCopy[kind]||'伸びる'; }
-if(board){ const observer=new MutationObserver(syncOutcome); observer.observe(board,{attributes:true,attributeFilter:['data-move-preview','data-move-preview-text']}); syncOutcome(); }
-if(careDialog&&careConfirm){ const observer=new MutationObserver(()=>{ if(!careDialog.open)return; careDialog.classList.add('quick-care'); queueMicrotask(()=>{ if(careDialog.open&&!careConfirm.disabled)careConfirm.click(); }); }); observer.observe(careDialog,{attributes:true,attributeFilter:['open']}); }
-function tapFeedback(){ navigator.vibrate?.(6); }
-directionPad?.addEventListener('click',(event)=>{ if(event.target.closest('button:not(:disabled)'))tapFeedback(); },true);
-careGrid?.addEventListener('click',(event)=>{ if(event.target.closest('button:not(:disabled)'))tapFeedback(); },true);
+
+const compactCareCopy = {
+  sharpen: ['研ぐ', '今の先端を鋭くする'],
+  gel: ['ジェル', '選んだ部分を1段階かたくする'],
+  hook: ['鉤爪', '根元に仕込み、先端に出た鉤で横から切る'],
+  sculpt: ['スカルプ', '自然成長のあと、もう1マス伸ばす'],
+  hide: ['隠す', 'このラウンドだけ敵の爪をすり抜ける'],
+  cut: ['切る', '今の先端を1節だけ落とす'],
+};
+
+function syncCareDialog() {
+  if (!careDialog?.open) return;
+  careDialog.classList.remove('quick-care');
+  const type = carePreview?.dataset.type || '';
+  const copy = compactCareCopy[type];
+  if (copy) {
+    careDialogTitle.textContent = copy[0];
+    careDialogText.textContent = copy[1];
+  }
+  if (careConfirm) careConfirm.textContent = '使う';
+}
+
+if (careDialog) {
+  const observer = new MutationObserver(syncCareDialog);
+  observer.observe(careDialog, { attributes: true, attributeFilter: ['open'] });
+  syncCareDialog();
+}
+
+function tapFeedback() { navigator.vibrate?.(6); }
+directionPad?.addEventListener('click', (event) => {
+  if (event.target.closest('button:not(:disabled)')) tapFeedback();
+}, true);
+careGrid?.addEventListener('click', (event) => {
+  if (event.target.closest('button:not(:disabled)')) tapFeedback();
+}, true);
