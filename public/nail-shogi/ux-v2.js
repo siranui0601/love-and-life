@@ -48,14 +48,14 @@ if (careGrid) {
     const button = event.target.closest('button[data-care]');
     if (!button) return;
     const type = button.dataset.care;
-    requestAnimationFrame(() => rewriteCareDialog(type));
+    queueMicrotask(() => rewriteCareDialog(type));
   }, true);
 }
 
 if (board) {
   board.addEventListener('click', (event) => {
     if (!event.target.closest('[data-segment]')) return;
-    requestAnimationFrame(() => rewriteCareDialog('gel'));
+    queueMicrotask(() => rewriteCareDialog('gel'));
   }, true);
 }
 
