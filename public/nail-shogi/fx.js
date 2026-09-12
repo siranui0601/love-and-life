@@ -77,6 +77,43 @@ function impactStar(point, ctx) {
   return Promise.allSettled([a.finished,b.finished]).then(() => { ring.remove(); star.remove(); });
 }
 
+async function hookSwipe(event, ctx) {
+  const p = viewPoint(event.point, ctx.viewPlayer);
+  const side = event.attackerPlayer === ctx.viewPlayer ? 1 : -1;
+  const hook = svgEl("path", {
+    class: "fx-hook-swipe",
+    d: `M ${p.x-62*side} ${p.y+10} Q ${p.x-8*side} ${p.y-58} ${p.x+23*side} ${p.y-3} Q ${p.x+35*side} ${p.y+23} ${p.x+9*side} ${p.y+30}`,
+  });
+  const slash = svgEl("line", {
+    class: "fx-hook-slash",
+    x1: p.x - 34, y1: p.y + 34,
+    x2: p.x + 34, y2: p.y - 34,
+  });
+  ctx.fxSvg.append(hook, slash);
+  navigator.vibrate?.([18, 16, 32]);
+  if (reduced()) {
+    await sleep(100);
+    hook.remove(); slash.remove();
+    return;
+  }
+  const hookLen = 150;
+  hook.style.strokeDasharray = `${hookLen}`;
+  hook.style.strokeDashoffset = `${hookLen}`;
+  const a = hook.animate([
+    { strokeDashoffset: hookLen, opacity: .2, transform: `translate(${-18*side}px,0)` },
+    { strokeDashoffset: 0, opacity: 1, transform: "translate(0,0)", offset: .62 },
+    { strokeDashoffset: 0, opacity: 0, transform: `translate(${16*side}px,4px)` },
+  ], { duration: 340, easing: "cubic-bezier(.2,.85,.3,1)" });
+  const b = slash.animate([
+    { opacity: 0, transformOrigin: `${p.x}px ${p.y}px`, transform: "scale(.35)" },
+    { opacity: 1, transformOrigin: `${p.x}px ${p.y}px`, transform: "scale(1.1)", offset: .45 },
+    { opacity: 0, transformOrigin: `${p.x}px ${p.y}px`, transform: "scale(1.25)" },
+  ], { duration: 300, delay: 110, easing: "ease-out" });
+  boardNudge(ctx.boardWrap, 1.25);
+  await Promise.allSettled([a.finished, b.finished]);
+  hook.remove(); slash.remove();
+}
+
 async function fragments(event, ctx) {
   const removed = Array.isArray(event.removed) ? event.removed : [];
   if (!removed.length) return;
@@ -99,12 +136,16 @@ async function fragments(event, ctx) {
 
 async function collisionWave(events, ctx) {
   const collisionEvents = events.filter((e) => ["tip-collision","segment-collision","own-block"].includes(e.type));
+  const hookEvents = collisionEvents.filter((e) => e.type === "segment-collision" && e.hookCut);
+  const ordinary = collisionEvents.filter((e) => !e.hookCut);
   const removalEvents = events.filter((e) => ["break","sever"].includes(e.type));
   if (!collisionEvents.length && !removalEvents.length) return;
   navigator.vibrate?.(collisionEvents.length ? 28 : 12);
-  const impacts = collisionEvents.map((event) => impactStar(event.point, ctx));
-  boardNudge(ctx.boardWrap, Math.min(1.7, .8 + collisionEvents.length * .15));
-  await Promise.allSettled(impacts);
+  await Promise.allSettled([
+    ...ordinary.map((event) => impactStar(event.point, ctx)),
+    ...hookEvents.map((event) => hookSwipe(event, ctx)),
+  ]);
+  if (ordinary.length) boardNudge(ctx.boardWrap, Math.min(1.7, .8 + ordinary.length * .15));
   await Promise.allSettled(removalEvents.map((event) => fragments(event, ctx)));
 }
 
