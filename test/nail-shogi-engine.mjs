@@ -69,14 +69,15 @@ test("hook cuts a nail only when it actually enters the body from the side", () 
   const preview = previewMove(state, 0, 0);
   assert.equal(preview.kind, "hook-cut");
   const result = resolveRound(state);
-  assert.equal(defender.path.length, 1);
+  assert.deepEqual(defender.path, [{ x: 1, y: 0 }]);
   assert.ok(result.events.some((event) => event.type === "segment-collision" && event.hookCut === true));
   const sever = result.events.find((event) => event.type === "sever" && event.nailId === defender.id);
   assert.ok(sever);
   assert.equal(sever.removed.length, 2);
+  assert.equal(result.events.some((event) => event.type === "grow" && event.nailId === defender.id), false);
 });
 
-test("hook does not get its special cut when approaching along the defender nail", () => {
+test("hook does not become a side cut in a head-on tip swap", () => {
   const state = createInitialState();
   disableExcept(state, ["0:0", "1:0"]);
   const attacker = getNail(state, 0, 0);
@@ -89,9 +90,10 @@ test("hook does not get its special cut when approaching along the defender nail
   const preview = previewMove(state, 0, 0);
   assert.equal(preview.kind, "collision");
   const result = resolveRound(state);
-  assert.equal(defender.path.length, 3);
+  assert.equal(defender.path.length, 2);
   assert.equal(attacker.path.length, 1);
-  assert.ok(result.events.some((event) => event.type === "segment-collision" && event.hookCut === false));
+  assert.ok(result.events.some((event) => event.type === "tip-collision"));
+  assert.equal(result.events.some((event) => event.type === "segment-collision" && event.hookCut === true), false);
 });
 
 test("touching an enemy finger captures immediately even if its nail is long", () => {
