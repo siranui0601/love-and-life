@@ -7,6 +7,7 @@
   <meta name="description" content="伸びる爪を操って、先に相手の指を2本詰める。siranui.jpのオンライン盤面ゲーム『爪将棋』。" />
   <title>爪将棋 | 不知火遊技場</title>
   <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./ux-v2.css" />
 </head>
 <body>
   <div class="paper-noise" aria-hidden="true"></div>
@@ -26,7 +27,7 @@
           <button class="primary-button" id="onlineBtn" type="button">オンライン対戦</button>
           <button class="secondary-button" id="cpuBtn" type="button">CPUで練習</button>
         </div>
-        <p class="start-note">方向指定は毎ラウンド無料。ケアは2回まで。</p>
+        <p class="start-note">毎ラウンド、5本の爪が一斉に伸びる。方向は自由、ケアは2回まで。</p>
       </div>
       <div class="hero-hand" aria-hidden="true">
         <div class="hero-grid"></div>
@@ -44,7 +45,6 @@
         <p class="eyebrow">ONLINE MATCH</p>
         <h1 id="lobbyTitle">対戦部屋</h1>
         <p class="lobby-lead">4桁の部屋番号で、相手と合流します。</p>
-
         <div class="lobby-entry" id="lobbyEntry">
           <button class="primary-button lobby-create" id="createRoomBtn" type="button">部屋を作る</button>
           <div class="lobby-or"><span>または</span></div>
@@ -53,7 +53,6 @@
             <div><input id="roomIdInput" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="4" pattern="[0-9]{4}" placeholder="1234" /><button class="secondary-button" type="submit">入る</button></div>
           </form>
         </div>
-
         <div class="waiting-room" id="waitingRoom" hidden>
           <p class="waiting-label">ROOM</p>
           <div class="room-code-row"><strong id="roomCode">----</strong><button id="copyRoomBtn" type="button">コピー</button></div>
@@ -95,14 +94,25 @@
             <svg id="fxSvg" class="fx-svg" viewBox="0 0 1000 800" aria-hidden="true"></svg>
             <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
           </div>
+          <div class="next-outcome" id="nextOutcome" data-kind="grow" aria-live="polite">
+            <span class="next-outcome-label">このまま伸びると</span>
+            <strong id="nextOutcomeText">この方向へ1マス伸びます</strong>
+          </div>
           <p class="board-hint" id="boardHint">自分の指を選び、伸ばす方向を決めよう。</p>
         </section>
 
         <aside class="control-panel" id="controlPanel" aria-label="操作パネル">
+          <div class="turn-steps" aria-label="このターンの流れ">
+            <span><b>1</b> 指を選ぶ</span>
+            <span><b>2</b> 方向を決める</span>
+            <span><b>3</b> 必要ならケア</span>
+            <span><b>4</b> 決定</span>
+          </div>
+
           <div class="selected-block">
-            <span class="panel-kicker">SELECTED</span>
+            <span class="panel-kicker">選択中</span>
             <strong id="selectedFingerName">親指</strong>
-            <span id="selectedState">素爪</span>
+            <span id="selectedState">ふつうの爪</span>
           </div>
 
           <div class="target-banner" id="targetBanner" hidden>
@@ -112,29 +122,29 @@
           </div>
 
           <div class="control-section">
-            <div class="section-title"><span>伸ばす方向</span><small>無料</small></div>
+            <div class="section-title"><span>次に伸びる方向</span><small>何本変えてもOK</small></div>
             <div class="direction-pad" id="directionPad">
-              <button type="button" data-view-dir="-1" aria-label="左斜め前へ伸ばす">↖</button>
-              <button type="button" data-view-dir="0" aria-label="まっすぐ前へ伸ばす">↑</button>
-              <button type="button" data-view-dir="1" aria-label="右斜め前へ伸ばす">↗</button>
+              <button type="button" data-view-dir="-1" aria-label="左斜め前へ伸ばす"><span>↖</span><small>左へ</small></button>
+              <button type="button" data-view-dir="0" aria-label="まっすぐ前へ伸ばす"><span>↑</span><small>まっすぐ</small></button>
+              <button type="button" data-view-dir="1" aria-label="右斜め前へ伸ばす"><span>↗</span><small>右へ</small></button>
             </div>
           </div>
 
           <div class="control-section">
-            <div class="section-title"><span>ケア</span><small>同じ指は1回まで</small></div>
+            <div class="section-title"><span>ケア</span><small>1ラウンド2回・同じ指は1回</small></div>
             <div class="care-grid" id="careGrid">
-              <button type="button" data-care="sharpen"><b>研ぐ</b><span>先端 P+1</span></button>
-              <button type="button" data-care="gel"><b>ジェル</b><span>選んだ節 D+1 <i id="gelStock">×4</i></span></button>
-              <button type="button" data-care="hook"><b>鉤爪</b><span>根元に仕込む <i id="hookStock">×2</i></span></button>
-              <button type="button" data-care="sculpt"><b>スカルプ</b><span>今R +1マス <i id="sculptStock">×2</i></span></button>
-              <button type="button" data-care="hide"><b>隠す</b><span>敵爪だけ1Rすり抜け</span></button>
-              <button type="button" data-care="cut"><b>切る</b><span>先端を1節落とす</span></button>
+              <button type="button" data-care="sharpen"><b>研ぐ</b><span>先端を鋭くして、ぶつかり合いに強くする</span></button>
+              <button type="button" data-care="gel"><b>ジェル</b><span>選んだ場所を1段階かたくする <i id="gelStock">×4</i></span></button>
+              <button type="button" data-care="hook"><b>鉤爪</b><span>根元に仕込み、先端まで来ると横から切断 <i id="hookStock">×2</i></span></button>
+              <button type="button" data-care="sculpt"><b>スカルプ</b><span>このラウンドだけ、自然成長のあとさらに1マス <i id="sculptStock">×2</i></span></button>
+              <button type="button" data-care="hide"><b>隠す</b><span>このラウンドだけ敵の爪をすり抜ける</span></button>
+              <button type="button" data-care="cut"><b>切る</b><span>今の先端を1節だけ落とす</span></button>
             </div>
           </div>
 
           <div class="command-actions">
             <button class="reset-turn-button" id="resetTurnBtn" type="button">このターンをやり直す</button>
-            <button class="commit-button" id="commitBtn" type="button"><span>この手で決定</span><small>両者の操作後、全爪が一斉に伸びる</small></button>
+            <button class="commit-button" id="commitBtn" type="button"><span>この手で決定</span><small>両者が決めたら、全爪が一斉に伸びる</small></button>
           </div>
         </aside>
       </div>
@@ -144,11 +154,11 @@
   <dialog class="care-dialog" id="careDialog">
     <form method="dialog" id="careDialogForm">
       <button class="dialog-close" value="cancel" aria-label="閉じる">×</button>
-      <p class="eyebrow">CARE CONFIRM</p>
+      <p class="eyebrow">ケアの確認</p>
       <h2 id="careDialogTitle">ジェルを塗る</h2>
       <div class="care-preview" id="carePreview" aria-hidden="true"><span></span></div>
       <p id="careDialogText"></p>
-      <div class="dialog-actions"><button class="secondary-button" value="cancel">やめる</button><button class="primary-button" id="careConfirmBtn" value="default">決定</button></div>
+      <div class="dialog-actions"><button class="secondary-button" value="cancel">やめる</button><button class="primary-button" id="careConfirmBtn" value="default">このケアを使う</button></div>
     </form>
   </dialog>
 
@@ -156,17 +166,28 @@
     <form method="dialog">
       <button class="dialog-close" aria-label="閉じる">×</button>
       <p class="eyebrow">HOW TO PLAY</p>
-      <h2>爪将棋の遊び方</h2>
+      <h2>まず、これだけ</h2>
+      <div class="rule-flow">
+        <div><b>① 指を選ぶ</b><span>自分の5本から、動きを変えたい指をタップ。</span></div>
+        <div><b>② 方向を決める</b><span>左・まっすぐ・右。両者が決めたあと、全爪が1マス伸びます。</span></div>
+        <div><b>③ 必要ならケア</b><span>1ラウンド2回まで。使わなくてもOK。</span></div>
+        <div><b>④ 相手の指へ届けば「詰み」</b><span>先に2本詰めた方が勝ち。</span></div>
+      </div>
+
+      <h3>ぶつかったらどうなる？</h3>
+      <div class="plain-rules">
+        <p><strong>先端どうし</strong><span>同じ強さなら両方欠けます。研いだ先端は、相手を欠けさせやすくなります。</span></p>
+        <p><strong>胴体に当たる</strong><span>胴体は先端よりかたい。途中が折れると、その場所より先は全部落ちます。</span></p>
+        <p class="hook-rule"><strong>鉤爪</strong><span>根元に仕込んだ鉤爪は成長と一緒に前へ流れます。先端まで来たあと、敵の爪の横腹へ入ると、そこから先をまとめて切断します。</span></p>
+        <p><strong>ジェル</strong><span>塗った場所だけがかたくなります。成長すると、その塗った部分も先端側へ流れていきます。</span></p>
+      </div>
+
+      <h3>覚えておくこと</h3>
       <ol>
-        <li><strong>5本すべての爪</strong>は、両者の操作が終わると根元から1節ずつ自然に伸びます。</li>
-        <li>各指の進行方向を「左斜め・前・右斜め」から決めます。方向指定は無料です。</li>
-        <li>1ラウンドに<strong>2回まで</strong>ケアできます。同じ指には1回だけ。</li>
-        <li>自分の爪同士は重なりません。ぶつかる進路を選ぶと、そのラウンドはそこで止まります。</li>
-        <li>攻撃力は爪先だけ。横から胴を折ると、その先の爪はまとめて落ちます。</li>
-        <li>爪先が敵の指へ届いた瞬間に<strong>「詰み」</strong>。その指は退場し、攻めた爪も地爪まで戻ります。</li>
-        <li>先に2本の指を詰めた方が勝ちです。</li>
+        <li>自分の爪同士は重なりません。</li>
+        <li>爪は毎ラウンド、根元から押し出されるように伸びます。</li>
+        <li>爪先が敵の指へ届いた瞬間に「詰み」。その指は退場し、攻めた爪も地爪まで戻ります。</li>
       </ol>
-      <div class="rule-stats"><span><b>素爪先端</b>P1 / D1</span><span><b>素爪側面</b>D2</span><span><b>鉤爪</b>側面攻撃 P3</span></div>
       <button class="primary-button dialog-ok" value="close">わかった</button>
     </form>
   </dialog>
@@ -187,5 +208,6 @@
   <div class="sr-only" id="liveRegion" aria-live="assertive"></div>
   <script src="/socket.io/socket.io.js"></script>
   <script type="module" src="./app.js"></script>
+  <script type="module" src="./ux-v2.js"></script>
 </body>
 </html>
