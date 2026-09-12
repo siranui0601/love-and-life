@@ -4,6 +4,7 @@ import {performAt,prepare,decisionCounts,secureArea} from './validation/action-d
 import {walk,travelTo} from './validation/journey.mjs';
 const content=JSON.parse(await fs.readFile(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url),'utf8'));
 const kind=process.argv[2]||'mine',out=new URL('./reports/aftermath-worldlines/',import.meta.url);await fs.mkdir(out,{recursive:true});
+const runName=process.argv[3]||kind;if(!/^[a-z-]+$/.test(runName))throw new Error('Invalid output record name');
 const r=new WorldReplay(content,{seed:4}),must=result=>{if(result?.error)throw new Error(JSON.stringify(result));return result;};
 const natural=kind==='ordinary',dailyContacts=new Set(),routine=[];
 const visit=(target,type,params={},reason)=>must(performAt(r,target,type,params,reason));
@@ -22,13 +23,15 @@ async function speakNearby() {
 function liveCycle() {
  const inn=r.view().region.objects.find(o=>o.kind==='inn'),market=r.view().region.objects.find(o=>o.kind==='shop');
  if(!r.view().services.some(s=>s.id===market.id))visit(market,'interact',{action:'inspect'},'食料と仕事を店頭で確かめる');
- else visit(market,null,{},'知っている仕事場へ歩く');
+ else if(!natural)visit(market,null,{},'知っている仕事場へ歩く');
  let job=r.options().find(o=>o.command.type==='work');
  if(!job)for(const place of r.view().region.objects.filter(o=>['job','board','trainer'].includes(o.kind))) {
   visit(place,null,{},'生活費を稼げる仕事を現地で探す');job=r.options().find(o=>o.command.type==='work');if(job)break;
  }
  if(!job)throw new Error('FIRST_MISSING_AFFORDANCE: local paid work');must(r.select(job,'仕事で食費と宿代を稼ぐ'));
- must(prepare(r,{items:{supplies:1},gold:8}));visit(inn,null,{},'仕事場から宿へ戻り、食事のできる場所へ移る');
+ must(prepare(r,{items:{supplies:1},gold:8}));
+ const condition=r.view();if(natural&&condition.player.hunger<40&&condition.player.fatigue<55&&condition.time%86400<22*3600)return;
+ visit(inn,null,{},'食事や休息が必要になったため、宿へ戻る');
  let food=r.options().find(o=>o.command.type==='eat'&&!o.command.targetId);
  if(!food&&r.view().monsters.some(m=>m.activity==='attack')){must(secureArea(r));food=r.options().find(o=>o.command.type==='eat'&&!o.command.targetId);}
  const needs=r.view().player;
@@ -69,12 +72,12 @@ try {
  }
  if(r.view().player.collapse?.status==='active')throw new Error('PLAYER_COLLAPSED');
 }catch(error){failure=error.message;}
-const record=r.export();await fs.writeFile(new URL(kind+'-replay.json',out),JSON.stringify(record));await fs.writeFile(new URL(kind+'-trace.json',out),JSON.stringify(r.trace,null,2));
-await fs.writeFile(new URL(kind+'-final-state.json',out),JSON.stringify(r.state));if(split)await fs.writeFile(new URL(kind+'-intermediate.json',out),JSON.stringify(split));
+const record=r.export();await fs.writeFile(new URL(runName+'-replay.json',out),JSON.stringify(record));await fs.writeFile(new URL(runName+'-trace.json',out),JSON.stringify(r.trace,null,2));
+await fs.writeFile(new URL(runName+'-final-state.json',out),JSON.stringify(r.state));if(split)await fs.writeFile(new URL(runName+'-intermediate.json',out),JSON.stringify(split));
 console.error(JSON.stringify({stage:'recorded',kind,operations:record.operations.length,day:r.view().day,firstMissing:failure||null}));
 const restored=replay(content,record);let restartEqual=null;
 if(split){const suffix={...record,initialState:split.state,operations:record.operations.slice(split.operation)};restartEqual=digest(replay(content,suffix).state)===digest(r.state);}
 const rescueDemonstrated=Object.values(r.state.structures).some(s=>s.recoveries?.length);
 if(kind==='mine'&&!rescueDemonstrated)failure||='ACCEPTANCE_NOT_REACHED: no actual survivor recovery';
 const result={kind,lifePolicy:natural?'public hunger/fatigue/night, paid labor and at most one contact per person per day':'fixed macro stress itinerary; not a natural-life certificate',routine,layer:'structural travel prefix, public local life/discovery/response',firstMissing:failure||null,defects:r.defects,counts:decisionCounts(record),day:r.view().day,clock:r.view().clock,hp:r.view().player.hp,replayEqual:digest(restored.state)===digest(r.state),intermediateRestartEqual:restartEqual,rescueDemonstrated,structures:r.state.structures,events:Object.fromEntries(Object.entries(r.state.events).map(([id,e])=>[id,{status:e.status,componentStatus:e.causal.componentStatus}]))};
-await fs.writeFile(new URL(kind+'-summary.json',out),JSON.stringify(result,null,2));console.log(JSON.stringify(result));process.exitCode=failure||r.defects.length||!result.replayEqual||restartEqual===false?1:0;
+await fs.writeFile(new URL(runName+'-summary.json',out),JSON.stringify({...result,runName},null,2));console.log(JSON.stringify(result));process.exitCode=failure||r.defects.length||!result.replayEqual||restartEqual===false?1:0;

@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "operations": 64,
+  "everyOperationHashEqual": true,
+  "traceEqual": true,
+  "beforeMs": 3950.5845,
+  "afterMs": 3734.987
+}

@@ -69,3 +69,11 @@ Current remaining issues:
 - P2: ordinary preparation still includes many return trips and single-unit purchases; reported decision units include travel and leaving conversation, and are not measured human decision density. Replay artifacts require their pinned code version. Current fire/smoke is state/interaction text, not completed visual presentation. Browser review is SKIP.
 
 Calendar/active-simulation policy, actual-v1 migrations, semantic stability, 10/30/60-second contracts and destination continuity remain in the passing full regression. No paid/live LLM calls. USER DECISION REQUIRED: none. This phase is not declared complete.
+
+## Ordinary-life validation in progress
+
+Evidence checkpoint `cf93fde7723dae9909467cd194afb4e6b90f5479` is safely pushed. The first needs-driven run has recorded Day5 with four meals, four rests, 28 paid jobs, two lessons and fire recovery/reopening. Its sleep starts were Day1 23:18, Day3 08:48 (after overnight crisis response), Day3 22:22 and Day4 23:41. Whole replay is still running, so these are recorded outcomes, not yet a completed certificate.
+
+Decision review found 132 travel segments among 251 decision units: the driver still returned to a shop and inn every work cycle even without a need. A refined run stays at an available workplace and returns to the inn for actual hunger, fatigue or night. It uses the same public action offers and a separate output name so earlier evidence is not overwritten.
+
+The replay recorder also stops constructing unused full-world explanation snapshots for input/resume commands. Command execution, projection, transactional state and every state hash remain unchanged. A 64-operation comparison from the recorded mine escort matched every operation hash and the full trace; the single timing sample was 3951ms before / 3735ms after and is not a general performance claim. Focused semantic/preparation/aftermath: 29 PASS / 0 FAIL / 0 SKIP. Runtime code remains the 105-test passing d9e0de19 version.

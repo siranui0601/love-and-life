@@ -37,12 +37,15 @@ export class WorldReplay {
  view(){return projectWorld(this.state,this.content);}
  options(){return optionsFromView(this.view());}
  command(command,{reason='explicit player command',available=this.options(),selected}={}) {
-  const before=meaningfulState(this.state),progress=digest(progressState(this.state)),facts=this.state.socialFacts.length,candidate=structuredClone(this.state);
+  const traced=command.type!=='input'&&command.type!=='resume';
+  // Movement inputs retain the identical command, projection and state hash.
+  // Do not build unused full-world narrative snapshots for untraced commands.
+  const before=traced?meaningfulState(this.state):null,progress=traced?digest(progressState(this.state)):null,facts=this.state.socialFacts.length,candidate=structuredClone(this.state);
   let result,error;
   try{result=applyCommand(candidate,this.content,structuredClone(command));projectWorld(candidate,this.content);this.state=candidate;}
   catch(e){error={code:e.code||'REJECTED',message:e.message};}
   const operation={kind:'command',command:structuredClone(command),...(error?{error}:{}),after:digest(this.state)};this.operations.push(operation);
-  if(command.type!=='input'&&command.type!=='resume') {
+  if(traced) {
    const after=meaningfulState(this.state),entry={index:this.operations.length-1,worldTime:this.state.time,knowledge:before.knowledge,
     available:available.map(o=>({signature:o.signature,label:o.label})),selected:selected||available.find(o=>stableString(o.command)===stableString(command))?.signature||stableString(command),reason,
     result:structuredClone(result||error),createdFacts:structuredClone(this.state.socialFacts.slice(facts)),changedDomains:changedDomains(before,after),next:{knowledge:after.knowledge,events:after.events,options:this.options().map(o=>o.signature)}};

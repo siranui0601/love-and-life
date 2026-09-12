@@ -170,6 +170,16 @@
       "path": "d9e0de19/world-check.log",
       "bytes": 12513,
       "sha256": "2d01a5d19ed1878c25d95c696426ffed93b6387a8a17c61fc74b1077f317fd34"
+    },
+    {
+      "path": "README.md",
+      "bytes": 2007,
+      "sha256": "cde1c91770d56ab8bde6fc8f9e97842ae93c79e581305266aec0fbbccba742cc"
+    },
+    {
+      "path": "replay-snapshot-cost.json",
+      "bytes": 147,
+      "sha256": "0e1e893290e4a9cc60fe08f7711af3fafaaa720fafb0eb5b6f3edf21e6b6417c"
     }
   ]
 }
