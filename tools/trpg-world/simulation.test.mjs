@@ -98,13 +98,16 @@ test('portal transport actions expose authoritative fare, duration and missing c
   assert(portal.actions.find(action=>action.mode==='carriage').missing.includes('12G'));
   assert.throws(()=>applyCommand(s,c,{type:'travel',portalId:'exit',mode:'carriage'}),{code:'NO_GOLD'});
 });
-test('accepted world events project as urgent quests only when their live deadline is near',()=>{
-  const c=fixture(),s=createWorld(c);
+test('urgency requires a read deadline claim and does not follow hidden schedule changes',()=>{
+  const c=fixture();c.regions[0].objects.find(o=>o.id==='board').notices=[{eventId:'food',deadline:40000,text:'補修の受付は本日11時過ぎまで。'}];const s=createWorld(c);
   applyCommand(s,c,{type:'accept',targetId:'board',eventId:'food'});
   let quest=projectWorld(s,c).quests[0];
   assert.equal(quest.status,'accepted');assert.equal(quest.worldStatus,'latent');assert.equal(quest.urgent,false);
   s.time=30000;advanceWorld(s,c,.1);quest=projectWorld(s,c).quests[0];
+  assert.equal(quest.urgent,false);assert.equal(quest.deadline,undefined);assert.equal(projectWorld(s,c).knownEvents[0].deadline,undefined);
+  applyCommand(s,c,{type:'interact',targetId:'board',action:'inspect'});quest=projectWorld(s,c).quests[0];
   assert.equal(quest.worldStatus,'critical');assert.equal(quest.urgent,true);assert(quest.remaining>0&&quest.remaining<6*3600);
+  c.events[0].deadline=80000;assert.equal(projectWorld(s,c).quests[0].deadline,40000);assert.equal(projectWorld(s,c).quests[0].deadlineSource.targetId,'board');
 });
 test('dangerous routes create deterministic travel hazards and survival preparation avoids them',()=>{
   const c=fixture();c.routes[0].risk=1;

@@ -2,6 +2,7 @@ import {findPath,distance} from '../../../src/shared/trpg-world/navigation.js';
 import {MOVEMENT} from '../../../src/shared/trpg-world/progression.js';
 import {observePlayer,choosePolicy} from './policies.mjs';
 import {digest,WorldReplay} from './replay.mjs';
+import {prepare} from './action-domain.mjs';
 export function walk(run,target) {
  run.command({type:'resume'});const region=run.view().region;
  const path=findPath(region,run.state.player.position,target);
@@ -38,21 +39,25 @@ export function structuralSearch(content,initialState,goal,{maxNodes=32,maxDepth
  const first=new WorldReplay(content,{initialState}),queue=[{run:first,depth:0}],seen=new Set();let expanded=0;const rejected=[];
  while(queue.length&&expanded<maxNodes){queue.sort((a,b)=>estimate(a.run.state)-estimate(b.run.state)||a.depth-b.depth);const {run,depth}=queue.shift();expanded++;
   if(goal(run.state))return {status:'FOUND',expanded,run,rejected};if(depth>=maxDepth)continue;
-  const frontier=run.options().filter(o=>o.progress);
+  const frontier=run.options().filter(o=>o.progress||o.command.type==='causal'&&o.command.action==='escort'||['attack','defend','dodge','use','eat','rest','work','train','buy','craft','equip'].includes(o.command.type));
   const branches=frontier.map(o=>({option:o}));
+  for(const target of run.view().interactables)for(const option of target.actions)if(option.available===false&&option.requirements)branches.push({requirements:option.requirements});
+  if(run.view().player.actionInstance||run.view().monsters.some(m=>m.intent))branches.push({seconds:.25});
   for(const lead of run.view().leads||[])if(lead.region===run.state.player.region&&distance(lead.position,run.state.player.position)>4)branches.push({lead});
   for(const branch of branches) {
    const next=run.fork();
-   if(branch.lead){next.command({type:'track',leadId:branch.lead.id});const result=walk(next,branch.lead.position);if(result.error){rejected.push(result);continue;}}
+   if(branch.requirements){const result=prepare(next,branch.requirements);if(result.error){rejected.push(result);continue;}}
+   else if(branch.seconds)next.advance(branch.seconds);
+   else if(branch.lead){next.command({type:'track',leadId:branch.lead.id});const result=walk(next,branch.lead.position);if(result.error){rejected.push(result);continue;}}
    else {const result=next.select(branch.option,'structural search: execute a projected legal information/physical action');if(result.error){rejected.push(result.error);continue;}}
    next.command({type:'resume'});next.advance(.5);
-   const key=digest({knowledge:next.state.knowledge.map(k=>k.id).sort(),position:next.state.player.position,events:next.state.events,inventory:next.state.player.inventory});
+   const key=digest({knowledge:next.state.knowledge,player:next.state.player,events:next.state.events,monsters:next.state.monsters,npcs:next.state.npcs,time:next.state.time,simulationTime:next.state.simulationTime});
    if(seen.has(key))continue;seen.add(key);
    // Preserve the complete input stream from the original root for replay.
    next.initialState=run.initialState;next.operations=[...run.operations,...next.operations];next.trace=[...run.trace,...next.trace];queue.push({run:next,depth:depth+1});
   }
  }
- return {status:queue.length?'SEARCH_LIMIT':'NO_PATH_IN_SEARCH_DOMAIN',expanded,rejected,scope:'projected local progress actions and known local leads; purchases/training/combat are not searched yet'};
+ return {status:queue.length?'SEARCH_LIMIT':'NO_PATH_IN_SEARCH_DOMAIN',expanded,rejected,scope:'projected local actions, inspected preparation services, known leads, escort and temporal combat; bounded search, not an impossibility proof'};
 }
 export function travelTo(run,destination) {
  const queue=[{region:run.state.player.region,path:[]}],seen=new Set();let path;

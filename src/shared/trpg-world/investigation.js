@@ -1,8 +1,9 @@
-import {distance} from './navigation.js';
+import {distance,hasLineOfSight} from './navigation.js';
 // Authored fallback directions, grounded in information the player acquired.
 // These are leads, never a route or a promise that an absent person will spawn.
 export function investigationLeads(state,content) {
  const leads=[];
+ for(const fact of state.knowledge.filter(k=>k.kind==='testimony'&&k.destination&&k.personId))if(state.npcs[fact.personId]?.companionOf==='player')leads.push({id:`lead:${fact.id}:home`,targetId:fact.personId,region:fact.destination.region,position:[...fact.destination.position],expectedAction:'escort-arrival',label:'同行者を家族のもとへ送る',explanation:fact.text,sourceKnowledgeId:fact.id});
  for(const definition of content.causalScenarios||[]) {
   const known=state.knowledge.find(k=>k.kind==='event'&&k.eventId===definition.eventId);if(!known)continue;
   const event=content.events.find(e=>e.id===definition.eventId),region=content.regions.find(r=>r.id===event.region);
@@ -20,8 +21,8 @@ export function investigationLeads(state,content) {
    }
   }
   if(definition.type==='return-person') {
-   const person=state.npcs[definition.personId],visible=person&&person.region===state.player.region&&distance(person.position,state.player.position)<18;
-   if(visible)leads.push({id:`lead:${event.id}:person`,targetId:person.id,region:person.region,position:[...person.position],expectedAction:person.injury&&!person.injury.treated?'tend':'talk',label:'見つけた人の様子を確かめる',explanation:'近づいて話す。負傷しているなら手当てし、一緒に家へ戻る。',sourceKnowledgeId:known.id});
+   const person=state.npcs[definition.personId],visible=person&&person.hp>0&&!person.travel&&person.region===state.player.region&&distance(person.position,state.player.position)<18&&hasLineOfSight(region,state.player.position,person.position);
+   if(visible&&!person.companionOf)leads.push({id:`lead:${event.id}:person`,targetId:person.id,region:person.region,position:[...person.position],expectedAction:person.injury&&!person.injury.treated?'tend':person.injury?.treated||person.causalAssignment?'escort':'talk',label:'見つけた人の様子を確かめる',explanation:'近づいて話す。負傷しているなら手当てし、一緒に家へ戻る。',sourceKnowledgeId:known.id});
    else if(!state.player.inspections?.[`event:${event.id}`])leads.push({id:`lead:${event.id}:site`,targetId:`event:${event.id}`,region:region.id,position:[...event.position],expectedAction:'inspect',label:'人の行方が気になる場所を見に行く',explanation:'現場を歩いて探す。出会えなければ、見聞きしたことを人に尋ねられる。',sourceKnowledgeId:known.id});
   }
  }

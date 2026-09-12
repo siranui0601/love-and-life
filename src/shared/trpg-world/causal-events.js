@@ -50,7 +50,7 @@ export function advanceCausality(state,content,seconds) {
     if(definition.type==='return-person') {
       const person=state.npcs[definition.personId],family=state.npcs[definition.familyId];if(!person||!family)continue;
       if(causal.phase==='home'&&state.time>=event.startsAt&&person.hp>0) {causal.phase='excursion';person.causalAssignment=event.id;}
-      if(causal.phase==='excursion') {
+      if(causal.phase==='excursion'&&!person.companionOf) {
         person.activity='村の外を探検する';followPath(region,person,event.position,seconds/(content.time?.scale||60)*1.5);
         const predator=orderedValues(state.monsters).find(m=>m.hp>0&&m.region===person.region&&distance(m.position,person.position)<18);
         if(predator&&distance(person.position,event.position)<4) {
@@ -117,7 +117,7 @@ export function failCausality(state,content,event) {
 export function causalActions(state,content,target) {
   const actions=[];
   const npc=state.npcs[target.id];
-  if(npc?.injury&&!npc.injury.treated)actions.push({id:'tend',type:'causal',label:'脚の傷を手当てする · 傷薬1つ'});
+  if(npc?.injury&&!npc.injury.treated)actions.push({id:'tend',type:'causal',label:'脚の傷を手当てする · 傷薬1つ',requirements:{items:{medicine:1}},available:(state.player.inventory.medicine||0)>0,missing:['傷薬1つ']});
   if((npc?.injury?.treated||npc?.causalAssignment&&!npc.injury)&&!npc.companionOf)actions.push({id:'escort',type:'causal',label:'身体を支えて、一緒に歩く'});
   if(npc?.companionOf)actions.push({id:'release',type:'causal',label:'ここで待っていてもらう'});
   for(const definition of causalDefinitions(content)) {
@@ -127,8 +127,8 @@ export function causalActions(state,content,target) {
     }
     if(definition.type==='ecosystem'&&target.id===definition.deviceId) {
       const causal=state.events[definition.eventId].causal;
-      if(causal.coreInPool)actions.push({id:`divert:${definition.eventId}`,type:'causal',label:'木材と縄で脇水路を固定する · 木材2、縄1',available:(state.player.inventory.timber||0)>=2&&(state.player.inventory.rope||0)>=1,missing:['木材2つ、縄1つ']});
-      if(!causal.coreSealed)actions.push({id:`seal:${definition.eventId}`,type:'causal',label:'調律結晶で吸収核を封じる · 結晶1、基礎魔術',available:state.player.skills.includes('magic')&&(state.player.inventory.crystal||0)>=1,missing:['調律結晶1つ、基礎魔術']});
+      if(causal.coreInPool)actions.push({id:`divert:${definition.eventId}`,type:'causal',label:'木材と縄で脇水路を固定する · 木材2、縄1',requirements:{items:{timber:2,rope:1}},available:(state.player.inventory.timber||0)>=2&&(state.player.inventory.rope||0)>=1,missing:['木材2つ、縄1つ']});
+      if(!causal.coreSealed)actions.push({id:`seal:${definition.eventId}`,type:'causal',label:'調律結晶で吸収核を封じる · 結晶1、基礎魔術',requirements:{items:{crystal:1},skills:['magic']},available:state.player.skills.includes('magic')&&(state.player.inventory.crystal||0)>=1,missing:['調律結晶1つ、基礎魔術']});
     }
   }
   return actions;
@@ -138,7 +138,11 @@ export function applyCausalAction(state,content,target,id) {
   if(!causalActions(state,content,target).some(a=>a.id===id))reject('この場所ではできません。');
   const p=state.player,npc=state.npcs[target.id];
   if(id==='tend') {if(!p.inventory.medicine)reject('傷薬が必要です。');p.inventory.medicine--;npc.injury.treated=true;rememberAction(state,content,'treatment',{targetId:npc.id});}
-  else if(id==='escort')npc.companionOf='player';
+  else if(id==='escort') {
+    npc.companionOf='player';
+    const definition=causalDefinitions(content).find(d=>d.type==='return-person'&&d.personId===npc.id),family=content.npcs.find(n=>n.id===definition?.familyId);
+    if(family&&!state.knowledge.some(k=>k.id===`escort:${npc.id}`))state.knowledge.push({id:`escort:${npc.id}`,kind:'testimony',text:'家まで一緒に来てほしい。家族に引き渡してほしい。',personId:npc.id,destination:{region:family.region,position:[...family.home]},source:{type:'told',actorId:npc.id},observedAt:state.time});
+  }
   else if(id==='release')delete npc.companionOf;
   else {
     const [verb,eventId,documentId]=id.split(':'),definition=causalDefinitions(content).find(d=>d.eventId===eventId),causal=state.events[eventId].causal;

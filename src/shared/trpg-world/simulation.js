@@ -1,5 +1,6 @@
 import {advanceMemories} from './memory.js';
 import {orderedValues} from './semantic.js';
+import {knownTiming,readNotices} from './public-knowledge.js';
 import {investigationLeads,trackLead,arrivalContract} from './investigation.js';
 import {initializeProperty,propertyView,performPropertyAction} from './private-property.js';
 import {advanceSocialPlan,advanceLaw,exchangeCrimeMemories} from './law.js';
@@ -527,6 +528,7 @@ export function applyCommand(state,content,command) {
     if(action==='review'){setActivity(state,'inspecting',{targetId:target.id});return {message:state.player.inspections?.[target.id]?.text||target.description||`${target.name}を眺めた。`};}
     if(action!=='inspect') fail('INVALID_ACTION','この操作は使えません。');
     setActivity(state,'inspecting',{targetId:target.id});
+    readNotices(state,target);
     if(target.eventId) learnEvent(state,content,target.eventId,{type:'read',region:p.region});
     if(target.evidenceId) learnEvidence(state,target.evidenceId,{type:'examined',targetId:target.id,region:p.region},target.description || `${target.name}を調べ、手がかりを得た。`);
     if(target.kind==='board') {
@@ -534,6 +536,9 @@ export function applyCommand(state,content,command) {
       for(const event of content.events || []) if(event.region===p.region&&state.time>=eventStart(event)) learnEvent(state,content,event.id,{type:'read',targetId:target.id,region:p.region});
     }
     p.inspections||={};p.inspections[target.id]={at:state.time,text:target.description||`${target.name}を調べた。`};
+    if(['shop','stable','trainer','inn','board','job','workshop'].includes(target.kind)) {
+      p.knownServices||={};p.knownServices[target.id]={id:target.id,name:target.name,region:p.region,position:clone(target.position),observedAt:state.time,source:{type:'examined',targetId:target.id},offers:actionsFor(state,content,target).filter(a=>['buy','work','train','rest','craft'].includes(a.type)).map(a=>clone(a))};
+    }
     return {message:p.inspections[target.id].text};
   }
   if(command.type==='train') {
@@ -714,20 +719,23 @@ function actionsFor(state,content,target) {
     actions.push({id:checked?'review':'inspect',label:checked?'確かめた内容を読み返す':target.kind==='evidence'?'調べる':'見る'});
   }
   if(['inn','camp','bench'].includes(target.kind))for(const item of content.items||[])if((item.kind==='food'||['food','supplies'].includes(item.id))&&p.inventory[item.id]>0)actions.push({id:`eat:${item.id}`,type:'eat',itemId:item.id,label:`${item.name}を食べる · 15分`});
-  if(target.kind==='inn') actions.push({id:'rest',label:'6時間泊まる · 8G',type:'rest',hours:6});
-  if(target.kind==='shop'||target.kind==='stable') for(const item of itemsForShop(state,content,target)) actions.push({id:`buy:${item.id}`,type:'buy',itemId:item.id,label:`${item.name} · ${priceOf(state,item,p.region)}G`,price:priceOf(state,item,p.region)});
+  if(target.kind==='inn') actions.push({id:'rest',label:'6時間泊まる · 8G',type:'rest',hours:6,requirements:{gold:8},available:p.gold>=8,missing:p.gold>=8?[]:['宿代8G']});
+  if(target.kind==='shop'||target.kind==='stable') for(const item of itemsForShop(state,content,target)) {const price=priceOf(state,item,p.region);actions.push({id:`buy:${item.id}`,type:'buy',itemId:item.id,label:`${item.name} · ${price}G`,price,requirements:{gold:price},available:p.gold>=price,missing:p.gold>=price?[]:[`${price}G`]});}
   if(target.kind==='shop')for(const [id,count] of Object.entries(p.inventory))if(count>0&&!Object.values(p.equipment).includes(id)){
     const item=idx.items.get(id)||(content.materials||[]).find(i=>i.id===id)||idx.equipment.get(id);
     if(item)actions.push({id:`sell:${id}`,type:'sell',itemId:id,label:`売る：${item.name}（所持 ${count}）`});
   }
-  if(target.kind==='trainer') for(const skill of content.skills || []) if(!p.skills.includes(skill.id)&&(!target.skills||target.skills.includes(skill.id)))
-    actions.push({id:`train:${skill.id}`,type:'train',skillId:skill.id,label:`${skill.name} · ${finite(skill.cost??skill.spCost,1)}SP / ${finite(skill.goldCost,12)/lessonFor(skill).sessionsRequired}G / ${lessonFor(skill).seconds/60}分`});
+  if(target.kind==='trainer') for(const skill of content.skills || []) if(!p.skills.includes(skill.id)&&(!target.skills||target.skills.includes(skill.id))) {
+    const lesson=lessonFor(skill),requirements={skills:skill.requires||[],items:Object.fromEntries(lesson.equipment.map(id=>[id,1])),gold:finite(skill.goldCost,12)/lesson.sessionsRequired,sp:finite(skill.cost??skill.spCost,1)},missing=requirementsMissing(state,content,requirements);
+    if(p.sp<requirements.sp)missing.push(`${requirements.sp}SP`);
+    actions.push({id:`train:${skill.id}`,type:'train',skillId:skill.id,label:`${skill.name} · ${requirements.sp}SP / ${requirements.gold}G / ${lesson.seconds/60}分`,requirements,available:missing.length===0,missing});
+  }
   if(target.crafting) for(const recipe of content.recipes || []) if(!recipe.facilityIds || recipe.facilityIds.includes(target.id)) {
     const missing=requirementsMissing(state,content,{...(recipe.requirements || {}),items:Object.fromEntries(Object.entries(recipe.requirements?.items || recipe.requirements?.inventory || {}).map(([id,amount])=>[id,finite(amount)]))});
     actions.push({id:`craft:${recipe.id}`,type:'craft',recipeId:recipe.id,label:`製作：${recipe.name} · ${finite(recipe.minutes,30)}分`,available:missing.length===0,missing});
   }
   for(const job of content.jobs || []) if((job.facilityId?job.facilityId===target.id:['job','board','npc'].includes(target.kind))&&(!job.region||job.region===p.region)&&(!target.jobId||target.jobId===job.id))
-    actions.push({id:`work:${job.id}`,type:'work',jobId:job.id,label:`${job.name} · ${finite(job.pay??job.reward??job.wage,30)}G`});
+    {const requirements=job.requirements||{},missing=requirementsMissing(state,content,requirements);actions.push({id:`work:${job.id}`,type:'work',jobId:job.id,label:`${job.name} · ${finite(job.pay??job.reward??job.wage,30)}G`,requirements,available:missing.length===0,missing});}
   if(['board','npc'].includes(target.kind)) for(const known of state.knowledge.filter(k=>k.kind==='event'&&k.region===p.region)) {
     const event=idx.events.get(known.eventId);if(event&&!state.quests.some(q=>q.eventId===event.id)&&['active','critical','latent'].includes(state.events[event.id].status))
       actions.push({id:`accept:${event.id}`,type:'accept',eventId:event.id,label:`依頼を受ける：${event.name}`});
@@ -735,6 +743,25 @@ function actionsFor(state,content,target) {
   actions.push(...affordances(state,content,target.id));
   actions.push(...causalActions(state,content,target));
   return actions;
+}
+function personalActions(state,content) {
+ const p=state.player,actions=[],region=index(content).regions.get(p.region);
+ if(p.collapse?.status==='active')return [{id:'recover',type:'recover',label:'救助を待つ'}];
+ for(const [id,count] of Object.entries(p.inventory))if(count>0) {
+  const item=index(content).items.get(id),gear=index(content).equipment.get(id);
+  if(gear&&!Object.values(p.equipment).includes(id))actions.push({id:`equip:${id}`,type:'equip',itemId:id,label:`${gear.name}を装備する`});
+  if(item&&(id==='medicine'||item.heal)&&p.hp<p.maxHp)actions.push({id:`use:${id}`,type:'use',itemId:id,label:`${item.name}を使う`});
+  if(item&&(item.kind==='food'||['food','supplies'].includes(id))&&p.position[1]<=1&&!combatNearby(state,content))actions.push({id:`eat:${id}`,type:'eat',itemId:id,label:`${item.name}を食べる · 15分`});
+ }
+ if(p.activity?.worldTimePolicy==='paused')return actions;
+ for(const monster of values(state.monsters))if(monster.hp>0&&monster.region===p.region&&hasLineOfSight(region,p.position,monster.position)) {
+  for(const [skillId,range,cooldown] of [['combat',3.2,.7],['magic',13,1.6]])if(p.skills.includes(skillId)&&distance(p.position,monster.position)<=range&&!p.actionInstance&&!(p.staggerUntil>state.simulationTime)&&state.simulationTime-finite(p.cooldowns.attack,-10000)>=cooldown&&(skillId!=='magic'||p.mp>=6))actions.push({id:`attack:${skillId}:${monster.id}`,type:'attack',targetId:monster.id,skillId,label:skillId==='magic'?'魔法を放つ':'攻撃する'});
+ }
+ if(combatNearby(state,content)) {
+  actions.push({id:'guard',type:'defend',active:!p.guarding,label:p.guarding?'防御を解く':'身を守る'});
+  if(p.stamina>=20&&!(p.dodgeUntil>state.simulationTime))actions.push({id:'dodge',type:'dodge',x:Math.sin(p.heading+Math.PI/2),z:Math.cos(p.heading+Math.PI/2),label:'横へ回避する'});
+ }
+ return actions;
 }
 export function projectWorld(state,content) {
   initializeProperty(state,content);
@@ -757,14 +784,14 @@ export function projectWorld(state,content) {
       return {id:`travel:${mode}`,type:'travel',portalId:portal.id,mode,label:`${estimate.label}で向かう · ${duration}分 · ${fare} · ${estimate.riskLabel}`,available:estimate.missing.length===0,missing:estimate.missing,minutes:estimate.minutes,price:estimate.cost,risk:estimate.risk,riskLabel:estimate.riskLabel,destination:destination?.name};
     })});
   }
-  const knownEvents=state.knowledge.filter(k=>k.kind==='event').map(k=>{const e=idx.events.get(k.eventId);return {id:e.id,name:e.name,region:e.region,description:k.text,status:k.status,observedAt:k.observedAt,source:clone(k.source),deadline:eventDeadline(e),remaining:Math.max(0,eventDeadline(e)-state.time),position:e.region===p.region?clone(e.position):undefined};});
+  const knownEvents=state.knowledge.filter(k=>k.kind==='event'&&idx.events.has(k.eventId)).map(k=>{const e=idx.events.get(k.eventId),timing=knownTiming(state,e.id);return {id:e.id,name:e.name,region:e.region,description:k.text,status:k.status==='critical'&&!Number.isFinite(timing.deadline)?'active':k.status,observedAt:k.observedAt,source:clone(k.source),...timing,position:e.region===p.region?clone(e.position):undefined};});
   const quests=state.quests.map(quest=>{
-    const event=idx.events.get(quest.eventId),worldStatus=state.knowledge.find(k=>k.eventId===quest.eventId)?.status,deadline=event?eventDeadline(event):null,remaining=deadline==null?null:Math.max(0,deadline-state.time);
-    return {...clone(quest),name:event?.name||quest.name,worldStatus,deadline,remaining,urgent:['active','critical'].includes(worldStatus)&&remaining<=6*3600};
+    const event=idx.events.get(quest.eventId),known=knownEvents.find(k=>k.id===quest.eventId),worldStatus=known?.status,timing=knownTiming(state,quest.eventId);
+    return {id:quest.id,eventId:quest.eventId,status:quest.status,acceptedAt:quest.acceptedAt,reward:quest.reward,name:event?.name||quest.name,worldStatus,...timing,urgent:['active','critical'].includes(worldStatus)&&Number.isFinite(timing.remaining)&&timing.remaining<=6*3600};
   });
   return {schemaVersion:2,simulationTime:state.simulationTime,time:state.time,day:Math.floor(state.time/DAY)+1,clock:`${String(Math.floor(hour(state))).padStart(2,'0')}:${String(Math.floor(state.time/60)%60).padStart(2,'0')}`,
     weather:clone(state.weather[p.region]),player:{...clone(p),force:forceOf(p,content),inventoryDetails:Object.entries(p.inventory).filter(([,quantity])=>quantity>0).map(([id,quantity])=>{const item=idx.items.get(id)||(content.materials||[]).find(i=>i.id===id)||idx.equipment.get(id);return {id,name:item?.name||'採集した素材',kind:item?.kind||(idx.equipment.has(id)?'equipment':'material'),quantity,equipped:Object.values(p.equipment).includes(id)};})},region:publicRegion,npcs:nearbyNpcs,
     monsters:values(state.monsters).filter(m=>m.region===p.region&&m.hp>0&&distance(m.position,p.position)<75).map(m=>{const t=idx.monsters.get(m.templateId);return {id:m.id,name:t?.name,position:clone(m.position),hp:m.hp,maxHp:m.maxHp,level:t?.level,role:t?.role,activity:m.activity,heading:m.heading,boss:t?.boss,intent:m.intent?{name:m.intent.name,position:clone(m.intent.position),resolvesAt:m.intent.resolvesAt}:undefined};}),
     leads:investigationLeads(state,content),arrival:arrivalContract(state,content,interactables),notes:state.knowledge.filter(k=>['document','testimony'].includes(k.kind)).map(k=>({text:k.text,kind:k.kind})),heldProperties:propertyView(state,content).filter(o=>o.held),affordances:affordances(state,content),worldObjects:values(state.worldObjects).filter(o=>!o.custodianId&&o.region===p.region&&o.quantity>0&&distance(o.position,p.position)<5).map(o=>({id:o.id,kind:o.kind,name:o.name,itemId:o.itemId,quantity:o.quantity,position:clone(o.position),actions:affordances(state,content,o.id)})),conversation:state.conversation?.status==='active'?conversationResult(state,content).conversation:undefined,interactables,knownEvents,quests,journal:clone(state.history.slice(-60)),notifications:clone(state.notifications.slice(-5)),cycleComplete:state.cycleComplete,
-    outcomes:state.cycleComplete?{knownResolved:knownEvents.filter(e=>['prevented','resolved'].includes(e.status)).length,knownFailed:knownEvents.filter(e=>e.status==='failed').length}:undefined};
+    personalActions:personalActions(state,content),services:clone(Object.values(p.knownServices||{})),outcomes:state.cycleComplete?{knownResolved:knownEvents.filter(e=>['prevented','resolved'].includes(e.status)).length,knownFailed:knownEvents.filter(e=>e.status==='failed').length}:undefined};
 }

@@ -20,5 +20,5 @@ export function semanticIdentity(option,targetId,session) {
   parameters:Object.fromEntries(parameters.filter(k=>command[k]!==undefined).map(k=>[k,command[k]]))});
 }
 export function knowledgeMeaning(fact) {
- return canonical({id:fact.id,kind:fact.kind,text:fact.text,status:fact.status,documentId:fact.documentId,belief:fact.belief&&{claim:fact.belief.claim,about:fact.belief.about,source:fact.belief.source}});
+ return canonical({id:fact.id,kind:fact.kind,text:fact.text,status:fact.status,documentId:fact.documentId,deadlineClaim:fact.deadlineClaim,belief:fact.belief&&{claim:fact.belief.claim,about:fact.belief.about,source:fact.belief.source}});
 }
