@@ -765,6 +765,11 @@ function actionsFor(state,content,target) {
   actions.push(...affordances(state,content,target.id));
   actions.push(...causalActions(state,content,target));
   actions.push(...structureActions(state,content,target.id));
+  const remembered=p.knownServices?.[target.id],review=actions.find(a=>a.id==='review');
+  const offerMeaning=offers=>JSON.stringify(offers.filter(a=>['buy','work','train','rest','craft'].includes(a.type)).map(a=>({id:a.id,type:a.type,price:a.price,requirements:a.requirements})).sort((a,b)=>a.id.localeCompare(b.id,'en')));
+  if(remembered&&review&&offerMeaning(remembered.offers)!==offerMeaning(actions)){
+    review.id='inspect';review.label='変わった店頭・仕事の条件を確かめる';
+  }
   return actions;
 }
 function personalActions(state,content) {

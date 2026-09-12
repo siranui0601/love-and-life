@@ -15,6 +15,7 @@ function recoverAtShelter(state,content,s,npc,shelter,helperId) {
 export function damageStructure(state,content,spec) {
  const s=state.structures[spec.id],site=siteOf(content,spec);if(s.damageAt!==undefined||!spec.failure||!site)return;
  Object.assign(s,spec.failure.effects);s.damageAt=state.time;s.casualties=[];s.recoveries=[];
+ state.facilities||={};state.facilities[site.id]={...state.facilities[site.id],closed:!s.operating||s.integrity<=0};
  const fact={id:`physical:${state.nextId++}`,kind:'structural-damage',actorId:null,targetId:site.id,region:spec.region,position:[...site.position],at:state.time,payload:{kind:spec.failure.kind},witnesses:[]};
  state.socialFacts.push(fact);s.damageFactId=fact.id;
  for(const n of orderedValues(state.npcs))if(n.hp>0&&!n.travel&&n.region===spec.region&&distance(n.position,site.position)<(spec.failure.exposureRange||8)&&hasLineOfSight(content.regions.find(r=>r.id===spec.region),n.position,site.position)) {
@@ -24,7 +25,7 @@ export function damageStructure(state,content,spec) {
  }
 }
 export function siteDescription(s,voices=false) {
- return `${s.fire>0?'炎と煙が上がっている。':s.fuel?'床に灯油がこぼれている。':''}${s.blocked?'崩れた物が入口を塞いでいる。':''}${s.damageAt!==undefined?'壊れた設備と散らばった残骸がある。':''}${voices?'奥から人の声がする。':''}`;
+ return `${s.fire>0?'炎と煙が上がっている。':s.fuel?'床に灯油がこぼれている。':''}${s.blocked?'崩れた物が入口を塞いでいる。':''}${s.damageAt!==undefined?(s.recoveredAt!==undefined&&!s.blocked?'設備には補修の跡が残っている。':'壊れた設備と散らばった残骸がある。'):''}${voices?'奥から人の声がする。':''}`;
 }
 function observeSite(state,content,spec,npc) {
  const s=state.structures[spec.id],site=siteOf(content,spec),region=content.regions.find(r=>r.id===spec.region);

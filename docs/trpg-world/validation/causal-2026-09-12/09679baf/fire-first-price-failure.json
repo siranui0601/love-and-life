@@ -1,0 +1,84 @@
+{
+  "kind": "fire",
+  "layer": "structural travel prefix, public local life/discovery/response",
+  "firstMissing": "{\"error\":\"FIRST_MISSING_AFFORDANCE\",\"target\":\"村のパン屋\",\"type\":\"buy\",\"parameter\":{\"itemId\":\"timber\"},\"offered\":[{\"id\":\"review\",\"label\":\"確かめた内容を読み返す\"},{\"id\":\"buy:supplies\",\"type\":\"buy\",\"itemId\":\"supplies\",\"label\":\"食料と生活物資 · 28G\",\"price\":28,\"requirements\":{\"gold\":28},\"available\":false,\"missing\":[\"28G\"]},{\"id\":\"buy:medicine\",\"type\":\"buy\",\"itemId\":\"medicine\",\"label\":\"傷薬 · 39G\",\"price\":39,\"requirements\":{\"gold\":39},\"available\":false,\"missing\":[\"39G\"]},{\"id\":\"buy:food\",\"type\":\"buy\",\"itemId\":\"food\",\"label\":\"旅人の温かい弁当 · 17G\",\"price\":17,\"requirements\":{\"gold\":17},\"available\":true,\"missing\":[]},{\"id\":\"buy:rope\",\"type\":\"buy\",\"itemId\":\"rope\",\"label\":\"丈夫な縄 · 22G\",\"price\":22,\"requirements\":{\"gold\":22},\"available\":true,\"missing\":[]},{\"id\":\"buy:timber\",\"type\":\"buy\",\"itemId\":\"timber\",\"label\":\"補修用木材 · 34G\",\"price\":34,\"requirements\":{\"gold\":34},\"available\":false,\"missing\":[\"34G\"]},{\"id\":\"buy:antidote\",\"type\":\"buy\",\"itemId\":\"antidote\",\"label\":\"解毒薬 · 70G\",\"price\":70,\"requirements\":{\"gold\":70},\"available\":false,\"missing\":[\"70G\"]},{\"id\":\"buy:crystal\",\"type\":\"buy\",\"itemId\":\"crystal\",\"label\":\"調律結晶 · 78G\",\"price\":78,\"requirements\":{\"gold\":78},\"available\":false,\"missing\":[\"78G\"]},{\"id\":\"buy:EQP-W-0005\",\"type\":\"buy\",\"itemId\":\"EQP-W-0005\",\"label\":\"農具鉈 · 25G\",\"price\":25,\"requirements\":{\"gold\":25},\"available\":true,\"missing\":[]},{\"id\":\"buy:EQP-W-0006\",\"type\":\"buy\",\"itemId\":\"EQP-W-0006\",\"label\":\"薪割り斧 · 45G\",\"price\":45,\"requirements\":{\"gold\":45},\"available\":false,\"missing\":[\"45G\"]},{\"id\":\"buy:EQP-W-0009\",\"type\":\"buy\",\"itemId\":\"EQP-W-0009\",\"label\":\"旅杖 · 22G\",\"price\":22,\"requirements\":{\"gold\":22},\"available\":true,\"missing\":[]},{\"id\":\"buy:EQP-S-0001\",\"type\":\"buy\",\"itemId\":\"EQP-S-0001\",\"label\":\"木蓋の盾 · 22G\",\"price\":22,\"requirements\":{\"gold\":22},\"available\":true,\"missing\":[]},{\"id\":\"buy:EQP-A-0001\",\"type\":\"buy\",\"itemId\":\"EQP-A-0001\",\"label\":\"綿入り上着 · 22G\",\"price\":22,\"requirements\":{\"gold\":22},\"available\":true,\"missing\":[]},{\"id\":\"buy:EQP-W-0072\",\"type\":\"buy\",\"itemId\":\"EQP-W-0072\",\"label\":\"農事暦 · 39G\",\"price\":39,\"requirements\":{\"gold\":39},\"available\":false,\"missing\":[\"39G\"]},{\"id\":\"sell:medicine\",\"type\":\"sell\",\"itemId\":\"medicine\",\"label\":\"売る：傷薬（所持 2）\"},{\"id\":\"sell:MAT_RED_FANG\",\"type\":\"sell\",\"itemId\":\"MAT_RED_FANG\",\"label\":\"売る：素材（赤牙狼の幼体）（所持 1）\"},{\"id\":\"sell:timber\",\"type\":\"sell\",\"itemId\":\"timber\",\"label\":\"売る：補修用木材（所持 2）\"}]}",
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 2273,
+    "simulationAdvances": 1061,
+    "movementInputs": 1106,
+    "meaningfulPlayerDecisions": 91,
+    "travelSegments": 39,
+    "investigations": 2,
+    "conversationTurns": 8,
+    "preparationActions": 25,
+    "combatActions": 5,
+    "otherDecisions": 12
+  },
+  "day": 3,
+  "clock": "12:36",
+  "hp": 65,
+  "replayEqual": true,
+  "intermediateRestartEqual": null,
+  "rescueDemonstrated": false,
+  "structures": {
+    "deep-shaft": {
+      "integrity": 13.505874920173643,
+      "milestones": [],
+      "operating": true,
+      "water": 60
+    },
+    "grain-store": {
+      "fire": 0,
+      "fuel": false,
+      "integrity": 25,
+      "milestones": [
+        {
+          "id": "milestone:13787",
+          "kind": "extinguish",
+          "at": 215101.67532829262,
+          "evidence": "social:13786"
+        },
+        {
+          "id": "milestone:14735",
+          "kind": "clear-rubble",
+          "at": 217816.00173105992,
+          "evidence": "social:14734"
+        }
+      ],
+      "operating": false,
+      "water": 0,
+      "blocked": false,
+      "damageAt": 151205.63394443705,
+      "casualties": [],
+      "recoveries": [],
+      "damageFactId": "physical:9063"
+    }
+  },
+  "events": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "latent"
+    },
+    "deep-mine": {
+      "status": "active"
+    },
+    "harbor": {
+      "status": "active"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "active"
+    }
+  }
+}

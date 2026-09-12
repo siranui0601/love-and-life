@@ -39,6 +39,9 @@ export function prepare(run,requirements,{maxDecisions=24}={}) {
   const needed=choice.offer.requirements||{};
   const lacking=Object.entries(needed.items||{}).some(([id,n])=>(p.inventory[id]||0)<n)||(needed.skills||[]).some(id=>!p.skills.includes(id))||p.gold<(needed.gold||0)||p.sp<(needed.sp||0);
   if(lacking){if(goals.some(g=>JSON.stringify(g)===JSON.stringify(needed)))return {error:'CYCLIC_PREPARATION_REQUIREMENTS',decisions};goals.push(needed);continue;}
+  const arrived=performAt(run,choice.service,null);if(arrived.error)return arrived;
+  const refresh=run.options().find(o=>o.command.targetId===choice.service.id&&o.command.type==='interact'&&o.command.action==='inspect');
+  if(refresh){const result=run.select(refresh,'店頭で変わった条件を確かめ、準備を組み直す');decisions++;if(result.error)return result;continue;}
   const result=performAt(run,choice.service,type,parameter,'調べて知った入手先で、旅支度を進める');decisions++;if(result.error)return result;
  }
  return goals.length?{error:'SEARCH_LIMIT',decisions}:{prepared:true,decisions};

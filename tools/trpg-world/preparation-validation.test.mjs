@@ -22,6 +22,15 @@ test('unaffordable offers carry public requirements but cannot be selected as ex
  const c=content();c.items[0].price=100;const r=new WorldReplay(c);
  const offer=r.view().interactables.find(t=>t.id==='shop').actions.find(a=>a.itemId==='timber');assert.equal(offer.available,false);assert.equal(offer.requirements.gold,100);assert(!r.options().some(o=>o.command.type==='buy'&&o.command.itemId==='timber'));
 });
+test('a failed incident changes shop prices; ordinary reinspection updates preparation without granting money',()=>{
+ const c=content();c.items[0].price=20;c.events=[{id:'shortage',name:'荷の損失',region:'farm',position:[60,0,60],startsAt:26000,deadline:28000,failureEffects:{stock:{farm:-.75}}}];
+ const r=new WorldReplay(c),shop=r.view().region.objects.find(o=>o.id==='shop');
+ assert(!performAt(r,shop,'interact',{action:'inspect'}).error);const old=r.state.player.knownServices.shop.offers.find(o=>o.itemId==='timber').price;
+ assert(!performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest').error);
+ assert.equal(r.state.events.shortage.status,'failed');assert(r.view().interactables.find(t=>t.id==='shop').actions.some(a=>a.id==='inspect'));
+ const result=prepare(r,{items:{timber:4}});assert(result.prepared,JSON.stringify(result));assert(r.state.player.knownServices.shop.offers.find(o=>o.itemId==='timber').price>old);
+ assert(r.operations.some(o=>o.command?.type==='work'));assert.deepEqual(r.defects,[]);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
 test('combat controller uses offered attack windows and normal healing, never a victory command',()=>{
  const c=content();c.regions[0].spawn=[-49,0,-45];c.monsters=[{id:'rat',region:'farm',name:'野鼠',hp:35,level:1,attack:4,defense:0,speed:1,range:2.8,xp:20,gold:3,drops:[]}];const r=new WorldReplay(c);r.advance(.1);
  const target=r.view().monsters[0],first=r.options().find(o=>o.command.type==='attack');assert(first);r.select(first,'間合いから攻撃する');assert.equal(r.state.monsters[target.id].hp,35);
